@@ -36,6 +36,34 @@ function loadSupabaseEnvFromLocal(): Record<string, string> {
 
 const supabaseFromEnvLocal = loadSupabaseEnvFromLocal()
 
+// NFT on admin/bpo/* walks process.cwd() via the CMA map/basemap read
+// (lib/geo/basemap-streets.ts). Production then zipped the repo: design_system
+// PNGs, scratch drafts, docs, CMA PDFs — 366.95mb against a 250mb cap.
+// These stay off the BPO lambdas. CMA PDF API routes keep their own includes.
+const BPO_LAMBDA_TRACE_EXCLUDES = [
+  './node_modules/googleapis/**',
+  './node_modules/googleapis-common/**',
+  './node_modules/pdfjs-dist/**',
+  './node_modules/@napi-rs/canvas/**',
+  './node_modules/puppeteer-core/**',
+  './node_modules/@sparticuz/chromium-min/**',
+  './scratch/**',
+  './tmp/**',
+  './docs/**',
+  './design_system/**',
+  './e2e/**',
+  './automation_skills/**',
+  './marketing_brain_skills/**',
+  './video_production_skills/**',
+  './social_media_skills/**',
+  './public/cmas/**',
+  './public/drafts/**',
+  './public/v5_library/**',
+  './data/asset-library/**',
+  './out/**',
+  './.artifacts/**',
+] as const
+
 // PWA: Serwist requires webpack. Next 16 defaults to Turbopack; use `next build --webpack` to enable SW.
 // Manifest + offline page + InstallPrompt work without the service worker.
 const nextConfig: NextConfig = {
@@ -519,35 +547,14 @@ const nextConfig: NextConfig = {
       './node_modules/@sparticuz/chromium-min/**',
     ],
     // Found 2026-09-16: admin/bpo/[slug] traced at 366.95mb (limit 250mb) after
-    // the action-required shrink. The review page imported the @/lib/data barrel
-    // (bookingAvailability → googleapis ~196mb) plus the CMA/BPO build graph
-    // (pdfjs / canvas). Leaf imports cut that chain; these excludes keep the
-    // leftovers out of this lambda. Rebuild still writes HTML to the DB — it
-    // does not need Gmail or a PDF renderer.
-    'app/admin/(protected)/bpo/[slug]/page': [
-      './node_modules/googleapis/**',
-      './node_modules/googleapis-common/**',
-      './node_modules/pdfjs-dist/**',
-      './node_modules/@napi-rs/canvas/**',
-      './node_modules/puppeteer-core/**',
-      './node_modules/@sparticuz/chromium-min/**',
-    ],
-    'app/admin/(protected)/bpo/page': [
-      './node_modules/googleapis/**',
-      './node_modules/googleapis-common/**',
-      './node_modules/pdfjs-dist/**',
-      './node_modules/@napi-rs/canvas/**',
-      './node_modules/puppeteer-core/**',
-      './node_modules/@sparticuz/chromium-min/**',
-    ],
-    'app/admin/(protected)/bpo/new/page': [
-      './node_modules/googleapis/**',
-      './node_modules/googleapis-common/**',
-      './node_modules/pdfjs-dist/**',
-      './node_modules/@napi-rs/canvas/**',
-      './node_modules/puppeteer-core/**',
-      './node_modules/@sparticuz/chromium-min/**',
-    ],
+    // the action-required shrink. Two leaks: the @/lib/data barrel
+    // (bookingAvailability → googleapis ~196mb) and an NFT cwd walk that
+    // shipped design_system / scratch / docs / CMA PDFs. Leaf imports cut
+    // googleapis; these excludes drop the repo dump. Rebuild writes HTML to
+    // the DB — it does not need Gmail, a PDF renderer, or kit PNGs.
+    'app/admin/(protected)/bpo/[slug]/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
+    'app/admin/(protected)/bpo/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
+    'app/admin/(protected)/bpo/new/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
   },
 }
 
