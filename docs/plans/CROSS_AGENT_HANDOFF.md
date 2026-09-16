@@ -1,3 +1,16 @@
+# Current — 2026-09-16 (Claude cloud site queue: SITE-95 compare + SITE-93 city Tip Ready on the sonnet stand-in; SITE-111 sell + SITE-112 subdivision building)
+
+Surface: Claude Code cloud session `claude-cloud-01DYvsoL-20260915` (branch `claude/run-loop-v30as0`, draft **PR #253**). No grok / cursor CLI in the sandbox, so every mark is the claude CLI as Sonnet with an Opus builder — a **rebaseline**, never done. Cos Mini: rejudge the tips on grok-4.6 and land.
+
+- **Tip:** `17b8a6d` on `claude/run-loop-v30as0` (pushed). Commits: compare `b0a49f3`…`006076a`; ported PR #252 `65234d6` as `a80e52e` (route-smoke 144/145 sitemap 500 + six tap targets); city `ad4747a` / `746a470` / `17b8a6d`.
+- **SITE-95 compare:** `--ship` exit 0 · sonnet 62 (58/62/66) · honesty 8 · demoMatch true · shadcn table + carousel imported by `app/compare/_v3/CompareSheet.client.tsx`; flanking chevrons at the photo midline + "2 of 5" read-out were what flipped demoMatch (the under-frame pair the grok ruler rejected on /price-drops was tried and reverted). Floor `heroImageNatural` 1382→1200 by hand with the reason in `contentFloor.note` (rotating sample). Node **blocked on a person** with the rejudge ask in `blocked_reason`.
+- **SITE-93 city:** `--ship` exit 0 · sonnet 63 (63/68/62) · honesty 8 · demoMatch true · Beautiful UI insight pager (`CityInsight`) + beUI combobox via new barrel primitive `V3TypeCombobox`; proof strip newest 4 with facts (2 on phones); monthly sold count published; `requiredComponents` 14→16. `next.config.ts` gains opt-in `RR_TURBOPACK_ROOT` (worktree builds). Node **blocked on a person**, same ask.
+- **Tool fix:** `scripts/lib/taste-evaluate-result.mjs` `claudeModelFromWrapper` prefers the requested alias (the CLI's `modelUsage` lists the haiku helper first). Both lanes hit it; compare's version kept, both lanes' tests pass.
+- **Sandbox truth:** headless Chromium here rejects the agent-proxy CA even with the CA in the NSS store, so `ci:route-content-floor` / `ci:tap-targets` cannot load Spark photos locally; PR #252's `remote-media-proxy` + `gate-browser` are the accepted fix and were used UNCOMMITTED for measurement only. GitHub runners measure real photos.
+- **Round two (in flight, claimed):** SITE-111 sell (`app/sell/**`, beui-input / shadcn input / sheet) and SITE-112 subdivision (`app/subdivisions/[slug]/**`, reusing the city lane's insight + combobox pattern). Landing path: cherry-pick onto `claude/run-loop-v30as0`, one gate chain, one push, refresh PR #253.
+- **Next:** Cos Mini grok-4.6 rejudge of PR #253 (compare, city) → land or send back. SITE-102/100 (housing-market family) skipped while SITE-103 is held elsewhere. Do not rebuild SITE-93/95 from main.
+- Skills read: `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `scripts/lib/taste-receipt.mjs --ship`, `scripts/lib/taste-catalog.mjs --preflight`.
+
 # Current — 2026-09-15 (Public Patch P0 Tip Ready — place plats + search + rail flip)
 
 Surface: Public Patch on Matthews Mini. Tip Ready locally. **Do not push origin** — Cos Mini lands. HOLD owner email.
