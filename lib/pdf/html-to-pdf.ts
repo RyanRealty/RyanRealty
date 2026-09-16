@@ -8,8 +8,7 @@
  * lib/cma-pdf.ts).
  */
 
-import puppeteer, { type Browser } from 'puppeteer-core'
-import chromium from '@sparticuz/chromium-min'
+import type { Browser } from 'puppeteer-core'
 import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
 import { assertPageFit } from '@/lib/pdf/assert-page-fit'
 import { pdfRenderOptions, type RunningMarks } from '@/lib/pdf/page-contract'
@@ -18,6 +17,10 @@ const CHROMIUM_REMOTE =
   'https://github.com/Sparticuz/chromium/releases/download/v138.0.2/chromium-v138.0.2-pack.x64.tar'
 
 async function getBrowser(): Promise<Browser> {
+  const [{ default: puppeteer }, { default: chromium }] = await Promise.all([
+    import('puppeteer-core'),
+    import('@sparticuz/chromium-min'),
+  ])
   const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
   if (isVercel) {
     return puppeteer.launch({

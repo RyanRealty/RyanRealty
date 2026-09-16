@@ -1,3 +1,11 @@
+# Current — 2026-09-16 (P0: shrink action-required lambda)
+
+Surface: Cursor cloud, branch `cursor/shrink-action-required-lambda-45b6`. PR only — do not merge.
+
+- **Cause:** Vercel rejected `admin/analytics/action-required` at ~805.9mb uncompressed (250mb cap). Live stayed on `151a32f9`. Shared admin chrome imported `app/actions/crm.ts` (`getCrmAccess` / `listCrmPeople` / `getNextRecommendation`), so Next compiled the CRM god-file into every protected page.
+- **Fix on this branch:** `getCrmAccess` → `lib/data/crm/getCrmAccess.ts`; next-rec → `app/actions/crm-next-rec.ts`; ⌘K leads via `searchCrmPeople`; action-required imports v2 leaves + `DataStates` (no barrel / ReportGrid); puppeteer/chromium dynamic-import; `outputFileTracingExcludes` for this route. `VERCEL_ANALYZE_BUILD_OUTPUT=1` documented in `next.config.ts`. Did not set `VERCEL_SUPPORT_LARGE_FUNCTIONS=1`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md` (this is not a SITE node).
+
 # Current — 2026-09-16 (SITE-120 Tip Ready PR — place-alert sticky ask)
 
 Surface: Cursor cloud `cursor-cloud-site120-20260916`, branch `cursor/site-120-place-alerts-3485`. PR only — do not merge.

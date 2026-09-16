@@ -16,13 +16,14 @@ export type CrmPersonHit = {
   id: number
   name: string | null
   stage: string | null
+  source: string | null
   assigned_broker: string | null
   emails: Array<{ value: string }> | null
   phones: Array<{ value: string }> | null
   updated_at: string | null
 }
 
-const SELECT = 'id,name,stage,assigned_broker,emails,phones,updated_at'
+const SELECT = 'id,name,stage,source,assigned_broker,emails,phones,updated_at'
 
 export async function searchCrmPeople(params: {
   q: string | null

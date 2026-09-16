@@ -1,6 +1,8 @@
 'use server'
 
-import { listCrmPeople, getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess } from '@/lib/data/crm/getCrmAccess'
+import { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
+import { scopeBroker } from '@/lib/crm/scope'
 import { checkAdminAction, getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { closingMatchesQuery, getClosingsBoard } from '@/lib/data/tc/closings'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
@@ -22,11 +24,19 @@ export async function consoleSearchLeads(q: string): Promise<ConsoleLeadHit[]> {
   // (audit MED — the one non-page CRM read path).
   const gate = await checkAdminAction('people.view')
   if (!gate.ok) return []
-  const res = await listCrmPeople({ q: query, broker: access.brokerSlug ?? undefined, page: 1 })
-  return res.rows.slice(0, 8).map((p) => ({
+  // scopeBroker(superuser) is null = every book. Restricted brokers get their
+  // own slug; unmapped non-superusers get UNMAPPED_OWN_BOOK (empty). Do not
+  // fall back to access.brokerSlug — that would clamp Matt to the 'matt' book
+  // and contradict "superuser sees all" above.
+  const hits = await searchCrmPeople({
+    q: query,
+    brokerScope: scopeBroker(access),
+    limit: 8,
+  })
+  return hits.map((p) => ({
     id: p.id,
     name: p.name ?? `Contact #${p.id}`,
-    stage: p.stage,
+    stage: p.stage ?? '',
     source: p.source,
   }))
 }
