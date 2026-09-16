@@ -31,7 +31,11 @@ describe('index pages open on the rows', () => {
   it.each(INDEX_PAGES)('%s mounts a page Ledger and never an Instrument', (rel) => {
     const src = read(rel)
     expect(src).toContain('<V3Ledger')
-    expect(src).toMatch(/headingLevel=\{1\}/)
+    // The page declares its H1: on the Ledger itself, or — since SITE-92
+    // (2026-09-16) on /cities — on a V3Heading opening above a drawing-and-
+    // figure fold (the regional Atlas beside the alerts ask). The guard's job
+    // is unchanged: an index still mounts a Ledger and never an Instrument.
+    expect(src).toMatch(/headingLevel=\{1\}|<V3Heading level=\{1\}/)
     expect(src).toMatch(/note=\{v3Text\(/)
     expect(src).not.toMatch(/\bV3Instrument\b/)
   })

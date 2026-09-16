@@ -60,6 +60,14 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
+import { V3Atlas, V3Eyebrow, V3Heading } from '@/components/site/v3'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
+import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
+import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
+import { CitiesAlertsStrip } from './_v3/CitiesAlertsStrip.client'
+import './_v3/cities-fold.css'
 import { cityFeaturedLinks } from '@/app/cities/CityFeaturedLinks'
 import {
   CITY_SENTENCE_FALLBACK,
@@ -138,7 +146,31 @@ function cityReveal(layers: DetachedOverlay | undefined, months: readonly Public
 
 export default async function CitiesPage() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [allCities, allSnapshots] = await Promise.all([getCitiesForIndex(), getAllCitySnapshots()])
+  // THE FOLD IS A DRAWING AND A FIGURE (SITE-92, 2026-09-16; Matt: "my city
+  // pages have to be special"). The table scored this index 30: a supply
+  // lecture on cream with no Atlas, no city mark, no photo and no alerts. The
+  // same three reads the About page and the community fold make: the region's
+  // live listings for the Atlas dots, every recorded town boundary as a
+  // touchable region, and the region's own 30-day count for the alerts
+  // figure. Each is timeboxed — a slow read costs the drawing, never the
+  // directory — and none is a second source for a figure the ledger prints.
+  const [allCities, allSnapshots, atlasRead, regionAtlas, regionPace] = await Promise.all([
+    getCitiesForIndex(),
+    getAllCitySnapshots(),
+    withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'cities:atlas'),
+    buildRegionAtlasRegions().catch(() => null),
+    withTimeoutFallback(
+      getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+      EMPTY_PUBLIC_PACE,
+      3500,
+      'cities:regionPace',
+    ),
+  ])
+  const atlas = atlasRead ?? EMPTY_PLACE_ATLAS
+  // Towns only on the index — the community and neighborhood outlines belong
+  // to the place pages; here every region is a city with its own page.
+  const townRegions = (regionAtlas?.regions ?? []).filter((r) => r.kind === 'town')
+  const atlasDrawable = townRegions.length > 0 || atlas.dots.length > 0
 
   const sortedCities = sortCitiesWithPrimaryFirst(allCities)
   const visibleCities = sortedCities.slice(0, 60)
@@ -451,12 +483,60 @@ export default async function CitiesPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities' }]} />
 
+        {/* The H1 and one caption, then the fold: Central Oregon drawn, with
+            the ask beside it (layout lock: a drawing and a figure beside the
+            alerts sentence). */}
+        <header className="cities-opening">
+          <V3Eyebrow>Central Oregon</V3Eyebrow>
+          <V3Heading level={1} size="field">
+            Central Oregon cities
+          </V3Heading>
+          <p className="cities-opening__caption">
+            {directoryNote || 'Live single-family inventory from the regional MLS.'}
+          </p>
+        </header>
+
+        <div className="cities-fold">
+          <div className="cities-fold__stage">
+            <div className="cities-fold__drawing">
+              {atlasDrawable ? (
+                <V3Atlas
+                  id="atlas"
+                  headingLevel={2}
+                  headline={v3Text('Central Oregon right now')}
+                  headlineTone="eyebrow"
+                  claimText="Every town is a door to its own page; every mark is a live MLS listing of any type. The supply reading below counts detached houses."
+                  keyPlacement="head"
+                  sourceName="Oregon Data Share"
+                  dots={atlas.dots}
+                  regions={townRegions}
+                  basemap={basemapForRegions(townRegions, { dots: atlas.dots, fit: 'dots' })}
+                  fit="dots"
+                  types={atlas.types}
+                  events={atlas.events}
+                  source={atlas.source}
+                  stamp={atlas.stamp}
+                  incomplete={!atlas.complete}
+                />
+              ) : null}
+            </div>
+            <aside className="cities-fold__figure">
+              <CitiesAlertsStrip
+                id="regional-alerts"
+                newCount30d={regionPace.newCount30d}
+                updatedAt={ledgerStamp ? formatDate(ledgerStamp) : null}
+                browseHref={REGIONAL_SEARCH_HREF}
+              />
+            </aside>
+          </div>
+        </div>
+
         {firstFeatured ? (
           <V3Ledger
             id="featured-cities"
-            headingLevel={1}
-            eyebrow={v3Text('Central Oregon')}
-            heading={v3Text('Central Oregon cities')}
+            headingLevel={2}
+            eyebrow={v3Text('Every city')}
+            heading={v3Text('Central Oregon cities, A to Z')}
             note={v3Text(
               directoryNote || 'Live single-family inventory from the regional MLS.',
             )}
@@ -470,8 +550,8 @@ export default async function CitiesPage() {
         ) : (
           <V3Ledger
             id="featured-cities"
-            headingLevel={1}
-            heading={v3Text('Central Oregon cities')}
+            headingLevel={2}
+            heading={v3Text('Central Oregon cities, A to Z')}
             rows={[]}
             emptyMessage={v3Text('The city index returned no city on this refresh.')}
           />
