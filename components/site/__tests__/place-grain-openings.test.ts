@@ -104,13 +104,40 @@ describe('city opening', () => {
 
 describe('neighborhood opening MOS', () => {
   const page = readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8')
+  const nbhInsight = readFileSync(
+    resolve('app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodInsight.client.tsx'),
+    'utf8',
+  )
 
-  it('adds the MOS overlay from leftover HUD, not a second valuation card', () => {
+  it('draws leftover MOS in the neighborhood fold, not a second valuation card', () => {
     expect(page).toMatch(/buildPlaceMosView\(\{/)
     expect(page).toMatch(/grain: 'neighborhood'/)
-    expect(page).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} mos=\{placeMos\} \/>/)
+    // SITE-104: the bars came OFF the photograph. They are page one of the
+    // fold's insight pager now — the same move SITE-93 made on the city — so
+    // the hero carries the still alone and the page composes the bar props.
+    expect(page).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} \/>/)
+    expect(page).toMatch(/caption: placeMos\.caption/)
+    expect(page).toMatch(/homesValue: placeMos\.homesValue/)
+    expect(page).toMatch(/mos=\{foldMosProps\}/)
+    expect(nbhInsight).toMatch(/<V3MosBars/)
     expect(page).not.toMatch(/<V3PlaceValue/)
     expect(page).not.toMatch(/<V3PlaceDoor/)
+  })
+
+  it('binds the verdict to the same months-of-supply figure the bars divide', () => {
+    // The sentence above the bars is marketVerdict()'s label and nothing else,
+    // handed hud.monthsSupply — the figure buildPlaceMosView draws. A second
+    // classifier, or a different input, is how a verdict and its number drift
+    // apart (CLAUDE.md section 0 rule 5).
+    expect(page).toMatch(/marketVerdict\(hud\.monthsSupply\)/)
+    expect(page).toMatch(/const foldVerdictProse =/)
+    expect(page).not.toMatch(/foldVerdictProse[\s\S]{0,120}(seller|buyer|balanced)'?s? market'/)
+  })
+
+  it('never draws the parent city monthly series under the neighborhood name', () => {
+    // placeMonthly is leftoverUsed && !cityFallback. When the neighborhood's own
+    // monthly read did not answer, the insight is handed no rows at all.
+    expect(page).toMatch(/months: placeMonthly \? chartMonths\.months : \[\]/)
   })
 })
 

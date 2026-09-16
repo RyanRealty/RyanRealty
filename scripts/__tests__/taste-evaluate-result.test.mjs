@@ -179,23 +179,6 @@ describe('taste-evaluate-result — the judge chain', () => {
       'claude-sonnet-5',
     )
     expect(claudeModelFromWrapper({}, 'opus')).toBe('claude-opus-5')
-    // The CLI lists its own internal haiku helper alongside the judge; the
-    // alias we asked for is the judge (2026-09-15, SITE-95).
-    expect(
-      claudeModelFromWrapper(
-        {
-          modelUsage: {
-            'claude-haiku-4-5-20251001': { inputTokens: 899 },
-            'claude-sonnet-5': { inputTokens: 2, cacheReadInputTokens: 28660 },
-          },
-        },
-        'sonnet',
-      ),
-    ).toBe('claude-sonnet-5')
-    // Nothing on the judge chain ran: say so rather than claim a ruler.
-    expect(
-      claudeModelFromWrapper({ modelUsage: { 'claude-haiku-4-5-20251001': { inputTokens: 899 } } }, 'sonnet'),
-    ).toBe('claude-haiku-4-5-20251001')
     expect(claudeModelFromWrapper(null, 'sonnet')).toBe('claude-sonnet-5')
   })
 

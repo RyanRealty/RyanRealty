@@ -47,8 +47,7 @@
  */
 
 import { useMemo } from 'react'
-import InsightCards, { AnomalyCard, STABLE_EPOCH,
-  useChartEpoch, type InsightPage } from '@/components/motion/insight-cards'
+import InsightCards, { AnomalyCard, type InsightPage } from '@/components/motion/insight-cards'
 import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3MosBars, V3SourceLine, type V3MosBarsProps } from '@/components/site/v3'
 import { cityInsightCount, cityInsightMoney, type CityInsightBoard } from './city-insight'
@@ -64,10 +63,7 @@ export type CityInsightProps = {
 }
 
 export function CityInsight({ id, board, mos, latestSale }: CityInsightProps) {
-  // The same epoch the catalog's card lays its points on, so the month under a
-  // tick is the month that point came from.
-  const epoch = useChartEpoch() ?? STABLE_EPOCH
-  const pages = useMemo(() => buildPages(board, mos, latestSale, epoch), [board, mos, latestSale, epoch])
+  const pages = useMemo(() => buildPages(board, mos, latestSale), [board, mos, latestSale])
   if (pages.length === 0) return null
 
   return (
@@ -81,7 +77,6 @@ function buildPages(
   board: CityInsightBoard,
   mos: V3MosBarsProps | null,
   latestSale: CityInsightProps['latestSale'],
-  epoch: number,
 ): InsightPage[] {
   const pages: InsightPage[] = []
 
@@ -101,8 +96,7 @@ function buildPages(
   if (path && path.points.length > 1) {
     const medians = path.points.map((p) => p.median)
     const solds = path.points.map((p) => p.sold)
-    const labels = path.points.map((p) => p.label)
-    const lastLabel = labels[labels.length - 1]
+    const lastLabel = path.points[path.points.length - 1]?.label ?? ''
     pages.push({
       key: 'closed-sales',
       prose: latestSale ? (
@@ -137,7 +131,12 @@ function buildPages(
                   `Median sale price ran ${path.range.medianLow} to ${path.range.medianHigh};`,
                 vsLine: `homes sold ran ${path.range.soldLow} to ${path.range.soldHigh}. ${path.window}, latest ${lastLabel}.`,
               }}
-              formatTime={(t) => monthFace(t, labels, epoch)}
+              /* SITE-103's opt-in axis: one face per SOURCED point, handed straight
+                 to the card. It replaces a formatTime() that reverse-engineered each
+                 tick's index from the chart epoch and the point gap — arithmetic the
+                 catalog now derives internally, so the hand-rolled copy could name the
+                 wrong face the moment either changed. */
+              tickLabels={path.points.map((p) => p.label.slice(0, 3))}
             />
             <V3SourceLine source={path.source} sourceName="Oregon Data Share" />
           </div>
@@ -149,21 +148,4 @@ function buildPages(
   }
 
   return pages
-}
-
-/**
- * AnomalyCard lays its points 49 / (n - 1) apart, ending at the chart epoch
- * (makePoints(values, gap, epoch)). Map a tick back onto the month it came from,
- * so the axis under the line names real months instead of clock time.
- */
-function monthFace(t: number, labels: string[], epoch: number): string {
-  if (labels.length === 0) return ''
-  // Mirrors AnomalyCard: 49 / (n - 1), which is the demo's 7 at eight points.
-  const gap = 49 / Math.max(1, labels.length - 1)
-  const index = Math.round((t - (epoch - (labels.length - 1) * gap)) / gap)
-  if (index < 0 || index > labels.length - 1) return ''
-  const label = labels[index] ?? ''
-  // "August 2026" is too wide for a tick; the axis says the month, the source
-  // line and the note carry the year.
-  return label.split(' ')[0] ?? label
 }

@@ -1,0 +1,176 @@
+/* SITE-104 — house paint for beautifului's InsightCards in the neighborhood
+   fold. Tokens only (components/site/v3/tokens.css). The catalog's own layout,
+   pager and scrub geometry are untouched; this repaints them navy on cream and
+   squares the corners the register never rounds.
+
+   The city fold paints the same object in app/cities/[slug]/_v3/city-insight.css.
+   Two files rather than one shared sheet because each fold's column geometry is
+   its own (the neighborhood has no V3PlaceIndex under it and a shorter still
+   above it) — the register, the tokens and the control are the same. */
+
+.nbh-insight {
+  min-width: 0;
+}
+
+/* NO PLATE. The register separates columns with a hairline rule, not with a
+   panel — a bordered cream box beside two borderless columns is the exact tell
+   the evaluator named on this route ("Cream box"). The rule lives on the fold
+   column (neighborhood-fold.css). */
+.nbh-insight .insight-cards {
+  width: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  padding: 0;
+  gap: var(--v3-space-xs);
+}
+
+/* The pager face: the register's eyebrow, not a product chip. */
+.nbh-insight .insight-cards__title,
+.nbh-insight .insight-pager__title {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.nbh-insight .insight-cards__count,
+.nbh-insight .insight-pager__count {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.nbh-insight .insight-pager__face {
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+}
+
+/* The pager head sits on the register's hairline, so the chevrons belong to
+   the object under them rather than floating over the column. */
+.nbh-insight .insight-cards__head,
+.nbh-insight .insight-pager {
+  border-bottom: var(--v3-rule-hairline);
+  padding-bottom: var(--v3-space-2xs);
+}
+
+/* Previous / Next ARE the catalog's control and stay the catalog's shape:
+   borderless, transparent, 44x44, a wash on hover. Boxing each chevron in a
+   hairline plate is what made the first city pass read as "a generic widget"
+   rather than the pager it is. */
+.nbh-insight .insight-pager__btn {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  border: 0;
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  color: var(--v3-ink);
+}
+
+.nbh-insight .insight-pager__btn:hover {
+  background: var(--v3-wash);
+}
+
+.nbh-insight .insight-pager__btn:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.nbh-insight .insight-cards__prose {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+  margin: 0;
+}
+
+.nbh-insight .insight-cards__card {
+  border-radius: var(--v3-radius-card);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+/* The pill is a real link out of the fold. Ghost, square, 44px. */
+.nbh-insight .insight-cards__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-hairline);
+  border-color: var(--v3-edge);
+  background: transparent;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  padding-inline: var(--v3-space-sm);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.nbh-insight .insight-cards__pill:hover {
+  background: var(--v3-wash);
+  border-color: var(--v3-navy);
+}
+
+/* The bars inside the pager are the same figure they always were — drop the
+   plate they used to sit on so the pager owns the one border, and let the
+   claim sentence WRAP. Clipped off the top of a floating cream card is exactly
+   what the 2026-09-10 receipt recorded against the old overlay. */
+.nbh-insight .v3.v3-mos {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  max-width: 100%;
+}
+
+.nbh-insight .v3-mos__caption {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  -webkit-line-clamp: none;
+  overflow: visible;
+}
+
+.nbh-insight__chart {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.nbh-insight__chart .insight-chart-stage {
+  min-height: 7.5rem;
+  touch-action: pan-y;
+}
+
+.nbh-insight .insight-tooltip {
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-hairline);
+  border-color: var(--v3-edge);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  box-shadow: none;
+}
+
+.nbh-insight__num {
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 63.99rem) {
+  .nbh-insight .insight-cards {
+    gap: var(--v3-space-2xs);
+  }
+
+  .nbh-insight__chart .insight-chart-stage {
+    min-height: 5.5rem;
+  }
+}

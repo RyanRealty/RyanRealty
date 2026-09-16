@@ -1,0 +1,748 @@
+/* SITE-104 — the neighborhood first viewport: Atlas drawing, the paged figure,
+   the ask. Page-local: every selector is under `.nbh-fold` or the neighborhood
+   grain's own opening class, so the city and community openings that share
+   components/place/place-opening.css do not move.
+
+   The city fold paints the same composition in app/cities/[slug]/_v3/city-fold.css.
+   Two files, one register: this route has no V3PlaceIndex under the fold, its
+   type set is Houses / Land rather than four, and its opening carries three
+   doors — so the geometry is its own even though the objects are the same.
+
+   WHY IT EXISTS. The 2026-09-12 table scored this fold 55: MOS floating on the
+   photograph with its claim clipped off the top, one alerts sentence, a
+   Houses / Land pair of flat rectangles ("Cream box"), and an email form.
+   No drawing, nothing to page, nothing to scrub. */
+
+@layer base {
+  .nbh-fold a {
+    color: inherit;
+  }
+
+  /* The door row's links read at full ink while the separators between them
+     stay muted. `color` belongs in the layer: an un-layered element colour beats
+     the whole Tailwind utilities layer whatever its specificity, which is the
+     invisible-CTA-text P0 of 2026-07-08 (ci:css-layers). */
+  .nbh-fold__peers-row a {
+    color: var(--v3-ink);
+  }
+}
+
+/* The photograph is H1 + doors now, not a stage for a cream card. Prefixed with
+   `.v3` so it clears the (0,3,0) SITE-84 heights in place-opening.css in either
+   load order — the specificity trap the v3 stylesheets document. */
+.v3 .place-opening.place-opening--neighborhood.place-opening--nbhfold.place-opening--media {
+  min-height: 9rem;
+  max-height: 12rem;
+}
+
+.v3 .place-opening--nbhfold .place-opening__caption--doors {
+  font-size: var(--v3-size-body-sm);
+  margin-top: var(--v3-space-2xs);
+}
+
+.v3 .place-opening--nbhfold .place-opening__caption--doors a {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.v3 .place-opening--nbhfold .place-opening__caption--doors a:hover {
+  text-decoration-thickness: 2px;
+}
+
+@media (min-width: 64rem) {
+  .v3 .place-opening.place-opening--neighborhood.place-opening--nbhfold.place-opening--media {
+    min-height: 8.5rem;
+    max-height: 11rem;
+  }
+
+  .v3 .place-opening--nbhfold.place-opening--media .place-opening__copy {
+    align-self: end;
+    padding-top: calc(var(--v3-space-lg) + 2rem);
+    padding-bottom: var(--v3-space-sm);
+    max-width: none;
+  }
+}
+
+@media (max-width: 39.99rem) {
+  /* Barely a still — H1 + the three doors, so Atlas + the pager + the email
+     land inside 812. Tall enough for the door row to wrap whole: clipping it
+     would make the third door unreadable and uncrawlable to a phone reader.
+
+     MEASURED, TWICE. At 6.75rem with a 1.5rem lift the door row ran 146 -> 183.4
+     while the band closed at 174, and `overflow: hidden` took the bottom third of
+     "Bend housing market" off — a half-cut link is a defect, not a crop. The band
+     now closes at 7.25rem (116) and the copy is lifted 1rem instead of 1.5rem,
+     which brings the H1 to 106 and the door row to 138 -> 175.4, whole descender
+     inside the band. The lift cannot go further down: the trail's own row is
+     what the H1 would run into, which is why the rule under this one takes the
+     air off the trail instead of off the H1. */
+  .v3 .place-opening.place-opening--neighborhood.place-opening--nbhfold.place-opening--media {
+    min-height: 5rem;
+    max-height: 7.25rem;
+  }
+
+  .v3 .place-opening--nbhfold.place-opening--media .place-opening__copy {
+    align-self: end;
+    padding-top: calc(var(--v3-space-lg) + 1rem);
+    padding-bottom: var(--v3-space-2xs);
+  }
+
+  /* The trail rides at the top of the band so the H1 sits UNDER it and not in
+     it. Its row keeps the full 44px tap height (ci:tap-targets); the 8px of air
+     above the row is what goes, which lifts the trail's own line to ~80-96 and
+     leaves the 24px H1 at 102 a clear six pixels. Lifting the H1 instead would
+     cost the fold the eight pixels the email field needs to stay inside 812. */
+  .v3 .place-opening--nbhfold.place-opening--media .v3-breadcrumb {
+    padding-top: 0;
+  }
+
+  .v3 .place-opening--nbhfold .place-opening__caption--doors {
+    font-size: var(--v3-size-source);
+    line-height: var(--v3-leading-note);
+  }
+}
+
+/* ── The stage ─────────────────────────────────────────────────────────── */
+
+.nbh-fold {
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+  padding-top: var(--v3-space-md);
+  padding-bottom: var(--v3-space-lg);
+}
+
+.nbh-fold__stage {
+  display: grid;
+  gap: var(--v3-space-lg);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  /* THREE columns, not a stack: the drawing, the figure, the ask — each a
+     different width, a different density and a different medium.
+
+     The figure column is wider here than on the city fold, and the drawing
+     narrower, because this grain's pager is titled "This neighborhood" rather
+     than "This market": at 293px the face wrapped onto two lines and pushed the
+     page count away from the word it counts. The map keeps the largest share. */
+  .nbh-fold__stage {
+    grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 0.9fr) minmax(16.5rem, 0.85fr);
+    column-gap: var(--v3-space-lg);
+  }
+
+  /* The Atlas's own wide layout puts a 16-20rem dock column beside the map. In
+     a fold column that leaves the map a sliver, which is the opposite of "the
+     map is Atlas". In the fold the map takes the whole column and the type +
+     price controls dock under it.
+
+     THE COMPOUND IS LOAD-BEARING. A boundary the shape of Awbrey Butte lands
+     `is-wide` on the Atlas root, and `.v3-atlas.is-wide .v3-atlas__grid` is the
+     same (0,2,0) this rule used to be: it kept its own `dock aside` row, and
+     with the fold's aside hidden the dock sat in a 229px half-column under a
+     458px map — which is why "Land" fell to a line of its own with 230px of
+     empty cream beside it. `.v3-atlas` in the middle makes this (0,3,0) so it
+     beats `is-wide` and `is-stacked` in either load order. */
+  .nbh-fold__drawing .v3-atlas .v3-atlas__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto;
+    /* `aside` is named here on purpose: the live rail is visible in this fold
+       and an unplaced `grid-area: aside` opens an implicit COLUMN, which
+       collapsed the map to a 20px ribbon of wrapped words (captured 2026-09-16
+       before this line existed). */
+    grid-template-areas:
+      'head'
+      'body'
+      'dock'
+      'aside';
+    padding: 0;
+  }
+
+  .nbh-fold__drawing .v3-atlas__frame {
+    border-left: 0;
+    border-top: var(--v3-rule-hairline);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  /* The drawing is the fold's left column and it should READ as the drawing.
+     Measured at 1440x900 (scratch playwright pass): a 16rem plate left 190px of
+     empty cream under the price scrubber while the ask column beside it ran to
+     the viewport floor — a ragged column bottom is fine, a void is a hole. The
+     map now takes the height its neighbours take, and the cap stays a `vh` so a
+     short window shrinks the map rather than pushing the email below the fold. */
+  .nbh-fold__drawing .v3-atlas__stage {
+    min-height: 0;
+    max-height: min(52vh, 27rem);
+  }
+
+  /* Three columns, two rules. The register's own separator (PUBLIC_UI: rules,
+     not panels), so the figure and the ask read as columns of one front page
+     instead of cards floating in cream. */
+  .nbh-fold__figure--insight,
+  .nbh-fold__figure--ask {
+    border-left: var(--v3-rule-hairline);
+    padding-left: var(--v3-space-lg);
+  }
+}
+
+/* MOS owns the inventory numeral in this fold, so the Atlas key's competing
+   for-sale / pending counts stay off (the tile population is not the leftover
+   HUD population, and two counts of one thing in one viewport is a question).
+   The place chips go with them — they carry a per-plat active count each, which
+   is a third measure of "homes for sale" in one viewport, and the door row under
+   the map is this fold's place navigation. Type toggles and the price scrubber
+   stay — that is the house-atlas interaction. */
+.nbh-fold__drawing .v3-atlas__key,
+.nbh-fold__drawing .v3-atlas__sales-legend,
+.nbh-fold__drawing .v3-atlas__chips,
+.nbh-fold__drawing .v3-atlas__search,
+.nbh-fold__drawing .v3-atlas__events {
+  display: none;
+}
+
+/* THE LIVE RAIL STAYS, which is where this fold parts company with the city's
+   (app/cities/[slug]/_v3/city-fold.css hides the whole aside to fit the first
+   viewport). It is three rows — what just listed, what went pending, what sold,
+   each with its price and each a link to that home — and a neighborhood is small
+   enough that those three are about THIS hillside. It is the only place on the
+   first screen that says what happened rather than how much there is. Three rows
+   cost 70px, which the drawing column has under a 27rem map. */
+.nbh-fold__drawing .v3-atlas__aside {
+  padding-inline: 0;
+  padding-top: 0;
+}
+
+.nbh-fold__drawing {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The Atlas is a full-bleed SECTION everywhere else, so it carries the page
+   gutter and a closing space of its own. Inside a fold column that is a second
+   gutter on top of .nbh-fold's — the head and the dock sat 20px in from the
+   pager beside them, which is two spacing rhythms in one viewport (craft). */
+.nbh-fold__drawing .v3.v3-atlas {
+  padding-bottom: 0;
+}
+
+.nbh-fold__drawing .v3-atlas__head,
+.nbh-fold__drawing .v3-atlas__dock,
+.nbh-fold__drawing .v3-atlas__aside {
+  padding-inline: 0;
+}
+
+.nbh-fold__drawing .v3-atlas__head {
+  padding-top: 0;
+  padding-bottom: var(--v3-space-2xs);
+  gap: var(--v3-space-2xs);
+}
+
+.nbh-fold__drawing .v3-atlas {
+  max-width: 100%;
+}
+
+/* Cap the map plate so drawing + figure + ask fit the first viewport. The cap
+   is a `vh` first so a short window takes it out of the map, never out of the
+   ask; the rem is the ceiling on a tall one. */
+.nbh-fold__drawing .v3-atlas__frame {
+  max-height: min(52vh, 27rem);
+}
+
+/* THE DOCK IS TWO ROWS, NOT A WRAPPING FLEX LINE. As a flex row the scrubber's
+   12rem basis shrank the type list until "Land" fell to a line of its own
+   beside 200px of empty cream (1440 capture, 2026-09-16) — a third control
+   orphaned from the two it belongs with. Types own the first row whole, the
+   price scrubber owns the second. */
+.nbh-fold__drawing .v3-atlas__dock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-2xs);
+  padding-top: var(--v3-space-2xs);
+  max-height: none;
+}
+
+.nbh-fold__drawing .v3-atlas__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+}
+
+/* The scrubber is the dock's second row, so it runs the column's width: the
+   barrel's 22rem cap is for the Atlas's own wide dock beside a map, not for a
+   fold column. */
+.nbh-fold__drawing .v3-atlas__scrub {
+  min-width: 0;
+  max-width: none;
+}
+
+/* ── The map's door row ────────────────────────────────────────────────────
+   Six neighbour doors and the city's own index, under the price scrubber, in
+   the column the map leaves empty below 27rem. A row of links, not a list: one
+   tracked label and one wrapping line of doors wearing the same underline the
+   opening's doors wear, so the fold gains a navigation beat without gaining a
+   second card shape. Tap targets: each door is a text link in a line with the
+   44px row height, which is what the register uses for inline doors. */
+.nbh-fold__peers {
+  margin-top: var(--v3-space-sm);
+  padding-top: var(--v3-space-xs);
+  border-top: var(--v3-rule-hairline);
+}
+
+.nbh-fold__peers-label {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.nbh-fold__peers-row {
+  margin: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-tap);
+  color: var(--v3-ink-muted);
+}
+
+.nbh-fold__peers-door {
+  white-space: nowrap;
+}
+
+.nbh-fold__peers-row a {
+  text-decoration: underline;
+  text-decoration-color: var(--v3-ink-muted);
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.nbh-fold__peers-row a:hover,
+.nbh-fold__peers-row a:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+/* Fold polygons are the drawing, not the hit target. Type chips + the price
+   scrubber are the 44x44 controls (WCAG 2.5.8); hiding the aside list would
+   otherwise leave the paths as the only named place control. */
+.nbh-fold__drawing .v3-atlas__place {
+  pointer-events: none;
+}
+
+.nbh-fold__drawing .v3-atlas__scrub input,
+.nbh-fold__drawing .v3-atlas__range,
+.nbh-fold__drawing .v3-range,
+.nbh-fold__drawing .v3-range__beui {
+  min-block-size: var(--v3-tap);
+  min-inline-size: var(--v3-tap);
+}
+
+/* ── The figure and the ask columns ────────────────────────────────────── */
+
+.nbh-fold__figure {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+  align-content: start;
+}
+
+.nbh-fold__figure .nbh-insight,
+.nbh-fold__figure .v3-alerts {
+  margin: 0;
+  min-width: 0;
+}
+
+/* Alerts live inside the fold column — drop the default section gutters that
+   assume a full-bleed strip below the opening. */
+.nbh-fold__figure .v3.v3-alerts {
+  padding-inline: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  max-width: none;
+}
+
+/* CLAIM -> ASK -> PROOF, one column, at every width. Must override both columns
+   AND areas — areas alone keep an implicit second column and collapse the claim
+   (SITE-87 / SITE-82).
+
+   THE ASK SITS DIRECTLY UNDER THE CLAIM, and the proof under the ask, because
+   this is a 300px column and not the full-bleed strip the default order was
+   written for. Measured at 1440x900: with the four proof cards, the source
+   trace, the scope line and the browse door between the claim and the form, the
+   submit's bottom edge landed at 933 — the ask was off the first screen on a
+   DESKTOP, which is the defect this node was opened on at 375. Nothing is
+   dropped; the same rows sit under the button instead of above it, which also
+   puts the listing facts (price, street, beds / baths / sqft) on the first
+   screen beside the map rather than below it. The phone already read this way
+   and now the two widths agree. */
+.nbh-fold__figure .v3.v3-alerts .v3-alerts__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas: 'lead' 'ask' 'figure' !important;
+  column-gap: 0;
+  row-gap: var(--v3-space-xs);
+  gap: var(--v3-space-xs);
+}
+
+.nbh-fold__figure .v3.v3-alerts .v3-alerts__ask {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+
+/* THE SCOPE LINE AND THE BROWSE DOOR STAY. An earlier draft of this fold hid
+   both — "the scope is the disclosure's job, the newest-first door is the sticky
+   repeat's" — and that was wrong twice over. The scope sentence is the one that
+   reconciles a claim counting THIS neighborhood with an alert that really sends
+   every new listing in the city ("Every new listing in Bend, Awbrey Butte
+   included, by email."); without it the promise beside a neighborhood figure
+   reads as a neighborhood alert, which is the strip's own honesty contract
+   (parity.json, SITE-04) and CLAUDE.md section 0 rule 5. The browse door is the
+   only thing on the page that turns the 14 into something a reader can open,
+   and the 2026-09-12 table named exactly that: "a real door but nothing signals
+   it". A sticky bar that appears later is not a signal at rest. Both now sit in
+   the proof block under the button, where they cost the ask nothing. */
+.nbh-fold__figure .v3-alerts__eyebrow {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.nbh-fold__figure .v3-alerts__claim {
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-snug, 1.25);
+}
+
+.nbh-fold__figure .v3-alerts__claim-text {
+  display: inline;
+}
+
+.nbh-fold__figure .v3-alerts__num {
+  font-size: clamp(2.25rem, 4.5vw, 2.9rem);
+  line-height: 0.95;
+  margin-right: 0.2em;
+}
+
+/* The type control stays in the fold so the reader can change the ask. On this
+   route it is the installed beUI combobox (NeighborhoodTypeCombobox.client.tsx);
+   the toggle-row rules are kept for the community strip that still renders one. */
+.nbh-fold__figure .v3-alerts__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+}
+
+.nbh-fold__figure .v3-alerts__types button {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
+.nbh-fold__figure .v3-alerts__types--control {
+  display: block;
+  max-width: 17rem;
+}
+
+/* Proof rows: the newest listings this claim counts, each with price, street
+   and beds/baths/sqft. A photo without the facts is an inventory miss. */
+.nbh-fold__figure .v3-alerts__strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xs);
+  max-height: none;
+  overflow: visible;
+}
+
+.nbh-fold__figure .v3-alerts__thumb {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--v3-space-xs);
+  row-gap: 0;
+  min-width: 0;
+  max-width: none;
+  /* Each card is a link to that home: a real target at 375 (WCAG 2.5.5). */
+  min-block-size: var(--v3-tap);
+}
+
+.nbh-fold__figure .v3-alerts__thumb img {
+  width: 3rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* Price beside the street, the facts under both. */
+.nbh-fold__figure .v3-alerts__thumb-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--v3-space-2xs);
+  row-gap: 0;
+  line-height: var(--v3-leading-control);
+}
+
+.nbh-fold__figure .v3-alerts__thumb-price {
+  grid-column: 1;
+  font-size: var(--v3-size-body-sm);
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.nbh-fold__figure .v3-alerts__thumb-name {
+  grid-column: 2;
+  overflow-wrap: anywhere;
+}
+
+.nbh-fold__figure .v3-alerts__thumb-facts {
+  grid-column: 1 / -1;
+  font-size: var(--v3-size-source);
+}
+
+/* The ask is a COLUMN in this narrow column. A field beside a button at ~300px
+   left the placeholder reading "you@ema"; a field a visitor cannot see the
+   shape of is a worse ask than one that takes another row. */
+.nbh-fold__figure .v3-alerts__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-2xs);
+  align-items: stretch;
+}
+
+.nbh-fold__figure .v3-alerts__row .v3-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Primary submit must clear 44x44 at 375 (--v3-tap). */
+.nbh-fold__figure .v3-alerts__ask .v3-btn,
+.nbh-fold__figure .v3-alerts__ask button[type='submit'] {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
+/* ── Phone: drawing, figure and the email inside 812 ───────────────────── */
+
+@media (max-width: 63.99rem) {
+  .nbh-fold {
+    padding-top: var(--v3-space-2xs);
+    padding-bottom: var(--v3-space-sm);
+  }
+
+  .nbh-fold__stage {
+    gap: var(--v3-space-sm);
+  }
+
+  /* A small drawing, not no drawing: the scrubber stays, so the house-atlas
+     interaction is still on a phone's first screen. */
+  .nbh-fold__drawing .v3-atlas__frame {
+    max-height: min(11vh, 4.5rem);
+  }
+
+  /* The +/- pair is taller than a 5.5rem map, so at this width it stood ABOVE
+     the frame with nothing under it. Pinch and the price scrubber are the
+     phone's zoom and filter; the buttons come back with the map at 64rem. */
+  .nbh-fold__drawing .v3-atlas__zoom {
+    display: none;
+  }
+
+  .nbh-fold__drawing .v3-atlas__head {
+    padding-bottom: 0;
+  }
+
+  .nbh-fold__drawing .v3-atlas__headline {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .nbh-fold__drawing .v3-atlas__claim {
+    display: none;
+  }
+
+  .nbh-fold__drawing .v3-atlas__dock {
+    position: static;
+    padding-top: 0;
+  }
+
+  .nbh-fold__drawing .v3-atlas__types {
+    display: none;
+  }
+
+  /* THE EMAIL COMES BEFORE THE PROOF, which is now the order at every width
+     (see the base rule) rather than a phone exception. Measured at 375x812 with
+     the drawing, the pager and the four proof cards above it, the field and its
+     button landed ~250px below the fold — the defect this node was opened on
+     ("the section's entire ask is below the fold"). The cards, the scope line,
+     the browse door and the section-0 source line are not dropped; they sit one
+     row down, still inside the same section, still the first thing under the
+     ask.
+
+     EVERY proof card, with its whole card — price, street, beds/baths/sqft. An
+     earlier draft kept one of the four on a phone, back when the strip sat above
+     the button and each card was 250px of the first screen. Under the button
+     they cost the fold nothing, and four homes a reader can open beats one. */
+  .nbh-fold__figure .v3-alerts__thumb {
+    grid-template-columns: 3.5rem minmax(0, 1fr);
+  }
+
+  .nbh-fold__figure .v3-alerts__thumb img {
+    width: 3.5rem;
+  }
+
+  .nbh-fold__figure .v3-alerts__thumb-facts {
+    display: block !important;
+    font-size: var(--v3-size-source);
+  }
+
+  .nbh-fold__figure {
+    gap: var(--v3-space-sm);
+  }
+
+  .nbh-fold__figure .v3-alerts__num {
+    font-size: clamp(2rem, 9vw, 2.5rem);
+  }
+
+  .nbh-fold__figure .v3-alerts__claim {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .nbh-fold__figure .v3-alerts__promise {
+    font-size: var(--v3-size-source);
+    line-height: var(--v3-leading-note);
+  }
+
+  /* The bars keep their caption and their as-of stamp on the phone — the
+     2026-09-10 receipt recorded both dropping at 375, which left the figure
+     as numbers with no verdict and no date. The plain label is what goes. */
+  .nbh-fold__figure .v3-mos__plain {
+    display: none;
+  }
+}
+
+/* ── 375: the ask lands inside 812 ─────────────────────────────────────────
+   Measured, not guessed (scratch playwright pass at 375x812): with the dock,
+   the section paddings and the default gaps, the submit button's bottom edge
+   sat at 1058. Every rule below is one of the 246px that had to come out, and
+   none of them removes a figure, a trace, a link or a control from the page. */
+
+@media (max-width: 39.99rem) {
+  .nbh-fold {
+    padding-top: 0;
+  }
+
+  .nbh-fold__stage {
+    gap: var(--v3-space-3xs);
+  }
+
+  /* THE PRICE SCRUBBER AND THE TYPE CHIPS COME OFF THE MAP AT PHONE WIDTH.
+     Stated plainly, because an earlier draft of this comment said the same
+     scrubber was "on the Atlas the visitor reaches by scrolling" and that is
+     not true: this route has ONE Atlas and it is this one. What the phone
+     keeps is the map itself (it pans and it pinches — `touch-action: none` on
+     the stage), the pager's Previous / Next insight, the property-type
+     combobox in the ask, and PlaceSplitView further down, which is the real
+     filtered search with its own price control. What it cannot keep is a
+     72px-tall map with a price filter under it: the filter would have nothing
+     legible to filter, and the 44px row it costs is the row the email field
+     needs to stay inside 812. */
+  .nbh-fold__drawing .v3-atlas__dock {
+    display: none;
+  }
+
+  /* The live rail is a desktop-column affordance. On a phone the fold's budget
+     is the email field's, and three more rows would put it back below 812. */
+  .nbh-fold__drawing .v3-atlas__aside {
+    display: none;
+  }
+
+  /* Same budget, same answer for the door row: measured at 375 it is 166px of
+     the 812, and with it in the fold the email field and its button sat below
+     the screen again — the defect this node was opened on. The doors stay in
+     the document (they are crawled either way) and a phone reader meets the
+     same neighbours, with their counts and their photographs, in the
+     #peer-neighborhoods Ledger. */
+  .nbh-fold__peers {
+    display: none;
+  }
+
+  /* The place name comes off the FOLD map at this width, because at 72px the
+     label lands on the frame's bottom rule and prints with its lower third
+     sheared off — a clipped word is worse than no word. Nothing is lost to a
+     reader: the H1 two rows above and this section's own heading both say
+     "Awbrey Butte", and the only region this map draws is that one. At 64rem
+     the frame is tall enough for the label and it comes back. */
+  .nbh-fold__drawing .v3-atlas__labels {
+    display: none;
+  }
+
+  .nbh-fold__figure .nbh-insight .insight-cards {
+    gap: var(--v3-space-3xs);
+  }
+
+  .nbh-fold__figure .nbh-insight .insight-cards__head {
+    padding-bottom: 0;
+  }
+
+  /* The label over the field is a small tracked line at this width, not a body
+     row. It stays a real <label> for the input. */
+  .nbh-fold__figure .v3-alerts__label {
+    font-size: var(--v3-size-source);
+    line-height: var(--v3-leading-note);
+  }
+
+  .nbh-fold__figure .v3-alerts__field {
+    gap: var(--v3-space-3xs);
+  }
+
+  .nbh-fold__figure .v3-alerts__form {
+    gap: var(--v3-space-2xs);
+  }
+
+  .nbh-fold__figure .v3-alerts__num {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+  }
+
+  .nbh-fold__figure .v3.v3-alerts .v3-alerts__grid {
+    row-gap: var(--v3-space-3xs);
+    gap: var(--v3-space-3xs);
+  }
+
+  /* THE LAST SEVEN PIXELS. With the trail lifted and the door row whole, the
+     submit's bottom edge measured 812.0 at 375x812 — inside the fold by nothing
+     at all. These are the four gaps between the claim and the button, dropped
+     one step on the scale (5.6 -> 4). Nothing is removed and nothing shrinks
+     below a tap target; the ask simply sits on the tighter of the two spacing
+     steps the register already uses at this width. */
+  .nbh-fold__figure .v3.v3-alerts .v3-alerts__lead,
+  .nbh-fold__figure .v3.v3-alerts .v3-alerts__form,
+  .nbh-fold__figure .v3.v3-alerts .v3-alerts__row {
+    gap: var(--v3-space-3xs);
+  }
+
+  .nbh-fold__figure {
+    gap: var(--v3-space-xs);
+  }
+
+  .nbh-fold__figure .v3-alerts__lead {
+    gap: var(--v3-space-2xs);
+  }
+
+  /* THE FINE PRINT GOES UNDER THE BUTTON at this width. It is the same
+     disclosure, in the same form, one row lower — how often, what else, how to
+     stop — and putting it there is what lets the field and the button land
+     inside 812 instead of 45px past it. Above 40rem the promise opens the form
+     again, where there is room for it. */
+  .nbh-fold__figure .v3-alerts__form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nbh-fold__figure .v3-alerts__form .v3-alerts__row {
+    order: 1;
+  }
+
+  .nbh-fold__figure .v3-alerts__form .v3-alerts__promise {
+    order: 2;
+    font-size: var(--v3-size-source);
+    line-height: var(--v3-leading-note);
+  }
+
+  .nbh-fold__figure .v3-alerts__form .v3-alerts__problem {
+    order: 3;
+  }
+}
