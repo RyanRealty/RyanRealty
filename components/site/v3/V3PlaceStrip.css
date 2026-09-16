@@ -1,0 +1,121 @@
+/* ===========================================================================
+   V3 PLACE STRIP — a claim, its live figure, and the places it covers as a
+   strip of drawn marks, each a door. Styles for V3PlaceStrip.tsx and nothing
+   else. Every value resolves from ./tokens.css. No raw color, no shadow,
+   radius 0 (Broadside).
+
+   THE WRAPPER CARRIES V3_ROOT_CLASS, WHICH PAINTS; this strip is mounted
+   inside another pattern (the Sheet's figure slot), so it declares transparent
+   and lets its host's surface show — the same neutralisation V3PlaceDoor
+   makes. The compound selector is (0,2,0), which beats the root's (0,1,0).
+   =========================================================================== */
+
+.v3.v3-place-strip {
+  display: grid;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+  background: transparent;
+}
+
+/* The claim: one sentence, the count as the register's numeral face at the
+   figure size so it reads first, the words at body-lg beside it. */
+.v3-place-strip__claim {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+  text-wrap: balance;
+}
+
+.v3-place-strip__num {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+  vertical-align: baseline;
+}
+
+/* What the strip is, as the tracked small-caps label every pattern uses. */
+.v3-place-strip__label {
+  margin: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* The strip: the marks in a packed grid, each with its name under it. The
+   column floor is the tap square plus a little air, so 375 gets four or five
+   across and 1440 a full row. */
+.v3-place-strip__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+  gap: var(--v3-space-xs) var(--v3-space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-place-strip__item {
+  min-width: 0;
+}
+
+/* The door: mark over name, centred, the whole cell the target at the tap
+   floor. Hover and focus bring the name to full ink and underline it; the
+   mark's own hover is its ground going a step darker. */
+.v3-place-strip__place {
+  display: grid;
+  justify-items: center;
+  gap: var(--v3-space-3xs);
+  min-height: var(--v3-tap);
+  padding-bottom: var(--v3-space-3xs);
+  color: var(--v3-ink-muted);
+  text-align: center;
+  text-decoration: none;
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-place-strip__place:hover,
+.v3-place-strip__place:focus-visible {
+  color: var(--v3-ink);
+}
+
+.v3-place-strip__place:hover .v3-place-strip__name,
+.v3-place-strip__place:focus-visible .v3-place-strip__name {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-place-strip__place:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-place-strip__mark {
+  display: block;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  overflow: hidden;
+  border-radius: var(--v3-radius-sm);
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-place-strip__mark > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.v3-place-strip__name {
+  font-size: var(--v3-size-label);
+  line-height: var(--v3-leading-note);
+  overflow-wrap: anywhere;
+}
+
+.v3-place-strip__source {
+  margin-top: var(--v3-space-2xs);
+}

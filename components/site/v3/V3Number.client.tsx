@@ -19,12 +19,13 @@ export type V3NumberProps = {
   formatted: string
   /** Rough settle time in ms. */
   durationMs?: number
-  /** When false, count up on mount (fold numerals that may never hit 60% in-view). */
+  /** When false, a value change animates even off screen; on load nothing counts up either way. */
   startOnView?: boolean
   /**
-   * Opt-in (SITE-103): publish the sourced face on the server and animate only
-   * when the value changes. See AnimatedNumber.settleOnMount — the default
-   * renders `0` until hydration, which is a wrong number in the HTML.
+   * Accepted for the SITE-103 callers that opted in; since 2026-09-16
+   * (SITE-117 + SITE-103 merged) it is the only behaviour: the sourced face
+   * is in the served HTML and digits move only when the value changes
+   * (TASTE.md bans counting up on load). See AnimatedNumber.
    */
   settle?: boolean
   className?: string

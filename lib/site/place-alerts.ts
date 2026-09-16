@@ -300,8 +300,20 @@ export function placeAlertsSource(input: {
       `The alert follows this page's filter.`
     )
   }
+  // NAME THE FEED, NOT OUR TABLE (SITE-116 round 2, 2026-09-16). This clause
+  // used to read "regional MLS through Oregon Data Share, Market Truth new
+  // listings in the last 30 days …". Market Truth is the name of OUR OWN
+  // metric layer, and a reader who opens "how we calculate this" is owed the
+  // source they can recognise and check — an internal label handed to a
+  // visitor is the same defect V3Quiet's `sourceName` prop was added for
+  // (evaluator, 2026-09-09: "Market Truth region row" in the market hub's
+  // fold). §0 loses nothing: the feed, the window, the segment and the
+  // exclusion all still print, and the compact clause the reader sees first is
+  // already "regional MLS through Oregon Data Share as of <date>" — the feed
+  // and the date, which is what a source line is for. The raw metric slug
+  // stays out of visitor copy, same as the geo key (see the test below).
   return (
-    `${formatCount(input.count)} ${unit}: regional MLS through Oregon Data Share, Market Truth ` +
+    `${formatCount(input.count)} ${unit}: regional MLS through Oregon Data Share, ` +
     `new listings in the last 30 days for ${where} (detached single-family; Coming Soon excluded). ` +
     `The alert follows this page's filter, which is wider than houses alone.`
   )

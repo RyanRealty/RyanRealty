@@ -13,6 +13,19 @@ export const GROUP_THREAD_FAILED =
 export const GROUP_THREAD_FALLBACK_NOTICE =
   'Could not start one group thread — texted each person separately.'
 
+/**
+ * The fallback notice WITH the reason the group did not form. For six weeks
+ * the composer showed the bare notice while the reason ("Group MMS with given
+ * participant list already exists as Conversation CH…") went to console.warn
+ * — the broker had no way to know the fix was one line away (2026-09-16).
+ * A reason is a sentence fragment from Twilio or from our own guard; it is
+ * shown as-is inside parentheses, trimmed, never invented.
+ */
+export function groupFallbackNotice(reason?: string | null): string {
+  const why = String(reason ?? '').trim()
+  return why ? `${GROUP_THREAD_FALLBACK_NOTICE} (${why})` : GROUP_THREAD_FALLBACK_NOTICE
+}
+
 export type ComposePersonChip = {
   id: number
   name: string

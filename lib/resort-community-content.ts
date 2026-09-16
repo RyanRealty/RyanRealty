@@ -24,6 +24,13 @@ export type ResortAmenity = {
   access?: string | null
   /** Optional slug of a published blog post about this amenity (topic-cluster SEO). */
   blog_slug?: string | null
+  /**
+   * The place's own recorded page (a park district page, the venue's site) —
+   * the door a tile opens when no guide of ours is published about it. Carried
+   * by some configs since they were authored (Tetherow's Shevlin Park row) and
+   * read by nothing until the amenity board (SITE-116, 2026-09-16).
+   */
+  url?: string | null
 }
 
 export type ResortDriveTime = {
@@ -78,6 +85,18 @@ export type ResortBuilder = {
   website?: string | null
 }
 
+/**
+ * One dated step of the community's build-out, as the config records it
+ * (`build_timeline`: "2008 · Golf course + clubhouse open"). Carried by the
+ * configs since they were authored and read by nothing until the founding
+ * year's sentence (app/communities/[slug]/_v3/fact-sentences.ts, SITE-116
+ * round 4) needed the config's own words for what happened that year.
+ */
+export type ResortTimelineStep = {
+  year: number
+  label: string
+}
+
 export type ResortCommunityContent = {
   slug: string
   name: string
@@ -111,6 +130,13 @@ export type ResortCommunityContent = {
    * forced to carry a field it is not testing.
    */
   sources?: ResortContentSource[]
+  /**
+   * The config's `build_timeline`, year-ascending as authored. Optional in the
+   * TYPE and always set by the loader (empty when the config has none), for
+   * the same reason `sources` is: a hand-built fixture is not forced to carry
+   * a field it is not testing.
+   */
+  buildTimeline?: ResortTimelineStep[]
 }
 
 /** One recorded source behind a community config's authored facts. */
@@ -193,5 +219,10 @@ export async function getResortCommunityContent(
       typeof c.hoa_master_assessment_annual === 'number' ? c.hoa_master_assessment_annual : null,
     hoaBoard: (c.hoa_board as Record<string, unknown>) ?? null,
     sources: toArray<ResortContentSource>(c.sources),
+    buildTimeline: toArray<{ year?: unknown; label?: unknown }>(c.build_timeline).flatMap((step) =>
+      typeof step?.year === 'number' && Number.isFinite(step.year) && typeof step.label === 'string' && step.label.trim()
+        ? [{ year: step.year, label: step.label.trim() }]
+        : [],
+    ),
   }
 }

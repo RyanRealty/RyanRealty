@@ -252,6 +252,10 @@
   hyphens: manual;
 }
 
+/* The census left the fold in SITE-116 round 4 (it ran the amenity board
+   third, against competitive brief beat 2) and now sits beside the homes list
+   as its own section, on the pattern's own padding and rule. */
+
 /* Keep the valuation ask on the page, but out of the first viewport so Atlas
    + alerts own the fold (SITE-87). */
 .community-fold__ask {

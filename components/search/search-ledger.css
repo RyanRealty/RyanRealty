@@ -44,9 +44,19 @@
 }
 
 /* Filter chip / trigger / control shape+type: Redfin/Zillow-clean sharp
-   chips (not chubby ovals), tracked small caps, tabular figures. */
+   chips (not chubby ovals), tracked small caps, tabular figures.
+
+   ONE RADIUS RULE PER CONTROL FAMILY (SITE-116 round 4, defect 6). Every
+   control edge in this file used to be a literal 6px while the v3 controls
+   beside it on a place page (the alerts strip's type toggle, the Sheet's
+   button, the finder) read `--v3-radius-control` — two radii in one
+   viewport, which the judge named. Both registers set the token to 0
+   (PUBLIC_UI.md §6, radius 0 on every box), so the chips, the view switch,
+   the locate button, the map chrome and the sort pill now read the token and
+   move with it. The sheet handle and the $/sqft tick are marks, not boxes,
+   and keep their own shape. */
 .srch-chip {
-  border-radius: 6px;
+  border-radius: var(--v3-radius-control, 0);
   font-size: var(--v3-size-label, 0.65625rem);
   font-weight: var(--v3-weight-medium, 500);
   letter-spacing: var(--v3-track-label, 0.12em);
@@ -99,7 +109,7 @@
 /* Sharp remaining control corners (inputs, selects, toggles) without
    touching its color, border, or focus treatment. */
 .srch-square {
-  border-radius: 6px;
+  border-radius: var(--v3-radius-control, 0);
   box-shadow: none;
   min-height: var(--v3-tap, 44px);
 }
@@ -172,6 +182,21 @@
   border-bottom: 1px solid var(--v3-edge, currentColor);
 }
 
+/* The one sentence over the list that says what its count counts — every
+   property type, filed under the place's MLS names, inside this frame — so
+   the list's figure can be told apart from the map key's (SITE-116 round 3).
+   Body-small, muted, inside the list's own gutter; never a wall. */
+.place-split__scope {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--v3-space-xs) var(--v3-gutter);
+  border-bottom: var(--v3-rule-hairline);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
 /* Compact Map / Split / List. Not the filter-bar chip row. */
 /* The three views are the map's primary thumb targets, so the strip holds the
    44px floor at every width. The toolbar row grows 16px at 390 and 14.4px at
@@ -184,7 +209,7 @@
   flex-shrink: 0;
   border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
   background: var(--v3-cream);
-  border-radius: 6px;
+  border-radius: var(--v3-radius-control, 0);
   overflow: hidden;
 }
 @layer base {
@@ -411,6 +436,19 @@
   height: 100%;
   object-fit: cover;
 }
+/* SITE-116 round 2: a type with no cover photograph gets a drawn mark
+   centred in the same frame, instead of a blank wash panel. It arrives on
+   scroll (V3Reveal, the installed beUI scroll animation); a photograph never
+   does, because a photograph caught mid-entrance is an empty box. */
+.place-type-card__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: currentColor;
+  opacity: 0.55;
+}
 .place-type-card.is-active {
   background: var(--v3-navy);
   color: var(--v3-cream);
@@ -549,7 +587,7 @@
 }
 
 .map-search-views {
-  border-radius: 6px;
+  border-radius: var(--v3-radius-control, 0);
   overflow: hidden;
 }
 
@@ -562,7 +600,7 @@
   min-height: var(--v3-tap, 44px);
   padding: 0 0.75rem;
   border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
-  border-radius: 6px;
+  border-radius: var(--v3-radius-control, 0);
   background: var(--v3-cream);
   color: var(--v3-navy);
   font-family: inherit;
@@ -583,7 +621,7 @@
   display: inline-flex;
   align-items: stretch;
   border: 1px solid var(--v3-edge, color-mix(in srgb, var(--v3-navy) 12%, transparent));
-  border-radius: 6px;
+  border-radius: var(--v3-radius-control, 0);
   background: var(--v3-surface-raised, rgba(255, 255, 255, 1));
   overflow: visible;
 }
@@ -626,7 +664,7 @@
 
 /* Mic inside the location search bar — square tap, no outline chip. */
 .srch-mic-inbar {
-  border-radius: 6px !important;
+  border-radius: var(--v3-radius-control, 0) !important;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -743,7 +781,7 @@ button.srch-chip--key {
   align-items: stretch;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
-  border-radius: 6px;
+  border-radius: var(--v3-radius-control, 0);
   background: var(--v3-cream);
 }
 

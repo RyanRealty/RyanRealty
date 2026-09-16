@@ -135,6 +135,14 @@ export type {
 } from './V3Drawing.client'
 
 /**
+ * SITE-93: the barrel's wrapper for the installed beUI combobox. The type
+ * picker in a place fold, and the house primitive ci:catalog-install reads for
+ * beui-combobox.
+ */
+export { V3TypeCombobox } from './V3TypeCombobox.client'
+export type { V3TypeComboboxProps, V3TypeOption } from './V3TypeCombobox.client'
+
+/**
  * Compact two-bar months-of-supply overlay for a place opening (SITE-43).
  * Homes for sale vs a month of sales. Wired through PlaceAreaHero.
  */
@@ -144,10 +152,19 @@ export type { V3MosBarsProps } from './V3MosBars'
 /**
  * Region months-of-supply threshold scale with a searchable city overlay
  * (SITE-69). Pair with V3Drawing's two bars — never a KPI tile of the ratio.
- * Adapted from beui:combobox + beautifului:insight-cards into house paint.
+ * The overlay is the installed beUI combobox through V3TypeCombobox (SITE-92
+ * round 4); beautifului:insight-cards for the one-figure-against-another read.
  */
-export { V3MosCompare, V3_MOS_COMPARE_MAX } from './V3MosCompare.client'
-export type { V3MosCompareProps, V3MosCompareCity } from './V3MosCompare.client'
+export { V3MosCompare, V3_MOS_COMPARE_MAX, V3_MOS_COMPARE_REGION_KEY } from './V3MosCompare.client'
+export type { V3MosCompareProps, V3MosCompareCity, V3MosOverlayControlProps } from './V3MosCompare.client'
+
+/**
+ * The designed mark for a place with no photograph (SITE-92 round 4): its
+ * recorded outline as a tile, or the map's point mark. What a Ledger row
+ * draws in its media square through `mark` instead of a lettered tile.
+ */
+export { V3PlaceMark } from './V3PlaceMark'
+export type { V3PlaceMarkProps } from './V3PlaceMark'
 
 /**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
@@ -371,6 +388,7 @@ export type {
   V3LedgerPlainRow,
   V3LedgerRows,
   V3LedgerReveal,
+  V3LedgerScale,
 } from './V3Ledger'
 export { V3_LEDGER_SPARK_MIN } from './V3Ledger'
 /** The Ledger's phone hold (SITE-52); mounted by V3Ledger itself, exported so the barrel gate sees one register. */
@@ -469,6 +487,16 @@ export type { V3MorphSearchProps, V3MorphSearchItem } from './V3MorphSearch'
 export { V3Number } from './V3Number.client'
 export type { V3NumberProps } from './V3Number.client'
 /**
+ * Scroll-entered MEDIA (SITE-116). Catalog job beui-scroll-animation: the
+ * installed `components/motion/scroll-reveal.tsx`, on the house motion ladder
+ * (300ms, ≤16px travel, ease-out, reduced motion respected). It takes `media`
+ * and not `children` on purpose — the catalog component serves its child at
+ * opacity 0 until it is scrolled to, so a photograph or a drawn mark may go
+ * inside it and a word may not.
+ */
+export { V3Reveal } from './V3Reveal.client'
+export type { V3RevealProps } from './V3Reveal.client'
+/**
  * Dual-thumb tick range (SITE-72). Catalog job beui-range-slider: tick stops,
  * navy fill, bounce reduced to the house 120ms ease-out. Wired from search.
  */
@@ -511,6 +539,8 @@ export type {
   V3QuietFact,
   V3QuietChips,
   V3QuietFold,
+  V3QuietReach,
+  V3QuietReachMark,
   V3QuietFigure,
   V3QuietMark,
 } from './V3Quiet'
@@ -557,8 +587,50 @@ export type {
  * TASTE.md bans.
  */
 export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
+export { V3PlaceAmenities, amenityGroups, amenityBoardLede } from './V3PlaceAmenities'
+export type { V3PlaceAmenitiesProps, V3PlaceAmenity, V3PlaceAmenityGroup, V3PlaceAmenityFact } from './V3PlaceAmenities'
 
-export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
+/* PATTERN 11: DOOR BOARD (site queue SITE-92 round 5). Every place on a      */
+/* board — its photograph or drawn outline, its live figure as the installed  */
+/* digit primitive, one line, and its doors each carrying the count it opens  */
+/* onto. Built because the city index's second, third and fourth door per     */
+/* city rendered as thirty identical Quiet rows: the brief's own refuse case, */
+/* "a link farm of city names with no figure". Quiet stays the form for a     */
+/* handful of exits; a board of places with counts is this.                   */
+export { V3DoorBoard } from './V3DoorBoard'
+export type { V3DoorBoardProps, V3DoorBoardTile, V3DoorBoardDoor, V3DoorBoardFigure } from './V3DoorBoard'
+
+/* THE PLACE STRIP (SITE-92 round 5): a claim with its live figure and the    */
+/* places it covers drawn as a strip of recorded outlines, each a door. The   */
+/* Sheet's `figure` slot mounts it so the regional alerts ask stands on the   */
+/* region's real 30-day count and the towns the alert covers.                 */
+export { V3PlaceStrip } from './V3PlaceStrip'
+export type { V3PlaceStripProps, V3PlaceStripPlace } from './V3PlaceStrip'
+
+export type { V3PlaceIndexProps, V3PlaceIndexEntry, V3PlaceIndexFinder } from './V3PlaceIndex'
+
+/* The place finder: the installed beUI combobox over an index's own rows,     */
+/* mounted by V3PlaceIndex (SITE-116 round 3). Exported so the barrel gate     */
+/* sees one register and a page can mount it alone.                            */
+export { V3PlaceFinder } from './V3PlaceFinder.client'
+export type { V3PlaceFinderProps, V3PlaceFinderItem } from './V3PlaceFinder.client'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 11 — CENSUS: one place, counted several true ways, on one sheet     */
+/*                                                                             */
+/* A page that prints several correct inventory figures over different         */
+/* populations owes the reader the sentence that says how they differ. This    */
+/* is that sentence as a table: figure, what, where, when, and the door to the */
+/* section that holds it (SITE-116 round 3).                                   */
+/* -------------------------------------------------------------------------- */
+export { V3Census, censusRows, censusPages } from './V3Census'
+export type { V3CensusProps, V3CensusRow, V3CensusGroup } from './V3Census'
+/* The census's client island — the installed beautifului insight cards over
+   the sheet's populations (SITE-116 round 4). Mounted by V3Census; its types
+   are exported so a caller can shape a page, the component itself stays a
+   sibling import (a barrel export nothing outside v3 mounts is what G73 —
+   ci:site-primitive-wired — refuses). */
+export type { V3CensusPage, V3CensusCard, V3CensusAllocationSegment, V3CensusBarRow } from './V3CensusInsight.client'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */

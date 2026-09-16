@@ -1,0 +1,24 @@
+/* ===========================================================================
+   V3PlaceFinder — the index's finder.
+   Styles for V3PlaceFinder.client.tsx and nothing else. The control's paint
+   — navy edge, cream surface, radius 0, Geist, 44px rows, the demo's active
+   fill and selected check — is V3TypeCombobox.css's (SITE-92 r4), because the
+   finder IS V3TypeCombobox over the index's rows. What is left to say here is
+   the finder's place in the section head: a field-width control, full width
+   on a phone. Every value resolves from ./tokens.css.
+   =========================================================================== */
+
+.v3.v3-place-finder {
+  width: 100%;
+  max-width: 24rem;
+}
+
+.v3-place-finder__box {
+  width: 100%;
+}
+
+@media (max-width: 40rem) {
+  .v3.v3-place-finder {
+    max-width: none;
+  }
+}

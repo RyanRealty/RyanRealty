@@ -16,6 +16,11 @@
  *   - Body does NOT contain "Application error" (no top-level crash)
  *   - <title> tag is non-empty
  *   - Body is at least 5 KB (catches blank-page regressions)
+ *   - /sitemaps/listings.xml answers 200 with canonical listing <loc> entries
+ *     (its own row since 2026-09-16; the by-key check no longer fails with it)
+ *   - No count-up numeral is served as "0" under a non-zero settled figure
+ *     (the AnimatedNumber SSR placeholder, SITE-117; see
+ *     scripts/lib/served-number-placeholder.mjs)
  *
  * Run modes:
  *   - Standalone: `node scripts/check-route-smoke.mjs` (requires the
@@ -39,10 +44,14 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
+import { placeholderZeroReason } from './lib/served-number-placeholder.mjs'
 
 const BASE = (process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/+$/, '')
 const LISTING_KEY = process.env.SMOKE_LISTING_KEY
 const TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS ?? 15_000)
+// The listings sitemap alone: the heaviest read the gate makes (see
+// discoverResolvingListingKey), so it gets its own ceiling.
+const SITEMAP_TIMEOUT_MS = Number(process.env.SMOKE_SITEMAP_TIMEOUT_MS ?? 45_000)
 
 // ADMIN ROUTES GET A LONGER BUDGET — as a CLASS, not route by route.
 //
@@ -281,6 +290,11 @@ function checkBody(body) {
   const titleMatch = body.match(/<title>([^<]*)<\/title>/i)
   if (!titleMatch || titleMatch[1].trim().length === 0) reasons.push('empty <title>')
   if (body.length < 5_000) reasons.push(`body too small (${body.length} bytes)`)
+  // A count-up numeral whose served face is "0" under a non-zero settled figure
+  // is a false stat in the HTML a crawler reads (SITE-117). See
+  // scripts/lib/served-number-placeholder.mjs for the mechanism.
+  const placeholder = placeholderZeroReason(body)
+  if (placeholder) reasons.push(placeholder)
   return { ok: reasons.length === 0, reasons, title: titleMatch?.[1]?.trim() }
 }
 
@@ -328,14 +342,86 @@ async function checkHop(route, url, hop) {
  * hardcoded. Failing to obtain one is a FAILURE, not a skip — silence here is
  * exactly how this defect survived.
  */
-async function discoverResolvingListingKey() {
-  const { status, body } = await fetchWithTimeout(`${BASE}/sitemaps/listings.xml`, TIMEOUT_MS)
-  if (status !== 200) return { key: null, why: `sitemaps/listings.xml returned HTTP ${status}` }
-  // Canonical detail URLs end in -<mlsNumber>; getListingCanonicalPathFields
-  // accepts an MLS number as well as a ListingKey.
-  const m = body.match(/<loc>[^<]*\/homes-for-sale\/[^<]*?-(\d{5,})<\/loc>/)
-  if (!m) return { key: null, why: 'no canonical listing URL in sitemaps/listings.xml' }
-  return { key: m[1], why: null }
+/**
+ * Fetch /sitemaps/listings.xml with retries. Returned once and shared: the
+ * sitemap's own route row reads it, and key discovery below reads it, so the
+ * heaviest read this gate makes happens once.
+ *
+ * The sitemap was the only source of the resolving key until 2026-09-16, when
+ * it answered 500 three times in the 07:05–07:07Z CI window (the 593K-row tile
+ * MV under its :00 refresh, a second CI run on the same database) and took the
+ * by-key check down with it — a redirect check failing because a sitemap was
+ * slow is two facts reported as one. Now the sitemap is its own row (a 500
+ * there is still red, as its own line) and discovery falls back to the served
+ * /homes-for-sale HTML, so the by-key check always has a key that exists.
+ */
+const SITEMAP_ATTEMPTS = 3
+const SITEMAP_BACKOFF_MS = [1000, 3000]
+async function fetchListingsSitemap() {
+  let status = 0
+  let body = ''
+  let why = ''
+  for (let attempt = 1; attempt <= SITEMAP_ATTEMPTS; attempt++) {
+    try {
+      ;({ status, body } = await fetchWithTimeout(`${BASE}/sitemaps/listings.xml`, SITEMAP_TIMEOUT_MS))
+      why = `HTTP ${status}`
+    } catch (err) {
+      status = 0
+      body = ''
+      why = err?.name === 'AbortError' ? `no response within ${SITEMAP_TIMEOUT_MS}ms` : `fetch failed: ${err?.message ?? err}`
+    }
+    if (status === 200) break
+    if (attempt < SITEMAP_ATTEMPTS) {
+      const wait = SITEMAP_BACKOFF_MS[attempt - 1] ?? SITEMAP_BACKOFF_MS.at(-1)
+      console.warn(`  sitemaps/listings.xml answered ${why} (attempt ${attempt}/${SITEMAP_ATTEMPTS}) — retrying in ${wait}ms`)
+      await new Promise((r) => setTimeout(r, wait))
+    }
+  }
+  return { status, body, why: status === 200 ? null : `${why} on ${SITEMAP_ATTEMPTS} attempts` }
+}
+
+/** Canonical detail URLs end in -<mlsNumber>; the by-key route accepts an MLS number too. */
+const CANONICAL_LISTING_TAIL = /\/homes-for-sale\/[a-z0-9-]+\/[a-z0-9-]*?-(\d{5,})(?=["'<\s?#])/
+
+/**
+ * The listings sitemap as a route of its own: 200, and at least one canonical
+ * listing URL in the body — an empty urlset is the false-absence shape
+ * (2026-09-16: 262 homes qualified while a page said none did).
+ */
+function sitemapRouteResult(route, url, sitemap) {
+  if (sitemap.status !== 200) {
+    return { ...route, url, ok: false, status: sitemap.status, reasons: [`sitemaps/listings.xml answered ${sitemap.why}`], title: null }
+  }
+  const locs = (sitemap.body.match(/<loc>/g) ?? []).length
+  const reasons = []
+  if (locs === 0) reasons.push('no <loc> entries (an empty urlset is the false-absence shape)')
+  if (!CANONICAL_LISTING_TAIL.test(sitemap.body)) reasons.push('no canonical /homes-for-sale/<city>/<slug>-<mls> URL in the body')
+  return { ...route, url, ok: reasons.length === 0, status: 200, reasons, title: `${locs} <loc> entries` }
+}
+
+/**
+ * A resolving listing key: from the sitemap when it answered, otherwise from
+ * the first canonical listing link in the served /homes-for-sale HTML. Never
+ * hardcoded; both sources are the server under test. Failing both is a gate
+ * failure — silence here is exactly how the blank-200 defect survived.
+ */
+async function discoverResolvingListingKey(sitemap) {
+  if (sitemap.status === 200) {
+    const m = sitemap.body.match(/<loc>[^<]*\/homes-for-sale\/[^<]*?-(\d{5,})<\/loc>/)
+    if (m) return { key: m[1], why: null, source: 'sitemaps/listings.xml' }
+  }
+  const sitemapWhy = sitemap.status === 200 ? 'no canonical listing URL in sitemaps/listings.xml' : `sitemaps/listings.xml answered ${sitemap.why}`
+  try {
+    const { status, body } = await fetchWithTimeout(`${BASE}/homes-for-sale`, TIMEOUT_MS)
+    if (status === 200) {
+      const m = body.match(CANONICAL_LISTING_TAIL)
+      if (m) return { key: m[1], why: null, source: '/homes-for-sale served HTML' }
+      return { key: null, why: `${sitemapWhy}; /homes-for-sale served HTML carries no canonical listing link` }
+    }
+    return { key: null, why: `${sitemapWhy}; /homes-for-sale answered HTTP ${status}` }
+  } catch (err) {
+    return { key: null, why: `${sitemapWhy}; /homes-for-sale ${err?.name === 'AbortError' ? `no response within ${TIMEOUT_MS}ms` : `fetch failed: ${err?.message ?? err}`}` }
+  }
 }
 
 async function checkResolvingRedirect(route, url) {
@@ -401,9 +487,25 @@ async function runWithConcurrency(items, worker, concurrency) {
 async function main() {
   const refusals = REFUSAL_ROUTES.map((r) => ({ ...r, refusal: true }))
 
+  // The listings sitemap: fetched once, judged as its own row, then mined for
+  // the resolving key (with the served-HTML fallback when it cannot answer).
+  const sitemap = await fetchListingsSitemap()
+  const sitemapRoutes = [
+    {
+      path: '/sitemaps/listings.xml',
+      name: 'listings sitemap — 200 with canonical listing <loc> entries',
+      predetermined: sitemapRouteResult(
+        { path: '/sitemaps/listings.xml', name: 'listings sitemap — 200 with canonical listing <loc> entries' },
+        `${BASE}/sitemaps/listings.xml`,
+        sitemap,
+      ),
+    },
+  ]
+
   // The resolving half of every key-shaped redirect route. Discovered, never
   // hardcoded, and a discovery failure is a gate failure.
-  const discovered = await discoverResolvingListingKey()
+  const discovered = await discoverResolvingListingKey(sitemap)
+  if (discovered.key) console.log(`  resolving listing key ${discovered.key} from ${discovered.source}`)
   const resolvingRoutes = discovered.key
     ? [
         {
@@ -441,8 +543,8 @@ async function main() {
   }
 
   const toCheck = REFUSALS_ONLY
-    ? [...refusals, ...resolvingRoutes]
-    : [...smokeRoutes, ...refusals, ...resolvingRoutes]
+    ? [...refusals, ...sitemapRoutes, ...resolvingRoutes]
+    : [...smokeRoutes, ...refusals, ...sitemapRoutes, ...resolvingRoutes]
   const results = await runWithConcurrency(toCheck, checkRoute, CONCURRENCY)
   const failed = results.filter((r) => !r.ok)
 

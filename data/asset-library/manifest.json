@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-09-07T23:04:07.994Z",
+  "updated_at": "2026-09-16T03:25:40.103Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -46568,7 +46568,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/b2196211-e791-4477-985a-26dc2ad6c1be.png"
+      "file_path": "public/asset-library/photos/grok-imagine/b2196211-e791-4477-985a-26dc2ad6c1be.png",
+      "vision_quality": "A",
+      "vision_caption": "Modern stone-and-glass residences sit among volcanic rock and sagebrush with snow-capped peaks on the horizon.",
+      "vision_scene": "home-exterior",
+      "vision_watermark": false
     },
     {
       "id": "df383d74-c775-4a01-9d32-e23291a1d098",
@@ -46615,7 +46619,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/df383d74-c775-4a01-9d32-e23291a1d098.png"
+      "file_path": "public/asset-library/photos/grok-imagine/df383d74-c775-4a01-9d32-e23291a1d098.png",
+      "vision_quality": "B",
+      "vision_caption": "A cluster of dark-roofed homes nestled in pines and juniper faces a distant volcanic mountain range at dusk.",
+      "vision_scene": "aerial-residential",
+      "vision_watermark": false
     },
     {
       "id": "87d9bd66-3ba0-408f-8485-05471fd285e6",
@@ -46662,7 +46670,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/87d9bd66-3ba0-408f-8485-05471fd285e6.png"
+      "file_path": "public/asset-library/photos/grok-imagine/87d9bd66-3ba0-408f-8485-05471fd285e6.png",
+      "vision_quality": "A",
+      "vision_caption": "A winding neighborhood road curves past contemporary homes toward a forested plain and snowy mountains.",
+      "vision_scene": "aerial-residential",
+      "vision_watermark": false
     },
     {
       "id": "07f604ee-8d4e-436e-aa5c-ca0b1289b276",
@@ -46709,7 +46721,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/07f604ee-8d4e-436e-aa5c-ca0b1289b276.png"
+      "file_path": "public/asset-library/photos/grok-imagine/07f604ee-8d4e-436e-aa5c-ca0b1289b276.png",
+      "vision_quality": "A",
+      "vision_caption": "A contemporary home with a stone chimney overlooks sunlit sagebrush, pines, and a broad mountain skyline.",
+      "vision_scene": "home-exterior",
+      "vision_watermark": false
     },
     {
       "id": "c2c09c61-58c9-432d-8b13-9f0a15396c97",
@@ -46756,7 +46772,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/c2c09c61-58c9-432d-8b13-9f0a15396c97.png"
+      "file_path": "public/asset-library/photos/grok-imagine/c2c09c61-58c9-432d-8b13-9f0a15396c97.png",
+      "vision_quality": "A",
+      "vision_caption": "Ridge-top residences look out over high-desert slopes, a golf fairway, and twin snow-covered volcanoes.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "da03bf27-28c5-49ec-9ef5-6b4206350804",
@@ -46803,7 +46823,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/da03bf27-28c5-49ec-9ef5-6b4206350804.png"
+      "file_path": "public/asset-library/photos/grok-imagine/da03bf27-28c5-49ec-9ef5-6b4206350804.png",
+      "vision_quality": "A",
+      "vision_caption": "Scattered homes and pines stretch across open high desert toward a chain of snow-capped Cascade peaks.",
+      "vision_scene": "aerial-residential",
+      "vision_watermark": false
     },
     {
       "id": "f517b1d4-7f19-4b5c-bede-9164e117e023",
@@ -46850,7 +46874,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/f517b1d4-7f19-4b5c-bede-9164e117e023.png"
+      "file_path": "public/asset-library/photos/grok-imagine/f517b1d4-7f19-4b5c-bede-9164e117e023.png",
+      "vision_quality": "A",
+      "vision_caption": "Low-profile homes line a grassy hillside above a golf course with mountains fading on the horizon.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "e9b8e450-33d5-4bfa-b419-b7c46fb30ccd",
@@ -46897,7 +46925,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/e9b8e450-33d5-4bfa-b419-b7c46fb30ccd.png"
+      "file_path": "public/asset-library/photos/grok-imagine/e9b8e450-33d5-4bfa-b419-b7c46fb30ccd.png",
+      "vision_quality": "A",
+      "vision_caption": "Terraced modern homes step down a wooded slope toward forest, meadows, and distant snowy mountains.",
+      "vision_scene": "aerial-residential",
+      "vision_watermark": false
     },
     {
       "id": "664064c1-b91b-4da2-ab20-4d13ab802a83",
@@ -46944,7 +46976,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/664064c1-b91b-4da2-ab20-4d13ab802a83.png"
+      "file_path": "public/asset-library/photos/grok-imagine/664064c1-b91b-4da2-ab20-4d13ab802a83.png",
+      "vision_quality": "A",
+      "vision_caption": "Modern stone-and-timber homes line a curved driveway through sunlit pines.",
+      "vision_scene": "home-exterior",
+      "vision_watermark": false
     },
     {
       "id": "8d38fe66-5f20-40e4-9c6d-82d1d6fabaac",
@@ -46991,7 +47027,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/8d38fe66-5f20-40e4-9c6d-82d1d6fabaac.png"
+      "file_path": "public/asset-library/photos/grok-imagine/8d38fe66-5f20-40e4-9c6d-82d1d6fabaac.png",
+      "vision_quality": "A",
+      "vision_caption": "Cliffside residences overlook a rugged canyon toward distant volcanic peaks at sunset.",
+      "vision_scene": "mountain-landscape",
+      "vision_watermark": false
     },
     {
       "id": "08370d71-370f-4620-9381-48085547af1c",
@@ -47038,7 +47078,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/08370d71-370f-4620-9381-48085547af1c.png"
+      "file_path": "public/asset-library/photos/grok-imagine/08370d71-370f-4620-9381-48085547af1c.png",
+      "vision_quality": "A",
+      "vision_caption": "A contemporary home sits along a winding road with snow-capped mountains on the horizon.",
+      "vision_scene": "home-exterior",
+      "vision_watermark": false
     },
     {
       "id": "37d9038b-905f-4812-b050-828bc7ebebf1",
@@ -47085,7 +47129,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/37d9038b-905f-4812-b050-828bc7ebebf1.png"
+      "file_path": "public/asset-library/photos/grok-imagine/37d9038b-905f-4812-b050-828bc7ebebf1.png",
+      "vision_quality": "A",
+      "vision_caption": "A cluster of modern desert homes nestles among pines with a mountain range beyond.",
+      "vision_scene": "home-exterior",
+      "vision_watermark": false
     },
     {
       "id": "fb507dc2-4c86-43bc-b050-44209e475856",
@@ -47515,7 +47563,11 @@
         "card"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/25203b45-bace-48e3-b073-7435e93f39bd.png"
+      "file_path": "public/asset-library/photos/grok-imagine/25203b45-bace-48e3-b073-7435e93f39bd.png",
+      "vision_quality": "A",
+      "vision_caption": "Homes and pines stretch toward a wide mountain skyline across an open meadow.",
+      "vision_scene": "mountain-landscape",
+      "vision_watermark": false
     },
     {
       "id": "072d5b63-3b0a-42cf-b62a-4d516c2e2c81",
@@ -47647,7 +47699,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/f87f4315-fff3-406c-afca-0fb7117c2b00.png"
+      "file_path": "public/asset-library/photos/grok-imagine/f87f4315-fff3-406c-afca-0fb7117c2b00.png",
+      "vision_quality": "A",
+      "vision_caption": "A golf green and bunker overlook houses and distant mountains in warm evening light.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "6b115538-1866-4a39-936e-e471ee65ffba",
@@ -47693,7 +47749,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/6b115538-1866-4a39-936e-e471ee65ffba.png"
+      "file_path": "public/asset-library/photos/grok-imagine/6b115538-1866-4a39-936e-e471ee65ffba.png",
+      "vision_quality": "A",
+      "vision_caption": "A tree-lined golf fairway and green sit beneath a prominent volcanic peak.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "4538b162-3228-464c-97f2-1e9763b70da6",
@@ -47739,7 +47799,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/4538b162-3228-464c-97f2-1e9763b70da6.png"
+      "file_path": "public/asset-library/photos/grok-imagine/4538b162-3228-464c-97f2-1e9763b70da6.png",
+      "vision_quality": "A",
+      "vision_caption": "A sculpted green with sand bunkers faces a row of mountains and nearby homes.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "fb951298-f71e-4e3e-9e0e-f8729d2ec308",
@@ -47831,7 +47895,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/d8effb78-908e-4828-9e16-fe9cc09287bb.png"
+      "file_path": "public/asset-library/photos/grok-imagine/d8effb78-908e-4828-9e16-fe9cc09287bb.png",
+      "vision_quality": "A",
+      "vision_caption": "Golden-hour fairway and putting green framed by pines, mountain lodges, and a snow-capped peak.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "c7e3a738-eda2-4604-af81-ef7fc11aaa45",
@@ -47877,7 +47945,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/c7e3a738-eda2-4604-af81-ef7fc11aaa45.png"
+      "file_path": "public/asset-library/photos/grok-imagine/c7e3a738-eda2-4604-af81-ef7fc11aaa45.png",
+      "vision_quality": "A",
+      "vision_caption": "Elevated view of a still lake and pine forest with a snowy volcanic range on the horizon.",
+      "vision_scene": "mountain-landscape",
+      "vision_watermark": false
     },
     {
       "id": "99b8d1e2-ae73-49e5-a07e-6a1704a5928a",
@@ -48012,7 +48084,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/7a3c2344-269d-408a-b23c-856ea8fc7464.png"
+      "file_path": "public/asset-library/photos/grok-imagine/7a3c2344-269d-408a-b23c-856ea8fc7464.png",
+      "vision_quality": "A",
+      "vision_caption": "Golf hole beside a reflecting pond with lodge homes and a prominent snow-dusted mountain.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "e0442e4f-8a72-4d9f-9786-745bc2e51911",
@@ -48101,7 +48177,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/f6bf2883-c586-4a3f-9487-2e6ffe9502db.png"
+      "file_path": "public/asset-library/photos/grok-imagine/f6bf2883-c586-4a3f-9487-2e6ffe9502db.png",
+      "vision_quality": "A",
+      "vision_caption": "Undulating green and bunker in a sagebrush neighborhood with a distant Cascade skyline.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "9bc832f7-c985-41ab-b3f3-4a69a59e6d09",
@@ -48319,7 +48399,11 @@
         "card"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/3ccba2f5-7cbc-4577-91d0-7983be00b9d6.png"
+      "file_path": "public/asset-library/photos/grok-imagine/3ccba2f5-7cbc-4577-91d0-7983be00b9d6.png",
+      "vision_quality": "A",
+      "vision_caption": "Curving residential street of mountain homes under tall ponderosa pines in late-day light.",
+      "vision_scene": "home-exterior",
+      "vision_watermark": false
     },
     {
       "id": "5829da8a-a424-4381-9376-6c0f02a4e5e9",
@@ -48408,7 +48492,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/82a00188-e82a-4462-962a-ca0fc79b67ac.png"
+      "file_path": "public/asset-library/photos/grok-imagine/82a00188-e82a-4462-962a-ca0fc79b67ac.png",
+      "vision_quality": "A",
+      "vision_caption": "Lava-rock framed putting green and flagstick with high-desert homes and distant volcanoes.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "19f6f162-1009-4bfe-85ee-4dad4c5b250d",
@@ -48586,7 +48674,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/dd96da7a-9874-460c-8165-a990e93e045d.png"
+      "file_path": "public/asset-library/photos/grok-imagine/dd96da7a-9874-460c-8165-a990e93e045d.png",
+      "vision_quality": "A",
+      "vision_caption": "Pine forest and clustered homes stretching toward a lake and a long snowy mountain chain.",
+      "vision_scene": "mountain-landscape",
+      "vision_watermark": false
     },
     {
       "id": "9d5cdb00-a17d-4692-a8f5-68f7242e8d56",
@@ -48632,7 +48724,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/9d5cdb00-a17d-4692-a8f5-68f7242e8d56.png"
+      "file_path": "public/asset-library/photos/grok-imagine/9d5cdb00-a17d-4692-a8f5-68f7242e8d56.png",
+      "vision_quality": "A",
+      "vision_caption": "Links-style fairway and bunkers with golden grasses, a clubhouse, and four volcanic peaks.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "bb8a3db3-2274-4fdc-84b9-797f424a6d00",
@@ -48675,7 +48771,11 @@
         "card"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/bb8a3db3-2274-4fdc-84b9-797f424a6d00.png"
+      "file_path": "public/asset-library/photos/grok-imagine/bb8a3db3-2274-4fdc-84b9-797f424a6d00.png",
+      "vision_quality": "A",
+      "vision_caption": "A pine-lined river with rapids flowing past rocky banks and homes nestled among the trees.",
+      "vision_scene": "river-water",
+      "vision_watermark": false
     },
     {
       "id": "a76ff36d-e403-4cda-af34-b598c207a978",
@@ -48761,7 +48861,11 @@
         "card"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/e7263fbd-2a2e-490c-b207-cc3fde1cfbb6.png"
+      "file_path": "public/asset-library/photos/grok-imagine/e7263fbd-2a2e-490c-b207-cc3fde1cfbb6.png",
+      "vision_quality": "A",
+      "vision_caption": "A sunlit meadow of golden grass and ponderosa pines with a distant mountain range under a clear sky.",
+      "vision_scene": "mountain-landscape",
+      "vision_watermark": false
     },
     {
       "id": "58540dca-0fe7-4096-81be-267d07c8024a",
@@ -48850,7 +48954,11 @@
         "golf"
       ],
       "vision_grade": null,
-      "file_path": "public/asset-library/photos/grok-imagine/e9625bb0-86f5-4dc8-a9eb-ee8457bdde8d.png"
+      "file_path": "public/asset-library/photos/grok-imagine/e9625bb0-86f5-4dc8-a9eb-ee8457bdde8d.png",
+      "vision_quality": "A",
+      "vision_caption": "A manicured golf green with a flagstick, framed by tall pines, cliffs, and mountain views.",
+      "vision_scene": "golf-ground",
+      "vision_watermark": false
     },
     {
       "id": "41215199-b411-46a5-9edc-2ff3ebf554e6",

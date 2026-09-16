@@ -57,6 +57,13 @@ export type AtlasScope = {
    * had failed (evaluator round five, SUBDIVISION-CHART-7).
    */
   listingKeys?: readonly string[]
+  /**
+   * Whether the map this population feeds draws the sales-heat wash (default
+   * true). The region index passes false and hands V3Atlas the same flag, so
+   * the source line describes what is on screen: a sentence about a wash that
+   * is not drawn is a claim about a drawing that is not there (SITE-92, 2026-09-16).
+   */
+  salesWash?: boolean
 }
 
 export type AtlasPopulation = {
@@ -279,9 +286,13 @@ async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promis
   // sentence itself, from the dots it actually placed — this one used to
   // claim "a few sit just beyond its edges" on maps where none did (evaluator
   // round five, LISTING-NOBOUNDARY-5).
+  const washSentence =
+    scope.salesWash === false
+      ? `Homes for sale and pending are the marks; closes of the last ${ATLAS_HEAT_WINDOW_DAYS} days are counted under the key by the place that holds them, not drawn. `
+      : `The wash is sales density of closes in the last ${ATLAS_HEAT_WINDOW_DAYS} days; homes for sale and pending stay as marks. `
   const source =
     `Every active and pending listing of every property type on the regional MLS through Oregon Data Share ${where}. ` +
-    `The wash is sales density of closes in the last ${ATLAS_HEAT_WINDOW_DAYS} days; homes for sale and pending stay as marks. ` +
+    washSentence +
     `Pulses and the sold count are the closes of the last ${ATLAS_PULSE_WINDOW_DAYS} days. ` +
     `Counts and medians cover every listing read for this map.`
   return {
@@ -304,7 +315,12 @@ async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promis
  */
 export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Promise<AtlasPopulation> {
   const day = new Date(nowMs).toISOString().slice(0, 10)
-  const key = `${[...scope.cities].map((c) => c.toLowerCase().trim()).sort().join('|') || '*'}::${hashGeometry(scope.boundary)}::${day}`
+  // The wash mode is part of the key: the memoized population carries its
+  // source sentence, and a flag that is not in the key cannot change the text
+  // (2026-09-16: build K served "The wash is sales density…" on an index that
+  // no longer drew one, straight out of the previous day's entry).
+  const wash = scope.salesWash === false ? 'marks' : 'wash'
+  const key = `${[...scope.cities].map((c) => c.toLowerCase().trim()).sort().join('|') || '*'}::${hashGeometry(scope.boundary)}::${wash}::${day}`
   const cached = unstable_cache(
     async () => {
       const population = await buildPlaceAtlasUncached(scope, nowMs)

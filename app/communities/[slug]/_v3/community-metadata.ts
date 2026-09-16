@@ -225,6 +225,8 @@ export function buildCommunitySchemas(input: {
   asOfIso: string | null
   asOfLabel: string | null
   faqs: readonly { question: string; answer: string }[]
+  /** The amenity board's rows (SITE-116) — the Place's amenityFeature, from the same list the page prints. */
+  amenities?: ReadonlyArray<{ name: string; description?: string | null }>
 }): SchemaInput[] {
   const { slug, name, cityName, citySlug } = input
 
@@ -255,6 +257,7 @@ export function buildCommunitySchemas(input: {
       address: { city: cityName, state: 'OR', country: 'US' },
       containedInPlace,
       hasMap: input.hasMap ? `/communities/${slug}` : undefined,
+      amenityFeature: input.amenities && input.amenities.length > 0 ? input.amenities : undefined,
       additionalProperty: input.datasetVariables.length > 0 ? input.datasetVariables : undefined,
     },
   ]

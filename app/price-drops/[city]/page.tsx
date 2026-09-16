@@ -13,6 +13,7 @@ import { unstable_noStore as noStore } from 'next/cache'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { homesForSalePath } from '@/lib/slug'
+import { formatDate } from '@/lib/format/date'
 import { formatPriceCompact } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
@@ -25,22 +26,26 @@ import {
   V3SectionTracker,
   V3SourceLine,
   type V3QuietItem,
+  V3Drawing,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from '../_v3/PriceDropAlertsSheet.client'
+import { DROPS_CITY_SLUGS, cityLabel, dropsTrace } from '../_v3/drops-constants'
 import {
-  DROPS_CITY_SLUGS,
-  cityLabel,
-  dropsTrace,
-  medianPositive,
-} from '../_v3/drops-constants'
-import { priceDropFieldItems } from '../_v3/drops-field-items'
+  pageDeepestCut,
+  pageMedianCut,
+  priceDropFieldItems,
+} from '../_v3/drops-field-items'
+import { priceDropDistribution } from '../_v3/drops-drawing'
 import { priceDropDatasetSchemas } from '../_v3/drops-jsonld'
-import { PriceDropPhotos, PriceDropsOpening } from '../_v3/PriceDropsField'
+import { PriceDropPhotos, PriceDropsOpening, priceDropsDeck } from '../_v3/PriceDropsField'
 
 export const revalidate = 1800
 export const dynamicParams = false
+
+/** The pull's row cap. Named because the caption prints both counts. */
+const PRICE_DROPS_LIMIT = 48
 
 export function generateStaticParams(): Array<{ city: string }> {
   return DROPS_CITY_SLUGS.map((slug) => ({ city: slug }))
@@ -76,7 +81,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
 
   const { drops, total, fetchedAt } = await getPriceDrops({
     city: cityName,
-    limit: 48,
+    limit: PRICE_DROPS_LIMIT,
     days: 7,
   }).catch(() => ({ drops: [], total: 0, fetchedAt: new Date().toISOString() }))
 
@@ -84,9 +89,21 @@ export default async function PriceDropsCityPage({ params }: Props) {
     noStore()
   }
 
-  const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
-  const medianDropPct = medianPositive(drops.map((d) => d.lastDropPct))
   const fieldItems = priceDropFieldItems(drops)
+  // ONE median and ONE deepest over ONE population, the same way the region
+  // page does it: the rows this page renders (§0).
+  const medianDropPct = pageMedianCut(fieldItems)
+  const deepestShownPct = pageDeepestCut(fieldItems)
+  const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
+  const distribution = priceDropDistribution({
+    drops,
+    total,
+    cap: PRICE_DROPS_LIMIT,
+    placeLabel: cityName,
+    windowDays: 7,
+    fetchedAt: fetchedAt ? formatDate(fetchedAt) : null,
+    medianPct: medianDropPct,
+  })
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const pageUrl = `${siteUrl}${path}`
 
@@ -113,7 +130,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
       pageUrl,
       placeName: cityName,
       total,
-      shownCount: drops.length,
+      shownCount: fieldItems.length,
       totalReducedLabel,
       medianDropPctLabel,
       fetchedAt: drops.length > 0 ? fetchedAt : null,
@@ -123,8 +140,10 @@ export default async function PriceDropsCityPage({ params }: Props) {
           {
             type: 'itemList' as const,
             name: `${cityName} homes with a price cut in the last 7 days`,
-            items: fieldItems.slice(0, 24).map((item) => ({
-              name: `${item.priceLabel} · ${item.title}`,
+            items: fieldItems.map((item) => ({
+              name: [item.cutLabel, item.priceLabel, item.title]
+                .filter((part): part is string => Boolean(part))
+                .join(' · '),
               url: item.href.startsWith('http') ? item.href : `${siteUrl}${item.href}`,
             })),
           },
@@ -170,21 +189,59 @@ export default async function PriceDropsCityPage({ params }: Props) {
 
         {captionCount > 0 ? (
           <>
+            {/* THE COUNT IS THE FULL POPULATION. Until SITE-108 this caption
+                published `captionCount` — the capped, rendered slice — as
+                "40 price cuts in Bend" while the window held 115. The region
+                page fixed the same figure on 2026-09-15 and this route was
+                missed; two counts for one question is the §0 failure. */}
             <PriceDropsOpening
               heading={`Price drops in ${cityName}`}
               headline={`Price drops in ${cityName}`}
-              captionValue={captionCount.toLocaleString('en-US')}
-              captionLabel={captionCount === 1 ? `price cut in ${cityName}` : `price cuts in ${cityName}`}
+              captionValue={total.toLocaleString('en-US')}
+              captionLabel={
+                total === 1
+                  ? `price cut in ${cityName}`
+                  : total > captionCount
+                    ? `price cuts in ${cityName} · ${captionCount} shown below`
+                    : `price cuts in ${cityName}`
+              }
+              captionDrillHref={distribution ? '#spread' : '#cuts'}
+              captionDrillLabel={
+                distribution ? 'see how far each ask came down' : 'browse the cuts'
+              }
+              deck={priceDropsDeck({
+                placeLabel: cityName,
+                shownCount: captionCount,
+                medianPct: medianDropPct,
+                deepestPct: deepestShownPct,
+              })}
             />
-            <V3Field
-              id="cuts"
-              className="pd-homes-field"
-              ariaLabel={`Homes in ${cityName} with a price cut in the last 7 days`}
-              items={fieldItems}
-              mapSlot={<PriceDropPhotos items={fieldItems} />}
-              emptyMessage={`No price cut in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
+            <div className="pd-fold">
+              <V3Field
+                id="cuts"
+                className="pd-homes-field"
+                ariaLabel={`Homes in ${cityName} with a price cut in the last 7 days`}
+                items={fieldItems}
+                mapSlot={<PriceDropPhotos items={fieldItems} />}
+                emptyMessage={`No price cut in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
+              />
+              {distribution ? (
+                <V3Drawing
+                  id="spread"
+                  className="pd-spread"
+                  figures={[distribution]}
+                  label={`This week's ${cityName} price cuts by how far the ask came down`}
+                />
+              ) : null}
+            </div>
+            <V3SourceLine
+              className="pd-source"
+              source={`${dropsTrace(cityName)}${
+                medianDropPctLabel ? `. Median drop ${medianDropPctLabel}` : ''
+              }${totalReducedLabel ? `, ${totalReducedLabel} in asking prices cut this week` : ''}${
+                fetchedAt ? ` · updated ${formatDate(fetchedAt)}` : ''
+              }`}
             />
-            <V3SourceLine source={dropsTrace(cityName)} />
           </>
         ) : (
           <V3Quiet

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { PlaceTypeCard } from '@/lib/place/publish-place-type-cards'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { V3Icon, V3Reveal } from '@/components/site/v3'
 import '@/components/search/search-ledger.css'
 
 /** Horizontal type cards. Each card is leftover/segment data, miss omitted. */
@@ -15,18 +16,33 @@ export function PlaceTypeSlider({
   return (
     <section className="place-type-slider" aria-label={label}>
       <div className="place-type-slider__track no-scrollbar">
-        {cards.map((card) => (
+        {cards.map((card, index) => (
           <Link
             key={card.key}
             href={card.href}
             className={card.active ? 'place-type-card is-active' : 'place-type-card'}
             data-type={card.key}
           >
+            {/* SITE-116 round 2: a card with no cover photograph gets the
+                board's own answer — a drawn mark that arrives on scroll
+                through the installed beUI scroll animation, staggered across
+                the row — instead of an empty frame. A card that HAS a
+                photograph shows it plainly and immediately: an entrance a
+                record or a fast scroller can catch empty is not something a
+                photograph goes behind (see V3PlaceAmenities). The thumb is
+                aria-hidden decoration either way; the count, the title and the
+                bits below are plain HTML at full opacity. */}
             <div className="place-type-card__thumb" aria-hidden="true">
               {card.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={listingRowPhotoSrc(card.photoUrl)} alt="" />
-              ) : null}
+              ) : (
+                <V3Reveal
+                  step={index}
+                  className="place-type-card__mark"
+                  media={<V3Icon name="HomeSale" size={20} />}
+                />
+              )}
             </div>
             {card.count ? <div className="place-type-card__count">{card.count}</div> : null}
             <div className="place-type-card__title">{card.title}</div>

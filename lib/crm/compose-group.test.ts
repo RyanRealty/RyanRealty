@@ -3,6 +3,7 @@ import {
   GROUP_THREAD_FALLBACK_NOTICE,
   composeRecipientPayload,
   decideGroupSmsFallback,
+  groupFallbackNotice,
   emailsForCompose,
   isComposeGroup,
 } from '@/lib/crm/compose-group'
@@ -53,5 +54,19 @@ describe('compose group (one thread, honest fan-out if group fails)', () => {
         { email: null },
       ]),
     ).toEqual(['a@example.com', 'b@example.com'])
+  })
+})
+
+describe('groupFallbackNotice', () => {
+  it('carries the reason the group did not form, in parentheses', () => {
+    expect(
+      groupFallbackNotice('Group MMS with given participant list already exists as Conversation CHaf1f40233b2944ec944df877e7c57ce9'),
+    ).toBe(
+      'Could not start one group thread — texted each person separately. (Group MMS with given participant list already exists as Conversation CHaf1f40233b2944ec944df877e7c57ce9)',
+    )
+  })
+  it('is the bare notice when there is no reason to give', () => {
+    expect(groupFallbackNotice()).toBe('Could not start one group thread — texted each person separately.')
+    expect(groupFallbackNotice('  ')).toBe('Could not start one group thread — texted each person separately.')
   })
 })

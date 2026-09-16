@@ -85,7 +85,12 @@ describe('the display numeral threshold', () => {
     expect(copy.promiseScope).toBe('Bend')
     expect(copy.source).toContain('148 houses')
     expect(copy.source).toContain('Bend')
-    expect(copy.source).toContain('Market Truth')
+    // SITE-116 round 2: the trace names the FEED a reader can check, never our
+    // own metric layer's brand. The window, the segment and the exclusion stay.
+    expect(copy.source).toContain('regional MLS through Oregon Data Share')
+    expect(copy.source).toContain('new listings in the last 30 days')
+    expect(copy.source).toContain('detached single-family')
+    expect(copy.source).not.toContain('Market Truth')
     expect(copy.source).not.toContain('city:bend')
     expect(copy.source).not.toContain('new_listings_30d')
     expect(copy.browseLabel).toBe('See the newest Bend listings')

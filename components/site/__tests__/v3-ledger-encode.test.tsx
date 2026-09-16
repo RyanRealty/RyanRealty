@@ -211,3 +211,123 @@ describe('V3Ledger drawing slot', () => {
     expect(html).toContain('stub-drawing')
   })
 })
+
+/**
+ * SITE-92 round 4: the scale said on the drawing, the designed mark, and the
+ * run as a small chart. What these hold is the honesty of each: the ruler only
+ * prints the caller's ticks at the caller's positions and drops one it cannot
+ * place; a mark never replaces a photo; a label never appears the caller did
+ * not hand over.
+ */
+describe('V3Ledger scale (the ruler over the bars)', () => {
+  const scale = {
+    note: v3Text('Bars are on a square-root scale.'),
+    ticks: [
+      { at: 0.09, label: v3Text('5') },
+      { at: 0.64, label: v3Text('250') },
+      { at: 1, label: v3Text('616') },
+    ],
+  }
+
+  it('prints the note and one tick per caller position, only with encode="bar"', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Ledger, {
+        heading: v3Text('Cities'),
+        source: v3Text('live MLS'),
+        rows: [row({ weight: 1 }), row({ href: '/cities/redmond', weight: 0.3 })],
+        encode: 'bar',
+        scale,
+      }),
+    )
+    expect(html).toContain('v3-ledger--ruled')
+    expect(html).toContain('Bars are on a square-root scale.')
+    const ticks = [...html.matchAll(/class="v3-ledger__tick" style="left:([^"]+)"/g)].map((m) => m[1]!)
+    expect(ticks).toEqual(['9.00%', '64.00%', '100.00%'])
+    // The ruler sits between the head and the list, and is hidden from assistive tech.
+    expect(html.indexOf('v3-ledger__ruler')).toBeLessThan(html.indexOf('v3-ledger__list'))
+    expect(html).toMatch(/v3-ledger__ruler-measure" aria-hidden="true"/)
+
+    const plain = renderToStaticMarkup(
+      createElement(V3Ledger, {
+        heading: v3Text('Cities'),
+        source: v3Text('live MLS'),
+        rows: [row({ weight: 1 })],
+        scale,
+      }),
+    )
+    expect(plain).not.toContain('v3-ledger__ruler')
+    expect(plain).not.toContain('v3-ledger--ruled')
+  })
+
+  it('drops a tick it cannot place rather than clamping it onto the track', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Ledger, {
+        heading: v3Text('Cities'),
+        source: v3Text('live MLS'),
+        rows: [row({ weight: 1 })],
+        encode: 'bar',
+        scale: { note: scale.note, ticks: [{ at: 1.4, label: v3Text('900') }, { at: 0.5, label: v3Text('154') }] },
+      }),
+    )
+    expect(html).not.toContain('>900<')
+    expect(html).toContain('>154<')
+  })
+})
+
+describe('V3Ledger mark (a drawn place where there is no photograph)', () => {
+  it('draws the caller mark in the media square instead of the glyph, and never over a photo', () => {
+    const html = render([
+      row({ media: { src: '/images/bend.jpg' }, mark: createElement('svg', { className: 'stub-mark-bend' }) }),
+      row({ href: '/cities/metolius', what: v3Text('Metolius'), mark: createElement('svg', { className: 'stub-mark' }) }),
+      row({ href: '/cities/camp-sherman', what: v3Text('Camp Sherman') }),
+    ])
+    expect(html.match(/v3-ledger__thumb/g)).toHaveLength(1)
+    expect(html).not.toContain('stub-mark-bend')
+    expect(html.match(/v3-ledger__mark" aria-hidden="true"/g)).toHaveLength(1)
+    expect(html).toContain('stub-mark')
+    // The row with neither still carries the glyph, so the column keeps one edge.
+    expect(html.match(/v3-ledger__glyph/g)).toHaveLength(1)
+    expect(html.match(/v3-ledger__what--media/g)).toHaveLength(3)
+  })
+
+  it('draws no mark in a list with no photos at all — the column does not exist', () => {
+    const html = render([row({ mark: createElement('svg', { className: 'stub-mark' }) }), row({ href: '/cities/redmond' })])
+    expect(html).not.toContain('stub-mark')
+    expect(html).not.toContain('v3-ledger__what--media')
+  })
+})
+
+describe('V3Ledger reveal run as a small chart', () => {
+  const twelve = [40, 38, 52, 61, 70, 66, 58, 49, 44, 51, 47, 45]
+
+  it('names the window at both ends and labels the endpoint with the caller string, when given', () => {
+    const html = render([
+      row({
+        reveal: {
+          line: v3Text("Seller's market · 3.8 months of supply"),
+          series: twelve,
+          seriesLabel: v3Text('Closed detached sales by month'),
+          seriesEnds: { first: v3Text('Sep 2025'), last: v3Text('Aug 2026') },
+          seriesLast: v3Text('45'),
+        },
+      }),
+    ])
+    expect(html).toContain('v3-ledger__run-ends')
+    expect(html).toMatch(/<span>Sep 2025<\/span><span>Aug 2026<\/span>/)
+    expect(html).toMatch(/<text class="v3-ledger__spark-end"[^>]*>45<\/text>/)
+    expect(html).toContain('v3-ledger__spark-base')
+    // The SVG scales to its column: a viewBox and no fixed pixel width.
+    expect(html).toMatch(/<svg class="v3-ledger__spark" viewBox="0 0 \d+ \d+" aria-hidden="true">/)
+    expect(html).not.toMatch(/<svg class="v3-ledger__spark"[^>]*width=/)
+  })
+
+  it('prints no end labels and no endpoint value the caller did not hand over', () => {
+    const html = render([
+      row({ reveal: { line: v3Text("Seller's market · 3.8 months of supply"), series: twelve, seriesLabel: v3Text('closes by month') } }),
+    ])
+    expect(html).not.toContain('v3-ledger__run-ends')
+    expect(html).not.toContain('v3-ledger__spark-end')
+    // The line's own points are never written on screen.
+    expect(html).not.toMatch(/>70</)
+  })
+})

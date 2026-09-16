@@ -8,16 +8,16 @@
     "https://ui.shadcn.com"
   ],
   "catalogUrl": "https://ui.shadcn.com/docs/components",
-  "note": "Matt 2026-09-10: these catalogs ARE the UX bar, not a parts list. catalogUrls is a FLOOR of five and is append-only \u2014 paste a new URL and inventory it; the evaluator option list grows. Fetch the source (shadcn add / registry URL), restyle to navy #102742 / cream #faf8f4 / Geist / Amboqia / Iconoir, and wire the REAL interaction. A cream box with the catalog name is not adapted. The loop is comprehensive: SEO, listing/page information, and UX all rise on the same pass. A missing job is a NEW barrel primitive that still matches the demo.",
+  "note": "Matt 2026-09-10: these catalogs ARE the UX bar, not a parts list. catalogUrls is a FLOOR of five and is append-only — paste a new URL and inventory it; the evaluator option list grows. Fetch the source (shadcn add / registry URL), restyle to navy #102742 / cream #faf8f4 / Geist / Amboqia / Iconoir, and wire the REAL interaction. A cream box with the catalog name is not adapted. The loop is comprehensive: SEO, listing/page information, and UX all rise on the same pass. A missing job is a NEW barrel primitive that still matches the demo.",
   "refuse": [
-    "npx shadcn add onto app/ or components/site/ \u2014 install into components/ui or components/site/v3, then paint with house tokens",
+    "npx shadcn add onto app/ or components/site/ — install into components/ui or components/site/v3, then paint with house tokens",
     "npm install beUI / Rare UI / Beautiful UI / Transitions as a second public design system (submodule their demo app, Inter, purple)",
     "Copy their palette, Inter, purple, orbs, magnetic/tilt buttons, or agent-chat chrome onto a listing or place page",
     "Keep the catalog name and throw away the interaction (V3MorphSearch as a labeled cream field is this miss)",
     "Shrink a working full-bleed layout to dodge a 'looks like Zillow' tell",
     "Drop or summarize away PropertySpecs, MLS remarks, schools, payment line items, or Tour/Call/Text",
-    "Rewrite Spark listing photos to 320x240 on a card, rail, or hero \u2014 320 is the 88x66 ledger thumb only",
-    "Skip a catalog job because the barrel has no primitive yet \u2014 ADD the primitive that still matches the demo",
+    "Rewrite Spark listing photos to 320x240 on a card, rail, or hero — 320 is the 88x66 ledger thumb only",
+    "Skip a catalog job because the barrel has no primitive yet — ADD the primitive that still matches the demo",
     "Treat a score rise or rebaseline as done when the live control and the demo are not the same interaction",
     "Claim adaptedFrom without the installed file imported by the house primitive (ci:catalog-install). A comment is not an import. motion/react on a house wrapper is a dependency of beUI, not the component.",
     "Mark a SITE node done on comparedToPrior rebaselined or a taste score below 70"
@@ -81,7 +81,7 @@
       "add": "@beui/combobox",
       "file": "components/motion/combobox.tsx",
       "import": "@/components/motion/combobox",
-      "house": "components/site/v3/V3MorphSearch.tsx",
+      "house": "components/site/v3/V3TypeCombobox.client.tsx",
       "repo": "https://github.com/starc007/ui-components",
       "mustContain": [
         "ComboboxTrigger",
@@ -116,6 +116,27 @@
     "beui:range-slider": {
       "aliasOf": "beui-range-slider"
     },
+    "beui-scroll-animation": {
+      "add": "https://beui.dev/r/scroll-reveal.json",
+      "file": "components/motion/scroll-reveal.tsx",
+      "import": "@/components/motion/scroll-reveal",
+      "house": "components/site/v3/V3Reveal.client.tsx",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": [
+        "ScrollReveal",
+        "useInView",
+        "blur("
+      ]
+    },
+    "beui:scroll-animation": {
+      "aliasOf": "beui-scroll-animation"
+    },
+    "beui-scroll-reveal": {
+      "aliasOf": "beui-scroll-animation"
+    },
+    "beui:scroll-reveal": {
+      "aliasOf": "beui-scroll-animation"
+    },
     "beui-number": {
       "add": "@beui/number",
       "file": "components/motion/number.tsx",
@@ -136,7 +157,12 @@
       "file": "components/motion/insight-cards.tsx",
       "import": "@/components/motion/insight-cards",
       "house": "app/invest/_v3/InvestInsight.client.tsx",
-      "mustContain": ["Previous insight", "Next insight", "Liveline", "AllocationCard"]
+      "mustContain": [
+        "Previous insight",
+        "Next insight",
+        "Liveline",
+        "AllocationCard"
+      ]
     },
     "beautifului:insight": {
       "aliasOf": "beautifului-insight"
@@ -325,7 +351,7 @@
       "name": "Listing-detail stack",
       "url": "components/site/listing-detail/",
       "kind": "house",
-      "take": "ListingHero, PropertySpecs, PriceCtaStrip, DescriptionBlock, SchoolsBlock \u2014 the sections a listing page must keep.",
+      "take": "ListingHero, PropertySpecs, PriceCtaStrip, DescriptionBlock, SchoolsBlock — the sections a listing page must keep.",
       "refuse": "Dropping a requiredComponent to make the fold quieter."
     },
     {
@@ -2226,7 +2252,7 @@
   },
   "classes": {
     "listing-detail": {
-      "layoutLock": "Listing media is full-bleed above the grid (listing-hero-bleed), not a column frame (listing-hero-column). SITE-45 set heroInMain to dodge a 'looks like Zillow' tell. Matt 2026-09-10: that lost the full-width hero, hid home details, and made the buttons look bad. Restore bleed. Keep PropertySpecs, description, schools, Tour/Call/Text (parity.json requiredComponents). Adapt shadcn carousel / button-group / sheet / dialog into that foundation \u2014 do not invent a smaller layout.",
+      "layoutLock": "Listing media is full-bleed above the grid (listing-hero-bleed), not a column frame (listing-hero-column). SITE-45 set heroInMain to dodge a 'looks like Zillow' tell. Matt 2026-09-10: that lost the full-width hero, hid home details, and made the buttons look bad. Restore bleed. Keep PropertySpecs, description, schools, Tour/Call/Text (parity.json requiredComponents). Adapt shadcn carousel / button-group / sheet / dialog into that foundation — do not invent a smaller layout.",
       "layoutLockChecks": [
         {
           "path": "app/listing/[listingKey]/page.tsx",
@@ -2288,7 +2314,7 @@
           "id": "shadcn-sheet",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/sheet",
-          "job": "Mobile ask and lightbox-adjacent panes. We already installed components/ui/sheet.tsx \u2014 fetch it, restyle in v3."
+          "job": "Mobile ask and lightbox-adjacent panes. We already installed components/ui/sheet.tsx — fetch it, restyle in v3."
         },
         {
           "id": "shadcn-dialog",
@@ -2337,7 +2363,7 @@
       ]
     },
     "homepage-v6": {
-      "layoutLock": "The homepage opens with live inventory in the first viewport and a real Sell address field without waiting on JS. Do not replace the hero search with a stacked memo. Rails stay house carousels \u2014 adapt V3Carousel into them rather than inventing a second rail look. Featured community and Browse places are catalog Card / carousel / number \u2014 not house chips or a house pager.",
+      "layoutLock": "The homepage opens with live inventory in the first viewport and a real Sell address field without waiting on JS. Do not replace the hero search with a stacked memo. Rails stay house carousels — adapt V3Carousel into them rather than inventing a second rail look. Featured community and Browse places are catalog Card / carousel / number — not house chips or a house pager.",
       "primitivesToAdd": [
         "V3Carousel"
       ],
@@ -2527,11 +2553,17 @@
           "catalog": "beui",
           "url": "https://beui.dev/components/motion/number",
           "job": "Live counts that swap digits. Only sourced figures. Reduced-motion shows the finished number."
+        },
+        {
+          "id": "house-board",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3PlaceAmenities.tsx",
+          "job": "The places that make a place — every authored amenity as a tile on one board with a photo strip, chips as anchors, and the config's publishers as the source line; not chip text inside a Quiet (SITE-116)."
         }
       ]
     },
     "about": {
-      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. FAIL if AboutTeamTeaser or a Meet-the-Team dump is on About. Hero is AboutFirm: office exterior + one purpose line (boutique \u00b7 all of Central Oregon \u00b7 buy and sell). V3Proof is primary client reviews. FirmClosings is dated local sold homes \u2014 never invented MOS. Then shadcn Button Group Call|Text|Email|Schedule, then AboutOffice Card (115 NW Oregon Ave #2 + firm OREA), then AboutInquiry Input+Button GET /contact. Brokers belong on /team only. Do not mount AboutFaces or size=\"proof\". No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
+      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. FAIL if AboutTeamTeaser or a Meet-the-Team dump is on About. Hero is AboutFirm: office exterior + one purpose line (boutique · all of Central Oregon · buy and sell). V3Proof is primary client reviews. FirmClosings is dated local sold homes — never invented MOS. Then shadcn Button Group Call|Text|Email|Schedule, then AboutOffice Card (115 NW Oregon Ave #2 + firm OREA), then AboutInquiry Input+Button GET /contact. Brokers belong on /team only. Do not mount AboutFaces or size=\"proof\". No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
       "layoutLockChecks": [
         {
           "path": "app/about/page.tsx",
@@ -2575,7 +2607,7 @@
       "competitiveBrief": {
         "id": "about-matt-2026-09-12",
         "source": "Matt 2026-09-12 / 2026-09-14 lock. About is the brokerage story. Brokers belong on /team. Evidence quotes required.",
-        "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry\u2192/contact. No broker roster on About.",
+        "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry→/contact. No broker roster on About.",
         "refuse": "AboutFaces, AboutTeamTeaser, Meet-the-Team dump, broker Cards, AvatarGroup. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
         "beats": [
           {
@@ -2629,7 +2661,7 @@
           "id": "house-faces",
           "catalog": "house-v3",
           "url": "app/about/_v3/AboutFaces.tsx",
-          "job": "Team page faces only \u2014 brokers on /team. Never the About opener. About forbids AboutTeamTeaser."
+          "job": "Team page faces only — brokers on /team. Never the About opener. About forbids AboutTeamTeaser."
         },
         {
           "id": "house-proof",
@@ -2708,13 +2740,13 @@
       "layoutLock": "One ask. Doors have hierarchy and live hours. Brokers are AboutFaces, not a second flatter roster. Do not open on four identical link rows.",
       "competitiveBrief": {
         "id": "contact-looking-1-8",
-        "source": "Researchy Contact Looking 2026-09-12 beats 1\u20138; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md \u00a76 /contact",
-        "productLock": "hero Call/text/write + address on fold + Call|Text|Email|Schedule PASS + form+SMS + brokers\u2192/team; FAQ optional; do not reopen CTAs as missing",
+        "source": "Researchy Contact Looking 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6 /contact",
+        "productLock": "hero Call/text/write + address on fold + Call|Text|Email|Schedule PASS + form+SMS + brokers→/team; FAQ optional; do not reopen CTAs as missing",
         "refuse": "Five-step wizard. Four equal link cells. Looking that reopens Call|Text|Email|Schedule as missing. Invented reply-time.",
         "beats": [
           {
             "id": "1",
-            "text": "Hero H1 is Call, text, or write \u2014 one conversion sentence, not a five-step contact wizard."
+            "text": "Hero H1 is Call, text, or write — one conversion sentence, not a five-step contact wizard."
           },
           {
             "id": "2",
@@ -2722,19 +2754,19 @@
           },
           {
             "id": "3",
-            "text": "Call is on the reach control at display scale with live published hours. PASS regression \u2014 do not drop Call."
+            "text": "Call is on the reach control at display scale with live published hours. PASS regression — do not drop Call."
           },
           {
             "id": "4",
-            "text": "Text sits on the same reach control as Call. PASS regression \u2014 do not drop Text."
+            "text": "Text sits on the same reach control as Call. PASS regression — do not drop Text."
           },
           {
             "id": "5",
-            "text": "Email sits on the same reach control as Call and Text. PASS regression \u2014 do not drop Email."
+            "text": "Email sits on the same reach control as Call and Text. PASS regression — do not drop Email."
           },
           {
             "id": "6",
-            "text": "Schedule sits on the same reach control as Call, Text, and Email. PASS regression \u2014 do not drop Schedule."
+            "text": "Schedule sits on the same reach control as Call, Text, and Email. PASS regression — do not drop Schedule."
           },
           {
             "id": "7",
@@ -2775,7 +2807,7 @@
           "id": "shadcn-input",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/input",
-          "job": "Form fields. We already installed components/ui/input.tsx \u2014 restyle in v3."
+          "job": "Form fields. We already installed components/ui/input.tsx — restyle in v3."
         }
       ],
       "demoStates": [
@@ -2881,6 +2913,7 @@
     },
     "price-drops": {
       "layoutLock": "Opening is the Field of cut houses. Count is a caption. Do not open on a KPI of reductions this week with no photographs.",
+      "demoStates": ["carousel-open=.pd-cuts-rail [data-slot=\"carousel-next\"]!click"],
       "modules": [
         {
           "id": "house-field",
@@ -3065,7 +3098,7 @@
   },
   "approach": {
     "ux": "Fetch the module, adapt the interaction into the house barrel, keep required listing sections and SEO.",
-    "dx": "One command prints the builder card (house files, \u22648 fetches, missing primitives). --preflight fails if a house file or the layout lock is gone. New primitives are files in v3 / admin v2, exported from the barrel, wired to a public route (G73). Next catalog-class receipt must name adaptedFrom and replaceWith.",
+    "dx": "One command prints the builder card (house files, ≤8 fetches, missing primitives). --preflight fails if a house file or the layout lock is gone. New primitives are files in v3 / admin v2, exported from the barrel, wired to a public route (G73). Next catalog-class receipt must name adaptedFrom and replaceWith.",
     "ax": "The evaluator prompt includes evaluatorBrief(class). A stacked-section page that ignored the catalog is a named defect.",
     "frankenstein": "A second component family, a second stylesheet, or a catalog palette on a public page. Growing v3 with V3Carousel is the opposite."
   },

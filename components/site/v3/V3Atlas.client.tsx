@@ -78,6 +78,7 @@ import {
   isAtlasPulseSold,
   salesHeatField,
 } from '@/lib/atlas/sales-heat'
+import { closesByPlace } from '@/lib/atlas/closes-by-place'
 import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/atlas/pack-labels'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
@@ -280,6 +281,39 @@ export type V3AtlasProps = {
    * "1 listing of every type for sale, slide the price" is noise on it.
    */
   quiet?: boolean
+  /**
+   * Draw the sales-heat wash under the marks (default). The region index
+   * passes false: at Central Oregon scale the kernel field over a year of
+   * closings covered the town silhouettes, and the separate evaluator read the
+   * frame as "a blurred point-density heatmap with floating labels" rather than
+   * an atlas of places (SITE-92, 2026-09-16). The marks, counts, pulses, key
+   * and dock are unchanged; only the field is withheld, so nothing the wash
+   * would have said is claimed in text.
+   */
+  salesWash?: boolean
+  /**
+   * How the base silhouettes (kind `town`) are drawn.
+   *
+   * `base` (default, every caller before 2026-09-16): the towns are the
+   * ground the places sit on — a faint fill UNDER the marks, hoverable, no tab
+   * stop. The doors are the communities and neighborhoods painted on top, and
+   * a town is context for them.
+   *
+   * `doors` (the region index, SITE-92 round 4): every town IS the door. The
+   * towns join the place layer — painted ABOVE the marks with the cream halo,
+   * the wide phone hit stroke, the roving tab stop, `role="button"` and the
+   * door label — and the base layer draws nothing. Two separate evaluators had
+   * read the index as "a scatter of dark dot clusters with floating city-name
+   * labels": eighteen recorded town lines were on the page, drawn under four
+   * thousand marks at 5% fill, and Bend's line was under Bend's marks. With
+   * the towns above the marks the marks step down at region scale (the
+   * `data-atlas-zoom` bucket on the section, V3Atlas.css) so a cluster reads
+   * as density inside a drawn place rather than a blot, and each town's name
+   * sits ON its silhouette as a tag when the silhouette is tall enough to hold
+   * it, under its bottom edge when it is not. Nothing about counts, the card,
+   * the key or the dock changes; only which layer the towns are painted in.
+   */
+  townsAs?: 'base' | 'doors'
   children?: ReactNode
   className?: string
   /**
@@ -307,6 +341,16 @@ export type V3AtlasProps = {
 /* -------------------------------------------------------------------------- */
 
 const RESIDENTIAL = new Set(['house', 'condo', 'townhouse', 'manufactured', 'multi'])
+/* Town doors (`townsAs="doors"`): the camera buckets the stylesheet keys the
+   mark weight on — `far` is the region at rest, `mid` the first two zoom
+   steps, `near` everything past them — and the tag geometry. The sales wash
+   already hides at the same 1.35, so "region scale" means one thing. */
+const ATLAS_ZOOM_FAR_K = 1.35
+const ATLAS_ZOOM_MID_K = 2.6
+/** A silhouette at least this tall on screen carries its own name tag inside. */
+const ATLAS_DOOR_TAG_INSIDE_PX = 40
+/** The tag is uppercase and tracked, wider than the plain label the box estimates. */
+const ATLAS_DOOR_TAG_WIDEN = 1.3
 /** Pulse slots per event kind, so a month of closes always has living marks. */
 const PULSE_SLOTS = { new: 16, pending: 6, sold: 18 } as const
 const KIND_LABEL: Record<AtlasRegionKind, string> = { town: 'Town', community: 'Community', neighborhood: 'Neighborhood' }
@@ -390,6 +434,8 @@ export function V3Atlas({
   parcels,
   frame,
   quiet,
+  salesWash = true,
+  townsAs = 'base',
   noun: nounProp,
   incomplete,
   events,
@@ -763,9 +809,17 @@ export function V3Atlas({
      Places with listings first, by count; empty ones after, still doors. */
   /* A record map draws only the places the record touches; an outline with
      nothing in it would open a card reading 0 closings (pass three, D5). */
+  /* The door set. `townsAs="doors"` promotes the towns into it — largest
+     first, like the places, so a smaller shape inside a larger one still
+     takes the pointer — and the base layer below then draws nothing. */
+  const townDoors = townsAs === 'doors'
+  const doorShapes = useMemo(
+    () => (townDoors ? [...towns, ...places].sort((a, b) => b.area - a.area) : places),
+    [townDoors, towns, places],
+  )
   const drawnPlaces = useMemo(
-    () => (closingsMap ? places.filter((s) => (regionStats.get(s.id)?.n ?? 0) > 0) : places),
-    [places, closingsMap, regionStats],
+    () => (closingsMap ? doorShapes.filter((s) => (regionStats.get(s.id)?.n ?? 0) > 0) : doorShapes),
+    [doorShapes, closingsMap, regionStats],
   )
   /* A filter can shrink the drawn set under the tab stop: keep it in range, or
      the map loses its one keyboard entry. */
@@ -777,7 +831,9 @@ export function V3Atlas({
      map draws a subset, and a frame clips what falls outside it, so counting
      the regions the page handed over overstated it by two to one (evaluator
      round five, TEAM-MATT-2). */
-  const drawnCount = towns.length + drawnPlaces.length
+  /* With the towns promoted to doors they are already in drawnPlaces; counting
+     the base layer as well would name every town twice. */
+  const drawnCount = (townDoors ? 0 : towns.length) + drawnPlaces.length
 
 
   /* What the numbers are filtered to, in the reader's words. A claim that says
@@ -838,7 +894,7 @@ export function V3Atlas({
      maps, incomplete reads, and a broker's record of closings (the dots ARE
      the subject) draw none. */
   const heat = useMemo(() => {
-    if (quiet || incomplete || closingsMap) return { cells: [] as const, n: 0, max: 0 }
+    if (quiet || incomplete || closingsMap || !salesWash) return { cells: [] as const, n: 0, max: 0 }
     const points: { x: number; y: number }[] = []
     dots.forEach((d, i) => {
       if (!isAtlasHeatClosing(d.s) || !isOn(d)) return
@@ -847,7 +903,29 @@ export function V3Atlas({
       points.push({ x: p[0], y: p[1] })
     })
     return salesHeatField(points, { width: proj.width, height: proj.height })
-  }, [quiet, incomplete, closingsMap, dots, isOn, xy, proj.width, proj.height])
+  }, [quiet, incomplete, closingsMap, salesWash, dots, isOn, xy, proj.width, proj.height])
+
+  /* Closes by place: the wash's own subject, as a count. A map that withholds
+     the sales field (the region index, SITE-92) still owes the reader what it
+     would have drawn, so the aside lists the heat window's closes by the place
+     that holds them — each row a door that lights its silhouette, the same
+     way a chip does. A closing counts once, in the smallest place; one that
+     falls outside every outline is named, not lost (lib/atlas/closes-by-place). */
+  const closes = useMemo(
+    () =>
+      quiet || incomplete || closingsMap || salesWash
+        ? null
+        : closesByPlace({
+            dots,
+            membership,
+            shapes: paths,
+            isOn,
+            isClosing: isAtlasHeatClosing,
+            ownerOf: smallestOf,
+          }),
+    [quiet, incomplete, closingsMap, salesWash, dots, membership, paths, isOn, smallestOf],
+  )
+  const closesNoun = closes && closes.rows.length > 0 && closes.rows.every((r) => r.shape.kind === 'town') ? 'town' : 'place'
 
   /* ROW ↔ MARK, the list's direction. One index, so a hover over a sibling
      list re-renders one mark instead of every dot on the map. */
@@ -982,7 +1060,10 @@ export function V3Atlas({
     () =>
       incomplete
         ? []
-        : places
+        : /* Every door gets a chip: with `townsAs="doors"` that includes the
+             towns, each a role=button polygon that needs a same-name 44px
+             partner (WCAG 2.5.8, ci:tap-targets' equivalence rule). */
+          doorShapes
             .map((s) => ({ shape: s, n: regionStats.get(s.id)?.n ?? 0 }))
             // A record map lists only the places the record touches; a rail
             // of zeros is brokerage chrome on a personal page (C5).
@@ -998,7 +1079,7 @@ export function V3Atlas({
                could ever reach them by. Every chip measures 100x44; a drawn
                place without one is a promise the page cannot keep. */
             .slice(0, Math.max(24, drawnPlaces.length)),
-    [places, regionStats, incomplete, closingsMap, drawnPlaces.length],
+    [doorShapes, regionStats, incomplete, closingsMap, drawnPlaces.length],
   )
   /* One chip. Rendered twice over (the first eight, then the folded rest), so
      the two halves cannot drift apart. */
@@ -1089,6 +1170,32 @@ export function V3Atlas({
     for (const s of towns) {
       if (!s.anchor || isFrame(s) || s.id === active) continue
       const text = shortPlaceLabel(s.name)
+      if (townDoors && s.bbox) {
+        /* A door's name sits ON the door. Inside the silhouette when the
+           silhouette is tall enough on screen to hold a tag; whole and just
+           under its bottom edge when it is not, so a small town's line stays
+           visible above its name instead of under it. The tag is uppercase
+           and tracked (V3Atlas.css), so its box is wider than the plain
+           label's estimate. */
+        const [, top] = screenOf(s.bbox.minLon, s.bbox.maxLat)
+        const [, bottom] = screenOf(s.bbox.maxLon, s.bbox.minLat)
+        const box = atlasLabelBox(text, 'town')
+        const hw = box.hw * ATLAS_DOOR_TAG_WIDEN
+        const hh = box.hh
+        const [x] = screenOf(s.anchor[0], s.anchor[1])
+        const inside = Math.abs(bottom - top) >= ATLAS_DOOR_TAG_INSIDE_PX
+        candidates.push({
+          id: s.id,
+          kind: 'town',
+          text,
+          x,
+          y: inside ? (top + bottom) / 2 : bottom + hh + 2,
+          rank: 1_000 + s.area * 1e6,
+          hw,
+          hh,
+        })
+        continue
+      }
       const [x, y] = screenOf(s.anchor[0], s.anchor[1])
       candidates.push({
         id: s.id,
@@ -1134,7 +1241,7 @@ export function V3Atlas({
       })
     }
     return packAtlasLabels(candidates, view)
-  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats, doorLabel])
+  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats, doorLabel, townDoors])
 
   const activeHomes = useMemo(() => {
     if (!active || incomplete) return []
@@ -1354,8 +1461,20 @@ export function V3Atlas({
     <section
       ref={sectionRef}
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-atlas', wide && 'is-wide', fitsPhone && 'is-fits', !inView && 'is-offscreen', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-atlas',
+        wide && 'is-wide',
+        fitsPhone && 'is-fits',
+        !inView && 'is-offscreen',
+        townDoors && 'v3-atlas--town-doors',
+        className,
+      )}
       aria-labelledby={`${uid}-h`}
+      /* The camera's zoom bucket, for the stylesheet: at region scale the
+         marks step down so a town's line reads over its cluster; zoomed in
+         they take their full weight again (V3Atlas.css, town doors). */
+      data-atlas-zoom={cam.k <= ATLAS_ZOOM_FAR_K ? 'far' : cam.k <= ATLAS_ZOOM_MID_K ? 'mid' : 'near'}
       /* The linked mark's state, on the section, so a sibling list and a test
          can both read what the map is pointing at without walking the SVG. */
       data-atlas-linked={linkedIndex != null ? (linkedKey ?? undefined) : undefined}
@@ -1509,23 +1628,29 @@ export function V3Atlas({
                     ))}
                   </g>
                 ) : null}
-                <g className="v3-atlas__towns">
-                  {towns.map((s) => (
-                    <path
-                      key={s.id}
-                      d={s.d}
-                      className={cn('v3-atlas__town', active === s.id && 'is-active')}
-                      onPointerEnter={() => setHover(s.id)}
-                      onClick={(e) => {
-                        if (dotHit != null && dots[dotHit]?.href) {
-                          e.stopPropagation()
-                          return
-                        }
-                        openPlace(s)
-                      }}
-                    />
-                  ))}
-                </g>
+                {/* 1. The base silhouettes, UNDER the marks. With
+                    `townsAs="doors"` the towns are painted in the place
+                    layer below instead, above the marks, with the halo, the
+                    hit stroke and the tab stop every door has. */}
+                {townDoors ? null : (
+                  <g className="v3-atlas__towns">
+                    {towns.map((s) => (
+                      <path
+                        key={s.id}
+                        d={s.d}
+                        className={cn('v3-atlas__town', active === s.id && 'is-active')}
+                        onPointerEnter={() => setHover(s.id)}
+                        onClick={(e) => {
+                          if (dotHit != null && dots[dotHit]?.href) {
+                            e.stopPropagation()
+                            return
+                          }
+                          openPlace(s)
+                        }}
+                      />
+                    ))}
+                  </g>
+                )}
                 {/* Sales wash: kernel density of closings. Under the inventory
                     marks and the place outlines. Not the old inventory fog. */}
                 {heat.cells.length > 0 && cam.k <= 1.35 ? (
@@ -1757,6 +1882,7 @@ export function V3Atlas({
                       key={l.id}
                       className={cn(
                         'v3-atlas__label',
+                        l.kind === 'town' && 'v3-atlas__label--town',
                         l.kind === 'home' && 'v3-atlas__label--home',
                         l.kind === 'place' && 'v3-atlas__label--place',
                         l.kind === 'active' && 'v3-atlas__label--active',
@@ -1786,6 +1912,51 @@ export function V3Atlas({
 
         {/* The aside: the live line, the search, the source. */}
         <div className="v3-atlas__aside">
+          {closes && closes.rows.length > 0 ? (
+            <div
+              className="v3-atlas__closes"
+              role="group"
+              aria-label={`Closes by ${closesNoun}, ${atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}`}
+            >
+              <p className="v3-atlas__closes-head">
+                <span className="v3-atlas__closes-title">Closes by {closesNoun}</span>
+                <span className="v3-atlas__closes-window">{atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}</span>
+              </p>
+              <ol className="v3-atlas__closes-list">
+                {closes.rows.map((r) => (
+                  <li key={r.shape.id} className="v3-atlas__closes-item">
+                    <button
+                      type="button"
+                      className={cn('v3-atlas__closes-door', active === r.shape.id && 'is-active')}
+                      aria-pressed={active === r.shape.id}
+                      onPointerEnter={() => {
+                        setDotHit(null)
+                        setHover(r.shape.id)
+                      }}
+                      onPointerLeave={() => {
+                        if (!pinned) setHover(null)
+                      }}
+                      onClick={() => openPlace(r.shape)}
+                    >
+                      <span className="v3-atlas__closes-name">{doorLabel(r.shape)}</span>
+                      <span className="v3-atlas__closes-n">{r.n.toLocaleString('en-US')}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              {closes.placesMore > 0 || closes.outside > 0 ? (
+                <p className="v3-atlas__closes-rest">
+                  {closes.placesMore > 0
+                    ? `${closes.placesMore.toLocaleString('en-US')} more ${closesNoun}${closes.placesMore === 1 ? '' : 's'} with fewer closes`
+                    : null}
+                  {closes.placesMore > 0 && closes.outside > 0 ? ' · ' : null}
+                  {closes.outside > 0
+                    ? `${closes.outside.toLocaleString('en-US')} outside every ${closesNoun} line`
+                    : null}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {events && events.length > 0 ? (
             <ul className="v3-atlas__live" aria-label="Latest activity">
               {events.slice(0, 3).map((e) => (

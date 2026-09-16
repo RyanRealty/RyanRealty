@@ -10,6 +10,7 @@
  *   npx tsx scripts/site-queue-status.ts --json     # the same as JSON
  *   npx tsx scripts/site-queue-status.ts --claim SITE-XX,SITE-YY --owner <session>   # take work (the ONLY claim path)
  *   npx tsx scripts/site-queue-status.ts --touch SITE-XX --owner <session>           # heartbeat
+ *   npx tsx scripts/site-queue-status.ts --release SITE-XX --owner <session>         # hand a claim back (open, no owner)
  *   npx tsx scripts/site-queue-status.ts --note SITE-XX --text "…" --owner <session> # append a finding to evidence
  */
 import { createClient } from '@supabase/supabase-js'
@@ -72,6 +73,41 @@ async function touch(sb: ReturnType<typeof createClient>, gaps: string[], owner:
       continue
     }
     console.log(`${gap}: heartbeat`)
+    ok += 1
+  }
+  return ok
+}
+
+/**
+ * `--release <SITE-XX,...> --owner <session>` hands a claim back (2026-09-16). The
+ * skill has always said a session that cannot finish a node releases it before it
+ * ends, but the only paths were the boot brief's idle sweep and this tool's own
+ * stale-claim release, both keyed to SITE_CLAIM_IDLE_HOURS — so a lane that had
+ * recorded "cannot finish here" (no comparable judge, a file another surface holds)
+ * still sat on its nodes for three hours, counted against the fleet cap. Same shape
+ * as --touch: only the session that holds the node can release it, and the write is
+ * optimistic on owner + state so a claim taken over in between is left alone. It
+ * does not touch evidence — record why before you release.
+ */
+async function release(sb: ReturnType<typeof createClient>, gaps: string[], owner: string): Promise<number> {
+  let ok = 0
+  for (const gap of gaps) {
+    const { data, error } = await sb
+      .from('loop_work_nodes')
+      .update({ state: 'open', owner_session: null, heartbeat_at: null, updated_at: new Date().toISOString() })
+      .eq('version_gap', gap)
+      .eq('state', 'in_progress')
+      .eq('owner_session', owner)
+      .select('version_gap')
+    if (error) {
+      console.error(`${gap}: ${error.message}`)
+      continue
+    }
+    if (!data?.length) {
+      console.error(`${gap}: not held by ${owner} — nothing to release`)
+      continue
+    }
+    console.log(`${gap}: released (open, no owner)`)
     ok += 1
   }
   return ok
@@ -235,6 +271,19 @@ async function main() {
       process.exit(2)
     }
     const ok = await touch(sb, gaps, owner)
+    process.exit(ok === gaps.length ? 0 : 1)
+  }
+
+  const releaseIdx = process.argv.indexOf('--release')
+  if (releaseIdx > -1) {
+    const gaps = (process.argv[releaseIdx + 1] ?? '').split(',').map((g) => g.trim()).filter(Boolean)
+    const ownerIdx = process.argv.indexOf('--owner')
+    const owner = process.argv[ownerIdx + 1] ?? ''
+    if (!gaps.length || ownerIdx === -1 || !owner) {
+      console.error('usage: --release SITE-02,SITE-05 --owner <session-id>')
+      process.exit(2)
+    }
+    const ok = await release(sb, gaps, owner)
     process.exit(ok === gaps.length ? 0 : 1)
   }
 

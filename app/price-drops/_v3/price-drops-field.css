@@ -1,4 +1,4 @@
-/* Opening: H1 + count caption. Photographs open next. */
+/* Opening: H1 + count caption + the answer in one sentence. Photographs next. */
 .pd-opening.v3 {
   max-width: var(--v3-measure);
   margin: 0 auto;
@@ -34,6 +34,19 @@
   color: var(--v3-navy);
 }
 
+/* The answer in text, not only in the list (competitiveTarget) — how many cut,
+   how far the middle one came down, how far the deepest did. */
+.pd-opening__deck {
+  margin: 0;
+  /* The full measure, not the 44rem text measure: this is one sentence in the
+     fold and the drawing under the rail needs the line it would otherwise
+     spend wrapping. */
+  max-width: var(--v3-measure);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-control);
+}
+
 /* First-viewport fold: photographed rail first, drawing under it. */
 .pd-fold {
   display: flex;
@@ -49,7 +62,7 @@
   width: 100%;
   max-width: none;
   min-width: 0;
-  padding: 0 0 var(--v3-space-sm);
+  padding: 0 0 var(--v3-space-2xs);
   position: relative;
   z-index: 0;
   align-self: stretch;
@@ -92,17 +105,58 @@
   height: auto;
 }
 
-/* V3Carousel rail of this week's cuts (shadcn carousel → house primitive). */
-.pd-cuts-rail.v3.v3-carousel,
-.pd-cuts-rail.v3-carousel--rail {
-  width: 100%;
+/* ── THE SHADCN CAROUSEL STAGE ────────────────────────────────────────────
+   shadcn ships prev/next at `-left-12` / `-right-12`: OUTSIDE the track you
+   drag, not overlaid on the first and last slide. The 2026-09-15 evaluator
+   scored the overlaid pair "not the shadcn Carousel's composition — a visitor
+   would not recognise the same control", demoMatch false. The stage is the
+   room that placement needs, the same one place-type's film uses: 3rem for
+   shadcn's own offset plus a full 44px tap target. */
+.pd-cuts-stage {
   min-width: 0;
-  overflow: hidden;
+  margin-inline: auto;
+  max-width: var(--v3-measure);
+  padding-inline: calc(3rem + var(--v3-tap));
+  overflow: visible;
 }
 
-.pd-cuts-rail.v3-carousel--rail .v3-carousel__viewport {
+/* Never `overflow: hidden` here — shadcn clips the track on
+   [data-slot='carousel-content'], and clipping the root as well eats the
+   flanking chevrons the stage just made room for. */
+.pd-cuts-rail.v3.v3-carousel,
+.pd-cuts-rail.v3-carousel--rail {
+  /* SHADCN'S OWN PLACEMENT, THROUGH THE BARREL'S OWN VARIABLES.
+     `CarouselPrevious` / `CarouselNext` ship `inset-y-0 -left-12 my-auto` and
+     `-right-12`: a round control on each side of the track you drag, OUTSIDE
+     it, centred on the whole slide. The 2026-09-15 evaluator scored our
+     inside-the-track pair "overlay chevrons at the far edges, not the shadcn
+     Carousel's composition — a visitor would not recognise the same control",
+     demoMatch false.
+
+     This is set HERE and not in V3Carousel.css on purpose. SITE-91 shipped
+     /buy and the homepage rails on the barrel default — flanking children
+     centred on the MEDIA midline, its receipt measured at "chevron centre 646,
+     media midline 646" — so moving the default outside the track would drag
+     two surfaces that did not ask for it out of position and undo that
+     receipt. The barrel keeps its default; this page overrides the two
+     variables the barrel already exposes for exactly this. `-3rem` is
+     shadcn's `-left-12`; `50%` is its `inset-y-0 my-auto`. `.pd-cuts-stage`
+     above is the inline room the outside placement needs. */
+  --v3-carousel-nav-inset: -3rem;
+  --v3-carousel-nav-top: 50%;
   width: 100%;
-  padding-inline: var(--v3-gutter);
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Wide enough that $1,295,000 + 3 bd · 3 ba · sqft stay readable. This sets
+   the barrel's slide variable rather than `flex-basis`: the barrel writes the
+   width through the `flex` SHORTHAND, which was landing after this rule at
+   equal specificity and quietly restoring 17.5rem — so the specs line wrapped
+   and the flanking chevrons centred on the wrong height. */
+.pd-cuts-rail.v3-carousel--rail {
+  --v3-carousel-slide-w: min(22rem, 100%);
+  --pd-lead-w: min(30rem, 100%);
 }
 
 /* Wide enough that $1,295,000 + 3 bd · 3 ba · sqft stay readable. This sets
@@ -118,8 +172,40 @@
   padding-right: var(--v3-space-md);
 }
 
+/* The deepest cut leads at a wider slide: an edited field, not a grid of
+   equal tiles (evaluator 2026-09-15: "a row of uniform equal-width cards").
+   Embla measures variable slide widths, so this is flex-basis on the first
+   slide only and every snap still lands.
 
-.pd-card {
+   The lead plate is WIDER, never TALLER: its height is pinned to the standard
+   slide's plate so the fold keeps the same room for the drawing under the
+   rail. 22rem is the standard slide, less the slide's own right padding,
+   at the plate's 16/9. */
+@media (min-width: 64rem) {
+  .pd-cuts-rail.v3-carousel--rail .v3-carousel__slide:first-child,
+  .pd-cuts-rail.v3-carousel--rail [data-slot='carousel-item']:first-child {
+    flex-basis: var(--pd-lead-w);
+  }
+
+  .pd-cut[data-lead='true'] .pd-cut__media {
+    aspect-ratio: auto;
+    height: calc((22rem - var(--v3-space-md)) * 9 / 16);
+  }
+}
+
+@media (max-width: 47.999rem) {
+  /* A 44px control needs 48px of offset plus its own width; at 375 that is the
+     whole gutter, so the stage gives it exactly that and no more. */
+  .pd-cuts-stage {
+    padding-inline: calc(3rem + var(--v3-space-3xs));
+  }
+}
+
+/* ── THE CUT CARD ─────────────────────────────────────────────────────────
+   A cut, not a listing tile: the percent is the headline, the photograph is
+   its evidence, and the meter under it compares this cut with the rest of the
+   week on one shared scale. */
+.pd-cut {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -128,115 +214,168 @@
   text-decoration: none;
   background: var(--v3-surface);
   border: var(--v3-rule-hairline);
+  transition:
+    border-color var(--v3-dur-state) var(--v3-ease-out),
+    background var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.pd-card:hover,
-.pd-card:focus-visible {
-  outline: none;
+/* A card-sized tap target owes a visible hover AND a visible pressed state
+   (evaluator 2026-09-15: "no visible focus ring or pressed state despite the
+   whole card being a tap target"). */
+.pd-cut:hover {
+  border-color: var(--v3-navy);
 }
 
-.pd-card:focus-visible {
+.pd-cut:active {
+  background: color-mix(in srgb, var(--v3-ink) 5%, var(--v3-surface));
+}
+
+.pd-cut:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
 }
 
-.pd-card__media {
+.pd-cut__media {
   position: relative;
   display: block;
-  /* Short enough that price + beds/baths/sqft + drawing claim share the 1440 fold. */
-  aspect-ratio: 16 / 10;
+  /* Short enough that the percent, the meter and the house facts share the
+     1440 fold with the drawing under the rail. */
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: color-mix(in srgb, var(--v3-ink) 8%, transparent);
 }
 
-.pd-card__photo {
+.pd-cut__photo {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Square badge — matches the register's radius-0 edges (SITE-49 craft). */
-.pd-card__badge {
-  position: absolute;
-  bottom: var(--v3-space-2xs);
-  left: var(--v3-space-2xs);
-  padding: 0.15rem 0.45rem;
-  background: color-mix(in srgb, var(--v3-ink) 78%, transparent);
-  color: var(--v3-ink-on-navy);
-  font-size: var(--v3-size-body-sm);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-  border-radius: 0;
-}
-
-.pd-card__badge--solo {
-  position: static;
-  display: inline-block;
-  margin: var(--v3-space-sm) var(--v3-space-sm) 0;
-}
-
-.pd-card__body {
+.pd-cut__body {
   display: grid;
   gap: var(--v3-space-3xs);
   padding: var(--v3-space-sm);
   min-width: 0;
 }
 
-.pd-card__ask {
-  display: grid;
-  gap: var(--v3-space-3xs);
+/* THE MARK. The percent ranks this card, so it is the card's own headline —
+   no chip floating over a photograph whose brightness we do not control
+   (the 2026-09-15 contrast defect), and no percent hiding at the end of a
+   was-line. */
+.pd-cut__mark {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-3xs) var(--v3-space-2xs);
+  min-width: 0;
 }
 
-.pd-card__price {
+.pd-cut__pct {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+/* What the seller actually gave up. The percent ranks the card; the dollars
+   are the size of it, and the old card carried neither in this position. */
+.pd-cut__off {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+/* THE METER. Track = the deepest cut on this page; fill = this cut; the
+   hairline is the shown median. One shared scale, so two cards compare
+   without the reader subtracting two percents — the comparison a portal's
+   price-reduced card does not carry. */
+.pd-cut__meter {
+  position: relative;
+  display: block;
+  height: 6px;
+  margin-block: var(--v3-space-3xs) var(--v3-space-2xs);
+  background: color-mix(in srgb, var(--v3-ink) 12%, transparent);
+}
+
+.pd-cut__fill {
+  display: block;
+  height: 100%;
+  background: var(--v3-ink);
+}
+
+/* The notch: the middle cut on this page. It has to read BOTH on the navy
+   fill and on the empty track, so it runs past the bar on each side (where
+   the ground is cream) and carries a cream keyline where it crosses the
+   fill. The drawing right below the rail is what names it. */
+.pd-cut__median {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  inline-size: 2px;
+  margin-inline-start: -1px;
+  background: var(--v3-ink);
+  box-shadow: 0 0 0 1px var(--v3-surface);
+}
+
+.pd-cut__ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-3xs) var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.pd-cut__now {
   font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-strong);
   font-variant-numeric: tabular-nums;
   line-height: var(--v3-leading-control);
 }
 
-.pd-card__body,
-.pd-card__addr,
-.pd-card__specs,
-.pd-card__drop,
-.pd-card__price {
+.pd-cut__was {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+  text-decoration: line-through;
+  text-decoration-thickness: var(--v3-rule-weight-hairline);
+}
+
+.pd-cut__body,
+.pd-cut__addr,
+.pd-cut__specs,
+.pd-cut__when,
+.pd-cut__now,
+.pd-cut__pct {
   overflow: visible;
   text-overflow: clip;
   white-space: normal;
 }
 
-/* Cut bar is first-class under the ask. */
-.pd-card__cut {
-  display: block;
-  height: 3px;
-  max-width: 8rem;
-  background: color-mix(in srgb, var(--v3-ink) 14%, transparent);
-}
-
-.pd-card__cut > span {
-  display: block;
-  height: 100%;
-  background: var(--v3-ink);
-}
-
-.pd-card__drop {
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-body-sm);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--v3-leading-control);
-}
-
-.pd-card__addr {
+.pd-cut__addr {
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-control);
   overflow-wrap: anywhere;
 }
 
-.pd-card__specs {
+.pd-cut__specs {
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
   font-variant-numeric: tabular-nums;
   line-height: var(--v3-leading-control);
+}
+
+/* Recency: how long the ask has stood at the new price. */
+.pd-cut__when {
+  margin-block-start: var(--v3-space-3xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-control);
+  text-transform: uppercase;
 }
 
 /* Drawing is the differentiator under the photographed Field. */
@@ -246,44 +385,56 @@
   z-index: 0;
 }
 
-/* Compact the figure so the strip shares the 1440 fold with card facts. */
-.pd-spread .v3-drawing__figure,
-.pd-spread .v3-drawing__figure:first-child {
+/* Compact the figure so the strip shares the 1440 fold with card facts.
+   THESE CARRY `.v3.pd-spread`, NOT `.pd-spread`. The barrel's own rules are
+   `.v3 .v3-drawing__figure:first-child` and `.v3 .v3-drawing__claim` — the
+   same specificity as a bare `.pd-spread` descendant selector, so which one
+   won came down to stylesheet order, and the barrel was winning: measured at
+   1440 on 2026-09-16 the figure kept its 0.75rem top padding, the claim kept
+   its 44rem measure and its 1rem bottom margin, and the whole 77px went
+   between the rail and the claim while the drawing fell out of the fold —
+   which is the "clipped to a few unlabeled dots" defect the evaluator named.
+   `.v3` also sits on this element, so `.v3.pd-spread` outranks it outright. */
+.v3.pd-spread .v3-drawing__figure,
+.v3.pd-spread .v3-drawing__figure:first-child {
   padding-top: 0;
   padding-bottom: var(--v3-space-2xs);
 }
 
-.pd-spread .v3-drawing__claim {
+.v3.pd-spread .v3-drawing__figure:first-child .v3-drawing__claim,
+.v3.pd-spread .v3-drawing__claim {
   margin-bottom: var(--v3-space-2xs);
-  font-size: var(--v3-size-body-sm);
+  max-width: none;
+  font-size: var(--v3-size-body);
 }
 
-.pd-spread .v3-drawing__foot {
+.v3.pd-spread .v3-drawing__foot {
   margin-top: var(--v3-space-2xs);
 }
 
 /* Page already prints V3SourceLine — drop the drawing's duplicate foot source. */
-.pd-spread .v3-drawing__source {
+.v3.pd-spread .v3-drawing__source {
   display: none;
 }
 
 /* Compact strip so the first card + distribution share the 1440 fold. */
-.pd-spread .v3-drawing__strip {
+.v3.pd-spread .v3-drawing__strip {
   --v3-drawing-lane-step: 0.7rem;
 }
 
-.pd-spread .v3-drawing__quiet,
-.pd-spread .v3-drawing__reading.is-idle {
+/* The idle reading is the only thing on screen that says the marks answer —
+   hiding it to save 20px is what made the strip read as "a decorative
+   scatter" (evaluator, 2026-09-15). It stays at every width. */
+.v3.pd-spread .v3-drawing__quiet {
   display: none;
 }
 
 @media (max-width: 47.999rem) {
-  .pd-spread .v3-drawing__strip {
+  .v3.pd-spread .v3-drawing__strip {
     --v3-drawing-lane-step: 1.65rem;
   }
 
-  .pd-spread .v3-drawing__quiet,
-  .pd-spread .v3-drawing__reading.is-idle {
+  .v3.pd-spread .v3-drawing__quiet {
     display: block;
   }
 }

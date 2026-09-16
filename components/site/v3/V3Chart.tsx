@@ -206,9 +206,31 @@ export type V3ChartProps = {
    * THE RESTING READING (SITE-41). `'last'` opens the newest stop's crosshair and
    * tooltip before the reader touches anything, and returns there when the pointer
    * leaves. It is how the chart says it is interactive without a sentence teaching a
-   * gesture. Lines only; ignored when `hover` is off.
+   * gesture. Lines and bars; ignored when `hover` is off. On bars, `'max'` rests on
+   * the tallest bar — the mode of a histogram (SITE-116 round 4).
    */
-  restingRead?: 'last'
+  restingRead?: 'last' | 'max'
+  /**
+   * Bars only (SITE-116 round 4). Print each bar's own formatted reading above
+   * it. For a histogram of a handful of price bands the count per band IS the
+   * reading, which is the one case the dataviz skill direct-labels every mark
+   * ("never a number on every point unless it is the reading"). HTML placed by
+   * percentage like every tick, so the viewBox stretch never distorts a
+   * numeral; the y rail steps aside, because "5 houses" on the rail and "5
+   * houses" over the tallest bar is one figure said twice. Six bars or fewer —
+   * past that the labels collide at 375.
+   */
+  barValues?: boolean
+  /**
+   * Bars only (SITE-116 round 4). The hover layer draws one band per column
+   * and washes the ACTIVE one — pointer, touch, or arrow keys — so a bar
+   * answers with a visible state on the band and not only a tip beside it.
+   * With `restingRead`, the resting band is washed before anyone touches the
+   * chart: a still of the section shows it is interactive without a teaching
+   * sentence (the SITE-41 rule, applied to bars). With `barValues` the resting
+   * tip stays folded — its number is already written over the bar.
+   */
+  columnBands?: boolean
   /**
    * Range rows only. Names what every row's `sample` counted, drawn ONCE
    * above the rows ("detached closes in the quarter"). A bare n is not a
@@ -416,6 +438,8 @@ export function V3Chart({
   layout,
   run,
   barLabels,
+  barValues,
+  columnBands,
   baselineLabel,
   emptyReason,
   id,
@@ -611,6 +635,16 @@ export function V3Chart({
     }
     return hoverColumns.length - 1
   })()
+  /* The bars' resting stop: the tallest bar for 'max' (a histogram's mode),
+     the last bar for 'last'. Lines keep the rule above. */
+  const barRestingIndex =
+    plot.kind === 'bars' && restingRead && hover !== false && plot.bars.length > 0
+      ? restingRead === 'max'
+        ? plot.bars.reduce((best, b, i, all) => (b.h > (all[best]?.h ?? -1) ? i : best), 0)
+        : plot.bars.length - 1
+      : undefined
+  const barsWithValues = plot.kind === 'bars' && barValues === true
+  const barsWithBands = plot.kind === 'bars' && columnBands === true
 
   const rangeHasBase = plot.kind === 'range' && plot.rows.some((r) => r.baseXPct != null)
   // Drawn rows, not input rows: buildRangePlot drops a row with no finite
@@ -628,6 +662,8 @@ export function V3Chart({
         'v3-chart',
         `v3-chart--${plot.kind}`,
         yoy && 'v3-chart--yoy',
+        barsWithValues && 'v3-chart--barvalues',
+        barsWithBands && 'v3-chart--bands',
         className,
       )}
       aria-labelledby={captionId}
@@ -867,6 +903,26 @@ export function V3Chart({
                 />
               ) : null}
             </svg>
+            {/* Each bar's reading over it, when the caller says the count per
+                band is the reading (barValues). Percent-placed HTML like the
+                ticks; aria-hidden because the reading list below carries the
+                same words for the accessibility tree. */}
+            {barsWithValues ? (
+              <div className="v3-chart__barvalues" aria-hidden="true">
+                {plot.bars.map((b) => (
+                  <span
+                    key={`bv-${b.index}-${b.tick}`}
+                    className="v3-chart__barvalue"
+                    style={{
+                      left: `${((b.x + b.w / 2) / plot.vbW) * 100}%`,
+                      top: `${(b.y / plot.vbH) * 100}%`,
+                    }}
+                  >
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
             {plot.ref ? (
               <span
                 className={cn(
@@ -879,8 +935,9 @@ export function V3Chart({
               </span>
             ) : null}
             {/* A bar answers a pointer like a line does: the crosshair, the
-                reading, arrow keys (evaluator pass two, C2). */}
-            {plot.bars.length > 0 ? (
+                reading, arrow keys (evaluator pass two, C2) — and, with
+                columnBands, a washed band under the pointer. */}
+            {plot.bars.length > 0 && hover !== false ? (
               <V3ChartHover
                 columns={plot.bars.map((b) => ({
                   frac: (b.x + b.w / 2) / plot.vbW,
@@ -895,6 +952,8 @@ export function V3Chart({
                   ],
                 }))}
                 label={caption}
+                initial={barRestingIndex}
+                columnBands={barsWithBands}
               />
             ) : null}
           </div>
