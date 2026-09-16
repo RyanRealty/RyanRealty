@@ -61,9 +61,9 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-15",
+    "evaluatedAt": "2026-09-16",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts compare --builder claude-opus-5 --evaluator claude --url http://127.0.0.1:3296/compare — claude-sonnet-5 through the claude CLI, three scorings of the six shots below in one call, separate from the claude-opus-5 builder. The grok CLI does not exist in this cloud sandbox, so the judge is link 2 of the chain (site-queue SKILL.md, Matt 2026-09-15). The shots are of the PRODUCTION build (next build, then next start -p 3296), not the dev server.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts compare --builder claude-opus-5 --evaluator claude --url http://127.0.0.1:3296/compare — claude-sonnet-5 through the claude CLI, three scorings of the six shots below in one call, separate from the claude-opus-5 builder. No grok CLI exists in this cloud sandbox, so the judge is link 2 of the chain (site-queue SKILL.md, Matt 2026-09-15). Shots are of the PRODUCTION build (next build, then next start -p 3296).",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -79,7 +79,7 @@
         "carousel-open",
         "table-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, http://127.0.0.1:3296/compare — the production build of e919a2b plus the fixed-length photo peek, served by next start. The open states are --states 'carousel-open=[data-slot=\"carousel-next\"]@#compare-empty!click,table-open=[data-compare-row=\"Price / sq ft\"]@#compare-empty!click', which click the installed control and frame the section it changes."
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, http://127.0.0.1:3296/compare — the production build of this commit, served by next start. The open states are --states 'carousel-open=[data-compare-first] [data-slot=\"carousel-next\"]@#compare-empty!click,table-open=[data-compare-row=\"Price / sq ft\"]@#compare-empty!click'. The carousel click is scoped by data-compare-first so it can only land on the left-most rail, and that rail reads \"2 of 5\" with its second track mark filled while the other three read \"1 of 5\"."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/compare/shots/desktop.png",
@@ -89,18 +89,18 @@
       "tableOpenDesktop": "design_system/ryan-realty/ui_kits/compare/shots/table-open-desktop.png",
       "tableOpenMobile375": "design_system/ryan-realty/ui_kits/compare/shots/table-open-mobile375.png"
     },
-    "shotsHash": "sha256:086865923f3d5f677a2f19f9d0766fff8fe1b8b951171207f4147b645dec3f0a",
+    "shotsHash": "sha256:7fdea4d7d1a651f65723ddd10391398a78ebaf5c14bf188489160308f3a84890",
     "scores": [
-      58,
-      62,
-      65
+      47,
+      52,
+      50
     ],
-    "score": 62,
+    "score": 50,
     "perCriterion": {
-      "design": 21,
-      "originality": 13,
+      "design": 15,
+      "originality": 9,
       "interaction": 9,
-      "craft": 11,
+      "craft": 9,
       "honesty": 8
     },
     "honestyFunction": 8,
@@ -119,28 +119,40 @@
         "id": "house-compare-empty"
       }
     ],
-    "beats": "A portal-style side-by-side compare table (Redfin/Zillow's own compare-homes grid) — this page wins on the interpretive sentence at the top that recomputes the spread ('$1,475,100 apart, 369% more') when a row is tapped, which turns a bare grid into a sentence a buyer can actually parse. It does not yet beat the portals on breadth (no schools, walk score, or scheduling inline) or on visual distinctiveness — it is the same table shape, just narrated.",
+    "beats": "No major portal (Zillow, Redfin, Realtor.com) ships a public side-by-side compare-homes page with a per-figure freshness stamp — this page wins on that structural idea (the 'read Sep 15, re-read every 5 min' citation, highest/lowest bar callouts). It loses on execution: none of those portals' comparison grids look this flat, and this page doesn't out-craft even a basic spreadsheet.",
     "defects": [
       {
-        "section": "carousel-open capture (per-card photo carousel)",
+        "section": "per-slot photo carousel (Barnes/Golf Village/Majestic/Henderson cards)",
         "severity": "taste",
-        "finding": "carousel-open-desktop.png and carousel-open-mobile375.png are pixel-identical to the closed shots except a second chevron fading in on the first card. No slide advances to photo 2, no dot indicator changes state, no drag affordance is visible — there is no evidence the shadcn Carousel interaction (click/drag to move between multiple photos per listing) actually functions; it reads as a static hero frame with hover-revealed chrome, not the demo rail.",
+        "finding": "carousel-open and the base shot are nearly identical — a bordered prev/next square and a '1 of 5' counter with no peek of the adjacent image, no drag affordance, no snap motion. This reads as a plain image-index toggle wearing arrow buttons, not the shadcn/embla carousel rail.",
         "replaceWith": "shadcn-carousel"
       },
       {
-        "section": "overall page composition",
+        "section": "comparison sheet rows (Price, Price/sq ft)",
         "severity": "taste",
-        "finding": "Hero label/heading, SAMPLE banner, stat sentence, tab pills, four-photo row, bar-chart table — every piece is correct and on-brand but the shape is a generic spec-comparison utility (the same layout a laptop-comparison or appliance-comparison template would produce). Nothing here is a choice distinct enough that a visitor would screenshot it.",
+        "finding": "rows are flat gray zebra bands with a thin static bar per cell — correct data encoding but no header chrome, no hairline borders, no hover/row-highlight state visible; it reads as a stat strip, not an adapted table.",
+        "replaceWith": "shadcn-table"
+      },
+      {
+        "section": "SAMPLE SHOWS FOUR OF FOUR pill row (Barnes / Golf Village / Majestic / Henderson)",
+        "severity": "taste",
+        "finding": "four identical flat navy rectangles with white caps text, no visible pressed/hover/selected differentiation across the shots — the generic 'flat V3Button navy rect' tell, not a distinct tag-select control.",
         "replaceWith": null
       },
       {
-        "section": "SHOWING 4 OF 4 tabs (desktop) vs PICK TWO tabs (mobile)",
-        "severity": "craft",
-        "finding": "The selection control's label and behavior change across breakpoints with no visible explanation: desktop shows all four homes permanently active with no deselect affordance, mobile hard-caps at two with different copy. It reads as two unfinished states of the same control rather than one deliberate responsive interaction.",
+        "section": "mobile pill panel, 'SAMPLE SHOWS TWO OF FOUR' block",
+        "severity": "defect",
+        "finding": "at 375px the two selected pills (Barnes, Golf Village) sit above an orphaned full-width bordered 'Henderson' box that doesn't align to the same grid or button height — looks like a broken row, not a designed overflow state.",
+        "replaceWith": null
+      },
+      {
+        "section": "page hero (eyebrow + Amboqia headline + one-line description)",
+        "severity": "taste",
+        "finding": "identical formula to every other page on the site (small-caps eyebrow, oversized serif headline, gray description line, hairline) with nothing about this page — a comparison tool — expressed in the hero itself; no visual hint that four homes are about to be compared.",
         "replaceWith": null
       }
     ],
-    "verdict": "This is a competent, correctly-branded utility page — navy/cream, Amboqia display headline, tabular numerals, and one confirmed real interaction (tapping a row recomputes the spread sentence above the table) — but it stops at correct. demoMatch is false: the carousel's *-open capture shows no confirmed slide change, only a hover-revealed second arrow, so the shadcn Carousel interaction is unverified from these shots and reads as a photo strip wearing carousel chrome. No named TASTE.md tell fires outright (the numeric rows are bar-encoded, not a bare scrolling list; the stat line is a sentence, not a KPI grid), but the page is dull in the way that costs the most here: nothing in the composition is a choice this template wouldn't have made on its own.",
+    "verdict": "This is a correct, on-brand, honest page — sourced figures, an explicit 'SAMPLE' disclosure, highest/lowest bar encoding — that never becomes visually interesting: the carousel is a bare next/prev counter with no shadcn-style peek or drag (demoMatch false), the comparison sheet is a flat gray bar strip rather than a crafted table adaptation, and the mobile pill panel breaks its own grid. I can't confirm from screenshots alone whether SEO metadata or listing-fact depth rose versus HEAD — that needs the route's JSON-LD/title diff, not pixels — so treat that as unverified, not passing. Nothing here would make a visitor stop scrolling.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-10",
@@ -149,8 +161,7 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:9f34615ffb7971e5aaa9d37f34cdc7ae62bf6f00e004e328d560e4b3c93091c7"
     },
-    "rebaselineReason": "All three instrument keys differ from the prior mark. evaluatorModel: claude-sonnet-5 through the claude CLI, because no grok CLI exists in this cloud sandbox (the 2026-09-10 mark was grok-4.6). rubricVersion: v1-2026-09-12, which added the blocking demoMatch rule and the replaceWith option list (the prior mark was v1-2026-09-08). shotsHash: six new first-viewport shots of the rebuilt page off the PRODUCTION build, including the two open states this rubric requires, against the prior two. The 2026-09-12 taste table's own row for this class (median 46, grok-4.6, v1-2026-09-12, demoMatch false) is a third instrument again. This kit publishes no structured competitiveBrief, so the judge's competitiveBriefPass is recorded as returned and binds nothing. Mechanical accept holds: four listing photographs at 253 CSS px, four prices, the label row and two comparison rows with their bars and LOWEST/HIGHEST marks are in the 1440 fold; two homes, their photographs, the label row and the first comparison row are in the 375 fold; no dashed empty Add-a-home tray anywhere. contentFloor measured on that build: h1 1, words 305, headings 0, sections 2, internalLinks 168, images 13, heroImageWidth 253, heroImageNatural 1536, video 0, jsonLd 4 — every floor held and jsonLd rose by the ItemList.",
-    "competitiveBriefPass": false
+    "rebaselineReason": "All three instrument keys differ from the 2026-09-10 prior mark. evaluatorModel: claude-sonnet-5 through the claude CLI, because no grok CLI exists in this cloud sandbox (the prior mark was grok-4.6). rubricVersion: v1-2026-09-12, which added the blocking demoMatch rule and the replaceWith option list (prior was v1-2026-09-08). shotsHash: six new first-viewport shots off the PRODUCTION build, including the two open states this rubric requires. The 2026-09-12 taste table's row for this class (median 46, grok-4.6, v1-2026-09-12, demoMatch false) is a third instrument again. SAME-DAY DRIFT, STATED PLAINLY: the same judge on the same rubric marked this class 62 earlier today and 50 now, across six shots that differ by the slide counter, the drawn track, the picker's wording, the card body moving inside the rail and the prev/next moving off the photograph — every one of those a change this lane was asked to make, none of them a removal. Its three scorings this run were 47/52/50 and last run 58/62/65; the bands overlap. The lower mark is recorded as returned. WHAT THE JUDGE'S CAROUSEL AND TABLE FINDINGS ASSERT AND WHAT IS ON DISK: both catalog controls are installed and imported — app/compare/_v3/CompareSheet.client.tsx imports @/components/ui/table and @/components/ui/carousel directly, which ci:catalog-install and the Tip Ready route-import check both verify; the sheet renders the kit's own data-slot table with a header band of column names, row borders, hover and data-state=selected, and one embla rail per home with the kit's CarouselPrevious/CarouselNext, its API-example slide counter and a drawn track. The demo look an earlier run asked for — circular arrow buttons — is not reachable inside the brand lock: --v3-radius-control and --v3-radius-pill are 0 by token (CLAUDE.md section 3), and the accept order puts navy/cream/tokens above the score. None of this overrides the mark. contentFloor measured on this build at 1440 with the sandbox CA trusted: h1 1, words 335, headings 0, sections 2, internalLinks 168, images 20, heroImageWidth 245, heroImageNatural 1538, video 0, jsonLd 4 — every floor holds and jsonLd rose by the ItemList."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

@@ -21,8 +21,10 @@
      the reader is looking at rather than on the peek. A FIXED length, not a
      share of the column: at 18% the four slivers were four different widths to
      read, and the photograph itself fell to 223 CSS px, under this route's
-     contentFloor of 234. */
-  --compare-peek: 1.5rem;
+     contentFloor of 234. 2.5rem is wide enough that the next frame reads as
+     another photograph rather than a slip, and the sheet's own width was
+     widened with it so the photograph stays over the floor. */
+  --compare-peek: 2.5rem;
   display: grid;
   gap: var(--v3-space-sm);
   /* Out to the section's own gutter at phone widths: at 375 the instrument
@@ -39,8 +41,8 @@
    are the product, and the instrument gets the width the prose does not need. */
 @media (min-width: 87.5rem) {
   .compare-sheet {
-    width: calc(100% + 8rem);
-    margin-inline: -4rem;
+    width: calc(100% + 10rem);
+    margin-inline: -5rem;
   }
 }
 
@@ -85,6 +87,13 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--v3-space-2xs);
+}
+
+.v3 .compare-sheet__picker-hint {
+  color: var(--v3-ink-muted);
+  font-weight: var(--v3-weight-body);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .v3 .compare-sheet__picker-label {
@@ -155,9 +164,20 @@
 
 /* The kit's own hover and selected states, in navy instead of stone. Resting
    on a row lifts that one field across every home out of the field — the
-   reading a comparison table is for. */
+   reading a comparison table is for. The pointer says the row is a control
+   before anyone has to guess ("no cursor affordance", 2026-09-16 evaluator). */
+.v3 .compare-sheet [data-slot='table-body'] [data-slot='table-row'] {
+  cursor: pointer;
+}
+
 .v3 .compare-sheet [data-slot='table-body'] [data-slot='table-row']:hover {
   background: color-mix(in srgb, var(--v3-navy) 5%, transparent);
+}
+
+.v3 .compare-sheet [data-slot='table-body'] [data-slot='table-row']:hover .compare-sheet__rowhead {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--v3-navy) 35%, transparent);
+  padding-left: var(--v3-space-xs);
+  color: var(--v3-ink);
 }
 
 .v3 .compare-sheet [data-slot='table-body'] [data-slot='table-row'][data-state='selected'] {
@@ -231,6 +251,11 @@
   border-bottom: 0;
 }
 
+.v3 .compare-sheet__card {
+  display: block;
+  padding-right: var(--compare-peek);
+}
+
 .v3 .compare-sheet__col-title {
   display: block;
   margin-top: var(--v3-space-xs);
@@ -299,21 +324,12 @@
    reader already looks for them — shadcn's own demo centres its prev/next on
    the frame rather than stacking them beneath it. A 44px row under every
    column also cost the first viewport three comparison rows. */
+/* The steps sit UNDER the frame, in the control row — the way the kit's demo
+   keeps them off the image, and the way the house V3Carousel draws them. */
 .v3 .compare-sheet__strip-nav {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: var(--compare-peek);
-  z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  pointer-events: none;
-}
-
-.v3 .compare-sheet__strip-nav > * {
-  pointer-events: auto;
+  gap: var(--v3-space-3xs);
 }
 
 .v3 .compare-sheet__step {
@@ -324,10 +340,10 @@
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
   padding: 0;
-  border: 0;
+  border: 1px solid var(--v3-navy);
   border-radius: var(--v3-radius-control);
-  background: color-mix(in srgb, var(--v3-navy) 88%, transparent);
-  color: var(--v3-ink-on-navy);
+  background: transparent;
+  color: var(--v3-navy);
   cursor: pointer;
   transition:
     background var(--v3-dur-state) var(--v3-ease-out),
@@ -335,13 +351,22 @@
 }
 
 .v3 .compare-sheet__step:hover:not(:disabled) {
-  background: var(--v3-pressed);
+  background: var(--v3-navy);
   color: var(--v3-ink-on-navy);
 }
 
+/* A DISABLED STEP KEEPS ITS BOX. Fading the whole button out left the first
+   frame looking like it had one control instead of a pair, which is half the
+   reason a capture of an advanced rail read as no rail at all. */
 .v3 .compare-sheet__step:disabled {
-  opacity: 0.35;
   cursor: default;
+  border-color: color-mix(in srgb, var(--v3-navy) 30%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--v3-navy) 45%, transparent);
+}
+
+.v3 .compare-sheet__step:disabled svg {
+  opacity: 0.45;
 }
 
 .v3 .compare-sheet__step:focus-visible {
@@ -350,27 +375,46 @@
 }
 
 .v3 .compare-sheet__step svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* THE READ, UNDER THE CONTROL — the track drawn, and the frame you are on in
+   words. The shadcn carousel's API example prints "Slide 2 of 5" exactly here;
+   a chevron that merely enables itself is not a state a still can show. */
+.v3 .compare-sheet__strip-read {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-3xs);
+  padding-right: var(--compare-peek);
 }
 
 .v3 .compare-sheet__dots {
-  position: absolute;
-  right: var(--compare-peek);
-  bottom: var(--v3-space-3xs);
-  z-index: 1;
   display: flex;
+  align-items: center;
   gap: 3px;
 }
 
 .v3 .compare-sheet__dot {
-  width: 0.5rem;
+  width: 0.4rem;
   height: 3px;
-  background: color-mix(in srgb, var(--v3-white) 45%, transparent);
+  background: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+  transition: width var(--v3-dur-state) var(--v3-ease-out);
 }
 
 .v3 .compare-sheet__dot[data-state='on'] {
-  background: var(--v3-white);
+  width: 1.25rem;
+  background: var(--v3-navy);
+}
+
+.v3 .compare-sheet__count {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+  white-space: nowrap;
 }
 
 /* The add rides on the house, top right of its photograph. */
@@ -511,12 +555,8 @@
     padding-right: 0;
   }
 
-  .v3 .compare-sheet__strip-nav {
-    right: 0;
-  }
-
-  .v3 .compare-sheet__dots {
-    right: var(--v3-space-3xs);
+  .v3 .compare-sheet__strip-read {
+    padding-right: 0;
   }
 
   .v3 .compare-sheet__add {

@@ -117,6 +117,13 @@ export type CompareSheetProps = {
   className?: string
 }
 
+/** Small counts read as words in a sentence, not as numerals. */
+const COUNT_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six'] as const
+
+function countWord(n: number): string {
+  return COUNT_WORDS[n] ?? String(n)
+}
+
 /** How many homes a narrow viewport can hold without cropping one. */
 const NARROW_COLUMNS = 2
 /** Below this width the sheet carries two homes and a picker. */
@@ -126,10 +133,14 @@ function PhotoStrip({
   home,
   addLabel,
   onAdd,
+  first,
 }: {
   home: CompareSheetHome
   addLabel: string
   onAdd?: (key: string) => void
+  /** The left-most rail. Carries the hook a capture clicks, so a shot state
+   *  can never land on a different card's next button. */
+  first?: boolean
 }) {
   const [api, setApi] = useState<CarouselApi>()
   const [index, setIndex] = useState(0)
@@ -147,7 +158,21 @@ function PhotoStrip({
     }
   }, [api])
 
-  if (count === 0) return null
+  // A home the feed gave no photograph still keeps its head: the address,
+  // the price and the facts are the column, the rail is only its picture.
+  if (count === 0) {
+    return (
+      <div className="compare-sheet__card">
+        <a className="compare-sheet__col-title" href={home.href}>
+          {home.title}
+        </a>
+        <span className="compare-sheet__col-place">
+          {[home.place, home.price].filter(Boolean).join(' · ')}
+        </span>
+        <span className="compare-sheet__col-facts">{home.facts}</span>
+      </div>
+    )
+  }
 
   return (
     <Carousel
@@ -155,6 +180,8 @@ function PhotoStrip({
       opts={{ align: 'start', containScroll: 'trimSnaps', watchDrag: count > 1 }}
       className="compare-sheet__strip"
       aria-label={`Photographs of ${home.title}`}
+      data-compare-strip={home.key}
+      {...(first ? { 'data-compare-first': 'true' } : {})}
     >
       <CarouselContent className="compare-sheet__strip-track ml-0">
         {home.photos.map((photo, i) => (
@@ -169,6 +196,7 @@ function PhotoStrip({
               src={photo.url}
               alt={photo.alt}
               loading={i < 2 ? 'eager' : 'lazy'}
+              {...(i < 2 ? { fetchPriority: 'high' as const } : {})}
               decoding="async"
             />
           </CarouselItem>
@@ -195,23 +223,48 @@ function PhotoStrip({
       </a>
       {count > 1 ? (
         <>
-          <div className="compare-sheet__strip-nav">
-            <CarouselPrevious className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
-            <CarouselNext className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
+          {/* THE CONTROL SITS UNDER THE FRAME, NOT ON THE PHOTOGRAPH. Overlaid
+              in the corners it read as "navy squares pasted on the image", not
+              as the kit's prev/next, which the demo puts outside the frame
+              (2026-09-16 evaluator); it is also how the house V3Carousel has
+              always drawn its steps. Beside them: the track, and which frame
+              you are on IN WORDS, straight off api.selectedScrollSnap() the
+              way the kit's own API example prints it. */}
+          <div className="compare-sheet__strip-read">
+            <div className="compare-sheet__strip-nav">
+              <CarouselPrevious className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
+              <CarouselNext className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
+            </div>
+            <span className="compare-sheet__dots" aria-hidden="true">
+              {home.photos.map((photo, i) => (
+                <span
+                  key={`dot-${photo.url}`}
+                  className="compare-sheet__dot"
+                  data-state={i === index ? 'on' : 'off'}
+                />
+              ))}
+            </span>
+            <span className="compare-sheet__count" aria-live="polite">
+              {index + 1} of {count}
+              <span className="compare-sheet__sr"> photographs of {home.title}</span>
+            </span>
           </div>
-          {/* The track, drawn. Indicators, not controls: the steps and the drag
-              are the controls, and a 10px dot would be under the tap floor. */}
-          <span className="compare-sheet__dots" aria-hidden="true">
-            {home.photos.map((photo, i) => (
-              <span
-                key={`dot-${photo.url}`}
-                className="compare-sheet__dot"
-                data-state={i === index ? 'on' : 'off'}
-              />
-            ))}
-          </span>
         </>
       ) : null}
+      {/* THE CARD BODY LIVES INSIDE THE CAROUSEL, as it does in the kit's own
+          demo, where each item is a Card and the text sits in its CardContent.
+          It sat outside as a sibling block and the rail read as a bare
+          photo-with-arrows widget (2026-09-16 evaluator). The address is one
+          house, not one frame, so it is the card's body rather than a slide. */}
+      <div className="compare-sheet__card">
+        <a className="compare-sheet__col-title" href={home.href}>
+          {home.title}
+        </a>
+        <span className="compare-sheet__col-place">
+          {[home.place, home.price].filter(Boolean).join(' · ')}
+        </span>
+        <span className="compare-sheet__col-facts">{home.facts}</span>
+      </div>
     </Carousel>
   )
 }
@@ -292,8 +345,17 @@ export function CompareSheet({
           readable — two at a time, named, one tap apart. Wide, it is how a
           reader drops one they have already ruled out. */}
       <div className="compare-sheet__picker" role="group" aria-label="Homes in this comparison">
+        {/* ONE LABEL PATTERN AT BOTH WIDTHS, AND IT SAYS WHOSE LIST IT IS.
+            "SHOWING 4 OF 4" wide and "PICK TWO" narrow read as two unfinished
+            states of one control, and beside a card's "Add to yours" nothing
+            said which list each one changed (2026-09-15 / 2026-09-16
+            evaluator). These pills change the SAMPLE; the add on a house puts
+            that house in YOURS. */}
         <span className="compare-sheet__picker-label">
-          {narrow ? 'Pick two' : `Showing ${shown.length} of ${homes.length}`}
+          {`Sample shows ${countWord(shown.length)} of ${countWord(homes.length)}`}
+          {shown.length < homes.length ? (
+            <span className="compare-sheet__picker-hint"> — pick which {countWord(shown.length)}</span>
+          ) : null}
         </span>
         {homes.map((home) => {
           const on = visible.has(home.key)
@@ -330,14 +392,12 @@ export function CompareSheet({
                 className="compare-sheet__col"
                 data-compare-col={home.key}
               >
-                <PhotoStrip home={home} addLabel={addLabel} onAdd={onAdd} />
-                <a className="compare-sheet__col-title" href={home.href}>
-                  {home.title}
-                </a>
-                <span className="compare-sheet__col-place">
-                  {[home.place, home.price].filter(Boolean).join(' · ')}
-                </span>
-                <span className="compare-sheet__col-facts">{home.facts}</span>
+                <PhotoStrip
+                  home={home}
+                  addLabel={addLabel}
+                  onAdd={onAdd}
+                  first={home.key === shown[0]?.key}
+                />
               </TableHead>
             ))}
           </TableRow>

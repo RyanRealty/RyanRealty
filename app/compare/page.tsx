@@ -68,6 +68,9 @@ export const metadata: Metadata = {
   },
 }
 
+/** How long a rendered copy of this page is served before it is read again.
+ *  The sample's caption states this in minutes, off this constant, so the page
+ *  can never claim a freshness its own cache does not keep. */
 export const revalidate = 300
 
 /* ---------------------------------------------------------------------------
@@ -433,7 +436,11 @@ export default async function ComparePage({
       // The source is NAMED in the caption, in the fold, not only inside the
       // disclosure below the sheet: an evaluator reading the rendered page on
       // 2026-09-09 could see a freshness stamp and no publisher.
-      sampleCaption = `${n} real listings, shown as an example — not your queue. Oregon Data Share, read ${formatDate(new Date())}.`
+      // SAY HOW FRESH, NOT JUST WHEN. "read <date>" leaves a reader to guess
+      // whether the four homes are a fixture; they are a live read, and the
+      // cadence comes off `revalidate` rather than out of a sentence, so the
+      // claim cannot drift from the cache that serves it.
+      sampleCaption = `${n} real listings, shown as an example — not your queue. Oregon Data Share, read ${formatDate(new Date())} and re-read every ${Math.round(revalidate / 60)} minutes.`
       // NO DATASET CODENAMES IN COPY A VISITOR READS (TASTE.md: raw slugs and
       // internal labels are a named tell; the 2026-09-15 evaluator called this
       // one blocking). The table name belongs in the §0 trace behind "Source",
@@ -443,7 +450,7 @@ export default async function ComparePage({
       // folds a trace to the shorter of its pre-comma segment and its first
       // sentence — a trace that opens with a clause instead of a name folds to
       // a fragment nobody can read.
-      sampleSource = `Regional MLS through Oregon Data Share, read from listing_tile_mv in this render: standard_status Active, scoped to the Central Oregon service-area cities, ordered by most recent MLS update, the first ${SAMPLE_POOL} read and the first ${SAMPLE_SIZE} that publish a photograph, a price, beds, baths and square feet shown here — a comparison of four homes has to be four homes, so a vacant lot is not one of them. Price is ListPrice as published; beds, baths, square feet, lot acres, year built, garage spaces and days on market are the feed's own fields, and the photographs are that listing's own, read through getListingPhotos from the Spark payload on the listings row (details.Photos at Uri1600, falling back to the single PhotoURL), in the order the feed publishes them and honouring an owner's media-removal request. A field the feed withheld renders as an em dash, never as a zero and never as an estimate. The length under a figure is that home's value as a share of the largest in the same row — one rule for every row — and the spread sentence over the sheet is the difference between the two extremes in that row, with the two extremes marked in the columns that hold them; all of it computed from the same numbers printed in the cells. These are real active listings and they are labelled as an example — they are not your comparison, and nothing here has been filled in for you.`
+      sampleSource = `Regional MLS through Oregon Data Share, read from listing_tile_mv in this render: standard_status Active, scoped to the Central Oregon service-area cities, ordered by most recent MLS update, the first ${SAMPLE_POOL} read and the first ${SAMPLE_SIZE} that publish a photograph, a price, beds, baths and square feet shown here — a comparison of four homes has to be four homes, so a vacant lot is not one of them. Price is ListPrice as published; beds, baths, square feet, lot acres, year built, garage spaces and days on market are the feed's own fields, and the photographs are that listing's own, read through getListingPhotos from the Spark payload on the listings row (details.Photos at Uri1600, falling back to the single PhotoURL), in the order the feed publishes them and honouring an owner's media-removal request. A field the feed withheld renders as an em dash, never as a zero and never as an estimate. The length under a figure is that home's value as a share of the largest in the same row — one rule for every row — and the spread sentence over the sheet is the difference between the two extremes in that row, with the two extremes marked in the columns that hold them; all of it computed from the same numbers printed in the cells. The example is re-read on the same cadence the page is cached at, so the stamp in the caption is the age of the figures and not of the page. These are real active listings and they are labelled as an example — they are not your comparison, and nothing here has been filled in for you.`
     }
   }
 

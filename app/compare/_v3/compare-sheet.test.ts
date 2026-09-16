@@ -94,6 +94,20 @@ describe('CompareSheet — the installed kit', () => {
     expect(count(m, /data-slot="carousel-item"/g)).toBe(3)
   })
 
+  it('prints which frame the rail is on, the way the catalog demo does', () => {
+    const m = html()
+    // "1 of 2" for the home with two photographs; the single-photo home gets
+    // no track and no read at all.
+    expect(count(m, /class="compare-sheet__count"/g)).toBe(1)
+    expect(m).toContain('1 of 2')
+    expect(count(m, /data-state="on"/g)).toBe(1)
+    expect(count(m, /data-state="off"/g)).toBe(1)
+  })
+
+  it('marks the left-most rail so a capture cannot click another card', () => {
+    expect(count(html(), /data-compare-first="true"/g)).toBe(1)
+  })
+
   it('renders every photograph the page handed it, with real alt text', () => {
     const m = html()
     expect(m).toContain('https://cdn.example.com/k1-2.jpg')
@@ -171,7 +185,7 @@ describe('CompareSheet — the doors', () => {
     expect(count(m, /aria-pressed="true"/g)).toBe(2)
     expect(m).toContain('>Union<')
     expect(m).toContain('>Volcano<')
-    expect(m).toContain('Showing 2 of 2')
+    expect(m).toContain('Sample shows two of two')
   })
 
   it('carries the as-of line under the table', () => {
