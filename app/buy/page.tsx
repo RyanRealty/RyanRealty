@@ -39,6 +39,7 @@ import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { homeFieldItems } from '@/app/_v3/home-field-items'
 import { HomeHomesField } from '@/app/_v3/HomeHomesField'
 import { HomeHomesRails } from '@/app/_v3/HomeHomesRails'
+import { BuyHomesShelf } from './_v3/BuyHomesShelf.client'
 import { homeRailRows, enrichHomeRailRows } from '@/app/_v3/home-rail-items'
 import { homeRailItemList } from '@/app/_v3/home-jsonld'
 import { HOME_TILE_FETCH, HOME_FIELD_LIMIT } from '@/app/_v3/home-constants'
@@ -130,6 +131,9 @@ export default async function BuyPage() {
   // Crawlable record of the houses on this page: one ItemList of canonical
   // listing URLs, the same builder the homepage uses.
   const railListLd = homeRailItemList(railRows)
+  // The lead shelf takes this route's own composition; the rest stay on the
+  // homepage primitive. One ItemList still covers every card on the page.
+  const [leadRow, ...restRows] = railRows
   // The same six towns the homepage leads with, same order, off the pulse
   // snapshots (a lib/data read; ci:page-action-imports bans a new page->action
   // read, which is where the city index lives).
@@ -223,13 +227,25 @@ export default async function BuyPage() {
           </div>
         </div>
 
-        {/* The houses, first thing after the Stage: shelves of live
-            single-family listings on V3Carousel, ask + address + facts on every
-            card (SITE-91). */}
-        <HomeHomesRails
-          rows={railRows}
-          emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
-        />
+        {/* THE HOUSES, FIRST THING AFTER THE STAGE (SITE-91, 2026-09-16).
+            The lead shelf is this route's own composition of the installed
+            shadcn carousel — flanking chevrons on the media midline and the
+            asking-price brush that answers the question a buyer arrives with.
+            Cheapest first, because the
+            shelf opened on $1,875,000 and a fold that answers "what can I
+            buy" with the top of the market answers it wrong.
+            The remaining shelves (price cuts, new this week) stay on
+            HomeHomesRails, the same primitive the homepage mounts, so the two
+            pages show inventory the same way. */}
+        {leadRow ? <BuyHomesShelf row={leadRow} /> : null}
+        {/* With a lead shelf on screen and no second row to show, this would
+            print "no photographed home returned" under twelve of them. */}
+        {restRows.length > 0 || !leadRow ? (
+          <HomeHomesRails
+            rows={restRows}
+            emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
+          />
+        ) : null}
 
         {firstGuide ? (
           <V3Ledger

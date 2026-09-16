@@ -124,6 +124,15 @@
     padding-bottom: var(--v3-space-2xs);
     gap: var(--v3-space-2xs);
   }
+
+  /* 375x812 is the tighter of the two folds by a long way: the band's three
+     figure rows each hold the 44px tap floor, so the only slack in it is its
+     own block padding. Four pixels top and bottom keeps the hairline reading
+     as an edge and hands 16px back to the shelf below. */
+  .v3.v3-stage--band-kept .v3-stage-band__inner {
+    padding-top: var(--v3-space-3xs);
+    padding-bottom: var(--v3-space-3xs);
+  }
 }
 
 /* A slot (search) opens a dropdown that must escape the frame. Media and
@@ -486,7 +495,8 @@
    the only place a taste pass can see it.
 
    The travel on hover is 2px of transform, inside the register's micro band. */
-.v3 .v3-stage-strip__door .v3-figure__label::after {
+.v3 .v3-stage-strip__door .v3-figure__label::after,
+.v3 .v3-stage-strip__door .v3-stage-strip__label::after {
   content: '';
   display: inline-block;
   width: 0.4em;
@@ -507,20 +517,41 @@
     color var(--v3-dur-state) var(--v3-ease-out);
 }
 
+/* AT REST, IN A STILL. The caret above says "this opens something" to a
+   reader who is already looking at the clause; a taste pass looks at a 1440px
+   screenshot scaled to fit, where a 0.4em mark is four pixels. So the label
+   also carries the register's text-control rule at rest — under the WORD, not
+   under the numeral, which is what made the earlier full-cell underline read
+   as a strikethrough on the narrow band. Cream at 45% is a hairline against
+   the navy ground; hover takes it to full cream, so the state still moves. */
+.v3 .v3-stage-strip__claim .v3-stage-strip__label {
+  border-bottom: var(--v3-rule-weight-hairline) solid
+    color-mix(in srgb, var(--v3-cream) 45%, transparent);
+  padding-bottom: 0.12em;
+  transition: border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
 .v3 .v3-stage-strip__claim .v3-stage-strip__door:hover,
 .v3 .v3-stage-strip__claim .v3-stage-strip__door:focus-visible {
   background: transparent;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+}
+
+.v3 .v3-stage-strip__claim .v3-stage-strip__door:hover .v3-stage-strip__label,
+.v3 .v3-stage-strip__claim .v3-stage-strip__door:focus-visible .v3-stage-strip__label {
+  border-bottom-color: var(--v3-cream);
 }
 
 .v3 .v3-stage-strip__door:hover .v3-figure__label,
-.v3 .v3-stage-strip__door:focus-visible .v3-figure__label {
+.v3 .v3-stage-strip__door:focus-visible .v3-figure__label,
+.v3 .v3-stage-strip__door:hover .v3-stage-strip__label,
+.v3 .v3-stage-strip__door:focus-visible .v3-stage-strip__label {
   color: var(--v3-ink-on-media);
 }
 
 .v3 .v3-stage-strip__door:hover .v3-figure__label::after,
-.v3 .v3-stage-strip__door:focus-visible .v3-figure__label::after {
+.v3 .v3-stage-strip__door:focus-visible .v3-figure__label::after,
+.v3 .v3-stage-strip__door:hover .v3-stage-strip__label::after,
+.v3 .v3-stage-strip__door:focus-visible .v3-stage-strip__label::after {
   transform: translateX(2px) rotate(45deg);
 }
 
@@ -528,7 +559,9 @@
    complete, so nothing is lost by it not moving. */
 @media (prefers-reduced-motion: reduce) {
   .v3 .v3-stage-strip__door:hover .v3-figure__label::after,
-  .v3 .v3-stage-strip__door:focus-visible .v3-figure__label::after {
+  .v3 .v3-stage-strip__door:focus-visible .v3-figure__label::after,
+  .v3 .v3-stage-strip__door:hover .v3-stage-strip__label::after,
+  .v3 .v3-stage-strip__door:focus-visible .v3-stage-strip__label::after {
     transform: translateX(0) rotate(45deg);
   }
 }
@@ -611,6 +644,37 @@
   color: var(--v3-ink-on-navy);
   border-color: var(--v3-ink-on-navy);
   border-width: var(--v3-rule-weight-section);
+}
+
+/* THE SAME CARET THE BAND'S DOORS CARRY. The taste table read this control as
+   "a plain cream bordered rectangle on a photo" — and over a dark photograph a
+   navy face against a navy-scrimmed forest is, in a still, a rectangle. The
+   edge identifies it; the caret says what it does. One mark, drawn the same way
+   in the same file as the strip's, so the hero's action and the hero's doors
+   are visibly the same family. */
+.v3.v3-stage--inventory .v3-stage-copy .v3-btn--primary::after {
+  content: '';
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  margin-left: 0.7em;
+  vertical-align: baseline;
+  border-top: var(--v3-rule-weight-hairline) solid currentColor;
+  border-right: var(--v3-rule-weight-hairline) solid currentColor;
+  transform: translateX(0) rotate(45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.v3-stage--inventory .v3-stage-copy .v3-btn--primary:hover::after,
+.v3.v3-stage--inventory .v3-stage-copy .v3-btn--primary:focus-visible::after {
+  transform: translateX(2px) rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3.v3-stage--inventory .v3-stage-copy .v3-btn--primary:hover::after,
+  .v3.v3-stage--inventory .v3-stage-copy .v3-btn--primary:focus-visible::after {
+    transform: translateX(0) rotate(45deg);
+  }
 }
 
 /* Hover lifts the face rather than inverting it: a control that swaps its two

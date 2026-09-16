@@ -119,6 +119,8 @@
 }
 
 .insight-cards__pill {
+  display: inline-flex;
+  align-items: center;
   justify-self: start;
   min-height: 2.75rem;
   padding: 0 0.9rem;
@@ -127,7 +129,13 @@
   background: var(--v3-surface);
   color: inherit;
   font: inherit;
+  text-decoration: none;
   cursor: pointer;
+}
+
+a.insight-cards__pill:hover,
+a.insight-cards__pill:focus-visible {
+  background: var(--v3-wash);
 }
 
 .insight-cards__hero {

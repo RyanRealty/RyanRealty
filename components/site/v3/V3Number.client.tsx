@@ -19,8 +19,15 @@ export type V3NumberProps = {
   formatted: string
   /** Rough settle time in ms. */
   durationMs?: number
-  /** When false, count up on mount (fold numerals that may never hit 60% in-view). */
+  /** When false, a value change animates even off screen; on load nothing counts up either way. */
   startOnView?: boolean
+  /**
+   * Accepted for the SITE-103 callers that opted in; since 2026-09-16
+   * (SITE-117 + SITE-103 merged) it is the only behaviour: the sourced face
+   * is in the served HTML and digits move only when the value changes
+   * (TASTE.md bans counting up on load). See AnimatedNumber.
+   */
+  settle?: boolean
   className?: string
 }
 
@@ -29,12 +36,14 @@ export function V3Number({
   formatted,
   durationMs = 900,
   startOnView = true,
+  settle = false,
   className,
 }: V3NumberProps) {
   const safe = Number.isFinite(value) ? Math.max(0, value) : 0
   return (
     <AnimatedNumber
       value={safe}
+      settleOnMount={settle}
       duration={Math.max(0, durationMs) / 1000}
       format={(n) => {
         if (Math.round(n) === Math.round(safe)) return formatted

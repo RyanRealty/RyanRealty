@@ -2,7 +2,7 @@
   "route": "app/buy/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic buyer-intent pages: live MLS search as the next step, a specific process walkthrough, buyer strategy sub-pages, and a listing-alerts ask. Zero invented stats. Above the fold at 1440x900 the page answers 'what is the market doing' with sourced figures and shows a real listing, which is where the portal search pages are beaten: they show inventory but no trace, no as-of date, and no broker.",
-  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /buy onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb tone=on-media overlays the Stage (ci:kb-breadcrumb-overlay). V3Footer outside <main>. Page contract carried unchanged: pageMetadata title/description/path, revalidate 300, getSurfaceImage hero, BreadcrumbList + WebPage + FAQPage JSON-LD, KbSectionTracker pageType=buy, listing-alert capture via submitSearchAlertSignup (email + propertyType A + company honeypot), exits to /homes-for-sale, /buy/[intent], /open-houses, /price-drops, /contact. Dual objectives unchanged. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, RegionalSfrAlertsBand / KbCommunityAlerts markup, six hero chips (Search homes stays as the Stage primary; the rest moved to the closing Quiet), the no-hand-off pitch. MetadataBlock and KbSectionTracker stay on non-v3 registers (JSON-LD + analytics, not visual language). /buy/[intent] still renders LeadLandingPage and is out of this lease. SITE-46 2026-09-09: the taste table scored this route 42 -- 'competent, on-brand and inert', the whole fold a photo, an eyebrow, a headline and one button. The fix is in the primitive, not the page: components/site/v3/V3Stage.tsx gained an opt-in `inventory` prop (a figure band inside the hero, a shorter frame, the navy on-media primary), and this page opts in. Every other Stage caller renders byte-identically -- proved by diffing /sell's Stage region HTML before and after. SITE-91 2026-09-16: the table scored the fold 53 -- Field a crop of roofs with no price/address, no carousel chrome, three figure rows with stranded middots at 375. HomeHomesRails (the homepage's V3Carousel shelves, SITE-83) now sits under a compact Stage; HomeHomesField stays on the page as the browse-by-type instrument under the guides; the rail ItemList JSON-LD is on the page; the strip stacks one figure per line at 375.",
+  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /buy onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb tone=on-media overlays the Stage (ci:kb-breadcrumb-overlay). V3Footer outside <main>. Page contract carried unchanged: pageMetadata title/description/path, revalidate 300, getSurfaceImage hero, BreadcrumbList + WebPage + FAQPage JSON-LD, KbSectionTracker pageType=buy, listing-alert capture via submitSearchAlertSignup (email + propertyType A + company honeypot), exits to /homes-for-sale, /buy/[intent], /open-houses, /price-drops, /contact. Dual objectives unchanged. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, RegionalSfrAlertsBand / KbCommunityAlerts markup, six hero chips (Search homes stays as the Stage primary; the rest moved to the closing Quiet), the no-hand-off pitch. MetadataBlock and KbSectionTracker stay on non-v3 registers (JSON-LD + analytics, not visual language). /buy/[intent] still renders LeadLandingPage and is out of this lease. SITE-46 2026-09-09: the taste table scored this route 42 -- 'competent, on-brand and inert', the whole fold a photo, an eyebrow, a headline and one button. The fix is in the primitive, not the page: components/site/v3/V3Stage.tsx gained an opt-in `inventory` prop (a figure band inside the hero, a shorter frame, the navy on-media primary), and this page opts in. Every other Stage caller renders byte-identically -- proved by diffing /sell's Stage region HTML before and after. SITE-91 2026-09-16: the table scored the fold 53 -- Field a crop of roofs with no price/address, no carousel chrome, three figure rows with stranded middots at 375. HomeHomesRails (the homepage's V3Carousel shelves, SITE-83) now sits under a compact Stage; HomeHomesField stays on the page as the browse-by-type instrument under the guides; the rail ItemList JSON-LD is on the page; the strip stacks one figure per line at 375. SITE-91 round two 2026-09-16: the judge (claude-sonnet-5) scored the cherry-picked build 51 with demoMatch FALSE for one reason -- HomeListingRail parked the carousel's prev/next as a static pair UNDER the cards, below the 900px fold, so the shelf photographed as a static grid. Fixed in the primitive for both pages (flanking chevrons on the media midline, the demo's 01/09 readout, 4/3 -> 16/10 media, the shadcn Card's own 12px block padding removed so the photo meets the card edge and the chevrons centre truly). /buy additionally gained BuyHomesShelf, the route's own composition of @/components/ui/carousel with the asking-price brush. The Stage band's doors were rendering with NO rest affordance at all: the caret rule in V3Stage.css selects .v3-figure__label, which the SITE-77 claim form does not render -- the label now carries .v3-stage-strip__label and the caret and the text-control underline hang on it. The hero action carries the same caret. SITE-91 round three 2026-09-16: the judge asked the shelf for a position indicator; it got the ladder instead of a counter — one mark per listing along the shelf's OWN asking-price range (app/buy/_v3/buy-shelf-bands.ts buyShelfLadder), both ends named, the on-screen cards' marks filled, moving with the track. Section 0: low and high are the min and max ListPrice of the cards the shelf renders, published figures already on the cards' faces; no average, no median, no market statistic. The shelves below the fold keep the plain 01 / 09 twin. A price_reduction_share meter for the hero band was built and CUT: getMarketPulseSnapshot nulls that column on purpose because every other band figure is overlaid onto the detached single-family population while the stored share describes the mixed pulse population (recorded as an honesty defect on the receipt). Tooling: scripts/lib/taste-evaluate-result.mjs claudeModelFromWrapper took Object.keys(modelUsage)[0], and the claude CLI bills its own background haiku into that same map FIRST — so three judge runs recorded claude-haiku-4-5 as the instrument, which isAllowedEvaluator refuses and identityDrift would read as a different judge. The alias is the ask: if the asked-for model is in the map, that is the model that answered.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -20,8 +20,13 @@
       "blocking": true
     },
     {
+      "name": "BuyHomesShelf",
+      "section": "Directly under the Stage (SITE-91, 2026-09-16): THIS ROUTE'S OWN composition of the installed shadcn carousel (app/buy/_v3/BuyHomesShelf.client.tsx imports @/components/ui/carousel, which is what ci:catalog-install --requireRouteImport and taste-receipt --ship read this directory for). The lead shelf of live single-family listings, sorted cheapest first and brushed by asking-price band on V3ChartSwitch, whose hidden panels stay in the DOM so every listing href is crawlable whichever band is open. Flanking 44x44 chevrons on the media midline; the card face, the chrome classes and the stylesheet are imported from HomeListingRail so the two pages show inventory as one object.",
+      "blocking": true
+    },
+    {
       "name": "HomeHomesRails",
-      "section": "Directly under the Stage (SITE-91, 2026-09-16): shelves of live single-family listings on V3Carousel (app/_v3/HomeHomesRails.tsx, the same rows the homepage mounts), every card carrying ask, address, beds/baths/sqft and town, built from THIS page's SFR tiles so the cards belong to the population the hero's figures describe. The taste table scored the prior fold's Field as a roofline crop with no price or address and no carousel chrome; this is the answer, in the primitive that already answered it on the homepage.",
+      "section": "The shelves BELOW the lead one (price cuts, new this week): app/_v3/HomeHomesRails.tsx, the same rows and the same V3Carousel primitive the homepage mounts, built from THIS page's SFR tiles so every card belongs to the population the hero's figures describe. Carries the shadcn position readout (01 / 09) the fold shelf trades away for 25px of fold.",
       "blocking": true
     },
     {
@@ -59,9 +64,10 @@
   ],
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
-    "V3Stage #top -- the opening, inventory variant: photo + H1 + the navy action, then the live market band across the base (SITE-46)",
+    "V3Stage #top -- the opening, inventory variant: photo + H1 + the navy action, then the live market band across the base (SITE-46). Each figure is a door and carries the register's caret at rest (SITE-91)",
     "V3Breadcrumb",
-    "HomeHomesRails -- the live inventory shelves (SITE-91): V3Carousel rows with ask + address + facts on every card, first thing after the Stage",
+    "BuyHomesShelf -- the lead shelf (its section id is the rail row's own, homes-local, set in app/_v3/home-rail-items.ts rather than in the page) (SITE-91): the installed shadcn carousel imported by this route's own _v3, cheapest first, asking-price brush + see-all on one line with the heading, the price ladder over the track, flanking 44x44 chevrons on the media midline, a fifth card cut by the track edge",
+    "HomeHomesRails -- the remaining inventory shelves (price cuts, new this week) on the homepage primitive",
     "V3Ledger #buyer-guides -- first-time, relocation, investment",
     "HomeHomesField -- browse the same single-family population by type, regional search as the door out; under the guides so the shelves and the Field are never adjacent (moved here SITE-91)",
     "V3Quiet #how-it-works -- how a purchase works here",
@@ -76,9 +82,10 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-16",
     "rubricVersion": "v1-2026-09-12",
-    "demoMatch": false,
-    "evaluator": "npx tsx scripts/taste-evaluate.ts buy --builder claude-opus-5 --url http://127.0.0.1:3402/buy — judge chain fell to the claude CLI (this cloud sandbox has neither cursor-agent nor the grok CLI). Three scorings of one capture from the production build, median. Separate from the builder.",
+    "demoMatch": true,
+    "evaluator": "npx tsx scripts/taste-evaluate.ts buy --builder claude-opus-5 --evaluator claude --url http://localhost:3191/buy — the judge chain fell to the claude CLI (this cloud sandbox has neither cursor-agent nor the grok CLI, and the table's instrument is a claude alias). Three scorings of one six-shot capture in one call, median. Separate agent, different model from the builder.",
     "evaluatorModel": "claude-sonnet-5",
+    "transport": "claude-cli",
     "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
@@ -89,37 +96,43 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "rail-open",
+        "band-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against the production build (next start) on http://127.0.0.1:3402"
+      "capture": "node scripts/take-route-shots.mjs buy http://localhost:3191 --states 'rail-open=.buy-shelf [data-slot=\"carousel-next\"]@.buy-shelf!click,band-open=.buy-shelf [role=\"tab\"]:last-child@#top!click' — first viewport, scale 1, palette-quantized, against the lane's own dev server on http://localhost:3191. rail-open clicks the installed carousel's own next button and frames the shelf (the track has advanced, both chevrons are live, the ladder's filled marks have moved); band-open clicks the last asking-price chip and frames the hero, so the whole shelf is a different population."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/buy/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/buy/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/buy/shots/mobile375.png",
+      "rail-open-desktop": "design_system/ryan-realty/ui_kits/buy/shots/rail-open-desktop.png",
+      "rail-open-mobile375": "design_system/ryan-realty/ui_kits/buy/shots/rail-open-mobile375.png",
+      "band-open-desktop": "design_system/ryan-realty/ui_kits/buy/shots/band-open-desktop.png",
+      "band-open-mobile375": "design_system/ryan-realty/ui_kits/buy/shots/band-open-mobile375.png"
     },
-    "shotsHash": "sha256:af37d7fec0b6d205a7a0f5f5c0643c4105fb48c63972a8214cb92ac3b2fc5467",
+    "shotsHash": "sha256:c9919496d8d823dd2953a2b61731a8921f435de05fcad326212a2172553e35ba",
     "scores": [
-      52,
-      49,
-      51
+      50,
+      55,
+      60
     ],
-    "score": 51,
+    "score": 55,
     "criteria": {
       "designQuality": 18,
-      "originality": 10,
-      "interaction": 4,
-      "craft": 11,
+      "originality": 9,
+      "interaction": 10,
+      "craft": 10,
       "honestyFunction": 8
     },
     "perCriterion": {
       "design": 18,
-      "originality": 10,
-      "interaction": 4,
-      "craft": 11,
+      "originality": 9,
+      "interaction": 10,
+      "craft": 10,
       "honesty": 8
     },
     "honestyFunction": 8,
-    "beats": "Zillow's Bend buy/search landing — this page wins on honest, sourced plain-language stats ('$749,500 half the houses ask more', cited to Live MLS with a calc-method disclosure), but Zillow's map-driven results view still beats it on interactivity: nothing in the fold scrubs, filters, or expands.",
+    "beats": "Redfin's Bend search page — the judge's own words: we win on transparency (the band explains '1,493 for sale', 'half the houses ask more' and '30 days to an offer' in plain sentences with a sourced 'how we calculate this' disclosure Redfin never shows), and the fold now also carries an asking-price brush and a ladder of every listing on the shelf, which no portal place page offers. We do NOT beat it on layout, density or data depth below the fold: the card rails are the shape Redfin already ships.",
     "adaptedFrom": [
       {
         "id": "shadcn-carousel",
@@ -130,40 +143,49 @@
       },
       {
         "id": "house-field"
+      },
+      {
+        "id": "house-ledger"
       }
     ],
     "defects": [
       {
-        "section": "Homes in Bend and nearby (4-card row)",
+        "section": "Homes in Bend and nearby — card rail",
         "severity": "taste",
-        "finding": "Four listings render as identical fixed-width cards in a static row with no rail affordance, no scroll cue and no size variation in the first viewport; the layout lock calls for a field of live homes, not a wall of identical cards. The carousel's prev/next sit UNDER the rail (HomeListingRail's .home-rail__arrows, static), below the 900px fold — so no carousel object is visible in the shot.",
-        "primitive": "app/_v3/HomeListingRail.client.tsx",
-        "replaceWith": "shadcn-carousel"
+        "finding": "Five identical-size cards (photo, price, specs, address) in a row is exactly the 'wall of identical cards' the layout lock explicitly bans for house-field — no hero card, no size variation, no data encoding beyond text.",
+        "primitive": "app/buy/_v3/BuyHomesShelf.client.tsx",
+        "replaceWith": "house-field"
       },
       {
-        "section": "hero stat band under 'Buy a home in Central Oregon'",
+        "section": "Price cuts — card rail",
         "severity": "taste",
-        "finding": "The three market figures (inventory, median ask, days to an offer) read as flat text with a static source line — the doors are real links but nothing in the still signals hover or scrub, so the live-market promise reads as copy rather than an instrument.",
-        "primitive": "components/site/v3/V3Stage.tsx",
-        "replaceWith": "house-stage"
+        "finding": "Repeats the same card shape as the section directly above it with only a corner badge changed; back-to-back identical rail forms is the stacked-section tell and wastes a section that should show trend, not another photo grid.",
+        "primitive": "app/_v3/HomeHomesRails.tsx",
+        "replaceWith": "house-ledger"
       },
       {
-        "section": "property card row at 375px",
+        "section": "price-filter pill strip at 375px (band-open-mobile375)",
         "severity": "craft",
-        "finding": "On mobile the second card is sliced mid-photo at the viewport edge with no partial-card affordance or arrow in frame (the arrows are below the fold), so it reads as a layout break rather than an intentional horizontal scroll.",
-        "primitive": "app/_v3/home-homes-rails.css",
+        "finding": "'$600K TO $90...' is truncated at the viewport edge with no fade, arrow, or dot affordance signaling the strip scrolls, leaving an orphaned clipped label.",
+        "primitive": "app/buy/_v3/buy-homes-shelf.css",
+        "replaceWith": null
+      },
+      {
+        "section": "hero band — the ratio that is not there",
+        "severity": "honesty",
+        "finding": "An earlier round of this build drew price_reduction_share as a meter in the hero band and it was CUT before shipping, not for taste: getMarketPulseSnapshot's overlayLeftoverHudFamily nulls that column on purpose, because every other figure in the band has been overlaid onto the detached single-family population while the stored cut share (5.99 on the live region row) describes the mixed pulse population. A share of one population beside a count of another reads true and is not (CLAUDE.md section 0), so the band ships three figures rather than four. Recorded here as an open defect because the figure is still the right idea; it needs its own population-matched read and its own trace.",
+        "primitive": "app/buy/_v3/buy-hero-inventory.ts",
         "replaceWith": null
       }
     ],
-    "verdict": "Competent, on-brand Stage-then-shelves open — navy/cream/Amboqia held, real sourced numbers, no invented figures, and for the first time a priced house (ask, address, beds/baths/sqft) is in the 1440 fold — but demoMatch is FALSE: the carousel chrome is parked under the rail, out of the first viewport, so a static grid stands in for the inventory rail, and the stat band is inert text. The same flanking-chevron fix V3Carousel received in 7b5535bd is what HomeListingRail needs; its file is held by another surface's unpushed work this round. Not Tip Ready; node stays in_progress.",
-    "comparedToPrior": "rebaselined",
-    "rebaselineReason": "evaluatorModel differs (prior mark grok-4.6, this mark claude-sonnet-5 — this sandbox has neither the grok CLI nor cursor-agent) and rubricVersion differs (prior v1-2026-09-08, this v1-2026-09-12). Two of three identity keys changed, so 51 is NOT comparable to the prior 57 (parity) or 53 (table) and is neither a rise nor a drop. The next pass on THIS instrument must rise by the floor over 51.",
+    "verdict": "The judge's own summary: demoMatch is true — the rail-open shots show a real carousel (arrow controls, partial-card peek, index counter) adapted into navy/cream, not a hidden or cream-boxed import. 55 is a rise of 4 over the 51 this same instrument scored the previous build (rise floor 3), and the blocking defect that build carried — the carousel's prev/next parked as a static pair below the 900px fold, so the shelf photographed as a static grid — is closed: the chevrons flank the track on the media midline at both widths. What did NOT rise is originality (9/30): the judge reads two consecutive card rails as the 'wall of identical cards' the house-field spec forbids. That, and the 375 chip strip's scroll cue, are the named work for the next pass. 55 is BELOW the 70 finish line, so this node is not done.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 57,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:86ea5a644c3d5ef63ca53c72e4d0f3395d49fe40935624612a9473f12a75a26d"
+      "evaluatedAt": "2026-09-16",
+      "score": 51,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:af37d7fec0b6d205a7a0f5f5c0643c4105fb48c63972a8214cb92ac3b2fc5467"
     }
   },
   "contentFloor": {
