@@ -17,6 +17,14 @@
   .nbh-fold a {
     color: inherit;
   }
+
+  /* The door row's links read at full ink while the separators between them
+     stay muted. `color` belongs in the layer: an un-layered element colour beats
+     the whole Tailwind utilities layer whatever its specificity, which is the
+     invisible-CTA-text P0 of 2026-07-08 (ci:css-layers). */
+  .nbh-fold__peers-row a {
+    color: var(--v3-ink);
+  }
 }
 
 /* The photograph is H1 + doors now, not a stage for a cream card. Prefixed with
@@ -138,11 +146,16 @@
      beats `is-wide` and `is-stacked` in either load order. */
   .nbh-fold__drawing .v3-atlas .v3-atlas__grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto auto auto;
+    /* `aside` is named here on purpose: the live rail is visible in this fold
+       and an unplaced `grid-area: aside` opens an implicit COLUMN, which
+       collapsed the map to a 20px ribbon of wrapped words (captured 2026-09-16
+       before this line existed). */
     grid-template-areas:
       'head'
       'body'
-      'dock';
+      'dock'
+      'aside';
     padding: 0;
   }
 
@@ -176,13 +189,28 @@
 /* MOS owns the inventory numeral in this fold, so the Atlas key's competing
    for-sale / pending counts stay off (the tile population is not the leftover
    HUD population, and two counts of one thing in one viewport is a question).
-   Type toggles and the price scrubber stay — that is the house-atlas
-   interaction. */
+   The place chips go with them — they carry a per-plat active count each, which
+   is a third measure of "homes for sale" in one viewport, and the door row under
+   the map is this fold's place navigation. Type toggles and the price scrubber
+   stay — that is the house-atlas interaction. */
 .nbh-fold__drawing .v3-atlas__key,
 .nbh-fold__drawing .v3-atlas__sales-legend,
-.nbh-fold__drawing .v3-atlas__aside,
+.nbh-fold__drawing .v3-atlas__chips,
+.nbh-fold__drawing .v3-atlas__search,
 .nbh-fold__drawing .v3-atlas__events {
   display: none;
+}
+
+/* THE LIVE RAIL STAYS, which is where this fold parts company with the city's
+   (app/cities/[slug]/_v3/city-fold.css hides the whole aside to fit the first
+   viewport). It is three rows — what just listed, what went pending, what sold,
+   each with its price and each a link to that home — and a neighborhood is small
+   enough that those three are about THIS hillside. It is the only place on the
+   first screen that says what happened rather than how much there is. Three rows
+   cost 70px, which the drawing column has under a 27rem map. */
+.nbh-fold__drawing .v3-atlas__aside {
+  padding-inline: 0;
+  padding-top: 0;
 }
 
 .nbh-fold__drawing {
@@ -246,6 +274,50 @@
 .nbh-fold__drawing .v3-atlas__scrub {
   min-width: 0;
   max-width: none;
+}
+
+/* ── The map's door row ────────────────────────────────────────────────────
+   Six neighbour doors and the city's own index, under the price scrubber, in
+   the column the map leaves empty below 27rem. A row of links, not a list: one
+   tracked label and one wrapping line of doors wearing the same underline the
+   opening's doors wear, so the fold gains a navigation beat without gaining a
+   second card shape. Tap targets: each door is a text link in a line with the
+   44px row height, which is what the register uses for inline doors. */
+.nbh-fold__peers {
+  margin-top: var(--v3-space-sm);
+  padding-top: var(--v3-space-xs);
+  border-top: var(--v3-rule-hairline);
+}
+
+.nbh-fold__peers-label {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.nbh-fold__peers-row {
+  margin: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-tap);
+  color: var(--v3-ink-muted);
+}
+
+.nbh-fold__peers-door {
+  white-space: nowrap;
+}
+
+.nbh-fold__peers-row a {
+  text-decoration: underline;
+  text-decoration-color: var(--v3-ink-muted);
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.nbh-fold__peers-row a:hover,
+.nbh-fold__peers-row a:focus-visible {
+  text-decoration-color: currentColor;
 }
 
 /* Fold polygons are the drawing, not the hit target. Type chips + the price
@@ -570,6 +642,22 @@
      legible to filter, and the 44px row it costs is the row the email field
      needs to stay inside 812. */
   .nbh-fold__drawing .v3-atlas__dock {
+    display: none;
+  }
+
+  /* The live rail is a desktop-column affordance. On a phone the fold's budget
+     is the email field's, and three more rows would put it back below 812. */
+  .nbh-fold__drawing .v3-atlas__aside {
+    display: none;
+  }
+
+  /* Same budget, same answer for the door row: measured at 375 it is 166px of
+     the 812, and with it in the fold the email field and its button sat below
+     the screen again — the defect this node was opened on. The doors stay in
+     the document (they are crawled either way) and a phone reader meets the
+     same neighbours, with their counts and their photographs, in the
+     #peer-neighborhoods Ledger. */
+  .nbh-fold__peers {
     display: none;
   }
 

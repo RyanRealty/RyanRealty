@@ -14,6 +14,7 @@
  * Section order: design_system/ryan-realty/ui_kits/neighborhood/parity.json.
  */
 
+import { Fragment } from 'react'
 import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import type { Metadata } from 'next'
@@ -675,6 +676,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     img: p.img ?? '',
   }))
   const [firstPeer, ...restPeer] = placeFigureRows(peerItems, `${cityName} neighborhood`)
+  /* The fold's door row. Six is what fits on three lines in the figure column at
+     1440 and still reads as a row rather than a list; the seventh door is the
+     city's own index, so the cap hides nothing. */
+  const peerDoors = peerNeighborhoods.slice(0, 6).map((p) => ({ name: p.name, href: p.href }))
 
   // No excludeSlug: a neighborhood page links its own city on purpose.
   const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, {
@@ -817,6 +822,50 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
                 board={insightBoard}
                 mos={foldMosProps}
               />
+              {/* SITE-104 SEO: the fold's door row. A reader looking at the Awbrey
+                  Butte outline asks what is next to it, and until now the only
+                  answer on this page was a Ledger twenty sections down. Six
+                  neighbour doors plus the city's own index, in the first viewport,
+                  crawlable. It sits under the FIGURE and not under the map because
+                  that is the column with room at 1440: the drawing column ends with
+                  the Atlas's live rail, and a row after it landed at y=951.
+
+                  NAMES ONLY. The peer ACTIVE COUNTS are an all-types count and the
+                  bars above these doors are detached-only, so printing both in one
+                  viewport would set two different measures of "homes for sale" side
+                  by side with one trace between them (CLAUDE.md §0 rule 5, and the
+                  class's layout lock: inventory counts on the page must agree). The
+                  counts keep their trace in #peer-neighborhoods, where they already
+                  ship. */}
+              {peerDoors.length > 0 ? (
+                <nav
+                  id="also-in-city"
+                  className="nbh-fold__peers"
+                  aria-label={`Other ${cityName} neighborhoods`}
+                >
+                  <p className="nbh-fold__peers-label">Also in {cityName}</p>
+                  {/* The separator rides with the door it follows, inside a nowrap
+                      span, so a wrap never opens a line with a stray middot. The
+                      SPACE after each span is a real text node and it is the row's
+                      only break opportunity: JSX drops the whitespace between
+                      sibling elements, so with the space inside the nowrap span the
+                      row became one unbreakable word and ran straight through the
+                      column beside it (captured 2026-09-16). */}
+                  <p className="nbh-fold__peers-row">
+                    {peerDoors.map((peer) => (
+                      <Fragment key={peer.href}>
+                        <span className="nbh-fold__peers-door">
+                          <a href={peer.href}>{peer.name}</a>
+                          <span aria-hidden="true"> ·</span>
+                        </span>{' '}
+                      </Fragment>
+                    ))}
+                    <span className="nbh-fold__peers-door">
+                      <a href={`/cities/${citySlug}#neighborhoods`}>Every {cityName} neighborhood</a>
+                    </span>
+                  </p>
+                </nav>
+              ) : null}
             </aside>
             <aside className="nbh-fold__figure nbh-fold__figure--ask">
               <NeighborhoodAlertsStrip
