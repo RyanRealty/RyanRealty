@@ -24,6 +24,11 @@
  * is a broker bar (Tour / Call / Text) and this is a valuation ask, and they
  * never mount on the same route.
  *
+ * SITE-122 (Matt 2026-09-16): below 64rem the phone dock (V3PhoneDock) is the
+ * one bottom bar and this plate retires by CSS while a dock is mounted; the
+ * paragraph below describes the wide window, where the plate still owns the
+ * corner.
+ *
  * IT IS THE ONE BOTTOM-FIXED ELEMENT ON ITS PAGE. While shown it publishes its
  * own measured height on the document root as --rr-sticky-bottom. ANY OTHER
  * STICKY ELEMENT (SITE-04's alerts strip repeat, for one) MUST dock above it —

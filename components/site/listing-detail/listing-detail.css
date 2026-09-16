@@ -1662,62 +1662,15 @@
   }
 }
 
-/* Mobile broker bar. Was .kb-root .listing-mobile-cta. Conversion-critical. */
-.listing-detail .listing-mobile-cta {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 80;
-  height: calc(var(--v3-sticky-bar-h) + env(safe-area-inset-bottom, 0px));
-  background: var(--cream);
-  border-top: var(--v3-chrome-rule);
-  padding: 0 0 env(safe-area-inset-bottom, 0px);
-  transform: none;
-}
-/* PAGE_INVENTORY: Tour/Call/Text cannot be covered or removed by cookies. */
-body:has([data-cookie-notice='bar']) .listing-detail .listing-mobile-cta {
-  bottom: var(--v3-cookie-bar-h, 5.5rem);
-}
-body:has([data-cookie-notice='chip']) .listing-detail .listing-mobile-cta {
-  /* Corner chip — ask bar stays put. */
-}
-@media (min-width: 1024px) {
+/* Mobile broker bar. Was .kb-root .listing-mobile-cta. Conversion-critical.
+   SITE-122: the bar IS the site's phone dock (components/site/v3/V3PhoneDock.css
+   owns the fixed frame, the height, the safe-area inset, the cookie-bar dock
+   and the connected outline group). The class stays for ListingAlertCoach's
+   band and for the off-market gate; only the desktop hide remains here. */
+@media (min-width: 64rem) {
   .listing-detail .listing-mobile-cta {
     display: none;
   }
-}
-@media (prefers-reduced-motion: reduce) {
-  .listing-detail .listing-mobile-cta {
-    transition: none;
-  }
-}
-.listing-detail .listing-mobile-cta-inner {
-  display: flex;
-  align-items: stretch;
-  height: var(--v3-sticky-bar-h);
-  max-width: none;
-  margin: 0;
-}
-.listing-detail .listing-mobile-cta [data-slot='button-group'] {
-  width: 100%;
-  height: 100%;
-  gap: 0 !important;
-}
-.listing-detail .listing-mobile-cta [data-slot='button'] {
-  flex: 1;
-  height: 100%;
-  min-height: var(--v3-sticky-bar-h);
-  margin: 0 !important;
-  border-radius: 0 !important;
-}
-.listing-detail .listing-mobile-cta [data-slot='button'] + [data-slot='button'] {
-  margin-left: -1px !important;
-  border-left-width: 0 !important;
-}
-.listing-detail .listing-mobile-cta [data-slot='button']:first-child,
-.listing-detail .listing-mobile-cta [data-slot='button']:last-child {
-  border-radius: 0 !important;
 }
 
 /* Catalog Sheet / Dialog sit at z-50. House chrome (z-100) and the sticky

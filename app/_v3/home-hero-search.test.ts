@@ -418,7 +418,7 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).toMatch(/Talk to a broker/)
     expect(PAGE).toMatch(/Buy a home/)
     expect(PAGE).toMatch(/Sell a home/)
-    expect(PAGE).toMatch(/Work with us/)
+    expect(PAGE).toMatch(/Join Ryan Realty/)
     expect(PAGE).toMatch(/href: '\/join'/)
     expect(PAGE).not.toMatch(/Income property/)
     expect(PAGE).not.toMatch(/kicker: v3Text\('Invest'\)/)

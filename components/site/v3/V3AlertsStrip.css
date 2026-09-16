@@ -451,7 +451,9 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Above the phone dock (SITE-122), which publishes its measured height on
+     the root; 0 where there is no dock (a wide window). */
+  bottom: var(--rr-dock-h, 0px);
   z-index: 90;
   padding: var(--v3-strip-pad) var(--v3-gutter) calc(var(--v3-strip-pad) + env(safe-area-inset-bottom, 0px));
   background: var(--v3-surface-inverse);

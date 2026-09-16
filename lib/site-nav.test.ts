@@ -37,7 +37,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       expect(hrefs).toContain(h)
     }
     expect(hrefs).toContain('/join')
-    expect(about?.children.find((l) => l.href === '/join')?.label).toBe('Work with us')
+    expect(about?.children.find((l) => l.href === '/join')?.label).toBe('Join Ryan Realty')
     expect(KB_ABOUT_DROPDOWN.map((l) => l.href).sort()).toEqual(['/contact', '/reviews', '/team'])
   })
 

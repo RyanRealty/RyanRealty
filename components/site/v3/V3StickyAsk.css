@@ -54,6 +54,16 @@
   }
 }
 
+/* SITE-122 (Matt 2026-09-16): the phone dock is the one bottom bar on a phone,
+   and its Work with us sheet carries Sell your home one tap away. While a dock
+   is mounted the plate retires below 64rem; the desktop corner plate is
+   unchanged. Attribute-scoped so a stray class cannot hide it. */
+@media (max-width: 63.99rem) {
+  body:has([data-v3-dock]) .v3-sticky-ask {
+    display: none;
+  }
+}
+
 /* PAGE_INVENTORY precedent, from the listing bar: a cookie bar may not cover
    the ask. Same variable, same fallback, so the two behave identically. */
 body:has([data-cookie-notice='bar']) .v3-sticky-ask {
