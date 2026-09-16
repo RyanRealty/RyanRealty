@@ -1,7 +1,7 @@
 {
   "route": "app/price-drops/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). There is no index.html in this directory. The visual target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "note": "Homes grain fix 2026-08-14. Rhythm: THREE of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Field of the cut houses as a V3Carousel photo rail (count is a caption, never an Instrument hero), Drawing of the week's cuts, Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Field and is still three patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: an empty resilient-cache fallback is opted out of ISR with noStore(), and Dataset / updated / count figures are omitted rather than published as 0. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search. SITE-70: photographs open via shadcn-carousel -> V3Carousel; ItemList JSON-LD lists the cut homes.",
+  "note": "Homes grain fix 2026-08-14. Rhythm: THREE of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Field of the cut houses as a V3Carousel photo rail (count is a caption, never an Instrument hero), Drawing of the week's cuts, Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Field and is still three patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: an empty resilient-cache fallback is opted out of ISR with noStore(), and Dataset / updated / count figures are omitted rather than published as 0. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search. SITE-70: photographs open via shadcn-carousel -> V3Carousel; ItemList JSON-LD lists the cut homes. SITE-108: the rail cell is a CUT, not a listing tile -- the percent is the card's headline (no chip over a photograph whose brightness we do not control), a meter under it draws this cut against the deepest cut on the page with a notch at the page's middle cut, and the card also carries what the seller gave up in dollars and how many days ago the ask fell (getPriceDrops lastDropAmount / daysSinceLastChange). Price, prior ask, address and beds/baths/sqft all stay. The deepest cut leads at a wider slide (the plate is wider, never taller). prev/next are shadcn's OWN -left-12 / -right-12 flanking pair -- V3Carousel no longer repositions them and .pd-cuts-stage is the inline room they need. ONE median serves the card notches, the drawing's hairline, the deck sentence and the Dataset.",
   "deletions": [
     "KbHero: the dark photo hero and its live-glance counts. The counts survive as Instrument figures when the pull is non-empty.",
     "KbFeatured: the poster grid of the biggest percent reductions. Those homes are Field rows now, sorted by lastDropPct descending.",
@@ -36,7 +36,7 @@
     },
     {
       "name": "PriceDropAlertsSheet",
-      "section": "Pattern 5, once, in app/price-drops/_v3/PriceDropAlertsSheet.client.tsx. Wraps V3Sheet. Capture contract unchanged (see dataLayer).",
+      "section": "Pattern 5, once, in app/price-drops/_v3/PriceDropAlertsSheet.client.tsx. Wraps V3Sheet. Capture contract unchanged (see dataLayer). SITE-108: the COPY now leads with the cut -- \"Email me when a <place> home cuts its price\" -- because that is what the product already did. An alert created here takes the listing_alerts.events column DEFAULT, which is price_change true (migration 20260729235500, mirrored by DEFAULT_EVENT_TOGGLES in lib/alerts/event-detection.ts); detectListingEvents emits price_change with the old price and the direction and lib/alerts/send.ts renders it under \"Price changes\". The copy names all three default events (price cut, new listing, status change) rather than promising a cut-only digest. Payload, honeypot and disclosure sentences are untouched; ci:alert-capture-disclosure green.",
       "blocking": true
     },
     {
@@ -72,15 +72,15 @@
   },
   "dataLayer": {
     "getPriceDrops": "lib/data/listings/getPriceDrops.ts. { limit: 48, days: 7 }. No .catch() empty swallow. Empty result calls noStore() so ISR cannot pin a blank week. THE ONLY READ ON THIS PAGE.",
-    "submitSearchAlertSignup": "app/actions/search-alert-capture.ts, bound to PriceDropAlertsSheet. UNCHANGED CONTRACT: { email, filters: { propertyType: 'A' } (region) or { city } (city page), company }.",
+    "submitSearchAlertSignup": "app/actions/search-alert-capture.ts, bound to PriceDropAlertsSheet. UNCHANGED CONTRACT: { email, filters: { propertyType: 'A' } (region) or { city } (city page), company }. SITE-108 changed the sheet's words only; this payload is byte-identical.",
     "note": "Route-local constants and Field/JSON-LD builders live in app/price-drops/_v3/ so the route file stays under the ci:file-size-budget floor."
   },
   "sectionOrder": [
     "V3SectionTracker + TrackSearchView + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "PriceDropsOpening -- the H1 and the count of homes that cut price",
-    "V3Field #cuts -- V3Carousel rail of photographed cut houses (price, address, beds/baths/sqft)",
-    "V3Drawing #spread -- distribution of this week's cuts (after photographs)",
+    "PriceDropsOpening -- the H1, the count of homes that cut price, and the answer in text (middle cut and deepest cut)",
+    "V3Field #cuts -- V3Carousel rail of photographed cut houses (percent + cut meter, dollars off, price, prior ask, address, beds/baths/sqft, days since the cut)",
+    "V3Drawing #spread -- distribution of this week's cuts (after photographs); its claim names the hairline the card meters notch",
     "V3SourceLine -- the trace and the stamp under the set",
     "PriceDropAlertsSheet -- the ask: tell me when a home cuts price",
     "V3Quiet #edges -- keep looking",

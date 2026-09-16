@@ -61,7 +61,7 @@ describe('priceDropDistribution', () => {
     drop({ listingKey: `k${i}`, lastDropPct: pct }),
   )
 
-  it('claims the median and the deepest cut, and counts what it could not plot', () => {
+  it('claims what the marks are, names the hairline, and counts what it could not plot', () => {
     const figure = priceDropDistribution({
       drops: [...drops, drop({ listingKey: 'x', lastDropPct: null })],
       total: 60,
@@ -73,10 +73,42 @@ describe('priceDropDistribution', () => {
     expect(figure.draw).toBe('strip')
     expect(figure.points).toHaveLength(6)
     expect(figure.claim).toContain('7.0%')
-    expect(figure.claim).toContain('13.0%')
-    expect(figure.source).toContain('60 cuts are in the window and the pull is capped at 48')
-    expect(figure.source).toContain('12 of them are not on this page at all')
+    // SITE-108: the claim names the hairline, because an unlabelled strip of
+    // dots read as "a decorative scatter" to the 2026-09-15 evaluator.
+    expect(figure.claim).toContain('hairline')
+    expect(figure.claim).toContain("each card's bar")
+    expect(figure.source).toContain('60 cuts are in the window; the pull is capped at 48')
+    // 7 rows came back, not the 48 cap: 53 of the window are not on this page.
+    expect(figure.source).toContain('and returned 7')
+    expect(figure.source).toContain('53 of them are not on this page at all')
     expect(figure.source).toContain('1 row(s) in the pull carry no percent')
+  })
+
+  it('draws the hairline at the page median the route hands in, not a second median of its own', () => {
+    const figure = priceDropDistribution({
+      drops,
+      total: 6,
+      cap: 48,
+      placeLabel: 'Central Oregon',
+      windowDays: 7,
+      fetchedAt: null,
+      // medianPositive over 3,5,7,9,11,13 averages the two middle values.
+      medianPct: 8,
+    })!
+    expect(figure.context).toEqual({ value: 8, label: 'middle cut 8.0%' })
+    expect(figure.claim).toContain('8.0%')
+  })
+
+  it('falls back to the middle drawn mark when the route names no median', () => {
+    const figure = priceDropDistribution({
+      drops,
+      total: 6,
+      cap: 48,
+      placeLabel: 'Central Oregon',
+      windowDays: 7,
+      fetchedAt: null,
+    })!
+    expect(figure.context).toEqual({ value: 7, label: 'middle cut 7.0%' })
   })
 
   it('returns nothing when no row can be placed', () => {
@@ -90,5 +122,35 @@ describe('priceDropDistribution', () => {
         fetchedAt: null,
       }),
     ).toBeNull()
+  })
+
+  // SITE-108 (§0). Subtracting the CAP was right on /price-drops, where the
+  // window always exceeds it, and wrong on every city route the drawing
+  // reached on 2026-09-16: /price-drops/bend had 118 cuts in the window and a
+  // pull that returned 40, and the trace claimed 70 were missing when 78 were.
+  it('counts what is missing from what the pull RETURNED, never from the cap', () => {
+    const figure = priceDropDistribution({
+      drops,
+      total: 118,
+      cap: 48,
+      placeLabel: 'Bend',
+      windowDays: 7,
+      fetchedAt: null,
+    })!
+    expect(figure.source).toContain('and returned 6')
+    expect(figure.source).toContain('112 of them are not on this page at all')
+    expect(figure.source).not.toContain('70 of them')
+  })
+
+  it('says every one is here when the window fits on the page', () => {
+    const figure = priceDropDistribution({
+      drops,
+      total: 6,
+      cap: 48,
+      placeLabel: 'Sisters',
+      windowDays: 7,
+      fetchedAt: null,
+    })!
+    expect(figure.source).toContain('every one of them is here')
   })
 })

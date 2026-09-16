@@ -69,27 +69,54 @@ export function priceDropDistribution(input: {
   placeLabel: string
   windowDays: number
   fetchedAt: string | null
+  /**
+   * THE page's median cut — the same figure the cards compare against and the
+   * source line publishes. One number over one population (§0). Omitted or
+   * unplaceable on this axis means no hairline; it is never approximated.
+   */
+  medianPct?: number | null
 }): V3DrawingFigure | null {
   const points = priceDropPoints(input.drops)
   if (points.length === 0) return null
 
   const deepest = points[points.length - 1]!
   const shallowest = points[0]!
-  const median = points[Math.floor((points.length - 1) / 2)]!
+  const median =
+    input.medianPct != null && Number.isFinite(input.medianPct) && input.medianPct > 0
+      ? input.medianPct
+      : points[Math.floor((points.length - 1) / 2)]!.at
 
   return {
     key: 'cuts',
     draw: 'strip',
-    claim: `${points.length} of this week's ${input.placeLabel} price cuts, smallest to deepest: the middle one came down ${median.at.toFixed(1)}%, the deepest ${deepest.at.toFixed(1)}%.`,
+    // The CLAIM is about this drawing's own marks. The week's answer — the
+    // middle cut and the deepest — is stated in text up in the opening, so
+    // repeating it here would put the same sentence on the page twice.
+    // SITE-108: the evaluator read the unlabelled dots as "a decorative
+    // scatter", so the claim now names what the hairline is.
+    claim: `Every one of these ${points.length} cuts, placed by how far the ask came down. The hairline is this page's middle cut, ${median.toFixed(1)}% — the same notch each card's bar carries.`,
     caption: 'Every cut this week by how far the ask came down',
     sampleKey: 'cuts',
+    // One labelled landmark on the axis, so the strip reads without a hover.
+    // Same figure the cards compare against and the source line publishes.
+    context: { value: median, label: `middle cut ${median.toFixed(1)}%` },
     // What the marks actually give up. The primitive's default names a month,
     // which these marks do not carry.
     askHint: 'Hover, tap or tab a cut for the home, the percent and the dollars.',
     source:
       `Active single-family listings in the ${input.placeLabel} service area with a documented asking-price cut in the last ${input.windowDays} days ` +
-      `(the same pull the list below renders). ${input.total} cuts are in the window and the pull is capped at ${input.cap}, ` +
-      `so ${input.total > input.cap ? `${input.total - input.cap} of them are not on this page at all` : 'every one of them is here'}. ` +
+      `(the same pull the list below renders). ${input.total} cuts are in the window; the pull is capped at ${input.cap} ` +
+      // WHAT THE PULL RETURNED, not the cap. Subtracting the cap was right on
+      // /price-drops, where the window always exceeds it, and wrong on every
+      // city route: /price-drops/bend had 118 in the window, a pull that
+      // returned 40, and this sentence claiming 70 were missing when 78 were
+      // (§0 — measured on the rendered page 2026-09-16, the day the drawing
+      // reached the city routes).
+      `and returned ${input.drops.length}, so ${
+        input.total > input.drops.length
+          ? `${input.total - input.drops.length} of them are not on this page at all`
+          : 'every one of them is here'
+      }. ` +
       `One mark per cut, placed at the cut as a percent of the previous ask; ` +
       `${input.drops.length - points.length} row(s) in the pull carry no percent or no street and are not plotted. ` +
       `Range ${shallowest.at.toFixed(1)}% to ${deepest.at.toFixed(1)}%` +

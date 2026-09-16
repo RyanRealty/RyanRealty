@@ -3,6 +3,7 @@ import type { PriceDrop } from '@/lib/data'
 import { priceDropFieldItems } from '@/app/price-drops/_v3/drops-field-items'
 import { priceDropDatasetSchemas } from '@/app/price-drops/_v3/drops-jsonld'
 import { medianPositive } from '@/app/price-drops/_v3/drops-constants'
+import { priceDropsDeck } from '@/app/price-drops/_v3/PriceDropsField'
 
 function drop(over: Partial<PriceDrop> = {}): PriceDrop {
   return {
@@ -138,5 +139,35 @@ describe('priceDropDatasetSchemas', () => {
 describe('medianPositive', () => {
   it('ignores null and non-positive values', () => {
     expect(medianPositive([null, 0, 4, 2, 6])).toBe(4)
+  })
+})
+
+// SITE-108: the competitiveTarget is a page that answers "how many cut price
+// and by how much" in TEXT, not only in a list a crawler has to infer from.
+describe('priceDropsDeck', () => {
+  it('states the middle cut and the deepest cut in words', () => {
+    expect(
+      priceDropsDeck({
+        placeLabel: 'Central Oregon',
+        shownCount: 48,
+        medianPct: 6.84,
+        deepestPct: 13.04,
+      }),
+    ).toBe(
+      'Across the 48 Central Oregon cuts on this page the middle seller came down 6.8%, and the deepest came down 13.0%.',
+    )
+  })
+
+  it('says nothing rather than half an answer when a figure is missing (§0)', () => {
+    const base = { placeLabel: 'Bend', shownCount: 12, medianPct: 5, deepestPct: 9 }
+    expect(priceDropsDeck({ ...base, medianPct: null })).toBeNull()
+    expect(priceDropsDeck({ ...base, deepestPct: 0 })).toBeNull()
+    expect(priceDropsDeck({ ...base, shownCount: 0 })).toBeNull()
+  })
+
+  it('reads singular when one cut is on the page', () => {
+    expect(
+      priceDropsDeck({ placeLabel: 'Sisters', shownCount: 1, medianPct: 4, deepestPct: 4 }),
+    ).toContain('1 Sisters cut on this page')
   })
 })
