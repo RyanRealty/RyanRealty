@@ -6,17 +6,26 @@
   display: none;
 }
 
-/* SITE-85: shorter tall so #proof ("The record") bleeds under the fold
-   instead of clipping to two letters. Scoped to sell-stage-poster only —
-   /buy inventory Stage is untouched. Pair layout needs less photo chrome. */
+/* SITE-111: the fold boundary is a section, not two clipped letters. The
+   slab is one narrow column now (sourced line, field, ask), so the Stage can
+   stop where it stops and let #proof ("The record") carry the bottom of the
+   first viewport. Scoped to sell-stage-poster only — /buy is untouched. */
 .v3.v3-stage.sell-stage-poster.v3-stage--tall {
-  min-height: max(52vh, 24rem);
+  min-height: max(46vh, 22rem);
 }
 
 @media (min-width: 48rem) {
   .v3.v3-stage.sell-stage-poster.v3-stage--tall {
-    min-height: max(50vh, 26rem);
+    min-height: max(44vh, 24rem);
   }
+}
+
+/* The first viewport is a composition, not a stack: the Stage spends its
+   height on the photograph and the ask, and hands the bottom of the frame to
+   the record. A 4rem/3rem copy pad on top of a slab pushed the next section's
+   headline through the bottom edge. */
+.v3.v3-stage.sell-stage-poster .v3-stage-copy {
+  padding-block: var(--v3-space-2xl) var(--v3-space-lg);
 }
 
 /* Form-specific Stage behavior (adapted from beui-input focus + Redfin
@@ -57,11 +66,13 @@
   }
 }
 
-/* The ask sits on the photograph as a cream slab, not in a cream void
-   under it. Tokens only. 44px controls. Pair layout widens so proof can
-   sit BESIDE the address field instead of stacking like a portal card. */
+/* The ask sits on the photograph as a cream slab, not in a cream void under
+   it, and it is ONE column: the sourced line, the field, the ask. A
+   full-width white card holding a single address field is the portal fold
+   the 2026-09-12 table named, so the slab is narrow and the photograph keeps
+   the rest of the frame. Tokens only. 44px controls. */
 .v3.v3-stage .sell-stage-ask {
-  width: min(100%, var(--v3-measure-text));
+  width: min(100%, 30rem);
   padding: var(--v3-space-md);
   background: var(--v3-surface);
   color: var(--v3-ink);
@@ -69,14 +80,11 @@
   gap: var(--v3-space-sm);
 }
 
-.v3.v3-stage .sell-stage-ask[data-layout='pair'] {
-  width: min(100%, var(--v3-measure));
-}
-
-.v3.v3-stage .sell-stage-ask__rail {
+.v3.v3-stage .sell-stage-ask__record {
   display: grid;
-  gap: var(--v3-space-sm);
-  align-content: start;
+  gap: var(--v3-space-3xs);
+  padding-block-end: var(--v3-space-xs);
+  border-block-end: var(--v3-rule-hairline);
 }
 
 .v3.v3-stage .sell-stage-ask__form {
@@ -85,38 +93,22 @@
   min-width: 0;
 }
 
-@media (min-width: 48rem) {
-  .v3.v3-stage .sell-stage-ask[data-layout='pair'] {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    column-gap: var(--v3-space-lg);
-    align-items: start;
-  }
-
-  .v3.v3-stage .sell-stage-ask[data-layout='pair'] .sell-stage-next {
-    grid-column: 1 / -1;
-  }
-}
-
-/* SITE-85 mobile craft: breathing room under the card so it is not flush
-   with the photo bottom the way the table shot named. */
+/* SITE-85 mobile craft, kept: breathing room under the card so it is not
+   flush with the photo bottom the way the table shot named. */
 @media (max-width: 47.99rem) {
   .v3.v3-stage .sell-stage-ask {
-    margin-block-end: var(--v3-space-3xl);
+    margin-block-end: var(--v3-space-lg);
     padding-block-end: var(--v3-space-md);
-  }
-
-  .v3.v3-stage .sell-stage-mos .v3-mos__barrow {
-    grid-template-columns: minmax(5.5rem, 42%) minmax(0, 1fr) auto;
   }
 }
 
 .v3.v3-stage .sell-stage-ask__head {
   display: grid;
   gap: var(--v3-space-3xs);
-  margin-bottom: var(--v3-space-sm);
+  margin-bottom: var(--v3-space-2xs);
 }
 
-/* Quiet sourced sentence near the CTA — plain prose, not a KPI tile. */
+/* Quiet sourced sentence above the field — plain prose, not a KPI tile. */
 .v3.v3-stage .sell-stage-ask__proof {
   margin: 0;
   font-family: var(--v3-font-body);
@@ -128,29 +120,25 @@
 
 .v3.v3-stage .sell-stage-ask__proof strong {
   color: var(--v3-ink);
-  font-weight: var(--v3-weight-strong);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
 }
 
-/* Compact MOS two-bar inside the Stage rail — same Bend pulse as Instrument.
-   Hide the long §0 source line on the fold; Instrument keeps the full trace. */
-.v3.v3-stage .sell-stage-mos {
-  max-width: none;
-  width: 100%;
-  padding: var(--v3-space-sm);
-  border: var(--v3-rule-hairline);
-  box-shadow: none;
+/* The figures' own door. A sourced number in the fold should be reachable —
+   for a reader and for a crawler — from the fold. */
+.v3.v3-stage .sell-stage-ask__door {
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
 }
 
-.v3.v3-stage .sell-stage-mos .v3-source {
-  display: none;
-}
-
-.v3.v3-stage .sell-stage-mos .v3-mos__plain {
-  font-size: var(--v3-size-label);
-}
-
-.v3.v3-stage .sell-stage-mos .v3-mos__caption {
-  font-size: var(--v3-size-body-sm);
+/* The trace sits with the figures, collapsed, never a paragraph of
+   methodology competing with the ask. */
+.v3.v3-stage .sell-stage-ask__trace {
+  margin: 0;
+  font-size: var(--v3-size-source);
 }
 
 .v3.v3-stage .sell-stage-ask form {
@@ -158,7 +146,9 @@
   gap: var(--v3-space-xs);
 }
 
-.v3.v3-stage .sell-stage-ask input,
+/* The catalog control owns its own box, so the blanket rule skips it —
+   two borders in one field is the tell of a paint that was bolted on. */
+.v3.v3-stage .sell-stage-ask input:not(.sell-field__input),
 .v3.v3-stage .sell-stage-ask textarea {
   min-height: var(--v3-tap);
   border: 2px solid var(--v3-ink);
@@ -166,8 +156,12 @@
   color: var(--v3-ink);
 }
 
-/* beui-input adapt: reserved error row + shake on invalid, success check
-   when Places commits a pin. Navy on cream only. */
+/* THE CATALOG CONTROL, PAINTED (beui-input, components/motion/input).
+   The shake, the drawn check, the affix and the reserved message row are the
+   demo's own — motion/react runs them. Everything below is paint: pill radius
+   to the register's square, destructive red to a heavier navy rule, the
+   emerald check to a navy stroke, the purple ring to warm stone. Two-class
+   selectors so the utility classes the catalog ships lose cleanly. */
 .sell-stage-field {
   display: grid;
   gap: var(--v3-space-3xs);
@@ -177,71 +171,79 @@
   position: relative;
 }
 
-.sell-stage-field__control[data-state='error'] input {
+.sell-field {
+  gap: var(--v3-space-3xs);
+}
+
+.sell-field .sell-field__label {
+  padding: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.sell-field .sell-field__box {
+  /* 44px of CONTROL, not a 44px box with a 40px control inside it: the catalog
+     ships h-11 on a border-box, so a 2px rule on each edge leaves the input
+     itself at 40 and ci:tap-targets measures the input. */
+  height: auto;
+  min-block-size: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-section);
+  background: var(--v3-surface);
+  overflow: visible;
+  transition: border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The catalog draws its focus and error rings as box-shadows in the shadcn
+   ring / destructive hues. Two colors only: the ring goes, the warm-stone
+   outline is the focus, and an error is a heavier navy rule. */
+.sell-field .sell-field__box[data-state='focused'] {
   border-color: var(--v3-ink);
-  animation: sell-field-shake var(--v3-dur-enter) var(--v3-ease-out);
+  box-shadow: none;
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
 }
 
-.sell-stage-field__control[data-state='success'] input {
-  padding-inline-end: calc(var(--v3-tap) * 0.85);
+.sell-field .sell-field__box[data-state='error'] {
+  border-color: var(--v3-ink);
+  border-width: var(--v3-rule-weight-mast);
+  box-shadow: none;
 }
 
-.sell-stage-field__check {
-  position: absolute;
-  inset-block-start: 50%;
-  inset-inline-end: var(--v3-space-sm);
-  width: 1.1rem;
-  height: 1.1rem;
-  translate: 0 -50%;
+.sell-field .sell-field__box[data-state='success'] {
+  border-color: var(--v3-ink);
+}
+
+.sell-field .sell-field__input {
+  min-block-size: var(--v3-tap);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
   color: var(--v3-ink);
-  pointer-events: none;
+  caret-color: var(--v3-ink);
 }
 
-.sell-stage-field__check path {
-  stroke: currentColor;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
-  stroke-dasharray: 24;
-  stroke-dashoffset: 24;
-  animation: sell-check-draw var(--v3-dur-enter) var(--v3-ease-out) forwards;
+.sell-field .sell-field__input::placeholder {
+  color: var(--v3-ink-muted);
 }
 
-@keyframes sell-field-shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-0.35rem);
-  }
-  40% {
-    transform: translateX(0.35rem);
-  }
-  60% {
-    transform: translateX(-0.2rem);
-  }
-  80% {
-    transform: translateX(0.2rem);
-  }
+.sell-field .sell-field__affix {
+  color: var(--v3-ink-muted);
 }
 
-@keyframes sell-check-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
+.sell-field .sell-field__check {
+  color: var(--v3-ink);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sell-stage-field__control[data-state='error'] input {
-    animation: none;
-  }
-
-  .sell-stage-field__check path {
-    animation: none;
-    stroke-dashoffset: 0;
-  }
+.sell-field .sell-field__error {
+  padding: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
 }
 
 /* Pin map resolves inside the card once Places returns lat/lng — form-
@@ -313,6 +315,7 @@
 /* beui:expanding-arrow-button adapt — cream-on-navy trail on hover/focus,
    not lime. Keeps the filled primary as the one Value my home ask. */
 .v3.v3-stage .sell-stage-ask .sell-stage-submit {
+  margin-block-start: var(--v3-space-2xs);
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -360,12 +363,14 @@
   opacity: 1;
 }
 
-/* Quiet scroll affordance keyed to what's next (#proof / The record). */
-.sell-stage-next {
+/* Quiet scroll affordance keyed to what's next (#proof / The record). It sits
+   ON the photograph under the slab, in media ink, so the fold boundary reads
+   as "there is more below" instead of one more row of the form. */
+.v3.v3-stage .sell-stage-next {
   display: inline-flex;
   align-items: center;
   gap: var(--v3-space-3xs);
-  margin-block-start: var(--v3-space-sm);
+  margin-block-start: var(--v3-space-xs);
   min-height: var(--v3-tap);
   padding-inline: 0;
   font-family: var(--v3-font-body);
@@ -373,14 +378,14 @@
   letter-spacing: var(--v3-track-eyebrow);
   text-transform: uppercase;
   text-decoration: none;
-  color: var(--v3-ink-muted);
+  color: var(--v3-ink-on-navy);
   background: transparent;
   border: 0;
 }
 
-.sell-stage-next:hover,
-.sell-stage-next:focus-visible {
-  color: var(--v3-ink);
+.v3.v3-stage .sell-stage-next:hover,
+.v3.v3-stage .sell-stage-next:focus-visible {
+  color: var(--v3-ink-on-media);
 }
 
 .sell-stage-next__mark {
@@ -422,4 +427,214 @@
   .v3.v3-sheet.sell-plan .v3-sheet-prose {
     grid-column: 1 / -1;
   }
+}
+
+
+/* ---------------------------------------------------------------------------
+   THE ADDRESS SHEET (shadcn:sheet — components/ui/sheet, Radix Dialog).
+
+   The layout lock is "Stage, then the address sheet, with the sourced answer
+   between the address and the contact step". This is that sheet: the real
+   control, with its overlay, its focus trap, its Escape and its close button,
+   painted in v3 tokens. It is not a house drawer wearing the name — the
+   portal, the slide and the dismiss behaviour are the catalog's.
+
+   Paint only below: cream ground, navy mast rule on the leading edge, no
+   elevation shadow (PUBLIC_UI section 6), square corners, Amboqia on the
+   step title, Geist everywhere else.
+   --------------------------------------------------------------------------- */
+/* The chrome sits at z-index 100 (its mobile panel at 200), and a modal that
+   opens UNDER the site header is a sheet with a hole in it: the header stays
+   lit and clickable while focus is trapped somewhere else, and the sheet's own
+   first line is hidden behind it. Both layers go above the chrome. */
+.sell-ask-sheet__scrim {
+  z-index: 300;
+  background: var(--v3-scrim-strong);
+}
+
+.v3.sell-ask-sheet {
+  z-index: 300;
+  width: min(100%, 34rem);
+  max-width: min(100%, 34rem);
+  gap: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  border-inline-start: var(--v3-rule-mast);
+  box-shadow: none;
+}
+
+.v3.sell-ask-sheet [data-slot='sheet-close'] {
+  color: var(--v3-ink);
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__head {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  padding: var(--v3-space-lg) var(--v3-space-lg) var(--v3-space-md);
+  border-block-end: var(--v3-rule-section);
+  background: var(--v3-surface);
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__street {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__title {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  line-height: var(--v3-leading-heading);
+  letter-spacing: var(--v3-track-display);
+  color: var(--v3-ink);
+  text-wrap: balance;
+  padding-inline-end: var(--v3-tap);
+}
+
+/* Three rungs, one question at a time. The current rung is the only one in
+   full ink, so how much is left reads at a glance. */
+.v3.sell-ask-sheet .sell-ask-sheet__rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm);
+  margin-block-start: var(--v3-space-2xs);
+  padding: 0;
+  list-style: none;
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__rung {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-3xs);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  opacity: 0.55;
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__rung::before {
+  content: '';
+  width: 1.5rem;
+  height: var(--v3-rule-weight-section);
+  background: currentColor;
+}
+
+@media (max-width: 30rem) {
+  .v3.sell-ask-sheet .sell-ask-sheet__rail {
+    gap: var(--v3-space-xs);
+  }
+
+  .v3.sell-ask-sheet .sell-ask-sheet__rung::before {
+    width: 0.75rem;
+  }
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__rung[data-state='now'] {
+  color: var(--v3-ink);
+  opacity: 1;
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__rung[data-state='done'] {
+  color: var(--v3-ink);
+  opacity: 0.8;
+}
+
+/* transitions-panel band: each step arrives at the house rise, so a step
+   change reads as one surface moving rather than a page swap. */
+.v3.sell-ask-sheet .sell-ask-sheet__body {
+  padding: var(--v3-space-lg);
+  animation: sell-ask-step var(--v3-dur-rise) var(--v3-ease-out);
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__fields {
+  display: grid;
+  gap: var(--v3-space-md);
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__reading {
+  display: grid;
+  gap: var(--v3-space-sm);
+  color: var(--v3-ink-muted);
+}
+
+.v3.sell-ask-sheet .sell-ask-sheet__pulse {
+  display: block;
+  width: 100%;
+  height: var(--v3-rule-weight-section);
+  background: linear-gradient(
+    to right,
+    var(--v3-edge) 0%,
+    var(--v3-navy) 45%,
+    var(--v3-edge) 90%
+  );
+  background-size: 220% 100%;
+  animation: sell-ask-pulse var(--v3-dur-loop) var(--v3-ease-out) infinite;
+}
+
+/* The answer inside the sheet keeps its own drawing and its own trace; it
+   only loses the card chrome it wore on the Stage. */
+.v3.sell-ask-sheet .sell-answer {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+@keyframes sell-ask-step {
+  from {
+    opacity: 0;
+    transform: translateY(var(--v3-travel));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sell-ask-pulse {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3.sell-ask-sheet .sell-ask-sheet__body {
+    animation: none;
+  }
+
+  .v3.sell-ask-sheet .sell-ask-sheet__pulse {
+    animation: none;
+  }
+}
+
+/* The fold boundary. #proof follows a full-bleed Stage, so it opens on a
+   tighter pad than a mid-page section: the first viewport ends on the
+   record's claim rather than on an inch of empty cream. */
+.v3.v3-proofblock.sell-proof--quiet {
+  padding-block-start: var(--v3-space-xl);
+}
+
+/* V3Drawing was measured for a page column. Inside a 34rem sheet its footer
+   band collides — the reading squeezes to one word a line beside its trace —
+   so the sheet takes the same stacked form the 375 rules already define. */
+.v3.sell-ask-sheet .v3-drawing__foot {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--v3-space-3xs);
+  min-block-size: 0;
+}
+
+.v3.sell-ask-sheet .v3-drawing__source {
+  justify-self: start;
+  white-space: normal;
 }

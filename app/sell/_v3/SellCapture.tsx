@@ -7,9 +7,13 @@
  * On the homepage it still opens the Sheet token scope as the sell band.
  * Payload, field names, and Places autocomplete are unchanged.
  *
- * SITE-85: stage placement is a two-column working surface — sourced proof
- * (and optional MOS two-bar) beside the address ask — so the fold is not the
- * industry portal card. Scroll cue to #proof stays under the pair.
+ * SITE-111: the stage placement is ONE narrow column again — a sourced line
+ * with its own section-0 trace, then the address field, then the ask. The
+ * two-column slab that carried a Bend months-of-supply drawing beside an empty
+ * field is gone, and the 2026-09-12 table said why: "Bend-wide months of supply
+ * printed next to an untyped address, so the page answers the city before it
+ * has a house." Supply is now drawn in the sheet the address opens, against the
+ * street the visitor actually typed. Scroll cue to #proof stays under the ask.
  */
 import type { ReactNode } from 'react'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
@@ -29,15 +33,16 @@ type Props = {
    */
   placement?: 'page' | 'stage'
   /**
-   * Quiet sourced sentence near the CTA. Plain prose, never a KPI tile.
+   * Quiet sourced sentence above the field. Plain prose, never a KPI tile.
    * Server-composed from a DAL figure the page already fetched.
    */
   proof?: ReactNode
   /**
-   * Optional drawing that sits with the proof (MOS two-bar from the same Bend
-   * pulse the Instrument uses). Stage only.
+   * The section-0 trace for the figures in `proof`, as a collapsed disclosure.
+   * The fold used to carry figures whose only source line lived three sections
+   * down; a figure and its trace belong in the same viewport.
    */
-  aside?: ReactNode
+  trace?: ReactNode
   /** Scroll affordance keyed to the next section (The record). Stage only. */
   nextHref?: string
   nextLabel?: string
@@ -52,7 +57,7 @@ export function SellCapture({
   ariaLabel,
   placement = 'page',
   proof,
-  aside,
+  trace,
   nextHref,
   nextLabel,
   children,
@@ -73,26 +78,30 @@ export function SellCapture({
   )
 
   if (placement === 'stage') {
-    const hasRail = Boolean(proof || aside)
     return (
-      <div className="sell-stage-ask" data-layout={hasRail ? 'pair' : 'solo'} {...named}>
-        {hasRail ? (
-          <aside className="sell-stage-ask__rail" aria-label="Bend market context">
-            {proof ? <p className="sell-stage-ask__proof">{proof}</p> : null}
-            {aside}
-          </aside>
-        ) : null}
-        <div className="sell-stage-ask__form">
-          {head}
-          {children}
+      <>
+        <div className="sell-stage-ask" {...named}>
+          {proof ? (
+            <div className="sell-stage-ask__record">
+              <p className="sell-stage-ask__proof">{proof}</p>
+              {trace}
+            </div>
+          ) : null}
+          <div className="sell-stage-ask__form">
+            {head}
+            {children}
+          </div>
         </div>
+        {/* The cue to what is next belongs on the photograph, not inside the
+            ask: a scroll affordance printed in the capture slab makes the slab
+            taller and reads as one more line of the form. */}
         {nextHref && nextLabel ? (
           <a className="sell-stage-next" href={nextHref}>
             <span className="sell-stage-next__mark" aria-hidden="true" />
             {nextLabel}
           </a>
         ) : null}
-      </div>
+      </>
     )
   }
 

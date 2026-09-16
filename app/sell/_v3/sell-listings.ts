@@ -1,7 +1,13 @@
 /**
  * Office listings as house rows for the Sell shop (photo, price, beds,
- * baths, sqft, street). Same query as /our-homes. Cap six: a longer
- * ledger without encoding is a table.
+ * baths, sqft, street, and whether the house is still available). Same query
+ * as /our-homes. Cap six: a longer ledger without encoding is a table.
+ *
+ * SITE-111 information increment: the row now says the listing's MLS status
+ * when it is anything other than plain Active. A seller reading "what has this
+ * office listed" is reading the office's record, and "Pending" is the part of
+ * that record the old row dropped. Active is the default state of a for-sale
+ * row, so printing it would be noise, not information.
  */
 import type { V3LedgerFigureRow } from '@/components/site/v3'
 import { v3Text } from '@/components/site/v3'
@@ -30,12 +36,15 @@ export function sellListingRows(
       .join(' ')
       .trim()
     if (!street) continue
+    const status = listing.StandardStatus?.trim()
+    const standing = status && status.toLowerCase() !== 'active' ? status : null
     const detail = [
       listing.BedroomsTotal != null ? `${listing.BedroomsTotal} bd` : null,
       listing.BathroomsTotal != null ? `${listing.BathroomsTotal} ba` : null,
       listing.TotalLivingAreaSqFt != null
         ? `${listing.TotalLivingAreaSqFt.toLocaleString('en-US')} sqft`
         : null,
+      standing,
     ]
       .filter((part): part is string => part !== null && part !== '')
       .join(' · ')
