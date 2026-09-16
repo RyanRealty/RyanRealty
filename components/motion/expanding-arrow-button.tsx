@@ -14,7 +14,6 @@ import {
   type ReactNode,
 } from "react";
 import { EASE_OUT, SPRING_LAYOUT, SPRING_PRESS } from "@/lib/ease";
-import { useHoverCapable } from "@/lib/hooks/use-hover-capable";
 import { cn } from "@/lib/utils";
 
 export interface ExpandingArrowButtonProps extends Omit<
@@ -64,10 +63,9 @@ export const ExpandingArrowButton = forwardRef<
   ref,
 ) {
   const reduce = useReducedMotion();
-  const canHover = useHoverCapable();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const active = !disabled && ((canHover && hovered) || focused);
+  const active = !disabled && (hovered || focused);
   const layoutTransition = reduce ? { duration: 0 } : SPRING_LAYOUT;
 
   const handleMouseEnter = (event: MouseEvent<HTMLButtonElement>) => {

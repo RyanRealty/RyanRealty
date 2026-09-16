@@ -551,7 +551,7 @@ export function SellValueForm({
               id={addressFieldId}
               value={address}
               InputComponent={BeuiInput}
-              error={addressError}
+              error={addressError ?? false}
               success={addressSuccess}
               onChange={(next) => {
                 setAddress(next)
