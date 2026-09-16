@@ -907,7 +907,7 @@ export function V3Atlas({
 
   /* Closes by place: the wash's own subject, as a count. A map that withholds
      the sales field (the region index, SITE-92) still owes the reader what it
-     would have drawn, so the dock lists the heat window's closes by the place
+     would have drawn, so the aside lists the heat window's closes by the place
      that holds them — each row a door that lights its silhouette, the same
      way a chip does. A closing counts once, in the smallest place; one that
      falls outside every outline is named, not lost (lib/atlas/closes-by-place). */
@@ -1424,51 +1424,6 @@ export function V3Atlas({
           <p className="v3-atlas__sales-legend-window">{atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}</p>
         </div>
       ) : null}
-      {closes && closes.rows.length > 0 ? (
-        <div
-          className="v3-atlas__closes"
-          role="group"
-          aria-label={`Closes by ${closesNoun}, ${atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}`}
-        >
-          <p className="v3-atlas__closes-head">
-            <span className="v3-atlas__closes-title">Closes by {closesNoun}</span>
-            <span className="v3-atlas__closes-window">{atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}</span>
-          </p>
-          <ol className="v3-atlas__closes-list">
-            {closes.rows.map((r) => (
-              <li key={r.shape.id} className="v3-atlas__closes-item">
-                <button
-                  type="button"
-                  className={cn('v3-atlas__closes-door', active === r.shape.id && 'is-active')}
-                  aria-pressed={active === r.shape.id}
-                  onPointerEnter={() => {
-                    setDotHit(null)
-                    setHover(r.shape.id)
-                  }}
-                  onPointerLeave={() => {
-                    if (!pinned) setHover(null)
-                  }}
-                  onClick={() => openPlace(r.shape)}
-                >
-                  <span className="v3-atlas__closes-name">{doorLabel(r.shape)}</span>
-                  <span className="v3-atlas__closes-n">{r.n.toLocaleString('en-US')}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-          {closes.placesMore > 0 || closes.outside > 0 ? (
-            <p className="v3-atlas__closes-rest">
-              {closes.placesMore > 0
-                ? `${closes.placesMore.toLocaleString('en-US')} more ${closesNoun}${closes.placesMore === 1 ? '' : 's'} with fewer closes`
-                : null}
-              {closes.placesMore > 0 && closes.outside > 0 ? ' · ' : null}
-              {closes.outside > 0
-                ? `${closes.outside.toLocaleString('en-US')} outside every ${closesNoun} line`
-                : null}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
       {keyPlacement === 'dock' ? keyList : null}
       <div className="v3-atlas__types" role="group" aria-label="Property types">
         {types.map((t) => (
@@ -1957,6 +1912,51 @@ export function V3Atlas({
 
         {/* The aside: the live line, the search, the source. */}
         <div className="v3-atlas__aside">
+          {closes && closes.rows.length > 0 ? (
+            <div
+              className="v3-atlas__closes"
+              role="group"
+              aria-label={`Closes by ${closesNoun}, ${atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}`}
+            >
+              <p className="v3-atlas__closes-head">
+                <span className="v3-atlas__closes-title">Closes by {closesNoun}</span>
+                <span className="v3-atlas__closes-window">{atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}</span>
+              </p>
+              <ol className="v3-atlas__closes-list">
+                {closes.rows.map((r) => (
+                  <li key={r.shape.id} className="v3-atlas__closes-item">
+                    <button
+                      type="button"
+                      className={cn('v3-atlas__closes-door', active === r.shape.id && 'is-active')}
+                      aria-pressed={active === r.shape.id}
+                      onPointerEnter={() => {
+                        setDotHit(null)
+                        setHover(r.shape.id)
+                      }}
+                      onPointerLeave={() => {
+                        if (!pinned) setHover(null)
+                      }}
+                      onClick={() => openPlace(r.shape)}
+                    >
+                      <span className="v3-atlas__closes-name">{doorLabel(r.shape)}</span>
+                      <span className="v3-atlas__closes-n">{r.n.toLocaleString('en-US')}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              {closes.placesMore > 0 || closes.outside > 0 ? (
+                <p className="v3-atlas__closes-rest">
+                  {closes.placesMore > 0
+                    ? `${closes.placesMore.toLocaleString('en-US')} more ${closesNoun}${closes.placesMore === 1 ? '' : 's'} with fewer closes`
+                    : null}
+                  {closes.placesMore > 0 && closes.outside > 0 ? ' · ' : null}
+                  {closes.outside > 0
+                    ? `${closes.outside.toLocaleString('en-US')} outside every ${closesNoun} line`
+                    : null}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {events && events.length > 0 ? (
             <ul className="v3-atlas__live" aria-label="Latest activity">
               {events.slice(0, 3).map((e) => (

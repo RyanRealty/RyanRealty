@@ -127,11 +127,45 @@
 }
 
 /* Inventory + type toggles stay on the head; dock/events/key counts stay off
-   this opening so the map cannot own the whole scroll. */
+   this opening so the map cannot own the whole scroll. The one aside block
+   that stays is the closes-by-town list: with the sales wash withheld it is
+   what the map would have drawn, as numbers, and a hidden list is not
+   content (SITE-92 round 4). */
 .cities-fold__drawing .v3-atlas__dock,
-.cities-fold__drawing .v3-atlas__aside,
+.cities-fold__drawing .v3-atlas__aside > :not(.v3-atlas__closes),
 .cities-fold__drawing .v3-atlas__events {
   display: none;
+}
+
+/* Desktop: the Atlas primitive puts head + aside in a column beside the map
+   from 64rem. Inside the fold's drawing column that halves the map — the one
+   thing this index exists to draw — so the index stacks the Atlas: head, the
+   full-width map, then the closes-by-town list under it in its own columns.
+   Mirrors the primitive's own is-wide stacking rules (SITE-92 round 4). */
+@media (min-width: 64rem) {
+  .cities-fold__drawing .v3-atlas__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      'head'
+      'body'
+      'dock'
+      'aside';
+  }
+
+  .cities-fold__drawing .v3-atlas__frame {
+    border-left: 0;
+    border-top: var(--v3-rule-hairline);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .cities-fold__drawing .v3-atlas__body {
+    position: static;
+  }
+
+  .cities-fold__drawing .v3-atlas__aside {
+    padding-right: 0;
+  }
 }
 
 @media (max-width: 63.99rem) {
