@@ -595,3 +595,23 @@ line, and keep building the other lanes.
 - Send anything to a real person (a lead, a client) without Matt's per-action yes.
   A same-minute system confirmation to a visitor who just submitted their own
   request, and the sequence that submit enrolls, are not broker sends (CLAUDE.md §1).
+
+### 7. Depth is held, not just presence (Matt 2026-09-16)
+
+"Somehow my community pages are also being stripped … this has to be fixed within the loop
+and evaluation process and then not allowed to regress." A section that stays on the page
+with less in it passes every presence gate. So:
+
+- A judge's finding on a data section is answered by **strengthening the form** (a better
+  drawing, a real primitive, the catalog control). Deleting the data, the parcels, the
+  provenance sentence or the rows to make the finding go away is forbidden — that is the
+  regression, not the fix.
+- `ci:route-content-floor` holds per-section item counts (`contentFloor.sections`). When a
+  lane builds or re-scores a class, it seeds that class's sections from the production build
+  (`node scripts/check-route-content-floor.mjs --seed <base> --sections-only --classes <class>`)
+  in the same commit, so the next lane cannot ship the page thinner. Lowering a section floor
+  is a hand edit with a reason in `contentFloor.note`, never a reseed to make a red gate green.
+- The authored expert content for a place (`data/resort-community-<slug>.json`: amenities,
+  dining, golf, HOA, drive times, sources) is presented as its own section, not folded into
+  prose. SITE-116 built the board for communities; a place class whose expert content is a
+  paragraph is a defect to name on its node.

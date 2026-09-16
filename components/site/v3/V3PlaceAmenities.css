@@ -1,0 +1,267 @@
+/* ===========================================================================
+   PATTERN 10: BOARD
+   Styles for V3PlaceAmenities.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3PlaceAmenities.tsx imports and whose scope the section
+   opens on itself with V3_ROOT_CLASS. No raw color, no hardcoded motion.
+
+   THE FORM IS A BOARD: the category names are the reading order, set as
+   small-caps group heads with the places under each one in columns. A tile is
+   a display-face name over one plain line and an access line, and the rhythm
+   is the hairline above every tile — not a box around it. Six cream cards
+   named after a resort homepage would be the tell TASTE.md bans; a board of
+   named places the reader scans by kind is what a resort homepage is trying
+   to be with its photo grid, minus the photographs we do not own.
+
+   The block selector is doubled (`.v3.v3-place-amenities`) for the same reason
+   every other pattern doubles its own: the prototype route declares plain
+   global single-class rules, App Router keeps route CSS in the document across
+   client navigations, and a (0,1,0) rule must never be able to reach this one.
+   =========================================================================== */
+
+.v3.v3-place-amenities {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* Rule weight is the hierarchy: a section following content opens on the 2px
+   navy section rule. Same as Quiet, Instrument, Ledger and Index. */
+* + .v3.v3-place-amenities {
+  border-top: var(--v3-rule-section);
+}
+
+/* Head ---------------------------------------------------------------------- */
+.v3-place-amenities__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-md);
+}
+
+.v3-place-amenities__heading {
+  margin: 0;
+}
+
+.v3-place-amenities__lede {
+  max-width: var(--v3-measure-text);
+}
+
+/* The index -----------------------------------------------------------------
+   One chip per kind, each a real in-page anchor to its group. Tap-height, pill
+   radius, navy hairline; the count sits inside the chip at the quiet weight so
+   the row reads "Dining 3 · Wellness 1 …" at a glance. */
+.v3-place-amenities__index {
+  margin-top: var(--v3-space-xs);
+}
+
+.v3-place-amenities__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The same wash material as a Quiet chip (one chip look on the site), at the
+   tap height a control needs rather than a chip's label height. */
+.v3-place-amenities__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  background: var(--v3-wash);
+  border-radius: var(--v3-radius-pill);
+  color: var(--v3-navy);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  text-decoration: none;
+  transition:
+    background-color var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-place-amenities__chip:hover {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3-place-amenities__chip:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-place-amenities__chip-count {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-source);
+  opacity: 0.75;
+}
+
+/* The strip -----------------------------------------------------------------
+   Up to three frames of the place itself, edge to edge across the measure,
+   2:1 so a landscape and an aerial sit at one height AND the first row of
+   places — name, line, who can use it — is still inside the section's first
+   viewport at 1440x900 (3:2 frames pushed the first name to 705px and the
+   access line under the sticky alerts bar; a judge read the board as three
+   photographs captioned DINING, 2026-09-16). One frame runs full width; two
+   split it; three split it in thirds. No box, no rounded corner
+   (the register's radii are 0), one caption line naming what they are and
+   crediting a frame that is not our own. */
+.v3-place-amenities__strip {
+  display: grid;
+  grid-template-columns: repeat(var(--v3-strip-frames, 1), minmax(0, 1fr));
+  gap: var(--v3-space-2xs);
+  margin: 0 0 var(--v3-space-md);
+}
+
+.v3-place-amenities__strip[data-frames='2'] {
+  --v3-strip-frames: 2;
+}
+
+.v3-place-amenities__strip[data-frames='3'] {
+  --v3-strip-frames: 3;
+}
+
+.v3-place-amenities__frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  background: var(--v3-wash);
+}
+
+.v3-place-amenities__strip-caption {
+  grid-column: 1 / -1;
+  margin-top: var(--v3-space-3xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}
+
+/* A pictured tile: the guide's own cover above the name, same 3:2 frame. */
+.v3-place-amenities__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  margin-bottom: var(--v3-space-2xs);
+  background: var(--v3-wash);
+}
+
+@media (max-width: 47.99rem) {
+  /* One frame per row on a phone: three thumbnails in a row at 375 would be
+     100px wide, which shows nothing about a place. */
+  .v3-place-amenities__strip[data-frames='2'],
+  .v3-place-amenities__strip[data-frames='3'] {
+    --v3-strip-frames: 1;
+  }
+}
+
+/* The tiles -----------------------------------------------------------------
+   auto-fill so the column count is a consequence of the measure, never a
+   breakpoint someone has to maintain; min() keeps one column at 375. */
+.v3-place-amenities__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+  column-gap: var(--v3-space-xl);
+  row-gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The hairline IS the rhythm: a rule above every tile, so the columns read as
+   a set without a box around them. */
+.v3-place-amenities__tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+  padding: var(--v3-space-sm) 0 var(--v3-space-md);
+  border-top: var(--v3-rule-hairline);
+  /* A chip's anchor target lands under the sticky chrome, not behind it. */
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* The kind, as the tile's eyebrow: the reader scans the column of small caps
+   the way the group heads would have read, without the empty columns. */
+.v3-place-amenities__kind {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  line-height: var(--v3-leading-note);
+  text-transform: uppercase;
+}
+
+.v3-place-amenities__name {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-display);
+  line-height: var(--v3-leading-heading);
+  letter-spacing: var(--v3-track-display);
+}
+
+.v3-place-amenities__line {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+.v3-place-amenities__access {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}
+
+.v3-place-amenities__access-label {
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+/* The door: text link, tap-height, the same caret the strip doors use. */
+.v3-place-amenities__door {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  align-self: flex-start;
+  min-height: var(--v3-tap);
+  margin-top: auto;
+  color: var(--v3-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  text-decoration: none;
+}
+
+.v3-place-amenities__door::after {
+  content: '';
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  border-top: var(--v3-rule-weight-hairline) solid currentColor;
+  border-right: var(--v3-rule-weight-hairline) solid currentColor;
+  transform: rotate(45deg);
+}
+
+.v3-place-amenities__door:hover,
+.v3-place-amenities__door:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-place-amenities__door:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-place-amenities__source {
+  margin-top: var(--v3-space-lg);
+}

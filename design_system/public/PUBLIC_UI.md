@@ -341,3 +341,10 @@ Why each rule is the way it is, so a dead one is not reintroduced as a new idea.
 - **2026-08-28** — Place Stage prefers the registered Imagine still
   (`imagine-place-*`) over a leftover live crop. Area-guide video stays off
   Stage. Official city slugs pin `hero_image_url` to the matching file.
+- **2026-09-16** — **Pattern 10, BOARD** (`V3PlaceAmenities`, site queue SITE-116). The
+  places that make a place — every authored amenity row of a community config as a tile
+  under its own kind, chips as the in-page index, hairlines not boxes, a door to our guide
+  or the place's own page, the config's publishers as the §0 line. Built because the same
+  rows were printing as chip text inside a Quiet, fifth section down, and because a resort's
+  own homepage leads with exactly this grid. Same-rows rule: the Place JSON-LD's
+  `amenityFeature` is built from what the board prints.
