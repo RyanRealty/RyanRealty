@@ -157,6 +157,7 @@
       "add": "input-group",
       "file": "components/ui/input-group.tsx",
       "import": "@/components/ui/input-group",
+      "house": "app/sell/_v3/SellValueForm.tsx",
       "mustContain": [
         "data-slot=\"input-group\"",
         "InputGroupAddon"
@@ -169,6 +170,7 @@
       "add": "field",
       "file": "components/ui/field.tsx",
       "import": "@/components/ui/field",
+      "house": "app/sell/_v3/SellValueForm.tsx",
       "mustContain": [
         "data-slot=\"field\"",
         "FieldError"
@@ -181,6 +183,7 @@
       "add": "@beui/button",
       "file": "components/motion/button.tsx",
       "import": "@/components/motion/button",
+      "house": "app/sell/_v3/SellValueForm.tsx",
       "repo": "https://github.com/starc007/ui-components",
       "mustContain": [
         "pressScale",
@@ -194,6 +197,7 @@
       "add": "@beui/expanding-arrow-button",
       "file": "components/motion/expanding-arrow-button.tsx",
       "import": "@/components/motion/expanding-arrow-button",
+      "house": "app/sell/_v3/SellValueForm.tsx",
       "repo": "https://github.com/starc007/ui-components",
       "mustContain": [
         "DottedChevron",
@@ -207,6 +211,7 @@
       "add": "https://transitions.dev",
       "file": "components/motion/transitions-panel.tsx",
       "import": "@/components/motion/transitions-panel",
+      "house": "app/sell/_v3/SellValueForm.tsx",
       "repo": "https://github.com/Jakubantalik/transitions.dev",
       "mustContain": [
         "TRANSITIONS_PANEL_SURFACE",
