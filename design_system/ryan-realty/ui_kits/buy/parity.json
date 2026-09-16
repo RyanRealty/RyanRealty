@@ -179,7 +179,8 @@
       }
     ],
     "verdict": "The judge's own summary: demoMatch is true — the rail-open shots show a real carousel (arrow controls, partial-card peek, index counter) adapted into navy/cream, not a hidden or cream-boxed import. 55 is a rise of 4 over the 51 this same instrument scored the previous build (rise floor 3), and the blocking defect that build carried — the carousel's prev/next parked as a static pair below the 900px fold, so the shelf photographed as a static grid — is closed: the chevrons flank the track on the media midline at both widths. What did NOT rise is originality (9/30): the judge reads two consecutive card rails as the 'wall of identical cards' the house-field spec forbids. That, and the 375 chip strip's scroll cue, are the named work for the next pass. 55 is BELOW the 70 finish line, so this node is not done.",
-    "comparedToPrior": "rose",
+    "comparedToPrior": "rebaselined",
+    "rebaselineReason": "shotsHash: the prior mark was scored on the grok-4.6 table instrument from its own capture; this mark is claude-sonnet-5 via the claude CLI on a fresh six-shot capture, so the two shotsHash values differ and the score is a rebaseline, not a rise (set on the merge of main into claude/run-loop-v30as0, 2026-09-16, where ci:taste-canon refused the rose claim)",
     "priorMark": {
       "evaluatedAt": "2026-09-16",
       "score": 51,
