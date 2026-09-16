@@ -181,12 +181,20 @@ export function V3MosCompare({
             className="v3-mos-compare__beui"
           >
             <ComboboxTrigger className="v3-mos-compare__beui-trigger">
-              <ComboboxValue placeholder="Search a city with a published reading…" />
+              <ComboboxValue placeholder="Search a city with a published reading…">
+                {(value, label) =>
+                  value === REGION_ONLY ? `${regionLabel} only` : (label ?? 'Search a city with a published reading…')
+                }
+              </ComboboxValue>
             </ComboboxTrigger>
             <ComboboxContent align="start" className="v3-mos-compare__beui-content">
               <ComboboxInput placeholder="Search a city…" aria-label="Search a city with a published reading" />
               <ComboboxList ariaLabel="Cities with months of supply">
-                <ComboboxItem value={REGION_ONLY} keywords={['region', 'clear', regionLabel]}>
+                <ComboboxItem
+                  value={REGION_ONLY}
+                  textValue={`${regionLabel} only`}
+                  keywords={['region', 'clear', regionLabel]}
+                >
                   {regionLabel} only
                 </ComboboxItem>
                 {overlayable.map((city) => (

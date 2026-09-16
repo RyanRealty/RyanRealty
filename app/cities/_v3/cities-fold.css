@@ -47,26 +47,42 @@
   align-items: start;
 }
 
-.cities-fold__figure {
+.cities-fold__drawing {
   order: 1;
 }
 
-.cities-fold__drawing {
+.cities-fold__figure {
   order: 2;
+}
+
+/* 375 fold: drawing first, then the alerts sentence. Hide Atlas type
+   switches / price slider / event dock so the map and the figure share
+   the first viewport. Desktop keeps the full Atlas chrome. */
+@media (max-width: 63.99rem) {
+  .cities-fold .v3-atlas__dock,
+  .cities-fold .v3-atlas__aside {
+    display: none;
+  }
+
+  .cities-fold .v3-atlas__head {
+    padding-top: 0;
+    padding-bottom: var(--v3-space-2xs);
+  }
+
+  .cities-fold .v3-atlas__stage {
+    min-height: 14rem;
+    max-height: 38vh;
+  }
+
+  .cities-fold .v3-alerts__num {
+    white-space: nowrap;
+  }
 }
 
 @media (min-width: 64rem) {
   .cities-fold__stage {
     grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.9fr);
     gap: var(--v3-space-xl);
-  }
-
-  .cities-fold__drawing {
-    order: 1;
-  }
-
-  .cities-fold__figure {
-    order: 2;
   }
 }
 

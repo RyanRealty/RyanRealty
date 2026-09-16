@@ -27,6 +27,7 @@ import { trySendGroupMms } from '@/lib/crm/try-send-group-mms'
 export type CrmActionResult = { ok: true; notice?: string } | { ok: false; error: string }
 
 import { getCrmAccess, requireCrmAccess, type CrmAccess } from '@/app/actions/crm-access'
+import { getNextRecommendation as loadNextRecommendation } from '@/app/actions/crm-next-rec'
 export type { CrmAccess } from '@/app/actions/crm-access'
 export { getCrmAccess, requireCrmAccess }
 
@@ -1293,7 +1294,11 @@ export async function advanceEnrollmentNowAction(enrollmentId: number) {
 }
 
 export type { CrmNextRec } from '@/app/actions/crm-next-rec'
-export { getNextRecommendation } from '@/app/actions/crm-next-rec'
+
+/** Async wrapper — webpack "use server" refuses a bare re-export. */
+export async function getNextRecommendation(personId: number) {
+  return loadNextRecommendation(personId)
+}
 
 export type { BrokerActionItem } from '@/lib/data/crm/getBrokerActionQueue'
 
