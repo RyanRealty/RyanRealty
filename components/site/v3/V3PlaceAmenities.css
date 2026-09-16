@@ -146,8 +146,33 @@
   width: 100%;
   aspect-ratio: 3 / 2;
   object-fit: cover;
-  margin-bottom: var(--v3-space-2xs);
   background: var(--v3-wash);
+}
+
+/* The media slot ------------------------------------------------------------
+   One box per tile, whether it holds a photograph or the kind's mark, so the
+   spacing under it is written once and the scroll reveal has something with a
+   size to move. */
+.v3-place-amenities__media {
+  margin-bottom: var(--v3-space-2xs);
+}
+
+/* THE PLACE MARK: what a tile shows when we hold no photograph OF THIS PLACE
+   (SITE-116 round 2). Deliberately not a 3:2 plate. A grey box at the size of
+   a photograph reads as a picture that failed to load, and a board of eight of
+   them beside one real frame reads as a broken page — so the mark is a
+   control-height square of the same wash the chips use, carrying the kind's
+   Iconoir stroke in navy. A tile that HAS a photograph obviously has one; a
+   tile that does not is obviously a drawing. Nobody is told a picture exists
+   where none does, and nothing is invented to fill the space. */
+.v3-place-amenities__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  background: var(--v3-wash);
+  color: var(--v3-navy);
 }
 
 @media (max-width: 47.99rem) {

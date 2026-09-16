@@ -532,6 +532,27 @@
     display: none;
   }
 
+  /* THE PROMISE RIDES WITH THE FIELD (SITE-116 round 2, 2026-09-16). Measured
+     on /communities/tetherow at 375x812 the resting strip stood 183px tall —
+     22.5% of the screen, permanently over six rows of whatever section the
+     reader had scrolled to, and the evaluator read it as the bar covering the
+     ledger. The page already PAYS for the strip's height (the root carries
+     matching bottom padding and scroll padding, above), so nothing was
+     unreachable; what was wrong is how much of a phone one persistent bar
+     holds.
+     Four of those lines are the note, and the rule above has already hidden
+     the field it describes: below 48rem the resting strip cannot collect an
+     address at all, the button only OPENS the ask. So the promise appears with
+     the field it is a promise about — the same tap, the same frame, before a
+     single character is typed — and the resting bar is the claim, the control
+     and the close. Nothing is cut: the note is in the served HTML either way,
+     the #alerts callout carries the identical scope and unsubscribe line in
+     full at every width, and aria-describedby still points at it for the input
+     that now shares its state. */
+  .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__note {
+    display: none;
+  }
+
   .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__controls {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -43,13 +43,14 @@ import {
   tooFewSalesItems,
 } from '@/app/cities/[slug]/_v3/place-graphics'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
-import { getPlacePhotoStrip } from '@/lib/place-photos'
+import { curatedPlaceTilePhoto, getPlacePhotoStrip } from '@/lib/place-photos'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
 import { GOLF_COURSES } from '@/data/golf/courses'
 import { cityResorts, resortActiveSfrCounts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { getDistrictForCity } from '@/data/co-schools'
+import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { getPlaceLinks } from '@/lib/place-links'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
@@ -441,10 +442,13 @@ export default async function CommunityDetailPage({ params }: Props) {
     const post = amenity.blog_slug ? amenityPosts[amenity.blog_slug] : undefined
     const external = amenity.url?.trim()
     // The guide's own cover is a photograph OF this place (it is the post
-    // about it); nothing else is put on a tile.
+    // about it); nothing else is put on a tile. SITE-116 round 2 adds the one
+    // other source that can make that claim: an authored frame keyed to this
+    // row in lib/place-photos.ts. Everything else gets the board's drawn kind
+    // mark, because we do not own a photograph of it.
     const cover = post && 'heroImageUrl' in post && typeof post.heroImageUrl === 'string' && post.heroImageUrl.trim()
       ? { src: post.heroImageUrl.trim(), alt: `${amenity.name}, from our guide` }
-      : null
+      : curatedPlaceTilePhoto(slug, amenity.name)
     return {
       name: amenity.name,
       category: amenity.category,
@@ -473,15 +477,21 @@ export default async function CommunityDetailPage({ params }: Props) {
       category: 'Golf',
       description: courseSummary,
       access: null,
-      image: null,
+      // SITE-116 round 2: the three Tetherow frames we own are all of the
+      // course, so one of them stands on the course's own tile — the single
+      // place on this board we can photograph honestly.
+      image: curatedPlaceTilePhoto(slug, 'golf-course'),
       door: courseMap ? { href: '#course', label: 'The course, hole by hole' } : null,
     })
   }
   const amenityBoardOwnsRows = amenityBoardRows.some((row) => row.name?.trim())
   // Frames of the place for the board's strip: our curated photography and
-  // the graded library photos tagged with this slug, never the fold's hero.
+  // the graded library photos tagged with this slug, never the fold's hero and
+  // never a frame already standing on a tile (a photograph belongs to the
+  // place it shows, not to a general strip).
+  const amenityTileSrcs = amenityBoardRows.map((row) => row.image?.src ?? null)
   const amenityBoardPhotos = amenityBoardOwnsRows
-    ? await getPlacePhotoStrip(slug, { excludeSrc: stagePosterSrc, limit: 3 }).catch(() => [])
+    ? await getPlacePhotoStrip(slug, { excludeSrc: [stagePosterSrc, ...amenityTileSrcs], limit: 3 }).catch(() => [])
     : []
 
   const { measuredAnnual: hoaMeasuredAnnual, measuredBasis: hoaMeasuredBasis } =
@@ -627,6 +637,20 @@ export default async function CommunityDetailPage({ params }: Props) {
         : null
 
   const schoolDistrictInfo = getDistrictForCity(slug === 'eagle-crest' ? 'Redmond' : cityName)
+
+  // THE SCHOOLS THIS COMMUNITY'S OWN LISTINGS REPORT (SITE-116 round 2,
+  // competitive brief beat 7). The same read /subdivisions has shipped since
+  // W2.4, scoped City + SubdivisionName, and the same §0 threshold: a level
+  // publishes only when >= 10 listings here carry the field and >= 70% of them
+  // agree, so a split assignment prints nothing rather than a guess. A rail,
+  // because it is not a fold figure — a build-phase skip leaves the district
+  // sentence standing and ISR fills the named rows.
+  const namedSchools = await skippableRail(
+    () => getSubdivisionSchools(cityName, community.subdivision),
+    [],
+    2500,
+    'comm:schools',
+  ).catch(() => [])
 
   const marketFaqInput: MarketFaqInput = {
     grain: 'neighborhood',
@@ -894,6 +918,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     registry: registryEntry ?? null,
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
     schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
+    namedSchools,
     isResort,
     countIsAliasAware: aliasAwareCount != null,
     contactHref: `/contact?inquiryType=Buying&message=${encodeURIComponent(
@@ -1104,12 +1129,27 @@ export default async function CommunityDetailPage({ params }: Props) {
         />
 
         {/* Subdivisions inside the community - every row is a door, mirroring
-            the neighborhood page's ledger so the two grains read the same. */}
+            the neighborhood page's ledger so the two grains read the same.
+
+            ONE ID PER SECTION (SITE-116 round 2, 2026-09-16). This block and
+            the V3PlaceIndex legend above it BOTH shipped `id="subdivisions"`,
+            so the served page carried the id twice and the heading target
+            `subdivisions-heading` twice. Three things broke quietly: a
+            `#subdivisions` link (the Atlas legend's own doors, a shared URL, a
+            skip link) always landed on the first one, the second section's
+            `aria-labelledby` resolved to the FIRST section's heading, so a
+            screen reader announced two regions with the same name, and
+            ci:route-content-floor keeps the first match per id
+            (scripts/lib/content-floor.mjs), which left this ledger with no
+            depth floor at all while the parity file looked like it had one.
+            The two sections also ask different questions, so they now say so:
+            the legend is where the neighborhoods are, this is which of them
+            are moving. Nothing is removed — both sections keep every row. */}
         {firstChildSub ? (
           <V3Ledger
-            id="subdivisions"
+            id="subdivisions-moving"
             eyebrow={v3Text(`${publicName} · Subdivisions`)}
-            heading={v3Text('Subdivisions')}
+            heading={v3Text(`Which ${publicName} neighborhoods are moving`)}
             rows={[firstChildSub, ...restChildSub]}
             // A comparison, so the counts draw as lengths too: TASTE bans a
             // ledger past six rows that encodes nothing. The share comes off
@@ -1129,8 +1169,12 @@ export default async function CommunityDetailPage({ params }: Props) {
             figures={[firstMarketFigure, ...restMarketFigures]}
             chartFirst
             foldAfter={0}
+            // SITE-116 round 2: the trace names the MLS feed and the segment,
+            // not our own metric layer's internal name. "Market Truth" is a
+            // table in this repo; it is not a source a reader recognises or
+            // can go and check. Nothing else about the trace changes.
             source={v3Text(
-              `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
+              `regional MLS through Oregon Data Share: ` +
                 `detached single-family houses assigned to ${publicName} by boundary membership. ` +
                 `Sold history is leftover, not a city monthly chart. Months of supply and a buyer's or seller's verdict stay off this grain.`,
             )}
@@ -1152,7 +1196,10 @@ export default async function CommunityDetailPage({ params }: Props) {
               {
                 kind: 'prose',
                 term: 'No live market figures right now',
-                body: `The Market Truth metric layer published no figure for ${publicName} on this refresh, so this page is not printing a median, a supply figure, or a verdict.`,
+                // SITE-116 round 2: say what happened in the reader's words.
+                // The old sentence handed a visitor the name of one of our own
+                // tables and asked them to take it as an explanation.
+                body: `The last MLS refresh published no figure for ${publicName}, so this page is not printing a median, a supply figure, or a verdict.`,
               },
             ]}
           />

@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-const { pickLibraryPhotos } = await import('./place-photos')
+const { curatedPlaceTilePhoto, pickLibraryPhotos } = await import('./place-photos')
 
 const base = {
   type: 'photo',
@@ -63,5 +63,31 @@ describe('pickLibraryPhotos', () => {
     )
     expect(out[0]).toEqual({ src: 'https://x/storage/a.jpg', alt: 'A fairway at dusk', credit: null })
     expect(out[1]!.credit).toBe('Jane Doe')
+  })
+})
+
+/**
+ * SITE-116 round 2. A photograph on a board TILE is a claim that the frame
+ * shows that place, so the authored map is short on purpose and a place we
+ * hold no frame of gets nothing rather than a picture of somewhere else.
+ */
+describe('curatedPlaceTilePhoto', () => {
+  it("puts one of Tetherow's own course frames on the course's tile", () => {
+    const photo = curatedPlaceTilePhoto('tetherow', 'golf-course')
+    expect(photo?.src).toBe('/lp/tetherow/img/tetherow-aerial-course.jpg')
+    expect(photo?.alt).toMatch(/Tetherow course/i)
+  })
+
+  it('has nothing for the places we have not photographed', () => {
+    for (const place of ['Coorie', 'The Row', 'Tetherow Café', 'Tetherow Spa', 'Tetherow Sport']) {
+      expect(curatedPlaceTilePhoto('tetherow', place)).toBeNull()
+    }
+  })
+
+  it('is null for an unknown place, an unknown community, and an empty key', () => {
+    expect(curatedPlaceTilePhoto('tetherow', 'a place nobody has authored')).toBeNull()
+    expect(curatedPlaceTilePhoto('somewhere-else', 'golf-course')).toBeNull()
+    expect(curatedPlaceTilePhoto('tetherow', '   ')).toBeNull()
+    expect(curatedPlaceTilePhoto('tetherow', null)).toBeNull()
   })
 })
