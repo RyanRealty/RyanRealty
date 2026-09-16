@@ -1,4 +1,9 @@
 import { unstable_rethrow } from 'next/navigation'
+import {
+  isProductionBuildPhase,
+  notePublishedDegrade,
+  publishedRenderActive,
+} from '@/lib/site/degraded-isr'
 
 /**
  * The outcome of a guarded read. `ok: false` means `value` is the FALLBACK — the
@@ -49,6 +54,12 @@ export function withTimeoutFallback<T>(
   timeoutMs: number,
   logLabel?: string
 ): Promise<T> {
+  // SITE-118: during `next build` a published-section read gets 3× the runtime
+  // leash (build minutes are cheap; a timeout here used to bake the fallback
+  // into the deployed HTML). Chrome / sitemap callers never open the bag, so
+  // their budgets stay unchanged.
+  const budget =
+    publishedRenderActive() && isProductionBuildPhase() ? timeoutMs * 3 : timeoutMs
   return new Promise((resolve, reject) => {
     // A timeout is a silent no-op elsewhere in this file's history — a slow
     // (not failing) query degraded a whole page section to nothing with no
@@ -56,9 +67,10 @@ export function withTimeoutFallback<T>(
     // empty on every render with zero errors logged (design-audit P2). Warn
     // so a real fallback and a genuinely-empty result stay distinguishable.
     const t = setTimeout(() => {
-      if (logLabel) console.warn(`[withTimeoutFallback:${logLabel}] timed out after ${timeoutMs}ms`)
+      if (logLabel) console.warn(`[withTimeoutFallback:${logLabel}] timed out after ${budget}ms`)
+      notePublishedDegrade(logLabel ?? 'timeout')
       resolve(fallback)
-    }, timeoutMs)
+    }, budget)
     promise
       .then((value) => {
         clearTimeout(t)
@@ -78,6 +90,7 @@ export function withTimeoutFallback<T>(
           return
         }
         if (logLabel) console.error(`[withTimeoutFallback:${logLabel}]`, err)
+        notePublishedDegrade(logLabel ?? 'error')
         resolve(fallback)
       })
   })

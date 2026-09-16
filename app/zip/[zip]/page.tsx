@@ -99,6 +99,7 @@ import {
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { formatPrice, formatPriceExact } from '@/lib/format/money'
@@ -196,7 +197,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   })
 }
 
-export default async function ZipPage({ params }: { params: Promise<Params> }) {
+export default async function ZipPage(props: { params: Promise<Params> }) {
+  return runPublishedPageRender('zip', () => renderZipPage(props))
+}
+
+async function renderZipPage({ params }: { params: Promise<Params> }) {
   const { zip: rawZip } = await params
   const zip = normalizeZip(rawZip)
   if (!CANONICAL_ZIPS.has(zip)) notFound()

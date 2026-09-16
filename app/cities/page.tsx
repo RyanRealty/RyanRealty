@@ -33,6 +33,7 @@ import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 import { getCityContent } from '@/lib/city-content'
 import { cityHero, preferPlaceHero } from '@/lib/geo-images'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { formatCount } from '@/lib/format/count'
 import { formatDate, formatMonthYear, zonedDateKey } from '@/lib/format/date'
@@ -137,6 +138,10 @@ function cityReveal(layers: DetachedOverlay | undefined, months: readonly Public
 }
 
 export default async function CitiesPage() {
+  return runPublishedPageRender('cities', renderCitiesIndex)
+}
+
+async function renderCitiesIndex() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [allCities, allSnapshots] = await Promise.all([getCitiesForIndex(), getAllCitySnapshots()])
 

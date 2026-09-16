@@ -90,6 +90,7 @@ import { latestSaleMedian } from '@/lib/market/latest-sale-median'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import {
@@ -222,7 +223,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function CityDetailPage({ params }: Props) {
+export default async function CityDetailPage(props: Props) {
+  return runPublishedPageRender('city', () => renderCityDetail(props))
+}
+
+async function renderCityDetail({ params }: Props) {
   const { slug } = await params
 
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })

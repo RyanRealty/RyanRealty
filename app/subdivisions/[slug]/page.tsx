@@ -163,6 +163,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { subdivisionPageTrail } from '@/lib/site/place-trail'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatCount } from '@/lib/format/count'
 import { formatDate } from '@/lib/format/date'
@@ -477,7 +478,11 @@ const loadSubdivisionCore = cache(async (slug: string) => {
 // Page
 // ---------------------------------------------------------------------------
 
-export default async function SubdivisionPage({ params }: Props) {
+export default async function SubdivisionPage(props: Props) {
+  return runPublishedPageRender('subdivision', () => renderSubdivisionPage(props))
+}
+
+async function renderSubdivisionPage({ params }: Props) {
   const { slug } = await params
 
   const { inventoryRead, mtCounts, boundary, footprint, inventory, hasBoundary, registryMatch, mapTiles, refused } =

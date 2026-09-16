@@ -66,6 +66,7 @@ import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-b
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { neighborhoodPageTrail } from '@/lib/site/place-trail'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { skippableRail, skippableRailResult } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -191,7 +192,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function NeighborhoodDetailPage({ params }: Props) {
+export default async function NeighborhoodDetailPage(props: Props) {
+  return runPublishedPageRender('neighborhood', () => renderNeighborhoodDetail(props))
+}
+
+async function renderNeighborhoodDetail({ params }: Props) {
   const { slug: citySlug, neighborhoodSlug } = await params
 
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)

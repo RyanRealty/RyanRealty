@@ -14,3 +14,4 @@ export function revalidateTag(): void {}
 export function revalidate(): void {}
 export function cacheLife(): void {}
 export function cacheTag(): void {}
+export function unstable_noStore(): void {}
