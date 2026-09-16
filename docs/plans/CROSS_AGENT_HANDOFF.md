@@ -1,3 +1,12 @@
+# Current — 2026-09-16 (SITE-90 About Tip Ready PR #255 — judge CLIs missing)
+
+Surface: Cursor cloud `cursor-cloud-site90-20260916`, branch `cursor/site-90-about-tip-ready-e711`, PR #255 (draft). Do not merge.
+
+- **Craft:** `/about` first viewport is the boutique Central Oregon buy-and-sell sentence + full-bleed office exterior, then V3Proof. Reach at ~2014px / 1440. Zero AboutFaces. Catalog Button Group / carousel+Card / Input+Button held.
+- **--ship 0** on Mini receipt (`demoMatch: true`, `competitiveBriefPass: true`). `--about-lock` OK. Content floor on the new page: hero **1440px** (was 725), words 1049, images 26, jsonLd 8.
+- **Blocker:** `taste-evaluate about --builder grok-4.6` — cursor-agent missing, grok CLI missing, claude CLI missing. Did not invent a receipt. New shots are artifacts only.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`, `taste-receipt.mjs --ship`.
+
 # Current — 2026-09-16 (cloud grinder: SITE-103 landed at 70, SITE-91 rose to 55, production NOT deploying)
 
 Surface: Claude cloud routine `cloud-grinder-2026-09-16-04`, two lanes in worktrees, both merged to main and pushed.
