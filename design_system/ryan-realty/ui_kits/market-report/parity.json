@@ -16,7 +16,17 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, twice. Level 1 is the page's answer: the verdict headline, then the MOS two-bar (homes for sale vs a month of sales) as Instrument.chart when leftover active and months of supply both publish. Folded tiles carry median list, days to pending, and leftover extra-type/pace/mix. The region monthly median series is the fallback drawing when MOS cannot be derived. Flattening MOS to a 3.9 tile is a defect. Neither level carries an action (2026-08-27 single-ask consolidation): the page previously put a GHOST Value My Home button here, but MarketInquirySheet, the on-page inquiry form, is now the page's one ask and this Instrument answers the reader's question without soliciting one of its own. Level 2 is the last full calendar year of closed sales: a different population, its own trace, and its computedAt stamp ONLY when getCoMarketAnnual returned a mart row, because the live-aggregate fallback stamps now() and would print 'updated today' over a closed calendar year. All three of its figures are doors into the closed-sales explorer, the property-type one carrying its own type filter. That closed year is a singleton status (A27) and stays type.",
+      "section": "Pattern 1, twice. SITE-100: level 1 opens chartFirst with NO `chart` and a `drawing` that holds HubInsight (beautifului InsightCards) beside V3MosBars. The three-year overlay moves to `chartSecondary` under them and loses `yearPages` so two pagers do not sit a hand's width apart. Lead figures are median list and under contract (HUB_LEAD_FIGURES = 2), each with a sentence and a count so settleFigures publishes beui-number on the server. Homes-for-sale and a-month-of-sales are the two bars, never tiles. Flattening MOS to a 3.9 tile is a defect. Neither level carries an action (2026-08-27 single-ask consolidation). Level 2 is the last full calendar year of closed sales: a different population, its own trace, and its computedAt stamp ONLY when getCoMarketAnnual returned a mart row.",
+      "blocking": true
+    },
+    {
+      "name": "HubInsight",
+      "section": "SITE-100. The catalog control in the level-1 fold, app/housing-market/_v3/HubInsight.client.tsx, wrapping the INSTALLED beautifului source components/motion/insight-cards.tsx and the INSTALLED beUI number components/motion/number.tsx. Three sourced pages off the same board the region report uses (central-oregon/_v3/region-insight.ts): last twelve months of median sale vs the twelve before (Compare, scrubbed), homes closed each month (Anomaly), and last-full-year mix by type (Allocation). Under two pages the control does not render. The board also feeds Dataset variableMeasured, temporalCoverage, and FAQPage items.",
+      "blocking": true
+    },
+    {
+      "name": "V3MosBars",
+      "section": "SITE-100. Layout-lock months of supply as two named bars (homes for sale vs a month of sales), integer sales face, settle=true so the digits are beui-number. Never a KPI tile.",
       "blocking": true
     },
     {
@@ -99,8 +109,9 @@
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Instrument (level 1, region answer)",
+    "V3Instrument (level 1, region answer + HubInsight + V3MosBars)",
     "V3Ledger (market by city)",
+    "V3Quiet (chooser, more reports)",
     "V3Instrument (level 2, closed sales)",
     "V3Ledger (guides and insights)",
     "V3Instrument (level 2, long view: chart-room cards)",

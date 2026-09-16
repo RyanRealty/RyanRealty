@@ -62,26 +62,30 @@ describe('market instruments open on a claim and a drawing', () => {
     }
   })
 
-  it('SITE-88/101/103 year isolate: annual keeps the year pager, the region hands it to InsightCards', () => {
-    // SITE-103. The region opening now mounts the beautifului InsightCards
+  it('SITE-88/101/103/100 year isolate: annual keeps the year pager, hub and region hand it to InsightCards', () => {
+    // SITE-103 / SITE-100. The opening mounts the beautifului InsightCards
     // pager in the same fold as the long-view chart. Two pagers a hand's width
     // apart — one stepping years, one stepping claims — read as one broken
     // control, and the 2026-09-13 judge named the year chips as exactly that.
-    // So the chart's own year pager is OFF on this route, explicitly rather
+    // So the chart's own year pager is OFF on these routes, explicitly rather
     // than by omission. Nothing is lost: all three years still draw, each with
     // its marks, its hover and its legend toggle.
     expect(region).toMatch(/yearPages:\s*false/)
     expect(region).toMatch(/RegionInsight/)
+    expect(hub).toMatch(/yearPages:\s*false/)
+    expect(hub).toMatch(/HubInsight/)
     expect(annual).toMatch(/yearPages:\s*true/)
-    expect(hub).not.toMatch(/yearPages/)
     expect(city).not.toMatch(/yearPages/)
   })
 
-  it('draws MOS on the hub opening instrument, not two leftover tiles above the chart', () => {
-    expect(hub).toMatch(/buildMosSupplyChart/)
-    expect(hub).toMatch(/chart=\{mosChart \?\? regionChart\}/)
-    expect(hub).toMatch(/label: v3Text\('a month of sales'\)/)
+  it('draws MOS as V3MosBars on the hub opening, not two leftover tiles above the chart', () => {
+    expect(hub).toMatch(/buildRegionPlaceMos/)
+    expect(hub).toMatch(/V3MosBars/)
+    expect(hub).toMatch(/HubInsight/)
     expect(hub).toMatch(/chartFirst/)
+    expect(hub).toMatch(/foldAfter=\{HUB_LEAD_FIGURES\}/)
+    expect(hub).not.toMatch(/foldAfter=\{0\}/)
+    expect(hub).not.toMatch(/buildMosSupplyChart/)
   })
 
   it('does not retarget {city} homes for sale in market metadata keywords', () => {
