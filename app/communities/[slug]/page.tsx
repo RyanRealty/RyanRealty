@@ -43,6 +43,7 @@ import {
   tooFewSalesItems,
 } from '@/app/cities/[slug]/_v3/place-graphics'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { getPlacePhotoStrip } from '@/lib/place-photos'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
 import { GOLF_COURSES } from '@/data/golf/courses'
@@ -96,6 +97,8 @@ import {
   type AtlasRegion,
   V3PlaceIndex,
   type V3PlaceIndexEntry,
+  V3PlaceAmenities,
+  type V3PlaceAmenity,
   V3SectionTracker,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
@@ -131,7 +134,7 @@ import {
   reconcileListedVsDetachedFaq,
   reconcilePlaceHoaFaq,
 } from './_v3/community-figures'
-import { buildPlaceKnowledge, communityGuides, placeKnowledgeSource } from './_v3/place-knowledge'
+import { amenityBoardSource, buildPlaceKnowledge, communityGuides, foldCaptionSource, placeKnowledgeSource } from './_v3/place-knowledge'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
@@ -413,6 +416,11 @@ export default async function CommunityDetailPage({ params }: Props) {
   const headline = belongingHeadline(publicName, richContent)
   const belonging = belongingFigures(richContent, placeCharacter)
   const belongingLine = belongingCaption(belonging)
+  // The caption's figures carry their source IN VIEW, not only in a title
+  // attribute (SITE-116 re-score, 2026-09-16 — honesty 6 for this line).
+  const belongingSource = belongingLine
+    ? foldCaptionSource({ content: richContent, hasMeasuredHoa: Boolean(measuredPlaceHoaInput(placeCharacter).measuredAnnual) })
+    : undefined
 
   const amenityBlogSlugs = (richContent?.amenities ?? [])
     .map((a) => a.blog_slug)
@@ -421,6 +429,60 @@ export default async function CommunityDetailPage({ params }: Props) {
     amenityBlogSlugs.length > 0
       ? await skippableRail(() => getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'comm:amenityPosts')
       : {}
+
+  // THE AMENITY BOARD (SITE-116, Matt 2026-09-16: "we have to show that we are
+  // the absolute experts on these planned communities"). Every authored row in
+  // the config, as its own section directly after the fold: name, kind, one
+  // line, who can use it, and a door — our published guide about the place
+  // when one exists (resolved above, so a link is never to an unpublished
+  // post), else the row's own recorded URL, else no door. Nothing here is
+  // invented: a community with no rows on file renders no board.
+  const amenityBoardRows: V3PlaceAmenity[] = (richContent?.amenities ?? []).map((amenity) => {
+    const post = amenity.blog_slug ? amenityPosts[amenity.blog_slug] : undefined
+    const external = amenity.url?.trim()
+    // The guide's own cover is a photograph OF this place (it is the post
+    // about it); nothing else is put on a tile.
+    const cover = post && 'heroImageUrl' in post && typeof post.heroImageUrl === 'string' && post.heroImageUrl.trim()
+      ? { src: post.heroImageUrl.trim(), alt: `${amenity.name}, from our guide` }
+      : null
+    return {
+      name: amenity.name,
+      category: amenity.category,
+      description: amenity.description,
+      access: amenity.access,
+      image: cover,
+      door: post
+        ? { href: `/blog/${post.slug}`, label: 'Read our guide' }
+        : external
+          ? { href: external, label: 'Their own page', external: true }
+          : null,
+    }
+  })
+  // GOLF ON THE BOARD (SITE-116 re-score, 2026-09-16: three course frames
+  // sat on a board with no golf on it). Ten configs carry authored course
+  // facts (course_specs.summary, architect); where they exist the course is a
+  // place on the board — named from the course map when the page draws one,
+  // described in the config's own words, with a door to the hole-by-hole map
+  // lower on the page. No access line is authored for a course, so none prints.
+  const courseMap = await getCommunityCourseMap(slug).catch(() => null)
+  const courseSummary = richContent?.courseSpecs?.summary?.trim()
+  if (courseSummary) {
+    amenityBoardRows.unshift({
+      key: 'golf-course',
+      name: courseMap?.map?.name?.trim() || `${publicName} golf course`,
+      category: 'Golf',
+      description: courseSummary,
+      access: null,
+      image: null,
+      door: courseMap ? { href: '#course', label: 'The course, hole by hole' } : null,
+    })
+  }
+  const amenityBoardOwnsRows = amenityBoardRows.some((row) => row.name?.trim())
+  // Frames of the place for the board's strip: our curated photography and
+  // the graded library photos tagged with this slug, never the fold's hero.
+  const amenityBoardPhotos = amenityBoardOwnsRows
+    ? await getPlacePhotoStrip(slug, { excludeSrc: stagePosterSrc, limit: 3 }).catch(() => [])
+    : []
 
   const { measuredAnnual: hoaMeasuredAnnual, measuredBasis: hoaMeasuredBasis } =
     measuredPlaceHoaInput(placeCharacter)
@@ -838,6 +900,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       `I have questions about short-term rental rules in ${publicName}.`,
     )}`,
     amenityPosts,
+    amenitiesOwnSection: amenityBoardOwnsRows,
     character: placeCharacter,
   })
 
@@ -862,7 +925,6 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   // The community's own course, when the registry names one that has a map.
   // Committed geometry, not a query; the catch is the prerender contract.
-  const courseMap = await getCommunityCourseMap(slug).catch(() => null)
 
   const communitySchemas = buildCommunitySchemas({
     slug,
@@ -878,6 +940,8 @@ export default async function CommunityDetailPage({ params }: Props) {
     // beside them from a second array, so the markup can never describe a
     // sentence the page does not print.
     faqs: answerFaqs,
+    // SITE-116: the same rule for the Place's amenityFeature — the board's rows.
+    amenities: amenityBoardOwnsRows ? amenityBoardRows : undefined,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
@@ -935,6 +999,9 @@ export default async function CommunityDetailPage({ params }: Props) {
                 title={belongingTrace(publicName)}
               >
                 {belongingLine}
+                {belongingSource ? (
+                  <span className="place-opening__caption-source"> {belongingSource}</span>
+                ) : null}
               </p>
             ) : null}
           </div>
@@ -989,6 +1056,23 @@ export default async function CommunityDetailPage({ params }: Props) {
             <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
           </div>
         </div>
+
+        {/* SITE-116: the places that make the place, directly after the fold.
+            PLACE_PAGES.md master-plan order puts "what this place is" and the
+            amenity grid before the houses; the fold above keeps the Atlas as
+            SITE-87 locked it, so the board is the first section after it. */}
+        {amenityBoardOwnsRows ? (
+          <V3PlaceAmenities
+            id="amenities"
+            eyebrow={`${publicName} · The places`}
+            heading={`Life at ${publicName}`}
+            amenities={amenityBoardRows}
+            photos={amenityBoardPhotos}
+            photosCaption={`Photographs of ${publicName}`}
+            source={amenityBoardSource(publicName, richContent)}
+            sourceName={richContent?.sources?.find((src) => src.publisher?.trim())?.publisher ?? null}
+          />
+        ) : null}
 
         {/* SITE-30: the map's legend, in the served HTML. The same plat cells
             the Atlas above draws, each one a real anchor with the homes for

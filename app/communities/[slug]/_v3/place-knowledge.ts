@@ -51,8 +51,43 @@ type Registry = {
  * zero source elements while stating "Founded 2008", "Acres 700", "Course
  * architect David McLay Kidd" and "Ranked #57 (Golf Digest)".
  */
-export function placeKnowledgeSource(input: {
-  name: string
+/** The config's distinct publishers, in the order the config lists them, as one English list. */
+function publisherList(content: ResortCommunityContent | null): string | undefined {
+  const publishers: string[] = []
+  for (const s of content?.sources ?? []) {
+    const p = s.publisher?.trim()
+    if (p && !publishers.includes(p)) publishers.push(p)
+  }
+  if (publishers.length === 0) return undefined
+  return publishers.length === 1
+    ? publishers[0]
+    : publishers.length === 2
+      ? `${publishers[0]} and ${publishers[1]}`
+      : `${publishers.slice(0, -1).join(', ')}, and ${publishers[publishers.length - 1]}`
+}
+
+/**
+ * The §0 line under the amenity board (SITE-116): every tile is an authored
+ * row from the community config, so the disclosure names the config's own
+ * publishers — the same list the belonging block names, because it is the
+ * same file. Undefined when the config recorded no publisher, and then the
+ * board renders no trace rather than an invented one.
+ */
+export function amenityBoardSource(name: string, content: ResortCommunityContent | null): string | undefined {
+  const list = publisherList(content)
+  if (!list) return undefined
+  return `Every place above is recorded in ${name}'s sources: ${list}. Who can use it is as those sources state it; hours, prices and membership terms change, and the place's own site is the door.`
+}
+
+/**
+ * The visible source under the fold caption (SITE-116 re-score, 2026-09-16:
+ * a judge scored honesty 6 because "$2,052 HOA a year · 3 membership tiers ·
+ * 700 acres" sat under the H1 with a hover title and no visible citation while
+ * every other figure on the page carried one). One short clause: the config's
+ * first publisher and how many more, and the HOA's basis when it is measured
+ * from listings rather than authored. Undefined when nothing is sourced.
+ */
+export function foldCaptionSource(input: {
   content: ResortCommunityContent | null
   hasMeasuredHoa: boolean
 }): string | undefined {
@@ -61,13 +96,20 @@ export function placeKnowledgeSource(input: {
     const p = s.publisher?.trim()
     if (p && !publishers.includes(p)) publishers.push(p)
   }
-  if (publishers.length === 0) return undefined
-  const list =
-    publishers.length === 1
-      ? publishers[0]
-      : publishers.length === 2
-        ? `${publishers[0]} and ${publishers[1]}`
-        : `${publishers.slice(0, -1).join(', ')}, and ${publishers[publishers.length - 1]}`
+  const parts: string[] = []
+  if (publishers.length === 1) parts.push(`Source: ${publishers[0]}`)
+  else if (publishers.length > 1) parts.push(`Sources: ${publishers[0]} and ${publishers.length - 1} more on file`)
+  if (input.hasMeasuredHoa) parts.push('HOA from current listings here')
+  return parts.length ? parts.join(' · ') : undefined
+}
+
+export function placeKnowledgeSource(input: {
+  name: string
+  content: ResortCommunityContent | null
+  hasMeasuredHoa: boolean
+}): string | undefined {
+  const list = publisherList(input.content)
+  if (!list) return undefined
   const authored = `The facts above come from ${input.name}'s recorded sources: ${list}.`
   return input.hasMeasuredHoa
     ? `${authored} The HOA figure is not authored — it comes from current listings here and carries its own basis on the row.`
@@ -132,6 +174,14 @@ export function buildPlaceKnowledge(input: {
    * door, and the config cannot know a post's status.
    */
   amenityPosts: Readonly<Record<string, { slug: string, title: string }>>
+  /**
+   * True when the page renders the amenities as their own section (the
+   * V3PlaceAmenities board, SITE-116, 2026-09-16). The chip rows and the
+   * guide doors then belong to that section and are NOT repeated here — one
+   * source for a fact, the same rule a number follows (PLACE_PAGES.md rule 5).
+   * Default false, so every other caller and fixture renders as before.
+   */
+  amenitiesOwnSection?: boolean
   /**
    * Measured build years + HOA from member listings (PLACE_CONTENT_RULES
    * R1-R3), the same read V3PlaceCharacter renders lower on the page. A
@@ -207,7 +257,7 @@ export function buildPlaceKnowledge(input: {
   }
 
   const byCategory = new Map<string, string[]>()
-  for (const amenity of content?.amenities ?? []) {
+  for (const amenity of input.amenitiesOwnSection ? [] : content?.amenities ?? []) {
     const category = amenity.category?.trim() || 'On site'
     const label = amenity.access ? `${amenity.name} (${amenity.access})` : amenity.name
     if (!label?.trim()) continue
@@ -220,7 +270,7 @@ export function buildPlaceKnowledge(input: {
   }
 
   const seenPost = new Set<string>()
-  for (const amenity of content?.amenities ?? []) {
+  for (const amenity of input.amenitiesOwnSection ? [] : content?.amenities ?? []) {
     const post = amenity.blog_slug ? input.amenityPosts[amenity.blog_slug] : undefined
     if (!post || seenPost.has(post.slug)) continue
     seenPost.add(post.slug)

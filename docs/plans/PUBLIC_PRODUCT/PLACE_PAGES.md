@@ -150,6 +150,14 @@ Do not open with a number hero. Do not put subdivisions after a long “about”
 
 A master-plan page that opens like Bend has already lost to tetherow.com.
 
+**Where the amenity grid sits when the Atlas owns the fold (SITE-116, 2026-09-16).** SITE-87
+locked the Atlas and the alerts figure into the first viewport with the value ask under them.
+Items 2–3 then follow the fold directly: `V3PlaceAmenities #amenities` (the board — every
+authored row in `data/resort-community-<slug>.json`, grouped by the config's own kinds, chips
+as the index, a door to our guide or the place's own page, the config's publishers as the §0
+line) comes before `#subdivisions`. It is built from the same rows as the Place JSON-LD's
+`amenityFeature`. A community with no rows on file renders no board.
+
 ---
 
 ## Plat — `/subdivisions/…`
@@ -215,5 +223,6 @@ Place pages have to be good enough that an ad can land on them. That is the qual
 3. Kill the atlas how-to sentence on every grain in the same pass as the first build.
 4. Do not restyle Bend, Tetherow, and a plat to share a first screen again.
 5. Competitive audit is per grain, once, written under each heading above. Re-run it when a competitor page changes, not every session.
+6. **A finding on a data section is answered by strengthening its form, never by deleting the data or the drawing** (Matt 2026-09-16: "my community pages are being stripped … this has to be fixed within the loop and evaluation process and then not allowed to regress"). On 2026-09-15 the table's "timid plat" critique was answered by removing the parcels from the Atlas, and every section id stayed on the page, so `ci:page-purpose` and the ten content-floor totals both passed. `ci:route-content-floor` now also holds each section's item count (`contentFloor.sections`, seeded per class, shrink-only, lowered only by hand with a reason) so depth cannot leave a place page silently. Seed it for a class the first time that class is built or re-scored.
 
 Tests that currently freeze “Bend’s first fold is the leftover face + split” are tests of the trap. When this spec ships, those tests move with it.

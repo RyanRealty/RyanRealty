@@ -123,6 +123,7 @@ export default async function PriceDropsRegionPage() {
       pageUrl,
       placeName: 'Central Oregon',
       total,
+      shownCount: drops.length,
       totalReducedLabel,
       medianDropPctLabel,
       fetchedAt: drops.length > 0 ? fetchedAt : null,

@@ -8,14 +8,38 @@
     "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry→/contact. No broker roster on About.",
     "refuse": "AboutFaces, AboutTeamTeaser, Meet-the-Team dump, broker Cards, AvatarGroup. Looking that invents past this checklist. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
     "beats": [
-      { "id": "1", "text": "Firm story opens the page: one plain boutique Central Oregon buy-and-sell sentence. Not a staccato three-liner. Not a staff-directory fold." },
-      { "id": "2", "text": "Brokers are not on About. No broker Cards, roster dump, Meet-the-Team band, or AboutTeamTeaser. Brokers belong on /team only." },
-      { "id": "3", "text": "Firm reviews as words (V3Proof) plus dated local closings as a carousel of recorded sales. Never invent MOS." },
-      { "id": "4", "text": "Equal four-up reach: Call, Text, Email, Schedule. No Call-dominant lead." },
-      { "id": "5", "text": "Office 115 NW Oregon Ave #2 is on the page. Optional exterior hero of that office." },
-      { "id": "6", "text": "Firm OREA license is on the page. One-line inquiry GET-submits to /contact." },
-      { "id": "7", "text": "Navy and cream only. Redfin is the layout and interaction reference, not a second palette." },
-      { "id": "8", "text": "Catalog interactions are real: closings carousel (shadcn carousel + Card) and inquiry input. Avatar-import plus cream CSS is not a demo match." }
+      {
+        "id": "1",
+        "text": "Firm story opens the page: one plain boutique Central Oregon buy-and-sell sentence. Not a staccato three-liner. Not a staff-directory fold."
+      },
+      {
+        "id": "2",
+        "text": "Brokers are not on About. No broker Cards, roster dump, Meet-the-Team band, or AboutTeamTeaser. Brokers belong on /team only."
+      },
+      {
+        "id": "3",
+        "text": "Firm reviews as words (V3Proof) plus dated local closings as a carousel of recorded sales. Never invent MOS."
+      },
+      {
+        "id": "4",
+        "text": "Equal four-up reach: Call, Text, Email, Schedule. No Call-dominant lead."
+      },
+      {
+        "id": "5",
+        "text": "Office 115 NW Oregon Ave #2 is on the page. Optional exterior hero of that office."
+      },
+      {
+        "id": "6",
+        "text": "Firm OREA license is on the page. One-line inquiry GET-submits to /contact."
+      },
+      {
+        "id": "7",
+        "text": "Navy and cream only. Redfin is the layout and interaction reference, not a second palette."
+      },
+      {
+        "id": "8",
+        "text": "Catalog interactions are real: closings carousel (shadcn carousel + Card) and inquiry input. Avatar-import plus cream CSS is not a demo match."
+      }
     ]
   },
   "note": "SITE-90 2026-09-14 Matt lock. About = brokerage, not Meet the Team. Brokers belong on /team only. requiredComponents opener is AboutFirm, not AboutFaces, not AboutTeamTeaser. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings catalog carousel+Card, AboutReach Button Group Call/Text/Email/Schedule, AboutOffice Card, AboutInquiry Input+Button GET /contact, Atlas, Quiet #about, V3Answers, Footer. Tip Ready needs competitiveBriefEvidence quotes in source — a lone boolean is refuse.",
@@ -146,11 +170,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-12",
+    "evaluatedAt": "2026-09-16",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch true on the catalog evaluate land. Evidence re-landed from About source. Do not invent scores.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "evaluator": "scripts/taste-evaluate.ts — claude CLI fallback (grok CLI and cursor-agent absent in the cloud sandbox; claude-sonnet-5 answered). Builder claude-opus-5, passed as --builder. Three scorings in one call; median.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
     "demoMatch": true,
     "competitiveBriefPass": true,
     "competitiveBriefEvidence": {
@@ -186,59 +210,93 @@
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:4653719af77eabce94993ecca059128c906471588319ec759ea0cf9e8f4d5309",
+    "shotsHash": "sha256:008a9e1176dfcba3037ff7a742c808c15e27fdc65b1a5270d6285810e8742dff",
     "scores": [
       52,
-      47,
-      57
+      56,
+      60
     ],
-    "score": 52,
-    "beats": "Mini re-eval: competitiveBriefPass true. demoMatch true. Catalog install: Button Group reach, Input+Button inquiry, carousel+Card closings, Card office. Evidence quotes copied from About source.",
+    "score": 56,
+    "perCriterion": {
+      "design": 17,
+      "originality": 14,
+      "interaction": 8,
+      "craft": 9,
+      "honesty": 8
+    },
+    "beats": "Redfin's brokerage/office page — we win on the live filtered sales-density map with a real-time listing ticker and neighborhood-count pills, which no Bend competitor brokerage page shows; we lose on the reach bar and inquiry module, which read less finished than Redfin's contact block.",
     "adaptedFrom": [
-      { "id": "house-firm" },
-      { "id": "house-proof" },
-      { "id": "shadcn-button-group" },
-      { "id": "shadcn-card" },
-      { "id": "shadcn-carousel" },
-      { "id": "shadcn-input" }
+      {
+        "id": "house-firm"
+      },
+      {
+        "id": "house-proof"
+      },
+      {
+        "id": "shadcn-button-group"
+      },
+      {
+        "id": "shadcn-card"
+      },
+      {
+        "id": "shadcn-carousel"
+      },
+      {
+        "id": "shadcn-input"
+      }
     ],
-    "evaluatorBlocked": "Mini 2026-09-14: competitiveBriefPass true, demoMatch true on the catalog evaluate land. Scores 52/47/57 are the prior 3-scoring instrument. Do not invent a new score.",
     "defects": [
       {
-        "section": "#reach",
+        "section": "reach bar (Call/Text/Email/Schedule)",
         "severity": "taste",
-        "finding": "Reach must photograph as the catalog Button Group four-up, not house editorial columns. Cos re-runs after catalog install.",
+        "finding": "The four-up reach control is a flat white bar with plain black text and thin dividers — no button chrome, no hover/pressed state, no icon, nothing that reads as tappable. It looks like a table header, not the catalog Button Group demo it's supposed to be.",
+        "primitive": "app/about/page.tsx",
         "replaceWith": "shadcn-button-group"
       },
       {
-        "section": "#firm-sales",
-        "severity": "taste",
-        "finding": "Closings must photograph as catalog carousel prev/next + Card peek, not a house rail wrapper. Cos re-runs after catalog install.",
-        "replaceWith": "shadcn-carousel"
+        "section": "office card / inquiry input region",
+        "severity": "defect",
+        "finding": "On desktop there is a large dead cream gap between the office card on the left and the floating inquiry input on the right — the input and Send button sit isolated mid-page with no visual relationship to the office card beside them, reading as an unfinished layout rather than a deliberate composition.",
+        "primitive": "app/about/page.tsx",
+        "replaceWith": null
       },
       {
-        "section": "#write",
+        "section": "hero / proof / closings stack",
         "severity": "taste",
-        "finding": "Inquiry must photograph as catalog Input + Button. Cos re-runs after catalog install.",
-        "replaceWith": "shadcn-input"
+        "finding": "Three consecutive sections (hero, proof, closings) all repeat the identical eyebrow (small-caps label) → Amboqia heading → content rows → text link shape with no variation in width, density, or media — the stacked-section tell, even though each section's content differs.",
+        "primitive": "app/about/page.tsx",
+        "replaceWith": null
       },
       {
-        "section": "#office",
+        "section": "In their own words (proof)",
         "severity": "taste",
-        "finding": "Office must photograph as a catalog Card (photo, body, footer), not a definition-list reprint. Cos re-runs after catalog install.",
-        "replaceWith": "shadcn-card"
+        "finding": "Copy promises reviews shown 'one at a time' but the shot shows a single static quote plus a plain 'Every review' text link — no visible arrow, dot, or scrubber control that would let a visitor actually cycle through reviews, so the interaction the copy describes isn't demonstrated.",
+        "primitive": "app/about/page.tsx",
+        "replaceWith": null
+      },
+      {
+        "section": "neighborhood pill list under the map",
+        "severity": "taste",
+        "finding": "Sunriver 150 / Summit West 140 / Mountain View 115 etc. are raw counts with no plain-English meaning and no visual encoding (bar length, shading) tying them back to the density map right above — a KPI list sitting next to a much richer visualization it should be reinforcing.",
+        "primitive": "app/about/page.tsx",
+        "replaceWith": "house-atlas"
       }
     ],
+    "verdict": "This is a correct, on-brand About page with one genuinely strong section — the live filtered sales-density map with real-time activity feed — surrounded by sections that are structurally complete but visually inert: a reach bar with zero button affordance, a proof block that claims rotation it doesn't show, and a dead whitespace gap around the inquiry input. demoMatch holds on the closings carousel and inquiry input, but the Button Group reach control looks like unstyled text, not the catalog demo. Every competitive-brief beat (firm story opener, no brokers, reviews+closings, four-up reach, office+OREA, inquiry-to-contact, navy/cream, real carousel) is technically present, so competitiveBriefPass is true, but 'present' and 'well-made' aren't the same thing here.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
+      "evaluatedAt": "2026-09-12",
       "score": 52,
+      "scores": [
+        52,
+        47,
+        57
+      ],
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:4653719af77eabce94993ecca059128c906471588319ec759ea0cf9e8f4d5309"
     },
-    "rebaselineReason": "Mini 2026-09-14: competitiveBriefPass true, demoMatch true on the catalog evaluate land. Evidence re-landed from About source. rubricVersion and shotsHash differ from the prior/HEAD instrument; scores 52/47/57 stay. Do not invent a new score.",
-    "verdict": "Brief holds. Catalog controls installed. demoMatch true. Evidence quotes are verbatim About source. The opener is the firm claim, not a Meet-the-Team dump.",
+    "rebaselineReason": "evaluatorModel differs: this mark is claude-sonnet-5 (claude CLI fallback; the grok CLI and cursor-agent are absent in the cloud sandbox) against a grok-4.6 prior receipt and a grok-4.6 table, so it is a different instrument — no rise is claimed and SITE-90 stays in_progress until the round judge scores these shots. shotsHash differs too: the shots were recaptured from a fresh production build (BUILD_ID 5c5L1ATjdwteWlb02X37q) after the work landed. Work in this mark (SITE-90, 2026-09-16, claude-cloud-fermi-20260915): V3Proof picks show the whole first sentence (no ellipsis under a claim that says \"in full\"); the door to /reviews sits in the band head inside the 1440 fold; Review JSON-LD for the four printed reviews; the office card prints the firm license once (\"Firm OREA 201253677\", was \"OREA OREA\").",
     "contactListIsFirstContent": false,
     "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 + firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump. Brokers belong on /team."
   },

@@ -14,11 +14,13 @@ function ratingValue(rating: number): number {
   return Math.min(5, Math.max(1, Math.round(rating)))
 }
 
-export function buildReviewsJsonLd(
-  siteUrl: string,
-  quotes: readonly ReviewQuote[],
-): Record<string, unknown> {
-  const reviews = quotes.map((t) => ({
+/**
+ * The Review items alone — one per quote actually rendered — for any page that
+ * prints reviews (SITE-90: /about prints the newest four in V3Proof and had no
+ * Review markup for them). Same policy as above: no aggregateRating.
+ */
+export function reviewItemsJsonLd(quotes: readonly ReviewQuote[]): Array<Record<string, unknown>> {
+  return quotes.map((t) => ({
     '@type': 'Review',
     author: { '@type': 'Person', name: t.author },
     reviewBody: t.quote,
@@ -30,6 +32,13 @@ export function buildReviewsJsonLd(
       worstRating: 1,
     },
   }))
+}
+
+export function buildReviewsJsonLd(
+  siteUrl: string,
+  quotes: readonly ReviewQuote[],
+): Record<string, unknown> {
+  const reviews = reviewItemsJsonLd(quotes)
 
   return {
     '@context': 'https://schema.org',

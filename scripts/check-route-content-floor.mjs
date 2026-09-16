@@ -13,9 +13,20 @@
  *
  * Under the floor is a hard fail. Lowering a floor is done by editing the
  * number in the same commit (`--seed` re-reads every class and rewrites the
- * floors; the diff shows the drop). A class with no contentFloor is reported
- * and counts as a failure when --require-all is passed; otherwise it warns,
- * so a brand-new class can land and be seeded in the next commit.
+ * floors; the diff shows the drop) — including a number under
+ * `contentFloor.floors.sectionDepth`, added 2026-09-16 (see below). A class
+ * with no contentFloor is reported and counts as a failure when
+ * --require-all is passed; otherwise it warns, so a brand-new class can land
+ * and be seeded in the next commit.
+ *
+ * SECTION DEPTH (Matt 2026-09-16, "my community pages are also being
+ * stripped"): three commits cut taxlot parcels off the Atlas, trimmed a plat
+ * index's provenance, and genericized copy, while every section id stayed on
+ * the page — so this gate's ten page-level totals (and ci:page-purpose's
+ * section list) both passed. `contentFloor.floors.sectionDepth` (see
+ * lib/content-floor.mjs) closes that: it floors ITEMS and WORDS per section
+ * id, and flags a floor-held section id that vanished from the page
+ * entirely. Older seeds carry no `sectionDepth` key and are unaffected.
  *
  * Usage:
  *   npm run ci:route-content-floor                       # needs a server (BASE)
@@ -23,20 +34,38 @@
  *   node scripts/check-route-content-floor.mjs --seed https://ryan-realty.com
  *   node scripts/check-route-content-floor.mjs --classes about,team
  *
+ *   # Seed ONLY sectionDepth, leaving the ten existing page-level floors (and
+ *   # their seededAt) exactly as they are — for landing depth floors on
+ *   # classes whose page-level floors are mid-review elsewhere, without
+ *   # re-seeding numbers nobody asked to reseed. Requires an EXISTING
+ *   # contentFloor (seed the base ten first with a plain --seed).
+ *   node scripts/check-route-content-floor.mjs --seed <baseUrl> --classes community --sections-only
+ *
+ *   # Verify what a seed would write without touching the tracked file:
+ *   node scripts/check-route-content-floor.mjs --seed <baseUrl> --classes community --dry-run
+ *   # Or write the would-be result to a scratch copy instead of the tracked
+ *   # parity.json (exactly one class only):
+ *   node scripts/check-route-content-floor.mjs --seed <baseUrl> --classes community --parity-out scratchpad/community-parity-copy.json
+ *
  * Runs inside scripts/run-runtime-gates.sh after tap-targets, and in the CI
  * production-server step. A missing server is a failure, never a skip.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { chromium } from 'playwright'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
-import { floorProblems, measurePage, seedFloor, spliceContentFloor } from './lib/content-floor.mjs'
+import { floorProblems, isPlainObject, measurePage, seedFloor, seedSectionFloors, spliceContentFloor } from './lib/content-floor.mjs'
+import { openGateContext } from './lib/gate-browser.mjs'
 
 const ROOT = process.cwd()
 const CLASS_REGISTRY_PATH = 'design_system/public/taste-classes.json'
 const UI_KITS = 'design_system/ryan-realty/ui_kits'
 const NAV_TIMEOUT_MS = Number(process.env.CONTENT_FLOOR_TIMEOUT_MS ?? 60_000)
 const SETTLE_MS = Number(process.env.CONTENT_FLOOR_SETTLE_MS ?? 2_000)
+// Hydration settle: re-read the per-section map until two consecutive
+// readings agree (see measure()).
+const STABLE_PASSES = 5
+const STABLE_INTERVAL_MS = 1_500
 const NAV_ATTEMPTS = 2
 
 const argv = process.argv.slice(2)
@@ -45,6 +74,15 @@ const SEED_BASE = seedIdx >= 0 ? String(argv[seedIdx + 1] ?? '').replace(/\/+$/,
 const classesIdx = argv.indexOf('--classes')
 const ONLY = classesIdx >= 0 ? String(argv[classesIdx + 1] ?? '').split(',').map((s) => s.trim()).filter(Boolean) : null
 const REQUIRE_ALL = argv.includes('--require-all')
+// --sections-only (2026-09-16): re-seeding sectionDepth must not force a
+// reseed of the ten page-level floors on a class whose page-level numbers
+// are under separate review — see the file header.
+const SECTIONS_ONLY = argv.includes('--sections-only')
+// --dry-run / --parity-out: verify a seed without touching the tracked
+// parity.json. Both only make sense alongside --seed.
+const DRY_RUN = argv.includes('--dry-run')
+const parityOutIdx = argv.indexOf('--parity-out')
+const PARITY_OUT = parityOutIdx >= 0 ? String(argv[parityOutIdx + 1] ?? '').trim() : null
 
 const BASE = (SEED_BASE ?? process.env.CONTENT_FLOOR_BASE_URL ?? process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/+$/, '')
 
@@ -85,8 +123,41 @@ async function measure(page, url) {
         window.scrollTo(0, 0)
       })
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
+      // The hero measurement only counts images that have FINISHED loading, so
+      // a frame still in flight when the page is read hands "widest in-fold
+      // image" to whatever small thing had loaded — the 120px chrome logo, a
+      // 300px thumbnail. Measured 2026-09-16: /zip/97702 read hero 1072px on
+      // one run and 120px on the next of the same build; /compare read
+      // heroImageNatural 1536 then 300. Wait for every in-fold image to settle
+      // (loaded OR errored — an errored one is simply not counted) before
+      // measuring, bounded so a hung CDN cannot hang the gate.
+      await page
+        .waitForFunction(
+          () =>
+            Array.from(document.images).every((img) => {
+              const top = img.getBoundingClientRect().top + window.scrollY
+              return top >= 1200 || img.complete
+            }),
+          undefined,
+          { timeout: 20_000 },
+        )
+        .catch(() => {})
       await page.waitForTimeout(SETTLE_MS)
-      return await page.evaluate(`(${measurePage.toString()})()`)
+      // Client-rendered sections fill in AFTER load: the Atlas's legend and
+      // type toggles are list items the browser paints once the island
+      // hydrates, and on a cold server the first read of /communities/tetherow
+      // measured sections.atlas.items 0 against a floor of 8, then 9 on every
+      // warm read of the same build (2026-09-16). Read until two consecutive
+      // readings agree on the per-section map (bounded), and keep the last.
+      let reading = await page.evaluate(`(${measurePage.toString()})()`)
+      for (let pass = 0; pass < STABLE_PASSES; pass += 1) {
+        await page.waitForTimeout(STABLE_INTERVAL_MS)
+        const next = await page.evaluate(`(${measurePage.toString()})()`)
+        const settled = JSON.stringify(next.sectionDepth ?? null) === JSON.stringify(reading.sectionDepth ?? null)
+        reading = next
+        if (settled) break
+      }
+      return reading
     } catch (err) {
       lastErr = err
       if (attempt < NAV_ATTEMPTS) await page.waitForTimeout(3_000)
@@ -101,6 +172,14 @@ async function main() {
     console.error(`route-content-floor: no classes selected from ${CLASS_REGISTRY_PATH}.`)
     process.exit(1)
   }
+  if (PARITY_OUT && classes.length !== 1) {
+    console.error(`--parity-out writes one file; select exactly one class with --classes <key> (got ${classes.length}).`)
+    process.exit(1)
+  }
+  if ((SECTIONS_ONLY || DRY_RUN || PARITY_OUT) && !SEED_BASE) {
+    console.error('--sections-only / --dry-run / --parity-out only apply alongside --seed <baseUrl>.')
+    process.exit(1)
+  }
   if (!(await reachable(BASE + '/'))) {
     console.error(`No server answering at ${BASE}.`)
     console.error('This gate measures a real rendered page; it does not guess and it does not skip.')
@@ -113,7 +192,17 @@ async function main() {
   console.log('==============================================')
 
   const browser = await chromium.launch()
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, userAgent: CI_PROBE_HEADERS['User-Agent'] })
+  // This gate MEASURES IMAGES, and under --seed it navigates to a live
+  // PRODUCTION host over https. scripts/lib/gate-browser.mjs carries both
+  // fixes a cloud sandbox needs for that (untrusted proxy CA in Chromium,
+  // cross-origin photo CDNs failing to load in-page) so this gate does not
+  // wire them by hand. See that file's header for the measured failure.
+  const { context: ctx, mediaStats } = await openGateContext(browser, {
+    baseUrl: BASE,
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    userAgent: CI_PROBE_HEADERS['User-Agent'],
+  })
   const page = await ctx.newPage()
 
   const failures = []
@@ -146,16 +235,55 @@ async function main() {
     }
 
     if (SEED_BASE) {
-      const floor = seedFloor(measured, { seededAt: today, seededFrom: SEED_BASE })
-      floor.note =
-        typeof parity.contentFloor?.note === 'string'
-          ? parity.contentFloor.note
-          : 'No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason.'
+      let floor
+      if (SECTIONS_ONLY) {
+        // Merge sectionDepth into the EXISTING floor rather than reseeding —
+        // the ten page-level floors, their `seededAt`, and `note` all stay
+        // exactly as they were. Needs an existing contentFloor: there is
+        // nothing sensible to merge sectionDepth into otherwise.
+        const existing = parity.contentFloor
+        if (!isPlainObject(existing)) {
+          failures.push(
+            `${cls.key}: --sections-only needs an existing contentFloor to merge sectionDepth into. Seed the base ten first: node scripts/check-route-content-floor.mjs --seed ${SEED_BASE} --classes ${cls.key}`,
+          )
+          continue
+        }
+        const { observed: depthObserved, floors: depthFloors } = seedSectionFloors(measured.sectionDepth)
+        floor = {
+          ...existing,
+          observed: { ...(isPlainObject(existing.observed) ? existing.observed : {}), sectionDepth: depthObserved },
+          floors: { ...(isPlainObject(existing.floors) ? existing.floors : {}), sectionDepth: depthFloors },
+          sectionDepthSeededAt: today,
+        }
+      } else {
+        floor = seedFloor(measured, { seededAt: today, seededFrom: SEED_BASE })
+        floor.note =
+          typeof parity.contentFloor?.note === 'string'
+            ? parity.contentFloor.note
+            : 'No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. Section depth (contentFloor.floors.sectionDepth) follows the same rule.'
+      }
+
+      const sectionCount = isPlainObject(floor.floors?.sectionDepth) ? Object.keys(floor.floors.sectionDepth).length : 0
+      const label = `${cls.key}${SECTIONS_ONLY ? ' (sections only)' : ''}`
+
+      if (DRY_RUN) {
+        console.log(`  DRY RUN ${label} — would write:`)
+        console.log(`    sections measured: ${JSON.stringify(measured.sectionDepth ?? {})}`)
+        console.log(`    contentFloor: ${JSON.stringify(floor)}`)
+        seeded += 1
+        continue
+      }
+
+      const outPath = PARITY_OUT ? join(ROOT, PARITY_OUT) : pPath
       // Splice, do not re-serialize: these files are hand-edited and a
       // stringify round-trip buries the ten-line change in a thousand-line diff.
-      writeFileSync(pPath, spliceContentFloor(parityText, floor))
+      const outText = spliceContentFloor(parityText, floor)
+      if (PARITY_OUT) mkdirSync(dirname(outPath), { recursive: true })
+      writeFileSync(outPath, outText)
       seeded += 1
-      console.log(`  seeded ${cls.key}: ${JSON.stringify(floor.observed)}`)
+      console.log(
+        `  seeded ${label}${PARITY_OUT ? ` -> ${PARITY_OUT}` : ''}: sections ${sectionCount}, sectionDepth ${JSON.stringify(measured.sectionDepth ?? {})}`,
+      )
       continue
     }
 
@@ -171,11 +299,18 @@ async function main() {
       failures.push(`${cls.key} (${cls.url}):\n      ${problems.join('\n      ')}`)
       console.log(`  FAIL ${cls.key}`)
     } else {
-      console.log(`  ok   ${cls.key} — words ${measured.words}, images ${measured.images}, hero ${measured.heroImageWidth}px, video ${measured.video}, jsonLd ${measured.jsonLd}`)
+      const sectionFloors = parity.contentFloor?.floors?.sectionDepth
+      const sectionsNote = isPlainObject(sectionFloors) ? `, sections ${Object.keys(sectionFloors).length}/${Object.keys(sectionFloors).length}` : ''
+      console.log(
+        `  ok   ${cls.key} — words ${measured.words}, images ${measured.images}, hero ${measured.heroImageWidth}px, video ${measured.video}, jsonLd ${measured.jsonLd}${sectionsNote}`,
+      )
     }
   }
 
   await browser.close()
+  if (mediaStats.served > 0) {
+    console.log(`\n(${mediaStats.served} cross-origin media request(s) fetched through Node — sandbox egress.)`)
+  }
 
   if (SEED_BASE) {
     console.log(`\nseeded ${seeded} class floor(s) from ${SEED_BASE}.`)
@@ -192,7 +327,9 @@ async function main() {
   if (failures.length) {
     console.log(`\n${failures.length} violation(s):`)
     for (const f of failures) console.log(`  - ${f}`)
-    console.log('\nThe page carries less than it did when its floor was seeded. Put it back, or lower the floor by hand in parity.json in this same commit and say why. The evaluator does not run on a page that lost content.')
+    console.log(
+      '\nThe page carries less than it did when its floor was seeded — including, since 2026-09-16, a section that shrank or vanished (contentFloor.floors.sectionDepth). Put it back, or lower the floor by hand in parity.json in this same commit and say why. The evaluator does not run on a page that lost content.',
+    )
     process.exit(1)
   }
   console.log('OK - every seeded class holds its content floor.')

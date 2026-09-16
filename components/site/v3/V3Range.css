@@ -144,6 +144,20 @@
   border-radius: var(--v3-radius-control);
 }
 
+/* The installed beUI thumb (components/motion/range-slider.tsx) paints a
+   4x24 handle by design ("Match InlineSlider: the 4px handle…") — WCAG
+   2.5.5 needs the HIT area at 44x44, not the mark. A centered pseudo-element
+   widens the hit box without fattening the thin visual the library ships. */
+.v3-range__beui [role='slider']::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  transform: translate(-50%, -50%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .v3-range__thumb::after {
     transition: none;

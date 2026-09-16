@@ -894,7 +894,9 @@
 .about-faces__reach-text {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: var(--v3-tap);
+  min-inline-size: var(--v3-tap);
   padding-inline: var(--v3-space-2xs);
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);

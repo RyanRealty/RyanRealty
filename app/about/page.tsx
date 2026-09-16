@@ -26,6 +26,7 @@ import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atla
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
+import { reviewItemsJsonLd } from '@/app/reviews/_v3/reviews-jsonld'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -197,6 +198,18 @@ export default async function AboutPage() {
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
+        {/* Review markup for the four reviews this page prints (SITE-90). The
+            same builder /reviews uses, so what a crawler reads is what a
+            visitor reads; no aggregateRating (self-serving under Google's
+            structured-data policy — see reviews-jsonld.ts). */}
+        {quotes.length > 0 ? (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({ '@context': 'https://schema.org', '@graph': reviewItemsJsonLd(quotes) }),
+            }}
+          />
+        ) : null}
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
         <div className="about-fold">
@@ -214,7 +227,12 @@ export default async function AboutPage() {
                 eyebrow="Ryan Realty · Google"
                 headline="In their own words"
                 headingLevel={2}
-                claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
+                /* SITE-90 (2026-09-16): the picks used to cut their first sentence
+                   with an ellipsis under this claim — a visible contradiction.
+                   The picks now show that sentence whole; the reading pane shows
+                   the chosen review in full; the claim says exactly that. */
+                claim={`The newest four of ${reviewCount} verified Google reviews — each one in full, exactly as it was written, one at a time.`}
+                sourceInHead
                 figures={[
                   { value: reviewAverage.toFixed(1), label: 'Average rating' },
                   { value: String(reviewCount), label: 'Google reviews' },

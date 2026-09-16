@@ -27,8 +27,15 @@
  * name in a comment either.
  */
 
-/** Firm license as published on the pre-v3 about page (OREA 201253677). */
-export const FIRM_LICENSE = 'OREA 201253677'
+/** Firm license number as published on the pre-v3 about page. */
+export const FIRM_LICENSE_NUMBER = '201253677'
+/**
+ * Firm license as published on the pre-v3 about page (OREA 201253677). Print
+ * the NUMBER next to a label that already says OREA: AboutOffice rendered
+ * "Firm OREA OREA 201253677" for two days (a separate evaluator called it a
+ * broken template concatenation, 2026-09-16).
+ */
+export const FIRM_LICENSE = `OREA ${FIRM_LICENSE_NUMBER}`
 
 /** Matt 2026-09-14 lock. One plain purpose line — not How it started, not Team. */
 export const ABOUT_FIRM_STORY =

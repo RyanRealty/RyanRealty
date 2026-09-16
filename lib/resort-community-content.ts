@@ -24,6 +24,13 @@ export type ResortAmenity = {
   access?: string | null
   /** Optional slug of a published blog post about this amenity (topic-cluster SEO). */
   blog_slug?: string | null
+  /**
+   * The place's own recorded page (a park district page, the venue's site) —
+   * the door a tile opens when no guide of ours is published about it. Carried
+   * by some configs since they were authored (Tetherow's Shevlin Park row) and
+   * read by nothing until the amenity board (SITE-116, 2026-09-16).
+   */
+  url?: string | null
 }
 
 export type ResortDriveTime = {

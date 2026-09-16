@@ -173,11 +173,18 @@ describe('homepage hero search uses the public search stack', () => {
       /\.v3\.v3-stage \.v3-stage-copy \.v3 \{\s*background:\s*transparent/,
     )
     expect(readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')).toContain('v3-tabs__tab--${row.value}')
+    // The compact inventory Stage hides its band on the homepage (V3Pulse
+    // repeats it). SITE-91 made that an opt-out — `bandWhenCompact` keeps the
+    // band on a page with no Pulse (/buy) — so the rule is now guarded by
+    // :not(.v3-stage--band-kept). The homepage must never opt in.
     const stageCss = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
-    expect(stageCss).toContain('.v3.v3-stage--inventory.v3-stage--compact .v3-stage-band')
-    expect(stageCss).toMatch(
-      /\.v3\.v3-stage--inventory\.v3-stage--compact \.v3-stage-band \{\s*display:\s*none/,
+    expect(stageCss).toContain(
+      '.v3.v3-stage--inventory.v3-stage--compact:not(.v3-stage--band-kept) .v3-stage-band',
     )
+    expect(stageCss).toMatch(
+      /\.v3\.v3-stage--inventory\.v3-stage--compact:not\(\.v3-stage--band-kept\) \.v3-stage-band \{\s*display:\s*none/,
+    )
+    expect(PAGE).not.toContain('bandWhenCompact')
   })
 
   // SITE-12. The hard accept test for this node: `curl /` finds the seller

@@ -148,6 +148,12 @@ export type PlaceInput = {
   address?: AddressInput
   containedInPlace?: string
   hasMap?: string
+  /**
+   * The place's recorded amenities (schema.org Place.amenityFeature, one
+   * LocationFeatureSpecification each). Built from the SAME authored rows the
+   * page renders on its amenity board (SITE-116), never from a second list.
+   */
+  amenityFeature?: ReadonlyArray<{ name: string; description?: string | null }>
   /** Verified live stats (active count, median list price, etc.) surfaced as PropertyValue. */
   additionalProperty?: ReadonlyArray<StatValue>
 }
@@ -350,6 +356,16 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         description: input.description,
         url: absoluteUrl(input.url),
         hasMap: absoluteUrl(input.hasMap),
+        amenityFeature: input.amenityFeature && input.amenityFeature.length > 0
+          ? input.amenityFeature
+              .filter((a) => a.name?.trim())
+              .map((a) => prune({
+                '@type': 'LocationFeatureSpecification',
+                name: a.name.trim(),
+                value: true,
+                description: a.description?.trim() || undefined,
+              }))
+          : undefined,
         geo: input.geo ? {
           '@type': 'GeoCoordinates',
           latitude: input.geo.lat,

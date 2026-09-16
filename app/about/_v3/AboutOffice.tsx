@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BRAND } from '@/lib/brand/contact'
-import { FIRM_LICENSE } from './about-constants'
+import { FIRM_LICENSE_NUMBER } from './about-constants'
 import { teamPath } from '@/lib/slug'
 
 const OFFICE_EXTERIOR = '/images/office/ryan-realty-bend-office-exterior-01.jpg'
@@ -35,7 +35,7 @@ export function AboutOffice({ id = 'office' }: { id?: string } = {}) {
         </CardHeader>
         <CardContent>
           <p>
-            {street}, {cityLine}. Firm OREA {FIRM_LICENSE}.
+            {street}, {cityLine}. Firm OREA {FIRM_LICENSE_NUMBER}.
           </p>
         </CardContent>
         <CardFooter>

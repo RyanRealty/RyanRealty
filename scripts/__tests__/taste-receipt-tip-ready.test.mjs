@@ -321,10 +321,17 @@ describe('taste-receipt --ship CLI', () => {
     expect(`${r.stderr}${r.stdout}`).toMatch(/open-state evidence|demoMatch|catalog/)
   })
 
-  it('SITE-94 community parity --ship exits 0', () => {
+  // The fixture is a LIVE parity whose receipt is Tip Ready. It was
+  // community (SITE-94, grok-4.6, 2026-09-15) until 2026-09-16, when the
+  // class gained a competitiveBrief (SITE-116) and a brief means the class has
+  // to earn Tip Ready again against it: --ship now refuses community until
+  // the round judge scores the brief (competitiveBriefPass). place-type-community
+  // (SITE-107, Tip Ready land 2026-09-15) carries no brief and stays the
+  // live fixture for the exit-0 path.
+  it('SITE-107 place-type-community parity --ship exits 0', () => {
     const r = spawnSync(
       process.execPath,
-      [SHIP, '--ship', 'design_system/ryan-realty/ui_kits/community/parity.json'],
+      [SHIP, '--ship', 'design_system/ryan-realty/ui_kits/place-type-community/parity.json'],
       { cwd: REPO, encoding: 'utf8', env: process.env },
     )
     expect(r.status).toBe(0)

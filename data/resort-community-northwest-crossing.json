@@ -17,40 +17,154 @@
     "The trade-off shows up most on Saturdays in season. Street parking around the market and the commercial center runs limited, and market guidance asks visitors to carpool, walk, bike or roll instead of driving, use the overflow lot at Summit High School, and lock bikes at the racks in Compass Park or near La Rosa rather than at neighborhood trees and sign posts. A neighborhood built around a walkable center trades some quiet for crowding right at its own front door for a few hours each week from late May through late September."
   ],
   "amenities": [
-    { "category": "Recreation", "name": "Discovery Park", "description": "A 40-acre park with a 3-acre lake, natural play area, fenced off-leash dog park, community garden, and trails connecting to Shevlin Park.", "access": "Public, Bend Park and Recreation District", "blog_slug": "northwest-crossing-discovery-park" },
-    { "category": "Recreation", "name": "Compass Park", "description": "A 5-acre circular park at the neighborhood center, with a picnic shelter, open lawn, and a stage used for summer movie screenings.", "access": "Public, Bend Park and Recreation District", "blog_slug": "northwest-crossing-compass-park" },
-    { "category": "Shopping", "name": "NW Crossing Drive Neighborhood Center", "description": "A mixed-use commercial corridor of LEED-certified buildings with restaurants, cafes, local businesses, and offices, including The Grove food hall.", "access": "Public" },
-    { "category": "Other", "name": "Saturday Farmers Market", "description": "Held every Saturday late May through late September, 10am to 2pm, on NW Crossing Drive, with over 150 vendors.", "access": "Public, free admission" },
-    { "category": "Education", "name": "Neighborhood Schools", "description": "High Lakes Elementary, Pacific Crest Middle School, and Summit High School (Bend-La Pine Schools) serve the community.", "access": "Bend-La Pine School District" },
-    { "category": "Recreation", "name": "Phil's Trail Access", "description": "The trail network connects to the broader Phil's Trail mountain-bike and running system, about 10 minutes by bike.", "access": "Public trail system" }
+    {
+      "category": "Recreation",
+      "name": "Discovery Park",
+      "description": "A 40-acre park with a 3-acre lake, natural play area, fenced off-leash dog park, community garden, and trails connecting to Shevlin Park.",
+      "access": "Public, Bend Park and Recreation District",
+      "blog_slug": "northwest-crossing-discovery-park"
+    },
+    {
+      "category": "Recreation",
+      "name": "Compass Park",
+      "description": "A 5-acre circular park at the neighborhood center, with a picnic shelter, open lawn, and a stage used for summer movie screenings.",
+      "access": "Public, Bend Park and Recreation District",
+      "blog_slug": "northwest-crossing-compass-park"
+    },
+    {
+      "category": "Shopping",
+      "name": "NW Crossing Drive Neighborhood Center",
+      "description": "A mixed-use commercial corridor of LEED-certified buildings with restaurants, cafes, local businesses, and offices, including The Grove food hall.",
+      "access": "Public"
+    },
+    {
+      "category": "Events",
+      "name": "Saturday Farmers Market",
+      "description": "Held every Saturday late May through late September, 10am to 2pm, on NW Crossing Drive, with over 150 vendors.",
+      "access": "Public, free admission"
+    },
+    {
+      "category": "Education",
+      "name": "Neighborhood Schools",
+      "description": "High Lakes Elementary, Pacific Crest Middle School, and Summit High School (Bend-La Pine Schools) serve the community.",
+      "access": "Bend-La Pine School District"
+    },
+    {
+      "category": "Recreation",
+      "name": "Phil's Trail Access",
+      "description": "The trail network connects to the broader Phil's Trail mountain-bike and running system, about 10 minutes by bike.",
+      "access": "Public trail system"
+    }
   ],
   "drive_times": [
-    { "minutes": 5, "destination": "Downtown Bend", "note": "West edge of Bend via NW Newport Ave" },
-    { "minutes": 30, "destination": "Mt. Bachelor", "note": "Via Century Drive (OR-372)" },
-    { "minutes": 25, "destination": "Redmond Airport (RDM)", "note": "About 17 miles north via US-97" }
+    {
+      "minutes": 5,
+      "destination": "Downtown Bend",
+      "note": "West edge of Bend via NW Newport Ave"
+    },
+    {
+      "minutes": 30,
+      "destination": "Mt. Bachelor",
+      "note": "Via Century Drive (OR-372)"
+    },
+    {
+      "minutes": 25,
+      "destination": "Redmond Airport (RDM)",
+      "note": "About 17 miles north via US-97"
+    }
   ],
   "citations": [
-    { "fact": "488 acres, developed from 1999 by Brooks Resources + Tennant Family via West Bend Property Company", "source_url": "https://brooksresources.com/community/northwest-crossing-2/" },
-    { "fact": "1,335 residential units at buildout; mixed-use; Earth Advantage required", "source_url": "https://cascadebusnews.com/the-mixed-use-dream-at-northwest-crossing-in-bend-oregon/" },
-    { "fact": "Discovery Park 40 acres w/ 3-acre lake, dog park, garden, Shevlin trail link; Compass Park 5 acres", "source_url": "https://www.bendparksandrec.org/park/discovery-park/" },
-    { "fact": "Saturday Farmers Market 150+ vendors, late May-late Sept, 10am-2pm", "source_url": "https://www.nwxfarmersmarket.com/" },
-    { "fact": "High Lakes Elementary, Pacific Crest Middle, Summit High (Bend-La Pine)", "source_url": "https://www.greatschools.org/oregon/bend/1700-High-Lakes-Elementary-School/" },
-    { "fact": "No master HOA assessment. NWX's own site states it is not a homeowners' association, and Master Declaration section 7.2(d) (Deschutes County 2001-63854) bars the ARC or a successor non-profit from assessing owners or lots without amending the declaration. Article 8 still requires an association for each planned development inside NWX, so a pod can carry its own dues.", "source_url": "https://www.northwestcrossing.com/s/CCRs-_-Document-2001-63854.pdf" }
+    {
+      "fact": "488 acres, developed from 1999 by Brooks Resources + Tennant Family via West Bend Property Company",
+      "source_url": "https://brooksresources.com/community/northwest-crossing-2/"
+    },
+    {
+      "fact": "1,335 residential units at buildout; mixed-use; Earth Advantage required",
+      "source_url": "https://cascadebusnews.com/the-mixed-use-dream-at-northwest-crossing-in-bend-oregon/"
+    },
+    {
+      "fact": "Discovery Park 40 acres w/ 3-acre lake, dog park, garden, Shevlin trail link; Compass Park 5 acres",
+      "source_url": "https://www.bendparksandrec.org/park/discovery-park/"
+    },
+    {
+      "fact": "Saturday Farmers Market 150+ vendors, late May-late Sept, 10am-2pm",
+      "source_url": "https://www.nwxfarmersmarket.com/"
+    },
+    {
+      "fact": "High Lakes Elementary, Pacific Crest Middle, Summit High (Bend-La Pine)",
+      "source_url": "https://www.greatschools.org/oregon/bend/1700-High-Lakes-Elementary-School/"
+    },
+    {
+      "fact": "No master HOA assessment. NWX's own site states it is not a homeowners' association, and Master Declaration section 7.2(d) (Deschutes County 2001-63854) bars the ARC or a successor non-profit from assessing owners or lots without amending the declaration. Article 8 still requires an association for each planned development inside NWX, so a pod can carry its own dues.",
+      "source_url": "https://www.northwestcrossing.com/s/CCRs-_-Document-2001-63854.pdf"
+    }
   ],
   "sources": [
-    { "url": "https://brooksresources.com/community/northwest-crossing-2/", "publisher": "Brooks Resources Corporation", "supports": "486 acres; late-1990s partnership between Brooks Resources and Tennant Developments as West Bend Property Company; land originally owned by Bill Miller; first lots sold by lottery 2001; construction started early 2002; residential build-out concluded 2018; City of Bend wrote a mixed-use overlay zone for the property; Builders' Guild lottery system for lots" },
-    { "url": "https://www.northwestcrossing.com/nwx-history", "publisher": "NorthWest Crossing (official community site)", "supports": "Late-1990s partnership timeline; Bill Miller as original landowner; 2001 first builder lottery; early 2002 construction start and sales center opening; 2018 residential build-out conclusion; new-urbanist mixed-use design philosophy; Builders' Guild lottery process in place of production-builder land sales" },
-    { "url": "https://cascadebusnews.com/the-mixed-use-dream-at-northwest-crossing-in-bend-oregon/", "publisher": "Cascade Business News", "supports": "1,335 residential units at buildout; architectural styles (Craftsman, Tudor Revival, Colonial, American Foursquare, Prairie); 600 to 3,400 square foot home size range; housing types (cottages, duplexes, townhomes, second-story apartments, single-family homes); Earth Advantage and ENERGY STAR requirement on every home; some homes reaching LEED certification or zero-net-energy status" },
-    { "url": "https://www.bendparksandrec.org/park/discovery-park/", "publisher": "Bend Park and Recreation District", "supports": "Discovery Park is 40 acres; includes a 3-acre pond used for irrigation only, not swimming or fishing; fenced off-leash dog area; community garden with 51 raised beds; natural play area; Outback Trail connection to the wider trail network" },
-    { "url": "https://www.bendparksandrec.org/park/compass-park/", "publisher": "Bend Park and Recreation District", "supports": "Compass Park is 5 acres; developed in 2016 after acquisition from West Bend Property Company; circular shape is the source of the park's name; playground and picnic shelter seating up to 100 people" },
-    { "url": "https://www.bendparksandrec.org/park/shevlin-park/", "publisher": "Bend Park and Recreation District", "supports": "Shevlin Park totals 981 acres; donated to the community in 1920; the park district has been assembling additional acreage since 1977; Tumalo Creek runs through the park" },
-    { "url": "https://www.nwxfarmersmarket.com/", "publisher": "NorthWest Crossing Saturday Farmers Market", "supports": "Market runs Saturdays, late May through late September, 10am to 2pm; more than 150 vendors each week; now in its 19th year; billed as Central Oregon's largest farmers market" },
-    { "url": "https://discoverywestbend.com/enjoy-the-bounty-of-summer-at-northwest-crossing-saturday-farmers-market/", "publisher": "Discovery West Bend", "supports": "Market-day parking guidance: overflow parking suggested at Summit High School; visitors encouraged to carpool, walk, bike, or roll due to limited street parking; bike parking directed to racks at Compass Park or near La Rosa rather than neighborhood trees and sign posts" },
-    { "url": "https://www.bendsource.com/food-drink/a-new-gathering-space-for-nwx-14635853/", "publisher": "The Source Weekly", "supports": "The Grove market hall opened May 28, 2021; 13,800 square feet; nine food vendor spaces plus the Waypoint bar" },
-    { "url": "https://www.northwestcrossing.com/", "publisher": "NorthWest Crossing (official community site)", "supports": "The neighborhood's Architectural Review Committee is not a conventional homeowners association; it holds authority under the CC&Rs and design guidelines over exterior changes including paint colors, landscaping, tree removal, additions, and new construction, all of which require prior sign-off" },
-    { "url": "https://www.northwestcrossing.com/s/CCRs-_-Document-2001-63854.pdf", "publisher": "Master Declaration of Covenants, Conditions and Restrictions for NorthWest Crossing, recorded in the Official Records of Deschutes County as document 2001-63854, hosted by NorthWest Crossing", "supports": "The recorded declaration is a scan with no text layer, so the PDF was downloaded straight from the neighborhood's own site and its pages were rasterised and read directly, not summarised. Section 7.2(d), on document page 12, reads verbatim: \"Neither the ARC nor a successor non-profit corporation shall have the right to assess Owners or Lots unless and until this Declaration is amended in accordance with Section 9.2 and applicable law. The foregoing shall not negate the right of the ARC or a successor non-profit corporation to charge a reasonable review fee for performing the review functions described in Section 4. In no event shall this Section 7.2(d) be construed so as to prevent the establishment of any homeowners' association(s) covering one or more of the Lots, which association has the right to levy assessments on member owners or lots, provided such association is established in accordance with applicable law.\" Article 8, on document page 13, reads verbatim: \"Declarant shall, at the time of creating a Planned Development that is subject to these Declarations, form an Association with appropriate Articles of Incorporation and Bylaws for such Planned Development.\" Together these are why NorthWest Crossing carries no master assessment while an individual pod inside it still can." },
-    { "url": "https://www.northwestcrossing.com/home", "publisher": "NorthWest Crossing (official neighbourhood site)", "supports": "Read raw from the page HTML. Verbatim: \"While we are not a homeowners' association (HOA), we are committed to supporting thoughtful design, promoting neighborhood safety, and maintaining the integrity of our community's aesthetic.\" Note for future editors: this site's robots.txt names ClaudeBot and anthropic-ai in the same rule block as the wildcard agent, and that block disallows only /config, /search, /account, /api/ and /static/, not the content pages." },
-    { "url": "https://www.greatschools.org/oregon/bend/1700-High-Lakes-Elementary-School/", "publisher": "GreatSchools", "supports": "High Lakes Elementary, Pacific Crest Middle School, and Summit High School (Bend-La Pine Schools) serve the neighborhood" }
+    {
+      "url": "https://brooksresources.com/community/northwest-crossing-2/",
+      "publisher": "Brooks Resources Corporation",
+      "supports": "486 acres; late-1990s partnership between Brooks Resources and Tennant Developments as West Bend Property Company; land originally owned by Bill Miller; first lots sold by lottery 2001; construction started early 2002; residential build-out concluded 2018; City of Bend wrote a mixed-use overlay zone for the property; Builders' Guild lottery system for lots"
+    },
+    {
+      "url": "https://www.northwestcrossing.com/nwx-history",
+      "publisher": "NorthWest Crossing (official community site)",
+      "supports": "Late-1990s partnership timeline; Bill Miller as original landowner; 2001 first builder lottery; early 2002 construction start and sales center opening; 2018 residential build-out conclusion; new-urbanist mixed-use design philosophy; Builders' Guild lottery process in place of production-builder land sales"
+    },
+    {
+      "url": "https://cascadebusnews.com/the-mixed-use-dream-at-northwest-crossing-in-bend-oregon/",
+      "publisher": "Cascade Business News",
+      "supports": "1,335 residential units at buildout; architectural styles (Craftsman, Tudor Revival, Colonial, American Foursquare, Prairie); 600 to 3,400 square foot home size range; housing types (cottages, duplexes, townhomes, second-story apartments, single-family homes); Earth Advantage and ENERGY STAR requirement on every home; some homes reaching LEED certification or zero-net-energy status"
+    },
+    {
+      "url": "https://www.bendparksandrec.org/park/discovery-park/",
+      "publisher": "Bend Park and Recreation District",
+      "supports": "Discovery Park is 40 acres; includes a 3-acre pond used for irrigation only, not swimming or fishing; fenced off-leash dog area; community garden with 51 raised beds; natural play area; Outback Trail connection to the wider trail network"
+    },
+    {
+      "url": "https://www.bendparksandrec.org/park/compass-park/",
+      "publisher": "Bend Park and Recreation District",
+      "supports": "Compass Park is 5 acres; developed in 2016 after acquisition from West Bend Property Company; circular shape is the source of the park's name; playground and picnic shelter seating up to 100 people"
+    },
+    {
+      "url": "https://www.bendparksandrec.org/park/shevlin-park/",
+      "publisher": "Bend Park and Recreation District",
+      "supports": "Shevlin Park totals 981 acres; donated to the community in 1920; the park district has been assembling additional acreage since 1977; Tumalo Creek runs through the park"
+    },
+    {
+      "url": "https://www.nwxfarmersmarket.com/",
+      "publisher": "NorthWest Crossing Saturday Farmers Market",
+      "supports": "Market runs Saturdays, late May through late September, 10am to 2pm; more than 150 vendors each week; now in its 19th year; billed as Central Oregon's largest farmers market"
+    },
+    {
+      "url": "https://discoverywestbend.com/enjoy-the-bounty-of-summer-at-northwest-crossing-saturday-farmers-market/",
+      "publisher": "Discovery West Bend",
+      "supports": "Market-day parking guidance: overflow parking suggested at Summit High School; visitors encouraged to carpool, walk, bike, or roll due to limited street parking; bike parking directed to racks at Compass Park or near La Rosa rather than neighborhood trees and sign posts"
+    },
+    {
+      "url": "https://www.bendsource.com/food-drink/a-new-gathering-space-for-nwx-14635853/",
+      "publisher": "The Source Weekly",
+      "supports": "The Grove market hall opened May 28, 2021; 13,800 square feet; nine food vendor spaces plus the Waypoint bar"
+    },
+    {
+      "url": "https://www.northwestcrossing.com/",
+      "publisher": "NorthWest Crossing (official community site)",
+      "supports": "The neighborhood's Architectural Review Committee is not a conventional homeowners association; it holds authority under the CC&Rs and design guidelines over exterior changes including paint colors, landscaping, tree removal, additions, and new construction, all of which require prior sign-off"
+    },
+    {
+      "url": "https://www.northwestcrossing.com/s/CCRs-_-Document-2001-63854.pdf",
+      "publisher": "Master Declaration of Covenants, Conditions and Restrictions for NorthWest Crossing, recorded in the Official Records of Deschutes County as document 2001-63854, hosted by NorthWest Crossing",
+      "supports": "The recorded declaration is a scan with no text layer, so the PDF was downloaded straight from the neighborhood's own site and its pages were rasterised and read directly, not summarised. Section 7.2(d), on document page 12, reads verbatim: \"Neither the ARC nor a successor non-profit corporation shall have the right to assess Owners or Lots unless and until this Declaration is amended in accordance with Section 9.2 and applicable law. The foregoing shall not negate the right of the ARC or a successor non-profit corporation to charge a reasonable review fee for performing the review functions described in Section 4. In no event shall this Section 7.2(d) be construed so as to prevent the establishment of any homeowners' association(s) covering one or more of the Lots, which association has the right to levy assessments on member owners or lots, provided such association is established in accordance with applicable law.\" Article 8, on document page 13, reads verbatim: \"Declarant shall, at the time of creating a Planned Development that is subject to these Declarations, form an Association with appropriate Articles of Incorporation and Bylaws for such Planned Development.\" Together these are why NorthWest Crossing carries no master assessment while an individual pod inside it still can."
+    },
+    {
+      "url": "https://www.northwestcrossing.com/home",
+      "publisher": "NorthWest Crossing (official neighbourhood site)",
+      "supports": "Read raw from the page HTML. Verbatim: \"While we are not a homeowners' association (HOA), we are committed to supporting thoughtful design, promoting neighborhood safety, and maintaining the integrity of our community's aesthetic.\" Note for future editors: this site's robots.txt names ClaudeBot and anthropic-ai in the same rule block as the wildcard agent, and that block disallows only /config, /search, /account, /api/ and /static/, not the content pages."
+    },
+    {
+      "url": "https://www.greatschools.org/oregon/bend/1700-High-Lakes-Elementary-School/",
+      "publisher": "GreatSchools",
+      "supports": "High Lakes Elementary, Pacific Crest Middle School, and Summit High School (Bend-La Pine Schools) serve the neighborhood"
+    }
   ],
   "last_modified": "2026-08-26T00:00:00Z",
   "source": "Structured fields (amenities, drive_times, citations) verified in an earlier pass. about_prose rewritten and expanded 2026-08-03 as long-form editorial via live web research; see the top-level 'sources' array for full per-claim provenance (Brooks Resources, NorthWest Crossing's official site, Cascade Business News, Bend Park and Recreation District, the NWX Saturday Farmers Market, Discovery West Bend, and The Source Weekly). No market figures, prices, or percentages included per brand-voice policy. A claim about street names referencing the Lewis and Clark expedition bicentennial surfaced in secondary sources but could not be confirmed on NorthWest Crossing's own history page and was cut rather than shipped unverified."

@@ -557,6 +557,8 @@ export type {
  * TASTE.md bans.
  */
 export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
+export { V3PlaceAmenities, amenityGroups, amenityBoardLede } from './V3PlaceAmenities'
+export type { V3PlaceAmenitiesProps, V3PlaceAmenity, V3PlaceAmenityGroup } from './V3PlaceAmenities'
 
 export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
 

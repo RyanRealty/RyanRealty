@@ -176,6 +176,16 @@
   text-shadow: var(--v3-media-shadow);
 }
 
+/* The caption's figures name their source in view (SITE-116, 2026-09-16): a
+   hover title is not a citation. One quiet clause after the sentence. */
+.place-opening__caption-source {
+  display: block;
+  margin-top: var(--v3-space-3xs);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  opacity: 0.85;
+}
+
 @layer base {
   .place-opening__caption a {
     color: inherit;
