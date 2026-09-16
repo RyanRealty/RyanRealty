@@ -21,10 +21,10 @@ const OPEN_PROGRESS = 0.42
 
 function MasonryProgress({ progress }: { progress: ReturnType<typeof useMotionValue<number>> }) {
   return (
-    <>
+    <div className="zip-opening__progress-tools" aria-hidden="true">
       <ScrollProgress
         variant="bar"
-        height={4}
+        height={6}
         position="top"
         fixed={false}
         spring={false}
@@ -33,13 +33,13 @@ function MasonryProgress({ progress }: { progress: ReturnType<typeof useMotionVa
       />
       <ScrollProgress
         variant="circle"
-        size={44}
-        thickness={4}
+        size={56}
+        thickness={6}
         spring={false}
         progress={progress}
         className="zip-opening__progress"
       />
-    </>
+    </div>
   )
 }
 
@@ -89,8 +89,10 @@ export function ZipHomesMasonry({
       className="zip-opening__masonry-frame"
       data-demo-state="masonry-open"
     >
-      <p className="zip-opening__homes-kicker">Houses in {zip}</p>
-      <MasonryProgress progress={progress} />
+      <div className="zip-opening__homes-head">
+        <p className="zip-opening__homes-kicker">Houses in {zip}</p>
+        <MasonryProgress progress={progress} />
+      </div>
       <InfiniteMasonry
         items={visible}
         getItemKey={(item) => item.id}
