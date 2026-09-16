@@ -2604,9 +2604,9 @@
         }
       ],
       "demoStates": [
-        "error-open=[data-taste=error-open]@#get-value!click",
-        "success-open=[data-taste=success-open]@#get-value!click",
-        "answer-open=[data-taste=answer-open]@#get-value!click"
+        "error-open=[data-taste=error-open]@#sell-hero!click",
+        "success-open=[data-taste=success-open]@#sell-hero!click",
+        "answer-open=[data-taste=answer-open]@#sell-hero!click"
       ]
     },
     "city": {

@@ -294,7 +294,7 @@ export function SellValueForm({
   }
 
   const tasteStrip = (
-    <div className="sell-taste sr-only">
+    <div className="sell-taste" aria-hidden="true">
       <BeuiButton
         type="button"
         variant="ghost"
@@ -580,7 +580,6 @@ export function SellValueForm({
               wrapperClassName="min-w-0 flex-1"
             />
           </InputGroup>
-          {addressError ? <FieldError>{addressError}</FieldError> : null}
         </Field>
       </FieldGroup>
 

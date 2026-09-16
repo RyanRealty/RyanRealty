@@ -72,9 +72,27 @@
 }
 
 .sell-address-sheet__body {
+  position: relative;
   padding-inline: var(--v3-space-md);
   padding-block-end: var(--v3-space-md);
   overflow: auto;
+}
+
+/* Opacity 0 keeps taste controls out of the frame; a tap-sized box keeps
+   them clickable for take-route-shots (clip/1px fails Playwright visible). */
+.sell-taste {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  opacity: 0;
+}
+
+.sell-taste [data-taste] {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
 }
 
 .sell-stage-field {
