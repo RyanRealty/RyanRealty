@@ -1,4 +1,92 @@
-# Current — 2026-09-16 (Claude cloud site queue: Matt's three phone directives landed — one bottom bar + Work with us sheet, header search, alert copy; SITE-95/93/112/104 Tip Ready on the sonnet stand-in)
+# Current — 2026-09-16 (Claude cloud site queue: STOPPING POINT — Matt's three phone directives landed; SITE-104 merged; SITE-111 merged but NOT judged)
+
+## Stopping point, session claude-cloud-01DYvsoL-20260915
+
+```
+STOPPING POINT — 2026-09-16 ~20:30Z, session claude-cloud-01DYvsoL-20260915
+
+BRANCH: claude/run-loop-v30as0, head 6231328, everything pushed, working tree clean, no stash.
+PR: #253 (draft), body current, CI running on 6231328.
+
+WHAT LANDED THIS SESSION (all on the branch, none on main)
+- f345749  SITE-122 phone dock. One bottom bar below 64rem on every public page:
+           components/site/v3/V3PhoneDock.client.tsx + .css, three exports (shell /
+           contacts / ask), mounted once in app/layout.tsx. Site pages and sold homes:
+           Call · Text · Work with us on the BROKERAGE line. Active listing: Tour ·
+           Call · Text · Work with us on the attributed broker, labelled. "Work with
+           us" opens the catalog shadcn Drawer (vaul, registered as shadcn-drawer):
+           Buy a home -> /buy, Sell your home -> /sell, then About / Team / Reviews /
+           Contact, then the phone. --rr-dock-h has ONE owner (both docks are in the
+           DOM on a listing page; the hidden one measures 0 and must not clear the
+           visible one). V3AlertsStrip docks above it; V3StickyAsk retires below
+           64rem. /join relabelled "Join Ryan Realty". ci:offmarket-listing-cta now
+           guards the READ of broker.phoneDirect/phoneFub and requires it on an
+           active home.
+- ead301c  SITE-121 header search (overlayClassName z-[150] over the sticky chrome at
+           100, full-width icon-only panel, autoFocus inside the tap, every suggest
+           kind, letter-less subdivision placeholders filtered) + SITE-120 alert copy.
+- 4052f9d  SITE-104 neighborhood merged from its worktree branch: sonnet 66, honesty 9,
+           demoMatch true. ITS 375 SHOTS PREDATE THE DOCK — the rejudge must re-capture.
+- bd1bc11  Merge of origin/main after another fleet session landed the same SITE-120
+           copy there. Kept main's one differing sentence; kept THIS branch's five
+           sheet files (main lacks the SITE-93/104 bindings).
+- 05d4d92  Revert of my own wrong /buy receipt edit.
+- 6231328  Drawer imports @/lib/utils, not the "cn" package the shadcn CLI wrote.
+
+QUEUE CLAIMS held by this session (heartbeat pid in scratchpad/heartbeat.pid, 40 min,
+expires on its own after SITE_CLAIM_IDLE_HOURS=3 if nothing beats):
+- SITE-122  in_progress — LANDED, held only so nobody rebuilds it before the PR merges.
+- SITE-111  in_progress — the sell lane; see below.
+Parked blocked-on-a-person for the grok-4.6 rejudge: SITE-95, SITE-93, SITE-112, SITE-104.
+
+WORKTREES
+- .claude/worktrees/agent-af163f8b33b1a99d8 (neighborhood) — clean at 41a11f4, fully
+  merged into the branch. Safe to remove.
+- .claude/worktrees/agent-a500abb37df2abc69 (sell, SITE-111) — see the lane's report.
+  Its commits are NOT on the branch yet. Merge the BRANCH (do not cherry-pick) so its
+  own main-merge resolutions come along.
+
+KNOWN CI RED, not this PR's: ci:route-content-floor on /about, /search, /team and
+/communities/tetherow/types/single-family. Floors seeded 2026-09-12; those base pages
+now carry less. Documented in the PR body, not laundered.
+
+SANDBOX FACTS THAT COST HOURS
+- /cities/bend cannot be webpack-built here: next-server peaks ~5.5 GB and the
+  claude-code-bash memory cgroup OOM-kills it. CI measures that route instead.
+- NEVER put `pkill -f "next dev"` in the same bash line that starts the server — the
+  pattern matches the launching shell's own command line and kills the task (exit 144,
+  empty log). Cost four dead servers before it was spotted.
+- Warm a route with curl before pointing Playwright at it; a cold dev compile exceeds
+  Playwright's selector timeout.
+- On a listing page BOTH docks are in the DOM. Query the VISIBLE one
+  (getBoundingClientRect().height > 0), or you measure the hidden layout bar.
+- A stray node_modules package installed by a CLI can make a local typecheck pass where
+  CI fails. Delete it before trusting the check.
+
+SITE-111 (sell) — MERGED BUT NOT DONE
+The lane's branch is merged into claude/run-loop-v30as0 so nothing is stranded in an
+ephemeral worktree. Its one authored change is app/sell/_v3/sell-stage.css: the error
+state set `box-shadow: none` with no substitute, which threw away the catalog's own
+destructive ring and left a 2px->4px border bump as the whole error signal. It now
+paints a flush 3px navy outline plus a navy wash, distinct from the focus ring. The
+dead success-state border rule (identical to idle) was removed. The catalog source
+components/motion/input.tsx was already correct (shake on error, check drawn by
+pathLength) and is untouched.
+
+NOT VERIFIED: no re-shoot, no judge call. BOTH judge calls are still unspent. The
+receipt still reads scores [61,63,66] median 63, demoMatch FALSE, honesty 9 — exactly
+as committed at 2bca37a. Nothing was invented or re-rolled. The node stays open.
+
+Next session, in order: do NOT run `next build` here (the memory cgroup is shared
+across every lane); use `NODE_OPTIONS="--max-old-space-size=3072" npx next dev
+--webpack -p 3111`, curl-warm with a real UA, then re-take the five state captures and
+run the plain default capture LAST so a loading-skeleton frame cannot end up as
+sell-1440.png — then open that file and look at it. Then ONE judge call with --shots
+scoped to those ten files. For comparedToPrior use "rebaselined" against the CURRENT
+grok-4.6 table row (design_system/public/taste-table.json, key "sell": median 55,
+[54,57,55], grok-4.6, v1-2026-09-12, 2026-09-13, honesty 8), naming evaluatorModel as
+the differing key — not the stale 2026-09-10 mark the old receipt cites.
+```
 # Current — 2026-09-16 (Claude cloud site queue: SITE-95 compare + SITE-93 city Tip Ready on the sonnet stand-in; SITE-111 sell + SITE-112 subdivision building)
 
 Surface: Claude Code cloud session `claude-cloud-01DYvsoL-20260915` (branch `claude/run-loop-v30as0`, draft **PR #253**). No grok / cursor CLI in the sandbox, so every mark is the claude CLI as Sonnet with an Opus builder — a **rebaseline**, never done. Cos Mini: rejudge the tips on grok-4.6 and land.
