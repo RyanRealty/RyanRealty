@@ -1,3 +1,12 @@
+# Current — 2026-09-16 (SITE-119 Tip Ready PR — floor counter ignores aria-hidden)
+
+Surface: Cursor cloud `cursor-cloud-cos-fleet-20260916-1626`, branch `cursor/site-119-floor-aria-hidden-0301`. PR only — do not merge. Node left `in_progress` (Cos Mini lands).
+
+- **SITE-119.** `measurePage()` sectionDepth item counts skip `aria-hidden` decoration. Four empty Atlas sales-legend swatch `<li>`s inside `<ol aria-hidden="true">` are no longer 4 of the 9 seeded cities/community atlas "items".
+- **Floors not lowered.** Proposed Matt-approved re-seed only: cities + community `sectionDepth.atlas.items` 8 → 4 (counted-decoration; 5 real rows × 0.9). honestyFunction / requiredComponents untouched. Main parity files still have no `sectionDepth` key, so the page-level floor hold is unchanged.
+- **Evidence.** jsdom `scripts/__tests__/content-floor-measure.test.mjs` (naive 9, measured 5). Node left in progress.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY + §6.
+
 # Current — 2026-09-16 (SITE-114 zip Tip Ready — do not merge)
 
 Surface: Cursor cloud `cursor-cloud-site114-20260916`, branch `cursor/site-114-zip-tip-ready-f900`, draft PR #257. Claim held. Do not merge.
