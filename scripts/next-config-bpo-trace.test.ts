@@ -8,6 +8,7 @@ describe('admin/bpo NFT excludes', () => {
   it('keeps googleapis and the PDF/chromium stack off the review lambda', () => {
     expect(CONFIG).toContain("'app/admin/(protected)/bpo/[slug]/page'")
     expect(CONFIG).toContain('BPO_LAMBDA_TRACE_EXCLUDES')
+    expect(CONFIG).toContain('REPO_DUMP_TRACE_EXCLUDES')
     expect(CONFIG).toContain('./node_modules/googleapis/**')
     expect(CONFIG).toContain('./node_modules/pdfjs-dist/**')
     expect(CONFIG).toContain('./node_modules/@napi-rs/canvas/**')
