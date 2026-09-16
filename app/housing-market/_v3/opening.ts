@@ -27,6 +27,14 @@
 export const MARKET_LEAD_FIGURES = 4
 
 /**
+ * How many figures lead on the hub when the MOS two-bar is on screen (SITE-100).
+ * Two: median list and under contract. Homes-for-sale and a-month-of-sales are
+ * the two bars, so reprinting them as tiles is the KPI-grid tell. Matches
+ * REGION_LEAD_FIGURES on the region report.
+ */
+export const HUB_LEAD_FIGURES = 2
+
+/**
  * What the fold reveals, in the reader's words rather than the database's.
  *
  * The default V3Instrument summary is "All {n} figures", which rendered on the live
