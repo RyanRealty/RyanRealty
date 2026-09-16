@@ -1,16 +1,17 @@
 'use client'
 
 /**
- * SITE-94. Route-local catalog install.
+ * SITE-94 / SITE-116. Route-local catalog install.
  *
- * ci:catalog-install checks the house primitive named on each install spec
- * (V3Number → `@/components/motion/number`). Tip Ready (`taste-receipt --ship`)
- * also requires the community page/_v3 set to import that specifier
- * (requireRouteImport). This is the real beUI number the fold already paints
- * through V3AlertsStrip → V3Number → AnimatedNumber — not a cream box.
+ * Tip Ready (`taste-receipt --ship`) requires the community page/_v3 set to
+ * import each adaptedFrom specifier (requireRouteImport). beui-number is the
+ * fold count via V3AlertsStrip → V3Number → AnimatedNumber. beautifului-insight
+ * is the #amenities board via CommunityAmenities → InsightCards — not a cream box.
  */
+import InsightCards from '@/components/motion/insight-cards'
 import { AnimatedNumber } from '@/components/motion/number'
 
 void AnimatedNumber
+void InsightCards
 
 export const communityCatalogReady = true

@@ -146,6 +146,36 @@ describe('master-plan belonging Quiet', () => {
     }
   })
 
+  it('SITE-116 leaves amenities out of Quiet chips so #amenities owns them', () => {
+    const items = buildPlaceKnowledge({
+      name: 'Tetherow',
+      city: 'Bend',
+      aboutParagraphs: [],
+      content: {
+        hoaMasterAnnual: null,
+        membershipTiers: [],
+        amenities: [{ category: 'Dining', name: 'Coorie', access: 'Open to public' }],
+        aboutProse: [],
+        driveTimes: [],
+        courseRankings: [],
+        courseSpecs: null,
+        signatureHole: null,
+        builders: [],
+        slug: 'tetherow',
+        name: 'Tetherow',
+      } as ResortCommunityContent,
+      registry: { subdivision_aliases: [] },
+      schoolDistrictName: null,
+      schoolDistrictSlug: null,
+      isResort: false,
+      countIsAliasAware: false,
+      contactHref: '/contact',
+      amenityPosts: {},
+    })
+    expect(items.some((item) => item.kind === 'chips' && item.term === 'Dining')).toBe(false)
+    expect(items.some((item) => 'label' in item && item.label === 'Coorie')).toBe(false)
+  })
+
   it('puts second-home copy behind a disclosure, not an open paragraph', () => {
     const items = buildPlaceKnowledge({
       name: 'Tetherow',
