@@ -27,10 +27,32 @@ export const TIME_ADJUSTMENT_MEASURE_POCKET = 'sold and last-ask prices in this 
 
 export const TIME_ADJUSTMENT_BASIS_POCKET = 'exclusive-pocket-sold-list' as const
 
-/** Matt 2026-09-17 gold gate — Canter recommend must sit near FlexMLS ~$659k. */
-export const FLEX_CANTER_RECOMMEND = 659_000
-export const FLEX_CANTER_LOW = 649_000
-export const FLEX_CANTER_HIGH = 675_000
+/**
+ * Matt 2026-09-17 re-anchor: Canter gold bar = live market-cool Rec ~$680
+ * (@ 0cccf1ea4). FlexMLS ~$659 RETIRED as Tip Ready refuse bar.
+ * Tip Ready: |Recommended − CANTER_GOLD_RECOMMEND| ≤ CANTER_GOLD_TOLERANCE.
+ */
+export const CANTER_GOLD_RECOMMEND = 680_000
+/** Live closed-comp band around the cool Rec (reasonable gate). */
+export const CANTER_GOLD_LOW = 675_000
+export const CANTER_GOLD_HIGH = 705_000
+export const CANTER_GOLD_TOLERANCE = 40_000
+
+/** @deprecated Flex ~$659 retired — aliases to CANTER_GOLD_*. */
+export const FLEX_CANTER_RECOMMEND = CANTER_GOLD_RECOMMEND
+/** @deprecated use CANTER_GOLD_LOW */
+export const FLEX_CANTER_LOW = CANTER_GOLD_LOW
+/** @deprecated use CANTER_GOLD_HIGH */
+export const FLEX_CANTER_HIGH = CANTER_GOLD_HIGH
+
+/** Retired Flex refuse bar — history only; never Tip Ready refuse. */
+export const RETIRED_FLEX_CANTER_RECOMMEND = 659_000
+
+/** Tip Ready: Canter Rec near live gold ~$680. */
+export function canterRecommendNearGold(recommended: number): boolean {
+  if (!(recommended > 0)) return false
+  return Math.abs(recommended - CANTER_GOLD_RECOMMEND) <= CANTER_GOLD_TOLERANCE
+}
 
 /** Matt 2026-09-17 — Tip Ready refuse below this many closed comps. */
 export const CANTER_MIN_CLOSED_COMPS = 5
