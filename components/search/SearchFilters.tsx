@@ -1251,6 +1251,7 @@ export default function SearchFilters({
               setMoreSheetOpen(true)
             }}
             className="srch-chip shrink-0 gap-1 px-3"
+            data-srch-all-filters=""
             aria-label={moreFilterCount > 0 ? `Open all filters, ${moreFilterCount} active` : 'Open all filters'}
           >
             <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />
@@ -1304,7 +1305,7 @@ export default function SearchFilters({
 
       {/* SITE-72: price ticks live in the first viewport — the catalog job is
           a range with stops, not a Price pill that hides the instrument. */}
-      <div className="srch-price-rail px-3 pb-2 sm:px-4">
+      <div className="srch-price-rail px-3 pb-2 sm:px-4" data-srch-price-rail="">
         <V3Range
           label="Price"
           low={draftPrice.low}

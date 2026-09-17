@@ -23,6 +23,10 @@ import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease";
 import { useOnOpen } from "@/lib/hooks/use-on-open";
 import { useRowCursor } from "@/lib/hooks/use-row-cursor";
 import { cn } from "@/lib/utils";
+import {
+	iconOnlyPanelLayout,
+	overlayLayerZIndex,
+} from "@/components/motion/morphing-search-layout";
 
 // Keeps the Wallet Card feel with a little more time to read the morph.
 const SEARCH_MORPH: Transition = {
@@ -111,6 +115,7 @@ export function MorphingSearch({
 		left: 16,
 		width: 288,
 	});
+	const [chromeBottom, setChromeBottom] = useState(56);
 	const open = controlledOpen ?? internalOpen;
 	const controlled = controlledOpen !== undefined;
 	const reduce = useReducedMotion();
@@ -137,7 +142,13 @@ export function MorphingSearch({
 		const rect = anchorRef.current?.getBoundingClientRect();
 		if (!rect || rect.width === 0) return;
 		setAnchorRect({ top: rect.top, left: rect.left, width: rect.width });
-	}, []);
+		if (iconOnly) {
+			const chrome = document.querySelector(".v3-chrome");
+			if (chrome instanceof HTMLElement) {
+				setChromeBottom(chrome.getBoundingClientRect().bottom);
+			}
+		}
+	}, [iconOnly]);
 
 	const openSearch = useCallback(() => {
 		measureAnchor();
@@ -358,23 +369,25 @@ export function MorphingSearch({
 	// A compact (icon-only) trigger sits at the far edge of a phone header, so a
 	// panel measured from the icon's left edge to the viewport was ~150px wide
 	// and hung off the right of a 375px screen. Icon-only opens as a full-width
-	// sheet instead: as wide as the viewport allows, clamped inside its gutters,
-	// still anchored to the trigger's top so the morph has an origin.
+	// sheet under the sticky chrome (iOS sticky + fixed stacking hid the input
+	// row when the panel shared the header's top).
 	const viewportWidth = mounted ? window.innerWidth : 0;
-	const panelWidth = mounted
-		? iconOnly
-			? Math.max(anchorRect.width, Math.min(448, viewportWidth - 24))
-			: Math.max(
+	const iconLayout =
+		mounted && iconOnly
+			? iconOnlyPanelLayout(viewportWidth, chromeBottom)
+			: null;
+	const panelWidth = iconLayout
+		? iconLayout.width
+		: mounted
+			? Math.max(
 					anchorRect.width,
 					Math.min(448, viewportWidth - anchorRect.left - 16),
 				)
-		: anchorRect.width;
-	const panelLeft =
-		mounted && iconOnly
-			? Math.max(12, Math.min(anchorRect.left, viewportWidth - panelWidth - 12))
-			: anchorRect.left;
+			: anchorRect.width;
+	const panelLeft = iconLayout ? iconLayout.left : anchorRect.left;
+	const panelTop = iconLayout ? iconLayout.top : anchorRect.top;
 	const resultsHeight = mounted
-		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
+		? Math.max(96, Math.min(288, window.innerHeight - panelTop - 80))
 		: 288;
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,
@@ -392,10 +405,15 @@ export function MorphingSearch({
 				<div
 					aria-hidden={!open}
 					inert={!open}
+					data-v3-morph-overlay=""
 					className={cn(
 						"pointer-events-none fixed left-0 top-0 z-50 size-0",
 						overlayClassName,
 					)}
+					style={{
+						zIndex: overlayLayerZIndex(overlayClassName),
+						isolation: "isolate",
+					}}
 				>
 					<AnimatePresence
 						initial={false}
@@ -420,7 +438,7 @@ export function MorphingSearch({
 									data-v3-morph="panel"
 									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
 									style={{
-										top: anchorRect.top,
+										top: panelTop,
 										left: panelLeft,
 										width: panelWidth,
 										height: 48 + resultsHeight,
@@ -462,7 +480,7 @@ export function MorphingSearch({
 									data-v3-morph="dialog"
 									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
 									style={{
-										top: anchorRect.top,
+										top: panelTop,
 										left: panelLeft,
 										width: panelWidth,
 									}}

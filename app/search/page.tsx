@@ -31,6 +31,7 @@ import {
   V3_FOOTER_COLUMNS,
 } from '@/components/site/v3'
 import SearchRootJsonLd from './SearchRootJsonLd'
+import { SEARCH_CATALOG_READY } from './_v3/search-catalog'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -184,7 +185,9 @@ function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
   const parts: string[] = []
   if (filters.beds != null && filters.beds > 0) parts.push(`${filters.beds}+ Bedroom`)
   if (filters.baths != null && filters.baths > 0) parts.push(`${filters.baths}+ Bath`)
-  const loc = [filters.subdivision, filters.city].filter(Boolean).join(', ')
+  const loc = [filters.subdivision, filters.neighborhood, filters.city, filters.postalCode]
+    .filter(Boolean)
+    .join(', ')
   if (loc) parts.push(loc)
   if (parts.length === 0) return 'Central Oregon homes for sale'
   return `${parts.join(' ')} Homes for Sale`
@@ -194,7 +197,7 @@ function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
 function buildSearchDescription(filters: ReturnType<typeof parseFilters>): string {
   return filters.city || filters.subdivision
     ? `Homes for sale in ${[filters.subdivision, filters.city].filter(Boolean).join(', ') || 'Central Oregon'}. Live from the regional MLS, with price, beds, baths, and the map.`
-    : 'Homes for sale in Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
+    : 'Homes for sale in Central Oregon. Live from the regional MLS — price, beds, baths, sqft, address, and the map.'
 }
 
 /** Shared by generateMetadata and the WebPage JSON-LD so the canonical URL
@@ -463,7 +466,10 @@ export default async function SearchPage({
     />
     {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
         (THE LOOK, PUBLIC_UI.md section 6). */}
-    <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
+    <main
+      data-search-catalog={SEARCH_CATALOG_READY ? '1' : '0'}
+      className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}
+    >
     {/* Dynamic page: the request's query seeds the static-safe URL store the
         filter tree reads (SITE-29), so the chips are in the HTML as before. */}
     <UrlSearchParamsProvider search={queryStringFromSearchParams(sp)}>
@@ -481,7 +487,11 @@ export default async function SearchPage({
       <div className={cn('search-filter-dock w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         {/* Visually hidden H1 keeps a document outline without the noisy
             "{City} homes for sale" title above the filter chips. */}
-        <h1 className="sr-only">Homes for sale</h1>
+        <h1 className="sr-only">
+          {typeof resultsCount === 'number' && resultsCount > 0
+            ? `${resultsCount.toLocaleString()} ${buildSearchTitle(filters)}`
+            : buildSearchTitle(filters)}
+        </h1>
         <div className={isAppFrame ? 'hidden' : undefined}>
           <SentenceSearch />
         </div>

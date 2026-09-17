@@ -2,7 +2,8 @@ import { listingTileHref } from '@/lib/slug'
 
 /**
  * Structured data for the root search page (/homes-for-sale, unslugged
- * filters): WebPage + an ItemList of the listings the page already fetched.
+ * filters): WebPage + an ItemList of the listings the page already fetched
+ * + a Dataset node for the live MLS inventory.
  *
  * Sibling to app/search/[...slug]/SearchPageJsonLd.tsx rather than a shared
  * import: the root page carries no breadcrumb (see the `@no-breadcrumb` note
@@ -80,7 +81,7 @@ export default function SearchRootJsonLd({
           // Real total when available; fall back to the slice length so we
           // never report a number smaller than what is actually shown.
           numberOfItems: totalCount ?? listings.length,
-          itemListElement: listingUrls.slice(0, 10).map((url, i) => ({
+          itemListElement: listingUrls.slice(0, 20).map((url, i) => ({
             '@type': 'ListItem',
             position: i + 1,
             url,
@@ -88,12 +89,23 @@ export default function SearchRootJsonLd({
         }
       : null
 
+  const dataset = {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    name: title,
+    description,
+    url: canonicalUrl,
+    creator: { '@type': 'Organization', name: 'Ryan Realty' },
+    isAccessibleForFree: true,
+  }
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPage) }} />
       {itemList && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
       )}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dataset) }} />
     </>
   )
 }

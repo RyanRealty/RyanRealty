@@ -140,8 +140,14 @@
 }
 
 .v3 .v3-range__beui {
-  background: var(--v3-edge);
+  background: color-mix(in srgb, var(--v3-navy) 12%, var(--v3-surface));
   border-radius: var(--v3-radius-control);
+}
+
+/* Catalog fill is bg-foreground/15 (reads gray on cream). House paint is
+   navy so the selected range is the beUI object, not two empty tracks. */
+.v3 .v3-range__beui [class*='bg-foreground'] {
+  background-color: var(--v3-navy) !important;
 }
 
 /* The installed beUI thumb (components/motion/range-slider.tsx) paints a
