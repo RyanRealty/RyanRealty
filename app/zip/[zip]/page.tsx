@@ -98,6 +98,7 @@ import {
 } from '@/lib/data/market-truth/public-monthly'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -193,7 +194,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const area = ZIP_AREA[zip] ?? 'Central Oregon'
   const cityName = ZIP_CITY_NAME[zip] ?? 'Bend'
   return pageMetadata({
-    title: `Homes for sale in ${zip} · ${area}, Oregon | Ryan Realty`,
+    title: `${placeHomesForSaleHeading(zip)} · ${area}, Oregon`,
     description: `Live single-family inventory in ZIP ${zip} (${area}, ${cityName}) — Atlas map of every active home, months of supply as two bars, 30-day new-listing alerts, and neighborhood doors with median list prices.`,
     path: `/zip/${zip}`,
   })
@@ -516,7 +517,7 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
   const marketHeadline =
     verdict && mosText != null
       ? `Is ZIP ${zip} a buyer's or seller's market?`
-      : `Homes for sale in ${zip}`
+      : placeHomesForSaleHeading(zip)
 
   // ── THE FIELD ────────────────────────────────────────────────────────────
   const masonryItems = zipMasonryItems(tiles, zip)
@@ -690,7 +691,7 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
       ? [
           {
             type: 'itemList' as const,
-            name: `Homes for sale in ${zip}`,
+            name: placeHomesForSaleHeading(zip),
             items: itemListEntries,
           },
         ]
@@ -719,7 +720,7 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
           area={area}
           city={cityName}
           citySlug={cacheCitySlug}
-          headline={v3Text(`Homes for sale in ${zip}`)}
+          headline={v3Text(placeHomesForSaleHeading(zip))}
           claimCount={activeCount != null && activeCount > 0 ? activeCount : null}
           claimNoun={claimNoun}
           claimHref={zipSearchHref(zip)}
@@ -791,7 +792,7 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
         ) : (
           <V3Quiet
             id="market-report"
-            heading={`Homes for sale in ${zip}`}
+            heading={placeHomesForSaleHeading(zip)}
             headingLevel={2}
             items={[
               {

@@ -42,6 +42,7 @@ import { stripOwnPrefix } from '@/lib/place/short-place-label'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { KbYearSeries } from '@/lib/kb/year-series'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 
 /**
  * A place that has its own node: a neighborhood, a golf or master-planned
@@ -669,7 +670,7 @@ export function cityExploreItems(
   hasPopulation: boolean,
 ): V3QuietItem[] {
   const items: V3QuietItem[] = [
-    { label: `See every ${cityName} home for sale`, href: links.browse },
+    { label: placeHomesForSaleHeading(cityName), href: links.browse },
     { label: `${cityName} market report`, href: `/housing-market/${slug}` },
     { label: `Open houses in ${cityName}`, href: `/open-houses/${slug}` },
     { label: 'Every Central Oregon city', href: '/cities' },

@@ -10,6 +10,7 @@ import {
   HOME_BRIEF_LEAK_REFUSE,
   INVENTORY_LECTURE_REFUSE,
   PLATS_VOICE_REFUSE,
+  EVERY_HOME_LECTURE_REFUSE,
   MANNERED_COPY_REFUSE,
   manneredPublicCopyProblems,
   publicCopyHaystack,
@@ -319,6 +320,78 @@ describe('Find a home + pulse lecture refuse', () => {
         'More than one in five listings on the Central Oregon market is already under contract.',
       ),
     ).toContain(INVENTORY_LECTURE_REFUSE)
+  })
+})
+
+describe('every-home lecture refuse', () => {
+  it('refuses Every home for sale in … headings', () => {
+    expect(
+      manneredPublicCopyProblems('headline={`Every home for sale in Lazy River South`}'),
+    ).toContain(EVERY_HOME_LECTURE_REFUSE)
+    expect(
+      manneredPublicCopyProblems("label: 'See every home for sale'"),
+    ).toContain(EVERY_HOME_LECTURE_REFUSE)
+    expect(
+      manneredPublicCopyProblems("label: 'See every Bend home for sale'"),
+    ).toContain(EVERY_HOME_LECTURE_REFUSE)
+  })
+
+  it('passes the Redfin-like place-first heading', () => {
+    expect(manneredPublicCopyProblems("headline: 'Lazy River South homes for sale'")).toEqual([])
+    expect(manneredPublicCopyProblems("label: 'Bend homes for sale'")).toEqual([])
+  })
+})
+
+describe('live place / search source after the every-home kill', () => {
+  it('does not ship the every-home lecture on place + search heading files', () => {
+    const files = [
+      'app/cities/[slug]/page.tsx',
+      'app/cities/[slug]/_v3/city-sections.ts',
+      'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+      'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
+      'app/communities/[slug]/_v3/community-opening.ts',
+      'app/subdivisions/[slug]/page.tsx',
+      'app/subdivisions/[slug]/_v3/plat-title.ts',
+      'app/subdivisions/[slug]/_v3/subdivision-insight.ts',
+      'app/zip/[zip]/page.tsx',
+      'app/search/[...slug]/page.tsx',
+      'app/search/[...slug]/search-metadata.ts',
+      'app/listing/[listingKey]/page.tsx',
+      'lib/site/place-homes-heading.ts',
+    ]
+    const src = files.map((rel) => readFileSync(join(REPO, rel), 'utf8')).join('\n')
+    expect(manneredPublicCopyProblems(src)).not.toContain(EVERY_HOME_LECTURE_REFUSE)
+  })
+})
+
+describe('taste-receipt --ship CLI refuses every-home lecture', () => {
+  it('exits 1 when the route source is Every home for sale in …', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rr-every-home-'))
+    mkdirSync(join(dir, 'app/search'), { recursive: true })
+    mkdirSync(join(dir, 'design_system/public'), { recursive: true })
+    writeFileSync(
+      join(dir, 'design_system/public/taste-catalog.json'),
+      JSON.stringify({ installById: {}, classes: {}, routeClasses: {} }),
+    )
+    writeFileSync(
+      join(dir, 'app/search/page.tsx'),
+      `export default function Search() { return <h1>Every home for sale in Lazy River South</h1> }\n`,
+    )
+    writeFileSync(
+      join(dir, 'parity.json'),
+      JSON.stringify({
+        route: 'app/search/page.tsx',
+        kit: 'search',
+        tasteReview: doneReceipt(),
+      }),
+    )
+    const r = spawnSync(process.execPath, [SHIP, '--ship', 'parity.json'], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: process.env,
+    })
+    expect(r.status).toBe(1)
+    expect(`${r.stderr}${r.stdout}`).toMatch(/Every home for sale in|every-home lecture/)
   })
 })
 

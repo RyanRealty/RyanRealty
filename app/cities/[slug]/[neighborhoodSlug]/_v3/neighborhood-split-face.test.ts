@@ -54,8 +54,8 @@ function tile(over: Partial<ListingTile> = {}): ListingTile {
 }
 
 describe('neighborhoodHeadline', () => {
-  it('is the neighborhood name', () => {
-    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte')
+  it('is the neighborhood homes-for-sale heading', () => {
+    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte homes for sale')
   })
 })
 

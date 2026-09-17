@@ -31,10 +31,11 @@ import type { PlaceFaceStat } from '@/lib/market/publish-place-face'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 
 /** H1. The counted set is this neighborhood, never the city. */
 export function neighborhoodHeadline(placeName: string): string {
-  return placeName
+  return placeHomesForSaleHeading(placeName)
 }
 
 /** Polygon inventory tiles as Split rows. Face count does not read this length. */
@@ -250,7 +251,7 @@ export function neighborhoodExploreItems(input: {
   links: { browse: string; valuation: string }
 }): V3QuietItem[] {
   return [
-    { label: `See every ${input.placeName} home for sale`, href: input.links.browse },
+    { label: placeHomesForSaleHeading(input.placeName), href: input.links.browse },
     { label: `${input.cityName} market report`, href: `/housing-market/${input.citySlug}` },
     { label: `Open houses in ${input.cityName}`, href: `/open-houses/${input.citySlug}` },
     { label: `All of ${input.cityName}`, href: `/cities/${input.citySlug}` },

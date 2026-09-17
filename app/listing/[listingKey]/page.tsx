@@ -16,6 +16,7 @@ import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { listingPlaceTrail } from '@/lib/site/place-trail'
 import { listingAliasPlatLadder } from '@/lib/listing/listing-alias-plat-trail'
 import {
@@ -645,7 +646,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       ? 'sold'
       : 'unsold'
     : null
-  const similarLabel = listing.city ? `Homes for sale in ${listing.city}` : 'Homes for sale'
+  const similarLabel = listing.city ? placeHomesForSaleHeading(listing.city) : 'Homes for sale'
   // Every off-market door points at something that exists. The rail is an
   // anchor only when the rail rendered; with no active inventory to show, the
   // same label opens the city search rather than jumping to nothing. Same rule
@@ -713,7 +714,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       ) : null}
       {listingAtlas.frameHref ? (
         <p className="v3-atlas__door">
-          <a href={listingAtlas.frameHref}>Every home for sale in {listingAtlas.frameName}</a>
+          <a href={listingAtlas.frameHref}>{placeHomesForSaleHeading(listingAtlas.frameName)}</a>
         </p>
       ) : null}
     </V3Atlas>

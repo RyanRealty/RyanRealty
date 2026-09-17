@@ -9,6 +9,7 @@ import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
 import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { withTimeout } from './fetch-guards'
 import { resolveSlug, buildCanonicalPath } from './resolve-slug'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 
 /**
  * Full metadata assembly for the slug search route. page.tsx's generateMetadata
@@ -51,7 +52,7 @@ export async function buildSearchSlugMetadata({
   const dynamicOgImage = slug.length > 0
     ? `${siteUrl}/search/og/${slug.map((part) => encodeURIComponent(part)).join('/')}`
     : defaultOgImage
-  const title = preset ? `${preset.label} in ${placeName}` : `Homes for Sale in ${placeName}`
+  const title = preset ? `${preset.label} in ${placeName}` : placeHomesForSaleHeading(placeName)
   // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
   // VERIFIED zero active-inventory count stays renderable but is noindexed —
   // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with
