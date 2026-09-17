@@ -473,6 +473,7 @@ export function AboutFaces({
                 name={leadPerson.name}
                 priority
                 proof={proof?.value}
+                className="size-full!"
               />
             </Link>
             <div className="about-faces__row">
@@ -502,7 +503,7 @@ export function AboutFaces({
               {companions.map((person) => (
                 <li key={person.href} className="about-faces__companion">
                   <Link href={person.href} className="about-faces__photo-link">
-                    <FacePortrait src={person.src} name={person.name} />
+                    <FacePortrait src={person.src} name={person.name} className="size-full!" />
                   </Link>
                   <div className="about-faces__row">
                     <Link href={person.href} className="about-faces__name">
