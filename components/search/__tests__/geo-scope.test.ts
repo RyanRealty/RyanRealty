@@ -59,4 +59,11 @@ describe('geoScopeLabel', () => {
     expect(geoScopeLabel({ city: 'Redmond', subdivision: 'N/A' })).toBe('Redmond')
     expect(geoScopeLabel({ subdivision: '***masked' })).toBeNull()
   })
+
+  it('Caldera-only scope does not join implied parent Sunriver', () => {
+    expect(geoScopeLabel({ city: 'Sunriver', subdivision: 'Caldera Springs' })).toBe(
+      'Caldera Springs',
+    )
+    expect(geoScopeLabel({ subdivision: 'Caldera Springs' })).toBe('Caldera Springs')
+  })
 })

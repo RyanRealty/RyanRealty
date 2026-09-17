@@ -43,6 +43,28 @@ describe('search-as-you-move data layer', () => {
   })
 })
 
+describe('exclusive community places (Caldera is not Sunriver)', () => {
+  it('listing query does not invent parent / mls_cities pins', () => {
+    const search = readSrc('app/actions/search.ts')
+    expect(search).toMatch(/toExclusivePlaceQuery/)
+    expect(search).not.toMatch(/getResortCommunityBySubdivisionName\(name\)\?\.mls_cities/)
+  })
+
+  it('Places menu community toggle never writes the parent city', () => {
+    const filters = readSrc('components/search/SearchFilters.tsx')
+    expect(filters).toMatch(/applyCommunityToggle/)
+    expect(filters).toMatch(/applySubdivisionToggle/)
+    expect(filters).not.toMatch(/cities\.add\(c\.city\)/)
+  })
+
+  it('community path pages strip implied parent city from filters', () => {
+    const pageFilters = readSrc('app/search/[...slug]/page-filters.ts')
+    const mapSplit = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(pageFilters).toMatch(/pathPlaceFilters/)
+    expect(mapSplit).toMatch(/pathPlaceFilters/)
+  })
+})
+
 describe('MapSearchView orchestrator', () => {
   const src = readSrc('components/search/MapSearchView.tsx')
 
@@ -257,7 +279,7 @@ describe('390 Map uses one camera', () => {
     expect(filters).toMatch(/Row 1 @375/)
     expect(filters).toMatch(/w-full min-w-0 sm:w-64/)
     expect(filters).toMatch(/Row 2 @375/)
-    expect(filters).toMatch(/return 'Places'/)
+    expect(filters).toMatch(/placesChipLabel/)
     expect(filters).toMatch(/PLACE_SCHOOL_DISTRICT_OPTIONS/)
     expect(filters).toMatch(/School district/)
     expect(filters).toMatch(/schoolDistrict/)

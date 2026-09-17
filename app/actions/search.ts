@@ -17,8 +17,7 @@ import {
   type MapPolygonPoint,
   type MapShapeSet,
 } from '@/lib/map-polygon'
-import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
-import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
+import { toExclusivePlaceQuery } from '@/lib/search/exclusive-places'
 import { getGeneralLimiter } from '@/lib/rate-limit'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { searchListingsAll, searchListingsAllCount, pickSearchFeatureFilters } from '@/lib/data'
@@ -193,43 +192,15 @@ function toSearchAllFilter(f: SearchFilters): Omit<SearchListingsAllFilter, 'sta
   // this path matched the literal name ("3 homes") — one map, two counts
   // (Black Butte Ranch, 2026-09-01). A single-name subdivision expands to
   // itself, so nothing changes for non-community subdivisions.
-  // Places multi-select: city / subdivision may be CSV. Expand to cities /
-  // subdivisions arrays the DAL already understands.
-  const cityParts = (f.city ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  const subdivisionParts = (f.subdivision ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  const subdivisionNames = [
-    ...new Set(subdivisionParts.flatMap((name) => getSubdivisionMatchNames(name))),
-  ]
-  // Registry communities can file under their OWN MLS City (Black Butte Ranch
-  // homes carry City 'Black Butte Ranch'; the page's city is Sisters), so the
-  // single city pin widens to the registry's mls_cities — never dropped
-  // (member names like "South Meadow" are not unique statewide). Same rule as
-  // countSearchListings, so every count on a page describes one population.
-  const mlsCities = subdivisionParts.flatMap(
-    (name) => getResortCommunityBySubdivisionName(name)?.mls_cities ?? [],
-  )
-  const cities = [...new Set([...cityParts, ...mlsCities])]
+  // Places: city pins are only cities the caller chose. Do not invent the
+  // registry parent or extra MLS cities (Caldera-only must not pin Sunriver / Bend).
+  const place = toExclusivePlaceQuery({ city: f.city, subdivision: f.subdivision })
   const neighborhoodParts = (f.neighborhood ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
   return {
-    ...(cities.length > 1
-      ? { cities }
-      : cities.length === 1
-        ? { city: cities[0] }
-        : {}),
-    ...(subdivisionNames.length > 1
-      ? { subdivisions: subdivisionNames }
-      : subdivisionNames.length === 1
-        ? { subdivision: subdivisionNames[0] }
-        : {}),
+    ...place,
     // Multi neighborhoods: first label pins the MV eq filter today (DAL is
     // single-valued). Full OR support is a follow-up; UI still allows multi.
     neighborhood: neighborhoodParts[0] || undefined,
@@ -460,45 +431,13 @@ export async function countSearchListings(params: Record<string, string>): Promi
     const v = params[key]?.trim()
     if (v) filter[key] = v
   }
-  // Places multi-select: city may be CSV.
-  const cityParts = (params.city ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  if (cityParts.length > 1) filter.cities = cityParts
-  else if (cityParts.length === 1) filter.city = cityParts[0]
-
-  // Same alias expansion the list path uses — a bare subdivision_lower match
-  // undercounts communities with several MLS spellings (Pronghorn vs
-  // Pronghorn Resort vs Pronghorn Golf Club) — review finding 2026-07-11.
-  // Subdivision may also be CSV from the Places multi-select.
-  const subdivisionParts = (params.subdivision ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  if (subdivisionParts.length > 0) {
-    filter.subdivisions = [
-      ...new Set(subdivisionParts.flatMap((name) => getSubdivisionMatchNames(name))),
-    ]
-    // A registry community can file under its OWN MLS City ("Black Butte
-    // Ranch" homes carry City 'Black Butte Ranch' while the page's city is
-    // Sisters), so AND-ing the single page city drops real members. Widen the
-    // city pin to the registry's mls_cities — never drop it entirely (member
-    // names like "South Meadow" are not unique statewide).
-    const mlsCities = subdivisionParts.flatMap(
-      (name) => getResortCommunityBySubdivisionName(name)?.mls_cities ?? [],
-    )
-    if (mlsCities.length > 0) {
-      const baseCities =
-        Array.isArray(filter.cities)
-          ? (filter.cities as string[])
-          : typeof filter.city === 'string'
-            ? [filter.city]
-            : []
-      filter.cities = [...new Set([...baseCities, ...mlsCities])]
-      delete filter.city
-    }
-  }
+  // Places: same exclusive query as the list/map path — aliases yes, invented
+  // parent / extra MLS city pins no.
+  const place = toExclusivePlaceQuery({ city: params.city, subdivision: params.subdivision })
+  if (place.cities) filter.cities = place.cities
+  else if (place.city) filter.city = place.city
+  if (place.subdivisions) filter.subdivisions = place.subdivisions
+  else if (place.subdivision) filter.subdivision = place.subdivision
   const neighborhoodParts = (params.neighborhood ?? '')
     .split(',')
     .map((s) => s.trim())

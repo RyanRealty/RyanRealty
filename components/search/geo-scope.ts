@@ -1,3 +1,4 @@
+import { exclusiveGeoScopeParts } from '@/lib/search/exclusive-places'
 import { displaySubdivision } from '@/lib/slug'
 
 /**
@@ -49,16 +50,9 @@ export function geoScopeLabel(filters: {
   schoolDistrict?: string | null
   postalCode?: string | null
 }): string | null {
-  const first = (raw: string | null | undefined) => raw?.split(',')[0]?.trim() || null
-  const subdivisionRaw = first(filters.subdivision)
-  const subdivision = subdivisionRaw ? displaySubdivision(subdivisionRaw) : null
-  const parts = [
-    first(filters.schoolDistrict),
-    subdivision,
-    first(filters.neighborhood),
-    first(filters.city),
-    first(filters.postalCode),
-  ].filter((p): p is string => Boolean(p))
+  const parts = exclusiveGeoScopeParts(filters)
+    .map((part) => displaySubdivision(part) ?? '')
+    .filter(Boolean)
   if (parts.length === 0) return null
   return parts.join(' · ')
 }

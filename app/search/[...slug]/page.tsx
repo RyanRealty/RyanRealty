@@ -62,6 +62,7 @@ import { renderMapSplitView } from './sections/MapSplitView'
 import { ListingsResults } from './sections/ListingsResults'
 import { SearchSeoTail } from './sections/SeoTail'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
+import { pathPlaceFilters } from '@/lib/search/exclusive-places'
 import { loadCitySfrTilesForSearch, loadSearchCityMarketLayer } from '@/lib/market/search-city-sfr-publish'
 
 export async function generateStaticParams() {
@@ -120,7 +121,18 @@ export default async function SearchPage({
   const offset = (page - 1) * pageSize
   const initialPolygon = decodeMapPolygon(sp.poly)
 
-  const { filterOpts, presetChips } = buildSearchFilters({ sp, city, decodedSubdivision, neighborhood, preset })
+  const exclusivePlaces = neighborhood
+    ? { city: city || undefined, subdivision: decodedSubdivision }
+    : pathPlaceFilters(city, decodedSubdivision)
+  const filterCity = exclusivePlaces.city
+  const filterSubdivision = exclusivePlaces.subdivision
+  const { filterOpts, presetChips } = buildSearchFilters({
+    sp,
+    city: filterCity,
+    decodedSubdivision: filterSubdivision,
+    neighborhood,
+    preset,
+  })
 
   // Golf landing — the on-golf-course preset renders a purpose-built, immersive
   // golf properties landing page (hero + community spotlight + stat band + the
@@ -136,7 +148,9 @@ export default async function SearchPage({
       ? 'all'
       : 'active'
 
-  const placeName = subdivision && decodedSubdivision ? getSubdivisionDisplayName(decodedSubdivision) : (city ?? 'Central Oregon')
+  const placeName = filterSubdivision && decodedSubdivision
+    ? getSubdivisionDisplayName(decodedSubdivision)
+    : (filterCity ?? city ?? 'Central Oregon')
   const displayName = preset ? `${placeName} ${preset.shortLabel}` : (presetLabel ?? placeName)
   const searchPagePath = buildCanonicalPath(city ?? null, decodedSubdivision ?? null, subdivision ?? null, resolved.presetSlug)
 
@@ -194,8 +208,8 @@ export default async function SearchPage({
       neighborhood,
       displayName,
       headline:
-        city && !preset
-          ? `${city} homes for sale`
+        filterCity && !preset && !filterSubdivision && !neighborhood
+          ? `${filterCity} homes for sale`
           : `${displayName}${/homes for sale/i.test(displayName) ? '' : ' homes for sale'}`,
       searchPagePath,
       searchBreadcrumbItems,
@@ -403,8 +417,8 @@ export default async function SearchPage({
       {(city || hasFilterOnly) && (
         <SearchAlertCapture
           signedIn={!!session?.user}
-          defaultCity={city ?? ''}
-          defaultSubdivision={decodedSubdivision ?? ''}
+          defaultCity={filterCity ?? ''}
+          defaultSubdivision={filterSubdivision ?? ''}
           defaultFilters={guestAlertFilters}
         />
       )}

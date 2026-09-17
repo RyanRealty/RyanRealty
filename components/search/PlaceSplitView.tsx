@@ -5,6 +5,7 @@ import SearchFilters, { type SearchFiltersInitial } from '@/components/search/Se
 import { PlaceSplitHomesBound } from '@/app/_v3/HomeHomesFieldBound.client'
 import { inAtlasView, type AtlasViewBounds } from '@/lib/geo/atlas-camera'
 import { publishPlaceSplitSeed } from '@/lib/search/publish-place-split-seed'
+import { pathPlaceFilters } from '@/lib/search/exclusive-places'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
@@ -110,12 +111,15 @@ export async function PlaceSplitView(props: {
   const sort = 'newest'
   const view = 'map'
 
+  const exclusivePlaces = props.neighborhood
+    ? { city: props.city || undefined, subdivision: undefined as string | undefined }
+    : pathPlaceFilters(props.city, props.subdivision)
   const viewportFilters: ViewportFilters = {
-    // City + subdivision only: the query layer (toSearchAllFilter) expands a
-    // registry community's aliases and widens city to its mls_cities, so
-    // every counter on the page derives from the same rule.
-    city: props.city || undefined,
-    subdivision: props.neighborhood ? undefined : props.subdivision || undefined,
+    // Community membership is exclusive. Path city is SEO hierarchy — do not
+    // pin the parent city (Caldera + Sunriver showed every Sunriver home).
+    // Alias expansion still lives in toSearchAllFilter / toExclusivePlaceQuery.
+    city: exclusivePlaces.city,
+    subdivision: exclusivePlaces.subdivision,
     neighborhood: props.neighborhood || undefined,
     status,
     sort,
@@ -165,8 +169,8 @@ export async function PlaceSplitView(props: {
   const openHouseLabels = await loadOpenHouseBadgeLabels(props.city)
 
   const filters: SearchFiltersInitial = {
-    city: props.city ?? '',
-    subdivision: props.neighborhood ? '' : props.subdivision ?? '',
+    city: exclusivePlaces.city ?? '',
+    subdivision: exclusivePlaces.subdivision ?? '',
     neighborhood: props.neighborhood ?? '',
     status,
     sort,
