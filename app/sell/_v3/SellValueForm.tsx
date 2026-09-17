@@ -606,16 +606,6 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
           </figure>
         ) : null}
 
-        <Button
-          type="button"
-          variant="ghost"
-          data-taste="ask-open"
-          className="sr-only"
-          tabIndex={-1}
-          onClick={() => setAskOpen(true)}
-        >
-          Expand ask
-        </Button>
         <ExpandingArrowButton
           type="submit"
           disabled={pending}
@@ -625,6 +615,19 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         >
           {pending ? 'Reading the market' : 'Value my home'}
         </ExpandingArrowButton>
+        {/* Shot trigger: opacity-0 (Playwright-visible) so ask-open can force
+            the expanding-arrow trail on 375, where hover media is false. */}
+        <Button
+          type="button"
+          variant="ghost"
+          data-taste="ask-open"
+          aria-hidden
+          tabIndex={-1}
+          className="h-11 w-11 p-0 opacity-0"
+          onClick={() => setAskOpen(true)}
+        >
+          Expand ask
+        </Button>
       </form>
 
       {/* shadcn:sheet — the real one. Overlay over the photograph, focus trap,
