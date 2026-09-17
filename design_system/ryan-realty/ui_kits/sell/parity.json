@@ -2,7 +2,7 @@
   "route": "app/sell/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic list-with-us pages: the ask in the first working surface (SellValueForm, Places autocomplete, pagePath=/sell), live Bend figures with a source trace, one 3% plan with the full Enhanced inclusion list, and every valuation CTA anchored to #get-value. Zero invented results. D11: Value my home on the field submit, never What's my home worth on a control.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value. CLOSED 2026-08-27: 'Places autocomplete' verified by code trace, not by curl (client-hydrated). Chain confirmed: app/sell/_v3/SellValueForm.tsx renders components/seller-lp/AddressAutocomplete.tsx bound to the address field (visible 'Home address' label, empty value). AddressAutocomplete calls lib/use-google-maps-ready.ts (useGoogleMapsReady({libraries:['places']})) and instantiates google.maps.places.Autocomplete via importLibrary('places') restricted to US addresses, biased to Bend/Central Oregon bounds. The loader is components/GoogleMapsBootstrap.tsx, mounted app/layout.tsx -> RootProvider -> AnalyticsScripts -> GoogleMapsBootstrap (same shared loader used by SearchMapClustered, ListingLocationMap, ListingHeroMap, ListingLot3D, and other live map surfaces). NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set in .env.local. Served SSR markup carries the empty address input with its visible label (curl-verified); the Places wiring itself only activates post-hydration by design, so it cannot be curl-verified and was not expected to be. 2026-09-08 (SITE-02, SITE-10, SITE-05, SITE-11): the address step now ANSWERS before it asks. Order is address -> answer -> contact (email required, phone optional) -> timeframe (the choice is the submit, so a submit cannot land without one) -> success. The near-term lane (ready-now) gets a /book prompt in the success state and in the same-minute system confirmation. address_submit fires on the address step so the address-to-request ratio has a denominator. The old V3Proof reviews band was REMOVED rather than duplicated: V3ProofBlock carries the reviews, directly under the ask, and one reviews surface is the rule (TASTE.md consistency). 2026-09-16 (SITE-111): the first viewport is Stage then THE ADDRESS SHEET. The slab on the photograph is one narrow column — the sourced Bend line with its own section-0 disclosure (SELL_FOLD_TRACE) and a crawlable door to /housing-market/bend, the beui-input address field (components/motion/input, imported by app/sell/_v3/SellValueForm.tsx), the Value my home submit — and the scroll cue moved out of the slab onto the photo. The Bend months-of-supply two-bar LEFT the fold: the 2026-09-12 table called printing city supply beside an untyped address \"answering the city before it has a house\", and supply is now drawn inside the sheet against the typed street. The submit opens the real shadcn Sheet (components/ui/sheet, Radix Dialog, imported by the same route file) above the chrome — overlay, focus trap, Escape, close control, a three-rung step rail — and the sourced answer reveals inside it between the address and the contact step. Nothing SITE-02, SITE-05, SITE-10 or SITE-11 shipped was removed: the answer step, the sticky ask, the timeframe ask, the proof block and the ask-source attribution are all still here, and the four steps still run address -> answer -> contact -> timeframe -> success with the same payload, field names and pagePath.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value. CLOSED 2026-08-27: 'Places autocomplete' verified by code trace, not by curl (client-hydrated). Chain confirmed: app/sell/_v3/SellValueForm.tsx renders components/seller-lp/AddressAutocomplete.tsx bound to the address field (visible 'Home address' label, empty value). AddressAutocomplete calls lib/use-google-maps-ready.ts (useGoogleMapsReady({libraries:['places']})) and instantiates google.maps.places.Autocomplete via importLibrary('places') restricted to US addresses, biased to Bend/Central Oregon bounds. The loader is components/GoogleMapsBootstrap.tsx, mounted app/layout.tsx -> RootProvider -> AnalyticsScripts -> GoogleMapsBootstrap (same shared loader used by SearchMapClustered, ListingLocationMap, ListingHeroMap, ListingLot3D, and other live map surfaces). NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set in .env.local. Served SSR markup carries the empty address input with its visible label (curl-verified); the Places wiring itself only activates post-hydration by design, so it cannot be curl-verified and was not expected to be. 2026-09-08 (SITE-02, SITE-10, SITE-05, SITE-11): the address step now ANSWERS before it asks. Order is address -> answer -> contact (email required, phone optional) -> timeframe (the choice is the submit, so a submit cannot land without one) -> success. The near-term lane (ready-now) gets a /book prompt in the success state and in the same-minute system confirmation. address_submit fires on the address step so the address-to-request ratio has a denominator. The old V3Proof reviews band was REMOVED rather than duplicated: V3ProofBlock carries the reviews, directly under the ask, and one reviews surface is the rule (TASTE.md consistency). 2026-09-16 (SITE-111): the first viewport is Stage then THE ADDRESS SHEET. The slab on the photograph is one narrow column \u2014 the sourced Bend line with its own section-0 disclosure (SELL_FOLD_TRACE) and a crawlable door to /housing-market/bend, the beui-input address field (components/motion/input, imported by app/sell/_v3/SellValueForm.tsx), the Value my home submit \u2014 and the scroll cue moved out of the slab onto the photo. The Bend months-of-supply two-bar LEFT the fold: the 2026-09-12 table called printing city supply beside an untyped address \"answering the city before it has a house\", and supply is now drawn inside the sheet against the typed street. The submit opens the real shadcn Sheet (components/ui/sheet, Radix Dialog, imported by the same route file) above the chrome \u2014 overlay, focus trap, Escape, close control, a three-rung step rail \u2014 and the sourced answer reveals inside it between the address and the contact step. Nothing SITE-02, SITE-05, SITE-10 or SITE-11 shipped was removed: the answer step, the sticky ask, the timeframe ask, the proof block and the ask-source attribution are all still here, and the four steps still run address -> answer -> contact -> timeframe -> success with the same payload, field names and pagePath.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -135,11 +135,11 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-16",
-    "evaluator": "separate claude-sonnet-5 evaluator through the judge chain: npx tsx scripts/taste-evaluate.ts sell --builder claude-opus-5 --evaluator claude --url http://127.0.0.1:3111/sell --beat 59, ten shots (five states x two viewports) scored three times in the one call (61 / 63 / 66). grok-4.6 was not reachable from this sandbox, so the chain fell to the claude CLI; the route publishes no competitiveBrief, so competitiveBriefPass is not scored here.",
+    "evaluator": "separate claude-sonnet-5 evaluator (Cursor Task). grok CLI, cursor-agent, and claude CLI were not installed in this sandbox, so the chain could not sign via taste-evaluate.ts. Builder is grok-4.6. Three scorings in one call (57 / 61 / 54). The route publishes no competitiveBrief.",
     "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "builderModel": "grok-4.6",
     "rubricVersion": "v1-2026-09-12",
-    "transport": "claude-cli",
+    "transport": "cursor-task",
     "shotSpec": {
       "routes": [
         "/sell"
@@ -151,41 +151,50 @@
       "states": [
         "default",
         "address-focus",
-        "address-ok",
+        "ask-open",
         "address-error",
+        "address-ok",
         "answer-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, against `next start -p 3111` on this worktree. default: the page as served. address-focus: --states 'address-focus=#get-value-address!click' (the catalog control's focus state). address-ok: the same tool against /sell?address=61271%20Kwinnum%20Dr,%20Bend,%20OR%2097702 (the SITE-12 homepage hand-off), which opens the field filled, so the catalog control's success check is drawn. address-error: --states 'address-error=#get-value-address!type:abc' --await '.sell-field__error'. answer-open: --states 'answer-open=#get-value-address!type:61271 Kwinnum Dr, Bend, OR 97702' --await '.sell-answer' — the shadcn Sheet open over the photograph with the sourced answer for the typed street inside it."
+      "capture": "first viewport, scripts/take-route-shots.mjs plus a 180s Playwright wait for answer-open, scale 1, palette-quantized, against next dev --webpack -p 3111. default: page as served. address-focus: #get-value-address@#get-value!click. ask-open: [data-taste=ask-open]@#get-value!click (expanding-arrow trail). address-error: #get-value-address!type:abc --await .sell-field__error. address-ok: /sell?address=61271%20Kwinnum%20Dr,%20Bend,%20OR%2097702. answer-open: type full street --await .sell-answer (sheet with sourced MOS + days-to-pending)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/sell/shots/sell-1440.png",
       "mobile375": "design_system/ryan-realty/ui_kits/sell/shots/sell-375.png",
       "addressFocusDesktop": "design_system/ryan-realty/ui_kits/sell/shots/address-focus-1440.png",
       "addressFocus375": "design_system/ryan-realty/ui_kits/sell/shots/address-focus-375.png",
-      "addressOkDesktop": "design_system/ryan-realty/ui_kits/sell/shots/address-ok-1440.png",
-      "addressOk375": "design_system/ryan-realty/ui_kits/sell/shots/address-ok-375.png",
+      "askOpenDesktop": "design_system/ryan-realty/ui_kits/sell/shots/ask-open-1440.png",
+      "askOpen375": "design_system/ryan-realty/ui_kits/sell/shots/ask-open-375.png",
       "addressErrorDesktop": "design_system/ryan-realty/ui_kits/sell/shots/address-error-1440.png",
       "addressError375": "design_system/ryan-realty/ui_kits/sell/shots/address-error-375.png",
+      "addressOkDesktop": "design_system/ryan-realty/ui_kits/sell/shots/address-ok-1440.png",
+      "addressOk375": "design_system/ryan-realty/ui_kits/sell/shots/address-ok-375.png",
       "answerOpenDesktop": "design_system/ryan-realty/ui_kits/sell/shots/answer-open-1440.png",
       "answerOpen375": "design_system/ryan-realty/ui_kits/sell/shots/answer-open-375.png"
     },
-    "shotsHash": "sha256:ca0a40c899b41088450ec1ee404d854a648d194e253e07d2555eafbdf5b8deef",
+    "shotsHash": "sha256:c0c798830a10f5f3b345c5e54688f1b25cfcbdc28978187319ee47c12f1bd8b4",
     "scores": [
+      57,
       61,
-      63,
-      66
+      54
     ],
-    "score": 63,
+    "score": 57,
     "criteria": {
-      "designQuality": 20,
-      "originality": 15,
-      "interaction": 8,
-      "craft": 11,
-      "honestyFunction": 9
+      "designQuality": 15,
+      "originality": 14,
+      "interaction": 10,
+      "craft": 10,
+      "honestyFunction": 8
     },
     "demoMatch": false,
-    "beats": "Redfin's home-value estimate flow: this page wins on showing sourced, dated local market context (the months-of-supply bar pair, the days-to-pending scrubber, both with a how we calculate this disclosure) inside the same flow before any contact detail is asked for, which the portals gate behind lead capture. It loses on the input itself: Redfin's address field has visibly richer live autocomplete motion than this bordered box.",
+    "beats": "Zillow seller-advertise entry (zillow.com/seller-advertise): this page wins on sourced local market depth (months-of-supply bar plus a days-to-pending scrubber with a how we calculate this link, surfaced before any contact is asked). It loses on hero reframe toward the typed street \u2014 address-ok still shows the same aerial as the empty field.",
     "adaptedFrom": [
+      {
+        "id": "beui-expanding-arrow-button"
+      },
+      {
+        "id": "shadcn-input-group"
+      },
       {
         "id": "beui-input"
       },
@@ -201,45 +210,50 @@
     ],
     "defects": [
       {
-        "section": "address-input (SellValueForm home-address field)",
-        "severity": "blocking",
-        "finding": "The four captured states (idle, focus, success check, error) show only a border-colour change and a static checkmark or error line appended to a conventional labelled input. The beui Motion Input demo's defining behaviour is the label's morph into the field; here the label never leaves its position above the box in any shot, so a visitor cannot tell this is anything but a repainted native input.",
-        "primitive": "app/sell/_v3/SellValueForm.tsx",
-        "replaceWith": "beui-input",
-        "builderNote": "Recorded as returned and NOT acted on, because the premise is checkable and false: components/motion/input.tsx — the installed catalog source, which ci:catalog-install verifies and both the route file and components/site/v3/V3Input.tsx import — renders its label as a static <label> above the field. There is no floating-label morph in the demo to reproduce. What the demo does carry is in these shots: the label slot, the left affix, the focus state, the drawn success check, the reserved error message row; its shake and its check's path draw are motion and cannot appear in a still. The repaint to square corners, a navy rule and a warm-stone ring is CLAUDE.md section 3, not a cream box. Left open rather than answered by adding a behaviour the catalog does not have."
-      },
-      {
-        "section": "address-error row",
-        "severity": "craft",
-        "finding": "\"Please enter a complete property address.\" renders at roughly the same weight as the helper copy elsewhere on the card, so a visitor could miss that anything changed.",
-        "primitive": "app/sell/_v3/sell-stage.css",
-        "replaceWith": null
-      },
-      {
-        "section": "hero card (3% LISTING PLAN / Sell your home in Central Oregon)",
+        "section": "Stage hero card (sell-1440/375, address-ok-1440/375)",
         "severity": "taste",
-        "finding": "The fold leads with agency copy over the stat line, while the page's actual claim — Bend is a seller's market right now, backed by the 614-vs-175 comparison — is inside the sheet. The most sourced content on the page is invisible until a visitor completes an address.",
+        "finding": "The class brief calls for a form-specific dim/reframe toward the typed street once an address is entered. Comparing address-ok-1440 to sell-1440, the background is the identical aerial in both \u2014 no reframe keyed to the address.",
         "primitive": "components/site/v3/V3Stage.tsx",
         "replaceWith": "house-stage"
       },
       {
-        "section": "#proof (THE RECORD)",
+        "section": "Value my home button, open state (ask-open-1440/375)",
         "severity": "taste",
-        "finding": "A bare number (17), one testimonial and three flat outlined controls in three columns is the proof-block shape any brokerage site uses; nothing in the composition is a choice a template would not also make.",
-        "primitive": "components/site/v3/V3ProofBlock.client.tsx",
+        "finding": "The brief names beui-expanding-arrow-button dotted-chevron trail. The judge read the five fading DottedChevron marks as generic sparkle clusters, not a directional chevron trail, so demoMatch stayed false.",
+        "primitive": "components/motion/expanding-arrow-button.tsx",
+        "replaceWith": "beui-expanding-arrow-button"
+      },
+      {
+        "section": "Address field states (address-focus, address-error, address-ok)",
+        "severity": "taste",
+        "finding": "Across focus/error/success the stills show border color, a reserved error line, and a success check. The judge did not treat those as the beui-input shake/path-draw demo (motion cannot appear in a still) and scored demoMatch false.",
+        "primitive": "app/sell/_v3/SellAddressField.tsx",
+        "replaceWith": "beui-input"
+      },
+      {
+        "section": "Address input, mobile success state (address-ok-375)",
+        "severity": "craft",
+        "finding": "The confirmed address truncates inside the 375px field so a seller cannot read the full street and ZIP before submit.",
+        "primitive": "app/sell/_v3/SellAddressField.tsx",
+        "replaceWith": null
+      },
+      {
+        "section": "Hero card + THE RECORD section (sell-1440, address-focus-1440)",
+        "severity": "taste",
+        "finding": "The hero card and THE RECORD block under it repeat the same eyebrow-heading-row shape with no change in density, width, or media between them.",
+        "primitive": "app/sell/page.tsx",
         "replaceWith": null
       }
     ],
-    "verdict": "The sheet is the real gain: a sourced, verdict-consistent months-of-supply bar pair and a days-to-pending scrubber that reward the interaction, which is why this scores above the prior mark. Honesty rises to 9 — the fold's figures now carry their own section-0 disclosure, and the source row that read \"months of supply 3\" beside a 3.5-month verdict now reads 3.5. demoMatch came back false on the address field and is recorded as returned; the node stays in_progress. The fold that gets seen first is still a stock sell-your-home card and a conventional proof column.",
-    "comparedToPrior": "rebaselined",
+    "verdict": "demoMatch is false as returned. The sheet with sourced MOS bars is the real gain; the fold a visitor sees first is still a photo-and-card ask, and the judge did not accept the expanding-arrow trail or input states as the named demos. Honest false. Node stays in_progress. No house paint after this mark.",
+    "comparedToPrior": "fell",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 61,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:48b4ca0f6b045b04e3ccbfb707e2068817fab565b17e59297dc382c717371936"
-    },
-    "rebaselineReason": "evaluatorModel (claude-sonnet-5, not grok-4.6) and rubricVersion (v1-2026-09-12, not v1-2026-09-10) both differ from the mark committed at HEAD: grok-4.6 is not reachable from this sandbox and the judge chain fell to the claude CLI, which is a different instrument. The honesty criterion rose against both comparable readings — 9 here against the HEAD receipt's 7 and the 2026-09-12 grok table's 8 — so the product hold is met on its own terms rather than by the rebaseline. Not a fall from the HEAD 61: a first mark on a new instrument."
+      "evaluatedAt": "2026-09-16",
+      "score": 63,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:ca0a40c899b41088450ec1ee404d854a648d194e253e07d2555eafbdf5b8deef"
+    }
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

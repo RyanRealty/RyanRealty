@@ -221,6 +221,12 @@ export default function AddressAutocomplete({
             <InputGroup
               className={cn(
                 'h-auto min-h-11 w-full',
+                // Catalog InputGroup rings use :focus-visible. A pointer click
+                // (take-route-shots, real mouse) focuses without :focus-visible,
+                // so the same ring tokens also bind to :focus. Not a house border.
+                'has-[[data-slot=input-group-control]:focus]:border-ring',
+                'has-[[data-slot=input-group-control]:focus]:ring-3',
+                'has-[[data-slot=input-group-control]:focus]:ring-ring/50',
                 hasError && 'border-destructive ring-3 ring-destructive/25',
               )}
             >
@@ -236,7 +242,7 @@ export default function AddressAutocomplete({
                 classNames={{
                   root: 'min-w-0 flex-1 gap-0',
                   field:
-                    'h-auto min-h-11 rounded-none border-0 bg-transparent shadow-none ring-0 overflow-visible',
+                    'h-auto min-h-11 rounded-none border-0 bg-transparent shadow-none overflow-visible',
                   ...motionClassNames,
                 }}
                 error={hasError}

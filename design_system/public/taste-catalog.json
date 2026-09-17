@@ -2540,7 +2540,7 @@
         }
       ],
       "demoStates": [
-        "address-focus=#get-value-address!click",
+        "address-focus=#get-value-address@#get-value!click",
         "ask-open=[data-taste=ask-open]@#get-value!click",
         "address-error=#get-value-address!type:abc",
         "answer-open=#get-value-address!type:61271 Kwinnum Dr, Bend, OR 97702"
