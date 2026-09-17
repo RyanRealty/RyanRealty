@@ -230,7 +230,7 @@
       }
     ],
     "verdict": "Demo match holds: InsightCards pager, Liveline scrub, and navy-on-cream digit-swap faces are the opened controls, not a cream box. Inventory and information improved via live SFR rows with price, address, beds, baths, and sqft; visible SEO did not clearly rise because the H1 still omits 2026 and the for-sale count even though visitor English and sourced Oregon Data Share MLS figures are honest and the seller’s-market verdict matches 3.5 months of supply.",
-    "comparedToPrior": "rebaselined",
+    "comparedToPrior": "rose",
     "priorMark": {
       "evaluatedAt": "2026-09-12",
       "score": 56,
@@ -245,7 +245,7 @@
       "source": "taste-table.json instrument / SITE-102 table row (median 56, grok-4.6)",
       "honestyFunction": 7
     },
-    "rebaselineReason": "shotsHash sha256:0681a3bc… (table four-stat cream opener) → the eight shots above (InsightCards fold, DigitSwap faces, insight-open / scrub-open, visitor-English Oregon Data Share MLS). evaluatorModel stays grok-4.6; rubricVersion stays v1-2026-09-12. Median 77 is above the table 56 and the 70 finish line; demoMatch true. The committed HEAD receipt was grok-4.6 61 on rubric v1-2026-09-10 — this mark returns the table ruler on new open-state shots.",
+    "rebaselineReason": "Same instrument as the table (evaluatorModel grok-4.6, rubricVersion v1-2026-09-12). Median 77 rose 21 over table 56 (floor 3). shotsHash is new because the page changed; identityDrift does not treat a new hash as a different ruler.",
     "honestyFunction": 8,
     "notes": "SEO increment: title is Bend housing market 2026: 609 homes for sale; Dataset variableMeasured merges city insight variables. Information increment: #city-homes V3ListingRow from getCityListings (address + price + beds/baths/sqft). UX: beautifului InsightCards + beui DigitSwap/AnimatedNumber imported from CityInsight.client.tsx. Visitor English only — Market Truth / mt-v1 / MarketPulse killed on traces and leftover-hud fingerprint. honestyFunction 8, equal to HEAD 61 receipt and above table 7. Fold citation is Oregon Data Share MLS. market-report-detail content floor: words 873 vs 598, images 4, jsonLd 6."
   },
