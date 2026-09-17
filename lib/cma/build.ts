@@ -88,6 +88,7 @@ import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
 import { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
+import { nudgeRecommendedDownForHighDomActives } from '@/lib/pricing/active-dom-nudge'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -1299,6 +1300,26 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             ringsTried: competitionRing.ringsTried,
           })
         : null
+
+    // Matt 2026-09-17: high-DOM (60+) overpriced actives may nudge Recommended
+    // DOWN within the closed-comp band only — never outside, no story-adj.
+    if (pricing && bandRivals?.rivals?.length) {
+      const bandLow = Math.min(pricing.valueLow, pricing.valueHigh)
+      const bandHigh = Math.max(pricing.valueLow, pricing.valueHigh)
+      const nudge = nudgeRecommendedDownForHighDomActives({
+        recommended: pricing.recommended,
+        bandLow,
+        bandHigh,
+        actives: bandRivals.rivals.map((r) => ({
+          status: r.status,
+          listPrice: r.listPrice,
+          daysOnMarket: r.daysOnMarket,
+        })),
+      })
+      if (nudge.nudged) {
+        pricing = { ...pricing, recommended: nudge.recommended, notes: [...pricing.notes, nudge.reason!] }
+      }
+    }
 
     const renderArgs = {
       coverPhoto: {
