@@ -99,6 +99,7 @@
     "app/motivated-sellers/[city]/page.tsx",
     "app/motivated-sellers/page.tsx",
     "app/neighborhoods/page.tsx",
+    "app/new-construction/page.tsx",
     "app/newsletter/page.tsx",
     "app/newsletter/unsubscribe/page.tsx",
     "app/offline/page.tsx",

@@ -1,3 +1,12 @@
+# Current — 2026-09-17 (Bend new-construction SFR-first)
+
+Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR #278. PR only — Cos Mini lands. Do not merge. Not Tip Ready (no catalog SITE class / `@no-parity`).
+
+- **SFR first.** Shelf + ledger: Parkside → Calaveras → Easton → Petrosa → Acadia → Stevens Ranch SF (`From $579,995` Horton page). Live shelf cards filter `Single Family Residence`.
+- **Horton townhomes.** Separate ledger: Thunder Ridge $379,995–$419,995, Ponderosa $414,995–$419,995, Stevens Ranch townhomes from $419,995. Not the lead.
+- **Gates.** Last stamp 149/149; restamp after this commit. Tip SHA: none.
+- Skills read: `VOICE.md`, `TASTE.md`, research uploads 2026-09-16.
+
 # Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)
 
 Surface: Cursor cloud, branch `cursor/p0-matt-voice-phone-sheet-d3db`. PR only — Cos Mini cherry-picks + `npm run push`. Do not merge here.

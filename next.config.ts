@@ -325,8 +325,8 @@ const nextConfig: NextConfig = {
       // E-CUT: leftover CUT-CANDIDATE public pages fold into living destinations.
       { source: '/area-guides', destination: '/cities', permanent: true },
       { source: '/areas/:slug', destination: '/homes-for-sale', permanent: true },
-      { source: '/builders', destination: '/homes-for-sale?newConstruction=1', permanent: true },
-      { source: '/builders/:slug', destination: '/homes-for-sale?newConstruction=1', permanent: true },
+      { source: '/builders', destination: '/new-construction', permanent: true },
+      { source: '/builders/:slug', destination: '/new-construction', permanent: true },
       { source: '/resources', destination: '/housing-market', permanent: true },
       { source: '/pulse', destination: '/activity', permanent: true },
       // IA lock (P5): deal-signal survivor is /price-drops. Page-level
