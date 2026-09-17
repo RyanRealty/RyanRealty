@@ -88,6 +88,12 @@
   opacity: 0;
 }
 
+/* Scrim over the same photo was the rematch-2 fail. The street frame is
+   the Stage content now — hide the overlay so the lot is readable. */
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-scrim {
+  opacity: 0;
+}
+
 .v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-media {
   background: var(--v3-surface-inverse);
 }
@@ -247,13 +253,18 @@
   }
 
   .sell-stage-ask .sell-field input {
-    font-size: var(--v3-size-label);
-    letter-spacing: -0.02em;
+    font-size: var(--v3-size-source);
+    letter-spacing: -0.03em;
   }
 
-  .sell-stage-ask .sell-field [class*='leftIcon'],
-  .sell-stage-ask .sell-field span:has(svg) {
-    transform: scale(0.9);
+  /* Success: drop the affix so the street string fits the 375 pill.
+     Confirm line under the field stays a second line. */
+  .sell-stage-ask .sell-field [data-state='success'] > span:first-of-type {
+    display: none;
+  }
+
+  .sell-stage-ask .sell-field [data-state='success'] input {
+    padding-inline-start: var(--v3-space-sm);
   }
 }
 
