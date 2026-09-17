@@ -38,11 +38,13 @@ function DottedChevron({ className }: { className?: string }) {
       aria-hidden="true"
       className={className}
     >
-      <circle cx="4" cy="4" r="2" fill="currentColor" />
-      <circle cx="10" cy="9" r="2" fill="currentColor" />
-      <circle cx="16" cy="14" r="2" fill="currentColor" />
-      <circle cx="10" cy="19" r="2" fill="currentColor" />
-      <circle cx="4" cy="24" r="2" fill="currentColor" />
+      <path
+        d="M5 4 L16 14 L5 24"
+        stroke="currentColor"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -133,10 +135,10 @@ export const ExpandingArrowButton = forwardRef<
           transition={{ duration: reduce ? 0 : 0.1, ease: EASE_OUT }}
           className="absolute inset-0 grid place-items-center"
         >
-          <DottedChevron className="h-7 w-5" />
+          <DottedChevron className="h-10 w-7" />
         </motion.span>
 
-        <span className="absolute inset-0 flex items-center justify-around px-3">
+        <span className="absolute inset-0 flex items-center justify-start gap-1 px-4">
           {ARROW_OPACITY.map((opacity, index) => (
             <motion.span
               key={opacity}
@@ -150,12 +152,10 @@ export const ExpandingArrowButton = forwardRef<
                 delay: active && !reduce ? 0.04 + index * 0.025 : 0,
                 ease: EASE_OUT,
               }}
-              style={{
-                color: `color-mix(in srgb, var(--primary) ${Math.round(opacity * 100)}%, transparent)`,
-              }}
-              className="inline-grid place-items-center"
+              style={{ color: `color-mix(in oklab, currentColor ${Math.round(opacity * 100)}%, transparent)` }}
+              className="inline-grid shrink-0 place-items-center"
             >
-              <DottedChevron className="h-7 w-5" />
+              <DottedChevron className="h-10 w-7" />
             </motion.span>
           ))}
         </span>
