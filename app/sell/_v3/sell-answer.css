@@ -155,104 +155,12 @@
    stylesheet are untouched, and the rule disappears the day the strips turn on
    because the page stops passing the class. */
 
-/* THE RECORD is a navy ledger band, not another eyebrow-heading-row under
-   the Stage. Density, width, and ground all change: one-line mast, figures
-   first, inverse surface. */
-.v3.v3-proofblock.sell-proof--quiet {
-  padding-block: var(--v3-space-lg);
-  background: var(--v3-surface-inverse);
-  color: var(--v3-ink-on-navy);
-  border-top: 0;
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--v3-space-xs) var(--v3-space-sm);
-  max-width: none;
-  margin: 0 auto var(--v3-space-md);
-  padding-inline-start: var(--v3-space-sm);
-  border-inline-start: var(--v3-rule-weight-mast) solid var(--v3-cream);
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-eyebrow,
-.v3.v3-proofblock.sell-proof--quiet .v3-heading,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__claim {
-  color: var(--v3-ink-on-navy);
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-heading {
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-label);
-  font-weight: var(--v3-weight-medium);
-  letter-spacing: var(--v3-track-label);
-  line-height: var(--v3-leading-body);
-  text-transform: uppercase;
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__claim {
-  flex: 1 1 100%;
-  max-width: none;
-  margin: 0;
-  font-size: var(--v3-size-body-sm);
-  color: var(--v3-ink-on-navy-muted);
-}
-
 .v3.v3-proofblock.sell-proof--quiet .v3-proofblock__body {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__rail {
-  order: -1;
-}
-
 .v3.v3-proofblock.sell-proof--quiet .v3-proofblock__drawing {
-  order: 1;
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure-value,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure-label,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure-aside,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__quiet,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__score-line,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__quote,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__quote blockquote p,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__reach-link,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__more-label,
-.v3.v3-proofblock.sell-proof--quiet cite {
-  color: var(--v3-ink-on-navy);
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure-aside,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__quiet,
-.v3.v3-proofblock.sell-proof--quiet figcaption,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__more-label {
-  color: var(--v3-ink-on-navy-muted);
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__words,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__reach {
-  border-color: color-mix(in srgb, var(--v3-cream) 22%, transparent);
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__pick {
-  color: var(--v3-ink-on-navy-muted);
-  border-color: color-mix(in srgb, var(--v3-cream) 28%, transparent);
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__pick.is-active {
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-}
-
-.v3.v3-proofblock.sell-proof--quiet + .sell-proof-trace {
-  max-inline-size: none;
-  margin: 0;
-  padding-block: 0 var(--v3-space-lg);
-  background: var(--v3-surface-inverse);
-  color: var(--v3-ink-on-navy-muted);
+  order: -1;
 }
 
 @media (min-width: 62rem) {
