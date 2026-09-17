@@ -76,11 +76,15 @@ export function CommunityMarketView({
   const figures = [...live.figures, ...closed]
   const [firstFigure, ...restFigures] = figures
   const closedLine = closedTrace(geoName, closed)
-  const traceParts = [live.figures.length > 0 ? live.trace.replace(/\.$/, '') : null, closedLine].filter(
-    (part): part is string => Boolean(part),
-  )
+  const liveLine =
+    live.figures.length > 0
+      ? `Active single-family houses in ${geoName} from Oregon Data Share MLS`
+      : null
+  const traceParts = [liveLine, closedLine].filter((part): part is string => Boolean(part))
   const trace =
-    traceParts.length > 0 ? `${traceParts.join('. ')}.` : live.trace
+    traceParts.length > 0
+      ? `${traceParts.join('. ')}.`
+      : `Oregon Data Share MLS, active single-family houses in ${geoName}.`
 
   const cityLedger = buildCityLedger(snapshots, citySlug)
   const [firstCityRow, ...restCityRows] = cityLedger.rows
@@ -120,6 +124,7 @@ export function CommunityMarketView({
           foldAfter={MARKET_LEAD_FIGURES}
           foldLabel={v3Text(MARKET_FOLD_LABEL)}
           source={v3Text(trace)}
+          sourceName={v3Text('Oregon Data Share MLS')}
           updated={
             live.figures.length > 0 && closed.length === 0 && refreshedAt
               ? v3Text(formatDate(refreshedAt))
