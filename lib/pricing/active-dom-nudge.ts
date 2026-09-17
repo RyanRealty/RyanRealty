@@ -5,6 +5,8 @@
  * - high DOM = 60+ days on market
  * - overpriced = current ask above closed-comp / Recommended band high
  * - actives still do not *set* Recommended (closed comps own the band)
+ * - pending high-DOM (60+) = letter signal only — never sets Recommended,
+ *   never nudges (actives may still nudge in-band)
  */
 
 export const HIGH_DOM_ACTIVE_DAYS = 60
@@ -29,6 +31,16 @@ export function isHighDomOverpricedActive(
   if (dom == null || !(dom >= HIGH_DOM_ACTIVE_DAYS)) return false
   if (!(rival.listPrice > 0) || !(closedBandHigh > 0)) return false
   return rival.listPrice > closedBandHigh
+}
+
+/**
+ * Pending sitting 60+ DOM — letter/competition signal only.
+ * Never qualifies for Recommended nudge (actives may still nudge in-band).
+ */
+export function isHighDomPendingLetterSignal(rival: ActiveDomNudgeRival): boolean {
+  if (!/^pending$/i.test(rival.status.trim())) return false
+  const dom = rival.daysOnMarket
+  return dom != null && dom >= HIGH_DOM_ACTIVE_DAYS
 }
 
 export type ActiveDomNudgeInput = {

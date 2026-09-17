@@ -1,0 +1,11 @@
+{
+  "kind": "picker-contract",
+  "id": "cma-canter-then-fleet-locks",
+  "contracts": [
+    "locks-live-on-shared-engine-paths",
+    "canter-proves-then-fleet-applies"
+  ],
+  "testFiles": [
+    "lib/cma/canter-then-fleet-locks.contract.test.ts"
+  ]
+}

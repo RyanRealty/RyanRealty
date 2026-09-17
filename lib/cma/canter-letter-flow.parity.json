@@ -7,6 +7,7 @@
     "recommended-inside-closed-comp-band",
     "pin-map-subject-comps-status-legend-class",
     "active-peers-dom-overpricing-signal-closed-only-recommend",
+    "pending-high-dom-letter-signal-never-sets-recommended",
     "every-comparable-row-dom-and-price-history"
   ],
   "testFiles": [

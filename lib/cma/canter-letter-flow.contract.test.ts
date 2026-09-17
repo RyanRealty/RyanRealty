@@ -10,6 +10,8 @@
  * listing/price history — Tip Ready refuse if missing.
  * Low/High from closed-comp band (valueLow/valueHigh); Recommended must stay
  * inside that band — Tip Ready refuse if Rec is outside Low/High.
+ * Pending high-DOM 60+ = letter signal only; never sets Recommended (actives
+ * may still nudge in-band). Canter first, then apply ALL locks to every CMA.
  */
 import { describe, expect, it } from 'vitest'
 import {
@@ -25,6 +27,10 @@ import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
 import { didNotSellBodyHtml } from '@/lib/cma/did-not-sell'
 import { storyAdjustment } from '@/lib/pricing/classes'
 import { recommendedInsideClosedBand } from '@/lib/pricing/recommended-in-band'
+import {
+  isHighDomPendingLetterSignal,
+  nudgeRecommendedDownForHighDomActives,
+} from '@/lib/pricing/active-dom-nudge'
 import {
   COMPARABLE_DOM_ROW_LABEL,
   COMPARABLE_PRICE_HISTORY_ROW_LABEL,
@@ -294,6 +300,75 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(storyAdjustment('one', 'one', 679_000)).toBe(0)
   })
 
+
+  it('contract: pending-high-dom-letter-signal-never-sets-recommended', () => {
+    const pendingRival = {
+      listingKey: 'P-1100',
+      address: '1100 Horse Back',
+      listPrice: 729_000,
+      status: 'Pending' as const,
+      daysOnMarket: 95,
+      photoUrl: null,
+      latitude: 44.294,
+      longitude: -121.535,
+      beds: 3,
+      baths: 2,
+      sqft: 1900,
+      yearBuilt: 2018,
+      lotAcres: 0.2,
+      originalListPrice: 749_000,
+      onMarketDate: '2026-06-01',
+      listingHistoryLine: 'Listed Jun 1, 2026 at $749,000, now $729,000 under contract · 95 days on market',
+    }
+    expect(
+      isHighDomPendingLetterSignal({
+        status: pendingRival.status,
+        listPrice: pendingRival.listPrice,
+        daysOnMarket: pendingRival.daysOnMarket,
+      }),
+    ).toBe(true)
+
+    const rivalsHtml = renderBandRivalsHtml({
+      city: 'Sisters',
+      lo: 649_000,
+      hi: 675_000,
+      activeCount: 0,
+      pendingCount: 1,
+      rivals: [pendingRival],
+      subject: {
+        beds: 3,
+        baths: 2,
+        sqft: 1883,
+        yearBuilt: 2025,
+        lotAcres: 0.2,
+        recommendedList: pricing.recommended,
+        latitude: 44.292,
+        longitude: -121.534,
+        listingHistoryLine: null,
+        daysOnMarket: null,
+      },
+    })
+    expect(rivalsHtml).toContain('1100 Horse Back')
+    expect(rivalsHtml).toMatch(/95 days on market/)
+    // Pending ask must not become Recommended.
+    expect(letterCoverPayoffHtml(pricing)).toContain('$659,000')
+    expect(letterCoverPayoffHtml(pricing)).not.toContain('$729,000')
+
+    const nudge = nudgeRecommendedDownForHighDomActives({
+      recommended: pricing.recommended,
+      bandLow: pricing.valueLow,
+      bandHigh: pricing.valueHigh,
+      actives: [
+        {
+          status: pendingRival.status,
+          listPrice: pendingRival.listPrice,
+          daysOnMarket: pendingRival.daysOnMarket,
+        },
+      ],
+    })
+    expect(nudge.nudged).toBe(false)
+    expect(nudge.recommended).toBe(pricing.recommended)
+  })
 
   it('contract: every-comparable-row-dom-and-price-history', () => {
     // Tip Ready refuse labels — must match SHARED_ROWS in comp-matrix.

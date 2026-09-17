@@ -1,0 +1,12 @@
+{
+  "kind": "picker-contract",
+  "id": "cma-closed-comp-weight-recent-similar",
+  "contracts": [
+    "more-recent-closed-weighs-more",
+    "more-similar-size-weighs-more",
+    "weighted-point-pulls-toward-recent-similar-then-in-band"
+  ],
+  "testFiles": [
+    "lib/pricing/closed-comp-weight.contract.test.ts"
+  ]
+}

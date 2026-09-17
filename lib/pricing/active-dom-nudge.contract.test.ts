@@ -1,11 +1,13 @@
 /**
  * Matt 2026-09-17 high-DOM overpriced-active Recommended nudge.
+ * Pending high-DOM 60+ = letter signal only; never sets Recommended.
  * Tip Ready: node scripts/lib/taste-receipt.mjs --ship lib/pricing/active-dom-nudge.parity.json
  */
 import { describe, expect, it } from 'vitest'
 import {
   HIGH_DOM_ACTIVE_DAYS,
   isHighDomOverpricedActive,
+  isHighDomPendingLetterSignal,
   nudgeRecommendedDownForHighDomActives,
 } from '@/lib/pricing/active-dom-nudge'
 import { storyAdjustment } from '@/lib/pricing/classes'
@@ -59,4 +61,26 @@ describe('high-DOM overpriced active Recommended nudge', () => {
     expect(out.nudged).toBe(false)
     expect(out.recommended).toBe(701_000)
   })
+  it('contract: pending-high-dom-letter-signal-never-sets-recommended', () => {
+    const pending = { status: 'Pending', listPrice: 729_000, daysOnMarket: 201 }
+    expect(isHighDomPendingLetterSignal(pending)).toBe(true)
+    expect(isHighDomPendingLetterSignal({ status: 'Pending', listPrice: 729_000, daysOnMarket: 59 })).toBe(
+      false,
+    )
+    expect(isHighDomPendingLetterSignal({ status: 'Active', listPrice: 729_000, daysOnMarket: 201 })).toBe(
+      false,
+    )
+
+    // Pending alone must not nudge Recommended.
+    const out = nudgeRecommendedDownForHighDomActives({
+      recommended: 701_000,
+      bandLow: 675_000,
+      bandHigh: 705_000,
+      actives: [pending],
+    })
+    expect(out.nudged).toBe(false)
+    expect(out.recommended).toBe(701_000)
+    expect(isHighDomOverpricedActive(pending, 705_000)).toBe(false)
+  })
+
 })
