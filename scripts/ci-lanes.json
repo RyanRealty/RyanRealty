@@ -28,6 +28,7 @@
     "ci:listing-alert-enroll",
     "ci:listing-canonical-single",
     "ci:listing-figure-publish",
+    "ci:listing-fold-density",
     "ci:listing-key-lookup",
     "ci:listing-offmarket-index",
     "ci:listing-photo-alt",
@@ -1303,6 +1304,17 @@
       "lib/listing/publish-listing-mosaic.ts",
       "lib/listing/row-photo.ts",
       "lib/data/listings/getListingDetail.ts"
+    ],
+    "ci:listing-fold-density": [
+      "app/listing/**",
+      "components/site/listing-detail/**",
+      "components/site/v3/V3Breadcrumb.tsx",
+      "components/site/v3/V3Breadcrumb.css",
+      "components/site/v3/V3BreadcrumbCollapse.client.tsx",
+      "design_system/ryan-realty/ui_kits/listing-detail/parity.json",
+      "scripts/check-listing-fold-density.mjs",
+      "scripts/lib/listing-fold-density.mjs",
+      "scripts/lib/taste-receipt.mjs"
     ],
     "ci:place-section-depth": [
       "app/communities/**",
