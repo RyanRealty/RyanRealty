@@ -160,6 +160,7 @@ import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { subdivisionPageTrail } from '@/lib/site/place-trail'
@@ -745,7 +746,7 @@ async function renderSubdivisionPage({ params }: Props) {
     segments: publicSegments,
     covers: { ...placeTypeCoverPhotos(splitListings), ...typeCovers },
   })
-  const headline = displayName
+  const headline = placeHomesForSaleHeading(displayName)
   const platLibraryHeroUrl = await withTimeoutFallback(
     placeLibraryHero('subdivision', slug),
     null,
@@ -863,11 +864,11 @@ async function renderSubdivisionPage({ params }: Props) {
      /homes-for-sale/redmond/ridge-at-eagle-crest answers "99 homes for sale,
      all types"; Park Addition is 3 here and 4 there. A door reading "See all 14
      homes for sale" would be a figure this page cannot reconcile with the page
-     it opens. "Every home for sale" is what the destination actually holds —
-     its own heading is "Homes for sale in {Name}" — so the label describes the
-     door instead of counting through it. The count stays where its trace is. */
+     it opens. The destination heading is "{Place} homes for sale", so the door
+     uses that same phrase and does not invent a second count. The count stays
+     where its trace is. */
   const platDoors: Array<{ label: string; href: string }> = [
-    ...(browseHref ? [{ label: 'See every home for sale', href: browseHref }] : []),
+    ...(browseHref ? [{ label: placeHomesForSaleHeading(displayName), href: browseHref }] : []),
     { label: 'Talk to a broker', href: '/contact' },
   ]
 
@@ -1602,7 +1603,7 @@ async function renderSubdivisionPage({ params }: Props) {
             Atlas above because it is the same set. */}
         <div id="homes">
           <div id="homes-head" className={V3_ROOT_CLASS}>
-            <V3Heading level={2}>{`Every home for sale in ${displayName}`}</V3Heading>
+            <V3Heading level={2}>Homes for sale</V3Heading>
           </div>
           <PlaceSplitView
             city={splitCity}
@@ -1792,7 +1793,7 @@ async function renderSubdivisionPage({ params }: Props) {
           questions={platAnswers}
           sourceKey={platSourceKey}
           doors={[
-            ...(browseHref ? [{ label: `Every home for sale in ${displayName}`, href: browseHref }] : []),
+            ...(browseHref ? [{ label: placeHomesForSaleHeading(displayName), href: browseHref }] : []),
             ...(resortSlug
               ? [{ label: `${resortLabel ?? displayName} overview`, href: `/communities/${resortSlug}` }]
               : citySlug

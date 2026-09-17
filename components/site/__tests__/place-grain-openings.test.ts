@@ -73,7 +73,7 @@ describe('city opening', () => {
     expect(page).toMatch(/place-opening--media/)
     expect(page).toMatch(/leftoverHudKpis\(\{/)
     expect(page).toMatch(/publishPlaceFace\(\{\s*grain:\s*'city',/)
-    expect(page).toMatch(/const headline = `\$\{cityName\} real estate`/)
+    expect(page).toMatch(/const headline = placeHomesForSaleHeading\(cityName\)/)
     expect(page).not.toMatch(/<PlaceFaceStrip/)
     expect(page).toMatch(/<PlaceSplitView/)
     expect(page).toMatch(/getBoundaryGeoJSON\(\{\s*geoType:\s*'city'/)
@@ -160,8 +160,8 @@ describe('neighborhood pace', () => {
     expect(neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 0, totalQualifying: 0 })).toBeNull()
   })
 
-  it('headline is the neighborhood name', () => {
-    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte')
+  it('headline is the neighborhood homes-for-sale heading', () => {
+    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte homes for sale')
   })
 
   it('about is one paragraph', () => {
@@ -450,9 +450,9 @@ describe('place door (SITE-03, city grain only this round)', () => {
   it('owns the browse destination: the market Instrument draws no second filled button to the same href', () => {
     // /cities/bend rendered the door at /homes-for-sale/bend AND, inside
     // .v3-instrument__action, a second v3-btn--primary at the identical href
-    // ("See every Bend home for sale"). One destination, one filled control.
+    // ("Bend homes for sale"). One destination, one filled control.
     const instrumentAction = cityPage.match(
-      /action=\{\{\n\s+label: v3Text\(`See every \$\{cityName\} home for sale`\),\n\s+href: homesForSalePath\(cityName\),\n\s+variant: '(\w+)',/,
+      /action=\{\{\n\s+label: v3Text\(placeHomesForSaleHeading\(cityName\)\),\n\s+href: homesForSalePath\(cityName\),\n\s+variant: '(\w+)',/,
     )
     expect(instrumentAction?.[1]).toBe('ghost')
     // And no other filled action is written anywhere in the page source.

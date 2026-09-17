@@ -1,3 +1,12 @@
+# Current — 2026-09-17 (P0 Matt voice — place H1 every-home kill)
+
+Surface: Cursor cloud, branch `cursor/place-h1-every-home-voice-a7e4`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **H1 / titles.** Place + search headings are `{Place} homes for sale` (Redfin-like). Killed `Every home for sale in …` / inverted `Homes for sale in …` on city, neighborhood, community, subdivision, zip, and `/homes-for-sale/…` (Lazy River South).
+- **Tip Ready.** `EVERY_HOME_LECTURE_REFUSE` in `mannered-public-copy` / `--ship`, beside inventory-lecture + plats.
+- **Helper.** `placeHomesForSaleHeading` + `publishPlaceHomesTitle` (title helper inlined in `page-metadata.ts` so `ci:listing-offmarket-index` can still execute that module).
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `VOICE.md`, `scripts/lib/mannered-public-copy.mjs`.
+
 # Current — 2026-09-17 (Bend new-construction SFR-first)
 
 Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR #278. PR only — Cos Mini lands. Do not merge. Not Tip Ready (no catalog SITE class / `@no-parity`).

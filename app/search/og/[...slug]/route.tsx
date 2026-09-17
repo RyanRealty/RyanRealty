@@ -6,6 +6,7 @@ import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { marketVerdict } from '@/lib/market/classify'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 
 // Node: leftover overlays use unstable_cache (not Edge-safe).
 export const runtime = 'nodejs'
@@ -27,7 +28,7 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
   const city = citySlug ? unslug(citySlug) : 'Central Oregon'
   const subdivision = citySlug && second && !getPresetBySlug(second) ? unslug(second) : null
   const place = subdivision ? `${subdivision}, ${city}` : city
-  const title = preset ? `${preset.label} in ${place}` : `Homes for Sale in ${place}`
+  const title = preset ? `${preset.label} in ${place}` : placeHomesForSaleHeading(place)
 
   const leftoverSlug = citySlug ? cityDetachedSlug(canonicalCityCacheSlug(citySlug)) : ''
   const overlays = leftoverSlug

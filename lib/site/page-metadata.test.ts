@@ -16,12 +16,12 @@ function rendered(pageTitle: string): string {
 describe('publishPlaceHomesTitle', () => {
   it('does not emit Central Oregon, Oregon', () => {
     expect(publishPlaceHomesTitle('8th Street Cottages', 'Central Oregon')).toBe(
-      'Homes for Sale in 8th Street Cottages | Central Oregon',
+      '8th Street Cottages homes for sale',
     )
   })
 
   it('keeps a real city with Oregon', () => {
-    expect(publishPlaceHomesTitle('Tetherow', 'Bend')).toBe('Homes for Sale in Tetherow | Bend, Oregon')
+    expect(publishPlaceHomesTitle('Tetherow', 'Bend')).toBe('Tetherow homes for sale · Bend, Oregon')
   })
 })
 

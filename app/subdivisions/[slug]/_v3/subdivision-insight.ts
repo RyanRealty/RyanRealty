@@ -33,6 +33,7 @@
  */
 
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 
 /** One round price band over the counted active set. */
 export type PlatPriceBand = {
@@ -116,7 +117,7 @@ export type PlatInsightInput = {
   activeCount: number | null
   /** The published middle asking price, or null when it was withheld. */
   medianListPrice: number | null
-  /** Where "see every home for sale" goes. */
+  /** Where "{Place} homes for sale" goes. */
   browseHref: string | null
   /** Complete closed years, in any order: `{ year, closedCount }`. */
   closedYears: readonly { year: number; closedCount: number }[]
@@ -211,7 +212,7 @@ export function buildSubdivisionInsightBoard(input: PlatInsightInput): PlatInsig
               : `Asking prices of all ${prices.length.toLocaleString('en-US')} homes for sale in ${input.placeName}.`,
           source: input.inventorySource,
           href: input.browseHref ?? '/homes-for-sale',
-          hrefLabel: `See every home for sale in ${input.placeName}`,
+          hrefLabel: placeHomesForSaleHeading(input.placeName),
         }
       : null
 
