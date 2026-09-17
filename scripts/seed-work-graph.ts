@@ -300,6 +300,17 @@ const SEEDS = [
     output: 'Referral-linked closing shows referral_fee auto-populated from the recorded pct; admin referral desk shows GCI-after-fee.',
     accept: 'A test deal for a referred person computes net = gci - (pct \u00d7 side) without hand-typing; desk renders the figure with a \u00a70 trace.',
   },
+  {
+    versionGap: 'G37',
+    domain: 'factory',
+    title: 'Admin serverless functions fit the size limit on their own merits',
+    objective:
+      'Production was frozen for 13 hours on 2026-09-16 and 16 consecutive deploys failed. The last one failed AFTER a clean build: "The Vercel Function admin/bpo/[slug] is 366.95mb uncompressed which exceeds the maximum uncompressed size limit of 250mb." Unblocked by setting VERCEL_SUPPORT_LARGE_FUNCTIONS=1 in vercel.json build.env (e5a6db4) — the limit is raised, the functions are not smaller. Measured on that route: 16 third-party packages reachable, of which next is 159.8mb, pdf-lib 23.2mb, everything else ~12mb. googleapis (196mb installed) is NOT reachable from it — checked before assuming. So the framework runtime alone is two thirds of the OLD ceiling and this route is simply the first over, not uniquely bloated; two sessions spent 2026-09-16 trimming other admin routes under the same cap (31f6365 admin/analytics/action-required, 69f48e0 getCrmAccess split). The open question is which admin routes are near the NEW ceiling and what actually drives their weight, since no one has measured the whole set.',
+    output:
+      'A measured size report for every admin serverless function (VERCEL_ANALYZE_BUILD_OUTPUT=1 on one production build, or the equivalent from the build output), the top weight drivers named per route, the fixes that are worth making (route-segment splits, outputFileTracingExcludes per route, lighter per-API packages where a barrel pulls a whole SDK), and a mechanical gate that fails a build when a function crosses an agreed threshold so the next one is caught before it freezes production.',
+    accept:
+      'The report exists and names a number per admin function, not an estimate. Any fix it recommends is landed or explicitly deferred with a reason. A gate exists that would have caught admin/bpo/[slug] before the outage, and it is wired into the chain (ci:gates-wired sees it). VERCEL_SUPPORT_LARGE_FUNCTIONS stays set — this node is about knowing and controlling the weight, not about removing the raised limit.',
+  },
 ] as const
 
 async function main() {
