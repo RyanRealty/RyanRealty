@@ -35,5 +35,11 @@
       padding-top: 0.25rem;
       padding-bottom: 0;
     }
+
+    /* Map-first: after the slim dock, the canvas must occupy the fold.
+       height:auto stays so footer remains reachable; min-height holds map. */
+    .search-app-frame .map-search-shell {
+      min-height: min(62dvh, 28rem);
+    }
   }
 }

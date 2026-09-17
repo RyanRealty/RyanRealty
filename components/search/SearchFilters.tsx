@@ -588,9 +588,10 @@ export default function SearchFilters({
     <div className="flex flex-col gap-0">
       {/* One filter row: location(+mic) · Places · For sale · Price · Beds · Baths ·
           Home type · All filters · Save. Map/List lives in the map shell.
-          At 375: search flexes (mic stays in-bar), Places stays visible, other
-          chips fold into All filters (one Sheet). Map|List|Sort is OK on phone. */}
-      <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:px-4">
+          At 375: search flexes (mic stays in-bar), Places + Price stay visible,
+          other chips fold into All filters (one Sheet). Dual price rail is
+          desktop SITE-72 only. Map|List|Sort floats on the map. */}
+      <div className="flex flex-col gap-1.5 px-3 py-1.5 sm:flex-row sm:items-center sm:gap-2 sm:px-4 sm:py-2">
         {/* Row 1 @375: full-width search so mic stays inside the bar. */}
         {hideLocation ? null : (
         <div className={cn('relative w-full min-w-0 sm:w-64 sm:shrink-0', morphOpen && 'z-40')}>
@@ -684,9 +685,9 @@ export default function SearchFilters({
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
         </div>
         )}
-        {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search. */}
+        {/* Row 2 @375: Places + Price chips + Filters + Save. Desktop: same row as search. */}
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="srch-phone-places-price flex shrink-0 items-center gap-2">
         {/* Places — City / Neighborhood / Community / Subdivision / School district. */}
         <FilterDropdown
           label={placesChipLabel({
@@ -990,37 +991,8 @@ export default function SearchFilters({
             </div>
           </div>
         </FilterDropdown>
-        </div>
-
-        <div className="srch-chip-rail hidden min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar sm:flex">
-
-        {/* For Sale / Status */}
-        <FilterDropdown
-          label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
-          active={!!(initialFilters.status && initialFilters.status !== 'Active')}
-          open={openPanel === 'status'}
-          onOpenChange={panelOpenHandler('status')}
-        >
-          <div className="p-3">
-            <p className="srch-label mb-2.5">Status</p>
-            <div className="flex flex-col gap-1">
-              {STATUS_OPTIONS.map(({ value, label }) => (
-                <Button
-                  key={value}
-                  type="button"
-                  variant={(initialFilters.status ?? 'Active') === value ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => { setFilter('status', value === 'Active' ? undefined : value); setOpenPanel(null) }}
-                  className="justify-start"
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </FilterDropdown>
-
-        {/* Price */}
+        {/* Phone densify: Price chip sits with Places. Dual V3Range rail stays
+            SITE-72 desktop (srch-price-rail hidden below 640). */}
         <FilterDropdown
           label={activePriceLabel ? `Price: ${activePriceLabel}` : 'Price'}
           active={!!activePriceLabel}
@@ -1108,6 +1080,35 @@ export default function SearchFilters({
                   </Button>
                 )
               })}
+            </div>
+          </div>
+        </FilterDropdown>
+        </div>
+
+        <div className="srch-chip-rail hidden min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar sm:flex">
+
+        {/* For Sale / Status */}
+        <FilterDropdown
+          label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
+          active={!!(initialFilters.status && initialFilters.status !== 'Active')}
+          open={openPanel === 'status'}
+          onOpenChange={panelOpenHandler('status')}
+        >
+          <div className="p-3">
+            <p className="srch-label mb-2.5">Status</p>
+            <div className="flex flex-col gap-1">
+              {STATUS_OPTIONS.map(({ value, label }) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={(initialFilters.status ?? 'Active') === value ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => { setFilter('status', value === 'Active' ? undefined : value); setOpenPanel(null) }}
+                  className="justify-start"
+                >
+                  {label}
+                </Button>
+              ))}
             </div>
           </div>
         </FilterDropdown>
@@ -1251,7 +1252,14 @@ export default function SearchFilters({
           <SaveSearchButton user={viewerState.signedIn} />
         </span>
         {hideViewToggle ? null : (
-        <div className="map-search-mapsort__pill ml-auto shrink-0" role="group" aria-label="Map and sort">
+        <div
+          className={cn(
+            'map-search-mapsort__pill ml-auto shrink-0',
+            view === 'map' && 'max-sm:hidden',
+          )}
+          role="group"
+          aria-label="Map and sort"
+        >
           <div className="map-search-views map-search-mapsort__views" role="radiogroup" aria-label="View">
             {(['map', 'split', 'list'] as const).map((v) => (
               <button

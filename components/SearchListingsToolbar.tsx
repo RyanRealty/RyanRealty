@@ -59,8 +59,10 @@ export default function SearchListingsToolbar({
   }
 
   return (
-    <div className="srch-panel mb-6 flex flex-wrap items-center justify-between gap-4 p-4">
-      <div className="flex flex-wrap items-center gap-4">
+    <div className="srch-panel srch-listings-toolbar mb-3 flex flex-wrap items-center justify-between gap-3 p-3 sm:mb-6 sm:gap-4 sm:p-4">
+      {/* Phone densify: Per page + Columns are desktop layout chrome. COLUMNS:3
+          with one result on a 390 viewport is absurd. */}
+      <div className="srch-layout-controls hidden flex-wrap items-center gap-4 sm:flex">
         <div className="flex items-center gap-2">
           <span className="srch-label">Per page</span>
           <div className="flex rounded-none border border-border p-0.5">

@@ -993,10 +993,23 @@ button.srch-chip--key {
 }
 
 /* Price ticks in the first viewport. Ends hide here — the readout already
-   names the band — so the rail stays one tap tall. */
+   names the band — so the rail stays one tap tall. Phone densify: the dual
+   V3Range rail leaves the fold; Price sits as a chip with Places. SITE-72
+   desktop keeps the ticks. */
 .srch-price-rail {
   border-top: var(--v3-rule-hairline, 1px solid color-mix(in srgb, var(--v3-navy) 8%, transparent));
   padding-top: 0.15rem;
+}
+
+@media (max-width: 639px) {
+  .srch-price-rail {
+    display: none;
+  }
+
+  .srch-chip-actions {
+    padding-left: 0.5rem;
+    margin-left: 0;
+  }
 }
 
 .srch-price-rail .v3-range__ends {

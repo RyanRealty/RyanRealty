@@ -220,7 +220,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
           aria-haspopup="dialog"
           aria-label={triggerLabel}
         >
-          <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save Search'}</span>
+          <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save'}</span>
           <span className="hidden sm:inline">{triggerLabel}</span>
         </Button>
         {open ? (
@@ -305,7 +305,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
         aria-haspopup="dialog"
         aria-label={triggerLabel}
       >
-        <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save Search'}</span>
+        <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save'}</span>
         <span className="hidden sm:inline">{triggerLabel}</span>
       </Button>
       {open && (
