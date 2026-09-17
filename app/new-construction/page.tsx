@@ -215,7 +215,7 @@ export default async function NewConstructionPage() {
               href: BEND_NEW_CON_SEARCH_HREF,
             }}
           />
-          <div className="absolute inset-x-0 top-0 z-10 bg-navy">
+          <div className="newcon-hero__crumb absolute inset-x-0 top-0 z-10 bg-navy">
             <V3Breadcrumb
               tone="on-media"
               belowNav={false}
