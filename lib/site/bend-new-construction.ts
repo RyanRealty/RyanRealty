@@ -13,6 +13,9 @@
  *   - bend-new-con-brief-2026-09-16.md — flags only (UNVERIFIED / STALE / CONFLICT)
  */
 import { homesForSalePath, slugify } from '@/lib/slug'
+import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
+import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
+import type { SearchListingsAllFilter } from '@/lib/data/listings/searchListingsAll'
 
 export const BEND_NEW_CONSTRUCTION_PATH = '/new-construction'
 export const BEND_NEW_CONSTRUCTION_RESEARCH_DATE = '2026-09-16'
@@ -20,11 +23,70 @@ export const BEND_NEW_CONSTRUCTION_RESEARCH_STAMP = '2026-09-16 PT'
 
 export const BEND_NEW_CON_SEARCH_HREF = `${homesForSalePath('Bend')}?newConstruction=1`
 
-export function bendNewConSearchHref(subdivision?: string | null): string {
-  const path = subdivision?.trim()
-    ? homesForSalePath('Bend', subdivision)
-    : homesForSalePath('Bend')
-  return `${path}?newConstruction=1`
+export const BEND_NEW_CON_SFR_SUBTYPE = 'Single Family Residence'
+export const BEND_NEW_CON_TOWNHOUSE_SUBTYPE = 'Townhouse'
+
+export type BendNewConSearchExtra = {
+  /** Exact MLS property_sub_type when the door is a product split, not the whole plat. */
+  propertySubType?: string
+}
+
+function searchQuery(extra?: BendNewConSearchExtra): string {
+  const params = new URLSearchParams()
+  params.set('newConstruction', '1')
+  if (extra?.propertySubType?.trim()) {
+    params.set('propertySubType', extra.propertySubType.trim())
+  }
+  return params.toString()
+}
+
+/**
+ * Exclusive live-inventory door for a Bend community.
+ *
+ * Path form: `/homes-for-sale/bend/{slug}?newConstruction=1` — city AND
+ * subdivision, never Bend OR the plat. Tetherow's path 301s to the community
+ * page (`data/legacy-redirects.json`), so that one name uses the query-param
+ * search (`/homes-for-sale?city=Bend&subdivision=Tetherow&newConstruction=1`)
+ * which the root search page reads as the same exclusive filter.
+ */
+export function bendNewConSearchHref(
+  subdivision?: string | null,
+  extra?: BendNewConSearchExtra,
+): string {
+  const query = searchQuery(extra)
+  const name = subdivision?.trim()
+  if (!name) return `${homesForSalePath('Bend')}?${query}`
+
+  const path = homesForSalePath('Bend', name)
+  if (redirectsAwayFromSearch(path)) {
+    const params = new URLSearchParams(query)
+    params.set('city', 'Bend')
+    params.set('subdivision', name)
+    return `/homes-for-sale?${params.toString()}`
+  }
+  return `${path}?${query}`
+}
+
+/** Same predicates the exclusive search door applies — live counts must use this. */
+export function bendNewConSearchFilter(
+  subdivision?: string | null,
+  extra?: BendNewConSearchExtra,
+): SearchListingsAllFilter {
+  const name = subdivision?.trim()
+  return {
+    city: 'Bend',
+    newConstruction: true,
+    status: 'active',
+    ...(name ? { subdivisions: getSubdivisionMatchNames(name) } : {}),
+    ...(extra?.propertySubType?.trim()
+      ? { propertySubType: extra.propertySubType.trim() }
+      : {}),
+  }
+}
+
+export function bendNewConSeeHomesLabel(count: number | null | undefined): string {
+  if (count == null || count <= 0) return 'See homes'
+  return count === 1 ? 'See 1 home' : `See ${count} homes`
 }
 
 /** Known community pages for Bend-proper names that appear in the snapshot. */
@@ -471,14 +533,26 @@ export const BEND_NEW_CON_STEVENS_RANCH_SF = {
     'D.R. Horton Stevens Ranch community page, 2026-09-16 PT. DAL mixed band the same day includes townhomes.',
 } as const
 
-/** Horton Stevens Ranch townhomes — Express page 2026-09-16. */
+/** Horton Stevens Ranch townhomes — Express page 2026-09-16. Live door is the exclusive search. */
 export const BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES = {
   name: 'Stevens Ranch townhomes',
   builders: 'DR Horton',
   priceBand: 'From $419,995',
   qmi: '$419,995–$444,995',
-  href: 'https://www.drhorton.com/oregon/central-oregon/bend/stevens-ranch-townhomes',
+  subdivision: 'Stevens Ranch',
+  propertySubType: BEND_NEW_CON_TOWNHOUSE_SUBTYPE,
+  builderHref: 'https://www.drhorton.com/oregon/central-oregon/bend/stevens-ranch-townhomes',
 } as const
+
+export function bendNewConStevensRanchSfHref(): string {
+  return bendNewConSearchHref('Stevens Ranch', { propertySubType: BEND_NEW_CON_SFR_SUBTYPE })
+}
+
+export function bendNewConStevensRanchTownhomeHref(): string {
+  return bendNewConSearchHref('Stevens Ranch', {
+    propertySubType: BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.propertySubType,
+  })
+}
 
 export const BEND_NEW_CON_HORTON_TOWNHOME_NOTE =
   'D.R. Horton townhomes that day: Thunder Ridge $379,995–$419,995, Ponderosa $414,995–$419,995, and Stevens Ranch from $419,995. Those are not the single-family lead.'
@@ -732,7 +806,7 @@ export const BEND_NEW_CON_DISCLAIMER = {
 } as const
 
 export const BEND_NEW_CON_INVENTORY_SOURCE =
-  'Ryan Realty listings search DAL, 2026-09-16 PT. City = Bend, Active, new_construction_yn. List-price bands ignore ListPrice under $10,000. Builders are from sampled listing details, not every row. Coming Soon is not on the public path.'
+  'Ryan Realty listings search DAL, 2026-09-16 PT. City = Bend, Active, new_construction_yn. List-price bands ignore ListPrice under $10,000. Builders are from sampled listing details, not every row. Coming Soon is not on the public path. A See N homes figure is the live Active new-construction match for that row’s exclusive search, not the 2026-09-16 snapshot count.'
 
 export const BEND_NEW_CON_FINANCING_SOURCE =
   'Public builder pages and the D.R. Horton Stevens Ranch flyer, transcribed 2026-09-16 PT. Not a rate sheet and not a loan quote.'

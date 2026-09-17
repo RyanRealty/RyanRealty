@@ -14,7 +14,7 @@
  * lib/site/bend-new-construction.ts. Live photos come from the listings DAL.
  */
 import type { Metadata } from 'next'
-import { getListingTiles } from '@/lib/data'
+import { searchListingsAllCount } from '@/lib/data'
 import { formatDate } from '@/lib/format/date'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
@@ -43,7 +43,7 @@ import {
   BEND_NEW_CONSTRUCTION_TITLE,
   bendNewConCommunityHref,
   bendNewConRestPrimary,
-  bendNewConSearchHref,
+  bendNewConSeeHomesLabel,
   bendNewConWeight,
   financingHighlight,
   flagLabel,
@@ -65,6 +65,13 @@ import {
 } from '@/components/site/v3'
 import { V3Stage } from '@/components/site/v3/V3Stage'
 import { buildNewConLeadShelf } from './_v3/load-lead-shelf'
+import {
+  loadBendNewConLiveMatch,
+  loadLeadShelfTiles,
+  loadStevensRanchSfMatch,
+  loadStevensRanchTownhomeMatch,
+  type BendNewConLiveMatch,
+} from './_v3/load-live-matches'
 import { NewConLeadShelf } from './_v3/NewConLeadShelf.client'
 import './_v3/new-con-page.css'
 
@@ -78,31 +85,34 @@ export const metadata: Metadata = pageMetadata({
   ogType: 'article',
 })
 
-function inventoryRow(row: NewConInventoryRow): V3LedgerFigureRow {
+function inventoryRow(row: NewConInventoryRow, live: BendNewConLiveMatch): V3LedgerFigureRow {
   const builders = row.builders ?? 'Builder not in sampled details'
   const community = bendNewConCommunityHref(row.name)
   const stevensSf = row.name === 'Stevens Ranch'
   const priceBand = stevensSf ? BEND_NEW_CON_STEVENS_RANCH_SF.priceBand : row.priceBand
+  const liveLine =
+    live.count != null
+      ? `${live.count} live Active new-construction ${live.count === 1 ? 'home matches' : 'homes match'} this search`
+      : 'Opens the live new-construction search for this subdivision only'
   const revealBits = [
+    liveLine,
+    `${row.active} Active on 2026-09-16`,
     stevensSf
-      ? `${BEND_NEW_CON_STEVENS_RANCH_SF.source} Horton SF QMI about ${BEND_NEW_CON_STEVENS_RANCH_SF.qmi}. DAL mixed band ${BEND_NEW_CON_STEVENS_RANCH_SF.dalMixedBand}.`
+      ? `${BEND_NEW_CON_STEVENS_RANCH_SF.source} Horton SF QMI about ${BEND_NEW_CON_STEVENS_RANCH_SF.qmi}. DAL mixed band ${BEND_NEW_CON_STEVENS_RANCH_SF.dalMixedBand}. This door is Single Family Residence only.`
       : null,
     row.median && !stevensSf ? `Median list ${row.median}` : null,
     row.typical,
-    community ? 'Opens the community page' : null,
+    community ? `Community page also at ${community}` : null,
   ].filter((bit): bit is string => Boolean(bit))
 
   return {
-    href: community ?? bendNewConSearchHref(row.name),
+    href: live.href,
     when: v3Text(builders),
     what: v3Text(row.name),
     detail: v3Text(row.typical ? `${priceBand} · ${row.typical}` : priceBand),
-    value: v3Text(stevensSf ? `${row.active} active · mixed` : `${row.active} active`),
-    weight: bendNewConWeight(row.active),
-    reveal:
-      revealBits.length > 0
-        ? { line: v3Text(revealBits.join(' · ')) }
-        : undefined,
+    value: v3Text(bendNewConSeeHomesLabel(live.count)),
+    weight: live.count != null && live.count > 0 ? bendNewConWeight(live.count) : bendNewConWeight(row.active),
+    reveal: { line: v3Text(revealBits.join(' · ')) },
   }
 }
 
@@ -134,29 +144,44 @@ function financingDoors(): V3AnswersDoor[] {
 }
 
 export default async function NewConstructionPage() {
+  void searchListingsAllCount
   const site = getCanonicalSiteUrl()
   const pageUrl = `${site}${BEND_NEW_CONSTRUCTION_PATH}`
   const researched = formatDate(BEND_NEW_CONSTRUCTION_RESEARCH_DATE)
   const office = `${BRAND.address.street}, ${BRAND.address.city}`
-  const restPrimary = bendNewConRestPrimary().map(inventoryRow)
-  const [firstRest, ...moreRest] = restPrimary
-  const [firstSingle, ...restSingle] = BEND_NEW_CON_SINGLE.map(inventoryRow)
-  const hortonTownhomes = bendNewConHortonTownhomeRows().map(inventoryRow)
-  const [firstHortonTownhome, ...moreHortonTownhomes] = hortonTownhomes
+  const restRows = bendNewConRestPrimary()
+  const singleRows = BEND_NEW_CON_SINGLE
+  const hortonTownhomeRows = bendNewConHortonTownhomeRows()
   const leadRows = bendNewConLeadRows()
-  const tilesByName = await Promise.all(
-    leadRows.map((row) =>
-      getListingTiles({
-        city: 'Bend',
-        subdivision: row.name,
-        status: 'active',
-        propertySubType: 'Single Family Residence',
-        sort: 'price-asc',
-        limit: 12,
-      }).catch(() => []),
+  const [
+    leadMatches,
+    restMatches,
+    singleMatches,
+    hortonMatches,
+    stevensTownhomeMatch,
+    tilesByName,
+  ] = await Promise.all([
+    Promise.all(leadRows.map((row) => loadBendNewConLiveMatch(row.name))),
+    Promise.all(
+      restRows.map((row) =>
+        row.name === 'Stevens Ranch'
+          ? loadStevensRanchSfMatch()
+          : loadBendNewConLiveMatch(row.name),
+      ),
     ),
+    Promise.all(singleRows.map((row) => loadBendNewConLiveMatch(row.name))),
+    Promise.all(hortonTownhomeRows.map((row) => loadBendNewConLiveMatch(row.name))),
+    loadStevensRanchTownhomeMatch(),
+    Promise.all(leadRows.map((row) => loadLeadShelfTiles(row))),
+  ])
+  const restPrimary = restRows.map((row, i) => inventoryRow(row, restMatches[i]!))
+  const [firstRest, ...moreRest] = restPrimary
+  const [firstSingle, ...restSingle] = singleRows.map((row, i) =>
+    inventoryRow(row, singleMatches[i]!),
   )
-  const lead = await buildNewConLeadShelf(leadRows, tilesByName)
+  const hortonTownhomes = hortonTownhomeRows.map((row, i) => inventoryRow(row, hortonMatches[i]!))
+  const [firstHortonTownhome, ...moreHortonTownhomes] = hortonTownhomes
+  const lead = await buildNewConLeadShelf(leadRows, tilesByName, leadMatches)
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -245,7 +270,7 @@ export default async function NewConstructionPage() {
 
         <NewConLeadShelf
           heading={BEND_NEW_CON_LEDE}
-          note="Not a loan offer. Single-family first. Bands from 2026-09-16. Houses on the shelf are live SFR listings."
+          note="Not a loan offer. Single-family first. Bands from 2026-09-16. Houses on the shelf are live SFR listings. See homes opens every Active new-construction home in that subdivision."
           bands={lead.bands}
           seeAllHref={BEND_NEW_CON_SEARCH_HREF}
         />
@@ -256,7 +281,7 @@ export default async function NewConstructionPage() {
             eyebrow={v3Text('Lowest SFR band first')}
             heading={v3Text('Single-family communities')}
             note={v3Text(
-              'Parkside, Calaveras, and Easton are on the shelf. Next are Petrosa, Acadia Pointe, then Horton Stevens Ranch single-family from $579,995. Hover a row for the median and typical plan.',
+              'Parkside, Calaveras, and Easton are on the shelf. Next are Petrosa, Acadia Pointe, then Horton Stevens Ranch single-family from $579,995. Each row opens that subdivision’s live new-construction search. Hover a row for the snapshot band.',
             )}
             rows={[firstRest, ...moreRest]}
             source={v3Text(BEND_NEW_CON_INVENTORY_SOURCE)}
@@ -286,14 +311,26 @@ export default async function NewConstructionPage() {
               firstHortonTownhome,
               ...moreHortonTownhomes,
               {
-                href: BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.href,
+                href: stevensTownhomeMatch.href,
                 when: v3Text(BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.builders),
                 what: v3Text(BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.name),
                 detail: v3Text(
-                  `${BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.priceBand} · Horton Express page, 2026-09-16. Live QMI about ${BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.qmi}.`,
+                  `${BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.priceBand} · Horton Express QMI about ${BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.qmi}.`,
                 ),
-                value: v3Text(BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.priceBand),
-                weight: 0.25,
+                value: v3Text(bendNewConSeeHomesLabel(stevensTownhomeMatch.count)),
+                weight:
+                  stevensTownhomeMatch.count != null && stevensTownhomeMatch.count > 0
+                    ? bendNewConWeight(stevensTownhomeMatch.count)
+                    : 0.25,
+                reveal: {
+                  line: v3Text(
+                    `${
+                      stevensTownhomeMatch.count != null
+                        ? `${stevensTownhomeMatch.count} live Townhouse new-construction homes match this Stevens Ranch search`
+                        : 'Opens live Townhouse new-construction search for Stevens Ranch'
+                    } · ${BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.priceBand} on the Horton Express page, 2026-09-16 · ${BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.builderHref}`,
+                  ),
+                },
               },
             ]}
             source={v3Text(BEND_NEW_CON_HORTON_TOWNHOME_SOURCE)}
