@@ -16,10 +16,12 @@
 .history-filter-bar__form {
   display: grid;
   gap: var(--v3-space-md);
+  justify-items: start;
 }
 
 .history-filter-bar__fields {
   display: grid;
+  width: 100%;
   gap: var(--v3-space-sm);
   grid-template-columns: 1fr;
 }
