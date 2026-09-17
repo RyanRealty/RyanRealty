@@ -1,10 +1,9 @@
-# Current — 2026-09-17 (SITE-121 rematch — PR only, HOLD)
+# Current — 2026-09-17 (SITE-121 rematch 2 — PR only, HOLD)
 
-Surface: Cursor cloud `cursor-cloud-site121-20260917`, branch `cursor/site-121-search-taste-rematch-ae49`, draft PR #279 (off #277 tip `56c0cb1fb`). Claim held. Do not merge. HOLD owner send. Cos Mini later only if Tip Ready.
+Surface: Cursor cloud `cursor-cloud-site121-20260917`, branch `cursor/site-121-search-taste-rematch-ae49`, draft PR #279. Claim held. Do not merge. HOLD owner send. Cos Mini later only if Tip Ready.
 
-- **P0 held.** 375 header morph still full-width under chrome, typeable (`iconOnlyPanelLayout`, `z-[150]`, `autoFocus`).
-- **Craft.** Command groups+icons; InputGroup `$` `/mo` `/sqft`; designed checkbox rows; ChipRail fade+arrows at 375; MapListingPeek on default shots. City sublabel is "City", not a count.
-- **Taste.** Official grok / cursor-agent / claude CLIs missing (`taste-evaluate --evaluator auto` exit 2). Separate `claude-sonnet-5` Task judge: **54 / 55 / 57 median 55**, `demoMatch: false` (header open reads as autocomplete, not morph choreography), honestyFunction **7** (fell from 8). No `competitiveBrief` on search — do not invent `competitiveBriefPass`. `comparedToPrior: rose` vs #277 52. `taste-receipt --ship` refuse (demoMatch false + honesty drop). Finish line 70 not met. Node stays `in_progress`.
+- **HARD LOCK.** Installed official `beui-morphing-search` source (button trigger, layoutId shell, clip-path unfold; no Command wrapper) + official `shadcn-checkbox` (`border-primary` / `shadow` / lucide Check) + catalog `Field` checkbox-group rows. P0 kept: 375 `iconOnlyPanelLayout`, `z-[150]`, `autoFocus`.
+- **Taste.** Official grok / cursor-agent / claude CLIs missing (`taste-evaluate --evaluator auto` exit 2). Separate `claude-sonnet-5` Task judge: **52 / 53 / 52 median 52**, `demoMatch: false` (open morph still reads as city autocomplete; boolean rows read as radio circles). honestyFunction **8** (held vs prior 7). No `competitiveBrief` — do not invent `competitiveBriefPass`. Score fell vs 257d198ed 55 (needs 58). `taste-receipt --ship` refuse. Finish line 70 unmet. Node stays `in_progress`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `TASTE.md`, `taste-evaluator.v1-2026-09-12.md`.
 
 # Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)

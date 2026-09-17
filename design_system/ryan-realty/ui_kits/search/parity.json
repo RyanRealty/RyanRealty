@@ -72,7 +72,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-17",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "claude-sonnet-5 Task judge (official grok / cursor-agent / claude CLIs missing: taste-evaluate --evaluator auto exited 2). Three independent scorings of recaptured take-route-shots search kit plates including search-open, morph-open, sheet-open. Builder grok-4.6. Do not invent demoMatch.",
+    "evaluator": "claude-sonnet-5 Task judge (official grok / cursor-agent / claude CLIs missing: taste-evaluate --evaluator auto exited 2). Three independent scorings of recaptured take-route-shots search kit plates including search-open, morph-open, sheet-open after catalog beui-morphing-search + shadcn-checkbox install. Builder grok-4.6. Do not invent demoMatch. No competitiveBrief on search — competitiveBriefPass omitted.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "grok-4.6",
     "shotSpec": {
@@ -89,7 +89,7 @@
         "morph-open",
         "sheet-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3172/homes-for-sale?city=Bend"
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3188/homes-for-sale?city=Bend; 375 sheet-open then scrolled to #srch-bool-priceReduced"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
@@ -101,29 +101,29 @@
       "sheet-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-desktop.png",
       "sheet-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-mobile375.png"
     },
-    "shotsHash": "sha256:15db8bbc68d64c5292925de26550bf7acaf0590677e423c4e13a1899d0cb8ac1",
+    "shotsHash": "sha256:239f45eaaabe149b345054f7d19a3ab72612e63d1f82b2010c55dea1169573fd",
     "scores": [
-      54,
-      55,
-      57
+      52,
+      53,
+      52
     ],
-    "score": 55,
+    "score": 52,
     "criteria": {
-      "designQuality": 20,
-      "originality": 9,
-      "interaction": 9,
-      "craft": 10,
-      "honestyFunction": 7
+      "designQuality": 19,
+      "originality": 10,
+      "interaction": 7,
+      "craft": 8,
+      "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 20,
-      "originality": 9,
-      "interaction": 9,
-      "craft": 10,
-      "honesty": 7
+      "design": 19,
+      "originality": 10,
+      "interaction": 7,
+      "craft": 8,
+      "honesty": 8
     },
     "demoMatch": false,
-    "beats": "Redfin's map search (redfin.com/city/16163/OR/Bend) on reach-a-broker — Call | Text | Work with us stays pinned at the bottom of the mobile viewport here, while Redfin only surfaces an agent CTA after opening a listing. Redfin still wins on map data depth.",
+    "beats": "No win named against Redfin/Zillow map search. Call | Text | Work with us stays pinned on 375, but the open morph and checkbox jobs do not clear the catalog demos.",
     "adaptedFrom": [
       {
         "id": "beui-morphing-search"
@@ -149,34 +149,46 @@
     ],
     "defects": [
       {
-        "section": "header MorphingSearch dropdown (search-open-desktop.png / search-open-mobile375.png)",
+        "section": "Header MorphingSearch (search-open-desktop/mobile)",
         "severity": "taste",
-        "finding": "The opened header search is a plain vertical list of five city names with small building icons and a right-aligned type label. There is no morph transformation, richer preview, or imagery — it reads as a generic autocomplete, not the beui morphing-search choreography this control is named for.",
+        "finding": "Opening the header search trigger produces a plain list of place rows (icon + title + subtitle: Bend/Redmond/Sisters/Sunriver/Tetherow) in a cream dropdown card. No visible clip-path unfold, no shared-layout highlight between trigger and panel — this is a generic city autocomplete, exactly the pattern the catalog job says not to build.",
         "replaceWith": "beui-morphing-search"
       },
       {
-        "section": "All filters sheet — boolean checkboxes (Price reduced / Owner financing / Special assessment)",
-        "severity": "craft",
-        "finding": "The three boolean filters render as small plain outlined squares with no visible corner radius, fill, or checkmark treatment in the unchecked state — indistinguishable from an unstyled native checkbox rather than a designed row.",
+        "section": "In-page filter morph (morph-open-desktop/mobile)",
+        "severity": "taste",
+        "finding": "The .srch-morph trigger renders the identical place-suggestion list as the header search trigger (same rows, same layout). Two differently-named morph triggers collapse into one undifferentiated dropdown, so there is no distinct in-page filter/command experience — it reads as the same component reused, not two purposeful morphs.",
+        "replaceWith": "shadcn-command"
+      },
+      {
+        "section": "All filters sheet — boolean rows (Price reduced / Owner financing / Special assessment)",
+        "severity": "taste",
+        "finding": "Boolean filter rows use bare circular radio-look controls, not a designed rounded-sm square checkbox with primary border and shadow. Reads as native/unmarked toggle, not the shadcn checkbox job.",
         "replaceWith": "shadcn-checkbox"
       },
       {
-        "section": "Atlas map price/cluster bubbles",
+        "section": "Price range slider (header pill + All filters sheet)",
+        "severity": "taste",
+        "finding": "The slider shows two stacked, visually disconnected bars — a thin gray row of tick dots above a fully navy-filled bar even at the default Any price state. It does not read as one continuous tick-stop track whose navy fill tracks the selected range.",
+        "replaceWith": "beui-range-slider"
+      },
+      {
+        "section": "All filters sheet — Financing accepted pill row",
         "severity": "craft",
-        "finding": "Every cluster and price bubble on the map uses the identical flat navy pill regardless of price band or listing density, so the map communicates location only, never magnitude — a $530K cluster looks the same as a $5.3M one at a glance.",
+        "finding": "Financing-accepted count pills wrap into a dense, small-type cluster with a truncated Show all 12 — crowded relative to the rest of the sheet's spacing rhythm.",
         "replaceWith": null
       }
     ],
-    "verdict": "Competent and on-brand (navy/cream, ticked price range, grouped Command lists, map listing peek, 375 chip arrows), but demoMatch is false: the header MorphingSearch open state still reads as a static city autocomplete rather than the catalog morph, and honestyFunction 7 fell below the prior 8. Median 55 meets the +3 rise floor over 52 on the same instrument and stays below the 70 finish line. SITE-121 stays in_progress.",
+    "verdict": "52/100 — correct, on-brand (navy/cream intact), and functionally honest (real listings, real counts, real map clusters), but generic. The two named morph interactions are the same undifferentiated place-list dropdown, not beui-morphing-search's spring/clip-path/shared-layout panel, and the boolean filters use radio-look circles instead of shadcn-checkbox squares. demoMatch is false. Median 52 did not rise over the prior 55. Finish line 70 unmet. SITE-121 stays in_progress.",
     "comparedToPrior": "rose",
     "priorMark": {
       "evaluatedAt": "2026-09-17",
-      "score": 52,
+      "score": 55,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:5ca275d9d40c907cc3e8f319d15649ed5029e0629f5d782fa09349dca6912338",
-      "honestyFunction": 8,
-      "note": "SITE-121 phone-search tip (56c0cb1fb / PR #277). Same claude-sonnet-5 / v1-2026-09-12 instrument; this rematch recaptured rest plus open states after InputGroup / Command groups / ChipRail / map peek."
+      "shotsHash": "sha256:15db8bbc68d64c5292925de26550bf7acaf0590677e423c4e13a1899d0cb8ac1",
+      "honestyFunction": 7,
+      "note": "SITE-121 rematch tip 257d198ed / PR #279. Same claude-sonnet-5 / v1-2026-09-12 instrument; this pass recaptured after installing official beui-morphing-search source + shadcn checkbox/Field rows."
     }
   },
   "contentFloor": {
