@@ -20,6 +20,19 @@ const rising: MarketPath = {
   reversedWithinSpan: false,
 }
 
+const cooling: MarketPath = {
+  factor: 0.94,
+  fromPpsf: 360,
+  toPpsf: 338,
+  monthlyRate: -0.01,
+  months: 6,
+  regime: 'falling',
+  capped: false,
+  source: 'index',
+  referenceMonths: ['2026-06-01', '2026-07-01', '2026-08-01'],
+  reversedWithinSpan: false,
+}
+
 describe('selectionIsExclusivePocket', () => {
   it('is true for pocket / subdivision / own-street only', () => {
     expect(selectionIsExclusivePocket(['pocket-6mo', 'subdivision-12mo'])).toBe(true)
@@ -39,16 +52,25 @@ describe('selectionIsExclusivePocket', () => {
 describe('applyExclusivePocketDateAdj', () => {
   it('leaves a city-widened path untouched', () => {
     expect(applyExclusivePocketDateAdj(rising, false)).toEqual(rising)
+    expect(applyExclusivePocketDateAdj(cooling, false)).toEqual(cooling)
   })
 
-  it('zeros the city-index factor on an exclusive pocket', () => {
+  it('refuses upward city-index pump on an exclusive pocket', () => {
     const applied = applyExclusivePocketDateAdj(rising, true)
     expect(applied.factor).toBe(1)
     expect(applied.regime).toBe('flat')
     expect(applied.capped).toBe(true)
-    expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/exclusive pocket/)
-    expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/21\.0%/)
-    expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/size and story/)
+    expect(exclusivePocketPathNote('1025 E Horse Back', rising, applied)).toMatch(/exclusive pocket/)
+    expect(exclusivePocketPathNote('1025 E Horse Back', rising, applied)).toMatch(/21\.0%/)
+    expect(exclusivePocketPathNote('1025 E Horse Back', rising, applied)).toMatch(/pumped|size and story/)
+  })
+
+  it('contract: flex-style-cooling-date-adj-allowed-on-exclusive-pocket', () => {
+    const applied = applyExclusivePocketDateAdj(cooling, true)
+    expect(applied.factor).toBe(0.94)
+    expect(applied.regime).toBe('falling')
+    expect(exclusivePocketPathNote('1025 E Horse Back', cooling, applied)).toMatch(/Flex-style cooling/)
+    expect(exclusivePocketPathNote('1025 E Horse Back', cooling, applied)).toMatch(/-6\.0%/)
   })
 })
 

@@ -1,10 +1,11 @@
 /**
  * Matt 2026-09-17: Recommended is weighted toward more recent / more similar
- * closed comps (size proximity × recency). Still clamped inside Low/High.
- * Pending and Active never enter this weight — closed comps only.
+ * closed comps. Market cool / no false hope: heavy recent weight so earlier
+ * hotter closeds (e.g. March) do not overstate when similar homes sit.
+ * Still clamped inside Low/High. Pending/Active never enter this weight.
  *
- * Same formula `adjustCmaCompAlongMarket` has always used; extracted so Tip
- * Ready can refuse a silent drift away from recent/similar weighting.
+ * Recency half-life ~3 months (was ~12): a 6-month-old sale carries ~¼ the
+ * recency of a fresh close. Size proximity unchanged.
  */
 
 export type ClosedCompWeightInput = {
@@ -13,13 +14,17 @@ export type ClosedCompWeightInput = {
   monthsSinceClose: number
 }
 
-/** size proximity × recency — higher when closer in size and more recent. */
+/** Months for recency to halve — heavy recent weight for market cool. */
+export const CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS = 3
+
+/** size proximity × heavy recency — higher when closer in size and more recent. */
 export function closedCompWeight(input: ClosedCompWeightInput): number {
   const months = Math.max(0, Number(input.monthsSinceClose) || 0)
   const subjectSqft = Number(input.subjectSqft) || 0
   const saleSqft = Number(input.saleSqft) || 0
   const sizeProximity =
     subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - saleSqft) / subjectSqft) : 1
-  const recency = 1 / (1 + months / 12)
+  // Heavy recent: half-life CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS (Matt cool).
+  const recency = Math.pow(0.5, months / CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS)
   return +(sizeProximity * recency).toFixed(4)
 }
