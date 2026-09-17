@@ -4,10 +4,16 @@ import {
   BEND_NEW_CON_FINANCING,
   BEND_NEW_CON_HEADLINE,
   BEND_NEW_CON_NAMED,
+  BEND_NEW_CON_HORTON_TOWNHOME_NAMES,
+  BEND_NEW_CON_HORTON_TOWNHOME_NOTE,
   BEND_NEW_CON_LEAD_NAMES,
   BEND_NEW_CON_LEDE,
   BEND_NEW_CON_PRIMARY,
   BEND_NEW_CON_SEARCH_HREF,
+  BEND_NEW_CON_SFR_ORDER,
+  BEND_NEW_CON_STEVENS_RANCH_SF,
+  BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES,
+  bendNewConHortonTownhomeRows,
   bendNewConLeadRows,
   bendNewConRestPrimary,
   financingHighlight,
@@ -110,15 +116,39 @@ describe('Bend new-construction snapshot', () => {
     expect(bendNewConWeight(10)).toBe(0.5)
   })
 
-  it('leads with Parkside, then Calaveras, then Easton', () => {
+  it('leads with affordable SFR, not Horton townhomes', () => {
+    expect([...BEND_NEW_CON_SFR_ORDER]).toEqual([
+      'Parkside Place Phase 1',
+      'Calaveras',
+      'Easton',
+      'Petrosa',
+      'Acadia Pointe Phase 5 and 6',
+      'Stevens Ranch',
+    ])
     expect([...BEND_NEW_CON_LEAD_NAMES]).toEqual([
       'Parkside Place Phase 1',
       'Calaveras',
       'Easton',
     ])
-    expect(BEND_NEW_CON_LEDE).toBe('Parkside Place starts at $399,990')
+    expect(BEND_NEW_CON_LEDE).toBe('Single-family starts at $399,990 at Parkside Place')
     expect(bendNewConLeadRows().map((row) => row.name)).toEqual([...BEND_NEW_CON_LEAD_NAMES])
+    expect(bendNewConRestPrimary().map((row) => row.name).slice(0, 3)).toEqual([
+      'Petrosa',
+      'Acadia Pointe Phase 5 and 6',
+      'Stevens Ranch',
+    ])
     expect(bendNewConRestPrimary().some((row) => row.name === 'Easton')).toBe(false)
+    expect(bendNewConRestPrimary().some((row) => row.name === 'Thunder Ridge')).toBe(false)
+    expect(bendNewConRestPrimary().some((row) => row.name === 'Ponderosa, Phase 1')).toBe(false)
+    expect(BEND_NEW_CON_STEVENS_RANCH_SF.priceBand).toBe('From $579,995')
+    expect(BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.priceBand).toBe('From $419,995')
+    expect([...BEND_NEW_CON_HORTON_TOWNHOME_NAMES]).toEqual(['Thunder Ridge', 'Ponderosa, Phase 1'])
+    expect(bendNewConHortonTownhomeRows().map((row) => row.priceBand)).toEqual([
+      '$379,995–$419,995',
+      '$414,995–$419,995',
+    ])
+    expect(BEND_NEW_CON_HORTON_TOWNHOME_NOTE).toMatch(/Thunder Ridge \$379,995–\$419,995/)
+    expect(BEND_NEW_CON_HORTON_TOWNHOME_NOTE).toMatch(/Stevens Ranch from \$419,995/)
     expect(financingHighlight({
       id: 'pahlisch-golden-key',
       builder: 'Pahlisch Homes',
