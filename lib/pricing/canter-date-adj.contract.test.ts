@@ -303,7 +303,7 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
     expect(basis.pctPerMonth).toBe(0)
     expect(basis.sentence).toMatch(/exclusive pocket/)
     expect(basis.sentence).toMatch(/city index/)
-    expect(basis.sentence).toMatch(/story class/)
+    expect(basis.sentence).toMatch(/size and story/)
     expect(basis.sentence).not.toMatch(/Each sale is moved by the change/)
   })
 
@@ -354,8 +354,10 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
     )
     for (const row of rows) {
       expect(row.adjusted.storyAdjustment).toBe(0)
+      expect(row.adjusted.sizeAdjustment).toBe(0)
       expect(row.adjusted.timeAdjustment).toBe(0)
-      expect(row.pathNote).toMatch(/story class/)
+      expect(row.adjusted.adjustedPrice).toBe(row.adjusted.closePrice)
+      expect(row.pathNote).toMatch(/size and story/)
     }
     const { cover, built, method1Mid } = recommendFrom(
       rows.map((r) => r.adjusted),
