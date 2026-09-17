@@ -109,6 +109,17 @@ describe('flattenSuggestions category coverage', () => {
     expect(flattenSuggestions(EMPTY_SUGGESTIONS)).toEqual([])
   })
 
+  it('drops letter-less subdivision placeholders', () => {
+    const items = flattenSuggestions({
+      ...EMPTY_SUGGESTIONS,
+      subdivisions: [
+        { city: 'Bend', subdivisionName: '12', count: 1 },
+        { city: 'Bend', subdivisionName: 'Awbrey Butte', count: 2 },
+      ],
+    })
+    expect(items.map((i) => i.label)).toEqual(['Awbrey Butte'])
+  })
+
   it('caps each category so the dropdown stays scannable', () => {
     const many: SearchSuggestionsResult = {
       ...EMPTY_SUGGESTIONS,
@@ -128,6 +139,12 @@ describe('merge lock — one search component', () => {
     const src = readFileSync(join(root, 'components/search/SearchFilters.tsx'), 'utf8')
     expect(src).toContain("from '@/components/search/SearchSuggest'")
     expect(src).toContain('<SearchSuggestPanel')
+  })
+
+  it('SearchSuggest imports the installed Command catalog source', () => {
+    const src = readFileSync(join(root, 'components/search/SearchSuggest.tsx'), 'utf8')
+    expect(src).toMatch(/import(?:[\s\S]{0,200}?)from '@\/components\/ui\/command'/)
+    expect(src).toContain('<Command')
   })
 
   // RE-EXPRESSED 2026-08-27. The chrome has NO search field, deliberately, and

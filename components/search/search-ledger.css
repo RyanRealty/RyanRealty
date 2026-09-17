@@ -60,25 +60,45 @@
 }
 
 /* Horizontal chip rail: trailing fade via navy mask (G27 — keep gradients out of TSX).
-   At 375 the rail only holds search+Places — a trailing fade clipped the Places
-   chip and the in-bar mic. Fade only from sm up where the chip set scrolls. */
-.srch-chip-rail {
-  -webkit-mask-image: none;
-  mask-image: none;
+   Fade + arrows at 375 so Places / Filters / Save Search do not clip. */
+.srch-chip-rail-wrap {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.25rem;
 }
-@media (min-width: 40rem) {
-  .srch-chip-rail {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      var(--v3-navy) calc(100% - 1.75rem),
-      transparent
-    );
-    mask-image: linear-gradient(
-      to right,
-      var(--v3-navy) calc(100% - 1.75rem),
-      transparent
-    );
+.srch-chip-rail {
+  min-width: 0;
+  flex: 1 1 auto;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    var(--v3-navy) calc(100% - 1.75rem),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    var(--v3-navy) calc(100% - 1.75rem),
+    transparent
+  );
+}
+.srch-chip-rail__arrow {
+  display: none;
+  flex: 0 0 auto;
+}
+@media (max-width: 39.99rem) {
+  .srch-chip-rail__arrow {
+    display: inline-flex;
   }
+  .srch-chip-rail__arrow:disabled {
+    visibility: hidden;
+  }
+}
+
+.srch-map-peek {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 90;
 }
 
 /* Places multi-select: one scroll region (inner list). Header + typeahead stay fixed. */

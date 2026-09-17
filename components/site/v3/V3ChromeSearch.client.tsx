@@ -12,17 +12,18 @@ import {
   type MorphingSearchItem,
 } from '@/components/motion/morphing-search'
 import { flattenSuggestions, useSearchSuggest } from '@/components/search/SearchSuggest'
+import { suggestToMorphItem } from '@/components/search/suggest-morph'
 import { trackEvent } from '@/lib/tracking'
 
 const PLACE_SEEDS: MorphingSearchItem[] = [
-  { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },
-  { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City' },
-  { id: '/homes-for-sale/sisters', title: 'Sisters', description: 'City' },
-  { id: '/homes-for-sale/sunriver', title: 'Sunriver', description: 'Community' },
-  { id: '/communities/tetherow', title: 'Tetherow', description: 'Bend' },
-  { id: '/homes-for-sale/prineville', title: 'Prineville', description: 'City' },
-  { id: '/homes-for-sale/la-pine', title: 'La Pine', description: 'City' },
-  { id: '/homes-for-sale/madras', title: 'Madras', description: 'City' },
+  suggestToMorphItem({ href: '/homes-for-sale/bend', label: 'Bend', sublabel: 'City', kind: 'city' }),
+  suggestToMorphItem({ href: '/homes-for-sale/redmond', label: 'Redmond', sublabel: 'City', kind: 'city' }),
+  suggestToMorphItem({ href: '/homes-for-sale/sisters', label: 'Sisters', sublabel: 'City', kind: 'city' }),
+  suggestToMorphItem({ href: '/homes-for-sale/sunriver', label: 'Sunriver', sublabel: 'Community', kind: 'subdivision' }),
+  suggestToMorphItem({ href: '/communities/tetherow', label: 'Tetherow', sublabel: 'Bend', kind: 'neighborhood' }),
+  suggestToMorphItem({ href: '/homes-for-sale/prineville', label: 'Prineville', sublabel: 'City', kind: 'city' }),
+  suggestToMorphItem({ href: '/homes-for-sale/la-pine', label: 'La Pine', sublabel: 'City', kind: 'city' }),
+  suggestToMorphItem({ href: '/homes-for-sale/madras', label: 'Madras', sublabel: 'City', kind: 'city' }),
 ]
 
 export function V3ChromeSearch() {
@@ -57,12 +58,9 @@ export function V3ChromeSearch() {
     // guides — not a hand-picked five. The feed already matched them to the
     // query; `keywords` carries that query so the morph's own substring filter
     // cannot drop a match the server made on a field the row does not print.
-    const typed = flattenSuggestions(suggestions).map((item) => ({
-      id: item.href,
-      title: item.label,
-      description: item.sublabel,
-      keywords: [query],
-    }))
+    const typed = flattenSuggestions(suggestions).map((item) =>
+      suggestToMorphItem(item, { keywords: [query] }),
+    )
     return typed.length > 0 ? typed : PLACE_SEEDS
   }, [suggestions, query])
 
@@ -84,6 +82,11 @@ export function V3ChromeSearch() {
     setOpen(next)
     if (!next) setQuery('')
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('rr-chrome-search-open', open)
+    return () => document.documentElement.classList.remove('rr-chrome-search-open')
+  }, [open])
 
   return (
     <div className="v3-chrome__search">

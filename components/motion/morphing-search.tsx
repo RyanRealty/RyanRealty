@@ -23,6 +23,17 @@ import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease";
 import { useOnOpen } from "@/lib/hooks/use-on-open";
 import { useRowCursor } from "@/lib/hooks/use-row-cursor";
 import { cn } from "@/lib/utils";
+import {
+	iconOnlyPanelLayout,
+	overlayLayerZIndex,
+} from "@/components/motion/morphing-search-layout";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
 
 // Keeps the Wallet Card feel with a little more time to read the morph.
 const SEARCH_MORPH: Transition = {
@@ -44,8 +55,28 @@ export type MorphingSearchItem = {
 	description?: string;
 	keywords?: string[];
 	icon?: LucideIcon;
+	/** Command group heading (Cities, Addresses). Empty = ungrouped. */
+	group?: string;
 	onSelect?: () => void;
 };
+
+function groupMorphItems(items: MorphingSearchItem[]) {
+	const order: string[] = [];
+	const map = new Map<string, MorphingSearchItem[]>();
+	for (const item of items) {
+		const key = item.group ?? "";
+		if (!map.has(key)) {
+			order.push(key);
+			map.set(key, []);
+		}
+		map.get(key)?.push(item);
+	}
+	let index = 0;
+	return order.map((heading) => ({
+		heading,
+		items: (map.get(heading) ?? []).map((item) => ({ item, index: index++ })),
+	}));
+}
 
 export interface MorphingSearchProps {
 	items: MorphingSearchItem[];
@@ -111,6 +142,7 @@ export function MorphingSearch({
 		left: 16,
 		width: 288,
 	});
+	const [chromeBottom, setChromeBottom] = useState(56);
 	const open = controlledOpen ?? internalOpen;
 	const controlled = controlledOpen !== undefined;
 	const reduce = useReducedMotion();
@@ -137,7 +169,13 @@ export function MorphingSearch({
 		const rect = anchorRef.current?.getBoundingClientRect();
 		if (!rect || rect.width === 0) return;
 		setAnchorRect({ top: rect.top, left: rect.left, width: rect.width });
-	}, []);
+		if (iconOnly) {
+			const chrome = document.querySelector(".v3-chrome");
+			if (chrome instanceof HTMLElement) {
+				setChromeBottom(chrome.getBoundingClientRect().bottom);
+			}
+		}
+	}, [iconOnly]);
 
 	const openSearch = useCallback(() => {
 		measureAnchor();
@@ -162,6 +200,10 @@ export function MorphingSearch({
 	}, [items, query]);
 
 	const { activeIndex, moveTo, moveActive } = useRowCursor(filteredItems, query);
+	const groupedItems = useMemo(
+		() => groupMorphItems(filteredItems),
+		[filteredItems],
+	);
 
 	// The cursor is stamped with the query, so changing it drops the highlight
 	// without this having to say so.
@@ -358,23 +400,25 @@ export function MorphingSearch({
 	// A compact (icon-only) trigger sits at the far edge of a phone header, so a
 	// panel measured from the icon's left edge to the viewport was ~150px wide
 	// and hung off the right of a 375px screen. Icon-only opens as a full-width
-	// sheet instead: as wide as the viewport allows, clamped inside its gutters,
-	// still anchored to the trigger's top so the morph has an origin.
+	// sheet under the sticky chrome (iOS sticky + fixed stacking hid the input
+	// row when the panel shared the header's top).
 	const viewportWidth = mounted ? window.innerWidth : 0;
-	const panelWidth = mounted
-		? iconOnly
-			? Math.max(anchorRect.width, Math.min(448, viewportWidth - 24))
-			: Math.max(
+	const iconLayout =
+		mounted && iconOnly
+			? iconOnlyPanelLayout(viewportWidth, chromeBottom)
+			: null;
+	const panelWidth = iconLayout
+		? iconLayout.width
+		: mounted
+			? Math.max(
 					anchorRect.width,
 					Math.min(448, viewportWidth - anchorRect.left - 16),
 				)
-		: anchorRect.width;
-	const panelLeft =
-		mounted && iconOnly
-			? Math.max(12, Math.min(anchorRect.left, viewportWidth - panelWidth - 12))
-			: anchorRect.left;
+			: anchorRect.width;
+	const panelLeft = iconLayout ? iconLayout.left : anchorRect.left;
+	const panelTop = iconLayout ? iconLayout.top : anchorRect.top;
 	const resultsHeight = mounted
-		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
+		? Math.max(96, Math.min(288, window.innerHeight - panelTop - 80))
 		: 288;
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,
@@ -392,10 +436,15 @@ export function MorphingSearch({
 				<div
 					aria-hidden={!open}
 					inert={!open}
+					data-v3-morph-overlay=""
 					className={cn(
 						"pointer-events-none fixed left-0 top-0 z-50 size-0",
 						overlayClassName,
 					)}
+					style={{
+						zIndex: overlayLayerZIndex(overlayClassName),
+						isolation: "isolate",
+					}}
 				>
 					<AnimatePresence
 						initial={false}
@@ -420,7 +469,7 @@ export function MorphingSearch({
 									data-v3-morph="panel"
 									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
 									style={{
-										top: anchorRect.top,
+										top: panelTop,
 										left: panelLeft,
 										width: panelWidth,
 										height: 48 + resultsHeight,
@@ -462,7 +511,7 @@ export function MorphingSearch({
 									data-v3-morph="dialog"
 									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
 									style={{
-										top: anchorRect.top,
+										top: panelTop,
 										left: panelLeft,
 										width: panelWidth,
 									}}
@@ -497,12 +546,14 @@ export function MorphingSearch({
 														: undefined
 												}
 												placeholder={placeholder}
-												className="size-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+												className="size-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
 											/>
 										</div>
-										<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
-											Esc
-										</kbd>
+										{iconOnly ? null : (
+											<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+												Esc
+											</kbd>
+										)}
 									</div>
 
 									<motion.div
@@ -550,51 +601,64 @@ export function MorphingSearch({
 											maxHeight: resultsHeight,
 										}}
 									>
-										{filteredItems.length > 0 ? (
-											filteredItems.map((item, index) => {
-												const Icon = item.icon;
-												const active = index === activeIndex;
-												return (
-													<button
-														key={item.id}
-														id={`${uid}-option-${index}`}
-														type="button"
-														role="option"
-														aria-selected={active}
-														data-index={index}
-														onMouseMove={() => moveTo(item.id)}
-														onFocus={() => moveTo(item.id)}
-														onClick={() => selectItem(item)}
-														className="relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-													>
-														{active ? (
-															<motion.span
-																layoutId={`${uid}-active-result`}
-																className="absolute inset-0 rounded-lg bg-foreground/5"
-																transition={transition}
-															/>
-														) : null}
-														{Icon ? (
-															<Icon className="relative size-4 shrink-0 text-muted-foreground" />
-														) : null}
-														<span className="relative min-w-0">
-															<span className="block truncate text-sm font-medium text-foreground">
-																{item.title}
-															</span>
-															{item.description ? (
-																<span className="block truncate text-xs text-muted-foreground">
-																	{item.description}
-																</span>
-															) : null}
-														</span>
-													</button>
-												);
-											})
-										) : (
-											<p className="px-3 py-8 text-center text-sm text-muted-foreground">
-												{emptyMessage}
-											</p>
-										)}
+										<Command
+											shouldFilter={false}
+											className="srch-command bg-transparent p-0"
+										>
+											<CommandList className="max-h-none overflow-visible p-0">
+												{filteredItems.length > 0 ? (
+													groupedItems.map((group) => (
+														<CommandGroup
+															key={group.heading || "results"}
+															heading={group.heading || undefined}
+														>
+															{group.items.map(({ item, index }) => {
+																const Icon = item.icon;
+																const active = index === activeIndex;
+																return (
+																	<CommandItem
+																		key={item.id}
+																		id={`${uid}-option-${index}`}
+																		value={item.id}
+																		role="option"
+																		aria-selected={active}
+																		data-index={index}
+																		data-selected={active || undefined}
+																		onMouseMove={() => moveTo(item.id)}
+																		onFocus={() => moveTo(item.id)}
+																		onSelect={() => selectItem(item)}
+																		className="relative min-h-11"
+																	>
+																		{active ? (
+																			<motion.span
+																				layoutId={`${uid}-active-result`}
+																				className="absolute inset-0 rounded-lg bg-foreground/5"
+																				transition={transition}
+																			/>
+																		) : null}
+																		{Icon ? (
+																			<Icon className="relative size-4 shrink-0 text-muted-foreground" />
+																		) : null}
+																		<span className="relative min-w-0">
+																			<span className="block truncate text-sm font-medium text-foreground">
+																				{item.title}
+																			</span>
+																			{item.description ? (
+																				<span className="block truncate text-xs text-muted-foreground">
+																					{item.description}
+																				</span>
+																			) : null}
+																		</span>
+																	</CommandItem>
+																);
+															})}
+														</CommandGroup>
+													))
+												) : (
+													<CommandEmpty>{emptyMessage}</CommandEmpty>
+												)}
+											</CommandList>
+										</Command>
 									</motion.div>
 								</motion.div>
 							</motion.div>

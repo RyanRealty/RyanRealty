@@ -11,9 +11,8 @@
  * - `flattenSuggestions` turns the grouped result into one keyboard-navigable
  *   list covering EVERY category the backend returns — addresses included
  *   (the "3480" class: the old dropdown never rendered them).
- * - `SearchSuggestPanel` renders the grouped dropdown. Plain elements +
- *   semantic token classes only (no shadcn) so it drops into both the portal
- *   filter bar and the KB nav without violating G47.
+ * - `SearchSuggestPanel` is the shadcn Command list (search:field job).
+ *   Navy/cream via tokens; cmdk grouping stays the demo interaction.
  *
  * Consumers own their input element and keyboard wiring; the panel is
  * aria-activedescendant-compatible (`${idPrefix}-item-${index}`).
@@ -21,8 +20,30 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SearchSuggestionsResult } from '@/app/actions/listings'
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Building2,
+  FileText,
+  Hash,
+  Home,
+  LineChart,
+  MapPinned,
+  Trees,
+  User,
+  type LucideIcon,
+} from 'lucide-react'
 import { cityPagePath } from '@/lib/slug'
 import { communityPagePath } from '@/lib/community-slug'
+import { cn } from '@/lib/utils'
+
+function hasLetters(value: string): boolean {
+  return /[a-z]/i.test(value)
+}
 
 export const SUGGEST_MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 90
@@ -70,6 +91,17 @@ export const SUGGEST_GROUP_LABELS: Record<SuggestKind, string> = {
   page: 'Pages and guides',
 }
 
+export const SUGGEST_KIND_ICONS: Record<SuggestKind, LucideIcon> = {
+  address: Home,
+  city: Building2,
+  subdivision: Trees,
+  neighborhood: MapPinned,
+  zip: Hash,
+  broker: User,
+  report: LineChart,
+  page: FileText,
+}
+
 /** Per-category render caps (dropdown stays scannable). */
 const CAPS = {
   addresses: 8,
@@ -105,12 +137,13 @@ export function flattenSuggestions(s: SearchSuggestionsResult | null): SuggestIt
     items.push({
       kind: 'city',
       label: c.city,
-      sublabel: c.count > 0 ? `${c.count}` : undefined,
+      sublabel: 'City',
       href: cityPagePath(c.city),
       city: c.city,
     })
   }
   for (const sub of (s.subdivisions ?? []).slice(0, CAPS.subdivisions)) {
+    if (!hasLetters(sub.subdivisionName ?? '')) continue
     items.push({
       kind: 'subdivision',
       label: sub.subdivisionName,
@@ -243,44 +276,63 @@ export function SearchSuggestPanel({
   }
   if (items.length === 0) return null
 
+  const groups: { kind: SuggestKind; entries: { item: SuggestItem; index: number }[] }[] = []
+  for (const [index, item] of items.entries()) {
+    const last = groups.at(-1)
+    if (!last || last.kind !== item.kind) {
+      groups.push({ kind: item.kind, entries: [{ item, index }] })
+    } else {
+      last.entries.push({ item, index })
+    }
+  }
+
   return (
-    <div id={`${idPrefix}-listbox`} role="listbox" aria-label="Search suggestions" className={className}>
-      {items.map((item, index) => {
-        const showHeader = index === 0 || items[index - 1]!.kind !== item.kind
-        const active = index === highlight
-        return (
-          <div key={`${item.kind}-${index}-${item.href}`}>
-            {showHeader && (
-              <p className="px-4 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {SUGGEST_GROUP_LABELS[item.kind]}
-              </p>
-            )}
-            <a
-              id={`${idPrefix}-item-${index}`}
-              role="option"
-              aria-selected={active}
-              href={item.href}
-              tabIndex={-1}
-              className={`block w-full px-4 py-2 text-left text-sm transition ${
-                active ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted'
-              }`}
-              onMouseDown={(e) => {
-                // Left click only; let middle/modified clicks use the raw href.
-                if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-                e.preventDefault()
-                onPick(item)
-              }}
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-                e.preventDefault()
-              }}
-            >
-              {item.label}
-              {item.sublabel && <span className="ml-1.5 text-muted-foreground">({item.sublabel})</span>}
-            </a>
-          </div>
-        )
-      })}
-    </div>
+    <Command shouldFilter={false} className={cn('srch-command bg-transparent p-0', className)}>
+      <CommandList id={`${idPrefix}-listbox`} role="listbox" aria-label="Search suggestions">
+        {groups.map((group) => (
+          <CommandGroup key={group.kind} heading={SUGGEST_GROUP_LABELS[group.kind]}>
+            {group.entries.map(({ item, index }) => {
+              const active = index === highlight
+              const Icon = SUGGEST_KIND_ICONS[item.kind]
+              return (
+                <CommandItem
+                  key={`${item.kind}-${index}-${item.href}`}
+                  id={`${idPrefix}-item-${index}`}
+                  value={`${item.kind}-${item.href}`}
+                  role="option"
+                  aria-selected={active}
+                  data-selected={active || undefined}
+                  className="min-h-11 px-4"
+                  onSelect={() => onPick(item)}
+                >
+                  <a
+                    href={item.href}
+                    tabIndex={-1}
+                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                    onMouseDown={(e) => {
+                      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                      e.preventDefault()
+                      onPick(item)
+                    }}
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                      e.preventDefault()
+                    }}
+                  >
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm text-foreground">{item.label}</span>
+                      {item.sublabel ? (
+                        <span className="block truncate text-xs text-muted-foreground">{item.sublabel}</span>
+                      ) : null}
+                    </span>
+                  </a>
+                </CommandItem>
+              )
+            })}
+          </CommandGroup>
+        ))}
+      </CommandList>
+    </Command>
   )
 }

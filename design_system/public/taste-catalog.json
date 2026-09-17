@@ -62,6 +62,15 @@
         "backdrop-blur-xl"
       ]
     },
+    "shadcn-command": {
+      "add": "command",
+      "file": "components/ui/command.tsx",
+      "import": "@/components/ui/command",
+      "house": "components/search/SearchSuggest.tsx"
+    },
+    "shadcn:command": {
+      "aliasOf": "shadcn-command"
+    },
     "beui:morphing-search": {
       "aliasOf": "beui-morphing-search"
     },
@@ -187,6 +196,24 @@
     },
     "shadcn:input": {
       "aliasOf": "shadcn-input"
+    },
+    "shadcn-checkbox": {
+      "add": "checkbox",
+      "file": "components/ui/checkbox.tsx",
+      "import": "@/components/ui/checkbox",
+      "house": "components/search/AllFiltersSheet.tsx"
+    },
+    "shadcn:checkbox": {
+      "aliasOf": "shadcn-checkbox"
+    },
+    "shadcn-input-group": {
+      "add": "input-group",
+      "file": "components/ui/input-group.tsx",
+      "import": "@/components/ui/input-group",
+      "house": "components/search/AllFiltersSheet.tsx"
+    },
+    "shadcn:input-group": {
+      "aliasOf": "shadcn-input-group"
     },
     "beui-input": {
       "add": "@beui/input",
@@ -2519,7 +2546,24 @@
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/command",
           "job": "Command search. Adapt into v3, do not paste radix chrome on the public map."
+        },
+        {
+          "id": "shadcn-input-group",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input-group",
+          "job": "Filter number fields carry unit addons ($ /mo /sqft), not a stack of identical boxes."
+        },
+        {
+          "id": "shadcn-checkbox",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/checkbox",
+          "job": "Boolean filters are designed checkbox rows, not tiny unmarked boxes."
         }
+      ],
+      "demoStates": [
+        "search-open=.v3-chrome__search [aria-haspopup=dialog]!click",
+        "morph-open=.srch-morph [aria-haspopup=dialog]!click",
+        "sheet-open=[data-srch-all-filters]!click"
       ]
     },
     "sell": {

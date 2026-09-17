@@ -11,7 +11,7 @@
  * hands the parent a full param-update map on Apply.
  */
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react'
 import { useUrlSearchParams } from '@/lib/search/url-search-params.client'
 import { cn } from '@/lib/utils'
 import './search-ledger.css'
@@ -57,6 +57,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -106,6 +111,38 @@ const UNIT_LABEL: Record<string, string> = {
   spaces: 'spaces',
 }
 
+function unitPrefix(unit: string | undefined): string | undefined {
+  if (unit === 'usd' || unit === 'usdMonth') return '$'
+  return undefined
+}
+
+function unitSuffix(unit: string | undefined, key?: string): string | undefined {
+  if (key === 'pricePerSqft') return '/sqft'
+  if (key === 'pricePerAcre') return '/ac'
+  if (unit === 'usdMonth') return '/mo'
+  if (unit === 'sqft') return 'sq ft'
+  if (unit === 'acres') return 'ac'
+  if (unit === 'days') return 'days'
+  if (unit === 'spaces') return 'spaces'
+  return undefined
+}
+
+function UnitNumberInput({
+  unit,
+  fieldKey,
+  ...props
+}: Omit<ComponentProps<typeof InputGroupInput>, 'type'> & { unit?: string; fieldKey?: string }) {
+  const prefix = unitPrefix(unit)
+  const suffix = unitSuffix(unit, fieldKey)
+  return (
+    <InputGroup>
+      {prefix ? <InputGroupAddon>{prefix}</InputGroupAddon> : null}
+      <InputGroupInput type="number" inputMode="numeric" {...props} />
+      {suffix ? <InputGroupAddon align="inline-end">{suffix}</InputGroupAddon> : null}
+    </InputGroup>
+  )
+}
+
 type SetParam = (param: string, value: string | undefined) => void
 
 function RangeFieldRow({
@@ -138,9 +175,9 @@ function RangeFieldRow({
           }}
         />
         <div className="grid grid-cols-2 gap-2">
-          <Input
-            type="number"
-            inputMode="numeric"
+          <UnitNumberInput
+            unit={def.unit}
+            fieldKey={def.key}
             placeholder="No min"
             value={draft[min] ?? ''}
             disabled={disabled}
@@ -148,9 +185,9 @@ function RangeFieldRow({
             className="tabular-nums"
             aria-label={`${def.label} minimum`}
           />
-          <Input
-            type="number"
-            inputMode="numeric"
+          <UnitNumberInput
+            unit={def.unit}
+            fieldKey={def.key}
             placeholder="No max"
             value={draft[max] ?? ''}
             disabled={disabled}
@@ -191,17 +228,16 @@ function RangeFieldRow({
     )
   }
 
+  const bothSides = Boolean(min && max)
   return (
     <div>
-      <p className="mb-1.5 text-xs text-muted-foreground">
-        {unit ? `${def.label} (${unit})` : def.label}
-      </p>
-      <div className="grid grid-cols-2 gap-2">
+      <p className="mb-1.5 text-xs text-muted-foreground">{def.label}</p>
+      <div className={cn(bothSides && 'grid grid-cols-2 gap-2')}>
         {min && (
-          <Input
-            type="number"
-            inputMode="numeric"
-            placeholder="No min"
+          <UnitNumberInput
+            unit={def.unit}
+            fieldKey={def.key}
+            placeholder={bothSides ? 'No min' : 'No minimum'}
             value={draft[min] ?? ''}
             disabled={disabled}
             onChange={(e) => setParam(min, e.target.value || undefined)}
@@ -210,10 +246,10 @@ function RangeFieldRow({
           />
         )}
         {max && (
-          <Input
-            type="number"
-            inputMode="numeric"
-            placeholder="No max"
+          <UnitNumberInput
+            unit={def.unit}
+            fieldKey={def.key}
+            placeholder={bothSides ? 'No max' : 'No maximum'}
             value={draft[max] ?? ''}
             disabled={disabled}
             onChange={(e) => setParam(max, e.target.value || undefined)}
@@ -819,18 +855,36 @@ export default function AllFiltersSheet({
                     <p className="srch-label">
                       {label}
                     </p>
-                    {ranges.map((def) => (
-                      <div key={def.key} id={fieldAnchorId(def.key)}>
-                        <RangeFieldRow
-                          def={def}
-                          draft={draft}
-                          disabled={fieldDisabled(def)}
-                          setParam={setParam}
-                        />
+                    {ranges
+                      .filter((def) => def.key === 'price')
+                      .map((def) => (
+                        <div key={def.key} id={fieldAnchorId(def.key)}>
+                          <RangeFieldRow
+                            def={def}
+                            draft={draft}
+                            disabled={fieldDisabled(def)}
+                            setParam={setParam}
+                          />
+                        </div>
+                      ))}
+                    {ranges.some((def) => def.key !== 'price') ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {ranges
+                          .filter((def) => def.key !== 'price')
+                          .map((def) => (
+                            <div key={def.key} id={fieldAnchorId(def.key)}>
+                              <RangeFieldRow
+                                def={def}
+                                draft={draft}
+                                disabled={fieldDisabled(def)}
+                                setParam={setParam}
+                              />
+                            </div>
+                          ))}
                       </div>
-                    ))}
+                    ) : null}
                     {booleans.length > 0 && (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {booleans.map((def) => {
                           const meta = conditionBoolean(def.key, artifact, classes, draft[def.key] === '1')
                           const zeroDisabled = meta.count === 0 && !meta.selected
@@ -838,7 +892,7 @@ export default function AllFiltersSheet({
                             <Label
                               key={def.key}
                               className={cn(
-                                'flex min-w-0 items-start gap-2',
+                                'flex min-h-11 min-w-0 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2',
                                 fieldDisabled(def) || zeroDisabled
                                   ? 'cursor-not-allowed opacity-50'
                                   : 'cursor-pointer'
