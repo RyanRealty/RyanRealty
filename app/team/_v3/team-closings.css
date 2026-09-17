@@ -1,0 +1,57 @@
+/* SITE-113. Catalog carousel + Card on /team. Tokens only. */
+
+.team-closings {
+  min-width: 0;
+  padding: var(--v3-space-md) var(--v3-gutter);
+}
+
+.team-closings__eyebrow {
+  margin: 0 0 var(--v3-space-3xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.team-closings__heading {
+  margin: 0 0 var(--v3-space-sm);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+}
+
+.team-closings__stage {
+  min-width: 0;
+  padding-inline: 2.5rem;
+  overflow: visible;
+}
+
+.team-closings__carousel {
+  min-width: 0;
+}
+
+.team-closings [data-slot='card'] {
+  --card: var(--v3-cream);
+  --card-foreground: var(--v3-navy);
+}
+
+.team-closings__card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.team-closings__card-link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.team-closings [data-slot='card'] img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}

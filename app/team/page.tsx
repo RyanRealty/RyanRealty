@@ -1,10 +1,9 @@
 /**
  * /team - broker roster, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (SITE-74, 2026-09-10): Breadcrumb, then a first-viewport
- * pair — AboutFaces editorial (H1 The brokers, principal at conversation
- * scale, companions as rows, one Call each) beside V3Atlas of every closing
- * the three of them have on the MLS. Footer.
+ * PAGE OUTLINE (SITE-113): Breadcrumb, AboutFaces editorial (licenses +
+ * sparkline record + ButtonGroup Call|Text|Email|Schedule), AvatarGroup,
+ * shadcn carousel of recorded closing Cards, then V3Atlas. Footer.
  *
  * WHAT CHANGED AND WHY. The taste table of 2026-09-08 scored this page 39 and
  * named the whole route as its own dullest section: "three identical directory
@@ -53,6 +52,9 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { buildBrokerRecord } from '@/app/team/[slug]/_v3/broker-record'
+import { publishFirmClosingRows, uniqueListingTiles } from '@/app/team/[slug]/_v3/sale-rows'
+import { TeamClosings } from './_v3/TeamClosings'
+import { TeamTrio } from './_v3/TeamTrio'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { ATLAS_TYPES } from '@/lib/atlas/build-place-atlas'
@@ -62,15 +64,16 @@ import { brokerRosterRecord } from './_v3/broker-roster-record'
 import './_v3/team-fold.css'
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Our team · Ryan Realty, Bend Oregon',
+  title: 'Bend brokers · Oregon licenses and recorded closings',
   description:
-    'Ryan Realty brokers in Bend and Central Oregon.',
+    'Matt Ryan, Rebecca Peterson, and Paul Stevenson. Oregon license on every card, and a rail of the houses they closed with sold price, beds, baths, and square feet.',
   path: '/team',
   ogImage: '/images/hero/hero-old-mill-master-4k.jpg',
   keywords: [
     'Ryan Realty team',
     'Bend Oregon real estate brokers',
     'Matt Ryan',
+    'Oregon real estate license',
     'Central Oregon broker',
   ],
 })
@@ -150,6 +153,10 @@ export default async function TeamPage() {
     `Closed MLS sales through Oregon Data Share, every closing recorded for a Ryan Realty broker on either side of the deal (list side by list_agent_email, buy side by buyer_agent_mls_id): ${closedTotal} closings on record, ${dots.length} of them carrying a coordinate on the feed and drawn here. A closing the feed gives no latitude and longitude for is not a mark and is not counted in this map. Prices are the recorded ClosePrice.`,
   )
   const atlasStamp = newestClose ? v3Text(formatDate(newestClose.slice(0, 10))) : undefined
+  const closingRows = publishFirmClosingRows(
+    uniqueListingTiles(records.flatMap((r) => r.sales)),
+    18,
+  )
 
   const schemas: SchemaInput[] = [
     {
@@ -158,7 +165,7 @@ export default async function TeamPage() {
       aboutOrganization: true,
       name: 'The Ryan Realty Team',
       description:
-        'Ryan Realty brokers in Bend and Central Oregon.',
+        'Bend Oregon brokers with Oregon licenses and recorded MLS closings.',
       url: '/team',
     },
     {
@@ -168,6 +175,23 @@ export default async function TeamPage() {
         { name: 'Team', url: '/team' },
       ],
     },
+    {
+      type: 'itemList',
+      name: 'Ryan Realty brokers',
+      items: faces.map((face) => ({ name: face.name, url: face.href })),
+    },
+    ...(closingRows.length > 0
+      ? [
+          {
+            type: 'itemList' as const,
+            name: 'Recent Ryan Realty closings',
+            items: closingRows.map((row) => ({
+              name: `${String(row.what)} · ${String(row.value)}`,
+              url: row.href,
+            })),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -183,6 +207,14 @@ export default async function TeamPage() {
             heading="The brokers"
             size="editorial"
           />
+          <div className="team-fold__trio">
+            <TeamTrio people={faces} />
+          </div>
+          {closingRows.length > 0 ? (
+            <div className="team-fold__closings">
+              <TeamClosings id="closings-rail" rows={closingRows} />
+            </div>
+          ) : null}
 
           {dots.length > 0 ? (
             <V3Atlas
