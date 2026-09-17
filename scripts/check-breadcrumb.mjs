@@ -74,7 +74,7 @@ const EXEMPT = [
   /^app\/reports\/\[slug\]\/page\.tsx$/, // E-CUT redirect-only into /housing-market/reports/[slug]
   /^app\/area-guides\/page\.tsx$/, // E-CUT redirect-only into /cities
   /^app\/areas\/\[slug\]\/page\.tsx$/, // E-CUT redirect-only into /homes-for-sale
-  /^app\/builders(\/\[slug\])?\/page\.tsx$/, // E-CUT redirect-only into new-construction search
+  /^app\/builders(\/\[slug\])?\/page\.tsx$/, // E-CUT redirect-only into /new-construction
   /^app\/resources\/page\.tsx$/, // E-CUT redirect-only into /housing-market
   /^app\/pulse\/page\.tsx$/, // E-CUT redirect-only into /activity
   /^app\/reports\/\[slug\]\/\[geoName\]\//, // redirect-only (consolidated to /housing-market/<city>)

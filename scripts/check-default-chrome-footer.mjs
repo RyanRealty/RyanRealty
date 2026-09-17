@@ -48,8 +48,8 @@ const REDIRECT_ONLY = new Set([
   'app/feed/page.tsx', // P3 lock: 301 /feed into /videos?view=feed
   'app/area-guides/page.tsx', // E-CUT: 301 /area-guides into /cities
   'app/areas/[slug]/page.tsx', // E-CUT: 301 /areas/[slug] into /homes-for-sale
-  'app/builders/page.tsx', // E-CUT: 301 /builders into new-construction search
-  'app/builders/[slug]/page.tsx', // E-CUT: 301 /builders/[slug] into new-construction search
+  'app/builders/page.tsx', // E-CUT: 301 /builders into /new-construction
+  'app/builders/[slug]/page.tsx', // E-CUT: 301 /builders/[slug] into /new-construction
   'app/reports/page.tsx', // E-CUT: 301 /reports into /housing-market/reports
   'app/reports/[slug]/page.tsx', // E-CUT: 308 /reports/[slug] into /housing-market/reports/[slug]
   'app/resources/page.tsx', // E-CUT: 301 /resources into /housing-market

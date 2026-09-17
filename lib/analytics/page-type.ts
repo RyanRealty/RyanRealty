@@ -81,6 +81,7 @@ export const PUBLIC_PAGE_SEGMENTS = [
   'months-of-supply',
   'motivated-sellers',
   'neighborhoods',
+  'new-construction',
   'newsletter',
   'offline',
   'open-houses',
@@ -147,7 +148,11 @@ export function visitorPageCategoryFromPath(pathname: string): string {
   if (/^\/lp\/seller-home-value|^\/sell(\/|$)/.test(p) || p.startsWith('/motivated-sellers')) {
     return 'seller_intent'
   }
-  if (/^\/lp\/buyer-listing-alerts|^\/buyers(\/|$)|^\/explore/.test(p) || p.startsWith('/buy')) {
+  if (
+    /^\/lp\/buyer-listing-alerts|^\/buyers(\/|$)|^\/explore/.test(p) ||
+    p.startsWith('/buy') ||
+    p.startsWith('/new-construction')
+  ) {
     return 'buyer_intent'
   }
   if (/^\/lp\/expired-listing|^\/lp\/fsbo|^\/lp\/sell/.test(p)) return 'seller_intent'
@@ -213,7 +218,7 @@ export function pageTypeFromPath(pathname: string): PageType {
   ) {
     return 'sell'
   }
-  if (p.startsWith('/buy') || p.startsWith('/lp/buyer')) return 'buy'
+  if (p.startsWith('/buy') || p.startsWith('/lp/buyer') || p.startsWith('/new-construction')) return 'buy'
   if (p.startsWith('/lp/')) return 'lead'
   if (p.startsWith('/team') || p.startsWith('/about') || p.startsWith('/reviews') || p.startsWith('/join')) {
     return 'team'

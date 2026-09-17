@@ -98,6 +98,7 @@ export const PUBLIC_ISR_TTLS = [
   ['app/housing-market/annual-review/page.tsx', 86400],
   ['app/housing-market/reports/archive/[city]/page.tsx', 86400],
   ['app/how-we-get-our-numbers/page.tsx', 86400],
+  ['app/new-construction/page.tsx', 86400],
 ]
 
 const REVALIDATE_EXPORT = /export\s+const\s+revalidate\s*=\s*(-?\d+)/
