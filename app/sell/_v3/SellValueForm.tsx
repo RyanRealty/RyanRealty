@@ -664,8 +664,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
           type="submit"
           disabled={pending}
           active={askOpen}
-          className="sell-stage-submit mt-4 w-full min-w-0"
-          labelClassName="text-base font-medium"
+          className="sell-stage-submit mt-4 justify-self-start"
         >
           {pending ? 'Reading the market' : 'Value my home'}
         </ExpandingArrowButton>
