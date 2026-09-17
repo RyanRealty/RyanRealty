@@ -334,10 +334,14 @@
   min-height: var(--v3-tap);
 }
 
-/* beui-expanding-arrow-button owns the motion. Width only here. */
+/* Catalog expanding-arrow is inline-flex min-w-72. Grid stretch + w-full
+   made ask-open a same-width cream bar of five chevrons. Leave size to
+   the demo; only pin it to the start of the column. */
 .v3.v3-stage .sell-stage-ask .sell-stage-submit {
   margin-block-start: var(--v3-space-2xs);
-  width: 100%;
+  justify-self: start;
+  width: max-content;
+  max-width: 100%;
 }
 
 /* Quiet scroll affordance keyed to what's next (#proof / The record). It sits
