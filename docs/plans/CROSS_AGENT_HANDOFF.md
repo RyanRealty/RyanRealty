@@ -1,10 +1,10 @@
 # Current — 2026-09-17 (Bend new-construction craft raise)
 
-Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR #278. PR only — Cos Mini lands. Do not merge. Not Tip Ready (no catalog SITE class).
+Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR #278. PR only — Cos Mini lands. Do not merge. Not Tip Ready (no catalog SITE class / `@no-parity`).
 
-- **Fold.** Compact Stage + Parkside → Calaveras → Easton shadcn carousel (`NewConLeadShelf`). Not a ledger above the fold.
-- **Financing.** V3Answers with flag figures, sourced doors. Snapshot numbers unchanged.
-- **Gates.** `ci:gates` 147/147. Tip SHA: none.
+- **Fold.** Compact Stage + Parkside → Calaveras → Easton shadcn shelf. 375 hides crumb/KPI/CTA so H1 + `$399,990` + house cards share the first viewport.
+- **Financing.** Closed V3Answers list with UNVERIFIED / STALE / CONFLICT / NOT DISCLOSED figures. Snapshot 2026-09-16 unchanged.
+- **Gates.** `ci:gates` 147/147 on the fold-reclaim tree. Tip SHA: none.
 - Skills read: `VOICE.md`, `TASTE.md`, `.cursor/skills/site-queue/SKILL.md`.
 
 # Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)

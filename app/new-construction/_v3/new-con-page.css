@@ -5,6 +5,7 @@
 }
 
 @media (max-width: 40rem) {
+  .newcon-hero__crumb,
   .newcon-hero .v3-stage-band,
   .newcon-hero .v3-stage-eyebrow,
   .newcon-hero .v3-stage-copy .v3-btn {
@@ -13,7 +14,7 @@
 
   .newcon-hero .v3.v3-stage--compact .v3-stage-copy,
   .newcon-hero .v3-stage-copy {
-    padding-top: 3.25rem;
+    padding-top: var(--v3-space-lg);
     padding-bottom: var(--v3-space-xs);
     gap: var(--v3-space-2xs);
   }
