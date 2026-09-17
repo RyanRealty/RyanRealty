@@ -53,6 +53,25 @@ function tally(names: readonly (string | null | undefined)[]): { name: string; n
     .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))
 }
 
+/** Oldest → newest monthly closing counts for the trailing `months` window. */
+export function monthlyClosingSeries(
+  sales: readonly BrokerSaleTile[],
+  now: Date,
+  months = 12,
+): number[] {
+  const buckets = Array.from({ length: months }, () => 0)
+  const nowY = now.getUTCFullYear()
+  const nowM = now.getUTCMonth()
+  for (const sale of sales) {
+    if (!sale.CloseDate || sale.ClosePrice == null || Number(sale.ClosePrice) <= 0) continue
+    const day = new Date(sale.CloseDate)
+    if (Number.isNaN(day.getTime())) continue
+    const idx = months - 1 - ((nowY - day.getUTCFullYear()) * 12 + (nowM - day.getUTCMonth()))
+    if (idx >= 0 && idx < months) buckets[idx] += 1
+  }
+  return buckets
+}
+
 /** "Bend and Redmond" / "Bend, Redmond and Sisters". Never a bare slug list. */
 export function placesSentence(places: readonly { name: string }[]): string {
   const names = places.map((p) => p.name)
@@ -82,12 +101,13 @@ export function brokerRosterRecord(input: {
       value: String(recent.length),
       label: recent.length === 1 ? 'closing in the last 12 months' : 'closings in the last 12 months',
       places,
-      placesSummary: places.length > 0 ? 'Cities' : 'How this is counted',
+      placesSummary: 'Source',
       sourceName: 'Closed MLS sales',
+      series: monthlyClosingSeries(closed, now),
       trace:
-        `Closed MLS sales through Oregon Data Share, every closing recorded for ${input.name} on either side of the deal ` +
-        `(list side by list_agent_email, buy side by buyer_agent_mls_id), with a recorded ClosePrice and a CloseDate on or after ${cutoff}: ` +
-        `${recent.length} of ${closed.length} on record. Places are the City on those same rows` +
+        `Closed MLS sales through Oregon Data Share. Every closing recorded for ${input.name} as listing agent or buyer agent, ` +
+        `with a recorded sold price and a close date on or after ${cutoff}: ` +
+        `${recent.length} of ${closed.length} on record. Cities on those same rows` +
         (places.length > 0 ? ` — ${places.map((p) => `${p.name} ${p.n}`).join(', ')}.` : '.'),
     }
   }
@@ -105,12 +125,13 @@ export function brokerRosterRecord(input: {
       value: String(closed.length),
       label: closed.length === 1 ? `closed sale on record${span}` : `closed sales on record${span}`,
       places,
-      placesSummary: places.length > 0 ? 'Cities' : 'How this is counted',
+      placesSummary: 'Source',
       sourceName: 'Closed MLS sales',
+      series: monthlyClosingSeries(closed, now),
       trace:
-        `Closed MLS sales through Oregon Data Share, every closing recorded for ${input.name} on either side of the deal ` +
-        `(list side by list_agent_email, buy side by buyer_agent_mls_id) with a recorded ClosePrice: ${closed.length} rows, ` +
-        `none of them in the last ${ROSTER_WINDOW_DAYS} days. Places are the City on those same rows` +
+        `Closed MLS sales through Oregon Data Share. Every closing recorded for ${input.name} as listing agent or buyer agent ` +
+        `with a recorded sold price: ${closed.length} rows, none of them in the last ${ROSTER_WINDOW_DAYS} days. ` +
+        `Cities on those same rows` +
         (places.length > 0 ? ` — ${places.map((p) => `${p.name} ${p.n}`).join(', ')}.` : '.'),
     }
   }
@@ -125,10 +146,10 @@ export function brokerRosterRecord(input: {
       placesSummary: places.length > 0 ? 'Cities' : 'How this is counted',
       sourceName: 'Live MLS listings',
       trace:
-        `Live MLS listings through Oregon Data Share, active listings whose listing agent is ${input.name} ` +
-        `(matched on the Oregon license number and on list_agent_email): ${actives.length} active. ` +
+        `Live MLS listings through Oregon Data Share. Active listings whose listing agent is ${input.name} ` +
+        `(matched on the Oregon license number and the listing-agent email): ${actives.length} active. ` +
         `This card shows live listings rather than closings because no closed sale is recorded against this broker on the feed — ` +
-        `unknown is not zero, so nothing is printed about closings. Places are the City on those same rows` +
+        `unknown is not zero, so nothing is printed about closings. Cities on those same rows` +
         (places.length > 0 ? ` — ${places.map((p) => `${p.name} ${p.n}`).join(', ')}.` : '.'),
     }
   }

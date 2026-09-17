@@ -29,6 +29,7 @@ import { teamPath } from "@/lib/slug"
 import type { AboutFace, AboutFaceRecord } from "./about-faces"
 import { aboutCompactReach } from "./about-faces"
 import { FacePortrait } from "./FacePortrait.client"
+import { TeamReach } from "@/app/team/_v3/TeamReach"
 import "./about-faces.css"
 
 export type AboutFaceProof = {
@@ -123,33 +124,46 @@ function IconCalendar() {
  * and the method with a single tap rather than reading three identical
  * "SOURCE …" rows across three cards standing side by side.
  */
+function RecordSpark({ series }: { series: readonly number[] }) {
+  if (series.length < 2 || !series.some((n) => n > 0)) return null
+  const max = Math.max(...series, 1)
+  const w = 72
+  const h = 20
+  const pts = series
+    .map((n, i) => {
+      const x = (i / (series.length - 1)) * w
+      const y = h - (n / max) * (h - 2) - 1
+      return `${x},${y}`
+    })
+    .join(" ")
+  return (
+    <svg className="about-faces__spark" viewBox={`0 0 ${w} ${h}`} width={w} height={h} aria-hidden="true">
+      <polyline
+        points={pts}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 function faceRecord(record: AboutFaceRecord | null | undefined) {
   if (!record) return null
   return (
     <div className="about-faces__record">
       <p className="about-faces__record-figure">
+        {record.series ? <RecordSpark series={record.series} /> : null}
         <span className="about-faces__record-value">{record.value}</span>
         <span className="about-faces__record-label">{record.label}</span>
       </p>
-      {/* One control, not two. The places and the section 0 trace live behind
-          the same disclosure: three cards side by side each printing their own
-          "SOURCE …" row put the least editorial text on the page three times
-          in a row, and the trace is still in the served HTML either way. */}
       <details className="about-faces__where">
         <summary className="about-faces__where-summary">
           <span className="about-faces__where-text">{record.placesSummary}</span>
           <span className="about-faces__where-caret" aria-hidden="true" />
         </summary>
-        {record.places.length > 0 ? (
-          <ul className="about-faces__where-list">
-            {record.places.map((place) => (
-              <li key={place.name} className="about-faces__where-row">
-                <span className="about-faces__where-place">{place.name}</span>
-                <span className="about-faces__where-n">{place.n}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
         <p className="about-faces__where-trace">
           <span className="about-faces__where-trace-label">Source</span> {record.trace}
         </p>
@@ -175,38 +189,7 @@ function faceCredential(person: AboutFace) {
 function editorialReach(person: AboutFace) {
   return (
     <div className="about-faces__reach-row">
-      {person.tel ? (
-        <a
-          href={`tel:${person.tel}`}
-          className={cn("about-faces__reach", "about-faces__reach--call")}
-          aria-label={`Call ${person.name}`}
-        >
-          <span className="about-faces__reach-label">Call</span>
-        </a>
-      ) : null}
-      {person.tel ? (
-        <a href={`sms:${person.tel}`} className="about-faces__reach-text" aria-label={`Text ${person.name}`}>
-          Text
-        </a>
-      ) : null}
-      {person.email ? (
-        <a
-          href={`mailto:${person.email}`}
-          className="about-faces__reach-text"
-          aria-label={`Email ${person.name}`}
-        >
-          Email
-        </a>
-      ) : null}
-      {person.bookHref ? (
-        <Link
-          href={person.bookHref}
-          className="about-faces__reach-text"
-          aria-label={`Schedule with ${person.name}`}
-        >
-          Schedule
-        </Link>
-      ) : null}
+      <TeamReach person={person} />
     </div>
   )
 }
@@ -483,31 +466,6 @@ export function AboutFaces({
           {claim ? <p className="about-faces__claim">{claim}</p> : null}
         </div>
         <div className="about-faces__editorial">
-          {proof ? (
-            <AvatarGroup className="about-faces__trio">
-              {shown.map((person) => (
-                <div key={`trio-${person.href}`} className="about-faces__trio-item">
-                  <Link href={person.href} className="about-faces__photo-link">
-                    <FacePortrait
-                      src={person.src}
-                      name={person.name}
-                      priority={person === leadPerson}
-                    />
-                  </Link>
-                  <span className="about-faces__trio-name">{person.name.split(/\s+/)[0]}</span>
-                  {person.tel ? (
-                    <a
-                      href={`tel:${person.tel}`}
-                      className="about-faces__trio-call"
-                      aria-label={`Call ${person.name}`}
-                    >
-                      Call
-                    </a>
-                  ) : null}
-                </div>
-              ))}
-            </AvatarGroup>
-          ) : null}
           <article className="about-faces__lead">
             <Link href={leadPerson.href} className="about-faces__photo-link">
               <FacePortrait
@@ -515,6 +473,7 @@ export function AboutFaces({
                 name={leadPerson.name}
                 priority
                 proof={proof?.value}
+                className="size-full!"
               />
             </Link>
             <div className="about-faces__row">
@@ -544,42 +503,14 @@ export function AboutFaces({
               {companions.map((person) => (
                 <li key={person.href} className="about-faces__companion">
                   <Link href={person.href} className="about-faces__photo-link">
-                    <FacePortrait src={person.src} name={person.name} />
+                    <FacePortrait src={person.src} name={person.name} className="size-full!" />
                   </Link>
                   <div className="about-faces__row">
                     <Link href={person.href} className="about-faces__name">
                       {person.name}
                     </Link>
                     {faceCredential(person)}
-                    {person.record ? (
-                      <p className="about-faces__specialty">
-                        <span className="about-faces__record-value">{person.record.value}</span>
-                        {person.record.places.length > 0
-                          ? ` in ${person.record.places.map((p) => p.name).join(', ')}`
-                          : ` ${person.record.label}`}
-                      </p>
-                    ) : null}
-                    {person.record ? (
-                      <details className="about-faces__where">
-                        <summary className="about-faces__where-summary">
-                          <span className="about-faces__where-text">{person.record.placesSummary}</span>
-                          <span className="about-faces__where-caret" aria-hidden="true" />
-                        </summary>
-                        {person.record.places.length > 0 ? (
-                          <ul className="about-faces__where-list">
-                            {person.record.places.map((place) => (
-                              <li key={place.name} className="about-faces__where-row">
-                                <span className="about-faces__where-place">{place.name}</span>
-                                <span className="about-faces__where-n">{place.n}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        <p className="about-faces__where-trace">
-                          <span className="about-faces__where-trace-label">Source</span> {person.record.trace}
-                        </p>
-                      </details>
-                    ) : null}
+                    {faceRecord(person.record)}
                     {reach ? editorialReach(person) : null}
                   </div>
                 </li>

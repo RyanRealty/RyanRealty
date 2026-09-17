@@ -35,6 +35,8 @@ describe('brokerRosterRecord — the ladder', () => {
       { name: 'Redmond', n: 1 },
     ])
     expect(r!.trace).toContain('3 of 4 on record')
+    expect(r!.series).toHaveLength(12)
+    expect(r!.series!.reduce((sum, n) => sum + n, 0)).toBe(3)
   })
 
   it('falls back to the whole record, with its span, when nothing closed this year', () => {
