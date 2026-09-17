@@ -1,9 +1,9 @@
-# Current — 2026-09-17 (SITE-111 rematch 3 — honest ship fail)
+# Current — 2026-09-17 (SITE-111 rematch 4 — --ship 0, Cos lands)
 
-Surface: Cursor cloud `cursor-cloud-site111-20260916`, branch `cursor/site-111-sell-tip-ready-75a0`, PR #267. Do not merge. Node stays `in_progress`.
+Surface: Cursor cloud `cursor-cloud-site111-20260916`, branch `cursor/site-111-sell-tip-ready-75a0`, PR #267. PR only — Cos Mini lands. Do not merge from this agent.
 
-- Tip SHA `832f12fad`. `--ship` exit 1. `demoMatch: false`. Median 68 (72/65/68) vs rematch-2 55 vs HEAD 63. Judge: claude-sonnet-5 Task. Builder: grok-4.6.
-- Judge accepted house-stage street reframe. replaceWith still: `beui-expanding-arrow-button` (five fading chevrons, no layout-size expand). No house paint after this false.
+- Tip SHA pending receipt commit. `--ship` exit 0. `demoMatch: true`. Median 73 (73/76/69) vs rematch-3 68 vs HEAD 63. Judge: claude-sonnet-5 Task. Builder: grok-4.6.
+- ask-open now photographs beUI layout-size expand (compact pill, accent tile 52px → full, dotted-chevron trail). Street reframe and 375 confirm held.
 - Skills read: `.cursor/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
 # Current — 2026-09-16 (Claude cloud site queue: STOPPING POINT — Matt's three phone directives landed; SITE-104 merged; SITE-111 merged but NOT judged)
