@@ -1,3 +1,12 @@
+# Current — 2026-09-17 (Bend new-construction factual page)
+
+Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR only — Cos Mini lands. Do not merge here. Not Tip Ready (no catalog SITE class / no parity kit).
+
+- **Page.** `/new-construction` — 2026-09-16 PT snapshot: Bend-proper Active bands + published builder financing. Caldera excluded. `/builders` 301s here.
+- **Flags kept.** Pahlisch 4.99% UNVERIFIED; Hayden Summer Savings STALE + NOT DISCLOSED; Horton flyer vs community page CONFLICT (not merged).
+- **Gates.** `ci:gates` 161/161. Tip SHA: none.
+- Skills read: `VOICE.md`, `TASTE.md`, `.cursor/skills/site-queue/SKILL.md`.
+
 # Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)
 
 Surface: Cursor cloud, branch `cursor/p0-matt-voice-phone-sheet-d3db`. PR only — Cos Mini cherry-picks + `npm run push`. Do not merge here.

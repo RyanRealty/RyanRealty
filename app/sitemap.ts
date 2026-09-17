@@ -114,6 +114,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     { url: `${baseUrl}/housing-market`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/months-of-supply`, lastModified: now, changeFrequency: 'weekly', priority: 0.55 },
     { url: `${baseUrl}/how-we-get-our-numbers`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
+    { url: `${baseUrl}/new-construction`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/housing-market/central-oregon`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
     { url: `${baseUrl}/housing-market/reports`, lastModified: now, changeFrequency: 'daily', priority: 0.65 },
     // Per-city market pages (mirror the generateStaticParams list in

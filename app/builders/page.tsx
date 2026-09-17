@@ -1,16 +1,16 @@
-// @data-free — E-CUT: this route only 301s to new-construction search. No listings.
+// @data-free — E-CUT: this route only 301s to /new-construction. No listings.
 import type { Metadata } from 'next'
 import { permanentRedirect } from 'next/navigation'
 
 /**
- * /builders folds into /homes-for-sale?newConstruction=1 (cut-list: builders
- * index never rose to the anchor-family floor). This file never renders UI.
+ * /builders folds into /new-construction (the dated Bend new-con page).
+ * This file never renders UI.
  */
 export const metadata: Metadata = {
   robots: { index: false, follow: true },
-  alternates: { canonical: '/homes-for-sale?newConstruction=1' },
+  alternates: { canonical: '/new-construction' },
 }
 
 export default function BuildersIndexPage() {
-  permanentRedirect('/homes-for-sale?newConstruction=1')
+  permanentRedirect('/new-construction')
 }

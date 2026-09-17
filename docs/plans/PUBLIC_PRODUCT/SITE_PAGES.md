@@ -63,6 +63,7 @@ Content is the point. **URLs** are what we cut.
 |---|---|---|
 | Home | `/` | Door. Full-bleed search hero with Buy/Sell tabs, buyer H1, Zillow-style house carousels, illustrated Buy/Sell/Work-with-us doors, brokers, places, proof. No Atlas on home. |
 | Search | `/homes-for-sale` and filtered paths | The buy job. One Field. |
+| New construction | `/new-construction` | Dated Bend-proper inventory + published builder financing (2026-09-16 snapshot). `/builders` 301s here. |
 | Listing | house URL | This house. |
 | Place indexes | `/cities`, `/neighborhoods`, `/communities`, `/subdivisions` | Directories. Not a fourth Bend. |
 | Place pages | `/cities/[city]`, `/cities/[city]/[hood]`, `/communities/[slug]`, `/subdivisions/[slug]`, `/zip/[zip]` | The landing pages. Spec in PLACE_PAGES.md. |
@@ -120,7 +121,7 @@ Do not keep a Vellum page “so the ad looks like an ad.”
 
 ### Cut only if empty
 
-`/motivated-sellers` if it is not a real product. `/builders` if it is a thin directory — otherwise keep as Places content. `/dev/*` stays off production chrome.
+`/motivated-sellers` if it is not a real product. `/builders` 301s to `/new-construction`. `/dev/*` stays off production chrome.
 
 ---
 
