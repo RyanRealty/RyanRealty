@@ -156,9 +156,12 @@
   color: var(--v3-ink);
 }
 
-/* Address field layout only. Error / success / focus live on the catalog
-   controls (beui-input shake + check, shadcn InputGroup rings). Do not
-   restyle those states to a navy border bump. */
+/* THE CATALOG CONTROL, PAINTED (beui-input, components/motion/input).
+   The shake, the drawn check, the affix and the reserved message row are the
+   demo's own — motion/react runs them. Everything below is paint: pill radius
+   to the register's square, destructive red to a heavier navy rule, the
+   emerald check to a navy stroke, the purple ring to warm stone. Two-class
+   selectors so the utility classes the catalog ships lose cleanly. */
 .sell-stage-field {
   display: grid;
   gap: var(--v3-space-3xs);
@@ -168,8 +171,94 @@
   position: relative;
 }
 
-.sell-stage-field__control [data-slot='input-group'] {
+.sell-field {
+  gap: var(--v3-space-3xs);
+}
+
+.sell-field .sell-field__label {
+  padding: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.sell-field .sell-field__box {
+  /* 44px of CONTROL, not a 44px box with a 40px control inside it: the catalog
+     ships h-11 on a border-box, so a 2px rule on each edge leaves the input
+     itself at 40 and ci:tap-targets measures the input. */
+  height: auto;
   min-block-size: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-section);
+  background: var(--v3-surface);
+  overflow: visible;
+  transition:
+    border-color var(--v3-dur-state) var(--v3-ease-out),
+    background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The catalog draws its focus and error rings as box-shadows in the shadcn
+   ring / destructive hues. Two colors only: the ring goes, the warm-stone
+   outline is the focus, and an error is a heavier navy rule.
+
+   SITE-111 (2026-09-16): error used to be ONLY a border-width bump with
+   box-shadow explicitly killed — the evaluator read that, correctly, as "a
+   border-colour change" indistinguishable from a repainted native input in a
+   still frame. The catalog demo pairs its destructive ring with a shake
+   (components/motion/input.tsx runs `animate(fieldRef, {x:[...]})` on
+   hasError, gated by the SAME useReducedMotion() this register already
+   respects — untouched here). A ring is the one piece of that pairing a
+   still CAN show, so it is restored: recolored navy instead of the demo's
+   red, flush instead of the focus ring's offset float so the two states read
+   as different gestures, plus a navy wash fill so the whole field — not just
+   its edge — reads as flagged once the shake has settled. Success carries NO
+   border treatment in the demo either (only the drawn check), so that state
+   is left exactly idle on purpose — the check is the entire signal. */
+.sell-field .sell-field__box[data-state='focused'] {
+  border-color: var(--v3-ink);
+  box-shadow: none;
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.sell-field .sell-field__box[data-state='error'] {
+  border-color: var(--v3-ink);
+  border-width: var(--v3-rule-weight-mast);
+  background: var(--v3-wash);
+  box-shadow: none;
+  outline: 3px solid var(--v3-ink);
+  outline-offset: 0;
+}
+
+.sell-field .sell-field__input {
+  min-block-size: var(--v3-tap);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  color: var(--v3-ink);
+  caret-color: var(--v3-ink);
+}
+
+.sell-field .sell-field__input::placeholder {
+  color: var(--v3-ink-muted);
+}
+
+.sell-field .sell-field__affix {
+  color: var(--v3-ink-muted);
+}
+
+.sell-field .sell-field__check {
+  color: var(--v3-ink);
+}
+
+.sell-field .sell-field__error {
+  padding: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
 }
 
 /* Pin map resolves inside the card once Places returns lat/lng — form-
@@ -238,10 +327,55 @@
   min-height: var(--v3-tap);
 }
 
-/* beui-expanding-arrow-button owns the motion. Width only here. */
+/* beui:expanding-arrow-button adapt — cream-on-navy trail on hover/focus,
+   not lime. Keeps the filled primary as the one Value my home ask. */
 .v3.v3-stage .sell-stage-ask .sell-stage-submit {
   margin-block-start: var(--v3-space-2xs);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v3-space-xs);
   width: 100%;
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  opacity: 0.55;
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow span {
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow span:last-child {
+  opacity: 1;
+  width: 0;
+  height: 0;
+  border-radius: 0;
+  background: transparent;
+  border-block: 0.28rem solid transparent;
+  border-inline-start: 0.4rem solid currentColor;
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit:hover .sell-stage-submit__arrow,
+.v3.v3-stage .sell-stage-ask .sell-stage-submit:focus-visible .sell-stage-submit__arrow {
+  opacity: 1;
+  transform: translateX(0.15rem);
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit:hover .sell-stage-submit__arrow span,
+.v3.v3-stage .sell-stage-ask .sell-stage-submit:focus-visible .sell-stage-submit__arrow span {
+  opacity: 1;
 }
 
 /* Quiet scroll affordance keyed to what's next (#proof / The record). It sits
