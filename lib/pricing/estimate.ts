@@ -15,6 +15,7 @@ import type { CmaSiteData } from '@/lib/cma/county'
 import { attachSellerNet, resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
+import { closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
@@ -679,8 +680,12 @@ export function adjustCmaCompAlongMarket(opts: {
   // Matt 2026-09-17: storyAdjustment is permanently 0 (kill story-adj entirely).
   const storyAdj = storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice)
   const adjustedPrice = timeAdjustedPrice + sizeAdjustment + storyAdj
-  const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - sale.sqft) / subjectSqft) : 1
-  const recency = 1 / (1 + monthsSinceClose / 12)
+  // Matt 2026-09-17: Recommended weighted toward more recent/similar closeds.
+  const weight = closedCompWeight({
+    subjectSqft,
+    saleSqft: sale.sqft,
+    monthsSinceClose,
+  })
   const adjusted: CmaAdjustedComp = {
     ...sale,
     monthsSinceClose: +monthsSinceClose.toFixed(1),
@@ -690,7 +695,7 @@ export function adjustCmaCompAlongMarket(opts: {
     sizeAdjustment,
     storyAdjustment: storyAdj,
     adjustedPrice,
-    weight: +(sizeProximity * recency).toFixed(4),
+    weight,
   }
   const pathNote =
     opts.exclusivePocket === true
