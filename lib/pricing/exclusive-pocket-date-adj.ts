@@ -1,5 +1,5 @@
 /**
- * Exclusive-pocket date-adjust residual (Canter 2026-09-15 08:15 PT).
+ * Exclusive-pocket date-adjust + story-adj residual (Canter 2026-09-15 → 2026-09-17).
  *
  * Admin already owns picker exclusivity (SaddleStone / Horse Back / Ranch in;
  * Clearpine / Forest Edge / Grand Peaks out). Do not reopen that path.
@@ -9,8 +9,12 @@
  * picker excluded and pumps recommend from the Flex ~$649–675k sold/list
  * band toward ~$800k+. Flex uses nearer list/sold without that pump.
  *
- * When the selected set stayed exclusive, date-adjust does not apply the
- * city-index factor. Size and story still run. The printed basis says so.
+ * When the selected set stayed exclusive:
+ * - date-adjust does not apply the city-index factor
+ * - story adjustment (one-story ±13.5%) does not apply either — that was the
+ *   residual +$90k lift on 1025/995 Horse Back after date-adj landed (be4bc0da).
+ * Size still runs. When the pocket is starved and the picker widens, tiers leave
+ * exclusive and both adjustments may run again.
  */
 
 import type { MarketPath } from '@/lib/pricing/market-path'
@@ -24,6 +28,11 @@ const EXCLUSIVE_TIER = /^(pocket-|subdivision-|own-street-)/
 export const TIME_ADJUSTMENT_MEASURE_POCKET = 'sold and last-ask prices in this exclusive pocket'
 
 export const TIME_ADJUSTMENT_BASIS_POCKET = 'exclusive-pocket-sold-list' as const
+
+/** Matt 2026-09-17 gold gate — Canter recommend must sit near FlexMLS ~$659k. */
+export const FLEX_CANTER_RECOMMEND = 659_000
+export const FLEX_CANTER_LOW = 649_000
+export const FLEX_CANTER_HIGH = 675_000
 
 export function selectionIsExclusivePocket(tiersUsed: readonly string[]): boolean {
   if (tiersUsed.some((t) => WIDEN_TIER.test(t))) return false
@@ -46,7 +55,16 @@ export function applyExclusivePocketDateAdj(path: MarketPath, exclusivePocket: b
   }
 }
 
+/**
+ * Exclusive pocket: refuse the one-story ±13.5% story lift. Pocket sales are
+ * the market; story class is for widened / starved sets only.
+ */
+export function applyExclusivePocketStoryAdj(rawStoryAdj: number, exclusivePocket: boolean): number {
+  if (!exclusivePocket) return rawStoryAdj
+  return 0
+}
+
 export function exclusivePocketPathNote(address: string, cityPath: MarketPath): string {
   const pct = ((cityPath.factor - 1) * 100).toFixed(1)
-  return `${address}: exclusive pocket — date adjustment not applied along the city index (would have been ${pct}%). Sold and last-ask stay as recorded; size still adjusts.`
+  return `${address}: exclusive pocket — date adjustment not applied along the city index (would have been ${pct}%). Sold and last-ask stay as recorded; size still adjusts; story class does not.`
 }

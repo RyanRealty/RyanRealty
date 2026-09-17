@@ -38,6 +38,7 @@ import {
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 import {
   applyExclusivePocketDateAdj,
+  applyExclusivePocketStoryAdj,
   exclusivePocketPathNote,
   selectionIsExclusivePocket,
   TIME_ADJUSTMENT_BASIS_POCKET,
@@ -270,7 +271,7 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: `exclusive pocket — city_slug='${opts.citySlug}' index computed but not applied`,
       },
-      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price, then size.${would}`,
+      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price, then size — story class does not adjust.${would}`,
     }
   }
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
@@ -625,7 +626,7 @@ export function adjustCompAlongMarket(opts: {
   asOf: string
   /** Hydrated first-list DOM from `selection.comps`. Overlay after sale rebuild. */
   hydrated?: HydratedClosedCompDom | null
-  /** Exclusive pocket: do not apply the city-index date-adjust factor. */
+  /** Exclusive pocket: refuse city-index date-adjust and story-class lift. */
   exclusivePocket?: boolean
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   return adjustCmaCompAlongMarket({
@@ -656,12 +657,13 @@ export function adjustCmaCompAlongMarket(opts: {
   saleStory: StoryClass
   points: MarketIndexPoint[]
   asOf: string
-  /** Exclusive pocket: do not apply the city-index date-adjust factor. */
+  /** Exclusive pocket: refuse city-index date-adjust and story-class lift. */
   exclusivePocket?: boolean
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   const sale = opts.comp
+  const exclusivePocket = opts.exclusivePocket === true
   const cityPath = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
-  const path = applyExclusivePocketDateAdj(cityPath, opts.exclusivePocket === true)
+  const path = applyExclusivePocketDateAdj(cityPath, exclusivePocket)
   const timeAdjustedPrice = timeAdjustAlongPath(sale.closePrice, path)
   const timeAdjustment = timeAdjustedPrice - sale.closePrice
   const monthsSinceClose = Math.max(
@@ -672,7 +674,10 @@ export function adjustCmaCompAlongMarket(opts: {
   const ppsfTimeAdjusted = sale.sqft > 0 ? timeAdjustedPrice / sale.sqft : 0
   const sizeAdjustment =
     subjectSqft > 0 ? Math.round((subjectSqft - sale.sqft) * ppsfTimeAdjusted * SIZE_ADJ_FACTOR) : 0
-  const storyAdj = storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice)
+  const storyAdj = applyExclusivePocketStoryAdj(
+    storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice),
+    exclusivePocket,
+  )
   const adjustedPrice = timeAdjustedPrice + sizeAdjustment + storyAdj
   const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - sale.sqft) / subjectSqft) : 1
   const recency = 1 / (1 + monthsSinceClose / 12)

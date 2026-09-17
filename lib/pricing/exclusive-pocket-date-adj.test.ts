@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyExclusivePocketDateAdj,
+  applyExclusivePocketStoryAdj,
   exclusivePocketPathNote,
   selectionIsExclusivePocket,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
@@ -47,5 +48,19 @@ describe('applyExclusivePocketDateAdj', () => {
     expect(applied.capped).toBe(true)
     expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/exclusive pocket/)
     expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/21\.0%/)
+    expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/story class/)
+  })
+})
+
+describe('applyExclusivePocketStoryAdj', () => {
+  it('passes through when the set widened (pocket starved)', () => {
+    expect(applyExclusivePocketStoryAdj(94_500, false)).toBe(94_500)
+    expect(applyExclusivePocketStoryAdj(-94_500, false)).toBe(-94_500)
+  })
+
+  it('zeros story lift on an exclusive pocket', () => {
+    expect(applyExclusivePocketStoryAdj(94_500, true)).toBe(0)
+    expect(applyExclusivePocketStoryAdj(-94_500, true)).toBe(0)
+    expect(applyExclusivePocketStoryAdj(0, true)).toBe(0)
   })
 })
