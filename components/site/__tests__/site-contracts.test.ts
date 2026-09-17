@@ -556,7 +556,7 @@ describe('design directive contracts', () => {
   })
 
   it('D107 — closed-sales explorer year picker starts at 1998', () => {
-    const src = readSrc('app/housing-market/history/_v3/HistoryFilterSheet.client.tsx')
+    const src = readSrc('app/housing-market/history/_v3/history-query.ts')
     expect(src).toMatch(/HISTORY_FROM_YEAR = 1998/)
     expect(src).not.toMatch(/YEAR_OPTIONS = \[2016/)
   })
