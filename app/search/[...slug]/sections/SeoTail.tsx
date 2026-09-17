@@ -23,6 +23,7 @@ import { type buildMarketFaq } from '@/lib/site/market-faq'
 import { type buildPresetFaq } from '@/lib/site/preset-faq'
 import { type getAllCityHomesLink } from '../../../../lib/popular-searches'
 import { type SearchPreset } from '../resolve-slug'
+import { relatedSearchWhenLabel } from '@/lib/search/related-search-when-label'
 
 /** Below-fold SEO depth: market snapshot band, the asking-price ladder, city +
  *  preset FAQs, preset cross-links, and the related-searches link cloud (see
@@ -35,6 +36,8 @@ import { type SearchPreset } from '../resolve-slug'
  *  snapshot already opens — never a gallery, never above the listings. It
  *  bands the same tile array the snapshot's count and median publish from, so
  *  it costs no query and cannot disagree with the numbers above it. */
+
+
 export function SearchSeoTail({
   isPlainCityPage,
   relatedCitySlug,
@@ -99,7 +102,7 @@ export function SearchSeoTail({
     if (!link.href || !label) continue
     relatedRows.push({
       href: link.href,
-      when: v3Text(placeName),
+      when: v3Text(relatedSearchWhenLabel(link.href)),
       what: v3Text(label),
       id: link.href,
     })

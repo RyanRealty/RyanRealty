@@ -46,6 +46,7 @@ import {
   type SearchShapes,
   type ShapeSearchDeps,
 } from '@/lib/data/listings/searchShapes'
+import { dedupeListingTilesByStreet } from '@/lib/data/listings/dedupeListingTilesByStreet'
 
 // Shape schemas/types + the shapes execution paths live in searchShapes.ts —
 // re-exported here so existing importers (lib/data/index.ts) keep working.
@@ -617,8 +618,12 @@ async function fetchSearchListingsAll(
     // "0 matching homes" for the whole TTL — resilient wrapper pattern.
     throw new Error(`[searchListingsAll] supabase error: ${error.message}`)
   }
-  const rows = (data ?? []).map((row) => mvRowToTile(row as unknown as ListingSearchMvRow))
-  const totalCount = count ?? rows.length
+  const rows = dedupeListingTilesByStreet(
+    (data ?? []).map((row) => mvRowToTile(row as unknown as ListingSearchMvRow)),
+  )
+  const rawCount = (data ?? []).length
+  const removed = Math.max(0, rawCount - rows.length)
+  const totalCount = Math.max(0, (count ?? rawCount) - removed)
   return {
     rows,
     totalCount,
