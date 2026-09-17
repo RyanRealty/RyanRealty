@@ -42,12 +42,12 @@ const pages = [
     label: 'neighborhood page opening count names the neighborhood, not the city',
     forbid: /lead=\{`in \$\{cityName\}/,
     // Split + polygon-inventory face. H1 is neighborhoodHeadline
-    // (the neighborhood name). Face count is publishPlaceFace grain
+    // ("{neighborhood} homes for sale"). Face count is publishPlaceFace grain
     // neighborhood (inventory.activeCount), never "in ${cityName}".
     v3: {
       module: 'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
       builder: 'neighborhoodHeadline',
-      names: 'return placeName',
+      names: 'placeHomesForSaleHeading(placeName)',
     },
   },
   {
@@ -77,7 +77,7 @@ const pages = [
     path: 'app/subdivisions/[slug]/page.tsx',
     label: 'plat page opening names the plat, not the parent city alone',
     // The v3 Ledger/Field replaced KbHero here (2026-08-26). The heading is
-    // `Homes for sale in ${displayName}` and the count's own trace names the
+    // placeHomesForSaleHeading(displayName) and the count's own trace names the
     // plat: homesLedgerTrace interpolates the subdivision name, so the counted
     // set cannot read as the parent city's inventory.
     v3: {
