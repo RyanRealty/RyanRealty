@@ -4,7 +4,8 @@
   "contracts": [
     "split-closed-pending-active-summary-tables",
     "recommend-low-high-recommended-once",
-    "pin-map-subject-comps-status-legend-class"
+    "pin-map-subject-comps-status-legend-class",
+    "active-peers-dom-overpricing-signal-closed-only-recommend"
   ],
   "testFiles": [
     "lib/cma/canter-letter-flow.contract.test.ts"
