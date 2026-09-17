@@ -10,7 +10,7 @@
  * band toward ~$800k+. Flex uses nearer list/sold without that pump.
  *
  * When the selected set stayed exclusive, date-adjust does not apply the
- * city-index factor. Size still runs. Story adjustment is killed entirely
+ * city-index factor. Size and story do not adjust on the exclusive pocket (recommend as sold). Story is killed entirely
  * (Matt 2026-09-17) — even when the pocket is starved and widens one ring.
  */
 
@@ -65,5 +65,5 @@ export function applyExclusivePocketStoryAdj(_rawStoryAdj: number, _exclusivePoc
 
 export function exclusivePocketPathNote(address: string, cityPath: MarketPath): string {
   const pct = ((cityPath.factor - 1) * 100).toFixed(1)
-  return `${address}: exclusive pocket — date adjustment not applied along the city index (would have been ${pct}%). Sold and last-ask stay as recorded; size still adjusts; story class does not.`
+  return `${address}: exclusive pocket — date adjustment not applied along the city index (would have been ${pct}%). Sold and last-ask stay as recorded — size and story class do not adjust.`
 }

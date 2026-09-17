@@ -270,7 +270,7 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: `exclusive pocket — city_slug='${opts.citySlug}' index computed but not applied`,
       },
-      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price, then size — story class does not adjust.${would}`,
+      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price — size and story class do not adjust.${would}`,
     }
   }
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
@@ -671,8 +671,11 @@ export function adjustCmaCompAlongMarket(opts: {
   )
   const subjectSqft = opts.subject.sqft ?? 0
   const ppsfTimeAdjusted = sale.sqft > 0 ? timeAdjustedPrice / sale.sqft : 0
-  const sizeAdjustment =
+  // Matt 2026-09-17: exclusive pocket recommends from the pocket as sold —
+  // size and story do not inflate. Widened (starved one-ring) sets still size-adjust.
+  const rawSize =
     subjectSqft > 0 ? Math.round((subjectSqft - sale.sqft) * ppsfTimeAdjusted * SIZE_ADJ_FACTOR) : 0
+  const sizeAdjustment = exclusivePocket ? 0 : rawSize
   // Matt 2026-09-17: storyAdjustment is permanently 0 (kill story-adj entirely).
   const storyAdj = storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice)
   const adjustedPrice = timeAdjustedPrice + sizeAdjustment + storyAdj

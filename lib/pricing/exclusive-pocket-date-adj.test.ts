@@ -48,7 +48,7 @@ describe('applyExclusivePocketDateAdj', () => {
     expect(applied.capped).toBe(true)
     expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/exclusive pocket/)
     expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/21\.0%/)
-    expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/story class/)
+    expect(exclusivePocketPathNote('1025 E Horse Back', rising)).toMatch(/size and story/)
   })
 })
 
