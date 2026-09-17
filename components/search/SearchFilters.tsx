@@ -611,7 +611,8 @@ export default function SearchFilters({
             className="srch-morph"
             open={locationOpen}
             onOpenChange={(next) => setLocationOpen(next)}
-            placeholder={locationPlaceholder}
+            iconOnly
+            placeholder="Search places"
             items={morphItems.map((item) =>
               suggestToMorphItem(item, { onSelect: () => handleSuggestPick(item) }),
             )}

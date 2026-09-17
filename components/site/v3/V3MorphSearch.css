@@ -183,32 +183,5 @@
   }
 }
 
-/* Official MorphingSearch portals to document.body. Keep it above Places mega.
-   House paint on the portal (navy on cream, no glass) — the catalog file keeps
-   its backdrop-blur class so the install test still sees the demo source. */
-.v3-morph-overlay-root {
-  z-index: 300;
-}
-
-[data-v3-morph='trigger'],
-[data-v3-morph='panel'] {
-  background: var(--v3-surface) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: inset 0 0 0 2px var(--v3-ink) !important;
-}
-
-[data-v3-morph='trigger'] {
-  color: var(--v3-ink);
-}
-
-[data-v3-morph='dialog'] {
-  background: var(--v3-surface);
-  color: var(--v3-ink);
-}
-
-[data-v3-morph='dialog'] .text-foreground,
-[data-v3-morph='dialog'] .text-muted-foreground,
-[data-v3-morph='trigger'] + * .text-muted-foreground {
-  color: var(--v3-ink);
-}
+/* Official MorphingSearch portals to document.body. Do not restyle the
+   catalog shell — backdrop-blur-xl + layoutId panel is the demo. */

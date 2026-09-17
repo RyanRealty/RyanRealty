@@ -27,6 +27,8 @@ export type V3MorphSearchProps = {
   items?: readonly MorphingSearchItem[]
   onQueryChange?: (query: string) => void
   onSelect?: (item: MorphingSearchItem) => void
+  /** Official beUI closed trigger is the icon button that grows the panel. */
+  iconOnly?: boolean
   /** The field + submit row. Stays in the DOM for no-JS. */
   children: ReactNode
   /** Legacy results slot (unused when `items` is set). */
@@ -41,6 +43,7 @@ export function V3MorphSearch({
   items,
   onQueryChange,
   onSelect,
+  iconOnly = false,
   children,
   results,
   className,
@@ -67,6 +70,7 @@ export function V3MorphSearch({
           <MorphingSearch
             items={catalogItems}
             placeholder={placeholder}
+            iconOnly={iconOnly}
             {...(open !== undefined ? { open, onOpenChange } : { onOpenChange })}
             onQueryChange={onQueryChange}
             onSelect={onSelect}
