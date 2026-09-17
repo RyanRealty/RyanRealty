@@ -12,4 +12,11 @@ describe('V3Chrome catalog Search', () => {
     expect(search).toContain('MorphingSearch')
     expect(search).toContain('useSearchSuggest')
   })
+
+  it('SITE-121: overlay sits above sticky chrome and every suggest kind is fed', () => {
+    expect(search).toContain('overlayClassName="z-[150]"')
+    expect(search).toContain('rr-chrome-search-open')
+    expect(search).toContain('flattenSuggestions')
+    expect(search).toContain('keywords: [query]')
+  })
 })

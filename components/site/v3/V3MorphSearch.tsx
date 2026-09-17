@@ -32,6 +32,8 @@ export type V3MorphSearchProps = {
   /** Legacy results slot (unused when `items` is set). */
   results?: ReactNode
   className?: string
+  /** Portaled overlay z-index. Sticky docks sit at 40–100; default z-50 loses. */
+  overlayClassName?: string
 }
 
 export function V3MorphSearch({
@@ -44,6 +46,7 @@ export function V3MorphSearch({
   children,
   results,
   className,
+  overlayClassName = 'z-[150]',
 }: V3MorphSearchProps) {
   const catalogItems = items ? [...items] : []
   const useCatalog = catalogItems.length > 0 || onQueryChange != null || onSelect != null
@@ -73,6 +76,7 @@ export function V3MorphSearch({
             shortcut="f"
             emptyMessage="No places match that."
             className="v3-morph-search__catalog"
+            overlayClassName={overlayClassName}
           />
         </div>
       ) : null}

@@ -2,7 +2,7 @@
   "route": "app/search/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/search/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED site-v2 mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target. Homes opens on Field. Production search (MapSearchView + SearchFilters + SearchResults) IS the Field. Do not wrap it in V3Field: that would duplicate list+map.",
-  "competitiveTarget": "Redfin/Zillow-grade map search. Headline: search-as-you-move (pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch). Plus list\u2194map hover sync, photo popups on markers, mobile list/map toggle.",
+  "competitiveTarget": "Redfin/Zillow-grade map search. Headline: search-as-you-move (pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch). Plus list↔map hover sync, photo popups on markers, mobile list/map toggle.",
   "note": "E-HOMES-SEARCH 2026-08-13. Migrated leftover search chrome onto the v3 barrel. V3Chrome is sticky in flow on app/layout.tsx (recipe still says fixed; ignore that). This page does not remount chrome. Search belongs to the Homes Field, not the header. App-frame height is retargeted in app/search/search-frame.css off the sticky 3.5rem bar (globals.css still subtracts a 64px fixed overlay). Filter dock uses search-filter-dock under that bar. @no-breadcrumb stays: a Home > self trail on the highest-traffic page is waste. Map/split is viewport-fit and shows no footer at render; the V3Footer token stays in source for ci:default-chrome-footer / ci:kb-shared-shell. List view renders V3Footer outside <main>. KB-era deletions: KbFooter, kb.css, kb-root, pt-16 gap that assumed a fixed 64px nav. Capture unchanged: SearchAlertCapture. JSON-LD unchanged on the slug route (SearchPageJsonLd + Dataset MetadataBlock + preset FAQPage now from SeoTail MetadataBlock). Dual objectives and exits unchanged.",
   "requiredComponents": [
     {
@@ -46,15 +46,15 @@
   "layoutContracts": [
     "3-row chrome intent: Row 1 omnibox + Save/Alerts CTAs; Row 2 primary filter chips; Row 3 results count + filter summary + sort",
     "Degraded search honesty: SSR/client timeout or fetch failure must not present as true zero inventory without a retry/degraded affordance",
-    "Count/sort row: dedicated visible stamp in split (N homes \u00b7 scope/filters \u00b7 sorted by\u2026). 390 list names the list (N homes). in this map view only when the map is on screen.",
+    "Count/sort row: dedicated visible stamp in split (N homes · scope/filters · sorted by…). 390 list names the list (N homes). in this map view only when the map is on screen.",
     "390 filters are one All filters control. Chip set is sm+ so pills do not clip.",
     "Search-as-you-move: pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch",
     "Split body: map + results side-by-side on desktop; intentional mobile list/map toggle (not dual conflicting chrome)",
     "V3Chrome is sticky in flow, not fixed. Search-app-frame height is calc(100dvh - 3.5rem) with margin-top 0. Filter dock sticks at top 3.5rem.",
-    "SITE-44 basemap: every public Google map paints lib/maps/v3-basemap.ts \u2014 a navy-on-cream style array matched to V3Atlas's ladder (highway navy 34%, arterial 22%, local 10%, water 12%, boundary 55%, labels 70%). No mapId is ever passed: a Map ID makes Google discard the style array and serve a Cloud Console style this repo cannot read, which is how the search map came to be stock Google tiles. Google's own controls are off in one place (V3_MAP_CHROME_OFF); the wordmark and terms links stay, by the Maps terms of service.",
+    "SITE-44 basemap: every public Google map paints lib/maps/v3-basemap.ts — a navy-on-cream style array matched to V3Atlas's ladder (highway navy 34%, arterial 22%, local 10%, water 12%, boundary 55%, labels 70%). No mapId is ever passed: a Map ID makes Google discard the style array and serve a Cloud Console style this repo cannot read, which is how the search map came to be stock Google tiles. Google's own controls are off in one place (V3_MAP_CHROME_OFF); the wordmark and terms links stay, by the Maps terms of service.",
     "SITE-44 marks: clustering never stops (V3_CLUSTER_MAX_ZOOM) and merges anything closer than one mark's width (V3_CLUSTER_RADIUS_PX, with supercluster's extent pinned to the 256px tile so the radius means screen pixels). The opening fitBounds clears a mark and a half on every edge (v3FitPadding) and frames the boundary AND the pins, not the boundary alone. A mark that would still cross an edge slides in, and its caret slides the opposite way so it keeps pointing at its own house. A cluster badge's diameter is its count, and hovering it names the count and the ask range it holds.",
-    "SITE-44 claim: the results rail opens on a sentence, not a count \u2014 how many homes the frame draws, the ask range across them, the place, and a collapsed section 0 trace. It is derived from the same array the cards and the pins render, through publishWholePropertyAmount, so a lease rate and a fractional share never enter the range. The mobile peek carries the same claim beside the filter-match count, and each half names its own population.",
-    "SITE-44 card mark: every result card carries a price-per-square-foot position against the homes currently in view \u2014 a track for the full spread, a band for the middle half, a dot for this home (components/search/ppsf-band.ts). A home with no living area renders the mark's empty state rather than dropping it.",
+    "SITE-44 claim: the results rail opens on a sentence, not a count — how many homes the frame draws, the ask range across them, the place, and a collapsed section 0 trace. It is derived from the same array the cards and the pins render, through publishWholePropertyAmount, so a lease rate and a fractional share never enter the range. The mobile peek carries the same claim beside the filter-match count, and each half names its own population.",
+    "SITE-44 card mark: every result card carries a price-per-square-foot position against the homes currently in view — a track for the full spread, a band for the middle half, a dot for this home (components/search/ppsf-band.ts). A home with no living area renders the mark's empty state rather than dropping it.",
     "SITE-44 filter weights: Price and Beds/Baths are the row's heavy controls (srch-chip--key, 700); every other pill and the Save-search control sit at the row's base 500, and the two actions sit behind a hairline."
   ],
   "sectionOrder": [
@@ -70,11 +70,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts search --url http://127.0.0.1:3172/homes-for-sale?city=Bend --beat 32 \u2014 grok-4.6 via grok CLI, three scorings of the SITE-72 worktree first-viewport shots, separate from the grok-4.5 builder",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "evaluatedAt": "2026-09-17",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "claude-sonnet-5 Task judge (official grok / cursor-agent / claude CLIs missing in this cloud sandbox). Three independent scorings of take-route-shots search kit plates including search-open, morph-open, sheet-open. Builder grok-4.6. Do not invent demoMatch.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "grok-4.6",
     "shotSpec": {
       "routes": [
         "/homes-for-sale?city=Bend"
@@ -84,97 +84,107 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "search-open",
+        "morph-open",
+        "sheet-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3172/homes-for-sale?city=Bend on wt/site-72-20260910"
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3172/homes-for-sale?city=Bend"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/search/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/search/shots/mobile375.png",
+      "search-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/search-open-desktop.png",
+      "search-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/search-open-mobile375.png",
+      "morph-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/morph-open-desktop.png",
+      "morph-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/morph-open-mobile375.png",
+      "sheet-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-desktop.png",
+      "sheet-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-mobile375.png"
     },
-    "shotsHash": "sha256:7550e309aae7f2b6e03e9400ceac479f65333f21a48ece12754c8b4f9848c1a7",
+    "shotsHash": "sha256:5ca275d9d40c907cc3e8f319d15649ed5029e0629f5d782fa09349dca6912338",
     "scores": [
-      55,
-      63,
-      59
+      50,
+      52,
+      55
     ],
-    "score": 59,
+    "score": 52,
     "criteria": {
-      "designQuality": 18,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 10,
+      "designQuality": 17,
+      "originality": 9,
+      "interaction": 10,
+      "craft": 8,
       "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 18,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 10,
+      "design": 17,
+      "originality": 9,
+      "interaction": 10,
+      "craft": 8,
       "honesty": 8
     },
-    "beats": "Redfin Bend map search (https://www.redfin.com/city/16163/OR/Bend): this fold wins on reaching a broker (541.703.3095 and Save this search) and on citing Oregon Data Share; it loses the metric the class was told to beat \u2014 map-as-product \u2014 because Redfin encodes price on pins while this encodes headcount on cream-styled Google tiles. Also loses brand cartography vs V3Atlas on /cities/bend, which does not still wear a Google wordmark.",
+    "demoMatch": true,
+    "beats": "Zillow's map-search results page — this page beats it on data-source transparency (a visible SOURCE Oregon Data Share label plus a how we calculate this link sitting right on the result count), which Zillow never surfaces to a visitor.",
     "adaptedFrom": [
-      { "id": "beui-range-slider" },
-      { "id": "beui-morphing-search" },
-      { "id": "house-sheet" },
-      { "id": "house-atlas" }
+      {
+        "id": "beui-morphing-search"
+      },
+      {
+        "id": "beui-range-slider"
+      },
+      {
+        "id": "shadcn-command"
+      },
+      {
+        "id": "house-sheet"
+      },
+      {
+        "id": "house-atlas"
+      }
     ],
     "defects": [
       {
-        "section": "map pane",
+        "section": "All filters sheet — numeric field stack",
         "severity": "taste",
-        "finding": "Desktop still shows the Google wordmark, default +/\u2212 zoom, LOCATE, and Map data \u00a92026 Google on cream-tinted Google road tiles. Clusters (89 / 168 / 148 / 406) encode headcount, not price, so a buyer cannot read affordability from the field. This is a skin on Google, not house Atlas.",
-        "replaceWith": "map with data-encoded cells"
+        "finding": "Annual taxes, Est. monthly payment, Previous list price, Price/sqft, and Current rent render as five near-identical bordered text inputs stacked vertically with no icon, unit prefix, or visual differentiation from each other — a wall of inputs a template would generate, not a considered filter design.",
+        "replaceWith": "shadcn:input"
       },
       {
-        "section": "desktop listing rail",
-        "severity": "taste",
-        "finding": "The left half of the 1440 fold is a portal photo-price-spec stack (four-plus MLS cards). The thin mark under each spec line is mute \u2014 no label, no claim \u2014 so the rail is inventory chrome, not a drawing.",
-        "replaceWith": "stat tile with sparkline"
-      },
-      {
-        "section": "search field",
-        "severity": "taste",
-        "finding": "The Bend field is a static bordered input with a mic. It does not morph into results and it is not command search; both catalog jobs are missing from the first viewport.",
-        "replaceWith": "beui-morphing-search"
-      },
-      {
-        "section": "mobile cluster 406",
-        "severity": "taste",
-        "finding": "The strongest number on 375 is the 406 on Bend, and it has no sentence. The count is pushed into a cramped footer (1,223+ / 500 / $57K\u2013$5.0M) instead of a claim over the mark.",
-        "replaceWith": "hero figure"
-      },
-      {
-        "section": "listing card meter",
+        "section": "All filters sheet — checkbox row",
         "severity": "craft",
-        "finding": "Every desktop card has a hairline bar and dot under beds/baths/sqft with no unit or label, so the only per-row encoding cannot be read.",
-        "replaceWith": null
+        "finding": "Price reduced / Owner financing / Special assessment render as tiny, barely-visible boxes with plain text labels and no checked-state or icon treatment, so a meaningful filter reads as an afterthought at the bottom of the sheet.",
+        "replaceWith": "shadcn:checkbox"
       },
       {
-        "section": "mobile map dock",
-        "severity": "craft",
-        "finding": "SAVED AREAS, Map/List/SORT, and the inventory line stack onto the map and clip the south of the field; DRAW and Showing Bend only compete with the 406.",
-        "replaceWith": null
+        "section": "Header search + filter-bar location morph",
+        "severity": "taste",
+        "finding": "Both the header MorphingSearch and the filter-bar location field expand into the same flat five-row list (city name plus a gray City/Community label) with no icon, thumbnail, or grouping — the field-grows-into-results interaction is real, but the result list itself is a bare default combobox rather than a designed search object.",
+        "replaceWith": "shadcn-command"
       },
       {
-        "section": "price range labels",
+        "section": "Map / split results",
+        "severity": "taste",
+        "finding": "The map's only encoded data is cluster counts and price-tag pins; nothing in the rest or open shots shows a listing preview, photo thumbnail, or hover-card, so the map reads as a count display, not the richer place-and-listing atlas its name implies.",
+        "replaceWith": "house-atlas"
+      },
+      {
+        "section": "Mobile filter chip row",
         "severity": "craft",
-        "finding": "Desktop list header says $57K\u2013$4.2M for 500 homes on this map; mobile footer says $57K\u2013$5.0M next to 1,223+ and 500. Same fold, two maxima, no sentence saying which set the range belongs to.",
+        "finding": "At 375px the chip row (Places: Bend / Filters / Save Search) is hard-clipped at the right edge with no fade or arrow affordance, so Save Search looks cut off rather than intentionally scrollable.",
         "replaceWith": null
       }
     ],
-    "verdict": "Better than a 32: the tiles are cream, clusters are navy, the tick-stop price slider landed, and 500 is sourced to Oregon Data Share \u2014 it is no longer a default Google embed with no chrome. Not a 70: Google still signs the map, the desktop rail is portal cards, and the search box did not morph or become command; replace the basemap with house-atlas cells that encode price, make each listing a labeled sparkline, and put beui-morphing-search in the field.",
+    "verdict": "This closes the prior cream-box gap: the price control is a real ticked navy range slider and the location field genuinely grows into a results list, so demoMatch holds. But past the header it's still the portal floor — a stacked wall of identical filter inputs, a bare combobox instead of a designed search object, and a map that only counts rather than previews — competent and on-brand, not a page that beats Zillow or Redfin at their own game. Score 52 is below the 70 finish line; rebaseline is not done.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 75,
-      "evaluatorModel": "sonnet",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:fe34a159f9dd25c306c8670718834fd54f9307e87089d56c1bc9e69122bc13e4",
-      "note": "HEAD receipt before SITE-72: sonnet / v1-2026-09-08 / 75. Different instrument from grok-4.6 / v1-2026-09-10."
+      "evaluatedAt": "2026-09-10",
+      "score": 59,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:7550e309aae7f2b6e03e9400ceac479f65333f21a48ece12754c8b4f9848c1a7",
+      "honestyFunction": 8,
+      "note": "SITE-72 grok-4.6 / v1-2026-09-10 first-viewport mark. Different instrument from this claude-sonnet-5 / v1-2026-09-12 / open-state shotsHash."
     },
-    "rebaselineReason": "Instrument changed on three identity keys: evaluatorModel (sonnet \u2192 grok-4.6), rubricVersion (v1-2026-09-08 \u2192 v1-2026-09-10), and shotsHash (recaptured first viewport after V3Range + V3MorphSearch + MapChrome fold work). Median 59 is the first mark on this instrument; the next pass must rise above it. Accept bar for SITE-72 seed was above 32."
+    "rebaselineReason": "Instrument changed on evaluatorModel (grok-4.6 → claude-sonnet-5), rubricVersion (v1-2026-09-10 → v1-2026-09-12), and shotsHash (recaptured rest plus search-open, morph-open, sheet-open after SITE-121 phone morph + filter-bar open-on-tap)."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

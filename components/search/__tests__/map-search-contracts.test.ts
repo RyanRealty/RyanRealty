@@ -860,7 +860,9 @@ describe('search index filter dock (E-SEARCH-REFINE)', () => {
   const page = readSrc('app/search/page.tsx')
 
   it('keeps a visually-hidden h1 without the noisy title above filters', () => {
-    expect(page).toMatch(/<h1 className="sr-only">Homes for sale<\/h1>/)
+    expect(page).toMatch(/<h1 className="sr-only">/)
+    expect(page).toMatch(/resultsCount/)
+    expect(page).toMatch(/buildSearchTitle\(filters\)/)
     expect(page).not.toMatch(/const h1Place =/)
     expect(page).not.toMatch(/const h1Text =/)
     expect(page.match(/<h1\b/g)?.length).toBe(1)

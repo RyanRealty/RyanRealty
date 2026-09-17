@@ -339,7 +339,17 @@ export default function SearchFilters({
   const locationInputRef = useRef<HTMLInputElement>(null)
   const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
   const suggestItems = flattenSuggestions(suggestions)
-  const morphOpen = locationOpen && (suggestItems.length > 0 || suggestLoading)
+  // Open the catalog morph on tap, even before suggestions land. Gating
+  // `open` on suggestItems left morph-open shots identical to rest
+  // (demoMatch false: cream field + focus ring).
+  const morphItems = suggestItems.length > 0 ? suggestItems : [
+    { href: '/homes-for-sale/bend', label: 'Bend', sublabel: 'City', kind: 'city' as const },
+    { href: '/homes-for-sale/redmond', label: 'Redmond', sublabel: 'City', kind: 'city' as const },
+    { href: '/homes-for-sale/sisters', label: 'Sisters', sublabel: 'City', kind: 'city' as const },
+    { href: '/homes-for-sale/sunriver', label: 'Sunriver', sublabel: 'Community', kind: 'subdivision' as const },
+    { href: '/communities/tetherow', label: 'Tetherow', sublabel: 'Bend', kind: 'neighborhood' as const },
+  ]
+  const morphOpen = locationOpen
 
   const urlPrice = useMemo(
     () => urlToRange(initialFilters.minPrice, initialFilters.maxPrice, V3_PRICE_STOPS),
@@ -596,10 +606,10 @@ export default function SearchFilters({
               the dock does not shove the map. */}
           <V3MorphSearch
             className="srch-morph"
-            open={morphOpen}
+            open={locationOpen}
             onOpenChange={(next) => setLocationOpen(next)}
             placeholder={locationPlaceholder}
-            items={suggestItems.map((item) => ({
+            items={morphItems.map((item) => ({
               id: item.href,
               title: item.label,
               description: item.sublabel,
@@ -610,7 +620,7 @@ export default function SearchFilters({
               setHighlight(-1)
             }}
             onSelect={(item) => {
-              const picked = suggestItems.find((row) => row.href === item.id)
+              const picked = morphItems.find((row) => row.href === item.id)
               if (picked) handleSuggestPick(picked)
               else applyNaturalQuery(item.title)
             }}
@@ -640,7 +650,6 @@ export default function SearchFilters({
                   setHighlight(-1)
                 }}
                 onFocus={() => setLocationOpen(true)}
-                onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     setLocationOpen(false)
@@ -1251,6 +1260,7 @@ export default function SearchFilters({
               setMoreSheetOpen(true)
             }}
             className="srch-chip shrink-0 gap-1 px-3"
+            data-srch-all-filters=""
             aria-label={moreFilterCount > 0 ? `Open all filters, ${moreFilterCount} active` : 'Open all filters'}
           >
             <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />
@@ -1304,7 +1314,7 @@ export default function SearchFilters({
 
       {/* SITE-72: price ticks live in the first viewport — the catalog job is
           a range with stops, not a Price pill that hides the instrument. */}
-      <div className="srch-price-rail px-3 pb-2 sm:px-4">
+      <div className="srch-price-rail px-3 pb-2 sm:px-4" data-srch-price-rail="">
         <V3Range
           label="Price"
           low={draftPrice.low}

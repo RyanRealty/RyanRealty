@@ -88,6 +88,20 @@
   max-width: min(18rem, 42vw);
 }
 
+/* SITE-121: while the header morph is open, drop the sticky chrome under the
+   portaled sheet. iOS paints position:sticky above later position:fixed
+   siblings even when the portal is z-150. */
+html.rr-chrome-search-open .v3.v3-chrome {
+  z-index: 1;
+}
+
+@media (max-width: 56.24rem) {
+  .v3-chrome__search-morph {
+    width: 3rem;
+    max-width: none;
+  }
+}
+
 /* MorphingSearch closed trigger: keep tap floor, navy/cream via tokens on page. */
 .v3-chrome__search-morph button {
   min-width: var(--v3-tap);

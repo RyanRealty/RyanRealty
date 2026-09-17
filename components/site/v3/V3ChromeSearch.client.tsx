@@ -85,6 +85,11 @@ export function V3ChromeSearch() {
     if (!next) setQuery('')
   }, [])
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('rr-chrome-search-open', open)
+    return () => document.documentElement.classList.remove('rr-chrome-search-open')
+  }, [open])
+
   return (
     <div className="v3-chrome__search">
       <MorphingSearch

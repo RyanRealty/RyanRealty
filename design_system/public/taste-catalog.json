@@ -62,6 +62,15 @@
         "backdrop-blur-xl"
       ]
     },
+    "shadcn-command": {
+      "add": "command",
+      "file": "components/ui/command.tsx",
+      "import": "@/components/ui/command",
+      "house": "components/search/SearchSuggest.tsx"
+    },
+    "shadcn:command": {
+      "aliasOf": "shadcn-command"
+    },
     "beui:morphing-search": {
       "aliasOf": "beui-morphing-search"
     },
@@ -2520,6 +2529,11 @@
           "url": "https://ui.shadcn.com/docs/components/command",
           "job": "Command search. Adapt into v3, do not paste radix chrome on the public map."
         }
+      ],
+      "demoStates": [
+        "search-open=.v3-chrome__search [aria-haspopup=dialog]!click",
+        "morph-open=.srch-morph [aria-haspopup=dialog]!click",
+        "sheet-open=[data-srch-all-filters]!click"
       ]
     },
     "sell": {
