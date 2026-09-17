@@ -134,8 +134,8 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-17",
-    "evaluator": "separate claude-sonnet-5 evaluator (Cursor Task). grok CLI, cursor-agent, and claude CLI were not installed in this sandbox, so the chain could not sign via taste-evaluate.ts. Builder is grok-4.6. Three scorings in one call (55 / 58 / 52). The route publishes no competitiveBrief.",
+    "evaluatedAt": "2026-09-16",
+    "evaluator": "separate claude-sonnet-5 evaluator (Cursor Task). grok CLI, cursor-agent, and claude CLI were not installed in this sandbox, so the chain could not sign via taste-evaluate.ts. Builder is grok-4.6. Three scorings in one call (57 / 61 / 54). The route publishes no competitiveBrief.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "grok-4.6",
     "rubricVersion": "v1-2026-09-12",
@@ -156,7 +156,7 @@
         "address-ok",
         "answer-open"
       ],
-      "capture": "first viewport, custom Playwright open-state capture against next dev --webpack -p 3111, scale 1, palette-quantized. default: page as served. address-focus: #get-value-address click framed on #get-value. ask-open: [data-taste=ask-open] click. address-error: type abc + submit, await .sell-field__error. address-ok: fill 61271 Kwinnum Dr, Bend, OR 97702 without submit, await [data-taste=address-confirm] and data-sell-focus=pinned. answer-open: type full street + submit, await .sell-answer (180s)."
+      "capture": "first viewport, scripts/take-route-shots.mjs plus a 180s Playwright wait for answer-open, scale 1, palette-quantized, against next dev --webpack -p 3111. default: page as served. address-focus: #get-value-address@#get-value!click. ask-open: [data-taste=ask-open]@#get-value!click (expanding-arrow trail). address-error: #get-value-address!type:abc --await .sell-field__error. address-ok: /sell?address=61271%20Kwinnum%20Dr,%20Bend,%20OR%2097702. answer-open: type full street --await .sell-answer (sheet with sourced MOS + days-to-pending)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/sell/shots/sell-1440.png",
@@ -172,34 +172,37 @@
       "answerOpenDesktop": "design_system/ryan-realty/ui_kits/sell/shots/answer-open-1440.png",
       "answerOpen375": "design_system/ryan-realty/ui_kits/sell/shots/answer-open-375.png"
     },
-    "shotsHash": "sha256:5629cf5d863f7b10eda93429e64adaa92606c2344e845f6d297fedb95519b662",
+    "shotsHash": "sha256:c0c798830a10f5f3b345c5e54688f1b25cfcbdc28978187319ee47c12f1bd8b4",
     "scores": [
-      55,
-      58,
-      52
+      57,
+      61,
+      54
     ],
-    "score": 55,
+    "score": 57,
     "criteria": {
-      "designQuality": 16,
-      "originality": 11,
+      "designQuality": 15,
+      "originality": 14,
       "interaction": 10,
       "craft": 10,
       "honestyFunction": 8
     },
     "demoMatch": false,
-    "beats": "Beats Zillow's generic Zestimate seller flow by tying the ask to a real, sourced Bend inventory sheet (609 active vs 176.5/mo absorption, 25-day median DOM) keyed to the exact street typed, not a single opaque number.",
+    "beats": "Zillow seller-advertise entry (zillow.com/seller-advertise): this page wins on sourced local market depth (months-of-supply bar plus a days-to-pending scrubber with a how we calculate this link, surfaced before any contact is asked). It loses on hero reframe toward the typed street \u2014 address-ok still shows the same aerial as the empty field.",
     "adaptedFrom": [
       {
-        "id": "house-stage"
+        "id": "beui-expanding-arrow-button"
+      },
+      {
+        "id": "shadcn-input-group"
       },
       {
         "id": "beui-input"
       },
       {
-        "id": "beui-expanding-arrow-button"
+        "id": "shadcn:sheet"
       },
       {
-        "id": "shadcn:sheet"
+        "id": "house-stage"
       },
       {
         "id": "house-sheet"
@@ -207,49 +210,49 @@
     ],
     "defects": [
       {
-        "section": "Hero / Stage aerial",
+        "section": "Stage hero card (sell-1440/375, address-ok-1440/375)",
         "severity": "taste",
-        "finding": "sell-1440 and address-ok-1440 show the identical aerial crop and zoom; the only change on address entry is a flat dark scrim over the same frame. There is no pan, zoom, or reframe toward the typed street, so the house-stage form-specific reframe demo never actually happens.",
+        "finding": "The class brief calls for a form-specific dim/reframe toward the typed street once an address is entered. Comparing address-ok-1440 to sell-1440, the background is the identical aerial in both \u2014 no reframe keyed to the address.",
         "primitive": "components/site/v3/V3Stage.tsx",
         "replaceWith": "house-stage"
       },
       {
-        "section": "Value my home button (ask-open)",
+        "section": "Value my home button, open state (ask-open-1440/375)",
         "severity": "taste",
-        "finding": "On open, the navy accent-tile button loses its fill, icon, and label and becomes a plain cream pill filled with scattered round dots fading toward one edge. The judge did not read a chevron or directional arrow trail, so demoMatch stayed false.",
+        "finding": "The brief names beui-expanding-arrow-button dotted-chevron trail. The judge read the five fading DottedChevron marks as generic sparkle clusters, not a directional chevron trail, so demoMatch stayed false.",
         "primitive": "components/motion/expanding-arrow-button.tsx",
         "replaceWith": "beui-expanding-arrow-button"
       },
       {
-        "section": "Address field, mobile (address-ok-375)",
-        "severity": "craft",
-        "finding": "The pill still truncates the street text even after a successful match. The full address repeats as a second line under the field.",
+        "section": "Address field states (address-focus, address-error, address-ok)",
+        "severity": "taste",
+        "finding": "Across focus/error/success the stills show border color, a reserved error line, and a success check. The judge did not treat those as the beui-input shake/path-draw demo (motion cannot appear in a still) and scored demoMatch false.",
         "primitive": "app/sell/_v3/SellAddressField.tsx",
-        "replaceWith": "house-sheet"
+        "replaceWith": "beui-input"
       },
       {
-        "section": "THE RECORD (below Stage)",
-        "severity": "taste",
-        "finding": "THE RECORD still reads as an eyebrow-then-heading band under the Stage rather than a distinct section form.",
-        "primitive": "app/sell/page.tsx",
+        "section": "Address input, mobile success state (address-ok-375)",
+        "severity": "craft",
+        "finding": "The confirmed address truncates inside the 375px field so a seller cannot read the full street and ZIP before submit.",
+        "primitive": "app/sell/_v3/SellAddressField.tsx",
         "replaceWith": null
       },
       {
-        "section": "Mobile bottom bar (all shots at 375)",
-        "severity": "craft",
-        "finding": "The fixed bottom action bar clips its first label under the left edge of the viewport.",
-        "primitive": "components/site/v3/V3PhoneDock.client.tsx",
+        "section": "Hero card + THE RECORD section (sell-1440, address-focus-1440)",
+        "severity": "taste",
+        "finding": "The hero card and THE RECORD block under it repeat the same eyebrow-heading-row shape with no change in density, width, or media between them.",
+        "primitive": "app/sell/page.tsx",
         "replaceWith": null
       }
     ],
-    "verdict": "demoMatch is false as returned. The beUI input states and the shadcn Sheet with sourced MOS bars are the real gain. The judge did not accept the Stage dim as a street reframe, and read the expanding-arrow trail as a dot cluster rather than a chevron. Honest false. Node stays in_progress. No house paint after this mark.",
+    "verdict": "demoMatch is false as returned. The sheet with sourced MOS bars is the real gain; the fold a visitor sees first is still a photo-and-card ask, and the judge did not accept the expanding-arrow trail or input states as the named demos. Honest false. Node stays in_progress. No house paint after this mark.",
     "comparedToPrior": "fell",
     "priorMark": {
       "evaluatedAt": "2026-09-16",
-      "score": 57,
+      "score": 63,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:c0c798830a10f5f3b345c5e54688f1b25cfcbdc28978187319ee47c12f1bd8b4"
+      "shotsHash": "sha256:ca0a40c899b41088450ec1ee404d854a648d194e253e07d2555eafbdf5b8deef"
     }
   },
   "contentFloor": {
