@@ -38,11 +38,13 @@ function DottedChevron({ className }: { className?: string }) {
       aria-hidden="true"
       className={className}
     >
-      <circle cx="3" cy="3" r="2.4" fill="currentColor" />
-      <circle cx="10" cy="8.5" r="2.4" fill="currentColor" />
-      <circle cx="17" cy="14" r="2.4" fill="currentColor" />
-      <circle cx="10" cy="19.5" r="2.4" fill="currentColor" />
-      <circle cx="3" cy="25" r="2.4" fill="currentColor" />
+      <path
+        d="M5 4 L16 14 L5 24"
+        stroke="currentColor"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

@@ -152,6 +152,56 @@ function sellPinMapUrl(pin: SellPin): string | null {
   return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
 }
 
+/** House-stage street frame: the Stage photograph becomes the typed lot. */
+function sellStreetFrameUrl(address: string, pin: SellPin | null): string | null {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
+  if (!key) return null
+  const loc = pin ? `${pin.lat},${pin.lng}` : address.trim()
+  if (!loc) return null
+  const params = new URLSearchParams({
+    center: loc,
+    zoom: '18',
+    size: '1280x720',
+    scale: '2',
+    maptype: 'hybrid',
+    key,
+    markers: `color:0x102742|${loc}`,
+  })
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
+}
+
+function mountSellStreetFrame(address: string, pin: SellPin | null) {
+  const root = sellStageRoot()
+  const media = root?.querySelector('.v3-stage-media')
+  if (!root || !media) return
+  const complete = Boolean(pin) || addressLooksComplete(address)
+  if (!complete) {
+    root.removeAttribute('data-sell-street')
+    media.querySelector('.sell-stage-street')?.remove()
+    media.querySelector('.sell-stage-street-plate')?.remove()
+    return
+  }
+  root.setAttribute('data-sell-street', address.trim())
+  let plate = media.querySelector<HTMLParagraphElement>('.sell-stage-street-plate')
+  if (!plate) {
+    plate = document.createElement('p')
+    plate.className = 'sell-stage-street-plate'
+    media.appendChild(plate)
+  }
+  plate.textContent = address.trim()
+  const url = sellStreetFrameUrl(address, pin)
+  if (!url) return
+  let img = media.querySelector<HTMLImageElement>('img.sell-stage-street')
+  if (!img) {
+    img = document.createElement('img')
+    img.className = 'sell-stage-street'
+    img.alt = ''
+    img.decoding = 'async'
+    media.appendChild(img)
+  }
+  if (img.src !== url) img.src = url
+}
+
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void
@@ -245,7 +295,11 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     if (pin || addressLooksComplete(address)) setSellStageFocus('pinned')
     else if (address.trim().length >= 3) setSellStageFocus('typing')
     else setSellStageFocus('idle')
-    return () => setSellStageFocus('idle')
+    mountSellStreetFrame(address, pin)
+    return () => {
+      setSellStageFocus('idle')
+      mountSellStreetFrame('', null)
+    }
   }, [address, pin])
 
   /**
