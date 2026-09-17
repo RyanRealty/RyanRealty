@@ -824,7 +824,6 @@ export default async function CentralOregonRegionPage() {
             heading={v3Text('Newest houses on the market')}
             rows={[firstForSaleRow, ...restForSaleRows]}
             source={v3Text(forSaleLedger.source)}
-            sourceName={v3Text('Oregon Data Share MLS')}
             action={{ label: v3Text('Browse every home for sale'), href: listingsBrowsePath() }}
           />
         ) : null}
