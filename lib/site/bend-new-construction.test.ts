@@ -4,8 +4,13 @@ import {
   BEND_NEW_CON_FINANCING,
   BEND_NEW_CON_HEADLINE,
   BEND_NEW_CON_NAMED,
+  BEND_NEW_CON_LEAD_NAMES,
+  BEND_NEW_CON_LEDE,
   BEND_NEW_CON_PRIMARY,
   BEND_NEW_CON_SEARCH_HREF,
+  bendNewConLeadRows,
+  bendNewConRestPrimary,
+  financingHighlight,
   BEND_NEW_CON_SINGLE,
   BEND_NEW_CON_UNSPECIFIED,
   BEND_NEW_CONSTRUCTION_DESCRIPTION,
@@ -103,5 +108,24 @@ describe('Bend new-construction snapshot', () => {
     expect(BEND_NEW_CON_SINGLE.every((row) => row.active === 1)).toBe(true)
     expect(bendNewConWeight(20)).toBe(1)
     expect(bendNewConWeight(10)).toBe(0.5)
+  })
+
+  it('leads with Parkside, then Calaveras, then Easton', () => {
+    expect([...BEND_NEW_CON_LEAD_NAMES]).toEqual([
+      'Parkside Place Phase 1',
+      'Calaveras',
+      'Easton',
+    ])
+    expect(BEND_NEW_CON_LEDE).toMatch(/\$399,990/)
+    expect(bendNewConLeadRows().map((row) => row.name)).toEqual([...BEND_NEW_CON_LEAD_NAMES])
+    expect(bendNewConRestPrimary().some((row) => row.name === 'Easton')).toBe(false)
+    expect(financingHighlight({
+      id: 'pahlisch-golden-key',
+      builder: 'Pahlisch Homes',
+      title: 'Golden Key',
+      flags: ['UNVERIFIED'],
+      terms: [],
+      sources: [],
+    }).value).toBe('3% / $20,000')
   })
 })

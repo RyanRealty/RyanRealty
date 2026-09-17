@@ -1,10 +1,10 @@
-# Current — 2026-09-17 (Bend new-construction factual page)
+# Current — 2026-09-17 (Bend new-construction craft raise)
 
-Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR only — Cos Mini lands. Do not merge here. Not Tip Ready (no catalog SITE class / no parity kit).
+Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR #278. PR only — Cos Mini lands. Do not merge. Not Tip Ready (no catalog SITE class).
 
-- **Page.** `/new-construction` — 2026-09-16 PT snapshot: Bend-proper Active bands + published builder financing. Caldera excluded. `/builders` 301s here.
-- **Flags kept.** Pahlisch 4.99% UNVERIFIED; Hayden Summer Savings STALE + NOT DISCLOSED; Horton flyer vs community page CONFLICT (not merged).
-- **Gates.** `ci:gates` 161/161. Tip SHA: none.
+- **Fold.** Compact Stage + Parkside → Calaveras → Easton shadcn carousel (`NewConLeadShelf`). Not a ledger above the fold.
+- **Financing.** V3Answers with flag figures, sourced doors. Snapshot numbers unchanged.
+- **Gates.** `ci:gates` 147/147. Tip SHA: none.
 - Skills read: `VOICE.md`, `TASTE.md`, `.cursor/skills/site-queue/SKILL.md`.
 
 # Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)

@@ -1,0 +1,70 @@
+/**
+ * Live photographed homes for the affordable SFR lead — Parkside, Calaveras,
+ * Easton, in that order. Snapshot bands stay in bend-new-construction.ts.
+ * This file only turns DAL tiles into rail cards.
+ */
+import { attachListingCardExtras } from '@/lib/data'
+import type { ListingTile } from '@/lib/data/types/listing'
+import { homeRailRows, enrichHomeRailRows, type HomeRailCard } from '@/app/_v3/home-rail-items'
+import {
+  BEND_NEW_CON_SEARCH_HREF,
+  BEND_NEW_CON_STAGE_FALLBACK_POSTER,
+  bendNewConSearchHref,
+  type NewConInventoryRow,
+} from '@/lib/site/bend-new-construction'
+
+export type NewConLeadBand = {
+  key: string
+  label: string
+  row: NewConInventoryRow
+  href: string
+  cards: HomeRailCard[]
+}
+
+export type NewConLeadShelfData = {
+  posterSrc: string
+  bands: NewConLeadBand[]
+}
+
+function leadLabel(row: NewConInventoryRow): string {
+  const floor = row.priceBand.split('–')[0]?.trim() || row.priceBand
+  return `${row.name.split(',')[0]} · ${floor}`
+}
+
+export async function buildNewConLeadShelf(
+  leads: readonly NewConInventoryRow[],
+  tilesByName: readonly (readonly ListingTile[])[],
+): Promise<NewConLeadShelfData> {
+
+  const allTiles = tilesByName.flat()
+  const rail = homeRailRows(allTiles, {
+    nowMs: Date.now(),
+    regionalHref: BEND_NEW_CON_SEARCH_HREF,
+    bendHref: BEND_NEW_CON_SEARCH_HREF,
+    priceCutsHref: '/price-drops',
+    newHref: '/homes-for-sale/bend?newConstruction=1&sort=newest',
+  })
+  const keys = rail.flatMap((row) => row.cards.map((card) => card.listingKey))
+  const extras = await attachListingCardExtras(keys).catch(() => new Map())
+  const enriched = enrichHomeRailRows(rail, extras)
+  const byKey = new Map(enriched.flatMap((row) => row.cards.map((card) => [card.listingKey, card])))
+
+  const bands: NewConLeadBand[] = leads.map((row, i) => {
+    const cards = (tilesByName[i] ?? [])
+      .map((tile) => byKey.get(tile.listingKey))
+      .filter((card): card is HomeRailCard => Boolean(card))
+    return {
+      key: row.name,
+      label: leadLabel(row),
+      row,
+      href: bendNewConSearchHref(row.name),
+      cards,
+    }
+  })
+
+  const firstPhoto =
+    bands.flatMap((band) => band.cards).find((card) => card.photoUrls[0])?.photoUrls[0] ??
+    BEND_NEW_CON_STAGE_FALLBACK_POSTER
+
+  return { posterSrc: firstPhoto, bands }
+}
