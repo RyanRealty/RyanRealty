@@ -36,6 +36,11 @@
       "blocking": true
     },
     {
+      "name": "TeamClosings",
+      "section": "#closings-rail. shadcn carousel + Card of recorded closings: photo, address, ClosePrice, beds/baths/sqft, listing door. The 375 first-viewport differentiator and the desktop fold companion.",
+      "blocking": true
+    },
+    {
       "name": "V3Atlas",
       "section": "#closings. Every closing the three brokers hold on the MLS that carries a coordinate, on one field, built with the same dot builder /team/[slug] uses for one broker. Answers the taste table's 'no map of where they sell' and gives the route a second section.",
       "blocking": true
@@ -179,6 +184,7 @@
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
     "AboutFaces -- the brokers, each with one record figure of their own",
+    "TeamClosings #closings-rail -- recorded closings as carousel Cards",
     "V3Atlas #closings -- every Ryan Realty broker closing with a coordinate",
     "V3Footer"
   ],

@@ -44,6 +44,11 @@ export type AboutFaceRecord = {
   trace: string
   /** The source's short name for the folded clause. */
   sourceName: string
+  /**
+   * Trailing-month closing counts (oldest → newest). Present when the figure
+   * is a closing count so the face can draw a sparkline of the same window.
+   */
+  series?: readonly number[]
 }
 
 export type AboutFace = {

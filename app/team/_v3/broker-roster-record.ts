@@ -53,6 +53,25 @@ function tally(names: readonly (string | null | undefined)[]): { name: string; n
     .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))
 }
 
+/** Oldest → newest monthly closing counts for the trailing `months` window. */
+export function monthlyClosingSeries(
+  sales: readonly BrokerSaleTile[],
+  now: Date,
+  months = 12,
+): number[] {
+  const buckets = Array.from({ length: months }, () => 0)
+  const nowY = now.getUTCFullYear()
+  const nowM = now.getUTCMonth()
+  for (const sale of sales) {
+    if (!sale.CloseDate || sale.ClosePrice == null || Number(sale.ClosePrice) <= 0) continue
+    const day = new Date(sale.CloseDate)
+    if (Number.isNaN(day.getTime())) continue
+    const idx = months - 1 - ((nowY - day.getUTCFullYear()) * 12 + (nowM - day.getUTCMonth()))
+    if (idx >= 0 && idx < months) buckets[idx] += 1
+  }
+  return buckets
+}
+
 /** "Bend and Redmond" / "Bend, Redmond and Sisters". Never a bare slug list. */
 export function placesSentence(places: readonly { name: string }[]): string {
   const names = places.map((p) => p.name)
@@ -82,8 +101,9 @@ export function brokerRosterRecord(input: {
       value: String(recent.length),
       label: recent.length === 1 ? 'closing in the last 12 months' : 'closings in the last 12 months',
       places,
-      placesSummary: places.length > 0 ? 'Cities' : 'How this is counted',
+      placesSummary: 'Source',
       sourceName: 'Closed MLS sales',
+      series: monthlyClosingSeries(closed, now),
       trace:
         `Closed MLS sales through Oregon Data Share, every closing recorded for ${input.name} on either side of the deal ` +
         `(list side by list_agent_email, buy side by buyer_agent_mls_id), with a recorded ClosePrice and a CloseDate on or after ${cutoff}: ` +
@@ -105,8 +125,9 @@ export function brokerRosterRecord(input: {
       value: String(closed.length),
       label: closed.length === 1 ? `closed sale on record${span}` : `closed sales on record${span}`,
       places,
-      placesSummary: places.length > 0 ? 'Cities' : 'How this is counted',
+      placesSummary: 'Source',
       sourceName: 'Closed MLS sales',
+      series: monthlyClosingSeries(closed, now),
       trace:
         `Closed MLS sales through Oregon Data Share, every closing recorded for ${input.name} on either side of the deal ` +
         `(list side by list_agent_email, buy side by buyer_agent_mls_id) with a recorded ClosePrice: ${closed.length} rows, ` +
