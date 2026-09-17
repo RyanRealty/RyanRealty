@@ -1,13 +1,17 @@
 /**
- * SITE-116 — the authored amenity list, shaped for beautifului InsightCards.
+ * SITE-116 — amenity names from the community config, shaped for InsightCards.
  *
  * WHY IT IS NOT QUIET. Amenities used to be chip rows inside #belonging. That
  * made the thing a master-planned community is sold on — the course-facing
  * dining room, the spa, the courts, the park across the road — a supporting
  * list under HOA and drive times. Matt 2026-09-14/15: the amenities are the
  * page. This module does not invent a place. It groups the config's own
- * `amenities[]` and counts the share of that authored list. Those shares are
- * composition of a recorded list, not a market figure, and the trace says so.
+ * `amenities[]`. Shares are composition of that list, not a market figure.
+ *
+ * VISITOR COPY (Matt 2026-09-16). Public prose names what is on the grounds.
+ * It never lectures "authored amenity list", "on file", or "records N
+ * amenities". The catalog pager still prints a page count; the title is a
+ * fixed visitor label, not "Amenities" + index.
  *
  * THE CARD IS THE CATALOG'S. AllocationCard (pager + segmented bar + chips)
  * is the installed beautifului InsightCards object. This file only supplies
@@ -51,6 +55,9 @@ export type CommunityAmenityBoard = {
 }
 
 export type AmenityPostRef = { slug: string; title: string }
+
+/** Catalog pager title. Fixed visitor English — not "Amenities" + page index. */
+export const AMENITY_INSIGHT_TITLE = "What's here"
 
 /** Largest-remainder percents that sum to 100. Zero total yields zeros. */
 export function integerShares(weights: readonly number[]): number[] {
@@ -150,29 +157,24 @@ export function buildCommunityAmenityBoard(input: {
     label,
     count: list.length,
     pct: mixShares[i] ?? 0,
-    amount: list.length === 1 ? '1 on file' : `${list.length} on file`,
+    amount: joinEnglish(list.map((amenity) => amenityLabel(amenity)!)),
     cls: `insight-cards__alloc-seg--${i % 3}`,
     tone: '',
   }))
 
-  const noun = usable.length === 1 ? 'amenity' : 'amenities'
-  const claim = `${placeName}'s authored amenity list is ${usable.length} ${noun}: ${joinEnglish(names)}.`
+  const claim = `${placeName} has ${joinEnglish(names)}.`
 
   const categories: AmenityCategoryPage[] = categoryEntries.map(([label, list], i) => {
     const shares = integerShares(list.map(() => 1))
     const tokens = new Set<string>()
     const first = list[0]!
     const firstPost = first.blog_slug ? posts[first.blog_slug] : undefined
+    const categoryNames = list.map((amenity) => amenityLabel(amenity)!)
     return {
       key: `amenity-${i}-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
       label,
-      claim:
-        list.length === 1
-          ? `${placeName} records one ${label.toLowerCase()} amenity on file: ${amenityLabel(first)}.`
-          : `${placeName} records ${list.length} ${label.toLowerCase()} amenities on file: ${joinEnglish(list.map((a) => amenityLabel(a)!))}.`,
-      note:
-        trimmed(first.description) ??
-        `Share of the authored ${label.toLowerCase()} amenities on file for ${placeName}. Not a live inventory count.`,
+      claim: categoryClaim(label, categoryNames),
+      note: trimmed(first.description) ?? `${joinEnglish(categoryNames)}.`,
       pill: firstPost?.title
         ? firstPost.title
         : `See ${placeName} homes`,
@@ -182,7 +184,7 @@ export function buildCommunityAmenityBoard(input: {
         label: amenityLabel(amenity)!,
         count: 1,
         pct: shares[j] ?? 0,
-        amount: trimmed(amenity.access) ?? 'On file',
+        amount: trimmed(amenity.access) ?? 'On site',
         cls: `insight-cards__alloc-seg--${j % 3}`,
         tone: '',
       })),
@@ -195,12 +197,19 @@ export function buildCommunityAmenityBoard(input: {
     claim,
     names,
     mix,
-    mixNote: `Share of the ${usable.length} authored ${noun} on file for ${placeName}, grouped by the category the community config records. Not a live inventory count.`,
+    mixNote: 'Grouped by kind.',
     mixPill: `See ${placeName} homes`,
     mixPillHref: browseHref,
     categories,
-    source: `Authored ${placeName} amenity list on file. Names, access, and categories come from data/resort-community-*.json. Not MLS inventory.`,
+    source: `Amenity names come from the ${placeName} community guide. Not MLS inventory.`,
   }
+}
+
+function categoryClaim(label: string, names: readonly string[]): string {
+  const listed = joinEnglish(names)
+  if (label === 'On site' || label === 'Other') return `${listed}.`
+  if (names.length === 1) return `${listed} is the ${label.toLowerCase()} here.`
+  return `${label} here is ${listed}.`
 }
 
 export function amenityItemListItems(
