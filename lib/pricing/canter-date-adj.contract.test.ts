@@ -18,6 +18,7 @@ import {
   priceCmaSet,
 } from '@/lib/pricing/estimate'
 import {
+  CANTER_MIN_CLOSED_COMPS,
   FLEX_CANTER_HIGH,
   FLEX_CANTER_LOW,
   FLEX_CANTER_RECOMMEND,
@@ -177,6 +178,18 @@ function horseBackPocketSet(): SelectedPricingComp[] {
       closeDate: '2026-06-01',
       closePpsf: 347,
     }),
+    sale({
+      listingKey: 'HB-1010',
+      listNumber: '220199910',
+      address: '1010 E Horse Back',
+      closePrice: 662_000,
+      lastAsk: 669_000,
+      originalAsk: 669_000,
+      sqft: 1890,
+      closeDate: '2025-12-01',
+      closePpsf: 350,
+      selectionTier: 'pocket-12mo',
+    }),
   ]
 }
 
@@ -295,13 +308,12 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
   })
 
   /**
-   * Residual after be4bc0da: date-adj 0% but one-story subject vs two-story
-   * Horse Back sales still applied ±13.5% (~+$91k / +$95k on 1025/995).
-   * Cos cancelled the story-adj tip Sep 15; Matt 2026-09-17 gold gate refuses
-   * Tip Ready unless recommend stays near FlexMLS ~$659k.
+   * Matt 2026-09-17: kill story-adj entirely. Even a widened (starved) set
+   * must not reintroduce the ±13.5% one-story lift. Tip Ready/--ship refuses
+   * if any adjusted sale carries a non-zero storyAdjustment.
    */
-  it('contract: story-adj-pumps-horse-back-toward-800k', () => {
-    const rows = horseBackPocketSet().map((row) =>
+  it('contract: story-adj-killed-entirely', () => {
+    const exclusive = horseBackPocketSet().map((row) =>
       adjustCompAlongMarket({
         subject: subject(),
         subjectStory: 'one',
@@ -312,8 +324,6 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
         exclusivePocket: true,
       }),
     )
-    // Without the exclusive-pocket story refuse, adjustedPrice would lift ~13.5%.
-    // Prove the raw storyAdjustment math still exists off the refuse path:
     const widened = horseBackPocketSet().map((row) =>
       adjustCompAlongMarket({
         subject: subject(),
@@ -325,16 +335,7 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
         exclusivePocket: false,
       }),
     )
-    const storyLift = widened.map((r) => r.adjusted.storyAdjustment)
-    expect(Math.min(...storyLift)).toBeGreaterThanOrEqual(80_000)
-    const { cover, built } = recommendFrom(
-      widened.map((r) => r.adjusted),
-      false,
-    )
-    expect(cover.recommended).toBeGreaterThanOrEqual(PUMP_FLOOR)
-    expect(built?.recommended).toBeGreaterThanOrEqual(PUMP_FLOOR)
-    // exclusive path zeros story even when stories mismatch
-    for (const row of rows) {
+    for (const row of [...exclusive, ...widened]) {
       expect(row.adjusted.storyAdjustment).toBe(0)
     }
   })
@@ -373,12 +374,20 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
       rows.map((r) => r.adjusted),
       true,
     )
-    // Matt gold gate: Tip Ready/--ship refuse outside Flex sold/list band.
     expect(cover.recommended).toBeGreaterThanOrEqual(FLEX_CANTER_LOW - 10_000)
     expect(cover.recommended).toBeLessThanOrEqual(FLEX_CANTER_HIGH + 15_000)
     expect(built?.recommended).toBeGreaterThanOrEqual(FLEX_CANTER_LOW - 10_000)
     expect(built?.recommended).toBeLessThanOrEqual(FLEX_CANTER_HIGH + 15_000)
     const mid = cover.recommended!
     expect(Math.abs(mid - FLEX_CANTER_RECOMMEND)).toBeLessThanOrEqual(40_000)
+  })
+
+  it('contract: refuse-fewer-than-5-closed-comps', () => {
+    const closed = horseBackPocketSet()
+    expect(closed.length).toBeGreaterThanOrEqual(5)
+    // Tip Ready refuse: a kept set under 5 closed is not shippable for Canter.
+    const under = closed.slice(0, 4)
+    expect(under.length).toBeLessThan(5)
+    expect(under.length).toBeLessThan(CANTER_MIN_CLOSED_COMPS)
   })
 })

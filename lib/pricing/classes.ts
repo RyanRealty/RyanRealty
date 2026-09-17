@@ -653,21 +653,25 @@ export function acreageInfrastructureCompatible(
   return horseInfrastructureCompatible(subject.remarks, comp.remarks)
 }
 
-/** Measured one-story premium vs two-story, same 1600–2200 GLA band, 2024+ CO SFR. */
+/**
+ * Historical one-story premium vs two-story (1600–2200 GLA, 2024+ CO SFR).
+ * Kept as a named constant for docs/tests that prove the OLD inflate; it is
+ * not applied anywhere after Matt 2026-09-17 (kill story-adj entirely).
+ */
 export const ONE_STORY_PREMIUM = 0.135
 
 /**
- * Dollar story adjustment AFTER time + GLA. Same story = 0. Unknown = 0.
- * Subject one / comp two → add the premium (comp understates a ranch).
+ * Dollar story adjustment AFTER time + GLA.
+ *
+ * Matt 2026-09-17 HARD LOCK (Cos): kill story-adj entirely — no automatic
+ * price bumps on comps. Recommend from the pocket as sold. Tip Ready/--ship
+ * refuses if any path reintroduces a non-zero story lift.
  */
-export function storyAdjustment(subject: StoryClass, comp: StoryClass, timeAdjustedPrice: number): number {
-  if (subject === 'unknown' || comp === 'unknown' || subject === comp) return 0
-  if (subject === 'one' && (comp === 'two' || comp === 'three_plus')) {
-    return Math.round(timeAdjustedPrice * ONE_STORY_PREMIUM)
-  }
-  if ((subject === 'two' || subject === 'three_plus') && comp === 'one') {
-    return Math.round(-timeAdjustedPrice * ONE_STORY_PREMIUM)
-  }
+export function storyAdjustment(
+  _subject: StoryClass,
+  _comp: StoryClass,
+  _timeAdjustedPrice: number,
+): number {
   return 0
 }
 
