@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
-import { trackPageView } from '@/lib/tracking'
+import { applyVisitBrokerToGtag, trackPageView } from '@/lib/tracking'
 import { pageTypeFromPath } from '@/lib/analytics/page-type'
 
 /**
@@ -23,8 +23,12 @@ export default function PageViewTracker() {
 
   function stampPageType() {
     if (typeof window === 'undefined') return
+    const broker = applyVisitBrokerToGtag()
     window.dataLayer = window.dataLayer || []
-    window.dataLayer.push({ page_type: pageType })
+    window.dataLayer.push({
+      page_type: pageType,
+      ...(broker ? { broker_slug: broker.broker_slug, assigned_broker: broker.assigned_broker } : {}),
+    })
     if (typeof window.gtag === 'function') {
       window.gtag('set', { page_type: pageType })
     }

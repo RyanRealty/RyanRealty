@@ -5,6 +5,7 @@
  * Event names from Section 30.3 (GA4 Custom Event Taxonomy).
  */
 
+import { resolveClientVisitBroker, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
 import { trackEventWithCAPI } from '@/lib/meta-pixel-helpers'
 
 declare global {
@@ -137,11 +138,32 @@ export function trackEvent(eventName: EventName, params: Record<string, unknown>
 }
 
 /**
+ * Stamp `assigned_broker` (USER) + `broker_slug` (EVENT) when ?agent= or the
+ * attribution cookie names a broker. Same param names as fireLeadGenerated.
+ * Returns the fields so callers can attach them to this page_view.
+ */
+export function applyVisitBrokerToGtag(): { broker_slug: string; assigned_broker: string } | null {
+  const fields = visitBrokerGa4Fields(resolveClientVisitBroker())
+  if (!fields) return null
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+    window.gtag('set', 'user_properties', fields.userProperties)
+  }
+  return {
+    broker_slug: fields.eventParams.broker_slug,
+    assigned_broker: fields.userProperties.assigned_broker,
+  }
+}
+
+/**
  * Push a page view to window.dataLayer (e.g. for virtual page views or SPA updates).
+ * When broker attribution is known, the event carries broker_slug and the user
+ * property assigned_broker is set — not only on generate_lead.
  */
 export function trackPageView(pageType: string, params: Record<string, unknown> = {}) {
-  pushDataLayer({ event: 'page_view', page_type: pageType, ...params })
-  fireGaEvent('page_view', { page_type: pageType, ...params })
+  const broker = applyVisitBrokerToGtag()
+  const withBroker = broker ? { broker_slug: broker.broker_slug, ...params } : params
+  pushDataLayer({ event: 'page_view', page_type: pageType, ...withBroker })
+  fireGaEvent('page_view', { page_type: pageType, ...withBroker })
 }
 
 // ----------------------------------------------------------------------------

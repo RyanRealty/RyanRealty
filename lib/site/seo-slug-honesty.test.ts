@@ -154,6 +154,10 @@ describe('GTM and gtag do not both configure GA4', () => {
     const inline = gtm.slice(gtm.indexOf('__html'))
     expect(inline.indexOf("consent','default'")).toBeGreaterThan(-1)
     expect(inline.indexOf("consent','default'")).toBeLessThan(inline.indexOf('gtm.js'))
+    // First-paint broker user property must queue before gtm.js page_view.
+    expect(inline).toMatch(/user_properties[\s\S]*assigned_broker/)
+    expect(inline.indexOf('assigned_broker')).toBeGreaterThan(-1)
+    expect(inline.indexOf('assigned_broker')).toBeLessThan(inline.indexOf('gtm.js'))
   })
 })
 
