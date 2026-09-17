@@ -1,3 +1,11 @@
+# Current — 2026-09-16 (P0 Caldera amenities visitor copy — PR only)
+
+Surface: Cursor cloud `bc-c090e444-3805-5518-a95a-cbcc06b55006`, branch `cursor/caldera-amenity-visitor-copy-5006`. PR only — do not merge. Cos Mini lands.
+
+- **P0 Matt 2026-09-16 phone shot.** `/communities/caldera-springs` amenities no longer ships "authored amenity list" / "on file" / "records N amenities" / "Amenities 5". Claim is visitor English (`Caldera Springs has Lake House, …`). InsightCards title is `What's here`. Section lede dropped so the H2 is not repeated.
+- **Evidence.** `app/communities/[slug]/_v3/community-amenities.test.ts` 8/8 (unit+int). Founding: Caldera claim has no `authored`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+
 # Current — 2026-09-16 (SITE-119 Tip Ready PR — floor counter ignores aria-hidden)
 
 Surface: Cursor cloud `cursor-cloud-cos-fleet-20260916-1626`, branch `cursor/site-119-floor-aria-hidden-0301`. PR only — do not merge. Node left `in_progress` (Cos Mini lands).

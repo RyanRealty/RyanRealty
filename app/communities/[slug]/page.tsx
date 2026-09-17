@@ -1104,7 +1104,6 @@ async function renderCommunityDetail({ params }: Props) {
             id="amenities"
             eyebrow={`${publicName} · Amenities`}
             heading={`What ${publicName} has on the ground`}
-            lede={amenityBoard.claim}
             source={amenityBoard.source}
           >
             <CommunityAmenities board={amenityBoard} />
