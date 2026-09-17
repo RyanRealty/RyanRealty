@@ -113,6 +113,31 @@ export default function GoogleAnalytics() {
           // the data sent to Google Ads. Required for Consent Mode v2
           // compliance.
           gtag('set', 'ads_data_redaction', true);
+          // First-paint broker user property so GTM/gtag page_view is not
+          // Direct-only when the visitor arrived on ?agent= / cookie.
+          (function () {
+            try {
+              var agent = new URLSearchParams(window.location.search || '').get('agent');
+              if (!agent) {
+                var m = document.cookie.match(/(?:^|; )rr_agent_attribution=([^;]*)/);
+                if (m) {
+                  try {
+                    var parsed = JSON.parse(decodeURIComponent(m[1]));
+                    agent = parsed && parsed.slug;
+                  } catch (e) {
+                    agent = decodeURIComponent(m[1]);
+                  }
+                }
+              }
+              if (!agent) return;
+              agent = String(agent).trim().toLowerCase();
+              var map = { matt: 'matt', 'matt-ryan': 'matt', rebecca: 'rebecca', 'rebecca-peterson': 'rebecca', paul: 'paul', 'paul-stevenson': 'paul' };
+              var slug = map[agent];
+              if (!slug) return;
+              gtag('set', 'user_properties', { assigned_broker: slug });
+              window.dataLayer.push({ broker_slug: slug, assigned_broker: slug });
+            } catch (e) {}
+          })();
         `}
       </Script>
 

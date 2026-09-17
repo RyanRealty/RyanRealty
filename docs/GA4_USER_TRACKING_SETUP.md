@@ -108,13 +108,13 @@ The codebase fires GA4 events with rich custom params already (see `lib/lead-tra
 | Dimension name | Scope | User property / Event parameter | Description |
 |---|---|---|---|
 | **User ID** | User | user_id | The hashed FUB-person identifier set by AnalyticsIdentityBridge |
-| **Assigned broker** | User | assigned_broker | matt / rebecca / paul |
+| **Assigned broker** | User | assigned_broker | matt / rebecca / paul — set on visit `page_view` when `?agent=` / `rr_agent_attribution` is known, not only on `generate_lead` |
 | **LP variant** | Event | lp_variant | Which landing page / form fired the event (`seller-home-value`, `expired-listing`, etc.) |
 | **LP source** | Event | lp_source | utm_source captured at form submit |
 | **LP medium** | Event | lp_medium | utm_medium |
 | **LP campaign** | Event | lp_campaign | utm_campaign — **this is the one that breaks out FB ads by campaign name** |
 | **LP content** | Event | lp_content | utm_content (FB ad set name when using the convention below) |
-| **Broker slug** | Event | broker_slug | The broker assigned at form-submit time |
+| **Broker slug** | Event | broker_slug | The broker on the visit (`page_view` / `listing_view`) and at form-submit (`generate_lead`) |
 | **Lead classification** | Event | lead_classification | hot / warm / nurture |
 | **Lead type** | Event | lead_type | seller / buyer / listing_inquiry / exit_intent / page_cta |
 

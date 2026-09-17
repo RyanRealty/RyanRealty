@@ -1,3 +1,12 @@
+# Current — 2026-09-17 (GA broker visit attribution)
+
+Surface: Cursor cloud, branch `cursor/ga-broker-visit-attribution-22d2`. PR only — Cos Mini lands. Do not merge.
+
+- **UTMs.** `attributeSiteLinks` fills missing `utm_source=crm` + `utm_medium=email` (live CRM pair) and `utm_content=agent-<slug>` (`utm_term` only when content is already a creative). Existing listing-alert / market-report / CMA UTMs stay.
+- **Visit props.** `assigned_broker` (USER) + `broker_slug` (EVENT) on client `trackPageView` / first-paint GTM+gtag set, and on `/api/visitors/track` MP `page_view` when `?agent=` / cookie / agent UTM is known.
+- **Tests.** `lib/analytics/visit-broker.test.ts`, `lib/tracking.page-view.test.ts`, attributed-links + identity-stamp UTM cases. Not a SITE catalog class.
+- Skills read: `docs/UTM_TRACKING_CONVENTION.md`, `docs/GA4_USER_TRACKING_SETUP.md`.
+
 # Current — 2026-09-17 (Bend new-construction SFR-first)
 
 Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR #278. PR only — Cos Mini lands. Do not merge. Not Tip Ready (no catalog SITE class / `@no-parity`).

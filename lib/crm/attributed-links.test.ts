@@ -10,6 +10,18 @@ const OPTS = {
 }
 
 describe('attributeOutbound', () => {
+  it('adds broker UTMs when the destination has none', () => {
+    const html = '<a href="https://ryan-realty.com/homes-for-sale">Browse</a>'
+    const out = attributeOutbound(html, OPTS)
+    const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
+    const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString()) as { u: string }
+    const u = new URL(payload.u)
+    expect(u.searchParams.get('utm_source')).toBe('crm')
+    expect(u.searchParams.get('utm_medium')).toBe('email')
+    expect(u.searchParams.get('utm_content')).toBe('agent-matt-ryan')
+    expect(u.searchParams.get('agent')).toBe('matt-ryan')
+  })
+
   it('stamps ?agent=<broker> onto a ryan-realty.com link', () => {
     const html = '<a href="https://ryan-realty.com/homes-for-sale">Browse</a>'
     const out = attributeOutbound(html, OPTS)
@@ -51,7 +63,7 @@ describe('attributeOutbound', () => {
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
     expect(payload.u).toBe(
-      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report&agent=matt-ryan&_fuid=9001&_pid=4242#market-report',
+      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report&agent=matt-ryan&_fuid=9001&_pid=4242&utm_content=agent-matt-ryan#market-report',
     )
   })
 
@@ -136,6 +148,20 @@ describe('attributeUrl', () => {
   it('stamps ?agent=<broker> onto a bare URL (SMS / non-HTML case)', () => {
     const out = attributeUrl('https://ryan-realty.com/cma/deer-run', 'matt-ryan')
     expect(out).toContain('agent=matt-ryan')
+    expect(out).toContain('utm_content=agent-matt-ryan')
+  })
+
+  it('preserves pre-existing utm_* on a bare URL and still adds the broker content tag', () => {
+    const out = attributeUrl(
+      'https://ryan-realty.com/search?utm_source=ryan-realty&utm_medium=email&utm_campaign=listing-alerts',
+      'matt-ryan',
+    )
+    const u = new URL(out)
+    expect(u.searchParams.get('utm_source')).toBe('ryan-realty')
+    expect(u.searchParams.get('utm_medium')).toBe('email')
+    expect(u.searchParams.get('utm_campaign')).toBe('listing-alerts')
+    expect(u.searchParams.get('utm_content')).toBe('agent-matt-ryan')
+    expect(u.searchParams.get('agent')).toBe('matt-ryan')
   })
 
   it('stamps _fuid when provided', () => {

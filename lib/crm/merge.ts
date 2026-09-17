@@ -22,6 +22,7 @@
  * Server send paths build the context via lib/crm/merge-context.ts
  * (buildMergeContext) so agent/sender/company always resolve from real data.
  */
+import { stampCrmOutboundUtms } from '@/lib/analytics/visit-broker'
 import { formatDate } from '@/lib/format/date'
 
 export type MergeToken = {
@@ -316,6 +317,10 @@ export function renderCrmMerge(
  * cookie (AgentAttributionBridge), so the site features THAT broker in lead
  * routing and broker-facing CTAs when the lead clicks through from CRM
  * comms. Admin links and links that already carry an agent are untouched.
+ *
+ * Also stamps GA campaign UTMs when missing (`utm_source=crm&utm_medium=email`
+ * plus `utm_content=agent-<slug>` / `utm_term` fallback) so the click is a
+ * CRM-email session, not Direct. Existing channel UTMs are never overwritten.
  */
 export function attributeSiteLinks(
   text: string,
@@ -346,6 +351,9 @@ export function attributeSiteLinks(
     // send that only stamps _fuid can never stitch their web sessions.
     // PersonIdentityBridge prefers _pid when both are present.
     if (pid && !/[?&]_pid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_pid=' + pid
+    // GA channel + broker UTMs — only fill gaps. listing-alerts / market-report
+    // / CMA docs already carry their own source/medium/campaign.
+    out = stampCrmOutboundUtms(out, slug || null)
     return out + fragment
   })
 }

@@ -12,8 +12,10 @@
  * existing primitives in the correct order:
  *
  *   1. `attributeSiteLinks` (lib/crm/merge.ts) — stamps ?agent=<broker> (and
- *      optionally ?_fuid=<id>) onto every public ryan-realty.com link, so a
- *      click routes the lead to the right broker and backfills their sessions.
+ *      optionally ?_fuid=<id> / ?_pid=<id>) plus missing CRM UTMs
+ *      (`utm_source=crm&utm_medium=email&utm_content=agent-<slug>`) onto every
+ *      public ryan-realty.com link, so a click routes the lead AND attributes
+ *      the GA session to email/CRM + that broker.
  *   2. `instrumentEmailHtml` (lib/email-tracking.ts) — wraps every http(s) link
  *      through the signed click tracker and appends the 1x1 open pixel.
  *
