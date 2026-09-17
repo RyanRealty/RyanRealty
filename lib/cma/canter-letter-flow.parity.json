@@ -4,6 +4,7 @@
   "contracts": [
     "split-closed-pending-active-summary-tables",
     "recommend-low-high-recommended-once",
+    "recommended-inside-closed-comp-band",
     "pin-map-subject-comps-status-legend-class",
     "active-peers-dom-overpricing-signal-closed-only-recommend",
     "every-comparable-row-dom-and-price-history"

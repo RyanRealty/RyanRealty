@@ -8,6 +8,8 @@
  * only). No story-adj from that signal. Never overt "you overpriced."
  * Every comparable row (closed/pending/active/expired) must show DOM +
  * listing/price history — Tip Ready refuse if missing.
+ * Low/High from closed-comp band (valueLow/valueHigh); Recommended must stay
+ * inside that band — Tip Ready refuse if Rec is outside Low/High.
  */
 import { describe, expect, it } from 'vitest'
 import {
@@ -22,6 +24,7 @@ import {
 import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
 import { didNotSellBodyHtml } from '@/lib/cma/did-not-sell'
 import { storyAdjustment } from '@/lib/pricing/classes'
+import { recommendedInsideClosedBand } from '@/lib/pricing/recommended-in-band'
 import {
   COMPARABLE_DOM_ROW_LABEL,
   COMPARABLE_PRICE_HISTORY_ROW_LABEL,
@@ -133,6 +136,41 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       expect(html).toContain('$659,000')
       expect((html.match(/>Recommended</g) ?? []).length).toBe(1)
     }
+  })
+
+  it('contract: recommended-inside-closed-comp-band', () => {
+    expect(
+      recommendedInsideClosedBand({
+        recommended: pricing.recommended,
+        valueLow: pricing.valueLow,
+        valueHigh: pricing.valueHigh,
+      }),
+    ).toBe(true)
+
+    // Hero Low/High must print the closed-comp band, not list tiers that
+    // drifted outside it (Canter live: value 675–705 vs highEnd 716).
+    const drifted = {
+      ...pricing,
+      conservative: 686_000,
+      highEnd: 716_000,
+      valueLow: 675_000,
+      valueHigh: 705_000,
+      recommended: 701_000,
+    } as typeof pricing
+    const html = letterCoverPayoffHtml(drifted)
+    expect(html).toContain('$675,000')
+    expect(html).toContain('$705,000')
+    expect(html).toContain('$701,000')
+    expect(html).not.toContain('$716,000')
+    expect(html).not.toContain('$686,000')
+
+    expect(
+      recommendedInsideClosedBand({
+        recommended: 710_000,
+        valueLow: 675_000,
+        valueHigh: 705_000,
+      }),
+    ).toBe(false)
   })
 
   it('contract: pin-map-subject-comps-status-legend-class', () => {
