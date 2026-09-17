@@ -4,6 +4,11 @@
  * Replaces a deleted KB component Visual language:
  * design_system/public/PUBLIC_UI.md (locked 2026-08-11). Tokens: ./tokens.css.
  *
+ * Catalog source: shadcn Breadcrumb (`components/ui/breadcrumb.tsx`). House
+ * paint stays this file + ./V3Breadcrumb.css. Long trails collapse to
+ * first / … / current so a listing path (Bend / neighborhood / plat / street)
+ * does not wrap into a cream band.
+ *
  * The trail is REQUIRED. A breadcrumb with no trail is a strip that says
  * nothing, and the ancestors it names are the continuity the IA lock asks the
  * chrome to carry (place context follows the visitor; a node has to show the
@@ -31,11 +36,19 @@
  * MOUNTING: puts V3_ROOT_CLASS on its own outermost element, so ./tokens.css
  * resolves with no wrapper.
  *
- * Server component. No state, no effects, no hooks, no fetch, no formatting.
+ * Server component. Collapse state lives in V3BreadcrumbCollapse.client.tsx.
  */
 import Link from 'next/link'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS } from './atoms'
+import { V3BreadcrumbCollapse } from './V3BreadcrumbCollapse.client'
 import './tokens.css'
 import './V3Breadcrumb.css'
 
@@ -79,6 +92,11 @@ export type V3BreadcrumbProps = {
    */
   belowNav?: boolean
   /**
+   * Sit on the following media instead of occupying a cream band. Listing
+   * pages use this so Bend / … / address does not push the mosaic down.
+   */
+  overlay?: boolean
+  /**
    * The accessible name of the navigation landmark. Defaults to "Breadcrumb",
    * which is what a screen reader user expects to hear; override only when a
    * page shows two trails, which is a sign the page is doing two jobs.
@@ -102,15 +120,36 @@ function text(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined
 }
 
+function CrumbMark({ rung }: { rung: Rung }) {
+  if (typeof rung.href === 'string') {
+    return (
+      <BreadcrumbLink asChild className="v3-breadcrumb__link">
+        <Link href={rung.href}>{rung.label}</Link>
+      </BreadcrumbLink>
+    )
+  }
+  return (
+    <BreadcrumbPage
+      className={cn(
+        'v3-breadcrumb__text',
+        rung.isCurrent && 'v3-breadcrumb__text--current',
+      )}
+    >
+      {rung.label}
+    </BreadcrumbPage>
+  )
+}
+
 export function V3Breadcrumb({
   trail,
   tone = 'surface',
   belowNav,
+  overlay = false,
   ariaLabel,
   id,
   className,
 }: V3BreadcrumbProps) {
-  const clearsFixedHeader = belowNav ?? tone !== 'on-media'
+  const clearsFixedHeader = overlay ? false : (belowNav ?? tone !== 'on-media')
   const named: V3Crumb[] = []
   for (const crumb of trail) {
     // A hole is dropped, never dereferenced: without noUncheckedIndexedAccess
@@ -118,7 +157,7 @@ export function V3Breadcrumb({
     // array and arrives here as undefined.
     const label = text(crumb?.label)
     if (label === undefined) continue
-    named.push({ label, href: text(crumb?.href) })
+    named.push({ label, href: text(crumb.href) })
   }
 
   if (process.env.NODE_ENV !== 'production') {
@@ -139,10 +178,16 @@ export function V3Breadcrumb({
       : { label: crumb.label, isCurrent }
   })
 
+  const collapse = rungs.length >= 3
+  const head = rungs[0]
+  const current = rungs[lastIndex]
+  const middle = collapse ? rungs.slice(1, lastIndex) : []
+  const visible = collapse && head && current ? [head, current] : rungs
+
   const name = text(ariaLabel) ?? 'Breadcrumb'
 
   return (
-    <nav
+    <Breadcrumb
       id={id}
       aria-label={name}
       className={cn(
@@ -150,30 +195,34 @@ export function V3Breadcrumb({
         'v3-breadcrumb',
         tone === 'on-media' && 'v3-breadcrumb--on-media',
         clearsFixedHeader && 'v3-breadcrumb--below-nav',
+        overlay && 'v3-breadcrumb--overlay',
+        collapse && 'v3-breadcrumb--collapsed',
         className,
       )}
     >
-      <ol className="v3-breadcrumb__list">
-        {rungs.map((rung, index) => (
-          <li className="v3-breadcrumb__item" key={`${index}-${rung.label}`}>
-            {typeof rung.href === 'string' ? (
-              <Link href={rung.href} className="v3-breadcrumb__link">
-                {rung.label}
-              </Link>
-            ) : (
-              <span
-                className={cn(
-                  'v3-breadcrumb__text',
-                  rung.isCurrent && 'v3-breadcrumb__text--current',
-                )}
-                aria-current={rung.isCurrent ? 'page' : undefined}
-              >
-                {rung.label}
-              </span>
-            )}
-          </li>
-        ))}
-      </ol>
-    </nav>
+      <BreadcrumbList className="v3-breadcrumb__list">
+        {collapse && head && current ? (
+          <>
+            <BreadcrumbItem className="v3-breadcrumb__item">
+              <CrumbMark rung={head} />
+            </BreadcrumbItem>
+            {middle.length > 0 ? (
+              <BreadcrumbItem className="v3-breadcrumb__item v3-breadcrumb__item--more">
+                <V3BreadcrumbCollapse crumbs={middle} />
+              </BreadcrumbItem>
+            ) : null}
+            <BreadcrumbItem className="v3-breadcrumb__item">
+              <CrumbMark rung={current} />
+            </BreadcrumbItem>
+          </>
+        ) : (
+          visible.map((rung, index) => (
+            <BreadcrumbItem className="v3-breadcrumb__item" key={`${index}-${rung.label}`}>
+              <CrumbMark rung={rung} />
+            </BreadcrumbItem>
+          ))
+        )}
+      </BreadcrumbList>
+    </Breadcrumb>
   )
 }

@@ -1,3 +1,12 @@
+# Current — 2026-09-17 (P0 listing fold whitespace — breadcrumb + mosaic)
+
+Surface: Cursor cloud `bc-6ad1e3ba-28e0-5a32-bdb7-ef006085e937`, branch `cursor/listing-fold-whitespace-e937`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **Breadcrumb.** `V3Breadcrumb` imports shadcn breadcrumb. Trails of 3+ collapse to first / … / last. Listing mounts `tone="on-media" overlay` so Bend / … / address sits on the mosaic, not a cream band. V3Chrome / morphing search untouched.
+- **Mosaic.** Photo well and letterbox are navy. Filmstrip thumbs 2.75rem, no extra cream pad. `object-fit: contain` held.
+- **Tip Ready.** `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/listing-detail/parity.json` exit 0. Adapted `shadcn-breadcrumb`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-17 (Bend new-construction SFR-first)
 
 Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR #278. PR only — Cos Mini lands. Do not merge. Not Tip Ready (no catalog SITE class / `@no-parity`).

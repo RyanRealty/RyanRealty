@@ -371,6 +371,9 @@
         "id": "components/site/listing-detail/PriceCtaStrip.tsx"
       },
       {
+        "id": "shadcn-breadcrumb"
+      },
+      {
         "id": "shadcn-carousel"
       },
       {

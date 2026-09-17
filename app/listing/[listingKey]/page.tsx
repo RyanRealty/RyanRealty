@@ -967,7 +967,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           baths={listing.baths ?? undefined}
         />
         <V3SectionTracker />
-        <V3Breadcrumb trail={breadcrumbs} />
+        <V3Breadcrumb trail={breadcrumbs} tone="on-media" overlay />
         <ListingDetailShell
           hero={hero}
           main={main}
