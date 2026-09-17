@@ -1,10 +1,10 @@
-# Current — 2026-09-16 (SITE-117 Tip Ready PR — V3Number SSR honesty)
+# Current — 2026-09-17 (SITE-111 rematch 2 — honest ship fail)
 
-Surface: Cursor cloud `cursor-cloud-site117-20260916`, branch `cursor/site-117-v3number-ssr-e734`. PR only — do not merge. Node left `in_progress`.
+Surface: Cursor cloud `cursor-cloud-site111-20260916`, branch `cursor/site-111-sell-tip-ready-75a0`, PR #267. Do not merge. Node stays `in_progress`.
 
-- **SITE-117.** `V3Number` defaulted `settle=false`, so production `/cities/bend` first HTML said `<span class="v3-number v3-alerts__num-pop">0</span> houses came on the market`. Default is now `true`; non-finite values omit (never fake 0); `V3AlertsStrip` passes `settle` on both mounts; `V3MosBars` defaults `settle` too (place MOS was the leftover `0`).
-- **Evidence.** Production before: numeral `0`. Local `next dev --webpack :3401` after: alerts `121`, sticky `121`, MOS homes `612`. Gate: `components/site/__tests__/v3-number-ssr.test.tsx` (14 passed). No taste receipt invented.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY + §6, `TASTE.md`.
+- Tip SHA `bb81a378c` (open-state recapture). Receipt commit follows. `--ship` exit 1. `demoMatch: false`. Median 55 (55/58/52) vs prior 57 vs HEAD 63. Judge: claude-sonnet-5 Task. Builder: grok-4.6.
+- replaceWith still: `house-stage`, `beui-expanding-arrow-button`. No house paint after false.
+- Skills read: `.cursor/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
 # Current — 2026-09-16 (Claude cloud site queue: STOPPING POINT — Matt's three phone directives landed; SITE-104 merged; SITE-111 merged but NOT judged)
 
