@@ -1,0 +1,13 @@
+{
+  "kind": "picker-contract",
+  "id": "cma-active-dom-nudge",
+  "contracts": [
+    "high-dom-threshold-is-60",
+    "overpriced-means-ask-above-closed-band-high",
+    "nudge-down-within-closed-band-only",
+    "no-nudge-without-high-dom-overpriced-active"
+  ],
+  "testFiles": [
+    "lib/pricing/active-dom-nudge.contract.test.ts"
+  ]
+}
