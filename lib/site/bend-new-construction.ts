@@ -428,31 +428,100 @@ export const BEND_NEW_CON_PRIMARY = BEND_NEW_CON_NAMED.filter((row) => row.activ
 export const BEND_NEW_CON_SINGLE = BEND_NEW_CON_NAMED.filter((row) => row.active === 1)
 
 /**
- * Affordable SFR lead — lowest named Bend-proper bands that a buyer actually
- * shops first. Order is locked to the 2026-09-16 pull: Parkside Place Phase 1
- * ($399,990), Calaveras ($439,000), Easton ($449,900).
+ * Single-family shopping order — lowest SFR list band first.
+ *
+ * Locked to the 2026-09-16 files. DAL bands for Parkside / Calaveras / Easton /
+ * Petrosa / Acadia. Stevens Ranch SF uses the Horton community page that day
+ * (`From $579,995`) because the DAL subdivision band mixes in townhomes.
+ * Horton townhomes are `BEND_NEW_CON_HORTON_TOWNHOME_NAMES`, not this list.
  */
+export const BEND_NEW_CON_SFR_ORDER = [
+  'Parkside Place Phase 1',
+  'Calaveras',
+  'Easton',
+  'Petrosa',
+  'Acadia Pointe Phase 5 and 6',
+  'Stevens Ranch',
+] as const
+
+/** First three SFR communities on the photographed shelf. */
 export const BEND_NEW_CON_LEAD_NAMES = [
   'Parkside Place Phase 1',
   'Calaveras',
   'Easton',
 ] as const
 
-export const BEND_NEW_CON_LEDE = 'Parkside Place starts at $399,990'
+export const BEND_NEW_CON_LEDE = 'Single-family starts at $399,990 at Parkside Place'
 
 export const BEND_NEW_CON_STAGE_FALLBACK_POSTER =
   '/images/blog/new-construction-guide-central-oregon.jpg'
 
-export function bendNewConLeadRows(): NewConInventoryRow[] {
-  return BEND_NEW_CON_LEAD_NAMES.flatMap((name) => {
+/** Horton townhome communities in the DAL pull. Stevens Ranch townhomes share the SF subdivision name. */
+export const BEND_NEW_CON_HORTON_TOWNHOME_NAMES = [
+  'Thunder Ridge',
+  'Ponderosa, Phase 1',
+] as const
+
+/** Horton Stevens Ranch single-family — builder page 2026-09-16, not the mixed DAL band. */
+export const BEND_NEW_CON_STEVENS_RANCH_SF = {
+  priceBand: 'From $579,995',
+  qmi: '$579,995–$699,995',
+  dalMixedBand: '$419,995–$714,900',
+  source:
+    'D.R. Horton Stevens Ranch community page, 2026-09-16 PT. DAL mixed band the same day includes townhomes.',
+} as const
+
+/** Horton Stevens Ranch townhomes — Express page 2026-09-16. */
+export const BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES = {
+  name: 'Stevens Ranch townhomes',
+  builders: 'DR Horton',
+  priceBand: 'From $419,995',
+  qmi: '$419,995–$444,995',
+  href: 'https://www.drhorton.com/oregon/central-oregon/bend/stevens-ranch-townhomes',
+} as const
+
+export const BEND_NEW_CON_HORTON_TOWNHOME_NOTE =
+  'D.R. Horton townhomes that day: Thunder Ridge $379,995–$419,995, Ponderosa $414,995–$419,995, and Stevens Ranch from $419,995. Those are not the single-family lead.'
+
+export const BEND_NEW_CON_HORTON_TOWNHOME_SOURCE =
+  'Thunder Ridge and Ponderosa bands: Ryan Realty listings search DAL, 2026-09-16 PT. Stevens Ranch townhomes from $419,995: D.R. Horton Express page the same day.'
+
+/** Lennar Brooksmill is on the builder page that day; it is not a named DAL subdivision row. */
+export const BEND_NEW_CON_BROOKSMILL_NOTE =
+  'Lennar Brooksmill listed $759,900–$957,400 on the builder community page that day. It is not a named row in the DAL pull.'
+
+export function bendNewConPriceFloor(priceBand: string): number {
+  const match = priceBand.replace(/,/g, '').match(/\$(\d+)/)
+  return match ? Number(match[1]) : Number.POSITIVE_INFINITY
+}
+
+function namedRows(names: readonly string[]): NewConInventoryRow[] {
+  return names.flatMap((name) => {
     const row = BEND_NEW_CON_NAMED.find((item) => item.name === name)
     return row ? [row] : []
   })
 }
 
+export function bendNewConLeadRows(): NewConInventoryRow[] {
+  return namedRows(BEND_NEW_CON_LEAD_NAMES)
+}
+
+export function bendNewConHortonTownhomeRows(): NewConInventoryRow[] {
+  return namedRows(BEND_NEW_CON_HORTON_TOWNHOME_NAMES)
+}
+
 export function bendNewConRestPrimary(): NewConInventoryRow[] {
-  const lead = new Set<string>(BEND_NEW_CON_LEAD_NAMES)
-  return BEND_NEW_CON_PRIMARY.filter((row) => !lead.has(row.name))
+  const sfr = new Set<string>(BEND_NEW_CON_SFR_ORDER)
+  const townhomes = new Set<string>(BEND_NEW_CON_HORTON_TOWNHOME_NAMES)
+  const byName = new Map(BEND_NEW_CON_PRIMARY.map((row) => [row.name, row]))
+  const afterShelf = BEND_NEW_CON_SFR_ORDER.slice(3).flatMap((name) => {
+    const row = byName.get(name)
+    return row ? [row] : []
+  })
+  const higher = BEND_NEW_CON_PRIMARY.filter(
+    (row) => !sfr.has(row.name) && !townhomes.has(row.name),
+  ).sort((a, b) => bendNewConPriceFloor(a.priceBand) - bendNewConPriceFloor(b.priceBand))
+  return [...afterShelf, ...higher]
 }
 
 export function financingHighlight(offer: NewConFinancingOffer): { value: string; label: string } {

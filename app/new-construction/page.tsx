@@ -8,7 +8,8 @@
  * named communities, then financing as Answers. Not a search redirect.
  * /builders still 301s here.
  *
- * Rhythm: Breadcrumb-on-Stage -> Stage -> Lead shelf -> Ledger -> Answers
+ * Rhythm: Breadcrumb-on-Stage -> Stage -> SFR shelf -> SFR ledger ->
+ * Horton townhome note -> Answers
  * -> Doors -> Footer outside main. Snapshot figures live in
  * lib/site/bend-new-construction.ts. Live photos come from the listings DAL.
  */
@@ -19,13 +20,19 @@ import { BRAND, CONTACT } from '@/lib/brand/contact'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import {
+  BEND_NEW_CON_BROOKSMILL_NOTE,
   BEND_NEW_CON_DISCLAIMER,
   BEND_NEW_CON_FINANCING,
   BEND_NEW_CON_FINANCING_SOURCE,
   BEND_NEW_CON_HEADLINE,
+  BEND_NEW_CON_HORTON_TOWNHOME_NOTE,
+  BEND_NEW_CON_HORTON_TOWNHOME_SOURCE,
   BEND_NEW_CON_INVENTORY_SOURCE,
   BEND_NEW_CON_LEDE,
   BEND_NEW_CON_SEARCH_HREF,
+  BEND_NEW_CON_STEVENS_RANCH_SF,
+  BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES,
+  bendNewConHortonTownhomeRows,
   bendNewConLeadRows,
   BEND_NEW_CON_SINGLE,
   BEND_NEW_CON_UNSPECIFIED,
@@ -74,8 +81,13 @@ export const metadata: Metadata = pageMetadata({
 function inventoryRow(row: NewConInventoryRow): V3LedgerFigureRow {
   const builders = row.builders ?? 'Builder not in sampled details'
   const community = bendNewConCommunityHref(row.name)
+  const stevensSf = row.name === 'Stevens Ranch'
+  const priceBand = stevensSf ? BEND_NEW_CON_STEVENS_RANCH_SF.priceBand : row.priceBand
   const revealBits = [
-    row.median ? `Median list ${row.median}` : null,
+    stevensSf
+      ? `${BEND_NEW_CON_STEVENS_RANCH_SF.source} Horton SF QMI about ${BEND_NEW_CON_STEVENS_RANCH_SF.qmi}. DAL mixed band ${BEND_NEW_CON_STEVENS_RANCH_SF.dalMixedBand}.`
+      : null,
+    row.median && !stevensSf ? `Median list ${row.median}` : null,
     row.typical,
     community ? 'Opens the community page' : null,
   ].filter((bit): bit is string => Boolean(bit))
@@ -84,8 +96,8 @@ function inventoryRow(row: NewConInventoryRow): V3LedgerFigureRow {
     href: community ?? bendNewConSearchHref(row.name),
     when: v3Text(builders),
     what: v3Text(row.name),
-    detail: v3Text(row.typical ? `${row.priceBand} · ${row.typical}` : row.priceBand),
-    value: v3Text(`${row.active} active`),
+    detail: v3Text(row.typical ? `${priceBand} · ${row.typical}` : priceBand),
+    value: v3Text(stevensSf ? `${row.active} active · mixed` : `${row.active} active`),
     weight: bendNewConWeight(row.active),
     reveal:
       revealBits.length > 0
@@ -129,6 +141,8 @@ export default async function NewConstructionPage() {
   const restPrimary = bendNewConRestPrimary().map(inventoryRow)
   const [firstRest, ...moreRest] = restPrimary
   const [firstSingle, ...restSingle] = BEND_NEW_CON_SINGLE.map(inventoryRow)
+  const hortonTownhomes = bendNewConHortonTownhomeRows().map(inventoryRow)
+  const [firstHortonTownhome, ...moreHortonTownhomes] = hortonTownhomes
   const leadRows = bendNewConLeadRows()
   const tilesByName = await Promise.all(
     leadRows.map((row) =>
@@ -136,6 +150,7 @@ export default async function NewConstructionPage() {
         city: 'Bend',
         subdivision: row.name,
         status: 'active',
+        propertySubType: 'Single Family Residence',
         sort: 'price-asc',
         limit: 12,
       }).catch(() => []),
@@ -230,7 +245,7 @@ export default async function NewConstructionPage() {
 
         <NewConLeadShelf
           heading={BEND_NEW_CON_LEDE}
-          note="Not a loan offer. Bands from 2026-09-16. Houses on the shelf are live."
+          note="Not a loan offer. Single-family first. Bands from 2026-09-16. Houses on the shelf are live SFR listings."
           bands={lead.bands}
           seeAllHref={BEND_NEW_CON_SEARCH_HREF}
         />
@@ -238,10 +253,10 @@ export default async function NewConstructionPage() {
         {firstRest ? (
           <V3Ledger
             id="for-sale"
-            eyebrow={v3Text('The rest of Bend')}
-            heading={v3Text('Named communities')}
+            eyebrow={v3Text('Lowest SFR band first')}
+            heading={v3Text('Single-family communities')}
             note={v3Text(
-              'Hover or focus a row for the median and the typical plan. Parkside, Calaveras, and Easton are on the shelf above.',
+              'Parkside, Calaveras, and Easton are on the shelf. Next are Petrosa, Acadia Pointe, then Horton Stevens Ranch single-family from $579,995. Hover a row for the median and typical plan.',
             )}
             rows={[firstRest, ...moreRest]}
             source={v3Text(BEND_NEW_CON_INVENTORY_SOURCE)}
@@ -254,10 +269,36 @@ export default async function NewConstructionPage() {
             footnote={
               <>
                 {BEND_NEW_CON_UNSPECIFIED.note} Band {BEND_NEW_CON_UNSPECIFIED.priceBand}, median{' '}
-                {BEND_NEW_CON_UNSPECIFIED.median}. Caldera Springs is Sunriver. It is not in this
-                Bend table.
+                {BEND_NEW_CON_UNSPECIFIED.median}. {BEND_NEW_CON_BROOKSMILL_NOTE} Caldera Springs is
+                Sunriver. It is not in this Bend table.
               </>
             }
+          />
+        ) : null}
+
+        {firstHortonTownhome ? (
+          <V3Ledger
+            id="horton-townhomes"
+            eyebrow={v3Text('Also listed')}
+            heading={v3Text('Horton townhomes')}
+            note={v3Text(BEND_NEW_CON_HORTON_TOWNHOME_NOTE)}
+            rows={[
+              firstHortonTownhome,
+              ...moreHortonTownhomes,
+              {
+                href: BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.href,
+                when: v3Text(BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.builders),
+                what: v3Text(BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.name),
+                detail: v3Text(
+                  `${BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.priceBand} · Horton Express page, 2026-09-16. Live QMI about ${BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.qmi}.`,
+                ),
+                value: v3Text(BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.priceBand),
+                weight: 0.25,
+              },
+            ]}
+            source={v3Text(BEND_NEW_CON_HORTON_TOWNHOME_SOURCE)}
+            updated={v3Text(researched)}
+            encode="bar"
           />
         ) : null}
 

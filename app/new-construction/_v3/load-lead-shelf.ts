@@ -1,7 +1,7 @@
 /**
- * Live photographed homes for the affordable SFR lead — Parkside, Calaveras,
+ * Live photographed SFR homes for the affordable lead — Parkside, Calaveras,
  * Easton, in that order. Snapshot bands stay in bend-new-construction.ts.
- * This file only turns DAL tiles into rail cards.
+ * This file only turns DAL tiles into rail cards. Townhouses are excluded.
  */
 import { attachListingCardExtras } from '@/lib/data'
 import type { ListingTile } from '@/lib/data/types/listing'
@@ -56,6 +56,7 @@ export async function buildNewConLeadShelf(
 
   const bands: NewConLeadBand[] = leads.map((row, i) => {
     const cards = (tilesByName[i] ?? [])
+      .filter((tile) => tile.propertySubType === 'Single Family Residence')
       .map((tile) => byKey.get(tile.listingKey))
       .filter((card): card is HomeRailCard => Boolean(card))
     return {
