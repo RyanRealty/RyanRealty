@@ -132,6 +132,21 @@ describe('resolvePlaceContextFromListing', () => {
     expect(ctx.breadcrumb.map((b) => b.label).join(' ')).not.toMatch(/undesignated/i)
   })
 
+  it('does not assign Vandevert Ranch as a parent of Caldera Springs', () => {
+    const ctx = resolvePlaceContextFromListing({
+      city: 'Bend',
+      citySlug: 'bend',
+      neighborhoodName: 'Vandevert Ranch',
+      neighborhoodSlug: 'vandevert-ranch',
+      subdivisionName: 'Caldera Springs',
+      subdivisionSlug: 'caldera-springs',
+    })
+    expect(ctx.curatedCommunity?.slug).toBe('caldera-springs')
+    expect(ctx.neighborhood).toBeNull()
+    expect(ctx.breadcrumb.map((b) => b.label)).toEqual(['Bend', 'Caldera Springs'])
+    expect(ctx.identityLine).not.toMatch(/Vandevert/i)
+  })
+
   it('city-only listing has empty parents beyond city leaf', () => {
     const ctx = resolvePlaceContextFromListing({
       city: 'Redmond',

@@ -121,6 +121,34 @@ describe('listingPlaceTrail', () => {
   })
 
 
+  it('does not nest Vandevert Ranch over Caldera Springs', () => {
+    const trail = listingPlaceTrail({
+      city: { label: 'Bend', slug: 'bend' },
+      neighborhood: { label: 'Vandevert Ranch', slug: 'vandevert-ranch' },
+      community: { label: 'Caldera Springs', slug: 'caldera-springs' },
+      subdivision: { label: 'Caldera Springs', slug: 'caldera-springs' },
+      address: '56556 Caldera Springs Court',
+    })
+    expect(trail.map((c) => c.label)).toEqual([
+      'Bend',
+      'Caldera Springs',
+      '56556 Caldera Springs Court',
+    ])
+    expect(trail.map((c) => c.label)).not.toContain('Vandevert Ranch')
+  })
+
+  it('keeps neighborhood only when the registry lists the community as its child', () => {
+    expect(
+      listingPlaceTrail({
+        city: { label: 'Bend', slug: 'bend' },
+        neighborhood: { label: 'Widgi Creek', slug: 'widgi-creek' },
+        community: { label: 'Elkai Woods', slug: 'elkai-woods' },
+        subdivision: null,
+        address: '1 Elkai Woods',
+      }).map((c) => c.label),
+    ).toEqual(['Bend', 'Widgi Creek', 'Elkai Woods', '1 Elkai Woods'])
+  })
+
   it('never prints Undesignated as a neighborhood crumb', () => {
     expect(
       listingPlaceTrail({
