@@ -61,6 +61,11 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getSchoolDistrictOptions } from '@/lib/data/schools/getSchools'
 import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
+import {
+  applyCommunityToggle,
+  applySubdivisionToggle,
+  placesChipLabel,
+} from '@/lib/search/exclusive-places'
 
 export type SearchFiltersInitial = {
   city?: string
@@ -450,15 +455,13 @@ export default function SearchFilters({
         updateUrl({ city, subdivision: undefined, postalCode: undefined })
         setLocationQuery(city)
       } else {
-        updateUrl({ city, subdivision: subdivision ?? '', postalCode: undefined })
-        setLocationQuery(subdivision ? `${subdivision}, ${city}` : city)
+        // Community / plat pick is exclusive — do not write the parent city.
+        updateUrl({ subdivision: subdivision ?? '', postalCode: undefined })
+        setLocationQuery(subdivision || city)
       }
       setLocationOpen(false)
-      trackEvent('search', { city, subdivision: subdivision ?? undefined, search_term: locationQuery })
-      // First-party mirror — feeds visitor_events so the CRM behavior panel's
-      // "top searches" reads real on-site searches (metadata.query is the label
-      // key getContactBehaviorSummary derives from).
-      fireFirstPartyEvent('search', { metadata: { query: subdivision ? `${subdivision}, ${city}` : city, term: locationQuery || undefined, city, subdivision, source: 'typeahead' } })
+      trackEvent('search', { city: type === 'city' ? city : undefined, subdivision: subdivision ?? undefined, search_term: locationQuery })
+      fireFirstPartyEvent('search', { metadata: { query: subdivision || city, term: locationQuery || undefined, city: type === 'city' ? city : undefined, subdivision, source: 'typeahead' } })
     },
     [updateUrl, locationQuery]
   )
@@ -558,7 +561,7 @@ export default function SearchFilters({
       updateUrl(updates)
       showParsedChips(parsed)
       setLocationOpen(false)
-      setLocationQuery(parsed.city ?? '')
+      setLocationQuery(parsed.subdivision ?? parsed.city ?? '')
       trackEvent('search', { search_term: text, ...(parsed.city ? { city: parsed.city } : {}) })
       fireFirstPartyEvent('search', { metadata: { query: text, city: parsed.city, source: 'natural_language' } })
     },
@@ -571,8 +574,8 @@ export default function SearchFilters({
       ? locationQuery
       : initialFilters.postalCode
         ? initialFilters.postalCode
-        : initialFilters.subdivision && initialFilters.city
-          ? `${initialFilters.subdivision}, ${initialFilters.city}`
+        : initialFilters.subdivision
+          ? initialFilters.subdivision.split(',')[0]!.trim()
           : initialFilters.city
             ? initialFilters.city
             : 'City, community, zip, address...'
@@ -686,16 +689,12 @@ export default function SearchFilters({
         <div className="flex shrink-0 items-center gap-2">
         {/* Places — City / Neighborhood / Community / Subdivision / School district. */}
         <FilterDropdown
-          label={(() => {
-            const cities = splitCsv(initialFilters.city)
-            const hoods = splitCsv(initialFilters.neighborhood)
-            const subs = splitCsv(initialFilters.subdivision)
-            const districts = splitCsv(initialFilters.schoolDistrict)
-            const n = cities.length + hoods.length + subs.length + districts.length
-            if (n === 0) return 'Places'
-            if (n === 1) return `Places: ${cities[0] ?? hoods[0] ?? subs[0] ?? districts[0]}`
-            return `Places: ${n}`
-          })()}
+          label={placesChipLabel({
+            city: initialFilters.city,
+            neighborhood: initialFilters.neighborhood,
+            subdivision: initialFilters.subdivision,
+            schoolDistrict: initialFilters.schoolDistrict,
+          })}
           active={Boolean(
             initialFilters.city?.trim() ||
               initialFilters.neighborhood?.trim() ||
@@ -877,12 +876,10 @@ export default function SearchFilters({
                               variant={csvHas(initialFilters.subdivision, c.label) ? 'default' : 'ghost'}
                               size="sm"
                               onClick={() => {
-                                const next = toggleCsv(initialFilters.subdivision, c.label)
-                                const cities = new Set(splitCsv(initialFilters.city))
-                                if (next && csvHas(next, c.label)) cities.add(c.city)
+                                const next = applyCommunityToggle(initialFilters, c.label)
                                 updateUrl({
-                                  subdivision: next,
-                                  city: cities.size ? [...cities].join(',') : c.city,
+                                  subdivision: next.subdivision,
+                                  city: next.city,
                                   postalCode: undefined,
                                 })
                                 setLocationQuery(c.label)
@@ -918,18 +915,10 @@ export default function SearchFilters({
                               variant={csvHas(initialFilters.subdivision, name) ? 'default' : 'ghost'}
                               size="sm"
                               onClick={() => {
-                                const next = toggleCsv(initialFilters.subdivision, name)
-                                const cityGuess =
-                                  PLACE_COMMUNITY_OPTIONS.find(
-                                    (c) => c.label.toLowerCase() === name.toLowerCase(),
-                                  )?.city ??
-                                  splitCsv(initialFilters.city)[0] ??
-                                  'Bend'
-                                const cities = new Set(splitCsv(initialFilters.city))
-                                if (next && csvHas(next, name)) cities.add(cityGuess)
+                                const next = applySubdivisionToggle(initialFilters, name)
                                 updateUrl({
-                                  subdivision: next,
-                                  city: cities.size ? [...cities].join(',') : cityGuess,
+                                  subdivision: next.subdivision,
+                                  city: next.city,
                                   postalCode: undefined,
                                 })
                                 setLocationQuery(name)

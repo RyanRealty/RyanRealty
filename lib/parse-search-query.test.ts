@@ -417,13 +417,21 @@ describe('resort community vs architectural style (F1)', () => {
       beds: '3',
       baths: '2',
       subdivision: 'NorthWest Crossing',
-      city: 'Bend',
     })
+    expect(r.city).toBeUndefined()
     expect(r.architecturalStyles).toBeUndefined()
     expect(r.keywords ?? '').not.toMatch(/crossing/i)
     expect(searchHrefForQuery('3-bedroom, 2-bath in Northwest Crossing')).toBe(
       '/homes-for-sale/bend/northwest-crossing?beds=3&baths=2',
     )
+  })
+
+  it('Caldera Springs does not auto-pin parent city Sunriver', () => {
+    const r = parseSearchQuery('Caldera Springs')
+    expect(r).toEqual({ subdivision: 'Caldera Springs' })
+    expect(parseSearchQuery('Caldera Springs, Sunriver')).toEqual({ subdivision: 'Caldera Springs' })
+    expect(searchHrefForQuery('Caldera Springs')).toBe('/homes-for-sale/sunriver/caldera-springs')
+    expect(searchHrefForQuery('Caldera Springs, Sunriver')).toBe('/homes-for-sale/sunriver/caldera-springs')
   })
 
   it('bare "sunriver" stays a city, not a subdivision path', () => {

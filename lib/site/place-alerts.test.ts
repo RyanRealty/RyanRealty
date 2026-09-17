@@ -318,7 +318,9 @@ describe('the sentence matches the SQL it is built on', () => {
   it('a community alert matches the registry alias set exactly, case-insensitively', () => {
     const search = readFileSync(resolve('app/actions/search.ts'), 'utf8')
     const dal = readFileSync(resolve('lib/data/listings/searchListingsAll.ts'), 'utf8')
-    expect(search).toMatch(/getSubdivisionMatchNames\(name\)/)
+    expect(search).toMatch(/toExclusivePlaceQuery/)
+    const exclusive = readFileSync(resolve('lib/search/exclusive-places.ts'), 'utf8')
+    expect(exclusive).toMatch(/getSubdivisionMatchNames\(name\)/)
     expect(dal).toMatch(/\.in\(\s*'subdivision_lower'/)
     expect(dal).toMatch(/\.eq\('subdivision_lower'/)
   })

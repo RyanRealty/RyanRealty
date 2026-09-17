@@ -101,7 +101,8 @@ describe('SEO search honesty contracts', () => {
 
   it('passes neighborhood into MapSplitView and does not seed the map as a subdivision', () => {
     expect(map).toMatch(/neighborhood: neighborhoodName/)
-    expect(map).toMatch(/subdivision: neighborhoodName \? undefined : decodedSubdivision/)
+    expect(map).toMatch(/filterSubdivision = neighborhoodName \? undefined : exclusivePlaces.subdivision/)
+    expect(map).toMatch(/subdivision: filterSubdivision/)
     expect(map).toMatch(/getListingsWithAdvanced\(\{/)
     expect(map).toMatch(/neighborhood: neighborhoodName/)
     expect(map).toMatch(/neighborhood: neighborhoodName \?\? ''/)
