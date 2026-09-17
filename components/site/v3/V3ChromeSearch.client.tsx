@@ -28,7 +28,16 @@ export function V3ChromeSearch() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [iconOnly, setIconOnly] = useState(true)
   const { suggestions } = useSearchSuggest(query)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 56.24rem)')
+    const apply = () => setIconOnly(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -82,7 +91,7 @@ export function V3ChromeSearch() {
       <MorphingSearch
         items={items}
         placeholder="Search homes, places…"
-        iconOnly
+        iconOnly={iconOnly}
         open={open}
         onOpenChange={onOpenChange}
         onQueryChange={setQuery}

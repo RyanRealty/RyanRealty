@@ -275,9 +275,9 @@ describe('390 Map uses one camera', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
     expect(filters).toMatch(/srch-mic-inbar/)
     expect(filters).toMatch(/VoiceSearchButton/)
-    // 375 residual: full-width search row keeps mic in-bar; Places chip on row 2.
+    // Catalog pill stays compact (w-72) so open plates morph, not stretch.
     expect(filters).toMatch(/Row 1 @375/)
-    expect(filters).toMatch(/w-full min-w-0 sm:w-64/)
+    expect(filters).toMatch(/w-72 max-w-full/)
     expect(filters).toMatch(/Row 2 @375/)
     expect(filters).toMatch(/placesChipLabel/)
     expect(filters).toMatch(/PLACE_SCHOOL_DISTRICT_OPTIONS/)

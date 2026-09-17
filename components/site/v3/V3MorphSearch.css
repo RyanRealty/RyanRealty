@@ -141,12 +141,15 @@
 
 .v3 .v3-morph-search--live .v3-morph-search__beui {
   display: block;
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
 }
 
+/* Official catalog is h-12 w-72. Stretching it to the filter row made
+   open plates read as a cream autocomplete (SITE-121 rematch, demoMatch false). */
 .v3 .v3-morph-search--live .v3-morph-search__catalog {
-  width: 100%;
-  max-width: none;
+  width: auto;
+  max-width: 100%;
 }
 
 /* Native is clipped after hydrate so the catalog input is the one you see.

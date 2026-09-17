@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { iconOnlyPanelLayout, overlayLayerZIndex } from './morphing-search-layout'
+import {
+  catalogPanelWidth,
+  iconOnlyPanelLayout,
+  isPhoneMorphViewport,
+  overlayLayerZIndex,
+} from './morphing-search-layout'
 
 const src = readFileSync('components/motion/morphing-search.tsx', 'utf8')
 
@@ -11,6 +16,14 @@ describe('SITE-121 phone MorphingSearch sheet', () => {
     expect(box.left).toBe(12)
     expect(box.top).toBe(64)
     expect(box.width).toBeGreaterThan(280)
+    expect(isPhoneMorphViewport(375)).toBe(true)
+    expect(isPhoneMorphViewport(1440)).toBe(false)
+  })
+
+  it('desktop grows the official catalog panel, not a full-bleed slab', () => {
+    expect(catalogPanelWidth(1440, 16, 288)).toBe(448)
+    expect(catalogPanelWidth(1440, 976, 48)).toBe(448)
+    expect(catalogPanelWidth(375, 12, 288)).toBe(347)
   })
 
   it('reads overlay z-[150] so the input is not under sticky chrome at 100', () => {

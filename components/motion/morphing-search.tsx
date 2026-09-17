@@ -24,7 +24,9 @@ import { useOnOpen } from "@/lib/hooks/use-on-open";
 import { useRowCursor } from "@/lib/hooks/use-row-cursor";
 import { cn } from "@/lib/utils";
 import {
+	catalogPanelWidth,
 	iconOnlyPanelLayout,
+	isPhoneMorphViewport,
 	overlayLayerZIndex,
 } from "@/components/motion/morphing-search-layout";
 
@@ -364,17 +366,12 @@ export function MorphingSearch({
 	const listboxId = `${uid}-results`;
 	const viewportWidth = mounted ? window.innerWidth : 0;
 	const iconLayout =
-		mounted && iconOnly
+		mounted && iconOnly && isPhoneMorphViewport(viewportWidth)
 			? iconOnlyPanelLayout(viewportWidth, chromeBottom)
 			: null;
 	const panelWidth = iconLayout
 		? iconLayout.width
-		: mounted
-			? Math.max(
-					anchorRect.width,
-					Math.min(448, viewportWidth - anchorRect.left - 16),
-				)
-			: anchorRect.width;
+		: catalogPanelWidth(viewportWidth, anchorRect.left, anchorRect.width);
 	const panelLeft = iconLayout ? iconLayout.left : anchorRect.left;
 	const panelTop = iconLayout ? iconLayout.top : anchorRect.top;
 	const resultsHeight = mounted
@@ -505,11 +502,9 @@ export function MorphingSearch({
 												className="size-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
 											/>
 										</div>
-										{iconOnly ? null : (
-											<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
-												Esc
-											</kbd>
-										)}
+										<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+											Esc
+										</kbd>
 									</div>
 
 									<motion.div

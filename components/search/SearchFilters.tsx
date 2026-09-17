@@ -601,17 +601,15 @@ export default function SearchFilters({
           At 375: search flexes (mic stays in-bar), Places stays visible, other
           chips fold into All filters (one Sheet). Map|List|Sort is OK on phone. */}
       <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:px-4">
-        {/* Row 1 @375: full-width search so mic stays inside the bar. */}
+        {/* Row 1 @375: compact catalog pill so the open plate morphs, not stretches. */}
         {hideLocation ? null : (
-        <div className={cn('relative w-full min-w-0 sm:w-64 sm:shrink-0', locationOpen && 'z-40')}>
-          {/* SITE-72: beui-morphing-search + shadcn-command. The field grows
-              into the grouped suggest list on one cream surface. Overlay so
-              the dock does not shove the map. */}
+        <div className={cn('relative w-72 max-w-full shrink-0', locationOpen && 'z-40')}>
+          {/* Official beUI pill: compact button grows into a 448 panel.
+              A compact-icon trigger here was the 1440 cavernous cream slab. */}
           <V3MorphSearch
             className="srch-morph"
             open={locationOpen}
             onOpenChange={(next) => setLocationOpen(next)}
-            iconOnly
             placeholder="Search places"
             items={morphItems.map((item) =>
               suggestToMorphItem(item, { onSelect: () => handleSuggestPick(item) }),
