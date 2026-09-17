@@ -5,6 +5,7 @@
  * Client-open morph; suggest feed for instant places; ⌘K / Ctrl+K toggles it.
  * SITE-110 SearchMorph pattern, sized for chrome (icon on phone, pill on desk).
  */
+import { Building2, Home, MapPinned, Trees } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -16,14 +17,11 @@ import { suggestToMorphItem } from '@/components/search/suggest-morph'
 import { trackEvent } from '@/lib/tracking'
 
 const PLACE_SEEDS: MorphingSearchItem[] = [
-  suggestToMorphItem({ href: '/homes-for-sale/bend', label: 'Bend', sublabel: 'City', kind: 'city' }),
-  suggestToMorphItem({ href: '/homes-for-sale/redmond', label: 'Redmond', sublabel: 'City', kind: 'city' }),
-  suggestToMorphItem({ href: '/homes-for-sale/sisters', label: 'Sisters', sublabel: 'City', kind: 'city' }),
-  suggestToMorphItem({ href: '/homes-for-sale/sunriver', label: 'Sunriver', sublabel: 'Community', kind: 'subdivision' }),
-  suggestToMorphItem({ href: '/communities/tetherow', label: 'Tetherow', sublabel: 'Bend', kind: 'neighborhood' }),
-  suggestToMorphItem({ href: '/homes-for-sale/prineville', label: 'Prineville', sublabel: 'City', kind: 'city' }),
-  suggestToMorphItem({ href: '/homes-for-sale/la-pine', label: 'La Pine', sublabel: 'City', kind: 'city' }),
-  suggestToMorphItem({ href: '/homes-for-sale/madras', label: 'Madras', sublabel: 'City', kind: 'city' }),
+  { id: '/homes-for-sale/bend', title: 'Bend', description: 'City · Central Oregon', icon: Building2 },
+  { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City · High Desert', icon: Building2 },
+  { id: '/homes-for-sale/sisters', title: 'Sisters', description: 'City · Cascade foothills', icon: Trees },
+  { id: '/homes-for-sale/sunriver', title: 'Sunriver', description: 'Community · South of Bend', icon: Home },
+  { id: '/communities/tetherow', title: 'Tetherow', description: 'Neighborhood · Westside Bend', icon: MapPinned },
 ]
 
 export function V3ChromeSearch() {

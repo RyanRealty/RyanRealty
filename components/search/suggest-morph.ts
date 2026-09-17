@@ -9,11 +9,15 @@ export function suggestToMorphItem(
   item: SuggestItem,
   extras?: { keywords?: string[]; onSelect?: () => void },
 ): MorphingSearchItem {
+  const kindLabel = SUGGEST_GROUP_LABELS[item.kind]
+  const description =
+    item.sublabel && item.sublabel !== kindLabel
+      ? `${kindLabel} · ${item.sublabel}`
+      : kindLabel
   return {
     id: item.href,
     title: item.label,
-    description: item.sublabel ?? SUGGEST_GROUP_LABELS[item.kind],
-    group: SUGGEST_GROUP_LABELS[item.kind],
+    description,
     icon: SUGGEST_KIND_ICONS[item.kind],
     keywords: extras?.keywords,
     onSelect: extras?.onSelect,

@@ -26,9 +26,11 @@ describe('SITE-121 phone MorphingSearch sheet', () => {
     expect(src).toContain('data-v3-morph-overlay')
   })
 
-  it('renders Command groups in the open morph, not a flat combobox', () => {
-    expect(src).toMatch(/from ['"]@\/components\/ui\/command['"]/)
-    expect(src).toContain('CommandGroup')
-    expect(src).toContain('groupMorphItems')
+  it('opens with the catalog morph, not a Command autocomplete', () => {
+    expect(src).toContain('clipPath')
+    expect(src).toContain('SEARCH_MORPH')
+    expect(src).toContain('collapsedContentClip')
+    expect(src).not.toMatch(/from ['"]@\/components\/ui\/command['"]/)
+    expect(src).not.toContain('CommandGroup')
   })
 })

@@ -18,26 +18,30 @@ describe('SITE-121 rematch craft', () => {
     expect(items[0]?.sublabel).not.toMatch(/\d/)
   })
 
-  it('morph items carry a Command group and an icon', () => {
+  it('morph items carry a catalog title, description, and icon', () => {
     const item = suggestToMorphItem({
       href: '/homes-for-sale/bend',
       label: 'Bend',
       sublabel: 'City',
       kind: 'city',
     })
-    expect(item.group).toBe('Cities')
+    expect(item.description).toMatch(/Cities · City/)
     expect(item.icon).toBeTruthy()
+    expect(item).not.toHaveProperty('group')
   })
 
-  it('filter sheet uses InputGroup unit prefixes and designed checkbox rows', () => {
+  it('filter sheet uses InputGroup unit prefixes and catalog Field checkbox rows', () => {
     const sheet = readSrc('components/search/AllFiltersSheet.tsx')
     expect(sheet).toMatch(/from '@\/components\/ui\/input-group'/)
     expect(sheet).toContain('UnitNumberInput')
     expect(sheet).toContain('InputGroupAddon')
     expect(sheet).toContain("'/sqft'")
-    expect(sheet).toContain('sm:grid-cols-2')
-    expect(sheet).toContain('min-h-11')
-    expect(sheet).toContain('rounded-lg border border-border bg-card')
+    expect(sheet).toMatch(/from '@\/components\/ui\/field'/)
+    expect(sheet).toContain('FieldGroup')
+    expect(sheet).toContain('data-slot="checkbox-group"')
+    expect(sheet).toContain('orientation="horizontal"')
+    expect(readSrc('components/ui/checkbox.tsx')).toContain('border-primary')
+    expect(readSrc('components/ui/checkbox.tsx')).toContain('from "lucide-react"')
   })
 
   it('375 chip rail has arrows and a fade, and the map shows a listing peek', () => {
@@ -53,7 +57,10 @@ describe('SITE-121 rematch craft', () => {
     expect(morph).toContain('autoFocus')
     expect(morph).toContain('iconOnlyPanelLayout')
     expect(morph).toContain('overlayClassName')
-    expect(morph).toMatch(/from ['"]@\/components\/ui\/command['"]/)
+    expect(morph).toContain('aria-haspopup="dialog"')
+    expect(morph).toContain('layoutId')
+    expect(morph).toContain('backdrop-blur-xl')
+    expect(morph).not.toMatch(/from ['"]@\/components\/ui\/command['"]/)
     expect(readSrc('components/site/v3/V3ChromeSearch.client.tsx')).toContain('overlayClassName="z-[150]"')
   })
 })
