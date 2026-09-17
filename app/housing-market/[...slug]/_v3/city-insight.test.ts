@@ -5,6 +5,7 @@ import {
   cityInsightPageCount,
   cityInsightSources,
 } from './city-insight'
+import { v3Text } from '@/components/site/v3'
 import { cityHomesRows } from './city-homes'
 import { closedTrace } from './geo-figures'
 import type { ListingTile } from '@/lib/data'
@@ -77,7 +78,7 @@ describe('buildCityInsightBoard', () => {
 describe('visitor English traces', () => {
   it('does not print Market Truth, mt-v1, MarketPulse, or leftover in the closed-sales line', () => {
     const closed = closedTrace('Bend', [
-      { value: '$750,000', label: 'median sale' },
+      { value: v3Text('$750,000'), label: v3Text('median sale') },
     ])
     expect(closed).toMatch(/Oregon Data Share MLS/)
     expect(closed).not.toMatch(INTERNAL)
