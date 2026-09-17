@@ -13,6 +13,8 @@ import {
   BEND_NEW_CON_SFR_ORDER,
   BEND_NEW_CON_STEVENS_RANCH_SF,
   BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES,
+  BEND_NEW_CON_SFR_SUBTYPE,
+  BEND_NEW_CON_TOWNHOUSE_SUBTYPE,
   bendNewConHortonTownhomeRows,
   bendNewConLeadRows,
   bendNewConRestPrimary,
@@ -24,7 +26,11 @@ import {
   BEND_NEW_CONSTRUCTION_RESEARCH_DATE,
   BEND_NEW_CONSTRUCTION_TITLE,
   bendNewConCommunityHref,
+  bendNewConSearchFilter,
   bendNewConSearchHref,
+  bendNewConSeeHomesLabel,
+  bendNewConStevensRanchSfHref,
+  bendNewConStevensRanchTownhomeHref,
   bendNewConWeight,
 } from './bend-new-construction'
 
@@ -101,12 +107,67 @@ describe('Bend new-construction snapshot', () => {
     expect(lodges?.builders).toBeNull()
   })
 
-  it('links named rows to Bend new-construction search, and NWX / Tetherow to community pages', () => {
+  it('opens exclusive new-construction search, and never the Tetherow 301 path', () => {
     expect(BEND_NEW_CON_SEARCH_HREF).toBe('/homes-for-sale/bend?newConstruction=1')
     expect(bendNewConSearchHref('Easton')).toBe('/homes-for-sale/bend/easton?newConstruction=1')
+    expect(bendNewConSearchHref('Parkside Place Phase 1')).toBe(
+      '/homes-for-sale/bend/parkside-place-phase-1?newConstruction=1',
+    )
+    expect(bendNewConSearchHref('Petrosa')).toBe('/homes-for-sale/bend/petrosa?newConstruction=1')
+    expect(bendNewConSearchHref('Acadia Pointe Phase 5 and 6')).toBe(
+      '/homes-for-sale/bend/acadia-pointe-phase-5-and-6?newConstruction=1',
+    )
+    expect(bendNewConSearchHref('NorthWest Crossing')).toBe(
+      '/homes-for-sale/bend/northwest-crossing?newConstruction=1',
+    )
+    expect(bendNewConSearchHref('Tetherow')).toBe(
+      '/homes-for-sale?newConstruction=1&city=Bend&subdivision=Tetherow',
+    )
+    expect(bendNewConSearchHref('Tetherow')).not.toContain('/homes-for-sale/bend/tetherow')
+    expect(bendNewConStevensRanchSfHref()).toBe(
+      `/homes-for-sale/bend/stevens-ranch?newConstruction=1&propertySubType=${encodeURIComponent(BEND_NEW_CON_SFR_SUBTYPE).replace(/%20/g, '+')}`,
+    )
+    expect(bendNewConStevensRanchTownhomeHref()).toContain('propertySubType=Townhouse')
+    expect(bendNewConStevensRanchTownhomeHref()).toContain('/homes-for-sale/bend/stevens-ranch')
+    expect(bendNewConStevensRanchTownhomeHref()).not.toContain('drhorton.com')
     expect(bendNewConCommunityHref('NorthWest Crossing')).toBe('/communities/northwest-crossing')
     expect(bendNewConCommunityHref('Tetherow')).toBe('/communities/tetherow')
     expect(bendNewConCommunityHref('Easton')).toBeNull()
+    expect(bendNewConSeeHomesLabel(null)).toBe('See homes')
+    expect(bendNewConSeeHomesLabel(0)).toBe('See homes')
+    expect(bendNewConSeeHomesLabel(1)).toBe('See 1 home')
+    expect(bendNewConSeeHomesLabel(8)).toBe('See 8 homes')
+    expect(bendNewConSearchFilter('Easton')).toEqual(
+      expect.objectContaining({
+        city: 'Bend',
+        newConstruction: true,
+        status: 'active',
+        subdivisions: expect.arrayContaining(['Easton']),
+      }),
+    )
+    expect(bendNewConSearchFilter('Stevens Ranch', { propertySubType: BEND_NEW_CON_SFR_SUBTYPE }))
+      .toEqual(
+        expect.objectContaining({
+          city: 'Bend',
+          newConstruction: true,
+          propertySubType: BEND_NEW_CON_SFR_SUBTYPE,
+          subdivisions: expect.arrayContaining(['Stevens Ranch']),
+        }),
+      )
+    expect(BEND_NEW_CON_TOWNHOUSE_SUBTYPE).toBe('Townhouse')
+    expect(BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES.builderHref).toMatch(/drhorton\.com/)
+    for (const row of BEND_NEW_CON_NAMED) {
+      const href = bendNewConSearchHref(row.name)
+      expect(href).toContain('newConstruction=1')
+      expect(href).not.toMatch(/^\/communities\//)
+      expect(href).not.toBe(BEND_NEW_CON_SEARCH_HREF)
+      if (row.name === 'Tetherow') {
+        expect(href).toContain('subdivision=Tetherow')
+        expect(href).toContain('city=Bend')
+      } else {
+        expect(href.startsWith('/homes-for-sale/bend/')).toBe(true)
+      }
+    }
   })
 
   it('splits 2+ active from singles and encodes Easton as the weight ceiling', () => {

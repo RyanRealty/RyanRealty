@@ -10,14 +10,18 @@ import {
   BEND_NEW_CON_SEARCH_HREF,
   BEND_NEW_CON_STAGE_FALLBACK_POSTER,
   bendNewConSearchHref,
+  bendNewConSeeHomesLabel,
   type NewConInventoryRow,
 } from '@/lib/site/bend-new-construction'
+import type { BendNewConLiveMatch } from './load-live-matches'
 
 export type NewConLeadBand = {
   key: string
   label: string
   row: NewConInventoryRow
   href: string
+  seeHomesLabel: string
+  liveCount: number | null
   cards: HomeRailCard[]
 }
 
@@ -39,6 +43,7 @@ function leadLabel(row: NewConInventoryRow): string {
 export async function buildNewConLeadShelf(
   leads: readonly NewConInventoryRow[],
   tilesByName: readonly (readonly ListingTile[])[],
+  matches: readonly BendNewConLiveMatch[] = [],
 ): Promise<NewConLeadShelfData> {
 
   const allTiles = tilesByName.flat()
@@ -59,11 +64,14 @@ export async function buildNewConLeadShelf(
       .filter((tile) => tile.propertySubType === 'Single Family Residence')
       .map((tile) => byKey.get(tile.listingKey))
       .filter((card): card is HomeRailCard => Boolean(card))
+    const live = matches[i]
     return {
       key: row.name,
       label: leadLabel(row),
       row,
-      href: bendNewConSearchHref(row.name),
+      href: live?.href ?? bendNewConSearchHref(row.name),
+      seeHomesLabel: bendNewConSeeHomesLabel(live?.count),
+      liveCount: live?.count ?? null,
       cards,
     }
   })

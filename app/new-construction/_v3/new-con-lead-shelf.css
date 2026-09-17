@@ -71,6 +71,10 @@
   margin: var(--v3-space-sm) var(--v3-gutter) 0;
 }
 
+.newcon-lead__door {
+  margin: var(--v3-space-sm) var(--v3-gutter) 0;
+}
+
 @media (max-width: 40rem) {
   .v3.home-rail.newcon-lead,
   .v3.newcon-lead {

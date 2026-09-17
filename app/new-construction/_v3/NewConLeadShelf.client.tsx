@@ -28,17 +28,19 @@ import '@/app/_v3/home-homes-rails.css'
 import './new-con-lead-shelf.css'
 
 function SnapshotDoor({ band }: { band: NewConLeadBand }) {
-  const { row, href } = band
+  const { row, href, seeHomesLabel, liveCount } = band
   return (
     <div className="newcon-lead__empty">
       <p className="newcon-lead__empty-band">{row.priceBand}</p>
       <p className="newcon-lead__empty-meta">
-        {row.active} active on 2026-09-16
+        {liveCount != null
+          ? `${liveCount} live now · ${row.active} Active on 2026-09-16`
+          : `${row.active} Active on 2026-09-16`}
         {row.builders ? ` · ${row.builders}` : ''}
         {row.typical ? ` · ${row.typical}` : ''}
       </p>
       <V3Button href={href} variant="primary">
-        {`See ${row.name} now`}
+        {seeHomesLabel}
       </V3Button>
     </div>
   )
@@ -100,6 +102,9 @@ function LeadTrack({
           </>
         ) : null}
       </Carousel>
+      <V3Button href={fallback.href} variant="primary" className="newcon-lead__door">
+        {fallback.seeHomesLabel}
+      </V3Button>
     </div>
   )
 }
