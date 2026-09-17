@@ -72,8 +72,8 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-17",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "Official taste-evaluate chain: cursor-agent not logged in; grok CLI installed but not signed in (subscription); claude CLI installed but not logged in. Separate grok-4.6 agent (cursor-grok-4.6-high Task) scored the eight plates three times. Do not treat CLI-missing as a pass.",
-    "evaluatorModel": "grok-4.6",
+    "evaluator": "Official taste-evaluate chain: cursor-agent / grok CLI / claude CLI all missing. Separate claude-sonnet-5 Task judge scored the eight plates three times. Builder cursor-grok-4.6. Do not treat CLI-missing as a pass.",
+    "evaluatorModel": "claude-sonnet-5",
     "builderModel": "cursor-grok-4.6",
     "transport": "cursor-task",
     "shotSpec": {
@@ -102,29 +102,29 @@
       "sheet-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-desktop.png",
       "sheet-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-mobile375.png"
     },
-    "shotsHash": "sha256:63bbc18aad725d97def4cca56309d25c3533949e4c9f9b1edf7f60fededeeecd",
+    "shotsHash": "sha256:0f7979441ab16967a9c5580dea27003a00e38cb2a74b064847b931d03374ff7c",
     "scores": [
-      58,
-      50,
-      56
+      52,
+      55,
+      58
     ],
-    "score": 56,
+    "score": 55,
     "criteria": {
-      "designQuality": 14,
-      "originality": 7,
-      "interaction": 13,
-      "craft": 10,
-      "honestyFunction": 12
+      "designQuality": 18,
+      "originality": 8,
+      "interaction": 10,
+      "craft": 11,
+      "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 14,
-      "originality": 7,
-      "interaction": 13,
-      "craft": 10,
-      "honesty": 12
+      "design": 18,
+      "originality": 8,
+      "interaction": 10,
+      "craft": 11,
+      "honesty": 8
     },
     "demoMatch": false,
-    "beats": "Beats Zillow/Redfin Bend map search on cream Atlas cartography (navy clusters, Bend boundary chip, price tags) and always-on Call/Text broker reach; not on search morph or filter-sheet craft.",
+    "beats": "Beats Redfin Bend map search on the mobile Call / Text / Work with us dock that stays on the 375 plates; not on morph choreography or filter-sheet craft.",
     "adaptedFrom": [
       { "id": "beui-morphing-search" },
       { "id": "beui-range-slider" },
@@ -137,49 +137,37 @@
       {
         "section": "header and filter-bar MorphingSearch (search-open / morph-open)",
         "severity": "taste",
-        "finding": "Open states are a thin full-width cream input plus a static five-row city/community Command list (Bend, Redmond, Sisters, Sunriver, Tetherow). Not a button-triggered layoutId shell with clip-path unfold into a grown panel that holds the typeable field and icon rows as one object.",
+        "finding": "Open plates still read as a flat bordered Command dropdown: typeable cream field, Esc kbd, five icon city rows. No visible button-to-panel grow, layoutId shell, clip-path unfold, or backdrop-blur. Phone 375 is a thin full-width input plus the same city list under sticky chrome.",
         "replaceWith": "beui-morphing-search"
       },
       {
-        "section": "MorphingSearch results panel (desktop open)",
+        "section": "results column",
         "severity": "taste",
-        "finding": "Desktop open panel is a cavernous empty cream slab: five left-aligned icon rows and a huge unused field to the right, overlaying the listing rail instead of a compact grown morph shell.",
-        "replaceWith": "beui-morphing-search"
+        "finding": "The listing rail is house portal cards (ask, ppsf band, address) beside the map. It does not carry the house-atlas mark language the catalog job asked for on the list itself.",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "PRICE range (rest and All filters sheet)",
+        "section": "All filters Price and Terms",
         "severity": "craft",
-        "finding": "Two identical gray dotted tracks with navy end-thumbs are stacked as duplicate sliders, not one dual-thumb range, on both the rest fold and inside All filters.",
+        "finding": "Price is a dotted dual-thumb track plus min/max number rows (annual taxes, est. monthly, previous list, price per square foot). Not the beui-range-slider dual-thumb object.",
         "replaceWith": "beui-range-slider"
-      },
-      {
-        "section": "All filters sheet (mobile375)",
-        "severity": "defect",
-        "finding": "Sticky Call / Text / Work with us bar covers Reset; Est. monthly payment is clipped; the desktop Show N homes confirm never appears, so the sheet cannot finish the filter job at 375.",
-        "replaceWith": "house-sheet"
-      },
-      {
-        "section": "All filters finder placeholder",
-        "severity": "taste",
-        "finding": "Placeholder reads Find a filter, like duplex or MUA10 — MUA10 is MLS-internal jargon, not buyer language.",
-        "replaceWith": null
       }
     ],
     "tells": [
-      "Cream box. — search-open and morph-open are a labeled cream field plus Command-as-list cities, not the beui morphing-search grown shell.",
-      "Raw slugs, internal labels, methodology jargon — MUA10 in the All filters finder placeholder."
+      "Cream box. — search-open and morph-open are a labeled cream field plus a five-row city list, not the beui morphing-search grown shell.",
+      "Shadow soup. — open panels sit as flat bordered dropdowns without the catalog blur or clip-path unfold."
     ],
-    "dullest": "The opened MorphingSearch panel: five city rows stranded in a wide empty cream rectangle that reads as a default autocomplete, not a morph.",
-    "verdict": "This is a competent navy/cream portal map search with real Bend listings, an Atlas-like field, square All-filters checkboxes, and reachable broker CTAs, not a morphing-search demo. demoMatch is false: open shots show Command-as-list place rows under a stretched input, not a button-to-panel clip-path morph with a grown shell. Duplicate stacked price tracks, a hollow desktop results slab, a mobile sheet eaten by the sticky bar, and the MUA10 placeholder keep it on-brand and dull in the catalog jobs that were supposed to lift it. Not Tip Ready.",
+    "dullest": "The results card list: repeating price / ppsf / address rows with no atlas mark language.",
+    "verdict": "Competent on-brand MLS search with real Bend listings, square All-filters checkboxes, and a reachable Call/Text dock. Not a beUI morph demo. demoMatch is false: open shots show a Command-as-list dropdown, not a button trigger growing into a layoutId clip-path panel. Median 55. Not Tip Ready.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 59,
+      "evaluatedAt": "2026-09-17",
+      "score": 56,
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:7550e309aae7f2b6e03e9400ceac479f65333f21a48ece12754c8b4f9848c1a7"
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:63bbc18aad725d97def4cca56309d25c3533949e4c9f9b1edf7f60fededeeecd"
     },
-    "rebaselineReason": "rubricVersion v1-2026-09-10 → v1-2026-09-12. Same evaluatorModel grok-4.6; first mark on the frozen rubric with search-open / morph-open / sheet-open plates. Median 56, demoMatch false. Next pass must rise on this instrument and show the catalog morph object."
+    "rebaselineReason": "evaluatorModel grok-4.6 → claude-sonnet-5 (cursor-agent / grok / claude CLIs missing; separate Task judge). New plates change shotsHash sha256:63bbc18aad725d97def4cca56309d25c3533949e4c9f9b1edf7f60fededeeecd → sha256:0f7979441ab16967a9c5580dea27003a00e38cb2a74b064847b931d03374ff7c. Same rubric v1-2026-09-12. Median 55, demoMatch false. Honesty 8 is the sonnet mark; HEAD recorded 12 on grok-4.6 — do not invent 12 to hold."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

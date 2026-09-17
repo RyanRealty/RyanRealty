@@ -8,17 +8,25 @@ export function isPhoneMorphViewport(viewportWidth: number): boolean {
   return viewportWidth > 0 && viewportWidth <= PHONE_MORPH_MAX_WIDTH
 }
 
-/** Official beUI width: at least the trigger, at most 448, stay on screen. */
+/** Official beUI width: at least the trigger, at most 448, stay on screen.
+ *  Measuring from a right-edge icon (chrome) used to collapse to ~48px —
+ *  search-open then looked like the rest fold. Grow to 448 and shift left. */
 export function catalogPanelWidth(
   viewportWidth: number,
-  anchorLeft: number,
+  _anchorLeft: number,
   anchorWidth: number,
 ): number {
   if (viewportWidth <= 0) return anchorWidth
-  return Math.max(
-    anchorWidth,
-    Math.min(CATALOG_PANEL_MAX, viewportWidth - anchorLeft - 16),
-  )
+  return Math.max(anchorWidth, Math.min(CATALOG_PANEL_MAX, viewportWidth - 32))
+}
+
+export function catalogPanelLeft(
+  viewportWidth: number,
+  anchorLeft: number,
+  panelWidth: number,
+): number {
+  if (viewportWidth <= 0) return anchorLeft
+  return Math.min(anchorLeft, Math.max(16, viewportWidth - panelWidth - 16))
 }
 
 /** Icon-only chrome trigger sits at the far right. A panel measured from

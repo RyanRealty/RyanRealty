@@ -53,7 +53,7 @@ describe('SITE-121 rematch craft', () => {
     expect(morph).not.toMatch(/from ['"]@\/components\/ui\/command['"]/)
     expect(readSrc('components/site/v3/V3ChromeSearch.client.tsx')).toContain('overlayClassName="z-[150]"')
     expect(readSrc('components/site/v3/V3ChromeSearch.client.tsx')).toMatch(/iconOnly=\{iconOnly\}/)
-    expect(readSrc('components/site/v3/V3ChromeSearch.client.tsx')).toMatch(/matchMedia/)
+    expect(readSrc('components/site/v3/V3ChromeSearch.client.tsx')).toMatch(/innerWidth <= 640/)
     expect(readSrc('components/search/SearchFilters.tsx')).not.toMatch(/iconOnly/)
     expect(readSrc('components/search/SearchFilters.tsx')).toMatch(/w-72 max-w-full/)
     expect(readSrc('components/site/v3/V3MorphSearch.css')).not.toMatch(/backdrop-filter:\s*none/)

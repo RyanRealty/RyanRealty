@@ -28,15 +28,14 @@ export function V3ChromeSearch() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [iconOnly, setIconOnly] = useState(true)
+  const [iconOnly, setIconOnly] = useState(false)
   const { suggestions } = useSearchSuggest(query)
 
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 56.24rem)')
-    const apply = () => setIconOnly(mq.matches)
+    const apply = () => setIconOnly(window.innerWidth <= 640)
     apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
+    window.addEventListener('resize', apply)
+    return () => window.removeEventListener('resize', apply)
   }, [])
 
   useEffect(() => {

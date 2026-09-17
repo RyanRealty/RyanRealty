@@ -24,6 +24,7 @@ import { useOnOpen } from "@/lib/hooks/use-on-open";
 import { useRowCursor } from "@/lib/hooks/use-row-cursor";
 import { cn } from "@/lib/utils";
 import {
+	catalogPanelLeft,
 	catalogPanelWidth,
 	iconOnlyPanelLayout,
 	isPhoneMorphViewport,
@@ -372,7 +373,9 @@ export function MorphingSearch({
 	const panelWidth = iconLayout
 		? iconLayout.width
 		: catalogPanelWidth(viewportWidth, anchorRect.left, anchorRect.width);
-	const panelLeft = iconLayout ? iconLayout.left : anchorRect.left;
+	const panelLeft = iconLayout
+		? iconLayout.left
+		: catalogPanelLeft(viewportWidth, anchorRect.left, panelWidth);
 	const panelTop = iconLayout ? iconLayout.top : anchorRect.top;
 	const resultsHeight = mounted
 		? Math.max(96, Math.min(288, window.innerHeight - panelTop - 80))

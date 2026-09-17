@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
+  catalogPanelLeft,
   catalogPanelWidth,
   iconOnlyPanelLayout,
   isPhoneMorphViewport,
@@ -22,8 +23,10 @@ describe('SITE-121 phone MorphingSearch sheet', () => {
 
   it('desktop grows the official catalog panel, not a full-bleed slab', () => {
     expect(catalogPanelWidth(1440, 16, 288)).toBe(448)
-    expect(catalogPanelWidth(1440, 976, 48)).toBe(448)
-    expect(catalogPanelWidth(375, 12, 288)).toBe(347)
+    expect(catalogPanelWidth(1440, 1380, 48)).toBe(448)
+    expect(catalogPanelLeft(1440, 1380, 448)).toBe(976)
+    expect(catalogPanelLeft(1440, 16, 448)).toBe(16)
+    expect(catalogPanelWidth(375, 12, 288)).toBe(343)
   })
 
   it('reads overlay z-[150] so the input is not under sticky chrome at 100', () => {
