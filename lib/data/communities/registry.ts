@@ -158,3 +158,50 @@ export function getResortCommunityBySubdivisionName(
   if (!key) return null
   return communityByAlias.get(key) ?? null
 }
+
+function placeLookupKeys(value: string | null | undefined): string[] {
+  const raw = (value ?? '').trim().toLowerCase()
+  if (!raw) return []
+  const spaced = raw.replace(/-/g, ' ').replace(/\s+/g, ' ')
+  const dashed = spaced.replace(/\s+/g, '-')
+  return [...new Set([raw, spaced, dashed])]
+}
+
+function addKeys(into: Set<string>, value: string | null | undefined): void {
+  for (const key of placeLookupKeys(value)) into.add(key)
+}
+
+/**
+ * True when `child` is listed on `parent`'s registry entry
+ * (`subdivision_aliases` or `sub_neighborhoods`). Geography or MLS
+ * coincidence is not enough — both places must resolve through the
+ * resort registry, and the child must be a named member.
+ */
+export function isVerifiedRegistryChild(
+  parent: { slug?: string | null; label?: string | null },
+  child: { slug?: string | null; label?: string | null },
+): boolean {
+  const parentEntry =
+    getResortCommunityBySlug((parent.slug ?? '').trim().toLowerCase()) ??
+    getResortCommunityBySubdivisionName(parent.label) ??
+    getResortCommunityBySubdivisionName(parent.slug)
+  if (!parentEntry) return false
+
+  const childKeys = new Set<string>()
+  addKeys(childKeys, child.slug)
+  addKeys(childKeys, child.label)
+  if (childKeys.size === 0) return false
+
+  const members = new Set<string>()
+  for (const alias of parentEntry.subdivision_aliases ?? []) addKeys(members, alias)
+  for (const sub of parentEntry.sub_neighborhoods ?? []) {
+    addKeys(members, sub.slug)
+    addKeys(members, sub.name)
+    for (const alias of sub.mls_aliases ?? []) addKeys(members, alias)
+  }
+
+  for (const key of childKeys) {
+    if (members.has(key)) return true
+  }
+  return false
+}

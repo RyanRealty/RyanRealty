@@ -4,7 +4,10 @@
  * they land on /cities, /communities, /subdivisions — not /homes-for-sale.
  */
 import { getPlaceLinks } from '@/lib/place-links'
-import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
+import {
+  getResortCommunityBySlug,
+  isVerifiedRegistryChild,
+} from '@/lib/data/communities/registry'
 import { cityHref, cityNeighborhoodHref, subdivisionHref } from '@/lib/site/place-href'
 import {
   isPermitGluedPlatSlug,
@@ -119,8 +122,13 @@ export function subdivisionPageTrail(
 }
 
 /**
- * Listing: city landing → neighborhood if any → planned community if any →
- * subdivision if any → address (no href).
+ * Listing: city landing → neighborhood only when it is a proven ancestor
+ * of the community (or when there is no community) → planned community if
+ * any → subdivision if any → address (no href).
+ *
+ * Neighborhood and community are peers unless the resort registry lists
+ * the community as a child of the neighborhood. MLS / GIS coincidence
+ * (Vandevert Ranch next to Caldera Springs) is not a parent.
  */
 export function listingPlaceTrail(input: {
   city?: PlaceTrailNode | null
@@ -137,9 +145,13 @@ export function listingPlaceTrail(input: {
   const community = visitorPlaceNode(input.community)
   const neighborhoodRaw = visitorPlaceNode(input.neighborhood)
   const neighborhood =
-    neighborhoodRaw && community && samePlace(neighborhoodRaw, community)
+    !neighborhoodRaw
       ? null
-      : neighborhoodRaw
+      : community && samePlace(neighborhoodRaw, community)
+        ? null
+        : community && !isVerifiedRegistryChild(neighborhoodRaw, community)
+          ? null
+          : neighborhoodRaw
   if (neighborhood && !(city && samePlace(city, neighborhood))) {
     const href = city
       ? cityNeighborhoodHref(city.slug, neighborhood.slug)
