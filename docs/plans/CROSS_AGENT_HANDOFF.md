@@ -2,7 +2,7 @@
 
 Surface: Cursor cloud `cursor-cloud-site111-20260916`, branch `cursor/site-111-sell-tip-ready-75a0`, PR #267. Do not merge. Node stays `in_progress`.
 
-- Tip SHA after receipt commit (this file + sell parity). `--ship` exit 1. `demoMatch: false`. Median 68 (72/65/68) vs rematch-2 55 vs HEAD 63. Judge: claude-sonnet-5 Task. Builder: grok-4.6.
+- Tip SHA `832f12fad`. `--ship` exit 1. `demoMatch: false`. Median 68 (72/65/68) vs rematch-2 55 vs HEAD 63. Judge: claude-sonnet-5 Task. Builder: grok-4.6.
 - Judge accepted house-stage street reframe. replaceWith still: `beui-expanding-arrow-button` (five fading chevrons, no layout-size expand). No house paint after this false.
 - Skills read: `.cursor/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
