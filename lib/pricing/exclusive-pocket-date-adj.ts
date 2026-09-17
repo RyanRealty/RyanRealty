@@ -5,13 +5,14 @@
  * Clearpine / Forest Edge / Grand Peaks out). Do not reopen that path.
  *
  * The city monthly index is every Sisters sale. Walking exclusive-pocket
- * Horse Back closes along that series reintroduces the upmarket ppsf the
- * picker excluded and pumps recommend from the Flex ~$649–675k sold/list
- * band toward ~$800k+. Flex uses nearer list/sold without that pump.
+ * Horse Back closes along a rising city series reintroduces the upmarket
+ * ppsf the picker excluded and pumps recommend toward ~$800k+. Flex uses
+ * nearer list/sold without that pump.
  *
- * When the selected set stayed exclusive, date-adjust does not apply the
- * city-index factor. Size and story do not adjust on the exclusive pocket (recommend as sold). Story is killed entirely
- * (Matt 2026-09-17) — even when the pocket is starved and widens one ring.
+ * Matt 2026-09-17 Flex-style cool: exclusive pocket refuses upward city-index
+ * pump (factor > 1 → flat) but allows downward cooling (factor ≤ 1). Size and
+ * story stay 0 on the exclusive pocket. Story is killed entirely — even when
+ * the pocket is starved and widens one ring.
  */
 
 import type { MarketPath } from '@/lib/pricing/market-path'
@@ -40,18 +41,21 @@ export function selectionIsExclusivePocket(tiersUsed: readonly string[]): boolea
 }
 
 /**
- * Exclusive-pocket sales are the market. The city path may still be computed
- * (so the document can name what it refused) but the applied factor is 1.
+ * Flex-style time/date on exclusive pocket (market cool / no false hope):
+ * allow downward cooling; refuse upward city-index pump.
  */
 export function applyExclusivePocketDateAdj(path: MarketPath, exclusivePocket: boolean): MarketPath {
   if (!exclusivePocket) return path
   if (path.factor === 1 && path.source === 'none') return path
+  // Cooling or flat — keep Flex-style time adjustment.
+  if (path.factor <= 1) return path
+  // Rising city index — refuse the pump.
   return {
     ...path,
     factor: 1,
     monthlyRate: 0,
     regime: 'flat',
-    capped: path.factor !== 1,
+    capped: true,
   }
 }
 
@@ -63,7 +67,22 @@ export function applyExclusivePocketStoryAdj(_rawStoryAdj: number, _exclusivePoc
   return 0
 }
 
-export function exclusivePocketPathNote(address: string, cityPath: MarketPath): string {
-  const pct = ((cityPath.factor - 1) * 100).toFixed(1)
-  return `${address}: exclusive pocket — date adjustment not applied along the city index (would have been ${pct}%). Sold and last-ask stay as recorded — size and story class do not adjust.`
+export function exclusivePocketPathNote(
+  address: string,
+  cityPath: MarketPath,
+  applied?: MarketPath,
+): string {
+  const cityPct = ((cityPath.factor - 1) * 100).toFixed(1)
+  const used = applied ?? (cityPath.factor <= 1 ? cityPath : { ...cityPath, factor: 1 })
+  if (used.factor < 1) {
+    const appliedPct = ((used.factor - 1) * 100).toFixed(1)
+    if (cityPath.factor > 1) {
+      return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% (city index refused upward pump of ${cityPct}%). Size and story class do not adjust.`
+    }
+    return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% along the market path. Size and story class do not adjust.`
+  }
+  if (cityPath.factor > 1) {
+    return `${address}: exclusive pocket — date adjustment not applied along the city index (would have pumped ${cityPct}%). Sold and last-ask stay as recorded — size and story class do not adjust.`
+  }
+  return `${address}: exclusive pocket — date adjustment flat. Sold and last-ask stay as recorded — size and story class do not adjust.`
 }

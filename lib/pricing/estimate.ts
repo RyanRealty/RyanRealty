@@ -626,7 +626,7 @@ export function adjustCompAlongMarket(opts: {
   asOf: string
   /** Hydrated first-list DOM from `selection.comps`. Overlay after sale rebuild. */
   hydrated?: HydratedClosedCompDom | null
-  /** Exclusive pocket: refuse city-index date-adjust and story-class lift. */
+  /** Exclusive pocket: refuse upward city-index pump; allow Flex-style cooling; story lift stays 0. */
   exclusivePocket?: boolean
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   return adjustCmaCompAlongMarket({
@@ -657,7 +657,7 @@ export function adjustCmaCompAlongMarket(opts: {
   saleStory: StoryClass
   points: MarketIndexPoint[]
   asOf: string
-  /** Exclusive pocket: refuse city-index date-adjust and story-class lift. */
+  /** Exclusive pocket: refuse upward city-index pump; allow Flex-style cooling; story lift stays 0. */
   exclusivePocket?: boolean
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   const sale = opts.comp
@@ -699,7 +699,7 @@ export function adjustCmaCompAlongMarket(opts: {
   }
   const pathNote =
     opts.exclusivePocket === true
-      ? exclusivePocketPathNote(sale.address, cityPath)
+      ? exclusivePocketPathNote(sale.address, cityPath, path)
       : `${sale.address}: ${describePath(path)}`
   return { adjusted, path, pathNote }
 }
