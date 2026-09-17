@@ -7,7 +7,8 @@
    Near-zero weight by design: the trail tells a visitor where they are, and
    then the answer at the top of the page does the talking. Ancestors are muted,
    the current page is full ink, and there is no box, rule, or chip around any
-   of it.
+   of it. Long trails collapse (first / … / current) so the strip stays one
+   line instead of wrapping a cream band.
 
    The block selector is doubled (.v3.v3-breadcrumb) for the same reason every
    pattern stylesheet doubles its own: a single-class rule would be decided by
@@ -17,7 +18,7 @@
 .v3.v3-breadcrumb {
   max-width: var(--v3-measure);
   margin: 0 auto;
-  padding: var(--v3-space-xs) var(--v3-gutter) 0;
+  padding: 0 var(--v3-gutter);
 }
 
 /* The below-nav variant is AIR, not clearance (2026-08-27 mobile audit).
@@ -26,24 +27,53 @@
    occupying its own height — so nothing needs clearing, and the old value
    painted a dead cream band under the bar on every page that mounts this
    variant (Matt saw it on a phone: a blank half-viewport above the crumb).
-   What remains is ordinary leading space. */
+   2026-09-17: ordinary leading space is 2xs, not md. */
 .v3.v3-breadcrumb--below-nav {
-  padding-top: var(--v3-space-md);
+  padding-top: var(--v3-space-2xs);
+}
+
+.v3.v3-breadcrumb--overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 6;
+  max-width: none;
+  margin: 0;
+  padding: 0 var(--v3-gutter);
+  pointer-events: none;
+}
+
+.v3.v3-breadcrumb--overlay .v3-breadcrumb__list,
+.v3.v3-breadcrumb--overlay .v3-breadcrumb__link,
+.v3.v3-breadcrumb--overlay .v3-breadcrumb__collapse {
+  pointer-events: auto;
 }
 
 .v3-breadcrumb__list {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   margin: 0;
   padding: 0;
   list-style: none;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .v3-breadcrumb__item {
   display: flex;
   align-items: center;
   min-width: 0;
+}
+
+.v3-breadcrumb__item--more {
+  flex: 0 0 auto;
+}
+
+.v3-breadcrumb__item:last-child {
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 /* The separator is generated content rather than a DOM node: the list already
@@ -57,7 +87,8 @@
 }
 
 .v3-breadcrumb__link,
-.v3-breadcrumb__text {
+.v3-breadcrumb__text,
+.v3-breadcrumb__collapse {
   display: inline-flex;
   align-items: center;
   min-height: var(--v3-tap);
@@ -88,18 +119,47 @@
 .v3-breadcrumb__text--current {
   color: var(--v3-ink);
   font-weight: var(--v3-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(18rem, 52vw);
+}
+
+.v3.v3-breadcrumb .v3-breadcrumb__collapse {
+  margin: 0;
+  padding: 0 var(--v3-space-2xs);
+  border: 0;
+  background: transparent;
+  color: var(--v3-ink-muted);
+  cursor: pointer;
+}
+
+.v3-breadcrumb__collapse:hover,
+.v3-breadcrumb__collapse:focus-visible {
+  color: var(--v3-ink);
+}
+
+.v3-breadcrumb__collapse-menu {
+  background: var(--v3-cream);
+  color: var(--v3-navy);
 }
 
 /* On-media inverts the trail. Callers sometimes mount that tone as a sibling
    above Stage (community, sell) on cream ground, so the inverse surface has
    to carry the contrast. White ink on cream is 1.06:1. Navy behind the strip
-   keeps WCAG AA whether the trail sits on media or not. */
+   keeps WCAG AA whether the trail sits on media or not. Overlay skips the
+   solid bar — a short navy wash over the photograph is enough. */
 .v3.v3-breadcrumb--on-media {
   background: var(--v3-surface-inverse);
 }
 
+.v3.v3-breadcrumb--on-media.v3-breadcrumb--overlay {
+  background: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+}
+
 .v3-breadcrumb--on-media .v3-breadcrumb__link,
 .v3-breadcrumb--on-media .v3-breadcrumb__text,
+.v3-breadcrumb--on-media .v3-breadcrumb__collapse,
 .v3-breadcrumb--on-media .v3-breadcrumb__item + .v3-breadcrumb__item::before {
   color: var(--v3-ink-on-navy-muted);
   text-shadow: var(--v3-media-shadow);
@@ -107,6 +167,8 @@
 
 .v3-breadcrumb--on-media .v3-breadcrumb__link:hover,
 .v3-breadcrumb--on-media .v3-breadcrumb__link:focus-visible,
-.v3-breadcrumb--on-media .v3-breadcrumb__text--current {
+.v3-breadcrumb--on-media .v3-breadcrumb__text--current,
+.v3-breadcrumb--on-media .v3-breadcrumb__collapse:hover,
+.v3-breadcrumb--on-media .v3-breadcrumb__collapse:focus-visible {
   color: var(--v3-ink-on-media);
 }

@@ -33,6 +33,7 @@ import {
   isAboutLockBrief,
 } from './about-lock.mjs'
 import { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
+import { breadcrumbFoldDensityProblems, listingHeroFoldDensityProblems } from './listing-fold-density.mjs'
 
 export { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
 
@@ -636,6 +637,13 @@ export function tasteDoneProblems(tr, { competitiveBrief = null, catalog = null,
   }
   p.push(...openStateEvidenceProblems(tr, { catalogClass }))
   p.push(...tipReadyCatalogInstallProblems(tr.adaptedFrom, { catalog, route, root, catalogIo }))
+  const listingKit = kit === 'listing-detail' || route === 'app/listing/[listingKey]/page.tsx'
+  if (existsSync(join(root, 'components/site/v3/V3Breadcrumb.tsx'))) {
+    p.push(...breadcrumbFoldDensityProblems({ root }))
+  } else if (listingKit) {
+    p.push('listing-detail Tip Ready requires the shared V3Breadcrumb primitive.')
+  }
+  if (listingKit) p.push(...listingHeroFoldDensityProblems({ root }))
   return p
 }
 
