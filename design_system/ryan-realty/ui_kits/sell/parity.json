@@ -135,7 +135,7 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-17",
-    "evaluator": "separate claude-sonnet-5 evaluator (Cursor Task). grok CLI, cursor-agent, and claude CLI were not installed in this sandbox, so the chain could not sign via taste-evaluate.ts. Builder is grok-4.6. Three scorings in one call (55 / 58 / 52). The route publishes no competitiveBrief.",
+    "evaluator": "separate claude-sonnet-5 evaluator (Cursor Task). grok CLI, cursor-agent, and claude CLI were not installed in this sandbox, so the chain could not sign via taste-evaluate.ts. Builder is grok-4.6. Three scorings in one call (72 / 65 / 68). The route publishes no competitiveBrief.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "grok-4.6",
     "rubricVersion": "v1-2026-09-12",
@@ -156,7 +156,7 @@
         "address-ok",
         "answer-open"
       ],
-      "capture": "first viewport, custom Playwright open-state capture against next dev --webpack -p 3111, scale 1, palette-quantized. default: page as served. address-focus: #get-value-address click framed on #get-value. ask-open: [data-taste=ask-open] click. address-error: type abc + submit, await .sell-field__error. address-ok: fill 61271 Kwinnum Dr, Bend, OR 97702 without submit, await [data-taste=address-confirm] and data-sell-focus=pinned. answer-open: type full street + submit, await .sell-answer (180s)."
+      "capture": "first viewport, custom Playwright open-state capture against next dev --webpack -p 3111, scale 1, palette-quantized. default: page as served. address-focus: #get-value-address click framed on #get-value. ask-open: [data-taste=ask-open] click. address-error: type abc + submit, await .sell-field__error. address-ok: fill 61271 Kwinnum Dr, Bend, OR 97702, await [data-taste=address-confirm], data-sell-focus=pinned, and #sell-hero img.sell-stage-street complete. answer-open: type full street + submit, await .sell-answer (180s)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/sell/shots/sell-1440.png",
@@ -172,22 +172,22 @@
       "answerOpenDesktop": "design_system/ryan-realty/ui_kits/sell/shots/answer-open-1440.png",
       "answerOpen375": "design_system/ryan-realty/ui_kits/sell/shots/answer-open-375.png"
     },
-    "shotsHash": "sha256:5629cf5d863f7b10eda93429e64adaa92606c2344e845f6d297fedb95519b662",
+    "shotsHash": "sha256:7f61d272cd44fc7943ca155ea9ee2e8445cde028a9f0881a8baf5bc2c7d4c035",
     "scores": [
-      55,
-      58,
-      52
+      72,
+      65,
+      68
     ],
-    "score": 55,
+    "score": 68,
     "criteria": {
-      "designQuality": 16,
-      "originality": 11,
-      "interaction": 10,
-      "craft": 10,
-      "honestyFunction": 8
+      "designQuality": 20,
+      "originality": 16,
+      "interaction": 11,
+      "craft": 12,
+      "honestyFunction": 9
     },
     "demoMatch": false,
-    "beats": "Beats Zillow's generic Zestimate seller flow by tying the ask to a real, sourced Bend inventory sheet (609 active vs 176.5/mo absorption, 25-day median DOM) keyed to the exact street typed, not a single opaque number.",
+    "beats": "Beats Zillow's What's my home worth estimator on data honesty and depth: Zillow prints a bare Zestimate with no citation, while this page's answer sheet sources a months-of-supply verdict and a days-to-pending scrubber to a named metric layer.",
     "adaptedFrom": [
       {
         "id": "house-stage"
@@ -207,49 +207,35 @@
     ],
     "defects": [
       {
-        "section": "Hero / Stage aerial",
+        "section": "Value my home CTA, ask-open state",
         "severity": "taste",
-        "finding": "sell-1440 and address-ok-1440 show the identical aerial crop and zoom; the only change on address entry is a flat dark scrim over the same frame. There is no pan, zoom, or reframe toward the typed street, so the house-stage form-specific reframe demo never actually happens.",
-        "primitive": "components/site/v3/V3Stage.tsx",
-        "replaceWith": "house-stage"
-      },
-      {
-        "section": "Value my home button (ask-open)",
-        "severity": "taste",
-        "finding": "On open, the navy accent-tile button loses its fill, icon, and label and becomes a plain cream pill filled with scattered round dots fading toward one edge. The judge did not read a chevron or directional arrow trail, so demoMatch stayed false.",
+        "finding": "Submitting the address swaps the button label for five static, fixed-position chevrons fading in opacity at identical width and radius to the resting button — a decorative fading-arrow trail, not the beui expanding-arrow-button's layout-size expand with a single traveling arrow. No layout size change is visible between rest and open.",
         "primitive": "components/motion/expanding-arrow-button.tsx",
         "replaceWith": "beui-expanding-arrow-button"
       },
       {
-        "section": "Address field, mobile (address-ok-375)",
-        "severity": "craft",
-        "finding": "The pill still truncates the street text even after a successful match. The full address repeats as a second line under the field.",
-        "primitive": "app/sell/_v3/SellAddressField.tsx",
-        "replaceWith": "house-sheet"
+        "section": "Address autocomplete dropdown, address-ok state",
+        "severity": "defect",
+        "finding": "The Google Places suggestion row still shows the raw powered by Google wordmark chrome sitting inside an otherwise fully custom navy/cream field, breaking the editorial styling at the exact moment of success.",
+        "primitive": "components/seller-lp/AddressAutocomplete.tsx",
+        "replaceWith": null
       },
       {
-        "section": "THE RECORD (below Stage)",
+        "section": "The Record stat row, glimpsed below the fold",
         "severity": "taste",
-        "finding": "THE RECORD still reads as an eyebrow-then-heading band under the Stage rather than a distinct section form.",
+        "finding": "Homes closed and closed volume render as a bare numeral-plus-caption pair with no chart, sparkline, bar, or other visual encoding — the KPI-grid shape the rubric bans.",
         "primitive": "app/sell/page.tsx",
-        "replaceWith": null
-      },
-      {
-        "section": "Mobile bottom bar (all shots at 375)",
-        "severity": "craft",
-        "finding": "The fixed bottom action bar clips its first label under the left edge of the viewport.",
-        "primitive": "components/site/v3/V3PhoneDock.client.tsx",
-        "replaceWith": null
+        "replaceWith": "stat tile with sparkline"
       }
     ],
-    "verdict": "demoMatch is false as returned. The beUI input states and the shadcn Sheet with sourced MOS bars are the real gain. The judge did not accept the Stage dim as a street reframe, and read the expanding-arrow trail as a dot cluster rather than a chevron. Honest false. Node stays in_progress. No house paint after this mark.",
-    "comparedToPrior": "fell",
+    "verdict": "demoMatch is false as returned. The judge accepted the house-stage street reframe (Stage photograph swaps to the typed lot) and the beUI pill plus shadcn Sheet with sourced MOS. The open ask still reads as five fading chevrons at unchanged outer width, not the catalog layout-size expand. Honest false. Node stays in_progress. No house paint after this mark.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-16",
-      "score": 57,
+      "evaluatedAt": "2026-09-17",
+      "score": 55,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:c0c798830a10f5f3b345c5e54688f1b25cfcbdc28978187319ee47c12f1bd8b4"
+      "shotsHash": "sha256:5629cf5d863f7b10eda93429e64adaa92606c2344e845f6d297fedb95519b662"
     }
   },
   "contentFloor": {
