@@ -27,6 +27,7 @@ import {
   sewerCompatible,
   similarPerformingSubdivision,
   untieredSalePriceTierOk,
+  ONE_STORY_PREMIUM,
   storyAdjustment,
   waterCompatible,
 } from '@/lib/pricing/classes'
@@ -249,10 +250,13 @@ describe('year and quality for custom / new subjects', () => {
 
 describe('story dollar adjustment', () => {
   it('adds the measured 13.5% when the subject is one-story and the comp is two', () => {
-    expect(storyAdjustment('one', 'two', 700_000)).toBe(94_500)
-    expect(storyAdjustment('two', 'one', 700_000)).toBe(-94_500)
+    // Matt 2026-09-17: story-adj killed entirely — always 0.
+    expect(storyAdjustment('one', 'two', 700_000)).toBe(0)
+    expect(storyAdjustment('two', 'one', 700_000)).toBe(0)
     expect(storyAdjustment('one', 'one', 700_000)).toBe(0)
     expect(storyAdjustment('one', 'unknown', 700_000)).toBe(0)
+    // Historical premium constant stays named so Tip Ready can prove what we refused.
+    expect(ONE_STORY_PREMIUM).toBe(0.135)
   })
 })
 

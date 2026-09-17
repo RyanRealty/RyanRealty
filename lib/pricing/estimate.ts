@@ -38,7 +38,6 @@ import {
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 import {
   applyExclusivePocketDateAdj,
-  applyExclusivePocketStoryAdj,
   exclusivePocketPathNote,
   selectionIsExclusivePocket,
   TIME_ADJUSTMENT_BASIS_POCKET,
@@ -674,10 +673,8 @@ export function adjustCmaCompAlongMarket(opts: {
   const ppsfTimeAdjusted = sale.sqft > 0 ? timeAdjustedPrice / sale.sqft : 0
   const sizeAdjustment =
     subjectSqft > 0 ? Math.round((subjectSqft - sale.sqft) * ppsfTimeAdjusted * SIZE_ADJ_FACTOR) : 0
-  const storyAdj = applyExclusivePocketStoryAdj(
-    storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice),
-    exclusivePocket,
-  )
+  // Matt 2026-09-17: storyAdjustment is permanently 0 (kill story-adj entirely).
+  const storyAdj = storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice)
   const adjustedPrice = timeAdjustedPrice + sizeAdjustment + storyAdj
   const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - sale.sqft) / subjectSqft) : 1
   const recency = 1 / (1 + monthsSinceClose / 12)

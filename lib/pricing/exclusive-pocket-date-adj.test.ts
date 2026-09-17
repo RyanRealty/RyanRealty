@@ -53,14 +53,10 @@ describe('applyExclusivePocketDateAdj', () => {
 })
 
 describe('applyExclusivePocketStoryAdj', () => {
-  it('passes through when the set widened (pocket starved)', () => {
-    expect(applyExclusivePocketStoryAdj(94_500, false)).toBe(94_500)
-    expect(applyExclusivePocketStoryAdj(-94_500, false)).toBe(-94_500)
-  })
-
-  it('zeros story lift on an exclusive pocket', () => {
+  it('contract: story-adj-killed-entirely — always zero even when widened', () => {
+    expect(applyExclusivePocketStoryAdj(94_500, false)).toBe(0)
+    expect(applyExclusivePocketStoryAdj(-94_500, false)).toBe(0)
     expect(applyExclusivePocketStoryAdj(94_500, true)).toBe(0)
-    expect(applyExclusivePocketStoryAdj(-94_500, true)).toBe(0)
     expect(applyExclusivePocketStoryAdj(0, true)).toBe(0)
   })
 })
