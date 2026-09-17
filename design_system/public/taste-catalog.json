@@ -192,6 +192,32 @@
     "beui:input": {
       "aliasOf": "beui-input"
     },
+    "beui-expanding-arrow-button": {
+      "add": "@beui/expanding-arrow-button",
+      "file": "components/motion/expanding-arrow-button.tsx",
+      "import": "@/components/motion/expanding-arrow-button",
+      "repo": "https://beui.dev/components/motion/expanding-arrow-button",
+      "mustContain": [
+        "DottedChevron",
+        "ARROW_OPACITY",
+        "layout=\"size\""
+      ]
+    },
+    "beui:expanding-arrow-button": {
+      "aliasOf": "beui-expanding-arrow-button"
+    },
+    "shadcn-input-group": {
+      "add": "input-group",
+      "file": "components/ui/input-group.tsx",
+      "import": "@/components/ui/input-group",
+      "mustContain": [
+        "data-slot=\"input-group\"",
+        "InputGroupAddon"
+      ]
+    },
+    "shadcn:input-group": {
+      "aliasOf": "shadcn-input-group"
+    },
     "shadcn-button-group": {
       "add": "button-group",
       "file": "components/ui/button-group.tsx",
@@ -2525,11 +2551,29 @@
           "job": "Address field error shake and success check, restyled navy on cream."
         },
         {
+          "id": "shadcn-input-group",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input-group",
+          "job": "Address addon plus focus and invalid rings. Not a border-only house box."
+        },
+        {
+          "id": "beui-expanding-arrow-button",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/expanding-arrow-button",
+          "job": "Value my home is the expanding accent tile with the dotted-arrow trail."
+        },
+        {
           "id": "transitions-panel",
           "catalog": "transitions",
           "url": "https://transitions.dev",
           "job": "Answer panel reveal after the address, at our motion band."
         }
+      ],
+      "demoStates": [
+        "address-focus=#get-value-address@#get-value!click",
+        "ask-open=[data-taste=ask-open]@#get-value!click",
+        "address-error=#get-value-address!type:abc",
+        "answer-open=#get-value-address!type:61271 Kwinnum Dr, Bend, OR 97702"
       ]
     },
     "city": {
