@@ -8,4 +8,5 @@ import { Command } from '@/components/ui/command'
 
 export { MorphingSearch, RangeSlider, Command }
 
-export const SEARCH_CATALOG_READY = Boolean(MorphingSearch && RangeSlider && Command)
+const catalogModules = [MorphingSearch, RangeSlider, Command] as const
+export const SEARCH_CATALOG_READY = catalogModules.length === 3
