@@ -116,7 +116,7 @@ describe('Bend new-construction snapshot', () => {
       'Calaveras',
       'Easton',
     ])
-    expect(BEND_NEW_CON_LEDE).toMatch(/\$399,990/)
+    expect(BEND_NEW_CON_LEDE).toBe('Parkside Place starts at $399,990')
     expect(bendNewConLeadRows().map((row) => row.name)).toEqual([...BEND_NEW_CON_LEAD_NAMES])
     expect(bendNewConRestPrimary().some((row) => row.name === 'Easton')).toBe(false)
     expect(financingHighlight({

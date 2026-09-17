@@ -1,0 +1,20 @@
+/* Page-scoped fold: on a texted 375, the house cards beat the KPI band. */
+
+.newcon-hero {
+  position: relative;
+}
+
+@media (max-width: 40rem) {
+  .newcon-hero .v3-stage-band,
+  .newcon-hero .v3-stage-eyebrow,
+  .newcon-hero .v3-stage-copy .v3-btn {
+    display: none;
+  }
+
+  .newcon-hero .v3.v3-stage--compact .v3-stage-copy,
+  .newcon-hero .v3-stage-copy {
+    padding-top: 3.25rem;
+    padding-bottom: var(--v3-space-xs);
+    gap: var(--v3-space-2xs);
+  }
+}

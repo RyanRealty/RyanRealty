@@ -59,6 +59,7 @@ import {
 import { V3Stage } from '@/components/site/v3/V3Stage'
 import { buildNewConLeadShelf } from './_v3/load-lead-shelf'
 import { NewConLeadShelf } from './_v3/NewConLeadShelf.client'
+import './_v3/new-con-page.css'
 
 export const revalidate = 86400
 
@@ -94,7 +95,7 @@ function inventoryRow(row: NewConInventoryRow): V3LedgerFigureRow {
 }
 
 function financingAnswers(): V3Answer[] {
-  return BEND_NEW_CON_FINANCING.map((offer, index) => {
+  return BEND_NEW_CON_FINANCING.map((offer) => {
     const flags = flagLabel(offer.flags)
     const highlight = financingHighlight(offer)
     return {
@@ -106,7 +107,6 @@ function financingAnswers(): V3Answer[] {
       action: offer.sources[0]
         ? { label: offer.sources[0].label, href: offer.sources[0].href }
         : undefined,
-      open: index === 0,
     }
   })
 }
@@ -178,7 +178,7 @@ export default async function NewConstructionPage() {
 
         <V3SectionTracker />
 
-        <div className="relative">
+        <div className="newcon-hero">
           <V3Stage
             id="new-construction"
             headingLevel={1}
@@ -230,7 +230,7 @@ export default async function NewConstructionPage() {
 
         <NewConLeadShelf
           heading={BEND_NEW_CON_LEDE}
-          note="Not a loan offer. Bands are the 2026-09-16 pull. The houses on the shelf are live listings in those communities."
+          note="Not a loan offer. Bands from 2026-09-16. Houses on the shelf are live."
           bands={lead.bands}
           seeAllHref={BEND_NEW_CON_SEARCH_HREF}
         />
