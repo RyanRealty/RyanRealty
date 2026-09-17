@@ -70,13 +70,15 @@ describe('buildLiveFigures — list median digits', () => {
     expect(String(list?.value)).not.toContain('$400,000')
   })
 
-  it('prints leftover pending on the live instrument and leftover-membership trace', () => {
+  it('prints leftover pending on the live instrument and visitor-English MLS trace', () => {
     const live = buildLiveFigures(hud({ pending: 316, closed30: 180, daysToPending: 19 }), '4.4', 'Bend')
     const labels = live.figures.map((f) => String(f.label))
     expect(labels).toContain('under contract now')
     expect(labels).toContain('closed in the last 30 days')
     expect(labels).toContain('days to an offer, last 90 days')
-    expect(live.trace).toMatch(/Oregon Data Share via MarketPulse/)
+    expect(live.trace).toMatch(/Oregon Data Share MLS/)
+    expect(live.trace).not.toMatch(/MarketPulse/)
+    expect(live.trace).not.toMatch(/Market Truth|mt-v1|leftover/)
     expect(live.trace).not.toMatch(/live MLS/)
   })
 

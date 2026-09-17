@@ -21,20 +21,21 @@ describe('SITE-74 editorial /team fold', () => {
     const editorial = FACES.slice(FACES.indexOf('if (size === "editorial")'))
     expect(editorial).toContain('about-faces__lead')
     expect(editorial).toContain('about-faces__companions')
-    expect(editorial).toContain('about-faces__specialty')
+    expect(editorial).toContain('faceRecord')
     expect(editorial).toContain('editorialReach')
     expect(CSS).toMatch(/\.about-faces__lead \{[\s\S]*?grid-template-columns: var\(--v3-card-photo-w\) minmax\(0, 1fr\)/)
     expect(CSS).toMatch(/\.about-faces__companion \{[\s\S]*?grid-template-columns: var\(--v3-card-photo-h\) minmax\(0, 1fr\)/)
   })
 
-  it('keeps Call as the one primary reach and the other three as text links', () => {
+  it('uses the catalog ButtonGroup for Call|Text|Email|Schedule, not navy chips', () => {
     const editorial = FACES.slice(FACES.indexOf('function editorialReach'), FACES.indexOf('function faceIdentity'))
-    expect(editorial).toContain('about-faces__reach--call')
-    expect(editorial).toContain('about-faces__reach-text')
-    expect(editorial).toContain('Schedule')
-    expect(editorial).not.toContain('IconPhone')
+    expect(editorial).toContain('TeamReach')
+    expect(editorial).not.toContain('about-faces__reach-text')
     expect(editorial).not.toContain('phoneDisplay')
     expect(editorial).not.toContain('about-faces__reach-num')
+    const reach = readFileSync('app/team/_v3/TeamReach.tsx', 'utf8')
+    expect(reach).toContain('ButtonGroup')
+    expect(reach).toContain('Schedule')
   })
 
   it('does not lecture how the map or the MLS feed works', () => {
@@ -55,13 +56,13 @@ describe('SITE-74 editorial /team fold', () => {
     expect(CSS).toMatch(/\.about-faces__license--credential \{[\s\S]*?border-top: var\(--v3-rule-hairline\)/)
   })
 
-  it('puts the coverage Atlas in the first viewport beside the faces at 64rem', () => {
+  it('puts the closings carousel in the first viewport beside the faces at 64rem', () => {
     expect(PAGE).toContain('className="team-fold"')
+    expect(PAGE).toContain('className="team-fold__closings"')
     expect(PAGE).toContain('className="team-fold__atlas"')
-    expect(PAGE).toContain('headlineTone="eyebrow"')
-    expect(PAGE).toContain('keyPlacement="head"')
+    expect(PAGE).toContain('<TeamClosings')
     expect(FOLD_CSS).toMatch(/@media \(min-width: 64rem\) \{[\s\S]*?grid-template-columns: minmax\(0, 38%\) minmax\(0, 1fr\)/)
-    expect(FOLD_CSS).toMatch(/\.team-fold__atlas \{[\s\S]*?grid-column: 2/)
+    expect(FOLD_CSS).toMatch(/\.team-fold__closings \{[\s\S]*?grid-column: 2/)
   })
 
   it('uses the shadcn Avatar circle, not a painted-over cutout card', () => {

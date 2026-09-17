@@ -1,4 +1,19 @@
-/* City market fold — MOS proof + year overlay (SITE-81). */
+/* City fold — InsightCards, the two MOS bars, then the long view (SITE-102).
+   Tokens only. Matches the region fold so the class is one object. */
+
+.city-market-fold {
+  display: grid;
+  gap: var(--v3-space-lg);
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .city-market-fold {
+    grid-template-columns: minmax(0, 1.45fr) minmax(15rem, 0.85fr);
+    gap: var(--v3-space-xl);
+    align-items: start;
+  }
+}
 
 .city-market-mos {
   margin: 0;
@@ -19,20 +34,25 @@
   max-width: 28ch;
 }
 
-/* Pull the Instrument up under the breadcrumb. Ask before source so the
-   door to #ask lands in the first viewport. */
 #market.v3-instrument {
   padding-top: var(--v3-space-lg);
   display: flex;
   flex-direction: column;
 }
 
+/* Rank every direct child. A child with none takes order 0 and jumps the H1.
+   The year overlay is chartSecondary (a section child). Ask sits after the
+   drawing so the page job is one path from the first viewport. */
 #market .v3-instrument__eyebrow { order: 1; }
 #market .v3-instrument__headline { order: 2; }
-#market .v3-instrument__stage { order: 3; }
-#market .v3-instrument__action { order: 4; }
-#market .v3-instrument__fold { order: 5; }
-#market .v3-instrument__source { order: 6; }
+#market .v3-instrument__note { order: 3; }
+#market .v3-instrument__stage { order: 4; }
+#market .v3-instrument__action { order: 5; }
+#market.v3-instrument > .v3-instrument__chart { order: 6; }
+#market .v3-instrument__fold { order: 7; }
+#market .v3-instrument__source { order: 8; }
+#market .v3-instrument__figures { order: 9; }
+#market .v3-instrument__cards { order: 10; }
 
 #market .v3-instrument__action {
   margin-top: var(--v3-space-sm);
@@ -40,7 +60,6 @@
 }
 
 #market .v3-instrument__drawing {
-  order: -1;
   width: 100%;
   min-width: 0;
 }
@@ -50,47 +69,98 @@
   min-width: 0;
 }
 
-/* Compact opened source. */
 #market .v3-source__trace {
   max-width: 40rem;
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);
 }
 
-/* Desktop: MOS left (verdict proof), chart right — both in the first viewport. */
-@media (min-width: 64rem) {
-  #market .v3-instrument__stage--split {
-    display: grid;
-    grid-template-columns: minmax(18rem, 0.9fr) minmax(0, 1.35fr);
-    gap: var(--v3-space-md);
-    align-items: start;
-  }
+.city-homes {
+  padding-block: var(--v3-space-xl);
+  padding-inline: var(--v3-gutter);
+  max-width: var(--v3-measure);
+  margin-inline: auto;
 }
 
-/* Phone: MOS first, then a short chart so scrubber can clear the fold. */
+.city-homes__eyebrow {
+  margin: 0 0 var(--v3-space-xs);
+  font-size: var(--v3-size-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--v3-muted);
+}
+
+.city-homes__heading {
+  margin: 0 0 var(--v3-space-sm);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-h2);
+  color: var(--v3-navy);
+}
+
+.city-homes__note {
+  margin: 0 0 var(--v3-space-md);
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink);
+}
+
+.city-homes__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--v3-space-xs);
+}
+
+.city-homes__more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-top: var(--v3-space-md);
+  color: var(--v3-navy);
+  text-decoration-thickness: 1px;
+}
+
 @media (max-width: 63.99rem) {
-  #market .v3-instrument__stage--split {
-    display: flex;
-    flex-direction: column;
-    gap: var(--v3-space-sm);
+  #market-mos .v3-mos__caption {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  #market-mos .v3-mos__pair {
+    gap: 0.25rem;
+  }
+
+  #market-mos .v3-mos__barrow {
+    min-height: 2rem;
   }
 
   #market-chart .v3-chart__legend {
     display: none;
   }
 
+  #market-chart .v3-chart__y {
+    font-size: var(--v3-size-label);
+  }
+
   #market-chart .v3-chart__plot,
   #market-chart .v3-chart__svg {
-    max-height: 7.5rem;
+    max-height: 6.5rem;
+  }
+
+  #market-chart .v3-chart__tip--resting {
+    display: none;
   }
 
   #market-chart .v3-chart__tip {
     min-width: 0;
-    max-width: 9.5rem;
+    max-width: 9rem;
     font-size: var(--v3-size-label);
   }
 
   #market-chart .v3-chart__tip-row dt {
     display: none;
+  }
+
+  #market.v3-instrument.hm-tremor .v3-figure__value {
+    font-size: clamp(1.25rem, 6.5vw, 1.75rem);
   }
 }

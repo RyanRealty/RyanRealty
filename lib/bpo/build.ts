@@ -17,7 +17,7 @@
  */
 
 import { cmaMarketSources } from '@/lib/cma/market'
-import { getCmaBrokerBySlugOrEmail } from '@/lib/data'
+import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import {
   getBpoListingCyclesByAddress,
   upsertBpoRowBySlug,

@@ -7,6 +7,7 @@
  * No house classNames — about-faces.css must not restyle this into a card.
  */
 
+import { cn } from '@/lib/utils'
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { faceInitials } from './about-faces'
 
@@ -15,15 +16,17 @@ export function FacePortrait({
   name,
   priority = false,
   proof,
+  className,
 }: {
   src: string
   name: string
   priority?: boolean
   /** SITE-90: the firm's 5.0 lives on the principal AvatarBadge, not a KPI row. */
   proof?: string
+  className?: string
 }) {
   return (
-    <Avatar size="lg">
+    <Avatar size="lg" className={cn(className)}>
       <AvatarImage
         src={src}
         alt={name}

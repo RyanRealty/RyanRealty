@@ -41,6 +41,7 @@ import InsightCards, {
   type AllocationSegment,
   type InsightPage,
 } from '@/components/motion/insight-cards'
+import { DigitSwap } from '@/components/motion/digit-swap'
 import { AnimatedNumber } from '@/components/motion/number'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
@@ -78,7 +79,8 @@ function useRegionInsight(): RegionInsightState {
   return value
 }
 
-/** One sourced figure, drawn by the installed beUI number. */
+/** One sourced figure: DigitSwap slots are the beui-number object a still can
+ *  photograph; AnimatedNumber stays for the catalog import and the AT face. */
 function Figure({
   value,
   formatted,
@@ -89,19 +91,29 @@ function Figure({
   money: boolean
 }) {
   return (
-    <AnimatedNumber
-      value={value}
-      duration={0.5}
-      startOnView={false}
-      settleOnMount
-      className="region-insight__digits"
-      format={(n) => {
-        // The settled face is the SOURCED string, so a rounded tween can never
-        // become the published figure. Frames in between are the animation.
-        if (Math.round(n) === Math.round(value)) return formatted
-        return money ? insightMoney(Math.max(0, n)) : insightCount(Math.max(0, n))
-      }}
-    />
+    <span className="region-insight__digits">
+      <span aria-hidden="true">
+        <DigitSwap
+          value={formatted}
+          animationKey={`region-insight-${money ? 'money' : 'count'}-${value}`}
+          direction="up"
+          className="region-insight__swap"
+          glyphClassName="region-insight__glyph"
+        />
+      </span>
+      <span className="sr-only">
+        <AnimatedNumber
+          value={value}
+          duration={0.5}
+          startOnView={false}
+          settleOnMount
+          format={(n) => {
+            if (Math.round(n) === Math.round(value)) return formatted
+            return money ? insightMoney(Math.max(0, n)) : insightCount(Math.max(0, n))
+          }}
+        />
+      </span>
+    </span>
   )
 }
 

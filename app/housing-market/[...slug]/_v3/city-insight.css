@@ -1,0 +1,113 @@
+/* SITE-102 — city fold InsightCards. Tokens only. */
+
+.city-insight {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+.city-insight .insight-chart-stage {
+  height: 11.5rem;
+  margin-bottom: var(--v3-space-md);
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.city-insight .insight-cards {
+  gap: var(--v3-space-sm);
+}
+
+.city-insight .insight-cards__title {
+  font-size: var(--v3-size-h4, 1.25rem);
+  letter-spacing: -0.01em;
+}
+
+.city-insight .insight-cards__prose {
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink);
+}
+
+.city-insight .insight-cards__prose strong {
+  font-weight: 600;
+}
+
+.city-insight__digits {
+  display: inline-flex;
+  align-items: flex-end;
+  min-width: 4ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.city-insight__swap {
+  font-family: var(--v3-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.city-insight__swap [data-slot='digit-swap-glyph'] {
+  width: 0.82em;
+  min-width: 0.82em;
+  height: 1.15em;
+  margin-inline: 0.08em;
+  border-bottom: 3px solid var(--v3-navy);
+  background: color-mix(in oklab, var(--v3-navy) 12%, var(--v3-cream));
+  box-shadow: inset 0 -3px 0 var(--v3-navy);
+}
+
+.city-insight .insight-cards__chip,
+.city-insight .insight-cards__metric {
+  min-height: 2.75rem;
+  padding-inline: 0.8rem;
+}
+
+.city-insight .insight-cards__alloc-track {
+  height: 2.75rem;
+}
+
+.city-insight .insight-chart-stage button {
+  position: relative;
+}
+
+.city-insight .insight-chart-stage button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
+}
+
+.city-insight .insight-cards__note {
+  max-width: var(--v3-measure-text);
+}
+
+.city-insight__card {
+  display: grid;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+}
+
+@media (max-width: 47.99rem) {
+  .city-insight .insight-chart-stage {
+    height: 10rem;
+  }
+
+  .city-insight .insight-cards__prose {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .city-insight .insight-cards__delta {
+    font-size: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-insight .insight-cards__alloc-seg,
+  .city-insight .insight-cards__alloc-shine {
+    transition: none;
+  }
+}

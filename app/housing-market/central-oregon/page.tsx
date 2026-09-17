@@ -13,12 +13,13 @@
  * would otherwise leave two of a kind touching are unconditional and each one has a
  * declared empty form: the opening becomes a level-1 Quiet, the cities and closed-sales
  * Ledgers state a zero-row read in their own words, and the FAQ Quiet says it has no
- * answers instead of vanishing. Two sections stay conditional because their neighbours
+ * answers instead of vanishing. Three sections stay conditional because their neighbours
  * are already unlike each other. The pace Instrument sits between a Quiet and a Ledger,
- * and the guides Ledger between a Quiet and the Sheet.
+ * the guides Ledger between a Quiet and the Sheet, and the newest-houses Ledger between
+ * the Sheet and the explore Quiet.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata,
- * MetadataBlock JSON-LD (BreadcrumbList, WebPage, Dataset, FAQPage), a rendered
+ * MetadataBlock JSON-LD (BreadcrumbList, WebPage, Dataset, ItemList, FAQPage), a rendered
  * V3SectionTracker with pageType="market-report", revalidate 300, and the route.
  * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
@@ -96,12 +97,13 @@ import type { Metadata } from 'next'
 import {
   getRecentBlogPosts,
   getPriceHistory,
+  getListingTiles,
 } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
-import { getPublicDetachedMix, publicMixHasRow } from '@/lib/data/market-truth/public-mix'
+import { getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
@@ -155,13 +157,16 @@ import {
   buildRegionPlaceMos,
   composeRegionLiveTrace,
   REGION_LIVE_CITATION,
+  REGION_SOLD_ON_FOLD_CITATION,
 } from './_v3/region-figures'
 import { formatPriceCompact } from '@/lib/format/money'
 import {
   buildCityLedger,
   buildClosedLedger,
   buildExploreItems,
+  buildForSaleLedger,
   buildGuideRows,
+  regionHomesForSaleDoors,
 } from './_v3/region-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from '../_v3/market-charts'
 import { CLOSED_YEAR_LEAD_FIGURES } from '../_v3/opening'
@@ -186,6 +191,8 @@ export async function generateMetadata(): Promise<Metadata> {
   })
   const median =
     hud.medianList != null && hud.medianList > 0 ? formatPriceCompact(hud.medianList) : null
+  const forSale =
+    hud.active != null && hud.active > 0 ? hud.active.toLocaleString('en-US') : null
   // SITE-103 SEO: the description carries the live verdict and the supply
   // figure the H1 states, so the snippet is the answer instead of a promise of
   // one. Both clauses ship only when their own figure resolved — a description
@@ -196,10 +203,13 @@ export async function generateMetadata(): Promise<Metadata> {
     mosRawMeta != null && verdictMeta.kind !== 'unknown'
       ? `${formatMonthsOfSupply(mosRawMeta)} months of supply — ${verdictMeta.label}. `
       : ''
-  return pageMetadata({
-    title: median
+  const title = forSale && median
+    ? `Central Oregon housing market · ${forSale} for sale · ${median}`
+    : median
       ? `Central Oregon housing market · ${median} median list`
-      : 'Central Oregon region deep dive',
+      : 'Central Oregon region deep dive'
+  return pageMetadata({
+    title,
     description:
       `${supplyClause}Central Oregon housing market: live single-family inventory, months of supply as homes for sale against a month of sales, the last twelve months of closed sale prices, and city doors for Bend, Redmond, Sisters, and the rest of the region. Oregon Data Share via Ryan Realty.`,
     path: '/housing-market/central-oregon',
@@ -223,7 +233,7 @@ export default async function CentralOregonRegionPage() {
   // getRecentBlogPosts keeps offset 3 so this page's guide rail does not repeat the
   // /housing-market hub's three posts.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [citySnapshots, blogPosts, closedSeries, priceHistory, publicSegments, publicPace, publicMix, leftoverMonthly, regionOverlays] =
+  const [citySnapshots, blogPosts, closedSeries, priceHistory, publicSegments, publicPace, _publicMix, leftoverMonthly, regionOverlays, forSaleTiles] =
     await Promise.all([
       getMarketPulseAllCitySnapshots(),
       getRecentBlogPosts({ limit: 3, offset: 3 }),
@@ -242,7 +252,15 @@ export default async function CentralOregonRegionPage() {
         currentMonthKey,
       }),
       getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]),
+      getListingTiles({
+        status: 'active',
+        propertyType: 'A',
+        propertySubType: 'Single Family Residence',
+        sort: 'newest',
+        limit: 12,
+      }),
     ])
+  void _publicMix
   const regionMt = regionOverlays.get('region:central-oregon')
   const hud = leftoverHudKpis({
     grain: 'region',
@@ -342,8 +360,9 @@ export default async function CentralOregonRegionPage() {
   // bedroom mix cell into one tail with no sentence — the same KPI-grid tell the
   // 2026-09-09 evaluator named on the annual and city-detail classes. Segment and
   // pace now come captioned from ../_v3/tail-figures, pace capped at the cells
-  // a buyer or seller actually asks about. Mix is fetched and not drawn: the
-  // trace says so when a row came back.
+  // a buyer or seller actually asks about. Mix is still fetched (public-mix
+  // wiring) and is not drawn: the fold citation no longer announces a withheld
+  // cell.
   const extraLive: V3InstrumentFigure[] = [
     ...buildSegmentTailFigures(publicSegments, null),
     ...buildPaceTailFigures(publicPace),
@@ -361,12 +380,7 @@ export default async function CentralOregonRegionPage() {
   // is what a reader who only opens the section's source line gets.
   const liveTrace =
     composeRegionLiveTrace(regionMos ? REGION_LIVE_CITATION : region.live.trace, false) +
-    (hasInsight || openingChart
-      ? ' The cards and the line above are a second population: houses that already sold, month by month, from the same Oregon Data Share MLS feed. An asking price and a closed sale price are not the same number.'
-      : '') +
-    (publicMixHasRow(publicMix)
-      ? ' Financing, feature, and bedroom mix for this refresh is not shown on this page.'
-      : '')
+    (hasInsight || openingChart ? ` ${REGION_SOLD_ON_FOLD_CITATION}` : '')
   const [firstPaceFigure, ...restPaceFigures] = firstExtraFigure
     ? [...region.pace.figures, firstExtraFigure, ...restExtraFigures]
     : region.pace.figures
@@ -383,6 +397,8 @@ export default async function CentralOregonRegionPage() {
   const closedLedger = buildClosedLedger(closedSeries)
   const [firstClosedRow, ...restClosedRows] = closedLedger.rows
   const [firstGuideRow, ...restGuideRows] = buildGuideRows(blogPosts)
+  const forSaleLedger = buildForSaleLedger(forSaleTiles)
+  const [firstForSaleRow, ...restForSaleRows] = forSaleLedger.rows
 
   // The market summary, carried over from the KB ContentSection. The verdict itself
   // is the Instrument headline and the formula and thresholds are in that section's
@@ -449,14 +465,29 @@ export default async function CentralOregonRegionPage() {
     {
       type: 'webPage',
       name:
-        hud.medianList != null && hud.medianList > 0
-          ? `Central Oregon housing market · ${formatPriceCompact(hud.medianList)} median list`
-          : 'Central Oregon housing market',
+        hud.active != null && hud.active > 0 && hud.medianList != null && hud.medianList > 0
+          ? `Central Oregon housing market · ${hud.active.toLocaleString('en-US')} for sale · ${formatPriceCompact(hud.medianList)}`
+          : hud.medianList != null && hud.medianList > 0
+            ? `Central Oregon housing market · ${formatPriceCompact(hud.medianList)} median list`
+            : 'Central Oregon housing market',
       description:
-        'Live Central Oregon regional market data: active inventory, median list price, months of supply as homes for sale vs a month of sales, and city doors. Single-family homes. Oregon Data Share via Ryan Realty.',
+        'Live Central Oregon regional market data: active inventory, median list price, months of supply as homes for sale vs a month of sales, newest houses with price and beds, and city doors. Single-family homes. Oregon Data Share via Ryan Realty.',
       url: '/housing-market/central-oregon',
     },
   ]
+  const cityBrowseDoors = regionHomesForSaleDoors()
+  const listingDoors = forSaleLedger.rows.map((row) => ({
+    name: String(row.what),
+    url: row.href,
+  }))
+  const itemListItems = [...cityBrowseDoors, ...listingDoors]
+  if (itemListItems.length > 0) {
+    schemas.push({
+      type: 'itemList',
+      name: 'Central Oregon homes for sale and city browse doors',
+      items: itemListItems,
+    })
+  }
 
   if (datasetVariables.length > 0 && refreshedAt) {
     // The description names the metrics the payload actually carries, read off
@@ -781,6 +812,21 @@ export default async function CentralOregonRegionPage() {
         ) : null}
 
         <RegionInquirySheet />
+
+        {/* Newest houses sit between the Sheet and the explore Quiet so a missing
+            pace Instrument cannot put this Ledger against Size of the market, and a
+            missing guides Ledger cannot put it against the FAQ Quiet. Sheet-Ledger-Quiet
+            is a legal trio; when the tiles drop, Sheet-Quiet still is. */}
+        {firstForSaleRow ? (
+          <V3Ledger
+            id="for-sale"
+            eyebrow={v3Text('For sale now')}
+            heading={v3Text('Newest houses on the market')}
+            rows={[firstForSaleRow, ...restForSaleRows]}
+            source={v3Text(forSaleLedger.source)}
+            action={{ label: v3Text('Browse every home for sale'), href: listingsBrowsePath() }}
+          />
+        ) : null}
 
         <V3Quiet
           id="explore"

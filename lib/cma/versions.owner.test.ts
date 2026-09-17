@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const rows = new Map<string, Record<string, unknown>>()
 
 vi.mock('server-only', () => ({}))
-vi.mock('@/lib/data', () => ({
+vi.mock('@/lib/data/cma/documents', () => ({
   getCmaAdminReviewRowBySlug: async (slug: string) => rows.get(slug) ?? null,
 }))
 

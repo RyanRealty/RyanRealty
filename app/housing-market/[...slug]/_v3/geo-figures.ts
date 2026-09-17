@@ -117,6 +117,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
       // the Instrument beside $399,900 in the FAQ (fleet:6f45be4c).
       value: v3Text(formatPriceExact(medianListPrice)),
       label: v3Text('median list price'),
+      count: medianListPrice,
       href: listingsBrowsePath(),
       // THE SENTENCE BESIDE THE NUMBER (SITE-41). TASTE.md's banned KPI grid is "a
       // number, a percentage, and jargon" — a figure with nothing saying what it means
@@ -132,6 +133,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
     figures.push({
       value: v3Text(activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale'),
+      count: activeCount,
       href: listingsBrowsePath(),
       sentence: v3Text(`Single-family houses on the market in ${geoName} right now.`),
     })
@@ -140,6 +142,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
     figures.push({
       value: v3Text(pendingCount.toLocaleString('en-US')),
       label: v3Text('under contract now'),
+      count: pendingCount,
       sentence: v3Text('Sellers who have accepted an offer and have not closed yet.'),
     })
   }
@@ -157,6 +160,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
     figures.push({
       value: v3Text(String(daysToPending)),
       label: v3Text('days to an offer, last 90 days'),
+      count: daysToPending,
       sentence: v3Text(
         `The typical wait between a house going on the market in ${geoName} and a seller accepting an offer.`,
       ),
@@ -166,13 +170,14 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
     figures.push({
       value: v3Text(closed30.toLocaleString('en-US')),
       label: v3Text('closed in the last 30 days'),
+      count: closed30,
       sentence: v3Text('Sales that finished and changed hands in the last month.'),
     })
   }
 
-  // Trace string kept greppable for leftover-pending-hud (D26). CityMarketView
-  // replaces the visitor-facing Instrument source with plain MLS English (SITE-81).
-  const clauses = [`Oregon Data Share via MarketPulse, active single-family houses in ${geoName}`]
+  // Visitor English (SITE-102). Internal leftover / MarketPulse names stay in
+  // the DAL. CityMarketView and CommunityMarketView print this line as-is.
+  const clauses = [`Oregon Data Share MLS, active single-family houses in ${geoName}`]
   const trace =
     `${clauses.join('. ')}.` + (mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
 
@@ -316,7 +321,7 @@ export function buildClosedFigures(
 
 export function closedTrace(geoName: string, figures: V3InstrumentFigure[]): string | null {
   if (figures.length === 0) return null
-  return `closed single-family sales through Oregon Data Share, most recent monthly market_stats_cache row for ${geoName}`
+  return `Closed single-family sales in ${geoName} from Oregon Data Share MLS`
 }
 
 /**
@@ -590,6 +595,8 @@ export function buildCityMedianChart(
       // the beads on /housing-market/central-oregon must find them on
       // /housing-market/bend (SITE-41).
       ...YEAR_OVERLAY_READING,
+      yearPages: false,
+      id: 'market-chart',
       ...(yTicks.length ? { yTicks } : {}),
       xTicks: monthTicks(MONTH_TICK),
     }

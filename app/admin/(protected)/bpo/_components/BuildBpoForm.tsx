@@ -14,7 +14,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Button, SelectField, TextField } from '@/components/admin/v2'
+import { Button } from '@/components/admin/v2/Button'
+import { SelectField, TextField } from '@/components/admin/v2/Field'
 import { buildBpoAdminAction } from '@/app/actions/bpo-admin'
 
 export interface BrokerOption {

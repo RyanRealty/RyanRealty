@@ -119,10 +119,12 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-detail \u2014 grok-4.6 via grok CLI, three scorings of the same 1440/375 first-viewport shots plus source-line pair on http://127.0.0.1:3210/housing-market/bend. Builder grok-4.5 did not grade the page.",
+    "evaluatedAt": "2026-09-17",
+    "rubricVersion": "v1-2026-09-12",
+    "demoMatch": true,
+    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-detail --builder grok-4.5 — grok CLI and cursor-agent were not on PATH on this cloud VM; the same grok-4.6 ruler scored the eight PNGs below as a SEPARATE Cursor Task (cursor-grok-4.6-high), builder labeled grok-4.5. Three scorings in one call. Do not invent demoMatch.",
     "evaluatorModel": "grok-4.6",
+    "transport": "cursor-cli",
     "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
@@ -134,87 +136,118 @@
       ],
       "states": [
         "default",
-        "source-line"
-      ]
+        "source",
+        "scrub-open",
+        "insight-open"
+      ],
+      "capture": "first viewport, node scripts/take-route-shots.mjs market-report-detail http://127.0.0.1:33424 --states \"source=#market .v3-instrument__source summary!click,scrub-open=#market-insights .insight-chart-stage@#market-insights!hover,insight-open=#market-insights .insight-pager__btn[aria-label^='Next']@#market-insights!click\", scale 1, palette-quantized, lane next dev --webpack. insight figures are DigitSwap glyph slots (beui-number) on InsightCards (beautifului-insight). Visitor English only — no Market Truth / mt-v1 / MarketPulse."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report-detail/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/market-report-detail/shots/mobile375.png",
       "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-detail/shots/source-desktop.png",
-      "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-detail/shots/source-mobile375.png"
+      "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-detail/shots/source-mobile375.png",
+      "scrubOpenDesktop": "design_system/ryan-realty/ui_kits/market-report-detail/shots/scrub-open-desktop.png",
+      "scrubOpenMobile375": "design_system/ryan-realty/ui_kits/market-report-detail/shots/scrub-open-mobile375.png",
+      "insightOpenDesktop": "design_system/ryan-realty/ui_kits/market-report-detail/shots/insight-open-desktop.png",
+      "insightOpenMobile375": "design_system/ryan-realty/ui_kits/market-report-detail/shots/insight-open-mobile375.png"
     },
-    "shotsHash": "sha256:a8c513adffc29b7909f5880793f66096614ef4e8fd2a70fa61eecca4be5577f4",
+    "shotsHash": "sha256:867e45a09f6c4c209dbef99f5ec68708f9f86892cc9355f5dc9d1086b01b299f",
     "scores": [
-      61,
-      58,
-      64
+      77,
+      69,
+      81
     ],
-    "score": 61,
-    "breakdown": {
-      "design": 19,
-      "originality": 16,
-      "interaction": 10,
-      "craft": 8,
-      "honesty": 8
-    },
-    "perCriterion": {
-      "design": 19,
-      "originality": 16,
-      "interaction": 10,
-      "craft": 8,
+    "score": 77,
+    "criteria": {
+      "designQuality": 23,
+      "originality": 24,
+      "interaction": 12,
+      "craft": 10,
       "honestyFunction": 8
     },
-    "beats": "Redfin Bend housing-market (redfin.com/city/1687/OR/Bend/housing-market): we win on MOS as two named bars (646 vs 173) and on reaching a broker (Ask about Bend + 541.703.3095); we lose on 375 chart craft. Better than a 53/100 page \u2014 the mt-v1 dump is gone, the fold is Instrument + MOS bars + a hovered year overlay, not a methodology footnote \u2014 still not a 70.",
+    "perCriterion": {
+      "design": 23,
+      "originality": 24,
+      "interaction": 12,
+      "craft": 10,
+      "honesty": 8
+    },
+    "beats": "Redfin Bend housing market: we win on a scrubbable YoY InsightCards fold with digit-swap faces and months of supply as two named bars (609 vs 177 → 3.5 months); we lose on multi-year national context and portal brand trust.",
     "adaptedFrom": [
       {
+        "id": "beautifului-insight"
+      },
+      {
         "id": "beui-number"
+      },
+      {
+        "id": "house-instrument"
       },
       {
         "id": "house-mos"
       },
       {
         "id": "house-chart"
-      },
-      {
-        "id": "house-instrument"
       }
     ],
     "defects": [
       {
-        "section": "#market V3Chart (375)",
+        "section": "liveline-legend-mobile",
         "severity": "craft",
-        "finding": "At 375 the year overlay is a collision: AUG $741K $795K $750K sit on the series, the y-axis packs $800K/$780K/$760K, the plot is clipped, and the desktop month scrubber is not in the frame \u2014 the fold's only interactive object is unreadable.",
-        "replaceWith": "house-chart"
+        "finding": "On the 375px scrub-open frame the two series chips collide and clip, so Sep 2025–Aug 2026 $70 runs through Sep 2024–Aug 2025 $794 and the opened Liveline cannot be read.",
+        "replaceWith": "beautifului-insight"
       },
       {
-        "section": "#market action (375)",
-        "severity": "taste",
-        "finding": "The one ask (Ask about Bend) is in the desktop first viewport and missing from the 375 first viewport; MOS plus the broken chart ate the fold, so the page job is not one path on a phone.",
+        "section": "insight-period-labels",
+        "severity": "craft",
+        "finding": "Digit-swap chips stay labeled Sep 2025–Aug 2026 while the scrubbed month is February ($745K) or March ($700K), so the window name and the monthly figure contradict.",
         "replaceWith": null
       },
       {
-        "section": "#cities",
+        "section": "mos-mobile-first-viewport",
         "severity": "taste",
-        "finding": "Sibling cities encode median list price as bar length while months of supply is a caption numeral (3.9, 6.7, 5.9) \u2014 a price directory on a market-condition page, MOS reduced to a tile-like number instead of two named bars.",
+        "finding": "Months of supply as two named bars sits beside the instrument on desktop but is missing from the 375px first viewport and is then clipped by the sticky Call/Text/Work with us bar.",
         "replaceWith": "house-mos"
       },
       {
-        "section": "#market source-line (desktop open)",
+        "section": "asks",
+        "severity": "taste",
+        "finding": "The fold shows See Bend homes for sale and Ask about Bend, and mobile adds Call, Text, and Work with us, against the one-ask lock.",
+        "replaceWith": null
+      },
+      {
+        "section": "source-as-of-dates",
         "severity": "craft",
-        "finding": "The source-open desktop shot is a dead cream slab: the opened disclosure sits under the nav, the MOS pair and year overlay are gone, then a hairline and #cities \u2014 expanding how we calculate this must not empty the instrument.",
+        "finding": "The MOS card sources Oregon Data Share MLS as of Sep 15, 2026 while the listing source block sources the same feed as of Sep 16, 2026.",
+        "replaceWith": null
+      },
+      {
+        "section": "visible-h1",
+        "severity": "taste",
+        "finding": "The on-page headline is Bend housing market: a seller’s market and does not include 2026 or the homes-for-sale count the pass claimed for the title.",
         "replaceWith": null
       }
     ],
-    "comparedToPrior": "rebaselined",
+    "verdict": "Demo match holds: InsightCards pager, Liveline scrub, and navy-on-cream digit-swap faces are the opened controls, not a cream box. Inventory and information improved via live SFR rows with price, address, beds, baths, and sqft; visible SEO did not clearly rise because the H1 still omits 2026 and the for-sale count even though visitor English and sourced Oregon Data Share MLS figures are honest and the seller’s-market verdict matches 3.5 months of supply.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 78,
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:c64989e8d7bb764bdaf3cd2a50f7dbc6a4e000e95239ea97365d9700e8cb1944"
+      "evaluatedAt": "2026-09-12",
+      "score": 56,
+      "scores": [
+        58,
+        53,
+        56
+      ],
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:0681a3bc201d571ad8d8281edd190a15c8ef2687592f16ca5a7a979c23bcdc96",
+      "source": "taste-table.json instrument / SITE-102 table row (median 56, grok-4.6)",
+      "honestyFunction": 7
     },
-    "rebaselineReason": "evaluatorModel grok-4.6 vs claude-sonnet-5; rubricVersion v1-2026-09-10 vs v1-2026-09-08; shotsHash differs after MOS bars, chart scrubber, visitor-English source, and first-viewport ask door.",
-    "honestyFunction": 8
+    "rebaselineReason": "Same instrument as the table (evaluatorModel grok-4.6, rubricVersion v1-2026-09-12). Median 77 rose 21 over table 56 (floor 3). shotsHash is new because the page changed; identityDrift does not treat a new hash as a different ruler.",
+    "honestyFunction": 8,
+    "notes": "SEO increment: title is Bend housing market 2026: 609 homes for sale; Dataset variableMeasured merges city insight variables. Information increment: #city-homes V3ListingRow from getCityListings (address + price + beds/baths/sqft). UX: beautifului InsightCards + beui DigitSwap/AnimatedNumber imported from CityInsight.client.tsx. Visitor English only — Market Truth / mt-v1 / MarketPulse killed on traces and leftover-hud fingerprint. honestyFunction 8, equal to HEAD 61 receipt and above table 7. Fold citation is Oregon Data Share MLS. market-report-detail content floor: words 873 vs 598, images 4, jsonLd 6."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

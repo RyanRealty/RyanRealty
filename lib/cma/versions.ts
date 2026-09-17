@@ -21,9 +21,9 @@
  */
 
 import 'server-only'
-import { getCmaAdminReviewRowBySlug } from '@/lib/data'
+import { getCmaAdminReviewRowBySlug } from '@/lib/data/cma/documents'
 import { cmaHasStoredHtml } from '@/lib/cma/draft-access'
-import type { CmaAdminRow } from '@/lib/data'
+import type { CmaAdminRow } from '@/lib/data/cma/documents'
 import { cmaSlugForVersion } from '@/lib/cma/address-slug'
 
 /** Hard cap on documents per address — far above any real chain. */
