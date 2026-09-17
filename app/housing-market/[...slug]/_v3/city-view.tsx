@@ -16,14 +16,17 @@ import type { ReactNode } from 'react'
 import type { BlogPostCard, MarketPulseSnapshot } from '@/lib/data'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { formatDate } from '@/lib/format/date'
+import { homesForSalePath } from '@/lib/slug'
 import {
   v3Text,
   V3Instrument,
   V3Ledger,
+  V3ListingRow,
   V3MosBars,
   V3Quiet,
   type V3ChartProps,
   type V3InstrumentFigure,
+  type V3ListingRowData,
 } from '@/components/site/v3'
 import type { MarketKind } from '@/lib/market/classify'
 import { MOS_METHODOLOGY_CLAUSE, MOS_PLAIN_LABEL, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
@@ -34,6 +37,9 @@ import { buildCityLedger, buildExploreItems, buildFaqItems, buildLiveFigures } f
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import type { PublicMixRow } from '@/lib/data/market-truth/public-mix'
+import { CityInsight } from './CityInsight.client'
+import { cityInsightPageCount, type RegionInsightBoard } from './city-insight'
+import '../../_v3/tremor-density.css'
 import './city-market.css'
 
 type Props = {
@@ -54,6 +60,8 @@ type Props = {
   publicSegments?: readonly PublicSegmentRow[]
   publicPace?: PublicPaceRow | null
   publicMix?: PublicMixRow | null
+  insightBoard?: RegionInsightBoard | null
+  homes?: readonly V3ListingRowData[]
 }
 
 export function CityMarketView({
@@ -73,6 +81,8 @@ export function CityMarketView({
   sheet,
   publicSegments = [],
   publicPace = null,
+  insightBoard = null,
+  homes = [],
   // publicMix is not destructured: SITE-41 round two drops mix cells from this
   // view's fold (see the comment below). The Props field stays for callers and for
   // a future dedicated mix section; unread here on purpose.
@@ -121,6 +131,7 @@ export function CityMarketView({
     .filter((f, i, arr) => arr.findIndex((g) => String(g.label) === String(f.label)) === i)
     .filter((f) => !(placeMos && String(f.label) === MOS_PLAIN_LABEL))
   const [firstFigure, ...restFigures] = figures
+  const hasInsight = insightBoard ? cityInsightPageCount(insightBoard) >= 2 : false
   const cityLedger = buildCityLedger(snapshots, citySlug)
   const [firstCityRow, ...restCityRows] = cityLedger.rows
   const faqItems = buildFaqItems(faqs, [
@@ -166,20 +177,18 @@ export function CityMarketView({
         <V3Instrument
           id="market"
           level={1}
+          className="hm-tremor"
           eyebrow={v3Text(`${cityName}, Oregon`)}
           headline={v3Text(headline)}
           figures={[firstFigure, ...restFigures] as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]}
-          /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). foldAfter={0} put the
-             whole figure set behind one summary reading "ALL 41 FIGURES", which is a
-             row count offered as a reason to tap, and left the fold with nothing in
-             front of it but the chart. Four lead figures now answer the page's own
-             question, each with a sentence saying what it means; the long tail keeps
-             every figure behind a summary that names what is in it. */
+          /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41 / SITE-102). The
+             catalog control leads, MOS proves the verdict, the year overlay
+             rides as chartSecondary so a phone reaches a drawing before a
+             split chart eats the fold. KPI tiles fold whenever a drawing is
+             carrying the answer. */
           chartFirst
-          /* SITE-81: when the year overlay and MOS bars carry the answer, fold
-             every tile so the first viewport is not a KPI grid under the drawing.
-             Miss on either visual keeps the four lead figures open. */
-          foldAfter={MARKET_LEAD_FIGURES}
+          settleFigures
+          foldAfter={placeMos || chart || hasInsight ? 0 : MARKET_LEAD_FIGURES}
           foldLabel={v3Text(MARKET_FOLD_LABEL)}
           source={v3Text(trace)}
           sourceName={v3Text('Oregon Data Share MLS')}
@@ -187,26 +196,32 @@ export function CityMarketView({
           asOf={refreshedAt ?? undefined}
           /* Same ask as GeoInquirySheet — a door into #ask, not a second form. */
           action={{ label: v3Text(`Ask about ${cityName}`), href: '#ask' }}
-          chart={chart}
+          chartSecondary={chart}
           drawing={
-            placeMos ? (
-              <V3MosBars
-                id="market-mos"
-                className="city-market-mos"
-                caption={placeMos.caption}
-                plainLabel={placeMos.plainLabel}
-                homesName={placeMos.homesName}
-                homesLabel={placeMos.homesLabel}
-                homesValue={placeMos.homesValue}
-                salesName={placeMos.salesName}
-                salesLabel={placeMos.salesLabel}
-                salesValue={placeMos.salesValue}
-                source={placeMos.source}
-                asOf={placeMos.asOf}
-                sourceName="Oregon Data Share MLS"
-                tooltip={placeMos.tooltip}
-              />
-            ) : null
+            <div className="city-market-fold">
+              {hasInsight && insightBoard ? (
+                <CityInsight board={insightBoard} cityName={cityName} />
+              ) : null}
+              {placeMos ? (
+                <V3MosBars
+                  id="market-mos"
+                  settle
+                  className="city-market-mos"
+                  caption={placeMos.caption}
+                  plainLabel={placeMos.plainLabel}
+                  homesName={placeMos.homesName}
+                  homesLabel={placeMos.homesLabel}
+                  homesValue={placeMos.homesValue}
+                  salesName={placeMos.salesName}
+                  salesLabel={placeMos.salesLabel}
+                  salesValue={placeMos.salesValue}
+                  source={placeMos.source}
+                  asOf={placeMos.asOf}
+                  sourceName="Oregon Data Share MLS"
+                  tooltip={placeMos.tooltip}
+                />
+              ) : null}
+            </div>
           }
         />
       ) : (
@@ -223,6 +238,29 @@ export function CityMarketView({
           ]}
         />
       )}
+
+      {homes.length > 0 ? (
+        <section id="city-homes" className="city-homes" aria-labelledby="city-homes-heading">
+          <p className="city-homes__eyebrow">For sale now</p>
+          <h2 id="city-homes-heading" className="city-homes__heading">
+            {cityName} houses on the market
+          </h2>
+          <p className="city-homes__note">
+            Live single-family listings. Each row carries the asking price, the street,
+            and beds, baths, and living area.
+          </p>
+          <ul className="city-homes__list">
+            {homes.map((home) => (
+              <li key={home.listingKey}>
+                <V3ListingRow listing={home} showPricePerSqft />
+              </li>
+            ))}
+          </ul>
+          <a className="city-homes__more" href={homesForSalePath(cityName)}>
+            Every {cityName} home for sale
+          </a>
+        </section>
+      ) : null}
 
       {firstCityRow ? (
         <V3Ledger

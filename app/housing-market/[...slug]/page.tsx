@@ -47,7 +47,9 @@ import {
   getCompleteMonthlyMarketDetail,
   getRecentBlogPosts,
   getDetachedOverlays,
+  getCityListings,
 } from '@/lib/data'
+import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
@@ -85,6 +87,12 @@ import { buildAmenityShareChart } from '../_v3/market-charts'
 import { CityMarketView } from './_v3/city-view'
 import { CommunityMarketView } from './_v3/community-view'
 import { GeoInquirySheet } from './_v3/GeoInquirySheet.client'
+import {
+  buildCityInsightBoard,
+  cityInsightDatasetVariables,
+  cityInsightMetaClause,
+} from './_v3/city-insight'
+import { cityHomesRows } from './_v3/city-homes'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
   return CORE_CITY_SLUGS.map((s) => ({ slug: [s] }))
@@ -138,7 +146,8 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // behind a confident empty page.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const leftoverGeo = geoType === 'neighborhood' || geoType === 'city' ? geoType : null
-  const [priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix, leftoverMonthly, mtOverlays] =
+  const insightYear = Number(currentMonthKey.slice(0, 4))
+  const [priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix, leftoverMonthly, mtOverlays, closedSeries, cityTiles] =
     await Promise.all([
     getPriceHistory(geoType, geoSlug, 'monthly', priceHistoryLimit),
     getMarketPulseCitySnapshots([...COMPARISON_CITY_LABELS]),
@@ -160,6 +169,22 @@ const loadGeoMarket = cache(async (slugKey: string) => {
     leftoverGeo
       ? getDetachedOverlays([{ geoType: leftoverGeo, geoSlug }])
       : Promise.resolve(new Map()),
+    isCity && Number.isFinite(insightYear)
+      ? Promise.all(
+          [insightYear - 1, insightYear - 2, insightYear - 3].map((year) =>
+            getCoMarketAnnualCity({ year, citySlug: geoSlug }),
+          ),
+        ).then((rows) => rows.filter((row) => row.source === 'mart' && row.soldCount > 0))
+      : Promise.resolve([]),
+    isCity
+      ? getCityListings(cityName, {
+          status: 'active',
+          propertyType: 'A',
+          propertySubType: 'Single Family Residence',
+          sort: 'newest',
+          limit: 8,
+        })
+      : Promise.resolve([]),
   ])
 
   const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
@@ -210,6 +235,16 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // labels was the defect that pulled it off /cities/bend the day it shipped).
   // Here it gets its own section with the population NAMED in the heading.
   const financingMix = publishes && isCity ? await getFinancingMix({ city: cityName, days: 365 }) : null
+  const insightBoard = isCity
+    ? buildCityInsightBoard({
+        cityName,
+        monthly: chartMonths.months,
+        closedSeries,
+      })
+    : null
+  const homes = isCity ? cityHomesRows(cityTiles) : []
+  const insightClause = insightBoard ? cityInsightMetaClause(cityName, insightBoard) : null
+  const insightVariables = insightBoard ? cityInsightDatasetVariables(insightBoard) : []
 
   return {
     geo,
@@ -234,6 +269,10 @@ const loadGeoMarket = cache(async (slugKey: string) => {
     asOfIso: faq.asOfIso,
     asOfLabel: faq.asOfLabel,
     financingMix,
+    insightBoard,
+    homes,
+    insightClause,
+    insightVariables,
   }
 })
 
@@ -256,14 +295,15 @@ function geoTitle(input: {
   datasetVariables: ReadonlyArray<{ name: string; value: string | number }>
 }): string {
   const active = input.datasetVariables.find((v) => v.name === 'Active Listings')?.value ?? null
-  if (active == null) return `${input.geoName} housing market`
-  return `${input.geoName} housing market: ${Number(active).toLocaleString('en-US')} homes for sale`
+  if (active == null) return `${input.geoName} housing market 2026`
+  return `${input.geoName} housing market 2026: ${Number(active).toLocaleString('en-US')} homes for sale`
 }
 
 function geoDescription(input: {
   geoName: string
   datasetVariables: ReadonlyArray<{ name: string; value: string | number; unitText?: string }>
   verdictLabel: string
+  insightClause?: string | null
 }): string {
   const read = (name: string) => input.datasetVariables.find((v) => v.name === name)?.value ?? null
   const active = read('Active Listings')
@@ -283,7 +323,8 @@ function geoDescription(input: {
     return `Single-family market data for ${input.geoName}, Oregon: inventory, list prices, and how fast homes go under contract.`
   }
   const verdictClause = supply != null ? ` A ${input.verdictLabel}.` : ''
-  const head = `${input.geoName} single-family homes: ${clauses.join(', ')}.${verdictClause}`
+  const insight = input.insightClause ? ` ${input.insightClause}` : ''
+  const head = `${input.geoName} single-family homes: ${clauses.join(', ')}.${verdictClause}${insight}`
   const tail = ' Live from Oregon Data Share MLS.'
   return head.length + tail.length <= 155 ? head + tail : head
 }
@@ -304,6 +345,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       geoName,
       datasetVariables: data.datasetVariables,
       verdictLabel: data.verdict.label,
+      insightClause: data.insightClause,
     }),
     path: data.canonicalPath,
     keywords: [
@@ -344,6 +386,9 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     asOfIso,
     asOfLabel,
     financingMix,
+    insightBoard,
+    homes,
+    insightVariables,
   } = data
   const { geoType, citySlug, geoName, cityName, communityName } = data.geo
   const valuationHrefValue = valuationHref(canonicalPath)
@@ -374,7 +419,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   ]
 
   if (datasetVariables.length > 0 && refreshedAt) {
-    const metricNames = datasetVariables.map((variable) => variable.name.toLowerCase())
+    const publishedVariables = [...datasetVariables, ...insightVariables]
+    const metricNames = publishedVariables.map((variable) => variable.name.toLowerCase())
     const metricList =
       metricNames.length === 1
         ? metricNames[0]
@@ -389,7 +435,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       url: canonicalPath,
       dateModified: asOfIso ?? undefined,
       spatialCoverageName: `${geoName}, OR`,
-      variableMeasured: datasetVariables,
+      variableMeasured: publishedVariables,
     })
   }
 
@@ -404,7 +450,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     chartMonths.months.filter((row) => row.medianSalePrice != null).length >= 6
       ? buildMonthlyMedianChart(
           chartMonths.months,
-          `${geoName} median close, leftover completed months`,
+          `${geoName} median sale price, completed months`,
         )
       : undefined
   const cityClosed = buildCityPeriodFigures({
@@ -453,6 +499,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             publicSegments={publicSegments}
             publicPace={publicPace}
             publicMix={publicMix}
+            insightBoard={insightBoard}
+            homes={homes}
           />
         ) : (
           <CommunityMarketView
