@@ -165,38 +165,18 @@
   border-top: 0;
 }
 
+/* Kill the eyebrow-heading band. THE RECORD opens on the figures, not
+   another Stage-shaped stack. Head stays in the tree for the heading floor. */
 .v3.v3-proofblock.sell-proof--quiet .v3-proofblock__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--v3-space-xs) var(--v3-space-sm);
-  max-width: none;
-  margin: 0 auto var(--v3-space-md);
-  padding-inline-start: var(--v3-space-sm);
-  border-inline-start: var(--v3-rule-weight-mast) solid var(--v3-cream);
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-eyebrow,
-.v3.v3-proofblock.sell-proof--quiet .v3-heading,
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__claim {
-  color: var(--v3-ink-on-navy);
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-heading {
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-label);
-  font-weight: var(--v3-weight-medium);
-  letter-spacing: var(--v3-track-label);
-  line-height: var(--v3-leading-body);
-  text-transform: uppercase;
-}
-
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__claim {
-  flex: 1 1 100%;
-  max-width: none;
-  margin: 0;
-  font-size: var(--v3-size-body-sm);
-  color: var(--v3-ink-on-navy-muted);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .v3.v3-proofblock.sell-proof--quiet .v3-proofblock__body {
