@@ -256,7 +256,7 @@ describe('street-cluster exclusive streets (Flex HARD LOCK residual)', () => {
     expect(pocket.neighborNorms).not.toContain('timber creek')
   })
 
-  it('contract: dense SaddleStone keeps densest street only — not Timber Creek / Black Butte', () => {
+  it('contract: dense SaddleStone keeps Horse Back + Ranch — not Timber Creek / Black Butte', () => {
     const neighbors = [
       { ...neighbor('Rolling Horse Meadow', 0.04), address: '1121 Canter Ct' },
       { ...neighbor('Timber Creek', 0.09), address: '1141 Cascade' },
@@ -265,9 +265,10 @@ describe('street-cluster exclusive streets (Flex HARD LOCK residual)', () => {
       { ...neighbor('SaddleStone', 0.13), address: '995 E Horse Back' },
       { ...neighbor('SaddleStone', 0.14), address: '945 E Horse Back' },
       { ...neighbor('SaddleStone', 0.15), address: '994 E Horse Back' },
-      { ...neighbor('SaddleStone', 0.16), address: '1006 Black Butte' },
-      { ...neighbor('SaddleStone', 0.17), address: '1048 Black Butte' },
-      { ...neighbor('SaddleStone', 0.18), address: '1009 Black Butte' },
+      { ...neighbor('SaddleStone', 0.16), address: '1058 E Ranch' },
+      { ...neighbor('SaddleStone', 0.17), address: '1006 Black Butte' },
+      { ...neighbor('SaddleStone', 0.18), address: '1048 Black Butte' },
+      { ...neighbor('SaddleStone', 0.19), address: '1009 Black Butte' },
     ]
     const pocket = inferSubdivisionPocket({
       subdivision: null,
@@ -279,7 +280,7 @@ describe('street-cluster exclusive streets (Flex HARD LOCK residual)', () => {
     expect(pocket.source).toBe('street-cluster')
     expect(pocket.subdivision).toBe('SaddleStone')
     expect(pocket.subdivisionSlug).toBeNull()
-    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse']))
+    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse', 'ranch']))
     expect(pocket.pocketStreetKeys).not.toContain('timber')
     expect(pocket.pocketStreetKeys).not.toContain('cascade')
     expect(pocket.pocketStreetKeys).not.toContain('black')

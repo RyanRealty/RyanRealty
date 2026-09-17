@@ -207,15 +207,25 @@ function exclusiveClusterRows(
       tight.filter((m) => avoidedNorm && m.norm === avoidedNorm && m.street).map((m) => m.street!),
     )
     if (subjectStreet) avoidedStreets.add(subjectStreet)
+    // Matt Flex HARD LOCK: Canter / Horse Back / Ranch stay in the exclusive
+    // pocket even when densest-street logic (Horse Back) would drop Ranch Ave
+    // sales that share the catch-all SaddleStone MLS name with Black Butte.
+    // Black / Cowboy / Timber stay out — only these companion pocket streets.
+    const catchAllPocketStreets = new Set(['canter', 'horse', 'ranch'])
+    const keepStreet = (street: string | null | undefined) =>
+      Boolean(
+        street &&
+          (street === densestStreet ||
+            avoidedStreets.has(street) ||
+            catchAllPocketStreets.has(street)),
+      )
     for (const m of homeRows) {
-      if (m.street === densestStreet || (m.street != null && avoidedStreets.has(m.street))) push(m)
+      if (keepStreet(m.street)) push(m)
     }
     for (const m of tight) {
       if (m.norm === home.norm) continue
       if (avoidedNorm && m.norm === avoidedNorm) continue
-      if (m.street && (m.street === densestStreet || avoidedStreets.has(m.street))) {
-        push(m)
-      }
+      if (keepStreet(m.street)) push(m)
     }
   } else {
     for (const m of homeRows) push(m)
