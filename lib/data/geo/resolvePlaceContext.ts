@@ -11,7 +11,10 @@
  */
 
 import { getPlaceLinks } from '@/lib/place-links'
-import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
+import {
+  getResortCommunityBySubdivisionName,
+  isVerifiedRegistryChild,
+} from '@/lib/data/communities/registry'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { slugify } from '@/lib/slug'
 import {
@@ -147,16 +150,29 @@ export function resolvePlaceContextFromListing(input: PlaceContextListingInput):
   // Community sits above plat when both exist (buyer mental model: resort → phase/plat).
   // Dedupe: GIS neighborhood and curated community often name the same place
   // (e.g. NorthWest Crossing) — keep the Community node (registry product page).
-  const neighborhoodDistinct =
+  // Neighborhood is a parent of community only when the registry lists
+  // that community as a child. GIS containment of two sibling resorts
+  // (Vandevert Ranch vs Caldera Springs) is not a parent.
+  const neighborhoodSameAsCommunity = Boolean(
     neighborhood &&
-    !(
       curatedCommunity &&
       (curatedCommunity.slug === neighborhood.slug ||
         curatedCommunity.label.trim().toLowerCase() ===
-          neighborhood.label.trim().toLowerCase())
-    )
-      ? neighborhood
-      : null
+          neighborhood.label.trim().toLowerCase()),
+  )
+  const neighborhoodIsProvenParent = Boolean(
+    neighborhood &&
+      curatedCommunity &&
+      !neighborhoodSameAsCommunity &&
+      isVerifiedRegistryChild(neighborhood, curatedCommunity),
+  )
+  const assignedNeighborhood =
+    neighborhood && curatedCommunity && !neighborhoodSameAsCommunity && !neighborhoodIsProvenParent
+      ? null
+      : neighborhood
+
+  const neighborhoodDistinct =
+    assignedNeighborhood && !neighborhoodSameAsCommunity ? assignedNeighborhood : null
 
   const subdivisionDistinct =
     subdivision &&
@@ -195,7 +211,7 @@ export function resolvePlaceContextFromListing(input: PlaceContextListingInput):
 
   return {
     city,
-    neighborhood,
+    neighborhood: assignedNeighborhood,
     subdivision,
     curatedCommunity,
     preferredMarketGrain,
