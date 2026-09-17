@@ -1,4 +1,9 @@
 {
+  "build": {
+    "env": {
+      "VERCEL_SUPPORT_LARGE_FUNCTIONS": "1"
+    }
+  },
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
   "crons": [
     {
