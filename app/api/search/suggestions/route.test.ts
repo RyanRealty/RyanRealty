@@ -97,13 +97,27 @@ describe('GET /api/search/suggestions', () => {
     for (const key of CATEGORY_KEYS) {
       expect(Array.isArray(body[key]), `missing category: ${key}`).toBe(true)
     }
-    // Seeded fixture populates each non-report category through its own path.
+    // Seeded fixture populates cities/zips/brokers/pages for "bend".
+    // Subdivisions only emit when the subdivision NAME itself matches the
+    // typed prefix (P0: street hits must not stamp unrelated place names).
     expect(body.cities.length).toBeGreaterThan(0)
-    expect(body.subdivisions.length).toBeGreaterThan(0)
     expect(body.zips.length).toBeGreaterThan(0)
     expect(body.brokers.length).toBeGreaterThan(0)
     expect(body.neighborhoods.length).toBeGreaterThan(0)
     expect(body.pages.length).toBeGreaterThan(0)
+  })
+
+  it('only returns subdivisions whose names match the typed prefix', async () => {
+    const streetHit = await (await GET(req('3480'))).json()
+    expect(streetHit.addresses.length).toBeGreaterThan(0)
+    // Fixture subdivisions are Awbrey Butte / Shevlin Ridge — neither matches "3480".
+    expect(streetHit.subdivisions).toEqual([])
+
+    const placeHit = await (await GET(req('awbrey'))).json()
+    expect(placeHit.subdivisions.length).toBeGreaterThan(0)
+    expect(placeHit.subdivisions.every((s: { subdivisionName: string }) =>
+      s.subdivisionName.toLowerCase().includes('awbrey'),
+    )).toBe(true)
   })
 
   it('short queries return the empty shape without hitting the DAL', async () => {

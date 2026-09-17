@@ -350,12 +350,16 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     .map(([city, count]) => ({ city, count }))
     .sort((a, b) => b.count - a.count || a.city.localeCompare(b.city))
     .slice(0, 8)
+  // Subdivisions / zips must themselves match the typed prefix — otherwise a
+  // street hit ("delaw" → Delaware Ave listings) stamps unrelated place names
+  // (Staats, Deschutes, Park) into the dropdown ahead of the address matches.
   const subRows = listingRows
   const subByKey = new Map<string, { city: string; subdivisionName: string; count: number }>()
   for (const row of subRows) {
     const city = (row.City ?? '').trim()
     const sub = (row.SubdivisionName ?? '').trim()
     if (!city || !sub || isNaSubdivision(sub)) continue
+    if (!sub.toLowerCase().includes(qLower)) continue
     const key = `${city.toLowerCase()}\t${sub.toLowerCase()}`
     const cur = subByKey.get(key)
     if (cur) cur.count += 1
@@ -365,9 +369,12 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     .sort((a, b) => b.count - a.count || a.subdivisionName.localeCompare(b.subdivisionName))
     .slice(0, 12)
 
+  // Prefer addresses whose street line actually contains the typed prefix, and
+  // rank those first so "delaw" surfaces 114 Delaware ahead of incidental
+  // GIN hits that only matched a different token on the same row budget.
   const addrRows = listingRows
   const seenAddr = new Set<string>()
-  const addresses: SearchSuggestionAddress[] = []
+  const addressCandidates: Array<{ label: string; href: string; score: number }> = []
   for (const row of addrRows) {
     const sn = (row.StreetNumber ?? '').toString().trim()
     const sname = (row.StreetName ?? '').toString().trim()
@@ -383,9 +390,16 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
       ? [parts, [city, state, zip].filter(Boolean).join(', ')].filter(Boolean).join(', ')
       : [city, state, zip].filter(Boolean).join(', ')
     if (!label) continue
+    const streetLine = parts.toLowerCase()
+    const nameLower = sname.toLowerCase()
+    let score = 0
+    if (nameLower.startsWith(qLower) || nameLower.split(/\s+/).some((w) => w.startsWith(qLower))) score = 3
+    else if (streetLine.includes(qLower)) score = 2
+    else if (label.toLowerCase().includes(qLower)) score = 1
+    if (score === 0) continue
     const key = (row.ListNumber ?? row.ListingKey ?? '').toString().trim()
     if (!key) continue
-    addresses.push({
+    addressCandidates.push({
       label,
       href: listingTileHref({
         listingKey: key,
@@ -397,9 +411,13 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
         boundaryNeighborhood: row.BoundaryNeighborhood ?? null,
         subdivisionName: row.SubdivisionName ?? null,
       }),
+      score,
     })
-    if (addresses.length >= 10) break
   }
+  const addresses: SearchSuggestionAddress[] = addressCandidates
+    .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label))
+    .slice(0, 10)
+    .map(({ label, href }) => ({ label, href }))
 
   const zipRows = listingRows
   const zipMap = new Map<string, { postalCode: string; city?: string; count: number }>()
@@ -407,6 +425,9 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     const postalCode = (row.PostalCode ?? '').toString().trim().replace(/\D/g, '')
     const city = (row.City ?? '').toString().trim() || undefined
     if (!postalCode) continue
+    // Same prefix contract as cities/subdivisions: typing "delaw" must not
+    // stamp unrelated zip buckets from the address-hit tile set.
+    if (!postalCode.includes(qLower) && !(city ?? '').toLowerCase().includes(qLower)) continue
     const key = `${postalCode}\t${(city ?? '').toLowerCase()}`
     const cur = zipMap.get(key)
     if (cur) cur.count += 1

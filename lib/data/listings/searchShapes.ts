@@ -21,6 +21,7 @@ import type {
   ParsedSearchListingsAllFilter,
   SearchListingsAllResult,
 } from '@/lib/data/listings/searchListingsAll'
+import { dedupeListingTilesByStreet } from '@/lib/data/listings/dedupeListingTilesByStreet'
 
 // ── Map shapes (Phase 2 map search — SEARCH_OPTIMIZATION_PLAN_2026-07-29) ──
 // Mirrors the SQL contract of public.search_listing_keys_in_shapes
@@ -270,7 +271,9 @@ async function fetchShapesFallbackInMemory(
   if (error) {
     throw new Error(`[searchListingsAll] shapes fallback supabase error: ${error.message}`)
   }
-  const fetched = (data ?? []).map((row) => mvRowToTile(row as unknown as ListingSearchMvRow))
+  const fetched = dedupeListingTilesByStreet(
+    (data ?? []).map((row) => mvRowToTile(row as unknown as ListingSearchMvRow)),
+  )
   const inShape = fetched.filter(
     (t) =>
       t.lat != null &&
@@ -312,7 +315,9 @@ export async function fetchSearchListingsAllInShapes(
       return (data ?? []) as unknown[]
     })
   )
-  const tiles = results.flat().map((row) => mvRowToTile(row as ListingSearchMvRow))
+  const tiles = dedupeListingTilesByStreet(
+    results.flat().map((row) => mvRowToTile(row as ListingSearchMvRow)),
+  )
   tiles.sort(tileComparator(parsed.sort))
   const totalCount = tiles.length
   const rows = tiles.slice(parsed.offset, parsed.offset + parsed.limit)
