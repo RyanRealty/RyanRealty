@@ -1,21 +1,45 @@
 {
   "route": "app/team/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic brokerage team pages AND Cascade Sotheby's Bend agent directory: real broker names, Oregon licenses, transparent-PNG headshots, and — the thing a directory does not have — each broker's OWN MLS record as a figure with the places behind a disclosure, plus a map of every closing the three of them hold.",
+  "competitiveTarget": "Beat generic brokerage team pages AND Cascade Sotheby's Bend agent directory: real broker names, Oregon licenses, transparent-PNG headshots, and \u2014 the thing a directory does not have \u2014 each broker's OWN MLS record as a figure with the places behind a disclosure, plus a map of every closing the three of them hold.",
   "competitiveBrief": {
     "id": "team-broker-researchy-1-8",
-    "source": "Researchy Team/broker 2026-09-12; PAGE_INVENTORY.md §6 /team + /team/[slug]. P6 licenses, P0 hero CTAs, P3 listings rail, P2 Schedule regression.",
+    "source": "Researchy Team/broker 2026-09-12; PAGE_INVENTORY.md \u00a76 /team + /team/[slug]. P6 licenses, P0 hero CTAs, P3 listings rail, P2 Schedule regression.",
     "productLock": "licenses on cards (P6) + desktop hero license+CTAs (P0) + listings/closings rail (P3) + Schedule on the reach row (P2)",
     "refuse": "Roster without Oregon licenses. Hero without license+CTAs. Orphaned Schedule. Second About (Proof/FAQ/seller ask on the index). Invented personal tallies.",
     "beats": [
-      { "id": "1", "text": "P6: every roster card shows the Oregon license number as a credential, not a buried footnote." },
-      { "id": "2", "text": "P0: the desktop hero carries the license line plus Call, Text, Email, and Schedule CTAs in the first viewport." },
-      { "id": "3", "text": "P3: a listings or closings rail (atlas or recorded sales) is a real second section, not a one-screen directory." },
-      { "id": "4", "text": "P2: Schedule stays on the reach row with Call/Text/Email — regression, never an orphaned fourth action." },
-      { "id": "5", "text": "Index is roster only: doors to /team/[slug]. Not a second About — no Proof, FAQ, or seller ask on /team." },
-      { "id": "6", "text": "Each card is a person (photo, name, title, license) not four equal hairline contact cells." },
-      { "id": "7", "text": "Broker profile fold: license + Call/Text/Email/Schedule. Firm proof is the default; personal record only when real." },
-      { "id": "8", "text": "Call is the primary conversion on cards and the profile. Text, Email, and Schedule remain. Do not invent a personal volume hero." }
+      {
+        "id": "1",
+        "text": "P6: every roster card shows the Oregon license number as a credential, not a buried footnote."
+      },
+      {
+        "id": "2",
+        "text": "P0: the desktop hero carries the license line plus Call, Text, Email, and Schedule CTAs in the first viewport."
+      },
+      {
+        "id": "3",
+        "text": "P3: a listings or closings rail (atlas or recorded sales) is a real second section, not a one-screen directory."
+      },
+      {
+        "id": "4",
+        "text": "P2: Schedule stays on the reach row with Call/Text/Email \u2014 regression, never an orphaned fourth action."
+      },
+      {
+        "id": "5",
+        "text": "Index is roster only: doors to /team/[slug]. Not a second About \u2014 no Proof, FAQ, or seller ask on /team."
+      },
+      {
+        "id": "6",
+        "text": "Each card is a person (photo, name, title, license) not four equal hairline contact cells."
+      },
+      {
+        "id": "7",
+        "text": "Broker profile fold: license + Call/Text/Email/Schedule. Firm proof is the default; personal record only when real."
+      },
+      {
+        "id": "8",
+        "text": "Call is the primary conversion on cards and the profile. Text, Email, and Schedule remain. Do not invent a personal volume hero."
+      }
     ]
   },
   "note": "SITE-74 2026-09-10. /team first viewport is editorial AboutFaces (principal at conversation scale, companions as rows, Call as the one primary reach, Oregon license as a credential) beside V3Atlas of every Ryan Realty closing with a coordinate. shadcn Avatar adapted as image plus initials fallback. Still not a second About: no Proof, no FAQ, no seller ask. Per-broker figure still from getBrokerSales via broker-roster-record.ts.",
@@ -93,35 +117,59 @@
     }
   ],
   "removedComponents": [
-    "KbHero — Old Mill poster and 'the broker you call' poetry H1.",
-    "KbAbout — intro prose and license ledger, rebuilt as Faces.",
-    "KbTeam — broker grid, rebuilt as AboutFaces. A later V3Ledger of the same three people was a second roster and is gone 2026-09-03.",
-    "KbTestimonials — rebuilt as V3Proof (newest four, record off) from getReviews / TESTIMONIALS.",
-    "KbSell — address capture. Index ask is /contact.",
-    "FAQBlock — rebuilt as V3Answers from TEAM_FAQ_ITEMS (was V3Quiet prose 2026-08, a wall).",
+    "KbHero \u2014 Old Mill poster and 'the broker you call' poetry H1.",
+    "KbAbout \u2014 intro prose and license ledger, rebuilt as Faces.",
+    "KbTeam \u2014 broker grid, rebuilt as AboutFaces. A later V3Ledger of the same three people was a second roster and is gone 2026-09-03.",
+    "KbTestimonials \u2014 rebuilt as V3Proof (newest four, record off) from getReviews / TESTIMONIALS.",
+    "KbSell \u2014 address capture. Index ask is /contact.",
+    "FAQBlock \u2014 rebuilt as V3Answers from TEAM_FAQ_ITEMS (was V3Quiet prose 2026-08, a wall).",
     "SmoothScrollProvider.",
-    "KbFooter — replaced by V3Footer outside <main>.",
+    "KbFooter \u2014 replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
   ],
   "perBrokerPage": {
     "route": "app/team/[slug]/page.tsx",
     "competitiveBrief": {
       "id": "team-broker-researchy-1-8",
-      "source": "Researchy Team/broker 2026-09-12; PAGE_INVENTORY.md §6 /team/[slug]. Same 1–8 as /team — P0 hero license+CTAs, P3 rail, P2 Schedule, P6 license on the face.",
+      "source": "Researchy Team/broker 2026-09-12; PAGE_INVENTORY.md \u00a76 /team/[slug]. Same 1\u20138 as /team \u2014 P0 hero license+CTAs, P3 rail, P2 Schedule, P6 license on the face.",
       "productLock": "licenses on cards (P6) + desktop hero license+CTAs (P0) + listings/closings rail (P3) + Schedule on the reach row (P2)",
       "refuse": "Profile without license+CTAs. Orphaned Schedule. Invented personal volume hero. Empty personal tally.",
       "beats": [
-        { "id": "1", "text": "P6: the profile face shows the Oregon license number as a credential, not a buried footnote." },
-        { "id": "2", "text": "P0: the desktop hero carries the license line plus Call, Text, Email, and Schedule CTAs in the first viewport." },
-        { "id": "3", "text": "P3: a listings or closings rail (firm ledger / personal atlas) is a real section, not a cream lake under the cutout." },
-        { "id": "4", "text": "P2: Schedule stays on the reach row with Call/Text/Email — regression, never an orphaned fourth action." },
-        { "id": "5", "text": "Firm proof is the default on the profile. Personal record only when the broker has a real closing set." },
-        { "id": "6", "text": "Portrait is card-photo scale, not an AboutFaces poster. Name, title, license sit with the face." },
-        { "id": "7", "text": "Call/Text/Email/Schedule sit on the fold from the live phone and email. Valuation is /sell, not a CMA sheet." },
-        { "id": "8", "text": "Door back to all brokers, reviews, and sell. Do not invent a personal volume hero from a thin tally." }
+        {
+          "id": "1",
+          "text": "P6: the profile face shows the Oregon license number as a credential, not a buried footnote."
+        },
+        {
+          "id": "2",
+          "text": "P0: the desktop hero carries the license line plus Call, Text, Email, and Schedule CTAs in the first viewport."
+        },
+        {
+          "id": "3",
+          "text": "P3: a listings or closings rail (firm ledger / personal atlas) is a real section, not a cream lake under the cutout."
+        },
+        {
+          "id": "4",
+          "text": "P2: Schedule stays on the reach row with Call/Text/Email \u2014 regression, never an orphaned fourth action."
+        },
+        {
+          "id": "5",
+          "text": "Firm proof is the default on the profile. Personal record only when the broker has a real closing set."
+        },
+        {
+          "id": "6",
+          "text": "Portrait is card-photo scale, not an AboutFaces poster. Name, title, license sit with the face."
+        },
+        {
+          "id": "7",
+          "text": "Call/Text/Email/Schedule sit on the fold from the live phone and email. Valuation is /sell, not a CMA sheet."
+        },
+        {
+          "id": "8",
+          "text": "Door back to all brokers, reviews, and sell. Do not invent a personal volume hero from a thin tally."
+        }
       ]
     },
-    "note": "PAGE_INVENTORY §6 2026-09-05. Order is Breadcrumb, AboutFaces portrait (not poster), Quiet license + firm review door, V3Doors Call/Text/Email, V3Proof firm reviews, V3Ledger firm sales, personal Instrument/Atlas/Ledger only if hasRealPersonalRecord, Quiet bio + team/reviews/sell. Valuation is /sell; no CMA sheet on this page. Invariants: (1) firm reviews, not a thin personal wall. (2) getBrokerSales still loads the personal set; display is gated. (3) JSON-LD RealEstateAgent + BreadcrumbList. (4) 977 zip filter on firm closings. (5) Direct call/text/email from live phone/email only.",
+    "note": "PAGE_INVENTORY \u00a76 2026-09-05. Order is Breadcrumb, AboutFaces portrait (not poster), Quiet license + firm review door, V3Doors Call/Text/Email, V3Proof firm reviews, V3Ledger firm sales, personal Instrument/Atlas/Ledger only if hasRealPersonalRecord, Quiet bio + team/reviews/sell. Valuation is /sell; no CMA sheet on this page. Invariants: (1) firm reviews, not a thin personal wall. (2) getBrokerSales still loads the personal set; display is gated. (3) JSON-LD RealEstateAgent + BreadcrumbList. (4) 977 zip filter on firm closings. (5) Direct call/text/email from live phone/email only.",
     "requiredComponents": [
       {
         "name": "V3SectionTracker",
@@ -204,7 +252,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-17",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts team --builder grok-4.5 — official grok CLI, cursor-agent, and claude CLI all missing (exit 2). Fallback: separate claude-sonnet-5 Task judge on the six SITE-113 shots, three scorings in one call. Builder grok-4.5.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts team --builder grok-4.5 \u2014 official grok CLI, cursor-agent, and claude CLI all missing (exit 2). Fallback: separate claude-sonnet-5 Task judge on the six SITE-113 shots, three scorings in one call. Builder grok-4.5.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "grok-4.5",
     "transport": "task-fallback",
@@ -257,18 +305,27 @@
     "competitiveBriefPass": true,
     "beats": "Beats a typical Central Oregon brokerage Our Agents grid on verifiable credibility: Oregon license on every card, a plain-language Source disclosure (agent role, sold price, close-date cutoff, counts, city breakdown), and a photo carousel of recorded sales.",
     "adaptedFrom": [
-      { "id": "house-faces" },
-      { "id": "house-atlas" },
-      { "id": "shadcn-button-group" },
-      { "id": "shadcn-carousel" },
-      { "id": "shadcn-card" },
-      { "id": "shadcn-avatar" }
+      {
+        "id": "house-faces"
+      },
+      {
+        "id": "house-atlas"
+      },
+      {
+        "id": "shadcn-button-group"
+      },
+      {
+        "id": "shadcn-carousel"
+      },
+      {
+        "id": "shadcn-card"
+      }
     ],
     "defects": [
       {
         "section": "Recorded closings card (3480 45th, Redmond)",
         "severity": "craft",
-        "finding": "Community label still reads Forked Hom Butte — looks like a truncated subdivision name rather than a real place name.",
+        "finding": "Community label still reads Forked Hom Butte \u2014 looks like a truncated subdivision name rather than a real place name.",
         "replaceWith": null
       },
       {
@@ -280,7 +337,7 @@
       {
         "section": "Where the brokers have closed footer teaser",
         "severity": "craft",
-        "finding": "The atlas head peeks as 25 closings twice with no map yet in the first viewport — house-atlas is already on the page below the fold.",
+        "finding": "The atlas head peeks as 25 closings twice with no map yet in the first viewport \u2014 house-atlas is already on the page below the fold.",
         "replaceWith": "house-atlas"
       }
     ],
@@ -300,8 +357,8 @@
     },
     "rebaselineReason": "evaluatorModel grok-4.6 to claude-sonnet-5 (official grok / cursor-agent / claude CLIs missing; taste-evaluate.ts exit 2). rubricVersion v1-2026-09-10 to v1-2026-09-12. New catalog open-state shots. Table instrument was grok-4.6 median 55. Honesty 8 holds.",
     "verdict": "SEO improved: title names licenses and recorded closings, and CollectionPage now carries ItemList JSON-LD for the three brokers and the closing rail (jsonLd 4 to 6). Inventory improved: 18 recorded closing Cards with photo, sold price, beds/baths/sqft from the already-fetched MLS set. UX improved: shadcn ButtonGroup, carousel+Card, AvatarGroup, and sparkline faces; demoMatch true. Atlas still only peeks in the fold.",
-    "seoIncrement": "Title Bend brokers · Oregon licenses and recorded closings. ItemList JSON-LD for brokers and recorded closings. jsonLd floor 4 → 6.",
-    "inventoryIncrement": "TeamClosings #closings-rail: 18 MLS closing Cards (photo, ClosePrice, beds/baths/sqft, listing door) from getBrokerSales / publishFirmClosingRows. images 7 → 28.",
+    "seoIncrement": "Title Bend brokers \u00b7 Oregon licenses and recorded closings. ItemList JSON-LD for brokers and recorded closings. jsonLd floor 4 \u2192 6.",
+    "inventoryIncrement": "TeamClosings #closings-rail: 18 MLS closing Cards (photo, ClosePrice, beds/baths/sqft, listing door) from getBrokerSales / publishFirmClosingRows. images 7 \u2192 28.",
     "uxIncrement": "Catalog ButtonGroup Call|Text|Email|Schedule (no phone on Call), shadcn carousel+Card rail in the 375 first viewport, AvatarGroup, monthly sparkline, Source disclosure.",
     "tablePrior": {
       "median": 55,
@@ -337,6 +394,6 @@
       "video": 0,
       "jsonLd": 6
     },
-    "note": "SITE-113. Raised words/headings/sections/links/images/jsonLd/heroImageWidth to lock the closings rail + ItemList increment. Lowered only heroImageNatural 2043 → 1230: the widest first-1200px image is now a recorded closing Card photo (Spark 1367), not the 2271 broker PNG. Those PNGs stay on the faces. Floor is 0.9 × 1367."
+    "note": "SITE-113. Raised words/headings/sections/links/images/jsonLd/heroImageWidth to lock the closings rail + ItemList increment. Lowered only heroImageNatural 2043 \u2192 1230: the widest first-1200px image is now a recorded closing Card photo (Spark 1367), not the 2271 broker PNG. Those PNGs stay on the faces. Floor is 0.9 \u00d7 1367."
   }
 }
