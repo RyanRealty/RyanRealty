@@ -910,13 +910,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // THE ROOM-COUNT CONFLICT REACHES THE REVIEWER (Matt 2026-09-10). A count
     // the listing and the house's own closed sale disagree on is never a quiet
     // resolution: whichever number priced the document, a person confirms it.
-    if (roomConflicts.length > 0) {
+    if (pricing && roomConflicts.length > 0) {
       pricing.needsReview = true
       pricing.reviewReason = [pricing.reviewReason, ...roomConflicts.map((c) => c.note)]
         .filter(Boolean)
         .join(' ')
     }
-    if (contract.forceReview) {
+    if (pricing && contract.forceReview) {
       // Every failing review check reaches the reason, even when the engine
       // had already raised the flag: Dana's 1531 10th carried dispersion and
       // a ±27% range, and the range sentence never printed because the flag
