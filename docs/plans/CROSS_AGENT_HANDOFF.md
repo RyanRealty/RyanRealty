@@ -2,7 +2,7 @@
 
 Surface: Cursor cloud `cursor-cloud-site111-20260916`, branch `cursor/site-111-sell-tip-ready-75a0`, PR #267. PR only — Cos Mini lands. Do not merge from this agent.
 
-- Tip SHA pending receipt commit. `--ship` exit 0. `demoMatch: true`. Median 73 (73/76/69) vs rematch-3 68 vs HEAD 63. Judge: claude-sonnet-5 Task. Builder: grok-4.6.
+- Tip SHA `553021f0f`. `--ship` exit 0. `demoMatch: true`. Median 73 (73/76/69) vs rematch-3 68 vs HEAD 63. Judge: claude-sonnet-5 Task. Builder: grok-4.6.
 - ask-open now photographs beUI layout-size expand (compact pill, accent tile 52px → full, dotted-chevron trail). Street reframe and 375 confirm held.
 - Skills read: `.cursor/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
