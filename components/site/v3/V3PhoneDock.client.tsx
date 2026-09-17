@@ -36,11 +36,12 @@
  * first name, and the labels say who answers.
  *
  * WORK WITH US is the catalog shadcn Drawer (vaul), a bottom sheet a thumb
- * can drag closed, restyled navy on cream at the house radius: a navy head
- * with one true line about the brokerage, the two doors — Buy a home, Sell
- * your home — then the four ways to learn about us, then the phone. The
- * recruiting door that used to say "Work with us" now says Join Ryan Realty,
- * so the phrase means one thing on this site.
+ * can drag closed, restyled navy on cream at the house radius. The chip stays
+ * "Work with us"; the sheet is the door — title Buy or sell, one short true
+ * line, then Buy a home / Sell your home (teases, not page headlines), then
+ * About / team / reviews / contact, then the street and the phone. Never a
+ * broker count. The recruiting door that used to say "Work with us" now says
+ * Join Ryan Realty, so the phrase means one thing on this site.
  *
  * THE ONE-FILLED-CONTROL RULE (PUBLIC_UI §1) HOLDS. Every control in the bar
  * is the outline variant, the same as the listing bar has always been, so the
@@ -58,7 +59,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/tracking'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
-import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
+import { BRAND, CONTACT } from '@/lib/brand/contact'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import {
@@ -205,25 +206,22 @@ export type V3WorkWithUsProps = {
 
 /** The four ways to learn about the brokerage, in the About menu's own order. */
 const LEARN_LINKS = [
-  { href: '/about', label: 'About Ryan Realty' },
+  { href: '/about', label: 'About' },
   { href: '/team', label: 'Our team' },
   { href: '/reviews', label: 'Client reviews' },
-  { href: '/contact', label: 'Contact us' },
+  { href: '/contact', label: 'Contact' },
 ] as const
-
-const BROKER_COUNT = Object.keys(BROKERS).length
-const COUNT_WORD: Record<number, string> = { 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five' }
 
 /**
  * The ask and its sheet. The button sits in the bar as its last control; the
  * sheet is the catalog Drawer, direction bottom, which is the one bottom
- * sheet on this site.
+ * sheet on this site. Listing bars compose this same export so the copy
+ * cannot drift.
  */
 export function V3WorkWithUs({ phone, name, surface }: V3WorkWithUsProps) {
   const [open, setOpen] = useState(false)
   const line = dialable(phone) ?? CONTACT.phoneDirectTel
   const who = name?.trim() || 'Ryan Realty'
-  const brokers = `${COUNT_WORD[BROKER_COUNT] ?? BROKER_COUNT} brokers`
 
   const onOpenChange = useCallback(
     (next: boolean) => {
@@ -249,17 +247,16 @@ export function V3WorkWithUs({ phone, name, surface }: V3WorkWithUsProps) {
       </DrawerTrigger>
       <DrawerContent className={cn(V3_ROOT_CLASS, 'v3-dock-sheet')} aria-describedby={undefined}>
         <div className="v3-dock-sheet__head">
-          <DrawerTitle className="v3-dock-sheet__title">Work with us</DrawerTitle>
+          <DrawerTitle className="v3-dock-sheet__title">Buy or sell</DrawerTitle>
           <DrawerDescription className="v3-dock-sheet__line">
-            Ryan Realty is a Bend brokerage at {BRAND.address.street}. {brokers}, and the whole of
-            Central Oregon.
+            Boutique Central Oregon buy-and-sell firm.
           </DrawerDescription>
         </div>
         <nav className="v3-dock-sheet__doors" aria-label="Buy or sell with Ryan Realty">
           <Link href="/buy" className="v3-dock-sheet__door" onClick={door('buy')}>
             <span className="v3-dock-sheet__kicker">Buy</span>
             <span className="v3-dock-sheet__label">Buy a home</span>
-            <span className="v3-dock-sheet__fact">Every home for sale in Central Oregon, by town, community or map.</span>
+            <span className="v3-dock-sheet__fact">See homes on the map.</span>
             <span className="v3-dock-sheet__arrow" aria-hidden="true">
               &#8594;
             </span>
@@ -267,7 +264,7 @@ export function V3WorkWithUs({ phone, name, surface }: V3WorkWithUsProps) {
           <Link href="/sell" className="v3-dock-sheet__door" onClick={door('sell')}>
             <span className="v3-dock-sheet__kicker">Sell</span>
             <span className="v3-dock-sheet__label">Sell your home</span>
-            <span className="v3-dock-sheet__fact">Value my home: a written valuation from a principal broker.</span>
+            <span className="v3-dock-sheet__fact">Get a pricing take on your home.</span>
             <span className="v3-dock-sheet__arrow" aria-hidden="true">
               &#8594;
             </span>
@@ -285,6 +282,7 @@ export function V3WorkWithUs({ phone, name, surface }: V3WorkWithUsProps) {
           </ul>
         </nav>
         <div className="v3-dock-sheet__contact">
+          <p className="v3-dock-sheet__addr">{BRAND.address.street}</p>
           <a href={`tel:${line}`} className="v3-dock-sheet__phone" onClick={door('call')}>
             Call {who === 'Ryan Realty' ? CONTACT.phoneDirect : who}
           </a>

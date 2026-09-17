@@ -340,7 +340,7 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
             {rows.length > 0 ? (
               <PlaceTypeFilm
                 rows={rows}
-                label={`Photographed ${spec.nounMany} in ${publicName}`}
+                label={`${spec.nounMany} in ${publicName}`}
                 bandLow={lowAsk}
                 bandHigh={bandHigh}
               />
@@ -349,24 +349,24 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
 
           <section id="homes" className={cn(V3_ROOT_CLASS, 'place-type-homes')}>
             <div className="place-type-homes__head">
-              <V3Heading level={2}>All photographed listings</V3Heading>
+              <V3Heading level={2}>Homes for sale</V3Heading>
               {rows.length > 1 ? <PlaceTypeSortBar pagePath={pagePath} /> : null}
             </div>
             {rows.length > 0 ? (
               <PlaceTypeRows rows={rows} />
             ) : listOk && activeCount != null && activeCount > 0 ? (
               <V3Quiet
-                ariaLabel="Photographed listings"
+                ariaLabel="Homes for sale"
                 items={[
                   {
                     kind: 'prose',
-                    body: 'None of these listings have a photograph in this refresh.',
+                    body: 'None with a photo in this refresh.',
                   },
                 ]}
               />
             ) : measuredEmpty ? (
               <V3Quiet
-                ariaLabel="Photographed listings"
+                ariaLabel="Homes for sale"
                 items={[{ kind: 'prose', body: 'None for sale in this refresh.' }]}
               />
             ) : null}
@@ -378,7 +378,7 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
           items={[
             { label: `${publicName} homes for sale`, href: placeHref },
             { label: `Browse ${spec.nounMany} on the map`, href: '#atlas' },
-            { label: 'All photographed listings', href: '#homes' },
+            { label: 'Homes for sale', href: '#homes' },
           ]}
         />
       </main>

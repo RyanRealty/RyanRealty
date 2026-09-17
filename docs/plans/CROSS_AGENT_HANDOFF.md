@@ -1,10 +1,11 @@
-# Current — 2026-09-16 (P0 Caldera amenities visitor copy — PR only)
+# Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)
 
-Surface: Cursor cloud `bc-c090e444-3805-5518-a95a-cbcc06b55006`, branch `cursor/caldera-amenity-visitor-copy-5006`. PR only — do not merge. Cos Mini lands.
+Surface: Cursor cloud, branch `cursor/p0-matt-voice-phone-sheet-d3db`. PR only — Cos Mini cherry-picks + `npm run push`. Do not merge here.
 
-- **P0 Matt 2026-09-16 phone shot.** `/communities/caldera-springs` amenities no longer ships "authored amenity list" / "on file" / "records N amenities" / "Amenities 5". Claim is visitor English (`Caldera Springs has Lake House, …`). InsightCards title is `What's here`. Section lede dropped so the H2 is not repeated.
-- **Evidence.** `app/communities/[slug]/_v3/community-amenities.test.ts` 8/8 (unit+int). Founding: Caldera claim has no `authored`.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+- **Phone sheet.** `V3WorkWithUs` (listing bar shares the export): title Buy or sell; one line boutique Central Oregon buy-and-sell firm; no broker count; sell tease is Get a pricing take on your home (not the /sell H1); address sits with Call/Text.
+- **Place-type.** H2 + jump-nav + ariaLabels are Homes for sale. No "All photographed listings" on city/community type pages.
+- **Cheap.** Sort chips hydrate from `?sort=`. DigitSwap commas/`$` are marks, not 1ch slots.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `VOICE.md`, `TASTE.md`.
 
 # Current — 2026-09-16 (SITE-119 Tip Ready PR — floor counter ignores aria-hidden)
 
