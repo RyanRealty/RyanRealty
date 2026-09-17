@@ -48,6 +48,7 @@ import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-vide
 import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
+import { MapListingPeek } from '@/components/search/MapListingPeek'
 import './search-ledger.css'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
@@ -871,6 +872,12 @@ export default function MapSearchView({
     [listings, hiddenKeys],
   )
   const mapListings = useMemo(() => visibleListings.map(toMapListing), [visibleListings])
+  const peekListing = useMemo(() => {
+    const hovered = hoveredKey
+      ? visibleListings.find((row) => rowKey(row) === hoveredKey)
+      : undefined
+    return hovered ?? visibleListings.find((row) => Boolean(row.PhotoURL)) ?? visibleListings[0] ?? null
+  }, [hoveredKey, visibleListings])
 
   /**
    * The claim this rail is making about the current frame, and the band the
@@ -1239,6 +1246,29 @@ export default function MapSearchView({
         onMarkerClick={onMarkerClick}
         className="srch-map-field h-full w-full"
       />
+      {peekListing ? (
+        <MapListingPeek
+          listing={{
+            photoURL: peekListing.PhotoURL ? listingRowPhotoSrc(peekListing.PhotoURL) : null,
+            price: peekListing.ListPrice ?? null,
+            streetLine: cardStreet(peekListing),
+            cityLine: cardCity(peekListing),
+            beds: peekListing.BedroomsTotal ?? null,
+            baths: peekListing.BathroomsTotal ?? null,
+            sqft: rowSqft(peekListing),
+            href: listingTileHref({
+              listingKey: rowKey(peekListing),
+              listNumber: peekListing.ListNumber ?? null,
+              streetNumber: peekListing.StreetNumber,
+              streetName: peekListing.StreetName,
+              city: peekListing.City,
+              boundaryCity: peekListing.BoundaryCity ?? null,
+              boundaryNeighborhood: peekListing.BoundaryNeighborhood ?? null,
+              subdivisionName: peekListing.SubdivisionName,
+            }),
+          }}
+        />
+      ) : null}
       {/* Saved named areas (Flexmls My-Map-Overlays parity). Applying one
           replaces the drawn shape set, so it rides the identical ?shapes=
           contract and is shareable + alert-savable like any drawn area. */}

@@ -25,4 +25,10 @@ describe('SITE-121 phone MorphingSearch sheet', () => {
     expect(src).toContain('autoFocus')
     expect(src).toContain('data-v3-morph-overlay')
   })
+
+  it('renders Command groups in the open morph, not a flat combobox', () => {
+    expect(src).toMatch(/from ['"]@\/components\/ui\/command['"]/)
+    expect(src).toContain('CommandGroup')
+    expect(src).toContain('groupMorphItems')
+  })
 })

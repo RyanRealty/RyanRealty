@@ -5,10 +5,13 @@ const catalog = readFileSync('app/search/_v3/search-catalog.ts', 'utf8')
 const page = readFileSync('app/search/page.tsx', 'utf8')
 
 describe('SITE-121 search route catalog imports', () => {
-  it('route _v3 imports morphing-search, range-slider, and command', () => {
+  it('route _v3 imports morphing-search, range-slider, command, input, and checkbox', () => {
     expect(catalog).toMatch(/from '@\/components\/motion\/morphing-search'/)
     expect(catalog).toMatch(/from '@\/components\/motion\/range-slider'/)
     expect(catalog).toMatch(/from '@\/components\/ui\/command'/)
+    expect(catalog).toMatch(/from '@\/components\/ui\/input'/)
+    expect(catalog).toMatch(/from '@\/components\/ui\/checkbox'/)
+    expect(catalog).toMatch(/from '@\/components\/ui\/input-group'/)
   })
 
   it('the search page imports the route catalog module', () => {

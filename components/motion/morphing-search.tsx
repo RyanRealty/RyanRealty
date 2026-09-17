@@ -27,6 +27,13 @@ import {
 	iconOnlyPanelLayout,
 	overlayLayerZIndex,
 } from "@/components/motion/morphing-search-layout";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
 
 // Keeps the Wallet Card feel with a little more time to read the morph.
 const SEARCH_MORPH: Transition = {
@@ -48,8 +55,28 @@ export type MorphingSearchItem = {
 	description?: string;
 	keywords?: string[];
 	icon?: LucideIcon;
+	/** Command group heading (Cities, Addresses). Empty = ungrouped. */
+	group?: string;
 	onSelect?: () => void;
 };
+
+function groupMorphItems(items: MorphingSearchItem[]) {
+	const order: string[] = [];
+	const map = new Map<string, MorphingSearchItem[]>();
+	for (const item of items) {
+		const key = item.group ?? "";
+		if (!map.has(key)) {
+			order.push(key);
+			map.set(key, []);
+		}
+		map.get(key)?.push(item);
+	}
+	let index = 0;
+	return order.map((heading) => ({
+		heading,
+		items: (map.get(heading) ?? []).map((item) => ({ item, index: index++ })),
+	}));
+}
 
 export interface MorphingSearchProps {
 	items: MorphingSearchItem[];
@@ -173,6 +200,10 @@ export function MorphingSearch({
 	}, [items, query]);
 
 	const { activeIndex, moveTo, moveActive } = useRowCursor(filteredItems, query);
+	const groupedItems = useMemo(
+		() => groupMorphItems(filteredItems),
+		[filteredItems],
+	);
 
 	// The cursor is stamped with the query, so changing it drops the highlight
 	// without this having to say so.
@@ -570,51 +601,64 @@ export function MorphingSearch({
 											maxHeight: resultsHeight,
 										}}
 									>
-										{filteredItems.length > 0 ? (
-											filteredItems.map((item, index) => {
-												const Icon = item.icon;
-												const active = index === activeIndex;
-												return (
-													<button
-														key={item.id}
-														id={`${uid}-option-${index}`}
-														type="button"
-														role="option"
-														aria-selected={active}
-														data-index={index}
-														onMouseMove={() => moveTo(item.id)}
-														onFocus={() => moveTo(item.id)}
-														onClick={() => selectItem(item)}
-														className="relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-													>
-														{active ? (
-															<motion.span
-																layoutId={`${uid}-active-result`}
-																className="absolute inset-0 rounded-lg bg-foreground/5"
-																transition={transition}
-															/>
-														) : null}
-														{Icon ? (
-															<Icon className="relative size-4 shrink-0 text-muted-foreground" />
-														) : null}
-														<span className="relative min-w-0">
-															<span className="block truncate text-sm font-medium text-foreground">
-																{item.title}
-															</span>
-															{item.description ? (
-																<span className="block truncate text-xs text-muted-foreground">
-																	{item.description}
-																</span>
-															) : null}
-														</span>
-													</button>
-												);
-											})
-										) : (
-											<p className="px-3 py-8 text-center text-sm text-muted-foreground">
-												{emptyMessage}
-											</p>
-										)}
+										<Command
+											shouldFilter={false}
+											className="srch-command bg-transparent p-0"
+										>
+											<CommandList className="max-h-none overflow-visible p-0">
+												{filteredItems.length > 0 ? (
+													groupedItems.map((group) => (
+														<CommandGroup
+															key={group.heading || "results"}
+															heading={group.heading || undefined}
+														>
+															{group.items.map(({ item, index }) => {
+																const Icon = item.icon;
+																const active = index === activeIndex;
+																return (
+																	<CommandItem
+																		key={item.id}
+																		id={`${uid}-option-${index}`}
+																		value={item.id}
+																		role="option"
+																		aria-selected={active}
+																		data-index={index}
+																		data-selected={active || undefined}
+																		onMouseMove={() => moveTo(item.id)}
+																		onFocus={() => moveTo(item.id)}
+																		onSelect={() => selectItem(item)}
+																		className="relative min-h-11"
+																	>
+																		{active ? (
+																			<motion.span
+																				layoutId={`${uid}-active-result`}
+																				className="absolute inset-0 rounded-lg bg-foreground/5"
+																				transition={transition}
+																			/>
+																		) : null}
+																		{Icon ? (
+																			<Icon className="relative size-4 shrink-0 text-muted-foreground" />
+																		) : null}
+																		<span className="relative min-w-0">
+																			<span className="block truncate text-sm font-medium text-foreground">
+																				{item.title}
+																			</span>
+																			{item.description ? (
+																				<span className="block truncate text-xs text-muted-foreground">
+																					{item.description}
+																				</span>
+																			) : null}
+																		</span>
+																	</CommandItem>
+																);
+															})}
+														</CommandGroup>
+													))
+												) : (
+													<CommandEmpty>{emptyMessage}</CommandEmpty>
+												)}
+											</CommandList>
+										</Command>
 									</motion.div>
 								</motion.div>
 							</motion.div>

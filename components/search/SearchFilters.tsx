@@ -18,6 +18,8 @@ import {
   useSearchSuggest,
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
+import { suggestToMorphItem } from '@/components/search/suggest-morph'
+import { ChipRail } from '@/components/search/ChipRail'
 import HomeTypeFilterPanel, { homeTypeChipLabel } from '@/components/search/HomeTypeFilterPanel'
 import { parseSearchQuery } from '@/lib/parse-search-query'
 import dynamic from 'next/dynamic'
@@ -609,12 +611,9 @@ export default function SearchFilters({
             open={locationOpen}
             onOpenChange={(next) => setLocationOpen(next)}
             placeholder={locationPlaceholder}
-            items={morphItems.map((item) => ({
-              id: item.href,
-              title: item.label,
-              description: item.sublabel,
-              onSelect: () => handleSuggestPick(item),
-            }))}
+            items={morphItems.map((item) =>
+              suggestToMorphItem(item, { onSelect: () => handleSuggestPick(item) }),
+            )}
             onQueryChange={(next) => {
               setLocationQuery(next)
               setHighlight(-1)
@@ -690,8 +689,10 @@ export default function SearchFilters({
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
         </div>
         )}
-        {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search. */}
+        {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search.
+            ChipRail keeps Save Search from clipping at 375 (fade + arrows). */}
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
+        <ChipRail className="min-w-0 flex-1">
         <div className="flex shrink-0 items-center gap-2">
         {/* Places — City / Neighborhood / Community / Subdivision / School district. */}
         <FilterDropdown
@@ -1012,7 +1013,7 @@ export default function SearchFilters({
         </FilterDropdown>
         </div>
 
-        <div className="srch-chip-rail hidden min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar sm:flex">
+        <div className="hidden min-w-0 flex-1 flex-nowrap items-center gap-2 sm:flex">
 
         {/* For Sale / Status */}
         <FilterDropdown
@@ -1271,6 +1272,7 @@ export default function SearchFilters({
           </Button>
           <SaveSearchButton user={viewerState.signedIn} />
         </span>
+        </ChipRail>
         {hideViewToggle ? null : (
         <div className="map-search-mapsort__pill ml-auto shrink-0" role="group" aria-label="Map and sort">
           <div className="map-search-views map-search-mapsort__views" role="radiogroup" aria-label="View">
