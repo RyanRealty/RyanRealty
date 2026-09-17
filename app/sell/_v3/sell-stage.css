@@ -28,18 +28,17 @@
   padding-block: var(--v3-space-2xl) var(--v3-space-lg);
 }
 
-/* Form-specific Stage fold (house-stage). Typing leans the resort aerial.
-   A complete address REPLACES that aerial with the street/lot frame — a
-   scrim over the same photo is not the demo. */
+/* Form-specific Stage fold (house-stage). Typing leans and dims the poster
+   toward the typed street; a complete / pinned address locks a deeper crop
+   so address-ok stills are not the empty-field aerial. */
 .v3.v3-stage.sell-stage-poster .v3-stage-poster {
   transform: scale(1);
   transform-origin: 42% 38%;
   transition:
     transform var(--v3-dur-rise) var(--v3-ease-out),
     filter var(--v3-dur-rise) var(--v3-ease-out),
-    opacity var(--v3-dur-rise) var(--v3-ease-out),
     object-position var(--v3-dur-rise) var(--v3-ease-out);
-  will-change: transform, filter, opacity;
+  will-change: transform, filter;
 }
 
 .v3.v3-stage.sell-stage-poster[data-sell-focus='typing'] .v3-stage-poster {
@@ -48,48 +47,10 @@
   filter: brightness(0.62) saturate(0.78) contrast(1.08);
 }
 
-.v3.v3-stage.sell-stage-poster .sell-stage-street {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.v3.v3-stage.sell-stage-poster .sell-stage-street-plate {
-  position: absolute;
-  inset-inline: var(--v3-space-md);
-  inset-block-end: var(--v3-space-md);
-  z-index: 2;
-  margin: 0;
-  max-width: min(36rem, calc(100% - 2 * var(--v3-space-md)));
-  padding: var(--v3-space-2xs) var(--v3-space-sm);
-  background: var(--v3-surface);
-  color: var(--v3-ink);
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-sm);
-  line-height: var(--v3-leading-body);
-  overflow-wrap: anywhere;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .sell-stage-street,
-.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .sell-stage-street-plate {
-  opacity: 1;
-}
-
-.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-poster,
-.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-video {
-  opacity: 0;
-}
-
-.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-media {
-  background: var(--v3-surface-inverse);
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-poster {
+  transform: scale(1.42);
+  object-position: 78% 84%;
+  filter: brightness(0.36) saturate(0.62) contrast(1.18);
 }
 
 .v3.v3-stage.sell-stage-poster[data-sell-focus='typing'] .v3-stage-scrim {
@@ -107,8 +68,8 @@
   background: linear-gradient(
     to top,
     var(--v3-scrim-strong) 0%,
-    var(--v3-scrim-strong) 18%,
-    var(--v3-scrim-mid) 42%,
+    var(--v3-scrim-strong) 52%,
+    var(--v3-scrim-mid) 78%,
     var(--v3-scrim-soft) 100%
   );
   transition: background var(--v3-dur-rise) var(--v3-ease-out);
@@ -241,19 +202,8 @@
 }
 
 @media (max-width: 47.99rem) {
-  .sell-stage-ask .sell-field [data-state] {
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
   .sell-stage-ask .sell-field input {
-    font-size: var(--v3-size-label);
-    letter-spacing: -0.02em;
-  }
-
-  .sell-stage-ask .sell-field [class*='leftIcon'],
-  .sell-stage-ask .sell-field span:has(svg) {
-    transform: scale(0.9);
+    font-size: var(--v3-size-body-sm);
   }
 }
 

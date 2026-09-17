@@ -48,7 +48,7 @@ export function SellAddressField({
         onPlaceSelected={onPlaceSelected}
         motionClassNames={{
           root: 'sell-field min-w-0',
-          field: 'min-w-0 overflow-x-auto',
+          field: 'min-w-0',
           input: 'min-w-0',
           errorMessage: 'sell-field__error',
         }}
