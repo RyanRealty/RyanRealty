@@ -1,3 +1,12 @@
+# Current — 2026-09-17 (history explorer: kill Step N of 4)
+
+Surface: Cursor cloud, branch `cursor/history-inline-filter-0e1f`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **Wizard killed.** `/housing-market/history#query` is an inline filter bar (year / city / type / fireplace / min / max). No Step N of 4. No V3Sheet. Fireplace is one control, not a finale.
+- **GET contract unchanged.** `year`, `city`, `type`, `fireplace`, `min`, `max`. ODS source line and explore door intact. Page stays `@no-parity`.
+- **House control.** New barrel atom `V3Select` (labelled native select). Bar is a GET form; JS submit strips empty/`all`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `VOICE.md`, `TASTE.md`.
+
 # Current — 2026-09-17 (P0 Matt voice — place H1 every-home kill)
 
 Surface: Cursor cloud, branch `cursor/place-h1-every-home-voice-a7e4`. PR only — Cos Mini lands. Do not merge. HOLD owner email.

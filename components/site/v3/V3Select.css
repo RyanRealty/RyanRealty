@@ -1,0 +1,58 @@
+/* Labelled select. Same weight as V3Filter: hairline, 44px target, no box. */
+
+.v3 .v3-select__label {
+  display: block;
+  margin-bottom: var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.v3 .v3-select__label--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.v3 .v3-select__wrap {
+  position: relative;
+  display: block;
+}
+
+.v3 .v3-select__field {
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xl) 0 var(--v3-space-sm);
+  appearance: none;
+  background: var(--v3-surface);
+  border: 0;
+  border-bottom: var(--v3-rule-hairline);
+  border-radius: 0;
+  color: var(--v3-ink);
+  font: inherit;
+  font-size: var(--v3-size-body);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  cursor: pointer;
+}
+
+.v3 .v3-select__wrap::after {
+  content: '';
+  position: absolute;
+  right: var(--v3-space-sm);
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -0.1em;
+  border-left: 0.32em solid transparent;
+  border-right: 0.32em solid transparent;
+  border-top: 0.36em solid currentColor;
+  color: var(--v3-ink-muted);
+  pointer-events: none;
+}
