@@ -1,6 +1,6 @@
 # Ryan Realty — UTM tracking convention (every channel)
 
-**Last updated:** 2026-05-24
+**Last updated:** 2026-09-17
 **Owner:** Matt Ryan
 **Companion to:** `docs/GA4_USER_TRACKING_SETUP.md` · `docs/MARKETING_LEAD_FLOW.md` · `docs/MARKETING_ANALYTICS_PLAYBOOK.md`
 
@@ -122,8 +122,11 @@ The link in your IG bio (or YouTube description, or LinkedIn About section) is t
 | Email signature (Matt) | `?utm_source=email&utm_medium=signature&utm_campaign=matt-signature` |
 | Cold outreach | `?utm_source=email&utm_medium=outreach&utm_campaign=<list-slug>` |
 | Transactional (CMA delivery, valuation reports) | `?utm_source=email&utm_medium=transactional&utm_campaign=cma-delivery` |
+| CRM outbound default (`attributeOutbound` / `attributeSiteLinks`) | `?utm_source=crm&utm_medium=email&utm_content=agent-<slug>` |
 
-**Apply in:** every email template + your personal email signature. The signature one is non-obvious but adds up — every reply you send becomes a tracked click if a recipient clicks through.
+**CRM outbound (automatic).** `attributeSiteLinks` fills **missing** UTMs only. Channel pair is `crm` / `email` — the same pair live market-report and prospecting senders already stamp. Broker identity goes in `utm_content=agent-<slug>` (the `?agent=` slug, e.g. `agent-matt-ryan`). When `utm_content` is already a creative (`hero-video-30s`, `why-list`), the broker tag lands in `utm_term` instead. Pre-existing `utm_source` / `utm_medium` / `utm_campaign` (listing-alerts, market-report, CMA `utm_source=cma`) are never overwritten.
+
+**Apply in:** every email template + your personal email signature. The signature one is non-obvious but adds up — every reply you send becomes a tracked click if a recipient clicks through. CRM HTML/SMS that already goes through `attributeOutbound` / `attributeUrl` gets the default row above without hand-editing.
 
 ---
 

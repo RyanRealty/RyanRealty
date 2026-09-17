@@ -6,6 +6,7 @@ import { trackUserEvent } from '@/app/actions/track-user-event'
 import { hasAnalyticsConsent, getStoredConsent, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
 import { lastThingFromHouse, lastThingFromSearch, writeLastThing } from '@/lib/site/arrival-intent'
 import { listingMlsFromPath, visitorPageCategoryFromPath } from '@/lib/analytics/page-type'
+import { resolveClientVisitBroker } from '@/lib/analytics/visit-broker'
 
 
 // localStorage key for the source-agnostic uuid that lets us stitch a visitor
@@ -248,6 +249,9 @@ export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstP
     referrer,
     landingPage,
     consent,
+    // Canonical short slug when ?agent= / cookie is known — server MP page_view
+    // uses the same assigned_broker / broker_slug names as generate_lead.
+    agent: resolveClientVisitBroker() ?? undefined,
   }
   // keepalive=true so the POST survives a fast navigation away.
   try {

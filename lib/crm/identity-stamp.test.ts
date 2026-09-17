@@ -50,4 +50,22 @@ describe('attributeSiteLinks — a link we send must identify who we sent it to'
   it('leaves the text alone when there is nothing to stamp', () => {
     expect(attributeSiteLinks(LINK, null, null, null)).toBe(LINK)
   })
+
+  it('adds crm/email + agent-<slug> UTMs when the destination has none', () => {
+    const out = attributeSiteLinks(LINK, 'matt', null, 4242)
+    expect(out).toContain('utm_source=crm')
+    expect(out).toContain('utm_medium=email')
+    expect(out).toContain('utm_content=agent-matt')
+  })
+
+  it('preserves pre-existing channel UTMs and only fills the broker content tag', () => {
+    const existing =
+      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report'
+    const out = attributeSiteLinks(existing, 'rebecca', null, 7)
+    expect(out).toContain('utm_source=crm')
+    expect(out).toContain('utm_medium=email')
+    expect(out).toContain('utm_campaign=market-report')
+    expect(out).toContain('utm_content=agent-rebecca')
+    expect((out.match(/utm_source=/g) ?? []).length).toBe(1)
+  })
 })

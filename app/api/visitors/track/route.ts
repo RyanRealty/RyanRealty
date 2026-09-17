@@ -41,6 +41,8 @@ import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
 // Identity params (?_pid / ?_fuid) are stripped from every URL this route
 // stores or forwards. See strip-identity.ts for why the server, not the client
 // bridge, has to be the mechanism.
+import { AGENT_ATTRIB_COOKIE } from '@/lib/agent-attribution'
+import { resolveVisitBrokerSlug, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
 import { stripIdentityParams } from './strip-identity'
 
 export const runtime = 'nodejs'
@@ -168,6 +170,11 @@ type TrackBody = {
    * identified visitor) records a durable suppression. Phase 8.1.
    */
   gpc?: boolean
+  /**
+   * Canonical short broker slug resolved client-side from ?agent= / cookie.
+   * Server re-normalizes; unknown values are ignored.
+   */
+  agent?: string
 }
 
 function getSupabase() {
@@ -516,10 +523,22 @@ export async function POST(request: NextRequest) {
         const intent = typeof meta.intent === 'string' ? meta.intent : undefined
         const source = typeof meta.source === 'string' ? meta.source : undefined
         const thing = typeof meta.thing === 'string' ? meta.thing : undefined
+        const broker = visitBrokerGa4Fields(
+          resolveVisitBrokerSlug({
+            agentParam: typeof body.agent === 'string' ? body.agent : null,
+            cookieValue: request.cookies.get(AGENT_ATTRIB_COOKIE)?.value,
+            pageUrl,
+            utmContent: campaign?.content,
+            utmTerm: campaign?.term,
+          }),
+        )
         void fireGa4Event({
           eventName: isView ? 'page_view' : eventType,
           clientId: fromCookie || clientIdFromSessionId(sessionId),
-          userProperties: intent ? { intent } : undefined,
+          userProperties: {
+            ...(intent ? { intent } : {}),
+            ...(broker?.userProperties ?? {}),
+          },
           eventParams: {
             // Identity-stripped: GA4 is a third party and a contact id must not
             // leave the building inside a URL (same rule as the stored row).
@@ -533,6 +552,7 @@ export async function POST(request: NextRequest) {
             intent,
             source,
             thing,
+            ...(broker?.eventParams ?? {}),
           },
         })
       }
