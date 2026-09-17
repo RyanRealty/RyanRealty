@@ -1,3 +1,33 @@
+# Current — 2026-09-17 (listing fold density — Tip Ready)
+
+Surface: Cursor cloud, branch `cursor/listing-fold-whitespace-e937`. PR #285. Cos Mini landing onto main after puppeteer hotfix.
+
+# Current — 2026-09-17 (listing fold density — Tip Ready)
+
+Surface: Cursor cloud, branch `cursor/listing-fold-whitespace-e937`. PR #285. PR only — Cos Mini lands. Do not merge.
+
+# Current — 2026-09-17 (P0 listing fold whitespace — breadcrumb + mosaic)
+
+Surface: Cursor cloud `bc-6ad1e3ba-28e0-5a32-bdb7-ef006085e937`, branch `cursor/listing-fold-whitespace-e937`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **Breadcrumb.** `V3Breadcrumb` imports shadcn breadcrumb. Trails of 3+ collapse to first / … / last. Listing mounts `tone="on-media" overlay` so Bend / … / address sits on the mosaic, not a cream band. V3Chrome / morphing search untouched.
+- **Mosaic.** Photo well and letterbox are navy. Filmstrip thumbs 2.75rem, no extra cream pad. `object-fit: contain` held.
+- **Tip Ready.** `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/listing-detail/parity.json` exit 0. Adapted `shadcn-breadcrumb`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
+# Current — 2026-09-17 (GA broker visit attribution)
+
+Surface: Cursor cloud, branch `cursor/ga-broker-visit-attribution-22d2`. PR #284. PR only — Cos Mini lands. Do not merge.
+
+# Current — 2026-09-17 (GA broker visit attribution)
+
+Surface: Cursor cloud, branch `cursor/ga-broker-visit-attribution-22d2`. PR only — Cos Mini lands. Do not merge.
+
+- **UTMs.** `attributeSiteLinks` fills missing `utm_source=crm` + `utm_medium=email` (live CRM pair) and `utm_content=agent-<slug>` (`utm_term` only when content is already a creative). Existing listing-alert / market-report / CMA UTMs stay.
+- **Visit props.** `assigned_broker` (USER) + `broker_slug` (EVENT) on client `trackPageView` / first-paint GTM+gtag set, and on `/api/visitors/track` MP `page_view` when `?agent=` / cookie / agent UTM is known.
+- **Tests.** `lib/analytics/visit-broker.test.ts`, `lib/tracking.page-view.test.ts`, attributed-links + identity-stamp UTM cases. Not a SITE catalog class.
+- Skills read: `docs/UTM_TRACKING_CONVENTION.md`, `docs/GA4_USER_TRACKING_SETUP.md`.
+
 # Current — 2026-09-17 (Bend new-construction SFR-first)
 
 Surface: Cursor cloud, branch `cursor/bend-new-construction-51ff`. PR #278. PR only — Cos Mini lands. Do not merge. Not Tip Ready (no catalog SITE class / `@no-parity`).

@@ -10,6 +10,7 @@
  * tabs, action-swap, modal motion, photo skeleton — not a second kit.
  */
 import { Carousel } from '@/components/ui/carousel'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { Sheet } from '@/components/ui/sheet'
 import { Dialog } from '@/components/ui/dialog'
@@ -19,6 +20,7 @@ import { TRANSITIONS_MODAL_SURFACE } from '@/components/motion/transitions-modal
 import { PhotoSkeleton } from '@/components/motion/photo-skeleton'
 
 void Carousel
+void Breadcrumb
 void ButtonGroup
 void Sheet
 void Dialog

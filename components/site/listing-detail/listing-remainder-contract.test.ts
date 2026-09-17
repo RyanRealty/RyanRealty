@@ -113,6 +113,7 @@ describe('listing remainder composition', () => {
     expect(adapted.length).toBeGreaterThan(0)
     for (const id of [
       'shadcn-carousel',
+      'shadcn-breadcrumb',
       'shadcn-button-group',
       'shadcn-sheet',
       'shadcn-dialog',

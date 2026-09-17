@@ -7,6 +7,7 @@
  */
 
 .listing-detail {
+  position: relative;
   --navy: var(--v3-navy);
   --cream: var(--v3-cream);
   --navy-70: var(--v3-navy-70);
@@ -21,7 +22,18 @@
   line-height: 1.4;
   /* clip, not hidden: hidden makes this a scroll container and kills the
      sticky broker sidebar (the same defect kb-root already paid for). */
-  overflow-x: clip;
+   overflow-x: clip;
+}
+
+.listing-detail:has(> .v3-breadcrumb--overlay) .listing-mosaic__open-house,
+.listing-detail:has(> .v3-breadcrumb--overlay) .listing-mosaic__captions {
+  top: 2.75rem;
+}
+
+@media (min-width: 64rem) {
+  .listing-detail:has(> .v3-breadcrumb--overlay) .listing-mosaic__captions {
+    top: auto;
+  }
 }
 
 .listing-detail * {
@@ -518,7 +530,7 @@
 .listing-mosaic {
   position: relative;
   width: 100%;
-  background: var(--v3-cream);
+  background: var(--v3-navy);
 }
 
 .listing-mosaic__grid {
@@ -576,7 +588,7 @@
   scroll-snap-align: start;
   border: 0;
   padding: 0;
-  background: var(--v3-cream);
+  background: var(--v3-navy);
   cursor: zoom-in;
 }
 
@@ -590,7 +602,7 @@
 .listing-mosaic__empty-label {
   margin: 0;
   padding: var(--v3-space-sm);
-  color: var(--v3-navy);
+  color: var(--v3-cream);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body);
   text-align: center;
@@ -647,7 +659,7 @@
   position: relative;
   width: 100%;
   height: var(--v3-carousel-h);
-  background: var(--v3-cream);
+  background: var(--v3-navy);
 }
 
 .listing-mosaic__pane iframe,
@@ -662,7 +674,7 @@
 .listing-mosaic__map-slot {
   position: absolute;
   inset: 0;
-  background: var(--v3-cream);
+  background: var(--v3-navy);
 }
 
 .listing-facts-row {
@@ -946,14 +958,14 @@
 .listing-mosaic__tile-fallback {
   position: absolute;
   inset: 0;
-  background: var(--v3-cream);
+  background: var(--v3-navy);
 }
 
 /* THE FRAME AND THE FILMSTRIP (SITE-45) --------------------------------------
    One photograph in the frame, a navy strip under it indexing every photo,
    the media controls on the strip. The frame is the column's width (the
    shell seats the hero in the main column, ListingDetailShell heroInMain), so
-   the photograph shows the whole still (contain on cream) and the broker
+   the photograph shows the whole still (contain on navy) and the broker
    card's Tour sits beside it inside the first viewport at 1440x900. Below
    64rem the swipe carousel is the frame and the strip is a control bar
    under it, off the sky. */
@@ -965,7 +977,7 @@
 .listing-frame__media {
   position: relative;
   height: var(--v3-carousel-h);
-  background: var(--v3-cream);
+  background: var(--v3-navy);
   overflow: hidden;
 }
 
@@ -987,14 +999,14 @@
 }
 
 .listing-strip {
-  --listing-strip-h: 3.5rem;
-  --listing-strip-thumb: 5.5rem;
+  --listing-strip-h: 2.75rem;
+  --listing-strip-thumb: 2.75rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--v3-space-xs);
+  gap: 2px;
   min-height: var(--listing-strip-h);
-  padding: 0 var(--v3-space-xs) 0 0;
+  padding: 0;
   background: var(--v3-cream);
   color: var(--v3-navy);
   border-top: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
@@ -1021,7 +1033,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
-  padding: 0.375rem 0;
+  padding: 0;
 }
 
 .listing-strip__reel::-webkit-scrollbar {
@@ -1064,7 +1076,7 @@
 }
 
 .listing-strip[data-open='true'] {
-  --listing-strip-thumb: 5.5rem;
+  --listing-strip-thumb: 2.75rem;
 }
 
 .listing-strip__tools {
@@ -1254,7 +1266,7 @@
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
-  padding: var(--v3-hero-gap) var(--v3-gutter) var(--v3-space-2xl);
+  padding: var(--v3-space-xs) var(--v3-gutter) var(--v3-space-2xl);
 }
 @media (max-width: 1023px) {
   .listing-detail-shell {
@@ -1275,7 +1287,7 @@
 }
 
 .listing-hero-bleed {
-  background: var(--v3-cream);
+  background: var(--v3-navy);
 }
 
 .listing-detail-main {
