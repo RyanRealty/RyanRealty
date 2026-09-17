@@ -27,8 +27,14 @@ const geoMeta = code('app/housing-market/[...slug]/page.tsx')
 
 describe('market instruments open on a claim and a drawing', () => {
   it('leads with the capped figure row and folds the long tail, on city community region and the annual review', () => {
+    expect(city).toMatch(/chartFirst/)
+    // SITE-102: fold every KPI tile when MOS, the year overlay, or InsightCards
+    // is carrying the answer. MARKET_LEAD_FIGURES stays the degraded opening.
+    expect(city).toMatch(
+      /foldAfter=\{placeMos \|\| chart \|\| hasInsight \? 0 : MARKET_LEAD_FIGURES\}/,
+    )
+    expect(city).not.toMatch(/foldAfter=\{0\}/)
     for (const [name, src] of [
-      ['city', city],
       ['community', community],
       ['region', region],
       ['annual review', annual],
@@ -75,6 +81,7 @@ describe('market instruments open on a claim and a drawing', () => {
     expect(hub).toMatch(/yearPages:\s*false/)
     expect(hub).toMatch(/HubInsight/)
     expect(annual).toMatch(/yearPages:\s*true/)
+    expect(city).toMatch(/CityInsight/)
     expect(city).not.toMatch(/yearPages/)
   })
 
