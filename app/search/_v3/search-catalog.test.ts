@@ -15,4 +15,12 @@ describe('SITE-121 search route catalog imports', () => {
     expect(page).toContain("from './_v3/search-catalog'")
     expect(page).toContain('SEARCH_CATALOG_READY')
   })
+
+  it('filter-bar morph opens on tap, not only after suggestions land', () => {
+    const filters = readFileSync('components/search/SearchFilters.tsx', 'utf8')
+    const morph = readFileSync('components/site/v3/V3MorphSearch.tsx', 'utf8')
+    expect(filters).toContain('open={locationOpen}')
+    expect(filters).not.toContain('open={morphOpen}')
+    expect(morph).toContain('overlayClassName')
+  })
 })

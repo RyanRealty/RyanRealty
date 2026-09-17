@@ -10,6 +10,7 @@ describe('SITE-72 catalog wiring', () => {
   it('search dock adapts morphing search, command list, and the price ticks', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
     expect(filters).toMatch(/V3MorphSearch/)
+    expect(filters).toMatch(/open=\{locationOpen\}/)
     expect(filters).toMatch(/srch-morph/)
     expect(filters).toMatch(/srch-command/)
     expect(filters).toMatch(/V3Range/)

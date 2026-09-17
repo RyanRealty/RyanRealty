@@ -515,12 +515,14 @@ export function MorphingSearch({
 														: undefined
 												}
 												placeholder={placeholder}
-												className="size-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+												className="size-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
 											/>
 										</div>
-										<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
-											Esc
-										</kbd>
+										{iconOnly ? null : (
+											<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+												Esc
+											</kbd>
+										)}
 									</div>
 
 									<motion.div
