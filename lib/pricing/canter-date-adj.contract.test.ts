@@ -17,14 +17,20 @@ import {
   listPriceFromEngine,
   priceCmaSet,
 } from '@/lib/pricing/estimate'
-import { TIME_ADJUSTMENT_BASIS_POCKET, TIME_ADJUSTMENT_MEASURE_POCKET } from '@/lib/pricing/exclusive-pocket-date-adj'
+import {
+  FLEX_CANTER_HIGH,
+  FLEX_CANTER_LOW,
+  FLEX_CANTER_RECOMMEND,
+  TIME_ADJUSTMENT_BASIS_POCKET,
+  TIME_ADJUSTMENT_MEASURE_POCKET,
+} from '@/lib/pricing/exclusive-pocket-date-adj'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 import { computePricing } from '@/lib/cma/pricing'
 
 const AS_OF = '2026-09-15'
-const FLEX_LOW = 649_000
-const FLEX_HIGH = 675_000
+const FLEX_LOW = FLEX_CANTER_LOW
+const FLEX_HIGH = FLEX_CANTER_HIGH
 const RAW_SOLD_LIST_HIGH = 690_000
 const PUMP_FLOOR = 780_000
 const EXCLUSIVE_TIERS = ['pocket-6mo', 'pocket-12mo'] as const
@@ -284,6 +290,95 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
     expect(basis.pctPerMonth).toBe(0)
     expect(basis.sentence).toMatch(/exclusive pocket/)
     expect(basis.sentence).toMatch(/city index/)
+    expect(basis.sentence).toMatch(/story class/)
     expect(basis.sentence).not.toMatch(/Each sale is moved by the change/)
+  })
+
+  /**
+   * Residual after be4bc0da: date-adj 0% but one-story subject vs two-story
+   * Horse Back sales still applied ±13.5% (~+$91k / +$95k on 1025/995).
+   * Cos cancelled the story-adj tip Sep 15; Matt 2026-09-17 gold gate refuses
+   * Tip Ready unless recommend stays near FlexMLS ~$659k.
+   */
+  it('contract: story-adj-pumps-horse-back-toward-800k', () => {
+    const rows = horseBackPocketSet().map((row) =>
+      adjustCompAlongMarket({
+        subject: subject(),
+        subjectStory: 'one',
+        sale: { ...row, storyClass: 'two' },
+        saleStory: 'two',
+        points: sistersCityIndexPump,
+        asOf: AS_OF,
+        exclusivePocket: true,
+      }),
+    )
+    // Without the exclusive-pocket story refuse, adjustedPrice would lift ~13.5%.
+    // Prove the raw storyAdjustment math still exists off the refuse path:
+    const widened = horseBackPocketSet().map((row) =>
+      adjustCompAlongMarket({
+        subject: subject(),
+        subjectStory: 'one',
+        sale: { ...row, storyClass: 'two' },
+        saleStory: 'two',
+        points: sistersCityIndexPump,
+        asOf: AS_OF,
+        exclusivePocket: false,
+      }),
+    )
+    const storyLift = widened.map((r) => r.adjusted.storyAdjustment)
+    expect(Math.min(...storyLift)).toBeGreaterThanOrEqual(80_000)
+    const { cover, built } = recommendFrom(
+      widened.map((r) => r.adjusted),
+      false,
+    )
+    expect(cover.recommended).toBeGreaterThanOrEqual(PUMP_FLOOR)
+    expect(built?.recommended).toBeGreaterThanOrEqual(PUMP_FLOOR)
+    // exclusive path zeros story even when stories mismatch
+    for (const row of rows) {
+      expect(row.adjusted.storyAdjustment).toBe(0)
+    }
+  })
+
+  it('contract: exclusive-pocket-story-adj-keeps-flex-band', () => {
+    const rows = horseBackPocketSet().map((row) =>
+      adjustCompAlongMarket({
+        subject: subject(),
+        subjectStory: 'one',
+        sale: { ...row, storyClass: 'two' },
+        saleStory: 'two',
+        points: sistersCityIndexPump,
+        asOf: AS_OF,
+        exclusivePocket: true,
+      }),
+    )
+    for (const row of rows) {
+      expect(row.adjusted.storyAdjustment).toBe(0)
+      expect(row.adjusted.timeAdjustment).toBe(0)
+      expect(row.pathNote).toMatch(/story class/)
+    }
+    const { cover, built, method1Mid } = recommendFrom(
+      rows.map((r) => r.adjusted),
+      true,
+    )
+    expect(cover.recommended).toBeGreaterThanOrEqual(FLEX_LOW - 10_000)
+    expect(cover.recommended).toBeLessThanOrEqual(RAW_SOLD_LIST_HIGH)
+    expect(cover.recommended).toBeLessThan(PUMP_FLOOR)
+    expect(built?.recommended).toBeLessThan(PUMP_FLOOR)
+    expect(method1Mid).toBeLessThan(PUMP_FLOOR)
+  })
+
+  it('contract: flex-recommend-near-659k', () => {
+    const rows = adjustSet(true)
+    const { cover, built } = recommendFrom(
+      rows.map((r) => r.adjusted),
+      true,
+    )
+    // Matt gold gate: Tip Ready/--ship refuse outside Flex sold/list band.
+    expect(cover.recommended).toBeGreaterThanOrEqual(FLEX_CANTER_LOW - 10_000)
+    expect(cover.recommended).toBeLessThanOrEqual(FLEX_CANTER_HIGH + 15_000)
+    expect(built?.recommended).toBeGreaterThanOrEqual(FLEX_CANTER_LOW - 10_000)
+    expect(built?.recommended).toBeLessThanOrEqual(FLEX_CANTER_HIGH + 15_000)
+    const mid = cover.recommended!
+    expect(Math.abs(mid - FLEX_CANTER_RECOMMEND)).toBeLessThanOrEqual(40_000)
   })
 })
