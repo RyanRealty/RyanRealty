@@ -438,8 +438,7 @@ export const BEND_NEW_CON_LEAD_NAMES = [
   'Easton',
 ] as const
 
-export const BEND_NEW_CON_LEDE =
-  'Parkside Place starts at $399,990. Calaveras and Easton sit next to it.'
+export const BEND_NEW_CON_LEDE = 'Parkside Place starts at $399,990'
 
 export const BEND_NEW_CON_STAGE_FALLBACK_POSTER =
   '/images/blog/new-construction-guide-central-oregon.jpg'

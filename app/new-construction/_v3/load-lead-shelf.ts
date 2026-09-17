@@ -26,9 +26,14 @@ export type NewConLeadShelfData = {
   bands: NewConLeadBand[]
 }
 
+const LEAD_CHIP: Record<string, string> = {
+  'Parkside Place Phase 1': 'Parkside',
+  Calaveras: 'Calaveras',
+  Easton: 'Easton',
+}
+
 function leadLabel(row: NewConInventoryRow): string {
-  const floor = row.priceBand.split('–')[0]?.trim() || row.priceBand
-  return `${row.name.split(',')[0]} · ${floor}`
+  return LEAD_CHIP[row.name] ?? row.name
 }
 
 export async function buildNewConLeadShelf(
