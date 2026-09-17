@@ -1,3 +1,12 @@
+# Current — 2026-09-17 (SITE-121 phone header search — PR only)
+
+Surface: Cursor cloud `cursor-cloud-site121-20260917`, branch `cursor/site-121-phone-header-search-4272`, draft PR #277. Claim held. Do not merge. HOLD owner send.
+
+- **P0.** Phone header MorphingSearch opens as a full-width sheet under chrome (351px @ 375, top below sticky, `html.rr-chrome-search-open` drops chrome z-index). Typed "dekalb" yields Dekalb Avenue addresses.
+- **Catalog.** Route `_v3` imports morphing-search + range-slider + Command. Filter-bar morph opens on tap (`open={locationOpen}`), not after suggestions land.
+- **Taste.** Honest `claude-sonnet-5` Task judge (grok / cursor-agent / claude CLIs missing). Median **52** (50/52/55), `demoMatch: true`, honestyFunction 8 held. `--ship` exit 0. Finish line 70 not met; rebaseline off grok-4.6 / v1-2026-09-10 / 59. Node stays `in_progress`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)
 
 Surface: Cursor cloud, branch `cursor/p0-matt-voice-phone-sheet-d3db`. PR only — Cos Mini cherry-picks + `npm run push`. Do not merge here.
