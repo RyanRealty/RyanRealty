@@ -413,9 +413,7 @@
 
 /* THE SECTION MARKER, NOT A SECOND TITLE. The page has exactly one display
    line — the H1 — and every section below it is labelled the same way the
-   Atlas is (TASTE: two sections doing the same job wear the same variant). A
-   35px Amboqia "Photographed listings" under a full-bleed map is the stacked-
-   section tell the taste table named on this class. */
+   Atlas is (TASTE: two sections doing the same job wear the same variant). */
 .v3 .place-type-homes .v3-heading {
   margin-bottom: 0;
   font-family: var(--v3-font-body);

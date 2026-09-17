@@ -1,3 +1,12 @@
+# Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)
+
+Surface: Cursor cloud, branch `cursor/p0-matt-voice-phone-sheet-d3db`. PR only — Cos Mini cherry-picks + `npm run push`. Do not merge here.
+
+- **Phone sheet.** `V3WorkWithUs` (listing bar shares the export): title Buy or sell; one line boutique Central Oregon buy-and-sell firm; no broker count; sell tease is Get a pricing take on your home (not the /sell H1); address sits with Call/Text.
+- **Place-type.** H2 + jump-nav + ariaLabels are Homes for sale. No "All photographed listings" on city/community type pages.
+- **Cheap.** Sort chips hydrate from `?sort=`. DigitSwap commas/`$` are marks, not 1ch slots.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `VOICE.md`, `TASTE.md`.
+
 # Current — 2026-09-16 (SITE-119 Tip Ready PR — floor counter ignores aria-hidden)
 
 Surface: Cursor cloud `cursor-cloud-cos-fleet-20260916-1626`, branch `cursor/site-119-floor-aria-hidden-0301`. PR only — do not merge. Node left `in_progress` (Cos Mini lands).
