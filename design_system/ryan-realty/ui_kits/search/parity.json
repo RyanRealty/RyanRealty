@@ -72,7 +72,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-17",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "claude-sonnet-5 Task judge (official grok / cursor-agent / claude CLIs missing in this cloud sandbox). Three independent scorings of take-route-shots search kit plates including search-open, morph-open, sheet-open. Builder grok-4.6. Do not invent demoMatch.",
+    "evaluator": "claude-sonnet-5 Task judge (official grok / cursor-agent / claude CLIs missing: taste-evaluate --evaluator auto exited 2). Three independent scorings of recaptured take-route-shots search kit plates including search-open, morph-open, sheet-open. Builder grok-4.6. Do not invent demoMatch.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "grok-4.6",
     "shotSpec": {
@@ -101,29 +101,29 @@
       "sheet-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-desktop.png",
       "sheet-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-mobile375.png"
     },
-    "shotsHash": "sha256:5ca275d9d40c907cc3e8f319d15649ed5029e0629f5d782fa09349dca6912338",
+    "shotsHash": "sha256:15db8bbc68d64c5292925de26550bf7acaf0590677e423c4e13a1899d0cb8ac1",
     "scores": [
-      50,
-      52,
-      55
+      54,
+      55,
+      57
     ],
-    "score": 52,
+    "score": 55,
     "criteria": {
-      "designQuality": 17,
+      "designQuality": 20,
       "originality": 9,
-      "interaction": 10,
-      "craft": 8,
-      "honestyFunction": 8
+      "interaction": 9,
+      "craft": 10,
+      "honestyFunction": 7
     },
     "perCriterion": {
-      "design": 17,
+      "design": 20,
       "originality": 9,
-      "interaction": 10,
-      "craft": 8,
-      "honesty": 8
+      "interaction": 9,
+      "craft": 10,
+      "honesty": 7
     },
-    "demoMatch": true,
-    "beats": "Zillow's map-search results page — this page beats it on data-source transparency (a visible SOURCE Oregon Data Share label plus a how we calculate this link sitting right on the result count), which Zillow never surfaces to a visitor.",
+    "demoMatch": false,
+    "beats": "Redfin's map search (redfin.com/city/16163/OR/Bend) on reach-a-broker — Call | Text | Work with us stays pinned at the bottom of the mobile viewport here, while Redfin only surfaces an agent CTA after opening a listing. Redfin still wins on map data depth.",
     "adaptedFrom": [
       {
         "id": "beui-morphing-search"
@@ -135,6 +135,12 @@
         "id": "shadcn-command"
       },
       {
+        "id": "shadcn-input-group"
+      },
+      {
+        "id": "shadcn-checkbox"
+      },
+      {
         "id": "house-sheet"
       },
       {
@@ -143,48 +149,35 @@
     ],
     "defects": [
       {
-        "section": "All filters sheet — numeric field stack",
+        "section": "header MorphingSearch dropdown (search-open-desktop.png / search-open-mobile375.png)",
         "severity": "taste",
-        "finding": "Annual taxes, Est. monthly payment, Previous list price, Price/sqft, and Current rent render as five near-identical bordered text inputs stacked vertically with no icon, unit prefix, or visual differentiation from each other — a wall of inputs a template would generate, not a considered filter design.",
-        "replaceWith": "shadcn:input"
+        "finding": "The opened header search is a plain vertical list of five city names with small building icons and a right-aligned type label. There is no morph transformation, richer preview, or imagery — it reads as a generic autocomplete, not the beui morphing-search choreography this control is named for.",
+        "replaceWith": "beui-morphing-search"
       },
       {
-        "section": "All filters sheet — checkbox row",
+        "section": "All filters sheet — boolean checkboxes (Price reduced / Owner financing / Special assessment)",
         "severity": "craft",
-        "finding": "Price reduced / Owner financing / Special assessment render as tiny, barely-visible boxes with plain text labels and no checked-state or icon treatment, so a meaningful filter reads as an afterthought at the bottom of the sheet.",
-        "replaceWith": "shadcn:checkbox"
+        "finding": "The three boolean filters render as small plain outlined squares with no visible corner radius, fill, or checkmark treatment in the unchecked state — indistinguishable from an unstyled native checkbox rather than a designed row.",
+        "replaceWith": "shadcn-checkbox"
       },
       {
-        "section": "Header search + filter-bar location morph",
-        "severity": "taste",
-        "finding": "Both the header MorphingSearch and the filter-bar location field expand into the same flat five-row list (city name plus a gray City/Community label) with no icon, thumbnail, or grouping — the field-grows-into-results interaction is real, but the result list itself is a bare default combobox rather than a designed search object.",
-        "replaceWith": "shadcn-command"
-      },
-      {
-        "section": "Map / split results",
-        "severity": "taste",
-        "finding": "The map's only encoded data is cluster counts and price-tag pins; nothing in the rest or open shots shows a listing preview, photo thumbnail, or hover-card, so the map reads as a count display, not the richer place-and-listing atlas its name implies.",
-        "replaceWith": "house-atlas"
-      },
-      {
-        "section": "Mobile filter chip row",
+        "section": "Atlas map price/cluster bubbles",
         "severity": "craft",
-        "finding": "At 375px the chip row (Places: Bend / Filters / Save Search) is hard-clipped at the right edge with no fade or arrow affordance, so Save Search looks cut off rather than intentionally scrollable.",
+        "finding": "Every cluster and price bubble on the map uses the identical flat navy pill regardless of price band or listing density, so the map communicates location only, never magnitude — a $530K cluster looks the same as a $5.3M one at a glance.",
         "replaceWith": null
       }
     ],
-    "verdict": "This closes the prior cream-box gap: the price control is a real ticked navy range slider and the location field genuinely grows into a results list, so demoMatch holds. But past the header it's still the portal floor — a stacked wall of identical filter inputs, a bare combobox instead of a designed search object, and a map that only counts rather than previews — competent and on-brand, not a page that beats Zillow or Redfin at their own game. Score 52 is below the 70 finish line; rebaseline is not done.",
-    "comparedToPrior": "rebaselined",
+    "verdict": "Competent and on-brand (navy/cream, ticked price range, grouped Command lists, map listing peek, 375 chip arrows), but demoMatch is false: the header MorphingSearch open state still reads as a static city autocomplete rather than the catalog morph, and honestyFunction 7 fell below the prior 8. Median 55 meets the +3 rise floor over 52 on the same instrument and stays below the 70 finish line. SITE-121 stays in_progress.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 59,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:7550e309aae7f2b6e03e9400ceac479f65333f21a48ece12754c8b4f9848c1a7",
+      "evaluatedAt": "2026-09-17",
+      "score": 52,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:5ca275d9d40c907cc3e8f319d15649ed5029e0629f5d782fa09349dca6912338",
       "honestyFunction": 8,
-      "note": "SITE-72 grok-4.6 / v1-2026-09-10 first-viewport mark. Different instrument from this claude-sonnet-5 / v1-2026-09-12 / open-state shotsHash."
-    },
-    "rebaselineReason": "Instrument changed on evaluatorModel (grok-4.6 → claude-sonnet-5), rubricVersion (v1-2026-09-10 → v1-2026-09-12), and shotsHash (recaptured rest plus search-open, morph-open, sheet-open after SITE-121 phone morph + filter-bar open-on-tap)."
+      "note": "SITE-121 phone-search tip (56c0cb1fb / PR #277). Same claude-sonnet-5 / v1-2026-09-12 instrument; this rematch recaptured rest plus open states after InputGroup / Command groups / ChipRail / map peek."
+    }
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

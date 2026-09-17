@@ -1,11 +1,11 @@
-# Current — 2026-09-17 (SITE-121 phone header search — PR only)
+# Current — 2026-09-17 (SITE-121 rematch — PR only, HOLD)
 
-Surface: Cursor cloud `cursor-cloud-site121-20260917`, branch `cursor/site-121-phone-header-search-4272`, draft PR #277. Claim held. Do not merge. HOLD owner send.
+Surface: Cursor cloud `cursor-cloud-site121-20260917`, branch `cursor/site-121-search-taste-rematch-ae49`, draft PR #279 (off #277 tip `56c0cb1fb`). Claim held. Do not merge. HOLD owner send. Cos Mini later only if Tip Ready.
 
-- **P0.** Phone header MorphingSearch opens as a full-width sheet under chrome (351px @ 375, top below sticky, `html.rr-chrome-search-open` drops chrome z-index). Typed "dekalb" yields Dekalb Avenue addresses.
-- **Catalog.** Route `_v3` imports morphing-search + range-slider + Command. Filter-bar morph opens on tap (`open={locationOpen}`), not after suggestions land.
-- **Taste.** Honest `claude-sonnet-5` Task judge (grok / cursor-agent / claude CLIs missing). Median **52** (50/52/55), `demoMatch: true`, honestyFunction 8 held. `--ship` exit 0. Finish line 70 not met; rebaseline off grok-4.6 / v1-2026-09-10 / 59. Node stays `in_progress`.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+- **P0 held.** 375 header morph still full-width under chrome, typeable (`iconOnlyPanelLayout`, `z-[150]`, `autoFocus`).
+- **Craft.** Command groups+icons; InputGroup `$` `/mo` `/sqft`; designed checkbox rows; ChipRail fade+arrows at 375; MapListingPeek on default shots. City sublabel is "City", not a count.
+- **Taste.** Official grok / cursor-agent / claude CLIs missing (`taste-evaluate --evaluator auto` exit 2). Separate `claude-sonnet-5` Task judge: **54 / 55 / 57 median 55**, `demoMatch: false` (header open reads as autocomplete, not morph choreography), honestyFunction **7** (fell from 8). No `competitiveBrief` on search — do not invent `competitiveBriefPass`. `comparedToPrior: rose` vs #277 52. `taste-receipt --ship` refuse (demoMatch false + honesty drop). Finish line 70 not met. Node stays `in_progress`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `TASTE.md`, `taste-evaluator.v1-2026-09-12.md`.
 
 # Current — 2026-09-17 (P0 Matt voice — phone sheet + photographed H2)
 
