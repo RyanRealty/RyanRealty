@@ -22,24 +22,21 @@
  * SellAnswer.tsx against the SellAnswerData type, so the drawing can be
  * replaced without touching this file.
  *
- * SITE-111 — THE TWO INSTALLED CONTROLS THIS FILE RUNS.
+ * SITE-111 — THE THREE INSTALLED CONTROLS THIS FILE RUNS.
  *
  *   beui-input (components/motion/input, https://beui.dev/components/motion/input)
- *   is the address field and every contact field: the catalog's own label slot,
- *   left affix, error SHAKE, and the success check whose path draws itself.
- *   Painted in v3 tokens — navy on cream, square corners, no second hue, the
- *   warm-stone focus ring — so it is the demo's object in our paint rather than
- *   a cream box wearing its name.
+ *   is the address field and every contact field: catalog pill, left affix,
+ *   error SHAKE, destructive ring, reserved error line, and the success check
+ *   whose path draws itself. Do not restyle those states to a navy border bump.
  *
- *   shadcn:sheet (components/ui/sheet, https://ui.shadcn.com/docs/components/sheet)
- *   is everything after the address. The 2026-09-12 table read the old fold
- *   exactly right: "Layout lock is Stage then the address sheet ... No sheet
- *   edge, overlay, or sheet chrome. Contact never appears." So the submit now
- *   opens the real Radix sheet — overlay over the photograph, focus trap,
- *   Escape and a close control — and the sourced answer reveals INSIDE it,
- *   between the address and the contact step, one question at a time on 390.
- *   The address stays on screen behind the scrim, which is the continuity the
- *   pattern owes (PUBLIC_UI section 5).
+ *   shadcn-input-group stays imported on SellAddressField for catalog-install.
+ *   The visible address control is the MotionInput demo, not the group wrap.
+ *
+ *   beui-expanding-arrow-button (components/motion/expanding-arrow-button)
+ *   is Value my home: accent tile that expands into the dotted-arrow trail.
+ *
+ *   shadcn:sheet (components/ui/sheet) is everything after the address. The
+ *   sourced answer reveals INSIDE it, between the address and the contact step.
  *
  * The sheet opens on the submit, not on the answer: the read takes a beat, and
  * a working surface that appears only once the data lands reads as a page that
@@ -52,6 +49,7 @@
  */
 import { useEffect, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
+import { ExpandingArrowButton } from '@/components/motion/expanding-arrow-button'
 import { Input as MotionInput, type InputClassNames } from '@/components/motion/input'
 import {
   Sheet,
@@ -62,23 +60,30 @@ import {
 } from '@/components/ui/sheet'
 import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
+import { trackEvent, readRrSessionId } from '@/lib/tracking'
+import { readAskSource, withAskSource, type AskSource } from '@/lib/ask-source'
+import {
+  submitSellerLPForm,
+  type SellerLPTimeline,
+} from '@/app/lp/seller-home-value/actions'
+import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
+import { CONTACT } from '@/lib/brand/contact'
+import { publishSellValuationConfirm } from '@/lib/sell/publish-sell-valuation'
+import { SellAddressField } from './SellAddressField'
+import { answerSellValue } from './sell-answer-actions'
+import { SellAnswer } from './SellAnswer'
+import { sellAnswerHasSubstance, type SellAnswerData } from './sell-answer'
+import './sell-answer.css'
 
 type SellPin = { lat: number; lng: number; label: string }
 
 /**
- * The catalog control, painted. Every slot the beUI Input exposes gets a house
- * class so the demo's structure survives and only its palette changes: pill
- * radius to square, destructive red to a heavier navy rule, the emerald check
- * to a navy stroke, Inter to Geist. The rules live in sell-stage.css.
+ * Contact-step paint only. Do not override field / error / success rings —
+ * those are the beUI demo. Typography stays Geist via tokens already on the
+ * catalog control.
  */
 const SELL_FIELD_CLASSES: InputClassNames = {
   root: 'sell-field',
-  label: 'sell-field__label',
-  field: 'sell-field__box',
-  input: 'sell-field__input',
-  leftIcon: 'sell-field__affix',
-  successIcon: 'sell-field__check',
-  errorMessage: 'sell-field__error',
 }
 
 /** The left affix on the address field: a pin, drawn, never an emoji. */
@@ -146,20 +151,56 @@ function sellPinMapUrl(pin: SellPin): string | null {
   })
   return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
 }
-import { trackEvent, readRrSessionId } from '@/lib/tracking'
-import { readAskSource, withAskSource, type AskSource } from '@/lib/ask-source'
-import {
-  submitSellerLPForm,
-  type SellerLPTimeline,
-} from '@/app/lp/seller-home-value/actions'
-import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
-import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
-import { CONTACT } from '@/lib/brand/contact'
-import { publishSellValuationConfirm } from '@/lib/sell/publish-sell-valuation'
-import { answerSellValue } from './sell-answer-actions'
-import { SellAnswer } from './SellAnswer'
-import { sellAnswerHasSubstance, type SellAnswerData } from './sell-answer'
-import './sell-answer.css'
+
+/** House-stage street frame: the Stage photograph becomes the typed lot. */
+function sellStreetFrameUrl(address: string, pin: SellPin | null): string | null {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
+  if (!key) return null
+  const loc = pin ? `${pin.lat},${pin.lng}` : address.trim()
+  if (!loc) return null
+  const params = new URLSearchParams({
+    center: loc,
+    zoom: '18',
+    size: '1280x720',
+    scale: '2',
+    maptype: 'hybrid',
+    key,
+    markers: `color:0x102742|${loc}`,
+  })
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
+}
+
+function mountSellStreetFrame(address: string, pin: SellPin | null) {
+  const root = sellStageRoot()
+  const media = root?.querySelector('.v3-stage-media')
+  if (!root || !media) return
+  const complete = Boolean(pin) || addressLooksComplete(address)
+  if (!complete) {
+    root.removeAttribute('data-sell-street')
+    media.querySelector('.sell-stage-street')?.remove()
+    media.querySelector('.sell-stage-street-plate')?.remove()
+    return
+  }
+  root.setAttribute('data-sell-street', address.trim())
+  let plate = media.querySelector<HTMLParagraphElement>('.sell-stage-street-plate')
+  if (!plate) {
+    plate = document.createElement('p')
+    plate.className = 'sell-stage-street-plate'
+    media.appendChild(plate)
+  }
+  plate.textContent = address.trim()
+  const url = sellStreetFrameUrl(address, pin)
+  if (!url) return
+  let img = media.querySelector<HTMLImageElement>('img.sell-stage-street')
+  if (!img) {
+    img = document.createElement('img')
+    img.className = 'sell-stage-street'
+    img.alt = ''
+    img.decoding = 'async'
+    media.appendChild(img)
+  }
+  if (img.src !== url) img.src = url
+}
 
 declare global {
   interface Window {
@@ -241,6 +282,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   const [isHot, setIsHot] = useState(false)
   const [bookLane, setBookLane] = useState(false)
   const [pin, setPin] = useState<SellPin | null>(null)
+  const [askOpen, setAskOpen] = useState(false)
 
   const addressFieldId = `${formId}-address`
 
@@ -250,10 +292,14 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
    * that — so what sits behind the overlay is still the street that was typed.
    */
   useEffect(() => {
-    if (pin) setSellStageFocus('pinned')
+    if (pin || addressLooksComplete(address)) setSellStageFocus('pinned')
     else if (address.trim().length >= 3) setSellStageFocus('typing')
     else setSellStageFocus('idle')
-    return () => setSellStageFocus('idle')
+    mountSellStreetFrame(address, pin)
+    return () => {
+      setSellStageFocus('idle')
+      mountSellStreetFrame('', null)
+    }
   }, [address, pin])
 
   /**
@@ -434,8 +480,9 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       <ol className="sell-when">
         {TIMELINE_OPTIONS.map((opt) => (
           <li key={opt.value}>
-            <button
+            <Button
               type="button"
+              variant="ghost"
               disabled={pending}
               onClick={() => {
                 setTimeline(opt.value)
@@ -448,7 +495,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               <span className="sell-when__label">{opt.label}</span>
               <span className="sell-when__when">{opt.when}</span>
               <span className="sell-when__sub">{opt.sub}</span>
-            </button>
+            </Button>
           </li>
         ))}
       </ol>
@@ -572,14 +619,12 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
             addressError ? 'error' : pin || addressLooksComplete(address) ? 'success' : 'idle'
           }
         >
-          <AddressAutocomplete
+          <SellAddressField
             id={addressFieldId}
-            variant="motion"
             label="Home address"
             leftIcon={<PinAffix />}
-            error={addressError ?? false}
+            error={addressError}
             success={(Boolean(pin) || addressLooksComplete(address)) && !addressError}
-            motionClassNames={SELL_FIELD_CLASSES}
             value={address}
             onChange={(next) => {
               setAddress(next)
@@ -604,7 +649,6 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
                 setPin(null)
               }
             }}
-            invalid={addressError !== null}
           />
         </div>
 
@@ -616,19 +660,26 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
           </figure>
         ) : null}
 
-        <Button
+        <ExpandingArrowButton
           type="submit"
           disabled={pending}
-          className="sell-stage-submit mt-4 min-h-11 w-full text-base"
+          active={askOpen}
+          className="sell-stage-submit mt-4 justify-self-start"
         >
-          <span>{pending ? 'Reading the market' : 'Value my home'}</span>
-          {!pending ? (
-            <span className="sell-stage-submit__arrow" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-          ) : null}
+          {pending ? 'Reading the market' : 'Value my home'}
+        </ExpandingArrowButton>
+        {/* Shot trigger: opacity-0 (Playwright-visible) so ask-open can force
+            the expanding-arrow trail on 375, where hover media is false. */}
+        <Button
+          type="button"
+          variant="ghost"
+          data-taste="ask-open"
+          aria-hidden
+          tabIndex={-1}
+          className="h-11 w-11 p-0 opacity-0"
+          onClick={() => setAskOpen(true)}
+        >
+          Expand ask
         </Button>
       </form>
 

@@ -155,12 +155,84 @@
    stylesheet are untouched, and the rule disappears the day the strips turn on
    because the page stops passing the class. */
 
+/* THE RECORD is a navy ledger band, not another eyebrow-heading-row under
+   the Stage. Density, width, and ground all change: one-line mast, figures
+   first, inverse surface. */
+.v3.v3-proofblock.sell-proof--quiet {
+  padding-block: var(--v3-space-lg);
+  background: var(--v3-surface-inverse);
+  color: var(--v3-ink-on-navy);
+  border-top: 0;
+}
+
+/* Kill the eyebrow-heading band. THE RECORD opens on the figures, not
+   another Stage-shaped stack. Head stays in the tree for the heading floor. */
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .v3.v3-proofblock.sell-proof--quiet .v3-proofblock__body {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__drawing {
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__rail {
   order: -1;
+}
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__drawing {
+  order: 1;
+}
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure-value,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure-label,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure-aside,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__quiet,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__score-line,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__quote,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__quote blockquote p,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__reach-link,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__more-label,
+.v3.v3-proofblock.sell-proof--quiet cite {
+  color: var(--v3-ink-on-navy);
+}
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure-aside,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__quiet,
+.v3.v3-proofblock.sell-proof--quiet figcaption,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__more-label {
+  color: var(--v3-ink-on-navy-muted);
+}
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__figure,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__words,
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__reach {
+  border-color: color-mix(in srgb, var(--v3-cream) 22%, transparent);
+}
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__pick {
+  color: var(--v3-ink-on-navy-muted);
+  border-color: color-mix(in srgb, var(--v3-cream) 28%, transparent);
+}
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__pick.is-active {
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+}
+
+.v3.v3-proofblock.sell-proof--quiet + .sell-proof-trace {
+  max-inline-size: none;
+  margin: 0;
+  padding-block: 0 var(--v3-space-lg);
+  background: var(--v3-surface-inverse);
+  color: var(--v3-ink-on-navy-muted);
 }
 
 @media (min-width: 62rem) {

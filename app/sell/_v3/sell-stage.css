@@ -28,33 +28,93 @@
   padding-block: var(--v3-space-2xl) var(--v3-space-lg);
 }
 
-/* Form-specific Stage behavior (adapted from beui-input focus + Redfin
-   address-reframe tell). Typing dims and leans the poster; a Places pin
-   locks the deeper scrim. No competitor static hero does this. */
+/* Form-specific Stage fold (house-stage). Typing leans the resort aerial.
+   A complete address REPLACES that aerial with the street/lot frame — a
+   scrim over the same photo is not the demo. */
 .v3.v3-stage.sell-stage-poster .v3-stage-poster {
   transform: scale(1);
-  transform-origin: 50% 45%;
+  transform-origin: 42% 38%;
   transition:
     transform var(--v3-dur-rise) var(--v3-ease-out),
     filter var(--v3-dur-rise) var(--v3-ease-out),
+    opacity var(--v3-dur-rise) var(--v3-ease-out),
     object-position var(--v3-dur-rise) var(--v3-ease-out);
-  will-change: transform, filter;
+  will-change: transform, filter, opacity;
 }
 
-.v3.v3-stage.sell-stage-poster[data-sell-focus='typing'] .v3-stage-poster,
-.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-poster {
-  transform: scale(1.07);
-  object-position: center 58%;
-  filter: brightness(0.82) saturate(0.92);
+.v3.v3-stage.sell-stage-poster[data-sell-focus='typing'] .v3-stage-poster {
+  transform: scale(1.2);
+  object-position: 58% 62%;
+  filter: brightness(0.62) saturate(0.78) contrast(1.08);
 }
 
-.v3.v3-stage.sell-stage-poster[data-sell-focus='typing'] .v3-stage-scrim,
+.v3.v3-stage.sell-stage-poster .sell-stage-street {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.v3.v3-stage.sell-stage-poster .sell-stage-street-plate {
+  position: absolute;
+  inset-inline: var(--v3-space-md);
+  inset-block-end: var(--v3-space-md);
+  z-index: 2;
+  margin: 0;
+  max-width: min(36rem, calc(100% - 2 * var(--v3-space-md)));
+  padding: var(--v3-space-2xs) var(--v3-space-sm);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  overflow-wrap: anywhere;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .sell-stage-street,
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .sell-stage-street-plate {
+  opacity: 1;
+}
+
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-poster,
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-video {
+  opacity: 0;
+}
+
+/* Scrim over the same photo was the rematch-2 fail. The street frame is
+   the Stage content now — hide the overlay so the lot is readable. */
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-scrim {
+  opacity: 0;
+}
+
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-media {
+  background: var(--v3-surface-inverse);
+}
+
+.v3.v3-stage.sell-stage-poster[data-sell-focus='typing'] .v3-stage-scrim {
+  background: linear-gradient(
+    to top,
+    var(--v3-scrim-strong) 0%,
+    var(--v3-scrim-strong) 36%,
+    var(--v3-scrim-mid) 68%,
+    var(--v3-scrim-soft) 100%
+  );
+  transition: background var(--v3-dur-rise) var(--v3-ease-out);
+}
+
 .v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-scrim {
   background: linear-gradient(
     to top,
     var(--v3-scrim-strong) 0%,
-    var(--v3-scrim-strong) 28%,
-    var(--v3-scrim-mid) 58%,
+    var(--v3-scrim-strong) 18%,
+    var(--v3-scrim-mid) 42%,
     var(--v3-scrim-soft) 100%
   );
   transition: background var(--v3-dur-rise) var(--v3-ease-out);
@@ -156,12 +216,9 @@
   color: var(--v3-ink);
 }
 
-/* THE CATALOG CONTROL, PAINTED (beui-input, components/motion/input).
-   The shake, the drawn check, the affix and the reserved message row are the
-   demo's own — motion/react runs them. Everything below is paint: pill radius
-   to the register's square, destructive red to a heavier navy rule, the
-   emerald check to a navy stroke, the purple ring to warm stone. Two-class
-   selectors so the utility classes the catalog ships lose cleanly. */
+/* Address field layout only. Error / success / focus live on the catalog
+   controls (beui-input shake + check, shadcn InputGroup rings). Do not
+   restyle those states to a navy border bump. */
 .sell-stage-field {
   display: grid;
   gap: var(--v3-space-3xs);
@@ -169,96 +226,46 @@
 
 .sell-stage-field__control {
   position: relative;
+  min-width: 0;
 }
 
-.sell-field {
-  gap: var(--v3-space-3xs);
-}
-
-.sell-field .sell-field__label {
-  padding: 0;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-label);
-  font-weight: var(--v3-weight-medium);
-  letter-spacing: var(--v3-track-label);
-  text-transform: uppercase;
-  color: var(--v3-ink-muted);
-}
-
-.sell-field .sell-field__box {
-  /* 44px of CONTROL, not a 44px box with a 40px control inside it: the catalog
-     ships h-11 on a border-box, so a 2px rule on each edge leaves the input
-     itself at 40 and ci:tap-targets measures the input. */
-  height: auto;
+.sell-stage-field__control [data-slot='input-group'] {
   min-block-size: var(--v3-tap);
-  border-radius: var(--v3-radius-control);
-  border: var(--v3-rule-section);
-  background: var(--v3-surface);
-  overflow: visible;
-  transition:
-    border-color var(--v3-dur-state) var(--v3-ease-out),
-    background-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-/* The catalog draws its focus and error rings as box-shadows in the shadcn
-   ring / destructive hues. Two colors only: the ring goes, the warm-stone
-   outline is the focus, and an error is a heavier navy rule.
-
-   SITE-111 (2026-09-16): error used to be ONLY a border-width bump with
-   box-shadow explicitly killed — the evaluator read that, correctly, as "a
-   border-colour change" indistinguishable from a repainted native input in a
-   still frame. The catalog demo pairs its destructive ring with a shake
-   (components/motion/input.tsx runs `animate(fieldRef, {x:[...]})` on
-   hasError, gated by the SAME useReducedMotion() this register already
-   respects — untouched here). A ring is the one piece of that pairing a
-   still CAN show, so it is restored: recolored navy instead of the demo's
-   red, flush instead of the focus ring's offset float so the two states read
-   as different gestures, plus a navy wash fill so the whole field — not just
-   its edge — reads as flagged once the shake has settled. Success carries NO
-   border treatment in the demo either (only the drawn check), so that state
-   is left exactly idle on purpose — the check is the entire signal. */
-.sell-field .sell-field__box[data-state='focused'] {
-  border-color: var(--v3-ink);
-  box-shadow: none;
-  outline: 3px solid var(--v3-focus);
-  outline-offset: 2px;
-}
-
-.sell-field .sell-field__box[data-state='error'] {
-  border-color: var(--v3-ink);
-  border-width: var(--v3-rule-weight-mast);
-  background: var(--v3-wash);
-  box-shadow: none;
-  outline: 3px solid var(--v3-ink);
-  outline-offset: 0;
-}
-
-.sell-field .sell-field__input {
-  min-block-size: var(--v3-tap);
+/* Sheet street pattern: the full formatted address sits under the pill so
+   375 cannot clip the ZIP the way a single-line overflow field does. */
+.sell-field__confirm {
+  margin: 0;
+  min-width: 0;
   font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
   color: var(--v3-ink);
-  caret-color: var(--v3-ink);
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
-.sell-field .sell-field__input::placeholder {
-  color: var(--v3-ink-muted);
-}
+@media (max-width: 47.99rem) {
+  .sell-stage-ask .sell-field [data-state] {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 
-.sell-field .sell-field__affix {
-  color: var(--v3-ink-muted);
-}
+  .sell-stage-ask .sell-field input {
+    font-size: var(--v3-size-source);
+    letter-spacing: -0.03em;
+  }
 
-.sell-field .sell-field__check {
-  color: var(--v3-ink);
-}
+  /* Success: drop the affix so the street string fits the 375 pill.
+     Confirm line under the field stays a second line. */
+  .sell-stage-ask .sell-field [data-state='success'] > span:first-of-type {
+    display: none;
+  }
 
-.sell-field .sell-field__error {
-  padding: 0;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-source);
-  font-weight: var(--v3-weight-medium);
-  color: var(--v3-ink);
+  .sell-stage-ask .sell-field [data-state='success'] input {
+    padding-inline-start: var(--v3-space-sm);
+  }
 }
 
 /* Pin map resolves inside the card once Places returns lat/lng — form-
@@ -327,55 +334,14 @@
   min-height: var(--v3-tap);
 }
 
-/* beui:expanding-arrow-button adapt — cream-on-navy trail on hover/focus,
-   not lime. Keeps the filled primary as the one Value my home ask. */
+/* Catalog expanding-arrow is inline-flex min-w-72. Grid stretch + w-full
+   made ask-open a same-width cream bar of five chevrons. Leave size to
+   the demo; only pin it to the start of the column. */
 .v3.v3-stage .sell-stage-ask .sell-stage-submit {
   margin-block-start: var(--v3-space-2xs);
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--v3-space-xs);
-  width: 100%;
-}
-
-.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  opacity: 0.55;
-  transition:
-    opacity var(--v3-dur-state) var(--v3-ease-out),
-    transform var(--v3-dur-state) var(--v3-ease-out);
-}
-
-.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow span {
-  width: 0.28rem;
-  height: 0.28rem;
-  border-radius: 999px;
-  background: currentColor;
-  opacity: 0.35;
-}
-
-.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow span:last-child {
-  opacity: 1;
-  width: 0;
-  height: 0;
-  border-radius: 0;
-  background: transparent;
-  border-block: 0.28rem solid transparent;
-  border-inline-start: 0.4rem solid currentColor;
-}
-
-.v3.v3-stage .sell-stage-ask .sell-stage-submit:hover .sell-stage-submit__arrow,
-.v3.v3-stage .sell-stage-ask .sell-stage-submit:focus-visible .sell-stage-submit__arrow {
-  opacity: 1;
-  transform: translateX(0.15rem);
-}
-
-.v3.v3-stage .sell-stage-ask .sell-stage-submit:hover .sell-stage-submit__arrow span,
-.v3.v3-stage .sell-stage-ask .sell-stage-submit:focus-visible .sell-stage-submit__arrow span {
-  opacity: 1;
+  justify-self: start;
+  width: max-content;
+  max-width: 100%;
 }
 
 /* Quiet scroll affordance keyed to what's next (#proof / The record). It sits
@@ -633,12 +599,7 @@
   }
 }
 
-/* The fold boundary. #proof follows a full-bleed Stage, so it opens on a
-   tighter pad than a mid-page section: the first viewport ends on the
-   record's claim rather than on an inch of empty cream. */
-.v3.v3-proofblock.sell-proof--quiet {
-  padding-block-start: var(--v3-space-xl);
-}
+/* Fold boundary pad lives on the inverse ledger in sell-answer.css. */
 
 /* V3Drawing was measured for a page column. Inside a 34rem sheet its footer
    band collides — the reading squeezes to one word a line beside its trace —
