@@ -93,19 +93,19 @@ const REQUIRED = [
     // a v3 page to satisfy a regex would be gate-gaming, so the check accepts
     // either register's spelling.
     //
-    // BOTH ARMS ARE EXACT LITERALS, DELIBERATELY, the same discipline as the
-    // market hub's arm below. The v3 arm pins the interpolated head term the page
-    // actually opens with, `${cityName} real estate`, in the sentence case
-    // design_system/public/PUBLIC_UI.md requires. Search owns "homes for sale".
-    // Change the page's H1 and this must change with it, which is the point of
-    // a required contract.
+    // BOTH ARMS ARE EXACT LITERALS, DELIBERATELY. Matt 2026-09-17: place H1 is
+    // "{Place} homes for sale", never "Every home for sale in …" / inverted
+    // "Homes for Sale in …". The helper is the one spelling.
     // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
     checks: [
       {
-        re: /titleBottom\s*=\s*["']Homes for Sale["']|[`'"]\$\{cityName\} real estate\b/,
-        msg: 'city H1 must carry the head term: KB titleBottom="Homes for Sale", or a v3 headline literal opening "${cityName} real estate"',
+        re: /titleBottom\s*=\s*["']Homes for Sale["']|placeHomesForSaleHeading\(\s*cityName\s*\)|[`'"]\$\{cityName\} homes for sale\b/,
+        msg: 'city H1 must be "{city} homes for sale" (placeHomesForSaleHeading(cityName) or `${cityName} homes for sale`)',
       },
-      { re: /title:\s*[`'"]Homes for Sale in \$\{/i, msg: 'city metadata title must be "Homes for Sale in ${city}…"' },
+      {
+        re: /publishPlaceHomesTitle\(\s*cityName|placeHomesForSaleHeading\(\s*cityName\s*\)|title:\s*[`'"]\$\{cityName\} homes for sale/i,
+        msg: 'city metadata title must be "{city} homes for sale" (publishPlaceHomesTitle / placeHomesForSaleHeading)',
+      },
     ],
   },
   {
@@ -243,8 +243,8 @@ const REQUIRED = [
     file: 'app/search/[...slug]/page.tsx',
     checks: [
       {
-        re: /Homes for sale in \$\{placeName\}/i,
-        msg: 'default search H1 must be "Homes for sale in ${placeName}" (query language)',
+        re: /placeHomesForSaleHeading\(\s*placeName\s*\)/,
+        msg: 'default search H1 must be "{place} homes for sale" (placeHomesForSaleHeading(placeName))',
       },
     ],
   },

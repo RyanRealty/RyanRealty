@@ -1,5 +1,6 @@
 import { homesForSalePath, listingTileHref, getSubdivisionDisplayName } from '../../../lib/slug'
 import { buildJsonLd, type SchemaInput } from '../../../lib/site/json-ld'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 
 /**
  * Structured data for city/subdivision search pages: WebPage, BreadcrumbList, Place, ItemList.
@@ -75,7 +76,7 @@ export default function SearchPageJsonLd({
   const webPage = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: `Homes for Sale in ${displayName}`,
+    name: placeHomesForSaleHeading(displayName),
     description,
     ...(bannerUrl && { primaryImageOfPage: { '@type': 'ImageObject', url: bannerUrl, width: 1200, height: 336 } }),
     ...(pageUrl && { url: pageUrl }),

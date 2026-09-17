@@ -193,11 +193,19 @@ export function documentTitle(raw: string): string {
 export function publishPlaceHomesTitle(name: string, city: string | null | undefined): string {
   const place = name.trim()
   const cityName = (city ?? '').trim()
-  if (!place) return 'Homes for Sale | Central Oregon'
-  if (!cityName || /^central oregon$/i.test(cityName)) {
-    return `Homes for Sale in ${place} | Central Oregon`
-  }
-  return `Homes for Sale in ${place} | ${cityName}, Oregon`
+  // Inline the place-first heading. This file must import only share-metadata
+  // (plus a type from next): ci:listing-offmarket-index executes pageMetadata
+  // from a transpiled isolate that cannot resolve other @/lib/site modules.
+  // Keep this in lockstep with placeHomesForSaleHeading().
+  const heading = !place
+    ? 'Homes for sale'
+    : /homes for sale$/i.test(place)
+      ? place
+      : `${place} homes for sale`
+  if (!place) return heading
+  if (!cityName || /^central oregon$/i.test(cityName)) return heading
+  if (place.toLowerCase().endsWith(cityName.toLowerCase())) return heading
+  return `${heading} · ${cityName}, Oregon`
 }
 
 export function pageMetadata(input: PageMetadataInput): Metadata {

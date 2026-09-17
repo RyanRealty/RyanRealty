@@ -191,6 +191,7 @@ import { getTaxlotsInBoundary, getTaxlotsNear, TAXLOT_DISCLAIMER } from '@/lib/d
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
+import { placeHomesForSaleHeading } from '@/lib/place/place-homes-heading'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
@@ -727,7 +728,7 @@ async function renderSubdivisionPage({ params }: Props) {
     medianList: platFigures.medianListPrice,
   })
   const stockSections = placeStockSectionsFromTiles(unionListingTiles(stockTiles, mapTiles))
-  const headline = displayName
+  const headline = placeHomesForSaleHeading(displayName)
   const platLibraryHeroUrl = await withTimeoutFallback(
     placeLibraryHero('subdivision', slug),
     null,

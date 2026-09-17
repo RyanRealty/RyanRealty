@@ -15,6 +15,9 @@
  *      "Where those closings were") — over-explain / obvious blurb (Matt 2026-09-15)
  *   6. Inventory-count lectures on rails / carousels / place folds
  *      ("3,271 homes for sale across Central Oregon…") — cut, do not replace (Matt 2026-09-15)
+ *   7. Every-home lecture on place / search headings
+ *      ("Every home for sale in Lazy River South") — prefer "{Place} homes for sale"
+ *      (Matt 2026-09-17)
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -36,6 +39,9 @@ export const PLATS_VOICE_REFUSE =
 
 export const FORM_ALERT_ASK_REFUSE =
   'mannered public copy: place-alert sticky ask reads like a form ("Email me each one" / "Every new listing by email." / "by email, as they come on the market"). Talk like a person. Leave the node in_progress.'
+
+export const EVERY_HOME_LECTURE_REFUSE =
+  'mannered public copy: every-home lecture ("Every home for sale in …"). Prefer "{Place} homes for sale". Leave the node in_progress.'
 
 /** "3,271 homes for sale across Central Oregon…" under Homes in Bend / place folds. */
 export const INVENTORY_LECTURE_RES = Object.freeze([
@@ -68,6 +74,14 @@ export const FORM_ALERT_ASK_RES = Object.freeze([
   /Email me each one/,
   /by email, as they come on the market/,
   /Every new listing by email\./,
+])
+
+/** Place / search H1 lecture — "Every home for sale in Lazy River South" (Matt 2026-09-17). */
+export const EVERY_HOME_LECTURE_RES = Object.freeze([
+  /Every home for sale in\b/i,
+  /See every home for sale/i,
+  /See every .+ home for sale/i,
+  /Every home on the market/i,
 ])
 
 /** Visitor-facing lectures about how the map / feed / filter works. */
@@ -131,8 +145,11 @@ const HOME_COPY_FILES = Object.freeze([
 const PLACE_COPY_FILES = Object.freeze([
   'app/cities/[slug]/page.tsx',
   'app/communities/[slug]/page.tsx',
+  'app/communities/[slug]/_v3/community-opening.ts',
   'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
   'app/subdivisions/[slug]/page.tsx',
+  'app/subdivisions/[slug]/_v3/plat-title.ts',
+  'lib/site/place-homes-heading.ts',
   'lib/site/place-alerts.ts',
   'app/cities/[slug]/_v3/CityAlertSheet.client.tsx',
   'app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodAlertsSheet.client.tsx',
@@ -143,8 +160,14 @@ const PLACE_COPY_FILES = Object.freeze([
 
 const SEARCH_COPY_FILES = Object.freeze([
   'app/search/page.tsx',
+  'app/search/[...slug]/page.tsx',
+  'app/search/[...slug]/search-metadata.ts',
+  'app/search/[...slug]/SearchPageJsonLd.tsx',
+  'app/search/[...slug]/sections/MapSplitView.tsx',
+  'app/search/og/[...slug]/route.tsx',
   'components/search/SearchFilters.tsx',
   'components/search/MapSearchView.tsx',
+  'lib/site/place-homes-heading.ts',
 ])
 
 const EXTRA_PUBLIC_COPY = Object.freeze({
@@ -288,6 +311,9 @@ export function manneredPublicCopyProblems(sourceText) {
   }
   if (FORM_ALERT_ASK_RES.some((re) => re.test(scan))) {
     p.push(FORM_ALERT_ASK_REFUSE)
+  }
+  if (EVERY_HOME_LECTURE_RES.some((re) => re.test(scan))) {
+    p.push(EVERY_HOME_LECTURE_REFUSE)
   }
   return p
 }

@@ -3,7 +3,7 @@
  *
  * First screen (SITE-82): shortened place photograph + MOS bars, then a city
  * fold where Atlas is the drawing and CityAlertsStrip (V3Number) is the figure.
- * Search owns "homes for sale". Flagship PlaceSplitView is seeded from the city
+ * H1 is "{city} homes for sale". Flagship PlaceSplitView is seeded from the city
  * polygon. Nested places draw as Atlas regions and Split overlayBoundaries
  * (Bend neighborhoods, plats elsewhere). Do not write ?shapes= onto this URL.
  * Type chips live on Split, not as first-screen property-type H2s. One
@@ -83,7 +83,8 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { getPlaceLinks } from '@/lib/place-links'
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { pageMetadata } from '@/lib/site/page-metadata'
+import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { latestSaleMedian } from '@/lib/market/latest-sale-median'
@@ -217,7 +218,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!snapshot) notFound()
   const cityName = snapshot.geoLabel
   return pageMetadata({
-    title: `Homes for Sale in ${cityName}, Oregon`,
+    title: publishPlaceHomesTitle(cityName, cityName),
     description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, subdivisions, open houses, and MLS market data from Oregon Data Share.`,
     path: `/cities/${slug}`,
   })
@@ -482,7 +483,7 @@ async function renderCityDetail({ params }: Props) {
     covers: { ...placeTypeCoverPhotos(tiles), ...typeCovers },
   })
   const trail = cityPageTrail(cityName)
-  const headline = `${cityName} real estate`
+  const headline = placeHomesForSaleHeading(cityName)
 
   // §0 UNKNOWN IS NOT ZERO (D78): the hero count is leftover HUD - never tiles,
   // never a snapshot all-count, never a `?? 0`. displayedActiveCount: hud.active
@@ -1086,7 +1087,7 @@ async function renderCityDetail({ params }: Props) {
             // so the Instrument's way in steps down to the outline. The link,
             // the label and the destination are unchanged.
             action={{
-              label: v3Text(`See every ${cityName} home for sale`),
+              label: v3Text(placeHomesForSaleHeading(cityName)),
               href: homesForSalePath(cityName),
               variant: 'ghost',
             }}

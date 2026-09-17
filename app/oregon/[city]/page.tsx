@@ -74,6 +74,7 @@ import { getListingTiles, getMarketPulse } from '@/lib/data'
 import { classifyInventoryPropertyType } from '@/lib/inventory-filters'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingTileHref } from '@/lib/slug'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
@@ -572,7 +573,7 @@ export default async function OutOfAreaCityPage({
           feedMissMessage={`The live listing feed did not return this refresh. The ${city.name} snapshot above is a different read.`}
           note={listingsNote}
           source={listingTrace}
-          actionLabel={`See every ${city.name} home for sale`}
+          actionLabel={placeHomesForSaleHeading(city.name)}
           actionHref={browsePath}
           forcedView={listingView ?? (feedMiss && !firstListingCard ? 'feed-miss' : undefined)}
         />

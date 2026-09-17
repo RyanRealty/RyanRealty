@@ -64,7 +64,8 @@ import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { pageMetadata } from '@/lib/site/page-metadata'
+import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { neighborhoodPageTrail } from '@/lib/site/place-trail'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -156,7 +157,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title =
     neighborhood.seoTitle?.trim() ||
-    `${neighborhood.name} · ${neighborhood.cityName}, Oregon`
+    publishPlaceHomesTitle(neighborhood.name, neighborhood.cityName)
 
   const inventory =
     citySlug === 'bend'
@@ -185,7 +186,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return pageMetadata({
     title:
       inventory != null && inventory.activeCount > 0
-        ? `${neighborhood.name} homes for sale · ${neighborhood.cityName}, Oregon`
+        ? publishPlaceHomesTitle(neighborhood.name, neighborhood.cityName)
         : title,
     description,
     path: `/cities/${citySlug}/${neighborhoodSlug}`,
@@ -808,7 +809,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
                 headingLevel={2}
                 headline={v3Text(`${neighborhood.name} right now`)}
                 headlineTone="eyebrow"
-                claimText={`Every home for sale and under contract inside the ${neighborhood.name} lines. Scrub price to filter the map.`}
+                claimText={`${neighborhood.name} houses for sale — active and pending. Scrub price to filter the map.`}
                 dots={atlasView.dots}
                 regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
                 basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
@@ -1031,7 +1032,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
           questions={placeAnswers}
           sourceKey={answerSourceKey}
           doors={[
-            ...(browseHref ? [{ label: `Every home for sale in ${neighborhood.name}`, href: browseHref }] : []),
+            ...(browseHref ? [{ label: placeHomesForSaleHeading(neighborhood.name), href: browseHref }] : []),
             { label: `${cityName} market report`, href: `/housing-market/${citySlug}` },
             { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
           ]}

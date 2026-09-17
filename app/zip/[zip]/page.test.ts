@@ -126,7 +126,7 @@ describe('ZIP page is on the v3 barrel', () => {
     expect(PAGE).toMatch(/export async function generateStaticParams/)
     expect(PAGE).toMatch(/CANONICAL_ZIPS/)
     expect(PAGE).toMatch(/title: 'ZIP not found · Ryan Realty'/)
-    expect(PAGE).toMatch(/Homes for sale in \$\{zip\} · \$\{area\}, Oregon/)
+    expect(PAGE).toMatch(/placeHomesForSaleHeading\(zip\)\} · \$\{area\}, Oregon/)
     // The same three JSON-LD payloads, plus the masonry ItemList increment.
     expect(PAGE).toMatch(/type: 'breadcrumb'/)
     expect(PAGE).toMatch(/type: 'place'/)
@@ -157,7 +157,7 @@ describe('ZIP page is on the v3 barrel', () => {
     // A question with no answer under it is worse than a label (§0): no
     // publishable verdict falls back to the homes-for-sale headline.
     expect(PAGE).toMatch(
-      /const marketHeadline =\s*\n\s*verdict && mosText != null\s*\n\s*\? `Is ZIP \$\{zip\} a buyer's or seller's market\?`\s*\n\s*: `Homes for sale in \$\{zip\}`/,
+      /const marketHeadline =\s*\n\s*verdict && mosText != null\s*\n\s*\? `Is ZIP \$\{zip\} a buyer's or seller's market\?`\s*\n\s*: placeHomesForSaleHeading\(zip\)/,
     )
     expect(PAGE).toMatch(/headline=\{v3Text\(marketHeadline\)\}/)
   })

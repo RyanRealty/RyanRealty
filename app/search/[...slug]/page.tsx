@@ -48,6 +48,7 @@ import { decodeMapPolygon } from '@/lib/map-polygon'
 import { generateStaticParams as buildSearchStaticParams, IS_PRODUCTION_BUILD } from './search-static'
 import { withTimeout, LISTINGS_FETCH_TIMEOUT_MS } from './fetch-guards'
 import { resolveSlug, buildCanonicalPath } from './resolve-slug'
+import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { buildSearchSlugMetadata } from './search-metadata'
 import { resolvePlaceBannerUrl } from './place-banner'
 import {
@@ -209,8 +210,8 @@ export default async function SearchPage({
       displayName,
       headline:
         filterCity && !preset && !filterSubdivision && !neighborhood
-          ? `${filterCity} homes for sale`
-          : `${displayName}${/homes for sale/i.test(displayName) ? '' : ' homes for sale'}`,
+          ? placeHomesForSaleHeading(filterCity)
+          : placeHomesForSaleHeading(displayName),
       searchPagePath,
       searchBreadcrumbItems,
       savedKeys,
@@ -302,18 +303,18 @@ export default async function SearchPage({
   })
   const headerIntro = headerPublished ? `${headerPublished.phrase}.` : ''
   // Header title adapts: preset label folds into placeName, filter-only searches
-  // use the derived presetLabel, everything else is "Homes for sale in <place>".
+  // use the derived presetLabel, everything else is "{Place} homes for sale".
   // The preset's own `label` is the grammatical noun phrase ("Duplexes for
   // Sale", "Manufactured Homes"); `shortLabel` is a chip word. Appending the
   // chip word produced broken English on every preset page — "Homes in Central
   // Oregon residential lots" (live 2026-07-31). Strip the label's trailing
   // "for Sale" (the H1 sits above a "for sale" count line) and read it as the
-  // subject. Title Case is correct here: this is the page's hero H1.
+  // subject.
   const headerTitle = preset
     ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
     : presetLabel
       ? `${presetLabel} homes in Central Oregon`
-      : `Homes for sale in ${placeName}`
+      : placeHomesForSaleHeading(placeName)
 
   // Related searches — SEO internal-linking for a city/preset page. Cross-link to
   // that city's other popular searches plus an "All [City] homes" link.
@@ -523,7 +524,7 @@ export default async function SearchPage({
             </Button>
           )}
           <ShareButton
-            title={`Homes for sale in ${displayName}`}
+            title={placeHomesForSaleHeading(displayName)}
             text={subdivisionBlurb ?? cityContent?.metaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`}
             url={siteUrl ? `${siteUrl}${searchPagePath}` : undefined}
             variant="default"

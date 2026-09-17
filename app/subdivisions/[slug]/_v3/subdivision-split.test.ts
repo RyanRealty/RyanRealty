@@ -119,7 +119,7 @@ describe('subdivision page first screen', () => {
     expect(code).toMatch(/hud:\s*null/)
     expect(code).not.toMatch(/<V3Field\b/)
     expect(code).not.toMatch(/<V3Stage\b/)
-    expect(code).toMatch(/const headline = displayName/)
+    expect(code).toMatch(/const headline = placeHomesForSaleHeading\(displayName\)/)
     expect(code).not.toMatch(/heading=\{v3Text\(`Homes for sale in \$\{displayName\}`\)\}/)
     expect(code).not.toMatch(/every home for sale in/i)
   })
