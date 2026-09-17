@@ -20,13 +20,14 @@
 }
 
 .team-fold__trio {
-  order: 1;
+  order: 4;
   padding: 0 var(--v3-gutter) var(--v3-space-sm);
 }
 
 .team-fold .about-faces__lead {
   order: 2;
-  padding: 0 var(--v3-gutter) var(--v3-space-md);
+  padding: 0 var(--v3-gutter) var(--v3-space-sm);
+  grid-template-columns: 5.5rem minmax(0, 1fr);
 }
 
 .team-fold__closings {
@@ -35,16 +36,25 @@
 }
 
 .team-fold .about-faces__companions {
-  order: 4;
+  order: 5;
   padding: 0 var(--v3-gutter);
 }
 
 .team-fold__atlas {
-  order: 5;
+  order: 6;
+}
+
+.team-fold .about-faces--editorial .about-faces__lead .about-faces__photo-link,
+.team-fold .about-faces--editorial .about-faces__companion .about-faces__photo-link {
+  display: block;
+  width: 5.5rem;
+  height: 5.5rem;
+  aspect-ratio: 1;
+  overflow: hidden;
 }
 
 .team-fold .about-faces--editorial .about-faces__reach-row [data-slot='button-group'] {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   width: 100%;
 }
 
@@ -94,6 +104,17 @@
     grid-column: 1;
     grid-row: 3;
     padding: 0 var(--v3-gutter) var(--v3-space-lg);
+    grid-template-columns: var(--v3-card-photo-w) minmax(0, 1fr);
+  }
+
+  .team-fold .about-faces--editorial .about-faces__lead .about-faces__photo-link {
+    width: var(--v3-card-photo-w);
+    height: var(--v3-card-photo-w);
+  }
+
+  .team-fold .about-faces--editorial .about-faces__companion .about-faces__photo-link {
+    width: var(--v3-card-photo-h);
+    height: var(--v3-card-photo-h);
   }
 
   .team-fold .about-faces__companions {
@@ -126,5 +147,9 @@
 
   .team-fold .team-fold__atlas .v3-atlas__stage {
     min-height: 18rem;
+  }
+
+  .team-fold .about-faces--editorial .about-faces__reach-row [data-slot='button-group'] {
+    flex-wrap: nowrap;
   }
 }

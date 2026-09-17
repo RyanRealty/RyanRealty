@@ -150,7 +150,7 @@ export default async function TeamPage() {
       .map((k) => ({ key: k, label: k === 'other' ? 'Other' : `${k[0]!.toUpperCase()}${k.slice(1)}` })),
   ]
   const atlasSource = v3Text(
-    `Closed MLS sales through Oregon Data Share, every closing recorded for a Ryan Realty broker on either side of the deal (list side by list_agent_email, buy side by buyer_agent_mls_id): ${closedTotal} closings on record, ${dots.length} of them carrying a coordinate on the feed and drawn here. A closing the feed gives no latitude and longitude for is not a mark and is not counted in this map. Prices are the recorded ClosePrice.`,
+    `Closed MLS sales through Oregon Data Share. Every closing recorded for a Ryan Realty broker as listing agent or buyer agent: ${closedTotal} closings on record, ${dots.length} of them carrying a coordinate on the feed and drawn here. A closing the feed gives no latitude and longitude for is not a mark and is not counted in this map. Prices are the recorded sold price.`,
   )
   const atlasStamp = newestClose ? v3Text(formatDate(newestClose.slice(0, 10))) : undefined
   const closingRows = publishFirmClosingRows(
