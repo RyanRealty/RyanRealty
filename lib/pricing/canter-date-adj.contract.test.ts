@@ -1,9 +1,10 @@
 /**
  * 1130 E Canter / Sisters residual after Admin live-select tip on main.
  * Pocket exclusivity PASS (1025/945/995/994 Horse Back; Clearpine out).
- * Recommend FAIL on the 2026-09-15 08:15 PT rebuild: $803k vs FlexMLS
- * ~$659k (low $649 / high $675). Admin named date-adjust pumping pocket
- * Horse Back closes toward ~$800k+.
+ * Recommend FAIL on the 2026-09-15 08:15 PT rebuild: $803k vs then-Flex
+ * ~$659k. Matt 2026-09-17 re-anchored gold to live market-cool ~$680
+ * (Flex ~$659 retired). Admin named date-adjust pumping pocket Horse Back
+ * closes toward ~$800k+.
  *
  * Tip Ready is this file + --ship lib/pricing/canter-date-adj.parity.json.
  * Do not reopen street-cluster / RHM. Do not twin Admin picker contracts.
@@ -18,20 +19,22 @@ import {
   priceCmaSet,
 } from '@/lib/pricing/estimate'
 import {
+  CANTER_GOLD_HIGH,
+  CANTER_GOLD_LOW,
+  CANTER_GOLD_RECOMMEND,
+  CANTER_GOLD_TOLERANCE,
   CANTER_MIN_CLOSED_COMPS,
-  FLEX_CANTER_HIGH,
-  FLEX_CANTER_LOW,
-  FLEX_CANTER_RECOMMEND,
   TIME_ADJUSTMENT_BASIS_POCKET,
   TIME_ADJUSTMENT_MEASURE_POCKET,
+  canterRecommendNearGold,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 import { computePricing } from '@/lib/cma/pricing'
 
 const AS_OF = '2026-09-15'
-const FLEX_LOW = FLEX_CANTER_LOW
-const FLEX_HIGH = FLEX_CANTER_HIGH
+/** Fixture sold band (gold fixtures) — anti-pump bounds, not live gold gate. */
+const FIXTURE_SOLD_LOW = 649_000
 const RAW_SOLD_LIST_HIGH = 690_000
 const PUMP_FLOOR = 780_000
 const EXCLUSIVE_TIERS = ['pocket-6mo', 'pocket-12mo'] as const
@@ -258,17 +261,17 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
     }
     const rawCloses = horseBackPocketSet().map((s) => s.closePrice)
     const rawMid = [...rawCloses].sort((a, b) => a - b)[Math.floor(rawCloses.length / 2)]!
-    expect(rawMid).toBeGreaterThanOrEqual(FLEX_LOW)
+    expect(rawMid).toBeGreaterThanOrEqual(FIXTURE_SOLD_LOW)
     expect(rawMid).toBeLessThanOrEqual(RAW_SOLD_LIST_HIGH)
 
     const { cover, built, method1Mid } = recommendFrom(
       rows.map((r) => r.adjusted),
       true,
     )
-    expect(cover.recommended).toBeGreaterThanOrEqual(FLEX_LOW - 10_000)
+    expect(cover.recommended).toBeGreaterThanOrEqual(FIXTURE_SOLD_LOW - 10_000)
     expect(cover.recommended).toBeLessThanOrEqual(RAW_SOLD_LIST_HIGH)
     expect(cover.recommended).toBeLessThan(PUMP_FLOOR)
-    expect(built?.recommended).toBeGreaterThanOrEqual(FLEX_LOW - 10_000)
+    expect(built?.recommended).toBeGreaterThanOrEqual(FIXTURE_SOLD_LOW - 10_000)
     expect(built?.recommended).toBeLessThanOrEqual(RAW_SOLD_LIST_HIGH)
     expect(built?.recommended).toBeLessThan(PUMP_FLOOR)
     expect(method1Mid).toBeLessThan(PUMP_FLOOR)
@@ -363,25 +366,32 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
       rows.map((r) => r.adjusted),
       true,
     )
-    expect(cover.recommended).toBeGreaterThanOrEqual(FLEX_LOW - 10_000)
+    expect(cover.recommended).toBeGreaterThanOrEqual(FIXTURE_SOLD_LOW - 10_000)
     expect(cover.recommended).toBeLessThanOrEqual(RAW_SOLD_LIST_HIGH)
     expect(cover.recommended).toBeLessThan(PUMP_FLOOR)
     expect(built?.recommended).toBeLessThan(PUMP_FLOOR)
     expect(method1Mid).toBeLessThan(PUMP_FLOOR)
   })
 
-  it('contract: flex-recommend-near-659k', () => {
+  it('contract: canter-gold-near-680k', () => {
+    // Matt 2026-09-17: Flex ~$659 retired. Tip Ready gold = live cool Rec ~$680.
+    expect(CANTER_GOLD_RECOMMEND).toBe(680_000)
+    expect(CANTER_GOLD_LOW).toBe(675_000)
+    expect(CANTER_GOLD_HIGH).toBe(705_000)
+    expect(canterRecommendNearGold(680_000)).toBe(true)
+    expect(canterRecommendNearGold(659_000)).toBe(true) // within tolerance of re-anchor
+    expect(canterRecommendNearGold(800_000)).toBe(false)
+
     const rows = adjustSet(true)
     const { cover, built } = recommendFrom(
       rows.map((r) => r.adjusted),
       true,
     )
-    expect(cover.recommended).toBeGreaterThanOrEqual(FLEX_CANTER_LOW - 10_000)
-    expect(cover.recommended).toBeLessThanOrEqual(FLEX_CANTER_HIGH + 15_000)
-    expect(built?.recommended).toBeGreaterThanOrEqual(FLEX_CANTER_LOW - 10_000)
-    expect(built?.recommended).toBeLessThanOrEqual(FLEX_CANTER_HIGH + 15_000)
-    const mid = cover.recommended!
-    expect(Math.abs(mid - FLEX_CANTER_RECOMMEND)).toBeLessThanOrEqual(40_000)
+    expect(canterRecommendNearGold(cover.recommended!)).toBe(true)
+    expect(canterRecommendNearGold(built!.recommended!)).toBe(true)
+    expect(Math.abs(cover.recommended! - CANTER_GOLD_RECOMMEND)).toBeLessThanOrEqual(
+      CANTER_GOLD_TOLERANCE,
+    )
   })
 
   it('contract: refuse-fewer-than-5-closed-comps', () => {

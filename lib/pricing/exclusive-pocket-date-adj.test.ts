@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CANTER_GOLD_RECOMMEND,
   applyExclusivePocketDateAdj,
   applyExclusivePocketStoryAdj,
+  canterRecommendNearGold,
   exclusivePocketPathNote,
   selectionIsExclusivePocket,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
@@ -80,5 +82,16 @@ describe('applyExclusivePocketStoryAdj', () => {
     expect(applyExclusivePocketStoryAdj(-94_500, false)).toBe(0)
     expect(applyExclusivePocketStoryAdj(94_500, true)).toBe(0)
     expect(applyExclusivePocketStoryAdj(0, true)).toBe(0)
+  })
+})
+
+describe('Canter gold re-anchor ~$680', () => {
+  it('contract: canter-gold-near-680k — Flex $659 retired as refuse bar', () => {
+    expect(CANTER_GOLD_RECOMMEND).toBe(680_000)
+    expect(canterRecommendNearGold(680_000)).toBe(true)
+    expect(canterRecommendNearGold(700_000)).toBe(true)
+    expect(canterRecommendNearGold(640_000)).toBe(true) // 40k tolerance
+    expect(canterRecommendNearGold(620_000)).toBe(false)
+    expect(canterRecommendNearGold(800_000)).toBe(false)
   })
 })
