@@ -21,6 +21,22 @@ export function isPlaceTypeSort(value: string | null | undefined): value is Plac
 }
 
 /**
+ * The lit chip must match the list. These routes are statically generated, so
+ * the server always ships newest; a `?sort=` URL is the reader's order after
+ * a share or refresh. Unknown keys fall back to newest — never a silent
+ * price-asc list under a Newest chip.
+ */
+export function placeTypeSortFromSearch(
+  search: string | null | undefined,
+): PlaceTypeSort {
+  if (!search) return 'newest'
+  const raw = new URLSearchParams(
+    search.startsWith('?') ? search.slice(1) : search,
+  ).get('sort')
+  return isPlaceTypeSort(raw) ? raw : 'newest'
+}
+
+/**
  * Reorder the photographed rows. `newest` is the order the read returned, so
  * it is the identity — never a re-sort on a field the row does not carry.
  * Ties break on the listing key so the order is stable across renders, and a

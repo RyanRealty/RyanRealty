@@ -28,7 +28,7 @@
  * already says so.
  */
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   V3Atlas,
@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils'
 import {
   PLACE_TYPE_SORTS,
   isPlaceTypeSort,
+  placeTypeSortFromSearch,
   sortPlaceTypeRows,
   type PlaceTypeSort,
 } from '@/lib/place/place-type-sort'
@@ -79,7 +80,12 @@ export function usePlaceTypeLink(): LinkState {
  */
 export function PlaceTypeField({ children }: { children: ReactNode }) {
   const [linkedKey, setLinkedKeyState] = useState<string | null>(null)
+  /* Server HTML is newest (static). After mount, match ?sort= so a shared
+     price-asc URL does not light Newest over a reordered list. */
   const [sort, setSort] = useState<PlaceTypeSort>('newest')
+  useEffect(() => {
+    setSort(placeTypeSortFromSearch(window.location.search))
+  }, [])
   const setLinkedKey = useCallback((key: string | null) => {
     setLinkedKeyState((prev) => (prev === key ? prev : key))
   }, [])

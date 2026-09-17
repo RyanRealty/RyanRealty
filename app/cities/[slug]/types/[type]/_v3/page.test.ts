@@ -6,7 +6,12 @@ import {
   placeTypeClaim,
   resolvePlaceTypePage,
 } from '@/lib/place/place-type-page'
-import { PLACE_TYPE_SORTS, isPlaceTypeSort, sortPlaceTypeRows } from '@/lib/place/place-type-sort'
+import {
+  PLACE_TYPE_SORTS,
+  isPlaceTypeSort,
+  placeTypeSortFromSearch,
+  sortPlaceTypeRows,
+} from '@/lib/place/place-type-sort'
 import type { V3ListingRowData } from '@/components/site/v3'
 
 const CITY = readFileSync(resolve('app/cities/[slug]/types/[type]/page.tsx'), 'utf8')
@@ -180,6 +185,17 @@ describe('place-type pages', () => {
     }
     expect(FIELD).toMatch(/href=\{option\.key === 'newest' \? pagePath : `\$\{pagePath\}\?sort=\$\{option\.key\}`\}/)
     expect(FIELD).toMatch(/rel="nofollow"/)
+    expect(FIELD).toMatch(/placeTypeSortFromSearch\(window\.location\.search\)/)
+  })
+
+  it('labels the list Homes for sale, not photographed listings', () => {
+    for (const src of [CITY, COMM]) {
+      expect(src).toMatch(/<V3Heading level=\{2\}>Homes for sale<\/V3Heading>/)
+      expect(src).toMatch(/label: 'Homes for sale', href: '#homes'/)
+      expect(src).toMatch(/ariaLabel="Homes for sale"/)
+      expect(src).not.toMatch(/All photographed listings/)
+      expect(src).not.toMatch(/ariaLabel="Photographed listings"/)
+    }
   })
 })
 
@@ -291,5 +307,14 @@ describe('sortPlaceTypeRows', () => {
     expect(isPlaceTypeSort('price-asc')).toBe(true)
     expect(isPlaceTypeSort('sqft')).toBe(false)
     expect(isPlaceTypeSort(null)).toBe(false)
+  })
+
+  it('reads the real sort off the URL so the lit chip is honest', () => {
+    expect(placeTypeSortFromSearch('?sort=price-asc')).toBe('price-asc')
+    expect(placeTypeSortFromSearch('sort=price-desc')).toBe('price-desc')
+    expect(placeTypeSortFromSearch('?sort=newest')).toBe('newest')
+    expect(placeTypeSortFromSearch('')).toBe('newest')
+    expect(placeTypeSortFromSearch('?sort=sqft')).toBe('newest')
+    expect(placeTypeSortFromSearch(null)).toBe('newest')
   })
 })

@@ -68,6 +68,7 @@ export function DigitSwap({
     character,
     id: `glyph-${position}`,
     position,
+    kind: /\d/.test(character) ? "digit" : "mark",
   }));
 
   return (
@@ -78,7 +79,7 @@ export function DigitSwap({
     >
       <span className="sr-only">{text}</span>
       <span aria-hidden="true" className="inline-flex items-center">
-        {glyphs.map(({ character, id, position }) => {
+        {glyphs.map(({ character, id, position, kind }) => {
           if (character === " ") {
             return <span key={id} className="inline-block w-[0.7ch]" />;
           }
@@ -88,10 +89,29 @@ export function DigitSwap({
               ? `${id}-${character}`
               : `${id}-${character}-${animationKey}`;
 
+          /* Commas, $, and other marks keep their own width. A 1ch slot on
+             "," is what printed "$999 , 900" on ledger prices. */
+          if (kind === "mark") {
+            return (
+              <span
+                key={id}
+                data-slot="digit-swap-mark"
+                className={cn(
+                  "inline-block shrink-0 leading-none",
+                  glyphClassName,
+                  position >= suffixStart ? suffixClassName : undefined,
+                )}
+              >
+                {character}
+              </span>
+            );
+          }
+
           return (
             <span
               key={id}
               data-slot="digit-swap-glyph"
+              data-kind="digit"
               className="relative inline-block h-[1.1em] w-[1ch] shrink-0 overflow-hidden align-bottom"
             >
               <AnimatePresence initial={false} custom={motionContext}>
