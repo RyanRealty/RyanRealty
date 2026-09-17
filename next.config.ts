@@ -498,6 +498,8 @@ const nextConfig: NextConfig = {
     'app/team/[slug]/page': ['./data/basemap/streets/*.json'],
     'app/api/cma/[slug]/pdf/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
       './public/drafts/cma-*/cma.html',
       './public/drafts/cma-*/assets/*.png',
       './public/drafts/cma-*/assets/*.jpg',
@@ -509,6 +511,8 @@ const nextConfig: NextConfig = {
     ],
     'app/api/cma/[slug]/email/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
       './public/drafts/cma-*/cma.html',
       './public/drafts/cma-*/assets/*.png',
       './public/drafts/cma-*/assets/*.jpg',
@@ -520,9 +524,31 @@ const nextConfig: NextConfig = {
     ],
     'app/api/cma/[slug]/gmail-draft/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
+    ],
+    'app/api/cma/[slug]/finalize-deliver/route': [
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
+      './public/drafts/cma-*/cma.html',
+      './public/drafts/cma-*/assets/*.png',
+      './public/drafts/cma-*/assets/*.jpg',
+      './public/drafts/cma-*/assets/*.otf',
+      './public/cmas/cma-*/cma.html',
+      './public/cmas/cma-*/assets/*.png',
+      './public/cmas/cma-*/assets/*.jpg',
+      './public/cmas/cma-*/assets/*.otf',
     ],
     'app/api/reports/export/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+    ],
+    'app/api/pdf/cma/route': [
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
+    ],
+    'app/api/pdf/report/route': [
+      './node_modules/@react-pdf/renderer/**',
+      './node_modules/@react-pdf/layout/**',
     ],
     'app/home-valuation/actions': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',

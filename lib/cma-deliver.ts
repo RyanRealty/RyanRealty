@@ -24,7 +24,6 @@
  * Locked 2026-06-04.
  */
 
-import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { createGmailDraft } from '@/lib/gmail-draft'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { sendEmail } from '@/lib/resend'
@@ -221,8 +220,9 @@ export async function finalizeAndDeliverCma(
   // ── 3. Render the PDF ─────────────────────────────────────────────────────
   let pdfBuffer: Buffer
   let finalized: boolean
+  const cmaPdf = await import('@/lib/cma-pdf')
   try {
-    const result = await renderCmaPdfBuffer(safeSlug)
+    const result = await cmaPdf.renderCmaPdfBuffer(safeSlug)
     pdfBuffer = result.buffer
     finalized = result.finalized
     if (!finalized) {
@@ -231,7 +231,7 @@ export async function finalizeAndDeliverCma(
       )
     }
   } catch (e) {
-    if (e instanceof CmaNotFoundError) {
+    if (e instanceof cmaPdf.CmaNotFoundError) {
       return { ok: false, warnings, error: `CMA HTML not found: ${e.message}` }
     }
     return {

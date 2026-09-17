@@ -16,7 +16,6 @@ import {
   cmaComposePdfFilename,
   cmaComposeSmsBody,
 } from '@/lib/cma/crm-compose-copy'
-import { renderCmaPdfBuffer } from '@/lib/cma-pdf'
 import { uploadAttachmentBytes } from '@/lib/crm/attachments'
 import { MMS_ATTACHMENT_LIMITS, type CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 
@@ -52,6 +51,7 @@ export async function stageCmaPdfForComposeAction(input: {
     if (target.status === 'archived') return { ok: false, error: 'Restore the CMA before attaching it' }
 
     const address = applySlugStreetDirectional(target.subjectAddress || slug, slug)
+    const { renderCmaPdfBuffer } = await import('@/lib/cma-pdf')
     const pdf = await renderCmaPdfBuffer(slug)
     const filename = cmaComposePdfFilename(slug)
     const mmsOk = pdf.buffer.byteLength <= MMS_ATTACHMENT_LIMITS.maxFileBytes

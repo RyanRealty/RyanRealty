@@ -27,7 +27,6 @@ import {
   logCmaTimelineEvent,
 } from '@/lib/data'
 import { CMA_DOC_ORIGIN } from '@/lib/cma/doc-links'
-import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { wrapBrandedEmail, brandedTextFooter, escapeHtml } from '@/lib/email/shell'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
@@ -411,13 +410,14 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     return { ok: false, error: `This contact has opted out of email (${sup.reasons.join(', ')}).` }
   }
 
-  // PDF.
+  // PDF. Dynamic import keeps puppeteer-core off admin page lambdas (NFT excludes it).
   let pdf: Buffer
+  const cmaPdf = await import('@/lib/cma-pdf')
   try {
-    const rendered = await renderCmaPdfBuffer(slug)
+    const rendered = await cmaPdf.renderCmaPdfBuffer(slug)
     pdf = rendered.buffer
   } catch (e) {
-    if (e instanceof CmaNotFoundError) return { ok: false, error: 'CMA document not found for PDF render' }
+    if (e instanceof cmaPdf.CmaNotFoundError) return { ok: false, error: 'CMA document not found for PDF render' }
     return { ok: false, error: `PDF render failed: ${e instanceof Error ? e.message : String(e)}` }
   }
   if (pdf.byteLength > MAX_PDF_BYTES) {

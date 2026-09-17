@@ -30,7 +30,6 @@ import { getBpoAdminRowBySlug, updateBpoRowFieldsBySlug } from '@/lib/data/bpo/r
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { getContactSendTarget } from '@/lib/data/crm/getContactSendTarget'
 import { assertClientSafe, stripOfferStrategy } from '@/lib/bpo/render'
-import { htmlToPdfBuffer } from '@/lib/pdf/html-to-pdf'
 import { CONTACT } from '@/lib/brand/contact'
 import { wrapBrandedEmail, brandedTextFooter, escapeHtml, type ShellBroker } from '@/lib/email/shell'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
@@ -324,6 +323,7 @@ export async function sendBpoToLead(opts: {
     // Running marks live in the @page margin strips, so body content cannot
     // reach them on any sheet — including the interior sheets that used to
     // print with no margin at all. See lib/pdf/page-contract.ts.
+    const { htmlToPdfBuffer } = await import('@/lib/pdf/html-to-pdf')
     pdf = await htmlToPdfBuffer(docHtml, {
       label: `BPO ${(row.subject_address as string) ?? slug}`,
       marks: {
