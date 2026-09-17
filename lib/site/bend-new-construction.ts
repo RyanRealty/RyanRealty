@@ -79,8 +79,18 @@ export type NewConSourceLink = {
   href: string
 }
 
+export type NewConFinancingId =
+  | 'pahlisch-golden-key'
+  | 'horton-stevens-ranch-flyer'
+  | 'lennar-fall-super-sale'
+  | 'hayden-summer-savings'
+  | 'hayden-zero-down'
+  | 'hayden-parkside-10k'
+  | 'stone-bridge-35k'
+  | 'discovery-west'
+
 export type NewConFinancingOffer = {
-  id: string
+  id: NewConFinancingId
   builder: string
   title: string
   flags: readonly NewConFlag[]
@@ -416,6 +426,60 @@ export function bendNewConWeight(active: number): number {
 
 export const BEND_NEW_CON_PRIMARY = BEND_NEW_CON_NAMED.filter((row) => row.active >= 2)
 export const BEND_NEW_CON_SINGLE = BEND_NEW_CON_NAMED.filter((row) => row.active === 1)
+
+/**
+ * Affordable SFR lead — lowest named Bend-proper bands that a buyer actually
+ * shops first. Order is locked to the 2026-09-16 pull: Parkside Place Phase 1
+ * ($399,990), Calaveras ($439,000), Easton ($449,900).
+ */
+export const BEND_NEW_CON_LEAD_NAMES = [
+  'Parkside Place Phase 1',
+  'Calaveras',
+  'Easton',
+] as const
+
+export const BEND_NEW_CON_LEDE =
+  'Parkside Place starts at $399,990. Calaveras and Easton sit next to it.'
+
+export const BEND_NEW_CON_STAGE_FALLBACK_POSTER =
+  '/images/blog/new-construction-guide-central-oregon.jpg'
+
+export function bendNewConLeadRows(): NewConInventoryRow[] {
+  return BEND_NEW_CON_LEAD_NAMES.flatMap((name) => {
+    const row = BEND_NEW_CON_NAMED.find((item) => item.name === name)
+    return row ? [row] : []
+  })
+}
+
+export function bendNewConRestPrimary(): NewConInventoryRow[] {
+  const lead = new Set<string>(BEND_NEW_CON_LEAD_NAMES)
+  return BEND_NEW_CON_PRIMARY.filter((row) => !lead.has(row.name))
+}
+
+export function financingHighlight(offer: NewConFinancingOffer): { value: string; label: string } {
+  switch (offer.id) {
+    case 'pahlisch-golden-key':
+      return { value: '3% / $20,000', label: 'published credit cap' }
+    case 'horton-stevens-ranch-flyer':
+      return { value: 'CONFLICT', label: 'flyer vs community page' }
+    case 'lennar-fall-super-sale':
+      return { value: '09/14–09/20', label: 'sign window' }
+    case 'hayden-summer-savings':
+      return { value: 'STALE', label: 'treat past 2026-09-15 as stale' }
+    case 'hayden-zero-down':
+      return { value: '$0 down', label: 'program name, not a quote' }
+    case 'hayden-parkside-10k':
+      return { value: '$10K', label: 'on listed homesites' }
+    case 'stone-bridge-35k':
+      return { value: '$35K', label: 'banner only' }
+    case 'discovery-west':
+      return { value: 'NOT DISCLOSED', label: 'no public concession' }
+    default: {
+      const _exhaustive: never = offer.id
+      return _exhaustive
+    }
+  }
+}
 
 /**
  * Financing / concessions — terms from the 2026-09-16 financing-detail

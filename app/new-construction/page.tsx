@@ -1,18 +1,19 @@
 // @no-parity — factual 2026-09-16 snapshot. No Wave-3 mockup / taste class.
-// @data-free
 /**
  * /new-construction — Bend new-construction communities, list-price bands,
  * and published builder financing. Snapshot researched 2026-09-16 PT.
  *
- * VISUAL THESIS: a Redfin-like inventory list, then the concession legal
- * copy with flags, then Call / Text / Schedule. Not a search redirect.
+ * VISUAL THESIS: compact Stage, then the affordable SFR shelf (Parkside →
+ * Calaveras → Easton) on the installed shadcn carousel, then the rest of the
+ * named communities, then financing as Answers. Not a search redirect.
  * /builders still 301s here.
  *
- * Rhythm: Breadcrumb -> Instrument -> Ledger -> Ledger -> Quiet -> Doors
- * -> Footer outside main. Copy and figures live in
- * lib/site/bend-new-construction.ts. Do not invent MOS, rates, or prices here.
+ * Rhythm: Breadcrumb-on-Stage -> Stage -> Lead shelf -> Ledger -> Answers
+ * -> Doors -> Footer outside main. Snapshot figures live in
+ * lib/site/bend-new-construction.ts. Live photos come from the listings DAL.
  */
 import type { Metadata } from 'next'
+import { getListingTiles } from '@/lib/data'
 import { formatDate } from '@/lib/format/date'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
@@ -23,8 +24,9 @@ import {
   BEND_NEW_CON_FINANCING_SOURCE,
   BEND_NEW_CON_HEADLINE,
   BEND_NEW_CON_INVENTORY_SOURCE,
-  BEND_NEW_CON_PRIMARY,
+  BEND_NEW_CON_LEDE,
   BEND_NEW_CON_SEARCH_HREF,
+  bendNewConLeadRows,
   BEND_NEW_CON_SINGLE,
   BEND_NEW_CON_UNSPECIFIED,
   BEND_NEW_CONSTRUCTION_DESCRIPTION,
@@ -33,25 +35,30 @@ import {
   BEND_NEW_CONSTRUCTION_RESEARCH_DATE,
   BEND_NEW_CONSTRUCTION_TITLE,
   bendNewConCommunityHref,
+  bendNewConRestPrimary,
   bendNewConSearchHref,
   bendNewConWeight,
+  financingHighlight,
   flagLabel,
   type NewConInventoryRow,
 } from '@/lib/site/bend-new-construction'
 import {
   V3_FOOTER_COLUMNS,
   V3_ROOT_CLASS,
+  V3Answers,
   V3Breadcrumb,
   V3Doors,
   V3Footer,
-  V3Instrument,
   V3Ledger,
-  V3Quiet,
   V3SectionTracker,
   v3Text,
+  type V3Answer,
+  type V3AnswersDoor,
   type V3LedgerFigureRow,
-  type V3QuietItem,
 } from '@/components/site/v3'
+import { V3Stage } from '@/components/site/v3/V3Stage'
+import { buildNewConLeadShelf } from './_v3/load-lead-shelf'
+import { NewConLeadShelf } from './_v3/NewConLeadShelf.client'
 
 export const revalidate = 86400
 
@@ -86,36 +93,55 @@ function inventoryRow(row: NewConInventoryRow): V3LedgerFigureRow {
   }
 }
 
-function financingItems(): V3QuietItem[] {
-  const items: V3QuietItem[] = []
-  for (const offer of BEND_NEW_CON_FINANCING) {
+function financingAnswers(): V3Answer[] {
+  return BEND_NEW_CON_FINANCING.map((offer, index) => {
     const flags = flagLabel(offer.flags)
-    items.push({
-      kind: 'prose',
+    const highlight = financingHighlight(offer)
+    return {
       id: offer.id,
-      term: flags ? `${offer.builder} — ${offer.title} · ${flags}` : `${offer.builder} — ${offer.title}`,
+      question: flags ? `${offer.builder}: ${offer.title} · ${flags}` : `${offer.builder}: ${offer.title}`,
+      figure: { value: highlight.value, label: highlight.label },
       body: offer.terms,
-    })
-    for (const source of offer.sources) {
-      items.push({
-        kind: 'link',
-        label: source.label,
-        href: source.href,
-        mark: 'external',
-        detail: offer.builder,
-      })
+      source: BEND_NEW_CON_FINANCING_SOURCE,
+      action: offer.sources[0]
+        ? { label: offer.sources[0].label, href: offer.sources[0].href }
+        : undefined,
+      open: index === 0,
     }
-  }
-  return items
+  })
 }
 
-export default function NewConstructionPage() {
+function financingDoors(): V3AnswersDoor[] {
+  return BEND_NEW_CON_FINANCING.flatMap((offer) =>
+    offer.sources.map((source) => ({
+      label: source.label,
+      href: source.href,
+      group: offer.builder,
+    })),
+  )
+}
+
+export default async function NewConstructionPage() {
   const site = getCanonicalSiteUrl()
   const pageUrl = `${site}${BEND_NEW_CONSTRUCTION_PATH}`
   const researched = formatDate(BEND_NEW_CONSTRUCTION_RESEARCH_DATE)
   const office = `${BRAND.address.street}, ${BRAND.address.city}`
-  const [firstPrimary, ...restPrimary] = BEND_NEW_CON_PRIMARY.map(inventoryRow)
+  const restPrimary = bendNewConRestPrimary().map(inventoryRow)
+  const [firstRest, ...moreRest] = restPrimary
   const [firstSingle, ...restSingle] = BEND_NEW_CON_SINGLE.map(inventoryRow)
+  const leadRows = bendNewConLeadRows()
+  const tilesByName = await Promise.all(
+    leadRows.map((row) =>
+      getListingTiles({
+        city: 'Bend',
+        subdivision: row.name,
+        status: 'active',
+        sort: 'price-asc',
+        limit: 12,
+      }).catch(() => []),
+    ),
+  )
+  const lead = await buildNewConLeadShelf(leadRows, tilesByName)
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -152,60 +178,72 @@ export default function NewConstructionPage() {
 
         <V3SectionTracker />
 
-        <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: 'Homes for sale', href: '/homes-for-sale' },
-            { label: BEND_NEW_CONSTRUCTION_TITLE },
-          ]}
+        <div className="relative">
+          <V3Stage
+            id="new-construction"
+            headingLevel={1}
+            eyebrow="Bend proper · 2026-09-16"
+            headline={BEND_NEW_CONSTRUCTION_TITLE}
+            posterSrc={lead.posterSrc}
+            overlayStrength="standard"
+            height="compact"
+            bandWhenCompact
+            inventory={{
+              figures: [
+                {
+                  value: String(BEND_NEW_CON_HEADLINE.active),
+                  label: 'active new homes in Bend',
+                  href: BEND_NEW_CON_SEARCH_HREF,
+                },
+                {
+                  value: BEND_NEW_CON_HEADLINE.median,
+                  label: 'median list that day',
+                  href: BEND_NEW_CON_SEARCH_HREF,
+                },
+                {
+                  value: `${BEND_NEW_CON_HEADLINE.priceLow}–${BEND_NEW_CON_HEADLINE.priceHigh}`,
+                  label: 'list-price span',
+                  href: BEND_NEW_CON_SEARCH_HREF,
+                },
+              ],
+              source: BEND_NEW_CON_INVENTORY_SOURCE,
+              sourceName: 'Ryan Realty listings',
+              updatedAt: BEND_NEW_CONSTRUCTION_RESEARCH_DATE,
+            }}
+            action={{
+              label: 'See Bend new construction',
+              href: BEND_NEW_CON_SEARCH_HREF,
+            }}
+          />
+          <div className="absolute inset-x-0 top-0 z-10 bg-navy">
+            <V3Breadcrumb
+              tone="on-media"
+              belowNav={false}
+              trail={[
+                { label: 'Home', href: '/' },
+                { label: 'Homes for sale', href: '/homes-for-sale' },
+                { label: BEND_NEW_CONSTRUCTION_TITLE },
+              ]}
+            />
+          </div>
+        </div>
+
+        <NewConLeadShelf
+          heading={BEND_NEW_CON_LEDE}
+          note="Not a loan offer. Bands are the 2026-09-16 pull. The houses on the shelf are live listings in those communities."
+          bands={lead.bands}
+          seeAllHref={BEND_NEW_CON_SEARCH_HREF}
         />
 
-        <V3Instrument
-          id="new-construction"
-          level={1}
-          eyebrow={v3Text('Bend proper · researched 2026-09-16 PT')}
-          headline={v3Text(BEND_NEW_CONSTRUCTION_TITLE)}
-          note={v3Text(
-            'Not a loan offer. Published terms change. Verify with onsite sales and the lender on the purchase agreement.',
-          )}
-          figures={[
-            {
-              value: v3Text(String(BEND_NEW_CON_HEADLINE.active)),
-              label: v3Text('Active new construction'),
-              href: BEND_NEW_CON_SEARCH_HREF,
-              sentence: v3Text('Bend city, Active only, new-construction flag on.'),
-            },
-            {
-              value: v3Text(`${BEND_NEW_CON_HEADLINE.priceLow}–${BEND_NEW_CON_HEADLINE.priceHigh}`),
-              label: v3Text('List-price span'),
-              href: BEND_NEW_CON_SEARCH_HREF,
-              sentence: v3Text('Valid list prices in that pull. One $1.32 row was dropped.'),
-            },
-            {
-              value: v3Text(BEND_NEW_CON_HEADLINE.median),
-              label: v3Text('Median list'),
-              href: BEND_NEW_CON_SEARCH_HREF,
-              sentence: v3Text('Median of the valid list prices, same pull.'),
-            },
-          ]}
-          source={v3Text(BEND_NEW_CON_INVENTORY_SOURCE)}
-          updated={v3Text(researched)}
-          sourceName={v3Text('Ryan Realty listings')}
-          action={{
-            label: v3Text('See Bend new construction'),
-            href: BEND_NEW_CON_SEARCH_HREF,
-          }}
-        />
-
-        {firstPrimary ? (
+        {firstRest ? (
           <V3Ledger
             id="for-sale"
-            eyebrow={v3Text('What’s for sale')}
-            heading={v3Text('Named communities in Bend')}
+            eyebrow={v3Text('The rest of Bend')}
+            heading={v3Text('Named communities')}
             note={v3Text(
-              'Active count and list-price band from the 2026-09-16 pull. Hover or focus a row for the median and the typical plan range.',
+              'Hover or focus a row for the median and the typical plan. Parkside, Calaveras, and Easton are on the shelf above.',
             )}
-            rows={[firstPrimary, ...restPrimary]}
+            rows={[firstRest, ...moreRest]}
             source={v3Text(BEND_NEW_CON_INVENTORY_SOURCE)}
             updated={v3Text(researched)}
             encode="bar"
@@ -234,18 +272,15 @@ export default function NewConstructionPage() {
           />
         ) : null}
 
-        <V3Quiet
+        <V3Answers
           id="financing"
           eyebrow="Financing and concessions"
           heading="What builders published that day"
-          alert={{
-            title: BEND_NEW_CON_DISCLAIMER.title,
-            description: BEND_NEW_CON_DISCLAIMER.description,
-            action: { label: 'Call the office', href: `tel:${CONTACT.phoneDirectTel}` },
-          }}
-          items={financingItems()}
-          source={BEND_NEW_CON_FINANCING_SOURCE}
-          note="UNVERIFIED, STALE, NOT DISCLOSED, and CONFLICT are printed on the offer they belong to. Horton’s community page and FlippingBook flyer are separate sources."
+          note={`${BEND_NEW_CON_DISCLAIMER.title}. ${BEND_NEW_CON_DISCLAIMER.description.join(' ')} UNVERIFIED, STALE, NOT DISCLOSED, and CONFLICT sit on the offer they belong to. Horton’s community page and FlippingBook flyer are separate sources.`}
+          questions={financingAnswers()}
+          doors={financingDoors()}
+          doorsLabel="Builder pages"
+          sourceKey="bend-new-construction:financing:2026-09-16"
         />
 
         <V3Doors
