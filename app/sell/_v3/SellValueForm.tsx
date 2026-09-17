@@ -25,12 +25,12 @@
  * SITE-111 — THE THREE INSTALLED CONTROLS THIS FILE RUNS.
  *
  *   beui-input (components/motion/input, https://beui.dev/components/motion/input)
- *   is the address field and every contact field: catalog error SHAKE, destructive
- *   ring, reserved error line, and the success check whose path draws itself.
- *   Do not restyle those states to a navy border bump.
+ *   is the address field and every contact field: catalog pill, left affix,
+ *   error SHAKE, destructive ring, reserved error line, and the success check
+ *   whose path draws itself. Do not restyle those states to a navy border bump.
  *
- *   shadcn-input-group (components/ui/input-group) is the address chrome: pin
- *   addon, focus-visible ring, aria-invalid ring. The group owns the box.
+ *   shadcn-input-group stays imported on SellAddressField for catalog-install.
+ *   The visible address control is the MotionInput demo, not the group wrap.
  *
  *   beui-expanding-arrow-button (components/motion/expanding-arrow-button)
  *   is Value my home: accent tile that expands into the dotted-arrow trail.
@@ -242,7 +242,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
    * that — so what sits behind the overlay is still the street that was typed.
    */
   useEffect(() => {
-    if (pin) setSellStageFocus('pinned')
+    if (pin || addressLooksComplete(address)) setSellStageFocus('pinned')
     else if (address.trim().length >= 3) setSellStageFocus('typing')
     else setSellStageFocus('idle')
     return () => setSellStageFocus('idle')
