@@ -459,6 +459,10 @@ export type {
 export { V3Filter } from './V3Filter.client'
 export type { V3FilterProps } from './V3Filter.client'
 
+/** A labelled native select for a filter bar. V3Sheet is one field per step. */
+export { V3Select } from './V3Select'
+export type { V3SelectProps, V3SelectOption } from './V3Select'
+
 /** Two or three ways to look at one set. Controlled, and it renders NO panels —
  *  V3ChartSwitch renders every panel, which is wrong for a 600-link list. */
 export { V3Segmented } from './V3Segmented.client'

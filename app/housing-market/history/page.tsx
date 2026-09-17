@@ -10,9 +10,8 @@
  *
  * DROPPED: KbBreadcrumb, KbFooter, SmoothScrollProvider, the raw query
  * <form> / <input> / <button> plate (design-token lint in a new file),
- * H2 from primitives. The query is a V3Sheet that router.push-es the
- * same year/city/type/fireplace query string. min and max already on
- * the URL still apply.
+ * H2 from primitives, and the Step N of 4 V3Sheet wizard. The query is
+ * an inline filter bar that GET-submits year/city/type/fireplace/min/max.
  */
 
 import type { Metadata } from 'next'
@@ -43,7 +42,7 @@ import {
   V3SectionTracker,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
-import { HistoryFilterSheet } from './_v3/HistoryFilterSheet.client'
+import { HistoryFilterBar } from './_v3/HistoryFilterBar.client'
 
 export const revalidate = 3600
 
@@ -199,7 +198,7 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
             )}
             updated={computedLabel ? v3Text(computedLabel) : undefined}
             action={{
-              label: v3Text('Slice closed sales'),
+              label: v3Text('Filter these sales'),
               href: '#query',
               variant: 'primary',
             }}
@@ -222,7 +221,7 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
           />
         )}
 
-        <HistoryFilterSheet
+        <HistoryFilterBar
           year={year}
           city={city}
           propertyType={propertyType && 'ABCD'.includes(propertyType) ? propertyType : undefined}
