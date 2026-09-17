@@ -89,6 +89,7 @@ import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
 import { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
 import { nudgeRecommendedDownForHighDomActives } from '@/lib/pricing/active-dom-nudge'
+import { clampRecommendedToClosedBand } from '@/lib/pricing/recommended-in-band'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -1319,6 +1320,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       if (nudge.nudged) {
         pricing = { ...pricing, recommended: nudge.recommended, notes: [...pricing.notes, nudge.reason!] }
       }
+    }
+
+    // Matt 2026-09-17: Low/High = closed-comp band; Recommended must stay inside.
+    // Tip Ready refuses when Rec is outside Low/High (see recommended-in-band).
+    if (pricing) {
+      pricing = clampRecommendedToClosedBand(pricing)
     }
 
     const renderArgs = {

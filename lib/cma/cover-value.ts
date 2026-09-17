@@ -145,11 +145,13 @@ export function coverValueBlockHtml(a: CoverArgs): string {
 /**
  * Low · High · Recommended once — FlexMLS letter FLOW labels, Ryan craft.
  * Shared by immersive hero and letter cover so renderCmaHtml cannot skip the trio.
- * Uses list-range (conservative / highEnd), falling back to valueLow / valueHigh.
+ * Matt 2026-09-17: Low/High from closed-comp band (valueLow/valueHigh).
+ * Recommended must stay inside that band (Tip Ready refuse if outside).
+ * Falls back to list tiers only when the closed band is missing.
  */
 export function heroTrioHtml(p: CmaPricing, opts?: { singleClass?: string }): string {
-  const loRaw = p.conservative ?? p.valueLow ?? 0
-  const hiRaw = p.highEnd ?? p.valueHigh ?? 0
+  const loRaw = (p.valueLow != null && p.valueLow > 0 ? p.valueLow : p.conservative) ?? 0
+  const hiRaw = (p.valueHigh != null && p.valueHigh > 0 ? p.valueHigh : p.highEnd) ?? 0
   const low = Math.min(loRaw, hiRaw)
   const high = Math.max(loRaw, hiRaw)
   const rec = p.recommended

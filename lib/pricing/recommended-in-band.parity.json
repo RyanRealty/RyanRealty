@@ -1,0 +1,35 @@
+{
+  "kind": "picker-contract",
+  "id": "cma-recommended-in-closed-band",
+  "contracts": [
+    "low-high-from-closed-comp-band",
+    "recommended-must-stay-inside-low-high",
+    "tip-ready-refuse-when-rec-outside-band"
+  ],
+  "testFiles": [
+    "lib/pricing/recommended-in-band.contract.test.ts"
+  ],
+  "cases": [
+    {
+      "id": "canter-live-inside",
+      "recommended": 701000,
+      "valueLow": 675000,
+      "valueHigh": 705000,
+      "expectInside": true
+    },
+    {
+      "id": "rec-above-high-refuse",
+      "recommended": 716000,
+      "valueLow": 675000,
+      "valueHigh": 705000,
+      "expectInside": false
+    },
+    {
+      "id": "rec-below-low-refuse",
+      "recommended": 649000,
+      "valueLow": 675000,
+      "valueHigh": 705000,
+      "expectInside": false
+    }
+  ]
+}
