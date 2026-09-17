@@ -21,6 +21,10 @@
 
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import {
+  communityForPlaceToken,
+  isImpliedParentCity,
+} from '@/lib/search/exclusive-places'
 import { homesForSalePath } from '@/lib/slug'
 
 export type ParsedSearch = Record<string, string>
@@ -132,9 +136,10 @@ function buildMatchers(): CompiledMatcher[] {
   }
 
   // Resort labels before style voice so "Northwest Crossing" is not architecturalStyles=Northwest.
+  // Community only — do not auto-pin the registry parent city (Caldera → Sunriver).
   const cityNames = new Set(CITY_PATTERNS.map(([, n]) => n.toLowerCase()))
   for (const c of getAllResortCommunities()) {
-    const params = { subdivision: c.label, city: c.city }
+    const params = { subdivision: c.label }
     for (const phrase of [c.label, c.slug.replace(/-/g, ' ')]) {
       if (cityNames.has(phrase.toLowerCase())) continue
       add(phrase, { kind: 'params', params })
@@ -490,6 +495,12 @@ export function parseSearchQuery(raw: string): ParsedSearch {
     }
   }
 
+  // A community name plus its registry parent ("Caldera Springs, Sunriver")
+  // is one place, not two. Explicit Bend+Caldera (parent is Sunriver) stays.
+  if (out.city && out.subdivision && isImpliedParentCity(out.city, out.subdivision)) {
+    delete out.city
+  }
+
   // Inverted ranges make a search match nothing forever ("over 500k under
   // 400k"). Drop the smaller-than-floor ceiling rather than emit a dead
   // search (attack finding 2026-07-11).
@@ -588,11 +599,17 @@ export function searchHrefForQuery(raw: string): string {
   const { statusFilter, city, subdivision, ...rest } = parsed
   if (statusFilter === 'closed') rest.status = 'Sold'
   else if (statusFilter === 'pending') rest.status = 'Pending'
-  if (!(city && subdivision)) {
+  const community = subdivision ? communityForPlaceToken(subdivision) : null
+  const pathCity = city || community?.city
+  // SEO path may include the registry parent city. That city is hierarchy,
+  // not a second place filter — do not also write it as ?city=.
+  if (!(pathCity && subdivision)) {
     if (city) rest.city = city
     if (subdivision) rest.subdivision = subdivision
+  } else if (city && !isImpliedParentCity(city, subdivision)) {
+    rest.city = city
   }
   const qs = new URLSearchParams(rest).toString()
-  const base = city && subdivision ? homesForSalePath(city, subdivision) : '/homes-for-sale'
+  const base = pathCity && subdivision ? homesForSalePath(pathCity, subdivision) : '/homes-for-sale'
   return qs ? `${base}?${qs}` : base
 }

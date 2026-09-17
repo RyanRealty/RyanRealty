@@ -1,4 +1,5 @@
 import { coerceRegistryParams, searchFieldByKey } from '@/lib/search/field-registry'
+import { pathPlaceFilters } from '@/lib/search/exclusive-places'
 import { PUBLIC_SEARCH_STATUS_FILTERS } from '@/lib/listing-status-public'
 import { pickSearchFeatureFilters } from '@/lib/data'
 import { type AdvancedSort } from '../../actions/listings'
@@ -71,18 +72,23 @@ export function buildSearchFilters(args: {
   city: string | undefined
   decodedSubdivision: string | undefined
   neighborhood: string | undefined
-  preset: SearchPreset
+  preset: SearchPreset | null
 }) {
   // const bindings (not parameter destructures) so `preset` narrowing survives
   // into the presetChips closure below.
   const { sp, city, decodedSubdivision, neighborhood, preset } = args
+  // Path `/homes-for-sale/{city}/{community}` keeps the city segment for SEO.
+  // That city is hierarchy, not a second selected place.
+  const exclusive = neighborhood
+    ? { city: city || undefined, subdivision: decodedSubdivision }
+    : pathPlaceFilters(city, decodedSubdivision)
   const filterOptsBase = {
     // Registry fields (fireplace, shop, well water, appliances, …) — without
     // this spread the AllFiltersSheet/chips on this surface would claim filters
     // the query ignores (review finding 2026-07-11).
     ...pickSearchFeatureFilters(coerceRegistryParams(sp as Record<string, string | undefined>)),
-    city: city || undefined,
-    subdivision: decodedSubdivision,
+    city: exclusive.city,
+    subdivision: exclusive.subdivision,
     neighborhood,
     minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
     maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,

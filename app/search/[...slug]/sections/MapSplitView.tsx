@@ -5,6 +5,7 @@ import { getBuyingPreferences } from '../../../actions/buying-preferences'
 import { getCityBoundary } from '../../../actions/cities'
 import { getBoundaryGeoJSON } from '@/lib/data'
 import { resolveSearchPlaceBoundaryTarget } from '@/lib/search/resolve-search-place-boundary'
+import { pathPlaceFilters } from '@/lib/search/exclusive-places'
 import { getCommunityBySlug } from '../../../actions/communities'
 import { getListingsWithAdvanced, type AdvancedSort } from '../../../actions/listings'
 import { getViewportSearch, type SearchFilters as ViewportSearchFilters } from '@/app/actions/search'
@@ -119,10 +120,15 @@ export async function renderMapSplitView(props: {
   // Finest place ring: neighborhood district → community/subdivision → city.
   // Path-resolved Southern Crossing / Bend districts must draw the district
   // polygon, not the city outline.
+  const exclusivePlaces = neighborhoodName
+    ? { city: city || undefined, subdivision: decodedSubdivision || undefined }
+    : pathPlaceFilters(city, decodedSubdivision)
+  const filterCity = exclusivePlaces.city
+  const filterSubdivision = neighborhoodName ? undefined : exclusivePlaces.subdivision
   const placeBoundaryTarget = resolveSearchPlaceBoundaryTarget({
-    city,
+    city: filterCity,
     neighborhood: neighborhoodName,
-    subdivision: neighborhoodName ? undefined : decodedSubdivision,
+    subdivision: filterSubdivision,
   })
   const placeQuery =
     placeBoundaryTarget?.placeQuery ??
@@ -183,8 +189,8 @@ export async function renderMapSplitView(props: {
   // ride `subdivision` (MLS plat name) — that under-counts the area. The grid
   // already uses getListingsWithAdvanced({ neighborhood }). Same field here.
   const viewportFilters: ViewportSearchFilters = {
-    city: city || undefined,
-    subdivision: neighborhoodName ? undefined : decodedSubdivision || undefined,
+    city: filterCity,
+    subdivision: filterSubdivision,
     minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
     maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
     beds: sp.beds ? Number(sp.beds) : undefined,
@@ -281,8 +287,8 @@ export async function renderMapSplitView(props: {
 
   const filters: SearchFiltersInitial = {
     ...registryParamsFromUrl,
-    city: city ?? '',
-    subdivision: neighborhoodName ? '' : decodedSubdivision ?? '',
+    city: filterCity ?? '',
+    subdivision: filterSubdivision ?? '',
     neighborhood: neighborhoodName ?? '',
     minPrice: sp.minPrice ?? '',
     maxPrice: sp.maxPrice ?? '',
