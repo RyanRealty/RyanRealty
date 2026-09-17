@@ -11,5 +11,7 @@ describe('V3Chrome catalog Search', () => {
     expect(search).toContain("from '@/components/motion/morphing-search'")
     expect(search).toContain('MorphingSearch')
     expect(search).toContain('useSearchSuggest')
+    expect(search).toContain('overlayClassName="z-[150]"')
+    expect(search).toContain('suggestToMorphItem')
   })
 })

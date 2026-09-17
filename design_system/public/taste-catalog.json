@@ -179,6 +179,33 @@
     "beautifului:insight-cards": {
       "aliasOf": "beautifului-insight"
     },
+    "shadcn-checkbox": {
+      "add": "checkbox",
+      "file": "components/ui/checkbox.tsx",
+      "import": "@/components/ui/checkbox",
+      "house": "components/search/AllFiltersSheet.tsx",
+      "mustContain": [
+        "from \"lucide-react\"",
+        "rounded-sm",
+        "border-primary"
+      ]
+    },
+    "shadcn:checkbox": {
+      "aliasOf": "shadcn-checkbox"
+    },
+    "shadcn-field": {
+      "add": "field",
+      "file": "components/ui/field.tsx",
+      "import": "@/components/ui/field",
+      "house": "components/search/AllFiltersSheet.tsx",
+      "mustContain": [
+        "FieldGroup",
+        "data-slot=\"field\""
+      ]
+    },
+    "shadcn:field": {
+      "aliasOf": "shadcn-field"
+    },
     "shadcn-input": {
       "add": "input",
       "file": "components/ui/input.tsx",
@@ -2519,7 +2546,24 @@
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/command",
           "job": "Command search. Adapt into v3, do not paste radix chrome on the public map."
+        },
+        {
+          "id": "shadcn-checkbox",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/checkbox",
+          "job": "All-filters boolean rows as designed square checkboxes, not circular radios."
+        },
+        {
+          "id": "shadcn-field",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/field",
+          "job": "Field / FieldGroup checkbox rows in All filters."
         }
+      ],
+      "demoStates": [
+        "search-open=.v3-chrome__search [aria-haspopup=dialog]!click",
+        "morph-open=.srch-morph [aria-haspopup=dialog]!click",
+        "sheet-open=button[aria-label^='Open all filters']!click"
       ]
     },
     "sell": {

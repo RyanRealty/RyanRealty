@@ -23,6 +23,10 @@ import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease";
 import { useOnOpen } from "@/lib/hooks/use-on-open";
 import { useRowCursor } from "@/lib/hooks/use-row-cursor";
 import { cn } from "@/lib/utils";
+import {
+	iconOnlyPanelLayout,
+	overlayLayerZIndex,
+} from "@/components/motion/morphing-search-layout";
 
 // Keeps the Wallet Card feel with a little more time to read the morph.
 const SEARCH_MORPH: Transition = {
@@ -61,12 +65,8 @@ export interface MorphingSearchProps {
 	onSelect?: (item: MorphingSearchItem) => void;
 	className?: string;
 	/**
-	 * Classes for the portaled overlay layer (the click catcher, the morph
-	 * panel and the dialog all resolve against it). The default `z-50` sits
-	 * BELOW a sticky site header at z-index 100, so a search anchored inside
-	 * that header opened with its input row hidden behind the chrome and only
-	 * the result list showing (Matt, phone, 2026-09-16: "I cannot type in the
-	 * search"). A host whose header stacks above 50 passes its own z here.
+	 * Host z for the portaled overlay. Sticky chrome sits at 100; the catalog
+	 * default z-50 hid the typeable row. Chrome passes z-[150].
 	 */
 	overlayClassName?: string;
 }
@@ -111,6 +111,7 @@ export function MorphingSearch({
 		left: 16,
 		width: 288,
 	});
+	const [chromeBottom, setChromeBottom] = useState(56);
 	const open = controlledOpen ?? internalOpen;
 	const controlled = controlledOpen !== undefined;
 	const reduce = useReducedMotion();
@@ -137,7 +138,13 @@ export function MorphingSearch({
 		const rect = anchorRef.current?.getBoundingClientRect();
 		if (!rect || rect.width === 0) return;
 		setAnchorRect({ top: rect.top, left: rect.left, width: rect.width });
-	}, []);
+		if (iconOnly) {
+			const chrome = document.querySelector(".v3-chrome");
+			if (chrome instanceof HTMLElement) {
+				setChromeBottom(chrome.getBoundingClientRect().bottom);
+			}
+		}
+	}, [iconOnly]);
 
 	const openSearch = useCallback(() => {
 		measureAnchor();
@@ -355,26 +362,23 @@ export function MorphingSearch({
 
 	const shellLayoutId = `${uid}-shell`;
 	const listboxId = `${uid}-results`;
-	// A compact (icon-only) trigger sits at the far edge of a phone header, so a
-	// panel measured from the icon's left edge to the viewport was ~150px wide
-	// and hung off the right of a 375px screen. Icon-only opens as a full-width
-	// sheet instead: as wide as the viewport allows, clamped inside its gutters,
-	// still anchored to the trigger's top so the morph has an origin.
 	const viewportWidth = mounted ? window.innerWidth : 0;
-	const panelWidth = mounted
-		? iconOnly
-			? Math.max(anchorRect.width, Math.min(448, viewportWidth - 24))
-			: Math.max(
+	const iconLayout =
+		mounted && iconOnly
+			? iconOnlyPanelLayout(viewportWidth, chromeBottom)
+			: null;
+	const panelWidth = iconLayout
+		? iconLayout.width
+		: mounted
+			? Math.max(
 					anchorRect.width,
 					Math.min(448, viewportWidth - anchorRect.left - 16),
 				)
-		: anchorRect.width;
-	const panelLeft =
-		mounted && iconOnly
-			? Math.max(12, Math.min(anchorRect.left, viewportWidth - panelWidth - 12))
-			: anchorRect.left;
+			: anchorRect.width;
+	const panelLeft = iconLayout ? iconLayout.left : anchorRect.left;
+	const panelTop = iconLayout ? iconLayout.top : anchorRect.top;
 	const resultsHeight = mounted
-		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
+		? Math.max(96, Math.min(288, window.innerHeight - panelTop - 80))
 		: 288;
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,
@@ -392,10 +396,15 @@ export function MorphingSearch({
 				<div
 					aria-hidden={!open}
 					inert={!open}
+					data-v3-morph-overlay=""
 					className={cn(
 						"pointer-events-none fixed left-0 top-0 z-50 size-0",
 						overlayClassName,
 					)}
+					style={{
+						zIndex: overlayLayerZIndex(overlayClassName),
+						isolation: "isolate",
+					}}
 				>
 					<AnimatePresence
 						initial={false}
@@ -420,7 +429,7 @@ export function MorphingSearch({
 									data-v3-morph="panel"
 									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
 									style={{
-										top: anchorRect.top,
+										top: panelTop,
 										left: panelLeft,
 										width: panelWidth,
 										height: 48 + resultsHeight,
@@ -462,7 +471,7 @@ export function MorphingSearch({
 									data-v3-morph="dialog"
 									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
 									style={{
-										top: anchorRect.top,
+										top: panelTop,
 										left: panelLeft,
 										width: panelWidth,
 									}}
@@ -479,10 +488,6 @@ export function MorphingSearch({
 										<div className="flex h-10 min-w-0 flex-1 items-center">
 											<input
 												ref={inputRef}
-												// Focus during React's commit of the tap that opened
-												// the dialog, i.e. still inside the user gesture. The
-												// requestAnimationFrame focus below runs a frame later,
-												// which iOS treats as programmatic: no keyboard.
 												autoFocus
 												value={query}
 												onChange={(event) => updateQuery(event.target.value)}
@@ -500,9 +505,11 @@ export function MorphingSearch({
 												className="size-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
 											/>
 										</div>
-										<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
-											Esc
-										</kbd>
+										{iconOnly ? null : (
+											<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+												Esc
+											</kbd>
+										)}
 									</div>
 
 									<motion.div
@@ -616,52 +623,25 @@ export function MorphingSearch({
 				)}
 			>
 				{!open ? (
-					iconOnly ? (
-						<motion.button
-							ref={triggerRef}
-							key="morphing-search-trigger"
-							layoutId={shellLayoutId}
-							type="button"
-							aria-haspopup="dialog"
-							aria-expanded="false"
-							aria-label={placeholder}
-							data-v3-morph="trigger"
-							onClick={openSearch}
-							transition={morphTransition}
-							style={{
-								boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
-							}}
-							className="flex size-full cursor-pointer items-center justify-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-ring"
-						></motion.button>
-					) : (
-						<motion.div
-							key="morphing-search-trigger"
-							layoutId={shellLayoutId}
-							data-v3-morph="trigger"
-							transition={morphTransition}
-							style={{
-								boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
-							}}
-							className="flex size-full items-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-within:ring-2 focus-within:ring-ring"
-						>
-							{/* Real typeable field at rest — closed button was not accepting input. */}
-							<input
-								type="search"
-								value={query}
-								aria-label={placeholder}
-								aria-haspopup="dialog"
-								aria-expanded="false"
-								placeholder={placeholder}
-								autoComplete="off"
-								className="size-full cursor-text bg-transparent py-0 pl-9 pr-14 text-sm text-foreground outline-none placeholder:text-muted-foreground"
-								onFocus={openSearch}
-								onChange={(event) => {
-									updateQuery(event.target.value);
-									openSearch();
-								}}
-							/>
-						</motion.div>
-					)
+					<motion.button
+						ref={triggerRef}
+						key="morphing-search-trigger"
+						layoutId={shellLayoutId}
+						type="button"
+						aria-haspopup="dialog"
+						aria-expanded="false"
+						aria-label={placeholder}
+						data-v3-morph="trigger"
+						onClick={openSearch}
+						transition={morphTransition}
+						style={{
+							boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
+						}}
+						className={cn(
+							"flex size-full items-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-ring",
+							iconOnly ? "cursor-pointer justify-center" : "cursor-text px-3.5",
+						)}
+					></motion.button>
 				) : null}
 				<motion.div
 					aria-hidden="true"
@@ -685,10 +665,11 @@ export function MorphingSearch({
 					<Search className="size-4 shrink-0 text-muted-foreground" />
 					{iconOnly ? null : (
 						<>
-							{/* Placeholder lives on the typeable input; keep shortcut only. */}
-							<span className="min-w-0 flex-1" aria-hidden="true" />
+							<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+								{placeholder}
+							</span>
 							{shortcut ? (
-								<kbd className="pointer-events-none flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+								<kbd className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
 									{shortcut.toUpperCase()}
 								</kbd>
 							) : null}
