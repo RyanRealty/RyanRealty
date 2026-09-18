@@ -8,6 +8,11 @@
 
 .listing-detail {
   position: relative;
+  /* Listing-scoped: a 16:9 aerial in the short 28.75rem well is a postage
+     stamp in navy gutters (Grand Targhee 1440). Fill the first slice minus
+     chrome + tap-height strip. Other surfaces keep --v3-mosaic-h. */
+  --v3-mosaic-h: min(calc(100dvh - var(--v3-chrome-h) - 2.75rem), 50rem);
+  --v3-carousel-h: min(62dvh, 28rem);
   --navy: var(--v3-navy);
   --cream: var(--v3-cream);
   --navy-70: var(--v3-navy-70);
@@ -1007,9 +1012,9 @@
   gap: 2px;
   min-height: var(--listing-strip-h);
   padding: 0;
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  border-top: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  border-top: 1px solid color-mix(in srgb, var(--v3-cream) 20%, transparent);
 }
 
 .listing-strip__counter {
@@ -1017,7 +1022,7 @@
   align-items: center;
   min-height: var(--v3-tap);
   padding: 0 var(--v3-space-sm);
-  color: var(--v3-navy);
+  color: var(--v3-cream);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
@@ -1072,7 +1077,7 @@
 
 .listing-strip__thumb.is-current {
   opacity: 1;
-  border-bottom-color: var(--v3-navy);
+  border-bottom-color: var(--v3-cream);
 }
 
 .listing-strip[data-open='true'] {
@@ -1095,7 +1100,7 @@
   padding: 0 var(--v3-space-sm);
   border: 0;
   background: transparent;
-  color: var(--v3-navy);
+  color: var(--v3-cream);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
@@ -1105,17 +1110,17 @@
 }
 
 .listing-strip__tool--primary {
-  background: color-mix(in srgb, var(--v3-navy) 8%, var(--v3-cream));
+  background: color-mix(in srgb, var(--v3-cream) 12%, var(--v3-navy));
 }
 
 .listing-strip__tool.is-on {
-  background: var(--v3-navy);
-  color: var(--v3-cream);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
 }
 
 .listing-strip__tool:hover,
 .listing-strip__more:hover {
-  background: color-mix(in srgb, var(--v3-navy) 12%, var(--v3-cream));
+  background: color-mix(in srgb, var(--v3-cream) 18%, var(--v3-navy));
 }
 
 .listing-strip__tool.is-on:hover {

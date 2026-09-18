@@ -7,7 +7,8 @@
  * Catalog source: shadcn Breadcrumb (`components/ui/breadcrumb.tsx`). House
  * paint stays this file + ./V3Breadcrumb.css. Long trails collapse to
  * first / … / current so a listing path (Bend / neighborhood / plat / street)
- * does not wrap into a cream band.
+ * does not wrap into a cream band. Overlay (listing hero) compact to
+ * … / current — ancestors live in the disclosure.
  *
  * The trail is REQUIRED. A breadcrumb with no trail is a strip that says
  * nothing, and the ancestors it names are the continuity the IA lock asks the
@@ -179,9 +180,16 @@ export function V3Breadcrumb({
   })
 
   const collapse = rungs.length >= 3
+  // Overlay (listing hero) hides the first ancestor too: … / address. A wide
+  // aerial with Bend / … / street still paints a chrome row on the photograph.
+  const overlayCompact = Boolean(overlay && collapse)
   const head = rungs[0]
   const current = rungs[lastIndex]
-  const middle = collapse ? rungs.slice(1, lastIndex) : []
+  const middle = overlayCompact
+    ? rungs.slice(0, lastIndex)
+    : collapse
+      ? rungs.slice(1, lastIndex)
+      : []
   const visible = collapse && head && current ? [head, current] : rungs
 
   const name = text(ariaLabel) ?? 'Breadcrumb'
@@ -197,15 +205,18 @@ export function V3Breadcrumb({
         clearsFixedHeader && 'v3-breadcrumb--below-nav',
         overlay && 'v3-breadcrumb--overlay',
         collapse && 'v3-breadcrumb--collapsed',
+        overlayCompact && 'v3-breadcrumb--overlay-compact',
         className,
       )}
     >
       <BreadcrumbList className="v3-breadcrumb__list">
         {collapse && head && current ? (
           <>
-            <BreadcrumbItem className="v3-breadcrumb__item">
-              <CrumbMark rung={head} />
-            </BreadcrumbItem>
+            {overlayCompact ? null : (
+              <BreadcrumbItem className="v3-breadcrumb__item">
+                <CrumbMark rung={head} />
+              </BreadcrumbItem>
+            )}
             {middle.length > 0 ? (
               <BreadcrumbItem className="v3-breadcrumb__item v3-breadcrumb__item--more">
                 <V3BreadcrumbCollapse crumbs={middle} />

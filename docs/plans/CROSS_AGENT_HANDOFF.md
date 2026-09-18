@@ -1,3 +1,11 @@
+# Current — 2026-09-18 (P0 Grand Targhee listing hero follow-up)
+
+Surface: Cursor cloud `bc-a35cf13b-5096-5143-a17f-bd6f8b801440`, branch `cursor/listing-hero-grand-targhee-1440`. PR #288. PR only — Cos Mini lands. Do not merge. HOLD owner email. Do not twin SITE-121 morph.
+
+- **Live densify FAIL.** `06ae550d7` READY on ryan-realty.com (`dpl_HEaMrb6FL1TtSausmcQ7icTFyGuE`). Overlay crumbs landed (Bend / More / 60923 Grand Targhee, 44px). 1440 hero still postage-stamp: mosaic 460×1440 navy gutters around 16:9 aerial; cream filmstrip remains.
+- **Follow-up.** Overlay compact `… / address`; listing mosaic `100dvh` height; filmstrip navy. Shared `V3Breadcrumb` + listing hero CSS. `ci:listing-fold-density` + `--ship` refuse short mosaic / cream strip. V3Chrome untouched.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-18 (P0 place inventory craft)
 
 Surface: Cursor cloud, branch `cursor/place-inventory-craft-60a4`. PR only — Cos Mini lands Tip Ready. Do not merge. HOLD owner email.
@@ -7,14 +15,6 @@ Surface: Cursor cloud, branch `cursor/place-inventory-craft-60a4`. PR only — C
 - **Voice.** `placeHomesForSaleHeading` + `EVERY_HOME_LECTURE_REFUSE`. No lecture H1.
 - **Proof.** `/subdivisions/parkside-place-phase-1`, then `/communities/tetherow`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
-
-# Current — 2026-09-17 (listing fold density — Tip Ready)
-
-Surface: Cursor cloud, branch `cursor/listing-fold-whitespace-e937`. PR #285. Cos Mini landing onto main after puppeteer hotfix.
-
-# Current — 2026-09-17 (listing fold density — Tip Ready)
-
-Surface: Cursor cloud, branch `cursor/listing-fold-whitespace-e937`. PR #285. PR only — Cos Mini lands. Do not merge.
 
 # Current — 2026-09-17 (P0 listing fold whitespace — breadcrumb + mosaic)
 

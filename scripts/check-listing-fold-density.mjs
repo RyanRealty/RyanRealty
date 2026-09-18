@@ -22,5 +22,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${LISTING_FOLD_DENSITY_GATE} — OK: crumb collapses at 3, below-nav is 2xs, listing overlay on mosaic, navy well, 2.75rem thumbs.`,
+  `${LISTING_FOLD_DENSITY_GATE} — OK: crumb collapses at 3, overlay compact … / current, viewport mosaic, navy well + strip, 2.75rem thumbs.`,
 )

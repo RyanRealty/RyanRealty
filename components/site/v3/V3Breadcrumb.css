@@ -154,7 +154,11 @@
 }
 
 .v3.v3-breadcrumb--on-media.v3-breadcrumb--overlay {
-  background: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--v3-navy) 58%, transparent),
+    transparent
+  );
 }
 
 .v3-breadcrumb--on-media .v3-breadcrumb__link,

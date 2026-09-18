@@ -21,6 +21,8 @@ describe('V3Breadcrumb collapse + listing fold density', () => {
     expect(SRC).toMatch(/from '@\/components\/ui\/breadcrumb'/)
     expect(SRC).toContain('V3BreadcrumbCollapse')
     expect(SRC).toContain('rungs.length >= 3')
+    expect(SRC).toContain('overlayCompact')
+    expect(SRC).toMatch(/rungs\.slice\(\s*0\s*,\s*lastIndex\s*\)/)
     expect(SRC).toContain('overlay')
     expect(COLLAPSE).toMatch(/from '@\/components\/ui\/breadcrumb'/)
     expect(COLLAPSE).toContain('BreadcrumbEllipsis')
@@ -42,6 +44,8 @@ describe('V3Breadcrumb collapse + listing fold density', () => {
     expect(LISTING_CSS).toMatch(/\.listing-mosaic\s*\{[^}]*background:\s*var\(--v3-navy\)/)
     expect(LISTING_CSS).toMatch(/\.listing-frame__media\s*\{[^}]*background:\s*var\(--v3-navy\)/)
     expect(LISTING_CSS).toMatch(/--listing-strip-thumb:\s*2\.75rem/)
+    expect(LISTING_CSS).toMatch(/--v3-mosaic-h:\s*min\(calc\(100dvh/)
+    expect(LISTING_CSS).toMatch(/\.listing-strip\s*\{[^}]*background:\s*var\(--v3-navy\)/)
     expect(LISTING_CSS).toMatch(/\.listing-mosaic__slide img\s*\{[\s\S]*?object-fit:\s*contain/)
     expect(LISTING_CSS).not.toMatch(
       /\.listing-mosaic__slide img,\s*\n\.listing-mosaic__slide video[\s\S]{0,120}object-fit:\s*cover/,
