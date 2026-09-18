@@ -17,7 +17,7 @@
  * inspect the winner. Capture does not live on this route.
  *
  * Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount
- * it. V3Breadcrumb belowNav={false}. V3Footer outside <main>.
+ * it. V3Breadcrumb uses the sitewide name-only trail. V3Footer outside <main>.
  *
  * KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root,
  * kb.css, navy header band.
@@ -567,10 +567,7 @@ export default async function ComparePage({
           ]}
         />
 
-        <V3Breadcrumb
-          belowNav={false}
-          trail={[{ label: 'Home', href: '/' }, { label: 'Compare homes' }]}
-        />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Compare homes' }]} />
 
         {/* THE H1 SITS INSIDE THE OPENING SECTION, not in a bare <header>
             beside it. The bare header had no measure and no gutter of its own,

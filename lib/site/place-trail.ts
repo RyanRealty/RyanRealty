@@ -20,6 +20,37 @@ export type PlaceCrumb = {
   href?: string
 }
 
+/** Grain-directory ancestors. Current-page label stays even when it matches. */
+const GRAIN_INDEX_LABELS = new Set([
+  'home',
+  'homes for sale',
+  'cities',
+  'communities',
+  'neighborhoods',
+  'subdivisions',
+])
+
+/**
+ * Sitewide visible trail (Matt LOCK 2026-09-18): name-only, same density as
+ * place pages. Home is never a crumb. Grain-index ancestors (Cities /
+ * Communities / Neighborhoods / Subdivisions / Homes for sale) drop so a
+ * search or team page does not grow a different chrome than /cities/bend.
+ * JSON-LD may still list Home; this is the painted trail only.
+ */
+export function nameOnlyCrumbs<T extends { label: string; href?: string }>(
+  trail: readonly T[],
+): T[] {
+  const named = trail.filter((crumb) => Boolean(crumb?.label?.trim()))
+  if (named.length === 0) return []
+  const last = named.length - 1
+  return named.filter((crumb, index) => {
+    const label = crumb.label.trim().toLowerCase()
+    if (label === 'home') return false
+    if (index === last) return true
+    return !GRAIN_INDEX_LABELS.has(label)
+  })
+}
+
 export type PlaceTrailNode = {
   label: string
   slug: string

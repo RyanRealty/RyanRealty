@@ -1,0 +1,40 @@
+{
+  "kind": "hierarchy-naming",
+  "id": "site-128-hierarchy-naming",
+  "lockedAt": "2026-09-18",
+  "lock": "SITE-128 Tip Ready #4 — hierarchy naming + breadcrumb sameness",
+  "dependsOn": {
+    "tip": "SITE-128 Tip Ready #2 map hierarchy on first-look main",
+    "sha": "762952409",
+    "note": "Tipped against origin/main. PR #310 amenity #3 (99ba8b0a6) is Tip Ready awaiting Mini-land — Cos Mini-lands #3 first. This tip does not stack on 99ba8b0a6."
+  },
+  "locks": [
+    "community-not-neighborhood",
+    "name-only-child-cards",
+    "plat-kind-subdivision",
+    "twin-slug-collapse",
+    "breadcrumb-sameness",
+    "place-craft-first-look-refuse",
+    "map-hierarchy-lock",
+    "amenity-layers-intact"
+  ],
+  "gate": "ci:hierarchy-naming",
+  "ship": "node scripts/lib/taste-receipt.mjs --ship lib/place/hierarchy-naming.parity.json",
+  "evidencePath": {
+    "communityNotNeighborhood": "Atlas child plats are kind:subdivision (not neighborhood + Subdivision label). City rail heading is Communities, not Communities and subdivisions. Quiet term is Names the MLS uses here — not Subdivisions in X.",
+    "nameOnlyChildCards": "City / community / neighborhood children go through nameOnlyChildEntries. V3PlaceIndex nameOnly. No Subdivisions-in / Neighborhoods-in list headings.",
+    "twinSlugCollapse": "2+ token suffix twins collapse to the longer slug (river-woods ⊂ deschutes-river-woods). Single-token suffix is not a twin.",
+    "breadcrumbSameness": "V3Breadcrumb runs nameOnlyCrumbs: no Home, no grain-index ancestors. Collapse stays 3+ / overlayCompact. Search and compare use the default surface density (no belowNav={false}).",
+    "placeCraftFirstLook": "ci:place-craft + --ship lib/place/place-craft.parity.json still refuse without named-peer first-look shots.",
+    "mapHierarchyLock": "ci:map-hierarchy subject-polygon-only + child-select zoom stays.",
+    "amenityLayersIntact": "Subdivision / place Atlas still pass amenities={amenityLayers}. This tip does not invent geom."
+  },
+  "testFiles": [
+    "lib/place/child-rings.test.ts",
+    "lib/explore/nearby-place-peers.test.ts",
+    "lib/explore/place-hierarchy-crumb.test.ts",
+    "lib/site/place-trail.test.ts",
+    "app/communities/[slug]/_v3/place-knowledge.test.ts",
+    "scripts/__tests__/hierarchy-naming.test.mjs"
+  ]
+}

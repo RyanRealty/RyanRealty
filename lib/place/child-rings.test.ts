@@ -55,7 +55,7 @@ describe('regionsFromChildCells', () => {
     const [region] = regionsFromChildCells([cell()])
     expect(region).toMatchObject({
       id: 'subdivision:sunrise-village',
-      kind: 'neighborhood',
+      kind: 'subdivision',
       kindLabel: 'Subdivision',
       name: 'Sunrise Village',
       href: '/subdivisions/sunrise-village',

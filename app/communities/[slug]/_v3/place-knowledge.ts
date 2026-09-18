@@ -89,7 +89,7 @@ function childPlatItems(input: {
   return [
     {
       kind: 'prose',
-      term: `Subdivisions in ${input.name}`,
+      term: 'Names the MLS uses here',
       body: input.countIsAliasAware
         ? `The MLS files these homes under more than one subdivision name, and every one of them counts toward the figures above.`
         : `The MLS files these homes under more than one subdivision name.`,

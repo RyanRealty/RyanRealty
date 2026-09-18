@@ -135,6 +135,7 @@ import {
   publishPlaceTypeCards,
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
+import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { overlaysFromRegions } from '@/lib/place/child-rings'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertsStrip } from './_v3/CityAlertSheet.client'
@@ -385,7 +386,7 @@ async function renderCityDetail({ params }: Props) {
                 [...cells]
                   .sort((a, b) => b.activeHomes - a.activeHomes)
                   .slice(0, 60)
-                  .map((cell): AtlasRegion => ({ id: `subdivision:${cell.slug}`, kind: 'neighborhood', kindLabel: 'Subdivision', name: atlasRegionName(cell.label) ?? cell.label, href: `/subdivisions/${cell.slug}`, geometry: cell.geometry })),
+                  .map((cell): AtlasRegion => ({ id: `subdivision:${cell.slug}`, kind: 'subdivision', kindLabel: 'Subdivision', name: atlasRegionName(cell.label) ?? cell.label, href: `/subdivisions/${cell.slug}`, geometry: cell.geometry })),
               ),
               [] as (AtlasRegion | null)[],
               6000,
@@ -420,9 +421,11 @@ async function renderCityDetail({ params }: Props) {
    * #neighborhoods. A–Z `/subdivisions` is the directory. Atlas-drawn plats
    * (non-Bend cities) stay as name-only cards after those bars.
    */
-  const childPlatEntries: V3PlaceIndexEntry[] = atlasRegions
-    .filter((r) => typeof r.href === 'string' && r.href.startsWith('/subdivisions/'))
-    .map((r) => ({ name: r.name, href: r.href as string }))
+  const childPlatEntries: V3PlaceIndexEntry[] = nameOnlyChildEntries([
+    atlasRegions
+      .filter((r) => typeof r.href === 'string' && r.href.startsWith('/subdivisions/'))
+      .map((r) => ({ name: r.name, href: r.href as string })),
+  ])
   const libraryHero = await withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero')
   const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
   const typeCovers = await withTimeoutFallback(
@@ -1027,7 +1030,7 @@ async function renderCityDetail({ params }: Props) {
             id="communities"
             layout="places"
             eyebrow={v3Text(`${cityName} · Communities`)}
-            heading={v3Text('Communities and subdivisions')}
+            heading={v3Text('Communities')}
             rows={[firstRail, ...restRail]}
             source={v3Text(PLACE_COUNT_TRACE)}
             action={{ label: v3Text('Every community'), href: '/communities' }}

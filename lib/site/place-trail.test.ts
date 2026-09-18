@@ -4,6 +4,7 @@ import {
   communityHref,
   communityPageTrail,
   listingPlaceTrail,
+  nameOnlyCrumbs,
   neighborhoodPageTrail,
   subdivisionPageTrail,
 } from './place-trail'
@@ -210,5 +211,28 @@ describe('listingPlaceTrail', () => {
         expect(href).not.toBe('/communities')
       }
     }
+  })
+})
+
+describe('nameOnlyCrumbs', () => {
+  it('strips Home and grain-index ancestors, keeps the current page', () => {
+    expect(
+      nameOnlyCrumbs([
+        { label: 'Home', href: '/' },
+        { label: 'Homes for sale', href: '/homes-for-sale' },
+        { label: 'Bend', href: '/homes-for-sale/bend' },
+        { label: 'Open houses' },
+      ]),
+    ).toEqual([
+      { label: 'Bend', href: '/homes-for-sale/bend' },
+      { label: 'Open houses' },
+    ])
+    expect(
+      nameOnlyCrumbs([
+        { label: 'Home', href: '/' },
+        { label: 'Communities' },
+      ]),
+    ).toEqual([{ label: 'Communities' }])
+    expect(nameOnlyCrumbs([{ label: 'Bend' }])).toEqual([{ label: 'Bend' }])
   })
 })
