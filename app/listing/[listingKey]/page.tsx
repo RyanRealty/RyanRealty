@@ -39,7 +39,8 @@ import { outOfAreaListingPolicy } from '@/lib/data/listings/service-area'
 import { getOutOfAreaCity } from '@/lib/data/geo/getOutOfAreaCities'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
-import { homesForSalePath, listingCanonicalHref, subdivisionListingsPath } from '@/lib/slug'
+import { homesForSalePath, listingCanonicalHref } from '@/lib/slug'
+import { listingKeepExploringDoor } from '@/lib/listing/listing-keep-exploring'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import {
   ListingUnavailable,
@@ -327,14 +328,21 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const outOfAreaNotice = buildListingOutOfAreaNotice(outOfArea, outOfAreaCityRow !== null)
 
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
-  const featuredGeoName =
-    placeContext.curatedCommunity?.label ?? marketGeo?.name ?? listing.city ?? 'Nearby'
-  const featuredViewAllHref =
-    placeContext.curatedCommunity
-      ? `/communities/${placeContext.curatedCommunity.slug}`
-      : marketGeo && marketGeo.geoType !== 'city'
-        ? subdivisionListingsPath(listing.city, marketGeo.name)
-        : homesForSalePath(listing.city)
+  const aliasLadder = listingAliasPlatLadder({
+    mlsSubdivisionName: listing.subdivisionName,
+    boundarySubdivision: listing.boundarySubdivision,
+  })
+  const keepExploring = listingKeepExploringDoor({
+    subdivision: placeContext.subdivision,
+    aliasPlat: aliasLadder.plat,
+    aliasParent: aliasLadder.parent,
+    curatedCommunity: placeContext.curatedCommunity,
+    neighborhood: placeContext.neighborhood,
+    city: placeContext.city,
+    boundarySubdivision: listing.boundarySubdivision,
+  })
+  const featuredGeoName = keepExploring.name
+  const featuredViewAllHref = keepExploring.href
 
   const platDocuments = await withTimeoutFallback(
     getPlaceDocumentsForListing(listing.boundarySubdivision),
@@ -571,10 +579,6 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const street = listingMlsStreetLine(listing)
   const listingHref = listingCanonicalHref(listing)
 
-  const aliasLadder = listingAliasPlatLadder({
-    mlsSubdivisionName: listing.subdivisionName,
-    boundarySubdivision: listing.boundarySubdivision,
-  })
   const breadcrumbs = listingPlaceTrail({
     city: listing.city && listing.citySlug ? { label: listing.city, slug: listing.citySlug } : null,
     neighborhood: placeContext.neighborhood,

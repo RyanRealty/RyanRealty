@@ -1,3 +1,12 @@
+# Current — 2026-09-18 (SITE-128 craft #4 — listing keep-exploring)
+
+Surface: Cursor cloud `bc-9a2f4151-2468-559c-b8f5-687187e3279e`, branch `cursor/listing-keep-exploring-279e`. Tip pending push. Draft PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **View more.** Similar-homes door is `listingKeepExploringDoor`: recorded plat / visitor subdivision via `subdivisionHref` (`/subdivisions/…`). Never `/homes-for-sale` or city-only search. Community / neighborhood / city place pages are fallbacks only.
+- **Plat chip leak.** Listing Atlas no longer slices 60/80 GIS plats into chips. City frame = subject plat only. Local frame = subject + visitor siblings, cap 7 so frame + plats stay ≤ CHIP_FOLD_AT 8. `+52 more` at 375 cannot return.
+- **Not this pass.** Hierarchy tip `8007cbd62` (listingPlaceTrail) untouched. Amenity / ListingAroundHere untouched. City fold clustering untouched.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-18 (SITE-128 rematch — desktop fold stage lock)
 
 Surface: Cursor cloud, branch `cursor/site-128-desktop-cluster-4748`. Tip `242dd3617`. Draft PR #294. PR only — Cos Mini lands. Do not merge. HOLD owner email.

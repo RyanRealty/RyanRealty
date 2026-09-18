@@ -30,6 +30,7 @@
     "ci:atlas-price-pins",
     "ci:listing-figure-publish",
     "ci:listing-fold-density",
+    "ci:listing-keep-exploring",
     "ci:listing-key-lookup",
     "ci:listing-offmarket-index",
     "ci:listing-photo-alt",
@@ -1315,6 +1316,15 @@
       "design_system/ryan-realty/ui_kits/listing-detail/parity.json",
       "scripts/check-listing-fold-density.mjs",
       "scripts/lib/listing-fold-density.mjs",
+      "scripts/lib/taste-receipt.mjs"
+    ],
+    "ci:listing-keep-exploring": [
+      "app/listing/**",
+      "components/site/listing-detail/**",
+      "lib/listing/listing-keep-exploring.ts",
+      "components/site/v3/V3Atlas.client.tsx",
+      "scripts/check-listing-keep-exploring.mjs",
+      "scripts/lib/listing-keep-exploring.mjs",
       "scripts/lib/taste-receipt.mjs"
     ],
     "ci:place-section-depth": [
