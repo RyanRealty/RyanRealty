@@ -798,9 +798,14 @@
    figures sit in a Now column with the same row height as a destination. */
 .v3-chrome__panel--mega {
   width: max-content;
-  max-width: min(96vw, 64rem);
+  max-width: min(92vw, 48rem);
   min-width: min(22rem, 92vw);
   padding: var(--v3-space-md) var(--v3-space-md) var(--v3-space-sm);
+  transform: translateX(var(--v3-chrome-mega-shift, 0px)) translateY(var(--v3-travel));
+}
+
+.v3.v3-chrome .v3-chrome__group.is-open .v3-chrome__panel--mega {
+  transform: translateX(var(--v3-chrome-mega-shift, 0px));
 }
 
 .v3-chrome__panel--end {
@@ -810,7 +815,7 @@
 
 .v3-chrome__mega {
   display: grid;
-  grid-template-columns: repeat(var(--v3-chrome-mega-cols, 2), minmax(11.5rem, 1fr));
+  grid-template-columns: repeat(var(--v3-chrome-mega-cols, 2), minmax(10.5rem, 13.25rem));
   gap: var(--v3-space-xs) var(--v3-space-md);
   min-width: 0;
 }

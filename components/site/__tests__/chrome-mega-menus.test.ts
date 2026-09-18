@@ -21,7 +21,7 @@ describe('V3Chrome mega-menus — all five, one language', () => {
   it('locks dense packed columns: real padding, explicit tracks, no auto-fit leftovers', () => {
     expect(CHROME_CSS).toContain('.v3-chrome__panel--mega')
     expect(CHROME_CSS).toContain('padding: var(--v3-space-md) var(--v3-space-md) var(--v3-space-sm)')
-    expect(CHROME_CSS).toContain('repeat(var(--v3-chrome-mega-cols, 2), minmax(11.5rem, 1fr))')
+    expect(CHROME_CSS).toContain('repeat(var(--v3-chrome-mega-cols, 2), minmax(10.5rem, 13.25rem))')
     expect(CHROME_CSS).not.toMatch(/repeat\(\s*auto-fit/)
     expect(CHROME_CSS).not.toContain('v3-chrome__panel--places')
     expect(CHROME_CSS).not.toContain('v3-chrome__places-mega')
