@@ -33,11 +33,15 @@ import {
 } from '@/lib/maps/v3-basemap'
 import {
   ringLabelAnchor,
+  SUBJECT_RING_CHIP_Z,
   SUBJECT_RING_HALO_Z,
   SUBJECT_RING_INK_Z,
   SUBJECT_RING_Z_UNDER_PILLS,
   subjectRingHaloWeight,
   subjectRingInkWeight,
+  subjectRingIslandFill,
+  subjectRingIsKnot,
+  subjectRingKeepFittedZoom,
   subjectRingLabel,
 } from '@/lib/maps/subject-ring'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
@@ -682,6 +686,7 @@ type RingPath = { lat: number; lng: number }[]
 interface SubjectRingOverlayHandle {
   setMap(map: google.maps.Map | null): void
   update(opts: { paths: RingPath[]; label: string | null; inkWeight: number }): void
+  pixelBox(): { width: number; height: number }
 }
 
 type SubjectRingOverlayCtor = new (opts: {
@@ -694,19 +699,24 @@ type SubjectRingOverlayCtor = new (opts: {
 let SubjectRingOverlayClass: SubjectRingOverlayCtor | null = null
 
 /**
- * Cream halo + navy ink + place chip in overlayMouseTarget at z 0.
- * Pills stay at z 1. Same recorded paths as the Polygon — no invented geom.
- * Atlas draws every outline twice so it reads over the field; Cos rematch
- * had strokeWeight 8 on the tile layer only and lost Bend under the pile.
+ * Cream halo + navy ink on overlayLayer (under $ pills). Place chip on
+ * overlayMouseTarget at z 3 so "Bend" reads at the north of the fitted
+ * ring. Same recorded paths as the Polygon — no invented geom.
+ *
+ * Live rematch FAIL: SVG was 87×99 because the camera was forced to z9
+ * (and this overlay was torn down/re-added mid-fit). draw() uses the
+ * current projection only — scale follows the fitted island, not a knot.
  */
 function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
   if (SubjectRingOverlayClass) return SubjectRingOverlayClass
 
   class SubjectRingOverlay extends google.maps.OverlayView {
-    private root: HTMLDivElement | null = null
+    private ringRoot: HTMLDivElement | null = null
+    private chipRoot: HTMLDivElement | null = null
     private paths: RingPath[]
     private label: string | null
     private inkWeight: number
+    private lastBox: { width: number; height: number } = { width: 0, height: 0 }
 
     constructor(opts: {
       map?: google.maps.Map | null
@@ -728,20 +738,36 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
       this.draw()
     }
 
+    pixelBox() {
+      return this.lastBox
+    }
+
     onAdd() {
-      const root = document.createElement('div')
-      root.dataset.subjectRing = 'true'
-      root.style.position = 'absolute'
-      root.style.pointerEvents = 'none'
-      root.style.zIndex = String(SUBJECT_RING_Z_UNDER_PILLS)
-      this.getPanes()?.overlayMouseTarget.appendChild(root)
-      this.root = root
+      const panes = this.getPanes()
+      const ring = document.createElement('div')
+      ring.dataset.subjectRing = 'true'
+      ring.style.position = 'absolute'
+      ring.style.pointerEvents = 'none'
+      ring.style.zIndex = String(SUBJECT_RING_Z_UNDER_PILLS)
+      ring.style.transform = 'none'
+      panes?.overlayLayer.appendChild(ring)
+      this.ringRoot = ring
+
+      const chip = document.createElement('div')
+      chip.dataset.subjectRingChipHost = 'true'
+      chip.style.position = 'absolute'
+      chip.style.pointerEvents = 'none'
+      chip.style.zIndex = String(SUBJECT_RING_CHIP_Z)
+      chip.style.transform = 'none'
+      panes?.overlayMouseTarget.appendChild(chip)
+      this.chipRoot = chip
     }
 
     draw() {
-      const root = this.root
+      const ringRoot = this.ringRoot
+      const chipRoot = this.chipRoot
       const proj = this.getProjection()
-      if (!root || !proj) return
+      if (!ringRoot || !proj) return
       const halo = subjectRingHaloWeight(this.inkWeight)
       const pixels = this.paths.map((path) =>
         path
@@ -750,7 +776,9 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
       )
       const all = pixels.flat()
       if (all.length < 2) {
-        root.replaceChildren()
+        this.lastBox = { width: 0, height: 0 }
+        ringRoot.replaceChildren()
+        chipRoot?.replaceChildren()
         return
       }
       const xs = all.map((p) => p.x)
@@ -759,10 +787,11 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
       const minY = Math.min(...ys) - halo
       const width = Math.max(...xs) - minX + halo
       const height = Math.max(...ys) - minY + halo
-      root.style.left = `${minX}px`
-      root.style.top = `${minY}px`
-      root.style.width = `${width}px`
-      root.style.height = `${height}px`
+      this.lastBox = { width, height }
+      ringRoot.style.left = `${minX}px`
+      ringRoot.style.top = `${minY}px`
+      ringRoot.style.width = `${width}px`
+      ringRoot.style.height = `${height}px`
 
       const d = pixels
         .map((path) => {
@@ -783,6 +812,8 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
       svg.setAttribute('aria-hidden', 'true')
       svg.style.display = 'block'
       svg.style.overflow = 'visible'
+      svg.style.maxWidth = 'none'
+      svg.style.maxHeight = 'none'
 
       const haloPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
       haloPath.setAttribute('d', d)
@@ -802,8 +833,21 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
       inkPath.setAttribute('stroke-linecap', 'round')
 
       svg.append(haloPath, inkPath)
-      const kids: Node[] = [svg]
+      ringRoot.replaceChildren(svg)
+      const mapDiv = this.getMap()?.getDiv()
+      if (mapDiv) {
+        const island = { width: mapDiv.clientWidth, height: mapDiv.clientHeight }
+        const fill = subjectRingIslandFill(island, this.lastBox)
+        mapDiv.dataset.placeLookFill = fill.toFixed(2)
+        mapDiv.dataset.placeLookRing = subjectRingIsKnot(island, this.lastBox) ? 'refit' : 'in-view'
+        mapDiv.dataset.placeLookZoom = String(this.getMap()?.getZoom() ?? '')
+      }
 
+      if (!chipRoot) return
+      chipRoot.style.left = `${minX}px`
+      chipRoot.style.top = `${minY}px`
+      chipRoot.style.width = `${width}px`
+      chipRoot.style.height = `${height}px`
       const labelText = this.label
       const anchor = labelText ? ringLabelAnchor(this.paths) : null
       const anchorPx = anchor
@@ -817,6 +861,7 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
         chip.style.left = `${anchorPx.x - minX}px`
         chip.style.top = `${anchorPx.y - minY}px`
         chip.style.transform = 'translate(-50%, -50%)'
+        chip.style.zIndex = String(SUBJECT_RING_CHIP_Z)
         chip.style.background = MAP_CREAM
         chip.style.color = MAP_NAVY
         chip.style.border = `1.5px solid ${MAP_NAVY}`
@@ -829,14 +874,17 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
         chip.style.lineHeight = '1.2'
         chip.style.whiteSpace = 'nowrap'
         chip.style.pointerEvents = 'none'
-        kids.push(chip)
+        chipRoot.replaceChildren(chip)
+      } else {
+        chipRoot.replaceChildren()
       }
-      root.replaceChildren(...kids)
     }
 
     onRemove() {
-      this.root?.remove()
-      this.root = null
+      this.ringRoot?.remove()
+      this.chipRoot?.remove()
+      this.ringRoot = null
+      this.chipRoot = null
     }
   }
 
@@ -1461,42 +1509,53 @@ export default function SearchMapClustered({
       }
       map.fitBounds(bb, v3SubjectRingPadding(div))
       google.maps.event.addListenerOnce(map, 'idle', () => {
-        const z = map.getZoom()
-        const h = div?.clientHeight ?? 0
-        if (typeof z === 'number' && z > 14) map.setZoom(14)
+        const kept = subjectRingKeepFittedZoom(map.getZoom())
+        if (kept != null && kept !== map.getZoom()) map.setZoom(kept)
         const view = map.getBounds()
         const ne = bb.getNorthEast()
         const sw = bb.getSouthWest()
         const ringInView = Boolean(view && view.contains(ne) && view.contains(sw))
-        // Short phone island: z10 still sits inside the city and paints the
-        // west edge as a line through the pin pile. Pull out so the recorded
-        // outline reads as a closed ring (SITE-128 @375 rematch).
-        if (h > 0 && h < 260) {
+        // Short phone island: if the recorded corners are still clipped,
+        // fitBounds again. Do NOT setZoom(9) — that cancelled the async
+        // fit and left Bend as an 87×99 knot under the $ pile.
+        if (!ringInView && (div?.clientHeight ?? 0) > 0) {
           map.fitBounds(bb, v3SubjectRingPadding(div))
-          const z2 = map.getZoom()
-          if (typeof z2 === 'number' && z2 > 9) map.setZoom(9)
         }
+        subjectRingOverlayRef.current?.update({
+          paths: boundaryPaths,
+          label: subjectRingLabel(placeQuery),
+          inkWeight: subjectRingInkWeight(boundaryStrokeWeight),
+        })
+        const island = {
+          width: div?.clientWidth ?? 0,
+          height: div?.clientHeight ?? 0,
+        }
+        const box = subjectRingOverlayRef.current?.pixelBox() ?? { width: 0, height: 0 }
+        const fill = subjectRingIslandFill(island, box)
         if (div) {
-          div.dataset.placeLookRing = ringInView ? 'in-view' : 'refit'
+          const knot = subjectRingIsKnot(island, box)
+          div.dataset.placeLookRing = ringInView && !knot ? 'in-view' : 'refit'
           div.dataset.placeLookZoom = String(map.getZoom() ?? '')
+          div.dataset.placeLookFill = fill.toFixed(2)
         }
       })
     }
     apply()
     const t = window.setTimeout(apply, 450)
     return () => window.clearTimeout(t)
-  }, [mapInstance, fitSubjectRing, boundaryPaths])
+  }, [mapInstance, fitSubjectRing, boundaryPaths, placeQuery, boundaryStrokeWeight])
 
-  // Cream halo + navy ink + place chip above the basemap, under $ pills.
+  // Cream halo + navy ink on overlayLayer; Bend chip above pills.
   // Same recorded GeoJSON as the Polygon. Look island only.
+  // Do not setMap(null) on every dep change — that redrew at the pre-fit
+  // zoom and produced the 87×99 knot.
   useEffect(() => {
     const map = mapInstance
-    const overlay = subjectRingOverlayRef.current
     const paint =
       Boolean(map && window.google?.maps && fitSubjectRing && showBoundary && !selectedChildId) &&
       boundaryPaths.flat().length >= 2
     if (!paint || !map) {
-      overlay?.setMap(null)
+      subjectRingOverlayRef.current?.setMap(null)
       return
     }
     const next = {
@@ -1504,15 +1563,13 @@ export default function SearchMapClustered({
       label: subjectRingLabel(placeQuery),
       inkWeight: subjectRingInkWeight(boundaryStrokeWeight),
     }
+    const overlay = subjectRingOverlayRef.current
     if (!overlay) {
       const Ctor = getSubjectRingOverlayClass()
       subjectRingOverlayRef.current = new Ctor({ map, ...next })
     } else {
       overlay.update(next)
       overlay.setMap(map)
-    }
-    return () => {
-      subjectRingOverlayRef.current?.setMap(null)
     }
   }, [
     mapInstance,
@@ -1523,6 +1580,13 @@ export default function SearchMapClustered({
     placeQuery,
     boundaryStrokeWeight,
   ])
+
+  useEffect(() => {
+    return () => {
+      subjectRingOverlayRef.current?.setMap(null)
+      subjectRingOverlayRef.current = null
+    }
+  }, [])
 
   // NOTE: The idle listener for bounds reporting is attached directly in onLoad
   // above. This effect is intentionally removed to avoid the race condition where
@@ -1956,8 +2020,9 @@ export default function SearchMapClustered({
             )}
             {/* Subject place ring only. Hidden while a child is selected so
                 the highlight is THAT child, not twenty plats. data-map-hierarchy=subject
-                Look island: cream halo under navy ink (Atlas), then the
-                overlayMouseTarget copy sits above tiles and under pills. */}
+                Look island: cream halo under navy ink (Atlas). OverlayView
+                stroke sits on overlayLayer (under pills); Bend chip is
+                overlayMouseTarget at chip z. */}
             {showBoundary && !selectedChildId && boundaryPaths.flat().length > 0 &&
               boundaryPaths.flatMap((path, i) => {
                 const ink = subjectRingInkWeight(fitSubjectRing ? boundaryStrokeWeight : undefined)

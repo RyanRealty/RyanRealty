@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   ringLabelAnchor,
+  SUBJECT_RING_CHIP_Z,
   SUBJECT_RING_HALO_WEIGHT,
   SUBJECT_RING_INK_WEIGHT,
+  SUBJECT_RING_KNOT_PX,
+  SUBJECT_RING_MIN_ISLAND_FILL,
   SUBJECT_RING_Z_UNDER_PILLS,
   subjectRingHaloWeight,
   subjectRingInkWeight,
+  subjectRingIslandFill,
+  subjectRingIsKnot,
+  subjectRingKeepFittedZoom,
   subjectRingLabel,
 } from '@/lib/maps/subject-ring'
 
@@ -27,6 +33,30 @@ describe('subject ring paint', () => {
     expect(subjectRingHaloWeight(8)).toBeGreaterThanOrEqual(SUBJECT_RING_HALO_WEIGHT)
     expect(subjectRingHaloWeight(8)).toBeGreaterThan(8)
     expect(SUBJECT_RING_Z_UNDER_PILLS).toBe(0)
+    expect(SUBJECT_RING_CHIP_Z).toBeGreaterThan(1)
+  })
+})
+
+describe('subject ring island fill', () => {
+  const phone = { width: 335, height: 208 }
+
+  it('flags the live 87×99 knot and accepts a ring that spans the island', () => {
+    const knot = { width: 87, height: 99 }
+    expect(SUBJECT_RING_KNOT_PX).toBe(110)
+    expect(subjectRingIslandFill(phone, knot)).toBeLessThan(SUBJECT_RING_MIN_ISLAND_FILL)
+    expect(subjectRingIsKnot(phone, knot)).toBe(true)
+
+    const fitted = { width: 137, height: 162 }
+    expect(subjectRingIslandFill(phone, fitted)).toBeGreaterThanOrEqual(SUBJECT_RING_MIN_ISLAND_FILL)
+    expect(subjectRingIsKnot(phone, fitted)).toBe(false)
+  })
+
+  it('keeps the fitted zoom instead of clamping the phone island to 9', () => {
+    expect(subjectRingKeepFittedZoom(11)).toBe(11)
+    expect(subjectRingKeepFittedZoom(10)).toBe(10)
+    expect(subjectRingKeepFittedZoom(9)).toBe(9)
+    expect(subjectRingKeepFittedZoom(15)).toBe(14)
+    expect(subjectRingKeepFittedZoom(null)).toBeNull()
   })
 })
 

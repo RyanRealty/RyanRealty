@@ -1,10 +1,11 @@
-# Current — 2026-09-18 (SITE-128 Tip Ready — Bend @375 ring residual)
+# Current — 2026-09-18 (SITE-128 Tip Ready — Bend @375 ring fit/scale)
 
-Surface: Cursor cloud, branch `cursor/site-128-bend-375-ring-bf7c` tip `940d21e3b` off `origin/main` `072448d40` (#5 Mini-landed). PR #316 — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+Surface: Cursor cloud `bc-08e057ba-ce1e-5c77-89d4-11efefb6ab64`, branch `cursor/site-128-bend-ring-fit-ab64` tip `2d736f3d2` (evidence `f47d6e8f8`) off `origin/main` `1a5ea269b`. PR #317 — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
 
-- **Cos FAIL after Look rematch** `dpl_7zYBU98` / `dbde4cdf3`: 36 $ pills + photo-card fold PASS. GeoJSON + strokeWeight 8 present but navy ring unreadable under the pin pile (no Bend label/outline). Soft: pill overlap.
-- **This tip.** Same recorded city geom. Atlas cream halo under navy ink on the Polygon; OverlayView copy in `overlayMouseTarget` at z 0 (pills stay z 1) plus a "Bend" chip from `placeQuery`. No invent geom. Pin cap 36 and 13rem / 2×2 cards untouched.
-- **Evidence.** `look-pass-site128-bend375-ring-2026-09-18/` after the @375 capture.
+- **Look rematch FAIL** `dpl_AXi1pkPDec4yt1B9Xzs8vp322vdA` / `ff126836a`: SVG **87×99** under the $ pile (fill 0.48). Halo/ink present. Chip on the knot. $ pills + cards PASS.
+- **Root cause.** `fitBounds` then `map.setZoom(9)` on the *pre-fit* zoom (async). z9 on a 13rem island is the knot. Overlay teardown mid-fit redrew at that scale.
+- **This tip.** Keep fitted zoom (`subjectRingKeepFittedZoom`). Stroke on `overlayLayer`. Bend chip z 3. Same recorded geom. No invent. Pins + 2×2 cards untouched.
+- **Evidence @375.** Prod knot 87×99. Local SVG **137×162**, zoom 10, `in-view`, fill **0.78**, Bend chip visible. `look-pass-site128-ring-fit-2026-09-18/`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
 # Current — 2026-09-18 (SITE-128 paint rematch — Bend first-look @375 squash)
