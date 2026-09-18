@@ -20,5 +20,37 @@
   "testFiles": [
     "scripts/__tests__/place-craft.test.mjs",
     "lib/explore/place-hierarchy-crumb.test.ts"
-  ]
+  ],
+  "competitorFirstLook": {
+    "peer": "Compass Bend homes-for-sale/bend-or + Compass Old Bend + Zillow bend-or",
+    "peerUrl": "https://www.compass.com/homes-for-sale/bend-or/",
+    "peers": [
+      {
+        "name": "Compass Bend, OR homes",
+        "url": "https://www.compass.com/homes-for-sale/bend-or/"
+      },
+      {
+        "name": "Compass Old Bend",
+        "url": "https://www.compass.com/neighborhoods/old-bend-or/"
+      },
+      {
+        "name": "Zillow bend-or",
+        "url": "https://www.zillow.com/bend-or/",
+        "skip": "403 Press-and-Hold bot wall — same class as Redfin skip"
+      }
+    ],
+    "shots": {
+      "ours": "look-pass-site128-rematch-2026-09-18/ours-local-old-bend.png",
+      "peer": "look-pass-site128-rematch-2026-09-18/peer-compass-old-bend.png",
+      "sideBySide": "look-pass-site128-rematch-2026-09-18/side-by-side-old-bend.png",
+      "sequence": [
+        "look-pass-site128-rematch-2026-09-18/peer-compass-old-bend.png",
+        "look-pass-site128-rematch-2026-09-18/ours-local-old-bend.png",
+        "look-pass-site128-rematch-2026-09-18/peer-compass-bend-or.png",
+        "look-pass-site128-rematch-2026-09-18/ours-local-cities-bend.png",
+        "look-pass-site128-rematch-2026-09-18/side-by-side-bend.png",
+        "look-pass-site128-rematch-2026-09-18/peer-zillow-bend-or.png"
+      ]
+    }
+  }
 }

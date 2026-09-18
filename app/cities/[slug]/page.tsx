@@ -113,7 +113,12 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { V3Atlas, V3PlaceIndex, V3PlaceLook, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
-import { listingsFromAtlasDots, listingsFromTiles, placeLookPhotoCards } from '@/lib/place/first-look'
+import {
+  capLookListings,
+  listingsFromAtlasDots,
+  listingsFromTiles,
+  placeLookPhotoCards,
+} from '@/lib/place/first-look'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import {
@@ -828,8 +833,9 @@ async function renderCityDetail({ params }: Props) {
   const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
   // SITE-128 #1 first-look: Google + ONE city ring + price pins + photo cards.
   // Atlas stays later so amenity / cluster gates still see <V3Atlas id="atlas">.
-  const foldLookListings =
-    tiles.length > 0 ? listingsFromTiles(tiles) : listingsFromAtlasDots(foldAtlasDots)
+  const foldLookListings = capLookListings(
+    tiles.length > 0 ? listingsFromTiles(tiles) : listingsFromAtlasDots(foldAtlasDots),
+  )
   const foldPhotoCards = placeLookPhotoCards({
     buckets: openingListings,
     listings: foldLookListings,

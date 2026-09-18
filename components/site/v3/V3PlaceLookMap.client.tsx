@@ -24,6 +24,7 @@ export function V3PlaceLookMap({ listings, boundaryGeojson, placeQuery }: V3Plac
   const mapProps: ComponentProps<typeof SearchMapClustered> = {
     listings,
     hideBoundaryToggle: true,
+    boundaryStrokeWeight: 4,
     className: 'v3-place-look__map-canvas',
   }
   if (boundaryGeojson != null) mapProps.boundaryGeojson = boundaryGeojson

@@ -16,6 +16,8 @@ import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 export const PLACE_LOOK_CARD_LIMIT = 6
+/** City folds can hold 700+ pins. Cap the client map so first look paints. */
+export const CITY_LOOK_PIN_CAP = 240
 
 export type PlaceLookCard = PlaceOpeningListing
 
@@ -162,6 +164,21 @@ export function listingsFromTiles(tiles: readonly ListingTile[]): ListingForMap[
       BoundaryCity: tile.boundaryCity,
       BoundaryNeighborhood: tile.boundaryNeighborhood,
     })
+  }
+  return out
+}
+
+/** Spread-sample so a city cap does not keep only one neighborhood. */
+export function capLookListings(
+  listings: readonly ListingForMap[],
+  cap = CITY_LOOK_PIN_CAP,
+): ListingForMap[] {
+  if (listings.length <= cap) return [...listings]
+  const out: ListingForMap[] = []
+  const step = listings.length / cap
+  for (let i = 0; i < cap; i += 1) {
+    const row = listings[Math.min(listings.length - 1, Math.floor(i * step))]
+    if (row) out.push(row)
   }
   return out
 }

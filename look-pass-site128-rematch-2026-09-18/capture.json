@@ -1,0 +1,26 @@
+[
+  {
+    "url": "http://127.0.0.1:3000/cities/bend",
+    "dest": "/workspace/look-pass-site128-rematch-2026-09-18/ours-local-cities-bend.png",
+    "status": 200,
+    "title": "",
+    "ok": false,
+    "note": "page.waitForSelector: Timeout 45000ms exceeded.\nCall log:\n  - waiting for locator('.v3-place-look') to be visible\n"
+  },
+  {
+    "url": "http://127.0.0.1:3000/cities/bend/old-bend",
+    "dest": "/workspace/look-pass-site128-rematch-2026-09-18/ours-local-old-bend.png",
+    "status": 200,
+    "title": "Old Bend homes for sale | Ryan Realty — Central Oregon",
+    "ok": true,
+    "note": ""
+  },
+  {
+    "url": "https://www.zillow.com/bend-or/",
+    "dest": "/workspace/look-pass-site128-rematch-2026-09-18/peer-zillow-bend-or.png",
+    "status": 403,
+    "title": "Access to this page has been denied",
+    "ok": false,
+    "note": ""
+  }
+]
