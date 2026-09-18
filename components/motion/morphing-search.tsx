@@ -445,14 +445,19 @@ export function MorphingSearch({
 									aria-label="Search"
 									onKeyDown={handleDialogKeyDown}
 									initial={
-										reduce
+										reduce || iconOnly
 											? false
 											: { opacity: 0, clipPath: collapsedContentClip }
 									}
-									animate={{ opacity: 1, clipPath: expandedContentClip }}
+									animate={{
+										opacity: 1,
+										clipPath: expandedContentClip,
+									}}
 									exit={{
 										opacity: 0,
-										clipPath: collapsedContentClip,
+										clipPath: iconOnly
+											? expandedContentClip
+											: collapsedContentClip,
 										transition: reduce
 											? { duration: 0 }
 											: {
