@@ -725,6 +725,12 @@ export { getParks, getParksCount } from '@/lib/data/parks/getParks'
 export type { ParkCityGroup } from '@/lib/data/parks/getParks'
 export { getParkBoundaryGeoJSON } from '@/lib/data/parks/getParkBoundaryGeoJSON'
 export type { ParkBoundaryGeometry } from '@/lib/data/parks/getParkBoundaryGeoJSON'
+export { getPlaceAmenityLayers } from '@/lib/data/places/getPlaceAmenityLayers'
+export type {
+  PlaceAmenityGrain,
+  PlaceAmenityLayers,
+  PlaceAmenityLayersInput,
+} from '@/lib/data/places/getPlaceAmenityLayers'
 
 // Central Oregon events — recurring anchor events (data/co-events.ts, verified +
 // cited, never invented per CLAUDE.md §0). getEventsForIndex/Count feed the hub;

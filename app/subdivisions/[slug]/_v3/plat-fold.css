@@ -219,7 +219,8 @@
   max-height: none;
 }
 
-.plat-fold__drawing .v3-atlas__types {
+.plat-fold__drawing .v3-atlas__types,
+.plat-fold__drawing .v3-atlas__amenities {
   display: flex;
   flex-wrap: wrap;
   gap: var(--v3-space-2xs);

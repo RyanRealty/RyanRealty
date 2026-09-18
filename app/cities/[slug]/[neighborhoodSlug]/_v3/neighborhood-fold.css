@@ -268,7 +268,8 @@
   max-height: none;
 }
 
-.nbh-fold__drawing .v3-atlas__types {
+.nbh-fold__drawing .v3-atlas__types,
+.nbh-fold__drawing .v3-atlas__amenities {
   display: flex;
   flex-wrap: wrap;
   gap: var(--v3-space-2xs);
@@ -570,6 +571,12 @@
 
   .nbh-fold__drawing .v3-atlas__types {
     display: none;
+  }
+
+  .nbh-fold__drawing .v3-atlas__amenities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--v3-space-2xs);
   }
 
   /* THE EMAIL COMES BEFORE THE PROOF, which is now the order at every width

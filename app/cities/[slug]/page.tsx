@@ -49,7 +49,9 @@ import {
   getAllNeighborhoodsWithCity,
   getIndexableSubdivisions,
   getPlaceOpeningListings,
+  getPlaceAmenityLayers,
 } from '@/lib/data'
+import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import {
@@ -280,6 +282,7 @@ async function renderCityDetail({ params }: Props) {
     cityBoundary,
     cityBoundaryFallback,
     openingListings,
+    amenityLayers,
   ] = await Promise.all([
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
@@ -337,6 +340,12 @@ async function renderCityDetail({ params }: Props) {
     withTimeoutFallback(getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }), null, 2000, 'city:boundary'),
     withTimeoutFallback(getCityBoundaryGeoJSON(cityName), null, 2000, 'city:boundaryFallback'),
     withTimeoutFallback(getPlaceOpeningListings({ city: cityName }), [], 3000, 'city:openingListings'),
+    withTimeoutFallback(
+      getPlaceAmenityLayers({ grain: 'city', placeSlug: slug, cityName, citySlug: slug }),
+      EMPTY_PLACE_AMENITY_LAYERS,
+      4500,
+      'city:amenityLayers',
+    ),
   ])
 
   const cityGeojson = asPlaceBoundary(cityBoundary) ?? asPlaceBoundary(cityBoundaryFallback)
@@ -961,6 +970,7 @@ async function renderCityDetail({ params }: Props) {
                 }
                 stamp={atlasView.stamp}
                 incomplete={!atlasView.complete}
+                amenities={amenityLayers}
               />
             </div>
             {/* SITE-93: the fold figure is ONE paged object (beautifului
