@@ -1,10 +1,10 @@
 # Current — 2026-09-18 (SITE-128 rematch — desktop fold stage lock)
 
-Surface: Cursor cloud, branch `cursor/site-128-desktop-cluster-4748`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-desktop-cluster-4748`. Tip `242dd3617`. Draft PR #294. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
 - **Root cause.** `CITY_FOLD_CLUSTER_STAGE` (1112×610 → 46/44/2) only seeded SSR `view`. Desktop ResizeObserver then replaced it with a collapsed box (abspos SVG, used height a few px). All 759 asks shared one 64px cell until `cam.k` ≈ 5. 375 measured ~360×285 and already PASSed 14+2.
 - **This tip.** Membership locks to viewport-class fold stages (`projectPinsToFoldStage`); paint floors collapsed GBR; desktop CSS `height: min(38.125rem, 68vh)`. Phone hint `CITY_FOLD_CLUSTER_STAGE_PHONE` {360,285}. Old Bend / Tetherow / DRW still omit both hints.
-- **Contract.** Desktop 46 marks / 44 clusters / 2 pills. Phone 14 bubbles + 2 pills. +1 zoom (k=1.18) > 46.
+- **Contract.** Desktop 46 marks / 44 clusters / 2 pills. Phone 14 bubbles + 2 pills. +1 zoom (k=1.18) → 58. Collapsed 1112×64 live grid → 2 marks / max 749; locked still 46.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 
 # Current — 2026-09-18 (SITE-128 residual — city fold drives clusters)
