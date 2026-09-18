@@ -7,6 +7,7 @@ import { findParksNear, type ParkType } from '@/data/co-parks'
 import { CO_TRAILS } from '@/data/co-trails'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import { CO_EVENTS } from '@/data/co-events'
+import { enrichLifestyleItem } from '@/lib/site/place-recreation'
 
 const PARK_META: Record<ParkType, string> = {
   state: 'State park',
@@ -31,6 +32,8 @@ export type LifestyleNearItem = {
   href: string
   distanceMiles: number
   meta?: string
+  /** First sourced sentence (trail or park blurb). Omitted when the registry has none. */
+  overview?: string
   lat?: number
   lng?: number
 }
@@ -52,6 +55,7 @@ export function findTrailsNear(
     .filter((t) => t.distanceMiles <= radiusMiles)
     .sort((a, b) => a.distanceMiles - b.distanceMiles)
     .slice(0, limit)
+    .map(enrichLifestyleItem)
 }
 
 export function findGolfNear(
@@ -110,13 +114,16 @@ const EMPTY_NEAR: LifestyleNearGroups = {
 }
 
 function parkItems(lat: number, lng: number, radiusMiles = 4, limit = 6): LifestyleNearItem[] {
-  return findParksNear(lat, lng, radiusMiles, limit).map((p) => ({
-    kind: 'park' as const,
-    name: p.name,
-    href: `/parks/${p.slug}`,
-    distanceMiles: p.distanceMiles,
-    meta: PARK_META[p.type],
-  }))
+  return findParksNear(lat, lng, radiusMiles, limit)
+    .map((p) =>
+      enrichLifestyleItem({
+        kind: 'park' as const,
+        name: p.name,
+        href: `/parks/${p.slug}`,
+        distanceMiles: p.distanceMiles,
+        meta: PARK_META[p.type],
+      }),
+    )
 }
 
 /** Parks, trails, golf, and events as separate nearby groups. */

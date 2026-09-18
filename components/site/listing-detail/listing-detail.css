@@ -1604,10 +1604,15 @@
 }
 
 .listing-near__meta,
+.listing-near__overview,
 .listing-near__dist {
   display: block;
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
+}
+
+.listing-near__overview {
+  margin-top: 0.15em;
 }
 
 .listing-guides {

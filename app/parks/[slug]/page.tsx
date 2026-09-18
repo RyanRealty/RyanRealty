@@ -20,6 +20,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getParkDetail, getParkBoundaryGeoJSON } from '@/lib/data'
 import { CO_PARKS, getParkBySlug, type ParkType } from '@/data/co-parks'
+import { parkParkingLabel } from '@/lib/site/place-recreation'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { registryDescription, registryTitle } from '@/lib/site/registry-metadata'
 import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
@@ -159,7 +160,17 @@ export default async function ParkDetailPage({ params }: Props) {
     })
   }
   if (park.amenities.length > 0) {
-    quietItems.push({ kind: 'prose', term: 'Amenities', body: park.amenities.join(', ') })
+    quietItems.push({ kind: 'prose', term: 'Features', body: park.amenities.join(', ') })
+  }
+  const parking = parkParkingLabel(park)
+  if (parking) {
+    quietItems.push({ kind: 'prose', term: 'Where to park', body: parking })
+  }
+  if (park.hours?.trim()) {
+    quietItems.push({ kind: 'prose', term: 'Hours', body: park.hours.trim() })
+  }
+  if (park.address?.trim()) {
+    quietItems.push({ kind: 'prose', term: 'Address', body: park.address.trim() })
   }
   quietItems.push({
     kind: 'prose',

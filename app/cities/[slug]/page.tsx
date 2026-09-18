@@ -173,6 +173,11 @@ import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
 import { buildCitySchemas } from './_v3/city-metadata'
 import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
+import {
+  PLACE_PARKS_TRACE,
+  PLACE_TRAILS_TRACE,
+  recreationForCity,
+} from '@/lib/site/place-recreation'
 
 /**
  * How many of a city's recorded plats the #plats index prints (SITE-30).
@@ -831,6 +836,9 @@ async function renderCityDetail({ params }: Props) {
   const quickFacts = CITY_QUICK_FACTS[cityName] ?? null
   const description = cityContent?.description?.trim()
   const aboutItems = cityAboutItems(description, quickFacts, cityName)
+  const { parks: cityParkRows, trails: cityTrailRows } = recreationForCity(cityName)
+  const [firstCityPark, ...restCityParks] = cityParkRows
+  const [firstCityTrail, ...restCityTrails] = cityTrailRows
 
   const exploreItems = cityExploreItems(
     cityName,
@@ -1124,6 +1132,28 @@ async function renderCityDetail({ params }: Props) {
             eyebrow={`${cityName}, Oregon`}
             heading={cityName}
             items={aboutItems}
+          />
+        ) : null}
+
+        {firstCityPark ? (
+          <V3Ledger
+            id="parks"
+            eyebrow={v3Text(`${cityName} · Parks`)}
+            heading={v3Text('Parks')}
+            rows={[firstCityPark, ...restCityParks]}
+            source={v3Text(PLACE_PARKS_TRACE)}
+            action={{ label: v3Text('Every Central Oregon park'), href: '/parks' }}
+          />
+        ) : null}
+
+        {firstCityTrail ? (
+          <V3Ledger
+            id="trails"
+            eyebrow={v3Text(`${cityName} · Trails`)}
+            heading={v3Text('Trails')}
+            rows={[firstCityTrail, ...restCityTrails]}
+            source={v3Text(PLACE_TRAILS_TRACE)}
+            action={{ label: v3Text('Every Central Oregon trail'), href: '/central-oregon/trails' }}
           />
         ) : null}
 

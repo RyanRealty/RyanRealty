@@ -201,7 +201,11 @@ export default async function TrailDetailPage({ params }: Props) {
           <V3Instrument
             id="trail"
             level={1}
-            eyebrow={v3Text(`${TRAIL_USE_LABEL[trail.use]} · ${trail.city}`)}
+            eyebrow={v3Text(
+              [TRAIL_USE_LABEL[trail.use], trail.city, dist, trail.difficulty ? TRAIL_DIFFICULTY_LABEL[trail.difficulty] : null]
+                .filter(Boolean)
+                .join(' · '),
+            )}
             headline={v3Text(trailName)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(

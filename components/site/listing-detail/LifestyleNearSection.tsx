@@ -135,6 +135,7 @@ function NearGroup({
                   <span className="listing-near__kind">{item.kind}</span>
                   <span className="listing-near__name">{item.name}</span>
                   {item.meta ? <span className="listing-near__meta">{item.meta}</span> : null}
+                  {item.overview ? <span className="listing-near__overview">{item.overview}</span> : null}
                   <span className="listing-near__dist tabular-nums">{formatMiles(item.distanceMiles)}</span>
                 </span>
               </Link>

@@ -84,7 +84,15 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
         `Straight-line distance from the middle of the listings recorded in ${displayName}, ` +
         `measured against the curated Central Oregon parks, trails, and golf registry.`,
     })
-    for (const item of lifestyleItems) push(`${item.name} · ${milesLabel(item.distanceMiles)}`, item.href)
+    for (const item of lifestyleItems) {
+      const depth = item.meta?.trim()
+      push(
+        depth
+          ? `${item.name} · ${milesLabel(item.distanceMiles)} · ${depth}`
+          : `${item.name} · ${milesLabel(item.distanceMiles)}`,
+        item.href,
+      )
+    }
   }
 
   // EVERY DOOR SAYS WHAT IT OPENS. A plat inside Sunriver has a Sunriver

@@ -11,6 +11,7 @@ import { v3Text, type V3LedgerPlainRow } from '@/components/site/v3'
 import { findSchoolByName } from '@/data/co-schools'
 import { CO_PARKS } from '@/data/co-parks'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
+import { parkDepthLine } from '@/lib/site/place-recreation'
 
 /** Named in authored school descriptions (High Lakes → Cascade → Summit). */
 const AUTHORED_SECONDARY = ['Cascade Middle', 'Summit High'] as const
@@ -76,11 +77,13 @@ export function dailyLifeRows(
     if (category === 'Parks') {
       const park = resolvePark(name)
       if (!park) continue
+      const access = amenity.access?.trim()
+      const depth = parkDepthLine(park)
       push({
         href: `/parks/${park.slug}`,
         when: v3Text('Park'),
         what: v3Text(park.name),
-        detail: amenity.access?.trim() ? v3Text(amenity.access.trim()) : undefined,
+        detail: access ? v3Text(access) : depth ? v3Text(depth) : undefined,
         id: `park-${park.slug}`,
       })
     }

@@ -13,6 +13,7 @@ import type { Metadata } from 'next'
 import { getTrailsForIndex, getTrailsCount, getTrailLineGeoJSON } from '@/lib/data'
 import { placeListThumbDataUri } from '@/lib/place/publish-place-list-thumb'
 import { TRAIL_USE_LABEL } from '@/data/co-trails'
+import { trailIndexDetail } from '@/lib/site/place-recreation'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -54,15 +55,11 @@ export default async function TrailsIndexPage() {
     const name = trail.name.trim()
     const slug = trail.slug.trim()
     if (!name || !slug) return []
-    const dist =
-      typeof trail.lengthMiles === 'number'
-        ? `${trail.lengthMiles} mi${trail.distanceNote ? ` ${trail.distanceNote}` : ''}`
-        : trail.landManager
     return [{
       href: `/central-oregon/trails/${slug}`,
       when: v3Text(TRAIL_USE_LABEL[trail.use]),
       what: v3Text(name),
-      detail: v3Text(`${trail.city} · ${dist}`),
+      detail: v3Text(trailIndexDetail(trail)),
       id: slug,
       lat: trail.lat,
       lng: trail.lng,

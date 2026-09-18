@@ -164,6 +164,8 @@ describe('design directive contracts', () => {
     expect(life).toMatch(/Parks nearby/)
     expect(life).toMatch(/Trails nearby/)
     expect(life).toMatch(/Events nearby/)
+    expect(life).toMatch(/listing-near__overview/)
+    expect(life).toMatch(/item\.overview/)
     const css = readSrc('components/site/listing-detail/listing-detail.css')
     expect(css).toMatch(/\.listing-gallery__back/)
     const parkDetail = readSrc('app/parks/[slug]/page.tsx')

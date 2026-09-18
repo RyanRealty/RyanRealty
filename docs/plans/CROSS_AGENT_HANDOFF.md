@@ -1,3 +1,14 @@
+# Current — 2026-09-18 (SITE-128 Tip Ready — trails/parks depth)
+
+Surface: Cursor cloud, branch `cursor/site-128-trails-parks-depth-6123`. Tip `a3676b12d`. Draft PR #296. Node `1a71550b-7231-42f4-9f5c-07a318cbc3f3`. Look holds SITE-128 gate. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **Punch.** Trails/parks depth was thin or missing on city, neighborhood, community, listing, trail, and park surfaces.
+- **This tip.** `lib/site/place-recreation.ts` prints held registry facts only. City `#parks`/`#trails`, nearby neighborhood/community ledgers, listing LifestyleNear overview, trail/park index+detail, subdivision Quiet meta.
+- **Sourced.** Phil’s `difficulty: varies` + `fee: Free` (USFS 2026-09-18). Farewell Bend parking/hours/address (BPRD). No invented miles.
+- **Omitted.** Phil’s miles; 18/19 trail difficulties; 16/18 park parking lines (Juniper included). OSM geometry unused for facts.
+- **Not this tip.** Atlas amenity invent, hierarchy rewrite, listing keep-exploring, SITE-127 pin $.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
+
 # Current — 2026-09-18 (SITE-128 rematch — desktop fold stage lock)
 
 Surface: Cursor cloud, branch `cursor/site-128-desktop-cluster-4748`. Tip `242dd3617`. Draft PR #294. PR only — Cos Mini lands. Do not merge. HOLD owner email.
