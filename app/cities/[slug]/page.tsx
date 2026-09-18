@@ -114,7 +114,11 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { V3Atlas, V3PlaceIndex, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
-import { ATLAS_PIN_CLUSTER_CELL_PX, CITY_FOLD_CLUSTER_STAGE } from '@/lib/atlas/cluster-pins'
+import {
+  ATLAS_PIN_CLUSTER_CELL_PX,
+  CITY_FOLD_CLUSTER_STAGE,
+  CITY_FOLD_CLUSTER_STAGE_PHONE,
+} from '@/lib/atlas/cluster-pins'
 import { atlasRegionName, atlasRegionNames } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
@@ -932,6 +936,7 @@ async function renderCityDetail({ params }: Props) {
                 clusterPins
                 clusterCellPx={ATLAS_PIN_CLUSTER_CELL_PX}
                 clusterStageHint={CITY_FOLD_CLUSTER_STAGE}
+                clusterStageHintPhone={CITY_FOLD_CLUSTER_STAGE_PHONE}
                 dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
                 regions={foldAtlasRegions}
                 basemap={basemapForRegions(foldAtlasRegions, {

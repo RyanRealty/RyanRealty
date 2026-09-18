@@ -123,7 +123,11 @@
   }
 
   .city-fold__drawing .v3-atlas__stage {
-    min-height: min(52vh, 32rem);
+    /* SITE-128 rematch: lock the desktop fold to the cluster contract
+       (1112×610). Aspect-ratio + abspos SVG used to leave used height at a
+       few px after measure, so every Bend ask shared one 64px cell. */
+    min-height: 32rem;
+    height: min(38.125rem, 68vh);
     max-height: min(68vh, 40rem);
   }
 

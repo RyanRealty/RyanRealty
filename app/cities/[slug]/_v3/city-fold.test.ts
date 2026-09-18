@@ -6,8 +6,9 @@ import { recordFrame } from '@/lib/geo/record-frame'
 import {
   ATLAS_PIN_CLUSTER_CELL_PX,
   CITY_FOLD_CLUSTER_STAGE,
+  CITY_FOLD_CLUSTER_STAGE_PHONE,
   clusterAtlasPins,
-  type AtlasPinCandidate,
+  projectPinsToFoldStage,
 } from '@/lib/atlas/cluster-pins'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
 
@@ -55,6 +56,11 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/clusterPins/)
     expect(PAGE).toMatch(/clusterCellPx=\{ATLAS_PIN_CLUSTER_CELL_PX\}/)
     expect(PAGE).toMatch(/clusterStageHint=\{CITY_FOLD_CLUSTER_STAGE\}/)
+    expect(PAGE).toMatch(/clusterStageHintPhone=\{CITY_FOLD_CLUSTER_STAGE_PHONE\}/)
+    expect(FOLD_CSS).toMatch(/height:\s*min\(38\.125rem,\s*68vh\)/)
+    expect(ATLAS).toMatch(/projectPinsToFoldStage/)
+    expect(ATLAS).toMatch(/floorCityFoldPaintView/)
+    expect(ATLAS).toMatch(/data-atlas-cluster-stage/)
     expect(ATLAS).toMatch(/clusterAtlasPins/)
     expect(ATLAS).toMatch(/data-atlas-cluster/)
     expect(ATLAS).toMatch(/data-atlas-pin-layer/)
@@ -109,7 +115,7 @@ describe('SITE-82 city fold composition', () => {
 })
 
 describe('SITE-128 city fold pin clustering', () => {
-  it('contract: city fold path invokes clusterAtlasPins and produces clusters for 758 overlapping pins', () => {
+  it('contract: desktop fold stage is 46 / 44 / 2; phone is 14 + 2', () => {
     const houses = JSON.parse(
       readFileSync(resolve('lib/atlas/fixtures/bend-city-fold-houses.json'), 'utf8'),
     ) as { lat: number; lng: number }[]
@@ -118,24 +124,25 @@ describe('SITE-128 city fold pin clustering', () => {
     const frame = recordFrame(houses, [])
     expect(frame.bbox).not.toBeNull()
     const proj = makeProjection(padBbox(frame.bbox!, 0.1), 1000)
-    const stage = CITY_FOLD_CLUSTER_STAGE
-    const scale = Math.min(stage.w / proj.width, stage.h / proj.height)
-    const ox = (stage.w - proj.width * scale) / 2
-    const oy = (stage.h - proj.height * scale) / 2
-    const pins: AtlasPinCandidate[] = houses.map((d, i) => {
+    const projPins = houses.map((d, i) => {
       const [x, y] = proj.toXY(d.lng, d.lat)
-      return { i, x: ox + x * scale, y: oy + y * scale }
+      return { i, x, y }
     })
 
-    const out = clusterAtlasPins(pins, ATLAS_PIN_CLUSTER_CELL_PX)
-    const clustered = out.filter((c) => c.count > 1)
-    const densest = Math.max(...out.map((c) => c.count))
-    expect(out.length).toBeGreaterThan(10)
-    expect(out.length).toBeLessThan(80)
-    expect(clustered.length).toBeGreaterThan(8)
-    expect(densest).toBeGreaterThan(8)
-    expect(densest).toBeLessThan(pins.length)
-    expect(out.reduce((n, c) => n + c.count, 0)).toBe(pins.length)
+    const desktop = clusterAtlasPins(
+      projectPinsToFoldStage(projPins, CITY_FOLD_CLUSTER_STAGE, proj, 1),
+      ATLAS_PIN_CLUSTER_CELL_PX,
+    )
+    expect(desktop).toHaveLength(46)
+    expect(desktop.filter((c) => c.count > 1)).toHaveLength(44)
+    expect(desktop.filter((c) => c.count === 1)).toHaveLength(2)
+
+    const phone = clusterAtlasPins(
+      projectPinsToFoldStage(projPins, CITY_FOLD_CLUSTER_STAGE_PHONE, proj, 1),
+      ATLAS_PIN_CLUSTER_CELL_PX,
+    )
+    expect(phone.filter((c) => c.count > 1)).toHaveLength(14)
+    expect(phone.filter((c) => c.count === 1)).toHaveLength(2)
   })
 })
 
