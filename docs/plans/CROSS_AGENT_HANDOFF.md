@@ -1,10 +1,11 @@
-# Current — 2026-09-18 (SITE-128 residual — Bend pin declutter)
+# Current — 2026-09-18 (SITE-128 residual — city fold drives clusters)
 
-Surface: Cursor cloud, branch `cursor/site-128-bend-pin-declutter-5a41`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-city-grid-clusters-dd0c`. Tip `ae25eee57`. Draft PR #293. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
-- **SITE-128 residual.** V3Atlas price-pin layer clusters overlapping pills (40px screen radius, union-find). City fold ~758 Bend asks collapse to count bubbles; tap `fitRect`s the pile. Spaced neighborhood/community/sub pins stay 735K pills. Hover still blows up a single home.
-- **Not this pass.** SITE-129 PASS, SITE-130, SITE-131 HOLD iPhone, H1 voice. Tetherow / DRW map CSS not touched.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`.
+- **Prior land miss.** `bd25af464` DID call `clusterAtlasPins` inside V3Atlas, but (1) union-find @ 40px made one 759 blob, (2) SSR `view` was null so first HTML was 759 SVG house dots / 0 bubbles — Cos counted those dots as pills. City page never named the cluster props.
+- **This tip.** City fold passes `clusterPins` + `clusterCellPx` + `clusterStageHint={CITY_FOLD_CLUSTER_STAGE}`. Grid @ 64px. Pin-eligible SVG dots omitted. Old Bend / Tetherow omit the stage hint.
+- **Not this pass.** SITE-129, SITE-130, SITE-131. Tetherow / DRW map CSS not touched.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 
 # Current — 2026-09-17 (history explorer: kill Step N of 4)
 

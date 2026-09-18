@@ -7,7 +7,8 @@
  * must read as a short price (735K / $1.5M) and hover must blow up the home
  * (photo + ask). This gate runs the pin formatter and asserts the primitive
  * plus the four place pages still wire it. SITE-128 residual: overlapping
- * pills must cluster (clusterAtlasPins) so a city fold is not one pile.
+ * pills must cluster (clusterAtlasPins grid cells) so a city fold is not
+ * one 759 pile and not one 759 bubble.
  * Silent dots cannot regress.
  */
 import { readFileSync } from 'node:fs'
@@ -109,6 +110,16 @@ for (const page of PLACE_PAGES) {
   if (!src.includes('<V3Atlas')) {
     failures.push(`${page} must still mount V3Atlas so place maps share the price pins`)
   }
+}
+
+const cityPage = readFileSync('app/cities/[slug]/page.tsx', 'utf8')
+for (const needle of ['clusterPins', 'ATLAS_PIN_CLUSTER_CELL_PX', 'CITY_FOLD_CLUSTER_STAGE']) {
+  if (!cityPage.includes(needle)) {
+    failures.push(`app/cities/[slug]/page.tsx must pass ${needle} so the city fold, not only the lib, drives clusters`)
+  }
+}
+if (!clusterSrc.includes('CITY_FOLD_CLUSTER_STAGE')) {
+  failures.push(`${CLUSTER} must export CITY_FOLD_CLUSTER_STAGE for the city fold first paint`)
 }
 
 if (failures.length) {

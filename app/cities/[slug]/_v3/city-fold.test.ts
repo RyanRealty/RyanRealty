@@ -1,9 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { makeProjection, padBbox } from '@/lib/geo/project-svg'
+import { recordFrame } from '@/lib/geo/record-frame'
+import {
+  ATLAS_PIN_CLUSTER_CELL_PX,
+  CITY_FOLD_CLUSTER_STAGE,
+  clusterAtlasPins,
+  type AtlasPinCandidate,
+} from '@/lib/atlas/cluster-pins'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
 
 const PAGE = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 const FOLD_CSS = readFileSync(resolve('app/cities/[slug]/_v3/city-fold.css'), 'utf8')
 const PLACE_MOS = readFileSync(resolve('lib/site/place-mos.ts'), 'utf8')
 const INSIGHT = readFileSync(resolve('app/cities/[slug]/_v3/CityInsight.client.tsx'), 'utf8')
@@ -18,6 +27,7 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/city-fold__figure/)
     expect(PAGE).toMatch(/place-opening--city/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
+    expect(PAGE).toMatch(/dots=\{foldAtlasDots/)
     expect(PAGE).toMatch(/<CityAlertsStrip[\s\S]*?id="alerts"/)
     expect(PAGE).toMatch(/headlineTone="eyebrow"/)
     expect(PAGE).toMatch(/keyPlacement="dock"/)
@@ -41,6 +51,14 @@ describe('SITE-82 city fold composition', () => {
     expect(INSIGHT).toMatch(/<V3MosBars/)
     expect(PAGE).toMatch(/city-fold__figure/)
     expect(PAGE).toMatch(/foldAtlasDots/)
+    expect(PAGE).toMatch(/dots=\{foldAtlasDots\.length > 0 \? foldAtlasDots : atlasView\.dots\}/)
+    expect(PAGE).toMatch(/clusterPins/)
+    expect(PAGE).toMatch(/clusterCellPx=\{ATLAS_PIN_CLUSTER_CELL_PX\}/)
+    expect(PAGE).toMatch(/clusterStageHint=\{CITY_FOLD_CLUSTER_STAGE\}/)
+    expect(ATLAS).toMatch(/clusterAtlasPins/)
+    expect(ATLAS).toMatch(/data-atlas-cluster/)
+    expect(ATLAS).toMatch(/data-atlas-pin-layer/)
+    expect(ATLAS).toMatch(/atlasPinShouldPaint\(d\)\) return null/)
     // Photograph no longer carries the MOS overlay — fold figure owns it.
     expect(PAGE).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} \/>/)
   })
@@ -87,6 +105,37 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/homes for sale/)
     expect(PAGE).toMatch(/housing-market/)
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
+  })
+})
+
+describe('SITE-128 city fold pin clustering', () => {
+  it('contract: city fold path invokes clusterAtlasPins and produces clusters for 758 overlapping pins', () => {
+    const houses = JSON.parse(
+      readFileSync(resolve('lib/atlas/fixtures/bend-city-fold-houses.json'), 'utf8'),
+    ) as { lat: number; lng: number }[]
+    expect(houses.length).toBeGreaterThanOrEqual(758)
+
+    const frame = recordFrame(houses, [])
+    expect(frame.bbox).not.toBeNull()
+    const proj = makeProjection(padBbox(frame.bbox!, 0.1), 1000)
+    const stage = CITY_FOLD_CLUSTER_STAGE
+    const scale = Math.min(stage.w / proj.width, stage.h / proj.height)
+    const ox = (stage.w - proj.width * scale) / 2
+    const oy = (stage.h - proj.height * scale) / 2
+    const pins: AtlasPinCandidate[] = houses.map((d, i) => {
+      const [x, y] = proj.toXY(d.lng, d.lat)
+      return { i, x: ox + x * scale, y: oy + y * scale }
+    })
+
+    const out = clusterAtlasPins(pins, ATLAS_PIN_CLUSTER_CELL_PX)
+    const clustered = out.filter((c) => c.count > 1)
+    const densest = Math.max(...out.map((c) => c.count))
+    expect(out.length).toBeGreaterThan(10)
+    expect(out.length).toBeLessThan(80)
+    expect(clustered.length).toBeGreaterThan(8)
+    expect(densest).toBeGreaterThan(8)
+    expect(densest).toBeLessThan(pins.length)
+    expect(out.reduce((n, c) => n + c.count, 0)).toBe(pins.length)
   })
 })
 

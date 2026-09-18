@@ -321,6 +321,20 @@ export type V3AtlasProps = {
    * the pointer leaves every mark.
    */
   onLinkedKeyChange?: (key: string | null) => void
+  /**
+   * SITE-128: collapse overlapping ask pills to count bubbles. Default on —
+   * city fold passes it explicitly so the page, not only the primitive, is
+   * what Look can grep. Neighborhood / community keep the default; their
+   * spacing already leaves singles as pills.
+   */
+  clusterPins?: boolean
+  /** Occupied-cell size in stage pixels. City fold passes the grid constant. */
+  clusterCellPx?: number
+  /**
+   * First-paint stage so pinMarks exist in SSR HTML. City fold only — without
+   * it `view` is null until ResizeObserver and the fold ships 759 SVG dots.
+   */
+  clusterStageHint?: { w: number; h: number }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -386,6 +400,11 @@ type RegionShape = AtlasRegion & {
 type PlacedShape = RegionShape & { d: string }
 type View = { w: number; h: number; scale: number; ox: number; oy: number }
 
+function atlasViewFromStage(w: number, h: number, projW: number, projH: number): View {
+  const scale = Math.min(w / projW, h / projH)
+  return { w, h, scale, ox: (w - projW * scale) / 2, oy: (h - projH * scale) / 2 }
+}
+
 type PaintedPin =
   | { kind: 'pin'; d: AtlasDot; i: number; x: number; y: number; label: string }
   | {
@@ -432,6 +451,9 @@ export function V3Atlas({
   onViewChange,
   linkedKey = null,
   onLinkedKeyChange,
+  clusterPins = true,
+  clusterCellPx = ATLAS_PIN_CLUSTER_RADIUS_PX,
+  clusterStageHint,
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
@@ -596,17 +618,21 @@ export function V3Atlas({
   const placesRef = useRef<SVGGElement>(null)
   const [roving, setRoving] = useState(0)
 
-  /* The measured view: where the viewBox lands inside the stage (meet fit). */
+  /* The measured view: where the viewBox lands inside the stage (meet fit).
+     City fold seeds this from clusterStageHint so SSR already has bubbles. */
   const stageRef = useRef<HTMLDivElement>(null)
-  const [view, setView] = useState<View | null>(null)
+  const [view, setView] = useState<View | null>(() =>
+    clusterStageHint
+      ? atlasViewFromStage(clusterStageHint.w, clusterStageHint.h, proj.width, proj.height)
+      : null,
+  )
   useEffect(() => {
     const el = stageRef.current
     if (!el || typeof ResizeObserver === 'undefined') return
     const measure = () => {
       const r = el.getBoundingClientRect()
       if (r.width <= 0 || r.height <= 0) return
-      const scale = Math.min(r.width / proj.width, r.height / proj.height)
-      setView({ w: r.width, h: r.height, scale, ox: (r.width - proj.width * scale) / 2, oy: (r.height - proj.height * scale) / 2 })
+      setView(atlasViewFromStage(r.width, r.height, proj.width, proj.height))
     }
     const ro = new ResizeObserver(measure)
     ro.observe(el)
@@ -1259,10 +1285,23 @@ export function V3Atlas({
       const [x, y] = screenOf(d.lng, d.lat)
       raw.push({ d, i, x, y, label })
     })
-    const grouped = clusterAtlasPins(
-      raw.map((p) => ({ i: p.i, x: p.x, y: p.y })),
-      ATLAS_PIN_CLUSTER_RADIUS_PX,
-    )
+    /* Grid, not union-find: a 40px transitive radius on the letterboxed
+       city fold chained every Bend ask into one 759 bubble. One occupied
+       cell is one mark; zoom stretches the cells apart. City fold passes
+       clusterPins + clusterCellPx so this path is the page's, not a lib
+       side-effect Look can miss. */
+    const grouped = clusterPins
+      ? clusterAtlasPins(
+          raw.map((p) => ({ i: p.i, x: p.x, y: p.y })),
+          clusterCellPx,
+        )
+      : raw.map((p) => ({
+          id: `c-${p.i}`,
+          x: p.x,
+          y: p.y,
+          indices: [p.i],
+          count: 1,
+        }))
     const byIndex = new Map(raw.map((p) => [p.i, p]))
     const out: PaintedPin[] = []
     for (const g of grouped) {
@@ -1291,7 +1330,7 @@ export function V3Atlas({
       })
     }
     return out
-  }, [view, dots, isOn, screenOf])
+  }, [view, dots, isOn, screenOf, clusterPins, clusterCellPx])
   pinMarksRef.current = pinMarks
 
   /* The home under the pointer: photo + ask, not a one-line status chip. */
@@ -1725,6 +1764,10 @@ export function V3Atlas({
                   <g className="v3-atlas__dots" aria-hidden="true">
                     {dots.map((d, i) => {
                       if (d.s === 'sold' && !closingsMap && d.k !== highlight?.key) return null
+                      /* SITE-128: pin-eligible asks are HTML pills / bubbles.
+                         Leaving the SVG dots painted 759 silent marks that
+                         Look counted as pills on /cities/bend. */
+                      if (atlasPinShouldPaint(d)) return null
                       const [x, y] = xy[i]!
                       return (
                         <path
@@ -1845,6 +1888,7 @@ export function V3Atlas({
                     {dots.map((d, i) => {
                       if (!isOn(d) || !inActivePlace(i)) return null
                       if (d.s === 'sold' && !closingsMap && d.k !== highlight?.key) return null
+                      if (atlasPinShouldPaint(d)) return null
                       const [x, y] = xy[i]!
                       return (
                         <path
@@ -1946,7 +1990,12 @@ export function V3Atlas({
               ) : null}
 
               {view && pinMarks.length > 0 ? (
-                <div className="v3-atlas__pins" aria-hidden="true" data-atlas-pin-layer="clustered">
+                <div
+                  className="v3-atlas__pins"
+                  aria-hidden="true"
+                  data-atlas-pin-layer={clusterPins ? 'clustered' : 'pills'}
+                  data-atlas-cluster-cell={clusterPins ? clusterCellPx : undefined}
+                >
                   {pinMarks.map((mark) => {
                     switch (mark.kind) {
                       case 'cluster':
