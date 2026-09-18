@@ -36,14 +36,19 @@ checks.push({
 const community = src('app/communities/[slug]/page.tsx')
 checks.push({
   label: 'community browse doors keep the place filter (getPlaceLinks)',
-  // Every inventory door on the v3 community page is placeLinks.browseUrl,
-  // built by getPlaceLinks for THIS community — stricter than the old
-  // homesForSalePath(cityName, subdivision) CTA, which the alias-aware set
-  // exists to correct. A bare /homes-for-sale or /search door fails.
+  // P0 place inventory (2026-09-18): typed stock stays on the page (#homes /
+  // V3PlaceInventory). Opening caption is an in-page jump, not a regional door.
+  // Place-filtered browse still comes from getPlaceLinks for alerts / amenities /
+  // explore — same founding rule, re-expressed. A bare /homes-for-sale or /search
+  // door fails.
   ok:
     /getPlaceLinks\(\{\s*\n?\s*type: 'community',/.test(community) &&
     /const browseHref = placeLinks\.browseUrl/.test(community) &&
-    /href: browseHref,/.test(community) &&
+    (/href: browseHref,/.test(community) ||
+      /browseHref=\{browseHref\}/.test(community) ||
+      /browse: browseHref,/.test(community)) &&
+    /href="#homes"/.test(community) &&
+    /\bV3PlaceInventory\b/.test(community) &&
     !/href:\s*['"]\/homes-for-sale['"]/.test(community) &&
     !/href:\s*['"]\/search['"]/.test(community),
 })
