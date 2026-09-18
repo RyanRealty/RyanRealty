@@ -69,6 +69,28 @@ for (const page of PLACE_PAGES) {
   }
 }
 
+const communityAmenity = read('app/communities/[slug]/page.tsx')
+const communityCallAt = communityAmenity.indexOf('getPlaceAmenityLayers({')
+const communityFetch = communityCallAt >= 0 ? communityAmenity.slice(communityCallAt, communityCallAt + 420) : ''
+if (!communityFetch.includes("grain: 'community'") || !/citySlug:\s*citySlug/.test(communityFetch)) {
+  failures.push('community Atlas must fetch amenity layers at community grain with citySlug')
+}
+
+const subdivisionAmenity = read('app/subdivisions/[slug]/page.tsx')
+const subdivisionCallAt = subdivisionAmenity.indexOf('getPlaceAmenityLayers({')
+const subdivisionFetch =
+  subdivisionCallAt >= 0 ? subdivisionAmenity.slice(subdivisionCallAt, subdivisionCallAt + 420) : ''
+if (
+  !subdivisionFetch.includes("grain: 'subdivision'") ||
+  !/communitySlug:\s*resortSlug/.test(subdivisionFetch)
+) {
+  failures.push('subdivision Atlas must fetch amenity layers at subdivision grain with communitySlug')
+}
+
+if (!read(LAYERS).includes('amenityGeomTouchesPlace')) {
+  failures.push(`${LAYERS} must keep official amenity geom against the recorded place ring`)
+}
+
 for (const page of DESTINATION) {
   const src = read(page)
   if (!src.includes('PlaceFieldMap')) {
@@ -85,5 +107,5 @@ if (failures.length) {
   process.exit(1)
 }
 console.log(
-  'ci:atlas-amenity-layers OK — recorded park polys + trail lines on four place Atlases; destinations untouched',
+  'ci:atlas-amenity-layers OK — recorded park polys + trail lines on four place Atlases; community/subdivision grain wired; destinations untouched',
 )

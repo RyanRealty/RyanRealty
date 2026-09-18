@@ -28,6 +28,19 @@ describe('SITE-128 Atlas amenity layers', () => {
     expect(ATLAS).toMatch(/data-atlas-amenity="trail"/)
   })
 
+  it('contract: community-subdivision-grain — local Atlas fetches pass citySlug + parent communitySlug', () => {
+    const commAt = COMM.indexOf('getPlaceAmenityLayers({')
+    const subAt = SUB.indexOf('getPlaceAmenityLayers({')
+    const commFetch = COMM.slice(commAt, commAt + 420)
+    const subFetch = SUB.slice(subAt, subAt + 420)
+    expect(commFetch).toMatch(/grain:\s*'community'/)
+    expect(commFetch).toMatch(/citySlug/)
+    expect(commFetch).toMatch(/communitySlug:\s*slug/)
+    expect(subFetch).toMatch(/grain:\s*'subdivision'/)
+    expect(subFetch).toMatch(/communitySlug:\s*resortSlug/)
+    expect(LAYERS).toMatch(/amenityGeomTouchesPlace/)
+  })
+
   it('contract: on-brand-non-blue — amenity paint is navy on cream, never Google blue', () => {
     expect(CSS).toMatch(/\.v3-atlas__amenity-park/)
     expect(CSS).toMatch(/\.v3-atlas__amenity-trail/)

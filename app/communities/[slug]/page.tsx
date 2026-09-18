@@ -642,6 +642,7 @@ async function renderCommunityDetail({ params }: Props) {
             grain: 'community',
             placeSlug: slug,
             cityName,
+            citySlug: citySlug || undefined,
             communitySlug: slug,
             placeGeometry: mapPolygon,
           }),
