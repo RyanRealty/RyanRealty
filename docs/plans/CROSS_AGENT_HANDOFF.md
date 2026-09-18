@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-128 Tip Ready #2 — map hierarchy lock)
 
-Surface: Cursor cloud `bc-6f8f259d-9e23-5f9c-be98-dcebd1925178`, branch `cursor/site-128-map-hierarchy-lock-5178`. Tip against `origin/main` `5d8a0f874`. Depends on #1 `ac8ddac28` / PR #306 (not on main). PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+Surface: Cursor cloud `bc-6f8f259d-9e23-5f9c-be98-dcebd1925178`, branch `cursor/site-128-map-hierarchy-lock-5178`, tip `daadcfba9`, draft PR #308. Against `origin/main` `5d8a0f874`. Depends on #1 `ac8ddac28` / PR #306 (not on main). PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
 
 - **Highlight.** Nbhd/community Atlas + Split paint THAT recorded subject ring. Child plats are hit-only until selected. No subject geom (Tetherow/Juniper) → no highlight. Do not invent rings. Old Bend FAIL was town||neighborhood = 20 plats.
 - **Child zoom.** Overlay / Atlas child click fits THAT recorded bbox (`childZoomBounds` / `fitCamToShape`). Listing pins stay listing clicks. Homepage cities are not children (`hierarchyChildIdSet`).
