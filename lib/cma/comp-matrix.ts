@@ -166,7 +166,7 @@ export function subjectPrintableAsk(
 const MAX_COMPS_PER_TABLE = 5
 
 /** Row-label column share. The rest is split evenly across the value columns. */
-const LABEL_COL_PCT = 20
+const LABEL_COL_PCT = 24
 
 function dash(v: string | null | undefined): string {
   return cleanText(v) ?? '-'
@@ -632,10 +632,14 @@ function matrixTable(
       // The adjustment table under matrix 1 repeats the SAME columns, so it
       // repeats the addresses and drops the photographs: two thumbnails of one
       // house on one screen is the wall this document is trying not to be.
+      // Empty box when MLS has no photo: keeps header addresses from floating
+      // above columns that do have thumbs (Canter @1280 lookpass). Never invent URLs.
       const img =
-        opts.heads === false || !src
+        opts.heads === false
           ? ''
-          : `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
+          : src
+            ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
+            : `<span class="matrix-thumb is-empty" aria-hidden="true"></span>`
       // THE BADGE SITS OUTSIDE THE ANCHOR'S TEXT. Inside it, `innerText` read
       // "31737 7th" and a copy-paste or a text extraction carried the pin
       // number into the address (tasteReview round three, §4 item 6). It is
@@ -823,6 +827,8 @@ export function renderMatrixHtml(input: {
   id: string
   family: 'closed' | 'unsold' | 'active'
   heading: string
+  /** When the chapter already printed the H2 (salesThatSetItPage), skip the H3. */
+  omitHeading?: boolean
   lead?: string
   entries: readonly MatrixEntry[]
   /** Shaded on every price path, so the reader sees who came into it. */
@@ -881,8 +887,12 @@ export function renderMatrixHtml(input: {
     .join('')}
   ${input.adjustmentsFooter ?? ''}`
   }
+  const headingHtml =
+    input.omitHeading || !input.heading.trim()
+      ? ''
+      : `<h3 class="subhead">${esc(input.heading)}</h3>`
   return `
-  <h3 class="subhead">${esc(input.heading)}</h3>
+  ${headingHtml}
   ${input.lead ?? ''}
   ${statusPpsfCaptionHtml(input.family, rest)}
   ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
@@ -915,7 +925,13 @@ export function renderCompMatrixHtml(
   ctx?: TrackedDocLinkCtx | null,
   weights?: ReadonlyMap<string, CompWeight>,
   askCtx?: SubjectAskContext,
-  opts: { range?: PricePathRange | null; finalCycle?: ExpiredFinalCycle | null; footer?: string } = {},
+  opts: {
+    range?: PricePathRange | null
+    finalCycle?: ExpiredFinalCycle | null
+    footer?: string
+    /** Chapter already owns the H2 — do not emit a duplicate H3. */
+    omitHeading?: boolean
+  } = {},
 ): string {
   // Fail closed: a recommend needs >= MIN_CLOSED_SALES_FOR_MATRIX closed sales.
   if (comps.length < MIN_CLOSED_SALES_FOR_MATRIX) return ''
@@ -932,6 +948,7 @@ export function renderCompMatrixHtml(
     id: 'sales-that-set-it',
     family: 'closed',
     heading: 'The sales that set this price',
+    omitHeading: opts.omitHeading,
     lead,
     entries,
     range: opts.range ?? null,

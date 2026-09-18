@@ -13,6 +13,8 @@
  * Pending high-DOM 60+ = letter signal only; never sets Recommended (actives
  * may still nudge in-band). Canter first, then apply ALL locks to every CMA.
  */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   immersiveHeroNumberHtml,
@@ -39,11 +41,12 @@ import {
   matrixHtmlHasDomAndPriceHistory,
 } from '@/lib/cma/comparable-dom-history'
 import { renderCompMatrixHtml, renderMatrixHtml } from '@/lib/cma/comp-matrix'
+import { salesThatSetItPage, SALES_THAT_SET_IT_HEADING } from '@/lib/cma/render-pricing-page'
 import { activeEntries, closedEntries, unsoldEntries } from '@/lib/cma/matrix-entry'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
 import type { MatrixEntry } from '@/lib/cma/matrix-entry'
-import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 function entry(over: Partial<MatrixEntry> & Pick<MatrixEntry, 'family' | 'key'>): MatrixEntry {
   return {
@@ -640,5 +643,200 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       }),
     ).toBe(false)
   })
+
+  it('contract: matrix-empty-thumb-align', () => {
+    // Canter @1280: missing MLS photo still reserves 4/3 so headers do not float.
+    const html = renderCompMatrixHtml(subject, [
+      {
+        listingKey: 'C1',
+        mlsNumber: '1',
+        address: '1058 Ranch',
+        city: 'Sisters',
+        closePrice: 675000,
+        listPrice: 675000,
+        closeDate: '2026-04-21',
+        onMarketDate: '2026-02-04',
+        domTotal: 76,
+        daysToOffer: 60,
+        sqft: 1842,
+        beds: 3,
+        baths: 2,
+        yearBuilt: 2019,
+        lotAcres: 0.2,
+        adjustedPrice: 675000,
+        timeAdjustment: 0,
+        sizeAdjustment: 0,
+        weight: 1,
+        photoUrl: null,
+        listingHistoryLine: 'Sold Apr 21, 2026 · 76 days on market',
+      },
+      {
+        listingKey: 'C2',
+        mlsNumber: '2',
+        address: '945 Horse Back',
+        city: 'Sisters',
+        closePrice: 690000,
+        listPrice: 689000,
+        closeDate: '2025-11-24',
+        onMarketDate: '2025-08-08',
+        domTotal: 108,
+        daysToOffer: 90,
+        sqft: 1758,
+        beds: 3,
+        baths: 2,
+        yearBuilt: 2019,
+        lotAcres: 0.2,
+        adjustedPrice: 690000,
+        timeAdjustment: 0,
+        sizeAdjustment: 0,
+        weight: 1,
+        photoUrl: 'https://cdn.example/comp.jpg',
+        listingHistoryLine: 'Sold Nov 24, 2025 · 108 days on market',
+      },
+      {
+        listingKey: 'C3',
+        mlsNumber: '3',
+        address: '995 Horse Back',
+        city: 'Sisters',
+        closePrice: 705000,
+        listPrice: 705000,
+        closeDate: '2025-06-12',
+        onMarketDate: '2025-04-01',
+        domTotal: 72,
+        daysToOffer: 50,
+        sqft: 1883,
+        beds: 3,
+        baths: 2,
+        yearBuilt: 2020,
+        lotAcres: 0.2,
+        adjustedPrice: 705000,
+        timeAdjustment: 0,
+        sizeAdjustment: 0,
+        weight: 1,
+        photoUrl: null,
+        listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
+      },
+    ] as CmaAdjustedComp[])
+    expect(html).toContain('matrix-thumb is-empty')
+    expect(html).toContain('https://cdn.example/comp.jpg')
+    expect(html).not.toMatch(/cdn\.example\/(?!comp\.jpg)/)
+    const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
+    expect(immersive).toContain('.matrix-thumb.is-empty')
+  })
+
+  it('contract: matrix-label-wrap-not-ellipsis', () => {
+    // Prefer wrap on LABEL + long prose; figures stay nowrap. Label col widened.
+    const matrixSrc = readFileSync(join(process.cwd(), 'lib/cma/comp-matrix.ts'), 'utf8')
+    expect(matrixSrc).toMatch(/const LABEL_COL_PCT = 24/)
+    const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
+    expect(immersive).toContain('table.comp-matrix tbody th{white-space:normal')
+    expect(immersive).toContain('table.comp-matrix td.v:not(.n){white-space:normal')
+    expect(immersive).toContain('table.comp-matrix td.n{white-space:nowrap}')
+    // No blanket nowrap+ellipsis on every th/td.
+    expect(immersive).not.toMatch(
+      /table\.comp-matrix th,table\.comp-matrix td\{[^}]*white-space:nowrap;overflow:hidden;text-overflow:ellipsis/,
+    )
+    const printCss = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
+    expect(printCss).toContain('table.comp-matrix tbody th { white-space: normal')
+    expect(printCss).toContain('table.comp-matrix td.v:not(.n) { white-space: normal')
+  })
+
+  it('contract: sales-that-set-it-one-heading', () => {
+    const pricing = {
+      method1Low: 650000,
+      method1Mid: 680000,
+      method1High: 710000,
+      method2: 670000,
+      method3: 700000,
+      conservative: 650000,
+      recommended: 680000,
+      highEnd: 710000,
+      valueLow: 650000,
+      valueHigh: 710000,
+      confidence: 'High',
+      notes: [],
+    } as unknown as CmaPricing
+    const comps = [
+      {
+        listingKey: 'C1',
+        mlsNumber: '1',
+        address: '1025 Horse Back',
+        city: 'Sisters',
+        closePrice: 675000,
+        listPrice: 675000,
+        closeDate: '2026-04-21',
+        onMarketDate: '2026-02-04',
+        domTotal: 76,
+        daysToOffer: 60,
+        sqft: 1842,
+        beds: 3,
+        baths: 2,
+        yearBuilt: 2019,
+        lotAcres: 0.2,
+        adjustedPrice: 675000,
+        timeAdjustment: 0,
+        sizeAdjustment: 0,
+        weight: 1,
+        listingHistoryLine: 'Sold Apr 21, 2026 · 76 days on market',
+      },
+      {
+        listingKey: 'C2',
+        mlsNumber: '2',
+        address: '945 Horse Back',
+        city: 'Sisters',
+        closePrice: 690000,
+        listPrice: 689000,
+        closeDate: '2025-11-24',
+        onMarketDate: '2025-08-08',
+        domTotal: 108,
+        daysToOffer: 90,
+        sqft: 1758,
+        beds: 3,
+        baths: 2,
+        yearBuilt: 2019,
+        lotAcres: 0.2,
+        adjustedPrice: 690000,
+        timeAdjustment: 0,
+        sizeAdjustment: 0,
+        weight: 1,
+        listingHistoryLine: 'Sold Nov 24, 2025 · 108 days on market',
+      },
+      {
+        listingKey: 'C3',
+        mlsNumber: '3',
+        address: '995 Horse Back',
+        city: 'Sisters',
+        closePrice: 705000,
+        listPrice: 705000,
+        closeDate: '2025-06-12',
+        onMarketDate: '2025-04-01',
+        domTotal: 72,
+        daysToOffer: 50,
+        sqft: 1883,
+        beds: 3,
+        baths: 2,
+        yearBuilt: 2020,
+        lotAcres: 0.2,
+        adjustedPrice: 705000,
+        timeAdjustment: 0,
+        sizeAdjustment: 0,
+        weight: 1,
+        listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
+      },
+    ] as CmaAdjustedComp[]
+    const page = salesThatSetItPage({
+      subject,
+      comps,
+      market: { geoLabel: 'Sisters' } as CmaMarketContext,
+      pricing,
+    })
+    expect(page).not.toBeNull()
+    const body = page!.body
+    expect(body).toContain(`<h2 class="section">${SALES_THAT_SET_IT_HEADING}</h2>`)
+    expect(body).not.toContain('<h3 class="subhead">The sales that set this price</h3>')
+    // Visible chapter title once; aria-label may still carry the matrix heading string.
+    expect((body.match(/<h[23][^>]*>[^<]*The sales that set this price/g) ?? []).length).toBe(1)
+  })
+
 
 })

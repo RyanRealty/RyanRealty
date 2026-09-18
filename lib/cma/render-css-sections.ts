@@ -613,6 +613,7 @@ export function cmaSectionStyles(): string {
   /* TOP, not bottom: the subject head carries one line the sale heads do not. */
   table.comp-matrix thead th.v { vertical-align: top; text-align: center; }
   table.comp-matrix .matrix-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; margin: 0 0 6px; }
+  table.comp-matrix .matrix-thumb.is-empty { background: rgba(16, 39, 66, 0.06); }
   table.comp-matrix .matrix-addr { display: block; }
   .addr-row { display: flex; align-items: center; justify-content: center; }
   .addr-row .matrix-addr { min-width: 0; }
@@ -633,16 +634,14 @@ export function cmaSectionStyles(): string {
   .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
   table.comp-matrix th, table.comp-matrix td {
     padding: 5px 6px;
-    /* Matt ADD 2026-09-12: no wrapping crumbs — labels and numbers stay one line. */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     /* Values sit under their own column head. Only the thead rule carried
        this before, so every figure in the body left-aligned away from the
        address it belonged to. The immersive stylesheet always aligned both. */
     text-align: right;
   }
-  /* Only figures hold the line. Free text wraps rather than widening a column. */
+  /* Matt ADD 2026-09-12 tension: figures nowrap; LABEL + long prose wrap. */
+  table.comp-matrix tbody th { white-space: normal; overflow: visible; text-overflow: clip; }
+  table.comp-matrix td.v:not(.n) { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }
   table.comp-matrix td.n { white-space: nowrap; }
   /* The column HEAD is the address, and an address is neither a label nor a
      number: under nowrap + overflow hidden a long one ("401 Comparable Street
