@@ -1256,6 +1256,56 @@ const SEEDS: readonly Seed[] = [
     accept:
       'Mechanical at 1440 on a place with ≥3 actives (e.g. Larkspur / Parkside / Tetherow): visible short price labels on pins; hover shows a home blow-up with photo+price; labels match list ask formatting. Matt does not ask where the prices went. ci:gates green.',
   },
+  {
+    versionGap: 'SITE-128',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] places dial-in: Look eyes-on city / neighborhood / community / subdivision @1440+375 — dial everything in',
+    objective:
+      'Matt 2026-09-17: assign Public Look to walk places pages so craft gets dialed in. Scope: city, neighborhood, community, subdivision templates. Locked craft to verify — type-split inventory on community/subdivision (no scrubber), enlarged place map with price pins + hover blow-up (SITE-127), H1 “{place} homes for sale” (no Every home…), hero+breadcrumb whitespace tight. Public Look owns eyes-on; Public Patch owns Tip Ready craft; Cos Mini-lands. HOLD owner email.',
+    output:
+      'Look pack: expected vs actual shots + punch list per place class; Patch Tip Ready fixes; Cos land. Queue stays current.',
+    accept:
+      'Look delivered a punch list with 1440/375 evidence on at least one of each class (city, nbhd, community, subdivision). Patch Tip Ready items land on main. Matt does not open a place and ask why stock/map/H1 still look unfinished.',
+  },
+  {
+    versionGap: 'SITE-129',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] community + subdivision: inventory by property type ON the page — kill scrubber search UI',
+    objective:
+      'Matt lock 2026-09-18: subdivision and community pages must show all inventory for sale ON the page, split into sections by property type (single-family, multifamily, townhomes/condos, land — omit empty). Kill scrolling/scrubber search UI on those pages. Parkside/Tetherow pattern sitewide. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'V3PlaceInventory (or successor) typed sections on community + subdivision; no PlaceSplitView scrubber inventory UI; Tip Ready + gate.',
+    accept:
+      'Live community and subdivision with mixed stock show typed sections; scrubber inventory UI gone; empty types omitted; ci:gates / Tip Ready refuse if scrubber returns.',
+    dependsOn: ['SITE-128'],
+  },
+  {
+    versionGap: 'SITE-130',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] place heroes + breadcrumbs: tighten whitespace sitewide on place templates',
+    objective:
+      'Matt lock: tighten hero + breadcrumb whitespace on place pages; breadcrumbs collapsible. Encode as Tip Ready refuse + CI ratchet so cream/breadcrumb bloat never regresses. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Tighter place hero/crumb rhythm; Tip Ready refuse + CI ratchet; Look verify @1440/375.',
+    accept:
+      'Place heroes and crumbs match the tightened rhythm on city/nbhd/community/subdivision; CI fails on regressing cream/breadcrumb bloat.',
+    dependsOn: ['SITE-128'],
+  },
+  {
+    versionGap: 'SITE-131',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] listing H1 Amboqia on iPhone: address looks double-struck / smeared (1540 NE Bear Creek)',
+    objective:
+      'Matt 2026-09-17 phone shot of /listing … 1540 NE Bear Creek Road: .listing-ask Amboqia H1 looks double-struck / overlapping (likely faux-bold — weight 500 on a single-weight face). Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Clean listing address H1 at 375 on iOS Safari; Tip Ready shots; gate or font-weight fix so synthetic bold cannot return.',
+    accept:
+      'At 375 on a live listing, H1 street line is sharp single-stroke Amboqia (or safe fallback); no double-struck glyphs; Matt phone check passes.',
+  },
 
 ]
 
