@@ -834,6 +834,14 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
 
       svg.append(haloPath, inkPath)
       ringRoot.replaceChildren(svg)
+      const mapDiv = this.getMap()?.getDiv()
+      if (mapDiv) {
+        const island = { width: mapDiv.clientWidth, height: mapDiv.clientHeight }
+        const fill = subjectRingIslandFill(island, this.lastBox)
+        mapDiv.dataset.placeLookFill = fill.toFixed(2)
+        mapDiv.dataset.placeLookRing = subjectRingIsKnot(island, this.lastBox) ? 'refit' : 'in-view'
+        mapDiv.dataset.placeLookZoom = String(this.getMap()?.getZoom() ?? '')
+      }
 
       if (!chipRoot) return
       chipRoot.style.left = `${minX}px`

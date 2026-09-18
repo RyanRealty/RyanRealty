@@ -46,7 +46,7 @@ describe('subject ring island fill', () => {
     expect(subjectRingIslandFill(phone, knot)).toBeLessThan(SUBJECT_RING_MIN_ISLAND_FILL)
     expect(subjectRingIsKnot(phone, knot)).toBe(true)
 
-    const fitted = { width: 280, height: 170 }
+    const fitted = { width: 137, height: 162 }
     expect(subjectRingIslandFill(phone, fitted)).toBeGreaterThanOrEqual(SUBJECT_RING_MIN_ISLAND_FILL)
     expect(subjectRingIsKnot(phone, fitted)).toBe(false)
   })

@@ -47,12 +47,16 @@ export function subjectRingHaloWeight(ink: number): number {
 
 export type IslandBox = { width: number; height: number }
 
-/** Projected ring vs the map island. 87×99 on 335×208 is a knot (~0.48). */
+/**
+ * How much of the island the fitted ring occupies on its constraining axis.
+ * Bend is taller than wide, so min(ring)/min(island) under-reads a correct
+ * height-fit (137×162 on 335×208). max(w-ratio, h-ratio) is the fitBounds
+ * axis. 87×99 is still ~0.48 — a knot.
+ */
 export function subjectRingIslandFill(island: IslandBox, ring: IslandBox): number {
-  const islandMin = Math.min(island.width, island.height)
-  const ringMin = Math.min(ring.width, ring.height)
-  if (!(islandMin > 0) || !(ringMin > 0)) return 0
-  return ringMin / islandMin
+  const wr = island.width > 0 ? ring.width / island.width : 0
+  const hr = island.height > 0 ? ring.height / island.height : 0
+  return Math.max(wr, hr)
 }
 
 export function subjectRingIsKnot(island: IslandBox, ring: IslandBox): boolean {

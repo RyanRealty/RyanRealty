@@ -1,0 +1,24 @@
+[
+  {
+    "url": "http://127.0.0.1:3199/cities/bend",
+    "dest": "/workspace/look-pass-site128-ring-fit-2026-09-18/ours-local-cities-bend-375.png",
+    "status": 200,
+    "island": {
+      "w": 335,
+      "h": 208
+    },
+    "ring": {
+      "w": 137,
+      "h": 162
+    },
+    "fill": 0.7788461538461539,
+    "zoom": null,
+    "placeLookRing": null,
+    "chip": "Bend",
+    "chipVisible": true,
+    "pills": 120,
+    "cardsInFold": 4,
+    "knot": false,
+    "mapHtml": "<div class=\"relative v3-place-look__map-canvas\" style=\"height: 100%; min-height: 0px; border-radius: 0px; overflow: hidden; box-shadow: none;\"><div data-place-look-ring=\"in-view\" data-place-look-zoom=\"10\" data-place-look-fill=\"0.78\" style=\"width: 100%; height: 100%; min-height: 0px; position: relative; overflow: hidden;\"><div style=\"height: 100%; width: 100%; position: absolute; top: 0px; left: 0p"
+  }
+]
