@@ -1326,6 +1326,7 @@
       "app/listing/**",
       "components/site/listing-detail/**",
       "lib/listing/listing-keep-exploring.ts",
+      "lib/explore/nearby-place-peers.ts",
       "components/site/v3/V3Atlas.client.tsx",
       "scripts/check-listing-keep-exploring.mjs",
       "scripts/lib/listing-keep-exploring.mjs",

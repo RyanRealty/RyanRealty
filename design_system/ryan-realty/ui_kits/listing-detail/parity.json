@@ -335,6 +335,7 @@
     "ListingTaxHistory #tax",
     "GoverningDocumentsBlock #plat",
     "ListingSimilarStrip on market: similar in the same parent, under the plat docs",
+    "V3PlaceIndex #other-subdivs (same-community sibling plats, name-only)",
     "V3ListingClose #close (on market only: the ending, cut claim + drawing, then watch / tour / payment)",
     "ListingBrokerCTA #listed",
     "ListingAttribution",

@@ -134,7 +134,9 @@ import {
   peerPlatsForResort,
   subdivisionPlaceContext,
 } from '@/lib/explore/subdivision-page-extras'
-import { nearbySubdivisionPeers } from '@/lib/explore/nearby-place-peers'
+import { nearbySubdivisionPeers, otherCommunitySubdivs } from '@/lib/explore/nearby-place-peers'
+import { childAliasesOf } from '@/lib/communities/community-own-names'
+import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
 import { getSubdivisionRing } from '@/lib/data/geo/subdivision-ring'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getPlatClosedCount } from '@/lib/data/subdivisions/getPlatClosedCounts'
@@ -195,7 +197,13 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { V3Atlas, V3PlaceIndex, V3PlaceInventory, V3Quiet, type AtlasRegion } from '@/components/site/v3'
-import { getTaxlotsInBoundary, getTaxlotsNear, TAXLOT_DISCLAIMER, getPlaceAmenityLayers } from '@/lib/data'
+import {
+  getCommunitySubdivisions,
+  getTaxlotsInBoundary,
+  getTaxlotsNear,
+  TAXLOT_DISCLAIMER,
+  getPlaceAmenityLayers,
+} from '@/lib/data'
 import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
@@ -677,6 +685,8 @@ async function renderSubdivisionPage({ params }: Props) {
   const hasMap =
     seedRing || mapTiles.some((row) => row.lat != null && row.lng != null)
 
+  const parentCommunitySlug = resortSlug ?? boundaryCity?.neighborhood?.slug ?? null
+
   // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
   const [
     salesHistory,
@@ -690,6 +700,7 @@ async function renderSubdivisionPage({ params }: Props) {
     openingListings,
     amenityLayers,
     nearbyRing,
+    communityPlats,
   ] = await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -752,6 +763,14 @@ async function renderSubdivisionPage({ params }: Props) {
         3500,
         'sub:nearbyRing',
       ),
+      parentCommunitySlug
+        ? withTimeoutFallback(
+            getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: parentCommunitySlug }),
+            [],
+            3500,
+            'sub:otherSubdivs',
+          )
+        : Promise.resolve([]),
     ])
 
   // ── THE MARKET BAND READS ONE POPULATION AT A TIME ──────────────────────
@@ -1383,6 +1402,13 @@ async function renderSubdivisionPage({ params }: Props) {
     ring: nearbyRing,
     resortPeers: peerPlatsForResort(resortSlug, slug),
   })
+  const resortEntry = resortSlug ? getResortCommunityBySlug(resortSlug) : null
+  const nearbyHrefs = new Set(nearbyPeerEntries.map((row) => row.href))
+  const otherSubdivEntries = otherCommunitySubdivs({
+    selfSlug: slug,
+    plats: communityPlats,
+    aliases: resortEntry ? childAliasesOf(resortEntry, resortEntry.subdivision_aliases) : [],
+  }).filter((row) => !nearbyHrefs.has(row.href))
   // The subject is ALWAYS the selected row, including on a page that did not
   // make the deepest-history cut above or that sits below the indexing floor
   // entirely. Its count comes from the same cached set when that set holds one,
@@ -1614,6 +1640,13 @@ async function renderSubdivisionPage({ params }: Props) {
           heading={displayName}
           nameOnly
           entries={nearbyPeerEntries}
+        />
+
+        <V3PlaceIndex
+          id="other-subdivs"
+          heading={resortLabel ?? boundaryCity?.neighborhood?.label ?? displayName}
+          nameOnly
+          entries={otherSubdivEntries}
         />
 
         <V3PlaceInventory

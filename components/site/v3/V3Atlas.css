@@ -512,40 +512,33 @@
   outline-offset: 1px;
 }
 
-/* SITE-128 residual — Redfin-style count bubble. Same navy/cream pin, no
-   caret: the numeral is the mark, and a tap fits that pile. */
+/* SITE-127 — cluster face is a $ pill (735K+ / $1.5M), not a bare count disc. */
 .v3-atlas__pin.is-cluster {
   z-index: 3;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.125rem;
-  height: 2.125rem;
-  padding: 0;
-  border-radius: var(--v3-radius-mark);
+  width: auto;
+  height: auto;
+  min-width: 2.125rem;
+  padding: 0.14rem 0.42rem 0.18rem;
+  border-radius: var(--v3-radius-sm);
   outline: 1.5px solid var(--v3-cream);
   outline-offset: 0;
-  transform: translate(-50%, -50%);
-  font-size: var(--v3-size-body-sm);
-}
-
-.v3-atlas__pin.is-cluster[data-atlas-cluster-size='md'] {
-  width: 2.375rem;
-  height: 2.375rem;
-}
-
-.v3-atlas__pin.is-cluster[data-atlas-cluster-size='lg'] {
-  width: 2.75rem;
-  height: 2.75rem;
+  transform: translate(-50%, calc(-100% - 5px));
   font-size: var(--v3-size-label);
 }
 
-.v3-atlas__pin.is-cluster::after {
-  content: none;
+.v3-atlas__pin.is-cluster[data-atlas-cluster-size='md'] {
+  min-width: 2.375rem;
+}
+
+.v3-atlas__pin.is-cluster[data-atlas-cluster-size='lg'] {
+  min-width: 2.75rem;
 }
 
 .v3-atlas__pin.is-cluster.is-hot {
-  transform: translate(-50%, -50%) scale(1.08);
+  transform: translate(-50%, calc(-100% - 5px)) scale(1.08);
 }
 
 .v3-atlas__home {

@@ -30,6 +30,18 @@ export function formatAtlasClusterRange(minUsd: number, maxUsd: number): string 
   return `${lo} to ${hi}`
 }
 
+/**
+ * Cluster pill face — same 735K / $1.5M language as a lone pin.
+ * A mixed pile prints the low ask with +. Never a bare count.
+ */
+export function formatAtlasClusterPin(minUsd: number, maxUsd: number): string {
+  const lo = formatAtlasPinPrice(minUsd)
+  const hi = formatAtlasPinPrice(maxUsd)
+  if (!lo || !hi) return lo || hi
+  if (lo === hi) return lo
+  return `${lo}+`
+}
+
 /** For-sale and pending marks with an ask become price pills. Sold stays a dot. */
 export function atlasPinShouldPaint(dot: {
   s: 'active' | 'pending' | 'sold' | 'closed'
