@@ -539,19 +539,24 @@
     }
   },
   "foldDensity": {
-    "lockedAt": "2026-09-17",
+    "lockedAt": "2026-09-18",
     "crumbCollapseAt": 3,
     "crumbBelowNavPadToken": "--v3-space-2xs",
     "crumbOverlayOnListing": true,
+    "overlayCompactOnListing": true,
     "maxCrumbBandPx": 44,
     "stripThumbRem": 2.75,
     "mosaicWell": "navy",
+    "stripWell": "navy",
+    "mosaicHeightUsesViewport": true,
     "shellPadTopToken": "--v3-space-xs",
     "gate": "ci:listing-fold-density",
     "refuse": [
       "tall quiet under chrome",
       "wrapping crumb band",
       "cream mosaic well",
+      "cream filmstrip",
+      "short mosaic well",
       "oversized filmstrip thumbs"
     ]
   },

@@ -40,6 +40,23 @@ describe('listing-fold-density lock', () => {
     expect(p.join('\n')).toMatch(/tall quiet|nowrap|oversized crumb|below-nav/i)
   })
 
+  it('refuses a short mosaic well and a cream filmstrip', () => {
+    const css = live.listingCss
+      .replace(
+        '--v3-mosaic-h: min(calc(100dvh - var(--v3-chrome-h) - 2.75rem), 50rem);',
+        '--v3-mosaic-h: 28.75rem;',
+      )
+      .replace(
+        '.listing-strip {\n  --listing-strip-h: 2.75rem;\n  --listing-strip-thumb: 2.75rem;\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr) auto;\n  align-items: center;\n  gap: 2px;\n  min-height: var(--listing-strip-h);\n  padding: 0;\n  background: var(--v3-navy);\n',
+        '.listing-strip {\n  --listing-strip-h: 2.75rem;\n  --listing-strip-thumb: 2.75rem;\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr) auto;\n  align-items: center;\n  gap: 2px;\n  min-height: var(--listing-strip-h);\n  padding: 0;\n  background: var(--v3-cream);\n',
+      )
+    const p = listingHeroFoldDensityProblems({
+      root: REPO,
+      files: { ...live, listingCss: css },
+    })
+    expect(p.join('\n')).toMatch(/viewport|filmstrip|navy/i)
+  })
+
   it('refuses cream mosaic well and oversized thumbs', () => {
     const css = live.listingCss
       .replace('.listing-mosaic {\n  position: relative;\n  width: 100%;\n  background: var(--v3-navy);\n}', '.listing-mosaic {\n  position: relative;\n  width: 100%;\n  background: var(--v3-cream);\n}')
