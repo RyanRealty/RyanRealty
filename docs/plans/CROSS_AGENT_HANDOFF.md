@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-128 Tip Ready #1 — competitive first-look)
 
-Surface: Cursor cloud `bc-cc128bf6-dd08-56c8-950d-d0c1a05dc730`, branch `cursor/site-128-first-look-c730`, draft PR #306. Tip Ready `--ship` OK. PR only — Cos Mini lands. Do not merge. HOLD owner email. **Stop before #2.**
+Surface: Cursor cloud `bc-cc128bf6-dd08-56c8-950d-d0c1a05dc730`, branch `cursor/site-128-first-look-c730` @ `ac8ddac28`, draft PR #306. Tip Ready `--ship` OK. PR only — Cos Mini lands. Do not merge. HOLD owner email. **Stop before #2.**
 
 - **#1 fold.** City + Old Bend first look is Google + ONE place ring + clustered price pins + listing photo cards (`V3PlaceLook`). Cream Atlas stays later for amenity/cluster gates.
 - **Evidence.** `look-pass-site128-rematch-2026-09-18/`: Compass Bend, Compass Old Bend, Zillow bend-or (403 bot wall skip), ours local folds, side-by-sides. `node scripts/lib/taste-receipt.mjs --ship lib/place/place-craft.parity.json` → ship OK.
