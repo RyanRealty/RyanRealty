@@ -10,6 +10,7 @@ import {
   breadcrumbFoldDensityProblems,
   listingFoldDensityProblems,
   listingHeroFoldDensityProblems,
+  placeHeroFoldDensityProblems,
 } from '../lib/listing-fold-density.mjs'
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -94,6 +95,22 @@ describe('listing-fold-density lock', () => {
       /crumb|mosaic|thumb|foldDensity|tall quiet|cream bloat/i.test(line),
     )
     expect(liveFold).toEqual([])
+  })
+
+  it('passes the live place templates', () => {
+    expect(placeHeroFoldDensityProblems({ root: REPO })).toEqual([])
+  })
+
+  it('refuses a place crumb that is not overlay', () => {
+    const cityPage = readFileSync(join(REPO, 'app/cities/[slug]/page.tsx'), 'utf8').replace(
+      'overlay={Boolean(stagePosterSrc)}',
+      '',
+    )
+    const p = placeHeroFoldDensityProblems({
+      root: REPO,
+      files: { 'app/cities/[slug]/page.tsx': cityPage },
+    })
+    expect(p.join('\n')).toMatch(/overlay/)
   })
 
   it('ci:listing-fold-density exits 0 on HEAD', () => {

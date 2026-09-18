@@ -37,7 +37,20 @@ const PATHS = Object.freeze({
   page: 'app/listing/[listingKey]/page.tsx',
   listingCss: 'components/site/listing-detail/listing-detail.css',
   parity: 'design_system/ryan-realty/ui_kits/listing-detail/parity.json',
+  cityPage: 'app/cities/[slug]/page.tsx',
+  communityPage: 'app/communities/[slug]/page.tsx',
+  neighborhoodPage: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+  subdivisionPage: 'app/subdivisions/[slug]/page.tsx',
+  communityStage: 'app/communities/[slug]/_v3/CommunityStage.tsx',
+  placeOpeningCss: 'components/place/place-opening.css',
 })
+
+const PLACE_TEMPLATE_PAGES = Object.freeze([
+  PATHS.cityPage,
+  PATHS.communityPage,
+  PATHS.neighborhoodPage,
+  PATHS.subdivisionPage,
+])
 
 const TALL_PAD_RE =
   /padding-top\s*:\s*(?:var\(--v3-space-(?:sm|md|lg|xl|2xl|3xl)\)|76px|4\.75rem|[1-9]\d*(?:\.\d+)?rem)/
@@ -260,9 +273,72 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
   return p
 }
 
+/**
+ * SITE-130 + Matt LOCK 2026-09-18: place hero/crumb whitespace after listing
+ * densify. Overlay on the photograph. Copy pad is the 44px tap strip, not
+ * xl/3xl cream. One V3Breadcrumb, one overlay contract, on every place grain.
+ */
+export function placeHeroFoldDensityProblems({ root = process.cwd(), files = {} } = {}) {
+  const p = []
+  for (const rel of PLACE_TEMPLATE_PAGES) {
+    const key = rel
+    const src = readRel(root, rel, files[key] ?? files[rel.split('/').at(-2) + 'Page'])
+    if (src == null) {
+      p.push(`${rel}: missing place template.`)
+      continue
+    }
+    if (!src.includes('overlay={Boolean(stagePosterSrc)}')) {
+      p.push(`${rel}: place crumb must overlay the photograph (overlay={Boolean(stagePosterSrc)}). A flow band is cream bloat.`)
+    }
+    if (!/tone=\{stagePosterSrc \? 'on-media' : 'surface'\}/.test(src)) {
+      p.push(`${rel}: place crumb tone must follow the still (on-media overlay / surface when there is no photo).`)
+    }
+    if (!/<V3Breadcrumb/.test(src)) {
+      p.push(`${rel}: must mount V3Breadcrumb — sitewide crumb is one component.`)
+    }
+    if (/heading=\{[^}]*Subdivisions in/.test(src) || /heading=\{[^}]*Neighborhoods in/.test(src)) {
+      p.push(`${rel}: "Subdivisions in …" / "Neighborhoods in …" list heading is refuse. Name-only child cards.`)
+    }
+  }
+
+  const stage = readRel(root, PATHS.communityStage, files.communityStage)
+  if (stage == null) {
+    p.push(`${PATHS.communityStage}: missing.`)
+  } else if (!/overlay=\{Boolean\(props\.posterSrc\)\}/.test(stage)) {
+    p.push(`${PATHS.communityStage}: Stage crumb must overlay the poster. Same V3Breadcrumb contract as the four place templates.`)
+  }
+
+  const css = readRel(root, PATHS.placeOpeningCss, files.placeOpeningCss)
+  if (css == null) {
+    p.push(`${PATHS.placeOpeningCss}: missing.`)
+  } else {
+    if (!/\.place-opening--media \.v3-breadcrumb \{[\s\S]*?position:\s*absolute/.test(css)) {
+      p.push(`${PATHS.placeOpeningCss}: on-media crumb must sit on the photograph (position:absolute), not a cream band.`)
+    }
+    const mediaCopy = cssBlock(css, '.place-opening--media .place-opening__copy')
+    if (!mediaCopy) {
+      p.push(`${PATHS.placeOpeningCss}: .place-opening--media .place-opening__copy missing.`)
+    } else if (
+      /--v3-space-(?:xl|2xl|3xl)/.test(mediaCopy) ||
+      TALL_PAD_RE.test(mediaCopy) ||
+      TALL_BLOCK_PAD_RE.test(mediaCopy)
+    ) {
+      p.push(
+        `${PATHS.placeOpeningCss}: media copy pad must clear the 44px overlay crumb (tap + 2xs), not xl/3xl cream.`,
+      )
+    }
+    if (!/padding:\s*calc\(var\(--v3-tap\) \+ var\(--v3-space-2xs\)\)/.test(css)) {
+      p.push(`${PATHS.placeOpeningCss}: media copy must use tap + 2xs after densify. Larger cream is refuse.`)
+    }
+  }
+  return p
+}
+
 export function listingFoldDensityProblems(opts = {}) {
   const includeHero = opts.includeHero !== false
+  const includePlace = opts.includePlace !== false
   const p = breadcrumbFoldDensityProblems(opts)
   if (includeHero) p.push(...listingHeroFoldDensityProblems(opts))
+  if (includePlace) p.push(...placeHeroFoldDensityProblems(opts))
   return p
 }

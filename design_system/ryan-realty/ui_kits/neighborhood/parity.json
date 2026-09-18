@@ -16,7 +16,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome, and the up-rung of the place ladder: Home > {City} > {Neighborhood}, current page never a link. Surface tone, because this page opens on a pace Instrument and not on a dark Stage.",
+      "section": "Chrome. V3Breadcrumb sitewide — overlay on the still, surface when there is no photo. Name-only trail. Current page never a link.",
       "blocking": true
     },
     {
@@ -67,6 +67,11 @@
     {
       "name": "PlaceTypeSlider",
       "section": "Horizontal leftover type cards. Filters Split. Replaces stacked V3PlacePropertyTypes Instruments.",
+      "blocking": true
+    },
+    {
+      "name": "V3PlaceIndex",
+      "section": "#child-places — name-only cards for plats inside the neighborhood (SITE-128). No Subdivisions heading, no sales bars. A–Z /subdivisions is the directory.",
       "blocking": true
     },
     {
@@ -194,7 +199,7 @@
     "NeighborhoodAlertsStrip #alerts (V3AlertsStrip: the ask in the FIRST VIEWPORT, this neighborhood's real 30-day count as the claim, the city-scoped promise, email, one button; the sticky repeat past #atlas from the same component). SITE-104 makes the fold three columns — the drawing, the figure, the ask — so the callout sits third in source order inside .nbh-fold rather than directly under the opening, and inside its own column the order is CLAIM -> ASK -> PROOF at every width: the four proof cards (price, street, beds/baths/sqft each), the section-0 source trace, the SCOPE sentence that reconciles a neighborhood claim with a city-wide alert, and the browse door all sit UNDER the button. With them above it the submit's bottom edge measured 933 at 1440x900 and ~1058 at 375x812. It is still on the visitor's first screen at 1440 and at 375, it still carries the 30-day figure with its trace, and the sticky still keys off #atlas scrolling past. Its property-type control is the installed beUI combobox (NeighborhoodTypeCombobox.client.tsx -> V3TypeCombobox -> components/motion/combobox) handed down through renderTypes; the two flat Houses / Land rectangles it replaces are what the 2026-09-12 table named \"Cream box\".",
     "PlaceTypeSlider",
     "#homes",
-    "#subdivisions",
+    "#child-places",
     "#market",
     "#afford",
     "#daily-life",

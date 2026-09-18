@@ -213,3 +213,39 @@
 .v3.v3-place-index .v3-place-index__action .v3-btn {
   min-height: var(--v3-tap);
 }
+
+/* Name-only child cards (SITE-128). The parent place is already on the page;
+   a second "Subdivisions in …" / "Neighborhoods in …" heading twins the
+   wrong grain. Cards carry the name and the door, nothing else. */
+.v3.v3-place-index--names {
+  padding-block: var(--v3-space-lg);
+}
+
+.v3-place-index--names .v3-place-index__head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.v3-place-index--names .v3-place-index__list {
+  grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+  column-gap: var(--v3-space-sm);
+  row-gap: var(--v3-space-sm);
+}
+
+.v3-place-index--names .v3-place-index__item {
+  border-top: 0;
+}
+
+.v3-place-index--names .v3-place-index__row {
+  justify-content: flex-start;
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  border: var(--v3-rule-hairline);
+  background: var(--v3-cream);
+}

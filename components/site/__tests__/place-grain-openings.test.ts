@@ -357,7 +357,7 @@ describe('master-plan opening', () => {
     expect(page).toMatch(/foldAfter=\{0\}/)
     expect(page.indexOf('place-opening__caption')).toBeLessThan(page.indexOf('<V3Atlas'))
     expect(page.indexOf('<V3Atlas')).toBeLessThan(page.indexOf('id="market"'))
-    expect(page.indexOf('id="subdivisions"')).toBeLessThan(page.indexOf('id="market"'))
+    expect(page.indexOf('id="child-places"')).toBeLessThan(page.indexOf('id="market"'))
     expect(page).not.toMatch(/cityStagePoster\(cityHeroes/)
   })
 
