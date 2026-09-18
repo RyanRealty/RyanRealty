@@ -1,0 +1,29 @@
+{
+  "url": "http://127.0.0.1:3199/cities/bend",
+  "status": "Bend homes for sale | Ryan Realty — Central Oregon",
+  "viewport": {
+    "w": 375,
+    "h": 720
+  },
+  "lookTop": 0,
+  "map": {
+    "w": 335,
+    "h": 187,
+    "top": 75
+  },
+  "cards": 6,
+  "cardsInFold": 4,
+  "pills": 36,
+  "pillsInFold": 36,
+  "ringHost": true,
+  "haloSvg": true,
+  "label": "Bend",
+  "placeLookRing": "in-view",
+  "placeLookZoom": "9",
+  "cardPrices": [
+    "$1.0M",
+    "$750K",
+    "$700K",
+    "$965K"
+  ]
+}

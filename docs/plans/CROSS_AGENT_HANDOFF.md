@@ -1,3 +1,12 @@
+# Current — 2026-09-18 (SITE-128 Tip Ready — Bend @375 ring residual)
+
+Surface: Cursor cloud, branch `cursor/site-128-bend-375-ring-bf7c` tip `940d21e3b` off `origin/main` `072448d40` (#5 Mini-landed). PR #316 — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+
+- **Cos FAIL after Look rematch** `dpl_7zYBU98` / `dbde4cdf3`: 36 $ pills + photo-card fold PASS. GeoJSON + strokeWeight 8 present but navy ring unreadable under the pin pile (no Bend label/outline). Soft: pill overlap.
+- **This tip.** Same recorded city geom. Atlas cream halo under navy ink on the Polygon; OverlayView copy in `overlayMouseTarget` at z 0 (pills stay z 1) plus a "Bend" chip from `placeQuery`. No invent geom. Pin cap 36 and 13rem / 2×2 cards untouched.
+- **Evidence.** `look-pass-site128-bend375-ring-2026-09-18/` — 36 pills, map 335×187, `label: Bend`, halo SVG, ring in-view at z9. Fold / map / place-look PNGs + `capture.json`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-18 (SITE-128 paint rematch — Bend first-look @375 squash)
 
 Surface: Cursor cloud, branch `cursor/site-128-bend-375-first-look-00f7` off `origin/main` `a873fe9ea`. Replaces PR #312 / `f7aa8fc7e` (8-commit stack Cos could not cherry-pick). One squash SHA — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.

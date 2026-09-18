@@ -80,6 +80,17 @@ describe('place first-look map island', () => {
     expect(clustered).toMatch(/fitSubjectRing && hasRing/)
     expect(clustered).toMatch(/v3SubjectRingPadding/)
   })
+
+  it('paints a cream halo + navy ink above the basemap and under pills', () => {
+    const clustered = readFileSync(resolve('components/SearchMapClustered.tsx'), 'utf8')
+    expect(clustered).toMatch(/subjectRingHaloWeight/)
+    expect(clustered).toMatch(/strokeColor: MAP_CREAM/)
+    expect(clustered).toMatch(/dataset\.subjectRing = 'true'/)
+    expect(clustered).toMatch(/SUBJECT_RING_Z_UNDER_PILLS/)
+    expect(clustered).toMatch(/dataset\.subjectRingLabel/)
+    expect(clustered).toMatch(/subjectRingLabel\(placeQuery\)/)
+    expect(clustered).toMatch(/overlayMouseTarget/)
+  })
 })
 
 describe('place first-look pin cap', () => {
