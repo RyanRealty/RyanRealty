@@ -1,3 +1,12 @@
+# Current — 2026-09-18 (SITE-121 phone header search type-in)
+
+Surface: Cursor cloud, branch `cursor/site-121-phone-search-morph-3f98`. Tip pending this commit. Draft PR #295. PR only — Cos Mini lands. Do not merge. HOLD owner email. Owner `public-patch`. Node `7a0fe27e-b8c1-4575-9021-052b6f6c1a48`.
+
+- **How it blocked.** First land (`z-[150]`) cleared sticky chrome. Residual: `layoutId` shell + `backdrop-blur` painted over the dialog; size-0 `motion.div` became the containing block; inset-0 catcher ate taps; icon-only `clip-path` hid the field from hit-testing while the morph looked open.
+- **This tip.** Panel `pointer-events-none`; catcher `z-0`; dialog `isolate`; input `bg-background`; overlay group is a plain div; icon-only skips collapsing clip-path. Mega-menus not touched.
+- **Phone verify.** 375×812 iPhone UA: home / `/cities/bend` / `/homes-for-sale/bend` — `elementFromPoint` at input center is `input[data-v3-morph=input]`, typed `dekalb`, focus held. Desktop 1440 same. Suggest feed empty in this env (`No places match that`) — not the overlay bug.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
+
 # Current — 2026-09-18 (SITE-128 rematch — desktop fold stage lock)
 
 Surface: Cursor cloud, branch `cursor/site-128-desktop-cluster-4748`. Tip `242dd3617`. Draft PR #294. PR only — Cos Mini lands. Do not merge. HOLD owner email.
