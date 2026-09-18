@@ -1,10 +1,11 @@
-# Current — 2026-09-18 (SITE-128 Tip Ready — Bend @375 ring residual)
+# Current — 2026-09-18 (SITE-128 Tip Ready — Bend @375 ring fit/scale)
 
-Surface: Cursor cloud, branch `cursor/site-128-bend-375-ring-bf7c` tip `940d21e3b` off `origin/main` `072448d40` (#5 Mini-landed). PR #316 — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+Surface: Cursor cloud `bc-08e057ba-ce1e-5c77-89d4-11efefb6ab64`, branch `cursor/site-128-bend-ring-fit-ab64` off `origin/main` `1a5ea269b`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
 
-- **Cos FAIL after Look rematch** `dpl_7zYBU98` / `dbde4cdf3`: 36 $ pills + photo-card fold PASS. GeoJSON + strokeWeight 8 present but navy ring unreadable under the pin pile (no Bend label/outline). Soft: pill overlap.
-- **This tip.** Same recorded city geom. Atlas cream halo under navy ink on the Polygon; OverlayView copy in `overlayMouseTarget` at z 0 (pills stay z 1) plus a "Bend" chip from `placeQuery`. No invent geom. Pin cap 36 and 13rem / 2×2 cards untouched.
-- **Evidence.** `look-pass-site128-bend375-ring-2026-09-18/` after the @375 capture.
+- **Look rematch FAIL** `dpl_AXi1pkPDec4yt1B9Xzs8vp322vdA` / `ff126836a`: paint present. SVG ~87×99 under the $ pile — dark knot, no readable Bend outline, chip hidden. $ pills + photo cards PASS.
+- **Root cause.** Phone-island camera called `fitBounds` then `map.setZoom(9)` on the *pre-fit* zoom (fitBounds is async). z9 on a 13rem island projects the recorded city ring to ~87×99. OverlayView was also torn down/re-added mid-fit, so halo/ink CSS shipped at the wrong scale/z.
+- **This tip.** Keep the fitted zoom (`subjectRingKeepFittedZoom` — only pull back from lot z>14). Overlay stroke on `overlayLayer` (under pills). Bend chip on `overlayMouseTarget` at z 3. Same recorded geom. No invent. Pin cap 36 and 13rem / 2×2 cards untouched.
+- **Evidence.** `look-pass-site128-ring-fit-2026-09-18/` @375.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
 # Current — 2026-09-18 (SITE-128 paint rematch — Bend first-look @375 squash)

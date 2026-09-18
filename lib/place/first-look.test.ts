@@ -87,9 +87,12 @@ describe('place first-look map island', () => {
     expect(clustered).toMatch(/strokeColor: MAP_CREAM/)
     expect(clustered).toMatch(/dataset\.subjectRing = 'true'/)
     expect(clustered).toMatch(/SUBJECT_RING_Z_UNDER_PILLS/)
+    expect(clustered).toMatch(/SUBJECT_RING_CHIP_Z/)
     expect(clustered).toMatch(/dataset\.subjectRingLabel/)
     expect(clustered).toMatch(/subjectRingLabel\(placeQuery\)/)
-    expect(clustered).toMatch(/overlayMouseTarget/)
+    expect(clustered).toMatch(/overlayLayer/)
+    expect(clustered).toMatch(/subjectRingKeepFittedZoom/)
+    expect(clustered).not.toMatch(/map\.setZoom\(9\)/)
   })
 })
 
