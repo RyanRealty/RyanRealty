@@ -1,3 +1,11 @@
+# Current — 2026-09-18 (SITE-128 / SITE-129 Look FAIL punch)
+
+Surface: Cursor cloud, branch `cursor/site-128-129-place-atlas-inv-0095`. Tip `fd9fd576a`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **SITE-128.** City + neighborhood Atlas folds are a dominant map (community/sub lock). Scrubber off. Price pins + hover stay. Tetherow / DRW map CSS not touched.
+- **SITE-129.** Mixed plats (DRW) load Atlas keys into typed `V3PlaceInventory` and unfilter House / Condo / Land. SFR counted face stays `getPlatPublicInventory`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `TASTE.md`.
+
 # Current — 2026-09-17 (history explorer: kill Step N of 4)
 
 Surface: Cursor cloud, branch `cursor/history-inline-filter-0e1f`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
