@@ -308,4 +308,11 @@ describe('listing remainder composition', () => {
     expect(PAGE).not.toMatch(/featuredViewAllHref[\s\S]{0,240}homesForSalePath/)
     expect(PAGE).not.toMatch(/featuredViewAllHref[\s\S]{0,240}subdivisionListingsPath/)
   })
+
+  it('keeps a name-only other-subdivs rail for same-community siblings', () => {
+    expect(PAGE).toMatch(/<V3PlaceIndex/)
+    expect(PAGE).toMatch(/id="other-subdivs"/)
+    expect(PAGE).toMatch(/nameOnly/)
+    expect(PAGE).toMatch(/listingAtlas\.otherSubdivs/)
+  })
 })
