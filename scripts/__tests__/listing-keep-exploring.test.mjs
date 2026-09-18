@@ -48,6 +48,18 @@ const cells = ranked.slice(0, cap)
     expect(problems.some((m) => /60\/80|\+52|slice/.test(m))).toBe(true)
   })
 
+  it('refuses a listing page that drops the other-subdivs rail', () => {
+    const problems = listingKeepExploringProblems({
+      root: REPO,
+      files: {
+        page: `const featuredViewAllHref = keepExploring.href
+const keepExploring = listingKeepExploringDoor(listing)
+`,
+      },
+    })
+    expect(problems.some((m) => /other-subdivs/.test(m))).toBe(true)
+  })
+
   it('ci:listing-keep-exploring exits 0 on HEAD', () => {
     const r = spawnSync('node', [join(REPO, 'scripts/check-listing-keep-exploring.mjs')], {
       cwd: REPO,

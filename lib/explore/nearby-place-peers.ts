@@ -4,7 +4,18 @@
  * A city-wide lifetime-sales dump is not a neighbor list. Rank comes from the
  * GIS ring (plats that touch or sit next to this one), then resort siblings.
  * Closed-count sort never enters this file.
+ *
+ * otherCommunitySubdivs is the same-community sibling rail (listing / place
+ * keep-exploring). Visitor names only — no plat-name leaks, no counts.
  */
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { slugify } from '@/lib/slug'
+import { subdivisionHref } from '@/lib/site/place-href'
+import {
+  isPermitGluedPlatSlug,
+  isVisitorPlaceNoiseLabel,
+  isVisitorPlaceNoiseSlug,
+} from '@/lib/site/visitor-place-noise'
 
 export type NearbyPlacePeer = {
   name: string
@@ -107,4 +118,52 @@ export function nameOnlyChildEntries(
     }
   }
   return collapseTwinChildEntries(out)
+}
+
+function visitorSubdivCard(label: string, slug: string): NearbyPlacePeer | null {
+  const rawLabel = label.trim()
+  const rawSlug = slug.trim().toLowerCase()
+  if (!rawLabel || !rawSlug) return null
+  if (
+    isVisitorPlaceNoiseLabel(rawLabel) ||
+    isVisitorPlaceNoiseSlug(rawSlug) ||
+    isPermitGluedPlatSlug(rawSlug)
+  ) {
+    return null
+  }
+  const name = publishPlatDisplayName(rawLabel)
+  const href = subdivisionHref(rawSlug)
+  if (!name || !href) return null
+  return { name, href }
+}
+
+/**
+ * Sibling subdivs in the same community. Name-only cards. No city dump,
+ * no sales sort, no plat-name leaks (permit-glued / MLS abbreviations).
+ * Empty when the frame is a city or nothing visitor-named remains.
+ */
+export function otherCommunitySubdivs(input: {
+  selfSlug?: string | null
+  plats?: ReadonlyArray<{ slug: string; label: string }>
+  aliases?: readonly string[]
+  cap?: number
+}): NearbyPlacePeer[] {
+  const self = (input.selfSlug ?? '').trim().toLowerCase()
+  const cards: NearbyPlacePeer[] = []
+  for (const plat of input.plats ?? []) {
+    const card = visitorSubdivCard(plat.label, plat.slug)
+    if (card) cards.push(card)
+  }
+  for (const alias of input.aliases ?? []) {
+    const published = publishPlatDisplayName(alias)
+    const slug = published ? slugify(published) : slugify(alias)
+    if (!published || !slug) continue
+    const card = visitorSubdivCard(published, slug)
+    if (card) cards.push(card)
+  }
+  const deduped = nameOnlyChildEntries([cards]).filter(
+    (row) => slugFromHref(row.href).toLowerCase() !== self,
+  )
+  deduped.sort((a, b) => a.name.localeCompare(b.name, 'en-US'))
+  return deduped.slice(0, input.cap ?? DEFAULT_CAP)
 }

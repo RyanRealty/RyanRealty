@@ -88,7 +88,12 @@ import {
   salesHeatField,
 } from '@/lib/atlas/sales-heat'
 import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/atlas/pack-labels'
-import { atlasPinShouldPaint, formatAtlasClusterRange, formatAtlasPinPrice } from '@/lib/atlas/pin-price'
+import {
+  atlasPinShouldPaint,
+  formatAtlasClusterPin,
+  formatAtlasClusterRange,
+  formatAtlasPinPrice,
+} from '@/lib/atlas/pin-price'
 import {
   ATLAS_PIN_CLUSTER_RADIUS_PX,
   CITY_FOLD_CLUSTER_BREAKPOINT_PX,
@@ -2245,7 +2250,9 @@ export function V3Atlas({
                 >
                   {pinMarks.map((mark) => {
                     switch (mark.kind) {
-                      case 'cluster':
+                      case 'cluster': {
+                        const price =
+                          mark.minP > 0 ? formatAtlasClusterPin(mark.minP, mark.maxP) : ''
                         return (
                           <span
                             key={mark.id}
@@ -2253,11 +2260,13 @@ export function V3Atlas({
                             style={{ left: mark.x, top: mark.y }}
                             data-atlas-cluster={mark.id}
                             data-atlas-cluster-n={mark.count}
+                            data-atlas-cluster-price={price || undefined}
                             data-atlas-cluster-size={atlasClusterSize(mark.count)}
                           >
-                            {mark.count}
+                            {price}
                           </span>
                         )
+                      }
                       case 'pin': {
                         const { d, i, x, y, label } = mark
                         return (

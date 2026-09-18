@@ -156,6 +156,12 @@ export function mapDrivesHierarchyProblems({ root = process.cwd(), files = {} } 
     if (/entries=\{sisterEntries\}/.test(subdivision)) {
       p.push(`${PATHS.subdivision}: sisterEntries city dump is refuse. Map / GIS ring drives peers.`)
     }
+    if (!/otherCommunitySubdivs/.test(subdivision) || !/id="other-subdivs"/.test(subdivision)) {
+      p.push(`${PATHS.subdivision}: same-community siblings are name-only #other-subdivs, not a city dump.`)
+    }
+    if (/getIndexableSubdivisions[\s\S]{0,200}otherCommunitySubdivs/.test(subdivision)) {
+      p.push(`${PATHS.subdivision}: other-subdivs must not read the indexable city dump.`)
+    }
   }
 
   return p

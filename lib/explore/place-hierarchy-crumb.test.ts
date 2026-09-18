@@ -48,6 +48,12 @@ describe('SITE-128 hierarchy — community ≠ neighborhood', () => {
     expect(subdivision).toMatch(/nameOnly/)
     expect(subdivision).not.toMatch(/entries=\{sisterEntries\}/)
   })
+
+  it('adds same-community other-subdivs as name-only cards, not an index dump', () => {
+    expect(subdivision).toMatch(/otherCommunitySubdivs/)
+    expect(subdivision).toMatch(/id="other-subdivs"/)
+    expect(subdivision).not.toMatch(/getIndexableSubdivisions[\s\S]{0,200}otherCommunitySubdivs/)
+  })
 })
 
 describe('Matt LOCK — sitewide crumb is one component', () => {

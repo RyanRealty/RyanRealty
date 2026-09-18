@@ -119,6 +119,7 @@ import {
   V3SectionTracker,
   V3Atlas,
   V3ListingRow,
+  V3PlaceIndex,
   v3Text,
 } from '@/components/site/v3'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -879,6 +880,14 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           rows={similarRows}
           placeName={featuredGeoName}
           viewMoreHref={featuredViewAllHref}
+        />
+      ) : null}
+      {listingAtlas && listingAtlas.otherSubdivs.length > 0 ? (
+        <V3PlaceIndex
+          id="other-subdivs"
+          heading={listingAtlas.otherSubdivsHeading || featuredGeoName}
+          nameOnly
+          entries={listingAtlas.otherSubdivs}
         />
       ) : null}
       {/* SITE-06 — THE ENDING. It sits after the similar-homes Ledger and before
