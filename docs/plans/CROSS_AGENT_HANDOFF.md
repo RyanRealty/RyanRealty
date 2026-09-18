@@ -1,3 +1,13 @@
+# Current — 2026-09-18 (SITE-128 Tip Ready #3 — amenity layers at community/subdivision grain)
+
+Surface: Cursor cloud `bc-82fef573-212a-5e70-8071-55cb73dacbc3`, branch `cursor/site-128-amenity-comm-subdiv-cbc3`. Tip `99ba8b0a6`. Stacked on #2 rematch `09239cb31` / PR #309 (not Mini-landed). Cos should Mini-land #2 first, then this tip. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **Wired.** Community fold V3Atlas + subdivision fold V3Atlas. `getPlaceAmenityLayers` now passes `citySlug` (community) and parent `communitySlug`/`resortSlug` (plat). Local grain keeps official `boundaries` park polygons and `trail_lines` that touch the recorded place ring; missing geom stays omitted.
+- **Not invented.** Registry lat/lng is membership only. No OSM / buffer / corridor. Same V3Atlas amenity paint as city (`amenities={amenityLayers}`).
+- **Locks intact.** Map hierarchy (`ci:map-hierarchy`, `--ship map-hierarchy.parity.json`) and first-look refuse (`--ship place-craft.parity.json`) still ship OK on this stack.
+- **Gates.** `ci:atlas-amenity-layers` + `--ship lib/atlas/amenity-layers.parity.json` OK. Targeted amenity/hierarchy/first-look tests 74/74.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
+
 # Current — 2026-09-18 (SITE-128 Tip Ready #2 rematch — map hierarchy lock)
 
 Surface: Cursor cloud `bc-e1f596a2-a544-5f74-9d76-8b562ab3519f`, branch `cursor/site-128-map-hierarchy-lock-519f`. Rematch of tip `daadcfba9` / PR #308 onto first-look-landed `origin/main` `5f0d2a1cb` (e788894f4 → 6bd09fb32 → 5f0d2a1cb). PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
