@@ -22,12 +22,13 @@ Surface: site queue SITE-127 open. Public Patch owns Tip Ready — price labels 
 
 
 
-# Current — 2026-09-18 (SITE-126 chrome mega-menus)
+# Current — 2026-09-18 (SITE-126 chrome mega-menus — Tip Ready)
 
-Surface: site queue SITE-126 open. Public Patch owns Tip Ready craft for ALL V3Chrome mega-menus (Homes / Places / Market / Sell / About). Cos Mini lands. Do not merge unrelated. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/v3chrome-all-mega-menus-0035`. Draft PR #289. SITE-126 claimed by `cursor-grok-4.6-2026-09-18`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
-- **Defect.** Sparse uneven panels, mixed thumbs, empty dead columns, edge-cramp.
-- **Accept.** Dense balanced panels, consistent row treatment, real padding; Matt does not call them buns.
+- **Menus.** Homes / Places / Market / Sell / About — one packed mega on seed `f8a6ce215`. No empty dead columns. Live facts are Now rows. Thumbs all-or-none per column. Places indexes (All communities + neighborhoods + subdivisions + schools) pack into Browse.
+- **Tip Ready.** `node scripts/lib/taste-receipt.mjs --ship lib/site/chrome-mega.parity.json` exit 0 (picker-contract).
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
 # Current — 2026-09-18 (P0 Grand Targhee listing hero follow-up)
 

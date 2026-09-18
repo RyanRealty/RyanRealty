@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { KB_TOP_NAV } from '@/lib/site-nav'
 import {
   CHROME_MEGA_GROUP_KEYS,
+  chromeMegaColumnMarks,
   chromeMegaModel,
   chromeMegaPath,
   packMegaSections,
@@ -87,7 +88,7 @@ describe('chromeMegaModel — all five chrome menus', () => {
       'Communities',
       'Browse',
     ])
-    expect(models.Areas.sections.find((section) => section.heading === 'Browse')?.links).toHaveLength(3)
+    expect(models.Areas.sections.find((section) => section.heading === 'Browse')?.links).toHaveLength(4)
     expect(models.Market.now?.heading).toBe('Now')
     expect(models.Market.caption).toBe('Central Oregon detached homes right now')
     expect(models.Market.colCount).toBe(4)
@@ -104,6 +105,20 @@ describe('chromeMegaModel — all five chrome menus', () => {
     expect(places.sections.every((section) => section.links.length >= 2)).toBe(true)
   })
 
+  it('contract: places-indexes-pack-into-browse — All communities sits with the other indexes', () => {
+    const places = chromeMegaModel('Areas', topGroup('Areas').children)
+    const browse = places.sections.find((section) => section.heading === 'Browse')
+    expect(browse?.links.map((link) => link.href)).toEqual([
+      '/communities',
+      '/neighborhoods',
+      '/subdivisions',
+      '/schools',
+    ])
+    expect(places.sections.find((section) => section.heading === 'Communities')?.links.every((link) =>
+      link.href.startsWith('/communities/'),
+    )).toBe(true)
+  })
+
   it('keeps every featured door reachable after packing', () => {
     for (const key of CHROME_MEGA_GROUP_KEYS) {
       const group = topGroup(key)
@@ -111,5 +126,18 @@ describe('chromeMegaModel — all five chrome menus', () => {
       const packed = model.sections.flatMap((section) => section.links.map((link) => link.href))
       expect(packed.sort()).toEqual([...group.children.map((link) => link.href)].sort())
     }
+  })
+})
+
+describe('chromeMegaColumnMarks', () => {
+  const marks = {
+    '/communities/tetherow': '/images/chrome-marks/tetherow.jpg',
+    '/communities/broken-top': '/images/chrome-marks/broken-top.jpg',
+  }
+
+  it('contract: thumbs-all-or-none-per-column — mixed mark / text-only columns emit no thumbs', () => {
+    expect(chromeMegaColumnMarks(['/communities/tetherow', '/communities/broken-top'], marks)).toEqual(marks)
+    expect(chromeMegaColumnMarks(['/communities/tetherow', '/communities'], marks)).toBeNull()
+    expect(chromeMegaColumnMarks([], marks)).toBeNull()
   })
 })
