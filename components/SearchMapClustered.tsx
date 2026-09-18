@@ -31,6 +31,15 @@ import {
   v3FitPadding,
   v3SubjectRingPadding,
 } from '@/lib/maps/v3-basemap'
+import {
+  ringLabelAnchor,
+  SUBJECT_RING_HALO_Z,
+  SUBJECT_RING_INK_Z,
+  SUBJECT_RING_Z_UNDER_PILLS,
+  subjectRingHaloWeight,
+  subjectRingInkWeight,
+  subjectRingLabel,
+} from '@/lib/maps/subject-ring'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import './search/search-map-marks.css'
 
@@ -668,6 +677,173 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
   return PricePillOverlayClass
 }
 
+type RingPath = { lat: number; lng: number }[]
+
+interface SubjectRingOverlayHandle {
+  setMap(map: google.maps.Map | null): void
+  update(opts: { paths: RingPath[]; label: string | null; inkWeight: number }): void
+}
+
+type SubjectRingOverlayCtor = new (opts: {
+  map?: google.maps.Map | null
+  paths: RingPath[]
+  label: string | null
+  inkWeight: number
+}) => SubjectRingOverlayHandle
+
+let SubjectRingOverlayClass: SubjectRingOverlayCtor | null = null
+
+/**
+ * Cream halo + navy ink + place chip in overlayMouseTarget at z 0.
+ * Pills stay at z 1. Same recorded paths as the Polygon — no invented geom.
+ * Atlas draws every outline twice so it reads over the field; Cos rematch
+ * had strokeWeight 8 on the tile layer only and lost Bend under the pile.
+ */
+function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
+  if (SubjectRingOverlayClass) return SubjectRingOverlayClass
+
+  class SubjectRingOverlay extends google.maps.OverlayView {
+    private root: HTMLDivElement | null = null
+    private paths: RingPath[]
+    private label: string | null
+    private inkWeight: number
+
+    constructor(opts: {
+      map?: google.maps.Map | null
+      paths: RingPath[]
+      label: string | null
+      inkWeight: number
+    }) {
+      super()
+      this.paths = opts.paths
+      this.label = opts.label
+      this.inkWeight = opts.inkWeight
+      if (opts.map) this.setMap(opts.map)
+    }
+
+    update(opts: { paths: RingPath[]; label: string | null; inkWeight: number }) {
+      this.paths = opts.paths
+      this.label = opts.label
+      this.inkWeight = opts.inkWeight
+      this.draw()
+    }
+
+    onAdd() {
+      const root = document.createElement('div')
+      root.dataset.subjectRing = 'true'
+      root.style.position = 'absolute'
+      root.style.pointerEvents = 'none'
+      root.style.zIndex = String(SUBJECT_RING_Z_UNDER_PILLS)
+      this.getPanes()?.overlayMouseTarget.appendChild(root)
+      this.root = root
+    }
+
+    draw() {
+      const root = this.root
+      const proj = this.getProjection()
+      if (!root || !proj) return
+      const halo = subjectRingHaloWeight(this.inkWeight)
+      const pixels = this.paths.map((path) =>
+        path
+          .map((p) => proj.fromLatLngToDivPixel(new google.maps.LatLng(p.lat, p.lng)))
+          .filter((pt): pt is google.maps.Point => Boolean(pt)),
+      )
+      const all = pixels.flat()
+      if (all.length < 2) {
+        root.replaceChildren()
+        return
+      }
+      const xs = all.map((p) => p.x)
+      const ys = all.map((p) => p.y)
+      const minX = Math.min(...xs) - halo
+      const minY = Math.min(...ys) - halo
+      const width = Math.max(...xs) - minX + halo
+      const height = Math.max(...ys) - minY + halo
+      root.style.left = `${minX}px`
+      root.style.top = `${minY}px`
+      root.style.width = `${width}px`
+      root.style.height = `${height}px`
+
+      const d = pixels
+        .map((path) => {
+          if (path.length < 2) return ''
+          const [first, ...rest] = path
+          return `M${(first.x - minX).toFixed(1)} ${(first.y - minY).toFixed(1)}${rest
+            .map((pt) => `L${(pt.x - minX).toFixed(1)} ${(pt.y - minY).toFixed(1)}`)
+            .join('')}Z`
+        })
+        .filter(Boolean)
+        .join('')
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      svg.setAttribute('data-subject-ring', 'halo-ink')
+      svg.setAttribute('width', String(width))
+      svg.setAttribute('height', String(height))
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
+      svg.setAttribute('aria-hidden', 'true')
+      svg.style.display = 'block'
+      svg.style.overflow = 'visible'
+
+      const haloPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      haloPath.setAttribute('d', d)
+      haloPath.setAttribute('fill', 'none')
+      haloPath.setAttribute('stroke', MAP_CREAM)
+      haloPath.setAttribute('stroke-width', String(halo))
+      haloPath.setAttribute('stroke-linejoin', 'round')
+      haloPath.setAttribute('stroke-linecap', 'round')
+
+      const inkPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      inkPath.setAttribute('d', d)
+      inkPath.setAttribute('fill', MAP_NAVY)
+      inkPath.setAttribute('fill-opacity', '0.08')
+      inkPath.setAttribute('stroke', MAP_NAVY)
+      inkPath.setAttribute('stroke-width', String(this.inkWeight))
+      inkPath.setAttribute('stroke-linejoin', 'round')
+      inkPath.setAttribute('stroke-linecap', 'round')
+
+      svg.append(haloPath, inkPath)
+      const kids: Node[] = [svg]
+
+      const labelText = this.label
+      const anchor = labelText ? ringLabelAnchor(this.paths) : null
+      const anchorPx = anchor
+        ? proj.fromLatLngToDivPixel(new google.maps.LatLng(anchor.lat, anchor.lng))
+        : null
+      if (labelText && anchorPx) {
+        const chip = document.createElement('div')
+        chip.dataset.subjectRingLabel = labelText
+        chip.textContent = labelText
+        chip.style.position = 'absolute'
+        chip.style.left = `${anchorPx.x - minX}px`
+        chip.style.top = `${anchorPx.y - minY}px`
+        chip.style.transform = 'translate(-50%, -50%)'
+        chip.style.background = MAP_CREAM
+        chip.style.color = MAP_NAVY
+        chip.style.border = `1.5px solid ${MAP_NAVY}`
+        chip.style.borderRadius = '999px'
+        chip.style.padding = '2px 7px'
+        chip.style.fontFamily = 'Geist, ui-sans-serif, system-ui, sans-serif'
+        chip.style.fontSize = '11px'
+        chip.style.fontWeight = '600'
+        chip.style.letterSpacing = '0.02em'
+        chip.style.lineHeight = '1.2'
+        chip.style.whiteSpace = 'nowrap'
+        chip.style.pointerEvents = 'none'
+        kids.push(chip)
+      }
+      root.replaceChildren(...kids)
+    }
+
+    onRemove() {
+      this.root?.remove()
+      this.root = null
+    }
+  }
+
+  SubjectRingOverlayClass = SubjectRingOverlay as unknown as SubjectRingOverlayCtor
+  return SubjectRingOverlayClass
+}
+
 /** How close a mark's painted box may come to the frame edge before it slides in. */
 const MARK_EDGE_MARGIN_PX = 14
 
@@ -853,6 +1029,7 @@ export default function SearchMapClustered({
   const clustererRef = useRef<MarkerClusterer | null>(null)
   // Price-pill marker refs — PricePillOverlay on the styled raster map.
   const advMarkersRef = useRef<PriceMarker[]>([])
+  const subjectRingOverlayRef = useRef<SubjectRingOverlayHandle | null>(null)
   const markersByKeyRef = useRef<Map<string, PriceMarker>>(new Map())
   const placeViewportRef = useRef<google.maps.LatLngBounds | null>(null)
   const [placeViewport, setPlaceViewport] = useState<google.maps.LatLngBounds | null>(null)
@@ -1310,6 +1487,43 @@ export default function SearchMapClustered({
     return () => window.clearTimeout(t)
   }, [mapInstance, fitSubjectRing, boundaryPaths])
 
+  // Cream halo + navy ink + place chip above the basemap, under $ pills.
+  // Same recorded GeoJSON as the Polygon. Look island only.
+  useEffect(() => {
+    const map = mapInstance
+    const overlay = subjectRingOverlayRef.current
+    const paint =
+      Boolean(map && window.google?.maps && fitSubjectRing && showBoundary && !selectedChildId) &&
+      boundaryPaths.flat().length >= 2
+    if (!paint || !map) {
+      overlay?.setMap(null)
+      return
+    }
+    const next = {
+      paths: boundaryPaths,
+      label: subjectRingLabel(placeQuery),
+      inkWeight: subjectRingInkWeight(boundaryStrokeWeight),
+    }
+    if (!overlay) {
+      const Ctor = getSubjectRingOverlayClass()
+      subjectRingOverlayRef.current = new Ctor({ map, ...next })
+    } else {
+      overlay.update(next)
+      overlay.setMap(map)
+    }
+    return () => {
+      subjectRingOverlayRef.current?.setMap(null)
+    }
+  }, [
+    mapInstance,
+    fitSubjectRing,
+    showBoundary,
+    selectedChildId,
+    boundaryPaths,
+    placeQuery,
+    boundaryStrokeWeight,
+  ])
+
   // NOTE: The idle listener for bounds reporting is attached directly in onLoad
   // above. This effect is intentionally removed to avoid the race condition where
   // the effect ran before onLoad set mapRef.current (causing no listener to be
@@ -1741,21 +1955,56 @@ export default function SearchMapClustered({
               />
             )}
             {/* Subject place ring only. Hidden while a child is selected so
-                the highlight is THAT child, not twenty plats. data-map-hierarchy=subject */}
+                the highlight is THAT child, not twenty plats. data-map-hierarchy=subject
+                Look island: cream halo under navy ink (Atlas), then the
+                overlayMouseTarget copy sits above tiles and under pills. */}
             {showBoundary && !selectedChildId && boundaryPaths.flat().length > 0 &&
-              boundaryPaths.map((path, i) => (
-                <Polygon
-                  key={`geo-${i}`}
-                  paths={path}
-                  options={{
-                    fillColor: MAP_NAVY,
-                    fillOpacity: 0.06,
-                    strokeColor: MAP_NAVY,
-                    strokeWeight: boundaryStrokeWeight ?? 2.5,
-                    strokeOpacity: fitSubjectRing ? 1 : 0.75,
-                  }}
-                />
-              ))}
+              boundaryPaths.flatMap((path, i) => {
+                const ink = subjectRingInkWeight(fitSubjectRing ? boundaryStrokeWeight : undefined)
+                if (!fitSubjectRing) {
+                  return [
+                    <Polygon
+                      key={`geo-${i}`}
+                      paths={path}
+                      options={{
+                        fillColor: MAP_NAVY,
+                        fillOpacity: 0.06,
+                        strokeColor: MAP_NAVY,
+                        strokeWeight: boundaryStrokeWeight ?? 2.5,
+                        strokeOpacity: 0.75,
+                      }}
+                    />,
+                  ]
+                }
+                return [
+                  <Polygon
+                    key={`geo-halo-${i}`}
+                    paths={path}
+                    options={{
+                      fillColor: MAP_NAVY,
+                      fillOpacity: 0,
+                      strokeColor: MAP_CREAM,
+                      strokeWeight: subjectRingHaloWeight(ink),
+                      strokeOpacity: 1,
+                      zIndex: SUBJECT_RING_HALO_Z,
+                      clickable: false,
+                    }}
+                  />,
+                  <Polygon
+                    key={`geo-${i}`}
+                    paths={path}
+                    options={{
+                      fillColor: MAP_NAVY,
+                      fillOpacity: 0.08,
+                      strokeColor: MAP_NAVY,
+                      strokeWeight: ink,
+                      strokeOpacity: 1,
+                      zIndex: SUBJECT_RING_INK_Z,
+                      clickable: false,
+                    }}
+                  />,
+                ]
+              })}
             {/* Child plats: hit-only until selected. Click zooms THAT recorded
                 boundary — listing pins keep their own click. */}
             {showBoundary &&
