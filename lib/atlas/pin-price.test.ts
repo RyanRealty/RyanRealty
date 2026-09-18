@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { atlasPinShouldPaint, formatAtlasClusterRange, formatAtlasPinPrice } from './pin-price'
+import {
+  atlasPinShouldPaint,
+  formatAtlasClusterPin,
+  formatAtlasClusterRange,
+  formatAtlasPinPrice,
+} from './pin-price'
 
 describe('formatAtlasPinPrice', () => {
   it('prints Redfin-style thousands without a dollar (735K)', () => {
@@ -31,6 +36,18 @@ describe('formatAtlasClusterRange', () => {
   it('names a span in the same pin language', () => {
     expect(formatAtlasClusterRange(499_000, 1_500_000)).toBe('499K to $1.5M')
     expect(formatAtlasClusterRange(735_000, 735_000)).toBe('735K')
+  })
+})
+
+describe('formatAtlasClusterPin', () => {
+  it('prints the same face as a lone pin when the pile is one ask', () => {
+    expect(formatAtlasClusterPin(735_000, 735_400)).toBe('735K')
+    expect(formatAtlasClusterPin(1_500_000, 1_500_000)).toBe('$1.5M')
+  })
+
+  it('prints the low ask with + when the pile spans, never a bare count', () => {
+    expect(formatAtlasClusterPin(735_000, 1_500_000)).toBe('735K+')
+    expect(formatAtlasClusterPin(1_000_000, 2_400_000)).toBe('$1M+')
   })
 })
 

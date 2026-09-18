@@ -22,6 +22,7 @@ import {
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { outerRings, pointInRings } from '@/lib/geo/project-svg'
 import { listingAtlasFrameIntent } from '@/lib/listing/listing-place-market'
+import { otherCommunitySubdivs } from '@/lib/explore/nearby-place-peers'
 import { pickListingAtlasRelatedPlats } from '@/lib/listing/listing-keep-exploring'
 import {
   cityHref,
@@ -61,6 +62,9 @@ export type ListingAtlas = {
   /** What the frame is: "Awbrey Butte" or "Bend". */
   frameName: string
   frameHref: string | null
+  /** Same-community sibling plats. Empty on a city frame (no dump). */
+  otherSubdivs: { name: string; href: string }[]
+  otherSubdivsHeading: string
 }
 
 const READ_MS = 4500
@@ -209,6 +213,13 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     ),
   ]
 
+  const otherSubdivs = hasLocalFrame
+    ? otherCommunitySubdivs({
+        selfSlug: subjectPlat?.slug ?? null,
+        plats: withGeometry,
+      })
+    : []
+
   return {
     atlas: atlasRead ?? EMPTY_PLACE_ATLAS,
     regions,
@@ -218,5 +229,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     frameHref,
     outlinedOf: (boundary ? 1 : 0) + withGeometry.length,
     dotsFrame: !boundary,
+    otherSubdivs,
+    otherSubdivsHeading: hasLocalFrame ? frameName : '',
   }
 }

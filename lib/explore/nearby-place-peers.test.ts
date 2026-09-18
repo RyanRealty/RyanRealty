@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { isTwoTokenSuffixTwin, nameOnlyChildEntries, nearbySubdivisionPeers } from './nearby-place-peers'
+import {
+  isTwoTokenSuffixTwin,
+  nameOnlyChildEntries,
+  nearbySubdivisionPeers,
+  otherCommunitySubdivs,
+} from './nearby-place-peers'
 
 describe('nearbySubdivisionPeers', () => {
   it('ranks GIS ring neighbors ahead of resort siblings and never sorts by sales', () => {
@@ -74,5 +79,36 @@ describe('nameOnlyChildEntries', () => {
       ],
     ])
     expect(rows).toEqual([{ name: 'Awbrey Butte', href: '/cities/bend/awbrey-butte' }])
+  })
+})
+
+describe('otherCommunitySubdivs', () => {
+  it('keeps sibling visitor names and drops self', () => {
+    const rows = otherCommunitySubdivs({
+      selfSlug: 'parkside-place-phase-1',
+      plats: [
+        { slug: 'parkside-place-phase-1', label: 'Parkside Place Phase 1' },
+        { slug: 'parkside-place-phase-2', label: 'Parkside Place Phase 2' },
+        { slug: 'awbrey-glen', label: 'Awbrey Glen' },
+      ],
+    })
+    expect(rows.map((row) => row.name)).toEqual(['Awbrey Glen', 'Parkside Place Phase 2'])
+    expect(rows.every((row) => !('count' in row))).toBe(true)
+  })
+
+  it('drops permit-glued slugs and withheld MLS tokens', () => {
+    const rows = otherCommunitySubdivs({
+      selfSlug: 'stevens-ranch',
+      plats: [
+        { slug: 'stevens-ranch-plld20211070', label: 'Stevens Ranch' },
+        { slug: 'oww', label: 'Oww' },
+        { slug: 'stevens-ranch-phase-rs-1', label: 'Stevens Ranch Phase RS-1' },
+      ],
+    })
+    expect(rows.map((row) => row.href)).toEqual(['/subdivisions/stevens-ranch-phase-rs-1'])
+  })
+
+  it('is empty on a city dump — omit the rail', () => {
+    expect(otherCommunitySubdivs({ selfSlug: 'lone-plat', plats: [] })).toEqual([])
   })
 })

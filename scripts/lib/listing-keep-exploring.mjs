@@ -1,10 +1,12 @@
 /**
  * listing-keep-exploring.mjs — lock listing View more + Atlas plat chips.
  *
- * SITE-128 craft #4. "View more" must land on the subdivision (or the next
- * visitor place), never generic /homes-for-sale search. Listing Atlas chips
- * must not dump 60 legal plats ("+52 more" at 375). Tip Ready --ship and
- * ci:listing-keep-exploring refuse a rebuild that restores either leak.
+ * SITE-128 craft #4 + #5. "View more" must land on the subdivision (or the
+ * next visitor place), never generic /homes-for-sale search. Listing Atlas
+ * chips must not dump 60 legal plats ("+52 more" at 375). #5 adds the
+ * name-only #other-subdivs rail (same-community siblings, no plat-name leaks).
+ * Tip Ready --ship and ci:listing-keep-exploring refuse a rebuild that
+ * restores either leak.
  *
  * Existing keep-exploring / related-places chrome only. Does not touch
  * listingPlaceTrail (hierarchy tip) or amenity layers.
@@ -27,6 +29,7 @@ export const KEEP_EXPLORING_LOCK = Object.freeze({
 
 const PATHS = Object.freeze({
   helper: 'lib/listing/listing-keep-exploring.ts',
+  peers: 'lib/explore/nearby-place-peers.ts',
   page: 'app/listing/[listingKey]/page.tsx',
   atlas: 'app/listing/[listingKey]/_v3/listing-atlas.ts',
   similar: 'components/site/listing-detail/ListingSimilarStrip.tsx',
@@ -108,6 +111,29 @@ export function listingKeepExploringProblems({ root = process.cwd(), files = {} 
 
   if (atlasClient && !/const CHIP_FOLD_AT = 8/.test(atlasClient)) {
     p.push(`${PATHS.atlasClient}: CHIP_FOLD_AT must stay 8 (listing chips assume this fold).`)
+  }
+
+  const peers = readRel(root, PATHS.peers, files.peers)
+  if (peers == null) {
+    p.push(`${PATHS.peers}: missing — other-subdivs rail helper is gone.`)
+  } else if (!/export function otherCommunitySubdivs/.test(peers)) {
+    p.push(`${PATHS.peers}: otherCommunitySubdivs export is gone.`)
+  } else if (!/publishPlatDisplayName/.test(peers) || !/isPermitGluedPlatSlug/.test(peers)) {
+    p.push(`${PATHS.peers}: other-subdivs must refuse plat-name leaks.`)
+  }
+
+  if (!/otherCommunitySubdivs/.test(atlas)) {
+    p.push(`${PATHS.atlas}: listing keep-exploring must pick same-community siblings via otherCommunitySubdivs.`)
+  }
+  if (!/hasLocalFrame[\s\S]{0,80}otherCommunitySubdivs/.test(atlas) && !/otherSubdivs = hasLocalFrame/.test(atlas)) {
+    p.push(`${PATHS.atlas}: other-subdivs rail must stay empty on a city frame (no dump).`)
+  }
+
+  if (!/id="other-subdivs"/.test(page) || !/<V3PlaceIndex/.test(page) || !/nameOnly/.test(page)) {
+    p.push(`${PATHS.page}: keep-exploring other-subdivs rail must be name-only V3PlaceIndex #other-subdivs.`)
+  }
+  if (/id="other-subdivs"[\s\S]{0,200}countLabel/.test(page)) {
+    p.push(`${PATHS.page}: other-subdivs cards must stay name-only — no countLabel.`)
   }
 
   return p

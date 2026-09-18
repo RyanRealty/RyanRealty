@@ -36,7 +36,7 @@ const js = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText
 const mod = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
-const { formatAtlasPinPrice, atlasPinShouldPaint } = mod
+const { formatAtlasPinPrice, formatAtlasClusterPin, atlasPinShouldPaint } = mod
 
 function expect(label, actual, wanted) {
   if (!Object.is(actual, wanted)) {
@@ -47,6 +47,8 @@ function expect(label, actual, wanted) {
 expect('735K', formatAtlasPinPrice(735_000), '735K')
 expect('$1.5M', formatAtlasPinPrice(1_500_000), '$1.5M')
 expect('$1M', formatAtlasPinPrice(1_000_000), '$1M')
+expect('cluster same ask', formatAtlasClusterPin(735_000, 735_400), '735K')
+expect('cluster span', formatAtlasClusterPin(735_000, 1_500_000), '735K+')
 expect('active paints', atlasPinShouldPaint({ s: 'active', p: 735_000 }), true)
 expect('sold silent', atlasPinShouldPaint({ s: 'sold', p: 735_000 }), false)
 
@@ -74,17 +76,22 @@ expect('spaced pin stays', piled[1]?.count, 1)
 const atlas = readFileSync(ATLAS, 'utf8')
 for (const needle of [
   'formatAtlasPinPrice',
+  'formatAtlasClusterPin',
   'atlasPinShouldPaint',
   'clusterAtlasPins',
   'v3-atlas__pin',
   'data-atlas-pin-price',
   'data-atlas-cluster',
+  'data-atlas-cluster-price',
   'data-atlas-pin-layer',
   'v3-atlas__home',
   'data-atlas-home',
   'v3-atlas__home-photo',
 ]) {
   if (!atlas.includes(needle)) failures.push(`${ATLAS} must keep ${needle} (silent dots regress)`)
+}
+if (/>\s*\{mark\.count\}\s*</.test(atlas)) {
+  failures.push(`${ATLAS}: cluster pills must print 735K/$1.5M, not a bare count`)
 }
 
 const builder = readFileSync(BUILDER, 'utf8')
