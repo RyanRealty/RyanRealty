@@ -226,7 +226,7 @@
 
 .nbh-fold__drawing {
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* The Atlas is a full-bleed SECTION everywhere else, so it carries the page
@@ -569,6 +569,16 @@
      (SITE-128 FAIL). Match community/sub. */
   .nbh-fold__drawing .v3-atlas__frame {
     max-height: min(46vh, 20rem);
+  }
+
+  .nbh-fold__drawing .v3-place-look__stage {
+    min-height: 0;
+  }
+
+  .nbh-fold__drawing .v3-place-look__map {
+    height: min(26vh, 13rem);
+    min-height: 11rem;
+    max-height: 13rem;
   }
 
   .nbh-fold__drawing .v3-atlas__stage {

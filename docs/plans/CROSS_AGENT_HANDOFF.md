@@ -1,13 +1,18 @@
+# Current — 2026-09-18 (SITE-128 paint rematch — Bend first-look @375)
+
+Surface: Cursor cloud, branch `cursor/site-128-bend-375-first-look-56a7` off `origin/main` `a873fe9ea`. PR #312 — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+
+- **Root cause.** V3PlaceLook is mounted. Fold zoom fitted 240 pins ∪ city ring → z≈8 speck under one count cluster; BEM canvas `\b` miss left a 360px minHeight; @375 18rem map + 2-col left two photo peeks.
+- **Paint.** Ring-only camera (`fitSubjectRing` + `v3SubjectRingPadding` + phone z9). `disableClustering` + pin cap 36. Phone 13rem island + 2×2 cards. Evidence in `look-pass-site128-firstlook-2026-09-18/`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
+
 # Current — 2026-09-18 (SITE-128 Tip Ready #4 — hierarchy naming + crumb sameness)
 
-Surface: Cursor cloud, branch `cursor/site-128-hierarchy-naming-crumb-4cdb`. Tipped against `origin/main` `762952409` (first-look + map hierarchy). PR #310 amenity #3 (`99ba8b0a6`) is Tip Ready awaiting Mini-land — Cos Mini-lands #3 first. This tip does not stack on `99ba8b0a6`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+Surface: Cursor cloud, branch `cursor/site-128-hierarchy-naming-crumb-4cdb`. Tipped against `origin/main` `762952409` (first-look + map hierarchy). Landed `a873fe9ea`. HOLD owner email.
 
-- **Naming.** Atlas child plats are `kind:'subdivision'` (child-rings, city non-Bend, listing Atlas). `KIND_LABEL.subdivision = Subdivision`. City rail heading is Communities, not Communities and subdivisions. Quiet term is "Names the MLS uses here". leftoverHudKpis community grain stays neighborhood (DATA).
-- **Twin slug.** `nameOnlyChildEntries` collapses 2+ token suffix twins (river-woods ⊂ deschutes-river-woods). Single-token suffix is not a twin. City children wrap the same helper.
-- **Crumbs.** `V3Breadcrumb` runs `nameOnlyCrumbs`: no Home, no grain-index ancestors. Collapse 3+ / overlayCompact stays. Search + compare drop `belowNav={false}`.
-- **Prior locks.** first-look refuse, map-hierarchy subject ring, `amenities={amenityLayers}` untouched. No geom invent.
-- **Tip Ready.** `node scripts/lib/taste-receipt.mjs --ship lib/place/hierarchy-naming.parity.json`. `ci:hierarchy-naming` in `ci:gates:chain` + lanes always.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
+- **Naming.** Atlas child plats are `kind:'subdivision'`. City rail heading is Communities. Quiet term is "Names the MLS uses here".
+- **Twin slug.** `nameOnlyChildEntries` collapses 2+ token suffix twins.
+- **Crumbs.** `V3Breadcrumb` runs `nameOnlyCrumbs`: no Home, no grain-index ancestors.
 
 # Current — 2026-09-18 (SITE-128 Tip Ready #2 rematch — map hierarchy lock)
 
