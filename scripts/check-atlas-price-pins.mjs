@@ -71,6 +71,11 @@ const tiles = readFileSync(TILES, 'utf8')
 for (const col of ['photo_url', 'beds', 'baths', 'sqft', 'street_suffix']) {
   if (!tiles.includes(col)) failures.push(`${TILES} must read ${col} for the hover card`)
 }
+if (!tiles.includes('StreetSuffix:details->>StreetSuffix')) {
+  failures.push(
+    `${TILES} closed walk must alias StreetSuffix from details — listings has no StreetSuffix column`,
+  )
+}
 
 for (const page of PLACE_PAGES) {
   const src = readFileSync(page, 'utf8')
