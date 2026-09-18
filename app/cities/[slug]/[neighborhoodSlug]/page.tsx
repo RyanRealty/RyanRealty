@@ -105,6 +105,7 @@ import {
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { overlaysFromChildCells, regionsFromChildCells } from '@/lib/place/child-rings'
+import { childAtlasRegions, subjectAtlasRegions } from '@/lib/place/map-hierarchy'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
@@ -826,7 +827,8 @@ async function renderNeighborhoodDetail({ params }: Props) {
                 headlineTone="eyebrow"
                 claimText={`${neighborhood.name} houses for sale — active and pending.`}
                 dots={atlasView.dots}
-                regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
+                regions={subjectAtlasRegions(atlasRegions)}
+                childRegions={childAtlasRegions(atlasRegions)}
                 basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
                 fit="dots"
                 types={atlasView.types}

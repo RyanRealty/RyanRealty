@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { childZoomBounds } from '@/lib/place/map-hierarchy'
 import { MapContext, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import {
@@ -39,6 +39,26 @@ import './search/search-map-marks.css'
  * wears it. The painted size is untouched; the target is an invisible pseudo.
  */
 const MARK_CLASS = 'rr-map-mark'
+
+/** Unselected child plats: hit only. Not 20 highlighted rings (Old Bend FAIL). */
+const MAP_HIERARCHY_CHILD_HIT = {
+  fillColor: MAP_NAVY,
+  fillOpacity: 0,
+  strokeColor: MAP_NAVY,
+  strokeWeight: 10,
+  strokeOpacity: 0,
+  clickable: true,
+} as const
+
+/** The one selected child — that recorded ring fills the frame. */
+const MAP_HIERARCHY_SELECTED_CHILD = {
+  fillColor: MAP_NAVY,
+  fillOpacity: 0.08,
+  strokeColor: MAP_NAVY,
+  strokeWeight: 3.5,
+  strokeOpacity: 0.92,
+  clickable: true,
+} as const
 
 // There is ONE marker path here, and it is the raster one (SITE-44, 2026-09-09).
 //
@@ -898,19 +918,38 @@ export default function SearchMapClustered({
     [savedListingKeys, likedListingKeys]
   )
 
-  const router = useRouter()
   const boundaryPaths = useMemo(() => geojsonToPaths(boundaryGeojson), [boundaryGeojson])
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null)
 
-  // Subordinate cells (a community's plats). Paths computed once per prop; a
-  // cell keeps its label + href beside its rings so the click handler and the
-  // renderer read one structure.
+  // Subordinate cells (a community's plats). Recorded GIS only. Default
+  // highlight is the subject ring; a cell is a select → zoom target.
   const overlayCells = useMemo(
     () =>
       (overlayBoundaries ?? [])
-        .map((cell) => ({ label: cell.label, href: cell.href, paths: geojsonToPaths(cell.geojson) }))
+        .map((cell) => ({
+          id: cell.href?.trim() || cell.label,
+          label: cell.label,
+          href: cell.href,
+          geojson: cell.geojson,
+          paths: geojsonToPaths(cell.geojson),
+        }))
         .filter((cell) => cell.paths.flat().length > 0),
     [overlayBoundaries],
   )
+
+  const selectChildOverlay = useCallback((cell: { id: string; geojson: unknown }) => {
+    const bounds = childZoomBounds(cell.geojson)
+    setSelectedChildId(cell.id)
+    const map = mapRef.current
+    if (!map || !bounds) return
+    const box = new google.maps.LatLngBounds(
+      { lat: bounds.south, lng: bounds.west },
+      { lat: bounds.north, lng: bounds.east },
+    )
+    if (!box.isEmpty()) {
+      map.fitBounds(box, v3FitPadding(map.getDiv()))
+    }
+  }, [])
 
   useEffect(() => {
     setActivePolygon(initialPolygon && initialPolygon.length >= 3 ? initialPolygon : null)
@@ -1603,8 +1642,9 @@ export default function SearchMapClustered({
                 }}
               />
             )}
-            {/* City / neighborhood boundary overlay — brand signature navy stroke + 6% fill */}
-            {showBoundary && boundaryPaths.flat().length > 0 &&
+            {/* Subject place ring only. Hidden while a child is selected so
+                the highlight is THAT child, not twenty plats. data-map-hierarchy=subject */}
+            {showBoundary && !selectedChildId && boundaryPaths.flat().length > 0 &&
               boundaryPaths.map((path, i) => (
                 <Polygon
                   key={`geo-${i}`}
@@ -1618,25 +1658,21 @@ export default function SearchMapClustered({
                   }}
                 />
               ))}
-            {/* Subordinate plat cells — lighter than the seed ring, and each
-                one with an href is a door to its own place page. */}
+            {/* Child plats: hit-only until selected. Click zooms THAT recorded
+                boundary — listing pins keep their own click. */}
             {showBoundary &&
               overlayCells.map((cell, ci) =>
-                cell.paths.map((path, pi) => (
-                  <Polygon
-                    key={`cell-${ci}-${pi}`}
-                    paths={path}
-                    onClick={cell.href ? () => router.push(cell.href!) : undefined}
-                    options={{
-                      fillColor: MAP_NAVY,
-                      fillOpacity: 0.02,
-                      strokeColor: MAP_NAVY,
-                      strokeWeight: 1.25,
-                      strokeOpacity: 0.45,
-                      clickable: Boolean(cell.href),
-                    }}
-                  />
-                )),
+                cell.paths.map((path, pi) => {
+                  const selected = cell.id === selectedChildId
+                  return (
+                    <Polygon
+                      key={`cell-${ci}-${pi}`}
+                      paths={path}
+                      onClick={() => selectChildOverlay(cell)}
+                      options={selected ? MAP_HIERARCHY_SELECTED_CHILD : MAP_HIERARCHY_CHILD_HIT}
+                    />
+                  )
+                }),
               )}
             {/* Brand popup (not stock Google InfoWindow — no white balloon / scroll chrome). */}
             {mapInstance && openInfo && openListing && openKey ? (

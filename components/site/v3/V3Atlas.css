@@ -967,6 +967,25 @@
   animation: v3-atlas-wake var(--v3-dur-rise) var(--v3-ease-out);
 }
 
+/* SITE-128 #2: subdivision grain — the plat ring must read, not sit faint. */
+.v3-atlas--subject-grain .v3-atlas__town {
+  fill: color-mix(in srgb, var(--v3-navy) 12%, transparent);
+  stroke: var(--v3-navy);
+  stroke-width: 2.8px;
+}
+
+/* Child plats are hit targets until selected. Default highlight is the subject. */
+.v3-atlas__place--child:not(.is-active) {
+  --atlas-fill-d: transparent;
+  --atlas-stroke-d: transparent;
+}
+
+.v3-atlas__place--child.is-active {
+  --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  --atlas-stroke-d: var(--v3-navy);
+  --atlas-width-d: 2.8px;
+}
+
 /* Sales heat: navy alpha on cream, four steps, no second hue. */
 .v3-atlas__sales-heat {
   pointer-events: none;
