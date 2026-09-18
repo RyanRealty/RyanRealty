@@ -5,11 +5,17 @@ import { makeProjection, padBbox } from '@/lib/geo/project-svg'
 import { recordFrame } from '@/lib/geo/record-frame'
 import {
   ATLAS_PIN_CLUSTER_CELL_PX,
+  CITY_FOLD_CLUSTER_STAGE,
+  CITY_FOLD_CLUSTER_STAGE_PHONE,
   atlasClusterCanExpand,
   atlasClusterSize,
   atlasClusterWorldBounds,
+  atlasViewFromStage,
   clusterAtlasPins,
+  floorCityFoldPaintView,
   hitAtlasPinLayer,
+  pickCityFoldClusterStage,
+  projectPinsToFoldStage,
   type AtlasPinCandidate,
 } from './cluster-pins'
 
@@ -70,7 +76,7 @@ describe('clusterAtlasPins', () => {
     expect(out.every((c) => c.count === 1)).toBe(true)
   })
 
-  it('contract: bend-city-fold-path-produces-clusters — city fold invokes grid, not one 759 blob', () => {
+  it('contract: bend-desktop-fold — 46 marks / 44 clusters / 2 pills, not one 759 blob', () => {
     const houses = JSON.parse(
       readFileSync(resolve('lib/atlas/fixtures/bend-city-fold-houses.json'), 'utf8'),
     ) as { lat: number; lng: number }[]
@@ -79,25 +85,92 @@ describe('clusterAtlasPins', () => {
     const frame = recordFrame(houses, [])
     expect(frame.bbox).not.toBeNull()
     const proj = makeProjection(padBbox(frame.bbox!, 0.1), 1000)
-    // Live /cities/bend desktop fold stage (Playwright 1400×900, 2026-09-18).
-    const stage = { w: 1112, h: 610 }
-    const scale = Math.min(stage.w / proj.width, stage.h / proj.height)
-    const ox = (stage.w - proj.width * scale) / 2
-    const oy = (stage.h - proj.height * scale) / 2
-    const pins: AtlasPinCandidate[] = houses.map((d, i) => {
+    const projPins = houses.map((d, i) => {
       const [x, y] = proj.toXY(d.lng, d.lat)
-      return { i, x: ox + x * scale, y: oy + y * scale }
+      return { i, x, y }
     })
-
-    const out = clusterAtlasPins(pins, ATLAS_PIN_CLUSTER_CELL_PX)
+    const out = clusterAtlasPins(
+      projectPinsToFoldStage(projPins, CITY_FOLD_CLUSTER_STAGE, proj, 1),
+      ATLAS_PIN_CLUSTER_CELL_PX,
+    )
     const clustered = out.filter((c) => c.count > 1)
-    const densest = Math.max(...out.map((c) => c.count))
-    expect(out.length).toBeGreaterThan(10)
-    expect(out.length).toBeLessThan(80)
-    expect(clustered.length).toBeGreaterThan(8)
-    expect(densest).toBeGreaterThan(8)
-    expect(densest).toBeLessThan(pins.length)
-    expect(out.reduce((n, c) => n + c.count, 0)).toBe(pins.length)
+    const pills = out.filter((c) => c.count === 1)
+    expect(out).toHaveLength(46)
+    expect(clustered).toHaveLength(44)
+    expect(pills).toHaveLength(2)
+    expect(Math.max(...out.map((c) => c.count))).toBeLessThan(houses.length)
+    expect(out.reduce((n, c) => n + c.count, 0)).toBe(houses.length)
+  })
+
+  it('contract: bend-phone-fold — 14 navy bubbles + 2 price pills', () => {
+    const houses = JSON.parse(
+      readFileSync(resolve('lib/atlas/fixtures/bend-city-fold-houses.json'), 'utf8'),
+    ) as { lat: number; lng: number }[]
+    const frame = recordFrame(houses, [])
+    const proj = makeProjection(padBbox(frame.bbox!, 0.1), 1000)
+    const projPins = houses.map((d, i) => {
+      const [x, y] = proj.toXY(d.lng, d.lat)
+      return { i, x, y }
+    })
+    const out = clusterAtlasPins(
+      projectPinsToFoldStage(projPins, CITY_FOLD_CLUSTER_STAGE_PHONE, proj, 1),
+      ATLAS_PIN_CLUSTER_CELL_PX,
+    )
+    expect(out.filter((c) => c.count > 1)).toHaveLength(14)
+    expect(out.filter((c) => c.count === 1)).toHaveLength(2)
+  })
+
+  it('contract: collapsed desktop GBR still uses the fold stage (not 1 × 759)', () => {
+    const houses = JSON.parse(
+      readFileSync(resolve('lib/atlas/fixtures/bend-city-fold-houses.json'), 'utf8'),
+    ) as { lat: number; lng: number }[]
+    const frame = recordFrame(houses, [])
+    const proj = makeProjection(padBbox(frame.bbox!, 0.1), 1000)
+    const collapsed = atlasViewFromStage(1112, 64, proj.width, proj.height)
+    expect(collapsed.scale).toBeLessThan(0.08)
+    const floored = floorCityFoldPaintView(collapsed, CITY_FOLD_CLUSTER_STAGE, proj.width, proj.height)
+    expect(floored.scale).toBeCloseTo(
+      atlasViewFromStage(CITY_FOLD_CLUSTER_STAGE.w, CITY_FOLD_CLUSTER_STAGE.h, proj.width, proj.height)
+        .scale,
+    )
+    const projPins = houses.map((d, i) => {
+      const [x, y] = proj.toXY(d.lng, d.lat)
+      return { i, x, y }
+    })
+    const liveCollapsed = clusterAtlasPins(
+      projPins.map((p) => ({
+        i: p.i,
+        x: collapsed.ox + p.x * collapsed.scale,
+        y: collapsed.oy + p.y * collapsed.scale,
+      })),
+    )
+    expect(liveCollapsed.length).toBeLessThan(5)
+    expect(Math.max(...liveCollapsed.map((c) => c.count))).toBeGreaterThan(houses.length * 0.7)
+    const locked = clusterAtlasPins(projectPinsToFoldStage(projPins, CITY_FOLD_CLUSTER_STAGE, proj, 1))
+    expect(locked).toHaveLength(46)
+  })
+
+  it('desktop +1 zoom (k=1.18) engages — more marks than the default 46', () => {
+    const houses = JSON.parse(
+      readFileSync(resolve('lib/atlas/fixtures/bend-city-fold-houses.json'), 'utf8'),
+    ) as { lat: number; lng: number }[]
+    const frame = recordFrame(houses, [])
+    const proj = makeProjection(padBbox(frame.bbox!, 0.1), 1000)
+    const projPins = houses.map((d, i) => {
+      const [x, y] = proj.toXY(d.lng, d.lat)
+      return { i, x, y }
+    })
+    const rest = clusterAtlasPins(projectPinsToFoldStage(projPins, CITY_FOLD_CLUSTER_STAGE, proj, 1))
+    const zoomed = clusterAtlasPins(projectPinsToFoldStage(projPins, CITY_FOLD_CLUSTER_STAGE, proj, 1.18))
+    expect(rest).toHaveLength(46)
+    expect(zoomed.length).toBeGreaterThan(46)
+  })
+
+  it('picks desktop vs phone fold stage at the 64rem cut', () => {
+    expect(pickCityFoldClusterStage(1400)).toEqual(CITY_FOLD_CLUSTER_STAGE)
+    expect(pickCityFoldClusterStage(1024)).toEqual(CITY_FOLD_CLUSTER_STAGE)
+    expect(pickCityFoldClusterStage(375)).toEqual(CITY_FOLD_CLUSTER_STAGE_PHONE)
+    expect(pickCityFoldClusterStage(1023)).toEqual(CITY_FOLD_CLUSTER_STAGE_PHONE)
   })
 
   it('zoom doubles distances and a pair that piled becomes two pills', () => {
