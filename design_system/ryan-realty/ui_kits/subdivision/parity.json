@@ -22,7 +22,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Home > Communities > the parent resort or city > this place.",
+      "section": "V3Breadcrumb sitewide — overlay on the still, surface when there is no photo. Name-only trail. Current page never a link.",
       "blocking": true
     },
     {
@@ -87,7 +87,7 @@
     },
     {
       "name": "V3PlaceIndex",
-      "section": "#nearby-subdivisions — every subdivision in this page's city that has a page of its own, each a real anchor carrying its own lifetime closed count, off the SAME getIndexableSubdivisions read the robots policy makes. It is the crawlable half of the fold's picker (SubdivisionPicker over the barrel's beUI V3TypeCombobox): a role=option row is not a link. Same primitive and same job as the city page's 'Subdivisions in {city}' index.",
+      "section": "#nearby-subdivisions — name-only nearby peers (SITE-128 Look punch, 2026-09-18). GIS ring rank first, then resort siblings. Never a city-wide lifetime-sales dump. The fold picker still jumps across city sisters; the crawlable keep-exploring list does not. A–Z /subdivisions is the directory.",
       "blocking": true
     },
     {

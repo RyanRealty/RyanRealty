@@ -21,7 +21,7 @@
 
   .place-opening--community.place-opening--media .place-opening__copy {
     align-self: end;
-    padding-top: calc(var(--v3-space-lg) + 2rem);
+    padding-top: calc(var(--v3-tap) + var(--v3-space-2xs));
     padding-bottom: var(--v3-space-sm);
     max-width: none;
   }
@@ -35,7 +35,7 @@
 
   /* Clear the absolute breadcrumb so the H1 is not clipped. */
   .place-opening--community.place-opening--media .place-opening__copy {
-    padding-top: calc(var(--v3-space-xl) + 2.75rem);
+    padding-top: calc(var(--v3-tap) + var(--v3-space-2xs));
     padding-bottom: var(--v3-space-2xs);
   }
 

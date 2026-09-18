@@ -134,6 +134,8 @@ import {
   peerPlatsForResort,
   subdivisionPlaceContext,
 } from '@/lib/explore/subdivision-page-extras'
+import { nearbySubdivisionPeers } from '@/lib/explore/nearby-place-peers'
+import { getSubdivisionRing } from '@/lib/data/geo/subdivision-ring'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getPlatClosedCount } from '@/lib/data/subdivisions/getPlatClosedCounts'
 import { getPlatUnsoldOutcome } from '@/lib/data/subdivisions/getPlatUnsoldOutcomes'
@@ -192,7 +194,7 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { V3Atlas, V3PlaceIndex, V3PlaceInventory, V3Quiet, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
+import { V3Atlas, V3PlaceIndex, V3PlaceInventory, V3Quiet, type AtlasRegion } from '@/components/site/v3'
 import { getTaxlotsInBoundary, getTaxlotsNear, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
@@ -672,6 +674,7 @@ async function renderSubdivisionPage({ params }: Props) {
     platUnsold,
     stockTiles,
     openingListings,
+    nearbyRing,
   ] = await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -726,6 +729,12 @@ async function renderSubdivisionPage({ params }: Props) {
         [],
         3000,
         'sub:openingListings',
+      ),
+      withTimeoutFallback(
+        getSubdivisionRing(mapCentroid(mapTiles)?.lat ?? null, mapCentroid(mapTiles)?.lng ?? null),
+        null,
+        3500,
+        'sub:nearbyRing',
       ),
     ])
 
@@ -1350,9 +1359,14 @@ async function renderSubdivisionPage({ params }: Props) {
     const name = sisterNames[i]
     return name ? [{ slug: p.slug, name, closedCount: p.closedCount }] : []
   })
-  const sisterEntries: V3PlaceIndexEntry[] = sisterRows
-    .filter((row) => row.slug !== slug)
-    .map((row) => ({ name: row.name, href: `/subdivisions/${row.slug}`, count: row.closedCount }))
+  // Keep-exploring is nearby peers (SITE-128), never the city-wide sales dump
+  // the picker still uses for jump-to. DRW / any plat with a ring lists
+  // touching neighbors first, then resort siblings.
+  const nearbyPeerEntries = nearbySubdivisionPeers({
+    selfSlug: slug,
+    ring: nearbyRing,
+    resortPeers: peerPlatsForResort(resortSlug, slug),
+  })
   // The subject is ALWAYS the selected row, including on a page that did not
   // make the deepest-history cut above or that sits below the indexing floor
   // entirely. Its count comes from the same cached set when that set holds one,
@@ -1419,6 +1433,7 @@ async function renderSubdivisionPage({ params }: Props) {
               displayName,
             )}
             tone={stagePosterSrc ? 'on-media' : 'surface'}
+            overlay={Boolean(stagePosterSrc)}
           />
           <div className="place-opening__copy">
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
@@ -1576,24 +1591,12 @@ async function renderSubdivisionPage({ params }: Props) {
           </>
         )}
 
-        {/* SITE-112: the picker's legend, in the served HTML. Every subdivision
-            in this city with a page of its own, each one a real anchor a
-            crawler can follow, each carrying its own lifetime sale count. The
-            reader choosing between neighbours had no door out of this page
-            before this pass. */}
-        {sisterEntries.length > 1 ? (
-          <V3PlaceIndex
-            id="nearby-subdivisions"
-            eyebrow={`${cityName} · Subdivisions`}
-            heading={`Other subdivisions in ${cityName}`}
-            lede={'Each one has its own page — what has sold there, what is for sale, and where it sits.'}
-            countLabel="lifetime sales"
-            entries={sisterEntries}
-            foldAfter={12}
-            action={{ label: 'Every Central Oregon subdivision', href: '/subdivisions' }}
-            source="Deschutes County · Oregon Data Share"
-          />
-        ) : null}
+        <V3PlaceIndex
+          id="nearby-subdivisions"
+          heading={displayName}
+          nameOnly
+          entries={nearbyPeerEntries}
+        />
 
         <V3PlaceInventory
           id="homes"

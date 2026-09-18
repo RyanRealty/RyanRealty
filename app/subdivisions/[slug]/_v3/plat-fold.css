@@ -33,7 +33,7 @@
 
   .place-opening--plat.place-opening--media .place-opening__copy {
     align-self: end;
-    padding-top: calc(var(--v3-space-md) + 1.25rem);
+    padding-top: calc(var(--v3-tap) + var(--v3-space-2xs));
     padding-bottom: var(--v3-space-2xs);
     max-width: none;
   }
@@ -61,7 +61,7 @@
     /* The band is 96px on a phone and the breadcrumb is inside it; the old
        3.5rem top pad pushed the H1 through the bottom edge, which
        overflow:hidden then cut in half. */
-    padding-top: 3rem;
+    padding-top: calc(var(--v3-tap) + var(--v3-space-2xs));
     padding-bottom: var(--v3-space-2xs);
   }
 

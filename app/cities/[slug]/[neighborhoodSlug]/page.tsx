@@ -62,7 +62,7 @@ import { marketVerdict } from '@/lib/market/classify'
 import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
-import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
+import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
@@ -86,6 +86,7 @@ import {
   V3PlaceDocuments,
   V3Answers,
   V3PlaceAffordability,
+  V3PlaceIndex,
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
@@ -606,23 +607,14 @@ async function renderNeighborhoodDetail({ params }: Props) {
   const dailyRows = dailyLifeRows(richContent, cityName)
   const [firstDaily, ...restDaily] = dailyRows
 
-  // Subdivisions inside the boundary. §0: a count the index read did not carry
-  // stays null, never a zero. Each row's other-type bits are the destination
-  // subdivision's own Market Truth segment counts (one source — the same rows
-  // its page prints).
+  // Children inside the boundary — name-only cards (SITE-128). Not a
+  // "Subdivisions" bar list that twins the community page.
   const neighborhoodChildren = neighborhoodCommunities.slice(0, 12)
-  const childTypeBits = await loadSubdivisionTypeBits(neighborhoodChildren.map((c) => slugify(c.subdivision)))
-  const subdivisionItems: CityPlaceItem[] = neighborhoodChildren.map((c) => ({
-    name: c.subdivision,
-    href: `/subdivisions/${slugify(c.subdivision)}`,
-    activeCount: c.activeCount ?? null,
-    medianPrice: c.medianPrice ?? null,
-    img: preferPlaceHero(c.heroImageUrl, communityImage(c.slug) ?? ''),
-    typeBits: childTypeBits.get(slugify(c.subdivision)) ?? null,
-  }))
-  // Its own children: the rows drop the neighborhood's name where a plat's
-  // name opens with it (placeFigureRows, `within`).
-  const [firstSub, ...restSub] = placeFigureRows(subdivisionItems, `${neighborhood.name} subdivision`, neighborhood.name)
+  const childPlaceEntries = nameOnlyChildEntries(
+    neighborhoodChildren.map((c) => [
+      { name: c.subdivision, href: `/subdivisions/${slugify(c.subdivision)}` },
+    ]),
+  )
 
   // Live feed - fetched city-wide (the MLS carries no neighborhood scope), so
   // it is labeled with whichever scope the rows actually carry (§0).
@@ -784,7 +776,11 @@ async function renderNeighborhoodDetail({ params }: Props) {
         >
           <PlaceAreaHero posterSrc={stagePosterSrc} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
-          <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
+          <V3Breadcrumb
+            trail={trail}
+            tone={stagePosterSrc ? 'on-media' : 'surface'}
+            overlay={Boolean(stagePosterSrc)}
+          />
           <div className="place-opening__copy">
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
@@ -909,21 +905,12 @@ async function renderNeighborhoodDetail({ params }: Props) {
           />
         </div>
 
-        {/* Subdivisions inside the boundary - every row is a door. */}
-        {firstSub ? (
-          <V3Ledger
-            id="subdivisions"
-            eyebrow={v3Text(`${neighborhood.name} · Subdivisions`)}
-            heading={v3Text('Subdivisions')}
-            rows={[firstSub, ...restSub]}
-            // A comparison, so the counts draw as lengths too: TASTE bans a
-            // ledger past six rows that encodes nothing. The share comes off
-            // the same counts the figures print (placeFigureRows).
-            encode="bar"
-            source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
-            action={{ label: v3Text(`All ${cityName} homes`), href: `/homes-for-sale/${citySlug}` }}
-          />
-        ) : null}
+        <V3PlaceIndex
+          id="child-places"
+          heading={neighborhood.name}
+          nameOnly
+          entries={childPlaceEntries}
+        />
 
         {costChart && firstMarketFigure ? (
           <V3Instrument
