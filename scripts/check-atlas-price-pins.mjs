@@ -71,9 +71,9 @@ const tiles = readFileSync(TILES, 'utf8')
 for (const col of ['photo_url', 'beds', 'baths', 'sqft', 'street_suffix']) {
   if (!tiles.includes(col)) failures.push(`${TILES} must read ${col} for the hover card`)
 }
-if (!tiles.includes('StreetSuffix:details->>StreetSuffix')) {
+if (tiles.includes('details->>StreetSuffix') || /StreetSuffix(?!:)/.test(tiles)) {
   failures.push(
-    `${TILES} closed walk must alias StreetSuffix from details — listings has no StreetSuffix column`,
+    `${TILES} must not read listings.StreetSuffix — the column is not first-class; sold heat does not need a suffix`,
   )
 }
 
