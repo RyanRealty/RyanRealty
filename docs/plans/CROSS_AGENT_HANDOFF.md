@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-121 phone header search type-in)
 
-Surface: Cursor cloud, branch `cursor/site-121-phone-search-morph-3f98`. Tip pending this commit. Draft PR #295. PR only — Cos Mini lands. Do not merge. HOLD owner email. Owner `public-patch`. Node `7a0fe27e-b8c1-4575-9021-052b6f6c1a48`.
+Surface: Cursor cloud, branch `cursor/site-121-phone-search-morph-3f98`. Tip `d1c183dfa` (fix `30d338b19`). Draft PR #295. PR only — Cos Mini lands. Do not merge. HOLD owner email. Owner `public-patch`. Node `7a0fe27e-b8c1-4575-9021-052b6f6c1a48`.
 
 - **How it blocked.** First land (`z-[150]`) cleared sticky chrome. Residual: `layoutId` shell + `backdrop-blur` painted over the dialog; size-0 `motion.div` became the containing block; inset-0 catcher ate taps; icon-only `clip-path` hid the field from hit-testing while the morph looked open.
 - **This tip.** Panel `pointer-events-none`; catcher `z-0`; dialog `isolate`; input `bg-background`; overlay group is a plain div; icon-only skips collapsing clip-path. Mega-menus not touched.
