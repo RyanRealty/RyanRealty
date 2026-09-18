@@ -907,25 +907,38 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       })
       return { ok: false, error: err, slug }
     }
+    // Re-narrow after audit repair/rebuild reassignments (priceSet.p is
+    // CmaPricing | null). Without this, `if (pricing && …)` widens the rest
+    // of the function and TS18047 fires in closures (ci:commit-compiles).
+    if (!pricing) {
+      const err = 'Pricing could not be computed after audit (subject sqft missing).'
+      await recordBuildFailure(slug, err, {
+        stage: 'pricing',
+        docType,
+        compSelection: selection.diagnostics,
+      })
+      return { ok: false, error: err, slug }
+    }
     // THE ROOM-COUNT CONFLICT REACHES THE REVIEWER (Matt 2026-09-10). A count
     // the listing and the house's own closed sale disagree on is never a quiet
     // resolution: whichever number priced the document, a person confirms it.
-    if (pricing && roomConflicts.length > 0) {
+    if (roomConflicts.length > 0) {
       pricing.needsReview = true
       pricing.reviewReason = [pricing.reviewReason, ...roomConflicts.map((c) => c.note)]
         .filter(Boolean)
         .join(' ')
     }
-    if (pricing && contract.forceReview) {
+    if (contract.forceReview) {
       // Every failing review check reaches the reason, even when the engine
       // had already raised the flag: Dana's 1531 10th carried dispersion and
       // a ±27% range, and the range sentence never printed because the flag
       // was up first (2026-09-09).
       pricing.needsReview = true
+      const reviewReasonHeld = pricing.reviewReason ?? ''
       const details = contract.checks
         .filter((c) => c.severity === 'review' && !c.pass)
         .map((c) => c.detail)
-        .filter((d) => d && !(pricing.reviewReason ?? '').includes(d))
+        .filter((d) => d && !reviewReasonHeld.includes(d))
       pricing.reviewReason = [pricing.reviewReason, ...details].filter(Boolean).join(' ')
     }
 
