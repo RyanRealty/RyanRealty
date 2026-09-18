@@ -520,6 +520,8 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
     {
       range: worthRangeRounded(p),
       finalCycle: input.finalCycle ?? null,
+      // H2.section already names the chapter — skip duplicate H3.subhead.
+      omitHeading: true,
       footer: `${concessionsCaption(input.comps)}
   ${renderReconciliationHtml(p)}
   ${perSquareFootLine({ subject: s, pricing: p })}`,

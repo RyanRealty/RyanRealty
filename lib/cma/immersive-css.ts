@@ -129,7 +129,11 @@ table.comp-matrix{width:100%;table-layout:fixed;border-collapse:collapse;font-si
 /* The MLS sentence, as written, reads as prose: left-aligned and a size down
    from the figures beside it. */
 table.comp-matrix td.is-note{text-align:left;font-size:12px;line-height:1.4;opacity:.85}
-table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Matt ADD 2026-09-12 tension: figures stay nowrap; LABEL + long prose rows wrap
+   so Status / First ask→last ask→outcome / Distance do not collide at ~24% label. */
+table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right}
+table.comp-matrix tbody th{white-space:normal;overflow:visible;text-overflow:clip}
+table.comp-matrix td.v:not(.n){white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
 table.comp-matrix td.n{white-space:nowrap}
 /* Matrix 3's status filter hides COLUMNS. A table cell needs the rule said
    out loud: our own padding rule would otherwise fight the UA [hidden]. */
@@ -359,6 +363,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
    so bottom alignment staircased six photos to six different heights. */
 table.comp-matrix thead th.v{vertical-align:top;text-align:center}
 table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;margin:0 0 8px}
+table.comp-matrix .matrix-thumb.is-empty{background:rgba(16,39,66,.06)}
 table.comp-matrix .matrix-addr{display:block}
 /* The map's pin, at reading size. The number beside a sale is the KEY to that
    pin, not a rank, and drawn as the pin it cannot be misread as one after the

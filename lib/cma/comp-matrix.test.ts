@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
-import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
+import { salesThatSetItPage, SALES_THAT_SET_IT_HEADING } from '@/lib/cma/render-pricing-page'
+import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
   streetAddress: '648 Douglas',
@@ -104,7 +105,9 @@ describe('renderCompMatrixHtml', () => {
     expect(html).toContain('$465,744')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
-    expect(html).not.toContain('matrix-thumb')
+    // No MLS photo on the fixture → honest empty thumb boxes so column heights align.
+    expect(html).toContain('matrix-thumb is-empty')
+    expect(html).not.toMatch(/<img class="matrix-thumb"/)
     // Punctuation law over the visible text; `&amp;` in a tracked URL is markup.
     expect(html.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
   })
@@ -186,7 +189,7 @@ describe('renderCompMatrixHtml', () => {
     const cols = shared.match(/<col style="width:[\d.]+%">/g) ?? []
     expect(cols).toHaveLength(7) // label + subject + 5 sales
     const widths = cols.map((c) => Number(c.match(/([\d.]+)%/)![1]))
-    expect(widths[0]).toBe(20)
+    expect(widths[0]).toBe(24)
     expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(100)
     // Figures never wrap; free text does. Both classes must actually be emitted.
     expect(html).toMatch(/<td class="v n[^"]*">\$495,000<\/td>/)
@@ -283,6 +286,47 @@ describe('land columns', () => {
     expect(html).toContain('matrix-thumb')
     expect(html).toContain('https://cdn.example/subject.jpg')
     expect(html).toContain('https://cdn.example/comp.jpg')
+    expect(html).not.toContain('matrix-thumb is-empty')
+  })
+
+  it('reserves an empty thumb box when a column has no MLS photo', () => {
+    const html = renderCompMatrixHtml(
+      { ...subject, photoUrl: 'https://cdn.example/subject.jpg' },
+      padSales({ ...comp, photoUrl: null }),
+    )
+    expect(html).toContain('https://cdn.example/subject.jpg')
+    expect(html).toContain('matrix-thumb is-empty')
+    // Never invent a listing photo URL for the bare column.
+    expect(html).not.toMatch(/cdn\.example\/comp/)
+  })
+
+  it('emits one chapter heading when salesThatSetItPage owns the H2', () => {
+    const pricing = {
+      method1Low: 420000,
+      method1Mid: 450000,
+      method1High: 480000,
+      method2: 440000,
+      method3: 460000,
+      conservative: 420000,
+      recommended: 450000,
+      highEnd: 480000,
+      valueLow: 420000,
+      valueHigh: 480000,
+      confidence: 'High',
+      notes: [],
+    } as unknown as CmaPricing
+    const page = salesThatSetItPage({
+      subject,
+      comps: padSales(comp),
+      market: { geoLabel: 'Bend' } as CmaMarketContext,
+      pricing,
+    })
+    expect(page).not.toBeNull()
+    const body = page!.body
+    expect(body).toContain(`<h2 class="section">${SALES_THAT_SET_IT_HEADING}</h2>`)
+    expect(body).not.toContain('<h3 class="subhead">The sales that set this price</h3>')
+    // Visible chapter title once; aria-label may still carry the matrix heading string.
+    expect((body.match(/<h[23][^>]*>[^<]*The sales that set this price/g) ?? []).length).toBe(1)
   })
 
   it('still prints living area for an improved comp', () => {

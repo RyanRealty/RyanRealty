@@ -9,7 +9,10 @@
     "active-peers-dom-overpricing-signal-closed-only-recommend",
     "pending-high-dom-letter-signal-never-sets-recommended",
     "every-comparable-row-dom-and-price-history",
-    "flex-flow-side-by-side-matrix-labels"
+    "flex-flow-side-by-side-matrix-labels",
+    "matrix-empty-thumb-align",
+    "matrix-label-wrap-not-ellipsis",
+    "sales-that-set-it-one-heading"
   ],
   "testFiles": [
     "lib/cma/canter-letter-flow.contract.test.ts"
