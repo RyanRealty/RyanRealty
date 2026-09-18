@@ -82,6 +82,16 @@ export type MatrixEntry = {
   listPrice: number | null
   /** Seller concessions $ on a closed sale; null when unknown or not a sale. */
   concessionsAmount: number | null
+  /** Flex FLOW: distance + direction when known ("0.2 mi NW"). */
+  proximity: string | null
+  /** Flex FLOW: garage spaces when known. */
+  garageSpaces: number | null
+  /** Flex FLOW: cumulative DOM when distinct from first-list DOM. */
+  cdomDays: number | null
+  /** Flex FLOW: status date (close / off-market / under contract) ISO or display. */
+  statusDate: string | null
+  /** Flex FLOW: adjusted sale for closed comps; null elsewhere. */
+  adjustedPrice: number | null
   /** The end of the path in words: "sold $457K", "asking $417K", "came off". */
   endLabel: string
   latitude: number | null
@@ -264,6 +274,14 @@ export function closedEntries(
         const v = c.concessions ?? c.concessionsAmount ?? null
         return v != null && Number.isFinite(v) ? Number(v) : null
       })(),
+      proximity: (c.proximity ?? '').trim() || null,
+      garageSpaces: c.garageSpaces != null && Number.isFinite(c.garageSpaces) ? Number(c.garageSpaces) : null,
+      cdomDays: days(c.domTotal),
+      statusDate: /^\d{4}-\d{2}-\d{2}/.test((c.closeDate ?? '').slice(0, 10))
+        ? (c.closeDate ?? '').slice(0, 10)
+        : null,
+      adjustedPrice:
+        c.adjustedPrice != null && Number.isFinite(c.adjustedPrice) ? Number(c.adjustedPrice) : null,
       endLabel: c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
       latitude: c.latitude ?? null,
       longitude: c.longitude ?? null,
@@ -332,6 +350,13 @@ export function unsoldEntries(
       closePrice: null,
       listPrice: num(p.listPrice) ?? num(p.originalListPrice),
       concessionsAmount: null,
+      proximity: null,
+      garageSpaces: null,
+      cdomDays: dom,
+      statusDate: /^\d{4}-\d{2}-\d{2}/.test((p.onMarketDate ?? '').slice(0, 10))
+        ? (p.onMarketDate ?? '').slice(0, 10)
+        : null,
+      adjustedPrice: null,
       endLabel: 'came off',
       latitude: p.latitude ?? null,
       longitude: p.longitude ?? null,
@@ -405,6 +430,13 @@ export function activeEntries(
       closePrice: null,
       listPrice: num(r.listPrice) ?? num(r.originalListPrice),
       concessionsAmount: null,
+      proximity: null,
+      garageSpaces: null,
+      cdomDays: dom,
+      statusDate: /^\d{4}-\d{2}-\d{2}/.test((r.onMarketDate ?? '').slice(0, 10))
+        ? (r.onMarketDate ?? '').slice(0, 10)
+        : null,
+      adjustedPrice: null,
       endLabel: pending ? 'under contract' : 'still for sale',
       latitude: r.latitude ?? null,
       longitude: r.longitude ?? null,
@@ -482,6 +514,13 @@ export function subjectEntry(input: {
     closePrice: null,
     listPrice: input.printableAsk,
     concessionsAmount: null,
+    proximity: null,
+    garageSpaces: s.garageSpaces != null && Number.isFinite(s.garageSpaces) ? Number(s.garageSpaces) : null,
+    cdomDays: input.domDays,
+    statusDate: s.lastListDate && /^\d{4}-\d{2}-\d{2}/.test(s.lastListDate.slice(0, 10))
+      ? s.lastListDate.slice(0, 10)
+      : null,
+    adjustedPrice: null,
     endLabel: cameOff ? 'came off' : input.printableAsk != null ? 'still asking' : '',
     latitude: s.latitude ?? null,
     longitude: s.longitude ?? null,

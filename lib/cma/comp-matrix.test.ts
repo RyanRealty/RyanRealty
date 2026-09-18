@@ -76,20 +76,30 @@ describe('renderCompMatrixHtml', () => {
     // value, which on this fixture they do.
     // Delta 3's column set, exactly, plus the adjustment grid under matrix 1.
     for (const row of [
-      'Outcome',
+      'Distance',
+      'Status',
+      'List price',
+      'Original list',
+      'Sold',
       'Size',
       'Days on market',
+      'CDOM',
+      'Garage',
       'List $/sqft',
       'Sold $/sqft',
       'Seller concessions',
+      'Adjusted',
       'First ask \u2192 last ask \u2192 outcome',
       'Sold for',
       'Sale price today',
     ]) {
       expect(html, row).toContain(row)
     }
-    // ONE sentence, not one per folded row (tasteReview round three, §3).
-    expect(html).toContain('Every home here is 3 bd, 1 ba, built in 1978.')
+    // Flex FLOW keeps Beds / Baths / Year built as rows; Size may still fold.
+    expect(html).toContain('<th>Beds</th>')
+    expect(html).toContain('<th>Baths</th>')
+    expect(html).toContain('<th>Year built</th>')
+    expect(html).toContain('1978')
     expect(html).toContain('$495,000')
     expect(html).toContain('$465,744')
     expect(html).toContain('Jun 25, 2026')
@@ -180,9 +190,11 @@ describe('renderCompMatrixHtml', () => {
     expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(100)
     // Figures never wrap; free text does. Both classes must actually be emitted.
     expect(html).toMatch(/<td class="v n[^"]*">\$495,000<\/td>/)
-    // Beds, baths, year built and the lot are identical across the table, so
-    // they fold into one sentence rather than repeating a value six times.
-    expect(html).toContain('Every home here is 3 bd, 1 ba, built in 1978.')
+    // Flex FLOW keeps Beds / Baths / Year built as side-by-side rows even when identical.
+    expect(html).toContain('<th>Beds</th>')
+    expect(html).toContain('<th>Baths</th>')
+    expect(html).toContain('<th>Year built</th>')
+    expect(html).toContain('1978')
   })
 
   it('does not print MLS N/A into the grid', () => {
@@ -240,12 +252,13 @@ describe('land columns', () => {
   })
 
   it('cuts the per-square-foot rows the blueprint does not name', () => {
-    // CMA_REIMAGINED_2026-09-07.md chapter 3: seven rows, and only these. Sale
-    // price / sqft is the sale price stated a second way.
+    // Sale price / sqft as a separate formula row stays cut. Flex FLOW keeps
+    // List price / List $/sqft / Sold $/sqft as named side-by-side rows.
     const html = renderCompMatrixHtml(subject, padSales(comp))
     expect(html).not.toContain('Sale price / sqft')
     expect(html).not.toContain('$478/sf')
-    expect(html).not.toContain('List price')
+    expect(html).toContain('List price')
+    expect(html).toContain('List $/sqft')
   })
 
   it('does not lecture the per-square-foot formula', () => {

@@ -68,6 +68,11 @@ function entry(over: Partial<MatrixEntry> & Pick<MatrixEntry, 'family' | 'key'>)
     closePrice: over.closePrice ?? null,
     listPrice: over.listPrice ?? null,
     concessionsAmount: null,
+    proximity: null,
+    garageSpaces: null,
+    cdomDays: null,
+    statusDate: null,
+    adjustedPrice: null,
     endLabel: '',
     latitude: null,
     longitude: null,
@@ -376,7 +381,102 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(nudge.recommended).toBe(pricing.recommended)
   })
 
-  it('contract: every-comparable-row-dom-and-price-history', () => {
+  it('contract: flex-flow-side-by-side-matrix-labels', () => {
+    // Matt 2026-09-17 letter craft — Flex FLOW compact side-by-side (not Outcome sprawl).
+    const seed = {
+      city: 'Sisters',
+      beds: 3,
+      baths: 2,
+      yearBuilt: 2019,
+      lotAcres: 0.2,
+      garageSpaces: 2,
+      timeAdjustment: 0,
+      sizeAdjustment: 0,
+      weight: 1,
+    }
+    const closedComps = [
+      {
+        ...seed,
+        listingKey: 'C1',
+        mlsNumber: '1',
+        address: '1025 Horse Back',
+        closePrice: 675000,
+        listPrice: 675000,
+        originalListPrice: 689000,
+        closeDate: '2026-04-21',
+        onMarketDate: '2026-02-04',
+        domTotal: 76,
+        daysToOffer: 60,
+        sqft: 1842,
+        proximity: '0.2 miles NW',
+        adjustedPrice: 675000,
+        listingHistoryLine: 'Listed Feb 4, 2026 · 76 days on market',
+      },
+      {
+        ...seed,
+        listingKey: 'C2',
+        mlsNumber: '2',
+        address: '945 Horse Back',
+        closePrice: 690000,
+        listPrice: 689000,
+        originalListPrice: 739000,
+        closeDate: '2025-11-24',
+        onMarketDate: '2025-08-08',
+        domTotal: 108,
+        daysToOffer: 90,
+        sqft: 1758,
+        proximity: '0.3 miles NW',
+        adjustedPrice: 690000,
+        listingHistoryLine: 'Sold Nov 24, 2025 · 108 days on market',
+      },
+      {
+        ...seed,
+        listingKey: 'C3',
+        mlsNumber: '3',
+        address: '995 Horse Back',
+        closePrice: 705000,
+        listPrice: 705000,
+        originalListPrice: 705000,
+        closeDate: '2025-06-12',
+        onMarketDate: '2025-04-01',
+        domTotal: 72,
+        daysToOffer: 50,
+        sqft: 1883,
+        proximity: '0.4 miles NW',
+        adjustedPrice: 705000,
+        listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
+      },
+    ] as CmaAdjustedComp[]
+    const html = renderCompMatrixHtml(subject, closedComps)
+    for (const label of [
+      'Distance',
+      'Status',
+      'Status date',
+      'List price',
+      'Original list',
+      'Sold',
+      'Days on market',
+      'CDOM',
+      'Beds',
+      'Baths',
+      'Size',
+      'Lot size',
+      'Year built',
+      'Garage',
+      'List $/sqft',
+      'Sold $/sqft',
+      'Seller concessions',
+      'Adjusted',
+      'First ask \u2192 last ask \u2192 outcome',
+    ]) {
+      expect(html, label).toContain(label)
+    }
+    expect(html).toContain('0.2 miles NW')
+    expect(html).not.toContain('>Outcome<')
+    expect(html).not.toContain('Remodel or update notes')
+  })
+
+    it('contract: every-comparable-row-dom-and-price-history', () => {
     // Tip Ready refuse labels — must match SHARED_ROWS in comp-matrix.
     expect(COMPARABLE_DOM_ROW_LABEL).toBe('Days on market')
     expect(COMPARABLE_PRICE_HISTORY_ROW_LABEL).toContain('First ask')

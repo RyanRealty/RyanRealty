@@ -474,10 +474,13 @@ try{
     box.className='rr-controls is-row'
     var hasAdj=chapter.querySelectorAll('tr[data-adj]').length>0
     if(hasAdj){
+      // Matt 2026-09-17 letter craft: Flex FLOW side-by-side first. Adjustment
+      // grid is optional — default Sale prices only so the matrix is readable.
+      chapter.classList.add('is-plain')
       var seg=el('div','rr-seg')
       box.appendChild(seg)
-      button(seg,'With the adjustments',true,function(){chapter.classList.remove('is-plain')})
-      button(seg,'Sale prices only',false,function(){chapter.classList.add('is-plain')})
+      button(seg,'With the adjustments',false,function(){chapter.classList.remove('is-plain')})
+      button(seg,'Sale prices only',true,function(){chapter.classList.add('is-plain')})
     }
 
     // The sort runs ACROSS every table, not within each one. A wide grid splits
