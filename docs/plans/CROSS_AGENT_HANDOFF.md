@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-128 residual — city grid clusters)
 
-Surface: Cursor cloud, branch `cursor/site-128-city-grid-clusters-dd0c`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-city-grid-clusters-dd0c`. Tip `08916fb1e`. Draft PR #293. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
 - **SITE-128 residual.** Live `/cities/bend` after `bd25af464` painted one `759` bubble (union-find @ 40px chained the letterboxed fold). Grid cells (64px) replace that: many navy count bubbles, densest ~42; Old Bend / Tetherow spaced pills stay pills. City fold path still mounts `V3Atlas` → `clusterAtlasPins`.
 - **Not this pass.** SITE-129, SITE-130, SITE-131. Tetherow / DRW map CSS not touched.
