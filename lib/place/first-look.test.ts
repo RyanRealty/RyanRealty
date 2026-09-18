@@ -77,6 +77,8 @@ describe('place first-look map island', () => {
     expect(clustered).not.toMatch(/\\bv3-place-look\\b/)
     expect(/v3-place-look/.test('v3-place-look__map-canvas')).toBe(true)
     expect(/\bv3-place-look\b/.test('v3-place-look__map-canvas')).toBe(false)
+    expect(clustered).toMatch(/fitSubjectRing && hasRing/)
+    expect(clustered).toMatch(/v3SubjectRingPadding/)
   })
 })
 

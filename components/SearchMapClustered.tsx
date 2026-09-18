@@ -1217,8 +1217,10 @@ export default function SearchMapClustered({
     if (!map || !window.google?.maps) return
     const padding = v3FitPadding(map.getDiv())
     const key = `${placeQuery ?? ''}|${boundaryPaths.flat().length}`
-    if (placeFitKeyRef.current === null) {
-      // First paint: onLoad already fitted (bbox / boundary / places). Seed key.
+    const hasRing = boundaryPaths.flat().length >= 2
+    // onLoad can run before GeoJSON parses. Skipping the first effect then
+    // leaves the phone island on a pin-cluster crop (SITE-128 @375 rematch).
+    if (placeFitKeyRef.current === null && !(fitSubjectRing && hasRing)) {
       placeFitKeyRef.current = key
       return
     }
