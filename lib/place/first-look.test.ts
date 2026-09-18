@@ -61,12 +61,24 @@ describe('place first-look cards', () => {
 })
 
 describe('place first-look map island', () => {
-  it('clusters pins on one ring and does not paint child overlays', () => {
+  it('paints price pins on one ring and does not paint child overlays', () => {
     const map = readFileSync(resolve('components/site/v3/V3PlaceLookMap.client.tsx'), 'utf8')
     expect(map).toMatch(/hideBoundaryToggle:\s*true/)
-    expect(map).toMatch(/boundaryStrokeWeight:\s*4/)
+    expect(map).toMatch(/boundaryStrokeWeight:\s*8/)
+    expect(map).toMatch(/disableClustering:\s*true/)
+    expect(map).toMatch(/fitSubjectRing:\s*true/)
     expect(map).toMatch(/SearchMapClustered/)
     expect(map).not.toMatch(/overlayBoundaries/)
+  })
+
+  it('lets the BEM canvas fill the 10.5rem phone island (no 360px minHeight)', () => {
+    const clustered = readFileSync(resolve('components/SearchMapClustered.tsx'), 'utf8')
+    expect(clustered).toMatch(/const fillIsland = \/v3-place-look\/\.test\(className\)/)
+    expect(clustered).not.toMatch(/\\bv3-place-look\\b/)
+    expect(/v3-place-look/.test('v3-place-look__map-canvas')).toBe(true)
+    expect(/\bv3-place-look\b/.test('v3-place-look__map-canvas')).toBe(false)
+    expect(clustered).toMatch(/fitSubjectRing && hasRing/)
+    expect(clustered).toMatch(/v3SubjectRingPadding/)
   })
 })
 
@@ -79,6 +91,7 @@ describe('place first-look pin cap', () => {
       Longitude: -121 - i / 10000,
     }))
     const capped = capLookListings(listings)
+    expect(CITY_LOOK_PIN_CAP).toBe(36)
     expect(capped).toHaveLength(CITY_LOOK_PIN_CAP)
     expect(capped[0]?.ListingKey).toBe('k0')
     expect(capped.at(-1)?.ListingKey).not.toBe('k0')
