@@ -42,7 +42,7 @@ describe('method lead — list high is the recommend echo', () => {
     standardStatus: 'Expired',
   } as CmaSubject
 
-  it('keeps the conservative floor and says that price for the recommend high', () => {
+  it('cites the closed-comp (hero) band once — listRange is not a second tier', () => {
     const pricing = {
       conservative: 533_000,
       recommended: 565_000,
@@ -52,7 +52,9 @@ describe('method lead — list high is the recommend echo', () => {
     } as unknown as CmaPricing
     const lead = whatItsWorthLead(subject, pricing)
     expect(lead).toContain('The sales support $513,000 to $658,000.')
-    expect(lead).toContain('List between $533,000 and that price.')
+    // Same band as hero → instruction only, figures do not repeat.
+    expect(lead).toContain('List in that range.')
+    expect(lead).not.toContain('List between $533,000')
     expect(lead).not.toContain('$565,000')
   })
 })

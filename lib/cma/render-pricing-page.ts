@@ -28,6 +28,7 @@ import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { listCeiling, readMeasure, readRangeRuleKept } from '@/lib/cma/render-contract'
+import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -164,13 +165,15 @@ function worthRangeSentence(pricing: CmaPricing): string {
 /**
  * THE LIST RANGE THIS DOCUMENT IS ALLOWED TO PRINT, rounded once, here.
  *
- * `[conservative, min(highEnd, clamp.after)]`. Round-four class E: Concorde
- * carried three list ceilings across two screens — the cover's raw `highEnd`,
- * this chapter's raw `highEnd`, and the clamped recommendation between them —
- * and the highest of the three was $1,500,000, the ask that had just failed to
- * sell. `listCeiling` is the one resolution; the cover reads this same
- * function, so the two screens cannot disagree and neither can round
- * differently.
+ * Matt 2026-09-18 (Canter dual-tier lock): the list-range prose cites the SAME
+ * closed-comp band the hero prints (`valueLow`/`valueHigh`) — one source of
+ * truth via `closedCompBand`. Do not invent a second tier from
+ * `conservative`/`highEnd` when those drifted (Canter live: list $686–716
+ * beside hero $675–705). Tip Ready refuses when listRange ≠ hero band.
+ *
+ * Fallback only when the closed band is missing: legacy
+ * `[conservative, min(highEnd, clamp.after)]` plus the failed-ask equality
+ * guard (Concorde: never land ON the ask that already failed).
  *
  * Null when the row carries no usable pair. The chapter then states the worth
  * range alone rather than inventing a list.
@@ -179,6 +182,11 @@ export function listRangeBounds(
   pricing: CmaPricing,
   failedAsk?: number | null,
 ): { low: number; high: number } | null {
+  const band = closedCompBand(pricing)
+  if (band) {
+    return { low: round1k(band.low), high: round1k(band.high) }
+  }
+  // Closed band missing — legacy list-tier path (rare / old rows).
   let top = listCeiling(pricing)
   if (top == null || !(top > 0)) return null
   // AND NEVER THE PRICE THAT ALREADY FAILED, EXACTLY. `applyFailedAskCap` caps
@@ -195,6 +203,20 @@ export function listRangeBounds(
   const floor = pricing.conservative > 0 ? Math.min(pricing.conservative, top) : top
   if (!(floor > 0)) return null
   return { low: round1k(floor), high: round1k(top) }
+}
+
+/**
+ * Tip Ready: list-range prose band must equal the hero closed-comp band.
+ * Refuse dual-tier (Canter: $686–716 list vs $675–705 hero).
+ */
+export function listRangeMatchesHeroBand(
+  pricing: CmaPricing,
+  failedAsk?: number | null,
+): boolean {
+  const hero = closedCompBand(pricing)
+  const list = listRangeBounds(pricing, failedAsk)
+  if (!hero || !list) return false
+  return list.low === round1k(hero.low) && list.high === round1k(hero.high)
 }
 
 /**
@@ -232,8 +254,8 @@ export function keptSaleCount(
 /**
  * The list range beside it — dropped when it is the same two numbers again.
  *
- * On 1617 NW 8th `conservative`/`highEnd` are `valueLow`/`valueHigh`, so the
- * old lead printed one pair twice in one sentence.
+ * listRangeBounds now reads the closed-comp (hero) band, so the usual case is
+ * "List in that range." Dual-tier list dollars beside the hero are refused.
  */
 function listRangeSentence(pricing: CmaPricing, failedAsk: number | null): string {
   const bounds = listRangeBounds(pricing, failedAsk)

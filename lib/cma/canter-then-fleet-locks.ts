@@ -14,6 +14,7 @@ export const CMA_FLEET_LOCK_MODULES = [
   'lib/pricing/exclusive-pocket-date-adj.ts',
   'lib/cma/comparable-dom-history.ts',
   'lib/cma/cover-value.ts',
+  'lib/cma/render-pricing-page.ts',
   'lib/cma/build.ts',
 ] as const
 

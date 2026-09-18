@@ -10,6 +10,8 @@
  * listing/price history — Tip Ready refuse if missing.
  * Low/High from closed-comp band (valueLow/valueHigh); Recommended must stay
  * inside that band — Tip Ready refuse if Rec is outside Low/High.
+ * Matt 2026-09-18: listRange prose must match hero band — Tip Ready refuse
+ * dual-tier (Canter live: list $686–716 vs hero $675–705 / Rec $680).
  * Pending high-DOM 60+ = letter signal only; never sets Recommended (actives
  * may still nudge in-band). Canter first, then apply ALL locks to every CMA.
  */
@@ -41,7 +43,13 @@ import {
   matrixHtmlHasDomAndPriceHistory,
 } from '@/lib/cma/comparable-dom-history'
 import { renderCompMatrixHtml, renderMatrixHtml } from '@/lib/cma/comp-matrix'
-import { salesThatSetItPage, SALES_THAT_SET_IT_HEADING } from '@/lib/cma/render-pricing-page'
+import {
+  listRangeBounds,
+  listRangeMatchesHeroBand,
+  salesThatSetItPage,
+  SALES_THAT_SET_IT_HEADING,
+  whatItsWorthLead,
+} from '@/lib/cma/render-pricing-page'
 import { activeEntries, closedEntries, unsoldEntries } from '@/lib/cma/matrix-entry'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
@@ -185,6 +193,35 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         valueHigh: 705_000,
       }),
     ).toBe(false)
+  })
+
+  it('contract: list-range-prose-matches-hero-band', () => {
+    // Canter live dual-tier: conservative/highEnd $686–716 beside hero $675–705.
+    const canter = {
+      ...pricing,
+      conservative: 686_000,
+      highEnd: 716_000,
+      valueLow: 675_000,
+      valueHigh: 705_000,
+      recommended: 680_000,
+    } as typeof pricing
+
+    expect(listRangeMatchesHeroBand(canter)).toBe(true)
+    expect(listRangeBounds(canter)).toEqual({ low: 675_000, high: 705_000 })
+
+    const hero = letterCoverPayoffHtml(canter)
+    expect(hero).toContain('$675,000')
+    expect(hero).toContain('$705,000')
+    expect(hero).toContain('$680,000')
+    expect(hero).not.toContain('$686,000')
+    expect(hero).not.toContain('$716,000')
+
+    const lead = whatItsWorthLead(subject, canter)
+    expect(lead).toContain('The sales support $675,000 to $705,000.')
+    expect(lead).toContain('List in that range.')
+    expect(lead).not.toContain('$686,000')
+    expect(lead).not.toContain('$716,000')
+    expect(lead).not.toMatch(/List between \$686/)
   })
 
   it('contract: pin-map-subject-comps-status-legend-class', () => {
