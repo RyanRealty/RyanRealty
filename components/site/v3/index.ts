@@ -672,6 +672,7 @@ export { V3Footer, V3_FOOTER_COLUMNS, V3_FOOTER_LEGAL } from './V3Footer'
 export type { V3FooterProps, V3FooterColumn, V3FooterCluster, V3FooterLink } from './V3Footer'
 
 export { V3Breadcrumb } from './V3Breadcrumb'
+export { V3BreadcrumbCollapse } from './V3BreadcrumbCollapse.client'
 
 export type { V3BreadcrumbProps, V3Crumb } from './V3Breadcrumb'
 
