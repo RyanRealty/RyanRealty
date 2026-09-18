@@ -157,13 +157,13 @@ export type AtlasDot = {
 /** A recent, real event: what the live line prints. */
 export type AtlasEvent = { key: string; kind: 'new' | 'pending' | 'sold'; label: string; href: string }
 
-export type AtlasRegionKind = 'town' | 'community' | 'neighborhood'
+export type AtlasRegionKind = 'town' | 'community' | 'neighborhood' | 'subdivision'
 
 export type AtlasRegion = {
   id: string
-  /** town = the base silhouette(s); community/neighborhood = the places on it. */
+  /** town = the base silhouette(s); community / neighborhood / subdivision = the places on it. */
   kind: AtlasRegionKind
-  /** What the card calls it: "City", "Community", "Subdivision". Defaults by kind. */
+  /** What the card calls it: "City", "Community", "Neighborhood", "Subdivision". Defaults by kind. */
   kindLabel?: string
   name: string
   href: string
@@ -394,7 +394,12 @@ export type V3AtlasProps = {
 const RESIDENTIAL = new Set(['house', 'condo', 'townhouse', 'manufactured', 'multi'])
 /** Pulse slots per event kind, so a month of closes always has living marks. */
 const PULSE_SLOTS = { new: 16, pending: 6, sold: 18 } as const
-const KIND_LABEL: Record<AtlasRegionKind, string> = { town: 'Town', community: 'Community', neighborhood: 'Neighborhood' }
+const KIND_LABEL: Record<AtlasRegionKind, string> = {
+  town: 'Town',
+  community: 'Community',
+  neighborhood: 'Neighborhood',
+  subdivision: 'Subdivision',
+}
 
 /**
  * The price a control is actually set to. Two decimals under ten million,

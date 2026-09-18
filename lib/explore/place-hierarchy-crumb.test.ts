@@ -21,8 +21,10 @@ describe('SITE-128 hierarchy — community ≠ neighborhood', () => {
     expect(city).not.toMatch(/getIndexableSubdivisions/)
     expect(city).not.toMatch(/CITY_PLAT_INDEX_CAP/)
     expect(city).not.toMatch(/heading=\{[^}]*Subdivisions in/)
+    expect(city).not.toMatch(/Communities and subdivisions/)
     expect(city.indexOf('id="neighborhoods"')).toBeLessThan(city.indexOf('id="child-places"'))
     expect(city).toMatch(/nameOnly/)
+    expect(city).toMatch(/nameOnlyChildEntries/)
   })
 
   it('does not twin Neighborhoods-in on the community page', () => {
@@ -63,5 +65,6 @@ describe('Matt LOCK — sitewide crumb is one component', () => {
     expect(crumb).toMatch(/V3BreadcrumbCollapse/)
     expect(crumb).toMatch(/overlayCompact/)
     expect(crumb).toMatch(/rungs\.length\s*>=\s*3/)
+    expect(crumb).toMatch(/nameOnlyCrumbs/)
   })
 })

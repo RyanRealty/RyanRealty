@@ -23,6 +23,41 @@ function slugFromHref(href: string): string {
   return href.split('/').filter(Boolean).at(-1) ?? ''
 }
 
+function slugTokens(slug: string): string[] {
+  return slug.toLowerCase().split(/[-_]+/).filter(Boolean)
+}
+
+/**
+ * Two-or-more token suffix twin: river-woods ⊂ deschutes-river-woods.
+ * A single leftover token (woods ⊂ deschutes-river-woods) is not a twin.
+ */
+export function isTwoTokenSuffixTwin(shorterSlug: string, longerSlug: string): boolean {
+  const shorter = slugTokens(shorterSlug)
+  const longer = slugTokens(longerSlug)
+  if (shorter.length < 2 || longer.length <= shorter.length) return false
+  return shorter.every((token, i) => token === longer[longer.length - shorter.length + i])
+}
+
+function collapseTwinChildEntries(rows: NearbyPlacePeer[]): NearbyPlacePeer[] {
+  const drop = new Set<number>()
+  const slugs = rows.map((row) => slugFromHref(row.href).toLowerCase())
+  const names = rows.map((row) => row.name.trim().toLowerCase())
+  for (let i = 0; i < rows.length; i += 1) {
+    for (let j = 0; j < rows.length; j += 1) {
+      if (i === j) continue
+      if (isTwoTokenSuffixTwin(slugs[i], slugs[j])) {
+        drop.add(i)
+        continue
+      }
+      if (names[i] && names[i] === names[j]) {
+        if (slugs[i].length < slugs[j].length) drop.add(i)
+        else if (slugs[i].length === slugs[j].length && i > j) drop.add(i)
+      }
+    }
+  }
+  return rows.filter((_, i) => !drop.has(i))
+}
+
 /**
  * Name-only doors, caller order preserved, self dropped, cap applied.
  * Empty when nothing nearby is named — the section then omits itself.
@@ -71,5 +106,5 @@ export function nameOnlyChildEntries(
       out.push({ name, href })
     }
   }
-  return out
+  return collapseTwinChildEntries(out)
 }

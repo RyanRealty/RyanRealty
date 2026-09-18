@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nameOnlyChildEntries, nearbySubdivisionPeers } from './nearby-place-peers'
+import { isTwoTokenSuffixTwin, nameOnlyChildEntries, nearbySubdivisionPeers } from './nearby-place-peers'
 
 describe('nearbySubdivisionPeers', () => {
   it('ranks GIS ring neighbors ahead of resort siblings and never sorts by sales', () => {
@@ -48,5 +48,31 @@ describe('nameOnlyChildEntries', () => {
       { name: 'Phase 1', href: '/subdivisions/phase-1' },
       { name: 'Phase 2', href: '/subdivisions/phase-2' },
     ])
+  })
+
+  it('collapses River Woods into Deschutes River Woods and keeps the longer name', () => {
+    expect(isTwoTokenSuffixTwin('river-woods', 'deschutes-river-woods')).toBe(true)
+    expect(isTwoTokenSuffixTwin('woods', 'deschutes-river-woods')).toBe(false)
+    const rows = nameOnlyChildEntries([
+      [
+        { name: 'River Woods', href: '/subdivisions/river-woods' },
+        { name: 'Deschutes River Woods', href: '/subdivisions/deschutes-river-woods' },
+        { name: 'Woodside Ranch', href: '/subdivisions/woodside-ranch' },
+      ],
+    ])
+    expect(rows).toEqual([
+      { name: 'Deschutes River Woods', href: '/subdivisions/deschutes-river-woods' },
+      { name: 'Woodside Ranch', href: '/subdivisions/woodside-ranch' },
+    ])
+  })
+
+  it('keeps the longer slug when two cards share one name', () => {
+    const rows = nameOnlyChildEntries([
+      [
+        { name: 'Awbrey Butte', href: '/subdivisions/awbrey' },
+        { name: 'Awbrey Butte', href: '/cities/bend/awbrey-butte' },
+      ],
+    ])
+    expect(rows).toEqual([{ name: 'Awbrey Butte', href: '/cities/bend/awbrey-butte' }])
   })
 })

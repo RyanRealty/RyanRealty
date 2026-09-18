@@ -18,7 +18,7 @@ export type PlaceChildOverlay = {
 
 export type PlaceChildRegion = {
   id: string
-  kind: 'neighborhood'
+  kind: 'subdivision'
   kindLabel: string
   name: string
   href: string
@@ -68,7 +68,7 @@ export function regionsFromChildCells(
     if (!label || !slug) continue
     out.push({
       id: `subdivision:${slug}`,
-      kind: 'neighborhood',
+      kind: 'subdivision',
       kindLabel: 'Subdivision',
       name: label,
       href: `/subdivisions/${slug}`,

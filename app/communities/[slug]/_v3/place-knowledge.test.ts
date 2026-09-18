@@ -106,7 +106,8 @@ describe('master-plan belonging Quiet', () => {
       amenityPosts: {},
     })
     const terms = items.flatMap((item) => ('term' in item ? [item.term] : []))
-    expect(terms).toContain('Subdivisions in Tetherow')
+    expect(terms).toContain('Names the MLS uses here')
+    expect(terms.join(' ')).not.toMatch(/Subdivisions in /)
     const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
     expect(hrefs.filter((h) => typeof h === 'string' && h.startsWith('/subdivisions/'))).toEqual([])
   })
