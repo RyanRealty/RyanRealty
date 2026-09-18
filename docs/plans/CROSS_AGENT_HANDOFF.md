@@ -1,11 +1,11 @@
-# Current — 2026-09-18 (SITE-128 Tip Ready #1 — competitive first-look)
+# Current — 2026-09-18 (SITE-128 first-look CI clear — page-purpose + wired)
 
-Surface: Cursor cloud `bc-cc128bf6-dd08-56c8-950d-d0c1a05dc730`, branch `cursor/site-128-first-look-c730`, draft PR #306. Tip Ready `--ship` OK. PR only — Cos Mini lands. Do not merge. HOLD owner email. **Stop before #2.**
+Surface: Cursor cloud, branch `cursor/site-128-first-look-ci-ec30`. Fix tip ON TOP of `ac8ddac28` (first-look already on `5d8a0f874`). PR only — Cos Mini lands. Do not merge. HOLD owner email. No geom invent.
 
-- **#1 fold.** City + Old Bend first look is Google + ONE place ring + clustered price pins + listing photo cards (`V3PlaceLook`). Cream Atlas stays later for amenity/cluster gates.
-- **Evidence.** `look-pass-site128-rematch-2026-09-18/`: Compass Bend, Compass Old Bend, Zillow bend-or (403 bot wall skip), ours local folds, side-by-sides. `node scripts/lib/taste-receipt.mjs --ship lib/place/place-craft.parity.json` → ship OK.
-- **Not this SHA.** #2 map hierarchy, #3 amenity off-city, #4 naming+crumb, #5 keep-exploring + SITE-127 $. Bundled rematch stays on `cursor/site-128-map-hierarchy-c730` / PR #305.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+- **ci:page-purpose.** City + neighborhood `sectionOrder` now matches the first-look fold: `#place-look` then slider / Split / peers / alerts / `#homes`, then `#atlas` later.
+- **ci:site-primitive-wired.** `V3PlaceLookMap` recorded as SITE-128 sub-primitive of wired `V3PlaceLook` (same shape as `V3ChartHover`).
+- **Cherry-pick.** After `4f7364785` + `ac8ddac28`, take this tip SHA. Both gates pass locally.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
 
 # Current — 2026-09-18 (ISR spend cut — place/home 300 → 900)
 
