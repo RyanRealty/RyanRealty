@@ -5,6 +5,7 @@
 
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
+import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
@@ -132,9 +133,14 @@ export function coverValueBlockHtml(a: CoverArgs): string {
         <p class="vb-price">${usd(p.recommended)}</p>
       </div>
     </div>
-    <div class="vb-range">${esc(
-      `List ${usd(p.conservative)} to ${usd(p.highEnd)}.`,
-    )}${
+    <div class="vb-range">${esc((() => {
+      // Matt 2026-09-18: same closed-comp band as hero trio — never a second
+      // list-tier range beside Low/High (Canter dual-tier refuse).
+      const band = closedCompBand(p)
+      const lo = band?.low ?? p.conservative
+      const hi = band?.high ?? p.highEnd
+      return `List ${usd(lo)} to ${usd(hi)}.`
+    })())}${
       range.outOfRange ? ` The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
     }</div>
     ${currentAskLine(p) ? `<div class="vb-detail vb-ask">${esc(currentAskLine(p)!)}</div>` : ''}
@@ -150,8 +156,10 @@ export function coverValueBlockHtml(a: CoverArgs): string {
  * Falls back to list tiers only when the closed band is missing.
  */
 export function heroTrioHtml(p: CmaPricing, opts?: { singleClass?: string }): string {
-  const loRaw = (p.valueLow != null && p.valueLow > 0 ? p.valueLow : p.conservative) ?? 0
-  const hiRaw = (p.valueHigh != null && p.valueHigh > 0 ? p.valueHigh : p.highEnd) ?? 0
+  // Same closedCompBand listRangeBounds / Tip Ready parity reads.
+  const band = closedCompBand(p)
+  const loRaw = band?.low ?? (p.conservative ?? 0)
+  const hiRaw = band?.high ?? (p.highEnd ?? 0)
   const low = Math.min(loRaw, hiRaw)
   const high = Math.max(loRaw, hiRaw)
   const rec = p.recommended

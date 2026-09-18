@@ -300,25 +300,33 @@ describe('E2 — one list ceiling per document', () => {
     expect(listCeiling(pricing({ clamp: { after: 300_000, bound: false } }))).toBe(452_000)
   })
 
-  it('prints the list range against that ceiling and never above it', () => {
-    expect(listRangeBounds(concorde)).toEqual({ low: 1_413_000, high: 1_473_000 })
+  it('prints the list range from the closed-comp (hero) band — never a second list-tier', () => {
+    // Matt 2026-09-18: listRange === valueLow/valueHigh (hero), not conservative/highEnd.
+    expect(listRangeBounds(concorde)).toEqual({ low: 1_390_000, high: 1_930_000 })
     const lead = whatItsWorthLead(subject({ standardStatus: 'Expired', lastListPrice: 1_500_000 }), concorde, {
       asOfIso: AS_OF,
       hasFinalCycle: true,
     })
-    expect(lead).toContain('List between $1,413,000 and that price.')
+    expect(lead).toContain('List in that range.')
     expect(lead).not.toContain('$1,500,000')
+    expect(lead).not.toContain('$1,413,000')
   })
 
-  it('never prints the failed ask itself as the top of the list range', () => {
-    // A row with no clamp whose high end was capped exactly AT the ask.
-    const capped = pricing({ conservative: 1_413_000, recommended: 1_473_000, highEnd: 1_500_000 })
+  it('never prints the failed ask itself as the top of the list range (legacy path)', () => {
+    // Closed band missing → legacy list-tier + failed-ask equality guard.
+    const capped = pricing({
+      conservative: 1_413_000,
+      recommended: 1_473_000,
+      highEnd: 1_500_000,
+      valueLow: 0,
+      valueHigh: 0,
+    })
     expect(listRangeBounds(capped, 1_500_000)).toEqual({ low: 1_413_000, high: 1_473_000 })
     // A high end merely ABOVE an old ask is a reading the sales may support.
     expect(listRangeBounds(capped, 1_400_000)).toEqual({ low: 1_413_000, high: 1_500_000 })
   })
 
-  it('refuses a net sheet priced above the ceiling, or at the failed ask', () => {
+  it('refuses a net sheet priced above the hero band, or at the failed ask', () => {
     const sheet = (list: number) => ({
       basis: 'Deschutes County schedule.',
       list,
@@ -335,11 +343,11 @@ describe('E2 — one list ceiling per document', () => {
           expiredAudit: { findings: [], finalCycle: { initialAsk: 460_000, cuts: [] } } as never,
         }),
       )?.body ?? ''
-    // $452,000 is the ceiling: a sheet there itemises.
-    expect(at(452_000)).toContain('List price')
-    // Above it, and the chapter prints no figure at all.
-    expect(at(460_001)).not.toContain('List price')
-    expect(at(460_001)).toContain('needs')
+    // Fixture closed-comp band high is $443,000 (hero High) — a sheet there itemises.
+    expect(at(443_000)).toContain('List price')
+    // Above the hero band, and the chapter prints no figure at all.
+    expect(at(452_000)).not.toContain('List price')
+    expect(at(452_000)).toContain('needs')
     // AT the failed ask ($460,000) is the same defect wearing the failed price.
     expect(at(460_000)).not.toContain('List price')
   })
