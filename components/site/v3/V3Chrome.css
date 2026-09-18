@@ -94,6 +94,19 @@
   min-height: var(--v3-tap);
 }
 
+/* SITE-121: drop sticky chrome under the portaled morph so the 375 input
+   sits full-width below the bar and stays typeable. */
+html.rr-chrome-search-open .v3.v3-chrome {
+  z-index: 1;
+}
+
+@media (max-width: 56.24rem) {
+  .v3-chrome__search-morph {
+    width: 3rem;
+    max-width: none;
+  }
+}
+
 @media (min-width: 56.25rem) {
   .v3-chrome__search-morph {
     max-width: 16rem;

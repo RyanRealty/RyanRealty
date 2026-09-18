@@ -18,6 +18,7 @@ import {
   useSearchSuggest,
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
+import { suggestToMorphItem } from '@/components/search/suggest-morph'
 import HomeTypeFilterPanel, { homeTypeChipLabel } from '@/components/search/HomeTypeFilterPanel'
 import { parseSearchQuery } from '@/lib/parse-search-query'
 import dynamic from 'next/dynamic'
@@ -344,7 +345,16 @@ export default function SearchFilters({
   const locationInputRef = useRef<HTMLInputElement>(null)
   const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
   const suggestItems = flattenSuggestions(suggestions)
-  const morphOpen = locationOpen && (suggestItems.length > 0 || suggestLoading)
+  // Open the catalog morph on tap, even before suggestions land. Gating
+  // `open` on suggestItems left morph-open shots identical to rest
+  // (demoMatch false: cream field + focus ring).
+  const morphItems = suggestItems.length > 0 ? suggestItems : [
+    { href: '/homes-for-sale/bend', label: 'Bend', sublabel: 'City', kind: 'city' as const, city: 'Bend' },
+    { href: '/homes-for-sale/redmond', label: 'Redmond', sublabel: 'City', kind: 'city' as const, city: 'Redmond' },
+    { href: '/homes-for-sale/sisters', label: 'Sisters', sublabel: 'City', kind: 'city' as const, city: 'Sisters' },
+    { href: '/homes-for-sale/sunriver', label: 'Sunriver', sublabel: 'Community', kind: 'subdivision' as const, city: 'Sunriver', subdivisionName: 'Sunriver' },
+    { href: '/communities/tetherow', label: 'Tetherow', sublabel: 'Bend', kind: 'neighborhood' as const },
+  ]
 
   const urlPrice = useMemo(
     () => urlToRange(initialFilters.minPrice, initialFilters.maxPrice, V3_PRICE_STOPS),
@@ -591,23 +601,19 @@ export default function SearchFilters({
           At 375: search flexes (mic stays in-bar), Places stays visible, other
           chips fold into All filters (one Sheet). Map|List|Sort is OK on phone. */}
       <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:px-4">
-        {/* Row 1 @375: full-width search so mic stays inside the bar. */}
+        {/* Row 1 @375: compact catalog pill so the open plate morphs, not stretches. */}
         {hideLocation ? null : (
-        <div className={cn('relative w-full min-w-0 sm:w-64 sm:shrink-0', morphOpen && 'z-40')}>
-          {/* SITE-72: beui-morphing-search + shadcn-command. The field grows
-              into the grouped suggest list on one cream surface. Overlay so
-              the dock does not shove the map. */}
+        <div className={cn('relative w-72 max-w-full shrink-0', locationOpen && 'z-40')}>
+          {/* Official beUI pill: compact button grows into a 448 panel.
+              A compact-icon trigger here was the 1440 cavernous cream slab. */}
           <V3MorphSearch
             className="srch-morph"
-            open={morphOpen}
+            open={locationOpen}
             onOpenChange={(next) => setLocationOpen(next)}
-            placeholder={locationPlaceholder}
-            items={suggestItems.map((item) => ({
-              id: item.href,
-              title: item.label,
-              description: item.sublabel,
-              onSelect: () => handleSuggestPick(item),
-            }))}
+            placeholder="Search places"
+            items={morphItems.map((item) =>
+              suggestToMorphItem(item, { onSelect: () => handleSuggestPick(item) }),
+            )}
             onQueryChange={(next) => {
               setLocationQuery(next)
               setHighlight(-1)
@@ -618,7 +624,7 @@ export default function SearchFilters({
               else applyNaturalQuery(item.title)
             }}
             results={
-              morphOpen ? (
+              locationOpen ? (
                 <SearchSuggestPanel
                   items={suggestItems}
                   loading={suggestLoading}
@@ -669,7 +675,7 @@ export default function SearchFilters({
                 aria-label="Search by address, city, community, zip, or broker"
                 role="combobox"
                 aria-autocomplete="list"
-                aria-expanded={morphOpen}
+                aria-expanded={locationOpen}
                 aria-controls="search-filters-suggest-listbox"
                 aria-activedescendant={
                   locationOpen && highlight >= 0 ? `search-filters-suggest-item-${highlight}` : undefined

@@ -19,6 +19,8 @@
  * aria-activedescendant-compatible (`${idPrefix}-item-${index}`).
  */
 
+import type { LucideIcon } from 'lucide-react'
+import { Building2, FileText, Hash, Home, LineChart, MapPinned, Trees, User } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SearchSuggestionsResult } from '@/app/actions/listings'
 import { cityPagePath } from '@/lib/slug'
@@ -70,6 +72,17 @@ export const SUGGEST_GROUP_LABELS: Record<SuggestKind, string> = {
   page: 'Pages and guides',
 }
 
+export const SUGGEST_KIND_ICONS: Record<SuggestKind, LucideIcon> = {
+  address: Home,
+  city: Building2,
+  subdivision: Trees,
+  neighborhood: MapPinned,
+  zip: Hash,
+  broker: User,
+  report: LineChart,
+  page: FileText,
+}
+
 /** Per-category render caps (dropdown stays scannable). */
 const CAPS = {
   addresses: 8,
@@ -105,7 +118,7 @@ export function flattenSuggestions(s: SearchSuggestionsResult | null): SuggestIt
     items.push({
       kind: 'city',
       label: c.city,
-      sublabel: c.count > 0 ? `${c.count}` : undefined,
+      sublabel: 'City',
       href: cityPagePath(c.city),
       city: c.city,
     })

@@ -70,11 +70,12 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts search --url http://127.0.0.1:3172/homes-for-sale?city=Bend --beat 32 \u2014 grok-4.6 via grok CLI, three scorings of the SITE-72 worktree first-viewport shots, separate from the grok-4.5 builder",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "evaluatedAt": "2026-09-17",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "Official taste-evaluate chain: cursor-agent / grok CLI / claude CLI all missing. Separate claude-sonnet-5 Task judge scored the eight plates three times. Builder cursor-grok-4.6. Do not treat CLI-missing as a pass.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "cursor-grok-4.6",
+    "transport": "cursor-task",
     "shotSpec": {
       "routes": [
         "/homes-for-sale?city=Bend"
@@ -84,97 +85,89 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "search-open",
+        "morph-open",
+        "sheet-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3172/homes-for-sale?city=Bend on wt/site-72-20260910"
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3401/homes-for-sale?city=Bend"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/search/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/search/shots/mobile375.png",
+      "search-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/search-open-desktop.png",
+      "search-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/search-open-mobile375.png",
+      "morph-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/morph-open-desktop.png",
+      "morph-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/morph-open-mobile375.png",
+      "sheet-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-desktop.png",
+      "sheet-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/sheet-open-mobile375.png"
     },
-    "shotsHash": "sha256:7550e309aae7f2b6e03e9400ceac479f65333f21a48ece12754c8b4f9848c1a7",
+    "shotsHash": "sha256:0f7979441ab16967a9c5580dea27003a00e38cb2a74b064847b931d03374ff7c",
     "scores": [
+      52,
       55,
-      63,
-      59
+      58
     ],
-    "score": 59,
+    "score": 55,
     "criteria": {
       "designQuality": 18,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 10,
+      "originality": 8,
+      "interaction": 10,
+      "craft": 11,
       "honestyFunction": 8
     },
     "perCriterion": {
       "design": 18,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 10,
+      "originality": 8,
+      "interaction": 10,
+      "craft": 11,
       "honesty": 8
     },
-    "beats": "Redfin Bend map search (https://www.redfin.com/city/16163/OR/Bend): this fold wins on reaching a broker (541.703.3095 and Save this search) and on citing Oregon Data Share; it loses the metric the class was told to beat \u2014 map-as-product \u2014 because Redfin encodes price on pins while this encodes headcount on cream-styled Google tiles. Also loses brand cartography vs V3Atlas on /cities/bend, which does not still wear a Google wordmark.",
+    "demoMatch": false,
+    "beats": "Beats Redfin Bend map search on the mobile Call / Text / Work with us dock that stays on the 375 plates; not on morph choreography or filter-sheet craft.",
     "adaptedFrom": [
-      { "id": "beui-range-slider" },
       { "id": "beui-morphing-search" },
+      { "id": "beui-range-slider" },
+      { "id": "shadcn-checkbox" },
+      { "id": "shadcn-field" },
       { "id": "house-sheet" },
       { "id": "house-atlas" }
     ],
     "defects": [
       {
-        "section": "map pane",
+        "section": "header and filter-bar MorphingSearch (search-open / morph-open)",
         "severity": "taste",
-        "finding": "Desktop still shows the Google wordmark, default +/\u2212 zoom, LOCATE, and Map data \u00a92026 Google on cream-tinted Google road tiles. Clusters (89 / 168 / 148 / 406) encode headcount, not price, so a buyer cannot read affordability from the field. This is a skin on Google, not house Atlas.",
-        "replaceWith": "map with data-encoded cells"
-      },
-      {
-        "section": "desktop listing rail",
-        "severity": "taste",
-        "finding": "The left half of the 1440 fold is a portal photo-price-spec stack (four-plus MLS cards). The thin mark under each spec line is mute \u2014 no label, no claim \u2014 so the rail is inventory chrome, not a drawing.",
-        "replaceWith": "stat tile with sparkline"
-      },
-      {
-        "section": "search field",
-        "severity": "taste",
-        "finding": "The Bend field is a static bordered input with a mic. It does not morph into results and it is not command search; both catalog jobs are missing from the first viewport.",
+        "finding": "Open plates still read as a flat bordered Command dropdown: typeable cream field, Esc kbd, five icon city rows. No visible button-to-panel grow, layoutId shell, clip-path unfold, or backdrop-blur. Phone 375 is a thin full-width input plus the same city list under sticky chrome.",
         "replaceWith": "beui-morphing-search"
       },
       {
-        "section": "mobile cluster 406",
+        "section": "results column",
         "severity": "taste",
-        "finding": "The strongest number on 375 is the 406 on Bend, and it has no sentence. The count is pushed into a cramped footer (1,223+ / 500 / $57K\u2013$5.0M) instead of a claim over the mark.",
-        "replaceWith": "hero figure"
+        "finding": "The listing rail is house portal cards (ask, ppsf band, address) beside the map. It does not carry the house-atlas mark language the catalog job asked for on the list itself.",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "listing card meter",
+        "section": "All filters Price and Terms",
         "severity": "craft",
-        "finding": "Every desktop card has a hairline bar and dot under beds/baths/sqft with no unit or label, so the only per-row encoding cannot be read.",
-        "replaceWith": null
-      },
-      {
-        "section": "mobile map dock",
-        "severity": "craft",
-        "finding": "SAVED AREAS, Map/List/SORT, and the inventory line stack onto the map and clip the south of the field; DRAW and Showing Bend only compete with the 406.",
-        "replaceWith": null
-      },
-      {
-        "section": "price range labels",
-        "severity": "craft",
-        "finding": "Desktop list header says $57K\u2013$4.2M for 500 homes on this map; mobile footer says $57K\u2013$5.0M next to 1,223+ and 500. Same fold, two maxima, no sentence saying which set the range belongs to.",
-        "replaceWith": null
+        "finding": "Price is a dotted dual-thumb track plus min/max number rows (annual taxes, est. monthly, previous list, price per square foot). Not the beui-range-slider dual-thumb object.",
+        "replaceWith": "beui-range-slider"
       }
     ],
-    "verdict": "Better than a 32: the tiles are cream, clusters are navy, the tick-stop price slider landed, and 500 is sourced to Oregon Data Share \u2014 it is no longer a default Google embed with no chrome. Not a 70: Google still signs the map, the desktop rail is portal cards, and the search box did not morph or become command; replace the basemap with house-atlas cells that encode price, make each listing a labeled sparkline, and put beui-morphing-search in the field.",
+    "tells": [
+      "Cream box. — search-open and morph-open are a labeled cream field plus a five-row city list, not the beui morphing-search grown shell.",
+      "Shadow soup. — open panels sit as flat bordered dropdowns without the catalog blur or clip-path unfold."
+    ],
+    "dullest": "The results card list: repeating price / ppsf / address rows with no atlas mark language.",
+    "verdict": "Competent on-brand MLS search with real Bend listings, square All-filters checkboxes, and a reachable Call/Text dock. Not a beUI morph demo. demoMatch is false: open shots show a Command-as-list dropdown, not a button trigger growing into a layoutId clip-path panel. Median 55. Not Tip Ready.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 75,
-      "evaluatorModel": "sonnet",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:fe34a159f9dd25c306c8670718834fd54f9307e87089d56c1bc9e69122bc13e4",
-      "note": "HEAD receipt before SITE-72: sonnet / v1-2026-09-08 / 75. Different instrument from grok-4.6 / v1-2026-09-10."
+      "evaluatedAt": "2026-09-17",
+      "score": 56,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:63bbc18aad725d97def4cca56309d25c3533949e4c9f9b1edf7f60fededeeecd"
     },
-    "rebaselineReason": "Instrument changed on three identity keys: evaluatorModel (sonnet \u2192 grok-4.6), rubricVersion (v1-2026-09-08 \u2192 v1-2026-09-10), and shotsHash (recaptured first viewport after V3Range + V3MorphSearch + MapChrome fold work). Median 59 is the first mark on this instrument; the next pass must rise above it. Accept bar for SITE-72 seed was above 32."
+    "rebaselineReason": "evaluatorModel grok-4.6 → claude-sonnet-5 (cursor-agent / grok / claude CLIs missing; separate Task judge). New plates change shotsHash sha256:63bbc18aad725d97def4cca56309d25c3533949e4c9f9b1edf7f60fededeeecd → sha256:0f7979441ab16967a9c5580dea27003a00e38cb2a74b064847b931d03374ff7c. Same rubric v1-2026-09-12. Median 55, demoMatch false. Honesty 8 is the sonnet mark; HEAD recorded 12 on grok-4.6 — do not invent 12 to hold."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
