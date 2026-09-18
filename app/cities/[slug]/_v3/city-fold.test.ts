@@ -28,6 +28,8 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/city-fold__figure/)
     expect(PAGE).toMatch(/place-opening--city/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
+    expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
+    expect(PAGE).toMatch(/getPlaceAmenityLayers/)
     expect(PAGE).toMatch(/dots=\{foldAtlasDots/)
     expect(PAGE).toMatch(/<CityAlertsStrip[\s\S]*?id="alerts"/)
     expect(PAGE).toMatch(/headlineTone="eyebrow"/)

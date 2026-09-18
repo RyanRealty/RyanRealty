@@ -10,6 +10,8 @@ describe('SITE-128 neighborhood fold Atlas', () => {
     expect(PAGE).toMatch(/import '\.\/_v3\/neighborhood-fold\.css'/)
     expect(PAGE).toMatch(/className="nbh-fold"/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
+    expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
+    expect(PAGE).toMatch(/getPlaceAmenityLayers/)
     expect(PAGE).not.toMatch(/clusterStageHint/)
     expect(PAGE).not.toMatch(/CITY_FOLD_CLUSTER_STAGE/)
     expect(PAGE).not.toMatch(/clusterStageHintPhone/)

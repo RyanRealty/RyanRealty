@@ -178,7 +178,8 @@
   max-height: none;
 }
 
-.city-fold__drawing .v3-atlas__types {
+.city-fold__drawing .v3-atlas__types,
+.city-fold__drawing .v3-atlas__amenities {
   display: flex;
   flex-wrap: wrap;
   gap: var(--v3-space-2xs);
@@ -244,6 +245,12 @@
 
   .city-fold__drawing .v3-atlas__types {
     display: none;
+  }
+
+  .city-fold__drawing .v3-atlas__amenities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--v3-space-2xs);
   }
 
   .city-fold__drawing .v3-atlas__sales-legend {

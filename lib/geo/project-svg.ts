@@ -74,6 +74,23 @@ export function ringsToPath(rings: readonly Ring[], proj: Projection, decimals =
   return d
 }
 
+/** Open line parts of a recorded LineString / MultiLineString. Never invents points. */
+export function lineStringParts(
+  geometry: GeoJSON.LineString | GeoJSON.MultiLineString,
+): LonLat[][] {
+  const asLine = (coords: readonly GeoJSON.Position[]): LonLat[] => {
+    const out: LonLat[] = []
+    for (const pos of coords) {
+      const lon = pos[0]
+      const lat = pos[1]
+      if (typeof lon === 'number' && typeof lat === 'number') out.push([lon, lat])
+    }
+    return out
+  }
+  if (geometry.type === 'LineString') return [asLine(geometry.coordinates)]
+  return geometry.coordinates.map((line) => asLine(line))
+}
+
 /**
  * SVG path data for an OPEN line — a road, a river. Unlike `ringsToPath` it
  * never closes the path and it keeps a two-point segment, which is most of what

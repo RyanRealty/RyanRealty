@@ -862,6 +862,66 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* SITE-128 amenity layers: recorded parks + trails, navy on cream — never
+   a map-tile blue fill or crowd-sourced invent. Under homes, no pointer steal. */
+.v3-atlas__amenity-parks,
+.v3-atlas__amenity-trails {
+  pointer-events: none;
+}
+
+.v3-atlas__amenity-park {
+  fill: color-mix(in srgb, var(--v3-navy) 10%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 38%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3-atlas__amenity-trail {
+  fill: none;
+  stroke: color-mix(in srgb, var(--v3-navy) 58%, transparent);
+  stroke-width: 1.6;
+  stroke-dasharray: 5 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3-atlas__amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs) var(--v3-space-sm);
+}
+
+.v3-atlas__type-mark--park {
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--v3-navy) 18%, transparent);
+  border-color: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+}
+
+.v3-atlas__type-mark--trail {
+  width: 0.9rem;
+  height: 0.14rem;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--v3-navy) 58%, transparent);
+  border-color: transparent;
+}
+
+.v3-atlas__type-mark--trail::after {
+  content: none;
+}
+
+.v3-atlas__key-mark--park {
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--v3-navy) 18%, transparent);
+}
+
+.v3-atlas__key-mark--trail {
+  width: 0.85rem;
+  height: 0.14rem;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--v3-navy) 58%, transparent);
+}
+
 /* Lot lines. The assessor's recorded parcel shape, never a survey: the subject
    lot in full ink so a reader knows which one the page is about, its
    neighbours as hairlines so the subject reads as part of a fabric rather than
