@@ -55,9 +55,17 @@ const AMENITY_BOARD = 'app/communities/[slug]/_v3/community-amenities.ts'
 const AMENITY_CLIENT = 'app/communities/[slug]/_v3/CommunityAmenities.client.tsx'
 const AMENITY_PRIMITIVE = 'components/site/v3/V3Amenities.tsx'
 
+// Mirrors lib/place/place-homes-heading.ts EVERY_HOME_LECTURE_REFUSE.
+const EVERY_HOME_LECTURE_REFUSE = /\bevery home for sale in\b/i
+const PLACE_INVENTORY_KEYS = new Set(['community', 'subdivision'])
+
 const read = (rel) => {
   const path = join(ROOT, rel)
   return existsSync(path) ? readFileSync(path, 'utf8') : null
+}
+
+function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
 }
 
 const failures = []
@@ -81,6 +89,18 @@ for (const route of ROUTES) {
   for (const token of route.mustMatch ?? []) {
     if (!src.includes(token)) {
       failures.push(`${route.file}: missing \`${token}\` — the amenity section mount cannot be stripped.`)
+    }
+  }
+  if (PLACE_INVENTORY_KEYS.has(route.key)) {
+    const code = stripComments(src)
+    if (EVERY_HOME_LECTURE_REFUSE.test(code)) {
+      failures.push(`${route.file}: lecture heading "every home for sale in" is refused on place inventory.`)
+    }
+    if (/\bPlaceSplitView\b/.test(code) || /\bSearchFilters\b/.test(code)) {
+      failures.push(`${route.file}: scrolling search / PlaceSplitView is not the inventory surface.`)
+    }
+    if (!/\bV3PlaceInventory\b/.test(code)) {
+      failures.push(`${route.file}: missing V3PlaceInventory — typed stock stays on the place page.`)
     }
   }
 }

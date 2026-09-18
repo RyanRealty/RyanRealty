@@ -108,8 +108,10 @@ describe('subdivision page first screen', () => {
   const page = readFileSync(PAGE, 'utf8')
   const code = page.replace(/(^|[^:])\/\/.*$/gm, '$1').replace(/\/\*[\s\S]*?\*\//g, '')
 
-  it('opens on Split + plat inventory face, not a Stage/Field cage', () => {
-    expect(page).toMatch(/from ['"]@\/components\/search\/PlaceSplitView['"]/)
+  it('opens on typed on-page inventory + plat face, not a Stage/Field cage', () => {
+    expect(page).toMatch(/from ['"]@\/components\/site\/v3['"]/)
+    expect(page).toMatch(/V3PlaceInventory/)
+    expect(page).not.toMatch(/from ['"]@\/components\/search\/PlaceSplitView['"]/)
     expect(page).not.toMatch(/from ['"]@\/components\/place\/PlaceFaceStrip['"]/)
     expect(page).toMatch(/from ['"]@\/lib\/market\/publish-place-face['"]/)
     expect(code).toMatch(/publishPlaceFace\(\{/)
@@ -119,6 +121,7 @@ describe('subdivision page first screen', () => {
     expect(code).not.toMatch(/<V3Stage\b/)
     expect(code).toMatch(/const headline = displayName/)
     expect(code).not.toMatch(/heading=\{v3Text\(`Homes for sale in \$\{displayName\}`\)\}/)
+    expect(code).not.toMatch(/every home for sale in/i)
   })
 
   it('faces inventory count + median through publishPlatFigures, never a leftover parent', () => {
@@ -132,10 +135,10 @@ describe('subdivision page first screen', () => {
     expect(code).not.toMatch(/cityPulse/)
     expect(code).not.toMatch(/communityPulse/)
     expect(code).not.toMatch(/fetchSubdivMarketExtras/)
-    expect(code).toMatch(/seedRing=\{seedRing\}/)
     expect(code).toMatch(/hasRealPlatPolygon\(/)
-    expect(code).toMatch(/getPublicPlaceSegments/)
-    expect(code).toMatch(/segments: publicSegments/)
+    expect(code).toMatch(/loadPlaceStockTiles/)
+    expect(code).toMatch(/placeStockSectionsFromTiles/)
+    expect(code).toMatch(/<V3PlaceInventory/)
   })
 
   it('Stage is a place-owned still, not a listing photo of one house', () => {

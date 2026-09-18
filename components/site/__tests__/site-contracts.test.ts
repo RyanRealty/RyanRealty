@@ -703,9 +703,10 @@ describe('design directive contracts', () => {
     expect(figures).toMatch(/resortItems/)
   })
 
-  it('community first fold is Split + leftover face, not Stage or an area-guide loop', () => {
+  it('community first fold is leftover face + on-page typed inventory, not Stage or an area-guide loop', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
-    expect(src).toMatch(/<PlaceSplitView/)
+    expect(src).toMatch(/<V3PlaceInventory/)
+    expect(src).not.toMatch(/<PlaceSplitView/)
     expect(src).toMatch(/publishPlaceFace\(\{\s*grain: 'community',\s*hud\s*\}\)/)
     expect(src).not.toMatch(/<CommunityStage/)
     expect(src).not.toMatch(/videoSrc=/)

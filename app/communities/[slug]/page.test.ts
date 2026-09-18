@@ -57,13 +57,15 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/has \$\{mosLabel\} months of supply/)
   })
 
-  it('opens on Split, not V3Stage/V3Field as the cage', () => {
-    expect(SRC).toMatch(/<PlaceSplitView/)
+  it('opens on typed on-page inventory, not V3Stage/V3Field as the cage', () => {
+    expect(SRC).toMatch(/<V3PlaceInventory/)
+    expect(SRC).not.toMatch(/<PlaceSplitView/)
+    expect(SRC).not.toMatch(/<PlaceTypeSlider/)
     expect(SRC).toMatch(/<V3Heading/)
     expect(SRC).not.toMatch(/headingLevel=\{1\}/)
-    expect(SRC).toMatch(/overlaysFromChildCells\(platCells\)/)
     expect(SRC).toMatch(/id="homes"/)
-    expect(SRC).toMatch(/seedRing=\{seedRing\}/)
+    expect(SRC).toMatch(/loadPlaceStockTiles/)
+    expect(SRC).toMatch(/placeStockSectionsFromTiles/)
     // seedRing keys on having a TRUSTED polygon (county plat-union first,
     // reliable stored boundary second) — not on hull reliability alone, which
     // left Black Butte Ranch's verified union undrawn (2026-09-01).
@@ -72,14 +74,14 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/<V3Field/)
     expect(SRC).not.toMatch(/<CommunityStage/)
     expect(SRC).not.toMatch(/V3PlacePropertyTypes/)
+    expect(SRC).not.toMatch(/every home for sale in/i)
   })
 
-  it('never seeds an unreliable hull — only the plat union or a reliable boundary — and passes alias tiles', () => {
+  it('never seeds an unreliable hull — only the plat union or a reliable boundary — and keeps stock on-page', () => {
     expect(SRC).toMatch(/UNRELIABLE_BOUNDARY_SLUGS/)
     expect(SRC).toMatch(/isBoundaryReliable\(slug\)/)
-    expect(SRC).toMatch(/!boundaryReliable && fieldTiles\.length > 0 \? communitySplitListings\(fieldTiles\)/)
     expect(SRC).toMatch(/resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\)/)
-    expect(SRC).toMatch(/boundaryGeojson=\{seedRing \? mapPolygon : null\}/)
+    expect(SRC).toMatch(/href: '#homes'/)
     expect(SRC).toMatch(/belongingCaption\(/)
     expect(SRC).toMatch(/belongingFigures\(richContent, placeCharacter\)/)
     expect(SRC).not.toMatch(/id="facts"/)

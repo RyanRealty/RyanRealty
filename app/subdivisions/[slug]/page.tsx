@@ -3,7 +3,7 @@
  * /subdivisions/[slug] — the plat grain, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3. First screen is
- * H1 the plat name + living atlas + PlaceSplitView, the same composition as
+ * H1 the plat name + living atlas + V3PlaceInventory, the same composition as
  * city / neighborhood / community. Atlas is the inventory graphic. The atlas
  * ring is this place (self). Do not cage that screen in V3Stage or V3Field.
  * Never say "plat" in visitor copy. Giant 0 is forbidden on a timed-out read.
@@ -186,19 +186,12 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { V3Atlas, V3PlaceIndex, V3Quiet, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
+import { V3Atlas, V3PlaceIndex, V3PlaceInventory, V3Quiet, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
 import { getTaxlotsInBoundary, getTaxlotsNear, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
-import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
-import { PlaceSplitView } from '@/components/search/PlaceSplitView'
-import {
-  placeTypeCoverPhotos,
-  publishPlaceTypeCards,
-} from '@/lib/place/publish-place-type-cards'
-import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { overlaysFromRegions } from '@/lib/place/child-rings'
+import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
+import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
@@ -206,7 +199,7 @@ import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { buildSubdivisionEdges } from './_v3/subdivision-edges'
 import { platClosedYearChart, platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
 import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
-import { boundsFromListingPins, hasRealPlatPolygon, toSplitListing } from './_v3/subdivision-split'
+import { hasRealPlatPolygon } from './_v3/subdivision-split'
 import {
   homesLedgerTrace,
   PERIOD_LABEL,
@@ -658,10 +651,8 @@ async function renderSubdivisionPage({ params }: Props) {
       : cityRegionPolygon && citySlug && placeCity
         ? [{ id: `city:${citySlug}`, kind: 'town', kindLabel: 'City', name: placeCity, href: `/cities/${citySlug}`, geometry: cityRegionPolygon }]
         : []
-  const splitListings = mapTiles.map(toSplitListing)
-  const pinBounds = boundsFromListingPins(mapTiles)
   const hasMap =
-    seedRing || splitListings.some((row) => row.Latitude != null && row.Longitude != null)
+    seedRing || mapTiles.some((row) => row.lat != null && row.lng != null)
 
   // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
   const [
@@ -670,9 +661,9 @@ async function renderSubdivisionPage({ params }: Props) {
     subdivisionSchools,
     placeDocuments,
     placeCharacter,
-    publicSegments,
     platClosed,
     platUnsold,
+    stockTiles,
   ] = await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -693,12 +684,6 @@ async function renderSubdivisionPage({ params }: Props) {
       // Build years and HOA, measured from this plat's own member listings
       // (PLACE_CONTENT_RULES R1/R2/R3).
       withTimeoutFallback(getPlaceCharacter('subdivision', slug), null, 4500, 'sub:character'),
-      withTimeoutFallback(
-        getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: slug }),
-        [],
-        3000,
-        'sub:publicSegments',
-      ),
       // POPULATION 5 (SITE-24): the plat's lifetime closed count, attributed by
       // point-in-polygon first and by MLS name second, unioned. It is the same
       // read the indexability gate makes, off the same 6h cache, so the figure
@@ -711,6 +696,19 @@ async function renderSubdivisionPage({ params }: Props) {
       // clean case — the MV writes a row only where something came off unsold —
       // and the publisher says so in words rather than hiding the section.
       withTimeoutFallback(getPlatUnsoldOutcome(slug), null, 4500, 'sub:platUnsold'),
+      withTimeoutFallback(
+        loadPlaceStockTiles({
+          listingKeys: [
+            ...boundary.pins.map((pin) => pin.listingKey),
+            ...mapTiles.map((tile) => tile.listingKey),
+          ],
+          subdivisionNames: getSubdivisionMatchNames(displayName),
+          city: placeCity,
+        }),
+        [],
+        4500,
+        'sub:stock',
+      ),
     ])
 
   // ── THE MARKET BAND READS ONE POPULATION AT A TIME ──────────────────────
@@ -728,23 +726,7 @@ async function renderSubdivisionPage({ params }: Props) {
     active: activeCount,
     medianList: platFigures.medianListPrice,
   })
-  const typeCovers = placeCity
-    ? await withTimeoutFallback(
-        loadPlaceTypeCoverPhotos({ city: placeCity, subdivision: displayName }),
-        {},
-        4500,
-        'sub:typeThumbs',
-      )
-    : {}
-  const typeCards = publishPlaceTypeCards({
-    browsePath: placeCity ? subdivisionListingsPath(placeCity, displayName) : '/homes-for-sale',
-    placeName: displayName,
-    sfrCount: activeCount,
-    sfrMedian: platFigures.medianListPrice,
-    sfrMos: null,
-    segments: publicSegments,
-    covers: { ...placeTypeCoverPhotos(splitListings), ...typeCovers },
-  })
+  const stockSections = placeStockSectionsFromTiles(unionListingTiles(stockTiles, mapTiles))
   const headline = displayName
   const platLibraryHeroUrl = await withTimeoutFallback(
     placeLibraryHero('subdivision', slug),
@@ -867,7 +849,7 @@ async function renderSubdivisionPage({ params }: Props) {
      its own heading is "Homes for sale in {Name}" — so the label describes the
      door instead of counting through it. The count stays where its trace is. */
   const platDoors: Array<{ label: string; href: string }> = [
-    ...(browseHref ? [{ label: 'See every home for sale', href: browseHref }] : []),
+    { label: 'Homes for sale here', href: '#homes' },
     { label: 'Talk to a broker', href: '/contact' },
   ]
 
@@ -1372,10 +1354,6 @@ async function renderSubdivisionPage({ params }: Props) {
     count: row.closedCount >= 0 ? formatCount(row.closedCount) : null,
     href: `/subdivisions/${row.slug}`,
   }))
-  const splitCity = placeCity ?? undefined
-  const splitSubdivision = registryMatch?.canonicalName ?? displayName
-  const placeQuery = splitCity ? `${displayName} ${splitCity} Oregon` : `${displayName} Oregon`
-
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
@@ -1385,8 +1363,8 @@ async function renderSubdivisionPage({ params }: Props) {
   const foldHouseCount = activeCount ?? (foldAtlasDots.length > 0 ? foldAtlasDots.length : null)
   const atlasClaimText =
     foldHouseCount != null && foldHouseCount > 0
-      ? `${foldHouseCount} homes for sale in ${displayName}. Scrub price to filter the map.`
-      : `Homes for sale in ${displayName}. Scrub price to filter the map.`
+      ? `${foldHouseCount} homes for sale in ${displayName}. Toggle house, land, or other types on the map.`
+      : `Homes for sale in ${displayName}. Toggle house, land, or other types on the map.`
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -1458,7 +1436,7 @@ async function renderSubdivisionPage({ params }: Props) {
                   events={atlasView.events}
                   source={[
                     foldAtlasDots.length > 0
-                      ? `Detached single-family (Houses) active and pending marks inside the recorded ${displayName} boundary, from the same Oregon Data Share listing tiles the map draws. Price scrubber filters this set.`
+                      ? `Detached single-family (Houses) active and pending marks inside the recorded ${displayName} boundary, from the same Oregon Data Share listing tiles the map draws.`
                       : atlasView.source,
                     footprintNote,
                     platLots.length > 0 && nearLotsCentre
@@ -1482,10 +1460,10 @@ async function renderSubdivisionPage({ params }: Props) {
                     either way. */}
                 <p className="place-opening__caption place-opening__caption--doors plat-fold__seo-doors">
                   <span className="plat-fold__seo-label">More about this area</span>
-                  {browseHref ? <a href={browseHref}>{displayName} homes for sale</a> : null}
-                  {browseHref && citySlug ? ' · ' : null}
+                  <a href="#homes">{displayName} homes for sale</a>
+                  {citySlug ? ' · ' : null}
                   {citySlug ? <a href={`/cities/${citySlug}`}>{cityName} real estate</a> : null}
-                  {(browseHref || citySlug) && canMapAtlas ? ' · ' : null}
+                  {canMapAtlas ? ' · ' : null}
                   {canMapAtlas ? <a href="#atlas">Map of {displayName}</a> : null}
                   {resortSlug ? (
                     <>
@@ -1586,37 +1564,13 @@ async function renderSubdivisionPage({ params }: Props) {
           />
         ) : null}
 
-        <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
-
-        {/* THE SECTION SAYS WHAT IT IS, AND IT IS NOT A MAP (SITE-56).
-            It opened on "Search the map" over "Every home on the market AROUND
-            {name}", with a sentence saying the counts follow the map view —
-            three claims about a map that has not been in this section since
-            2026-09-03, when PlaceSplitView was set `listOnly` and the Atlas
-            above became the page's map ("Google Field and the place Split
-            canvas are off: the atlas is the map", c75222a9). Measured on the
-            lane server 2026-09-09: zero requests to maps.googleapis.com from
-            this route and no .gm-style node in #homes. What the section
-            actually holds is this plat's own counted homes, filterable — so
-            that is what it now says, and the count cannot disagree with the
-            Atlas above because it is the same set. */}
-        <div id="homes">
-          <div id="homes-head" className={V3_ROOT_CLASS}>
-            <V3Heading level={2}>{`Every home for sale in ${displayName}`}</V3Heading>
-          </div>
-          <PlaceSplitView
-            city={splitCity}
-            subdivision={splitSubdivision}
-            boundaryGeojson={seedRing ? platPolygon : null}
-            overlayBoundaries={overlaysFromRegions(atlasRegions.slice(1))}
-            seedRing={seedRing}
-            placeQuery={placeQuery}
-            listings={splitListings}
-            totalCount={activeCount ?? splitListings.length}
-            bounds={seedRing ? undefined : pinBounds ?? undefined}
-            degraded={!inventoryRead.ok}
-          />
-        </div>
+        <V3PlaceInventory
+          id="homes"
+          placeName={displayName}
+          sections={stockSections}
+          source={inventorySource}
+          asOf={inventory?.readAt ?? null}
+        />
 
         {/* Pattern 6, Quiet — the assigned schools and every outbound edge this
             page carries. ci:subdivision-stats-integrity requires this component
@@ -1792,7 +1746,7 @@ async function renderSubdivisionPage({ params }: Props) {
           questions={platAnswers}
           sourceKey={platSourceKey}
           doors={[
-            ...(browseHref ? [{ label: `Every home for sale in ${displayName}`, href: browseHref }] : []),
+            { label: 'Homes for sale here', href: '#homes' },
             ...(resortSlug
               ? [{ label: `${resortLabel ?? displayName} overview`, href: `/communities/${resortSlug}` }]
               : citySlug

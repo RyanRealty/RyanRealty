@@ -36,8 +36,8 @@
       "blocking": true
     },
     {
-      "name": "PlaceSplitView",
-      "section": "Flagship Split of the counted plat inventory. Seed ring only from a real GIS polygon. Pin bounds when there is no ring.",
+      "name": "V3PlaceInventory",
+      "section": "On-page inventory (Matt 2026-09-18). Every active listing on this plat, typed into Single-family / Multifamily / Townhomes and condos / Land. Empty types omit. No PlaceSplitView or price scrubber as the stock surface.",
       "blocking": true
     },
     {
@@ -76,8 +76,8 @@
       "blocking": true
     },
     {
-      "name": "PlaceTypeSlider",
-      "section": "Horizontal type cards from getPublicPlaceSegments, the same leftover extra-type feed city / neighborhood / community use. Replaces stacked V3PlacePropertyTypes Instruments. Miss omits (slider hides when fewer than two cards).",
+      "name": "placeStockSectionsFromTiles",
+      "section": "Groups live tiles into the four buyer buckets. Empty buckets omit. Market figures stay on SFR leftover / plat inventory traces.",
       "blocking": true
     },
     {
@@ -134,8 +134,7 @@
     "V3Heading #overview (photograph owns the fold: breadcrumb, H1)",
     "plat-fold: THREE columns — V3Atlas #atlas (the drawing, with its claim, type filter, zoom and price scrubber at every width) + the crawlable door row under it, SubdivisionInsight #place-insight (the paged figure), and the SubdivisionAlertsStrip #alerts ask with the door row and the SubdivisionPicker. On a phone the column order is map, ask, paged figure, doors — 375x812 holds the map with its controls and the whole email ask, and nothing else.",
     "V3PlaceIndex #nearby-subdivisions (the picker’s crawlable legend)",
-    "PlaceTypeSlider (horizontal leftover type cards)",
-    "PlaceSplitView #homes",
+    "V3PlaceInventory #homes (typed on-page stock; empty types omit)",
     "SubdivisionSchools (Quiet: assigned schools when published, then every outbound edge)",
     "V3Instrument #market-report (own market, conditional)",
     "SubdivisionSalesHistory (yearly counts) with SubdivisionMarketCharts inside it",
