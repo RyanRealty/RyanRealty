@@ -3,7 +3,7 @@
  * unmeasured place prints no figure rather than a zero.
  */
 import { describe, expect, it } from 'vitest'
-import { placeIndexRows } from './V3PlaceIndex'
+import { placeIndexNameRows, placeIndexRows } from './V3PlaceIndex'
 
 describe('placeIndexRows', () => {
   it('orders measured rows by count, biggest first', () => {
@@ -83,5 +83,26 @@ describe('placeIndexRows', () => {
 
   it('is empty for an empty set, which is what makes the section omit itself', () => {
     expect(placeIndexRows([])).toEqual([])
+  })
+})
+
+describe('placeIndexNameRows', () => {
+  it('keeps caller order and drops every figure', () => {
+    const rows = placeIndexNameRows([
+      { name: 'Small', href: '/subdivisions/small', count: 2 },
+      { name: 'Big', href: '/subdivisions/big', count: 23 },
+      { name: 'Middle', href: '/subdivisions/middle', count: 7 },
+    ])
+    expect(rows.map((r) => r.name)).toEqual(['Small', 'Big', 'Middle'])
+    expect(rows.every((r) => r.count == null && r.share == null)).toBe(true)
+  })
+
+  it('dedupes on key and is empty when nothing is named', () => {
+    const rows = placeIndexNameRows([
+      { name: 'Phase 1', href: '/subdivisions/phase-1' },
+      { name: 'Phase 1 again', href: '/subdivisions/phase-1' },
+    ])
+    expect(rows).toHaveLength(1)
+    expect(placeIndexNameRows([])).toEqual([])
   })
 })

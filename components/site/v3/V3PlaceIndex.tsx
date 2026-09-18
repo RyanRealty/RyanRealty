@@ -73,6 +73,13 @@ export type V3PlaceIndexProps = {
   eyebrow?: string
   /** The section's visible title and its accessible name. */
   heading: string
+  /**
+   * Name-only child cards (SITE-128 Look punch, 2026-09-18). No visible
+   * Subdivisions / Neighborhoods heading, no bars, no lifetime-sales dump.
+   * The heading stays for the accessible name and is visually hidden.
+   * A–Z `/subdivisions` keeps a real directory heading on its own page.
+   */
+  nameOnly?: boolean
   /** One plain sentence: the claim this index makes. */
   lede?: string
   /**
@@ -166,6 +173,29 @@ export function placeIndexRows(entries: readonly V3PlaceIndexEntry[]): Row[] {
   })
 }
 
+/**
+ * Name-only child cards keep the caller's order (nearby rank, atlas draw
+ * order) and drop every figure. A lifetime-sales sort is the city dump the
+ * Look punch killed.
+ */
+export function placeIndexNameRows(entries: readonly V3PlaceIndexEntry[]): Row[] {
+  const seen = new Set<string>()
+  const rows: Row[] = []
+
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue
+    const name = trimmed(entry.name)
+    const href = trimmed(entry.href)
+    if (!name || !href) continue
+    const key = trimmed(entry.key) ?? href
+    if (seen.has(key)) continue
+    seen.add(key)
+    rows.push({ name, href, count: null, key, share: null })
+  }
+
+  return rows
+}
+
 function IndexRow({ row, countLabel }: { row: Row; countLabel: string | undefined }) {
   return (
     <li className="v3-place-index__item">
@@ -199,6 +229,7 @@ export function V3PlaceIndex({
   id,
   eyebrow,
   heading,
+  nameOnly = false,
   lede,
   countLabel,
   entries,
@@ -207,7 +238,7 @@ export function V3PlaceIndex({
   source,
   className,
 }: V3PlaceIndexProps) {
-  const rows = placeIndexRows(entries)
+  const rows = nameOnly ? placeIndexNameRows(entries) : placeIndexRows(entries)
 
   // Nothing to index: render nothing. A heading over an empty grid is a dead
   // end, and this primitive will not invent the places that would fill it.
@@ -217,19 +248,24 @@ export function V3PlaceIndex({
   if (!title) return null
 
   const headingId = `${id}-heading`
-  const contextLine = trimmed(eyebrow)
-  const claim = trimmed(lede)
-  const trace = trimmed(source)
-  const unit = trimmed(countLabel)
+  const contextLine = nameOnly ? undefined : trimmed(eyebrow)
+  const claim = nameOnly ? undefined : trimmed(lede)
+  const trace = nameOnly ? undefined : trimmed(source)
+  const unit = nameOnly ? undefined : trimmed(countLabel)
 
   const cut = Math.max(1, foldAfter)
   const lead = rows.slice(0, cut)
-  const tail = rows.slice(cut)
+  const tail = nameOnly ? [] : rows.slice(cut)
 
   return (
     <section
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-place-index', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-place-index',
+        nameOnly && 'v3-place-index--names',
+        className,
+      )}
       aria-labelledby={headingId}
     >
       <div className="v3-place-index__head">

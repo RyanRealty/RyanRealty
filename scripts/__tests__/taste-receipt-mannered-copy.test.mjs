@@ -11,6 +11,7 @@ import {
   INVENTORY_LECTURE_REFUSE,
   PLATS_VOICE_REFUSE,
   EVERY_HOME_LECTURE_REFUSE,
+  HIERARCHY_LIST_HEADING_REFUSE,
   MANNERED_COPY_REFUSE,
   manneredPublicCopyProblems,
   publicCopyHaystack,
@@ -306,9 +307,14 @@ describe('plats voice refuse', () => {
     expect(manneredPublicCopyProblems("eyebrow: 'Sisters · Recorded plats'")).toContain(PLATS_VOICE_REFUSE)
   })
 
-  it('passes subdivision / neighborhood buyer words', () => {
-    expect(manneredPublicCopyProblems("heading=\"Subdivisions in Sisters\"" )).toEqual([])
-    expect(manneredPublicCopyProblems("Neighborhoods in Widgi Creek")).toEqual([])
+  it('refuses Subdivisions in / Neighborhoods in list headings', () => {
+    expect(manneredPublicCopyProblems("heading=\"Subdivisions in Sisters\"" )).toContain(HIERARCHY_LIST_HEADING_REFUSE)
+    expect(manneredPublicCopyProblems("Neighborhoods in Widgi Creek")).toContain(HIERARCHY_LIST_HEADING_REFUSE)
+  })
+
+  it('still allows buyer words that are not list headings', () => {
+    expect(manneredPublicCopyProblems("heading=\"Sisters subdivisions\"")).toEqual([])
+    expect(manneredPublicCopyProblems("heading=\"Neighborhoods\"")).toEqual([])
   })
 })
 

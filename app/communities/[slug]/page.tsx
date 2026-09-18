@@ -18,9 +18,8 @@ import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { buildActivityItems } from '@/lib/kb/place-sections'
-import { activityRows, areaGuideRow, articleRows, placeFigureRows, PLACE_COUNT_TRACE, type CityPlaceItem } from '@/app/cities/[slug]/_v3/city-sections'
+import { activityRows, areaGuideRow, articleRows } from '@/app/cities/[slug]/_v3/city-sections'
 import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
-import { communityImage } from '@/lib/geo-images'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
 import {
@@ -65,7 +64,7 @@ import {
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
-import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
+import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
 import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
@@ -98,7 +97,6 @@ import {
   type AtlasRegion,
   V3PlaceIndex,
   V3PlaceInventory,
-  type V3PlaceIndexEntry,
   V3SectionTracker,
   V3Amenities,
   type V3InstrumentFigure,
@@ -475,55 +473,6 @@ async function renderCommunityDetail({ params }: Props) {
 
   const activeCount: number | null = hud.active
 
-  // Child subdivisions — the registry's own named subdivisions of this
-  // community (childAliasesOf already excludes the community's current and
-  // former names), counted from the SAME city SFR set the alias-aware count
-  // uses, so the ledger and the face can never disagree about a member.
-  // Destination safety: every href resolves through the plat page's registry
-  // path, so no card here can serve the refusal. §0: when the city SFR read
-  // did not answer, counts are null ("not measured"), never zero.
-  const childAliasTypeBits = await loadSubdivisionTypeBits(childAliases.map((a) => slugify(a)))
-  const childSubdivisionItems: CityPlaceItem[] = childAliases
-    .flatMap((alias) => {
-      // The MLS alias stays the ingest key (href + count bin); the visitor
-      // name goes through the one display publisher (Triple → Triple Knot,
-      // and an MLS abbreviation like BBR publishes nothing rather than junk).
-      const displayName = publishPlatDisplayName(alias)
-      if (!displayName) return []
-      const aliasLc = alias.trim().toLowerCase()
-      const prices = haveCityTiles
-        ? citySfrTiles
-            .filter((t) => (t.subdivisionName ?? '').trim().toLowerCase() === aliasLc)
-            .map((t) => Number(t.listPrice))
-            .filter((p) => Number.isFinite(p) && p > 0)
-            .sort((a, b) => a - b)
-        : null
-      const medianPrice =
-        prices == null || prices.length === 0
-          ? null
-          : prices.length % 2
-            ? prices[Math.floor(prices.length / 2)]!
-            : Math.round((prices[prices.length / 2 - 1]! + prices[prices.length / 2]!) / 2)
-      return [
-        {
-          name: displayName,
-          href: `/subdivisions/${slugify(alias)}`,
-          activeCount: prices == null ? null : prices.length,
-          medianPrice,
-          img: communityImage(slugify(alias)) ?? '',
-          typeBits: childAliasTypeBits.get(slugify(alias)) ?? null,
-        },
-      ]
-    })
-    .sort((a, b) => (b.activeCount ?? 0) - (a.activeCount ?? 0) || a.name.localeCompare(b.name))
-  // Its own children: the rows drop the community's name where a plat's
-  // name opens with it (placeFigureRows, `within`).
-  const [firstChildSub, ...restChildSub] = placeFigureRows(
-    childSubdivisionItems,
-    `${publicName} subdivision`,
-    publicName,
-  )
-
   const marketHeadline = `Typical price in ${publicName}`
 
   const leftoverStamp =
@@ -720,36 +669,17 @@ async function renderCommunityDetail({ params }: Props) {
   const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
 
   /**
-   * THE PLAT INDEX, IN SERVER HTML (site queue SITE-30, 2026-09-09).
-   *
-   * The Atlas is a client component, so before this section its region names
-   * and hrefs existed only inside the hydration payload: measured on the live
-   * tree, /communities/tetherow's served HTML held 47 occurrences of
-   * "/subdivisions/" of which 46 were escaped JSON and exactly ONE was a real
-   * anchor. This list is built from the SAME cells the Atlas regions are built
-   * from, one line above, so an outline on the map always has its anchor below
-   * and the two can never disagree.
-   *
-   * The figure is each plat's own active count, which the same RPC already
-   * returned — the map and the index publish one number from one read.
-   *
-   * A COMMUNITY WITH NO RECORDED PLATS RENDERS NO SECTION, and that is a fact
-   * about the county, not a failure. `boundaries` holds Deschutes County's plat
-   * set (3,223 rows); Brasada Ranch is in CROOK county, so
-   * community_subdivisions returns zero rows for it. Confirmed four ways on
-   * 2026-09-09 rather than from one query shape (§0): the containment RPC (0),
-   * boundaries by label (one row, the community's own neighborhood polygon,
-   * no child plats), the city-level RPC for powell-butte (0), and every MLS
-   * SubdivisionName ever carried by a Powell Butte listing (2,512 of them say
-   * "Brasada Ranch" and nothing else names a phase). There is no nested plat to
-   * link, so nothing is invented to fill the section.
+   * SITE-128: name-only child cards. Same Atlas cells as the map, plus
+   * registry aliases, no "Neighborhoods in …" twin and no sales bars.
+   * A community with no recorded children renders nothing here.
    */
-  const platActiveBySlug = new Map(platCells.map((cell) => [cell.slug, cell.activeHomes]))
-  const platIndexEntries: V3PlaceIndexEntry[] = platRegions.map((region) => ({
-    name: region.name,
-    href: region.href,
-    count: platActiveBySlug.get(region.id.replace(/^subdivision:/, '')) ?? null,
-  }))
+  const childPlaceEntries = nameOnlyChildEntries([
+    platRegions.map((region) => ({ name: region.name, href: region.href })),
+    childAliases.flatMap((alias) => {
+      const displayName = publishPlatDisplayName(alias)
+      return displayName ? [{ name: displayName, href: `/subdivisions/${slugify(alias)}` }] : []
+    }),
+  ])
 
   /**
    * THE GUIDES THIS COMMUNITY IS THE SUBJECT OF (SITE-30).
@@ -939,7 +869,11 @@ async function renderCommunityDetail({ params }: Props) {
               Atlas is the interactive drawing in the fold stage below. */}
           <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
-          <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
+          <V3Breadcrumb
+            trail={trail}
+            tone={stagePosterSrc ? 'on-media' : 'surface'}
+            overlay={Boolean(stagePosterSrc)}
+          />
           <div className="place-opening__copy">
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
@@ -1016,18 +950,11 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-30: the map's legend, in the served HTML. The same plat cells
-            the Atlas above draws, each one a real anchor with the homes for
-            sale inside it right now. */}
         <V3PlaceIndex
-          id="subdivisions"
-          eyebrow={`${publicName} · Neighborhoods`}
-          heading={`Neighborhoods in ${publicName}`}
-          lede={`${publicName} was built in phases. Each neighborhood below has its own page — what has sold there and what is for sale today.`}
-          countLabel="for sale"
-          entries={platIndexEntries}
-          foldAfter={10}
-          source="Deschutes County · Oregon Data Share"
+          id="child-places"
+          heading={publicName}
+          nameOnly
+          entries={childPlaceEntries}
         />
 
         <V3PlaceInventory
@@ -1037,23 +964,6 @@ async function renderCommunityDetail({ params }: Props) {
           source={inventorySource}
           asOf={leftoverStamp}
         />
-
-        {/* Subdivisions inside the community - every row is a door, mirroring
-            the neighborhood page's ledger so the two grains read the same. */}
-        {firstChildSub ? (
-          <V3Ledger
-            id="subdivisions"
-            eyebrow={v3Text(`${publicName} · Subdivisions`)}
-            heading={v3Text('Subdivisions')}
-            rows={[firstChildSub, ...restChildSub]}
-            // A comparison, so the counts draw as lengths too: TASTE bans a
-            // ledger past six rows that encodes nothing. The share comes off
-            // the same counts the figures print (placeFigureRows).
-            encode="bar"
-            source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
-            action={{ label: v3Text(`All ${publicName} homes`), href: '#homes' }}
-          />
-        ) : null}
 
         {costChart && firstMarketFigure ? (
           <V3Instrument
