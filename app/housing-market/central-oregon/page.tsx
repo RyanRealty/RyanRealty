@@ -176,7 +176,7 @@ import {
 } from '@/lib/market/report-doors'
 import '../_v3/tremor-density.css'
 
-export const revalidate = 300
+export const revalidate = 900
 
 // Title carries one live figure when the region row answers (SITE-88 SEO).
 export async function generateMetadata(): Promise<Metadata> {

@@ -57,7 +57,7 @@ const D11_HOMEPAGE_LEAD =
  * metadata title/OG only, as the tail of the keyword title Matt picked
  * 2026-09-07. absolute title skips the layout suffix.
  */
-export const revalidate = 300
+export const revalidate = 900
 
 export async function generateMetadata(): Promise<Metadata> {
   const pulseBundle = await loadHomePulseBundle().catch(() => null)

@@ -7,9 +7,10 @@
  * the buyer can see. Matt 2026-09-13: raise the window; use TTLs already
  * used elsewhere in this repo (do not invent new ones).
  *
- *   300   — search / listing detail / homepage / city+community+subdivision
- *           detail / zip / compare / open houses / live market hub + geo
- *           reports / root layout
+ *   300   — search / listing detail (cookies() ISR; stay on the 5m window)
+ *   900   — homepage / city+community+subdivision detail / zip / compare /
+ *           open houses / live market hub + geo reports / root layout
+ *           (aligned to MLS sync every 15m; already used by market API)
  *   1800  — team broker pages / price-drop inventory
  *   3600  — marketing (sell/buy/valuation/invest) / About / Contact / Team
  *           index / blog indexes / place indexes / POI details / MoS explainer
@@ -36,25 +37,27 @@ const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const REPORT = process.argv.slice(2).includes('--report')
 
 export const PUBLIC_ISR_TTLS = [
-  // Hot inventory / search / browse — buyer-facing freshness
-  ['app/layout.tsx', 300],
-  ['app/page.tsx', 300],
+  // Search / listing — cookies() ISR; not this tip
   ['app/search/page.tsx', 300],
   ['app/search/[...slug]/page.tsx', 300],
   ['app/listing/[listingKey]/page.tsx', 300],
-  ['app/cities/[slug]/page.tsx', 300],
-  ['app/cities/[slug]/[neighborhoodSlug]/page.tsx', 300],
-  ['app/cities/[slug]/types/[type]/page.tsx', 300],
-  ['app/communities/[slug]/page.tsx', 300],
-  ['app/communities/[slug]/types/[type]/page.tsx', 300],
-  ['app/subdivisions/[slug]/page.tsx', 300],
-  ['app/zip/[zip]/page.tsx', 300],
-  ['app/open-houses/page.tsx', 300],
-  ['app/open-houses/[city]/page.tsx', 300],
-  ['app/compare/page.tsx', 300],
-  ['app/housing-market/page.tsx', 300],
-  ['app/housing-market/[...slug]/page.tsx', 300],
-  ['app/housing-market/central-oregon/page.tsx', 300],
+
+  // Place / home / market hubs — MLS sync cadence (15m)
+  ['app/layout.tsx', 900],
+  ['app/page.tsx', 900],
+  ['app/cities/[slug]/page.tsx', 900],
+  ['app/cities/[slug]/[neighborhoodSlug]/page.tsx', 900],
+  ['app/cities/[slug]/types/[type]/page.tsx', 900],
+  ['app/communities/[slug]/page.tsx', 900],
+  ['app/communities/[slug]/types/[type]/page.tsx', 900],
+  ['app/subdivisions/[slug]/page.tsx', 900],
+  ['app/zip/[zip]/page.tsx', 900],
+  ['app/open-houses/page.tsx', 900],
+  ['app/open-houses/[city]/page.tsx', 900],
+  ['app/compare/page.tsx', 900],
+  ['app/housing-market/page.tsx', 900],
+  ['app/housing-market/[...slug]/page.tsx', 900],
+  ['app/housing-market/central-oregon/page.tsx', 900],
 
   // Inventory-adjacent, already longer than search
   ['app/team/[slug]/page.tsx', 1800],
@@ -157,7 +160,7 @@ function main() {
     const { value } = readExport(rel)
     if (value === 60) {
       problems.push(
-        `${rel}: leftover \`revalidate = 60\` — raise to an existing public TTL (300 / 1800 / 3600 / 86400)`,
+        `${rel}: leftover \`revalidate = 60\` — raise to an existing public TTL (300 / 900 / 1800 / 3600 / 86400)`,
       )
     }
   }

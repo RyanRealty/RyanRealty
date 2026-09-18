@@ -37,8 +37,8 @@ const amboqia = localFont({
   weight: '400',
 })
 
-/** Public ISR floor (300s). Descendants may set a longer window. */
-export const revalidate = 300
+/** Public ISR floor (900s — MLS sync cadence). Descendants may set a longer window. */
+export const revalidate = 900
 
 export const metadata: Metadata = {
   metadataBase: new URL(getCanonicalSiteUrl()),

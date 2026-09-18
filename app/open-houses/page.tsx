@@ -68,7 +68,7 @@ import { assembleOpenHouses, medianPositive } from './_v3/oh-listings'
 import { openHouseFieldItems } from './_v3/oh-field-items'
 import { openHouseEventSchemas } from './_v3/oh-jsonld'
 
-export const revalidate = 300
+export const revalidate = 900
 
 /**
  * ONE read per request, shared by generateMetadata and the body.

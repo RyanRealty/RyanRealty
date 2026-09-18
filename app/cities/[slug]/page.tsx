@@ -186,7 +186,7 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return PRIMARY_CITIES.map((name) => ({ slug: slugify(name) }))
 }
 export const dynamicParams = true
-export const revalidate = 300
+export const revalidate = 900
 
 type Props = {
   params: Promise<{ slug: string }>
