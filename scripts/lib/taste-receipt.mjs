@@ -39,6 +39,14 @@ import {
   placeHeroFoldDensityProblems,
 } from './listing-fold-density.mjs'
 import { listingKeepExploringProblems } from './listing-keep-exploring.mjs'
+import {
+  competitorFirstLookProblems,
+  isPlaceCraftDocument,
+  isPlaceCraftDoneClaim,
+  mapDrivesHierarchyProblems,
+  placeCraftShipProblems,
+  resolveCompetitorFirstLook,
+} from './place-craft.mjs'
 
 export { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
 
@@ -658,6 +666,7 @@ export function tasteDoneProblems(tr, { competitiveBrief = null, catalog = null,
     kit === 'place-type' ||
     kit === 'place-type-community'
   if (placeKit) p.push(...placeHeroFoldDensityProblems({ root }))
+  if (placeKit) p.push(...mapDrivesHierarchyProblems({ root }))
   return p
 }
 
@@ -770,6 +779,13 @@ export function siteQueueDoneEvidenceProblems(
     return [
       'Tip Ready language without `node scripts/lib/taste-receipt.mjs --ship` exit 0 is refuse. Cos prose is not Tip Ready.',
     ]
+  }
+  if (isPlaceCraftDoneClaim(text, gap) || isPlaceCraftDocument(loaded)) {
+    const look = resolveCompetitorFirstLook(loaded, tr)
+    const firstLook = competitorFirstLookProblems(look, { root: copyRoot })
+    if (firstLook.length) return firstLook
+    const hierarchy = mapDrivesHierarchyProblems({ root: copyRoot })
+    if (hierarchy.length) return hierarchy
   }
   return []
 }
@@ -930,6 +946,16 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
         process.exit(1)
       }
       console.log('ship OK — picker contract tests passed')
+      process.exit(0)
+    }
+    if (isPlaceCraftDocument(d)) {
+      const problems = placeCraftShipProblems(d, { root })
+      if (problems.length) {
+        console.error(problems.join('\n'))
+        console.error('ship refuse — place craft Tip Ready needs competitor first-look + map-drives-hierarchy. Cos prose is not Tip Ready.')
+        process.exit(1)
+      }
+      console.log('ship OK — place craft · map-drives-hierarchy · competitor first-look')
       process.exit(0)
     }
     const kitFromPath = rel.includes('ui_kits/') ? rel.split('/').filter(Boolean).at(-2) : null

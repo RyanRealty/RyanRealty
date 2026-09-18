@@ -1,3 +1,12 @@
+# Current — 2026-09-18 (SITE-128 place craft — Tip Ready refuses without competitor first-look)
+
+Surface: Cursor cloud `bc-ed6caaf0-4a16-5a87-b2ec-252c5ef31516`, branch `cursor/place-craft-first-look-refuse-1516`. Gate only — no place UI invent. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **Refuse.** `node scripts/lib/taste-receipt.mjs --ship lib/place/place-craft.parity.json` exits 1 unless evidence has (1) competitor first-look: named peer (Redfin or Bend competitor place page) + side-by-side or sequential shots on disk, and (2) map-drives-hierarchy still locked.
+- **CI.** `ci:place-craft` holds the hierarchy lock + documents the evidence path on every push. Stub receipt has no invented shots.
+- **Not this pass.** No place page paint. Hierarchy / amenity / keep-exploring already on main.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-18 (SITE-128 craft #4 — listing keep-exploring rematch on hierarchy)
 
 Surface: Cursor cloud `bc-8c9b9d18-f3c6-58b1-9411-1357ab7e6899`, branch `cursor/listing-keep-exploring-rematch-6899`. Rematch of Tip Ready tip `a49d0dc7b` / PR #301 onto hierarchy-landed `origin/main` `fc68066dc`. Cherry-pick of `a49d0dc7b` did not apply clean (`CROSS_AGENT_HANDOFF.md`, `scripts/lib/taste-receipt.mjs`). PR only — Cos Mini lands. Do not merge. HOLD owner email.

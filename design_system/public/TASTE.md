@@ -199,6 +199,18 @@ in `scripts/lib/taste-receipt.mjs`):
   import the real `components/ui` demo is refuse — same check as
   `ci:catalog-install`, plus `requireRouteImport`. House-only import is not
   Tip Ready.
+- **Place craft first-look (Matt LOCK via Cos 2026-09-18, SITE-128 explorer).**
+  `node scripts/lib/taste-receipt.mjs --ship lib/place/place-craft.parity.json`
+  is the place-craft Tip Ready path. Refuse unless **both** locks are in the
+  evidence: (1) **competitor first-look** — `competitorFirstLook.peer` names
+  the page (Redfin or a Bend competitor place page) and
+  `competitorFirstLook.shots` is a side-by-side file **or** sequential
+  `ours` + `peer` (or `sequence` of 2+) that exist on disk; (2)
+  **map-drives-hierarchy** still locked (`ci:place-craft` — Atlas regions /
+  GIS ring drive child places; no `Subdivisions in …` dump). Omit is refuse.
+  Do not invent `true`. Do not invent place UI to clear the gate. Evidence
+  path is documented on the stub receipt; shots land on the tip that beats
+  the peer, not on this lock.
 
 Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
 them. Receipts written before this shape landed stay valid; ones already dated
