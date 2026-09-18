@@ -1,8 +1,10 @@
 /**
  * The living map for a listing page: the home's own neighborhood or curated
  * community (NorthWest Crossing), else its city, as the frame. Every listing
- * of every type inside that frame as dots, the recorded plats as doors. Same
- * population and builder the place pages read (buildPlaceAtlas), this home held.
+ * of every type inside that frame as dots. Related-place chips are the
+ * keep-exploring rail — this home's plat, plus a few visitor-facing siblings
+ * inside a local frame. Not a 60-plat legal dump. Same population and builder
+ * the place pages read (buildPlaceAtlas), this home held.
  *
  * Every read is capped and falls back: a listing page never waits on the map
  * and never prints a count it could not read (the Atlas's incomplete branch).
@@ -20,6 +22,7 @@ import {
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { outerRings, pointInRings } from '@/lib/geo/project-svg'
 import { listingAtlasFrameIntent } from '@/lib/listing/listing-place-market'
+import { pickListingAtlasRelatedPlats } from '@/lib/listing/listing-keep-exploring'
 import {
   cityHref,
   cityNeighborhoodHref,
@@ -158,14 +161,19 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
   ])
 
   const withGeometry = plats.filter((c) => !!c.geometry)
-  const ranked = hasLocalFrame ? withGeometry : [...withGeometry].sort((a, b) => (b.activeHomes ?? 0) - (a.activeHomes ?? 0))
-  const cap = hasLocalFrame ? 80 : 60
-  const cells = ranked.slice(0, cap)
-  // The home's own plat is always outlined, cap or no cap (pass four, E2).
-  if (scope.lat != null && scope.lng != null) {
-    const home = withGeometry.find((c) => pointInRings(scope.lng!, scope.lat!, outerRings(c.geometry)))
-    if (home && !cells.includes(home)) cells.push(home)
-  }
+  // Keep-exploring chips are this rail. A city frame that sliced 60 legal
+  // plats printed "+52 more" at 375. Subject plat always; visitor siblings
+  // only inside a neighborhood / community frame, under the 375 fold.
+  const subjectPlat =
+    scope.lat != null && scope.lng != null
+      ? withGeometry.find((c) => pointInRings(scope.lng!, scope.lat!, outerRings(c.geometry))) ??
+        null
+      : null
+  const cells = pickListingAtlasRelatedPlats({
+    plats: withGeometry,
+    subject: subjectPlat,
+    hasLocalFrame,
+  })
   const names = atlasRegionNames(cells.map((c) => c.label))
   const regions: AtlasRegion[] = [
     ...(boundary
