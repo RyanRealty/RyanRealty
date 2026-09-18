@@ -28,7 +28,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome. Home > Communities > City > Community. Surface tone: the opener is H1 + face + atlas, not an on-media Stage.",
+      "section": "Chrome. V3Breadcrumb sitewide — overlay on the still, surface when there is no photo. Name-only trail. Current page never a link.",
       "blocking": true
     },
     {
@@ -108,7 +108,7 @@
     },
     {
       "name": "V3PlaceIndex",
-      "section": "Pattern 9, #plats, between #atlas and the type slider (site queue SITE-30, 2026-09-09). The Atlas's own child plat cells, rendered as real anchors in the served HTML: before this section /communities/tetherow held 47 occurrences of \"/subdivisions/\" of which 46 were escaped JSON in the RSC payload and exactly ONE was a real anchor, and /communities/broken-top held none at all. Built from the SAME platRegions array the Atlas regions are built from, one expression above it, so an outline on the map always has its anchor below and the two cannot be two reads that merely agree today. The figure is each plat's own active count out of listing_boundary_xref_mv, which the community_subdivisions RPC already returned for the map \u2014 one number from one read. Ten rows, then a native <details> for the tail. A COMMUNITY WITH NO RECORDED PLATS RENDERS NOTHING HERE, and that is a fact about the county rather than a failure: `boundaries` holds Deschutes County's plat set, Brasada Ranch is in CROOK county, and the absence was confirmed four ways on 2026-09-09 (\u00a70 \u2014 the containment RPC returns 0, boundaries by label returns only the community's own polygon, the city-level RPC for powell-butte returns 0, and every MLS SubdivisionName ever carried by a Powell Butte listing names \"Brasada Ranch\" and no phase of it). Nothing is invented to fill the section. This is NOT the #subdivisions Ledger: that one names the registry's own child subdivisions with photographs and prices, this one names the county's recorded plats.",
+      "section": "Pattern 9, #child-places (SITE-128 Look punch, 2026-09-18). Name-only cards from the SAME Atlas plat cells plus registry aliases. No 'Neighborhoods in …' twin, no Subdivisions heading, no sales bars. A community with no recorded children renders nothing here. A–Z /subdivisions is the directory.",
       "blocking": true
     },
     {

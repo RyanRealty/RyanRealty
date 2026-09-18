@@ -26,7 +26,7 @@ export function CommunityStage(props: {
   const Stage = props.Stage
   return (
     <>
-      <V3Breadcrumb tone="on-media" trail={props.trail} />
+      <V3Breadcrumb tone="on-media" overlay={Boolean(props.posterSrc)} trail={props.trail} />
       <Stage
         id="place"
         headingLevel={1}

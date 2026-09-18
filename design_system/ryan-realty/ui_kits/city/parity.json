@@ -21,7 +21,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome. City name only (cityPageTrail). No Home, no Cities index. Surface tone. Current page never a link.",
+      "section": "Chrome. City name only (cityPageTrail). No Home, no Cities index. V3Breadcrumb sitewide — overlay on the still, surface when there is no photo. Current page never a link.",
       "blocking": true
     },
     {
@@ -81,7 +81,7 @@
     },
     {
       "name": "V3PlaceIndex",
-      "section": "Pattern 9, #plats, between #atlas and the type slider (site queue SITE-30, 2026-09-09). The crawlable half of the Atlas. V3Atlas is a client component, so before this section the served HTML of /cities/bend carried ZERO <a href=\"/subdivisions/…\"> — its only 22 occurrences of that string were storage image URLs — while the page carried 42 crawlable community links, every one of them sitewide chrome. The 2,486 plats that clear the indexable floor (1,519 of them attributed to Bend, measured 2026-09-09) had essentially no contextual inbound link from the city that contains them. Entries are the city's own slice of getIndexableSubdivisions() — the SAME read the sitemap, llms.txt and the /subdivisions robots tag make, so a page we submit to Google is a page we link to — deepest sale history first, capped at CITY_PLAT_INDEX_CAP (60, the Atlas's own child cap), UNIONED with every plat the Atlas above actually draws so the map can never show an outline the index omits. The figure is that plat's lifetime closed sales from subdivision_plat_closed_mv, polygon-and-name unioned over distinct listing; a drawn plat below the publishing floor prints NO figure rather than one measured a different way (§0 — unknown is not zero, and a noindexed plat still renders its page). Names run through atlasRegionNames, the set-aware publisher, so two plats whose recorder residue strips to one string keep their full names instead of two rows reading the same and opening different pages. The tail past twelve rows is a native <details>, so every anchor is in the served HTML whether or not it is open, and /subdivisions carries the rest of the set.",
+      "section": "Pattern 9, #child-places AFTER #neighborhoods (SITE-128 Look punch, 2026-09-18). Name-only cards for Atlas-drawn plats on non-Bend cities. Bend's crawlable children are the designated districts in #neighborhoods — the city no longer dumps 'Subdivisions in {city}' (60 deepest-history plats) above those bars. A–Z /subdivisions is the directory. No bars, no lifetime-sales sort, no Subdivisions/Neighborhoods heading.",
       "blocking": true
     }
   ],

@@ -16,7 +16,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome, and the up-rung of the place ladder: Home > {City} > {Neighborhood}, current page never a link. Surface tone, because this page opens on a pace Instrument and not on a dark Stage.",
+      "section": "Chrome. V3Breadcrumb sitewide — overlay on the still, surface when there is no photo. Name-only trail. Current page never a link.",
       "blocking": true
     },
     {
@@ -67,6 +67,11 @@
     {
       "name": "PlaceTypeSlider",
       "section": "Horizontal leftover type cards. Filters Split. Replaces stacked V3PlacePropertyTypes Instruments.",
+      "blocking": true
+    },
+    {
+      "name": "V3PlaceIndex",
+      "section": "#child-places — name-only cards for plats inside the neighborhood (SITE-128). No Subdivisions heading, no sales bars. A–Z /subdivisions is the directory.",
       "blocking": true
     },
     {
