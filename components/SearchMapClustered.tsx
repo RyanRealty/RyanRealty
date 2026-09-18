@@ -1276,15 +1276,32 @@ export default function SearchMapClustered({
     for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
     if (bb.isEmpty()) return
     const apply = () => {
+      const div = map.getDiv()
       try {
         google.maps.event.trigger(map, 'resize')
       } catch {
         // map may not expose trigger mid-teardown
       }
-      map.fitBounds(bb, v3SubjectRingPadding(map.getDiv()))
+      map.fitBounds(bb, v3SubjectRingPadding(div))
       google.maps.event.addListenerOnce(map, 'idle', () => {
         const z = map.getZoom()
+        const h = div?.clientHeight ?? 0
         if (typeof z === 'number' && z > 14) map.setZoom(14)
+        const view = map.getBounds()
+        const ne = bb.getNorthEast()
+        const sw = bb.getSouthWest()
+        const ringInView = Boolean(view && view.contains(ne) && view.contains(sw))
+        // Short phone island: constructor zoom 11 crops a city ring that
+        // desktop shows whole. Pull out so the recorded outline fills the fold.
+        if (!ringInView && h > 0 && h < 240) {
+          map.fitBounds(bb, v3SubjectRingPadding(div))
+          const z2 = map.getZoom()
+          if (typeof z2 === 'number' && z2 >= 11) map.setZoom(9)
+        }
+        if (div) {
+          div.dataset.placeLookRing = ringInView ? 'in-view' : 'refit'
+          div.dataset.placeLookZoom = String(map.getZoom() ?? '')
+        }
       })
     }
     apply()
