@@ -795,12 +795,9 @@ async function renderNeighborhoodDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-104: drawing + figure + ask in the first viewport, the shape the
-            place class landed on the city and the subdivision. Atlas is the
-            drawing (type toggles + price scrubber). The paged insight is the
-            figure. The alerts callout is the ask — still the callout SITE-04
-            shipped, with the same 30-day figure, the same trace and the same
-            sticky repeat keyed off #atlas scrolling past. */}
+        {/* SITE-104 / SITE-128: drawing + figure + ask. Atlas is the drawing
+            (price pins + hover; type chips stay; price scrubber is off). The
+            paged insight is the figure. The alerts callout is the ask. */}
         <div className="nbh-fold">
           <div className="nbh-fold__stage">
             <div className="nbh-fold__drawing">
@@ -809,7 +806,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
                 headingLevel={2}
                 headline={v3Text(`${neighborhood.name} right now`)}
                 headlineTone="eyebrow"
-                claimText={`${neighborhood.name} houses for sale — active and pending. Scrub price to filter the map.`}
+                claimText={`${neighborhood.name} houses for sale — active and pending.`}
                 dots={atlasView.dots}
                 regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
                 basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}

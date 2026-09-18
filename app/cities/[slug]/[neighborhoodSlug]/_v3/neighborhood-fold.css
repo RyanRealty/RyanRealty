@@ -120,16 +120,27 @@
 }
 
 @media (min-width: 64rem) {
-  /* THREE columns, not a stack: the drawing, the figure, the ask — each a
-     different width, a different density and a different medium.
-
-     The figure column is wider here than on the city fold, and the drawing
-     narrower, because this grain's pager is titled "This neighborhood" rather
-     than "This market": at 293px the face wrapped onto two lines and pushed the
-     page count away from the word it counts. The map keeps the largest share. */
+  /* SITE-128: dominant map on its own row, then insight | ask — same lock as
+     community/sub. A squeezed left column stacked Old Bend pins unreadably. */
   .nbh-fold__stage {
-    grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 0.9fr) minmax(16.5rem, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-areas:
+      'drawing drawing'
+      'insight ask';
     column-gap: var(--v3-space-lg);
+    row-gap: var(--v3-space-lg);
+  }
+
+  .nbh-fold__drawing {
+    grid-area: drawing;
+  }
+
+  .nbh-fold__figure--insight {
+    grid-area: insight;
+  }
+
+  .nbh-fold__figure--ask {
+    grid-area: ask;
   }
 
   /* The Atlas's own wide layout puts a 16-20rem dock column beside the map. In
@@ -172,8 +183,8 @@
      map now takes the height its neighbours take, and the cap stays a `vh` so a
      short window shrinks the map rather than pushing the email below the fold. */
   .nbh-fold__drawing .v3-atlas__stage {
-    min-height: 0;
-    max-height: min(52vh, 27rem);
+    min-height: min(52vh, 32rem);
+    max-height: min(68vh, 40rem);
   }
 
   /* Three columns, two rules. The register's own separator (PUBLIC_UI: rules,
@@ -191,8 +202,8 @@
    HUD population, and two counts of one thing in one viewport is a question).
    The place chips go with them — they carry a per-plat active count each, which
    is a third measure of "homes for sale" in one viewport, and the door row under
-   the map is this fold's place navigation. Type toggles and the price scrubber
-   stay — that is the house-atlas interaction. */
+   the map is this fold's place navigation. Type toggles stay. The price
+   scrubber is off (SITE-128, community/sub lock). */
 .nbh-fold__drawing .v3-atlas__key,
 .nbh-fold__drawing .v3-atlas__sales-legend,
 .nbh-fold__drawing .v3-atlas__chips,
@@ -246,14 +257,9 @@
    is a `vh` first so a short window takes it out of the map, never out of the
    ask; the rem is the ceiling on a tall one. */
 .nbh-fold__drawing .v3-atlas__frame {
-  max-height: min(52vh, 27rem);
+  max-height: min(68vh, 40rem);
 }
 
-/* THE DOCK IS TWO ROWS, NOT A WRAPPING FLEX LINE. As a flex row the scrubber's
-   12rem basis shrank the type list until "Land" fell to a line of its own
-   beside 200px of empty cream (1440 capture, 2026-09-16) — a third control
-   orphaned from the two it belongs with. Types own the first row whole, the
-   price scrubber owns the second. */
 .nbh-fold__drawing .v3-atlas__dock {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -268,12 +274,10 @@
   gap: var(--v3-space-2xs);
 }
 
-/* The scrubber is the dock's second row, so it runs the column's width: the
-   barrel's 22rem cap is for the Atlas's own wide dock beside a map, not for a
-   fold column. */
-.nbh-fold__drawing .v3-atlas__scrub {
-  min-width: 0;
-  max-width: none;
+.nbh-fold__drawing .v3-atlas__scrub,
+.nbh-fold__drawing .v3-atlas__range,
+.nbh-fold__drawing .v3-range {
+  display: none;
 }
 
 /* ── The map's door row ────────────────────────────────────────────────────
@@ -530,10 +534,14 @@
     gap: var(--v3-space-sm);
   }
 
-  /* A small drawing, not no drawing: the scrubber stays, so the house-atlas
-     interaction is still on a phone's first screen. */
+  /* Phone: a usable map. The 11vh / 4.5rem plate measured 320×86 at 375
+     (SITE-128 FAIL). Match community/sub. */
   .nbh-fold__drawing .v3-atlas__frame {
-    max-height: min(11vh, 4.5rem);
+    max-height: min(46vh, 20rem);
+  }
+
+  .nbh-fold__drawing .v3-atlas__stage {
+    min-height: min(36vh, 16rem);
   }
 
   /* The +/- pair is taller than a 5.5rem map, so at this width it stood ABOVE
