@@ -157,6 +157,7 @@ type ClosedRow = {
   property_sub_type: string | null
   StreetNumber: string | null
   StreetName: string | null
+  /** Alias of details->>StreetSuffix — the listings table has no StreetSuffix column. */
   StreetSuffix: string | null
   PhotoURL: string | null
   BedroomsTotal: number | string | null
@@ -167,7 +168,7 @@ type ClosedRow = {
 }
 
 const CLOSED_COLUMNS =
-  'ListingKey,ListNumber,StandardStatus,ListPrice,ClosePrice,CloseDate,OnMarketDate,ModificationTimestamp,Latitude,Longitude,City,SubdivisionName,PropertyType,property_sub_type,StreetNumber,StreetName,StreetSuffix,PhotoURL,BedroomsTotal,BathroomsTotal,TotalLivingAreaSqFt,boundary_city,boundary_neighborhood'
+  'ListingKey,ListNumber,StandardStatus,ListPrice,ClosePrice,CloseDate,OnMarketDate,ModificationTimestamp,Latitude,Longitude,City,SubdivisionName,PropertyType,property_sub_type,StreetNumber,StreetName,StreetSuffix:details->>StreetSuffix,PhotoURL,BedroomsTotal,BathroomsTotal,TotalLivingAreaSqFt,boundary_city,boundary_neighborhood'
 /** A month of closes across the service area is a few hundred rows. */
 const CLOSED_MAX_PAGES = 3
 
