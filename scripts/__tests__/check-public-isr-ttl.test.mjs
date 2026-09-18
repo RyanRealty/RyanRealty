@@ -59,11 +59,21 @@ describe('ci:public-isr-ttl', () => {
   it('fails when a listed page drops its revalidate export', () => {
     reset()
     const file = join(SANDBOX, 'app/zip/[zip]/page.tsx')
-    writeFileSync(file, readFileSync(file, 'utf8').replace('export const revalidate = 300', ''))
+    writeFileSync(file, readFileSync(file, 'utf8').replace('export const revalidate = 900', ''))
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toContain('app/zip/[zip]/page.tsx')
     expect(r.out).toContain('lost ISR')
+  })
+
+  it('fails when a place page drops from 900 back to 300', () => {
+    reset()
+    const file = join(SANDBOX, 'app/cities/[slug]/page.tsx')
+    writeFileSync(file, readFileSync(file, 'utf8').replace('export const revalidate = 900', 'export const revalidate = 300'))
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('app/cities/[slug]/page.tsx')
+    expect(r.out).toContain('900')
   })
 
   it('fails when a leftover unlisted public page still exports 60', () => {

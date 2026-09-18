@@ -71,7 +71,7 @@ export const metadata: Metadata = {
 /** How long a rendered copy of this page is served before it is read again.
  *  The sample's caption states this in minutes, off this constant, so the page
  *  can never claim a freshness its own cache does not keep. */
-export const revalidate = 300
+export const revalidate = 900
 
 /* ---------------------------------------------------------------------------
    THE WORKED EXAMPLE (site queue SITE-50, rebuilt SITE-95)

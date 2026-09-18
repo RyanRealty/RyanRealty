@@ -256,9 +256,9 @@ export const dynamicParams = true
 // awaits searchParams (the split view is a static shell whose URL filters
 // apply after mount). The render tree now reads NO request state, which is
 // the condition `revalidate` needs: the first hit renders and caches, later
-// hits are served from the cache and refreshed every 300s. Held by the
-// structural test in components/search/__tests__/static-shell-url-params.
-export const revalidate = 300
+// hits are served from the cache and refreshed every 900s (MLS sync cadence).
+// Held by the structural test in components/search/__tests__/static-shell-url-params.
+export const revalidate = 900
 // Worst-case first render chains sequential timeout-capped stages, above
 // Vercel's 15s default function cap.
 export const maxDuration = 60

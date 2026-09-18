@@ -1,3 +1,12 @@
+# Current — 2026-09-18 (ISR spend cut — place/home 300 → 900)
+
+Surface: Cursor cloud `bc-d020ba1b-33a8-53dc-a4b3-f41f506ff6c6`, branch `cursor/isr-ttl-900-f6c6`. Tip Ready Cos recommended; Matt skipped widget — ship default. PR only — Cos Mini lands. Do not merge. HOLD owner email. First-look refuse `281e5f02a` already on main — not retouched.
+
+- **Change.** `export const revalidate` 300 → 900 on layout, home, city/community/subdivision/zip/open-houses/compare/housing-market pages in `PUBLIC_ISR_TTLS`. Gate + `scripts/__tests__/check-public-isr-ttl.test.mjs` + zip contract test pinned.
+- **Left alone.** Search / listing cookies() ISR stay 300. Place-index hubs stay 3600 (no multi-hour TTL). No sync-delta tags.
+- **Why.** MLS sync every 15m; 5m ISR rewrites big pages faster than data changes; Sep ISR Writes ~$159.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`.
+
 # Current — 2026-09-18 (SITE-128 place craft — Tip Ready refuses without competitor first-look)
 
 Surface: Cursor cloud `bc-ed6caaf0-4a16-5a87-b2ec-252c5ef31516`, branch `cursor/place-craft-first-look-refuse-1516`. Gate only — no place UI invent. PR only — Cos Mini lands. Do not merge. HOLD owner email.
