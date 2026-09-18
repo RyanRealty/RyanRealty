@@ -7,6 +7,8 @@
  */
 import { atlasRegionName } from '@/lib/atlas/place-names'
 import type { CommunitySubdivision } from '@/lib/data/geo/getCommunitySubdivisions'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { isPermitGluedPlatSlug, isVisitorPlaceNoiseLabel } from '@/lib/site/visitor-place-noise'
 
 const RING_CAP = 80
 
@@ -63,9 +65,11 @@ export function regionsFromChildCells(
   for (const cell of cells) {
     if (out.length >= cap) break
     if (!isRingGeometry(cell.geometry)) continue
-    const label = (atlasRegionName(cell.label) ?? cell.label).trim()
+    const rawLabel = (atlasRegionName(cell.label) ?? cell.label).trim()
     const slug = cell.slug.trim()
+    const label = publishPlatDisplayName(rawLabel)
     if (!label || !slug) continue
+    if (isVisitorPlaceNoiseLabel(label) || isPermitGluedPlatSlug(slug)) continue
     out.push({
       id: `subdivision:${slug}`,
       kind: 'neighborhood',

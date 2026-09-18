@@ -149,7 +149,7 @@ describe('place amenity membership', () => {
     expect(layers.trails.every((trail) => isTrailLine(trail.geometry))).toBe(true)
   })
 
-  it('fetches only parks and trails that already have membership, never a city-wide fan-out on a local ring', () => {
+  it('fetches held city park polygons on a local ring so overlap can keep them; still omits a far ring', () => {
     const far: GeoJSON.Polygon = {
       type: 'Polygon',
       coordinates: [
@@ -162,7 +162,15 @@ describe('place amenity membership', () => {
         ],
       ],
     }
-    expect(parksNeedingGeom({ grain: 'neighborhood', cityName: 'Bend', placeGeometry: far })).toEqual([])
+    expect(parksNeedingGeom({ grain: 'neighborhood', cityName: 'Bend', placeGeometry: far }).length).toBeGreaterThan(0)
+    const outside = assembleAmenityLayers({
+      grain: 'neighborhood',
+      cityName: 'Bend',
+      placeGeometry: far,
+      parkGeom: new Map([['juniper-park', PARK_POLY]]),
+      trailGeom: new Map(),
+    })
+    expect(outside.parks).toHaveLength(0)
     expect(
       trailsNeedingGeom({
         grain: 'community',
@@ -171,6 +179,31 @@ describe('place amenity membership', () => {
         placeGeometry: far,
       }).some((trail) => trail.slug === 'steelhead-falls'),
     ).toBe(true)
+  })
+
+  it('keeps a park whose recorded polygon overlaps the place even when the centroid sits outside', () => {
+    const juniper = getParkBySlug('juniper-park')!
+    const place: GeoJSON.Polygon = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-121.325, 44.052],
+          [-121.305, 44.052],
+          [-121.305, 44.062],
+          [-121.325, 44.062],
+          [-121.325, 44.052],
+        ],
+      ],
+    }
+    expect(amenityInsidePlace(juniper.lng, juniper.lat, place)).toBe(false)
+    const layers = assembleAmenityLayers({
+      grain: 'community',
+      cityName: 'Bend',
+      placeGeometry: place,
+      parkGeom: new Map([[juniper.slug, PARK_POLY]]),
+      trailGeom: new Map(),
+    })
+    expect(layers.parks.map((park) => park.slug)).toContain('juniper-park')
   })
 
   it('contract: no-osm-invent — assemble never synthesizes coordinates; it only forwards provided geom', () => {

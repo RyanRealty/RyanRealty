@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { slugToTitle } from './subdivision-registry'
+import { resolveRegistryAlias, slugToTitle } from './subdivision-registry'
 
 /**
  * A plat with no registry entry gets its display name built from the slug, and
@@ -9,6 +9,16 @@ import { slugToTitle } from './subdivision-registry'
  * published "Ridge At Eagle Crest" in all of them — found by a separate taste
  * evaluator, and general to every plat name carrying a connector word.
  */
+describe('resolveRegistryAlias — contained plat names the crumb', () => {
+  it('puts Golf Homes at Tetherow under Tetherow', () => {
+    expect(resolveRegistryAlias('golf-homes-at-tetherow')).toMatchObject({
+      resortSlug: 'tetherow',
+      resortLabel: 'Tetherow',
+      citySlug: 'bend',
+    })
+  })
+})
+
 describe('slugToTitle — English title case, not per-word capitalisation', () => {
   it('leaves a connector word lower in the middle of a name', () => {
     expect(slugToTitle('ridge-at-eagle-crest')).toBe('Ridge at Eagle Crest')

@@ -59,7 +59,7 @@ async function loadAmenityGeometry(input: PlaceAmenityLayersInput): Promise<Plac
 
 function cacheKey(input: PlaceAmenityLayersInput): string[] {
   return [
-    'place-amenity-layers-v1',
+    'place-amenity-layers-v2',
     input.grain,
     input.placeSlug.trim().toLowerCase(),
     input.cityName.trim().toLowerCase(),

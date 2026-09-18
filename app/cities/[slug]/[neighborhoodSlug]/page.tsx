@@ -105,6 +105,7 @@ import {
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { overlaysFromChildCells, regionsFromChildCells } from '@/lib/place/child-rings'
+import { photoCardsFromOpening, SUBJECT_FRAME_PAD } from '@/lib/atlas/map-hierarchy'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
@@ -366,10 +367,10 @@ async function renderNeighborhoodDetail({ params }: Props) {
         ),
       ])
     : [null, [], EMPTY_PLACE_AMENITY_LAYERS]
+  const platRegions = regionsFromChildCells(atlasPlats)
   const atlasRegions: AtlasRegion[] = boundaryMapData.polygon
     ? [
         { id: `neighborhood:${neighborhoodSlug}`, kind: 'town', kindLabel: 'Neighborhood', name: neighborhood.name, href: `/cities/${citySlug}/${neighborhoodSlug}`, geometry: boundaryMapData.polygon },
-        ...regionsFromChildCells(atlasPlats),
       ]
     : []
   const inventory = inventoryRead
@@ -624,11 +625,13 @@ async function renderNeighborhoodDetail({ params }: Props) {
   // Children inside the boundary — name-only cards (SITE-128). Not a
   // "Subdivisions" bar list that twins the community page.
   const neighborhoodChildren = neighborhoodCommunities.slice(0, 12)
-  const childPlaceEntries = nameOnlyChildEntries(
-    neighborhoodChildren.map((c) => [
-      { name: c.subdivision, href: `/subdivisions/${slugify(c.subdivision)}` },
-    ]),
-  )
+  const childPlaceEntries = nameOnlyChildEntries([
+    platRegions.map((region) => ({ name: region.name, href: region.href })),
+    neighborhoodChildren.map((c) => ({
+      name: c.subdivision,
+      href: `/subdivisions/${slugify(c.subdivision)}`,
+    })),
+  ])
 
   // Live feed - fetched city-wide (the MLS carries no neighborhood scope), so
   // it is labeled with whichever scope the rows actually carry (§0).
@@ -826,9 +829,13 @@ async function renderNeighborhoodDetail({ params }: Props) {
                 headlineTone="eyebrow"
                 claimText={`${neighborhood.name} houses for sale — active and pending.`}
                 dots={atlasView.dots}
-                regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
+                regions={atlasRegions.filter((r) => r.kind === 'town')}
+                childRegions={platRegions}
+                {...(boundaryMapData.polygon
+                  ? { frame: boundaryMapData.polygon, framePad: SUBJECT_FRAME_PAD }
+                  : { fit: 'dots' as const })}
+                photoCards={photoCardsFromOpening(openingListings)}
                 basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
-                fit="dots"
                 types={atlasView.types}
                 events={atlasView.events}
                 source={atlasView.source}

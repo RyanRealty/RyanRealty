@@ -32,6 +32,16 @@ describe('SITE-128 hierarchy — community ≠ neighborhood', () => {
     expect(community).toMatch(/nameOnly/)
   })
 
+  it('draws one subject outline and selects children on the Atlas', () => {
+    expect(neighborhood).not.toMatch(/town \|\| neighborhood/)
+    expect(neighborhood).toMatch(/childRegions=\{platRegions\}/)
+    expect(neighborhood).toMatch(/SUBJECT_FRAME_PAD/)
+    expect(community).toMatch(/childRegions=\{platRegions\}/)
+    expect(community).toMatch(/SUBJECT_FRAME_PAD/)
+    expect(subdivision).toMatch(/SUBJECT_FRAME_PAD/)
+    expect(city).toMatch(/photoCards/)
+  })
+
   it('keeps neighborhood children as name-only cards, not a Subdivisions ledger', () => {
     expect(neighborhood).toMatch(/id="child-places"/)
     expect(neighborhood).toMatch(/nameOnly/)
@@ -61,7 +71,7 @@ describe('Matt LOCK — sitewide crumb is one component', () => {
   it('V3Breadcrumb is the only crumb primitive — collapse + overlay live there', () => {
     expect(crumb).toMatch(/from '@\/components\/ui\/breadcrumb'/)
     expect(crumb).toMatch(/V3BreadcrumbCollapse/)
-    expect(crumb).toMatch(/overlayCompact/)
+    expect(crumb).not.toMatch(/overlayCompact/)
     expect(crumb).toMatch(/rungs\.length\s*>=\s*3/)
   })
 })

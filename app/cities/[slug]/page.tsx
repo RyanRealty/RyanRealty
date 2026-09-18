@@ -121,6 +121,7 @@ import {
   CITY_FOLD_CLUSTER_STAGE_PHONE,
 } from '@/lib/atlas/cluster-pins'
 import { atlasRegionName } from '@/lib/atlas/place-names'
+import { photoCardsFromOpening, SUBJECT_FRAME_PAD } from '@/lib/atlas/map-hierarchy'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -825,6 +826,8 @@ async function renderCityDetail({ params }: Props) {
   const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
   const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
   const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
+  const firstLookCards = photoCardsFromOpening(openingListings)
+  const subjectRing = foldAtlasRegions[0]?.geometry ?? atlasBoundary
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -905,11 +908,12 @@ async function renderCityDetail({ params }: Props) {
                 clusterStageHintPhone={CITY_FOLD_CLUSTER_STAGE_PHONE}
                 dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
                 regions={foldAtlasRegions}
+                {...(subjectRing ? { frame: subjectRing, framePad: SUBJECT_FRAME_PAD } : { fit: 'dots' as const })}
+                photoCards={firstLookCards}
                 basemap={basemapForRegions(foldAtlasRegions, {
                   dots: foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots,
-                  fit: 'dots',
+                  fit: subjectRing ? 'regions' : 'dots',
                 })}
-                fit="dots"
                 types={foldAtlasTypes.length > 0 ? foldAtlasTypes : atlasView.types}
                 events={atlasView.events}
                 source={

@@ -543,7 +543,7 @@
     "crumbCollapseAt": 3,
     "crumbBelowNavPadToken": "--v3-space-2xs",
     "crumbOverlayOnListing": true,
-    "overlayCompactOnListing": true,
+    "overlayCompactOnListing": false,
     "maxCrumbBandPx": 44,
     "stripThumbRem": 2.75,
     "mosaicWell": "navy",

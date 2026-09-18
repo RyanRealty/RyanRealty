@@ -56,7 +56,8 @@ export function nearbySubdivisionPeers(input: {
   return out
 }
 
-/** Deduped name-only child cards. First occurrence wins; counts never attach. */
+/** Deduped name-only child cards. First occurrence wins; counts never attach.
+ *  Same visitor name on two hrefs is a twin (River Woods) — keep the first. */
 export function nameOnlyChildEntries(
   groups: ReadonlyArray<ReadonlyArray<{ name: string; href: string }>>,
 ): NearbyPlacePeer[] {
@@ -66,8 +67,10 @@ export function nameOnlyChildEntries(
     for (const row of group) {
       const href = row.href.trim()
       const name = row.name.trim()
-      if (!href || !name || seen.has(href)) continue
+      const nameKey = `name:${name.toLowerCase().replace(/\s+/g, ' ')}`
+      if (!href || !name || seen.has(href) || seen.has(nameKey)) continue
       seen.add(href)
+      seen.add(nameKey)
       out.push({ name, href })
     }
   }

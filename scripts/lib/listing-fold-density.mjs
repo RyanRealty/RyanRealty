@@ -20,7 +20,7 @@ export const FOLD_LOCK = Object.freeze({
   crumbCollapseAt: 3,
   crumbBelowNavPadToken: '--v3-space-2xs',
   crumbOverlayOnListing: true,
-  overlayCompactOnListing: true,
+  overlayCompactOnListing: false,
   maxCrumbBandPx: 44,
   stripThumbRem: 2.75,
   mosaicWell: 'navy',
@@ -103,9 +103,14 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
       `${PATHS.breadcrumbTsx}: collapse must default at ${FOLD_LOCK.crumbCollapseAt}+ crumbs. A taller trail is an oversized crumb band.`,
     )
   }
-  if (!tsx.includes('overlayCompact') || !/rungs\.slice\(\s*0\s*,\s*lastIndex\s*\)/.test(tsx)) {
+  if (tsx.includes('overlayCompact')) {
     p.push(
-      `${PATHS.breadcrumbTsx}: listing overlay must compact to … / current (ancestors in the disclosure). Bend / … / street on the photo is leftover chrome.`,
+      `${PATHS.breadcrumbTsx}: overlayCompact is refuse. One V3Breadcrumb behavior: first / … / current on place and listing.`,
+    )
+  }
+  if (!/rungs\.slice\(\s*1\s*,\s*lastIndex\s*\)/.test(tsx)) {
+    p.push(
+      `${PATHS.breadcrumbTsx}: collapse must keep the first ancestor (first / … / current). Hiding Bend on listing overlay is refuse.`,
     )
   }
   if (!tsx.includes('overlay')) {
@@ -259,8 +264,8 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
       if (lock.crumbOverlayOnListing !== true) {
         p.push(`${PATHS.parity}: foldDensity.crumbOverlayOnListing must stay true.`)
       }
-      if (lock.overlayCompactOnListing !== true) {
-        p.push(`${PATHS.parity}: foldDensity.overlayCompactOnListing must stay true.`)
+      if (lock.overlayCompactOnListing !== false) {
+        p.push(`${PATHS.parity}: foldDensity.overlayCompactOnListing must stay false — one crumb behavior.`)
       }
       if (lock.mosaicHeightUsesViewport !== true) {
         p.push(`${PATHS.parity}: foldDensity.mosaicHeightUsesViewport must stay true.`)

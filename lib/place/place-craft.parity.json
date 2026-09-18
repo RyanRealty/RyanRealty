@@ -19,6 +19,41 @@
   },
   "testFiles": [
     "scripts/__tests__/place-craft.test.mjs",
-    "lib/explore/place-hierarchy-crumb.test.ts"
-  ]
+    "lib/explore/place-hierarchy-crumb.test.ts",
+    "lib/atlas/map-hierarchy.test.ts"
+  ],
+  "competitorFirstLook": {
+    "peer": "Compass Old Bend neighborhood + Compass Bend, OR homes-for-sale",
+    "peerUrl": "https://www.compass.com/neighborhoods/old-bend-or/",
+    "peers": [
+      {
+        "name": "Compass Old Bend",
+        "url": "https://www.compass.com/neighborhoods/old-bend-or/",
+        "shot": "look-pass-site128-rematch-2026-09-18/peer-compass-old-bend.png"
+      },
+      {
+        "name": "Compass Bend, OR homes for sale",
+        "url": "https://www.compass.com/homes-for-sale/bend-or/",
+        "shot": "look-pass-site128-rematch-2026-09-18/peer-compass-bend-or.png"
+      }
+    ],
+    "skip": [
+      "Zillow bend-or — 403 Press-and-Hold bot wall (same class as Redfin). Shot kept as peer-zillow-bend-or.png, not used as first-look.",
+      "Redfin — skip per Cos order 2026-09-18."
+    ],
+    "shots": {
+      "sideBySide": "look-pass-site128-rematch-2026-09-18/side-by-side-old-bend.png",
+      "ours": "look-pass-site128-rematch-2026-09-18/ours-local-old-bend.png",
+      "peer": "look-pass-site128-rematch-2026-09-18/peer-compass-old-bend.png",
+      "sequence": [
+        "look-pass-site128-rematch-2026-09-18/peer-compass-old-bend.png",
+        "look-pass-site128-rematch-2026-09-18/ours-local-old-bend.png",
+        "look-pass-site128-rematch-2026-09-18/side-by-side-old-bend.png",
+        "look-pass-site128-rematch-2026-09-18/peer-compass-bend-or.png",
+        "look-pass-site128-rematch-2026-09-18/ours-local-cities-bend.png",
+        "look-pass-site128-rematch-2026-09-18/side-by-side-bend.png"
+      ]
+    },
+    "notes": "look-pass-site128-rematch-2026-09-18/NOTES.md — V3Atlas stays (TASTE). Thick navy subject ring fills the frame, price pins, opening-listing photo cards in the first viewport. Child plats select on chips and zoom one recorded ring. Do not lose to Compass first-look on named peers."
+  }
 }

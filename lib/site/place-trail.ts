@@ -6,6 +6,7 @@
 import { getPlaceLinks } from '@/lib/place-links'
 import {
   getResortCommunityBySlug,
+  getResortCommunityBySubdivisionName,
   isVerifiedRegistryChild,
 } from '@/lib/data/communities/registry'
 import { cityHref, cityNeighborhoodHref, subdivisionHref } from '@/lib/site/place-href'
@@ -142,7 +143,18 @@ export function listingPlaceTrail(input: {
   const cityUrl = city ? cityHref(city.slug) : null
   if (city && cityUrl) pushUnique(trail, city.label, cityUrl)
 
-  const community = visitorPlaceNode(input.community)
+  const communityFromPlat = (() => {
+    const plat = visitorPlaceNode(input.subdivision)
+    if (!plat) return null
+    const parent =
+      getResortCommunityBySlug(plat.slug) ??
+      getResortCommunityBySubdivisionName(plat.label) ??
+      getResortCommunityBySubdivisionName(plat.slug)
+    if (!parent) return null
+    if (samePlace(plat, { label: parent.label, slug: parent.slug })) return null
+    return { label: parent.label, slug: parent.slug }
+  })()
+  const community = visitorPlaceNode(input.community) ?? communityFromPlat
   const neighborhoodRaw = visitorPlaceNode(input.neighborhood)
   const neighborhood =
     !neighborhoodRaw

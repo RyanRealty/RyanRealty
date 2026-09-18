@@ -75,6 +75,25 @@ describe('subdivisionPageTrail', () => {
     ])
   })
 
+  it('puts Tetherow on Golf Homes At Tetherow — contained name, not an MLS alias', () => {
+    expect(
+      subdivisionPageTrail({ label: 'Bend', slug: 'bend' }, { label: 'Tetherow', slug: 'tetherow' }, 'Golf Homes at Tetherow'),
+    ).toEqual([
+      { label: 'Bend', href: '/cities/bend' },
+      { label: 'Tetherow', href: '/communities/tetherow' },
+      { label: 'Golf Homes at Tetherow' },
+    ])
+    expect(
+      listingPlaceTrail({
+        city: { label: 'Bend', slug: 'bend' },
+        neighborhood: null,
+        community: null,
+        subdivision: { label: 'Golf Homes At Tetherow', slug: 'golf-homes-at-tetherow' },
+        address: '1 Tetherow Fairway',
+      }).map((c) => c.label),
+    ).toEqual(['Bend', 'Tetherow', 'Golf Homes At Tetherow', '1 Tetherow Fairway'])
+  })
+
   it('skips community when the plat has none', () => {
     expect(
       subdivisionPageTrail({ label: 'Bend', slug: 'bend' }, null, 'Bear Creek Estates'),

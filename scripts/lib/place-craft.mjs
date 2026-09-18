@@ -117,6 +117,9 @@ export function mapDrivesHierarchyProblems({ root = process.cwd(), files = {} } 
     if (!/nameOnly/.test(city)) {
       p.push(`${PATHS.city}: child place cards must be nameOnly.`)
     }
+    if (!/SUBJECT_FRAME_PAD|framePad/.test(city) || !/photoCards/.test(city)) {
+      p.push(`${PATHS.city}: first-look must pass subject framePad + photoCards.`)
+    }
   }
 
   const community = readRel(root, PATHS.community, files.community ?? files[PATHS.community])
@@ -129,6 +132,12 @@ export function mapDrivesHierarchyProblems({ root = process.cwd(), files = {} } 
     if (!/id="child-places"/.test(community) || !/nameOnly/.test(community)) {
       p.push(`${PATHS.community}: children are name-only #child-places cards, not a ledger dump.`)
     }
+    if (!/childRegions=\{platRegions\}/.test(community)) {
+      p.push(`${PATHS.community}: child plats select on the Atlas (childRegions), they are not twenty outlines.`)
+    }
+    if (!/SUBJECT_FRAME_PAD|framePad/.test(community)) {
+      p.push(`${PATHS.community}: subject outline must fill the frame (SUBJECT_FRAME_PAD).`)
+    }
   }
 
   const neighborhood = readRel(root, PATHS.neighborhood, files.neighborhood ?? files[PATHS.neighborhood])
@@ -140,6 +149,15 @@ export function mapDrivesHierarchyProblems({ root = process.cwd(), files = {} } 
     }
     if (/id="subdivisions"/.test(neighborhood) || /heading=\{[^}]*Subdivisions/.test(neighborhood)) {
       p.push(`${PATHS.neighborhood}: Subdivisions ledger / heading is refuse.`)
+    }
+    if (/town \|\| neighborhood/.test(neighborhood)) {
+      p.push(`${PATHS.neighborhood}: fold must draw ONE subject outline, not child plats as neighborhood regions.`)
+    }
+    if (!/childRegions=\{platRegions\}/.test(neighborhood)) {
+      p.push(`${PATHS.neighborhood}: child plats select on the Atlas (childRegions). Links-only is refuse.`)
+    }
+    if (!/SUBJECT_FRAME_PAD|framePad/.test(neighborhood)) {
+      p.push(`${PATHS.neighborhood}: subject outline must fill the frame (SUBJECT_FRAME_PAD).`)
     }
   }
 
@@ -155,6 +173,9 @@ export function mapDrivesHierarchyProblems({ root = process.cwd(), files = {} } 
     }
     if (/entries=\{sisterEntries\}/.test(subdivision)) {
       p.push(`${PATHS.subdivision}: sisterEntries city dump is refuse. Map / GIS ring drives peers.`)
+    }
+    if (!/SUBJECT_FRAME_PAD/.test(subdivision)) {
+      p.push(`${PATHS.subdivision}: recorded plat ring must fill the frame (SUBJECT_FRAME_PAD), not a 0.6 speck.`)
     }
   }
 

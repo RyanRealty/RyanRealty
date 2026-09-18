@@ -36,6 +36,17 @@ describe('nearbySubdivisionPeers', () => {
 })
 
 describe('nameOnlyChildEntries', () => {
+  it('collapses a River Woods name twin to the first door', () => {
+    expect(
+      nameOnlyChildEntries([
+        [
+          { name: 'River Woods', href: '/subdivisions/river-woods' },
+          { name: 'River Woods', href: '/subdivisions/river-woods-2' },
+        ],
+      ]),
+    ).toEqual([{ name: 'River Woods', href: '/subdivisions/river-woods' }])
+  })
+
   it('dedupes on href and never carries a count', () => {
     const rows = nameOnlyChildEntries([
       [{ name: 'Phase 1', href: '/subdivisions/phase-1' }],

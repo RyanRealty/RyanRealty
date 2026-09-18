@@ -229,6 +229,7 @@ import {
   platFrame,
   platGround,
 } from './_v3/plat-ground'
+import { photoCardsFromOpening, SUBJECT_FRAME_PAD } from '@/lib/atlas/map-hierarchy'
 import { platListingPhoto, platOpeningPhoto } from './_v3/plat-opening-image'
 import {
   footprintProvenance,
@@ -1477,9 +1478,19 @@ async function renderSubdivisionPage({ params }: Props) {
                   sourceName={PLAT_FEED}
                   dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
                   regions={atlasRegions}
-                  {...(frame ? { frame: frame.geometry } : {})}
+                  photoCards={photoCardsFromOpening(openingListings)}
+                  {...(platPolygon
+                    ? { frame: platPolygon, framePad: SUBJECT_FRAME_PAD }
+                    : frame
+                      ? { frame: frame.geometry, framePad: ATLAS_FRAME_PAD }
+                      : {})}
                   basemap={
-                    frame
+                    platPolygon
+                      ? basemapForRegions(atlasRegions, {
+                          dots: foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots,
+                          fit: 'regions',
+                        })
+                      : frame
                       ? basemapForFrame({ bbox: frame.bbox, pad: ATLAS_FRAME_PAD })
                       : basemapForRegions(atlasRegions, {
                           dots: foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots,

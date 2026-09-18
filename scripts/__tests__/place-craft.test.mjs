@@ -109,9 +109,32 @@ describe('place-craft --ship', () => {
     expect(d.evidencePath.competitorFirstLook.required).toBe(true)
   })
 
-  it('Tip Ready --ship of the stub refuses without competitor first-look shots', () => {
+  it('Tip Ready --ship of a copy without competitor first-look shots refuses', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rr-place-craft-refuse-'))
+    mkdirSync(join(dir, 'lib/place'), { recursive: true })
+    mkdirSync(join(dir, 'app/cities/[slug]'), { recursive: true })
+    mkdirSync(join(dir, 'app/communities/[slug]'), { recursive: true })
+    mkdirSync(join(dir, 'app/cities/[slug]/[neighborhoodSlug]'), { recursive: true })
+    mkdirSync(join(dir, 'app/subdivisions/[slug]'), { recursive: true })
+    writeFileSync(join(dir, 'app/cities/[slug]/page.tsx'), liveCity)
+    writeFileSync(
+      join(dir, 'app/communities/[slug]/page.tsx'),
+      readFileSync(join(REPO, 'app/communities/[slug]/page.tsx')),
+    )
+    writeFileSync(
+      join(dir, 'app/cities/[slug]/[neighborhoodSlug]/page.tsx'),
+      readFileSync(join(REPO, 'app/cities/[slug]/[neighborhoodSlug]/page.tsx')),
+    )
+    writeFileSync(
+      join(dir, 'app/subdivisions/[slug]/page.tsx'),
+      readFileSync(join(REPO, 'app/subdivisions/[slug]/page.tsx')),
+    )
+    const d = JSON.parse(readFileSync(join(REPO, PLACE_CRAFT_PARITY), 'utf8'))
+    delete d.competitorFirstLook
+    delete d.tasteReview
+    writeFileSync(join(dir, PLACE_CRAFT_PARITY), JSON.stringify(d))
     const r = spawnSync(process.execPath, [SHIP, '--ship', PLACE_CRAFT_PARITY], {
-      cwd: REPO,
+      cwd: dir,
       encoding: 'utf8',
       env: process.env,
     })
@@ -119,6 +142,18 @@ describe('place-craft --ship', () => {
     expect(`${r.stderr}${r.stdout}`).toMatch(/competitor first-look/)
     expect(`${r.stderr}${r.stdout}`).toMatch(/named peer/)
     expect(`${r.stderr}${r.stdout}`).toMatch(/ship refuse/)
+  })
+
+  it('Tip Ready --ship of the live rematch receipt exits 0', () => {
+    const r = spawnSync(process.execPath, [SHIP, '--ship', PLACE_CRAFT_PARITY], {
+      cwd: REPO,
+      encoding: 'utf8',
+      env: process.env,
+    })
+    expect(r.status).toBe(0)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/ship OK/)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/competitor first-look/)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/map-drives-hierarchy/)
   })
 
   it('placeCraftShipProblems passes hierarchy + named-peer sequential shots', () => {

@@ -151,12 +151,37 @@ const communityByAlias: Map<string, ResortCommunityEntry> = (() => {
  * name or slug. Returns null when the string is an ordinary plat, not a
  * registry Community. See CONTEXT.md — Community vs Subdivision.
  */
+/**
+ * "Golf Homes At Tetherow" is a contained plat, not an MLS alias. Matching
+ * only subdivision_aliases skipped the Tetherow crumb (SITE-128 rematch).
+ * Name pattern only — does not invent registry membership.
+ */
+function communityFromContainedName(raw: string): ResortCommunityEntry | null {
+  const key = raw.trim().toLowerCase()
+  if (!key) return null
+  const at = key.match(/\bat\s+(.+)$/)
+  if (at?.[1]) {
+    const parentKey = at[1].trim()
+    const hit =
+      communityByAlias.get(parentKey) ??
+      communityByAlias.get(parentKey.replace(/\s+/g, '-')) ??
+      getResortCommunityBySlug(parentKey.replace(/\s+/g, '-'))
+    if (hit) return hit
+  }
+  const slug = key.replace(/\s+/g, '-')
+  for (const entry of communities) {
+    if (slug.endsWith(`-at-${entry.slug}`) || slug === entry.slug) return entry
+    if (key.endsWith(` at ${entry.label.trim().toLowerCase()}`)) return entry
+  }
+  return null
+}
+
 export function getResortCommunityBySubdivisionName(
   subdivisionName: string | null | undefined,
 ): ResortCommunityEntry | null {
   const key = subdivisionName?.trim().toLowerCase()
   if (!key) return null
-  return communityByAlias.get(key) ?? null
+  return communityByAlias.get(key) ?? communityFromContainedName(key)
 }
 
 function placeLookupKeys(value: string | null | undefined): string[] {

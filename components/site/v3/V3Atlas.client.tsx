@@ -189,6 +189,14 @@ export type AtlasAmenityLayers = {
   trails?: readonly AtlasAmenityTrail[]
 }
 
+/** First-look photo cards (SITE-128 rematch). Opening listings the page already fetched. */
+export type AtlasPhotoCard = {
+  href: string
+  photo: string
+  price: string | null
+  street: string
+}
+
 /** One lot line. `subject` is the lot the page's own home sits on. */
 export type AtlasParcel = {
   id: string
@@ -373,6 +381,18 @@ export type V3AtlasProps = {
    * stays omitted — this prop never invents a corridor or a circle.
    */
   amenities?: AtlasAmenityLayers | null
+  /**
+   * Pad around an explicit `frame`. Default 0.6 keeps plat-ground's ladder.
+   * Place folds pass SUBJECT_FRAME_PAD (0.12) so the outline fills the view.
+   */
+  framePad?: number
+  /**
+   * Child plats the visitor can select. Not drawn until picked — one outline.
+   * Selecting a child frames that recorded ring.
+   */
+  childRegions?: readonly AtlasRegion[]
+  /** Opening-listing photo cards under the map (Zillow / Compass first look). */
+  photoCards?: readonly AtlasPhotoCard[]
 }
 
 /* -------------------------------------------------------------------------- */
@@ -489,14 +509,29 @@ export function V3Atlas({
   clusterStageHint,
   clusterStageHintPhone,
   amenities,
+  framePad = 0.6,
+  childRegions = [],
+  photoCards = [],
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
   const Heading = headingLevel === 1 ? 'h1' : 'h2'
 
+  const [pickedChildId, setPickedChildId] = useState<string | null>(null)
+  const pickedChild = useMemo(
+    () => (pickedChildId ? childRegions.find((r) => r.id === pickedChildId) ?? null : null),
+    [childRegions, pickedChildId],
+  )
+  const paintRegions = useMemo<readonly AtlasRegion[]>(() => {
+    if (pickedChild) return [{ ...pickedChild, kind: 'town' }]
+    return regions
+  }, [pickedChild, regions])
+  const paintFrame = pickedChild?.geometry ?? frame ?? null
+  const paintPad = pickedChild ? 0.12 : framePad
+
   /* Geometry: rings, label anchors, areas, projection — once per data set. */
   const shapes = useMemo<RegionShape[]>(() => {
-    return regions.map((r) => {
+    return paintRegions.map((r) => {
       const rings = outerRings(r.geometry)
       const anchor = labelAnchor(rings)
       const b = bboxOfRings(rings)
@@ -505,13 +540,13 @@ export function V3Atlas({
       const labelAt = anchor && b ? ([anchor[0], b.minLat] as const) : anchor
       return { ...r, rings, anchor: labelAt, area, bbox: b }
     })
-  }, [regions])
+  }, [paintRegions])
 
   const proj = useMemo(() => {
     // An explicit frame wins: the caller has told the map what it is about.
-    if (frame) {
-      const framed = bboxOfRings(outerRings(frame))
-      if (framed) return makeProjection(padBbox(framed, 0.6), 1000)
+    if (paintFrame) {
+      const framed = bboxOfRings(outerRings(paintFrame))
+      if (framed) return makeProjection(padBbox(framed, paintPad), 1000)
     }
     // Frame the basin, not the outliers: the base silhouettes plus the dots'
     // 1st–99th percentile in each axis. A lone listing an hour into the high
@@ -544,7 +579,7 @@ export function V3Atlas({
     const b = bboxOfRings(core.length > 0 ? [...baseRings, core] : baseRings)
     const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.04)
     return makeProjection(padded, 1000)
-  }, [shapes, dots, fit, frame])
+  }, [shapes, dots, fit, paintFrame, paintPad])
 
 
   const paths = useMemo<PlacedShape[]>(
@@ -715,6 +750,9 @@ export function V3Atlas({
   const [cam, setCam] = useState<AtlasCam>(ATLAS_CAM_HOME)
   const camRef = useRef(cam)
   camRef.current = cam
+  useEffect(() => {
+    setCam(ATLAS_CAM_HOME)
+  }, [pickedChildId])
   const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null)
   const ptsRef = useRef(new Map<number, { x: number; y: number }>())
   const pinchRef = useRef<{ d: number } | null>(null)
@@ -1621,8 +1659,59 @@ export function V3Atlas({
       </ul>
     ) : null
 
+  const childSelect =
+    childRegions.length > 0 ? (
+      <div
+        className="v3-atlas__chips"
+        role="group"
+        aria-label="Places inside this outline"
+        data-atlas-child-select="1"
+      >
+        <button
+          type="button"
+          className={cn('v3-atlas__chip', pickedChildId == null && 'is-active')}
+          aria-pressed={pickedChildId == null}
+          onClick={() => setPickedChildId(null)}
+        >
+          <span className="v3-atlas__chip-name">
+            {regions.find((r) => r.kind === 'town')?.name ?? 'This place'}
+          </span>
+        </button>
+        {childRegions.map((child) => (
+          <button
+            key={child.id}
+            type="button"
+            className={cn('v3-atlas__chip', pickedChildId === child.id && 'is-active')}
+            aria-pressed={pickedChildId === child.id}
+            onClick={() => setPickedChildId(child.id)}
+          >
+            <span className="v3-atlas__chip-name">{child.name}</span>
+          </button>
+        ))}
+      </div>
+    ) : null
+
+  const firstLookPhotos =
+    photoCards.length > 0 ? (
+      <ul className="v3-atlas__photos" data-atlas-first-look="photos" aria-label="Homes on this map">
+        {photoCards.map((home) => (
+          <li key={home.href} className="v3-atlas__photo">
+            <Link href={home.href} className="v3-atlas__photo-link">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="v3-atlas__photo-img" src={home.photo} alt="" />
+              <span className="v3-atlas__photo-meta">
+                {home.price ? <strong className="v3-atlas__photo-price">{home.price}</strong> : null}
+                <span className="v3-atlas__photo-street">{home.street}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    ) : null
+
   const dock = (
     <div className="v3-atlas__dock">
+      {childSelect}
       {heat.cells.length > 0 ? (
         <div
           className="v3-atlas__sales-legend"
@@ -1707,6 +1796,8 @@ export function V3Atlas({
       /* The linked mark's state, on the section, so a sibling list and a test
          can both read what the map is pointing at without walking the SVG. */
       data-atlas-linked={linkedIndex != null ? (linkedKey ?? undefined) : undefined}
+      data-atlas-hierarchy={childRegions.length > 0 ? 'child-select' : 'subject'}
+      data-atlas-frame-pad={String(paintPad)}
     >
       <div className="v3-atlas__grid">
         {/* The head: the H1 and the claim. On a phone the map follows at once. */}
@@ -1904,7 +1995,8 @@ export function V3Atlas({
                     <path
                       key={s.id}
                       d={s.d}
-                      className={cn('v3-atlas__town', active === s.id && 'is-active')}
+                      className={cn('v3-atlas__town', 'is-subject', active === s.id && 'is-active')}
+                      data-atlas-subject={s.id}
                       onPointerEnter={() => setHover(s.id)}
                       onClick={(e) => {
                         if (dotHit != null && dots[dotHit]?.href) {
@@ -2231,7 +2323,7 @@ export function V3Atlas({
                 round five, LISTING-BEND-1). */}
             {card}
           </div>
-
+          {firstLookPhotos}
         </div>
 
         {/* The legend: type toggles and the price scrubber. Under the map on a
@@ -2252,12 +2344,11 @@ export function V3Atlas({
             </ul>
           ) : null}
           {children ? <div className="v3-atlas__search">{children}</div> : null}
-          {/* Every place as a door, under the search: on a phone because the
-              silhouettes are too small to tap, on a desktop because this
-              column was otherwise empty beside a map full of unnamed shapes
-              (evaluator round five, TEAM-MATT-5). It sits AFTER the search so
-              it fills the column rather than pushing the search off screen. */}
-          {chipPlaces.length > 0 ? (
+          {/* Place doors stay in the aside when this fold is not a child-
+              select grain. Child plats select from the dock so city /
+              community / neighborhood folds (which hide this column) still
+              zoom one recorded ring. */}
+          {childSelect ? null : chipPlaces.length > 0 ? (
             /* Wrapped at every width; a set past the fold shows its first
                chips and one trailing "+ N more" chip that opens the rest
                (aria-expanded, aria-controls). The rest is two wrappers so the

@@ -217,6 +217,15 @@
   align-self: start;
 }
 
+/* Compass / Zillow first-look: map + photo prices in one viewport. */
+@media (min-width: 64rem) {
+  .v3-atlas__body:has([data-atlas-first-look='photos']) {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
+    gap: var(--v3-space-sm);
+    align-items: stretch;
+  }
+}
+
 .v3-atlas__frame {
   position: relative;
   min-width: 0;
@@ -954,6 +963,14 @@
   vector-effect: non-scaling-stroke;
   cursor: pointer;
   transition: fill var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* SITE-128 rematch: one subject outline fills the frame (Compass thick ring). */
+.v3-atlas__town.is-subject {
+  fill: color-mix(in srgb, var(--v3-navy) 10%, transparent);
+  stroke: var(--v3-navy);
+  stroke-width: 3.6px;
+  stroke-linejoin: round;
 }
 
 .v3-atlas__town:hover,
@@ -1717,6 +1734,57 @@ a.v3-atlas__card-home {
   .v3-atlas.is-stacked .v3-atlas__stage {
     max-height: min(70vh, 44rem);
   }
+}
+
+.v3-atlas__photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--v3-space-2xs);
+  list-style: none;
+  margin: var(--v3-space-xs) 0 0;
+  padding: 0;
+  align-content: start;
+}
+
+@media (min-width: 64rem) {
+  .v3-atlas__body:has([data-atlas-first-look='photos']) .v3-atlas__photos {
+    grid-template-columns: 1fr;
+    margin: 0;
+    max-height: min(68vh, 40rem);
+    overflow: auto;
+  }
+}
+
+.v3-atlas__photo-link {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  color: inherit;
+  text-decoration: none;
+}
+
+.v3-atlas__photo-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--v3-navy);
+}
+
+.v3-atlas__photo-meta {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.v3-atlas__photo-price {
+  font-family: var(--v3-font-sans);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-navy);
+}
+
+.v3-atlas__photo-street {
+  font-size: var(--v3-size-body-sm);
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
 }
 
 /* A door under the map's aside: the same underline every door wears. */

@@ -206,10 +206,16 @@
    scrubber is off (SITE-128, community/sub lock). */
 .nbh-fold__drawing .v3-atlas__key,
 .nbh-fold__drawing .v3-atlas__sales-legend,
-.nbh-fold__drawing .v3-atlas__chips,
+.nbh-fold__drawing .v3-atlas__chips:not([data-atlas-child-select]),
 .nbh-fold__drawing .v3-atlas__search,
 .nbh-fold__drawing .v3-atlas__events {
   display: none;
+}
+
+.nbh-fold__drawing .v3-atlas__chips[data-atlas-child-select] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
 }
 
 /* THE LIVE RAIL STAYS, which is where this fold parts company with the city's

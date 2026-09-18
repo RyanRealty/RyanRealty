@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { isVerifiedRegistryChild } from './registry'
+import { getResortCommunityBySubdivisionName, isVerifiedRegistryChild } from './registry'
+
+describe('getResortCommunityBySubdivisionName', () => {
+  it('resolves Golf Homes At Tetherow to Tetherow without inventing an alias', () => {
+    expect(getResortCommunityBySubdivisionName('Golf Homes At Tetherow')?.slug).toBe('tetherow')
+    expect(getResortCommunityBySubdivisionName('golf-homes-at-tetherow')?.slug).toBe('tetherow')
+    expect(getResortCommunityBySubdivisionName('Tetherow')?.slug).toBe('tetherow')
+  })
+})
 
 describe('isVerifiedRegistryChild', () => {
   it('is true only for a named registry child, not a sibling resort', () => {

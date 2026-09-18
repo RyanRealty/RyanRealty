@@ -109,6 +109,7 @@ import { getPlaceOpeningListings } from '@/lib/data'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
+import { photoCardsFromOpening, SUBJECT_FRAME_PAD } from '@/lib/atlas/map-hierarchy'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -917,11 +918,13 @@ async function renderCommunityDetail({ params }: Props) {
                 sourceName="Oregon Data Share"
                 dots={atlasView.dots}
                 regions={foldAtlasRegions}
+                childRegions={platRegions}
+                {...(mapPolygon ? { frame: mapPolygon, framePad: SUBJECT_FRAME_PAD } : { fit: 'dots' as const })}
+                photoCards={photoCardsFromOpening(openingListings)}
                 basemap={basemapForRegions(foldAtlasRegions, {
                   dots: atlasView.dots,
-                  fit: 'dots',
+                  fit: mapPolygon ? 'regions' : 'dots',
                 })}
-                fit="dots"
                 types={atlasView.types}
                 events={atlasView.events}
                 source={atlasView.source}

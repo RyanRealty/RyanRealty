@@ -288,7 +288,7 @@ describe('listing remainder composition', () => {
     expect(PARITY.foldDensity?.gate).toBe('ci:listing-fold-density')
     expect(PARITY.foldDensity?.crumbCollapseAt).toBe(3)
     expect(PARITY.foldDensity?.crumbOverlayOnListing).toBe(true)
-    expect(PARITY.foldDensity?.overlayCompactOnListing).toBe(true)
+    expect(PARITY.foldDensity?.overlayCompactOnListing).toBe(false)
     expect(PARITY.foldDensity?.mosaicHeightUsesViewport).toBe(true)
     expect(PAGE).toMatch(/<V3Breadcrumb trail=\{breadcrumbs\} tone="on-media" overlay \/>/)
   })

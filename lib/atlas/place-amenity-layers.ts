@@ -16,7 +16,13 @@
 
 import { CO_PARKS, type CoPark } from '@/data/co-parks'
 import { CO_TRAILS, type CoTrail } from '@/data/co-trails'
-import { outerRings, pointInRings } from '@/lib/geo/project-svg'
+import {
+  bboxOfRings,
+  lineStringParts,
+  outerRings,
+  pointInRings,
+  type Bbox,
+} from '@/lib/geo/project-svg'
 
 export type PlaceAmenityGrain = 'city' | 'neighborhood' | 'community' | 'subdivision'
 
@@ -113,6 +119,65 @@ export function amenityInsidePlace(
   return pointInRings(lon, lat, outerRings(placeGeometry))
 }
 
+function bboxesOverlap(a: Bbox, b: Bbox): boolean {
+  return a.minLon <= b.maxLon && a.maxLon >= b.minLon && a.minLat <= b.maxLat && a.maxLat >= b.minLat
+}
+
+/** Held amenity geom overlapping the place ring. Never buffers or invents. */
+export function amenityGeomOverlapsPlace(
+  amenityGeometry: GeoJSON.Geometry | null | undefined,
+  placeGeometry: GeoJSON.Geometry | null | undefined,
+): boolean {
+  if (!amenityGeometry || !placeGeometry) return false
+  const placeRings = outerRings(placeGeometry)
+  const placeBox = bboxOfRings(placeRings)
+  if (!placeBox) return false
+
+  if (amenityGeometry.type === 'LineString' || amenityGeometry.type === 'MultiLineString') {
+    for (const part of lineStringParts(amenityGeometry)) {
+      for (const [lon, lat] of part) {
+        if (
+          lon >= placeBox.minLon &&
+          lon <= placeBox.maxLon &&
+          lat >= placeBox.minLat &&
+          lat <= placeBox.maxLat &&
+          pointInRings(lon, lat, placeRings)
+        ) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  const amenityRings = outerRings(amenityGeometry)
+  const amenityBox = bboxOfRings(amenityRings)
+  if (!amenityBox || !bboxesOverlap(amenityBox, placeBox)) return false
+  for (const ring of amenityRings) {
+    for (const [lon, lat] of ring) {
+      if (pointInRings(lon, lat, placeRings)) return true
+    }
+  }
+  for (const ring of placeRings) {
+    for (const [lon, lat] of ring) {
+      if (pointInRings(lon, lat, amenityRings)) return true
+    }
+  }
+  return false
+}
+
+function localAmenityHitsPlace(
+  lon: number | null | undefined,
+  lat: number | null | undefined,
+  amenityGeometry: GeoJSON.Geometry | null | undefined,
+  placeGeometry: GeoJSON.Geometry | null | undefined,
+): boolean {
+  if (typeof lon === 'number' && typeof lat === 'number' && amenityInsidePlace(lon, lat, placeGeometry)) {
+    return true
+  }
+  return amenityGeomOverlapsPlace(amenityGeometry, placeGeometry)
+}
+
 export function selectParkCandidates(input: {
   grain: PlaceAmenityGrain
   cityName: string
@@ -154,7 +219,8 @@ export function parksNeedingGeom(input: {
   if (local && !placeGeometry) return []
   return selectParkCandidates(input).filter((park) => {
     if (!park.hasPolygon) return false
-    if (local && !amenityInsidePlace(park.lng, park.lat, placeGeometry)) return false
+    // Local grain fetches held city park polygons, then assemble keeps
+    // centroid-in-ring OR recorded-geom overlap. Do not invent a ring.
     return true
   })
 }
@@ -174,8 +240,8 @@ export function trailsNeedingGeom(input: {
     const communityHit = Boolean(communitySlug && trail.communitySlug?.trim() === communitySlug)
     if (local && !communityHit) {
       if (!placeGeometry) return false
-      if (typeof trail.lng !== 'number' || typeof trail.lat !== 'number') return false
-      if (!amenityInsidePlace(trail.lng, trail.lat, placeGeometry)) return false
+      // Fetch held trail lines for this city; assemble drops those whose
+      // recorded line does not meet the place ring.
     }
     return true
   })
@@ -224,13 +290,13 @@ export function assembleAmenityLayers(input: {
       omitted.push(omit('park', park.slug, park.name, 'no-polygon-flag'))
       continue
     }
-    if (local && !amenityInsidePlace(park.lng, park.lat, placeGeometry)) {
-      omitted.push(omit('park', park.slug, park.name, 'outside-place'))
-      continue
-    }
     const geometry = input.parkGeom.get(park.slug)
     if (!isParkPolygon(geometry)) {
       omitted.push(omit('park', park.slug, park.name, 'geom-missing'))
+      continue
+    }
+    if (local && !localAmenityHitsPlace(park.lng, park.lat, geometry, placeGeometry)) {
+      omitted.push(omit('park', park.slug, park.name, 'outside-place'))
       continue
     }
     if (parks.length >= parkCap) {
@@ -250,24 +316,25 @@ export function assembleAmenityLayers(input: {
   for (const trail of selectTrailCandidates(input)) {
     const communityHit = Boolean(communitySlug && trail.communitySlug?.trim() === communitySlug)
     const hasAnchor = typeof trail.lng === 'number' && typeof trail.lat === 'number'
+    const geometry = input.trailGeom.get(trail.slug)
+    if (!isTrailLine(geometry)) {
+      omitted.push(omit('trail', trail.slug, trail.name, 'geom-missing'))
+      continue
+    }
     if (local && !communityHit) {
       if (!placeGeometry) {
         omitted.push(omit('trail', trail.slug, trail.name, 'no-place-ring'))
         continue
       }
-      if (!hasAnchor) {
-        omitted.push(omit('trail', trail.slug, trail.name, 'no-anchor'))
+      if (!localAmenityHitsPlace(
+        hasAnchor ? (trail.lng as number) : null,
+        hasAnchor ? (trail.lat as number) : null,
+        geometry,
+        placeGeometry,
+      )) {
+        omitted.push(omit('trail', trail.slug, trail.name, hasAnchor ? 'outside-place' : 'no-anchor'))
         continue
       }
-      if (!amenityInsidePlace(trail.lng as number, trail.lat as number, placeGeometry)) {
-        omitted.push(omit('trail', trail.slug, trail.name, 'outside-place'))
-        continue
-      }
-    }
-    const geometry = input.trailGeom.get(trail.slug)
-    if (!isTrailLine(geometry)) {
-      omitted.push(omit('trail', trail.slug, trail.name, 'geom-missing'))
-      continue
     }
     if (trails.length >= trailCap) {
       omitted.push(omit('trail', trail.slug, trail.name, 'cap'))

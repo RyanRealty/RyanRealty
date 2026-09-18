@@ -36,9 +36,10 @@ type ResortEntry = {
  */
 export function resolveRegistryAlias(slug: string): RegistryMatch | null {
   const communities = (resortCommunitiesData as { communities: ResortEntry[] }).communities
+  const incoming = slugify(slug)
   for (const entry of communities) {
     for (const alias of entry.subdivision_aliases) {
-      if (slugify(alias) === slug) {
+      if (slugify(alias) === incoming) {
         return {
           canonicalName: alias,
           resortSlug: entry.slug,
@@ -46,6 +47,18 @@ export function resolveRegistryAlias(slug: string): RegistryMatch | null {
           city: entry.city,
           citySlug: entry.city_slug,
         }
+      }
+    }
+  }
+  // Contained plat: golf-homes-at-tetherow → Tetherow. Not an MLS alias.
+  for (const entry of communities) {
+    if (incoming.endsWith(`-at-${entry.slug}`) && incoming !== entry.slug) {
+      return {
+        canonicalName: slugToTitle(incoming),
+        resortSlug: entry.slug,
+        resortLabel: entry.label,
+        city: entry.city,
+        citySlug: entry.city_slug,
       }
     }
   }

@@ -528,6 +528,7 @@ export type {
   AtlasAmenityLayers,
   AtlasAmenityPark,
   AtlasAmenityTrail,
+  AtlasPhotoCard,
 } from './V3Atlas.client'
 export type { V3Door, V3DoorsProps } from './V3Doors'
 
