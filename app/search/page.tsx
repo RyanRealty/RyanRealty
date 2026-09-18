@@ -31,6 +31,7 @@ import {
   V3_FOOTER_COLUMNS,
 } from '@/components/site/v3'
 import SearchRootJsonLd from './SearchRootJsonLd'
+import { SEARCH_CATALOG_READY } from './_v3/search-catalog'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -463,7 +464,10 @@ export default async function SearchPage({
     />
     {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
         (THE LOOK, PUBLIC_UI.md section 6). */}
-    <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
+    <main
+      data-search-catalog={SEARCH_CATALOG_READY ? '1' : '0'}
+      className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}
+    >
     {/* Dynamic page: the request's query seeds the static-safe URL store the
         filter tree reads (SITE-29), so the chips are in the HTML as before. */}
     <UrlSearchParamsProvider search={queryStringFromSearchParams(sp)}>

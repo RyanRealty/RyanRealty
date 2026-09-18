@@ -56,6 +56,7 @@ import { countSearchListings } from '@/app/actions/search'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -710,6 +711,10 @@ export default function AllFiltersSheet({
       ? `Show ${applyPublished.phrase}`
       : 'Apply filters'
 
+  const featuredBooleans = SEARCH_FIELDS.filter((f) =>
+    f.kind === 'boolean' && ['priceReduced', 'hasFireplace', 'hasPool', 'hasView'].includes(f.key),
+  )
+
   const visibleCategories = SEARCH_FIELD_CATEGORIES.map(({ id, label }) => ({
     id,
     label,
@@ -807,6 +812,49 @@ export default function AllFiltersSheet({
             screen (the 2026-07-11 audit hit the same defect in the old sheet). */}
         <ScrollArea className="min-h-0 flex-1 px-4 py-4">
           <div className="flex flex-col gap-5">
+            {featuredBooleans.length > 0 && (
+              <section className="flex flex-col gap-3">
+                <p className="srch-label">Conditions</p>
+                <FieldGroup data-slot="checkbox-group" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {featuredBooleans.map((def) => {
+                    const meta = conditionBoolean(def.key, artifact, classes, draft[def.key] === '1')
+                    const zeroDisabled = meta.count === 0 && !meta.selected
+                    const id = `srch-bool-featured-${def.key}`
+                    const disabled = fieldDisabled(def) || zeroDisabled
+                    return (
+                      <Field
+                        key={def.key}
+                        orientation="horizontal"
+                        data-disabled={disabled || undefined}
+                        className={cn(disabled && 'opacity-50')}
+                      >
+                        <Checkbox
+                          id={id}
+                          checked={meta.selected}
+                          disabled={disabled}
+                          onCheckedChange={(v) => setParam(def.key, v === true ? '1' : undefined)}
+                          aria-label={
+                            meta.count === 0
+                              ? `${def.label}, ${zeroReasonLabel(scopeLabel)}`
+                              : def.label
+                          }
+                        />
+                        <FieldLabel
+                          htmlFor={id}
+                          className={cn(
+                            'min-h-11 min-w-0 flex-1 whitespace-normal break-words font-normal',
+                            meta.suspended && 'line-through decoration-2',
+                            disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                          )}
+                        >
+                          {def.label}
+                        </FieldLabel>
+                      </Field>
+                    )
+                  })}
+                </FieldGroup>
+              </section>
+            )}
             {visibleCategories.map(({ id, label, fields }, index) => {
               const ranges = fields.filter((f) => f.kind === 'range')
               const booleans = fields.filter((f) => f.kind === 'boolean')
@@ -829,24 +877,24 @@ export default function AllFiltersSheet({
                         />
                       </div>
                     ))}
-                    {booleans.length > 0 && (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        {booleans.map((def) => {
+                    {booleans.filter((def) => !featuredBooleans.some((f) => f.key === def.key)).length > 0 && (
+                      <FieldGroup data-slot="checkbox-group" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {booleans.filter((def) => !featuredBooleans.some((f) => f.key === def.key)).map((def) => {
                           const meta = conditionBoolean(def.key, artifact, classes, draft[def.key] === '1')
                           const zeroDisabled = meta.count === 0 && !meta.selected
+                          const id = `srch-bool-${def.key}`
+                          const disabled = fieldDisabled(def) || zeroDisabled
                           return (
-                            <Label
+                            <Field
                               key={def.key}
-                              className={cn(
-                                'flex min-w-0 items-start gap-2',
-                                fieldDisabled(def) || zeroDisabled
-                                  ? 'cursor-not-allowed opacity-50'
-                                  : 'cursor-pointer'
-                              )}
+                              orientation="horizontal"
+                              data-disabled={disabled || undefined}
+                              className={cn(disabled && 'opacity-50')}
                             >
                               <Checkbox
+                                id={id}
                                 checked={meta.selected}
-                                disabled={fieldDisabled(def) || zeroDisabled}
+                                disabled={disabled}
                                 onCheckedChange={(v) => setParam(def.key, v === true ? '1' : undefined)}
                                 aria-label={
                                   meta.count === 0
@@ -854,21 +902,20 @@ export default function AllFiltersSheet({
                                     : def.label
                                 }
                               />
-                              <span
+                              <FieldLabel
+                                htmlFor={id}
                                 className={cn(
-                                  'min-w-0 whitespace-normal break-words text-sm text-foreground',
-                                  meta.suspended && 'line-through decoration-2'
+                                  'min-h-11 min-w-0 flex-1 whitespace-normal break-words font-normal',
+                                  meta.suspended && 'line-through decoration-2',
+                                  disabled ? 'cursor-not-allowed' : 'cursor-pointer',
                                 )}
                               >
                                 {def.label}
-                              </span>
-                              {meta.count === 0 && (
-                                <span className="text-xs tabular-nums text-muted-foreground">0</span>
-                              )}
-                            </Label>
+                              </FieldLabel>
+                            </Field>
                           )
                         })}
-                      </div>
+                      </FieldGroup>
                     )}
                     {multis.map((def) =>
                       def.key === 'propertySubTypes' ? (

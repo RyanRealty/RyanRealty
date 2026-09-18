@@ -286,8 +286,10 @@ describe('homepage hero search uses the public search stack', () => {
     expect(morph).toContain('.v3 .v3-morph-search__go')
     expect(morph).toContain('background: var(--v3-ink)')
     expect(morph).toContain('color: var(--v3-ink-on-navy)')
-    expect(morph).toContain("[data-v3-morph='trigger']")
-    expect(morph).toContain('backdrop-filter: none')
+    expect(morph).not.toContain('backdrop-filter: none')
+    expect(readFileSync(resolve('components/motion/morphing-search.tsx'), 'utf8')).toContain(
+      'backdrop-blur-xl',
+    )
   })
 })
 
