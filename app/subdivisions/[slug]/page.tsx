@@ -629,7 +629,7 @@ async function renderSubdivisionPage({ params }: Props) {
       grain: 'subdivision',
       placeSlug: slug,
       cityName: placeCity ?? '',
-      citySlug,
+      citySlug: citySlug ?? undefined,
       placeGeometry: platPolygon ?? null,
     }),
     EMPTY_PLACE_AMENITY_LAYERS,
