@@ -1,0 +1,24 @@
+{
+  "kind": "place-craft",
+  "id": "site-128-place-craft",
+  "lockedAt": "2026-09-18",
+  "lock": "Matt LOCK via Cos 2026-09-18",
+  "locks": ["map-drives-hierarchy", "competitor-first-look"],
+  "gate": "ci:place-craft",
+  "ship": "node scripts/lib/taste-receipt.mjs --ship lib/place/place-craft.parity.json",
+  "evidencePath": {
+    "mapDrivesHierarchy": "Source lock on city / neighborhood / community / subdivision. Atlas regions (and GIS ring on plats) drive child places. No getIndexableSubdivisions dump. No \"Subdivisions in …\" heading above neighborhood bars. Held by ci:place-craft and by --ship.",
+    "competitorFirstLook": {
+      "required": true,
+      "field": "competitorFirstLook on this file (or tasteReview.competitorFirstLook)",
+      "peer": "Named peer — Redfin or a Bend competitor place page. Placeholder \"competitor\" / \"peer\" / \"tbd\" is refuse.",
+      "peerUrl": "Optional http(s) URL of that page.",
+      "shots": "side-by-side image, OR sequential ours + peer images (or shots.sequence of 2+). Files must exist on disk. One lonely house shot is refuse.",
+      "omit": "refuse — Cos prose is not Tip Ready. If Matt has to re-explain beat competitors, we failed."
+    }
+  },
+  "testFiles": [
+    "scripts/__tests__/place-craft.test.mjs",
+    "lib/explore/place-hierarchy-crumb.test.ts"
+  ]
+}

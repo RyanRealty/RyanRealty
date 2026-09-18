@@ -11,6 +11,8 @@ description: Run the site queue until it is empty. Pull every eligible SITE node
 
 Demos install BEFORE house paint. Tip Ready = `node scripts/lib/taste-receipt.mjs --ship <parity.json>` exit 0 only. House patch after `demoMatch: false` is FORBIDDEN — install the named `replaceWith` catalog source. Cos prose, score rise, and house chrome (V3Doors, cream pills, custom stacks) are not Tip Ready.
 
+**Place craft (SITE-128 explorer, Matt LOCK via Cos 2026-09-18):** `--ship lib/place/place-craft.parity.json` is refuse unless evidence includes (1) competitor first-look — named peer (Redfin or a Bend competitor place page) + side-by-side or sequential shots on disk proving we do not lose on first look, and (2) map-drives-hierarchy still locked (`ci:place-craft`). Omit is refuse. If Matt has to re-explain “beat competitors,” we failed. Gate only — do not invent place UI to clear the refuse.
+
 # /site-queue — the site is done when this queue is empty
 
 Matt, 2026-09-07: "I want the go to run until done, not do a loop and stop." This
