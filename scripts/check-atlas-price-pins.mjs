@@ -112,6 +112,16 @@ for (const page of PLACE_PAGES) {
   }
 }
 
+const cityPage = readFileSync('app/cities/[slug]/page.tsx', 'utf8')
+for (const needle of ['clusterPins', 'ATLAS_PIN_CLUSTER_CELL_PX', 'CITY_FOLD_CLUSTER_STAGE']) {
+  if (!cityPage.includes(needle)) {
+    failures.push(`app/cities/[slug]/page.tsx must pass ${needle} so the city fold, not only the lib, drives clusters`)
+  }
+}
+if (!clusterSrc.includes('CITY_FOLD_CLUSTER_STAGE')) {
+  failures.push(`${CLUSTER} must export CITY_FOLD_CLUSTER_STAGE for the city fold first paint`)
+}
+
 if (failures.length) {
   console.error('ci:atlas-price-pins FAILED\n')
   for (const f of failures) console.error(`  • ${f}`)

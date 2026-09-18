@@ -1,8 +1,9 @@
-# Current — 2026-09-18 (SITE-128 residual — city grid clusters)
+# Current — 2026-09-18 (SITE-128 residual — city fold drives clusters)
 
-Surface: Cursor cloud, branch `cursor/site-128-city-grid-clusters-dd0c`. Tip `08916fb1e`. Draft PR #293. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-city-grid-clusters-dd0c`. Draft PR #293. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
-- **SITE-128 residual.** Live `/cities/bend` after `bd25af464` painted one `759` bubble (union-find @ 40px chained the letterboxed fold). Grid cells (64px) replace that: many navy count bubbles, densest ~42; Old Bend / Tetherow spaced pills stay pills. City fold path still mounts `V3Atlas` → `clusterAtlasPins`.
+- **Prior land miss.** `bd25af464` DID call `clusterAtlasPins` inside V3Atlas, but (1) union-find @ 40px made one 759 blob, (2) SSR `view` was null so first HTML was 759 SVG house dots / 0 bubbles — Cos counted those dots as pills. City page never named the cluster props.
+- **This tip.** City fold passes `clusterPins` + `clusterCellPx` + `clusterStageHint={CITY_FOLD_CLUSTER_STAGE}`. Grid @ 64px. Pin-eligible SVG dots omitted. Old Bend / Tetherow omit the stage hint.
 - **Not this pass.** SITE-129, SITE-130, SITE-131. Tetherow / DRW map CSS not touched.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 
