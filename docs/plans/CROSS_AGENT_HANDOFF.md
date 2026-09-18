@@ -1,10 +1,20 @@
+# Current — 2026-09-18 (SITE-128 Tip Ready #2 rematch — map hierarchy lock)
+
+Surface: Cursor cloud `bc-e1f596a2-a544-5f74-9d76-8b562ab3519f`, branch `cursor/site-128-map-hierarchy-lock-519f`. Tip SHA `09239cb31`. PR https://github.com/RyanRealty/RyanRealty/pull/309. Rematch of `daadcfba9` / PR #308 onto first-look-landed `origin/main` `5f0d2a1cb` (e788894f4 → 6bd09fb32 → 5f0d2a1cb). Cherry-pick of `daadcfba9` was not clean (nbhd fold + handoff). This rematch commit should cherry-pick clean onto `5f0d2a1cb`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look. Do not land #308.
+
+- **Highlight.** Nbhd/community Atlas + Split paint THAT recorded subject ring. Child plats are hit-only until selected. No subject geom (Tetherow/Juniper) → no highlight. Do not invent rings. Old Bend FAIL was town||neighborhood = 20 plats.
+- **Child zoom.** Overlay / Atlas child click fits THAT recorded bbox (`childZoomBounds` / `fitCamToShape`). Listing pins stay listing clicks. Homepage cities are not children (`hierarchyChildIdSet`).
+- **Subdiv.** `subjectGrain` + `atlasFramePad(0.1)` + 2.8px navy so DRW fills the frame.
+- **Conflict resolve.** Kept landed first-look fold (`V3PlaceLook` + `#place-look` section order). Hierarchy lock applies to later `#atlas` (`subjectAtlasRegions` + `childRegions`) and Split/SearchMap child zoom. `ci:place-craft` first-look evidence stays on main.
+- **#1 refuse.** `--ship place-craft.parity.json` still requires named-peer first-look shots (now present on main). `--ship map-hierarchy.parity.json` ships.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-18 (SITE-128 first-look CI clear — page-purpose + wired)
 
-Surface: Cursor cloud, branch `cursor/site-128-first-look-ci-ec30`. Fix tip ON TOP of `ac8ddac28` (first-look already on `5d8a0f874`). PR only — Cos Mini lands. Do not merge. HOLD owner email. No geom invent.
+Surface: Cursor cloud, branch `cursor/site-128-first-look-ci-ec30`. Fix tip ON TOP of `ac8ddac28` (first-look already on `5d8a0f874`). Landed on `origin/main` `5f0d2a1cb`. HOLD owner email. No geom invent.
 
 - **ci:page-purpose.** City + neighborhood `sectionOrder` now matches the first-look fold: `#place-look` then slider / Split / peers / alerts / `#homes`, then `#atlas` later.
 - **ci:site-primitive-wired.** `V3PlaceLookMap` recorded as SITE-128 sub-primitive of wired `V3PlaceLook` (same shape as `V3ChartHover`).
-- **Cherry-pick.** After `4f7364785` + `ac8ddac28`, take this tip SHA. Both gates pass locally.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
 
 # Current — 2026-09-18 (ISR spend cut — place/home 300 → 900)

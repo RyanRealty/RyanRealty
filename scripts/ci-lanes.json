@@ -33,6 +33,7 @@
     "ci:listing-fold-density",
     "ci:listing-keep-exploring",
     "ci:place-craft",
+    "ci:map-hierarchy",
     "ci:listing-key-lookup",
     "ci:listing-offmarket-index",
     "ci:listing-photo-alt",
@@ -1344,6 +1345,19 @@
       "lib/explore/nearby-place-peers.ts",
       "scripts/check-place-craft.mjs",
       "scripts/lib/place-craft.mjs",
+      "scripts/lib/taste-receipt.mjs"
+    ],
+    "ci:map-hierarchy": [
+      "app/communities/**",
+      "app/cities/**",
+      "app/subdivisions/**",
+      "components/site/v3/V3Atlas.client.tsx",
+      "components/site/v3/V3Atlas.css",
+      "components/SearchMapClustered.tsx",
+      "lib/place/map-hierarchy.ts",
+      "lib/place/map-hierarchy.parity.json",
+      "scripts/check-map-hierarchy.mjs",
+      "scripts/lib/map-hierarchy.mjs",
       "scripts/lib/taste-receipt.mjs"
     ],
     "ci:rubric-freeze": [

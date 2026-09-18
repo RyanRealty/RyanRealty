@@ -70,9 +70,9 @@ export async function PlaceSplitView(props: {
   /** When false, do not fit the camera to an untrusted hull. */
   seedRing?: boolean
   /**
-   * Subordinate boundary cells drawn inside the main ring — a community's
-   * recorded plats, each a door to its own place page. County-GIS geometry
-   * only; the map draws them lighter than the seed ring.
+   * Child GIS plats for select → zoom. The map highlights the subject ring
+   * only; picking a cell fits THAT recorded boundary. County-GIS geometry
+   * only — do not invent rings.
    */
   overlayBoundaries?: Array<{
     label: string
