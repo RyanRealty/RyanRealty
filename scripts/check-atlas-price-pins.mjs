@@ -6,12 +6,15 @@
  * (and pending) mark on a city / neighborhood / community / subdivision map
  * must read as a short price (735K / $1.5M) and hover must blow up the home
  * (photo + ask). This gate runs the pin formatter and asserts the primitive
- * plus the four place pages still wire it. Silent dots cannot regress.
+ * plus the four place pages still wire it. SITE-128 residual: overlapping
+ * pills must cluster (clusterAtlasPins) so a city fold is not one pile.
+ * Silent dots cannot regress.
  */
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 
 const CONTRACT = 'lib/atlas/pin-price.ts'
+const CLUSTER = 'lib/atlas/cluster-pins.ts'
 const ATLAS = 'components/site/v3/V3Atlas.client.tsx'
 const BUILDER = 'lib/atlas/build-place-atlas.ts'
 const TILES = 'lib/data/listings/getAtlasTiles.ts'
@@ -46,12 +49,36 @@ expect('$1M', formatAtlasPinPrice(1_000_000), '$1M')
 expect('active paints', atlasPinShouldPaint({ s: 'active', p: 735_000 }), true)
 expect('sold silent', atlasPinShouldPaint({ s: 'sold', p: 735_000 }), false)
 
+const clusterSrc = readFileSync(CLUSTER, 'utf8')
+if (/^\s*import\s/m.test(clusterSrc)) {
+  failures.push(`${CLUSTER} must stay import-free — this gate transpiles and executes it.`)
+}
+const clusterJs = ts.transpileModule(clusterSrc, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+}).outputText
+const clusterMod = await import(`data:text/javascript;base64,${Buffer.from(clusterJs).toString('base64')}`)
+const { clusterAtlasPins } = clusterMod
+const piled = clusterAtlasPins(
+  [
+    { i: 0, x: 100, y: 100 },
+    { i: 1, x: 108, y: 104 },
+    { i: 2, x: 400, y: 300 },
+  ],
+  40,
+)
+expect('pile collapses', piled.length, 2)
+expect('pile count', piled[0]?.count, 2)
+expect('spaced pin stays', piled[1]?.count, 1)
+
 const atlas = readFileSync(ATLAS, 'utf8')
 for (const needle of [
   'formatAtlasPinPrice',
   'atlasPinShouldPaint',
+  'clusterAtlasPins',
   'v3-atlas__pin',
   'data-atlas-pin-price',
+  'data-atlas-cluster',
+  'data-atlas-pin-layer',
   'v3-atlas__home',
   'data-atlas-home',
   'v3-atlas__home-photo',
@@ -89,4 +116,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  • ${f}`)
   process.exit(1)
 }
-console.log('ci:atlas-price-pins OK — pins 735K/$1.5M, hover home, four place pages wired')
+console.log('ci:atlas-price-pins OK — pins 735K/$1.5M, hover home, clusters, four place pages wired')
