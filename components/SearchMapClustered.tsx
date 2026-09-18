@@ -29,6 +29,7 @@ import {
   V3_CLUSTER_MAX_ZOOM,
   V3_CLUSTER_RADIUS_PX,
   v3FitPadding,
+  v3SubjectRingPadding,
 } from '@/lib/maps/v3-basemap'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import './search/search-map-marks.css'
@@ -197,6 +198,18 @@ type Props = {
   lockBounds?: boolean
   /** After a mobile list→map layout, trigger Maps resize. Does not refit pins. */
   relayoutKey?: string | number
+  /**
+   * Place first-look: paint $ pills on the one ring. City-zoom SuperCluster
+   * of a 240-cap pile collapsed into one count bubble (Bend phone FAIL).
+   * Search keeps clustering.
+   */
+  disableClustering?: boolean
+  /**
+   * Place first-look: fit the recorded subject ring only. Unioning 240 pins
+   * with the city polygon opened Bend at z≈8 so the ring was a speck under
+   * the count bubble. Search keeps the pin∪ring frame.
+   */
+  fitSubjectRing?: boolean
 }
 
 /**
@@ -820,7 +833,14 @@ export default function SearchMapClustered({
   initialBounds = null,
   lockBounds = false,
   relayoutKey,
+  disableClustering = false,
+  fitSubjectRing = false,
 }: Props) {
+  // BEM `v3-place-look__map-canvas` — `\b` after look fails because `_` is a
+  // word char, which left a 360px minHeight under the 10.5rem phone island
+  // and clipped the ring + $ pins into the hidden bottom of the canvas.
+  const fillIsland = /v3-place-look/.test(className)
+  const islandMinHeight = fillIsland ? 0 : 360
   // Multi-shape mode (Phase 2 draw tools) replaces the legacy single-polygon UI.
   const multiShape = onShapesChange != null
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -1111,6 +1131,23 @@ export default function SearchMapClustered({
         }
       }
 
+      // Place first-look: the recorded subject ring fills the island. Do not
+      // union every pin — that is the z≈8 speck under the 240-count bubble.
+      if (fitSubjectRing && boundaryPaths.flat().length >= 2) {
+        const ring = new google.maps.LatLngBounds()
+        for (const path of boundaryPaths) for (const p of path) ring.extend(p)
+        if (!ring.isEmpty()) {
+          map.fitBounds(ring, v3SubjectRingPadding(map.getDiv()))
+          google.maps.event.addListenerOnce(map, 'idle', () => {
+            const z = map.getZoom()
+            // Do not clamp UP. A min-z of 11 on a 10.5rem phone island
+            // crops the city ring off the fold (SITE-128 paint rematch).
+            if (typeof z === 'number' && z > 14) map.setZoom(14)
+          })
+          return
+        }
+      }
+
       // Preferred frame: the city/neighborhood/community boundary polygon AND
       // every home this view is about to draw, so the map opens on that area's
       // true extent instead of a fixed zoom or a bare bbox.
@@ -1168,7 +1205,7 @@ export default function SearchMapClustered({
       // If neither case applies the idle listener above will still fire once
       // the map renders its initial center/zoom position.
     },
-    [validListings, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths, lockBounds, initialBounds]
+    [validListings, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths, lockBounds, initialBounds, fitSubjectRing]
   )
 
   // Place SELECT / search→city: re-fit when placeQuery or boundary changes.
@@ -1180,8 +1217,10 @@ export default function SearchMapClustered({
     if (!map || !window.google?.maps) return
     const padding = v3FitPadding(map.getDiv())
     const key = `${placeQuery ?? ''}|${boundaryPaths.flat().length}`
-    if (placeFitKeyRef.current === null) {
-      // First paint: onLoad already fitted (bbox / boundary / places). Seed key.
+    const hasRing = boundaryPaths.flat().length >= 2
+    // onLoad can run before GeoJSON parses. Skipping the first effect then
+    // leaves the phone island on a pin-cluster crop (SITE-128 @375 rematch).
+    if (placeFitKeyRef.current === null && !(fitSubjectRing && hasRing)) {
       placeFitKeyRef.current = key
       return
     }
@@ -1194,9 +1233,16 @@ export default function SearchMapClustered({
       const bb = new google.maps.LatLngBounds()
       for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
       if (!bb.isEmpty()) {
-        map.fitBounds(bb, padding)
-        const z = map.getZoom()
-        if (typeof z === 'number' && z > 15) map.setZoom(15)
+        map.fitBounds(bb, fitSubjectRing ? v3SubjectRingPadding(map.getDiv()) : padding)
+        if (fitSubjectRing) {
+          google.maps.event.addListenerOnce(map, 'idle', () => {
+            const z = map.getZoom()
+            if (typeof z === 'number' && z > 14) map.setZoom(14)
+          })
+        } else {
+          const z = map.getZoom()
+          if (typeof z === 'number' && z > 15) map.setZoom(15)
+        }
         return
       }
     }
@@ -1217,7 +1263,52 @@ export default function SearchMapClustered({
         },
       )
     }
-  }, [placeQuery, boundaryPaths])
+  }, [placeQuery, boundaryPaths, fitSubjectRing])
+
+  // First-look ring camera: fit after the map instance exists AND after the
+  // island has a real box. onLoad + the place-fit effect can both run against
+  // a 0-height phone canvas and leave zoom 11 on the pin centroid.
+  useEffect(() => {
+    const map = mapInstance
+    if (!map || !window.google?.maps || !fitSubjectRing) return
+    if (boundaryPaths.flat().length < 2) return
+    const bb = new google.maps.LatLngBounds()
+    for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
+    if (bb.isEmpty()) return
+    const apply = () => {
+      const div = map.getDiv()
+      try {
+        google.maps.event.trigger(map, 'resize')
+      } catch {
+        // map may not expose trigger mid-teardown
+      }
+      map.fitBounds(bb, v3SubjectRingPadding(div))
+      google.maps.event.addListenerOnce(map, 'idle', () => {
+        const z = map.getZoom()
+        const h = div?.clientHeight ?? 0
+        if (typeof z === 'number' && z > 14) map.setZoom(14)
+        const view = map.getBounds()
+        const ne = bb.getNorthEast()
+        const sw = bb.getSouthWest()
+        const ringInView = Boolean(view && view.contains(ne) && view.contains(sw))
+        // Short phone island: z10 still sits inside the city and paints the
+        // west edge as a line through the pin pile. Pull out so the recorded
+        // outline reads as a closed ring (SITE-128 @375 rematch).
+        if (h > 0 && h < 260) {
+          map.fitBounds(bb, v3SubjectRingPadding(div))
+          const z2 = map.getZoom()
+          if (typeof z2 === 'number' && z2 > 9) map.setZoom(9)
+        }
+        if (div) {
+          div.dataset.placeLookRing = ringInView ? 'in-view' : 'refit'
+          div.dataset.placeLookZoom = String(map.getZoom() ?? '')
+        }
+      })
+    }
+    apply()
+    const t = window.setTimeout(apply, 450)
+    return () => window.clearTimeout(t)
+  }, [mapInstance, fitSubjectRing, boundaryPaths])
 
   // NOTE: The idle listener for bounds reporting is attached directly in onLoad
   // above. This effect is intentionally removed to avoid the race condition where
@@ -1346,41 +1437,45 @@ export default function SearchMapClustered({
     // past 14 every pin drew raw, on top of its neighbours. Supercluster
     // separates points on its own as the zoom climbs, so at street level almost
     // nothing is still merged — only the homes that genuinely share a corner.
-    clustererRef.current = new MarkerClusterer({
-      map,
-      markers: newMarkers as unknown as google.maps.Marker[],
-      algorithm: new SuperClusterAlgorithm({
-        maxZoom: V3_CLUSTER_MAX_ZOOM,
-        radius: V3_CLUSTER_RADIUS_PX,
-        // Supercluster measures radius in units of `extent`; its default 512 is
-        // twice a Google tile, which halved every radius this file ever set.
-        extent: V3_CLUSTER_EXTENT,
-      }),
-      // Draw mode: the default handler zooms into the cluster, which yanks the
-      // viewport mid-outline and strands the user's partial polygon across two
-      // zoom levels. Clusters go inert while drawing.
-      onClusterClick: (event, cluster, clusterMap) => {
-        if (drawingModeRef.current || multiDrawClickRef.current) return
-        defaultOnClusterClickHandler(event, cluster, clusterMap)
-      },
-      renderer: {
-        render: (cluster, _stats, map) => {
-          const count = cluster.count
-          const position = cluster.position
-          const bubbleEl = buildClusterElement(count, clusterPriceRange(cluster.markers ?? []))
-          const zIndex = Number(google.maps.Marker.MAX_ZINDEX) + count
-          // OverlayView bubble: its DOM click re-fires as a Maps 'click' event,
-          // which drives MarkerClusterer's default zoom-into-cluster handler.
-          const clusterOverlay = new PricePillOverlay({
-            position,
-            map,
-            content: bubbleEl,
-            zIndex,
-          })
-          return clusterOverlay as unknown as google.maps.Marker
+    if (disableClustering) {
+      clustererRef.current = null
+    } else {
+      clustererRef.current = new MarkerClusterer({
+        map,
+        markers: newMarkers as unknown as google.maps.Marker[],
+        algorithm: new SuperClusterAlgorithm({
+          maxZoom: V3_CLUSTER_MAX_ZOOM,
+          radius: V3_CLUSTER_RADIUS_PX,
+          // Supercluster measures radius in units of `extent`; its default 512 is
+          // twice a Google tile, which halved every radius this file ever set.
+          extent: V3_CLUSTER_EXTENT,
+        }),
+        // Draw mode: the default handler zooms into the cluster, which yanks the
+        // viewport mid-outline and strands the user's partial polygon across two
+        // zoom levels. Clusters go inert while drawing.
+        onClusterClick: (event, cluster, clusterMap) => {
+          if (drawingModeRef.current || multiDrawClickRef.current) return
+          defaultOnClusterClickHandler(event, cluster, clusterMap)
         },
-      },
-    })
+        renderer: {
+          render: (cluster, _stats, map) => {
+            const count = cluster.count
+            const position = cluster.position
+            const bubbleEl = buildClusterElement(count, clusterPriceRange(cluster.markers ?? []))
+            const zIndex = Number(google.maps.Marker.MAX_ZINDEX) + count
+            // OverlayView bubble: its DOM click re-fires as a Maps 'click' event,
+            // which drives MarkerClusterer's default zoom-into-cluster handler.
+            const clusterOverlay = new PricePillOverlay({
+              position,
+              map,
+              content: bubbleEl,
+              zIndex,
+            })
+            return clusterOverlay as unknown as google.maps.Marker
+          },
+        },
+      })
+    }
 
     // Re-fit the tap boxes whenever the marks change.
     //
@@ -1446,7 +1541,7 @@ export default function SearchMapClustered({
         // guard against unmount race
       }
     }
-  }, [mapInstance, validListings, zoomMode, scheduleFitTaps])
+  }, [mapInstance, validListings, zoomMode, scheduleFitTaps, disableClustering])
 
   // Marker emphasis: update content in-place for hovered / active marker.
   // Pill vs photo stamp follows zoomMode. Mutate content (no full remount).
@@ -1499,7 +1594,7 @@ export default function SearchMapClustered({
         className={className}
         style={{
           height: '100%',
-          minHeight: 360,
+          minHeight: islandMinHeight,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1518,7 +1613,7 @@ export default function SearchMapClustered({
         className={className}
         style={{
           height: '100%',
-          minHeight: 360,
+          minHeight: islandMinHeight,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1542,7 +1637,7 @@ export default function SearchMapClustered({
       className={`relative ${className}`.trim()}
       style={{
         height: '100%',
-        minHeight: 360,
+        minHeight: islandMinHeight,
         borderRadius: 0,
         overflow: 'hidden',
         boxShadow: 'none',
@@ -1554,7 +1649,7 @@ export default function SearchMapClustered({
       <MapContext.Provider value={mapInstance}>
         <div
           ref={mapContainerRef}
-          style={{ width: '100%', height: '100%', minHeight: 360, cursor: drawingMode || multiDrawActive ? 'crosshair' : '' }}
+          style={{ width: '100%', height: '100%', minHeight: islandMinHeight, cursor: drawingMode || multiDrawActive ? 'crosshair' : '' }}
           onClick={(e) => {
             if (!drawingMode) return
             // Translate click coordinates to lat/lng via the map's projection.
@@ -1657,7 +1752,7 @@ export default function SearchMapClustered({
                     fillOpacity: 0.06,
                     strokeColor: MAP_NAVY,
                     strokeWeight: boundaryStrokeWeight ?? 2.5,
-                    strokeOpacity: 0.75,
+                    strokeOpacity: fitSubjectRing ? 1 : 0.75,
                   }}
                 />
               ))}

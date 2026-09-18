@@ -70,7 +70,7 @@ export function V3PlaceLook({
         </div>
         {photoCards.length > 0 ? (
           <ul className="v3-place-look__cards">
-            {photoCards.map((card) => {
+            {photoCards.map((card, index) => {
               const meta = cardMeta(card)
               return (
                 <li key={card.href}>
@@ -81,6 +81,7 @@ export function V3PlaceLook({
                         src={card.photoSrc}
                         alt={listingPhotoAlt({ addressLine: card.title })}
                         fill
+                        priority={index < 2}
                         sizes="(min-width: 64rem) 22vw, 50vw"
                       />
                     </span>

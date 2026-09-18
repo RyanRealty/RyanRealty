@@ -101,7 +101,7 @@ describe('competitor first-look evidence', () => {
 })
 
 describe('place-craft --ship', () => {
-  it('stub parity is a place-craft document and documents both locks', () => {
+  it('live parity is a place-craft document and documents both locks', () => {
     const d = JSON.parse(readFileSync(join(REPO, PLACE_CRAFT_PARITY), 'utf8'))
     expect(isPlaceCraftDocument(d)).toBe(true)
     expect(d.kind).toBe(PLACE_CRAFT_KIND)
@@ -109,9 +109,14 @@ describe('place-craft --ship', () => {
     expect(d.evidencePath.competitorFirstLook.required).toBe(true)
   })
 
-  it('Tip Ready --ship of the stub refuses without competitor first-look shots', () => {
+  it('Tip Ready --ship of a stub without shots still refuses', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rr-place-craft-stub-'))
+    mkdirSync(join(dir, 'lib/place'), { recursive: true })
+    const d = JSON.parse(readFileSync(join(REPO, PLACE_CRAFT_PARITY), 'utf8'))
+    delete d.competitorFirstLook
+    writeFileSync(join(dir, PLACE_CRAFT_PARITY), JSON.stringify(d))
     const r = spawnSync(process.execPath, [SHIP, '--ship', PLACE_CRAFT_PARITY], {
-      cwd: REPO,
+      cwd: dir,
       encoding: 'utf8',
       env: process.env,
     })
@@ -119,6 +124,16 @@ describe('place-craft --ship', () => {
     expect(`${r.stderr}${r.stdout}`).toMatch(/competitor first-look/)
     expect(`${r.stderr}${r.stdout}`).toMatch(/named peer/)
     expect(`${r.stderr}${r.stdout}`).toMatch(/ship refuse/)
+  })
+
+  it('Tip Ready --ship of live place-craft.parity.json exits 0 with first-look shots', () => {
+    const r = spawnSync(process.execPath, [SHIP, '--ship', PLACE_CRAFT_PARITY], {
+      cwd: REPO,
+      encoding: 'utf8',
+      env: process.env,
+    })
+    expect(r.status).toBe(0)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/ship OK/)
   })
 
   it('placeCraftShipProblems passes hierarchy + named-peer sequential shots', () => {
