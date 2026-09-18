@@ -1,11 +1,11 @@
 # Current — 2026-09-18 (SITE-128 Tip Ready — Bend @375 ring fit/scale)
 
-Surface: Cursor cloud `bc-08e057ba-ce1e-5c77-89d4-11efefb6ab64`, branch `cursor/site-128-bend-ring-fit-ab64` off `origin/main` `1a5ea269b`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+Surface: Cursor cloud `bc-08e057ba-ce1e-5c77-89d4-11efefb6ab64`, branch `cursor/site-128-bend-ring-fit-ab64` tip `2d736f3d2` (evidence `f47d6e8f8`) off `origin/main` `1a5ea269b`. PR #317 — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
 
-- **Look rematch FAIL** `dpl_AXi1pkPDec4yt1B9Xzs8vp322vdA` / `ff126836a`: paint present. SVG ~87×99 under the $ pile — dark knot, no readable Bend outline, chip hidden. $ pills + photo cards PASS.
-- **Root cause.** Phone-island camera called `fitBounds` then `map.setZoom(9)` on the *pre-fit* zoom (fitBounds is async). z9 on a 13rem island projects the recorded city ring to ~87×99. OverlayView was also torn down/re-added mid-fit, so halo/ink CSS shipped at the wrong scale/z.
-- **This tip.** Keep the fitted zoom (`subjectRingKeepFittedZoom` — only pull back from lot z>14). Overlay stroke on `overlayLayer` (under pills). Bend chip on `overlayMouseTarget` at z 3. Same recorded geom. No invent. Pin cap 36 and 13rem / 2×2 cards untouched.
-- **Evidence.** `look-pass-site128-ring-fit-2026-09-18/` @375.
+- **Look rematch FAIL** `dpl_AXi1pkPDec4yt1B9Xzs8vp322vdA` / `ff126836a`: SVG **87×99** under the $ pile (fill 0.48). Halo/ink present. Chip on the knot. $ pills + cards PASS.
+- **Root cause.** `fitBounds` then `map.setZoom(9)` on the *pre-fit* zoom (async). z9 on a 13rem island is the knot. Overlay teardown mid-fit redrew at that scale.
+- **This tip.** Keep fitted zoom (`subjectRingKeepFittedZoom`). Stroke on `overlayLayer`. Bend chip z 3. Same recorded geom. No invent. Pins + 2×2 cards untouched.
+- **Evidence @375.** Prod knot 87×99. Local SVG **137×162**, zoom 10, `in-view`, fill **0.78**, Bend chip visible. `look-pass-site128-ring-fit-2026-09-18/`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
 # Current — 2026-09-18 (SITE-128 paint rematch — Bend first-look @375 squash)
