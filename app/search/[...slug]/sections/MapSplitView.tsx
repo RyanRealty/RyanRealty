@@ -339,7 +339,7 @@ export async function renderMapSplitView(props: {
         filter tree reads (SITE-29), so the chips are in the HTML as before. */}
     <UrlSearchParamsProvider search={queryStringFromSearchParams(sp as Record<string, string | string[] | undefined>)}>
       <div className="search-filter-dock w-full shrink-0 border-b border-border bg-card shadow-sm">
-        <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
+        <h1 className="truncate px-3 pt-1 font-display text-xs font-medium leading-4 text-foreground sm:px-6 sm:pt-2 sm:text-sm sm:leading-5">
           {headline}
         </h1>
         <SearchFilters initialFilters={filters} signedIn={!!session?.user} hideViewToggle />

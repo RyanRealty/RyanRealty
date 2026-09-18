@@ -90,7 +90,7 @@ describe('SEO search honesty contracts', () => {
     expect(map).toMatch(/<SearchFilters/)
     expect(map).toMatch(/<MapSearchView/)
     expect(map).not.toMatch(/SearchFilterBar/)
-    expect(map).toMatch(/font-display text-sm/)
+    expect(map).toMatch(/font-display text-xs[\s\S]*sm:text-sm/)
   })
 
   it('prints the all-types caption on the city header intro', () => {
