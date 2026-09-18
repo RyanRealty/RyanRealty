@@ -53,7 +53,7 @@
  * ./tokens.css resolves with no wrapper. It is `position: sticky`, so it holds
  * its own space in flow and a page needs no spacer under it.
  */
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import type { AuthUser } from '@/lib/auth/types'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -329,8 +329,8 @@ function isCurrentPath(pathname: string | null, href: string): boolean {
 }
 
 
-/** Later bar items end-align so a wide mega cannot run off the right edge. */
-const MEGA_ALIGN_END = new Set(['Market', 'Sell', 'About'])
+/** Sell and About sit on the right of the bar; end-align those panels. Market stays start-aligned so a 3–4 col mega cannot run off the left. */
+const MEGA_ALIGN_END = new Set(['Sell', 'About'])
 
 function ChromePanelLink({
   href,
@@ -414,6 +414,22 @@ function V3ChromeDestination({
   const panelId = `${useId()}-panel`
   const current = isCurrentPath(currentPath, group.href)
   const mega = chromeMegaModel(group.key, group.featured, live)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    panel.style.setProperty('--v3-chrome-mega-shift', '0px')
+    if (!open) return
+    const rect = panel.getBoundingClientRect()
+    const pad = 16
+    let shift = 0
+    if (rect.left < pad) shift += pad - rect.left
+    if (rect.right + shift > window.innerWidth - pad) {
+      shift -= rect.right + shift - (window.innerWidth - pad)
+    }
+    panel.style.setProperty('--v3-chrome-mega-shift', `${Math.round(shift)}px`)
+  }, [open, mega.colCount])
 
   // Native focusout rather than React's onBlur: collapse once focus leaves the
   // group entirely, so tabbing out of the last child closes the panel behind it.
@@ -463,6 +479,7 @@ function V3ChromeDestination({
         <IconChevron />
       </button>
       <div
+        ref={panelRef}
         className={cn(
           'v3-chrome__panel',
           'v3-chrome__panel--mega',
