@@ -1,7 +1,9 @@
-# Current — 2026-09-18 (SITE-128 craft #2 — Atlas amenity layers)
+# Current — 2026-09-18 (SITE-128 amenity layers — Mini TS follow-up)
 
-Surface: Cursor cloud, branch `cursor/site-128-atlas-amenity-layers-4dca`. Tip `1d168e848`. Draft PR #297. Node `1a71550b-7231-42f4-9f5c-07a318cbc3f3` (claim stays public-look). PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-atlas-amenity-layers-4dca`. Draft PR #297. Node `1a71550b-7231-42f4-9f5c-07a318cbc3f3`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
+- **Cherry-pick order.** Feat `1d168e848` then TS tip `dd63ce360`. Mini `502a06da8` failed `ci:gates` 184/185 on `citySlug: string | null` at `app/subdivisions/[slug]/page.tsx` `getPlaceAmenityLayers`. Fix is `citySlug: citySlug ?? undefined`. No new features.
+- **Verified.** `ci:commit-compiles` PASS. `ci:atlas-amenity-layers` OK.
 - **This tip.** Park polygons + trail lines on V3Atlas with homes (city / neighborhood / community / subdivision). Navy on cream. Destinations stay PlaceFieldMap.
 - **Wired (live RPC 2026-09-18).** `public.boundaries` geo_type=park via `boundary_geojson` — 17/18 registry parks. `public.trail_lines` via `trail_line_geojson` — 18/19 registry trails. Membership from `data/co-parks.ts` / `data/co-trails.ts` (lat/lng never drawn).
 - **Omitted.** `american-legion-park` (no-polygon-flag). `whoops-trail` (no trail_lines row). No crowd-sourced invent. Depth tip `2e6244515` / hierarchy / keep-exploring / SITE-127 pin $ not in this tip.
