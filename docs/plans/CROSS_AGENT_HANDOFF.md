@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-128 rematch Tip Ready — map hierarchy + competitor first-look)
 
-Surface: Cursor cloud `bc-cc128bf6-dd08-56c8-950d-d0c1a05dc730`, branch `cursor/site-128-map-hierarchy-c730`. Claim stays public-look. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud `bc-cc128bf6-dd08-56c8-950d-d0c1a05dc730`, branch `cursor/site-128-map-hierarchy-c730`, tip `ab5c642c2`, draft PR #305. Claim stays public-look. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
 - **Tip Ready.** `node scripts/lib/taste-receipt.mjs --ship lib/place/place-craft.parity.json` → ship OK (map-drives-hierarchy + competitor first-look).
 - **Peers.** Compass Old Bend + Compass Bend homes. Zillow/Redfin 403 skip. Evidence: `look-pass-site128-rematch-2026-09-18/` (side-by-side-old-bend.png, side-by-side-bend.png).
