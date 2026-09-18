@@ -632,6 +632,7 @@ async function renderSubdivisionPage({ params }: Props) {
       placeSlug: slug,
       cityName: placeCity ?? '',
       citySlug: citySlug ?? undefined,
+      communitySlug: resortSlug ?? undefined,
       placeGeometry: platPolygon ?? null,
     }),
     EMPTY_PLACE_AMENITY_LAYERS,

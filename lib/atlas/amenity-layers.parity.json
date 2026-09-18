@@ -7,6 +7,8 @@
     "omit-missing-geom",
     "no-osm-invent",
     "place-homes-atlas-wired",
+    "community-subdivision-grain",
+    "official-geom-touch-local",
     "on-brand-non-blue",
     "destination-google-maps-untouched"
   ],

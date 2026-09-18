@@ -3,6 +3,7 @@ import { getParkBySlug } from '@/data/co-parks'
 import { getTrailBySlug } from '@/data/co-trails'
 import {
   assembleAmenityLayers,
+  amenityGeomTouchesPlace,
   amenityInsidePlace,
   cityNameMatches,
   isParkPolygon,
@@ -133,6 +134,96 @@ describe('place amenity membership', () => {
     expect(outside.omitted.some((row) => row.slug === 'juniper-park' && row.reason === 'outside-place')).toBe(
       true,
     )
+  })
+
+  it('contract: official-geom-touch-local — community grain keeps a park whose official polygon touches the ring even when the centroid sits outside', () => {
+    const communityRing: GeoJSON.Polygon = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-121.305, 44.048],
+          [-121.295, 44.048],
+          [-121.295, 44.058],
+          [-121.305, 44.058],
+          [-121.305, 44.048],
+        ],
+      ],
+    }
+    const overlappingPark: GeoJSON.Polygon = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-121.32, 44.04],
+          [-121.3, 44.04],
+          [-121.3, 44.052],
+          [-121.32, 44.052],
+          [-121.32, 44.04],
+        ],
+      ],
+    }
+    expect(amenityGeomTouchesPlace(overlappingPark, communityRing)).toBe(true)
+    expect(amenityInsidePlace(-121.31, 44.046, communityRing)).toBe(false)
+
+    const layers = assembleAmenityLayers({
+      grain: 'community',
+      cityName: 'Bend',
+      citySlug: 'bend',
+      communitySlug: 'tetherow',
+      placeGeometry: communityRing,
+      parkGeom: new Map([['juniper-park', overlappingPark]]),
+      trailGeom: new Map(),
+    })
+    expect(layers.parks.map((park) => park.slug)).toContain('juniper-park')
+    expect(layers.parks[0]?.geometry).toBe(overlappingPark)
+  })
+
+  it('contract: official-geom-touch-local — subdivision grain keeps a trail_lines stroke that crosses the plat and omits one that does not', () => {
+    const plat: GeoJSON.Polygon = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-121.305, 44.048],
+          [-121.295, 44.048],
+          [-121.295, 44.058],
+          [-121.305, 44.058],
+          [-121.305, 44.048],
+        ],
+      ],
+    }
+    const crossing: GeoJSON.LineString = {
+      type: 'LineString',
+      coordinates: [
+        [-121.31, 44.053],
+        [-121.3, 44.053],
+      ],
+    }
+    const elsewhere: GeoJSON.LineString = {
+      type: 'LineString',
+      coordinates: [
+        [-121.4, 44.2],
+        [-121.39, 44.21],
+      ],
+    }
+    expect(amenityGeomTouchesPlace(crossing, plat)).toBe(true)
+    expect(amenityGeomTouchesPlace(elsewhere, plat)).toBe(false)
+
+    const layers = assembleAmenityLayers({
+      grain: 'subdivision',
+      cityName: 'Bend',
+      citySlug: 'bend',
+      communitySlug: 'tetherow',
+      placeGeometry: plat,
+      parkGeom: new Map(),
+      trailGeom: new Map([
+        ['phils-trail', crossing],
+        ['whoops-trail', elsewhere],
+      ]),
+    })
+    expect(layers.trails.map((trail) => trail.slug)).toContain('phils-trail')
+    expect(layers.trails.map((trail) => trail.slug)).not.toContain('whoops-trail')
+    expect(
+      layers.omitted.some((row) => row.slug === 'whoops-trail' && row.reason === 'outside-place'),
+    ).toBe(true)
   })
 
   it('draws a communitySlug trail from trail_lines even when the trailhead sits outside the ring', () => {
