@@ -12,4 +12,9 @@ describe('V3Chrome catalog Search', () => {
     expect(search).toContain('MorphingSearch')
     expect(search).toContain('useSearchSuggest')
   })
+
+  it('raises the portaled overlay above sticky chrome without covering the input', () => {
+    expect(search).toContain('overlayClassName="z-[150]"')
+    expect(search).not.toContain('overlayClassName="z-50"')
+  })
 })
