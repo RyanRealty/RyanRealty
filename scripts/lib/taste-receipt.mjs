@@ -48,6 +48,7 @@ import {
   resolveCompetitorFirstLook,
 } from './place-craft.mjs'
 import { isMapHierarchyDocument, mapHierarchyShipProblems } from './map-hierarchy.mjs'
+import { isHierarchyNamingDocument, hierarchyNamingShipProblems } from './hierarchy-naming.mjs'
 
 export { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
 
@@ -967,6 +968,16 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
         process.exit(1)
       }
       console.log('ship OK — map-hierarchy · subject-polygon-only · child-select-zooms')
+      process.exit(0)
+    }
+    if (isHierarchyNamingDocument(d)) {
+      const problems = hierarchyNamingShipProblems(d, { root })
+      if (problems.length) {
+        console.error(problems.join('\n'))
+        console.error('ship refuse — hierarchy naming Tip Ready needs community≠neighborhood + name-only crumbs. Cos prose is not Tip Ready.')
+        process.exit(1)
+      }
+      console.log('ship OK — hierarchy-naming · community≠neighborhood · breadcrumb-sameness')
       process.exit(0)
     }
     const kitFromPath = rel.includes('ui_kits/') ? rel.split('/').filter(Boolean).at(-2) : null

@@ -47,6 +47,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb'
+import { nameOnlyCrumbs } from '@/lib/site/place-trail'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS } from './atoms'
 import { V3BreadcrumbCollapse } from './V3BreadcrumbCollapse.client'
@@ -151,8 +152,9 @@ export function V3Breadcrumb({
   className,
 }: V3BreadcrumbProps) {
   const clearsFixedHeader = overlay ? false : (belowNav ?? tone !== 'on-media')
+  const visibleTrail = nameOnlyCrumbs(trail)
   const named: V3Crumb[] = []
-  for (const crumb of trail) {
+  for (const crumb of visibleTrail) {
     // A hole is dropped, never dereferenced: without noUncheckedIndexedAccess
     // an expression like `trail={[ancestors[0]]}` type-checks against an empty
     // array and arrives here as undefined.
@@ -162,7 +164,7 @@ export function V3Breadcrumb({
   }
 
   if (process.env.NODE_ENV !== 'production') {
-    const dropped = trail.length - named.length
+    const dropped = visibleTrail.length - named.length
     if (dropped > 0) {
       console.warn(`V3Breadcrumb: dropped ${dropped} crumb(s) with no label.`)
     }

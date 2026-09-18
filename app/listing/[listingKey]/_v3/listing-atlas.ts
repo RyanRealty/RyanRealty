@@ -198,7 +198,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
         ? [
             {
               id: `subdivision:${cell.slug}`,
-              kind: 'neighborhood',
+              kind: 'subdivision',
               kindLabel: 'Subdivision',
               name: names[i] ?? cell.label,
               href: subdivisionHref(cell.slug) ?? `/subdivisions/${cell.slug}`,
