@@ -1,3 +1,13 @@
+# Current — 2026-09-18 (SITE-128 Tip Ready #2 — map hierarchy lock)
+
+Surface: Cursor cloud `bc-6f8f259d-9e23-5f9c-be98-dcebd1925178`, branch `cursor/site-128-map-hierarchy-lock-5178`, tip `daadcfba9`, draft PR #308. Against `origin/main` `5d8a0f874`. Depends on #1 `ac8ddac28` / PR #306 (not on main). PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+
+- **Highlight.** Nbhd/community Atlas + Split paint THAT recorded subject ring. Child plats are hit-only until selected. No subject geom (Tetherow/Juniper) → no highlight. Do not invent rings. Old Bend FAIL was town||neighborhood = 20 plats.
+- **Child zoom.** Overlay / Atlas child click fits THAT recorded bbox (`childZoomBounds` / `fitCamToShape`). Listing pins stay listing clicks. Homepage cities are not children (`hierarchyChildIdSet`).
+- **Subdiv.** `subjectGrain` + `atlasFramePad(0.1)` + 2.8px navy so DRW fills the frame.
+- **#1 refuse.** `ci:place-craft` + `--ship place-craft.parity.json` still refuse without named-peer first-look shots. This tip does not invent them. `--ship map-hierarchy.parity.json` ships.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-18 (ISR spend cut — place/home 300 → 900)
 
 Surface: Cursor cloud `bc-d020ba1b-33a8-53dc-a4b3-f41f506ff6c6`, branch `cursor/isr-ttl-900-f6c6`. Tip Ready Cos recommended; Matt skipped widget — ship default. PR only — Cos Mini lands. Do not merge. HOLD owner email. First-look refuse `281e5f02a` already on main — not retouched.

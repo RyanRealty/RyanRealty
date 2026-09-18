@@ -1,0 +1,34 @@
+{
+  "kind": "map-hierarchy",
+  "id": "site-128-map-hierarchy",
+  "lockedAt": "2026-09-18",
+  "lock": "SITE-128 Tip Ready #2 — Cos order after #1 ac8ddac28",
+  "dependsOn": {
+    "tip": "SITE-128 Tip Ready #1",
+    "sha": "ac8ddac28",
+    "pr": "https://github.com/RyanRealty/RyanRealty/pull/306",
+    "note": "Tip against current main. Cos Mini lands #1 first. First-look shots live on that tip — this lock does not invent them."
+  },
+  "locks": [
+    "subject-polygon-only",
+    "child-select-zooms-boundary",
+    "homes-in-place-pass",
+    "subdiv-poly-readable",
+    "place-craft-first-look-refuse"
+  ],
+  "gate": "ci:map-hierarchy",
+  "ship": "node scripts/lib/taste-receipt.mjs --ship lib/place/map-hierarchy.parity.json",
+  "evidencePath": {
+    "subjectPolygonOnly": "Neighborhood / community highlight THAT recorded place ring. Child plats are select/zoom, not the default highlight. Old Bend FAIL was 20 plats. Tetherow/Juniper with no subject geom highlight nothing — do not invent.",
+    "childSelectZooms": "Selecting a child subdivision fits THAT recorded boundary in the frame. Listing pin click stays a listing click.",
+    "homesInPlace": "Homes for sale in the current place stay on the map (already PASS).",
+    "subdivReadable": "Subdivision grain (DRW) paints a readable subject stroke and a tight frame pad so the plat fills the stage.",
+    "placeCraftFirstLook": "ci:place-craft + --ship lib/place/place-craft.parity.json still refuse without named-peer first-look shots. This tip does not invent those shots."
+  },
+  "testFiles": [
+    "lib/place/map-hierarchy.test.ts",
+    "lib/geo/atlas-camera.test.ts",
+    "scripts/__tests__/map-hierarchy.test.mjs",
+    "scripts/__tests__/place-craft.test.mjs"
+  ]
+}
