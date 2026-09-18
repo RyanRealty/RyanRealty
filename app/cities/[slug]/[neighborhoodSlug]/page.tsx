@@ -42,7 +42,9 @@ import {
   cityDetachedSlug,
   getCityHeroUrlsBySlug,
   getPlaceOpeningListings,
+  getPlaceAmenityLayers,
 } from '@/lib/data'
+import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -340,7 +342,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
   // The living map, scoped to the neighborhood: every listing inside the
   // recorded boundary, its plats as the touchable places. Same builder as
   // the homepage (one source).
-  const [atlas, atlasPlats] = boundaryMapData.polygon
+  const [atlas, atlasPlats, amenityLayers] = boundaryMapData.polygon
     ? await Promise.all([
         withTimeoutFallback(
           buildPlaceAtlas({ cities: [cityName], boundary: boundaryMapData.polygon, label: neighborhood.name }),
@@ -349,8 +351,20 @@ async function renderNeighborhoodDetail({ params }: Props) {
           'nbh:atlas',
         ),
         withTimeoutFallback(getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), [], 4500, 'nbh:atlasPlats'),
+        withTimeoutFallback(
+          getPlaceAmenityLayers({
+            grain: 'neighborhood',
+            placeSlug: neighborhoodSlug,
+            cityName,
+            citySlug,
+            placeGeometry: boundaryMapData.polygon,
+          }),
+          EMPTY_PLACE_AMENITY_LAYERS,
+          4500,
+          'nbh:amenityLayers',
+        ),
       ])
-    : [null, []]
+    : [null, [], EMPTY_PLACE_AMENITY_LAYERS]
   const atlasRegions: AtlasRegion[] = boundaryMapData.polygon
     ? [
         { id: `neighborhood:${neighborhoodSlug}`, kind: 'town', kindLabel: 'Neighborhood', name: neighborhood.name, href: `/cities/${citySlug}/${neighborhoodSlug}`, geometry: boundaryMapData.polygon },
@@ -824,6 +838,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
                 source={atlasView.source}
                 stamp={atlasView.stamp}
                 incomplete={!atlasView.complete}
+                amenities={amenityLayers}
               />
             </div>
             <aside className="nbh-fold__figure nbh-fold__figure--insight">

@@ -193,7 +193,8 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { V3Atlas, V3PlaceIndex, V3PlaceInventory, V3Quiet, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
-import { getTaxlotsInBoundary, getTaxlotsNear, TAXLOT_DISCLAIMER } from '@/lib/data'
+import { getTaxlotsInBoundary, getTaxlotsNear, TAXLOT_DISCLAIMER, getPlaceAmenityLayers } from '@/lib/data'
+import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
@@ -623,6 +624,18 @@ async function renderSubdivisionPage({ params }: Props) {
   const atlasScope = seedRing && platPolygon
     ? { cities: [placeCity as string], boundary: platPolygon, label: displayName }
     : { cities: [placeCity as string], label: displayName, listingKeys: mapTiles.map((t) => t.listingKey) }
+  const amenityLayersPromise = withTimeoutFallback(
+    getPlaceAmenityLayers({
+      grain: 'subdivision',
+      placeSlug: slug,
+      cityName: placeCity ?? '',
+      citySlug: citySlug ?? undefined,
+      placeGeometry: platPolygon ?? null,
+    }),
+    EMPTY_PLACE_AMENITY_LAYERS,
+    4500,
+    'sub:amenityLayers',
+  )
   let atlas = canMapAtlas && placeCity != null
     ? await withTimeoutFallback(buildPlaceAtlas(atlasScope), null, 6000, 'sub:atlas')
     : null
@@ -672,6 +685,7 @@ async function renderSubdivisionPage({ params }: Props) {
     platUnsold,
     stockTiles,
     openingListings,
+    amenityLayers,
   ] = await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -727,6 +741,7 @@ async function renderSubdivisionPage({ params }: Props) {
         3000,
         'sub:openingListings',
       ),
+      amenityLayersPromise,
     ])
 
   // ── THE MARKET BAND READS ONE POPULATION AT A TIME ──────────────────────
@@ -1480,6 +1495,7 @@ async function renderSubdivisionPage({ params }: Props) {
                   stamp={atlasView.stamp}
                   incomplete={!atlasView.complete}
                   {...(frame == null && atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
+                  amenities={amenityLayers}
                 />
                 {/* SITE-112: the crawlable doors belong to the map's column,
                     under it. On a wide window that is one line instead of the

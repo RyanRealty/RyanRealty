@@ -1,0 +1,17 @@
+{
+  "kind": "picker-contract",
+  "id": "atlas-amenity-layers",
+  "contracts": [
+    "real-park-polygons-only",
+    "real-trail-lines-only",
+    "omit-missing-geom",
+    "no-osm-invent",
+    "place-homes-atlas-wired",
+    "on-brand-non-blue",
+    "destination-google-maps-untouched"
+  ],
+  "testFiles": [
+    "lib/atlas/place-amenity-layers.test.ts",
+    "components/site/__tests__/atlas-amenity-layers.test.ts"
+  ]
+}

@@ -37,6 +37,8 @@
  *            SITE-128 residual: overlapping pills collapse to count bubbles
  *            that expand on zoom (city folds); spaced neighborhood pins stay.
  *   html     town labels, positioned from the measured view, in real type.
+ *   svg      SITE-128 amenity layers: recorded park polygons + trail lines
+ *            under the homes (navy on cream, never a Google blue tile).
  *   svg      the pulses, alone, on their own layer, capped with slots for
  *            each kind of event so a close always shows, paused off-screen.
  *   html     the card and the dock. The dock is a legend in flow — under
@@ -51,6 +53,7 @@ import {
   bboxOfRings,
   labelAnchor,
   makeProjection,
+  lineStringParts,
   outerRings,
   padBbox,
   pointInRings,
@@ -167,6 +170,24 @@ export type AtlasRegion = {
 }
 
 export type AtlasType = { key: string; label: string }
+
+/** Recorded park / trail geom the place page already fetched. Never invented. */
+export type AtlasAmenityPark = {
+  id: string
+  name: string
+  href?: string
+  geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon
+}
+export type AtlasAmenityTrail = {
+  id: string
+  name: string
+  href?: string
+  geometry: GeoJSON.LineString | GeoJSON.MultiLineString
+}
+export type AtlasAmenityLayers = {
+  parks?: readonly AtlasAmenityPark[]
+  trails?: readonly AtlasAmenityTrail[]
+}
 
 /** One lot line. `subject` is the lot the page's own home sits on. */
 export type AtlasParcel = {
@@ -346,6 +367,12 @@ export type V3AtlasProps = {
    * width (neighborhood / community omit both).
    */
   clusterStageHintPhone?: { w: number; h: number }
+  /**
+   * SITE-128 craft #2: recorded park polygons + trail lines on the homes
+   * Atlas. Pages pass only geom we already hold. Missing official geometry
+   * stays omitted — this prop never invents a corridor or a circle.
+   */
+  amenities?: AtlasAmenityLayers | null
 }
 
 /* -------------------------------------------------------------------------- */
@@ -461,6 +488,7 @@ export function V3Atlas({
   clusterCellPx = ATLAS_PIN_CLUSTER_RADIUS_PX,
   clusterStageHint,
   clusterStageHintPhone,
+  amenities,
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
@@ -555,6 +583,29 @@ export function V3Atlas({
     }
     return built.bodies.length + built.waterways.length + built.roads.length > 0 ? built : null
   }, [basemap, proj])
+
+  const amenityParks = amenities?.parks ?? []
+  const amenityTrails = amenities?.trails ?? []
+  const [showParks, setShowParks] = useState(true)
+  const [showTrails, setShowTrails] = useState(true)
+
+  const amenityParkPaths = useMemo(() => {
+    return amenityParks
+      .map((park) => ({ id: park.id, name: park.name, d: ringsToPath(outerRings(park.geometry), proj) }))
+      .filter((park) => park.d.length > 0)
+  }, [amenityParks, proj])
+
+  const amenityTrailPaths = useMemo(() => {
+    const out: { id: string; name: string; d: string }[] = []
+    amenityTrails.forEach((trail, index) => {
+      lineStringParts(trail.geometry).forEach((points, part) => {
+        const d = pointsToPath(points, proj)
+        if (d) out.push({ id: `${trail.id}:${index}:${part}`, name: trail.name, d })
+      })
+    })
+    return out
+  }, [amenityTrails, proj])
+
   const towns = useMemo(() => paths.filter((s) => s.kind === 'town'), [paths])
   /* Largest first, so a community inside a neighborhood is painted on top
      and takes the pointer. */
@@ -1541,8 +1592,20 @@ export function V3Atlas({
     const out: { kind: string; label: string }[] = []
     if (counts.forSale > 0) out.push({ kind: 'active', label: `${counts.forSale.toLocaleString('en-US')} for sale` })
     if (counts.pending > 0) out.push({ kind: 'pending', label: `${counts.pending.toLocaleString('en-US')} pending` })
+    if (amenityParks.length > 0) {
+      out.push({
+        kind: 'park',
+        label: `${amenityParks.length.toLocaleString('en-US')} ${amenityParks.length === 1 ? 'park' : 'parks'}`,
+      })
+    }
+    if (amenityTrails.length > 0) {
+      out.push({
+        kind: 'trail',
+        label: `${amenityTrails.length.toLocaleString('en-US')} ${amenityTrails.length === 1 ? 'trail' : 'trails'}`,
+      })
+    }
     return out
-  }, [counts, closingsMap, noun, incomplete])
+  }, [counts, closingsMap, noun, incomplete, amenityParks.length, amenityTrails.length])
 
   /* The key, rendered once. `keyPlacement` decides which slot holds it; the
      markup is identical in both, so a reader and a test see one list. */
@@ -1577,6 +1640,32 @@ export function V3Atlas({
         </div>
       ) : null}
       {keyPlacement === 'dock' ? keyList : null}
+      {amenityParks.length > 0 || amenityTrails.length > 0 ? (
+        <div className="v3-atlas__amenities" role="group" aria-label="Parks and trails">
+          {amenityParks.length > 0 ? (
+            <button
+              type="button"
+              className="v3-atlas__type"
+              aria-pressed={showParks}
+              onClick={() => setShowParks((on) => !on)}
+            >
+              <span className="v3-atlas__type-mark v3-atlas__type-mark--park" aria-hidden="true" />
+              Parks
+            </button>
+          ) : null}
+          {amenityTrails.length > 0 ? (
+            <button
+              type="button"
+              className="v3-atlas__type"
+              aria-pressed={showTrails}
+              onClick={() => setShowTrails((on) => !on)}
+            >
+              <span className="v3-atlas__type-mark v3-atlas__type-mark--trail" aria-hidden="true" />
+              Trails
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="v3-atlas__types" role="group" aria-label="Property types">
         {types.map((t) => (
           <button
@@ -1778,6 +1867,34 @@ export function V3Atlas({
                     {basemapPaths.roads.map((p, i) => (
                       <path key={`r-${i}`} d={p.d} className={`v3-atlas__road v3-atlas__road--${p.cls}`}>
                         {p.name ? <title>{p.name}</title> : null}
+                      </path>
+                    ))}
+                  </g>
+                ) : null}
+                {showParks && amenityParkPaths.length > 0 ? (
+                  <g className="v3-atlas__amenity-parks" data-atlas-amenity-layer="parks" aria-hidden="true">
+                    {amenityParkPaths.map((park) => (
+                      <path
+                        key={park.id}
+                        d={park.d}
+                        className="v3-atlas__amenity-park"
+                        data-atlas-amenity="park"
+                      >
+                        <title>{park.name}</title>
+                      </path>
+                    ))}
+                  </g>
+                ) : null}
+                {showTrails && amenityTrailPaths.length > 0 ? (
+                  <g className="v3-atlas__amenity-trails" data-atlas-amenity-layer="trails" aria-hidden="true">
+                    {amenityTrailPaths.map((trail) => (
+                      <path
+                        key={trail.id}
+                        d={trail.d}
+                        className="v3-atlas__amenity-trail"
+                        data-atlas-amenity="trail"
+                      >
+                        <title>{trail.name}</title>
                       </path>
                     ))}
                   </g>
@@ -2210,6 +2327,9 @@ export function V3Atlas({
                 {incomplete ? ' A read failed on this render, so no count is printed.' : ''}
                 {basemapPaths && basemap?.source
                   ? ` Roads, rivers and lakes: ${basemap.source}, drawn in this map's own projection.`
+                  : ''}
+                {amenityParks.length > 0 || amenityTrails.length > 0
+                  ? ' Park outlines from recorded park boundaries in public.boundaries (geo_type=park). Trail lines from public.trail_lines (USFS / BPRD / BLM / OPRD). Missing official geometry is omitted.'
                   : ''}
               </p>
             </details>

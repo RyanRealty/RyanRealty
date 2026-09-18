@@ -36,7 +36,9 @@ import {
   getPriceHistory,
   getDetachedOverlays,
   cityDetachedSlug,
+  getPlaceAmenityLayers,
 } from '@/lib/data'
+import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import {
   leftoverClosedCount,
   placeCostChart,
@@ -674,18 +676,32 @@ async function renderCommunityDetail({ params }: Props) {
   // every page). Population = every active, pending, and 30-day-closed
   // listing INSIDE the recorded boundary, read through the same builder the
   // homepage uses; the plats are the touchable places. No boundary, no map.
-  const atlas = mapPolygon
-    ? await withTimeoutFallback(
-        buildPlaceAtlas({
-          cities: [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])],
-          boundary: mapPolygon,
-          label: publicName,
-        }),
-        null,
-        6000,
-        'comm:atlas',
-      )
-    : null
+  const [atlas, amenityLayers] = mapPolygon
+    ? await Promise.all([
+        withTimeoutFallback(
+          buildPlaceAtlas({
+            cities: [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])],
+            boundary: mapPolygon,
+            label: publicName,
+          }),
+          null,
+          6000,
+          'comm:atlas',
+        ),
+        withTimeoutFallback(
+          getPlaceAmenityLayers({
+            grain: 'community',
+            placeSlug: slug,
+            cityName,
+            communitySlug: slug,
+            placeGeometry: mapPolygon,
+          }),
+          EMPTY_PLACE_AMENITY_LAYERS,
+          4500,
+          'comm:amenityLayers',
+        ),
+      ])
+    : [null, EMPTY_PLACE_AMENITY_LAYERS]
 
   // The lots inside this community, from the county assessor's cadastre. A
   // /subdivisions/ slug for a registry community redirects here, so this is
@@ -977,6 +993,7 @@ async function renderCommunityDetail({ params }: Props) {
                 source={atlasView.source}
                 stamp={atlasView.stamp}
                 incomplete={!atlasView.complete}
+                amenities={amenityLayers}
               />
             </div>
             <aside className="community-fold__figure">
