@@ -10,6 +10,8 @@ describe('SITE-128 neighborhood fold Atlas', () => {
     expect(PAGE).toMatch(/import '\.\/_v3\/neighborhood-fold\.css'/)
     expect(PAGE).toMatch(/className="nbh-fold"/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
+    expect(PAGE).not.toMatch(/clusterStageHint/)
+    expect(PAGE).not.toMatch(/CITY_FOLD_CLUSTER_STAGE/)
     expect(PAGE).not.toMatch(/Scrub price to filter the map/)
     expect(FOLD_CSS).toMatch(/grid-template-areas:\s*'drawing drawing'/)
     expect(FOLD_CSS).toMatch(/\.nbh-fold__drawing \.v3-atlas__scrub[\s\S]{0,80}display:\s*none/)

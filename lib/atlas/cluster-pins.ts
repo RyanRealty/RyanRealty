@@ -24,6 +24,15 @@ export const ATLAS_PIN_CLUSTER_CELL_PX = 64
 /** Hit / expand still speak in "radius"; the cell is that radius. */
 export const ATLAS_PIN_CLUSTER_RADIUS_PX = ATLAS_PIN_CLUSTER_CELL_PX
 
+/**
+ * Desktop Look stage for the city fold (`/cities/bend` @ 1400×900). The page
+ * passes this into V3Atlas so the first HTML already has count bubbles —
+ * `view` used to start null, so SSR painted 759 SVG house dots and 0
+ * clusters. Cos counted those dots as pills. Neighborhood / community omit
+ * this hint (Old Bend skip).
+ */
+export const CITY_FOLD_CLUSTER_STAGE = { w: 1112, h: 610 }
+
 export type AtlasPinCandidate = {
   /** Index in the caller's dots / pinMarks array. */
   i: number
