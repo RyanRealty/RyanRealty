@@ -32,6 +32,8 @@
  *            reads over the field. Dots are zero-length stroked paths with
  *            non-scaling-stroke, so their diameter is screen pixels at any
  *            scale — the server-rendered map is the final map.
+ *   html     SITE-127 price pills (735K / $1.5M) on for-sale and pending
+ *            marks, plus the home blow-up (photo + ask + street) on hover.
  *   html     town labels, positioned from the measured view, in real type.
  *   svg      the pulses, alone, on their own layer, capped with slots for
  *            each kind of event so a close always shows, paused off-screen.
@@ -79,6 +81,7 @@ import {
   salesHeatField,
 } from '@/lib/atlas/sales-heat'
 import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/atlas/pack-labels'
+import { atlasPinShouldPaint, formatAtlasPinPrice } from '@/lib/atlas/pin-price'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Atlas.css'
@@ -122,6 +125,13 @@ export type AtlasDot = {
   s: 'active' | 'pending' | 'sold' | 'closed'
   /** Days since close for a sold dot; null otherwise. */
   soldAgo?: number | null
+  /** Hero photo, already sized for the hover blow-up. Absent when withheld. */
+  photo?: string | null
+  /** "714 Wrangler Court, Sisters" — the card address. */
+  street?: string | null
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
 }
 
 /** A recent, real event: what the live line prints. */
@@ -874,7 +884,8 @@ export function V3Atlas({
      no hit testing, and on a frame with no places the whole map was inert
      (evaluator round five, LISTING-NOBOUNDARY-2, LISTING-BEND-7). */
   const [dotHit, setDotHit] = useState<number | null>(null)
-  const REACH = 14
+  /* Price pills are ~52×22 above the coordinate; 14px only caught the caret. */
+  const REACH = 28
 
   /* ROW ↔ MARK, the map's direction: the key under the pointer, reported up
      so a sibling list can raise its own row. */
@@ -1168,53 +1179,84 @@ export function V3Atlas({
         }
       : undefined
 
-  /* The readout for one mark: what it is, what it costs, when it moved. */
-  const tip = (() => {
-    if (dotHit == null || pinned || hover || !view) return null
+  const pinMarks = useMemo(() => {
+    if (!view) return []
+    const out: { d: AtlasDot; i: number; x: number; y: number; label: string }[] = []
+    dots.forEach((d, i) => {
+      if (!isOn(d) || !atlasPinShouldPaint(d)) return
+      const label = formatAtlasPinPrice(d.p)
+      if (!label) return
+      const [x, y] = screenOf(d.lng, d.lat)
+      out.push({ d, i, x, y, label })
+    })
+    return out
+  }, [view, dots, isOn, screenOf])
+
+  /* The home under the pointer: photo + ask, not a one-line status chip. */
+  const homePreview = (() => {
+    if (dotHit == null || pinned || !view) return null
     const d = dots[dotHit]
-    const p = dotPx[dotHit]
-    if (!d || !p) return null
-    const state =
-      d.s === 'closed' ? 'Closed' : d.s === 'sold' ? 'Sold' : d.s === 'pending' ? 'Pending' : 'For sale'
-    const when =
-      d.s === 'sold' || d.s === 'closed'
-        ? d.soldAgo != null
-          ? d.soldAgo === 0
-            ? 'today'
-            : `${d.soldAgo} ${d.soldAgo === 1 ? 'day' : 'days'} ago`
-          : null
-        : d.age != null && d.age <= 14
-          ? d.age === 0
-            ? 'listed today'
-            : `listed ${d.age} ${d.age === 1 ? 'day' : 'days'} ago`
-          : null
-    const type = types.find((t) => t.key === d.t)?.label
-    const sx = p[0] * cam.k + cam.x
-    const sy = p[1] * cam.k + cam.y
+    if (!d || !atlasPinShouldPaint(d)) return null
+    const [sx, sy] = screenOf(d.lng, d.lat)
+    const facts: string[] = []
+    if (d.beds != null && Number.isFinite(d.beds)) facts.push(`${Math.round(d.beds)} bd`)
+    if (d.baths != null && Number.isFinite(d.baths)) {
+      facts.push(`${Number.isInteger(d.baths) ? d.baths : d.baths.toFixed(1)} ba`)
+    }
+    if (d.sqft != null && Number.isFinite(d.sqft)) {
+      facts.push(`${Math.round(d.sqft).toLocaleString('en-US')} sqft`)
+    }
+    const state = d.s === 'pending' ? 'Pending' : 'For sale'
+    const price = d.p != null ? formatAtlasPinPrice(d.p) : ''
+    const cardW = 248
+    const cardH = d.photo ? 280 : 148
+    const left = Math.min(Math.max(sx, cardW / 2 + 8), Math.max(cardW / 2 + 8, view.w - cardW / 2 - 8))
+    const placeBelow = sy < cardH + 28
+    const top = placeBelow ? Math.min(sy + 18, Math.max(18, view.h - 12)) : Math.max(12, sy - 16)
     const body = (
       <>
-        <span className="v3-atlas__tip-state">{state}</span>
-        {d.p != null ? <span className="v3-atlas__tip-price">{fmtShort(d.p)}</span> : null}
-        {type ? <span className="v3-atlas__tip-type">{type}</span> : null}
-        {when ? <span className="v3-atlas__tip-type">{when}</span> : null}
+        {d.photo ? (
+          // Spark listing photos skip next/image (row-photo.ts).
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className="v3-atlas__home-photo"
+            src={d.photo}
+            alt={d.street || 'Home'}
+            width={248}
+            height={148}
+            draggable={false}
+          />
+        ) : (
+          <span className="v3-atlas__home-photo is-empty" aria-hidden="true" />
+        )}
+        <span className="v3-atlas__home-body">
+          <span className="v3-atlas__home-state">{state}</span>
+          {price ? <span className="v3-atlas__home-price">{price}</span> : null}
+          {d.street ? <span className="v3-atlas__home-street">{d.street}</span> : null}
+          {facts.length > 0 ? <span className="v3-atlas__home-facts">{facts.join(' · ')}</span> : null}
+        </span>
       </>
     )
-    const style = {
-      left: Math.min(Math.max(sx, 8), Math.max(8, view.w - 8)),
-      top: Math.max(0, sy - 12),
-    }
+    const style = { left, top }
     return d.href ? (
-      <Link href={d.href} className="v3-atlas__tip" style={style}>
+      <Link
+        href={d.href}
+        className={cn('v3-atlas__home', placeBelow && 'is-below')}
+        style={style}
+        data-atlas-home={d.k}
+        data-atlas-home-price={price || undefined}
+        aria-label={d.street ? `${d.street}, ${price || state}` : `Listing, ${price || state}`}
+      >
         {body}
       </Link>
     ) : (
-      <p className="v3-atlas__tip" role="status" style={style}>
+      <p className={cn('v3-atlas__home', placeBelow && 'is-below')} role="status" style={style} data-atlas-home={d.k}>
         {body}
       </p>
     )
   })()
 
-  const showCard = Boolean(activeShape && activeStats && (pinned || hover))
+  const showCard = Boolean(activeShape && activeStats && (pinned || hover) && dotHit == null)
   const card =
     showCard && activeShape && activeStats ? (
       <div ref={cardRef} className={cn('v3-atlas__card', pinned && 'is-pinned')} role="status" style={cardStyle}>
@@ -1769,7 +1811,29 @@ export function V3Atlas({
                 </div>
               ) : null}
 
-              {tip}
+              {view && pinMarks.length > 0 ? (
+                <div className="v3-atlas__pins" aria-hidden="true">
+                  {pinMarks.map(({ d, i, x, y, label }) => (
+                    <span
+                      key={d.k}
+                      className={cn(
+                        'v3-atlas__pin',
+                        d.s === 'pending' && 'is-pending',
+                        highlight && d.k === highlight.key && 'is-home',
+                        linkedIndex === i && 'is-linked',
+                        dotHit === i && 'is-hot',
+                      )}
+                      style={{ left: x, top: y }}
+                      data-atlas-pin={d.k}
+                      data-atlas-pin-price={label}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              {homePreview}
             </div>
             {/* The card sits in the frame, not the stage: on a phone it drops
                 below the map in flow, because pinned over a 208px stage it

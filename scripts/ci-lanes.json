@@ -27,6 +27,7 @@
     "ci:jsonb-contains",
     "ci:listing-alert-enroll",
     "ci:listing-canonical-single",
+    "ci:atlas-price-pins",
     "ci:listing-figure-publish",
     "ci:listing-fold-density",
     "ci:listing-key-lookup",

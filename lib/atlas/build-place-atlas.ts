@@ -21,6 +21,8 @@ import { getAtlasTiles, type AtlasTile } from '@/lib/data'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { listingTileHref } from '@/lib/slug'
 import { formatDateTime } from '@/lib/format/date'
+import { publishCardAddress } from '@/lib/listing/publish-street-line'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { outerRings, pointInRings, type Ring } from '@/lib/geo/project-svg'
 import { classifyType } from '@/app/_v3/home-field-items'
@@ -174,6 +176,16 @@ export function atlasDotsFromTiles(tiles: readonly AtlasTile[], nowMs = Date.now
         t: typeKey,
         s,
         age: daysAgo(nowMs, tile.onMarketDate),
+        photo: tile.photoUrl ? listingRowPhotoSrc(tile.photoUrl, LISTING_FIELD_LEAD_PHOTO_SIZE) : null,
+        street: publishCardAddress({
+          streetNumber: tile.streetNumber,
+          streetName: tile.streetName,
+          streetSuffix: tile.streetSuffix ?? null,
+          city: tile.city,
+        }) || null,
+        beds: tile.beds ?? null,
+        baths: tile.baths ?? null,
+        sqft: tile.sqft ?? null,
         ...(soldAgo != null ? { soldAgo } : {}),
       },
     ]
@@ -311,7 +323,7 @@ export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Pr
       if (!population.complete) throw new Error('[build-place-atlas] short read is not cached')
       return population
     },
-    ['atlas-population-v2', key],
+    ['atlas-population-v3', key],
     { revalidate: CACHE_WINDOWS.listingsByGeo, tags: [cacheTag.listings] },
   )
   try {
