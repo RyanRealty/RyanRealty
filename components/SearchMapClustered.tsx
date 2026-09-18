@@ -1265,6 +1265,33 @@ export default function SearchMapClustered({
     }
   }, [placeQuery, boundaryPaths, fitSubjectRing])
 
+  // First-look ring camera: fit after the map instance exists AND after the
+  // island has a real box. onLoad + the place-fit effect can both run against
+  // a 0-height phone canvas and leave zoom 11 on the pin centroid.
+  useEffect(() => {
+    const map = mapInstance
+    if (!map || !window.google?.maps || !fitSubjectRing) return
+    if (boundaryPaths.flat().length < 2) return
+    const bb = new google.maps.LatLngBounds()
+    for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
+    if (bb.isEmpty()) return
+    const apply = () => {
+      try {
+        google.maps.event.trigger(map, 'resize')
+      } catch {
+        // map may not expose trigger mid-teardown
+      }
+      map.fitBounds(bb, v3SubjectRingPadding(map.getDiv()))
+      google.maps.event.addListenerOnce(map, 'idle', () => {
+        const z = map.getZoom()
+        if (typeof z === 'number' && z > 14) map.setZoom(14)
+      })
+    }
+    apply()
+    const t = window.setTimeout(apply, 450)
+    return () => window.clearTimeout(t)
+  }, [mapInstance, fitSubjectRing, boundaryPaths])
+
   // NOTE: The idle listener for bounds reporting is attached directly in onLoad
   // above. This effect is intentionally removed to avoid the race condition where
   // the effect ran before onLoad set mapRef.current (causing no listener to be
