@@ -32,7 +32,7 @@ describe('SITE-82 city fold composition', () => {
     expect(FOLD_CSS).toMatch(/\.city-fold__drawing \.v3-place-look__map/)
     expect(FOLD_CSS).toMatch(/overflow:\s*visible/)
     expect(readFileSync(resolve('components/site/v3/V3PlaceLook.css'), 'utf8')).toMatch(
-      /max-width:\s*63\.99rem[\s\S]*v3-place-look__map[\s\S]*10\.5rem/,
+      /max-width:\s*63\.99rem[\s\S]*v3-place-look__map[\s\S]*13rem/,
     )
     expect(readFileSync(resolve('components/site/v3/V3PlaceLook.css'), 'utf8')).toMatch(
       /nth-child\(n \+ 5\)/,

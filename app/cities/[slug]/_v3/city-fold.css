@@ -244,9 +244,9 @@
   }
 
   .city-fold__drawing .v3-place-look__map {
-    height: min(22vh, 10.5rem);
-    min-height: 9.5rem;
-    max-height: 10.5rem;
+    height: min(26vh, 13rem);
+    min-height: 11rem;
+    max-height: 13rem;
   }
 
   .city-fold__drawing .v3-atlas__stage {

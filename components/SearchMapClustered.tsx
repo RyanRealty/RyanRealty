@@ -1291,12 +1291,13 @@ export default function SearchMapClustered({
         const ne = bb.getNorthEast()
         const sw = bb.getSouthWest()
         const ringInView = Boolean(view && view.contains(ne) && view.contains(sw))
-        // Short phone island: constructor zoom 11 crops a city ring that
-        // desktop shows whole. Pull out so the recorded outline fills the fold.
-        if (!ringInView && h > 0 && h < 240) {
+        // Short phone island: z10 still sits inside the city and paints the
+        // west edge as a line through the pin pile. Pull out so the recorded
+        // outline reads as a closed ring (SITE-128 @375 rematch).
+        if (h > 0 && h < 260) {
           map.fitBounds(bb, v3SubjectRingPadding(div))
           const z2 = map.getZoom()
-          if (typeof z2 === 'number' && z2 >= 11) map.setZoom(9)
+          if (typeof z2 === 'number' && z2 > 8) map.setZoom(8)
         }
         if (div) {
           div.dataset.placeLookRing = ringInView ? 'in-view' : 'refit'

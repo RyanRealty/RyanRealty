@@ -43,14 +43,14 @@
   .v3-place-look__stage {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(9.5rem, 22vh) auto;
+    grid-template-rows: minmax(11rem, 26vh) auto;
     min-height: 0;
   }
 
   .v3-place-look__map {
-    height: min(22vh, 10.5rem);
-    min-height: 9.5rem;
-    max-height: 10.5rem;
+    height: min(26vh, 13rem);
+    min-height: 11rem;
+    max-height: 13rem;
   }
 
   .v3-place-look__cards {
