@@ -22,6 +22,7 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/headlineTone="eyebrow"/)
     expect(PAGE).toMatch(/keyPlacement="dock"/)
     expect(PAGE).toMatch(/claimText=\{/)
+    expect(PAGE).not.toMatch(/Scrub price to filter the map/)
   })
 
   it('shortens the city photograph so the drawing can own the fold', () => {
@@ -48,7 +49,10 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/city-fold__figure city-fold__figure--insight/)
     expect(PAGE).toMatch(/city-fold__figure city-fold__figure--ask/)
     expect(FOLD_CSS).toMatch(/\.city-fold__figure--insight/)
-    expect(FOLD_CSS).toMatch(/grid-template-columns: minmax\(0, 1\.25fr\)/)
+    expect(FOLD_CSS).toMatch(/grid-template-areas:\s*'drawing drawing'/)
+    expect(FOLD_CSS).toMatch(/\.city-fold__drawing \.v3-atlas__scrub[\s\S]{0,80}display:\s*none/)
+    expect(FOLD_CSS).toMatch(/max-height:\s*min\(68vh,\s*40rem\)/)
+    expect(FOLD_CSS).toMatch(/min-height:\s*min\(36vh,\s*16rem\)/)
     // The catalog source itself, imported by the route (ci:catalog-install).
     expect(INSIGHT).toMatch(/from '@\/components\/motion\/insight-cards'/)
     expect(INSIGHT).toMatch(/from '@\/components\/motion\/number'/)

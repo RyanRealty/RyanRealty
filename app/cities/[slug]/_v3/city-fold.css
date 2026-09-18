@@ -80,22 +80,32 @@
 }
 
 @media (min-width: 64rem) {
-  /* SITE-93: THREE columns, not two stacked plates in one.
-     The drawing, the figure, the ask — each a different width, a different
-     density and a different medium, which is exactly what the evaluator said
-     the old right column did not have ("no change in width, density, or
-     media"). It is also what puts the email ask back inside the first
-     viewport: as one column it ended 178px below the fold once the pager and
-     the four proof cards arrived. */
+  /* SITE-128: dominant map on its own row, then insight | ask — the same
+     composition community/sub already lock. A 1.25fr sliver left the Bend
+     drawing at ~459×208 with stacked price pins. */
   .city-fold__stage {
-    grid-template-columns: minmax(0, 1.25fr) minmax(15.5rem, 0.8fr) minmax(16.5rem, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-areas:
+      'drawing drawing'
+      'insight ask';
     column-gap: var(--v3-space-lg);
+    row-gap: var(--v3-space-lg);
+  }
+
+  .city-fold__drawing {
+    grid-area: drawing;
+  }
+
+  .city-fold__figure--insight {
+    grid-area: insight;
+  }
+
+  .city-fold__figure--ask {
+    grid-area: ask;
   }
 
   /* The Atlas's own wide layout puts a 16-20rem dock column beside the map.
-     In a 476px fold column that leaves the map ~180px and it draws as a
-     sliver, which is the opposite of "the map is Atlas". In the fold the map
-     takes the whole column and the type + price controls dock under it. */
+     In the fold the map takes the whole row and type chips dock under it. */
   .city-fold__drawing .v3-atlas__grid {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
@@ -113,13 +123,10 @@
   }
 
   .city-fold__drawing .v3-atlas__stage {
-    min-height: 0;
-    max-height: min(42vh, 21rem);
+    min-height: min(52vh, 32rem);
+    max-height: min(68vh, 40rem);
   }
 
-  /* Three columns, two rules. The register's own separator (PUBLIC_UI: rules,
-     not panels), so the figure and the ask read as columns of one front page
-     instead of cards floating in cream. */
   .city-fold__figure--insight,
   .city-fold__figure--ask {
     border-left: var(--v3-rule-hairline);
@@ -128,7 +135,8 @@
 }
 
 /* Fold Atlas: MOS owns the inventory numeral. Hide the key's competing
-   for-sale / pending counts (tile population ≠ leftover HUD). Keep type + scrub. */
+   for-sale / pending counts (tile population ≠ leftover HUD). Type chips
+   stay; the price scrubber is off (SITE-128, community/sub lock). */
 .city-fold__drawing .v3-atlas__key {
   display: none;
 }
@@ -142,17 +150,17 @@
   max-width: 100%;
 }
 
-/* Cap the map plate so drawing + figure + alerts ask fit the first viewport. */
+/* Dominant map: pins have to be readable, not a postage stamp (SITE-128). */
 .city-fold__drawing .v3-atlas__frame {
-  max-height: min(32vh, 16rem);
+  max-height: min(68vh, 40rem);
 }
 
 .city-fold__drawing .v3-atlas__sales-legend {
   display: none;
 }
 
-/* Keep type toggles + price scrubber (the house-atlas interaction). Hide the
-   tall events rail and aside so the fold still fits the first viewport. */
+/* Keep type toggles. Hide the tall events rail and aside so the fold still
+   fits. Price scrubber is off on this grain (SITE-128). */
 .city-fold__drawing .v3-atlas__aside,
 .city-fold__drawing .v3-atlas__events {
   display: none;
@@ -172,14 +180,15 @@
   gap: var(--v3-space-2xs);
 }
 
-.city-fold__drawing .v3-atlas__scrub {
-  flex: 1 1 12rem;
-  min-width: 10rem;
+.city-fold__drawing .v3-atlas__scrub,
+.city-fold__drawing .v3-atlas__range,
+.city-fold__drawing .v3-range {
+  display: none;
 }
 
-/* Fold polygons are the drawing, not the hit target. Type chips + the price
-   scrubber are the 44×44 controls (WCAG 2.5.8). Hiding the aside list would
-   otherwise leave the paths as the only named "Old Bend" control. */
+/* Fold polygons are the drawing, not the hit target. Type chips are the
+   44×44 controls (WCAG 2.5.8). Hiding the aside list would otherwise leave
+   the paths as the only named "Old Bend" control. */
 .city-fold__drawing .v3-atlas__place {
   pointer-events: none;
 }
@@ -203,9 +212,13 @@
     gap: var(--v3-space-sm);
   }
 
-  /* Phone: tiny Atlas drawing, then MOS + alerts ask — all in 812. */
+  /* Phone: a usable map, then MOS + alerts ask (SITE-128). */
   .city-fold__drawing .v3-atlas__frame {
-    max-height: min(10vh, 4.75rem);
+    max-height: min(46vh, 20rem);
+  }
+
+  .city-fold__drawing .v3-atlas__stage {
+    min-height: min(36vh, 16rem);
   }
 
   .city-fold__drawing .v3-atlas__head {
@@ -220,7 +233,6 @@
     display: none;
   }
 
-  /* Scrubber stays — the house-atlas interaction on a phone. */
   .city-fold__drawing .v3-atlas__dock {
     position: static;
     padding-top: 0;
