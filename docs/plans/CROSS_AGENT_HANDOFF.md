@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-128 craft #3 + SITE-130 + crumb LOCK)
 
-Surface: Cursor cloud `bc-9f9e4e81-b037-5dc5-a68e-ce6aabd797eb`, branch `cursor/site-128-130-hierarchy-crumb-97eb`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud `bc-9f9e4e81-b037-5dc5-a68e-ce6aabd797eb`, branch `cursor/site-128-130-hierarchy-crumb-97eb`, tip `8007cbd62`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
 - **Hierarchy.** Killed city “Subdivisions in Bend” dump above nbhd bars. Community/neighborhood children are name-only `#child-places` cards (no Subdivisions/Neighborhoods headings). DRW keep-exploring = GIS ring + resort peers, not a city-wide sales dump. A–Z `/subdivisions` stays the directory.
 - **Crumb LOCK.** One component (`V3Breadcrumb`) sitewide. Place templates + CommunityStage overlay on the still. Copy pad is tap + 2xs after listing densify. `ci:listing-fold-density` + `--ship` refuse flow crumbs / xl-3xl cream / “Subdivisions in …” headings.
