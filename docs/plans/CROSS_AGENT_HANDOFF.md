@@ -1,3 +1,13 @@
+# Current — 2026-09-18 (P0 place inventory craft)
+
+Surface: Cursor cloud, branch `cursor/place-inventory-craft-60a4`. PR only — Cos Mini lands Tip Ready. Do not merge. HOLD owner email.
+
+- **Inventory.** Subdivision + community `#homes` is `V3PlaceInventory` (typed SFR / multifamily / attached / land). Empty types omit. No PlaceSplitView / price scrubber / morphing search on those two routes. City + neighborhood keep Split.
+- **Map.** Plat + community Atlas frames `min(68vh, 40rem)` desktop / `min(46vh, 20rem)` phone; scrub hidden. Stock stays on the place page (`#homes`).
+- **Voice.** `placeHomesForSaleHeading` + `EVERY_HOME_LECTURE_REFUSE`. No lecture H1.
+- **Proof.** `/subdivisions/parkside-place-phase-1`, then `/communities/tetherow`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
+
 # Current — 2026-09-17 (listing fold density — Tip Ready)
 
 Surface: Cursor cloud, branch `cursor/listing-fold-whitespace-e937`. PR #285. Cos Mini landing onto main after puppeteer hotfix.

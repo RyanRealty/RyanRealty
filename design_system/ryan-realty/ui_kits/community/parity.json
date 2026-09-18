@@ -42,8 +42,18 @@
       "blocking": true
     },
     {
-      "name": "PlaceSplitView",
-      "section": "First-screen Split. Tetherow seeds the reliable ring (getGeoBoundaryMapData neighborhood + getResortBoundaryGeoJSON). A community with a verified county plat-union (Eagle Crest, Black Butte Ranch, ...) seeds that union even when its stored hull is unreliable; alias tiles still pass as listings override then. overlayBoundaries carries the child plat cells. Face count is leftover, not this list length.",
+      "name": "V3PlaceInventory",
+      "section": "On-page inventory (Matt 2026-09-18). Every active listing in this community, typed into Single-family / Multifamily / Townhomes and condos / Land. Empty types omit. No PlaceSplitView, price scrubber, or morphing search as the stock surface.",
+      "blocking": true
+    },
+    {
+      "name": "loadPlaceStockTiles",
+      "section": "All-type active tiles for this community (boundary keys + subdivision aliases). Market HUD stays leftover SFR.",
+      "blocking": true
+    },
+    {
+      "name": "placeStockSectionsFromTiles",
+      "section": "Groups live tiles into the four buyer buckets. Empty buckets omit.",
       "blocking": true
     },
     {
@@ -64,16 +74,6 @@
     {
       "name": "V3Footer",
       "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Carries no button: the page's one primary is the opening Instrument's ask, and a footer sits below every section that could earn a second one. Rendered OUTSIDE <main>, because HTML-AAM maps <footer> to role=contentinfo only when it is not nested in sectioning content, and <main> is sectioning content.",
-      "blocking": true
-    },
-    {
-      "name": "communityTypeStripItems",
-      "section": "Type strips, not H2s. Count + noun chips from getPublicPlaceSegments. MOS / verdict stay off the chips.",
-      "blocking": true
-    },
-    {
-      "name": "PlaceTypeSlider",
-      "section": "Horizontal leftover type cards from getPublicPlaceSegments. Same slider as city / neighborhood / subdivision.",
       "blocking": true
     },
     {
@@ -234,8 +234,7 @@
     "V3Atlas #atlas -- the living map scoped to the community (renders only with a trusted boundary and at least one listing inside it)",
     "CommunityAlertsStrip #alerts (V3AlertsStrip: SITE-87 fold figure beside Atlas. The listing-alert callout with this community's real 30-day count as the claim, the MLS-name scope line, the newest-first door, email, one ghost button; the sticky repeat from the same component, with its own one-line disclosure)",
     "CommunityPlaceValue (the first-screen ask: address in, verdict and pace out, then the email that delivers the written valuation; on every community page; the answer names it when no verdict is published)",
-    "PlaceTypeSlider (type cards, not H2s)",
-    "PlaceSplitView #homes",
+    "V3PlaceInventory #homes (typed on-page stock; empty types omit)",
     "V3Ledger #subdivisions (registry child subdivisions, SFR-counted from the same city set as the face; omitted when the registry names none)",
     "V3Instrument #market (this community's typical-price slope after villages; never Bend's median) or V3Quiet (too few / stated absence)",
     "V3Amenities #amenities (SITE-116: authored amenity list as InsightCards; omitted when the config recorded none)",

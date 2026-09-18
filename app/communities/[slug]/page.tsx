@@ -6,7 +6,7 @@
  * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
  * Matt 2026-09-07): an input-to-answer ask, not a number hero.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
- * regions and Split overlayBoundaries.
+ * regions. Inventory is V3PlaceInventory on this page, typed by property.
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * leftoverHudKpis grain stays 'neighborhood', keyed by the bare community
@@ -60,7 +60,6 @@ import {
   getPublicDetachedMonthly,
   leftoverNeighborhoodOrCityMonthly,
 } from '@/lib/data/market-truth/public-monthly'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
@@ -96,6 +95,7 @@ import {
   V3Atlas,
   type AtlasRegion,
   V3PlaceIndex,
+  V3PlaceInventory,
   type V3PlaceIndexEntry,
   V3SectionTracker,
   V3Amenities,
@@ -108,16 +108,9 @@ import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atla
 import { getPlaceOpeningListings } from '@/lib/data'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
-import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
-import { PlaceSplitView } from '@/components/search/PlaceSplitView'
-import {
-  placeTypeCoverPhotos,
-  publishPlaceTypeCards,
-} from '@/lib/place/publish-place-type-cards'
-import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
-import { overlaysFromChildCells, regionsFromChildCells } from '@/lib/place/child-rings'
+import { regionsFromChildCells } from '@/lib/place/child-rings'
+import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
 import { slugify } from '@/lib/slug'
-import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { CommunityAlertsStrip } from './_v3/CommunityAlertSheet.client'
@@ -148,8 +141,6 @@ import {
   belongingHeadline,
   belongingTrace,
   communityLibraryHero,
-  communitySplitListings,
-  communityTypeStripItems,
   firstAboutParagraph,
   leftoverSoldHistoryFigures,
   stagePoster,
@@ -314,7 +305,6 @@ async function renderCommunityDetail({ params }: Props) {
     cityPriceHist,
     publicPace,
     cityPace,
-    publicSegments,
     leftoverCityMonthly,
     leftoverNeighborhoodMonthly,
     commOverlays,
@@ -353,12 +343,6 @@ async function renderCommunityDetail({ params }: Props) {
           'comm:cityPace',
         )
       : Promise.resolve(EMPTY_PUBLIC_PACE),
-    withTimeoutFallback(
-      getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
-      [],
-      3000,
-      'comm:publicSegments',
-    ),
     withTimeoutFallback(
       getPublicDetachedMonthly({ geoType: 'city', geoSlug: citySlug, currentMonthKey }),
       [],
@@ -656,14 +640,25 @@ async function renderCommunityDetail({ params }: Props) {
   // verified-good union polygon and drew nothing (Matt, 2026-09-01). An
   // unreliable hull with no union still draws nothing — mapPolygon is null.
   const seedRing = mapPolygon != null
-  const splitListings =
-    !boundaryReliable && fieldTiles.length > 0 ? communitySplitListings(fieldTiles) : undefined
-  const hasMap = Boolean(mapPolygon) || fieldTiles.length > 0 || Boolean(splitListings?.length)
-  // The community's recorded plats as subordinate map cells, each a door to
-  // its own page — the "broken out" rendering getCommunitySubdivisions was
-  // built for. Spatial membership (centroid in polygon), county-GIS geometry
-  // only, capped so a plat-dense resort cannot flood the map with paths.
-  const platCellOverlays = overlaysFromChildCells(platCells)
+  const stockTiles = await withTimeoutFallback(
+    loadPlaceStockTiles({
+      listingKeys: [
+        ...boundaryListingKeys,
+        ...fieldTiles.map((tile) => tile.listingKey),
+      ],
+      subdivisionNames: [
+        ...getSubdivisionMatchNames(community.subdivision || publicName),
+        ...childAliases,
+      ],
+      city: cityName,
+    }),
+    [],
+    4500,
+    'comm:stock',
+  )
+  const stockSections = placeStockSectionsFromTiles(unionListingTiles(stockTiles, fieldTiles))
+  const inventorySource = `regional MLS through Oregon Data Share, every active listing in ${publicName}`
+  const hasMap = seedRing || fieldTiles.length > 0 || stockSections.length > 0
   // The living map, scoped to this community (Matt 2026-09-01: heat maps on
   // every page). Population = every active, pending, and 30-day-closed
   // listing INSIDE the recorded boundary, read through the same builder the
@@ -750,26 +745,6 @@ async function renderCommunityDetail({ params }: Props) {
       dateLabel: formatDate(post.publishedAt),
     })),
   )
-  const typeCovers = await withTimeoutFallback(
-    loadPlaceTypeCoverPhotos({
-      city: cityName,
-      subdivision: community.subdivision,
-      aliases: [community.subdivision, publicName, ...childAliases],
-    }),
-    {},
-    4500,
-    'comm:typeThumbs',
-  )
-  const typeCards = publishPlaceTypeCards({
-    browsePath: `/communities/${slug}`,
-    placeName: publicName,
-    sfrCount: hud.active,
-    sfrMedian: hud.medianList,
-    sfrMos: null,
-    segments: publicSegments,
-    covers: { ...placeTypeCoverPhotos(splitListings ?? fieldTiles), ...typeCovers },
-  })
-
   const pageFaqs = reconcilePlaceHoaFaq(
     reconcileListedVsDetachedFaq(faqs, {
       placeName: publicName,
@@ -857,8 +832,6 @@ async function renderCommunityDetail({ params }: Props) {
     amenityPosts,
     character: placeCharacter,
   })
-
-  const typeItems = communityTypeStripItems(publicSegments, citySlug)
 
   const exploreItems = buildExploreEdges({
     communityName: publicName,
@@ -952,7 +925,7 @@ async function renderCommunityDetail({ params }: Props) {
                   {' · '}
                 </>
               ) : null}
-              <a href={browseHref}>{publicName} homes for sale</a>
+              <a href="#homes">{publicName} homes for sale</a>
             </p>
             {belongingLine ? (
               <p
@@ -1029,19 +1002,12 @@ async function renderCommunityDetail({ params }: Props) {
           source="Deschutes County · Oregon Data Share"
         />
 
-        <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
-
-        <PlaceSplitView
+        <V3PlaceInventory
           id="homes"
-          city={cityName}
-          subdivision={community.subdivision}
-          boundaryGeojson={seedRing ? mapPolygon : null}
-          overlayBoundaries={platCellOverlays}
-          seedRing={seedRing}
-          placeQuery={publicName}
-          listings={splitListings}
-          totalCount={splitListings?.length}
-          degraded={!citySfrRead.ok && isResortInCity}
+          placeName={publicName}
+          sections={stockSections}
+          source={inventorySource}
+          asOf={leftoverStamp}
         />
 
         {/* Subdivisions inside the community - every row is a door, mirroring
@@ -1057,7 +1023,7 @@ async function renderCommunityDetail({ params }: Props) {
             // the same counts the figures print (placeFigureRows).
             encode="bar"
             source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
-            action={{ label: v3Text(`All ${publicName} homes`), href: browseHref }}
+            action={{ label: v3Text(`All ${publicName} homes`), href: '#homes' }}
           />
         ) : null}
 
@@ -1078,8 +1044,8 @@ async function renderCommunityDetail({ params }: Props) {
             chart={costChart}
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
             action={{
-              label: v3Text(`Search ${publicName} homes`),
-              href: browseHref,
+              label: v3Text(`${publicName} homes for sale`),
+              href: '#homes',
               variant: 'primary',
             }}
           />

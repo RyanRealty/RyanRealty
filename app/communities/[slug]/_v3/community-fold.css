@@ -68,7 +68,7 @@
 
 .community-fold {
   width: 100%;
-  max-width: var(--v3-measure);
+  max-width: min(100%, 90rem);
   margin-inline: auto;
   padding-inline: var(--v3-gutter);
   padding-top: var(--v3-space-md);
@@ -82,10 +82,9 @@
 }
 
 @media (min-width: 64rem) {
-  /* Atlas owns more of the fold; alerts figure stays wide enough to read. */
+  /* Dominant map on its own row; alerts sit under it, not beside a stamp. */
   .community-fold__stage {
-    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.95fr);
-    column-gap: var(--v3-space-lg);
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -98,10 +97,19 @@
   max-width: 100%;
 }
 
-/* Cap the map plate so drawing + figure fit the first viewport.
-   Tall enough to read marks; not so tall the alerts figure leaves the fold. */
+/* Dominant map: pins have to be usable, not a postage stamp. */
 .community-fold__drawing .v3-atlas__frame {
-  max-height: min(52vh, 28rem);
+  max-height: min(68vh, 40rem);
+}
+
+.community-fold__drawing .v3-atlas__stage {
+  min-height: min(48vh, 28rem);
+}
+
+.community-fold__drawing .v3-atlas__scrub,
+.community-fold__drawing .v3-atlas__range,
+.community-fold__drawing .v3-range {
+  display: none;
 }
 
 /* Inventory + type toggles stay on the head; dock/events/key counts stay off
@@ -113,9 +121,13 @@
 }
 
 @media (max-width: 63.99rem) {
-  /* Phone: short Atlas, then claim + cards + ask — all in the first viewport. */
+  /* Phone: a usable map, then claim + cards + ask. */
   .community-fold__drawing .v3-atlas__frame {
-    max-height: min(12vh, 5.5rem);
+    max-height: min(46vh, 20rem);
+  }
+
+  .community-fold__drawing .v3-atlas__stage {
+    min-height: min(36vh, 16rem);
   }
 
   .community-fold__drawing .v3-atlas__head {

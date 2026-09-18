@@ -90,7 +90,7 @@
 
 .plat-fold {
   width: 100%;
-  max-width: var(--v3-measure);
+  max-width: min(100%, 90rem);
   margin-inline: auto;
   padding-inline: var(--v3-gutter);
   padding-top: var(--v3-space-md);
@@ -129,20 +129,32 @@
 }
 
 @media (min-width: 64rem) {
-  /* SITE-112: THREE columns, not one column holding three plates.
-     The drawing, the paged figure, the ask - each a different width, a
-     different density and a different medium. It is also what puts the email
-     field back inside the first viewport now that the pager sits beside it
-     rather than above it. */
+  /* Dominant map on its own row, then insight | ask. Pins have to be usable. */
   .plat-fold__stage {
-    grid-template-columns: minmax(0, 1.2fr) minmax(15.5rem, 0.85fr) minmax(16rem, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-areas:
+      'drawing drawing'
+      'insight ask';
     column-gap: var(--v3-space-lg);
+    row-gap: var(--v3-space-lg);
+  }
+
+  .plat-fold__drawing {
+    grid-area: drawing;
+  }
+
+  .plat-fold__figure--insight {
+    grid-area: insight;
+  }
+
+  .plat-fold__figure--ask {
+    grid-area: ask;
   }
 
   /* The Atlas's own wide layout puts a 16-20rem dock column beside the map. In
      a fold column that leaves the map a sliver, which is the opposite of "the
-     map is Atlas". In the fold the map takes the whole column and the type +
-     price controls dock under it. */
+     map is Atlas". In the fold the map takes the whole column and the type
+     controls dock under it. */
   .plat-fold__drawing .v3-atlas__grid {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
@@ -160,13 +172,10 @@
   }
 
   .plat-fold__drawing .v3-atlas__stage {
-    min-height: 0;
-    max-height: min(42vh, 21rem);
+    min-height: min(52vh, 32rem);
+    max-height: min(68vh, 40rem);
   }
 
-  /* Three columns, two rules. The register's own separator (PUBLIC_UI: rules,
-     not panels), so the figure and the ask read as columns of one front page
-     instead of cards floating in cream. */
   .plat-fold__figure--insight,
   .plat-fold__figure--ask {
     border-left: var(--v3-rule-hairline);
@@ -190,7 +199,7 @@
 }
 
 .plat-fold__drawing .v3-atlas__frame {
-  max-height: min(32vh, 16rem);
+  max-height: min(68vh, 40rem);
 }
 
 .plat-fold__drawing .v3-atlas__sales-legend {
@@ -216,9 +225,10 @@
   gap: var(--v3-space-2xs);
 }
 
-.plat-fold__drawing .v3-atlas__scrub {
-  flex: 1 1 12rem;
-  min-width: 10rem;
+.plat-fold__drawing .v3-atlas__scrub,
+.plat-fold__drawing .v3-atlas__range,
+.plat-fold__drawing .v3-range {
+  display: none;
 }
 
 .plat-fold__drawing .v3-atlas__place {
@@ -282,7 +292,12 @@
      before any legend, dot key, or count is visible"). The frame is now tall
      enough to read and the dock rides under it. */
   .plat-fold__drawing .v3-atlas__frame {
-    max-height: min(18vh, 6.25rem);
+    max-height: min(46vh, 20rem);
+  }
+
+  .plat-fold__drawing .v3-atlas__stage {
+    min-height: min(36vh, 16rem);
+    max-height: min(46vh, 20rem);
   }
 
   .plat-fold__drawing .v3-atlas__head {

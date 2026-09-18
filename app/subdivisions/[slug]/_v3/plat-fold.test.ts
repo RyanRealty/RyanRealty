@@ -29,6 +29,8 @@ describe('SITE-86 plat fold composition', () => {
     expect(FOLD_CSS).toMatch(/max-height:\s*12rem/)
     expect(FOLD_CSS).toMatch(/\.plat-fold__drawing \.v3-atlas__frame/)
     expect(FOLD_CSS).toMatch(/\.plat-fold__drawing \.v3-atlas__dock/)
+    expect(FOLD_CSS).toMatch(/\.plat-fold__drawing \.v3-atlas__scrub[\s\S]{0,80}display:\s*none/)
+    expect(FOLD_CSS).toMatch(/max-height:\s*min\(68vh,\s*40rem\)/)
   })
 
   it('puts alerts in the fold figure and never mounts MOS on this grain', () => {

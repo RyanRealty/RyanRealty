@@ -67,7 +67,7 @@ describe('subdivision counts-only grain', () => {
     // Instrument (subdivisionCountItems) and the extras are the barrel's
     // property-type enumeration. Same two reads, same two surfaces.
     expect(page).toMatch(/subdivisionCountItems/)
-    expect(page).toMatch(/PlaceTypeSlider/)
+    expect(page).toMatch(/V3PlaceInventory/)
     expect(page).not.toMatch(/getDetachedMarket/)
   })
 

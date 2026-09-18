@@ -419,8 +419,8 @@ describe('public place pages', () => {
       resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'),
       'utf8',
     )
-    expect(community).toMatch(/getPublicPlaceSegments/)
-    expect(community).toMatch(/communityTypeStripItems/)
+    expect(community).toMatch(/V3PlaceInventory/)
+    expect(community).not.toMatch(/PlaceTypeSlider/)
     expect(community).not.toMatch(/V3PlacePropertyTypes/)
     expect(neighborhood).toMatch(/getPublicPlaceSegments/)
     // v3 neighborhood page (2026-08-26): the enumeration is the barrel section.

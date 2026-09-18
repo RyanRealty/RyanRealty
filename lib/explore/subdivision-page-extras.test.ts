@@ -99,11 +99,12 @@ describe('place list wiring', () => {
     expect(src).toMatch(/publishPlaceFace/)
   })
 
-  it('sends the community counted-set door to the on-page Split', () => {
+  it('sends the community counted-set door to the on-page inventory', () => {
     const src = readFileSync('app/communities/[slug]/page.tsx', 'utf8')
     expect(src).toContain("href: '#homes'")
     expect(src).toMatch(/id="homes"/)
-    expect(src).toMatch(/<PlaceSplitView/)
+    expect(src).toMatch(/<V3PlaceInventory/)
+    expect(src).not.toMatch(/<PlaceSplitView/)
   })
 })
 
