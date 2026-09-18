@@ -1,17 +1,28 @@
 /**
  * Screen-space clustering for Atlas price pins (SITE-128 residual).
  *
- * City folds paint hundreds of 735K pills into one unreadable pile. Neighborhood
- * and community frames already have room between marks. Same radius in screen
- * pixels does both jobs: overlapping centres merge into a count bubble; a
- * zoom (or a tighter frame) spreads them until each ask is a pin again.
- * Redfin-style, on the existing pin layer — not a second map.
+ * City folds letterbox a tall Bend projection into a short wide stage. Union-
+ * find at a 40px radius then chains every ask into ONE bubble (live
+ * /cities/bend @ 1112×610 → 1 × 759). Neighborhood / community frames already
+ * have room between marks, so the same grid leaves those as price pills.
+ *
+ * One occupied cell = one mark. Adjacent cells do not merge — a connected
+ * city stays many navy count bubbles, not one centroid. Zoom stretches
+ * screen distances and the grid dissolves back to 735K pills.
  *
  * Import-free so `ci:atlas-price-pins` can transpile and run the matrix.
  */
 
-/** Two pill centres closer than this (px) share a bubble. ~one Atlas pin wide. */
-export const ATLAS_PIN_CLUSTER_RADIUS_PX = 40
+/**
+ * Occupied-cell size in stage pixels. ~one Atlas price pill (52×22) plus a
+ * little air — two pills whose centres share this cell become one bubble.
+ * Live Bend city fold densest cell at this size is ~42, which is the bubble
+ * the fold should paint, not a 759 pile and not 759 stacked asks.
+ */
+export const ATLAS_PIN_CLUSTER_CELL_PX = 64
+
+/** Hit / expand still speak in "radius"; the cell is that radius. */
+export const ATLAS_PIN_CLUSTER_RADIUS_PX = ATLAS_PIN_CLUSTER_CELL_PX
 
 export type AtlasPinCandidate = {
   /** Index in the caller's dots / pinMarks array. */
@@ -34,38 +45,15 @@ export type AtlasPinLayerHit =
   | { kind: 'cluster'; id: string }
   | { kind: 'pin'; i: number }
 
-function find(parent: number[], i: number): number {
-  let r = i
-  while (parent[r] !== r) r = parent[r]!
-  let c = i
-  while (parent[c] !== r) {
-    const next = parent[c]!
-    parent[c] = r
-    c = next
-  }
-  return r
-}
-
-function union(parent: number[], rank: number[], a: number, b: number): void {
-  const ra = find(parent, a)
-  const rb = find(parent, b)
-  if (ra === rb) return
-  if (rank[ra]! < rank[rb]!) parent[ra] = rb
-  else if (rank[ra]! > rank[rb]!) parent[rb] = ra
-  else {
-    parent[rb] = ra
-    rank[ra]! += 1
-  }
-}
-
 /**
- * Group pins whose screen centres sit inside `radiusPx`. Order-stable: members
- * keep input order, clusters emit by lowest index so the same pile always
- * yields the same bubbles.
+ * Group pins that share one screen-space cell. Order-stable: members keep
+ * input order, clusters emit by lowest index so the same pile always yields
+ * the same bubbles. Not transitive across cell edges — that is what kept
+ * Bend's fold as one 759 bubble after the first cluster land.
  */
 export function clusterAtlasPins(
   pins: readonly AtlasPinCandidate[],
-  radiusPx = ATLAS_PIN_CLUSTER_RADIUS_PX,
+  cellPx = ATLAS_PIN_CLUSTER_CELL_PX,
 ): AtlasPinCluster[] {
   const n = pins.length
   if (n === 0) return []
@@ -74,50 +62,25 @@ export function clusterAtlasPins(
     return [{ id: `c-${p.i}`, x: p.x, y: p.y, indices: [p.i], count: 1 }]
   }
 
-  const parent = Array.from({ length: n }, (_, i) => i)
-  const rank = new Array<number>(n).fill(0)
-  const cell = Math.max(radiusPx, 1)
+  const cell = Math.max(cellPx, 1)
   const buckets = new Map<string, number[]>()
-  const keyOf = (x: number, y: number) => `${Math.floor(x / cell)},${Math.floor(y / cell)}`
-
   for (let i = 0; i < n; i += 1) {
     const p = pins[i]!
-    const k = keyOf(p.x, p.y)
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) {
+      const k = `nan-${p.i}`
+      const bucket = buckets.get(k)
+      if (bucket) bucket.push(i)
+      else buckets.set(k, [i])
+      continue
+    }
+    const k = `${Math.floor(p.x / cell)},${Math.floor(p.y / cell)}`
     const bucket = buckets.get(k)
     if (bucket) bucket.push(i)
     else buckets.set(k, [i])
   }
 
-  const r2 = radiusPx * radiusPx
-  for (let i = 0; i < n; i += 1) {
-    const p = pins[i]!
-    const cx = Math.floor(p.x / cell)
-    const cy = Math.floor(p.y / cell)
-    for (let dx = -1; dx <= 1; dx += 1) {
-      for (let dy = -1; dy <= 1; dy += 1) {
-        const near = buckets.get(`${cx + dx},${cy + dy}`)
-        if (!near) continue
-        for (const j of near) {
-          if (j <= i) continue
-          const q = pins[j]!
-          const ddx = p.x - q.x
-          const ddy = p.y - q.y
-          if (ddx * ddx + ddy * ddy <= r2) union(parent, rank, i, j)
-        }
-      }
-    }
-  }
-
-  const groups = new Map<number, number[]>()
-  for (let i = 0; i < n; i += 1) {
-    const root = find(parent, i)
-    const list = groups.get(root)
-    if (list) list.push(i)
-    else groups.set(root, [i])
-  }
-
   const out: AtlasPinCluster[] = []
-  for (const members of groups.values()) {
+  for (const members of buckets.values()) {
     members.sort((a, b) => a - b)
     let sx = 0
     let sy = 0
@@ -162,20 +125,20 @@ export function atlasClusterWorldBounds(
 }
 
 /**
- * True when zooming to `maxK` would pull member centres at least two radii
+ * True when zooming to `maxK` would pull member centres at least two cells
  * apart. A condo stack that shares one coordinate never expands — the tap
  * should open a listing instead of a no-op zoom.
  */
 export function atlasClusterCanExpand(
   pts: readonly { x: number; y: number }[],
   maxK: number,
-  radiusPx = ATLAS_PIN_CLUSTER_RADIUS_PX,
+  cellPx = ATLAS_PIN_CLUSTER_CELL_PX,
 ): boolean {
   if (pts.length < 2 || !(maxK > 0)) return false
   const b = atlasClusterWorldBounds(pts)
   if (!b) return false
   const spread = Math.max(b.x1 - b.x0, b.y1 - b.y0)
-  return spread * maxK >= radiusPx * 2
+  return spread * maxK >= cellPx * 2
 }
 
 export type AtlasPinLayerMark = {

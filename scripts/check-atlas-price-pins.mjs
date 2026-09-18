@@ -7,7 +7,8 @@
  * must read as a short price (735K / $1.5M) and hover must blow up the home
  * (photo + ask). This gate runs the pin formatter and asserts the primitive
  * plus the four place pages still wire it. SITE-128 residual: overlapping
- * pills must cluster (clusterAtlasPins) so a city fold is not one pile.
+ * pills must cluster (clusterAtlasPins grid cells) so a city fold is not
+ * one 759 pile and not one 759 bubble.
  * Silent dots cannot regress.
  */
 import { readFileSync } from 'node:fs'

@@ -1,10 +1,10 @@
-# Current — 2026-09-18 (SITE-128 residual — Bend pin declutter)
+# Current — 2026-09-18 (SITE-128 residual — city grid clusters)
 
-Surface: Cursor cloud, branch `cursor/site-128-bend-pin-declutter-5a41`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-city-grid-clusters-dd0c`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
-- **SITE-128 residual.** V3Atlas price-pin layer clusters overlapping pills (40px screen radius, union-find). City fold ~758 Bend asks collapse to count bubbles; tap `fitRect`s the pile. Spaced neighborhood/community/sub pins stay 735K pills. Hover still blows up a single home.
-- **Not this pass.** SITE-129 PASS, SITE-130, SITE-131 HOLD iPhone, H1 voice. Tetherow / DRW map CSS not touched.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`.
+- **SITE-128 residual.** Live `/cities/bend` after `bd25af464` painted one `759` bubble (union-find @ 40px chained the letterboxed fold). Grid cells (64px) replace that: many navy count bubbles, densest ~42; Old Bend / Tetherow spaced pills stay pills. City fold path still mounts `V3Atlas` → `clusterAtlasPins`.
+- **Not this pass.** SITE-129, SITE-130, SITE-131. Tetherow / DRW map CSS not touched.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 
 # Current — 2026-09-17 (history explorer: kill Step N of 4)
 
