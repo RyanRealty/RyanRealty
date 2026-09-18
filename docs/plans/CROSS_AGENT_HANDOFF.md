@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-128 craft #4 — listing keep-exploring rematch on hierarchy)
 
-Surface: Cursor cloud `bc-8c9b9d18-f3c6-58b1-9411-1357ab7e6899`, branch `cursor/listing-keep-exploring-rematch-6899`. Rematch of Tip Ready tip `a49d0dc7b` / PR #301 onto hierarchy-landed `origin/main` `fc68066dc`. Cherry-pick of `a49d0dc7b` did not apply clean (`CROSS_AGENT_HANDOFF.md`, `scripts/lib/taste-receipt.mjs`). Craft SHA: `1ab6c5c49`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud `bc-8c9b9d18-f3c6-58b1-9411-1357ab7e6899`, branch `cursor/listing-keep-exploring-rematch-6899`. Rematch of Tip Ready tip `a49d0dc7b` / PR #301 onto hierarchy-landed `origin/main` `fc68066dc`. Cherry-pick of `a49d0dc7b` did not apply clean (`CROSS_AGENT_HANDOFF.md`, `scripts/lib/taste-receipt.mjs`). Craft SHA: `1ab6c5c49`. Draft PR #302. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
 - **View more.** Similar-homes door is `listingKeepExploringDoor`: recorded plat / visitor subdivision via `subdivisionHref` (`/subdivisions/…`). Never `/homes-for-sale` or city-only search. Community / neighborhood / city place pages are fallbacks only.
 - **Plat chip leak.** Listing Atlas no longer slices 60/80 GIS plats into chips. City frame = subject plat only. Local frame = subject + visitor siblings, cap 7 so frame + plats stay ≤ CHIP_FOLD_AT 8. `+52 more` at 375 cannot return.
