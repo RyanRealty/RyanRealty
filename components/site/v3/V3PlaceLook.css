@@ -1,0 +1,140 @@
+/* V3PlaceLook — competitive first-look: real map + one ring + photo cards. */
+
+.v3-place-look {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+}
+
+.v3-place-look__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+}
+
+.v3-place-look__claim {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-place-look__stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: min(36vh, 16rem);
+  background: var(--v3-cream);
+}
+
+.v3-place-look__map {
+  position: relative;
+  min-width: 0;
+  height: 18rem;
+  min-height: 16rem;
+  overflow: hidden;
+  border: var(--v3-rule-hairline) solid var(--v3-navy);
+}
+
+.v3-place-look__map-canvas,
+.v3-place-look__map-pending {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--v3-cream);
+}
+
+.v3-place-look__cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--v3-space-2xs);
+  margin: 0;
+  padding: var(--v3-space-xs) 0 0;
+  list-style: none;
+  background: var(--v3-cream);
+}
+
+.v3-place-look__card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--v3-cream);
+  color: inherit;
+  text-decoration: none;
+}
+
+.v3-place-look__card:hover .v3-place-look__street,
+.v3-place-look__card:focus-visible .v3-place-look__street {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.v3-place-look__still {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--v3-navy);
+}
+
+.v3-place-look__photo {
+  object-fit: cover;
+}
+
+.v3-place-look__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: var(--v3-space-2xs) 0 var(--v3-space-xs);
+}
+
+.v3-place-look__price {
+  font-family: var(--v3-font-mono);
+  font-size: var(--v3-size-body);
+  font-weight: 600;
+  color: var(--v3-navy);
+}
+
+.v3-place-look__street {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
+.v3-place-look__meta {
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.v3-place-look__source {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+@media (min-width: 64rem) {
+  .v3-place-look__stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+    grid-template-rows: minmax(0, 1fr);
+    height: min(38.125rem, 68vh);
+    max-height: min(68vh, 40rem);
+  }
+
+  .v3-place-look__map {
+    height: auto;
+    min-height: 0;
+  }
+
+  .v3-place-look__cards {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    overflow-y: auto;
+    padding: var(--v3-space-xs);
+    border: var(--v3-rule-hairline) solid var(--v3-navy);
+    border-left: 0;
+  }
+}

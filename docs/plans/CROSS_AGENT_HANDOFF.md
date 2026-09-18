@@ -1,3 +1,12 @@
+# Current — 2026-09-18 (SITE-128 first-look CI clear — page-purpose + wired)
+
+Surface: Cursor cloud, branch `cursor/site-128-first-look-ci-ec30`. Fix tip ON TOP of `ac8ddac28` (first-look already on `5d8a0f874`). PR only — Cos Mini lands. Do not merge. HOLD owner email. No geom invent.
+
+- **ci:page-purpose.** City + neighborhood `sectionOrder` now matches the first-look fold: `#place-look` then slider / Split / peers / alerts / `#homes`, then `#atlas` later.
+- **ci:site-primitive-wired.** `V3PlaceLookMap` recorded as SITE-128 sub-primitive of wired `V3PlaceLook` (same shape as `V3ChartHover`).
+- **Cherry-pick.** After `4f7364785` + `ac8ddac28`, take this tip SHA. Both gates pass locally.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
+
 # Current — 2026-09-18 (ISR spend cut — place/home 300 → 900)
 
 Surface: Cursor cloud `bc-d020ba1b-33a8-53dc-a4b3-f41f506ff6c6`, branch `cursor/isr-ttl-900-f6c6`. Tip Ready Cos recommended; Matt skipped widget — ship default. PR only — Cos Mini lands. Do not merge. HOLD owner email. First-look refuse `281e5f02a` already on main — not retouched.
