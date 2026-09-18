@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { makeProjection, padBbox } from '@/lib/geo/project-svg'
+import { recordFrame } from '@/lib/geo/record-frame'
 import {
-  ATLAS_PIN_CLUSTER_RADIUS_PX,
+  ATLAS_PIN_CLUSTER_CELL_PX,
   atlasClusterCanExpand,
   atlasClusterSize,
   atlasClusterWorldBounds,
@@ -21,7 +25,7 @@ describe('clusterAtlasPins', () => {
     expect(out.map((c) => c.indices[0])).toEqual([0, 1])
   })
 
-  it('merges two centres inside the radius into one bubble', () => {
+  it('merges two centres in the same cell into one bubble', () => {
     const out = clusterAtlasPins([pin(4, 100, 100), pin(9, 112, 108)])
     expect(out).toHaveLength(1)
     expect(out[0]!.count).toBe(2)
@@ -31,11 +35,13 @@ describe('clusterAtlasPins', () => {
     expect(out[0]!.y).toBeCloseTo(104)
   })
 
-  it('is transitive: a street of close pins is one bubble, not a chain of pairs', () => {
+  it('does not chain a street across cell edges into one city-wide blob', () => {
     const row = Array.from({ length: 8 }, (_, i) => pin(i, 80 + i * 18, 120))
     const out = clusterAtlasPins(row)
-    expect(out).toHaveLength(1)
-    expect(out[0]!.count).toBe(8)
+    expect(out.length).toBeGreaterThan(1)
+    expect(out.length).toBeLessThan(8)
+    expect(out.reduce((n, c) => n + c.count, 0)).toBe(8)
+    expect(Math.max(...out.map((c) => c.count))).toBeLessThan(8)
   })
 
   it('is deterministic for the same pile', () => {
@@ -57,36 +63,47 @@ describe('clusterAtlasPins', () => {
     expect(out.every((c) => c.count === 1)).toBe(true)
   })
 
-  it('contract: bend-city-758-declutter — city frame does not paint 758 stacked pills', () => {
-    const pins: AtlasPinCandidate[] = []
-    let i = 0
-    // 14 Bend-ish clumps (hoods) × ~54 listings, plus a few loners.
-    for (let hood = 0; hood < 14; hood += 1) {
-      const ox = 80 + (hood % 7) * 145
-      const oy = 70 + Math.floor(hood / 7) * 200
-      for (let n = 0; n < 54; n += 1) {
-        pins.push(pin(i, ox + (n % 9) * 7, oy + Math.floor(n / 9) * 6))
-        i += 1
-      }
-    }
-    while (i < 758) {
-      pins.push(pin(i, 40 + (i % 17) * 62, 30 + (i % 11) * 28))
-      i += 1
-    }
-    expect(pins).toHaveLength(758)
-    const out = clusterAtlasPins(pins, ATLAS_PIN_CLUSTER_RADIUS_PX)
-    const marks = out.length
+  it('contract: tetherow-spaced-pins-stay-pills — community frame keeps asks', () => {
+    const spaced = Array.from({ length: 28 }, (_, i) => pin(i, 40 + (i % 7) * 80, 40 + Math.floor(i / 7) * 70))
+    const out = clusterAtlasPins(spaced)
+    expect(out).toHaveLength(28)
+    expect(out.every((c) => c.count === 1)).toBe(true)
+  })
+
+  it('contract: bend-city-fold-path-produces-clusters — city fold invokes grid, not one 759 blob', () => {
+    const houses = JSON.parse(
+      readFileSync(resolve('lib/atlas/fixtures/bend-city-fold-houses.json'), 'utf8'),
+    ) as { lat: number; lng: number }[]
+    expect(houses.length).toBeGreaterThanOrEqual(758)
+
+    const frame = recordFrame(houses, [])
+    expect(frame.bbox).not.toBeNull()
+    const proj = makeProjection(padBbox(frame.bbox!, 0.1), 1000)
+    // Live /cities/bend desktop fold stage (Playwright 1400×900, 2026-09-18).
+    const stage = { w: 1112, h: 610 }
+    const scale = Math.min(stage.w / proj.width, stage.h / proj.height)
+    const ox = (stage.w - proj.width * scale) / 2
+    const oy = (stage.h - proj.height * scale) / 2
+    const pins: AtlasPinCandidate[] = houses.map((d, i) => {
+      const [x, y] = proj.toXY(d.lng, d.lat)
+      return { i, x: ox + x * scale, y: oy + y * scale }
+    })
+
+    const out = clusterAtlasPins(pins, ATLAS_PIN_CLUSTER_CELL_PX)
     const clustered = out.filter((c) => c.count > 1)
-    expect(marks).toBeLessThan(80)
-    expect(marks).toBeGreaterThan(10)
+    const densest = Math.max(...out.map((c) => c.count))
+    expect(out.length).toBeGreaterThan(10)
+    expect(out.length).toBeLessThan(80)
     expect(clustered.length).toBeGreaterThan(8)
-    expect(out.reduce((n, c) => n + c.count, 0)).toBe(758)
+    expect(densest).toBeGreaterThan(8)
+    expect(densest).toBeLessThan(pins.length)
+    expect(out.reduce((n, c) => n + c.count, 0)).toBe(pins.length)
   })
 
   it('zoom doubles distances and a pair that piled becomes two pills', () => {
-    const piled = clusterAtlasPins([pin(0, 100, 100), pin(1, 130, 100)])
+    const piled = clusterAtlasPins([pin(0, 70, 100), pin(1, 120, 100)])
     expect(piled).toHaveLength(1)
-    const zoomed = clusterAtlasPins([pin(0, 200, 200), pin(1, 260, 200)])
+    const zoomed = clusterAtlasPins([pin(0, 140, 200), pin(1, 240, 200)])
     expect(zoomed).toHaveLength(2)
   })
 })

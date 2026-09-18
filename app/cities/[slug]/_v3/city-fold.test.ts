@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
 
 const PAGE = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 const FOLD_CSS = readFileSync(resolve('app/cities/[slug]/_v3/city-fold.css'), 'utf8')
 const PLACE_MOS = readFileSync(resolve('lib/site/place-mos.ts'), 'utf8')
 const INSIGHT = readFileSync(resolve('app/cities/[slug]/_v3/CityInsight.client.tsx'), 'utf8')
@@ -18,6 +19,7 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/city-fold__figure/)
     expect(PAGE).toMatch(/place-opening--city/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
+    expect(PAGE).toMatch(/dots=\{foldAtlasDots/)
     expect(PAGE).toMatch(/<CityAlertsStrip[\s\S]*?id="alerts"/)
     expect(PAGE).toMatch(/headlineTone="eyebrow"/)
     expect(PAGE).toMatch(/keyPlacement="dock"/)
@@ -41,6 +43,10 @@ describe('SITE-82 city fold composition', () => {
     expect(INSIGHT).toMatch(/<V3MosBars/)
     expect(PAGE).toMatch(/city-fold__figure/)
     expect(PAGE).toMatch(/foldAtlasDots/)
+    expect(PAGE).toMatch(/dots=\{foldAtlasDots\.length > 0 \? foldAtlasDots : atlasView\.dots\}/)
+    expect(ATLAS).toMatch(/clusterAtlasPins/)
+    expect(ATLAS).toMatch(/data-atlas-cluster/)
+    expect(ATLAS).toMatch(/data-atlas-pin-layer="clustered"/)
     // Photograph no longer carries the MOS overlay — fold figure owns it.
     expect(PAGE).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} \/>/)
   })

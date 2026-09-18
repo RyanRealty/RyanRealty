@@ -1259,6 +1259,9 @@ export function V3Atlas({
       const [x, y] = screenOf(d.lng, d.lat)
       raw.push({ d, i, x, y, label })
     })
+    /* Grid, not union-find: a 40px transitive radius on the letterboxed
+       city fold chained every Bend ask into one 759 bubble. One occupied
+       cell is one mark; zoom stretches the cells apart. */
     const grouped = clusterAtlasPins(
       raw.map((p) => ({ i: p.i, x: p.x, y: p.y })),
       ATLAS_PIN_CLUSTER_RADIUS_PX,
