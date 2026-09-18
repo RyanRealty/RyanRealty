@@ -34,15 +34,9 @@ import {
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
-import type { ParkType } from '@/data/co-parks'
+import { parkIndexDetail } from '@/lib/site/place-recreation'
 
 export const revalidate = 3600
-
-const TYPE_LABEL: Record<ParkType, string> = {
-  state: 'State park',
-  city: 'City park',
-  'natural-area': 'Natural area',
-}
 
 export function generateMetadata(): Metadata {
   return pageMetadata({
@@ -76,15 +70,11 @@ export default async function ParksIndexPage() {
       const name = park.name.trim()
       const slug = park.slug.trim()
       if (!name || !slug) continue
-      const parts = [TYPE_LABEL[park.type]]
-      if (typeof park.acres === 'number') {
-        parts.push(`${park.acres.toLocaleString('en-US')} acres`)
-      }
       drafted.push({
         href: `/parks/${slug}`,
         when: v3Text(city),
         what: v3Text(name),
-        detail: v3Text(parts.join(' · ')),
+        detail: v3Text(parkIndexDetail(park)),
         id: slug,
         lat: park.lat,
         lng: park.lng,

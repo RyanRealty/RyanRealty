@@ -56,6 +56,12 @@ export type CoPark = {
   blurb: string
   /** Traceable amenities (each present on the official source). */
   amenities: string[]
+  /** Where to park, only when the official page states it. Omit rather than guess. */
+  parking?: string
+  /** Posted hours, only when the official page states them. */
+  hours?: string
+  /** Street address or lot location, only when the official page states it. */
+  address?: string
   /** Official agency page the blurb + amenities trace to. */
   sourceUrl: string
   /** True when a boundaries row (geo_type='park', geo_slug=slug) exists. */
@@ -303,6 +309,10 @@ const CITY: CoPark[] = [
       'Paved paths and fitness loop',
       'Year-round restrooms',
     ],
+    parking:
+      'Limited street parking; no dedicated lot. Carpooling is encouraged.',
+    hours: '5 am to 10 pm',
+    address: '1000 Southwest Reed Market Road, Bend, OR 97702',
     sourceUrl: 'https://www.bendparksandrec.org/park/farewell-bend-park/',
     hasPolygon: true,
   },

@@ -31,11 +31,16 @@ export function buildTrailFaq(
   })
 
   if (t.difficulty) {
+    const gain =
+      typeof t.elevationGainFt === 'number'
+        ? `, with about ${t.elevationGainFt.toLocaleString()} feet of elevation gain`
+        : ''
     faq.push({
       question: `How hard is ${t.name}?`,
-      answer: `${t.landManager} rates ${t.name} as ${TRAIL_DIFFICULTY_LABEL[t.difficulty].toLowerCase()}${
-        typeof t.elevationGainFt === 'number' ? `, with about ${t.elevationGainFt.toLocaleString()} feet of elevation gain` : ''
-      }.`,
+      answer:
+        t.difficulty === 'varies'
+          ? `${t.landManager} describes ${t.name} as trails of varying difficulty${gain}.`
+          : `${t.landManager} rates ${t.name} as ${TRAIL_DIFFICULTY_LABEL[t.difficulty].toLowerCase()}${gain}.`,
     })
   }
 
