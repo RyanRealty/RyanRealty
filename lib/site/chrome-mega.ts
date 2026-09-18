@@ -54,6 +54,24 @@ export function chromeMegaPath(href: string): string {
   return href.split('?')[0]?.split('#')[0] ?? href
 }
 
+/**
+ * Thumbs are all-or-none per column (SITE-126). A mixed mark / text-only
+ * list is the unfinished Places panel Matt called buns.
+ */
+export function chromeMegaColumnMarks(
+  hrefs: readonly string[],
+  marks: Readonly<Record<string, string>>,
+): Readonly<Record<string, string>> | null {
+  if (hrefs.length === 0) return null
+  const out: Record<string, string> = {}
+  for (const href of hrefs) {
+    const mark = marks[href]
+    if (!mark) return null
+    out[href] = mark
+  }
+  return out
+}
+
 export function packMegaSections(sections: readonly ChromeMegaSection[]): ChromeMegaSection[] {
   const filled = sections
     .filter((section) => section.links.length > 0)
@@ -104,11 +122,12 @@ function bucketsFor(key: ChromeMegaGroupKey): Bucket[] {
         },
         {
           heading: 'Communities',
-          test: (path) => path === '/communities' || path.startsWith('/communities/'),
+          test: (path) => path.startsWith('/communities/'),
         },
         {
           heading: 'Browse',
           test: (path) =>
+            path === '/communities' ||
             path === '/neighborhoods' ||
             path.startsWith('/neighborhoods/') ||
             path === '/subdivisions' ||

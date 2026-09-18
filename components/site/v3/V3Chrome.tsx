@@ -67,7 +67,7 @@ import {
 } from '@/lib/site-nav'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { chromeShowsSellerAsk } from '@/lib/site/chrome-seller-ask'
-import { chromeMegaModel } from '@/lib/site/chrome-mega'
+import { chromeMegaColumnMarks, chromeMegaModel } from '@/lib/site/chrome-mega'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
 import { V3ChromeSearch } from './V3ChromeSearch.client'
@@ -336,19 +336,21 @@ function ChromePanelLink({
   href,
   label,
   value,
+  mark,
   onClick,
 }: {
   href: string
   label: string
   value?: string
+  mark?: string
   onClick: () => void
 }) {
   return (
     <Link href={href} className="v3-chrome__panel-link" onClick={onClick}>
-      {CHROME_MARKS[href] ? (
+      {mark ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={CHROME_MARKS[href]}
+          src={mark}
           alt=""
           className="v3-chrome__link-mark"
           width={28}
@@ -490,23 +492,30 @@ function V3ChromeDestination({
       >
         {mega.caption ? <p className="v3-chrome__panel-caption">{mega.caption}</p> : null}
         <div className="v3-chrome__mega">
-          {mega.sections.map((section) => (
-            <div key={section.heading} className="v3-chrome__mega-col">
-              <p className="v3-chrome__mega-heading">{section.heading}</p>
-              <ul className="v3-chrome__panel-list v3-chrome__panel-list--stacked">
-                {section.links.map((link) => (
-                  <li key={link.href}>
-                    <ChromePanelLink
-                      href={link.href}
-                      label={link.label}
-                      value={live?.values?.[link.href]}
-                      onClick={() => setOpenPath(null)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {mega.sections.map((section) => {
+            const marks = chromeMegaColumnMarks(
+              section.links.map((link) => link.href),
+              CHROME_MARKS,
+            )
+            return (
+              <div key={section.heading} className="v3-chrome__mega-col">
+                <p className="v3-chrome__mega-heading">{section.heading}</p>
+                <ul className="v3-chrome__panel-list v3-chrome__panel-list--stacked">
+                  {section.links.map((link) => (
+                    <li key={link.href}>
+                      <ChromePanelLink
+                        href={link.href}
+                        label={link.label}
+                        value={live?.values?.[link.href]}
+                        mark={marks?.[link.href]}
+                        onClick={() => setOpenPath(null)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
           {mega.now ? (
             <div className="v3-chrome__mega-col" aria-label={mega.caption ?? mega.now.heading}>
               <p className="v3-chrome__mega-heading">{mega.now.heading}</p>
@@ -769,6 +778,10 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
           ).map((group, index) => {
             const headingId = `${menuId}-group-${index}`
             const lg = live?.[group.key]
+            const marks = chromeMegaColumnMarks(
+              group.links.map((item) => item.href),
+              CHROME_MARKS,
+            )
             return (
               <div className="v3-chrome__menu-group" key={group.key}>
                 <p className="v3-chrome__menu-title" id={headingId}>
@@ -796,10 +809,10 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
                     return (
                       <li key={link.href}>
                         <Link href={link.href} onClick={close} className="v3-chrome__menu-link">
-                          {CHROME_MARKS[link.href] ? (
+                          {marks?.[link.href] ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={CHROME_MARKS[link.href]}
+                              src={marks[link.href]}
                               alt=""
                               className="v3-chrome__link-mark"
                               width={28}
