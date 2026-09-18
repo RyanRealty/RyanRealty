@@ -38,9 +38,10 @@ import {
 } from '@/lib/cma/price-path'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
-import { closedEntries, remodelCell, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
+import { closedEntries, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
 import { statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
+import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
@@ -226,29 +227,37 @@ type MatrixRow = {
  * THE COLUMN SET, EXACTLY, AND THE SAME ONE THREE TIMES (Delta 3).
  *
  * "Columns exactly: photo · address (tracked link) · outcome line · year built
- * · remodel or update notes · size · lot size · rooms · beds · baths · days on
- * market · price changes (count, and the path drawn) · first ask → last ask →
- * outcome."
+ * Flex FLOW side-by-side (Matt 2026-09-17): distance · status · status date ·
+ * list · original list · sold · DOM · CDOM · beds · baths · size · lot · year ·
+ * garage · list $/sf · sold $/sf · concessions · adjusted · first ask → last
+ * ask → outcome.
  *
  * Photo and address live in the column head, where a reader meets the house
  * before its facts. Everything else is a row, in that order.
  */
 const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
-  { label: 'Outcome', figure: false },
-  { label: 'Year built', figure: true },
-  { label: 'Remodel or update notes', figure: false, note: true },
+  // Matt 2026-09-17 letter craft / Flex FLOW side-by-side (HARD LOCK fields).
+  // Tip Ready still requires Days on market + First ask → last ask → outcome.
+  { label: 'Distance', figure: false },
+  { label: 'Status', figure: false },
+  { label: 'Status date', figure: true },
+  { label: 'List price', figure: true },
+  { label: 'Original list', figure: true },
+  { label: 'Sold', figure: true },
+  { label: 'Days on market', figure: true, fact: 'dom' },
+  { label: 'CDOM', figure: true },
+  { label: 'Beds', figure: true },
+  { label: 'Baths', figure: true },
   { label: 'Size', figure: true },
   // Matt ADD 2026-09-12: lot size on every row (subject + comps) — never fold away.
   { label: 'Lot size', figure: true },
-  { label: 'Rooms', figure: true },
-  { label: 'Beds', figure: true },
-  { label: 'Baths', figure: true },
-  { label: 'Days on market', figure: true, fact: 'dom' },
-  { label: 'Price changes', figure: true },
+  { label: 'Year built', figure: true },
+  { label: 'Garage', figure: true },
   // Matt ADD 2026-09-12: list $/sqft AND sold $/sqft + concession $ on sold.
   { label: 'List $/sqft', figure: true },
   { label: 'Sold $/sqft', figure: true },
   { label: 'Seller concessions', figure: true },
+  { label: 'Adjusted', figure: true },
   // NOT `figure`: keep arc short; Tip Ready also bans wrapping crumbs.
   { label: 'First ask → last ask → outcome', figure: false },
 ]
@@ -336,30 +345,52 @@ function sharedConcessionCell(entry: MatrixEntry): string {
   return c > 0 ? usd(c) : 'none'
 }
 
+function statusCell(entry: MatrixEntry): string {
+  if (entry.family === 'closed') return 'Sold'
+  if (entry.family === 'unsold') return 'Expired'
+  if (entry.family === 'subject') {
+    if (entry.endLabel === 'came off') return 'Off market'
+    if (entry.listPrice != null && entry.listPrice > 0) return 'Listed'
+    return 'Your home'
+  }
+  if (entry.status === 'pending') return 'Pending'
+  return 'Active'
+}
+
+function statusDateCell(entry: MatrixEntry): string {
+  const raw = entry.statusDate
+  if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return '-'
+  return formatDate(raw.slice(0, 10)) || raw.slice(0, 10)
+}
+
+function moneyCell(n: number | null | undefined): string {
+  return n != null && n > 0 ? usd(n) : '-'
+}
+
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
   // Matt ADD 2026-09-12: kill "how the price moved" spark entirely.
   void _range
   const listForPpsf = entry.listPrice ?? entry.lastAsk ?? entry.firstAsk
+  const cdom = entry.cdomDays != null ? entry.cdomDays : entry.domDays
   return [
-    entry.outcome || '-',
-    entry.yearBuilt != null ? String(entry.yearBuilt) : '-',
-    remodelCell(entry),
-    sizeCell(entry.sqft, entry.lotAcres),
-    lotCell(entry.lotAcres),
-    entry.rooms != null ? int(entry.rooms) : '-',
+    entry.proximity?.trim() || '-',
+    statusCell(entry),
+    statusDateCell(entry),
+    moneyCell(entry.listPrice ?? entry.lastAsk),
+    moneyCell(entry.firstAsk),
+    moneyCell(entry.closePrice),
+    entry.domDays != null ? `${int(entry.domDays)} ${entry.domDays === 1 ? 'day' : 'days'}` : '-',
+    cdom != null ? `${int(cdom)} ${cdom === 1 ? 'day' : 'days'}` : '-',
     entry.beds != null ? int(entry.beds) : '-',
     entry.baths != null ? dec(entry.baths, entry.baths % 1 !== 0 ? 1 : 0) : '-',
-    entry.domDays != null ? `${int(entry.domDays)} ${entry.domDays === 1 ? 'day' : 'days'}` : '-',
-    entry.priceChanges == null
-      ? '-'
-      : entry.priceChanges === 0
-        ? 'none'
-        : entry.priceChangesExact
-          ? int(entry.priceChanges)
-          : 'at least 1',
+    sizeCell(entry.sqft, entry.lotAcres),
+    lotCell(entry.lotAcres),
+    entry.yearBuilt != null ? String(entry.yearBuilt) : '-',
+    entry.garageSpaces != null ? int(entry.garageSpaces) : '-',
     ppsfCell(listForPpsf, entry.sqft),
     ppsfCell(entry.closePrice, entry.sqft),
     sharedConcessionCell(entry),
+    entry.family === 'closed' ? moneyCell(entry.adjustedPrice) : '-',
     askArcCell(entry),
   ]
 }
@@ -497,7 +528,9 @@ const SHARED_PHRASE: Record<string, (v: string) => string> = {
 }
 
 /** The clauses read best in this order, whatever order the rows are in. */
-const SHARED_ORDER = ['Beds', 'Baths', 'Rooms', 'Year built', 'Size']
+// Matt 2026-09-17 Flex FLOW: Beds / Baths / Year built stay as matrix rows
+// (even when identical). Only Rooms + Size may still fold into one sentence.
+const SHARED_ORDER = ['Rooms', 'Size']
 
 function foldIdenticalRows(
   cols: readonly Col[],
@@ -512,7 +545,22 @@ function foldIdenticalRows(
       row.label === 'Lot size' ||
       row.label === 'List $/sqft' ||
       row.label === 'Sold $/sqft' ||
-      row.label === 'Seller concessions'
+      row.label === 'Seller concessions' ||
+      // Matt 2026-09-17 Flex FLOW: keep side-by-side identity/price rows even when identical.
+      row.label === 'Beds' ||
+      row.label === 'Baths' ||
+      row.label === 'Year built' ||
+      row.label === 'Garage' ||
+      row.label === 'Distance' ||
+      row.label === 'Status' ||
+      row.label === 'Status date' ||
+      row.label === 'List price' ||
+      row.label === 'Original list' ||
+      row.label === 'Sold' ||
+      row.label === 'CDOM' ||
+      row.label === 'Adjusted' ||
+      row.label === 'Days on market' ||
+      row.label === 'First ask → last ask → outcome'
     ) {
       kept.push(row)
       keptIndexes.push(i)
@@ -707,13 +755,25 @@ function matrixStack(input: {
     // columns is still on the card — but only the four a reader compares homes
     // on are open: what happened, what it asked and got, how long it took, and
     // how big it is. The rest opens with the price path and the working.
-    const OPEN = new Set(['Outcome', 'First ask \u2192 last ask \u2192 outcome', 'Days on market', 'Size', 'Lot size', 'List $/sqft', 'Sold $/sqft', 'Seller concessions', 'Price changes'])
+    const OPEN = new Set([
+      'Status',
+      'List price',
+      'Sold',
+      'First ask \u2192 last ask \u2192 outcome',
+      'Days on market',
+      'Size',
+      'Lot size',
+      'List $/sqft',
+      'Sold $/sqft',
+      'Seller concessions',
+      'Adjusted',
+    ])
     const headline = facts
-      .filter(({ row }) => row.label === 'Outcome')
+      .filter(({ row }) => row.label === 'Status')
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const body = facts
-      .filter(({ row }) => row.label !== 'Outcome' && OPEN.has(row.label))
+      .filter(({ row }) => row.label !== 'Status' && OPEN.has(row.label))
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const rest = facts
