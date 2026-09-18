@@ -1,6 +1,15 @@
+# Current — 2026-09-18 (SITE-128 craft #4 — listing keep-exploring, rebased)
+
+Surface: Cursor cloud, branch `cursor/listing-keep-exploring-7dfd`. Rebased onto `origin/main` `97a0985fb` (amenity landed). Replaces conflicted tip `836aa317a` / PR #300. Draft PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **View more.** Similar-homes door is `listingKeepExploringDoor`: recorded plat / visitor subdivision via `subdivisionHref` (`/subdivisions/…`). Never `/homes-for-sale` or city-only search. Community / neighborhood / city place pages are fallbacks only.
+- **Plat chip leak.** Listing Atlas no longer slices 60/80 GIS plats into chips. City frame = subject plat only. Local frame = subject + visitor siblings, cap 7 so frame + plats stay ≤ CHIP_FOLD_AT 8. `+52 more` at 375 cannot return.
+- **Not this pass.** Hierarchy rematch not on `origin/main` (`listingPlaceTrail` untouched). Amenity already on main — this tip does not retouch parks/trails. City fold clustering untouched. No invent.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-18 (SITE-128 craft #2 — Atlas amenity layers)
 
-Surface: Cursor cloud, branch `cursor/site-128-atlas-amenity-layers-4dca`. Node `1a71550b-7231-42f4-9f5c-07a318cbc3f3` (claim stays public-look). PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-atlas-amenity-layers-4dca`. Node `1a71550b-7231-42f4-9f5c-07a318cbc3f3` (claim stays public-look). Landed on `origin/main` `97a0985fb`. HOLD owner email.
 
 - **This tip.** Park polygons + trail lines on V3Atlas with homes (city / neighborhood / community / subdivision). Navy on cream. Destinations stay PlaceFieldMap.
 - **Wired (live RPC 2026-09-18).** `public.boundaries` geo_type=park via `boundary_geojson` — 17/18 registry parks. `public.trail_lines` via `trail_line_geojson` — 18/19 registry trails. Membership from `data/co-parks.ts` / `data/co-trails.ts` (lat/lng never drawn).
