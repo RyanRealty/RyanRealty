@@ -526,6 +526,10 @@
   pointer-events: none;
 }
 
+.v3-atlas__home.is-below {
+  transform: translate(-50%, 0.55rem);
+}
+
 .v3-atlas__home-photo {
   display: block;
   width: 100%;
