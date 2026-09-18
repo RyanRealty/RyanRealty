@@ -57,7 +57,7 @@
 
   .v3 .place-opening--nbhfold.place-opening--media .place-opening__copy {
     align-self: end;
-    padding-top: calc(var(--v3-space-lg) + 2rem);
+    padding-top: calc(var(--v3-tap) + var(--v3-space-2xs));
     padding-bottom: var(--v3-space-sm);
     max-width: none;
   }
@@ -83,7 +83,7 @@
 
   .v3 .place-opening--nbhfold.place-opening--media .place-opening__copy {
     align-self: end;
-    padding-top: calc(var(--v3-space-lg) + 1rem);
+    padding-top: calc(var(--v3-tap) + var(--v3-space-2xs));
     padding-bottom: var(--v3-space-2xs);
   }
 

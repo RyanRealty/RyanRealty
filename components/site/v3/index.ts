@@ -587,7 +587,7 @@ export type {
  * has no column for a figure, and sixty of its rows is the scrolling list
  * TASTE.md bans.
  */
-export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
+export { V3PlaceIndex, placeIndexNameRows, placeIndexRows } from './V3PlaceIndex'
 
 export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
 

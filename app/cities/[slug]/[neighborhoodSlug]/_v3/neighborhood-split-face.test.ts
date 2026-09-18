@@ -120,7 +120,7 @@ describe('neighborhood page first screen', () => {
     expect(code).toMatch(/chartFirst/)
     expect(code).toMatch(/foldAfter=\{0\}/)
     expect(code).toMatch(/tooFewSalesItems/)
-    expect(code.indexOf('id="subdivisions"')).toBeLessThan(code.indexOf('id="market"'))
+    expect(code.indexOf('id="child-places"')).toBeLessThan(code.indexOf('id="market"'))
     expect(code).not.toMatch(/in plain words/)
   })
 })

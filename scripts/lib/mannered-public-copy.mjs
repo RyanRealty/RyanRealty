@@ -43,6 +43,9 @@ export const FORM_ALERT_ASK_REFUSE =
 export const EVERY_HOME_LECTURE_REFUSE =
   'mannered public copy: every-home lecture ("Every home for sale in …"). Prefer "{Place} homes for sale". Leave the node in_progress.'
 
+export const HIERARCHY_LIST_HEADING_REFUSE =
+  'mannered public copy: "Subdivisions in …" / "Neighborhoods in …" list heading. Community ≠ neighborhood. Name-only child cards; A–Z /subdivisions is the directory. Leave the node in_progress.'
+
 /** "3,271 homes for sale across Central Oregon…" under Homes in Bend / place folds. */
 export const INVENTORY_LECTURE_RES = Object.freeze([
   /\d[\d,]*\+?\s*homes for sale across/i,
@@ -82,6 +85,16 @@ export const EVERY_HOME_LECTURE_RES = Object.freeze([
   /See every home for sale/i,
   /See every .+ home for sale/i,
   /Every home on the market/i,
+])
+
+/**
+ * SITE-128 Look punch, 2026-09-18. Visible list headings that twin the wrong
+ * grain. A–Z `/subdivisions` is not in PLACE_COPY_FILES; FAQ terms live in
+ * place-knowledge.ts, also outside this haystack.
+ */
+export const HIERARCHY_LIST_HEADING_RES = Object.freeze([
+  /Subdivisions in [A-Z]/,
+  /Neighborhoods in [A-Z]/,
 ])
 
 /** Visitor-facing lectures about how the map / feed / filter works. */
@@ -314,6 +327,9 @@ export function manneredPublicCopyProblems(sourceText) {
   }
   if (EVERY_HOME_LECTURE_RES.some((re) => re.test(scan))) {
     p.push(EVERY_HOME_LECTURE_REFUSE)
+  }
+  if (HIERARCHY_LIST_HEADING_RES.some((re) => re.test(scan))) {
+    p.push(HIERARCHY_LIST_HEADING_REFUSE)
   }
   return p
 }
