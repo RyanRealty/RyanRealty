@@ -21,6 +21,15 @@ export function formatAtlasPinPrice(usd: number | null | undefined): string {
   return `${thousands}K`
 }
 
+/** Hover line for a cluster: one ask, or the span the bubble holds. */
+export function formatAtlasClusterRange(minUsd: number, maxUsd: number): string {
+  const lo = formatAtlasPinPrice(minUsd)
+  const hi = formatAtlasPinPrice(maxUsd)
+  if (!lo || !hi) return lo || hi
+  if (lo === hi) return lo
+  return `${lo} to ${hi}`
+}
+
 /** For-sale and pending marks with an ask become price pills. Sold stays a dot. */
 export function atlasPinShouldPaint(dot: {
   s: 'active' | 'pending' | 'sold' | 'closed'

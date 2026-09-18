@@ -34,6 +34,8 @@
  *            scale — the server-rendered map is the final map.
  *   html     SITE-127 price pills (735K / $1.5M) on for-sale and pending
  *            marks, plus the home blow-up (photo + ask + street) on hover.
+ *            SITE-128 residual: overlapping pills collapse to count bubbles
+ *            that expand on zoom (city folds); spaced neighborhood pins stay.
  *   html     town labels, positioned from the measured view, in real type.
  *   svg      the pulses, alone, on their own layer, capped with slots for
  *            each kind of event so a close always shows, paused off-screen.
@@ -62,6 +64,7 @@ import {
   ATLAS_CAM_HOME,
   ATLAS_K_MAX,
   ATLAS_K_MIN,
+  fitRect,
   panBy,
   publishAtlasView,
   screenToWorld,
@@ -81,7 +84,15 @@ import {
   salesHeatField,
 } from '@/lib/atlas/sales-heat'
 import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/atlas/pack-labels'
-import { atlasPinShouldPaint, formatAtlasPinPrice } from '@/lib/atlas/pin-price'
+import { atlasPinShouldPaint, formatAtlasClusterRange, formatAtlasPinPrice } from '@/lib/atlas/pin-price'
+import {
+  ATLAS_PIN_CLUSTER_RADIUS_PX,
+  atlasClusterCanExpand,
+  atlasClusterSize,
+  atlasClusterWorldBounds,
+  clusterAtlasPins,
+  hitAtlasPinLayer,
+} from '@/lib/atlas/cluster-pins'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Atlas.css'
@@ -374,6 +385,19 @@ type RegionShape = AtlasRegion & {
 }
 type PlacedShape = RegionShape & { d: string }
 type View = { w: number; h: number; scale: number; ox: number; oy: number }
+
+type PaintedPin =
+  | { kind: 'pin'; d: AtlasDot; i: number; x: number; y: number; label: string }
+  | {
+      kind: 'cluster'
+      id: string
+      x: number
+      y: number
+      count: number
+      indices: number[]
+      minP: number
+      maxP: number
+    }
 
 /* -------------------------------------------------------------------------- */
 /* V3Atlas                                                                     */
@@ -884,6 +908,8 @@ export function V3Atlas({
      no hit testing, and on a frame with no places the whole map was inert
      (evaluator round five, LISTING-NOBOUNDARY-2, LISTING-BEND-7). */
   const [dotHit, setDotHit] = useState<number | null>(null)
+  const [clusterHit, setClusterHit] = useState<string | null>(null)
+  const pinMarksRef = useRef<PaintedPin[]>([])
   /* Price pills are ~52×22 above the coordinate; 14px only caught the caret. */
   const REACH = 28
 
@@ -920,6 +946,31 @@ export function V3Atlas({
     [dotPx, dots, isOn, closingsMap, highlight],
   )
 
+  const layerMarksOf = (marks: readonly PaintedPin[]) =>
+    marks.map((m) =>
+      m.kind === 'cluster'
+        ? { kind: 'cluster' as const, id: m.id, x: m.x, y: m.y }
+        : { kind: 'pin' as const, id: m.d.k, i: m.i, x: m.x, y: m.y },
+    )
+
+  const applyLayerHit = useCallback((px: number, py: number, wx: number, wy: number) => {
+    const layer = hitAtlasPinLayer(px, py, layerMarksOf(pinMarksRef.current), REACH)
+    if (layer?.kind === 'cluster') {
+      setClusterHit(layer.id)
+      setDotHit(null)
+      return layer
+    }
+    if (layer?.kind === 'pin') {
+      setClusterHit(null)
+      setDotHit(layer.i)
+      return layer
+    }
+    setClusterHit(null)
+    const fallback = nearestDot(wx, wy, REACH / camRef.current.k)
+    setDotHit(fallback)
+    return fallback != null ? ({ kind: 'pin' as const, i: fallback }) : null
+  }, [nearestDot])
+
   const pointerOnStage = (e: { clientX: number; clientY: number }) => {
     const el = stageRef.current
     if (!el) return null
@@ -933,6 +984,25 @@ export function V3Atlas({
     const r = el.getBoundingClientRect()
     setCam((c) => zoomAt(c, r.width / 2, r.height / 2, factor, r.width, r.height))
   }, [])
+
+  const zoomIntoCluster = useCallback(
+    (indices: readonly number[]) => {
+      if (!view) return
+      const pts: { x: number; y: number }[] = []
+      for (const i of indices) {
+        const p = dotPx[i]
+        if (p) pts.push({ x: p[0], y: p[1] })
+      }
+      if (atlasClusterCanExpand(pts, ATLAS_K_MAX, ATLAS_PIN_CLUSTER_RADIUS_PX)) {
+        const box = atlasClusterWorldBounds(pts)
+        if (box) setCam(fitRect(box, view.w, view.h, 0.22))
+        return
+      }
+      const first = indices.map((i) => dots[i]).find((d) => d?.href)
+      if (first?.href) router.push(first.href)
+    },
+    [view, dotPx, dots, router],
+  )
 
   const onMove = useCallback(
     (e: React.PointerEvent) => {
@@ -968,9 +1038,9 @@ export function V3Atlas({
       }
       setPointer({ x: at.px, y: at.py })
       const [wx, wy] = screenToWorld(camRef.current, at.px, at.py)
-      setDotHit(nearestDot(wx, wy, REACH / camRef.current.k))
+      applyLayerHit(at.px, at.py, wx, wy)
     },
-    [nearestDot, stageSize.w, stageSize.h],
+    [nearestDot, applyLayerHit, stageSize.w, stageSize.h],
   )
 
   const openPlace = useCallback(
@@ -1179,18 +1249,50 @@ export function V3Atlas({
         }
       : undefined
 
-  const pinMarks = useMemo(() => {
+  const pinMarks = useMemo<PaintedPin[]>(() => {
     if (!view) return []
-    const out: { d: AtlasDot; i: number; x: number; y: number; label: string }[] = []
+    const raw: { d: AtlasDot; i: number; x: number; y: number; label: string }[] = []
     dots.forEach((d, i) => {
       if (!isOn(d) || !atlasPinShouldPaint(d)) return
       const label = formatAtlasPinPrice(d.p)
       if (!label) return
       const [x, y] = screenOf(d.lng, d.lat)
-      out.push({ d, i, x, y, label })
+      raw.push({ d, i, x, y, label })
     })
+    const grouped = clusterAtlasPins(
+      raw.map((p) => ({ i: p.i, x: p.x, y: p.y })),
+      ATLAS_PIN_CLUSTER_RADIUS_PX,
+    )
+    const byIndex = new Map(raw.map((p) => [p.i, p]))
+    const out: PaintedPin[] = []
+    for (const g of grouped) {
+      if (g.count === 1) {
+        const src = byIndex.get(g.indices[0]!)
+        if (src) out.push({ kind: 'pin', ...src })
+        continue
+      }
+      let minP = Infinity
+      let maxP = 0
+      for (const i of g.indices) {
+        const p = dots[i]?.p
+        if (p == null || !(p > 0)) continue
+        if (p < minP) minP = p
+        if (p > maxP) maxP = p
+      }
+      out.push({
+        kind: 'cluster',
+        id: g.id,
+        x: g.x,
+        y: g.y,
+        count: g.count,
+        indices: g.indices,
+        minP: Number.isFinite(minP) ? minP : 0,
+        maxP,
+      })
+    }
     return out
   }, [view, dots, isOn, screenOf])
+  pinMarksRef.current = pinMarks
 
   /* The home under the pointer: photo + ask, not a one-line status chip. */
   const homePreview = (() => {
@@ -1252,6 +1354,24 @@ export function V3Atlas({
     ) : (
       <p className={cn('v3-atlas__home', placeBelow && 'is-below')} role="status" style={style} data-atlas-home={d.k}>
         {body}
+      </p>
+    )
+  })()
+
+  const clusterPreview = (() => {
+    if (!clusterHit || pinned || !view) return null
+    const mark = pinMarks.find((m) => m.kind === 'cluster' && m.id === clusterHit)
+    if (!mark || mark.kind !== 'cluster') return null
+    const range = mark.minP > 0 ? formatAtlasClusterRange(mark.minP, mark.maxP) : ''
+    const label = `${mark.count.toLocaleString('en-US')} ${noun(mark.count)}`
+    const style = {
+      left: Math.min(Math.max(mark.x, 8), Math.max(8, view.w - 8)),
+      top: Math.max(0, mark.y - 18),
+    }
+    return (
+      <p className="v3-atlas__tip v3-atlas__tip--cluster" role="status" style={style} data-atlas-cluster-tip={mark.id}>
+        <span className="v3-atlas__tip-state">{label}</span>
+        {range ? <span className="v3-atlas__tip-price">{range}</span> : null}
       </p>
     )
   })()
@@ -1479,7 +1599,7 @@ export function V3Atlas({
                 dragRef.current = { x: at.px, y: at.py, moved: false }
                 const [wx, wy] = screenToWorld(camRef.current, at.px, at.py)
                 setPointer({ x: at.px, y: at.py })
-                setDotHit(nearestDot(wx, wy, REACH / camRef.current.k))
+                applyLayerHit(at.px, at.py, wx, wy)
               }}
               onPointerUp={(e) => {
                 ptsRef.current.delete(e.pointerId)
@@ -1490,10 +1610,23 @@ export function V3Atlas({
                 const at = pointerOnStage(e)
                 if (!at) return
                 const [wx, wy] = screenToWorld(camRef.current, at.px, at.py)
-                const hit = nearestDot(wx, wy, REACH / camRef.current.k)
-                const d = hit != null ? dots[hit] : null
-                if (d?.href) {
-                  router.push(d.href)
+                const hit = applyLayerHit(at.px, at.py, wx, wy)
+                if (!hit) return
+                switch (hit.kind) {
+                  case 'cluster': {
+                    const mark = pinMarksRef.current.find((m) => m.kind === 'cluster' && m.id === hit.id)
+                    if (mark?.kind === 'cluster') zoomIntoCluster(mark.indices)
+                    return
+                  }
+                  case 'pin': {
+                    const d = dots[hit.i]
+                    if (d?.href) router.push(d.href)
+                    return
+                  }
+                  default: {
+                    const _never: never = hit
+                    return _never
+                  }
                 }
               }}
               onPointerLeave={(e) => {
@@ -1502,6 +1635,7 @@ export function V3Atlas({
                 setHover(null)
                 setPointer(null)
                 setDotHit(null)
+                setClusterHit(null)
               }}
             >
               <div
@@ -1812,27 +1946,52 @@ export function V3Atlas({
               ) : null}
 
               {view && pinMarks.length > 0 ? (
-                <div className="v3-atlas__pins" aria-hidden="true">
-                  {pinMarks.map(({ d, i, x, y, label }) => (
-                    <span
-                      key={d.k}
-                      className={cn(
-                        'v3-atlas__pin',
-                        d.s === 'pending' && 'is-pending',
-                        highlight && d.k === highlight.key && 'is-home',
-                        linkedIndex === i && 'is-linked',
-                        dotHit === i && 'is-hot',
-                      )}
-                      style={{ left: x, top: y }}
-                      data-atlas-pin={d.k}
-                      data-atlas-pin-price={label}
-                    >
-                      {label}
-                    </span>
-                  ))}
+                <div className="v3-atlas__pins" aria-hidden="true" data-atlas-pin-layer="clustered">
+                  {pinMarks.map((mark) => {
+                    switch (mark.kind) {
+                      case 'cluster':
+                        return (
+                          <span
+                            key={mark.id}
+                            className={cn('v3-atlas__pin', 'is-cluster', clusterHit === mark.id && 'is-hot')}
+                            style={{ left: mark.x, top: mark.y }}
+                            data-atlas-cluster={mark.id}
+                            data-atlas-cluster-n={mark.count}
+                            data-atlas-cluster-size={atlasClusterSize(mark.count)}
+                          >
+                            {mark.count}
+                          </span>
+                        )
+                      case 'pin': {
+                        const { d, i, x, y, label } = mark
+                        return (
+                          <span
+                            key={d.k}
+                            className={cn(
+                              'v3-atlas__pin',
+                              d.s === 'pending' && 'is-pending',
+                              highlight && d.k === highlight.key && 'is-home',
+                              linkedIndex === i && 'is-linked',
+                              dotHit === i && 'is-hot',
+                            )}
+                            style={{ left: x, top: y }}
+                            data-atlas-pin={d.k}
+                            data-atlas-pin-price={label}
+                          >
+                            {label}
+                          </span>
+                        )
+                      }
+                      default: {
+                        const _never: never = mark
+                        return _never
+                      }
+                    }
+                  })}
                 </div>
               ) : null}
 
+              {clusterPreview}
               {homePreview}
             </div>
             {/* The card sits in the frame, not the stage: on a phone it drops
