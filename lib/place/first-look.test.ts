@@ -61,10 +61,12 @@ describe('place first-look cards', () => {
 })
 
 describe('place first-look map island', () => {
-  it('clusters pins on one ring and does not paint child overlays', () => {
+  it('paints price pins on one ring and does not paint child overlays', () => {
     const map = readFileSync(resolve('components/site/v3/V3PlaceLookMap.client.tsx'), 'utf8')
     expect(map).toMatch(/hideBoundaryToggle:\s*true/)
-    expect(map).toMatch(/boundaryStrokeWeight:\s*4/)
+    expect(map).toMatch(/boundaryStrokeWeight:\s*5/)
+    expect(map).toMatch(/disableClustering:\s*true/)
+    expect(map).toMatch(/fitSubjectRing:\s*true/)
     expect(map).toMatch(/SearchMapClustered/)
     expect(map).not.toMatch(/overlayBoundaries/)
   })
@@ -79,6 +81,7 @@ describe('place first-look pin cap', () => {
       Longitude: -121 - i / 10000,
     }))
     const capped = capLookListings(listings)
+    expect(CITY_LOOK_PIN_CAP).toBe(36)
     expect(capped).toHaveLength(CITY_LOOK_PIN_CAP)
     expect(capped[0]?.ListingKey).toBe('k0')
     expect(capped.at(-1)?.ListingKey).not.toBe('k0')

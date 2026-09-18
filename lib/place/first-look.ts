@@ -16,8 +16,10 @@ import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 export const PLACE_LOOK_CARD_LIMIT = 6
-/** City folds can hold 700+ pins. Cap the client map so first look paints. */
-export const CITY_LOOK_PIN_CAP = 240
+/** Spread-sample only. 240 city pins SuperCluster into one count bubble at
+ *  city zoom (Matt phone FAIL: "Bend Right Now / 240 cluster only"). First
+ *  look needs readable $ pills on one ring, not a cream cluster atlas. */
+export const CITY_LOOK_PIN_CAP = 36
 
 export type PlaceLookCard = PlaceOpeningListing
 

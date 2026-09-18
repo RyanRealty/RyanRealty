@@ -147,7 +147,7 @@
 
 .city-fold__drawing {
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .city-fold__drawing .v3-atlas {
@@ -236,6 +236,13 @@
   /* Phone: a usable map, then MOS + alerts ask (SITE-128). */
   .city-fold__drawing .v3-atlas__frame {
     max-height: min(46vh, 20rem);
+  }
+
+  /* First look: short island so 2×2 photo cards own the 375 fold. */
+  .city-fold__drawing .v3-place-look__map {
+    height: min(22vh, 10.5rem);
+    min-height: 9.5rem;
+    max-height: 10.5rem;
   }
 
   .city-fold__drawing .v3-atlas__stage {

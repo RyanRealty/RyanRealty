@@ -11,6 +11,8 @@ describe('SITE-128 neighborhood fold Atlas', () => {
     expect(PAGE).toMatch(/className="nbh-fold"/)
     expect(PAGE).toMatch(/<V3PlaceLook[\s\S]*?id="place-look"/)
     expect(PAGE).toMatch(/photoCards=\{foldPhotoCards\}/)
+    expect(FOLD_CSS).toMatch(/\.nbh-fold__drawing \.v3-place-look__map/)
+    expect(FOLD_CSS).toMatch(/overflow:\s*visible/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
     expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
     expect(PAGE).toMatch(/getPlaceAmenityLayers/)

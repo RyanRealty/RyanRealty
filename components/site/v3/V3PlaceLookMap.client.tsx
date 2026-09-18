@@ -1,7 +1,8 @@
 'use client'
 
 /**
- * Google island for V3PlaceLook. One place ring. Price pins cluster.
+ * Google island for V3PlaceLook. One place ring. Price pills, no count
+ * cluster. Camera fits the recorded ring (not a 240-pin union).
  * Child cells stay off this fold (SITE-128 #2).
  */
 
@@ -24,7 +25,9 @@ export function V3PlaceLookMap({ listings, boundaryGeojson, placeQuery }: V3Plac
   const mapProps: ComponentProps<typeof SearchMapClustered> = {
     listings,
     hideBoundaryToggle: true,
-    boundaryStrokeWeight: 4,
+    boundaryStrokeWeight: 5,
+    disableClustering: true,
+    fitSubjectRing: true,
     className: 'v3-place-look__map-canvas',
   }
   if (boundaryGeojson != null) mapProps.boundaryGeojson = boundaryGeojson
