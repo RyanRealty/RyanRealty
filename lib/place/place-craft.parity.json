@@ -40,16 +40,17 @@
       }
     ],
     "shots": {
-      "ours": "look-pass-site128-rematch-2026-09-18/ours-local-old-bend.png",
+      "ours": "look-pass-site128-firstlook-2026-09-18/ours-local-cities-bend-375.png",
       "peer": "look-pass-site128-rematch-2026-09-18/peer-compass-old-bend.png",
       "sideBySide": "look-pass-site128-rematch-2026-09-18/side-by-side-old-bend.png",
       "sequence": [
         "look-pass-site128-rematch-2026-09-18/peer-compass-old-bend.png",
-        "look-pass-site128-rematch-2026-09-18/ours-local-old-bend.png",
-        "look-pass-site128-rematch-2026-09-18/peer-compass-bend-or.png",
-        "look-pass-site128-rematch-2026-09-18/ours-local-cities-bend.png",
-        "look-pass-site128-rematch-2026-09-18/side-by-side-bend.png",
-        "look-pass-site128-rematch-2026-09-18/peer-zillow-bend-or.png"
+        "look-pass-site128-firstlook-2026-09-18/ours-local-old-bend-375.png",
+        "look-pass-site128-firstlook-2026-09-18/prod-cities-bend-375-before.png",
+        "look-pass-site128-firstlook-2026-09-18/ours-local-cities-bend-375.png",
+        "look-pass-site128-firstlook-2026-09-18/ours-local-cities-bend-375-map.png",
+        "look-pass-site128-firstlook-2026-09-18/ours-local-cities-bend-1440.png",
+        "look-pass-site128-rematch-2026-09-18/peer-compass-bend-or.png"
       ]
     }
   }

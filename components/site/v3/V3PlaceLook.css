@@ -37,6 +37,31 @@
   border: var(--v3-rule-hairline) solid var(--v3-navy);
 }
 
+/* 375 first-look: photo cards OWN the fold (2×2). Map is a short island
+   so the ring + $ pins stay readable. An 18rem map left only two peeks. */
+@media (max-width: 63.99rem) {
+  .v3-place-look__stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(11rem, 26vh) auto;
+    min-height: 0;
+  }
+
+  .v3-place-look__map {
+    height: min(26vh, 13rem);
+    min-height: 11rem;
+    max-height: 13rem;
+  }
+
+  .v3-place-look__cards {
+    padding-top: var(--v3-space-2xs);
+  }
+
+  .v3-place-look__cards > li:nth-child(n + 5) {
+    display: none;
+  }
+}
+
 .v3-place-look__map-canvas,
 .v3-place-look__map-pending {
   position: absolute;

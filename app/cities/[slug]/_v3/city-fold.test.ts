@@ -29,6 +29,14 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/place-opening--city/)
     expect(PAGE).toMatch(/<V3PlaceLook[\s\S]*?id="place-look"/)
     expect(PAGE).toMatch(/photoCards=\{foldPhotoCards\}/)
+    expect(FOLD_CSS).toMatch(/\.city-fold__drawing \.v3-place-look__map/)
+    expect(FOLD_CSS).toMatch(/overflow:\s*visible/)
+    expect(readFileSync(resolve('components/site/v3/V3PlaceLook.css'), 'utf8')).toMatch(
+      /max-width:\s*63\.99rem[\s\S]*v3-place-look__map[\s\S]*13rem/,
+    )
+    expect(readFileSync(resolve('components/site/v3/V3PlaceLook.css'), 'utf8')).toMatch(
+      /nth-child\(n \+ 5\)/,
+    )
     expect(PAGE).toMatch(/placeLookPhotoCards/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
     expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)

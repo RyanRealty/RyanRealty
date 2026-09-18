@@ -1,0 +1,147 @@
+[
+  {
+    "url": "http://127.0.0.1:3199/cities/bend",
+    "dest": "/workspace/look-pass-site128-firstlook-2026-09-18/ours-local-cities-bend-375.png",
+    "status": 200,
+    "stats": {
+      "viewport": {
+        "w": 417,
+        "h": 903
+      },
+      "lookTop": 202,
+      "map": {
+        "h": 168,
+        "w": 335,
+        "top": 277
+      },
+      "cards": 6,
+      "cardsInFold": 4,
+      "cardsFullyInFold": 6,
+      "pills": 36,
+      "pillsInFold": 36,
+      "clusterZoomIn": 2,
+      "cardPrices": [
+        "$565K",
+        "$1.5M",
+        "$992K",
+        "$505K"
+      ]
+    }
+  },
+  {
+    "url": "http://127.0.0.1:3199/cities/bend#place-look",
+    "dest": "/workspace/look-pass-site128-firstlook-2026-09-18/ours-local-cities-bend-375-place-look.png",
+    "status": 200,
+    "stats": {
+      "viewport": {
+        "w": 417,
+        "h": 903
+      },
+      "lookTop": 175,
+      "map": {
+        "h": 168,
+        "w": 335,
+        "top": 250
+      },
+      "cards": 6,
+      "cardsInFold": 4,
+      "cardsFullyInFold": 6,
+      "pills": 36,
+      "pillsInFold": 36,
+      "clusterZoomIn": 2,
+      "cardPrices": [
+        "$565K",
+        "$1.5M",
+        "$992K",
+        "$505K"
+      ]
+    }
+  },
+  {
+    "url": "http://127.0.0.1:3199/cities/bend/old-bend",
+    "dest": "/workspace/look-pass-site128-firstlook-2026-09-18/ours-local-old-bend-375.png",
+    "status": 200,
+    "stats": {
+      "viewport": {
+        "w": 388,
+        "h": 838
+      },
+      "lookTop": 182,
+      "map": {
+        "h": 168,
+        "w": 335,
+        "top": 235
+      },
+      "cards": 5,
+      "cardsInFold": 4,
+      "cardsFullyInFold": 3,
+      "pills": 7,
+      "pillsInFold": 7,
+      "clusterZoomIn": 2,
+      "cardPrices": [
+        "$1.2M",
+        "$1.9M",
+        "$1.4M",
+        "$2.0M"
+      ]
+    }
+  },
+  {
+    "url": "https://www.ryan-realty.com/cities/bend",
+    "dest": "/workspace/look-pass-site128-firstlook-2026-09-18/prod-cities-bend-375-before.png",
+    "status": 200,
+    "stats": {
+      "viewport": {
+        "w": 417,
+        "h": 903
+      },
+      "lookTop": 202,
+      "map": {
+        "h": 288,
+        "w": 335,
+        "top": 277
+      },
+      "cards": 6,
+      "cardsInFold": 4,
+      "cardsFullyInFold": 2,
+      "pills": 0,
+      "pillsInFold": 0,
+      "clusterZoomIn": 3,
+      "cardPrices": [
+        "$565K",
+        "$1.5M",
+        "$992K",
+        "$505K"
+      ]
+    }
+  },
+  {
+    "url": "http://127.0.0.1:3199/cities/bend",
+    "dest": "/workspace/look-pass-site128-firstlook-2026-09-18/ours-local-cities-bend-1440.png",
+    "status": 200,
+    "stats": {
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      },
+      "lookTop": 218,
+      "map": {
+        "h": 610,
+        "w": 760,
+        "top": 271
+      },
+      "cards": 6,
+      "cardsInFold": 2,
+      "cardsFullyInFold": 1,
+      "pills": 36,
+      "pillsInFold": 28,
+      "clusterZoomIn": 2,
+      "cardPrices": [
+        "$565K",
+        "$1.5M",
+        "$992K",
+        "$505K"
+      ]
+    }
+  }
+]
