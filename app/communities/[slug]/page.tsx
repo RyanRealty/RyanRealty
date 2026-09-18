@@ -917,6 +917,7 @@ async function renderCommunityDetail({ params }: Props) {
                 sourceName="Oregon Data Share"
                 dots={atlasView.dots}
                 regions={foldAtlasRegions}
+                childRegions={platRegions}
                 basemap={basemapForRegions(foldAtlasRegions, {
                   dots: atlasView.dots,
                   fit: 'dots',

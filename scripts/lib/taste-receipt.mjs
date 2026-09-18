@@ -47,6 +47,7 @@ import {
   placeCraftShipProblems,
   resolveCompetitorFirstLook,
 } from './place-craft.mjs'
+import { isMapHierarchyDocument, mapHierarchyShipProblems } from './map-hierarchy.mjs'
 
 export { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
 
@@ -956,6 +957,16 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
         process.exit(1)
       }
       console.log('ship OK — place craft · map-drives-hierarchy · competitor first-look')
+      process.exit(0)
+    }
+    if (isMapHierarchyDocument(d)) {
+      const problems = mapHierarchyShipProblems(d, { root })
+      if (problems.length) {
+        console.error(problems.join('\n'))
+        console.error('ship refuse — map hierarchy Tip Ready needs subject-polygon-only + child-select zoom. Cos prose is not Tip Ready.')
+        process.exit(1)
+      }
+      console.log('ship OK — map-hierarchy · subject-polygon-only · child-select-zooms')
       process.exit(0)
     }
     const kitFromPath = rel.includes('ui_kits/') ? rel.split('/').filter(Boolean).at(-2) : null
