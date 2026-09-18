@@ -208,14 +208,17 @@ export function MorphingSearch({
 	useEffect(() => {
 		if (!backgroundScrollLocked) return;
 
+		const isInsideOpenSearch = (target: EventTarget | null) =>
+			target instanceof Node &&
+			Boolean(
+				dialogRef.current?.contains(target) || listRef.current?.contains(target),
+			);
 		const preventBackgroundWheel = (event: WheelEvent) => {
-			const target = event.target;
-			if (target instanceof Node && listRef.current?.contains(target)) return;
+			if (isInsideOpenSearch(event.target)) return;
 			event.preventDefault();
 		};
 		const preventBackgroundTouch = (event: TouchEvent) => {
-			const target = event.target;
-			if (target instanceof Node && listRef.current?.contains(target)) return;
+			if (isInsideOpenSearch(event.target)) return;
 			event.preventDefault();
 		};
 
@@ -384,9 +387,13 @@ export function MorphingSearch({
 
 	// Neither grouping layer carries a box: they only hold `inert`/`aria-hidden`,
 	// the z-index and the presence key, and every child below is `fixed` and
-	// resolves against the viewport itself. The click catcher spans the viewport
-	// edges but has no children and filters nothing, so it is not a sampling
-	// layer either. See tests/fixed-overlay-edge-sampling.test.tsx.
+	// resolves against the viewport itself. The grouping child is a plain div
+	// (not motion.div) so Framer does not put a transform on a size-0 box and
+	// turn it into the containing block for the dialog. The click catcher sits
+	// at z-0; the layoutId shell is pointer-events-none (iOS backdrop-filter +
+	// shared-layout projection otherwise paint on top of the input and swallow
+	// taps — SITE-121 residual, Matt 2026-09-18). See
+	// tests/fixed-overlay-edge-sampling.test.tsx.
 	const overlay = mounted
 		? createPortal(
 				<div
@@ -403,14 +410,15 @@ export function MorphingSearch({
 						onExitComplete={() => setBackgroundScrollLocked(false)}
 					>
 						{open ? (
-							<motion.div
+							<div
 								key="morphing-search-overlay"
 								className="fixed left-0 top-0 size-0"
 							>
 								<button
 									type="button"
 									aria-label="Close search"
-									className="pointer-events-auto fixed inset-0 cursor-default bg-transparent"
+									data-v3-morph="catcher"
+									className="pointer-events-auto fixed inset-0 z-0 cursor-default bg-transparent"
 									onClick={closeSearch}
 								/>
 
@@ -418,13 +426,14 @@ export function MorphingSearch({
 									layoutId={shellLayoutId}
 									aria-hidden="true"
 									data-v3-morph="panel"
-									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
+									className="pointer-events-none fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
 										left: panelLeft,
 										width: panelWidth,
 										height: 48 + resultsHeight,
 										boxShadow: "inset 0 0 0 1px var(--color-border)",
+										pointerEvents: "none",
 									}}
 									transition={morphTransition}
 								/>
@@ -460,7 +469,7 @@ export function MorphingSearch({
 												}
 									}
 									data-v3-morph="dialog"
-									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
+									className="pointer-events-auto isolate fixed z-20 overflow-hidden rounded-xl"
 									style={{
 										top: anchorRect.top,
 										left: panelLeft,
@@ -469,14 +478,14 @@ export function MorphingSearch({
 								>
 									<div
 										className={cn(
-											"flex h-12 items-center gap-2.5 border-b border-border",
+											"relative z-10 flex h-12 items-center gap-2.5 border-b border-border bg-background",
 											iconOnly ? "px-4" : "px-3.5",
 										)}
 									>
-										<span className="shrink-0">
+										<span className="pointer-events-none shrink-0">
 											<Search className="size-4 text-muted-foreground" />
 										</span>
-										<div className="flex h-10 min-w-0 flex-1 items-center">
+										<div className="relative z-10 flex h-10 min-w-0 flex-1 items-center">
 											<input
 												ref={inputRef}
 												// Focus during React's commit of the tap that opened
@@ -497,7 +506,8 @@ export function MorphingSearch({
 														: undefined
 												}
 												placeholder={placeholder}
-												className="size-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+												data-v3-morph="input"
+												className="relative z-10 size-full bg-background text-sm text-foreground outline-none placeholder:text-muted-foreground"
 											/>
 										</div>
 										<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
@@ -597,7 +607,7 @@ export function MorphingSearch({
 										)}
 									</motion.div>
 								</motion.div>
-							</motion.div>
+							</div>
 						) : null}
 					</AnimatePresence>
 				</div>,
