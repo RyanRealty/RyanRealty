@@ -854,8 +854,7 @@ async function renderCityDetail({ params }: Props) {
   // MOS / leftover HUD detached (same inventory question, one answer). Other
   // types stay available via the type toggles when their marks are present —
   // we keep every house mark (active + pending + recent sold) and only the
-  // house type chip, so the dock still has a scrubber and a real toggle set
-  // cannot disagree with 645 on first paint.
+  // house type chip. SITE-128 hides the price scrubber on this grain.
   const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
   const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
   const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
@@ -914,9 +913,10 @@ async function renderCityDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-82: drawing + figure in the first viewport. Atlas is the drawing
-            (type toggles + price scrubber). MOS two-bar + alerts/V3Number are
-            the figure. Sticky alerts still key off #atlas scrolling past. */}
+        {/* SITE-82 / SITE-128: drawing + figure. Atlas is the drawing (price
+            pins + hover; type chips stay; price scrubber is off). MOS two-bar
+            + alerts/V3Number are the figure. Sticky alerts still key off
+            #atlas scrolling past. */}
         <div className="city-fold">
           <div className="city-fold__stage">
             <div className="city-fold__drawing">
@@ -925,7 +925,7 @@ async function renderCityDetail({ params }: Props) {
                 headingLevel={2}
                 headline={v3Text(`${cityName} right now`)}
                 headlineTone="eyebrow"
-                claimText={`${cityName} houses for sale — active and pending detached homes. Scrub price to filter the map.`}
+                claimText={`${cityName} houses for sale — active and pending detached homes.`}
                 keyPlacement="dock"
                 sourceName="Oregon Data Share"
                 dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
@@ -939,7 +939,7 @@ async function renderCityDetail({ params }: Props) {
                 events={atlasView.events}
                 source={
                   foldAtlasDots.length > 0
-                    ? `Detached single-family (Houses) active and pending in ${cityName}, from Oregon Data Share listing tiles. Price scrubber filters this set.`
+                    ? `Detached single-family (Houses) active and pending in ${cityName}, from Oregon Data Share listing tiles.`
                     : atlasView.source
                 }
                 stamp={atlasView.stamp}

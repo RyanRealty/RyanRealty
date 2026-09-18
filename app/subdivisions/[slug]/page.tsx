@@ -112,7 +112,7 @@ import type { Metadata } from 'next'
 import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
 import { subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
-import { getAreaGuideVideo, getBoundaryGeoJSON, getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
+import { getAreaGuideVideo, getBoundaryGeoJSON, getGeoBoundaryMapData, getListingTiles, getMarketStats, getPlaceOpeningListings } from '@/lib/data'
 import { areaGuideRow } from '@/app/cities/[slug]/_v3/city-sections'
 import { areaGuideLookupSlugs, areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 import { cityStagePoster, placeLibraryHero } from '@/app/cities/[slug]/_v3/city-opening'
@@ -146,6 +146,12 @@ import './_v3/plat-opening.css'
 import './_v3/plat-fold.css'
 import { SubdivisionAlertsStrip } from './_v3/SubdivisionAlertSheet.client'
 import { platNewCount30dFromTiles } from './_v3/plat-fold-figures'
+import {
+  platAtlasListingKeys,
+  platFoldAtlasView,
+  platFoldHasMixedTypes,
+  platFoldListedCount,
+} from './_v3/plat-typed-inventory'
 import { SubdivisionInsight } from './_v3/SubdivisionInsight.client'
 import { SubdivisionPicker } from './_v3/SubdivisionPicker.client'
 import { buildSubdivisionInsightBoard } from './_v3/subdivision-insight'
@@ -665,6 +671,7 @@ async function renderSubdivisionPage({ params }: Props) {
     platClosed,
     platUnsold,
     stockTiles,
+    openingListings,
   ] = await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -702,6 +709,7 @@ async function renderSubdivisionPage({ params }: Props) {
           listingKeys: [
             ...boundary.pins.map((pin) => pin.listingKey),
             ...mapTiles.map((tile) => tile.listingKey),
+            ...platAtlasListingKeys(atlas?.dots ?? []),
           ],
           subdivisionNames: getSubdivisionMatchNames(displayName),
           city: placeCity,
@@ -709,6 +717,15 @@ async function renderSubdivisionPage({ params }: Props) {
         [],
         4500,
         'sub:stock',
+      ),
+      withTimeoutFallback(
+        getPlaceOpeningListings({
+          ...(placeCity ? { city: placeCity } : {}),
+          subdivision: displayName,
+        }),
+        [],
+        3000,
+        'sub:openingListings',
       ),
     ])
 
@@ -728,6 +745,10 @@ async function renderSubdivisionPage({ params }: Props) {
     medianList: platFigures.medianListPrice,
   })
   const stockSections = placeStockSectionsFromTiles(unionListingTiles(stockTiles, mapTiles))
+  const inventorySource =
+    stockSections.length > 1
+      ? `regional MLS through Oregon Data Share, every active listing in ${displayName}`
+      : homesLedgerTrace(platScope)
   const headline = placeHomesForSaleHeading(displayName)
   const platLibraryHeroUrl = await withTimeoutFallback(
     placeLibraryHero('subdivision', slug),
@@ -904,7 +925,7 @@ async function renderSubdivisionPage({ params }: Props) {
     geoType: 'neighborhood',
     geoSlug: slug,
     leftoverHouses30d: platNew30d,
-    matchNames: [displayName],
+    matchNames: getSubdivisionMatchNames(displayName),
     buckets: [
       {
         key: 'houses',
@@ -914,6 +935,7 @@ async function renderSubdivisionPage({ params }: Props) {
         source: 'listing_tile_mv',
         listings: recentHouseListings,
       },
+      ...openingListings.filter((bucket) => bucket.key !== 'houses'),
     ],
   })
 
@@ -1251,8 +1273,6 @@ async function renderSubdivisionPage({ params }: Props) {
     for (const line of platAnswerTraces) console.log(`[plat:${slug}] ${line}`)
   }
 
-  const inventorySource = homesLedgerTrace(platScope)
-
   /* ── THE FOLD'S PAGED FIGURE (SITE-112) ──────────────────────────────────
      The counted active set's asking prices, and this place's own closed count
      per year, on the beautifului InsightCards pager the city fold already
@@ -1358,14 +1378,22 @@ async function renderSubdivisionPage({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
-  // SITE-86: fold Atlas marks match the counted SFR face (city layout lock).
-  const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
-  const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
-  const foldHouseCount = activeCount ?? (foldAtlasDots.length > 0 ? foldAtlasDots.length : null)
+  // SITE-86 / SITE-129: SFR-only plats stay house-locked so the counted face
+  // and the map agree. Mixed plats (DRW, Tetherow-style stock) keep every
+  // live type so House / Condo / Land can toggle and V3PlaceInventory can
+  // split. getPlatPublicInventory remains the SFR SoR for MOS / median.
+  const foldAtlas = platFoldAtlasView(atlasView)
+  const foldAtlasDots = foldAtlas.dots
+  const foldAtlasTypes = foldAtlas.types
+  const mixedAtlas = platFoldHasMixedTypes(atlasView.dots)
+  const foldListedCount = platFoldListedCount(foldAtlasDots)
+  const foldHouseCount = activeCount ?? (foldAtlasDots.filter((d) => d.t === 'house').length || null)
   const atlasClaimText =
-    foldHouseCount != null && foldHouseCount > 0
-      ? `${foldHouseCount} homes for sale in ${displayName}. Toggle house, land, or other types on the map.`
-      : `Homes for sale in ${displayName}. Toggle house, land, or other types on the map.`
+    mixedAtlas && foldListedCount > 0
+      ? `${foldListedCount} homes for sale in ${displayName}. Toggle house, land, or other types on the map.`
+      : foldHouseCount != null && foldHouseCount > 0
+        ? `${foldHouseCount} homes for sale in ${displayName}.`
+        : `Homes for sale in ${displayName}.`
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -1401,7 +1429,7 @@ async function renderSubdivisionPage({ params }: Props) {
         </div>
 
         {/* SITE-86: drawing + figure in the first viewport. Atlas is the drawing
-            (type toggles + price scrubber). MOS two-bar + alerts/V3Number are
+            (type toggles; price scrubber is off). MOS two-bar + alerts/V3Number are
             the figure. Source chip sits under the figure it supports — never
             mount="hero" at H1 weight. Doors sit after the stage so the short
             photograph does not clip the primary ask. */}
@@ -1436,7 +1464,9 @@ async function renderSubdivisionPage({ params }: Props) {
                   types={foldAtlasTypes.length > 0 ? foldAtlasTypes : atlasView.types}
                   events={atlasView.events}
                   source={[
-                    foldAtlasDots.length > 0
+                    mixedAtlas
+                      ? `Active and pending marks inside the recorded ${displayName} boundary, from the same Oregon Data Share listing tiles the map draws.`
+                      : foldAtlasDots.length > 0
                       ? `Detached single-family (Houses) active and pending marks inside the recorded ${displayName} boundary, from the same Oregon Data Share listing tiles the map draws.`
                       : atlasView.source,
                     footprintNote,
