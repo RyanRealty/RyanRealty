@@ -22,7 +22,8 @@
  */
 
 export type TrailUse = 'hike' | 'mtb' | 'both'
-export type TrailDifficulty = 'easy' | 'moderate' | 'hard'
+/** Single rating when the land manager publishes one. `varies` is for a network. */
+export type TrailDifficulty = 'easy' | 'moderate' | 'hard' | 'varies'
 
 export type CoTrail = {
   /** kebab-case slug. Stable, unique. */
@@ -68,6 +69,7 @@ export const TRAIL_DIFFICULTY_LABEL: Record<TrailDifficulty, string> = {
   easy: 'Easy',
   moderate: 'Moderate',
   hard: 'Hard',
+  varies: 'Varying',
 }
 
 /** kebab-case a trail name for its slug. */
@@ -171,13 +173,15 @@ export const CO_TRAILS: CoTrail[] = [
     city: 'Bend',
     geoSlug: 'bend',
     use: 'mtb',
+    difficulty: 'varies',
     lat: 44.044608,
     lng: -121.384984,
     landManager: 'USFS Deschutes National Forest',
+    fee: 'Free',
     blurb:
       "Phil's Trail is the namesake of the biggest mountain-bike network on the west side of Bend, one of the best-known trailheads in the Northwest. The riding starts minutes from town off Skyliners Road, and the neighborhoods out that way fill with people who ride before work.",
     officialUrl: 'https://www.fs.usda.gov/r06/deschutes/recreation/phils-trailhead',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-09-18',
   },
   {
     slug: 'whoops-trail',

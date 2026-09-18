@@ -116,6 +116,10 @@ import { NeighborhoodAlertsStrip } from './_v3/NeighborhoodAlertsSheet.client'
 import { NeighborhoodInsight } from './_v3/NeighborhoodInsight.client'
 import { buildNeighborhoodInsightBoard } from './_v3/neighborhood-insight'
 import { dailyLifeRows } from './_v3/neighborhood-daily-life'
+import {
+  PLACE_NEAR_RECREATION_TRACE,
+  recreationNearPoint,
+} from '@/lib/site/place-recreation'
 import './_v3/neighborhood-fold.css'
 import {
   neighborhoodAboutItems,
@@ -724,6 +728,10 @@ async function renderNeighborhoodDetail({ params }: Props) {
           lng: withCoords.reduce((a, p) => a + p.lng, 0) / withCoords.length,
         }
       : undefined
+  const dailyHrefs = new Set(dailyRows.map((row) => row.href))
+  const nearbyRecreation = recreationNearPoint(geo?.lat, geo?.lng, { omitHrefs: dailyHrefs })
+  const [firstNearbyPark, ...restNearbyParks] = nearbyRecreation.parks
+  const [firstNearbyTrail, ...restNearbyTrails] = nearbyRecreation.trails
   const hasMap = Boolean(boundaryMapData.polygon) || (splitListings != null && splitListings.length > 0)
   const neighborhoodSchemas: SchemaInput[] = buildNeighborhoodSchemas({
     neighborhoodName: neighborhood.name,
@@ -950,6 +958,28 @@ async function renderNeighborhoodDetail({ params }: Props) {
             heading={v3Text('Schools')}
             rows={[firstDaily, ...restDaily]}
             action={{ label: v3Text('Every school'), href: '/schools' }}
+          />
+        ) : null}
+
+        {firstNearbyPark ? (
+          <V3Ledger
+            id="parks"
+            eyebrow={v3Text(`${neighborhood.name} · Parks`)}
+            heading={v3Text('Parks')}
+            rows={[firstNearbyPark, ...restNearbyParks]}
+            source={v3Text(PLACE_NEAR_RECREATION_TRACE)}
+            action={{ label: v3Text('Every Central Oregon park'), href: '/parks' }}
+          />
+        ) : null}
+
+        {firstNearbyTrail ? (
+          <V3Ledger
+            id="trails"
+            eyebrow={v3Text(`${neighborhood.name} · Trails`)}
+            heading={v3Text('Trails')}
+            rows={[firstNearbyTrail, ...restNearbyTrails]}
+            source={v3Text(PLACE_NEAR_RECREATION_TRACE)}
+            action={{ label: v3Text('Every Central Oregon trail'), href: '/central-oregon/trails' }}
           />
         ) : null}
 

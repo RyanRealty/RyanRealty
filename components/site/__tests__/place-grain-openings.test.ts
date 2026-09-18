@@ -102,6 +102,29 @@ describe('city opening', () => {
   })
 })
 
+describe('place trails and parks depth', () => {
+  const cityPage = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+  const nbhPage = readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8')
+  const communityPage = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
+  const parkDetail = readFileSync(resolve('app/parks/[slug]/page.tsx'), 'utf8')
+  const trailDetail = readFileSync(resolve('app/central-oregon/trails/[slug]/page.tsx'), 'utf8')
+
+  it('mounts sourced park and trail ledgers on city, neighborhood, and community', () => {
+    for (const page of [cityPage, nbhPage, communityPage]) {
+      expect(page).toMatch(/id="parks"/)
+      expect(page).toMatch(/id="trails"/)
+      expect(page).toMatch(/place-recreation/)
+    }
+  })
+
+  it('keeps park features and parking, and trail difficulty, on the detail pages', () => {
+    expect(parkDetail).toMatch(/term: 'Features'/)
+    expect(parkDetail).toMatch(/term: 'Where to park'/)
+    expect(trailDetail).toMatch(/TRAIL_DIFFICULTY_LABEL/)
+    expect(trailDetail).toMatch(/term: 'Difficulty'/)
+  })
+})
+
 describe('neighborhood opening MOS', () => {
   const page = readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8')
   const nbhInsight = readFileSync(

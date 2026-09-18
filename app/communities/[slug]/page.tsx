@@ -132,6 +132,10 @@ import {
   amenityItemListItems,
   buildCommunityAmenityBoard,
 } from './_v3/community-amenities'
+import {
+  PLACE_NEAR_RECREATION_TRACE,
+  recreationNearPoint,
+} from '@/lib/site/place-recreation'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
@@ -587,6 +591,13 @@ async function renderCommunityDetail({ params }: Props) {
     citySlug: citySlug || undefined,
   })
   const browseHref = placeLinks.browseUrl
+  const communityCenter = registryEntry?.center_lon_lat
+  const nearbyRecreation = recreationNearPoint(
+    Array.isArray(communityCenter) ? communityCenter[1] : null,
+    Array.isArray(communityCenter) ? communityCenter[0] : null,
+  )
+  const [firstNearbyPark, ...restNearbyParks] = nearbyRecreation.parks
+  const [firstNearbyTrail, ...restNearbyTrails] = nearbyRecreation.trails
   const amenityBoard = buildCommunityAmenityBoard({
     placeName: publicName,
     amenities: richContent?.amenities,
@@ -1074,6 +1085,28 @@ async function renderCommunityDetail({ params }: Props) {
           >
             <CommunityAmenities board={amenityBoard} />
           </V3Amenities>
+        ) : null}
+
+        {firstNearbyPark ? (
+          <V3Ledger
+            id="parks"
+            eyebrow={v3Text(`${publicName} · Parks`)}
+            heading={v3Text('Parks')}
+            rows={[firstNearbyPark, ...restNearbyParks]}
+            source={v3Text(PLACE_NEAR_RECREATION_TRACE)}
+            action={{ label: v3Text('Every Central Oregon park'), href: '/parks' }}
+          />
+        ) : null}
+
+        {firstNearbyTrail ? (
+          <V3Ledger
+            id="trails"
+            eyebrow={v3Text(`${publicName} · Trails`)}
+            heading={v3Text('Trails')}
+            rows={[firstNearbyTrail, ...restNearbyTrails]}
+            source={v3Text(PLACE_NEAR_RECREATION_TRACE)}
+            action={{ label: v3Text('Every Central Oregon trail'), href: '/central-oregon/trails' }}
+          />
         ) : null}
 
         {knowledgeItems.length > 0 ? (
