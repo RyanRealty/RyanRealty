@@ -1,10 +1,10 @@
-# Current — 2026-09-18 (SITE-128 LIVE FAIL — Bend first-look PAINT)
+# Current — 2026-09-18 (SITE-128 paint rematch — Bend first-look @375)
 
-Surface: Cursor cloud, branch `cursor/site-128-bend-375-first-look-56a7` off `origin/main` `a873fe9ea`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+Surface: Cursor cloud, branch `cursor/site-128-bend-375-first-look-56a7` off `origin/main` `a873fe9ea`. PR #312 — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
 
-- **Root cause (Cos rematch).** V3PlaceLook is mounted. Fold zoom fits 240 pins ∪ city ring → z≈8 so the ring is a speck under one “240 homes. Zoom in” cluster; price pills never paint; @375 an 18rem map + 2-col cards lets only two photos peek.
-- **Paint.** `fitSubjectRing` (ring-only camera, min z 11). `disableClustering` + pin cap 36 ($ pills). Phone: 10rem map + 2×2 photo cards own the fold. No geom invent. Hierarchy / amenity / naming crumbs untouched.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+- **Root cause.** V3PlaceLook is mounted. Fold zoom fitted 240 pins ∪ city ring → z≈8 speck under one count cluster; BEM canvas `\b` miss left a 360px minHeight; @375 18rem map + 2-col left two photo peeks.
+- **Paint.** Ring-only camera (`fitSubjectRing` + `v3SubjectRingPadding` + phone z9). `disableClustering` + pin cap 36. Phone 13rem island + 2×2 cards. Evidence in `look-pass-site128-firstlook-2026-09-18/`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
 
 # Current — 2026-09-18 (SITE-128 Tip Ready #4 — hierarchy naming + crumb sameness)
 

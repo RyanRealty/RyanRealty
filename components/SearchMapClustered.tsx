@@ -1297,7 +1297,7 @@ export default function SearchMapClustered({
         if (h > 0 && h < 260) {
           map.fitBounds(bb, v3SubjectRingPadding(div))
           const z2 = map.getZoom()
-          if (typeof z2 === 'number' && z2 > 8) map.setZoom(8)
+          if (typeof z2 === 'number' && z2 > 9) map.setZoom(9)
         }
         if (div) {
           div.dataset.placeLookRing = ringInView ? 'in-view' : 'refit'
@@ -1752,7 +1752,7 @@ export default function SearchMapClustered({
                     fillOpacity: 0.06,
                     strokeColor: MAP_NAVY,
                     strokeWeight: boundaryStrokeWeight ?? 2.5,
-                    strokeOpacity: 0.75,
+                    strokeOpacity: fitSubjectRing ? 1 : 0.75,
                   }}
                 />
               ))}
