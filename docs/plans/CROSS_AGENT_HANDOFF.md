@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-128 residual — city fold drives clusters)
 
-Surface: Cursor cloud, branch `cursor/site-128-city-grid-clusters-dd0c`. Draft PR #293. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-city-grid-clusters-dd0c`. Tip `ae25eee57`. Draft PR #293. PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
 - **Prior land miss.** `bd25af464` DID call `clusterAtlasPins` inside V3Atlas, but (1) union-find @ 40px made one 759 blob, (2) SSR `view` was null so first HTML was 759 SVG house dots / 0 bubbles — Cos counted those dots as pills. City page never named the cluster props.
 - **This tip.** City fold passes `clusterPins` + `clusterCellPx` + `clusterStageHint={CITY_FOLD_CLUSTER_STAGE}`. Grid @ 64px. Pin-eligible SVG dots omitted. Old Bend / Tetherow omit the stage hint.
