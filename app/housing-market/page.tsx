@@ -141,7 +141,7 @@ import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
 import './_v3/hub-market.css'
 
-export const revalidate = 300
+export const revalidate = 900
 
 // Metadata - unchanged from the KB page.
 export async function generateMetadata(): Promise<Metadata> {
