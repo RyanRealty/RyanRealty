@@ -24,6 +24,7 @@ import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
+import { placeHomesForSaleHeading } from '@/lib/place/place-homes-heading'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
 
 function imaginePlaceStill(...urls: Array<string | null | undefined>): string | null {
@@ -64,7 +65,7 @@ export function stagePoster(
  * the name of a premier community. (Matt 2026-08-27.)
  */
 export function belongingHeadline(name: string, _content: ResortCommunityContent | null): string {
-  return `${name} homes for sale`
+  return placeHomesForSaleHeading(name)
 }
 
 export function belongingFigures(

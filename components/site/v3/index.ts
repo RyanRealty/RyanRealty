@@ -642,6 +642,10 @@ export { V3PlacePropertyTypes } from './V3PlacePropertyTypes'
 
 export type { PlaceSegmentInput } from './V3PlacePropertyTypes'
 
+export { V3PlaceInventory } from './V3PlaceInventory'
+
+export type { V3PlaceInventoryProps } from './V3PlaceInventory'
+
 /* -------------------------------------------------------------------------- */
 /* CHROME: the persistent frame the six patterns sit inside                    */
 /* -------------------------------------------------------------------------- */
