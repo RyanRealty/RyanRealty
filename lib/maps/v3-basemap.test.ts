@@ -9,6 +9,7 @@ import { MAP_CREAM, MAP_NAVY } from '@/lib/maps/markers'
 import {
   navyOnCream,
   v3FitPadding,
+  v3SubjectRingPadding,
   V3_BASEMAP_INK,
   V3_BASEMAP_PALETTE,
   V3_BASEMAP_STYLE,
@@ -146,5 +147,13 @@ describe('the frame geometry', () => {
   it('survives a frame that has not been laid out yet', () => {
     const pad = v3FitPadding(null)
     expect(pad.left).toBeGreaterThanOrEqual(V3_MARK_WIDTH_PX * 1.5)
+  })
+
+  it('keeps subject-ring padding inside a 10.5rem phone island', () => {
+    const phone = v3SubjectRingPadding({ clientWidth: 335, clientHeight: 168 })
+    expect(phone.top + phone.bottom).toBeLessThan(168)
+    expect(phone.left + phone.right).toBeLessThan(335)
+    expect(phone.top).toBeGreaterThanOrEqual(8)
+    expect(phone.top).toBeLessThanOrEqual(18)
   })
 })

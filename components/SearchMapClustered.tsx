@@ -29,6 +29,7 @@ import {
   V3_CLUSTER_MAX_ZOOM,
   V3_CLUSTER_RADIUS_PX,
   v3FitPadding,
+  v3SubjectRingPadding,
 } from '@/lib/maps/v3-basemap'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import './search/search-map-marks.css'
@@ -1136,10 +1137,11 @@ export default function SearchMapClustered({
         const ring = new google.maps.LatLngBounds()
         for (const path of boundaryPaths) for (const p of path) ring.extend(p)
         if (!ring.isEmpty()) {
-          map.fitBounds(ring, padding)
+          map.fitBounds(ring, v3SubjectRingPadding(map.getDiv()))
           google.maps.event.addListenerOnce(map, 'idle', () => {
             const z = map.getZoom()
-            if (typeof z === 'number' && z < 11) map.setZoom(11)
+            // Do not clamp UP. A min-z of 11 on a 10.5rem phone island
+            // crops the city ring off the fold (SITE-128 paint rematch).
             if (typeof z === 'number' && z > 14) map.setZoom(14)
           })
           return
@@ -1229,11 +1231,10 @@ export default function SearchMapClustered({
       const bb = new google.maps.LatLngBounds()
       for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
       if (!bb.isEmpty()) {
-        map.fitBounds(bb, padding)
+        map.fitBounds(bb, fitSubjectRing ? v3SubjectRingPadding(map.getDiv()) : padding)
         if (fitSubjectRing) {
           google.maps.event.addListenerOnce(map, 'idle', () => {
             const z = map.getZoom()
-            if (typeof z === 'number' && z < 11) map.setZoom(11)
             if (typeof z === 'number' && z > 14) map.setZoom(14)
           })
         } else {
