@@ -1208,8 +1208,11 @@ export function V3Atlas({
     }
     const state = d.s === 'pending' ? 'Pending' : 'For sale'
     const price = d.p != null ? formatAtlasPinPrice(d.p) : ''
-    const left = Math.min(Math.max(sx, 128), Math.max(128, view.w - 128))
-    const top = Math.max(12, sy - 16)
+    const cardW = 248
+    const cardH = d.photo ? 280 : 148
+    const left = Math.min(Math.max(sx, cardW / 2 + 8), Math.max(cardW / 2 + 8, view.w - cardW / 2 - 8))
+    const placeBelow = sy < cardH + 28
+    const top = placeBelow ? Math.min(sy + 18, Math.max(18, view.h - 12)) : Math.max(12, sy - 16)
     const body = (
       <>
         {d.photo ? (
@@ -1238,7 +1241,7 @@ export function V3Atlas({
     return d.href ? (
       <Link
         href={d.href}
-        className="v3-atlas__home"
+        className={cn('v3-atlas__home', placeBelow && 'is-below')}
         style={style}
         data-atlas-home={d.k}
         data-atlas-home-price={price || undefined}
@@ -1247,7 +1250,7 @@ export function V3Atlas({
         {body}
       </Link>
     ) : (
-      <p className="v3-atlas__home" role="status" style={style} data-atlas-home={d.k}>
+      <p className={cn('v3-atlas__home', placeBelow && 'is-below')} role="status" style={style} data-atlas-home={d.k}>
         {body}
       </p>
     )
