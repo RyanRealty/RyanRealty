@@ -260,6 +260,36 @@
   max-height: min(68vh, 40rem);
 }
 
+.nbh-fold__drawing .v3-place-look__stage {
+  min-height: min(36vh, 16rem);
+}
+
+.nbh-fold__drawing .v3-place-look__map {
+  max-height: min(68vh, 40rem);
+}
+
+@media (min-width: 64rem) {
+  .nbh-fold__drawing .v3-place-look__stage {
+    height: min(38.125rem, 68vh);
+    max-height: min(68vh, 40rem);
+  }
+}
+
+.nbh-fold__drawing .v3-place-look__stage {
+  min-height: min(36vh, 16rem);
+}
+
+.nbh-fold__drawing .v3-place-look__map {
+  max-height: min(68vh, 40rem);
+}
+
+@media (min-width: 64rem) {
+  .nbh-fold__drawing .v3-place-look__stage {
+    height: min(38.125rem, 68vh);
+    max-height: min(68vh, 40rem);
+  }
+}
+
 .nbh-fold__drawing .v3-atlas__dock {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

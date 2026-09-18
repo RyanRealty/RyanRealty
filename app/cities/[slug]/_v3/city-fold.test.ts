@@ -21,12 +21,15 @@ const COMBOBOX = readFileSync(resolve('app/cities/[slug]/_v3/CityTypeCombobox.cl
 const ALERT_SHEET = readFileSync(resolve('app/cities/[slug]/_v3/CityAlertSheet.client.tsx'), 'utf8')
 
 describe('SITE-82 city fold composition', () => {
-  it('imports page-local city-fold.css and composes Atlas beside CityAlertsStrip', () => {
+  it('imports page-local city-fold.css and composes the real-map look beside CityAlertsStrip', () => {
     expect(PAGE).toMatch(/import '\.\/_v3\/city-fold\.css'/)
     expect(PAGE).toMatch(/className="city-fold"/)
     expect(PAGE).toMatch(/city-fold__drawing/)
     expect(PAGE).toMatch(/city-fold__figure/)
     expect(PAGE).toMatch(/place-opening--city/)
+    expect(PAGE).toMatch(/<V3PlaceLook[\s\S]*?id="place-look"/)
+    expect(PAGE).toMatch(/photoCards=\{foldPhotoCards\}/)
+    expect(PAGE).toMatch(/placeLookPhotoCards/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
     expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
     expect(PAGE).toMatch(/getPlaceAmenityLayers/)
