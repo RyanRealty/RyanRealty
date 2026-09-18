@@ -16,13 +16,16 @@ export const LISTING_FOLD_DENSITY_GATE = 'ci:listing-fold-density'
 export const LISTING_FOLD_DENSITY_SCRIPT = 'scripts/check-listing-fold-density.mjs'
 
 export const FOLD_LOCK = Object.freeze({
-  lockedAt: '2026-09-17',
+  lockedAt: '2026-09-18',
   crumbCollapseAt: 3,
   crumbBelowNavPadToken: '--v3-space-2xs',
   crumbOverlayOnListing: true,
+  overlayCompactOnListing: true,
   maxCrumbBandPx: 44,
   stripThumbRem: 2.75,
   mosaicWell: 'navy',
+  stripWell: 'navy',
+  mosaicHeightUsesViewport: true,
   shellPadTopToken: '--v3-space-xs',
   gate: LISTING_FOLD_DENSITY_GATE,
 })
@@ -87,6 +90,11 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
       `${PATHS.breadcrumbTsx}: collapse must default at ${FOLD_LOCK.crumbCollapseAt}+ crumbs. A taller trail is an oversized crumb band.`,
     )
   }
+  if (!tsx.includes('overlayCompact') || !/rungs\.slice\(\s*0\s*,\s*lastIndex\s*\)/.test(tsx)) {
+    p.push(
+      `${PATHS.breadcrumbTsx}: listing overlay must compact to … / current (ancestors in the disclosure). Bend / … / street on the photo is leftover chrome.`,
+    )
+  }
   if (!tsx.includes('overlay')) {
     p.push(`${PATHS.breadcrumbTsx}: overlay prop missing — listing trails cannot sit on the mosaic.`)
   }
@@ -122,6 +130,11 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
     p.push(`${PATHS.breadcrumbCss}: overlay modifier missing.`)
   } else if (TALL_PAD_RE.test(overlay)) {
     p.push(`${PATHS.breadcrumbCss}: overlay crumb must not grow a cream band (max ${FOLD_LOCK.maxCrumbBandPx}px tap).`)
+  }
+  if (!/linear-gradient\(/.test(css) || !/v3-breadcrumb--on-media\.v3-breadcrumb--overlay/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay on-media crumb must be a gradient wash, not a solid navy/cream bar on the photograph.`,
+    )
   }
   return p
 }
@@ -172,6 +185,17 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
       if (!/padding:\s*0/.test(strip) || TALL_BLOCK_PAD_RE.test(strip)) {
         p.push(`${PATHS.listingCss}: .listing-strip padding must stay 0. Extra cream around thumbs is refuse.`)
       }
+      if (!/background\s*:\s*var\(--v3-navy\)/.test(strip) || /background\s*:\s*var\(--v3-cream\)/.test(strip)) {
+        p.push(`${PATHS.listingCss}: .listing-strip well must be navy. A cream filmstrip under the mosaic is refuse.`)
+      }
+    }
+    if (
+      !/--v3-mosaic-h:\s*min\(calc\(100dvh/.test(css) ||
+      !/--v3-carousel-h:\s*min\(62dvh/.test(css)
+    ) {
+      p.push(
+        `${PATHS.listingCss}: listing mosaic/carousel height must use the viewport (100dvh / 62dvh), not the short 28.75rem token. A postage-stamp aerial in navy gutters is refuse.`,
+      )
     }
     const slides = cssBlocks(css, '.listing-mosaic__slide')
     const slideHasZero = slides.some((b) => /padding:\s*0/.test(b))
@@ -221,6 +245,15 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
       }
       if (lock.crumbOverlayOnListing !== true) {
         p.push(`${PATHS.parity}: foldDensity.crumbOverlayOnListing must stay true.`)
+      }
+      if (lock.overlayCompactOnListing !== true) {
+        p.push(`${PATHS.parity}: foldDensity.overlayCompactOnListing must stay true.`)
+      }
+      if (lock.mosaicHeightUsesViewport !== true) {
+        p.push(`${PATHS.parity}: foldDensity.mosaicHeightUsesViewport must stay true.`)
+      }
+      if (lock.stripWell !== FOLD_LOCK.stripWell) {
+        p.push(`${PATHS.parity}: foldDensity.stripWell must stay ${FOLD_LOCK.stripWell}.`)
       }
     }
   }

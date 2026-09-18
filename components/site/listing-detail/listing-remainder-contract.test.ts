@@ -276,10 +276,20 @@ describe('listing remainder composition', () => {
   it('locks listing fold density on the shared crumb + hero (ci:listing-fold-density)', () => {
     const PARITY = JSON.parse(
       readFileSync(resolve('design_system/ryan-realty/ui_kits/listing-detail/parity.json'), 'utf8'),
-    ) as { foldDensity?: { gate?: string; crumbCollapseAt?: number; crumbOverlayOnListing?: boolean } }
+    ) as {
+      foldDensity?: {
+        gate?: string
+        crumbCollapseAt?: number
+        crumbOverlayOnListing?: boolean
+        overlayCompactOnListing?: boolean
+        mosaicHeightUsesViewport?: boolean
+      }
+    }
     expect(PARITY.foldDensity?.gate).toBe('ci:listing-fold-density')
     expect(PARITY.foldDensity?.crumbCollapseAt).toBe(3)
     expect(PARITY.foldDensity?.crumbOverlayOnListing).toBe(true)
+    expect(PARITY.foldDensity?.overlayCompactOnListing).toBe(true)
+    expect(PARITY.foldDensity?.mosaicHeightUsesViewport).toBe(true)
     expect(PAGE).toMatch(/<V3Breadcrumb trail=\{breadcrumbs\} tone="on-media" overlay \/>/)
   })
 
