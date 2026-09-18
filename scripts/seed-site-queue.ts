@@ -1243,6 +1243,20 @@ const SEEDS: readonly Seed[] = [
       'Mechanical at 1440: every open mega-menu has real padding, balanced columns, no orphan single-link dead columns with huge white; community (or equivalent) rows treat thumbs consistently; no lecture H1s. Matt does not call any panel buns. ci:gates green. Tip Ready --ship on chrome / nav parity if one exists, else taste receipt on the chrome kit.',
   },
 
+
+  {
+    versionGap: 'SITE-127',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] place maps: show price marks on pins (735K / $1.5M) + hover blow-up of the home — Atlas dots are silent',
+    objective:
+      'Matt 2026-09-17: on place maps (city/neighborhood/community/subdivision Atlas / fold maps), every for-sale (and pending if shown) mark should read as a short price like Redfin — 735K, $1.5M — matching the listing ask. Mouse-over opens a small blow-up of the home (photo + price + address). Scope is ALL place maps that plot inventory dots, not listing-detail alone. Public Patch owns Tip Ready craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Price-labeled map marks + hover card/blow-up on V3Atlas / place fold maps; Tip Ready shots 1440/375; gate so silent dots cannot regress on place inventory maps',
+    accept:
+      'Mechanical at 1440 on a place with ≥3 actives (e.g. Larkspur / Parkside / Tetherow): visible short price labels on pins; hover shows a home blow-up with photo+price; labels match list ask formatting. Matt does not ask where the prices went. ci:gates green.',
+  },
+
 ]
 
 async function main() {

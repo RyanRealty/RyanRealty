@@ -251,7 +251,8 @@ export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstP
     consent,
     // Canonical short slug when ?agent= / cookie is known — server MP page_view
     // uses the same assigned_broker / broker_slug names as generate_lead.
-    agent: resolveClientVisitBroker() ?? undefined,
+    // Only runs inside fireFirstPartyEvent (client POST / keepalive), never in JSX render.
+    agent: resolveClientVisitBroker() ?? undefined, // hydration-safe
   }
   // keepalive=true so the POST survives a fast navigation away.
   try {

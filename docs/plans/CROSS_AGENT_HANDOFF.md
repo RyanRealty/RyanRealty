@@ -1,3 +1,7 @@
+# Current — 2026-09-18 (SITE-127 place map price marks)
+
+Surface: site queue SITE-127 open. Public Patch owns Tip Ready — price labels on place-map pins (735K / $1.5M) + hover home blow-up. Cos Mini lands. HOLD owner email.
+
 
 
 # Current — 2026-09-18 (SITE-126 chrome mega-menus)
