@@ -1229,6 +1229,20 @@ const SEEDS: readonly Seed[] = [
       'Mechanical: grep of app/ and lib/ finds no "Email me each one", no "by email, as they come on the market", no "Every new listing by email."; ci:alert-capture-disclosure passes on every capture surface (frequency sentence + unsubscribe still present in each file); the sticky strip and callout on a place page render the new wording at 375 and 1440; V3AlertsStrip logic tests green. Matt reads the new lines on his phone and does not send them back.',
   },
 
+
+  {
+    versionGap: 'SITE-126',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] chrome: all V3Chrome mega-menus are buns — Homes / Places / Market / Sell / About panels sparse, uneven, empty dead columns',
+    objective:
+      'Matt 2026-09-17: Places mega-menu (and every chrome menu) looks unfinished — cramped left edge, mixed community thumbs vs text-only rows, Neighborhoods/Subdivisions/School districts nearly empty dead white, bottom orphan rows. Scope is ALL V3Chrome mega-menus (Homes, Places, Market, Sell, About), not Places-only. Dense balanced panels, consistent row treatment (thumbs all-or-none per column), no empty dead columns, real padding. Public Patch owns craft. Cos Mini-lands Tip Ready. HOLD owner email.',
+    output:
+      'Restyled V3Chrome mega-menu panels for Homes/Places/Market/Sell/About; Tip Ready shots 1440/375 on each open panel; gate/ratchet so empty dead columns and edge-cramp cannot regress; evidence URLs',
+    accept:
+      'Mechanical at 1440: every open mega-menu has real padding, balanced columns, no orphan single-link dead columns with huge white; community (or equivalent) rows treat thumbs consistently; no lecture H1s. Matt does not call any panel buns. ci:gates green. Tip Ready --ship on chrome / nav parity if one exists, else taste receipt on the chrome kit.',
+  },
+
 ]
 
 async function main() {

@@ -1,3 +1,10 @@
+# Current — 2026-09-18 (SITE-126 chrome mega-menus)
+
+Surface: site queue SITE-126 open. Public Patch owns Tip Ready craft for ALL V3Chrome mega-menus (Homes / Places / Market / Sell / About). Cos Mini lands. Do not merge unrelated. HOLD owner email.
+
+- **Defect.** Sparse uneven panels, mixed thumbs, empty dead columns, edge-cramp.
+- **Accept.** Dense balanced panels, consistent row treatment, real padding; Matt does not call them buns.
+
 # Current — 2026-09-18 (P0 Grand Targhee listing hero follow-up)
 
 Surface: Cursor cloud `bc-a35cf13b-5096-5143-a17f-bd6f8b801440`, branch `cursor/listing-hero-grand-targhee-1440`. PR #288. PR only — Cos Mini lands. Do not merge. HOLD owner email. Do not twin SITE-121 morph.
