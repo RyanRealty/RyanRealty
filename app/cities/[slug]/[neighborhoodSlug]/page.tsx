@@ -93,7 +93,8 @@ import {
   V3SectionTracker,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
+import { V3Atlas, V3PlaceLook, type AtlasRegion } from '@/components/site/v3'
+import { listingsFromAtlasDots, listingsFromTileRows, placeLookPhotoCards } from '@/lib/place/first-look'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
@@ -769,6 +770,16 @@ async function renderNeighborhoodDetail({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // SITE-128 #1 first-look: Google + ONE neighborhood ring + photo cards.
+  // Atlas stays later so amenity gates still see <V3Atlas id="atlas">.
+  const foldLookListings =
+    splitListings != null && splitListings.length > 0
+      ? listingsFromTileRows(splitListings)
+      : listingsFromAtlasDots(atlasView.dots.filter((d) => d.t === 'house'))
+  const foldPhotoCards = placeLookPhotoCards({
+    buckets: openingListings,
+    listings: foldLookListings,
+  })
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -813,28 +824,20 @@ async function renderNeighborhoodDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-104 / SITE-128: drawing + figure + ask. Atlas is the drawing
-            (price pins + hover; type chips stay; price scrubber is off). The
-            paged insight is the figure. The alerts callout is the ask. */}
+        {/* SITE-128 #1: first-look is a real map + one neighborhood ring +
+            photo cards. Cream Atlas is not the fold. */}
         <div className="nbh-fold">
           <div className="nbh-fold__stage">
             <div className="nbh-fold__drawing">
-              <V3Atlas
-                id="atlas"
-                headingLevel={2}
-                headline={v3Text(`${neighborhood.name} right now`)}
-                headlineTone="eyebrow"
-                claimText={`${neighborhood.name} houses for sale — active and pending.`}
-                dots={atlasView.dots}
-                regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
-                basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
-                fit="dots"
-                types={atlasView.types}
-                events={atlasView.events}
+              <V3PlaceLook
+                id="place-look"
+                headline={`${neighborhood.name} right now`}
+                claim={`${neighborhood.name} houses for sale — active and pending.`}
+                listings={foldLookListings}
+                boundaryGeojson={boundaryMapData.polygon}
+                placeQuery={`${neighborhood.name} ${cityName}`}
+                photoCards={foldPhotoCards}
                 source={atlasView.source}
-                stamp={atlasView.stamp}
-                incomplete={!atlasView.complete}
-                amenities={amenityLayers}
               />
             </div>
             <aside className="nbh-fold__figure nbh-fold__figure--insight">
@@ -919,6 +922,24 @@ async function renderNeighborhoodDetail({ params }: Props) {
             degraded={!boundaryRead.ok && !inventoryOk}
           />
         </div>
+
+        <V3Atlas
+          id="atlas"
+          headingLevel={2}
+          headline={v3Text(`${neighborhood.name} right now`)}
+          headlineTone="eyebrow"
+          claimText={`${neighborhood.name} houses for sale — active and pending.`}
+          dots={atlasView.dots}
+          regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
+          basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
+          fit="dots"
+          types={atlasView.types}
+          events={atlasView.events}
+          source={atlasView.source}
+          stamp={atlasView.stamp}
+          incomplete={!atlasView.complete}
+          amenities={amenityLayers}
+        />
 
         <V3PlaceIndex
           id="child-places"

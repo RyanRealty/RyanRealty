@@ -112,7 +112,13 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { V3Atlas, V3PlaceIndex, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
+import { V3Atlas, V3PlaceIndex, V3PlaceLook, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
+import {
+  capLookListings,
+  listingsFromAtlasDots,
+  listingsFromTiles,
+  placeLookPhotoCards,
+} from '@/lib/place/first-look'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import {
@@ -825,6 +831,15 @@ async function renderCityDetail({ params }: Props) {
   const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
   const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
   const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
+  // SITE-128 #1 first-look: Google + ONE city ring + price pins + photo cards.
+  // Atlas stays later so amenity / cluster gates still see <V3Atlas id="atlas">.
+  const foldLookListings = capLookListings(
+    tiles.length > 0 ? listingsFromTiles(tiles) : listingsFromAtlasDots(foldAtlasDots),
+  )
+  const foldPhotoCards = placeLookPhotoCards({
+    buckets: openingListings,
+    listings: foldLookListings,
+  })
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -884,42 +899,25 @@ async function renderCityDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-82 / SITE-128: drawing + figure. Atlas is the drawing (price
-            pins + hover; type chips stay; price scrubber is off). MOS two-bar
-            + alerts/V3Number are the figure. Sticky alerts still key off
-            #atlas scrolling past. */}
+        {/* SITE-128 #1: first-look is a real map + one city ring + photo cards.
+            Cream Atlas is not the fold. Sticky alerts still key off #atlas
+            later on the page. */}
         <div className="city-fold">
           <div className="city-fold__stage">
             <div className="city-fold__drawing">
-              <V3Atlas
-                id="atlas"
-                headingLevel={2}
-                headline={v3Text(`${cityName} right now`)}
-                headlineTone="eyebrow"
-                claimText={`${cityName} houses for sale — active and pending detached homes.`}
-                keyPlacement="dock"
-                sourceName="Oregon Data Share"
-                clusterPins
-                clusterCellPx={ATLAS_PIN_CLUSTER_CELL_PX}
-                clusterStageHint={CITY_FOLD_CLUSTER_STAGE}
-                clusterStageHintPhone={CITY_FOLD_CLUSTER_STAGE_PHONE}
-                dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
-                regions={foldAtlasRegions}
-                basemap={basemapForRegions(foldAtlasRegions, {
-                  dots: foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots,
-                  fit: 'dots',
-                })}
-                fit="dots"
-                types={foldAtlasTypes.length > 0 ? foldAtlasTypes : atlasView.types}
-                events={atlasView.events}
+              <V3PlaceLook
+                id="place-look"
+                headline={`${cityName} right now`}
+                claim={`${cityName} houses for sale — active and pending detached homes.`}
+                listings={foldLookListings}
+                boundaryGeojson={cityGeojson}
+                placeQuery={`${cityName} Oregon`}
+                photoCards={foldPhotoCards}
                 source={
-                  foldAtlasDots.length > 0
+                  foldLookListings.length > 0
                     ? `Detached single-family (Houses) active and pending in ${cityName}, from Oregon Data Share listing tiles.`
                     : atlasView.source
                 }
-                stamp={atlasView.stamp}
-                incomplete={!atlasView.complete}
-                amenities={amenityLayers}
               />
             </div>
             {/* SITE-93: the fold figure is ONE paged object (beautifului
@@ -964,6 +962,37 @@ async function renderCityDetail({ params }: Props) {
           overlayBoundaries={overlaysFromRegions(atlasRegions.slice(1))}
           seedRing
           placeQuery={`${cityName} Oregon`}
+        />
+
+        <V3Atlas
+          id="atlas"
+          headingLevel={2}
+          headline={v3Text(`${cityName} right now`)}
+          headlineTone="eyebrow"
+          claimText={`${cityName} houses for sale — active and pending detached homes.`}
+          keyPlacement="dock"
+          sourceName="Oregon Data Share"
+          clusterPins
+          clusterCellPx={ATLAS_PIN_CLUSTER_CELL_PX}
+          clusterStageHint={CITY_FOLD_CLUSTER_STAGE}
+          clusterStageHintPhone={CITY_FOLD_CLUSTER_STAGE_PHONE}
+          dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
+          regions={foldAtlasRegions}
+          basemap={basemapForRegions(foldAtlasRegions, {
+            dots: foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots,
+            fit: 'dots',
+          })}
+          fit="dots"
+          types={foldAtlasTypes.length > 0 ? foldAtlasTypes : atlasView.types}
+          events={atlasView.events}
+          source={
+            foldAtlasDots.length > 0
+              ? `Detached single-family (Houses) active and pending in ${cityName}, from Oregon Data Share listing tiles.`
+              : atlasView.source
+          }
+          stamp={atlasView.stamp}
+          incomplete={!atlasView.complete}
+          amenities={amenityLayers}
         />
 
         {/* D83: the DESIGNATED Bend polygons, and only those. */}

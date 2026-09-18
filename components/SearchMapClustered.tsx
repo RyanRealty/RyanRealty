@@ -145,6 +145,8 @@ type Props = {
   onBoundsChanged?: (bounds: MapBounds) => void
   /** Optional GeoJSON boundary (Polygon/MultiPolygon) to draw for city/neighborhood/community. */
   boundaryGeojson?: unknown
+  /** Place first-look can thicken the one subject ring. Search keeps the default. */
+  boundaryStrokeWeight?: number
   /**
    * Subordinate boundary cells inside the main ring — a community's recorded
    * plats. Drawn lighter than the seed ring; a cell with an href navigates to
@@ -786,6 +788,7 @@ export default function SearchMapClustered({
   initialZoom = 11,
   onBoundsChanged,
   boundaryGeojson,
+  boundaryStrokeWeight,
   overlayBoundaries,
   hideBoundaryToggle = false,
   onPolygonDrawn,
@@ -1613,7 +1616,7 @@ export default function SearchMapClustered({
                     fillColor: MAP_NAVY,
                     fillOpacity: 0.06,
                     strokeColor: MAP_NAVY,
-                    strokeWeight: 2.5,
+                    strokeWeight: boundaryStrokeWeight ?? 2.5,
                     strokeOpacity: 0.75,
                   }}
                 />
