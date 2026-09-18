@@ -53,7 +53,7 @@
  * ./tokens.css resolves with no wrapper. It is `position: sticky`, so it holds
  * its own space in flow and a page needs no spacer under it.
  */
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import type { AuthUser } from '@/lib/auth/types'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -67,6 +67,7 @@ import {
 } from '@/lib/site-nav'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { chromeShowsSellerAsk } from '@/lib/site/chrome-seller-ask'
+import { chromeMegaColumnMarks, chromeMegaModel } from '@/lib/site/chrome-mega'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
 import { V3ChromeSearch } from './V3ChromeSearch.client'
@@ -328,62 +329,56 @@ function isCurrentPath(pathname: string | null, href: string): boolean {
 }
 
 
-/** Places mega sections — cities / communities / neighborhoods / subdivisions / schools. */
-function placesMegaSections(links: readonly NavLink[]): { heading: string; links: NavLink[] }[] {
-  const buckets: { heading: string; test: (href: string) => boolean; links: NavLink[] }[] = [
-    { heading: 'Cities', test: (h) => h === '/cities' || h.startsWith('/cities/'), links: [] },
-    { heading: 'Communities', test: (h) => h === '/communities' || h.startsWith('/communities/'), links: [] },
-    { heading: 'Neighborhoods', test: (h) => h === '/neighborhoods' || h.startsWith('/neighborhoods/'), links: [] },
-    { heading: 'Subdivisions', test: (h) => h === '/subdivisions' || h.startsWith('/subdivisions/'), links: [] },
-    { heading: 'School districts', test: (h) => h === '/schools' || h.startsWith('/schools/'), links: [] },
-  ]
-  const other: NavLink[] = []
-  for (const link of links) {
-    const bucket = buckets.find((b) => b.test(link.href))
-    if (bucket) bucket.links.push(link)
-    else other.push(link)
-  }
-  const sections = buckets.filter((b) => b.links.length > 0).map(({ heading, links: ls }) => ({ heading, links: ls }))
-  if (other.length) sections.push({ heading: 'More', links: other })
-  return sections
+/** Sell and About sit on the right of the bar; end-align those panels. Market stays start-aligned so a 3–4 col mega cannot run off the left. */
+const MEGA_ALIGN_END = new Set(['Sell', 'About'])
+
+function ChromePanelLink({
+  href,
+  label,
+  value,
+  mark,
+  onClick,
+}: {
+  href: string
+  label: string
+  value?: string
+  mark?: string
+  onClick: () => void
+}) {
+  return (
+    <Link href={href} className="v3-chrome__panel-link" onClick={onClick}>
+      {mark ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={mark}
+          alt=""
+          className="v3-chrome__link-mark"
+          width={28}
+          height={28}
+          decoding="async"
+        />
+      ) : null}
+      <span>{label}</span>
+      {value ? <span className="v3-chrome__panel-value">{value}</span> : null}
+    </Link>
+  )
 }
 
 /* -------------------------------------------------------------------------- */
 /* One bar destination: a link, plus a disclosure for its children              */
 /* -------------------------------------------------------------------------- */
 
-/**
- * The live column of a panel: the scope, the dot field when the group has
- * one, then the figures. Reads top to bottom as one sentence the visitor did
- * not have to ask for. Only what the server could read is printed; a group
- * with no live model renders no column at all.
- */
-function V3ChromeLivePanel({ live }: { live: V3ChromeLiveGroup }) {
+/** Optional listing-dot field inside the shared Now column. */
+function ChromeMegaField({ field }: { field: { w: number; h: number; d: string } }) {
   return (
-    <div className="v3-chrome__live" aria-label={live.eyebrow}>
-      <p className="v3-chrome__live-eyebrow">{live.eyebrow}</p>
-      {live.field ? (
-        <svg
-          className="v3-chrome__field"
-          viewBox={`0 0 ${live.field.w} ${live.field.h}`}
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path d={live.field.d} className="v3-chrome__field-dots" />
-        </svg>
-      ) : null}
-      {live.facts.length > 0 ? (
-        <dl className="v3-chrome__live-facts">
-          {live.facts.map((f) => (
-            <div key={`${f.figure} ${f.label}`} className="v3-chrome__live-fact">
-              <dt className="v3-chrome__live-figure">{f.figure}</dt>
-              <dd className="v3-chrome__live-label">{f.label}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
-      {live.note ? <p className="v3-chrome__live-note">{live.note}</p> : null}
-    </div>
+    <svg
+      className="v3-chrome__field"
+      viewBox={`0 0 ${field.w} ${field.h}`}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d={field.d} className="v3-chrome__field-dots" />
+    </svg>
   )
 }
 
@@ -420,9 +415,23 @@ function V3ChromeDestination({
   const caretRef = useRef<HTMLButtonElement>(null)
   const panelId = `${useId()}-panel`
   const current = isCurrentPath(currentPath, group.href)
-  // A live model with figures or a field earns the second column; one that
-  // only carries values beside the links (Places) captions the list instead.
-  const column = live != null && (live.facts.length > 0 || live.field != null)
+  const mega = chromeMegaModel(group.key, group.featured, live)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    panel.style.setProperty('--v3-chrome-mega-shift', '0px')
+    if (!open) return
+    const rect = panel.getBoundingClientRect()
+    const pad = 16
+    let shift = 0
+    if (rect.left < pad) shift += pad - rect.left
+    if (rect.right + shift > window.innerWidth - pad) {
+      shift -= rect.right + shift - (window.innerWidth - pad)
+    }
+    panel.style.setProperty('--v3-chrome-mega-shift', `${Math.round(shift)}px`)
+  }, [open, mega.colCount])
 
   // Native focusout rather than React's onBlur: collapse once focus leaves the
   // group entirely, so tabbing out of the last child closes the panel behind it.
@@ -472,83 +481,61 @@ function V3ChromeDestination({
         <IconChevron />
       </button>
       <div
+        ref={panelRef}
         className={cn(
           'v3-chrome__panel',
-          column && 'v3-chrome__panel--live',
-          group.key === 'Areas' && 'v3-chrome__panel--places',
+          'v3-chrome__panel--mega',
+          MEGA_ALIGN_END.has(group.key) && 'v3-chrome__panel--end',
         )}
         id={panelId}
+        style={{ '--v3-chrome-mega-cols': String(mega.colCount) } as CSSProperties}
       >
-        {live && !column && live.eyebrow.trim() ? (
-          <p className="v3-chrome__panel-caption">{live.eyebrow}</p>
-        ) : null}
-        {group.key === 'Areas' ? (
-          <div className="v3-chrome__places-mega">
-            {placesMegaSections(group.featured).map((section) => (
-              <div key={section.heading} className="v3-chrome__places-col">
-                <p className="v3-chrome__places-heading">{section.heading}</p>
+        {mega.caption ? <p className="v3-chrome__panel-caption">{mega.caption}</p> : null}
+        <div className="v3-chrome__mega">
+          {mega.sections.map((section) => {
+            const marks = chromeMegaColumnMarks(
+              section.links.map((link) => link.href),
+              CHROME_MARKS,
+            )
+            return (
+              <div key={section.heading} className="v3-chrome__mega-col">
+                <p className="v3-chrome__mega-heading">{section.heading}</p>
                 <ul className="v3-chrome__panel-list v3-chrome__panel-list--stacked">
-                  {section.links.map((link) => {
-                    const value = live?.values?.[link.href]
-                    return (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          className="v3-chrome__panel-link"
-                          onClick={() => setOpenPath(null)}
-                        >
-                          {CHROME_MARKS[link.href] ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={CHROME_MARKS[link.href]}
-                              alt=""
-                              className="v3-chrome__link-mark"
-                              width={28}
-                              height={28}
-                              decoding="async"
-                            />
-                          ) : null}
-                          <span>{link.label}</span>
-                          {value ? <span className="v3-chrome__panel-value">{value}</span> : null}
-                        </Link>
-                      </li>
-                    )
-                  })}
+                  {section.links.map((link) => (
+                    <li key={link.href}>
+                      <ChromePanelLink
+                        href={link.href}
+                        label={link.label}
+                        value={live?.values?.[link.href]}
+                        mark={marks?.[link.href]}
+                        onClick={() => setOpenPath(null)}
+                      />
+                    </li>
+                  ))}
                 </ul>
               </div>
-            ))}
-          </div>
-        ) : (
-          <ul className="v3-chrome__panel-list">
-            {group.featured.map((link) => {
-              const value = live?.values?.[link.href]
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="v3-chrome__panel-link"
-                    onClick={() => setOpenPath(null)}
-                  >
-                    {CHROME_MARKS[link.href] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={CHROME_MARKS[link.href]}
-                        alt=""
-                        className="v3-chrome__link-mark"
-                        width={28}
-                        height={28}
-                        decoding="async"
-                      />
-                    ) : null}
-                    <span>{link.label}</span>
-                    {value ? <span className="v3-chrome__panel-value">{value}</span> : null}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-        {column ? <V3ChromeLivePanel live={live} /> : null}
+            )
+          })}
+          {mega.now ? (
+            <div className="v3-chrome__mega-col" aria-label={mega.caption ?? mega.now.heading}>
+              <p className="v3-chrome__mega-heading">{mega.now.heading}</p>
+              {mega.now.field ? <ChromeMegaField field={mega.now.field} /> : null}
+              {mega.now.facts.length > 0 ? (
+                <ul className="v3-chrome__panel-list v3-chrome__panel-list--stacked">
+                  {mega.now.facts.map((fact) => (
+                    <li key={`${fact.figure} ${fact.label}`}>
+                      <div className="v3-chrome__panel-link v3-chrome__panel-link--fact">
+                        <span>{fact.label}</span>
+                        <span className="v3-chrome__panel-value">{fact.figure}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {mega.now.note ? <p className="v3-chrome__live-note">{mega.now.note}</p> : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   )
@@ -791,6 +778,10 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
           ).map((group, index) => {
             const headingId = `${menuId}-group-${index}`
             const lg = live?.[group.key]
+            const marks = chromeMegaColumnMarks(
+              group.links.map((item) => item.href),
+              CHROME_MARKS,
+            )
             return (
               <div className="v3-chrome__menu-group" key={group.key}>
                 <p className="v3-chrome__menu-title" id={headingId}>
@@ -818,10 +809,10 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
                     return (
                       <li key={link.href}>
                         <Link href={link.href} onClick={close} className="v3-chrome__menu-link">
-                          {CHROME_MARKS[link.href] ? (
+                          {marks?.[link.href] ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={CHROME_MARKS[link.href]}
+                              src={marks[link.href]}
                               alt=""
                               className="v3-chrome__link-mark"
                               width={28}

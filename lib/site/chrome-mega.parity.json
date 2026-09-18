@@ -1,0 +1,16 @@
+{
+  "kind": "picker-contract",
+  "id": "v3chrome-mega-menus",
+  "contracts": [
+    "all-five-chrome-menus-share-packed-mega",
+    "no-orphan-single-link-dead-columns",
+    "real-mega-padding-md",
+    "explicit-column-tracks-no-autofit",
+    "thumbs-all-or-none-per-column",
+    "places-indexes-pack-into-browse"
+  ],
+  "testFiles": [
+    "lib/site/chrome-mega.test.ts",
+    "components/site/__tests__/chrome-mega-menus.test.ts"
+  ]
+}
