@@ -301,4 +301,11 @@ describe('listing remainder composition', () => {
     expect(PAGE).not.toMatch(/label: 'Home'/)
     expect(PAGE).not.toMatch(/label: 'Homes for sale'/)
   })
+
+  it('routes similar-homes View more through the subdivision keep-exploring door', () => {
+    expect(PAGE).toMatch(/listingKeepExploringDoor/)
+    expect(PAGE).toMatch(/featuredViewAllHref = keepExploring\.href/)
+    expect(PAGE).not.toMatch(/featuredViewAllHref[\s\S]{0,240}homesForSalePath/)
+    expect(PAGE).not.toMatch(/featuredViewAllHref[\s\S]{0,240}subdivisionListingsPath/)
+  })
 })

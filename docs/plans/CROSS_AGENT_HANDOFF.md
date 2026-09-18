@@ -1,6 +1,16 @@
+# Current — 2026-09-18 (SITE-128 craft #4 — listing keep-exploring rematch on hierarchy)
+
+Surface: Cursor cloud `bc-8c9b9d18-f3c6-58b1-9411-1357ab7e6899`, branch `cursor/listing-keep-exploring-rematch-6899`. Rematch of Tip Ready tip `a49d0dc7b` / PR #301 onto hierarchy-landed `origin/main` `fc68066dc`. Cherry-pick of `a49d0dc7b` did not apply clean (`CROSS_AGENT_HANDOFF.md`, `scripts/lib/taste-receipt.mjs`). PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+- **View more.** Similar-homes door is `listingKeepExploringDoor`: recorded plat / visitor subdivision via `subdivisionHref` (`/subdivisions/…`). Never `/homes-for-sale` or city-only search. Community / neighborhood / city place pages are fallbacks only.
+- **Plat chip leak.** Listing Atlas no longer slices 60/80 GIS plats into chips. City frame = subject plat only. Local frame = subject + visitor siblings, cap 7 so frame + plats stay ≤ CHIP_FOLD_AT 8. `+52 more` at 375 cannot return.
+- **Conflict resolve.** Kept hierarchy `placeHeroFoldDensityProblems` on `--ship` and added `listingKeepExploringProblems` for listing-detail. Listing files applied from `a49d0dc7b` without invent. `listingPlaceTrail` still untouched.
+- **Not this pass.** Hierarchy already on main (`fc68066dc`). Amenity already on main — this tip does not retouch parks/trails. City fold clustering untouched. No invent.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
+
 # Current — 2026-09-18 (SITE-128 craft #3 + SITE-130 + crumb LOCK — rematch on amenity)
 
-Surface: Cursor cloud `bc-887dcd7c-7cd3-55bd-8c48-6049b6276f78`, branch `cursor/site-128-130-hierarchy-crumb-6f78`. Rebase of `8007cbd62` (PR #298) onto amenity-landed `97a0985fb`. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud `bc-887dcd7c-7cd3-55bd-8c48-6049b6276f78`, branch `cursor/site-128-130-hierarchy-crumb-6f78`. Landed on `origin/main` `fc68066dc` (tip `3434fa255`). PR only — Cos Mini lands. Do not merge. HOLD owner email.
 
 - **Hierarchy.** Killed city “Subdivisions in Bend” dump above nbhd bars. Community/neighborhood children are name-only `#child-places` cards (no Subdivisions/Neighborhoods headings). DRW keep-exploring = GIS ring + resort peers, not a city-wide sales dump. A–Z `/subdivisions` stays the directory.
 - **Crumb LOCK.** One component (`V3Breadcrumb`) sitewide. Place templates + CommunityStage overlay on the still. Copy pad is tap + 2xs after listing densify. `ci:listing-fold-density` + `--ship` refuse flow crumbs / xl-3xl cream / “Subdivisions in …” headings.
@@ -10,7 +20,7 @@ Surface: Cursor cloud `bc-887dcd7c-7cd3-55bd-8c48-6049b6276f78`, branch `cursor/
 
 # Current — 2026-09-18 (SITE-128 craft #2 — Atlas amenity layers)
 
-Surface: Cursor cloud, branch `cursor/site-128-atlas-amenity-layers-4dca`. Node `1a71550b-7231-42f4-9f5c-07a318cbc3f3` (claim stays public-look). PR only — Cos Mini lands. Do not merge. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-128-atlas-amenity-layers-4dca`. Node `1a71550b-7231-42f4-9f5c-07a318cbc3f3` (claim stays public-look). Landed on `origin/main` `97a0985fb`. HOLD owner email.
 
 - **This tip.** Park polygons + trail lines on V3Atlas with homes (city / neighborhood / community / subdivision). Navy on cream. Destinations stay PlaceFieldMap.
 - **Wired (live RPC 2026-09-18).** `public.boundaries` geo_type=park via `boundary_geojson` — 17/18 registry parks. `public.trail_lines` via `trail_line_geojson` — 18/19 registry trails. Membership from `data/co-parks.ts` / `data/co-trails.ts` (lat/lng never drawn).

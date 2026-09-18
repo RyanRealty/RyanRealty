@@ -38,6 +38,7 @@ import {
   listingHeroFoldDensityProblems,
   placeHeroFoldDensityProblems,
 } from './listing-fold-density.mjs'
+import { listingKeepExploringProblems } from './listing-keep-exploring.mjs'
 
 export { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
 
@@ -648,6 +649,7 @@ export function tasteDoneProblems(tr, { competitiveBrief = null, catalog = null,
     p.push('listing-detail Tip Ready requires the shared V3Breadcrumb primitive.')
   }
   if (listingKit) p.push(...listingHeroFoldDensityProblems({ root }))
+  if (listingKit) p.push(...listingKeepExploringProblems({ root }))
   const placeKit =
     kit === 'city' ||
     kit === 'community' ||
