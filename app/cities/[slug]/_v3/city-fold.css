@@ -239,6 +239,10 @@
   }
 
   /* First look: short island so 2×2 photo cards own the 375 fold. */
+  .city-fold__drawing .v3-place-look__stage {
+    min-height: 0;
+  }
+
   .city-fold__drawing .v3-place-look__map {
     height: min(22vh, 10.5rem);
     min-height: 9.5rem;

@@ -70,6 +70,14 @@ describe('place first-look map island', () => {
     expect(map).toMatch(/SearchMapClustered/)
     expect(map).not.toMatch(/overlayBoundaries/)
   })
+
+  it('lets the BEM canvas fill the 10.5rem phone island (no 360px minHeight)', () => {
+    const clustered = readFileSync(resolve('components/SearchMapClustered.tsx'), 'utf8')
+    expect(clustered).toMatch(/const fillIsland = \/v3-place-look\/\.test\(className\)/)
+    expect(clustered).not.toMatch(/\\bv3-place-look\\b/)
+    expect(/v3-place-look/.test('v3-place-look__map-canvas')).toBe(true)
+    expect(/\bv3-place-look\b/.test('v3-place-look__map-canvas')).toBe(false)
+  })
 })
 
 describe('place first-look pin cap', () => {

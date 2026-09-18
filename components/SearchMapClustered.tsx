@@ -835,7 +835,10 @@ export default function SearchMapClustered({
   disableClustering = false,
   fitSubjectRing = false,
 }: Props) {
-  const fillIsland = /\bv3-place-look\b/.test(className)
+  // BEM `v3-place-look__map-canvas` — `\b` after look fails because `_` is a
+  // word char, which left a 360px minHeight under the 10.5rem phone island
+  // and clipped the ring + $ pins into the hidden bottom of the canvas.
+  const fillIsland = /v3-place-look/.test(className)
   const islandMinHeight = fillIsland ? 0 : 360
   // Multi-shape mode (Phase 2 draw tools) replaces the legacy single-polygon UI.
   const multiShape = onShapesChange != null
