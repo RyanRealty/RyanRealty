@@ -87,11 +87,16 @@ import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/
 import { atlasPinShouldPaint, formatAtlasClusterRange, formatAtlasPinPrice } from '@/lib/atlas/pin-price'
 import {
   ATLAS_PIN_CLUSTER_RADIUS_PX,
+  CITY_FOLD_CLUSTER_BREAKPOINT_PX,
   atlasClusterCanExpand,
   atlasClusterSize,
   atlasClusterWorldBounds,
+  atlasViewFromStage,
   clusterAtlasPins,
+  floorCityFoldPaintView,
   hitAtlasPinLayer,
+  pickCityFoldClusterStage,
+  projectPinsToFoldStage,
 } from '@/lib/atlas/cluster-pins'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
@@ -331,10 +336,16 @@ export type V3AtlasProps = {
   /** Occupied-cell size in stage pixels. City fold passes the grid constant. */
   clusterCellPx?: number
   /**
-   * First-paint stage so pinMarks exist in SSR HTML. City fold only — without
-   * it `view` is null until ResizeObserver and the fold ships 759 SVG dots.
+   * First-paint + membership stage so pinMarks exist in SSR HTML and desktop
+   * clustering does not follow a collapsed ResizeObserver box. City fold only.
    */
   clusterStageHint?: { w: number; h: number }
+  /**
+   * Phone twin of `clusterStageHint`. City fold passes it so 375 stays on
+   * the 14-bubble + 2-pill layout. Absent, the desktop hint is used at every
+   * width (neighborhood / community omit both).
+   */
+  clusterStageHintPhone?: { w: number; h: number }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -400,11 +411,6 @@ type RegionShape = AtlasRegion & {
 type PlacedShape = RegionShape & { d: string }
 type View = { w: number; h: number; scale: number; ox: number; oy: number }
 
-function atlasViewFromStage(w: number, h: number, projW: number, projH: number): View {
-  const scale = Math.min(w / projW, h / projH)
-  return { w, h, scale, ox: (w - projW * scale) / 2, oy: (h - projH * scale) / 2 }
-}
-
 type PaintedPin =
   | { kind: 'pin'; d: AtlasDot; i: number; x: number; y: number; label: string }
   | {
@@ -454,6 +460,7 @@ export function V3Atlas({
   clusterPins = true,
   clusterCellPx = ATLAS_PIN_CLUSTER_RADIUS_PX,
   clusterStageHint,
+  clusterStageHintPhone,
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
@@ -619,26 +626,35 @@ export function V3Atlas({
   const [roving, setRoving] = useState(0)
 
   /* The measured view: where the viewBox lands inside the stage (meet fit).
-     City fold seeds this from clusterStageHint so SSR already has bubbles. */
+     City fold seeds this from the desktop hint so SSR already has bubbles.
+     Membership does NOT follow this box — pinMarks locks to the fold stage.
+     Layout effect + offset size so a collapsed GBR cannot paint 1 × 759. */
   const stageRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState<View | null>(() =>
     clusterStageHint
       ? atlasViewFromStage(clusterStageHint.w, clusterStageHint.h, proj.width, proj.height)
       : null,
   )
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = stageRef.current
     if (!el || typeof ResizeObserver === 'undefined') return
     const measure = () => {
-      const r = el.getBoundingClientRect()
-      if (r.width <= 0 || r.height <= 0) return
-      setView(atlasViewFromStage(r.width, r.height, proj.width, proj.height))
+      const w = Math.max(el.offsetWidth, el.getBoundingClientRect().width)
+      const h = Math.max(el.offsetHeight, el.getBoundingClientRect().height)
+      if (w <= 0 || h <= 0) return
+      const measured = atlasViewFromStage(w, h, proj.width, proj.height)
+      if (clusterStageHint) {
+        const fold = pickCityFoldClusterStage(w, clusterStageHint, clusterStageHintPhone ?? clusterStageHint)
+        setView(floorCityFoldPaintView(measured, fold, proj.width, proj.height))
+        return
+      }
+      setView(measured)
     }
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     measure()
     return () => ro.disconnect()
-  }, [proj.width, proj.height])
+  }, [proj.width, proj.height, clusterStageHint, clusterStageHintPhone])
 
   const toPx = useCallback(
     (x: number, y: number): readonly [number, number] => (view ? [view.ox + x * view.scale, view.oy + y * view.scale] : [0, 0]),
@@ -1277,22 +1293,44 @@ export function V3Atlas({
 
   const pinMarks = useMemo<PaintedPin[]>(() => {
     if (!view) return []
-    const raw: { d: AtlasDot; i: number; x: number; y: number; label: string }[] = []
+    const foldStage = clusterStageHint
+      ? pickCityFoldClusterStage(
+          view.w,
+          clusterStageHint,
+          clusterStageHintPhone ?? clusterStageHint,
+        )
+      : null
+    const raw: {
+      d: AtlasDot
+      i: number
+      x: number
+      y: number
+      label: string
+      projX: number
+      projY: number
+    }[] = []
     dots.forEach((d, i) => {
       if (!isOn(d) || !atlasPinShouldPaint(d)) return
       const label = formatAtlasPinPrice(d.p)
       if (!label) return
+      const [projX, projY] = proj.toXY(d.lng, d.lat)
       const [x, y] = screenOf(d.lng, d.lat)
-      raw.push({ d, i, x, y, label })
+      raw.push({ d, i, x, y, label, projX, projY })
     })
-    /* Grid, not union-find: a 40px transitive radius on the letterboxed
-       city fold chained every Bend ask into one 759 bubble. One occupied
-       cell is one mark; zoom stretches the cells apart. City fold passes
-       clusterPins + clusterCellPx so this path is the page's, not a lib
-       side-effect Look can miss. */
+    /* City fold: membership is the locked fold stage × cam.k, never live
+       GBR. Desktop 1112×610 stays 46 marks when measure collapses; phone
+       360×285 stays 14 bubbles + 2 pills. Zoom stretches that stage so
+       +1–2 dissolves. Neighborhood / community have no hint — live view. */
     const grouped = clusterPins
       ? clusterAtlasPins(
-          raw.map((p) => ({ i: p.i, x: p.x, y: p.y })),
+          foldStage
+            ? projectPinsToFoldStage(
+                raw.map((p) => ({ i: p.i, x: p.projX, y: p.projY })),
+                foldStage,
+                proj,
+                cam.k,
+              )
+            : raw.map((p) => ({ i: p.i, x: p.x, y: p.y })),
           clusterCellPx,
         )
       : raw.map((p) => ({
@@ -1307,22 +1345,31 @@ export function V3Atlas({
     for (const g of grouped) {
       if (g.count === 1) {
         const src = byIndex.get(g.indices[0]!)
-        if (src) out.push({ kind: 'pin', ...src })
+        if (src) out.push({ kind: 'pin', d: src.d, i: src.i, x: src.x, y: src.y, label: src.label })
         continue
       }
       let minP = Infinity
       let maxP = 0
+      let sx = 0
+      let sy = 0
+      let n = 0
       for (const i of g.indices) {
+        const src = byIndex.get(i)
         const p = dots[i]?.p
         if (p == null || !(p > 0)) continue
         if (p < minP) minP = p
         if (p > maxP) maxP = p
+        if (src) {
+          sx += src.x
+          sy += src.y
+          n += 1
+        }
       }
       out.push({
         kind: 'cluster',
         id: g.id,
-        x: g.x,
-        y: g.y,
+        x: n > 0 ? sx / n : g.x,
+        y: n > 0 ? sy / n : g.y,
         count: g.count,
         indices: g.indices,
         minP: Number.isFinite(minP) ? minP : 0,
@@ -1330,7 +1377,18 @@ export function V3Atlas({
       })
     }
     return out
-  }, [view, dots, isOn, screenOf, clusterPins, clusterCellPx])
+  }, [
+    view,
+    dots,
+    isOn,
+    screenOf,
+    clusterPins,
+    clusterCellPx,
+    clusterStageHint,
+    clusterStageHintPhone,
+    proj,
+    cam.k,
+  ])
   pinMarksRef.current = pinMarks
 
   /* The home under the pointer: photo + ask, not a one-line status chip. */
@@ -1995,6 +2053,13 @@ export function V3Atlas({
                   aria-hidden="true"
                   data-atlas-pin-layer={clusterPins ? 'clustered' : 'pills'}
                   data-atlas-cluster-cell={clusterPins ? clusterCellPx : undefined}
+                  data-atlas-cluster-stage={
+                    clusterStageHint
+                      ? view.w >= CITY_FOLD_CLUSTER_BREAKPOINT_PX
+                        ? 'desktop'
+                        : 'phone'
+                      : undefined
+                  }
                 >
                   {pinMarks.map((mark) => {
                     switch (mark.kind) {

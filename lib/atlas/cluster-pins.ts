@@ -25,13 +25,84 @@ export const ATLAS_PIN_CLUSTER_CELL_PX = 64
 export const ATLAS_PIN_CLUSTER_RADIUS_PX = ATLAS_PIN_CLUSTER_CELL_PX
 
 /**
- * Desktop Look stage for the city fold (`/cities/bend` @ 1400×900). The page
- * passes this into V3Atlas so the first HTML already has count bubbles —
- * `view` used to start null, so SSR painted 759 SVG house dots and 0
- * clusters. Cos counted those dots as pills. Neighborhood / community omit
- * this hint (Old Bend skip).
+ * Desktop Look stage for the city fold (`/cities/bend` @ 1400×900).
+ * Contract at 64px cells, k=1: 46 marks / 44 clusters / 2 pills.
+ *
+ * Membership MUST use this stage (or the phone twin), not live
+ * ResizeObserver pixels. After Cos land 829bbb6c7 the hint only seeded
+ * `view`; desktop measure then replaced it with a collapsed box so every
+ * Bend ask shared one 64px cell (1 × 759) until cam.k ≈ 5. Neighborhood /
+ * community omit both hints (Old Bend / Tetherow / DRW stay spaced pills).
  */
 export const CITY_FOLD_CLUSTER_STAGE = { w: 1112, h: 610 }
+
+/**
+ * Phone Look stage for the same fold (`/cities/bend` @ 375).
+ * Contract at 64px cells, k=1: 14 navy count bubbles + 2 price pills.
+ * Matches the live 375 hard-refresh that already PASSed.
+ */
+export const CITY_FOLD_CLUSTER_STAGE_PHONE = { w: 360, h: 285 }
+
+/** City-fold CSS desktop grid starts at 64rem — same cut for cluster stage. */
+export const CITY_FOLD_CLUSTER_BREAKPOINT_PX = 1024
+
+export type AtlasFoldClusterStage = { w: number; h: number }
+
+export type AtlasViewBox = { w: number; h: number; scale: number; ox: number; oy: number }
+
+export function atlasViewFromStage(
+  w: number,
+  h: number,
+  projW: number,
+  projH: number,
+): AtlasViewBox {
+  const scale = Math.min(w / projW, h / projH)
+  return { w, h, scale, ox: (w - projW * scale) / 2, oy: (h - projH * scale) / 2 }
+}
+
+/** Desktop hint at/above 64rem; phone hint below. Missing phone → desktop. */
+export function pickCityFoldClusterStage(
+  widthPx: number,
+  desktop: AtlasFoldClusterStage = CITY_FOLD_CLUSTER_STAGE,
+  phone: AtlasFoldClusterStage = CITY_FOLD_CLUSTER_STAGE_PHONE,
+): AtlasFoldClusterStage {
+  return widthPx >= CITY_FOLD_CLUSTER_BREAKPOINT_PX ? desktop : phone
+}
+
+/**
+ * Project-space pins → fold-stage screen pixels, then × zoomK.
+ * City fold clusters here so a collapsed desktop GBR cannot merge 759 asks.
+ */
+export function projectPinsToFoldStage(
+  pins: readonly { i: number; x: number; y: number }[],
+  stage: AtlasFoldClusterStage,
+  proj: { width: number; height: number },
+  zoomK = 1,
+): AtlasPinCandidate[] {
+  const v = atlasViewFromStage(stage.w, stage.h, proj.width, proj.height)
+  const k = Number.isFinite(zoomK) && zoomK > 0 ? zoomK : 1
+  return pins.map((p) => ({
+    i: p.i,
+    x: (v.ox + p.x * v.scale) * k,
+    y: (v.oy + p.y * v.scale) * k,
+  }))
+}
+
+/**
+ * Live measure wins when it is at least 85% of the fold stage's scale.
+ * A collapsed desktop box (height a few px, scale ~0.06) keeps the stage
+ * so paint and membership stay on the readable multi-bubble layout.
+ */
+export function floorCityFoldPaintView(
+  measured: AtlasViewBox,
+  stage: AtlasFoldClusterStage,
+  projW: number,
+  projH: number,
+): AtlasViewBox {
+  const floor = atlasViewFromStage(stage.w, stage.h, projW, projH)
+  if (measured.scale + 1e-9 >= floor.scale * 0.85) return measured
+  return atlasViewFromStage(Math.max(measured.w, stage.w), Math.max(measured.h, stage.h), projW, projH)
+}
 
 export type AtlasPinCandidate = {
   /** Index in the caller's dots / pinMarks array. */
