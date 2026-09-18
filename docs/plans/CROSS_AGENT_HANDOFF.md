@@ -18,7 +18,12 @@ Surface: Cursor cloud, branch `cursor/place-h1-every-home-voice-a7e4`. PR only �
 
 # Current — 2026-09-18 (SITE-127 place map price marks)
 
-Surface: site queue SITE-127 open. Public Patch owns Tip Ready — price labels on place-map pins (735K / $1.5M) + hover home blow-up. Cos Mini lands. HOLD owner email.
+Surface: Cursor cloud, branch `cursor/site-127-atlas-price-pins-fb34`. Node `4e53ce69-591f-4b62-abaf-8ba9ae95e561`. PR only — Cos Mini lands. Do not merge. HOLD owner email. Do not twin SITE-126 V3Chrome.
+
+- **Pins.** Active + pending Atlas marks print the ask: `735K` under a million (no $), `$1.5M` / `$1M` at a million. Sold stays heat dots. Primitive is `V3Atlas` sitewide (city / neighborhood / community / subdivision).
+- **Hover.** Pin hit (REACH 28) blows up the home: photo + For sale/Pending + same pin price + street + beds/baths/sqft. Place card suppressed while a pin is hot.
+- **Lock.** `ci:atlas-price-pins` refuses silent dots. Cache `atlas-population-v3`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
 
 

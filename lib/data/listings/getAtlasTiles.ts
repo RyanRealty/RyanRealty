@@ -11,7 +11,9 @@
  * error (evaluator pass two, N10; dev logs 2026-09-01).
  *
  * This read is shaped for the job:
- *   - fourteen columns, not forty; no photo, no address slug, no sqft
+ *   - the lean inventory columns plus the hover-card facts (photo, beds,
+ *     baths, sqft, street suffix) — SITE-127 price pins need the ask AND
+ *     the home behind it; address slug stays off this read
  *   - keyset pagination on listing_key (the MV's primary order), never
  *     OFFSET, so page five costs what page one costs
  *   - two reads instead of one OR: the on-market statuses from the tile MV
@@ -50,6 +52,11 @@ export type AtlasTile = {
   propertySubType: string | null
   streetNumber: string | null
   streetName: string | null
+  streetSuffix?: string | null
+  photoUrl?: string | null
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
   /** SITE-22 — the canonical URL's middle segments, so an Atlas dot's href is
    *  the URL that listing canonicalises to. */
   boundaryCity: string | null
@@ -80,12 +87,17 @@ type Row = {
   property_sub_type: string | null
   street_number: string | null
   street_name: string | null
+  street_suffix: string | null
+  photo_url: string | null
+  beds: number | string | null
+  baths: number | string | null
+  sqft: number | string | null
   boundary_city: string | null
   boundary_neighborhood: string | null
 }
 
 const COLUMNS =
-  'listing_key,list_number,standard_status,list_price,close_price,close_date,on_market_date,modified_at,lat,lng,city,subdivision_name,property_type,property_sub_type,street_number,street_name,boundary_city,boundary_neighborhood'
+  'listing_key,list_number,standard_status,list_price,close_price,close_date,on_market_date,modified_at,lat,lng,city,subdivision_name,property_type,property_sub_type,street_number,street_name,street_suffix,photo_url,beds,baths,sqft,boundary_city,boundary_neighborhood'
 const PAGE = 1000
 /** 8 pages = 8,000 rows: the whole service area on market is ~4–5K. */
 const MAX_PAGES = 8
@@ -145,12 +157,17 @@ type ClosedRow = {
   property_sub_type: string | null
   StreetNumber: string | null
   StreetName: string | null
+  StreetSuffix: string | null
+  PhotoURL: string | null
+  BedroomsTotal: number | string | null
+  BathroomsTotal: number | string | null
+  TotalLivingAreaSqFt: number | string | null
   boundary_city: string | null
   boundary_neighborhood: string | null
 }
 
 const CLOSED_COLUMNS =
-  'ListingKey,ListNumber,StandardStatus,ListPrice,ClosePrice,CloseDate,OnMarketDate,ModificationTimestamp,Latitude,Longitude,City,SubdivisionName,PropertyType,property_sub_type,StreetNumber,StreetName,boundary_city,boundary_neighborhood'
+  'ListingKey,ListNumber,StandardStatus,ListPrice,ClosePrice,CloseDate,OnMarketDate,ModificationTimestamp,Latitude,Longitude,City,SubdivisionName,PropertyType,property_sub_type,StreetNumber,StreetName,StreetSuffix,PhotoURL,BedroomsTotal,BathroomsTotal,TotalLivingAreaSqFt,boundary_city,boundary_neighborhood'
 /** A month of closes across the service area is a few hundred rows. */
 const CLOSED_MAX_PAGES = 3
 
@@ -207,6 +224,11 @@ function fromClosed(r: ClosedRow): Row {
     property_sub_type: r.property_sub_type,
     street_number: r.StreetNumber,
     street_name: r.StreetName,
+    street_suffix: r.StreetSuffix,
+    photo_url: r.PhotoURL,
+    beds: r.BedroomsTotal,
+    baths: r.BathroomsTotal,
+    sqft: r.TotalLivingAreaSqFt,
     boundary_city: r.boundary_city,
     boundary_neighborhood: r.boundary_neighborhood,
   }
@@ -242,6 +264,11 @@ async function fetchAtlasTiles(input: AtlasTilesInput): Promise<AtlasTile[]> {
       propertySubType: r.property_sub_type,
       streetNumber: r.street_number,
       streetName: r.street_name,
+      streetSuffix: r.street_suffix ?? null,
+      photoUrl: r.photo_url ?? null,
+      beds: num(r.beds),
+      baths: num(r.baths),
+      sqft: num(r.sqft),
       boundaryCity: r.boundary_city,
       boundaryNeighborhood: r.boundary_neighborhood,
     })

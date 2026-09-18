@@ -459,6 +459,119 @@
   font-size: var(--v3-size-eyebrow);
 }
 
+/* SITE-127 — Redfin-style ask on the mark, hover blow-up of the home. */
+.v3-atlas__pins {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.v3-atlas__pin {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, calc(-100% - 5px));
+  padding: 0.14rem 0.42rem 0.18rem;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  border-radius: var(--v3-radius-sm);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-strong, 600);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.v3-atlas__pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--v3-navy);
+}
+
+.v3-atlas__pin.is-pending {
+  background: color-mix(in srgb, var(--v3-navy) 78%, var(--v3-cream));
+}
+
+.v3-atlas__pin.is-pending::after {
+  border-top-color: color-mix(in srgb, var(--v3-navy) 78%, var(--v3-cream));
+}
+
+.v3-atlas__pin.is-hot,
+.v3-atlas__pin.is-linked,
+.v3-atlas__pin.is-home {
+  z-index: 4;
+  transform: translate(-50%, calc(-100% - 5px)) scale(1.14);
+  outline: 2px solid var(--v3-cream);
+  outline-offset: 1px;
+}
+
+.v3-atlas__home {
+  position: absolute;
+  z-index: 5;
+  width: 15.5rem;
+  transform: translate(-50%, calc(-100% - 2.4rem));
+  overflow: hidden;
+  background: var(--v3-cream);
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 28%, transparent);
+  box-shadow: var(--v3-media-shadow);
+  text-decoration: none;
+  color: inherit;
+  pointer-events: none;
+}
+
+.v3-atlas__home-photo {
+  display: block;
+  width: 100%;
+  height: 8.5rem;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--v3-navy) 10%, var(--v3-cream));
+}
+
+.v3-atlas__home-photo.is-empty {
+  height: 3.25rem;
+}
+
+.v3-atlas__home-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  padding: var(--v3-space-sm) var(--v3-space-md) var(--v3-space-md);
+}
+
+.v3-atlas__home-state {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3-atlas__home-price {
+  color: var(--v3-navy);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-strong, 600);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+.v3-atlas__home-street,
+.v3-atlas__home-facts {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: 1.3;
+}
+
+.v3-atlas__home-facts {
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Sales-heat legend: four navy swatches, fewer → more, plus the window. */
 .v3-atlas__sales-legend {
   display: flex;
