@@ -1510,6 +1510,7 @@ async function renderSubdivisionPage({ params }: Props) {
                   stamp={atlasView.stamp}
                   incomplete={!atlasView.complete}
                   {...(frame == null && atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
+                  subjectGrain
                   amenities={amenityLayers}
                 />
                 {/* SITE-112: the crawlable doors belong to the map's column,

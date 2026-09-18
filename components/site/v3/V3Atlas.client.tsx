@@ -77,6 +77,7 @@ import {
   type AtlasViewBounds,
 } from '@/lib/geo/atlas-camera'
 import { placeDoorLabels, shortPlaceLabel } from '@/lib/place/short-place-label'
+import { atlasFramePad, hierarchyChildIdSet } from '@/lib/place/map-hierarchy'
 
 export type { AtlasViewBounds }
 import {
@@ -258,6 +259,17 @@ export type V3AtlasProps = {
   keyPlacement?: 'dock' | 'head'
   dots: readonly AtlasDot[]
   regions: readonly AtlasRegion[]
+  /**
+   * SITE-128 #2: child plats for select → zoom. Not the default highlight.
+   * Neighborhood / community pass recorded GIS children here so Old Bend
+   * does not paint twenty plats as the place.
+   */
+  childRegions?: readonly AtlasRegion[]
+  /**
+   * Subdivision grain: tight frame pad + readable subject stroke so a plat
+   * like DRW fills the stage instead of sitting faint and tiny.
+   */
+  subjectGrain?: boolean
   /** Type toggles, in display order. Keys match AtlasDot.t. */
   types: readonly AtlasType[]
   /** The section 0 trace: what the dots are and where they come from. */
@@ -465,6 +477,8 @@ export function V3Atlas({
   keyPlacement = 'dock',
   dots,
   regions,
+  childRegions = [],
+  subjectGrain = false,
   types,
   source,
   sourceName,
@@ -496,7 +510,7 @@ export function V3Atlas({
 
   /* Geometry: rings, label anchors, areas, projection — once per data set. */
   const shapes = useMemo<RegionShape[]>(() => {
-    return regions.map((r) => {
+    return [...regions, ...childRegions].map((r) => {
       const rings = outerRings(r.geometry)
       const anchor = labelAnchor(rings)
       const b = bboxOfRings(rings)
@@ -505,13 +519,14 @@ export function V3Atlas({
       const labelAt = anchor && b ? ([anchor[0], b.minLat] as const) : anchor
       return { ...r, rings, anchor: labelAt, area, bbox: b }
     })
-  }, [regions])
+  }, [regions, childRegions])
+  const childIdSet = useMemo(() => hierarchyChildIdSet(childRegions), [childRegions])
 
   const proj = useMemo(() => {
     // An explicit frame wins: the caller has told the map what it is about.
     if (frame) {
       const framed = bboxOfRings(outerRings(frame))
-      if (framed) return makeProjection(padBbox(framed, 0.6), 1000)
+      if (framed) return makeProjection(padBbox(framed, atlasFramePad(subjectGrain)), 1000)
     }
     // Frame the basin, not the outliers: the base silhouettes plus the dots'
     // 1st–99th percentile in each axis. A lone listing an hour into the high
@@ -544,7 +559,7 @@ export function V3Atlas({
     const b = bboxOfRings(core.length > 0 ? [...baseRings, core] : baseRings)
     const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.04)
     return makeProjection(padded, 1000)
-  }, [shapes, dots, fit, frame])
+  }, [shapes, dots, fit, frame, subjectGrain])
 
 
   const paths = useMemo<PlacedShape[]>(
@@ -1136,6 +1151,28 @@ export function V3Atlas({
     [nearestDot, applyLayerHit, stageSize.w, stageSize.h],
   )
 
+  const fitCamToShape = useCallback(
+    (shape: RegionShape) => {
+      if (!shape.bbox || !view || view.w <= 0 || view.h <= 0) return
+      const [x0, y0] = toPx(...proj.toXY(shape.bbox.minLon, shape.bbox.maxLat))
+      const [x1, y1] = toPx(...proj.toXY(shape.bbox.maxLon, shape.bbox.minLat))
+      setCam(
+        fitRect(
+          {
+            x0: Math.min(x0, x1),
+            y0: Math.min(y0, y1),
+            x1: Math.max(x0, x1),
+            y1: Math.max(y0, y1),
+          },
+          view.w,
+          view.h,
+          0.08,
+        ),
+      )
+    },
+    [proj, toPx, view],
+  )
+
   const openPlace = useCallback(
     (shape: PlacedShape) => {
       const at = shape.anchor
@@ -1145,8 +1182,13 @@ export function V3Atlas({
           : ([0, 0] as const)
       setPinned((prev) => (prev?.id === shape.id ? null : { id: shape.id, at: [at[0], at[1]] }))
       setHover(shape.id)
+      // Child plat: zoom so THAT recorded boundary fills the frame.
+      // Subject town: return home. Homepage / city places stay pin-only.
+      // Listing pins keep their own click path.
+      if (shape.kind === 'town') setCam(ATLAS_CAM_HOME)
+      else if (childIdSet.has(shape.id)) fitCamToShape(shape)
     },
-    [pointer, proj, toPx],
+    [childIdSet, fitCamToShape, pointer, proj, toPx],
   )
 
   /* Every place as a door a thumb can hit: on a phone most silhouettes are
@@ -1702,7 +1744,16 @@ export function V3Atlas({
     <section
       ref={sectionRef}
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-atlas', wide && 'is-wide', fitsPhone && 'is-fits', !inView && 'is-offscreen', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-atlas',
+        subjectGrain && 'v3-atlas--subject-grain',
+        wide && 'is-wide',
+        fitsPhone && 'is-fits',
+        !inView && 'is-offscreen',
+        className,
+      )}
+      data-map-hierarchy={subjectGrain ? 'subject-grain' : 'place'}
       aria-labelledby={`${uid}-h`}
       /* The linked mark's state, on the section, so a sibling list and a test
          can both read what the map is pointing at without walking the SVG. */
@@ -1905,6 +1956,7 @@ export function V3Atlas({
                       key={s.id}
                       d={s.d}
                       className={cn('v3-atlas__town', active === s.id && 'is-active')}
+                      data-map-hierarchy="subject"
                       onPointerEnter={() => setHover(s.id)}
                       onClick={(e) => {
                         if (dotHit != null && dots[dotHit]?.href) {
@@ -2008,9 +2060,17 @@ export function V3Atlas({
                       className={cn(
                         'v3-atlas__place',
                         `v3-atlas__place--${s.kind}`,
+                        childIdSet.has(s.id) && 'v3-atlas__place--child',
                         (regionStats.get(s.id)?.n ?? 0) === 0 && 'is-empty',
                         active === s.id && 'is-active',
                       )}
+                      data-map-hierarchy={
+                        childIdSet.has(s.id)
+                          ? active === s.id
+                            ? 'selected-child'
+                            : 'child-hit'
+                          : undefined
+                      }
                       /* One tab stop for the whole map; arrows walk the places.
                          Twenty-seven stops here plus twenty-four chips below
                          put fifty-one presses between the chrome and the search
