@@ -1,6 +1,6 @@
 # Current — 2026-09-18 (SITE-128 Tip Ready #2 rematch — map hierarchy lock)
 
-Surface: Cursor cloud `bc-e1f596a2-a544-5f74-9d76-8b562ab3519f`, branch `cursor/site-128-map-hierarchy-lock-519f`. Rematch of tip `daadcfba9` / PR #308 onto first-look-landed `origin/main` `5f0d2a1cb` (e788894f4 → 6bd09fb32 → 5f0d2a1cb). PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
+Surface: Cursor cloud `bc-e1f596a2-a544-5f74-9d76-8b562ab3519f`, branch `cursor/site-128-map-hierarchy-lock-519f`. Tip SHA `09239cb31`. PR https://github.com/RyanRealty/RyanRealty/pull/309. Rematch of `daadcfba9` / PR #308 onto first-look-landed `origin/main` `5f0d2a1cb` (e788894f4 → 6bd09fb32 → 5f0d2a1cb). Cherry-pick of `daadcfba9` was not clean (nbhd fold + handoff). This rematch commit should cherry-pick clean onto `5f0d2a1cb`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look. Do not land #308.
 
 - **Highlight.** Nbhd/community Atlas + Split paint THAT recorded subject ring. Child plats are hit-only until selected. No subject geom (Tetherow/Juniper) → no highlight. Do not invent rings. Old Bend FAIL was town||neighborhood = 20 plats.
 - **Child zoom.** Overlay / Atlas child click fits THAT recorded bbox (`childZoomBounds` / `fitCamToShape`). Listing pins stay listing clicks. Homepage cities are not children (`hierarchyChildIdSet`).
