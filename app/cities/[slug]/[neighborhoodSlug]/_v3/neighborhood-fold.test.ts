@@ -9,6 +9,8 @@ describe('SITE-128 neighborhood fold Atlas', () => {
   it('uses a dominant map row and hides the price scrubber', () => {
     expect(PAGE).toMatch(/import '\.\/_v3\/neighborhood-fold\.css'/)
     expect(PAGE).toMatch(/className="nbh-fold"/)
+    expect(PAGE).toMatch(/<V3PlaceLook[\s\S]*?id="place-look"/)
+    expect(PAGE).toMatch(/photoCards=\{foldPhotoCards\}/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
     expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
     expect(PAGE).toMatch(/getPlaceAmenityLayers/)
