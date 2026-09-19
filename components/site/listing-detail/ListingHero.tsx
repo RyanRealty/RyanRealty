@@ -37,6 +37,7 @@ import {
 } from '@/lib/listing/publish-listing-mosaic'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
+import { listingGalleryFrameAlt, listingPhotoAlt } from '@/components/site/v3/listing-photo-alt'
 import dynamic from 'next/dynamic'
 
 const ListingMediaMap = dynamic(() => import('./ListingLocationMap.client'), {
@@ -156,7 +157,13 @@ export function ListingHero({
     lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
   const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0 || hasMap
   const canUnmute = publishListingHeroUnmute(heroVideo)
-  const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
+  const altBase = listingPhotoAlt({ addressLine: addressLine ?? '' }) || 'Listing photo'
+  const frameAlt = (ordinal: number) =>
+    listingGalleryFrameAlt({
+      addressLine,
+      ordinal,
+      total: Math.max(1, total),
+    })
   const hasStreetView = hasMap
   const onSiteTour = virtualTour && !isOffsiteTourHost(virtualTour.url) ? virtualTour : null
   const mosaicPills = publishListingMosaicPills({
@@ -369,7 +376,7 @@ export function ListingHero({
                     {i === 0 || i === frame ? (
                     <MosaicStill
                       src={photo.url}
-                      alt={photo.caption ?? `${altBase} ${i + 1} of ${total}`}
+                      alt={frameAlt(i + 1)}
                       sizes={i === 0 ? LISTING_MOSAIC_LEAD_SIZES : LISTING_MOSAIC_CAROUSEL_SIZES}
                       priority={lcpPriority && i === 0}
                     />
@@ -450,7 +457,7 @@ export function ListingHero({
                 >
                   <SparkSafeImage
                     src={listingRowPhotoSrc(photo.url)}
-                    alt=""
+                    alt={frameAlt(index + 1)}
                     fill
                     sizes={LISTING_MOSAIC_STRIP_SIZES}
                     quality={LISTING_MOSAIC_PHOTO_QUALITY}
@@ -502,6 +509,7 @@ export function ListingHero({
         onPaneChange={setGalleryPane}
         total={galleryPane === 'floor' ? floorPlans.length : total}
         altBase={altBase}
+        addressLine={addressLine}
         hasStreetView={hasStreetView}
         onClose={() => setOpenIndex(null)}
         onChange={(i) => setOpenIndex(i)}
