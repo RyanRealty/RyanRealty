@@ -42,13 +42,13 @@ describe('listing remainder composition', () => {
     expect(SAVE_SHEET).toContain('side="right"')
     expect(SAVE_SHEET).not.toContain('surface="drawer"')
     expect(SAVE_SHEET).not.toContain('top-16')
-    const MOBILE_BAR = readFileSync(
-      resolve('components/site/listing-detail/ListingMobileContactBar.client.tsx'),
-      'utf8',
-    )
-    expect(MOBILE_BAR).toMatch(/from '@\/components\/ui\/button-group'/)
-    expect(MOBILE_BAR).toMatch(/from '@\/components\/ui\/button'/)
-    expect(MOBILE_BAR).not.toMatch(/className="lmc-/)
+    expect(PAGE).not.toMatch(/<ListingBrokerBar/)
+    expect(PAGE).not.toMatch(/<ListingMobileContactBar/)
+    expect(PAGE).not.toMatch(/<V3PhoneDock[\s/>]/)
+    const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
+    expect(LAYOUT).not.toMatch(/V3PhoneDock/)
+    const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
+    expect(CHROME).toContain('<V3WorkWithUs surface="chrome" placement="chrome"')
     expect(HERO).toMatch(/from '@\/components\/motion\/tabs'/)
     expect(HERO).toMatch(/from '@\/components\/ui\/carousel'/)
     expect(HERO).not.toContain('V3Tabs')
@@ -98,7 +98,7 @@ describe('listing remainder composition', () => {
     const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
     expect(rules).not.toMatch(/\.listing-face__keep[^{]*\{[^}]*display:\s*none/)
     expect(rules).not.toMatch(/\.listing-face__actions\s*\{\s*display:\s*none/)
-    expect(rules).toMatch(/\.listing-face__ask[\s\S]*display:\s*none/)
+    expect(rules).not.toMatch(/\.listing-face__ask[^{]*\{[^}]*display:\s*none/)
   })
 
   it('names installed catalog jobs on the receipt and imports the source (SITE-99)', () => {
@@ -266,7 +266,7 @@ describe('listing remainder composition', () => {
 
   it('carries the saved search on OFF-MARKET rows only, never as a second on-market ask', () => {
     // SITE-21. The alerts sheet was off this page because an on-market listing
-    // already has one ask (Tour / Call / Text) and a second capture under it is
+    // already has one ask (Tour beside the price) and a second capture under it is
     // the stacked-ask tell. Off market there is no first ask, so this is it.
     expect(PAGE).toMatch(/<ListingLikeThisAlerts/)
     const mount = PAGE.slice(PAGE.indexOf('<ListingLikeThisAlerts') - 200, PAGE.indexOf('<ListingLikeThisAlerts'))

@@ -16,6 +16,15 @@ describe('chrome homepage H-fixes', () => {
     expect(CHROME).toContain('PRIMARY_BAR_KEYS')
   })
 
+  it('mounts Work with us in the header at every width (CTA lock 2026-09-19)', () => {
+    expect(CHROME).toContain('<V3WorkWithUs surface="chrome" placement="chrome"')
+    expect(CHROME_CSS).toMatch(/\.v3\.v3-chrome \.v3-chrome__work \{[\s\S]*?display: inline-flex/)
+    expect(CHROME_CSS).not.toMatch(/\.v3-chrome__work[^{]*\{[^}]*display:\s*none/)
+    const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
+    expect(LAYOUT).not.toMatch(/V3PhoneDock/)
+    expect(LAYOUT).toMatch(/<V3Chrome/)
+  })
+
   it('hides Menu when primary nav is visible (H1)', () => {
     // Must beat the later base `.v3-chrome__menu-btn { display: inline-flex }` rule.
     expect(CHROME_CSS).toMatch(

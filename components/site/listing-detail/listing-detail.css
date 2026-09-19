@@ -767,12 +767,8 @@
   border-left-width: 0 !important;
 }
 
-@media (max-width: 63.99rem) {
-  .listing-face__ask,
-  .listing-face__price-row .listing-face__ask {
-    display: none;
-  }
-}
+/* Tour stays beside the price at every width (Matt / Critiquito 2026-09-19).
+   The sticky Tour | Call | Text bar is dropped; this is the listing ask. */
 
 .listing-face__keep .v3-btn {
   width: 100%;
@@ -1684,11 +1680,9 @@
   }
 }
 
-/* Mobile broker bar. Was .kb-root .listing-mobile-cta. Conversion-critical.
-   SITE-122: the bar IS the site's phone dock (components/site/v3/V3PhoneDock.css
-   owns the fixed frame, the height, the safe-area inset, the cookie-bar dock
-   and the connected outline group). The class stays for ListingAlertCoach's
-   band and for the off-market gate; only the desktop hide remains here. */
+/* Retired sticky listing bar (Matt / Critiquito 2026-09-19). The class
+   stays so leftover CSS cannot resurrect a fixed frame; the desktop hide
+   remains so an accidental remount is still off at 64rem. */
 @media (min-width: 64rem) {
   .listing-detail .listing-mobile-cta {
     display: none;

@@ -195,7 +195,7 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/<PriceCtaStrip\b/)
     // SITE-21: the saved search is back on this page, OFF MARKET ONLY. It was
     // banned outright because an on-market listing already carries one ask
-    // (Tour / Call / Text) and a second capture under it is the stacked-ask
+    // (Tour beside the price) and a second capture under it is the stacked-ask
     // tell. A Closed, Expired, Canceled or Withdrawn home has no first ask —
     // there is no showing to book — so this is the one, guarded by offMarket.
     expect(src).toMatch(/\{offMarket \? \(\s*<ListingLikeThisAlerts\b/)

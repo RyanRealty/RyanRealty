@@ -48,10 +48,10 @@ import { PriceDropMark } from './PriceDropMark'
  *
  * Hierarchy (E4 craft):
  *   1. Price (Layer A H1, address in sr-only + visible lines) — honest MLS numbers only
- *   2. Primary: Schedule a tour (navy-filled, full-width on mobile)
- *   3. Secondary: Save / Share — always mounted (SITE-21 / SITE-99). Tour /
- *      Call / Text is the on-market ask; desktop hides that ask because the
- *      sidebar already carries it. Save and Share stay in the live control.
+ *   2. Primary: Tour — the one ask beside the price (Matt / Critiquito
+ *      2026-09-19). Call / Text live in Work with us / the agent card, not
+ *      as equal verbs here or on a sticky bar.
+ *   3. Secondary: Save / Share — always mounted (SITE-21 / SITE-99).
  *   4. Tertiary: Get alerts for homes like this → #listing-like-alerts
  *
  * Spec source:
@@ -131,8 +131,6 @@ type Props = {
    */
   showEstPayment?: boolean
   showAlerts?: boolean
-  callHref?: string | null
-  textHref?: string | null
   /**
    * Where the off-market ask sends a reader who wants a home they can actually
    * buy: the active-inventory rail on this page. Required for the branch to
@@ -180,8 +178,6 @@ export function PriceCtaStrip({
   ratePct,
   showEstPayment = true,
   showAlerts = true,
-  callHref,
-  textHref,
   similarHref = '#similar',
   alertsHref = '#listing-like-alerts',
   dropMark,
@@ -378,12 +374,11 @@ export function PriceCtaStrip({
           ariaLabel={`Share ${propertyName}`}
         />
       </ButtonGroup>
-      {/* SITE-21: THE ASK A BROKER CAN FULFIL.
-          Off market, Tour / Call / Text are three requests nobody can act
-          on. Connected shadcn ButtonGroup + outline Buttons; Tour label is
-          beUI action-swap. Hidden under 64rem — the sticky bar is that ask. */}
+      {/* SITE-21 + Matt / Critiquito 2026-09-19: Tour is the one ask beside
+          the price. Call / Text are not equal verbs here. Off market, the
+          doors a broker can still fulfil are homes for sale and alerts. */}
       <ButtonGroup
-        aria-label={offMarket ? 'Homes like this' : 'Contact about this listing'}
+        aria-label={offMarket ? 'Homes like this' : 'Tour this listing'}
         className="listing-ask-row listing-face__ask gap-0"
       >
         {offMarket ? (
@@ -398,27 +393,11 @@ export function PriceCtaStrip({
             </Button>
           </>
         ) : (
-          <>
-            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
-              <a href={tourHref}>
-                <ActionSwapText value="tour">Tour</ActionSwapText>
-              </a>
-            </Button>
-            {callHref ? (
-              <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
-                <a href={callHref}>Call</a>
-              </Button>
-            ) : (
-              <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
-                <a href={askHrefResolved}>Ask a question</a>
-              </Button>
-            )}
-            {textHref ? (
-              <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
-                <a href={textHref}>Text</a>
-              </Button>
-            ) : null}
-          </>
+          <Button size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
+            <a href={tourHref}>
+              <ActionSwapText value="tour">Tour</ActionSwapText>
+            </a>
+          </Button>
         )}
       </ButtonGroup>
       </div>

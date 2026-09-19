@@ -253,13 +253,8 @@ export type { V3PlaceValueProps, V3PlaceValueActivity } from './V3PlaceValue.cli
  */
 export { V3StickyAsk, type V3StickyAskProps, type V3StickyAskSurface } from './V3StickyAsk.client'
 export {
-  V3PhoneDock,
-  V3PhoneDockShell,
-  V3PhoneDockContacts,
   V3WorkWithUs,
-  type V3PhoneDockVariant,
-  type V3PhoneDockShellProps,
-  type V3PhoneDockContactsProps,
+  type V3WorkWithUsPlacement,
   type V3WorkWithUsProps,
 } from './V3PhoneDock.client'
 
