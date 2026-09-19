@@ -350,6 +350,7 @@ export function PriceCtaStrip({
   return (
     <div className={cn('listing-face', className)}>
       <div>
+      <div className="listing-face__title">
       <h1 className="listing-ask">
         {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
       </h1>
@@ -359,13 +360,24 @@ export function PriceCtaStrip({
       </p>
       {datedDrop && !offMarket ? (
         /* The cut as two prices at rest, with the date (Matt 2026-09-15). */
-        <div className="mt-1.5">
+        <div className="listing-face__drop">
           <PriceDropMark
             mark={datedDrop}
             label={lastDrop?.label ?? `Price drop ${formatPriceCompact(datedDrop.drop)}`}
           />
         </div>
       ) : null}
+      {factsLine ? (
+        <div className="listing-face__facts">
+          {factsLine}
+        </div>
+      ) : null}
+      {cityWithCommunity ? (
+        <div className="listing-face__place">
+          {cityWithCommunity}
+        </div>
+      ) : null}
+      </div>
       <div className="listing-face__price-row">
       <ButtonGroup aria-label="Save or share this listing" className="listing-face__keep gap-0">
         <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
@@ -401,23 +413,13 @@ export function PriceCtaStrip({
         )}
       </ButtonGroup>
       </div>
-      {factsLine ? (
-        <div className="listing-face__facts">
-          {factsLine}
-        </div>
-      ) : null}
-      {cityWithCommunity ? (
-        <div className="mt-0.5 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
-          {cityWithCommunity}
-        </div>
-      ) : null}
       {listedBy ? (
-        <div className="mt-1 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
+        <div className="listing-face__listed">
           {listedBy}
         </div>
       ) : null}
 
-      <div className="mt-3.5 flex flex-nowrap gap-2 overflow-x-auto no-scrollbar">
+      <div className="listing-face__pills no-scrollbar">
         <Pill kind={listing.status}>
           <span aria-hidden>●</span>{' '}
           {isClosed && listing.closeDate

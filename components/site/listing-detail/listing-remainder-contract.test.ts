@@ -285,6 +285,11 @@ describe('listing remainder composition', () => {
         crumbOverlayOnListing?: boolean
         overlayCompactOnListing?: boolean
         mosaicHeightUsesViewport?: boolean
+        phoneFacePadTop?: string
+        phoneShellPadTop?: string
+        phoneHeroColumnPad?: string
+        phoneHeroToFaceGapCancel?: boolean
+        titleStackOnPhone?: boolean
       }
     }
     expect(PARITY.foldDensity?.gate).toBe('ci:listing-fold-density')
@@ -292,6 +297,11 @@ describe('listing remainder composition', () => {
     expect(PARITY.foldDensity?.crumbOverlayOnListing).toBe(true)
     expect(PARITY.foldDensity?.overlayCompactOnListing).toBe(true)
     expect(PARITY.foldDensity?.mosaicHeightUsesViewport).toBe(true)
+    expect(PARITY.foldDensity?.phoneFacePadTop).toBe('0')
+    expect(PARITY.foldDensity?.phoneShellPadTop).toBe('0')
+    expect(PARITY.foldDensity?.phoneHeroColumnPad).toBe('0')
+    expect(PARITY.foldDensity?.phoneHeroToFaceGapCancel).toBe(true)
+    expect(PARITY.foldDensity?.titleStackOnPhone).toBe(true)
     expect(PAGE).toMatch(/<V3Breadcrumb trail=\{breadcrumbs\} tone="on-media" overlay \/>/)
   })
 

@@ -819,29 +819,57 @@
   border-bottom: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
 }
 
+/* Address + price + beds sit as one title stack (Matt 2026-09-19). */
+.listing-face__title {
+  display: grid;
+  gap: var(--v3-space-3xs);
+}
+
 .listing-face__facts {
-  margin-top: var(--v3-space-xs);
+  margin-top: 0;
   font-size: var(--v3-size-body-lg);
   font-weight: var(--v3-weight-medium);
   color: var(--v3-navy);
   font-variant-numeric: tabular-nums;
 }
 
+.listing-face__place,
+.listing-face__listed {
+  font-size: var(--v3-size-body-sm);
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+}
+
+.listing-face__pills {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-xs);
+  overflow-x: auto;
+}
+
 @media (max-width: 40rem) {
   .listing-face {
-    gap: var(--v3-space-xs);
-    padding-top: var(--v3-space-2xs);
-    padding-bottom: var(--v3-space-sm);
+    gap: var(--v3-space-3xs);
+    padding-top: 0;
+    padding-bottom: var(--v3-space-xs);
+  }
+
+  .listing-face__title {
+    gap: 0;
   }
 
   .listing-face__price-row {
-    gap: var(--v3-space-2xs);
-    margin-top: var(--v3-space-2xs);
+    gap: var(--v3-space-3xs);
+    margin-top: 0;
   }
 
   .listing-face__facts {
-    margin-top: var(--v3-space-2xs);
+    margin-top: 0;
     font-size: var(--v3-size-body);
+  }
+
+  .listing-face__pills {
+    margin-top: var(--v3-space-2xs);
   }
 }
 
@@ -1302,11 +1330,29 @@
   }
 }
 
+/* Matt 2026-09-19: the md band on the hero column plus the main-column
+   gap is the cream under the gallery at 375. Flush the strip to the
+   title stack. Other sections keep the md rhythm. */
+@media (max-width: 40rem) {
+  .listing-detail-main > .listing-hero-column {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .listing-detail-main > .listing-hero-column + .listing-face {
+    margin-top: calc(-1 * var(--v3-space-md));
+  }
+}
+
 .listing-detail-shell {
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
   padding: var(--v3-space-xs) var(--v3-gutter) var(--v3-space-2xl);
+}
+@media (max-width: 40rem) {
+  .listing-detail-shell {
+    padding-top: 0;
+  }
 }
 @media (max-width: 1023px) {
   .listing-detail-shell {
@@ -1491,7 +1537,7 @@ h1.listing-ask {
   }
 
   .listing-ask__price {
-    margin-top: var(--v3-space-3xs);
+    margin-top: 0;
   }
 }
 

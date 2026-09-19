@@ -99,6 +99,36 @@ describe('listing-fold-density lock', () => {
     expect(p.join('\n')).toMatch(/font-weight 400|font-synthesis: none|faux-bold|Amboqia/i)
   })
 
+  it('refuses cream under the gallery and a button row between price and beds', () => {
+    const css = live.listingCss
+      .replace(
+        '.listing-face {\n    gap: var(--v3-space-3xs);\n    padding-top: 0;',
+        '.listing-face {\n    gap: var(--v3-space-xs);\n    padding-top: var(--v3-space-2xs);',
+      )
+      .replace(
+        '.listing-detail-shell {\n    padding-top: 0;',
+        '.listing-detail-shell {\n    padding-top: var(--v3-space-xs);',
+      )
+      .replace(
+        '.listing-detail-main > .listing-hero-column {\n    padding-top: 0;\n    padding-bottom: 0;',
+        '.listing-detail-main > .listing-hero-column {\n    padding-top: var(--v3-space-md);\n    padding-bottom: var(--v3-space-md);',
+      )
+      .replace(
+        '.listing-detail-main > .listing-hero-column + .listing-face {\n    margin-top: calc(-1 * var(--v3-space-md));',
+        '.listing-detail-main > .listing-hero-column + .listing-face {\n    margin-top: var(--v3-space-md);',
+      )
+    const page = live.page
+    const strip = readFileSync(join(REPO, 'components/site/listing-detail/PriceCtaStrip.tsx'), 'utf8').replace(
+      'listing-face__title',
+      'listing-face__stack',
+    )
+    const p = listingHeroFoldDensityProblems({
+      root: REPO,
+      files: { ...live, listingCss: css, priceCta: strip, page },
+    })
+    expect(p.join('\n')).toMatch(/flush|cream under the gallery|title stack|price-row|3xs/i)
+  })
+
   it('refuses a phone fold that puts display-1 air back on the address', () => {
     const css = live.listingCss
       .replace(

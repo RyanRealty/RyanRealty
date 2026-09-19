@@ -22,5 +22,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${LISTING_FOLD_DENSITY_GATE} — OK: crumb collapses at 3, overlay compact … / current, viewport mosaic, navy well + strip, 2.75rem thumbs, place overlay crumb + tap+2xs copy.`,
+  `${LISTING_FOLD_DENSITY_GATE} — OK: crumb collapses at 3, overlay compact … / current, viewport mosaic, navy well + strip, 2.75rem thumbs, phone title stack flush under gallery, place overlay crumb + tap+2xs copy.`,
 )

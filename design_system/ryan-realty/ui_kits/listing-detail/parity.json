@@ -540,7 +540,7 @@
     }
   },
   "foldDensity": {
-    "lockedAt": "2026-09-18",
+    "lockedAt": "2026-09-19",
     "crumbCollapseAt": 3,
     "crumbBelowNavPadToken": "--v3-space-2xs",
     "crumbOverlayOnListing": true,
@@ -551,6 +551,12 @@
     "stripWell": "navy",
     "mosaicHeightUsesViewport": true,
     "shellPadTopToken": "--v3-space-xs",
+    "phoneShellPadTop": "0",
+    "phoneFacePadTop": "0",
+    "phoneFaceGapToken": "--v3-space-3xs",
+    "phoneHeroColumnPad": "0",
+    "phoneHeroToFaceGapCancel": true,
+    "titleStackOnPhone": true,
     "gate": "ci:listing-fold-density",
     "refuse": [
       "tall quiet under chrome",
@@ -558,7 +564,9 @@
       "cream mosaic well",
       "cream filmstrip",
       "short mosaic well",
-      "oversized filmstrip thumbs"
+      "oversized filmstrip thumbs",
+      "cream under the gallery",
+      "button row between price and beds"
     ]
   },
   "contentFloor": {

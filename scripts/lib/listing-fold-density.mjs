@@ -16,7 +16,7 @@ export const LISTING_FOLD_DENSITY_GATE = 'ci:listing-fold-density'
 export const LISTING_FOLD_DENSITY_SCRIPT = 'scripts/check-listing-fold-density.mjs'
 
 export const FOLD_LOCK = Object.freeze({
-  lockedAt: '2026-09-18',
+  lockedAt: '2026-09-19',
   crumbCollapseAt: 3,
   crumbBelowNavPadToken: '--v3-space-2xs',
   crumbOverlayOnListing: true,
@@ -27,6 +27,12 @@ export const FOLD_LOCK = Object.freeze({
   stripWell: 'navy',
   mosaicHeightUsesViewport: true,
   shellPadTopToken: '--v3-space-xs',
+  phoneShellPadTop: '0',
+  phoneFacePadTop: '0',
+  phoneFaceGapToken: '--v3-space-3xs',
+  phoneHeroColumnPad: '0',
+  phoneHeroToFaceGapCancel: true,
+  titleStackOnPhone: true,
   gate: LISTING_FOLD_DENSITY_GATE,
 })
 
@@ -36,6 +42,7 @@ const PATHS = Object.freeze({
   collapse: 'components/site/v3/V3BreadcrumbCollapse.client.tsx',
   page: 'app/listing/[listingKey]/page.tsx',
   listingCss: 'components/site/listing-detail/listing-detail.css',
+  priceCta: 'components/site/listing-detail/PriceCtaStrip.tsx',
   parity: 'design_system/ryan-realty/ui_kits/listing-detail/parity.json',
   cityPage: 'app/cities/[slug]/page.tsx',
   communityPage: 'app/communities/[slug]/page.tsx',
@@ -267,8 +274,49 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
         `${PATHS.listingCss}: listing H1 must keep --v3-font-display (amboqia-i-patch + amboqia 400).`,
       )
     }
-    if (!/@media \(max-width: 40rem\)[\s\S]*\.listing-face[\s\S]{0,160}padding-top:\s*var\(--v3-space-2xs\)/.test(css)) {
-      p.push(`${PATHS.listingCss}: phone title block must tighten listing-face pad to 2xs.`)
+    if (!/@media \(max-width: 40rem\)[\s\S]*\.listing-face[\s\S]{0,160}padding-top:\s*0/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone title block must sit flush (listing-face padding-top: 0). Cream under the gallery is refuse.`)
+    }
+    if (!/@media \(max-width: 40rem\)[\s\S]*\.listing-face[\s\S]{0,200}gap:\s*var\(--v3-space-3xs\)/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone listing-face gap must be var(${FOLD_LOCK.phoneFaceGapToken}).`)
+    }
+    if (!/@media \(max-width: 40rem\)[\s\S]*\.listing-detail-shell[\s\S]{0,80}padding-top:\s*0/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone .listing-detail-shell pad-top must be 0. xs/2xs cream under the strip is refuse.`)
+    }
+    if (!/@media \(max-width: 40rem\)[\s\S]*\.listing-ask__price[\s\S]{0,80}margin-top:\s*0/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone .listing-ask__price must sit flush under the address (margin-top: 0).`)
+    }
+    if (!/@media \(max-width: 40rem\)[\s\S]*\.listing-hero-column[\s\S]{0,160}padding-bottom:\s*0/.test(css)) {
+      p.push(
+        `${PATHS.listingCss}: phone .listing-hero-column must drop its md band (padding-bottom: 0). Cream under the gallery is refuse.`,
+      )
+    }
+    if (
+      !/@media \(max-width: 40rem\)[\s\S]*\.listing-hero-column \+ \.listing-face[\s\S]{0,120}margin-top:\s*calc\(-1 \* var\(--v3-space-md\)\)/.test(
+        css,
+      )
+    ) {
+      p.push(
+        `${PATHS.listingCss}: phone hero-to-face must cancel the main-column md gap. That gap is cream under the gallery.`,
+      )
+    }
+    if (!/\.listing-face__title/.test(css)) {
+      p.push(`${PATHS.listingCss}: listing-face__title stack is required so address/price/beds share one tight block.`)
+    }
+    if (!/\.listing-face__facts[\s\S]{0,80}margin-top:\s*0/.test(css)) {
+      p.push(`${PATHS.listingCss}: beds line (.listing-face__facts) must not grow cream (margin-top: 0).`)
+    }
+  }
+
+  const stripSrc = readRel(root, 'components/site/listing-detail/PriceCtaStrip.tsx', files.priceCta)
+  if (stripSrc) {
+    const titleAt = stripSrc.indexOf('listing-face__title')
+    const factsAt = stripSrc.indexOf('listing-face__facts')
+    const rowAt = stripSrc.indexOf('listing-face__price-row')
+    if (titleAt < 0 || factsAt < 0 || factsAt > rowAt) {
+      p.push(
+        'components/site/listing-detail/PriceCtaStrip.tsx: address/price/beds must sit in listing-face__title before the Save/Tour row. A button row between price and beds is cream on the fold.',
+      )
     }
   }
 
@@ -312,6 +360,21 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
       }
       if (lock.stripWell !== FOLD_LOCK.stripWell) {
         p.push(`${PATHS.parity}: foldDensity.stripWell must stay ${FOLD_LOCK.stripWell}.`)
+      }
+      if (lock.phoneFacePadTop !== FOLD_LOCK.phoneFacePadTop) {
+        p.push(`${PATHS.parity}: foldDensity.phoneFacePadTop must stay ${FOLD_LOCK.phoneFacePadTop}.`)
+      }
+      if (lock.phoneShellPadTop !== FOLD_LOCK.phoneShellPadTop) {
+        p.push(`${PATHS.parity}: foldDensity.phoneShellPadTop must stay ${FOLD_LOCK.phoneShellPadTop}.`)
+      }
+      if (lock.titleStackOnPhone !== true) {
+        p.push(`${PATHS.parity}: foldDensity.titleStackOnPhone must stay true.`)
+      }
+      if (lock.phoneHeroColumnPad !== FOLD_LOCK.phoneHeroColumnPad) {
+        p.push(`${PATHS.parity}: foldDensity.phoneHeroColumnPad must stay ${FOLD_LOCK.phoneHeroColumnPad}.`)
+      }
+      if (lock.phoneHeroToFaceGapCancel !== true) {
+        p.push(`${PATHS.parity}: foldDensity.phoneHeroToFaceGapCancel must stay true.`)
       }
     }
   }
