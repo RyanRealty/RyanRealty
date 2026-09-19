@@ -1,3 +1,12 @@
+# Current — 2026-09-19 (CTA lock — drop sticky, header Work with us)
+
+Surface: Cursor cloud, branch `cursor/cta-lock-drop-sticky-2f27` tip `4e1dd7a7b` off `origin/main` `3c0d7c8d3`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-123 not on main (not in seed).
+
+- **Drop.** Sitewide sticky Call/Text/Work with us (`V3PhoneDock` unmounted from `app/layout.tsx`). Listing sticky Tour|Call|Text|Work with us (`ListingBrokerBar` / `ListingMobileContactBar` unmounted; `floating=null`).
+- **Add.** Header `V3WorkWithUs` sitewide (`placement="chrome"`, `.v3-chrome__work` never `display:none`). Same SITE-122 sheet copy (Buy or sell, Buy a home / Sell your home, About/team/reviews/contact, Call/Text).
+- **Listing.** Tour is the one filled ask beside the price (`PriceCtaStrip`). Call/Text stay on `TextMattCTA` and inside Work with us — not equal sticky verbs.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `walkthrough-artifacts`.
+
 # Current — 2026-09-19 (search typeahead — drop 2018 dead stock)
 
 Surface: Cursor cloud `bc-2e02ecf3-d804-5e7c-b8e5-bec7a17234bb`, branch `cursor/gate-stale-search-typeahead-34bb` off `origin/main` `381997f27`. PR only — Cos Mini lands. Do not merge. HOLD owner email. City→place-page nav left alone (Matt never mind).

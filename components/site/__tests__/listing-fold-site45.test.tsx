@@ -122,12 +122,13 @@ describe("the pills' plain read", () => {
 })
 
 describe('the ask as one grouped control', () => {
-  it('renders Tour / Call / Text through shadcn ButtonGroup, not leftover ghost buttons', () => {
-    const html = strip({ callHref: 'tel:+15412136706', textHref: 'sms:+15412136706' })
+  it('renders Tour as the one ask beside the price, not Call / Text sticky verbs', () => {
+    const html = strip()
     expect(html).toContain('data-slot="button-group"')
     expect(html).toContain('Tour')
-    expect(html).toContain('Call')
-    expect(html).toContain('Text')
+    expect(html).not.toMatch(/>Call</)
+    expect(html).not.toMatch(/href="tel:/)
+    expect(html).not.toMatch(/href="sms:/)
     expect(html).not.toMatch(/class="btn alt"/)
   })
 })

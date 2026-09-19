@@ -52,22 +52,12 @@
  *     The guarded nodes:
  *       app/listing/[listingKey]/page.tsx  MortgageCalculator, ListingAskInstrument,
  *                                          V3ListingClose, every tel:/sms: URI
- *       PriceCtaStrip.tsx                  the Tour / Call / Text anchors
- *       ListingMobileContactBar.client.tsx every tel:/sms: URI, AND every read of
- *                                          the broker's line (phoneDirect / phoneFub)
- *       TextMattCTA.tsx                    every tel:/sms: URI
+ *       PriceCtaStrip.tsx                  the Tour (on-market) / homes-like-this ask
+ *       TextMattCTA.tsx                    every tel:/sms: URI (Call / Text live here)
  *
- *     The mobile bar is in that list for a reason a server-side check would
- *     miss entirely: it reads the broker's line in the BROWSER from a broker
- *     prop, so the page's rendered HTML can be clean while a phone visitor
- *     still gets the listing agent's Call and Text about a sold home across
- *     the bottom of the screen, which is exactly where their thumb is.
- *     SITE-122 (Matt 2026-09-16) put Call and Text back on every page, sold
- *     homes included, on the BROKERAGE line (lib/brand/contact CONTACT, built
- *     inside components/site/v3/V3PhoneDock.client.tsx). So the bar's own
- *     tel:/sms: URIs are gone and the thing to guard is the READ of the
- *     broker's line: `broker.phoneDirect` / `broker.phoneFub` may only be
- *     touched under the off-market flag's active branch.
+ *     The sticky Tour | Call | Text bar is dropped (Matt / Critiquito
+ *     2026-09-19). Call / Text live on the agent card (TextMattCTA) and
+ *     inside Work with us. This gate still holds those tel:/sms: URIs.
  *
  *  4. THE REPLACEMENT IS MOUNTED. The page must mount ListingOffMarketFacts and
  *     ListingLikeThisAlerts and must call publishListingOffMarketFacts. A page
@@ -86,7 +76,6 @@ const STATUS_MODULE = 'lib/listing-status-public.ts'
 const PRICE_MODULE = 'lib/listing/publish-listing-published-price.ts'
 const PAGE = 'app/listing/[listingKey]/page.tsx'
 const STRIP = 'components/site/listing-detail/PriceCtaStrip.tsx'
-const MOBILE_BAR = 'components/site/listing-detail/ListingMobileContactBar.client.tsx'
 const BROKER_CARD = 'components/site/listing-detail/TextMattCTA.tsx'
 
 /** The four. Named here so the executed matrix is readable, never imported as the source. */
@@ -221,7 +210,7 @@ function testsFlag(node, src) {
  * Two shapes count, because both are honest code:
  *   (a) an ancestor conditional / logical / if whose TEST mentions the flag;
  *   (b) an earlier `if (<flag…>) { return … }` inside the same function, which
- *       is how ListingMobileContactBar leaves before it builds a tel: URI.
+ *       is how an early return under the flag leaves before a tel: URI.
  */
 function isGuarded(node, src) {
   for (let p = node.parent; p; p = p.parent) {
@@ -274,20 +263,6 @@ function contactUris(sourceFile) {
   return out
 }
 
-/**
- * Every read of a broker's own line: `x.phoneDirect` / `x.phoneFub`. The mobile
- * bar's Call / Text are built from these on an active home and from the
- * brokerage constant otherwise, so on a sold home the read itself must not
- * happen (SITE-122).
- */
-function brokerLineReads(sourceFile) {
-  const out = []
-  eachNode(sourceFile, (n) => {
-    if (ts.isPropertyAccessExpression(n) && /^phone(Direct|Fub)$/.test(n.name.text)) out.push(n)
-  })
-  return out
-}
-
 /** Every JSX mount of a component by name. */
 function mounts(sourceFile, name) {
   const out = []
@@ -316,12 +291,11 @@ function hrefsNamed(sourceFile, names) {
 }
 
 /**
- * `allowNone` is for a file whose ask moved somewhere this gate holds by another
- * means: the mobile bar no longer builds its own tel:/sms: (the phone dock does,
- * from the brokerage line), and what it must not do on a sold home is READ the
- * broker's line — checked separately and required to exist. Everywhere else an
- * empty node list is still a failure: a gate that finds nothing and passes is
- * the one that let the defect through.
+ * `allowNone` is for a file whose ask moved somewhere this gate holds by
+ * another means: the listing page no longer builds tel:/sms: (Call / Text
+ * live on the agent card and inside Work with us). Everywhere else an empty
+ * node list is still a failure: a gate that finds nothing and passes is the
+ * one that let the defect through.
  */
 function requireGuarded(rel, src, sourceFile, nodes, what, { allowNone = false } = {}) {
   if (nodes.length === 0) {
@@ -368,7 +342,9 @@ function requireMounted(rel, sourceFile, name, why) {
     requireGuarded(PAGE, src, sf, mounts(sf, 'MortgageCalculator'), 'the payment calculator')
     requireGuarded(PAGE, src, sf, mounts(sf, 'ListingAskInstrument'), 'the market-ask instrument')
     requireGuarded(PAGE, src, sf, mounts(sf, 'V3ListingClose'), 'the three-act close (watch / tour / payment)')
-    requireGuarded(PAGE, src, sf, contactUris(sf), 'a tel:/sms: contact URI')
+    requireGuarded(PAGE, src, sf, contactUris(sf), 'a tel:/sms: contact URI', {
+      allowNone: true,
+    })
     requireMounted(
       PAGE,
       sf,
@@ -392,8 +368,8 @@ function requireMounted(rel, sourceFile, name, why) {
       STRIP,
       src,
       sf,
-      hrefsNamed(sf, ['tourHref', 'callHref', 'textHref', 'askHrefResolved']),
-      'the Tour / Call / Text ask',
+      hrefsNamed(sf, ['tourHref', 'similarHref', 'alertsHref']),
+      'the Tour / homes-like-this ask',
     )
   }
 }
@@ -406,36 +382,12 @@ function requireMounted(rel, sourceFile, name, why) {
   }
 }
 
-/* The mobile bar guards a READ, not a URI (SITE-122). It composes the site's
-   phone dock, which builds `tel:`/`sms:` from the BROKERAGE line unless it is
-   handed someone's own; the bar is what hands it over. So the thing that must
-   not happen on a sold home is the READ of `broker.phoneDirect` /
-   `broker.phoneFub`, and the bar must still make that read on an active one —
-   a bar with no attributed Call and Text is the other way to fail a seller. */
-{
-  const src = read(MOBILE_BAR)
-  if (src) {
-    const sf = parse(MOBILE_BAR, src)
-    requireGuarded(MOBILE_BAR, src, sf, contactUris(sf), 'a tel:/sms: contact URI', {
-      allowNone: true,
-    })
-    const reads = brokerLineReads(sf)
-    if (reads.length === 0) {
-      failures.push(
-        `${MOBILE_BAR}: no read of broker.phoneDirect / broker.phoneFub — the active bar must offer the ` +
-          `attributed broker's Call and Text, and this gate guards that read on a sold home.`,
-      )
-    }
-    requireGuarded(MOBILE_BAR, src, sf, reads, "a read of the broker's line (phoneDirect / phoneFub)")
-  }
-}
-
 /* ── report ────────────────────────────────────────────────────────────────── */
 
 console.log('off-market listing ask (ci:offmarket-listing-cta)')
 console.log('=================================================')
 console.log(`  predicate executed over : ${OFF_MARKET.length + ON_MARKET.length} statuses`)
-console.log(`  files held              : 5`)
+console.log(`  files held              : 4`)
 
 if (failures.length) {
   console.error(`\nFAIL - ${failures.length} problem(s):\n`)

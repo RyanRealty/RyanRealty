@@ -1,39 +1,16 @@
 'use client'
 /**
- * V3PhoneDock — THE bottom bar on a phone. (SITE-122, Matt 2026-09-16.)
+ * V3WorkWithUs sheet — header Work with us (Matt / Critiquito 2026-09-19).
  *
- * "We also keep losing the bottom bar for the call text. I want an optimized
- * CTA that says work with us and has buy a home / sell your home options.
- * Right now there is no easy way for people to learn about us in mobile."
+ * SITE-122 built a phone bottom bar (Call · Text · Work with us). The CTA
+ * lock drops that sticky and the listing Tour|Call|Text|Work with us bar.
+ * Work with us lives in V3Chrome at every width. Listing Tour is the one
+ * ask beside the price. Call / Text live inside this sheet and the agent
+ * card — not equal sticky verbs.
  *
- * WHAT WAS LOST. The site had three bottom-fixed bars and no page carried the
- * same one: the listing page's Tour / Call / Text (which drops Call and Text
- * on every sold, expired, canceled or withdrawn home — most listing pages),
- * the place pages' "Value my home" plate (which the alerts strip sat on top
- * of), and nothing at all everywhere else. On a phone the header is
- * logo · search · Sign in · menu, so Buy, Sell, About and the brokers were
- * behind the hamburger.
- *
- * WHAT THIS IS. One bar, one geometry, every public page below 64rem:
- *
- *   site pages   [Call] [Text] [Work with us]
- *   listing page [Tour] [Call] [Text] [Work with us]          (active)
- *                [Homes for sale] [Call] [Text] [Work with us] (off market)
- *
- * The shell, the contact pair and the ask are three exports so the listing
- * page (components/site/listing-detail/ListingMobileContactBar.client.tsx)
- * composes them around its own lead control and keeps the catalog
- * ButtonGroup import the taste receipt names. The site composition is
- * `V3PhoneDock`, mounted once in app/layout.tsx beside V3Chrome; it hides
- * itself on the routes the chrome hides on, and by CSS whenever a page mounts
- * its own dock, so no page ever has two.
- *
- * WHOSE PHONE. Call and Text on a site page, and on a sold home, are the
- * BROKERAGE line (lib/brand/contact CONTACT), labelled as the brokerage —
- * never a listing agent "about this home", which is the SITE-21 point and
- * the reason the off-market gate still guards the broker-line reads in the
- * listing file. An active listing passes its attributed broker's line and
- * first name, and the labels say who answers.
+ * WHOSE PHONE. Call and Text in this sheet default to the BROKERAGE line
+ * (lib/brand/contact CONTACT). The listing agent card (TextMattCTA) is the
+ * other Call / Text home; SITE-21 still guards those tel:/sms: URIs.
  *
  * WORK WITH US is the catalog shadcn Drawer (vaul), a bottom sheet a thumb
  * can drag closed, restyled navy on cream at the house radius. The chip stays
@@ -43,15 +20,10 @@
  * broker count. The recruiting door that used to say "Work with us" now says
  * Join Ryan Realty, so the phrase means one thing on this site.
  *
- * THE ONE-FILLED-CONTROL RULE (PUBLIC_UI §1) HOLDS. Every control in the bar
- * is the outline variant, the same as the listing bar has always been, so the
- * page's own primary stays the one filled control in the viewport. Inside the
- * drawer nothing is filled either; the navy head is a surface, not a control.
- *
- * THE BOTTOM EDGE IS CLAIMED. While mounted the shell publishes its measured
- * height on the document root as --rr-dock-h; the alerts strip docks above it
- * (`bottom: var(--rr-dock-h, 0px)`), and V3StickyAsk retires on a phone while
- * a dock is present (its desktop plate is unchanged).
+ * THE ONE-FILLED-CONTROL RULE (PUBLIC_UI §1) HOLDS. The header trigger is
+ * outline, so the page's own primary stays the one filled control. Inside
+ * the drawer nothing is filled either; the navy head is a surface, not a
+ * control.
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -197,11 +169,19 @@ export function V3PhoneDockContacts({ phone, name, surface }: V3PhoneDockContact
   )
 }
 
+export type V3WorkWithUsPlacement = 'chrome' | 'inline' | 'dock'
+
 export type V3WorkWithUsProps = {
   /** The line the drawer's own Call / Text use. Same default as the bar. */
   phone?: string | null
   name?: string | null
   surface: string
+  /**
+   * Matt / Critiquito 2026-09-19 CTA lock: chrome is the sitewide header
+   * trigger; inline is the listing agent card; dock is the retired sticky bar.
+   */
+  placement?: V3WorkWithUsPlacement
+  className?: string
 }
 
 /** The four ways to learn about the brokerage, in the About menu's own order. */
@@ -213,12 +193,18 @@ const LEARN_LINKS = [
 ] as const
 
 /**
- * The ask and its sheet. The button sits in the bar as its last control; the
- * sheet is the catalog Drawer, direction bottom, which is the one bottom
- * sheet on this site. Listing bars compose this same export so the copy
- * cannot drift.
+ * The ask and its sheet. Copy stays the SITE-122 sheet (Buy or sell, two
+ * doors, About / team / reviews / contact, Call / Text). The trigger
+ * placement moved: chrome sitewide, listing agent card for Call / Text,
+ * not a bottom sticky bar (Matt / Critiquito 2026-09-19).
  */
-export function V3WorkWithUs({ phone, name, surface }: V3WorkWithUsProps) {
+export function V3WorkWithUs({
+  phone,
+  name,
+  surface,
+  placement = 'dock',
+  className,
+}: V3WorkWithUsProps) {
   const [open, setOpen] = useState(false)
   const line = dialable(phone) ?? CONTACT.phoneDirectTel
   const who = name?.trim() || 'Ryan Realty'
@@ -241,7 +227,17 @@ export function V3WorkWithUs({ phone, name, surface }: V3WorkWithUsProps) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerTrigger asChild>
-        <Button variant="outline" size="lg" className="v3-dock__control v3-dock__ask" data-v3-dock-ask="true">
+        <Button
+          variant="outline"
+          size="lg"
+          className={cn(
+            placement === 'chrome' && 'v3-chrome__work',
+            placement === 'inline' && 'rounded-none first:rounded-l-lg last:rounded-r-lg',
+            placement === 'dock' && 'v3-dock__control v3-dock__ask',
+            className,
+          )}
+          data-v3-dock-ask="true"
+        >
           Work with us
         </Button>
       </DrawerTrigger>
@@ -301,9 +297,8 @@ export function V3WorkWithUs({ phone, name, surface }: V3WorkWithUsProps) {
 }
 
 /**
- * The site's own bar: Call · Text · Work with us on the brokerage line.
- * Mounted once in app/layout.tsx. A page that mounts a `page` dock hides
- * this one by CSS (V3PhoneDock.css), so a route never carries two.
+ * Retired sticky site bar. Kept so the sheet file stays one unit; not
+ * mounted (Matt / Critiquito 2026-09-19).
  */
 export function V3PhoneDock() {
   return (

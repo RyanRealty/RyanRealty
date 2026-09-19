@@ -32,7 +32,6 @@ const GATE = join(SANDBOX, 'scripts/check-offmarket-listing-cta.mjs')
 
 const PAGE = 'app/listing/[listingKey]/page.tsx'
 const STRIP = 'components/site/listing-detail/PriceCtaStrip.tsx'
-const BAR = 'components/site/listing-detail/ListingMobileContactBar.client.tsx'
 const CARD = 'components/site/listing-detail/TextMattCTA.tsx'
 const STATUS = 'lib/listing-status-public.ts'
 
@@ -42,7 +41,6 @@ const FILES = [
   'lib/listing/publish-listing-published-price.ts',
   PAGE,
   STRIP,
-  BAR,
   CARD,
 ]
 
@@ -173,91 +171,19 @@ describe('ci:offmarket-listing-cta', () => {
     expect(r.out).toContain('the three-act close')
   })
 
-  /* ── the page's own tel:/sms: ────────────────────────────────────────────── */
-
-  it('FAILS when the page hands the strip an unguarded tel:', () => {
-    reset()
-    edit(PAGE, 'callHref={ctaTel && !offMarket ? `tel:${ctaTel}` : null}', 'callHref={ctaTel ? `tel:${ctaTel}` : null}')
-    const r = run()
-    expect(r.code).toBe(1)
-    expect(r.out).toContain('a tel:/sms: contact URI is NOT guarded')
-  })
-
-  it('FAILS when the page hands the strip an unguarded sms:', () => {
-    reset()
-    edit(PAGE, 'textHref={ctaTel && !offMarket ? `sms:${ctaTel}` : null}', 'textHref={ctaTel ? `sms:${ctaTel}` : null}')
-    const r = run()
-    expect(r.code).toBe(1)
-    expect(r.out).toContain('a tel:/sms: contact URI is NOT guarded')
-  })
-
   /* ── the price strip's ask ───────────────────────────────────────────────── */
 
-  it('FAILS when the strip serves Tour / Call / Text to everyone — branch removed', () => {
+  it('FAILS when the strip serves the Tour / homes-like-this ask to everyone — branch removed', () => {
     reset()
     const p = join(SANDBOX, STRIP)
     const src = readFileSync(p, 'utf8')
     expect(src).toContain('{offMarket ? (')
     // SITE-99 moved Save/Share out of this ternary. Flip the flag so the
-    // on-market Tour / Call / Text arm always paints.
+    // on-market Tour arm always paints on a sold home.
     writeFileSync(p, src.replace('{offMarket ? (', '{false ? ('))
     const r = run()
     expect(r.code).toBe(1)
-    expect(r.out).toContain('the Tour / Call / Text ask is NOT guarded')
-  })
-
-  /* ── the mobile bar, whose hrefs are built client-side ───────────────────── */
-
-  it('FAILS when the mobile bar loses its early return — the whole branch deleted', () => {
-    reset()
-    const p = join(SANDBOX, BAR)
-    const src = readFileSync(p, 'utf8')
-    const start = src.indexOf('  if (offMarket) {')
-    // The active branch begins where the broker's own line is read — the one
-    // thing the off-market branch exists to skip (SITE-122).
-    const end = src.indexOf('  const line = broker.phoneDirect', start)
-    expect(start).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-    writeFileSync(p, src.slice(0, start) + src.slice(end))
-    const r = run()
-    expect(r.code).toBe(1)
-    expect(r.out).toContain("a read of the broker's line (phoneDirect / phoneFub) is NOT guarded")
-  })
-
-  it('FAILS when the early return survives but stops testing the flag', () => {
-    reset()
-    edit(BAR, '  if (offMarket) {', '  if (listingKey === "never") {')
-    const r = run()
-    expect(r.code).toBe(1)
-    expect(r.out).toContain("a read of the broker's line (phoneDirect / phoneFub) is NOT guarded")
-  })
-
-  it('PASSES when the mobile bar guard is re-spelled as a ternary instead of an early return', () => {
-    reset()
-    const p = join(SANDBOX, BAR)
-    const src = readFileSync(p, 'utf8')
-    const rewritten = src
-      .replace('  if (offMarket) {\n    return (', '  if (offMarket) {\n    return (')
-      .replace(
-        'const line = broker.phoneDirect ?? broker.phoneFub ?? null',
-        'const line = offMarket ? null : (broker.phoneDirect ?? broker.phoneFub ?? null)',
-      )
-    writeFileSync(p, rewritten)
-    const r = run()
-    expect(r.out).toContain('OK - every off-market branch')
-    expect(r.code).toBe(0)
-  })
-
-  it("FAILS when the bar stops reading the broker's line at all (a bar with no attributed Call / Text)", () => {
-    reset()
-    edit(
-      BAR,
-      'const line = broker.phoneDirect ?? broker.phoneFub ?? null',
-      'const line = null as string | null',
-    )
-    const r = run()
-    expect(r.code).toBe(1)
-    expect(r.out).toContain('no read of broker.phoneDirect / broker.phoneFub')
+    expect(r.out).toContain('the Tour / homes-like-this ask is NOT guarded')
   })
 
   /* ── the broker card ─────────────────────────────────────────────────────── */
