@@ -5,7 +5,7 @@ Surface: Cursor cloud `bc-cdfb7753-a7e8-5c40-b0cd-ef2f155111d4`, branch `cursor/
 - **Look rematch FAIL** `dpl_8mPgUD1TnSYE6efbuk2E1mbYGp1k` @375×720 after Cos rematch of `381997f27`. SVG ~101×126 on 320×187. `placeLookRing=refit` `placeLookZoom=10` `placeLookFill=0.00`. $ pills + photo cards PASS.
 - **Why fill stayed 0 / knot persisted.** `subjectRingKeepFittedZoom` kept integer z10 (fitBounds result) — it only blocked the old setZoom(9). Overlay `pixelBox()` was read on the same idle as `update()`, before OverlayView drew, so fill stamped 0.00. A 450ms re-`fitBounds` snapped back to z10. Visual path at z10 is 101/187 ≈ 0.54 (still a knot). `ringInView` refit zoomed OUT when corners clipped, never IN.
 - **This tip.** `subjectRingZoomFromMeasuredBox` + path-projection fallback. Fractional zoom on the look island. Settle loop centers once, waits for a real box, zooms to fill ≥ 0.7 / box ≥ 110, restamps after draw. No second fitBounds. Same recorded geom. Pin cap 36 and 13rem / 2×2 cards untouched.
-- **Evidence.** `look-pass-site128-ring-fill-2026-09-19/` @375.
+- **Evidence.** Local @375×720: `placeLookFill=0.86` `placeLookBox=162x193` `placeLookZoom=10.31` `in-view`. 36 pills, 2×2 cards. Shots in `look-pass-site128-ring-fill-2026-09-19/`. Tip SHA `1e2d0ab25`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `TASTE.md`.
 
 # Current — 2026-09-19 (search typeahead — drop 2018 dead stock)
