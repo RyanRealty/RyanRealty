@@ -368,7 +368,7 @@ function requireMounted(rel, sourceFile, name, why) {
       STRIP,
       src,
       sf,
-      hrefsNamed(sf, ['tourHref', 'similarHref', 'alertsHref', 'askHrefResolved']),
+      hrefsNamed(sf, ['tourHref', 'similarHref', 'alertsHref']),
       'the Tour / homes-like-this ask',
     )
   }

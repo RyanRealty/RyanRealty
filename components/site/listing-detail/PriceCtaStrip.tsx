@@ -118,8 +118,6 @@ type Props = {
   onShare?: (listingKey: string) => void
   /** Override the default contact-tour href. */
   scheduleHref?: string
-  /** Override the default ask-question href. */
-  askHref?: string
   /**
    * Seed 30-yr rate in PERCENT, same prop the payment calculator receives.
    * Omit / null → DEFAULT_PITI_RATE inside computeMonthlyPiti.
@@ -174,7 +172,6 @@ export function PriceCtaStrip({
   signedIn = false,
   onShare,
   scheduleHref,
-  askHref,
   ratePct,
   showEstPayment = true,
   showAlerts = true,
@@ -306,8 +303,6 @@ export function PriceCtaStrip({
 
   const tourHref =
     scheduleHref ?? listingContactHref(contactKey, 'tour') ?? `/contact?intent=tour`
-  const askHrefResolved =
-    askHref ?? listingContactHref(contactKey, 'question') ?? `/contact?intent=question`
 
   async function handleSave() {
     if (saveState === 'saving') return
