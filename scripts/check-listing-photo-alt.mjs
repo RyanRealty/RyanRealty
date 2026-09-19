@@ -11,8 +11,9 @@
  * holds the fix in place: none of the four files below may render a
  * listing-photo <Image>/<img> tag with an empty alt attribute again.
  *
- * Scope is deliberately narrow — the four files the audit named, not every
- * <Image>/<img> in the repo. A genuinely decorative image (e.g. the
+ * Scope is listing photography: the original four search/home files plus
+ * the 2026-09-18 residual surfaces (listing PDP gallery, Bend alerts
+ * thumbs, Sell/place ledger thumbs). A genuinely decorative image (e.g. the
  * aria-hidden poster in V3Stage.tsx) is out of scope and not scanned here;
  * this is a presence check on listing photography specifically, in the
  * style of check-ai-structured-data.mjs, not a general accessibility linter.
@@ -27,6 +28,10 @@ const FILES = [
   'components/site/v3/SplitCardMedia.tsx',
   'components/site/v3/V3Field.tsx',
   'app/_v3/HomeFeaturedCommunity.client.tsx',
+  'components/site/listing-detail/ListingHero.tsx',
+  'components/site/listing-detail/PhotoGalleryLightbox.tsx',
+  'components/site/v3/V3AlertsStrip.client.tsx',
+  'components/site/v3/V3Ledger.tsx',
 ]
 
 const EMPTY_ALT = /alt\s*=\s*(""|'')/
