@@ -19,16 +19,25 @@ $ pills + 2×2 photo cards PASS.
 4. The 450ms apply called `fitBounds` again and snapped any later zoom back
    to z10. `ringInView` refit zoomed OUT when bbox corners clipped, never IN.
 
-## After (this tip)
+## After (this tip) — local @375×720
 
-`subjectRingZoomFromMeasuredBox(10, 320×187, 101×126)` → ~10.37.
-Predicted box ~131×163. Fill 0.70. Max box 163 ≥ 110.
+`subjectRingZoomFromMeasuredBox(10, 320×187, 101×126)` → ~10.37 predicted.
+Captured on this tip:
+
+| Field | Cos FAIL | This tip |
+|---|---|---|
+| `placeLookRing` | refit | **in-view** |
+| `placeLookZoom` | 10 | **10.31** |
+| `placeLookFill` | 0.00 | **0.86** |
+| SVG / box | 101×126 | **162×193** |
+| island | 320×187 | 335×187 |
+| $ pills | PASS | **36** |
+| photo cards | PASS | **4 in fold / 6 total** |
 
 Same recorded city GeoJSON. Pin cap 36 and 13rem / 2×2 cards untouched.
-Fractional zoom on the look island. Settle restamps fill after draw.
 
 | Shot | What it proves |
 |---|---|
 | `ours-local-cities-bend-375.png` | City outline spans the island; Bend chip; 2×2 cards |
-| `ours-local-cities-bend-375-map.png` | Map crop: fill ≥ 0.7, box ≥ 110, not a 101×126 knot |
+| `ours-local-cities-bend-375-map.png` | Map crop: fill 0.86, box 162×193, not a 101×126 knot |
 | `ours-local-cities-bend-375-measure.json` | island, SVG box, fill, zoom, ring, pills, cards |
