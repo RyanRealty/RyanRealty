@@ -13,6 +13,7 @@ import {
 } from '@/components/motion/morphing-search'
 import { flattenSuggestions, useSearchSuggest } from '@/components/search/SearchSuggest'
 import { trackEvent } from '@/lib/tracking'
+import './V3MorphSearch.css'
 
 const PLACE_SEEDS: MorphingSearchItem[] = [
   { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },

@@ -176,3 +176,25 @@
 .v3-breadcrumb--on-media .v3-breadcrumb__collapse:focus-visible {
   color: var(--v3-ink-on-media);
 }
+
+/* Listing overlay (… / street) is a short navy wash, not a 44px cream/navy
+   band. Visual row is 1.75rem; the tap stays 44px via the expanded hit. */
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text,
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__collapse {
+  min-height: 1.75rem;
+  line-height: 1.2;
+}
+
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__collapse {
+  position: relative;
+}
+
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link::after,
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__collapse::after {
+  content: '';
+  position: absolute;
+  inset-block: calc((var(--v3-tap) - 1.75rem) / -2);
+  inset-inline: 0;
+}

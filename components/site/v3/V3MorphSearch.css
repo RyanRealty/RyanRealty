@@ -212,3 +212,23 @@
 [data-v3-morph='trigger'] + * .text-muted-foreground {
   color: var(--v3-ink);
 }
+
+/* Phone typeahead (empty query / default places): catalog py-2.5 + p-2
+   leaves Bend / Redmond / Sisters / Sunriver / Tetherow too far apart
+   above the keyboard. Keep name + type as two lines; cut row chrome. */
+@media (max-width: 40rem) {
+  [data-v3-morph='dialog'] [role='listbox'] {
+    padding: 0.125rem;
+  }
+
+  [data-v3-morph='dialog'] [role='option'] {
+    padding-block: 0;
+    padding-inline: 0.5rem;
+    gap: 0.35rem;
+    align-items: flex-start;
+  }
+
+  [data-v3-morph='dialog'] [role='option'] span.block {
+    line-height: 1.1;
+  }
+}

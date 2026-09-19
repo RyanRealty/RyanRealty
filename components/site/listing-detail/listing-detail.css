@@ -32,7 +32,7 @@
 
 .listing-detail:has(> .v3-breadcrumb--overlay) .listing-mosaic__open-house,
 .listing-detail:has(> .v3-breadcrumb--overlay) .listing-mosaic__captions {
-  top: 2.75rem;
+  top: 1.75rem;
 }
 
 @media (min-width: 64rem) {
@@ -819,6 +819,32 @@
   border-bottom: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
 }
 
+.listing-face__facts {
+  margin-top: var(--v3-space-xs);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-navy);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 40rem) {
+  .listing-face {
+    gap: var(--v3-space-xs);
+    padding-top: var(--v3-space-2xs);
+    padding-bottom: var(--v3-space-sm);
+  }
+
+  .listing-face__price-row {
+    gap: var(--v3-space-2xs);
+    margin-top: var(--v3-space-2xs);
+  }
+
+  .listing-face__facts {
+    margin-top: var(--v3-space-2xs);
+    font-size: var(--v3-size-body);
+  }
+}
+
 @media (min-width: 40rem) {
   .listing-face {
     grid-template-columns: minmax(0, 1fr) var(--v3-map-peek);
@@ -999,13 +1025,26 @@
   z-index: 4;
 }
 
+@media (max-width: 40rem) {
+  .listing-frame__tabs {
+    left: var(--v3-space-2xs);
+    bottom: 0;
+  }
+
+  .listing-mosaic__captions {
+    gap: var(--v3-space-2xs);
+    left: var(--v3-space-2xs);
+    right: var(--v3-space-2xs);
+  }
+}
+
 .listing-strip {
   --listing-strip-h: 2.75rem;
   --listing-strip-thumb: 2.75rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   min-height: var(--listing-strip-h);
   padding: 0;
   background: var(--v3-navy);
@@ -1437,6 +1476,17 @@
   font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-medium);
   color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+}
+
+@media (max-width: 40rem) {
+  .listing-ask {
+    font-size: var(--v3-size-display-2);
+    line-height: var(--v3-leading-display);
+  }
+
+  .listing-ask__price {
+    margin-top: var(--v3-space-3xs);
+  }
 }
 
 /* Four leftover figures in the listing column cannot share one row of

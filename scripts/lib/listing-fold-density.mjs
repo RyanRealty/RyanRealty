@@ -149,6 +149,13 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
       `${PATHS.breadcrumbCss}: overlay on-media crumb must be a gradient wash, not a solid navy/cream bar on the photograph.`,
     )
   }
+  if (!/\.v3\.v3-breadcrumb--overlay-compact/.test(css)) {
+    p.push(`${PATHS.breadcrumbCss}: overlay-compact must tighten the listing crumb band.`)
+  } else if (!/\.v3\.v3-breadcrumb--overlay-compact[\s\S]{0,280}min-height:\s*1\.75rem/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact crumb must sit at 1.75rem, not the 44px tap band.`,
+    )
+  }
   return p
 }
 
@@ -224,6 +231,15 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
     }
     if (/\.listing-hero-bleed\s*\{[^}]*padding-top\s*:\s*var\(--v3-space-(?:md|lg|xl)/.test(css)) {
       p.push(`${PATHS.listingCss}: listing-hero-bleed must not grow vertical cream.`)
+    }
+    if (!/@media \(max-width: 40rem\)\s*\{\s*\.listing-frame__tabs[\s\S]{0,120}bottom:\s*0/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone Photos/Map tabs must sit flush on the strip (bottom: 0).`)
+    }
+    if (!/@media \(max-width: 40rem\)\s*\{\s*\.listing-ask[\s\S]{0,80}--v3-size-display-2/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone listing-ask must use display-2, not display-1 air.`)
+    }
+    if (!/@media \(max-width: 40rem\)[\s\S]*\.listing-face[\s\S]{0,160}padding-top:\s*var\(--v3-space-2xs\)/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone title block must tighten listing-face pad to 2xs.`)
     }
   }
 

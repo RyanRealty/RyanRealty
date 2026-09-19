@@ -48,8 +48,8 @@ describe('listing-fold-density lock', () => {
         '--v3-mosaic-h: 28.75rem;',
       )
       .replace(
-        '.listing-strip {\n  --listing-strip-h: 2.75rem;\n  --listing-strip-thumb: 2.75rem;\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr) auto;\n  align-items: center;\n  gap: 2px;\n  min-height: var(--listing-strip-h);\n  padding: 0;\n  background: var(--v3-navy);\n',
-        '.listing-strip {\n  --listing-strip-h: 2.75rem;\n  --listing-strip-thumb: 2.75rem;\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr) auto;\n  align-items: center;\n  gap: 2px;\n  min-height: var(--listing-strip-h);\n  padding: 0;\n  background: var(--v3-cream);\n',
+        '.listing-strip {\n  --listing-strip-h: 2.75rem;\n  --listing-strip-thumb: 2.75rem;\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr) auto;\n  align-items: center;\n  gap: 0;\n  min-height: var(--listing-strip-h);\n  padding: 0;\n  background: var(--v3-navy);\n',
+        '.listing-strip {\n  --listing-strip-h: 2.75rem;\n  --listing-strip-thumb: 2.75rem;\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr) auto;\n  align-items: center;\n  gap: 0;\n  min-height: var(--listing-strip-h);\n  padding: 0;\n  background: var(--v3-cream);\n',
       )
     const p = listingHeroFoldDensityProblems({
       root: REPO,
@@ -67,6 +67,35 @@ describe('listing-fold-density lock', () => {
       files: { ...live, listingCss: css },
     })
     expect(p.join('\n')).toMatch(/navy|cream bloat|thumbs/i)
+  })
+
+  it('refuses overlay-compact that keeps the 44px tap band', () => {
+    const css = live.breadcrumbCss.replace(
+      /min-height:\s*1\.75rem/,
+      'min-height: var(--v3-tap)',
+    )
+    const p = breadcrumbFoldDensityProblems({
+      root: REPO,
+      files: { ...live, breadcrumbCss: css },
+    })
+    expect(p.join('\n')).toMatch(/1\.75rem|tap band|overlay-compact/i)
+  })
+
+  it('refuses a phone fold that puts display-1 air back on the address', () => {
+    const css = live.listingCss
+      .replace(
+        '.listing-ask {\n    font-size: var(--v3-size-display-2);',
+        '.listing-ask {\n    font-size: var(--v3-size-display-1);',
+      )
+      .replace(
+        '.listing-frame__tabs {\n    left: var(--v3-space-2xs);\n    bottom: 0;',
+        '.listing-frame__tabs {\n    left: var(--v3-space-2xs);\n    bottom: var(--v3-space-sm);',
+      )
+    const p = listingHeroFoldDensityProblems({
+      root: REPO,
+      files: { ...live, listingCss: css },
+    })
+    expect(p.join('\n')).toMatch(/display-2|flush on the strip|listing-ask|Photos\/Map/i)
   })
 
   it('refuses a listing crumb that is not overlay', () => {

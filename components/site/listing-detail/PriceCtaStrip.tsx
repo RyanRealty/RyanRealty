@@ -402,7 +402,7 @@ export function PriceCtaStrip({
       </ButtonGroup>
       </div>
       {factsLine ? (
-        <div className="mt-1.5 text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
+        <div className="listing-face__facts">
           {factsLine}
         </div>
       ) : null}
