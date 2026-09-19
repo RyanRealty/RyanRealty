@@ -95,4 +95,22 @@ describe('V3AlertsStrip first HTML never says 0 houses', () => {
     expect(html).toContain('houses came on the market in Bend')
     expect(html).not.toMatch(/0\s+houses came on the market/)
   })
+
+  it('names each alerts thumb with the listing address, never alt=""', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3AlertsStrip, {
+        ...STRIP_PROPS,
+        listings: [
+          {
+            href: '/homes-for-sale/bend/listing/220227631',
+            photoSrc: 'https://cdn.resize.sparkplatform.com/ore/800x600/true/demo.jpg',
+            title: '2750 NE Great Horned Place',
+          },
+        ],
+      }),
+    )
+    expect(html).toContain('v3-alerts__thumb')
+    expect(html).toContain('alt="2750 NE Great Horned Place"')
+    expect(html).not.toMatch(/v3-alerts__thumb[\s\S]{0,200}alt=""/)
+  })
 })

@@ -1,3 +1,11 @@
+# Current — 2026-09-19 (P1 a11y — listing gallery + Bend/Sell thumbs)
+
+Surface: Cursor cloud, branch `cursor/p1-a11y-gallery-alt-4aa4` tip `310184bc9` off `origin/main` `22b53b94a`. PR #325 — Cos Mini lands after SITE-123. Do not merge. HOLD owner email.
+
+- **PDP.** `listingGalleryFrameAlt` (address + ordinal) on every ListingHero carousel still, filmstrip thumb, and lightbox frame. Live repro 2750 Great Horned: 54 `listing-strip__thumb` + 56 empty-or-missing alts → SSR after: 0 empty on 54 thumbs.
+- **Residual.** Bend `v3-alerts__thumb` and Sell `v3-ledger__thumb` reuse `listingPhotoAlt`. Gate `ci:listing-photo-alt` now scans those four files.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `walkthrough-artifacts`.
+
 # Current — 2026-09-19 (CTA lock — drop sticky, header Work with us)
 
 Surface: Cursor cloud, branch `cursor/cta-lock-drop-sticky-2f27` off `origin/main` `3c0d7c8d3`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-123 not on main (not in seed).

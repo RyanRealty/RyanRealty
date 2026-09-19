@@ -11,6 +11,7 @@
  */
 import type { V3LedgerFigureRow } from '@/components/site/v3'
 import { v3Text } from '@/components/site/v3'
+import { listingPhotoAlt } from '@/components/site/v3/listing-photo-alt'
 import type { PriceDropTile } from '@/lib/data'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
@@ -67,7 +68,14 @@ export function sellListingRows(
       value: v3Text(price),
       ...(city ? { when: v3Text(city) } : {}),
       ...(detail ? { detail: v3Text(detail) } : {}),
-      ...(photoSrc ? { media: { src: photoSrc } } : {}),
+      ...(photoSrc
+        ? {
+            media: {
+              src: photoSrc,
+              alt: listingPhotoAlt({ addressLine: street, cityLine: city }),
+            },
+          }
+        : {}),
     })
   }
   return rows
