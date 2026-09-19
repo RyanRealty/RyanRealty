@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MarketDetail } from '@/lib/data'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
-import { buildCityPeriodFigures, buildLiveFigures, buildPublicPaceFigures } from './geo-figures'
+import { buildCityPeriodFigures, buildExploreItems, buildLiveFigures, buildPublicPaceFigures } from './geo-figures'
 
 function hud(overrides: Partial<LeftoverHudKpis> = {}): LeftoverHudKpis {
   return {
@@ -166,6 +166,40 @@ describe('buildCityPeriodFigures — leftover 12-month overlay', () => {
     expect(labels).not.toContain('this month median sale')
     expect(figures.some((f) => /MoM|month over month/i.test(String(f.label)))).toBe(false)
     expect(figures.some((f) => String(f.label) === 'median sale price')).toBe(false)
+  })
+})
+
+describe('buildExploreItems — SITE-123 Bend AEO cluster', () => {
+  it('pins the three SEO Desk guides on /housing-market/bend and skips them on a community', () => {
+    const bend = buildExploreItems({
+      valuationHrefValue: '/sell',
+      citySlug: 'bend',
+      cityName: 'Bend',
+      communityName: null,
+      footnotes: [],
+      posts: [],
+    })
+    const hrefs = bend.flatMap((item) => ('href' in item && item.href ? [item.href] : []))
+    expect(hrefs).toContain('/blog/is-now-a-good-time-to-buy-in-bend')
+    expect(hrefs).toContain('/blog/cost-of-living-bend-oregon')
+    expect(hrefs).toContain('/blog/property-taxes-deschutes-county')
+    const goodTime = bend.find(
+      (item) => 'href' in item && item.href === '/blog/is-now-a-good-time-to-buy-in-bend',
+    )
+    expect(goodTime && 'label' in goodTime ? goodTime.label : null).toBe(
+      'Is Now a Good Time to Buy in Bend?',
+    )
+
+    const community = buildExploreItems({
+      valuationHrefValue: '/sell',
+      citySlug: 'bend',
+      cityName: 'Bend',
+      communityName: 'Tetherow',
+      footnotes: [],
+      posts: [],
+    })
+    const communityHrefs = community.flatMap((item) => ('href' in item && item.href ? [item.href] : []))
+    expect(communityHrefs).not.toContain('/blog/is-now-a-good-time-to-buy-in-bend')
   })
 })
 

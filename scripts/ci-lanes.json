@@ -32,6 +32,7 @@
     "ci:listing-figure-publish",
     "ci:listing-fold-density",
     "ci:listing-keep-exploring",
+    "ci:aeo-hub-guides",
     "ci:place-craft",
     "ci:map-hierarchy",
     "ci:hierarchy-naming",
@@ -1389,6 +1390,15 @@
       "scripts/lib/taste-evaluate-result.mjs",
       "scripts/lib/taste-receipt.mjs",
       "scripts/lib/taste-table-core.mjs"
+    ],
+    "ci:aeo-hub-guides": [
+      "lib/seo/aeo-hub-guides.ts",
+      "app/buy/_v3/buy-constants.ts",
+      "app/buy/page.tsx",
+      "app/sell/page.tsx",
+      "app/neighborhoods/page.tsx",
+      "app/housing-market/[...slug]/_v3/geo-figures.ts",
+      "scripts/check-aeo-hub-guides.mjs"
     ]
   },
   "nightly": [

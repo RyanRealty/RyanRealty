@@ -42,6 +42,7 @@ import { publishCompleteMonthMedian } from '@/lib/market/publish-complete-month-
 import { YEAR_OVERLAY_READING } from '../../_v3/market-charts'
 import { COMPARISON_CITY_LABELS, COMPARISON_CITY_SLUG } from './geo-constants'
 import { marketReportDoorLinks } from '@/lib/market/report-doors'
+import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 
 const MONTH_TICK = [
   'Jan',
@@ -444,11 +445,24 @@ export function buildExploreItems(args: {
       href: `/housing-market/${args.citySlug}`,
     })
   }
+  const seenBlog = new Set(
+    items.flatMap((item) => ('href' in item && item.href?.startsWith('/blog/') ? [item.href] : [])),
+  )
+  if (args.citySlug === 'bend' && !args.communityName) {
+    for (const guide of aeoHubQuietItems('housing-market/bend')) {
+      if (!guide.href || seenBlog.has(guide.href)) continue
+      seenBlog.add(guide.href)
+      items.push(guide)
+    }
+  }
   for (const post of args.posts) {
     const title = post.title?.trim()
     const slug = post.slug?.trim()
     if (!title || !slug) continue
-    items.push({ label: title, href: `/blog/${slug}` })
+    const href = `/blog/${slug}`
+    if (seenBlog.has(href)) continue
+    seenBlog.add(href)
+    items.push({ label: title, href })
   }
   if (args.footnotes.length > 0) {
     items.push({
