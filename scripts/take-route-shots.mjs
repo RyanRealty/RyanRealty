@@ -591,7 +591,10 @@ async function relayBlockedAssets(page) {
 
 /** Trap 5 — webfonts reflow every heading after first paint. */
 async function waitFonts(page) {
-  await page.evaluate(() => (document.fonts ? document.fonts.ready : Promise.resolve())).catch(() => {})
+  await Promise.race([
+    page.evaluate(() => (document.fonts ? document.fonts.ready : Promise.resolve())),
+    page.waitForTimeout(4000),
+  ]).catch(() => {})
   await page.addStyleTag({ content: HIDE_DEV_CHROME }).catch(() => {})
 }
 

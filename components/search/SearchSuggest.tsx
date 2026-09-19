@@ -59,6 +59,23 @@ export type SuggestItem = {
   postalCode?: string
 }
 
+/** Empty-query morph body — Bend / Redmond / Sisters / Sunriver / Tetherow.
+ *  Click-to-open must show Command rows; the API fetch requires two characters. */
+export const DEFAULT_PLACE_SUGGESTIONS: SuggestItem[] = [
+  { kind: 'city', label: 'Bend', href: cityPagePath('Bend'), city: 'Bend' },
+  { kind: 'city', label: 'Redmond', href: cityPagePath('Redmond'), city: 'Redmond' },
+  { kind: 'city', label: 'Sisters', href: cityPagePath('Sisters'), city: 'Sisters' },
+  { kind: 'city', label: 'Sunriver', href: cityPagePath('Sunriver'), city: 'Sunriver' },
+  {
+    kind: 'subdivision',
+    label: 'Tetherow',
+    sublabel: 'Bend',
+    href: communityPagePath('Bend', 'Tetherow'),
+    city: 'Bend',
+    subdivisionName: 'Tetherow',
+  },
+]
+
 export const SUGGEST_GROUP_LABELS: Record<SuggestKind, string> = {
   address: 'Addresses',
   city: 'Cities',

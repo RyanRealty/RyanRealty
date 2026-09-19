@@ -16,7 +16,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { flattenSuggestions, EMPTY_SUGGESTIONS, SUGGEST_GROUP_LABELS } from '../SearchSuggest'
+import { flattenSuggestions, EMPTY_SUGGESTIONS, SUGGEST_GROUP_LABELS, DEFAULT_PLACE_SUGGESTIONS } from '../SearchSuggest'
 import type { SearchSuggestionsResult } from '@/app/actions/listings'
 
 const FULL_FIXTURE: SearchSuggestionsResult = {
@@ -128,6 +128,18 @@ describe('merge lock — one search component', () => {
     const src = readFileSync(join(root, 'components/search/SearchFilters.tsx'), 'utf8')
     expect(src).toContain("from '@/components/search/SearchSuggest'")
     expect(src).toContain('<SearchCommandList')
+    expect(src).toContain('DEFAULT_PLACE_SUGGESTIONS')
+    expect(src).toMatch(/const morphOpen = locationOpen/)
+  })
+
+  it('empty-query morph seeds the Central Oregon places the click-open shot must show', () => {
+    expect(DEFAULT_PLACE_SUGGESTIONS.map((row) => row.label)).toEqual([
+      'Bend',
+      'Redmond',
+      'Sisters',
+      'Sunriver',
+      'Tetherow',
+    ])
   })
 
   // RE-EXPRESSED 2026-08-27. The chrome has NO search field, deliberately, and

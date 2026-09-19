@@ -10,6 +10,7 @@ import {
 } from "motion/react";
 import {
 	type KeyboardEvent as ReactKeyboardEvent,
+	type ReactNode,
 	useCallback,
 	useEffect,
 	useId,
@@ -59,6 +60,8 @@ export interface MorphingSearchProps {
 	onOpenChange?: (open: boolean) => void;
 	onQueryChange?: (query: string) => void;
 	onSelect?: (item: MorphingSearchItem) => void;
+	/** Optional list body (search uses shadcn Command). Default is the catalog rows. */
+	results?: ReactNode;
 	className?: string;
 	/**
 	 * Classes for the portaled overlay layer (the click catcher, the morph
@@ -98,6 +101,7 @@ export function MorphingSearch({
 	onOpenChange,
 	onQueryChange,
 	onSelect,
+	results,
 	className,
 	overlayClassName,
 }: MorphingSearchProps) {
@@ -565,7 +569,9 @@ export function MorphingSearch({
 											maxHeight: resultsHeight,
 										}}
 									>
-										{filteredItems.length > 0 ? (
+										{results != null ? (
+											results
+										) : filteredItems.length > 0 ? (
 											filteredItems.map((item, index) => {
 												const Icon = item.icon;
 												const active = index === activeIndex;

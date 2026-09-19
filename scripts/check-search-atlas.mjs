@@ -69,6 +69,8 @@ must(files.css, /\.srch-ppsf-glance/, 'glance is painted, not mute')
 must(files.css, /button\.srch-chip--key \{[\s\S]*box-shadow: inset/, 'key chips have a visible hierarchy beyond font-weight')
 
 must(files.filters, /<SearchCommandList/, 'morph results are Command, not a plain list')
+must(files.filters, /const morphOpen = locationOpen/, 'click opens the morph without waiting for a typed query')
+must(files.filters, /DEFAULT_PLACE_SUGGESTIONS/, 'empty query seeds Bend/Redmond/Sisters/Sunriver/Tetherow')
 must(files.results, /<SearchEmptyState/, 'empty/degraded use official Empty')
 must(files.results, /<SearchPagination/, 'list view has crawlable pagination')
 must(files.catalog, /from '@\/components\/ui\/command'/, 'command installed on the route _v3 set')

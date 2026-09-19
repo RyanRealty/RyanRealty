@@ -13,6 +13,7 @@ import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import { buildFilterApplyPayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
+  DEFAULT_PLACE_SUGGESTIONS,
   flattenSuggestions,
   useSearchSuggest,
   type SuggestItem,
@@ -343,8 +344,9 @@ export default function SearchFilters({
   const [highlight, setHighlight] = useState(-1)
   const locationInputRef = useRef<HTMLInputElement>(null)
   const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
-  const suggestItems = flattenSuggestions(suggestions)
-  const morphOpen = locationOpen && (suggestItems.length > 0 || suggestLoading)
+  const fetchedItems = flattenSuggestions(suggestions)
+  const suggestItems = fetchedItems.length > 0 ? fetchedItems : DEFAULT_PLACE_SUGGESTIONS
+  const morphOpen = locationOpen
 
   const urlPrice = useMemo(
     () => urlToRange(initialFilters.minPrice, initialFilters.maxPrice, V3_PRICE_STOPS),

@@ -2602,7 +2602,7 @@
         }
       ],
       "demoStates": [
-        "search-open=.srch-morph input[type=search]!click",
+        "search-open=.srch-morph [aria-haspopup=dialog]!click",
         "filters-open=[aria-label='Open all filters']!click"
       ]
     },

@@ -73,6 +73,8 @@ export function V3MorphSearch({
             shortcut="f"
             emptyMessage="No places match that."
             className="v3-morph-search__catalog"
+            overlayClassName="v3-morph-overlay-root"
+            results={results}
           />
         </div>
       ) : null}
