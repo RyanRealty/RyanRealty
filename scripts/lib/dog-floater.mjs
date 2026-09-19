@@ -1,10 +1,11 @@
 /**
  * dog-floater.mjs — SITE-134 floating dog CTA lock.
  *
- * Matt 2026-09-19: sitewide navy circle with the logo dog head. Click opens
- * a five-door menu. Replaces sticky Call / Text / Work-with-us bars.
- * Header Work with us stays. Tip Ready --ship and ci:dog-floater refuse
- * a missing floater or a returned phone dock.
+ * Matt 2026-09-19 + Critiquito: sitewide circle with the INNER dog-head
+ * crop (not the wordmark seal). Click opens five plain doors. Replaces
+ * sticky Call / Text / Work-with-us bars. Header Work with us stays.
+ * Tip Ready --ship and ci:dog-floater refuse a missing floater, a seal
+ * FAB, or a returned phone dock.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
