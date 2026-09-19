@@ -19,7 +19,7 @@ slug lives in one seed file. Author byline: Matt (`2fda6811-2edf-49e3-b3ca-33e10
 | 4 | How to sell | `how-to-sell-your-home-bend` | published, unsourced cost figures |
 | 5 | Cost to sell | `cost-to-sell-house-bend-oregon` | new |
 | 6 | First-time buyer | `first-time-home-buyer-guide-central-oregon` | published |
-| 7 | Buyer closing costs | `understanding-closing-costs-oregon` | draft |
+| 7 | Buyer closing costs | `closing-costs-buyers-bend-oregon` (was `understanding-closing-costs-oregon`) | published SITE-124 |
 | 8 | Westside vs eastside | `westside-vs-eastside-bend` | new |
 | 9 | Good time to buy | `is-now-a-good-time-to-buy-in-bend` | new |
 | 10 | How to price | `how-to-price-your-bend-home` | new |

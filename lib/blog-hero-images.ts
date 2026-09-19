@@ -112,6 +112,8 @@ export const BLOG_HERO_BY_SLUG: Record<string, string> = {
   'vacation-rental-rules-bend-deschutes': '/images/blog/vacation-rental-rules-bend-deschutes.jpg',
   // 46a56bdc · central-oregon · subdivision curved streets aerial
   'what-happens-between-offer-accepted-and-closing': '/images/blog/what-happens-between-offer-accepted-and-closing.jpg',
+  // same owned derivative as the offer-to-close guide (SITE-124 slug)
+  'closing-costs-buyers-bend-oregon': '/images/blog/what-happens-between-offer-accepted-and-closing.jpg',
   // 4a8123ab · bend, downtown-bend · cafe interior
   'working-remote-central-oregon': '/images/blog/working-remote-central-oregon.jpg',
 }

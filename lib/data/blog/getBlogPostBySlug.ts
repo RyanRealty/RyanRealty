@@ -13,6 +13,11 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { resolveBlogHeroImage } from '@/lib/blog-hero-images'
+import {
+  BUYER_CLOSING_COSTS_POST,
+  BUYER_CLOSING_COSTS_SLUG,
+  BUYER_CLOSING_COSTS_STABLE_ID,
+} from '@/lib/blog/buyer-closing-costs'
 
 export type BlogPostFull = {
   id: string
@@ -34,6 +39,30 @@ export type BlogPostFull = {
   author_title: string | null
 }
 
+function seedFallback(slug: string): BlogPostFull | null {
+  if (slug !== BUYER_CLOSING_COSTS_SLUG) return null
+  const post = BUYER_CLOSING_COSTS_POST
+  return {
+    id: BUYER_CLOSING_COSTS_STABLE_ID,
+    title: post.title,
+    slug: post.slug,
+    content: post.content,
+    excerpt: post.excerpt,
+    category: post.category,
+    tags: post.tags,
+    hero_image_url: resolveBlogHeroImage(post.slug, post.category, post.heroImageUrl),
+    published_at: post.publishedAt,
+    updated_at: post.publishedAt,
+    author_broker_id: post.authorBrokerId,
+    seo_title: post.seoTitle,
+    seo_description: post.seoDescription,
+    author_name: 'Matt Ryan',
+    author_slug: 'matt-ryan',
+    author_photo_url: null,
+    author_title: 'Principal Broker',
+  }
+}
+
 type PostRow = {
   id: string
   title: string
@@ -52,7 +81,7 @@ type PostRow = {
 
 async function _getBlogPostBySlugUncached(slug: string): Promise<BlogPostFull | null> {
   const sb = supabaseAnon()
-  if (!sb) return null
+  if (!sb) return seedFallback(slug)
 
   const { data: row, error } = await sb
     .from('blog_posts')
@@ -62,7 +91,7 @@ async function _getBlogPostBySlugUncached(slug: string): Promise<BlogPostFull | 
     .maybeSingle()
 
   if (error) throw new Error(`[getBlogPostBySlug] ${error.message}`)
-  if (!row) return null // genuine miss — post does not exist or is not published
+  if (!row) return seedFallback(slug)
 
   const post = row as PostRow
   let author_name: string | null = null
@@ -101,7 +130,7 @@ export const getBlogPostBySlug = makeResilientCached(
   // v3 (design-audit #146): adds author_title so the "About the author" box
   // can say who this broker actually is instead of one hardcoded generic
   // sentence identical on every post — evicts v2 rows missing the field.
-  ['blog-post-by-slug-v3'],
+  ['blog-post-by-slug-v4'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
   null,
 )
