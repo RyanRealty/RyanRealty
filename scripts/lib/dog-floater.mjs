@@ -21,7 +21,8 @@ const PATHS = Object.freeze({
   dock: 'components/site/v3/V3PhoneDock.client.tsx',
   stickyCss: 'components/site/v3/V3StickyAsk.css',
   listingPage: 'app/listing/[listingKey]/page.tsx',
-  asset: 'public/brand/jax-white.png',
+  assetNavy: 'public/brand/jax-head-navy.png',
+  assetCream: 'public/brand/jax-head-cream.png',
 })
 
 const DOOR_LABELS = [
@@ -85,8 +86,17 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!/sms:\$\{CONTACT\.phoneDirectTel\}/.test(floater)) {
     p.push(`${PATHS.floater}: Text us door must be sms:\${CONTACT.phoneDirectTel}.`)
   }
-  if (!floater.includes('/brand/jax-white.png')) {
-    p.push(`${PATHS.floater}: must paint the inner dog head from /brand/jax-white.png.`)
+  if (!floater.includes('/brand/jax-head-navy.png') || !floater.includes('/brand/jax-head-cream.png')) {
+    p.push(`${PATHS.floater}: must paint the inner dog-head crop (jax-head-navy / jax-head-cream), not the wordmark seal.`)
+  }
+  if (floater.includes('/brand/jax-white.png') || floater.includes('/brand/jax-navy.png')) {
+    p.push(`${PATHS.floater}: FAB must be the inner dog-head circle, not the full RYAN REALTY seal.`)
+  }
+  if (!floater.includes('data-v3-dog-head="inner"')) {
+    p.push(`${PATHS.floater}: trigger must mark the inner-head crop (data-v3-dog-head=inner).`)
+  }
+  if (/woof|How can we help|get a take/i.test(floater)) {
+    p.push(`${PATHS.floater}: five plain items only — no pun / woof copy.`)
   }
 
   if (css == null) {
@@ -98,8 +108,14 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     if (!/right:\s*calc\(var\(--v3-space-md\) \+ env\(safe-area-inset-right/.test(css)) {
       p.push(`${PATHS.css}: floater must clear the iPhone home-indicator / notch side.`)
     }
-    if (!/@keyframes v3-dog-bob/.test(css) || !/@keyframes v3-dog-blink/.test(css)) {
-      p.push(`${PATHS.css}: dog head must bob/tilt/blink in CSS (no video).`)
+    if (!/@keyframes v3-dog-tilt/.test(css)) {
+      p.push(`${PATHS.css}: dog head must quiet-tilt in CSS (≤4s + pause). No video.`)
+    }
+    if (!/@keyframes v3-dog-menu-in/.test(css) || !/180ms/.test(css)) {
+      p.push(`${PATHS.css}: menu must rise+fade in 150–220ms with no bounce.`)
+    }
+    if (/v3-dog-bob|v3-dog-blink|v3-dog-door-in/.test(css)) {
+      p.push(`${PATHS.css}: Critiquito idle is one tilt, not bob/blink/stagger.`)
     }
     if (!/prefers-reduced-motion/.test(css)) {
       p.push(`${PATHS.css}: reduced-motion must still the dog.`)
@@ -115,8 +131,11 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     }
   }
 
-  if (!existsSync(join(root, PATHS.asset))) {
-    p.push(`${PATHS.asset}: missing dog-head asset.`)
+  if (!existsSync(join(root, PATHS.assetNavy))) {
+    p.push(`${PATHS.assetNavy}: missing inner navy dog-head crop.`)
+  }
+  if (!existsSync(join(root, PATHS.assetCream))) {
+    p.push(`${PATHS.assetCream}: missing inner cream dog-head crop.`)
   }
 
   if (barrel == null || !barrel.includes("from './V3DogFloater.client'")) {

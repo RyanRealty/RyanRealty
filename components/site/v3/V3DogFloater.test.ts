@@ -32,9 +32,11 @@ describe('V3DogFloater · SITE-134', () => {
   it('is a named circle with CSS dog motion and a Dialog menu', () => {
     expect(SRC).toContain('Open Ryan Realty menu')
     expect(SRC).toContain("from '@/components/ui/dialog'")
-    expect(SRC).toContain('/brand/jax-white.png')
+    expect(SRC).toContain('/brand/jax-head-navy.png')
+    expect(SRC).toContain('/brand/jax-head-cream.png')
+    expect(SRC).toContain('data-v3-dog-head="inner"')
     expect(CSS).toMatch(/border-radius:\s*50%/)
-    expect(CSS).toContain('@keyframes v3-dog-bob')
+    expect(CSS).toContain('@keyframes v3-dog-tilt')
     expect(CSS).toContain('prefers-reduced-motion')
     expect(CSS).toContain('safe-area-inset-bottom')
     expect(CSS).toMatch(/z-index:\s*95/)

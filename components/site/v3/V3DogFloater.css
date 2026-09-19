@@ -1,4 +1,6 @@
-/* SITE-134 — floating dog circle + big menu. Tokens only. */
+/* SITE-134 — floating dog-head circle + five-door sheet. Tokens only.
+   Critiquito 2026-09-19: inner head (not the wordmark seal). One quiet
+   tilt ≤4s + pause. Sheet 150–220ms rise+fade, no bounce. */
 
 .v3-dog-floater {
   position: fixed;
@@ -11,9 +13,14 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  cursor: pointer;
+}
+
+.v3-dog-floater--on-dark {
   background: var(--v3-navy);
   color: var(--v3-cream);
-  cursor: pointer;
 }
 
 body:has([data-cookie-notice='chip']) .v3-dog-floater {
@@ -37,55 +44,36 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   height: 100%;
   overflow: hidden;
   border-radius: 50%;
-  animation: v3-dog-bob 2.8s var(--v3-ease-out) infinite;
+  animation: v3-dog-tilt 4s var(--v3-ease-out) infinite;
 }
 
 .v3-dog-floater__dog {
   display: block;
-  width: 3.15rem;
-  height: auto;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   pointer-events: none;
 }
 
-.v3-dog-floater__lid {
-  position: absolute;
-  left: 18%;
-  right: 18%;
-  top: 38%;
-  height: 0.28rem;
-  background: var(--v3-navy);
-  transform: scaleY(0);
-  transform-origin: top;
-  animation: v3-dog-blink 5.2s var(--v3-ease-out) infinite;
-}
-
-@keyframes v3-dog-bob {
+@keyframes v3-dog-tilt {
   0%,
+  70%,
   100% {
-    transform: translateY(0) rotate(-3deg);
+    transform: rotate(0deg);
   }
-  50% {
-    transform: translateY(-0.22rem) rotate(4deg);
+  78% {
+    transform: rotate(-7deg);
   }
-}
-
-@keyframes v3-dog-blink {
-  0%,
-  88%,
-  94%,
-  100% {
-    transform: scaleY(0);
+  86% {
+    transform: rotate(5deg);
   }
-  90%,
-  92% {
-    transform: scaleY(1);
+  94% {
+    transform: rotate(0deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .v3-dog-floater__head,
-  .v3-dog-floater__lid {
+  .v3-dog-floater__head {
     animation: none;
   }
 }
@@ -113,6 +101,7 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   border-radius: 0;
   background: var(--v3-cream);
   color: var(--v3-navy);
+  animation: v3-dog-menu-in 180ms var(--v3-ease-out);
 }
 
 @media (max-width: 40rem) {
@@ -126,22 +115,21 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   }
 }
 
-.v3-dog-floater-menu__title {
-  margin: 0;
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-display-2);
-  font-weight: 400;
-  font-synthesis: none;
-  line-height: var(--v3-leading-display);
-  letter-spacing: var(--v3-track-display);
-  color: var(--v3-navy);
+@keyframes v3-dog-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.v3-dog-floater-menu__line {
-  margin: 0;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body);
-  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='dialog-content'].v3-dog-floater-menu {
+    animation: none;
+  }
 }
 
 .v3-dog-floater-menu__doors {
@@ -162,20 +150,6 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   font-weight: 400;
   font-synthesis: none;
   text-decoration: none;
-  animation: v3-dog-door-in var(--v3-dur-enter, 0.3s) var(--v3-ease-out) both;
-}
-
-.v3-dog-floater-menu__door:nth-child(2) {
-  animation-delay: 0.04s;
-}
-.v3-dog-floater-menu__door:nth-child(3) {
-  animation-delay: 0.08s;
-}
-.v3-dog-floater-menu__door:nth-child(4) {
-  animation-delay: 0.12s;
-}
-.v3-dog-floater-menu__door:nth-child(5) {
-  animation-delay: 0.16s;
 }
 
 .v3-dog-floater-menu__door:hover,
@@ -187,23 +161,6 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
 .v3-dog-floater-menu__door:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
-}
-
-@keyframes v3-dog-door-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .v3-dog-floater-menu__door {
-    animation: none;
-  }
 }
 
 .v3-dog-floater-menu__close {
