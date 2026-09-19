@@ -4,6 +4,17 @@
  * built in 20260522144509_listing_tile_mv.sql and carried through every MV
  * rebuild since).
  *
+ * Feed (Matt P0 / Cos 2026-09-19 — Delaware 2018 dead-stock):
+ *   GET /api/search/suggestions?q=…
+ *     → getSearchSuggestions (app/actions/listings.ts)
+ *     → this function
+ *   Table: public.listing_tile_mv_src (service-client read; the public
+ *   listing_tile_mv name is the coming-soon-lockdown security_barrier view
+ *   and blocks GIN pushdown).
+ *   Index: listing_tile_mv_search GIN(search_vector). Numeric prefixes
+ *   ("3480") use street_number / postal_code btree LIKE instead (see
+ *   20260722223000) because '3480:*' is pathological on the GIN.
+ *
  * WHY: the previous suggestions path ran a five-column ILIKE OR
  * (`street_number.ilike.%q% , street_name.ilike... , city... , subdivision... ,
  * postal_code...`) against the ~593K-row MV — a full scan per keystroke that
@@ -15,17 +26,19 @@
  * "Awbrey Bu" matches "Awbrey Butte"; "3480" matches street number 3480.
  * The `english` config stems both sides identically ("meadows" -> "meadow:*").
  *
- * Coming Soon is excluded (never public — CLAUDE.md locked rule); the MV
- * itself already excludes internet-display opt-outs and non-IDX listings
- * (20260627150000_idx_internet_display_optout.sql), so ODS/IDX compliance is
- * inherited from the same read path every listing card uses.
+ * On-market only. The MV holds one row per MLS listing ever seen, so an
+ * unscoped GIN prefix on "delaware" returned Closed 2018 Avenue addresses as
+ * if they were live. Typeahead address hits must be current inventory
+ * (PUBLIC_ON_MARKET_STATUSES = Active / Active Under Contract / Pending).
+ * Coming Soon is already outside that set (never public). IDX opt-outs stay
+ * excluded by the MV definition (20260627150000).
  *
  * Fail-soft: returns [] on any Supabase error — suggestions are a progressive
  * enhancement, never worth a 500.
  */
 
 import { createServiceClient } from '@/lib/data/client'
-import { COMING_SOON_STATUS, MV_NOT_COMING_SOON_OR_PREDICATE } from '@/lib/listing-status-public'
+import { PUBLIC_ON_MARKET_STATUSES } from '@/lib/listing-status-public'
 
 export type SuggestTileRow = {
   listNumber: string | null
@@ -90,16 +103,14 @@ export async function searchListingSuggestTiles(
   // blocks pushdown of non-leakproof operators (LIKE, tsvector @@), so every
   // suggestion query through the view seq-scanned all ~594K rows (~1.2s,
   // EXPLAIN-verified 2026-07-22). Reading src engages the GIN + prefix btree
-  // indexes; the view's exact predicate is mirrored inline below.
+  // indexes; on-market status is applied here so the GIN cannot return
+  // Closed 2018 stock as a live address hit.
   const sb = createServiceClient()
   if (!sb) return null
   const trimmed = (query ?? '').trim()
   const cappedLimit = Math.min(Math.max(limit, 1), 500)
   const cols =
     'list_number, listing_key, street_number, street_name, street_suffix, city, postal_code, subdivision_name, boundary_city, boundary_neighborhood'
-  // Lockdown-view predicate mirror — central policy constant, kept in lockstep
-  // with migration 20260721164833 (G-COMINGSOON).
-  const comingSoonMirror = MV_NOT_COMING_SOON_OR_PREDICATE
 
   // Numeric fast path — a purely numeric prefix ("3480") is pathological for
   // the tsvector GIN index (every address number shares the token prefix;
@@ -111,8 +122,7 @@ export async function searchListingSuggestTiles(
     const { data, error } = await sb
       .from('listing_tile_mv_src')
       .select(cols)
-      .neq('standard_status', COMING_SOON_STATUS)
-      .or(comingSoonMirror)
+      .in('standard_status', PUBLIC_ON_MARKET_STATUSES)
       .or(`street_number.like.${trimmed}%,postal_code.like.${trimmed}%`)
       .limit(cappedLimit)
     if (error) {
@@ -128,10 +138,9 @@ export async function searchListingSuggestTiles(
   const { data, error } = await sb
     .from('listing_tile_mv_src')
     .select(cols)
-    // Pre-marketing listings never render publicly (central policy constant
-    // plus the lockdown-view predicate mirror — belt-and-suspenders).
-    .neq('standard_status', COMING_SOON_STATUS)
-    .or(comingSoonMirror)
+    // Drop Closed / Expired / Withdrawn / Canceled / Coming Soon so a street
+    // prefix cannot surface 2018 sold stock as a live address hit.
+    .in('standard_status', PUBLIC_ON_MARKET_STATUSES)
     .textSearch('search_vector', tsquery, { config: 'english' })
     // NO order-by. ORDER BY modified_at + LIMIT flips the planner off the GIN
     // index onto a per-row fts recheck (measured 2026-07-22: ~1.9s extra, and

@@ -20,4 +20,10 @@ describe('getSearchSuggestions prefix contract', () => {
       "if (!postalCode.includes(qLower) && !(city ?? '').toLowerCase().includes(qLower)) continue",
     )
   })
+
+  it('address tiles come from the on-market GIN reader (Delaware 2018 class)', () => {
+    expect(src).toContain('searchListingSuggestTiles')
+    expect(src).toContain('PUBLIC_ON_MARKET_STATUSES')
+    expect(src).toContain('listing_tile_mv_src.search_vector')
+  })
 })

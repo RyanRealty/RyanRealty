@@ -1,3 +1,13 @@
+# Current — 2026-09-19 (search typeahead — drop 2018 dead stock)
+
+Surface: Cursor cloud `bc-2e02ecf3-d804-5e7c-b8e5-bec7a17234bb`, branch `cursor/gate-stale-search-typeahead-34bb` off `origin/main` `381997f27`. PR only — Cos Mini lands. Do not merge. HOLD owner email. City→place-page nav left alone (Matt never mind).
+
+- **Repro.** Type `Delaware` in site search. Typeahead listed 1020 / 1042 / 105 / 114 / 115 / 124 Delaware Avenue as live address hits. 1020 is Closed Nov 1998; 124 is Closed Nov 2018.
+- **Index.** `GET /api/search/suggestions` → `getSearchSuggestions` → `searchListingSuggestTiles` on `listing_tile_mv_src.search_vector` via GIN `listing_tile_mv_search`. MV is one row per MLS listing ever seen. Query only excluded Coming Soon.
+- **Gate.** Both numeric + prefix paths `.in('standard_status', PUBLIC_ON_MARKET_STATUSES)` (Active / AUC / Pending). Ungated Delaware prefix: 80 tiles (79 Closed, 1 Expired). Gated: 4 Active (114 + 942 Bend, 3126 + 4014 Klamath Falls). Search grid already defaults to `status: active`.
+- **Not this tip.** City / neighborhood / community typeahead still goes to SERP.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `walkthrough-artifacts`.
+
 # Current — 2026-09-18 (SITE-128 Tip Ready — Bend @375 ring fit/scale)
 
 Surface: Cursor cloud `bc-08e057ba-ce1e-5c77-89d4-11efefb6ab64`, branch `cursor/site-128-bend-ring-fit-ab64` off `origin/main` `1a5ea269b`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-128 claim stays public-look.
