@@ -773,10 +773,15 @@
 /* STRIP (SITE-125). Compact ATF band: scannable guide doors stay in the flow,
    questions stay native disclosures, and the rail does not stick. Tight pad so
    photographed house rails still enter the first 1440 viewport. Hairlines only
-   — no cream pills, no second card kit. */
+   — no cream pills, no second card kit.
+
+   LOOK REMATCH (40c4a9a3b land): a single 22rem door stack put Sell / Market
+   and the house rails under the 1440×900 fold (only Buy + 3 FAQ cleared).
+   Wide windows put Buy | Sell | Market beside the FAQ so those doors and the
+   first rail stay in the first viewport. Phone stays one column. */
 .v3.v3-answers.v3-answers--strip {
   max-width: var(--v3-measure);
-  padding: var(--v3-space-sm) var(--v3-gutter);
+  padding: var(--v3-space-2xs) var(--v3-gutter) var(--v3-space-xs);
 }
 
 * + .v3.v3-answers.v3-answers--strip {
@@ -784,15 +789,20 @@
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__grid {
-  gap: var(--v3-space-sm);
+  gap: var(--v3-space-2xs);
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__rail {
-  gap: var(--v3-space-sm);
+  gap: var(--v3-space-2xs);
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__head {
+  gap: var(--v3-space-3xs);
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__heading {
-  font-size: var(--v3-size-display-2);
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-heading);
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__note {
@@ -800,7 +810,7 @@
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__q {
-  padding: var(--v3-space-2xs) 0;
+  padding: var(--v3-space-3xs) 0;
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__q-text {
@@ -811,7 +821,12 @@
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__door {
-  padding: var(--v3-space-2xs) 0;
+  min-width: 0;
+  padding: var(--v3-space-3xs) 0;
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__door-label {
+  overflow-wrap: anywhere;
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__door-group + .v3-answers__door-group {
@@ -828,14 +843,51 @@
   }
 }
 
+/* Tablet+: Buy / Sell / Market as peer columns so Sell and Market are not
+   stacked under Buy. Phone stays a single scannable stack. */
+@media (min-width: 40rem) {
+  .v3.v3-answers.v3-answers--strip .v3-answers__strip-doors {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--v3-space-md);
+    row-gap: var(--v3-space-xs);
+  }
+
+  .v3.v3-answers.v3-answers--strip .v3-answers__door-group + .v3-answers__door-group {
+    margin-top: 0;
+  }
+}
+
 @media (min-width: 64rem) {
   .v3.v3-answers.v3-answers--strip .v3-answers__grid {
-    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
-    column-gap: var(--v3-space-xl);
+    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(15rem, 1.1fr);
+    column-gap: var(--v3-space-md);
+    row-gap: var(--v3-space-2xs);
+    align-items: start;
   }
 
   .v3.v3-answers.v3-answers--strip .v3-answers__rail {
+    display: contents;
     position: static;
+  }
+
+  .v3.v3-answers.v3-answers--strip .v3-answers__head {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--v3-space-sm);
+  }
+
+  .v3.v3-answers.v3-answers--strip .v3-answers__strip-doors {
+    grid-column: 1 / 4;
+    grid-row: 2;
+  }
+
+  .v3.v3-answers.v3-answers--strip .v3-answers__list {
+    grid-column: 4;
+    grid-row: 2;
   }
 
   .v3.v3-answers.v3-answers--strip .v3-answers__doors {

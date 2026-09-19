@@ -36,6 +36,8 @@
   display: flex;
   align-items: center;
   gap: var(--v3-space-xs);
+  box-sizing: border-box;
+  width: 100%;
   max-width: var(--v3-measure);
   height: var(--v3-chrome-h);
   min-height: var(--v3-chrome-h);
@@ -583,6 +585,43 @@
   }
 }
 
+/* 375 LOOK REMATCH (40c4a9a3b land): Menu clipped, document scrollWidth 391.
+   Logo + Search + Work with us + Sign in + Menu plus the 1.25rem gutter ran
+   16px past the phone viewport. Tighten the phone bar so Menu stays on the
+   canvas; clip is the backstop, not the hide. Work with us stays visible. */
+@media (max-width: 39.99rem) {
+  .v3.v3-chrome {
+    overflow-x: clip;
+  }
+
+  .v3-chrome__bar {
+    gap: var(--v3-space-3xs);
+    padding: 0 var(--v3-space-sm);
+    overflow-x: clip;
+  }
+
+  .v3-chrome__actions {
+    gap: 0;
+    min-width: 0;
+  }
+
+  .v3.v3-chrome .v3-chrome__work {
+    flex-shrink: 1;
+    min-width: 0;
+    padding: 0 var(--v3-space-3xs);
+    overflow: hidden;
+  }
+
+  .v3-chrome__signin {
+    padding: 0 var(--v3-space-3xs);
+  }
+
+  .v3-chrome__menu-btn {
+    overflow: hidden;
+    padding: 0;
+  }
+}
+
 /* Menu and close ------------------------------------------------------------
    Icon-only at 390 and labelled from 40rem up. The word is never display:none:
    it is the control's accessible name, so it moves out of sight and stays in
@@ -593,6 +632,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--v3-space-3xs);
+  position: relative;
+  flex: none;
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
   padding: 0 var(--v3-space-2xs);
