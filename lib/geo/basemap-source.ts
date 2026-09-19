@@ -18,6 +18,8 @@ import { outerRings, type Bbox } from './project-svg'
 import { recordFrame } from './record-frame'
 import { streetsForFrame } from './basemap-streets'
 
+export type { Basemap } from './basemap'
+
 const TIERS = { region: region as Basemap, near: near as Basemap }
 
 export type BasemapTier = keyof typeof TIERS

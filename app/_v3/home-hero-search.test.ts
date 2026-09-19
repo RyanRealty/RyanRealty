@@ -465,6 +465,8 @@ describe('homepage house rails use SplitCardMedia cards', () => {
   // carries the same live active count /cities publishes per city.
   it('browses places as two labelled runs, with the live count on the towns', () => {
     expect(PAGE).toMatch(/<HomeBrowsePlaces[^>]*runs=\{placeRuns\}/)
+    expect(PAGE).toContain('loadHomeNewConRun')
+    expect(PAGE).toContain('...(newConRun ? [newConRun] : [])')
     expect(PAGE).toContain("name: 'Towns'")
     expect(PAGE).toContain("name: 'Resorts and communities'")
     expect(PAGE).toContain("unit: 'houses for sale'")

@@ -99,14 +99,19 @@ export function bendNewConCommunityHref(subdivision: string): string | null {
   return COMMUNITY_PAGE_BY_SLUG[slugify(subdivision)] ?? null
 }
 
-export const BEND_NEW_CONSTRUCTION_TITLE = 'New construction in Bend'
+/** Document title — one of the SITE-132 SEO brief options. Layout adds the brand suffix. */
+export const BEND_NEW_CONSTRUCTION_TITLE = 'New Homes in Bend — Builder Savings'
+/** Visible H1 from the SITE-132 SEO brief. */
+export const BEND_NEW_CONSTRUCTION_H1 =
+  'New homes in Bend — inventory and builder savings'
 export const BEND_NEW_CONSTRUCTION_DESCRIPTION =
-  'Bend new-construction communities, list-price bands, and published builder financing as of 2026-09-16. Not a loan offer. Verify terms with the builder and lender.'
+  'New homes in Bend: live Active inventory plus published builder savings. Snapshot researched 2026-09-16. Not a loan offer. Verify every term with the builder and lender.'
 
 export const BEND_NEW_CONSTRUCTION_KEYWORDS = [
   'Bend new construction',
   'new homes Bend Oregon',
-  'builder financing Bend',
+  'builder savings Bend',
+  'rate buydown closing cost credit',
   'Pahlisch Easton Petrosa Collier',
   'D.R. Horton Stevens Ranch',
 ] as const
@@ -800,18 +805,189 @@ export const BEND_NEW_CON_FINANCING: readonly NewConFinancingOffer[] = [
 export const BEND_NEW_CON_DISCLAIMER = {
   title: 'Not a loan offer',
   description: [
-    'Researched 2026-09-16 PT. These are published builder and MLS figures from that day, not a quote and not a commitment to lend.',
+    'Researched 2026-09-16 PT. Builder terms are published figures from that day, not a quote and not a commitment to lend.',
+    'Live Active counts on this page come from the listings DAL and move with MLS. Snapshot bands stay on the 2026-09-16 pull.',
     'Rates, credits, deadlines, and inventory change. Verify every term with the onsite sales team and the lender named in the purchase agreement before you rely on it.',
   ],
 } as const
 
 export const BEND_NEW_CON_INVENTORY_SOURCE =
-  'Ryan Realty listings search DAL, 2026-09-16 PT. City = Bend, Active, new_construction_yn. List-price bands ignore ListPrice under $10,000. Builders are from sampled listing details, not every row. Coming Soon is not on the public path. A See N homes figure is the live Active new-construction match for that row’s exclusive search, not the 2026-09-16 snapshot count.'
+  'Ryan Realty listings search DAL. Snapshot bands: 2026-09-16 PT, City = Bend, Active, new_construction_yn. List-price bands ignore ListPrice under $10,000. Builders are from sampled listing details, not every row. Coming Soon is not on the public path. A See N homes figure is the live Active new-construction match for that row’s exclusive search, not the 2026-09-16 snapshot count.'
 
 export const BEND_NEW_CON_FINANCING_SOURCE =
   'Public builder pages and the D.R. Horton Stevens Ranch flyer, transcribed 2026-09-16 PT. Not a rate sheet and not a loan quote.'
+
+export const BEND_NEW_CON_MAP_SOURCE =
+  'Zone outlines: recorded subdivision polygons from public.boundaries via community_subdivisions / boundary_geojson. Dots: live Active Bend listings with new_construction_yn and a coordinate from listing_search_mv. Names without a recorded plat are omitted from the map, not invented.'
 
 export function flagLabel(flags: readonly NewConFlag[]): string | null {
   if (flags.length === 0) return null
   return flags.join(' · ')
 }
+
+export const BEND_NEW_CON_STATUS_LEGEND: readonly {
+  flag: NewConFlag
+  meaning: string
+}[] = [
+  {
+    flag: 'UNVERIFIED',
+    meaning: 'Marketed on a banner or homepage, not on the legal offer page we transcribed.',
+  },
+  {
+    flag: 'STALE',
+    meaning: 'The published window may already have closed. Confirm before you rely on it.',
+  },
+  {
+    flag: 'NOT DISCLOSED',
+    meaning: 'The builder page names a program and withholds the rate, APR, or dollar amount.',
+  },
+  {
+    flag: 'CONFLICT',
+    meaning: 'Two official sources for the same builder disagree. We do not merge them.',
+  },
+]
+
+export type NewConSavingsChipId = 'rate' | 'closing' | 'dpa' | 'options' | 'other'
+
+export type NewConSavingsChip = {
+  id: NewConSavingsChipId
+  label: string
+  /** Existing financing card ids — chips only point here. No invented dollars. */
+  offerIds: readonly NewConFinancingId[]
+  /** Plain scan line. Dollars appear only when a named card already published them. */
+  scan: string
+}
+
+/**
+ * Scannable savings map — SITE-132 SEO brief.
+ * Each chip anchors to an existing builder card. Do not add a dollar that
+ * is not already on that card.
+ */
+export const BEND_NEW_CON_SAVINGS_CHIPS: readonly NewConSavingsChip[] = [
+  {
+    id: 'rate',
+    label: 'Rate / buydown',
+    offerIds: ['horton-stevens-ranch-flyer', 'lennar-fall-super-sale', 'pahlisch-golden-key', 'hayden-summer-savings'],
+    scan: 'Horton flyer publishes rates. Lennar and Hayden do not publish a note rate. Pahlisch 4.99% is UNVERIFIED.',
+  },
+  {
+    id: 'closing',
+    label: 'Closing-cost credit',
+    offerIds: ['pahlisch-golden-key', 'horton-stevens-ranch-flyer', 'hayden-parkside-10k', 'hayden-zero-down'],
+    scan: 'Pahlisch Golden Key credit cap, Horton Main Street Stars, Hayden $10K on listed Parkside homesites.',
+  },
+  {
+    id: 'dpa',
+    label: '$0-down / DPA',
+    offerIds: ['hayden-zero-down', 'horton-stevens-ranch-flyer'],
+    scan: 'Hayden $0 Down program page. Horton flyer Home Now second-mortgage DPA. Neither is a quote.',
+  },
+  {
+    id: 'options',
+    label: 'Options credit',
+    offerIds: ['hayden-summer-savings', 'stone-bridge-35k'],
+    scan: 'Hayden may apply savings to design options. Stone Bridge $35K is a banner only (NOT DISCLOSED).',
+  },
+  {
+    id: 'other',
+    label: 'Moving / HOA / other',
+    offerIds: ['pahlisch-golden-key', 'hayden-parkside-10k', 'discovery-west'],
+    scan: 'Pahlisch moving package. Hayden Parkside HOA note. Discovery West: no public concession transcribed.',
+  },
+]
+
+export function bendNewConChipHref(chip: NewConSavingsChip): string {
+  return `#${chip.offerIds[0]}`
+}
+
+export function bendNewConChipFlags(chip: NewConSavingsChip): NewConFlag[] {
+  const seen = new Set<NewConFlag>()
+  for (const id of chip.offerIds) {
+    const offer = BEND_NEW_CON_FINANCING.find((row) => row.id === id)
+    for (const flag of offer?.flags ?? []) seen.add(flag)
+  }
+  return BEND_NEW_CON_STATUS_LEGEND.map((row) => row.flag).filter((flag) => seen.has(flag))
+}
+
+export type NewConFaq = {
+  id: string
+  question: string
+  answer: string
+}
+
+/** AEO FAQ — same facts as the visible page. No invented inventory or dollars. */
+export const BEND_NEW_CON_FAQ: readonly NewConFaq[] = [
+  {
+    id: 'faq-what-is-for-sale',
+    question: 'What new homes are for sale in Bend right now?',
+    answer:
+      'This page lists Bend-proper Active new-construction communities, single-family first. Live See N homes counts come from the Ryan Realty listings search. Snapshot list-price bands were researched 2026-09-16. Townhomes sit in a separate Horton section. Caldera Springs is Sunriver and is not in the Bend table.',
+  },
+  {
+    id: 'faq-builder-savings',
+    question: 'What builder savings are published in Bend?',
+    answer:
+      'The savings chips map published programs only: rate or buydown, closing-cost credit, $0-down or down-payment assistance, options credit, and moving or HOA notes. Each chip opens the builder card we transcribed on 2026-09-16. We do not invent a dollar, rate, or deadline.',
+  },
+  {
+    id: 'faq-status-flags',
+    question: 'What do UNVERIFIED, STALE, NOT DISCLOSED, and CONFLICT mean?',
+    answer:
+      'UNVERIFIED means a marketed rate or credit is not on the legal page we transcribed. STALE means the published window may have ended. NOT DISCLOSED means the builder names a program and withholds the rate, APR, or amount. CONFLICT means two official sources disagree — we keep them separate.',
+  },
+  {
+    id: 'faq-who-to-call',
+    question: 'Who do I call — the builder or a broker?',
+    answer:
+      'Call or text Ryan Realty to walk a community with a buyer broker. Builder pages stay on each financing card so you can read the published program. The onsite sales team works for the builder. Talk to us before you visit a model home if you want representation on the contract.',
+  },
+  {
+    id: 'faq-townhomes',
+    question: 'Are townhomes included with the new single-family homes?',
+    answer:
+      'No. Single-family communities lead. Horton townhomes at Thunder Ridge, Ponderosa, and Stevens Ranch sit in their own section so a townhome price is not read as the single-family start.',
+  },
+]
+
+const PLAT_NOISE = new Set(['phase', 'and', 'the', 'at', 'of', 'pud', 'llc'])
+
+export function bendNewConNameTokens(name: string): string[] {
+  return slugify(name)
+    .split('-')
+    .filter((token) => token.length > 1 && !PLAT_NOISE.has(token) && !/^\d+$/.test(token))
+}
+
+/**
+ * Match an MLS community name to a recorded plat. Exact slug, phase-stripped
+ * stem, or shared significant tokens. Never invent a coordinate.
+ */
+export function bendNewConPlatMatchesName(
+  name: string,
+  plat: { slug: string; label: string },
+): boolean {
+  const nameSlug = slugify(name)
+  const labelSlug = slugify(plat.label)
+  const platSlug = plat.slug
+  if (!nameSlug || !platSlug) return false
+  if (nameSlug === labelSlug || nameSlug === platSlug) return true
+  const stripPhase = (value: string) => value.replace(/-phase-.*$/, '')
+  const nameStem = stripPhase(nameSlug)
+  if (nameStem === stripPhase(platSlug) || nameStem === stripPhase(labelSlug)) return true
+  const nameTokens = bendNewConNameTokens(name)
+  if (nameTokens.length === 0) return false
+  const platTokens = new Set([
+    ...bendNewConNameTokens(plat.label),
+    ...platSlug.split('-').filter((token) => token.length > 1 && !PLAT_NOISE.has(token) && !/^\d+$/.test(token)),
+  ])
+  const shared = nameTokens.filter((token) => platTokens.has(token))
+  if (nameTokens.length === 1) return shared.length === 1 && nameTokens[0]!.length >= 6
+  return shared.length >= Math.min(2, nameTokens.length)
+}
+
+/** Active-building doors for homepage nav — SFR lead first, then the next named plats. */
+export const BEND_NEW_CON_HOME_NAV_NAMES = [
+  ...BEND_NEW_CON_LEAD_NAMES,
+  'Petrosa',
+  'Acadia Pointe Phase 5 and 6',
+  'Stevens Ranch',
+] as const

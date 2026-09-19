@@ -1,17 +1,17 @@
-// @no-parity — factual 2026-09-16 snapshot. No Wave-3 mockup / taste class.
+// @no-parity — factual 2026-09-16 snapshot + live counts. No Wave-3 mockup / taste class.
 /**
  * /new-construction — Bend new-construction communities, list-price bands,
  * and published builder financing. Snapshot researched 2026-09-16 PT.
+ * SITE-132: one overview map, scannable savings chips, contact, SEO H1/FAQ.
  *
- * VISUAL THESIS: compact Stage, then the affordable SFR shelf (Parkside →
- * Calaveras → Easton) on the installed shadcn carousel, then the rest of the
- * named communities, then financing as Answers. Not a search redirect.
- * /builders still 301s here.
+ * VISUAL THESIS: compact Stage, overview map of recorded NC zones, savings
+ * chips, contact, then the affordable SFR shelf (Parkside → Calaveras →
+ * Easton), then the rest of the named communities, then financing as Answers.
+ * Not a search redirect. /builders still 301s here.
  *
- * Rhythm: Breadcrumb-on-Stage -> Stage -> SFR shelf -> SFR ledger ->
- * Horton townhome note -> Answers
- * -> Doors -> Footer outside main. Snapshot figures live in
- * lib/site/bend-new-construction.ts. Live photos come from the listings DAL.
+ * Rhythm: Breadcrumb-on-Stage -> Stage -> Atlas -> savings -> contact ->
+ * SFR shelf -> SFR ledger -> Horton townhome note -> Answers -> places/guides
+ * -> FAQ -> Footer outside main.
  */
 import type { Metadata } from 'next'
 import { searchListingsAllCount } from '@/lib/data'
@@ -22,6 +22,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import {
   BEND_NEW_CON_BROOKSMILL_NOTE,
   BEND_NEW_CON_DISCLAIMER,
+  BEND_NEW_CON_FAQ,
   BEND_NEW_CON_FINANCING,
   BEND_NEW_CON_FINANCING_SOURCE,
   BEND_NEW_CON_HEADLINE,
@@ -37,6 +38,7 @@ import {
   BEND_NEW_CON_SINGLE,
   BEND_NEW_CON_UNSPECIFIED,
   BEND_NEW_CONSTRUCTION_DESCRIPTION,
+  BEND_NEW_CONSTRUCTION_H1,
   BEND_NEW_CONSTRUCTION_KEYWORDS,
   BEND_NEW_CONSTRUCTION_PATH,
   BEND_NEW_CONSTRUCTION_RESEARCH_DATE,
@@ -53,10 +55,12 @@ import {
   V3_FOOTER_COLUMNS,
   V3_ROOT_CLASS,
   V3Answers,
+  V3Atlas,
   V3Breadcrumb,
   V3Doors,
   V3Footer,
   V3Ledger,
+  V3Quiet,
   V3SectionTracker,
   v3Text,
   type V3Answer,
@@ -72,7 +76,10 @@ import {
   loadStevensRanchTownhomeMatch,
   type BendNewConLiveMatch,
 } from './_v3/load-live-matches'
+import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 import { NewConLeadShelf } from './_v3/NewConLeadShelf.client'
+import { NewConSavingsChips } from './_v3/NewConSavingsChips'
+import { loadNewConOverviewMap } from './_v3/load-overview-map'
 import './_v3/new-con-page.css'
 
 export const revalidate = 86400
@@ -96,7 +103,7 @@ function inventoryRow(row: NewConInventoryRow, live: BendNewConLiveMatch): V3Led
       : 'Opens the live new-construction search for this subdivision only'
   const revealBits = [
     liveLine,
-    `${row.active} Active on 2026-09-16`,
+    `${row.active} Active in the 2026-09-16 snapshot`,
     stevensSf
       ? `${BEND_NEW_CON_STEVENS_RANCH_SF.source} Horton SF QMI about ${BEND_NEW_CON_STEVENS_RANCH_SF.qmi}. DAL mixed band ${BEND_NEW_CON_STEVENS_RANCH_SF.dalMixedBand}. This door is Single Family Residence only.`
       : null,
@@ -144,7 +151,6 @@ function financingDoors(): V3AnswersDoor[] {
 }
 
 export default async function NewConstructionPage() {
-  void searchListingsAllCount
   const site = getCanonicalSiteUrl()
   const pageUrl = `${site}${BEND_NEW_CONSTRUCTION_PATH}`
   const researched = formatDate(BEND_NEW_CONSTRUCTION_RESEARCH_DATE)
@@ -160,6 +166,8 @@ export default async function NewConstructionPage() {
     hortonMatches,
     stevensTownhomeMatch,
     tilesByName,
+    overview,
+    liveBendCount,
   ] = await Promise.all([
     Promise.all(leadRows.map((row) => loadBendNewConLiveMatch(row.name))),
     Promise.all(
@@ -173,6 +181,20 @@ export default async function NewConstructionPage() {
     Promise.all(hortonTownhomeRows.map((row) => loadBendNewConLiveMatch(row.name))),
     loadStevensRanchTownhomeMatch(),
     Promise.all(leadRows.map((row) => loadLeadShelfTiles(row))),
+    loadNewConOverviewMap(),
+    (async () => {
+      try {
+        const count = await searchListingsAllCount({
+          city: 'Bend',
+          newConstruction: true,
+          status: 'active',
+        })
+        return Number.isFinite(count) ? count : null
+      } catch (err) {
+        console.error('[NewConstructionPage] live Bend count', err)
+        return null
+      }
+    })(),
   ])
   const restPrimary = restRows.map((row, i) => inventoryRow(row, restMatches[i]!))
   const [firstRest, ...moreRest] = restPrimary
@@ -196,7 +218,7 @@ export default async function NewConstructionPage() {
       },
       {
         '@type': 'Article',
-        headline: BEND_NEW_CONSTRUCTION_TITLE,
+        headline: BEND_NEW_CONSTRUCTION_H1,
         description: BEND_NEW_CONSTRUCTION_DESCRIPTION,
         url: pageUrl,
         datePublished: BEND_NEW_CONSTRUCTION_RESEARCH_DATE,
@@ -204,12 +226,20 @@ export default async function NewConstructionPage() {
         author: { '@type': 'Organization', name: BRAND.name, url: site },
         publisher: { '@type': 'Organization', name: BRAND.name, url: site },
       },
+      {
+        '@type': 'FAQPage',
+        mainEntity: BEND_NEW_CON_FAQ.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: { '@type': 'Answer', text: item.answer },
+        })),
+      },
     ],
   }
 
   return (
     <>
-      <main className={V3_ROOT_CLASS}>
+      <main className={`${V3_ROOT_CLASS} newcon-page`}>
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
@@ -222,8 +252,8 @@ export default async function NewConstructionPage() {
           <V3Stage
             id="new-construction"
             headingLevel={1}
-            eyebrow="Bend proper · 2026-09-16"
-            headline={BEND_NEW_CONSTRUCTION_TITLE}
+            eyebrow="Bend proper · researched 2026-09-16 · live counts today"
+            headline={BEND_NEW_CONSTRUCTION_H1}
             posterSrc={lead.posterSrc}
             overlayStrength="standard"
             height="compact"
@@ -231,18 +261,21 @@ export default async function NewConstructionPage() {
             inventory={{
               figures: [
                 {
-                  value: String(BEND_NEW_CON_HEADLINE.active),
-                  label: 'active new homes in Bend',
+                  value: String(liveBendCount ?? BEND_NEW_CON_HEADLINE.active),
+                  label:
+                    liveBendCount != null
+                      ? 'live Active new homes in Bend'
+                      : 'Active new homes on 2026-09-16',
                   href: BEND_NEW_CON_SEARCH_HREF,
                 },
                 {
                   value: BEND_NEW_CON_HEADLINE.median,
-                  label: 'median list that day',
+                  label: 'median list 2026-09-16',
                   href: BEND_NEW_CON_SEARCH_HREF,
                 },
                 {
                   value: `${BEND_NEW_CON_HEADLINE.priceLow}–${BEND_NEW_CON_HEADLINE.priceHigh}`,
-                  label: 'list-price span',
+                  label: 'list-price span that day',
                   href: BEND_NEW_CON_SEARCH_HREF,
                 },
               ],
@@ -262,15 +295,99 @@ export default async function NewConstructionPage() {
               trail={[
                 { label: 'Home', href: '/' },
                 { label: 'Homes for sale', href: '/homes-for-sale' },
-                { label: BEND_NEW_CONSTRUCTION_TITLE },
+                { label: BEND_NEW_CONSTRUCTION_H1 },
               ]}
             />
           </div>
         </div>
 
+        {overview.regions.length > 0 || overview.dots.length > 0 ? (
+          <V3Atlas
+            id="zones"
+            headingLevel={2}
+            headline={v3Text('New-construction zones on the map')}
+            headlineTone="eyebrow"
+            claimTone="inventory"
+            claimText={
+              overview.dots.length > 0
+                ? `${overview.dots.length} live Active new-construction homes with a coordinate. ${overview.outlinedNamed} of ${overview.namedTotal} named communities have a recorded plat.`
+                : `${overview.outlinedNamed} of ${overview.namedTotal} named communities have a recorded plat. Live homes without coordinates stay on the lists below.`
+            }
+            keyPlacement="head"
+            sourceName="Oregon Data Share"
+            dots={overview.dots}
+            regions={overview.regions}
+            types={overview.types}
+            source={overview.source}
+            stamp={overview.stamp}
+            incomplete={overview.incomplete}
+            outlinedOf={overview.namedTotal}
+            basemap={overview.basemap}
+            fit="regions"
+          />
+        ) : null}
+
+        <NewConSavingsChips />
+
+        <V3Doors
+          id="tour"
+          name={v3Text('Call, text, or open a builder page')}
+          doors={[
+            {
+              kicker: v3Text('Call'),
+              label: v3Text(CONTACT.phoneDirect),
+              fact: v3Text(office),
+              href: `tel:${CONTACT.phoneDirectTel}`,
+              primary: true,
+            },
+            {
+              kicker: v3Text('Text'),
+              label: v3Text('Same number'),
+              href: `sms:${CONTACT.phoneDirectTel}`,
+            },
+            {
+              kicker: v3Text('Schedule'),
+              label: v3Text('Pick a time'),
+              href: '/book',
+            },
+            {
+              kicker: v3Text('Search'),
+              label: v3Text('Bend new construction'),
+              href: BEND_NEW_CON_SEARCH_HREF,
+            },
+          ]}
+        />
+
+        <V3Doors
+          id="builders"
+          name={v3Text('Published builder pages')}
+          doors={[
+            {
+              kicker: v3Text('Pahlisch'),
+              label: v3Text('Golden Key'),
+              href: BEND_NEW_CON_FINANCING[0]!.sources[0]!.href,
+            },
+            {
+              kicker: v3Text('D.R. Horton'),
+              label: v3Text('Stevens Ranch flyer'),
+              href: BEND_NEW_CON_FINANCING[1]!.sources[0]!.href,
+            },
+            {
+              kicker: v3Text('Lennar'),
+              label: v3Text('Fall Super Sale'),
+              href: BEND_NEW_CON_FINANCING[2]!.sources[0]!.href,
+            },
+            {
+              kicker: v3Text('Hayden'),
+              label: v3Text('$0 Down'),
+              href: BEND_NEW_CON_FINANCING[4]!.sources[0]!.href,
+            },
+          ]}
+        />
+
         <NewConLeadShelf
           heading={BEND_NEW_CON_LEDE}
-          note="Not a loan offer. Single-family first. Bands from 2026-09-16. Houses on the shelf are live SFR listings. See homes opens every Active new-construction home in that subdivision."
+          note="Not a loan offer. Single-family first. Snapshot bands from 2026-09-16. Houses on the shelf are live SFR listings. See homes opens every Active new-construction home in that subdivision."
           bands={lead.bands}
           seeAllHref={BEND_NEW_CON_SEARCH_HREF}
         />
@@ -281,7 +398,7 @@ export default async function NewConstructionPage() {
             eyebrow={v3Text('Lowest SFR band first')}
             heading={v3Text('Single-family communities')}
             note={v3Text(
-              'Parkside, Calaveras, and Easton are on the shelf. Next are Petrosa, Acadia Pointe, then Horton Stevens Ranch single-family from $579,995. Each row opens that subdivision’s live new-construction search. Hover a row for the snapshot band.',
+              'Same communities as the map, lowest SFR list band first. Parkside, Calaveras, and Easton are on the shelf. Next are Petrosa, Acadia Pointe, then Horton Stevens Ranch single-family from $579,995. Each row opens that subdivision’s live search. Open a row for the snapshot band.',
             )}
             rows={[firstRest, ...moreRest]}
             source={v3Text(BEND_NEW_CON_INVENTORY_SOURCE)}
@@ -361,33 +478,34 @@ export default async function NewConstructionPage() {
           sourceKey="bend-new-construction:financing:2026-09-16"
         />
 
-        <V3Doors
-          id="tour"
-          name={v3Text('Tour or ask')}
-          doors={[
-            {
-              kicker: v3Text('Call'),
-              label: v3Text(CONTACT.phoneDirect),
-              fact: v3Text(office),
-              href: `tel:${CONTACT.phoneDirectTel}`,
-              primary: true,
-            },
-            {
-              kicker: v3Text('Text'),
-              label: v3Text('Same number'),
-              href: `sms:${CONTACT.phoneDirectTel}`,
-            },
-            {
-              kicker: v3Text('Schedule'),
-              label: v3Text('Pick a time'),
-              href: '/book',
-            },
-            {
-              kicker: v3Text('Search'),
-              label: v3Text('Bend new construction'),
-              href: BEND_NEW_CON_SEARCH_HREF,
-            },
+        <V3Quiet
+          id="places"
+          eyebrow="Places and guides"
+          heading="Keep going from here"
+          items={[
+            { kind: 'link', label: 'Bend', href: '/cities/bend', lead: true },
+            { kind: 'link', label: 'Bend neighborhoods', href: '/neighborhoods' },
+            { kind: 'link', label: 'Communities', href: '/communities' },
+            { kind: 'link', label: 'Subdivisions', href: '/subdivisions' },
+            { kind: 'link', label: 'Homes for sale', href: '/homes-for-sale/bend' },
+            { kind: 'link', label: 'Market stories', href: '/blog' },
+            ...aeoHubQuietItems('buy').slice(0, 4),
           ]}
+          note="Place pages and buyer guides sit here, not only in the footer."
+        />
+
+        <V3Answers
+          id="faq"
+          eyebrow="Questions"
+          heading="New homes in Bend — short answers"
+          questions={BEND_NEW_CON_FAQ.map((item, i) => ({
+            id: item.id,
+            question: item.question,
+            body: item.answer,
+            open: i === 0,
+            source: BEND_NEW_CON_INVENTORY_SOURCE,
+          }))}
+          sourceKey="bend-new-construction:faq:2026-09-16"
         />
       </main>
 

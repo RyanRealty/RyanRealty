@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   BEND_NEW_CON_DISCLAIMER,
@@ -21,10 +23,18 @@ import {
   financingHighlight,
   BEND_NEW_CON_SINGLE,
   BEND_NEW_CON_UNSPECIFIED,
+  BEND_NEW_CON_FAQ,
+  BEND_NEW_CON_HOME_NAV_NAMES,
+  BEND_NEW_CON_SAVINGS_CHIPS,
+  BEND_NEW_CON_STATUS_LEGEND,
   BEND_NEW_CONSTRUCTION_DESCRIPTION,
+  BEND_NEW_CONSTRUCTION_H1,
   BEND_NEW_CONSTRUCTION_PATH,
   BEND_NEW_CONSTRUCTION_RESEARCH_DATE,
   BEND_NEW_CONSTRUCTION_TITLE,
+  bendNewConChipFlags,
+  bendNewConChipHref,
+  bendNewConPlatMatchesName,
   bendNewConCommunityHref,
   bendNewConSearchFilter,
   bendNewConSearchHref,
@@ -52,7 +62,8 @@ describe('Bend new-construction snapshot', () => {
   it('keeps the public path and research date', () => {
     expect(BEND_NEW_CONSTRUCTION_PATH).toBe('/new-construction')
     expect(BEND_NEW_CONSTRUCTION_RESEARCH_DATE).toBe('2026-09-16')
-    expect(BEND_NEW_CONSTRUCTION_TITLE).toBe('New construction in Bend')
+    expect(BEND_NEW_CONSTRUCTION_TITLE).toBe('New Homes in Bend — Builder Savings')
+    expect(BEND_NEW_CONSTRUCTION_H1).toBe('New homes in Bend — inventory and builder savings')
     expect(BEND_NEW_CONSTRUCTION_DESCRIPTION).toMatch(/2026-09-16/)
     expect(BEND_NEW_CONSTRUCTION_DESCRIPTION).toMatch(/Not a loan offer/)
     expect(BEND_NEW_CON_DISCLAIMER.title).toBe('Not a loan offer')
@@ -218,5 +229,101 @@ describe('Bend new-construction snapshot', () => {
       terms: [],
       sources: [],
     }).value).toBe('3% / $20,000')
+  })
+
+  it('maps savings chips onto existing cards and never invents a dollar', () => {
+    const invented = /\$25,000|\$15,000|\$50,000/
+    for (const chip of BEND_NEW_CON_SAVINGS_CHIPS) {
+      expect(chip.offerIds.length).toBeGreaterThan(0)
+      expect(bendNewConChipHref(chip)).toBe(`#${chip.offerIds[0]}`)
+      for (const id of chip.offerIds) {
+        expect(BEND_NEW_CON_FINANCING.some((offer) => offer.id === id)).toBe(true)
+      }
+      expect(chip.scan).not.toMatch(invented)
+      expect(chip.scan).not.toMatch(MOS)
+    }
+    expect(BEND_NEW_CON_SAVINGS_CHIPS.map((chip) => chip.id)).toEqual([
+      'rate',
+      'closing',
+      'dpa',
+      'options',
+      'other',
+    ])
+    expect(BEND_NEW_CON_STATUS_LEGEND.map((row) => row.flag)).toEqual([
+      'UNVERIFIED',
+      'STALE',
+      'NOT DISCLOSED',
+      'CONFLICT',
+    ])
+    expect(bendNewConChipFlags(BEND_NEW_CON_SAVINGS_CHIPS[0]!)).toEqual(
+      expect.arrayContaining(['UNVERIFIED', 'CONFLICT', 'NOT DISCLOSED', 'STALE']),
+    )
+    expect([...BEND_NEW_CON_HOME_NAV_NAMES]).toEqual([
+      'Parkside Place Phase 1',
+      'Calaveras',
+      'Easton',
+      'Petrosa',
+      'Acadia Pointe Phase 5 and 6',
+      'Stevens Ranch',
+    ])
+  })
+
+  it('matches recorded plats to MLS names without inventing a slug', () => {
+    expect(
+      bendNewConPlatMatchesName('Parkside Place Phase 1', {
+        slug: 'parkside-place',
+        label: 'Parkside Place',
+      }),
+    ).toBe(true)
+    expect(
+      bendNewConPlatMatchesName('Discovery West Phase 8 & 9', {
+        slug: 'discovery-west',
+        label: 'Discovery West',
+      }),
+    ).toBe(true)
+    expect(
+      bendNewConPlatMatchesName('Acadia Pointe Phase 5 and 6', {
+        slug: 'acadia-pointe',
+        label: 'Acadia Pointe',
+      }),
+    ).toBe(true)
+    expect(
+      bendNewConPlatMatchesName('Easton', { slug: 'easton', label: 'Easton' }),
+    ).toBe(true)
+    expect(
+      bendNewConPlatMatchesName('Easton', { slug: 'petrosa', label: 'Petrosa' }),
+    ).toBe(false)
+    expect(
+      bendNewConPlatMatchesName('Highland', { slug: 'awbrey-butte', label: 'Awbrey Butte' }),
+    ).toBe(false)
+  })
+
+  it('keeps FAQ answers on the transcribed snapshot and live-count split', () => {
+    expect(BEND_NEW_CON_FAQ).toHaveLength(5)
+    expect(BEND_NEW_CON_FAQ.map((item) => item.id)).toContain('faq-status-flags')
+    const text = BEND_NEW_CON_FAQ.map((item) => item.answer).join('\n')
+    expect(text).toMatch(/2026-09-16/)
+    expect(text).toMatch(/UNVERIFIED/)
+    expect(text).not.toMatch(MOS)
+    expect(text).not.toMatch(INVENTED_HAYDEN_25K)
+  })
+
+  it('wires the overview map, savings chips, and contact on the public page', () => {
+    const page = readFileSync(resolve('app/new-construction/page.tsx'), 'utf8')
+    const chips = readFileSync(resolve('app/new-construction/_v3/NewConSavingsChips.tsx'), 'utf8')
+    const home = readFileSync(resolve('app/_v3/home-new-construction.ts'), 'utf8')
+    expect(page).toContain('<V3Atlas')
+    expect(page).toContain('id="zones"')
+    expect(page).toContain('<NewConSavingsChips')
+    expect(page).toContain("id=\"tour\"")
+    expect(page).toContain('BEND_NEW_CONSTRUCTION_H1')
+    expect(page).toContain('FAQPage')
+    expect(page).not.toMatch(/Hover a row/)
+    expect(page).toMatch(/Open a row/)
+    expect(chips).toContain('BEND_NEW_CON_SAVINGS_CHIPS')
+    expect(chips).toContain('BEND_NEW_CON_STATUS_LEGEND')
+    expect(chips).toContain('id="savings"')
+    expect(home).toContain("href: '/new-construction'")
+    expect(home).toContain("layout: 'carousel'")
   })
 })
