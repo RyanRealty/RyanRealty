@@ -55,8 +55,11 @@ describe('homepage guides / Q&A strip (SITE-125)', () => {
     expect(PAGE.slice(guidesAt, railsAt)).not.toMatch(/Work with us/)
   })
 
-  it('keeps eight AEO doors and three FAQ rows after the fold rematch', () => {
-    expect(aeoHubHomeStripDoors()).toHaveLength(8)
+  it('keeps live AEO doors and three FAQ rows after the fold rematch', () => {
+    expect(aeoHubHomeStripDoors()).toHaveLength(9)
+    expect(aeoHubHomeStripDoors().map((door) => door.href)).toContain(
+      '/blog/closing-costs-buyers-bend-oregon',
+    )
     expect(homeGuideQaQuestions()).toHaveLength(3)
     expect(PAGE).not.toMatch(/V3PhoneDock/)
     const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
