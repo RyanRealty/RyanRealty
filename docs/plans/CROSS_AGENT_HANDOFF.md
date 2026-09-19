@@ -1,6 +1,6 @@
 # Current — 2026-09-19 (CTA lock — drop sticky, header Work with us)
 
-Surface: Cursor cloud, branch `cursor/cta-lock-drop-sticky-2f27` off `origin/main` `3c0d7c8d3`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-123 not on main (not in seed).
+Surface: Cursor cloud, branch `cursor/cta-lock-drop-sticky-2f27` tip `4e1dd7a7b` off `origin/main` `3c0d7c8d3`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-123 not on main (not in seed).
 
 - **Drop.** Sitewide sticky Call/Text/Work with us (`V3PhoneDock` unmounted from `app/layout.tsx`). Listing sticky Tour|Call|Text|Work with us (`ListingBrokerBar` / `ListingMobileContactBar` unmounted; `floating=null`).
 - **Add.** Header `V3WorkWithUs` sitewide (`placement="chrome"`, `.v3-chrome__work` never `display:none`). Same SITE-122 sheet copy (Buy or sell, Buy a home / Sell your home, About/team/reviews/contact, Call/Text).
