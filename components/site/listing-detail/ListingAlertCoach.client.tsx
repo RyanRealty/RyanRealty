@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'rr-listing-alert-coach-dismissed'
 const DWELL_MS = 5000
-/** Matches .listing-mobile-cta height band so coach never sits under the broker bar. */
-const MOBILE_BAR_LIFT = 'max(4.75rem, calc(3.75rem + env(safe-area-inset-bottom, 0px)))'
-const DESKTOP_PAD = 'max(0.75rem, env(safe-area-inset-bottom, 0px))'
+const SAFE_PAD = 'max(0.75rem, env(safe-area-inset-bottom, 0px))'
 
 function alreadyWatchingInThisBrowser(): boolean {
   try {
@@ -34,25 +32,12 @@ function alreadyWatchingInThisBrowser(): boolean {
  *   fixed bottom bar landing right on top of the MAP chip and photo strip
  *   otherwise (design-audit, mobile 390px, 2026-08-27)
  * - Only render when city is known (same gate as ListingLikeThisAlerts)
- * - On small screens, sit above the listing mobile contact bar (z-stack + lift)
- *   so coach and "Schedule a tour" never become one unreadable blob
  *
  * No shadcn (ci:shadcn-burndown). Dismiss control is a raw button like
  * PriceCtaStrip / RoomRestyle (design-token ignore list).
  */
 export function ListingAlertCoach({ city }: { city: string | null | undefined }) {
   const [visible, setVisible] = useState(false)
-  /** true when viewport is below lg (mobile broker bar can show). */
-  const [liftForMobileBar, setLiftForMobileBar] = useState(true)
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const mq = window.matchMedia('(min-width: 1024px)')
-    const apply = () => setLiftForMobileBar(!mq.matches)
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
-  }, [])
 
   useEffect(() => {
     if (!city) return
@@ -156,8 +141,7 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
       aria-label="Suggested next step"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 sm:px-4"
       style={{
-        // Sit above .listing-mobile-cta (z-80) visually via bottom lift, not z-war.
-        paddingBottom: liftForMobileBar ? MOBILE_BAR_LIFT : DESKTOP_PAD,
+        paddingBottom: SAFE_PAD,
       }}
     >
       <div

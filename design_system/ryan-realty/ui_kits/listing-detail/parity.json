@@ -76,7 +76,7 @@
     },
     {
       "name": "PriceCtaStrip",
-      "section": "H1 is the street. On-market ask: Tour / Call / Text. Save and Share stay on Active, Pending, and off-market (SITE-21 / SITE-99). Face Est. $/mo is off.",
+      "section": "H1 is the street. On-market ask: Tour beside the price. Call / Text live in Work with us / the agent card, not a sticky bar. Save and Share stay on Active, Pending, and off-market (SITE-21 / SITE-99). Face Est. $/mo is off.",
       "blocking": true
     },
     {
@@ -170,8 +170,8 @@
       "blocking": true
     },
     {
-      "name": "ListingMobileContactBar",
-      "section": "Mobile sticky Tour / Call / Text. Hidden while the cookie bar is up.",
+      "name": "V3WorkWithUs",
+      "section": "Header Work with us (sitewide). Call / Text live in this sheet and the agent card, not a sticky bar.",
       "blocking": true
     },
     {

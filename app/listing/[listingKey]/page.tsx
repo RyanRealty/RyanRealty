@@ -95,14 +95,13 @@ import {
 import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishOpenHouseBadgeLabel } from '@/lib/listing/publish-listing-card-badges'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
-import ListingBrokerBar from '@/components/site/listing-detail/ListingBrokerBar.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/listing-detail/PhotoGalleryLightbox'
 import { ListingSaveButton as _ListingSaveButtonImport } from '@/components/site/listing-detail/ListingSaveButton'
 import { ListingShareButton as _ListingShareButtonImport } from '@/components/site/listing-detail/ListingShareButton'
 import { listingDocumentTitle } from '@/lib/listing/listing-document-title'
 import { getSession } from '@/lib/data/auth/getSession'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
-import ListingMobileContactBar from '@/components/site/listing-detail/ListingMobileContactBar.client'
+import { V3WorkWithUs as _V3WorkWithUsImport } from '@/components/site/v3/V3PhoneDock.client'
 import ListingTracker from '@/components/listing/ListingTracker'
 import { ListingAttribution } from '@/components/listing/ListingAttribution'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -128,7 +127,7 @@ void _PhotoGalleryLightboxImport
 void _ListingSaveButtonImport
 void _ListingShareButtonImport
 void _TextMattCTAImport
-void ListingMobileContactBar
+void _V3WorkWithUsImport
 void ListingVideoEmbed
 void V3ListingRow
 
@@ -137,7 +136,7 @@ void V3ListingRow
  *
  *   1 breadcrumb   City → neighborhood → community → plat → street
  *   2 media        price, beds, baths, sqft, street on the media; tabs we have
- *   3 ask          Tour / Call / Text (cookies cannot cover)
+ *   3 ask          Tour near the price; Call / Text in Work with us / agent card
  *   4 facts        type, lot, year, HOA, $/sqft
  *   5 about        the MLS public remarks, as written (§2)
  *   6 payment      computeMonthlyPiti only; P&I, tax, HOA
@@ -263,11 +262,6 @@ async function saveListingFromStrip(key: string): Promise<{ saved: boolean; need
   const r = await toggleSavedListing(key)
   if (r.error === 'Not signed in') return { saved: false, needsAuth: true }
   return { saved: r.saved }
-}
-
-function brokerTelDigits(phone: string | null | undefined): string | null {
-  const digits = (phone ?? '').replace(/[^\d]/g, '')
-  return digits.length >= 10 ? digits : null
 }
 
 export default async function ListingDetailPage({ params, searchParams }: PageProps) {
@@ -659,7 +653,6 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   // without one.
   const similarHref = similarRows.length > 0 ? '#similar' : homesForSalePath(listing.city)
   const alertsHref = listing.city ? '#listing-like-alerts' : '/contact?intent=question'
-  const ctaTel = brokerTelDigits(ctaBroker?.phoneDirect ?? ctaBroker?.phoneFub)
   // /book only knows three slugs (app/book/page.tsx BROKER_SLUGS). Map the
   // routed broker's first name onto one; anything unexpected books with Matt,
   // which is the same default /book applies to an unknown ?agent.
@@ -773,8 +766,6 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         ratePct={calcDefaults?.mortgageRate ?? null}
         showEstPayment={false}
         showAlerts={false}
-        callHref={ctaTel && !offMarket ? `tel:${ctaTel}` : null}
-        textHref={ctaTel && !offMarket ? `sms:${ctaTel}` : null}
         similarHref={similarHref}
         alertsHref={alertsHref}
         dropMark={dropMark}
@@ -930,17 +921,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     </>
   )
 
-  const floating = ctaBroker ? (
-    <ListingBrokerBar
-      defaultBroker={ctaBroker}
-      brokers={brokers}
-      listingKey={contactKey}
-      lockToDefault={listingAgent != null}
-      offMarket={offMarket}
-      similarHref={similarHref}
-      alertsHref={alertsHref}
-    />
-  ) : null
+  const floating = null
 
   const sidebar = ctaBroker ? (
     <ListingBrokerCTA

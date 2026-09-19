@@ -550,6 +550,27 @@
   }
 }
 
+/* Work with us — sitewide outline ask (Matt / Critiquito 2026-09-19).
+   Visible at every width; the filled seller ask stays the one fill. */
+.v3.v3-chrome .v3-chrome__work {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-2xs);
+  white-space: nowrap;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+}
+
+@media (min-width: 26rem) {
+  .v3.v3-chrome .v3-chrome__work {
+    padding: 0 var(--v3-space-xs);
+  }
+}
+
 /* Menu and close ------------------------------------------------------------
    Icon-only at 390 and labelled from 40rem up. The word is never display:none:
    it is the control's accessible name, so it moves out of sight and stays in

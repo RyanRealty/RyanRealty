@@ -42,6 +42,10 @@
  * listing chrome never fill it. The door stays in the Sell nav group. The
  * footer never carries a second solid button (PUBLIC_UI.md section 1).
  *
+ * WORK WITH US (Matt / Critiquito 2026-09-19): outline, every public width,
+ * same V3WorkWithUs sheet as SITE-122. Not a bottom sticky bar. Call / Text
+ * live inside that sheet (and the listing agent card), not as header verbs.
+ *
  * SEARCH: catalog MorphingSearch via V3ChromeSearch (beUI install). Client
  * open, ⌘K / Ctrl+K, icon on phone / pill on desk. Suggest feed for places —
  * not a second token layer or a house-invented chrome field.
@@ -72,6 +76,7 @@ import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
 import { V3ChromeSearch } from './V3ChromeSearch.client'
 import { V3Icon } from './V3Icon'
+import { V3WorkWithUs } from './V3PhoneDock.client'
 import './tokens.css'
 import './V3Chrome.css'
 
@@ -658,9 +663,10 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
-          {/* Mobile bar: logo | Search (MorphingSearch) | Sign in | hamburger.
+          {/* Mobile bar: logo | Search | Work with us | Sign in | hamburger.
               Phone + seller ask stay desktop (and in the menu foot). */}
           <V3ChromeSearch />
+          <V3WorkWithUs surface="chrome" placement="chrome" />
           {viewerReady && viewer ? (
             <Link
               href={ACCOUNT_HOME?.href ?? '/account'}

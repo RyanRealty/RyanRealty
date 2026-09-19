@@ -14,11 +14,9 @@
  * cookie is read client-side so static / ISR listing pages stay static; the card
  * SSRs with the default broker and swaps in place after hydration if attributed.
  *
- * THE MOBILE BAR LEFT THIS FILE (2026-09-02). It rendered here, inside the
- * aside, and an aside that is `display: none` below 64rem takes its fixed
- * children with it — the bar measured 0px high at 390, 1024 and 1440. It is
- * ListingBrokerBar now, mounted in the shell's floating slot; both read
- * useAttributedBroker so they show the same person.
+ * THE STICKY BAR IS DROPPED (Matt / Critiquito 2026-09-19). Call / Text stay
+ * on this card (the agent flow). Tour is the primary beside the price.
+ * Work with us lives in the site header.
  */
 import { TextMattCTA } from './TextMattCTA'
 import { useAttributedBroker } from './use-attributed-broker'

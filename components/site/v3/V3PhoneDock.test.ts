@@ -4,16 +4,19 @@ import { describe, expect, it } from 'vitest'
 
 const SRC = readFileSync(resolve('components/site/v3/V3PhoneDock.client.tsx'), 'utf8')
 const CSS = readFileSync(resolve('components/site/v3/V3PhoneDock.css'), 'utf8')
-const LISTING = readFileSync(
-  resolve('components/site/listing-detail/ListingMobileContactBar.client.tsx'),
-  'utf8',
-)
+const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
+const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
+const LISTING_PAGE = readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8')
 
-describe('V3PhoneDock sheet · Matt voice 2026-09-16', () => {
-  it('is the one sheet the listing bar opens', () => {
-    expect(LISTING).toContain('V3WorkWithUs')
-    expect(LISTING).toContain("from '@/components/site/v3/V3PhoneDock.client'")
+describe('V3WorkWithUs sheet · Matt / Critiquito CTA lock 2026-09-19', () => {
+  it('is the one sheet the header Work with us opens', () => {
+    expect(CHROME).toContain('V3WorkWithUs')
+    expect(CHROME).toContain("from './V3PhoneDock.client'")
     expect(SRC).toContain('export function V3WorkWithUs')
+    expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
+    expect(LISTING_PAGE).not.toMatch(/<ListingBrokerBar/)
+    expect(LISTING_PAGE).not.toMatch(/<ListingMobileContactBar/)
+    expect(LISTING_PAGE).not.toMatch(/<V3PhoneDock[\s/>]/)
   })
 
   it('keeps the dock chip and titles the sheet Buy or sell', () => {
