@@ -95,8 +95,8 @@ describe('V3StickyAsk · the bottom edge', () => {
     expect(LISTING_CSS).not.toMatch(/\.listing-mobile-cta[^{}]*\{[^}]*position:\s*fixed/)
   })
 
-  it('retires on a phone while a dock is mounted, so the edge has one owner', () => {
-    expect(CSS).toContain('body:has([data-v3-dock])')
+  it('retires on a phone so the dog floater owns the edge', () => {
+    expect(CSS).toMatch(/@media \(max-width: 63\.99rem\)\s*\{\s*\.v3-sticky-ask\s*\{[\s\S]{0,80}display:\s*none/)
     expect(DOCK_CSS).toContain('--rr-dock-h')
   })
 

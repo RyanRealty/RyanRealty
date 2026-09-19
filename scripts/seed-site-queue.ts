@@ -1306,6 +1306,29 @@ const SEEDS: readonly Seed[] = [
     accept:
       'At 375 on a live listing, H1 street line is sharp single-stroke Amboqia (or safe fallback); no double-struck glyphs; Matt phone check passes.',
   },
+  {
+    versionGap: 'SITE-133',
+    domain: 'public-ux',
+    title: 'Matt ADD [p0] listing fold: kill whitespace under gallery @375',
+    objective:
+      'Matt lock 2026-09-19: listing fold at 375 still has too much cream under the gallery. Densify the address/price/beds title stack so more of it sits on the phone fold. Ratchet ci:listing-fold-density. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Tighter listing-face title stack; hero-column md band and main-column gap cancelled on phone; foldDensity lock + ci:listing-fold-density refuse cream under the gallery.',
+    accept:
+      'Measured @375 fold: gallery bottom sits flush on address/price/beds. Gate refuses hero-column md pad, main-column gap, or a button row between price and beds. Header Work with us stays. No sticky Call/Text regress.',
+  },
+  {
+    versionGap: 'SITE-134',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] floating dog CTA: sitewide circle menu replaces sticky Call/Text bars',
+    objective:
+      'Matt lock 2026-09-19: sitewide floating circle bottom-right with the animated logo dog head. Click opens a big menu with exactly Sell your home, Buy your home, Text us, Get your home\'s value, Learn about us. Replaces sticky CTA thinking. Keep header Work with us. Drop remaining bottom sticky Call/Text/Work-with-us bars. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'V3DogFloater barrel primitive + public/brand dog-head assets; mounted once in app/layout.tsx; real routes (/sell, /buy, sms: CONTACT, /sell#get-value, /about); Tip Ready + ci:dog-floater refuse if the floater is missing or a sticky phone dock returns.',
+    accept:
+      'Floater present on public layout at 375 and 1440; menu opens those five doors; header Work with us stays; no sitewide or listing sticky Call/Text/Work-with-us bar; ci:dog-floater and Tip Ready --ship refuse the missing floater or a returned dock.',
+  },
 
 ]
 

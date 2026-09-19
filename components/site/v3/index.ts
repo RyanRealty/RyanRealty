@@ -257,6 +257,11 @@ export {
   type V3WorkWithUsPlacement,
   type V3WorkWithUsProps,
 } from './V3PhoneDock.client'
+/**
+ * SITE-134 (Matt 2026-09-19): sitewide floating dog circle. Five-door menu.
+ * Replaces sticky Call / Text / Work-with-us bars. Header Work with us stays.
+ */
+export { V3DogFloater, DOG_FLOATER_MENUS } from './V3DogFloater.client'
 
 /**
  * The place-page affordability instrument (SITE-07, 2026-09-08): a payment and a

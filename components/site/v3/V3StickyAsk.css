@@ -54,12 +54,11 @@
   }
 }
 
-/* SITE-122 (Matt 2026-09-16): the phone dock is the one bottom bar on a phone,
-   and its Work with us sheet carries Sell your home one tap away. While a dock
-   is mounted the plate retires below 64rem; the desktop corner plate is
-   unchanged. Attribute-scoped so a stray class cannot hide it. */
+/* SITE-134 (Matt 2026-09-19): the dog floater owns the phone edge. The
+   full-width Value-my-home dock is retired below 64rem; the desktop corner
+   plate stays (bottom-left, opposite the dog). */
 @media (max-width: 63.99rem) {
-  body:has([data-v3-dock]) .v3-sticky-ask {
+  .v3-sticky-ask {
     display: none;
   }
 }

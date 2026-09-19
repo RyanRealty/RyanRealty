@@ -3,6 +3,7 @@ import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
 import { V3Chrome } from "@/components/site/v3/V3Chrome";
+import { V3DogFloater } from "@/components/site/v3/V3DogFloater.client";
 import { getChromeLive } from '@/lib/site/chrome-live'
 import { V3_ROOT_CLASS } from "@/components/site/v3/atoms";
 import { RootProvider } from "../components/site/providers";
@@ -149,6 +150,7 @@ export default async function RootLayout({
               dashboard. SiteFooter stays route-owned (check-default-chrome-footer)
               — never mount a hidden global footer. */}
           <V3Chrome live={live} />
+          <V3DogFloater />
           <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
           {/* Real-user Core Web Vitals -> /api/web-vitals + GA4 (field CWV). */}
           <WebVitalsReporter />

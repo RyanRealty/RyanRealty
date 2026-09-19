@@ -39,6 +39,7 @@ import {
   placeHeroFoldDensityProblems,
 } from './listing-fold-density.mjs'
 import { listingKeepExploringProblems } from './listing-keep-exploring.mjs'
+import { dogFloaterProblems } from './dog-floater.mjs'
 import {
   competitorFirstLookProblems,
   isPlaceCraftDocument,
@@ -660,6 +661,7 @@ export function tasteDoneProblems(tr, { competitiveBrief = null, catalog = null,
   }
   if (listingKit) p.push(...listingHeroFoldDensityProblems({ root }))
   if (listingKit) p.push(...listingKeepExploringProblems({ root }))
+  p.push(...dogFloaterProblems({ root }))
   const placeKit =
     kit === 'city' ||
     kit === 'community' ||

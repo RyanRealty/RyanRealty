@@ -31,6 +31,7 @@
     "ci:atlas-amenity-layers",
     "ci:listing-figure-publish",
     "ci:listing-fold-density",
+    "ci:dog-floater",
     "ci:listing-keep-exploring",
     "ci:aeo-hub-guides",
     "ci:place-craft",
@@ -1321,6 +1322,19 @@
       "design_system/ryan-realty/ui_kits/listing-detail/parity.json",
       "scripts/check-listing-fold-density.mjs",
       "scripts/lib/listing-fold-density.mjs",
+      "scripts/lib/taste-receipt.mjs"
+    ],
+    "ci:dog-floater": [
+      "app/layout.tsx",
+      "app/listing/**",
+      "components/site/v3/V3DogFloater.client.tsx",
+      "components/site/v3/V3DogFloater.css",
+      "components/site/v3/V3PhoneDock.client.tsx",
+      "components/site/v3/V3Chrome.tsx",
+      "components/site/v3/V3StickyAsk.css",
+      "public/brand/jax-white.png",
+      "scripts/check-dog-floater.mjs",
+      "scripts/lib/dog-floater.mjs",
       "scripts/lib/taste-receipt.mjs"
     ],
     "ci:listing-keep-exploring": [

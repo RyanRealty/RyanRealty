@@ -1,0 +1,218 @@
+/* SITE-134 — floating dog circle + big menu. Tokens only. */
+
+.v3-dog-floater {
+  position: fixed;
+  right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));
+  z-index: 90;
+  box-sizing: border-box;
+  width: 4.25rem;
+  height: 4.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  cursor: pointer;
+}
+
+.v3-dog-floater:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-dog-floater__head {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+  animation: v3-dog-bob 2.8s var(--v3-ease-out) infinite;
+}
+
+.v3-dog-floater__dog {
+  display: block;
+  width: 3.15rem;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.v3-dog-floater__lid {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 38%;
+  height: 0.28rem;
+  background: var(--v3-navy);
+  transform: scaleY(0);
+  transform-origin: top;
+  animation: v3-dog-blink 5.2s var(--v3-ease-out) infinite;
+}
+
+@keyframes v3-dog-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-0.22rem) rotate(4deg);
+  }
+}
+
+@keyframes v3-dog-blink {
+  0%,
+  88%,
+  94%,
+  100% {
+    transform: scaleY(0);
+  }
+  90%,
+  92% {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-dog-floater__head,
+  .v3-dog-floater__lid {
+    animation: none;
+  }
+}
+
+[data-slot='dialog-overlay'].v3-dog-floater-scrim {
+  z-index: 110;
+  background: color-mix(in srgb, var(--v3-navy) 62%, transparent);
+}
+
+[data-slot='dialog-content'].v3-dog-floater-menu {
+  z-index: 111;
+  top: auto;
+  left: auto;
+  right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));
+  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  width: min(26rem, calc(100vw - 2 * var(--v3-gutter)));
+  max-width: min(26rem, calc(100vw - 2 * var(--v3-gutter)));
+  max-height: min(36rem, calc(100dvh - 8rem));
+  translate: none;
+  transform: none;
+  display: grid;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-lg);
+  overflow: auto;
+  border-radius: 0;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+}
+
+@media (max-width: 40rem) {
+  [data-slot='dialog-content'].v3-dog-floater-menu {
+    right: var(--v3-gutter);
+    left: var(--v3-gutter);
+    width: auto;
+    max-width: none;
+    bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+    padding: var(--v3-space-md);
+  }
+}
+
+.v3-dog-floater-menu__title {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: var(--v3-leading-display);
+  letter-spacing: var(--v3-track-display);
+  color: var(--v3-navy);
+}
+
+.v3-dog-floater-menu__line {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+}
+
+.v3-dog-floater-menu__doors {
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.v3-dog-floater-menu__door {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  border: var(--v3-rule-weight-hairline, 1px) solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  font-weight: 400;
+  font-synthesis: none;
+  text-decoration: none;
+  animation: v3-dog-door-in var(--v3-dur-enter, 0.3s) var(--v3-ease-out) both;
+}
+
+.v3-dog-floater-menu__door:nth-child(2) {
+  animation-delay: 0.04s;
+}
+.v3-dog-floater-menu__door:nth-child(3) {
+  animation-delay: 0.08s;
+}
+.v3-dog-floater-menu__door:nth-child(4) {
+  animation-delay: 0.12s;
+}
+.v3-dog-floater-menu__door:nth-child(5) {
+  animation-delay: 0.16s;
+}
+
+.v3-dog-floater-menu__door:hover,
+.v3-dog-floater-menu__door:focus-visible {
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+}
+
+.v3-dog-floater-menu__door:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+@keyframes v3-dog-door-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-dog-floater-menu__door {
+    animation: none;
+  }
+}
+
+.v3-dog-floater-menu__close {
+  justify-self: start;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 0;
+  background: transparent;
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.v3-dog-floater-menu__close:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
