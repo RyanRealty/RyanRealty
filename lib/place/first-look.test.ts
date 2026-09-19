@@ -92,6 +92,8 @@ describe('place first-look map island', () => {
     expect(clustered).toMatch(/subjectRingLabel\(placeQuery\)/)
     expect(clustered).toMatch(/overlayLayer/)
     expect(clustered).toMatch(/subjectRingKeepFittedZoom/)
+    expect(clustered).toMatch(/subjectRingZoomFromMeasuredBox/)
+    expect(clustered).toMatch(/isFractionalZoomEnabled/)
     expect(clustered).not.toMatch(/map\.setZoom\(9\)/)
   })
 })

@@ -1,0 +1,45 @@
+{
+  "url": "http://127.0.0.1:3199/cities/bend",
+  "status": 200,
+  "viewport": {
+    "width": 375,
+    "height": 720
+  },
+  "stats": {
+    "placeLookRing": "in-view",
+    "placeLookZoom": "10.31487800846832",
+    "placeLookFill": "0.86",
+    "placeLookBox": "162x193",
+    "fill": 0.86,
+    "svg": {
+      "w": 162,
+      "h": 193
+    },
+    "island": {
+      "w": 335,
+      "h": 187
+    },
+    "measuredFill": 0.8635225375626043,
+    "pills": 36,
+    "cards": 6,
+    "visibleCards": 4,
+    "cardPrices": [
+      "$540K",
+      "$500K",
+      "$749K",
+      "$1.6M"
+    ],
+    "lookPresent": true
+  },
+  "dest": {
+    "full": "/workspace/look-pass-site128-ring-fill-2026-09-19/ours-local-cities-bend-375.png",
+    "map": "/workspace/look-pass-site128-ring-fill-2026-09-19/ours-local-cities-bend-375-map.png",
+    "look": "/workspace/look-pass-site128-ring-fill-2026-09-19/ours-local-cities-bend-375-place-look.png"
+  },
+  "pass": {
+    "fill": true,
+    "box": true,
+    "pills": true,
+    "cards": true
+  }
+}
