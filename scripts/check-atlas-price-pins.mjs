@@ -36,7 +36,7 @@ const js = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText
 const mod = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
-const { formatAtlasPinPrice, formatAtlasClusterPin, atlasPinShouldPaint } = mod
+const { formatAtlasPinPrice, formatAtlasClusterPin, atlasClusterAskSpan, atlasPinShouldPaint } = mod
 
 function expect(label, actual, wanted) {
   if (!Object.is(actual, wanted)) {
@@ -49,8 +49,18 @@ expect('$1.5M', formatAtlasPinPrice(1_500_000), '$1.5M')
 expect('$1M', formatAtlasPinPrice(1_000_000), '$1M')
 expect('cluster same ask', formatAtlasClusterPin(735_000, 735_400), '735K')
 expect('cluster span', formatAtlasClusterPin(735_000, 1_500_000), '735K+')
+expect('token $1.32 is not 0K', formatAtlasPinPrice(1.32), '')
+expect('token $3k is not a pin', formatAtlasPinPrice(3_000), '')
+expect('never 0K+', formatAtlasClusterPin(1.32, 5_285_000), '')
+expect('real NC span', formatAtlasClusterPin(185_000, 5_285_000), '185K+')
+expect(
+  'cluster span skips tokens',
+  JSON.stringify(atlasClusterAskSpan([1.32, 3_000, 185_000, 5_285_000])),
+  JSON.stringify({ min: 185_000, max: 5_285_000 }),
+)
 expect('active paints', atlasPinShouldPaint({ s: 'active', p: 735_000 }), true)
 expect('sold silent', atlasPinShouldPaint({ s: 'sold', p: 735_000 }), false)
+expect('token does not paint', atlasPinShouldPaint({ s: 'active', p: 1.32 }), false)
 
 const clusterSrc = readFileSync(CLUSTER, 'utf8')
 if (/^\s*import\s/m.test(clusterSrc)) {
@@ -77,6 +87,7 @@ const atlas = readFileSync(ATLAS, 'utf8')
 for (const needle of [
   'formatAtlasPinPrice',
   'formatAtlasClusterPin',
+  'atlasClusterAskSpan',
   'atlasPinShouldPaint',
   'clusterAtlasPins',
   'v3-atlas__pin',

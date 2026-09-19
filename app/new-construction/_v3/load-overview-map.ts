@@ -9,6 +9,7 @@ import { getBoundaryGeoJSON, getCommunitySubdivisions, searchListingsAll } from 
 import type { ListingTile } from '@/lib/data/types/listing'
 import type { AtlasDot, AtlasRegion, AtlasType } from '@/components/site/v3'
 import { atlasTypesPresent } from '@/lib/atlas/build-place-atlas'
+import { ATLAS_PIN_MIN_USD } from '@/lib/atlas/pin-price'
 import { classifyType } from '@/app/_v3/home-field-items'
 import { formatDateTime } from '@/lib/format/date'
 import { listingTileHref, slugify } from '@/lib/slug'
@@ -76,7 +77,10 @@ function dotsFromTiles(tiles: readonly ListingTile[]): AtlasDot[] {
         href: listingTileHref(tile),
         lat: Number(tile.lat.toFixed(4)),
         lng: Number(tile.lng.toFixed(4)),
-        p: price != null && Number.isFinite(price) && price > 0 ? Math.round(price) : null,
+        p:
+          price != null && Number.isFinite(price) && price >= ATLAS_PIN_MIN_USD
+            ? Math.round(price)
+            : null,
         t: typeKey,
         s,
         age: tile.dom ?? null,

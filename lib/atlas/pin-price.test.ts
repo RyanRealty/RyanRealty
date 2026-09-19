@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  atlasClusterAskSpan,
   atlasPinShouldPaint,
   formatAtlasClusterPin,
   formatAtlasClusterRange,
@@ -30,6 +31,15 @@ describe('formatAtlasPinPrice', () => {
     expect(formatAtlasPinPrice(0)).toBe('')
     expect(formatAtlasPinPrice(-1)).toBe('')
   })
+
+  it('never prints 0K for MLS token / call-for-price asks', () => {
+    expect(formatAtlasPinPrice(1.32)).toBe('')
+    expect(formatAtlasPinPrice(1)).toBe('')
+    expect(formatAtlasPinPrice(3_000)).toBe('')
+    expect(formatAtlasPinPrice(9_999)).toBe('')
+    expect(formatAtlasPinPrice(10_000)).toBe('10K')
+    expect(formatAtlasPinPrice(185_000)).toBe('185K')
+  })
 })
 
 describe('formatAtlasClusterRange', () => {
@@ -48,6 +58,22 @@ describe('formatAtlasClusterPin', () => {
   it('prints the low ask with + when the pile spans, never a bare count', () => {
     expect(formatAtlasClusterPin(735_000, 1_500_000)).toBe('735K+')
     expect(formatAtlasClusterPin(1_000_000, 2_400_000)).toBe('$1M+')
+    expect(formatAtlasClusterPin(185_000, 5_285_000)).toBe('185K+')
+  })
+
+  it('does not paint 0K+ when the low ask is an MLS token', () => {
+    expect(formatAtlasClusterPin(1.32, 5_285_000)).toBe('')
+    expect(formatAtlasClusterPin(3_000, 5_285_000)).toBe('')
+  })
+})
+
+describe('atlasClusterAskSpan', () => {
+  it('skips token asks so a Bend NC pile faces 185K, not 0K+', () => {
+    expect(atlasClusterAskSpan([1.32, 3_000, 185_000, 5_285_000])).toEqual({
+      min: 185_000,
+      max: 5_285_000,
+    })
+    expect(atlasClusterAskSpan([1.32, 3_000])).toBeNull()
   })
 })
 
@@ -58,5 +84,7 @@ describe('atlasPinShouldPaint', () => {
     expect(atlasPinShouldPaint({ s: 'sold', p: 735_000 })).toBe(false)
     expect(atlasPinShouldPaint({ s: 'closed', p: 735_000 })).toBe(false)
     expect(atlasPinShouldPaint({ s: 'active', p: null })).toBe(false)
+    expect(atlasPinShouldPaint({ s: 'active', p: 1.32 })).toBe(false)
+    expect(atlasPinShouldPaint({ s: 'active', p: 3_000 })).toBe(false)
   })
 })

@@ -89,6 +89,7 @@ import {
 } from '@/lib/atlas/sales-heat'
 import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/atlas/pack-labels'
 import {
+  atlasClusterAskSpan,
   atlasPinShouldPaint,
   formatAtlasClusterPin,
   formatAtlasClusterRange,
@@ -1451,23 +1452,21 @@ export function V3Atlas({
         if (src) out.push({ kind: 'pin', d: src.d, i: src.i, x: src.x, y: src.y, label: src.label })
         continue
       }
-      let minP = Infinity
-      let maxP = 0
       let sx = 0
       let sy = 0
       let n = 0
+      const asks: number[] = []
       for (const i of g.indices) {
         const src = byIndex.get(i)
         const p = dots[i]?.p
-        if (p == null || !(p > 0)) continue
-        if (p < minP) minP = p
-        if (p > maxP) maxP = p
+        if (p != null && formatAtlasPinPrice(p)) asks.push(p)
         if (src) {
           sx += src.x
           sy += src.y
           n += 1
         }
       }
+      const span = atlasClusterAskSpan(asks)
       out.push({
         kind: 'cluster',
         id: g.id,
@@ -1475,8 +1474,8 @@ export function V3Atlas({
         y: n > 0 ? sy / n : g.y,
         count: g.count,
         indices: g.indices,
-        minP: Number.isFinite(minP) ? minP : 0,
-        maxP,
+        minP: span?.min ?? 0,
+        maxP: span?.max ?? 0,
       })
     }
     return out

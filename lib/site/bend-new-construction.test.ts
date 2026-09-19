@@ -75,6 +75,7 @@ describe('Bend new-construction snapshot', () => {
     expect(BEND_NEW_CON_HEADLINE.namedCommunities).toBe(BEND_NEW_CON_NAMED.length)
     expect(BEND_NEW_CON_HEADLINE.priceLow).toBe('$185,000')
     expect(BEND_NEW_CON_HEADLINE.priceHigh).toBe('$5,285,000')
+    expect(BEND_NEW_CON_HEADLINE.priceSpanFold).toBe('$185K–$5.3M')
     expect(BEND_NEW_CON_HEADLINE.median).toBe('$699,900')
     expect(BEND_NEW_CON_NAMED.reduce((sum, row) => sum + row.active, 0)).toBe(
       BEND_NEW_CON_HEADLINE.active - BEND_NEW_CON_UNSPECIFIED.active,
@@ -317,6 +318,8 @@ describe('Bend new-construction snapshot', () => {
     expect(page).toContain('<NewConSavingsChips')
     expect(page).toContain("id=\"tour\"")
     expect(page).toContain('BEND_NEW_CONSTRUCTION_H1')
+    expect(page).toContain('priceSpanFold')
+    expect(page).toContain("{ label: 'New construction' }")
     expect(page).toContain('FAQPage')
     expect(page).not.toMatch(/Hover a row/)
     expect(page).toMatch(/Open a row/)

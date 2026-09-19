@@ -124,6 +124,8 @@ export const BEND_NEW_CON_HEADLINE = {
   unspecifiedActive: 16,
   priceLow: '$185,000',
   priceHigh: '$5,285,000',
+  /** Fold face of the same band — 375 nowrap, same sourced ends. */
+  priceSpanFold: '$185K–$5.3M',
   median: '$699,900',
 } as const
 

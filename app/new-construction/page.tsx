@@ -274,7 +274,7 @@ export default async function NewConstructionPage() {
                   href: BEND_NEW_CON_SEARCH_HREF,
                 },
                 {
-                  value: `${BEND_NEW_CON_HEADLINE.priceLow}–${BEND_NEW_CON_HEADLINE.priceHigh}`,
+                  value: BEND_NEW_CON_HEADLINE.priceSpanFold,
                   label: 'list-price span that day',
                   href: BEND_NEW_CON_SEARCH_HREF,
                 },
@@ -295,7 +295,7 @@ export default async function NewConstructionPage() {
               trail={[
                 { label: 'Home', href: '/' },
                 { label: 'Homes for sale', href: '/homes-for-sale' },
-                { label: BEND_NEW_CONSTRUCTION_H1 },
+                { label: 'New construction' },
               ]}
             />
           </div>

@@ -10,6 +10,19 @@
     inset: auto;
   }
 
+  .newcon-hero .v3-breadcrumb__list {
+    min-width: 0;
+  }
+
+  .newcon-hero .v3-breadcrumb__text--current {
+    display: block;
+    max-width: min(11rem, 48vw);
+  }
+
+  .newcon-hero .v3-stage-strip__value {
+    white-space: nowrap;
+  }
+
   .newcon-hero .v3.v3-stage--compact .v3-stage-copy,
   .newcon-hero .v3-stage-copy {
     padding-top: var(--v3-space-lg);
