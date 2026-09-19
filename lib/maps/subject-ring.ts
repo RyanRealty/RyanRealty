@@ -2,12 +2,12 @@
  * Place first-look subject ring. Atlas paints every outline twice — cream
  * halo under navy ink — so the silhouette reads over the field.
  *
- * Mini-land ff126836a added halo + OverlayView + Bend chip, but live paint
- * on dpl_AXi1pkPDec4yt1B9Xzs8vp322vdA was still an 87×99 knot: the phone
- * island cancelled async fitBounds with setZoom(9), so the projected SVG
- * sat under the $ pile at the wrong scale. Same recorded paths. No invent
- * geom. Camera keeps the fitted zoom; overlay stroke is under pills; the
- * place chip sits above them at the north of that fitted ring.
+ * 381997f27 kept the fitted zoom (no setZoom(9)) but Cos rematch on
+ * dpl_8mPgUD1TnSYE6efbuk2E1mbYGp1k still failed: fitBounds settles on
+ * integer z10, the projected SVG is ~101×126 on a 320×187 island, and
+ * placeLookFill stamped 0.00 because pixelBox() was read before OverlayView
+ * drew. Same recorded paths. No invent geom. Camera now zooms to fill
+ * (fractional) until fill ≥ 0.7 and box ≥ 110, then restamps after draw.
  */
 
 export const SUBJECT_RING_INK_WEIGHT = 8
@@ -19,13 +19,15 @@ export const SUBJECT_RING_CHIP_Z = 3
 export const SUBJECT_RING_HALO_Z = 1
 export const SUBJECT_RING_INK_Z = 2
 /**
- * Live rematch on dpl_AXi1pkPDec4yt1B9Xzs8vp322vdA measured the OverlayView
- * SVG at ~87×99px — a dark knot under the pill pile. That size is zoom 9 on
- * a 13rem island after an async fitBounds was cancelled by setZoom(9).
+ * Cos rematch on dpl_8mPgUD1TnSYE6efbuk2E1mbYGp1k measured the OverlayView
+ * SVG at ~101×126px on a 320×187 island (z10 after 381997f27). Still a
+ * knot: fill 101/187 ≈ 0.54. 87×99 was the older z9 cancel.
  */
 export const SUBJECT_RING_KNOT_PX = 110
 /** Fitted ring must cover this share of the island's shorter side. */
 export const SUBJECT_RING_MIN_ISLAND_FILL = 0.7
+/** Web Mercator tile width. OverlayView CSS pixels scale the same way. */
+export const SUBJECT_RING_TILE_PX = 256
 
 export type RingPoint = { lat: number; lng: number }
 
@@ -64,11 +66,108 @@ export function subjectRingIsKnot(island: IslandBox, ring: IslandBox): boolean {
  * Keep the zoom fitBounds just chose. Only pull back from lot zoom that
  * crops the city. Never clamp to 9 — getZoom() before idle is the pre-fit
  * camera (often 11), and setZoom(9) cancels the fit (87×99 knot).
+ *
+ * Keeping z10 is not enough: integer fitBounds on a 13rem island still
+ * projects Bend to ~101×126 (fill 0.54). Pair with subjectRingZoomFromMeasuredBox.
  */
 export function subjectRingKeepFittedZoom(fittedZoom: number | null | undefined): number | null {
   if (fittedZoom == null || !Number.isFinite(fittedZoom)) return null
   if (fittedZoom > 14) return 14
+  if (fittedZoom < 7) return 7
   return fittedZoom
+}
+
+/**
+ * Scale the current camera so the already-projected SVG meets fill ≥ 0.7
+ * and max(box) ≥ 110. Returns null when the box is 0 (overlay has not
+ * drawn — remasure) or when the ring already reads.
+ *
+ * Mercator CSS pixels double per zoom step, so +log2(scale) is exact.
+ * Cos kick: 101×126 @ z10 on 320×187 → ~10.37 (fill 0.70, box 163).
+ */
+export function subjectRingZoomFromMeasuredBox(
+  zoom: number,
+  island: IslandBox,
+  ring: IslandBox,
+): number | null {
+  if (!Number.isFinite(zoom)) return null
+  const islandMin = Math.min(island.width, island.height)
+  const ringMin = Math.min(ring.width, ring.height)
+  const ringMax = Math.max(ring.width, ring.height)
+  if (!(islandMin > 0) || !(ringMin > 0) || !(ringMax > 0)) return null
+
+  const scaleFill = (SUBJECT_RING_MIN_ISLAND_FILL * islandMin) / ringMin
+  const scaleBox = ringMax < SUBJECT_RING_KNOT_PX ? SUBJECT_RING_KNOT_PX / ringMax : 1
+  const scale = Math.max(scaleFill, scaleBox, 1)
+  if (scale <= 1 && !subjectRingIsKnot(island, ring)) return null
+
+  return subjectRingKeepFittedZoom(zoom + Math.log2(scale))
+}
+
+export function subjectRingMercatorWorld(
+  lat: number,
+  lng: number,
+  zoom: number,
+): { x: number; y: number } {
+  const scale = SUBJECT_RING_TILE_PX * 2 ** zoom
+  const x = ((lng + 180) / 360) * scale
+  const sin = Math.sin((lat * Math.PI) / 180)
+  const clipped = Math.min(1 - 1e-12, Math.max(-1 + 1e-12, sin))
+  const y = (0.5 - Math.log((1 + clipped) / (1 - clipped)) / (4 * Math.PI)) * scale
+  return { x, y }
+}
+
+/**
+ * Project recorded vertices the same way OverlayView lastBox does (path
+ * bbox + halo on each side). Fallback when pixelBox is still 0.
+ */
+export function subjectRingProjectedBox(
+  paths: readonly (readonly RingPoint[])[],
+  zoom: number,
+  halo = SUBJECT_RING_HALO_WEIGHT,
+): IslandBox {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const path of paths) {
+    for (const p of path) {
+      if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue
+      const { x, y } = subjectRingMercatorWorld(p.lat, p.lng, zoom)
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+    }
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(maxX)) return { width: 0, height: 0 }
+  return {
+    width: maxX - minX + halo * 2,
+    height: maxY - minY + halo * 2,
+  }
+}
+
+/** Smallest zoom in 7..14 where the recorded paths are not a knot. */
+export function subjectRingZoomFromPaths(
+  paths: readonly (readonly RingPoint[])[],
+  island: IslandBox,
+  halo = SUBJECT_RING_HALO_WEIGHT,
+): number | null {
+  if (!(island.width > 0) || !(island.height > 0) || paths.flat().length < 2) return null
+  let lo = 7
+  let hi = 14
+  let found: number | null = null
+  for (let i = 0; i < 24; i += 1) {
+    const mid = (lo + hi) / 2
+    const box = subjectRingProjectedBox(paths, mid, halo)
+    if (subjectRingIsKnot(island, box)) {
+      lo = mid
+    } else {
+      found = mid
+      hi = mid
+    }
+  }
+  return subjectRingKeepFittedZoom(found ?? lo)
 }
 
 /**
