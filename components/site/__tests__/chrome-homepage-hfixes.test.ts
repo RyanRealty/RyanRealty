@@ -82,6 +82,9 @@ describe('chrome homepage H-fixes', () => {
     expect(ANSWERS_CSS).toMatch(
       /\.v3\.v3-answers\.v3-answers--strip \.v3-answers__heading \{[\s\S]*?font-size: var\(--v3-size-body-lg\)/,
     )
+    expect(ANSWERS_CSS).toMatch(
+      /\.v3\.v3-answers\.v3-answers--strip \.v3-answers__door \{[\s\S]*?font-size: var\(--v3-size-body-sm\)/,
+    )
     expect(ANSWERS_CSS).not.toMatch(
       /\.v3\.v3-answers\.v3-answers--strip \.v3-answers__grid \{[\s\S]*?grid-template-columns: minmax\(0, 22rem\)/,
     )

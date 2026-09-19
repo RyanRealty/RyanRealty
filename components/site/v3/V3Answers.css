@@ -822,7 +822,10 @@
 
 .v3.v3-answers.v3-answers--strip .v3-answers__door {
   min-width: 0;
+  min-height: var(--v3-tap);
   padding: var(--v3-space-3xs) 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-heading);
 }
 
 .v3.v3-answers.v3-answers--strip .v3-answers__door-label {
