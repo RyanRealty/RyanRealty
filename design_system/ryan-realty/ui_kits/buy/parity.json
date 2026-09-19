@@ -36,7 +36,7 @@
     },
     {
       "name": "V3Ledger",
-      "section": "Pattern 3, once: first-time, relocation, and investment guides. Every row is a door into /buy/[intent].",
+      "section": "Pattern 3, once: first-time, relocation, and investment leaves, then the Sep 7 AEO buyer guides from lib/seo/aeo-hub-guides.ts (SITE-123). Product rows stay /buy/[intent]; AEO rows use the published blog titles.",
       "blocking": true
     },
     {
@@ -68,7 +68,7 @@
     "V3Breadcrumb",
     "BuyHomesShelf -- the lead shelf (its section id is the rail row's own, homes-local, set in app/_v3/home-rail-items.ts rather than in the page) (SITE-91): the installed shadcn carousel imported by this route's own _v3, cheapest first, asking-price brush + see-all on one line with the heading, the price ladder over the track, flanking 44x44 chevrons on the media midline, a fifth card cut by the track edge",
     "HomeHomesRails -- the remaining inventory shelves (price cuts, new this week) on the homepage primitive",
-    "V3Ledger #buyer-guides -- first-time, relocation, investment",
+    "V3Ledger #buyer-guides -- first-time, relocation, investment, plus Sep 7 AEO buyer guides",
     "HomeHomesField -- browse the same single-family population by type, regional search as the door out; under the guides so the shelves and the Field are never adjacent (moved here SITE-91)",
     "V3Quiet #how-it-works -- how a purchase works here",
     "BuyAlertsSheet -- the listing-alerts ask",

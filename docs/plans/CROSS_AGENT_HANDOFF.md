@@ -1,3 +1,12 @@
+# Current — 2026-09-19 (SITE-123 Tip Ready — wire Sep 7 AEO guides)
+
+Surface: Cursor cloud, branch `cursor/site-123-aeo-hub-guides-3c98` off `origin/main` `3c0d7c8d3`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-123 `eebb6664-7eae-406a-9d81-b47a7e577e6c` claimed by `cursor-grok-4.6-2026-09-19`.
+
+- **Wire.** SEO Desk live list only. Human anchors = published titles from `scripts/blog-content/aeo-guides-2026-09.ts`. OMIT `/blog/closing-costs-buyers-bend-oregon` (404 SITE-124) and buyer-broker slug.
+- **Hubs.** `/buy` Ledger (8) · `/sell` Quiet (5) · `/neighborhoods` Quiet (3) · `/housing-market/bend` Quiet (3). Contract: `lib/seo/aeo-hub-guides.ts`.
+- **Gate.** `ci:aeo-hub-guides` → `scripts/check-aeo-hub-guides.mjs` (always lane). Drop of href or title fails.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `walkthrough-artifacts`.
+
 # Current — 2026-09-19 (search typeahead — drop 2018 dead stock)
 
 Surface: Cursor cloud `bc-2e02ecf3-d804-5e7c-b8e5-bec7a17234bb`, branch `cursor/gate-stale-search-typeahead-34bb` off `origin/main` `381997f27`. PR only — Cos Mini lands. Do not merge. HOLD owner email. City→place-page nav left alone (Matt never mind).
