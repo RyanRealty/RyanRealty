@@ -107,6 +107,12 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     if (!/border-radius:\s*50%/.test(css)) {
       p.push(`${PATHS.css}: trigger must be a circle.`)
     }
+    if (!/z-index:\s*95/.test(css)) {
+      p.push(`${PATHS.css}: floater must sit above the cookie chip (z-index 95).`)
+    }
+    if (!/data-cookie-notice='chip'/.test(css) || !/data-cookie-notice='bar'/.test(css)) {
+      p.push(`${PATHS.css}: floater must clear the cookie chip and bar, not sit under Cookies.`)
+    }
   }
 
   if (!existsSync(join(root, PATHS.asset))) {

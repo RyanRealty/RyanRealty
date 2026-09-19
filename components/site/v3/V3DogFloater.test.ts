@@ -37,5 +37,7 @@ describe('V3DogFloater · SITE-134', () => {
     expect(CSS).toContain('@keyframes v3-dog-bob')
     expect(CSS).toContain('prefers-reduced-motion')
     expect(CSS).toContain('safe-area-inset-bottom')
+    expect(CSS).toMatch(/z-index:\s*95/)
+    expect(CSS).toContain("data-cookie-notice='chip'")
   })
 })
