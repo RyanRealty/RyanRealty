@@ -13,6 +13,7 @@ import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
 import { countSearchListings, getViewportSearch, type SearchFilters } from '@/app/actions/search'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import type { ListingForMap } from '@/components/SearchMapClustered'
+import { V3_SEARCH_CLUSTER_RADIUS_PX } from '@/lib/maps/v3-basemap'
 import {
   buildShapeSetForSearch,
   encodeMapPolygon,
@@ -1237,6 +1238,7 @@ export default function MapSearchView({
         hoveredKey={hoveredKey ?? selectedKey}
         onMarkerHover={onMarkerHover}
         onMarkerClick={onMarkerClick}
+        clusterRadiusPx={V3_SEARCH_CLUSTER_RADIUS_PX}
         className="srch-map-field h-full w-full"
       />
       {/* Saved named areas (Flexmls My-Map-Overlays parity). Applying one

@@ -28,6 +28,7 @@
     "ci:listing-alert-enroll",
     "ci:listing-canonical-single",
     "ci:atlas-price-pins",
+    "ci:search-atlas",
     "ci:atlas-amenity-layers",
     "ci:listing-figure-publish",
     "ci:listing-fold-density",

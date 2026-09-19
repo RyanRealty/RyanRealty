@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { getSearchListings, type SearchFilters } from '@/app/actions/search'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
@@ -13,7 +12,10 @@ import { V3ListingRow } from '@/components/site/v3'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
-import { Button } from '@/components/ui/button'
+import { buildPpsfBand } from '@/components/search/ppsf-band'
+import { PpsfMark } from '@/components/search/PpsfMark'
+import { SearchEmptyState } from '@/app/search/_v3/SearchEmptyState'
+import { SearchPagination } from '@/app/search/_v3/SearchPagination'
 import './search-ledger.css'
 
 /**
@@ -188,6 +190,17 @@ export default function SearchResults({
     () => excludeHiddenListings(listings, hiddenKeys),
     [listings, hiddenKeys],
   )
+  const ppsfBand = useMemo(
+    () =>
+      buildPpsfBand(
+        visibleListings.map((listing) =>
+          listing.ListPrice && listing.TotalLivingAreaSqFt
+            ? listing.ListPrice / listing.TotalLivingAreaSqFt
+            : null,
+        ),
+      ),
+    [visibleListings],
+  )
   // Cos/Matt 2026-09-06 residual: no unscoped "N homes found" total-inventory
   // chrome. Place-scoped counts (Places filter on) stay intentional.
   const placeScoped = Boolean(
@@ -200,38 +213,9 @@ export default function SearchResults({
   return (
     <div className="w-full p-4 space-y-4">
       {showDegradedState ? (
-        <div className="srch-panel p-8 text-center">
-          <p className="srch-label">Search delayed</p>
-          <h3 className="mt-2 text-base font-semibold text-foreground">
-            We could not load listings in time
-          </h3>
-          <p className="mx-auto mt-2 max-w-md text-muted-foreground">
-            This is a connection or timeout problem, not an empty market. Try again.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="srch-chip mt-6"
-            onClick={() => {
-              if (typeof window !== 'undefined') window.location.reload()
-            }}
-          >
-            Reload page
-          </Button>
-        </div>
+        <SearchEmptyState kind="degraded" />
       ) : showEmptyState ? (
-        <div className="srch-panel p-8 text-center">
-          <p className="srch-label">No matches</p>
-          <h3 className="mt-2 text-base font-semibold text-foreground">
-            No homes match these filters
-          </h3>
-          <p className="mx-auto mt-2 max-w-md text-muted-foreground">
-            Loosen a filter, or view every Central Oregon listing.
-          </p>
-          <Button asChild variant="outline" className="srch-chip mt-6">
-            <Link href="/homes-for-sale">View all listings</Link>
-          </Button>
-        </div>
+        <SearchEmptyState kind="empty" />
       ) : (
         <>
           {placeScoped ? (
@@ -304,6 +288,14 @@ export default function SearchResults({
                   listNumber: listing.ListNumber ?? null,
                 }}
               />
+              <PpsfMark
+                band={ppsfBand}
+                value={
+                  listing.ListPrice && listing.TotalLivingAreaSqFt
+                    ? listing.ListPrice / listing.TotalLivingAreaSqFt
+                    : null
+                }
+              />
             </div>
           )
         })}
@@ -313,6 +305,7 @@ export default function SearchResults({
           {loading && <span className="text-muted-foreground">Loading more…</span>}
         </div>
       )}
+      <SearchPagination page={page} total={total} />
         </>
       )}
     </div>

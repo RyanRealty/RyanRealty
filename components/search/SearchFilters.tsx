@@ -13,11 +13,11 @@ import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import { buildFilterApplyPayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
-  SearchSuggestPanel,
   flattenSuggestions,
   useSearchSuggest,
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
+import { SearchCommandList } from '@/app/search/_v3/SearchCommandList'
 import HomeTypeFilterPanel, { homeTypeChipLabel } from '@/components/search/HomeTypeFilterPanel'
 import { parseSearchQuery } from '@/lib/parse-search-query'
 import dynamic from 'next/dynamic'
@@ -619,7 +619,7 @@ export default function SearchFilters({
             }}
             results={
               morphOpen ? (
-                <SearchSuggestPanel
+                <SearchCommandList
                   items={suggestItems}
                   loading={suggestLoading}
                   hasResult={suggestions !== null}

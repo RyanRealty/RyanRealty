@@ -11,6 +11,7 @@ import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { nextSearchUrlWithBbox } from '@/lib/search/publish-map-bbox'
 import { navigateQuery, readUrlSearchParams } from '@/lib/search/url-search-params.client'
 import { cn } from '@/lib/utils'
+import { V3_SEARCH_CLUSTER_RADIUS_PX } from '@/lib/maps/v3-basemap'
 
 /**
  * The /search?view=map (map-only) pin layer, made hidden-aware. The split view
@@ -110,6 +111,7 @@ export default function HideAwareSearchMap({
       initialBounds={initialBounds}
       lockBounds={lockBounds}
       onBoundsChanged={persistBbox}
+      clusterRadiusPx={V3_SEARCH_CLUSTER_RADIUS_PX}
     />
   )
 }

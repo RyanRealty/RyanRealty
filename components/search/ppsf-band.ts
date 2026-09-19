@@ -79,3 +79,15 @@ export function bandLabel(band: PpsfBand, value: number | null): string {
   if (value > band.q3) return `${dollars} — above the middle half of ${set}.`
   return `${dollars} — inside the middle half of ${set}.`
 }
+
+/**
+ * The short line on the card. SITE-110: a mute hairline is not a comparison
+ * signal — the reader has to see, in words, where this home sits among the
+ * homes currently in view.
+ */
+export function bandGlance(band: PpsfBand, value: number | null): string {
+  if (value == null) return 'No living area reported'
+  if (value < band.q1) return 'Lower $/sqft than most on this map'
+  if (value > band.q3) return 'Higher $/sqft than most on this map'
+  return 'Middle $/sqft of homes on this map'
+}

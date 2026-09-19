@@ -23,6 +23,9 @@ import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { searchListingsAll, searchListingsAllCount, pickSearchFeatureFilters } from '@/lib/data'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { SEARCH_LIST_PAGE_SIZE } from '@/lib/search/search-page-size'
+
+export { SEARCH_LIST_PAGE_SIZE } from '@/lib/search/search-page-size'
 
 /**
  * Page-level search filters — field names are the URL params. The registry
@@ -232,7 +235,7 @@ export async function getSearchListings(
   filters: SearchFilters,
   page: number
 ): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
-  const limit = 24
+  const limit = SEARCH_LIST_PAGE_SIZE
   const offset = (page - 1) * limit
   const opts = toAdvancedFilters(filters, { limit, offset })
   return getListingsWithAdvanced(opts)

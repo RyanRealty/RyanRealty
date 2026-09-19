@@ -127,7 +127,7 @@ describe('merge lock — one search component', () => {
   it('SearchFilters renders the shared panel, not a re-forked inline dropdown', () => {
     const src = readFileSync(join(root, 'components/search/SearchFilters.tsx'), 'utf8')
     expect(src).toContain("from '@/components/search/SearchSuggest'")
-    expect(src).toContain('<SearchSuggestPanel')
+    expect(src).toContain('<SearchCommandList')
   })
 
   // RE-EXPRESSED 2026-08-27. The chrome has NO search field, deliberately, and

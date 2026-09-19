@@ -312,6 +312,44 @@
     "shadcn:empty": {
       "aliasOf": "shadcn-empty"
     },
+    "shadcn-command": {
+      "add": "command",
+      "file": "components/ui/command.tsx",
+      "import": "@/components/ui/command",
+      "house": "app/search/_v3/SearchCommandList.tsx",
+      "mustContain": [
+        "data-slot=\"command\"",
+        "CommandItem"
+      ]
+    },
+    "shadcn:command": {
+      "aliasOf": "shadcn-command"
+    },
+    "shadcn-pagination": {
+      "add": "pagination",
+      "file": "components/ui/pagination.tsx",
+      "import": "@/components/ui/pagination",
+      "house": "app/search/_v3/SearchPagination.tsx",
+      "mustContain": [
+        "data-slot=\"pagination\"",
+        "PaginationNext"
+      ]
+    },
+    "shadcn:pagination": {
+      "aliasOf": "shadcn-pagination"
+    },
+    "shadcn-checkbox": {
+      "add": "checkbox",
+      "file": "components/ui/checkbox.tsx",
+      "import": "@/components/ui/checkbox",
+      "house": "components/search/AllFiltersSheet.tsx",
+      "mustContain": [
+        "data-slot=\"checkbox\""
+      ]
+    },
+    "shadcn:checkbox": {
+      "aliasOf": "shadcn-checkbox"
+    },
     "shadcn-table": {
       "add": "table",
       "file": "components/ui/table.tsx",
@@ -2537,7 +2575,35 @@
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/command",
           "job": "Command search. Adapt into v3, do not paste radix chrome on the public map."
+        },
+        {
+          "id": "shadcn-checkbox",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/checkbox",
+          "job": "Registry filters in the house sheet. Same checkbox as the catalog, navy on cream."
+        },
+        {
+          "id": "shadcn-empty",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/empty",
+          "job": "Empty and degraded search honesty. Official Empty, not a cream panel."
+        },
+        {
+          "id": "shadcn-pagination",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/pagination",
+          "job": "Crawlable page links on the list. Infinite scroll is in-session only."
+        },
+        {
+          "id": "shadcn-input",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input",
+          "job": "The morph field and the sheet typeahead. Installed Input, not a raw box."
         }
+      ],
+      "demoStates": [
+        "search-open=.srch-morph input[type=search]!click",
+        "filters-open=[aria-label='Open all filters']!click"
       ]
     },
     "sell": {

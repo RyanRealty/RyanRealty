@@ -15,6 +15,7 @@ import {
   V3_BASEMAP_STYLE,
   V3_CLUSTER_MAX_ZOOM,
   V3_CLUSTER_RADIUS_PX,
+  V3_SEARCH_CLUSTER_RADIUS_PX,
   V3_MAP_CHROME_OFF,
   V3_MAP_MAX_ZOOM,
   V3_MARK_WIDTH_PX,
@@ -112,6 +113,7 @@ describe('the map options', () => {
     }
     expect(opts.styles).toBe(V3_BASEMAP_STYLE)
     expect(opts.backgroundColor).toBe(V3_BASEMAP_INK.field)
+    expect(opts.renderingType).toBe('RASTER')
   })
 
   it('lets a caller override gestures without losing the cartography', () => {
@@ -125,6 +127,8 @@ describe('the map options', () => {
 describe('the frame geometry', () => {
   it('merges anything closer than a full mark, at every zoom', () => {
     expect(V3_CLUSTER_RADIUS_PX).toBeGreaterThan(V3_MARK_WIDTH_PX)
+    expect(V3_SEARCH_CLUSTER_RADIUS_PX).toBe(V3_MARK_WIDTH_PX * 2)
+    expect(V3_SEARCH_CLUSTER_RADIUS_PX).toBeGreaterThan(V3_CLUSTER_RADIUS_PX)
     expect(V3_CLUSTER_MAX_ZOOM).toBe(V3_MAP_MAX_ZOOM)
   })
 

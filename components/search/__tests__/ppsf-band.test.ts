@@ -3,7 +3,7 @@
  * view; these are the rules that keep it from describing anything else.
  */
 import { describe, expect, it } from 'vitest'
-import { bandLabel, bandPosition, buildPpsfBand, quantile } from '@/components/search/ppsf-band'
+import { bandGlance, bandLabel, bandPosition, buildPpsfBand, quantile } from '@/components/search/ppsf-band'
 
 describe('quantile', () => {
   it('interpolates between the two straddling values', () => {
@@ -65,5 +65,16 @@ describe('bandLabel', () => {
 
   it('says plainly when a home cannot be placed at all', () => {
     expect(bandLabel(band, null)).toContain('does not report a living area')
+  })
+})
+
+describe('bandGlance', () => {
+  const band = { min: 100, max: 500, q1: 200, q3: 400, n: 12 }
+
+  it('prints a comparison sentence a buyer can read without hovering', () => {
+    expect(bandGlance(band, 150)).toBe('Lower $/sqft than most on this map')
+    expect(bandGlance(band, 300)).toBe('Middle $/sqft of homes on this map')
+    expect(bandGlance(band, 450)).toBe('Higher $/sqft than most on this map')
+    expect(bandGlance(band, null)).toBe('No living area reported')
   })
 })

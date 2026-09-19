@@ -225,6 +225,12 @@ type Props = {
    * the count bubble. Search keeps the pin∪ring frame.
    */
   fitSubjectRing?: boolean
+  /**
+   * Merge radius in screen pixels. Place Atlas (SITE-127) keeps the default
+   * V3_CLUSTER_RADIUS_PX. Search passes V3_SEARCH_CLUSTER_RADIUS_PX so city
+   * zoom does not stack neighbouring price pills.
+   */
+  clusterRadiusPx?: number
 }
 
 /**
@@ -1053,6 +1059,7 @@ export default function SearchMapClustered({
   relayoutKey,
   disableClustering = false,
   fitSubjectRing = false,
+  clusterRadiusPx = V3_CLUSTER_RADIUS_PX,
 }: Props) {
   // BEM `v3-place-look__map-canvas` — `\b` after look fails because `_` is a
   // word char, which left a 360px minHeight under the 10.5rem phone island
@@ -1798,7 +1805,7 @@ export default function SearchMapClustered({
         markers: newMarkers as unknown as google.maps.Marker[],
         algorithm: new SuperClusterAlgorithm({
           maxZoom: V3_CLUSTER_MAX_ZOOM,
-          radius: V3_CLUSTER_RADIUS_PX,
+          radius: clusterRadiusPx,
           // Supercluster measures radius in units of `extent`; its default 512 is
           // twice a Google tile, which halved every radius this file ever set.
           extent: V3_CLUSTER_EXTENT,
@@ -1894,7 +1901,7 @@ export default function SearchMapClustered({
         // guard against unmount race
       }
     }
-  }, [mapInstance, validListings, zoomMode, scheduleFitTaps, disableClustering])
+  }, [mapInstance, validListings, zoomMode, scheduleFitTaps, disableClustering, clusterRadiusPx])
 
   // Marker emphasis: update content in-place for hovered / active marker.
   // Pill vs photo stamp follows zoomMode. Mutate content (no full remount).

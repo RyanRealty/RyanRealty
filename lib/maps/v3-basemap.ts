@@ -163,6 +163,10 @@ export function getV3MapOptions(overrides?: google.maps.MapOptions): google.maps
     minZoom: V3_MAP_MIN_ZOOM,
     maxZoom: V3_MAP_MAX_ZOOM,
     styles: V3_BASEMAP_STYLE,
+    // Raster is what lets the style array paint. Vector tiles ignore `styles`
+    // the same way a Cloud map id does — that is how production kept Google's
+    // terrain greens after SITE-44 shipped this cream ladder.
+    renderingType: 'RASTER' as google.maps.MapOptions['renderingType'],
     ...overrides,
   }
 }
@@ -188,6 +192,14 @@ export const V3_MARK_WIDTH_PX = 64
  * radius is a full mark plus a hair.
  */
 export const V3_CLUSTER_RADIUS_PX = V3_MARK_WIDTH_PX + 8
+
+/**
+ * Search-only merge radius. Place Atlas pins are SITE-127 and stay on
+ * V3_CLUSTER_RADIUS_PX. Search still stacked price pills at city zoom after
+ * SITE-44 because 72px is one pill — neighbouring streets still overlap.
+ * Two mark-widths collapses a block without swallowing a whole district.
+ */
+export const V3_SEARCH_CLUSTER_RADIUS_PX = V3_MARK_WIDTH_PX * 2
 
 /**
  * Supercluster's tile extent, and it is NOT a detail.

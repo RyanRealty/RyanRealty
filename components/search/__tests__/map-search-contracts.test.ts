@@ -884,14 +884,17 @@ describe('search index filter dock (E-SEARCH-REFINE)', () => {
   const page = readSrc('app/search/page.tsx')
 
   it('keeps a visually-hidden h1 without the noisy title above filters', () => {
-    expect(page).toMatch(/<h1 className="sr-only">Homes for sale<\/h1>/)
+    expect(page).toMatch(/<h1 className="sr-only">\{pageTitle\}<\/h1>/)
     expect(page).not.toMatch(/const h1Place =/)
     expect(page).not.toMatch(/const h1Text =/)
     expect(page.match(/<h1\b/g)?.length).toBe(1)
   })
 
   it('empty filters still title the regional query in metadata', () => {
-    expect(page).toMatch(/if \(parts\.length === 0\) return 'Central Oregon homes for sale'/)
+    expect(page).toMatch(/from '@\/lib\/search\/search-title'/)
+    expect(readSrc('lib/search/search-title.ts')).toMatch(
+      /if \(parts\.length === 0\) return 'Central Oregon homes for sale'/,
+    )
     expect(page).not.toMatch(/return 'Homes for Sale'/)
   })
 
@@ -989,7 +992,14 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     // pills stacked on each other past that. The radius and the ceiling are now
     // the shared frame constants, so a change moves both the merge and the fit.
     expect(map).toMatch(/maxZoom:\s*V3_CLUSTER_MAX_ZOOM/)
-    expect(map).toMatch(/radius:\s*V3_CLUSTER_RADIUS_PX/)
+    expect(map).toMatch(/radius:\s*clusterRadiusPx/)
+    expect(map).toMatch(/clusterRadiusPx = V3_CLUSTER_RADIUS_PX/)
+    const split = readSrc('components/search/MapSearchView.tsx')
+    const mapOnly = readSrc('components/search/HideAwareSearchMap.tsx')
+    expect(split).toMatch(/clusterRadiusPx=\{V3_SEARCH_CLUSTER_RADIUS_PX\}/)
+    expect(mapOnly).toMatch(/clusterRadiusPx=\{V3_SEARCH_CLUSTER_RADIUS_PX\}/)
+    const place = readSrc('components/site/v3/V3PlaceLookMap.client.tsx')
+    expect(place).not.toMatch(/V3_SEARCH_CLUSTER_RADIUS_PX/)
     expect(map).not.toMatch(/maxZoom:\s*14/)
     expect(map).toMatch(/buildPhotoStampElement/)
     expect(map).toMatch(/zoomMode/)

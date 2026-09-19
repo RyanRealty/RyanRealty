@@ -13,6 +13,8 @@ import { getGeocodedListings } from '@/app/actions/geocode'
 import { getSession } from '@/app/actions/auth'
 import type { SearchFilters as SearchFiltersState } from '@/app/actions/search'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
+import { buildSearchDescription, buildSearchTitle } from '@/lib/search/search-title'
+import { searchRelHrefs } from '@/lib/search/search-rel'
 import { appendIndexableSearchParams, shouldNoIndexSearchVariant } from '@/lib/seo-routing'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
@@ -180,22 +182,6 @@ propertySubType: sp.propertySubType?.trim() || undefined,
   return filters
 }
 
-function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
-  const parts: string[] = []
-  if (filters.beds != null && filters.beds > 0) parts.push(`${filters.beds}+ Bedroom`)
-  if (filters.baths != null && filters.baths > 0) parts.push(`${filters.baths}+ Bath`)
-  const loc = [filters.subdivision, filters.city].filter(Boolean).join(', ')
-  if (loc) parts.push(loc)
-  if (parts.length === 0) return 'Central Oregon homes for sale'
-  return `${parts.join(' ')} Homes for Sale`
-}
-
-/** Shared by generateMetadata and the WebPage JSON-LD so the two never drift. */
-function buildSearchDescription(filters: ReturnType<typeof parseFilters>): string {
-  return filters.city || filters.subdivision
-    ? `Homes for sale in ${[filters.subdivision, filters.city].filter(Boolean).join(', ') || 'Central Oregon'}. Live from the regional MLS, with price, beds, baths, and the map.`
-    : 'Homes for sale in Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
-}
 
 /** Shared by generateMetadata and the WebPage JSON-LD so the canonical URL
  *  published in both places is always the same value. */
@@ -450,11 +436,18 @@ export default async function SearchPage({
   const isAppFrame = view === 'map' || view === 'split'
 
   const { siteUrl, canonical } = buildSearchCanonical(sp)
+  const pageTitle = buildSearchTitle(filters)
+  const rel =
+    view === 'list' && typeof resultsCount === 'number'
+      ? searchRelHrefs(canonical, page, resultsCount)
+      : {}
 
   return (
     <>
+    {rel.prev ? <link rel="prev" href={rel.prev} /> : null}
+    {rel.next ? <link rel="next" href={rel.next} /> : null}
     <SearchRootJsonLd
-      title={buildSearchTitle(filters)}
+      title={pageTitle}
       description={buildSearchDescription(filters)}
       canonicalUrl={canonical.toString()}
       siteUrl={siteUrl}
@@ -481,7 +474,7 @@ export default async function SearchPage({
       <div className={cn('search-filter-dock w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         {/* Visually hidden H1 keeps a document outline without the noisy
             "{City} homes for sale" title above the filter chips. */}
-        <h1 className="sr-only">Homes for sale</h1>
+        <h1 className="sr-only">{pageTitle}</h1>
         <div className={isAppFrame ? 'hidden' : undefined}>
           <SentenceSearch />
         </div>
