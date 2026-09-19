@@ -1,3 +1,11 @@
+# Current — 2026-09-19 (SITE-123 rematch — Quiet link href compile)
+
+Surface: Cursor cloud `bc-4255a234-e451-5646-8629-b9ffd9a17f19`, branch `cursor/site-123-aeo-href-compile-7f19` off `origin/main` `3c0d7c8d3`. Replaces tip `7b428b0d8` / PR #319 (Cos cherry-pick aborted on `ci:commit-compiles`). PR only — Cos Mini lands this NEW tip. Do not merge. HOLD owner email.
+
+- **Wire kept.** SEO Desk live list + `ci:aeo-hub-guides` from SITE-123. `/buy` Ledger (8) · `/sell` Quiet (5) · `/neighborhoods` Quiet (3) · `/housing-market/bend` Quiet (3).
+- **Compile fix.** `aeoHubQuietItems` returns `V3QuietLink[]` (`kind: 'link'` + `href`). `buildExploreItems` reads href through `quietLinkHref` so `V3QuietProse` never sees `.href`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `walkthrough-artifacts`.
+
 # Current — 2026-09-19 (search typeahead — drop 2018 dead stock)
 
 Surface: Cursor cloud `bc-2e02ecf3-d804-5e7c-b8e5-bec7a17234bb`, branch `cursor/gate-stale-search-typeahead-34bb` off `origin/main` `381997f27`. PR only — Cos Mini lands. Do not merge. HOLD owner email. City→place-page nav left alone (Matt never mind).
