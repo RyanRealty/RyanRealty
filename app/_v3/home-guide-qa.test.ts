@@ -31,14 +31,15 @@ describe('homepage guides / Q&A strip (SITE-125)', () => {
     )
   })
 
-  it('opens with the unique AEO tip-min doors and omits the 404 closing-costs slug', () => {
+  it('opens with the unique AEO tip-min doors including the live closing-costs slug', () => {
     const doors = aeoHubHomeStripDoors()
     const hrefs = doors.map((door) => door.href)
     const expected = [...new Set(Object.values(AEO_HUB_TIP_MINS).flat())]
     expect(hrefs).toEqual(expected)
-    expect(hrefs).toHaveLength(8)
-    expect(hrefs).not.toContain(AEO_HUB_OMIT[0])
+    expect(hrefs).toHaveLength(9)
+    expect(hrefs).toContain('/blog/closing-costs-buyers-bend-oregon')
     expect(hrefs).not.toContain('/blog/buyers-agent-bend-buyer-broker-agreement')
+    expect(AEO_HUB_OMIT).toHaveLength(0)
     expect(doors[0]?.label).toBe('First-Time Home Buyer Guide for Bend and Central Oregon')
     expect(doors.find((door) => door.href === '/blog/how-to-sell-your-home-bend')?.group).toBe('Sell')
   })

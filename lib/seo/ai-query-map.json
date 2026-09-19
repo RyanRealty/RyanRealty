@@ -18,6 +18,11 @@
       "path": "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2"
     },
     {
+      "section": "guides",
+      "label": "Closing Costs for Home Buyers in Bend, Oregon",
+      "path": "/blog/closing-costs-buyers-bend-oregon"
+    },
+    {
       "section": "tools",
       "label": "Value my home",
       "path": "/sell"
@@ -208,6 +213,25 @@
         }
       ],
       "llmsSubstrings": ["/communities/"]
+    },
+    {
+      "id": "buyer-closing-costs-bend",
+      "source": "seo-desk",
+      "query": "How much are closing costs for buyers in Bend Oregon",
+      "intent": "buyer-guide",
+      "citablePaths": ["/blog/closing-costs-buyers-bend-oregon"],
+      "why": "SITE-124 dedicated buyer closing-costs page. Sourced line items only. No invented percent-of-price total.",
+      "jsonLd": [
+        {
+          "file": "lib/blog/buyer-closing-costs.ts",
+          "all": ["Questions", "How much are closing costs for buyers in Bend?"]
+        },
+        {
+          "file": "app/blog/[slug]/page.tsx",
+          "all": ["publishBlogFaq"]
+        }
+      ],
+      "llmsSubstrings": ["/blog/closing-costs-buyers-bend-oregon", "Closing Costs for Home Buyers"]
     },
     {
       "id": "gsc-brasada",

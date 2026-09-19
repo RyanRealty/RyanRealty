@@ -9,8 +9,9 @@ import {
 } from './aeo-hub-guides'
 
 describe('aeo-hub-guides', () => {
-  it('keeps the SEO Desk live list and omits the 404 closing-costs slug', () => {
-    expect(AEO_HUB_GUIDES.buy).toHaveLength(8)
+  it('keeps the SEO Desk live list and the published closing-costs slug', () => {
+    expect(AEO_HUB_GUIDES.buy).toHaveLength(9)
+    expect(AEO_HUB_GUIDES.buy.map((g) => g.href)).toContain('/blog/closing-costs-buyers-bend-oregon')
     expect(AEO_HUB_GUIDES.sell.map((g) => g.href)).toContain('/blog/how-to-sell-your-home-bend')
     expect(AEO_HUB_GUIDES.sell.map((g) => g.href)).toContain('/blog/cost-to-sell-house-bend-oregon')
     expect(AEO_HUB_GUIDES.neighborhoods.map((g) => g.href)).toEqual([
@@ -19,9 +20,9 @@ describe('aeo-hub-guides', () => {
       '/blog/bend-vs-redmond-vs-sisters',
     ])
     const allHrefs = Object.values(AEO_HUB_GUIDES).flatMap((rows) => rows.map((g) => g.href))
-    expect(allHrefs).not.toContain('/blog/closing-costs-buyers-bend-oregon')
+    expect(allHrefs).toContain('/blog/closing-costs-buyers-bend-oregon')
     expect(allHrefs).not.toContain('/blog/buyers-agent-bend-buyer-broker-agreement')
-    expect(AEO_HUB_OMIT).toContain('/blog/closing-costs-buyers-bend-oregon')
+    expect(AEO_HUB_OMIT).not.toContain('/blog/closing-costs-buyers-bend-oregon')
   })
 
   it('uses authentic titles as ledger and Quiet anchors', () => {
@@ -50,8 +51,8 @@ describe('aeo-hub-guides', () => {
   it('homepage strip doors are the unique tip-min union with published titles', () => {
     const doors = aeoHubHomeStripDoors()
     expect(doors.map((door) => door.href)).toEqual([...new Set(Object.values(AEO_HUB_TIP_MINS).flat())])
-    expect(doors).toHaveLength(8)
+    expect(doors).toHaveLength(9)
     expect(doors.every((door) => door.label && door.group)).toBe(true)
-    expect(doors.map((door) => door.href)).not.toContain('/blog/closing-costs-buyers-bend-oregon')
+    expect(doors.map((door) => door.href)).toContain('/blog/closing-costs-buyers-bend-oregon')
   })
 })

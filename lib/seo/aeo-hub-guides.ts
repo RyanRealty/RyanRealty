@@ -3,8 +3,8 @@
  *
  * Human anchors are the published titles from
  * `scripts/blog-content/aeo-guides-2026-09.ts`. Do not invent slugs.
- * Omitted on purpose: `/blog/closing-costs-buyers-bend-oregon` (404, SITE-124)
- * and any buyer-broker slug that was not on the Desk list.
+ * SITE-124 published `/blog/closing-costs-buyers-bend-oregon`. Still omit
+ * the buyer-broker slug that was not on the Desk wire list.
  *
  * reachability: imported by /buy, /sell, /neighborhoods, and
  * /housing-market/bend through V3Ledger / V3Quiet (44px tap floor).
@@ -27,7 +27,7 @@ export type AeoHubGuide = {
   readonly title: string
 }
 
-export const AEO_HUB_OMIT = ['/blog/closing-costs-buyers-bend-oregon'] as const
+export const AEO_HUB_OMIT = [] as const
 
 export const AEO_HUB_GUIDES: Record<AeoHubId, readonly AeoHubGuide[]> = {
   buy: [
@@ -62,6 +62,10 @@ export const AEO_HUB_GUIDES: Record<AeoHubId, readonly AeoHubGuide[]> = {
     {
       href: '/blog/property-taxes-deschutes-county',
       title: 'Property Taxes in Bend and Deschutes County, Explained',
+    },
+    {
+      href: '/blog/closing-costs-buyers-bend-oregon',
+      title: 'Closing Costs for Home Buyers in Bend, Oregon',
     },
   ],
   sell: [
@@ -123,6 +127,7 @@ export const AEO_HUB_TIP_MINS: Record<AeoHubId, readonly string[]> = {
     '/blog/cost-of-living-bend-oregon',
     '/blog/best-neighborhoods-bend-buyers',
     '/blog/bend-vs-redmond-vs-sisters',
+    '/blog/closing-costs-buyers-bend-oregon',
   ],
   sell: ['/blog/how-to-sell-your-home-bend', '/blog/cost-to-sell-house-bend-oregon'],
   neighborhoods: [
@@ -162,7 +167,7 @@ const HOME_STRIP_HUBS = [
 /**
  * Homepage ATF strip (SITE-125). Unique tip-min guides across the four hubs,
  * published titles only. Dedupes shared slugs so Best Neighborhoods is one
- * door, not three. Closing-costs stays omitted with the sealed list.
+ * door, not three. Closing-costs is live (SITE-124) and is on the buy tip-min.
  */
 export function aeoHubHomeStripDoors(): V3AnswersDoor[] {
   const seen = new Set<string>()
