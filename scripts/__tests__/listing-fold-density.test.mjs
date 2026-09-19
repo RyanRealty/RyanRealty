@@ -146,6 +146,23 @@ describe('listing-fold-density lock', () => {
     expect(p.join('\n')).toMatch(/display-2|flush on the strip|listing-ask|Photos\/Map/i)
   })
 
+  it('refuses an overlay crumb that ellipsizes the address at 375', () => {
+    const css = live.breadcrumbCss
+      .replace(
+        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  max-width: none;',
+        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  max-width: min(18rem, 52vw);',
+      )
+      .replace(
+        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {\n  flex: 0 0 auto;',
+        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {\n  flex: 0 1 auto;',
+      )
+    const p = breadcrumbFoldDensityProblems({
+      root: REPO,
+      files: { ...live, breadcrumbCss: css },
+    })
+    expect(p.join('\n')).toMatch(/ellipsis|52vw|shrink|828 Florida|clip/i)
+  })
+
   it('refuses a listing crumb that is not overlay', () => {
     const page = live.page.replace(
       '<V3Breadcrumb trail={breadcrumbs} tone="on-media" overlay />',

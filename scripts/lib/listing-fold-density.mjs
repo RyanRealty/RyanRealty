@@ -171,6 +171,16 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
       `${PATHS.breadcrumbCss}: overlay-compact list must scroll the name-only place path, not clip Bend / Old Bend / plat / address.`,
     )
   }
+  if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__text--current[\s\S]{0,160}max-width:\s*none/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact current crumb must not ellipsis at 52vw. SITE-128 rematch: 828 Florida clipped.`,
+    )
+  }
+  if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__item:last-child[\s\S]{0,120}flex:\s*0 0 auto/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact items must not shrink. Address end clipping is refuse.`,
+    )
+  }
   return p
 }
 

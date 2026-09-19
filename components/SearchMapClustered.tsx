@@ -32,6 +32,7 @@ import {
   v3SubjectRingPadding,
 } from '@/lib/maps/v3-basemap'
 import {
+  clampRingChip,
   ringLabelAnchor,
   SUBJECT_RING_CHIP_Z,
   SUBJECT_RING_HALO_Z,
@@ -847,13 +848,26 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
       const anchorPx = anchor
         ? proj.fromLatLngToDivPixel(new google.maps.LatLng(anchor.lat, anchor.lng))
         : null
-      if (labelText && anchorPx) {
+      if (labelText && anchor && anchorPx) {
+        const mapDiv = this.getMap()?.getDiv()
+        const containerPx = proj.fromLatLngToContainerPixel
+          ? proj.fromLatLngToContainerPixel(new google.maps.LatLng(anchor.lat, anchor.lng))
+          : null
+        const island = {
+          width: mapDiv?.clientWidth ?? 0,
+          height: mapDiv?.clientHeight ?? 0,
+        }
+        const clamped = containerPx && island.width > 0
+          ? clampRingChip({ x: containerPx.x, y: containerPx.y }, island)
+          : null
+        const dx = clamped && containerPx ? clamped.x - containerPx.x : 0
+        const dy = clamped && containerPx ? clamped.y - containerPx.y : 0
         const chip = document.createElement('div')
         chip.dataset.subjectRingLabel = labelText
         chip.textContent = labelText
         chip.style.position = 'absolute'
-        chip.style.left = `${anchorPx.x - minX}px`
-        chip.style.top = `${anchorPx.y - minY}px`
+        chip.style.left = `${anchorPx.x - minX + dx}px`
+        chip.style.top = `${anchorPx.y - minY + dy}px`
         chip.style.transform = 'translate(-50%, -50%)'
         chip.style.zIndex = String(SUBJECT_RING_CHIP_Z)
         chip.style.background = MAP_CREAM

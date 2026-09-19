@@ -43,6 +43,11 @@ const PATHS = Object.freeze({
   citySections: 'app/cities/[slug]/_v3/city-sections.ts',
   crumb: 'components/site/v3/V3Breadcrumb.tsx',
   placeLookMap: 'components/site/v3/V3PlaceLookMap.client.tsx',
+  placeLookCss: 'components/site/v3/V3PlaceLook.css',
+  cityFoldCss: 'app/cities/[slug]/_v3/city-fold.css',
+  searchMap: 'components/SearchMapClustered.tsx',
+  subjectRing: 'lib/maps/subject-ring.ts',
+  ringPad: 'lib/maps/v3-basemap.ts',
   platInsight: 'app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx',
   grain: 'lib/place/city-place-grain.ts',
   parity: PLACE_CRAFT_PARITY,
@@ -356,6 +361,35 @@ export function placeSeamsProblems({ root = process.cwd(), files = {} } = {}) {
     p.push(
       `${PATHS.placeLookMap}: city first-look must cluster price marks. disableClustering:true piles/clips at 375.`,
     )
+  }
+
+  const lookCss = readRel(root, PATHS.placeLookCss, files.placeLookCss ?? files[PATHS.placeLookCss])
+  if (lookCss == null) {
+    p.push(`${PATHS.placeLookCss}: missing PlaceLook CSS.`)
+  } else if (!/\.v3-place-look__map \{[\s\S]{0,220}overflow-x:\s*clip/.test(lookCss)) {
+    p.push(`${PATHS.placeLookCss}: map island must clip overflow so price chips cannot scroll the page.`)
+  }
+
+  const foldCss = readRel(root, PATHS.cityFoldCss, files.cityFoldCss ?? files[PATHS.cityFoldCss])
+  if (foldCss == null) {
+    p.push(`${PATHS.cityFoldCss}: missing city fold CSS.`)
+  } else if (!/overflow-x:\s*clip/.test(foldCss)) {
+    p.push(`${PATHS.cityFoldCss}: city fold drawing must overflow-x clip at 375. Chip overflow is refuse.`)
+  }
+
+  const searchMap = readRel(root, PATHS.searchMap, files.searchMap ?? files[PATHS.searchMap])
+  if (searchMap == null || !searchMap.includes('clampRingChip')) {
+    p.push(`${PATHS.searchMap}: subject-ring chip must clamp inside the island (SITE-128 rematch).`)
+  }
+
+  const ring = readRel(root, PATHS.subjectRing, files.subjectRing ?? files[PATHS.subjectRing])
+  if (ring == null || !/export function clampRingChip/.test(ring)) {
+    p.push(`${PATHS.subjectRing}: clampRingChip must stay — edge chips clipping the map is refuse.`)
+  }
+
+  const pad = readRel(root, PATHS.ringPad, files.ringPad ?? files[PATHS.ringPad])
+  if (pad == null || !/Math\.max\(22/.test(pad)) {
+    p.push(`${PATHS.ringPad}: v3SubjectRingPadding must inset ≥22px so pills stay inside the island.`)
   }
 
   return p

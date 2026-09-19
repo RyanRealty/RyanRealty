@@ -79,6 +79,7 @@ describe('place first-look map island', () => {
     expect(/\bv3-place-look\b/.test('v3-place-look__map-canvas')).toBe(false)
     expect(clustered).toMatch(/fitSubjectRing && hasRing/)
     expect(clustered).toMatch(/v3SubjectRingPadding/)
+    expect(clustered).toMatch(/clampRingChip/)
   })
 
   it('paints a cream halo + navy ink above the basemap and under pills', () => {

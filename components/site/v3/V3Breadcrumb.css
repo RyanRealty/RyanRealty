@@ -185,6 +185,21 @@
   scrollbar-width: none;
 }
 
+/* SITE-128 rematch: the name-only place path must stay readable. Ellipsis
+   on the last crumb (52vw) clipped "828 NW Florida Avenue" at 375. Items
+   do not shrink; the list scrolls instead of chopping the address. */
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item,
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {
+  max-width: none;
+  overflow: visible;
+  text-overflow: unset;
+}
+
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list::-webkit-scrollbar {
   display: none;
 }

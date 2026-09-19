@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clampRingChip,
   ringLabelAnchor,
   SUBJECT_RING_CHIP_Z,
   SUBJECT_RING_HALO_WEIGHT,
@@ -124,5 +125,16 @@ describe('ring label anchor', () => {
   it('returns null for an empty path', () => {
     expect(ringLabelAnchor([])).toBeNull()
     expect(ringLabelAnchor([[]])).toBeNull()
+  })
+})
+
+describe('clampRingChip', () => {
+  it('keeps a north-edge Bend chip inside the 375 island', () => {
+    const island = { width: 335, height: 187 }
+    const clipped = clampRingChip({ x: 12, y: -4 }, island)
+    expect(clipped.x).toBeGreaterThanOrEqual(36)
+    expect(clipped.y).toBeGreaterThanOrEqual(14)
+    expect(clipped.x).toBeLessThanOrEqual(island.width - 36)
+    expect(clipped.y).toBeLessThanOrEqual(island.height - 14)
   })
 })

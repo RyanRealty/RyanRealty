@@ -195,3 +195,18 @@ export function ringLabelAnchor(paths: readonly (readonly RingPoint[])[]): RingP
     lng: north.lng * 0.85 + (sumLng / n) * 0.15,
   }
 }
+
+/** Keep the Bend / count chip inside the visible island (SITE-128 rematch). */
+export function clampRingChip(
+  anchor: { x: number; y: number },
+  island: IslandBox,
+  halfW = 36,
+  halfH = 14,
+): { x: number; y: number } {
+  const maxX = Math.max(halfW, island.width - halfW)
+  const maxY = Math.max(halfH, island.height - halfH)
+  return {
+    x: Math.min(maxX, Math.max(halfW, anchor.x)),
+    y: Math.min(maxY, Math.max(halfH, anchor.y)),
+  }
+}

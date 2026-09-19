@@ -147,7 +147,8 @@
 
 .city-fold__drawing {
   min-width: 0;
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .city-fold__drawing .v3-atlas {
@@ -223,6 +224,14 @@
 }
 
 @media (max-width: 63.99rem) {
+  /* SITE-128 rematch: price/count chips must not push the page sideways. */
+  .city-fold,
+  .city-fold__stage,
+  .city-fold__drawing {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
   .city-fold {
     padding-top: var(--v3-space-2xs);
     padding-bottom: var(--v3-space-sm);

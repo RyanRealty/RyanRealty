@@ -234,8 +234,8 @@ export function v3FitPadding(el: { clientWidth: number; clientHeight: number } |
 /**
  * Place first-look ring camera. The search-map pad floors at 96px so pills
  * clear the edge; that floor is taller than the 10.5rem phone island and
- * crops the city ring off the fold. Tight inset so the recorded ring fills
- * the island.
+ * crops the city ring off the fold. SITE-128 rematch: 22–32px inset so
+ * price/count chips stay inside the island instead of clipping the frame.
  */
 export function v3SubjectRingPadding(el: { clientWidth: number; clientHeight: number } | null): {
   top: number
@@ -245,6 +245,6 @@ export function v3SubjectRingPadding(el: { clientWidth: number; clientHeight: nu
 } {
   const w = el?.clientWidth ?? 0
   const h = el?.clientHeight ?? 0
-  const pad = Math.max(8, Math.min(18, Math.round(Math.min(w || 320, h || 168) * 0.08)))
+  const pad = Math.max(22, Math.min(32, Math.round(Math.min(w || 320, h || 168) * 0.14)))
   return { top: pad, right: pad, bottom: pad, left: pad }
 }
