@@ -47,7 +47,7 @@ describe('sellListingRows', () => {
       what: '12 Pine Rd',
       when: 'Bend',
       detail: '3 bd · 2 ba · 1,850 sqft',
-      media: { src: 'https://img.example/house.jpg' },
+      media: { src: 'https://img.example/house.jpg', alt: '12 Pine Rd, Bend' },
     })
     expect(String(rows[0]!.value)).toMatch(/\$/)
     expect(rows[0]!.href).toContain('220000001')
