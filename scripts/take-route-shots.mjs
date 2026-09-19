@@ -762,8 +762,11 @@ async function loadPage(page, url, { attempt = 1 } = {}) {
 
 const RAW_DIR = 'out/take-route-shots'
 
-async function writeShot(page, destPath, { full, keepRaw, routeKey }) {
-  const raw = await page.screenshot({ fullPage: Boolean(full), animations: 'disabled' })
+async function writeShot(page, destPath, { full, keepRaw, routeKey, allowAnimations }) {
+  const raw = await page.screenshot({
+    fullPage: Boolean(full),
+    animations: allowAnimations ? 'allow' : 'disabled',
+  })
   const encoded = await sharp(raw).png(PNG_ENCODE).toBuffer()
   mkdirSync(resolve(destPath, '..'), { recursive: true })
   writeFileSync(destPath, encoded)
@@ -1128,7 +1131,10 @@ async function main() {
         }
 
         const file = naming.fileFor(state.name, viewport.key)
-        const result = await writeShot(page, join(outDir, file), opts)
+        const result = await writeShot(page, join(outDir, file), {
+          ...opts,
+          allowAnimations: /(?:^|[-_])(?:search-)?open(?:$|[-_])/i.test(state.name),
+        })
         written.push({ file, ...result })
         // Independent catalog demos share one page. Close a morph/dialog so the
         // next state's click is not aimed at a hidden Buy field (homepage Sell

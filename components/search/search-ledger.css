@@ -1007,7 +1007,7 @@ button.srch-chip--key {
 .srch-command {
   max-height: 18rem;
   overflow: auto;
-  background: var(--v3-surface, rgba(255, 255, 255, 1));
+  background: var(--v3-cream, var(--v3-surface));
 }
 
 .srch-command [role='option'] {

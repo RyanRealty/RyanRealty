@@ -370,10 +370,10 @@ export function MorphingSearch({
 	const viewportWidth = mounted ? window.innerWidth : 0;
 	const panelWidth = mounted
 		? iconOnly
-			? Math.max(anchorRect.width, Math.min(448, viewportWidth - 24))
+			? Math.max(anchorRect.width, Math.min(640, viewportWidth - 24))
 			: Math.max(
 					anchorRect.width,
-					Math.min(448, viewportWidth - anchorRect.left - 16),
+					Math.min(640, viewportWidth - anchorRect.left - 16),
 				)
 		: anchorRect.width;
 	const panelLeft =
@@ -448,11 +448,7 @@ export function MorphingSearch({
 									aria-modal="true"
 									aria-label="Search"
 									onKeyDown={handleDialogKeyDown}
-									initial={
-										reduce || iconOnly
-											? false
-											: { opacity: 0, clipPath: collapsedContentClip }
-									}
+									initial={false}
 									animate={{
 										opacity: 1,
 										clipPath: expandedContentClip,

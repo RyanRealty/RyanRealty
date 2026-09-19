@@ -45,7 +45,7 @@ export function SearchCommandList({
   return (
     <Command
       shouldFilter={false}
-      className={cn('srch-command rounded-none bg-transparent p-0', className)}
+      className={cn('srch-command rounded-none bg-background p-0', className)}
     >
       <CommandList id={`${idPrefix}-listbox`} aria-label="Search suggestions">
         {loading && items.length === 0 ? (
