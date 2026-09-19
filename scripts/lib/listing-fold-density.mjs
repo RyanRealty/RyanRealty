@@ -238,6 +238,27 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
     if (!/@media \(max-width: 40rem\)\s*\{\s*\.listing-ask[\s\S]{0,80}--v3-size-display-2/.test(css)) {
       p.push(`${PATHS.listingCss}: phone listing-ask must use display-2, not display-1 air.`)
     }
+    const askType = cssBlocks(css, '.listing-ask').find((b) => /font-family|font-synthesis/.test(b))
+    if (!askType || !/font-weight:\s*400/.test(askType)) {
+      p.push(
+        `${PATHS.listingCss}: listing H1 (.listing-ask) must use font-weight 400 to match loaded Amboqia.`,
+      )
+    }
+    if (askType && /font-weight:\s*(?:var\(--v3-weight-medium\)|[567]00)/.test(askType)) {
+      p.push(
+        `${PATHS.listingCss}: listing H1 must not request 500/600/700 — Amboqia has no those cuts; Safari synthesizes smear.`,
+      )
+    }
+    if (!askType || !/font-synthesis:\s*none/.test(askType)) {
+      p.push(
+        `${PATHS.listingCss}: listing H1 must set font-synthesis: none so Safari cannot faux-bold Amboqia.`,
+      )
+    }
+    if (!askType || !/--v3-font-display/.test(askType)) {
+      p.push(
+        `${PATHS.listingCss}: listing H1 must keep --v3-font-display (amboqia-i-patch + amboqia 400).`,
+      )
+    }
     if (!/@media \(max-width: 40rem\)[\s\S]*\.listing-face[\s\S]{0,160}padding-top:\s*var\(--v3-space-2xs\)/.test(css)) {
       p.push(`${PATHS.listingCss}: phone title block must tighten listing-face pad to 2xs.`)
     }

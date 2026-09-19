@@ -1449,10 +1449,16 @@
   min-height: var(--v3-map-min);
 }
 
-.listing-ask {
+/* SITE-131: listing H1 only. Amboqia ships the 400 cut (next/font +
+   amboqia-i-patch @font-face). Weight 500 + default font-synthesis made
+   Safari faux-bold the street line — double-struck smear on iPhone @375.
+   Keep --v3-font-display (amboqia-i-patch, amboqia): the I-patch is loaded
+   in app/globals.css at 400 / U+0049; do not request a weight it does not ship. */
+h1.listing-ask {
   font-family: var(--v3-font-display);
   font-size: var(--v3-size-display-1);
-  font-weight: var(--v3-weight-medium);
+  font-weight: 400;
+  font-synthesis: none;
   line-height: var(--v3-leading-heading);
   letter-spacing: var(--v3-track-display);
   color: var(--v3-navy);

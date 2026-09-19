@@ -81,6 +81,24 @@ describe('listing-fold-density lock', () => {
     expect(p.join('\n')).toMatch(/1\.75rem|tap band|overlay-compact/i)
   })
 
+  it('refuses listing H1 faux-bold (weight 500 or missing font-synthesis: none)', () => {
+    const css = live.listingCss.replace(
+      /h1\.listing-ask \{[\s\S]*?\}/,
+      `h1.listing-ask {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-1);
+  font-weight: var(--v3-weight-medium);
+  font-synthesis: weight style small-caps;
+  line-height: var(--v3-leading-heading);
+}`,
+    )
+    const p = listingHeroFoldDensityProblems({
+      root: REPO,
+      files: { ...live, listingCss: css },
+    })
+    expect(p.join('\n')).toMatch(/font-weight 400|font-synthesis: none|faux-bold|Amboqia/i)
+  })
+
   it('refuses a phone fold that puts display-1 air back on the address', () => {
     const css = live.listingCss
       .replace(
