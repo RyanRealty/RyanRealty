@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * Google island for V3PlaceLook. One place ring. Price pills, no count
- * cluster. Camera fits the recorded ring (not a 240-pin union).
- * Child cells stay off this fold (SITE-128 #2).
+ * Google island for V3PlaceLook. One place ring. Price pills cluster at
+ * city zoom so a 375 first-look does not pile/clip into an unreadable
+ * stack (SITE-128 rematch FAIL 5). Camera fits the recorded ring.
  */
 
 import dynamic from 'next/dynamic'
@@ -26,7 +26,6 @@ export function V3PlaceLookMap({ listings, boundaryGeojson, placeQuery }: V3Plac
     listings,
     hideBoundaryToggle: true,
     boundaryStrokeWeight: 8,
-    disableClustering: true,
     fitSubjectRing: true,
     className: 'v3-place-look__map-canvas',
   }

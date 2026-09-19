@@ -1600,15 +1600,9 @@ async function renderSubdivisionPage({ params }: Props) {
                 </div>
                 {pickerOptions.length > 1 ? (
                   <div className="plat-fold__picker">
-                    <span className="plat-fold__picker-label">
-                      {citySlug ? `Another subdivision in ${cityName}` : 'Another subdivision'}
-                    </span>
+                    {cityName ? <span className="plat-fold__picker-label">{cityName}</span> : null}
                     <SubdivisionPicker
-                      label={
-                        citySlug
-                          ? `Go to another subdivision in ${cityName}`
-                          : 'Go to another subdivision'
-                      }
+                      label={cityName ? `Also in ${cityName}` : 'Nearby places'}
                       options={pickerOptions}
                       value={slug}
                     />

@@ -65,7 +65,7 @@ describe('place first-look map island', () => {
     const map = readFileSync(resolve('components/site/v3/V3PlaceLookMap.client.tsx'), 'utf8')
     expect(map).toMatch(/hideBoundaryToggle:\s*true/)
     expect(map).toMatch(/boundaryStrokeWeight:\s*8/)
-    expect(map).toMatch(/disableClustering:\s*true/)
+    expect(map).not.toMatch(/disableClustering:\s*true/)
     expect(map).toMatch(/fitSubjectRing:\s*true/)
     expect(map).toMatch(/SearchMapClustered/)
     expect(map).not.toMatch(/overlayBoundaries/)

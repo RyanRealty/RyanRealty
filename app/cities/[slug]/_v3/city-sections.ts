@@ -216,13 +216,11 @@ export function placePlainRows(
  * The communities rail as rows. The rail's own ordering is applied by the caller
  * (marquee and video cards first, then by active count), so this only shapes.
  * The clip is not played here — V3Ledger renders the poster frame, and the
- * community's own node is where the clip plays — but a community that HAS one is
- * marked, because that is why it leads the list.
+ * community's own node is where the clip plays.
  *
- * `when` carries ONLY the area-guide flag, not the town (SITE-52): every item's
- * town is this city, already named by the section's own eyebrow/heading, so
- * printing it on every row was the taste evaluator's "repeats OREGON" defect
- * with a city name in place of the state.
+ * Name-only cards (SITE-128 rematch): no AREA GUIDE / villages / subdivisions
+ * eyebrow. That flag belongs on the dedicated guides ledger (areaGuideRow),
+ * never on a public child card.
  */
 export function communityRows(items: readonly CityCommunityItem[]): V3LedgerFigureRow[] {
   return items.flatMap((item) => {
@@ -233,7 +231,6 @@ export function communityRows(items: readonly CityCommunityItem[]): V3LedgerFigu
       {
         id: href,
         href,
-        ...(item.video ? { when: v3Text('Area guide') } : {}),
         what: v3Text(name),
         value: v3Text(
           item.activeCount != null ? `${item.activeCount.toLocaleString('en-US')} active` : 'not measured',

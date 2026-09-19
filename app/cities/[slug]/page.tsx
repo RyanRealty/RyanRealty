@@ -136,6 +136,8 @@ import {
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
+import { cityPlaceGrain } from '@/lib/place/city-place-grain'
+import { subdivisionHref } from '@/lib/site/place-href'
 import { overlaysFromRegions } from '@/lib/place/child-rings'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertsStrip } from './_v3/CityAlertSheet.client'
@@ -421,11 +423,9 @@ async function renderCityDetail({ params }: Props) {
    * #neighborhoods. A–Z `/subdivisions` is the directory. Atlas-drawn plats
    * (non-Bend cities) stay as name-only cards after those bars.
    */
-  const childPlatEntries: V3PlaceIndexEntry[] = nameOnlyChildEntries([
-    atlasRegions
-      .filter((r) => typeof r.href === 'string' && r.href.startsWith('/subdivisions/'))
-      .map((r) => ({ name: r.name, href: r.href as string })),
-  ])
+  const atlasPlatEntries = atlasRegions
+    .filter((r) => typeof r.href === 'string' && r.href.startsWith('/subdivisions/'))
+    .map((r) => ({ name: r.name, href: r.href as string }))
   const libraryHero = await withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero')
   const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
   const typeCovers = await withTimeoutFallback(
@@ -716,13 +716,23 @@ async function renderCityDetail({ params }: Props) {
     ),
   }))
 
-  // THE COMMUNITIES RAIL - every community in this city that has a photo, with
-  // the curated marquee set (hand-picked still + silent Area Guide clip)
-  // floated to the front and the rest by active count (D88). Built from
-  // cityComms, never from a curated three.
+  // THE COMMUNITIES RAIL — community grain only (SITE-128 rematch FAIL 3).
+  // Designated neighborhoods stay on #neighborhoods. MLS plats/phases become
+  // name-only #child-places cards. Built from cityComms, never a curated three.
   const curatedComms = CITY_MARQUEE_COMMUNITIES[slug] ?? []
-  const communityItems: CityCommunityItem[] = cityComms
-    .map((c): CityCommunityItem | null => {
+  const cityCommGrains = cityComms.map((c) => {
+    const resortSlug = resortSlugByLabel.get(c.subdivision.toLowerCase().trim())
+    const grain = cityPlaceGrain({
+      name: c.subdivision,
+      slug: c.slug,
+      isResort: Boolean(c.isResort || resortSlug),
+      citySlug: slug,
+    })
+    return { c, resortSlug, grain }
+  })
+  const communityItems: CityCommunityItem[] = cityCommGrains
+    .filter(({ grain }) => grain === 'community')
+    .map(({ c, resortSlug }): CityCommunityItem | null => {
       const curated = curatedComms.find((f) => c.subdivision.toLowerCase().includes(f.match))
       const cvUrl = communityVideoUrl(curated?.videoSlug)
       const img = preferPlaceHero(c.heroImageUrl, curated?.img ?? '') || null
@@ -730,7 +740,6 @@ async function renderCityDetail({ params }: Props) {
       // When this community is a resort, show its ALIAS-AWARE count, so the
       // rail card matches the golf ledger and the real MLS total rather than
       // the literal-name undercount (§0).
-      const resortSlug = resortSlugByLabel.get(c.subdivision.toLowerCase().trim())
       const activeCount = resortSlug ? resortSfrCounts.get(resortSlug) ?? c.activeCount : c.activeCount
       return {
         name: c.subdivision,
@@ -749,6 +758,16 @@ async function renderCityDetail({ params }: Props) {
     // with one href are one place listed twice — and a duplicated React key.
     // The sort above has already put the marquee/high-count row first.
     .filter((item, i, arr) => arr.findIndex((x) => x.href === item.href) === i)
+
+  const platPlaceCards = cityCommGrains
+    .filter(({ grain }) => grain === 'plat')
+    .map(({ c }) => {
+      const platSlug = c.slug.replace(new RegExp(`^${slug}-`), '')
+      const href = subdivisionHref(platSlug)
+      return href ? { name: c.subdivision, href } : null
+    })
+    .filter((row): row is { name: string; href: string } => row !== null)
+  const childPlatEntries: V3PlaceIndexEntry[] = nameOnlyChildEntries([atlasPlatEntries, platPlaceCards])
 
   // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
   // city-prefixed index slugs while the ledger's are plain registry slugs for

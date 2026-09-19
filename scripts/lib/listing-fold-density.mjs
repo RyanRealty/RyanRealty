@@ -103,9 +103,12 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
       `${PATHS.breadcrumbTsx}: collapse must default at ${FOLD_LOCK.crumbCollapseAt}+ crumbs. A taller trail is an oversized crumb band.`,
     )
   }
-  if (!tsx.includes('overlayCompact') || !/rungs\.slice\(\s*0\s*,\s*lastIndex\s*\)/.test(tsx)) {
+  if (!tsx.includes('overlayCompact')) {
+    p.push(`${PATHS.breadcrumbTsx}: overlayCompact must stay (1.75rem listing wash).`)
+  }
+  if (!tsx.includes('showFullOverlayPath') || /overlayCompact \? null/.test(tsx)) {
     p.push(
-      `${PATHS.breadcrumbTsx}: listing overlay must compact to … / current (ancestors in the disclosure). Bend / … / street on the photo is leftover chrome.`,
+      `${PATHS.breadcrumbTsx}: listing overlay must paint the name-only place path (Bend / Old Bend / plat / address). Hiding ancestors to … / street is refuse.`,
     )
   }
   if (!tsx.includes('overlay')) {
@@ -154,6 +157,11 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
   } else if (!/\.v3\.v3-breadcrumb--overlay-compact[\s\S]{0,280}min-height:\s*1\.75rem/.test(css)) {
     p.push(
       `${PATHS.breadcrumbCss}: overlay-compact crumb must sit at 1.75rem, not the 44px tap band.`,
+    )
+  }
+  if (!/\.v3\.v3-breadcrumb--overlay-compact[\s\S]{0,200}overflow-x:\s*auto/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact list must scroll the name-only place path, not clip Bend / Old Bend / plat / address.`,
     )
   }
   return p

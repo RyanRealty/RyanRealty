@@ -19,7 +19,9 @@
   },
   "testFiles": [
     "scripts/__tests__/place-craft.test.mjs",
-    "lib/explore/place-hierarchy-crumb.test.ts"
+    "lib/explore/place-hierarchy-crumb.test.ts",
+    "lib/place/city-place-grain.test.ts",
+    "app/cities/[slug]/_v3/city-sections-seams.test.ts"
   ],
   "competitorFirstLook": {
     "peer": "Compass Bend homes-for-sale/bend-or + Compass Old Bend + Zillow bend-or",

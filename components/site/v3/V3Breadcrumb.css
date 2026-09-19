@@ -177,8 +177,18 @@
   color: var(--v3-ink-on-media);
 }
 
-/* Listing overlay (… / street) is a short navy wash, not a 44px cream/navy
-   band. Visual row is 1.75rem; the tap stays 44px via the expanded hit. */
+/* Listing overlay paints the name-only place path in a short navy wash.
+   Visual row is 1.75rem; the tap stays 44px via the expanded hit. */
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list::-webkit-scrollbar {
+  display: none;
+}
+
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text,
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__collapse {

@@ -40,6 +40,11 @@ const PATHS = Object.freeze({
   community: 'app/communities/[slug]/page.tsx',
   neighborhood: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
   subdivision: 'app/subdivisions/[slug]/page.tsx',
+  citySections: 'app/cities/[slug]/_v3/city-sections.ts',
+  crumb: 'components/site/v3/V3Breadcrumb.tsx',
+  placeLookMap: 'components/site/v3/V3PlaceLookMap.client.tsx',
+  platInsight: 'app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx',
+  grain: 'lib/place/city-place-grain.ts',
   parity: PLACE_CRAFT_PARITY,
 })
 
@@ -103,7 +108,7 @@ export function mapDrivesHierarchyProblems({ root = process.cwd(), files = {} } 
     if (/heading=\{[^}]*Subdivisions in/.test(city)) {
       p.push(`${PATHS.city}: "Subdivisions in …" list heading is refuse. Name-only child cards after the map.`)
     }
-    if (!/childPlatEntries[\s\S]{0,80}atlasRegions/.test(city)) {
+    if (!/atlasRegions/.test(city) || !/atlasPlatEntries/.test(city) || !/childPlatEntries/.test(city)) {
       p.push(`${PATHS.city}: child plats must come from atlasRegions (the map), not a sales-index dump.`)
     }
     if (!/id="atlas"/.test(city) || !/<V3Atlas/.test(city)) {
@@ -281,6 +286,81 @@ export function placeCraftParityContractProblems(d) {
   return p
 }
 
+/**
+ * SITE-128 rematch seams. Source-scan so the five Look FAILs cannot regress.
+ * CI only — not in --ship, which runs against a temp tree that copies only
+ * the four place templates.
+ */
+export function placeSeamsProblems({ root = process.cwd(), files = {} } = {}) {
+  const p = []
+  const crumb = readRel(root, PATHS.crumb, files.crumb ?? files[PATHS.crumb])
+  if (crumb == null) {
+    p.push(`${PATHS.crumb}: missing — listing place path cannot lock.`)
+  } else {
+    if (!/showFullOverlayPath/.test(crumb) || /overlayCompact \? null/.test(crumb)) {
+      p.push(
+        `${PATHS.crumb}: listing overlay must paint the name-only place path (Bend / Old Bend / plat / address). Hiding ancestors is refuse.`,
+      )
+    }
+  }
+
+  const sections = readRel(root, PATHS.citySections, files.citySections ?? files[PATHS.citySections])
+  if (sections == null) {
+    p.push(`${PATHS.citySections}: missing city ledger rows.`)
+  } else {
+    const rowsFn = sections.match(/export function communityRows[\s\S]*?^export function /m)
+    const body = rowsFn ? rowsFn[0] : ''
+    if (/Area guide/.test(body)) {
+      p.push(
+        `${PATHS.citySections}: communityRows must stay name-only. AREA GUIDE belongs on areaGuideRow, not a public child card.`,
+      )
+    }
+  }
+
+  const city = readRel(root, PATHS.city, files.city ?? files[PATHS.city])
+  if (city == null) {
+    p.push(`${PATHS.city}: missing city template — grain split cannot lock.`)
+  } else {
+    if (!/cityPlaceGrain/.test(city) || !/grain === 'community'/.test(city) || !/grain === 'plat'/.test(city)) {
+      p.push(
+        `${PATHS.city}: Communities rail must split grains (neighborhood vs community vs plat). Mixing Awbrey Butte with plats is refuse.`,
+      )
+    }
+  }
+
+  const grain = readRel(root, PATHS.grain, files.grain ?? files[PATHS.grain])
+  if (grain == null) {
+    p.push(`${PATHS.grain}: missing city-place-grain helper.`)
+  } else if (!/BEND_NEIGHBORHOOD_DISTRICTS/.test(grain) || !/getAllResortCommunities/.test(grain)) {
+    p.push(`${PATHS.grain}: grain split must use designated districts + the resort registry.`)
+  }
+
+  const subdivision = readRel(root, PATHS.subdivision, files.subdivision ?? files[PATHS.subdivision])
+  if (subdivision == null) {
+    p.push(`${PATHS.subdivision}: missing plat template.`)
+  } else if (/Another subdivision/i.test(subdivision) || /This subdivision/i.test(subdivision)) {
+    p.push(`${PATHS.subdivision}: type/lecture labels (This/Another subdivision) are refuse. Name-only.`)
+  }
+
+  const platInsight = readRel(root, PATHS.platInsight, files.platInsight ?? files[PATHS.platInsight])
+  if (platInsight == null) {
+    p.push(`${PATHS.platInsight}: missing plat insight.`)
+  } else if (/This subdivision/i.test(platInsight)) {
+    p.push(`${PATHS.platInsight}: InsightCards title must be the place name, not "This subdivision".`)
+  }
+
+  const lookMap = readRel(root, PATHS.placeLookMap, files.placeLookMap ?? files[PATHS.placeLookMap])
+  if (lookMap == null) {
+    p.push(`${PATHS.placeLookMap}: missing PlaceLook map.`)
+  } else if (/disableClustering:\s*true/.test(lookMap)) {
+    p.push(
+      `${PATHS.placeLookMap}: city first-look must cluster price marks. disableClustering:true piles/clips at 375.`,
+    )
+  }
+
+  return p
+}
+
 export function placeCraftShipProblems(d, { root = process.cwd(), files = {}, tr } = {}) {
   const p = []
   if (isPlaceCraftDocument(d)) p.push(...placeCraftParityContractProblems(d))
@@ -304,5 +384,6 @@ export function placeCraftCiProblems({ root = process.cwd(), files = {} } = {}) 
     return p
   }
   p.push(...placeCraftParityContractProblems(parsed))
+  p.push(...placeSeamsProblems({ root, files }))
   return p
 }

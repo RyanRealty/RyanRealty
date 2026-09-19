@@ -14,6 +14,7 @@ import {
   mapDrivesHierarchyProblems,
   placeCraftCiProblems,
   placeCraftShipProblems,
+  placeSeamsProblems,
 } from '../lib/place-craft.mjs'
 import { siteQueueDoneEvidenceProblems, tasteDoneProblems } from '../lib/taste-receipt.mjs'
 
@@ -192,6 +193,53 @@ describe('ci:place-craft', () => {
     expect(r.status).toBe(0)
     expect(r.stdout).toContain(PLACE_CRAFT_GATE)
     expect(r.stdout).toMatch(/map-drives-hierarchy/)
+  })
+})
+
+describe('SITE-128 rematch seams (CI only)', () => {
+  it('passes the live tree', () => {
+    expect(placeSeamsProblems({ root: REPO })).toEqual([])
+    expect(placeCraftCiProblems({ root: REPO })).toEqual([])
+  })
+
+  it('FAIL 1 — refuses a listing overlay that hides the place path', () => {
+    const crumb = readFileSync(join(REPO, 'components/site/v3/V3Breadcrumb.tsx'), 'utf8').replaceAll(
+      'showFullOverlayPath',
+      'keepCollapsedOverlay',
+    )
+    const p = placeSeamsProblems({ root: REPO, files: { crumb } })
+    expect(p.join('\n')).toMatch(/place path/)
+  })
+
+  it('FAIL 2 — refuses AREA GUIDE on communityRows', () => {
+    const citySections = readFileSync(join(REPO, 'app/cities/[slug]/_v3/city-sections.ts'), 'utf8').replace(
+      'export function communityRows(items: readonly CityCommunityItem[]): V3LedgerFigureRow[] {',
+      'export function communityRows(items: readonly CityCommunityItem[]): V3LedgerFigureRow[] {\n    const when = v3Text("Area guide")',
+    )
+    const p = placeSeamsProblems({ root: REPO, files: { citySections } })
+    expect(p.join('\n')).toMatch(/name-only|AREA GUIDE/)
+  })
+
+  it('FAIL 3 — refuses a city Communities rail that does not split grains', () => {
+    const city = liveCity.replace('cityPlaceGrain', 'placeKindHint').replace(/grain === 'community'/g, 'kind === "rail"')
+    const p = placeSeamsProblems({ root: REPO, files: { city } })
+    expect(p.join('\n')).toMatch(/split grains|Awbrey Butte/)
+  })
+
+  it('FAIL 4 — refuses This/Another subdivision lecture on the plat node', () => {
+    const subdivision = `${readFileSync(join(REPO, 'app/subdivisions/[slug]/page.tsx'), 'utf8')}\nconst lecture = "Another subdivision in Bend"`
+    const platInsight = readFileSync(
+      join(REPO, 'app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx'),
+      'utf8',
+    ).replace('title: placeName', 'title: "This subdivision"')
+    const p = placeSeamsProblems({ root: REPO, files: { subdivision, platInsight } })
+    expect(p.join('\n')).toMatch(/This\/Another subdivision|place name/)
+  })
+
+  it('FAIL 5 — refuses disableClustering:true on the city first-look map', () => {
+    const placeLookMap = `${readFileSync(join(REPO, 'components/site/v3/V3PlaceLookMap.client.tsx'), 'utf8')}\n  disableClustering: true,`
+    const p = placeSeamsProblems({ root: REPO, files: { placeLookMap } })
+    expect(p.join('\n')).toMatch(/cluster price marks|375/)
   })
 })
 

@@ -63,7 +63,7 @@ export function SubdivisionInsight({ id, placeName, board, sourceName, asOf }: S
 
   return (
     <section id={id} className={`${V3_ROOT_CLASS} plat-insight`} aria-label={`${placeName}, page by page`}>
-      <InsightCards pages={pages} labels={{ title: 'This subdivision' }} />
+      <InsightCards pages={pages} labels={{ title: placeName }} />
     </section>
   )
 }

@@ -345,17 +345,15 @@ describe('design directive contracts', () => {
     expect(shared).toMatch(/href: `\/cities\/\$\{cs\}`/)
   })
 
-  it('D88 — communities rail renders ALL the city communities (built from cityComms, not a curated 3)', () => {
+  it('D88 — communities rail is grain-split from cityComms, not a curated 3', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    // rail maps over the full city community set, not CITY_COMMUNITIES[slug] alone.
-    // The ROW TYPE is route-local now (P9, 2026-08-12): KbCommunityItem is a plain
-    // data shape, but importing it puts a components/site/kb module specifier back on
-    // a page the roll just took off that register, which ci:public-ui counts as debt
-    // on this exact page. CityCommunityItem in app/cities/[slug]/_v3/city-sections.ts
-    // carries the same fields. The source of the list — `= cityComms` — is the part
-    // this directive is about and it is unchanged.
-    expect(src).toMatch(/const communityItems: CityCommunityItem\[\] = cityComms/)
-    // marquee/video cards float to the front, then by active count
+    // SITE-128 rematch: the rail still starts from cityComms (not CITY_MARQUEE
+    // alone) and then keeps community grain only. Neighborhoods and plats
+    // leave the photo rail.
+    expect(src).toMatch(/const cityCommGrains = cityComms/)
+    expect(src).toMatch(/cityPlaceGrain/)
+    expect(src).toMatch(/grain === 'community'/)
+    expect(src).toMatch(/const communityItems: CityCommunityItem\[\] = cityCommGrains/)
     expect(src).toMatch(/\.sort\(\(a, b\) => \(a\.video \? 0 : 1\)/)
   })
 

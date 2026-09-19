@@ -22,7 +22,8 @@ describe('V3Breadcrumb collapse + listing fold density', () => {
     expect(SRC).toContain('V3BreadcrumbCollapse')
     expect(SRC).toContain('rungs.length >= 3')
     expect(SRC).toContain('overlayCompact')
-    expect(SRC).toMatch(/rungs\.slice\(\s*0\s*,\s*lastIndex\s*\)/)
+    expect(SRC).toContain('showFullOverlayPath')
+    expect(SRC).not.toMatch(/overlayCompact \? null/)
     expect(SRC).toContain('overlay')
     expect(COLLAPSE).toMatch(/from '@\/components\/ui\/breadcrumb'/)
     expect(COLLAPSE).toContain('BreadcrumbEllipsis')
@@ -33,6 +34,7 @@ describe('V3Breadcrumb collapse + listing fold density', () => {
 
   it('keeps the trail one line and overlays listing crumbs on the mosaic', () => {
     expect(CSS).toMatch(/flex-wrap:\s*nowrap/)
+    expect(CSS).toMatch(/\.v3\.v3-breadcrumb--overlay-compact[\s\S]{0,200}overflow-x:\s*auto/)
     expect(CSS).toContain('v3-breadcrumb--overlay')
     expect(SRC).toContain('v3-breadcrumb--collapsed')
     expect(CSS).toMatch(/\.v3\.v3-breadcrumb--below-nav\s*\{[^}]*padding-top:\s*var\(--v3-space-2xs\)/)
