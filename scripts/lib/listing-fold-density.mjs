@@ -181,6 +181,11 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
       `${PATHS.breadcrumbCss}: overlay-compact items must not shrink. Address end clipping is refuse.`,
     )
   }
+  if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__link[\s\S]{0,280}font-size:\s*var\(--v3-size-source\)/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact phone crumbs must use source size so 828 Florida stays on the 375 trail.`,
+    )
+  }
   return p
 }
 

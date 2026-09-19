@@ -64,6 +64,12 @@
   text-decoration-thickness: 2px;
 }
 
+/* SITE-128 rematch: Google tile panes + $ chips must not widen the 375. */
+.city-page {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 .city-fold {
   width: 100%;
   max-width: var(--v3-measure);
@@ -147,8 +153,7 @@
 
 .city-fold__drawing {
   min-width: 0;
-  overflow-x: clip;
-  overflow-y: visible;
+  overflow: hidden;
 }
 
 .city-fold__drawing .v3-atlas {
@@ -224,11 +229,15 @@
 }
 
 @media (max-width: 63.99rem) {
-  /* SITE-128 rematch: price/count chips must not push the page sideways. */
+  /* SITE-128 rematch: both axes clip. overflow-x:clip + overflow-y:visible
+     computes back to auto and lets $ chips widen the page. */
   .city-fold,
   .city-fold__stage,
-  .city-fold__drawing {
-    overflow-x: clip;
+  .city-fold__drawing,
+  .city-fold__drawing .v3-place-look,
+  .city-fold__drawing .v3-place-look__stage,
+  .city-fold__drawing .v3-place-look__map {
+    overflow: hidden;
     max-width: 100%;
   }
 

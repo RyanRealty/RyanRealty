@@ -333,6 +333,11 @@ export function placeSeamsProblems({ root = process.cwd(), files = {} } = {}) {
     }
   }
 
+  const cityPage = readRel(root, PATHS.city, files.city ?? files[PATHS.city])
+  if (cityPage && !/city-page/.test(cityPage)) {
+    p.push(`${PATHS.city}: city main must carry city-page so 375 overflow-x stays clipped.`)
+  }
+
   const grain = readRel(root, PATHS.grain, files.grain ?? files[PATHS.grain])
   if (grain == null) {
     p.push(`${PATHS.grain}: missing city-place-grain helper.`)
@@ -366,15 +371,15 @@ export function placeSeamsProblems({ root = process.cwd(), files = {} } = {}) {
   const lookCss = readRel(root, PATHS.placeLookCss, files.placeLookCss ?? files[PATHS.placeLookCss])
   if (lookCss == null) {
     p.push(`${PATHS.placeLookCss}: missing PlaceLook CSS.`)
-  } else if (!/\.v3-place-look__map \{[\s\S]{0,220}overflow-x:\s*clip/.test(lookCss)) {
-    p.push(`${PATHS.placeLookCss}: map island must clip overflow so price chips cannot scroll the page.`)
+  } else if (!/\.v3-place-look__map \{[\s\S]{0,220}overflow:\s*hidden/.test(lookCss)) {
+    p.push(`${PATHS.placeLookCss}: map island must overflow:hidden so price chips cannot scroll the page.`)
   }
 
   const foldCss = readRel(root, PATHS.cityFoldCss, files.cityFoldCss ?? files[PATHS.cityFoldCss])
   if (foldCss == null) {
     p.push(`${PATHS.cityFoldCss}: missing city fold CSS.`)
-  } else if (!/overflow-x:\s*clip/.test(foldCss)) {
-    p.push(`${PATHS.cityFoldCss}: city fold drawing must overflow-x clip at 375. Chip overflow is refuse.`)
+  } else if (!/\.city-page \{[\s\S]{0,80}overflow-x:\s*hidden/.test(foldCss) || !/city-fold__drawing \.v3-place-look__map/.test(foldCss)) {
+    p.push(`${PATHS.cityFoldCss}: city page must overflow-x hidden and the fold map must clip. Chip overflow is refuse.`)
   }
 
   const searchMap = readRel(root, PATHS.searchMap, files.searchMap ?? files[PATHS.searchMap])

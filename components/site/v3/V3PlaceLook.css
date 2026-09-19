@@ -34,7 +34,7 @@
   height: 18rem;
   min-height: 16rem;
   overflow: hidden;
-  overflow-x: clip;
+  contain: paint;
   border: var(--v3-rule-hairline) solid var(--v3-navy);
 }
 

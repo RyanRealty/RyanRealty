@@ -864,7 +864,7 @@ async function renderCityDetail({ params }: Props) {
   })
   return (
     <>
-      <main className={V3_ROOT_CLASS}>
+      <main className={`${V3_ROOT_CLASS} city-page`}>
         <CityPageTracker
           cityName={cityName}
           slug={slug}

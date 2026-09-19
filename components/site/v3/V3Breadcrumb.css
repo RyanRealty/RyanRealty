@@ -200,6 +200,20 @@
   text-overflow: unset;
 }
 
+@media (max-width: 39.99rem) {
+  /* SITE-128 rematch: fit Bend / Old Bend / plat / address on a 375
+     without ellipsizing the street. Source size + tighter slashes. */
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text,
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__collapse {
+    font-size: var(--v3-size-source);
+  }
+
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item + .v3-breadcrumb__item::before {
+    margin: 0 0.15em;
+  }
+}
+
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list::-webkit-scrollbar {
   display: none;
 }
