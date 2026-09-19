@@ -85,9 +85,24 @@ describe('chrome homepage H-fixes', () => {
     expect(ANSWERS_CSS).toMatch(
       /\.v3\.v3-answers\.v3-answers--strip \.v3-answers__door \{[\s\S]*?font-size: var\(--v3-size-body-sm\)/,
     )
+    expect(ANSWERS_CSS).toMatch(
+      /\.v3\.v3-answers\.v3-answers--strip \{[\s\S]*?padding: var\(--v3-space-2xs\) var\(--v3-gutter\)/,
+    )
     expect(ANSWERS_CSS).not.toMatch(
       /\.v3\.v3-answers\.v3-answers--strip \.v3-answers__grid \{[\s\S]*?grid-template-columns: minmax\(0, 22rem\)/,
     )
+  })
+
+  it('pulls first house-rail photos onto the 1440 fold, not only the heading', () => {
+    const RAILS = readFileSync(resolve('app/_v3/home-homes-rails.css'), 'utf8')
+    expect(RAILS).toMatch(/\.home-rails \{\s*padding-top: 0;/)
+    expect(RAILS).toMatch(
+      /\.home-rails > \.home-rail:first-child \{\s*padding-top: var\(--v3-space-2xs\);/,
+    )
+    expect(RAILS).toMatch(
+      /\.home-rails > \.home-rail:first-child \.home-rail__head \{\s*padding-bottom: var\(--v3-space-2xs\);/,
+    )
+    expect(RAILS).not.toMatch(/\.home-rails > \.home-rail:first-child \{\s*padding-top: var\(--v3-space-sm\);/)
   })
 
   it('clips the 375 chrome bar so Menu stays on the canvas', () => {

@@ -7,15 +7,22 @@
   padding: var(--v3-space-xl) 0 var(--v3-space-md);
 }
 
-/* First rail sits in the fold under the compact Stage. */
-.home-rails > .home-rail:first-child {
-  padding-top: var(--v3-space-sm);
+/*
+ * SITE-125 fold rematch: #guides already pads the band. Stacking wrapper xl
+ * (36px) on first-child sm put the first house photos at y≈912 — heading in
+ * the 1440×900 fold, photographs 12px under it. Wrapper top stays 0 so the
+ * first card photos peek (target top ≤ ~860–880). Later rails keep xl.
+ */
+.home-rails {
+  padding-top: 0;
 }
 
-@media (max-width: 40rem) {
-  .home-rails > .home-rail:first-child {
-    padding-top: var(--v3-space-2xs);
-  }
+.home-rails > .home-rail:first-child {
+  padding-top: var(--v3-space-2xs);
+}
+
+.home-rails > .home-rail:first-child .home-rail__head {
+  padding-bottom: var(--v3-space-2xs);
 }
 
 * + .v3.home-rail,

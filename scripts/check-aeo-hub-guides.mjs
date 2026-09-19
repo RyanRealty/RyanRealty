@@ -11,6 +11,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { homepageFoldDensityProblems } from './lib/homepage-fold-density.mjs'
 
 const ROOT = process.cwd()
 const GATE = 'ci:aeo-hub-guides'
@@ -154,7 +155,7 @@ function aeoHubGuideProblems() {
   return failures
 }
 
-const failures = aeoHubGuideProblems()
+const failures = [...aeoHubGuideProblems(), ...homepageFoldDensityProblems({ root: ROOT })]
 if (failures.length) {
   console.error(`${GATE} FAILED\n`)
   for (const f of failures) console.error(`  ✗ ${f}`)
@@ -162,5 +163,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${GATE} — OK: /buy /sell /neighborhoods /housing-market/bend and the homepage #guides strip keep the Sep 7 AEO cluster with authentic titles.`,
+  `${GATE} — OK: /buy /sell /neighborhoods /housing-market/bend and the homepage #guides strip keep the Sep 7 AEO cluster with authentic titles. First house-rail photos must peek onto the 1440×900 fold (not heading-only).`,
 )

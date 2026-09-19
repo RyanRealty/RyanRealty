@@ -1398,7 +1398,11 @@
       "app/sell/page.tsx",
       "app/neighborhoods/page.tsx",
       "app/housing-market/[...slug]/_v3/geo-figures.ts",
-      "scripts/check-aeo-hub-guides.mjs"
+      "app/page.tsx",
+      "app/_v3/home-homes-rails.css",
+      "components/site/v3/V3Answers.css",
+      "scripts/check-aeo-hub-guides.mjs",
+      "scripts/lib/homepage-fold-density.mjs"
     ]
   },
   "nightly": [
