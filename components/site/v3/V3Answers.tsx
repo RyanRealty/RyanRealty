@@ -176,8 +176,9 @@ export type V3AnswersProps = {
   /**
    * `section` (default) is the closing two-column Answers block.
    * `strip` is the compact ATF band (homepage SITE-125): scannable doors stay
-   * in the flow and never fold, the rail does not stick, and padding matches
-   * a hairline strip so house rails still enter the first 1440 viewport.
+   * in the flow and never fold, the rail does not stick, and on a wide window
+   * Buy / Sell / Market sit in peer columns beside the FAQ so house rails
+   * still enter the first 1440 viewport.
    */
   layout?: 'section' | 'strip'
   className?: string

@@ -53,4 +53,12 @@ describe('homepage guides / Q&A strip (SITE-125)', () => {
     expect(PAGE).toContain('homeGuideQaQuestions')
     expect(PAGE.slice(guidesAt, railsAt)).not.toMatch(/Work with us/)
   })
+
+  it('keeps eight AEO doors and three FAQ rows after the fold rematch', () => {
+    expect(aeoHubHomeStripDoors()).toHaveLength(8)
+    expect(homeGuideQaQuestions()).toHaveLength(3)
+    expect(PAGE).not.toMatch(/V3PhoneDock/)
+    const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
+    expect(LAYOUT).not.toMatch(/V3PhoneDock/)
+  })
 })

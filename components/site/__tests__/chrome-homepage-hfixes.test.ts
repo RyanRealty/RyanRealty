@@ -73,4 +73,30 @@ describe('chrome homepage H-fixes', () => {
     expect(PAGE).toContain('layout="strip"')
     expect(PAGE.slice(guidesAt, railsAt)).not.toMatch(/Work with us/)
   })
+
+  it('densifies the homepage strip so Sell/Market sit beside Buy at 1440', () => {
+    const ANSWERS_CSS = readFileSync(resolve('components/site/v3/V3Answers.css'), 'utf8')
+    expect(ANSWERS_CSS).toMatch(
+      /\.v3\.v3-answers\.v3-answers--strip \.v3-answers__strip-doors \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/,
+    )
+    expect(ANSWERS_CSS).toMatch(
+      /\.v3\.v3-answers\.v3-answers--strip \.v3-answers__heading \{[\s\S]*?font-size: var\(--v3-size-body-lg\)/,
+    )
+    expect(ANSWERS_CSS).not.toMatch(
+      /\.v3\.v3-answers\.v3-answers--strip \.v3-answers__grid \{[\s\S]*?grid-template-columns: minmax\(0, 22rem\)/,
+    )
+  })
+
+  it('clips the 375 chrome bar so Menu stays on the canvas', () => {
+    expect(CHROME_CSS).toMatch(
+      /@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3\.v3-chrome \{[\s\S]*?overflow-x: clip/,
+    )
+    expect(CHROME_CSS).toMatch(
+      /@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3-chrome__bar \{[\s\S]*?padding: 0 var\(--v3-space-sm\)/,
+    )
+    expect(CHROME_CSS).toMatch(
+      /@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3-chrome__menu-btn \{[\s\S]*?overflow: hidden/,
+    )
+    expect(CHROME_CSS).toMatch(/\.v3-chrome__menu-btn,[\s\S]*?position: relative/)
+  })
 })
