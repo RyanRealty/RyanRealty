@@ -60,12 +60,10 @@ const geo = await page.evaluate(() => {
 
 mkdirSync(OUT, { recursive: true })
 const stamp = 'site-125-fold-1440x900'
-await page.screenshot({ path: join(OUT, `${stamp}.png`), fullPage: false })
 await page.evaluate(() => window.scrollTo(0, 0))
-const guidesShot = document.querySelector
-void guidesShot
+await page.screenshot({ path: join(OUT, `${stamp}.png`), fullPage: false })
 if (geo.guides) {
-  await page.evaluate((y) => window.scrollTo(0, Math.max(0, y - 40)), geo.guides.top)
+  await page.evaluate((y) => window.scrollTo(0, Math.max(0, y - 24)), geo.guides.top)
   await page.screenshot({ path: join(OUT, `${stamp}-guides.png`), fullPage: false })
 }
 
@@ -84,5 +82,26 @@ const report = {
 writeFileSync(join(OUT, `${stamp}.json`), JSON.stringify(report, null, 2))
 console.log(JSON.stringify(report, null, 2))
 
+await page.setViewportSize({ width: 375, height: 812 })
+await page.goto(`${BASE}/`, { waitUntil: 'networkidle', timeout: 90_000 })
+await page.waitForTimeout(300)
+const phone = await page.evaluate(() => {
+  const chrome = document.querySelector('.v3-chrome')
+  const menu = document.querySelector('.v3-chrome__menu-btn')
+  const menuBox = menu?.getBoundingClientRect()
+  return {
+    innerWidth: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    overflow: document.documentElement.scrollWidth - window.innerWidth,
+    menuRight: menuBox ? Math.round(menuBox.right) : null,
+    chromeOverflow: chrome ? chrome.scrollWidth - chrome.clientWidth : null,
+  }
+})
+await page.screenshot({ path: join(OUT, 'site-125-fold-375x812.png'), fullPage: false })
+report.phone375 = phone
+writeFileSync(join(OUT, `${stamp}.json`), JSON.stringify(report, null, 2))
+console.log(JSON.stringify({ phone375: phone }, null, 2))
+
+const overflowOk = (phone.overflow ?? 99) <= 0
 await browser.close()
-process.exit(pass ? 0 : 1)
+process.exit(pass && overflowOk ? 0 : 1)
