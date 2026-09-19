@@ -37,11 +37,13 @@ import {
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3QuietItem,
+  type V3QuietLink,
 } from '@/components/site/v3'
 import { publishCompleteMonthMedian } from '@/lib/market/publish-complete-month-median'
 import { YEAR_OVERLAY_READING } from '../../_v3/market-charts'
 import { COMPARISON_CITY_LABELS, COMPARISON_CITY_SLUG } from './geo-constants'
 import { marketReportDoorLinks } from '@/lib/market/report-doors'
+import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 
 const MONTH_TICK = [
   'Jan',
@@ -444,11 +446,27 @@ export function buildExploreItems(args: {
       href: `/housing-market/${args.citySlug}`,
     })
   }
+  const seenBlog = new Set(
+    items.flatMap((item) => {
+      const href = quietLinkHref(item)
+      return href?.startsWith('/blog/') ? [href] : []
+    }),
+  )
+  if (args.citySlug === 'bend' && !args.communityName) {
+    for (const guide of aeoHubQuietItems('housing-market/bend')) {
+      if (!guide.href || seenBlog.has(guide.href)) continue
+      seenBlog.add(guide.href)
+      items.push(guide)
+    }
+  }
   for (const post of args.posts) {
     const title = post.title?.trim()
     const slug = post.slug?.trim()
     if (!title || !slug) continue
-    items.push({ label: title, href: `/blog/${slug}` })
+    const href = `/blog/${slug}`
+    if (seenBlog.has(href)) continue
+    seenBlog.add(href)
+    items.push({ label: title, href })
   }
   if (args.footnotes.length > 0) {
     items.push({
@@ -463,6 +481,14 @@ export function buildExploreItems(args: {
     }
   }
   return items
+}
+
+export function isQuietLink(item: V3QuietItem): item is V3QuietLink {
+  return item.kind === 'link' || item.kind === undefined
+}
+
+export function quietLinkHref(item: V3QuietItem): string | undefined {
+  return isQuietLink(item) ? item.href : undefined
 }
 
 function compactPricePoint(

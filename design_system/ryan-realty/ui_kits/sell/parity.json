@@ -41,7 +41,7 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6. Seller FAQ as prose from the same FAQ_ITEMS the FAQPage JSON-LD uses, track-record proof as prose with its own MLS closed-sale trace, outbound doors including Value my home and valuationHref('/sell').",
+      "section": "Pattern 6. Seller FAQ as prose from the same FAQ_ITEMS the FAQPage JSON-LD uses, track-record proof as prose with its own MLS closed-sale trace, Sep 7 AEO seller guides from lib/seo/aeo-hub-guides.ts (SITE-123, published titles), outbound doors including Value my home and valuationHref('/sell').",
       "blocking": true
     },
     {

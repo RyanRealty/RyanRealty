@@ -35,6 +35,7 @@ import {
   liveForSaleLabel,
 } from '@/app/cities/_v3/cities-index-constants'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 
 export const revalidate = 3600
 
@@ -229,8 +230,9 @@ export default async function NeighborhoodsPage() {
         <V3Quiet
           id="edges"
           eyebrow="Central Oregon"
-          heading="Search every listing in Central Oregon"
+          heading="Bend district guides, then every listing"
           items={[
+            ...aeoHubQuietItems('neighborhoods'),
             { label: 'Search all listings', href: '/search' },
             { label: 'All cities', href: '/cities' },
             { label: 'Communities', href: '/communities' },

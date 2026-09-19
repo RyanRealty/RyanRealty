@@ -251,7 +251,7 @@ export default async function BuyPage() {
           <V3Ledger
             id="buyer-guides"
             eyebrow={v3Text('Buyer guides')}
-            heading={v3Text('First-time buyers, relocations, and investment property')}
+            heading={v3Text('Guides for buying in Central Oregon')}
             rows={[firstGuide, ...restGuides]}
           />
         ) : null}

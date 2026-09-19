@@ -62,6 +62,7 @@ import { formatPrice, formatPriceExact, formatPriceCompact } from '@/lib/format/
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath, valuationPath } from '@/lib/slug'
 import { CONTACT } from '@/lib/brand/contact'
+import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -283,6 +284,7 @@ export default async function SellPage() {
   }
 
   quietItems.push(
+    ...aeoHubQuietItems('sell'),
     { label: 'Value my home', href: FORM_ANCHOR },
     ...(proofReviewCount > 0
       ? [{ label: `All ${proofReviewCount} Google reviews`, href: '/reviews' }]

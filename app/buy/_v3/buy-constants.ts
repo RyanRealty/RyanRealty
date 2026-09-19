@@ -6,6 +6,7 @@
  */
 import { v3Text, type V3LedgerPlainRow, type V3QuietItem } from '@/components/site/v3'
 import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
+import { aeoHubLedgerRows } from '@/lib/seo/aeo-hub-guides'
 
 export const OLD_MILL_HERO = '/images/homepage/sisters-downtown-three-peaks.jpg'
 
@@ -67,6 +68,7 @@ export const BUYER_GUIDE_ROWS: V3LedgerPlainRow[] = [
     ),
     id: 'investment',
   },
+  ...aeoHubLedgerRows('buy'),
 ]
 
 export const BUY_FACTS: V3QuietItem[] = [
