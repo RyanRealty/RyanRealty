@@ -13,6 +13,9 @@ import {
   subjectRingIsKnot,
   subjectRingKeepFittedZoom,
   subjectRingLabel,
+  subjectRingProjectedBox,
+  subjectRingZoomFromMeasuredBox,
+  subjectRingZoomFromPaths,
 } from '@/lib/maps/subject-ring'
 
 describe('subject ring label', () => {
@@ -57,6 +60,45 @@ describe('subject ring island fill', () => {
     expect(subjectRingKeepFittedZoom(9)).toBe(9)
     expect(subjectRingKeepFittedZoom(15)).toBe(14)
     expect(subjectRingKeepFittedZoom(null)).toBeNull()
+  })
+
+  it('zooms in from the Cos kick 101×126 @ z10 so fill and box settle', () => {
+    const island = { width: 320, height: 187 }
+    const knot = { width: 101, height: 126 }
+    expect(subjectRingIslandFill(island, knot)).toBeCloseTo(101 / 187, 5)
+    expect(subjectRingIsKnot(island, knot)).toBe(true)
+    expect(subjectRingZoomFromMeasuredBox(10, island, { width: 0, height: 0 })).toBeNull()
+
+    const next = subjectRingZoomFromMeasuredBox(10, island, knot)
+    expect(next).not.toBeNull()
+    expect(next!).toBeGreaterThan(10)
+    expect(next!).toBeLessThan(11)
+
+    const scale = 2 ** (next! - 10)
+    const filled = { width: knot.width * scale, height: knot.height * scale }
+    expect(subjectRingIslandFill(island, filled)).toBeGreaterThanOrEqual(SUBJECT_RING_MIN_ISLAND_FILL)
+    expect(Math.max(filled.width, filled.height)).toBeGreaterThanOrEqual(SUBJECT_RING_KNOT_PX)
+    expect(subjectRingIsKnot(island, filled)).toBe(false)
+    expect(subjectRingZoomFromMeasuredBox(next!, island, filled)).toBeNull()
+  })
+
+  it('projects recorded vertices — no invented geom — until the island fills', () => {
+    const island = { width: 320, height: 187 }
+    const paths = [[
+      { lat: 44.0, lng: -121.4 },
+      { lat: 44.1, lng: -121.4 },
+      { lat: 44.1, lng: -121.2 },
+      { lat: 44.0, lng: -121.2 },
+    ]]
+    const at10 = subjectRingProjectedBox(paths, 10)
+    expect(at10.width).toBeGreaterThan(0)
+    expect(at10.height).toBeGreaterThan(0)
+    const zoom = subjectRingZoomFromPaths(paths, island)
+    expect(zoom).not.toBeNull()
+    const box = subjectRingProjectedBox(paths, zoom!)
+    expect(subjectRingIslandFill(island, box)).toBeGreaterThanOrEqual(SUBJECT_RING_MIN_ISLAND_FILL)
+    expect(Math.max(box.width, box.height)).toBeGreaterThanOrEqual(SUBJECT_RING_KNOT_PX)
+    expect(subjectRingIsKnot(island, box)).toBe(false)
   })
 })
 
