@@ -309,7 +309,9 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
 
   const qLower = q.toLowerCase()
   // DAL: address/locality rows come from the listing_tile_mv tsvector GIN index
-  // (searchListingSuggestTiles) — the ILIKE five-column OR scan is retired.
+  // (searchListingSuggestTiles on listing_tile_mv_src.search_vector). That
+  // reader already gates to PUBLIC_ON_MARKET_STATUSES so a street prefix
+  // cannot stamp Closed 2018 stock into the Addresses group.
   const { searchListingSuggestTiles, searchBrokersByDisplayName, getNeighborhoodDirectory, searchSiteContentTitles } =
     await import('@/lib/data')
   const { searchSitePages } = await import('@/lib/search/site-pages')
