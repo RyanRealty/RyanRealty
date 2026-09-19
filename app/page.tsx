@@ -27,6 +27,7 @@ import { HomeHomesRails } from './_v3/HomeHomesRails'
 import { loadHomePulseBundle } from './_v3/home-pulse'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
+import { loadHomeNewConRun } from './_v3/home-new-construction'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
 import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
 import { communityImage } from '@/lib/geo-images'
@@ -108,7 +109,7 @@ const RESORT_DOORS = [
 ] as const
 
 export default async function Home() {
-  const [cities, tiles, brokers, openHouseLabels, recentPriceDrops, reviewSummary, featuredCommunitySlides, pulseBundle] =
+  const [cities, tiles, brokers, openHouseLabels, recentPriceDrops, reviewSummary, featuredCommunitySlides, pulseBundle, newConRun] =
     await Promise.all([
       getCitiesForIndex().catch(() => []),
       getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -125,6 +126,10 @@ export default async function Home() {
       // SITE-83 also pours the raw counts into the Stage inventory strip.
       loadHomePulseBundle().catch((err) => {
         console.error('[home] live pulse loader failed', err)
+        return null
+      }),
+      loadHomeNewConRun().catch((err) => {
+        console.error('[home] new-construction run failed', err)
         return null
       }),
     ])
@@ -198,6 +203,7 @@ export default async function Home() {
   // carries no figure because this page holds no per-resort read; /communities
   // owns those.
   const placeRuns = [
+    ...(newConRun ? [newConRun] : []),
     {
       name: 'Towns',
       // What the figures count, said once for the run: `activeCount` is
