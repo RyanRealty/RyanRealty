@@ -67,6 +67,8 @@ describe('V3Ledger media="photo"', () => {
     )
     const srcs = [...html.matchAll(/class="v3-ledger__media v3-ledger__thumb"[^>]*src="([^"]+)"/g)].map((m) => m[1])
     expect(srcs).toEqual([PHOTO_A, PHOTO_B])
+    expect(html).toContain('alt="835 Cherry Street, Medford"')
+    expect(html).not.toMatch(/v3-ledger__thumb[^>]*alt=""/)
   })
 
   it('gives a row with no photograph the glyph tile, not an empty box', () => {

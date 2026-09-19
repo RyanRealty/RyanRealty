@@ -62,6 +62,7 @@ import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceDisclosure } from './atoms'
 import { V3Icon } from './V3Icon'
 import { V3Number } from './V3Number.client'
+import { listingPhotoAlt } from './listing-photo-alt'
 import {
   anchorPassed,
   isPlausibleEmail,
@@ -536,7 +537,12 @@ export function V3AlertsStrip({
                     <li key={item.href}>
                       <a className="v3-alerts__thumb" href={item.href}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.photoSrc} alt="" width={800} height={600} />
+                        <img
+                          src={item.photoSrc}
+                          alt={listingPhotoAlt({ addressLine: item.title })}
+                          width={800}
+                          height={600}
+                        />
                         <span className="v3-alerts__thumb-body">
                           {price ? <span className="v3-alerts__thumb-price">{price}</span> : null}
                           <span className="v3-alerts__thumb-name">{item.title}</span>

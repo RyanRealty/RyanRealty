@@ -49,6 +49,7 @@ import {
   type V3ButtonVariant,
   type V3Text,
 } from './atoms'
+import { listingPhotoAlt } from './listing-photo-alt'
 import './tokens.css'
 import './V3Ledger.css'
 
@@ -107,12 +108,13 @@ type V3LedgerRowBase = {
    * stand-in. Callers resolve it from a verified registry or from a real listing
    * inside the place's own boundary; nothing here fetches, picks, or falls back.
    *
-   * `src` only. The photo is DECORATIVE by construction — the row's accessible
-   * name is `what`, the row is already one link, and a second name on the image
-   * would make a screen reader read every row twice — so it renders `alt=""` and
-   * takes no alt text from the caller.
+   * `src` required. `alt` optional: when the caller already built the house
+   * string (Sell rows pass `listingPhotoAlt`), use that. Otherwise the
+   * primitive names the photograph from `what` — the same helper home/search
+   * use — so listing thumbs never ship `alt=""`. The row link still speaks
+   * `what`; the alt is for image search / AEO (site audit 2026-09-18).
    */
-  media?: { src: string }
+  media?: { src: string; alt?: string }
   /**
    * What a hover (desktop), a keyboard focus, or a tap-and-hold (phone) shows
    * about this row that its resting text does not: the months-of-supply
@@ -558,7 +560,10 @@ export function V3Ledger(props: V3LedgerProps) {
                     <img
                       className="v3-ledger__media v3-ledger__thumb"
                       src={row.media.src}
-                      alt=""
+                      alt={
+                        row.media.alt?.trim() ||
+                        listingPhotoAlt({ addressLine: row.what })
+                      }
                       loading="lazy"
                       decoding="async"
                     />

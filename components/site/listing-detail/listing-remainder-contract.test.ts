@@ -53,6 +53,8 @@ describe('listing remainder composition', () => {
     expect(HERO).toMatch(/from '@\/components\/ui\/carousel'/)
     expect(HERO).not.toContain('V3Tabs')
     expect(HERO).toContain('PhotoSkeleton')
+    expect(HERO).toMatch(/listingGalleryFrameAlt/)
+    expect(HERO).not.toMatch(/alt=""/)
     const SHEET = readFileSync(resolve('components/site/v3/V3Sheet.tsx'), 'utf8')
     expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
     expect(PARITY).toContain('"name": "ListingSaveButton"')

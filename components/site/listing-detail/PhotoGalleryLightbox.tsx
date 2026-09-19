@@ -20,6 +20,7 @@ import {
 } from '@/lib/listing/publish-listing-mosaic-pills'
 import { preferListingMosaicPhotoUrl } from '@/lib/listing/publish-listing-mosaic'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { listingGalleryFrameAlt } from '@/components/site/v3/listing-photo-alt'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import './listing-detail.css'
 
@@ -46,6 +47,7 @@ type Props = {
   onPaneChange?: (pane: GalleryPane) => void
   total?: number
   altBase?: string
+  addressLine?: string
   hasStreetView?: boolean
   onClose: () => void
   onChange: (nextIndex: number) => void
@@ -62,6 +64,7 @@ export function PhotoGalleryLightbox({
   onPaneChange,
   total,
   altBase = 'Photo',
+  addressLine,
   hasStreetView = false,
   onClose,
   onChange,
@@ -150,7 +153,11 @@ export function PhotoGalleryLightbox({
   if (!isOpen) return null
 
   const current = stills[openIndex!] ?? stills[0]
-  const altText = current?.caption ?? `${altBase} ${openIndex! + 1} of ${count}`
+  const altText = listingGalleryFrameAlt({
+    addressLine: addressLine || altBase,
+    ordinal: (openIndex ?? 0) + 1,
+    total: Math.max(1, count),
+  })
 
   function selectPane(next: GalleryPane) {
     onPaneChange?.(next)
@@ -267,7 +274,11 @@ export function PhotoGalleryLightbox({
           </Button>
         </div>
         {stills.length > 1 ? (
-          <div ref={stripRef} className="flex gap-1 overflow-x-auto no-scrollbar">
+          <div
+            ref={stripRef}
+            className="flex gap-1 overflow-x-auto no-scrollbar"
+            aria-label="Photo thumbnails"
+          >
             {stills.map((p, i) => (
               <button
                 key={`${i}-${p.url}`}
@@ -283,7 +294,11 @@ export function PhotoGalleryLightbox({
               >
                 <SparkSafeImage
                   src={listingRowPhotoSrc(p.url)}
-                  alt={p.caption ?? `${altBase} thumbnail ${i + 1}`}
+                  alt={listingGalleryFrameAlt({
+                    addressLine: addressLine || altBase,
+                    ordinal: i + 1,
+                    total: Math.max(1, count),
+                  })}
                   fill
                   sizes="108px"
                   className="object-cover"
