@@ -8,8 +8,15 @@
  *
  * reachability: imported by /buy, /sell, /neighborhoods, and
  * /housing-market/bend through V3Ledger / V3Quiet (44px tap floor).
+ * Homepage SITE-125 consumes the unique tip-min union through
+ * `aeoHubHomeStripDoors` → V3Answers layout="strip".
  */
-import { v3Text, type V3LedgerPlainRow, type V3QuietLink } from '@/components/site/v3'
+import {
+  v3Text,
+  type V3AnswersDoor,
+  type V3LedgerPlainRow,
+  type V3QuietLink,
+} from '@/components/site/v3'
 
 export const AEO_HUB_GATE = 'ci:aeo-hub-guides'
 
@@ -143,4 +150,31 @@ export function aeoHubQuietItems(hub: AeoHubId): V3QuietLink[] {
     label: guide.title,
     href: guide.href,
   }))
+}
+
+const HOME_STRIP_HUBS = [
+  { hub: 'buy', group: 'Buy' },
+  { hub: 'sell', group: 'Sell' },
+  { hub: 'neighborhoods', group: 'Neighborhoods' },
+  { hub: 'housing-market/bend', group: 'Market' },
+] as const satisfies readonly { hub: AeoHubId; group: string }[]
+
+/**
+ * Homepage ATF strip (SITE-125). Unique tip-min guides across the four hubs,
+ * published titles only. Dedupes shared slugs so Best Neighborhoods is one
+ * door, not three. Closing-costs stays omitted with the sealed list.
+ */
+export function aeoHubHomeStripDoors(): V3AnswersDoor[] {
+  const seen = new Set<string>()
+  const doors: V3AnswersDoor[] = []
+  for (const { hub, group } of HOME_STRIP_HUBS) {
+    for (const href of AEO_HUB_TIP_MINS[hub]) {
+      if (seen.has(href)) continue
+      const guide = AEO_HUB_GUIDES[hub].find((row) => row.href === href)
+      if (!guide) continue
+      seen.add(href)
+      doors.push({ href: guide.href, label: guide.title, group })
+    }
+  }
+  return doors
 }

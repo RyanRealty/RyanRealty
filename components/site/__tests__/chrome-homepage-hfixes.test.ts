@@ -63,4 +63,14 @@ describe('chrome homepage H-fixes', () => {
     expect(PAGE).not.toContain('mapHeadline')
     expect(PAGE).not.toContain('Homes on the map')
   })
+
+  it('keeps the guides strip above the rails and Work with us in the header', () => {
+    const guidesAt = PAGE.indexOf('id="guides"')
+    const railsAt = PAGE.indexOf('<HomeHomesRails')
+    expect(guidesAt).toBeGreaterThan(-1)
+    expect(railsAt).toBeGreaterThan(guidesAt)
+    expect(PAGE).toContain('V3Answers')
+    expect(PAGE).toContain('layout="strip"')
+    expect(PAGE.slice(guidesAt, railsAt)).not.toMatch(/Work with us/)
+  })
 })

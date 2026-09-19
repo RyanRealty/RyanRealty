@@ -769,3 +769,77 @@
   color: var(--v3-ink);
   transform: translateX(var(--v3-travel));
 }
+
+/* STRIP (SITE-125). Compact ATF band: scannable guide doors stay in the flow,
+   questions stay native disclosures, and the rail does not stick. Tight pad so
+   photographed house rails still enter the first 1440 viewport. Hairlines only
+   — no cream pills, no second card kit. */
+.v3.v3-answers.v3-answers--strip {
+  max-width: var(--v3-measure);
+  padding: var(--v3-space-sm) var(--v3-gutter);
+}
+
+* + .v3.v3-answers.v3-answers--strip {
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__grid {
+  gap: var(--v3-space-sm);
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__rail {
+  gap: var(--v3-space-sm);
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__heading {
+  font-size: var(--v3-size-display-2);
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__note {
+  max-width: none;
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__q {
+  padding: var(--v3-space-2xs) 0;
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__q-text {
+  font-family: var(--v3-font-sans);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: normal;
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__door {
+  padding: var(--v3-space-2xs) 0;
+}
+
+.v3.v3-answers.v3-answers--strip .v3-answers__door-group + .v3-answers__door-group {
+  margin-top: var(--v3-space-xs);
+}
+
+@media (max-width: 63.999rem) {
+  .v3.v3-answers--strip .v3-answers__strip-doors {
+    order: 2;
+  }
+
+  .v3.v3-answers--strip .v3-answers__list {
+    order: 3;
+  }
+}
+
+@media (min-width: 64rem) {
+  .v3.v3-answers.v3-answers--strip .v3-answers__grid {
+    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+    column-gap: var(--v3-space-xl);
+  }
+
+  .v3.v3-answers.v3-answers--strip .v3-answers__rail {
+    position: static;
+  }
+
+  .v3.v3-answers.v3-answers--strip .v3-answers__doors {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

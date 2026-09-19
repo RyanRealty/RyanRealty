@@ -22,7 +22,10 @@ import {
   V3SectionTracker,
   V3Proof,
   V3Pulse,
+  V3Answers,
 } from '@/components/site/v3'
+import { aeoHubHomeStripDoors } from '@/lib/seo/aeo-hub-guides'
+import { homeGuideQaJsonLd, homeGuideQaQuestions } from './_v3/home-guide-qa'
 import { HomeHomesRails } from './_v3/HomeHomesRails'
 import { loadHomePulseBundle } from './_v3/home-pulse'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
@@ -156,6 +159,9 @@ export default async function Home() {
   )
   const railRows = enrichHomeRailRows(railRowsRaw, railExtras)
   const railListLd = homeRailItemList(railRows)
+  const guideDoors = aeoHubHomeStripDoors()
+  const guideQuestions = homeGuideQaQuestions()
+  const guideQaLd = homeGuideQaJsonLd()
 
   const townCount = TOWN_ORDER.filter((slug) => cityBySlug.has(slug)).length || TOWN_ORDER.length
 
@@ -261,6 +267,12 @@ export default async function Home() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(railListLd) }}
         />
       ) : null}
+      {guideQaLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(guideQaLd) }}
+        />
+      ) : null}
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
 
@@ -289,6 +301,17 @@ export default async function Home() {
             }))}
           />
         </V3Stage>
+
+        <V3Answers
+          id="guides"
+          layout="strip"
+          eyebrow="Central Oregon"
+          heading="Guides and answers"
+          headingLevel={2}
+          questions={guideQuestions}
+          doors={guideDoors}
+          note="Buyer, seller, and neighborhood guides already on the site."
+        />
 
         <HomeHomesRails
           rows={railRows}

@@ -2,8 +2,9 @@
 /**
  * check-aeo-hub-guides.mjs — ci:aeo-hub-guides (SITE-123).
  *
- * /buy, /sell, /neighborhoods, and /housing-market/bend must crawlably link
- * the Sep 7 AEO cluster with the published titles. Sealed SEO Desk list.
+ * /buy, /sell, /neighborhoods, /housing-market/bend, and the homepage strip
+ * must crawlably link the Sep 7 AEO cluster with the published titles.
+ * Sealed SEO Desk list.
  * Dropping a href or swapping the title for a generic label fails.
  *
  *   node scripts/check-aeo-hub-guides.mjs
@@ -43,6 +44,16 @@ const REQUIRED = {
     ['/blog/cost-of-living-bend-oregon', 'Cost of Living in Bend, Oregon: Housing, Taxes, and a Realistic Budget'],
     ['/blog/property-taxes-deschutes-county', 'Property Taxes in Bend and Deschutes County, Explained'],
   ],
+  home: [
+    ['/blog/first-time-home-buyer-guide-central-oregon', 'First-Time Home Buyer Guide for Bend and Central Oregon'],
+    ['/blog/cost-of-living-bend-oregon', 'Cost of Living in Bend, Oregon: Housing, Taxes, and a Realistic Budget'],
+    ['/blog/best-neighborhoods-bend-buyers', 'Best Neighborhoods in Bend, Oregon for Buyers'],
+    ['/blog/bend-vs-redmond-vs-sisters', 'Bend vs Redmond vs Sisters: Which Central Oregon Town Fits'],
+    ['/blog/how-to-sell-your-home-bend', 'How to Sell Your House in Bend, Oregon'],
+    ['/blog/cost-to-sell-house-bend-oregon', 'What It Costs to Sell a House in Bend (and Oregon)'],
+    ['/blog/is-now-a-good-time-to-buy-in-bend', 'Is Now a Good Time to Buy in Bend?'],
+    ['/blog/property-taxes-deschutes-county', 'Property Taxes in Bend and Deschutes County, Explained'],
+  ],
 }
 
 const TIP_MINS = {
@@ -50,6 +61,7 @@ const TIP_MINS = {
   sell: ['/blog/how-to-sell-your-home-bend', '/blog/cost-to-sell-house-bend-oregon'],
   neighborhoods: ['/blog/best-neighborhoods-bend-buyers', '/blog/bend-vs-redmond-vs-sisters'],
   'housing-market/bend': 3,
+  home: 8,
 }
 
 const OMIT = ['/blog/closing-costs-buyers-bend-oregon']
@@ -60,6 +72,7 @@ const HUB_FILES = {
   sell: ['app/sell/page.tsx'],
   neighborhoods: ['app/neighborhoods/page.tsx'],
   'housing-market/bend': ['app/housing-market/[...slug]/_v3/geo-figures.ts'],
+  home: ['app/page.tsx', 'app/_v3/home-guide-qa.ts'],
 }
 
 const WIRE = {
@@ -67,6 +80,7 @@ const WIRE = {
   sell: { helper: 'aeoHubQuietItems', primitive: 'V3Quiet' },
   neighborhoods: { helper: 'aeoHubQuietItems', primitive: 'V3Quiet' },
   'housing-market/bend': { helper: 'aeoHubQuietItems', primitive: 'V3Quiet' },
+  home: { helper: 'aeoHubHomeStripDoors', primitive: 'V3Answers' },
 }
 
 function src(rel) {
@@ -105,6 +119,14 @@ function aeoHubGuideProblems() {
     if (hub === 'housing-market/bend' && !src('app/housing-market/[...slug]/_v3/geo-figures.ts').includes("citySlug === 'bend'")) {
       failures.push('housing-market/bend: static AEO guides must gate on citySlug === bend')
     }
+    if (hub === 'home') {
+      if (!src('app/page.tsx').includes('layout="strip"') || !src('app/page.tsx').includes('id="guides"')) {
+        failures.push('home: page must mount V3Answers layout="strip" as #guides above the rails')
+      }
+      if (!src('app/page.tsx').includes('<HomeHomesRails')) {
+        failures.push('home: house rails must stay on the page after the guides strip')
+      }
+    }
 
     const hrefs = pairs.map(([href]) => href)
     const min = TIP_MINS[hub]
@@ -138,5 +160,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${GATE} — OK: /buy /sell /neighborhoods /housing-market/bend keep the Sep 7 AEO cluster with authentic titles.`,
+  `${GATE} — OK: /buy /sell /neighborhoods /housing-market/bend and the homepage #guides strip keep the Sep 7 AEO cluster with authentic titles.`,
 )

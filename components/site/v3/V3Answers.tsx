@@ -173,6 +173,13 @@ export type V3AnswersProps = {
    * the questions above it.
    */
   doorsLabel?: string
+  /**
+   * `section` (default) is the closing two-column Answers block.
+   * `strip` is the compact ATF band (homepage SITE-125): scannable doors stay
+   * in the flow and never fold, the rail does not stick, and padding matches
+   * a hairline strip so house rails still enter the first 1440 viewport.
+   */
+  layout?: 'section' | 'strip'
   className?: string
 }
 
@@ -347,6 +354,36 @@ function toDoors(doors: readonly V3AnswersDoor[] | undefined): V3AnswersDoor[] {
   return out
 }
 
+function DoorList({ doors }: { doors: readonly V3AnswersDoor[] }) {
+  return (
+    <ul className="v3-answers__doors">
+      {doors.map((door) => (
+        <li key={door.href} className="v3-answers__door-item">
+          <Link href={door.href} className="v3-answers__door">
+            <span className="v3-answers__door-label">{door.label}</span>
+            <span aria-hidden="true" className="v3-answers__door-mark">
+              →
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function DoorGroups({ edges }: { edges: readonly V3AnswersDoor[] }) {
+  return (
+    <>
+      {groupDoors(edges).map((group, groupIndex) => (
+        <div key={group.label ?? `ungrouped-${groupIndex}`} className="v3-answers__door-group">
+          {group.label ? <p className="v3-answers__door-group-label">{group.label}</p> : null}
+          <DoorList doors={group.doors} />
+        </div>
+      ))}
+    </>
+  )
+}
+
 /**
  * The closing question set of a node. Every row is a native disclosure, so the
  * reader works the section instead of scrolling past it, and the answers stay
@@ -362,11 +399,13 @@ export function V3Answers({
   note,
   sourceKey,
   doorsLabel,
+  layout = 'section',
   className,
 }: V3AnswersProps) {
   const rows = toRenderable(questions)
   const edges = toDoors(doors)
   const title = text(heading)
+  const isStrip = layout === 'strip'
   const contextLine = text(eyebrow)
   const trailingNote = text(note)
 
@@ -388,7 +427,8 @@ export function V3Answers({
   return (
     <section
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-answers', className)}
+      className={cn(V3_ROOT_CLASS, 'v3-answers', isStrip && 'v3-answers--strip', className)}
+      data-layout={isStrip ? 'strip' : 'section'}
       aria-labelledby={headingId}
       data-source-key={sourceKey?.trim() || undefined}
     >
@@ -415,7 +455,10 @@ export function V3Answers({
 
           {edges.length > 0 ? (
             /*
-             * Past a handful, the doors fold.
+             * Past a handful, the doors fold — except on `layout="strip"`,
+             * where the job is a scannable ATF guide row. Folding eight live
+             * AEO titles behind "Where to go next" would hide the surface
+             * SITE-125 asked for.
              *
              * A community page closed on FORTY-ONE of these — every recorded
              * governing document, every golf course, every sibling resort, plus
@@ -431,7 +474,11 @@ export function V3Answers({
              * hide destinations — the same rule the footer's fold follows, with
              * the same chevron.
              */
-            edges.length > FOLD_DOORS_PAST ? (
+            isStrip ? (
+              <div className="v3-answers__strip-doors">
+                <DoorGroups edges={edges} />
+              </div>
+            ) : edges.length > FOLD_DOORS_PAST ? (
               <details className="v3-answers__edges">
                 <summary className="v3-answers__edges-summary">
                   {text(doorsLabel) ?? 'Where to go next'}
@@ -442,42 +489,10 @@ export function V3Answers({
                     <span aria-hidden="true" className="v3-answers__mark" />
                   </span>
                 </summary>
-                {groupDoors(edges).map((group, groupIndex) => (
-                  <div
-                    key={group.label ?? `ungrouped-${groupIndex}`}
-                    className="v3-answers__door-group"
-                  >
-                    {group.label ? (
-                      <p className="v3-answers__door-group-label">{group.label}</p>
-                    ) : null}
-                    <ul className="v3-answers__doors">
-                      {group.doors.map((door) => (
-                        <li key={door.href} className="v3-answers__door-item">
-                          <Link href={door.href} className="v3-answers__door">
-                            <span className="v3-answers__door-label">{door.label}</span>
-                            <span aria-hidden="true" className="v3-answers__door-mark">
-                              →
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                <DoorGroups edges={edges} />
               </details>
             ) : (
-              <ul className="v3-answers__doors">
-                {edges.map((door) => (
-                  <li key={door.href} className="v3-answers__door-item">
-                    <Link href={door.href} className="v3-answers__door">
-                      <span className="v3-answers__door-label">{door.label}</span>
-                      <span aria-hidden="true" className="v3-answers__door-mark">
-                        →
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <DoorList doors={edges} />
             )
           ) : null}
         </div>

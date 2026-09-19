@@ -93,6 +93,11 @@
       "blocking": true
     },
     {
+      "name": "V3Answers",
+      "section": "#guides -- compact ATF short-guides and Q&A strip. Doors are SITE-123 AEO hub tip-mins with published titles. Questions are the site FAQ (first-time buyers, cost to list, Bend neighborhoods). FAQPage JSON-LD from the same answers. Not a Work with us CTA.",
+      "blocking": true
+    },
+    {
       "name": "V3Pulse",
       "section": "#right-now -- the live read under the hero search (SITE-12): the region's for-sale / under-contract / sold-in-30 counts as a claim plus three magnitude rules, every listing plotted at its own coordinate, a native radio switch that lights one population with no JavaScript, the moment of the read, and the section 0 trace. Moved off the Homes dropdown, which no longer publishes it.",
       "blocking": true
@@ -142,7 +147,8 @@
       "What is for sale here right now?",
       "Can I buy, sell, or invest from here?",
       "Who are the brokers?",
-      "Where can I browse places?"
+      "Where can I browse places?",
+      "Where are the buyer and seller guides, and what do people ask first?"
     ],
     "searchIntent": {
       "headTerm": "homes for sale central oregon",
@@ -233,6 +239,7 @@
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
     "V3Stage #hero -- compact inventory Stage: flyover, H1, V3Tabs Buy/Sell, catalog MorphingSearch, live count chip",
+    "V3Answers #guides -- compact SITE-125 guides/Q&A strip (AEO hub tip-mins + site FAQ)",
     "HomeHomesRails -- V3Carousel house rails in the first viewport (Card price + address + beds/baths/sqft)",
     "V3Pulse #right-now -- Central Oregon right now: live counts, constellation, read stamp",
     "HomeFeaturedCommunity #featured-community -- shadcn carousel + Card featured resort / community slides with live figures",

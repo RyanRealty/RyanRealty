@@ -91,6 +91,14 @@ describe('V3Answers doors', () => {
     expect(html).toBe('')
   })
 
+  it('strip layout keeps eight scannable doors in the flow', () => {
+    const html = render(8, { layout: 'strip' })
+    expect(html).toContain('v3-answers--strip')
+    expect(html).toContain('data-layout="strip"')
+    expect(html).not.toContain('v3-answers__edges')
+    expect(html.match(/v3-answers__door-item/g)).toHaveLength(8)
+  })
+
   it('folds the doors even when every question was dropped as unnameable', () => {
     const html = renderToStaticMarkup(
       createElement(V3Answers, {

@@ -3,6 +3,7 @@ import {
   AEO_HUB_GUIDES,
   AEO_HUB_OMIT,
   AEO_HUB_TIP_MINS,
+  aeoHubHomeStripDoors,
   aeoHubLedgerRows,
   aeoHubQuietItems,
 } from './aeo-hub-guides'
@@ -44,5 +45,13 @@ describe('aeo-hub-guides', () => {
         },
       ]),
     )
+  })
+
+  it('homepage strip doors are the unique tip-min union with published titles', () => {
+    const doors = aeoHubHomeStripDoors()
+    expect(doors.map((door) => door.href)).toEqual([...new Set(Object.values(AEO_HUB_TIP_MINS).flat())])
+    expect(doors).toHaveLength(8)
+    expect(doors.every((door) => door.label && door.group)).toBe(true)
+    expect(doors.map((door) => door.href)).not.toContain('/blog/closing-costs-buyers-bend-oregon')
   })
 })
