@@ -26,6 +26,7 @@ const REQUIRED = {
     ['/blog/moving-to-bend-from-california', 'Moving to Bend from California: What Changes'],
     ['/blog/is-now-a-good-time-to-buy-in-bend', 'Is Now a Good Time to Buy in Bend?'],
     ['/blog/property-taxes-deschutes-county', 'Property Taxes in Bend and Deschutes County, Explained'],
+    ['/blog/closing-costs-buyers-bend-oregon', 'Closing Costs for Home Buyers in Bend, Oregon'],
   ],
   sell: [
     ['/blog/how-to-sell-your-home-bend', 'How to Sell Your House in Bend, Oregon'],
@@ -53,19 +54,20 @@ const REQUIRED = {
     ['/blog/cost-to-sell-house-bend-oregon', 'What It Costs to Sell a House in Bend (and Oregon)'],
     ['/blog/is-now-a-good-time-to-buy-in-bend', 'Is Now a Good Time to Buy in Bend?'],
     ['/blog/property-taxes-deschutes-county', 'Property Taxes in Bend and Deschutes County, Explained'],
+    ['/blog/closing-costs-buyers-bend-oregon', 'Closing Costs for Home Buyers in Bend, Oregon'],
   ],
 }
 
 const TIP_MINS = {
-  buy: 4,
+  buy: 5,
   sell: ['/blog/how-to-sell-your-home-bend', '/blog/cost-to-sell-house-bend-oregon'],
   neighborhoods: ['/blog/best-neighborhoods-bend-buyers', '/blog/bend-vs-redmond-vs-sisters'],
   'housing-market/bend': 3,
-  home: 8,
+  home: 9,
 }
 
-const OMIT = ['/blog/closing-costs-buyers-bend-oregon']
-const INVENTED_BROKER = ['/blog/closing-costs-buyers-bend-oregon']
+const OMIT = ['/blog/buyers-agent-bend-buyer-broker-agreement']
+const INVENTED_BROKER = ['/blog/buyers-agent-bend-buyer-broker-agreement']
 
 const HUB_FILES = {
   buy: ['app/buy/_v3/buy-constants.ts', 'app/buy/page.tsx'],

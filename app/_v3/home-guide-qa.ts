@@ -3,7 +3,7 @@
  *
  * Questions are the live site FAQ — same strings /faq and /faq/[slug] publish.
  * Doors come from SITE-123 AEO hub tip-mins (published titles only).
- * Do not invent a closing-costs slug or a buyer-broker brief here.
+ * Closing-costs is live (SITE-124). Do not invent a buyer-broker brief here.
  */
 import { getFaqBySlug } from '@/app/faq/data'
 import { generateFAQSchema } from '@/lib/structured-data'

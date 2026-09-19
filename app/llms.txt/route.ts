@@ -149,7 +149,8 @@ ${pillarLines('listings')}
 - Central Oregon hiking & mountain-bike trails: ${SITE_URL}/central-oregon/trails${trailLines}
 
 ## Guides
-- All guides: ${SITE_URL}/blog${guideLines}
+- All guides: ${SITE_URL}/blog
+${pillarLines('guides')}${guideLines}
 
 ## Blog
 - All posts: ${SITE_URL}/blog${blogLines}
