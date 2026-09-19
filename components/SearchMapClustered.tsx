@@ -43,6 +43,8 @@ import {
   subjectRingIsKnot,
   subjectRingKeepFittedZoom,
   subjectRingLabel,
+  subjectRingZoomFromMeasuredBox,
+  subjectRingZoomFromPaths,
 } from '@/lib/maps/subject-ring'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import './search/search-map-marks.css'
@@ -1070,6 +1072,8 @@ export default function SearchMapClustered({
   // Price-pill marker refs — PricePillOverlay on the styled raster map.
   const advMarkersRef = useRef<PriceMarker[]>([])
   const subjectRingOverlayRef = useRef<SubjectRingOverlayHandle | null>(null)
+  const subjectRingSettleGenRef = useRef(0)
+  const subjectRingFittedKeyRef = useRef<string | null>(null)
   const markersByKeyRef = useRef<Map<string, PriceMarker>>(new Map())
   const placeViewportRef = useRef<google.maps.LatLngBounds | null>(null)
   const [placeViewport, setPlaceViewport] = useState<google.maps.LatLngBounds | null>(null)
@@ -1227,10 +1231,13 @@ export default function SearchMapClustered({
       ...getSearchMapOptions(),
       draggable: !drawingMode && !multiDrawActive,
       clickableIcons: !drawingMode && !multiDrawActive,
+      // Integer fitBounds on a 13rem island stops at z10 (~101×126 knot).
+      // Fractional zoom lets the settle loop hit fill ≥ 0.7.
+      ...(fitSubjectRing ? { isFractionalZoomEnabled: true } : {}),
     }
     // isLoaded stays a dep so options recompute after the Maps script
     // arrives. Google UI chrome is off; MapChrome owns zoom and Map/Satellite.
-  }, [drawingMode, multiDrawActive, isLoaded])
+  }, [drawingMode, multiDrawActive, isLoaded, fitSubjectRing])
 
   // ─── Imperative map creation ───────────────────────────────────────────────
   // We create the google.maps.Map instance ourselves rather than relying on
@@ -1348,21 +1355,12 @@ export default function SearchMapClustered({
         }
       }
 
-      // Place first-look: the recorded subject ring fills the island. Do not
-      // union every pin — that is the z≈8 speck under the 240-count bubble.
+      // Place first-look camera is owned by the settle effect. onLoad
+      // fitBounds here raced it and snapped back to integer z10 (Cos kick
+      // fill 0.00 / 101×126 knot). Do not union every pin either — that is
+      // the z≈8 speck under the 240-count bubble.
       if (fitSubjectRing && boundaryPaths.flat().length >= 2) {
-        const ring = new google.maps.LatLngBounds()
-        for (const path of boundaryPaths) for (const p of path) ring.extend(p)
-        if (!ring.isEmpty()) {
-          map.fitBounds(ring, v3SubjectRingPadding(map.getDiv()))
-          google.maps.event.addListenerOnce(map, 'idle', () => {
-            const z = map.getZoom()
-            // Do not clamp UP. A min-z of 11 on a 10.5rem phone island
-            // crops the city ring off the fold (SITE-128 paint rematch).
-            if (typeof z === 'number' && z > 14) map.setZoom(14)
-          })
-          return
-        }
+        return
       }
 
       // Preferred frame: the city/neighborhood/community boundary polygon AND
@@ -1443,6 +1441,9 @@ export default function SearchMapClustered({
     }
     if (placeFitKeyRef.current === key) return
     placeFitKeyRef.current = key
+    // Look island camera is the settle effect. A second fitBounds here
+    // snaps back to integer z10 after fill-zoom (Cos kick knot).
+    if (fitSubjectRing && hasRing) return
     // Place SELECT changed — always fly to the new boundary, even when the
     // shell passes lockBounds for camera restore on cold load.
 
@@ -1482,63 +1483,9 @@ export default function SearchMapClustered({
     }
   }, [placeQuery, boundaryPaths, fitSubjectRing])
 
-  // First-look ring camera: fit after the map instance exists AND after the
-  // island has a real box. onLoad + the place-fit effect can both run against
-  // a 0-height phone canvas and leave zoom 11 on the pin centroid.
-  useEffect(() => {
-    const map = mapInstance
-    if (!map || !window.google?.maps || !fitSubjectRing) return
-    if (boundaryPaths.flat().length < 2) return
-    const bb = new google.maps.LatLngBounds()
-    for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
-    if (bb.isEmpty()) return
-    const apply = () => {
-      const div = map.getDiv()
-      try {
-        google.maps.event.trigger(map, 'resize')
-      } catch {
-        // map may not expose trigger mid-teardown
-      }
-      map.fitBounds(bb, v3SubjectRingPadding(div))
-      google.maps.event.addListenerOnce(map, 'idle', () => {
-        const kept = subjectRingKeepFittedZoom(map.getZoom())
-        if (kept != null && kept !== map.getZoom()) map.setZoom(kept)
-        const view = map.getBounds()
-        const ne = bb.getNorthEast()
-        const sw = bb.getSouthWest()
-        const ringInView = Boolean(view && view.contains(ne) && view.contains(sw))
-        // Short phone island: if the recorded corners are still clipped,
-        // fitBounds again. Do NOT setZoom(9) — that cancelled the async
-        // fit and left Bend as an 87×99 knot under the $ pile.
-        if (!ringInView && (div?.clientHeight ?? 0) > 0) {
-          map.fitBounds(bb, v3SubjectRingPadding(div))
-        }
-        subjectRingOverlayRef.current?.update({
-          paths: boundaryPaths,
-          label: subjectRingLabel(placeQuery),
-          inkWeight: subjectRingInkWeight(boundaryStrokeWeight),
-        })
-        const island = {
-          width: div?.clientWidth ?? 0,
-          height: div?.clientHeight ?? 0,
-        }
-        const box = subjectRingOverlayRef.current?.pixelBox() ?? { width: 0, height: 0 }
-        const fill = subjectRingIslandFill(island, box)
-        if (div) {
-          const knot = subjectRingIsKnot(island, box)
-          div.dataset.placeLookRing = ringInView && !knot ? 'in-view' : 'refit'
-          div.dataset.placeLookZoom = String(map.getZoom() ?? '')
-          div.dataset.placeLookFill = fill.toFixed(2)
-        }
-      })
-    }
-    apply()
-    const t = window.setTimeout(apply, 450)
-    return () => window.clearTimeout(t)
-  }, [mapInstance, fitSubjectRing, boundaryPaths, placeQuery, boundaryStrokeWeight])
-
   // Cream halo + navy ink on overlayLayer; Bend chip above pills.
   // Same recorded GeoJSON as the Polygon. Look island only.
+  // Mounted BEFORE the settle effect so pixelBox can read after draw.
   // Do not setMap(null) on every dep change — that redrew at the pre-fit
   // zoom and produced the 87×99 knot.
   useEffect(() => {
@@ -1579,6 +1526,142 @@ export default function SearchMapClustered({
       subjectRingOverlayRef.current = null
     }
   }, [])
+
+  // First-look ring camera. fitBounds alone snaps to integer z10 on a 13rem
+  // island (Cos kick: SVG 101×126, fill stamped 0.00 before OverlayView drew).
+  // Center once, then zoom to the measured box until fill ≥ 0.7 / box ≥ 110.
+  // Do not fitBounds again after that — that is what kept the knot.
+  useEffect(() => {
+    const map = mapInstance
+    if (!map || !window.google?.maps || !fitSubjectRing) return
+    if (boundaryPaths.flat().length < 2) return
+    const bb = new google.maps.LatLngBounds()
+    for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
+    if (bb.isEmpty()) return
+
+    const gen = ++subjectRingSettleGenRef.current
+    const key = `${placeQuery ?? ''}|${boundaryPaths.flat().length}`
+    const ink = subjectRingInkWeight(boundaryStrokeWeight)
+    const halo = subjectRingHaloWeight(ink)
+    const paint = {
+      paths: boundaryPaths,
+      label: subjectRingLabel(placeQuery),
+      inkWeight: ink,
+    }
+
+    const waitIdle = () =>
+      new Promise<void>((resolve) => {
+        const done = () => resolve()
+        google.maps.event.addListenerOnce(map, 'idle', done)
+        window.setTimeout(done, 900)
+      })
+    const waitFrames = (n: number) =>
+      new Promise<void>((resolve) => {
+        const step = (left: number) => {
+          if (left <= 0) resolve()
+          else requestAnimationFrame(() => step(left - 1))
+        }
+        step(n)
+      })
+    const measure = () => {
+      subjectRingOverlayRef.current?.update(paint)
+      return subjectRingOverlayRef.current?.pixelBox() ?? { width: 0, height: 0 }
+    }
+    const stamp = (
+      div: HTMLElement,
+      island: { width: number; height: number },
+      box: { width: number; height: number },
+    ) => {
+      const fill = subjectRingIslandFill(island, box)
+      const knot = subjectRingIsKnot(island, box)
+      div.dataset.placeLookRing = knot ? 'refit' : 'in-view'
+      div.dataset.placeLookZoom = String(map.getZoom() ?? '')
+      div.dataset.placeLookFill = fill.toFixed(2)
+      div.dataset.placeLookBox = `${Math.round(box.width)}x${Math.round(box.height)}`
+    }
+
+    const settle = async (allowFit: boolean) => {
+      if (gen !== subjectRingSettleGenRef.current) return
+      await waitFrames(1)
+      if (gen !== subjectRingSettleGenRef.current) return
+      const div = map.getDiv()
+      try {
+        google.maps.event.trigger(map, 'resize')
+      } catch {
+        // map may not expose trigger mid-teardown
+      }
+      const island = {
+        width: div?.clientWidth ?? 0,
+        height: div?.clientHeight ?? 0,
+      }
+      if (island.width <= 0 || island.height <= 0) return
+
+      try {
+        map.setOptions({ isFractionalZoomEnabled: true })
+      } catch {
+        // older Maps builds ignore the option
+      }
+
+      if (allowFit && subjectRingFittedKeyRef.current !== key) {
+        map.fitBounds(bb, v3SubjectRingPadding(div))
+        await waitIdle()
+        if (gen !== subjectRingSettleGenRef.current) return
+        const kept = subjectRingKeepFittedZoom(map.getZoom())
+        if (kept != null && kept !== map.getZoom()) map.setZoom(kept)
+        subjectRingFittedKeyRef.current = key
+      }
+
+      let box = { width: 0, height: 0 }
+      for (let i = 0; i < 10; i += 1) {
+        box = measure()
+        if (box.width > 0 && box.height > 0) break
+        await waitFrames(2)
+        if (gen !== subjectRingSettleGenRef.current) return
+      }
+
+      let zoom = map.getZoom() ?? 10
+      if (!(box.width > 0)) {
+        const fromPaths = subjectRingZoomFromPaths(boundaryPaths, island, halo)
+        if (fromPaths != null && Math.abs(fromPaths - zoom) > 0.02) {
+          map.setZoom(fromPaths)
+          await waitIdle()
+          if (gen !== subjectRingSettleGenRef.current) return
+          box = measure()
+          zoom = map.getZoom() ?? fromPaths
+        }
+      }
+
+      if (subjectRingIsKnot(island, box)) {
+        const next =
+          subjectRingZoomFromMeasuredBox(zoom, island, box) ??
+          subjectRingZoomFromPaths(boundaryPaths, island, halo)
+        if (next != null && Math.abs(next - zoom) > 0.02) {
+          map.setZoom(next)
+          await waitIdle()
+          if (gen !== subjectRingSettleGenRef.current) return
+          box = measure()
+          zoom = map.getZoom() ?? next
+        }
+        if (subjectRingIsKnot(island, box) && zoom < 14) {
+          map.setZoom(Math.min(14, Math.ceil(zoom + 0.05)))
+          await waitIdle()
+          if (gen !== subjectRingSettleGenRef.current) return
+          box = measure()
+        }
+      }
+
+      if (div) stamp(div, island, box)
+    }
+
+    void settle(true)
+    const t = window.setTimeout(() => {
+      void settle(false)
+    }, 450)
+    return () => {
+      window.clearTimeout(t)
+      subjectRingSettleGenRef.current += 1
+    }
+  }, [mapInstance, fitSubjectRing, boundaryPaths, placeQuery, boundaryStrokeWeight])
 
   // NOTE: The idle listener for bounds reporting is attached directly in onLoad
   // above. This effect is intentionally removed to avoid the race condition where
