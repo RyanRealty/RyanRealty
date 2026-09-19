@@ -25,8 +25,6 @@ import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from 
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { SEARCH_LIST_PAGE_SIZE } from '@/lib/search/search-page-size'
 
-export { SEARCH_LIST_PAGE_SIZE } from '@/lib/search/search-page-size'
-
 /**
  * Page-level search filters — field names are the URL params. The registry
  * fields (booleans, multis, schools, HOA/tax/payment ceilings) come from
