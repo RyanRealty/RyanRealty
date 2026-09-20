@@ -28,12 +28,32 @@ const LIVE = {
 }
 
 describe('pulseClaim', () => {
-  it('stays plain — no fraction lecture', () => {
+  it('stays plain: no fraction lecture', () => {
     expect(pulseClaim(3284, 912)).toBe('Central Oregon right now.')
     expect(pulseClaim(4300, 1000)).toBe('Central Oregon right now.')
     expect(pulseClaim(3000, 1000)).toBe('Central Oregon right now.')
     expect(pulseClaim(3284, 0)).toBe('Central Oregon right now.')
     expect(pulseClaim(0, 0)).toBe('Central Oregon right now.')
+  })
+
+  it('keeps the Central Oregon right now pulse free of em dashes (Matt lock 2026-09-20)', () => {
+    const pulse = composeHomePulse(LIVE)!
+    const blobs = [
+      pulseClaim(3284, 912),
+      String(pulse.claim),
+      pulse.note,
+      pulse.source,
+      pulse.fieldAlt ?? '',
+      pulse.plotCaption ?? '',
+      ...pulse.readings.flatMap((reading) => [reading.definition, reading.label, reading.hrefLabel ?? '']),
+    ]
+    for (const text of blobs) {
+      expect(text, text).not.toContain('\u2014')
+      expect(text, text).not.toMatch(/ -- /)
+    }
+    const src = readFileSync(resolve('app/_v3/home-pulse.ts'), 'utf8')
+    expect(src).not.toContain('\u2014')
+    expect(src).not.toMatch(/ -- /)
   })
 })
 

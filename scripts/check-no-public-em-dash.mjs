@@ -6,9 +6,11 @@
  * site copy, headers, or captions. Prefer colon, period, comma, or rewrite.
  * Plain ` -- ` used as a dash is the same refuse.
  *
- * Scope: public new-construction + home/search string literals. Comments,
- * markdown docs, *.test.* files, console.* logs, and `new Error(...)` text
- * are out of scope.
+ * Scope: public new-construction + home/search string literals, including
+ * the "Central Oregon right now" pulse in app/_v3/home-pulse.ts. Comments
+ * in other files, markdown docs, *.test.* files, console.* logs, and
+ * `new Error(...)` text are out of scope. home-pulse.ts must also stay
+ * U+2014-free in comments (SITE-145 Cos widen).
  *
  * Usage:
  *   node scripts/check-no-public-em-dash.mjs
@@ -27,9 +29,12 @@ const ROOTS = [
   'app/page.tsx',
   'app/search',
   'app/_v3',
+  'app/_v3/home-pulse.ts',
 ]
 
 const SKIP_TEST = /\.(test|spec)\.(ts|tsx)$/
+/** Cos SITE-145 widen: this pulse module may not hide U+2014 in comments. */
+const WHOLE_FILE_CLEAN = ['app/_v3/home-pulse.ts']
 
 function collectFiles() {
   const files = []
@@ -111,6 +116,14 @@ for (const file of files) {
   const kind = file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   const source = ts.createSourceFile(rel, code, ts.ScriptTarget.Latest, true, kind)
   visit(source, source, rel, fails)
+}
+
+for (const file of WHOLE_FILE_CLEAN) {
+  if (!existsSync(file)) continue
+  const code = readFileSync(file, 'utf8')
+  if (code.includes(EM)) {
+    fails.push(`${file}: U+2014 anywhere in this file, including comments. Rewrite with colon, period, or comma.`)
+  }
 }
 
 console.log('public em-dash gate (ci:no-public-em-dash)')
