@@ -1,0 +1,33 @@
+{
+  "kind": "place-typed-inventory",
+  "id": "site-129-place-typed-inventory",
+  "lockedAt": "2026-09-20",
+  "lock": "SITE-129 Tip Ready — community/subdivision typed stock; scrubber cannot return",
+  "dependsOn": {
+    "tip": "SITE-127 atlas price pins on main",
+    "sha": "df8f37e6eb4027f1ccddd14fb35f1b9973bcecd8",
+    "note": "Inventory primitive already on main. This tip unmounts the Atlas price range and gates the accept so Cos can mark SITE-129 done."
+  },
+  "locks": [
+    "typed-stock-on-page",
+    "empty-types-omit",
+    "no-split-search",
+    "scrubber-unmounted"
+  ],
+  "gate": "ci:place-typed-inventory",
+  "ship": "node scripts/lib/taste-receipt.mjs --ship lib/place/place-typed-inventory.parity.json",
+  "evidencePath": {
+    "typedStockOnPage": "Community + subdivision #homes is V3PlaceInventory grouped by placeStockSectionsFromTiles (sfr / multifamily / attached / land). Parkside Phase 1, Tetherow, Discovery West Phase 1.",
+    "emptyTypesOmit": "A type with zero actives is omitted — no empty stub. Tetherow live: sfr + attached + land, no Multifamily. Parkside: sfr + attached. DRW Phase 1: sfr only.",
+    "noSplitSearch": "Those two routes do not mount PlaceSplitView, SearchFilters, or MorphingSearch. City + neighborhood keep Split.",
+    "scrubberUnmounted": "Community + subdivision V3Atlas pass hidePriceScrubber so .v3-atlas__scrub does not mount. CSS display:none stays as belt-and-suspenders. Live main still mounted the range under display:none — that is the residual this tip kills."
+  },
+  "testFiles": [
+    "lib/place/place-inventory-stock.test.ts",
+    "app/communities/[slug]/page.test.ts",
+    "app/communities/[slug]/_v3/community-fold.test.ts",
+    "app/subdivisions/[slug]/_v3/plat-fold.test.ts",
+    "app/subdivisions/[slug]/_v3/plat-typed-inventory.test.ts",
+    "scripts/__tests__/place-typed-inventory.test.mjs"
+  ]
+}

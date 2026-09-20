@@ -18,6 +18,7 @@ describe('SITE-86 plat fold composition', () => {
     expect(PAGE).toMatch(/plat-fold__figure/)
     expect(PAGE).toMatch(/place-opening--plat/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
+    expect(PAGE).toMatch(/<V3Atlas[\s\S]*?hidePriceScrubber/)
     expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
     expect(PAGE).toMatch(/grain:\s*'subdivision'/)
     expect(PAGE).toMatch(/communitySlug:\s*resortSlug/)

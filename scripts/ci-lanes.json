@@ -37,6 +37,7 @@
     "ci:place-craft",
     "ci:map-hierarchy",
     "ci:hierarchy-naming",
+    "ci:place-typed-inventory",
     "ci:listing-key-lookup",
     "ci:listing-offmarket-index",
     "ci:listing-photo-alt",
@@ -1353,6 +1354,17 @@
       "app/subdivisions/**",
       "components/site/v3/V3Amenities.tsx",
       "scripts/check-place-section-depth.mjs"
+    ],
+    "ci:place-typed-inventory": [
+      "app/communities/**",
+      "app/subdivisions/**",
+      "components/site/v3/V3Atlas.client.tsx",
+      "components/site/v3/V3PlaceInventory.tsx",
+      "lib/place/place-inventory-stock.ts",
+      "lib/place/place-typed-inventory.parity.json",
+      "scripts/check-place-typed-inventory.mjs",
+      "scripts/lib/place-typed-inventory.mjs",
+      "scripts/lib/taste-receipt.mjs"
     ],
     "ci:place-craft": [
       "app/communities/**",

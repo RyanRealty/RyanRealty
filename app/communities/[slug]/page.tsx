@@ -930,6 +930,7 @@ async function renderCommunityDetail({ params }: Props) {
                 stamp={atlasView.stamp}
                 incomplete={!atlasView.complete}
                 amenities={amenityLayers}
+                hidePriceScrubber
               />
             </div>
             <aside className="community-fold__figure">

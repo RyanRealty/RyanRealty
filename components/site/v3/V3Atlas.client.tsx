@@ -391,6 +391,12 @@ export type V3AtlasProps = {
    * stays omitted — this prop never invents a corridor or a circle.
    */
   amenities?: AtlasAmenityLayers | null
+  /**
+   * SITE-129: community + subdivision inventory lives in V3PlaceInventory.
+   * The Atlas price range must not mount on those grains — CSS hide is not
+   * enough; the control cannot return in the DOM.
+   */
+  hidePriceScrubber?: boolean
 }
 
 /* -------------------------------------------------------------------------- */
@@ -514,6 +520,7 @@ export function V3Atlas({
   clusterStageHint,
   clusterStageHintPhone,
   amenities,
+  hidePriceScrubber = false,
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
@@ -1731,21 +1738,23 @@ export function V3Atlas({
           </button>
         ))}
       </div>
-      <label className="v3-atlas__scrub">
-        <span className="v3-atlas__scrub-label">
-          Up to <strong className="v3-atlas__scrub-value">{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
-        </span>
-        <input
-          className="v3-atlas__range"
-          type="range"
-          min={priceScale.min}
-          max={priceScale.max}
-          step={priceScale.step}
-          value={maxPrice}
-          onChange={(e) => setMaxPrice(Number(e.target.value))}
-          aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
-        />
-      </label>
+      {hidePriceScrubber ? null : (
+        <label className="v3-atlas__scrub">
+          <span className="v3-atlas__scrub-label">
+            Up to <strong className="v3-atlas__scrub-value">{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
+          </span>
+          <input
+            className="v3-atlas__range"
+            type="range"
+            min={priceScale.min}
+            max={priceScale.max}
+            step={priceScale.step}
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(Number(e.target.value))}
+            aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
+          />
+        </label>
+      )}
     </div>
   )
 

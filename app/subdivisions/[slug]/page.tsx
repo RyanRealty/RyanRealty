@@ -1539,6 +1539,7 @@ async function renderSubdivisionPage({ params }: Props) {
                   {...(frame == null && atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
                   subjectGrain
                   amenities={amenityLayers}
+                  hidePriceScrubber
                 />
                 {/* SITE-112: the crawlable doors belong to the map's column,
                     under it. On a wide window that is one line instead of the
