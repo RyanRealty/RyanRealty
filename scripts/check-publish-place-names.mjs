@@ -151,6 +151,19 @@ checks.push({
     /allowedCommunityUrlSlugs\(/.test(mwSlugs),
 })
 
+const EM_DASH = '\u2014'
+function publicClaimCopy(file) {
+  return [...src(file).matchAll(/(?:claim|claimText)=\{`([^`]*)`\}/g)].map((m) => m[1])
+}
+const site136Claims = [
+  ...publicClaimCopy('app/cities/[slug]/page.tsx'),
+  ...publicClaimCopy('app/communities/[slug]/page.tsx'),
+]
+checks.push({
+  label: 'SITE-136 city/community claim copy has no em dash (Matt lock 2026-09-20)',
+  ok: site136Claims.length > 0 && site136Claims.every((copy) => !copy.includes(EM_DASH)),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)

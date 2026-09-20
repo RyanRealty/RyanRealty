@@ -914,7 +914,7 @@ async function renderCommunityDetail({ params }: Props) {
                 headingLevel={2}
                 headline={v3Text(`${publicName} right now`)}
                 headlineTone="eyebrow"
-                claimText={`${publicName} — every active and pending mark is a live MLS listing.`}
+                claimText={`${publicName}: every active and pending mark is a live MLS listing.`}
                 keyPlacement="head"
                 sourceName="Oregon Data Share"
                 dots={atlasView.dots}

@@ -111,4 +111,12 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/heading=\{belongingHeadline[\s\S]{0,200}\b(plat|nest|parent|child|sibling|CDP|Feeders)\b/)
     expect(SRC).not.toMatch(/body: faceAbout[\s\S]{0,80}\b(plat|nest|parent|child|sibling|CDP|Feeders)\b/)
   })
+
+  it('does not put an em dash in the atlas claim (Matt lock 2026-09-20)', () => {
+    const claims = [...SRC.matchAll(/(?:claim|claimText)=\{`([^`]*)`\}/g)].map((m) => m[1])
+    expect(claims.length).toBeGreaterThan(0)
+    for (const copy of claims) {
+      expect(copy).not.toContain('\u2014')
+    }
+  })
 })

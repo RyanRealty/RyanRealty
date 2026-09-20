@@ -935,7 +935,7 @@ async function renderCityDetail({ params }: Props) {
               <V3PlaceLook
                 id="place-look"
                 headline={`${cityName} right now`}
-                claim={`${cityName} houses for sale — active and pending detached homes.`}
+                claim={`${cityName} houses for sale: active and pending detached homes.`}
                 listings={foldLookListings}
                 boundaryGeojson={cityGeojson}
                 placeQuery={`${cityName} Oregon`}
@@ -996,7 +996,7 @@ async function renderCityDetail({ params }: Props) {
           headingLevel={2}
           headline={v3Text(`${cityName} right now`)}
           headlineTone="eyebrow"
-          claimText={`${cityName} houses for sale — active and pending detached homes.`}
+          claimText={`${cityName} houses for sale: active and pending detached homes.`}
           keyPlacement="dock"
           sourceName="Oregon Data Share"
           clusterPins
