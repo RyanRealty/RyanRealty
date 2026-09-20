@@ -36,6 +36,7 @@ import { V3_ROOT_CLASS } from './atoms'
 import './tokens.css'
 import './V3DogFloater.css'
 
+/** Matt permanent lock 2026-09-20: these five strings, this order. Do not shorten. */
 export const DOG_FLOATER_MENUS = [
   { href: '/sell', label: 'Sell your home', kind: 'route' },
   { href: '/buy', label: 'Buy your home', kind: 'route' },

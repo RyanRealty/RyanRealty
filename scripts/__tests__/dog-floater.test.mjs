@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import { dogFloaterProblems, dogHeadCropProblems, DOG_FLOATER_GATE } from '../lib/dog-floater.mjs'
+import { dogFloaterProblems, dogHeadCropProblems, DOG_FLOATER_GATE, DOG_FLOATER_DOOR_LABELS } from '../lib/dog-floater.mjs'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -39,6 +39,25 @@ describe('ci:dog-floater lock', () => {
       files: { ...live, layout: live.layout.replace('<V3DogFloater />', '<V3PhoneDock />\n          <V3DogFloater />') },
     })
     expect(p.join('\n')).toMatch(/V3PhoneDock|sticky/)
+  })
+
+  it('refuses shortened door labels or an em dash in public copy', () => {
+    const shortened = live.floater.replace("label: 'Sell your home'", "label: 'Sell'")
+    const dashed = live.floater.replace(
+      'Sell your home, buy your home, text us, get your home&apos;s value, or learn about us.',
+      'Sell your home — or buy.',
+    )
+    const shortP = dogFloaterProblems({ root: REPO, files: { ...live, floater: shortened } })
+    const dashP = dogFloaterProblems({ root: REPO, files: { ...live, floater: dashed } })
+    expect(DOG_FLOATER_DOOR_LABELS).toEqual([
+      'Sell your home',
+      'Buy your home',
+      'Text us',
+      "Get your home's value",
+      'Learn about us',
+    ])
+    expect(shortP.join('\n')).toMatch(/Do not shorten|EXACTLY/)
+    expect(dashP.join('\n')).toMatch(/em dash|U\+2014/)
   })
 
   it('refuses a menu that drops Text us or invents a number', () => {
