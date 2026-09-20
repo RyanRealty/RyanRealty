@@ -783,7 +783,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
   })
   return (
     <>
-      <main className={V3_ROOT_CLASS}>
+      <main className={`${V3_ROOT_CLASS} nbh-page`}>
         <V3SectionTracker />
         <MetadataBlock schemas={neighborhoodSchemas} />
 
