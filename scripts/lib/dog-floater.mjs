@@ -148,6 +148,9 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     if (!/border-radius:\s*50%/.test(css)) {
       p.push(`${PATHS.css}: trigger must be a circle.`)
     }
+    if (/box-shadow\s*:\s*(?!none)(?![^;]*inset)[^;]*\b\d+px\s+\d+px/i.test(css)) {
+      p.push(`${PATHS.css}: no elevation shadow (PUBLIC_UI §6 / ci:one-design-system). Focus ring only.`)
+    }
     if (!/z-index:\s*95/.test(css)) {
       p.push(`${PATHS.css}: floater must sit above the cookie chip (z-index 95).`)
     }

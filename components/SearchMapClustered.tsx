@@ -95,6 +95,12 @@ const MAP_HIERARCHY_SELECTED_CHILD = {
 type GeoJSONPolygon = { type: 'Polygon'; coordinates: number[][][] | number[][] }
 type GeoJSONMultiPolygon = { type: 'MultiPolygon'; coordinates: number[][][][] }
 
+function isGoogleMap(
+  host: google.maps.Map | google.maps.StreetViewPanorama | null | undefined,
+): host is google.maps.Map {
+  return Boolean(host && 'getDiv' in host)
+}
+
 function geojsonToPaths(geo: unknown): { lat: number; lng: number }[][] {
   const g = geo as GeoJSONPolygon | GeoJSONMultiPolygon | null
   if (!g || typeof g !== 'object') return []
@@ -857,7 +863,8 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
         ? proj.fromLatLngToDivPixel(new google.maps.LatLng(anchor.lat, anchor.lng))
         : null
       if (labelText && anchor && anchorPx) {
-        const mapDiv = this.getMap()?.getDiv()
+        const host = this.getMap()
+        const mapDiv = isGoogleMap(host) ? host.getDiv() : null
         const containerPx = proj.fromLatLngToContainerPixel
           ? proj.fromLatLngToContainerPixel(new google.maps.LatLng(anchor.lat, anchor.lng))
           : null

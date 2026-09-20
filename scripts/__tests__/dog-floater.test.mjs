@@ -50,6 +50,15 @@ describe('ci:dog-floater lock', () => {
     expect(p.join('\n')).toMatch(/Text us|CONTACT/)
   })
 
+  it('refuses an elevation shadow on the FAB', () => {
+    const css = `${live.css}\n.v3-dog-floater { box-shadow: 0 1px 6px color-mix(in srgb, var(--v3-navy) 16%, transparent); }`
+    const p = dogFloaterProblems({
+      root: REPO,
+      files: { ...live, css },
+    })
+    expect(p.join('\n')).toMatch(/elevation|one-design-system|focus ring/i)
+  })
+
   it('refuses a FAB that cannot second-tap close or that fights Tour', () => {
     const floater = live.floater
       .replaceAll('DialogTrigger', 'DialogRoot')
