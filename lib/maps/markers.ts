@@ -14,6 +14,7 @@
  * change it ONCE in this file and it applies everywhere.
  */
 
+import { formatAtlasPinPrice } from '@/lib/atlas/pin-price'
 import { getV3MapOptions, V3_BASEMAP_STYLE } from '@/lib/maps/v3-basemap'
 
 // Brand tokens (hex required for Google Maps SVG/InfoWindow isolation).
@@ -211,16 +212,12 @@ export function buildClusterIcon(count: number): google.maps.Icon {
 // ─── Price label formatter ─────────────────────────────────────────────────────
 
 /**
- * Format a listing price as a compact pill label.
- * Matches the convention used across all map markers site-wide.
- *   $1,200,000 -> "$1.2M"
- *   $895,000   -> "$895k"
- *   $500       -> "$500"
+ * For-sale / pending map pill. Same Redfin face as Atlas (SITE-127):
+ * `735K` under a million (no $), `$1.5M` / `$1M` at a million. Token MLS
+ * asks ($1.32, $3k) return empty so a fold cluster cannot print `$1`.
  */
 export function formatPriceLabel(price: number): string {
-  if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(1)}M`
-  if (price >= 1_000) return `$${(price / 1_000).toFixed(0)}k`
-  return `$${price}`
+  return formatAtlasPinPrice(price)
 }
 
 // ─── InfoWindow card HTML ──────────────────────────────────────────────────────

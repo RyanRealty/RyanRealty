@@ -118,7 +118,7 @@ function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v)
 }
 
-/** Short pill label. Mirrors lib/maps/markers formatPriceLabel so every map surface agrees. */
+/** Closed-sale animation label. Keeps $475k units; for-sale place pins use formatAtlasPinPrice. */
 export function formatSaleLabel(price: number): string {
   if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(1)}M`
   if (price >= 1_000) return `$${(price / 1_000).toFixed(0)}k`

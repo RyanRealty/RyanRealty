@@ -6,7 +6,8 @@
  * (and pending) mark on a city / neighborhood / community / subdivision map
  * must read as a short price (735K / $1.5M) and hover must blow up the home
  * (photo + ask). This gate runs the pin formatter and asserts the primitive
- * plus the four place pages still wire it. SITE-128 residual: overlapping
+ * plus the four place pages still wire it. Look/Split fold pills must use
+ * the same 735K /$1.5M face (not $895k). SITE-128 residual: overlapping
  * pills must cluster (clusterAtlasPins grid cells) so a city fold is not
  * one 759 pile and not one 759 bubble.
  * Silent dots cannot regress.
@@ -19,11 +20,18 @@ const CLUSTER = 'lib/atlas/cluster-pins.ts'
 const ATLAS = 'components/site/v3/V3Atlas.client.tsx'
 const BUILDER = 'lib/atlas/build-place-atlas.ts'
 const TILES = 'lib/data/listings/getAtlasTiles.ts'
+const MARKERS = 'lib/maps/markers.ts'
+const SEARCH_MAP = 'components/SearchMapClustered.tsx'
+const PLACE_LOOK_MAP = 'components/site/v3/V3PlaceLookMap.client.tsx'
 const PLACE_PAGES = [
   'app/cities/[slug]/page.tsx',
   'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
   'app/communities/[slug]/page.tsx',
   'app/subdivisions/[slug]/page.tsx',
+]
+const FOLD_PAGES = [
+  'app/cities/[slug]/page.tsx',
+  'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
 ]
 
 const failures = []
@@ -157,9 +165,39 @@ if (!atlas.includes('projectPinsToFoldStage')) {
   failures.push(`${ATLAS} must cluster city-fold pins on the locked fold stage, not live GBR`)
 }
 
+const markers = readFileSync(MARKERS, 'utf8')
+if (!markers.includes('formatAtlasPinPrice')) {
+  failures.push(`${MARKERS} must delegate formatPriceLabel to formatAtlasPinPrice (fold $ vs K mix)`)
+}
+if (/toFixed\(0\)\}k/.test(markers) || markers.includes('"$895k"') || /return `\$\$\{price\}`/.test(markers)) {
+  failures.push(`${MARKERS}: formatPriceLabel must not print $895k / $1 — Atlas 735K /$1.5M is the pin face`)
+}
+
+const searchMap = readFileSync(SEARCH_MAP, 'utf8')
+for (const needle of ['formatAtlasPinPrice', 'formatAtlasClusterRange']) {
+  if (!searchMap.includes(needle)) {
+    failures.push(`${SEARCH_MAP} must use ${needle} so Look/Split fold pills match Atlas`)
+  }
+}
+if (/formatPriceLabel\(/.test(searchMap)) {
+  failures.push(`${SEARCH_MAP} must print formatAtlasPinPrice, not the old $895k formatPriceLabel path`)
+}
+
+const lookMap = readFileSync(PLACE_LOOK_MAP, 'utf8')
+if (!lookMap.includes('SearchMapClustered')) {
+  failures.push(`${PLACE_LOOK_MAP} must keep SearchMapClustered so city/neighborhood fold pills stay wired`)
+}
+
+for (const page of FOLD_PAGES) {
+  const src = readFileSync(page, 'utf8')
+  if (!src.includes('<V3PlaceLook')) {
+    failures.push(`${page} must still mount V3PlaceLook so the fold map shares Atlas pin language`)
+  }
+}
+
 if (failures.length) {
   console.error('ci:atlas-price-pins FAILED\n')
   for (const f of failures) console.error(`  • ${f}`)
   process.exit(1)
 }
-console.log('ci:atlas-price-pins OK — pins 735K/$1.5M, hover home, clusters, four place pages wired')
+console.log('ci:atlas-price-pins OK — pins 735K/$1.5M, hover home, clusters, fold + Atlas share pin face')

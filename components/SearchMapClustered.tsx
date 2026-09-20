@@ -17,8 +17,8 @@ import MapDrawTools from '@/components/search/MapDrawTools'
 import MapChrome from '@/components/search/MapChrome'
 import MapListingPopup from '@/components/search/MapListingPopup'
 import { Button } from "@/components/ui/button"
+import { formatAtlasClusterRange, formatAtlasPinPrice } from '@/lib/atlas/pin-price'
 import {
-  formatPriceLabel,
   getSearchMapOptions,
   MAP_NAVY,
   MAP_WHITE,
@@ -365,9 +365,7 @@ function buildClusterElement(count: number, range: { min: number; max: number } 
   const caption = document.createElement('span')
   const homes = count === 1 ? '1 home' : `${count.toLocaleString('en-US')} homes`
   caption.textContent = range
-    ? range.min === range.max
-      ? `${homes} · ${formatPriceLabel(range.min)}`
-      : `${homes} · ${formatPriceLabel(range.min)} to ${formatPriceLabel(range.max)}`
+    ? `${homes} · ${formatAtlasClusterRange(range.min, range.max)}`
     : homes
   caption.style.cssText = [
     'position:absolute',
@@ -419,7 +417,7 @@ function clusterPriceRange(markers: readonly unknown[]): { min: number; max: num
   for (const m of markers) {
     const content = (m as { content?: HTMLElement }).content
     const raw = Number(content?.dataset?.price ?? NaN)
-    if (!Number.isFinite(raw) || raw <= 0) continue
+    if (!Number.isFinite(raw) || !formatAtlasPinPrice(raw)) continue
     if (raw < min) min = raw
     if (raw > max) max = raw
   }
@@ -1758,7 +1756,7 @@ export default function SearchMapClustered({
         city: l.City,
         listNumber: l.ListNumber != null ? String(l.ListNumber) : null,
       })
-      const label = price == null ? '—' : formatPriceLabel(price)
+      const label = price == null ? '—' : formatAtlasPinPrice(price) || '—'
       const isSaved = savedSetRef.current.has(listingKey)
       const contentEl =
         mode === 'photo' && l.PhotoURL
@@ -1951,7 +1949,7 @@ export default function SearchMapClustered({
           city: listing?.City,
           listNumber: listing?.ListNumber != null ? String(listing.ListNumber) : null,
         })
-        const label = price == null ? '—' : formatPriceLabel(price)
+        const label = price == null ? '—' : formatAtlasPinPrice(price) || '—'
         const isSaved = savedSet.has(key)
         const newEl =
           zoomMode === 'photo' && listing?.PhotoURL
