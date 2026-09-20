@@ -32,7 +32,9 @@ import {
   v3SubjectRingPadding,
 } from '@/lib/maps/v3-basemap'
 import {
+  clampMarkNudge,
   clampRingChip,
+  listingsInsideSubjectRing,
   ringLabelAnchor,
   SUBJECT_RING_CHIP_Z,
   SUBJECT_RING_HALO_Z,
@@ -617,16 +619,22 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       if (w === 0 || h === 0) return
 
       // The box as painted: centred on the point, hanging above it.
-      let nudgeX = 0
-      const left = cp.x - w / 2
-      const right = cp.x + w / 2
-      if (left < MARK_EDGE_MARGIN_PX) nudgeX = MARK_EDGE_MARGIN_PX - left
-      else if (right > frame.clientWidth - MARK_EDGE_MARGIN_PX) {
-        nudgeX = frame.clientWidth - MARK_EDGE_MARGIN_PX - right
-      }
+      // SITE-128 rematch: also clamp Y. Top-only flip still left $795k
+      // hanging off the bottom of the 375 Bend island.
       const flip = cp.y - h < MARK_EDGE_MARGIN_PX && cp.y + h < frame.clientHeight
+      const painted = {
+        left: cp.x - w / 2,
+        right: cp.x + w / 2,
+        top: flip ? cp.y : cp.y - h,
+        bottom: flip ? cp.y + h : cp.y,
+      }
+      const { nudgeX, nudgeY } = clampMarkNudge(
+        painted,
+        { width: frame.clientWidth, height: frame.clientHeight },
+        MARK_EDGE_MARGIN_PX,
+      )
 
-      div.style.transform = `translate(calc(-50% + ${nudgeX}px), ${flip ? '0' : '-100%'})`
+      div.style.transform = `translate(calc(-50% + ${nudgeX}px), calc(${flip ? '0' : '-100%'} + ${nudgeY}px))`
       this.contentEl.style.setProperty('--rr-mark-nudge-x', `${nudgeX}px`)
       const caret = this.contentEl.querySelector<HTMLElement>('[data-caret]')
       if (caret) {
@@ -901,7 +909,7 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
 }
 
 /** How close a mark's painted box may come to the frame edge before it slides in. */
-const MARK_EDGE_MARGIN_PX = 14
+const MARK_EDGE_MARGIN_PX = 18
 
 /** The target every mark carries, matching --v3-tap in components/site/v3/tokens.css. */
 const MARK_TAP_PX = 44
@@ -1177,6 +1185,10 @@ export default function SearchMapClustered({
   )
 
   const boundaryPaths = useMemo(() => geojsonToPaths(boundaryGeojson), [boundaryGeojson])
+  const markListings = useMemo(() => {
+    if (!fitSubjectRing || boundaryPaths.flat().length < 2) return validListings
+    return listingsInsideSubjectRing(validListings, boundaryPaths)
+  }, [fitSubjectRing, validListings, boundaryPaths])
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null)
 
   // Subordinate cells (a community's plats). Recorded GIS only. Default
@@ -1703,7 +1715,7 @@ export default function SearchMapClustered({
   // the note at the top of this file.
   useEffect(() => {
     const map = mapInstance
-    if (!map || !window.google || validListings.length === 0) return
+    if (!map || !window.google || markListings.length === 0) return
 
     const PricePillOverlay = getPricePillOverlayClass()
 
@@ -1717,7 +1729,7 @@ export default function SearchMapClustered({
     markersByKeyRef.current = new Map()
 
     const mode = zoomMode
-    const newMarkers: PriceMarker[] = validListings.map((l, i) => {
+    const newMarkers: PriceMarker[] = markListings.map((l, i) => {
       const listingKey = (l.ListNumber ?? l.ListingKey ?? `point-${i}`).toString()
       // Section 0: what a pill may print.
       //
@@ -1908,7 +1920,7 @@ export default function SearchMapClustered({
         // guard against unmount race
       }
     }
-  }, [mapInstance, validListings, zoomMode, scheduleFitTaps, disableClustering])
+  }, [mapInstance, markListings, zoomMode, scheduleFitTaps, disableClustering])
 
   // Marker emphasis: update content in-place for hovered / active marker.
   // Pill vs photo stamp follows zoomMode. Mutate content (no full remount).

@@ -245,6 +245,10 @@ export function v3SubjectRingPadding(el: { clientWidth: number; clientHeight: nu
 } {
   const w = el?.clientWidth ?? 0
   const h = el?.clientHeight ?? 0
-  const pad = Math.max(22, Math.min(32, Math.round(Math.min(w || 320, h || 168) * 0.14)))
-  return { top: pad, right: pad, bottom: pad, left: pad }
+  const side = Math.max(22, Math.min(32, Math.round(Math.min(w || 320, h || 168) * 0.14)))
+  // Pills hang ~32px above the point plus a 7px caret. A 22px vertical
+  // inset still clips $795k / count chips at the 375 island edge
+  // (SITE-128 rematch Cos FAIL 5).
+  const vertical = Math.max(36, Math.min(48, Math.round((h || 168) * 0.22)))
+  return { top: vertical, right: side, bottom: vertical, left: side }
 }

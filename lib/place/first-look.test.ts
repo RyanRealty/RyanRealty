@@ -80,6 +80,8 @@ describe('place first-look map island', () => {
     expect(clustered).toMatch(/fitSubjectRing && hasRing/)
     expect(clustered).toMatch(/v3SubjectRingPadding/)
     expect(clustered).toMatch(/clampRingChip/)
+    expect(clustered).toMatch(/listingsInsideSubjectRing/)
+    expect(clustered).toMatch(/clampMarkNudge/)
   })
 
   it('paints a cream halo + navy ink above the basemap and under pills', () => {

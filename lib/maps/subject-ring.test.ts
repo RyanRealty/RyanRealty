@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clampMarkNudge,
   clampRingChip,
+  listingsInsideSubjectRing,
   ringLabelAnchor,
   SUBJECT_RING_CHIP_Z,
   SUBJECT_RING_HALO_WEIGHT,
@@ -136,5 +138,42 @@ describe('clampRingChip', () => {
     expect(clipped.y).toBeGreaterThanOrEqual(14)
     expect(clipped.x).toBeLessThanOrEqual(island.width - 36)
     expect(clipped.y).toBeLessThanOrEqual(island.height - 14)
+  })
+})
+
+describe('clampMarkNudge', () => {
+  it('slides a bottom $795k pill and a top-right count chip back inside the island', () => {
+    const island = { width: 335, height: 208 }
+    const bottom = clampMarkNudge({ left: 140, right: 196, top: 190, bottom: 222 }, island, 18)
+    expect(bottom.nudgeY).toBeLessThan(0)
+    expect(190 + bottom.nudgeY).toBeGreaterThanOrEqual(18)
+    expect(222 + bottom.nudgeY).toBeLessThanOrEqual(island.height - 18)
+    const topRight = clampMarkNudge({ left: 310, right: 360, top: -6, bottom: 20 }, island, 18)
+    expect(topRight.nudgeX).toBeLessThan(0)
+    expect(topRight.nudgeY).toBeGreaterThan(0)
+    expect(310 + topRight.nudgeX).toBeGreaterThanOrEqual(18)
+    expect(360 + topRight.nudgeX).toBeLessThanOrEqual(island.width - 18)
+  })
+})
+
+describe('listingsInsideSubjectRing', () => {
+  it('drops homes outside the recorded ring so $ chips cannot sit on cream', () => {
+    const square = [
+      [
+        { lng: -121.4, lat: 44.0 },
+        { lng: -121.2, lat: 44.0 },
+        { lng: -121.2, lat: 44.1 },
+        { lng: -121.4, lat: 44.1 },
+        { lng: -121.4, lat: 44.0 },
+      ],
+    ]
+    const kept = listingsInsideSubjectRing(
+      [
+        { Latitude: 44.05, Longitude: -121.3 },
+        { Latitude: 44.2, Longitude: -121.3 },
+      ],
+      square,
+    )
+    expect(kept).toEqual([{ Latitude: 44.05, Longitude: -121.3 }])
   })
 })

@@ -179,9 +179,12 @@
 
 /* Listing overlay paints the name-only place path in a short navy wash.
    Visual row is 1.75rem; the tap stays 44px via the expanded hit. */
+.v3.v3-breadcrumb--overlay-compact {
+  overflow: visible;
+}
+
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: visible;
   scrollbar-width: none;
 }
 
@@ -201,8 +204,13 @@
 }
 
 @media (max-width: 39.99rem) {
-  /* SITE-128 rematch: fit Bend / Old Bend / plat / address on a 375
-     without ellipsizing the street. Source size + tighter slashes. */
+  /* SITE-128 rematch: the 20px gutter left 8px of "Avenue" in the clip.
+     Source size + a tighter wash so Bend / Old Bend / plat / address
+     stay fully on the 375. overflow:visible — auto still chopped the end. */
+  .v3.v3-breadcrumb--overlay-compact {
+    padding-inline: var(--v3-space-sm);
+  }
+
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text,
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__collapse {
@@ -210,7 +218,7 @@
   }
 
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item + .v3-breadcrumb__item::before {
-    margin: 0 0.15em;
+    margin: 0 0.12em;
   }
 }
 

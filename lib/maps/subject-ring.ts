@@ -10,6 +10,8 @@
  * (fractional) until fill ≥ 0.7 and box ≥ 110, then restamps after draw.
  */
 
+import { pointInRings } from '@/lib/geo/project-svg'
+
 export const SUBJECT_RING_INK_WEIGHT = 8
 export const SUBJECT_RING_HALO_WEIGHT = 18
 /** OverlayView pills use zIndex 1. The ring stroke stays under them. */
@@ -209,4 +211,40 @@ export function clampRingChip(
     x: Math.min(maxX, Math.max(halfW, anchor.x)),
     y: Math.min(maxY, Math.max(halfH, anchor.y)),
   }
+}
+
+/**
+ * Slide a painted $ / count pill back inside the island. Cos rematch FAIL 5
+ * ($795k bottom, $850k top, 2-home top/right) was half-off the map box.
+ */
+export function clampMarkNudge(
+  box: { left: number; right: number; top: number; bottom: number },
+  island: IslandBox,
+  margin = 14,
+): { nudgeX: number; nudgeY: number } {
+  let nudgeX = 0
+  let nudgeY = 0
+  if (box.left < margin) nudgeX = margin - box.left
+  else if (box.right > island.width - margin) nudgeX = island.width - margin - box.right
+  if (box.top < margin) nudgeY = margin - box.top
+  else if (box.bottom > island.height - margin) nudgeY = island.height - margin - box.bottom
+  return { nudgeX, nudgeY }
+}
+
+/** Recorded ring as GeoJSON [lon, lat] outers for point-in-polygon. */
+export function subjectRingLonLat(paths: readonly (readonly RingPoint[])[]) {
+  return paths.map((path) => path.map((p) => [p.lng, p.lat] as const))
+}
+
+/**
+ * Place-look marks must sit inside the subject ring. Bounding-box homes
+ * paint $ chips on cream around the Bend silhouette (SITE-128 rematch).
+ */
+export function listingsInsideSubjectRing<T extends { Latitude: number; Longitude: number }>(
+  listings: readonly T[],
+  paths: readonly (readonly RingPoint[])[],
+): T[] {
+  if (paths.length === 0) return [...listings]
+  const rings = subjectRingLonLat(paths)
+  return listings.filter((l) => pointInRings(l.Longitude, l.Latitude, rings))
 }

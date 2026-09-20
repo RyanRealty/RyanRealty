@@ -386,15 +386,23 @@ export function placeSeamsProblems({ root = process.cwd(), files = {} } = {}) {
   if (searchMap == null || !searchMap.includes('clampRingChip')) {
     p.push(`${PATHS.searchMap}: subject-ring chip must clamp inside the island (SITE-128 rematch).`)
   }
+  if (searchMap == null || !/listingsInsideSubjectRing/.test(searchMap) || !/clampMarkNudge/.test(searchMap)) {
+    p.push(
+      `${PATHS.searchMap}: place-look marks must stay inside the ring (listingsInsideSubjectRing) and the island (clampMarkNudge). Edge $ chips are refuse.`,
+    )
+  }
 
   const ring = readRel(root, PATHS.subjectRing, files.subjectRing ?? files[PATHS.subjectRing])
   if (ring == null || !/export function clampRingChip/.test(ring)) {
     p.push(`${PATHS.subjectRing}: clampRingChip must stay — edge chips clipping the map is refuse.`)
   }
+  if (ring == null || !/export function listingsInsideSubjectRing/.test(ring) || !/export function clampMarkNudge/.test(ring)) {
+    p.push(`${PATHS.subjectRing}: listingsInsideSubjectRing + clampMarkNudge must stay. Chips off the Bend ring or island are refuse.`)
+  }
 
   const pad = readRel(root, PATHS.ringPad, files.ringPad ?? files[PATHS.ringPad])
-  if (pad == null || !/Math\.max\(22/.test(pad)) {
-    p.push(`${PATHS.ringPad}: v3SubjectRingPadding must inset ≥22px so pills stay inside the island.`)
+  if (pad == null || !/Math\.max\(22/.test(pad) || !/Math\.max\(36/.test(pad)) {
+    p.push(`${PATHS.ringPad}: v3SubjectRingPadding must inset ≥22px sides and ≥36px vertical so pills stay inside the island.`)
   }
 
   return p

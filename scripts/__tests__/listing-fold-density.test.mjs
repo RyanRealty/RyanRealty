@@ -146,6 +146,18 @@ describe('listing-fold-density lock', () => {
     expect(p.join('\n')).toMatch(/display-2|flush on the strip|listing-ask|Photos\/Map/i)
   })
 
+  it('refuses overlay-compact list overflow that clips Avenue at 375', () => {
+    const css = live.breadcrumbCss.replace(
+      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {\n  overflow: visible;',
+      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {\n  overflow-x: auto;',
+    )
+    const p = breadcrumbFoldDensityProblems({
+      root: REPO,
+      files: { ...live, breadcrumbCss: css },
+    })
+    expect(p.join('\n')).toMatch(/overflow:visible|overflow-x|clip|Avenue/i)
+  })
+
   it('refuses an overlay crumb that ellipsizes the address at 375', () => {
     const css = live.breadcrumbCss
       .replace(

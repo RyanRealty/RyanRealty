@@ -241,6 +241,21 @@ describe('SITE-128 rematch seams (CI only)', () => {
     const p = placeSeamsProblems({ root: REPO, files: { placeLookMap } })
     expect(p.join('\n')).toMatch(/cluster price marks|375/)
   })
+
+  it('FAIL 5 rematch — refuses place-look marks that are not ring-filtered or island-clamped', () => {
+    const searchMap = readFileSync(join(REPO, 'components/SearchMapClustered.tsx'), 'utf8')
+      .replaceAll('listingsInsideSubjectRing', 'allListingsOnMap')
+      .replaceAll('clampMarkNudge', 'nudgeXOnly')
+    const ring = readFileSync(join(REPO, 'lib/maps/subject-ring.ts'), 'utf8')
+      .replace('export function listingsInsideSubjectRing', 'export function allListingsOnMap')
+      .replace('export function clampMarkNudge', 'export function nudgeXOnly')
+    const pad = readFileSync(join(REPO, 'lib/maps/v3-basemap.ts'), 'utf8').replace(
+      'Math.max(36',
+      'Math.max(12',
+    )
+    const p = placeSeamsProblems({ root: REPO, files: { searchMap, subjectRing: ring, ringPad: pad } })
+    expect(p.join('\n')).toMatch(/listingsInsideSubjectRing|clampMarkNudge|36px|edge \$ chips/i)
+  })
 })
 
 describe('Tip Ready place kit still holds the hierarchy lock', () => {

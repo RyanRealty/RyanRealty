@@ -166,9 +166,14 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
       `${PATHS.breadcrumbCss}: overlay-compact crumb must sit at 1.75rem, not the 44px tap band.`,
     )
   }
-  if (!/\.v3\.v3-breadcrumb--overlay-compact[\s\S]{0,200}overflow-x:\s*auto/.test(css)) {
+  if (!/\.v3\.v3-breadcrumb--overlay-compact[\s\S]{0,200}overflow:\s*visible/.test(css)) {
     p.push(
-      `${PATHS.breadcrumbCss}: overlay-compact list must scroll the name-only place path, not clip Bend / Old Bend / plat / address.`,
+      `${PATHS.breadcrumbCss}: overlay-compact list must overflow:visible. overflow-x:auto clipped "828 NW Florida Avenue" at 375.`,
+    )
+  }
+  if (/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__list \{[\s\S]{0,80}overflow-x:\s*(auto|hidden)/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact list must not overflow-x clip/scroll the address end.`,
     )
   }
   if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__text--current[\s\S]{0,160}max-width:\s*none/.test(css)) {
@@ -184,6 +189,11 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
   if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__link[\s\S]{0,280}font-size:\s*var\(--v3-size-source\)/.test(css)) {
     p.push(
       `${PATHS.breadcrumbCss}: overlay-compact phone crumbs must use source size so 828 Florida stays on the 375 trail.`,
+    )
+  }
+  if (!/@media \(max-width: 39\.99rem\)[\s\S]{0,800}\.v3\.v3-breadcrumb--overlay-compact \{[\s\S]{0,80}padding-inline:\s*var\(--v3-space-sm\)/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact phone wash must use space-sm, not the 20px gutter. Gutter clipped "Avenue" at 375.`,
     )
   }
   return p
