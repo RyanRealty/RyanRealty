@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { getSearchListings, type SearchFilters } from '@/app/actions/search'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
@@ -13,8 +12,14 @@ import { V3ListingRow } from '@/components/site/v3'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
-import { Button } from '@/components/ui/button'
+import { buildPpsfBand } from '@/components/search/ppsf-band'
+import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
+import { SearchCompareMark } from '@/app/search/_v3/SearchCompareMark'
+import { SearchEmpty } from '@/app/search/_v3/SearchEmpty'
+import { SearchPager, SearchPagerMore } from '@/app/search/_v3/SearchPager'
 import './search-ledger.css'
+
+const LIST_PAGE_SIZE = 24
 
 /**
  * Convert the page's URL filter object into getSearchListings' SearchFilters.
@@ -188,6 +193,28 @@ export default function SearchResults({
     () => excludeHiddenListings(listings, hiddenKeys),
     [listings, hiddenKeys],
   )
+  const listBand = useMemo(
+    () =>
+      buildPpsfBand(
+        visibleListings.map((listing) =>
+          listing.ListPrice && listing.TotalLivingAreaSqFt
+            ? listing.ListPrice / listing.TotalLivingAreaSqFt
+            : null,
+        ),
+      ),
+    [visibleListings],
+  )
+  const pageCount = Math.max(1, Math.ceil(total / LIST_PAGE_SIZE))
+  const hrefForPage = (nextPage: number) => {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(filters)) {
+      if (value == null || value === '') continue
+      params.set(key, String(value))
+    }
+    params.set('view', 'list')
+    params.set('page', String(nextPage))
+    return `/homes-for-sale?${params.toString()}`
+  }
   // Cos/Matt 2026-09-06 residual: no unscoped "N homes found" total-inventory
   // chrome. Place-scoped counts (Places filter on) stay intentional.
   const placeScoped = Boolean(
@@ -200,38 +227,24 @@ export default function SearchResults({
   return (
     <div className="w-full p-4 space-y-4">
       {showDegradedState ? (
-        <div className="srch-panel p-8 text-center">
-          <p className="srch-label">Search delayed</p>
-          <h3 className="mt-2 text-base font-semibold text-foreground">
-            We could not load listings in time
-          </h3>
-          <p className="mx-auto mt-2 max-w-md text-muted-foreground">
-            This is a connection or timeout problem, not an empty market. Try again.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="srch-chip mt-6"
-            onClick={() => {
+        <SearchEmpty
+          kind="degraded"
+          title="We could not load listings in time"
+          description="This is a connection or timeout problem, not an empty market. Try again."
+          action={{
+            label: 'Reload page',
+            onClick: () => {
               if (typeof window !== 'undefined') window.location.reload()
-            }}
-          >
-            Reload page
-          </Button>
-        </div>
+            },
+          }}
+        />
       ) : showEmptyState ? (
-        <div className="srch-panel p-8 text-center">
-          <p className="srch-label">No matches</p>
-          <h3 className="mt-2 text-base font-semibold text-foreground">
-            No homes match these filters
-          </h3>
-          <p className="mx-auto mt-2 max-w-md text-muted-foreground">
-            Loosen a filter, or view every Central Oregon listing.
-          </p>
-          <Button asChild variant="outline" className="srch-chip mt-6">
-            <Link href="/homes-for-sale">View all listings</Link>
-          </Button>
-        </div>
+        <SearchEmpty
+          kind="empty"
+          title="No homes match these filters"
+          description="Loosen a filter, or view every Central Oregon listing."
+          action={{ href: '/homes-for-sale', label: 'View all listings' }}
+        />
       ) : (
         <>
           {placeScoped ? (
@@ -279,6 +292,22 @@ export default function SearchResults({
               <V3ListingRow
                 showPricePerSqft
                 priority={cardIndex === 0}
+                compare={
+                  <SearchCompareMark
+                    band={listBand}
+                    value={publishListingSharePricePerSqft({
+                      propertyType: listing.PropertyType ?? null,
+                      propertySubType: listing.PropertySubType ?? null,
+                      subdivisionName: listing.SubdivisionName ?? null,
+                      city: listing.City ?? null,
+                      listNumber: listing.ListNumber ?? null,
+                      pricePerSqft:
+                        listing.ListPrice && listing.TotalLivingAreaSqFt
+                          ? listing.ListPrice / listing.TotalLivingAreaSqFt
+                          : null,
+                    })}
+                  />
+                }
                 listing={{
                   listingKey: key,
                   href,
@@ -313,6 +342,10 @@ export default function SearchResults({
           {loading && <span className="text-muted-foreground">Loading more…</span>}
         </div>
       )}
+      <SearchPager page={page} pageCount={pageCount} hrefForPage={hrefForPage} />
+      {listings.length < total ? (
+        <SearchPagerMore href={hrefForPage(page + 1)} label="Show more homes" />
+      ) : null}
         </>
       )}
     </div>

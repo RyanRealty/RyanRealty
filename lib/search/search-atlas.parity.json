@@ -1,0 +1,33 @@
+{
+  "kind": "search-atlas",
+  "id": "site-110-search-atlas",
+  "lockedAt": "2026-09-20",
+  "lock": "SITE-110 Tip Ready — search is Atlas cartography plus a list. Portal split cannot return.",
+  "dependsOn": {
+    "tip": "SITE-129 on main",
+    "sha": "07afb044711c12da28bddcb0ea35b1b390faa0fb",
+    "note": "Honesty/function already engineered. This tip breaks portal-shape taste and ratchets it."
+  },
+  "locks": [
+    "map-dominant",
+    "labeled-compare",
+    "house-sheet-filters",
+    "no-portal-pills",
+    "catalog-route-import"
+  ],
+  "gate": "ci:search-atlas",
+  "ship": "node scripts/lib/taste-receipt.mjs --ship lib/search/search-atlas.parity.json",
+  "evidencePath": {
+    "mapDominant": "Search split list share is .srch-atlas 30% / min 20rem. Map stays the field. Do not restore 40%/25rem Zillow columns.",
+    "labeledCompare": "SplitListingCard and list rows render SearchCompareMark with .srch-ppsf__label against the visible-set ppsf band.",
+    "houseSheetFilters": "All-filters stays V3Sheet / .srch-sheet. Status, baths, home type leave the first-viewport pill row.",
+    "noPortalPills": "Dock first viewport is morph + Places + Beds + All filters + price ticks. For sale / Price pill / Baths / Home type are .srch-chip--sheet.",
+    "catalogRouteImport": "app/search/_v3 imports morphing-search, range-slider, command, checkbox, empty, input, pagination."
+  },
+  "testFiles": [
+    "scripts/__tests__/search-atlas.test.mjs",
+    "components/search/__tests__/ppsf-band.test.ts",
+    "lib/search/compare-readout.test.ts",
+    "app/search/_v3/search-atlas.test.ts"
+  ]
+}

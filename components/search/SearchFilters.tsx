@@ -234,6 +234,8 @@ type FilterDropdownProps = {
    * search-ledger.css so the ladder is a token, not a per-call-site class.
    */
   weight?: 'base' | 'key'
+  /** SITE-110: portal pills leave the first viewport and live in the house sheet. */
+  sheet?: boolean
 }
 
 function FilterDropdown({
@@ -244,6 +246,7 @@ function FilterDropdown({
   children,
   align = 'start',
   weight = 'base',
+  sheet = false,
 }: FilterDropdownProps) {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -256,6 +259,7 @@ function FilterDropdown({
           className={cn(
             'srch-chip shrink-0 gap-1 whitespace-nowrap px-3',
             weight === 'key' && 'srch-chip--key',
+            sheet && 'srch-chip--sheet',
             open && !active && 'ring-2 ring-primary/30',
           )}
         >
@@ -994,12 +998,13 @@ export default function SearchFilters({
 
         <div className="srch-chip-rail hidden min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar sm:flex">
 
-        {/* For Sale / Status */}
+        {/* For Sale / Status — SITE-110: lives in the house sheet, not the dock. */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
           active={!!(initialFilters.status && initialFilters.status !== 'Active')}
           open={openPanel === 'status'}
           onOpenChange={panelOpenHandler('status')}
+          sheet
         >
           <div className="p-3">
             <p className="srch-label mb-2.5">Status</p>
@@ -1020,13 +1025,14 @@ export default function SearchFilters({
           </div>
         </FilterDropdown>
 
-        {/* Price */}
+        {/* Price pill — SITE-110: ticks stay on the dock; the duplicate pill is sheet. */}
         <FilterDropdown
           label={activePriceLabel ? `Price: ${activePriceLabel}` : 'Price'}
           active={!!activePriceLabel}
           open={openPanel === 'price'}
           onOpenChange={panelOpenHandler('price')}
           weight="key"
+          sheet
         >
           <div className="p-3">
             <p className="srch-label mb-2.5">Price range</p>
@@ -1156,13 +1162,14 @@ export default function SearchFilters({
           </div>
         </FilterDropdown>
 
-        {/* Baths — min + max (URL: baths / maxBaths) */}
+        {/* Baths — SITE-110: house sheet, not a seventh dock pill. */}
         <FilterDropdown
           label={activeBathsLabel ? `Baths: ${activeBathsLabel}` : 'Baths'}
           active={!!activeBathsLabel}
           open={openPanel === 'baths'}
           onOpenChange={panelOpenHandler('baths')}
           weight="key"
+          sheet
         >
           <div className="space-y-3 p-3">
             <div>
@@ -1200,12 +1207,13 @@ export default function SearchFilters({
           </div>
         </FilterDropdown>
 
-        {/* Home Type — class + MLS sub-type (duplex, manufactured on land, …) */}
+        {/* Home Type — SITE-110: house sheet. */}
         <FilterDropdown
           label={activeTypeLabel ?? 'Home type'}
           active={!!activeTypeLabel}
           open={openPanel === 'type'}
           onOpenChange={panelOpenHandler('type')}
+          sheet
         >
           <div className="w-full max-w-sm">
             <HomeTypeFilterPanel

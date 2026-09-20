@@ -38,6 +38,7 @@
     "ci:map-hierarchy",
     "ci:hierarchy-naming",
     "ci:place-typed-inventory",
+    "ci:search-atlas",
     "ci:listing-key-lookup",
     "ci:listing-offmarket-index",
     "ci:listing-photo-alt",
@@ -1364,6 +1365,15 @@
       "lib/place/place-typed-inventory.parity.json",
       "scripts/check-place-typed-inventory.mjs",
       "scripts/lib/place-typed-inventory.mjs",
+      "scripts/lib/taste-receipt.mjs"
+    ],
+    "ci:search-atlas": [
+      "app/search/**",
+      "components/search/**",
+      "lib/search/search-atlas.parity.json",
+      "lib/search/compare-readout.ts",
+      "scripts/check-search-atlas.mjs",
+      "scripts/lib/search-atlas.mjs",
       "scripts/lib/taste-receipt.mjs"
     ],
     "ci:place-craft": [

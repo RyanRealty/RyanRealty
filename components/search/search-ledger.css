@@ -1048,3 +1048,48 @@ button.srch-chip--key {
   font-size: var(--v3-size-body, 0.875rem);
   color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
 }
+
+/* SITE-110 — Atlas cartography plus a list. The 40%/25rem portal split cannot return. */
+@media (min-width: 64rem) {
+  .srch-atlas .map-search-list {
+    width: 30%;
+    min-width: 20rem;
+  }
+}
+
+/* Portal pills leave the first viewport. Status, Price pill, Baths, Home type
+   live in the house sheet. Morph + Places + Beds + All filters + price ticks stay. */
+.srch-chip--sheet {
+  display: none;
+}
+
+/* Labeled comparison — the mute hairline is no longer the signal. */
+.srch-ppsf--labeled {
+  height: auto;
+  min-height: 10px;
+}
+
+.srch-ppsf__label {
+  display: block;
+  margin: 0 0 0.3rem;
+  font-size: var(--v3-size-label, 0.65625rem);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+  line-height: 1.25;
+}
+
+.srch-ppsf__track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 10px;
+}
+
+.srch-ppsf--empty {
+  height: auto;
+}
+
+.srch-ppsf--empty .srch-ppsf__none {
+  position: static;
+}

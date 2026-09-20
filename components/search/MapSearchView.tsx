@@ -48,6 +48,8 @@ import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-vide
 import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
+import { SearchEmpty } from '@/app/search/_v3/SearchEmpty'
+import { SearchPagerMore } from '@/app/search/_v3/SearchPager'
 import './search-ledger.css'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
@@ -1045,67 +1047,49 @@ export default function MapSearchView({
         )}
       </header>
       {resultsDegraded ? (
-        <div className="srch-panel m-4 p-8 text-center">
-          <p className="srch-label">Try again</p>
-          <h3 className="mt-2 text-base font-semibold text-foreground">Search took too long</h3>
-          <p className="mt-2 text-muted-foreground">
-            We could not load homes for this view. Try again, or reload the page.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Button type="button" size="sm" className="srch-chip" onClick={retryViewportSearch} disabled={loading}>
-              Try again
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="srch-chip"
-              onClick={() => {
-                if (typeof window !== 'undefined') window.location.reload()
-              }}
-            >
-              Reload page
-            </Button>
-          </div>
-        </div>
+        <SearchEmpty
+          kind="degraded"
+          title="Search took too long"
+          description="We could not load homes for this view. Try again, or reload the page."
+          action={{
+            label: loading ? 'Trying…' : 'Try again',
+            onClick: retryViewportSearch,
+          }}
+        />
       ) : !matchCountReady && listings.length === 0 ? (
-        <div className="srch-panel m-4 p-8 text-center">
-          <p className="srch-label">Updating</p>
-          <h3 className="mt-2 text-base font-semibold text-foreground">Checking homes for this view</h3>
-          <p className="mt-2 text-muted-foreground">
-            The filter-match count is still loading. This is not an empty market.
-          </p>
-        </div>
+        <SearchEmpty
+          kind="updating"
+          title="Checking homes for this view"
+          description="The filter-match count is still loading. This is not an empty market."
+        />
       ) : listings.length === 0 ? (
         hasNarrowingFilters ? (
-          <div className="srch-panel m-4 p-8 text-center">
-            <p className="srch-label">{beyondViewportCount != null ? 'Outside this view' : 'No matches'}</p>
-            <h3 className="mt-2 text-base font-semibold text-foreground">
-              {beyondViewportCount != null
+          <SearchEmpty
+            kind={beyondViewportCount != null ? 'outside' : 'empty'}
+            title={
+              beyondViewportCount != null
                 ? `${beyondViewportCount.toLocaleString('en-US')} matching home${beyondViewportCount === 1 ? ' is' : 's are'} outside this map view`
-                : 'No homes match these filters here'}
-            </h3>
-            <p className="mt-2 text-muted-foreground">
-              {beyondViewportCount != null
+                : 'No homes match these filters here'
+            }
+            description={
+              beyondViewportCount != null
                 ? 'Zoom out to see them, or loosen a filter.'
-                : 'Loosen a filter, or zoom out to widen the search area.'}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="srch-chip mt-4"
-              onClick={() => navigateQuery(router, `${pathname ?? '/homes-for-sale'}?view=${filters.view ?? 'split'}`, { staticShell })}
-            >
-              Clear all filters
-            </Button>
-          </div>
+                : 'Loosen a filter, or zoom out to widen the search area.'
+            }
+            action={{
+              label: 'Clear all filters',
+              onClick: () =>
+                navigateQuery(router, `${pathname ?? '/homes-for-sale'}?view=${filters.view ?? 'split'}`, {
+                  staticShell,
+                }),
+            }}
+          />
         ) : (
-          <div className="srch-panel m-4 p-8 text-center">
-            <p className="srch-label">Empty view</p>
-            <h3 className="mt-2 text-base font-semibold text-foreground">No homes in this part of the map</h3>
-            <p className="mt-2 text-muted-foreground">Zoom out or pan to a different area to see listings.</p>
-          </div>
+          <SearchEmpty
+            kind="empty"
+            title="No homes in this part of the map"
+            description="Zoom out or pan to a different area to see listings."
+          />
         )
       ) : (
         <>
@@ -1193,16 +1177,10 @@ export default function MapSearchView({
           })}
         </div>
         {visibleListings.length > visibleCount && (
-          <div className="px-4 pb-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
-              className="srch-chip w-full"
-            >
-              Show more homes
-            </Button>
-          </div>
+          <SearchPagerMore
+            label="Show more homes"
+            onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
+          />
         )}
         {/* ODS Aug 2024 IDX display rules (G54): every rendered price/$-per-sqft
             needs source attribution in view. Split/map is an app frame that
@@ -1375,7 +1353,7 @@ export default function MapSearchView({
   )
 
   return (
-    <div className="map-search-shell flex min-h-0 flex-1 w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
+    <div className="map-search-shell srch-atlas flex min-h-0 flex-1 w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
       {/* List + map, ONE mount each. Desktop: side-by-side. Mobile: full-bleed
           map under a Zillow-style bottom sheet (peek → expand). Never double-render. */}
       <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">

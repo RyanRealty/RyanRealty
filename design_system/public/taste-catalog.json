@@ -312,6 +312,33 @@
     "shadcn:empty": {
       "aliasOf": "shadcn-empty"
     },
+    "shadcn-command": {
+      "add": "command",
+      "file": "components/ui/command.tsx",
+      "import": "@/components/ui/command",
+      "house": "app/search/_v3/SearchCommand.tsx"
+    },
+    "shadcn:command": {
+      "aliasOf": "shadcn-command"
+    },
+    "shadcn-checkbox": {
+      "add": "checkbox",
+      "file": "components/ui/checkbox.tsx",
+      "import": "@/components/ui/checkbox",
+      "house": "components/search/AllFiltersSheet.tsx"
+    },
+    "shadcn:checkbox": {
+      "aliasOf": "shadcn-checkbox"
+    },
+    "shadcn-pagination": {
+      "add": "pagination",
+      "file": "components/ui/pagination.tsx",
+      "import": "@/components/ui/pagination",
+      "house": "app/search/_v3/SearchPager.tsx"
+    },
+    "shadcn:pagination": {
+      "aliasOf": "shadcn-pagination"
+    },
     "shadcn-table": {
       "add": "table",
       "file": "components/ui/table.tsx",
@@ -2537,6 +2564,36 @@
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/command",
           "job": "Command search. Adapt into v3, do not paste radix chrome on the public map."
+        },
+        {
+          "id": "shadcn-checkbox",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/checkbox",
+          "job": "House-sheet filters. One check language, not a second pill overlay."
+        },
+        {
+          "id": "shadcn-drawer",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/drawer",
+          "job": "All-filters stays the house sheet. Do not invent a second overlay."
+        },
+        {
+          "id": "shadcn-empty",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/empty",
+          "job": "Degraded, updating, outside-view, and empty states. Never invent a zero market."
+        },
+        {
+          "id": "shadcn-input",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input",
+          "job": "Location field inside the morph. Navy on cream."
+        },
+        {
+          "id": "shadcn-pagination",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/pagination",
+          "job": "List pages and the split-rail more control. Same catalog, no new overlay."
         }
       ]
     },

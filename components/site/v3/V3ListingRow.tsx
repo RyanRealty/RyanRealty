@@ -31,6 +31,7 @@
  * calls in this file itself; the publishers live in lib and stay the one
  * definition of what an ask means.
  */
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
@@ -123,6 +124,7 @@ export function V3ListingRow({
   priority = false,
   className,
   onOpenTour,
+  compare,
 }: {
   listing: V3ListingRowData
   /** Opt-in: append "$X/sqft" to the figure column (search results). */
@@ -133,6 +135,8 @@ export function V3ListingRow({
   className?: string
   /** 3D badge opens the on-site tour viewer. */
   onOpenTour?: () => void
+  /** SITE-110: labeled comparison against the visible set. */
+  compare?: ReactNode
 }) {
   // A row may not show a fractional ask unlabelled (decided 2026-08-19): the
   // share label is computed HERE from the subject the row already carries,
@@ -221,6 +225,7 @@ export function V3ListingRow({
           <span className="v3-lrow__price">{ask ?? '—'}</span>
           {shareKind ? <span className="v3-lrow__tag">{shareKind}</span> : null}
           {meta.length > 0 ? <span className="v3-lrow__meta">{meta.join(' · ')}</span> : null}
+          {compare}
           <span className="v3-lrow__addr">{listing.addressLine}</span>
           <span className="v3-lrow__city">{listing.cityLine}</span>
         </Link>
@@ -242,6 +247,7 @@ export function V3ListingRow({
         <span className="v3-lrow__price">{ask ?? '—'}</span>
         {shareKind ? <span className="v3-lrow__tag">{shareKind}</span> : null}
         {meta.length > 0 ? <span className="v3-lrow__meta">{meta.join(' · ')}</span> : null}
+        {compare}
       </span>
     </Link>
   )

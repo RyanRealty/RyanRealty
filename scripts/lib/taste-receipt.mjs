@@ -54,6 +54,7 @@ import {
   isPlaceTypedInventoryDocument,
   placeTypedInventoryShipProblems,
 } from './place-typed-inventory.mjs'
+import { isSearchAtlasDocument, searchAtlasShipProblems } from './search-atlas.mjs'
 
 export { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
 
@@ -994,6 +995,16 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
         process.exit(1)
       }
       console.log('ship OK — place-typed-inventory · typed stock · empty omit · scrubber unmounted')
+      process.exit(0)
+    }
+    if (isSearchAtlasDocument(d)) {
+      const problems = searchAtlasShipProblems(d, { root })
+      if (problems.length) {
+        console.error(problems.join('\n'))
+        console.error('ship refuse — search atlas Tip Ready needs map-dominant + labeled compare + house sheet. Cos prose is not Tip Ready.')
+        process.exit(1)
+      }
+      console.log('ship OK — search-atlas · map-dominant · labeled compare · house sheet')
       process.exit(0)
     }
     const kitFromPath = rel.includes('ui_kits/') ? rel.split('/').filter(Boolean).at(-2) : null

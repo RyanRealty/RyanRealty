@@ -80,8 +80,26 @@ export default function SearchRootJsonLd({
           // Real total when available; fall back to the slice length so we
           // never report a number smaller than what is actually shown.
           numberOfItems: totalCount ?? listings.length,
-          itemListElement: listingUrls.slice(0, 10).map((url, i) => ({
+          itemListElement: listingUrls.map((url, i) => ({
             '@type': 'ListItem',
+            position: i + 1,
+            url,
+          })),
+        }
+      : null
+
+  // SITE-110 SEO increment: the visible set is also an OfferCatalog so crawlers
+  // get the inventory count plus the same listing URLs the ItemList already names.
+  const offerCatalog =
+    listingUrls.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'OfferCatalog',
+          name: title,
+          url: canonicalUrl,
+          numberOfItems: totalCount ?? listings.length,
+          itemListElement: listingUrls.map((url, i) => ({
+            '@type': 'Offer',
             position: i + 1,
             url,
           })),
@@ -93,6 +111,9 @@ export default function SearchRootJsonLd({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPage) }} />
       {itemList && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+      )}
+      {offerCatalog && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(offerCatalog) }} />
       )}
     </>
   )

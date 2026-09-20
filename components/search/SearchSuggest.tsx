@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SearchSuggestionsResult } from '@/app/actions/listings'
+import { SearchCommand } from '@/app/search/_v3/SearchCommand'
 import { cityPagePath } from '@/lib/slug'
 import { communityPagePath } from '@/lib/community-slug'
 
@@ -244,43 +245,20 @@ export function SearchSuggestPanel({
   if (items.length === 0) return null
 
   return (
-    <div id={`${idPrefix}-listbox`} role="listbox" aria-label="Search suggestions" className={className}>
-      {items.map((item, index) => {
-        const showHeader = index === 0 || items[index - 1]!.kind !== item.kind
-        const active = index === highlight
-        return (
-          <div key={`${item.kind}-${index}-${item.href}`}>
-            {showHeader && (
-              <p className="px-4 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {SUGGEST_GROUP_LABELS[item.kind]}
-              </p>
-            )}
-            <a
-              id={`${idPrefix}-item-${index}`}
-              role="option"
-              aria-selected={active}
-              href={item.href}
-              tabIndex={-1}
-              className={`block w-full px-4 py-2 text-left text-sm transition ${
-                active ? 'bg-muted text-foreground' : 'text-foreground hover:bg-muted'
-              }`}
-              onMouseDown={(e) => {
-                // Left click only; let middle/modified clicks use the raw href.
-                if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-                e.preventDefault()
-                onPick(item)
-              }}
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-                e.preventDefault()
-              }}
-            >
-              {item.label}
-              {item.sublabel && <span className="ml-1.5 text-muted-foreground">({item.sublabel})</span>}
-            </a>
-          </div>
-        )
-      })}
-    </div>
+    <SearchCommand
+      className={className}
+      items={items.map((item) => ({
+        id: item.href,
+        group: SUGGEST_GROUP_LABELS[item.kind],
+        label: item.label,
+        sublabel: item.sublabel,
+      }))}
+      highlight={highlight}
+      idPrefix={idPrefix}
+      onPick={(id) => {
+        const item = items.find((row) => row.href === id)
+        if (item) onPick(item)
+      }}
+    />
   )
 }
