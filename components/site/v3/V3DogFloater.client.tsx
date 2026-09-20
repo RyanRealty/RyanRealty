@@ -4,10 +4,11 @@
  * (Matt lock 2026-09-19, phone rematch 2026-09-20).
  *
  * A circle, bottom-end, with the INNER dog-head crop from the FULL
- * seal (blue-dog-transparent / white-dog-trans) — not the wordmark
- * ring, and not the already-clipped disc. Click toggles a cream sheet
- * with exactly five doors. Critiquito 2026-09-19: light → navy-etched
- * head on cream; dark → white head on navy. Idle is one quiet tilt
+ * seals at public/brand/jax-navy.png and public/brand/jax-white.png
+ * (3635x3417), not the wordmark ring, and not an already-clipped
+ * disc. Click toggles a cream sheet with exactly five doors.
+ * Critiquito 2026-09-19: light is navy-etched head on cream; dark is
+ * white head on navy. Idle is one quiet tilt
  * (3–6°) that moves for most of a ≤4s cycle, then a pause — not a
  * 70% static hold. Head assets carry muzzle/ears/crown plus padding
  * inside the square before the circle masks. Menu is 150–220ms

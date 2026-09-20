@@ -41,6 +41,20 @@ describe('ci:dog-floater lock', () => {
     expect(p.join('\n')).toMatch(/V3PhoneDock|sticky/)
   })
 
+  it('refuses a builder that crops from brand-kit/rasta', () => {
+    const builder = readFileSync(join(REPO, 'scripts/build-jax-head.mjs'), 'utf8')
+    const p = dogFloaterProblems({
+      root: REPO,
+      files: {
+        ...live,
+        builder: builder
+          .replaceAll('public/brand/jax-navy.png', 'brand-kit/rasta/blue-dog-transparent.png')
+          .replaceAll('public/brand/jax-white.png', 'brand-kit/rasta/white-dog-trans.png'),
+      },
+    })
+    expect(p.join('\n')).toMatch(/brand-kit\/rasta|jax-navy|jax-white/)
+  })
+
   it('refuses shortened door labels or an em dash in public copy', () => {
     const shortened = live.floater.replace("label: 'Sell your home'", "label: 'Sell'")
     const dashed = live.floater.replace(

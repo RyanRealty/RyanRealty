@@ -33,9 +33,18 @@ const PATHS = Object.freeze({
   dock: 'components/site/v3/V3PhoneDock.client.tsx',
   stickyCss: 'components/site/v3/V3StickyAsk.css',
   listingPage: 'app/listing/[listingKey]/page.tsx',
+  builder: 'scripts/build-jax-head.mjs',
   assetNavy: 'public/brand/jax-head-navy.png',
   assetCream: 'public/brand/jax-head-cream.png',
+  sealNavy: 'public/brand/jax-navy.png',
+  sealWhite: 'public/brand/jax-white.png',
 })
+
+/** Cos 2026-09-20: these two files on the repo tree are the crop source. */
+export const JAX_HEAD_SEALS = Object.freeze([
+  { src: PATHS.sealNavy, dest: PATHS.assetNavy, width: 3635, height: 3417, tint: { r: 16, g: 39, b: 66 } },
+  { src: PATHS.sealWhite, dest: PATHS.assetCream, width: 3635, height: 3417, tint: { r: 255, g: 255, b: 255 } },
+])
 
 /** Matt permanent lock 2026-09-20: five doors, these strings, this order. Do not shorten. */
 export const DOG_FLOATER_DOOR_LABELS = Object.freeze([
@@ -62,6 +71,7 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   const dock = readRel(root, PATHS.dock, files.dock)
   const stickyCss = readRel(root, PATHS.stickyCss, files.stickyCss)
   const listingPage = readRel(root, PATHS.listingPage, files.listingPage)
+  const builder = readRel(root, PATHS.builder, files.builder)
 
   if (floater == null) {
     p.push(`${PATHS.floater}: missing — SITE-134 dog floater is gone.`)
@@ -107,8 +117,11 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!floater.includes('/brand/jax-head-navy.png') || !floater.includes('/brand/jax-head-cream.png')) {
     p.push(`${PATHS.floater}: must paint the inner dog-head crop (jax-head-navy / jax-head-cream), not the wordmark seal.`)
   }
-  if (floater.includes('/brand/jax-white.png') || floater.includes('/brand/jax-navy.png')) {
+  if (/\bsrc=\{?['"`]\/brand\/jax-(white|navy)\.png/.test(stripComments(floater))) {
     p.push(`${PATHS.floater}: FAB must be the inner dog-head circle, not the full RYAN REALTY seal.`)
+  }
+  if (/brand-kit\/rasta|blue-dog-transparent|white-dog-trans/.test(floater)) {
+    p.push(`${PATHS.floater}: crop source is public/brand/jax-navy.png + jax-white.png. brand-kit/rasta is not on this tree.`)
   }
   if (!floater.includes('data-v3-dog-head="inner"')) {
     p.push(`${PATHS.floater}: trigger must mark the inner-head crop (data-v3-dog-head=inner).`)
@@ -193,6 +206,7 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!existsSync(join(root, PATHS.assetCream))) {
     p.push(`${PATHS.assetCream}: missing inner cream dog-head crop.`)
   }
+  p.push(...sealSourceProblems(builder, PATHS.builder))
 
   if (barrel == null || !barrel.includes("from './V3DogFloater.client'")) {
     p.push(`${PATHS.barrel}: V3DogFloater must leave through the v3 barrel.`)
@@ -243,6 +257,21 @@ function menuDoorLabels(src) {
   const block = src.match(/export const DOG_FLOATER_MENUS = \[([\s\S]*?)\] as const/)
   if (!block) return null
   return [...block[1].matchAll(/label:\s*(['"])(.*?)\1/g)].map((m) => m[2])
+}
+
+function sealSourceProblems(builder, label = PATHS.builder) {
+  const p = []
+  if (builder == null) {
+    p.push(`${label}: missing jax-head extractor.`)
+    return p
+  }
+  if (/brand-kit\/rasta/.test(builder)) {
+    p.push(`${label}: brand-kit/rasta is not on the Mini/repo tree. Crop from ${PATHS.sealNavy} and ${PATHS.sealWhite}.`)
+  }
+  if (!builder.includes(PATHS.sealNavy) || !builder.includes(PATHS.sealWhite)) {
+    p.push(`${label}: must crop the inner head from ${PATHS.sealNavy} and ${PATHS.sealWhite}.`)
+  }
+  return p
 }
 
 /** Matt lock: exact five door strings, in order. No shorten. No U+2014 in public copy. */
@@ -323,6 +352,19 @@ function alphaAt(data, w, h, x, y) {
  */
 export async function dogHeadCropProblems({ root = process.cwd() } = {}) {
   const p = []
+  for (const spec of JAX_HEAD_SEALS) {
+    const abs = join(root, spec.src)
+    if (!existsSync(abs)) {
+      p.push(`${spec.src}: missing full seal. Inner heads crop from this 3635x3417 file.`)
+      continue
+    }
+    const meta = await sharp(abs).metadata()
+    if (meta.width !== spec.width || meta.height !== spec.height) {
+      p.push(
+        `${spec.src}: expected ${spec.width}x${spec.height} full seal, got ${meta.width}x${meta.height}.`,
+      )
+    }
+  }
   for (const rel of [PATHS.assetNavy, PATHS.assetCream]) {
     const abs = join(root, rel)
     if (!existsSync(abs)) continue
