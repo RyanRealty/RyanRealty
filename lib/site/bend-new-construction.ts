@@ -100,10 +100,10 @@ export function bendNewConCommunityHref(subdivision: string): string | null {
 }
 
 /** Document title — one of the SITE-132 SEO brief options. Layout adds the brand suffix. */
-export const BEND_NEW_CONSTRUCTION_TITLE = 'New Homes in Bend — Builder Savings'
+export const BEND_NEW_CONSTRUCTION_TITLE = 'New Homes in Bend: Builder Savings'
 /** Visible H1 from the SITE-132 SEO brief. */
 export const BEND_NEW_CONSTRUCTION_H1 =
-  'New homes in Bend — inventory and builder savings'
+  'New homes in Bend: inventory and builder savings'
 export const BEND_NEW_CONSTRUCTION_DESCRIPTION =
   'New homes in Bend: live Active inventory plus published builder savings. Snapshot researched 2026-09-16. Not a loan offer. Verify every term with the builder and lender.'
 
@@ -674,7 +674,7 @@ export const BEND_NEW_CON_FINANCING: readonly NewConFinancingOffer[] = [
       'Special-interest-rate panel (pp. 20–21): 5.75% / 6.464% APR, tied to certain D.R. Horton homes in select Oregon communities.',
       '$0-down product (pp. 20–21): “DHI Mortgage Home Now Program.” Down-payment assistance is described as a forgivable second mortgage equal to 3.5% of the lesser of purchase price or appraised value. Borrower must occupy the home as a primary residence. Other qualification details are in the flyer fine print.',
       'Main Street Stars panel: $4,000 toward closing costs for qualifying members of the named service professions (the panel references military, law enforcement, firefighters, teachers, and healthcare professionals). The flyer’s eligibility and verification terms apply.',
-      'Deadlines on the visible panels: ARM — contract by / on 10/26/26 and close by 10/30/26. Fixed-rate — contract on / after 08/26/26 and close by 10/30/26. Confirm the exact panel. The flyer contains multiple offers.',
+      'Deadlines on the visible panels: ARM, contract by / on 10/26/26 and close by 10/30/26. Fixed-rate, contract on / after 08/26/26 and close by 10/30/26. Confirm the exact panel. The flyer contains multiple offers.',
       'Lender named: DHI Mortgage. No seller-paid buydown dollar amount is separately published beyond the stated rates. Qualification, credit, loan-program, inventory, funding, and fine-print restrictions apply. Rates and APRs can change and are not a quote for every Stevens Ranch home.',
     ],
     sources: [
@@ -691,7 +691,7 @@ export const BEND_NEW_CON_FINANCING: readonly NewConFinancingOffer[] = [
   {
     id: 'lennar-fall-super-sale',
     builder: 'Lennar',
-    title: 'Fall Super Sale — Acadia Pointe and Brooksmill',
+    title: 'Fall Super Sale: Acadia Pointe and Brooksmill',
     flags: ['NOT DISCLOSED'],
     terms: [
       'Published offer: Fall Super Sale, described as limited-time deals on top inventory. The linked offer describes a 7/6 adjustable-rate mortgage fixed for the first seven years. It does not publish a numeric note rate or APR in the reviewed page text. It says APR is achieved by Lennar-paid discount points.',
@@ -754,7 +754,7 @@ export const BEND_NEW_CON_FINANCING: readonly NewConFinancingOffer[] = [
   {
     id: 'hayden-parkside-10k',
     builder: 'Hayden Homes',
-    title: 'Parkside Place — save up to $10K on listed homes',
+    title: 'Parkside Place: save up to $10K on listed homes',
     flags: [],
     terms: [
       'Multiple listed homes show “SAVE UP TO $10K ON THIS HOME!” The page showed this on Darrington homesites 68 and 63, Maple Triplex homesites 13 and 24, Douglas Triplex homesites 12 and 23, Hazelwood Triplex homesite 22, and Middleton homesites 62 and 66. Cascade homesite 67 was shown without that savings label.',
@@ -784,7 +784,7 @@ export const BEND_NEW_CON_FINANCING: readonly NewConFinancingOffer[] = [
   },
   {
     id: 'discovery-west',
-    builder: 'Discovery West — MCD Homes and Salvesen Homes',
+    builder: 'Discovery West: MCD Homes and Salvesen Homes',
     title: 'No public concession transcribed',
     flags: ['NOT DISCLOSED'],
     terms: [
@@ -795,9 +795,9 @@ export const BEND_NEW_CON_FINANCING: readonly NewConFinancingOffer[] = [
     ],
     sources: [
       { label: 'Discovery West', href: 'https://discoverywestbend.com/' },
-      { label: 'MCD Homes — Discovery West', href: 'https://mcdhomesbend.com/discovery-west' },
+      { label: 'MCD Homes: Discovery West', href: 'https://mcdhomesbend.com/discovery-west' },
       {
-        label: 'Salvesen Homes — Discovery West',
+        label: 'Salvesen Homes: Discovery West',
         href: 'https://discoverywestbend.com/builders/salvesen/',
       },
     ],
@@ -935,11 +935,11 @@ export const BEND_NEW_CON_FAQ: readonly NewConFaq[] = [
     id: 'faq-status-flags',
     question: 'What do UNVERIFIED, STALE, NOT DISCLOSED, and CONFLICT mean?',
     answer:
-      'UNVERIFIED means a marketed rate or credit is not on the legal page we transcribed. STALE means the published window may have ended. NOT DISCLOSED means the builder names a program and withholds the rate, APR, or amount. CONFLICT means two official sources disagree — we keep them separate.',
+      'UNVERIFIED means a marketed rate or credit is not on the legal page we transcribed. STALE means the published window may have ended. NOT DISCLOSED means the builder names a program and withholds the rate, APR, or amount. CONFLICT means two official sources disagree. We keep them separate.',
   },
   {
     id: 'faq-who-to-call',
-    question: 'Who do I call — the builder or a broker?',
+    question: 'Who do I call: the builder or a broker?',
     answer:
       'Call or text Ryan Realty to walk a community with a buyer broker. Builder pages stay on each financing card so you can read the published program. The onsite sales team works for the builder. Talk to us before you visit a model home if you want representation on the contract.',
   },

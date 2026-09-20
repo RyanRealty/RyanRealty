@@ -51,6 +51,8 @@ describe('pulseTrace', () => {
     // The rules' own denominator, printed with its arithmetic.
     expect(trace).toContain('3,284 + 912 + 462 = 4,658')
     expect(trace).toContain('Coming Soon is never counted')
+    expect(trace).not.toContain('\u2014')
+    expect(trace).not.toMatch(/ -- /)
   })
 })
 
@@ -98,6 +100,8 @@ describe('composeHomePulse', () => {
     const pulse = composeHomePulse(LIVE)!
     for (const reading of pulse.readings) {
       expect(reading.definition.length).toBeGreaterThan(40)
+      expect(reading.definition).not.toContain('\u2014')
+      expect(reading.definition).not.toMatch(/ -- /)
       expect(reading.label).not.toMatch(/_|standard_status|listing_tile_mv/)
       expect(reading.href).toBeTruthy()
       expect(reading.hrefLabel).toBeTruthy()

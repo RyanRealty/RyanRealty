@@ -96,9 +96,9 @@ export function pulseTrace(input: HomePulseInput): string {
   return [
     `One read of the regional MLS feed through Oregon Data Share, taken at the moment above.`,
     `For sale and under contract are listing_tile_mv rows with a recorded coordinate in the Central Oregon service-area cities: standard_status Active gives ${n(forSale)}, Pending and Active Under Contract together give ${n(pending)}, over ${n(onMarket)} on-market rows.`,
-    `Sold is the listings table — StandardStatus Closed, ClosePrice at or above $1,000, a recorded coordinate, the same cities — read over the last ${ATLAS_HEAT_WINDOW_DAYS} days (${n(input.closedInWindow)} closes) and filtered to the ${ATLAS_PULSE_WINDOW_DAYS} days before the read, which is ${n(sold)}.`,
+    `Sold is the listings table: StandardStatus Closed, ClosePrice at or above $1,000, a recorded coordinate, the same cities. Read over the last ${ATLAS_HEAT_WINDOW_DAYS} days (${n(input.closedInWindow)} closes) and filtered to the ${ATLAS_PULSE_WINDOW_DAYS} days before the read, which is ${n(sold)}.`,
     `Under contract as a share of the market is ${n(pending)} ÷ ${n(onMarket)} = ${share}%.`,
-    `The rule under each count is that count over every listing in this read — ${n(forSale)} + ${n(pending)} + ${n(sold)} = ${n(forSale + pending + sold)} — so the three rules together fill one track.`,
+    `The rule under each count is that count over every listing in this read: ${n(forSale)} + ${n(pending)} + ${n(sold)} = ${n(forSale + pending + sold)}. The three rules together fill one track.`,
     `Every listing in each count is plotted at its own coordinate; marks coincide where houses sit close together.`,
     `Coming Soon is never counted on a public surface.`,
   ].join(' ')
@@ -141,7 +141,7 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
       label: 'listings for sale',
       share: forSale / readTotal,
       definition:
-        'Active listings of every property type the regional MLS carries — houses, condos, land, everything — across the Central Oregon cities and communities we cover.',
+        'Active listings of every property type the regional MLS carries: houses, condos, land, everything, across the Central Oregon cities and communities we cover.',
       path: pathOf('active'),
       href: publishRegionalSearchHref(),
       hrefLabel: 'Browse them',

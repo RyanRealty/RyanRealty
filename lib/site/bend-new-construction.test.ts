@@ -62,8 +62,8 @@ describe('Bend new-construction snapshot', () => {
   it('keeps the public path and research date', () => {
     expect(BEND_NEW_CONSTRUCTION_PATH).toBe('/new-construction')
     expect(BEND_NEW_CONSTRUCTION_RESEARCH_DATE).toBe('2026-09-16')
-    expect(BEND_NEW_CONSTRUCTION_TITLE).toBe('New Homes in Bend — Builder Savings')
-    expect(BEND_NEW_CONSTRUCTION_H1).toBe('New homes in Bend — inventory and builder savings')
+    expect(BEND_NEW_CONSTRUCTION_TITLE).toBe('New Homes in Bend: Builder Savings')
+    expect(BEND_NEW_CONSTRUCTION_H1).toBe('New homes in Bend: inventory and builder savings')
     expect(BEND_NEW_CONSTRUCTION_DESCRIPTION).toMatch(/2026-09-16/)
     expect(BEND_NEW_CONSTRUCTION_DESCRIPTION).toMatch(/Not a loan offer/)
     expect(BEND_NEW_CON_DISCLAIMER.title).toBe('Not a loan offer')
@@ -297,6 +297,28 @@ describe('Bend new-construction snapshot', () => {
     expect(
       bendNewConPlatMatchesName('Highland', { slug: 'awbrey-butte', label: 'Awbrey Butte' }),
     ).toBe(false)
+  })
+
+  it('keeps public NC copy free of em dashes (Matt lock 2026-09-20)', () => {
+    const blobs = [
+      BEND_NEW_CONSTRUCTION_TITLE,
+      BEND_NEW_CONSTRUCTION_H1,
+      BEND_NEW_CONSTRUCTION_DESCRIPTION,
+      ...BEND_NEW_CON_FAQ.flatMap((item) => [item.question, item.answer]),
+      ...BEND_NEW_CON_FINANCING.flatMap((offer) => [
+        offer.builder,
+        offer.title,
+        ...offer.terms,
+        ...offer.sources.map((source) => source.label),
+      ]),
+    ]
+    for (const text of blobs) {
+      expect(text, text).not.toContain('\u2014')
+      expect(text, text).not.toMatch(/ -- /)
+    }
+    const page = readFileSync(resolve('app/new-construction/page.tsx'), 'utf8')
+    expect(page).toContain('New homes in Bend: short answers')
+    expect(page).not.toContain('New homes in Bend \u2014 short answers')
   })
 
   it('keeps FAQ answers on the transcribed snapshot and live-count split', () => {
