@@ -174,7 +174,7 @@ export function HomeExploreMapImpl({
               href={pin.href}
               className={cn('home-explore-map__pin', activeId === pin.id && 'is-active')}
               style={{ left: 0, top: 0 }}
-              title={`${pin.title} — ${pin.priceLabel}`}
+              title={`${pin.title}: ${pin.priceLabel}`}
               aria-label={`${pin.title}, ${pin.priceLabel}, for sale`}
               onMouseEnter={() => setActiveId(pin.id)}
               onClick={(event) => {

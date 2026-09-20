@@ -46,6 +46,7 @@
     "ci:market-formula",
     "ci:market-truth",
     "ci:no-jsdom-serverless",
+    "ci:no-public-em-dash",
     "ci:no-report-rpc",
     "ci:no-staging-host",
     "ci:ods-compliance",
@@ -947,6 +948,13 @@
       "app/**",
       "next.config.*",
       "lib/site-nav.ts"
+    ],
+    "ci:no-public-em-dash": [
+      "lib/site/bend-new-construction.ts",
+      "app/new-construction/**",
+      "app/page.tsx",
+      "app/search/**",
+      "app/_v3/**"
     ],
     "ci:no-visits-reads": [
       "lib/**",

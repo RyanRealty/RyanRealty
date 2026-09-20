@@ -497,7 +497,7 @@ export default async function NewConstructionPage() {
         <V3Answers
           id="faq"
           eyebrow="Questions"
-          heading="New homes in Bend — short answers"
+          heading="New homes in Bend: short answers"
           questions={BEND_NEW_CON_FAQ.map((item, i) => ({
             id: item.id,
             question: item.question,
