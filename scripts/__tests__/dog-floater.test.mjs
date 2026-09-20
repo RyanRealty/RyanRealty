@@ -153,6 +153,18 @@ describe('ci:dog-floater lock', () => {
     expect(p).toMatch(/touch the square edge|too tight/)
   })
 
+  it('refuses a fat ~16% pad that leaves a ring around the head', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'dog-floater-fat-'))
+    mkdirSync(join(root, 'public/brand'), { recursive: true })
+    const fat = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect x="41" y="48" width="140" height="168" fill="#102742"/></svg>`,
+    )
+    await sharp(fat).png().toFile(join(root, 'public/brand/jax-head-navy.png'))
+    await sharp(fat).png().toFile(join(root, 'public/brand/jax-head-cream.png'))
+    const p = (await dogHeadCropProblems({ root })).join('\n')
+    expect(p).toMatch(/fat pad|does not fill the disc|16%/)
+  })
+
   it('ci:dog-floater exits 0 on HEAD', () => {
     const r = spawnSync('node', [join(REPO, 'scripts/check-dog-floater.mjs')], {
       cwd: REPO,

@@ -5,8 +5,11 @@
  * with the INNER dog-head crop (not the wordmark seal). Idle tilt must
  * be visible on a phone (motion in the first 40% of a ≤4s cycle — not a
  * 70% static hold). Head assets are the full-seal knockout (muzzle,
- * ears, crown) with padding inside the square before the circle masks.
- * CSS contain cannot restore pixels a circular pre-crop already cut.
+ * ears, crown) with a thin 4–8% pad inside the square before the
+ * circle masks — not the 16% fat ring that left a tiny head in an
+ * empty disc. CSS contain cannot restore pixels a circular pre-crop
+ * already cut. Placement is circle-aware so the left muzzle is not
+ * the thing kissing the rim.
  * Click opens five plain doors. Replaces sticky Call / Text /
  * Work-with-us bars. Header Work with us stays. Tip Ready --ship and
  * ci:dog-floater refuse a missing floater, a seal FAB, a circular
@@ -19,8 +22,14 @@ import sharp from 'sharp'
 
 export const DOG_FLOATER_GATE = 'ci:dog-floater'
 export const DOG_FLOATER_SCRIPT = 'scripts/check-dog-floater.mjs'
-/** SITE-146: opaque head pixels must sit inside this inset so a circle clip cannot eat muzzle/ears. */
-export const DOG_HEAD_MIN_INSET = 0.12
+/** SITE-146 rematch #3: thin safety inset (4–8%), not the 16% fat ring. */
+export const DOG_HEAD_PAD = 0.06
+export const DOG_HEAD_MIN_INSET = 0.04
+/** Tightest side ≥ this means the prior fat-pad rematch shipped again. */
+export const DOG_HEAD_MAX_MIN_INSET = 0.1
+/** Farthest opaque pixel as a fraction of the inscribed-circle radius. */
+export const DOG_HEAD_MIN_RADIUS_FILL = 0.88
+export const DOG_HEAD_MAX_RADIUS_FILL = 0.97
 /** Outer-ray CV below this means the glyph is still a pre-cropped disc. */
 export const DOG_HEAD_CIRCULAR_CV_MAX = 0.18
 
@@ -271,6 +280,9 @@ function sealSourceProblems(builder, label = PATHS.builder) {
   if (!builder.includes(PATHS.sealNavy) || !builder.includes(PATHS.sealWhite)) {
     p.push(`${label}: must crop the inner head from ${PATHS.sealNavy} and ${PATHS.sealWhite}.`)
   }
+  if (!builder.includes('DOG_HEAD_PAD')) {
+    p.push(`${label}: must use DOG_HEAD_PAD (4–8% thin safety), not a fat ~16% ring.`)
+  }
   return p
 }
 
@@ -348,7 +360,8 @@ function alphaAt(data, w, h, x, y) {
 
 /**
  * SITE-146: jax-head PNGs must be the full-seal inner head (not a circular
- * pre-crop) with real padding so the FAB circle cannot eat muzzle/ears.
+ * pre-crop) with a thin 4–8% pad so the FAB circle cannot eat muzzle/ears
+ * and the face still fills the disc (no fat empty ring).
  */
 export async function dogHeadCropProblems({ root = process.cwd() } = {}) {
   const p = []
@@ -384,6 +397,23 @@ export async function dogHeadCropProblems({ root = process.cwd() } = {}) {
           .join(', ')}). Keep ≥${Math.round(DOG_HEAD_MIN_INSET * 100)}% inset so the circle cannot crop muzzle/ears.`,
       )
     }
+    const minSide = Math.min(...Object.values(inset.sides))
+    if (minSide >= DOG_HEAD_MAX_MIN_INSET) {
+      p.push(
+        `${rel}: fat pad (tightest side=${(minSide * 100).toFixed(1)}%). Target 4–8% inside the square so the face fills the FAB, not a tiny head in a ring.`,
+      )
+    }
+    const fill = farthestRadiusFill(data, width, height)
+    if (fill != null && fill < DOG_HEAD_MIN_RADIUS_FILL) {
+      p.push(
+        `${rel}: head does not fill the disc (farthest pixel at ${(fill * 100).toFixed(1)}% of radius). Re-export with a thin 4–8% pad — the 16% ring is refuse.`,
+      )
+    }
+    if (fill != null && fill > DOG_HEAD_MAX_RADIUS_FILL) {
+      p.push(
+        `${rel}: farthest head pixel is at ${(fill * 100).toFixed(1)}% of the inscribed radius. Leave a thin safety so the circle + idle tilt cannot clip the muzzle.`,
+      )
+    }
     const cv = outerRayCv(data, width, height)
     if (cv != null && cv < DOG_HEAD_CIRCULAR_CV_MAX) {
       p.push(
@@ -392,6 +422,39 @@ export async function dogHeadCropProblems({ root = process.cwd() } = {}) {
     }
   }
   return p
+}
+
+/** Farthest opaque pixel / inscribed-circle radius. ~0.81 was the fat 16% ring. */
+export function farthestRadiusFill(data, width, height) {
+  let minX = width
+  let minY = height
+  let maxX = 0
+  let maxY = 0
+  let found = false
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (data[(y * width + x) * 4 + 3] <= 16) continue
+      found = true
+      if (x < minX) minX = x
+      if (y < minY) minY = y
+      if (x > maxX) maxX = x
+      if (y > maxY) maxY = y
+    }
+  }
+  if (!found) return null
+  const cx = width / 2
+  const cy = height / 2
+  const R = Math.min(width, height) / 2
+  if (R <= 0) return null
+  let max = 0
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      if (data[(y * width + x) * 4 + 3] <= 16) continue
+      const d = Math.hypot(x - cx, y - cy)
+      if (d > max) max = d
+    }
+  }
+  return max / R
 }
 
 function opaqueInsetFromRaw(data, width, height) {

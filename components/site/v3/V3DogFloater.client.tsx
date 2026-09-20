@@ -10,8 +10,9 @@
  * Critiquito 2026-09-19: light is navy-etched head on cream; dark is
  * white head on navy. Idle is one quiet tilt
  * (3–6°) that moves for most of a ≤4s cycle, then a pause — not a
- * 70% static hold. Head assets carry muzzle/ears/crown plus padding
- * inside the square before the circle masks. Menu is 150–220ms
+ * 70% static hold. Head assets carry muzzle/ears/crown plus a thin
+ * 4–8% pad inside the square before the circle masks (not a 16%
+ * fat ring). Menu is 150–220ms
  * rise+fade, no bounce, no pun copy. Esc / outside / second tap on
  * the dog close. Listing @375 sits the FAB above the inline Tour
  * row. Replaces sticky Call / Text / Work-with-us bars. Header Work

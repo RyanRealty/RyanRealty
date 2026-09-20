@@ -4,7 +4,9 @@
    tilt 3–6° that moves for most of a ≤4s cycle, then a short pause.
    Overflow lives on the circle, not the animated node (iOS reads
    overflow+animation on one node as frozen). Head assets already
-   include muzzle/ears/crown plus padding; contain paints the square.
+   include muzzle/ears/crown plus a thin 4–8% pad (not a fat ring);
+   contain paints the square. object-position nudges the face off the
+   left rim without inventing pixels.
    Sheet 150–220ms rise+fade, no bounce. Press scale 0.96. Listing
    @375 sits above .listing-ask-row. */
 
@@ -89,7 +91,7 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  object-position: 50% 50%;
+  object-position: 42% 48%;
   pointer-events: none;
 }
 

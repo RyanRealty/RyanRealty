@@ -1,18 +1,25 @@
 #!/usr/bin/env node
 /**
- * build-jax-head.mjs — SITE-146
+ * build-jax-head.mjs — SITE-146 rematch #3
  *
  * Re-export the INNER dog head from the FULL seals on this repo tree:
  *   public/brand/jax-navy.png  (3635x3417)
  *   public/brand/jax-white.png (3635x3417)
  *
  * Those two files are the source. Crop only from files that exist on
- * this repo tree.
+ * this repo tree. Do not cite an off-tree kit as a crop source.
  *
  * The dog is a knockout hole in the inner disc. Painting that hole
  * (and only that hole) yields a silhouette with the complete muzzle,
- * ears, and crown. Padding lives in the square so the FAB circle mask
- * cannot eat the head.
+ * ears, and crown.
+ *
+ * Pad is a thin 4–8% safety inside the square BEFORE the FAB circle
+ * masks — not the 16% fat ring that left a readable face sitting in
+ * an empty disc. Placement is circle-aware: the upper-left muzzle
+ * stays inside the inscribed circle at rest and at the -6° idle tilt
+ * (transform-origin 50% / 78%). Extra left inset vs the right so the
+ * nose is not the thing kissing the rim while dead space sits behind
+ * the ears.
  *
  * Do not crop an already-clipped jax-head disc. That file has no snout.
  *
@@ -22,12 +29,16 @@ import { writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import { JAX_HEAD_SEALS } from './lib/dog-floater.mjs'
+import { DOG_HEAD_PAD, JAX_HEAD_SEALS } from './lib/dog-floater.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SIZE = 1024
-const PAD = 0.16
 const INK = 16
+/** Radial keep-out so a 6° tilt around 50%/78% cannot push the muzzle out. */
+const CIRCLE_KEEP = 0.955
+const MIN_INSET = 0.04
+const TILT_DEG = -6
+const TILT_ORIGIN_Y = 0.78
 
 function discOuterRadius(data, w, h, cx, cy) {
   let lastHigh = 0
@@ -50,6 +61,80 @@ function discOuterRadius(data, w, h, cx, cy) {
     throw new Error(`inner disc radius not found (lastHigh=${lastHigh})`)
   }
   return lastHigh
+}
+
+function tiltPoint(x, y, side) {
+  const tcx = side * 0.5
+  const tcy = side * TILT_ORIGIN_Y
+  const rad = (TILT_DEG * Math.PI) / 180
+  const vx = x - tcx
+  const vy = y - tcy
+  return {
+    x: tcx + vx * Math.cos(rad) - vy * Math.sin(rad),
+    y: tcy + vx * Math.sin(rad) + vy * Math.cos(rad),
+  }
+}
+
+function insideCircle(x, y, side, keep = CIRCLE_KEEP) {
+  const c = side / 2
+  return Math.hypot(x - c, y - c) <= c * keep
+}
+
+function placeSquare(dogW, dogH, checks) {
+  const inner = Math.max(dogW, dogH)
+  let side = Math.ceil(inner / (1 - 2 * DOG_HEAD_PAD))
+
+  function score(s, ox, oy) {
+    const left = ox / s
+    const top = oy / s
+    const right = (s - ox - dogW) / s
+    const bottom = (s - oy - dogH) / s
+    if (left < MIN_INSET || top < MIN_INSET || right < MIN_INSET || bottom < MIN_INSET) {
+      return null
+    }
+    for (const p of checks) {
+      const x = ox + p.lx
+      const y = oy + p.ly
+      if (!insideCircle(x, y, s)) return null
+      if (p.tilt) {
+        const t = tiltPoint(x, y, s)
+        if (!insideCircle(t.x, t.y, s, 0.97)) return null
+      }
+    }
+    // Prefer extra left (muzzle) and a tight overall square (head fills the disc).
+    return left * 1.4 + top + right + bottom - (s - inner) / s
+  }
+
+  let best = null
+  for (let grow = 0; grow <= Math.ceil(inner * 0.12); grow += 4) {
+    const s = side + grow
+    const minO = Math.round(MIN_INSET * s)
+    const maxOx = s - dogW - minO
+    const maxOy = s - dogH - minO
+    if (maxOx < minO || maxOy < minO) continue
+    // Bias toward more left pad (muzzle) and a touch more top pad (crown).
+    const midOx = Math.round((minO + maxOx) / 2)
+    const midOy = Math.round((minO + maxOy) / 2)
+    const oxCandidates = [maxOx, Math.round((midOx + maxOx) / 2), midOx, Math.round((minO + midOx) / 2), minO]
+    const oyCandidates = [Math.round((midOy + maxOy) / 2), midOy, Math.round((minO + midOy) / 2), minO, maxOy]
+    for (const ox of oxCandidates) {
+      if (ox < minO || ox > maxOx) continue
+      for (const oy of oyCandidates) {
+        if (oy < minO || oy > maxOy) continue
+        const sc = score(s, ox, oy)
+        if (sc == null) continue
+        if (!best || sc > best.sc || (sc === best.sc && s < best.side)) {
+          best = { side: s, ox, oy, sc }
+        }
+      }
+    }
+    if (best && grow === 0) break
+    if (best && grow > 0) break
+  }
+  if (!best) {
+    throw new Error('could not place the inner head in a 4-8% circle-safe square')
+  }
+  return best
 }
 
 function extractHead(data, w, h) {
@@ -86,11 +171,32 @@ function extractHead(data, w, h) {
 
   const dogW = maxX - minX + 1
   const dogH = maxY - minY + 1
-  const inner = Math.max(dogW, dogH)
-  const side = Math.ceil(inner / (1 - 2 * PAD))
+
+  let leftMost = { x: w, y: 0 }
+  let topMost = { x: 0, y: h }
+  let rightMost = { x: 0, y: 0 }
+  let botMost = { x: 0, y: 0 }
+  const checks = []
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      if (cover[y * w + x] <= 0) continue
+      if (x < leftMost.x) leftMost = { x, y }
+      if (y < topMost.y) topMost = { x, y }
+      if (x > rightMost.x) rightMost = { x, y }
+      if (y > botMost.y) botMost = { x, y }
+      const ly = y - minY
+      if (ly <= dogH * 0.7 && (x + y) % 5 === 0) {
+        checks.push({ lx: x - minX, ly, tilt: ly < dogH * 0.55 })
+      }
+    }
+  }
+  for (const p of [leftMost, topMost, rightMost, botMost]) {
+    checks.push({ lx: p.x - minX, ly: p.y - minY, tilt: true })
+  }
+
+  const placed = placeSquare(dogW, dogH, checks)
+  const { side, ox, oy } = placed
   const out = Buffer.alloc(side * side * 4)
-  const ox = Math.round((side - dogW) / 2)
-  const oy = Math.round((side - dogH) / 2)
 
   for (let y = minY; y <= maxY; y += 1) {
     for (let x = minX; x <= maxX; x += 1) {
@@ -111,7 +217,7 @@ function extractHead(data, w, h) {
     bbox: [minX, minY, maxX, maxY],
     dogW,
     dogH,
-    pad: { x: ox / side, y: oy / side },
+    pad: { x: ox / side, y: oy / side, right: (side - ox - dogW) / side, bottom: (side - oy - dogH) / side },
   }
 }
 
@@ -153,8 +259,10 @@ for (const spec of JAX_HEAD_SEALS) {
     dogSize: [mask.dogW, mask.dogH],
     square: mask.side,
     pad: {
-      x: +((mask.pad.x) * 100).toFixed(1) + '%',
-      y: +((mask.pad.y) * 100).toFixed(1) + '%',
+      left: +((mask.pad.x) * 100).toFixed(1) + '%',
+      top: +((mask.pad.y) * 100).toFixed(1) + '%',
+      right: +((mask.pad.right) * 100).toFixed(1) + '%',
+      bottom: +((mask.pad.bottom) * 100).toFixed(1) + '%',
     },
   })
 }
