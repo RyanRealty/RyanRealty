@@ -1,20 +1,22 @@
 'use client'
 /**
- * V3DogFloater — SITE-134 / SITE-135 sitewide circle CTA
+ * V3DogFloater — SITE-134 / SITE-135 / SITE-146 sitewide circle CTA
  * (Matt lock 2026-09-19, phone rematch 2026-09-20).
  *
- * A circle, bottom-end, with the INNER dog-head crop from
- * blue-dog-transparent / white-dog-trans (not the RYAN REALTY seal).
- * Click toggles a cream sheet with exactly five doors. Critiquito
- * 2026-09-19: light → navy-etched head on cream; dark → white head on
- * navy. Idle is one quiet tilt (3–6°) that moves for most of a ≤4s
- * cycle, then a pause — not a 70% static hold. Head uses object-fit
- * contain + padded jax-head assets so muzzle/ears stay inside the
- * circle. Menu is 150–220ms rise+fade, no bounce, no pun copy. Esc /
- * outside / second tap on the dog close. Listing @375 sits the FAB
- * above the inline Tour row. Replaces sticky Call / Text / Work-with-us
- * bars. Header Work with us stays. `prefers-reduced-motion: reduce`
- * stills the loop. Do not treat all iOS as reduced-motion.
+ * A circle, bottom-end, with the INNER dog-head crop from the FULL
+ * seals at public/brand/jax-navy.png and public/brand/jax-white.png
+ * (3635x3417), not the wordmark ring, and not an already-clipped
+ * disc. Click toggles a cream sheet with exactly five doors.
+ * Critiquito 2026-09-19: light is navy-etched head on cream; dark is
+ * white head on navy. Idle is one quiet tilt
+ * (3–6°) that moves for most of a ≤4s cycle, then a pause — not a
+ * 70% static hold. Head assets carry muzzle/ears/crown plus padding
+ * inside the square before the circle masks. Menu is 150–220ms
+ * rise+fade, no bounce, no pun copy. Esc / outside / second tap on
+ * the dog close. Listing @375 sits the FAB above the inline Tour
+ * row. Replaces sticky Call / Text / Work-with-us bars. Header Work
+ * with us stays. `prefers-reduced-motion: reduce` stills the loop.
+ * Do not treat all iOS as reduced-motion.
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -35,6 +37,7 @@ import { V3_ROOT_CLASS } from './atoms'
 import './tokens.css'
 import './V3DogFloater.css'
 
+/** Matt permanent lock 2026-09-20: these five strings, this order. Do not shorten. */
 export const DOG_FLOATER_MENUS = [
   { href: '/sell', label: 'Sell your home', kind: 'route' },
   { href: '/buy', label: 'Buy your home', kind: 'route' },

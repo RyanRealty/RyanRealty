@@ -8,7 +8,7 @@ const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
 const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
 const BARREL = readFileSync(resolve('components/site/v3/index.ts'), 'utf8')
 
-describe('V3DogFloater · SITE-134 / SITE-135', () => {
+describe('V3DogFloater · SITE-134 / SITE-135 / SITE-146', () => {
   it('is mounted once on the public layout and exported from the barrel', () => {
     expect(LAYOUT).toContain('<V3DogFloater')
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
@@ -17,16 +17,24 @@ describe('V3DogFloater · SITE-134 / SITE-135', () => {
   })
 
   it('opens the five named doors on real routes', () => {
-    expect(SRC).toContain('Sell your home')
-    expect(SRC).toContain('Buy your home')
-    expect(SRC).toContain('Text us')
-    expect(SRC).toContain("Get your home's value")
-    expect(SRC).toContain('Learn about us')
+    const doors = [...SRC.matchAll(/label:\s*(['"])(.*?)\1/g)].map((m) => m[2])
+    expect(doors).toEqual([
+      'Sell your home',
+      'Buy your home',
+      'Text us',
+      "Get your home's value",
+      'Learn about us',
+    ])
+    const publicSrc = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    expect(publicSrc).not.toContain('\u2014')
     expect(SRC).toContain("href: '/sell'")
     expect(SRC).toContain("href: '/buy'")
     expect(SRC).toContain("href: '/sell#get-value'")
     expect(SRC).toContain("href: '/about'")
     expect(SRC).toContain('CONTACT.phoneDirectTel')
+    expect(SRC).toContain('public/brand/jax-navy.png')
+    expect(SRC).toContain('public/brand/jax-white.png')
+    expect(SRC).not.toMatch(/brand-kit\/rasta|blue-dog-transparent|white-dog-trans/)
   })
 
   it('is a named circle with CSS dog motion and a Dialog menu', () => {
