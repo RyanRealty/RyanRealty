@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import sharp from 'sharp'
 import { dogFloaterProblems, dogHeadCropProblems, DOG_FLOATER_GATE } from '../lib/dog-floater.mjs'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -98,6 +100,24 @@ describe('ci:dog-floater lock', () => {
 
   it('keeps jax-head silhouettes inset so the circle cannot crop the muzzle', async () => {
     await expect(dogHeadCropProblems({ root: REPO })).resolves.toEqual([])
+  })
+
+  it('refuses a circular pre-crop and an edge-tight head', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'dog-floater-head-'))
+    mkdirSync(join(root, 'public/brand'), { recursive: true })
+    const circle = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><circle cx="128" cy="128" r="90" fill="#102742"/></svg>`,
+    )
+    const edge = await sharp({
+      create: { width: 64, height: 64, channels: 4, background: { r: 16, g: 39, b: 66, alpha: 1 } },
+    })
+      .png()
+      .toBuffer()
+    await sharp(circle).png().toFile(join(root, 'public/brand/jax-head-navy.png'))
+    writeFileSync(join(root, 'public/brand/jax-head-cream.png'), edge)
+    const p = (await dogHeadCropProblems({ root })).join('\n')
+    expect(p).toMatch(/circular pre-crop/)
+    expect(p).toMatch(/touch the square edge|too tight/)
   })
 
   it('ci:dog-floater exits 0 on HEAD', () => {

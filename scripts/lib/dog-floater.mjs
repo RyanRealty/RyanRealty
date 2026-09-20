@@ -1,14 +1,17 @@
 /**
- * dog-floater.mjs — SITE-134 / SITE-135 floating dog CTA lock.
+ * dog-floater.mjs — SITE-134 / SITE-135 / SITE-146 floating dog CTA lock.
  *
  * Matt 2026-09-19 + Critiquito + Matt phone 2026-09-20: sitewide circle
  * with the INNER dog-head crop (not the wordmark seal). Idle tilt must
  * be visible on a phone (motion in the first 40% of a ≤4s cycle — not a
- * 70% static hold). Head uses object-fit:contain + padded jax-head
- * assets so muzzle/ears stay inside the circle. Click opens five plain
- * doors. Replaces sticky Call / Text / Work-with-us bars. Header Work
- * with us stays. Tip Ready --ship and ci:dog-floater refuse a missing
- * floater, a seal FAB, cover-crop, frozen idle, or a returned phone dock.
+ * 70% static hold). Head assets are the full-seal knockout (muzzle,
+ * ears, crown) with padding inside the square before the circle masks.
+ * CSS contain cannot restore pixels a circular pre-crop already cut.
+ * Click opens five plain doors. Replaces sticky Call / Text /
+ * Work-with-us bars. Header Work with us stays. Tip Ready --ship and
+ * ci:dog-floater refuse a missing floater, a seal FAB, a circular
+ * pre-crop, an edge-tight head, cover-crop, frozen idle, or a returned
+ * phone dock.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -16,8 +19,10 @@ import sharp from 'sharp'
 
 export const DOG_FLOATER_GATE = 'ci:dog-floater'
 export const DOG_FLOATER_SCRIPT = 'scripts/check-dog-floater.mjs'
-/** SITE-135: opaque head pixels must sit inside this inset so a circle clip cannot eat muzzle/ears. */
-export const DOG_HEAD_MIN_INSET = 0.1
+/** SITE-146: opaque head pixels must sit inside this inset so a circle clip cannot eat muzzle/ears. */
+export const DOG_HEAD_MIN_INSET = 0.12
+/** Outer-ray CV below this means the glyph is still a pre-cropped disc. */
+export const DOG_HEAD_CIRCULAR_CV_MAX = 0.18
 
 const PATHS = Object.freeze({
   floater: 'components/site/v3/V3DogFloater.client.tsx',
@@ -280,39 +285,29 @@ export function tiltVisibilityProblems(css, label = PATHS.css) {
   return p
 }
 
-async function opaqueInset(abs) {
-  const { data, info } = await sharp(abs).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
-  const { width, height } = info
-  let minX = width
-  let minY = height
-  let maxX = 0
-  let maxY = 0
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      if (data[(y * width + x) * 4 + 3] > 16) {
-        if (x < minX) minX = x
-        if (y < minY) minY = y
-        if (x > maxX) maxX = x
-        if (y > maxY) maxY = y
-      }
-    }
-  }
-  return {
-    left: minX / width,
-    top: minY / height,
-    right: (width - 1 - maxX) / width,
-    bottom: (height - 1 - maxY) / height,
-  }
+function alphaAt(data, w, h, x, y) {
+  if (x < 0 || y < 0 || x >= w || y >= h) return 0
+  return data[(y * w + x) * 4 + 3]
 }
 
-/** SITE-135: jax-head PNGs must keep muzzle/ears inside the circle (not edge-tight). */
+/**
+ * SITE-146: jax-head PNGs must be the full-seal inner head (not a circular
+ * pre-crop) with real padding so the FAB circle cannot eat muzzle/ears.
+ */
 export async function dogHeadCropProblems({ root = process.cwd() } = {}) {
   const p = []
   for (const rel of [PATHS.assetNavy, PATHS.assetCream]) {
     const abs = join(root, rel)
     if (!existsSync(abs)) continue
-    const inset = await opaqueInset(abs)
-    const tight = Object.entries(inset).filter(([, v]) => v < DOG_HEAD_MIN_INSET)
+    const { data, info } = await sharp(abs).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    const { width, height } = info
+    const inset = opaqueInsetFromRaw(data, width, height)
+    if (inset.edgeHits > 0) {
+      p.push(
+        `${rel}: opaque head pixels touch the square edge (${inset.edgeHits} px). That is a no-padding crop — muzzle/ears will clip under the circle mask.`,
+      )
+    }
+    const tight = Object.entries(inset.sides).filter(([, v]) => v < DOG_HEAD_MIN_INSET)
     if (tight.length) {
       p.push(
         `${rel}: dog silhouette is too tight (${tight
@@ -320,6 +315,79 @@ export async function dogHeadCropProblems({ root = process.cwd() } = {}) {
           .join(', ')}). Keep ≥${Math.round(DOG_HEAD_MIN_INSET * 100)}% inset so the circle cannot crop muzzle/ears.`,
       )
     }
+    const cv = outerRayCv(data, width, height)
+    if (cv != null && cv < DOG_HEAD_CIRCULAR_CV_MAX) {
+      p.push(
+        `${rel}: outer contour is a circular pre-crop (cv=${cv.toFixed(3)}). Re-export the inner head from the full seal — do not pad the already-clipped disc.`,
+      )
+    }
   }
   return p
+}
+
+function opaqueInsetFromRaw(data, width, height) {
+  let minX = width
+  let minY = height
+  let maxX = 0
+  let maxY = 0
+  let edgeHits = 0
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (data[(y * width + x) * 4 + 3] <= 16) continue
+      if (x < minX) minX = x
+      if (y < minY) minY = y
+      if (x > maxX) maxX = x
+      if (y > maxY) maxY = y
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) edgeHits += 1
+    }
+  }
+  return {
+    edgeHits,
+    sides: {
+      left: minX / width,
+      top: minY / height,
+      right: (width - 1 - maxX) / width,
+      bottom: (height - 1 - maxY) / height,
+    },
+  }
+}
+
+/** Coefficient of variation of last-ink radius on rays from the opaque bbox center. */
+export function outerRayCv(data, width, height) {
+  let minX = width
+  let minY = height
+  let maxX = 0
+  let maxY = 0
+  let found = false
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (data[(y * width + x) * 4 + 3] <= 16) continue
+      found = true
+      if (x < minX) minX = x
+      if (y < minY) minY = y
+      if (x > maxX) maxX = x
+      if (y > maxY) maxY = y
+    }
+  }
+  if (!found) return null
+  const cx = (minX + maxX) / 2
+  const cy = (minY + maxY) / 2
+  const radii = []
+  const maxR = Math.hypot(width, height)
+  for (let a = 0; a < 360; a += 2) {
+    const ux = Math.cos((a * Math.PI) / 180)
+    const uy = Math.sin((a * Math.PI) / 180)
+    let last = 0
+    for (let r = 0; r < maxR; r += 1) {
+      const x = Math.round(cx + ux * r)
+      const y = Math.round(cy + uy * r)
+      if (alphaAt(data, width, height, x, y) > 16) last = r
+    }
+    if (last > 0) radii.push(last)
+  }
+  if (radii.length < 24) return null
+  const mean = radii.reduce((a, b) => a + b, 0) / radii.length
+  if (mean <= 0) return null
+  const variance = radii.reduce((a, b) => a + (b - mean) ** 2, 0) / radii.length
+  return Math.sqrt(variance) / mean
 }
