@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { dogFloaterProblems, DOG_FLOATER_GATE } from '../lib/dog-floater.mjs'
+import { dogFloaterProblems, dogHeadCropProblems, DOG_FLOATER_GATE } from '../lib/dog-floater.mjs'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -71,6 +71,33 @@ describe('ci:dog-floater lock', () => {
       files: { ...live, floater, css },
     })
     expect(p.join('\n')).toMatch(/DialogTrigger|listing|Tour|ease-in-out/)
+  })
+
+  it('refuses object-fit:cover and a 70% static idle', () => {
+    const css = live.css
+      .replace('object-fit: contain', 'object-fit: cover')
+      .replace(
+        /@keyframes v3-dog-tilt \{[\s\S]*?\n\}/,
+        `@keyframes v3-dog-tilt {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0deg);
+  }
+  80% {
+    transform: rotate(-5deg);
+  }
+}`,
+      )
+    const p = dogFloaterProblems({
+      root: REPO,
+      files: { ...live, css },
+    })
+    expect(p.join('\n')).toMatch(/object-fit:cover|contain|70%|frozen/i)
+  })
+
+  it('keeps jax-head silhouettes inset so the circle cannot crop the muzzle', async () => {
+    await expect(dogHeadCropProblems({ root: REPO })).resolves.toEqual([])
   })
 
   it('ci:dog-floater exits 0 on HEAD', () => {

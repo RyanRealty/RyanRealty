@@ -8,7 +8,7 @@ const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
 const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
 const BARREL = readFileSync(resolve('components/site/v3/index.ts'), 'utf8')
 
-describe('V3DogFloater · SITE-134', () => {
+describe('V3DogFloater · SITE-134 / SITE-135', () => {
   it('is mounted once on the public layout and exported from the barrel', () => {
     expect(LAYOUT).toContain('<V3DogFloater')
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
@@ -36,12 +36,16 @@ describe('V3DogFloater · SITE-134', () => {
     expect(SRC).toContain('/brand/jax-head-navy.png')
     expect(SRC).toContain('/brand/jax-head-cream.png')
     expect(SRC).toContain('data-v3-dog-head="inner"')
+    expect(SRC).toContain('data-v3-dog-idle="tilt"')
     expect(SRC).toContain('v3-dog-floater--listing')
     expect(SRC).toContain('Help')
     expect(CSS).toMatch(/border-radius:\s*50%/)
     expect(CSS).toContain('@keyframes v3-dog-tilt')
     expect(CSS).toContain('ease-in-out')
-    expect(CSS).toMatch(/rotate\(-5deg\)/)
+    expect(CSS).toMatch(/rotate\(-6deg\)/)
+    expect(CSS).toContain('object-fit: contain')
+    expect(CSS).not.toMatch(/object-fit:\s*cover/)
+    expect(CSS).not.toMatch(/0%\s*,\s*70%\s*,\s*100%/)
     expect(CSS).toContain('scale(0.96)')
     expect(CSS).toContain('--v3-travel')
     expect(CSS).toContain('listing-ask-row')

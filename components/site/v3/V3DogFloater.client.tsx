@@ -1,16 +1,20 @@
 'use client'
 /**
- * V3DogFloater — SITE-134 sitewide circle CTA (Matt lock 2026-09-19).
+ * V3DogFloater — SITE-134 / SITE-135 sitewide circle CTA
+ * (Matt lock 2026-09-19, phone rematch 2026-09-20).
  *
  * A circle, bottom-end, with the INNER dog-head crop from
  * blue-dog-transparent / white-dog-trans (not the RYAN REALTY seal).
  * Click toggles a cream sheet with exactly five doors. Critiquito
  * 2026-09-19: light → navy-etched head on cream; dark → white head on
- * navy. Idle is one quiet tilt (3–6°, ≤4s + pause, ease-in-out).
- * Menu is 150–220ms rise+fade, no bounce, no pun copy. Esc / outside /
- * second tap on the dog close. Listing @375 sits the FAB above the
- * inline Tour row. Replaces sticky Call / Text / Work-with-us bars.
- * Header Work with us stays.
+ * navy. Idle is one quiet tilt (3–6°) that moves for most of a ≤4s
+ * cycle, then a pause — not a 70% static hold. Head uses object-fit
+ * contain + padded jax-head assets so muzzle/ears stay inside the
+ * circle. Menu is 150–220ms rise+fade, no bounce, no pun copy. Esc /
+ * outside / second tap on the dog close. Listing @375 sits the FAB
+ * above the inline Tour row. Replaces sticky Call / Text / Work-with-us
+ * bars. Header Work with us stays. `prefers-reduced-motion: reduce`
+ * stills the loop. Do not treat all iOS as reduced-motion.
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -87,7 +91,7 @@ export function V3DogFloater() {
             aria-controls={open ? titleId : undefined}
           >
             <span className="sr-only">Open Ryan Realty menu</span>
-            <span className="v3-dog-floater__head" aria-hidden="true">
+            <span className="v3-dog-floater__head" data-v3-dog-idle="tilt" aria-hidden="true">
               <img
                 src={headSrc}
                 alt=""

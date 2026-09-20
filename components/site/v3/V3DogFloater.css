@@ -1,7 +1,11 @@
-/* SITE-134 — floating dog-head circle + five-door sheet. Tokens only.
-   Critiquito 2026-09-19: inner head (not the wordmark seal). One quiet
-   tilt 3–6° ≤4s + pause, ease-in-out. Sheet 150–220ms rise+fade, no
-   bounce. Press scale 0.96. Listing @375 sits above .listing-ask-row. */
+/* SITE-134 / SITE-135 — floating dog-head circle + five-door sheet.
+   Critiquito 2026-09-19 + Matt phone 2026-09-20: inner head (not the
+   wordmark seal). One quiet tilt 3–6° that moves for most of a ≤4s
+   cycle, then a short pause. Overflow lives on the circle, not the
+   animated node (iOS reads overflow+animation on one node as frozen).
+   Head crop uses contain + padded assets so muzzle/ears stay inside
+   the circle. Sheet 150–220ms rise+fade, no bounce. Press scale 0.96.
+   Listing @375 sits above .listing-ask-row. */
 
 .v3-dog-floater {
   --v3-dog-fab-bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));
@@ -13,6 +17,7 @@
   width: 4.25rem;
   height: 4.25rem;
   padding: 0;
+  overflow: hidden;
   border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
   border-radius: 50%;
   background: var(--v3-cream);
@@ -73,32 +78,33 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   place-items: center;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  border-radius: 50%;
-  animation: v3-dog-tilt 4s ease-in-out infinite;
+  transform-origin: 50% 78%;
+  backface-visibility: hidden;
+  animation: v3-dog-tilt 3.2s ease-in-out infinite;
 }
 
 .v3-dog-floater__dog {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: 50% 48%;
   pointer-events: none;
 }
 
+/* Motion occupies the first 70% of the cycle (peak at 35%). A 70% hold
+   at rotate(0) reads as frozen on a 68px phone FAB. */
 @keyframes v3-dog-tilt {
-  0%,
-  70%,
-  100% {
+  0% {
     transform: rotate(0deg);
   }
-  80% {
-    transform: rotate(-5deg);
+  35% {
+    transform: rotate(-6deg);
   }
-  88% {
-    transform: rotate(4deg);
+  70% {
+    transform: rotate(0deg);
   }
-  96% {
+  100% {
     transform: rotate(0deg);
   }
 }
