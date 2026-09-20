@@ -44,7 +44,7 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
    the gallery pocket so the two asks do not share a corner. */
 @media (max-width: 40rem) {
   .v3-dog-floater--listing {
-    --v3-dog-fab-bottom: calc(16rem + env(safe-area-inset-bottom, 0px));
+    --v3-dog-fab-bottom: calc(19rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -146,7 +146,7 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   }
 
   html:has(.v3-dog-floater--listing) [data-slot='dialog-content'].v3-dog-floater-menu {
-    bottom: calc(16rem + 4.5rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(19rem + 4.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
