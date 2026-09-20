@@ -37,13 +37,14 @@ const PATHS = Object.freeze({
   assetCream: 'public/brand/jax-head-cream.png',
 })
 
-const DOOR_LABELS = [
+/** Matt permanent lock 2026-09-20: five doors, these strings, this order. Do not shorten. */
+export const DOG_FLOATER_DOOR_LABELS = Object.freeze([
   'Sell your home',
   'Buy your home',
   'Text us',
   "Get your home's value",
   'Learn about us',
-]
+])
 
 function readRel(root, rel, override) {
   if (typeof override === 'string') return override
@@ -93,11 +94,7 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!/>\s*Help\s*</.test(floater) && !floater.includes('>Help<')) {
     p.push(`${PATHS.floater}: expanded title is Help (or omitted) — not a pun.`)
   }
-  for (const label of DOOR_LABELS) {
-    if (!floater.includes(label)) {
-      p.push(`${PATHS.floater}: menu must include the label "${label}".`)
-    }
-  }
+  p.push(...doorLabelProblems(floater, PATHS.floater))
   if (!floater.includes("href: '/sell'") || !floater.includes("href: '/buy'")) {
     p.push(`${PATHS.floater}: Sell → /sell and Buy → /buy are required.`)
   }
@@ -235,6 +232,36 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     p.push(`${PATHS.layout}: do not remount the retired phone dock.`)
   }
 
+  return p
+}
+
+function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+}
+
+function menuDoorLabels(src) {
+  const block = src.match(/export const DOG_FLOATER_MENUS = \[([\s\S]*?)\] as const/)
+  if (!block) return null
+  return [...block[1].matchAll(/label:\s*(['"])(.*?)\1/g)].map((m) => m[2])
+}
+
+/** Matt lock: exact five door strings, in order. No shorten. No U+2014 in public copy. */
+export function doorLabelProblems(floater, label = PATHS.floater) {
+  const p = []
+  const found = menuDoorLabels(floater)
+  if (!found) {
+    p.push(`${label}: DOG_FLOATER_MENUS must list the five locked door labels.`)
+    return p
+  }
+  if (found.length !== DOG_FLOATER_DOOR_LABELS.length || found.some((v, i) => v !== DOG_FLOATER_DOOR_LABELS[i])) {
+    p.push(
+      `${label}: door labels must stay EXACTLY ${DOG_FLOATER_DOOR_LABELS.join(' / ')}. Do not shorten.`,
+    )
+  }
+  const publicSrc = stripComments(floater)
+  if (publicSrc.includes('\u2014')) {
+    p.push(`${label}: no em dashes (U+2014) in public copy (Matt 2026-09-20).`)
+  }
   return p
 }
 

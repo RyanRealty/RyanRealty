@@ -17,11 +17,16 @@ describe('V3DogFloater · SITE-134 / SITE-135 / SITE-146', () => {
   })
 
   it('opens the five named doors on real routes', () => {
-    expect(SRC).toContain('Sell your home')
-    expect(SRC).toContain('Buy your home')
-    expect(SRC).toContain('Text us')
-    expect(SRC).toContain("Get your home's value")
-    expect(SRC).toContain('Learn about us')
+    const doors = [...SRC.matchAll(/label:\s*(['"])(.*?)\1/g)].map((m) => m[2])
+    expect(doors).toEqual([
+      'Sell your home',
+      'Buy your home',
+      'Text us',
+      "Get your home's value",
+      'Learn about us',
+    ])
+    const publicSrc = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    expect(publicSrc).not.toContain('\u2014')
     expect(SRC).toContain("href: '/sell'")
     expect(SRC).toContain("href: '/buy'")
     expect(SRC).toContain("href: '/sell#get-value'")

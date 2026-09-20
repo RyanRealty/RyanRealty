@@ -4,8 +4,9 @@
  *
  * Refuse if the public layout drops V3DogFloater, remounts a sticky
  * Call/Text/Work-with-us phone dock, cover-crops the head, ships a
- * circular pre-crop / edge-tight jax-head, or ships a 70% static idle
- * that reads as frozen on a phone. Wired as ci:dog-floater (always + chain).
+ * circular pre-crop / edge-tight jax-head, ships a 70% static idle
+ * that reads as frozen on a phone, shortens a door label, or puts an
+ * em dash (U+2014) in public copy. Wired as ci:dog-floater (always + chain).
  *
  * Usage: node scripts/check-dog-floater.mjs
  */
@@ -23,5 +24,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${DOG_FLOATER_GATE} — OK: V3DogFloater mounted, visible idle tilt, full-seal inner head with padding (no circular pre-crop), five doors, header Work with us stays, sticky phone dock stays down.`,
+  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted, visible idle tilt, full-seal inner head with padding (no circular pre-crop), exact five doors, no em dash in public copy, header Work with us stays, sticky phone dock stays down.`,
 )
