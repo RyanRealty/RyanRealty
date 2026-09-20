@@ -1342,6 +1342,7 @@
       "components/site/v3/V3PhoneDock.client.tsx",
       "components/site/v3/V3Chrome.tsx",
       "components/site/v3/V3StickyAsk.css",
+      "public/brand/jax-navy.png",
       "public/brand/jax-white.png",
       "public/brand/jax-head-navy.png",
       "public/brand/jax-head-cream.png",

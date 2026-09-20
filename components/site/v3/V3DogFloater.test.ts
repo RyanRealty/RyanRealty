@@ -32,6 +32,9 @@ describe('V3DogFloater · SITE-134 / SITE-135 / SITE-146', () => {
     expect(SRC).toContain("href: '/sell#get-value'")
     expect(SRC).toContain("href: '/about'")
     expect(SRC).toContain('CONTACT.phoneDirectTel')
+    expect(SRC).toContain('public/brand/jax-navy.png')
+    expect(SRC).toContain('public/brand/jax-white.png')
+    expect(SRC).not.toMatch(/brand-kit\/rasta|blue-dog-transparent|white-dog-trans/)
   })
 
   it('is a named circle with CSS dog motion and a Dialog menu', () => {

@@ -2,14 +2,19 @@
 /**
  * build-jax-head.mjs — SITE-146
  *
- * Re-export the INNER dog head from the FULL seal (public/brand/jax-navy.png
- * / jax-white.png — same artwork as brand-kit/rasta/blue-dog-transparent.png
- * and white-dog-trans.png). The dog is a knockout hole in the inner disc.
- * Painting that hole (and only that hole) yields a silhouette with the
- * complete muzzle, ears, and crown. Padding lives in the square so the
- * FAB circle mask cannot eat the head.
+ * Re-export the INNER dog head from the FULL seals on this repo tree:
+ *   public/brand/jax-navy.png  (3635x3417)
+ *   public/brand/jax-white.png (3635x3417)
  *
- * Do not crop the already-clipped jax-head disc. That file has no snout.
+ * Those two files are the source. Crop only from files that exist on
+ * this repo tree.
+ *
+ * The dog is a knockout hole in the inner disc. Painting that hole
+ * (and only that hole) yields a silhouette with the complete muzzle,
+ * ears, and crown. Padding lives in the square so the FAB circle mask
+ * cannot eat the head.
+ *
+ * Do not crop an already-clipped jax-head disc. That file has no snout.
  *
  * Usage: node scripts/build-jax-head.mjs
  */
@@ -17,14 +22,9 @@ import { writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
+import { JAX_HEAD_SEALS } from './lib/dog-floater.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const SEAL_NAVY = join(ROOT, 'public/brand/jax-navy.png')
-const OUT_NAVY = join(ROOT, 'public/brand/jax-head-navy.png')
-const OUT_CREAM = join(ROOT, 'public/brand/jax-head-cream.png')
-
-const NAVY = { r: 16, g: 39, b: 66 }
-const CREAM = { r: 255, g: 255, b: 255 }
 const SIZE = 1024
 const PAD = 0.16
 const INK = 16
@@ -132,26 +132,31 @@ async function paintHead(mask, tint, dest) {
   writeFileSync(dest, png)
 }
 
-const { data, info } = await sharp(SEAL_NAVY).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
-const mask = extractHead(data, info.width, info.height)
-await paintHead(mask, NAVY, OUT_NAVY)
-await paintHead(mask, CREAM, OUT_CREAM)
-
-console.log(
-  JSON.stringify(
-    {
-      source: 'public/brand/jax-navy.png',
-      discR: mask.discR,
-      dogBBox: mask.bbox,
-      dogSize: [mask.dogW, mask.dogH],
-      square: mask.side,
-      pad: {
-        x: +((mask.pad.x) * 100).toFixed(1) + '%',
-        y: +((mask.pad.y) * 100).toFixed(1) + '%',
-      },
-      wrote: [OUT_NAVY, OUT_CREAM],
+const wrote = []
+for (const spec of JAX_HEAD_SEALS) {
+  const abs = join(ROOT, spec.src)
+  const { data, info } = await sharp(abs).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  if (info.width !== spec.width || info.height !== spec.height) {
+    throw new Error(
+      `${spec.src}: expected ${spec.width}x${spec.height}, got ${info.width}x${info.height}`,
+    )
+  }
+  const mask = extractHead(data, info.width, info.height)
+  const dest = join(ROOT, spec.dest)
+  await paintHead(mask, spec.tint, dest)
+  wrote.push({
+    source: spec.src,
+    size: [info.width, info.height],
+    dest: spec.dest,
+    discR: mask.discR,
+    dogBBox: mask.bbox,
+    dogSize: [mask.dogW, mask.dogH],
+    square: mask.side,
+    pad: {
+      x: +((mask.pad.x) * 100).toFixed(1) + '%',
+      y: +((mask.pad.y) * 100).toFixed(1) + '%',
     },
-    null,
-    2,
-  ),
-)
+  })
+}
+
+console.log(JSON.stringify({ wrote }, null, 2))
