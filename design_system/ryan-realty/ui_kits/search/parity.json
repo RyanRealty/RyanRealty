@@ -84,15 +84,16 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "sheet-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3172/homes-for-sale?city=Bend on wt/site-72-20260910"
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3310/homes-for-sale?city=Bend on cursor/site-110-search-atlas-88aa. Hash rematched 2026-09-20 to the SITE-110 recapture (desktop + mobile375). sheet-open shots sit beside the kit and are not in this hash."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/search/shots/mobile375.png"
     },
-    "shotsHash": "sha256:7550e309aae7f2b6e03e9400ceac479f65333f21a48ece12754c8b4f9848c1a7",
+    "shotsHash": "sha256:3a364a88ed8d3f0b5a8d7d729f3d2263a4d60fc0635671f2313445c1f6dba365",
     "scores": [
       55,
       63,
