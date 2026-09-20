@@ -8,7 +8,7 @@ const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
 const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
 const BARREL = readFileSync(resolve('components/site/v3/index.ts'), 'utf8')
 
-describe('V3DogFloater · SITE-134 / SITE-135', () => {
+describe('V3DogFloater · SITE-134 / SITE-135 / SITE-146', () => {
   it('is mounted once on the public layout and exported from the barrel', () => {
     expect(LAYOUT).toContain('<V3DogFloater')
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)

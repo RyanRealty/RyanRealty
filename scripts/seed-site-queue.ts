@@ -1329,6 +1329,18 @@ const SEEDS: readonly Seed[] = [
     accept:
       'Floater present on public layout at 375 and 1440; menu opens those five doors; header Work with us stays; no sitewide or listing sticky Call/Text/Work-with-us bar; ci:dog-floater and Tip Ready --ship refuse the missing floater or a returned dock.',
   },
+  {
+    versionGap: 'SITE-146',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] dog floater STILL CROPPED on phone (listing Talk-to-a-Broker fold) — SITE-135 Look GREEN overturned',
+    objective:
+      'Matt 2026-09-20: jax-head PNGs are still a circular glyph with snout/crown already cut in the artwork. CSS object-fit contain + inset cannot restore pixels that were never in the file. Re-export the INNER HEAD from the full seal so the square includes full muzzle + ears + crown with real padding before the circle masks. Keep idle tilt and the five door labels. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'New jax-head assets cropped from the full seal (not the clipped disc); V3DogFloater wired to them; ci:dog-floater refuses edge-touching / circular pre-crop heads. @375 evidence on home + listing Talk-to-a-Broker fold.',
+    accept:
+      'Full head readable on home and listing Talk-to-a-Broker fold at 375. Idle tilt still visible. Door labels exactly Sell your home / Buy your home / Text us / Get your home\'s value / Learn about us. No sticky CTA revival. ci:dog-floater refuses a circular pre-crop or an edge-tight head.',
+  },
 
 ]
 

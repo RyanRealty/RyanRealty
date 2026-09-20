@@ -1,11 +1,12 @@
-/* SITE-134 / SITE-135 — floating dog-head circle + five-door sheet.
-   Critiquito 2026-09-19 + Matt phone 2026-09-20: inner head (not the
-   wordmark seal). One quiet tilt 3–6° that moves for most of a ≤4s
-   cycle, then a short pause. Overflow lives on the circle, not the
-   animated node (iOS reads overflow+animation on one node as frozen).
-   Head crop uses contain + padded assets so muzzle/ears stay inside
-   the circle. Sheet 150–220ms rise+fade, no bounce. Press scale 0.96.
-   Listing @375 sits above .listing-ask-row. */
+/* SITE-134 / SITE-135 / SITE-146 — floating dog-head circle + five-door
+   sheet. Critiquito 2026-09-19 + Matt phone 2026-09-20: inner head from
+   the full seal (not the wordmark, not a pre-cropped disc). One quiet
+   tilt 3–6° that moves for most of a ≤4s cycle, then a short pause.
+   Overflow lives on the circle, not the animated node (iOS reads
+   overflow+animation on one node as frozen). Head assets already
+   include muzzle/ears/crown plus padding; contain paints the square.
+   Sheet 150–220ms rise+fade, no bounce. Press scale 0.96. Listing
+   @375 sits above .listing-ask-row. */
 
 .v3-dog-floater {
   --v3-dog-fab-bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));
@@ -88,7 +89,7 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  object-position: 50% 48%;
+  object-position: 50% 50%;
   pointer-events: none;
 }
 

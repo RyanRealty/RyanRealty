@@ -1335,6 +1335,9 @@
       "components/site/v3/V3Chrome.tsx",
       "components/site/v3/V3StickyAsk.css",
       "public/brand/jax-white.png",
+      "public/brand/jax-head-navy.png",
+      "public/brand/jax-head-cream.png",
+      "scripts/build-jax-head.mjs",
       "scripts/check-dog-floater.mjs",
       "scripts/lib/dog-floater.mjs",
       "scripts/lib/taste-receipt.mjs"
