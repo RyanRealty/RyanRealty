@@ -70,8 +70,17 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!floater.includes("from '@/components/ui/dialog'")) {
     p.push(`${PATHS.floater}: menu must be the catalog Dialog (focus trap + Esc).`)
   }
+  if (!floater.includes('DialogTrigger')) {
+    p.push(`${PATHS.floater}: FAB must be DialogTrigger so a second tap on the dog closes.`)
+  }
   if (!floater.includes('DialogClose') || !floater.includes('Close')) {
     p.push(`${PATHS.floater}: menu must be closable.`)
+  }
+  if (!floater.includes('v3-dog-floater--listing')) {
+    p.push(`${PATHS.floater}: listing paths must mark --listing so the FAB sits above Tour.`)
+  }
+  if (!/>\s*Help\s*</.test(floater) && !floater.includes('>Help<')) {
+    p.push(`${PATHS.floater}: expanded title is Help (or omitted) — not a pun.`)
   }
   for (const label of DOOR_LABELS) {
     if (!floater.includes(label)) {
@@ -112,8 +121,23 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     if (!/@keyframes v3-dog-tilt/.test(css)) {
       p.push(`${PATHS.css}: dog head must quiet-tilt in CSS (≤4s + pause). No video.`)
     }
+    if (!/ease-in-out/.test(css)) {
+      p.push(`${PATHS.css}: idle tilt must be ease-in-out, not a bounce ease.`)
+    }
+    if (!/rotate\(-?[3-6]deg\)/.test(css)) {
+      p.push(`${PATHS.css}: idle tilt must stay in the 3–6° range.`)
+    }
+    if (!/scale\(0\.96\)/.test(css)) {
+      p.push(`${PATHS.css}: press must scale(0.96).`)
+    }
     if (!/@keyframes v3-dog-menu-in/.test(css) || !/180ms/.test(css)) {
       p.push(`${PATHS.css}: menu must rise+fade in 150–220ms with no bounce.`)
+    }
+    if (!/--v3-travel/.test(css) && !/translateY\((8|9|10|11|12)px\)/.test(css)) {
+      p.push(`${PATHS.css}: menu rise must be 8–12px (--v3-travel) with no overshoot.`)
+    }
+    if (!/v3-dog-floater--listing/.test(css) || !/listing-ask-row/.test(css)) {
+      p.push(`${PATHS.css}: listing FAB must offset above .listing-ask-row (Tour inline).`)
     }
     if (/v3-dog-bob|v3-dog-blink|v3-dog-door-in/.test(css)) {
       p.push(`${PATHS.css}: Critiquito idle is one tilt, not bob/blink/stagger.`)

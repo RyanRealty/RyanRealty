@@ -1,11 +1,13 @@
 /* SITE-134 — floating dog-head circle + five-door sheet. Tokens only.
    Critiquito 2026-09-19: inner head (not the wordmark seal). One quiet
-   tilt ≤4s + pause. Sheet 150–220ms rise+fade, no bounce. */
+   tilt 3–6° ≤4s + pause, ease-in-out. Sheet 150–220ms rise+fade, no
+   bounce. Press scale 0.96. Listing @375 sits above .listing-ask-row. */
 
 .v3-dog-floater {
+  --v3-dog-fab-bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));
   position: fixed;
   right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));
-  bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));
+  bottom: var(--v3-dog-fab-bottom);
   z-index: 95;
   box-sizing: border-box;
   width: 4.25rem;
@@ -16,6 +18,7 @@
   background: var(--v3-cream);
   color: var(--v3-navy);
   cursor: pointer;
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--v3-navy) 16%, transparent);
 }
 
 .v3-dog-floater--on-dark {
@@ -23,12 +26,36 @@
   color: var(--v3-cream);
 }
 
+/* Keep the dog above the scrim so a second tap closes (DialogTrigger). */
+.v3-dog-floater--open {
+  z-index: 112;
+}
+
 body:has([data-cookie-notice='chip']) .v3-dog-floater {
   right: calc(6.75rem + env(safe-area-inset-right, 0px));
 }
 
 body:has([data-cookie-notice='bar']) .v3-dog-floater {
-  bottom: calc(var(--v3-cookie-bar-h, 5.5rem) + var(--v3-space-md) + env(safe-area-inset-bottom, 0px));
+  --v3-dog-fab-bottom: calc(var(--v3-cookie-bar-h, 5.5rem) + var(--v3-space-md) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Listing Tour is inline in .listing-ask-row (not a sticky bar). On the
+   375 fold that row sits in the lower title stack; raise the FAB into
+   the gallery pocket so the two asks do not share a corner. */
+@media (max-width: 40rem) {
+  .v3-dog-floater--listing {
+    --v3-dog-fab-bottom: calc(16rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .v3-dog-floater:hover {
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--v3-navy) 26%, transparent);
+  }
+}
+
+.v3-dog-floater:active {
+  transform: scale(0.96);
 }
 
 .v3-dog-floater:focus-visible {
@@ -44,7 +71,7 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   height: 100%;
   overflow: hidden;
   border-radius: 50%;
-  animation: v3-dog-tilt 4s var(--v3-ease-out) infinite;
+  animation: v3-dog-tilt 4s ease-in-out infinite;
 }
 
 .v3-dog-floater__dog {
@@ -61,13 +88,13 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   100% {
     transform: rotate(0deg);
   }
-  78% {
-    transform: rotate(-7deg);
+  80% {
+    transform: rotate(-5deg);
   }
-  86% {
-    transform: rotate(5deg);
+  88% {
+    transform: rotate(4deg);
   }
-  94% {
+  96% {
     transform: rotate(0deg);
   }
 }
@@ -75,6 +102,10 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
 @media (prefers-reduced-motion: reduce) {
   .v3-dog-floater__head {
     animation: none;
+  }
+
+  .v3-dog-floater:active {
+    transform: none;
   }
 }
 
@@ -113,12 +144,16 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
     bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
     padding: var(--v3-space-md);
   }
+
+  html:has(.v3-dog-floater--listing) [data-slot='dialog-content'].v3-dog-floater-menu {
+    bottom: calc(16rem + 4.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @keyframes v3-dog-menu-in {
   from {
     opacity: 0;
-    transform: translateY(0.6rem);
+    transform: translateY(var(--v3-travel));
   }
   to {
     opacity: 1;
@@ -126,8 +161,24 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   }
 }
 
+@keyframes v3-dog-menu-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--v3-travel));
+  }
+}
+
+[data-slot='dialog-content'].v3-dog-floater-menu[data-closed] {
+  animation: v3-dog-menu-out 160ms var(--v3-ease-out);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  [data-slot='dialog-content'].v3-dog-floater-menu {
+  [data-slot='dialog-content'].v3-dog-floater-menu,
+  [data-slot='dialog-content'].v3-dog-floater-menu[data-closed] {
     animation: none;
   }
 }

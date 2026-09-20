@@ -2,12 +2,15 @@
 /**
  * V3DogFloater — SITE-134 sitewide circle CTA (Matt lock 2026-09-19).
  *
- * A circle, bottom-right, with the INNER dog-head disc (not the RYAN
- * REALTY seal). Click opens a cream sheet with exactly five doors.
- * Critiquito 2026-09-19: light → navy-disc head; dark → cream head on
- * navy. Idle is one quiet tilt (≤4s + pause). Menu is 150–220ms rise
- * and fade, no bounce, no pun copy. Replaces sticky Call / Text /
- * Work-with-us bars. Header Work with us stays.
+ * A circle, bottom-end, with the INNER dog-head crop from
+ * blue-dog-transparent / white-dog-trans (not the RYAN REALTY seal).
+ * Click toggles a cream sheet with exactly five doors. Critiquito
+ * 2026-09-19: light → navy-etched head on cream; dark → white head on
+ * navy. Idle is one quiet tilt (3–6°, ≤4s + pause, ease-in-out).
+ * Menu is 150–220ms rise+fade, no bounce, no pun copy. Esc / outside /
+ * second tap on the dog close. Listing @375 sits the FAB above the
+ * inline Tour row. Replaces sticky Call / Text / Work-with-us bars.
+ * Header Work with us stays.
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -22,6 +25,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog'
 import { V3_ROOT_CLASS } from './atoms'
 import './tokens.css'
@@ -60,33 +64,40 @@ export function V3DogFloater() {
 
   if (hidden) return null
 
-  const onDark =
+  const onListing =
     pathname.startsWith('/homes-for-sale') || pathname.startsWith('/listing')
+  const onDark = onListing
   const headSrc = onDark ? '/brand/jax-head-cream.png' : '/brand/jax-head-navy.png'
 
   return (
     <div className={V3_ROOT_CLASS} data-v3-dog-floater="true">
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <button
-          type="button"
-          className={cn('v3-dog-floater', onDark && 'v3-dog-floater--on-dark')}
-          data-v3-dog-head="inner"
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          aria-controls={open ? titleId : undefined}
-          onClick={() => onOpenChange(true)}
-        >
-          <span className="sr-only">Open Ryan Realty menu</span>
-          <span className="v3-dog-floater__head" aria-hidden="true">
-            <img
-              src={headSrc}
-              alt=""
-              width={68}
-              height={68}
-              className="v3-dog-floater__dog"
-            />
-          </span>
-        </button>
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              'v3-dog-floater',
+              onDark && 'v3-dog-floater--on-dark',
+              onListing && 'v3-dog-floater--listing',
+              open && 'v3-dog-floater--open',
+            )}
+            data-v3-dog-head="inner"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            aria-controls={open ? titleId : undefined}
+          >
+            <span className="sr-only">Open Ryan Realty menu</span>
+            <span className="v3-dog-floater__head" aria-hidden="true">
+              <img
+                src={headSrc}
+                alt=""
+                width={68}
+                height={68}
+                className="v3-dog-floater__dog"
+              />
+            </span>
+          </button>
+        </DialogTrigger>
         <DialogContent
           showCloseButton={false}
           className={cn(
@@ -97,12 +108,12 @@ export function V3DogFloater() {
           aria-describedby={undefined}
         >
           <DialogTitle id={titleId} className="sr-only">
-            Ryan Realty
+            Help
           </DialogTitle>
           <DialogDescription className="sr-only">
             Sell your home, buy your home, text us, get your home&apos;s value, or learn about us.
           </DialogDescription>
-          <nav className="v3-dog-floater-menu__doors" aria-label="Ryan Realty">
+          <nav className="v3-dog-floater-menu__doors" aria-label="Help">
             {DOG_FLOATER_MENUS.map((item) =>
               item.kind === 'sms' ? (
                 <a

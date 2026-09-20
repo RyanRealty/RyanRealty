@@ -50,6 +50,20 @@ describe('ci:dog-floater lock', () => {
     expect(p.join('\n')).toMatch(/Text us|CONTACT/)
   })
 
+  it('refuses a FAB that cannot second-tap close or that fights Tour', () => {
+    const floater = live.floater
+      .replaceAll('DialogTrigger', 'DialogRoot')
+      .replaceAll('v3-dog-floater--listing', 'v3-dog-floater--wide')
+    const css = live.css
+      .replaceAll('ease-in-out', 'ease-out')
+      .replaceAll('listing-ask-row', 'listing-cta-row')
+    const p = dogFloaterProblems({
+      root: REPO,
+      files: { ...live, floater, css },
+    })
+    expect(p.join('\n')).toMatch(/DialogTrigger|listing|Tour|ease-in-out/)
+  })
+
   it('ci:dog-floater exits 0 on HEAD', () => {
     const r = spawnSync('node', [join(REPO, 'scripts/check-dog-floater.mjs')], {
       cwd: REPO,
