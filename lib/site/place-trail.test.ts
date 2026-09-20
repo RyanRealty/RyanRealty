@@ -17,6 +17,8 @@ describe('communityHref', () => {
   it('lands on the community page, not search', () => {
     expect(communityHref('tetherow')).toBe('/communities/tetherow')
     expect(communityHref('bend-tetherow')).toBe('/communities/tetherow')
+    expect(communityHref('pronghorn')).toBe('/communities/juniper-preserve')
+    expect(communityHref('juniper-preserve')).toBe('/communities/juniper-preserve')
     expect(communityHref(null)).toBeNull()
   })
 })

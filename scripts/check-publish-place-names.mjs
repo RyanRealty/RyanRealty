@@ -102,6 +102,46 @@ checks.push({
     /resolvePreRenderHop/.test(mw),
 })
 
+const pair = src('lib/communities/community-public-pair.ts')
+checks.push({
+  label: 'communityPublicPair publishes displayName + agreeing /communities/{publicSlug}',
+  ok:
+    /export function communityPublicPair/.test(pair) &&
+    /export function communityPublicPairForPlace/.test(pair) &&
+    /export function communityPairAgrees/.test(pair) &&
+    pair.includes('juniper-preserve') &&
+    pair.includes('pronghorn'),
+})
+
+const cityPage = src('app/cities/[slug]/page.tsx')
+checks.push({
+  label: 'Bend communities rail name/href come from communityPublicPair (cannot diverge)',
+  ok:
+    /from ['"]@\/lib\/communities\/community-public-pair['"]/.test(cityPage) &&
+    /communityPublicPairForPlace\(/.test(cityPage) &&
+    /pair\?\.displayName/.test(cityPage) &&
+    /pair\?\.href/.test(cityPage),
+})
+
+const placeLinks = src('lib/place-links.ts')
+checks.push({
+  label: 'getPlaceLinks community door uses public pair, not titleFromSlug(durable)',
+  ok:
+    /from ['"]@\/lib\/communities\/community-public-pair['"]/.test(placeLinks) &&
+    /communityPublicPairForPlace\(/.test(placeLinks) &&
+    /pair\?\.href/.test(placeLinks) &&
+    /pair\?\.displayName/.test(placeLinks),
+})
+
+const hop = src('lib/communities/canonical-community-slug.ts')
+checks.push({
+  label: 'durable rebrand slug 308s to public name URL (pronghorn → juniper-preserve)',
+  ok:
+    /resolvePublicCommunitySlug/.test(hop) &&
+    /publicCommunitySlug/.test(hop) &&
+    hop.includes('SITE-136'),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)

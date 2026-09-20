@@ -53,6 +53,10 @@
 
 import registry from '@/data/resort-communities.json' assert { type: 'json' }
 import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
+import {
+  publicCommunitySlug,
+  resolvePublicCommunitySlug,
+} from '@/lib/communities/community-public-pair'
 
 type RegistryEntry = {
   slug: string
@@ -82,8 +86,11 @@ function slugifyName(name: string): string {
 
 const ENTRIES = (registry as unknown as { communities: RegistryEntry[] }).communities
 
-/** Every registry slug — these URLs are already canonical. */
-const CANONICAL_SLUGS: ReadonlySet<string> = new Set(ENTRIES.map((e) => e.slug))
+/** Durable registry slugs (geo keys). A rebrand may hop these to a public slug. */
+const DURABLE_SLUGS: ReadonlySet<string> = new Set(ENTRIES.map((e) => e.slug))
+
+/** Visitor-canonical /communities slugs — slugify(label) when that path agrees. */
+const CANONICAL_SLUGS: ReadonlySet<string> = new Set(ENTRIES.map((e) => publicCommunitySlug(e)))
 
 /**
  * nameSlug -> registry entry, over labels + `subdivision_aliases` ONLY.
@@ -149,7 +156,18 @@ const ENTRY_BY_LABEL_SLUG: ReadonlyMap<string, RegistryEntry> = (() => {
  */
 export function resolveCanonicalCommunitySlug(rawSlug: string): string | null {
   const slug = rawSlug.trim().toLowerCase()
-  if (!slug || CANONICAL_SLUGS.has(slug)) return null
+  if (!slug) return null
+
+  // Already the visitor-canonical door (slugify of the public name).
+  if (CANONICAL_SLUGS.has(slug)) return null
+
+  // HOP 0a — a durable registry slug whose public name is a different path.
+  // SITE-136 / W5: /communities/pronghorn is the geo key, not the live URL.
+  // One live URL: /communities/juniper-preserve. Do not serve both.
+  if (DURABLE_SLUGS.has(slug)) {
+    const dest = resolvePublicCommunitySlug(slug)
+    return dest !== slug ? dest : null
+  }
 
   // HOP 0 — a BARE registry name that is not itself a canonical slug.
   //
@@ -157,20 +175,17 @@ export function resolveCanonicalCommunitySlug(rawSlug: string): string | null {
   // URLs, so a URL naming a community by its own label went to notFound(). That
   // is how /communities/juniper-preserve 404'd while
   // /communities/bend-juniper-preserve correctly 308'd to /communities/pronghorn
-  // (verified live and locally 2026-08-26): Pronghorn's registry label IS
-  // "Juniper Preserve" since the 2022 rebrand, and the slug deliberately stays
-  // `pronghorn` because geo_snapshot_mv keys on bend:pronghorn and a cron
-  // sentinels on it. The public name changed; the durable key did not.
-  //
-  // A brand's CURRENT name 404'ing is the worst possible outcome for the one
-  // term people now search. This converts that 404 into the same 308 the
-  // compound form already produced — and only ever a 404: an unregistered name
-  // still falls through to null, and a canonical slug never reaches here.
+  // (verified live and locally 2026-08-26). SITE-136 flips that hop: the
+  // public name is the live URL, and the durable slug 308s to it. Cache keys
+  // stay `pronghorn` / `bend:pronghorn`.
   //
   // LABELS ONLY, not the alias set — see ENTRY_BY_LABEL_SLUG for why hopping a
   // subdivision alias here would assert an identity that is not true.
   const bare = ENTRY_BY_LABEL_SLUG.get(slug)
-  if (bare && bare.slug !== slug) return bare.slug
+  if (bare) {
+    const dest = publicCommunitySlug(bare)
+    return dest !== slug ? dest : null
+  }
 
   const parts = slug.split('-')
   if (parts.length < 2) return null
@@ -196,16 +211,17 @@ export function resolveCanonicalCommunitySlug(rawSlug: string): string | null {
   const entry = ENTRY_BY_NAME_SLUG.get(nameSlug)
   if (!entry) return null
 
-  // Hop 1 — a resort in its own city consolidates onto its bare slug.
+  // Hop 1 — a resort in its own city consolidates onto its public slug.
   if (entry.is_resort === true && entry.city_slug === citySlug) {
-    return entry.slug === slug ? null : entry.slug
+    const dest = publicCommunitySlug(entry)
+    return dest === slug ? null : dest
   }
 
   // Hop 2 — wrong city for this community. A resort collapses straight to its
-  // bare slug (the page took two hops to get there); a non-resort registry
+  // public slug (the page took two hops to get there); a non-resort registry
   // entry keeps the compound shape under its verified city.
   if (entry.city_slug !== citySlug) {
-    return entry.is_resort === true ? entry.slug : `${entry.city_slug}-${nameSlug}`
+    return entry.is_resort === true ? publicCommunitySlug(entry) : `${entry.city_slug}-${nameSlug}`
   }
 
   // Non-resort entry, already under its verified city: the page renders.
@@ -219,7 +235,8 @@ export function resolveCanonicalCommunityPath(rawSlug: string): string | null {
 }
 
 /**
- * True when `slug` is a community's own canonical URL — a bare registry slug.
+ * True when `slug` is a community's own canonical URL — the public slug
+ * (slugify of the registry label, or the durable slug when those agree).
  *
  * Everything else reaching /communities/[slug] is a compound `<city>-<name>`
  * shape. When the name IS a registered community the edge canonicalises it
@@ -241,8 +258,9 @@ export function resolveCityNeighborhoodCommunityPath(pathname: string): string |
   const m = pathname.match(/^\/cities\/([^/]+)\/([^/]+)\/?$/)
   if (!m) return null
   const neighborhood = slugifyName(m[2])
-  if (!CANONICAL_SLUGS.has(neighborhood)) return null
-  const dest = `/communities/${neighborhood}`
+  const destSlug = resolvePublicCommunitySlug(neighborhood)
+  if (!CANONICAL_SLUGS.has(destSlug)) return null
+  const dest = `/communities/${destSlug}`
   return dest === pathname ? null : dest
 }
 

@@ -19,6 +19,7 @@ export const RESORT_DISPLAY_NAMES = [
   'Brasada Ranch',
   'Eagle Crest',
   'Pronghorn',
+  'Juniper Preserve',
   'Sunriver',
   'Caldera Springs',
   'Crosswater',

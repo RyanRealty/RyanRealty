@@ -14,7 +14,7 @@ export const LUX_MIN = 1_500_000
 export const LUX_COMMUNITIES = [
   { slug: 'broken-top', label: 'Broken Top' },
   { slug: 'tetherow', label: 'Tetherow' },
-  { slug: 'pronghorn', label: 'Pronghorn' },
+  { slug: 'pronghorn', label: 'Juniper Preserve' },
   { slug: 'awbrey-glen', label: 'Awbrey Glen' },
   { slug: 'northwest-crossing', label: 'NorthWest Crossing' },
 ] as const

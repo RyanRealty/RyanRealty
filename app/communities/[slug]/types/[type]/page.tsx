@@ -38,6 +38,7 @@ import { formatDateTime } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import { asPlaceBoundary } from '@/lib/place/place-type-page'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
+import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import {
   placeTypeAtlasEyebrow,
   placeTypeClaim,
@@ -73,7 +74,7 @@ import '@/app/cities/[slug]/types/[type]/_v3/place-type-page.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string; type: string }>> {
   return getAllResortCommunities().flatMap((community) =>
-    PLACE_TYPE_PAGE_SLUGS.map((type) => ({ slug: community.slug, type })),
+    PLACE_TYPE_PAGE_SLUGS.map((type) => ({ slug: publicCommunitySlug(community), type })),
   )
 }
 export const dynamicParams = true

@@ -32,7 +32,7 @@ export const posts: BlogPostSeed[] = [
 <p>Juniper Preserve is the private golf resort community northeast of Bend that a lot of longtime locals still call by its old name, Pronghorn. The resort rebranded in October 2022, but the homeowners association, the recorded plats, and the street signs never changed, so you'll run into both names depending on what you're reading. This guide walks through what a home here actually costs, what the club side does and doesn't include, how the four neighborhoods differ, and what's for sale as of this writing. Every figure below comes from our own listing data or the resort's own published sources, dated so you know exactly how current it is.</p>
 
 <h2>What does it cost to buy in Juniper Preserve right now?</h2>
-<p>As of this writing, 11 homes are for sale in Juniper Preserve, and the median asking price across those 11 listings is $1,595,000. That's the asking side of the picture. <a href="/communities/pronghorn">Browse the current listings on our Juniper Preserve community page</a> to see the actual homes behind that number, since the mix of what's on the market shifts the median from month to month in a community this small.</p>
+<p>As of this writing, 11 homes are for sale in Juniper Preserve, and the median asking price across those 11 listings is $1,595,000. That's the asking side of the picture. <a href="/communities/juniper-preserve">Browse the current listings on our Juniper Preserve community page</a> to see the actual homes behind that number, since the mix of what's on the market shifts the median from month to month in a community this small.</p>
 
 <h2>What have homes actually sold for?</h2>
 <p>Over the last 24 months, the median sale price in Juniper Preserve was $1,998,800, from 17 closings. We're using a 24-month window here on purpose. The 12-month sample doesn't clear the threshold we use before publishing a number, so we're not going to guess at it. Seventeen sales over two years tells you something on its own: this is a low-volume, high-value market, not a place where a fresh median shows up every quarter.</p>
@@ -79,7 +79,7 @@ export const posts: BlogPostSeed[] = [
 <p>Over the last 24 months, the median time from listing to accepted contract was 63 days, based on 17 sales.</p>
 
 <h2>Next step</h2>
-<p>If you're weighing a purchase in Juniper Preserve, the numbers above are a starting point, not the whole picture. Every neighborhood inside the resort has its own rules on rentals, furnishing, and club access, and that detail matters more here than it does in a standard subdivision. <a href="/communities/pronghorn">See what's currently listed in Juniper Preserve</a>, or talk to our <a href="/team">team</a> about which of the four neighborhoods actually fits what you're trying to do, whether that's a full-time move or a second home you plan to rent out part of the year.</p>
+<p>If you're weighing a purchase in Juniper Preserve, the numbers above are a starting point, not the whole picture. Every neighborhood inside the resort has its own rules on rentals, furnishing, and club access, and that detail matters more here than it does in a standard subdivision. <a href="/communities/juniper-preserve">See what's currently listed in Juniper Preserve</a>, or talk to our <a href="/team">team</a> about which of the four neighborhoods actually fits what you're trying to do, whether that's a full-time move or a second home you plan to rent out part of the year.</p>
 `,
   },
   // ─── awbrey-glen ───

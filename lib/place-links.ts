@@ -5,6 +5,11 @@
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { RESORT_SLUG_TO_CITY } from '@/lib/community-slug'
 import { cityHref, cityNeighborhoodHref } from '@/lib/site/place-href'
+import {
+  communityPublicPairForPlace,
+  resolveDurableCommunitySlug,
+  resolvePublicCommunitySlug,
+} from '@/lib/communities/community-public-pair'
 
 export type PlaceType = 'city' | 'neighborhood' | 'community'
 
@@ -67,13 +72,18 @@ export function getPlaceLinks(input: {
 
   // community
   const bare = canonicalCommunitySlug(slug)
-  const cityName = RESORT_SLUG_TO_CITY[bare]
+  const durable = resolveDurableCommunitySlug(bare)
+  const publicSlug = resolvePublicCommunitySlug(bare)
+  const pair = communityPublicPairForPlace({ slug: durable })
+  const cityName = RESORT_SLUG_TO_CITY[durable]
   const citySlug = cityName ? slugify(cityName) : (input.citySlug ?? 'bend')
-  const label = titleFromSlug(bare)
+  // Browse / market stay on the durable MLS identity (Pronghorn listings,
+  // bend:pronghorn cache). The visitor door is the public pair.
+  const browseLabel = titleFromSlug(durable)
   return {
-    placeUrl: `/communities/${bare}`,
-    browseUrl: homesForSalePath(cityName ?? titleFromSlug(citySlug), label),
-    marketUrl: `/housing-market/${citySlug}/${bare}`,
-    label,
+    placeUrl: pair?.href ?? `/communities/${publicSlug}`,
+    browseUrl: homesForSalePath(cityName ?? titleFromSlug(citySlug), browseLabel),
+    marketUrl: `/housing-market/${citySlug}/${durable}`,
+    label: pair?.displayName ?? titleFromSlug(publicSlug),
   }
 }

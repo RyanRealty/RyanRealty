@@ -63,5 +63,16 @@ describe('community-slug', () => {
         subdivision: 'Northwest Crossing',
       })
     })
+
+    it('parses the Juniper Preserve public slug as the durable Pronghorn identity', () => {
+      expect(parseCommunitySlug('juniper-preserve', citySlugs)).toEqual({
+        city: 'Bend',
+        subdivision: 'Pronghorn',
+      })
+      expect(parseCommunitySlug('pronghorn', citySlugs)).toEqual({
+        city: 'Bend',
+        subdivision: 'Pronghorn',
+      })
+    })
   })
 })

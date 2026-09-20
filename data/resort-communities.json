@@ -182,7 +182,7 @@
    "former_labels": [
     "Pronghorn"
    ],
-   "slug_note": "SLUG STAYS 'pronghorn' ON PURPOSE. The hospitality brand renamed to Juniper Preserve in Oct 2022, but the slug is a durable KEY, not a display name: geo_snapshot_mv carries geo_key='bend:pronghorn' (the market-stat-consistency cron sentinels on it), market_stats_cache rows are keyed geo_slug='pronghorn', and lib/community-slug.ts, luxury-rows.ts and the RESORT_IMG map all key on it. Renaming the slug orphans live figures on a $1M+ community page until every cache rebuilds. The PUBLIC NAME is what changed; /communities/juniper-preserve resolves to this entry by label."
+   "slug_note": "DURABLE SLUG STAYS 'pronghorn' ON PURPOSE (geo_snapshot_mv geo_key='bend:pronghorn', market_stats_cache geo_slug='pronghorn', CMA resort guard). SITE-136 / W5: the LIVE URL is /communities/juniper-preserve so the public name and path agree. /communities/pronghorn 308s there. Do not serve both. Do not paint Juniper Preserve on a /communities/pronghorn href."
   },
   {
    "slug": "caldera-springs",

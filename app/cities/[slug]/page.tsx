@@ -82,6 +82,7 @@ import { preferPlaceHero } from '@/lib/geo-images'
 import { buildActivityItems, buildArticlePosts, buildOtherCityItems } from '@/lib/kb/place-sections'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { getPlaceLinks } from '@/lib/place-links'
+import { communityPublicPair, communityPublicPairForPlace } from '@/lib/communities/community-public-pair'
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
@@ -705,16 +706,19 @@ async function renderCityDetail({ params }: Props) {
   // GOLF AND MASTER-PLANNED COMMUNITIES - a SEPARATE ledger from neighborhoods
   // (D85). Membership comes from the registry (is_resort), which drops Three
   // Rivers, and the count is the alias-aware one so the ledger and the rail agree.
-  const golfCommunityItems: CityPlaceItem[] = cityResorts(slug).map((c) => ({
-    name: c.label,
-    href: getPlaceLinks({ type: 'community', slug: c.slug, citySlug: slug }).placeUrl,
-    activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? null,
-    medianPrice: null,
-    img: preferPlaceHero(
-      commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()),
-      CITY_RESORT_LEDGER_IMG[c.slug] ?? '',
-    ),
-  }))
+  const golfCommunityItems: CityPlaceItem[] = cityResorts(slug).map((c) => {
+    const pair = communityPublicPair(c)
+    return {
+      name: pair.displayName,
+      href: pair.href,
+      activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? null,
+      medianPrice: null,
+      img: preferPlaceHero(
+        commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()),
+        CITY_RESORT_LEDGER_IMG[c.slug] ?? '',
+      ),
+    }
+  })
 
   // THE COMMUNITIES RAIL — community grain only (SITE-128 rematch FAIL 3).
   // Designated neighborhoods stay on #neighborhoods. MLS plats/phases become
@@ -741,12 +745,13 @@ async function renderCityDetail({ params }: Props) {
       // rail card matches the golf ledger and the real MLS total rather than
       // the literal-name undercount (§0).
       const activeCount = resortSlug ? resortSfrCounts.get(resortSlug) ?? c.activeCount : c.activeCount
+      const pair = communityPublicPairForPlace({ slug: resortSlug ?? c.slug, name: c.subdivision })
       return {
-        name: c.subdivision,
+        name: pair?.displayName ?? c.subdivision,
         activeCount,
         medianPrice: null,
         town: cityName,
-        href: getPlaceLinks({ type: 'community', slug: resortSlug ?? c.slug, citySlug: slug }).placeUrl,
+        href: pair?.href ?? getPlaceLinks({ type: 'community', slug: resortSlug ?? c.slug, citySlug: slug }).placeUrl,
         img,
         video: cvUrl ? { url: cvUrl, embedType: 'video-tag' as const } : null,
       }

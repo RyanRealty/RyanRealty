@@ -67,11 +67,11 @@ export const GOLF_COMMUNITIES: GolfCommunity[] = [
       'David McLay Kidd, the architect of Bandon Dunes, designed the links-style course that the homes here front.',
   },
   {
-    name: 'Pronghorn',
+    name: 'Juniper Preserve',
     city: 'Bend',
     citySlug: 'bend',
     slug: 'pronghorn',
-    communityHref: '/communities/pronghorn',
+    communityHref: '/communities/juniper-preserve',
     imageSrc: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
     imageAlt: 'Pronghorn course with high-desert juniper and lava rock',
     course: 'Pronghorn Nicklaus Signature Course',

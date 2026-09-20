@@ -77,7 +77,15 @@ export function resortActiveSfrCounts(citySlug: string, tiles: SubTile[]): Map<s
 /** Map of resort label (lowercased) -> slug, for the cities in `citySlug`. Lets a
  *  community-rail card resolve its resort alias-aware count by name. */
 export function resortLabelToSlug(citySlug: string): Map<string, string> {
-  return new Map(cityResorts(citySlug).map((c) => [c.label.toLowerCase().trim(), c.slug]))
+  const map = new Map<string, string>()
+  for (const c of cityResorts(citySlug)) {
+    map.set(c.label.toLowerCase().trim(), c.slug)
+    for (const former of (c as { former_labels?: string[] }).former_labels ?? []) {
+      const key = former.toLowerCase().trim()
+      if (key && !map.has(key)) map.set(key, c.slug)
+    }
+  }
+  return map
 }
 
 /**

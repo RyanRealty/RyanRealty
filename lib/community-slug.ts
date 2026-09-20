@@ -1,4 +1,5 @@
 import { homesForSalePath } from './slug'
+import { resolveDurableCommunitySlug } from '@/lib/communities/community-public-pair'
 
 /** Convert entity_key (e.g. "bend:sunriver") to URL slug "bend-sunriver". */
 export function entityKeyToSlug(entityKey: string): string {
@@ -64,15 +65,18 @@ export function parseCommunitySlug(
   citySlugs: Set<string>
 ): { city: string; subdivision: string } | null {
   const normalised = slug.trim().toLowerCase()
+  // Public rebrand slugs (juniper-preserve) parse as their durable key so
+  // geo_key stays bend:pronghorn. Visitor URL is the public slug; cache is not.
+  const durable = resolveDurableCommunitySlug(normalised)
 
   // 1. Bare resort slug (highest precedence — checked first so "sunriver"
   //    resolves to { city: 'Sunriver', subdivision: 'Sunriver' } rather than
   //    falling into the compound-slug loop which would fail because
   //    parts.length < 2).
-  if (RESORT_SLUG_TO_CITY[normalised]) {
+  if (RESORT_SLUG_TO_CITY[durable]) {
     return {
-      city:        RESORT_SLUG_TO_CITY[normalised]!,
-      subdivision: slugToTitle(normalised),
+      city:        RESORT_SLUG_TO_CITY[durable]!,
+      subdivision: slugToTitle(durable),
     }
   }
 

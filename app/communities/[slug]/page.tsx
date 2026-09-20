@@ -118,6 +118,7 @@ import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-m
 import { resolveCommunityDisplayName } from './_v3/community-display-name'
 import { CommunityUnavailable } from './_v3/CommunityUnavailable'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
+import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getRecordedPlatLabel } from '@/lib/data/subdivisions/getRecordedPlatLabel'
 import {
   buildExploreEdges,
@@ -158,7 +159,7 @@ import {
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  return getAllResortCommunities().map((c) => ({ slug: c.slug }))
+  return getAllResortCommunities().map((c) => ({ slug: publicCommunitySlug(c) }))
 }
 export const dynamicParams = true
 export const revalidate = 900

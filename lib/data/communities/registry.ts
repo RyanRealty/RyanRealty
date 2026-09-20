@@ -77,7 +77,19 @@ const communities = rawRegistry.communities as unknown as ResortCommunityEntry[]
  * Returns null if the slug is not in the registry.
  */
 export function getResortCommunityBySlug(slug: string): ResortCommunityEntry | null {
-  return communities.find((c) => c.slug === slug) ?? null
+  const key = slug.trim().toLowerCase()
+  if (!key) return null
+  return (
+    communities.find((c) => {
+      if (c.slug === key) return true
+      const labelSlug = c.label
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+      return labelSlug === key
+    }) ?? null
+  )
 }
 
 /**

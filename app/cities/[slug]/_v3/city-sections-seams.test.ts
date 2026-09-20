@@ -30,4 +30,11 @@ describe('SITE-128 seams — name-only community cards + grain split', () => {
     expect(PAGE).toMatch(/grain === 'plat'/)
     expect(PAGE).toMatch(/atlasPlatEntries/)
   })
+
+  it('pairs rail name and href through communityPublicPair so they cannot diverge', () => {
+    expect(PAGE).toMatch(/communityPublicPairForPlace/)
+    expect(PAGE).toMatch(/pair\?\.displayName/)
+    expect(PAGE).toMatch(/pair\?\.href/)
+    expect(PAGE).toMatch(/communityPublicPair\(c\)/)
+  })
 })

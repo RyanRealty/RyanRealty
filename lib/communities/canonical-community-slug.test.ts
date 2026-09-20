@@ -36,6 +36,7 @@ import {
   resolveCanonicalCommunitySlug,
   resolveCityNeighborhoodCommunityPath,
 } from './canonical-community-slug'
+import { publicCommunitySlug, resolvePublicCommunitySlug } from './community-public-pair'
 
 type Entry = {
   slug: string
@@ -132,18 +133,23 @@ describe('resolveCanonicalCommunitySlug', () => {
     expect(universe.length).toBeGreaterThan(1800)
   })
 
-  it('lands on the same destination the page body chose, for every slug', () => {
+  it('lands on the public slug the page body would have reached, for every slug', () => {
     const mismatches: string[] = []
     for (const slug of universe) {
       const mine = resolveCanonicalCommunitySlug(slug)
-      const theirs = pageFixedPoint(slug)
-      if (mine !== theirs) mismatches.push(`${slug}: edge=${mine} page=${theirs}`)
+      const pageDest = pageFixedPoint(slug)
+      const landed = pageDest ?? slug
+      const publicDest = resolvePublicCommunitySlug(landed)
+      const theirs = publicDest !== slug ? publicDest : null
+      if (mine !== theirs) mismatches.push(`${slug}: edge=${mine} expected=${theirs} page=${pageDest}`)
     }
     expect(mismatches).toEqual([])
   })
 
-  it('never redirects a canonical registry slug', () => {
-    for (const e of ENTRIES) expect(resolveCanonicalCommunitySlug(e.slug)).toBeNull()
+  it('never redirects a public community slug', () => {
+    for (const e of ENTRIES) {
+      expect(resolveCanonicalCommunitySlug(publicCommunitySlug(e))).toBeNull()
+    }
   })
 
   it('collapses the page\'s two-hop chains into one', () => {
@@ -210,15 +216,14 @@ describe('resolveCanonicalCommunitySlug', () => {
     }
   })
 
-  it("a renamed community's own label resolves to its durable slug", () => {
-    // Pronghorn rebranded to Juniper Preserve in 2022. The slug deliberately
-    // stays `pronghorn` — geo_snapshot_mv keys on bend:pronghorn and a cron
-    // sentinels on it — so the label is the only name the public now uses, and
-    // it used to 404 while the compound form already worked.
-    expect(resolveCanonicalCommunitySlug('juniper-preserve')).toBe('pronghorn')
-    expect(resolveCanonicalCommunitySlug('bend-juniper-preserve')).toBe('pronghorn')
-    // The canonical URL stays canonical.
-    expect(resolveCanonicalCommunitySlug('pronghorn')).toBeNull()
+  it("a renamed community's durable slug hops to the public name URL", () => {
+    // Pronghorn rebranded to Juniper Preserve in 2022. The durable slug stays
+    // `pronghorn` (geo_key bend:pronghorn). SITE-136: the live URL is the
+    // public name so rail label and href cannot diverge.
+    expect(resolveCanonicalCommunitySlug('pronghorn')).toBe('juniper-preserve')
+    expect(resolveCanonicalCommunitySlug('bend-juniper-preserve')).toBe('juniper-preserve')
+    expect(resolveCanonicalCommunitySlug('bend-pronghorn')).toBe('juniper-preserve')
+    expect(resolveCanonicalCommunitySlug('juniper-preserve')).toBeNull()
   })
 
   it('a BARE subdivision alias does NOT hop — only a label does', () => {
@@ -242,6 +247,12 @@ describe('resolveCanonicalCommunitySlug', () => {
     )
     expect(resolveCityNeighborhoodCommunityPath('/cities/bend/northwest-crossing')).toBe(
       '/communities/northwest-crossing',
+    )
+    expect(resolveCityNeighborhoodCommunityPath('/cities/bend/pronghorn')).toBe(
+      '/communities/juniper-preserve',
+    )
+    expect(resolveCityNeighborhoodCommunityPath('/cities/bend/juniper-preserve')).toBe(
+      '/communities/juniper-preserve',
     )
     expect(resolveCityNeighborhoodCommunityPath('/cities/la-pine/three-rivers')).toBe(
       '/communities/three-rivers',

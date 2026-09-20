@@ -168,12 +168,12 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       'Awbrey Glen',
     ])
     const allMarketLinks = footerColumnLinks(markets)
-    const redmondHrefs = allMarketLinks.filter((l) => l.href.includes('redmond') || l.href.includes('eagle-crest') || l.href.includes('pronghorn')).map((l) => l.href)
+    const redmondHrefs = allMarketLinks.filter((l) => l.href.includes('redmond') || l.href.includes('eagle-crest') || l.href.includes('juniper-preserve')).map((l) => l.href)
     expect(redmondHrefs).toEqual([
       '/homes-for-sale/redmond',
       '/housing-market/redmond',
       '/communities/eagle-crest',
-      '/communities/pronghorn',
+      '/communities/juniper-preserve',
     ])
     const actions = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Buy · Sell · Join')
     expect(actions?.groups?.map((g) => g.heading)).toEqual(['Buy', 'Sell', 'Join'])
@@ -211,7 +211,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/communities/northwest-crossing',
       '/communities/awbrey-glen',
       '/communities/eagle-crest',
-      '/communities/pronghorn',
+      '/communities/juniper-preserve',
       '/communities/black-butte-ranch',
       '/communities/caldera-springs',
       '/communities/crosswater',
@@ -240,5 +240,14 @@ describe('getPlaceLinks', () => {
     const community = getPlaceLinks({ type: 'community', slug: 'sunriver' })
     expect(city.placeUrl).toBe('/cities/sunriver')
     expect(community.placeUrl).toBe('/communities/sunriver')
+  })
+
+  it('pairs Juniper Preserve name with /communities/juniper-preserve', () => {
+    const fromDurable = getPlaceLinks({ type: 'community', slug: 'pronghorn' })
+    const fromPublic = getPlaceLinks({ type: 'community', slug: 'juniper-preserve' })
+    expect(fromDurable.placeUrl).toBe('/communities/juniper-preserve')
+    expect(fromDurable.label).toBe('Juniper Preserve')
+    expect(fromPublic.placeUrl).toBe('/communities/juniper-preserve')
+    expect(fromPublic.label).toBe('Juniper Preserve')
   })
 })
