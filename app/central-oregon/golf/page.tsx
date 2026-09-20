@@ -25,6 +25,7 @@
  * here and from every detail page. It is paid-arrival, off the organic graph.
  */
 
+import { communityPublicPair } from '@/lib/communities/community-public-pair'
 import type { Metadata } from 'next'
 import { getGolfCoursesForIndex, getGolfCourseCount } from '@/lib/data'
 import { GOLF_ACCESS_LABEL, displayCity } from '@/lib/golf-format'
@@ -125,7 +126,10 @@ export default function GolfIndexPage() {
   }
   const communityDoors: V3QuietItem[] = registry
     .filter((c) => golfCommunitySlugs.has(c.slug))
-    .map((c) => ({ label: `${c.label} homes for sale`, href: `/communities/${c.slug}` }))
+    .map((c) => {
+      const pair = communityPublicPair(c)
+      return { label: `${pair.displayName} homes for sale`, href: pair.href }
+    })
 
   const edges: V3QuietItem[] = [
     ...communityDoors,

@@ -13,6 +13,7 @@ const ACTIVE_STATUS_OR = PUBLIC_ACTIVE_OR_PREDICATE
 import { fetchAllRows } from '@/lib/supabase/paginate'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
@@ -37,7 +38,7 @@ import { CO_PARKS } from '@/data/co-parks'
 // registry grew to 19 — five live pages were never submitted to Google).
 // The old code before that emitted every row of the `communities` table,
 // which included ~31 junk subdivision slugs ("Industrial, Madras Oregon").
-const RESORT_COMMUNITY_SLUGS: string[] = getAllResortCommunities().map((c) => c.slug)
+const RESORT_COMMUNITY_SLUGS: string[] = getAllResortCommunities().map((c) => publicCommunitySlug(c))
 
 // Lifetime-listing floor for a (city, subdivision) browse URL to earn a
 // sitemap slot. The threshold counts every status bucket (active + pending +

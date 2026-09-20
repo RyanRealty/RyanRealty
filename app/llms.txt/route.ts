@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getTrailsForIndex, getAllNeighborhoodsWithCity } from '@/lib/data'
+import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionLlmsLines } from '@/lib/data/subdivisions/subdivision-index'
@@ -79,7 +80,7 @@ export async function GET() {
   )
   const communityLines = lines(
     getAllResortCommunities().map(
-      (c) => `- ${c.label} (${c.city}): ${SITE_URL}/communities/${c.slug}`,
+      (c) => `- ${c.label} (${c.city}): ${SITE_URL}/communities/${publicCommunitySlug(c)}`,
     ),
   )
   const neighborhoodLines = lines(

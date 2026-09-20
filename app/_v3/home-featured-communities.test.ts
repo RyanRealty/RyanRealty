@@ -11,6 +11,7 @@ import {
   homeFeaturedBlurb,
   homeFeaturedSalesFigures,
 } from './home-featured-communities'
+import { communityPublicPair } from '@/lib/communities/community-public-pair'
 import type { ResortCommunityEntry } from '@/lib/data/communities/registry'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 
@@ -175,7 +176,7 @@ describe('buildHomeFeaturedCommunitySlidesFromRegistry', () => {
     expect(slides.some((s) => s.slug === 'tetherow')).toBe(true)
     for (const slide of slides) {
       expect(slide.photoSrc.length).toBeGreaterThan(0)
-      expect(slide.href).toBe(`/communities/${slide.slug}`)
+      expect(slide.href).toBe(communityPublicPair({ slug: slide.slug, label: slide.name }).href)
     }
   })
 })

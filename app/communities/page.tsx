@@ -33,6 +33,7 @@ import {
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import { belongingLine, resortIndexRow } from '@/app/communities/_v3/community-index-rows'
 import { indexBarWeight } from '@/app/cities/_v3/cities-index-constants'
+import { resolvePublicCommunitySlug } from '@/lib/communities/community-public-pair'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -164,7 +165,7 @@ export default async function CommunitiesPage() {
   const [firstRow, ...restRows] = rows
 
   const inventoryDoors: V3QuietItem[] = resorts.flatMap((r) => [
-    { label: `${r.name} homes for sale`, href: `/communities/${r.slug}#listings` },
+    { label: `${r.name} homes for sale`, href: `/communities/${resolvePublicCommunitySlug(r.slug)}#listings` },
     { label: `Homes for sale in ${r.city}`, href: `/homes-for-sale/${r.citySlug}` },
   ])
 
@@ -193,7 +194,7 @@ export default async function CommunitiesPage() {
                   '@type': 'ListItem',
                   position: i + 1,
                   name: `${r.name}, ${r.city}, Oregon`,
-                  url: `${siteUrl}/communities/${r.slug}`,
+                  url: `${siteUrl}/communities/${resolvePublicCommunitySlug(r.slug)}`,
                 })),
               },
             }),

@@ -32,6 +32,7 @@ import {
 import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import { resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicates'
 import { CENTRAL_OREGON_CITY_SLUGS, citySlugForScope } from '@/lib/central-oregon'
+import { resolvePublicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { slugify } from '@/lib/slug'
 
 // ───────────────────────── Types ─────────────────────────
@@ -304,7 +305,7 @@ export function deriveCommunityLinks(
     const raw = countByGeoKey.get(geoKey)
     const count = raw != null && Number.isFinite(raw) && raw > 0 ? raw : 0
     return {
-      href: `/communities/${entry.slug}`,
+      href: `/communities/${resolvePublicCommunitySlug(entry.slug)}`,
       label: `${entry.label} · ${entry.city}`,
       count,
     }

@@ -4,8 +4,8 @@ import { resolvePreRenderHop } from '@/lib/routing/pre-render-hops'
 import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import { isPresetSlug } from '@/lib/search-presets'
-import resortCommunitiesRegistry from '@/data/resort-communities.json'
 import { isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
+import { allowedCommunityUrlSlugs } from '@/lib/communities/community-public-pair'
 
 /**
  * Next.js Edge Middleware.
@@ -257,15 +257,7 @@ function resolveLegacyRedirect(pathname: string): string | null {
 // STATIC sets and emit a REAL 404. Edge-safe (no DB): cities use the service-area
 // set; communities use the city-prefixed check + the resort registry. Valid but
 // dynamic city-prefixed subdivision slugs pass through to the page's own guard.
-const RESORT_COMMUNITY_SLUGS: Set<string> = new Set(
-  (Array.isArray(resortCommunitiesRegistry)
-    ? (resortCommunitiesRegistry as Array<{ slug?: string }>)
-    : ((resortCommunitiesRegistry as { communities?: Array<{ slug?: string }> }).communities ?? [])
-  )
-    .map((c) => c.slug)
-    .filter((s): s is string => typeof s === 'string')
-    .map((s) => s.toLowerCase()),
-)
+const RESORT_COMMUNITY_SLUGS: Set<string> = new Set(allowedCommunityUrlSlugs())
 
 function isInvalidGeoSlug(pathname: string): boolean {
   const commMatch = pathname.match(/^\/communities\/([^/]+)\/?$/)

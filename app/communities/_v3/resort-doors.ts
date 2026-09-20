@@ -5,6 +5,7 @@
  */
 
 import type { V3QuietItem } from '@/components/site/v3'
+import { communityPublicPair } from '@/lib/communities/community-public-pair'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 
 /**
@@ -18,13 +19,13 @@ export function resortQuietItems(): ResortDoor[] {
   const resorts = getAllResortCommunities()
   const doors: ResortDoor[] = []
   for (const entry of resorts) {
-    const name = entry.label.trim()
-    const slug = entry.slug.trim()
-    if (!name || !slug) continue
+    const pair = communityPublicPair(entry)
+    const name = pair.displayName
+    if (!name || !pair.publicSlug) continue
     const city = entry.city.trim()
     doors.push({
       label: city ? `${name}, ${city}` : name,
-      href: `/communities/${slug}`,
+      href: pair.href,
       // BY CITY, WHICH IS THE REGISTRY'S OWN FIELD. Grouping the exits by kind
       // left one bucket — "Nearby resorts" — holding nineteen flat hairline
       // rows on every community page, which the round-two evaluator named as

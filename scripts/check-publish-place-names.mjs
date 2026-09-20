@@ -110,7 +110,8 @@ checks.push({
     /export function communityPublicPairForPlace/.test(pair) &&
     /export function communityPairAgrees/.test(pair) &&
     pair.includes('juniper-preserve') &&
-    pair.includes('pronghorn'),
+    pair.includes('pronghorn') &&
+    /export function allowedCommunityUrlSlugs/.test(pair),
 })
 
 const cityPage = src('app/cities/[slug]/page.tsx')
@@ -140,6 +141,14 @@ checks.push({
     /resolvePublicCommunitySlug/.test(hop) &&
     /publicCommunitySlug/.test(hop) &&
     hop.includes('SITE-136'),
+})
+
+const mwSlugs = src('middleware.ts')
+checks.push({
+  label: 'edge geo-slug allowlist includes public community slugs (juniper-preserve is not a 404)',
+  ok:
+    /from ['"]@\/lib\/communities\/community-public-pair['"]/.test(mwSlugs) &&
+    /allowedCommunityUrlSlugs\(/.test(mwSlugs),
 })
 
 const failed = checks.filter((c) => !c.ok)

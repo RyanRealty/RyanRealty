@@ -5,6 +5,7 @@
 
 import { v3Text, type V3LedgerFigureRow } from '@/components/site/v3'
 import { firstSentence, liveForSaleLabel } from '@/app/cities/_v3/cities-index-constants'
+import { resolvePublicCommunitySlug } from '@/lib/communities/community-public-pair'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 
 export function belongingLine(content: ResortCommunityContent | null): string | null {
@@ -33,9 +34,10 @@ export function resortIndexRow(input: {
   const name = input.name.trim()
   if (!name) return null
   const city = input.city.trim()
+  const publicSlug = resolvePublicCommunitySlug(input.slug)
   const bits = [input.medianLine, input.belonging].filter(Boolean)
   return {
-    href: `/communities/${input.slug}`,
+    href: `/communities/${publicSlug}`,
     when: v3Text(city || 'Oregon'),
     what: v3Text(name),
     detail: bits.length > 0 ? v3Text(bits.join(' · ')) : undefined,

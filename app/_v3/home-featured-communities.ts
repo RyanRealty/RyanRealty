@@ -21,6 +21,7 @@ import type { RegistryResortPublicFigures } from '@/lib/kb/registry-resort-publi
 import type { MarketPulse } from '@/lib/data/types/market'
 import { formatCount } from '@/lib/format/count'
 import { formatPriceExact } from '@/lib/format/money'
+import { communityPublicPair } from '@/lib/communities/community-public-pair'
 import { communityImage } from '@/lib/geo-images'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import {
@@ -145,7 +146,7 @@ export function buildHomeFeaturedCommunitySlide(
     slug,
     name,
     city,
-    href: `/communities/${slug}`,
+    href: communityPublicPair(input.entry).href,
     photoSrc,
     blurb: homeFeaturedBlurb(input.content, input.entry),
     figures: homeFeaturedSalesFigures({

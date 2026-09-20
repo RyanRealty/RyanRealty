@@ -11,6 +11,7 @@
  */
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getAllNeighborhoodsWithCity, getBoundaryGeoJSON } from '@/lib/data'
+import { communityPublicPair } from '@/lib/communities/community-public-pair'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import type { AtlasRegion } from '@/components/site/v3'
 
@@ -87,7 +88,13 @@ export async function buildRegionAtlasRegions(): Promise<RegionAtlasRegions> {
     ),
     ...communityBoundaries.flatMap(({ c, geometry }): AtlasRegion[] =>
       geometry
-        ? [{ id: `community:${c.slug}`, kind: 'community', name: c.label, href: `/communities/${c.slug}`, geometry }]
+        ? [{
+            id: `community:${c.slug}`,
+            kind: 'community',
+            name: communityPublicPair(c).displayName,
+            href: communityPublicPair(c).href,
+            geometry,
+          }]
         : [],
     ),
     ...neighborhoodBoundaries.flatMap(({ r, geometry }): AtlasRegion[] => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { communityPublicPair } from '@/lib/communities/community-public-pair'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getPlaceLinks } from '@/lib/place-links'
 import { resortQuietItems } from './resort-doors'
@@ -18,7 +19,7 @@ describe('resortQuietItems', () => {
 
   it('does not invent slugs outside the registry', () => {
     const hrefs = resortQuietItems().flatMap((item) => ('href' in item ? [item.href] : []))
-    const allowed = new Set(getAllResortCommunities().map((entry) => `/communities/${entry.slug}`))
+    const allowed = new Set(getAllResortCommunities().map((entry) => communityPublicPair(entry).href))
     for (const href of hrefs) {
       expect(allowed.has(href)).toBe(true)
     }

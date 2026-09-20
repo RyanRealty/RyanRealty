@@ -137,3 +137,18 @@ export function communityPairAgrees(pair: CommunityPublicPair): boolean {
   const fromName = slugifyCommunityName(pair.displayName)
   return fromName === pair.publicSlug && pair.href === `/communities/${pair.publicSlug}`
 }
+
+/**
+ * Slugs the edge may serve on /communities/[slug] before a 308 hop.
+ * Durable keys stay allowed so /communities/pronghorn can 308; public slugs
+ * stay allowed so the live door is not a hard 404.
+ */
+export function allowedCommunityUrlSlugs(): string[] {
+  const slugs = new Set<string>()
+  for (const entry of ENTRIES) {
+    const durable = entry.slug.trim().toLowerCase()
+    if (durable) slugs.add(durable)
+    slugs.add(publicCommunitySlug(entry))
+  }
+  return [...slugs]
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  allowedCommunityUrlSlugs,
   communityPairAgrees,
   communityPublicPair,
   communityPublicPairForPlace,
@@ -57,5 +58,12 @@ describe('community public pair — name and URL agree', () => {
   it('slugifyCommunityName matches the Edge community slugify', () => {
     expect(slugifyCommunityName('Juniper Preserve')).toBe('juniper-preserve')
     expect(slugifyCommunityName('NorthWest Crossing')).toBe('northwest-crossing')
+  })
+
+  it('edge allowlist keeps both the durable hop slug and the public door', () => {
+    const slugs = allowedCommunityUrlSlugs()
+    expect(slugs).toContain('pronghorn')
+    expect(slugs).toContain('juniper-preserve')
+    expect(slugs).toContain('tetherow')
   })
 })
