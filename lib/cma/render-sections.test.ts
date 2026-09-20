@@ -248,9 +248,19 @@ describe('render helpers', () => {
     expect(chunk([], 3)).toEqual([])
   })
 
-  it('cuts the distance row — the map answers where the sales are', () => {
+  it('prints the distance row — a Flex FLOW HARD LOCK field', () => {
+    // Matt 2026-09-17 (76dc7774d, "Flex FLOW side-by-side matrix craft
+    // (Canter letter)") put Distance back into SHARED_ROWS as one of the
+    // comp-matrix.ts HARD LOCK fields ("Tip Ready still requires Days on
+    // market + First ask → last ask → outcome" sits right beside it in that
+    // same lock comment). comp-matrix.test.ts and the still-passing
+    // canter-letter-flow.contract.test.ts both require a 'Distance' row.
+    // This file (2026-09-07) predates that reversal and still asserted the
+    // row was cut; it now prints, and this asserts the current, locked
+    // behavior instead of the retired one.
     const { html } = renderCmaHtml(bareArgs)
-    expect(html).not.toContain('1.75 miles NW')
+    expect(html).toContain('1.75 miles NW')
+    expect(html).toContain('>Distance<')
   })
 })
 
