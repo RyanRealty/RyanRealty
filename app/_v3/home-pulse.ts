@@ -1,8 +1,8 @@
 /**
- * The homepage's live read — the band that sits under the hero search.
+ * The homepage's live read: the band that sits under the hero search.
  *
- * WHERE IT CAME FROM (site queue SITE-12). "Central Oregon right now" — the
- * region's for-sale, under-contract and just-sold counts — lived inside the
+ * WHERE IT CAME FROM (site queue SITE-12). "Central Oregon right now": the
+ * region's for-sale, under-contract and just-sold counts lived inside the
  * Homes dropdown, where it was true, sourced, and seen by whoever opened a
  * menu. It now sits on the page, under the search, carrying the moment it was
  * read. The Homes menu no longer publishes it, so the region's counts exist in
@@ -14,11 +14,11 @@
  * the page costs one cache hit, not a second walk of the feed.
  *
  * SECTION 0. Every figure here is a COUNT OF ROWS the DAL returned in this
- * render — no derivation from a prior deliverable, no remembered number. The
- * two derived figures — the under-contract share in the claim and each rule's
- * share of the whole read — are computed from those counts and their arithmetic
+ * render: no derivation from a prior deliverable, no remembered number. The
+ * two derived figures (the under-contract share in the claim and each rule's
+ * share of the whole read) are computed from those counts and their arithmetic
  * is printed in the trace. Verified 2026-09-08 against
- * `getAtlasTiles({ cities: [] })`: 5,751 rows read — 3,284 Active, 44 Active
+ * `getAtlasTiles({ cities: [] })`: 5,751 rows read. 3,284 Active, 44 Active
  * Under Contract, 868 Pending, 1,555 Closed inside the 90-day window, of which
  * 462 closed inside 30 days. Re-read the same day at 8:25 AM off the running
  * page: 3,282 for sale, 912 under contract (4,194 on market), 1,557 closes in
@@ -82,7 +82,7 @@ function n(value: number): string {
  * fraction gets neither word. The exact percentage is in the trace.
  */
 export function pulseClaim(forSale: number, pending: number): string {
-  // Plain voice — no "More than one in five…" lecture (Matt 2026-09-15).
+  // Plain voice. No "More than one in five…" lecture (Matt 2026-09-15).
   void forSale
   void pending
   return 'Central Oregon right now.'
@@ -105,7 +105,7 @@ export function pulseTrace(input: HomePulseInput): string {
 }
 
 /**
- * The band's props, composed from one read. Pure — every figure is formatted
+ * The band's props, composed from one read. Pure: every figure is formatted
  * here so the primitive prints and never computes (check-public-v3 rule 3).
  */
 export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
@@ -132,7 +132,7 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
   // beside them, which is what makes the rule and the constellation one graphic
   // rather than two. Scaled against the LARGEST reading instead, "listings for
   // sale" is 1 by construction and its rule is permanently full width
-  // (2026-09-08 evaluator) — the ratios are the same, the whole is not.
+  // (2026-09-08 evaluator). The ratios are the same, the whole is not.
   const readTotal = Math.max(1, forSale + pending + sold)
   const readings: V3PulseReading[] = [
     {
