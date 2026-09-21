@@ -56,33 +56,77 @@ describe('ci:dog-floater lock', () => {
   })
 
   it('refuses shortened door labels or an em dash in public copy', () => {
-    const shortened = live.floater.replace("label: 'Sell your home'", "label: 'Sell'")
+    const shortened = live.floater.replace("label: 'List your home'", "label: 'List'")
     const dashed = live.floater.replace(
-      'Sell your home, buy your home, text us, get your home&apos;s value, or learn about us.',
-      'Sell your home — or buy.',
+      "List your home, read our reviews, give us a call, send us a message, get your\n            home&apos;s value, or learn more about us.",
+      'List your home — or not.',
     )
     const shortP = dogFloaterProblems({ root: REPO, files: { ...live, floater: shortened } })
     const dashP = dogFloaterProblems({ root: REPO, files: { ...live, floater: dashed } })
     expect(DOG_FLOATER_DOOR_LABELS).toEqual([
-      'Sell your home',
-      'Buy your home',
-      'Text us',
+      'List your home',
+      'Read our reviews',
+      'Give us a call',
+      'Send us a message',
       "Get your home's value",
-      'Learn about us',
+      'Learn more about us',
     ])
     expect(shortP.join('\n')).toMatch(/Do not shorten|EXACTLY/)
     expect(dashP.join('\n')).toMatch(/em dash|U\+2014/)
   })
 
-  it('refuses a menu that drops Text us or invents a number', () => {
+  it('refuses a menu that drops the call door or invents a number', () => {
     const floater = live.floater
-      .replace('Text us', 'Call now')
-      .replace('sms:${CONTACT.phoneDirectTel}', 'sms:+15555550100')
+      .replace('Give us a call', 'Call now')
+      .replace('tel:${CONTACT.phoneDirectTel}', 'tel:+15555550100')
     const p = dogFloaterProblems({
       root: REPO,
       files: { ...live, floater },
     })
-    expect(p.join('\n')).toMatch(/Text us|CONTACT/)
+    expect(p.join('\n')).toMatch(/Give us a call|CONTACT/)
+  })
+
+  it('refuses a reintroduced cream-filled default (the "out of sight" bug)', () => {
+    const css = live.css.replace(
+      /\.v3-dog-floater\s*\{([^}]*)background:\s*var\(--v3-navy\)/,
+      '.v3-dog-floater {$1background: var(--v3-cream)',
+    )
+    const p = dogFloaterProblems({ root: REPO, files: { ...live, css } })
+    expect(p.join('\n')).toMatch(/cream-filled default|blends/i)
+  })
+
+  it('refuses an un-raised bottom offset', () => {
+    const css = live.css.replace(
+      '--v3-dog-fab-bottom: calc(var(--v3-space-3xl) + env(safe-area-inset-bottom, 0px));',
+      '--v3-dog-fab-bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));',
+    )
+    const p = dogFloaterProblems({ root: REPO, files: { ...live, css } })
+    expect(p.join('\n')).toMatch(/raised a full|space-3xl/)
+  })
+
+  it('refuses a dropped flourish or one that never inverts', () => {
+    const noFlourish = live.css.replace(/@keyframes v3-dog-flourish \{[\s\S]*?\n\}\n\n/, '')
+    const noInvert = live.css.replace('rotateY(180deg)', 'rotateY(45deg)')
+    const p1 = dogFloaterProblems({ root: REPO, files: { ...live, css: noFlourish } })
+    const p2 = dogFloaterProblems({ root: REPO, files: { ...live, css: noInvert } })
+    expect(p1.join('\n')).toMatch(/flip-spin flourish/)
+    expect(p2.join('\n')).toMatch(/invert/i)
+  })
+
+  it('refuses a modal Dialog (breaks the second-tap toggle — verified in a browser)', () => {
+    const floater = live.floater.replace('<Dialog open={open} onOpenChange={onOpenChange} modal={false}>', '<Dialog open={open} onOpenChange={onOpenChange}>')
+    expect(floater).not.toEqual(live.floater)
+    const p = dogFloaterProblems({ root: REPO, files: { ...live, floater } })
+    expect(p.join('\n')).toMatch(/modal=\{false\}/)
+  })
+
+  it('refuses a reintroduced visible Close link', () => {
+    const floater = live.floater.replace(
+      '</nav>',
+      '</nav>\n          <button className="v3-dog-floater-menu__close">Close</button>',
+    )
+    const p = dogFloaterProblems({ root: REPO, files: { ...live, floater } })
+    expect(p.join('\n')).toMatch(/visible "Close" text link/)
   })
 
   it('refuses an elevation shadow on the FAB', () => {
