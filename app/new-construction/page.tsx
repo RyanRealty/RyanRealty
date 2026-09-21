@@ -12,6 +12,38 @@
  * Rhythm: Breadcrumb-on-Stage -> Stage -> Atlas -> savings -> contact ->
  * SFR shelf -> SFR ledger -> Horton townhome note -> Answers -> places/guides
  * -> FAQ -> Footer outside main.
+ *
+ * SITE-152 (Matt 2026-09-21): "There are two maps, and the maps are
+ * confusing." Verified 2026-09-21: this route renders exactly ONE <V3Atlas>
+ * (the "zones" call below) — full grep of app/new-construction/** and
+ * lib/site/bend-new-construction.ts, the file history of this route back to
+ * its first commit (ab534f000), and the rendered HTML of both this branch's
+ * local build and the live production page (curl, both dated 2026-09-21) all
+ * show one "New-construction zones on the map" section. There is no second
+ * Atlas/place map to consolidate on THIS route, so none was deleted —
+ * deleting the only map to satisfy "consolidate to one" would have been the
+ * actual regression (the node's own escape hatch names this case).
+ *
+ * What most likely reads as "two maps": screenshotted 2026-09-21 at 1440 and
+ * 375 (design_system/ryan-realty/ui_kits/new-construction/shots/
+ * site152-atlas-1440.png, site152-atlas-375.png). V3Atlas's own
+ * touch-accessible chip list — the real tap target on mobile, since a
+ * cluster pin can render under 20px and is not reliably tappable
+ * (V3Atlas.client.tsx: "the chips carry the reach the map cannot") —
+ * renders as its own bordered grid of place-name buttons below the
+ * pinned canvas, long enough to fold behind "+ N more". At 375 it reads as a
+ * second, separate boxed list under the actual map, not obviously part of
+ * the same object. That chip list is load-bearing accessibility, not a
+ * duplicate map, and V3Atlas is a SHARED primitive (city/subdivision/
+ * community/team/zip pages all call it) — its internal chip/canvas framing
+ * is out of this route-scoped node's file ownership to redesign. Flagged as
+ * a follow-up task rather than patched here; see the SITE-152 report.
+ *
+ * The coverage rule below fixes the piece that WAS this route's own doing:
+ * the shelf's 3 tabs read as "the whole market" without the page ever
+ * stating that the other 35 named communities are one scroll away. See
+ * `bendNewConCoverageCounts()` and the shelf/ledger notes + the new
+ * `faq-coverage` FAQ entry.
  */
 import type { Metadata } from 'next'
 import { searchListingsAllCount } from '@/lib/data'
@@ -44,6 +76,7 @@ import {
   BEND_NEW_CONSTRUCTION_RESEARCH_DATE,
   BEND_NEW_CONSTRUCTION_TITLE,
   bendNewConCommunityHref,
+  bendNewConCoverageCounts,
   bendNewConRestPrimary,
   bendNewConRowConcessionLine,
   bendNewConRowConcessionReveal,
@@ -173,6 +206,7 @@ export default async function NewConstructionPage() {
   const pageUrl = `${site}${BEND_NEW_CONSTRUCTION_PATH}`
   const researched = formatDate(BEND_NEW_CONSTRUCTION_RESEARCH_DATE)
   const office = `${BRAND.address.street}, ${BRAND.address.city}`
+  const coverage = bendNewConCoverageCounts()
   const restRows = bendNewConRestPrimary()
   const singleRows = BEND_NEW_CON_SINGLE
   const hortonTownhomeRows = bendNewConHortonTownhomeRows()
@@ -185,7 +219,6 @@ export default async function NewConstructionPage() {
     stevensTownhomeMatch,
     tilesByName,
     overview,
-    liveBendCount,
   ] = await Promise.all([
     Promise.all(leadRows.map((row) => loadBendNewConLiveMatch(row.name))),
     Promise.all(
@@ -200,20 +233,33 @@ export default async function NewConstructionPage() {
     loadStevensRanchTownhomeMatch(),
     Promise.all(leadRows.map((row) => loadLeadShelfTiles(row))),
     loadNewConOverviewMap(),
-    (async () => {
-      try {
-        const count = await searchListingsAllCount({
-          city: 'Bend',
-          newConstruction: true,
-          status: 'active',
-        })
-        return Number.isFinite(count) ? count : null
-      } catch (err) {
-        console.error('[NewConstructionPage] live Bend count', err)
-        return null
-      }
-    })(),
   ])
+  /* SITE-152 (2026-09-21): the Stage's live headline reads the SAME
+     de-duplicated searchListingsAll() pull that draws the map's dots, not a
+     second, separate searchListingsAllCount() query — the two disagreed by 5
+     listings live-verified 2026-09-21 (216 raw MV rows vs 211 de-duplicated
+     by street) because searchListingsAllCount() counts the raw materialized
+     view and searchListingsAll()'s totalCount does not. One source keeps the
+     number at the top of the page and the map below it from ever
+     contradicting each other. See load-overview-map.ts `liveTotal`.
+     The raw head-count is still pulled directly, once, as a §0 cross-check:
+     if it ever drops BELOW the de-duplicated total, or grows apart from it by
+     more than the known street-duplicate margin, the de-dup itself likely
+     broke and is silently under- or over-counting — worth a server log, not
+     worth blocking the render over. */
+  const liveBendCount = overview.liveTotal
+  if (liveBendCount != null) {
+    const rawBendCount = await searchListingsAllCount({
+      city: 'Bend',
+      newConstruction: true,
+      status: 'active',
+    }).catch(() => null)
+    if (rawBendCount != null && rawBendCount < liveBendCount) {
+      console.error(
+        `[NewConstructionPage] live-count reconciliation: raw MV head-count (${rawBendCount}) is LESS than the de-duplicated total (${liveBendCount}) it should always exceed or equal.`,
+      )
+    }
+  }
   const restPrimary = restRows.map((row, i) => inventoryRow(row, restMatches[i]!))
   const [firstRest, ...moreRest] = restPrimary
   const [firstSingle, ...restSingle] = singleRows.map((row, i) =>
@@ -405,7 +451,7 @@ export default async function NewConstructionPage() {
 
         <NewConLeadShelf
           heading={BEND_NEW_CON_LEDE}
-          note="Not a loan offer. Single-family first. Snapshot bands from 2026-09-16. Houses on the shelf are live SFR listings. See homes opens every Active new-construction home in that subdivision."
+          note={`${coverage.total} named Bend communities were researched 2026-09-16. These ${coverage.shelf} lead with live SFR photos, lowest list band first; the other ${coverage.rest} are below on this page, same order. Not a loan offer. See homes opens every Active new-construction home in that subdivision.`}
           bands={lead.bands}
           seeAllHref={BEND_NEW_CON_SEARCH_HREF}
         />
@@ -413,10 +459,10 @@ export default async function NewConstructionPage() {
         {firstRest ? (
           <V3Ledger
             id="for-sale"
-            eyebrow={v3Text('Lowest SFR band first')}
+            eyebrow={v3Text(`${coverage.ledger} more, lowest SFR band first`)}
             heading={v3Text('Single-family communities')}
             note={v3Text(
-              'Same communities as the map, lowest SFR list band first. Parkside, Calaveras, and Easton are on the shelf. Next are Petrosa, Acadia Pointe, then Horton Stevens Ranch single-family from $579,995. Each row opens that subdivision’s live search. Open a row for the snapshot band.',
+              `Same communities as the map above. Parkside, Calaveras, and Easton lead the page with photos; these ${coverage.ledger} continue the same list, lowest SFR list band first, starting with Petrosa and Acadia Pointe, then Horton Stevens Ranch single-family from $579,995. Horton’s townhome communities and the ${coverage.single} communities with one Active home each have their own sections below. Each row opens that subdivision’s live search. Open a row for the snapshot band.`,
             )}
             rows={[firstRest, ...moreRest]}
             source={v3Text(BEND_NEW_CON_INVENTORY_SOURCE)}
