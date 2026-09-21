@@ -100,6 +100,7 @@ next-env.d.ts
 !.claude/skills/dataviz/
 .claude/worktrees
 .worktrees
+/worktrees/
 .claude/cache
 .claude/projects
 # Shared: settings.json, hooks/, and any team-wide rules ARE checked in

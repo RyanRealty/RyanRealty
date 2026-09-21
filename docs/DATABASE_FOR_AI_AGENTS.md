@@ -274,8 +274,8 @@ Pricing matcher (`lib/pricing/match.ts`) on top of facts. Refuse a comps-implied
 | `public.saved_listings` | 0 | User-favorited listings. One row per (user, listing_key). |
 | `public.saved_communities` | 0 | User-favorited communities (`entity_key='city:subdivision'`). |
 | `public.saved_cities` | 0 | User-favorited cities (`city_slug='bend'`, `'sunriver'`, etc.). |
-| `public.likes` | 0 | Per-listing like events. Realtime-enabled for live counts. |
-| `public.liked_communities` | 0 | Per-community like events. |
+| `public.likes` | 0 | Per-listing like events. Authenticated own-row SELECT; anon has no SELECT. Counts live on `listings.like_count`. |
+| `public.liked_communities` | 0 | Per-community like events. Authenticated own-row SELECT; anon has no SELECT (deep-audit C4, 2026-09-21). |
 | `public.user_collections` | 0 | User-named collections grouping saved listings. |
 | `public.user_buying_preferences` | 0 | Down payment %, interest rate, term — feeds est. monthly payment on listings. |
 | `public.user_events` | 0 | Product analytics: page_view, listing_view, listing_click, save, like, share, search. |
@@ -291,7 +291,8 @@ Pricing matcher (`lib/pricing/match.ts`) on top of facts. Refuse a comps-implied
 
 | Table | Rows | Purpose |
 |---|---|---|
-| `public.marketing_brain_actions` | 5 | The single source of truth for every marketing/content/site/ops/comms action the marketing brain produces. **See [CLAUDE.md §Marketing Brain Architecture](../CLAUDE.md) for the protocol.** |
+| `public.marketing_brain_actions` | 5 | The single source of truth for every marketing/content/site/ops/comms action the marketing brain produces. Service-role only. **See [CLAUDE.md §Marketing Brain Architecture](../CLAUDE.md) for the protocol.** |
+| `public.content_briefs` | — | Compatibility VIEW of `marketing_brain_actions`. Service-role only (`security_invoker`). Anon SELECT was deep-audit C5. |
 | `public.marketing_decisions` | 11 | Decision-log for marketing-brain actions. |
 | `public.marketing_channel_daily` | 207 | Per-channel daily metrics (impressions/clicks/leads). |
 | `public.marketing_inbox_events` | 0 | Inbound marketing events. |
