@@ -405,9 +405,25 @@ export default function SearchFilters({
   const commitPrice = useCallback(
     (low: number, high: number) => {
       const next = rangeToUrl(low, high, V3_PRICE_STOPS)
-      updateUrl({ minPrice: next.min, maxPrice: next.max })
+      // Instant pushState so a map bbox replace cannot read a pre-price URL
+      // (SITE-72 race). Then router.push so the dynamic /homes-for-sale RSC
+      // re-renders list + pins with the new band.
+      const params = new URLSearchParams(readUrlSearchParams())
+      if (next.min) params.set('minPrice', next.min)
+      else params.delete('minPrice')
+      if (next.max) params.set('maxPrice', next.max)
+      else params.delete('maxPrice')
+      params.delete('page')
+      const href = `${pathname ?? '/homes-for-sale'}?${params.toString()}`
+      navigateQuery(router, href, { staticShell: true })
+      if (!staticShell) navigateQuery(router, href, { staticShell: false })
+      const payload = buildFilterApplyPayload(
+        { minPrice: next.min, maxPrice: next.max },
+        params,
+      )
+      if (payload) fireSearchEvent('search_filter_apply', payload)
     },
-    [updateUrl],
+    [pathname, router, staticShell],
   )
 
   const setFilter = useCallback(

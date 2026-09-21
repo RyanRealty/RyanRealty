@@ -1,15 +1,14 @@
 'use client'
 
 /**
- * Dual range with tick stops. Wraps the installed beUI range-slider
- * (`components/motion/range-slider.tsx`) twice (low / high). Navy fill,
- * house stops, bounce reduced to the catalog spring (respects reduced motion).
- *
- * The caller owns the numbers and the URL. This paints the track.
+ * Dual range with tick stops. One catalog beUI track
+ * (`components/motion/range-slider.tsx` DualRangeSlider) — navy fill between
+ * two bouncing vertical-bar thumbs, house stops. Two stacked single sliders
+ * is the SITE-164 miss. The caller owns the numbers and the URL.
  */
 
 import { useCallback, useId } from 'react'
-import { RangeSlider } from '@/components/motion/range-slider'
+import { DualRangeSlider } from '@/components/motion/range-slider'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS } from './atoms'
 import {
@@ -86,10 +85,7 @@ export function V3Range({
   )
 
   return (
-    <div
-      className={cn(V3_ROOT_CLASS, 'v3-range', className)}
-      onPointerUp={() => onCommit?.(pair.low, pair.high)}
-    >
+    <div className={cn(V3_ROOT_CLASS, 'v3-range', className)}>
       <div className="v3-range__head">
         <p className="v3-range__label" id={`${uid}-label`}>
           {label}
@@ -98,31 +94,17 @@ export function V3Range({
           {rangeText}
         </p>
       </div>
-      <RangeSlider
-        value={loIdx}
+      <DualRangeSlider
+        values={[loIdx, hiIdx]}
         min={0}
         max={lastIdx}
         step={1}
         showTicks
-        aria-label={`Minimum ${label}`}
+        minAriaLabel={`Minimum ${label}`}
+        maxAriaLabel={`Maximum ${label}`}
         formatValueText={(i) => fmt(stops[i] ?? pair.low)}
-        onValueChange={(i) => {
-          const next = stops[i] ?? pair.low
-          emit(next, pair.high, false)
-        }}
-        className="v3-range__beui"
-      />
-      <RangeSlider
-        value={hiIdx}
-        min={0}
-        max={lastIdx}
-        step={1}
-        showTicks
-        aria-label={`Maximum ${label}`}
-        formatValueText={(i) => fmt(stops[i] ?? pair.high)}
-        onValueChange={(i) => {
-          const next = stops[i] ?? pair.high
-          emit(pair.low, next, false)
+        onValuesChange={([nextLo, nextHi]) => {
+          emit(stops[nextLo] ?? pair.low, stops[nextHi] ?? pair.high, true)
         }}
         className="v3-range__beui"
       />
