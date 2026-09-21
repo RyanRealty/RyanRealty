@@ -70,11 +70,13 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts search --url http://127.0.0.1:3172/homes-for-sale?city=Bend --beat 32 \u2014 grok-4.6 via grok CLI, three scorings of the SITE-72 worktree first-viewport shots, separate from the grok-4.5 builder",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "evaluatedAt": "2026-09-20",
+    "rubricVersion": "v1-2026-09-12",
+    "demoMatch": false,
+    "evaluator": "npx tsx scripts/taste-evaluate.ts search --builder grok-4.6 --evaluator claude --url http://localhost:3413/homes-for-sale?city=Bend — claude CLI sonnet, three scorings of SITE-143 recapture shots. Builder is grok-4.6; judge is not.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "grok-4.6",
+    "transport": "claude-cli",
     "shotSpec": {
       "routes": [
         "/homes-for-sale?city=Bend"
@@ -87,34 +89,34 @@
         "default",
         "sheet-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3310/homes-for-sale?city=Bend on cursor/site-110-search-atlas-88aa. Hash rematched 2026-09-20 to the SITE-110 recapture (desktop + mobile375). sheet-open shots sit beside the kit and are not in this hash."
+      "capture": "SITE-143 craft recapture. Desktop + mobile375 waited for .rr-map-mark then quantized. sheet-open shots kept from SITE-110. http://localhost:3413/homes-for-sale?city=Bend"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/search/shots/mobile375.png"
     },
-    "shotsHash": "sha256:3a364a88ed8d3f0b5a8d7d729f3d2263a4d60fc0635671f2313445c1f6dba365",
+    "shotsHash": "sha256:15ce4710399bd020f58a87f4a439b35e1a263c0ce750078b77174ba9bfa5b35e",
     "scores": [
-      55,
-      63,
-      59
+      43,
+      47,
+      51
     ],
-    "score": 59,
+    "score": 47,
     "criteria": {
-      "designQuality": 18,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 10,
+      "designQuality": 14,
+      "originality": 10,
+      "interaction": 10,
+      "craft": 6,
       "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 18,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 10,
+      "design": 14,
+      "originality": 10,
+      "interaction": 10,
+      "craft": 6,
       "honesty": 8
     },
-    "beats": "Redfin Bend map search (https://www.redfin.com/city/16163/OR/Bend): this fold wins on reaching a broker (541.703.3095 and Save this search) and on citing Oregon Data Share; it loses the metric the class was told to beat \u2014 map-as-product \u2014 because Redfin encodes price on pins while this encodes headcount on cream-styled Google tiles. Also loses brand cartography vs V3Atlas on /cities/bend, which does not still wear a Google wordmark.",
+    "beats": "Redfin's Bend map search — this page's card-level 'below middle half of 474 on this map' price/sqft percentile with a named source (Oregon Data Share, 'how we calculate this') is a real transparency win Redfin doesn't show; everything else here (split list/map, cluster bubbles, price-tag pins, filter drawer) is the same shape as Redfin and Zillow, not better.",
     "adaptedFrom": [
       { "id": "beui-range-slider" },
       { "id": "beui-morphing-search" },
@@ -123,59 +125,41 @@
     ],
     "defects": [
       {
-        "section": "map pane",
-        "severity": "taste",
-        "finding": "Desktop still shows the Google wordmark, default +/\u2212 zoom, LOCATE, and Map data \u00a92026 Google on cream-tinted Google road tiles. Clusters (89 / 168 / 148 / 406) encode headcount, not price, so a buyer cannot read affordability from the field. This is a skin on Google, not house Atlas.",
-        "replaceWith": "map with data-encoded cells"
+        "section": "map tile layer, bottom-left corner (desktop.png and mobile375.png)",
+        "severity": "blocking",
+        "finding": "The base map still shows the stock Google wordmark and default tile chrome under the custom navy cluster/price bubbles — this is a Google default map with an overlay, not Atlas-grade cartography.",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "desktop listing rail",
+        "section": "PRICE dual-handle slider under the search bar (both desktop.png and sheet-open shots)",
         "severity": "taste",
-        "finding": "The left half of the 1440 fold is a portal photo-price-spec stack (four-plus MLS cards). The thin mark under each spec line is mute \u2014 no label, no claim \u2014 so the rail is inventory chrome, not a drawing.",
-        "replaceWith": "stat tile with sparkline"
+        "finding": "The slider track renders as a flat gray-to-dark-gray bar with plain black/white handles and no navy fill or tick-stop styling — reads as an unstyled default range input, not a branded control.",
+        "replaceWith": "beui-range-slider"
       },
       {
-        "section": "search field",
-        "severity": "taste",
-        "finding": "The Bend field is a static bordered input with a mic. It does not morph into results and it is not command search; both catalog jobs are missing from the first viewport.",
-        "replaceWith": "beui-morphing-search"
-      },
-      {
-        "section": "mobile cluster 406",
-        "severity": "taste",
-        "finding": "The strongest number on 375 is the 406 on Bend, and it has no sentence. The count is pushed into a cramped footer (1,223+ / 500 / $57K\u2013$5.0M) instead of a claim over the mark.",
-        "replaceWith": "hero figure"
-      },
-      {
-        "section": "listing card meter",
+        "section": "All filters sheet — 'No min / No max' field pairs (sheet-open-desktop.png, sheet-open-mobile375.png)",
         "severity": "craft",
-        "finding": "Every desktop card has a hairline bar and dot under beds/baths/sqft with no unit or label, so the only per-row encoding cannot be read.",
-        "replaceWith": null
+        "finding": "Every numeric filter is an identical bare bordered box with a gray placeholder and no unit affordance, focus state, or grouping rhythm beyond the section caption — a stack of unstyled text inputs, not a crafted form.",
+        "replaceWith": "shadcn-input"
       },
       {
-        "section": "mobile map dock",
+        "section": "listing card price/sqft comparison line (left rail, desktop.png)",
         "severity": "craft",
-        "finding": "SAVED AREAS, Map/List/SORT, and the inventory line stack onto the map and clip the south of the field; DRAW and Showing Bend only compete with the 406.",
-        "replaceWith": null
-      },
-      {
-        "section": "price range labels",
-        "severity": "craft",
-        "finding": "Desktop list header says $57K\u2013$4.2M for 500 homes on this map; mobile footer says $57K\u2013$5.0M next to 1,223+ and 500. Same fold, two maxima, no sentence saying which set the range belongs to.",
+        "finding": "'$284/SQFT · BELOW MIDDLE HALF OF 474 ON THIS MAP' plus its dot-on-a-line indicator renders at roughly 9px with near-zero contrast between the filled and unfilled segments — the one genuinely original data encoding on the page is nearly illegible and will fail at any smaller viewport.",
         "replaceWith": null
       }
     ],
-    "verdict": "Better than a 32: the tiles are cream, clusters are navy, the tick-stop price slider landed, and 500 is sourced to Oregon Data Share \u2014 it is no longer a default Google embed with no chrome. Not a 70: Google still signs the map, the desktop rail is portal cards, and the search box did not morph or become command; replace the basemap with house-atlas cells that encode price, make each listing a labeled sparkline, and put beui-morphing-search in the field.",
+    "verdict": "SITE-143 craft: 1440 has no frame-sliced price badges and dense Bend stacks collapse to clusters; 375 corner 6 slides in; draw palette and list↔map keys still work. Claude judge median 47 / demoMatch false on SITE-110 leftovers (Google wordmark, gray slider, sheet inputs) — not a full taste pass. Honesty held at 8: pills still use publishWholePropertyAmount, one viewport fetch, no invented prices.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 75,
-      "evaluatorModel": "sonnet",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:fe34a159f9dd25c306c8670718834fd54f9307e87089d56c1bc9e69122bc13e4",
-      "note": "HEAD receipt before SITE-72: sonnet / v1-2026-09-08 / 75. Different instrument from grok-4.6 / v1-2026-09-10."
+      "evaluatedAt": "2026-09-10",
+      "score": 59,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:3a364a88ed8d3f0b5a8d7d729f3d2263a4d60fc0635671f2313445c1f6dba365",
+      "note": "HEAD receipt before SITE-143: grok-4.6 / v1-2026-09-10 / 59."
     },
-    "rebaselineReason": "Instrument changed on three identity keys: evaluatorModel (sonnet \u2192 grok-4.6), rubricVersion (v1-2026-09-08 \u2192 v1-2026-09-10), and shotsHash (recaptured first viewport after V3Range + V3MorphSearch + MapChrome fold work). Median 59 is the first mark on this instrument; the next pass must rise above it. Accept bar for SITE-72 seed was above 32."
+    "rebaselineReason": "Instrument changed on three identity keys: evaluatorModel (grok-4.6 → claude-sonnet-5), rubricVersion (v1-2026-09-10 → v1-2026-09-12), and shotsHash (SITE-143 recapture of desktop + mobile375 after edge-slide + screen-pixel clustering)."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
