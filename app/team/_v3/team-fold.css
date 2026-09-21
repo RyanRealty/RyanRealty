@@ -1,6 +1,6 @@
-/* SITE-113. /team fold: faces, catalog closings rail, then atlas.
-   display:contents lets the carousel sit in the 375 first viewport
-   after the principal, before companions. */
+/* SITE-113 + SITE-166. /team fold: display-scale faces open the page,
+   catalog closings rail, then atlas. display:contents lets the carousel
+   sit in the 375 first viewport after the principal, before companions. */
 
 .team-fold {
   display: flex;
@@ -12,22 +12,23 @@
   display: contents;
 }
 
-.team-fold .about-faces__head {
+/* Faces open the page at display scale (SITE-166). */
+.team-fold__trio {
   order: 0;
-  max-width: none;
-  margin: 0;
   padding: var(--v3-space-lg) var(--v3-gutter) var(--v3-space-sm);
 }
 
-.team-fold__trio {
-  order: 4;
+.team-fold .about-faces__head {
+  order: 1;
+  max-width: none;
+  margin: 0;
   padding: 0 var(--v3-gutter) var(--v3-space-sm);
 }
 
 .team-fold .about-faces__lead {
   order: 2;
   padding: 0 var(--v3-gutter) var(--v3-space-sm);
-  grid-template-columns: 5.5rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .team-fold__closings {
@@ -44,13 +45,22 @@
   order: 6;
 }
 
-.team-fold .about-faces--editorial .about-faces__lead .about-faces__photo-link,
+/* Matt's display-scale portrait is the TeamTrio opener. Companion cards
+   still carry a photo (brief beat 6). */
+.team-fold .about-faces--editorial .about-faces__lead .about-faces__photo-link {
+  display: none;
+}
+
 .team-fold .about-faces--editorial .about-faces__companion .about-faces__photo-link {
   display: block;
-  width: 5.5rem;
-  height: 5.5rem;
+  width: var(--v3-card-photo-h);
+  height: var(--v3-card-photo-h);
   aspect-ratio: 1;
   overflow: hidden;
+}
+
+.team-fold .about-faces__companion {
+  grid-template-columns: var(--v3-card-photo-h) minmax(0, 1fr);
 }
 
 .team-fold .about-faces--editorial .about-faces__reach-row [data-slot='button-group'] {
@@ -81,12 +91,20 @@
     min-height: calc(100svh - var(--v3-chrome-h));
   }
 
+  .team-fold__trio {
+    grid-column: 1;
+    grid-row: 1;
+    padding: var(--v3-space-lg) var(--v3-gutter) var(--v3-space-sm);
+  }
+
   .team-fold .about-faces__head {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--v3-space-lg);
-    align-items: end;
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+    gap: var(--v3-space-xs);
+    padding: var(--v3-space-lg) var(--v3-gutter) var(--v3-space-sm);
   }
 
   .team-fold .about-faces__head .about-faces__claim {
@@ -94,32 +112,16 @@
     max-width: var(--v3-measure-text);
   }
 
-  .team-fold__trio {
-    grid-column: 1;
-    grid-row: 2;
-    padding: 0 var(--v3-gutter) var(--v3-space-sm);
-  }
-
   .team-fold .about-faces__lead {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 2;
     padding: 0 var(--v3-gutter) var(--v3-space-lg);
-    grid-template-columns: var(--v3-card-photo-w) minmax(0, 1fr);
-  }
-
-  .team-fold .about-faces--editorial .about-faces__lead .about-faces__photo-link {
-    width: var(--v3-card-photo-w);
-    height: var(--v3-card-photo-w);
-  }
-
-  .team-fold .about-faces--editorial .about-faces__companion .about-faces__photo-link {
-    width: var(--v3-card-photo-h);
-    height: var(--v3-card-photo-h);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .team-fold .about-faces__companions {
     grid-column: 1;
-    grid-row: 4;
+    grid-row: 3;
     padding: 0 var(--v3-gutter) var(--v3-space-lg);
   }
 

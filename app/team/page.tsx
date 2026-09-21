@@ -1,9 +1,10 @@
 /**
  * /team - broker roster, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (SITE-113): Breadcrumb, AboutFaces editorial (licenses +
- * sparkline record + ButtonGroup Call|Text|Email|Schedule), AvatarGroup,
- * shadcn carousel of recorded closing Cards, then V3Atlas. Footer.
+ * PAGE OUTLINE (SITE-113 + SITE-166): Breadcrumb, display-scale AvatarGroup
+ * portraits (TeamTrio), AboutFaces editorial (licenses + sparkline record +
+ * ButtonGroup Call|Text|Email|Schedule), shadcn carousel of recorded closing
+ * Cards, then V3Atlas. Footer. Faces open the page at display scale.
  *
  * WHAT CHANGED AND WHY. The taste table of 2026-09-08 scored this page 39 and
  * named the whole route as its own dullest section: "three identical directory
@@ -27,6 +28,7 @@
  */
 
 import type { Metadata } from 'next'
+import { preload } from 'react-dom'
 import {
   getBrokers,
   getBrokerBySlug,
@@ -124,6 +126,9 @@ export default async function TeamPage() {
     })
     .filter((face): face is AboutFace => face !== null)
 
+  /* LCP: the first-viewport portrait is the display-scale opener (SITE-166). */
+  if (faces[0]?.src) preload(faces[0].src, { as: 'image' })
+
   /* THE COVERAGE MAP. Every closing the three of them hold on the MLS, on one
      field — the same dot builder /team/[slug] uses for one broker, so the two
      surfaces cannot grow two ways of drawing a closing (TASTE.md consistency).
@@ -202,14 +207,14 @@ export default async function TeamPage() {
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Team' }]} />
 
         <div className="team-fold">
+          <div className="team-fold__trio">
+            <TeamTrio people={faces} />
+          </div>
           <AboutFaces
             people={faces}
             heading="The brokers"
             size="editorial"
           />
-          <div className="team-fold__trio">
-            <TeamTrio people={faces} />
-          </div>
           {closingRows.length > 0 ? (
             <div className="team-fold__closings">
               <TeamClosings id="closings-rail" rows={closingRows} />

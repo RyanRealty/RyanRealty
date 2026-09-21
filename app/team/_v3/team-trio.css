@@ -1,0 +1,51 @@
+/* SITE-166. Catalog AvatarGroup at house display scale. Tokens only.
+   No rectangular box behind a portrait. */
+
+.team-trio {
+  display: flex;
+  align-items: end;
+  min-height: var(--v3-tap);
+  overflow: visible;
+}
+
+.team-trio__link {
+  display: block;
+  width: auto;
+  height: auto;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+}
+
+.team-trio__link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.team-trio__link + .team-trio__link {
+  margin-inline-start: calc(var(--v3-space-md) * -1);
+}
+
+.team-trio__avatar.team-trio__avatar--display {
+  width: var(--v3-card-photo-w);
+  height: var(--v3-card-photo-w);
+  box-shadow: 0 0 0 2px var(--v3-cream);
+}
+
+@media (max-width: 47.99rem) {
+  .team-trio__link + .team-trio__link {
+    margin-inline-start: calc(var(--v3-card-photo-w) * -0.42);
+  }
+}
+
+@media (min-width: 64rem) {
+  .team-trio__avatar.team-trio__avatar--display {
+    width: calc(var(--v3-card-photo-w) * 1.45);
+    height: calc(var(--v3-card-photo-w) * 1.45);
+  }
+}
