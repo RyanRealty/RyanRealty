@@ -215,6 +215,7 @@ import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
 import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { buildSubdivisionEdges } from './_v3/subdivision-edges'
+import { SubdivisionNearbyRecreation } from './_v3/subdivision-nearby-recreation'
 import { platClosedYearChart, platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
 import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
 import { hasRealPlatPolygon } from './_v3/subdivision-split'
@@ -686,6 +687,8 @@ async function renderSubdivisionPage({ params }: Props) {
     seedRing || mapTiles.some((row) => row.lat != null && row.lng != null)
 
   const parentCommunitySlug = resortSlug ?? boundaryCity?.neighborhood?.slug ?? null
+  // Listing-pin centroid only. No lat/lng → omit Parks/Trails ledgers (§0).
+  const platCentroid = mapCentroid(mapTiles)
 
   // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
   const [
@@ -758,7 +761,7 @@ async function renderSubdivisionPage({ params }: Props) {
       ),
       amenityLayersPromise,
       withTimeoutFallback(
-        getSubdivisionRing(mapCentroid(mapTiles)?.lat ?? null, mapCentroid(mapTiles)?.lng ?? null),
+        getSubdivisionRing(platCentroid?.lat ?? null, platCentroid?.lng ?? null),
         null,
         3500,
         'sub:nearbyRing',
@@ -1124,7 +1127,7 @@ async function renderSubdivisionPage({ params }: Props) {
     resortLabel,
     resortSlug,
     placeContext: subdivisionPlaceContext({ cityName, citySlug, displayName, slug }),
-    lifestyleItems: lifestyleForCentroid(mapCentroid(mapTiles)),
+    lifestyleItems: lifestyleForCentroid(platCentroid),
     peerPlats: peerPlatsForResort(resortSlug, slug),
     browseHref,
     marketHref: citySlug ? `/housing-market/${citySlug}/${slug}` : '/housing-market',
@@ -1652,9 +1655,17 @@ async function renderSubdivisionPage({ params }: Props) {
           asOf={inventory?.readAt ?? null}
         />
 
+        {/* SITE-141: Parks and Trails as V3Ledger, same as neighborhood /
+            community. Omit a type when the registry has no nearby row. */}
+        <SubdivisionNearbyRecreation
+          displayName={displayName}
+          lat={platCentroid?.lat}
+          lng={platCentroid?.lng}
+        />
+
         {/* Pattern 6, Quiet — the assigned schools and every outbound edge this
             page carries. ci:subdivision-stats-integrity requires this component
-            by name. */}
+            by name. Parks/trails are the ledgers above, not this dump. */}
         <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} edges={edges} />
 
         {/* Pattern 1, Instrument — the plat's own market, one population.
