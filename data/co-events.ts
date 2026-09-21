@@ -198,12 +198,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.0588,
     lng: -121.3186,
     recurrence: 'Annually, mid-to-late September',
-    nextConfirmedDate: '2026-09-19',
-    endDate: '2026-09-19',
+    // 2026 edition (Sep 19) has passed; 2027 date not yet confirmed on oktoberfestbend.com.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Free',
     organizer: 'Bend Oktoberfest',
     officialUrl: 'https://oktoberfestbend.com/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-09-21',
     blurb:
       'A one-day Bavarian street party on the Deschutes Historical Museum lawn in downtown Bend, with local beer, brats, a stein-holding contest, and live polka. Admission is free and the day runs from early afternoon into the evening.',
   },

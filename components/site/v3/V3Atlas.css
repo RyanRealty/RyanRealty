@@ -46,6 +46,7 @@
   max-width: var(--v3-measure);
   margin: 0 auto;
   width: 100%;
+  min-width: 0;
   padding: 0 var(--v3-gutter);
   display: grid;
   gap: var(--v3-space-xs);
@@ -1582,11 +1583,11 @@ a.v3-atlas__card-home {
    stage like every other variant. */
 
 
-/* Place chips: every place as a pill, by count — on a phone because most
-   silhouettes are under 20px, and on a desktop because the left column was
-   otherwise 400px of empty cream beside a map full of places nobody could
-   read the name of (evaluator round five, TEAM-MATT-5). Tapping one pins its
-   card from the place's own centre.
+/* SITE-159 reach list. Cluster pins paint under 20px, so every named place
+   stays a 44px door in flow. This block is a caption of the map above it,
+   not a second canvas: a 2px section rule changes the surface, the kicker
+   names the object, the claim says it belongs to the map, and the names
+   are an index (no pill box — those read as another layer of map pins).
 
    WRAPPED AT EVERY WIDTH (SITE-07 quality pass, 2026-09-09). Under 48rem this
    was a hidden-scrollbar rail with no cue, and the neighborhood record showed
@@ -1596,11 +1597,42 @@ a.v3-atlas__card-home {
    set on a phone folds behind one trailing chip instead. The thesis: a
    neighborhood's plats read as its own children, and a page shows the first
    of its children and says how many more there are rather than a wall. */
+.v3-atlas__reach {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+  max-width: 100%;
+  margin-top: var(--v3-space-sm);
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-section);
+}
+
+.v3-atlas__reach-label {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-control);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-atlas__reach-claim {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-body);
+}
+
 .v3-atlas__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--v3-space-3xs);
-  margin-top: var(--v3-space-2xs);
+  gap: var(--v3-space-3xs) var(--v3-space-xs);
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 /* The rest of a folded set. `display: contents` so the chips inside it sit in
@@ -1615,41 +1647,53 @@ a.v3-atlas__card-home {
    long prefix used to ellipsize to one identical string at 11rem, and at
    14rem four "Awbrey Glen Homesites Phase …" chips still did (the shared
    prefix is another place's name, which the door label must keep). 18rem
-   holds "Awbrey Glen Homesites Phase Eight" whole and still fits inside the
-   375 column, so the pill stays one line and the name stays distinct. */
+   holds "Awbrey Glen Homesites Phase Eight" whole; the 100vw cap keeps a
+   long name inside the 375 column so the page does not scroll sideways. */
 .v3-atlas__chip-name {
-  max-width: 18rem;
+  min-width: 0;
+  max-width: min(18rem, calc(100vw - 6.5rem));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .v3-atlas__chip {
+  box-sizing: border-box;
   flex: none;
   display: inline-flex;
   /* Centred, not baseline: in a 44px tap box the label sat 1px from the top
      with 26px of dead space under it (round six, TEAM-MATT-R6-3). */
   align-items: center;
   gap: var(--v3-space-3xs);
+  min-width: var(--v3-tap);
   min-height: var(--v3-tap);
   max-width: 100%;
-  padding: 0 var(--v3-space-xs);
-  border: 1px solid var(--v3-edge);
-  border-radius: var(--v3-radius-pill);
+  padding: 0 var(--v3-space-2xs);
+  border: 0;
+  border-radius: 0;
   background: none;
+  box-shadow: inset 0 -1px 0 transparent;
   color: var(--v3-ink);
   font-family: inherit;
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-control);
   cursor: pointer;
-  transition: background var(--v3-dur-state) var(--v3-ease-out), color var(--v3-dur-state) var(--v3-ease-out);
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    box-shadow var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__chip:hover,
+.v3-atlas__chip:focus-visible {
+  background: color-mix(in srgb, var(--v3-navy) 6%, var(--v3-cream));
 }
 
 .v3-atlas__chip.is-active {
-  background: var(--v3-navy);
-  border-color: var(--v3-navy);
-  color: var(--v3-cream);
+  background: none;
+  box-shadow: inset 0 -2px 0 var(--v3-navy);
+  color: var(--v3-ink);
 }
 
 .v3-atlas__chip:focus-visible {
@@ -1664,7 +1708,7 @@ a.v3-atlas__card-home {
 }
 
 .v3-atlas__chip.is-active .v3-atlas__chip-n {
-  color: color-mix(in srgb, var(--v3-cream) 80%, transparent);
+  color: var(--v3-ink-muted);
 }
 
 /* The fold. A set past the cap shows its first chips and one trailing chip
@@ -1674,8 +1718,8 @@ a.v3-atlas__card-home {
    chips beside empty cream, which is the wall the fold exists to prevent, so
    the column folds too, later. The markup carries both rests and both
    labels; each width shows one of each, and a hidden label is out of the
-   accessible name. Same chip, same pill, same 44px: a control in the
-   register's own style and never a new look. */
+   accessible name. Same chip, same 44px: a name in the index, never a
+   second map of pills. */
 .v3-atlas__chip--more {
   display: inline-flex;
 }

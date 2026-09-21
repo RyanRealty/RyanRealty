@@ -2334,63 +2334,78 @@ export function V3Atlas({
             </ul>
           ) : null}
           {children ? <div className="v3-atlas__search">{children}</div> : null}
-          {/* Every place as a door, under the search: on a phone because the
-              silhouettes are too small to tap, on a desktop because this
-              column was otherwise empty beside a map full of unnamed shapes
-              (evaluator round five, TEAM-MATT-5). It sits AFTER the search so
-              it fills the column rather than pushing the search off screen. */}
+          {/* SITE-159: this is the map's reach list, not a second map. Cluster
+              pins paint under 20px; these names are the only thumb-reachable
+              path onto a place. A visible label + claim + a section rule are
+              the change of surface; the chips stay in flow (never a
+              disclosure, never under the tap floor). After search so a
+              search field is not pushed off the column (TEAM-MATT-5). */}
           {chipPlaces.length > 0 ? (
-            /* Wrapped at every width; a set past the fold shows its first
-               chips and one trailing "+ N more" chip that opens the rest
-               (aria-expanded, aria-controls). The rest is two wrappers so the
-               stylesheet can fold at eight on a phone and at twenty-four from
-               48rem with one control; the chip carries both counts and shows
-               the one its width means. Every chip reads the door label, so
-               siblings that differ only by phase stay distinct and no chip is
-               ever clipped at the viewport edge (SITE-07, 2026-09-09). */
-            <div className="v3-atlas__chips" role="group" aria-label="Places on this map">
-              {chipPlaces.slice(0, CHIP_FOLD_AT).map(chipButton)}
-              {chipPlaces.length > CHIP_FOLD_AT ? (
-                <>
-                  <div
-                    id={`${uid}-chips-rest`}
-                    className={cn('v3-atlas__chips-rest', !chipsOpen && 'is-folded')}
-                  >
-                    {chipPlaces.slice(CHIP_FOLD_AT, CHIP_FOLD_AT_WIDE).map(chipButton)}
-                  </div>
-                  {chipPlaces.length > CHIP_FOLD_AT_WIDE ? (
+            <div className="v3-atlas__reach">
+              <h3 className="v3-atlas__reach-label" id={`${uid}-reach`}>
+                Reach list
+              </h3>
+              <p className="v3-atlas__reach-claim" id={`${uid}-reach-claim`}>
+                {chipPlaces.length.toLocaleString('en-US')}{' '}
+                {chipPlaces.length === 1 ? 'place' : 'places'} on this map.
+              </p>
+              {/* Wrapped at every width; a set past the fold shows its first
+                 chips and one trailing "+ N more" chip that opens the rest
+                 (aria-expanded, aria-controls). The rest is two wrappers so the
+                 stylesheet can fold at eight on a phone and at twenty-four from
+                 48rem with one control; the chip carries both counts and shows
+                 the one its width means. Every chip reads the door label, so
+                 siblings that differ only by phase stay distinct and no chip is
+                 ever clipped at the viewport edge (SITE-07, 2026-09-09). */}
+              <div
+                className="v3-atlas__chips"
+                role="group"
+                aria-labelledby={`${uid}-reach`}
+                aria-describedby={`${uid}-reach-claim`}
+              >
+                {chipPlaces.slice(0, CHIP_FOLD_AT).map(chipButton)}
+                {chipPlaces.length > CHIP_FOLD_AT ? (
+                  <>
                     <div
-                      id={`${uid}-chips-rest-wide`}
-                      className={cn('v3-atlas__chips-rest-wide', !chipsOpen && 'is-folded')}
+                      id={`${uid}-chips-rest`}
+                      className={cn('v3-atlas__chips-rest', !chipsOpen && 'is-folded')}
                     >
-                      {chipPlaces.slice(CHIP_FOLD_AT_WIDE).map(chipButton)}
+                      {chipPlaces.slice(CHIP_FOLD_AT, CHIP_FOLD_AT_WIDE).map(chipButton)}
                     </div>
-                  ) : null}
-                  <button
-                    type="button"
-                    className={cn(
-                      'v3-atlas__chip v3-atlas__chip--more',
-                      chipPlaces.length <= CHIP_FOLD_AT_WIDE && 'v3-atlas__chip--more-narrow-only',
-                    )}
-                    aria-expanded={chipsOpen}
-                    aria-controls={
-                      chipPlaces.length > CHIP_FOLD_AT_WIDE
-                        ? `${uid}-chips-rest ${uid}-chips-rest-wide`
-                        : `${uid}-chips-rest`
-                    }
-                    onClick={() => setChipsOpen((open) => !open)}
-                  >
-                    {/* Two labels, one shown per width (display: none keeps the
-                        hidden one out of the accessible name). */}
-                    <span className="v3-atlas__chip-name v3-atlas__chip-name--narrow">
-                      {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT} more`}
-                    </span>
-                    <span className="v3-atlas__chip-name v3-atlas__chip-name--wide">
-                      {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT_WIDE} more`}
-                    </span>
-                  </button>
-                </>
-              ) : null}
+                    {chipPlaces.length > CHIP_FOLD_AT_WIDE ? (
+                      <div
+                        id={`${uid}-chips-rest-wide`}
+                        className={cn('v3-atlas__chips-rest-wide', !chipsOpen && 'is-folded')}
+                      >
+                        {chipPlaces.slice(CHIP_FOLD_AT_WIDE).map(chipButton)}
+                      </div>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={cn(
+                        'v3-atlas__chip v3-atlas__chip--more',
+                        chipPlaces.length <= CHIP_FOLD_AT_WIDE && 'v3-atlas__chip--more-narrow-only',
+                      )}
+                      aria-expanded={chipsOpen}
+                      aria-controls={
+                        chipPlaces.length > CHIP_FOLD_AT_WIDE
+                          ? `${uid}-chips-rest ${uid}-chips-rest-wide`
+                          : `${uid}-chips-rest`
+                      }
+                      onClick={() => setChipsOpen((open) => !open)}
+                    >
+                      {/* Two labels, one shown per width (display: none keeps the
+                          hidden one out of the accessible name). */}
+                      <span className="v3-atlas__chip-name v3-atlas__chip-name--narrow">
+                        {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT} more`}
+                      </span>
+                      <span className="v3-atlas__chip-name v3-atlas__chip-name--wide">
+                        {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT_WIDE} more`}
+                      </span>
+                    </button>
+                  </>
+                ) : null}
+              </div>
             </div>
           ) : null}
           {source ? (
