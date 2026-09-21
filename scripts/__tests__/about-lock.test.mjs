@@ -12,20 +12,20 @@ import { defectReplaceWithProblems, tasteDoneProblems } from '../lib/taste-recei
 
 const ABOUT_LOCK_QUOTES = {
   '1': 'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
-  '2': 'The brokers are on /team. The person you talk to first is the person who works with you through closing.',
-  '3': 'Hero (office exterior + purpose), V3Proof as first proof, closings,',
+  '2': 'Faces open the page at display scale. Deep bios stay on /team.',
+  '3': 'V3Proof reviews as words plus dated local closings as a carousel',
   '4': 'Call | Text | Email | Schedule. Live hours stay V3OnDuty above this.',
   '5': "street: '115 NW Oregon Ave #2'",
   '6': '5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.',
-  '7': '/about first viewport — Redfin structure. Navy and cream only.',
-  '8': 'Firm closings as the shadcn carousel + Card demo (SITE-90).',
+  '7': '/about first viewport — faces at display scale. Navy and cream only.',
+  '8': 'shadcn Avatar image, fallback, and badge at display scale.',
 }
 
 const ABOUT_BRIEF = {
-  id: 'about-matt-2026-09-12',
+  id: 'about-matt-2026-09-21',
   source: 'Matt lock',
-  productLock: 'firm story + reviews + closings + four-up + office + OREA',
-  refuse: 'roster on About',
+  productLock: 'faces at display scale + firm story + reviews + closings + four-up + office + OREA',
+  refuse: 'Meet-the-Team dump on About',
   beats: ABOUT_LOCK_BEATS.map((b) => ({ id: b.id, text: b.text })),
 }
 

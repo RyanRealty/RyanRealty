@@ -1,8 +1,8 @@
 /**
- * /about first viewport — Redfin structure. Navy and cream only.
- * Hero (office exterior + purpose), V3Proof as first proof, closings,
- * Contact four-up, office + OREA, one-line inquiry.
- * Never the sofa. Never a broker roster.
+ * /about first viewport — faces at display scale. Navy and cream only.
+ * Faces open the page at display scale. Deep bios stay on /team.
+ * V3Proof as first proof, closings, Contact four-up, office + OREA,
+ * one-line inquiry. Never the sofa. Never a Meet-the-Team dump.
  */
 
 .about-fold {
@@ -26,6 +26,59 @@
   padding: var(--v3-space-lg) 0 0;
 }
 
+.about-firm__faces-wrap {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+  padding: 0 var(--v3-gutter);
+  overflow: visible;
+}
+
+.about-firm__faces {
+  align-items: end;
+  min-height: var(--v3-tap);
+  overflow: visible;
+}
+
+.about-firm__faces .v3-avatar {
+  box-shadow: 0 0 0 2px var(--v3-cream);
+}
+
+.about-firm__avatar-btn {
+  width: auto;
+  height: auto;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.about-firm__avatar-btn:hover,
+.about-firm__avatar-btn:focus-visible,
+.about-firm__avatar-btn[aria-pressed='true'] {
+  background: transparent;
+}
+
+.about-firm__avatar-btn + .about-firm__avatar-btn {
+  margin-inline-start: calc(var(--v3-space-md) * -1);
+}
+
+.about-firm__rating {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body-lg);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-heading);
+}
+
+.about-firm__rating a {
+  color: inherit;
+  text-underline-offset: 0.12em;
+}
+
 .about-firm__claim {
   display: grid;
   gap: var(--v3-space-xs);
@@ -46,31 +99,6 @@
   line-height: var(--v3-leading-body);
 }
 
-.about-firm__hero {
-  position: relative;
-  margin: 0;
-  min-width: 0;
-  width: 100%;
-}
-
-.about-firm__hero img {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 18rem;
-  aspect-ratio: 2.4 / 1;
-  object-fit: cover;
-  object-position: center 68%;
-}
-
-.about-firm__caption {
-  margin: var(--v3-space-3xs) 0 0;
-  padding: 0 var(--v3-gutter);
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-label);
-  letter-spacing: var(--v3-track-label);
-}
-
 .about-fold__proof {
   grid-area: proof;
   min-width: 0;
@@ -86,51 +114,24 @@
 .about-fold__proof .v3-proof {
   max-width: none;
   display: grid;
-  grid-template-columns: minmax(12rem, 20rem) minmax(0, 1fr);
-  column-gap: var(--v3-space-xl);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   padding-block: var(--v3-space-lg);
 }
 
 .about-fold__proof .v3-proof__head {
-  grid-column: 2;
-  grid-row: 1;
+  grid-column: 1;
   max-width: none;
 }
 
+/* 5.0 from 25 lives on the fold faces. Do not repeat it as a KPI tile. */
 .about-fold__proof .v3-proof__face {
-  grid-column: 1;
-  grid-row: 1 / span 3;
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  display: none;
 }
 
-.about-fold__proof .v3-proof__face-value {
-  font-size: var(--v3-size-num-lead);
-}
-
-.about-fold__proof .v3-proof__face .v3-proof__star {
-  width: 1.3rem;
-  height: 1.3rem;
-}
-
-.about-fold__proof .v3-proof__face-count {
-  font-size: var(--v3-size-body);
-  color: var(--v3-ink);
-}
-
-.about-fold__proof .v3-proof__reader {
-  grid-column: 2;
-  grid-row: 2;
-}
-
+.about-fold__proof .v3-proof__reader,
 .about-fold__proof .v3-proof__source {
-  grid-column: 2;
-  grid-row: 3;
+  grid-column: 1;
 }
 
 .about-fold__proof .v3-proof__pull {
@@ -236,8 +237,8 @@
   display: none;
 }
 
-.about-reach [data-slot='button-group'] {
-  width: 100%;
+.about-fold__reach .about-reach {
+  display: flex;
 }
 
 .about-fold__write {
@@ -307,8 +308,8 @@
 }
 
 @media (max-width: 47.99rem) {
-  .about-firm__hero img {
-    max-height: 14rem;
+  .about-firm__avatar-btn + .about-firm__avatar-btn {
+    margin-inline-start: calc(var(--v3-card-photo-w) * -0.42);
   }
 
   .about-fold__proof .v3-proof {
@@ -318,12 +319,8 @@
     padding-block: var(--v3-space-md);
   }
 
-  .about-fold__proof .v3-proof__face {
-    order: 1;
-  }
-
   .about-fold__proof .v3-proof__head {
-    order: 2;
+    order: 1;
   }
 
   .about-fold__proof .v3-proof__reader {
@@ -355,10 +352,19 @@
 
   .about-firm {
     padding-top: var(--v3-space-xl);
+    grid-template-columns: minmax(0, 1.05fr) minmax(16rem, 1fr);
+    align-items: end;
+    column-gap: var(--v3-space-lg);
   }
 
-  .about-firm__hero img {
-    max-height: 20rem;
+  .about-firm__faces-wrap {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .about-firm__claim {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .about-fold__write {

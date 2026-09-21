@@ -1,11 +1,13 @@
 /**
- * About lock (Matt 2026-09-12, restated 2026-09-14).
+ * About lock (Matt 2026-09-21 SITE-163, restated from 2026-09-12/14).
+ *
+ * Faces open the page at display scale. Firm story stays one boutique
+ * sentence. 5.0 from 25 and 115 NW Oregon Ave #2 stay. Deep bios stay on
+ * /team. No Meet-the-Team dump, no three equal broker Cards, no KPI grid.
  *
  * Tip Ready cannot be a checkbox. A lone `competitiveBriefPass: true` is
  * refuse. Each Researchy beat needs a quote that actually appears in the
- * About source, and the source itself must carry the locked tokens
- * (boutique / Central Oregon / buy and sell; no broker roster; reviews +
- * closings; Call|Text|Email|Schedule; 115 NW Oregon Ave #2 + OREA).
+ * About source.
  *
  * Used by ci:page-purpose, taste-receipt --ship / --about-lock, and
  * site-queue-done. Do not invent true.
@@ -21,18 +23,20 @@ function isNonEmptyString(v, min = 1) {
   return typeof v === 'string' && v.trim().length >= min
 }
 
-export const ABOUT_LOCK_ID = 'about-matt-2026-09-12'
+export const ABOUT_LOCK_ID = 'about-matt-2026-09-21'
 
 /** Files the About lock reads. Missing file = fail that beat, not a skip. */
 export const ABOUT_LOCK_FILES = Object.freeze([
   'app/about/page.tsx',
   'app/about/_v3/AboutFirm.tsx',
+  'app/about/_v3/AboutFirmFaces.client.tsx',
   'app/about/_v3/AboutOffice.tsx',
   'app/about/_v3/AboutInquiry.tsx',
   'app/about/_v3/AboutReach.tsx',
   'app/about/_v3/FirmClosings.tsx',
   'app/about/_v3/about-constants.ts',
   'app/about/_v3/about-fold.css',
+  'components/site/v3/V3Avatar.tsx',
   'lib/brand/contact.ts',
 ])
 
@@ -43,28 +47,44 @@ export const ABOUT_LOCK_FILES = Object.freeze([
 export const ABOUT_LOCK_BEATS = Object.freeze([
   {
     id: '1',
-    text: 'Firm story opens the page: small boutique brokerage, all of Central Oregon, help clients buy and sell. Not a staff-directory fold.',
+    text: 'Faces open the page at display scale, with one boutique Central Oregon buy-and-sell sentence. Not a storefront postcard. Not a KPI grid. Not a staff-directory fold.',
     tokens: [/boutique/i, /Central Oregon/, /buy and sell/],
-    sourceRequire: [/<AboutFirm\b/, /ABOUT_FIRM_STORY/, /boutique/, /Central Oregon/, /buy and sell/],
+    sourceRequire: [
+      /<AboutFirm\b/,
+      /ABOUT_FIRM_STORY/,
+      /boutique/,
+      /Central Oregon/,
+      /buy and sell/,
+      /about-firm__faces/,
+    ],
     sourceForbid: [
       /We are a small boutique brokerage\.\s*We work all of Central Oregon\.\s*We help clients buy and sell/,
+      /openingFigures/,
     ],
   },
   {
     id: '2',
-    text: 'Brokers are not on About. No broker Cards, roster dump, Meet-the-Team band, or AboutTeamTeaser. Brokers belong on /team only.',
-    tokens: [/\/team/],
-    sourceRequire: [/\/team/, /The brokers are on \/team/],
+    text: 'Faces at display scale (shadcn Avatar). Deep bios stay on /team. No Meet-the-Team dump, no three equal broker Cards, no AboutTeamTeaser.',
+    tokens: [/display scale/, /\/team/],
+    sourceRequire: [
+      /Faces open the page at display scale/,
+      /\/team/,
+      /The brokers are on \/team/,
+      /from '@\/components\/ui\/avatar'/,
+      /<AvatarGroup\b/,
+      /<AvatarImage\b|<V3Avatar\b/,
+      /AvatarFallback/,
+      /AvatarBadge/,
+    ],
     sourceForbid: [
       /<AboutFaces\b/,
       /<AboutTeamTeaser\b/,
-      /AvatarGroup/,
       /Meet the team/,
       /id=["']team-teaser["']/,
       /Who you work with/,
       /about-teaser/,
       /ABOUT_BROKER_ROSTER/,
-      /data-slot=["']avatar["']/,
+      /size=["']proof["']/,
       /Who are the brokers\?[\s\S]{0,500}OR #/,
     ],
   },
@@ -78,7 +98,6 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
       /from '@\/components\/ui\/carousel'/,
       /CarouselPrevious/,
       /CarouselNext/,
-      /Redfin-clean/,
     ],
     sourceForbid: [/months of supply/i],
   },
@@ -94,13 +113,12 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
       />Email</,
       />Schedule</,
       /<V3OnDuty\b/,
-      /className="flex-1"/,
     ],
     sourceForbid: [/primary:\s*true/, /v3-doors--lead/, /<V3Doors\b/],
   },
   {
     id: '5',
-    text: 'Office 115 NW Oregon Ave #2 is on the page. Optional exterior hero of that office.',
+    text: 'Office 115 NW Oregon Ave #2 is on the page. Optional exterior of that office.',
     tokens: [/115 NW Oregon Ave #2/],
     sourceRequire: [/115 NW Oregon Ave #2/, /BRAND\.address\.street/, /ryan-realty-bend-office-exterior/],
     sourceForbid: [/ryan-realty-bend-office-interior/],
@@ -113,20 +131,23 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
   },
   {
     id: '7',
-    text: 'Navy and cream only. Redfin is the layout and interaction reference, not a second palette.',
+    text: 'Navy and cream only. Faces at display scale. Not a second palette.',
     tokens: [/navy/i, /cream/i],
     sourceRequire: [/Navy and cream only/, /--v3-/],
     sourceForbid: [/about-fold[\s\S]{0,80}#[0-9a-fA-F]{6}/, /lab\(/],
   },
   {
     id: '8',
-    text: 'Catalog interactions are real: closings carousel (shadcn carousel + Card) and inquiry input. Avatar-import plus cream CSS is not a demo match.',
-    tokens: [/carousel/i, /Card|input/i],
+    text: 'Catalog interactions are real: shadcn Avatar at display scale, closings carousel, and inquiry input.',
+    tokens: [/Avatar/i, /display scale/],
     sourceRequire: [
+      /from '@\/components\/ui\/avatar'/,
       /from '@\/components\/ui\/carousel'/,
       /from '@\/components\/ui\/card'/,
       /from '@\/components\/ui\/input'|from '@\/components\/motion\/input'/,
       /from '@\/components\/ui\/button-group'/,
+      /AvatarFallback/,
+      /AvatarBadge/,
     ],
   },
 ])
@@ -134,7 +155,7 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
 export function isAboutLockBrief(brief, kit) {
   if (kit === 'about') return true
   const id = isPlainObject(brief) ? String(brief.id ?? '') : ''
-  return id === ABOUT_LOCK_ID || id === 'about-researchy-1-8'
+  return id === ABOUT_LOCK_ID || id === 'about-matt-2026-09-12' || id === 'about-researchy-1-8'
 }
 
 export function readAboutLockSource(root = process.cwd(), files = ABOUT_LOCK_FILES) {
@@ -247,13 +268,13 @@ export function aboutRequiredComponentProblems(kit, parsed) {
     .filter(Boolean)
   const p = []
   if (names.includes('AboutFaces')) {
-    p.push('About requiredComponents cannot include AboutFaces. Brokers belong on /team.')
+    p.push('About requiredComponents cannot include AboutFaces. That roster dump belongs on /team.')
   }
   if (names.includes('AboutTeamTeaser')) {
     p.push('About requiredComponents cannot include AboutTeamTeaser. Brokers belong on /team. No Meet-the-Team dump.')
   }
   if (!names.includes('AboutFirm')) {
-    p.push('About requiredComponents must include AboutFirm (firm story opener).')
+    p.push('About requiredComponents must include AboutFirm (faces + firm story opener).')
   }
   if (!names.includes('AboutOffice')) {
     p.push('About requiredComponents must include AboutOffice (115 NW Oregon Ave #2 + firm OREA).')

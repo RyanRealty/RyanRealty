@@ -1,9 +1,9 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (Researchy 1–8 + Looking order — brokerage, not Team):
- * 1. Hero: AboutFirm — office exterior + one purpose line
- *    (boutique · Central Oregon · buy and sell). Not broker Cards.
+ * PAGE OUTLINE (SITE-163 — faces open, brokerage story stays):
+ * 1. Hero: AboutFirm — faces at display scale, branded H1, one purpose line
+ *    (boutique · Central Oregon · buy and sell). 5.0 from 25. Not broker Cards.
  * 2. V3Proof — client reviews PRIMARY (Google + featured quote). Not press.
  * 3. FirmClosings — dated local sold homes. Never invented MOS.
  * 4. AboutReach — catalog Button Group Call | Text | Email | Schedule
@@ -165,7 +165,10 @@ async function renderAboutPage() {
     {
       type: 'itemList',
       name: 'Ryan Realty brokers',
-      items: [{ name: 'The brokers', url: '/team' }],
+      items:
+        proof.faces.length > 0
+          ? proof.faces.map((face) => ({ name: face.name, url: face.href }))
+          : [{ name: 'The brokers', url: '/team' }],
     },
     ...(firmRows.length > 0
       ? [
@@ -208,9 +211,12 @@ async function renderAboutPage() {
           <AboutFirm
             id="firm"
             heading="About Ryan Realty · Bend"
-            officeSrc="/images/office/ryan-realty-bend-office-exterior-01.jpg"
-            officeAlt={`Ryan Realty at ${BRAND.address.street}, ${BRAND.address.city}`}
-            officeCaption={`BEND OFFICE · ${BRAND.address.street}`}
+            people={proof.faces}
+            proof={
+              reviewCount > 0
+                ? { value: reviewAverage.toFixed(1), count: reviewCount, href: '/reviews' }
+                : null
+            }
           />
           {quotes.length > 0 ? (
             <div className="about-fold__proof">

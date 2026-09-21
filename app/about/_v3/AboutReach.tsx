@@ -13,17 +13,17 @@ import { CONTACT } from '@/lib/brand/contact'
 export function AboutReach({ id = 'reach' }: { id?: string } = {}) {
   return (
     <section id={id} className="about-reach" aria-label="Reach a broker">
-      <ButtonGroup className="w-full" aria-label="Call, text, email, or schedule">
-        <Button asChild variant="outline" className="flex-1">
+      <ButtonGroup aria-label="Call, text, email, or schedule">
+        <Button asChild variant="outline">
           <a href={`tel:${CONTACT.phoneDirectTel}`}>Call</a>
         </Button>
-        <Button asChild variant="outline" className="flex-1">
+        <Button asChild variant="outline">
           <a href={`sms:${CONTACT.phoneDirectTel}`}>Text</a>
         </Button>
-        <Button asChild variant="outline" className="flex-1">
+        <Button asChild variant="outline">
           <a href={`mailto:${CONTACT.email.primary}`}>Email</a>
         </Button>
-        <Button asChild variant="outline" className="flex-1">
+        <Button asChild variant="outline">
           <Link href="/book">Schedule</Link>
         </Button>
       </ButtonGroup>

@@ -1,27 +1,28 @@
 /**
- * /about opener — firm claim first, office exterior as supporting media.
+ * /about opener — faces at display scale, then the firm claim.
  *
- * Mini 2026-09-14: H1 and purpose must read as the opening firm claim
- * (house-firm), not a caption under a navy postcard. Client reviews live
- * on V3Proof immediately after. Never the sofa interior. No broker Cards.
+ * SITE-163: a broker face opens the page. H1 stays branded. One boutique
+ * Central Oregon buy-and-sell sentence. 5.0 from 25 stays. Not a downtown
+ * storefront postcard. Not a KPI grid. Not three broker Cards.
+ * Deep bios stay on /team. Office photo lives on AboutOffice.
  */
 
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
 import { ABOUT_FIRM_STORY } from './about-constants'
+import { AboutFirmFaces, type AboutFirmProof } from './AboutFirmFaces.client'
+import type { AboutFace } from './about-faces'
 
 export function AboutFirm({
   heading,
   id = 'firm',
-  officeAlt,
-  officeCaption,
-  officeSrc,
+  people,
+  proof,
 }: {
   heading: string
   id?: string
-  officeAlt: string
-  officeCaption: string
-  officeSrc: string
+  people: readonly AboutFace[]
+  proof: AboutFirmProof | null
 }) {
   return (
     <section
@@ -29,6 +30,7 @@ export function AboutFirm({
       className={cn(V3_ROOT_CLASS, 'about-firm')}
       aria-labelledby="firm-heading"
     >
+      <AboutFirmFaces people={people} proof={proof} />
       <div className="about-firm__claim">
         <V3Eyebrow>Ryan Realty · Central Oregon</V3Eyebrow>
         <V3Heading level={1} id="firm-heading" className="about-firm__heading">
@@ -36,11 +38,6 @@ export function AboutFirm({
         </V3Heading>
         <p className="about-firm__purpose">{ABOUT_FIRM_STORY}</p>
       </div>
-      <figure className="about-firm__hero">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={officeSrc} alt={officeAlt} width={1600} height={1067} />
-        <figcaption className="about-firm__caption">{officeCaption}</figcaption>
-      </figure>
     </section>
   )
 }

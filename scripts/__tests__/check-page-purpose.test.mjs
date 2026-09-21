@@ -103,7 +103,7 @@ describe('check-page-purpose — competitiveBrief contract', () => {
   it('loads the live About brief as a complete checklist', () => {
     const parsed = JSON.parse(readFileSync(ABOUT_PARITY, 'utf8'))
     expect(competitiveBriefPurposeProblems('about', parsed)).toEqual([])
-    expect(parsed.competitiveBrief.id).toBe('about-matt-2026-09-12')
+    expect(parsed.competitiveBrief.id).toBe('about-matt-2026-09-21')
     expect(parsed.competitiveBrief.beats).toHaveLength(8)
   })
 

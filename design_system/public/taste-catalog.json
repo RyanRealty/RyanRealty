@@ -2689,12 +2689,28 @@
       ]
     },
     "about": {
-      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. FAIL if AboutTeamTeaser or a Meet-the-Team dump is on About. Hero is AboutFirm: office exterior + one purpose line (boutique \u00b7 all of Central Oregon \u00b7 buy and sell). V3Proof is primary client reviews. FirmClosings is dated local sold homes \u2014 never invented MOS. Then shadcn Button Group Call|Text|Email|Schedule, then AboutOffice Card (115 NW Oregon Ave #2 + firm OREA), then AboutInquiry Input+Button GET /contact. Brokers belong on /team only. Do not mount AboutFaces or size=\"proof\". No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
+      "layoutLock": "Faces open the page at display scale. FAIL if the first viewport is a downtown storefront with no broker face. FAIL if the page opens on a KPI grid, three equal broker Cards, AboutFaces roster, AboutTeamTeaser, or a Meet-the-Team dump. Hero is AboutFirm: shadcn AvatarGroup at display scale, branded H1, one boutique Central Oregon buy-and-sell sentence, 5.0 from 25. V3Proof is primary client reviews. FirmClosings is dated local sold homes \u2014 never invented MOS. Then shadcn Button Group Call|Text|Email|Schedule, then AboutOffice Card (115 NW Oregon Ave #2 + firm OREA), then AboutInquiry Input+Button GET /contact. Deep bios stay on /team. Do not mount AboutFaces or size=\"proof\". No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
+      "demoStates": [
+        "firm-sales-open=.about-closings__carousel [data-slot=carousel-next]!click",
+        "write-open=#about-inquiry!click"
+      ],
       "layoutLockChecks": [
         {
           "path": "app/about/page.tsx",
           "mustMatch": "<AboutFirm",
           "forbid": "<AboutFaces"
+        },
+        {
+          "path": "app/about/_v3/AboutFirmFaces.client.tsx",
+          "mustMatch": "about-firm__faces"
+        },
+        {
+          "path": "app/about/_v3/AboutFirmFaces.client.tsx",
+          "mustMatch": "from '@/components/ui/avatar'"
+        },
+        {
+          "path": "app/about/_v3/AboutFirmFaces.client.tsx",
+          "mustMatch": "<AvatarGroup"
         },
         {
           "path": "app/about/page.tsx",
@@ -2731,18 +2747,18 @@
         }
       ],
       "competitiveBrief": {
-        "id": "about-matt-2026-09-12",
-        "source": "Matt 2026-09-12 / 2026-09-14 lock. About is the brokerage story. Brokers belong on /team. Evidence quotes required.",
-        "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry\u2192/contact. No broker roster on About.",
-        "refuse": "AboutFaces, AboutTeamTeaser, Meet-the-Team dump, broker Cards, AvatarGroup. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
+        "id": "about-matt-2026-09-21",
+        "source": "Matt 2026-09-21 SITE-163 lock. Faces open About at display scale. Deep bios stay on /team. Evidence quotes required.",
+        "productLock": "faces at display scale + 5.0 from 25 + firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry\u2192/contact. No Meet-the-Team dump. No KPI grid.",
+        "refuse": "AboutFaces roster, AboutTeamTeaser, Meet-the-Team dump, three equal broker Cards, KPI grid, storefront-as-opener. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
         "beats": [
           {
             "id": "1",
-            "text": "Firm story opens the page: one plain boutique Central Oregon buy-and-sell sentence. Not a staccato three-liner. Not a staff-directory fold."
+            "text": "Faces open the page at display scale, with one boutique Central Oregon buy-and-sell sentence. Not a storefront postcard. Not a KPI grid. Not a staff-directory fold."
           },
           {
             "id": "2",
-            "text": "Brokers are not on About. No broker Cards, roster dump, Meet-the-Team band, or AboutTeamTeaser. Brokers belong on /team only."
+            "text": "Faces at display scale (shadcn Avatar). Deep bios stay on /team. No Meet-the-Team dump, no three equal broker Cards, no AboutTeamTeaser."
           },
           {
             "id": "3",
@@ -2754,7 +2770,7 @@
           },
           {
             "id": "5",
-            "text": "Office 115 NW Oregon Ave #2 is on the page. Optional exterior hero of that office."
+            "text": "Office 115 NW Oregon Ave #2 is on the page. Optional exterior of that office."
           },
           {
             "id": "6",
@@ -2762,11 +2778,11 @@
           },
           {
             "id": "7",
-            "text": "Navy and cream only. Redfin is the layout and interaction reference, not a second palette."
+            "text": "Navy and cream only. Faces at display scale. Not a second palette."
           },
           {
             "id": "8",
-            "text": "Catalog interactions are real: closings carousel (shadcn carousel + Card) and inquiry input. Avatar-import plus cream CSS is not a demo match."
+            "text": "Catalog interactions are real: shadcn Avatar at display scale, closings carousel, and inquiry input."
           }
         ]
       },
@@ -2775,7 +2791,7 @@
           "id": "house-firm",
           "catalog": "house-v3",
           "url": "app/about/_v3/AboutFirm.tsx",
-          "job": "Opens About on the firm story + office exterior. Not three broker Cards."
+          "job": "Opens About on faces at display scale plus the firm story. Not a storefront postcard. Not three broker Cards."
         },
         {
           "id": "house-office",
@@ -2787,13 +2803,13 @@
           "id": "house-faces",
           "catalog": "house-v3",
           "url": "app/about/_v3/AboutFaces.tsx",
-          "job": "Team page faces only \u2014 brokers on /team. Never the About opener. About forbids AboutTeamTeaser."
+          "job": "Team page roster only. About opener uses V3Avatar, not this dump. About forbids AboutTeamTeaser."
         },
         {
           "id": "house-proof",
           "catalog": "house-v3",
           "url": "components/site/v3/V3Proof.client.tsx",
-          "job": "First proof after the firm hero: Google score at display scale plus the client's words. Not a thin score link. Not press."
+          "job": "Client reviews after the faces: Google score plus the client's words. Not a thin score link. Not press."
         },
         {
           "id": "house-doors",
@@ -2806,6 +2822,12 @@
           "catalog": "house-v3",
           "url": "components/site/v3/V3Atlas.client.tsx",
           "job": "Service-area Atlas, not a default Google embed."
+        },
+        {
+          "id": "shadcn-avatar",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/avatar",
+          "job": "Broker faces at display scale: AvatarGroup, image, fallback, badge. Click opens the broker. Not a cream menu."
         },
         {
           "id": "shadcn-button-group",
