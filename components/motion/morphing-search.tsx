@@ -38,6 +38,9 @@ const SEARCH_CLIP_TRANSITION: Transition = {
 	ease: EASE_OUT,
 };
 
+/** One MorphingSearch overlay at a time. Homepage hero + chrome both mount this. */
+const MORPH_OPEN_EVENT = "rr:morphing-search-open";
+
 export type MorphingSearchItem = {
 	id: string;
 	title: string;
@@ -99,7 +102,7 @@ export function MorphingSearch({
 	onQueryChange,
 	onSelect,
 	className,
-	overlayClassName,
+	overlayClassName = "z-[150]",
 }: MorphingSearchProps) {
 	const [internalOpen, setInternalOpen] = useState(defaultOpen);
 	const [query, setQuery] = useState("");
@@ -109,7 +112,7 @@ export function MorphingSearch({
 	const [anchorRect, setAnchorRect] = useState<AnchorRect>({
 		top: 16,
 		left: 16,
-		width: 288,
+		width: 0,
 	});
 	const open = controlledOpen ?? internalOpen;
 	const controlled = controlledOpen !== undefined;
@@ -135,7 +138,7 @@ export function MorphingSearch({
 
 	const measureAnchor = useCallback(() => {
 		const rect = anchorRef.current?.getBoundingClientRect();
-		if (!rect || rect.width === 0) return;
+		if (!rect) return;
 		setAnchorRect({ top: rect.top, left: rect.left, width: rect.width });
 	}, []);
 
@@ -253,6 +256,8 @@ export function MorphingSearch({
 				!event.shiftKey &&
 				!isEditableTarget(event.target)
 			) {
+				const rect = anchorRef.current?.getBoundingClientRect();
+				if (!rect || rect.width < 8) return;
 				event.preventDefault();
 				openSearch();
 			}
@@ -261,6 +266,21 @@ export function MorphingSearch({
 		window.addEventListener("keydown", handleShortcut);
 		return () => window.removeEventListener("keydown", handleShortcut);
 	}, [closeSearch, open, openSearch, shortcut]);
+
+	useEffect(() => {
+		const onOther = (event: Event) => {
+			const other = (event as CustomEvent<string>).detail;
+			if (other === uid) return;
+			if (open) closeSearch();
+		};
+		window.addEventListener(MORPH_OPEN_EVENT, onOther);
+		return () => window.removeEventListener(MORPH_OPEN_EVENT, onOther);
+	}, [closeSearch, open, uid]);
+
+	useEffect(() => {
+		if (!open) return;
+		window.dispatchEvent(new CustomEvent(MORPH_OPEN_EVENT, { detail: uid }));
+	}, [open, uid]);
 
 	// Only this component's own state. Telling the consumer the query changed is
 	// a side effect, so it waits for the effect below.
@@ -377,7 +397,14 @@ export function MorphingSearch({
 			? Math.max(12, Math.min(anchorRect.left, viewportWidth - panelWidth - 12))
 			: anchorRect.left;
 	const resultsHeight = mounted
-		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
+		? Math.max(
+				96,
+				Math.min(
+					288,
+					window.innerHeight - anchorRect.top - 80,
+					Math.max(filteredItems.length, 1) * 52 + 16,
+				),
+			)
 		: 288;
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,
@@ -394,13 +421,15 @@ export function MorphingSearch({
 	// shared-layout projection otherwise paint on top of the input and swallow
 	// taps — SITE-121 residual, Matt 2026-09-18). See
 	// tests/fixed-overlay-edge-sampling.test.tsx.
-	const overlay = mounted
+	const triggerVisible = mounted && anchorRect.width >= 8;
+	const overlay =
+		mounted && triggerVisible
 		? createPortal(
 				<div
 					aria-hidden={!open}
 					inert={!open}
 					className={cn(
-						"pointer-events-none fixed left-0 top-0 z-50 size-0",
+						"v3 pointer-events-none fixed left-0 top-0 z-50 size-0",
 						overlayClassName,
 					)}
 				>
@@ -426,7 +455,7 @@ export function MorphingSearch({
 									layoutId={shellLayoutId}
 									aria-hidden="true"
 									data-v3-morph="panel"
-									className="pointer-events-none fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
+									className="pointer-events-none fixed z-10 rounded-xl bg-background backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
 										left: panelLeft,
@@ -474,11 +503,13 @@ export function MorphingSearch({
 												}
 									}
 									data-v3-morph="dialog"
-									className="pointer-events-auto isolate fixed z-20 overflow-hidden rounded-xl"
+									className="pointer-events-auto isolate fixed z-20 overflow-hidden rounded-xl bg-background"
 									style={{
 										top: anchorRect.top,
 										left: panelLeft,
 										width: panelWidth,
+										height: 48 + resultsHeight,
+										backgroundColor: "var(--v3-cream)",
 									}}
 								>
 									<div
@@ -563,6 +594,8 @@ export function MorphingSearch({
 										className="overscroll-contain overflow-y-auto p-2"
 										style={{
 											maxHeight: resultsHeight,
+											minHeight: resultsHeight,
+											backgroundColor: "var(--v3-cream)",
 										}}
 									>
 										{filteredItems.length > 0 ? (
@@ -646,7 +679,7 @@ export function MorphingSearch({
 							style={{
 								boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
 							}}
-							className="flex size-full cursor-pointer items-center justify-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-ring"
+							className="flex size-full cursor-pointer items-center justify-center rounded-xl bg-background text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-ring"
 						></motion.button>
 					) : (
 						<motion.div
@@ -657,7 +690,7 @@ export function MorphingSearch({
 							style={{
 								boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
 							}}
-							className="flex size-full items-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-within:ring-2 focus-within:ring-ring"
+							className="flex size-full items-center rounded-xl bg-background text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-within:ring-2 focus-within:ring-ring"
 						>
 							{/* Real typeable field at rest — closed button was not accepting input. */}
 							<input

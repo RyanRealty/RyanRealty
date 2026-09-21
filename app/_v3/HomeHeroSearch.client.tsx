@@ -150,7 +150,7 @@ export function HomeHeroSearch({
   }, [])
 
   return (
-    <div className="home-hero-search" data-mode={mode}>
+    <div className="home-hero-search" data-mode={mode} data-home-search="hero">
       <input
         type="radio"
         name={`${uid}-mode`}

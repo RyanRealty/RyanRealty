@@ -15,6 +15,29 @@
   min-height: 0;
 }
 
+/* SITE-160: homepage MorphingSearch is the one search. Chrome Search is a
+   second overlay (typing Tetherow opened both). Hidden, not unmounted — the
+   chrome file is not this lane's. */
+html:has(.home-hero-search) .v3-chrome__search {
+  display: none;
+}
+
+/* Compact Stage copy is 5.5rem of padding-top so a /sell ask clears chrome.
+   Home needs that space for a priced card, not empty flyover. */
+.v3.v3-stage--compact:has(.home-hero-search) .v3-stage-copy {
+  padding-top: 4.25rem;
+  padding-bottom: var(--v3-space-md);
+  gap: var(--v3-space-sm);
+}
+
+@media (max-width: 40rem) {
+  .v3.v3-stage--compact:has(.home-hero-search) .v3-stage-copy {
+    padding-top: 3.25rem;
+    padding-bottom: var(--v3-space-2xs);
+    gap: var(--v3-space-2xs);
+  }
+}
+
 .v3 .home-hero-search__mode {
   position: absolute;
   width: 1px;
@@ -110,6 +133,22 @@
 /* Rounded morph field stays cream; only the sharp wrapper around it dies above. */
 .v3 .home-hero-search .v3-morph-search__shell {
   border-radius: 0.875rem;
+}
+
+/* SITE-160: catalog MorphingSearch is a compact trigger that GROWS into the
+   overlay (beUI demo is h-12 w-72). Stretching it to the Stage measure made
+   the closed state a labeled cream field and the open state a typeahead —
+   demoMatch false. */
+.v3 .home-hero-search .v3-morph-search--live .v3-morph-search__catalog {
+  width: 18rem;
+  max-width: min(18rem, 100%);
+}
+
+@media (max-width: 40rem) {
+  .v3 .home-hero-search .v3-morph-search--live .v3-morph-search__catalog {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 /* Catalog Tabs paints active via aria-selected; inactive must read on the photo

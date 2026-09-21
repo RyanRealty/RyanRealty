@@ -44,15 +44,15 @@ describe('homepage guides / Q&A strip (SITE-125)', () => {
     expect(doors.find((door) => door.href === '/blog/how-to-sell-your-home-bend')?.group).toBe('Sell')
   })
 
-  it('mounts the strip above the house rails and keeps Work with us in chrome', () => {
+  it('mounts the strip below the house rails so priced homes clear the fold', () => {
     const guidesAt = PAGE.indexOf('id="guides"')
     const railsAt = PAGE.indexOf('<HomeHomesRails')
     expect(guidesAt).toBeGreaterThan(-1)
-    expect(railsAt).toBeGreaterThan(guidesAt)
+    expect(guidesAt).toBeGreaterThan(railsAt)
     expect(PAGE).toContain('layout="strip"')
     expect(PAGE).toContain('aeoHubHomeStripDoors')
     expect(PAGE).toContain('homeGuideQaQuestions')
-    expect(PAGE.slice(guidesAt, railsAt)).not.toMatch(/Work with us/)
+    expect(PAGE.slice(railsAt, guidesAt)).not.toMatch(/Work with us/)
   })
 
   it('keeps live AEO doors and three FAQ rows after the fold rematch', () => {

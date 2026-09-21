@@ -70,7 +70,7 @@ export async function generateMetadata(): Promise<Metadata> {
     typeof forSale === 'number' && Number.isFinite(forSale) && forSale > 0
       ? `${forSale.toLocaleString('en-US')} active homes for sale in `
       : 'Active homes for sale in '
-  const description = `${liveLead}${D11_HOMEPAGE_LEAD} Closed comps from the regional MLS.`
+  const description = `${liveLead}${D11_HOMEPAGE_LEAD} Photographed homes on this page show list price, address, beds, baths, and square feet. Closed comps from the regional MLS.`
   return {
     title: { absolute: 'Homes for Sale in Central Oregon | Ryan Realty, Bend' },
     description,
@@ -78,7 +78,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: 'Homes for Sale in Central Oregon | Ryan Realty, Bend',
       description:
-        'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. Live list prices, days on market, and closed comps.',
+        'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. List price, address, beds, baths, and square feet on photographed homes. Closed comps from the regional MLS.',
       url: siteUrl,
       siteName: 'Ryan Realty',
       type: 'website',
@@ -87,7 +87,8 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: 'Homes for Sale in Central Oregon | Ryan Realty, Bend',
-      description: 'Active Central Oregon homes for sale. List prices and days on market, town by town.',
+      description:
+        'Active Central Oregon homes for sale. List price, address, beds, baths, and square feet on photographed homes.',
     },
   }
 }
@@ -164,6 +165,11 @@ export default async function Home() {
   const guideQaLd = homeGuideQaJsonLd()
 
   const townCount = TOWN_ORDER.filter((slug) => cityBySlug.has(slug)).length || TOWN_ORDER.length
+  const listedNow = pulseBundle?.counts.forSale
+  const heroEyebrow =
+    typeof listedNow === 'number' && Number.isFinite(listedNow) && listedNow > 0
+      ? `${listedNow.toLocaleString('en-US')} listed`
+      : 'Central Oregon'
 
   const doors = [
     {
@@ -281,7 +287,7 @@ export default async function Home() {
           headingLevel={1}
           // Compact so photographed rails clear the first 1440×900 viewport.
           height="compact"
-          eyebrow="Central Oregon"
+          eyebrow={heroEyebrow}
           headline={v3Text('Homes for sale in Central Oregon')}
           // Sell mode swaps the copy with the panel, so the line over the
           // address field is a seller's question and not a buyer's headline.
@@ -302,6 +308,13 @@ export default async function Home() {
           />
         </V3Stage>
 
+        <HomeHomesRails
+          rows={railRows}
+          emptyMessage="No active homes with a photo and list price right now."
+          forSaleCount={pulseBundle?.counts.forSale}
+        />
+
+        {/* SITE-160: guides below the first rail so a priced card clears the fold. */}
         <V3Answers
           id="guides"
           layout="strip"
@@ -311,12 +324,6 @@ export default async function Home() {
           questions={guideQuestions}
           doors={guideDoors}
           note="Buyer, seller, and neighborhood guides already on the site."
-        />
-
-        <HomeHomesRails
-          rows={railRows}
-          emptyMessage="No active homes with a photo and list price right now."
-          forSaleCount={pulseBundle?.counts.forSale}
         />
 
         {/* The live read after the first rail so houses, not the beeswarm,

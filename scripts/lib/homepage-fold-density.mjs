@@ -1,11 +1,10 @@
 /**
- * homepage-fold-density.mjs — lock SITE-125 so the first house-rail photos
- * peek onto the 1440×900 fold, not only the rail heading.
+ * homepage-fold-density.mjs — lock SITE-160 so a priced house card is in the
+ * 1440×900 and 375 first viewport, not a 40px photo sliver under a Q&A strip.
  *
- * Look rematch on 0c040ca14: #guides denser, peer Buy/Sell/Market, heading
- * bottom at y≈894 (in fold) but first card photos at y≈912 (12px under 900).
- * Wrapper `.home-rails` still carried --v3-space-xl (36px) on top of the
- * first-child sm pad. Heading-in-fold / photos-below is refuse.
+ * SITE-125 put #guides above the rails and the house left the fold. SITE-160
+ * moves the strip below HomeHomesRails. Wrapper pad and first-rail 2xs still
+ * bind so photos, not only the H2, enter the fold.
  *
  * Source-scan, wired through ci:aeo-hub-guides (homepage guides gate).
  * Not a new rubric / taste-path field.
@@ -67,12 +66,12 @@ export function homepageFoldDensityProblems({ root = process.cwd(), files = {} }
     p.push(`${PATHS.page}: missing homepage.`)
   } else {
     if (!page.includes('id="guides"') || !page.includes('layout="strip"')) {
-      p.push(`${PATHS.page}: #guides must stay V3Answers layout="strip" above the rails.`)
+      p.push(`${PATHS.page}: #guides must stay V3Answers layout="strip" on the homepage.`)
     }
     const guidesAt = page.indexOf('id="guides"')
     const railsAt = page.indexOf('<HomeHomesRails')
-    if (guidesAt < 0 || railsAt < 0 || railsAt < guidesAt) {
-      p.push(`${PATHS.page}: HomeHomesRails must follow #guides so house photos sit under the strip.`)
+    if (guidesAt < 0 || railsAt < 0 || guidesAt < railsAt) {
+      p.push(`${PATHS.page}: HomeHomesRails must precede #guides so a priced card clears the fold.`)
     }
     if (page.includes('V3PhoneDock')) {
       p.push(`${PATHS.page}: do not remount V3PhoneDock. Sticky Call/Text is refuse.`)

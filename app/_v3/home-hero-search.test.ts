@@ -16,6 +16,8 @@ const FEATURED = readFileSync(resolve('app/_v3/HomeFeaturedCommunity.client.tsx'
 describe('homepage hero search uses the public search stack', () => {
   it('Stage H1 is buyer job line; brand stays in metadata (ci:seo-shell)', () => {
     expect(PAGE).toMatch(/headline=\{v3Text\('Homes for sale in Central Oregon'\)\}/)
+    expect(PAGE).toContain('heroEyebrow')
+    expect(PAGE).toContain('listedNow.toLocaleString')
     expect(PAGE).not.toContain('home-hero-search__job')
     expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
     expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Homes for Sale in Central Oregon \| Ryan Realty, Bend'\s*\}/)
@@ -42,11 +44,13 @@ describe('homepage hero search uses the public search stack', () => {
     const searchAt = PAGE.indexOf('<HomeHeroSearch')
     const pulseAt = PAGE.indexOf('<V3Pulse')
     const railsAt = PAGE.indexOf('<HomeHomesRails')
+    const guidesAt = PAGE.indexOf('<V3Answers')
     const doorsAt = PAGE.indexOf('<V3Doors')
     expect(stageAt).toBeGreaterThan(-1)
     expect(searchAt).toBeGreaterThan(stageAt)
     expect(railsAt).toBeGreaterThan(searchAt)
-    expect(pulseAt).toBeGreaterThan(railsAt)
+    expect(guidesAt).toBeGreaterThan(railsAt)
+    expect(pulseAt).toBeGreaterThan(guidesAt)
     expect(doorsAt).toBeGreaterThan(pulseAt)
   })
 
@@ -63,6 +67,8 @@ describe('homepage hero search uses the public search stack', () => {
     expect(wrap).toContain('shortcut="f"')
     expect(SEARCH).not.toMatch(/open=\{open\}/)
     expect(SEARCH).toContain('PLACE_SEEDS')
+    expect(morph).toContain('rr:morphing-search-open')
+    expect(morph).toContain('anchorRect.width >= 8')
   })
 
   it('adapts catalog modules into house primitives on the hero and rails', () => {
@@ -160,6 +166,10 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toContain('.v3 .home-hero-search__mode--buy:checked')
     expect(css).toContain('.v3 .home-hero-search__mode--sell:checked')
     expect(css).toContain('.v3.v3-stage--inventory.v3-stage--compact:has(.home-hero-search)')
+    expect(css).toContain('html:has(.home-hero-search) .v3-chrome__search')
+    expect(css).toMatch(/html:has\(\.home-hero-search\) \.v3-chrome__search \{\s*display:\s*none/)
+    expect(css).toContain('.v3 .home-hero-search .v3-morph-search--live .v3-morph-search__catalog')
+    expect(css).toContain('width: 18rem')
     // Sharp cream painters: nested .v3 + TabsList bg-card + V3Tabs track — gone on Stage.
     expect(css).toContain('.v3 .home-hero-search .v3,')
     expect(css).toContain('.v3 .home-hero-search .v3-tabs,')
@@ -446,6 +456,7 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).not.toMatch(/\/images\/homepage\/doors\/buy\.png/)
     const stageAt = PAGE.indexOf('<V3Stage')
     const railsAt = PAGE.indexOf('<HomeHomesRails')
+    const guidesAt = PAGE.indexOf('<V3Answers')
     const featuredAt = PAGE.indexOf('<HomeFeaturedCommunity')
     const doorsAt = PAGE.indexOf('<V3Doors')
     const facesAt = PAGE.indexOf('Talk to a broker')
@@ -453,7 +464,8 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     const proofAt = PAGE.indexOf('<V3Proof')
     expect(stageAt).toBeGreaterThan(-1)
     expect(railsAt).toBeGreaterThan(stageAt)
-    expect(featuredAt).toBeGreaterThan(railsAt)
+    expect(guidesAt).toBeGreaterThan(railsAt)
+    expect(featuredAt).toBeGreaterThan(guidesAt)
     expect(doorsAt).toBeGreaterThan(featuredAt)
     expect(facesAt).toBeGreaterThan(doorsAt)
     expect(placesAt).toBeGreaterThan(facesAt)
