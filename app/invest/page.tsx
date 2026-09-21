@@ -9,7 +9,8 @@
  * SITE-98: catalog demos install before house paint. The route imports the
  * installed sources — InsightCards and shadcn Table — then paints navy/cream.
  * The opening is the land-not-buildings finding (V3Pulse, lots vs buildings).
- * V3Ledger keeps crawlable doors.
+ * SITE-168: InvestTables is the one priced-address inventory (photograph +
+ * price + address + type/sqft). V3Ledger keeps type doors, not a reprint.
  *
  * Data ONLY through @/lib/data and @/app/actions.
  */
@@ -108,18 +109,7 @@ export default async function InvestPage() {
       },
     ]
   })
-  const listingDoorRows: V3LedgerFigureRow[] = listings.map((row) => {
-    const facts = investListingFacts(row)
-    return {
-      id: row.listingKey,
-      href: row.href,
-      what: v3Text(row.address),
-      detail: v3Text([row.city, facts].filter(Boolean).join(' · ')),
-      value: v3Text(row.price),
-    }
-  })
-  const searchRows = listingDoorRows.length > 0 ? listingDoorRows : typeDoorRows
-  const [firstSearchRow, ...restSearchRows] = searchRows
+  const [firstTypeRow, ...restTypeRows] = typeDoorRows
 
   const rateFact: V3QuietItem[] =
     liveRate != null
@@ -156,10 +146,13 @@ export default async function InvestPage() {
     { label: 'Invest', href: '/invest' },
   ]
 
-  const listingListItems = listings.map((row) => ({
-    name: `${row.address}, ${row.city} · ${row.price}`,
-    url: row.href,
-  }))
+  const listingListItems = listings.map((row) => {
+    const facts = investListingFacts(row)
+    return {
+      name: [row.address, row.city, row.price, facts].filter(Boolean).join(' · '),
+      url: row.href,
+    }
+  })
   const typeListItems = segmentRows.map((row) => ({
     name: `${row.type} · ${row.count}`,
     url: row.href,
@@ -231,12 +224,12 @@ export default async function InvestPage() {
 
         <InvestTables listings={listingsOk ? listings : []} source={SEGMENT_TRACE} />
 
-        {firstSearchRow ? (
+        {firstTypeRow ? (
           <V3Ledger
             id="searches"
-            eyebrow={v3Text(listingDoorRows.length > 0 ? 'Central Oregon · Live inventory' : 'Central Oregon · By property type')}
-            heading={v3Text(listingDoorRows.length > 0 ? 'Priced addresses on the income side' : 'What is for sale, and how it trades')}
-            rows={[firstSearchRow, ...restSearchRows]}
+            eyebrow={v3Text('Central Oregon · By property type')}
+            heading={v3Text('What is for sale, and how it trades')}
+            rows={[firstTypeRow, ...restTypeRows]}
             source={v3Text(SEGMENT_TRACE)}
             action={{ label: v3Text('Every home for sale'), href: '/homes-for-sale?view=list' }}
           />

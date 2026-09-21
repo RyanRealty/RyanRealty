@@ -5,9 +5,11 @@
  * A tile without a publishable price or a street is dropped, not guessed.
  * Land rows carry acres instead of beds when the feed has no rooms.
  */
+import { listingPhotoAlt } from '@/components/site/v3/listing-photo-alt'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPriceExact } from '@/lib/format/money'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 export type InvestListingRow = {
@@ -20,6 +22,9 @@ export type InvestListingRow = {
   baths: string | null
   size: string | null
   typeLabel: string
+  /** MLS photograph of this listing, sized for the inventory row. Null when the feed sent none. */
+  photoSrc: string | null
+  photoAlt: string
 }
 
 const TYPE_BY_CODE: Record<string, string> = {
@@ -58,12 +63,12 @@ function qualify(tile: ListingTile): boolean {
 
 function sizeBit(tile: ListingTile): string | null {
   if (tile.sqft != null && tile.sqft > 0) {
-    return `${Math.round(tile.sqft).toLocaleString('en-US')} sqft`
+    return `${Math.round(tile.sqft).toLocaleString('en-US')}\u00a0sqft`
   }
   if (tile.lotSizeAcres != null && tile.lotSizeAcres > 0) {
     const acres = tile.lotSizeAcres
     const label = acres >= 10 ? acres.toFixed(0) : acres.toFixed(2)
-    return `${label} acres`
+    return `${label}\u00a0acres`
   }
   return null
 }
@@ -78,16 +83,20 @@ function toRow(tile: ListingTile): InvestListingRow | null {
     streetDirSuffix: tile.streetDirSuffix,
   })
   if (!street) return null
+  const city = tile.city?.trim() || 'Central Oregon'
+  const photo = tile.photoUrl?.trim()
   return {
     listingKey: tile.listingKey,
     href: listingTileHref(tile),
     address: street,
-    city: tile.city?.trim() || 'Central Oregon',
+    city,
     price: formatPriceExact(tile.listPrice),
     beds: tile.beds != null && tile.beds > 0 ? `${Math.round(tile.beds)} bd` : null,
     baths: tile.baths != null && tile.baths > 0 ? `${Math.round(tile.baths * 10) / 10} ba` : null,
     size: sizeBit(tile),
     typeLabel: investTypeLabel(tile),
+    photoSrc: photo ? listingRowPhotoSrc(photo) : null,
+    photoAlt: listingPhotoAlt({ addressLine: street, cityLine: city }),
   }
 }
 
