@@ -21,6 +21,12 @@ import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3ChartSwitch, v3Text } from '@/components/site/v3'
 import { HomeRailCardFace } from '@/app/_v3/HomeListingRail.client'
 import type { HomeRailCard } from '@/app/_v3/home-rail-items'
+import {
+  bendNewConRowConcessionLine,
+  bendNewConRowConcessionReveal,
+  bendNewConRowOffer,
+  type NewConInventoryRow,
+} from '@/lib/site/bend-new-construction'
 import type { NewConLeadBand } from './load-lead-shelf'
 import '@/components/site/v3/V3ListingRow.css'
 import '@/components/site/v3/V3Carousel.css'
@@ -39,9 +45,34 @@ function SnapshotDoor({ band }: { band: NewConLeadBand }) {
         {row.builders ? ` · ${row.builders}` : ''}
         {row.typical ? ` · ${row.typical}` : ''}
       </p>
+      <ConcessionNote row={row} />
       <V3Button href={href} variant="primary">
         {seeHomesLabel}
       </V3Button>
+    </div>
+  )
+}
+
+/**
+ * Builder + concession, ON the home shelf (SITE-151, Matt 2026-09-21): a
+ * visitor scrolling real Parkside / Calaveras / Easton houses sees who
+ * built them and what is published right next to the cards, not four
+ * sections down in a disjointed Financing block. Renders nothing when the
+ * row has no attached offer (no builder sampled, or nothing publishable
+ * found for that specific community) — §0: say nothing rather than imply
+ * one.
+ */
+function ConcessionNote({ row }: { row: NewConInventoryRow }) {
+  const attach = bendNewConRowOffer(row.name)
+  if (!attach) return null
+  const headline = bendNewConRowConcessionLine(row.name)
+  const deep = bendNewConRowConcessionReveal(row.name)
+  const builder = row.builders ?? 'Builder not in sampled details'
+  return (
+    <div className="newcon-lead__concession">
+      <p className="newcon-lead__concession-builder">Built by {builder}</p>
+      {headline ? <p className="newcon-lead__concession-headline">{headline}</p> : null}
+      {deep ? <p className="newcon-lead__concession-deep">{deep}</p> : null}
     </div>
   )
 }
@@ -102,6 +133,7 @@ function LeadTrack({
           </>
         ) : null}
       </Carousel>
+      <ConcessionNote row={fallback.row} />
       <V3Button href={fallback.href} variant="primary" className="newcon-lead__door">
         {fallback.seeHomesLabel}
       </V3Button>
