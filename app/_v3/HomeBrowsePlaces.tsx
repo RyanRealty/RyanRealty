@@ -2,9 +2,9 @@
 
 /**
  * Browse places on Home `/`: catalog Card (and resort Carousel) demos.
- * Town Cards: photo when the city index has one, live AnimatedNumber,
- * CardFooter door. Resort Cards: photo when communityImage published one,
- * name + city line, CardFooter — never identical empty chips.
+ * One card structure: reserved 4:3 media (honest photo or navy text-only),
+ * title, subtitle, count slot, CardFooter. Never a short bald stub next
+ * to a photo card.
  */
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,10 @@ import {
 } from '@/components/ui/carousel'
 import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
+import { placeDoorPhotoSrc } from './home-browse-places'
 import './home-browse-places.css'
+
+export { HOME_PLACE_CARD_MEDIA_RATIO, placeDoorPhotoSrc } from './home-browse-places'
 
 export type HomePlaceDoor = {
   label: string
@@ -29,7 +32,7 @@ export type HomePlaceDoor = {
    * never send a zero for a miss.
    */
   count?: number | string
-  /** City-index or communityImage photo. Omit when none. */
+  /** City-index or communityImage photo. Omit when none — reserved plate still renders. */
   photoSrc?: string
   description?: string
 }
@@ -54,6 +57,23 @@ function doorCount(count: HomePlaceDoor['count']): { n: number; label: string } 
   return null
 }
 
+function PlaceMedia({ door }: { door: HomePlaceDoor }) {
+  const photoSrc = placeDoorPhotoSrc(door.photoSrc)
+  if (photoSrc) {
+    return (
+      <div className="home-browse-places__media">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={photoSrc} alt="" width={800} height={600} decoding="async" />
+      </div>
+    )
+  }
+  return (
+    <div className="home-browse-places__media home-browse-places__media--reserved" aria-hidden="true">
+      <span className="home-browse-places__media-name">{door.label}</span>
+    </div>
+  )
+}
+
 function PlaceCard({
   door,
   unit,
@@ -64,19 +84,18 @@ function PlaceCard({
   cta: string
 }) {
   const live = doorCount(door.count)
-  const description = door.description?.trim() || (live && unit?.trim() ? unit : undefined)
+  const description = door.description?.trim() || unit?.trim() || undefined
   return (
-    <Card className="home-browse-places__card">
-      {door.photoSrc?.trim() ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={door.photoSrc} alt="" width={800} height={600} decoding="async" />
-      ) : null}
+    <Card className="home-browse-places__card pt-0">
+      <PlaceMedia door={door} />
       <CardHeader>
         <CardTitle>{door.label}</CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
+        {description ? <CardDescription>{description}</CardDescription> : (
+          <CardDescription className="home-browse-places__desc-slot">&nbsp;</CardDescription>
+        )}
       </CardHeader>
-      {live ? (
-        <CardContent>
+      <CardContent className="home-browse-places__count-slot">
+        {live ? (
           <AnimatedNumber
             value={live.n}
             format={(n) =>
@@ -85,8 +104,12 @@ function PlaceCard({
             startOnView
             className="home-browse-places__count"
           />
-        </CardContent>
-      ) : null}
+        ) : (
+          <span className="home-browse-places__count home-browse-places__count--empty" aria-hidden="true">
+            &nbsp;
+          </span>
+        )}
+      </CardContent>
       <CardFooter>
         <Button asChild variant="link">
           <span>{cta}</span>
@@ -155,10 +178,13 @@ export function HomeBrowsePlaces({
                   className="home-browse-places__carousel w-full"
                   aria-label={run.name}
                 >
-                  <CarouselContent>
+                  <CarouselContent className="home-browse-places__track">
                     {run.doors.map((door) => (
-                      <CarouselItem key={door.href} className="md:basis-1/2 lg:basis-1/3">
-                        <div className="p-1">
+                      <CarouselItem
+                        key={door.href}
+                        className="home-browse-places__slide basis-[85%] md:basis-1/2 lg:basis-1/3"
+                      >
+                        <div className="home-browse-places__slide-inner">
                           <Link href={door.href} className="home-browse-places__link">
                             <PlaceCard door={door} unit={run.unit} cta={cta} />
                           </Link>

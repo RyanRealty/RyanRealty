@@ -76,7 +76,7 @@ import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
 import { cityResorts, resortActiveSfrCounts, resortLabelToSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
-import { preferPlaceHero } from '@/lib/geo-images'
+import { communityImage, preferPlaceHero } from '@/lib/geo-images'
 // Row shaping shared with the neighborhood + community place pages - one copy, so a
 // fix cannot land on one of the three and drift on the others.
 import { buildActivityItems, buildArticlePosts, buildOtherCityItems } from '@/lib/kb/place-sections'
@@ -736,11 +736,17 @@ async function renderCityDetail({ params }: Props) {
   })
   const communityItems: CityCommunityItem[] = cityCommGrains
     .filter(({ grain }) => grain === 'community')
-    .map(({ c, resortSlug }): CityCommunityItem | null => {
+    .map(({ c, resortSlug }): CityCommunityItem => {
       const curated = curatedComms.find((f) => c.subdivision.toLowerCase().includes(f.match))
       const cvUrl = communityVideoUrl(curated?.videoSlug)
-      const img = preferPlaceHero(c.heroImageUrl, curated?.img ?? '') || null
-      if (!img) return null
+      const registrySlug = resortSlug ?? c.slug
+      const img = preferPlaceHero(
+        c.heroImageUrl,
+        preferPlaceHero(
+          curated?.img ?? '',
+          preferPlaceHero(communityImage(registrySlug) ?? '', CITY_RESORT_LEDGER_IMG[registrySlug] ?? ''),
+        ),
+      )
       // When this community is a resort, show its ALIAS-AWARE count, so the
       // rail card matches the golf ledger and the real MLS total rather than
       // the literal-name undercount (§0).
@@ -756,7 +762,6 @@ async function renderCityDetail({ params }: Props) {
         video: cvUrl ? { url: cvUrl, embedType: 'video-tag' as const } : null,
       }
     })
-    .filter((x): x is CityCommunityItem => x !== null)
     .sort((a, b) => (a.video ? 0 : 1) - (b.video ? 0 : 1) || (b.activeCount ?? 0) - (a.activeCount ?? 0))
     // ONE ROW PER RESOLVED DOOR: two index rows (a resort and one of its member
     // subdivisions) can both resolve to the same registry slug, and two rows
@@ -1048,7 +1053,7 @@ async function renderCityDetail({ params }: Props) {
           entries={childPlatEntries}
         />
 
-        {/* D88: every community in the city that has a photo, marquee first. */}
+        {/* D88: every community-grain door. Photo when sourced; V3Ledger glyphs the rest. */}
         {firstRail ? (
           <V3Ledger
             id="communities"

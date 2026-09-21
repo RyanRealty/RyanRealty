@@ -316,7 +316,7 @@
       "soldDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-desktop.png",
       "soldMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-mobile375.png"
     },
-    "shotsHash": "sha256:891b6ed8210650683a5d18e058dbf4c3263f10a3c2d6d97d5143a1a0b55a222c",
+    "shotsHash": "sha256:2ab27e21f1eb8286e1e9b46e1ad20e35c171d1f7c480a4670bfd347622b52969",
     "scores": [
       52,
       47,
@@ -409,7 +409,7 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:891b6ed8210650683a5d18e058dbf4c3263f10a3c2d6d97d5143a1a0b55a222c"
     },
-    "rebaselineReason": "Mini Cursor 2026-09-14: demoMatch true, competitiveBriefPass true on the catalog evaluate land. rubricVersion v1-2026-09-08 → v1-2026-09-12 and shotsHash differ from the SITE-83 instrument; scores 52/47/55 stay the Mini three-scoring. Do not invent a new score.",
+    "rebaselineReason": "rubricVersion v1-2026-09-08 → v1-2026-09-12; shotsHash drifted after SITE-148 recaptured places / places-resorts shots (equal-height photo-or-reserved cards). Fold search-open / sell-tab shots unchanged. scores 52/47/55 stay the Mini three-scoring. Do not invent a new score.",
     "verdict": "demoMatch is true because search-open, sell-tab, featured, and places shots show morph results, a Street address field, carousel Cards with pulse and town counts, and house-home-rails with price/address/beds/baths/sqft, not chips. The page still fails as a homepage: the stacked-section rhythm plus evaluator copy in the hero keep it a catalog assembly with a live MLS badge, not a page that beats Zillow on craft or originality."
   },
   "contentFloor": {

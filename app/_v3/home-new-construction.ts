@@ -8,6 +8,8 @@ import {
   bendNewConSearchFilter,
   bendNewConSearchHref,
 } from '@/lib/site/bend-new-construction'
+import { communityImage, preferPlaceHeroOrNull } from '@/lib/geo-images'
+import { slugify } from '@/lib/slug'
 import type { HomePlaceDoor, HomePlaceRun } from './HomeBrowsePlaces'
 
 function dalReady(): boolean {
@@ -41,12 +43,16 @@ export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
       photoSrc: BEND_NEW_CON_STAGE_FALLBACK_POSTER,
       ...(bendCount != null ? { count: bendCount } : {}),
     },
-    ...BEND_NEW_CON_HOME_NAV_NAMES.map((name, i) => ({
-      label: name,
-      href: bendNewConSearchHref(name),
-      description: 'Active-building subdivision',
-      ...(navCounts[i] != null ? { count: navCounts[i] } : {}),
-    })),
+    ...BEND_NEW_CON_HOME_NAV_NAMES.map((name, i) => {
+      const photoSrc = preferPlaceHeroOrNull(null, communityImage(slugify(name)))
+      return {
+        label: name,
+        href: bendNewConSearchHref(name),
+        description: 'Active-building subdivision',
+        ...(photoSrc ? { photoSrc } : {}),
+        ...(navCounts[i] != null ? { count: navCounts[i] } : {}),
+      }
+    }),
   ]
 
   return {

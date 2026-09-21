@@ -33,7 +33,7 @@ import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { loadHomeNewConRun } from './_v3/home-new-construction'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
 import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
-import { communityImage } from '@/lib/geo-images'
+import { cityHero, communityImage, hasCuratedCityHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
 import { homeRailItemList } from './_v3/home-jsonld'
 import {
@@ -220,10 +220,14 @@ export default async function Home() {
       doors: TOWN_ORDER.map((slug) => {
         const live = cityBySlug.get(slug)
         const active = live?.activeCount
+        const photoSrc = preferPlaceHeroOrNull(
+          live?.heroImageUrl,
+          hasCuratedCityHero(slug) ? cityHero(slug).src : null,
+        )
         return {
           label: live?.name ?? TOWN_LABEL[slug],
           href: `/cities/${slug}`,
-          ...(live?.heroImageUrl?.trim() ? { photoSrc: live.heroImageUrl } : {}),
+          ...(photoSrc ? { photoSrc } : {}),
           ...(typeof active === 'number' && Number.isFinite(active) && active > 0
             ? { count: active }
             : {}),
@@ -234,18 +238,14 @@ export default async function Home() {
       name: 'Resorts and communities',
       layout: 'carousel' as const,
       seeAll: { label: 'Every community', href: '/communities' },
-      doors: RESORT_DOORS.flatMap((r) => {
+      doors: RESORT_DOORS.map((r) => {
         const photoSrc = communityImage(r.slug)
-        // Catalog Card carousel: photo is required. Misses stay on /communities.
-        if (!photoSrc) return []
-        return [
-          {
-            label: r.label,
-            href: r.href,
-            description: 'Resort community',
-            photoSrc,
-          },
-        ]
+        return {
+          label: r.label,
+          href: r.href,
+          description: 'Resort community',
+          ...(photoSrc ? { photoSrc } : {}),
+        }
       }),
     },
   ]
