@@ -1,0 +1,135 @@
+/* SITE-167: broker portraits on /reviews. Tokens only. */
+
+.reviews-faces {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-xs);
+  margin: var(--v3-space-sm) 0 0;
+  width: min(100%, 22rem);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.reviews-faces__note {
+  margin: 0;
+  max-width: 100%;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.reviews-faces [data-slot='avatar-group'] {
+  align-items: flex-end;
+}
+
+.reviews-faces [data-slot='avatar'] {
+  width: 4.5rem;
+  height: 4.5rem;
+  background-color: var(--v3-wash);
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+}
+
+.reviews-faces [data-slot='avatar-fallback'] {
+  background: transparent;
+  color: transparent;
+  font-size: 0;
+}
+
+.reviews-faces [data-slot='avatar'][data-lead='true'] {
+  width: 6rem;
+  height: 6rem;
+}
+
+.reviews-faces [data-slot='avatar']::after {
+  display: none;
+}
+
+.reviews-faces [data-slot='avatar-group-count'] {
+  width: 4.5rem;
+  height: 4.5rem;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body-sm);
+}
+
+.reviews-faces__btn {
+  width: auto;
+  height: auto;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0;
+}
+
+.reviews-faces__btn:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+/* Google sent no reviewer face. Do not paint initials as one. */
+.v3-proof--lead .v3-proof__reading--lead .v3-proof__avatar-wrap {
+  display: none;
+}
+
+@media (max-width: 47.99rem) {
+  .v3-proof--score > .reviews-faces.v3-proof__avatar-group {
+    order: 2;
+  }
+
+  .v3-proof--score > .v3-proof__head {
+    order: 3;
+  }
+
+  .v3-proof--score > .v3-proof__reading--lead {
+    order: 4;
+  }
+
+  .v3-proof--score > .reviews-faces [data-slot='avatar'] {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+
+  .v3-proof--score > .reviews-faces [data-slot='avatar'][data-lead='true'] {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .v3-proof--score > .reviews-faces [data-slot='avatar-group-count'] {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .v3-proof--score > .reviews-faces.v3-proof__avatar-group {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin-top: 0;
+    padding-top: var(--v3-space-md);
+    justify-self: end;
+    width: min(100%, 22rem);
+  }
+
+  .v3-proof--score > .v3-proof__face {
+    grid-column: 1;
+  }
+
+  .reviews-faces [data-slot='avatar'] {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+
+  .reviews-faces [data-slot='avatar'][data-lead='true'] {
+    width: 8.5rem;
+    height: 8.5rem;
+  }
+
+  .reviews-faces [data-slot='avatar-group-count'] {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+}

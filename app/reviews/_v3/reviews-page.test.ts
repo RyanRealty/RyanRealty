@@ -36,25 +36,34 @@ describe('reviews page composition', () => {
     expect(PAGE).toContain("href: '/team'")
   })
 
-  it('imports the shadcn-avatar composition on the route _v3 (SITE-109)', () => {
+  it('imports the shadcn-avatar composition on the route _v3 (SITE-109, SITE-167)', () => {
     const avatars = readFileSync('app/reviews/_v3/ReviewsAvatars.ts', 'utf8')
     const group = readFileSync('app/reviews/_v3/ReviewsAvatarGroup.client.tsx', 'utf8')
-    expect(avatars).toMatch(/import\s*\{[\s\S]*AvatarFallback[\s\S]*\}\s*from\s*'@\/components\/ui\/avatar'/)
+    expect(avatars).toMatch(/import\s*\{[\s\S]*AvatarImage[\s\S]*\}\s*from\s*'@\/components\/ui\/avatar'/)
     expect(avatars).toContain('AvatarGroup')
-    expect(avatars).not.toContain('AvatarImage')
+    expect(avatars).toContain('AvatarImage')
     expect(group).toContain('AvatarGroup')
     expect(group).toContain('AvatarFallback')
-    expect(group).not.toContain('AvatarImage')
+    expect(group).toContain('AvatarImage')
+    expect(group).toContain('brokersForReviews')
     expect(group).not.toContain('/images/catalog/shadcn-avatar/')
     expect(group).toContain('DropdownMenuGroup')
-    expect(group).toContain('Read this review')
+    expect(group).toContain('Meet ')
+    expect(group).not.toContain('Read this review')
     expect(group).not.toMatch(/>\s*Sign Out\s*</)
-    expect(group).not.toMatch(/<p className=/)
   })
 
   it('leads with the score face rather than a bare figure row', () => {
     expect(PAGE).toContain('face')
     expect(PAGE).toContain("{ value: average.toFixed(1), label: 'average of 5' }")
     expect(PAGE).toContain("{ value: String(count), label: 'Google reviews' }")
+  })
+
+  it('names brokers with images in reviews JSON-LD', () => {
+    const jsonld = readFileSync('app/reviews/_v3/reviews-jsonld.ts', 'utf8')
+    expect(jsonld).toContain('REVIEW_BROKERS')
+    expect(jsonld).toContain('primaryImageOfPage')
+    expect(jsonld).toContain('employee')
+    expect(jsonld).not.toMatch(/['"]aggregateRating['"]\s*:/)
   })
 })

@@ -8,6 +8,7 @@
  */
 
 import type { ReviewQuote } from '@/lib/reviews/review-quotes'
+import { REVIEW_BROKERS } from './reviews-faces'
 
 function ratingValue(rating: number): number {
   if (!Number.isFinite(rating)) return 5
@@ -47,6 +48,10 @@ export function buildReviewsJsonLd(
         name: `${quotes.length} Google reviews of Ryan Realty`,
         url: `${siteUrl}/reviews`,
         description: `${quotes.length} verified Google reviews of Ryan Realty, each in full on this page.`,
+        primaryImageOfPage: {
+          '@type': 'ImageObject',
+          url: `${siteUrl}${REVIEW_BROKERS[0]!.src}`,
+        },
       },
       {
         '@type': 'ItemList',
@@ -65,6 +70,14 @@ export function buildReviewsJsonLd(
         '@id': `${siteUrl}#organization`,
         name: 'Ryan Realty',
         url: `${siteUrl}/reviews`,
+        image: `${siteUrl}${REVIEW_BROKERS[0]!.src}`,
+        employee: REVIEW_BROKERS.map((b) => ({
+          '@type': 'Person',
+          name: b.name,
+          url: `${siteUrl}${b.href}`,
+          image: `${siteUrl}${b.src}`,
+          jobTitle: b.title,
+        })),
         review: reviews,
       },
     ],
