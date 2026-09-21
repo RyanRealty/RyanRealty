@@ -12,7 +12,12 @@ import { fetchListings } from '@/lib/spark-odata'
 import type { SparkListing } from '@/lib/spark-odata'
 import { processSparkListing } from '@/lib/listing-processor'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
-import { sparkToListingRow, sparkHistoryItemToRow as unifiedHistoryItemToRow, type ListingMapperOptions } from '@/lib/listing-mapper'
+import {
+  sparkToListingRow,
+  sparkHistoryItemToRow as unifiedHistoryItemToRow,
+  extractListingVideoRows,
+  type ListingMapperOptions,
+} from '@/lib/listing-mapper'
 import * as Sentry from '@sentry/nextjs'
 
 export type SyncDeltaResult = {
@@ -37,25 +42,15 @@ const ODATA_SYNC_EXPAND = 'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Docu
 const UPSERT_CHUNK_SIZE = 12
 const UPSERT_CHUNK_SIZE_RETRY = 5
 
-function isLikelyVideoUrl(url: string): boolean {
-  const u = url.toLowerCase()
-  if (u.length < 10) return false
-  return (
-    u.includes('matterport') ||
-    u.includes('youtube') ||
-    u.includes('youtu.be') ||
-    u.includes('vimeo') ||
-    u.includes('branded') ||
-    u.includes('unbranded') ||
-    u.includes('tour') ||
-    u.endsWith('.mp4') ||
-    u.endsWith('.mov') ||
-    u.endsWith('.webm') ||
-    u.includes('/video') ||
-    u.includes('video')
-  )
-}
-
+/**
+ * SITE-154 (2026-09-21): this used to derive video rows itself, checking only
+ * record.Uri/uri/URL/Url — fields a real Spark video object does not carry
+ * (it carries ObjectHtml: a bare URL, an <iframe> snippet, or occasionally an
+ * <a href>). That meant this admin path silently wrote NOTHING from real MLS
+ * data despite running successfully. Now shares extractListingVideoRows with
+ * the scheduled delta sync (lib/sync/deltaSync.ts) so the two paths cannot
+ * diverge again and both derive URLs the same, proven way.
+ */
 async function syncListingVideosForRows(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
@@ -66,26 +61,7 @@ async function syncListingVideosForRows(
   for (const row of rows) {
     const listingKey = String(row.ListingKey ?? '').trim()
     if (!listingKey) continue
-    const details = (row.details ?? null) as { Videos?: unknown; videos?: unknown } | null
-    const videos = Array.isArray(details?.Videos)
-      ? details.Videos
-      : Array.isArray(details?.videos)
-        ? details.videos
-        : []
-    const videoRows = videos
-      .map((item, index) => {
-        const record = item as { Uri?: string; uri?: string; URL?: string; Url?: string; Order?: number } | null
-        if (!record) return null
-        const videoUrl = (record.Uri ?? record.uri ?? record.URL ?? record.Url ?? '').trim()
-        if (!videoUrl || !isLikelyVideoUrl(videoUrl)) return null
-        return {
-          listing_key: listingKey,
-          video_url: videoUrl,
-          sort_order: Number.isFinite(record.Order) ? Number(record.Order) : index,
-          source: 'spark',
-        }
-      })
-      .filter((video): video is { listing_key: string; video_url: string; sort_order: number; source: string } => video != null)
+    const videoRows = extractListingVideoRows(listingKey, row.details ?? null)
     await replaceListingVideosForKey(listingKey, videoRows)
   }
 }

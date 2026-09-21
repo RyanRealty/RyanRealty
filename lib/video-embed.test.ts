@@ -3,6 +3,7 @@ import {
   getVideoEmbedHtml,
   isDirectListingVideoFileUrl,
   parseListingVideoEmbedForTile,
+  deriveRawVideoUrl,
 } from './video-embed'
 
 describe('getVideoEmbedHtml', () => {
@@ -107,5 +108,44 @@ describe('parseListingVideoEmbedForTile', () => {
     const p = parseListingVideoEmbedForTile('https://my.matterport.com/show/?m=abc')
     expect(p?.kind).toBe('matterport')
     expect(p?.src).toContain('matterport.com')
+  })
+})
+
+// SITE-154 (2026-09-21): verified live against Spark that a real Videos[]
+// entry almost never carries Uri/URL/Url — it carries ObjectHtml.
+describe('deriveRawVideoUrl', () => {
+  it('prefers a direct Uri/URL/Url field when present', () => {
+    expect(deriveRawVideoUrl({ Uri: 'https://example.com/v1.mp4', ObjectHtml: '<iframe src="https://other.com"></iframe>' })).toBe(
+      'https://example.com/v1.mp4',
+    )
+  })
+
+  it('pulls the src out of an <iframe> ObjectHtml snippet', () => {
+    const html =
+      '<iframe width="560" height="315" src="https://www.youtube.com/embed/HuSxin6MetA?si=x" frameborder="0" allowfullscreen></iframe>'
+    expect(deriveRawVideoUrl({ ObjectHtml: html })).toBe('https://www.youtube.com/embed/HuSxin6MetA?si=x')
+  })
+
+  it('resolves a protocol-relative iframe src to https', () => {
+    const html = '<iframe src="//player.vimeo.com/video/123456"></iframe>'
+    expect(deriveRawVideoUrl({ ObjectHtml: html })).toBe('https://player.vimeo.com/video/123456')
+  })
+
+  it('takes a bare-URL ObjectHtml as-is (Dropbox / Aryeo / Walker&Homes)', () => {
+    expect(deriveRawVideoUrl({ ObjectHtml: 'https://visual-property-pro.aryeo.com/videos/abc123' })).toBe(
+      'https://visual-property-pro.aryeo.com/videos/abc123',
+    )
+  })
+
+  it('pulls an href out of an <a> ObjectHtml link', () => {
+    expect(
+      deriveRawVideoUrl({ ObjectHtml: '<a href="https://example.com/tour">Watch</a>' }),
+    ).toBe('https://example.com/tour')
+  })
+
+  it('returns null when nothing usable is present', () => {
+    expect(deriveRawVideoUrl({ Id: 'v1', Name: 'no url here' })).toBeNull()
+    expect(deriveRawVideoUrl({ ObjectHtml: '' })).toBeNull()
+    expect(deriveRawVideoUrl({})).toBeNull()
   })
 })

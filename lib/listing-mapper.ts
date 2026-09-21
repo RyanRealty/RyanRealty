@@ -17,6 +17,7 @@ import {
   redactPublicDetails,
   stripMaskedValues,
 } from '@/lib/listing-customfields'
+import { deriveRawVideoUrl, normalizeEmbed } from '@/lib/video-embed'
 
 // The CustomFields subsystem lives in lib/listing-customfields.ts —
 // re-exported here so existing importers keep working unchanged.
@@ -535,6 +536,62 @@ export function sparkToListingRow(
   // derived alike — the 2026-08-05 delta-cursor incident (see the module doc).
   clampListingNumericBounds(row)
   return row
+}
+
+// ---------------------------------------------------------------------------
+// listing_videos row extraction (SITE-154, 2026-09-21)
+// ---------------------------------------------------------------------------
+
+export type ListingVideoSyncRow = {
+  listing_key: string
+  video_url: string
+  sort_order: number
+  source: string
+}
+
+/**
+ * Derive `listing_videos` rows from a mapped row's `details.Videos` — the raw
+ * MLS Videos array, retained verbatim in `details` by sparkToListingRow above
+ * (redactPublicDetails never touches Videos/VirtualTours; verified live
+ * 2026-09-21 against 10 sampled Active listings: details.Videos in Supabase
+ * matched Spark exactly).
+ *
+ * ONE extraction, shared by the scheduled delta sync (lib/sync/deltaSync.ts)
+ * and the manual admin full sync (app/actions/sync-spark.ts) so the two
+ * cannot drift. It replaces a prior per-caller extraction that only checked
+ * Uri/URL/Url — fields a real Spark video object does not carry (it carries
+ * ObjectHtml) — so that path silently wrote nothing from real MLS data. Every
+ * returned row is pre-checked against lib/video-embed.ts normalizeEmbed (the
+ * SAME renderability gate the listing detail page's Tier-3 read applies), so
+ * a row landing in listing_videos is guaranteed playable, never a MapRight
+ * parcel map or a link normalizeEmbed would otherwise drop at read time.
+ */
+export function extractListingVideoRows(
+  listingKey: string,
+  details: unknown
+): ListingVideoSyncRow[] {
+  const det = details as { Videos?: unknown } | null
+  const videos = det && typeof det === 'object' && Array.isArray(det.Videos) ? det.Videos : []
+  if (videos.length === 0) return []
+  const out: ListingVideoSyncRow[] = []
+  let order = 0
+  for (const item of videos) {
+    if (!item || typeof item !== 'object') continue
+    const record = item as Record<string, unknown>
+    const raw = deriveRawVideoUrl(record)
+    if (!raw) continue
+    const hint = typeof record.Source === 'string' ? record.Source : null
+    if (!normalizeEmbed(raw, hint)) continue // would render nothing — don't store it
+    const rawOrder = record.Order
+    out.push({
+      listing_key: listingKey,
+      video_url: raw,
+      sort_order: typeof rawOrder === 'number' && Number.isFinite(rawOrder) ? rawOrder : order,
+      source: 'spark',
+    })
+    order++
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------

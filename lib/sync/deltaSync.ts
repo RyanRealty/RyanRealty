@@ -26,7 +26,13 @@
 import { computeNextDeltaCursor } from '@/lib/sync/deltaCursor'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-status'
-import { sparkToListingRow, extractPrivateDetails, type ListingMapperOptions } from '@/lib/listing-mapper'
+import {
+  sparkToListingRow,
+  extractPrivateDetails,
+  extractListingVideoRows,
+  type ListingMapperOptions,
+  type ListingVideoSyncRow,
+} from '@/lib/listing-mapper'
 import { fetchSparkListingsPage } from '@/lib/spark'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
 import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
@@ -40,6 +46,7 @@ import {
   insertActivityEventRows,
   updateListingPhotoUrl,
   updateSyncStateLastDelta,
+  replaceListingVideosForKey,
 } from '@/lib/data/sync/syncWrites'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
 import { processNewExpiredListings } from '@/lib/expired-listing-processor'
@@ -84,6 +91,15 @@ export type ExistingListingLite = {
   StandardStatus: string | null
   ListPrice: number | null
   is_finalized: boolean | null
+  has_virtual_tour?: boolean | null
+}
+
+/** A listing_videos rewrite queued by the plan: one entry per listing whose
+ *  video set may need to change in the DB this run (see videoSyncTargets on
+ *  DeltaPlan for the write-amplification rule that bounds this list). */
+export type VideoSyncTarget = {
+  listingKey: string
+  rows: ListingVideoSyncRow[]
 }
 
 /** A raw Spark delta result as returned by the listings feed. CustomFields is
@@ -134,6 +150,9 @@ export type DeltaPlan = {
   priceHistoryRows: PriceHistoryRow[]
   statusHistoryRows: StatusHistoryRow[]
   finalizeTargets: FinalizeTarget[]
+  /** listing_videos rewrites this run should perform. SITE-154: NOT one entry
+   *  per upserted row — see the write-amplification note where this is built. */
+  videoSyncTargets: VideoSyncTarget[]
   maxProcessedTs: string | null
   counters: {
     fetched: number
@@ -200,6 +219,7 @@ export function computeDeltaPlan(
     priceHistoryRows: [],
     statusHistoryRows: [],
     finalizeTargets: [],
+    videoSyncTargets: [],
     maxProcessedTs: null,
     counters: { fetched: 0, newListings: 0, priceChanges: 0, statusChanges: 0, skippedFinalized: 0 },
   }
@@ -229,6 +249,18 @@ export function computeDeltaPlan(
 
     const priv = extractPrivateDetails(fields, result.CustomFields)
     if (priv) plan.privateRows.push({ listing_key: listingKey, private_data: priv })
+
+    // listing_videos rewrite — bounded, NOT one entry per upserted row
+    // (write-amplification guard, SITE-154: replaceListingVideosForKey deletes
+    // then inserts, and the overwhelming majority of any delta window is
+    // listings that have never had a video). Queue a rewrite only when this
+    // row's Spark Videos resolve to >=1 playable row, or the existing DB row
+    // previously carried one (has_virtual_tour) and may need its listing_videos
+    // rows cleared because Spark dropped the last video.
+    const videoRows = extractListingVideoRows(listingKey, row.details)
+    if (videoRows.length > 0 || existing?.has_virtual_tour === true) {
+      plan.videoSyncTargets.push({ listingKey, rows: videoRows })
+    }
 
     const nowTerminal = status ? isTerminalStatus(status) : false
 
@@ -373,6 +405,8 @@ export type ExecuteRunResult = {
   historyRowsInserted: number
   photosFixed: number
   skippedFinalized: number
+  /** listing_videos rewrites performed this run (see videoSyncTargets). */
+  videosSynced: number
   expired: ExpiredStats | null
 }
 
@@ -531,6 +565,17 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     if (error) console.error('[deltaSync] listing_private upsert error.', error.message)
   }
 
+  // 1c. listing_videos rewrite (SITE-154). videoSyncTargets is ALREADY bounded
+  // to "has a video now" or "had one before" (see computeDeltaPlan) — this loop
+  // does not run per upserted row, only per queued target, so a delta window
+  // full of video-less listings costs zero listing_videos writes.
+  let videosSynced = 0
+  for (const target of plan.videoSyncTargets) {
+    const r = await replaceListingVideosForKey(target.listingKey, target.rows)
+    if (r.ok) videosSynced++
+    else console.error(`[deltaSync] listing_videos rewrite error for ${target.listingKey}.`, r.error)
+  }
+
   // 2. Price history.
   if (plan.priceHistoryRows.length > 0) {
     const r = await insertPriceHistoryRows(plan.priceHistoryRows)
@@ -646,6 +691,7 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     historyRowsInserted,
     photosFixed,
     skippedFinalized: plan.counters.skippedFinalized,
+    videosSynced,
     expired,
   }
 }
