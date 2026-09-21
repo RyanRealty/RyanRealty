@@ -40,6 +40,8 @@ export type NavGroup = {
  */
 export type FooterCluster = {
   heading: string
+  /** When set, the cluster title is a door (city place page). */
+  href?: string
   links: NavLink[]
   depth?: 1 | 2 | 3
 }
@@ -53,16 +55,16 @@ export type FooterGroup = {
 
 /** Flatten a column's destinations. Groups, when present, are the source. */
 export function footerColumnLinks(column: FooterGroup): NavLink[] {
-  return column.groups?.length ? column.groups.flatMap((g) => g.links) : column.links
+  return column.groups?.length
+    ? column.groups.flatMap((g) => [
+        ...(g.href ? [{ href: g.href, label: g.heading }] : []),
+        ...g.links,
+      ])
+    : column.links
 }
 
 function footerFromGroups(heading: string, groups: FooterCluster[]): FooterGroup {
-  return { heading, groups, links: groups.flatMap((g) => g.links) }
-}
-
-/** City slug from a CITY_LINKS href (`/cities/la-pine` → `la-pine`). */
-function citySlugFromHref(href: string): string {
-  return href.replace(/^\/cities\//, '')
+  return { heading, groups, links: footerColumnLinks({ heading, groups, links: [] }) }
 }
 
 function footerCity(label: string): NavLink {
@@ -81,33 +83,18 @@ function footerCommunity(label: string): NavLink {
   return community
 }
 
-/** Exact-match SEO door onto city inventory. */
-function cityHomes(label: string): NavLink {
-  const city = footerCity(label)
-  return {
-    href: `/homes-for-sale/${citySlugFromHref(city.href)}`,
-    label: `Homes for sale in ${city.label}`,
-  }
-}
-
-/** Exact-match SEO door onto the city market node. */
-function cityMarket(label: string): NavLink {
-  const city = footerCity(label)
-  return {
-    href: `/housing-market/${citySlugFromHref(city.href)}`,
-    label: `${city.label} housing market`,
-  }
-}
-
-/** One town cluster under the Markets footer column (H13). */
+/** One town cluster under the Markets footer column. */
 function cityFooterCluster(
   label: string,
   communityLabels: readonly string[] = [],
   extra: NavLink[] = [],
 ): FooterCluster {
+  const city = footerCity(label)
   return {
     heading: label,
-    links: [cityHomes(label), cityMarket(label), ...extra, ...communityLabels.map(footerCommunity)],
+    href: city.href,
+    links: [...extra, ...communityLabels.map(footerCommunity)],
+    depth: 1,
   }
 }
 
@@ -348,8 +335,10 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
 // ─── Footers (projections) ────────────────────────────────────────────────────
 
 /**
- * Public sitemap: Markets / Buy · Sell · Join / Company / Contact (footer rebuild 2026-09-06).
- * Town clusters stay under Markets for SEO. Buy · Sell · Join densifies the action doors.
+ * Public sitemap: Markets / Buy · Sell · Join / Company / Contact.
+ * Markets is a city directory: the town name is the place-page door, communities
+ * nest under it. Keyword sentences ("Homes for sale in {city}") live on
+ * /site-index, not as a hairline dump in chrome (SITE-157, Matt 2026-09-20).
  * Header chrome: Homes / Places / Market / Sell / About.
  */
 const FOOTER_MORE_CITIES = ['La Pine', 'Terrebonne', 'Prineville', 'Madras'] as const

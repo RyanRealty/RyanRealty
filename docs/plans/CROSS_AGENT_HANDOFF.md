@@ -1,3 +1,12 @@
+# Current — 2026-09-21 (reboot resume: SITE-157 footer + SITE-156 Caldera)
+
+Surface: Grok Build `grok-build-01a0c3bd-20260921` resumed `01a0c181` after 2026-09-20 20:56 local reboot. Cos Mini-lands. Do not merge. HOLD owner email. Never `npm run push` from worktrees.
+
+- **SITE-157** claimed this owner. Footer craft on `wt/site-157-20260921`. Markets is a full-width city directory (town name → `/cities/{slug}`, communities nested; no "Homes for sale in {city}" / "{city} housing market" dump). Action row is Buy | Sell | Join | Company | Contact under Markets. Inner chrome width 90rem. Looked 1440 + 375 locally. Bend door → `/cities/bend` H1 "Bend homes for sale". Phone Markets fold opens. `ci:chrome-single-source` / `ci:nav-reachability` / `ci:default-chrome-footer` green. Cos Mini lands.
+- **SITE-156** still in worktree `subagent-01a0c202` / `wt/site-156-20260920`. Uncommitted Caldera look. 1440/375 Look + `--ship` remaining. Do not steal those files from this footer tip.
+- **SITE-146/143/148** still Cos-blocked on their `wt/site-*-20260920` SHAs. **SITE-147** not a full cherry-pick.
+- Not SITE-153. Skills: `.claude/skills/site-queue/SKILL.md`, TASTE.md.
+
 # Current — 2026-09-19 (CTA lock — drop sticky, header Work with us)
 
 Surface: Cursor cloud, branch `cursor/cta-lock-drop-sticky-2f27` off `origin/main` `3c0d7c8d3`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-123 not on main (not in seed).

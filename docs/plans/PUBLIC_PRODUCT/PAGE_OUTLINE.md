@@ -55,7 +55,7 @@ Not the primary target (do not write the H1 as if it were): generic `Bend homes 
 
 ### Footer-by-city (confirmed)
 
-Internal links with **exact-match anchors** (`Homes for sale in Bend`, `Bend housing market`, `Tetherow`) are how PageRank reaches the winners. Five IA columns (Buy/Areas) do not. City clusters stay.
+The town name is the door (`Bend` → `/cities/bend`). Communities nest under the town (`Tetherow`). Keyword sentences (`Homes for sale in Bend`, `Bend housing market`) live on `/site-index`, not as a hairline dump in chrome (SITE-157, Matt 2026-09-20).
 
 ### Live titles that violate this lock (fix when we build)
 
@@ -100,15 +100,15 @@ From `out/audits/ui-ux-inconsistencies/2026-09-05/findings/seo-live-metadata.md`
 
 **Contents (itemized, by city — SEO):**
 
-- Band: cityscape + logo-blue wordmark + “Central Oregon”
-- **Bend** — Homes for sale in Bend · Bend housing market · Bend neighborhoods · Tetherow · Broken Top · NorthWest Crossing · Awbrey Glen
-- **Redmond** — Homes for sale in Redmond · Redmond housing market · Eagle Crest · Pronghorn
-- **Sisters** — Homes for sale in Sisters · Sisters housing market · Black Butte Ranch
-- **Sunriver** — Homes for sale in Sunriver · Sunriver housing market · Caldera Springs · Crosswater
-- **La Pine · Terrebonne · Prineville · Madras** — Homes for sale in {city} · {city} housing market
-- **Sell** — Value my home · Our listings
-- **About** — Team · Reviews · Contact · Book
-- Legal row: privacy, terms, cookies, fair housing, DMCA, accessibility, site-index
+- Band: cityscape under columns; wordmark in the brand block (not overlaid on the sky)
+- **Bend** — city place page · Bend neighborhoods · Tetherow · Broken Top · NorthWest Crossing · Awbrey Glen
+- **Redmond** — city place page · Eagle Crest · Juniper Preserve
+- **Sisters** — city place page · Black Butte Ranch
+- **Sunriver** — city place page · Caldera Springs · Crosswater
+- **La Pine · Terrebonne · Prineville · Madras** — city place page (the name is the door)
+- **Buy · Sell · Join** — search, map, open houses, price drops, our listings, sell, value my home, join
+- **Company / Contact** — about, team, reviews, invest, housing market, blog, contact, book
+- Legal row: privacy, terms, fair housing, DMCA, accessibility, site-index
 - ODS: source line + license + disclaimer (required)
 
 Draft art: `design_system/ryan-realty/assets/footer/bend-cityscape-16x9-draft.jpg` and `…-21x9-draft.jpg`. Logo is the real wordmark overlay, not drawn in the PNG.

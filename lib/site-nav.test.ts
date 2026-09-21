@@ -148,10 +148,10 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       'Prineville',
       'Madras',
     ])
-    const bend = markets.groups?.find((g) => g.heading === 'Bend')?.links ?? []
+    const bendGroup = markets.groups?.find((g) => g.heading === 'Bend')
+    expect(bendGroup?.href).toBe('/cities/bend')
+    const bend = bendGroup?.links ?? []
     expect(bend.map((l) => l.href)).toEqual([
-      '/homes-for-sale/bend',
-      '/housing-market/bend',
       '/neighborhoods',
       '/communities/tetherow',
       '/communities/broken-top',
@@ -159,8 +159,6 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/communities/awbrey-glen',
     ])
     expect(bend.map((l) => l.label)).toEqual([
-      'Homes for sale in Bend',
-      'Bend housing market',
       'Bend neighborhoods',
       'Tetherow',
       'Broken Top',
@@ -168,13 +166,26 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       'Awbrey Glen',
     ])
     const allMarketLinks = footerColumnLinks(markets)
-    const redmondHrefs = allMarketLinks.filter((l) => l.href.includes('redmond') || l.href.includes('eagle-crest') || l.href.includes('juniper-preserve')).map((l) => l.href)
+    const redmondHrefs = allMarketLinks
+      .filter(
+        (l) =>
+          l.href.includes('redmond') ||
+          l.href.includes('eagle-crest') ||
+          l.href.includes('juniper-preserve'),
+      )
+      .map((l) => l.href)
     expect(redmondHrefs).toEqual([
-      '/homes-for-sale/redmond',
-      '/housing-market/redmond',
+      '/cities/redmond',
       '/communities/eagle-crest',
       '/communities/juniper-preserve',
     ])
+    expect(markets.groups?.find((g) => g.heading === 'Redmond')?.href).toBe('/cities/redmond')
+    expect(markets.groups?.find((g) => g.heading === 'La Pine')).toMatchObject({
+      href: '/cities/la-pine',
+      links: [],
+    })
+    expect(allMarketLinks.map((l) => l.label).join(' ')).not.toMatch(/Homes for sale in /)
+    expect(allMarketLinks.map((l) => l.label).join(' ')).not.toMatch(/ housing market/)
     const actions = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Buy · Sell · Join')
     expect(actions?.groups?.map((g) => g.heading)).toEqual(['Buy', 'Sell', 'Join'])
     expect(footerColumnLinks(actions!).map((l) => l.href)).toEqual([

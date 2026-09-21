@@ -158,11 +158,15 @@ describe('the footer fold', () => {
       'Company',
       'Contact',
     ])
-    expect(out).toContain('Homes for sale in Bend')
-    expect(out).toContain('Bend housing market')
+    expect(out).not.toContain('Homes for sale in Bend')
+    expect(out).not.toContain('Bend housing market')
+    expect(out).toContain('href="/cities/bend"')
+    expect(out).toContain('href="/cities/sisters"')
     expect(out).toContain('>Tetherow<')
-    expect(out).toContain('>La Pine</p>')
-    expect(out).toContain('>Terrebonne</p>')
+    expect(out).toContain('data-heading="Markets"')
+    expect(out).toContain('>La Pine</a>')
+    expect(out).toContain('>Terrebonne</a>')
+    expect(out).toContain('href="/cities/la-pine"')
     expect(out).toContain('>Buy</p>')
     expect(out).toContain('>Sell</p>')
     expect(out).toContain('>Join</p>')
@@ -183,6 +187,7 @@ describe('the footer fold', () => {
       'Prineville',
       'Madras',
     ])
-    expect(markets?.links.length).toBe(markets?.groups?.flatMap((g) => g.links).length)
+    expect(markets?.links.length).toBe(18)
+    expect(markets?.groups?.flatMap((g) => g.links).length).toBe(10)
   })
 })
