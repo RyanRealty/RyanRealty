@@ -43,8 +43,9 @@ import {
   type V3ChartSeries,
   type V3FieldItem,
 } from '@/components/site/v3'
-import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { moneyTicks, monthTicks, yoyClaim } from '@/lib/charts/ticks'
+import { formatPrice, formatPriceCompact } from '@/lib/format/money'
+import { formatPublishedSaleAskCompact } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
@@ -417,10 +418,10 @@ export function zipAlertListings(tiles: readonly ListingTile[]): PlaceAlertListi
         href: listingTileHref(tile),
         photoSrc: listingRowPhotoSrc(photo, LISTING_FIELD_LEAD_PHOTO_SIZE),
         title,
-        price:
-          tile.listPrice != null && Number.isFinite(tile.listPrice) && tile.listPrice > 0
-            ? formatPriceCompact(tile.listPrice)
-            : null,
+        price: formatPublishedSaleAskCompact({
+          price: tile.listPrice,
+          propertyType: tile.propertyType,
+        }),
         beds: tile.beds,
         baths: tile.baths,
         sqft: tile.sqft,

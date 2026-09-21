@@ -1,10 +1,10 @@
 /**
- * Short price on an Atlas pin — Redfin's map mark, navy on cream.
+ * House compact ask — place-map chips, search pins, and listing cards.
  *
- * SITE-127: place maps print the ask on the mark itself. Under a million
- * the dollar sign drops so a dense city frame stays readable (`735K`);
- * a million and up keep `$1.5M`. One function, one rounding rule, so the
- * pin and the hover blow-up never disagree.
+ * SITE-139: one publisher so an Active listing prints the same string on
+ * its chip and its card. Always `$`. Thousands use a lowercase k
+ * (`$795k`); a million and up keep `$1.2M` / `$1M`. Nearest thousand;
+ * never invent an ask. Token MLS prices stay empty.
  *
  * Import-free so `ci:atlas-price-pins` can transpile and run the matrix.
  */
@@ -16,7 +16,7 @@
  */
 export const ATLAS_PIN_MIN_USD = 10_000
 
-/** Compact pin label. Empty when the ask is missing or below a real 1K mark. */
+/** Compact pin / card label. Empty when the ask is missing or below a real 1K mark. */
 export function formatAtlasPinPrice(usd: number | null | undefined): string {
   if (usd == null || !Number.isFinite(usd) || usd < ATLAS_PIN_MIN_USD) return ''
   const thousands = Math.round(usd / 1_000)
@@ -26,7 +26,7 @@ export function formatAtlasPinPrice(usd: number | null | undefined): string {
     const body = m >= 10 ? m.toFixed(0) : m.toFixed(1).replace(/\.0$/, '')
     return `$${body}M`
   }
-  return `${thousands}K`
+  return `$${thousands}k`
 }
 
 /** Hover line for a cluster: one ask, or the span the bubble holds. */
@@ -39,7 +39,7 @@ export function formatAtlasClusterRange(minUsd: number, maxUsd: number): string 
 }
 
 /**
- * Cluster pill face — same 735K / $1.5M language as a lone pin.
+ * Cluster pill face — same $795k / $1.2M language as a lone pin.
  * A mixed pile prints the low ask with +. Never a bare count.
  */
 export function formatAtlasClusterPin(minUsd: number, maxUsd: number): string {
@@ -52,7 +52,7 @@ export function formatAtlasClusterPin(minUsd: number, maxUsd: number): string {
 
 /**
  * Lowest and highest asks that can print a pin. Token MLS prices stay out
- * so a city-scale bubble reads 185K+ / 735K, never 0K+.
+ * so a city-scale bubble reads $185k+ / $735k, never $0k+.
  */
 export function atlasClusterAskSpan(
   prices: readonly (number | null | undefined)[],

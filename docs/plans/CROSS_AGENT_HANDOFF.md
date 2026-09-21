@@ -1,3 +1,13 @@
+# Current — 2026-09-21 (SITE-139 house compact ask)
+
+Surface: Grok Build, branch `wt/site-139-20260921` off `origin/main` `32af7d2c4`. Worktree `/Users/matthewryan/RyanRealty-wt-site-139`. Cos Mini lands. Do not merge. HOLD owner email. Claim `grok-build-01a0c44c-139`.
+
+- **Publisher.** `formatAtlasPinPrice` is the one compact ask: `$795k` / `$1.2M` / `$1M`. Cards call `formatPublishedSaleAskCompact` (sale-aware, then the same formatter).
+- **Before.** Chip `749K` / `$1.5M`; place-look card `$749K`.
+- **After.** Chip and card `$749k` / `$1.5M` (Old Bend 1440: `$2M` / `$999k` / `$319k` on both). Field rows stay exact `$749,000`.
+- **Lock.** `lib/listing/house-compact-ask.test.ts` + `ci:atlas-price-pins`.
+- Skills read: `.claude/skills/site-queue/SKILL.md`, `TASTE.md`.
+
 # Current — 2026-09-19 (CTA lock — drop sticky, header Work with us)
 
 Surface: Cursor cloud, branch `cursor/cta-lock-drop-sticky-2f27` off `origin/main` `3c0d7c8d3`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-123 not on main (not in seed).

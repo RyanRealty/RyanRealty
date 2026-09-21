@@ -15,7 +15,7 @@ import {
   getListingTilesCount,
   type GetListingTilesFilter,
 } from '@/lib/data/listings/getListingTiles'
-import { formatPriceCompact } from '@/lib/format/money'
+import { formatPublishedSaleAskCompact } from '@/lib/listing/publish-listing-ask'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import {
   LISTING_FIELD_LEAD_PHOTO_SIZE,
@@ -30,7 +30,7 @@ export type PlaceOpeningListing = {
   photoSrc: string
   /** Street line (address). */
   title: string
-  /** Compact list price, or null when the tile has none. */
+  /** House compact ask (`$795k` / `$1.2M`), or null when the tile has none. */
   price: string | null
   beds: number | null
   baths: number | null
@@ -120,10 +120,10 @@ async function fetchPlaceOpeningListings(
             streetName: tile.streetName,
             streetSuffix: tile.streetSuffix,
           }) ?? tile.city ?? type.label
-        const price =
-          tile.listPrice != null && Number.isFinite(tile.listPrice) && tile.listPrice > 0
-            ? formatPriceCompact(tile.listPrice)
-            : null
+        const price = formatPublishedSaleAskCompact({
+          price: tile.listPrice,
+          propertyType: tile.propertyType,
+        })
         listings.push({
           href: listingTileHref(tile),
           // Cards and rails ask for 800×600 — never the 320×240 ledger thumb.

@@ -10,7 +10,7 @@ import type { ListingForMap } from '@/components/SearchMapClustered'
 import type { ListingTileRow } from '@/app/actions/listings'
 import type { PlaceOpeningListing, PlaceOpeningListingBucket } from '@/lib/data/listings/getPlaceOpeningListings'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { formatPriceCompact } from '@/lib/format/money'
+import { formatPublishedSaleAskCompact } from '@/lib/listing/publish-listing-ask'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
@@ -81,10 +81,10 @@ export function photoCardsFromMapListings(
         streetName: listing.StreetName,
         streetSuffix: listing.StreetSuffix,
       }) ?? listing.City ?? 'Home'
-    const price =
-      listing.ListPrice != null && Number.isFinite(listing.ListPrice) && listing.ListPrice > 0
-        ? formatPriceCompact(listing.ListPrice)
-        : null
+    const price = formatPublishedSaleAskCompact({
+      price: listing.ListPrice,
+      propertyType: listing.PropertyType,
+    })
     cards.push({
       href: listingTileHref({
         listingKey: key,

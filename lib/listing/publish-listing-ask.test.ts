@@ -6,9 +6,11 @@ import {
   computeMonthlyPitiBreakdown,
   DEFAULT_PITI_RATE,
 } from '@/lib/listing-tier1'
+import { formatAtlasPinPrice } from '@/lib/atlas/pin-price'
 import {
   formatListingAsk,
   formatPublishedAsk,
+  formatPublishedSaleAskCompact,
   publishListingAsk,
   publishListingDrop,
   publishListingEstPayment,
@@ -41,6 +43,31 @@ describe('publishListingAsk', () => {
     expect(formatPublishedAsk(919500)).not.toBe('$920,000')
     expect(formatPublishedAsk(1999900)).toBe('$1,999,900')
     expect(formatPublishedAsk(1999900)).not.toBe('$2,000,000')
+  })
+})
+
+describe('formatPublishedSaleAskCompact — same string as the map chip', () => {
+  it('prints $795k / $1.2M and matches formatAtlasPinPrice', () => {
+    expect(formatPublishedSaleAskCompact({ price: 795_000, propertyType: 'A' })).toBe('$795k')
+    expect(formatPublishedSaleAskCompact({ price: 650_000, propertyType: 'A' })).toBe('$650k')
+    expect(formatPublishedSaleAskCompact({ price: 1_200_000, propertyType: 'A' })).toBe('$1.2M')
+    expect(formatPublishedSaleAskCompact({ price: 749_000, propertyType: 'A' })).toBe(
+      formatAtlasPinPrice(749_000),
+    )
+    expect(formatPublishedSaleAskCompact({ price: 1_495_000, propertyType: 'A' })).toBe(
+      formatAtlasPinPrice(1_495_000),
+    )
+  })
+
+  it('does not print the old card $650K or pin 735K faces', () => {
+    expect(formatPublishedSaleAskCompact({ price: 650_000, propertyType: 'A' })).not.toBe('$650K')
+    expect(formatPublishedSaleAskCompact({ price: 735_000, propertyType: 'A' })).not.toBe('735K')
+  })
+
+  it('withholds a commercial lease and a token MLS ask', () => {
+    expect(formatPublishedSaleAskCompact({ price: 2.5, propertyType: 'G' })).toBeNull()
+    expect(formatPublishedSaleAskCompact({ price: 3_000, propertyType: 'A' })).toBeNull()
+    expect(formatPublishedSaleAskCompact({ price: null, propertyType: 'A' })).toBeNull()
   })
 })
 

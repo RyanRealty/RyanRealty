@@ -4,10 +4,10 @@
  *
  * Place Atlas maps used to draw silent dots. Matt 2026-09-17: every for-sale
  * (and pending) mark on a city / neighborhood / community / subdivision map
- * must read as a short price (735K / $1.5M) and hover must blow up the home
+ * must read as a short price ($795k / $1.2M) and hover must blow up the home
  * (photo + ask). This gate runs the pin formatter and asserts the primitive
- * plus the four place pages still wire it. Look/Split fold pills must use
- * the same 735K /$1.5M face (not $895k). SITE-128 residual: overlapping
+ * plus the four place pages still wire it. Look/Split fold pills and place
+ * listing cards must use the same $795k / $1.2M face (SITE-139). SITE-128 residual: overlapping
  * pills must cluster (clusterAtlasPins grid cells) so a city fold is not
  * one 759 pile and not one 759 bubble.
  * Silent dots cannot regress.
@@ -52,15 +52,18 @@ function expect(label, actual, wanted) {
   }
 }
 
-expect('735K', formatAtlasPinPrice(735_000), '735K')
+expect('$735k', formatAtlasPinPrice(735_000), '$735k')
+expect('$795k', formatAtlasPinPrice(795_000), '$795k')
+expect('$650k', formatAtlasPinPrice(650_000), '$650k')
+expect('$1.2M', formatAtlasPinPrice(1_200_000), '$1.2M')
 expect('$1.5M', formatAtlasPinPrice(1_500_000), '$1.5M')
 expect('$1M', formatAtlasPinPrice(1_000_000), '$1M')
-expect('cluster same ask', formatAtlasClusterPin(735_000, 735_400), '735K')
-expect('cluster span', formatAtlasClusterPin(735_000, 1_500_000), '735K+')
-expect('token $1.32 is not 0K', formatAtlasPinPrice(1.32), '')
+expect('cluster same ask', formatAtlasClusterPin(735_000, 735_400), '$735k')
+expect('cluster span', formatAtlasClusterPin(735_000, 1_500_000), '$735k+')
+expect('token $1.32 is not $0k', formatAtlasPinPrice(1.32), '')
 expect('token $3k is not a pin', formatAtlasPinPrice(3_000), '')
-expect('never 0K+', formatAtlasClusterPin(1.32, 5_285_000), '')
-expect('real NC span', formatAtlasClusterPin(185_000, 5_285_000), '185K+')
+expect('never $0k+', formatAtlasClusterPin(1.32, 5_285_000), '')
+expect('real NC span', formatAtlasClusterPin(185_000, 5_285_000), '$185k+')
 expect(
   'cluster span skips tokens',
   JSON.stringify(atlasClusterAskSpan([1.32, 3_000, 185_000, 5_285_000])),
@@ -110,7 +113,7 @@ for (const needle of [
   if (!atlas.includes(needle)) failures.push(`${ATLAS} must keep ${needle} (silent dots regress)`)
 }
 if (/>\s*\{mark\.count\}\s*</.test(atlas)) {
-  failures.push(`${ATLAS}: cluster pills must print 735K/$1.5M, not a bare count`)
+  failures.push(`${ATLAS}: cluster pills must print $795k/$1.2M, not a bare count`)
 }
 
 const builder = readFileSync(BUILDER, 'utf8')
@@ -170,7 +173,7 @@ if (!markers.includes('formatAtlasPinPrice')) {
   failures.push(`${MARKERS} must delegate formatPriceLabel to formatAtlasPinPrice (fold $ vs K mix)`)
 }
 if (/toFixed\(0\)\}k/.test(markers) || markers.includes('"$895k"') || /return `\$\$\{price\}`/.test(markers)) {
-  failures.push(`${MARKERS}: formatPriceLabel must not print $895k / $1 — Atlas 735K /$1.5M is the pin face`)
+  failures.push(`${MARKERS}: formatPriceLabel must delegate to formatAtlasPinPrice ($795k / $1.2M)`)
 }
 
 const searchMap = readFileSync(SEARCH_MAP, 'utf8')
@@ -195,9 +198,33 @@ for (const page of FOLD_PAGES) {
   }
 }
 
+const ASK = 'lib/listing/publish-listing-ask.ts'
+const askSrc = readFileSync(ASK, 'utf8')
+if (!askSrc.includes('formatAtlasPinPrice')) {
+  failures.push(`${ASK} must print compact cards through formatAtlasPinPrice`)
+}
+if (!askSrc.includes('export function formatPublishedSaleAskCompact')) {
+  failures.push(`${ASK} must export formatPublishedSaleAskCompact so cards share the chip face`)
+}
+
+const CARD_FILES = [
+  'lib/place/first-look.ts',
+  'lib/data/listings/getPlaceOpeningListings.ts',
+  'app/zip/[zip]/_v3/zip-constants.ts',
+]
+for (const file of CARD_FILES) {
+  const src = readFileSync(file, 'utf8')
+  if (!src.includes('formatPublishedSaleAskCompact')) {
+    failures.push(`${file} must print listing-card asks through formatPublishedSaleAskCompact`)
+  }
+  if (/formatPriceCompact\(/.test(src) && /formatPriceCompact\([\s\S]*listPrice/.test(src)) {
+    failures.push(`${file} must not format a listing ask through formatPriceCompact`)
+  }
+}
+
 if (failures.length) {
   console.error('ci:atlas-price-pins FAILED\n')
   for (const f of failures) console.error(`  • ${f}`)
   process.exit(1)
 }
-console.log('ci:atlas-price-pins OK — pins 735K/$1.5M, hover home, clusters, fold + Atlas share pin face')
+console.log('ci:atlas-price-pins OK — pins $795k/$1.2M, hover home, clusters, fold + cards share pin face')
