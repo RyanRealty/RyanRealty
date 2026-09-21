@@ -45,6 +45,8 @@ import {
   BEND_NEW_CONSTRUCTION_TITLE,
   bendNewConCommunityHref,
   bendNewConRestPrimary,
+  bendNewConRowConcessionLine,
+  bendNewConRowConcessionReveal,
   bendNewConSeeHomesLabel,
   bendNewConWeight,
   financingHighlight,
@@ -101,6 +103,14 @@ function inventoryRow(row: NewConInventoryRow, live: BendNewConLiveMatch): V3Led
     live.count != null
       ? `${live.count} live Active new-construction ${live.count === 1 ? 'home matches' : 'homes match'} this search`
       : 'Opens the live new-construction search for this subdivision only'
+  /* SITE-151 (Matt 2026-09-21): the concession travels WITH the row instead
+     of living only in the page-bottom Financing section. The headline sits
+     in the always-visible `detail` line; the full offer, its flags, and its
+     source sit in `reveal` alongside the row's other on-hold facts. Rows
+     with no attached offer show neither — §0: say nothing rather than
+     imply one. */
+  const concessionHeadline = bendNewConRowConcessionLine(row.name)
+  const concessionDeep = bendNewConRowConcessionReveal(row.name)
   const revealBits = [
     liveLine,
     `${row.active} Active in the 2026-09-16 snapshot`,
@@ -110,13 +120,21 @@ function inventoryRow(row: NewConInventoryRow, live: BendNewConLiveMatch): V3Led
     row.median && !stevensSf ? `Median list ${row.median}` : null,
     row.typical,
     community ? `Community page also at ${community}` : null,
+    concessionDeep,
   ].filter((bit): bit is string => Boolean(bit))
 
   return {
     href: live.href,
     when: v3Text(builders),
     what: v3Text(row.name),
-    detail: v3Text(row.typical ? `${priceBand} · ${row.typical}` : priceBand),
+    detail: v3Text(
+      [
+        row.typical ? `${priceBand} · ${row.typical}` : priceBand,
+        concessionHeadline ? `Concession: ${concessionHeadline}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    ),
     value: v3Text(bendNewConSeeHomesLabel(live.count)),
     weight: live.count != null && live.count > 0 ? bendNewConWeight(live.count) : bendNewConWeight(row.active),
     reveal: { line: v3Text(revealBits.join(' · ')) },

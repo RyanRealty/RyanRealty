@@ -20,6 +20,11 @@ import {
   bendNewConHortonTownhomeRows,
   bendNewConLeadRows,
   bendNewConRestPrimary,
+  BEND_NEW_CON_ROW_OFFERS,
+  bendNewConRowOffer,
+  bendNewConRowOffers,
+  bendNewConRowConcessionLine,
+  bendNewConRowConcessionReveal,
   financingHighlight,
   BEND_NEW_CON_SINGLE,
   BEND_NEW_CON_UNSPECIFIED,
@@ -319,6 +324,80 @@ describe('Bend new-construction snapshot', () => {
     const page = readFileSync(resolve('app/new-construction/page.tsx'), 'utf8')
     expect(page).toContain('New homes in Bend: short answers')
     expect(page).not.toContain('New homes in Bend \u2014 short answers')
+  })
+
+  it('attaches per-home concessions only where the offer names that community (SITE-151)', () => {
+    // Every attached row id is a real community in the snapshot.
+    for (const name of Object.keys(BEND_NEW_CON_ROW_OFFERS)) {
+      expect(BEND_NEW_CON_NAMED.some((row) => row.name === name)).toBe(true)
+    }
+
+    // Collier gets Golden Key, with the narrower-than-community caveat attached.
+    const collier = bendNewConRowOffer('Collier')
+    expect(collier?.kind).toBe('published')
+    expect(bendNewConRowOffers('Collier').map((o) => o.id)).toEqual(['pahlisch-golden-key'])
+    expect(bendNewConRowConcessionLine('Collier')).toBe('3% / $20,000, published credit cap')
+    const colliersDeep = bendNewConRowConcessionReveal('Collier')
+    expect(colliersDeep).toMatch(/Pahlisch Homes/)
+    expect(colliersDeep).toMatch(/Collier lots/)
+    expect(colliersDeep).toMatch(/pahlischhomes\.com\/golden-key/)
+
+    // Easton and Petrosa share Pahlisch as builder but do NOT inherit Golden
+    // Key — their own community pages published no separate concession.
+    for (const name of ['Easton', 'Petrosa']) {
+      const attach = bendNewConRowOffer(name)
+      expect(attach?.kind).toBe('reviewed-no-concession')
+      expect(bendNewConRowOffers(name)).toHaveLength(0)
+      expect(bendNewConRowConcessionLine(name)).toBe('No published concession found (reviewed 2026-09-16)')
+      expect(bendNewConRowConcessionReveal(name)).toMatch(/pahlischhomes\.com\/communities\//)
+      // Explains why Golden Key does NOT apply here (Collier-only that day)
+      // without ever claiming the credit for this community.
+      expect(bendNewConRowConcessionReveal(name)).toMatch(/Collier lots only/)
+    }
+
+    // Stevens Ranch carries the Horton flyer's CONFLICT flag through.
+    expect(bendNewConRowOffers('Stevens Ranch').map((o) => o.id)).toEqual([
+      'horton-stevens-ranch-flyer',
+    ])
+    expect(bendNewConRowConcessionLine('Stevens Ranch')).toMatch(/CONFLICT/)
+
+    // Parkside surfaces the most concrete Hayden offer first, and carries
+    // its narrower-than-every-homesite caveat.
+    expect(bendNewConRowOffers('Parkside Place Phase 1').map((o) => o.id)).toEqual([
+      'hayden-parkside-10k',
+      'hayden-zero-down',
+      'hayden-summer-savings',
+    ])
+    expect(bendNewConRowConcessionLine('Parkside Place Phase 1')).toBe('$10K, on listed homesites')
+    expect(bendNewConRowConcessionReveal('Parkside Place Phase 1')).toMatch(/Cascade homesite 67/)
+
+    // A row with no sampled builder, and a row with a builder we did not
+    // transcribe a concession for, both say nothing rather than imply one.
+    expect(bendNewConRowOffer('Calaveras')).toBeNull()
+    expect(bendNewConRowConcessionLine('Calaveras')).toBeNull()
+    expect(bendNewConRowOffer('Stone Creek')).toBeNull()
+    expect(bendNewConRowConcessionLine('Stone Creek')).toBeNull()
+    expect(bendNewConRowOffer('Thunder Ridge')).toBeNull()
+    expect(bendNewConRowOffer('unknown-row-name')).toBeNull()
+
+    // Every offer id referenced in the map resolves to a real financing card.
+    for (const attach of Object.values(BEND_NEW_CON_ROW_OFFERS)) {
+      if (attach.kind !== 'published') continue
+      for (const id of attach.offerIds) {
+        expect(BEND_NEW_CON_FINANCING.some((offer) => offer.id === id)).toBe(true)
+      }
+    }
+  })
+
+  it('never lets a row concession reference MLS private remarks or a phone number (SITE-151 §0)', () => {
+    const blobs = Object.keys(BEND_NEW_CON_ROW_OFFERS).flatMap((name) => [
+      bendNewConRowConcessionLine(name) ?? '',
+      bendNewConRowConcessionReveal(name) ?? '',
+    ])
+    const text = blobs.join('\n')
+    expect(text).not.toMatch(/private remarks?/i)
+    expect(text).not.toMatch(/\b\d{3}[.\-]\d{3}[.\-]\d{4}\b/) // no phone-number shape
+    expect(text).not.toMatch(/call\s+\w+\s+at/i)
   })
 
   it('keeps FAQ answers on the transcribed snapshot and live-count split', () => {

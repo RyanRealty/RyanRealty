@@ -849,6 +849,168 @@ export const BEND_NEW_CON_STATUS_LEGEND: readonly {
   },
 ]
 
+/**
+ * Per-home concession attachment — SITE-151 (Matt 2026-09-21): "I need to see
+ * what concessions are available for each of the houses... include that with
+ * the home so we can see who the builder is and what they are offering."
+ *
+ * Ties a named community row to the SAME `BEND_NEW_CON_FINANCING` cards
+ * already transcribed 2026-09-16 from public builder pages. No new offer, no
+ * new dollar, no new date is introduced here. This is a CURATED map, not a
+ * fuzzy builder-name match, because a builder's published concession is
+ * often scoped to specific lots or communities, not to every plat that
+ * builder happens to build: Pahlisch's Golden Key page named four specific
+ * Collier lots that day, and its own community pages for Easton and Petrosa
+ * (also Pahlisch, both in `BEND_NEW_CON_NAMED`) published no separate
+ * concession — see `pahlisch-golden-key`'s last term. Attaching Golden Key
+ * to Easton or Petrosa would overclaim past what either page says.
+ *
+ * A row absent from this map has no builder sampled, or a builder was
+ * sampled with nothing publishable found for THAT community specifically.
+ * The page states nothing for it — §0: "say nothing rather than implying
+ * one." A row present with `kind: 'reviewed-no-concession'` states plainly
+ * that the builder's own page was checked and had no separate concession,
+ * so a visitor is not left wondering whether the check happened.
+ *
+ * Compliance boundary (Matt 2026-09-21): every string reachable from this
+ * map traces to a PUBLIC builder page already listed in
+ * `BEND_NEW_CON_FINANCING[].sources`. Nothing here reads, quotes, or
+ * paraphrases MLS `PrivateRemarks` / `listing_private.private_data`, and no
+ * agent phone number appears anywhere in this module.
+ */
+export type NewConRowOffer =
+  | {
+      kind: 'published'
+      /** `BEND_NEW_CON_FINANCING` ids for this row, most concrete/on-point first. */
+      offerIds: readonly NewConFinancingId[]
+      /**
+       * Required whenever the cited offer names fewer homes than this row's
+       * Active count (a lot list, a "most but not all" label) — the row is a
+       * community aggregate and must not read as "every home here qualifies"
+       * when the source does not say that.
+       */
+      eligibilityNote?: string
+    }
+  | {
+      kind: 'reviewed-no-concession'
+      /** One sentence, already sourced by the cited builder page. */
+      note: string
+      source: NewConSourceLink
+    }
+
+/**
+ * Curated 2026-09-16 mapping, community name -> what that community's own
+ * builder page actually publishes. Coverage counts (of the 38 named rows,
+ * 17 carry a sampled builder): 10 rows attach here (8 with a worded
+ * concession, 2 stating none was found); the other 7 builder-known rows
+ * (Stone Creek, Talline Phase 1 & 2, NorthWest Crossing, Scalehouse Loop
+ * Townhomes, Thunder Ridge, Arrowood Eight, Discovery West Phase 6 & 7) have
+ * no financing card in `BEND_NEW_CON_FINANCING` for that builder, so the
+ * page names the builder and adds nothing invented for them. Thunder Ridge
+ * builds D.R. Horton, but the flyer is titled and scoped to Stevens Ranch
+ * ("not Stevens-Ranch-ONLY" is not the same as a named Thunder Ridge
+ * eligibility), so it is deliberately left unattached rather than extended
+ * past what the flyer names.
+ */
+export const BEND_NEW_CON_ROW_OFFERS: Readonly<Record<string, NewConRowOffer>> = {
+  Collier: {
+    kind: 'published',
+    offerIds: ['pahlisch-golden-key'],
+    eligibilityNote:
+      'Golden Key named four specific Collier lots that day (Carrington Lot 7, Malone Lot 6, Bentley Lot 2, Benedict Lot 10), not every Collier listing.',
+  },
+  Easton: {
+    kind: 'reviewed-no-concession',
+    note:
+      "Pahlisch Homes builds Easton. Easton's own community page published no separate rate, APR, or concession that day; Golden Key's named Bend homes that day were four Collier lots only.",
+    source: { label: 'Pahlisch Easton', href: 'https://pahlischhomes.com/communities/easton/' },
+  },
+  Petrosa: {
+    kind: 'reviewed-no-concession',
+    note:
+      "Pahlisch Homes builds Petrosa. Petrosa's own community page published no separate rate, APR, or concession that day; Golden Key's named Bend homes that day were four Collier lots only.",
+    source: { label: 'Pahlisch Petrosa', href: 'https://pahlischhomes.com/communities/petrosa/' },
+  },
+  'Stevens Ranch': { kind: 'published', offerIds: ['horton-stevens-ranch-flyer'] },
+  'Discovery West Phase 8 & 9': { kind: 'published', offerIds: ['discovery-west'] },
+  'Acadia Pointe Phase 5 and 6': { kind: 'published', offerIds: ['lennar-fall-super-sale'] },
+  'Parkside Place Phase 1': {
+    kind: 'published',
+    offerIds: ['hayden-parkside-10k', 'hayden-zero-down', 'hayden-summer-savings'],
+    eligibilityNote:
+      'The $10K label showed on most, not all, listed Parkside homesites that day (Cascade homesite 67 did not show it).',
+  },
+  'Sky Vista Phase 1': { kind: 'published', offerIds: ['stone-bridge-35k'] },
+  'Countryside Phase 4': { kind: 'published', offerIds: ['stone-bridge-35k'] },
+  'Sunset Glen': { kind: 'published', offerIds: ['stone-bridge-35k'] },
+}
+
+/** Source stamp for every string reachable through the functions below. */
+export const BEND_NEW_CON_ROW_OFFERS_SOURCE =
+  'Curated from BEND_NEW_CON_FINANCING (public builder pages, transcribed 2026-09-16 PT). A row attaches an offer only when that offer names the row’s own community as eligible.'
+
+export function bendNewConRowOffer(name: string): NewConRowOffer | null {
+  return BEND_NEW_CON_ROW_OFFERS[name] ?? null
+}
+
+/** Full financing-card objects attached to this row, in listed order. Empty when none. */
+export function bendNewConRowOffers(name: string): NewConFinancingOffer[] {
+  const attach = bendNewConRowOffer(name)
+  if (!attach || attach.kind !== 'published') return []
+  return attach.offerIds.flatMap((id) => {
+    const offer = BEND_NEW_CON_FINANCING.find((row) => row.id === id)
+    return offer ? [offer] : []
+  })
+}
+
+/**
+ * One short, always-visible line for the row's builder + headline concession
+ * (or the honest "none found" state). Reuses `financingHighlight`'s already
+ * compact value/label pair — the same vocabulary the Financing section uses
+ * — so the row and the deep-dive card never disagree on how the same offer
+ * reads.
+ */
+export function bendNewConRowConcessionLine(name: string): string | null {
+  const attach = bendNewConRowOffer(name)
+  if (!attach) return null
+  if (attach.kind === 'reviewed-no-concession') {
+    return 'No published concession found (reviewed 2026-09-16)'
+  }
+  const primary = bendNewConRowOffers(name)[0]
+  if (!primary) return null
+  const highlight = financingHighlight(primary)
+  return `${highlight.value}, ${highlight.label}`
+}
+
+/**
+ * The row's tap-and-hold / hover deep line: every attached offer, its
+ * builder, its flags, its eligibility caveat, and its public source link —
+ * so the full context travels WITH the row instead of living only in the
+ * page-bottom Financing section.
+ */
+export function bendNewConRowConcessionReveal(name: string): string | null {
+  const attach = bendNewConRowOffer(name)
+  if (!attach) return null
+  if (attach.kind === 'reviewed-no-concession') {
+    return `${attach.note} Source: ${attach.source.label}, ${attach.source.href}`
+  }
+  const offers = bendNewConRowOffers(name)
+  if (offers.length === 0) return null
+  const cards = offers.map((offer) => {
+    const flags = flagLabel(offer.flags)
+    const highlight = financingHighlight(offer)
+    const src = offer.sources[0]
+    return [
+      `${offer.builder}: ${offer.title}${flags ? ` (${flags})` : ''}. ${highlight.value} ${highlight.label}.`,
+      src ? `Source: ${src.label}, ${src.href}` : null,
+    ]
+      .filter((part): part is string => Boolean(part))
+      .join(' ')
+  })
+  const eligibility = attach.eligibilityNote ? ` ${attach.eligibilityNote}` : ''
+  return `${cards.join('  Also published: ')}${eligibility} Full terms in Financing below.`
+}
+
 export type NewConSavingsChipId = 'rate' | 'closing' | 'dpa' | 'options' | 'other'
 
 export type NewConSavingsChip = {
