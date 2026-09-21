@@ -45,6 +45,7 @@ const MUST_PREFER_LIVE = [
   'app/communities/page.tsx',
   'app/neighborhoods/page.tsx',
   'app/subdivisions/page.tsx',
+  'lib/geo/index-place-photo.ts',
   'app/communities/[slug]/_v3/community-opening.ts',
   'app/cities/[slug]/page.tsx',
   'lib/kb/place-sections.ts',

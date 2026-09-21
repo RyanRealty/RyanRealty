@@ -60,4 +60,12 @@ describe('communities index is resorts only', () => {
     expect(PAGE).toMatch(/formatPriceExact\(r\.medianPrice\)/)
     expect(PAGE).toMatch(/resortFigures\.get\(r\.slug\)\?\.activeCount/)
   })
+
+  it('resolves owned stills, never a city clone, for index thumbs', () => {
+    expect(PAGE).toMatch(/resolveIndexPlacePhoto/)
+    expect(PAGE).toMatch(/preferPlaceHeroOrNull\(live, owned\)/)
+    expect(PAGE).not.toMatch(/\bcityHero\b/)
+    expect(PAGE).not.toMatch(/geoTags: \[r\.city_slug\]/)
+    expect(PAGE).not.toMatch(/photoIsCommunity/)
+  })
 })
