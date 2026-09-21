@@ -83,8 +83,12 @@ export function TeamClosings({
           </CarouselContent>
           {rows.length > 1 ? (
             <>
-              <CarouselPrevious />
-              <CarouselNext />
+              {/* size-11 is 44x44. The carousel default is icon-sm (size-7,
+                  28px), which is the only unexcused tap target on the public
+                  site: WCAG 2.5.8 wants 44x44, and these arrows have no
+                  equivalent full-size control on this page to borrow from. */}
+              <CarouselPrevious className="size-11" />
+              <CarouselNext className="size-11" />
             </>
           ) : null}
         </Carousel>
