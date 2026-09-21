@@ -391,7 +391,7 @@ export async function GET(request: Request) {
         // ("optional email or text"); else hold + queue visibly until A2P clears.
         const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
         if (a2pStatus === 'VERIFIED') {
-          // Quiet hours gate the actual Twilio send only (8 AM to 9 PM PT).
+          // Quiet hours gate the actual Twilio send only (8 AM to 8 PM PT).
           if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }
           // Daily cap (#3): hold once the engine hits its daily budget so a big
           // backlog can't blast past the low-volume campaign's carrier cap.

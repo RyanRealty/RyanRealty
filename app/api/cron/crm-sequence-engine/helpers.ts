@@ -2,11 +2,16 @@ import 'server-only'
 
 /**
  * crm-sequence-engine helpers — pure/total utilities split out of route.ts
- * (file-size budget, 2026-07-02). No behavior change: identical bodies moved
- * verbatim from the route.
+ * (file-size budget, 2026-07-02). SMS quiet hours come from lib/crm/quiet-hours
+ * (Oregon 8pm). Do not reintroduce a local 9pm copy.
  */
 
 import { attributeSiteLinks, renderCrmMerge, type MergeContext, type MergePersonLike } from '@/lib/crm/merge'
+import {
+  hourInTimeZone,
+  inSmsQuietHours as canonicalInSmsQuietHours,
+  nextSmsWindow,
+} from '@/lib/crm/quiet-hours'
 
 /**
  * An archived email/SMS template imports into crm_templates with its
@@ -21,22 +26,17 @@ export function isArchivedPlaceholder(subject: string, body: string): boolean {
 }
 
 export function laHour(): number {
-  return Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Los_Angeles' }).format(new Date()))
+  return hourInTimeZone(new Date())
 }
 
-export function inSmsQuietHours(): boolean {
-  const h = laHour()
-  return h < 8 || h >= 21
+/** Oregon 8am–8pm Pacific. Do not fork a 9pm copy here (deep audit C1). */
+export function inSmsQuietHours(date?: Date): boolean {
+  return canonicalInSmsQuietHours(date)
 }
 
+/** Next 8:05am Pacific — after the Oregon SMS window opens. */
 export function nextSendWindow(): Date {
-  // next 07:05 LA time
-  const now = new Date()
-  const la = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))
-  const target = new Date(la)
-  target.setHours(7, 5, 0, 0)
-  if (la.getHours() >= 7) target.setDate(target.getDate() + 1)
-  return new Date(now.getTime() + (target.getTime() - la.getTime()))
+  return nextSmsWindow()
 }
 
 export type Step = {
