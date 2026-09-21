@@ -1341,6 +1341,52 @@ const SEEDS: readonly Seed[] = [
     accept:
       'Full head readable on home and listing Talk-to-a-Broker fold at 375. Idle tilt still visible. Door labels exactly Sell your home / Buy your home / Text us / Get your home\'s value / Learn about us. No sticky CTA revival. ci:dog-floater refuses a circular pre-crop or an edge-tight head.',
   },
+  {
+    versionGap: 'SITE-160',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] homepage-v6: first viewport is a flyover plus a guide list — priced homes are a sliver',
+    objective:
+      'Looked live https://ryan-realty.com/ at 1440 and 375 on 2026-09-20/21 (session 01a0c18d, 294 JPEGs in scratchpad/site-look-2026-09-20/). PNGs: homepage-v6__1440__fold.jpg, homepage-v6__1440__clean-fold.jpg, homepage-v6__375__fold.jpg, homepage-v6__1440__search-typed.jpg, homepage-v6__375__search-typed.jpg. First viewport: Old Mill flyover + “Homes for sale in Central Oregon” + cream search + a full Guides and answers link list. The Homes in Bend rail is a 40px sliver. Competitive brief #1 (live inventory in the first viewport) fails. SITE-125 put the Q&A strip above the fold and the house left the fold. Dual search: typing Tetherow opens BOTH the header morph overlay AND the hero cream field. Hero search is still a labeled cream field with an F kbd, not the morph as the first control. Last rail card clips the price ($1,69 / $584 / $1,02) — also SITE-148. Start with `node scripts/lib/taste-catalog.mjs homepage-v6 --preflight`. INSTALL beui-morphing-search as the actual first control (no inline, keep morph), beui-tabs for Buy/Sell, shadcn-carousel + shadcn-card on the rails. Layout lock: live inventory in the first viewport + real Sell address without JS. Do not keep the Q&A strip if it pushes the house off the fold — move guides below the first rail. Exclusive files: app/page.tsx, app/_v3/HomeHeroSearch*, app/_v3/HomeListingRail.client.tsx, components/motion/morphing-search.tsx. Do not edit place page.tsx. Do not steal SITE-147 pulse or SITE-148 HomeBrowsePlaces. SEO increment: homepage title stays branded; crawlable rail links to listing canonicals. Information increment: rail cards keep price+address+beds/baths/sqft under the photo. UX: one morph search, house in the first viewport, demo match. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Homepage first viewport shows a priced house; one search control; 1440/375 shots of rest + search-open + sell-tab; tasteReview adaptedFrom + demoMatch.',
+    accept:
+      'A visitor at 1440 and 375 sees a priced listing card in the first viewport without scrolling. One search control (header or hero, not both). Live morph matches the beUI demo. Rail last-card price is fully visible. Evidence names an SEO increment and an information increment. Product hold. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-161',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] cities: the first screen is a MOS lecture — no city to click, no photo, no house',
+    objective:
+      'Looked live https://ryan-realty.com/cities at 1440 and 375 on 2026-09-20/21 (scratchpad/site-look-2026-09-20/cities__1440__fold.jpg, cities__375__fold.jpg, cities__1440__scroll1.jpg). Fold is region MOS bars (1,438 for sale vs 330 under contract, 4.4 Balanced) + an atlas of $ chips. No city row, no city photo, no alerts sentence in the first viewport. Taste table already named this (median 42). SITE-92 is done; the live page still fails the class job (a city directory). At 375 the map is a $ chip pile; MOS bars sit under the dog; no city name is tappable in the fold. Overlay a city combobox is a heading “Central Oregon only” at the bottom of the desktop fold — the control is not in frame. Start with `node scripts/lib/taste-catalog.mjs city --preflight`. Layout lock: this INDEX should open as a directory of cities (photo + name + count), Atlas as the drawing, not MOS-only. Exclusive files: app/cities/page.tsx, components/site/v3/V3MosCompare.client.tsx, V3Atlas. SEO: city index links stay crawlable to /cities/{slug}. Information: each city row carries live for-sale count. UX: city marks on the map are the way in. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Cities index first viewport is a directory of cities plus Atlas; 1440/375 shots; taste receipt.',
+    accept:
+      'At 1440 and 375 a visitor can tap a named city from the first viewport. MOS bars may stay but cannot be the only object. Product hold. Score ≥ 70 on the table instrument. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-162',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] community Tetherow: first look is a pale plat of price chips — Tetherow.com opens on the golf and the lodge',
+    objective:
+      'Looked live https://ryan-realty.com/communities/tetherow at 1440 and 375, then https://tetherow.com/ (2026-09-20/21). PNGs: community__1440__fold.jpg, community__375__fold.jpg, community__1440__scroll1.jpg, peer-tetherow-own__1440__fold.jpg in scratchpad/site-look-2026-09-20/. Our fold: thin hero strip, HOA line “$2,052 HOA a year from homes here. 3 membership tiers. 700 acres” (375 truncates to “3…”), then a pale plat map of overlapping $ chips. Zero listing photographs in the first viewport. Neighborhood Awbrey Butte on the same template shows map + priced cards in the fold — Tetherow does not. Tetherow.com first look: full-bleed golf + lodge, Condé Nast badge. We lose belonging on first look. We should win on live MLS marks — those marks are currently unreadable chip soup. Below fold: plat-alias chips (SITE-144). Do not claim while SITE-156 holds app/communities/[slug]/page.tsx (same community template; Caldera leftover stack). Start with `node scripts/lib/taste-catalog.mjs city --preflight` (community uses the city card). Layout lock: drawing + figure + houses in the fold, same as neighborhood. Exclusive files: app/communities/[slug]/page.tsx, V3PlaceLook*, CommunityPlaceValue. Do not invent a HOA dollar. SEO: H1 stays Tetherow homes for sale. Information: 25 for sale / 3 pending stay on the page and match the marks. UX: priced house cards in the first viewport like Awbrey. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Tetherow fold matches neighborhood: map + priced cards; HOA line not truncated; 1440/375 + competitor sequential shots.',
+    accept:
+      'A visitor at 1440 and 375 sees at least two priced Tetherow listing cards in the first viewport. Chip overlap is gone at 375. Named-peer first-look shots on disk. Product hold. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-163',
+    domain: 'public-ux',
+    title: 'Matt ADD [p0] about: the first screen is a storefront photo, not a face',
+    objective:
+      'Looked live https://ryan-realty.com/about at 1440 and 375 on 2026-09-20/21. PNGs: about__1440__fold.jpg, about__375__fold.jpg in scratchpad/site-look-2026-09-20/. Fold is H1 “About Ryan Realty · Bend”, generic boutique sentence, then a downtown storefront photo (barber / 115 NW Oregon Ave). 5.0 from 25 sits under the photo. No broker face in the first viewport at either width. Layout lock: faces open the page at display scale. SITE-64 shipped the KPI-grid kill; live first look is now a storefront, not a face. Contact @375 is Call/Text first (good) but also no face; dog covers “Pick a time”. Start with `node scripts/lib/taste-catalog.mjs about --preflight`. Fetch shadcn-avatar. Exclusive files: app/about/page.tsx, components/site/v3/V3Quiet.tsx / about _v3. Do not lead with a KPI grid. SEO: about title stays branded. Information: 5.0 from 25 and office address stay. UX: faces at display scale in the first viewport. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output: 'About first viewport is faces + 5.0; 1440/375 shots; taste receipt.',
+    accept:
+      'At 1440 and 375 a broker face is in the first viewport. 5.0-from-25 remains. Product hold. Score ≥ 70. Rebaseline is not done.',
+  },
 
 ]
 
