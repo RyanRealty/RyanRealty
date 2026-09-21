@@ -1387,6 +1387,52 @@ const SEEDS: readonly Seed[] = [
     accept:
       'At 1440 and 375 a broker face is in the first viewport. 5.0-from-25 remains. Product hold. Score ≥ 70. Rebaseline is not done.',
   },
+  {
+    versionGap: 'SITE-164',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] search: the price control is two dead grey bars, not a range you can drag',
+    objective:
+      'Looked live https://ryan-realty.com/homes-for-sale at 1440 and 375 on 2026-09-20/21 (scratchpad/site-look-2026-09-20/search__1440__fold.jpg, search__1440__beds-open.jpg, search__375__fold.jpg). PRICE / Any price is two stacked grey tracks with dots. It does not read as a beUI range-slider (navy fill, tick stops). Catalog job beui-range-slider is the replaceWith. SITE-143 owns map clusters / edge-clipped chips — this node is the price control. Do not shrink the map. Cards already carry price + beds/baths/sqft + address; keep them. Start with `node scripts/lib/taste-catalog.mjs search --preflight`. INSTALL beui-range-slider. Exclusive files: the search price control (V3Range / components/motion/range-slider.tsx / SearchFilters price row). Do not restyle SearchMapClustered (SITE-143). SEO: /homes-for-sale title holds. Information: cards keep the house facts. UX: a range you can recognize next to the beUI demo. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Live price range matches the beUI range demo; 1440 + 375 shots of the control dragged.',
+    accept:
+      'demoMatch true on the range. A visitor can drag min and max at 1440 and 375. List count, cards, and map move together. Product hold. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-165',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] communities index: letter tiles where a photo should be (Black Butte B, Rivers Edge R)',
+    objective:
+      'Looked live https://ryan-realty.com/communities at 1440 on 2026-09-20/21 (scratchpad/site-look-2026-09-20/communities-index__1440__fold.jpg, communities-index__1440__scroll1.jpg, subdivisions__1440__fold.jpg). SITE-140 is the homepage NWC rail. This node is the communities INDEX. Black Butte Ranch is a navy “B” square; Rivers Edge is an “R”; Vandevert Ranch a grey square. Same letter-tile tell on /subdivisions (7th Mtn Golf Village = “7”, Glaze Meadow = “G”). Rows with photos (Awbrey Glen, Brasada, Broken Top, Caldera) already work. Exclusive files: communities index + subdivisions index photo resolver (not the community place page — SITE-162). Do not invent photos; use the asset library or omit the tile until a real still exists. SEO: index H1s hold. Information: for-sale counts stay. UX: no letter glyph standing in for a place. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Communities and subdivisions index rows show a real still or an honest empty, never a letter glyph; 1440/375 shots.',
+    accept:
+      'At 1440 and 375, Black Butte Ranch / Rivers Edge / Vandevert on /communities are not letter tiles. Same for the named subdivision letter tiles. Counts remain. Product hold. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-166',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p1] team: the first face is a 32px overlapping kicker, not display-scale portraits',
+    objective:
+      'Looked live https://ryan-realty.com/team at 1440 on 2026-09-20/21 (scratchpad/site-look-2026-09-20/team__1440__fold.jpg). SITE-113 shipped closings beside faces. Live leftover: three tiny overlapping heads sit above “Matt Ryan” while the real portraits are mid-page. SITE-163 put faces at display scale on /about; /team still opens on a kicker cluster. Exclusive files: app/team/**. Do not edit /about. Layout lock: faces open the page at display scale. SEO: team title holds. Information: 8 / 3 closings last 12 months stay sourced. UX: the first face a visitor sees is a broker portrait, not a 32px stack. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output: 'Team first viewport is display-scale portraits; 1440/375 shots; taste receipt.',
+    accept:
+      'At 1440 and 375 a broker portrait is in the first viewport at display scale. Closing counts remain. Product hold. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-167',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p1] reviews: the 25 five-star reviews still open as initials, not faces',
+    objective:
+      'Looked live https://ryan-realty.com/reviews at 1440 on 2026-09-20/21 (scratchpad/site-look-2026-09-20/reviews__1440__fold.jpg). SITE-109 shipped the 5.0 + full-text review. Live leftover: the first review is a giant pull-quote with “MJ” initials and a +22 blob of empty circles, not reviewer or broker faces. Quote still uses a hyphen. Exclusive files: app/reviews/**. Do not invent reviewer photos that Google did not give; if there is no face, say so and use the broker face that stands behind the 5.0. SEO: reviews title holds. Information: 5.0 from 25 and the verbatim Google text stay. UX: a person is in the first viewport. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output: 'Reviews fold has a person + 5.0 + verbatim text; 1440/375 shots.',
+    accept:
+      'At 1440 and 375 a face is in the first viewport with 5.0 from 25 and the quoted review. Product hold. Rebaseline is not done.',
+  },
 
 ]
 
