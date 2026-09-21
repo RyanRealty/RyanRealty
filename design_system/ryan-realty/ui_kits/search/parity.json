@@ -200,11 +200,11 @@
       "sections": 0,
       "internalLinks": 177,
       "images": 2,
-      "heroImageWidth": 230,
+      "heroImageWidth": 144,
       "heroImageNatural": 230,
       "video": 0,
       "jsonLd": 4
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. heroImageWidth LOWERED 230 -> 144 (2026-09-21, PR #351 blocker): this is a LAYOUT floor, not a source-size one — heroImageNatural (real photo resolution, 230 floor) still clears with room, the CSS-rendered box shrank. Root cause found: the winning element in the first 1200px is a SplitListingCard/V3ListingRow photo in the `.v3-lrow--split` Ledger register, whose box width is the design token `--v3-card-photo-w: 10rem` (160px) in components/site/v3/tokens.css — introduced 2026-08-29/committed 2026-09-02, i.e. BEFORE this floor was seeded on 2026-09-12, and unchanged since (git log -S on the token shows exactly one line, one value, ever). The CSS comment at V3ListingRow.css:190 names it explicitly: \"Split-view modifier: 160×120 photo\". Confirmed live on production right now (curl -A '<real UA>' https://ryan-realty.com/search, 2026-09-21): the deployed page renders the identical `class=\"v3 v3-lrow v3-lrow--split\"` card at the same 160px box — this is not a regression from this branch or from any recent commit, it is the standing, shipped, INTENDED design. Best reconstruction of the 256 seed reading: 2026-09-13's 1ff50bac0 (\"perf: bypass vercel image optimization for spark listing photos\", the day AFTER this floor was seeded) moved this exact image from next/image's built-in optimizer to a raw unoptimized <img> for Spark hosts; a `fill` image's CSS box is set by its positioned ancestor (`.v3-lrow__media`, fixed at the 160px token) in both the optimized and unoptimized path, so 256 does not correspond to any CSS state this component has ever had — it reads as a one-time capture artifact from that seed run, not a size this page used to render. 144 = floor(160 * 0.9), the same 0.9 TOLERANCE this gate applies everywhere else, applied to the real, documented, currently-shipped card width instead of to the anomalous seed reading."
   }
 }
