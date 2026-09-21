@@ -1,3 +1,18 @@
+# Current — 2026-09-21 (Matt filed five p0s mid-round: SITE-151 to SITE-155)
+
+Surface: Claude cloud `session_01BAjTFBeaGSMToksvaqRqip`, branch `claude/run-loop-14np9i`, draft PR #351. PR only — Cos Mini lands. Do not merge. HOLD owner email.
+
+**A written decision was reversed. `Work with us` comes OUT of the chrome (Matt 2026-09-21).** The 2026-09-19 CTA lock block below added a sitewide header `V3WorkWithUs` and dropped the sticky dock. Matt has now said: "There's a Work with us button that needs to be removed. We're going to use the dog for that." The dog floater takes that job. This supersedes the CTA-lock entry for the header button; the rest of that block (no sitewide sticky, Tour as the one filled listing ask) still stands. SITE-155 owns the removal, SITE-153 owns making the dog worth promoting.
+
+Matt's five, filed verbatim into the graph with his screenshots described on each node:
+
+- **SITE-151** `/new-construction` concessions are "completely disjointed from the home itself." Each home carries its own concession, its builder, and what that builder offers. Needs REAL per-listing research: public remarks AND the private/agent-only notes, plus any builder site those notes name. §0 is the hard part — a concession is a financial claim to a consumer, so every offer is quoted from the listing row or the builder page, or it does not ship.
+- **SITE-152** Same page: "you only have three of the subdivisions, and then it's not complete. There are two maps, and the maps are confusing." One map, and subdivision coverage driven from the data instead of a three-item shelf.
+- **SITE-153** Dog floater: move it (he said "not right there" and asked for actual research on placement), make it genuinely animated ("flip, spin, invert"), six named doors in his order (List your home · Read our reviews · Give us a call · Send us a message · Get your home's value · Learn more about us), and click-the-dog-to-toggle with the Close link gone. Lane in flight.
+- **SITE-154** Listing videos. **Already measured, read this before building anything:** the home he named (56240 Trailmere Circle, Caldera Springs, key `20260629155935525239000000`, Active) has NO video in our data. It carries `virtual_tour_url`, a Zillow 3D Home capture — that is the "3D" tab he is already looking at. `public.listing_videos` holds **8 rows in the entire database** and zero for this key; 1,508 of 7,458 Active listings carry a `virtual_tour_url`. So this is not a UI gap. The open question is whether Spark carries video for this key that our sync drops, or whether the MLS simply has none. Answer that against Spark before writing any video UI.
+- **SITE-155** Chrome, four defects in one: a scroll jump on every page load that the search box appears to cause, the `Work with us` removal above, show the Google avatar instead of the account name (it worked once and regressed — find what broke), and keep the chrome from clipping at any width.
+
+Landed on the branch this round, all PR-only: SITE-137 (listing crumb), SITE-138 (neighbourhood overflow), SITE-142 (NC pin overlap + builder door), the `lib/cma` break that had been blocking every commit in the repo and hiding CI, `scripts/measure-route-fit.mjs`, the `/team` 44x44 tap target, and the Bend Oktoberfest stale date. `ci:gates` 162/162 green at the tip.
 # Current — 2026-09-20 (SITE-137 + SITE-138 — and the CMA break that had been hiding CI)
 
 Surface: Claude cloud `session_01BAjTFBeaGSMToksvaqRqip`, branch `claude/run-loop-14np9i` off `origin/main` `f86ade9d5`, tip `364ffbd76`, draft PR #351. PR only — Cos Mini lands. Do not merge. HOLD owner email. Claims held as `claude-cloud-14np9i-20260920`.
