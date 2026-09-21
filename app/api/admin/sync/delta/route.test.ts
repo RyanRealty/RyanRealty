@@ -43,6 +43,10 @@ function executeResult(over: Partial<ExecuteRunResult> = {}): ExecuteRunResult {
     historyRowsInserted: 0,
     photosFixed: 0,
     skippedFinalized: 0,
+    // SITE-154: the delta sync now writes listing_videos, so ExecuteRunResult
+    // carries a count of the rows it rewrote. This fixture has to satisfy the
+    // whole type, not most of it.
+    videosSynced: 0,
     expired: null,
     ...over,
   }
