@@ -250,13 +250,13 @@
     "V3Footer -- Markets / Company / Contact"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-14",
+    "evaluatedAt": "2026-09-20",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "Mini Cursor 2026-09-14 cursor-grok-4.6-high: demoMatch true, competitiveBriefPass true on catalog evaluate land. Scores 52/47/55 are the judge three-scoring. Do not invent scores.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
-    "demoMatch": true,
-    "competitiveBriefPass": true,
+    "evaluator": "claude CLI sonnet (taste-evaluate --evaluator claude --builder grok-4.6) SITE-147 pulse copy recapture. Judge returned demoMatch false and competitiveBriefPass false. Do not invent true.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "grok-4.6",
+    "demoMatch": false,
+    "competitiveBriefPass": false,
     "competitiveBriefEvidence": {
       "1": "HomeHomesRails stacked house carousels; live.forSaleLabel homes for sale across Central Oregon on the lead rail.",
       "2": "V3MorphSearch (field morphs into results) from MorphingSearch — navy on cream, no glass.",
@@ -281,10 +281,12 @@
         "sell-tab",
         "featured",
         "places",
-        "places-resorts"
+        "places-resorts",
+        "right-now",
+        "sold"
       ],
-      "capture": "first viewport + search-open=SEL@morph!click + sell-tab=SEL@ANCHOR!click + featured=#featured-community + places=#places + places-resorts=#places-resorts-and-communities, scripts/take-route-shots.mjs, scale 1, palette-quantized",
-      "baseUrl": "http://127.0.0.1:3183/"
+      "capture": "SITE-147 recapture of right-now=#right-now and sold=label[for=right-now-sold]@#right-now (no click-reload: atlas 2MB cache drop). Default/search-open/sell-tab/featured/places unchanged. scale 1, palette-quantized",
+      "baseUrl": "http://127.0.0.1:3417/"
     },
     "shots": {
       "brokers390Before": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-390-before.png",
@@ -316,21 +318,28 @@
       "soldDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-desktop.png",
       "soldMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-mobile375.png"
     },
-    "shotsHash": "sha256:891b6ed8210650683a5d18e058dbf4c3263f10a3c2d6d97d5143a1a0b55a222c",
+    "shotsHash": "sha256:9ce26a42df544f2660893a2ec122810f6a22b173645354d4a8bbad44365b4411",
     "scores": [
-      52,
-      47,
-      55
+      26,
+      28,
+      30
     ],
-    "score": 52,
+    "score": 28,
     "breakdown": {
-      "design": 17,
-      "originality": 11,
-      "interaction": 10,
-      "craft": 8,
-      "honesty": 6
+      "design": 9,
+      "originality": 8,
+      "interaction": 6,
+      "craft": 4,
+      "honesty": 1
     },
-    "beats": "Wins Zillow's Bend homepage on named live inventory in the first viewport (3,265, Oregon Data Share) and on Tetherow pulse ($1,900,000 median list, 8 sold last 30 days) versus photo-only resort tiles; loses to Zillow on search-morph completeness and to any serious brokerage homepage on first-viewport copy.",
+    "perCriterion": {
+      "design": 9,
+      "originality": 8,
+      "interaction": 6,
+      "craft": 4,
+      "honesty": 1
+    },
+    "beats": "Loses to Redfin's homepage (photo-preview autocomplete search, live map, denser card previews) and to Zillow's homepage on search depth. Featured-community cards are the one arguable win on live sourced pulse stats. No clean win to claim on this instrument.",
     "adaptedFrom": [
       {
         "id": "beui-morphing-search"
@@ -359,58 +368,46 @@
     ],
     "defects": [
       {
-        "section": "#hero .home-hero-search__brief",
-        "severity": "taste",
-        "criterion": "taste",
-        "finding": "The first viewport body is the evaluation checklist pasted over the aerial, so a buyer reads navy-on-cream spec language instead of a market sentence.",
+        "section": "hero subhead (desktop.png, mobile375.png, sell-tab-desktop.png)",
+        "severity": "blocking",
+        "finding": "The hero subhead is the build brief text shipped as visitor-facing copy under the H1, in both Buy and Sell tab states.",
         "replaceWith": null
       },
       {
-        "section": "search-open .v3-morph-search",
-        "severity": "craft",
-        "criterion": "craft",
-        "finding": "Open search keeps a leftover aerial strip and drops a cream result list onto the house rail; on 375 the panel clips Esc, the MLS line, and the lead card instead of the field becoming the results surface.",
+        "section": "'Homes in Bend and nearby' section intro (desktop.png, rails-desktop.png)",
+        "severity": "blocking",
+        "finding": "The section intro reads internal spec text standing in for a real section subhead.",
+        "replaceWith": null
+      },
+      {
+        "section": "Central Oregon right now / V3Pulse rows (right-now-desktop.png, right-now-mobile375.png, sold-desktop.png, sold-mobile375.png)",
+        "severity": "blocking",
+        "finding": "Judge read the three pulse rows as having no visible number. SITE-147 did not restyle V3Pulse: v3-pulse--claim-first clips .v3-pulse__figure by design (Matt 2026-09-15 KPI hide). Counts remain in the DOM and in the §0 trace. Copy rewrite is the selected-rule definition.",
+        "replaceWith": null
+      },
+      {
+        "section": "hero 'Find a home' field (search-open-desktop.png, search-open-mobile375.png)",
+        "severity": "taste",
+        "finding": "The field never morphs — it stays a fixed-size input and drops a plain bordered address list underneath.",
         "replaceWith": "beui-morphing-search"
       },
       {
-        "section": "#featured-community",
+        "section": "page rhythm, hero through Browse places",
         "severity": "taste",
-        "criterion": "taste",
-        "finding": "Resorts and planned communities, Browse places, and Resorts and communities are three stacked eyebrow-heading-card rows; the lower resort rail repeats Tetherow/Broken Top as identical Resort community Cards with no pulse.",
-        "replaceWith": "shadcn-card"
-      },
-      {
-        "section": "#places-resorts-and-communities",
-        "severity": "taste",
-        "criterion": "taste",
-        "finding": "Tetherow, Broken Top, and Eagle Crest sit as photo Cards labeled only Resort community, a second community carousel that discards the pulse the featured rail just established.",
-        "replaceWith": "beui-number"
-      },
-      {
-        "section": ".home-rails",
-        "severity": "craft",
-        "criterion": "craft",
-        "finding": "See all homes on 375 wraps into a tall square beside Homes in Bend and nearby, and the first-viewport house photos are cropped to a sliver.",
-        "replaceWith": "house-home-rails"
-      },
-      {
-        "section": "#featured-community [data-slot=card]",
-        "severity": "craft",
-        "criterion": "craft",
-        "finding": "Caldera Springs shows 62.5 days to an offer with no source line on the Card, and Broken Top's Explore footer is clipped.",
+        "finding": "Every section below the fold is the same shape — eyebrow/heading, a row of identical-width cards, a See all/Explore link — repeated. The pulse constellation is the section that breaks the pattern.",
         "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 59,
+      "evaluatedAt": "2026-09-14",
+      "score": 52,
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-08",
+      "rubricVersion": "v1-2026-09-12",
       "shotsHash": "sha256:891b6ed8210650683a5d18e058dbf4c3263f10a3c2d6d97d5143a1a0b55a222c"
     },
-    "rebaselineReason": "Mini Cursor 2026-09-14: demoMatch true, competitiveBriefPass true on the catalog evaluate land. rubricVersion v1-2026-09-08 → v1-2026-09-12 and shotsHash differ from the SITE-83 instrument; scores 52/47/55 stay the Mini three-scoring. Do not invent a new score.",
-    "verdict": "demoMatch is true because search-open, sell-tab, featured, and places shots show morph results, a Street address field, carousel Cards with pulse and town counts, and house-home-rails with price/address/beds/baths/sqft, not chips. The page still fails as a homepage: the stacked-section rhythm plus evaluator copy in the hero keep it a catalog assembly with a live MLS badge, not a page that beats Zillow on craft or originality."
+    "rebaselineReason": "SITE-147: evaluatorModel grok-4.6 → claude-sonnet-5 on recaptured right-now/sold pulse shots. Do not invent demoMatch.",
+    "verdict": "demoMatch is false on this claude instrument: morphing search still reads as a static field with a stock dropdown. competitiveBriefPass is false. SITE-147 is copy craft on V3Pulse definitions, not a catalog restyle. Pulse blurbs no longer lecture about the MLS feed."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
