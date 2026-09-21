@@ -34,7 +34,16 @@ export function V3ChromeSearch() {
   const { suggestions } = useSearchSuggest(query)
 
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 56.24rem)')
+    // Icon-only through the whole "1280-class" bar (V3Chrome.css: 56.25rem-
+    // 84.99rem), not just below the nav breakpoint. At a compressed pill
+    // (the CSS max-width: 8.5rem step in that range) the bar's actions row —
+    // search + Sign in/account + phone — still ran 20px past the viewport at
+    // 1024 (SITE-155, measured with scripts/measure-route-fit.mjs against
+    // /cities/bend: .v3-chrome__phone right=1044px against a 1024px
+    // viewport). The icon trigger is ~44px (the tap floor) vs. the pill's
+    // 136px, which clears that overflow with room to spare. Matches the CSS
+    // "1280-class" comment's own range so the two stay in lockstep.
+    const mq = window.matchMedia('(max-width: 84.99rem)')
     const apply = () => setIconOnly(mq.matches)
     apply()
     mq.addEventListener('change', apply)

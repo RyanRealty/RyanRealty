@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
 const CHROME_CSS = readFileSync(resolve('components/site/v3/V3Chrome.css'), 'utf8')
+const SEARCH = readFileSync(resolve('components/site/v3/V3ChromeSearch.client.tsx'), 'utf8')
 const PROOF = readFileSync(resolve('components/site/v3/V3Proof.client.tsx'), 'utf8')
 const CHART_CSS = readFileSync(resolve('components/site/v3/V3Chart.css'), 'utf8')
 const CHART = readFileSync(resolve('components/site/v3/V3Chart.tsx'), 'utf8')
@@ -122,5 +123,41 @@ describe('chrome homepage H-fixes', () => {
       /@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3-chrome__menu-btn \{[\s\S]*?overflow: hidden/,
     )
     expect(CHROME_CSS).toMatch(/\.v3-chrome__menu-btn,[\s\S]*?position: relative/)
+  })
+
+  it('clips the header at every width, not only mobile (SITE-155)', () => {
+    // A start-aligned mega panel (Homes/Places/Market) is positioned off its
+    // own .v3-chrome__group, not clamped to the viewport, so between roughly
+    // 860-1200px its CLOSED, visibility:hidden box still sits past the right
+    // edge of the screen and widens document.documentElement.scrollWidth —
+    // measured live: /cities/bend at 1024px, .v3-chrome__panel--mega
+    // right=1155px against a 1024px viewport (+131px). Clipping at the
+    // header's own box (unconditional, not just the <640px rule that already
+    // existed) removes it at every width without touching the OPEN panel's
+    // own edge-shift correction in V3Chrome.tsx (--v3-chrome-mega-shift).
+    const baseRule = CHROME_CSS.slice(
+      CHROME_CSS.indexOf('.v3.v3-chrome {'),
+      CHROME_CSS.indexOf('\n}', CHROME_CSS.indexOf('.v3.v3-chrome {')),
+    )
+    expect(baseRule).toContain('overflow-x: clip')
+    // The mobile-only rule from the 375 fix above must still stand — this is
+    // additive, not a replacement.
+    expect(CHROME_CSS).toMatch(
+      /@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3\.v3-chrome \{[\s\S]*?overflow-x: clip/,
+    )
+  })
+
+  it('keeps the search icon-only through the whole 1280-class bar, not just below the nav breakpoint (SITE-155)', () => {
+    // Even fully compressed to the CSS "1280-class" pill width (8.5rem), the
+    // actions row (search + Sign in/account + phone) still ran the phone
+    // control 20px past the viewport at 1024px — measured live:
+    // .v3-chrome__phone right=1044px against a 1024px viewport. An icon
+    // trigger (~44px, the tap floor) clears it with room to spare. The JS
+    // breakpoint must match the CSS "1280-class" range (56.25rem-84.99rem)
+    // so the two never drift apart again.
+    expect(SEARCH).toContain("window.matchMedia('(max-width: 84.99rem)')")
+    expect(CHROME_CSS).toMatch(
+      /1280-class bars[\s\S]*?@media \(min-width: 56\.25rem\) and \(max-width: 84\.99rem\)/,
+    )
   })
 })
