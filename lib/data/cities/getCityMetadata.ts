@@ -146,7 +146,19 @@ export const getCommunityHeroUrlsBySlug = unstable_cache(
   async (): Promise<Record<string, string>> => {
     const sb = supabaseAnon()
     if (!sb) return {}
-    const { data } = await sb.from('communities').select('slug, name, hero_image_url')
+    // SITE-140: `communities` holds 1,848+ rows. An unfiltered select() has no
+    // ORDER BY, so PostgREST's default 1,000-row page silently truncated the
+    // read at an arbitrary point in physical row order — any row past that
+    // cutoff (verified: northwest-crossing sat at index 1097) never reached
+    // `liveHeroes`, so its live hero_image_url was dropped and the caller fell
+    // through to a weaker fallback (or none) even though the row had a photo.
+    // Filtering to non-null hero_image_url server-side both fixes the
+    // truncation (16 rows today, nowhere near the 1,000-row page) and is a
+    // lighter query than fetching the whole table.
+    const { data } = await sb
+      .from('communities')
+      .select('slug, name, hero_image_url')
+      .not('hero_image_url', 'is', null)
     const out: Record<string, string> = {}
     for (const row of (data ?? []) as Array<{
       slug: string | null
@@ -161,7 +173,7 @@ export const getCommunityHeroUrlsBySlug = unstable_cache(
     }
     return out
   },
-  ['community-hero-urls-v2'],
+  ['community-hero-urls-v3'],
   { revalidate: 1800, tags: ['communities'] },
 )
 

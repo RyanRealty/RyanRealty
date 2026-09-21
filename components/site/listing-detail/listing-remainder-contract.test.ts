@@ -48,7 +48,13 @@ describe('listing remainder composition', () => {
     const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
     expect(LAYOUT).not.toMatch(/V3PhoneDock/)
     const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
-    expect(CHROME).toContain('<V3WorkWithUs surface="chrome" placement="chrome"')
+    // Was: the chrome must carry <V3WorkWithUs surface="chrome">. Matt
+    // reversed that 2026-09-19 lock on 2026-09-21 (SITE-155): "There's a
+    // 'Work with us' button that needs to be removed. We're going to use the
+    // dog for that." V3DogFloater (SITE-153) took the job. Flipped rather
+    // than dropped so the trigger cannot quietly return to the header. This
+    // test's own subject, Save and Share on the listing page, is unaffected.
+    expect(CHROME).not.toMatch(/<V3WorkWithUs/)
     expect(HERO).toMatch(/from '@\/components\/motion\/tabs'/)
     expect(HERO).toMatch(/from '@\/components\/ui\/carousel'/)
     expect(HERO).not.toContain('V3Tabs')

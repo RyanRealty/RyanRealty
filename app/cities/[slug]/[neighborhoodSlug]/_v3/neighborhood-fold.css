@@ -102,6 +102,21 @@
   }
 }
 
+/* SITE-138: `<body>` already carries `overflow-x-hidden`, but the CSS2.1
+   html/body propagation rule steals a plain BODY overflow and hands it to the
+   viewport instead of clipping body's own box — so `document.documentElement
+   .scrollWidth` still reports the wider content even though nothing visibly
+   scrolls. The city fold dodges the propagation quirk by clipping on `<main>`
+   itself (`.city-page`, app/cities/[slug]/_v3/city-fold.css); this route had
+   no equivalent, so ANY horizontal overflow anywhere in the fold (measured:
+   PlaceSplitView's own `.srch-chip-actions` filter-chip row, not the map)
+   widened the document at 360/375. The chip set never clips itself — it counts
+   on its page shell to, same as it does on /cities/[slug]. */
+.nbh-page {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 /* ── The stage ─────────────────────────────────────────────────────────── */
 
 .nbh-fold {
@@ -556,6 +571,21 @@
 /* ── Phone: drawing, figure and the email inside 812 ───────────────────── */
 
 @media (max-width: 63.99rem) {
+  /* SITE-138: match the city fold's defense-in-depth (city-fold.css, SITE-128
+     rematch comment) so Google's own tile panes cannot widen the page either,
+     even though the measured escape on this route was the filter-chip row,
+     not the map. Both axes clip — overflow-x:clip + overflow-y:visible
+     recomputes to auto and lets content widen the page again. */
+  .nbh-fold,
+  .nbh-fold__stage,
+  .nbh-fold__drawing,
+  .nbh-fold__drawing .v3-place-look,
+  .nbh-fold__drawing .v3-place-look__stage,
+  .nbh-fold__drawing .v3-place-look__map {
+    overflow: hidden;
+    max-width: 100%;
+  }
+
   .nbh-fold {
     padding-top: var(--v3-space-2xs);
     padding-bottom: var(--v3-space-sm);

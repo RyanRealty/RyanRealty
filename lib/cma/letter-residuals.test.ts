@@ -252,7 +252,16 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       expect(doc).not.toContain('Marker key')
     }
     expect(html).toContain('comp-matrix')
-    const salesHits = (html.match(/<h3 class="subhead">The sales that set this price<\/h3>/g) ?? []).length
+    // Matt 2026-09-18 (c1f675d48, "Canter matrix lookpass — ... one heading"):
+    // salesThatSetItPage now owns a single <h2 class="section"> heading and
+    // tells renderCompMatrixHtml to omit its own duplicate <h3 class="subhead">
+    // (render-pricing-page.ts omitHeading: true) — verified against the
+    // still-passing canter-letter-flow.contract.test.ts
+    // ("contract: sales-that-set-it-one-heading"), which asserts the same
+    // chapter now prints zero <h3 class="subhead"> copies and exactly one
+    // <h2>/<h3> heading total. This file (2026-09-06) predates that change
+    // and still counted the retired <h3>; count the current heading instead.
+    const salesHits = (html.match(/<h[23][^>]*>[^<]*The sales that set this price/g) ?? []).length
     expect(salesHits).toBe(1)
   })
 

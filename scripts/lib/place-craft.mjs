@@ -45,6 +45,7 @@ const PATHS = Object.freeze({
   placeLookMap: 'components/site/v3/V3PlaceLookMap.client.tsx',
   placeLookCss: 'components/site/v3/V3PlaceLook.css',
   cityFoldCss: 'app/cities/[slug]/_v3/city-fold.css',
+  neighborhoodFoldCss: 'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-fold.css',
   searchMap: 'components/SearchMapClustered.tsx',
   subjectRing: 'lib/maps/subject-ring.ts',
   ringPad: 'lib/maps/v3-basemap.ts',
@@ -380,6 +381,39 @@ export function placeSeamsProblems({ root = process.cwd(), files = {} } = {}) {
     p.push(`${PATHS.cityFoldCss}: missing city fold CSS.`)
   } else if (!/\.city-page \{[\s\S]{0,80}overflow-x:\s*hidden/.test(foldCss) || !/city-fold__drawing \.v3-place-look__map/.test(foldCss)) {
     p.push(`${PATHS.cityFoldCss}: city page must overflow-x hidden and the fold map must clip. Chip overflow is refuse.`)
+  }
+
+  // SITE-138: /cities/bend passed the 375 overflow rematch (city-page above)
+  // while the neighborhood route still widened the document 29px at 360 /
+  // 14px at 375 — `<body>`'s own overflow-x-hidden utility class does not
+  // save it, because the CSS2.1 html/body propagation rule hands a plain
+  // BODY overflow to the viewport instead of clipping body's own box, so
+  // `documentElement.scrollWidth` keeps reporting the wider content. The
+  // escaping element measured live was PlaceSplitView's own search-chip row
+  // (components/search/SearchFilters.tsx `.srch-chip-actions`), not the map —
+  // it clips on `<main>` today only on /cities/[slug]. Same lock, same shape,
+  // on the neighborhood route.
+  const nbhPage = readRel(root, PATHS.neighborhood, files.neighborhood ?? files[PATHS.neighborhood])
+  if (nbhPage && !/nbh-page/.test(nbhPage)) {
+    p.push(
+      `${PATHS.neighborhood}: neighborhood main must carry nbh-page so 360/375 overflow-x stays clipped (SITE-138).`,
+    )
+  }
+
+  const nbhFoldCss = readRel(
+    root,
+    PATHS.neighborhoodFoldCss,
+    files.neighborhoodFoldCss ?? files[PATHS.neighborhoodFoldCss],
+  )
+  if (nbhFoldCss == null) {
+    p.push(`${PATHS.neighborhoodFoldCss}: missing neighborhood fold CSS.`)
+  } else if (
+    !/\.nbh-page \{[\s\S]{0,80}overflow-x:\s*hidden/.test(nbhFoldCss) ||
+    !/nbh-fold__drawing \.v3-place-look__map/.test(nbhFoldCss)
+  ) {
+    p.push(
+      `${PATHS.neighborhoodFoldCss}: neighborhood page must overflow-x hidden and the fold map must clip. SITE-138 phone overflow is refuse.`,
+    )
   }
 
   const searchMap = readRel(root, PATHS.searchMap, files.searchMap ?? files[PATHS.searchMap])

@@ -1,8 +1,18 @@
-/* SITE-134 / SITE-135 / SITE-146 — floating dog-head circle + five-door
-   sheet. Critiquito 2026-09-19 + Matt phone 2026-09-20: inner head from
-   the full seal (not the wordmark, not a pre-cropped disc). One quiet
-   tilt 3–6° that moves for most of a ≤4s cycle, then a short pause.
-   Overflow lives on the circle, not the animated node (iOS reads
+/* SITE-134 / SITE-135 / SITE-146 / SITE-153 — floating dog-head circle +
+   six-door sheet. SITE-153 (Matt 2026-09-21, "out of sight... do some
+   research... not animated enough"): stays corner-anchored (NN/g + the
+   Intercom/Drift default both penalize moving a persistent contact
+   affordance off bottom-right), but fixes the two things that actually made
+   it easy to miss — it was cream-on-cream against this site's cream page
+   background, and it sat tight against the exact bottom-right pixel where
+   the cookie chip and the last content row also compete. Now one solid navy
+   / cream-head circle everywhere (no more light-page vs listing-page color
+   branch) resting a full --v3-space-3xl off the edge instead of
+   --v3-space-md. See V3DogFloater.client.tsx for the research citations.
+   Motion: __head keeps the SITE-135/146 quiet 3-6° tilt (continuous, ~3s);
+   __stage adds a rotateY flip-spin flourish roughly every 10s (SITE-153,
+   "flip, spin, invert") — brief and infrequent, not a constant spin.
+   Overflow lives on the circle, not the animated nodes (iOS reads
    overflow+animation on one node as frozen). Head assets already
    include muzzle/ears/crown plus a thin 4–8% pad (not a fat ring);
    contain paints the square. object-position nudges the face off the
@@ -11,7 +21,7 @@
    @375 sits above .listing-ask-row. */
 
 .v3-dog-floater {
-  --v3-dog-fab-bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));
+  --v3-dog-fab-bottom: calc(var(--v3-space-3xl) + env(safe-area-inset-bottom, 0px));
   position: fixed;
   right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));
   bottom: var(--v3-dog-fab-bottom);
@@ -21,17 +31,12 @@
   height: 4.25rem;
   padding: 0;
   overflow: hidden;
-  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  perspective: 300px;
+  border: var(--v3-rule-weight-hairline) solid var(--v3-cream);
   border-radius: 50%;
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  cursor: pointer;
-}
-
-.v3-dog-floater--on-dark {
   background: var(--v3-navy);
   color: var(--v3-cream);
-  border-color: var(--v3-cream);
+  cursor: pointer;
 }
 
 /* Keep the dog above the scrim so a second tap closes (DialogTrigger). */
@@ -58,10 +63,6 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
 
 @media (hover: hover) and (pointer: fine) {
   .v3-dog-floater:hover {
-    box-shadow: inset 0 0 0 2px var(--v3-navy);
-  }
-
-  .v3-dog-floater--on-dark:hover {
     box-shadow: inset 0 0 0 2px var(--v3-cream);
   }
 }
@@ -73,6 +74,18 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
 .v3-dog-floater:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
+}
+
+/* Outer layer: the SITE-153 periodic flip-spin flourish. A separate node
+   from __head so the two transforms compose (nested elements) instead of
+   one keyframe animation clobbering the other on the same node. */
+.v3-dog-floater__stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+  animation: v3-dog-flourish 10s ease-in-out infinite;
 }
 
 .v3-dog-floater__head {
@@ -112,8 +125,27 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   }
 }
 
+/* SITE-153: flip-spin flourish, brief (~1s) and infrequent (~once per 10s)
+   so it reads as a deliberate move that gets attention, not a spinning
+   toy (CXL / NN/g: bold attention motion should be short + rare; continuous
+   motion should stay subtle). rotateY genuinely mirrors the head through
+   180deg — that is the "invert" Matt asked for, not a simulated one. */
+@keyframes v3-dog-flourish {
+  0%,
+  90% {
+    transform: rotateY(0deg) scale(1);
+  }
+  95% {
+    transform: rotateY(180deg) scale(1.06);
+  }
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .v3-dog-floater__head {
+  .v3-dog-floater__head,
+  .v3-dog-floater__stage {
     animation: none;
   }
 
@@ -132,7 +164,10 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   top: auto;
   left: auto;
   right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));
-  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  /* FAB bottom (--v3-space-3xl = 4rem) + FAB height (4.25rem) + a 0.25rem
+     gap — kept in sync by hand with .v3-dog-floater's raised SITE-153
+     bottom offset above. */
+  bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
   width: min(26rem, calc(100vw - 2 * var(--v3-gutter)));
   max-width: min(26rem, calc(100vw - 2 * var(--v3-gutter)));
   max-height: min(36rem, calc(100dvh - 8rem));
@@ -154,7 +189,7 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
     left: var(--v3-gutter);
     width: auto;
     max-width: none;
-    bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(8.75rem + env(safe-area-inset-bottom, 0px));
     padding: var(--v3-space-md);
   }
 
@@ -227,21 +262,6 @@ body:has([data-cookie-notice='bar']) .v3-dog-floater {
   outline-offset: var(--v3-focus-offset);
 }
 
-.v3-dog-floater-menu__close {
-  justify-self: start;
-  min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-sm);
-  border: 0;
-  background: transparent;
-  color: var(--v3-navy);
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-}
-
-.v3-dog-floater-menu__close:focus-visible {
-  outline: var(--v3-focus-ring);
-  outline-offset: var(--v3-focus-offset);
-}
+/* SITE-153 (Matt 2026-09-21): no visible "Close" text link. The dog itself
+   toggles (DialogTrigger), plus Escape / outside-click from DialogContent /
+   DialogOverlay — intentionally no .v3-dog-floater-menu__close rule here. */

@@ -27,6 +27,19 @@
   background: var(--v3-surface);
   /* 64px cream bar, 2px navy rule (first-slice chrome). */
   border-bottom: var(--v3-chrome-rule);
+  /* SITE-155: a start-aligned mega panel (Homes/Places/Market) is positioned
+     off its own .v3-chrome__group, not clamped to the viewport, so between
+     roughly 860-1200px its CLOSED, visibility:hidden box still sits past the
+     right edge of the screen and widens document.documentElement.scrollWidth
+     — a real horizontal scrollbar with nothing visibly clipped (measured:
+     scripts/measure-route-fit.mjs on /cities/bend at 1024, +131px overflow,
+     .v3-chrome__panel--mega right=1155px against a 1024px viewport). Clipping
+     at the header's own box (full viewport width, unlike the narrower
+     max-width-limited .v3-chrome__bar) removes that overhang at every width
+     without touching the open panel's own edge-shift correction in
+     V3Chrome.tsx (--v3-chrome-mega-shift), which still runs for the visible,
+     interactive case. */
+  overflow-x: clip;
 }
 
 /* The bar -------------------------------------------------------------------
@@ -1043,24 +1056,6 @@
   color: var(--v3-cream);
   font-size: 0.75rem;
   font-weight: var(--v3-weight-medium);
-}
-
-.v3-chrome__account-name {
-  max-width: 7rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (max-width: 39.99rem) {
-  .v3-chrome__account-name {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
 }
 
 .v3-chrome__panel-list--stacked { grid-template-columns: minmax(0, 1fr); }

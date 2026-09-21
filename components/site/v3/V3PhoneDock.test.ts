@@ -9,10 +9,15 @@ const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
 const LISTING_PAGE = readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8')
 
 describe('V3WorkWithUs sheet · Matt / Critiquito CTA lock 2026-09-19', () => {
-  it('is the one sheet the header Work with us opens', () => {
-    expect(CHROME).toContain('V3WorkWithUs')
-    expect(CHROME).toContain("from './V3PhoneDock.client'")
+  it('still exists as a sheet, but the chrome no longer opens it (Matt 2026-09-21, SITE-155)', () => {
+    // The 2026-09-19 lock made the header one of this sheet's openers. Matt
+    // reversed that on 2026-09-21 and gave the job to V3DogFloater
+    // (SITE-153). The SHEET is untouched and still opens from the listing
+    // agent card; only the chrome stopped opening it. Asserting the absence
+    // here so the trigger cannot quietly return to the header.
     expect(SRC).toContain('export function V3WorkWithUs')
+    expect(CHROME).not.toMatch(/<V3WorkWithUs/)
+    expect(CHROME).not.toMatch(/from '\.\/V3PhoneDock\.client'/)
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
     expect(LISTING_PAGE).not.toMatch(/<ListingBrokerBar/)
     expect(LISTING_PAGE).not.toMatch(/<ListingMobileContactBar/)

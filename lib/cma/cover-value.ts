@@ -5,7 +5,7 @@
 
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
-import { closedCompBand } from '@/lib/pricing/recommended-in-band'
+import { closedCompBand, recommendedInsideClosedBand } from '@/lib/pricing/recommended-in-band'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
@@ -157,7 +157,19 @@ export function coverValueBlockHtml(a: CoverArgs): string {
  */
 export function heroTrioHtml(p: CmaPricing, opts?: { singleClass?: string }): string {
   // Same closedCompBand listRangeBounds / Tip Ready parity reads.
-  const band = closedCompBand(p)
+  //
+  // `buildCma` clamps Recommended into the closed-comp band before render
+  // (lib/pricing/recommended-in-band.ts, Matt 2026-09-17), so in a normal
+  // build this band always holds it. But `recommendedInsideClosedBand` — the
+  // same guard Tip Ready refuses a build on — is checked here too: a
+  // Recommended below "Low" or above "High" is exactly the internal
+  // contradiction CLAUDE.md §0 bans ("every sentence, subhead, verdict, and
+  // pill must be consistent with the number it sits next to"), so the trio
+  // falls back to the conservative/highEnd tiers, which by construction
+  // bracket Recommended, rather than print a Low that reads higher than the
+  // Recommended figure beside it.
+  const rawBand = closedCompBand(p)
+  const band = rawBand && recommendedInsideClosedBand(p) ? rawBand : null
   const loRaw = band?.low ?? (p.conservative ?? 0)
   const hiRaw = band?.high ?? (p.highEnd ?? 0)
   const low = Math.min(loRaw, hiRaw)

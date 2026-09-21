@@ -90,7 +90,7 @@ export function ReviewsAvatarGroup({
                 aria-pressed={open}
               >
                 <Avatar size={open ? 'lg' : 'default'} data-initials={initials}>
-                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+                  <AvatarFallback className="v3-proof__avatar-fallback bg-navy text-cream">
                     {initials}
                   </AvatarFallback>
                   <AvatarBadge>{open ? <StarIcon /> : null}</AvatarBadge>
@@ -100,7 +100,7 @@ export function ReviewsAvatarGroup({
             <DropdownMenuContent className="w-56" align="start">
               <DropdownMenuLabel className="flex items-center gap-2 font-normal">
                 <Avatar size="sm" data-initials={initials}>
-                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+                  <AvatarFallback className="v3-proof__avatar-fallback bg-navy text-cream">
                     {initials}
                   </AvatarFallback>
                 </Avatar>

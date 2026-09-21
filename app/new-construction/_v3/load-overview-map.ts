@@ -32,6 +32,17 @@ export type NewConOverviewMap = {
   outlinedNamed: number
   namedTotal: number
   basemap: Basemap | null
+  /**
+   * SITE-152 (2026-09-21): the de-duplicated live Active count from the SAME
+   * searchListingsAll() pull that produces `dots` — `searchListingsAll()`'s
+   * own `totalCount` already runs `dedupeListingTilesByStreet`, unlike
+   * `searchListingsAllCount()`'s raw MV head-count (verified live 2026-09-21:
+   * 216 raw vs 211 de-duplicated for the same Bend/newConstruction/active
+   * filter). The page's Stage headline reads this field instead of issuing
+   * its own separate, undeduplicated count query, so the number visitors see
+   * at the top of the page can never disagree with the map below it.
+   */
+  liveTotal: number | null
 }
 
 function dalReady(): boolean {
@@ -51,6 +62,7 @@ function emptyMap(incomplete: boolean): NewConOverviewMap {
     outlinedNamed: 0,
     namedTotal: BEND_NEW_CON_NAMED.length,
     basemap: null,
+    liveTotal: null,
   }
 }
 
@@ -198,6 +210,7 @@ export async function loadNewConOverviewMap(): Promise<NewConOverviewMap> {
       outlinedNamed: matchedBySlug.size,
       namedTotal: BEND_NEW_CON_NAMED.length,
       basemap: regions.length > 0 ? basemapForRegions(regions, { dots, fit: 'regions' }) : null,
+      liveTotal: listingsOk ? listings.totalCount : null,
     }
   } catch (err) {
     console.error('[loadNewConOverviewMap]', err)

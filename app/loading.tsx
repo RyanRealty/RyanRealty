@@ -1,73 +1,32 @@
+import { V3Loading } from '@/components/site/v3'
+
+/**
+ * Streaming fallback for the ROOT segment — every route in the app, public
+ * and admin alike, shows this first before its own (shorter, route-specific)
+ * loading.tsx or real content replaces it (SITE-158).
+ *
+ * WHY NOT A HOMEPAGE SKELETON. This file used to draw a five-section,
+ * ~2,900px fake homepage (hero + featured row + just-listed row + community
+ * grid + market CTA + trust/email) on EVERY route, including ones whose real
+ * content — or whose OWN loading.tsx — is far shorter. Next.js streams the
+ * root boundary's fallback first regardless of which route is loading, so a
+ * visitor on /cities/bend got a ~2,900px document for ~1s, then watched it
+ * collapse to the route's own ~966px skeleton the instant that boundary
+ * resolved. A document that shrinks out from under a mid-load scroll is what
+ * the browser clamps `scrollY` against — that clamp is the "moves the middle
+ * of the page to the top" bug Matt reported. A fallback shorter than the page
+ * replacing it only ever GROWS the document, which does not clamp anything.
+ *
+ * WHY THIS SHAPE. The root fallback cannot know which route is loading, so it
+ * must not pretend to (no hero, no cards, no grid shaped like the homepage).
+ * V3Loading is the design system's existing answer to exactly that problem —
+ * nine other routes (about, blog, compare, contact, forgot-password, login,
+ * sell, signup, team) already use it as an honest "text is coming" shell that
+ * reserves the v3 section measure/gutter/pad without claiming a layout it
+ * has not seen. It renders under 500px, well under every nested loading.tsx
+ * and every real page's content, so the boundary handoff can only grow the
+ * document, never shrink it.
+ */
 export default function Loading() {
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Hero skeleton */}
-      <div className="relative flex min-h-[520px] items-center justify-center bg-primary">
-        <div className="h-12 w-3/4 max-w-md animate-pulse rounded bg-card/20" />
-      </div>
-
-      {/* Featured row */}
-      <section className="bg-card px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex justify-between">
-            <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-            <div className="h-5 w-20 animate-pulse rounded bg-muted" />
-          </div>
-          <div className="mt-6 flex gap-4 overflow-hidden">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-[340px] min-w-[280px] animate-pulse rounded-lg bg-muted" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Just listed row */}
-      <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="h-8 w-40 animate-pulse rounded bg-muted" />
-          <div className="mt-6 flex gap-4 overflow-hidden">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-[340px] min-w-[280px] animate-pulse rounded-lg bg-card/80" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Community grid */}
-      <section className="bg-card px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="h-8 w-56 animate-pulse rounded bg-muted" />
-          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="aspect-[16/10] animate-pulse rounded-lg bg-muted" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Market CTA */}
-      <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto h-8 w-72 animate-pulse rounded bg-card/20" />
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-lg bg-card/10" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Trust + email */}
-      <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-2xl">
-          <div className="h-8 w-64 animate-pulse rounded bg-muted" />
-          <div className="mt-4 h-4 w-full animate-pulse rounded bg-card/80" />
-          <div className="mt-6 flex gap-4">
-            <div className="h-12 flex-1 animate-pulse rounded-lg bg-card/80" />
-            <div className="h-12 w-28 animate-pulse rounded-lg bg-muted" />
-          </div>
-        </div>
-      </section>
-    </div>
-  )
+  return <V3Loading label="Loading Ryan Realty" lines={3} />
 }

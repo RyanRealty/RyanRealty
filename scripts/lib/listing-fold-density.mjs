@@ -166,24 +166,65 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
       `${PATHS.breadcrumbCss}: overlay-compact crumb must sit at 1.75rem, not the 44px tap band.`,
     )
   }
-  if (!/\.v3\.v3-breadcrumb--overlay-compact[\s\S]{0,200}overflow:\s*visible/.test(css)) {
+  // SITE-137: 485c1dba/ab130e38 pinned every overlay-compact rung to
+  // max-content with overflow:visible so 828 NW Florida Avenue fit by luck,
+  // but a longer street ran off the right edge with no ellipsis and no page
+  // scroll — unreachable, not just unpretty. The list must clip its own
+  // overflow, and the two truncation levels (ancestor rungs, then the
+  // address itself) must keep the ellipsis machinery live so a cut rung is
+  // always ellipsized, never hard-clipped mid-word.
+  if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__list \{[\s\S]{0,80}overflow:\s*hidden/.test(css)) {
     p.push(
-      `${PATHS.breadcrumbCss}: overlay-compact list must overflow:visible. overflow-x:auto clipped "828 NW Florida Avenue" at 375.`,
+      `${PATHS.breadcrumbCss}: overlay-compact list must overflow:hidden so a run-off address cannot escape the viewport unreachable (SITE-137).`,
     )
   }
-  if (/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__list \{[\s\S]{0,80}overflow-x:\s*(auto|hidden)/.test(css)) {
+  if (/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__list \{[\s\S]{0,80}overflow:\s*visible/.test(css)) {
     p.push(
-      `${PATHS.breadcrumbCss}: overlay-compact list must not overflow-x clip/scroll the address end.`,
+      `${PATHS.breadcrumbCss}: overlay-compact list overflow:visible reopens SITE-137 — a long address runs off-screen with no ellipsis and no scroll.`,
     )
   }
-  if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__text--current[\s\S]{0,160}max-width:\s*none/.test(css)) {
+  if (
+    /\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__text--current\s*\{[\s\S]{0,200}(overflow:\s*visible|text-overflow:\s*unset)/.test(
+      css,
+    )
+  ) {
     p.push(
-      `${PATHS.breadcrumbCss}: overlay-compact current crumb must not ellipsis at 52vw. SITE-128 rematch: 828 Florida clipped.`,
+      `${PATHS.breadcrumbCss}: overlay-compact current crumb must not disable its ellipsis fallback (overflow:visible / text-overflow:unset) — that is SITE-137's unreadable run-off, not a fix.`,
     )
   }
-  if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__item:last-child[\s\S]{0,120}flex:\s*0 0 auto/.test(css)) {
+  if (
+    !/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__text--current\s*\{[\s\S]{0,160}min-width:\s*0/.test(
+      css,
+    )
+  ) {
     p.push(
-      `${PATHS.breadcrumbCss}: overlay-compact items must not shrink. Address end clipping is refuse.`,
+      `${PATHS.breadcrumbCss}: overlay-compact current crumb must keep min-width:0 — without it nowrap text's min-content floor blocks the shrink and the address can run off-screen again.`,
+    )
+  }
+  {
+    const genericItem = cssBlock(css, '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item')
+    if (!genericItem || /flex:\s*0\s+0\s+auto/.test(genericItem) || !/min-width:\s*0/.test(genericItem)) {
+      p.push(
+        `${PATHS.breadcrumbCss}: overlay-compact ancestor rungs (Bend / Old Bend / plat) must stay shrinkable (flex-shrink > 0, min-width:0) so the final address always has room. Pinning them to max-content is SITE-137's bug.`,
+      )
+    }
+    const lastItem = cssBlock(
+      css,
+      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child',
+    )
+    if (!lastItem || /flex:\s*0\s+0\s+auto/.test(lastItem) || !/min-width:\s*0/.test(lastItem)) {
+      p.push(
+        `${PATHS.breadcrumbCss}: overlay-compact last (address) rung must stay shrinkable (flex-shrink > 0, min-width:0) — pinned to max-content it can only be hard-clipped, never ellipsized, when it alone overflows.`,
+      )
+    }
+  }
+  if (
+    !/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__item:not\(:last-child\)[\s\S]{0,400}text-overflow:\s*ellipsis/.test(
+      css,
+    )
+  ) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact ancestor rungs must ellipsize cleanly (text-overflow:ellipsis) when they compress — a cut rung with no "…" is a mid-word clip, the SITE-137 bug moved one level down.`,
     )
   }
   if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__link[\s\S]{0,280}font-size:\s*var\(--v3-size-source\)/.test(css)) {

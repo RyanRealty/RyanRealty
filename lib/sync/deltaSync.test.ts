@@ -201,3 +201,76 @@ describe('computeDeltaPlan', () => {
     expect(plan.finalizeTargets).toHaveLength(1)
   })
 })
+
+// SITE-154 (2026-09-21): the scheduled sync fetches `Videos` on every run
+// (DELTA_SYNC.EXPAND) but never wrote listing_videos — this is the wiring
+// that closes that gap, bounded so a delta window full of video-less
+// listings (the overwhelming majority) costs zero listing_videos writes.
+describe('computeDeltaPlan — videoSyncTargets (SITE-154)', () => {
+  const YOUTUBE_OBJECT_HTML =
+    '<iframe width="560" height="315" src="https://www.youtube.com/embed/HuSxin6MetA?si=abc" title="YouTube video player" frameborder="0" allowfullscreen></iframe>'
+
+  it('a real Spark video object (ObjectHtml only, no Uri) queues a video sync target with the derived URL', () => {
+    const plan = computeDeltaPlan(
+      [
+        mkResult({
+          Videos: [{ Id: 'v1', Name: 'Drone video', Type: 'unbranded', ObjectHtml: YOUTUBE_OBJECT_HTML }],
+        }),
+      ],
+      mapOf(),
+      { nowIso: NOW },
+    )
+    expect(plan.videoSyncTargets).toHaveLength(1)
+    expect(plan.videoSyncTargets[0].listingKey).toBe('KEY1')
+    expect(plan.videoSyncTargets[0].rows).toHaveLength(1)
+    expect(plan.videoSyncTargets[0].rows[0]).toMatchObject({
+      listing_key: 'KEY1',
+      video_url: 'https://www.youtube.com/embed/HuSxin6MetA?si=abc',
+      source: 'spark',
+      sort_order: 0,
+    })
+  })
+
+  it('a bare-URL ObjectHtml (Dropbox/Aryeo style) is also extracted', () => {
+    const plan = computeDeltaPlan(
+      [
+        mkResult({
+          Videos: [
+            { Id: 'v1', Type: 'unbranded', ObjectHtml: 'https://visual-property-pro.aryeo.com/videos/abc123' },
+          ],
+        }),
+      ],
+      mapOf(),
+      { nowIso: NOW },
+    )
+    expect(plan.videoSyncTargets[0].rows[0].video_url).toBe('https://visual-property-pro.aryeo.com/videos/abc123')
+  })
+
+  it('no Videos and no prior tour: no video sync target queued (zero-cost majority case)', () => {
+    const plan = computeDeltaPlan([mkResult()], mapOf(existing({ has_virtual_tour: false })), { nowIso: NOW })
+    expect(plan.videoSyncTargets).toHaveLength(0)
+  })
+
+  it('Videos now empty but the existing row had a tour: queues a target with empty rows to clear it', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ Videos: [] })],
+      mapOf(existing({ has_virtual_tour: true })),
+      { nowIso: NOW },
+    )
+    expect(plan.videoSyncTargets).toHaveLength(1)
+    expect(plan.videoSyncTargets[0].rows).toHaveLength(0)
+  })
+
+  it('an unrenderable video entry (MapRight parcel map) is filtered out and no target is queued', () => {
+    const plan = computeDeltaPlan(
+      [
+        mkResult({
+          Videos: [{ Id: 'v1', ObjectHtml: 'https://www.mapright.com/parcels/some-map-not-a-video' }],
+        }),
+      ],
+      mapOf(),
+      { nowIso: NOW },
+    )
+    expect(plan.videoSyncTargets).toHaveLength(0)
+  })
+})

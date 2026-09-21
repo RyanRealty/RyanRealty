@@ -32,6 +32,7 @@ export type ExistingListingRow = {
   StandardStatus: string | null
   ListPrice: number | null
   is_finalized: boolean | null
+  has_virtual_tour: boolean | null
 }
 
 export type SyncState = {
@@ -84,7 +85,7 @@ export async function getExistingListingsByListNumbers(
   if (!sb || listNumbers.length === 0) return []
   const { data } = await sb
     .from('listings')
-    .select('ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized')
+    .select('ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized, has_virtual_tour')
     .in('ListNumber', listNumbers.slice(0, 5000))
   return (data ?? []) as ExistingListingRow[]
 }

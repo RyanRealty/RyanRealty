@@ -536,3 +536,93 @@ describe('toText invariant — no unmatchable representation may reach a typed c
     }
   })
 })
+
+// SITE-154 (2026-09-21): extractListingVideoRows is the ONE listing_videos row
+// builder shared by the scheduled delta sync and the manual admin sync so the
+// two cannot diverge. Verified live against real Spark payloads: a real video
+// object carries ObjectHtml (bare URL, <iframe src>, or occasionally <a
+// href>), essentially never a bare Uri/URL/Url.
+describe('extractListingVideoRows', () => {
+  it('derives a URL from an <iframe> ObjectHtml (the common real-Spark shape)', async () => {
+    const { extractListingVideoRows } = await import('./listing-mapper')
+    const rows = extractListingVideoRows('KEY1', {
+      Videos: [
+        {
+          Id: 'v1',
+          Name: 'Full property video',
+          Type: 'unbranded',
+          ObjectHtml:
+            '<iframe width="560" height="315" src="https://www.youtube.com/embed/HuSxin6MetA?si=abc" title="YouTube video player" frameborder="0" allowfullscreen></iframe>',
+        },
+      ],
+    })
+    expect(rows).toEqual([
+      {
+        listing_key: 'KEY1',
+        video_url: 'https://www.youtube.com/embed/HuSxin6MetA?si=abc',
+        sort_order: 0,
+        source: 'spark',
+      },
+    ])
+  })
+
+  it('derives a URL from a bare-URL ObjectHtml (Dropbox / Aryeo / Walker&Homes style)', async () => {
+    const { extractListingVideoRows } = await import('./listing-mapper')
+    const rows = extractListingVideoRows('KEY1', {
+      Videos: [{ Id: 'v1', ObjectHtml: 'https://media.walkerandhomes.com/videos/01941eb4?v=442' }],
+    })
+    expect(rows).toEqual([
+      {
+        listing_key: 'KEY1',
+        video_url: 'https://media.walkerandhomes.com/videos/01941eb4?v=442',
+        sort_order: 0,
+        source: 'spark',
+      },
+    ])
+  })
+
+  it('a real Spark video object carries no Uri/URL/Url — the extraction must not depend on them', async () => {
+    const { extractListingVideoRows } = await import('./listing-mapper')
+    // No Uri/URL/Url key at all, matching a live-verified Spark payload shape.
+    const rows = extractListingVideoRows('KEY1', {
+      Videos: [{ Id: 'v1', GroupId: 'g1', CurrentPrivacy: 'Public', ObjectHtml: 'https://www.dropbox.com/scl/fi/abc/x.mp4?dl=0' }],
+    })
+    expect(rows).toHaveLength(1)
+    expect(rows[0].video_url).toContain('dropbox')
+  })
+
+  it('multiple videos keep Spark Order when present, else array index', async () => {
+    const { extractListingVideoRows } = await import('./listing-mapper')
+    const rows = extractListingVideoRows('KEY1', {
+      Videos: [
+        { Id: 'v1', ObjectHtml: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+        { Id: 'v2', ObjectHtml: 'https://www.youtube.com/watch?v=bbbbbbbbbbb', Order: 5 },
+      ],
+    })
+    expect(rows.map((r) => r.sort_order)).toEqual([0, 5])
+  })
+
+  it('an entry that would not render (MapRight parcel map) is dropped, not stored', async () => {
+    const { extractListingVideoRows } = await import('./listing-mapper')
+    const rows = extractListingVideoRows('KEY1', {
+      Videos: [{ Id: 'v1', ObjectHtml: 'https://www.mapright.com/parcels/some-map' }],
+    })
+    expect(rows).toHaveLength(0)
+  })
+
+  it('no Videos array, empty array, or non-object details: returns []', async () => {
+    const { extractListingVideoRows } = await import('./listing-mapper')
+    expect(extractListingVideoRows('KEY1', null)).toEqual([])
+    expect(extractListingVideoRows('KEY1', {})).toEqual([])
+    expect(extractListingVideoRows('KEY1', { Videos: [] })).toEqual([])
+    expect(extractListingVideoRows('KEY1', { Videos: [null, 42, 'x'] })).toEqual([])
+  })
+
+  it('VirtualTours are NOT pulled into listing_videos (a distinct concept — 3D tours, not marketing video)', async () => {
+    const { extractListingVideoRows } = await import('./listing-mapper')
+    const rows = extractListingVideoRows('KEY1', {
+      VirtualTours: [{ Id: 't1', Uri: 'https://my.matterport.com/show/?m=abc' }],
+    })
+    expect(rows).toEqual([])
+  })
+})

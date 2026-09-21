@@ -184,29 +184,53 @@
 }
 
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {
-  overflow: visible;
+  overflow: hidden;
   scrollbar-width: none;
 }
 
-/* SITE-128 rematch: the name-only place path must stay readable. Ellipsis
-   on the last crumb (52vw) clipped "828 NW Florida Avenue" at 375. Items
-   do not shrink; the list scrolls instead of chopping the address. */
-.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item,
+/* SITE-137: the prior fix (485c1dba / ab130e38) let the list paint past its
+   own box so 828 NW Florida Avenue fit by luck, but a longer street (11127
+   Horizon Street, 1035 Applewood Street …) ran off the right edge with no
+   ellipsis and no page scroll, so the address became unreadable rather than
+   merely un-pretty. Fix: the ancestors (Bend / Old Bend / plat) give way
+   FIRST — a steep flex-shrink so they compress to an ellipsis while there
+   is still deficit to cover — and the final address holds its width until
+   it alone cannot fit, at which point it ellipsizes too instead of being
+   clipped by the list's own clipping box. Both levels keep min-width:0 so
+   nowrap text's min-content floor cannot block the shrink (the classic flex
+   gotcha that would silently re-open this bug). */
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item {
+  flex: 0 50 auto;
+  min-width: 0;
+}
+
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {
-  flex: 0 0 auto;
-  min-width: max-content;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:not(:last-child) .v3-breadcrumb__link,
+.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:not(:last-child) .v3-breadcrumb__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {
-  max-width: none;
-  overflow: visible;
-  text-overflow: unset;
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (max-width: 39.99rem) {
   /* SITE-128 rematch: the 20px gutter left 8px of "Avenue" in the clip.
-     Source size + a tighter wash so Bend / Old Bend / plat / address
-     stay fully on the 375. overflow:visible — auto still chopped the end. */
+     Source size + a tighter wash buy back the width, so Bend / Old Bend /
+     plat / address fit on the 375 without anything having to shrink.
+     SITE-137 note: the old tail of this comment claimed overflow:visible was
+     what kept the address whole. It is not, and it never was — it only hid
+     the deficit off-screen. The list clips (see above) and the rungs shrink
+     in priority order; this block just makes the deficit smaller. */
   .v3.v3-breadcrumb--overlay-compact {
     padding-inline: var(--v3-space-sm);
   }

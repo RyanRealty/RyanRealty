@@ -144,8 +144,25 @@ function argsFor(broker: CmaBroker): RenderCmaArgs {
   }
 }
 
-/** Seller-facing list figures. Method 1/2/3 and expected close stay off the letter. */
-const PRICE_STRINGS = ['$715,000', '$705,000', '$735,000']
+/**
+ * Seller-facing list figures. Method 1/2/3 and expected close stay off the
+ * letter.
+ *
+ * Matt 2026-09-17/18 (d353036ef, bd001e971; locked by the actively-maintained
+ * `canter-letter-flow.contract.test.ts` — `contract: recommended-inside-
+ * closed-comp-band`) moved the printed Low/High from the list tiers
+ * (`conservative`/`highEnd`) to the closed-comp band (`valueLow`/`valueHigh`)
+ * whenever Recommended sits inside it, which this fixture's does (715,000 is
+ * inside 690,000–740,000). `$705,000`/`$735,000` (the old tiers) no longer
+ * print anywhere in that case; `$690,000`/`$740,000` do. This file predates
+ * that change (2026-09-07, before the feature existed) and was never
+ * updated — verified by rendering this exact fixture, and by the fact that
+ * a `conservative`/`highEnd`-first renderer would fail the newer, still-
+ * passing contract test's "Canter live" case, which requires the opposite
+ * priority. The invariant this file exists to prove — broker swap changes
+ * only the signature, never a pricing figure — is unaffected either way.
+ */
+const PRICE_STRINGS = ['$715,000', '$690,000', '$740,000']
 
 describe('CMA re-brand preserves every figure (render-level, W10.3)', () => {
   const a = renderCmaHtml(argsFor(matt))

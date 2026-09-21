@@ -25,6 +25,39 @@ export function isDirectListingVideoFileUrl(uri: string): boolean {
   return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(uri)
 }
 
+/**
+ * Derive the raw video URL from an MLS RETS `Videos[]` entry (SparkVideo shape:
+ * Id/Name/Caption/Type/ObjectHtml, occasionally Uri/URL/Url). SITE-154
+ * (2026-09-21): verified live against Spark that a real video object almost
+ * never carries a bare Uri/URL/Url field — it carries `ObjectHtml`, which is
+ * itself one of three shapes: a bare URL (Dropbox/Aryeo/Walker&Homes), an
+ * `<iframe src="...">` snippet (YouTube), or (rarely) an `<a href="...">`
+ * link. A prior sync helper (app/actions/sync-spark.ts) only checked
+ * Uri/URL/Url and so silently derived nothing from real payloads. This is the
+ * one correct extraction, shared by every write path so none of them can
+ * silently regress to the Uri-only shape again.
+ */
+export function deriveRawVideoUrl(video: Record<string, unknown>): string | null {
+  for (const f of ['Uri', 'uri', 'MediaURL', 'VideoURL', 'URL', 'Url'] as const) {
+    const v = video[f]
+    if (typeof v === 'string' && /^https?:\/\//i.test(v.trim())) return v.trim()
+  }
+  const oh = video.ObjectHtml
+  if (typeof oh === 'string') {
+    const html = oh.trim()
+    if (!html) return null
+    const iframe = extractIframeSrcFromMarkupLoose(html)
+    if (iframe) return iframe.startsWith('//') ? `https:${iframe}` : iframe
+    const anchor = /<a[^>]+href\s*=\s*["']([^"']+)["']/i.exec(html)
+    if (anchor) return anchor[1].replace(/&amp;/g, '&')
+    if (/^(?:https?:)?\/\/\S+$/i.test(html)) {
+      const bare = html.replace(/&amp;/g, '&')
+      return bare.startsWith('//') ? `https:${bare}` : bare
+    }
+  }
+  return null
+}
+
 function extractIframeSrcFromMarkup(raw: string): string | null {
   const m = raw.match(/<iframe[^>]+src=["']([^"']+)["']/i)
   const s = m?.[1]?.trim()

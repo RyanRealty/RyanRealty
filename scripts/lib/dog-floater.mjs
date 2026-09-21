@@ -1,5 +1,6 @@
 /**
- * dog-floater.mjs — SITE-134 / SITE-135 / SITE-146 floating dog CTA lock.
+ * dog-floater.mjs — SITE-134 / SITE-135 / SITE-146 / SITE-153 floating dog
+ * CTA lock.
  *
  * Matt 2026-09-19 + Critiquito + Matt phone 2026-09-20: sitewide circle
  * with the INNER dog-head crop (not the wordmark seal). Idle tilt must
@@ -10,11 +11,26 @@
  * empty disc. CSS contain cannot restore pixels a circular pre-crop
  * already cut. Placement is circle-aware so the left muzzle is not
  * the thing kissing the rim.
- * Click opens five plain doors. Replaces sticky Call / Text /
+ *
+ * SITE-153 (Matt 2026-09-21, "out of sight... not animated enough"):
+ * researched placement — stays corner-anchored (NN/g + Intercom/Drift both
+ * penalize moving a persistent contact affordance off bottom-right) but
+ * fixes the actual cause, a cream-on-cream circle blending into the page
+ * and sitting tight against the exact corner pixel the cookie chip and the
+ * last content row also compete for. Now: one solid navy/cream-head circle
+ * everywhere (no light-page/listing-page color branch), raised a full
+ * --v3-space-3xl off the bottom edge. Motion gained a second layer — a
+ * periodic rotateY flip-spin flourish on top of the continuous tilt. The
+ * menu is six doors, this exact order, and carries NO visible "Close" text
+ * link (the dog itself toggles; Escape / outside-click still work through
+ * unmodified Dialog primitives).
+ *
+ * Click opens six plain doors. Replaces sticky Call / Text /
  * Work-with-us bars. Header Work with us stays. Tip Ready --ship and
  * ci:dog-floater refuse a missing floater, a seal FAB, a circular
- * pre-crop, an edge-tight head, cover-crop, frozen idle, or a returned
- * phone dock.
+ * pre-crop, an edge-tight head, cover-crop, frozen idle, a returned
+ * phone dock, a light-page/listing-page color branch, an un-raised
+ * bottom offset, or a reintroduced visible Close link.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -55,13 +71,14 @@ export const JAX_HEAD_SEALS = Object.freeze([
   { src: PATHS.sealWhite, dest: PATHS.assetCream, width: 3635, height: 3417, tint: { r: 255, g: 255, b: 255 } },
 ])
 
-/** Matt permanent lock 2026-09-20: five doors, these strings, this order. Do not shorten. */
+/** Matt permanent lock 2026-09-21: six doors, these strings, this order. Do not shorten. */
 export const DOG_FLOATER_DOOR_LABELS = Object.freeze([
-  'Sell your home',
-  'Buy your home',
-  'Text us',
+  'List your home',
+  'Read our reviews',
+  'Give us a call',
+  'Send us a message',
   "Get your home's value",
-  'Learn about us',
+  'Learn more about us',
 ])
 
 function readRel(root, rel, override) {
@@ -89,14 +106,19 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!floater.includes('export function V3DogFloater')) {
     p.push(`${PATHS.floater}: must export V3DogFloater.`)
   }
-  if (!floater.includes('Open Ryan Realty menu')) {
-    p.push(`${PATHS.floater}: trigger must name itself (Open Ryan Realty menu).`)
+  if (!floater.includes('Ryan Realty menu')) {
+    p.push(`${PATHS.floater}: trigger must name itself (…Ryan Realty menu).`)
+  }
+  if (!/\{open \? 'Close' : 'Open'\}|\{open \? "Close" : "Open"\}/.test(floater)) {
+    p.push(
+      `${PATHS.floater}: with no visible Close link, the sr-only trigger label must flip Open/Close with state so assistive tech gets the same toggle cue a sighted tap gets.`,
+    )
   }
   if (!floater.includes('shouldHidePublicChrome')) {
     p.push(`${PATHS.floater}: must hide on LP / admin / sign / account.`)
   }
   if (!floater.includes('CONTACT.phoneDirectTel')) {
-    p.push(`${PATHS.floater}: Text us must use CONTACT.phoneDirectTel. Do not invent a number.`)
+    p.push(`${PATHS.floater}: Give us a call must use CONTACT.phoneDirectTel. Do not invent a number.`)
   }
   if (!floater.includes("from '@/components/ui/dialog'")) {
     p.push(`${PATHS.floater}: menu must be the catalog Dialog (focus trap + Esc).`)
@@ -104,8 +126,20 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!floater.includes('DialogTrigger')) {
     p.push(`${PATHS.floater}: FAB must be DialogTrigger so a second tap on the dog closes.`)
   }
-  if (!floater.includes('DialogClose') || !floater.includes('Close')) {
-    p.push(`${PATHS.floater}: menu must be closable.`)
+  if (!/<Dialog\s[^>]*modal=\{false\}/.test(floater)) {
+    p.push(
+      `${PATHS.floater}: Dialog must be modal={false} — verified in a real browser (SITE-153): Radix's default modal Dialog sets body{pointer-events:none} and aria-hidden on every outside sibling, including this trigger, which makes the second tap unclickable and hides it from assistive tech. Escape / outside-click still work with modal={false} (Radix's DismissableLayer does not depend on it).`,
+    )
+  }
+  if (/v3-dog-floater-menu__close/.test(floater) || />\s*Close\s*<\/(a|button)>/.test(floater)) {
+    p.push(
+      `${PATHS.floater}: no visible "Close" text link (Matt 2026-09-21) — the dog itself toggles; a second tap closes.`,
+    )
+  }
+  if (/onEscapeKeyDown|onPointerDownOutside/.test(floater)) {
+    p.push(
+      `${PATHS.floater}: do not suppress DialogContent's default Escape / outside-click close — with no visible Close link those are the only non-dog ways out.`,
+    )
   }
   if (!floater.includes('v3-dog-floater--listing')) {
     p.push(`${PATHS.floater}: listing paths must mark --listing so the FAB sits above Tour.`)
@@ -114,17 +148,20 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     p.push(`${PATHS.floater}: expanded title is Help (or omitted) — not a pun.`)
   }
   p.push(...doorLabelProblems(floater, PATHS.floater))
-  if (!floater.includes("href: '/sell'") || !floater.includes("href: '/buy'")) {
-    p.push(`${PATHS.floater}: Sell → /sell and Buy → /buy are required.`)
+  if (!floater.includes("href: '/sell'") || !floater.includes("href: '/reviews'")) {
+    p.push(`${PATHS.floater}: List your home → /sell and Read our reviews → /reviews are required.`)
+  }
+  if (!floater.includes("href: '/contact'")) {
+    p.push(`${PATHS.floater}: Send us a message → /contact is required.`)
   }
   if (!floater.includes("href: '/sell#get-value'") || !floater.includes("href: '/about'")) {
-    p.push(`${PATHS.floater}: Get value → /sell#get-value and Learn about us → /about are required.`)
+    p.push(`${PATHS.floater}: Get value → /sell#get-value and Learn more about us → /about are required.`)
   }
-  if (!/sms:\$\{CONTACT\.phoneDirectTel\}/.test(floater)) {
-    p.push(`${PATHS.floater}: Text us door must be sms:\${CONTACT.phoneDirectTel}.`)
+  if (!/tel:\$\{CONTACT\.phoneDirectTel\}/.test(floater)) {
+    p.push(`${PATHS.floater}: Give us a call door must be tel:\${CONTACT.phoneDirectTel}. Do not invent a number.`)
   }
-  if (!floater.includes('/brand/jax-head-navy.png') || !floater.includes('/brand/jax-head-cream.png')) {
-    p.push(`${PATHS.floater}: must paint the inner dog-head crop (jax-head-navy / jax-head-cream), not the wordmark seal.`)
+  if (!floater.includes('/brand/jax-head-cream.png')) {
+    p.push(`${PATHS.floater}: must paint the inner dog-head crop (jax-head-cream.png), not the wordmark seal.`)
   }
   if (/\bsrc=\{?['"`]\/brand\/jax-(white|navy)\.png/.test(stripComments(floater))) {
     p.push(`${PATHS.floater}: FAB must be the inner dog-head circle, not the full RYAN REALTY seal.`)
@@ -138,21 +175,52 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!floater.includes('data-v3-dog-idle="tilt"')) {
     p.push(`${PATHS.floater}: head must mark the one quiet tilt (data-v3-dog-idle=tilt).`)
   }
+  if (!floater.includes('data-v3-dog-idle="flourish"')) {
+    p.push(`${PATHS.floater}: must mark the SITE-153 periodic flip-spin flourish (data-v3-dog-idle=flourish).`)
+  }
+  if (!floater.includes('v3-dog-floater__stage')) {
+    p.push(`${PATHS.floater}: flourish needs its own node (.v3-dog-floater__stage) nested around __head so the two transforms compose instead of clobbering.`)
+  }
   if (/woof|How can we help|get a take/i.test(floater)) {
-    p.push(`${PATHS.floater}: five plain items only — no pun / woof copy.`)
+    p.push(`${PATHS.floater}: six plain items only — no pun / woof copy.`)
   }
 
   if (css == null) {
     p.push(`${PATHS.css}: missing.`)
   } else {
-    if (!/position:\s*fixed/.test(css) || !/bottom:\s*calc\(var\(--v3-space-md\) \+ env\(safe-area-inset-bottom/.test(css)) {
-      p.push(`${PATHS.css}: floater must be fixed bottom-right and safe-area aware.`)
+    if (!/position:\s*fixed/.test(css) || !/bottom:\s*calc\(var\(--v3-space-3xl\) \+ env\(safe-area-inset-bottom/.test(css)) {
+      p.push(`${PATHS.css}: floater must be fixed bottom-right, raised a full --v3-space-3xl off the edge (SITE-153 — not the old --v3-space-md, that was the "out of sight" offset), and safe-area aware.`)
     }
     if (!/right:\s*calc\(var\(--v3-space-md\) \+ env\(safe-area-inset-right/.test(css)) {
       p.push(`${PATHS.css}: floater must clear the iPhone home-indicator / notch side.`)
     }
+    if (!/\.v3-dog-floater\s*\{[^}]*background:\s*var\(--v3-navy\)/.test(css)) {
+      p.push(`${PATHS.css}: SITE-153 — default fill must be solid navy (cream-on-cream is the exact "out of sight" bug this node fixed). No light-page/listing-page color branch.`)
+    }
+    if (/\.v3-dog-floater\s*\{[^}]*background:\s*var\(--v3-cream\)/.test(css)) {
+      p.push(`${PATHS.css}: do not reintroduce a cream-filled default — it blends into this site's cream page background.`)
+    }
     if (!/@keyframes v3-dog-tilt/.test(css)) {
       p.push(`${PATHS.css}: dog head must quiet-tilt in CSS (≤4s + pause). No video.`)
+    }
+    if (!/@keyframes v3-dog-flourish/.test(css)) {
+      p.push(`${PATHS.css}: SITE-153 — must ship the periodic flip-spin flourish (@keyframes v3-dog-flourish).`)
+    } else {
+      const flourishBlock = css.match(/@keyframes\s+v3-dog-flourish\s*\{([\s\S]*?)\n\}/)
+      const body = flourishBlock ? flourishBlock[1] : ''
+      if (!/rotateY\(\s*180deg/.test(body)) {
+        p.push(`${PATHS.css}: flourish must pass through rotateY(180deg) — that is the "invert" Matt asked for, not a simulated one.`)
+      }
+      if (!/rotateY\(\s*(-?360|0)deg/.test(body)) {
+        p.push(`${PATHS.css}: flourish must complete a full rotateY spin (back to 0/360deg) so the loop seam is invisible.`)
+      }
+      const dur = css.match(/animation:\s*v3-dog-flourish\s+([0-9.]+)s/)
+      if (!dur || !(Number(dur[1]) >= 6 && Number(dur[1]) <= 16)) {
+        p.push(`${PATHS.css}: flourish must be infrequent (6–16s cycle) — a fast loop reads as a spinning toy, not a deliberate attention move (NN/g: bold motion should be short and rare).`)
+      }
+    }
+    if (!/\.v3-dog-floater__stage[\s\S]{0,10}\{[^}]*animation:\s*v3-dog-flourish/.test(css)) {
+      p.push(`${PATHS.css}: the flourish animation must run on .v3-dog-floater__stage, not on __head (that would clobber the continuous tilt).`)
     }
     if (!/ease-in-out/.test(css)) {
       p.push(`${PATHS.css}: idle tilt must be ease-in-out, not a bounce ease.`)
@@ -194,6 +262,15 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     }
     if (!/prefers-reduced-motion/.test(css)) {
       p.push(`${PATHS.css}: reduced-motion must still the dog.`)
+    } else {
+      const reducedBlock = [
+        ...css.matchAll(/@media \(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n\}\n/g),
+      ]
+        .map((m) => m[1])
+        .join('\n')
+      if (!/\.v3-dog-floater__stage[\s\S]{0,40}animation:\s*none/.test(reducedBlock)) {
+        p.push(`${PATHS.css}: reduced-motion must also still the flourish (.v3-dog-floater__stage), not just the tilt. Matt's ask does not override this.`)
+      }
     }
     if (!/border-radius:\s*50%/.test(css)) {
       p.push(`${PATHS.css}: trigger must be a circle.`)
@@ -232,9 +309,14 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     }
   }
 
-  if (chrome == null || !chrome.includes('<V3WorkWithUs surface="chrome" placement="chrome"')) {
-    p.push(`${PATHS.chrome}: header Work with us must stay.`)
-  }
+  // The 2026-09-19 lock here required <V3WorkWithUs surface="chrome"> to
+  // stay in the header. Matt reversed that 2026-09-21 (docs/plans/
+  // CROSS_AGENT_HANDOFF.md, "A written decision was reversed"): "There's a
+  // Work with us button that needs to be removed. We're going to use the dog
+  // for that." SITE-155 owns the chrome removal; this gate intentionally
+  // carries no assertion about V3WorkWithUs any more so it does not fight
+  // that node. `chrome` is read above (still exported via `files.chrome`
+  // for a caller that wants it) but no longer checked here.
 
   if (listingPage) {
     if (/<ListingBrokerBar/.test(listingPage) || /<ListingMobileContactBar/.test(listingPage)) {
@@ -286,12 +368,12 @@ function sealSourceProblems(builder, label = PATHS.builder) {
   return p
 }
 
-/** Matt lock: exact five door strings, in order. No shorten. No U+2014 in public copy. */
+/** Matt lock: exact six door strings, in order. No shorten. No U+2014 in public copy. */
 export function doorLabelProblems(floater, label = PATHS.floater) {
   const p = []
   const found = menuDoorLabels(floater)
   if (!found) {
-    p.push(`${label}: DOG_FLOATER_MENUS must list the five locked door labels.`)
+    p.push(`${label}: DOG_FLOATER_MENUS must list the six locked door labels.`)
     return p
   }
   if (found.length !== DOG_FLOATER_DOOR_LABELS.length || found.some((v, i) => v !== DOG_FLOATER_DOOR_LABELS[i])) {

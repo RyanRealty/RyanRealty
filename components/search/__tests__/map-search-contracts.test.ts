@@ -183,11 +183,28 @@ describe('MapSearchView orchestrator', () => {
 })
 
 describe('split loading skeleton matches the live rail', () => {
-  const src = readSrc('app/search/loading.tsx')
+  // SITE-158: app/search/loading.tsx and app/search/[...slug]/loading.tsx
+  // (the boundary /homes-for-sale/* actually streams through) both render
+  // this ONE shared shell now, instead of one matching the live rail and one
+  // drifting into a stale ~1,900px card-grid skeleton the app no longer
+  // renders — the shape mismatch that shrank the document out from under a
+  // mid-load scroll on /homes-for-sale/<city>. Asserting the shared file, and
+  // that both routes still import it, is what keeps them from drifting apart
+  // again.
+  const shared = readSrc('components/search/SearchAppFrameLoading.tsx')
+  const rootSearchLoading = readSrc('app/search/loading.tsx')
+  const slugSearchLoading = readSrc('app/search/[...slug]/loading.tsx')
 
   it('uses the token list pane, not a 420px clamp', () => {
-    expect(src).toMatch(/map-search-list/)
-    expect(src).not.toMatch(/lg:w-\[420px\]/)
+    expect(shared).toMatch(/map-search-list/)
+    expect(shared).not.toMatch(/lg:w-\[420px\]/)
+  })
+
+  it('both search routes render the shared shell, not a bespoke fallback', () => {
+    expect(rootSearchLoading).toMatch(/from '@\/components\/search\/SearchAppFrameLoading'/)
+    expect(rootSearchLoading).toMatch(/<SearchAppFrameLoading/)
+    expect(slugSearchLoading).toMatch(/from '@\/components\/search\/SearchAppFrameLoading'/)
+    expect(slugSearchLoading).toMatch(/<SearchAppFrameLoading/)
   })
 })
 

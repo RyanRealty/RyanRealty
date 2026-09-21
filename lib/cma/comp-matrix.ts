@@ -321,14 +321,23 @@ function bedsBaths(beds: number | null | undefined, baths: number | null | undef
   return b && ba ? `${b} / ${ba}` : (b ?? ba ?? '-')
 }
 
-/** "$475K → $460K → sold $457K" — the whole listing in one cell. */
+/**
+ * "$475K → $460K → sold $457K · offer in 25 days" — the whole listing in one
+ * cell, its final leg named by `entry.outcome` (matrix-entry.ts) rather than
+ * `entry.endLabel`. `endLabel` is the short word `statusCell` matches against
+ * ('came off', 'still asking'); `outcome` is the full sentence built to sit
+ * in THIS row — it is the one place a bare day count is disambiguated as
+ * "offer in N days" vs "listed to closed, N days" (matrix-entry.ts:210), and
+ * the one place a subject that is on no market at all still says so ("Not on
+ * the market") instead of leaving the row empty.
+ */
 export function askArcCell(entry: MatrixEntry): string {
   const bits: string[] = []
   if (entry.firstAsk != null && entry.firstAsk > 0) bits.push(shortUsd(entry.firstAsk))
   if (entry.lastAsk != null && entry.lastAsk > 0 && entry.lastAsk !== entry.firstAsk) {
     bits.push(shortUsd(entry.lastAsk))
   }
-  if (entry.endLabel) bits.push(entry.endLabel)
+  if (entry.outcome) bits.push(entry.outcome)
   return bits.length > 0 ? bits.join(' → ') : '-'
 }
 

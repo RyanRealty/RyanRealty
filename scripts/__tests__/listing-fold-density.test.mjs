@@ -146,33 +146,70 @@ describe('listing-fold-density lock', () => {
     expect(p.join('\n')).toMatch(/display-2|flush on the strip|listing-ask|Photos\/Map/i)
   })
 
-  it('refuses overlay-compact list overflow that clips Avenue at 375', () => {
+  // SITE-137 rematch residual: 485c1dba/ab130e38 pinned every overlay-compact
+  // rung to max-content with overflow:visible. 828 NW Florida Avenue fit by
+  // luck (right edge 352 < 375), but a longer street (11127 Horizon Street,
+  // right edge 535; 1035 Applewood Street, right edge 584) ran off the
+  // viewport with text-overflow:clip, white-space:nowrap and no page scroll
+  // — the address became unreachable, not merely unpretty. The fix trades
+  // that for a real clip box (list overflow:hidden) plus two levels of
+  // ellipsis fallback (ancestors shrink first, the address shrinks only if
+  // it alone still overflows). These four cases lock that in.
+
+  it('refuses overlay-compact list overflow:visible — the exact run-off regression', () => {
     const css = live.breadcrumbCss.replace(
+      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {\n  overflow: hidden;',
       '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {\n  overflow: visible;',
-      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {\n  overflow-x: auto;',
     )
     const p = breadcrumbFoldDensityProblems({
       root: REPO,
       files: { ...live, breadcrumbCss: css },
     })
-    expect(p.join('\n')).toMatch(/overflow:visible|overflow-x|clip|Avenue/i)
+    expect(p.join('\n')).toMatch(/overflow:visible|run-off|unreachable/i)
   })
 
-  it('refuses an overlay crumb that ellipsizes the address at 375', () => {
+  it('refuses an overlay current crumb whose ellipsis fallback is disabled', () => {
+    const css = live.breadcrumbCss.replace(
+      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  min-width: 0;\n  max-width: 100%;',
+      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  min-width: 0;\n  max-width: 100%;\n  overflow: visible;\n  text-overflow: unset;',
+    )
+    const p = breadcrumbFoldDensityProblems({
+      root: REPO,
+      files: { ...live, breadcrumbCss: css },
+    })
+    expect(p.join('\n')).toMatch(/ellipsis fallback|overflow:visible|text-overflow:\s*unset/i)
+  })
+
+  it('refuses overlay-compact rungs pinned to max-content — final rung cut with no ellipsis', () => {
+    // The exact SITE-137 shape: every item forced to its full content width,
+    // never allowed to shrink or ellipsize, so a long address simply runs
+    // past the viewport edge with no "…" and no way to reach it.
     const css = live.breadcrumbCss
       .replace(
-        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  max-width: none;',
-        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  max-width: min(18rem, 52vw);',
+        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item {\n  flex: 0 50 auto;\n  min-width: 0;\n}',
+        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item {\n  flex: 0 0 auto;\n  min-width: max-content;\n}',
       )
       .replace(
-        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {\n  flex: 0 0 auto;',
-        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {\n  flex: 0 1 auto;',
+        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {\n  flex: 0 1 auto;\n  min-width: 0;\n}',
+        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {\n  flex: 0 0 auto;\n  min-width: max-content;\n}',
       )
     const p = breadcrumbFoldDensityProblems({
       root: REPO,
       files: { ...live, breadcrumbCss: css },
     })
-    expect(p.join('\n')).toMatch(/ellipsis|52vw|shrink|828 Florida|clip/i)
+    expect(p.join('\n')).toMatch(/shrinkable|flex-shrink|hard-clipped/i)
+  })
+
+  it('refuses overlay-compact ancestor rungs with no ellipsis machinery on a hard clip', () => {
+    const css = live.breadcrumbCss.replace(
+      "  text-overflow: ellipsis;\n  white-space: nowrap;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {",
+      "  white-space: nowrap;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {",
+    )
+    const p = breadcrumbFoldDensityProblems({
+      root: REPO,
+      files: { ...live, breadcrumbCss: css },
+    })
+    expect(p.join('\n')).toMatch(/ellipsize cleanly|text-overflow/i)
   })
 
   it('refuses a listing crumb that is not overlay', () => {

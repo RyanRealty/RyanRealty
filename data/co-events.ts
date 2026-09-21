@@ -198,8 +198,12 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.0588,
     lng: -121.3186,
     recurrence: 'Annually, mid-to-late September',
-    nextConfirmedDate: '2026-09-19',
-    endDate: '2026-09-19',
+    // The 2026 event ran 2026-09-19 and is past. No 2027 date is published on
+    // oktoberfestbend.com yet, and §0 does not let us put a date on a public
+    // page without a source, so this carries the recurrence and no date —
+    // the same shape the Sisters quilt show record uses.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Free',
     organizer: 'Bend Oktoberfest',
     officialUrl: 'https://oktoberfestbend.com/',

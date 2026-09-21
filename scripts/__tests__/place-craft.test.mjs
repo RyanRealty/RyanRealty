@@ -256,6 +256,33 @@ describe('SITE-128 rematch seams (CI only)', () => {
     const p = placeSeamsProblems({ root: REPO, files: { searchMap, subjectRing: ring, ringPad: pad } })
     expect(p.join('\n')).toMatch(/listingsInsideSubjectRing|clampMarkNudge|36px|edge \$ chips/i)
   })
+
+  it('FAIL 6 — refuses a neighborhood main that dropped nbh-page (SITE-138 360/375 overflow)', () => {
+    const neighborhood = readFileSync(
+      join(REPO, 'app/cities/[slug]/[neighborhoodSlug]/page.tsx'),
+      'utf8',
+    ).replace('nbh-page', 'nbh-shell')
+    const p = placeSeamsProblems({ root: REPO, files: { neighborhood } })
+    expect(p.join('\n')).toMatch(/nbh-page|360\/375/)
+  })
+
+  it('FAIL 7 — refuses a neighborhood fold that dropped the phone overflow-x clip', () => {
+    const nbhFoldCss = readFileSync(
+      join(REPO, 'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-fold.css'),
+      'utf8',
+    ).replace('.nbh-page {\n  overflow-x: hidden;\n  max-width: 100%;\n}', '.nbh-page {\n  max-width: 100%;\n}')
+    const p = placeSeamsProblems({ root: REPO, files: { neighborhoodFoldCss: nbhFoldCss } })
+    expect(p.join('\n')).toMatch(/neighborhood-fold\.css|phone overflow/)
+  })
+
+  it('FAIL 7b — refuses a neighborhood fold whose map island lost its phone clip', () => {
+    const nbhFoldCss = readFileSync(
+      join(REPO, 'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-fold.css'),
+      'utf8',
+    ).replaceAll('nbh-fold__drawing .v3-place-look__map', 'nbh-fold__drawing .v3-place-look__frame')
+    const p = placeSeamsProblems({ root: REPO, files: { neighborhoodFoldCss: nbhFoldCss } })
+    expect(p.join('\n')).toMatch(/neighborhood-fold\.css|phone overflow/)
+  })
 })
 
 describe('Tip Ready place kit still holds the hierarchy lock', () => {
