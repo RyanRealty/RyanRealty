@@ -59,7 +59,7 @@ function pagesFromBoard(board: InvestInsightBoard): InsightPage[] {
       key: 'for-sale',
       prose: (
         <>
-          Lots are {board.landSharePct}% of income property for sale in Central Oregon —{' '}
+          Lots are {board.landSharePct}% of income property for sale in Central Oregon:{' '}
           {board.landCount.toLocaleString('en-US')} lots against {board.buildingsCount.toLocaleString('en-US')}{' '}
           buildings, {board.total.toLocaleString('en-US')} in all.
         </>
@@ -68,7 +68,7 @@ function pagesFromBoard(board: InvestInsightBoard): InsightPage[] {
         return (
           <AllocationAndLiveline
             segments={board.allocation}
-            note="For sale now, by type. Tap a segment to inspect that population. The line below is lots against buildings across the three published windows — scrub it."
+            note="For sale now, by type. Tap a segment to inspect that population. The line below is lots against buildings across the three published windows. Scrub it."
             series={series}
           />
         )
@@ -82,7 +82,7 @@ function pagesFromBoard(board: InvestInsightBoard): InsightPage[] {
       key: 'sold',
       prose: (
         <>
-          Sold in the last 12 months, the mix is still lots-heavy — {board.soldLandCount.toLocaleString('en-US')} of{' '}
+          Sold in the last 12 months, the mix is still lots-heavy: {board.soldLandCount.toLocaleString('en-US')} of{' '}
           {board.soldTotal.toLocaleString('en-US')}. Same two populations on the line: lots against buildings.
         </>
       ),
@@ -110,7 +110,7 @@ function pagesFromBoard(board: InvestInsightBoard): InsightPage[] {
         return (
           <AllocationAndLiveline
             segments={board.allocation}
-            note="The bar is for sale now. The line is lots against buildings across the published windows — scrub it."
+            note="The bar is for sale now. The line is lots against buildings across the published windows. Scrub it."
             series={series}
           />
         )

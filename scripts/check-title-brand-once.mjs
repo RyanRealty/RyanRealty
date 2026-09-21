@@ -5,7 +5,7 @@
  * THE BRAND GOES IN THE SERP TITLE ONCE.
  *
  * app/layout.tsx owns the one place it is added: `title.template` is
- * "%s | Ryan Realty — Central Oregon", and Next appends it to every page title
+ * "%s | Ryan Realty, Central Oregon", and Next appends it to every page title
  * that is not `title: { absolute }`. lib/site/page-metadata.ts exists partly to
  * make that safe — its `cleanTitle` strips a brand a caller (or a DB seoTitle)
  * already baked in, precisely so the template cannot double-brand.
@@ -270,7 +270,7 @@ if (newViolations.length) {
   console.error('A document title bakes in the brand the layout template already appends:')
   for (const v of newViolations) {
     console.error(`  ✗ ${relative(ROOT, v.file)}:${v.line}  ${v.shape}`)
-    console.error(`      "${v.title}"  →  "${v.title} | Ryan Realty — Central Oregon"`)
+    console.error(`      "${v.title}"  →  "${v.title} | Ryan Realty, Central Oregon"`)
   }
   console.error('')
   console.error('Fix: build the Metadata through pageMetadata() in lib/site/page-metadata.ts')

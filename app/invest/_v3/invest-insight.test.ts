@@ -114,5 +114,8 @@ describe('invest catalog import (Tip Ready route scan)', () => {
     expect(src).toMatch(/allocation-liveline/)
     expect(src).not.toMatch(/yearPages/)
     expect(src).not.toMatch(/AnomalyCard/)
+    expect(src).not.toMatch(/Oregon \u2014/)
+    expect(src).not.toMatch(/lots-heavy \u2014/)
+    expect(src).not.toMatch(/windows \u2014/)
   })
 })

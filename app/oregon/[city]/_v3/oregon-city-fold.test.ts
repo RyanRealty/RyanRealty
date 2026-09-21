@@ -21,11 +21,12 @@ const LISTINGS_CSS = readFileSync(new URL('./OregonCityListings.css', import.met
 describe('oregon-city fold helpers', () => {
   it('puts the live count in the title for SEO', () => {
     expect(buildOregonCityTitle({ name: 'Medford', activeAllCount: 725 })).toBe(
-      '725 Medford homes for sale — outside our market',
+      '725 Medford homes for sale, outside our market',
     )
     expect(buildOregonCityTitle({ name: 'Medford', activeAllCount: 0 })).toBe(
-      'Medford homes for sale — outside our market',
+      'Medford homes for sale, outside our market',
     )
+    expect(buildOregonCityTitle({ name: 'Medford', activeAllCount: 725 })).not.toContain('\u2014')
   })
 
   it('states the out-of-market claim without orphaned snapshot numerals', () => {

@@ -7,10 +7,12 @@
  * Plain ` -- ` used as a dash is the same refuse.
  *
  * Scope: public new-construction + home/search string literals, including
- * the "Central Oregon right now" pulse in app/_v3/home-pulse.ts. Comments
- * in other files, markdown docs, *.test.* files, console.* logs, and
- * `new Error(...)` text are out of scope. home-pulse.ts must also stay
- * U+2014-free in comments (SITE-145 Cos widen).
+ * the "Central Oregon right now" pulse in app/_v3/home-pulse.ts, plus the
+ * SITE-149 residual paths (root titles, brand suffix, $/sqft aria, Bend /
+ * neighborhood claim strings, web manifest). Comments in other files,
+ * markdown docs, *.test.* files, console.* logs, and `new Error(...)` text
+ * are out of scope. home-pulse.ts must also stay U+2014-free in comments
+ * (SITE-145 Cos widen).
  *
  * Usage:
  *   node scripts/check-no-public-em-dash.mjs
@@ -30,7 +32,27 @@ const ROOTS = [
   'app/search',
   'app/_v3',
   'app/_v3/home-pulse.ts',
+  // SITE-149 residual visitor strings the 2026-09-20 audit still found.
+  'app/layout.tsx',
+  'lib/site/page-metadata.ts',
+  'components/search/ppsf-band.ts',
+  'app/cities/[slug]/page.tsx',
+  'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+  'app/oregon/[city]/_v3/oregon-city-fold.ts',
+  'app/invest/page.tsx',
+  'app/invest/_v3/InvestInsight.client.tsx',
+  'app/invest/_v3/invest-pulse.ts',
+  'app/housing-market/central-oregon/_v3/RegionInsight.client.tsx',
+  'app/housing-market/central-oregon/_v3/region-insight.ts',
+  'app/housing-market/[...slug]/_v3/CityInsight.client.tsx',
+  'app/housing-market/[...slug]/_v3/city-insight.ts',
+  'app/zip/[zip]/page.tsx',
+  'app/zip/[zip]/_v3/ZipHomesField.tsx',
+  'app/zip/[zip]/_v3/ZipInsight.client.tsx',
 ]
+
+/** JSON the visitor can read; not walked as TypeScript. */
+const JSON_FILES = ['public/manifest.json']
 
 const SKIP_TEST = /\.(test|spec)\.(ts|tsx)$/
 /** Cos SITE-145 widen: this pulse module may not hide U+2014 in comments. */
@@ -126,12 +148,24 @@ for (const file of WHOLE_FILE_CLEAN) {
   }
 }
 
+for (const file of JSON_FILES) {
+  if (!existsSync(file)) continue
+  const code = readFileSync(file, 'utf8')
+  const rel = relative(process.cwd(), file)
+  if (code.includes(EM)) {
+    fails.push(`${rel}: U+2014 em dash in public copy. Prefer colon, period, comma, or rewrite.`)
+  }
+  if (DOUBLE_HYPHEN_DASH.test(code)) {
+    fails.push(`${rel}: \` -- \` used as a dash in public copy. Prefer colon, period, comma, or rewrite.`)
+  }
+}
+
 console.log('public em-dash gate (ci:no-public-em-dash)')
 console.log('=========================================')
-console.log(`Scanned ${files.length} NC/home/search source files`)
+console.log(`Scanned ${files.length} NC/home/search/title/aria/claim source files + ${JSON_FILES.length} JSON`)
 
 if (fails.length === 0) {
-  console.log('\nOK: public NC/home string literals have no U+2014 and no ` -- ` dash.')
+  console.log('\nOK: public NC/home/title/aria/claim string literals have no U+2014 and no ` -- ` dash.')
   process.exit(0)
 }
 

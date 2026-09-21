@@ -48,8 +48,8 @@ function reset() {
     [
       'export const metadata = {',
       '  title: {',
-      '    default: "Ryan Realty — Central Oregon Real Estate",',
-      '    template: "%s | Ryan Realty — Central Oregon",',
+      '    default: "Ryan Realty, Central Oregon Real Estate",',
+      '    template: "%s | Ryan Realty, Central Oregon",',
       '  },',
       '}',
       'export default function RootLayout({ children }) { return children }',
@@ -162,7 +162,7 @@ describe('ci:title-brand-once', () => {
     write(
       'app/absolute/page.tsx',
       [
-        'export const metadata = { title: { absolute: "Ryan Realty — Central Oregon" } }',
+        'export const metadata = { title: { absolute: "Ryan Realty, Central Oregon" } }',
         'export default function Page() { return null }',
         '',
       ].join('\n'),

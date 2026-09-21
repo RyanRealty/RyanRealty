@@ -205,7 +205,7 @@ function compareProse(
         In {cell.label} the middle house in {board.scope} sold for{' '}
         <strong>{zipInsightMoney(cell.median)}</strong>. A year earlier, in {prior.label}, it was{' '}
         {zipInsightMoney(prior.median)}
-        {delta ? ` — ${delta}` : ''}
+        {delta ? `, ${delta}` : ''}
         {direction === 'the same' ? ', level with a year ago' : `, ${direction} than the same month last year`}
         . Drag across the lines to read any other month.
       </>

@@ -43,6 +43,8 @@ describe('SITE-73 zip fold composition', () => {
     )
     expect(FIELD).toMatch(/keyPlacement="dock"/)
     expect(FIELD).toMatch(/foldAtlas(Dots|Types)/)
+    expect(FIELD).toMatch(/recorded boundary\. Hover a mark for the home/)
+    expect(FIELD).not.toMatch(/recorded boundary \u2014/)
   })
 
   it('stacks alerts claim → ask (proof below) so the 30-day figure does not collide with MOS', () => {

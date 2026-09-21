@@ -833,7 +833,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
               <V3PlaceLook
                 id="place-look"
                 headline={`${neighborhood.name} right now`}
-                claim={`${neighborhood.name} houses for sale — active and pending.`}
+                claim={`${neighborhood.name} houses for sale: active and pending.`}
                 listings={foldLookListings}
                 boundaryGeojson={boundaryMapData.polygon}
                 placeQuery={`${neighborhood.name} ${cityName}`}
@@ -929,7 +929,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
           headingLevel={2}
           headline={v3Text(`${neighborhood.name} right now`)}
           headlineTone="eyebrow"
-          claimText={`${neighborhood.name} houses for sale — active and pending.`}
+          claimText={`${neighborhood.name} houses for sale: active and pending.`}
           dots={atlasView.dots}
           regions={subjectAtlasRegions(atlasRegions)}
           childRegions={childAtlasRegions(atlasRegions)}

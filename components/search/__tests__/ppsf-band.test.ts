@@ -57,6 +57,9 @@ describe('bandLabel', () => {
     expect(bandLabel(band, 300)).toContain('inside the middle half')
     expect(bandLabel(band, 450)).toContain('above the middle half')
     expect(bandLabel(band, 450)).toContain('$450 per sq ft')
+    expect(bandLabel(band, 150)).not.toContain('\u2014')
+    expect(bandLabel(band, 300)).not.toContain('\u2014')
+    expect(bandLabel(band, 450)).not.toContain('\u2014')
   })
 
   it('names the population it is comparing against, not the whole market', () => {

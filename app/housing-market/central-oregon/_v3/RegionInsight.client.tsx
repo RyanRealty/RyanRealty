@@ -268,7 +268,8 @@ function compareProse(
       <>
         In {cell.label} the middle house in Central Oregon sold for{' '}
         <strong>{insightMoney(cell.median)}</strong>. A year earlier, in {prior.label}, it was{' '}
-        {insightMoney(prior.median)} — {delta ? `${delta}, ` : ''}
+        {insightMoney(prior.median)}
+        {delta ? `, ${delta}, ` : ', '}
         {direction === 'the same'
           ? 'level with a year ago'
           : `${direction} than the same month last year`}
@@ -311,7 +312,7 @@ function mixProse(board: RegionInsightBoard, name: string | null) {
   return (
     <>
       {segment.label} made up <strong>{segment.pct.toFixed(1)}%</strong> of everything that
-      closed in Central Oregon in {mix.year} — {insightCount(segment.count)} of{' '}
+      closed in Central Oregon in {mix.year}: {insightCount(segment.count)} of{' '}
       {insightCount(mix.total)} sales. Tap a band to weigh another type.
     </>
   )

@@ -5,7 +5,7 @@
  *
  * THE TITLE BUDGET COUNTS THE SUFFIX (SITE-25). A registry detail page's title
  * is the entity `name` and nothing else; app/layout.tsx then appends
- * " | Ryan Realty — Central Oregon" — 31 characters. The old bound was 48 on
+ * " | Ryan Realty, Central Oregon" — 30 characters. The old bound was 48 on
  * the name alone and never counted those 31, so every "bounded" name still
  * composed a 79-char document title. The bound is now
  * MAX_TITLE − BRAND_SUFFIX.length, measured on the document title the visitor
@@ -46,7 +46,7 @@ const WRITE_BASELINE = argv.includes('--write-baseline')
 const BASELINE_PATH = path.join(ROOT, 'scripts/content-metadata-baseline.json')
 
 /** Kept in sync with lib/site/page-metadata.ts — the same two constants. */
-const BRAND_SUFFIX = ' | Ryan Realty — Central Oregon'
+const BRAND_SUFFIX = ' | Ryan Realty, Central Oregon'
 const MAX_TITLE = 60
 const MAX_NAME = MAX_TITLE - BRAND_SUFFIX.length
 

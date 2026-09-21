@@ -13,7 +13,7 @@
  *
  * THE RULE:
  *   title       = the entity name, nothing else. No category label, no region.
- *                 app/layout.tsx's suffix supplies "Ryan Realty — Central
+ *                 app/layout.tsx's suffix supplies "Ryan Realty, Central
  *                 Oregon", so the page-level title carries zero copies of
  *                 "Central Oregon" and the document carries exactly one.
  *   description = as much of the entity's own blurb as fits 155 characters, cut

@@ -58,7 +58,7 @@ const DRAWN = 2
 const DEFINITION: Record<string, string> = {
   land: 'Lots and acreage with no house on them: bare residential lots, larger parcels, and development ground. The largest income-property population in the region by a wide margin, and the one with the longest hold.',
   commercial_sale:
-    'Commercial buildings and commercial condos offered for sale — retail, office, industrial, and mixed use. Leases are not counted here; these are properties for purchase.',
+    'Commercial buildings and commercial condos offered for sale: retail, office, industrial, and mixed use. Leases are not counted here; these are properties for purchase.',
   multifamily_2_4:
     'Duplexes, triplexes and fourplexes. Small enough to finance like a house and the closest thing to a conventional rental purchase in this market, which is also why there are so few of them for sale.',
   farm: 'Working farm and ranch property: irrigated ground, water rights, outbuildings. Priced on what the land produces as much as on what sits on it.',
@@ -137,14 +137,14 @@ export function investTrace(counts: readonly InvestSegmentCount[]): string {
   const parts = counts.map((c) => `${c.segment} ${n(c.count)}`).join(', ')
   const largest = counts[0]
   const lines = [
-    'Regional MLS listings for sale across Central Oregon, counted by property type — lots, commercial, two-to-four-unit buildings, farms, and businesses. Oregon Data Share is the feed. Geography is the whole region, not one town.',
-    `This read: ${parts} — ${n(total)} listings in all.`,
-    `The two rules are lots ${n(lots)} and buildings ${n(buildings)} — ${n(lots)} + ${n(buildings)} = ${n(total)}. Each share is that number over ${n(total)}, so the fills add to the whole set.`,
+    'Regional MLS listings for sale across Central Oregon, counted by property type: lots, commercial, two-to-four-unit buildings, farms, and businesses. Oregon Data Share is the feed. Geography is the whole region, not one town.',
+    `This read: ${parts}. ${n(total)} listings in all.`,
+    `The two rules are lots ${n(lots)} and buildings ${n(buildings)}: ${n(lots)} + ${n(buildings)} = ${n(total)}. Each share is that number over ${n(total)}, so the fills add to the whole set.`,
   ]
   if (largest) {
     const pct = ((largest.count / total) * 100).toFixed(1)
     lines.push(
-      `The headline is ${n(largest.count)} ÷ ${n(total)} = ${pct}% — it is published only while the largest population is land and holds more than half the set.`,
+      `The headline is ${n(largest.count)} ÷ ${n(total)} = ${pct}%. It is published only while the largest population is land and holds more than half the set.`,
     )
   }
   lines.push(
@@ -194,7 +194,7 @@ export function composeInvestPulse(input: InvestPulseInput): V3PulseProps | null
       label: split.buildings === 1 ? 'building' : 'buildings',
       share: split.buildings / split.total,
       definition:
-        'Commercial, two-to-four-unit, farm, and business listings — every income property for sale that is not a vacant lot. Together with the lots they add to the whole set.',
+        'Commercial, two-to-four-unit, farm, and business listings: every income property for sale that is not a vacant lot. Together with the lots they add to the whole set.',
       href: buildingLead ? publicSegmentBrowseHref(null, buildingLead.segment) : '/homes-for-sale',
       hrefLabel: `See all ${n(split.buildings)} ${split.buildings === 1 ? 'building' : 'buildings'}`,
     },

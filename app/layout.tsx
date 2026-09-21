@@ -43,14 +43,14 @@ export const revalidate = 900
 export const metadata: Metadata = {
   metadataBase: new URL(getCanonicalSiteUrl()),
   title: {
-    default: "Ryan Realty — Central Oregon Real Estate",
-    template: "%s | Ryan Realty — Central Oregon",
+    default: "Ryan Realty, Central Oregon Real Estate",
+    template: "%s | Ryan Realty, Central Oregon",
   },
   description:
     "Find your next home in Bend, Redmond, Sisters, and across Central Oregon. Ryan Realty offers expert local real estate service, listings, and market insights.",
   keywords: ["Central Oregon", "homes for sale", "real estate", "Bend", "Redmond", "Sisters", "listings", "MLS"],
   openGraph: {
-    title: "Ryan Realty — Central Oregon Real Estate",
+    title: "Ryan Realty, Central Oregon Real Estate",
     description: "Find your next home in Bend and Central Oregon. Expert real estate service, listings, and market insights.",
     type: "website",
     url: getCanonicalSiteUrl(),
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ryan Realty — Central Oregon Real Estate",
+    title: "Ryan Realty, Central Oregon Real Estate",
     description: "Find your next home in Bend and Central Oregon. Expert real estate service and listings.",
   },
   robots: { index: true, follow: true },

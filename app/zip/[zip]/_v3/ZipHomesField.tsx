@@ -124,7 +124,7 @@ export function ZipHomesField({
                  Atlas claimTone inventory would print every property type inside
                  the ZCTA and disagree with that detached figure. */
               claimTone="none"
-              claimText="Every listing inside this ZIP's recorded boundary — hover a mark for the home. Type chips and the price scrubber filter this set."
+              claimText="Every listing inside this ZIP's recorded boundary. Hover a mark for the home. Type chips and the price scrubber filter this set."
               keyPlacement="dock"
               sourceName="Oregon Data Share"
               dots={foldDots}

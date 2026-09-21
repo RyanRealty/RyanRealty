@@ -256,7 +256,7 @@ function buildMix(series: readonly CoMarketAnnualRow[]): RegionMixBoard | null {
     year: latest.year,
     total,
     segments,
-    source: `Everything that closed in Central Oregon in ${latest.year} — houses, condos, land and commercial — counted from Oregon Data Share MLS.`,
+    source: `Everything that closed in Central Oregon in ${latest.year}: houses, condos, land and commercial, counted from Oregon Data Share MLS.`,
   }
 }
 
@@ -365,7 +365,7 @@ export function regionInsightFaqs(
       answer:
         `In ${recent.label} the middle single-family sale across Central Oregon closed at ` +
         `${insightMoney(recent.median)}. A year earlier, in ${prior.label}, the middle sale was ` +
-        `${insightMoney(prior.median)}${delta ? ` — ${delta}` : ''}, so sale prices are ${direction} ` +
+        `${insightMoney(prior.median)}${delta ? `, ${delta}` : ''}, so sale prices are ${direction} ` +
         'than the same month last year. This is what buyers paid, not what sellers are asking; ' +
         'asking prices sit higher. Source: closed single-family sales through Oregon Data Share MLS.',
     })

@@ -17,8 +17,8 @@ import { getCanonicalSiteUrl, shareDescription } from '@/lib/share-metadata'
 /**
  * THE TITLE BUDGET IS THE WHOLE DOCUMENT TITLE, SUFFIX INCLUDED (SITE-25).
  *
- * app/layout.tsx appends `title.template` — " | Ryan Realty — Central Oregon",
- * 31 characters — to every page title that is not `title: { absolute }`. The
+ * app/layout.tsx appends `title.template` — " | Ryan Realty, Central Oregon",
+ * 30 characters — to every page title that is not `title: { absolute }`. The
  * old code capped the page's OWN title at 60 and then let those 31 land on top,
  * so the cap bought nothing and only sheared the phrase people search:
  *
@@ -53,7 +53,7 @@ import { getCanonicalSiteUrl, shareDescription } from '@/lib/share-metadata'
  * ci:title-brand-once exempts pageMetadata() arguments, so this stays green.
  */
 /** Exactly what app/layout.tsx's title.template appends. Keep the two in sync. */
-export const BRAND_SUFFIX = ' | Ryan Realty — Central Oregon'
+export const BRAND_SUFFIX = ' | Ryan Realty, Central Oregon'
 /** The whole document title, suffix included. ~600px SERP proxy, not a hard limit. */
 const MAX_TITLE = 60
 /**
@@ -119,7 +119,7 @@ const DANGLING_PUNCT = /[\s,;:]+$/
 /**
  * Strip a brand the caller (or a DB seoTitle) already baked in, so the layout
  * template cannot double-brand ("Foo | Ryan Realty" + template was shipping
- * "Foo | Ryan Realty | Ryan Realty — Central Oregon").
+ * "Foo | Ryan Realty | Ryan Realty, Central Oregon").
  */
 function stripBakedBrand(t: string): string {
   return t.replace(/\s*[|·—–-]\s*Ryan Realty\b.*$/i, '').trim()
