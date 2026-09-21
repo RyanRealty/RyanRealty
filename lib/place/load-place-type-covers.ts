@@ -4,7 +4,11 @@
  * each type on its own. Miss omits. Never invents a stand-in.
  */
 import { getListingTiles } from '@/lib/data/listings/getListingTiles'
-import { PLACE_TYPE_COVER_SPECS } from '@/lib/place/publish-place-type-cards'
+import {
+  coverFromListingRow,
+  PLACE_TYPE_COVER_SPECS,
+  type PlaceTypeCover,
+} from '@/lib/place/publish-place-type-cards'
 
 function inAliasSet(
   subdivisionName: string | null | undefined,
@@ -23,8 +27,8 @@ export async function loadPlaceTypeCoverPhotos(scope: {
   neighborhood?: string
   subdivision?: string
   aliases?: readonly string[]
-}): Promise<Record<string, string>> {
-  const covers: Record<string, string> = {}
+}): Promise<Record<string, PlaceTypeCover>> {
+  const covers: Record<string, PlaceTypeCover> = {}
   const settled = await Promise.all(
     PLACE_TYPE_COVER_SPECS.map(async (spec) => {
       try {
@@ -38,15 +42,15 @@ export async function loadPlaceTypeCoverPhotos(scope: {
           propertyType: spec.propertyType,
           propertySubType: spec.propertySubType,
         })
-        const photo = rows.find((row) => row.photoUrl)?.photoUrl ?? null
-        return [spec.key, photo] as const
+        const cover = rows.map(coverFromListingRow).find((row) => row != null) ?? null
+        return [spec.key, cover] as const
       } catch {
         return [spec.key, null] as const
       }
     }),
   )
-  for (const [key, photo] of settled) {
-    if (photo) covers[key] = photo
+  for (const [key, cover] of settled) {
+    if (cover) covers[key] = cover
   }
 
   const aliases = (scope.aliases ?? []).map((a) => a.trim()).filter(Boolean)
@@ -63,17 +67,19 @@ export async function loadPlaceTypeCoverPhotos(scope: {
             propertyType: spec.propertyType,
             propertySubType: spec.propertySubType,
           })
-          const photo =
-            rows.find((row) => row.photoUrl && inAliasSet(row.subdivisionName, aliases))?.photoUrl ??
-            null
-          return [spec.key, photo] as const
+          const cover =
+            rows
+              .filter((row) => inAliasSet(row.subdivisionName, aliases))
+              .map(coverFromListingRow)
+              .find((row) => row != null) ?? null
+          return [spec.key, cover] as const
         } catch {
           return [spec.key, null] as const
         }
       }),
     )
-    for (const [key, photo] of extras) {
-      if (photo) covers[key] = photo
+    for (const [key, cover] of extras) {
+      if (cover) covers[key] = cover
     }
   }
   return covers

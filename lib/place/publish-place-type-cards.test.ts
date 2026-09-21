@@ -47,9 +47,33 @@ describe('publishPlaceTypeCards', () => {
     expect(cards[0]?.active).toBe(false)
     expect(cards[0]?.href).toBe('/cities/redmond/types/single-family')
     expect(cards[0]?.photoUrl).toBe('https://cdn.example/sfr.jpg')
+    expect(cards[0]?.listingHref).toBeNull()
     expect(cards.find((c) => c.key === 'land')?.href).toBe('/cities/redmond/types/lots-and-land')
     expect(cards.find((c) => c.key === 'condo')?.href).toBe('/cities/redmond/types/condos')
     expect(cards.find((c) => c.key === 'condo')?.photoUrl).toBe('https://cdn.example/condo.jpg')
+  })
+
+  it('sends a priced house photograph to the listing, not the type page', () => {
+    const cards = publishPlaceTypeCards({
+      browsePath: '/homes-for-sale/redmond',
+      placeName: 'Redmond',
+      sfrCount: 255,
+      sfrMedian: 598900,
+      sfrMos: 4.6,
+      segments: [condo],
+      covers: {
+        sfr: {
+          photoUrl: 'https://cdn.example/sfr.jpg',
+          listingHref: '/homes-for-sale/redmond/123-sw-obsidian-220123456',
+          street: '123 SW Obsidian',
+          price: '$599K',
+        },
+      },
+    })
+    expect(cards[0]?.href).toBe('/cities/redmond/types/single-family')
+    expect(cards[0]?.listingHref).toBe('/homes-for-sale/redmond/123-sw-obsidian-220123456')
+    expect(cards[0]?.listingStreet).toBe('123 SW Obsidian')
+    expect(cards[0]?.listingPrice).toBe('$599K')
   })
 
   it('opens the community type page when browsePath is the community node', () => {
@@ -138,18 +162,29 @@ describe('placeTypeCoverPhotos', () => {
       { photoUrl: 'https://cdn.example/lot.jpg', propertyType: 'D' },
       { photoUrl: null, propertySubType: 'Condominium', propertyType: 'A' },
     ])
-    expect(covers.sfr).toBe('https://cdn.example/sfr.jpg')
-    expect(covers.condo).toBe('https://cdn.example/condo.jpg')
-    expect(covers.land).toBe('https://cdn.example/lot.jpg')
+    expect(covers.sfr?.photoUrl).toBe('https://cdn.example/sfr.jpg')
+    expect(covers.condo?.photoUrl).toBe('https://cdn.example/condo.jpg')
+    expect(covers.land?.photoUrl).toBe('https://cdn.example/lot.jpg')
   })
 
   it('asks Spark for the card size so a prefetched place page never names a 1600 plate', () => {
     const spark = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501165710852242000000-o.jpg'
     const covers = placeTypeCoverPhotos([
-      { photoUrl: spark, propertySubType: 'Single Family Residence', propertyType: 'A' },
+      {
+        photoUrl: spark,
+        propertySubType: 'Single Family Residence',
+        propertyType: 'A',
+        listingKey: 'abc',
+        listNumber: '220123456',
+        streetNumber: '123',
+        streetName: 'Obsidian',
+        city: 'Redmond',
+      },
     ])
-    expect(covers.sfr).toBe(
-      'https://cdn.resize.sparkplatform.com/ore/320x240/true/20260501165710852242000000-o.jpg',
+    expect(covers.sfr?.photoUrl).toBe(
+      'https://cdn.resize.sparkplatform.com/ore/800x600/true/20260501165710852242000000-o.jpg',
     )
+    expect(covers.sfr?.listingHref).toMatch(/220123456/)
+    expect(covers.sfr?.listingHref).not.toMatch(/\/types\//)
   })
 })

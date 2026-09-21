@@ -396,11 +396,16 @@
   text-decoration: none;
 }
 .place-type-card__thumb {
+  position: relative;
+  display: block;
   aspect-ratio: 16 / 10;
   margin: calc(var(--v3-space-sm) * -1) calc(var(--v3-space-sm) * -1) var(--v3-space-sm);
   overflow: hidden;
   background: color-mix(in srgb, var(--v3-navy) 12%, var(--v3-cream));
   flex: 0 0 auto;
+  min-height: var(--v3-tap);
+  color: inherit;
+  text-decoration: none;
 }
 .place-type-card.is-active .place-type-card__thumb {
   background: color-mix(in srgb, var(--v3-cream) 12%, var(--v3-navy));
@@ -410,6 +415,26 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.place-type-card__ask {
+  position: absolute;
+  left: var(--v3-space-sm);
+  bottom: var(--v3-space-sm);
+  padding: 0.2rem 0.45rem;
+  background: color-mix(in srgb, var(--v3-navy) 82%, transparent);
+  color: var(--v3-cream);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  line-height: 1.2;
+}
+.place-type-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: var(--v3-tap);
+  color: inherit;
+  text-decoration: none;
 }
 .place-type-card.is-active {
   background: var(--v3-navy);

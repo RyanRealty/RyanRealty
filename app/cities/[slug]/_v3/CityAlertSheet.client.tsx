@@ -146,6 +146,7 @@ export function CityAlertsStrip({
       // `demote` on Props: the outline under a rendered door, primary when the
       // opening published no door.
       emphasis={demote ? 'ghost' : 'primary'}
+      placeholder=""
       types={types}
       // SITE-93: the property-type picker is the installed beUI combobox, not
       // three flat toggles. The strip still owns the selection; the route owns
