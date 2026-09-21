@@ -19,9 +19,11 @@
  * the region (beui:combobox); no-photo rows carry a resting supply reading
  * when Market Truth publishes one.
  *
- * SITE-92: the fold is a drawing (Atlas) beside a figure (InsightCards +
- * MOS + the installed combobox) and the alerts sentence. Catalog sources
- * install first: beautifului InsightCards, beui-number, beui combobox.
+ * SITE-92: Atlas + InsightCards + MOS + combobox + alerts sentence.
+ * SITE-161: the INDEX opens as a directory of cities (photo + name + live
+ * count) in the first viewport. Atlas stays the drawing. MOS may stay but
+ * cannot be the only object. Catalog: beui infinite-masonry + beui-number
+ * on the cards; beui combobox stays the city overlay.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
@@ -70,6 +72,7 @@ import {
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import { CitiesInsight } from '@/app/cities/_v3/CitiesInsight.client'
 import { CitiesAlertsStrip } from '@/app/cities/_v3/CitiesAlerts.client'
+import { CitiesDirectory } from '@/app/cities/_v3/CitiesDirectory'
 import {
   buildCitiesInsightBoard,
   citiesInsightDatasetVariables,
@@ -468,13 +471,11 @@ async function renderCitiesIndex() {
       />
     ) : null
 
-  const regionDrawing =
+  const regionBars =
     regionFigures.length > 0 ? (
-      <>
-        <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
-        {regionScale}
-      </>
+      <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
     ) : null
+  const regionDrawing = regionBars || regionScale
 
   const insightBoard = buildCitiesInsightBoard({
     monthly: regionMonthly,
@@ -515,6 +516,30 @@ async function renderCitiesIndex() {
       geometry: row.geometry,
     }))
   const showAtlas = atlasPop.dots.length > 0 || atlasRegions.length > 0
+
+  const foldCities = featured
+    .filter(
+      (city) =>
+        Boolean(city.hero.verified && city.hero.src) &&
+        city.activeCount != null &&
+        city.activeCount > 0,
+    )
+    .slice(0, 6)
+    .map((city) => ({
+      slug: city.slug,
+      name: city.name,
+      href: `/cities/${city.slug}`,
+      photoSrc: city.hero.src,
+      photoAlt: city.hero.alt,
+      count: city.activeCount != null && city.activeCount > 0 ? city.activeCount : null,
+      countLabel:
+        city.activeCount != null && city.activeCount > 0
+          ? formatCount(city.activeCount)
+          : city.activeCount === 0
+            ? 'None listed now'
+            : NO_LIVE_COUNT_LABEL,
+      share: indexBarWeight(city.activeCount, maxCount),
+    }))
 
   const railRows = homeRailRows(listingTiles, {
     nowMs: Date.now(),
@@ -580,12 +605,14 @@ async function renderCitiesIndex() {
               {hud.active != null
                 ? `${formatCount(hud.active)} detached single-family homes for sale.`
                 : ''}
-              {atlasPop.counts.forSale > 0
-                ? ` The map marks ${formatCount(atlasPop.counts.forSale)} homes of every type.`
-                : ''}
             </p>
           </header>
           <div className="cities-fold__stage">
+            {foldCities.length > 0 ? (
+              <div className="cities-fold__directory" id="city-directory">
+                <CitiesDirectory cities={foldCities} source={FEATURED_TRACE} />
+              </div>
+            ) : null}
             {showAtlas ? (
               <div className="cities-fold__drawing">
                 <V3Atlas
@@ -611,12 +638,12 @@ async function renderCitiesIndex() {
               </div>
             ) : null}
             <aside className="cities-fold__figure">
-              {regionDrawing}
+              {regionScale}
               <CitiesAlertsStrip
                 newCount30d={hud.new30}
                 updatedAt={leftoverStamp}
               />
-              {showInsight ? <CitiesInsight board={insightBoard} /> : null}
+              {regionBars}
             </aside>
           </div>
         </section>
@@ -629,6 +656,8 @@ async function renderCitiesIndex() {
             />
           </div>
         ) : null}
+
+        {showInsight ? <CitiesInsight board={insightBoard} /> : null}
 
         {firstFeatured ? (
           <V3Ledger

@@ -1,0 +1,169 @@
+/* SITE-161 cities INDEX directory. tokens.css only. */
+
+.v3.cities-directory {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.cities-directory__head {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  margin: 0 0 var(--v3-space-xs);
+}
+
+.cities-directory__eyebrow {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.cities-directory__heading {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.cities-directory__lede {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  text-wrap: pretty;
+}
+
+/* Served HTML doors. First paint and no-JS. */
+.cities-directory__ssr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--v3-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cities-directory__card {
+  display: grid;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  text-decoration: none;
+  border-radius: 0;
+}
+
+.cities-directory__card:hover,
+.cities-directory__card:focus-visible {
+  color: var(--v3-ink);
+}
+
+.cities-directory__card:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.cities-directory__media {
+  display: block;
+  overflow: hidden;
+  min-height: 5.5rem;
+  background: var(--v3-navy);
+}
+
+.cities-directory__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cities-directory__copy {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.35rem 0 0.15rem;
+  min-width: 0;
+}
+
+.cities-directory__name {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  overflow-wrap: anywhere;
+}
+
+.cities-directory__bar {
+  display: block;
+  height: 0.35rem;
+  width: calc(var(--v3-share, 0) * 100%);
+  max-width: 100%;
+  background: var(--v3-navy);
+}
+
+.cities-directory__count {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-source);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-note);
+}
+
+.cities-directory__unit {
+  color: var(--v3-ink-muted);
+}
+
+.cities-directory__masonry-frame {
+  display: none;
+}
+
+.cities-directory__masonry {
+  height: 20.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  scrollbar-gutter: auto;
+}
+
+@media (min-width: 64rem) {
+  .cities-directory__ssr {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--v3-space-sm);
+  }
+
+  .cities-directory__heading {
+    font-size: var(--v3-size-heading);
+  }
+
+  .cities-directory__masonry {
+    height: 16rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
+
+/* After mount, masonry is the photographed object. Keep the static list in
+   the tree for crawlers; clip it from the visual fold. */
+.cities-directory.is-masonry .cities-directory__ssr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cities-directory.is-masonry .cities-directory__masonry-frame {
+  display: block;
+  min-height: 20.5rem;
+}
+
+@media (min-width: 64rem) {
+  .cities-directory.is-masonry .cities-directory__masonry-frame {
+    min-height: 16rem;
+  }
+}

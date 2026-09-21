@@ -4,7 +4,7 @@
   display: grid;
   gap: var(--v3-space-2xs);
   max-width: min(34rem, 100%);
-  margin: var(--v3-space-sm) 0 0;
+  margin: var(--v3-space-xs) 0 0;
   padding: 0;
   color: var(--v3-ink);
 }
@@ -127,7 +127,7 @@
   position: relative;
   display: grid;
   gap: var(--v3-space-3xs);
-  margin-top: var(--v3-space-2xs);
+  margin: 0 0 var(--v3-space-2xs);
 }
 
 .v3-mos-compare__label {
