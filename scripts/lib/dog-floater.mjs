@@ -32,6 +32,15 @@ export const DOG_HEAD_MIN_RADIUS_FILL = 0.88
 export const DOG_HEAD_MAX_RADIUS_FILL = 0.97
 /** Outer-ray CV below this means the glyph is still a pre-cropped disc. */
 export const DOG_HEAD_CIRCULAR_CV_MAX = 0.18
+/** CSS idle: rotate(-6deg) around 50% / 78%. Builder + gate must match paint. */
+export const DOG_HEAD_TILT_DEG = -6
+export const DOG_HEAD_TILT_ORIGIN_Y = 0.78
+/**
+ * Leftmost (muzzle) pixel after the idle tilt, as a fraction of inscribed R.
+ * 0.97 is the hairline-safe ceiling at a 68px FAB — higher and the nose kisses
+ * the circle on a phone even when rest-inset still passes 4%.
+ */
+export const DOG_HEAD_MAX_TILT_MUZZLE_FILL = 0.97
 
 const PATHS = Object.freeze({
   floater: 'components/site/v3/V3DogFloater.client.tsx',
@@ -420,8 +429,47 @@ export async function dogHeadCropProblems({ root = process.cwd() } = {}) {
         `${rel}: outer contour is a circular pre-crop (cv=${cv.toFixed(3)}). Re-export the inner head from the full seal — do not pad the already-clipped disc.`,
       )
     }
+    const tiltMuzzle = tiltedMuzzleRadiusFill(data, width, height)
+    if (tiltMuzzle != null && tiltMuzzle > DOG_HEAD_MAX_TILT_MUZZLE_FILL) {
+      p.push(
+        `${rel}: idle-tilt muzzle sits at ${(tiltMuzzle * 100).toFixed(1)}% of radius (max ${Math.round(DOG_HEAD_MAX_TILT_MUZZLE_FILL * 100)}%). Extra left inset — the left muzzle must not be the thing kissing the FAB rim.`,
+      )
+    }
   }
   return p
+}
+
+/**
+ * Leftmost opaque pixel rotated the same way the FAB tilts
+ * (CSS rotate(-6deg), origin 50% / 78%), then distance from square center / R.
+ */
+export function tiltedMuzzleRadiusFill(data, width, height) {
+  let leftX = width
+  let leftY = 0
+  let found = false
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (data[(y * width + x) * 4 + 3] <= 16) continue
+      found = true
+      if (x < leftX) {
+        leftX = x
+        leftY = y
+      }
+    }
+  }
+  if (!found) return null
+  const tcx = width * 0.5
+  const tcy = height * DOG_HEAD_TILT_ORIGIN_Y
+  const rad = (DOG_HEAD_TILT_DEG * Math.PI) / 180
+  const vx = leftX - tcx
+  const vy = leftY - tcy
+  const tx = tcx + vx * Math.cos(rad) - vy * Math.sin(rad)
+  const ty = tcy + vx * Math.sin(rad) + vy * Math.cos(rad)
+  const cx = width / 2
+  const cy = height / 2
+  const R = Math.min(width, height) / 2
+  if (R <= 0) return null
+  return Math.hypot(tx - cx, ty - cy) / R
 }
 
 /** Farthest opaque pixel / inscribed-circle radius. ~0.81 was the fat 16% ring. */

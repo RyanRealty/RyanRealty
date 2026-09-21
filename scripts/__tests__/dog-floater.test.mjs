@@ -5,7 +5,14 @@ import { tmpdir } from 'node:os'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import { dogFloaterProblems, dogHeadCropProblems, DOG_FLOATER_GATE, DOG_FLOATER_DOOR_LABELS } from '../lib/dog-floater.mjs'
+import {
+  dogFloaterProblems,
+  dogHeadCropProblems,
+  tiltedMuzzleRadiusFill,
+  DOG_FLOATER_GATE,
+  DOG_FLOATER_DOOR_LABELS,
+  DOG_HEAD_MAX_TILT_MUZZLE_FILL,
+} from '../lib/dog-floater.mjs'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -133,6 +140,15 @@ describe('ci:dog-floater lock', () => {
 
   it('keeps jax-head silhouettes inset so the circle cannot crop the muzzle', async () => {
     await expect(dogHeadCropProblems({ root: REPO })).resolves.toEqual([])
+  })
+
+  it('keeps the idle-tilt muzzle inside the inscribed circle (not kissing the rim)', async () => {
+    for (const rel of ['public/brand/jax-head-navy.png', 'public/brand/jax-head-cream.png']) {
+      const { data, info } = await sharp(join(REPO, rel)).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+      const fill = tiltedMuzzleRadiusFill(data, info.width, info.height)
+      expect(fill, rel).toBeGreaterThan(0.8)
+      expect(fill, rel).toBeLessThanOrEqual(DOG_HEAD_MAX_TILT_MUZZLE_FILL)
+    }
   })
 
   it('refuses a circular pre-crop and an edge-tight head', async () => {

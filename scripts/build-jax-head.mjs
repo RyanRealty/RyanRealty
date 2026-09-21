@@ -29,7 +29,12 @@ import { writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import { DOG_HEAD_PAD, JAX_HEAD_SEALS } from './lib/dog-floater.mjs'
+import {
+  DOG_HEAD_PAD,
+  DOG_HEAD_TILT_DEG,
+  DOG_HEAD_TILT_ORIGIN_Y,
+  JAX_HEAD_SEALS,
+} from './lib/dog-floater.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SIZE = 1024
@@ -37,8 +42,8 @@ const INK = 16
 /** Radial keep-out so a 6° tilt around 50%/78% cannot push the muzzle out. */
 const CIRCLE_KEEP = 0.955
 const MIN_INSET = 0.04
-const TILT_DEG = -6
-const TILT_ORIGIN_Y = 0.78
+const TILT_DEG = DOG_HEAD_TILT_DEG
+const TILT_ORIGIN_Y = DOG_HEAD_TILT_ORIGIN_Y
 
 function discOuterRadius(data, w, h, cx, cy) {
   let lastHigh = 0
