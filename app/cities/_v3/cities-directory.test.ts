@@ -19,8 +19,8 @@ describe('SITE-161 cities directory fold', () => {
   })
 
   it('puts named cities above Atlas at 375 and the combobox above the MOS scale', () => {
-    expect(fold).toMatch(/\.cities-fold__directory \{\s*order: 1;/s)
-    expect(fold).toMatch(/\.cities-fold__drawing \{\s*order: 3;/s)
+    expect(fold).toMatch(/\.cities-fold__directory \{[\s\S]*?order: 1;/)
+    expect(fold).toMatch(/\.cities-fold__drawing \{[\s\S]*?order: 3;/)
     expect(compare.indexOf('data-taste="city-combo"')).toBeLessThan(
       compare.indexOf('v3-mos-compare__field'),
     )
