@@ -1433,6 +1433,29 @@ const SEEDS: readonly Seed[] = [
     accept:
       'At 1440 and 375 a face is in the first viewport with 5.0 from 25 and the quoted review. Product hold. Rebaseline is not done.',
   },
+  {
+    versionGap: 'SITE-168',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] invest leftover: the income inventory is printed twice and never as a house',
+    objective:
+      'Looked live https://ryan-realty.com/invest at 1440 and 375 on 2026-09-21 (scratchpad/site-look-2026-09-21-places/invest__1440__fold.png, invest__1440__scroll1.png, invest__375__fold.png, invest__375__scroll1.png). SITE-50 / 68 / 98 are done (cover memo is gone). Leftover: “Income properties for sale now” is a photo-less table; immediately under it “Priced addresses on the income side” reprints the same rows (20844 Sierra Drive twice). No listing photograph. 375 hyphen-wraps the city. Insights em dash is SITE-149 — do not twin. Start with `node scripts/lib/taste-catalog.mjs invest --preflight`. Exclusive files: app/invest/page.tsx, V3Ledger, V3Pulse. Do not edit community page.tsx. SEO: invest title stays branded. Information: one row per listing with price + address + type/sqft-or-acres. UX: one ledger, photos on building rows. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'One income inventory (not two); building rows carry a photo; 1440/375 shots; taste receipt.',
+    accept:
+      'At 1440 the page has one listing inventory, not a table plus a second reprint. Building rows show a photograph plus price + address + type/sqft. At 375 the city is not a hyphenated orphan column. Product hold. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-169',
+    domain: 'public-ux',
+    title: 'Matt ADD [p0] open-houses: 33 listing photos, zero open-house times',
+    objective:
+      'Looked live https://ryan-realty.com/open-houses at 1440 and 375 on 2026-09-21 (scratchpad/site-look-2026-09-21-places/open-houses__1440__fold.png, open-houses__1440__scroll1.png, open-houses__375__fold.png, open-houses__375__scroll1.png). Fold is H1 plus 33 homes plus listing photos with price + specs + address. No day, no hours, no host. Source line is pipeline talk (“the same OpenHouses pull as the count above”). SITE-27 is done. Dog on 375 is SITE-153 — do not twin. Start with `node scripts/lib/taste-catalog.mjs buy --preflight`. Exclusive files: app/open-houses/page.tsx and its _v3. SEO: hub title stays Open houses; crawlable listing canonicals. Information: every card carries the open window from the OpenHouses pull plus house facts. UX: first viewport is this weekend’s opens. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Open-houses fold shows day/hours on each card; 1440/375 shots of fold + one scroll.',
+    accept:
+      'At 1440 and 375 a visitor can read when at least two opens are happening without opening a listing. Cards keep price + address + beds/baths/sqft. Source line is not “the same OpenHouses pull as the count above.” Product hold. Rebaseline is not done.',
+  },
 
 ]
 
