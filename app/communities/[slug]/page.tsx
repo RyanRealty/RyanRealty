@@ -1,7 +1,8 @@
 /**
  * /communities/[slug] — master-plan grain. First screen is owned still + H1
  * `{Name} homes for sale`. Belonging facts (HOA, acres, membership) sit as a
- * caption on the still, not a KPI Instrument. Atlas is the inventory graphic.
+ * caption on the still, not a KPI Instrument. First look is V3PlaceLook
+ * (Google + one ring + priced photo cards). Atlas stays later.
  * MOS / sold / verdict / DTP stay off the face as a strip. They appear on the face
  * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
  * Matt 2026-09-07): an input-to-answer ask, not a number hero.
@@ -99,6 +100,7 @@ import {
   V3Quiet,
   V3Atlas,
   type AtlasRegion,
+  V3PlaceLook,
   V3PlaceIndex,
   V3PlaceInventory,
   V3SectionTracker,
@@ -110,6 +112,12 @@ import { getCommunityCourseMap } from '@/lib/golf/community-course'
 import { courseMapKind } from '@/lib/golf/course-map'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { getPlaceOpeningListings } from '@/lib/data'
+import {
+  capLookListings,
+  listingsFromAtlasDots,
+  listingsFromTiles,
+  placeLookPhotoCards,
+} from '@/lib/place/first-look'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
@@ -851,6 +859,18 @@ async function renderCommunityDetail({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // SITE-162 first-look: Google + ONE community ring + photo cards.
+  // Atlas stays later so amenity / child-plat gates still see the Atlas mount.
+  const foldHouseDots = atlasView.dots.filter((d) => d.t === 'house')
+  const foldLookListings = capLookListings(
+    foldHouseDots.length > 0
+      ? listingsFromAtlasDots(foldHouseDots)
+      : listingsFromTiles(fieldTiles),
+  )
+  const foldPhotoCards = placeLookPhotoCards({
+    buckets: openingListings,
+    listings: foldLookListings,
+  })
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -905,41 +925,27 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-87: drawing + figure in the first viewport. Atlas is the drawing;
-            the 30-day count via V3AlertsStrip/V3Number is the figure. MOS bars
-            publish only when leftover HUD clears the community sample floor.
-            CommunityPlaceValue stays the page's filled ask, after the drawing so
-            the portal card is not the only object in the fold. */}
+        {/* SITE-162: drawing + figure + houses in the first viewport, same
+            lock as neighborhood. V3PlaceLook is the drawing (Google + one
+            ring + priced photo cards). The 30-day count via V3AlertsStrip is
+            the figure. MOS stays off this grain. CommunityPlaceValue stays
+            the filled ask, after the drawing. */}
         <div className="community-fold">
           <div className="community-fold__stage">
             <div className="community-fold__drawing">
-              <V3Atlas
-                id="atlas"
-                headingLevel={2}
-                headline={v3Text(`${publicName} right now`)}
-                headlineTone="eyebrow"
-                claimText={`${publicName}: every active and pending mark is a live MLS listing.`}
-                keyPlacement="head"
-                sourceName="Oregon Data Share"
-                dots={atlasView.dots}
-                regions={foldAtlasRegions}
-                childRegions={platRegions}
-                basemap={basemapForRegions(foldAtlasRegions, {
-                  dots: atlasView.dots,
-                  fit: 'dots',
-                })}
-                fit="dots"
-                types={atlasView.types}
-                events={atlasView.events}
-                source={atlasView.source}
-                stamp={atlasView.stamp}
-                incomplete={!atlasView.complete}
-                amenities={amenityLayers}
-                hidePriceScrubber
-                clusterPins
-                clusterCellPx={COMMUNITY_FOLD_CLUSTER_CELL_PX}
-                clusterStageHint={COMMUNITY_FOLD_CLUSTER_STAGE}
-                clusterStageHintPhone={COMMUNITY_FOLD_CLUSTER_STAGE_PHONE}
+              <V3PlaceLook
+                id="place-look"
+                headline={`${publicName} right now`}
+                claim={`${publicName} houses for sale: active and pending.`}
+                listings={foldLookListings}
+                boundaryGeojson={mapPolygon}
+                placeQuery={`${publicName} ${cityName}`}
+                photoCards={foldPhotoCards}
+                source={
+                  foldLookListings.length > 0
+                    ? `Active and pending homes in ${publicName}, from Oregon Data Share listing tiles.`
+                    : atlasView.source
+                }
               />
             </div>
             <aside className="community-fold__figure">
@@ -976,6 +982,37 @@ async function renderCommunityDetail({ params }: Props) {
           source={inventorySource}
           asOf={leftoverStamp}
         />
+
+        <div className="community-atlas">
+          <V3Atlas
+            id="atlas"
+            headingLevel={2}
+            headline={v3Text(`${publicName} right now`)}
+            headlineTone="eyebrow"
+            claimText={`${publicName}: every active and pending mark is a live MLS listing.`}
+            keyPlacement="head"
+            sourceName="Oregon Data Share"
+            dots={atlasView.dots}
+            regions={foldAtlasRegions}
+            childRegions={platRegions}
+            basemap={basemapForRegions(foldAtlasRegions, {
+              dots: atlasView.dots,
+              fit: 'dots',
+            })}
+            fit="dots"
+            types={atlasView.types}
+            events={atlasView.events}
+            source={atlasView.source}
+            stamp={atlasView.stamp}
+            incomplete={!atlasView.complete}
+            amenities={amenityLayers}
+            hidePriceScrubber
+            clusterPins
+            clusterCellPx={COMMUNITY_FOLD_CLUSTER_CELL_PX}
+            clusterStageHint={COMMUNITY_FOLD_CLUSTER_STAGE}
+            clusterStageHintPhone={COMMUNITY_FOLD_CLUSTER_STAGE_PHONE}
+          />
+        </div>
 
         {costChart && firstMarketFigure ? (
           <V3Instrument

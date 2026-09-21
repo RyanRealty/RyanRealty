@@ -1,0 +1,396 @@
+{
+  "origin": "http://127.0.0.1:3465",
+  "tetherow-1440": {
+    "status": 200,
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "cardsInFold": 2,
+    "cards": [
+      {
+        "x": 1076,
+        "y": 299.203125,
+        "w": 336,
+        "h": 244.125,
+        "text": "$2.2M 19372 Seaton Loop",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 1076,
+        "y": 548.921875,
+        "w": 336,
+        "h": 244.125,
+        "text": "$2.9M 19492 Bainbridge Court",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$1.4M 19301 Alianna Loop",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$2.2M 61636 Hosmer Lake Drive",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$450K Outrider Loop",
+        "inFold": false,
+        "priceInFold": false
+      }
+    ],
+    "markCount": 7,
+    "markTexts": [
+      "33 homes",
+      "22 homes",
+      "33 homes",
+      "77 homes",
+      "$2.5M",
+      "$4.3M",
+      "$2.6M"
+    ],
+    "overlappingMarks": 0,
+    "overlaps": [],
+    "lookY": {
+      "y": 238.15625,
+      "h": 689.765625
+    },
+    "h1": "Tetherow homes for sale"
+  },
+  "tetherow-375": {
+    "status": 200,
+    "viewport": {
+      "width": 375,
+      "height": 812
+    },
+    "cardsInFold": 2,
+    "cards": [
+      {
+        "x": 20,
+        "y": 231.84375,
+        "w": 164.703125,
+        "h": 207.640625,
+        "text": "$2.2M 19372 Seaton Loop",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 190.296875,
+        "y": 231.84375,
+        "w": 164.703125,
+        "h": 207.640625,
+        "text": "$2.9M 19492 Bainbridge Court",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$1.4M 19301 Alianna Loop",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$2.2M 61636 Hosmer Lake Drive",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$450K Outrider Loop",
+        "inFold": false,
+        "priceInFold": false
+      }
+    ],
+    "markCount": 3,
+    "markTexts": [
+      "44 homes",
+      "44 homes",
+      "1010 homes"
+    ],
+    "overlappingMarks": 0,
+    "overlaps": [],
+    "lookY": {
+      "y": 206,
+      "h": 417.703125
+    },
+    "h1": "Tetherow homes for sale"
+  },
+  "caldera-1440": {
+    "status": 200,
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "cardsInFold": 2,
+    "cards": [
+      {
+        "x": 1076,
+        "y": 299.203125,
+        "w": 336,
+        "h": 244.125,
+        "text": "$2.1M 18211 Basalt Lane, Bend",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 1076,
+        "y": 548.921875,
+        "w": 336,
+        "h": 244.125,
+        "text": "$2.5M 56393 Elk Run Drive, Bend",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$1.7M 56236 Rockcress Lane, Bend",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$1.7M 56244 Rockcress Lane, Bend",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$1.4M 18245 Forestbrook Loop, Bend",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$2.9M 56350 Mirror Rock Loop, Bend",
+        "inFold": false,
+        "priceInFold": false
+      }
+    ],
+    "markCount": 7,
+    "markTexts": [
+      "88 homes",
+      "1212 homes",
+      "33 homes",
+      "55 homes",
+      "66 homes",
+      "$2.2M",
+      "$1.4M"
+    ],
+    "overlappingMarks": 0,
+    "overlaps": [],
+    "lookY": {
+      "y": 238.15625,
+      "h": 689.765625
+    },
+    "h1": "Caldera Springs homes for sale"
+  },
+  "caldera-375": {
+    "status": 200,
+    "viewport": {
+      "width": 375,
+      "height": 812
+    },
+    "cardsInFold": 2,
+    "cards": [
+      {
+        "x": 20,
+        "y": 231.84375,
+        "w": 164.703125,
+        "h": 207.640625,
+        "text": "$2.1M 18211 Basalt Lane, Bend",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 190.296875,
+        "y": 231.84375,
+        "w": 164.703125,
+        "h": 229.25,
+        "text": "$2.5M 56393 Elk Run Drive, Bend",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$1.7M 56236 Rockcress Lane, Bend",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$1.7M 56244 Rockcress Lane, Bend",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$1.4M 18245 Forestbrook Loop, Bend",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "text": "$2.9M 56350 Mirror Rock Loop, Bend",
+        "inFold": false,
+        "priceInFold": false
+      }
+    ],
+    "markCount": 0,
+    "markTexts": [],
+    "overlappingMarks": 0,
+    "overlaps": [],
+    "lookY": {
+      "y": 206,
+      "h": 439.3125
+    },
+    "h1": "Caldera Springs homes for sale"
+  },
+  "peerTetherow": {
+    "title": "Tetherow: Bend, Oregon Luxury Award Winning Hotel & Golf Resort",
+    "url": "https://tetherow.com/"
+  },
+  "prodTetherow": {
+    "title": "Tetherow Homes for Sale | Bend, OR | Ryan Realty — Central Oregon",
+    "url": "https://ryan-realty.com/communities/tetherow"
+  },
+  "awbrey1440": {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "cardsInFold": 1,
+    "cards": [
+      {
+        "x": 932,
+        "y": 279.046875,
+        "w": 336,
+        "h": 336.125,
+        "text": "$1.5M 3063 Duffy Drive",
+        "inFold": true,
+        "priceInFold": true
+      },
+      {
+        "x": 932,
+        "y": 620.765625,
+        "w": 336,
+        "h": 336.125,
+        "text": "$1.2M 2393 Wyeth Place",
+        "inFold": true,
+        "priceInFold": false
+      },
+      {
+        "x": 932,
+        "y": 962.484375,
+        "w": 336,
+        "h": 336.125,
+        "text": "$1.7M 3335 Fairway Heights Drive",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 932,
+        "y": 1304.203125,
+        "w": 336,
+        "h": 336.125,
+        "text": "$995K 1287 City Heights Drive",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 932,
+        "y": 1645.921875,
+        "w": 336,
+        "h": 314.390625,
+        "text": "$575K 1975 Moon Shadow Court",
+        "inFold": false,
+        "priceInFold": false
+      },
+      {
+        "x": 932,
+        "y": 1965.90625,
+        "w": 336,
+        "h": 314.390625,
+        "text": "$380K 1327 Constellation Drive",
+        "inFold": false,
+        "priceInFold": false
+      }
+    ],
+    "markCount": 18,
+    "markTexts": [
+      "1212 homes",
+      "77 homes",
+      "$1.3M",
+      "99 homes",
+      "995K",
+      "55 homes",
+      "22 homes",
+      "33 homes",
+      "33 homes",
+      "965K",
+      "$1.2M",
+      "$1.2M",
+      "33 homes",
+      "625K",
+      "$1.1M",
+      "$2.1M",
+      "$1.2M",
+      "$1.1M"
+    ],
+    "overlappingMarks": 0,
+    "overlaps": [],
+    "lookY": {
+      "y": 218,
+      "h": 708.484375
+    },
+    "h1": "Awbrey Butte homes for sale"
+  }
+}

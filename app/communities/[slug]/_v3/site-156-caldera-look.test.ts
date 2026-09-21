@@ -73,5 +73,6 @@ describe('SITE-156 Caldera master-plan look', () => {
     expect(PAGE).toMatch(/clusterCellPx=\{COMMUNITY_FOLD_CLUSTER_CELL_PX\}/)
     expect(PAGE).toMatch(/clusterStageHint=\{COMMUNITY_FOLD_CLUSTER_STAGE\}/)
     expect(PAGE).toMatch(/clusterStageHintPhone=\{COMMUNITY_FOLD_CLUSTER_STAGE_PHONE\}/)
+    expect(PAGE).toMatch(/className="community-atlas"/)
   })
 })
