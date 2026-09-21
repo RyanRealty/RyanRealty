@@ -324,6 +324,14 @@ export default async function NewConstructionPage() {
             outlinedOf={overview.namedTotal}
             basemap={overview.basemap}
             fit="regions"
+            /* SITE-142 soft 1: default 64px cells left 3-4 overlapping cluster
+               pairs at both 375 and 1440 (measured, scratchpad/nc-fit-before.json
+               and the pin-overlap probe). 96px clears every 375/360/390 overlap
+               and cuts 1440's worst overlap area from 309px^2 to 76px^2 — the
+               grid clusterer is not transitive across cell edges (see
+               lib/atlas/cluster-pins.ts), so a residual pair or two at 1440 is
+               the algorithm's own floor, not a page-level miss. */
+            clusterCellPx={96}
           />
         ) : null}
 
@@ -351,9 +359,18 @@ export default async function NewConstructionPage() {
               href: '/book',
             },
             {
-              kicker: v3Text('Search'),
-              label: v3Text('Bend new construction'),
-              href: BEND_NEW_CON_SEARCH_HREF,
+              /* SITE-142 soft 5: this band's own name promised "or open a
+                 builder page" but every door was brokerage-only (Call, Text,
+                 Schedule, Search) — the finding behind "builder contact =
+                 broker block only." The builder pages doors below are the
+                 real, sourced destinations (BEND_NEW_CON_FINANCING); this
+                 door is the anchor that makes the promise in `name` true at
+                 the first contact touchpoint instead of four sections down.
+                 Search stays reachable from the Stage CTA above and the
+                 ledger actions below, so nothing is lost by trading it here. */
+              kicker: v3Text('Builder'),
+              label: v3Text('Open a builder page'),
+              href: '#builders',
             },
           ]}
         />
