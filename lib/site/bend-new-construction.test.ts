@@ -17,6 +17,7 @@ import {
   BEND_NEW_CON_STEVENS_RANCH_TOWNHOMES,
   BEND_NEW_CON_SFR_SUBTYPE,
   BEND_NEW_CON_TOWNHOUSE_SUBTYPE,
+  bendNewConCoverageCounts,
   bendNewConHortonTownhomeRows,
   bendNewConLeadRows,
   bendNewConRestPrimary,
@@ -401,13 +402,40 @@ describe('Bend new-construction snapshot', () => {
   })
 
   it('keeps FAQ answers on the transcribed snapshot and live-count split', () => {
-    expect(BEND_NEW_CON_FAQ).toHaveLength(5)
+    expect(BEND_NEW_CON_FAQ).toHaveLength(6)
     expect(BEND_NEW_CON_FAQ.map((item) => item.id)).toContain('faq-status-flags')
     const text = BEND_NEW_CON_FAQ.map((item) => item.answer).join('\n')
     expect(text).toMatch(/2026-09-16/)
     expect(text).toMatch(/UNVERIFIED/)
     expect(text).not.toMatch(MOS)
     expect(text).not.toMatch(INVENTED_HAYDEN_25K)
+  })
+
+  it('states the subdivision coverage rule honestly, with counts that trace to the same arrays the page renders (SITE-152)', () => {
+    const counts = bendNewConCoverageCounts()
+    // Every count is derived from the same constants the page maps over, so
+    // this can never silently drift from what actually renders.
+    expect(counts.total).toBe(BEND_NEW_CON_NAMED.length)
+    expect(counts.shelf).toBe(BEND_NEW_CON_LEAD_NAMES.length)
+    expect(counts.ledger).toBe(bendNewConRestPrimary().length)
+    expect(counts.townhomes).toBe(BEND_NEW_CON_HORTON_TOWNHOME_NAMES.length)
+    expect(counts.single).toBe(BEND_NEW_CON_SINGLE.length)
+    expect(counts.rest).toBe(counts.total - counts.shelf)
+    // Every named row lands in exactly one of the four sections — nothing
+    // dropped, nothing double-counted.
+    expect(counts.shelf + counts.ledger + counts.townhomes + counts.single).toBe(counts.total)
+
+    const faq = BEND_NEW_CON_FAQ.find((item) => item.id === 'faq-coverage')
+    expect(faq).toBeDefined()
+    expect(faq!.answer).toContain(String(counts.total))
+    expect(faq!.answer).toContain(String(counts.shelf))
+    expect(faq!.answer).toContain(String(counts.rest))
+    expect(faq!.answer).toContain(String(counts.ledger))
+    expect(faq!.answer).toContain(String(counts.townhomes))
+    expect(faq!.answer).toContain(String(counts.single))
+
+    const page = readFileSync(resolve('app/new-construction/page.tsx'), 'utf8')
+    expect(page).toContain('bendNewConCoverageCounts')
   })
 
   it('wires the overview map, savings chips, and contact on the public page', () => {

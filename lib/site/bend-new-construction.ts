@@ -1111,6 +1111,14 @@ export const BEND_NEW_CON_FAQ: readonly NewConFaq[] = [
     answer:
       'No. Single-family communities lead. Horton townhomes at Thunder Ridge, Ponderosa, and Stevens Ranch sit in their own section so a townhome price is not read as the single-family start.',
   },
+  {
+    id: 'faq-coverage',
+    question: 'Does this page cover every new-construction community in Bend?',
+    answer: (() => {
+      const c = bendNewConCoverageCounts()
+      return `Yes, by rule, not by accident. ${c.total} named Bend communities carried Active new-construction listings in the 2026-09-16 research pull. ${c.shelf} lead the top of the page with live SFR photos, lowest list band first; the other ${c.rest} are below in price order: ${c.ledger} more single-family communities, ${c.townhomes} Horton townhome communities, and ${c.single} communities with one Active home that day. Published builder pages are a separate, fourth group: four direct links to the builder sites behind the financing cards, not a subdivision list. Every community group opens that community’s live search.`
+    })(),
+  },
 ]
 
 const PLAT_NOISE = new Set(['phase', 'and', 'the', 'at', 'of', 'pud', 'llc'])
@@ -1155,3 +1163,30 @@ export const BEND_NEW_CON_HOME_NAV_NAMES = [
   'Acadia Pointe Phase 5 and 6',
   'Stevens Ranch',
 ] as const
+
+/**
+ * SITE-152 (Matt 2026-09-21): "you only have three of the subdivisions, and
+ * then it's not complete... Let's consolidate and be smarter about what's on
+ * this page." Verified 2026-09-21: every one of the 38 named rows already
+ * rendered somewhere on the page (shelf, "Single-family communities" ledger,
+ * Horton townhomes, or "One Active home") — 0 missing when checked against
+ * the same arrays the page maps over. What was missing was the page SAYING
+ * so. These counts are computed from those same arrays (not restated as
+ * literals) so the number on the page can never drift from what actually
+ * renders.
+ */
+export function bendNewConCoverageCounts(): {
+  total: number
+  shelf: number
+  ledger: number
+  townhomes: number
+  single: number
+  rest: number
+} {
+  const total = BEND_NEW_CON_NAMED.length
+  const shelf = BEND_NEW_CON_LEAD_NAMES.length
+  const ledger = bendNewConRestPrimary().length
+  const townhomes = BEND_NEW_CON_HORTON_TOWNHOME_NAMES.length
+  const single = BEND_NEW_CON_SINGLE.length
+  return { total, shelf, ledger, townhomes, single, rest: total - shelf }
+}
