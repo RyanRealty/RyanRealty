@@ -8,15 +8,21 @@ import { describe, expect, it } from 'vitest'
 import { MAP_CREAM, MAP_NAVY } from '@/lib/maps/markers'
 import {
   navyOnCream,
+  v3ClusterIntegerZoom,
+  v3ClusterRadiusForMapZoom,
   v3FitPadding,
   v3SubjectRingPadding,
   V3_BASEMAP_INK,
   V3_BASEMAP_PALETTE,
   V3_BASEMAP_STYLE,
+  V3_CLUSTER_EXTENT,
   V3_CLUSTER_MAX_ZOOM,
   V3_CLUSTER_RADIUS_PX,
   V3_MAP_CHROME_OFF,
   V3_MAP_MAX_ZOOM,
+  V3_MARK_CARET_PX,
+  V3_MARK_EDGE_MARGIN_PX,
+  V3_MARK_HEIGHT_PX,
   V3_MARK_WIDTH_PX,
   getV3MapOptions,
 } from '@/lib/maps/v3-basemap'
@@ -126,6 +132,33 @@ describe('the frame geometry', () => {
   it('merges anything closer than a full mark, at every zoom', () => {
     expect(V3_CLUSTER_RADIUS_PX).toBeGreaterThan(V3_MARK_WIDTH_PX)
     expect(V3_CLUSTER_MAX_ZOOM).toBe(V3_MAP_MAX_ZOOM)
+    expect(V3_CLUSTER_EXTENT).toBe(256)
+  })
+
+  it('keeps merge distance on screen even when MarkerClusterer rounds zoom up', () => {
+    // SITE-143: SuperClusterAlgorithm uses Math.round. At 10.6 that is 11,
+    // which used to shrink a 72px radius to ~54px and leave overlapping stacks.
+    expect(v3ClusterIntegerZoom(10.6)).toBe(11)
+    const radius = v3ClusterRadiusForMapZoom(10.6)
+    const effectivePx = radius * 2 ** (10.6 - 11)
+    expect(radius).toBeGreaterThan(V3_CLUSTER_RADIUS_PX)
+    expect(effectivePx).toBeGreaterThanOrEqual(V3_CLUSTER_RADIUS_PX - 0.5)
+    expect(v3ClusterRadiusForMapZoom(11)).toBe(V3_CLUSTER_RADIUS_PX)
+    expect(v3ClusterRadiusForMapZoom(10)).toBe(V3_CLUSTER_RADIUS_PX)
+  })
+
+  it('never lets a rounded-up zoom shrink the merge below a mark width', () => {
+    for (const z of [9.5, 10.5, 11.5, 12.5, 14.51]) {
+      const zInt = v3ClusterIntegerZoom(z)
+      const effectivePx = v3ClusterRadiusForMapZoom(z) * 2 ** (z - zInt)
+      expect(effectivePx).toBeGreaterThanOrEqual(V3_MARK_WIDTH_PX)
+    }
+  })
+
+  it('gives the edge clamp a caret-sized box to work with', () => {
+    expect(V3_MARK_HEIGHT_PX).toBeGreaterThan(20)
+    expect(V3_MARK_CARET_PX).toBeGreaterThan(0)
+    expect(V3_MARK_EDGE_MARGIN_PX).toBeGreaterThan(V3_MARK_CARET_PX)
   })
 
   it('pads the opening fit by a mark and a half on every edge', () => {

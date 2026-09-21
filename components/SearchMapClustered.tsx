@@ -27,7 +27,11 @@ import {
 import {
   V3_CLUSTER_EXTENT,
   V3_CLUSTER_MAX_ZOOM,
-  V3_CLUSTER_RADIUS_PX,
+  V3_MARK_CARET_PX,
+  V3_MARK_EDGE_MARGIN_PX,
+  V3_MARK_HEIGHT_PX,
+  V3_MARK_WIDTH_PX,
+  v3ClusterRadiusForMapZoom,
   v3FitPadding,
   v3SubjectRingPadding,
 } from '@/lib/maps/v3-basemap'
@@ -58,6 +62,30 @@ import './search/search-map-marks.css'
  * wears it. The painted size is untouched; the target is an invisible pseudo.
  */
 const MARK_CLASS = 'rr-map-mark'
+
+/**
+ * Supercluster radius in screen pixels, surviving MarkerClusterer's
+ * Math.round(zoom). A new inner algorithm is built when the scaled radius
+ * changes so dense Bend stacks collapse instead of overlapping.
+ */
+class V3ScreenPixelClusterAlgorithm {
+  private inner: SuperClusterAlgorithm | null = null
+  private radius = -1
+
+  calculate(input: Parameters<SuperClusterAlgorithm['calculate']>[0]) {
+    const zoom = input.map.getZoom() ?? 0
+    const radius = v3ClusterRadiusForMapZoom(zoom)
+    if (!this.inner || this.radius !== radius) {
+      this.radius = radius
+      this.inner = new SuperClusterAlgorithm({
+        maxZoom: V3_CLUSTER_MAX_ZOOM,
+        radius,
+        extent: V3_CLUSTER_EXTENT,
+      })
+    }
+    return this.inner.calculate(input)
+  }
+}
 
 /** Unselected child plats: hit only. Not 20 highlighted rings (Old Bend FAIL). */
 const MAP_HIERARCHY_CHILD_HIT = {
@@ -550,6 +578,7 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     private titleText: string
     private onClick?: (ev: MouseEvent) => void
     private listingKeyValue?: string
+    private drawRaf = 0
 
     constructor(opts: PricePillOverlayOptions) {
       super()
@@ -618,24 +647,34 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       const frame = host && 'getDiv' in host ? (host as google.maps.Map).getDiv() : null
       const cp = proj.fromLatLngToContainerPixel(this.latLng)
       if (!frame || !cp) return
-      const w = div.offsetWidth
-      const h = div.offsetHeight
-      if (w === 0 || h === 0) return
+      const measuredW = div.offsetWidth
+      const measuredH = div.offsetHeight
+      const w = measuredW || V3_MARK_WIDTH_PX
+      const h = measuredH || V3_MARK_HEIGHT_PX
+      // First OverlayView draw often runs before layout (offset 0). A zero box
+      // used to skip the slide-in, which is how $2M / $1.2M stayed sliced on
+      // the search frame (SITE-143). Fallback size now, refine next frame.
+      if ((measuredW === 0 || measuredH === 0) && this.drawRaf === 0) {
+        this.drawRaf = requestAnimationFrame(() => {
+          this.drawRaf = 0
+          this.draw()
+        })
+      }
 
       // The box as painted: centred on the point, hanging above it.
       // SITE-128 rematch: also clamp Y. Top-only flip still left $795k
       // hanging off the bottom of the 375 Bend island.
-      const flip = cp.y - h < MARK_EDGE_MARGIN_PX && cp.y + h < frame.clientHeight
+      const flip = cp.y - h < V3_MARK_EDGE_MARGIN_PX && cp.y + h < frame.clientHeight
       const painted = {
         left: cp.x - w / 2,
         right: cp.x + w / 2,
-        top: flip ? cp.y : cp.y - h,
+        top: flip ? cp.y - V3_MARK_CARET_PX : cp.y - h,
         bottom: flip ? cp.y + h : cp.y,
       }
       const { nudgeX, nudgeY } = clampMarkNudge(
         painted,
         { width: frame.clientWidth, height: frame.clientHeight },
-        MARK_EDGE_MARGIN_PX,
+        V3_MARK_EDGE_MARGIN_PX,
       )
 
       div.style.transform = `translate(calc(-50% + ${nudgeX}px), calc(${flip ? '0' : '-100%'} + ${nudgeY}px))`
@@ -658,6 +697,10 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     }
 
     onRemove() {
+      if (this.drawRaf) {
+        cancelAnimationFrame(this.drawRaf)
+        this.drawRaf = 0
+      }
       this.container?.remove()
       this.container = null
     }
@@ -913,9 +956,6 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
   return SubjectRingOverlayClass
 }
 
-/** How close a mark's painted box may come to the frame edge before it slides in. */
-const MARK_EDGE_MARGIN_PX = 18
-
 /** The target every mark carries, matching --v3-tap in components/site/v3/tokens.css. */
 const MARK_TAP_PX = 44
 /**
@@ -940,10 +980,38 @@ const MARK_TAP_MARGIN_PX = 2
  * A mark never shrinks below its painted footprint — the max() in
  * components/search/search-map-marks.css holds that floor.
  */
+function slideMarksInsideFrame(root: HTMLElement) {
+  const frame = root.getBoundingClientRect()
+  if (frame.width < 40 || frame.height < 40) return
+  const wraps = Array.from(
+    new Set(
+      Array.from(root.querySelectorAll<HTMLElement>('.rr-map-mark'))
+        .map((el) => el.parentElement)
+        .filter((el): el is HTMLElement => Boolean(el)),
+    ),
+  )
+  for (const wrap of wraps) wrap.style.translate = '0px 0px'
+  const margin = V3_MARK_EDGE_MARGIN_PX
+  for (const wrap of wraps) {
+    const r = wrap.getBoundingClientRect()
+    let dx = 0
+    let dy = 0
+    if (r.left < frame.left + margin) dx = frame.left + margin - r.left
+    else if (r.right > frame.right - margin) dx = frame.right - margin - r.right
+    if (r.top < frame.top + margin) dy = frame.top + margin - r.top
+    else if (r.bottom > frame.bottom - margin) dy = frame.bottom - margin - r.bottom
+    if (dx === 0 && dy === 0) continue
+    wrap.style.translate = `${dx}px ${dy}px`
+  }
+}
+
 function fitMapMarkTaps(root: HTMLElement | null) {
   if (!root) return
   const els = Array.from(root.querySelectorAll<HTMLElement>('.rr-map-mark'))
   if (els.length === 0) return
+  // OverlayView projection can miss a first layout (SITE-143 375 corner 6).
+  // After paint, slide any mark that still crosses the map frame.
+  slideMarksInsideFrame(root)
   // Read all geometry before writing anything: one layout pass, not one per mark.
   const marks = els.map((el, i) => {
     const r = el.getBoundingClientRect()
@@ -1262,13 +1330,13 @@ export default function SearchMapClustered({
       ...getSearchMapOptions(),
       draggable: !drawingMode && !multiDrawActive,
       clickableIcons: !drawingMode && !multiDrawActive,
-      // Integer fitBounds on a 13rem island stops at z10 (~101×126 knot).
-      // Fractional zoom lets the settle loop hit fill ≥ 0.7.
-      ...(fitSubjectRing ? { isFractionalZoomEnabled: true } : {}),
+      // Integer fitBounds eats the mark-and-a-half pad (SITE-143 clipped
+      // $2M / $1.2M). Fractional zoom lets the island keep that clearance.
+      isFractionalZoomEnabled: true,
     }
     // isLoaded stays a dep so options recompute after the Maps script
     // arrives. Google UI chrome is off; MapChrome owns zoom and Map/Satellite.
-  }, [drawingMode, multiDrawActive, isLoaded, fitSubjectRing])
+  }, [drawingMode, multiDrawActive, isLoaded])
 
   // ─── Imperative map creation ───────────────────────────────────────────────
   // We create the google.maps.Map instance ourselves rather than relying on
@@ -1381,7 +1449,18 @@ export default function SearchMapClustered({
           { lat: initialBounds.north, lng: initialBounds.east },
         )
         if (!locked.isEmpty()) {
-          map.fitBounds(locked, padding)
+          const applyLocked = () => {
+            const pad = v3FitPadding(map.getDiv())
+            map.fitBounds(locked, pad)
+          }
+          applyLocked()
+          // onLoad can run before the split island has a width. Re-apply once
+          // the div is real so the pad is not computed against 0×0 (SITE-143).
+          if ((map.getDiv()?.clientWidth ?? 0) < 40) {
+            google.maps.event.addListenerOnce(map, 'idle', () => {
+              if ((map.getDiv()?.clientWidth ?? 0) >= 40) applyLocked()
+            })
+          }
           return
         }
       }
@@ -1458,23 +1537,36 @@ export default function SearchMapClustered({
   // onLoad only runs once; without this, City=Redmond keeps a Bend camera and
   // the viewport empty ("0 homes in this map view" with "Showing Redmond only").
   const placeFitKeyRef = useRef<string | null>(null)
+  const placeFitPlaceRef = useRef<string | null>(null)
   useEffect(() => {
     const map = mapRef.current
     if (!map || !window.google?.maps) return
     const padding = v3FitPadding(map.getDiv())
     const key = `${placeQuery ?? ''}|${boundaryPaths.flat().length}`
+    const placeId = placeQuery ?? ''
     const hasRing = boundaryPaths.flat().length >= 2
     // onLoad can run before GeoJSON parses. Skipping the first effect then
     // leaves the phone island on a pin-cluster crop (SITE-128 @375 rematch).
     if (placeFitKeyRef.current === null && !(fitSubjectRing && hasRing)) {
       placeFitKeyRef.current = key
+      placeFitPlaceRef.current = placeId
       return
     }
     if (placeFitKeyRef.current === key) return
     placeFitKeyRef.current = key
     // Look island camera is the settle effect. A second fitBounds here
     // snaps back to integer z10 after fill-zoom (Cos kick knot).
-    if (fitSubjectRing && hasRing) return
+    if (fitSubjectRing && hasRing) {
+      placeFitPlaceRef.current = placeId
+      return
+    }
+    // SITE-143: lockBounds / URL bbox is the user's camera. A ring that
+    // arrives after onLoad must not yank that camera — that is what planted
+    // $2M / $1.2M on the frame edge. Place SELECT (Bend → Redmond) still
+    // flies to the new ring.
+    const placeChanged = placeFitPlaceRef.current !== placeId
+    placeFitPlaceRef.current = placeId
+    if (lockBounds && !placeChanged) return
     // Place SELECT changed — always fly to the new boundary, even when the
     // shell passes lockBounds for camera restore on cold load.
 
@@ -1512,7 +1604,7 @@ export default function SearchMapClustered({
         },
       )
     }
-  }, [placeQuery, boundaryPaths, fitSubjectRing])
+  }, [placeQuery, boundaryPaths, fitSubjectRing, lockBounds])
 
   // Cream halo + navy ink on overlayLayer; Bend chip above pills.
   // Same recorded GeoJSON as the Polygon. Look island only.
@@ -1813,27 +1905,19 @@ export default function SearchMapClustered({
 
     // Cluster renderer: a navy count badge that says what it holds on hover.
     //
-    // SITE-44 changed two numbers here and they are the whole overlap fix. The
-    // radius is now a full mark's width (V3_CLUSTER_RADIUS_PX), so any two
-    // marks closer than one pill collapse into a badge instead of stacking. And
-    // clustering no longer STOPS at zoom 14 (V3_CLUSTER_MAX_ZOOM is the map's
-    // own max), which is what left the SW Bend pile in the 2026-09-08 shots:
-    // past 14 every pin drew raw, on top of its neighbours. Supercluster
-    // separates points on its own as the zoom climbs, so at street level almost
-    // nothing is still merged — only the homes that genuinely share a corner.
+    // SITE-44: radius is a full mark's width and clustering never stops.
+    // SITE-143: that radius must still mean screen pixels AFTER
+    // SuperClusterAlgorithm rounds the zoom (z.6 used to shrink 72px to ~54
+    // and leave the 182/13 and $5.3M stacks). V3ScreenPixelClusterAlgorithm
+    // scales the constructor radius so the merge distance on the displayed
+    // map stays at least one mark.
     if (disableClustering) {
       clustererRef.current = null
     } else {
       clustererRef.current = new MarkerClusterer({
         map,
         markers: newMarkers as unknown as google.maps.Marker[],
-        algorithm: new SuperClusterAlgorithm({
-          maxZoom: V3_CLUSTER_MAX_ZOOM,
-          radius: V3_CLUSTER_RADIUS_PX,
-          // Supercluster measures radius in units of `extent`; its default 512 is
-          // twice a Google tile, which halved every radius this file ever set.
-          extent: V3_CLUSTER_EXTENT,
-        }),
+        algorithm: new V3ScreenPixelClusterAlgorithm(),
         // Draw mode: the default handler zooms into the cluster, which yanks the
         // viewport mid-outline and strands the user's partial polygon across two
         // zoom levels. Clusters go inert while drawing.

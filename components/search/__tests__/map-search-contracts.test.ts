@@ -989,10 +989,37 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     // pills stacked on each other past that. The radius and the ceiling are now
     // the shared frame constants, so a change moves both the merge and the fit.
     expect(map).toMatch(/maxZoom:\s*V3_CLUSTER_MAX_ZOOM/)
-    expect(map).toMatch(/radius:\s*V3_CLUSTER_RADIUS_PX/)
+    expect(map).toMatch(/V3ScreenPixelClusterAlgorithm/)
+    expect(map).toMatch(/v3ClusterRadiusForMapZoom/)
+    expect(map).toMatch(/extent:\s*V3_CLUSTER_EXTENT/)
     expect(map).not.toMatch(/maxZoom:\s*14/)
     expect(map).toMatch(/buildPhotoStampElement/)
     expect(map).toMatch(/zoomMode/)
+  })
+
+  it('SITE-143: edge pills slide in on first draw; lockBounds does not yank when the ring arrives', () => {
+    const map = readSrc('components/SearchMapClustered.tsx')
+    // OverlayView's first draw used to skip when offsetWidth was 0, leaving
+    // $2M / $1.2M sliced on the search frame.
+    expect(map).toMatch(/measuredW \|\| V3_MARK_WIDTH_PX/)
+    expect(map).toMatch(/measuredH \|\| V3_MARK_HEIGHT_PX/)
+    expect(map).toMatch(/requestAnimationFrame/)
+    expect(map).toMatch(/V3_MARK_CARET_PX/)
+    expect(map).toMatch(/V3_MARK_EDGE_MARGIN_PX/)
+    expect(map).toMatch(/slideMarksInsideFrame/)
+    expect(map).toMatch(/wrap\.style\.translate/)
+    // A city ring arriving after onLoad must not replace the lockBounds camera.
+    expect(map).toMatch(/placeFitPlaceRef/)
+    expect(map).toMatch(/lockBounds && !placeChanged/)
+    // Search keeps clustering; place first-look is the only disableClustering caller.
+    expect(map).toMatch(/disableClustering = false/)
+    const view = readSrc('components/search/MapSearchView.tsx')
+    expect(view).not.toMatch(/disableClustering/)
+    // Draw mode must not zoom-into-cluster.
+    expect(map).toMatch(/if \(drawingModeRef\.current \|\| multiDrawClickRef\.current\) return/)
+    expect(map).toMatch(/<MapDrawTools/)
+    expect(view).toMatch(/hoveredKey/)
+    expect(view).toMatch(/onMarkerHover/)
   })
 
   it('the search basemap is the one V3 navy-on-cream style array, never a Map ID', () => {

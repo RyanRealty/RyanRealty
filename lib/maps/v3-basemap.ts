@@ -210,6 +210,33 @@ export const V3_CLUSTER_EXTENT = 256
 export const V3_CLUSTER_MAX_ZOOM = V3_MAP_MAX_ZOOM
 
 /**
+ * MarkerClusterer's SuperClusterAlgorithm feeds Supercluster `Math.round(zoom)`.
+ * At z.6 that integer is one step IN, which shrinks a 72px radius to ~54px —
+ * under a mark's width — and leaves the dense Bend stacks SITE-143 named.
+ *
+ * Scale the constructor radius so that AFTER that round, the merge distance
+ * on the displayed map is still at least V3_CLUSTER_RADIUS_PX.
+ */
+export function v3ClusterIntegerZoom(mapZoom: number): number {
+  if (!Number.isFinite(mapZoom)) return 0
+  return Math.round(mapZoom)
+}
+
+export function v3ClusterRadiusForMapZoom(mapZoom: number): number {
+  if (!Number.isFinite(mapZoom)) return V3_CLUSTER_RADIUS_PX
+  const zInt = v3ClusterIntegerZoom(mapZoom)
+  const scaled = V3_CLUSTER_RADIUS_PX * 2 ** (zInt - mapZoom)
+  return Math.max(V3_CLUSTER_RADIUS_PX, Math.ceil(scaled))
+}
+
+/** Painted pill height without the caret. Used when OverlayView draws before layout. */
+export const V3_MARK_HEIGHT_PX = 28
+/** Caret hangs this far past the pill box. Include it in the edge clamp. */
+export const V3_MARK_CARET_PX = 7
+/** How close a mark's painted box may come to the frame edge before it slides in. */
+export const V3_MARK_EDGE_MARGIN_PX = 18
+
+/**
  * Padding for the opening fitBounds, in pixels, scaled to the frame.
  *
  * The accept test for SITE-44 is that no mark sits within its own width of the
