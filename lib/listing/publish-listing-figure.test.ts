@@ -44,7 +44,10 @@ describe('publishMoneyText', () => {
     expect(publishMoneyText(500)).toBe('$1,000')
     expect(publishMoneyText(771, 'exact')).toBe('$771')
     expect(publishMoneyText(2.5, 'exact')).toBe('$3')
-    expect(publishMoneyText(260_000, 'compact')).toBe('$260k')
+    // SITE-139 (Matt 2026-09-21): 'compact' printed lowercase "$260k" while
+    // listing cards print the house uppercase style ("$650K") — flipped so
+    // the lowercase form cannot quietly come back.
+    expect(publishMoneyText(260_000, 'compact')).toBe('$260K')
     expect(publishMoneyText(1_495_000, 'compact')).toBe('$1.5M')
   })
 

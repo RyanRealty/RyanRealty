@@ -215,8 +215,10 @@ describe('toClientPortalAlert', () => {
     expect(mapped.lastNotifiedAt).toBe('2026-07-25T12:00:00.000Z')
   })
 
+  // SITE-139: humanizeSearchCriteria prints the house uppercase style
+  // ("$800K"), not the old lowercase "$800k".
   it('falls back to the humanized criteria when the alert has no name', () => {
-    expect(toClientPortalAlert(alertRow({ name: '   ' })).name).toBe('Homes in Bend, under $800k, 3+ beds')
+    expect(toClientPortalAlert(alertRow({ name: '   ' })).name).toBe('Homes in Bend, under $800K, 3+ beds')
   })
 
   it('normalizes a row saved before the typed-events migration', () => {

@@ -23,6 +23,8 @@
  * removes real vertices — it never adds an interpolated one to the stored shape.
  */
 
+import { formatPriceCompact } from '@/lib/format/money'
+
 // ─── types ────────────────────────────────────────────────────────────────────
 
 /** Minimal lat/lng pair. Structurally compatible with google.maps.LatLngLiteral. */
@@ -118,11 +120,17 @@ function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v)
 }
 
-/** Closed-sale animation label. Keeps $475k units; for-sale place pins use formatAtlasPinPrice. */
+/**
+ * Closed-sale animation label — the house publisher (lib/format/money.ts
+ * formatPriceCompact), not a hand-rolled copy. For-sale place pins print
+ * through the separate formatAtlasPinPrice (SITE-127: no $ under a million,
+ * for density on a crowded canvas) — that pin exception is for asks, not
+ * closed-sale pills, so it stays a different function on purpose. Before
+ * SITE-139 this printed `$795k` (lowercase k) beside listing cards printing
+ * `$650K` — two house publishers on one page (Matt 2026-09-21).
+ */
 export function formatSaleLabel(price: number): string {
-  if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(1)}M`
-  if (price >= 1_000) return `$${(price / 1_000).toFixed(0)}k`
-  return `$${price}`
+  return formatPriceCompact(price)
 }
 
 /**

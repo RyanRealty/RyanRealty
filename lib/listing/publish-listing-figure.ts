@@ -523,7 +523,13 @@ function renderMoney(value: number, register: MoneyRegister): string {
       return `$${m >= 10 ? Math.round(m) : m.toFixed(1)}M`
     }
     if (value >= 1_000) {
-      return `$${Math.round(value / 1000)}k`
+      // Uppercase K — SITE-139 (Matt 2026-09-21): map chips printed "$795k"
+      // lowercase next to listing cards printing "$650K" uppercase, two
+      // house publishers on one page. lib/format/money.ts formatPriceCompact
+      // is the accepted style; this file must stay import-free (contract
+      // executed directly by ci:listing-figure-publish), so the fix is
+      // matching its case here rather than importing it.
+      return `$${Math.round(value / 1000)}K`
     }
     return `$${Math.round(value)}`
   }

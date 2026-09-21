@@ -1,30 +1,21 @@
 import { V3Chart, v3Text } from '@/components/site/v3'
+import { formatPriceCompact } from '@/lib/format/money'
 import type { ProjectionYear } from '@/lib/rental-analysis'
 
 type Props = {
   projection: ReadonlyArray<ProjectionYear>
 }
 
-function moneyCompact(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return '$0'
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000
-    return `$${m >= 10 ? Math.round(m) : m.toFixed(1)}M`
-  }
-  if (n >= 1_000) return `$${Math.round(n / 1000)}k`
-  return `$${Math.round(n)}`
-}
-
 export default function EquityProjectionChart({ projection }: Props) {
   const valuePoints = projection.map((p) => ({
     value: Math.round(p.propertyValue),
     tick: v3Text(`Year ${p.year}`),
-    label: v3Text(moneyCompact(p.propertyValue)),
+    label: v3Text(formatPriceCompact(p.propertyValue)),
   }))
   const equityPoints = projection.map((p) => ({
     value: Math.round(Math.max(0, p.equity)),
     tick: v3Text(`Year ${p.year}`),
-    label: v3Text(moneyCompact(Math.max(0, p.equity))),
+    label: v3Text(formatPriceCompact(Math.max(0, p.equity))),
   }))
 
   return (

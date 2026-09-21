@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
  *
  * Examples:
  *   <Price value={895000} />            → $895,000
- *   <Price value={895000} compact />    → $895k
+ *   <Price value={895000} compact />    → $895K
  *   <Price value={771} exact />         → $771      (no thousand-rounding)
  *   <Price value={null} />              → —
  *
@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils'
 
 type Props = {
   value: number | null | undefined
-  /** When true, format as $895k / $1.5M instead of full $895,000. */
+  /** When true, format as $895K / $1.5M instead of full $895,000. */
   compact?: boolean
   /** When true, render exact whole dollars ($771) with no thousand-rounding. */
   exact?: boolean

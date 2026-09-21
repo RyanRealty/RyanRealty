@@ -7,29 +7,33 @@ import {
 import { buildSearchUrlFromFilters } from '@/lib/search-filters'
 
 describe('humanizeSearchCriteria', () => {
+  // SITE-139 (Matt 2026-09-21): formatPriceShort printed lowercase k/m
+  // ("$400k") while listing cards print the house uppercase style
+  // ("$650K") — two house publishers disagreeing on one page. Flipped to
+  // uppercase so the old lowercase form cannot quietly come back.
   it('builds the canonical sentence: place, price range, beds, baths', () => {
     expect(
       humanizeSearchCriteria({ city: 'Bend', minPrice: 400000, maxPrice: 800000, beds: 3, baths: 2 }),
-    ).toBe('Homes in Bend, $400k-$800k, 3+ beds, 2+ baths')
+    ).toBe('Homes in Bend, $400K-$800K, 3+ beds, 2+ baths')
   })
 
   it('formats a price range with the city only', () => {
     expect(humanizeSearchCriteria({ city: 'Redmond', minPrice: 500000, maxPrice: 1000000 })).toBe(
-      'Homes in Redmond, $500k-$1m',
+      'Homes in Redmond, $500K-$1M',
     )
   })
 
   it('handles an open-ended min-only price', () => {
-    expect(humanizeSearchCriteria({ minPrice: 600000 })).toBe('Homes, $600k+')
+    expect(humanizeSearchCriteria({ minPrice: 600000 })).toBe('Homes, $600K+')
   })
 
   it('handles an open-ended max-only price', () => {
-    expect(humanizeSearchCriteria({ maxPrice: 750000 })).toBe('Homes, under $750k')
+    expect(humanizeSearchCriteria({ maxPrice: 750000 })).toBe('Homes, under $750K')
   })
 
   it('formats millions with one decimal when not a whole number', () => {
     expect(humanizeSearchCriteria({ minPrice: 1250000, maxPrice: 2000000 })).toBe(
-      'Homes, $1.3m-$2m',
+      'Homes, $1.3M-$2M',
     )
   })
 
@@ -58,7 +62,7 @@ describe('humanizeSearchCriteria', () => {
   it('reads string-encoded numbers and booleans (jsonb may store either)', () => {
     expect(
       humanizeSearchCriteria({ city: 'Bend', minPrice: '400000', beds: '3', hasWaterfront: 'true' }),
-    ).toBe('Homes in Bend, $400k+, 3+ beds, waterfront')
+    ).toBe('Homes in Bend, $400K+, 3+ beds, waterfront')
   })
 
   it('ignores zero / non-positive beds and baths', () => {
@@ -114,7 +118,10 @@ describe('toContactListingAlerts', () => {
 
   it('humanizes + deep-links each row and carries cadence', () => {
     const [mapped] = toContactListingAlerts([userRow])
-    expect(mapped.criteriaText).toBe('Homes in Bend, $400k-$800k, 3+ beds')
+    expect(mapped.criteriaText).toBe('Homes in Bend, $400K-$800K, 3+ beds')
+    // The saved-search NAME is user-typed text ("Bend under 800k" as they
+    // wrote it) and is never rewritten — only humanizeSearchCriteria's own
+    // generated criteriaText follows the house price-case rule.
     expect(mapped.label).toBe('Bend under 800k')
     expect(mapped.url).toBe(buildSearchUrl(userRow.filters))
     expect(mapped.cadence).toBe('daily')

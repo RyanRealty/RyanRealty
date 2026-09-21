@@ -68,15 +68,22 @@ function asBoolean(value: unknown): boolean | undefined {
   return undefined
 }
 
-/** Round a dollar amount to a compact "$400k" / "$1.2m" label. */
+/**
+ * Round a dollar amount to a compact "$400K" / "$1.2M" label — the house
+ * (uppercase) style. SITE-139 (Matt 2026-09-21): this printed lowercase
+ * "$400k" / "$1.2m" while listing cards print uppercase "$650K"; fixed to
+ * match rather than pulled from lib/format/money.ts, since that formatter's
+ * exact-million case ("$1.0M") is worse than this one's ("$1M") for the
+ * criteria sentence this feeds.
+ */
 function formatPriceShort(value: number): string {
   if (value >= 1_000_000) {
     const millions = value / 1_000_000
     const text = millions % 1 === 0 ? String(millions) : millions.toFixed(1)
-    return `$${text}m`
+    return `$${text}M`
   }
   if (value >= 1_000) {
-    return `$${Math.round(value / 1_000)}k`
+    return `$${Math.round(value / 1_000)}K`
   }
   return `$${Math.round(value)}`
 }

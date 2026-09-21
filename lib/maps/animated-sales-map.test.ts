@@ -115,7 +115,8 @@ describe('normalizeSales — guards', () => {
   it('handles exactly one sale', () => {
     const out = normalizeSales([sale({ id: 'only', price: 612_000 })])
     expect(out).toHaveLength(1)
-    expect(out[0]).toMatchObject({ id: 'only', price: 612_000, label: '$612k' })
+    // SITE-139: uppercase K (house style), not the old lowercase "$612k".
+    expect(out[0]).toMatchObject({ id: 'only', price: 612_000, label: '$612K' })
   })
 
   it('drops rows with a missing or non-finite coordinate', () => {
@@ -203,10 +204,20 @@ describe('normalizeSales — capping', () => {
 })
 
 describe('formatSaleLabel', () => {
-  it('carries a currency unit at every magnitude', () => {
-    expect(formatSaleLabel(475_000)).toBe('$475k')
+  // SITE-139 (Matt 2026-09-21): this used to hand-roll its own lowercase `k`
+  // ($475k) while listing cards printed uppercase ($650K) — two house
+  // publishers disagreeing on the same page. It now delegates to
+  // lib/format/money.ts formatPriceCompact, the house style, so the
+  // lowercase form must never come back.
+  it('carries a currency unit at every magnitude, in the house (uppercase) style', () => {
+    expect(formatSaleLabel(475_000)).toBe('$475K')
     expect(formatSaleLabel(1_250_000)).toBe('$1.3M')
     expect(formatSaleLabel(900)).toBe('$900')
+  })
+
+  it('never regresses to the old lowercase k/m suffix', () => {
+    expect(formatSaleLabel(475_000)).not.toMatch(/[km]$/)
+    expect(formatSaleLabel(1_250_000)).not.toMatch(/[km]$/)
   })
 })
 

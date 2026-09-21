@@ -25,6 +25,7 @@ import {
   leftoverNeighborhoodOrCityMonthly,
 } from '@/lib/data/market-truth/public-monthly'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
+import { formatPriceCompact } from '@/lib/format/money'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
@@ -157,7 +158,10 @@ type Props = {
 }
 
 // Short form for the character-constrained meta description below ONLY.
-const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null)
+// SITE-139 (Matt 2026-09-21): was a hand-rolled K-only template that would
+// have misprinted a >=$1M median (e.g. "$1500K"); formatPriceCompact is the
+// house publisher and handles the M range.
+const fmtK = (n: number | null): string | null => (n != null ? formatPriceCompact(n) : null)
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug: citySlug, neighborhoodSlug } = await params
