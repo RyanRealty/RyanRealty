@@ -1456,6 +1456,18 @@ const SEEDS: readonly Seed[] = [
     accept:
       'At 1440 and 375 a visitor can read when at least two opens are happening without opening a listing. Cards keep price + address + beds/baths/sqft. Source line is not “the same OpenHouses pull as the count above.” Product hold. Rebaseline is not done.',
   },
+  {
+    versionGap: 'SITE-170',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] city Redmond / Sisters / Sunriver / La Pine: next screen is a type KPI grid — house photos open empty type pages, no neighborhood doors',
+    objective:
+      'Looked live 2026-09-21 https://ryan-realty.com/cities/redmond, /cities/sisters, /cities/sunriver, /cities/la-pine at 1440 and 375. PNGs scratchpad/site-look-2026-09-21-cities/. Fold already has H1 “{City} homes for sale”, city photo, Atlas, priced cards. Do not rebuild the Bend fold (SITE-093). After one scroll: KPI grid of property types; house photographs at 1440 open empty /cities/{slug}/types/* cream pages, not the house. No in-city neighborhood/resort door in fold or first scroll. Sunriver is a Bend photocopy ($58K lot chip on a houses map). Map caption is pipeline jargon (“Oregon Data Share listing tiles”). Dummy you@email.com is SITE-156 leftover. Hero “homes for sale · housing market” pair is SITE-157 leftover. Dead PRICE bars are SITE-143. Start with `node scripts/lib/taste-catalog.mjs city --preflight`. Exclusive files: app/cities/[slug]/page.tsx and city child/type rail. Do not edit app/cities/page.tsx (SITE-161) or community page.tsx. SEO: H1 stays “{City} homes for sale”; city→neighborhood links stay crawlable. Information: cards keep price+address+beds/baths/sqft. UX: a house photo opens the house; a child door is a named place in this city. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Redmond/Sisters/Sunriver/La Pine: neighborhood or in-city resort doors in the first scroll; type-rail photos open the listing; 1440/375 fold+scroll+click shots.',
+    accept:
+      'At 1440 and 375 on /cities/redmond and one of Sisters/Sunriver/La Pine: a visitor can open a named neighborhood or in-city community from the first two screens. Clicking a priced listing photograph opens that listing, not /types/*. Dummy you@email.com is gone on the city alert field. Methodology “listing tiles” sentence is gone. Product hold. Rebaseline is not done. Do not twin SITE-161 or SITE-093.',
+  },
 
 ]
 
