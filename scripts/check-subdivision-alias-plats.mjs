@@ -78,6 +78,35 @@ for (const e of entries ?? []) {
     if (aliasSeen.has(e.aliasSlug)) fail.push(`duplicate aliasSlug ${e.aliasSlug}`)
     aliasSeen.add(e.aliasSlug)
   }
+  const mlsAliasSlugs = Array.isArray(e?.mlsAliasSlugs)
+    ? e.mlsAliasSlugs.filter((s) => typeof s === 'string' && s.trim())
+    : []
+  const memberSlugs = new Set(plats.map((p) => p?.slug).filter(Boolean))
+  const visitorChildren = Array.isArray(e?.visitorChildren) ? e.visitorChildren : []
+  if (e?.childJoin === 'visitor-children' && visitorChildren.length === 0) {
+    fail.push(`${at}: childJoin visitor-children but visitorChildren is empty`)
+  }
+  if (e?.childJoin && e.childJoin !== 'visitor-children' && e.childJoin !== 'member-plats') {
+    fail.push(`${at}: childJoin must be visitor-children or member-plats`)
+  }
+  for (const child of visitorChildren) {
+    if (typeof child?.slug !== 'string' || !child.slug.trim() || typeof child?.name !== 'string' || !child.name.trim()) {
+      fail.push(`${at}: visitor child missing slug or name`)
+      continue
+    }
+    if (!memberSlugs.has(child.slug) && !mlsAliasSlugs.includes(child.slug)) {
+      fail.push(`${at}: visitor child ${child.slug} is not a member plat or mlsAliasSlug`)
+    }
+  }
+  for (const look of Array.isArray(e?.excludedLookalikes) ? e.excludedLookalikes : []) {
+    if (typeof look?.slug !== 'string' || !look.slug.trim() || typeof look?.name !== 'string' || !look.name.trim()) {
+      fail.push(`${at}: excluded lookalike missing slug or name`)
+      continue
+    }
+    if (memberSlugs.has(look.slug)) {
+      fail.push(`${at}: lookalike ${look.slug} is also listed as a member plat`)
+    }
+  }
 }
 for (const e of entries ?? []) {
   if (e?.aliasSlug && platSeen.has(e.aliasSlug)) fail.push(`alias ${e.aliasSlug} is also listed as a member plat`)
