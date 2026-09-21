@@ -12,6 +12,7 @@ import {
   atlasClusterWorldBounds,
   atlasViewFromStage,
   clusterAtlasPins,
+  mergeOverlappingAtlasClusters,
   floorCityFoldPaintView,
   hitAtlasPinLayer,
   pickCityFoldClusterStage,
@@ -39,6 +40,20 @@ describe('clusterAtlasPins', () => {
     expect(out[0]!.indices).toEqual([4, 9])
     expect(out[0]!.x).toBeCloseTo(106)
     expect(out[0]!.y).toBeCloseTo(104)
+  })
+
+  it('merges adjacent-cell pills whose boxes still sit on each other', () => {
+    const grid = clusterAtlasPins([pin(0, 150, 100), pin(1, 170, 108)], 160)
+    expect(grid).toHaveLength(2)
+    const merged = mergeOverlappingAtlasClusters(grid)
+    expect(merged).toHaveLength(1)
+    expect(merged[0]!.count).toBe(2)
+    expect(merged[0]!.indices).toEqual([0, 1])
+  })
+
+  it('does not merge pills that already have air between them', () => {
+    const grid = clusterAtlasPins([pin(0, 40, 40), pin(1, 200, 180)], 160)
+    expect(mergeOverlappingAtlasClusters(grid)).toHaveLength(2)
   })
 
   it('does not chain a street across cell edges into one city-wide blob', () => {

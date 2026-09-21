@@ -183,6 +183,12 @@ export type V3AlertsStripProps = {
   listings?: readonly V3AlertsListing[]
   /** The id of the section the strip appears after. Defaults to `atlas`. */
   stickyAfter?: string
+  /**
+   * SITE-156: community master-plan pages keep the one new-listings sentence
+   * in the fold. A second sticky covering the house list is leftover.
+   * Default stays on for city / search surfaces that still want the repeat.
+   */
+  stickyEnabled?: boolean
   /** Accessible name for the strip region. */
   stickyLabel: string
   dismissLabel?: string
@@ -207,7 +213,7 @@ export function V3AlertsStrip({
   promise,
   submitLabel,
   emailLabel = 'Email',
-  placeholder = 'you@email.com',
+  placeholder = 'Email',
   sent,
   source,
   updatedAt,
@@ -217,6 +223,7 @@ export function V3AlertsStrip({
   renderTypes,
   listings,
   stickyAfter = 'atlas',
+  stickyEnabled = true,
   stickyLabel,
   dismissLabel = 'Close',
   invalidMessage = 'That address does not look complete.',
@@ -248,6 +255,7 @@ export function V3AlertsStrip({
 
   // The sticky rules: three observers and one session flag, all client-only.
   useEffect(() => {
+    if (!stickyEnabled) return
     let dismissed = false
     try {
       dismissed = sessionStorage.getItem(stickyDismissKey(id)) === '1'
@@ -312,7 +320,7 @@ export function V3AlertsStrip({
       window.removeEventListener('scroll', onScroll)
       if (frame) window.cancelAnimationFrame(frame)
     }
-  }, [id, stickyAfter])
+  }, [id, stickyAfter, stickyEnabled])
 
   const dismiss = useCallback(() => {
     setSticky((s) => ({ ...s, dismissed: true }))
@@ -612,6 +620,7 @@ export function V3AlertsStrip({
         </div>
       </section>
 
+      {stickyEnabled ? (
       <aside
         ref={stickyRef}
         className={cn(
@@ -681,6 +690,7 @@ export function V3AlertsStrip({
           {trapField(`${uid}-sticky`)}
         </form>
       </aside>
+      ) : null}
     </>
   )
 }

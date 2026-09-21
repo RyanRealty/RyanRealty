@@ -44,6 +44,19 @@ describe('publishPlatDisplayName', () => {
     expect(looksLikeMlsAbbreviation('River Meadows')).toBe(false)
   })
 
+  it('withholds Caldera MLS filing dumps and keeps visitor phase names', () => {
+    expect(publishPlatDisplayName('Olu')).toBeNull()
+    expect(publishPlatDisplayName('Sfr')).toBeNull()
+    expect(publishPlatDisplayName('Olu Phase A')).toBeNull()
+    expect(publishPlatDisplayName('Phase C1 Sfr')).toBeNull()
+    expect(publishPlatDisplayName('Caldera Springs, Phase C-2')).toBeNull()
+    expect(publishPlatDisplayName('Caldera Springs Olu, Phase C-2')).toBeNull()
+    expect(publishPlatDisplayName('Phase D')).toBeNull()
+    expect(publishPlatDisplayName('Tetherow Phase 1')).toBe('Tetherow Phase 1')
+    expect(publishPlatDisplayName('Caldera Springs Phase Three')).toBe('Caldera Springs Phase Three')
+    expect(publishPlatDisplayName('Parkside Place Phase 2')).toBe('Parkside Place Phase 2')
+  })
+
   it('withholds camelCase MLS codes and truncated Village tokens', () => {
     expect(publishPlatDisplayName('WildflS')).toBeNull()
     expect(publishPlatDisplayName('SkylinC')).toBeNull()
@@ -72,6 +85,22 @@ describe('English title case, not per-word capitalisation', () => {
   it('does not rescue a withheld abbreviation by casing it', () => {
     expect(publishPlatDisplayName('Oww')).toBeNull()
     expect(publishPlatDisplayName('DrrhTrs')).toBeNull()
+  })
+
+  it('withholds Caldera MLS phase-chip dumps without inventing expansions', () => {
+    expect(publishPlatDisplayName('Olu')).toBeNull()
+    expect(publishPlatDisplayName('Sfr')).toBeNull()
+    expect(publishPlatDisplayName('Phase C1 Sfr')).toBeNull()
+    expect(publishPlatDisplayName('Olu Phase A')).toBeNull()
+    expect(publishPlatDisplayName('Caldera Springs, Phase C-2')).toBeNull()
+    expect(publishPlatDisplayName('Caldera Springs Olu, Phase C-2')).toBeNull()
+    expect(publishPlatDisplayName('Phase D')).toBeNull()
+    expect(looksLikeMlsAbbreviation('Phase C-2')).toBe(true)
+    expect(looksLikeMlsAbbreviation('Parkside Place Phase 1')).toBe(false)
+    expect(looksLikeMlsAbbreviation('Homesites Phase Twenty-two')).toBe(false)
+    expect(looksLikeMlsAbbreviation('Stevens Ranch Phase RS-1')).toBe(false)
+    expect(publishPlatDisplayName('Parkside Place Phase 1')).toBe('Parkside Place Phase 1')
+    expect(publishPlatDisplayName('Stevens Ranch Phase RS-1')).toBe('Stevens Ranch Phase RS-1')
   })
 
   it('still prefers a recorded visitor name over any casing rule', () => {

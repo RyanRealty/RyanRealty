@@ -20,4 +20,11 @@ describe('SITE-129 community fold inventory', () => {
     expect(PAGE).not.toMatch(/<PlaceSplitView/)
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
   })
+
+  it('clusters the Caldera island on first paint and hides unpinned plat cards', () => {
+    expect(PAGE).toMatch(/clusterCellPx=\{COMMUNITY_FOLD_CLUSTER_CELL_PX\}/)
+    expect(PAGE).toMatch(/clusterStageHint=\{COMMUNITY_FOLD_CLUSTER_STAGE\}/)
+    expect(FOLD_CSS).toMatch(/\.community-fold__drawing \.v3-atlas__card:not\(\.is-pinned\)/)
+    expect(FOLD_CSS).toMatch(/\.community-fold__drawing \.v3-atlas__labels/)
+  })
 })

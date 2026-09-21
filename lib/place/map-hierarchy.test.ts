@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   atlasFramePad,
   childAtlasRegions,
+  childPaintLive,
   childZoomBounds,
   hierarchyChildIdSet,
   DEFAULT_ATLAS_FRAME_PAD,
@@ -104,6 +105,14 @@ describe('subject highlight — not twenty child plats', () => {
     }))
     expect(defaultHighlightOverlays(undefined, children).selected).toBeNull()
     expect(defaultHighlightOverlays(SQUARE, children).subject).toEqual(SQUARE)
+  })
+})
+
+describe('child paint is hit-only until selected', () => {
+  it('does not paint a child on hover, only after select', () => {
+    expect(childPaintLive(null, 'subdivision:phase-d')).toBe(false)
+    expect(childPaintLive('subdivision:phase-d', 'subdivision:phase-d')).toBe(true)
+    expect(childPaintLive('subdivision:a', 'subdivision:b')).toBe(false)
   })
 })
 

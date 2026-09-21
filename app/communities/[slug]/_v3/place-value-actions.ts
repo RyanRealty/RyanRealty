@@ -96,7 +96,7 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
   if (limited) return { ok: false, error: limited }
 
   const address = cleanAddress(String(input.address ?? ''))
-  if (!address) return { ok: false, error: 'Start with the street number, like 123 Ranch House Lane.' }
+  if (!address) return { ok: false, error: 'Start with the street number.' }
   const place = await resolvePlace(String(input.slug ?? ''))
   if (!place) return { ok: false, error: 'That community page is not one we publish figures for.' }
 
@@ -200,7 +200,7 @@ export async function requestPlaceValuation(input: PlaceValueRequestInput): Prom
   if (limited) return { ok: false, error: limited }
 
   const address = cleanAddress(String(input.address ?? ''))
-  if (!address) return { ok: false, error: 'Start with the street number, like 123 Ranch House Lane.' }
+  if (!address) return { ok: false, error: 'Start with the street number.' }
   const email = String(input.email ?? '').trim().toLowerCase()
   if (email.length > 254 || !EMAIL_RE.test(email)) return { ok: false, error: 'That email does not look complete.' }
   const phoneDigits = String(input.phone ?? '').replace(/\D/g, '')

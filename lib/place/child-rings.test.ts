@@ -62,6 +62,17 @@ describe('regionsFromChildCells', () => {
     })
     expect(region?.geometry).toEqual(square)
   })
+
+  it('drops Caldera MLS filing plats instead of painting them as visitor doors', () => {
+    const regions = regionsFromChildCells([
+      cell({ slug: 'caldera-springs-phase-c-2', label: 'Caldera Springs, Phase C-2' }),
+      cell({ slug: 'phase-c1-sfr', label: 'Phase C1 Sfr' }),
+      cell({ slug: 'olu-phase-a', label: 'Olu Phase A' }),
+      cell({ slug: 'tetherow-phase-1', label: 'Tetherow Phase 1' }),
+    ])
+    expect(regions.map((region) => region.name)).toEqual(['Tetherow Phase 1'])
+    expect(regions.map((region) => region.name).join(' ')).not.toMatch(/Sfr|Olu|Phase C-2/i)
+  })
 })
 
 describe('overlaysFromRegions', () => {

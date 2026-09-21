@@ -138,6 +138,17 @@
   display: none;
 }
 
+/* SITE-156: hover plat cards covered the map. Selected (pinned) still paints. */
+.community-fold__drawing .v3-atlas__card:not(.is-pinned) {
+  display: none;
+}
+
+/* SITE-156: packed plat names sat on price chips. Child plats are hit-only
+   until selected; the H1 already names the place. */
+.community-fold__drawing .v3-atlas__labels {
+  display: none;
+}
+
 @media (max-width: 63.99rem) {
   /* Phone: a usable map, then claim + cards + ask. */
   .community-fold__drawing .v3-atlas__frame {
@@ -301,6 +312,9 @@
 
   .community-fold__figure .v3-alerts__claim {
     font-size: var(--v3-size-body-lg);
+    /* SITE-156: Jax sits on the right of the 375 fold. Keep the 30-day
+       numeral and the one new-listings sentence out from under the dog. */
+    padding-right: 5.5rem;
   }
 
   .community-fold__ask {

@@ -1,3 +1,21 @@
+# Current — 2026-09-21 (SITE-156 Caldera leftover stack)
+
+Surface: Grok Build `grok-build-01a0c44c-156`. Worktree `wt/site-156-20260920`. Cos Mini-lands. Do not merge. HOLD owner email. Never `npm run push` from this worktree.
+
+- **SITE-156** Caldera leftover stack on this branch. Node `28af45b0-2590-4319-8d2d-5ca4ddc29a0e`. Looked `/communities/caldera-springs` 1440+375: map chips do not sit on each other (desktop 5 pills, 375 370K+/429K+ with air; 0 measured overlaps); child doors are Phase One/Two/Three + Harper (no Phase C-2 / Sfr / Olu); Typical-price omitted rather than "too few to chart"; amenities hero is Lake House (Dining), chips name Lake House / Forest House / golf / trails, no DINI/RECR/WELL/OTHE or Public heading; sticky off; empty email/address placeholders; listing rows keep price+address+beds/baths/sqft. Tetherow fold still paints. Kit plates: `ui_kits/community/shots/caldera-*.png` amenities/children/homes/tetherow. Receipt-bound `desktop.png`/`mobile375.png`/`value-open-*` left at HEAD (Tetherow SITE-94). `taste-receipt --ship` exit 0. `ci:gates` 186/186. Separate evaluator: grok-4.6 builder cannot use grok judge; `claude` weekly-limit resets Sep 22 12pm PT. Do not invent demoMatch. Score-rise rematch waits on Claude. `next build` in this grok isolation worktree: turbopack refuses the node_modules symlink; webpack `--webpack` dies on pre-existing `node:crypto` in SignFlow — runtime-gates not measured here. Compare: https://github.com/RyanRealty/RyanRealty/compare/main...wt/site-156-20260920?expand=1
+
+# Current — 2026-09-20 (SITE-143 search map + SITE-146 dog crop + SITE-147 pulse + SITE-148)
+
+Surface: Grok Build `grok-build-01a0c181-20260920`. Worktrees. Cos Mini-lands. Do not merge. HOLD owner email. `gh` 401; SSH push works. Never `npm run push` from these worktrees.
+
+- **SITE-146** blocked on Cos Mini. `origin/wt/site-146-20260920` `82dcaa345`. Orch verified listing-detail + homepage-v6 `--ship` exit 0 and `ci:dog-floater` OK. Compare: https://github.com/RyanRealty/RyanRealty/compare/main...wt/site-146-20260920?expand=1 Matt phone is the human done-gate. Do not rebuild.
+- **SITE-143** blocked on Cos Mini (craft). `origin/wt/site-143-20260920` `a3cf65a85`. Orch looked: 1440 no sliced `$2M`; 375 `$5.3M`/`$1.4M`/cluster `6` inside the map frame. `$1` under Jax is SITE-153. `search-atlas --ship` 0. Kit `--ship` 1 leftover slider/wordmark. Compare: https://github.com/RyanRealty/RyanRealty/compare/main...wt/site-143-20260920?expand=1
+- **SITE-147** NOT Tip Ready as a full cherry-pick. `origin/wt/site-147-20260920` `7c472ac5f`. Orch LOOK 1440+375 right-now and sold: new blurbs on the pulse module. homepage-v6 `--ship` 1 on that SHA (`demoMatch false` claude 28) would make main `--ship` red. Safe land: `app/_v3/home-pulse.ts` + test + four pulse shots; keep grok `demoMatch true` receipt. Amend blocked: pre-commit red on unrelated CMA. Compare: https://github.com/RyanRealty/RyanRealty/compare/main...wt/site-147-20260920?expand=1
+- **SITE-148** blocked on Cos Mini. `origin/wt/site-148-20260920` `cfd123e0c`. Equal-height Browse places (photo or reserved 4:3). Orch looked: Bend 216 photo beside Parkside/Calaveras navy plates. homepage-v6 `--ship` 0. ci:gates 172/172. Compare: https://github.com/RyanRealty/RyanRealty/compare/main...wt/site-148-20260920?expand=1 Drive-by in the commit: `data/co-events.ts` Oktoberfest 2026 date nulled.
+- **SITE-154** in_progress this owner. `wt/site-154-20260920`. §0: Active 7458; 56240 Trailmere VirtualTours has Zillow 3D + Vimeo walkthrough. Video tab craft in that worktree. Uncommitted — CMA pre-commit red.
+- **SITE-156** in_progress this owner. `wt/site-156-20260920`. Caldera leftover stack craft in this tree (MLS dump withhold, hit-only child labels, omit empty Typical price, named amenities, sticky off, empty placeholders). Unit tests green. Uncommitted — CMA hook. 1440/375 Look + `--ship` remaining. Claimed `28af45b0-2590-4319-8d2d-5ca4ddc29a0e`.
+- Not SITE-153. Skills: `.claude/skills/site-queue/SKILL.md`, TASTE.md, PLACE_PAGES.md.
+
 # Current — 2026-09-19 (CTA lock — drop sticky, header Work with us)
 
 Surface: Cursor cloud, branch `cursor/cta-lock-drop-sticky-2f27` off `origin/main` `3c0d7c8d3`. PR only — Cos Mini lands. Do not merge. HOLD owner email. SITE-123 not on main (not in seed).

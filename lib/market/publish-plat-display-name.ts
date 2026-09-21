@@ -38,8 +38,20 @@ const KNOWN_MLS_ABBREVIATIONS = new Set(
     'crr 1',
     'crr1',
     'crr',
+    'olu',
+    'sfr',
   ].map((s) => s.toLowerCase()),
 )
+
+/** MLS property-type / village tokens that leak into visitor doors. */
+const MLS_DUMP_TOKEN_RE = /\b(sfr|olu)\b/i
+
+/**
+ * Letter-coded MLS phases (Phase C-2, Phase C1, Phase A, Phase D).
+ * Numbered English phases stay: Phase 1, Phase Three, Phase Twenty-two,
+ * Phase RS-1 (two-letter recorded suffix, not a single-letter code).
+ */
+const MLS_LETTER_PHASE_RE = /\bphase\s+[a-z](?:-?\d+)?\b/i
 
 function compactLetters(name: string): string {
   return name.replace(/[^A-Za-z0-9]/g, '')
@@ -49,6 +61,8 @@ export function looksLikeMlsAbbreviation(name: string): boolean {
   const trimmed = name.trim()
   if (!trimmed) return false
   if (KNOWN_MLS_ABBREVIATIONS.has(trimmed.toLowerCase())) return true
+  if (MLS_DUMP_TOKEN_RE.test(trimmed)) return true
+  if (MLS_LETTER_PHASE_RE.test(trimmed)) return true
   if (/^[A-Z]{2,5}\d{0,2}$/.test(trimmed)) return true
   if (/^[A-Za-z]{2,4}\s+\d+$/.test(trimmed)) return true
   if (/\bVill\b/i.test(trimmed)) return true
@@ -64,6 +78,14 @@ export function looksLikeMlsAbbreviation(name: string): boolean {
     return true
   }
   return false
+}
+
+/**
+ * MLS ingest label a visitor must never tap as a child door.
+ * Withholds the whole string. Does not invent an expansion.
+ */
+export function looksLikeMlsFilingLabel(name: string): boolean {
+  return looksLikeMlsAbbreviation(name)
 }
 
 /**
@@ -125,6 +147,6 @@ export function publishPlatDisplayName(raw: string | null | undefined): string |
   if (recorded) return recorded
   // The abbreviation test runs on the CLEANED name, before casing, because
   // casing must not turn a withheld token into a publishable one.
-  if (looksLikeMlsAbbreviation(cleaned)) return null
+  if (looksLikeMlsFilingLabel(cleaned)) return null
   return titleCasePlaceName(cleaned)
 }

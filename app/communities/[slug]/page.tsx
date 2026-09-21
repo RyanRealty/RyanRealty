@@ -39,9 +39,13 @@ import {
 } from '@/lib/data'
 import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import {
+  COMMUNITY_FOLD_CLUSTER_CELL_PX,
+  COMMUNITY_FOLD_CLUSTER_STAGE,
+  COMMUNITY_FOLD_CLUSTER_STAGE_PHONE,
+} from '@/lib/atlas/cluster-pins'
+import {
   leftoverClosedCount,
   placeCostChart,
-  tooFewSalesItems,
 } from '@/app/cities/[slug]/_v3/place-graphics'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
@@ -932,6 +936,10 @@ async function renderCommunityDetail({ params }: Props) {
                 incomplete={!atlasView.complete}
                 amenities={amenityLayers}
                 hidePriceScrubber
+                clusterPins
+                clusterCellPx={COMMUNITY_FOLD_CLUSTER_CELL_PX}
+                clusterStageHint={COMMUNITY_FOLD_CLUSTER_STAGE}
+                clusterStageHintPhone={COMMUNITY_FOLD_CLUSTER_STAGE_PHONE}
               />
             </div>
             <aside className="community-fold__figure">
@@ -991,21 +999,7 @@ async function renderCommunityDetail({ params }: Props) {
               variant: 'primary',
             }}
           />
-        ) : firstMarketFigure && !costChart ? (
-          <V3Quiet id="market" heading={marketHeadline} items={tooFewSalesItems()} />
-        ) : (
-          <V3Quiet
-            id="market"
-            heading={marketHeadline}
-            items={[
-              {
-                kind: 'prose',
-                term: 'No live market figures right now',
-                body: `The Market Truth metric layer published no figure for ${publicName} on this refresh, so this page is not printing a median, a supply figure, or a verdict.`,
-              },
-            ]}
-          />
-        )}
+        ) : null}
 
         {amenityBoard ? (
           <V3Amenities

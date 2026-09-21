@@ -43,6 +43,25 @@ export const CITY_FOLD_CLUSTER_STAGE = { w: 1112, h: 610 }
  */
 export const CITY_FOLD_CLUSTER_STAGE_PHONE = { w: 360, h: 285 }
 
+/**
+ * SITE-156 community fold (`/communities/caldera-springs`).
+ * The island is dense; first-paint clustering needs a real stage, not a
+ * collapsed ResizeObserver box. Matches community-fold.css stage (28rem tall,
+ * full fold width). Do not disable clustering to dodge overlap.
+ */
+export const COMMUNITY_FOLD_CLUSTER_STAGE = { w: 1200, h: 448 }
+
+/** Phone twin of the community fold stage (375 content box × 16rem map). */
+export const COMMUNITY_FOLD_CLUSTER_STAGE_PHONE = { w: 343, h: 256 }
+
+/**
+ * Caldera island pills are wider than the city 64px cell. 96px still left
+ * $1M+ sitting on 370K+ and a south pile of four asks. 160px is ~three pill
+ * widths: adjacent cells still do not merge, so the resort stays several
+ * bubbles instead of one, and first-paint chips do not sit on each other.
+ */
+export const COMMUNITY_FOLD_CLUSTER_CELL_PX = 160
+
 /** City-fold CSS desktop grid starts at 64rem — same cut for cluster stage. */
 export const CITY_FOLD_CLUSTER_BREAKPOINT_PX = 1024
 
@@ -184,6 +203,50 @@ export function clusterAtlasPins(
   }
   out.sort((a, b) => a.indices[0]! - b.indices[0]!)
   return out
+}
+
+/**
+ * Atlas price pills are ~52×22 and sit on their coordinate (translate
+ * -50% / -100%). Occupied-cell clustering leaves two marks in adjacent
+ * cells that still paint on top of each other — Caldera @375 429K+ on
+ * $1.4M+. Merge those after the grid, using live screen centres, so the
+ * fold never shows two chips in one box. Far marks stay pills.
+ */
+export const ATLAS_PIN_PILL = { w: 56, h: 26 }
+
+export function mergeOverlappingAtlasClusters(
+  clusters: readonly AtlasPinCluster[],
+  pill: { w: number; h: number } = ATLAS_PIN_PILL,
+): AtlasPinCluster[] {
+  const items: AtlasPinCluster[] = clusters.map((c) => ({
+    ...c,
+    indices: [...c.indices],
+  }))
+  let merged = true
+  while (merged) {
+    merged = false
+    outer: for (let i = 0; i < items.length; i += 1) {
+      for (let j = i + 1; j < items.length; j += 1) {
+        const a = items[i]!
+        const b = items[j]!
+        if (Math.abs(a.x - b.x) >= pill.w || Math.abs(a.y - b.y) >= pill.h) continue
+        const indices = [...a.indices, ...b.indices].sort((x, y) => x - y)
+        const count = indices.length
+        items[i] = {
+          id: `c-${indices[0]}`,
+          x: (a.x * a.count + b.x * b.count) / count,
+          y: (a.y * a.count + b.y * b.count) / count,
+          indices,
+          count,
+        }
+        items.splice(j, 1)
+        merged = true
+        break outer
+      }
+    }
+  }
+  items.sort((a, b) => a.indices[0]! - b.indices[0]!)
+  return items
 }
 
 /** World-space box of a cluster's members, for `fitRect` on tap. */

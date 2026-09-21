@@ -1341,6 +1341,18 @@ const SEEDS: readonly Seed[] = [
     accept:
       'Full head readable on home and listing Talk-to-a-Broker fold at 375. Idle tilt still visible. Door labels exactly Sell your home / Buy your home / Text us / Get your home\'s value / Learn about us. No sticky CTA revival. ci:dog-floater refuses a circular pre-crop or an edge-tight head.',
   },
+  {
+    versionGap: 'SITE-156',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] master-plan community (Caldera Springs): leftover stack — overlapping map, MLS phase-chip dump, empty chart, jargon amenity bar',
+    objective:
+      'Matt 2026-09-20 phone/desktop on /communities/caldera-springs: "this is one of our master plan communities, and it is horribly designed." Looked: (1) Atlas fold paints overlapping price chips + overlapping plat labels + a Phase D card on the map; (2) child index is a wrapping grid of raw MLS names (Phase C-2, C1 Sfr, Olu Phase A); (3) Typical price is an empty "Too few recent sales here to chart"; (4) Amenities first screen is DINI/RECR/WELL/OTHE stacked bar, "Grouped by kind," while the real names (Lake House, Forest House, The Quarry) sit as a sentence; (5) "4 houses came on the market" repeats as section + sticky covering the house list; (6) alert/value fields show dummy you@email.com and 123 Ranch House Lane. PLACE_PAGES.md master-plan job: houses here, plats inside as children, daily life. SITE-128: child plats hit-only until selected. SITE-144 is Tetherow/NWC aliases — this node is the Caldera (and same-template master-plan) look. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Caldera Springs @1440+375: readable map (no overlapping plat labels on the fold), human child names not MLS dump, no empty-chart theater, amenity section leads with named places not jargon mix, one new-listings sentence not a covering sticky, empty form placeholders. Same template for other registry master-plans. Tip Ready community kit. Tests so the MLS chip dump cannot return on Caldera.',
+    accept:
+      'Live /communities/caldera-springs at 1440 and 375: map labels do not sit on each other; child doors are visitor names (no Phase C-2 / Sfr / Olu dump); Typical price is either a real chart with a sourced sample or omitted (never "too few to chart" as a blank theater); amenities name Lake House / Forest House / golf / trails before any DINI code; the house list is not covered by a second new-listings sticky; email/address fields are empty placeholders. Listing rows keep price+address+beds/baths/sqft. ci:gates green. Matt first-look does not call it leftover.',
+  },
 
 ]
 

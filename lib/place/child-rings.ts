@@ -42,7 +42,7 @@ export function overlaysFromChildCells(
   for (const cell of cells) {
     if (out.length >= cap) break
     if (!isRingGeometry(cell.geometry)) continue
-    const label = (atlasRegionName(cell.label) ?? cell.label).trim()
+    const label = atlasRegionName(cell.label)?.trim()
     const slug = cell.slug.trim()
     if (!label || !slug) continue
     out.push({
@@ -63,7 +63,7 @@ export function regionsFromChildCells(
   for (const cell of cells) {
     if (out.length >= cap) break
     if (!isRingGeometry(cell.geometry)) continue
-    const label = (atlasRegionName(cell.label) ?? cell.label).trim()
+    const label = atlasRegionName(cell.label)?.trim()
     const slug = cell.slug.trim()
     if (!label || !slug) continue
     out.push({
@@ -90,7 +90,7 @@ export function overlaysFromRegions(
   for (const region of regions) {
     if (out.length >= cap) break
     if (!isRingGeometry(region.geometry)) continue
-    const label = region.name.trim()
+    const label = atlasRegionName(region.name)?.trim()
     if (!label) continue
     const href = region.href?.trim()
     out.push({
