@@ -1,73 +1,22 @@
+import { V3Loading } from '@/components/site/v3'
+
+/**
+ * Streaming fallback for the ROOT segment. Every route shows this first
+ * before its own loading.tsx or the real page replaces it (SITE-158 / SITE-155).
+ *
+ * WHY NOT A HOMEPAGE SKELETON. This file used to draw a five-section,
+ * ~2,900px fake homepage on EVERY route. Next streams the root fallback
+ * first, so a visitor on /cities/bend got a ~2,900px document, then watched
+ * it collapse to the route's own ~900px skeleton. A document that shrinks
+ * out from under a mid-load scroll is what the browser clamps scrollY
+ * against — that clamp is the "moves the middle of the page to the top"
+ * jump. A fallback shorter than the page that replaces it only ever GROWS
+ * the document, which does not clamp.
+ *
+ * V3Loading is the design system's compact "text is coming" shell (blog,
+ * compare, contact, login, sell, signup, team already use it). It cannot
+ * know which route is loading, so it does not pretend to.
+ */
 export default function Loading() {
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Hero skeleton */}
-      <div className="relative flex min-h-[520px] items-center justify-center bg-primary">
-        <div className="h-12 w-3/4 max-w-md animate-pulse rounded bg-card/20" />
-      </div>
-
-      {/* Featured row */}
-      <section className="bg-card px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex justify-between">
-            <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-            <div className="h-5 w-20 animate-pulse rounded bg-muted" />
-          </div>
-          <div className="mt-6 flex gap-4 overflow-hidden">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-[340px] min-w-[280px] animate-pulse rounded-lg bg-muted" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Just listed row */}
-      <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="h-8 w-40 animate-pulse rounded bg-muted" />
-          <div className="mt-6 flex gap-4 overflow-hidden">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-[340px] min-w-[280px] animate-pulse rounded-lg bg-card/80" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Community grid */}
-      <section className="bg-card px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="h-8 w-56 animate-pulse rounded bg-muted" />
-          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="aspect-[16/10] animate-pulse rounded-lg bg-muted" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Market CTA */}
-      <section className="bg-primary px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto h-8 w-72 animate-pulse rounded bg-card/20" />
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-lg bg-card/10" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Trust + email */}
-      <section className="bg-muted px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto max-w-2xl">
-          <div className="h-8 w-64 animate-pulse rounded bg-muted" />
-          <div className="mt-4 h-4 w-full animate-pulse rounded bg-card/80" />
-          <div className="mt-6 flex gap-4">
-            <div className="h-12 flex-1 animate-pulse rounded-lg bg-card/80" />
-            <div className="h-12 w-28 animate-pulse rounded-lg bg-muted" />
-          </div>
-        </div>
-      </section>
-    </div>
-  )
+  return <V3Loading label="Loading Ryan Realty" lines={3} />
 }

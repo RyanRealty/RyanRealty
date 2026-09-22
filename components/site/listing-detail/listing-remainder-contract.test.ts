@@ -48,7 +48,7 @@ describe('listing remainder composition', () => {
     const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
     expect(LAYOUT).not.toMatch(/V3PhoneDock/)
     const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
-    expect(CHROME).toContain('<V3WorkWithUs surface="chrome" placement="chrome"')
+    expect(CHROME).not.toMatch(/<V3WorkWithUs/)
     expect(HERO).toMatch(/from '@\/components\/motion\/tabs'/)
     expect(HERO).toMatch(/from '@\/components\/ui\/carousel'/)
     expect(HERO).not.toContain('V3Tabs')

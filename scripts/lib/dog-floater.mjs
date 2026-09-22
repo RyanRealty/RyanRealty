@@ -11,10 +11,11 @@
  * already cut. Placement is circle-aware so the left muzzle is not
  * the thing kissing the rim.
  * Click opens five plain doors. Replaces sticky Call / Text /
- * Work-with-us bars. Header Work with us stays. Tip Ready --ship and
- * ci:dog-floater refuse a missing floater, a seal FAB, a circular
- * pre-crop, an edge-tight head, cover-crop, frozen idle, or a returned
- * phone dock.
+ * Work-with-us bars. Header Work with us is OUT (SITE-155, Matt 2026-09-21:
+ * the dog is that door). Tip Ready --ship and ci:dog-floater refuse a
+ * missing floater, a seal FAB, a circular pre-crop, an edge-tight head,
+ * cover-crop, frozen idle, a returned phone dock, or Work with us back in
+ * the chrome.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -232,8 +233,8 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     }
   }
 
-  if (chrome == null || !chrome.includes('<V3WorkWithUs surface="chrome" placement="chrome"')) {
-    p.push(`${PATHS.chrome}: header Work with us must stay.`)
+  if (chrome == null || /<V3WorkWithUs/.test(chrome)) {
+    p.push(`${PATHS.chrome}: header Work with us is out (SITE-155). The dog is that door.`)
   }
 
   if (listingPage) {

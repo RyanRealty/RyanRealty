@@ -2,6 +2,7 @@
 
 import { cache } from 'react'
 import { cookies, headers } from 'next/headers'
+import { normalizeAvatarUrl } from '@/lib/auth/avatar'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { createClient } from '@/lib/supabase/server'
 import { trackSignedInUser } from '@/lib/crm/send-event'
@@ -28,14 +29,6 @@ async function getRequestBaseUrl(): Promise<string> {
   return (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
 }
 
-function normalizeAvatarUrl(user: { user_metadata?: Record<string, unknown>; identities?: Array<{ identity_data?: Record<string, unknown> }> }): string | null {
-  const fromMeta = user.user_metadata?.avatar_url ?? user.user_metadata?.picture
-  if (typeof fromMeta === 'string' && fromMeta) return fromMeta
-  const fromIdentity = user.identities?.[0]?.identity_data?.avatar_url ?? user.identities?.[0]?.identity_data?.picture
-  if (typeof fromIdentity === 'string' && fromIdentity) return fromIdentity
-  return null
-}
-
 // Request-memoized: hot admin pages resolve the session from several data
 // loaders in one render (page + actions + DAL guards), and each call was a
 // full GoTrue network round trip. React cache() dedupes within one request;
@@ -44,12 +37,11 @@ const resolveSession = cache(async (): Promise<{ user: AuthUser } | null> => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const avatar_url = normalizeAvatarUrl(user)
   return {
     user: {
       id: user.id,
       email: user.email ?? null,
-      avatar_url: avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null,
+      avatar_url: normalizeAvatarUrl(user),
       user_metadata: user.user_metadata,
     },
   }
@@ -76,6 +68,9 @@ export async function getSignInUrl(provider: 'google' | 'facebook' | 'apple', ne
     provider,
     options: {
       redirectTo: `${base}/auth/callback`,
+      // Google's picture lives on the profile scope. Without it, chrome
+      // falls back to a letter circle (SITE-155).
+      ...(provider === 'google' ? { scopes: 'openid email profile' } : {}),
     },
   })
   if (error) return { error: error.message }

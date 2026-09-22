@@ -24,5 +24,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted, visible idle tilt, full-seal inner head with 4–8% pad (no fat ring, no circular pre-crop), exact five doors, no em dash in public copy, header Work with us stays, sticky phone dock stays down.`,
+  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted, visible idle tilt, full-seal inner head with 4–8% pad (no fat ring, no circular pre-crop), exact five doors, no em dash in public copy, header Work with us stays out, sticky phone dock stays down.`,
 )

@@ -1,16 +1,11 @@
+import { V3Loading } from '@/components/site/v3'
+
+/**
+ * City detail fallback (SITE-155 / SITE-158). The previous min-h-screen
+ * hero+tiles skeleton was taller than the first real paint of some city
+ * pages, so swapping it shrank the document and clamped a mid-load scroll
+ * to the top. V3Loading stays under every real /cities/[slug] page.
+ */
 export default function CityDetailLoading() {
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="h-80 animate-pulse bg-primary" />
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
-          ))}
-        </div>
-        <div className="mt-12 h-64 animate-pulse rounded-lg bg-muted" />
-      </div>
-    </div>
-  )
+  return <V3Loading label="Loading this city" lines={4} />
 }

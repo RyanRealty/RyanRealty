@@ -151,7 +151,13 @@ export default async function RootLayout({
               — never mount a hidden global footer. */}
           <V3Chrome live={live} />
           <V3DogFloater />
-          <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
+          <div
+            id="main-content"
+            tabIndex={-1}
+            className="min-h-[calc(100vh-64px)] [overflow-anchor:none]"
+          >
+            {children}
+          </div>
           {/* Real-user Core Web Vitals -> /api/web-vitals + GA4 (field CWV). */}
           <WebVitalsReporter />
           <Suspense fallback={null}>

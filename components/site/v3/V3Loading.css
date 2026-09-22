@@ -14,6 +14,7 @@
   max-width: var(--v3-measure);
   margin: 0 auto;
   padding: var(--v3-section-pad) var(--v3-gutter);
+  overflow-anchor: none;
 }
 
 .v3-loading__eyebrow {

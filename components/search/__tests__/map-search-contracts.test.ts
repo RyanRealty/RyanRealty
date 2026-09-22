@@ -183,11 +183,23 @@ describe('MapSearchView orchestrator', () => {
 })
 
 describe('split loading skeleton matches the live rail', () => {
-  const src = readSrc('app/search/loading.tsx')
+  // SITE-158 / SITE-155: both search loading routes render this one shared
+  // shell, instead of the slug route drifting into a stale ~1,900px card-grid
+  // skeleton that shrank the document mid-load.
+  const shared = readSrc('components/search/SearchAppFrameLoading.tsx')
+  const rootSearchLoading = readSrc('app/search/loading.tsx')
+  const slugSearchLoading = readSrc('app/search/[...slug]/loading.tsx')
 
   it('uses the token list pane, not a 420px clamp', () => {
-    expect(src).toMatch(/map-search-list/)
-    expect(src).not.toMatch(/lg:w-\[420px\]/)
+    expect(shared).toMatch(/map-search-list/)
+    expect(shared).not.toMatch(/lg:w-\[420px\]/)
+  })
+
+  it('both search routes render the shared shell, not a bespoke fallback', () => {
+    expect(rootSearchLoading).toMatch(/from '@\/components\/search\/SearchAppFrameLoading'/)
+    expect(rootSearchLoading).toMatch(/<SearchAppFrameLoading/)
+    expect(slugSearchLoading).toMatch(/from '@\/components\/search\/SearchAppFrameLoading'/)
+    expect(slugSearchLoading).toMatch(/<SearchAppFrameLoading/)
   })
 })
 

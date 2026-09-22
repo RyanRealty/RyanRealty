@@ -259,7 +259,7 @@ export {
 } from './V3PhoneDock.client'
 /**
  * SITE-134 (Matt 2026-09-19): sitewide floating dog circle. Five-door menu.
- * Replaces sticky Call / Text / Work-with-us bars. Header Work with us stays.
+ * Replaces sticky Call / Text / Work-with-us bars. Header Work with us is out (SITE-155).
  */
 export { V3DogFloater, DOG_FLOATER_MENUS } from './V3DogFloater.client'
 
