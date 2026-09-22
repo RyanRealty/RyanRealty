@@ -198,6 +198,7 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.0588,
     lng: -121.3186,
     recurrence: 'Annually, mid-to-late September',
+    // 2026 edition (Sept 19) has passed; 2027 date not yet confirmed on oktoberfestbend.com.
     nextConfirmedDate: null,
     endDate: null,
     priceInfo: 'Free',

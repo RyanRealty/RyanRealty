@@ -31,6 +31,15 @@ describe('SITE-128 seams — name-only community cards + grain split', () => {
     expect(PAGE).toMatch(/atlasPlatEntries/)
   })
 
+  it('keeps a community-grain door without a photo so V3Ledger can glyph it', () => {
+    expect(PAGE).not.toMatch(/if \(!img\) return null/)
+    const bald: CityCommunityItem = { ...tetherow, img: '', video: null }
+    const rows = communityRows([tetherow, bald])
+    expect(rows).toHaveLength(2)
+    expect(rows[0]?.media?.src).toBe(tetherow.img)
+    expect(rows[1]?.media).toBeUndefined()
+  })
+
   it('pairs rail name and href through communityPublicPair so they cannot diverge', () => {
     expect(PAGE).toMatch(/communityPublicPairForPlace/)
     expect(PAGE).toMatch(/pair\?\.displayName/)

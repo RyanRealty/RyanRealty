@@ -87,10 +87,15 @@
   padding: 0;
   border: 0;
   min-width: 0;
+  height: 100%;
 }
 
 .home-browse-places__link {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
   min-height: var(--v3-tap);
@@ -104,15 +109,74 @@
 .home-browse-places [data-slot='card'] {
   --card: var(--v3-cream);
   --card-foreground: var(--v3-navy);
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
   height: 100%;
 }
 
-.home-browse-places [data-slot='card'] img {
+.home-browse-places [data-slot='card-footer'] {
+  margin-top: auto;
+}
+
+/* One 4:3 plate on every card — photo or reserved navy field. Never a short stub.
+   Name/img are out of flow so min-content type cannot widen a bald card. */
+.home-browse-places__media {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--v3-navy);
+  aspect-ratio: 4 / 3;
+}
+
+.home-browse-places__media::before {
+  content: '';
+  display: block;
+  padding-top: 75%;
+}
+
+.home-browse-places__media img,
+.home-browse-places__media-name {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 3;
+  height: 100%;
+}
+
+.home-browse-places__media img {
   object-fit: cover;
+}
+
+.home-browse-places__media--reserved {
+  background: var(--v3-navy);
+}
+
+.home-browse-places__media-name {
+  display: grid;
+  place-items: center;
+  padding: var(--v3-space-md);
+  overflow: hidden;
+  color: var(--v3-cream);
+  text-align: center;
+  overflow-wrap: anywhere;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+}
+
+.home-browse-places [data-slot='card-header'] {
+  min-height: 3.5rem;
+}
+
+.home-browse-places__count-slot {
+  min-height: 2.6rem;
 }
 
 .home-browse-places__stage {
@@ -125,6 +189,25 @@
   min-width: 0;
 }
 
+.home-browse-places__track {
+  align-items: stretch;
+}
+
+.home-browse-places [data-slot='carousel-item'].home-browse-places__slide {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.home-browse-places__slide-inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0.25rem;
+}
+
 .home-browse-places__count {
   color: var(--v3-ink);
   font-family: var(--v3-font-display);
@@ -133,4 +216,8 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--v3-track-display);
   line-height: var(--v3-leading-heading);
+}
+
+.home-browse-places__count--empty {
+  visibility: hidden;
 }
