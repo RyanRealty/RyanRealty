@@ -1004,7 +1004,7 @@ button.srch-chip--key {
 }
 
 .srch-price-rail .v3-range {
-  gap: 0;
+  gap: 0.15rem;
 }
 
 /* House-sheet language on the All-filters overlay (catalog: house-sheet). */

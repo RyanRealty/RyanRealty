@@ -19,9 +19,13 @@ describe('SITE-72 catalog wiring', () => {
     expect(readSrc('components/site/v3/V3Range.tsx')).toMatch(
       /from '@\/components\/motion\/range-slider'/,
     )
+    expect(readSrc('components/site/v3/V3Range.tsx')).toMatch(/DualRangeSlider/)
+    expect(readSrc('components/site/v3/V3Range.tsx').match(/<DualRangeSlider/g)?.length).toBe(1)
+    expect(readSrc('components/site/v3/V3Range.tsx')).not.toMatch(/<RangeSlider\b/)
     expect(filters).toMatch(/srch-price-rail/)
     expect(filters).toMatch(/V3_PRICE_STOPS/)
     expect(filters).toMatch(/commitPrice/)
+    expect(filters).toMatch(/staticShell: true/)
   })
 
   it('All-filters is the house sheet and price uses the same ticks', () => {
