@@ -1,6 +1,6 @@
 /**
  * Mosaic captions and gallery tabs. The mosaic is stills of this house.
- * Photo count, 3D, floor, and street view are quiet type on the mosaic.
+ * Photo count, Video, 3D, floor, and street view are quiet type on the mosaic.
  * The map is not a caption and not a tile.
  */
 
@@ -29,6 +29,9 @@ export function publishListingMosaicPills(input: {
       action: 'gallery',
     },
   ]
+  if (publishListingHeroVideo(input.videos)) {
+    pills.push({ id: 'video', label: 'Video', action: 'video' })
+  }
   if (publishListingVirtualTour(input.videos)) {
     pills.push({ id: 'tour', label: '3D', action: 'tour' })
   }

@@ -668,6 +668,7 @@
 }
 
 .listing-mosaic__pane iframe,
+.listing-mosaic__pane video,
 .listing-mosaic__pane > div {
   position: absolute;
   inset: 0;

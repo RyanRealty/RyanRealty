@@ -66,7 +66,7 @@ const ListingMediaMap = dynamic(() => import('./ListingLocationMap.client'), {
  * thing SITE-20 had to fence with a status word. No empty navy, no grid.
  */
 
-type MediaTab = 'photos' | 'tour' | 'floor' | 'map'
+type MediaTab = 'photos' | 'video' | 'tour' | 'floor' | 'map'
 
 type Props = {
   photos: ReadonlyArray<ListingPhoto>
@@ -117,6 +117,55 @@ function getAutoplayEmbedUrl(video: VideoEmbed): string {
   } catch {
     return video.url
   }
+}
+
+/** Video tab: autoplay muted with controls so the walkthrough actually plays. */
+function getInteractiveEmbedUrl(video: VideoEmbed): string {
+  if (video.embedType !== 'iframe') return video.url
+  try {
+    const rawUrl = video.url.startsWith('//') ? `https:${video.url}` : video.url
+    const url = new URL(rawUrl)
+    url.searchParams.set('autoplay', '1')
+    if (url.hostname.includes('vimeo.com')) {
+      url.searchParams.delete('background')
+      url.searchParams.set('muted', '1')
+      url.searchParams.set('title', '0')
+      url.searchParams.set('byline', '0')
+    } else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+      url.searchParams.set('mute', '1')
+      url.searchParams.set('rel', '0')
+      url.searchParams.set('modestbranding', '1')
+    } else {
+      url.searchParams.set('muted', '1')
+    }
+    return url.toString()
+  } catch {
+    return video.url
+  }
+}
+
+function VideoPlayPane({ video, addressLine }: { video: VideoEmbed; addressLine?: string }) {
+  const title = `Video of ${addressLine ?? 'this home'}`
+  if (video.embedType === 'video-tag') {
+    return (
+      <video
+        src={video.url}
+        poster={video.posterUrl}
+        controls
+        autoPlay
+        muted
+        playsInline
+      />
+    )
+  }
+  return (
+    <iframe
+      src={getInteractiveEmbedUrl(video)}
+      title={title}
+      allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
+      allowFullScreen
+    />
+  )
 }
 
 export function ListingHero({
@@ -280,6 +329,10 @@ export function ListingHero({
       openGallery(0, 'floor')
       return
     }
+    if (pill.action === 'video') {
+      setMediaTab('video')
+      return
+    }
     if (pill.action === 'tour') {
       setMediaTab('tour')
       if (!onSiteTour) openEmbed('tour')
@@ -292,6 +345,7 @@ export function ListingHero({
 
   const showMap = mediaTab === 'map' && hasMap
   const showTour = mediaTab === 'tour' && onSiteTour
+  const showVideo = mediaTab === 'video' && reel != null
   const counter = total > 0 ? `${Math.min(frame + 1, total)} / ${total}` : null
 
   /* The strip's tools. "N photos" is the one control the phone always shows;
@@ -302,9 +356,9 @@ export function ListingHero({
   const mediaTabItems = [
     { value: 'photos' as const, label: primaryPill?.label ?? 'Photos' },
     ...otherPills
-      .filter((pill) => pill.action === 'floor' || pill.action === 'tour')
+      .filter((pill) => pill.action === 'floor' || pill.action === 'tour' || pill.action === 'video')
       .map((pill) => ({
-        value: (pill.action === 'floor' ? 'floor' : 'tour') as MediaTab,
+        value: pill.action as MediaTab,
         label: pill.label,
       })),
     hasMap ? { value: 'map' as const, label: 'Map' } : null,
@@ -316,6 +370,11 @@ export function ListingHero({
       className={cn('listing-hero-bleed listing-frame', className)}
     >
       <div className="listing-frame__media">
+        {showVideo && reel ? (
+          <div className="listing-mosaic__pane" data-listing-media="video">
+            <VideoPlayPane video={reel} addressLine={addressLine} />
+          </div>
+        ) : null}
         {showTour ? (
           <div className="listing-mosaic__pane">
             <iframe
@@ -331,7 +390,7 @@ export function ListingHero({
             <ListingMediaMap lat={lat!} lng={lng!} zoom={16} />
           </div>
         ) : null}
-        {showMap || showTour ? null : (
+        {showMap || showTour || showVideo ? null : (
           <Carousel
             className="listing-hero-carousel listing-mosaic__carousel"
             opts={{ align: 'start', loop: false }}
@@ -397,6 +456,13 @@ export function ListingHero({
           <Tabs
             value={mediaTab}
             onValueChange={(next) => {
+              if (next === 'video') {
+                const video = otherPills.find((pill) => pill.action === 'video')
+                if (video) {
+                  openCaption(video)
+                  return
+                }
+              }
               if (next === 'tour') {
                 const tour = otherPills.find((pill) => pill.action === 'tour')
                 if (tour) {
@@ -411,7 +477,7 @@ export function ListingHero({
                   return
                 }
               }
-              if (next === 'photos' || next === 'map' || next === 'tour' || next === 'floor') {
+              if (next === 'photos' || next === 'map' || next === 'tour' || next === 'floor' || next === 'video') {
                 setMediaTab(next)
               }
             }}

@@ -26,16 +26,15 @@ describe('publishListingMosaicPills', () => {
     expect(publishListingMosaicPills({ photoCount: 0, videos: [] })).toEqual([])
   })
 
-  it('photo count, 3D, floor, and street view are captions; the map is not', () => {
+  it('photo count, Video, 3D, floor, and street view are captions; the map is not', () => {
     const pills = publishListingMosaicPills({
       photoCount: 35,
       videos: [reel, tour],
       floorPlanCount: 1,
       hasStreetView: true,
     })
-    expect(pills.map((p) => p.id)).toEqual(['photos', 'tour', 'floor', 'street'])
-    expect(pills.map((p) => p.label)).toEqual(['35 photos', '3D', 'Floor', 'Street view'])
-    expect(pills.map((p) => p.id)).not.toContain('video')
+    expect(pills.map((p) => p.id)).toEqual(['photos', 'video', 'tour', 'floor', 'street'])
+    expect(pills.map((p) => p.label)).toEqual(['35 photos', 'Video', '3D', 'Floor', 'Street view'])
     expect(pills.map((p) => p.id)).not.toContain('map')
   })
 })

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isListingVirtualTour,
+  isListingWalkthroughVideo,
   publishListingHeroUnmute,
   publishListingHeroVideo,
   publishListingVirtualTour,
@@ -44,6 +45,30 @@ describe('publishListingHeroVideo', () => {
     }
     expect(publishListingHeroVideo([vimeo])).toEqual(vimeo)
     expect(publishListingHeroUnmute(vimeo)).toBe(false)
+  })
+
+  it('Trailmere Vimeo walkthrough is video even when MLS stored it as a tour', () => {
+    const zillow3d: VideoEmbed = {
+      source: 'mls-other',
+      embedType: 'iframe',
+      url: 'https://www.zillow.com/view-3d-home/865acc3a-e3d4-4402-ab96-f77e09bc5273/?utm_source=captureapp',
+      professional: true,
+      isVirtualTour: true,
+    }
+    const walkthrough: VideoEmbed = {
+      source: 'mls-vimeo',
+      embedType: 'iframe',
+      url: 'https://vimeo.com/1208618330?fl=pl&fe=sh',
+      professional: true,
+      isVirtualTour: true,
+    }
+    expect(isListingWalkthroughVideo(walkthrough.url)).toBe(true)
+    expect(isListingVirtualTour({ url: walkthrough.url, name: 'Walkthrough Video', isVirtualTour: true })).toBe(
+      false,
+    )
+    expect(isListingVirtualTour({ url: zillow3d.url, name: 'Zillow 3D', isVirtualTour: true })).toBe(true)
+    expect(publishListingHeroVideo([zillow3d, walkthrough])).toEqual(walkthrough)
+    expect(publishListingVirtualTour([zillow3d, walkthrough])).toEqual(zillow3d)
   })
 })
 
