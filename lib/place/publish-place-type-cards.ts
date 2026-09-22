@@ -3,9 +3,10 @@
  * Detached leftover is the first card. Extra types come from public segments.
  * Miss omits. Nothing is invented.
  *
- * Each card opens the place-type page (`/cities/{slug}/types/{preset}` or
- * `/communities/{slug}/types/{preset}`). A homes-for-sale city path rewrites
- * to the city type page. Unknown keys keep a defined query.
+ * The KPI body opens the place-type page (`/cities/{slug}/types/{preset}` or
+ * `/communities/{slug}/types/{preset}`). A house photograph on the card opens
+ * that listing. A homes-for-sale city path rewrites to the city type page.
+ * Unknown keys keep a defined query.
  */
 import {
   publicSegmentDisplayBits,
@@ -13,10 +14,22 @@ import {
   publicSegmentNoun,
   type PublicSegmentRow,
 } from '@/lib/data/market-truth/public-segments'
-import { formatPriceExact } from '@/lib/format/money'
+import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import {
+  LISTING_FIELD_LEAD_PHOTO_SIZE,
+  listingRowPhotoSrc,
+} from '@/lib/listing/row-photo'
+import { listingTileHref } from '@/lib/slug'
 import { placeTypeKey, type PlaceTypeKey } from '@/lib/place/place-type-style'
+
+export type PlaceTypeCover = {
+  photoUrl: string
+  listingHref: string | null
+  street: string | null
+  price: string | null
+}
 
 export type PlaceTypeCard = {
   key: string
@@ -26,6 +39,92 @@ export type PlaceTypeCard = {
   bits: string[]
   active: boolean
   photoUrl: string | null
+  /** The photographed house, when the thumb is a real listing still. */
+  listingHref: string | null
+  listingStreet: string | null
+  listingPrice: string | null
+}
+
+export function resolvePlaceTypeCover(
+  value: string | PlaceTypeCover | null | undefined,
+): PlaceTypeCover | null {
+  if (!value) return null
+  if (typeof value === 'string') {
+    const photoUrl = value.trim()
+    return photoUrl ? { photoUrl, listingHref: null, street: null, price: null } : null
+  }
+  const photoUrl = value.photoUrl?.trim()
+  if (!photoUrl) return null
+  return {
+    photoUrl,
+    listingHref: value.listingHref?.trim() || null,
+    street: value.street?.trim() || null,
+    price: value.price?.trim() || null,
+  }
+}
+
+type CoverListingRow = {
+  photoUrl?: string | null
+  PhotoURL?: string | null
+  listingKey?: string | null
+  ListingKey?: string | null
+  listNumber?: string | null
+  ListNumber?: string | number | null
+  listPrice?: number | null
+  ListPrice?: number | null
+  streetNumber?: string | null
+  StreetNumber?: string | null
+  streetName?: string | null
+  StreetName?: string | null
+  streetSuffix?: string | null
+  StreetSuffix?: string | null
+  city?: string | null
+  City?: string | null
+  boundaryCity?: string | null
+  BoundaryCity?: string | null
+  boundaryNeighborhood?: string | null
+  BoundaryNeighborhood?: string | null
+  subdivisionName?: string | null
+  SubdivisionName?: string | null
+  propertySubType?: string | null
+  PropertySubType?: string | null
+  propertyType?: string | null
+  PropertyType?: string | null
+}
+
+export function coverFromListingRow(row: CoverListingRow): PlaceTypeCover | null {
+  const photoRaw = row.PhotoURL ?? row.photoUrl
+  if (!photoRaw?.trim()) return null
+  const listingKey = row.listingKey ?? row.ListingKey ?? null
+  const listNumberRaw = row.listNumber ?? row.ListNumber
+  const listNumber = listNumberRaw != null ? String(listNumberRaw) : null
+  const listPrice = row.ListPrice ?? row.listPrice ?? null
+  const street = publishStreetLine({
+    streetNumber: row.streetNumber ?? row.StreetNumber,
+    streetName: row.streetName ?? row.StreetName,
+    streetSuffix: row.streetSuffix ?? row.StreetSuffix,
+  })
+  return {
+    photoUrl: listingRowPhotoSrc(photoRaw, LISTING_FIELD_LEAD_PHOTO_SIZE),
+    listingHref:
+      listingKey || listNumber
+        ? listingTileHref({
+            listingKey,
+            listNumber,
+            streetNumber: row.streetNumber ?? row.StreetNumber,
+            streetName: row.streetName ?? row.StreetName,
+            city: row.city ?? row.City,
+            boundaryCity: row.boundaryCity ?? row.BoundaryCity ?? null,
+            boundaryNeighborhood: row.boundaryNeighborhood ?? row.BoundaryNeighborhood ?? null,
+            subdivisionName: row.subdivisionName ?? row.SubdivisionName ?? null,
+          })
+        : null,
+    street,
+    price:
+      listPrice != null && Number.isFinite(listPrice) && listPrice > 0
+        ? formatPriceCompact(listPrice)
+        : null,
+  }
 }
 
 /** One Active listing with a photo, per card key. Codes fit getListingTiles. */
@@ -102,24 +201,17 @@ export function placeTypeLandingPath(browsePath: string, preset: string): string
 }
 
 export function placeTypeCoverPhotos(
-  listings: ReadonlyArray<{
-    photoUrl?: string | null
-    PhotoURL?: string | null
-    propertySubType?: string | null
-    PropertySubType?: string | null
-    propertyType?: string | null
-    PropertyType?: string | null
-  }>,
-): Record<string, string> {
-  const covers: Record<string, string> = {}
+  listings: ReadonlyArray<CoverListingRow>,
+): Record<string, PlaceTypeCover> {
+  const covers: Record<string, PlaceTypeCover> = {}
   for (const row of listings) {
-    const photo = row.PhotoURL ?? row.photoUrl
-    if (!photo) continue
+    const cover = coverFromListingRow(row)
+    if (!cover) continue
     const key = placeTypeKey(
       row.PropertyType ?? row.propertyType,
       row.PropertySubType ?? row.propertySubType,
     )
-    if (!covers[key]) covers[key] = listingRowPhotoSrc(photo)
+    if (!covers[key]) covers[key] = cover
   }
   return covers
 }
@@ -162,7 +254,7 @@ export function publishPlaceTypeCards(input: {
   sfrMedian: number | null
   sfrMos: number | null
   segments: readonly PublicSegmentRow[]
-  covers?: Readonly<Record<string, string>>
+  covers?: Readonly<Record<string, string | PlaceTypeCover>>
 }): PlaceTypeCard[] {
   const covers = input.covers ?? {}
   const cards: PlaceTypeCard[] = []
@@ -171,6 +263,7 @@ export function publishPlaceTypeCards(input: {
     propertySubTypes: 'Single Family Residence',
   }
 
+  const sfrCover = resolvePlaceTypeCover(covers.sfr)
   const sfrBits: string[] = []
   if (input.sfrMedian != null && input.sfrMedian > 0) sfrBits.push(formatPriceExact(input.sfrMedian))
   if (input.sfrMos != null && input.sfrMos > 0) sfrBits.push(`${formatMonthsOfSupply(input.sfrMos)} months`)
@@ -180,7 +273,10 @@ export function publishPlaceTypeCards(input: {
     title: `Single-family in ${input.placeName}`,
     count: input.sfrCount != null ? input.sfrCount.toLocaleString('en-US') : null,
     bits: sfrBits,
-    photoUrl: covers.sfr ?? null,
+    photoUrl: sfrCover?.photoUrl ?? null,
+    listingHref: sfrCover?.listingHref ?? null,
+    listingStreet: sfrCover?.street ?? null,
+    listingPrice: sfrCover?.price ?? null,
     active: false,
   })
 
@@ -189,13 +285,17 @@ export function publishPlaceTypeCards(input: {
     const filter = publicSegmentFilterParams(row.segment)
     if (!filter) continue
     const noun = publicSegmentNoun(row.segment, row.activeCount)
+    const cover = resolvePlaceTypeCover(covers[row.segment])
     cards.push({
       key: row.segment,
       href: placeTypeSearchHref(input.browsePath, row.segment, filter),
       title: `${noun.charAt(0).toUpperCase()}${noun.slice(1)} in ${input.placeName}`,
       count: row.activeCount.toLocaleString('en-US'),
       bits: publicSegmentDisplayBits(row).slice(0, 3),
-      photoUrl: covers[row.segment] ?? null,
+      photoUrl: cover?.photoUrl ?? null,
+      listingHref: cover?.listingHref ?? null,
+      listingStreet: cover?.street ?? null,
+      listingPrice: cover?.price ?? null,
       active: false,
     })
   }

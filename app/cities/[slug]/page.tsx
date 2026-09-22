@@ -809,6 +809,25 @@ async function renderCityDetail({ params }: Props) {
   const [firstNbh, ...restNbh] = placeFigureRows(bendNeighborhoodItems, `${cityName} neighborhood`, cityName)
   const [firstRail, ...restRail] = communityRows(communityItems)
   const [firstGolf, ...restGolf] = placeFigureRows(golfLedgerItems, 'Golf and master-planned')
+  // SITE-170: non-Bend cities had no named place door until after type KPIs
+  // and Atlas. Named resorts/communities (or plats when those are empty) move
+  // into the first two screens. Bend keeps its designated-neighborhood order
+  // after Atlas (SITE-093 / SITE-128).
+  const earlyNamedPlaces = !isBend && Boolean(firstRail || firstGolf)
+  // SITE-170: named in-city doors on screen one (Bend already has #neighborhoods).
+  // Resorts/communities only — recorded plat filing names stay off the hero.
+  const openingPlaceDoors: { name: string; href: string }[] = []
+  if (!isBend) {
+    const seen = new Set<string>()
+    for (const item of [...golfCommunityItems, ...communityItems]) {
+      const href = item.href?.trim()
+      const name = item.name?.trim()
+      if (!href || !name || seen.has(href)) continue
+      seen.add(href)
+      openingPlaceDoors.push({ name, href })
+      if (openingPlaceDoors.length >= 3) break
+    }
+  }
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
   // D94 restored 2026-08-27. The feed is CITY-scoped, which is what this page is,
   // so the eyebrow and the door both name the city honestly.
@@ -916,6 +935,12 @@ async function renderCityDetail({ params }: Props) {
                   <a href={`#neighborhoods`}>{cityName} neighborhoods</a>
                 </>
               ) : null}
+              {openingPlaceDoors.map((door) => (
+                <span key={door.href}>
+                  {' · '}
+                  <a href={door.href}>{door.name}</a>
+                </span>
+              ))}
             </p>
             {placeDoor ? (
               <V3PlaceDoor
@@ -947,7 +972,7 @@ async function renderCityDetail({ params }: Props) {
                 photoCards={foldPhotoCards}
                 source={
                   foldLookListings.length > 0
-                    ? `Detached single-family (Houses) active and pending in ${cityName}, from Oregon Data Share listing tiles.`
+                    ? `Detached single-family houses for sale and pending in ${cityName}, from Oregon Data Share.`
                     : atlasView.source
                 }
               />
@@ -985,6 +1010,30 @@ async function renderCityDetail({ params }: Props) {
           </div>
         </div>
 
+        {earlyNamedPlaces && firstGolf ? (
+          <V3Ledger
+            id="communities-ledger"
+            layout="places"
+            eyebrow={v3Text(`${cityName} · Communities`)}
+            heading={v3Text('Golf and master-planned communities')}
+            rows={[firstGolf, ...restGolf]}
+            encode="bar"
+            source={v3Text(PLACE_COUNT_TRACE)}
+            action={{ label: v3Text('Every community'), href: '/communities' }}
+          />
+        ) : null}
+        {earlyNamedPlaces && firstRail ? (
+          <V3Ledger
+            id="communities"
+            layout="places"
+            eyebrow={v3Text(`${cityName} · Communities`)}
+            heading={v3Text('Communities')}
+            rows={[firstRail, ...restRail]}
+            source={v3Text(PLACE_COUNT_TRACE)}
+            action={{ label: v3Text('Every community'), href: '/communities' }}
+          />
+        ) : null}
+
         <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />
 
         <PlaceSplitView
@@ -1019,7 +1068,7 @@ async function renderCityDetail({ params }: Props) {
           events={atlasView.events}
           source={
             foldAtlasDots.length > 0
-              ? `Detached single-family (Houses) active and pending in ${cityName}, from Oregon Data Share listing tiles.`
+              ? `Detached single-family houses for sale and pending in ${cityName}, from Oregon Data Share.`
               : atlasView.source
           }
           stamp={atlasView.stamp}
@@ -1053,8 +1102,9 @@ async function renderCityDetail({ params }: Props) {
           entries={childPlatEntries}
         />
 
-        {/* D88: every community-grain door. Photo when sourced; V3Ledger glyphs the rest. */}
-        {firstRail ? (
+        {/* D88: every community in the city that has a photo, marquee first.
+            Skip when SITE-170 already painted named in-city doors above. */}
+        {!earlyNamedPlaces && firstRail ? (
           <V3Ledger
             id="communities"
             layout="places"
@@ -1074,7 +1124,7 @@ async function renderCityDetail({ params }: Props) {
         {/* D85: golf and master-planned communities are their OWN section,
             never folded into the neighborhoods list. The value column publishes
             only when the alias-aware read returned (invariant 1). */}
-        {firstGolf ? (
+        {!earlyNamedPlaces && firstGolf ? (
           <V3Ledger
             id="communities-ledger"
             layout="places"

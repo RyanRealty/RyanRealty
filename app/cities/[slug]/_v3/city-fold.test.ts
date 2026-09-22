@@ -15,6 +15,7 @@ import { buildPlaceMosView } from '@/lib/site/place-mos'
 const PAGE = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 const FOLD_CSS = readFileSync(resolve('app/cities/[slug]/_v3/city-fold.css'), 'utf8')
+const TYPE_SLIDER = readFileSync(resolve('components/place/PlaceTypeSlider.tsx'), 'utf8')
 const PLACE_MOS = readFileSync(resolve('lib/site/place-mos.ts'), 'utf8')
 const INSIGHT = readFileSync(resolve('app/cities/[slug]/_v3/CityInsight.client.tsx'), 'utf8')
 const COMBOBOX = readFileSync(resolve('app/cities/[slug]/_v3/CityTypeCombobox.client.tsx'), 'utf8')
@@ -124,6 +125,37 @@ describe('SITE-82 city fold composition', () => {
     expect(PAGE).toMatch(/homes for sale/)
     expect(PAGE).toMatch(/housing-market/)
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
+  })
+})
+
+describe('SITE-170 city child doors and type-rail photographs', () => {
+  it('puts named in-city doors before the type KPI rail on non-Bend cities', () => {
+    const foldEnd = PAGE.indexOf('city-fold__figure--ask')
+    const typeRail = PAGE.indexOf('<PlaceTypeSlider')
+    const earlyGolf = PAGE.indexOf('earlyNamedPlaces && firstGolf')
+    const earlyRail = PAGE.indexOf('earlyNamedPlaces && firstRail')
+    expect(foldEnd).toBeGreaterThan(0)
+    expect(typeRail).toBeGreaterThan(foldEnd)
+    expect(earlyGolf).toBeGreaterThan(foldEnd)
+    expect(earlyGolf).toBeLessThan(typeRail)
+    expect(earlyRail).toBeGreaterThan(foldEnd)
+    expect(earlyRail).toBeLessThan(typeRail)
+    expect(PAGE.indexOf('id="neighborhoods"')).toBeLessThan(PAGE.indexOf('id="child-places"'))
+    expect(PAGE).toMatch(/openingPlaceDoors\.map/)
+    expect(PAGE).toMatch(/golfCommunityItems, \.\.\.communityItems/)
+  })
+
+  it('opens a type-rail house photograph on the listing, not /types/*', () => {
+    expect(TYPE_SLIDER).toMatch(/listingHref/)
+    expect(TYPE_SLIDER).toMatch(/place-type-card__thumb/)
+    expect(TYPE_SLIDER).toMatch(/place-type-card__body/)
+    expect(TYPE_SLIDER).not.toMatch(/<Link\s+key=\{card\.key\}[\s\S]*href=\{card\.href\}[\s\S]*place-type-card__thumb/)
+  })
+
+  it('drops the pipeline listing-tiles sentence and the dummy email placeholder', () => {
+    expect(PAGE).not.toMatch(/listing tiles/)
+    expect(ALERT_SHEET).toMatch(/placeholder=""/)
+    expect(ALERT_SHEET).not.toMatch(/you@email\.com/)
   })
 })
 
