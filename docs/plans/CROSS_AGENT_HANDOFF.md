@@ -1,6 +1,6 @@
 # Current — 2026-09-22 (Matt: city pages get the same one map)
 
-Surface: Grok Build, primary checkout. `/cities/[slug]` uses one map. Bend's neighborhoods sit beside it, with a property-type line and a listing photo when that neighborhood has stock. Choosing one zooms and the carousel lists that neighborhood's publicly active homes. The city name lists every publicly active home in the city. Other cities list the recorded plats drawn on the map. Node: none.
+Surface: Grok Build, primary checkout. `/cities/[slug]` uses one map. Bend's neighborhoods sit beside it, with a property-type line and a listing photo when that neighborhood has stock. Choosing one zooms and the carousel lists that neighborhood's publicly active homes. The city name lists every publicly active home in the city. Other cities list the recorded plats drawn on the map. `V3PlaceLook` left the barrel; no page mounts that Google fold. `V3PlaceLookMap` stays exported and on the shrink-only wire baseline because the pin gates still read the file. Node: none.
 
 # Current — 2026-09-22 (Matt: list the schools, not a hedge)
 

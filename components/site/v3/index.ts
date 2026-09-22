@@ -532,8 +532,6 @@ export type {
   AtlasAmenityPark,
   AtlasAmenityTrail,
 } from './V3Atlas.client'
-export { V3PlaceLook } from './V3PlaceLook'
-export type { V3PlaceLookProps, V3PlaceLookCard } from './V3PlaceLook'
 export { V3PlaceLookMap } from './V3PlaceLookMap.client'
 export type { V3PlaceLookMapProps } from './V3PlaceLookMap.client'
 export type { V3Door, V3DoorsProps } from './V3Doors'
