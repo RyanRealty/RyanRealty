@@ -1,15 +1,27 @@
 import type { V3FieldItem } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
-import { openHouseWhen } from './oh-when'
+import { isWeekendIso, openHouseWhen } from './oh-when'
 import type { OpenHouseListing } from './oh-listings'
 import { listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
-export type OpenHouseFieldItem = V3FieldItem & { when?: string }
+export type OpenHouseFieldItem = V3FieldItem & {
+  when?: string
+  eventDate: string
+  weekend: boolean
+}
+
+function compareOpenHouseOrder(a: OpenHouseListing, b: OpenHouseListing): number {
+  const aWeekend = isWeekendIso(a.eventDate) ? 0 : 1
+  const bWeekend = isWeekendIso(b.eventDate) ? 0 : 1
+  if (aWeekend !== bWeekend) return aWeekend - bWeekend
+  if (a.eventDate !== b.eventDate) return a.eventDate.localeCompare(b.eventDate)
+  return (a.startTime ?? '').localeCompare(b.startTime ?? '')
+}
 
 export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHouseFieldItem[] {
   const items: OpenHouseFieldItem[] = []
-  for (const oh of houses) {
+  for (const oh of [...houses].sort(compareOpenHouseOrder)) {
     const street = (
       oh.unparsedAddress ||
       listingMlsStreetLine(oh) ||
@@ -29,6 +41,9 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
     ]
       .filter((part): part is string => part !== null)
       .join(' · ')
+    const meta = [when || null, specs || null]
+      .filter((part): part is string => Boolean(part))
+      .join(' · ')
 
     const priceLabel =
       oh.listPrice != null && Number.isFinite(oh.listPrice) && oh.listPrice > 0
@@ -42,8 +57,10 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
       href: oh.href,
       priceLabel,
       title,
+      eventDate: oh.eventDate,
+      weekend: isWeekendIso(oh.eventDate),
       ...(when ? { when } : {}),
-      ...(specs ? { meta: specs } : {}),
+      ...(meta ? { meta } : {}),
       ...(photoSrc ? { photoSrc: listingRowPhotoSrc(photoSrc) } : {}),
       lat: oh.lat,
       lng: oh.lng,

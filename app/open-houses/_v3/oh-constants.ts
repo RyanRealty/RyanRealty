@@ -21,7 +21,7 @@ export const OH_TRACE =
   'live MLS through Oregon Data Share. OpenHouses on active listings in the Central Oregon service area. Window is today through six days out, Pacific. One soonest open house per listing.'
 
 export const OH_FIELD_TRACE =
-  'the same OpenHouses pull as the count above. Rows with no street or no list price stay in the count and drop from this list, because a Field row has to name a price and an address.'
+  'MLS OpenHouses field, day and hours from each active listing. Central Oregon, today through six days out, Pacific. One soonest open house per home. Homes without a street or a list price stay off this list.'
 
 /** Calendar-day arithmetic on a YYYY-MM-DD key. Noon UTC keeps the date stable. */
 export function addIsoDays(iso: string, days: number): string {

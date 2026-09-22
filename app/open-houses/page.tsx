@@ -56,6 +56,7 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { OpenHouseAlertsSheet } from './_v3/OpenHouseAlertsSheet.client'
+import { OpenHouseFold } from './_v3/OpenHouseFold.client'
 import {
   OH_CITY_SLUGS,
   OH_FIELD_TRACE,
@@ -66,7 +67,8 @@ import {
 } from './_v3/oh-constants'
 import { assembleOpenHouses, medianPositive } from './_v3/oh-listings'
 import { openHouseFieldItems } from './_v3/oh-field-items'
-import { openHouseEventSchemas } from './_v3/oh-jsonld'
+import { openHouseEventSchemas, openHouseItemListSchema } from './_v3/oh-jsonld'
+import { isWeekendIso } from './_v3/oh-when'
 
 export const revalidate = 900
 
@@ -102,9 +104,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const rows = await openHouseRowsForWindow(todayIso, dateToIso, todayIso, undefined)
   const count = rows.length
   const noun = count === 1 ? 'open house' : 'open houses'
+  const weekendCount = rows.filter((row) => isWeekendIso(row.event_date)).length
+  const weekendClause =
+    weekendCount > 0
+      ? ` ${weekendCount.toLocaleString('en-US')} ${weekendCount === 1 ? 'is' : 'are'} this weekend.`
+      : ''
   return pageMetadata({
     title: 'Open Houses in Central Oregon',
-    description: `${count.toLocaleString('en-US')} ${noun} across Central Oregon, ${windowDayLabel(todayIso)} through ${windowDayLabel(dateToIso)}. Times, addresses, and prices from the regional MLS.`,
+    description: `${count.toLocaleString('en-US')} ${noun} across Central Oregon, ${windowDayLabel(todayIso)} through ${windowDayLabel(dateToIso)}.${weekendClause} Day and hours from the MLS OpenHouses field.`,
     path: '/open-houses',
   })
 }
@@ -179,6 +186,7 @@ export default async function OpenHousesPage({
   }
   const [firstFigure, ...restFigures] = figures
 
+  const itemList = openHouseItemListSchema(fieldItems, siteUrl)
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -188,6 +196,7 @@ export default async function OpenHousesPage({
       ],
     },
     ...openHouseEventSchemas(openHouses, siteUrl),
+    ...(itemList ? [itemList] : []),
   ]
 
   const cityItems: V3QuietItem[] = OH_CITY_SLUGS.map((slug) => ({
@@ -213,8 +222,18 @@ export default async function OpenHousesPage({
 
         <V3Field
           id="calendar"
+          className="oh-homes-field"
+          slotSurface="photos"
           ariaLabel="Open houses on the calendar this week"
           items={fieldItems}
+          mapSlot={
+            fieldItems.length > 0 ? (
+              <OpenHouseFold
+                items={fieldItems}
+                railLabel="Open houses in Central Oregon this week"
+              />
+            ) : undefined
+          }
           count={
             fieldItems.length > 0
               ? {
@@ -222,11 +241,6 @@ export default async function OpenHousesPage({
                   label: fieldItems.length === 1 ? 'home on this list' : 'homes on this list',
                   source: OH_FIELD_TRACE,
                 }
-              : undefined
-          }
-          footNote={
-            fieldItems.some((item) => item.photoSrc)
-              ? 'Each photograph opens the listing.'
               : undefined
           }
           emptyMessage="No open house on this pull has both a street and a list price, so this list has nothing to name."

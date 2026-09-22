@@ -31,11 +31,23 @@ function house(over: Partial<OpenHouseListing> = {}): OpenHouseListing {
 }
 
 describe('openHouseFieldItems when-on-photo', () => {
-  it('puts the live when on the item, not in the spec line', () => {
+  it('puts the live when on the item and leads the caption, specs still present', () => {
     const items = openHouseFieldItems([house()])
     expect(items).toHaveLength(1)
     expect(items[0].when).toContain('2pm-4pm')
-    expect(items[0].meta).not.toContain('2pm-4pm')
+    expect(items[0].meta).toContain('2pm-4pm')
+    expect(items[0].meta).toContain('3 bd')
+    expect(items[0].meta).toContain('2 ba')
+    expect(items[0].meta).toContain('1,800 sqft')
     expect(items[0].photoSrc).toBe('/hero.jpg')
+    expect(items[0].weekend).toBe(true)
+  })
+
+  it('lists this weekend ahead of a weekday open', () => {
+    const items = openHouseFieldItems([
+      house({ id: 'weekday', eventDate: '2026-08-17', startTime: '10:00:00' }),
+      house({ id: 'weekend', eventDate: '2026-08-15', startTime: '14:00:00' }),
+    ])
+    expect(items.map((item) => item.id)).toEqual(['weekend', 'weekday'])
   })
 })

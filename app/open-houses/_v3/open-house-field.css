@@ -1,0 +1,207 @@
+/* Open-houses fold. Tokens only. */
+
+.oh-homes-field.v3.v3-field {
+  width: 100%;
+  min-width: 0;
+  padding-bottom: var(--v3-space-sm);
+  position: relative;
+  z-index: 0;
+}
+
+.oh-homes-field.v3.v3-field .v3-field__frame,
+.oh-homes-field.v3.v3-field .v3-field__frame--photos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+}
+
+.oh-homes-field.v3.v3-field .v3-field__col,
+.oh-homes-field.v3.v3-field .v3-field__map,
+.oh-homes-field.v3.v3-field .v3-field__map--photos {
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: auto;
+  height: auto;
+  overflow: visible;
+  border: none;
+  background: transparent;
+  position: relative;
+  inset: auto;
+  top: auto;
+  contain: none;
+}
+
+.oh-homes-field.v3.v3-field .v3-field__map > :only-child,
+.oh-homes-field.v3.v3-field
+  .v3-field__map:not(.v3-field__map--photos)
+  > :only-child {
+  position: static;
+  inset: auto;
+  width: 100%;
+  height: auto;
+}
+
+.oh-fold.v3 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+.oh-upcoming {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 56.25rem) {
+  .oh-upcoming {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 var(--v3-space-md);
+  }
+}
+
+.oh-upcoming__link {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-height: var(--v3-tap);
+  min-width: 0;
+  padding-block: var(--v3-space-xs);
+  color: var(--v3-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--v3-edge);
+  align-content: center;
+}
+
+.oh-upcoming__link:hover,
+.oh-upcoming__link:focus-visible {
+  color: var(--v3-navy);
+}
+
+.oh-upcoming__link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.oh-upcoming__when {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  line-height: var(--v3-leading-control);
+}
+
+.oh-upcoming__place {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  overflow-wrap: anywhere;
+}
+
+.oh-bands {
+  width: 100%;
+  min-width: 0;
+}
+
+.v3 .oh-bands > [role="tablist"] {
+  max-width: 100%;
+  margin: 0 0 var(--v3-space-xs);
+}
+
+.oh-rail-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  width: 100%;
+  min-width: 0;
+}
+
+.oh-rail.v3.v3-carousel {
+  width: 100%;
+  min-width: 0;
+  padding-inline: var(--v3-tap);
+}
+
+.oh-rail.v3.v3-carousel--rail {
+  --v3-carousel-slide-w: min(22rem, 78vw);
+}
+
+.oh-rail__pos {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.oh-slide {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  color: var(--v3-ink);
+  text-decoration: none;
+  background: var(--v3-surface);
+}
+
+.oh-slide:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.oh-slide__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  max-height: var(--v3-carousel-h);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--v3-ink) 8%, transparent);
+}
+
+.oh-slide__photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.oh-slide__body {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-sm) 0 var(--v3-space-xs);
+  min-width: 0;
+}
+
+.oh-slide__when {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  line-height: var(--v3-leading-control);
+}
+
+.oh-slide__price {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+.oh-slide__addr {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  overflow-wrap: anywhere;
+}
+
+.oh-slide__specs {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
