@@ -147,7 +147,7 @@ function pickLimiter(pathname: string): MemoryWindowLimiter | null {
 // Always allow. Mirrors the AI crawlers in app/robots.ts, plus search engines,
 // social unfurlers, and our perf tooling (Lighthouse / PageSpeed Insights).
 const GOOD_BOT_RE =
-  /(googlebot|google-inspectiontool|storebot-google|google-read-aloud|adsbot-google|mediapartners-google|googleother|google-extended|apis-google|feedfetcher-google|bingbot|bingpreview|adidxbot|msnbot|slurp|duckduckbot|applebot|gptbot|oai-searchbot|chatgpt-user|perplexitybot|claudebot|claude-searchbot|claude-web|anthropic-ai|cohere-ai|ccbot|chrome-lighthouse|google page speed|pagespeed|facebookexternalhit|facebookcatalog|facebot|twitterbot|linkedinbot|slackbot|slack-imgproxy|whatsapp|discordbot|telegrambot|skypeuripreview|pinterest|redditbot|embedly|flipboard|vercelbot|vercel-screenshot)/i
+  /(googlebot|google-inspectiontool|storebot-google|google-read-aloud|adsbot-google|mediapartners-google|googleother|google-extended|apis-google|feedfetcher-google|bingbot|bingpreview|adidxbot|msnbot|slurp|duckduckbot|applebot|gptbot|oai-searchbot|chatgpt-user|perplexitybot|perplexity-user|claudebot|claude-searchbot|claude-user|claude-web|anthropic-ai|cohere-ai|ccbot|youbot|meta-externalagent|amazonbot|bytespider|chrome-lighthouse|google page speed|pagespeed|facebookexternalhit|facebookcatalog|facebot|twitterbot|linkedinbot|slackbot|slack-imgproxy|whatsapp|discordbot|telegrambot|skypeuripreview|pinterest|redditbot|embedly|flipboard|vercelbot|vercel-screenshot)/i
 
 // Always block. Unambiguous automation: HTTP client libraries, CLI tools,
 // security scanners, and aggressive zero-value crawlers. No real visitor sends
