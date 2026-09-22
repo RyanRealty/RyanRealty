@@ -506,10 +506,11 @@ describe('walkPricingLadder', () => {
     const out = walkPricingLadder(subject({ sqft: 2000 }), [...larger, smaller], { asOf })
     expect(out.comps.map((c) => c.listingKey)).toContain('SMALL')
     expect(out.comps.some((c) => c.sqft > 2000)).toBe(true)
-    expect(out.comps.filter((c) => c.listingKey.startsWith('BIG'))).toHaveLength(7)
+    expect(out.comps).toHaveLength(5)
+    expect(out.comps.filter((c) => c.listingKey.startsWith('BIG'))).toHaveLength(4)
   })
 
-  it('never keeps more than 10 priced sales', () => {
+  it('never keeps more than five priced sales', () => {
     const pool = Array.from({ length: 12 }, (_, i) =>
       sale({
         listingKey: `N${i}`,
@@ -518,7 +519,30 @@ describe('walkPricingLadder', () => {
       }),
     )
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps).toHaveLength(10)
+    expect(out.comps).toHaveLength(5)
+  })
+
+  it('drops the price outlier once five closer sales are in', () => {
+    const tight = [700_000, 710_000, 720_000, 735_000, 748_000]
+    const pool = [
+      ...tight.map((closePrice, i) =>
+        sale({
+          listingKey: `T${i}`,
+          address: `${10 + i} Kenwood`,
+          closeDate: `2026-07-${String(20 - i).padStart(2, '0')}`,
+          closePrice,
+        }),
+      ),
+      sale({
+        listingKey: 'HIGH',
+        address: '90 Kenwood',
+        closeDate: '2026-05-01',
+        closePrice: 980_000,
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps).toHaveLength(5)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('HIGH')
   })
 
   it('does not treat three wide-GLA same-subdivision sales as a quality stop', () => {
@@ -1158,9 +1182,14 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     const subj = subject(RIVER_WEST)
     const held = walkPricingLadder(subj, [...inside(5), ...strangers], { asOf })
     expect(held.comps.every((c) => c.listingKey.startsWith('IN'))).toBe(true)
-    const beyond = held.rungs.find((r) => r.tier === 'beyond-2mi-12mo')!
-    expect(beyond.ran).toBe(false)
-    expect(beyond.skippedReason).toMatch(/stayed (inside|exclusive)/)
+    expect(held.comps).toHaveLength(5)
+    const beyond = held.rungs.find((r) => r.tier === 'beyond-2mi-12mo')
+    // Five inside sales fill the set, so the walk stops before the boundary
+    // rung. If that rung is still recorded, it did not run.
+    if (beyond) {
+      expect(beyond.ran).toBe(false)
+      expect(beyond.skippedReason).toMatch(/stayed (inside|exclusive)|already has/)
+    }
 
     const crossed = walkPricingLadder(subj, [...inside(3), ...strangers], { asOf })
     expect(crossed.comps.some((c) => c.selectionTier.startsWith('beyond-'))).toBe(true)
@@ -1500,9 +1529,8 @@ describe('named subdivision pocket-first (Matt 2026-09-15 Canter / SaddleStone)'
     const decoys = [upmarket('Clearpine', 2.2, 890_000), upmarket('Forest Edge', 2.5, 860_000)]
     const out = walkPricingLadder(canterSubject(), [...decoys, ...gold], { asOf })
     const numbers = out.comps.map((c) => c.listNumber)
-    for (const row of FLEX_GOLD) {
-      expect(numbers).toContain(row.mls)
-    }
+    expect(out.comps).toHaveLength(5)
+    expect(numbers.every((n) => FLEX_GOLD.some((g) => g.mls === n))).toBe(true)
     expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-Clearpine')
     expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-ForestEdge')
     expect(out.comps.every((c) => !/clearpine|forest edge/i.test(c.subdivision ?? ''))).toBe(true)

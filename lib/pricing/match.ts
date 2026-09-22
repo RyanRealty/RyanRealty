@@ -42,6 +42,7 @@ import {
   type WaterClass,
 } from '@/lib/pricing/classes'
 import {
+  keepTightestByClosePrice,
   PRICING_MAX_COMPS,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
@@ -944,6 +945,18 @@ export function walkPricingLadder(
   }
 
   for (const tier of tiers) {
+    if (byKey.size >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
+      rungs.push({
+        tier: tier.name,
+        ran: false,
+        skippedReason: `the search already has ${byKey.size} sales from this home's own ground, so it stopped`,
+        monthsBack: tier.monthsBack,
+        scanned: 0,
+        added: 0,
+        runningTotal: byKey.size,
+      })
+      continue
+    }
     const skip =
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= PRICING_MIN_COMPS
@@ -1032,14 +1045,13 @@ export function walkPricingLadder(
       if (tier.disclosure) trace.push(tier.disclosure)
     }
     if (isPocketExclusiveTier(tier)) exclusiveCount = byKey.size
-    if (byKey.size >= PRICING_TARGET_COMPS) break
   }
 
   const pocketStarved = pocketStarvedForYearQuality(exclusiveCount)
   const ranked = [...byKey.values()].sort(
     (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
   )
-  const sliced = ranked.slice(0, PRICING_MAX_COMPS)
+  const sliced = keepTightestByClosePrice(ranked, PRICING_MAX_COMPS, asOf)
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')

@@ -41,9 +41,9 @@ describe('pricingTierLadder — time before distance', () => {
     }
   })
 
-  it('does not stop at three tight sales — target 8, cap 10', () => {
-    expect(PRICING_TARGET_COMPS).toBe(8)
-    expect(PRICING_MAX_COMPS).toBe(10)
+  it('stops at five sales, and never prices more than five', () => {
+    expect(PRICING_TARGET_COMPS).toBe(5)
+    expect(PRICING_MAX_COMPS).toBe(5)
   })
 
   it('inserts wider custom time-first rungs before similar-sub for custom/new', () => {

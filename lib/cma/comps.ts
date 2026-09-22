@@ -33,6 +33,7 @@
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+import { keepTightestByClosePrice } from '@/lib/pricing/ladder'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
   closedSaleDomTotal,
@@ -115,7 +116,8 @@ export const MIN_COMPS = 3
  * stopping there keeps the set in the tightest tier that can fill it.
  */
 export const TARGET_COMPS = 5
-export const MAX_COMPS = 10
+/** Same cap as the facts ladder. A rung that overshoots is cut to five tight prices. */
+export const MAX_COMPS = 5
 
 function num(v: unknown): number | null {
   if (v == null) return null
@@ -1118,10 +1120,12 @@ export async function selectComps(
     }
   }
 
-  // Rank by similarity (size proximity x recency) and cap.
+  // Rank by similarity (size proximity x recency), then keep five
+  // whose close prices sit together. A rung that dumped a high outlier
+  // does not get to set the range.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
-  comps = comps.slice(0, MAX_COMPS)
+  comps = keepTightestByClosePrice(comps, MAX_COMPS)
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
 

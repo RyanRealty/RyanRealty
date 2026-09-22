@@ -403,7 +403,13 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
   ]
 }
 
-export const PRICING_TARGET_COMPS = 8
+/**
+ * Five closed sales, then stop (Matt 2026-09-22, on 20506 Murphy).
+ * Every sale past five is bought by a wider rung, and that wider rung is
+ * what stretched the shaded range. The listings ladder already stopped at
+ * five (`lib/cma/comps.ts` TARGET_COMPS).
+ */
+export const PRICING_TARGET_COMPS = 5
 export const PRICING_MIN_COMPS = 3
 /**
  * The search may cross the subject's neighborhood/community boundary only
@@ -430,8 +436,57 @@ export const POCKET_TIGHT_SET_MIN = 2
  * supply 5 never ran, and the build failed the document's own minimum.
  */
 export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
-/** Cap the priced set. Extra comps past ten dilute the median. */
-export const PRICING_MAX_COMPS = 10
+/** The priced set is five. A rung that overshoots is cut back to the tightest prices. */
+export const PRICING_MAX_COMPS = 5
+
+/**
+ * Keep the `max` sales whose close prices sit together.
+ *
+ * A sale older than a year is measured as farther away, so a stale close
+ * that happens to match today's prices does not hold a slot a recent sale
+ * should have. The list should already be best-first. When two sales are
+ * equally far, the later one goes.
+ */
+export function keepTightestByClosePrice<T extends { closePrice: number; closeDate?: string | null }>(
+  comps: readonly T[],
+  max: number,
+  asOf?: string,
+): T[] {
+  const kept = [...comps]
+  while (kept.length > max) {
+    const prices = kept.map((c) => c.closePrice).filter((n) => Number.isFinite(n) && n > 0)
+    if (prices.length === 0) break
+    const sorted = [...prices].sort((a, b) => a - b)
+    const midIndex = Math.floor(sorted.length / 2)
+    const mid =
+      sorted.length % 2 === 1 ? sorted[midIndex]! : (sorted[midIndex - 1]! + sorted[midIndex]!) / 2
+    const dist = (c: T) => {
+      const price = Math.abs(c.closePrice - mid) / mid
+      const months = monthsBefore(asOf, c.closeDate)
+      const stale = months > 12 ? (months - 12) / 12 : 0
+      return price + stale
+    }
+    let worst = kept.length - 1
+    let worstDist = dist(kept[worst]!)
+    for (let i = 0; i < kept.length - 1; i++) {
+      const d = dist(kept[i]!)
+      if (d > worstDist) {
+        worstDist = d
+        worst = i
+      }
+    }
+    kept.splice(worst, 1)
+  }
+  return kept
+}
+
+function monthsBefore(asOf: string | undefined, closeDate: string | null | undefined): number {
+  if (!asOf || !closeDate) return 0
+  const a = new Date(`${asOf.slice(0, 10)}T00:00:00Z`).getTime()
+  const b = new Date(`${closeDate.slice(0, 10)}T00:00:00Z`).getTime()
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 0
+  return Math.max(0, (a - b) / (30.44 * 86_400_000))
+}
 /**
  * How far the subject's own ground reaches for the POOL read (not for any
  * rung). Every containment rung — the plat, the plats beside it, the
