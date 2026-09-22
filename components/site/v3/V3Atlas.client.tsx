@@ -77,7 +77,8 @@ import {
   type AtlasViewBounds,
 } from '@/lib/geo/atlas-camera'
 import { placeDoorLabels, shortPlaceLabel } from '@/lib/place/short-place-label'
-import { atlasFramePad, hierarchyChildIdSet } from '@/lib/place/map-hierarchy'
+import { atlasFramePad, childPaintLive, hierarchyChildIdSet } from '@/lib/place/map-hierarchy'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 
 export type { AtlasViewBounds }
 import {
@@ -103,6 +104,7 @@ import {
   atlasClusterWorldBounds,
   atlasViewFromStage,
   clusterAtlasPins,
+  mergeOverlappingAtlasClusters,
   floorCityFoldPaintView,
   hitAtlasPinLayer,
   pickCityFoldClusterStage,
@@ -682,14 +684,19 @@ export function V3Atlas({
      phase keep the phase instead of collapsing to one identical string
      (lib/place/short-place-label, placeDoorLabels). */
   const doorLabels = useMemo(() => {
+    const visitable = places.filter((s) => publishPlatDisplayName(s.name))
     const labels = placeDoorLabels(
-      places.map((s) => s.name),
+      visitable.map((s) => publishPlatDisplayName(s.name) ?? s.name),
       ownPlaceName,
     )
-    return new Map(places.map((s, i) => [s.id, labels[i] ?? s.name]))
+    return new Map(visitable.map((s, i) => [s.id, labels[i] ?? publishPlatDisplayName(s.name) ?? s.name]))
   }, [places, ownPlaceName])
   const doorLabel = useCallback(
-    (s: RegionShape) => doorLabels.get(s.id) ?? shortPlaceLabel(s.name),
+    (s: RegionShape) => {
+      const published = publishPlatDisplayName(s.name)
+      if (!published) return ''
+      return doorLabels.get(s.id) ?? shortPlaceLabel(published)
+    },
     [doorLabels],
   )
 
@@ -1221,6 +1228,7 @@ export function V3Atlas({
             // A record map lists only the places the record touches; a rail
             // of zeros is brokerage chrome on a personal page (C5).
             .filter((r) => !closingsMap || r.n > 0)
+            .filter((r) => Boolean(publishPlatDisplayName(r.shape.name)))
             .sort((a, b) => b.n - a.n || a.shape.name.localeCompare(b.shape.name))
             /* A rail, not a list: the fullest places (E5) — but never fewer
                than the map DRAWS.
@@ -1337,10 +1345,13 @@ export function V3Atlas({
     if (cam.k > 1.2) {
       for (const s of places) {
         if (!s.anchor || isFrame(s) || s.id === active || !s.bbox) continue
+        // SITE-128: child plats stay unlabeled until selected.
+        if (childIdSet.has(s.id) && !childPaintLive(pinned?.id, s.id)) continue
         const [x0, y0] = screenOf(s.bbox.minLon, s.bbox.maxLat)
         const [x1, y1] = screenOf(s.bbox.maxLon, s.bbox.minLat)
         if (Math.min(Math.abs(x1 - x0), Math.abs(y1 - y0)) < 32) continue
         const text = doorLabel(s)
+        if (!text) continue
         const [x, y] = screenOf(s.anchor[0], s.anchor[1])
         const n = regionStats.get(s.id)?.n ?? 0
         candidates.push({
@@ -1355,7 +1366,11 @@ export function V3Atlas({
       }
     }
     if (activeShape?.anchor && !isFrame(activeShape)) {
+      if (childIdSet.has(activeShape.id) && !childPaintLive(pinned?.id, activeShape.id)) {
+        return packAtlasLabels(candidates, view)
+      }
       const text = doorLabel(activeShape)
+      if (!text) return packAtlasLabels(candidates, view)
       const [x, y] = screenOf(activeShape.anchor[0], activeShape.anchor[1])
       candidates.push({
         id: `on-${activeShape.id}`,
@@ -1368,7 +1383,7 @@ export function V3Atlas({
       })
     }
     return packAtlasLabels(candidates, view)
-  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats, doorLabel])
+  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats, doorLabel, childIdSet, pinned])
 
   const activeHomes = useMemo(() => {
     if (!active || incomplete) return []
@@ -1452,33 +1467,42 @@ export function V3Atlas({
           count: 1,
         }))
     const byIndex = new Map(raw.map((p) => [p.i, p]))
+    const screenGroups = grouped.map((g) => {
+      let sx = 0
+      let sy = 0
+      let n = 0
+      for (const i of g.indices) {
+        const src = byIndex.get(i)
+        if (!src) continue
+        sx += src.x
+        sy += src.y
+        n += 1
+      }
+      return {
+        ...g,
+        x: n > 0 ? sx / n : g.x,
+        y: n > 0 ? sy / n : g.y,
+      }
+    })
+    const merged = clusterPins ? mergeOverlappingAtlasClusters(screenGroups) : screenGroups
     const out: PaintedPin[] = []
-    for (const g of grouped) {
+    for (const g of merged) {
       if (g.count === 1) {
         const src = byIndex.get(g.indices[0]!)
         if (src) out.push({ kind: 'pin', d: src.d, i: src.i, x: src.x, y: src.y, label: src.label })
         continue
       }
-      let sx = 0
-      let sy = 0
-      let n = 0
       const asks: number[] = []
       for (const i of g.indices) {
-        const src = byIndex.get(i)
         const p = dots[i]?.p
         if (p != null && formatAtlasPinPrice(p)) asks.push(p)
-        if (src) {
-          sx += src.x
-          sy += src.y
-          n += 1
-        }
       }
       const span = atlasClusterAskSpan(asks)
       out.push({
         kind: 'cluster',
         id: g.id,
-        x: n > 0 ? sx / n : g.x,
-        y: n > 0 ? sy / n : g.y,
+        x: g.x,
+        y: g.y,
         count: g.count,
         indices: g.indices,
         minP: span?.min ?? 0,
@@ -1582,7 +1606,13 @@ export function V3Atlas({
     )
   })()
 
-  const showCard = Boolean(activeShape && activeStats && (pinned || hover) && dotHit == null)
+  const showCard = Boolean(
+    activeShape &&
+      activeStats &&
+      (pinned || hover) &&
+      dotHit == null &&
+      (!childIdSet.has(activeShape.id) || childPaintLive(pinned?.id, activeShape.id)),
+  )
   const card =
     showCard && activeShape && activeStats ? (
       <div ref={cardRef} className={cn('v3-atlas__card', pinned && 'is-pinned')} role="status" style={cardStyle}>

@@ -80,6 +80,19 @@ describe('nameOnlyChildEntries', () => {
     ])
     expect(rows).toEqual([{ name: 'Awbrey Butte', href: '/cities/bend/awbrey-butte' }])
   })
+
+  it('withholds Caldera MLS phase-chip dumps instead of printing visitor doors', () => {
+    const rows = nameOnlyChildEntries([
+      [
+        { name: 'Caldera Springs, Phase C-2', href: '/subdivisions/caldera-springs-phase-c-2' },
+        { name: 'Phase C1 Sfr', href: '/subdivisions/phase-c1-sfr' },
+        { name: 'Olu Phase A', href: '/subdivisions/olu-phase-a' },
+        { name: 'Parkside Place Phase 1', href: '/subdivisions/parkside-place-phase-1' },
+      ],
+    ])
+    expect(rows.map((row) => row.name)).toEqual(['Parkside Place Phase 1'])
+    expect(rows.map((row) => row.name).join(' ')).not.toMatch(/Sfr|Olu|Phase C-2/i)
+  })
 })
 
 describe('otherCommunitySubdivs', () => {

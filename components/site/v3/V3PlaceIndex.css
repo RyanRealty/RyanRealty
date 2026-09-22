@@ -249,3 +249,9 @@
   border: var(--v3-rule-hairline);
   background: var(--v3-cream);
 }
+
+.v3-place-index--names .v3-place-index__name {
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}

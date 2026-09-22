@@ -37,6 +37,11 @@
       "blocking": true
     },
     {
+      "name": "V3PlaceLook",
+      "section": "SITE-162 first-look: Google + one community ring + priced listing photo cards in the fold. Same object as city / neighborhood. Cream Atlas is not the fold drawing.",
+      "blocking": true
+    },
+    {
       "name": "V3Instrument",
       "section": "Pattern 1, AFTER village bars. Slope or strip of THIS community's closes, never Bend's median. chartFirst + foldAfter={0}. Too-few closes render Quiet. MOS stays off this grain.",
       "blocking": true
@@ -231,11 +236,12 @@
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
     "V3Heading (H1 `{Community} homes for sale`)",
-    "V3Atlas #atlas -- the living map scoped to the community (renders only with a trusted boundary and at least one listing inside it)",
-    "CommunityAlertsStrip #alerts (V3AlertsStrip: SITE-87 fold figure beside Atlas. The listing-alert callout with this community's real 30-day count as the claim, the MLS-name scope line, the newest-first door, email, one ghost button; the sticky repeat from the same component, with its own one-line disclosure)",
+    "V3PlaceLook #place-look -- SITE-162 first-look: Google + one community ring + photo cards. Cream Atlas is not the fold drawing.",
+    "CommunityAlertsStrip #alerts (V3AlertsStrip: SITE-162 fold figure after the drawing. The listing-alert callout with this community's real 30-day count as the claim, the MLS-name scope line, the newest-first door, email, one ghost button; the sticky repeat from the same component, with its own one-line disclosure)",
     "CommunityPlaceValue (the first-screen ask: address in, verdict and pace out, then the email that delivers the written valuation; on every community page; the answer names it when no verdict is published)",
     "V3PlaceIndex #child-places (name-only Atlas/registry children; omitted when none)",
     "V3PlaceInventory #homes (typed on-page stock; empty types omit)",
+    "V3Atlas #atlas -- the living map scoped to the community after the first-look fold (amenity layers, child plats hit-only). Sticky alerts still key off #atlas.",
     "V3Instrument #market (this community's typical-price slope after villages; never Bend's median) or V3Quiet (too few / stated absence)",
     "V3Amenities #amenities (SITE-116: authored amenity list as InsightCards; omitted when the config recorded none)",
     "V3Quiet #belonging",

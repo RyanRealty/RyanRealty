@@ -87,7 +87,8 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/id="facts"/)
     expect(SRC).toMatch(/chartFirst/)
     expect(SRC).toMatch(/foldAfter=\{0\}/)
-    expect(SRC).toMatch(/tooFewSalesItems/)
+    expect(SRC).not.toMatch(/tooFewSalesItems/)
+    expect(SRC).toMatch(/costChart && firstMarketFigure/)
     expect(SRC).not.toMatch(/id="place-about"/)
   })
 

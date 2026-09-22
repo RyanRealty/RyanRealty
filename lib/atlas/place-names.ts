@@ -29,15 +29,17 @@ const RESIDUE: readonly RegExp[] = [
 
 /** A recorded region's name as a visitor should read it, or null when nothing survives. */
 export function atlasRegionName(raw: string | null | undefined): string | null {
-  const published = publishPlatDisplayName(raw) ?? (raw ?? '').trim()
-  let name = published
+  let name = (raw ?? '').trim()
+  if (!name) return null
   for (const re of RESIDUE) name = name.replace(re, ' ')
   name = name
     .replace(/\s+\.\s*/g, ' ') // an orphan period left by a stripped abbreviation
     .replace(/\s{2,}/g, ' ')
     .replace(/^[\s,.-]+|[\s,.-]+$/g, '')
     .trim()
-  return name.length > 0 ? name : null
+  if (!name) return null
+  // MLS filing tokens (Olu, Sfr, Phase C-2) stay withheld. Do not fall back to raw.
+  return publishPlatDisplayName(name)
 }
 
 /**
@@ -52,7 +54,7 @@ export function atlasRegionNames(raws: readonly (string | null | undefined)[]): 
   for (const n of stripped) if (n) seen.set(n, (seen.get(n) ?? 0) + 1)
   const restored = stripped.map((n, i) => {
     if (!n || (seen.get(n) ?? 0) < 2) return n
-    const full = (publishPlatDisplayName(raws[i]) ?? raws[i] ?? '').trim()
+    const full = (publishPlatDisplayName(raws[i]) ?? '').trim()
     return full.length > 0 ? full : n
   })
   // Still colliding after the published name (three plats recorded as one
@@ -61,7 +63,7 @@ export function atlasRegionNames(raws: readonly (string | null | undefined)[]): 
   for (const n of restored) if (n) again.set(n, (again.get(n) ?? 0) + 1)
   return restored.map((n, i) => {
     if (!n || (again.get(n) ?? 0) < 2) return n
-    const raw = (raws[i] ?? '').trim()
-    return raw.length > 0 ? raw : n
+    const published = (publishPlatDisplayName(raws[i]) ?? '').trim()
+    return published.length > 0 ? published : n
   })
 }

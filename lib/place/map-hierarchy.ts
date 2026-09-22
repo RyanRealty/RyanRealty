@@ -113,6 +113,17 @@ export function defaultHighlightOverlays<T extends { geojson: unknown }>(
   }
 }
 
+/**
+ * SITE-128: child plats are hit-only until selected.
+ * Hover is not a paint — no label, no covering card.
+ */
+export function childPaintLive(
+  selectedId: string | null | undefined,
+  childId: string | null | undefined,
+): boolean {
+  return Boolean(selectedId && childId && selectedId === childId)
+}
+
 /** After a child is chosen, highlight THAT recorded ring only. */
 export function selectedChildHighlight<T extends { id?: string; href?: string; geojson: unknown }>(
   children: readonly T[],

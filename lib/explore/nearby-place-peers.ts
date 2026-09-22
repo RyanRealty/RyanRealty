@@ -117,7 +117,7 @@ export function nameOnlyChildEntries(
   for (const group of groups) {
     for (const row of group) {
       const href = row.href.trim()
-      const name = row.name.trim()
+      const name = publishPlatDisplayName(row.name)
       if (!href || !name || seen.has(href)) continue
       seen.add(href)
       out.push({ name, href })

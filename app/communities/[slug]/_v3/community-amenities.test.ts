@@ -61,16 +61,20 @@ describe('buildCommunityAmenityBoard', () => {
     expect(board?.total).toBe(3)
     expect(board?.claim).toBe('Tetherow has Coorie, The Row, and Tetherow Spa.')
     expect(board?.claim).not.toMatch(/\d+\s+amenities/)
-    expect(board?.mix).toHaveLength(2)
-    expect(board?.mix.map((s) => s.label)).toEqual(['Dining', 'Wellness'])
-    expect(board?.mix[0]?.amount).toBe('Coorie and The Row')
+    expect(board?.mix).toHaveLength(3)
+    expect(board?.mix.map((s) => s.name)).toEqual(['Coorie', 'The Row', 'Tetherow Spa'])
+    expect(board?.mix.map((s) => s.amount)).toEqual(['Coorie', 'The Row', 'Tetherow Spa'])
+    expect(board?.mix[0]?.label).toBe('Dining')
+    expect(board?.mix.map((s) => s.name).join(' ')).not.toMatch(/\b(DINI|RECR|WELL|OTHE)\b/)
+    expect(board?.mix.map((s) => s.amount).join(' ')).not.toMatch(/\b(Public|DINI|RECR|WELL|OTHE)\b/)
     expect(board?.mix.reduce((sum, s) => sum + s.pct, 0)).toBe(100)
     expect(board?.categories).toHaveLength(2)
     expect(board?.categories[0]?.claim).toBe('Dining here is Coorie and The Row.')
     expect(board?.categories[1]?.claim).toBe('Tetherow Spa is the wellness here.')
     expect(board?.categories[0]?.pillHref).toBe('/homes-for-sale/bend/tetherow')
     expect(board?.categories[1]?.pillHref).toBe('/blog/tetherow-spa-guide')
-    expect(board?.mixNote).toBe('Grouped by kind.')
+    expect(board?.mixNote).toBe('Coorie, The Row, and Tetherow Spa.')
+    expect(board?.mixNote).not.toBe('Grouped by kind.')
     expect(board?.source).toMatch(/Tetherow community guide/i)
     for (const line of visitorCopy(board!)) {
       expect(line).not.toMatch(VISITOR_META)
@@ -104,6 +108,18 @@ describe('buildCommunityAmenityBoard', () => {
     expect(board?.claim).toContain('Lake House')
     expect(board?.claim).toContain('Forest House')
     expect(board?.claim).not.toMatch(/\d+\s+amenities/)
+    expect(board?.mix[0]?.name).toBe('Lake House')
+    expect(board?.mix[0]?.amount).toBe('Lake House')
+    expect(board?.mix[0]?.label).toBe('Dining')
+    expect(board?.mix.map((s) => s.name)).toEqual(
+      expect.arrayContaining(['Lake House', 'Forest House', 'The Quarry', 'Caldera Links Golf Course', 'Lakes and Trails']),
+    )
+    expect(board?.mix.map((s) => s.amount)).toEqual(
+      expect.arrayContaining(['Lake House', 'Forest House', 'Caldera Links Golf Course', 'Lakes and Trails']),
+    )
+    expect(board?.mix.map((s) => s.name).join(' ')).not.toMatch(/\b(DINI|RECR|WELL|OTHE)\b/)
+    expect(board?.mix.map((s) => s.amount).join(' ')).not.toMatch(/\b(Public|DINI|RECR|WELL|OTHE)\b/)
+    expect(board?.mixNote).not.toBe('Grouped by kind.')
     expect(AMENITY_INSIGHT_TITLE).toBe("What's here")
     expect(AMENITY_INSIGHT_TITLE).not.toBe('Amenities')
     for (const line of visitorCopy(board!)) {

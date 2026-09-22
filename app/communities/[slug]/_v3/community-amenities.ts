@@ -94,20 +94,13 @@ function categoryLabel(amenity: ResortAmenity): string {
   return trimmed(amenity.category) ?? 'On site'
 }
 
-function shortToken(label: string, used: Set<string>): string {
-  const base = label
-    .replace(/[^A-Za-z0-9]+/g, '')
-    .slice(0, 4)
-    .toUpperCase()
-  const seed = base || 'AMEN'
-  let token = seed
-  let n = 2
-  while (used.has(token)) {
-    token = `${seed.slice(0, 3)}${n}`
-    n += 1
-  }
-  used.add(token)
-  return token
+/** Access codes (Public / DINI) are not the figure. The named place is. */
+function amenityHero(amenity: ResortAmenity): string {
+  return amenityLabel(amenity) ?? ''
+}
+
+function amenityNote(amenity: ResortAmenity): string {
+  return trimmed(amenity.description) ?? trimmed(amenity.access) ?? 'On site'
 }
 
 function amenityHref(
@@ -150,23 +143,24 @@ export function buildCommunityAmenityBoard(input: {
   }
 
   const categoryEntries = [...byCategory.entries()]
-  const mixShares = integerShares(categoryEntries.map(([, list]) => list.length))
-  const mixTokens = new Set<string>()
-  const mix: AmenityMixSegment[] = categoryEntries.map(([label, list], i) => ({
-    name: shortToken(label, mixTokens),
-    label,
-    count: list.length,
-    pct: mixShares[i] ?? 0,
-    amount: joinEnglish(list.map((amenity) => amenityLabel(amenity)!)),
-    cls: `insight-cards__alloc-seg--${i % 3}`,
-    tone: '',
-  }))
+  const nameShares = integerShares(usable.map(() => 1))
+  const mix: AmenityMixSegment[] = usable.map((amenity, i) => {
+    const name = amenityLabel(amenity)!
+    return {
+      name,
+      label: categoryLabel(amenity),
+      count: 1,
+      pct: nameShares[i] ?? 0,
+      amount: amenityHero(amenity),
+      cls: `insight-cards__alloc-seg--${i % 3}`,
+      tone: '',
+    }
+  })
 
   const claim = `${placeName} has ${joinEnglish(names)}.`
 
   const categories: AmenityCategoryPage[] = categoryEntries.map(([label, list], i) => {
     const shares = integerShares(list.map(() => 1))
-    const tokens = new Set<string>()
     const first = list[0]!
     const firstPost = first.blog_slug ? posts[first.blog_slug] : undefined
     const categoryNames = list.map((amenity) => amenityLabel(amenity)!)
@@ -174,20 +168,23 @@ export function buildCommunityAmenityBoard(input: {
       key: `amenity-${i}-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
       label,
       claim: categoryClaim(label, categoryNames),
-      note: trimmed(first.description) ?? `${joinEnglish(categoryNames)}.`,
+      note: amenityNote(first),
       pill: firstPost?.title
         ? firstPost.title
         : `See ${placeName} homes`,
       pillHref: amenityHref(first, posts, browseHref),
-      segments: list.map((amenity, j) => ({
-        name: shortToken(amenityLabel(amenity)!, tokens),
-        label: amenityLabel(amenity)!,
-        count: 1,
-        pct: shares[j] ?? 0,
-        amount: trimmed(amenity.access) ?? 'On site',
-        cls: `insight-cards__alloc-seg--${j % 3}`,
-        tone: '',
-      })),
+      segments: list.map((amenity, j) => {
+        const amenityName = amenityLabel(amenity)!
+        return {
+          name: amenityName,
+          label: amenityName,
+          count: 1,
+          pct: shares[j] ?? 0,
+          amount: amenityHero(amenity),
+          cls: `insight-cards__alloc-seg--${j % 3}`,
+          tone: '',
+        }
+      }),
     }
   })
 
@@ -197,7 +194,7 @@ export function buildCommunityAmenityBoard(input: {
     claim,
     names,
     mix,
-    mixNote: 'Grouped by kind.',
+    mixNote: joinEnglish(names) + '.',
     mixPill: `See ${placeName} homes`,
     mixPillHref: browseHref,
     categories,
