@@ -59,7 +59,24 @@ function mediaBlocks(css: string, query: RegExp): string[] {
 
 describe('V3Atlas chips: wrapped at every width, folded on a phone', () => {
   const css = stripComments(readFileSync(resolve('components/site/v3/V3Atlas.css'), 'utf8'))
+  const tsx = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
   const chips = rulesFor(css, '.v3-atlas__chips').join('\n')
+
+  it('is a labeled reach list of the map above, not a second map of pills', () => {
+    expect(tsx).toMatch(/v3-atlas__reach-label/)
+    expect(tsx).toMatch(/Reach list/)
+    expect(tsx).toMatch(/on this map/)
+    expect(tsx).toMatch(/aria-controls/)
+    expect(tsx).not.toMatch(/<details[^>]*v3-atlas__reach/)
+    const reach = rulesFor(css, '.v3-atlas__reach').join('\n')
+    expect(reach).toMatch(/border-top:\s*var\(--v3-rule-section\)/)
+    const chip = rulesFor(css, '.v3-atlas__chip').join('\n')
+    expect(chip).toMatch(/min-height:\s*var\(--v3-tap\)/)
+    expect(chip).toMatch(/min-width:\s*var\(--v3-tap\)/)
+    expect(chip).toMatch(/border:\s*0/)
+    expect(chip).not.toMatch(/border-radius:\s*var\(--v3-radius-pill\)/)
+  })
+
 
   it('is a wrapping row, never a scroll rail', () => {
     expect(chips).toMatch(/flex-wrap:\s*wrap/)
@@ -92,7 +109,7 @@ describe('V3Atlas chips: wrapped at every width, folded on a phone', () => {
 
   it('gives a chip name room so the ellipsis is the exception', () => {
     const name = rulesFor(css, '.v3-atlas__chip-name').join('\n')
-    expect(name).toMatch(/max-width:\s*18rem/)
+    expect(name).toMatch(/max-width:\s*min\(18rem/)
     expect(name).toMatch(/white-space:\s*nowrap/)
   })
 
