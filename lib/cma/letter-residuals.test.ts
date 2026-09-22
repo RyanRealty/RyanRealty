@@ -252,8 +252,11 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       expect(doc).not.toContain('Marker key')
     }
     expect(html).toContain('comp-matrix')
-    const salesHits = (html.match(/<h3 class="subhead">The sales that set this price<\/h3>/g) ?? []).length
+    // Chapter owns one H2. The matrix no longer repeats it as an H3
+    // (omitHeading, Canter lookpass).
+    const salesHits = (html.match(/<h2 class="section">The sales that set this price\.<\/h2>/g) ?? []).length
     expect(salesHits).toBe(1)
+    expect(html).not.toContain('<h3 class="subhead">The sales that set this price</h3>')
   })
 
   it('C9: exactly one comps pin-map when mapDataUri exists; never subject-only; cover keeps photo', () => {

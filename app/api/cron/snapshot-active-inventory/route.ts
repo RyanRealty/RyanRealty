@@ -1,33 +1,22 @@
 /**
  * GET /api/cron/snapshot-active-inventory
  * H8: write durable active inventory counts by CO city for as_of = today (UTC).
+ *
+ * The writer is imported. Spawning scripts/analytics/snapshot-active-inventory.mjs
+ * failed on Vercel (the file is not traced) and the route still returned 200.
  */
 import { NextResponse } from 'next/server'
-import { spawn } from 'node:child_process'
-import { join } from 'node:path'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import {
+  inventorySnapshotHttpStatus,
+  snapshotActiveInventory,
+} from '@/lib/data/analytics/snapshotActiveInventory'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
-
-function runSnapshot(): Promise<{ code: number; out: string }> {
-  return new Promise((resolve) => {
-    const script = join(process.cwd(), 'scripts/analytics/snapshot-active-inventory.mjs')
-    const child = spawn(process.execPath, [script, '--json'], {
-      env: process.env,
-      cwd: process.cwd(),
-    })
-    let out = ''
-    child.stdout?.on('data', (d) => {
-      out += String(d)
-    })
-    child.stderr?.on('data', (d) => {
-      out += String(d)
-    })
-    child.on('close', (code) => resolve({ code: code ?? 1, out: out.slice(-4000) }))
-  })
-}
 
 export async function GET(request: Request) {
   const denied = requireCronAuth(request)
@@ -35,15 +24,32 @@ export async function GET(request: Request) {
 
   const start = Date.now()
   try {
-    const result = await runSnapshot()
-    return NextResponse.json({
-      ok: result.code === 0,
-      duration_ms: Date.now() - start,
-      log_tail: result.out,
-    })
+    let client: SupabaseClient | null = null
+    try {
+      client = createServiceClient()
+    } catch {
+      client = null
+    }
+    const result = await snapshotActiveInventory({ client })
+    const status = inventorySnapshotHttpStatus(result)
+    return NextResponse.json(
+      {
+        ok: status === 200,
+        as_of: result.as_of,
+        computedAt: result.computedAt,
+        written: result.written,
+        attempted: result.attempted,
+        totalActive: result.totalActive,
+        errors: result.errors,
+        error: result.error,
+        byCity: result.byCity,
+        duration_ms: Date.now() - start,
+      },
+      { status },
+    )
   } catch (e) {
     return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : String(e) },
+      { ok: false, error: e instanceof Error ? e.message : String(e), written: 0 },
       { status: 500 },
     )
   }

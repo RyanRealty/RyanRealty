@@ -321,14 +321,19 @@ function bedsBaths(beds: number | null | undefined, baths: number | null | undef
   return b && ba ? `${b} / ${ba}` : (b ?? ba ?? '-')
 }
 
-/** "$475K → $460K → sold $457K" — the whole listing in one cell. */
+/**
+ * "$475K → sold $457K · offer in 1 day" — the tail is the outcome sentence,
+ * which names the day-count (offer vs on market) or says the home is not
+ * listed. `endLabel` is only the short close word when that sentence is absent.
+ */
 export function askArcCell(entry: MatrixEntry): string {
   const bits: string[] = []
   if (entry.firstAsk != null && entry.firstAsk > 0) bits.push(shortUsd(entry.firstAsk))
   if (entry.lastAsk != null && entry.lastAsk > 0 && entry.lastAsk !== entry.firstAsk) {
     bits.push(shortUsd(entry.lastAsk))
   }
-  if (entry.endLabel) bits.push(entry.endLabel)
+  const tail = entry.outcome.trim() || entry.endLabel.trim()
+  if (tail) bits.push(tail)
   return bits.length > 0 ? bits.join(' → ') : '-'
 }
 

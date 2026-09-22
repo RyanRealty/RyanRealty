@@ -248,9 +248,9 @@ describe('render helpers', () => {
     expect(chunk([], 3)).toEqual([])
   })
 
-  it('cuts the distance row — the map answers where the sales are', () => {
+  it('prints the distance row — Flex FLOW states how far each sale is', () => {
     const { html } = renderCmaHtml(bareArgs)
-    expect(html).not.toContain('1.75 miles NW')
+    expect(html).toContain('1.75 miles NW')
   })
 })
 
