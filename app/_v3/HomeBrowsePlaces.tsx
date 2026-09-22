@@ -57,13 +57,23 @@ function doorCount(count: HomePlaceDoor['count']): { n: number; label: string } 
   return null
 }
 
+/** Linked place stills name the place. Aerial files say so. Empty only when there is no photo. */
+export function homePlacePhotoAlt(door: Pick<HomePlaceDoor, 'label' | 'photoSrc'>): string {
+  const name = door.label.trim()
+  const src = door.photoSrc?.trim() ?? ''
+  if (!name || !src) return ''
+  if (/\baerial\b/i.test(src)) return `${name} aerial`
+  return name
+}
+
 function PlaceMedia({ door }: { door: HomePlaceDoor }) {
   const photoSrc = placeDoorPhotoSrc(door.photoSrc)
+  const photoAlt = homePlacePhotoAlt(door)
   if (photoSrc) {
     return (
       <div className="home-browse-places__media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photoSrc} alt="" width={800} height={600} decoding="async" />
+        <img src={photoSrc} alt={photoAlt} width={800} height={600} decoding="async" />
       </div>
     )
   }
