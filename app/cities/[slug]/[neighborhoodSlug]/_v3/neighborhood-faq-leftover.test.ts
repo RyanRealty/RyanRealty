@@ -18,4 +18,10 @@ describe('nested neighborhood FAQ leftover sold count', () => {
     expect(faqBlock).not.toMatch(/pulse\?\.medianDaysToPending/)
     expect(faqBlock).not.toMatch(/stats\?\.medianDaysOnMarket/)
   })
+
+  it('SITE-172 appends place FAQ extras from parks, trails, and peer neighborhoods already on the page', () => {
+    expect(SRC).toMatch(/buildPlaceFaqExtras/)
+    expect(SRC).toMatch(/placeFaqExtras\.map/)
+    expect(SRC).toMatch(/neighborhoodHeadline\(neighborhood\.name\)/)
+  })
 })

@@ -68,7 +68,7 @@ import { publishPlaceAffordability } from '@/lib/place/publish-place-affordabili
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
-import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
+import { buildPlaceAlertTypes, placeAlertsSource, publishableNewCount } from '@/lib/site/place-alerts'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlaceDoor } from '@/lib/market/publish-place-door'
 import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
@@ -92,6 +92,7 @@ import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
+import { appendPlaceFaqExtras, buildPlaceFaqExtras } from '@/lib/site/place-faq-extras'
 import { latestSaleMedian } from '@/lib/market/latest-sale-median'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { formatPrice } from '@/lib/format/money'
@@ -176,7 +177,9 @@ import {
   cityInstrumentSource,
   pickPlaceMart,
   placeMartFigures,
+  placeMartTrace,
 } from './_v3/city-mart'
+import { volumeCompact } from '@/app/housing-market/_v3/closed-kpis'
 import {
   cityVerdictCaption,
   leftoverClosedCount,
@@ -517,7 +520,6 @@ async function renderCityDetail({ params }: Props) {
     refreshedAt: leftoverStamp,
   }
   const marketFaq = buildMarketFaq(cityName, marketFaqInput)
-  const { faqs } = marketFaq
 
   const mart = pickPlaceMart(cityMartRow, regionMartRow)
   const figures: V3InstrumentFigure[] = leftoverMarketFigures(hud, {
@@ -897,6 +899,64 @@ async function renderCityDetail({ params }: Props) {
     Boolean(quickFacts?.population),
   )
 
+  // SITE-172: FAQ depth beyond pulse stats. Every extra traces to a section
+  // this page already printed. Dataset variables stay pulse-only.
+  const marketTrace = cityInstrumentSource(cityMarketTrace(cityName, mosLabel != null), mart, cityName)
+  const newHouses30d = publishableNewCount(publicPace.newCount30d)
+  const yearVolume = mart?.grain === 'city' ? volumeCompact(mart.totalVolume) : ''
+  const ohRows = firstOh ? [firstOh, ...restOh] : []
+  const placeFaqExtras = buildPlaceFaqExtras({
+    placeName: cityName,
+    grain: 'city',
+    neighborhoods: firstNbh ? bendNeighborhoodItems : [],
+    neighborhoodsSource: PLACE_COUNT_TRACE,
+    communities: [
+      ...(firstGolf ? golfLedgerItems : []),
+      ...(firstRail ? communityItems : []),
+    ],
+    communitiesSource: PLACE_COUNT_TRACE,
+    parks: cityParkRows.map((row) => ({ name: String(row.what) })),
+    parksSource: PLACE_PARKS_TRACE,
+    trails: cityTrailRows.map((row) => ({ name: String(row.what) })),
+    trailsSource: PLACE_TRAILS_TRACE,
+    openHouses: ohRows.map((row) => ({
+      address: String(row.what),
+      when: row.when ? String(row.when) : null,
+    })),
+    openHousesSource: OPEN_HOUSE_TRACE,
+    saleToOriginalPct: hud.saleToList,
+    saleToOriginalSource: marketTrace,
+    cashShare: publicPace.cashShare,
+    financing: affordability?.mix ?? [],
+    mixSource: affordability?.mixSource ?? marketTrace,
+    newListings30d: publicPace.newCount30d,
+    newListingsSource:
+      newHouses30d != null
+        ? placeAlertsSource({
+            count: newHouses30d,
+            geoType: 'city',
+            geoSlug: slug,
+            placeName: cityName,
+          })
+        : null,
+    medianListPrice: hud.medianList,
+    medianListSource: affordability?.medianSource ?? marketTrace,
+    rate: affordability?.rate
+      ? {
+          pct: affordability.rate.pct,
+          weekLabel: affordability.rate.weekLabel,
+          sourceName: affordability.rate.sourceName,
+        }
+      : null,
+    yearClosed:
+      mart?.grain === 'city' && yearVolume && mart.soldCount > 0
+        ? { year: mart.year, volume: yearVolume, soldCount: mart.soldCount }
+        : null,
+    yearClosedSource: mart?.grain === 'city' ? placeMartTrace(mart, cityName) : null,
+  })
+  const faq = appendPlaceFaqExtras(marketFaq, placeFaqExtras)
+  const { faqs } = faq
+
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
@@ -921,7 +981,7 @@ async function renderCityDetail({ params }: Props) {
   const citySchemas = buildCitySchemas({
     cityName,
     slug,
-    faq: marketFaq,
+    faq,
     hasMap: true,
     homes: foldPhotoCards,
   })
@@ -1257,7 +1317,17 @@ async function renderCityDetail({ params }: Props) {
           id="faq"
           eyebrow="Common questions"
           heading={`Questions about ${cityName}`}
-          questions={faqs.map((item) => ({ question: item.question, body: item.answer }))}
+          questions={faqs.map((item) => {
+            const extra = placeFaqExtras.find((row) => row.question === item.question)
+            return extra
+              ? {
+                  question: extra.question,
+                  body: extra.answer,
+                  source: extra.source,
+                  reference: true,
+                }
+              : { question: item.question, body: item.answer }
+          })}
         />
 
         {/* D80: real published guides for this city, never generated filler. */}

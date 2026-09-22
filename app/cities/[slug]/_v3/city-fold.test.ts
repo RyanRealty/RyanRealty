@@ -160,6 +160,17 @@ describe('SITE-170 city child doors and type-rail photographs', () => {
   })
 })
 
+describe('SITE-172 city FAQ depth beyond pulse stats', () => {
+  it('merges place FAQ extras into the visible FAQ and FAQPage without changing the H1', () => {
+    expect(PAGE).toMatch(/buildPlaceFaqExtras/)
+    expect(PAGE).toMatch(/appendPlaceFaqExtras/)
+    expect(PAGE).toMatch(/const headline = placeHomesForSaleHeading\(cityName\)/)
+    expect(PAGE).toMatch(/<V3Heading level=\{1\}[\s\S]*\{headline\}/)
+    expect(PAGE).not.toMatch(/hoaMasterAnnual/)
+    expect(PAGE).not.toMatch(/schoolDistrictName/)
+  })
+})
+
 describe('SITE-128 city fold pin clustering', () => {
   it('contract: desktop fold stage is 46 / 44 / 2; phone is 14 + 2', () => {
     const houses = JSON.parse(

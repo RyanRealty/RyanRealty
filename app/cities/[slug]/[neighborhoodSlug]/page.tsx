@@ -62,7 +62,7 @@ import {
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
 import { marketVerdict } from '@/lib/market/classify'
-import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
+import { buildPlaceAlertTypes, placeAlertsSource, publishableNewCount } from '@/lib/site/place-alerts'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
@@ -77,6 +77,7 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { skippableRail, skippableRailResult } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
+import { buildPlaceFaqExtras } from '@/lib/site/place-faq-extras'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   v3Text,
@@ -496,6 +497,43 @@ async function renderNeighborhoodDetail({ params }: Props) {
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
 
+  const dailyRows = dailyLifeRows(richContent, cityName)
+  const withCoords = boundaryMapData.pins.filter(
+    (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng),
+  )
+  const geo =
+    withCoords.length > 0
+      ? {
+          lat: withCoords.reduce((a, p) => a + p.lat, 0) / withCoords.length,
+          lng: withCoords.reduce((a, p) => a + p.lng, 0) / withCoords.length,
+        }
+      : undefined
+  const nearbyRecreation = recreationNearPoint(geo?.lat, geo?.lng, {
+    omitHrefs: new Set(dailyRows.map((row) => row.href)),
+  })
+  const newHouses30d = publishableNewCount(publicPace.newCount30d)
+  const placeFaqExtras = buildPlaceFaqExtras({
+    placeName: neighborhood.name,
+    cityName,
+    grain: 'neighborhood',
+    neighborhoods: peerNeighborhoods,
+    neighborhoodsSource: PLACE_COUNT_TRACE,
+    parks: nearbyRecreation.parks.map((row) => ({ name: String(row.what) })),
+    parksSource: PLACE_NEAR_RECREATION_TRACE,
+    trails: nearbyRecreation.trails.map((row) => ({ name: String(row.what) })),
+    trailsSource: PLACE_NEAR_RECREATION_TRACE,
+    newListings30d: publicPace.newCount30d,
+    newListingsSource:
+      newHouses30d != null
+        ? placeAlertsSource({
+            count: newHouses30d,
+            geoType: 'neighborhood',
+            geoSlug: metricNeighborhoodSlug,
+            placeName: neighborhood.name,
+          })
+        : null,
+  })
+
   /* ── The cited Q&A (SITE-08) ────────────────────────────────────────────
      One array feeds the visible rows AND the FAQPage JSON-LD, so the markup
      cannot describe a sentence the page does not print. Every row carries the
@@ -562,7 +600,14 @@ async function renderNeighborhoodDetail({ params }: Props) {
     // No SITE-01 address field on this route yet — the site's valuation spine
     // is the same ask one step away, and it carries this page as its source.
     valueAsk: { href: valuationHref(`/cities/${citySlug}/${neighborhoodSlug}`), onPage: false },
-    extra: faqs,
+    extra: [
+      ...faqs,
+      ...placeFaqExtras.map((item) => ({
+        question: item.question,
+        answer: item.answer,
+        source: item.source,
+      })),
+    ],
   })
   const answerFaqs = answersFaqItems(placeAnswers)
   if (process.env.NODE_ENV !== 'production') {
@@ -638,7 +683,6 @@ async function renderNeighborhoodDetail({ params }: Props) {
 
   /* ── The ledgers ───────────────────────────────────────────────────────── */
 
-  const dailyRows = dailyLifeRows(richContent, cityName)
   const [firstDaily, ...restDaily] = dailyRows
 
   // Every recorded subdivision inside the neighborhood, plus any community
@@ -752,19 +796,6 @@ async function renderNeighborhoodDetail({ params }: Props) {
 
   /* ── JSON-LD ───────────────────────────────────────────────────────────── */
 
-  // Geo centroid for Place schema: average of in-boundary listing coords.
-  const withCoords = boundaryMapData.pins.filter(
-    (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng),
-  )
-  const geo =
-    withCoords.length > 0
-      ? {
-          lat: withCoords.reduce((a, p) => a + p.lat, 0) / withCoords.length,
-          lng: withCoords.reduce((a, p) => a + p.lng, 0) / withCoords.length,
-        }
-      : undefined
-  const dailyHrefs = new Set(dailyRows.map((row) => row.href))
-  const nearbyRecreation = recreationNearPoint(geo?.lat, geo?.lng, { omitHrefs: dailyHrefs })
   const [firstNearbyPark, ...restNearbyParks] = nearbyRecreation.parks
   const [firstNearbyTrail, ...restNearbyTrails] = nearbyRecreation.trails
   const hasMap = Boolean(boundaryMapData.polygon) || placeHomes.length > 0
