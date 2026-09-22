@@ -116,13 +116,13 @@ export function mapDrivesHierarchyProblems({ root = process.cwd(), files = {} } 
     if (!/atlasRegions/.test(city) || !/atlasPlatEntries/.test(city) || !/childPlatEntries/.test(city)) {
       p.push(`${PATHS.city}: child plats must come from atlasRegions (the map), not a sales-index dump.`)
     }
-    if (!/id="atlas"/.test(city) || !/<V3Atlas/.test(city)) {
-      p.push(`${PATHS.city}: V3Atlas #atlas is the drawing that drives hierarchy.`)
+    if (!/id="atlas"/.test(city) || (!/<V3Atlas/.test(city) && !/<PlaceSubdivisionAtlas/.test(city))) {
+      p.push(`${PATHS.city}: the one Atlas is the drawing that drives hierarchy.`)
     }
     const nbh = city.indexOf('id="neighborhoods"')
     const kids = city.indexOf('id="child-places"')
-    if (nbh === -1 || kids === -1 || nbh > kids) {
-      p.push(`${PATHS.city}: #neighborhoods must sit above #child-places. Atlas-drawn plats follow the bars.`)
+    if (nbh === -1 || kids === -1 || kids > nbh) {
+      p.push(`${PATHS.city}: #child-places sits beside the map, above the counted neighborhood ledger.`)
     }
     if (!/nameOnly/.test(city)) {
       p.push(`${PATHS.city}: child place cards must be nameOnly.`)

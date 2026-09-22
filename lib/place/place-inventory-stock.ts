@@ -5,7 +5,10 @@
  * Market figures stay on their own traces (SFR leftover / plat inventory).
  * This module only groups the live stock a visitor can open.
  */
-import { getBoundaryOnMarketKeys } from '@/lib/data/geo/place-on-market-stock'
+import {
+  getBoundaryOnMarketKeys,
+  type PlaceBoundaryGeoType,
+} from '@/lib/data/geo/place-on-market-stock'
 import { getListingTiles, type ListingTile } from '@/lib/data'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { formatCount } from '@/lib/format/count'
@@ -171,7 +174,7 @@ export async function loadPlaceStockTiles(input: {
   subdivisionNames?: readonly string[]
   city?: string | null
   /** Recorded boundary. Every publicly active listing inside it, every type. */
-  boundary?: { geoType: 'subdivision' | 'neighborhood'; geoSlug: string } | null
+  boundary?: { geoType: PlaceBoundaryGeoType; geoSlug: string } | null
 }): Promise<ListingTile[]> {
   const boundaryKeys = input.boundary
     ? await getBoundaryOnMarketKeys(input.boundary.geoType, input.boundary.geoSlug)

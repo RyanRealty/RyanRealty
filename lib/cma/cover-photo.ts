@@ -13,6 +13,8 @@
  * exterior, even one with a photographer's overlay, always beats the brand.
  *
  * Cost: at most MAX_GRADES vision calls a build, and one in the common case.
+ * The brand frame is only for a listing that has no photo of its own. A
+ * living room is still this house; Old Mill is not.
  */
 import { gradePhoto, type PhotoGrade, type ShotSubject } from '@/lib/grok/classify'
 import { grokConfigured } from '@/lib/grok/client'
@@ -99,7 +101,19 @@ async function gradeOne(url: string) {
   }
 }
 
-const LIVE: CoverPhotoDeps = { fetchPhotos: sparkPhotos, grade: gradeOne, enabled: grokConfigured }
+/** The synced photo set. Spark is the fallback when that set is empty. */
+async function listingPhotos(listingKey: string): Promise<CoverCandidate[]> {
+  try {
+    const { getListingPhotos } = await import('@/lib/data/studio/listing-photos')
+    const rows = await getListingPhotos(listingKey, { limit: 40 })
+    if (rows.length > 0) return rows.map((p) => ({ url: p.url, primary: p.isPrimary }))
+  } catch {
+    // The synced set is missing. The live feed is the other copy of the same photos.
+  }
+  return sparkPhotos(listingKey)
+}
+
+const LIVE: CoverPhotoDeps = { fetchPhotos: listingPhotos, grade: gradeOne, enabled: grokConfigured }
 
 export async function pickCoverPhoto(
   input: { listingKey: string | null; heroUrl: string | null },
@@ -152,11 +166,23 @@ export async function pickCoverPhoto(
     }
   }
   if (graded.length === 0) return keep('no photo could be graded')
+  const subjects = graded.map((g) => g.subject).join(', ')
+  // The listing's own photo stays, even when it is a room. The brand frame
+  // is a different place, and it was showing up as "your home".
+  if (hero) {
+    return {
+      url: hero,
+      source: 'hero',
+      graded,
+      costUsd: cost,
+      reason: `no usable exterior among ${graded.length} graded photo(s) (${subjects}); kept the listing photo`,
+    }
+  }
   return {
     url: BRAND_HERO,
     source: 'brand',
     graded,
     costUsd: cost,
-    reason: `no usable exterior among ${graded.length} graded photo(s) (${graded.map((g) => g.subject).join(', ')})`,
+    reason: `no usable exterior among ${graded.length} graded photo(s) (${subjects})`,
   }
 }

@@ -77,7 +77,13 @@ import {
   type AtlasViewBounds,
 } from '@/lib/geo/atlas-camera'
 import { placeDoorLabels, shortPlaceLabel } from '@/lib/place/short-place-label'
-import { atlasFramePad, childPaintLive, hierarchyChildIdSet } from '@/lib/place/map-hierarchy'
+import {
+  atlasFramePad,
+  childPaintLive,
+  childSelectionId,
+  childSelectionMatches,
+  hierarchyChildIdSet,
+} from '@/lib/place/map-hierarchy'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 
 export type { AtlasViewBounds }
@@ -1224,9 +1230,7 @@ export function V3Atlas({
         onSubdivisionSelect?.(null)
       } else if (childIdSet.has(shape.id)) {
         fitCamToShape(shape)
-        onSubdivisionSelect?.(
-          shape.id.startsWith('subdivision:') ? shape.id.slice('subdivision:'.length) : shape.id,
-        )
+        onSubdivisionSelect?.(childSelectionId(shape.id))
       }
     },
     [childIdSet, fitCamToShape, onSubdivisionSelect, pointer, proj, toPx],
@@ -1243,8 +1247,10 @@ export function V3Atlas({
       setCam(ATLAS_CAM_HOME)
       return
     }
-    const shape = shapes.find((item) => item.id === `subdivision:${next}`)
-    if (shape && childIdSet.has(shape.id)) fitCamToShape(shape)
+    const shape = shapes.find(
+      (item) => childIdSet.has(item.id) && childSelectionMatches(item.id, next),
+    )
+    if (shape) fitCamToShape(shape)
   }, [pairedSelection, selectedSubdivisionId, view, shapes, childIdSet, fitCamToShape])
 
   /* Every place as a door a thumb can hit: on a phone most silhouettes are

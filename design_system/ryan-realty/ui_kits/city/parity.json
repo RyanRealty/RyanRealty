@@ -30,8 +30,8 @@
       "blocking": true
     },
     {
-      "name": "PlaceSplitView",
-      "section": "Flagship Split as the inventory surface under the atlas. City polygon from getBoundaryGeoJSON / getCityBoundaryGeoJSON. seedRing. overlayBoundaries from nested Atlas children (Bend neighborhoods, plats elsewhere). Never ?shapes= on this URL. Type chips are Split filters.",
+      "name": "PlaceSubdivisionMap",
+      "section": "One map. Children sit beside it (Bend neighborhoods, plats elsewhere) and the carousel under it lists the publicly active homes. Never ?shapes= on this URL.",
       "blocking": true
     },
     {
@@ -65,8 +65,8 @@
       "blocking": true
     },
     {
-      "name": "V3Atlas",
-      "section": "#atlas -- the living map scoped to the city: every active, pending, and 30-day-closed listing inside the recorded boundary as points over a heat field, its places as touchable silhouettes, type toggles, a price scrubber. Same builder as the homepage (one source). Matt 2026-09-01: heat maps on every page.",
+      "name": "PlaceSubdivisionAtlas",
+      "section": "#atlas -- the one city map. Subject ring plus child shapes. Type key stays. Price scrubber stays off. Same builder as the other place pages.",
       "blocking": true
     },
     {
@@ -80,8 +80,8 @@
       "blocking": true
     },
     {
-      "name": "V3PlaceIndex",
-      "section": "Pattern 9, #child-places AFTER #neighborhoods (SITE-128 Look punch, 2026-09-18). Name-only cards for Atlas-drawn plats on non-Bend cities. Bend's crawlable children are the designated districts in #neighborhoods — the city no longer dumps 'Subdivisions in {city}' (60 deepest-history plats) above those bars. A–Z /subdivisions is the directory. No bars, no lifetime-sales sort, no Subdivisions/Neighborhoods heading.",
+      "name": "PlaceSubdivisionRail",
+      "section": "#child-places beside the one map. Bend lists its neighborhoods. Other cities list the recorded plats drawn on the map. Name and property-type line. The list scrolls inside the map height. The city name shows every publicly active home.",
       "blocking": true
     }
   ],
@@ -166,10 +166,10 @@
     "PlaceAreaHero (shortened photograph; MOS moved to city-fold figure)",
     "V3Breadcrumb",
     "V3Heading (H1 `{City} real estate`)",
-    "city-fold: V3PlaceLook #place-look (drawing — Google + one city ring + photo cards) | CityInsight #place-insight (figure: the beautifului InsightCards pager, page 1 the two named V3MosBars, page 2 the catalog AnomalyCard over eight published months) | CityAlertsStrip #alerts (the ask, with the beUI combobox as its type control) — SITE-82, SITE-93, SITE-128 first-look",
+    "PlaceSubdivisionAtlas #atlas (one map: the city's children beside it)",
+    "PlaceSubdivisionHomes #homes (every publicly active home in the city, or in the selected child)",
+    "city-fold: CityInsight #place-insight (figure: the beautifului InsightCards pager) | CityAlertsStrip #alerts (the ask)",
     "PlaceTypeSlider (horizontal leftover type cards)",
-    "PlaceSplitView #homes (flagship Split, city polygon seed)",
-    "V3Atlas #atlas (amenity / cluster map after the first-look fold — sticky alerts still key off this id)",
     "V3Ledger #neighborhoods (designated Bend neighborhoods, D83/D89)",
     "V3Ledger #communities (all city communities, marquee first, D88)",
     "V3Ledger #communities-ledger (golf and master-planned, D85/D90/D92)",

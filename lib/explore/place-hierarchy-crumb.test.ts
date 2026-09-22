@@ -22,7 +22,7 @@ describe('SITE-128 hierarchy — community ≠ neighborhood', () => {
     expect(city).not.toMatch(/CITY_PLAT_INDEX_CAP/)
     expect(city).not.toMatch(/heading=\{[^}]*Subdivisions in/)
     expect(city).not.toMatch(/Communities and subdivisions/)
-    expect(city.indexOf('id="neighborhoods"')).toBeLessThan(city.indexOf('id="child-places"'))
+    expect(city.indexOf('id="child-places"')).toBeLessThan(city.indexOf('id="neighborhoods"'))
     expect(city).toMatch(/nameOnly/)
     expect(city).toMatch(/nameOnlyChildEntries/)
   })

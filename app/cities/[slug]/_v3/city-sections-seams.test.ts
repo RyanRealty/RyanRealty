@@ -47,11 +47,8 @@ describe('SITE-128 seams — name-only community cards + grain split', () => {
     expect(PAGE).toMatch(/communityPublicPair\(c\)/)
   })
 
-  it('does not put an em dash in the city fold or atlas claim (Matt lock 2026-09-20)', () => {
-    const claims = [...PAGE.matchAll(/(?:claim|claimText)=\{`([^`]*)`\}/g)].map((m) => m[1])
-    expect(claims.length).toBeGreaterThan(0)
-    for (const copy of claims) {
-      expect(copy).not.toContain('\u2014')
-    }
+  it('does not lecture over the city map', () => {
+    expect(PAGE).not.toMatch(/claimText=\{/)
+    expect(PAGE).not.toMatch(/houses for sale: active and pending/)
   })
 })

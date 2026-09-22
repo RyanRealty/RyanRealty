@@ -74,17 +74,20 @@ export function PlaceSubdivisionMap({
 export function PlaceSubdivisionRail({
   id,
   nameOnly = true,
+  label,
 }: {
   id: string
   /** Name and property-type line. No sales bar. */
   nameOnly?: boolean
+  /** Accessible name for the list. Defaults to "{place} subdivisions". */
+  label?: string
 }) {
   const { placeName, rail, homes, keysBySlug, selectedId, setSelected } = usePlaceMap()
   return (
     <nav
       id={id}
       className={cn('place-subdiv-rail', nameOnly && 'place-subdiv-rail--names')}
-      aria-label={`${placeName} subdivisions`}
+      aria-label={label ?? `${placeName} subdivisions`}
     >
       <ul className="place-subdiv-rail__list">
         <li>

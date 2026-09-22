@@ -3,10 +3,12 @@
  *
  * First screen (SITE-82): shortened place photograph + MOS bars, then a city
  * fold where Atlas is the drawing and CityAlertsStrip (V3Number) is the figure.
- * H1 is "{city} homes for sale". Flagship PlaceSplitView is seeded from the city
- * polygon. Nested places draw as Atlas regions and Split overlayBoundaries
- * (Bend neighborhoods, plats elsewhere). Do not write ?shapes= onto this URL.
- * Type chips live on Split, not as first-screen property-type H2s. One
+ * H1 is "{city} homes for sale". One map: the city's children sit beside it
+ * (Bend neighborhoods, recorded plats elsewhere), no taller than the map.
+ * Choosing one zooms to that shape and the carousel below lists its publicly
+ * active homes. The city name shows every publicly active home in the city.
+ * Do not write ?shapes= onto this URL. Type chips live on the map key and
+ * PlaceTypeSlider, not as first-screen property-type H2s. One
  * typical-price slope sits after the child doors. MOS is two bars, never a
  * five-number HUD. When MOS publishes, PlaceDoor is omitted so one inventory
  * count owns the fold.
@@ -49,6 +51,7 @@ import {
   getAllNeighborhoodsWithCity,
   getPlaceOpeningListings,
   getPlaceAmenityLayers,
+  getBoundaryChildRows,
 } from '@/lib/data'
 import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
@@ -113,13 +116,13 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { V3Atlas, V3PlaceIndex, V3PlaceLook, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
+import { type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
 import {
-  capLookListings,
-  listingsFromAtlasDots,
-  listingsFromTiles,
-  placeLookPhotoCards,
-} from '@/lib/place/first-look'
+  PlaceSubdivisionAtlas,
+  PlaceSubdivisionHomes,
+  PlaceSubdivisionMap,
+  PlaceSubdivisionRail,
+} from '@/components/site/v3/PlaceSubdivisionMap.client'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import {
@@ -130,7 +133,6 @@ import {
 import { atlasRegionName } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
-import { PlaceSplitView } from '@/components/search/PlaceSplitView'
 import {
   placeTypeCoverPhotos,
   publishPlaceTypeCards,
@@ -139,7 +141,10 @@ import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { cityPlaceGrain } from '@/lib/place/city-place-grain'
 import { subdivisionHref } from '@/lib/site/place-href'
-import { overlaysFromRegions } from '@/lib/place/child-rings'
+import { childAtlasRegions, subjectAtlasRegions } from '@/lib/place/map-hierarchy'
+import { cityChildStockSlug } from '@/lib/place/city-rail'
+import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
+import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertsStrip } from './_v3/CityAlertSheet.client'
 import { CityInsight } from './_v3/CityInsight.client'
@@ -778,6 +783,38 @@ async function renderCityDetail({ params }: Props) {
     })
     .filter((row): row is { name: string; href: string } => row !== null)
   const childPlatEntries: V3PlaceIndexEntry[] = nameOnlyChildEntries([atlasPlatEntries, platPlaceCards])
+  const subjectRegions = subjectAtlasRegions(atlasRegions)
+  const childRegions = childAtlasRegions(atlasRegions)
+  const childStockSlugs = childRegions.map((region) => cityChildStockSlug(region, slug))
+  const [cityStock, childStockRows] = await Promise.all([
+    withTimeoutFallback(
+      loadPlaceStockTiles({ boundary: { geoType: 'city', geoSlug: slug } }),
+      [],
+      12000,
+      'city:stock',
+    ),
+    withTimeoutFallback(
+      getBoundaryChildRows(isBend ? 'neighborhood' : 'subdivision', childStockSlugs),
+      [],
+      12000,
+      'city:child-stock',
+    ),
+  ])
+  const stockSections = placeStockSectionsFromTiles(cityStock)
+  const placeHomes = stockSections.flatMap((section) => section.rows)
+  const rowsForRail = isBend
+    ? childStockRows.map((row) => ({
+        ...row,
+        geo_slug: row.geo_slug.startsWith(`${slug}-`) ? row.geo_slug.slice(slug.length + 1) : row.geo_slug,
+      }))
+    : childStockRows
+  const railEntries = subdivisionRailEntries({
+    regions: childRegions.map((region) => ({ name: region.name, href: region.href ?? '' })),
+    extras: childRegions.length > 0 ? [] : childPlatEntries,
+    rows: rowsForRail,
+  })
+  const homesByChild = childListingKeys(rowsForRail)
+  const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${cityName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
 
   // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
   // city-prefixed index slugs while the ledger's are plain registry slugs for
@@ -877,20 +914,6 @@ async function renderCityDetail({ params }: Props) {
   // SITE-82: fold Atlas defaults to Houses so the for-sale count agrees with
   // MOS / leftover HUD detached (same inventory question, one answer). Other
   // types stay available via the type toggles when their marks are present —
-  // we keep every house mark (active + pending + recent sold) and only the
-  // house type chip. SITE-128 hides the price scrubber on this grain.
-  const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
-  const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
-  const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
-  // SITE-128 #1 first-look: Google + ONE city ring + price pins + photo cards.
-  // Atlas stays later so amenity / cluster gates still see <V3Atlas id="atlas">.
-  const foldLookListings = capLookListings(
-    tiles.length > 0 ? listingsFromTiles(tiles) : listingsFromAtlasDots(foldAtlasDots),
-  )
-  const foldPhotoCards = placeLookPhotoCards({
-    buckets: openingListings,
-    listings: foldLookListings,
-  })
   return (
     <>
       <main className={`${V3_ROOT_CLASS} city-page`}>
@@ -956,33 +979,55 @@ async function renderCityDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-128 #1: first-look is a real map + one city ring + photo cards.
-            Cream Atlas is not the fold. Sticky alerts still key off #atlas
-            later on the page. */}
-        <div className="city-fold">
-          <div className="city-fold__stage">
-            <div className="city-fold__drawing">
-              <V3PlaceLook
-                id="place-look"
-                headline={`${cityName} right now`}
-                claim={`${cityName} houses for sale: active and pending detached homes.`}
-                listings={foldLookListings}
-                boundaryGeojson={cityGeojson}
-                placeQuery={`${cityName} Oregon`}
-                photoCards={foldPhotoCards}
-                source={
-                  foldLookListings.length > 0
-                    ? `Detached single-family houses for sale and pending in ${cityName}, from Oregon Data Share.`
-                    : atlasView.source
-                }
+        <PlaceSubdivisionMap
+          placeName={cityName}
+          rail={railEntries}
+          homes={placeHomes}
+          keysBySlug={homesByChild}
+          source={inventorySource}
+          asOf={leftoverStamp}
+        >
+          <div className="place-one-map">
+            <PlaceSubdivisionRail
+              id="child-places"
+              nameOnly
+              label={isBend ? `${cityName} neighborhoods` : `${cityName} subdivisions`}
+            />
+            <div className="community-atlas">
+              <PlaceSubdivisionAtlas
+                id="atlas"
+                headingLevel={2}
+                headline={v3Text(cityName)}
+                headlineTone="eyebrow"
+                keyPlacement="head"
+                sourceName="Oregon Data Share"
+                clusterPins
+                clusterCellPx={ATLAS_PIN_CLUSTER_CELL_PX}
+                clusterStageHint={CITY_FOLD_CLUSTER_STAGE}
+                clusterStageHintPhone={CITY_FOLD_CLUSTER_STAGE_PHONE}
+                dots={atlasView.dots}
+                regions={subjectRegions}
+                childRegions={childRegions}
+                basemap={basemapForRegions(subjectRegions, {
+                  dots: atlasView.dots,
+                  fit: 'dots',
+                })}
+                fit="dots"
+                types={atlasView.types}
+                events={atlasView.events}
+                source={atlasView.source}
+                stamp={atlasView.stamp}
+                incomplete={!atlasView.complete}
+                amenities={amenityLayers}
+                hidePriceScrubber
               />
             </div>
-            {/* SITE-93: the fold figure is ONE paged object (beautifului
-                InsightCards), not another plate of the same shape. Page 1 is
-                the two named MOS bars with the verdict and its thresholds
-                above them; page 2 is the published monthly median-close path
-                on the catalog's own pointer-scrub. Both pills are real links
-                out of the fold. */}
+          </div>
+          <PlaceSubdivisionHomes id="homes" />
+        </PlaceSubdivisionMap>
+
+        <div className="city-fold">
+          <div className="city-fold__stage">
             <aside className="city-fold__figure city-fold__figure--insight">
               <CityInsight
                 id="place-insight"
@@ -1036,46 +1081,6 @@ async function renderCityDetail({ params }: Props) {
 
         <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />
 
-        <PlaceSplitView
-          id="homes"
-          city={cityName}
-          boundaryGeojson={cityGeojson}
-          overlayBoundaries={overlaysFromRegions(atlasRegions.slice(1))}
-          seedRing
-          placeQuery={`${cityName} Oregon`}
-        />
-
-        <V3Atlas
-          id="atlas"
-          headingLevel={2}
-          headline={v3Text(`${cityName} right now`)}
-          headlineTone="eyebrow"
-          claimText={`${cityName} houses for sale: active and pending detached homes.`}
-          keyPlacement="dock"
-          sourceName="Oregon Data Share"
-          clusterPins
-          clusterCellPx={ATLAS_PIN_CLUSTER_CELL_PX}
-          clusterStageHint={CITY_FOLD_CLUSTER_STAGE}
-          clusterStageHintPhone={CITY_FOLD_CLUSTER_STAGE_PHONE}
-          dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
-          regions={foldAtlasRegions}
-          basemap={basemapForRegions(foldAtlasRegions, {
-            dots: foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots,
-            fit: 'dots',
-          })}
-          fit="dots"
-          types={foldAtlasTypes.length > 0 ? foldAtlasTypes : atlasView.types}
-          events={atlasView.events}
-          source={
-            foldAtlasDots.length > 0
-              ? `Detached single-family houses for sale and pending in ${cityName}, from Oregon Data Share.`
-              : atlasView.source
-          }
-          stamp={atlasView.stamp}
-          incomplete={!atlasView.complete}
-          amenities={amenityLayers}
-        />
-
         {/* D83: the DESIGNATED Bend polygons, and only those. */}
         {firstNbh ? (
           <V3Ledger
@@ -1094,13 +1099,6 @@ async function renderCityDetail({ params }: Props) {
             }}
           />
         ) : null}
-
-        <V3PlaceIndex
-          id="child-places"
-          heading={cityName}
-          nameOnly
-          entries={childPlatEntries}
-        />
 
         {/* D88: every community in the city that has a photo, marquee first.
             Skip when SITE-170 already painted named in-city doors above. */}

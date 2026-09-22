@@ -11,7 +11,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 
-export type PlaceBoundaryGeoType = 'subdivision' | 'neighborhood'
+export type PlaceBoundaryGeoType = 'city' | 'subdivision' | 'neighborhood'
 
 export type SubdivisionOnMarketRow = {
   listing_key: string
@@ -61,7 +61,8 @@ export async function getBoundaryOnMarketKeys(
   return keys
 }
 
-export async function getSubdivisionOnMarketRows(
+export async function getBoundaryChildRows(
+  geoType: 'subdivision' | 'neighborhood',
   geoSlugs: readonly string[],
 ): Promise<SubdivisionOnMarketRow[]> {
   const slugs = [...new Set(geoSlugs.map((slug) => slug.trim()).filter(Boolean))]
@@ -74,7 +75,7 @@ export async function getSubdivisionOnMarketRows(
       sb
         .from('listing_boundary_xref_mv')
         .select('listing_key, geo_slug, property_type, property_sub_type')
-        .eq('geo_type', 'subdivision')
+        .eq('geo_type', geoType)
         .in('geo_slug', slugs)
         .in('standard_status', PUBLIC_ACTIVE_STATUSES)
         .order('listing_key', { ascending: true })
@@ -82,7 +83,13 @@ export async function getSubdivisionOnMarketRows(
     MAX_CHILD_ROWS,
   )
   if (error) {
-    throw new Error(`[getSubdivisionOnMarketRows] ${error.message}`)
+    throw new Error(`[getBoundaryChildRows] ${geoType}: ${error.message}`)
   }
   return rows.filter((row) => row.listing_key?.trim() && row.geo_slug?.trim())
+}
+
+export async function getSubdivisionOnMarketRows(
+  geoSlugs: readonly string[],
+): Promise<SubdivisionOnMarketRow[]> {
+  return getBoundaryChildRows('subdivision', geoSlugs)
 }

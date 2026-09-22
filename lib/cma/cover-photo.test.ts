@@ -58,14 +58,27 @@ describe('pickCoverPhoto — the best exterior, one grade in the common case', (
     expect(pick.url).toBe('https://cdn/b.jpg')
   })
 
-  it('no usable exterior at all → the brand hero, and says why', async () => {
+  it('keeps the listing photo when nothing graded is an exterior', async () => {
     const pick = await pickCoverPhoto(
       { listingKey: 'K', heroUrl: 'https://cdn/k.jpg' },
       deps({ grades: { 'https://cdn/k.jpg': grade('kitchen', 50) } }),
     )
+    expect(pick.url).toBe('https://cdn/k.jpg')
+    expect(pick.source).toBe('hero')
+    expect(pick.reason).toContain('kitchen')
+    expect(pick.reason).toContain('kept the listing photo')
+  })
+
+  it('uses the brand frame only when the listing has no photo of its own', async () => {
+    const pick = await pickCoverPhoto(
+      { listingKey: 'K', heroUrl: null },
+      deps({
+        fetchPhotos: async () => [{ url: 'https://cdn/k.jpg', primary: true }],
+        grades: { 'https://cdn/k.jpg': grade('kitchen', 50) },
+      }),
+    )
     expect(pick.url).toBe(BRAND_HERO)
     expect(pick.source).toBe('brand')
-    expect(pick.reason).toContain('kitchen')
   })
 
   it('fails open: no vision pass, no key, or every grade failing keeps the MLS hero', async () => {

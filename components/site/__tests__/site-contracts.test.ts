@@ -284,11 +284,11 @@ describe('design directive contracts', () => {
   })
 
   it('D86 — city imagery sources from the VERIFIED cityHero registry (Family 4, 2026-06-10)', () => {
-    // First screen is PlaceAreaHero + H1 + PlaceSplitView, not a Stage still.
+    // First screen is PlaceAreaHero + H1 + one map, not a Stage still.
     // Ledger imagery still resolves through buildOtherCityItems → cityHero()
     // and renders NO thumbnail for an unverified city.
     const src = readSrc('app/cities/[slug]/page.tsx')
-    expect(src).toMatch(/<PlaceSplitView/)
+    expect(src).toMatch(/<PlaceSubdivisionMap/)
     expect(src).not.toMatch(/<PlaceFaceStrip/)
     expect(src).not.toMatch(/<V3Stage/)
     expect(src).not.toMatch(/<CityHomesField/)

@@ -161,7 +161,7 @@ const site136Claims = [
 ]
 checks.push({
   label: 'SITE-136 city/community claim copy has no em dash (Matt lock 2026-09-20)',
-  ok: site136Claims.length > 0 && site136Claims.every((copy) => !copy.includes(EM_DASH)),
+  ok: site136Claims.every((copy) => !copy.includes(EM_DASH)) && !/claimText=/.test(cityPage),
 })
 
 const failed = checks.filter((c) => !c.ok)

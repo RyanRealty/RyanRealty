@@ -332,6 +332,7 @@ export type { NeighborhoodLedgerRow } from '@/lib/data/geo/getBendNeighborhoodLe
 // Gate G31 enforces this is the only import path for map data on geo pages.
 export { getGeoBoundaryMapData } from '@/lib/data/geo/getGeoBoundaryMapData'
 export {
+  getBoundaryChildRows,
   getBoundaryOnMarketKeys,
   getSubdivisionOnMarketRows,
 } from '@/lib/data/geo/place-on-market-stock'

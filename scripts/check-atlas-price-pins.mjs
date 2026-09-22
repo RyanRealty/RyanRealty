@@ -29,9 +29,7 @@ const PLACE_PAGES = [
   'app/communities/[slug]/page.tsx',
   'app/subdivisions/[slug]/page.tsx',
 ]
-const FOLD_PAGES = [
-  'app/cities/[slug]/page.tsx',
-]
+
 
 const failures = []
 
@@ -189,13 +187,6 @@ if (/formatPriceLabel\(/.test(searchMap)) {
 const lookMap = readFileSync(PLACE_LOOK_MAP, 'utf8')
 if (!lookMap.includes('SearchMapClustered')) {
   failures.push(`${PLACE_LOOK_MAP} must keep SearchMapClustered so city/neighborhood fold pills stay wired`)
-}
-
-for (const page of FOLD_PAGES) {
-  const src = readFileSync(page, 'utf8')
-  if (!src.includes('<V3PlaceLook')) {
-    failures.push(`${page} must still mount V3PlaceLook so the fold map shares Atlas pin language`)
-  }
 }
 
 const ASK = 'lib/listing/publish-listing-ask.ts'

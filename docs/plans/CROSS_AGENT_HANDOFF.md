@@ -1,6 +1,14 @@
+# Current — 2026-09-22 (Matt: city pages get the same one map)
+
+Surface: Grok Build, primary checkout. `/cities/[slug]` uses one map. Bend's neighborhoods sit beside it, with a property-type line and a listing photo when that neighborhood has stock. Choosing one zooms and the carousel lists that neighborhood's publicly active homes. The city name lists every publicly active home in the city. Other cities list the recorded plats drawn on the map. Node: none.
+
 # Current — 2026-09-22 (Matt: list the schools, not a hedge)
 
 Surface: Grok Build, primary checkout. On a community page, Schools lists the attendance areas that cover the place. Source is Deschutes County polygons in `boundaries` (`get_place_schools` / `getPlaceSchools`), kept when a school covers at least 5% of the place. The share is not printed. Tetherow: William E Miller Elem, Cascade Middle, Pacific Crest Middle, Summit High. No “confirm the address” sentence and no district-only door. An empty read omits the section (Brasada). Node: none.
+
+# Current — 2026-09-22 (Matt: use the photo of their home)
+
+Surface: Grok Build, primary checkout. Murphy's "Your home" column was the Old Mill frame because the MLS hero graded as a living room and the search never opened the rest of the listing's photos. The stored photo is now the front of 20506 Murphy. The cover picker keeps a listing photo instead of the brand frame, and reads the synced photo set. Not sent. auto_send stays off. Node: none.
 
 # Current — 2026-09-22 (Matt: the evidence price board was one string)
 

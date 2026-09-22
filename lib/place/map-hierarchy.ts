@@ -99,6 +99,22 @@ export function hierarchyChildIdSet(childRegions: readonly { id: string }[]): Se
   return new Set(childRegions.map((region) => region.id))
 }
 
+/** The id the rail and the carousel share. Strips the atlas prefix. */
+export function childSelectionId(shapeId: string): string {
+  if (shapeId.startsWith('subdivision:')) return shapeId.slice('subdivision:'.length)
+  if (shapeId.startsWith('neighborhood:')) return shapeId.slice('neighborhood:'.length)
+  return shapeId
+}
+
+/** A rail id matches a subdivision shape or a neighborhood shape. */
+export function childSelectionMatches(shapeId: string, selectedId: string): boolean {
+  return (
+    shapeId === selectedId ||
+    shapeId === `subdivision:${selectedId}` ||
+    shapeId === `neighborhood:${selectedId}`
+  )
+}
+
 /**
  * Default highlight: the subject place ring only. No subject geom → nothing
  * (never fall back to twenty child plats).

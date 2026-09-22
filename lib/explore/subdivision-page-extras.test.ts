@@ -93,9 +93,10 @@ describe('place list wiring', () => {
   // whose Field caption states its own cap (cityFieldCaption /
   // neighborhoodFieldCaption), asserted by ci:place-hero-grain's v3 arms.
 
-  it('keeps the city page on Split with a leftover face', () => {
+  it('keeps the city page on one map with a leftover face', () => {
     const src = readFileSync('app/cities/[slug]/page.tsx', 'utf8')
-    expect(src).toMatch(/<PlaceSplitView/)
+    expect(src).toMatch(/<PlaceSubdivisionHomes/)
+    expect(src).not.toMatch(/<PlaceSplitView/)
     expect(src).toMatch(/publishPlaceFace/)
   })
 
