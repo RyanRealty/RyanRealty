@@ -62,7 +62,7 @@ function priceScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream pack" id="what-its-worth">
     <div class="in wide">
       <div class="kick r">The number</div>
-      <h2 class="h r">${esc(page.toc)}</h2>
+      <h2 class="h r">${esc(page.toc ?? '')}</h2>
       <div class="r">${page.body}</div>
     </div>
   </section>`

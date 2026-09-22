@@ -210,7 +210,8 @@ async function outlinesFor(
     if (!polygonHoldsAnyPoint(rings, marks)) continue
     plats.push(...rings)
     located.forEach((point, i) => {
-      if (point && polygonHoldsAnyPoint(rings, [point])) held.add(i)
+      if (point.lat == null || point.lng == null) return
+      if (polygonHoldsAnyPoint(rings, [{ lat: point.lat, lng: point.lng }])) held.add(i)
     })
   }
   const uncovered = located.filter(

@@ -558,7 +558,12 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
       closePrice: c.closePrice,
       sqft: c.sqft,
     })),
-    rivals: input.rivals,
+    rivals: input.rivals?.map((r) => ({
+      address: r.address,
+      yearBuilt: r.yearBuilt ?? null,
+      listPrice: r.listPrice,
+      sqft: r.sqft ?? null,
+    })),
   })
   const ageHtml = age ? `<p class="method-line">${esc(age)}</p>` : ''
   // Tip Ready P0: cover already carries recommend + range. The worth-strip's
