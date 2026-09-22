@@ -22,7 +22,7 @@ export default function robots(): MetadataRoute.Robots {
         // /api/og must stay crawlable — social scrapers (facebookexternalhit,
         // Twitterbot, Slackbot, LinkedInBot, Discordbot, WhatsApp) fetch it to
         // render link-preview cards. A longer Allow beats the /api/ Disallow.
-        allow: ['/', '/api/og'],
+        allow: ['/', '/api/og', '/llms.txt'],
         disallow: ['/admin/', '/dashboard/', '/account/', '/api/', '/auth/', '/mockup-preview/', '/dev/'],
       },
       // AI retrieval / answer crawlers — these drive live citations (allow all).

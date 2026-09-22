@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildJsonLd } from './json-ld'
+import { buildJsonLd, listingItemList } from './json-ld'
 
 const rec = (v: unknown) => v as Record<string, unknown> | undefined
 
@@ -142,6 +142,40 @@ describe('buildJsonLd', () => {
   it('already-absolute URLs pass through unchanged', () => {
     const r = buildJsonLd({ type: 'article', headline: 'H', url: 'https://example.com/x' })
     expect(r.url).toBe('https://example.com/x')
+  })
+
+  it('place City on /cities/bend carries Wikipedia + Wikidata sameAs and a #place @id', () => {
+    const r = buildJsonLd({
+      type: 'place',
+      placeType: 'City',
+      name: 'Bend',
+      url: '/cities/bend',
+    })
+    expect(r['@type']).toBe('City')
+    expect(String(r['@id'])).toMatch(/\/cities\/bend#place$/)
+    const sameAs = r.sameAs as string[]
+    expect(sameAs).toContain('https://en.wikipedia.org/wiki/Bend,_Oregon')
+    expect(sameAs).toContain('https://www.wikidata.org/wiki/Q671288')
+  })
+
+  it('place community on /communities/tetherow cites the official origin', () => {
+    const r = buildJsonLd({
+      type: 'place',
+      name: 'Tetherow',
+      url: '/communities/tetherow',
+    })
+    expect(r.sameAs).toEqual(['https://tetherow.com'])
+  })
+
+  it('listingItemList withholds an empty set and builds ItemList input otherwise', () => {
+    expect(listingItemList('Homes for sale in Bend', [])).toBeNull()
+    expect(listingItemList('Homes for sale in Bend', [
+      { name: '$750,000 · 1 Main St', url: '/homes-for-sale/bend/1-main-st-2201' },
+    ])).toEqual({
+      type: 'itemList',
+      name: 'Homes for sale in Bend',
+      items: [{ name: '$750,000 · 1 Main St', url: '/homes-for-sale/bend/1-main-st-2201' }],
+    })
   })
 
   it('service points provider at #organization and names the area', () => {

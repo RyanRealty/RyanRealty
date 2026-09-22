@@ -7,6 +7,8 @@ import { subdivisionLlmsLines } from '@/lib/data/subdivisions/subdivision-index'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import aiQueryMap from '@/lib/seo/ai-query-map.json' assert { type: 'json' }
+import { CORE_CITY_SLUGS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { marketCityLlmsLines, zipLlmsLines } from '@/lib/site/llms-geo'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -95,6 +97,8 @@ export async function GET() {
   // Subdivision plat pages — built from the same list the sitemap emits, via
   // the shared line builder (never a copy of the URL logic).
   const subdivisionLines = lines(subdivisionLlmsLines(subdivisions, SITE_URL))
+  const zipLines = lines(zipLlmsLines(SITE_URL))
+  const marketCityLines = lines(marketCityLlmsLines(SITE_URL, CORE_CITY_SLUGS, cityLabel))
 
   const pillarLines = (section: string) =>
     (aiQueryMap.pillars as Array<{ section: string; label: string; path: string }>)
@@ -111,7 +115,10 @@ export async function GET() {
 - Bend homes for sale: ${SITE_URL}/homes-for-sale/bend
 - Redmond homes for sale: ${SITE_URL}/homes-for-sale/redmond
 - Sisters homes for sale: ${SITE_URL}/homes-for-sale/sisters
+- Sunriver homes for sale: ${SITE_URL}/homes-for-sale/sunriver
+- La Pine homes for sale: ${SITE_URL}/homes-for-sale/la-pine
 - Open houses: ${SITE_URL}/open-houses
+- New construction in Bend: ${SITE_URL}/new-construction
 ${pillarLines('listings')}
 
 ## Price Drops
@@ -122,7 +129,7 @@ ${pillarLines('listings')}
 
 ## Market Data
 - Housing market hub: ${SITE_URL}/housing-market
-- Market reports: ${SITE_URL}/housing-market/reports${reportLines}
+- Market reports: ${SITE_URL}/housing-market/reports${reportLines}${marketCityLines}
 
 ## Local Areas
 - Cities: ${SITE_URL}/cities
@@ -135,6 +142,8 @@ ${pillarLines('listings')}
 - All communities: ${SITE_URL}/communities${communityLines}
 
 ## Neighborhoods${neighborhoodLines}
+
+## ZIP codes${zipLines}
 
 ## Subdivisions${subdivisionLines}
 
