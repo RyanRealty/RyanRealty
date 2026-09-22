@@ -2,6 +2,10 @@
 
 Surface: Grok Build, primary checkout, `main` `20a975447`. Murphy letter column heads sit on the same edge as the figures. The ask path breaks on the clause, the same way in every column. The what-happened sentence stays one line. Five tight sales already live ($693,000–$735,000, recommended $716,000). Not sent. auto_send stays off. Node: none.
 
+# Current — 2026-09-22 (Matt: header and dog are already nodes; they were parked)
+
+Surface: Grok Build. SITE-155 and SITE-153 were blocked on draft PR #351, which never became the live header. Both are open again. SITE-155: remove Work with us, show the Google picture, do not print the name. SITE-153: move the dog off the cookie bar and the last line, make it move, six doors, click the dog to toggle. Do not mint twins.
+
 # Current — 2026-09-22 (Matt: improve the amenities, do not remove them)
 
 Surface: Grok Build, primary checkout. Community #amenities names each place from the community guide, with its description and a usable access line. No share bar and no "on the ground" heading. Phone is one column. Node: none.

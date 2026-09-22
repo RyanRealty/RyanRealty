@@ -1468,6 +1468,96 @@ const SEEDS: readonly Seed[] = [
     accept:
       'At 1440 and 375 on /cities/redmond and one of Sisters/Sunriver/La Pine: a visitor can open a named neighborhood or in-city community from the first two screens. Clicking a priced listing photograph opens that listing, not /types/*. Dummy you@email.com is gone on the city alert field. Methodology “listing tiles” sentence is gone. Product hold. Rebaseline is not done. Do not twin SITE-161 or SITE-093.',
   },
+  {
+    versionGap: 'SITE-171',
+    domain: 'public-ux',
+    title:
+      'SEO leftovers: search-area 200 twins of place pages, NC doors skip /subdivisions, market SERP title still says homes for sale',
+    objective:
+      'Looked live 2026-09-22 https://ryan-realty.com with a browser UA (scratchpad/seo-cannibalization-2026-09-22.md). Do not retarget locked H1s this node. ci:seo-shell (Matt 2026-09-07/17) requires homepage H1 “Homes for sale in Central Oregon” and city H1/title “{city} homes for sale”; PAGE_OUTLINE 2026-09-06 still says / = Ryan Realty, Bend and /cities/bend = Bend real estate. That conflict is Matt, not this ticket. CLEAR leftovers: (1) /homes-for-sale/bend/tetherow 301s to /communities/tetherow (the only /homes-for-sale/* key in data/legacy-redirects.json); /homes-for-sale/bend/awbrey-butte, /northwest-crossing, /stevens-ranch stay 200 with the same H1 as /cities/bend/awbrey-butte, /communities/northwest-crossing, /subdivisions/stevens-ranch. PAGE_OUTLINE: 301 area search URLs to the place URL. (2) /housing-market/bend/tetherow 200 “Tetherow housing market 2026: 11 homes for sale” — fold/301 into the community sold line. (3) Market keywords already omit “{city} homes for sale”; geoTitle still is “{geo} housing market 2026: N homes for sale”. H1 is housing-market, keep it. (4) /new-construction named communities href /homes-for-sale/bend/{subdivision}, not /subdivisions/{slug} when a plat page exists. (5) /homes-for-sale sr-only H1 is “Homes for sale”; title is already “Central Oregon homes for sale”. Exclusive files: data/legacy-redirects.json and/or lib/routing/pre-render-hops.ts (search-area hops), app/housing-market/[...slug]/page.tsx geoTitle, lib/site/bend-new-construction.ts community href, app/search/page.tsx sr-only h1. Do not edit app/page.tsx or city H1s (ci:seo-shell). Do not edit V3Atlas / SearchMapClustered. Do not twin SITE-157/160/170 (done). Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Middleware 3xx (not streamed 200) from leftover search-area URLs to the place page; market geoTitle without the inventory phrase; NC crawlable /subdivisions/{slug} doors; search index H1 matches the regional title; evidence in scratchpad + node.',
+    accept:
+      'Live HEAD with a browser UA: /homes-for-sale/bend/awbrey-butte 3xx → /cities/bend/awbrey-butte; /homes-for-sale/bend/northwest-crossing 3xx → /communities/northwest-crossing; /homes-for-sale/bend/stevens-ranch 3xx → /subdivisions/stevens-ranch (keep 200 only if that plat page does not exist). Tetherow hop stays. /housing-market/bend/tetherow is not an indexable twin of /communities/tetherow. Live /housing-market/bend <title> does not contain the phrase “homes for sale”; H1 stays housing market. Live /new-construction HTML has crawlable <a href="/subdivisions/…"> for at least two named plats that have subdivision pages. /homes-for-sale sr-only or visible H1 is “Central Oregon homes for sale”. ci:seo-shell still green. Do not change homepage or city H1s. Product hold. Rebaseline is not done.',
+  },
+
+  // ── Growth-loop GSC ingest 2026-09-22 (measurer). Window 2026-08-23..2026-09-19
+  // GSC API + target_query_benchmark. SITE-171..176 already live in loop_work_nodes
+  // from the parallel AEO measurer (search-area hops, city FAQ, market title phrase,
+  // AI-bot UA, NC ItemList, place ItemList). 176 is NOT the Tetherow blog 301.
+  // These nodes are leftover ranking gaps. Do not change locked H1s. Do not twin 137–176.
+  {
+    versionGap: 'SITE-180',
+    domain: 'public-ux',
+    title:
+      'Growth SEO: 301 /blog/tetherow-resort-living-real-estate — it still ranks for Tetherow homes while the community sits at pos 41',
+    objective:
+      'GSC 2026-08-23..2026-09-19 (scripts/_gsc-place-pages.mjs + scratchpad/_gsc-ingest-2026-09-22.mjs). Query landings for tetherow*: /communities/tetherow 220 impr pos 46.1 0 clicks; /blog/tetherow-resort-living-real-estate 186 impr pos 15.2 0 clicks. Page rows: blog 807 impr / 3 clicks / pos 9.6; community 261 impr / 0 clicks / pos 41.5. target_query_benchmark p1 “tetherow homes for sale” → /communities/tetherow, 70 impr pos 22. Looked live 2026-09-22 browser UA: /blog/tetherow-resort-living-real-estate 200 index,follow title “Tetherow Bend Oregon Resort Golf Community Buyer Guide”; /tetherow-resort-living-real-estate and /tetherow-bend-lifestyle-guide already 301 → community (PAGE_OUTLINE). The BLOG slug is the leftover twin. Do not 301 Caldera/Eagle Crest/Sunriver year-round posts (those titles are distinct and CTR 1.16–2.56% at pos 7–10). Exclusive files: data/legacy-redirects.json and/or next.config blog hop; blog sitemap/llms omit or 301. Do not edit app/communities/[slug]/page.tsx (SITE-162). Do not change Tetherow H1 (lock: Tetherow homes for sale). Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      '301 from /blog/tetherow-resort-living-real-estate to /communities/tetherow; sitemap/llms no longer emit the blog loc as indexable; gate or redirect test so the twin cannot return.',
+    accept:
+      'curl -A browser UA: /blog/tetherow-resort-living-real-estate is 3xx to https://ryan-realty.com/communities/tetherow (not a streamed 200). Community stays 200 index,follow H1 “Tetherow homes for sale”. /blog/caldera-springs-buyers-guide, /blog/eagle-crest-affordable-resort-redmond, /blog/sunriver-year-round-living-vs-vacation still 200. Product hold. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-177',
+    domain: 'public-ux',
+    title:
+      'Growth SEO: resort community SERP class — identical SFR blurbs, Brasada 1,263 impr / 0 clicks at pos 34, lots query ignored',
+    objective:
+      'GSC 2026-08-23..2026-09-19. Highest community page: /communities/brasada-ranch 1,263 impr 0 clicks CTR 0% pos 34.3. Query cluster: brasada ranch homes for sale 97 pos 26.7; quoted “brasada ranch homes for sale” 90 pos 11.5 CTR 0% (title); brasada ranch lots for sale 104 pos 26.3; brasada ranch cabins 89 pos 38.6. Same 28d class: black-butte-ranch 448/2/0.45%/38.2; broken-top 294/0/22.6; tetherow 261/0/41.5; eagle-crest 132/0/22.8; mountain-high 124/0/9.8 (title — pos 5–15 0 CTR); caldera-springs 94/0/28.1. Looked live 2026-09-22: every registry community description is the fill-in “Active single-family homes in {name}, {city}, Oregon. Live inventory and market data from the regional MLS.” (app/communities/[slug]/_v3/community-metadata.ts). Brasada is lots+cabins+homes; the snippet claims SFR only. Canon: high impr + CTR <2% at pos 11.5 → title/meta; pos >15 p1 community → on-page depth. H1 stays “{Place} homes for sale”. SEO-58: do not re-derive an active count in the description (must equal the body or omit). Do not invent HOA dollars (SITE-162). Do not twin SITE-23 (Brasada polygon / outside-boundaries listings), SITE-156/162 fold/Atlas, SITE-08/172 FAQ walls. Exclusive files: community-metadata.ts + the community Field type sections for lots/cabins when MLS has them. Start with `node scripts/lib/taste-catalog.mjs community --preflight`. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'Unique community meta descriptions from the same DAL figures the page body publishes; Brasada Field shows lots and cabins when those rows exist; Mountain High title/snippet names the live count the page already prints; 1440/375 shots of Brasada inventory types.',
+    accept:
+      'Live /communities/brasada-ranch description is not the SFR fill-in and names lots or cabins only if the page body lists them. /communities/tetherow, /broken-top, /black-butte-ranch descriptions are not byte-identical except the place name. H1s still “{Place} homes for sale”. /communities/mountain-high SERP title/snippet includes the on-page for-sale count or omits a count (no SEO-58 city leak). Product hold. Rebaseline is not done. Do not twin SITE-23/156/162.',
+  },
+  {
+    versionGap: 'SITE-178',
+    domain: 'public-ux',
+    title:
+      'Growth SEO: /housing-market/bend is pos 13.4 on 1,110 impr (depth); hub and /housing-market/central-oregon are the same SERP',
+    objective:
+      'GSC 2026-08-23..2026-09-19: /housing-market/bend 1,110 impr 2 clicks 0.18% CTR pos 13.4 (pos 5–15 → on-page depth). /housing-market hub 225 impr 0 clicks pos 9.3 (title). /housing-market/central-oregon 55 impr pos 8.9. 90d housing-market class 5,204 impr 11 clicks 0.21% pos 13.5. Query “bend oregon housing market” 55 impr pos 24.1. Looked live 2026-09-22: hub H1 “Central Oregon housing market: a balanced market”; leaf H1 “A balanced market” — same verdict, two indexable URLs. PAGE_OUTLINE: one regional hub (fold or differentiate: hub = live, CO leaf = report). SITE-173 owns geoTitle stripping “homes for sale”; SITE-171 owns /housing-market/bend/tetherow fold. This node is leftover depth + the hub twin. Do not bid {city} homes for sale. Do not change city/search H1s. Exclusive files: app/housing-market/page.tsx, app/housing-market/central-oregon/page.tsx, app/housing-market/[...slug]/_v3 depth (not geoTitle). Start with `node scripts/lib/taste-catalog.mjs market-report-detail --preflight`. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'One indexable regional housing-market URL; Bend market page depth beyond the KPI strip (composition / MOS drawing already on-page, sourced); hub title that is not a duplicate of the leaf; 1440/375 shots.',
+    accept:
+      'Live: exactly one of /housing-market and /housing-market/central-oregon is index,follow self-canonical; the other 3xx or noindex,follow. /housing-market/bend stays 200 index,follow, H1 still housing-market (not homes for sale). A visitor can read MOS as homes-for-sale vs a month of sales on Bend without a second URL. Product hold. Do not twin SITE-171/173. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-179',
+    domain: 'public-ux',
+    title:
+      'Growth SEO: “new construction Bend” lands on /homes-for-sale/bend/new-construction pos 43, not /new-construction',
+    objective:
+      'GSC 2026-08-23..2026-09-19 new-construction query landings: /homes-for-sale/bend/new-construction 38 impr pos 37.4; /new-construction is not in the query×page top. Page row /homes-for-sale/bend/new-construction 65 impr pos 43 0 clicks. Queries: bend or new construction for sale 20 pos 36.1; new build homes in bend 10 pos 42.6; new construction homes in bend 6. Looked live 2026-09-22: both URLs 200 index,follow. /new-construction title “New Homes in Bend: Builder Savings”; search slug title “New Construction Homes in Bend” with the generic Bend search description. Two winners for one query. SITE-175 owns JSON-LD ItemList on /new-construction; SITE-151/152/132 own the NC craft/map; SITE-171 owns plat hrefs. This node is canonical/robots only. Exclusive files: app/search/[...slug] generateMetadata for the new-construction preset (canonical + noindex or 3xx to /new-construction when the path is exactly that preset). Do not edit V3Atlas.client.tsx. Do not reopen SITE-151/152. Do not change /new-construction H1. Public Patch owns craft. Cos Mini-lands. HOLD owner email.',
+    output:
+      'One indexable Bend new-construction URL (/new-construction); search preset either 3xx or noindex+canonical to it; test so a second indexable twin cannot return.',
+    accept:
+      'Live browser UA: /new-construction 200 index,follow. /homes-for-sale/bend/new-construction is 3xx to /new-construction OR 200 noindex,follow with rel=canonical /new-construction. Faceted NC URLs that add price/beds may stay indexable only if they are not the same document. Product hold. Do not twin SITE-175/151/152. Rebaseline is not done.',
+  },
+  {
+    versionGap: 'SITE-155',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] chrome: kill the load-time scroll jump, drop Work with us, use the Google avatar not the name, keep chrome responsive',
+    objective:
+      '2026-09-22 LIVE on ryan-realty.com, Matt screenshot: the header still shows Work with us, a letter-M circle, and the first name Matthew. The search field is clipped to Sear. Draft PR #351 did not become production. This node is open again. Do not wait on that PR. Matt 2026-09-21, four chrome defects: (1) loading a page jumps the middle of the page to the top. (2) Remove the header Work with us button. The dog is that door. This reverses the 2026-09-19 lock that kept header Work with us. (3) The signed-in control is the Google profile picture, not the first name and not a letter circle. It worked, then stopped. (4) The bar stays usable from 360 through 1440 with nothing cut off. Pairs with SITE-153. Exclusive files: components/site/v3/V3Chrome.tsx, V3Chrome.css, app/api/auth/me/route.ts, app/actions/auth.ts. Do not edit V3DogFloater from this node.',
+    output:
+      'Header with no Work with us button. Signed-in control is the Google picture only, name in aria-label. Search placeholder fully visible. Shots at 360, 375, 390, 768, 1024, 1440.',
+    accept:
+      'Live header has no Work with us control. A Google-signed-in session shows that account picture and does not print the first name. Search is not clipped to Sear. No chrome control runs off the screen at 360, 375, 390, 768, 1024, or 1440. Loading a page does not move the scroll position. ci:gates green. Do not twin SITE-153.',
+  },
+  {
+    versionGap: 'SITE-153',
+    domain: 'public-ux',
+    title:
+      'Matt ADD [p0] dog floater: relocate it where it is seen, make it move, and rewrite the menu — click the dog to toggle, no Close link',
+    objective:
+      '2026-09-22: Matt says the floater position and behavior changes have not landed. The circle still sits on the cookie bar and on the last line of content. Draft PR #351 did not ship. This node is open again. Finish the contract below. Do not wait on that PR. Matt 2026-09-21: the floater is kind of out of sight. Move it somewhere researched, not the cream-on-cream corner it was in. Animate it so it gets attention: flip, spin, invert, brief rather than continuous. Menu is exactly List your home, Read our reviews, Give us a call, Send us a message, Get your home\'s value, Learn more about us. No Close link. Click the dog to open and click the dog again to close. Distinct from SITE-146 (head crop) and SITE-155 (header). Exclusive files: components/site/v3/V3DogFloater.client.tsx, V3DogFloater.css, scripts/lib/dog-floater.mjs, scripts/check-dog-floater.mjs.',
+    output:
+      'Floater clear of the cookie bar and the last line of content at 375 and 1440. Motion a person can see. Six doors. Toggle by clicking the dog. ci:dog-floater updated to this contract.',
+    accept:
+      'At 375 and 1440 the circle does not cover the cookie controls or the last readable line. It moves. The menu is those six doors in that order. A second click on the dog closes it and there is no Close link. prefers-reduced-motion still stops the motion. Tap target at least 44 by 44. ci:dog-floater and ci:gates green. Do not twin SITE-146 or SITE-155.',
+  },
 
 ]
 
