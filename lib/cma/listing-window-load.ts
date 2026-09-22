@@ -12,6 +12,7 @@ import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import {
   chooseListingMarket,
   closesFromRows,
+  withSqftMedian,
   type ListingMarketMove,
 } from '@/lib/cma/listing-window-market'
 
@@ -81,14 +82,7 @@ type MarketDoc = {
   listingMarket?: unknown
 }
 
-/** Stored figures when the row has them. Otherwise measure a draft. */
-export async function listingMarketForDocument(
-  doc: MarketDoc,
-  status: string | null | undefined,
-): Promise<ListingMarketMove | null> {
-  const stored = readListingMarket(doc.listingMarket)
-  if (stored) return stored
-  if (!LIVE_STATUS.has((status ?? '').toLowerCase())) return null
+async function measureDocument(doc: MarketDoc): Promise<ListingMarketMove | null> {
   const cycle = doc.expiredAudit?.finalCycle
   return loadListingWindowMarket({
     city: doc.subject?.city,
@@ -100,4 +94,22 @@ export async function listingMarketForDocument(
     offDate: cycle?.offMarketDate,
     asOf: new Date().toISOString().slice(0, 10),
   })
+}
+
+/**
+ * Stored dollars win. A draft that was measured before the size was kept
+ * gets the median square feet attached when a fresh read still matches
+ * those dollars, so the sentence can explain a rise beside a lower rate.
+ */
+export async function listingMarketForDocument(
+  doc: MarketDoc,
+  status: string | null | undefined,
+): Promise<ListingMarketMove | null> {
+  const stored = readListingMarket(doc.listingMarket)
+  const live = LIVE_STATUS.has((status ?? '').toLowerCase())
+  if (!stored) return live ? measureDocument(doc) : null
+  if (!live) return stored
+  if (stored.early.sqftMedian != null && stored.late.sqftMedian != null) return stored
+  const fresh = await measureDocument(doc)
+  return fresh ? withSqftMedian(stored, fresh) : stored
 }

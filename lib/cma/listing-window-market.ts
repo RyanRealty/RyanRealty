@@ -20,6 +20,8 @@ export type ListingMarketMoveWord = 'rose' | 'fell' | 'held flat'
 export type ListingMarketHalf = {
   median: number
   ppsf: number | null
+  /** Median living area of this half. Explains a price move that disagrees with the rate per foot. */
+  sqftMedian?: number | null
   n: number
   from: string
   to: string
@@ -77,14 +79,13 @@ function halfOf(rows: ListingMarketClose[], from: string, to: string): ListingMa
   const prices = rows.map((r) => r.closePrice).filter((n) => n > 0)
   const mid = median(prices)
   if (mid == null) return null
-  const ppsf = median(
-    rows
-      .filter((r) => r.sqft != null && r.sqft > 0)
-      .map((r) => r.closePrice / r.sqft!),
-  )
+  const withSize = rows.filter((r) => r.sqft != null && r.sqft > 0)
+  const ppsf = median(withSize.map((r) => r.closePrice / r.sqft!))
+  const sqftMedian = median(withSize.map((r) => r.sqft!))
   return {
     median: Math.round(mid),
     ppsf: ppsf == null ? null : Math.round(ppsf),
+    sqftMedian: sqftMedian == null ? null : Math.round(sqftMedian),
     n: prices.length,
     from,
     to,
@@ -251,14 +252,61 @@ function moveClause(word: ListingMarketMoveWord, from: number, to: number): stri
   return `fell from ${usd(from)} to ${usd(to)}`
 }
 
+/**
+ * When the check and the rate per foot move in opposite directions, say so
+ * only if the houses themselves changed size. A larger later median explains
+ * a higher sale price beside a lower rate. Without that, the two facts stand
+ * and no cause is invented.
+ */
+function mixSentence(move: ListingMarketMove): string {
+  const early = move.early.sqftMedian
+  const late = move.late.sqftMedian
+  if (early == null || late == null || !(early > 0) || !(late > 0)) return ''
+  const grew = (late - early) / early
+  if (Math.abs(grew) < 0.05) return ''
+  const larger = grew > 0
+  const explains =
+    (larger && move.priceMove === 'rose' && move.ppsfMove === 'fell') ||
+    (!larger && move.priceMove === 'fell' && move.ppsfMove === 'rose')
+  if (!explains) return ''
+  const fmt = (n: number) => Math.round(n).toLocaleString('en-US')
+  const word = larger ? 'larger' : 'smaller'
+  return `The later homes were ${word}. The median one was ${fmt(late)} square feet, and the earlier median was ${fmt(early)}.`
+}
+
 /** The sentence under the chart. Both halves are named, and the rate per foot when it exists. */
 export function listingMarketSentence(move: ListingMarketMove): string {
   const size = move.sized ? ' for a home about this size' : ''
   const price = moveClause(move.priceMove, move.early.median, move.late.median)
   const head = `While your home was listed, the median sale in ${move.place}${size} ${price}.`
   if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) return head
-  const foot = moveClause(move.ppsfMove, move.early.ppsf, move.late.ppsf)
-  return `${head} The price per square foot ${foot}.`
+  const foot = `The price per square foot ${moveClause(move.ppsfMove, move.early.ppsf, move.late.ppsf)}.`
+  const mix = mixSentence(move)
+  return mix ? `${head} ${mix} ${foot}` : `${head} ${foot}`
+}
+
+/** Same dollars, same counts. Size can be attached without replacing the signed medians. */
+export function sameListingMarketHalves(a: ListingMarketMove, b: ListingMarketMove): boolean {
+  return (
+    a.place === b.place &&
+    a.early.median === b.early.median &&
+    a.late.median === b.late.median &&
+    a.early.ppsf === b.early.ppsf &&
+    a.late.ppsf === b.late.ppsf &&
+    a.early.n === b.early.n &&
+    a.late.n === b.late.n
+  )
+}
+
+export function withSqftMedian(stored: ListingMarketMove, fresh: ListingMarketMove): ListingMarketMove {
+  if (stored.early.sqftMedian != null && stored.late.sqftMedian != null) return stored
+  if (fresh.early.sqftMedian == null || fresh.late.sqftMedian == null) return stored
+  if (!sameListingMarketHalves(stored, fresh)) return stored
+  return {
+    ...stored,
+    early: { ...stored.early, sqftMedian: fresh.early.sqftMedian },
+    late: { ...stored.late, sqftMedian: fresh.late.sqftMedian },
+  }
 }
 
 function spokenDay(iso: string): string {
@@ -298,21 +346,31 @@ export type ListingMarketSlopePanel = {
   deltaPct: number
 }
 
-/** The two drawings under the listing timeline. Dollars and the rate per foot never share an axis. */
+function halfMeta(half: ListingMarketHalf): string {
+  const sales = `${half.n} ${half.n === 1 ? 'sale' : 'sales'}`
+  if (half.sqftMedian == null || !(half.sqftMedian > 0)) return sales
+  return `${sales}, ${Math.round(half.sqftMedian).toLocaleString('en-US')} sqft`
+}
+
+/** The two readings under the listing timeline. Dollars and the rate per foot never share an axis. */
 export function listingMarketSlopes(move: ListingMarketMove): {
   kicker: string
   panels: ListingMarketSlopePanel[]
 } {
   const size = move.sized ? ', a home about this size' : ''
+  const fromWhen = spokenSpan(move.early.from, move.early.to)
+  const toWhen = spokenSpan(move.late.from, move.late.to)
+  const fromN = halfMeta(move.early)
+  const toN = halfMeta(move.late)
   const panels: ListingMarketSlopePanel[] = [
     {
       title: 'Sale price',
       fromText: usd(move.early.median),
       toText: usd(move.late.median),
-      fromWhen: spokenSpan(move.early.from, move.early.to),
-      toWhen: spokenSpan(move.late.from, move.late.to),
-      fromN: `${move.early.n} sales`,
-      toN: `${move.late.n} sales`,
+      fromWhen,
+      toWhen,
+      fromN,
+      toN,
       move: move.priceMove,
       deltaPct: move.early.median > 0 ? (move.late.median - move.early.median) / move.early.median : 0,
     },
@@ -322,10 +380,10 @@ export function listingMarketSlopes(move: ListingMarketMove): {
       title: 'Price per square foot',
       fromText: usd(move.early.ppsf),
       toText: usd(move.late.ppsf),
-      fromWhen: spokenSpan(move.early.from, move.early.to),
-      toWhen: spokenSpan(move.late.from, move.late.to),
-      fromN: `${move.early.n} sales`,
-      toN: `${move.late.n} sales`,
+      fromWhen,
+      toWhen,
+      fromN,
+      toN,
       move: move.ppsfMove,
       deltaPct: move.early.ppsf > 0 ? (move.late.ppsf - move.early.ppsf) / move.early.ppsf : 0,
     })

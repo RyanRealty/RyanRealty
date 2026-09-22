@@ -4,7 +4,9 @@ import {
   listingMarketMoveWord,
   listingMarketSentence,
   listingMarketSource,
+  withSqftMedian,
   type ListingMarketClose,
+  type ListingMarketMove,
 } from '@/lib/cma/listing-window-market'
 import { listingMarketSlopesPhoneSvg, listingMarketSlopesSvg } from '@/lib/cma/market-charts'
 import { listingMarketSlopes } from '@/lib/cma/listing-window-market'
@@ -95,6 +97,14 @@ describe('listing window market', () => {
     expect(move?.grain).toBe('neighborhood')
     expect(move?.sized).toBe(true)
     expect(listingMarketSentence(move!)).toBe(
+      'While your home was listed, the median sale in Old Farm District for a home about this size rose from $726,425 to $779,950. The later homes were larger. The median one was 2,483 square feet, and the earlier median was 2,242. The price per square foot fell from $324 to $314.',
+    )
+    const unsigned = {
+      ...move!,
+      early: { ...move!.early, sqftMedian: null },
+      late: { ...move!.late, sqftMedian: null },
+    }
+    expect(listingMarketSentence(unsigned)).toBe(
       'While your home was listed, the median sale in Old Farm District for a home about this size rose from $726,425 to $779,950. The price per square foot fell from $324 to $314.',
     )
     expect(listingMarketSource(move!)).toContain('8 closed sales')
@@ -146,6 +156,9 @@ describe('the market slopes', () => {
     expect(svg).toContain('$314')
     expect(svg).toContain('>rose<')
     expect(svg).toContain('>fell<')
+    expect(svg).toContain('2,242 sqft')
+    expect(svg).toContain('2,483 sqft')
+    expect(svg.match(/Mar 6–Jun 12/g)).toHaveLength(1)
     expect(svg).not.toContain('<rect')
     const priceY = Number(/\$726,425<\/text>/.test(svg) ? /y="([\d.]+)"[^>]*>\$726,425</.exec(svg)?.[1] : NaN)
     const firstCircles = [...svg.matchAll(/<circle[^>]*\bcy="([\d.]+)"/g)].slice(0, 2).map((m) => Number(m[1]))
@@ -184,6 +197,19 @@ describe('the market slopes', () => {
     expect(ys[0]).toBe(ys[1])
     expect(svg).toContain('held flat')
     expect(svg).not.toContain('#A8452B')
+  })
+
+  it('keeps the signed dollars and attaches the size only when the halves still match', () => {
+    const stored = {
+      ...move,
+      early: { ...move.early, sqftMedian: null },
+      late: { ...move.late, sqftMedian: null },
+    } satisfies ListingMarketMove
+    expect(withSqftMedian(stored, move).early.sqftMedian).toBe(2242)
+    expect(withSqftMedian(stored, move).late.sqftMedian).toBe(2483)
+    expect(withSqftMedian(stored, move).early.median).toBe(stored.early.median)
+    const drifted = { ...move, late: { ...move.late, median: move.late.median + 1000 } }
+    expect(withSqftMedian(stored, drifted).early.sqftMedian).toBeNull()
   })
 })
 

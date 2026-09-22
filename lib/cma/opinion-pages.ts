@@ -653,10 +653,11 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
 /**
  * The market during the listing, under the ask line.
  *
- * The picture is two slopes — the sale price, and the price per square foot —
- * because those are two units. The sentence states both, including when they
- * disagree. The regional relist figures stay where they are; this is a
- * different question.
+ * The picture is two slopes in one comparison — the sale price, then the
+ * price per square foot — because those are two units. The dates and the
+ * median size are said once. The sentence states both moves, and the size
+ * when that is what makes them disagree. The regional relist figures stay
+ * where they are; this is a different question.
  */
 function listingMarketHtml(move: ListingMarketMove | null | undefined): string {
   if (!move) return ''

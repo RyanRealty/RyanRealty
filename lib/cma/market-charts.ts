@@ -783,9 +783,10 @@ function timelineBody(o: {
 // different units. A shared scale would make a $10 move per foot look like
 // nothing next to a $50,000 move in the price, or the reverse.
 //
-// The listing timeline stays the ask. These sit under it, on the same halves
-// of the same days. The early median of a home this size sat on the reduced
-// ask, so drawing it on that chart hid the line inside the line.
+// They are one comparison, stacked, with the dates and the median size said
+// once. Side by side, a rise and a fall read as two answers. The listing
+// timeline stays the ask. These sit under it, on the same halves of the same
+// days.
 
 const SLOPE_DOWN = '#A8452B'
 const SLOPE_CREAM = '#faf8f4'
@@ -820,27 +821,24 @@ function slopePanel(
   x0: number,
   y0: number,
   w: number,
-  h: number,
   numFs: number,
 ): string {
   // Numbers on their own row. The stroke sits below them, unbroken. The word
   // sits under the stroke. A label painted on the line cut it into two stubs,
   // and the dollars rode the endpoints, so the move never read.
-  const titleY = y0 + 14
-  const numY = y0 + 40
-  const bandTop = y0 + 56
-  const bandBot = y0 + 112
+  const titleY = y0 + 13
+  const numY = y0 + 32
+  const bandTop = y0 + 42
+  const bandBot = y0 + 80
   const travel = slopeTravel(panel, bandBot - bandTop)
   const midY = (bandTop + bandBot) / 2
   const leftY = midY + (panel.move === 'rose' ? travel / 2 : panel.move === 'fell' ? -travel / 2 : 0)
   const rightY = midY + (panel.move === 'rose' ? -travel / 2 : panel.move === 'fell' ? travel / 2 : 0)
-  const xL = x0 + 10
-  const xR = x0 + w - 10
+  const xL = x0 + 8
+  const xR = x0 + w - 8
   const ink = panel.move === 'fell' ? SLOPE_DOWN : TL_INK
   const word = panel.move === 'held flat' ? 'held flat' : panel.move
-  const wordY = y0 + 136
-  const dateY = y0 + h - 22
-  const nY = y0 + h - 8
+  const wordY = y0 + 98
   const mx = (xL + xR) / 2
   return `<text x="${xL.toFixed(1)}" y="${titleY.toFixed(1)}" font-size="11" fill="${TL_MUTED}">${esc(panel.title)}</text>
     <text x="${xL.toFixed(1)}" y="${numY.toFixed(1)}" font-size="${numFs}" font-weight="600" fill="${TL_INK}">${esc(panel.fromText)}</text>
@@ -848,41 +846,38 @@ function slopePanel(
     <line x1="${xL.toFixed(1)}" y1="${leftY.toFixed(1)}" x2="${xR.toFixed(1)}" y2="${rightY.toFixed(1)}" stroke="${ink}" stroke-width="1.75"/>
     <circle cx="${xL.toFixed(1)}" cy="${leftY.toFixed(1)}" r="4.5" fill="${SLOPE_CREAM}" stroke="${ink}" stroke-width="1.6"/>
     <circle cx="${xR.toFixed(1)}" cy="${rightY.toFixed(1)}" r="4.5" fill="${SLOPE_CREAM}" stroke="${ink}" stroke-width="1.6"/>
-    <text x="${mx.toFixed(1)}" y="${wordY.toFixed(1)}" text-anchor="middle" font-size="12" font-weight="600" fill="${ink}">${esc(word)}</text>
-    <text x="${xL.toFixed(1)}" y="${dateY.toFixed(1)}" font-size="11" fill="${TL_MUTED}">${esc(panel.fromWhen)}</text>
-    <text x="${xR.toFixed(1)}" y="${dateY.toFixed(1)}" text-anchor="end" font-size="11" fill="${TL_MUTED}">${esc(panel.toWhen)}</text>
-    <text x="${xL.toFixed(1)}" y="${nY.toFixed(1)}" font-size="11" fill="${TL_MUTED}">${esc(panel.fromN)}</text>
-    <text x="${xR.toFixed(1)}" y="${nY.toFixed(1)}" text-anchor="end" font-size="11" fill="${TL_MUTED}">${esc(panel.toN)}</text>`
+    <text x="${mx.toFixed(1)}" y="${wordY.toFixed(1)}" text-anchor="middle" font-size="12" font-weight="600" fill="${ink}">${esc(word)}</text>`
 }
 
-function slopesSvg(input: MarketSlopesInput, W: number, stacked: boolean, numFs: number): string {
+function slopesSvg(input: MarketSlopesInput, W: number, numFs: number): string {
   if (input.panels.length === 0) return ''
-  const panelH = 180
-  const gap = stacked ? 8 : 28
+  const headH = 64
+  const panelH = 110
+  const gap = 4
   const n = input.panels.length
-  const panelW = stacked ? W : (W - gap * (n - 1)) / n
-  const H = 22 + (stacked ? n * panelH + (n - 1) * gap : panelH)
+  const H = headH + n * panelH + (n - 1) * gap
+  const first = input.panels[0]!
   const body = input.panels
-    .map((panel, i) => {
-      const x = stacked ? 0 : i * (panelW + gap)
-      const y = 22 + (stacked ? i * (panelH + gap) : 0)
-      return slopePanel(panel, x, y, panelW, panelH, numFs)
-    })
+    .map((panel, i) => slopePanel(panel, 0, headH + i * (panelH + gap), W, numFs))
     .join('\n    ')
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg">
-    <text x="8" y="14" font-size="12" fill="${TL_INK}">${esc(input.kicker)}</text>
+    <text x="8" y="16" font-size="12" fill="${TL_INK}">${esc(input.kicker)}</text>
+    <text x="8" y="40" font-size="11" fill="${TL_MUTED}">${esc(first.fromWhen)}</text>
+    <text x="${(W - 8).toFixed(1)}" y="40" text-anchor="end" font-size="11" fill="${TL_MUTED}">${esc(first.toWhen)}</text>
+    <text x="8" y="56" font-size="11" fill="${TL_MUTED}">${esc(first.fromN)}</text>
+    <text x="${(W - 8).toFixed(1)}" y="56" text-anchor="end" font-size="11" fill="${TL_MUTED}">${esc(first.toN)}</text>
     ${body}
   </svg>`
 }
 
-/** Wide slopes. One panel per unit, side by side. */
+/** Wide slopes. One comparison, the two units stacked. */
 export function listingMarketSlopesSvg(input: MarketSlopesInput): string {
-  return slopesSvg(input, 720, false, 13)
+  return slopesSvg(input, 720, 13)
 }
 
-/** The same slopes, stacked, so a phone does not crop the second unit. */
+/** The same slopes at phone width. */
 export function listingMarketSlopesPhoneSvg(input: MarketSlopesInput): string {
-  return slopesSvg(input, 360, true, 12.5)
+  return slopesSvg(input, 360, 12.5)
 }
 
 // ── Chapter 2: priced right sells, priced high sits ─────────────────────────
