@@ -21,7 +21,8 @@
  * it did. From there up every column is open, the state matches what is on
  * screen, and the control still works if someone wants to collapse one.
  *
- * 56.25rem and not 40rem: it is the width the sitemap goes four columns across.
+ * 56.25rem and not 40rem: it is the width the sitemap unfolds (Markets as a
+ * full-width directory, then the action row).
  * At the mid-width multi-column steps in between, open groups measured a
  * footer taller than the page, which is the wall the fold exists to prevent.
  */

@@ -49,7 +49,9 @@
 .v3-footer__inner {
   display: grid;
   gap: var(--v3-space-lg);
-  max-width: var(--v3-measure);
+  /* Chrome width, not the article measure — a 72rem inner left a cream
+     field beside Join while Markets was still listing Madras. */
+  max-width: min(96vw, 90rem);
   margin: 0 auto;
   padding: var(--v3-space-xl) var(--v3-gutter) var(--v3-space-md);
 }
@@ -67,6 +69,37 @@
 .v3-footer__brand {
   display: grid;
   gap: var(--v3-space-sm);
+}
+
+@media (min-width: 56.25rem) {
+  .v3-footer__brand {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'mark place social'
+      'mark contact social';
+    column-gap: var(--v3-space-lg);
+    row-gap: 0;
+    align-items: center;
+  }
+
+  .v3-footer__mark {
+    grid-area: mark;
+    align-self: center;
+  }
+
+  .v3-footer__place {
+    grid-area: place;
+  }
+
+  .v3-footer__contact {
+    grid-area: contact;
+  }
+
+  .v3-footer__social {
+    grid-area: social;
+    justify-self: end;
+    align-self: center;
+  }
 }
 
 .v3-footer__mark {
@@ -89,13 +122,12 @@
   text-transform: uppercase;
 }
 
-.v3-footer__contact,
-
 .v3-footer__firm {
   font-weight: 600;
   color: var(--v3-navy);
 }
 
+.v3-footer__contact,
 .v3-footer__social {
   display: flex;
   flex-wrap: wrap;
@@ -182,25 +214,81 @@
 }
 
 /* Sitemap -------------------------------------------------------------------
-   One column while it is folded. From 56.25rem, four across: Markets,
-   Buy · Sell · Join, Company, Contact. Markets is the densest column so it
-   gets a wider track. `minmax(0, 1fr)` rather than `1fr` so a long label wraps
-   instead of forcing the grid wider than the page. */
+   One column while folded. From 56.25rem: Markets spans the full width as a
+   dense city directory, then Buy · Sell · Join / Company / Contact sit in a
+   short equal row under it — so Join is not stranded in a cell as tall as
+   Madras. */
 .v3-footer__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--v3-space-lg);
 }
 
-/* The mid-width multi-column steps are gone. Folded groups in a 2- or 3-column
-   grid put a tall Markets cluster beside a short Contact column and opening
-   Markets stretched the row hundreds of pixels. A grid row is as tall as its
-   tallest cell. So the sitemap is ONE column wherever it is folded and four
-   columns wherever it is open. */
 @media (min-width: 56.25rem) {
   .v3-footer__columns {
-    grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 1fr));
-    gap: var(--v3-space-md) var(--v3-space-sm);
+    /* Five equal tracks: Markets spans all, then Buy·Sell·Join occupy three
+       so Buy | Sell | Join sit beside Company and Contact — no cell as tall
+       as a stacked Buy list. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--v3-space-md) var(--v3-space-lg);
+    align-items: start;
+  }
+
+  .v3-footer__column[data-heading='Markets'] {
+    grid-column: 1 / -1;
+    padding-bottom: var(--v3-space-sm);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .v3-footer__column[data-heading='Markets'] .v3-footer__clusters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--v3-space-sm) var(--v3-space-md);
+  }
+
+  .v3-footer__column[data-heading='Markets'] .v3-footer__cluster + .v3-footer__cluster {
+    margin-top: 0;
+  }
+
+  .v3-footer__column[data-heading='Buy · Sell · Join'] {
+    grid-column: 1 / 4;
+  }
+
+  .v3-footer__column[data-heading='Buy · Sell · Join'] .v3-footer__fold {
+    position: relative;
+  }
+
+  /* Landmark keeps aria-label="Buy · Sell · Join". The visible labels on
+     this row are Buy, Sell, Join, Company, Contact — one rank. */
+  .v3-footer__column[data-heading='Buy · Sell · Join'] .v3-footer__column-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .v3-footer__column[data-heading='Buy · Sell · Join'] .v3-footer__clusters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--v3-space-sm) var(--v3-space-md);
+  }
+
+  .v3-footer__column[data-heading='Buy · Sell · Join'] .v3-footer__cluster {
+    margin-top: 0;
+  }
+
+  .v3-footer__column[data-heading='Buy · Sell · Join'] .v3-footer__cluster-title {
+    display: flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    padding: 0;
+    margin-bottom: var(--v3-space-2xs);
   }
 }
 
@@ -328,6 +416,38 @@
   text-transform: uppercase;
   text-wrap: balance;
   color: var(--v3-ink-muted);
+}
+
+/* Markets is a directory, not a leftover SEO ledger: no hairline on every
+   44px row. Action columns keep the rule so their short lists still read. */
+.v3-footer__column[data-heading='Markets'] .v3-footer__column-list li,
+.v3-footer__column[data-heading='Markets'] .v3-footer__column-list li:last-child,
+.v3-footer__column[data-heading='Markets'] .v3-footer__clusters .v3-footer__column-list li:last-child,
+.v3-footer__column[data-heading='Markets']
+  .v3-footer__clusters
+  .v3-footer__cluster:last-child
+  .v3-footer__column-list
+  li:last-child {
+  border: 0;
+}
+
+.v3-footer__cluster-title a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  color: var(--v3-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-footer__cluster-title a:hover,
+.v3-footer__cluster-title a:focus-visible {
+  text-decoration-color: currentColor;
 }
 
 /* Thumb floor at every width. Unlayered so a utility or the old 1440

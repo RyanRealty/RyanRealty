@@ -62,8 +62,10 @@ export type V3FooterLink = {
 }
 
 export type V3FooterCluster = {
-  /** Visible group label inside the column. Not a destination. */
+  /** Visible group label inside the column. */
   heading: string
+  /** When set, the group title is a door (city place page). */
+  href?: string
   links: readonly V3FooterLink[]
   /** Place-grain step: 1 city, 2 neighborhood/community, 3 subdivision. */
   depth?: 1 | 2 | 3
@@ -86,7 +88,12 @@ export const V3_FOOTER_COLUMNS: readonly V3FooterColumn[] = KB_FOOTER_COLUMNS.ma
   (column) => ({
     heading: column.heading,
     links: column.links,
-    groups: column.groups,
+    groups: column.groups?.map((group) => ({
+      heading: group.heading,
+      href: group.href,
+      links: group.links,
+      depth: group.depth,
+    })),
   }),
 )
 
@@ -162,9 +169,14 @@ function clustersOf(
   const out: V3FooterCluster[] = []
   for (const group of groups ?? []) {
     const heading = text(group?.heading)
+    const href = text(group?.href)
     const rows = collectLinks(group?.links, seen)
-    if (!heading || rows.length === 0) continue
-    out.push(group.depth ? { heading, links: rows, depth: group.depth } : { heading, links: rows })
+    if (!heading) continue
+    if (rows.length === 0 && !href) continue
+    const next: V3FooterCluster = { heading, links: rows }
+    if (href) next.href = href
+    if (group.depth) next.depth = group.depth
+    out.push(next)
   }
   return out
 }
@@ -176,7 +188,18 @@ function columnsOf(input: readonly V3FooterColumn[]): V3FooterColumn[] {
     if (!heading) continue
     const seen = new Set<string>()
     const groups = clustersOf(column?.groups, seen)
-    const rows = groups.length > 0 ? groups.flatMap((g) => g.links) : collectLinks(column?.links, seen)
+    const rows =
+      groups.length > 0
+        ? collectLinks(
+            [
+              ...groups.flatMap((g) =>
+                g.href ? [{ href: g.href, label: g.heading }] : [],
+              ),
+              ...groups.flatMap((g) => g.links),
+            ],
+            new Set(),
+          )
+        : collectLinks(column?.links, seen)
     if (rows.length === 0) continue
     out.push(groups.length > 0 ? { heading, links: rows, groups } : { heading, links: rows })
   }
@@ -224,10 +247,18 @@ function ColumnLinks({ column }: { column: V3FooterColumn }) {
               aria-labelledby={id}
               key={id}
             >
-              <p id={id} className="v3-footer__cluster-title">
-                {group.heading}
-              </p>
-              <LinkList heading={`${column.heading}-${group.heading}`} items={group.links} />
+              {group.href ? (
+                <p id={id} className="v3-footer__cluster-title">
+                  <Link href={group.href}>{group.heading}</Link>
+                </p>
+              ) : (
+                <p id={id} className="v3-footer__cluster-title">
+                  {group.heading}
+                </p>
+              )}
+              {group.links.length > 0 ? (
+                <LinkList heading={`${column.heading}-${group.heading}`} items={group.links} />
+              ) : null}
             </div>
           )
         })}
@@ -340,7 +371,12 @@ export function V3Footer({
 
         <div className="v3-footer__columns">
           {sitemap.map((column) => (
-            <nav className="v3-footer__column" aria-label={column.heading} key={column.heading}>
+            <nav
+              className="v3-footer__column"
+              data-heading={column.heading}
+              aria-label={column.heading}
+              key={column.heading}
+            >
               {/*
                 A native disclosure, and the only interactive element this footer
                 has ever had. On a phone the city columns stacked past 2,000px —
