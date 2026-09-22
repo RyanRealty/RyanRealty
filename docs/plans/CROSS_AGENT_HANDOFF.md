@@ -1,12 +1,9 @@
-# Current — 2026-09-21 (local worktrees torn down — everything on origin)
+# Current — 2026-09-21 (Matt: merge the land queue + SITE-151/152 on the Mini)
 
-Surface: Grok Build `grok-build-01a0c44c-20260921`. Primary checkout back on `main`. Cos Mini-lands. HOLD owner email. Do not merge from this session.
+Surface: Grok Build `grok-build-01a0c44c-20260921` on the Mini. Merged SITE 139,141,144,148–151,152,157,159–170 onto local main. Pushing origin/main. HOLD owner email.
 
-**On `origin/main`:** `df70935a8` SITE-170 seed · `a998af95e` deep-audit C3/C4/C5 lockdown (hosted) · `32af7d2c4` C1 8pm SMS + C2 pricing view.
-
-**Cos Mini land queue (all on origin `wt/site-*`):** 157 footer `eabf6fda2` · 162 Tetherow+Caldera `2c29b98e0` (includes 156 `6ae9769c8`) · 159 Atlas `799562cef` · 160 homepage fold `dab5c4fbc` · 161 cities dir `fefc47e2c` · 163 about `653ec44bb` · 164 range `04b4a3193` · 165 letter tiles `d2c42086e` · 166 team `1a5773dfe` · 167 reviews `61729addb` · 168 invest `2ae3d1105` · 169 open-houses `0488d80d8` · 170 city doors `eed0612ad` · 144 aliases `aea991b31` · 150 alts `737eea893` · 139 ask `9f5f151d5` · 141 parks `b702383e3` · 149 em dash `a9f9e3bfc` · 148 equal-height `cfd123e0c`.
-
-Local sibling worktrees + Grok isolation copies removed after origin matched. Skills: site-queue, TASTE.md.
+- **SITE-152/151** `ba4955ceb` /new-construction: one Atlas, 46 live named subdivisions / 198 Bend homes from DAL; concessions on each home from public remarks + BEND_NEW_CON_FINANCING. No listing_private.
+- Landed in the same main tip: footer, Caldera+Tetherow, Atlas reach list, homepage fold, cities directory, about faces, search range, letter tiles, team/reviews faces, invest inventory, open-house times, city child doors, aliases, photo alts, ask format, parks/trails, em dashes, browse-places cards.
 
 # Current — 2026-09-19 (CTA lock — drop sticky, header Work with us)
 
