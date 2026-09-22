@@ -116,7 +116,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     { url: `${baseUrl}/months-of-supply`, lastModified: now, changeFrequency: 'weekly', priority: 0.55 },
     { url: `${baseUrl}/how-we-get-our-numbers`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
     { url: `${baseUrl}/new-construction`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${baseUrl}/housing-market/central-oregon`, lastModified: now, changeFrequency: 'weekly', priority: 0.65 },
+    // SITE-178: /housing-market/central-oregon is noindex,follow (report twin).
     { url: `${baseUrl}/housing-market/reports`, lastModified: now, changeFrequency: 'daily', priority: 0.65 },
     // Per-city market pages (mirror the generateStaticParams list in
     // app/housing-market/[...slug]/page.tsx) — the section's main organic

@@ -85,6 +85,12 @@ describe('market instruments open on a claim and a drawing', () => {
     expect(city).not.toMatch(/yearPages/)
   })
 
+  it('SITE-178: city fold mounts MOS bars before InsightCards so a phone can read the two bars', () => {
+    const drawing = city.slice(city.indexOf('drawing='))
+    expect(drawing.indexOf('<V3MosBars')).toBeGreaterThan(-1)
+    expect(drawing.indexOf('<V3MosBars')).toBeLessThan(drawing.indexOf('<CityInsight'))
+  })
+
   it('draws MOS as V3MosBars on the hub opening, not two leftover tiles above the chart', () => {
     expect(hub).toMatch(/buildRegionPlaceMos/)
     expect(hub).toMatch(/V3MosBars/)

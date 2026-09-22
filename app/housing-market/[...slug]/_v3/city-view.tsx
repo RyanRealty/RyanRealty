@@ -199,9 +199,6 @@ export function CityMarketView({
           chartSecondary={chart}
           drawing={
             <div className="city-market-fold">
-              {hasInsight && insightBoard ? (
-                <CityInsight board={insightBoard} cityName={cityName} />
-              ) : null}
               {placeMos ? (
                 <V3MosBars
                   id="market-mos"
@@ -220,6 +217,9 @@ export function CityMarketView({
                   sourceName="Oregon Data Share MLS"
                   tooltip={placeMos.tooltip}
                 />
+              ) : null}
+              {hasInsight && insightBoard ? (
+                <CityInsight board={insightBoard} cityName={cityName} />
               ) : null}
             </div>
           }
