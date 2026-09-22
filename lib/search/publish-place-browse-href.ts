@@ -11,17 +11,16 @@
  * (fleet 70b9cdad41fa4d875ca6b5997a1bab5a).
  *
  * SECOND CASE — THE DOOR THAT 301s BACK TO THE PAGE IT SITS ON (SITE-03,
- * 2026-09-08). `getPlaceLinks({ type: 'community', slug: 'tetherow' })` returns
- * `/homes-for-sale/bend/tetherow`, and that exact path is a key in
- * data/legacy-redirects.json mapping to `/communities/tetherow`. middleware.ts
- * applies the legacy map as a 301 before any route resolves, so a browse door
- * built from it takes a visitor on /communities/tetherow straight back to
- * /communities/tetherow. It is the only `/homes-for-sale/*` key among the 841
- * legacy entries, and deleting it is an SEO decision the owner makes, not a
- * repair this publisher may perform. So the publisher refuses the href instead:
- * a door that would bounce is not published, exactly as a door that would land
- * on the unfiltered regional index is not published. Callers already treat null
- * as "render no door".
+ * 2026-09-08; SITE-171 expanded the map). `getPlaceLinks({ type: 'community',
+ * slug: 'tetherow' })` returns `/homes-for-sale/bend/tetherow`, and that exact
+ * path is a key in data/legacy-redirects.json mapping to `/communities/tetherow`.
+ * middleware.ts applies the legacy map as a 301 before any route resolves, so a
+ * browse door built from it takes a visitor on /communities/tetherow straight
+ * back to /communities/tetherow. SITE-171 added the same hop for Awbrey Butte,
+ * NorthWest Crossing, and Stevens Ranch (area search → place page). The
+ * publisher refuses a href that would bounce, exactly as it refuses a door that
+ * would land on the unfiltered regional index. Callers already treat null as
+ * "render no door".
  */
 import legacyRedirects from '@/data/legacy-redirects.json'
 
@@ -31,7 +30,8 @@ const LEGACY_REDIRECTS: Record<string, string> = legacyRedirects as Record<strin
  * True when middleware.ts would 301 this path somewhere else. Normalisation
  * matches `resolveLegacyRedirect()` exactly — lowercase, no trailing slash —
  * including its self-map guard, because a key whose destination is itself is
- * served natively and never redirected.
+ * served natively and never redirected. Named for the search publisher; the
+ * lookup is the whole legacy map, so a market URL in that map answers too.
  */
 export function redirectsAwayFromSearch(path: string): boolean {
   let p = path

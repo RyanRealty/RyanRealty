@@ -27,6 +27,7 @@ import {
 import { type V3QuietItem } from '@/components/site/v3'
 import { homesForSalePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
+import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import type { PublishedPlaceHoa } from '@/lib/market/publish-place-hoa'
 
@@ -216,7 +217,17 @@ export function buildExploreEdges(input: {
   return [
     ...input.documentItems.map((item) => withGroup(item, 'Recorded documents')),
     { label: `Search ${input.communityName} homes`, href: input.browseHref, group: input.communityName },
-    { label: `${input.communityName} market report`, href: input.communityMarketHref, group: input.communityName },
+    // SITE-171: /housing-market/bend/tetherow 301s onto this community page.
+    // A "market report" door that bounces back is not a door.
+    ...(redirectsAwayFromSearch(input.communityMarketHref)
+      ? []
+      : [
+          {
+            label: `${input.communityName} market report`,
+            href: input.communityMarketHref,
+            group: input.communityName,
+          },
+        ]),
     { label: 'Manage your listing alerts', href: '/login?returnUrl=%2Faccount%2Fsaved-searches', group: input.communityName },
     ...(citySlug ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName), group: cityName }] : []),
     { label: `${cityName} market report`, href: input.cityReportHref, group: cityName },

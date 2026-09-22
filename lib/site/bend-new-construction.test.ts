@@ -52,6 +52,7 @@ import {
   bendNewConSearchFilter,
   bendNewConSearchHref,
   bendNewConSeeHomesLabel,
+  bendNewConSubdivisionHrefs,
   bendNewConStevensRanchSfHref,
   bendNewConStevensRanchTownhomeHref,
   bendNewConWeight,
@@ -143,21 +144,29 @@ describe('Bend new-construction snapshot', () => {
       '/homes-for-sale/bend/acadia-pointe-phase-5-and-6?newConstruction=1',
     )
     expect(bendNewConSearchHref('NorthWest Crossing')).toBe(
-      '/homes-for-sale/bend/northwest-crossing?newConstruction=1',
+      '/homes-for-sale?newConstruction=1&city=Bend&subdivision=NorthWest+Crossing',
     )
     expect(bendNewConSearchHref('Tetherow')).toBe(
       '/homes-for-sale?newConstruction=1&city=Bend&subdivision=Tetherow',
     )
     expect(bendNewConSearchHref('Tetherow')).not.toContain('/homes-for-sale/bend/tetherow')
     expect(bendNewConStevensRanchSfHref()).toBe(
-      `/homes-for-sale/bend/stevens-ranch?newConstruction=1&propertySubType=${encodeURIComponent(BEND_NEW_CON_SFR_SUBTYPE).replace(/%20/g, '+')}`,
+      `/homes-for-sale?newConstruction=1&propertySubType=${encodeURIComponent(BEND_NEW_CON_SFR_SUBTYPE).replace(/%20/g, '+')}&city=Bend&subdivision=Stevens+Ranch`,
     )
     expect(bendNewConStevensRanchTownhomeHref()).toContain('propertySubType=Townhouse')
-    expect(bendNewConStevensRanchTownhomeHref()).toContain('/homes-for-sale/bend/stevens-ranch')
+    expect(bendNewConStevensRanchTownhomeHref()).toContain('subdivision=Stevens+Ranch')
+    expect(bendNewConStevensRanchTownhomeHref()).not.toContain('/homes-for-sale/bend/stevens-ranch')
     expect(bendNewConStevensRanchTownhomeHref()).not.toContain('drhorton.com')
     expect(bendNewConCommunityHref('NorthWest Crossing')).toBe('/communities/northwest-crossing')
     expect(bendNewConCommunityHref('Tetherow')).toBe('/communities/tetherow')
-    expect(bendNewConCommunityHref('Easton')).toBeNull()
+    expect(bendNewConCommunityHref('Easton')).toBe('/subdivisions/easton')
+    expect(bendNewConCommunityHref('Stevens Ranch')).toBe('/subdivisions/stevens-ranch')
+    expect(bendNewConCommunityHref('Petrosa')).toBe('/subdivisions/petrosa')
+    expect(bendNewConSubdivisionHrefs().map((row) => row.href)).toEqual([
+      '/subdivisions/easton',
+      '/subdivisions/stevens-ranch',
+      '/subdivisions/petrosa',
+    ])
     expect(bendNewConSeeHomesLabel(null)).toBe('See homes')
     expect(bendNewConSeeHomesLabel(0)).toBe('See homes')
     expect(bendNewConSeeHomesLabel(1)).toBe('See 1 home')
@@ -186,9 +195,15 @@ describe('Bend new-construction snapshot', () => {
       expect(href).toContain('newConstruction=1')
       expect(href).not.toMatch(/^\/communities\//)
       expect(href).not.toBe(BEND_NEW_CON_SEARCH_HREF)
-      if (row.name === 'Tetherow') {
-        expect(href).toContain('subdivision=Tetherow')
+      if (
+        row.name === 'Tetherow' ||
+        row.name === 'NorthWest Crossing' ||
+        row.name === 'Stevens Ranch' ||
+        row.name === 'Awbrey Butte'
+      ) {
+        expect(href).toContain(`subdivision=${encodeURIComponent(row.name).replace(/%20/g, '+')}`)
         expect(href).toContain('city=Bend')
+        expect(href).not.toContain(`/homes-for-sale/bend/${row.name}`)
       } else {
         expect(href.startsWith('/homes-for-sale/bend/')).toBe(true)
       }
@@ -546,6 +561,7 @@ describe('Bend new-construction snapshot', () => {
     expect(page).not.toContain('V3ChartSwitch')
     expect(page).toContain('id="communities"')
     expect(page).toContain('ItemList')
+    expect(page).toContain('bendNewConSubdivisionHrefs')
   })
 
   it('puts WHOSE and WHAT on a home from public remarks or the named builder page (SITE-151)', () => {

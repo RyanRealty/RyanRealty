@@ -9,14 +9,11 @@ import {
 } from './publish-place-browse-href'
 
 describe('publishPlaceBrowseHref', () => {
-  it('keeps a city / plat / neighborhood listings path', () => {
+  it('keeps a city / plat listings path that does not 301 away', () => {
     expect(publishPlaceBrowseHref('/homes-for-sale/redmond/ridge-at-eagle-crest')).toBe(
       '/homes-for-sale/redmond/ridge-at-eagle-crest',
     )
     expect(publishPlaceBrowseHref('/homes-for-sale/bend')).toBe('/homes-for-sale/bend')
-    expect(publishPlaceBrowseHref('/homes-for-sale/bend/awbrey-butte')).toBe(
-      '/homes-for-sale/bend/awbrey-butte',
-    )
   })
 
   it('withholds the regional inventory door', () => {
@@ -53,8 +50,35 @@ describe('publishPlaceBrowseHref', () => {
   it('still publishes the places that do not redirect', () => {
     const bend = getPlaceLinks({ type: 'city', slug: 'bend' })
     expect(publishPlaceBrowseHref(bend.browseUrl)).toBe('/homes-for-sale/bend')
+    const ridge = getPlaceLinks({
+      type: 'neighborhood',
+      slug: 'ridge-at-eagle-crest',
+      citySlug: 'redmond',
+    })
+    expect(publishPlaceBrowseHref(ridge.browseUrl)).toBe(
+      '/homes-for-sale/redmond/ridge-at-eagle-crest',
+    )
+  })
+
+  it('SITE-171 withholds leftover area-search URLs that 301 onto the place page', () => {
     const awbrey = getPlaceLinks({ type: 'neighborhood', slug: 'awbrey-butte', citySlug: 'bend' })
-    expect(publishPlaceBrowseHref(awbrey.browseUrl)).toBe('/homes-for-sale/bend/awbrey-butte')
+    expect(awbrey.browseUrl).toBe('/homes-for-sale/bend/awbrey-butte')
+    expect(publishPlaceBrowseHref(awbrey.browseUrl)).toBeNull()
+    expect(publishPlaceBrowseHref('/homes-for-sale/bend/northwest-crossing')).toBeNull()
+    expect(publishPlaceBrowseHref('/homes-for-sale/bend/stevens-ranch')).toBeNull()
+    expect(
+      (legacyRedirects as Record<string, string>)['/homes-for-sale/bend/awbrey-butte'],
+    ).toBe('/cities/bend/awbrey-butte')
+    expect(
+      (legacyRedirects as Record<string, string>)['/homes-for-sale/bend/northwest-crossing'],
+    ).toBe('/communities/northwest-crossing')
+    expect(
+      (legacyRedirects as Record<string, string>)['/homes-for-sale/bend/stevens-ranch'],
+    ).toBe('/subdivisions/stevens-ranch')
+    expect(
+      (legacyRedirects as Record<string, string>)['/housing-market/bend/tetherow'],
+    ).toBe('/communities/tetherow')
+    expect(redirectsAwayFromSearch('/housing-market/bend/tetherow')).toBe(true)
   })
 
   it('redirectsAwayFromSearch ignores a self-map, the way middleware does', () => {
@@ -63,11 +87,16 @@ describe('publishPlaceBrowseHref', () => {
     expect(redirectsAwayFromSearch('/homes-for-sale/redmond/ridge-at-eagle-crest')).toBe(false)
   })
 
-  it('is the only /homes-for-sale key in the legacy map — a second one changes this rule', () => {
+  it('maps leftover area-search URLs and keeps the Tetherow hop', () => {
     const keys = Object.keys(legacyRedirects as Record<string, string>).filter((k) =>
       k.startsWith('/homes-for-sale'),
     )
-    expect(keys).toEqual(['/homes-for-sale/bend/tetherow'])
+    expect(keys).toEqual([
+      '/homes-for-sale/bend/awbrey-butte',
+      '/homes-for-sale/bend/northwest-crossing',
+      '/homes-for-sale/bend/stevens-ranch',
+      '/homes-for-sale/bend/tetherow',
+    ])
   })
 })
 

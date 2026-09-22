@@ -482,7 +482,7 @@ export default async function SearchPage({
       <div className={cn('search-filter-dock w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         {/* Visually hidden H1 keeps a document outline without the noisy
             "{City} homes for sale" title above the filter chips. */}
-        <h1 className="sr-only">Homes for sale</h1>
+        <h1 className="sr-only">Central Oregon homes for sale</h1>
         <div className={isAppFrame ? 'hidden' : undefined}>
           <SentenceSearch />
         </div>

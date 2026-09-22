@@ -140,12 +140,12 @@ describe('publishPlaceDoor', () => {
     const door = publishPlaceDoor({
       face: cityFace,
       grain: 'neighborhood',
-      placeName: 'Awbrey Butte',
-      href: '/homes-for-sale/bend/awbrey-butte',
+      placeName: 'Old Bend',
+      href: '/homes-for-sale/bend/old-bend',
       readDate: null,
     })
     expect(door?.verdict).toBeNull()
-    expect(door?.trace).toBe(placeDoorTrace({ grain: 'neighborhood', placeName: 'Awbrey Butte' }))
+    expect(door?.trace).toBe(placeDoorTrace({ grain: 'neighborhood', placeName: 'Old Bend' }))
   })
 
   it('derives the trace from the same grain the face was asked for', () => {
@@ -154,7 +154,7 @@ describe('publishPlaceDoor', () => {
       face,
       grain: 'community',
       placeName: 'Tetherow',
-      href: '/homes-for-sale/bend/awbrey-butte',
+      href: '/homes-for-sale/bend/easton',
       readDate: null,
     })
     expect(door?.trace).toBe(COMMUNITY_TRACE)
@@ -193,8 +193,11 @@ describe('publishPlaceDoor', () => {
     expect(publishPlaceDoor({ ...args, href: '/homes-for-sale' })).toBeNull()
     expect(publishPlaceDoor({ ...args, href: '/homes-for-sale?view=list' })).toBeNull()
     expect(publishPlaceDoor({ ...args, href: null })).toBeNull()
-    // the legacy-redirect key that 301s a Tetherow door back to its own page
+    // leftover area-search URLs that 301 onto the place page (SITE-03 / SITE-171)
     expect(publishPlaceDoor({ ...args, href: '/homes-for-sale/bend/tetherow' })).toBeNull()
+    expect(publishPlaceDoor({ ...args, href: '/homes-for-sale/bend/awbrey-butte' })).toBeNull()
+    expect(publishPlaceDoor({ ...args, href: '/homes-for-sale/bend/northwest-crossing' })).toBeNull()
+    expect(publishPlaceDoor({ ...args, href: '/homes-for-sale/bend/stevens-ranch' })).toBeNull()
   })
 
   it('drops a blank or dateless stamp rather than printing "updated" with no date', () => {
@@ -212,7 +215,7 @@ describe('publishPlaceDoor', () => {
       face,
       grain: 'community',
       placeName: 'Tetherow',
-      href: '/homes-for-sale/bend/awbrey-butte',
+      href: '/homes-for-sale/bend/easton',
       readDate: 'Sep 7, 2026',
     })
     expect(door?.count).toBe('1')
