@@ -120,8 +120,11 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
   const metricsCovered = new Set<string>()
   let totalRows = 0
+  let days = 0
+  let emptyDays = 0
 
   for (const day of dateIter(startDate, endDate)) {
+    days += 1
     try {
       const { accountRow, campaignRows } = await getMetaAdsInsights(day)
 
@@ -135,17 +138,24 @@ export async function GET(request: NextRequest) {
         rows.push(...campaignRowsForDay(day, cr))
       }
 
-      if (rows.length > 0) {
-        const upserted = await upsertMetricRows(rows)
-        totalRows += upserted
-        rows.forEach((r) => metricsCovered.add(r.metric))
+      // No delivery: Insights returns data:[] (no account row, no campaigns).
+      // That is not a measured zero and must not be upserted. A throw — missing
+      // token, Graph error, upsert failure — is recorded below and is not this.
+      if (rows.length === 0) {
+        emptyDays += 1
+        continue
       }
+
+      const upserted = await upsertMetricRows(rows)
+      totalRows += upserted
+      rows.forEach((r) => metricsCovered.add(r.metric))
     } catch (e) {
       errors.push(`${day}: ${e instanceof Error ? e.message : String(e)}`)
     }
   }
 
-  const result: IngestorResult = {
+  const genuineEmpty = errors.length === 0 && days > 0 && emptyDays === days
+  const result: IngestorResult & { empty?: true; reason?: string } = {
     channel: CHANNEL,
     startDate,
     endDate,
@@ -154,6 +164,12 @@ export async function GET(request: NextRequest) {
     errors,
     fetchedAt: new Date().toISOString(),
   }
+  if (genuineEmpty) {
+    result.empty = true
+    result.reason = 'insights succeeded with zero campaigns and zero spend'
+  }
 
-  return NextResponse.json(result)
+  // snapshot-channels treats res.ok as success. A swallowed errors[] on 200
+  // kept meta_ads frozen while the parent logged ok_count=8.
+  return NextResponse.json(result, { status: errors.length > 0 ? 500 : 200 })
 }
