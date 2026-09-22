@@ -45,7 +45,9 @@
 
 .place-subdiv-rail__button {
   display: grid;
-  gap: 0.1rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.1rem 0.65rem;
+  align-items: center;
   width: 100%;
   min-height: var(--v3-tap);
   margin: 0;
@@ -59,6 +61,25 @@
   font: inherit;
 }
 
+.place-subdiv-rail__button:has(.place-subdiv-rail__photo) {
+  grid-template-columns: 3.75rem minmax(0, 1fr);
+}
+
+.place-subdiv-rail__photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+}
+
+.place-subdiv-rail__copy {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
 .place-subdiv-rail__button.is-selected {
   background: color-mix(in srgb, var(--v3-navy) 8%, transparent);
 }
@@ -67,19 +88,38 @@
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-body);
+  overflow-wrap: break-word;
 }
 
 .place-subdiv-rail__detail {
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-source);
   line-height: var(--v3-leading-body);
+  overflow-wrap: break-word;
 }
 
 .place-homes {
+  container-type: inline-size;
   width: 100%;
   max-width: min(100%, 90rem);
   margin-inline: auto;
   padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-lg);
+}
+
+/* Below 48rem one home fills the row. From 48rem several cards sit side by side. */
+.place-homes .v3-carousel.v3-carousel--rail {
+  --v3-carousel-slide-w: 100cqi;
+  --v3-carousel-nav-top: calc((var(--v3-carousel-slide-w) - var(--v3-space-md)) * 1 / 3);
+}
+
+@media (min-width: 48rem) {
+  .place-subdiv-rail__button:has(.place-subdiv-rail__photo) {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+  }
+
+  .place-homes .v3-carousel.v3-carousel--rail {
+    --v3-carousel-slide-w: min(17.5rem, 42cqi);
+  }
 }
 
 .place-homes__count,
@@ -93,6 +133,7 @@
   display: grid;
   gap: 0.15rem;
   align-content: start;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
 }
@@ -122,4 +163,5 @@
 .place-home-card__addr {
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);
+  overflow-wrap: break-word;
 }

@@ -1,3 +1,7 @@
+# Current — 2026-09-22 (Matt: listing photos on the subdivision list, phones included)
+
+Surface: Grok Build, primary checkout. Each subdivision with a home for sale shows that home's photograph in the list, on desktop and on a phone. The phone home row is one complete card. The list stays the same height as the map. Node: none.
+
 # Current — 2026-09-22 (Matt: one map on community and neighborhood pages)
 
 Surface: Grok Build, primary checkout. One map. Subdivisions on the left, height locked to the map. Select zooms and the carousel below lists that subdivision's publicly active homes. The place name shows every home in the place. Reach list and the amenities board are off these pages. Node: none.

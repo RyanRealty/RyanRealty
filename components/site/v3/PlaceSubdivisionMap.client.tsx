@@ -15,8 +15,9 @@ import { formatCount } from '@/lib/format/count'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { SubdivisionRailEntry } from '@/lib/place/place-child-stock'
+import { firstListedPhoto } from '@/lib/place/rail-photo'
 import { V3_ROOT_CLASS, V3Heading } from './atoms'
 import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
 import { V3Carousel } from './V3Carousel.client'
@@ -78,7 +79,7 @@ export function PlaceSubdivisionRail({
   /** Name and property-type line. No sales bar. */
   nameOnly?: boolean
 }) {
-  const { placeName, rail, selectedId, setSelected } = usePlaceMap()
+  const { placeName, rail, homes, keysBySlug, selectedId, setSelected } = usePlaceMap()
   return (
     <nav
       id={id}
@@ -93,24 +94,41 @@ export function PlaceSubdivisionRail({
             aria-pressed={selectedId == null}
             onClick={() => setSelected(null)}
           >
-            <span className="place-subdiv-rail__name">{placeName}</span>
+            <span className="place-subdiv-rail__copy">
+              <span className="place-subdiv-rail__name">{placeName}</span>
+            </span>
           </button>
         </li>
-        {rail.map((entry) => (
-          <li key={entry.id}>
-            <button
-              type="button"
-              className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
-              aria-pressed={selectedId === entry.id}
-              onClick={() => setSelected(entry.id)}
-            >
-              <span className="place-subdiv-rail__name">{entry.name}</span>
-              {nameOnly && entry.detail ? (
-                <span className="place-subdiv-rail__detail">{entry.detail}</span>
-              ) : null}
-            </button>
-          </li>
-        ))}
+        {rail.map((entry) => {
+          const photo = firstListedPhoto(homes, keysBySlug[entry.id])
+          return (
+            <li key={entry.id}>
+              <button
+                type="button"
+                className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
+                aria-pressed={selectedId === entry.id}
+                onClick={() => setSelected(entry.id)}
+              >
+                {photo ? (
+                  <span className="place-subdiv-rail__photo">
+                    <SparkSafeImage
+                      src={listingRowPhotoSrc(photo)}
+                      alt=""
+                      fill
+                      sizes="96px"
+                    />
+                  </span>
+                ) : null}
+                <span className="place-subdiv-rail__copy">
+                  <span className="place-subdiv-rail__name">{entry.name}</span>
+                  {nameOnly && entry.detail ? (
+                    <span className="place-subdiv-rail__detail">{entry.detail}</span>
+                  ) : null}
+                </span>
+              </button>
+            </li>
+          )
+        })}
       </ul>
     </nav>
   )
@@ -152,10 +170,10 @@ function PlaceHomeCard({ listing }: { listing: V3ListingRowData }) {
       <span className="place-home-card__media">
         {listing.photoUrl ? (
           <SparkSafeImage
-            src={listingRowPhotoSrc(listing.photoUrl)}
+            src={listingRowPhotoSrc(listing.photoUrl, LISTING_FIELD_LEAD_PHOTO_SIZE)}
             alt={listingPhotoAlt(listing)}
             fill
-            sizes="280px"
+            sizes="(max-width: 48rem) 100vw, 280px"
           />
         ) : null}
       </span>

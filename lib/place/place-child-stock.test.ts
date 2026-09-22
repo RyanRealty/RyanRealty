@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { childListingKeys, childStockDetails, subdivisionRailEntries, summarizeChildStock } from './place-child-stock'
+import { firstListedPhoto } from './rail-photo'
 
 describe('summarizeChildStock', () => {
   it('counts each listing once and omits empty types', () => {
@@ -93,5 +94,23 @@ describe('subdivisionRailEntries', () => {
         property_sub_type: 'Single Family Residence',
       },
     ])).toEqual({ 'north-forty': ['a'] })
+  })
+})
+
+describe('firstListedPhoto', () => {
+  it('uses the first photograph inside that subdivision', () => {
+    expect(
+      firstListedPhoto(
+        [
+          { listingKey: 'a', photoUrl: '  ' },
+          { listingKey: 'b', photoUrl: 'https://cdn.example/north.jpg' },
+          { listingKey: 'c', photoUrl: 'https://cdn.example/other.jpg' },
+        ],
+        ['a', 'b'],
+      ),
+    ).toBe('https://cdn.example/north.jpg')
+    expect(firstListedPhoto([{ listingKey: 'c', photoUrl: 'https://cdn.example/other.jpg' }], ['a'])).toBeNull()
+    expect(firstListedPhoto([{ listingKey: 'a', photoUrl: 'https://cdn.example/north.jpg' }], [])).toBeNull()
+    expect(firstListedPhoto([{ listingKey: 'a', photoUrl: 'https://cdn.example/north.jpg' }], undefined)).toBeNull()
   })
 })
