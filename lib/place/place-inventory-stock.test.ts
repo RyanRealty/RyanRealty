@@ -90,6 +90,22 @@ describe('placeStockSectionsFromTiles', () => {
     expect(sections.find((s) => s.key === 'land')?.countLabel).toBe('1 for sale')
   })
 
+  it('keeps an unpriced home and a type outside the four buyer buckets', () => {
+    const sections = placeStockSectionsFromTiles([
+      tile({ listingKey: 'ask-withheld', listPrice: null }),
+      tile({
+        listingKey: 'office-1',
+        listNumber: '220000009',
+        propertyType: 'F',
+        propertySubType: 'Office',
+        listPrice: 410_000,
+      }),
+    ])
+    expect(sections.find((s) => s.key === 'sfr')?.rows.map((row) => row.listingKey)).toEqual(['ask-withheld'])
+    expect(sections.find((s) => s.key === 'sfr')?.rows[0]?.price).toBeNull()
+    expect(sections.find((s) => s.key === 'other')?.rows).toHaveLength(1)
+  })
+
   it('dedupes unioned tiles by listing key', () => {
     const a = tile({ listingKey: 'one' })
     expect(unionListingTiles([a], [a, tile({ listingKey: 'two' })]).map((t) => t.listingKey)).toEqual([

@@ -745,9 +745,10 @@ async function renderSubdivisionPage({ params }: Props) {
           ],
           subdivisionNames: getSubdivisionMatchNames(displayName),
           city: placeCity,
+          boundary: { geoType: 'subdivision', geoSlug: slug },
         }),
         [],
-        4500,
+        12000,
         'sub:stock',
       ),
       withTimeoutFallback(
@@ -793,8 +794,8 @@ async function renderSubdivisionPage({ params }: Props) {
   })
   const stockSections = placeStockSectionsFromTiles(unionListingTiles(stockTiles, mapTiles))
   const inventorySource =
-    stockSections.length > 1
-      ? `regional MLS through Oregon Data Share, every active listing in ${displayName}`
+    stockSections.length > 0
+      ? `regional MLS through Oregon Data Share, every publicly active listing inside ${displayName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
       : homesLedgerTrace(platScope)
   const headline = placeHomesForSaleHeading(displayName)
   const platLibraryHeroUrl = await withTimeoutFallback(

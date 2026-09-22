@@ -92,6 +92,20 @@
   text-decoration: none;
 }
 
+.v3-place-index__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.v3-place-index__detail {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-body);
+  text-decoration: none;
+}
+
 .v3-place-index__name {
   min-width: 0;
   text-decoration: underline;

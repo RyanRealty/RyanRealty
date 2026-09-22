@@ -63,6 +63,11 @@ export type V3PlaceIndexEntry = {
    * is not a place with none (§0).
    */
   count?: number | null
+  /**
+   * Sourced property-type mix for this plat ("4 single-family · 2 land").
+   * Omitted when the plat has no measured stock. Not a sales bar.
+   */
+  detail?: string
   /** React key when two entries could share an href. Defaults to href. */
   key?: string
 }
@@ -110,9 +115,15 @@ type Row = {
   name: string
   href: string
   count: number | null
+  detail: string | null
   key: string
   /** Share of the largest count in the set, 0..1. null when there is no count. */
   share: number | null
+}
+
+function rowDetail(value: string | undefined): string | null {
+  const text = trimmed(value)
+  return text ?? null
 }
 
 function trimmed(value: string | undefined): string | undefined {
@@ -148,7 +159,7 @@ export function placeIndexRows(entries: readonly V3PlaceIndexEntry[]): Row[] {
       typeof entry.count === 'number' && Number.isFinite(entry.count) && entry.count >= 0
         ? Math.round(entry.count)
         : null
-    rows.push({ name, href, count, key, share: null })
+    rows.push({ name, href, count, detail: rowDetail(entry.detail), key, share: null })
   }
 
   const largest = rows.reduce((max, r) => (r.count != null && r.count > max ? r.count : max), 0)
@@ -190,7 +201,7 @@ export function placeIndexNameRows(entries: readonly V3PlaceIndexEntry[]): Row[]
     const key = trimmed(entry.key) ?? href
     if (seen.has(key)) continue
     seen.add(key)
-    rows.push({ name, href, count: null, key, share: null })
+    rows.push({ name, href, count: null, detail: rowDetail(entry.detail), key, share: null })
   }
 
   return rows
@@ -200,7 +211,10 @@ function IndexRow({ row, countLabel }: { row: Row; countLabel: string | undefine
   return (
     <li className="v3-place-index__item">
       <Link className="v3-place-index__row" href={row.href}>
-        <span className="v3-place-index__name">{row.name}</span>
+        <span className="v3-place-index__identity">
+          <span className="v3-place-index__name">{row.name}</span>
+          {row.detail ? <span className="v3-place-index__detail">{row.detail}</span> : null}
+        </span>
         {row.count == null ? null : (
           <span className="v3-place-index__figure">
             <span
@@ -250,12 +264,12 @@ export function V3PlaceIndex({
   const headingId = `${id}-heading`
   const contextLine = nameOnly ? undefined : trimmed(eyebrow)
   const claim = nameOnly ? undefined : trimmed(lede)
-  const trace = nameOnly ? undefined : trimmed(source)
+  const trace = trimmed(source)
   const unit = nameOnly ? undefined : trimmed(countLabel)
 
   const cut = Math.max(1, foldAfter)
   const lead = rows.slice(0, cut)
-  const tail = nameOnly ? [] : rows.slice(cut)
+  const tail = rows.slice(cut)
 
   return (
     <section

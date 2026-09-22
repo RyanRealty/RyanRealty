@@ -5,6 +5,7 @@
  * Market figures stay on their own traces (SFR leftover / plat inventory).
  * This module only groups the live stock a visitor can open.
  */
+import { getBoundaryOnMarketKeys } from '@/lib/data/geo/place-on-market-stock'
 import { getListingTiles, type ListingTile } from '@/lib/data'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { formatCount } from '@/lib/format/count'
@@ -14,13 +15,14 @@ import { placeTypeKey } from '@/lib/place/place-type-style'
 
 export const PLACE_STOCK_SECTION_ORDER = ['sfr', 'multifamily', 'attached', 'land'] as const
 
-export type PlaceStockSectionKey = (typeof PLACE_STOCK_SECTION_ORDER)[number]
+export type PlaceStockSectionKey = (typeof PLACE_STOCK_SECTION_ORDER)[number] | 'other'
 
 export const PLACE_STOCK_HEADINGS: Record<PlaceStockSectionKey, string> = {
   sfr: 'Single-family homes',
   multifamily: 'Multifamily homes',
   attached: 'Townhomes and condos',
   land: 'Land',
+  other: 'Other property',
 }
 
 export type PlaceStockSection = {
@@ -72,7 +74,10 @@ export function placeStockRowFromTile(tile: ListingTile): V3ListingRowData | nul
       streetDirSuffix: tile.streetDirSuffix,
     }) ?? tile.listNumber
   if (!street) return null
-  if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) return null
+  const price =
+    tile.listPrice != null && Number.isFinite(tile.listPrice) && tile.listPrice > 0
+      ? tile.listPrice
+      : null
   const cityParts = [tile.city, 'OR'].filter(Boolean).join(', ')
   const cityZip = [cityParts, tile.postalCode].filter(Boolean).join(' ').trim()
   const subdivision = displaySubdivision(tile.subdivisionName)
@@ -80,7 +85,7 @@ export function placeStockRowFromTile(tile: ListingTile): V3ListingRowData | nul
     listingKey: tile.listingKey,
     href: listingTileHref(tile),
     photoUrl: tile.photoUrl,
-    price: tile.listPrice,
+    price,
     addressLine: street,
     cityLine: subdivision ? `${cityZip} · ${subdivision}` : cityZip || 'Central Oregon',
     beds: tile.beds,
@@ -103,15 +108,16 @@ export function placeStockSectionsFromTiles(tiles: readonly ListingTile[]): Plac
     multifamily: [],
     attached: [],
     land: [],
+    other: [],
   }
   for (const tile of tiles) {
-    const section = placeStockSectionKey(tile.propertyType, tile.propertySubType)
-    if (!section) continue
+    const section = placeStockSectionKey(tile.propertyType, tile.propertySubType) ?? 'other'
     const row = placeStockRowFromTile(tile)
     if (!row) continue
     buckets[section].push(row)
   }
-  return PLACE_STOCK_SECTION_ORDER.flatMap((key) => {
+  const ordered: PlaceStockSectionKey[] = [...PLACE_STOCK_SECTION_ORDER, 'other']
+  return ordered.flatMap((key) => {
     const rows = buckets[key]
     if (rows.length === 0) return []
     return [
@@ -125,30 +131,58 @@ export function placeStockSectionsFromTiles(tiles: readonly ListingTile[]): Plac
   })
 }
 
+const TILE_PAGE = 1000
+const TILE_CEILING = 8000
+
+async function tilesForKeys(keys: readonly string[]): Promise<ListingTile[]> {
+  const unique = [...new Set(keys.filter(Boolean))]
+  if (unique.length === 0) return []
+  const out: ListingTile[] = []
+  for (let i = 0; i < unique.length && out.length < TILE_CEILING; i += TILE_PAGE) {
+    const chunk = unique.slice(i, i + TILE_PAGE)
+    const page = await getListingTiles({
+      listingKeys: chunk,
+      status: 'active',
+      limit: chunk.length,
+    })
+    out.push(...page)
+  }
+  return out
+}
+
+async function tilesForSubdivisionName(subdivision: string, city: string | undefined): Promise<ListingTile[]> {
+  const out: ListingTile[] = []
+  for (let offset = 0; offset < TILE_CEILING; offset += TILE_PAGE) {
+    const page = await getListingTiles({
+      subdivision,
+      ...(city ? { city } : {}),
+      status: 'active',
+      limit: TILE_PAGE,
+      offset,
+    })
+    out.push(...page)
+    if (page.length < TILE_PAGE) break
+  }
+  return out
+}
+
 export async function loadPlaceStockTiles(input: {
   listingKeys?: readonly string[]
   subdivisionNames?: readonly string[]
   city?: string | null
+  /** Recorded boundary. Every publicly active listing inside it, every type. */
+  boundary?: { geoType: 'subdivision' | 'neighborhood'; geoSlug: string } | null
 }): Promise<ListingTile[]> {
-  const keys = [...new Set((input.listingKeys ?? []).filter(Boolean))].slice(0, 500)
-  const names = [...new Set((input.subdivisionNames ?? []).map((n) => n.trim()).filter(Boolean))].slice(
-    0,
-    40,
-  )
+  const boundaryKeys = input.boundary
+    ? await getBoundaryOnMarketKeys(input.boundary.geoType, input.boundary.geoSlug)
+    : []
+  const keys = [...new Set([...(input.listingKeys ?? []), ...boundaryKeys].filter(Boolean))]
+  const names = [...new Set((input.subdivisionNames ?? []).map((n) => n.trim()).filter(Boolean))]
   const city = input.city?.trim() || undefined
   const reads: Promise<ListingTile[]>[] = []
-  if (keys.length > 0) {
-    reads.push(getListingTiles({ listingKeys: keys, status: 'active', limit: 500 }))
-  }
+  if (keys.length > 0) reads.push(tilesForKeys(keys))
   for (const subdivision of names) {
-    reads.push(
-      getListingTiles({
-        subdivision,
-        ...(city ? { city } : {}),
-        status: 'active',
-        limit: 500,
-      }),
-    )
+    reads.push(tilesForSubdivisionName(subdivision, city))
   }
   if (reads.length === 0) return []
   const pages = await Promise.all(reads)

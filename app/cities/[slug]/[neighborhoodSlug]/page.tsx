@@ -43,6 +43,7 @@ import {
   getCityHeroUrlsBySlug,
   getPlaceOpeningListings,
   getPlaceAmenityLayers,
+  getSubdivisionOnMarketRows,
 } from '@/lib/data'
 import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
@@ -65,6 +66,8 @@ import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
+import { childStockDetails } from '@/lib/place/place-child-stock'
+import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
@@ -89,6 +92,7 @@ import {
   V3Answers,
   V3PlaceAffordability,
   V3PlaceIndex,
+  V3PlaceInventory,
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
@@ -318,7 +322,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
     // The parent city's same statistics, ONLY as the context mark on the
     // answer scales (SITE-08). Never as a figure under this neighborhood's
     // name: a city figure printed as a neighborhood's is the founding defect
-    // behind lib/market/publish-plat-figures.ts. Every sentence that uses one
+    // behind the place-figure publisher. Every sentence that uses one
     // names the city out loud.
     withTimeoutFallback(
       getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }),
@@ -385,12 +389,37 @@ async function renderNeighborhoodDetail({ params }: Props) {
   const listingTiles =
     countedKeys.length > 0
       ? await withTimeoutFallback(
-          getListingTiles({ listingKeys: countedKeys, status: 'active', propertyType: 'A', limit: 250 }),
+          getListingTiles({
+            listingKeys: countedKeys,
+            status: 'active',
+            propertyType: 'A',
+            limit: Math.min(Math.max(countedKeys.length, 1), 5000),
+          }),
           [],
           4500,
           'nbh:tiles',
         )
       : []
+  const [boundaryStock, childStockRows] = await Promise.all([
+    withTimeoutFallback(
+      loadPlaceStockTiles({
+        boundary: { geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug },
+      }),
+      [],
+      12000,
+      'nbh:stock',
+    ),
+    withTimeoutFallback(
+      getSubdivisionOnMarketRows([
+        ...atlasPlats.map((cell) => cell.slug),
+        ...neighborhoodCommunities.map((community) => community.slug),
+      ]),
+      [],
+      12000,
+      'nbh:child-stock',
+    ),
+  ])
+  const stockSections = placeStockSectionsFromTiles(boundaryStock)
   const splitListings = inventoryOk ? neighborhoodSplitListings(listingTiles) : undefined
   const typeCovers = await withTimeoutFallback(
     loadPlaceTypeCoverPhotos({ city: cityName, neighborhood: neighborhood.name }),
@@ -623,13 +652,21 @@ async function renderNeighborhoodDetail({ params }: Props) {
   const dailyRows = dailyLifeRows(richContent, cityName)
   const [firstDaily, ...restDaily] = dailyRows
 
-  // Children inside the boundary — name-only cards (SITE-128). Not a
-  // "Subdivisions" bar list that twins the community page.
-  const neighborhoodChildren = neighborhoodCommunities.slice(0, 12)
-  const childPlaceEntries = nameOnlyChildEntries(
-    neighborhoodChildren.map((c) => [
-      { name: c.subdivision, href: `/subdivisions/${slugify(c.subdivision)}` },
+  // Every recorded subdivision inside the neighborhood, plus any community
+  // row the neighborhood already named. The line under a name is that
+  // subdivision's live property-type mix. The full home list stays here.
+  const childPlaceEntries = childStockDetails(
+    nameOnlyChildEntries([
+      atlasPlats.map((cell) => ({
+        name: cell.label,
+        href: `/subdivisions/${cell.slug}`,
+      })),
+      neighborhoodCommunities.map((c) => ({
+        name: c.subdivision,
+        href: `/subdivisions/${slugify(c.subdivision)}`,
+      })),
     ]),
+    childStockRows,
   )
 
   // Live feed - fetched city-wide (the MLS carries no neighborhood scope), so
@@ -818,7 +855,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
             <p className="place-opening__caption place-opening__caption--doors">
               <a href={`/cities/${citySlug}`}>{cityName} real estate</a>
               {' · '}
-              <a href={browseHref}>{neighborhood.name} homes for sale</a>
+              <a href="#all-homes">{neighborhood.name} homes for sale</a>
               {' · '}
               <a href={`/housing-market/${citySlug}`}>{cityName} housing market</a>
             </p>
@@ -874,7 +911,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
                       span, so a wrap never opens a line with a stray middot. The
                       SPACE after each span is a real text node and it is the row's
                       only break opportunity: JSX drops the whitespace between
-                      sibling elements, so with the space inside the nowrap span the
+                      adjacent elements, so with the space inside the nowrap span the
                       row became one unbreakable word and ran straight through the
                       column beside it (captured 2026-09-16). */}
                   <p className="nbh-fold__peers-row">
@@ -924,6 +961,14 @@ async function renderNeighborhoodDetail({ params }: Props) {
           />
         </div>
 
+        <V3PlaceInventory
+          id="all-homes"
+          placeName={neighborhood.name}
+          sections={stockSections}
+          source={`regional MLS through Oregon Data Share, every publicly active listing inside the recorded ${neighborhood.name} boundary: Active and Active Under Contract, every property type. Coming Soon is excluded. This is a wider set than the detached count on the fold.`}
+          asOf={leftoverStamp}
+        />
+
         <V3Atlas
           id="atlas"
           headingLevel={2}
@@ -948,6 +993,8 @@ async function renderNeighborhoodDetail({ params }: Props) {
           heading={neighborhood.name}
           nameOnly
           entries={childPlaceEntries}
+          foldAfter={Math.max(childPlaceEntries.length, 1)}
+          source={`Oregon Data Share. The line under a subdivision counts publicly active listings inside that recorded subdivision: Active and Active Under Contract, every property type. Coming Soon is excluded. Every home in ${neighborhood.name} is listed on this page.`}
         />
 
         {costChart && firstMarketFigure ? (

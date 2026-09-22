@@ -111,7 +111,7 @@ import './_v3/community-fold.css'
 import { getCommunityCourseMap } from '@/lib/golf/community-course'
 import { courseMapKind } from '@/lib/golf/course-map'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
-import { getPlaceOpeningListings } from '@/lib/data'
+import { getPlaceOpeningListings, getSubdivisionOnMarketRows } from '@/lib/data'
 import {
   capLookListings,
   listingsFromAtlasDots,
@@ -122,6 +122,7 @@ import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
+import { childStockDetails } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -615,24 +616,33 @@ async function renderCommunityDetail({ params }: Props) {
   // verified-good union polygon and drew nothing (Matt, 2026-09-01). An
   // unreliable hull with no union still draws nothing — mapPolygon is null.
   const seedRing = mapPolygon != null
-  const stockTiles = await withTimeoutFallback(
-    loadPlaceStockTiles({
-      listingKeys: [
-        ...boundaryListingKeys,
-        ...fieldTiles.map((tile) => tile.listingKey),
-      ],
-      subdivisionNames: [
-        ...getSubdivisionMatchNames(community.subdivision || publicName),
-        ...childAliases,
-      ],
-      city: cityName,
-    }),
-    [],
-    4500,
-    'comm:stock',
-  )
+  const [stockTiles, childStockRows] = await Promise.all([
+    withTimeoutFallback(
+      loadPlaceStockTiles({
+        listingKeys: [
+          ...boundaryListingKeys,
+          ...fieldTiles.map((tile) => tile.listingKey),
+        ],
+        subdivisionNames: [
+          ...getSubdivisionMatchNames(community.subdivision || publicName),
+          ...childAliases,
+        ],
+        city: cityName,
+        boundary: { geoType: 'neighborhood', geoSlug: slug },
+      }),
+      [],
+      12000,
+      'comm:stock',
+    ),
+    withTimeoutFallback(
+      getSubdivisionOnMarketRows(platCells.map((cell) => cell.slug)),
+      [],
+      12000,
+      'comm:child-stock',
+    ),
+  ])
   const stockSections = placeStockSectionsFromTiles(unionListingTiles(stockTiles, fieldTiles))
-  const inventorySource = `regional MLS through Oregon Data Share, every active listing in ${publicName}`
+  const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${publicName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
   const hasMap = seedRing || fieldTiles.length > 0 || stockSections.length > 0
   // The living map, scoped to this community (Matt 2026-09-01: heat maps on
   // every page). Population = every active, pending, and 30-day-closed
@@ -687,13 +697,16 @@ async function renderCommunityDetail({ params }: Props) {
    * registry aliases, no "Neighborhoods in …" twin and no sales bars.
    * A community with no recorded children renders nothing here.
    */
-  const childPlaceEntries = nameOnlyChildEntries([
-    platRegions.map((region) => ({ name: region.name, href: region.href })),
-    childAliases.flatMap((alias) => {
-      const displayName = publishPlatDisplayName(alias)
-      return displayName ? [{ name: displayName, href: `/subdivisions/${slugify(alias)}` }] : []
-    }),
-  ])
+  const childPlaceEntries = childStockDetails(
+    nameOnlyChildEntries([
+      platRegions.map((region) => ({ name: region.name, href: region.href })),
+      childAliases.flatMap((alias) => {
+        const displayName = publishPlatDisplayName(alias)
+        return displayName ? [{ name: displayName, href: `/subdivisions/${slugify(alias)}` }] : []
+      }),
+    ]),
+    childStockRows,
+  )
 
   /**
    * THE GUIDES THIS COMMUNITY IS THE SUBJECT OF (SITE-30).
@@ -973,6 +986,8 @@ async function renderCommunityDetail({ params }: Props) {
           heading={publicName}
           nameOnly
           entries={childPlaceEntries}
+          foldAfter={Math.max(childPlaceEntries.length, 1)}
+          source="Oregon Data Share. The line under a subdivision counts publicly active listings there: Active and Active Under Contract, every property type. Coming Soon is excluded."
         />
 
         <V3PlaceInventory
