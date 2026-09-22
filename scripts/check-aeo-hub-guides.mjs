@@ -124,10 +124,10 @@ function aeoHubGuideProblems() {
     }
     if (hub === 'home') {
       if (!src('app/page.tsx').includes('layout="strip"') || !src('app/page.tsx').includes('id="guides"')) {
-        failures.push('home: page must mount V3Answers layout="strip" as #guides above the rails')
+        failures.push('home: page must mount V3Answers layout="strip" as #guides below the house rails')
       }
       if (!src('app/page.tsx').includes('<HomeHomesRails')) {
-        failures.push('home: house rails must stay on the page after the guides strip')
+        failures.push('home: house rails must stay on the page so a priced card can clear the fold')
       }
     }
 

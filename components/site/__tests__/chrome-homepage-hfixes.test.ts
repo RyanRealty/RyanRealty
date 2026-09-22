@@ -64,14 +64,14 @@ describe('chrome homepage H-fixes', () => {
     expect(PAGE).not.toContain('Homes on the map')
   })
 
-  it('keeps the guides strip above the rails and Work with us in the header', () => {
+  it('keeps the guides strip below the rails and Work with us in the header', () => {
     const guidesAt = PAGE.indexOf('id="guides"')
     const railsAt = PAGE.indexOf('<HomeHomesRails')
     expect(guidesAt).toBeGreaterThan(-1)
-    expect(railsAt).toBeGreaterThan(guidesAt)
+    expect(guidesAt).toBeGreaterThan(railsAt)
     expect(PAGE).toContain('V3Answers')
     expect(PAGE).toContain('layout="strip"')
-    expect(PAGE.slice(guidesAt, railsAt)).not.toMatch(/Work with us/)
+    expect(PAGE.slice(railsAt, guidesAt)).not.toMatch(/Work with us/)
   })
 
   it('densifies the homepage strip so Sell/Market sit beside Buy at 1440', () => {

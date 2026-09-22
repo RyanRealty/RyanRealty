@@ -94,7 +94,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "#guides -- compact ATF short-guides and Q&A strip. Doors are SITE-123 AEO hub tip-mins with published titles. Questions are the site FAQ (first-time buyers, cost to list, Bend neighborhoods). FAQPage JSON-LD from the same answers. Not a Work with us CTA.",
+      "section": "#guides -- compact guides/Q&A strip below the first house rail (SITE-160 fold). Doors are SITE-123 AEO hub tip-mins with published titles. Questions are the site FAQ (first-time buyers, cost to list, Bend neighborhoods). FAQPage JSON-LD from the same answers. Not a Work with us CTA.",
       "blocking": true
     },
     {
@@ -238,9 +238,9 @@
   },
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero -- compact inventory Stage: flyover, H1, V3Tabs Buy/Sell, catalog MorphingSearch, live count chip",
-    "V3Answers #guides -- compact SITE-125 guides/Q&A strip (AEO hub tip-mins + site FAQ)",
+    "V3Stage #hero -- compact inventory Stage: flyover, H1, V3Tabs Buy/Sell, catalog MorphingSearch, live listed count",
     "HomeHomesRails -- V3Carousel house rails in the first viewport (Card price + address + beds/baths/sqft)",
+    "V3Answers #guides -- compact guides/Q&A strip below the first rail so priced homes clear the fold (SITE-160)",
     "V3Pulse #right-now -- Central Oregon right now: live counts, constellation, read stamp",
     "HomeFeaturedCommunity #featured-community -- shadcn carousel + Card featured resort / community slides with live figures",
     "V3Doors #doors -- illustrated Buy / Sell / Work with us, Sell = Sell a home",
