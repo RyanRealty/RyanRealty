@@ -182,7 +182,7 @@ export function canonicalPlacePath(url: string | undefined): string | null {
 export function placeEntitySameAs(url: string | undefined): readonly string[] {
   const path = canonicalPlacePath(url)
   if (!path) return []
-  return BY_PATH.get(path) ?? []
+  return BY_PATH.get(path as `/${string}`) ?? []
 }
 
 export function mergePlaceSameAs(

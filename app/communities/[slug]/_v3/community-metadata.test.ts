@@ -54,7 +54,7 @@ describe('buildCommunitySchemas live-home ItemList (SITE-176)', () => {
   })
 
   it('withholds unphotographed homes', () => {
-    expect(itemListSchemas([{ ...home, photoUrl: null }]).some((schema) => schema.type === 'itemList')).toBe(false)
+    expect(itemListSchemas([{ ...home, photoUrl: '' }]).some((schema) => schema.type === 'itemList')).toBe(false)
   })
 })
 
