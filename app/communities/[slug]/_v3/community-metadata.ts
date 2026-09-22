@@ -9,16 +9,89 @@
  * for every caller by construction, and what ci:seo-routes, check-seo-authoring,
  * and lib/seo-route-contracts.test.ts each read off the route file.
  *
- * §0 NO COUNT IN THE DESCRIPTION. An earlier version interpolated an active
- * count here and it fell through to the parent CITY's, so three-rivers read
- * "1000 homes for sale" (Bend's, row-capped) and sunriver 121 against a body
- * showing 102. Re-deriving a count in metadata is out (the SEO-58 incident).
+ * §0 / SEO-58. Do not re-derive an active count from a city row. A count in
+ * the title or description must be the listed set this page body publishes,
+ * or omitted. Mountain High is the one title that names that listed count.
  */
 
 import type { pageMetadata } from '@/lib/site/page-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { preferPlaceHero } from '@/lib/geo-images'
 import type { SchemaInput, StatValue } from '@/lib/site/json-ld'
+import { formatCount } from '@/lib/format/count'
+import {
+  communityStockMixSentence,
+  type CommunitySerpStock,
+  type PlaceBuyerGroup,
+} from './community-stock-types'
+
+export type { CommunitySerpStock, PlaceBuyerGroup }
+
+/**
+ * SITE-177. One distinctive clause per resort so Tetherow / Broken Top /
+ * Black Butte Ranch cannot be byte-identical except the place name. Facts
+ * already on the page body (course, setting, city). No HOA dollars. No
+ * inventory count — that rides in `stock` when it equals the listed set.
+ */
+const COMMUNITY_SERP_SETTING: Record<string, string> = {
+  'brasada-ranch': 'High-desert resort around Brasada Canyons golf.',
+  tetherow: 'West Bend golf community on a David McLay Kidd course.',
+  'broken-top': 'Gated west Bend community around a Weiskopf and Morrish course.',
+  'black-butte-ranch': 'Forest resort with two golf courses under the Cascades.',
+  'mountain-high': 'South Bend neighborhood around the public Old Back Nine.',
+  'eagle-crest': 'Redmond golf resort along the Deschutes River canyon.',
+  'caldera-springs': 'Sunriver resort around Caldera Links and a wildlife preserve.',
+  sunriver: 'Ponderosa resort south of Bend along the Deschutes.',
+  'juniper-preserve': 'High-desert Bend resort around Nicklaus and Fazio golf.',
+  pronghorn: 'High-desert Bend resort around Nicklaus and Fazio golf.',
+  crosswater: 'Private Sunriver golf community along the Deschutes.',
+  'northwest-crossing': 'Walkable west Bend neighborhood of shops, trails, and homes.',
+  'awbrey-glen': 'Gated northwest Bend golf community on Awbrey Butte.',
+  'widgi-creek': 'South Bend golf community along the Deschutes.',
+  'vandevert-ranch': 'Sunriver-area ranch community of custom homes on acreage.',
+  'three-rivers': 'Deschutes-side community south of Sunriver.',
+  'mt-bachelor-village': 'West Bend resort village toward Mt. Bachelor.',
+  'inn-of-the-7th-mountain': 'West Bend resort lodging and homes toward Mt. Bachelor.',
+  'rivers-edge': 'North Bend golf community along the Deschutes.',
+  'crooked-river-ranch': 'Crook County ranch community above the Crooked River canyon.',
+}
+
+export function communitySerpTitle(input: {
+  slug: string
+  name: string
+  city: string
+  listedCount?: number | null
+}): string {
+  const { name, city, slug, listedCount } = input
+  // Mountain High GSC: title at pos 5–15 with 0 CTR. Name the on-page listed
+  // count, or omit a count. Never a parent-city leak (SEO-58).
+  if (slug === 'mountain-high' && listedCount != null && listedCount > 0) {
+    return `${name}: ${formatCount(listedCount)} homes for sale | ${city}, OR`
+  }
+  return `${name} Homes for Sale | ${city}, OR`
+}
+
+export function communitySerpDescription(input: {
+  slug: string
+  name: string
+  city: string
+  types?: readonly PlaceBuyerGroup[]
+  listedCount?: number | null
+}): string {
+  const { slug, name, city } = input
+  const types = input.types ?? []
+  const mix = communityStockMixSentence(types)
+  const setting = COMMUNITY_SERP_SETTING[slug]
+  const counted =
+    slug === 'mountain-high' && input.listedCount != null && input.listedCount > 0
+  const opener = counted
+    ? `${formatCount(input.listedCount)} homes for sale in ${name}, ${city}.`
+    : `${name} in ${city}, Oregon.`
+  const skipMix = counted && types.length <= 1
+  return [opener, setting, skipMix ? null : mix, 'Live MLS inventory.']
+    .filter((part): part is string => Boolean(part && part.trim()))
+    .join(' ')
+}
 
 /**
  * How each variable buildMarketFaq can emit reads inside a sentence. The keys are
@@ -96,6 +169,12 @@ export function communityMetadataInput(input: {
   city: string
   heroImageUrl?: string | null
   /**
+   * SITE-177. Types and listed count from the same DAL set the Field renders.
+   * Lots or cabins are named only when those groups are present. A count is
+   * interpolated only when it is this listed set (SEO-58).
+   */
+  stock?: CommunitySerpStock
+  /**
    * SITE-28. True when no real place name resolved for a compound slug, so the
    * page renders CommunityUnavailable instead of a community. The title and
    * description must then name NO place: the whole defect was
@@ -166,23 +245,25 @@ export function communityMetadataInput(input: {
   }
 
   return {
-    // Title <= 60 chars — community override, not the global template. Format:
-    // "[Community] Homes for Sale | [City], OR". cleanTitle in page-metadata.ts
-    // strips any trailing brand suffix and caps at 60.
-    title: `${name} Homes for Sale | ${city}, OR`,
-    // NO OPEN HOUSES IN THIS SENTENCE. The KB page carried an open-house list and
-    // this one does not: KbOpenHouses was removed as city-scoped (parity.json
-    // removedComponents) and what remains is a door to /open-houses/<city>. A
-    // description promising a section the page does not carry is the same defect
-    // class as a wrong figure, one field over.
-    //
-    // What is left is what EVERY community page renders under every branch: the
-    // Field, which shows the homes or states why there are none, and the market
-    // figures with their trace. The authored knowledge is deliberately not named
-    // here — a community with no config and no prose renders no knowledge block,
-    // and this sentence cannot see which one it is describing. It is also capped
-    // at 155 by shareDescription, and the longest registry name lands at 121.
-    description: `Active single-family homes in ${name}, ${city}, Oregon. Live inventory and market data from the regional MLS.`,
+    // Title format: "[Community] Homes for Sale | [City], OR". Mountain High
+    // includes the on-page listed count when stock carries it. H1 stays
+    // "{Place} homes for sale".
+    title: communitySerpTitle({
+      slug,
+      name,
+      city,
+      listedCount: input.stock?.listedCount,
+    }),
+    // Unique per community. Names lots or cabins only when `stock.types`
+    // includes those groups — the same listed set the Field renders. Capped
+    // at 155 by shareDescription.
+    description: communitySerpDescription({
+      slug,
+      name,
+      city,
+      types: input.stock?.types,
+      listedCount: input.stock?.listedCount,
+    }),
     // Self-canonical even when noindex. A cross-canonical was the first shape
     // of this fix and it is a footgun: noindex plus rel=canonical pointing
     // elsewhere is a conflicting pair, and the canonical TARGET can inherit the
@@ -231,6 +312,8 @@ export function buildCommunitySchemas(input: {
    * section anchor — never an invented place.
    */
   amenityItems?: ReadonlyArray<{ name: string; url: string }>
+  /** SITE-177. Same listed mix the Field and the meta description publish. */
+  stock?: CommunitySerpStock
 }): SchemaInput[] {
   const { slug, name, cityName, citySlug } = input
 
@@ -255,7 +338,13 @@ export function buildCommunitySchemas(input: {
       type: 'place',
       placeType: 'Place',
       name,
-      description: `${name}, a community in ${cityName}, Oregon. Homes for sale and live single-family market data.`,
+      description: communitySerpDescription({
+        slug,
+        name,
+        city: cityName,
+        types: input.stock?.types,
+        listedCount: input.stock?.listedCount,
+      }),
       url: `/communities/${slug}`,
       geo,
       address: { city: cityName, state: 'OR', country: 'US' },

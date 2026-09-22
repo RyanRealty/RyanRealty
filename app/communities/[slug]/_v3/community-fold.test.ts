@@ -17,6 +17,8 @@ describe('SITE-129 community fold inventory', () => {
   it('keeps typed stock on the page and does not remount Split search', () => {
     expect(PAGE).toMatch(/<PlaceSubdivisionHomes/)
     expect(PAGE).toMatch(/placeStockSectionsFromTiles/)
+    expect(PAGE).toMatch(/community-field-types/)
+    expect(PAGE).toMatch(/communityFieldTypeIndex/)
     expect(PAGE).not.toMatch(/<PlaceSplitView/)
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
   })
