@@ -264,6 +264,17 @@ async function main() {
     `stranded ledger windows: ${signals.ledger.expiredUnlearned}${strandedDomains.length ? ` (${strandedDomains.map((d) => `${d}:${signals.ledger.expiredByDomain[d]}`).join(', ')}) — these domains are FROZEN until Learn closes them` : ''}`,
   )
   push(
+    `gsc: ${signals.gsc.status} ${signals.gsc.rows28d} target_query_benchmark rows / 28d (${signals.gsc.source})`,
+  )
+  {
+    const siteEligibleCount = eligible.filter((n) => (n.version_gap ?? '').startsWith('SITE-')).length
+    if (siteEligibleCount === 0) {
+      push(
+        'GSC GAPS: 0 eligible SITE-* nodes. Ranking is not the served class. Dry-run: npx tsx scripts/seed-gsc-ranking-queue.ts  Apply: npx tsx scripts/seed-gsc-ranking-queue.ts --apply',
+      )
+    }
+  }
+  push(
     `tokens needing re-auth: ${needsReauth.length ? needsReauth.map((t) => `${t.table} (PARKED unless Matt wants it)`).join(', ') : 'none — the rest auto-refresh via the daily heartbeat'}`,
   )
   push('')
