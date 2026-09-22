@@ -75,7 +75,7 @@ export function bandLabel(band: PpsfBand, value: number | null): string {
     return `This home does not report a living area, so it has no price per square foot to place against ${set}.`
   }
   const dollars = `$${Math.round(value).toLocaleString('en-US')} per sq ft`
-  if (value < band.q1) return `${dollars} — below the middle half of ${set}.`
-  if (value > band.q3) return `${dollars} — above the middle half of ${set}.`
-  return `${dollars} — inside the middle half of ${set}.`
+  if (value < band.q1) return `${dollars}: below the middle half of ${set}.`
+  if (value > band.q3) return `${dollars}: above the middle half of ${set}.`
+  return `${dollars}: inside the middle half of ${set}.`
 }

@@ -10,7 +10,7 @@ import { spawnSync } from 'node:child_process'
  *
  * The bound the gate enforces is the DOCUMENT title, suffix included: a registry
  * detail page titles itself with the entity `name`, and app/layout.tsx then
- * appends " | Ryan Realty — Central Oregon" (31 chars). The old bound was 48 on
+ * appends " | Ryan Realty, Central Oregon" (30 chars). The old bound was 48 on
  * the name alone and never counted those 31, so a "bounded" 48-char name still
  * composed a 79-char title (SITE-25). Parks were not checked at all.
  *
@@ -73,20 +73,21 @@ afterAll(() => rmSync(SANDBOX, { recursive: true, force: true }))
 describe('ci:content-metadata', () => {
   it('passes on short, unique names across all four registries', () => {
     const { status, out } = run()
-    expect(out).toContain('name budget 29 chars')
+    expect(out).toContain('name budget 30 chars')
     expect(status).toBe(0)
   })
 
   it('FAILS on a name that only overflows once the brand suffix is counted', () => {
     // 34 chars: under the retired 48-char bound, over the real budget — the
-    // exact class /parks/pilot-butte shipped at 65 characters.
+    // exact class /parks/pilot-butte shipped at 64 characters with the
+    // 30-char brand suffix.
     const name = 'Pilot Butte State Scenic Viewpoint'
-    expect(name.length).toBeGreaterThan(29)
+    expect(name.length).toBeGreaterThan(30)
     expect(name.length).toBeLessThan(48)
     reset({ 'data/co-parks.ts': registry([{ slug: 'pilot-butte', name }]) })
     const { status, out } = run()
     expect(out).toContain('park/pilot-butte')
-    expect(out).toContain('the document title is 65 chars')
+    expect(out).toContain('the document title is 64 chars')
     expect(status).toBe(1)
   })
 

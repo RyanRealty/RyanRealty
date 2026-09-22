@@ -203,7 +203,7 @@ export const CO_EVENTS: CoEvent[] = [
     priceInfo: 'Free',
     organizer: 'Bend Oktoberfest',
     officialUrl: 'https://oktoberfestbend.com/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-09-21',
     blurb:
       'A one-day Bavarian street party on the Deschutes Historical Museum lawn in downtown Bend, with local beer, brats, a stein-holding contest, and live polka. Admission is free and the day runs from early afternoon into the evening.',
   },

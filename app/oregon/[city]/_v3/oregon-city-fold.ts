@@ -16,9 +16,9 @@ export function buildOregonCityTitle(input: {
 }): string {
   const name = input.name.trim()
   if (input.activeAllCount > 0) {
-    return `${input.activeAllCount.toLocaleString('en-US')} ${name} homes for sale — outside our market`
+    return `${input.activeAllCount.toLocaleString('en-US')} ${name} homes for sale, outside our market`
   }
-  return `${name} homes for sale — outside our market`
+  return `${name} homes for sale, outside our market`
 }
 
 export function buildOregonCityClaim(input: { name: string }): string {

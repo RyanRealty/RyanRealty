@@ -195,7 +195,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const cityName = ZIP_CITY_NAME[zip] ?? 'Bend'
   return pageMetadata({
     title: `${placeHomesForSaleHeading(zip)} · ${area}, Oregon`,
-    description: `Live single-family inventory in ZIP ${zip} (${area}, ${cityName}) — Atlas map of every active home, months of supply as two bars, 30-day new-listing alerts, and neighborhood doors with median list prices.`,
+    description: `Live single-family inventory in ZIP ${zip} (${area}, ${cityName}). Atlas map of every active home, months of supply as two bars, 30-day new-listing alerts, and neighborhood doors with median list prices.`,
     path: `/zip/${zip}`,
   })
 }

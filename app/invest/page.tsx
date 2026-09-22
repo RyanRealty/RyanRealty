@@ -69,14 +69,14 @@ export const revalidate = 3600
 
 const TITLE = 'Investment property in Central Oregon'
 const DESCRIPTION =
-  'Multi-family, commercial, and land listings across Central Oregon with live MLS counts. Rental math stays on the calculators — this page publishes no rent or yield.'
+  'Multi-family, commercial, and land listings across Central Oregon with live MLS counts. Rental math stays on the calculators. This page publishes no rent or yield.'
 
 export async function generateMetadata(): Promise<Metadata> {
   const board = await loadInvestBoard()
   const total = board.activeTotal
   const description =
     total > 0
-      ? `${total.toLocaleString('en-US')} income listings on the regional MLS right now — lots, commercial, two-to-four-unit buildings, farms. No rent or yield: that math needs a rent only you know.`
+      ? `${total.toLocaleString('en-US')} income listings on the regional MLS right now: lots, commercial, two-to-four-unit buildings, farms. No rent or yield: that math needs a rent only you know.`
       : DESCRIPTION
   return pageMetadata({
     title: TITLE,
@@ -134,7 +134,7 @@ export default async function InvestPage() {
       : []
 
   const RATE_TRACE = liveRate
-    ? `Freddie Mac Primary Mortgage Market Survey, the published 30-year fixed average for the week beginning ${formatDate(liveRate.weekStart)}, which is ${liveRate.ratePct.toFixed(2)}%. Read from market_history_weekly (geo national/us, metric mortgage_rate_30yr, source ${liveRate.source}) and captured by the weekly snapshot cron at ${formatDateTime(liveRate.capturedAt)}. It is a national owner-occupied average, not a quote and not an investor rate — investor terms run above it, and it is the floor your own math starts from. This page publishes no rent, no yield and no cash-flow figure: the rent side of that math has no live source here, so the calculators below take your own rent and your own terms.`
+    ? `Freddie Mac Primary Mortgage Market Survey, the published 30-year fixed average for the week beginning ${formatDate(liveRate.weekStart)}, which is ${liveRate.ratePct.toFixed(2)}%. Read from market_history_weekly (geo national/us, metric mortgage_rate_30yr, source ${liveRate.source}) and captured by the weekly snapshot cron at ${formatDateTime(liveRate.capturedAt)}. It is a national owner-occupied average, not a quote and not an investor rate. Investor terms run above it, and it is the floor your own math starts from. This page publishes no rent, no yield and no cash-flow figure: the rent side of that math has no live source here, so the calculators below take your own rent and your own terms.`
     : undefined
 
   const toolItems: V3QuietItem[] = [
@@ -142,7 +142,7 @@ export default async function InvestPage() {
     {
       label: 'Rental property calculator',
       href: '/tools/rental-property-calculator',
-      detail: 'Your rent, your rate, your expenses — the answer before the tour.',
+      detail: 'Your rent, your rate, your expenses: the answer before the tour.',
       lead: true,
     },
     { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },

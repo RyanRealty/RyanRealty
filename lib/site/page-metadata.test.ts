@@ -105,9 +105,9 @@ describe('documentTitle — one brand line, and no sheared place names', () => {
     expect(out).not.toMatch(/[&+|,]\s*$/)
   })
 
-  it('budgets 29 characters — the number the registry gate enforces', () => {
+  it('budgets 30 characters — the number the registry gate enforces', () => {
     expect(TITLE_BUDGET).toBe(60 - BRAND_SUFFIX.length)
-    expect(TITLE_BUDGET).toBe(29)
+    expect(TITLE_BUDGET).toBe(30)
   })
 })
 

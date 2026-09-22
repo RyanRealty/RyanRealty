@@ -152,6 +152,7 @@ describe('region insight board', () => {
     const faqs = regionInsightFaqs(board)
     expect(faqs).toHaveLength(3)
     for (const faq of faqs) {
+      expect(faq.answer).not.toContain('\u2014')
       expect(faq.answer).toMatch(/Oregon Data Share/)
       // No pipeline vocabulary in anything a visitor reads (SITE-88 jargon rule).
       expect(faq.question).not.toMatch(

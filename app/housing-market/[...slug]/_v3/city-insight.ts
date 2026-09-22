@@ -123,7 +123,7 @@ function buildMix(series: readonly CoMarketAnnualRow[], cityName: string): Regio
     segments,
     source: cityMlsSource(
       cityName,
-      `Everything that closed in ${latest.year} — houses, condos, land and commercial.`,
+      `Everything that closed in ${latest.year}: houses, condos, land and commercial.`,
     ),
   }
 }
