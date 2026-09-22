@@ -7,41 +7,23 @@
  * label on boundarySubdivision. When those differ, the trail should climb
  * parent → plat → street instead of collapsing to one Stevens Ranch crumb.
  */
-import aliasPlats from '@/data/subdivision-alias-plats.json'
+import {
+  findAliasPlatEntry,
+  type AliasMemberPlat,
+  type AliasPlatEntry,
+} from '@/lib/market/alias-plat-graph'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { slugify } from '@/lib/slug'
 import type { PlaceTrailNode } from '@/lib/site/place-trail'
-
-type MemberPlat = { slug?: string; name?: string; csnum?: string }
-type AliasEntry = {
-  aliasSlug?: string
-  mlsName?: string
-  memberPlats?: MemberPlat[]
-}
-
-type AliasFile = { entries?: AliasEntry[] }
-
-const ENTRIES: AliasEntry[] = Array.isArray((aliasPlats as AliasFile).entries)
-  ? ((aliasPlats as AliasFile).entries as AliasEntry[])
-  : []
 
 function norm(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
-function findEntry(mlsName: string | null | undefined): AliasEntry | null {
-  const needle = norm(mlsName)
-  if (!needle) return null
-  return (
-    ENTRIES.find((e) => norm(e.mlsName) === needle || norm(e.aliasSlug?.replace(/-/g, ' ')) === needle) ??
-    null
-  )
-}
-
-function findMember(entry: AliasEntry, boundaryLabel: string | null | undefined): MemberPlat | null {
+function findMember(entry: AliasPlatEntry, boundaryLabel: string | null | undefined): AliasMemberPlat | null {
   const needle = norm(boundaryLabel)
   if (!needle) return null
-  const plats = Array.isArray(entry.memberPlats) ? entry.memberPlats : []
+  const plats = entry.memberPlats
   // Exact label or slug only — do not let "Stevens Ranch" substring-match a phase.
   return (
     plats.find((p) => {
@@ -68,7 +50,7 @@ export function listingAliasPlatLadder(input: {
   mlsSubdivisionName: string | null | undefined
   boundarySubdivision: string | null | undefined
 }): ListingAliasPlatLadder {
-  const entry = findEntry(input.mlsSubdivisionName)
+  const entry = findAliasPlatEntry(input.mlsSubdivisionName)
   if (!entry?.aliasSlug || !entry.mlsName) return { parent: null, plat: null }
 
   const parent: PlaceTrailNode = {

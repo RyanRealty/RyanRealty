@@ -29,4 +29,14 @@ describe('listingAliasPlatLadder', () => {
       }),
     ).toEqual({ parent: null, plat: null })
   })
+
+  it('climbs MLS Triple to Tetherow, never Triple Ridge', () => {
+    const ladder = listingAliasPlatLadder({
+      mlsSubdivisionName: 'Triple',
+      boundarySubdivision: 'TETHEROW RIM',
+    })
+    expect(ladder.parent).toEqual({ label: 'Tetherow', slug: 'tetherow' })
+    expect(ladder.plat?.slug).toBe('tetherow-rim')
+    expect(ladder.plat?.label.toLowerCase()).not.toMatch(/ridge/)
+  })
 })

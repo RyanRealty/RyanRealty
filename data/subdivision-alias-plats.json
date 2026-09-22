@@ -314,6 +314,501 @@
       ],
       "evidence": "Geometry 2026-08-27. All TRS 151005. The Habitat plat is a Habitat for Humanity phase of the same development. STILL BUILDING OUT: 1 of 4 sampled parcels falls in no recorded plat yet. 31.6 acres.",
       "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "tetherow",
+      "mlsName": "Tetherow",
+      "city": "Bend",
+      "shape": "1:many",
+      "childJoin": "visitor-children",
+      "mlsAliasSlugs": [
+        "triple"
+      ],
+      "memberPlats": [
+        {
+          "slug": "golf-homes-at-tetherow",
+          "name": "GOLF HOMES AT TETHEROW",
+          "csnum": "18263"
+        },
+        {
+          "slug": "highlands-ridge-phase-3-and-4",
+          "name": "HIGHLANDS RIDGE PHASE 3 & 4",
+          "csnum": "21028"
+        },
+        {
+          "slug": "highlands-ridge-phases-1-and-2",
+          "name": "HIGHLANDS RIDGE, PHASES 1 & 2",
+          "csnum": "20154"
+        },
+        {
+          "slug": "north-forty-at-tetherow-also-in-section-2",
+          "name": "NORTH FORTY AT TETHEROW (ALSO IN SECTION 2)",
+          "csnum": "19649"
+        },
+        {
+          "slug": "outrider-overlook",
+          "name": "OUTRIDER OVERLOOK",
+          "csnum": "18890"
+        },
+        {
+          "slug": "outrider-overlook-phase-2",
+          "name": "OUTRIDER OVERLOOK PHASE 2",
+          "csnum": "19823"
+        },
+        {
+          "slug": "tetherow-cascades-vista-phase-1",
+          "name": "TETHEROW CASCADES VISTA PHASE 1",
+          "csnum": "19072"
+        },
+        {
+          "slug": "tetherow-cascades-vista-phase-2",
+          "name": "TETHEROW CASCADES VISTA PHASE 2",
+          "csnum": "19030"
+        },
+        {
+          "slug": "tetherow-phase-1",
+          "name": "TETHEROW PHASE 1",
+          "csnum": "17513"
+        },
+        {
+          "slug": "tetherow-phase-2",
+          "name": "TETHEROW PHASE 2",
+          "csnum": "17579"
+        },
+        {
+          "slug": "tetherow-phase-3",
+          "name": "TETHEROW PHASE 3",
+          "csnum": "17603"
+        },
+        {
+          "slug": "tetherow-phase-4",
+          "name": "TETHEROW PHASE 4",
+          "csnum": "17728"
+        },
+        {
+          "slug": "tetherow-phase-5",
+          "name": "TETHEROW PHASE 5",
+          "csnum": "17739"
+        },
+        {
+          "slug": "tetherow-phase-6",
+          "name": "TETHEROW PHASE 6",
+          "csnum": "18667"
+        },
+        {
+          "slug": "tetherow-phase-7",
+          "name": "TETHEROW PHASE 7",
+          "csnum": "19115"
+        },
+        {
+          "slug": "tetherow-rim",
+          "name": "TETHEROW RIM",
+          "csnum": "18852"
+        },
+        {
+          "slug": "tetherow-vacation-homes-phase-ia",
+          "name": "TETHEROW VACATION HOMES PHASE IA",
+          "csnum": "18941"
+        },
+        {
+          "slug": "tetherow-vacation-homes-phase-iii",
+          "name": "TETHEROW VACATION HOMES PHASE III",
+          "csnum": "19825"
+        },
+        {
+          "slug": "tetherow-vacation-homes-phases-ib-and-ii",
+          "name": "TETHEROW VACATION HOMES PHASES IB AND II",
+          "csnum": "19248"
+        },
+        {
+          "slug": "trailhead-at-tetherow-phase-1",
+          "name": "TRAILHEAD AT TETHEROW PHASE 1",
+          "csnum": "19338"
+        },
+        {
+          "slug": "trailhead-at-tetherow-phase-2",
+          "name": "TRAILHEAD AT TETHEROW PHASE 2",
+          "csnum": "19816"
+        },
+        {
+          "slug": "trailhead-cottages-247-23-000715-tp",
+          "name": "TRAILHEAD COTTAGES 247-23-000715-TP",
+          "csnum": "21565"
+        }
+      ],
+      "visitorChildren": [
+        {
+          "slug": "north-forty-at-tetherow-also-in-section-2",
+          "name": "North Forty"
+        },
+        {
+          "slug": "tetherow-cascades-vista-phase-1",
+          "name": "Cascades Vista"
+        },
+        {
+          "slug": "highlands-ridge-phases-1-and-2",
+          "name": "Highlands Ridge"
+        },
+        {
+          "slug": "outrider-overlook",
+          "name": "Outrider Overlook"
+        },
+        {
+          "slug": "trailhead-at-tetherow-phase-1",
+          "name": "Trailhead"
+        },
+        {
+          "slug": "triple",
+          "name": "Triple Knot"
+        },
+        {
+          "slug": "tetherow-rim",
+          "name": "The Rim"
+        },
+        {
+          "slug": "golf-homes-at-tetherow",
+          "name": "Golf Homes at Tetherow"
+        }
+      ],
+      "excludedLookalikes": [
+        {
+          "slug": "sunrise-village",
+          "name": "Sunrise Village"
+        },
+        {
+          "slug": "westbrook-meadows",
+          "name": "Westbrook Meadows"
+        },
+        {
+          "slug": "braeburn",
+          "name": "Braeburn"
+        },
+        {
+          "slug": "1st-on-the-hillsites",
+          "name": "1st On The Hillsites"
+        },
+        {
+          "slug": "first-on-the-hill-sites",
+          "name": "First On The Hill Sites"
+        },
+        {
+          "slug": "lodges-at-bachelor-v",
+          "name": "Lodges at Bachelor V"
+        },
+        {
+          "slug": "campbell-road",
+          "name": "Campbell Road"
+        },
+        {
+          "slug": "roald-west",
+          "name": "Roald West"
+        },
+        {
+          "slug": "triple-ridge",
+          "name": "Triple Ridge"
+        },
+        {
+          "slug": "triple-ridge-phase-1",
+          "name": "Triple Ridge Phase 1"
+        },
+        {
+          "slug": "triple-ridge-phase-2-also-in-section-29",
+          "name": "Triple Ridge, Phase 2"
+        },
+        {
+          "slug": "triple-ridge-phase-3",
+          "name": "Triple Ridge, Phase 3"
+        },
+        {
+          "slug": "triple-ridge-phase-4",
+          "name": "Triple Ridge, Phase 4"
+        }
+      ],
+      "evidence": "Geometry 2026-09-21 via community_subdivisions('neighborhood','tetherow') + public.boundaries CSNUM. 22 recorded plats, all Tetherow-named (Phases 1-7, Golf Homes CS 18263, Highlands Ridge CS 20154/21028, North Forty CS 19649, Outrider Overlook CS 18890/19823, Tetherow Rim CS 18852, Vacation Homes CS 18941/19248/19825, Trailhead CS 19338/19816/21565, Cascades Vista CS 19072/19030). 0 GIS lookalikes. Confirmed 2026-08-26: 1,445/1,453 Tetherow listings and 9/9 Triple listings inside the parent polygon. Visitor children are the named sub-neighborhoods a buyer taps (North Forty, Cascades Vista, Highlands Ridge, Outrider Overlook, Trailhead, Triple Knot, The Rim, Golf Homes) — not the county Phase 1-7 dump. Excluded lookalikes are the 2026-08-26 false children plus Triple Ridge (C-21: MLS Triple is Triple Knot, never triple-ridge-*). Heath and Tartan Druim have no recorded plat of their own and are not invented as doors.",
+      "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "northwest-crossing",
+      "mlsName": "NorthWest Crossing",
+      "city": "Bend",
+      "shape": "1:many",
+      "childJoin": "visitor-children",
+      "memberPlats": [
+        {
+          "slug": "bungalows-at-northwest-crossing-condominium-stage-1",
+          "name": "BUNGALOWS AT NORTHWEST CROSSING CONDOMINIUM STAGE 1",
+          "csnum": "19008"
+        },
+        {
+          "slug": "bungalows-at-northwest-crossing-condominium-stage-2",
+          "name": "BUNGALOWS AT NORTHWEST CROSSING CONDOMINIUM - STAGE 2",
+          "csnum": "19343"
+        },
+        {
+          "slug": "bungalows-at-northwest-crossing-condominium-stage-3",
+          "name": "BUNGALOWS AT NORTHWEST CROSSING CONDOMINIUM - STAGE 3",
+          "csnum": "19627"
+        },
+        {
+          "slug": "bungalows-at-northwest-crossing-condominiums-stage-4",
+          "name": "BUNGALOWS AT NORTHWEST CROSSING CONDOMINIUMS STAGE 4",
+          "csnum": "19788"
+        },
+        {
+          "slug": "commons-at-northwest-crossing",
+          "name": "COMMONS AT NORTHWEST CROSSING",
+          "csnum": "18822"
+        },
+        {
+          "slug": "compass-gardens",
+          "name": "COMPASS GARDENS",
+          "csnum": "18231"
+        },
+        {
+          "slug": "cottages-at-northwest-crossing",
+          "name": "COTTAGES AT NORTHWEST CROSSING",
+          "csnum": "15893"
+        },
+        {
+          "slug": "cottages-at-northwest-crossing-phase-2",
+          "name": "COTTAGES AT NORTHWEST CROSSING PHASE 2",
+          "csnum": "16935"
+        },
+        {
+          "slug": "district-2-east",
+          "name": "DISTRICT 2 EAST",
+          "csnum": "19951"
+        },
+        {
+          "slug": "fremont-row-condominiums",
+          "name": "FREMONT ROW CONDOMINIUMS",
+          "csnum": "19802"
+        },
+        {
+          "slug": "northwest-crossing-at-mcneal-way",
+          "name": "NORTHWEST CROSSING AT MCNEAL WAY",
+          "csnum": "19431"
+        },
+        {
+          "slug": "northwest-crossing-condominium",
+          "name": "NORTHWEST CROSSING CONDOMINIUM",
+          "csnum": "18431"
+        },
+        {
+          "slug": "northwest-crossing-district-1",
+          "name": "NORTHWEST CROSSING DISTRICT 1",
+          "csnum": "15383"
+        },
+        {
+          "slug": "northwest-crossing-district-2",
+          "name": "NORTHWEST CROSSING DISTRICT 2",
+          "csnum": "17383"
+        },
+        {
+          "slug": "northwest-crossing-live-work-townhomes",
+          "name": "NORTHWEST CROSSING LIVE/WORK TOWNHOMES",
+          "csnum": "17234"
+        },
+        {
+          "slug": "northwest-crossing-phase-1",
+          "name": "NORTHWEST CROSSING PHASE 1",
+          "csnum": "14845"
+        },
+        {
+          "slug": "northwest-crossing-phase-12",
+          "name": "NORTHWEST CROSSING PHASE 12",
+          "csnum": "17487"
+        },
+        {
+          "slug": "northwest-crossing-phase-13",
+          "name": "NORTHWEST CROSSING PHASE 13",
+          "csnum": "17940"
+        },
+        {
+          "slug": "northwest-crossing-phase-14",
+          "name": "NORTHWEST CROSSING PHASE 14",
+          "csnum": "18168"
+        },
+        {
+          "slug": "northwest-crossing-phase-15",
+          "name": "NORTHWEST CROSSING PHASE 15",
+          "csnum": "18225"
+        },
+        {
+          "slug": "northwest-crossing-phase-16",
+          "name": "NORTHWEST CROSSING PHASE 16",
+          "csnum": "18293"
+        },
+        {
+          "slug": "northwest-crossing-phase-17",
+          "name": "NORTHWEST CROSSING PHASE 17",
+          "csnum": "18446"
+        },
+        {
+          "slug": "northwest-crossing-phase-18",
+          "name": "NORTHWEST CROSSING PHASE 18",
+          "csnum": "18514"
+        },
+        {
+          "slug": "northwest-crossing-phase-19",
+          "name": "NORTHWEST CROSSING PHASE 19",
+          "csnum": "18401"
+        },
+        {
+          "slug": "northwest-crossing-phase-23",
+          "name": "NORTHWEST CROSSING, PHASE 23",
+          "csnum": "19432"
+        },
+        {
+          "slug": "northwest-crossing-phase-24",
+          "name": "NORTHWEST CROSSING PHASE 24",
+          "csnum": "18722"
+        },
+        {
+          "slug": "northwest-crossing-phase-25",
+          "name": "NORTHWEST CROSSING PHASE 25",
+          "csnum": "18906"
+        },
+        {
+          "slug": "northwest-crossing-phase-26",
+          "name": "NORTHWEST CROSSING PHASE 26",
+          "csnum": "19067"
+        },
+        {
+          "slug": "northwest-crossing-phase-27",
+          "name": "NORTHWEST CROSSING PHASE 27",
+          "csnum": "19501"
+        },
+        {
+          "slug": "northwest-crossing-phase-29",
+          "name": "NORTHWEST CROSSING PHASE 29",
+          "csnum": "19189"
+        },
+        {
+          "slug": "northwest-crossing-phase-30",
+          "name": "NORTHWEST CROSSING, PHASE 30",
+          "csnum": "19792"
+        },
+        {
+          "slug": "northwest-crossing-phase-4",
+          "name": "NORTHWEST CROSSING PHASE 4",
+          "csnum": "15454"
+        },
+        {
+          "slug": "northwest-crossing-phase-5",
+          "name": "NORTHWEST CROSSING PHASE 5",
+          "csnum": "15848"
+        },
+        {
+          "slug": "northwest-crossing-phase-6",
+          "name": "NORTHWEST CROSSING PHASE 6",
+          "csnum": "16064"
+        },
+        {
+          "slug": "northwest-crossing-phase-8",
+          "name": "NORTHWEST CROSSING PHASE 8",
+          "csnum": "16244"
+        },
+        {
+          "slug": "northwest-crossing-phases-2-and-3",
+          "name": "NORTHWEST CROSSING PHASES 2 & 3",
+          "csnum": "15202"
+        },
+        {
+          "slug": "northwest-crossing-phases-20-22",
+          "name": "NORTHWEST CROSSING PHASES 20-22",
+          "csnum": "18608"
+        },
+        {
+          "slug": "northwest-crossing-phases-7-and-11",
+          "name": "NORTHWEST CROSSING PHASES 7 AND 11",
+          "csnum": "17010"
+        },
+        {
+          "slug": "northwest-crossing-phases-9-and-10",
+          "name": "NORTHWEST CROSSING PHASES 9 AND 10",
+          "csnum": "16678"
+        },
+        {
+          "slug": "potts-court",
+          "name": "POTTS COURT",
+          "csnum": "19564"
+        }
+      ],
+      "visitorChildren": [
+        {
+          "slug": "cottages-at-northwest-crossing",
+          "name": "Cottages at Northwest Crossing"
+        },
+        {
+          "slug": "bungalows-at-northwest-crossing-condominium-stage-1",
+          "name": "Bungalows at Northwest Crossing"
+        },
+        {
+          "slug": "commons-at-northwest-crossing",
+          "name": "Commons at Northwest Crossing"
+        },
+        {
+          "slug": "compass-gardens",
+          "name": "Compass Gardens"
+        },
+        {
+          "slug": "fremont-row-condominiums",
+          "name": "Fremont Row"
+        },
+        {
+          "slug": "northwest-crossing-live-work-townhomes",
+          "name": "Live/work Townhomes"
+        },
+        {
+          "slug": "northwest-crossing-at-mcneal-way",
+          "name": "Mcneal Way"
+        },
+        {
+          "slug": "northwest-crossing-condominium",
+          "name": "Northwest Crossing Condominium"
+        }
+      ],
+      "excludedLookalikes": [
+        {
+          "slug": "skyliner-summit",
+          "name": "Skyliner Summit"
+        },
+        {
+          "slug": "shevlin-ridge",
+          "name": "Shevlin Ridge"
+        },
+        {
+          "slug": "westside-pines",
+          "name": "Westside Pines"
+        },
+        {
+          "slug": "westside-meadows",
+          "name": "Westside Meadows"
+        },
+        {
+          "slug": "valhalla-heights",
+          "name": "Valhalla Heights"
+        },
+        {
+          "slug": "treeline-phase-1",
+          "name": "Treeline Phase 1"
+        },
+        {
+          "slug": "outcrop",
+          "name": "Outcrop"
+        },
+        {
+          "slug": "shevlin-park-villas",
+          "name": "Shevlin Park Villas"
+        },
+        {
+          "slug": "shevlin-health-and-wellness-center",
+          "name": "Shevlin Health and Wellness Center"
+        }
+      ],
+      "evidence": "Geometry 2026-09-21 via community_subdivisions('neighborhood','northwest-crossing') + public.boundaries CSNUM. 42 GIS cells; Shevlin Health and Wellness Center CS 18857 and Shevlin Park Villas CS 17761 sit in the envelope and are EXCLUDED — not NWC phases. The other 40 are recorded NWC plats (TRS 171136 / 171231). Confirmed 2026-08-26: 2,901/2,957 NorthWest Crossing listings inside the parent polygon. Visitor children are named product plats (Cottages, Bungalows, Commons, Compass Gardens, Fremont Row, Live/work Townhomes, Mcneal Way, Condominium) — not Phase 1-30. Excluded lookalikes are the 2026-08-26 west-side false children plus the two Shevlin plats.",
+      "redirectCountySlugToAlias": false
     }
   ],
   "deferred": [

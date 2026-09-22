@@ -8,6 +8,10 @@
  * otherCommunitySubdivs is the same-community sibling rail (listing / place
  * keep-exploring). Visitor names only — no plat-name leaks, no counts.
  */
+import {
+  dropCuratedLookalikes,
+  joinCuratedChildEntries,
+} from '@/lib/market/alias-plat-graph'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { slugify } from '@/lib/slug'
 import { subdivisionHref } from '@/lib/site/place-href'
@@ -99,10 +103,12 @@ export function nearbySubdivisionPeers(input: {
   for (const peer of input.resortPeers ?? []) {
     push(slugFromHref(peer.href), peer.name, peer.href)
   }
-  return out
+  return dropCuratedLookalikes(self, out)
 }
 
-/** Deduped name-only child cards. First occurrence wins; counts never attach. */
+/** Deduped name-only child cards. First occurrence wins; counts never attach.
+ *  Tetherow / NWC GIS dumps join through the curated alias graph (SITE-144).
+ */
 export function nameOnlyChildEntries(
   groups: ReadonlyArray<ReadonlyArray<{ name: string; href: string }>>,
 ): NearbyPlacePeer[] {
@@ -117,7 +123,7 @@ export function nameOnlyChildEntries(
       out.push({ name, href })
     }
   }
-  return collapseTwinChildEntries(out)
+  return collapseTwinChildEntries(joinCuratedChildEntries(out))
 }
 
 function visitorSubdivCard(label: string, slug: string): NearbyPlacePeer | null {
