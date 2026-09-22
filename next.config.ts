@@ -417,6 +417,10 @@ const nextConfig: NextConfig = {
       // shell, so the 308 must live here (ci:redirect-only).
       { source: '/lp/tetherow', destination: '/communities/tetherow', permanent: true },
       { source: '/lp/tetherow/heath', destination: '/communities/tetherow', permanent: true },
+      // SITE-180: the live /blog/<slug> article cannibalized "Tetherow homes
+      // for sale". Bare /tetherow-resort-living-real-estate already 301s via
+      // the legacy table; this is the Next URL. Keep the post body.
+      { source: '/blog/tetherow-resort-living-real-estate', destination: '/communities/tetherow', permanent: true },
       { source: '/lp/bend', destination: '/cities/bend', permanent: true },
       { source: '/lp/bend-luxury-concierge', destination: '/cities/bend', permanent: true },
       { source: '/lp/awbrey-butte', destination: '/cities/bend', permanent: true },

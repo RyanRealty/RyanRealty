@@ -343,6 +343,8 @@ async function main() {
     '/lp/tetherow/heath': '/communities/tetherow',
     '/homes-for-sale/bend/tetherow': '/communities/tetherow',
     '/tetherow-resort-living-real-estate': '/communities/tetherow',
+    // SITE-180: the live Next article is /blog/<slug>, not the WP permalink.
+    '/blog/tetherow-resort-living-real-estate': '/communities/tetherow',
   }
   Object.assign(map, OVERRIDES)
 

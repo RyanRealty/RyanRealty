@@ -55,6 +55,10 @@ for (const file of pages) {
 check(config.includes("source: '/motivated-sellers'"), 'next.config must 308 /motivated-sellers → /price-drops')
 check(config.includes("source: '/motivated-sellers/:city'"), 'next.config must 308 /motivated-sellers/:city → /price-drops/:city')
 check(config.includes("source: '/feed'"), 'next.config must 308 /feed → /videos?view=feed')
+check(
+  config.includes("source: '/blog/tetherow-resort-living-real-estate'"),
+  'next.config must 308 /blog/tetherow-resort-living-real-estate → /communities/tetherow',
+)
 
 if (fails.length) {
   console.error('ci:redirect-only FAILED')
