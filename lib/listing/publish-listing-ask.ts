@@ -10,6 +10,7 @@
  * original minus exact ask. Do not thousand-round either under the same label.
  */
 
+import { formatAtlasPinPrice } from '@/lib/atlas/pin-price'
 import { publishSaleAskAmount } from '@/lib/listing/publish-listing-figure'
 import { computeMonthlyPiti, type MonthlyPitiInput } from '@/lib/listing-tier1'
 
@@ -137,4 +138,17 @@ export function formatPublishedSaleAsk(input: {
 }): string | null {
   const published = publishListingSaleAsk(input)
   return published ? formatListingAsk(published.ask) : null
+}
+
+/**
+ * Compact house ask — same string as the map chip (`$795k` / `$1.2M`).
+ * Lease rates stay null. Token MLS asks the pin withholds stay null.
+ */
+export function formatPublishedSaleAskCompact(input: {
+  price: number | null | undefined
+  propertyType: string | null | undefined
+}): string | null {
+  const published = publishListingSaleAsk(input)
+  if (!published) return null
+  return formatAtlasPinPrice(published.ask) || null
 }

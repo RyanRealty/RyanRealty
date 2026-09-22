@@ -8,7 +8,7 @@
  *
  * One occupied cell = one mark. Adjacent cells do not merge — a connected
  * city stays many navy count bubbles, not one centroid. Zoom stretches
- * screen distances and the grid dissolves back to 735K pills.
+ * screen distances and the grid dissolves back to $735k pills.
  *
  * Import-free so `ci:atlas-price-pins` can transpile and run the matrix.
  */

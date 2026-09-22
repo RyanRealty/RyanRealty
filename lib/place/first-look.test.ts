@@ -21,7 +21,7 @@ function houseBucket(n: number): PlaceOpeningListingBucket {
       href: `/homes-for-sale/listing/22000${i}`,
       photoSrc: `https://example.test/house-${i}.jpg`,
       title: `${100 + i} NW Test Ave`,
-      price: `$${(700 + i)}K`,
+      price: `$${(700 + i)}k`,
       beds: 3,
       baths: 2,
       sqft: 1800 + i,
@@ -51,12 +51,13 @@ describe('place first-look cards', () => {
           StreetName: 'Oregon',
           StreetSuffix: 'Ave',
           City: 'Bend',
+          PropertyType: 'A',
         },
       ],
     })
     expect(cards).toHaveLength(1)
     expect(cards[0]?.photoSrc).toContain('pin.jpg')
-    expect(cards[0]?.price).toBe('$735K')
+    expect(cards[0]?.price).toBe('$735k')
   })
 })
 

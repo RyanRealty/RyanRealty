@@ -212,8 +212,8 @@ export function buildClusterIcon(count: number): google.maps.Icon {
 // ─── Price label formatter ─────────────────────────────────────────────────────
 
 /**
- * For-sale / pending map pill. Same Redfin face as Atlas (SITE-127):
- * `735K` under a million (no $), `$1.5M` / `$1M` at a million. Token MLS
+ * For-sale / pending map pill. Same house compact ask as Atlas / cards
+ * (SITE-139): `$795k` under a million, `$1.2M` / `$1M` at a million. Token MLS
  * asks ($1.32, $3k) return empty so a fold cluster cannot print `$1`.
  */
 export function formatPriceLabel(price: number): string {
