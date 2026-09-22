@@ -73,7 +73,7 @@ describe('city opening', () => {
     expect(page).toMatch(/place-opening--media/)
     expect(page).toMatch(/leftoverHudKpis\(\{/)
     expect(page).toMatch(/publishPlaceFace\(\{\s*grain:\s*'city',/)
-    expect(page).toMatch(/const headline = placeHomesForSaleHeading\(cityName\)/)
+    expect(page).toMatch(/const headline = placeCityRealEstateHeading\(cityName\)/)
     expect(page).not.toMatch(/<PlaceFaceStrip/)
     expect(page).toMatch(/<PlaceSubdivisionHomes/)
     expect(page).not.toMatch(/<PlaceSplitView/)

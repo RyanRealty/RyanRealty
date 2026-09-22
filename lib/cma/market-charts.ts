@@ -810,7 +810,9 @@ export type MarketSlopesInput = {
 
 function slopeTravel(panel: MarketSlopePanel, max: number): number {
   if (panel.move === 'held flat' || Math.abs(panel.deltaPct) < 0.03) return 0
-  return Math.max(16, Math.min(max, Math.abs(panel.deltaPct) * 420))
+  // 8% uses the whole band. A 3% move stays a smaller step, not the same picture.
+  const share = Math.min(1, Math.abs(panel.deltaPct) / 0.08)
+  return Math.max(max * 0.28, share * max)
 }
 
 function slopePanel(
@@ -821,29 +823,32 @@ function slopePanel(
   h: number,
   numFs: number,
 ): string {
-  const titleY = y0 + 16
-  const travel = slopeTravel(panel, 32)
-  const midY = y0 + 64
+  // Numbers on their own row. The stroke sits below them, unbroken. The word
+  // sits under the stroke. A label painted on the line cut it into two stubs,
+  // and the dollars rode the endpoints, so the move never read.
+  const titleY = y0 + 14
+  const numY = y0 + 40
+  const bandTop = y0 + 56
+  const bandBot = y0 + 112
+  const travel = slopeTravel(panel, bandBot - bandTop)
+  const midY = (bandTop + bandBot) / 2
   const leftY = midY + (panel.move === 'rose' ? travel / 2 : panel.move === 'fell' ? -travel / 2 : 0)
   const rightY = midY + (panel.move === 'rose' ? -travel / 2 : panel.move === 'fell' ? travel / 2 : 0)
-  const xL = x0 + 8
-  const xR = x0 + w - 8
+  const xL = x0 + 10
+  const xR = x0 + w - 10
   const ink = panel.move === 'fell' ? SLOPE_DOWN : TL_INK
   const word = panel.move === 'held flat' ? 'held flat' : panel.move
-  const wordFs = 12
-  const wordW = Math.max(36, word.length * wordFs * 0.62 + 12)
+  const wordY = y0 + 136
+  const dateY = y0 + h - 22
+  const nY = y0 + h - 8
   const mx = (xL + xR) / 2
-  const my = (leftY + rightY) / 2
-  const dateY = y0 + h - 26
-  const nY = y0 + h - 10
   return `<text x="${xL.toFixed(1)}" y="${titleY.toFixed(1)}" font-size="11" fill="${TL_MUTED}">${esc(panel.title)}</text>
+    <text x="${xL.toFixed(1)}" y="${numY.toFixed(1)}" font-size="${numFs}" font-weight="600" fill="${TL_INK}">${esc(panel.fromText)}</text>
+    <text x="${xR.toFixed(1)}" y="${numY.toFixed(1)}" text-anchor="end" font-size="${numFs}" font-weight="600" fill="${TL_INK}">${esc(panel.toText)}</text>
     <line x1="${xL.toFixed(1)}" y1="${leftY.toFixed(1)}" x2="${xR.toFixed(1)}" y2="${rightY.toFixed(1)}" stroke="${ink}" stroke-width="1.75"/>
     <circle cx="${xL.toFixed(1)}" cy="${leftY.toFixed(1)}" r="4.5" fill="${SLOPE_CREAM}" stroke="${ink}" stroke-width="1.6"/>
     <circle cx="${xR.toFixed(1)}" cy="${rightY.toFixed(1)}" r="4.5" fill="${SLOPE_CREAM}" stroke="${ink}" stroke-width="1.6"/>
-    <text x="${xL.toFixed(1)}" y="${(leftY - 12).toFixed(1)}" font-size="${numFs}" font-weight="600" fill="${TL_INK}">${esc(panel.fromText)}</text>
-    <text x="${xR.toFixed(1)}" y="${(rightY - 12).toFixed(1)}" text-anchor="end" font-size="${numFs}" font-weight="600" fill="${TL_INK}">${esc(panel.toText)}</text>
-    <rect x="${(mx - wordW / 2).toFixed(1)}" y="${(my - wordFs / 2 - 2).toFixed(1)}" width="${wordW.toFixed(1)}" height="${(wordFs + 4).toFixed(1)}" fill="${SLOPE_CREAM}"/>
-    <text x="${mx.toFixed(1)}" y="${(my + wordFs / 2 - 2).toFixed(1)}" text-anchor="middle" font-size="${wordFs}" font-weight="600" fill="${ink}">${esc(word)}</text>
+    <text x="${mx.toFixed(1)}" y="${wordY.toFixed(1)}" text-anchor="middle" font-size="12" font-weight="600" fill="${ink}">${esc(word)}</text>
     <text x="${xL.toFixed(1)}" y="${dateY.toFixed(1)}" font-size="11" fill="${TL_MUTED}">${esc(panel.fromWhen)}</text>
     <text x="${xR.toFixed(1)}" y="${dateY.toFixed(1)}" text-anchor="end" font-size="11" fill="${TL_MUTED}">${esc(panel.toWhen)}</text>
     <text x="${xL.toFixed(1)}" y="${nY.toFixed(1)}" font-size="11" fill="${TL_MUTED}">${esc(panel.fromN)}</text>
@@ -852,7 +857,7 @@ function slopePanel(
 
 function slopesSvg(input: MarketSlopesInput, W: number, stacked: boolean, numFs: number): string {
   if (input.panels.length === 0) return ''
-  const panelH = 128
+  const panelH = 180
   const gap = stacked ? 8 : 28
   const n = input.panels.length
   const panelW = stacked ? W : (W - gap * (n - 1)) / n

@@ -162,7 +162,7 @@ describe('SITE-172 city FAQ depth beyond pulse stats', () => {
   it('merges place FAQ extras into the visible FAQ and FAQPage without changing the H1', () => {
     expect(PAGE).toMatch(/buildPlaceFaqExtras/)
     expect(PAGE).toMatch(/appendPlaceFaqExtras/)
-    expect(PAGE).toMatch(/const headline = placeHomesForSaleHeading\(cityName\)/)
+    expect(PAGE).toMatch(/const headline = placeCityRealEstateHeading\(cityName\)/)
     expect(PAGE).toMatch(/<V3Heading level=\{1\}[\s\S]*\{headline\}/)
     expect(PAGE).not.toMatch(/hoaMasterAnnual/)
     expect(PAGE).not.toMatch(/schoolDistrictName/)
