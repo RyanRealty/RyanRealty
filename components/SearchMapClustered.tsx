@@ -567,7 +567,10 @@ class V3SuperClusterAlgorithm extends SuperClusterAlgorithm {
         radius,
         extent: V3_CLUSTER_EXTENT,
       })
-      this.superCluster = (rebuilt as unknown as { superCluster: SuperClusterAlgorithm }).superCluster
+      // SuperClusterAlgorithm keeps the index on a private field; copy it when radius changes with zoom.
+      ;(this as unknown as { superCluster: unknown }).superCluster = (
+        rebuilt as unknown as { superCluster: unknown }
+      ).superCluster
       this.markers = []
       this.state = { zoom: -1 }
       this.appliedRadius = radius
