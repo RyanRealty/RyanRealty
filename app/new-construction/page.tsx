@@ -6,7 +6,10 @@
  * SITE-152 (Matt 2026-09-21): the named SET is today’s Active Bend
  * new-construction SubdivisionName values, not a three-tab shelf with a note
  * that 38 more exist below. One V3Atlas of that market. Do not edit
- * V3Atlas.client.tsx (SITE-159). Do not reopen SITE-132 or SITE-142.
+ * V3Atlas.client.tsx (SITE-159). Do not reopen SITE-132 or SITE-151/152 coverage.
+ *
+ * SITE-142: 375 pin island pad + cluster stage, crumb/stats no mid-word clip,
+ * no hover-only ledger reveal, builder/program doors in #tour.
  *
  * SITE-151: a home that shows a concession shows WHOSE and WHAT, sourced from
  * MLS PublicRemarks or the named builder page already in BEND_NEW_CON_FINANCING.
@@ -40,13 +43,11 @@ import {
   BEND_NEW_CONSTRUCTION_PATH,
   BEND_NEW_CONSTRUCTION_RESEARCH_DATE,
   BEND_NEW_CONSTRUCTION_TITLE,
-  bendNewConCommunityHref,
   bendNewConLiveCoverageAnswer,
   bendNewConSubdivisionHrefs,
   bendNewConLivePriceSpanFold,
   bendNewConLiveWeight,
   bendNewConRowConcessionHeadline,
-  bendNewConRowConcessionReveal,
   bendNewConSeeHomesLabel,
   financingHighlight,
   flagLabel,
@@ -75,7 +76,12 @@ import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 import { NewConLeadShelf } from './_v3/NewConLeadShelf.client'
 import { NewConSavingsChips } from './_v3/NewConSavingsChips'
 import { loadBendNewConLiveMarket } from './_v3/load-live-market'
-import { loadNewConOverviewMap } from './_v3/load-overview-map'
+import {
+  NEW_CON_ATLAS_CLUSTER_CELL_PX,
+  NEW_CON_ATLAS_CLUSTER_STAGE,
+  NEW_CON_ATLAS_CLUSTER_STAGE_PHONE,
+  loadNewConOverviewMap,
+} from './_v3/load-overview-map'
 import './_v3/new-con-page.css'
 
 export const revalidate = 86400
@@ -92,19 +98,9 @@ function liveCommunityRow(
   row: BendNewConLiveCommunity,
   maxCount: number,
 ): V3LedgerFigureRow {
-  const community = bendNewConCommunityHref(row.name)
   const concessionHeadline = bendNewConRowConcessionHeadline(row.name)
-  const concessionDeep = bendNewConRowConcessionReveal(row.name)
   const types = row.propertySubTypes.length > 0 ? row.propertySubTypes.join(', ') : null
   const snapshot = row.snapshot
-  const revealBits = [
-    `${row.count} live Active new-construction ${row.count === 1 ? 'home matches' : 'homes match'} this search`,
-    types,
-    snapshot ? `${snapshot.active} Active in the 2026-09-16 snapshot` : 'Not in the 2026-09-16 named snapshot',
-    snapshot?.builders ? `Sampled builder ${snapshot.builders}` : null,
-    community ? `Community page also at ${community}` : null,
-    concessionDeep,
-  ].filter((bit): bit is string => Boolean(bit))
 
   return {
     href: row.href,
@@ -120,7 +116,6 @@ function liveCommunityRow(
     ),
     value: v3Text(bendNewConSeeHomesLabel(row.count)),
     weight: bendNewConLiveWeight(row.count, maxCount),
-    reveal: { line: v3Text(revealBits.join(' · ')) },
   }
 }
 
@@ -248,6 +243,17 @@ export default async function NewConstructionPage() {
         <V3SectionTracker />
 
         <div className="newcon-hero">
+          <div className="newcon-hero__crumb">
+            <V3Breadcrumb
+              tone="on-media"
+              belowNav={false}
+              trail={[
+                { label: 'Home', href: '/' },
+                { label: 'Homes for sale', href: '/homes-for-sale' },
+                { label: 'New construction' },
+              ]}
+            />
+          </div>
           <V3Stage
             id="new-construction"
             headingLevel={1}
@@ -261,21 +267,17 @@ export default async function NewConstructionPage() {
               figures: [
                 {
                   value: String(market.listingsOk ? market.homeCount : BEND_NEW_CON_HEADLINE.active),
-                  label: market.listingsOk
-                    ? 'live Active new homes in Bend proper'
-                    : 'Active new homes on 2026-09-16',
+                  label: market.listingsOk ? 'live Active homes' : 'Active homes that day',
                   href: BEND_NEW_CON_SEARCH_HREF,
                 },
                 {
                   value: String(market.listingsOk ? market.namedCount : BEND_NEW_CON_HEADLINE.namedCommunities),
-                  label: market.listingsOk
-                    ? 'named subdivisions in that search'
-                    : 'named communities on 2026-09-16',
+                  label: market.listingsOk ? 'named subdivisions' : 'named communities that day',
                   href: '#communities',
                 },
                 {
                   value: priceSpanFold,
-                  label: market.listingsOk ? 'live list-price span' : 'list-price span that day',
+                  label: market.listingsOk ? 'list-price span' : 'list-price span that day',
                   href: BEND_NEW_CON_SEARCH_HREF,
                 },
               ],
@@ -288,17 +290,6 @@ export default async function NewConstructionPage() {
               href: BEND_NEW_CON_SEARCH_HREF,
             }}
           />
-          <div className="newcon-hero__crumb absolute inset-x-0 top-0 z-10 bg-navy">
-            <V3Breadcrumb
-              tone="on-media"
-              belowNav={false}
-              trail={[
-                { label: 'Home', href: '/' },
-                { label: 'Homes for sale', href: '/homes-for-sale' },
-                { label: 'New construction' },
-              ]}
-            />
-          </div>
         </div>
 
         {overview.regions.length > 0 || overview.dots.length > 0 ? (
@@ -324,6 +315,10 @@ export default async function NewConstructionPage() {
             outlinedOf={overview.namedTotal}
             basemap={overview.basemap}
             fit="regions"
+            clusterPins
+            clusterCellPx={NEW_CON_ATLAS_CLUSTER_CELL_PX}
+            clusterStageHint={NEW_CON_ATLAS_CLUSTER_STAGE}
+            clusterStageHintPhone={NEW_CON_ATLAS_CLUSTER_STAGE_PHONE}
           />
         ) : null}
 
@@ -333,7 +328,7 @@ export default async function NewConstructionPage() {
             eyebrow={v3Text(`${market.namedCount} named, live Active search`)}
             heading={v3Text('Every live new-construction community')}
             note={v3Text(
-              `${market.namedCount} named subdivisions in today’s Active Bend new-construction search. ${primary.length} have two or more live homes; ${singles.length} have one. Each row opens that subdivision’s live search. Open a row for the live band and published concession.`,
+              `${market.namedCount} named subdivisions in today’s Active Bend new-construction search. ${primary.length} have two or more live homes; ${singles.length} have one. Each row opens that subdivision’s live search. The live band and published concession sit on the row.`,
             )}
             rows={[firstPrimary, ...morePrimary]}
             source={v3Text(BEND_NEW_CON_LIVE_SOURCE)}
@@ -393,14 +388,16 @@ export default async function NewConstructionPage() {
               href: `sms:${CONTACT.phoneDirectTel}`,
             },
             {
-              kicker: v3Text('Schedule'),
-              label: v3Text('Pick a time'),
-              href: '/book',
+              kicker: v3Text('Pahlisch'),
+              label: v3Text('Golden Key'),
+              fact: v3Text('Builder program'),
+              href: BEND_NEW_CON_FINANCING[0]!.sources[0]!.href,
             },
             {
-              kicker: v3Text('Search'),
-              label: v3Text('Bend new construction'),
-              href: BEND_NEW_CON_SEARCH_HREF,
+              kicker: v3Text('D.R. Horton'),
+              label: v3Text('Stevens Ranch flyer'),
+              fact: v3Text('Builder program'),
+              href: BEND_NEW_CON_FINANCING[1]!.sources[0]!.href,
             },
           ]}
         />
@@ -410,16 +407,6 @@ export default async function NewConstructionPage() {
           name={v3Text('Published builder pages')}
           doors={[
             {
-              kicker: v3Text('Pahlisch'),
-              label: v3Text('Golden Key'),
-              href: BEND_NEW_CON_FINANCING[0]!.sources[0]!.href,
-            },
-            {
-              kicker: v3Text('D.R. Horton'),
-              label: v3Text('Stevens Ranch flyer'),
-              href: BEND_NEW_CON_FINANCING[1]!.sources[0]!.href,
-            },
-            {
               kicker: v3Text('Lennar'),
               label: v3Text('Fall Super Sale'),
               href: BEND_NEW_CON_FINANCING[2]!.sources[0]!.href,
@@ -428,6 +415,16 @@ export default async function NewConstructionPage() {
               kicker: v3Text('Hayden'),
               label: v3Text('$0 Down'),
               href: BEND_NEW_CON_FINANCING[4]!.sources[0]!.href,
+            },
+            {
+              kicker: v3Text('Stone Bridge'),
+              label: v3Text('Credit banner'),
+              href: BEND_NEW_CON_FINANCING[6]!.sources[0]!.href,
+            },
+            {
+              kicker: v3Text('Discovery West'),
+              label: v3Text('Builder pages'),
+              href: BEND_NEW_CON_FINANCING[7]!.sources[0]!.href,
             },
           ]}
         />

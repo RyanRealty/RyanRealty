@@ -1,31 +1,30 @@
-/* Page-scoped fold: keep CTA + stats on a 375; map + chips after the Stage. */
+/* SITE-142: 375 fold — crumb in flow, stats/CTA unclipped, atlas island padded. */
 
 .newcon-hero {
   position: relative;
 }
 
+.newcon-hero__crumb {
+  background: var(--v3-surface-inverse);
+}
+
+.newcon-hero .v3-breadcrumb__list {
+  min-width: 0;
+  overflow: visible;
+  flex-wrap: nowrap;
+}
+
+.newcon-hero .v3-breadcrumb__text--current {
+  max-width: none;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
+}
+
 @media (max-width: 40rem) {
-  .newcon-hero__crumb {
-    position: relative;
-    inset: auto;
-  }
-
-  .newcon-hero .v3-breadcrumb__list {
-    min-width: 0;
-  }
-
-  .newcon-hero .v3-breadcrumb__text--current {
-    display: block;
-    max-width: min(11rem, 48vw);
-  }
-
-  .newcon-hero .v3-stage-strip__value {
-    white-space: nowrap;
-  }
-
   .newcon-hero .v3.v3-stage--compact .v3-stage-copy,
   .newcon-hero .v3-stage-copy {
-    padding-top: var(--v3-space-lg);
+    padding-top: var(--v3-space-md);
     padding-bottom: var(--v3-space-xs);
     gap: var(--v3-space-2xs);
   }
@@ -34,24 +33,50 @@
   .newcon-hero .v3-stage-copy .v3-btn {
     display: inline-flex;
     min-height: var(--v3-tap);
+    max-width: 100%;
+    white-space: nowrap;
   }
 
   .newcon-hero .v3.v3-stage--inventory.v3-stage--compact .v3-stage-band,
   .newcon-hero .v3-stage-band {
     display: block;
   }
+
+  /* Jax is mid-trailing-edge (SITE-153). Keep stats off that disc. */
+  .newcon-hero .v3-stage-band__inner {
+    padding-right: calc(var(--v3-gutter) + 4.25rem + var(--v3-space-sm));
+  }
+
+  .newcon-hero .v3-stage-strip__claim,
+  .newcon-hero .v3-stage-strip__label {
+    overflow: visible;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: none;
+  }
+
+  .newcon-hero .v3-stage-strip__value {
+    white-space: nowrap;
+    overflow: visible;
+  }
+
+  .newcon-hero .v3-stage-strip__door {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
 }
 
-/* Desktop hover used to overlay the next ledger row. Reveal goes up instead. */
-.newcon-page .v3-ledger--reveal .v3-ledger__list {
-  padding-top: var(--v3-space-sm);
-}
+/* Pad the island so edge $ pills are not cropped at 375. */
+@media (max-width: 40rem) {
+  .newcon-page .v3-atlas__frame {
+    padding: 1.5rem 1.75rem 2.25rem;
+    overflow: hidden;
+  }
 
-.newcon-page .v3-ledger--reveal .v3-ledger__reveal {
-  top: auto;
-  bottom: calc(100% - 1px);
-  max-height: 4.25rem;
-  overflow: hidden;
+  .newcon-page .v3-atlas__stage {
+    overflow: visible;
+  }
 }
 
 .newcon-savings {

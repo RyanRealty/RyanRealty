@@ -10,6 +10,11 @@ import { getBoundaryGeoJSON, getCommunitySubdivisions } from '@/lib/data'
 import type { ListingTile } from '@/lib/data/types/listing'
 import type { AtlasDot, AtlasRegion, AtlasType } from '@/components/site/v3'
 import { atlasTypesPresent } from '@/lib/atlas/build-place-atlas'
+import {
+  ATLAS_PIN_CLUSTER_CELL_PX,
+  CITY_FOLD_CLUSTER_STAGE,
+  CITY_FOLD_CLUSTER_STAGE_PHONE,
+} from '@/lib/atlas/cluster-pins'
 import { ATLAS_PIN_MIN_USD } from '@/lib/atlas/pin-price'
 import { classifyType } from '@/app/_v3/home-field-items'
 import { formatDateTime } from '@/lib/format/date'
@@ -22,6 +27,11 @@ import {
   bendNewConSearchHref,
 } from '@/lib/site/bend-new-construction'
 import type { BendNewConLiveMarket } from './load-live-market'
+
+/** SITE-142: first-paint clustering at 375 uses the city-fold phone stage so NC pills do not stack. */
+export const NEW_CON_ATLAS_CLUSTER_CELL_PX = ATLAS_PIN_CLUSTER_CELL_PX
+export const NEW_CON_ATLAS_CLUSTER_STAGE = CITY_FOLD_CLUSTER_STAGE
+export const NEW_CON_ATLAS_CLUSTER_STAGE_PHONE = CITY_FOLD_CLUSTER_STAGE_PHONE
 
 export type NewConOverviewMap = {
   regions: AtlasRegion[]
