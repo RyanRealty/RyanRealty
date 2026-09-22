@@ -12,8 +12,9 @@ import { getRegistryResortPublicFigures } from '@/lib/kb/registry-resort-public-
 import { formatCount } from '@/lib/format/count'
 import { formatPriceExact } from '@/lib/format/money'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
-import { communityImage, cityHero, preferPlaceHero } from '@/lib/geo-images'
-import { getSurfaceImages, pickSurfaceImage } from '@/lib/data'
+import { preferPlaceHeroOrNull } from '@/lib/geo-images'
+import { getSurfaceImages } from '@/lib/data'
+import { indexImagineStill, resolveIndexPlacePhoto } from '@/lib/geo/index-place-photo'
 import { subdivisionEntityKey } from '@/lib/slug'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -89,15 +90,8 @@ export default async function CommunitiesPage() {
         const content = await getResortCommunityContent(r.slug)
         const sentence = belongingLine(content)
         const live = idx?.heroImageUrl
-        const curated = communityImage(r.slug)
-        const fallbackHero = cityHero(r.city_slug)
-        const pooledFallback = pickSurfaceImage(heroPhotoPool, {
-          geoTags: [r.city_slug],
-          seed: r.slug,
-          fallback: fallbackHero.src,
-        })
-        const photoSrc = preferPlaceHero(live, curated ?? pooledFallback ?? fallbackHero.src)
-        const placeOwned = Boolean(live?.trim() || curated)
+        const owned = resolveIndexPlacePhoto({ slug: r.slug, pool: heroPhotoPool })
+        const photoSrc = indexImagineStill(owned, live) ?? preferPlaceHeroOrNull(live, owned)
         return {
           slug: r.slug,
           name: r.label,
@@ -105,8 +99,6 @@ export default async function CommunitiesPage() {
           citySlug: r.city_slug,
           sentence,
           photoSrc,
-          photoAlt: placeOwned ? `${r.label}, ${r.city} Oregon` : fallbackHero.alt,
-          photoIsCommunity: placeOwned,
           activeCount: resortFigures.get(r.slug)?.activeCount ?? idx?.activeCount ?? 0,
           medianPrice: resortFigures.get(r.slug)?.medianListPrice ?? idx?.medianPrice ?? null,
         }
@@ -155,7 +147,7 @@ export default async function CommunitiesPage() {
       name: r.name,
       city: r.city,
       belonging: r.sentence,
-      photoSrc: r.photoIsCommunity ? r.photoSrc : null,
+      photoSrc: r.photoSrc,
       activeCount: r.activeCount,
       medianLine: median ? `Median list ${median}` : null,
       weight: indexBarWeight(r.activeCount, maxCount),

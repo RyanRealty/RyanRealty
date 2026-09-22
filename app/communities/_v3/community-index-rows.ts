@@ -1,6 +1,7 @@
 /**
  * Communities index rows. Live for-sale count is the figure on the door.
- * Dedicated communityImage() only, never a city-fallback photo.
+ * Owned stills only (library / communityImage / live hero). Never a city
+ * fallback — missing is honest empty, not a cloned Sisters or Bend photo.
  */
 
 import { v3Text, type V3LedgerFigureRow } from '@/components/site/v3'

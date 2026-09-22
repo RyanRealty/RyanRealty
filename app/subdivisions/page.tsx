@@ -8,16 +8,13 @@
  */
 
 import type { Metadata } from 'next'
-import {
-  getSurfaceImages,
-  pickSurfaceImage,
-  getCommunityHeroUrlsBySlug,
-} from '@/lib/data'
+import { getSurfaceImages, getCommunityHeroUrlsBySlug } from '@/lib/data'
 import {
   getRegistryPlatPublicInventory,
   registryChildPlats,
 } from '@/lib/data/geo/plat-public-inventory'
-import { communityImage, cityHero, preferPlaceHero } from '@/lib/geo-images'
+import { preferPlaceHeroOrNull } from '@/lib/geo-images'
+import { indexImagineStill, resolveIndexPlacePhoto } from '@/lib/geo/index-place-photo'
 import { publishFeaturedPlats } from '@/lib/market/publish-featured-plat-inventory'
 import { formatCount } from '@/lib/format/count'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
@@ -82,15 +79,12 @@ export default async function SubdivisionsPage() {
     .map((p) => {
       const inv = invByKey.get(`${p.citySlug}:${p.slug}`) ?? null
       const live = parentHeroBySlug[p.parentSlug]
-      const curated = communityImage(p.parentSlug)
-      const fallbackHero = cityHero(p.citySlug)
-      const pooled = pickSurfaceImage(heroPhotoPool, {
-        geoTags: [p.citySlug],
-        seed: p.slug,
-        fallback: curated ?? fallbackHero.src,
+      const owned = resolveIndexPlacePhoto({
+        slug: p.slug,
+        parentSlug: p.parentSlug,
+        pool: heroPhotoPool,
       })
-      const photoSrc = preferPlaceHero(live, curated ?? pooled ?? fallbackHero.src)
-      const placeOwned = Boolean(live || curated)
+      const photoSrc = indexImagineStill(owned, live) ?? preferPlaceHeroOrNull(live, owned)
       return {
         ...p,
         href: `/subdivisions/${p.slug}`,
@@ -98,8 +92,6 @@ export default async function SubdivisionsPage() {
         // community is the city (SITE-52 when audit).
         sentence: p.parent === p.city ? `${p.name} is in ${p.parent}.` : `${p.name} is in ${p.parent}, ${p.city}.`,
         photoSrc,
-        photoAlt: placeOwned ? `${p.name}, ${p.city} Oregon` : fallbackHero.alt,
-        photoIsPlat: placeOwned,
         activeCount: inventoryOk ? (inv?.activeCount ?? 0) : null,
         medianPrice: inventoryOk ? (inv?.medianListPrice ?? null) : null,
       }
@@ -141,7 +133,7 @@ export default async function SubdivisionsPage() {
       const bits = [median ? `Median list ${median}` : null, p.sentence].filter(Boolean)
       return bits.length > 0 ? v3Text(bits.join(' · ')) : undefined
     })(),
-    media: p.photoIsPlat ? { src: p.photoSrc } : undefined,
+    media: p.photoSrc ? { src: p.photoSrc } : undefined,
     ariaLabel: v3Text(`Homes for sale in ${p.name}, ${p.city} Oregon`),
   }))
 
