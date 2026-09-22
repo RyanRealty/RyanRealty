@@ -9,6 +9,7 @@ import {
   SuperClusterAlgorithm,
   defaultOnClusterClickHandler,
 } from '@googlemaps/markerclusterer'
+import type { AlgorithmInput } from '@googlemaps/markerclusterer'
 
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { listingTileHref } from '@/lib/slug'
@@ -28,6 +29,9 @@ import {
   V3_CLUSTER_EXTENT,
   V3_CLUSTER_MAX_ZOOM,
   V3_CLUSTER_RADIUS_PX,
+  V3_MARK_HEIGHT_PX,
+  V3_MARK_WIDTH_PX,
+  v3ClusterRadiusForMapZoom,
   v3FitPadding,
   v3SubjectRingPadding,
 } from '@/lib/maps/v3-basemap'
@@ -508,6 +512,7 @@ interface PricePillOverlayHandle {
   setMap(map: google.maps.Map | null): void
   getPosition(): google.maps.LatLng
   getVisible(): boolean
+  draw(): void
 }
 
 /** The one marker implementation on this canvas since SITE-44. */
@@ -523,11 +528,53 @@ interface PricePillOverlayOptions {
   onClick?: (ev: MouseEvent) => void
   /** Stamped on the container so the delegated hover listener can read it. */
   listingKey?: string
+  /**
+   * Price pills hang above the pin (caret on the house). Cluster discs sit
+   * on the centroid — hanging them like pills is what sliced the north-edge
+   * "7" on the 375 Bend frame (SITE-143).
+   */
+  anchor?: 'bottom' | 'center'
+  /** Search chrome (DRAW / zoom / view switcher) needs more than a place island. */
+  edgeMargin?: number
 }
 
 type PricePillOverlayCtor = new (opts: PricePillOverlayOptions) => PricePillOverlayHandle
 
 let PricePillOverlayClass: PricePillOverlayCtor | null = null
+
+/**
+ * Supercluster is constructed with one radius. MarkerClusterer then asks it
+ * at `Math.round(zoom)`, so a static V3_CLUSTER_RADIUS_PX shrinks on screen
+ * whenever the camera sits between integers. Rebuild the index when the
+ * compensated radius changes (SITE-143 dense Bend stacks).
+ */
+class V3SuperClusterAlgorithm extends SuperClusterAlgorithm {
+  private appliedRadius = V3_CLUSTER_RADIUS_PX
+
+  constructor() {
+    super({
+      maxZoom: V3_CLUSTER_MAX_ZOOM,
+      radius: V3_CLUSTER_RADIUS_PX,
+      extent: V3_CLUSTER_EXTENT,
+    })
+  }
+
+  calculate(input: AlgorithmInput) {
+    const radius = v3ClusterRadiusForMapZoom(input.map.getZoom() ?? 0)
+    if (radius !== this.appliedRadius) {
+      const rebuilt = new SuperClusterAlgorithm({
+        maxZoom: V3_CLUSTER_MAX_ZOOM,
+        radius,
+        extent: V3_CLUSTER_EXTENT,
+      })
+      this.superCluster = (rebuilt as unknown as { superCluster: typeof this.superCluster }).superCluster
+      this.markers = []
+      this.state = { zoom: -1 }
+      this.appliedRadius = radius
+    }
+    return super.calculate(input)
+  }
+}
 
 /**
  * Lazily build the OverlayView subclass — the class body references
@@ -550,6 +597,10 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     private titleText: string
     private onClick?: (ev: MouseEvent) => void
     private listingKeyValue?: string
+    private anchor: 'bottom' | 'center'
+    private edgeMargin: number
+    private slideInFrame = 0
+    private slideAttempts = 0
 
     constructor(opts: PricePillOverlayOptions) {
       super()
@@ -562,15 +613,18 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       this.titleText = opts.title ?? ''
       this.onClick = opts.onClick
       this.listingKeyValue = opts.listingKey
+      this.anchor = opts.anchor ?? 'bottom'
+      this.edgeMargin = opts.edgeMargin ?? MARK_EDGE_MARGIN_PX
       if (opts.map) this.setMap(opts.map)
     }
 
     onAdd() {
       const div = document.createElement('div')
       div.style.position = 'absolute'
-      // Anchor bottom-center so the caret tip sits on the exact lat/lng. draw()
-      // rewrites this transform when a mark has to be nudged off an edge.
-      div.style.transform = 'translate(-50%, -100%)'
+      // Price pills: caret tip on the lat/lng. Cluster discs: centroid.
+      // draw() rewrites this transform when a mark has to be nudged off an edge.
+      div.style.transform =
+        this.anchor === 'center' ? 'translate(-50%, -50%)' : 'translate(-50%, -100%)'
       div.style.zIndex = String(this.zIndexValue)
       div.style.cursor = 'pointer'
       if (this.listingKeyValue) div.dataset.listingKey = this.listingKeyValue
@@ -590,6 +644,19 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       google.maps.OverlayView.preventMapHitsAndGesturesFrom(div)
       this.getPanes()?.overlayMouseTarget.appendChild(div)
       this.container = div
+      // First draw often runs at offset 0. Place with the fallback mark size
+      // now, then rAF once layout has a real box (SITE-143 edge pills).
+      this.draw()
+      this.queueSlideIn()
+    }
+
+    private queueSlideIn() {
+      if (this.slideInFrame || this.slideAttempts >= 8) return
+      this.slideAttempts += 1
+      this.slideInFrame = requestAnimationFrame(() => {
+        this.slideInFrame = 0
+        this.draw()
+      })
     }
 
     /**
@@ -603,6 +670,9 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
      * sits on the coordinate, and a pill that would cross the TOP edge flips to
      * hang below its point with the caret pointing up. Nothing moves that does
      * not have to.
+     *
+     * SITE-143: do not skip the slide when offsetWidth is 0. OverlayView's
+     * first draw is that frame. Use V3_MARK_* fallback, then rAF the real size.
      */
     draw() {
       const div = this.container
@@ -618,27 +688,49 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       const frame = host && 'getDiv' in host ? (host as google.maps.Map).getDiv() : null
       const cp = proj.fromLatLngToContainerPixel(this.latLng)
       if (!frame || !cp) return
-      const w = div.offsetWidth
-      const h = div.offsetHeight
-      if (w === 0 || h === 0) return
+      const measuredW = div.offsetWidth
+      const measuredH = div.offsetHeight
+      const unmeasured = measuredW === 0 || measuredH === 0
+      const w = unmeasured ? V3_MARK_WIDTH_PX : measuredW
+      const h = unmeasured ? V3_MARK_HEIGHT_PX : measuredH
+      if (unmeasured) this.queueSlideIn()
+      else this.slideAttempts = 0
 
-      // The box as painted: centred on the point, hanging above it.
+      // A 0×0 getDiv() (first layout) would invert clampMarkNudge and push
+      // the mark further off the frame. Wait for a real box.
+      if (frame.clientWidth < 8 || frame.clientHeight < 8) {
+        this.queueSlideIn()
+        return
+      }
+
+      // Price pills hang above the point (caret on the house). Cluster discs
+      // are centred on the centroid so a north-edge 7 is not half-sliced.
       // SITE-128 rematch: also clamp Y. Top-only flip still left $795k
       // hanging off the bottom of the 375 Bend island.
-      const flip = cp.y - h < MARK_EDGE_MARGIN_PX && cp.y + h < frame.clientHeight
-      const painted = {
-        left: cp.x - w / 2,
-        right: cp.x + w / 2,
-        top: flip ? cp.y : cp.y - h,
-        bottom: flip ? cp.y + h : cp.y,
-      }
+      const hanging = this.anchor !== 'center'
+      const flip =
+        hanging && cp.y - h < this.edgeMargin && cp.y + h < frame.clientHeight
+      const painted = hanging
+        ? {
+            left: cp.x - w / 2,
+            right: cp.x + w / 2,
+            top: flip ? cp.y : cp.y - h,
+            bottom: flip ? cp.y + h : cp.y,
+          }
+        : {
+            left: cp.x - w / 2,
+            right: cp.x + w / 2,
+            top: cp.y - h / 2,
+            bottom: cp.y + h / 2,
+          }
       const { nudgeX, nudgeY } = clampMarkNudge(
         painted,
         { width: frame.clientWidth, height: frame.clientHeight },
-        MARK_EDGE_MARGIN_PX,
+        this.edgeMargin,
       )
 
-      div.style.transform = `translate(calc(-50% + ${nudgeX}px), calc(${flip ? '0' : '-100%'} + ${nudgeY}px))`
+      const yAnchor = hanging ? (flip ? '0' : '-100%') : '-50%'
+      div.style.transform = `translate(calc(-50% + ${nudgeX}px), calc(${yAnchor} + ${nudgeY}px))`
       this.contentEl.style.setProperty('--rr-mark-nudge-x', `${nudgeX}px`)
       const caret = this.contentEl.querySelector<HTMLElement>('[data-caret]')
       if (caret) {
@@ -658,6 +750,10 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     }
 
     onRemove() {
+      if (this.slideInFrame) {
+        cancelAnimationFrame(this.slideInFrame)
+        this.slideInFrame = 0
+      }
       this.container?.remove()
       this.container = null
     }
@@ -914,7 +1010,9 @@ function getSubjectRingOverlayClass(): SubjectRingOverlayCtor {
 }
 
 /** How close a mark's painted box may come to the frame edge before it slides in. */
-const MARK_EDGE_MARGIN_PX = 18
+const MARK_EDGE_MARGIN_PX = 22
+/** Search DRAW / zoom / Map-Split-List chrome. Place islands keep the tighter pad. */
+const SEARCH_MARK_EDGE_MARGIN_PX = 72
 
 /** The target every mark carries, matching --v3-tap in components/site/v3/tokens.css. */
 const MARK_TAP_PX = 44
@@ -1723,6 +1821,7 @@ export default function SearchMapClustered({
     if (!map || !window.google || markListings.length === 0) return
 
     const PricePillOverlay = getPricePillOverlayClass()
+    const edgeMargin = fitSubjectRing ? MARK_EDGE_MARGIN_PX : SEARCH_MARK_EDGE_MARGIN_PX
 
     // Clear previous clusterer and markers.
     if (clustererRef.current) {
@@ -1803,6 +1902,7 @@ export default function SearchMapClustered({
         zIndex: 1,
         onClick: handleClick,
         listingKey,
+        edgeMargin,
       })
 
       markersByKeyRef.current.set(listingKey, marker)
@@ -1821,19 +1921,16 @@ export default function SearchMapClustered({
     // past 14 every pin drew raw, on top of its neighbours. Supercluster
     // separates points on its own as the zoom climbs, so at street level almost
     // nothing is still merged — only the homes that genuinely share a corner.
+    // SITE-143: V3SuperClusterAlgorithm keeps that radius in screen pixels
+    // after MarkerClusterer Math.round(zoom), so a dense Bend viewport does
+    // not re-stack overlapping pills between integer zooms.
     if (disableClustering) {
       clustererRef.current = null
     } else {
       clustererRef.current = new MarkerClusterer({
         map,
         markers: newMarkers as unknown as google.maps.Marker[],
-        algorithm: new SuperClusterAlgorithm({
-          maxZoom: V3_CLUSTER_MAX_ZOOM,
-          radius: V3_CLUSTER_RADIUS_PX,
-          // Supercluster measures radius in units of `extent`; its default 512 is
-          // twice a Google tile, which halved every radius this file ever set.
-          extent: V3_CLUSTER_EXTENT,
-        }),
+        algorithm: new V3SuperClusterAlgorithm(),
         // Draw mode: the default handler zooms into the cluster, which yanks the
         // viewport mid-outline and strands the user's partial polygon across two
         // zoom levels. Clusters go inert while drawing.
@@ -1854,6 +1951,8 @@ export default function SearchMapClustered({
               map,
               content: bubbleEl,
               zIndex,
+              anchor: 'center',
+              edgeMargin,
             })
             return clusterOverlay as unknown as google.maps.Marker
           },
@@ -1903,7 +2002,18 @@ export default function SearchMapClustered({
     container?.addEventListener('mouseover', onMarkOver)
     container?.addEventListener('mouseleave', onMarkOut)
 
-    const idleListener = map.addListener('idle', scheduleFitTaps)
+    const idleListener = map.addListener('idle', () => {
+      scheduleFitTaps()
+      // OverlayView skips the edge-slide when getDiv() is 0×0. Idle is the
+      // first frame the island has a real size (SITE-143).
+      for (const marker of newMarkers) {
+        try {
+          marker.draw()
+        } catch {
+          /* overlay already removed */
+        }
+      }
+    })
     scheduleFitTaps()
 
     return () => {
@@ -1925,7 +2035,7 @@ export default function SearchMapClustered({
         // guard against unmount race
       }
     }
-  }, [mapInstance, markListings, zoomMode, scheduleFitTaps, disableClustering])
+  }, [mapInstance, markListings, zoomMode, scheduleFitTaps, disableClustering, fitSubjectRing])
 
   // Marker emphasis: update content in-place for hovered / active marker.
   // Pill vs photo stamp follows zoomMode. Mutate content (no full remount).

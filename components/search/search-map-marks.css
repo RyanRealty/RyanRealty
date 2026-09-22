@@ -24,6 +24,9 @@
   /* The pseudo positions against the mark. Without this it resolves against
      the map pane and lands somewhere else on the canvas. */
   position: relative;
+  /* Caret hangs 6–7px past the pill. Clip here and the edge-slide still
+     looks sliced even after OverlayView nudged the box (SITE-143). */
+  overflow: visible;
 }
 
 .rr-map-mark::after {
