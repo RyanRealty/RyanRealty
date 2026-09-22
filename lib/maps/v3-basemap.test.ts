@@ -17,8 +17,10 @@ import {
   V3_CLUSTER_RADIUS_PX,
   V3_MAP_CHROME_OFF,
   V3_MAP_MAX_ZOOM,
+  V3_MARK_HEIGHT_PX,
   V3_MARK_WIDTH_PX,
   getV3MapOptions,
+  v3ClusterRadiusForMapZoom,
 } from '@/lib/maps/v3-basemap'
 
 describe('the navy-on-cream ladder', () => {
@@ -126,6 +128,20 @@ describe('the frame geometry', () => {
   it('merges anything closer than a full mark, at every zoom', () => {
     expect(V3_CLUSTER_RADIUS_PX).toBeGreaterThan(V3_MARK_WIDTH_PX)
     expect(V3_CLUSTER_MAX_ZOOM).toBe(V3_MAP_MAX_ZOOM)
+    expect(V3_MARK_HEIGHT_PX).toBeGreaterThan(24)
+    expect(V3_MARK_HEIGHT_PX).toBeLessThanOrEqual(V3_MARK_WIDTH_PX)
+  })
+
+  it('inflates Supercluster radius when MarkerClusterer rounds zoom up', () => {
+    expect(v3ClusterRadiusForMapZoom(12)).toBe(V3_CLUSTER_RADIUS_PX)
+    expect(v3ClusterRadiusForMapZoom(11.4)).toBe(V3_CLUSTER_RADIUS_PX)
+    // 11.6 → round 12, screen scale 2^(11.6-12) ≈ 0.758, so 72px would paint as ~55px.
+    const roundedUp = v3ClusterRadiusForMapZoom(11.6)
+    expect(roundedUp).toBeGreaterThan(V3_CLUSTER_RADIUS_PX)
+    expect(roundedUp * 2 ** (11.6 - 12)).toBeGreaterThanOrEqual(V3_CLUSTER_RADIUS_PX - 1)
+    // Worst drift is a half-step (JS Math.round half-up).
+    expect(v3ClusterRadiusForMapZoom(11.5)).toBe(Math.ceil(V3_CLUSTER_RADIUS_PX * Math.SQRT2))
+    expect(v3ClusterRadiusForMapZoom(Number.NaN)).toBe(V3_CLUSTER_RADIUS_PX)
   })
 
   it('pads the opening fit by a mark and a half on every edge', () => {

@@ -180,6 +180,14 @@ export function getV3MapOptions(overrides?: google.maps.MapOptions): google.maps
 export const V3_MARK_WIDTH_PX = 64
 
 /**
+ * Typical painted height of a price pill plus its caret. OverlayView's first
+ * `draw()` often runs before layout, when offsetWidth/Height are 0; using this
+ * fallback lets the edge-slide run on that frame instead of leaving the pill
+ * at translate(-50%, -100%) and clipping it (SITE-143).
+ */
+export const V3_MARK_HEIGHT_PX = 40
+
+/**
  * Cluster radius in screen pixels. A pair of marks whose anchors are closer
  * than one mark's width collapses into a badge — which is the whole point of
  * the badge, and the reason the SW Bend stack in the 2026-09-08 shots is gone.
@@ -188,6 +196,24 @@ export const V3_MARK_WIDTH_PX = 64
  * radius is a full mark plus a hair.
  */
 export const V3_CLUSTER_RADIUS_PX = V3_MARK_WIDTH_PX + 8
+
+/**
+ * Supercluster radius that still means `V3_CLUSTER_RADIUS_PX` screen pixels
+ * after MarkerClusterer's `Math.round(zoom)`.
+ *
+ * Supercluster clusters at an integer zoom. Google's camera is often
+ * fractional (fitBounds, pinch). When the round goes UP, Supercluster thinks
+ * the map is closer than it is, so a 72px radius shrinks on screen and the
+ * Bend stack paints as overlapping pills. Inflate by 2^(rounded − zoom) so
+ * the painted merge distance stays one mark wide. Rounding down already
+ * over-merges; leave that radius alone.
+ */
+export function v3ClusterRadiusForMapZoom(zoom: number): number {
+  const z = Number.isFinite(zoom) ? zoom : 0
+  const rounded = Math.round(z)
+  const inflate = Math.max(0, rounded - z)
+  return Math.ceil(V3_CLUSTER_RADIUS_PX * 2 ** inflate)
+}
 
 /**
  * Supercluster's tile extent, and it is NOT a detail.

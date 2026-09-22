@@ -1001,10 +1001,23 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     // pills stacked on each other past that. The radius and the ceiling are now
     // the shared frame constants, so a change moves both the merge and the fit.
     expect(map).toMatch(/maxZoom:\s*V3_CLUSTER_MAX_ZOOM/)
-    expect(map).toMatch(/radius:\s*V3_CLUSTER_RADIUS_PX/)
+    expect(map).toMatch(/v3ClusterRadiusForMapZoom/)
+    expect(map).toMatch(/class V3SuperClusterAlgorithm extends SuperClusterAlgorithm/)
+    expect(map).toMatch(/algorithm: new V3SuperClusterAlgorithm\(\)/)
     expect(map).not.toMatch(/maxZoom:\s*14/)
     expect(map).toMatch(/buildPhotoStampElement/)
     expect(map).toMatch(/zoomMode/)
+  })
+
+  it('slides edge pills on the first OverlayView draw, not after a 0-size skip', () => {
+    const map = readSrc('components/SearchMapClustered.tsx')
+    expect(map).toMatch(/V3_MARK_WIDTH_PX/)
+    expect(map).toMatch(/V3_MARK_HEIGHT_PX/)
+    expect(map).toMatch(/queueSlideIn/)
+    expect(map).toMatch(/unmeasured \? V3_MARK_WIDTH_PX/)
+    expect(map).not.toMatch(/if \(w === 0 \|\| h === 0\) return/)
+    expect(map).toMatch(/anchor: 'center'/)
+    expect(map).toMatch(/SEARCH_MARK_EDGE_MARGIN_PX/)
   })
 
   it('the search basemap is the one V3 navy-on-cream style array, never a Map ID', () => {
