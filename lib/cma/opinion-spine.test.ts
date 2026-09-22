@@ -294,7 +294,7 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toContain('<h2 class="section">Home location</h2>')
     expect(html).not.toContain('<h2 class="section">Property facts</h2>')
     expect(html).toContain('$475,000')
-    expect(html).toContain('What the sales say')
+    expect(html).toContain('The sales support')
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('pin-map-wrap')
     expect(html).toContain('12 Pine')
@@ -311,7 +311,7 @@ describe('print CMA price-opinion spine', () => {
     // "the figure without a period" no longer separates it from chapter 3's
     // title. Anchor on what each surface actually prints.
     const recAt = html.indexOf('Our Recommended List Price for your home')
-    const salesAt = html.indexOf('<h2 class="section is-answer">What the sales say</h2>')
+    const salesAt = html.indexOf('class="section is-answer"')
     const discAt = html.indexOf('<h2 class="section">Basis and limits</h2>')
     expect(recAt).toBeGreaterThan(0)
     expect(salesAt).toBeGreaterThan(recAt)
@@ -402,7 +402,7 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toMatch(BANNED)
     // Blueprint order: what happened, priced right, what it is worth,
     // competition, this market, net at list, basis and limits, next step.
-    const priceAt = html.indexOf('What the sales say')
+    const priceAt = html.indexOf('The sales support')
     const marketAt = html.indexOf(' right now</h2>')
     const netAt = html.indexOf('<h2 class="section">Net at list</h2>')
     const discAt = html.indexOf('<h2 class="section">Basis and limits</h2>')

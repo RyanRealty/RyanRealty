@@ -10,6 +10,40 @@
  */
 
 import type { CmaSellerNet, CmaSellerNetLine } from '@/lib/cma/types'
+import { ownersPolicyPremium } from '@/lib/pricing/owners-policy'
+
+/**
+ * Enhanced plan, and the buyer-agent share the sheet uses when the seller
+ * offers one. Matt, 2026-07-14. Kept here so this module does not import the
+ * expired-audit sheet (that sheet imports back).
+ */
+export const NET_LISTING_FEE_PCT = 3
+export const NET_BUYER_AGENT_FEE_PCT = 2.5
+
+/** Our fee, the buyer's agent if offered, and the filed owner's title policy. */
+export function sellerCostLines(list: number): CmaSellerNetLine[] {
+  if (!Number.isFinite(list) || list <= 0) return []
+  const title = ownersPolicyPremium(list)
+  if (title == null) return []
+  const rounded = Math.round(list)
+  return [
+    {
+      label: 'Our fee',
+      amount: Math.round(rounded * (NET_LISTING_FEE_PCT / 100)),
+      source: `${NET_LISTING_FEE_PCT}% of ${usd(rounded)}`,
+    },
+    {
+      label: "Buyer's agent",
+      amount: Math.round(rounded * (NET_BUYER_AGENT_FEE_PCT / 100)),
+      source: `${NET_BUYER_AGENT_FEE_PCT}% of ${usd(rounded)}, if you offer it`,
+    },
+    {
+      label: 'Title insurance',
+      amount: title,
+      source: `Oregon owner's policy rate at ${usd(rounded)}`,
+    },
+  ]
+}
 
 export const CONCESSIONS_YN_NO_INFERRED_FROM = '2024-01-01'
 
@@ -125,19 +159,12 @@ function usd(n: number): string {
  * (a net ABOVE the price), $616,000 against $816,000, $426,575 against
  * $435,000, $436,008 against $461,000 — under a chapter headed "What you keep".
  *
- * The anchor is now the list, and every subtraction is a line with its own
- * source. A cost this row cannot defend from data is NOT a line: it is named
- * in `unknowns`, so the reader can see what the figure leaves out. Commission
- * is never a silent zero.
- *
- * WHY CONCESSIONS ARE THE ONLY LINE. It is the one seller cost the printed
- * sales themselves measure: the MLS reports the amount and the yes/no per
- * closed sale, `resolveConcessions` turns that into a dollar figure per sale,
- * and the median over the same set the grid prints is a number the reader can
- * check against the grid. Commission is a term of an agreement that does not
- * exist yet, title, escrow and recording are third-party quotes, and the
- * payoff is the lender's. §0: a figure with no named source does not ship, so
- * those are named as absent rather than estimated.
+ * The anchor is the list. The lines are our fee, the buyer's agent when the
+ * seller offers 2.5%, and the Oregon owner's title policy. A credit to the
+ * buyer is not one of those lines: homes like this one did not give one
+ * amount, and a median of a mixed set is not this seller's credit. That
+ * record is written beside the sheet, per sale, and nothing is subtracted
+ * for it. The loan payoff is the lender's figure. It is not estimated.
  */
 export const SELLER_NET_UNKNOWNS = {
   /** Every note this module writes opens with this, so a re-anchor replaces its own line. */
@@ -150,80 +177,26 @@ export const SELLER_NET_UNKNOWNS = {
   concessions: 'a seller concession, which these sales did not report',
 } as const
 
-const ALWAYS_UNKNOWN = [
-  SELLER_NET_UNKNOWNS.commission,
-  SELLER_NET_UNKNOWNS.title,
-  SELLER_NET_UNKNOWNS.escrow,
-  SELLER_NET_UNKNOWNS.recording,
-  SELLER_NET_UNKNOWNS.payoff,
-]
-
-/** "a, b, c and d" — one list, no serial comma before the final and. */
-function joinWords(parts: string[]): string {
-  if (parts.length === 0) return ''
-  if (parts.length === 1) return parts[0]!
-  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
-}
-
 /**
- * The itemisation, pure. Returns null when there is no usable list price — a
- * document with no price has nothing to net from, and a zero would be an
- * invented one.
+ * The itemisation, pure. Returns null when there is no usable list price.
+ * The concession summary stays on the block as the trace. It is not a line.
  */
 export function buildSellerNet(args: { list: number; summary: ConcessionSummary }): CmaSellerNet | null {
   const list = args.list
   if (!Number.isFinite(list) || list <= 0) return null
   const summary = args.summary
-  const expected = summary.knownCount > 0 ? summary.medianIncludingZero : null
-
-  const lines: CmaSellerNetLine[] = []
-  const unknowns: string[] = []
-  if (expected != null) {
-    const givenBit =
-      summary.givenCount > 0
-        ? `${summary.givenCount} of them gave one${
-            summary.medianWhenGiven != null ? `, median ${usd(summary.medianWhenGiven)}` : ''
-          }`
-        : 'None of them gave one'
-    lines.push({
-      label: 'Seller concession',
-      amount: Math.max(0, Math.round(expected)),
-      source: `Median of the ${summary.knownCount} comparable sales that reported the field. ${givenBit}.`,
-    })
-  } else {
-    unknowns.push(SELLER_NET_UNKNOWNS.concessions)
-  }
-  unknowns.push(...ALWAYS_UNKNOWN)
-
+  const lines = sellerCostLines(list)
+  if (lines.length === 0) return null
   const costs = lines.reduce((sum, l) => sum + Math.max(0, l.amount), 0)
-  // The net can never exceed the list: every line is a cost, and the floor
-  // stops a pathological set from netting below zero.
   const net = Math.min(Math.round(list), Math.max(0, Math.round(list) - Math.round(costs)))
-
-  const article = /^8/.test(String(Math.round(list))) ? 'an' : 'a'
-  const head = `From ${article} ${usd(list)} list`
-  // The line above carries the median across every sale that reported the
-  // field, zeros included. When fewer than half gave one that median is $0,
-  // which is not the same fact as "none gave one", so the sentence says
-  // which it is (round-four class E: the sentence contradicted its own line).
-  const middle =
-    expected == null
-      ? `, ${usd(net)} remains.`
-      : expected > 0
-        ? `, less ${usd(expected)} in seller concessions, ${usd(net)} remains.`
-        : summary.givenCount > 0
-          ? `, and with ${summary.givenCount} of the ${summary.knownCount} comparable sales giving a seller concession the median across all ${summary.knownCount} is $0, ${usd(net)} remains.`
-          : `, and none of the ${summary.knownCount} comparable sales that reported the field gave a seller concession, ${usd(net)} remains.`
-  const tail = ` This figure does not include ${joinWords(unknowns)}.`
-
   return {
     basis: 'list',
     list: Math.round(list),
     lines,
     net,
-    sentence: `${head}${middle}${tail}`,
-    unknowns,
-    expectedConcessions: expected,
+    sentence: '',
+    unknowns: [],
+    expectedConcessions: summary.knownCount > 0 ? summary.medianIncludingZero : null,
     knownCount: summary.knownCount,
     givenCount: summary.givenCount,
     medianWhenGiven: summary.medianWhenGiven,

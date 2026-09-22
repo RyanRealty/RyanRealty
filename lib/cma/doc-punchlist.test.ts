@@ -390,11 +390,13 @@ describe('chapter 1 — what happened comes FIRST, before the number', () => {
   // after How we got the price; the blueprint's reader gives the document
   // ninety seconds and wants their own listing explained before anything else.
   it('opens the document on what happened to their listing', () => {
-    const chapters = letterChapters(letter())
+    const html = letter()
+    const chapters = letterChapters(html)
     const happened = chapters.findIndex((c) => /and did not sell\./i.test(c))
-    // Tip Ready P0: chapter title is "What the sales say" (not "$389,000.").
-    const price = chapters.findIndex(
-      (c) => /What the sales say/i.test(c) || /\$389,000/.test(c),
+    // The price chapter is the display heading. Its words are the reason
+    // these sales were used, so the anchor is the class, not one phrase.
+    const price = [...html.matchAll(/<h2 class="section([^"]*)">/g)].findIndex((m) =>
+      (m[1] ?? '').includes('is-answer'),
     )
     const competition = chapters.findIndex((c) => /compete with/i.test(c))
     expect(happened).toBe(0)
@@ -1158,7 +1160,7 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
       // Tip Ready P0 / Cos Falcon: cover carries recommend once; strip's list mark is gone.
       expect(html).not.toContain('class="szn worth-wide"')
       expect(html).not.toContain('list $')
-      expect(html).toContain('What the sales say')
+      expect(html).toContain('The sales support')
       expect(html).toContain('The sales that set this price')
     }
   })

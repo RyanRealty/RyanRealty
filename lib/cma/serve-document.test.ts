@@ -16,6 +16,7 @@ vi.mock('@/lib/data', () => ({
 }))
 
 vi.mock('@/lib/data/cma/builderReads', () => ({
+  getCmaCityClosedDuring: vi.fn(async () => []),
   getCmaBrokerBySlugOrEmail: vi.fn(async () => ({
     id: 'broker-1',
     slug: 'matthew-ryan',

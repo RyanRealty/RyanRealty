@@ -53,7 +53,7 @@ describe('pricingPage', () => {
   it('leads with one list sentence, then how the matcher works', () => {
     const input = { subject, comps, market, pricing, tiersUsed: ['subdivision-3mo'] }
     const page = pricingPage(input)
-    expect(page.toc).toBe('What the sales say')
+    expect(page.toc).toBe('We stayed inside the Cascade Vista subdivision from the last 3 months.')
     // Delta 3 split the chapter: the number and the method here, the sales
     // that prove it in matrix 1. Both are what a reader meets.
     const html = `${page.body}\n${salesThatSetItPage(input)?.body ?? ''}`
@@ -117,6 +117,6 @@ describe('pricingPage — no "as your house"', () => {
   it('does not say as your house', () => {
     expect(page(subject).body).not.toMatch(/as your house/i)
     expect(page(land).body).not.toMatch(/as your house/i)
-    expect(page(land).toc).toBe('What the sales say')
+    expect(page(land).toc).toBe('We used the closest recent closed sales from the last 3 months.')
   })
 })

@@ -35,8 +35,13 @@ export type MapGroundLabel = {
 export type MapGroundInput = {
   view: StaticMapView
   basemap: Basemap | null
-  /** The comp-area outline(s), lat/lng rings. */
+  /** The subdivision outlines the subject and the comps sit in. */
   boundaryRings: readonly MapLatLng[][]
+  /**
+   * The neighborhood or community around those plats, drawn only when a pin
+   * has no subdivision polygon. No name is printed on it.
+   */
+  parentRings?: readonly MapLatLng[][]
   /** The search ring, when the area is a radius. */
   radius: { centre: MapLatLng; miles: number } | null
   labels: readonly MapGroundLabel[]
@@ -149,7 +154,17 @@ export function renderMapGroundSvg(input: MapGroundInput): MapGroundResult {
     }
   }
 
-  // The comp area, and the search ring: the same inks the Google path used.
+  // Parent first, so the subdivision lines sit on top of it. Dashed, and
+  // unnamed: the chapter title is the label.
+  for (const ring of input.parentRings ?? []) {
+    const d = pathD(ring.map(project), true)
+    if (d) {
+      parts.push(
+        `<path d="${d}" fill="${NAVY}" fill-opacity="0.04" stroke="${NAVY}" stroke-opacity="0.45" stroke-width="1.25" stroke-dasharray="5 4"/>`,
+      )
+    }
+  }
+  // The subdivision plats, and the search ring.
   for (const ring of input.boundaryRings) {
     const d = pathD(ring.map(project), true)
     if (d) parts.push(`<path d="${d}" fill="${NAVY}" fill-opacity="0.13" stroke="${NAVY}" stroke-opacity="0.8" stroke-width="1"/>`)

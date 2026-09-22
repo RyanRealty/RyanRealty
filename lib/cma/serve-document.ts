@@ -18,6 +18,8 @@ import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { canBrokerReviewCma, isCmaClientReady } from '@/lib/cma/draft-access'
 import { hydrateCmaMarketArea } from '@/lib/cma/market-area-hydrate'
+import { likeHomeCreditsForDocument } from '@/lib/cma/like-home-credits-load'
+import { listingMarketForDocument } from '@/lib/cma/listing-window-load'
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { GOOGLE_COMMS_COOKIE, hasGoogleCommsConsentRecorded } from '@/lib/auth/google-comms-consent'
@@ -107,6 +109,7 @@ export async function immersiveFromRow(
               view: map.view,
               pins: map.pins,
               boundaryShown: map.boundaryShown,
+              parentShown: map.parentShown,
               radiusShown: map.radiusShown,
             }
           : null
@@ -128,7 +131,11 @@ export async function immersiveFromRow(
       // Finalized/delivered owner docs never print the draft review band.
       documentStatus: row.status,
     }
-    const hydrated = hydrateArea ? await hydrateCmaMarketArea(base) : base
+    const listingMarket = await listingMarketForDocument(base, row.status)
+    const likeHomeCredits = await likeHomeCreditsForDocument(base, row.status)
+    const hydrated = hydrateArea
+      ? await hydrateCmaMarketArea({ ...base, listingMarket, likeHomeCredits })
+      : { ...base, listingMarket, likeHomeCredits }
     return renderImmersiveCmaHtml(hydrated, origin)
   } catch (err) {
     console.error('[cma/serve] immersive render failed:', err)

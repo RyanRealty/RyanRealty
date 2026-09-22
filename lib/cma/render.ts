@@ -116,6 +116,13 @@ export interface RenderCmaArgs {
    * "under broker review" band even if pricing.review still carries a notice.
    */
   documentStatus?: string | null
+  /**
+   * Median sale while this home was listed, at the tightest grain that had
+   * enough closes. Stored on render_args so a signed letter does not recompute.
+   */
+  listingMarket?: import('@/lib/cma/listing-window-market').ListingMarketMove | null
+  /** What homes like this one credited the buyer. Measured at serve for a draft. */
+  likeHomeCredits?: { sentence: string; source: string } | null
 }
 
 interface PageDef {

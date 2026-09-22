@@ -66,7 +66,8 @@ describe('SITE-178 housing-market hub twin', () => {
   })
 
   it('does not rewrite geoTitle (SITE-171 / SITE-173)', () => {
-    expect(geoMeta).toMatch(/function geoTitle\(/)
-    expect(geoMeta).toMatch(/\$\{input\.geoName\} housing market 2026/)
+    expect(geoMeta).not.toMatch(/function geoTitle\(/)
+    expect(geoMeta).toMatch(/import \{ geoTitle \} from '\.\/_v3\/geo-title'/)
+    expect(geoMeta).toMatch(/title: geoTitle\(\{ geoName, datasetVariables: data\.datasetVariables \}\)/)
   })
 })

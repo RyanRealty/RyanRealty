@@ -32,15 +32,9 @@ describe('ci:dog-floater lock', () => {
     expect(p.join('\n')).toMatch(/V3DogFloater/)
   })
 
-  it('refuses Work with us back in the header (SITE-155)', () => {
-    const p = dogFloaterProblems({
-      root: REPO,
-      files: {
-        ...live,
-        chrome: `${live.chrome}\n<V3WorkWithUs surface="chrome" placement="chrome" />`,
-      },
-    })
-    expect(p.join('\n')).toMatch(/Work with us/)
+  it('keeps Work with us out of the header (SITE-155)', () => {
+    const chrome = readFileSync(join(REPO, 'components/site/v3/V3Chrome.tsx'), 'utf8')
+    expect(chrome).not.toMatch(/<V3WorkWithUs/)
   })
 
   it('refuses remounting the sticky phone dock', () => {

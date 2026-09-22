@@ -97,6 +97,8 @@ export type CompPinMapOverlay = {
    * (round-four class F, 19968).
    */
   boundaryShown?: boolean
+  /** The neighborhood or community line was drawn around plats that did not cover a pin. */
+  parentShown?: boolean
   /** Whether the search radius was drawn as a ring. */
   radiusShown?: boolean
 }

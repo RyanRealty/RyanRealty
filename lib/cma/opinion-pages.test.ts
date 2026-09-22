@@ -167,27 +167,28 @@ describe('assembleOpinionPages format', () => {
     })
     // Delta 3: the map is its own chapter, under the number, and there is
     // still exactly one of it in the whole document.
-    const map = pages.find((p) => p.toc === 'The map.')
+    const map = pages.find((p) => p.toc === 'Comparable homes near you')
     expect(map?.body).toContain('data:image/png;base64,compsmap')
     expect(map?.body).toContain('pin-map')
     const all = pages.map((p) => p.body).join('')
     expect(all).not.toContain('data:image/png;base64,subjmap')
     expect((all.match(/data:image\/png;base64,compsmap/g) ?? []).length).toBe(1)
-    const price = pages.findIndex((p) => p.toc === 'What the sales say')
-    expect(pages.findIndex((p) => p.toc === 'The map.')).toBe(price + 1)
+    const price = pages.findIndex((p) => p.body.includes('is-answer'))
+    expect(pages.findIndex((p) => p.toc === 'Comparable homes near you')).toBe(price + 1)
   })
 
   it('runs the number, the map, then the three matrices in Delta 3 order', () => {
     // Three closed sales is the pricing unit's own floor, and the floor the
     // matrix fails closed at (MIN_CLOSED_SALES_FOR_MATRIX).
     const base = args()
-    const tocs = assembleOpinionPages({
+    const pages = assembleOpinionPages({
       ...base,
       comps: [0, 1, 2].map((i) => ({ ...base.comps[0]!, listingKey: `K${i}`, address: `${100 + i} Test St` })),
       mapDataUri: 'data:image/png;base64,compsmap',
-    }).map((p) => p.toc)
-    const price = tocs.indexOf('What the sales say')
-    const map = tocs.indexOf('The map.')
+    })
+    const tocs = pages.map((p) => p.toc)
+    const price = pages.findIndex((p) => p.body.includes('is-answer'))
+    const map = tocs.indexOf('Comparable homes near you')
     const closed = tocs.indexOf('The sales that set this price')
     const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
     const market = tocs.findIndex((t) => t?.endsWith('right now'))
@@ -251,7 +252,7 @@ describe('assembleOpinionPages format', () => {
     })
     const tocs = pages.map((p) => p.toc)
     const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
-    const price = tocs.indexOf('What the sales say')
+    const price = pages.findIndex((p) => p.body.includes('is-answer'))
     // The listings that did not sell are their own chapter (Delta 1), and they
     // sit BEFORE the number they explain. Competition follows the number.
     // Delta 3's order: the number, the map, matrix 1, matrix 2, matrix 3.
@@ -392,6 +393,54 @@ describe('net at list itemises, or prints no figure at all', () => {
   it('refuses a column that does not add up', () => {
     const html = sellerNetBodyHtml(withNet({ ...NET_SHEET, net: 300000 }))
     expect(html).toContain('A net at that price needs')
+  })
+
+  it('on a draft, prices the fees and title and does not subtract a median credit', () => {
+    const html = sellerNetBodyHtml({
+      ...withNet({
+        basis: 'list',
+        list: 429000,
+        lines: [
+          {
+            label: 'Seller concession',
+            amount: 8000,
+            source:
+              'Median of the 5 comparable sales that reported the field. 5 of them gave one, median $8,000.',
+          },
+        ],
+        net: 421000,
+        sentence:
+          'From a $429,000 list, less $8,000 in seller concessions, $421,000 remains. This figure does not include the listing and buyer-broker commission, title insurance, escrow and closing fees, recording and transfer fees and your loan payoff.',
+        unknowns: [
+          'the listing and buyer-broker commission',
+          'title insurance',
+          'escrow and closing fees',
+          'recording and transfer fees',
+          'your loan payoff',
+        ],
+      }),
+      documentStatus: 'draft',
+      likeHomeCredits: {
+        sentence:
+          'Four Countryside houses about this size, built in 2022 or 2023, have sold in the last 18 months. Three gave the buyer nothing. 20457 Aberdeen gave $7,500, so nothing is taken off here for a credit.',
+        source: '4 closed sales in Countryside, 2,098 to 2,838 sqft. Oregon Data Share MLS.',
+      },
+    })
+    expect(html).toContain('$429,000')
+    expect(html).toContain('Our fee')
+    expect(html).toContain('$12,870')
+    expect(html).toContain('if you offer it')
+    expect(html).toContain('$10,725')
+    expect(html).toContain('Title insurance')
+    expect(html).toContain('$1,208')
+    expect(html).toContain('Left from the sale')
+    expect(html).toContain('$404,197')
+    expect(html).toContain('Before the escrow company')
+    expect(html).toContain('20457 Aberdeen gave $7,500')
+    expect(html).not.toContain('that price')
+    expect(html).not.toContain('does not include')
+    expect(html).not.toContain('$8,000')
+    expect(html).not.toContain('$421,000')
   })
 })
 

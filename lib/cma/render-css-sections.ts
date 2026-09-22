@@ -308,7 +308,7 @@ export function cmaSectionStyles(): string {
   h2.section.is-answer {
     font-family: 'Amboqia Boriango', Georgia, serif;
     font-size: 42px;
-    line-height: 1;
+    line-height: 1.08;
     letter-spacing: 0;
     text-transform: none;
     font-weight: 400;

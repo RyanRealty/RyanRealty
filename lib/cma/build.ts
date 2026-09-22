@@ -87,6 +87,7 @@ import { buildCompArea } from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
+import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
 import { nudgeRecommendedDownForHighDomActives } from '@/lib/pricing/active-dom-nudge'
 import { clampRecommendedToClosedBand } from '@/lib/pricing/recommended-in-band'
@@ -1341,6 +1342,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       pricing = clampRecommendedToClosedBand(pricing)
     }
 
+    const listingMarket = await loadListingWindowMarket({
+      city: subject.city,
+      subdivision: subject.subdivision,
+      sqft: subject.sqft,
+      latitude: subject.latitude,
+      longitude: subject.longitude,
+      listDate: expiredAudit?.finalCycle?.listDate ?? subject.lastListDate,
+      offDate: expiredAudit?.finalCycle?.offMarketDate ?? null,
+      asOf: generatedAtIso.slice(0, 10),
+    }).catch(() => null)
+
     const renderArgs = {
       coverPhoto: {
         url: coverPhoto.url,
@@ -1375,6 +1387,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       listingPlan,
       thisHomePlan,
       tiersUsed: selection.tiersUsed,
+      listingMarket,
     }
 
     // Spread, never a second hand-written list: a field added to one list and
@@ -1491,6 +1504,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             ring_miles: competitionRing.area.kind === 'radius' ? competitionRing.area.radiusMiles : null,
             rings_tried: competitionRing.ringsTried,
             widened_from: competitionRing.widenedFrom,
+          }
+        : { source: 'none' },
+      listing_window_market: listingMarket
+        ? {
+            place: listingMarket.place,
+            grain: listingMarket.grain,
+            sized: listingMarket.sized,
+            sqft_low: listingMarket.sqftLow,
+            sqft_high: listingMarket.sqftHigh,
+            early: listingMarket.early,
+            late: listingMarket.late,
+            price_move: listingMarket.priceMove,
+            ppsf_move: listingMarket.ppsfMove,
+            source: `Supabase listings. City exact, PropertyType A, Single Family Residence, Closed, ClosePrice > 0, CloseDate ${listingMarket.early.from} through ${listingMarket.late.to}. Neighborhood is the Bend GIS polygon. Measured ${listingMarket.asOf ?? generatedAtIso.slice(0, 10)}.`,
           }
         : { source: 'none' },
       equity_position: equity ?? { source: 'none' },

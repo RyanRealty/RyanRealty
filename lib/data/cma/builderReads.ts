@@ -469,6 +469,107 @@ export async function getCmaCityClosedSkinny(city: string, sinceIso: string): Pr
 export type { CmaBandInventory, CmaBandListingRow } from '@/lib/data/cma/bandInventory'
 export { getCmaBandInventory } from '@/lib/data/cma/bandInventory'
 
+export type CmaWindowCloseRow = {
+  ClosePrice: number
+  CloseDate: string
+  TotalLivingAreaSqFt: number | null
+  Latitude: number | null
+  Longitude: number | null
+  SubdivisionName: string | null
+}
+
+/**
+ * Closed single-family sales in one city between two dates, inclusive.
+ * The listing-window story splits these into the subdivision, the neighborhood
+ * polygon, and the city. The cache cannot serve an arbitrary listing period.
+ */
+export async function getCmaCityClosedDuring(
+  city: string,
+  fromIso: string,
+  toIso: string,
+): Promise<CmaWindowCloseRow[]> {
+  const sb = client()
+  if (!sb || !city.trim() || !fromIso || !toIso) return []
+  const out: CmaWindowCloseRow[] = []
+  const SIZE = 1000
+  for (let from = 0; from < 20000; from += SIZE) {
+    const { data, error } = await sb
+      .from('listings')
+      .select('ClosePrice, CloseDate, TotalLivingAreaSqFt, Latitude, Longitude, SubdivisionName')
+      .eq('City', city)
+      .eq('PropertyType', 'A')
+      .eq('property_sub_type', 'Single Family Residence')
+      .eq('StandardStatus', 'Closed')
+      .gte('CloseDate', fromIso)
+      .lte('CloseDate', toIso)
+      .gt('ClosePrice', 0)
+      .order('CloseDate', { ascending: true })
+      .order('ListingKey', { ascending: true })
+      .range(from, from + SIZE - 1)
+    if (error) {
+      console.error('[getCmaCityClosedDuring]', error.message)
+      return out
+    }
+    out.push(...((data ?? []) as unknown as CmaWindowCloseRow[]))
+    if (!data || data.length < SIZE) break
+  }
+  return out
+}
+
+export type LikeHomeSaleRow = {
+  street_number: string | null
+  street_name: string | null
+  subdivision: string | null
+  year_built: number | null
+  sqft: number | null
+  close_date: string
+  concessions_amount: number | null
+  concessions_yn: string | null
+}
+
+/**
+ * Closed single-family sales in one subdivision family, sized and aged like
+ * the subject, over a listing-length window. sale_pricing_facts holds the
+ * concession amount and the yes/no. The cache cannot answer this cut.
+ */
+export async function getLikeHomeSales(args: {
+  city: string
+  subdivisionPrefix: string
+  sqftLow: number
+  sqftHigh: number
+  yearLow: number
+  yearHigh: number
+  fromIso: string
+  toIso: string
+}): Promise<LikeHomeSaleRow[]> {
+  const sb = client()
+  const city = args.city.trim()
+  const prefix = args.subdivisionPrefix.trim()
+  if (!sb || !city || !prefix) return []
+  const { data, error } = await sb
+    .from('sale_pricing_facts')
+    .select(
+      'street_number, street_name, subdivision, year_built, sqft, close_date, concessions_amount, concessions_yn',
+    )
+    .eq('city', city)
+    .eq('property_sub_type', 'Single Family Residence')
+    .ilike('subdivision', `${prefix}%`)
+    .gte('sqft', args.sqftLow)
+    .lte('sqft', args.sqftHigh)
+    .gte('year_built', args.yearLow)
+    .lte('year_built', args.yearHigh)
+    .gte('close_date', args.fromIso)
+    .lte('close_date', args.toIso)
+    .gt('close_price', 0)
+    .order('close_date', { ascending: true })
+    .limit(200)
+  if (error) {
+    console.error('[getLikeHomeSales]', error.message)
+    return []
+  }
+  return (data ?? []) as unknown as LikeHomeSaleRow[]
+}
+
 export type CmaSubdivisionSaleRow = {
   ClosePrice: number
   CloseDate: string

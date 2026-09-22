@@ -55,8 +55,9 @@ describe('seller-net concession set', () => {
     expect(p.sellerNet?.medianWhenGiven).toBe(7_500)
     // The denominator now rides on the concession LINE's own source, which the
     // itemisation prints beside the dollar figure (round four, class A).
-    expect(p.sellerNet?.lines[0]?.source).toContain('5 comparable sales that reported the field')
-    expect(p.sellerNet?.lines[0]?.source).toContain('2 of them gave one')
+    expect(p.sellerNet?.lines[0]?.label).toBe('Our fee')
+    expect(p.sellerNet?.lines.some((l) => /concession/i.test(l.label))).toBe(false)
+    expect(p.sellerNet?.expectedConcessions).not.toBeNull()
   })
 
   it('the build attaches seller net from the priced (kept) comps, not the band set', () => {

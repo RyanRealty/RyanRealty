@@ -15,12 +15,12 @@
  */
 
 import { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
+import { assignSubdivisionSlugs, getSubdivisionRing } from '@/lib/data/geo/subdivision-ring'
+import { platSlugsToDraw } from '@/lib/cma/map-outlines'
 import { spreadStackedMapPoints, type CmaMapPoint } from '@/lib/cma-map'
 import { circlePath, pathParam, ringsFromGeometry, type MapLatLng } from '@/lib/cma/map-overlay'
-import { renderMapGroundSvg, svgDataUri, viewBbox, type MapGroundLabel } from '@/lib/cma/map-ground'
+import { renderMapGroundSvg, svgDataUri, viewBbox } from '@/lib/cma/map-ground'
 import { basemapForFrame } from '@/lib/geo/basemap-source'
-import mapLabels from '@/data/cma/map-labels.json'
-import resortRegistry from '@/data/resort-communities.json'
 import { fitStaticMapView, type StaticMapView } from '@/lib/cma/static-map-projection'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { polygonHoldsAnyPoint } from '@/lib/cma/render-place-polygon'
@@ -53,6 +53,11 @@ export interface CmaMapResult {
    * can never disagree.
    */
   boundaryShown: boolean
+  /**
+   * The neighborhood or community outline was drawn because a pin sat in no
+   * subdivision polygon. The caption may name that outer line only then.
+   */
+  parentShown: boolean
   /** Whether the search radius was drawn as a ring. */
   radiusShown: boolean
 }
@@ -140,15 +145,104 @@ export function buildMonochromeStaticMapUrl(
   return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
 }
 
-async function boundaryRings(name: string | null | undefined): Promise<MapLatLng[][]> {
-  const slug = name?.trim() ? slugify(name.trim()) : ''
-  if (!slug) return []
+async function ringsFor(
+  geoType: 'subdivision' | 'neighborhood',
+  slug: string | null | undefined,
+): Promise<MapLatLng[][]> {
+  const id = slug?.trim() ?? ''
+  if (!id) return []
   try {
-    const geom = await getBoundaryGeoJSON({ geoType: 'subdivision', geoSlug: slug })
+    const geom = await getBoundaryGeoJSON({ geoType, geoSlug: id })
     return ringsFromGeometry(geom)
   } catch (e) {
     console.warn('[buildCmaMapDataUri] boundary', e instanceof Error ? e.message : String(e))
     return []
+  }
+}
+
+async function boundaryRings(name: string | null | undefined): Promise<MapLatLng[][]> {
+  const slug = name?.trim() ? slugify(name.trim()) : ''
+  return ringsFor('subdivision', slug)
+}
+
+type DrawnOutlines = {
+  plats: MapLatLng[][]
+  parent: MapLatLng[][]
+  shown: boolean
+  parentShown: boolean
+}
+
+/**
+ * Subject plat, then each plat a priced sale sits in. The neighborhood or
+ * community polygon is added only for a pin that has no plat. Names are not
+ * drawn on either line.
+ */
+async function outlinesFor(
+  subject: CmaSubject,
+  comps: readonly CmaComp[],
+  area: CmaCompArea | null,
+  marks: readonly MapLatLng[],
+): Promise<DrawnOutlines> {
+  const empty: DrawnOutlines = { plats: [], parent: [], shown: false, parentShown: false }
+  const located = [
+    finite(subject.latitude) != null && finite(subject.longitude) != null
+      ? { lat: subject.latitude as number, lng: subject.longitude as number }
+      : { lat: null as number | null, lng: null as number | null },
+    ...comps.map((c) => {
+      const lat = finite(c.latitude)
+      const lng = finite(c.longitude)
+      return lat != null && lng != null
+        ? { lat, lng }
+        : { lat: null as number | null, lng: null as number | null }
+    }),
+  ]
+  let assigned: Array<string | null> = []
+  try {
+    assigned = await assignSubdivisionSlugs(located)
+  } catch (e) {
+    console.warn('[buildCmaMapDataUri] plats', e instanceof Error ? e.message : String(e))
+    assigned = []
+  }
+  const plats: MapLatLng[][] = []
+  const held = new Set<number>()
+  for (const slug of platSlugsToDraw(assigned)) {
+    const rings = await ringsFor('subdivision', slug)
+    if (!polygonHoldsAnyPoint(rings, marks)) continue
+    plats.push(...rings)
+    located.forEach((point, i) => {
+      if (point && polygonHoldsAnyPoint(rings, [point])) held.add(i)
+    })
+  }
+  const uncovered = located.filter(
+    (point, i): point is MapLatLng =>
+      point.lat != null &&
+      point.lng != null &&
+      Number.isFinite(point.lat) &&
+      Number.isFinite(point.lng) &&
+      !held.has(i),
+  )
+  let parent: MapLatLng[][] = []
+  if (uncovered.length > 0 && finite(subject.latitude) != null && finite(subject.longitude) != null) {
+    try {
+      const ring = await getSubdivisionRing(subject.latitude, subject.longitude)
+      const parentRings = await ringsFor('neighborhood', ring?.neighborhoodSlug)
+      if (polygonHoldsAnyPoint(parentRings, uncovered)) parent = parentRings
+    } catch (e) {
+      console.warn('[buildCmaMapDataUri] parent', e instanceof Error ? e.message : String(e))
+    }
+  }
+  if (plats.length === 0 && parent.length === 0) {
+    for (const name of areaNames(area, subject)) {
+      const rings = await boundaryRings(name)
+      if (!polygonHoldsAnyPoint(rings, marks)) continue
+      plats.push(...rings)
+    }
+  }
+  return {
+    plats,
+    parent,
+    shown: plats.length > 0 || parent.length > 0,
+    parentShown: parent.length > 0,
   }
 }
 
@@ -163,31 +257,6 @@ function areaNames(area: CmaCompArea | null, subject: CmaSubject): string[] {
   const named = (area?.names ?? []).filter(Boolean)
   if (named.length > 0) return named.slice(0, 2)
   return subject.subdivision?.trim() ? [subject.subdivision.trim()] : []
-}
-
-/**
- * The towns the ground may name: cities and CDPs from `data/cma/map-labels.json`
- * (TIGER place polygons, point-on-surface) ranked by size, then the resort and
- * planned communities from the registry. The ground packs them around the pins.
- */
-function mapGroundLabels(): MapGroundLabel[] {
-  const towns = (mapLabels as { towns: Array<{ label: string; lat: number; lng: number; sqMi: number }> }).towns
-  const out: MapGroundLabel[] = towns.map((t) => ({
-    text: t.label,
-    lat: t.lat,
-    lng: t.lng,
-    kind: 'town',
-    rank: 100 + Math.min(99, Math.round(t.sqMi)),
-  }))
-  const registry =
-    (resortRegistry as { communities?: Array<{ label?: string; center_lon_lat?: number[]; is_resort?: boolean }> })
-      .communities ?? []
-  for (const c of registry) {
-    const centre = c.center_lon_lat
-    if (!c.label || !centre || centre.length !== 2) continue
-    out.push({ text: c.label, lat: centre[1]!, lng: centre[0]!, kind: 'place', rank: c.is_resort ? 50 : 40 })
-  }
-  return out
 }
 
 /** Subject pin and the subdivision outline. No numbered comps. */
@@ -245,17 +314,12 @@ export async function buildCmaMapDataUri(
   // of its sales — which is what 19968 drew. The check is the one a reader
   // makes: is my house in that shape, or is one of the marks?
   const drawn: MapLatLng[] = points.map((p) => ({ lat: p.lat, lng: p.lng }))
-  let boundaryShown = false
-  const groundRings: MapLatLng[][] = []
-  for (const name of areaNames(area, subject)) {
-    const rings = await boundaryRings(name)
-    if (!polygonHoldsAnyPoint(rings, drawn)) continue
-    for (const ring of rings) {
-      groundRings.push(ring)
-      const path = pathParam('0x102742CC', '0x10274222', ring)
-      if (path) paths.push(path)
-    }
-    boundaryShown = true
+  const outlines = await outlinesFor(subject, comps.slice(0, 9), area, drawn)
+  const boundaryShown = outlines.shown
+  const parentShown = outlines.parentShown
+  for (const ring of [...outlines.parent, ...outlines.plats]) {
+    const path = pathParam('0x102742CC', '0x10274222', ring)
+    if (path) paths.push(path)
   }
   // THE COMP AREA'S OWN RADIUS FIRST, the search story's second. `compArea`
   // is what the pricing side says it searched; the story is what the renderer
@@ -296,9 +360,10 @@ export async function buildCmaMapDataUri(
       const ground = renderMapGroundSvg({
         view: tightView,
         basemap: basemapForFrame({ bbox: viewBbox(tightView), pad: 0.1 }),
-        boundaryRings: groundRings,
+        boundaryRings: outlines.plats,
+        parentRings: outlines.parent,
         radius: radiusCentre && radiusDrawnMiles != null ? { centre: radiusCentre, miles: radiusDrawnMiles } : null,
-        labels: mapGroundLabels(),
+        labels: [],
         pins: spread.map((p) => ({ lat: p.lat, lng: p.lng })),
       })
       if (ground.featureCount > 0) {
@@ -313,6 +378,7 @@ export async function buildCmaMapDataUri(
             lng: spread[i]!.lng,
           })),
           boundaryShown,
+          parentShown,
           radiusShown,
         }
       }
@@ -339,6 +405,7 @@ export async function buildCmaMapDataUri(
         lng: p.lng,
       })),
       boundaryShown,
+      parentShown,
       radiusShown,
     }
   } catch (e) {

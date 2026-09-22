@@ -11,6 +11,7 @@ import { OWNER_FACING_PRODUCT_NAME, cmaCoverLabelHtml } from './fsbo-cma-render'
 import { CLOSE_EARN_YOUR_BUSINESS, nextStepHeading, nextStepNoteHtml, assembleOpinionPages } from './opinion-pages'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
 import { renderImmersiveCmaHtml } from './immersive'
+import { immersiveStylesheet } from './immersive-css'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle } from './inbound-packet'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 
@@ -145,7 +146,7 @@ describe('letter craft P0 — cover headline once', () => {
     expect(html).not.toContain('We recommend listing at')
     // Fold chapter is not titled with the recommend dollars.
     expect(html).not.toContain('class="section is-answer">$497,800')
-    expect(html).toContain('What the sales say')
+    expect(html).toContain('The sales support')
     const hero = immersiveHeroNumberHtml({
       subject,
       comps: five(),
@@ -182,6 +183,16 @@ describe('letter craft P0 — one product name', () => {
     expect(html).toContain('cover-label')
     expect(html).toContain('>Pricing report<')
     expect(html.match(/Comparative market analysis/g)?.length ?? 0).toBeLessThanOrEqual(1) // statutory fine print ok
+  })
+})
+
+describe('comparable matrix photographs', () => {
+  it('stays solid when the key-value label fade is on the same table', () => {
+    const css = immersiveStylesheet()
+    const fade = css.indexOf('.letter-body table.kv th{')
+    const solid = css.indexOf('.letter-body table.kv.comp-matrix thead th{opacity:1}')
+    expect(fade).toBeGreaterThan(-1)
+    expect(solid).toBeGreaterThan(fade)
   })
 })
 

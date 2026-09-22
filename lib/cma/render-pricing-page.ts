@@ -30,6 +30,7 @@ import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-o
 import { listCeiling, readMeasure, readRangeRuleKept } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
+import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -43,8 +44,37 @@ const ON_MARKET = /^(active|pending|coming)/i
  * on the cover photo. Chapter 3 no longer titles itself "$389,000." — that was
  * the fold repeating the number.
  */
-export function whatItsWorthHeading(_pricing: CmaPricing): string {
-  return 'What the sales say'
+function sentencesOf(text: string): string[] {
+  return text
+    .split(/(?<=\.)\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/**
+ * The chapter title is the reason these sales were the ones, not a label.
+ *
+ * The first sentence of the search story. The rest of that story, when there
+ * is a second sentence, stays in the method under the range.
+ */
+export function whatItsWorthHeading(input: {
+  subdivision?: string | null
+  comps?: readonly CmaAdjustedComp[]
+  tiersUsed?: readonly string[]
+  renderArgs?: unknown
+  compTrace?: readonly string[] | null
+}): string {
+  const logic = compSearchSentence({
+    subdivision: input.subdivision,
+    args: input.renderArgs,
+    compTrace: input.compTrace ?? input.tiersUsed ?? null,
+    comps: input.comps ?? [],
+    fallback: describeCompSearch({
+      subdivision: input.subdivision,
+      tiersUsed: input.tiersUsed ?? [],
+    }).body,
+  })
+  return sentencesOf(logic)[0] ?? 'What the sales say'
 }
 
 /**
@@ -297,16 +327,13 @@ function listRangeSentence(pricing: CmaPricing, failedAsk: number | null): strin
  * before anyone knew, and a sentence that hedges about something visible on
  * the page reads as the document not having looked.
  */
-function mapLegend(
-  subdivision: string | null | undefined,
-  boundaryShown?: boolean,
-): string {
-  const name = cleanText(subdivision)
+function mapLegend(boundaryShown?: boolean, parentShown?: boolean): string {
   const pins = 'Every pin below is a row in one of the three tables that follow.'
-  if (!name || boundaryShown === false) return pins
-  return boundaryShown === true
-    ? `${pins} The outline is ${name}.`
-    : `${pins} The outline is ${name}, when that boundary is on file.`
+  if (boundaryShown !== true) return pins
+  const lines = parentShown
+    ? 'The lines are the subdivisions these homes sit in, and the neighborhood around them.'
+    : 'The lines are the subdivisions these homes sit in.'
+  return `${pins} ${lines}`
 }
 
 /**
@@ -464,6 +491,15 @@ export type PricingPageInput = {
    * Same selected homes as the matrices; no MoS.
    */
   statusPriceBoard?: string
+  /** When the letter was built. The new-home comparison reads the year from this. */
+  asOfIso?: string | null
+  /** Homes for sale in the same area, already on this letter. */
+  rivals?: ReadonlyArray<{
+    address: string
+    yearBuilt?: number | null
+    listPrice: number
+    sqft?: number | null
+  }>
 }
 
 /**
@@ -480,6 +516,8 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   const s = input.subject
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
   // WHY THESE SALES. Never a shortage claim the printed grid refutes (class E).
+  // The first sentence is the chapter title. A second sentence, when the
+  // story has one, stays here so the title is not repeated under itself.
   const whichSales = compSearchSentence({
     subdivision: s.subdivision,
     args: input.renderArgs,
@@ -487,7 +525,9 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     comps: input.comps,
     fallback: search.body,
   })
-  const heading = whatItsWorthHeading(p)
+  const logic = sentencesOf(whichSales)
+  const heading = logic[0] ?? whatItsWorthHeading(input)
+  const methodTail = logic.slice(1).join(' ')
   // THE CLAMP, UNDER THE NUMBER IT MOVED. When the failed-ask clamp binds, the
   // printed price is not the one the method above it produces — Concorde
   // stated a method yielding $1,973,000 and printed $1,473,000 with nothing
@@ -505,7 +545,22 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // each was adjusted, and how the range and the recommended list follow.
   // Every one of those sentences is written by lib/pricing and stored on the
   // row; nothing here composes one.
-  const method = renderPricingMethodHtml({ pricing: pricingWithMeasure(p), whichSales })
+  const method = renderPricingMethodHtml({ pricing: pricingWithMeasure(p), whichSales: methodTail || null })
+  const age = newHomeRateParagraph({
+    subjectYear: s.yearBuilt ?? null,
+    subjectSqft: s.sqft ?? null,
+    asOfIso: input.asOfIso ?? '',
+    rangeLow: p.valueLow,
+    rangeHigh: p.valueHigh,
+    comps: input.comps.map((c) => ({
+      address: c.address,
+      yearBuilt: c.yearBuilt ?? null,
+      closePrice: c.closePrice,
+      sqft: c.sqft,
+    })),
+    rivals: input.rivals,
+  })
+  const ageHtml = age ? `<p class="method-line">${esc(age)}</p>` : ''
   // Tip Ready P0: cover already carries recommend + range. The worth-strip's
   // "list $521K" mark was the fold repeating the number (~8× on Falcon).
   return {
@@ -515,6 +570,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   ${lead}
   ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
   ${clampHtml}` : ''}
+  ${ageHtml}
   ${method}
 `,
   }
@@ -594,7 +650,7 @@ export function mapPage(input: {
   }
 }
 
-export const MAP_HEADING = 'The map.'
+export const MAP_HEADING = 'Comparable homes near you'
 
 /** Shared by the letter chapter and its immersive twin. */
 export function mapBodyHtml(input: {
@@ -615,7 +671,7 @@ export function mapBodyHtml(input: {
   const area = cleanText(input.areaSentence ?? null)
   return `<div class="pin-map-wrap">${pinMap}</div>
   <p class="small">${esc(
-    [area, mapLegend(input.subject.subdivision, input.mapOverlay?.boundaryShown)]
+    [area, mapLegend(input.mapOverlay?.boundaryShown, input.mapOverlay?.parentShown)]
       .filter(Boolean)
       .join(' '),
   )}</p>`

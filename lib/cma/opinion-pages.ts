@@ -36,7 +36,13 @@ import {
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
 import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
-import { listingTimelinePhoneSvg, listingTimelineSvg } from '@/lib/cma/market-charts'
+import { listingTimelinePhoneSvg, listingTimelineSvg, listingMarketSlopesPhoneSvg, listingMarketSlopesSvg } from '@/lib/cma/market-charts'
+import {
+  listingMarketSentence,
+  listingMarketSlopes,
+  listingMarketSource,
+  type ListingMarketMove,
+} from '@/lib/cma/listing-window-market'
 import { subjectDomDays, type SubjectAskContext } from '@/lib/cma/comp-matrix'
 import {
   MAP_HEADING,
@@ -64,6 +70,8 @@ import { compAreaSentence } from '@/lib/cma/matrix-sets'
 import { setAsideCompIndexes } from '@/lib/cma/set-aside'
 import { statusPpsfBoardHtml, statusPpsfSummaries } from '@/lib/cma/status-ppsf'
 import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '@/lib/cma/status-price-summary'
+import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
+import { sellerCostLines } from '@/lib/pricing/seller-net'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -152,6 +160,16 @@ export type OpinionPageArgs = {
    * belongs to the delivery, not to the stored figures.
    */
   docLinks?: TrackedDocLinkCtx | null
+  /**
+   * What sale prices did while this home was listed. Subdivision, then the
+   * neighborhood, then the city. Absent when no grain had enough closes, and
+   * absent on a letter signed before this was measured.
+   */
+  listingMarket?: ListingMarketMove | null
+  /** Row status at serve. A draft replaces an automatic concession net. */
+  documentStatus?: string | null
+  /** Credits homes like this one actually gave. Drafts only. */
+  likeHomeCredits?: Pick<LikeHomeCredit, 'sentence' | 'source'> | null
 }
 
 
@@ -256,6 +274,13 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     compTrace: a.compTrace,
     askCtx: subjectAskContext(a),
     finalCycle: a.expiredAudit?.finalCycle ?? null,
+    asOfIso: a.generatedAtIso,
+    rivals: (a.bandRivals?.rivals ?? []).map((r) => ({
+      address: r.address,
+      yearBuilt: r.yearBuilt ?? null,
+      listPrice: r.listPrice,
+      sqft: r.sqft ?? null,
+    })),
     statusPpsfBoard: statusPpsfBoardHtml(
       statusPpsfSummaries({
         closed: sets.closed,
@@ -382,9 +407,45 @@ export function sellerNetSheetForDoc(a: OpinionPageArgs): SellerNetSheet | null 
   return sheet
 }
 
-/** True only when every deduction is on the sheet. Gates the phrase itself. */
+/**
+ * "What you keep" is only true when the loan payoff is on the sheet and
+ * nothing else is still named as missing. Fees and title alone are not that.
+ */
 export function netIsEverything(sheet: SellerNetSheet | null): boolean {
-  return sheet != null && sheet.unknowns.length === 0
+  if (!sheet || sheet.unknowns.length > 0) return false
+  return sheet.lines.some((l) => /payoff/i.test(l.label))
+}
+
+const ENGINE_NET_LINE = /^(Our fee|Buyer's agent|Title insurance|Seller concession)$/
+
+/** A draft's automatic sheet. A hand-itemised sheet, with its own sources, stays. */
+function replaceEngineNet(status: string | null | undefined, sheet: SellerNetSheet): boolean {
+  const live = (status ?? '').toLowerCase()
+  if (live !== 'draft' && live !== 'needs_review') return false
+  return sheet.lines.length > 0 && sheet.lines.every((l) => ENGINE_NET_LINE.test(l.label))
+}
+
+function engineNetHtml(list: number, credits: Pick<LikeHomeCredit, 'sentence' | 'source'> | null | undefined): string {
+  const lines = sellerCostLines(list)
+  const net = Math.max(0, Math.round(list) - lines.reduce((sum, l) => sum + l.amount, 0))
+  const rows = lines
+    .map(
+      (l) =>
+        `<tr><th>${esc(l.label)}<span class="ln-src">${esc(l.source)}</span></th><td class="v">−${usd(l.amount)}</td></tr>`,
+    )
+    .join('\n    ')
+  const note = credits?.sentence
+    ? `<p>${esc(credits.sentence)}</p>${credits.source ? `<p class="small">${esc(credits.source)}</p>` : ''}`
+    : ''
+  return `<table class="kv netsheet">
+    <tbody>
+    <tr><th>List price</th><td class="v">${usd(list)}</td></tr>
+    ${rows}
+    <tr class="is-net"><th>Left from the sale</th><td class="v">${usd(net)}</td></tr>
+    </tbody>
+  </table>
+  <p>Before the escrow company's fee and what you still owe.</p>
+  ${note}`
 }
 
 /** The eyebrow over the immersive twin. Never "What you keep" on a partial net. */
@@ -404,6 +465,7 @@ export function sellerNetBodyHtml(a: OpinionPageArgs): string {
       )}. None of those is in the record this report reads. We put them in writing, against a real list price, before anything is signed.`,
     )}</p>`
   }
+  if (replaceEngineNet(a.documentStatus, sheet)) return engineNetHtml(sheet.list, a.likeHomeCredits)
   const everything = netIsEverything(sheet)
   const listIsRec = isRecommendMark(sheet.list, rec)
   const listCell = listIsRec ? 'that price' : usd(sheet.list)
@@ -431,9 +493,9 @@ export function sellerNetBodyHtml(a: OpinionPageArgs): string {
     <tr class="is-net"><th>${esc(netLabel)}</th><td class="v">${usd(sheet.net)}</td></tr>
     </tbody>
   </table>
-  ${sheet.basis ? `<p class="small">${esc(sheet.basis)}</p>` : ''}
+  ${sheet.basis && sheet.basis !== 'list' ? `<p class="small">${esc(sheet.basis)}</p>` : ''}
   ${
-    everything
+    everything || sheet.unknowns.filter((u) => u.trim()).length === 0
       ? ''
       : `<p>${esc(`This does not include ${orList(sheet.unknowns)}.`)}</p>`
   }`
@@ -584,7 +646,29 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
   })
   return `<div class="szn timeline-wide">${wide}</div>
   ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
+  ${listingMarketHtml(a.listingMarket)}
   ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}`
+}
+
+/**
+ * The market during the listing, under the ask line.
+ *
+ * The picture is two slopes — the sale price, and the price per square foot —
+ * because those are two units. The sentence states both, including when they
+ * disagree. The regional relist figures stay where they are; this is a
+ * different question.
+ */
+function listingMarketHtml(move: ListingMarketMove | null | undefined): string {
+  if (!move) return ''
+  const sentence = listingMarketSentence(move)
+  const drawn = { ...listingMarketSlopes(move), caption: sentence }
+  const wide = listingMarketSlopesSvg(drawn)
+  const phone = listingMarketSlopesPhoneSvg(drawn)
+  if (!wide) return ''
+  return `<div class="szn timeline-wide">${wide}</div>
+  ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
+  <p class="chart-read">${esc(sentence)}</p>
+  <p class="small">${esc(listingMarketSource(move))}</p>`
 }
 
 /**

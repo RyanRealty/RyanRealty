@@ -224,11 +224,12 @@ describe('F2 — a place polygon is suppressed when it holds neither the subject
 
   it('names the outline plainly when it was drawn', () => {
     expect(legendOf(true)).toBe(
-      'Every pin below is a row in one of the three tables that follow. The outline is Romaine Village.',
+      'Every pin below is a row in one of the three tables that follow. The lines are the subdivisions these homes sit in.',
     )
   })
 
-  it('keeps the hedge only when the tile predates the check', () => {
-    expect(legendOf(undefined)).toContain('when that boundary is on file')
+  it('does not claim an outline when the tile predates the check', () => {
+    expect(legendOf(undefined)).toBe('Every pin below is a row in one of the three tables that follow.')
+    expect(legendOf(undefined)).not.toContain('when that boundary is on file')
   })
 })

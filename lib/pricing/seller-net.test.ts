@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import { BUYER_BROKER_ASSUMPTION_PCT, STANDARD_LISTING_FEE_PCT } from '@/lib/cma/expired-audit'
 import {
+  NET_BUYER_AGENT_FEE_PCT,
+  NET_LISTING_FEE_PCT,
   SELLER_NET_UNKNOWNS,
   attachCompConcessions,
   attachSellerNet,
   buildSellerNet,
   reanchorSellerNet,
   resolveConcessions,
+  sellerCostLines,
   sellerNetFromPrice,
   summarizeConcessions,
 } from '@/lib/pricing/seller-net'
@@ -73,67 +77,44 @@ const NOTHING_KNOWN = summarizeConcessions([
   { concessionsAmount: null, concessionsYn: null, closeDate: '2023-04-01' },
 ])
 
-describe('buildSellerNet — the arithmetic starts at the list, and every line is derivable', () => {
+describe('buildSellerNet — fees and title come off the list, a credit does not', () => {
+  it('uses the same fee rates as the published plan', () => {
+    expect(NET_LISTING_FEE_PCT).toBe(STANDARD_LISTING_FEE_PCT)
+    expect(NET_BUYER_AGENT_FEE_PCT).toBe(BUYER_BROKER_ASSUMPTION_PCT)
+  })
+
   it('is anchored to the list, never to a close estimate', () => {
     const block = buildSellerNet({ list: 1_473_000, summary: GIVEN })!
     expect(block.basis).toBe('list')
     expect(block.list).toBe(1_473_000)
   })
 
-  it('subtracts the median concession of the printed sales, including the zeros', () => {
-    const block = buildSellerNet({ list: 1_473_000, summary: GIVEN })!
-    // median of [0, 15000, 20000, 30000] = 17,500
-    expect(GIVEN.medianIncludingZero).toBe(17_500)
-    expect(block.lines).toHaveLength(1)
-    expect(block.lines[0]!.amount).toBe(17_500)
-    expect(block.lines[0]!.label).toMatch(/concession/i)
-    expect(block.lines[0]!.source).toMatch(/4 comparable sales/)
-    expect(block.net).toBe(1_473_000 - 17_500)
+  it('subtracts our fee, the buyer agent fee, and the owner policy, not a median credit', () => {
+    const block = buildSellerNet({ list: 716_000, summary: GIVEN })!
+    expect(block.lines.map((l) => l.label)).toEqual(['Our fee', "Buyer's agent", 'Title insurance'])
+    expect(block.lines.map((l) => l.amount)).toEqual([21_480, 17_900, 1_674])
+    expect(block.net).toBe(674_946)
+    expect(block.lines.some((l) => /concession/i.test(l.label))).toBe(false)
+    expect(block.sentence).not.toMatch(/does not include/i)
+    // The trace of what the comps gave is still on the block. It is not the net.
+    expect(block.expectedConcessions).toBe(GIVEN.medianIncludingZero)
   })
 
-  it('prints a zero concession line when the sales reported the field and none gave one', () => {
-    const block = buildSellerNet({ list: 452_000, summary: NONE_GIVEN })!
-    expect(block.lines).toHaveLength(1)
-    expect(block.lines[0]!.amount).toBe(0)
-    expect(block.net).toBe(452_000)
-  })
-
-  it('carries no concession line at all when nothing was reported, and says so', () => {
-    const block = buildSellerNet({ list: 452_000, summary: NOTHING_KNOWN })!
-    expect(block.lines).toHaveLength(0)
-    expect(block.net).toBe(452_000)
-    expect(block.unknowns.some((u) => /concession/i.test(u))).toBe(true)
-  })
-
-  it('names commission, title, escrow, recording and payoff as NOT included, always', () => {
-    for (const summary of [GIVEN, NONE_GIVEN, NOTHING_KNOWN]) {
-      const block = buildSellerNet({ list: 700_000, summary })!
-      const joined = block.unknowns.join(' ').toLowerCase()
-      for (const word of ['commission', 'title', 'escrow', 'recording', 'payoff']) {
-        expect(joined).toContain(word)
-      }
-    }
-  })
-
-  it('never puts a commission of zero on a line', () => {
-    const block = buildSellerNet({ list: 700_000, summary: GIVEN })!
-    expect(block.lines.some((l) => /commission/i.test(l.label))).toBe(false)
+  it('is the same net whether or not the comps gave a credit', () => {
+    const given = buildSellerNet({ list: 452_000, summary: GIVEN })!
+    const none = buildSellerNet({ list: 452_000, summary: NONE_GIVEN })!
+    const unknown = buildSellerNet({ list: 452_000, summary: NOTHING_KNOWN })!
+    expect(given.net).toBe(none.net)
+    expect(none.net).toBe(unknown.net)
+    expect(given.lines).toHaveLength(3)
   })
 
   it('can never produce a net above the list', () => {
     for (const summary of [GIVEN, NONE_GIVEN, NOTHING_KNOWN]) {
       const block = buildSellerNet({ list: 816_000, summary })!
       expect(block.net).toBeLessThanOrEqual(block.list)
+      expect(block.net).toBe(block.list - sellerCostLines(block.list).reduce((s, l) => s + l.amount, 0))
     }
-  })
-
-  it('states the arithmetic in the sentence and names what is missing', () => {
-    const block = buildSellerNet({ list: 1_473_000, summary: GIVEN })!
-    expect(block.sentence).toContain('$1,473,000')
-    expect(block.sentence).toContain('$17,500')
-    expect(block.sentence).toContain('$1,455,500')
-    expect(block.sentence).toMatch(/commission/i)
-    expect(block.sentence).not.toMatch(/[—;]/)
   })
 
   it('is null-safe on a list that is not a usable price', () => {
@@ -154,8 +135,8 @@ describe('attachSellerNet', () => {
     ])
     expect(pricing.sellerNet?.list).toBe(700_000)
     expect(pricing.sellerNet?.expectedConcessions).toBe(5_000)
-    expect(pricing.sellerNet?.net).toBe(695_000)
-    expect(pricing.notes[0]).toBe(pricing.sellerNet?.sentence)
+    expect(pricing.sellerNet?.net).toBe(659_850)
+    expect(pricing.notes.some((n) => n.includes('does not include'))).toBe(false)
   })
 
   it('leaves no predictedSellerNet behind for a renderer to print', () => {
@@ -172,13 +153,13 @@ describe('reanchorSellerNet — the list moved, so the net moves with it', () =>
       { concessionsAmount: 20_000, concessionsYn: 'Yes', closeDate: '2026-05-01' },
       { concessionsAmount: null, concessionsYn: 'No', closeDate: '2026-04-01' },
     ])
-    expect(pricing.sellerNet?.net).toBe(1_920_000)
+    expect(pricing.sellerNet?.lines[0]?.label).toBe('Our fee')
 
     // The failed-ask ceiling drops the list. The net must follow.
     pricing.recommended = 1_473_000
     reanchorSellerNet(pricing)
     expect(pricing.sellerNet?.list).toBe(1_473_000)
-    expect(pricing.sellerNet?.net).toBe(1_463_000)
+    expect(pricing.sellerNet?.net).toBe(1_389_175)
     expect(pricing.sellerNet!.net).toBeLessThanOrEqual(pricing.recommended)
   })
 
@@ -188,9 +169,7 @@ describe('reanchorSellerNet — the list moved, so the net moves with it', () =>
     pricing.recommended = 1_473_000
     reanchorSellerNet(pricing)
     const netNotes = pricing.notes.filter((n) => n.startsWith(SELLER_NET_UNKNOWNS.notePrefix))
-    expect(netNotes).toHaveLength(1)
-    expect(netNotes[0]).toContain('$1,473,000')
-    expect(netNotes.join(' ')).not.toContain('$1,930,000')
+    expect(netNotes).toHaveLength(0)
   })
 
   it('does nothing when there is no block to re-anchor', () => {

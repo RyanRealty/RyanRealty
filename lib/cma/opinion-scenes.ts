@@ -8,7 +8,6 @@ import {
   mapBodyHtml,
   pricingPage,
   salesThatSetItPage,
-  whatItsWorthHeading,
 } from '@/lib/cma/render-pricing-page'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import {
@@ -63,7 +62,7 @@ function priceScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream pack" id="what-its-worth">
     <div class="in wide">
       <div class="kick r">The number</div>
-      <h2 class="h r">${esc(whatItsWorthHeading(a.pricing))}</h2>
+      <h2 class="h r">${esc(page.toc)}</h2>
       <div class="r">${page.body}</div>
     </div>
   </section>`
@@ -76,7 +75,7 @@ function mapScene(a: OpinionSceneArgs): string {
   return `
   <section class="sc sc-cream pack" id="the-map">
     <div class="in wide">
-      <div class="kick r">The map</div>
+      <div class="kick r">Comparable homes near you</div>
       <div class="r">${body}</div>
     </div>
   </section>`

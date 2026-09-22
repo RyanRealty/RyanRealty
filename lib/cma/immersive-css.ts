@@ -534,6 +534,10 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .sc-navy svg path[fill='#102742']{fill:var(--cream);fill-opacity:.14}
 .letter-body table.kv{width:100%;border-collapse:collapse;font-size:15px}
 .letter-body table.kv th{text-align:left;font-weight:500;opacity:.7;padding:8px 16px 8px 0;border-bottom:1px solid var(--ink12);width:38%}
+/* The comparable matrix is a kv table, and the house photo sits in the
+   header cell. The 70% label fade above is for a fact label. On a photograph
+   the cream page shows through it. The picture and the address stay solid. */
+.letter-body table.kv.comp-matrix thead th{opacity:1}
 .letter-body table.kv td{padding:8px 0;border-bottom:1px solid var(--ink12)}
 /* The status boards are many columns, not a label and one figure. The 38%
    rule above landed on every heading, so Low, Avg, Median and High stacked

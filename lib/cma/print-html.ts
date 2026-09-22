@@ -12,6 +12,8 @@ import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
 import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import type { CmaBroker } from '@/lib/cma/types'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import { likeHomeCreditsForDocument } from '@/lib/cma/like-home-credits-load'
+import { listingMarketForDocument } from '@/lib/cma/listing-window-load'
 
 export async function resolveCmaPrintHtml(slug: string): Promise<{ html: string; status: string } | null> {
   const source = await getCmaRenderSourceBySlug(slug)
@@ -63,6 +65,7 @@ export async function resolveCmaPrintHtmlFromSource(
               view: map.view,
               pins: map.pins,
               boundaryShown: map.boundaryShown,
+              parentShown: map.parentShown,
               radiusShown: map.radiusShown,
             }
           : null
@@ -72,6 +75,8 @@ export async function resolveCmaPrintHtmlFromSource(
       }
     }
     // C9: never rebuild/pass subject-only map — comps map is the single letter map.
+    const listingMarket = await listingMarketForDocument(stored, source.status)
+    const likeHomeCredits = await likeHomeCreditsForDocument(stored, source.status)
     const { html } = renderCmaHtml({
       ...stored,
       comps,
@@ -81,6 +86,8 @@ export async function resolveCmaPrintHtmlFromSource(
       subjectMapDataUri: null,
       docLinks: await resolveDocLinkCtx(slug, broker.slug),
       documentStatus: source.status,
+      listingMarket,
+      likeHomeCredits,
     })
     return { html, status: source.status }
   }
