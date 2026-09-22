@@ -14,19 +14,52 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 const upserts: Array<{ table: string; row: Record<string, unknown>; opts: Record<string, unknown> }> = []
 const inserts: Array<{ table: string; row: Record<string, unknown> }> = []
 
+type QueryResult = { data: null; error: null }
+
+// The route records with upsert, then the real reply path (record-message,
+// on-reply, getAlertPerson) chains select/eq/maybeSingle and awaits insert,
+// update, and upsert. A client that only had upsert/insert threw
+// "sb.from(...).select is not a function"; under a full parallel suite the
+// first lock paid for that plus the import and timed out at 5s. Reads resolve
+// empty so nothing here touches a live database or sends.
+function queryChain(table: string) {
+  const resolved: Promise<QueryResult> = Promise.resolve({ data: null, error: null })
+  const chain: Record<string, unknown> = {}
+  const back = () => chain
+  for (const name of [
+    'select', 'eq', 'neq', 'in', 'is', 'or', 'order', 'limit',
+    'gte', 'lte', 'lt', 'gt', 'ilike', 'like', 'contains', 'filter', 'match', 'not',
+    'update', 'delete',
+  ]) {
+    chain[name] = back
+  }
+  chain.insert = (row: Record<string, unknown>) => {
+    inserts.push({ table, row })
+    return chain
+  }
+  chain.upsert = (row: Record<string, unknown>, opts: Record<string, unknown> = {}) => {
+    upserts.push({ table, row, opts })
+    return chain
+  }
+  chain.maybeSingle = () => resolved
+  chain.single = () => resolved
+  chain.then = (resolve: (value: QueryResult) => unknown, reject?: (reason: unknown) => unknown) =>
+    resolved.then(resolve, reject)
+  return chain
+}
+
 vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({
-    from: (table: string) => ({
-      upsert: (row: Record<string, unknown>, opts: Record<string, unknown>) => {
-        upserts.push({ table, row, opts })
-        return Promise.resolve({ data: null, error: null })
-      },
-      insert: (row: Record<string, unknown>) => {
-        inserts.push({ table, row })
-        return Promise.resolve({ data: null, error: null })
-      },
-    }),
+    from: (table: string) => queryChain(table),
   }),
+}))
+
+// A working select() lets on-reply claim its idempotency key and call
+// createNativeTask, which inserts crm_tasks before the route returns on STOP.
+// LOCK 4 forbids that write. The native task has its own tests; this file
+// still locks the route's own task upsert.
+vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
+  createNativeTask: async () => {},
 }))
 
 const brokerForTwilioNumber = vi.fn(async (n: string) => (String(n).includes('5417033095') ? 'matt' : null))

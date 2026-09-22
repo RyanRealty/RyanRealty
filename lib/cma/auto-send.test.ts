@@ -1,4 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
+
+// Expired and FSBO rows are screened before the readiness gate. The screen
+// imports the DAL barrel and reads live MLS. These tests inject every send
+// dependency and only lock the decision, so the screen stays a clear no-op.
+// Loading the real module is what blew the 30s timeout under a parallel suite.
+vi.mock('@/lib/cma/solicit-screen', () => ({
+  screenAddressForSolicitation: async () => ({
+    ok: true as const,
+    checked: 0,
+    detail: 'clear',
+  }),
+}))
+
 import { autoSendBuiltCma, type AutoSendDeps } from '@/lib/cma/auto-send'
 import type { CmaQueueRow, CmaQueueState } from '@/lib/data/cma/unified-queue'
 import type { LaneSettings } from '@/lib/data/cma/lane-settings'
@@ -120,11 +133,7 @@ describe('autoSendBuiltCma — only ready sends', () => {
   ]
 
   for (const state of blocked) {
-    // First test in the file, so it absorbs the module-load cost of the whole
-    // auto-send import graph. Its own work is pure mocks and takes under a
-    // millisecond; under a full parallel suite the import alone has crossed
-    // vitest's 5s default and failed the commit hook on unrelated changes.
-    it(`leaves a ${state} row untouched even with the lane on`, { timeout: 30_000 }, async () => {
+    it(`leaves a ${state} row untouched even with the lane on`, async () => {
       const d = deps({ findRow: vi.fn(async () => queueRow({ state })) })
       const res = await autoSendBuiltCma('cma-1-main', d)
       expect(res.outcome).toBe('not-ready')
