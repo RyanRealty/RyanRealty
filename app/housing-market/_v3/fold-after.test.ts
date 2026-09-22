@@ -120,6 +120,5 @@ describe('market instruments open on a claim and a drawing', () => {
     expect(geoTitleSrc).toMatch(/months of supply/)
     expect(geoTitleSrc).not.toMatch(/homes for sale/)
     expect(geoTitleSrc).not.toMatch(/active listings/)
-  }
   })
 })
