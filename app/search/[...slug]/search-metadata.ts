@@ -10,6 +10,10 @@ import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { withTimeout } from './fetch-guards'
 import { resolveSlug, buildCanonicalPath } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import {
+  BEND_NEW_CONSTRUCTION_CANONICAL_PATH,
+  isBendNewConstructionSearchTwinSlug,
+} from '@/lib/routing/bend-new-construction-search-twin'
 
 /**
  * Full metadata assembly for the slug search route. page.tsx's generateMetadata
@@ -48,7 +52,10 @@ export async function buildSearchSlugMetadata({
       : await withTimeout(getBannerUrl('city', cityEntityKey(city)), null, 1200))
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const defaultOgImage = `${siteUrl}/api/og?type=default`
-  const canonicalPath = buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
+  const isBendNewConstructionTwin = isBendNewConstructionSearchTwinSlug(slug, sp)
+  const canonicalPath = isBendNewConstructionTwin
+    ? BEND_NEW_CONSTRUCTION_CANONICAL_PATH
+    : buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
   const dynamicOgImage = slug.length > 0
     ? `${siteUrl}/search/og/${slug.map((part) => encodeURIComponent(part)).join('/')}`
     : defaultOgImage
@@ -74,7 +81,11 @@ export async function buildSearchSlugMetadata({
       // same inventory the parent page shows — noindex the duplicate, keep links
       // followable. They are also excluded from the sitemap preset loop.
       robots:
-        hasInvalidPresetSegment || (!!preset && isSortOnlyPreset(preset)) || shouldNoIndexSearchVariant(sp) || matrixNoIndex
+        isBendNewConstructionTwin ||
+        hasInvalidPresetSegment ||
+        (!!preset && isSortOnlyPreset(preset)) ||
+        shouldNoIndexSearchVariant(sp) ||
+        matrixNoIndex
           ? { index: false, follow: true }
           : { index: true, follow: true },
       openGraph: {

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import legacyRedirects from '@/data/legacy-redirects.json'
 import { resolvePreRenderHop } from '@/lib/routing/pre-render-hops'
+import { resolveBendNewConstructionSearchTwinHop } from '@/lib/routing/bend-new-construction-search-twin'
 import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import { isPresetSlug } from '@/lib/search-presets'
@@ -513,8 +514,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // per-geo report. Each resolver is pure, synchronous, committed-JSON only —
   // Edge-safe, and no penalty on the ~3,213 valid plats (not in the map → pass
   // straight through). Pure path rewrites stay in next.config.ts redirects().
+  // SITE-179: Bend new-construction search slug is the same document as
+  // /new-construction. Faceted price/beds URLs stay on the search page.
   if (!pathname.startsWith('/api/')) {
-    const hopDest = resolvePreRenderHop(pathname)
+    const hopDest =
+      resolvePreRenderHop(pathname) ??
+      resolveBendNewConstructionSearchTwinHop(pathname, url.searchParams)
     if (hopDest) {
       const redirectUrl = url.clone()
       redirectUrl.pathname = hopDest
