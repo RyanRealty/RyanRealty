@@ -214,6 +214,41 @@ export function clusterAtlasPins(
  */
 export const ATLAS_PIN_PILL = { w: 56, h: 26 }
 
+/** SITE-127 caret hang: `translate(-50%, calc(-100% - 5px))`. */
+export const ATLAS_PIN_HANG_PX = 5
+/** Air between a pill edge and the island so overflow:hidden cannot clip it. */
+export const ATLAS_PIN_ISLAND_MARGIN_PX = 10
+export const ATLAS_PIN_CARET_PX = 4
+
+/**
+ * SITE-138: slide a hanging $ / count pill back inside the Atlas island.
+ * Bend @375 west-edge `$440k+` was cut by `.v3-atlas__stage { overflow: hidden }`.
+ * SearchMapClustered has its own clamp (SITE-143) — this is the SVG Atlas path.
+ */
+export function clampAtlasPinToIsland(
+  x: number,
+  y: number,
+  island: { w: number; h: number },
+  pill: { w: number; h: number } = ATLAS_PIN_PILL,
+): { x: number; y: number } {
+  if (!(island.w > 0) || !(island.h > 0)) return { x, y }
+  const halfW = pill.w / 2
+  const margin = ATLAS_PIN_ISLAND_MARGIN_PX
+  const box = {
+    left: x - halfW,
+    right: x + halfW,
+    top: y - pill.h - ATLAS_PIN_HANG_PX,
+    bottom: y + ATLAS_PIN_CARET_PX,
+  }
+  let nx = x
+  let ny = y
+  if (box.left < margin) nx += margin - box.left
+  else if (box.right > island.w - margin) nx += island.w - margin - box.right
+  if (box.top < margin) ny += margin - box.top
+  else if (box.bottom > island.h - margin) ny += island.h - margin - box.bottom
+  return { x: nx, y: ny }
+}
+
 export function mergeOverlappingAtlasClusters(
   clusters: readonly AtlasPinCluster[],
   pill: { w: number; h: number } = ATLAS_PIN_PILL,

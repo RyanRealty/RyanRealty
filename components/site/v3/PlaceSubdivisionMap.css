@@ -5,16 +5,43 @@
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'map' 'list';
   gap: var(--v3-space-sm);
+  box-sizing: border-box;
   width: 100%;
   max-width: min(100%, 90rem);
   margin-inline: auto;
   padding-inline: var(--v3-gutter);
   align-items: start;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .place-one-map > .v3-atlas,
 .place-one-map > .community-atlas {
   grid-area: map;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.place-one-map .v3-atlas,
+.place-one-map .v3-atlas__frame,
+.place-one-map .v3-atlas__stage {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 47.99rem) {
+  /* SITE-138: both axes clip so $ chips cannot widen the 375 or paint
+     past the island. overflow-x:clip + overflow-y:visible computes back
+     to auto — hide both. */
+  .place-one-map,
+  .place-one-map > .v3-atlas,
+  .place-one-map > .community-atlas,
+  .place-one-map .v3-atlas__frame,
+  .place-one-map .v3-atlas__stage {
+    overflow: hidden;
+    max-width: 100%;
+  }
 }
 
 .place-one-map > .place-subdiv-rail {

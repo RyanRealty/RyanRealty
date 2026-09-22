@@ -111,6 +111,16 @@ describe('V3Atlas chips: wrapped at every width, folded on a phone', () => {
     const name = rulesFor(css, '.v3-atlas__chip-name').join('\n')
     expect(name).toMatch(/max-width:\s*min\(18rem/)
     expect(name).toMatch(/white-space:\s*nowrap/)
+    expect(name).not.toMatch(/100vw/)
+  })
+
+  it('clamps hanging price pills inside the 375 island', () => {
+    const pin = rulesFor(css, '.v3-atlas__pin').join('\n')
+    expect(pin).toMatch(/left:\s*var\(--atlas-pin-x\)/)
+    expect(pin).toMatch(/top:\s*var\(--atlas-pin-y\)/)
+    const phone = mediaBlocks(css, /max-width:\s*47\.99rem/).join('\n')
+    expect(phone).toMatch(/\.v3-atlas__pin\s*\{[^}]*left:\s*clamp\(/)
+    expect(phone).toMatch(/\.v3-atlas__pin\s*\{[^}]*top:\s*clamp\(/)
   })
 
   it('lands its hash under the sticky chrome, not beneath it', () => {

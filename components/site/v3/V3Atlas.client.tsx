@@ -45,7 +45,7 @@
  *            the map on a phone, under the head in the desktop column — so
  *            the map keeps its full height.
  */
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -109,6 +109,7 @@ import {
   atlasClusterSize,
   atlasClusterWorldBounds,
   atlasViewFromStage,
+  clampAtlasPinToIsland,
   clusterAtlasPins,
   mergeOverlappingAtlasClusters,
   floorCityFoldPaintView,
@@ -1522,11 +1523,15 @@ export function V3Atlas({
       }
     })
     const merged = clusterPins ? mergeOverlappingAtlasClusters(screenGroups) : screenGroups
+    const island = { w: view.w, h: view.h }
     const out: PaintedPin[] = []
     for (const g of merged) {
       if (g.count === 1) {
         const src = byIndex.get(g.indices[0]!)
-        if (src) out.push({ kind: 'pin', d: src.d, i: src.i, x: src.x, y: src.y, label: src.label })
+        if (src) {
+          const at = clampAtlasPinToIsland(src.x, src.y, island)
+          out.push({ kind: 'pin', d: src.d, i: src.i, x: at.x, y: at.y, label: src.label })
+        }
         continue
       }
       const asks: number[] = []
@@ -1535,11 +1540,12 @@ export function V3Atlas({
         if (p != null && formatAtlasPinPrice(p)) asks.push(p)
       }
       const span = atlasClusterAskSpan(asks)
+      const at = clampAtlasPinToIsland(g.x, g.y, island)
       out.push({
         kind: 'cluster',
         id: g.id,
-        x: g.x,
-        y: g.y,
+        x: at.x,
+        y: at.y,
         count: g.count,
         indices: g.indices,
         minP: span?.min ?? 0,
@@ -2333,7 +2339,12 @@ export function V3Atlas({
                           <span
                             key={mark.id}
                             className={cn('v3-atlas__pin', 'is-cluster', clusterHit === mark.id && 'is-hot')}
-                            style={{ left: mark.x, top: mark.y }}
+                            style={
+                              {
+                                ['--atlas-pin-x']: `${mark.x}px`,
+                                ['--atlas-pin-y']: `${mark.y}px`,
+                              } as CSSProperties
+                            }
                             data-atlas-cluster={mark.id}
                             data-atlas-cluster-n={mark.count}
                             data-atlas-cluster-price={price || undefined}
@@ -2355,7 +2366,12 @@ export function V3Atlas({
                               linkedIndex === i && 'is-linked',
                               dotHit === i && 'is-hot',
                             )}
-                            style={{ left: x, top: y }}
+                            style={
+                              {
+                                ['--atlas-pin-x']: `${x}px`,
+                                ['--atlas-pin-y']: `${y}px`,
+                              } as CSSProperties
+                            }
                             data-atlas-pin={d.k}
                             data-atlas-pin-price={label}
                           >

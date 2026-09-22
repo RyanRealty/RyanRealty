@@ -165,6 +165,34 @@ for (const needle of [
 if (!atlas.includes('projectPinsToFoldStage')) {
   failures.push(`${ATLAS} must cluster city-fold pins on the locked fold stage, not live GBR`)
 }
+if (!clusterSrc.includes('clampAtlasPinToIsland')) {
+  failures.push(`${CLUSTER} must export clampAtlasPinToIsland so 375 $ chips stay inside the island`)
+}
+if (!atlas.includes('clampAtlasPinToIsland')) {
+  failures.push(`${ATLAS} must clamp painted $ chips inside the stage (SITE-138)`)
+}
+if (!atlas.includes('--atlas-pin-x')) {
+  failures.push(`${ATLAS} must set --atlas-pin-x so phone CSS can clamp hanging pills`)
+}
+
+const ATLAS_CSS = 'components/site/v3/V3Atlas.css'
+const atlasCss = readFileSync(ATLAS_CSS, 'utf8')
+if (!atlasCss.includes('--atlas-pin-x') || !/max-width:\s*47\.99rem[\s\S]{0,400}clamp\(/.test(atlasCss)) {
+  failures.push(`${ATLAS_CSS}: phone $ chips must clamp inside the island (SITE-138)`)
+}
+{
+  const stripped = atlasCss.replace(/\/\*[\s\S]*?\*\//g, '')
+  const nameRule = stripped.match(/\.v3-atlas__chip-name\s*\{[^}]+\}/)
+  if (nameRule && /100vw/.test(nameRule[0])) {
+    failures.push(`${ATLAS_CSS}: chip names must not use 100vw — that scrolls the 375 page sideways`)
+  }
+}
+
+const PLACE_MAP_CSS = 'components/site/v3/PlaceSubdivisionMap.css'
+const placeMapCss = readFileSync(PLACE_MAP_CSS, 'utf8')
+if (!/\.place-one-map\s*\{[\s\S]{0,480}overflow-x:\s*clip/.test(placeMapCss)) {
+  failures.push(`${PLACE_MAP_CSS}: place-one-map must overflow-x clip so Atlas chips cannot widen 375`)
+}
 
 const markers = readFileSync(MARKERS, 'utf8')
 if (!markers.includes('formatAtlasPinPrice')) {

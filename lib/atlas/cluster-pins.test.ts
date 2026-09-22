@@ -5,12 +5,16 @@ import { makeProjection, padBbox } from '@/lib/geo/project-svg'
 import { recordFrame } from '@/lib/geo/record-frame'
 import {
   ATLAS_PIN_CLUSTER_CELL_PX,
+  ATLAS_PIN_HANG_PX,
+  ATLAS_PIN_ISLAND_MARGIN_PX,
+  ATLAS_PIN_PILL,
   CITY_FOLD_CLUSTER_STAGE,
   CITY_FOLD_CLUSTER_STAGE_PHONE,
   atlasClusterCanExpand,
   atlasClusterSize,
   atlasClusterWorldBounds,
   atlasViewFromStage,
+  clampAtlasPinToIsland,
   clusterAtlasPins,
   mergeOverlappingAtlasClusters,
   floorCityFoldPaintView,
@@ -231,5 +235,28 @@ describe('atlasClusterSize', () => {
     expect(atlasClusterSize(3)).toBe('sm')
     expect(atlasClusterSize(10)).toBe('md')
     expect(atlasClusterSize(40)).toBe('lg')
+  })
+})
+
+describe('clampAtlasPinToIsland', () => {
+  it('slides a 375 west-edge $440k+ pill back inside the island', () => {
+    const island = { w: 335, h: 208 }
+    const at = clampAtlasPinToIsland(18, 90, island)
+    expect(at.x - ATLAS_PIN_PILL.w / 2).toBeGreaterThanOrEqual(ATLAS_PIN_ISLAND_MARGIN_PX)
+    expect(at.x + ATLAS_PIN_PILL.w / 2).toBeLessThanOrEqual(island.w - ATLAS_PIN_ISLAND_MARGIN_PX)
+    expect(at.y - ATLAS_PIN_PILL.h - ATLAS_PIN_HANG_PX).toBeGreaterThanOrEqual(ATLAS_PIN_ISLAND_MARGIN_PX)
+  })
+
+  it('slides a top-right count chip back inside the 375 island', () => {
+    const island = { w: 335, h: 208 }
+    const at = clampAtlasPinToIsland(330, -4, island)
+    expect(at.x + ATLAS_PIN_PILL.w / 2).toBeLessThanOrEqual(island.w - ATLAS_PIN_ISLAND_MARGIN_PX)
+    expect(at.y - ATLAS_PIN_PILL.h - ATLAS_PIN_HANG_PX).toBeGreaterThanOrEqual(ATLAS_PIN_ISLAND_MARGIN_PX)
+  })
+
+  it('leaves a centred desktop pin unmoved so SITE-127 hover stays on the house', () => {
+    const island = { w: 996, h: 558 }
+    const at = clampAtlasPinToIsland(480, 280, island)
+    expect(at).toEqual({ x: 480, y: 280 })
   })
 })
