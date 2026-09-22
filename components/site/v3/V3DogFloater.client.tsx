@@ -1,23 +1,18 @@
 'use client'
 /**
- * V3DogFloater — SITE-134 / SITE-135 / SITE-146 sitewide circle CTA
- * (Matt lock 2026-09-19, phone rematch 2026-09-20).
+ * V3DogFloater — SITE-153 (placement + six doors; crop lock SITE-146).
  *
- * A circle, bottom-end, with the INNER dog-head crop from the FULL
- * seals at public/brand/jax-navy.png and public/brand/jax-white.png
- * (3635x3417), not the wordmark ring, and not an already-clipped
- * disc. Click toggles a cream sheet with exactly five doors.
- * Critiquito 2026-09-19: light is navy-etched head on cream; dark is
- * white head on navy. Idle is one quiet tilt
- * (3–6°) that moves for most of a ≤4s cycle, then a pause — not a
- * 70% static hold. Head assets carry muzzle/ears/crown plus a thin
- * 4–8% pad inside the square before the circle masks (not a 16%
- * fat ring). Menu is 150–220ms
- * rise+fade, no bounce, no pun copy. Esc / outside / second tap on
- * the dog close. Listing @375 sits the FAB above the inline Tour
- * row. Replaces sticky Call / Text / Work-with-us bars. Header Work
- * with us stays. `prefers-reduced-motion: reduce` stills the loop.
- * Do not treat all iOS as reduced-motion.
+ * Mid-end circle (vertical center, trailing edge). Material FAB is
+ * bottom-end, 16dp from the edge, and must not cover a snackbar / banner;
+ * a cookie chip+bar owns that corner here, and cream-on-cream hid the dog.
+ * Mid-trailing-edge is the researched alternative when the bottom-end is
+ * occupied (help / a11y launchers). Navy disc, cream head — not a cream
+ * disc on cream chrome.
+ *
+ * Click the dog to open, click the dog again to close. No Close link.
+ * Esc and the scrim still dismiss. Six doors, this order. Brief
+ * flip / spin / invert on the head (not a continuous idle). Inner head
+ * from the full seals. `prefers-reduced-motion: reduce` stills it.
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -28,7 +23,6 @@ import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogTitle,
@@ -38,13 +32,14 @@ import { V3_ROOT_CLASS } from './atoms'
 import './tokens.css'
 import './V3DogFloater.css'
 
-/** Matt permanent lock 2026-09-20: these five strings, this order. Do not shorten. */
+/** Matt lock 2026-09-21: these six strings, this order. Do not shorten. */
 export const DOG_FLOATER_MENUS = [
-  { href: '/sell', label: 'Sell your home', kind: 'route' },
-  { href: '/buy', label: 'Buy your home', kind: 'route' },
-  { href: `sms:${CONTACT.phoneDirectTel}`, label: 'Text us', kind: 'sms' },
+  { href: '/sell', label: 'List your home', kind: 'route' },
+  { href: '/reviews', label: 'Read our reviews', kind: 'route' },
+  { href: `tel:${CONTACT.phoneDirectTel}`, label: 'Give us a call', kind: 'tel' },
+  { href: '/contact', label: 'Send us a message', kind: 'route' },
   { href: '/sell#get-value', label: "Get your home's value", kind: 'route' },
-  { href: '/about', label: 'Learn about us', kind: 'route' },
+  { href: '/about', label: 'Learn more about us', kind: 'route' },
 ] as const
 
 export function V3DogFloater() {
@@ -56,6 +51,20 @@ export function V3DogFloater() {
   useEffect(() => {
     if (hidden) setOpen(false)
   }, [hidden])
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (event: PointerEvent) => {
+      const t = event.target
+      if (!(t instanceof Element)) return
+      if (t.closest('.v3-dog-floater') || t.closest('.v3-dog-floater-menu')) return
+      event.preventDefault()
+      event.stopPropagation()
+      setOpen(false)
+    }
+    document.addEventListener('pointerdown', onDown, true)
+    return () => document.removeEventListener('pointerdown', onDown, true)
+  }, [open])
 
   const onOpenChange = useCallback((next: boolean) => {
     setOpen(next)
@@ -72,36 +81,35 @@ export function V3DogFloater() {
 
   if (hidden) return null
 
-  const onListing =
-    pathname.startsWith('/homes-for-sale') || pathname.startsWith('/listing')
-  const onDark = onListing
-  const headSrc = onDark ? '/brand/jax-head-cream.png' : '/brand/jax-head-navy.png'
-
   return (
     <div className={V3_ROOT_CLASS} data-v3-dog-floater="true">
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      {open ? <div className="v3-dog-floater-scrim" aria-hidden="true" /> : null}
+      <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
         <DialogTrigger asChild>
           <button
             type="button"
-            className={cn(
-              'v3-dog-floater',
-              onDark && 'v3-dog-floater--on-dark',
-              onListing && 'v3-dog-floater--listing',
-              open && 'v3-dog-floater--open',
-            )}
+            className={cn('v3-dog-floater', open && 'v3-dog-floater--open')}
             data-v3-dog-head="inner"
+            data-v3-dog-place="mid-end"
             aria-haspopup="dialog"
             aria-expanded={open}
             aria-controls={open ? titleId : undefined}
           >
             <span className="sr-only">Open Ryan Realty menu</span>
-            <span className="v3-dog-floater__head" data-v3-dog-idle="tilt" aria-hidden="true">
+            <span className="v3-dog-floater__head" data-v3-dog-idle="notice" aria-hidden="true">
               <img
-                src={headSrc}
+                src="/brand/jax-head-cream.png"
                 alt=""
                 width={68}
                 height={68}
-                className="v3-dog-floater__dog"
+                className="v3-dog-floater__dog v3-dog-floater__dog--cream"
+              />
+              <img
+                src="/brand/jax-head-navy.png"
+                alt=""
+                width={68}
+                height={68}
+                className="v3-dog-floater__dog v3-dog-floater__dog--navy"
               />
             </span>
           </button>
@@ -112,23 +120,28 @@ export function V3DogFloater() {
             V3_ROOT_CLASS,
             'v3-dog-floater-menu top-auto left-auto translate-x-0 translate-y-0 rounded-none data-open:zoom-in-100 data-closed:zoom-out-100',
           )}
-          overlayClassName={cn(V3_ROOT_CLASS, 'v3-dog-floater-scrim')}
+          overlayClassName={cn(V3_ROOT_CLASS, 'v3-dog-floater-scrim pointer-events-none')}
           aria-describedby={undefined}
+          onInteractOutside={(event) => {
+            const t = event.target
+            if (t instanceof Element && t.closest('.v3-dog-floater')) event.preventDefault()
+          }}
         >
           <DialogTitle id={titleId} className="sr-only">
             Help
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Sell your home, buy your home, text us, get your home&apos;s value, or learn about us.
+            List your home, read our reviews, give us a call, send us a message, get your
+            home&apos;s value, or learn more about us.
           </DialogDescription>
           <nav className="v3-dog-floater-menu__doors" aria-label="Help">
             {DOG_FLOATER_MENUS.map((item) =>
-              item.kind === 'sms' ? (
+              item.kind === 'tel' ? (
                 <a
                   key={item.href}
                   href={item.href}
                   className="v3-dog-floater-menu__door"
-                  onClick={door('text')}
+                  onClick={door('call')}
                 >
                   {item.label}
                 </a>
@@ -144,11 +157,6 @@ export function V3DogFloater() {
               ),
             )}
           </nav>
-          <DialogClose asChild>
-            <button type="button" className="v3-dog-floater-menu__close">
-              Close
-            </button>
-          </DialogClose>
         </DialogContent>
       </Dialog>
     </div>

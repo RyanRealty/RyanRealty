@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 /**
- * check-dog-floater.mjs — SITE-134 / SITE-135 / SITE-146 floating dog CTA.
+ * check-dog-floater.mjs — SITE-153 floating dog CTA.
  *
  * Refuse if the public layout drops V3DogFloater, remounts a sticky
- * Call/Text/Work-with-us phone dock, cover-crops the head, ships a
- * circular pre-crop / edge-tight jax-head, ships a 70% static idle
- * that reads as frozen on a phone, shortens a door label, or puts an
- * em dash (U+2014) in public copy. Wired as ci:dog-floater (always + chain).
+ * phone dock, parks the FAB on the cookie bar, ships continuous idle,
+ * a Close link, the wrong six doors, cover-crops the head, or ships a
+ * circular pre-crop / edge-tight jax-head. Wired as ci:dog-floater.
  *
  * Usage: node scripts/check-dog-floater.mjs
  */
@@ -24,5 +23,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted, visible idle tilt, full-seal inner head with 4–8% pad (no fat ring, no circular pre-crop), exact five doors, no em dash in public copy, header Work with us stays out, sticky phone dock stays down.`,
+  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted mid-end, brief flip/spin/invert, full-seal inner head with 4–8% pad, exact six doors, no Close link, no em dash, sticky phone dock stays down.`,
 )

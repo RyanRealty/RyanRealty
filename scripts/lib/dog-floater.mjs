@@ -1,21 +1,10 @@
 /**
- * dog-floater.mjs — SITE-134 / SITE-135 / SITE-146 floating dog CTA lock.
+ * dog-floater.mjs — SITE-153 floating dog CTA lock (crop: SITE-146).
  *
- * Matt 2026-09-19 + Critiquito + Matt phone 2026-09-20: sitewide circle
- * with the INNER dog-head crop (not the wordmark seal). Idle tilt must
- * be visible on a phone (motion in the first 40% of a ≤4s cycle — not a
- * 70% static hold). Head assets are the full-seal knockout (muzzle,
- * ears, crown) with a thin 4–8% pad inside the square before the
- * circle masks — not the 16% fat ring that left a tiny head in an
- * empty disc. CSS contain cannot restore pixels a circular pre-crop
- * already cut. Placement is circle-aware so the left muzzle is not
- * the thing kissing the rim.
- * Click opens five plain doors. Replaces sticky Call / Text /
- * Work-with-us bars. Header Work with us is OUT (SITE-155, Matt 2026-09-21:
- * the dog is that door). Tip Ready --ship and ci:dog-floater refuse a
- * missing floater, a seal FAB, a circular pre-crop, an edge-tight head,
- * cover-crop, frozen idle, a returned phone dock, or Work with us back in
- * the chrome.
+ * Matt 2026-09-21: mid-end (not the cream-on-cream cookie corner), brief
+ * flip/spin/invert (not a continuous idle), six doors, click the dog to
+ * toggle, no Close link. Inner head crop stays the SITE-146 lock.
+ * Header Work with us is SITE-155 — this gate does not police V3Chrome.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -56,13 +45,14 @@ export const JAX_HEAD_SEALS = Object.freeze([
   { src: PATHS.sealWhite, dest: PATHS.assetCream, width: 3635, height: 3417, tint: { r: 255, g: 255, b: 255 } },
 ])
 
-/** Matt permanent lock 2026-09-20: five doors, these strings, this order. Do not shorten. */
+/** Matt lock 2026-09-21: six doors, these strings, this order. Do not shorten. */
 export const DOG_FLOATER_DOOR_LABELS = Object.freeze([
-  'Sell your home',
-  'Buy your home',
-  'Text us',
+  'List your home',
+  'Read our reviews',
+  'Give us a call',
+  'Send us a message',
   "Get your home's value",
-  'Learn about us',
+  'Learn more about us',
 ])
 
 function readRel(root, rel, override) {
@@ -77,7 +67,6 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   const css = readRel(root, PATHS.css, files.css)
   const barrel = readRel(root, PATHS.barrel, files.barrel)
   const layout = readRel(root, PATHS.layout, files.layout)
-  const chrome = readRel(root, PATHS.chrome, files.chrome)
   const dock = readRel(root, PATHS.dock, files.dock)
   const stickyCss = readRel(root, PATHS.stickyCss, files.stickyCss)
   const listingPage = readRel(root, PATHS.listingPage, files.listingPage)
@@ -97,7 +86,7 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     p.push(`${PATHS.floater}: must hide on LP / admin / sign / account.`)
   }
   if (!floater.includes('CONTACT.phoneDirectTel')) {
-    p.push(`${PATHS.floater}: Text us must use CONTACT.phoneDirectTel. Do not invent a number.`)
+    p.push(`${PATHS.floater}: Give us a call must use CONTACT.phoneDirectTel. Do not invent a number.`)
   }
   if (!floater.includes("from '@/components/ui/dialog'")) {
     p.push(`${PATHS.floater}: menu must be the catalog Dialog (focus trap + Esc).`)
@@ -105,24 +94,30 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!floater.includes('DialogTrigger')) {
     p.push(`${PATHS.floater}: FAB must be DialogTrigger so a second tap on the dog closes.`)
   }
-  if (!floater.includes('DialogClose') || !floater.includes('Close')) {
-    p.push(`${PATHS.floater}: menu must be closable.`)
+  if (!/modal=\{false\}/.test(floater)) {
+    p.push(`${PATHS.floater}: Dialog must be modal={false} so the dog is not inert while open.`)
   }
-  if (!floater.includes('v3-dog-floater--listing')) {
-    p.push(`${PATHS.floater}: listing paths must mark --listing so the FAB sits above Tour.`)
+  if (/<DialogClose\b/.test(floater) || /v3-dog-floater-menu__close/.test(floater)) {
+    p.push(`${PATHS.floater}: no Close link — click the dog to toggle.`)
+  }
+  if (/>\s*Close\s*</.test(stripComments(floater))) {
+    p.push(`${PATHS.floater}: no Close link in the menu.`)
+  }
+  if (!floater.includes('data-v3-dog-place="mid-end"')) {
+    p.push(`${PATHS.floater}: trigger must mark mid-end placement (data-v3-dog-place=mid-end).`)
   }
   if (!/>\s*Help\s*</.test(floater) && !floater.includes('>Help<')) {
     p.push(`${PATHS.floater}: expanded title is Help (or omitted) — not a pun.`)
   }
   p.push(...doorLabelProblems(floater, PATHS.floater))
-  if (!floater.includes("href: '/sell'") || !floater.includes("href: '/buy'")) {
-    p.push(`${PATHS.floater}: Sell → /sell and Buy → /buy are required.`)
+  if (!floater.includes("href: '/sell'") || !floater.includes("href: '/reviews'")) {
+    p.push(`${PATHS.floater}: List your home → /sell and Read our reviews → /reviews are required.`)
   }
-  if (!floater.includes("href: '/sell#get-value'") || !floater.includes("href: '/about'")) {
-    p.push(`${PATHS.floater}: Get value → /sell#get-value and Learn about us → /about are required.`)
+  if (!floater.includes("href: '/contact'") || !floater.includes("href: '/sell#get-value'") || !floater.includes("href: '/about'")) {
+    p.push(`${PATHS.floater}: Send us a message → /contact, Get value → /sell#get-value, Learn more about us → /about.`)
   }
-  if (!/sms:\$\{CONTACT\.phoneDirectTel\}/.test(floater)) {
-    p.push(`${PATHS.floater}: Text us door must be sms:\${CONTACT.phoneDirectTel}.`)
+  if (!/tel:\$\{CONTACT\.phoneDirectTel\}/.test(floater)) {
+    p.push(`${PATHS.floater}: Give us a call door must be tel:\${CONTACT.phoneDirectTel}.`)
   }
   if (!floater.includes('/brand/jax-head-navy.png') || !floater.includes('/brand/jax-head-cream.png')) {
     p.push(`${PATHS.floater}: must paint the inner dog-head crop (jax-head-navy / jax-head-cream), not the wordmark seal.`)
@@ -136,32 +131,47 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!floater.includes('data-v3-dog-head="inner"')) {
     p.push(`${PATHS.floater}: trigger must mark the inner-head crop (data-v3-dog-head=inner).`)
   }
-  if (!floater.includes('data-v3-dog-idle="tilt"')) {
-    p.push(`${PATHS.floater}: head must mark the one quiet tilt (data-v3-dog-idle=tilt).`)
+  if (!floater.includes('data-v3-dog-idle="notice"')) {
+    p.push(`${PATHS.floater}: head must mark the brief notice motion (data-v3-dog-idle=notice).`)
   }
   if (/woof|How can we help|get a take/i.test(floater)) {
-    p.push(`${PATHS.floater}: five plain items only — no pun / woof copy.`)
+    p.push(`${PATHS.floater}: six plain items only — no pun / woof copy.`)
   }
 
   if (css == null) {
     p.push(`${PATHS.css}: missing.`)
   } else {
-    if (!/position:\s*fixed/.test(css) || !/bottom:\s*calc\(var\(--v3-space-md\) \+ env\(safe-area-inset-bottom/.test(css)) {
-      p.push(`${PATHS.css}: floater must be fixed bottom-right and safe-area aware.`)
+    if (!/position:\s*fixed/.test(css)) {
+      p.push(`${PATHS.css}: floater must be position:fixed.`)
+    }
+    if (!/\.v3-dog-floater\s*\{[^}]*top:\s*50%/.test(css)) {
+      p.push(`${PATHS.css}: floater must sit mid-end (top: 50%), not the bottom-end cookie corner.`)
+    }
+    if (/\.v3-dog-floater\s*\{[^}]*bottom:\s*calc/.test(css) || /--v3-dog-fab-bottom/.test(css)) {
+      p.push(`${PATHS.css}: do not pin the FAB to the bottom edge or rest it on the cookie bar.`)
+    }
+    if (/cookie-bar-h/.test(css)) {
+      p.push(`${PATHS.css}: do not rest the FAB on --v3-cookie-bar-h (cream-on-cream). Mid-end clears consent chrome.`)
     }
     if (!/right:\s*calc\(var\(--v3-space-md\) \+ env\(safe-area-inset-right/.test(css)) {
       p.push(`${PATHS.css}: floater must clear the iPhone home-indicator / notch side.`)
     }
-    if (!/@keyframes v3-dog-tilt/.test(css)) {
-      p.push(`${PATHS.css}: dog head must quiet-tilt in CSS (≤4s + pause). No video.`)
+    if (!/@keyframes v3-dog-notice/.test(css)) {
+      p.push(`${PATHS.css}: dog head must brief-notice in CSS (flip/spin/invert). No video.`)
+    }
+    if (!/rotateY\(/.test(css)) {
+      p.push(`${PATHS.css}: notice motion must flip (rotateY).`)
+    }
+    if (!/rotate\(360deg\)/.test(css)) {
+      p.push(`${PATHS.css}: notice motion must spin (rotate(360deg)).`)
+    }
+    if (!/invert\(/.test(css) && !/@keyframes v3-dog-notice-disc/.test(css)) {
+      p.push(`${PATHS.css}: notice motion must invert (filter invert, or navy/cream disc swap).`)
     }
     if (!/ease-in-out/.test(css)) {
-      p.push(`${PATHS.css}: idle tilt must be ease-in-out, not a bounce ease.`)
+      p.push(`${PATHS.css}: notice motion must be ease-in-out, not a bounce ease.`)
     }
-    if (!/rotate\(-?[3-6]deg\)/.test(css)) {
-      p.push(`${PATHS.css}: idle tilt must stay in the 3–6° range.`)
-    }
-    p.push(...tiltVisibilityProblems(css, PATHS.css))
+    p.push(...noticeMotionProblems(css, PATHS.css))
     if (/object-fit:\s*cover/.test(css)) {
       p.push(`${PATHS.css}: object-fit:cover crops muzzle/ears — use contain.`)
     }
@@ -181,17 +191,17 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     if (!/scale\(0\.96\)/.test(css)) {
       p.push(`${PATHS.css}: press must scale(0.96).`)
     }
+    if (!/min-width:\s*var\(--v3-tap\)/.test(css) || !/min-height:\s*var\(--v3-tap\)/.test(css)) {
+      p.push(`${PATHS.css}: tap target must be at least --v3-tap (44px).`)
+    }
     if (!/@keyframes v3-dog-menu-in/.test(css) || !/180ms/.test(css)) {
       p.push(`${PATHS.css}: menu must rise+fade in 150–220ms with no bounce.`)
     }
     if (!/--v3-travel/.test(css) && !/translateY\((8|9|10|11|12)px\)/.test(css)) {
       p.push(`${PATHS.css}: menu rise must be 8–12px (--v3-travel) with no overshoot.`)
     }
-    if (!/v3-dog-floater--listing/.test(css) || !/listing-ask-row/.test(css)) {
-      p.push(`${PATHS.css}: listing FAB must offset above .listing-ask-row (Tour inline).`)
-    }
-    if (/v3-dog-bob|v3-dog-blink|v3-dog-door-in/.test(css)) {
-      p.push(`${PATHS.css}: Critiquito idle is one tilt, not bob/blink/stagger.`)
+    if (/v3-dog-bob|v3-dog-blink|v3-dog-door-in|v3-dog-tilt/.test(css)) {
+      p.push(`${PATHS.css}: SITE-153 motion is a brief flip/spin/invert, not tilt/bob/blink.`)
     }
     if (!/prefers-reduced-motion/.test(css)) {
       p.push(`${PATHS.css}: reduced-motion must still the dog.`)
@@ -205,8 +215,11 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     if (!/z-index:\s*95/.test(css)) {
       p.push(`${PATHS.css}: floater must sit above the cookie chip (z-index 95).`)
     }
-    if (!/data-cookie-notice='chip'/.test(css) || !/data-cookie-notice='bar'/.test(css)) {
-      p.push(`${PATHS.css}: floater must clear the cookie chip and bar, not sit under Cookies.`)
+    if (!/v3-dog-floater-scrim[\s\S]{0,280}pointer-events:\s*none/.test(css)) {
+      p.push(`${PATHS.css}: scrim must use pointer-events:none so a second tap on the dog closes.`)
+    }
+    if (!/background:\s*var\(--v3-navy\)/.test(css)) {
+      p.push(`${PATHS.css}: default disc is navy (not cream-on-cream).`)
     }
   }
 
@@ -231,10 +244,6 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
     if (/<V3PhoneDock[\s/>]/.test(layout)) {
       p.push(`${PATHS.layout}: sticky V3PhoneDock returned. SITE-134 replaces that bar.`)
     }
-  }
-
-  if (chrome == null || /<V3WorkWithUs/.test(chrome)) {
-    p.push(`${PATHS.chrome}: header Work with us is out (SITE-155). The dog is that door.`)
   }
 
   if (listingPage) {
@@ -287,12 +296,12 @@ function sealSourceProblems(builder, label = PATHS.builder) {
   return p
 }
 
-/** Matt lock: exact five door strings, in order. No shorten. No U+2014 in public copy. */
+/** Matt lock: exact six door strings, in order. No shorten. No U+2014 in public copy. */
 export function doorLabelProblems(floater, label = PATHS.floater) {
   const p = []
   const found = menuDoorLabels(floater)
   if (!found) {
-    p.push(`${label}: DOG_FLOATER_MENUS must list the five locked door labels.`)
+    p.push(`${label}: DOG_FLOATER_MENUS must list the six locked door labels.`)
     return p
   }
   if (found.length !== DOG_FLOATER_DOOR_LABELS.length || found.some((v, i) => v !== DOG_FLOATER_DOOR_LABELS[i])) {
@@ -308,48 +317,28 @@ export function doorLabelProblems(floater, label = PATHS.floater) {
 }
 
 /**
- * SITE-135: the 70% hold at rotate(0) read as no motion on Matt's phone.
- * The first 3–6° peak must land by 40%, and the cycle must stay ≤4s.
+ * SITE-153: brief flip/spin/invert. A loop (infinite) is refuse.
+ * One play, duration ≤2s. Continuous idle tilt is gone.
  */
-export function tiltVisibilityProblems(css, label = PATHS.css) {
+export function noticeMotionProblems(css, label = PATHS.css) {
   const p = []
-  const block = css.match(/@keyframes\s+v3-dog-tilt\s*\{([\s\S]*?)\n\}/)
-  if (!block) return p
-  const body = block[1]
-  if (/0%\s*,\s*70%\s*,\s*100%\s*\{[^}]*rotate\(\s*0deg/.test(body)) {
-    p.push(`${label}: idle keyframes must not hold rotate(0) through 70% — that reads as frozen on a phone.`)
+  const decls = css.match(/animation:\s*v3-dog-notice(?!-)[^;]*/g) ?? []
+  if (!decls.length) {
+    p.push(`${label}: v3-dog-notice animation must declare a brief duration.`)
+    return p
   }
-  const stops = []
-  const re = /((?:[\d.]+%|from|to)(?:\s*,\s*(?:[\d.]+%|from|to))*)\s*\{([^}]*)\}/g
-  let m
-  while ((m = re.exec(body))) {
-    const rot = m[2].match(/rotate\(\s*(-?[\d.]+)deg/)
-    const deg = rot ? Number(rot[1]) : 0
-    for (const part of m[1].split(',')) {
-      const raw = part.trim()
-      const pct = raw === 'from' ? 0 : raw === 'to' ? 100 : Number.parseFloat(raw)
-      if (Number.isFinite(pct)) stops.push({ pct, deg })
+  for (const decl of decls) {
+    if (/\binfinite\b/.test(decl)) {
+      p.push(`${label}: notice motion must be brief, not continuous (no infinite).`)
     }
-  }
-  const firstMove = stops
-    .slice()
-    .sort((a, b) => a.pct - b.pct)
-    .find((s) => Math.abs(s.deg) >= 3)
-  if (!firstMove) {
-    p.push(`${label}: idle tilt must reach 3–6° so the head is perceptibly moving.`)
-  } else if (firstMove.pct > 40) {
-    p.push(
-      `${label}: first 3–6° tilt is at ${firstMove.pct}% — must move by 40% so @375 / a phone sees it.`,
-    )
-  }
-  const dur = css.match(/animation:\s*v3-dog-tilt\s+([0-9.]+)s/)
-  if (dur) {
-    const sec = Number(dur[1])
-    if (!(sec > 0 && sec <= 4)) {
-      p.push(`${label}: idle cycle must be ≤4s (got ${dur[1]}s).`)
+    const sec = decl.match(/v3-dog-notice\s+([0-9.]+)s/)
+    const ms = decl.match(/v3-dog-notice\s+(\d{3,4})ms/)
+    const duration = sec ? Number(sec[1]) : ms ? Number(ms[1]) / 1000 : null
+    if (duration == null) {
+      p.push(`${label}: v3-dog-notice animation must declare a ≤2s duration.`)
+    } else if (!(duration > 0 && duration <= 2)) {
+      p.push(`${label}: notice play must be ≤2s (got ${duration}s).`)
     }
-  } else if (!/animation:\s*v3-dog-tilt\s+\d{3,4}ms/.test(css)) {
-    p.push(`${label}: v3-dog-tilt animation must declare a ≤4s duration.`)
   }
   return p
 }
