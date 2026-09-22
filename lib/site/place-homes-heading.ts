@@ -11,3 +11,11 @@ export function placeHomesForSaleHeading(placeName: string): string {
   if (/homes for sale$/i.test(place)) return place
   return `${place} homes for sale`
 }
+
+/** City grain only. Inventory query stays on /homes-for-sale/{city}. */
+export function placeCityRealEstateHeading(cityName: string): string {
+  const city = cityName.trim()
+  if (!city) return 'Real estate'
+  if (/real estate$/i.test(city)) return city
+  return `${city} real estate`
+}

@@ -93,18 +93,16 @@ const REQUIRED = [
     // a v3 page to satisfy a regex would be gate-gaming, so the check accepts
     // either register's spelling.
     //
-    // BOTH ARMS ARE EXACT LITERALS, DELIBERATELY. Matt 2026-09-17: place H1 is
-    // "{Place} homes for sale", never "Every home for sale in …" / inverted
-    // "Homes for Sale in …". The helper is the one spelling.
-    // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
+    // City grain bids "{city} real estate". Inventory "{city} homes for sale"
+    // stays on /homes-for-sale/{city}. Matt 2026-09-22: stop the twin.
     checks: [
       {
-        re: /titleBottom\s*=\s*["']Homes for Sale["']|placeHomesForSaleHeading\(\s*cityName\s*\)|[`'"]\$\{cityName\} homes for sale\b/,
-        msg: 'city H1 must be "{city} homes for sale" (placeHomesForSaleHeading(cityName) or `${cityName} homes for sale`)',
+        re: /placeCityRealEstateHeading\(\s*cityName\s*\)|[`'"]\$\{cityName\} real estate\b/,
+        msg: 'city H1 must be "{city} real estate" (placeCityRealEstateHeading(cityName))',
       },
       {
-        re: /publishPlaceHomesTitle\(\s*cityName|placeHomesForSaleHeading\(\s*cityName\s*\)|title:\s*[`'"]\$\{cityName\} homes for sale/i,
-        msg: 'city metadata title must be "{city} homes for sale" (publishPlaceHomesTitle / placeHomesForSaleHeading)',
+        re: /publishCityRealEstateTitle\(\s*cityName|placeCityRealEstateHeading\(\s*cityName\s*\)|title:\s*[`'"]\$\{cityName\} real estate/i,
+        msg: 'city metadata title must be "{city} real estate" (publishCityRealEstateTitle)',
       },
     ],
   },

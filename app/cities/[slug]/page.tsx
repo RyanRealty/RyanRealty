@@ -88,8 +88,8 @@ import { getPlaceLinks } from '@/lib/place-links'
 import { communityPublicPair, communityPublicPairForPlace } from '@/lib/communities/community-public-pair'
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
-import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { pageMetadata, publishCityRealEstateTitle } from '@/lib/site/page-metadata'
+import { placeCityRealEstateHeading, placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { appendPlaceFaqExtras, buildPlaceFaqExtras } from '@/lib/site/place-faq-extras'
@@ -242,7 +242,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!snapshot) notFound()
   const cityName = snapshot.geoLabel
   return pageMetadata({
-    title: publishPlaceHomesTitle(cityName, cityName),
+    title: publishCityRealEstateTitle(cityName),
     description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, subdivisions, open houses, and MLS market data from Oregon Data Share.`,
     path: `/cities/${slug}`,
   })
@@ -472,7 +472,7 @@ async function renderCityDetail({ params }: Props) {
     covers: { ...placeTypeCoverPhotos(tiles), ...typeCovers },
   })
   const trail = cityPageTrail(cityName)
-  const headline = placeHomesForSaleHeading(cityName)
+  const headline = placeCityRealEstateHeading(cityName)
 
   // §0 UNKNOWN IS NOT ZERO (D78): the hero count is leftover HUD - never tiles,
   // never a snapshot all-count, never a `?? 0`. displayedActiveCount: hud.active
