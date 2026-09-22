@@ -1,11 +1,12 @@
 /**
  * Overview map for /new-construction.
  *
- * Regions: recorded Bend plats that match a named NC community.
- * Dots: live Active Bend new-construction tiles with coordinates.
+ * Regions: recorded Bend plats that match a LIVE named NC community.
+ * Dots: live Active Bend-proper new-construction tiles with coordinates.
  * No invented centroids. A name without a recorded polygon is omitted.
+ * One V3Atlas. Do not edit V3Atlas.client.tsx (SITE-159).
  */
-import { getBoundaryGeoJSON, getCommunitySubdivisions, searchListingsAll } from '@/lib/data'
+import { getBoundaryGeoJSON, getCommunitySubdivisions } from '@/lib/data'
 import type { ListingTile } from '@/lib/data/types/listing'
 import type { AtlasDot, AtlasRegion, AtlasType } from '@/components/site/v3'
 import { atlasTypesPresent } from '@/lib/atlas/build-place-atlas'
@@ -17,10 +18,10 @@ import { basemapForRegions, type Basemap } from '@/lib/geo/basemap-source'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import {
   BEND_NEW_CON_MAP_SOURCE,
-  BEND_NEW_CON_NAMED,
   bendNewConPlatMatchesName,
   bendNewConSearchHref,
 } from '@/lib/site/bend-new-construction'
+import type { BendNewConLiveMarket } from './load-live-market'
 
 export type NewConOverviewMap = {
   regions: AtlasRegion[]
@@ -32,6 +33,8 @@ export type NewConOverviewMap = {
   outlinedNamed: number
   namedTotal: number
   basemap: Basemap | null
+  /** Bend-proper live Active count from the same pull that draws the dots. */
+  liveTotal: number | null
 }
 
 function dalReady(): boolean {
@@ -40,7 +43,7 @@ function dalReady(): boolean {
   return Boolean(url?.trim() && key?.trim())
 }
 
-function emptyMap(incomplete: boolean): NewConOverviewMap {
+function emptyMap(incomplete: boolean, namedTotal = 0): NewConOverviewMap {
   return {
     regions: [],
     dots: [],
@@ -49,8 +52,9 @@ function emptyMap(incomplete: boolean): NewConOverviewMap {
     stamp: formatDateTime(new Date()),
     incomplete,
     outlinedNamed: 0,
-    namedTotal: BEND_NEW_CON_NAMED.length,
+    namedTotal,
     basemap: null,
+    liveTotal: null,
   }
 }
 
@@ -94,11 +98,14 @@ function dotsFromTiles(tiles: readonly ListingTile[]): AtlasDot[] {
   })
 }
 
-export async function loadNewConOverviewMap(): Promise<NewConOverviewMap> {
-  if (!dalReady()) return emptyMap(true)
+export async function loadNewConOverviewMap(
+  market: BendNewConLiveMarket,
+): Promise<NewConOverviewMap> {
+  if (!dalReady()) return emptyMap(true, market.namedCount)
 
   try {
-    const [cityBound, plats, listings] = await Promise.all([
+    const namedNames = market.named.map((row) => row.name)
+    const [cityBound, plats] = await Promise.all([
       withTimeoutFallback(
         getBoundaryGeoJSON({ geoType: 'city', geoSlug: 'bend' }),
         null,
@@ -111,41 +118,30 @@ export async function loadNewConOverviewMap(): Promise<NewConOverviewMap> {
         8000,
         'newcon:plats',
       ),
-      withTimeoutFallback(
-        searchListingsAll({
-          city: 'Bend',
-          newConstruction: true,
-          status: 'active',
-          limit: 400,
-        }),
-        { rows: [], totalCount: 0, capped: false, countIsExact: true },
-        8000,
-        'newcon:listings',
-      ),
     ])
 
     const matchedBySlug = new Map<string, { name: string; region: AtlasRegion }>()
-    for (const row of BEND_NEW_CON_NAMED) {
-      const hit = plats.find((plat) => bendNewConPlatMatchesName(row.name, plat))
+    for (const name of namedNames) {
+      const hit = plats.find((plat) => bendNewConPlatMatchesName(name, plat))
       if (!hit || matchedBySlug.has(hit.slug)) continue
       matchedBySlug.set(hit.slug, {
-        name: row.name,
+        name,
         region: {
           id: `subdivision:${hit.slug}`,
           kind: 'subdivision',
-          name: row.name,
-          href: bendNewConSearchHref(row.name),
+          name,
+          href: bendNewConSearchHref(name),
           geometry: hit.geometry,
         },
       })
     }
 
-    const unmatched = BEND_NEW_CON_NAMED.filter(
-      (row) => !plats.some((plat) => bendNewConPlatMatchesName(row.name, plat)),
+    const unmatched = namedNames.filter(
+      (name) => !plats.some((plat) => bendNewConPlatMatchesName(name, plat)),
     )
     const extras = await Promise.all(
-      unmatched.map(async (row) => {
-        const slug = slugify(row.name)
+      unmatched.map(async (name) => {
+        const slug = slugify(name)
         const geometry = await withTimeoutFallback(
           getBoundaryGeoJSON({ geoType: 'subdivision', geoSlug: slug }),
           null,
@@ -158,8 +154,8 @@ export async function loadNewConOverviewMap(): Promise<NewConOverviewMap> {
           region: {
             id: `subdivision:${slug}`,
             kind: 'subdivision' as const,
-            name: row.name,
-            href: bendNewConSearchHref(row.name),
+            name,
+            href: bendNewConSearchHref(name),
             geometry,
           },
         }
@@ -183,10 +179,10 @@ export async function loadNewConOverviewMap(): Promise<NewConOverviewMap> {
     }
     regions.push(...[...matchedBySlug.values()].map((entry) => entry.region))
 
-    const dots = dotsFromTiles(listings.rows)
+    const dots = dotsFromTiles(market.bendTiles)
     const types = atlasTypesPresent(dots)
-    const listingsOk = listings.rows.length > 0 || listings.countIsExact
-    const incomplete = !cityBound && regions.length === 0 && dots.length === 0
+    const incomplete =
+      market.incomplete || (!cityBound && regions.length === 0 && dots.length === 0)
 
     return {
       regions,
@@ -194,13 +190,14 @@ export async function loadNewConOverviewMap(): Promise<NewConOverviewMap> {
       types,
       source: BEND_NEW_CON_MAP_SOURCE,
       stamp: formatDateTime(new Date()),
-      incomplete: incomplete || !listingsOk,
+      incomplete,
       outlinedNamed: matchedBySlug.size,
-      namedTotal: BEND_NEW_CON_NAMED.length,
+      namedTotal: namedNames.length,
       basemap: regions.length > 0 ? basemapForRegions(regions, { dots, fit: 'regions' }) : null,
+      liveTotal: market.listingsOk ? market.homeCount : null,
     }
   } catch (err) {
     console.error('[loadNewConOverviewMap]', err)
-    return emptyMap(true)
+    return emptyMap(true, market.namedCount)
   }
 }
