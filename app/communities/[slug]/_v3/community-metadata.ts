@@ -18,7 +18,12 @@
 import type { pageMetadata } from '@/lib/site/page-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { preferPlaceHero } from '@/lib/geo-images'
-import type { SchemaInput, StatValue } from '@/lib/site/json-ld'
+import {
+  listingItemListFromHomes,
+  type ListingItemListHome,
+  type SchemaInput,
+  type StatValue,
+} from '@/lib/site/json-ld'
 
 /**
  * How each variable buildMarketFaq can emit reads inside a sentence. The keys are
@@ -196,7 +201,7 @@ export function communityMetadataInput(input: {
 
 /**
  * The JSON-LD payloads, in the order the page emits them: BreadcrumbList, Place,
- * the market Dataset, and FAQPage.
+ * the market Dataset, FAQPage, live-home ItemList, and amenity ItemList.
  *
  * FAQPage MOVED HERE, and it moved because its old emitter left. The KB page
  * emitted it from inside FAQBlock, and the v3 Quiet block that renders the
@@ -231,6 +236,11 @@ export function buildCommunitySchemas(input: {
    * section anchor — never an invented place.
    */
   amenityItems?: ReadonlyArray<{ name: string; url: string }>
+  /**
+   * SITE-176. Photographed homes on #homes (price + street + canonical listing
+   * URL). Empty inventory withholds the ItemList.
+   */
+  homes?: ReadonlyArray<ListingItemListHome>
 }): SchemaInput[] {
   const { slug, name, cityName, citySlug } = input
 
@@ -278,6 +288,9 @@ export function buildCommunitySchemas(input: {
   }
 
   if (input.faqs.length > 0) schemas.push({ type: 'faqPage', items: input.faqs })
+
+  const homeList = listingItemListFromHomes(`Homes for sale in ${name}`, input.homes ?? [])
+  if (homeList) schemas.push(homeList)
 
   if (input.amenityItems && input.amenityItems.length > 0) {
     schemas.push({

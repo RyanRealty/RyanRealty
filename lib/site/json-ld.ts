@@ -1,7 +1,8 @@
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { isComingSoonStatus } from '@/lib/listing-status-public'
+import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishListingSchemaAvailability } from '@/lib/listing/publish-listing-published-price'
-import { mergePlaceSameAs } from '@/lib/site/place-entity-same-as'
 
 /**
  * Typed schema.org JSON-LD builders for the site v2 MetadataBlock.
@@ -151,12 +152,6 @@ export type PlaceInput = {
   hasMap?: string
   /** Verified live stats (active count, median list price, etc.) surfaced as PropertyValue. */
   additionalProperty?: ReadonlyArray<StatValue>
-  /**
-   * Wikipedia / Wikidata / official-site URLs. Merged with the verified map in
-   * place-entity-same-as.ts keyed by `url`, so city and community Place nodes
-   * cite the entity even when the route forgets to pass this field.
-   */
-  sameAs?: ReadonlyArray<string>
 }
 
 /**
@@ -234,7 +229,7 @@ export type EventInput = {
 /**
  * A ranked/ordered list — the "listicle" page type AI answer engines cite most.
  * Used by hub pages (e.g. the events index) to expose an ordered set of links.
- * Place pages that show live homes should pass those homes here (name +
+ * Place pages that show live homes pass those homes here (price + street +
  * canonical listing URL) so ChatGPT/Google can cite inventory, not only the Place.
  */
 export type ItemListInput = {
@@ -243,13 +238,106 @@ export type ItemListInput = {
   items: ReadonlyArray<{ name: string; url: string }>
 }
 
-/** ItemList of live homes. Null when the page has none to cite — never an empty list. */
+/** Cap matches the homepage photographed rail. */
+export const LISTING_ITEM_LIST_CAP = 8
+
+export type ListingItemListEntry = { name: string; url: string }
+
+export type ListingItemListPhotoCard = {
+  href: string
+  title: string
+  price: string | null
+}
+
+export type ListingItemListHome = {
+  href: string
+  addressLine: string
+  price: number | null
+  propertyType: string | null
+  propertySubType?: string | null
+  subdivisionName?: string | null
+  city?: string | null
+  listNumber?: string | null
+  photoUrl?: string | null
+}
+
+/** Canonical listing path: /homes-for-sale/... ending in an MLS or listing id. */
+export function isCanonicalListingHref(url: string): boolean {
+  const raw = url.trim()
+  if (!raw) return false
+  let path = raw
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    try {
+      path = new URL(raw).pathname
+    } catch {
+      return false
+    }
+  }
+  if (!path.startsWith('/homes-for-sale/')) return false
+  const last = path.split('/').filter(Boolean).pop() ?? ''
+  return /\d/.test(last)
+}
+
+/**
+ * ItemList of live homes. Null when the page has none to cite — never an empty list.
+ * Only canonical /homes-for-sale/... listing URLs; cap like the homepage rail.
+ */
 export function listingItemList(
   name: string,
-  items: ReadonlyArray<{ name: string; url: string }>,
+  items: ReadonlyArray<ListingItemListEntry>,
 ): ItemListInput | null {
-  if (items.length === 0) return null
-  return { type: 'itemList', name, items }
+  const kept: ListingItemListEntry[] = []
+  for (const item of items) {
+    const itemName = item.name.trim()
+    const url = item.url.trim()
+    if (!itemName || !isCanonicalListingHref(url)) continue
+    kept.push({ name: itemName, url })
+    if (kept.length >= LISTING_ITEM_LIST_CAP) break
+  }
+  if (kept.length === 0) return null
+  return { type: 'itemList', name, items: kept }
+}
+
+/** Photographed fold cards the visitor already sees (price + street). */
+export function listingItemListFromPhotoCards(
+  name: string,
+  cards: ReadonlyArray<ListingItemListPhotoCard>,
+): ItemListInput | null {
+  return listingItemList(
+    name,
+    cards.map((card) => ({
+      name: [card.price, card.title].filter(Boolean).join(' · '),
+      url: card.href,
+    })),
+  )
+}
+
+/**
+ * Place/market listing rows. Only photographed cards, same ask + street the
+ * visitor sees. A share ask never prints unlabeled.
+ */
+export function listingItemListFromHomes(
+  name: string,
+  homes: ReadonlyArray<ListingItemListHome>,
+): ItemListInput | null {
+  const items: ListingItemListEntry[] = []
+  for (const home of homes) {
+    if (!home.photoUrl?.trim()) continue
+    const ask = formatPublishedSaleAsk({
+      price: home.price,
+      propertyType: home.propertyType,
+    })
+    const shareKind = publishListingShareKind({
+      propertySubType: home.propertySubType,
+      subdivisionName: home.subdivisionName,
+      city: home.city,
+      listNumber: home.listNumber,
+    })
+    const itemName = [ask, shareKind, home.addressLine].filter(Boolean).join(' · ')
+    if (!itemName) continue
+    items.push({ name: itemName, url: home.href })
+  }
+  return listingItemList(name, items)
 }
 
 /** A service the brokerage offers (valuation CMA, not a SoftwareApplication tool). */
@@ -360,16 +448,13 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         })),
       }
 
-    case 'place': {
-      const url = absoluteUrl(input.url)
+    case 'place':
       return prune({
         '@context': 'https://schema.org',
         '@type': input.placeType ?? 'Place',
-        '@id': url ? `${url}#place` : undefined,
         name: input.name,
         description: input.description,
-        url,
-        sameAs: mergePlaceSameAs(input.url, input.sameAs),
+        url: absoluteUrl(input.url),
         hasMap: absoluteUrl(input.hasMap),
         geo: input.geo ? {
           '@type': 'GeoCoordinates',
@@ -397,7 +482,6 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
             }))
           : undefined,
       })
-    }
 
     case 'dataset':
       return prune({

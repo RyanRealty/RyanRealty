@@ -26,5 +26,6 @@ describe('SITE-128 neighborhood fold Atlas', () => {
     expect(FOLD_CSS).toMatch(/max-height:\s*min\(68vh,\s*40rem\)/)
     expect(FOLD_CSS).toMatch(/min-height:\s*min\(36vh,\s*16rem\)/)
     expect(FOLD_CSS).not.toMatch(/max-height:\s*min\(11vh,\s*4\.5rem\)/)
+    expect(PAGE).toMatch(/homes:\s*placeHomes/)
   })
 })

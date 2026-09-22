@@ -897,23 +897,39 @@ async function renderCityDetail({ params }: Props) {
     Boolean(quickFacts?.population),
   )
 
-  const citySchemas = buildCitySchemas({
-    cityName,
-    slug,
-    faq: marketFaq,
-    hasMap: true,
-  })
-  // The area guide as a VideoObject: the file is contentUrl, the channel upload
-  // is embedUrl, so the video indexes once and credits the channel.
-  const cityGuideSchema = areaGuideVideoSchema(cityName, `/cities/${slug}`, areaGuideVideo)
-  if (cityGuideSchema) citySchemas.push(cityGuideSchema)
-
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
   // SITE-82: fold Atlas defaults to Houses so the for-sale count agrees with
   // MOS / leftover HUD detached (same inventory question, one answer). Other
   // types stay available via the type toggles when their marks are present —
+
+  // we keep every house mark (active + pending + recent sold) and only the
+  // house type chip. SITE-128 hides the price scrubber on this grain.
+  const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
+  const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
+  const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
+  // SITE-128 #1 first-look: Google + ONE city ring + price pins + photo cards.
+  // Atlas stays later so amenity / cluster gates still see <V3Atlas id="atlas">.
+  const foldLookListings = capLookListings(
+    tiles.length > 0 ? listingsFromTiles(tiles) : listingsFromAtlasDots(foldAtlasDots),
+  )
+  const foldPhotoCards = placeLookPhotoCards({
+    buckets: openingListings,
+    listings: foldLookListings,
+  })
+  const citySchemas = buildCitySchemas({
+    cityName,
+    slug,
+    faq: marketFaq,
+    hasMap: true,
+    homes: foldPhotoCards,
+  })
+  // The area guide as a VideoObject: the file is contentUrl, the channel upload
+  // is embedUrl, so the video indexes once and credits the channel.
+  const cityGuideSchema = areaGuideVideoSchema(cityName, `/cities/${slug}`, areaGuideVideo)
+  if (cityGuideSchema) citySchemas.push(cityGuideSchema)
+
   return (
     <>
       <main className={`${V3_ROOT_CLASS} city-page`}>

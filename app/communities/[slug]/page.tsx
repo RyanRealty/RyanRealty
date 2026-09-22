@@ -848,6 +848,7 @@ async function renderCommunityDetail({ params }: Props) {
     // sentence the page does not print.
     faqs: answerFaqs,
     amenityItems: amenityBoard ? amenityItemListItems(amenityBoard, `/communities/${slug}`) : undefined,
+    homes: placeHomes,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
