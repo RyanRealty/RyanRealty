@@ -12,6 +12,9 @@
  * MLS PublicRemarks or the named builder page already in BEND_NEW_CON_FINANCING.
  * concessions_amount is unused (NULL on Active). Never listing_private.
  *
+ * SITE-175: JSON-LD ItemList of photographed homes (canonical /homes-for-sale
+ * listing URLs), not only community names. Reuses listingItemListFromHomes.
+ *
  * Rhythm: Breadcrumb-on-Stage -> Stage -> Atlas -> live community ledger ->
  * photographed homes with per-home concessions -> contact -> builders ->
  * savings -> financing -> places -> FAQ -> Footer outside main.
@@ -67,6 +70,7 @@ import {
 } from '@/components/site/v3'
 import { V3Stage } from '@/components/site/v3/V3Stage'
 import { buildNewConMarketShelf } from './_v3/load-lead-shelf'
+import { photographedNewConHomeJsonLd } from './_v3/photographed-home-item-list'
 import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 import { NewConLeadShelf } from './_v3/NewConLeadShelf.client'
 import { NewConSavingsChips } from './_v3/NewConSavingsChips'
@@ -184,6 +188,10 @@ export default async function NewConstructionPage() {
       : item,
   )
 
+  // SITE-175: ItemList of the photographed homes on this page (canonical
+  // /homes-for-sale listing URLs). The community name list stays beside it.
+  const photographedHomesLd = photographedNewConHomeJsonLd(lead.cards)
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -216,6 +224,7 @@ export default async function NewConstructionPage() {
           url: `${site}${row.href}`,
         })),
       },
+      ...(photographedHomesLd ? [photographedHomesLd] : []),
       {
         '@type': 'FAQPage',
         mainEntity: faq.map((item) => ({
