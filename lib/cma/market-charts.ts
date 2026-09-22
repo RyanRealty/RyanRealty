@@ -658,6 +658,28 @@ export function listingTimelinePhoneSvg(input: ListingTimelineInput): string {
   return timelineBody({ input, g, W, H, plotL, plotR, top, bottom, x, y, fs: 10.5, endFs: 11 })
 }
 
+/**
+ * Where the zone caption sits. Prefer the inner edge farthest from every
+ * asking-price label, so the sentence does not run through a dollar figure.
+ * A short zone has no room inside; the caption goes just above it.
+ */
+function zoneCaptionY(
+  zoneTop: number,
+  zoneBottom: number,
+  askLabelYs: number[],
+  fs: number,
+  frameTop: number,
+): number {
+  const gap = fs + 8
+  if (zoneBottom - zoneTop < gap) return Math.max(zoneTop - 6, frameTop - 12)
+  const innerTop = zoneTop + fs + 2
+  const innerBottom = zoneBottom - 4
+  const clear = (y: number) => askLabelYs.every((ay) => Math.abs(ay - y) >= gap)
+  if (clear(innerBottom)) return innerBottom
+  if (clear(innerTop)) return innerTop
+  return innerBottom
+}
+
 function timelineBody(o: {
   input: ListingTimelineInput
   g: TimelineGeometry
@@ -720,11 +742,12 @@ function timelineBody(o: {
   const endLabelY = endBelow ? endY + 20 : endY - 12
   const startDay = monthDay(input.listDate)
   const endDay = input.offMarketDate ? monthDay(input.offMarketDate) : ''
-  // INSIDE the shaded zone. Above it, the caption sat exactly where the ask
-  // line runs on a listing that asked near the top of the range, and the line
-  // struck through its x-height on all four documents.
-  const zoneTall = zoneBottom - zoneTop >= fs + 8
-  const zoneLabelY = zoneTall ? (zoneTop + zoneBottom) / 2 + fs * 0.36 : Math.max(zoneTop - 6, top - 12)
+  // Inside the shaded zone, on the edge farthest from the asking-price
+  // labels. Centering it put "where homes like yours sold" through $729K on
+  // 20506 Murphy. Above the zone, the same caption sat under an ask near the
+  // top and the line struck through it.
+  const askLabelYs = g.steps.map((s) => y(s.ask) - 9)
+  const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, fs, top)
   // The zone label NAMES which range this is — the adjusted one — and that is
   // a longer string than the plot is wide on a phone. It shrinks to fit rather
   // than running off the right edge; the look-pass measures every label's own

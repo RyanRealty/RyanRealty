@@ -594,7 +594,7 @@ export function mapPage(input: {
   }
 }
 
-export const MAP_HEADING = 'Where all of this is.'
+export const MAP_HEADING = 'The map.'
 
 /** Shared by the letter chapter and its immersive twin. */
 export function mapBodyHtml(input: {

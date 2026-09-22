@@ -142,6 +142,15 @@ export function roundPriceUp(n: number): number {
 export const RANGE_TRIM_MIN_N = 6
 
 /**
+ * An end sale lighter than half the median weight of the sales still in the
+ * range does not set that end. Equal weights sit on the median, so they stay.
+ */
+export const RANGE_END_LIGHT_MEDIAN_FRACTION = 0.5
+
+/** Never peel the range below the pricing floor of three sales. */
+export const RANGE_MIN_KEPT = 3
+
+/**
  * Redfin's ±50% exclusion, applied to every sale-to-ask ratio that reaches the
  * list-price step. Its definitions for share-sold-above-list and sale-to-list
  * both drop closes 50 percent above or below the ask (fetched 2026-09-07); ours
@@ -394,11 +403,17 @@ export interface PricingRangeRule {
  * sales those are, so the range, the weights, the sentence and the count a
  * reader can check cannot come apart.
  *
+ * Then the new ends. On 20506 Murphy the trim left a July 2025 sale at
+ * $800,000 carrying a small fraction of the median weight, and that sale
+ * drew the top of the shaded range. An end lighter than half the median
+ * weight of the sales still in does not set the range. Peel it, the lighter
+ * end first, and stop at three sales.
+ *
  * The kept and set-aside lists both keep the ORDER they were given: the grid
  * renders in that order and a weight numbered three must be the sale numbered
  * three.
  */
-export function partitionByRangeRule<T extends { adjustedPrice?: number | null }>(
+export function partitionByRangeRule<T extends { adjustedPrice?: number | null; weight?: number | null }>(
   sales: readonly T[],
 ): { priced: T[]; kept: T[]; setAside: T[]; rule: PricingRangeRuleName | null } {
   const priced = sales.filter(
@@ -415,12 +430,69 @@ export function partitionByRangeRule<T extends { adjustedPrice?: number | null }
   // order survives into both lists.
   const order = priced.map((_, i) => i).sort((a, b) => priced[a]!.adjustedPrice - priced[b]!.adjustedPrice)
   const aside = new Set([order[0]!, order[order.length - 1]!])
+  peelLightRangeEnds(priced, aside)
   return {
     priced,
     kept: priced.filter((_, i) => !aside.has(i)),
     setAside: priced.filter((_, i) => aside.has(i)),
     rule: 'trimmed-one-each-end',
   }
+}
+
+/**
+ * Drop an end that barely moves the price.
+ *
+ * Weights are the ones the sales already carry (recency and size). Missing
+ * weights leave the one-each-end trim alone. Equal weights sit on the
+ * median, so they are never the light end.
+ */
+function peelLightRangeEnds(
+  priced: ReadonlyArray<{ adjustedPrice: number; weight?: number | null }>,
+  aside: Set<number>,
+): void {
+  const weights = priced.map((s) =>
+    typeof s.weight === 'number' && Number.isFinite(s.weight) && s.weight >= 0 ? s.weight : null,
+  )
+  if (weights.some((w) => w == null)) return
+  for (;;) {
+    const kept: number[] = []
+    for (let i = 0; i < priced.length; i++) if (!aside.has(i)) kept.push(i)
+    if (kept.length <= RANGE_MIN_KEPT) return
+    const total = kept.reduce((sum, i) => sum + weights[i]!, 0)
+    if (total <= 0) return
+    const keptWeights = kept.map((i) => weights[i]!)
+    const light = medianWeight(keptWeights) * RANGE_END_LIGHT_MEDIAN_FRACTION
+    const ends = (['low', 'high'] as const)
+      .map((side) => lightestAtExtreme(priced, weights, kept, side))
+      .filter((i, idx, arr) => arr.indexOf(i) === idx)
+      .map((i) => ({ i, weight: weights[i]! }))
+      .filter((e) => e.weight < light)
+      .sort((a, b) => a.weight - b.weight)
+    if (ends.length === 0) return
+    aside.add(ends[0]!.i)
+  }
+}
+
+function medianWeight(weights: number[]): number {
+  const sorted = [...weights].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
+}
+
+/** The lightest sale sitting on the low or high price of the sales still in. */
+function lightestAtExtreme(
+  priced: ReadonlyArray<{ adjustedPrice: number }>,
+  weights: Array<number | null>,
+  kept: number[],
+  side: 'low' | 'high',
+): number {
+  const target =
+    side === 'low'
+      ? Math.min(...kept.map((i) => priced[i]!.adjustedPrice))
+      : Math.max(...kept.map((i) => priced[i]!.adjustedPrice))
+  return kept
+    .filter((i) => priced[i]!.adjustedPrice === target)
+    .sort((a, b) => weights[a]! - weights[b]!)[0]!
 }
 
 /**
@@ -1091,15 +1163,34 @@ export function priceCmaSet(args: {
     sales: part.kept as unknown as ReconcilableSale[],
     subjectSqft: args.subject.sqft ?? 0,
   })
+  const pricedValues = part.priced
+    .map((s) => s.adjustedPrice)
+    .filter((n): n is number => n != null && Number.isFinite(n))
+  const absoluteLow = pricedValues.length ? Math.min(...pricedValues) : null
+  const absoluteHigh = pricedValues.length ? Math.max(...pricedValues) : null
+  const keptValues = part.kept
+    .map((s) => s.adjustedPrice)
+    .filter((n): n is number => n != null && Number.isFinite(n))
+  const keptLow = keptValues.length ? Math.min(...keptValues) : null
+  const keptHigh = keptValues.length ? Math.max(...keptValues) : null
   pricing.setAside = part.setAside.map((sale) => {
     const s = sale as unknown as CmaAdjustedComp
-    const high = part.setAside.length > 1 && s.adjustedPrice === Math.max(...part.setAside.map((x) => (x as unknown as CmaAdjustedComp).adjustedPrice))
+    const price = s.adjustedPrice
+    const end: 'high' | 'low' = keptHigh != null && price >= keptHigh ? 'high' : 'low'
+    const reason =
+      absoluteHigh != null && price === absoluteHigh
+        ? 'highest of the adjusted sales, set aside so one sale cannot set the range'
+        : absoluteLow != null && price === absoluteLow
+          ? 'lowest of the adjusted sales, set aside so one sale cannot set the range'
+          : end === 'high'
+            ? 'above the sales that carry this price, and it barely moves the number, so it does not set the range'
+            : 'below the sales that carry this price, and it barely moves the number, so it does not set the range'
     return {
       listingKey: s.listingKey,
       address: s.address,
-      adjustedPrice: Math.round(s.adjustedPrice),
-      end: (high ? 'high' : 'low') as 'high' | 'low',
-      reason: `${high ? 'highest' : 'lowest'} of the adjusted sales, set aside so one sale cannot set the range`,
+      adjustedPrice: Math.round(price),
+      end,
+      reason,
     }
   })
   // What moved each sale for its date, stated where the document can print it.

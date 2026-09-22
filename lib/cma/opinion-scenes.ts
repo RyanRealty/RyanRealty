@@ -5,7 +5,6 @@
 
 import { competitionHeading } from '@/lib/cma/band-rivals'
 import {
-  MAP_HEADING,
   mapBodyHtml,
   pricingPage,
   salesThatSetItPage,
@@ -78,7 +77,6 @@ function mapScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream pack" id="the-map">
     <div class="in wide">
       <div class="kick r">The map</div>
-      <h2 class="h r">${esc(MAP_HEADING)}</h2>
       <div class="r">${body}</div>
     </div>
   </section>`

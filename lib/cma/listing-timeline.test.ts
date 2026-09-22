@@ -240,6 +240,28 @@ describe('the timeline drawing', () => {
     expect((visibleText(svg).match(/\$\d/g) ?? []).length).toBeLessThanOrEqual(4)
   })
 
+  it('does not draw the zone caption through an ask that sits inside the range', () => {
+    const svg = listingTimelineSvg({
+      ...t,
+      steps: [
+        { date: '2026-03-06', ask: 769000 },
+        { date: '2026-06-01', ask: 729000 },
+      ],
+      rangeLow: 689000,
+      rangeHigh: 800000,
+      rangeLabel: 'where homes like yours sold, adjusted for date and size',
+    })
+    const texts = [...svg.matchAll(/<text [^>]*y="([\d.]+)"[^>]*>([^<]*)<\/text>/g)].map((m) => ({
+      y: Number(m[1]),
+      text: m[2] ?? '',
+    }))
+    const caption = texts.find((x) => x.text.includes('where homes like yours sold'))
+    const ask = texts.find((x) => x.text === '$729K')
+    expect(caption).toBeTruthy()
+    expect(ask).toBeTruthy()
+    expect(Math.abs(caption!.y - ask!.y)).toBeGreaterThan(14)
+  })
+
   it('keeps the line clear of the zone when the ask sat above it', () => {
     const svg = listingTimelineSvg(t)
     const zoneTop = Number(/<rect[^>]*\by="([\d.]+)"/.exec(svg)![1])

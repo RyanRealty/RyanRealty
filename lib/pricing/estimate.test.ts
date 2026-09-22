@@ -730,6 +730,46 @@ describe('D10 — the range and the point come off the printed adjusted prices',
     })
   })
 
+  it('does not let a sale that barely moves the price set the end of the range', () => {
+    // 20506 Murphy, 21 Sep 2026. One-each-end dropped $669k and $875k, then
+    // the next two — about 1% and 2% of the price — still drew $689k–$800k.
+    const part = partitionByRangeRule([
+      sale(668_733, 0.3479),
+      sale(689_594, 0.0158),
+      sale(693_608, 0.3673),
+      sale(696_334, 0.4365),
+      sale(735_000, 0.1325),
+      sale(735_000, 0.1165),
+      sale(746_130, 0.3302),
+      sale(749_900, 0.141),
+      sale(800_000, 0.0375),
+      sale(875_000, 0.146),
+    ])
+    const spread = rangeFromPartition(part)
+    expect(part.kept).toHaveLength(6)
+    expect(spread).toMatchObject({ low: 693_608, high: 749_900, kept: 6, n: 10 })
+    expect(part.setAside.map((s) => s.adjustedPrice).sort((a, b) => a - b)).toEqual([
+      668_733, 689_594, 800_000, 875_000,
+    ])
+  })
+
+  it('drops the light $800k end on the six-sale Murphy set', () => {
+    // The 22 Sep rebuild kept six. One-each-end removed $690k and $875k and
+    // left 20542 Aberdeen at $800k, a fraction of the median weight, as the top.
+    const part = partitionByRangeRule([
+      sale(689_594, 0.0157),
+      sale(696_334, 0.4332),
+      sale(735_000, 0.1315),
+      sale(749_900, 0.14),
+      sale(800_000, 0.0372),
+      sale(875_000, 0.0724),
+    ])
+    expect(rangeFromPartition(part)).toMatchObject({ low: 696_334, high: 749_900, kept: 3, n: 6 })
+    expect(part.setAside.map((s) => s.adjustedPrice).sort((a, b) => a - b)).toEqual([
+      689_594, 800_000, 875_000,
+    ])
+  })
+
   it('keeps every sale under six', () => {
     expect(range([100, 300, 200, 500, 400])).toEqual({
       low: 100,

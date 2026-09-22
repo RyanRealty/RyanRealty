@@ -167,14 +167,14 @@ describe('assembleOpinionPages format', () => {
     })
     // Delta 3: the map is its own chapter, under the number, and there is
     // still exactly one of it in the whole document.
-    const map = pages.find((p) => p.toc === 'Where all of this is.')
+    const map = pages.find((p) => p.toc === 'The map.')
     expect(map?.body).toContain('data:image/png;base64,compsmap')
     expect(map?.body).toContain('pin-map')
     const all = pages.map((p) => p.body).join('')
     expect(all).not.toContain('data:image/png;base64,subjmap')
     expect((all.match(/data:image\/png;base64,compsmap/g) ?? []).length).toBe(1)
     const price = pages.findIndex((p) => p.toc === 'What the sales say')
-    expect(pages.findIndex((p) => p.toc === 'Where all of this is.')).toBe(price + 1)
+    expect(pages.findIndex((p) => p.toc === 'The map.')).toBe(price + 1)
   })
 
   it('runs the number, the map, then the three matrices in Delta 3 order', () => {
@@ -187,7 +187,7 @@ describe('assembleOpinionPages format', () => {
       mapDataUri: 'data:image/png;base64,compsmap',
     }).map((p) => p.toc)
     const price = tocs.indexOf('What the sales say')
-    const map = tocs.indexOf('Where all of this is.')
+    const map = tocs.indexOf('The map.')
     const closed = tocs.indexOf('The sales that set this price')
     const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
     const market = tocs.findIndex((t) => t?.endsWith('right now'))
