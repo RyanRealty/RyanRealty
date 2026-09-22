@@ -1,3 +1,11 @@
+# Current — 2026-09-21 (Matt: every available home stays on the place page)
+
+Surface: Grok Build, primary checkout, `main` `9a325c485`. Production READY `dpl_8FpNMGkD6rUxhtFoHJh6mSjo4ndE`. `deploy:verify` printed READY; `ryan-realty.com` GET 200. Node: none.
+
+- Subdivision pages: `V3PlaceInventory` lists every publicly active listing inside the boundary (Active + Active Under Contract, every property type, unpriced kept). Live: Deschutes River Woods 15 + 3 = 18 addresses.
+- Community + neighborhood: every child subdivision, name-only, full list (`foldAfter` = length). Type line only when that child boundary has stock. All homes stay on the page (`#homes` on community, `#all-homes` on neighborhood). Live: Tetherow 8 children, 6 type lines, 24 homes (15 / 8 / 1). Awbrey Butte 125 children, 55 type lines, 70 homes (55 / 1 / 14). Two Awbrey rows share 3341 Panorama Drive and are two MLS numbers.
+- Type lines are not a partition of the place total. Map pins remain the smaller boundary RPC. Coming Soon stays out. Do not reopen SITE-151/152.
+
 # Current — 2026-09-21 (Matt: merge the land queue + SITE-151/152 on the Mini)
 
 Surface: Grok Build `grok-build-01a0c44c-20260921` on the Mini. Merged SITE 139,141,144,148–151,152,157,159–170 onto local main. Pushing origin/main. HOLD owner email.
