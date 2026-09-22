@@ -102,4 +102,13 @@ describe('market instruments open on a claim and a drawing', () => {
     expect(block).not.toMatch(/homes for sale/)
     expect(geoMeta).not.toMatch(/\$\{geoName\} homes for sale/)
   })
+
+  it('SITE-171: geo document title does not bid the inventory phrase homes for sale', () => {
+    const start = geoMeta.indexOf('function geoTitle')
+    expect(start).toBeGreaterThan(-1)
+    const fn = geoMeta.slice(start, start + 900)
+    expect(fn).not.toMatch(/homes for sale/)
+    expect(fn).toMatch(/housing market 2026/)
+    expect(fn).toMatch(/active listings/)
+  })
 })

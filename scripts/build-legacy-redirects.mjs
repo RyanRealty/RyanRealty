@@ -343,6 +343,12 @@ async function main() {
     '/lp/tetherow/heath': '/communities/tetherow',
     '/homes-for-sale/bend/tetherow': '/communities/tetherow',
     '/tetherow-resort-living-real-estate': '/communities/tetherow',
+    '/housing-market/bend/tetherow': '/communities/tetherow',
+    // SITE-171: leftover area-search URLs 301 onto the place page that owns
+    // the query. Place page is the Field (PAGE_OUTLINE). Keep Tetherow above.
+    '/homes-for-sale/bend/awbrey-butte': '/cities/bend/awbrey-butte',
+    '/homes-for-sale/bend/northwest-crossing': '/communities/northwest-crossing',
+    '/homes-for-sale/bend/stevens-ranch': '/subdivisions/stevens-ranch',
   }
   Object.assign(map, OVERRIDES)
 

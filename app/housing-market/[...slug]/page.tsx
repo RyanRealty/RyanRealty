@@ -296,7 +296,9 @@ function geoTitle(input: {
 }): string {
   const active = input.datasetVariables.find((v) => v.name === 'Active Listings')?.value ?? null
   if (active == null) return `${input.geoName} housing market 2026`
-  return `${input.geoName} housing market 2026: ${Number(active).toLocaleString('en-US')} homes for sale`
+  // Inventory query ("homes for sale") belongs to the place / search URL.
+  // Market pages keep the live count without bidding that phrase (SITE-171).
+  return `${input.geoName} housing market 2026: ${Number(active).toLocaleString('en-US')} active listings`
 }
 
 function geoDescription(input: {

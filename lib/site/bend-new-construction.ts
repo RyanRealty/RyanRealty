@@ -46,10 +46,11 @@ function searchQuery(extra?: BendNewConSearchExtra): string {
  * Exclusive live-inventory door for a Bend community.
  *
  * Path form: `/homes-for-sale/bend/{slug}?newConstruction=1` — city AND
- * subdivision, never Bend OR the plat. Tetherow's path 301s to the community
- * page (`data/legacy-redirects.json`), so that one name uses the query-param
- * search (`/homes-for-sale?city=Bend&subdivision=Tetherow&newConstruction=1`)
- * which the root search page reads as the same exclusive filter.
+ * subdivision, never Bend OR the plat. Names whose path 301s onto a place
+ * page (`data/legacy-redirects.json`: Tetherow, NorthWest Crossing, Stevens
+ * Ranch, Awbrey Butte) use the query-param search
+ * (`/homes-for-sale?city=Bend&subdivision=…&newConstruction=1`) which the root
+ * search page reads as the same exclusive filter.
  */
 export function bendNewConSearchHref(
   subdivision?: string | null,
@@ -91,14 +92,31 @@ export function bendNewConSeeHomesLabel(count: number | null | undefined): strin
   return count === 1 ? 'See 1 home' : `See ${count} homes`
 }
 
-/** Known community pages for Bend-proper names that appear in the snapshot. */
-const COMMUNITY_PAGE_BY_SLUG: Record<string, string> = {
+/**
+ * Place pages for Bend-proper names in the snapshot.
+ * Community grain stays on /communities. Named plats that have a subdivision
+ * page (verified 200 with an H1) sit on /subdivisions — SITE-171 crawlable doors.
+ */
+const PLACE_PAGE_BY_SLUG: Record<string, string> = {
   'northwest-crossing': '/communities/northwest-crossing',
   tetherow: '/communities/tetherow',
+  easton: '/subdivisions/easton',
+  'stevens-ranch': '/subdivisions/stevens-ranch',
+  petrosa: '/subdivisions/petrosa',
 }
 
 export function bendNewConCommunityHref(subdivision: string): string | null {
-  return COMMUNITY_PAGE_BY_SLUG[slugify(subdivision)] ?? null
+  return PLACE_PAGE_BY_SLUG[slugify(subdivision)] ?? null
+}
+
+/** Named plats whose place page is `/subdivisions/{slug}` — crawlable NC doors. */
+const BEND_NEW_CON_SUBDIVISION_PAGE_NAMES = ['Easton', 'Stevens Ranch', 'Petrosa'] as const
+
+export function bendNewConSubdivisionHrefs(): { name: string; href: string }[] {
+  return BEND_NEW_CON_SUBDIVISION_PAGE_NAMES.flatMap((name) => {
+    const href = bendNewConCommunityHref(name)
+    return href?.startsWith('/subdivisions/') ? [{ name, href }] : []
+  })
 }
 
 /** Document title — one of the SITE-132 SEO brief options. Layout adds the brand suffix. */
