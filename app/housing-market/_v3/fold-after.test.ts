@@ -24,6 +24,7 @@ const community = code('app/housing-market/[...slug]/_v3/community-view.tsx')
 const region = code('app/housing-market/central-oregon/page.tsx')
 const annual = code('app/housing-market/annual-review/page.tsx')
 const geoMeta = code('app/housing-market/[...slug]/page.tsx')
+const geoTitleSrc = code('app/housing-market/[...slug]/_v3/geo-title.ts')
 
 describe('market instruments open on a claim and a drawing', () => {
   it('leads with the capped figure row and folds the long tail, on city community region and the annual review', () => {
@@ -101,5 +102,17 @@ describe('market instruments open on a claim and a drawing', () => {
     const block = geoMeta.slice(start, start + 500)
     expect(block).not.toMatch(/homes for sale/)
     expect(geoMeta).not.toMatch(/\$\{geoName\} homes for sale/)
+  })
+
+  it('SITE-173: geo document title is the helper, not an inventory phrase', () => {
+    expect(geoMeta).toMatch(/from '\.\/_v3\/geo-title'/)
+    expect(geoMeta).not.toMatch(/function geoTitle/)
+    const titleCall = geoMeta.slice(geoMeta.indexOf('title: geoTitle'), geoMeta.indexOf('title: geoTitle') + 220)
+    expect(titleCall).toMatch(/title: geoTitle\(\{ geoName, datasetVariables: data\.datasetVariables \}\)/)
+    expect(titleCall).not.toMatch(/homes for sale/)
+    expect(geoTitleSrc).toMatch(/housing market/)
+    expect(geoTitleSrc).toMatch(/months of supply/)
+    expect(geoTitleSrc).not.toMatch(/homes for sale/)
+    expect(geoTitleSrc).not.toMatch(/active listings/)
   })
 })
