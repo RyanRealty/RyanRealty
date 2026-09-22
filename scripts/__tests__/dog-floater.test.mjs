@@ -14,7 +14,6 @@ const live = {
   css: readFileSync(join(REPO, 'components/site/v3/V3DogFloater.css'), 'utf8'),
   barrel: readFileSync(join(REPO, 'components/site/v3/index.ts'), 'utf8'),
   layout: readFileSync(join(REPO, 'app/layout.tsx'), 'utf8'),
-  chrome: readFileSync(join(REPO, 'components/site/v3/V3Chrome.tsx'), 'utf8'),
   dock: readFileSync(join(REPO, 'components/site/v3/V3PhoneDock.client.tsx'), 'utf8'),
   stickyCss: readFileSync(join(REPO, 'components/site/v3/V3StickyAsk.css'), 'utf8'),
   listingPage: readFileSync(join(REPO, 'app/listing/[listingKey]/page.tsx'), 'utf8'),
@@ -56,33 +55,31 @@ describe('ci:dog-floater lock', () => {
   })
 
   it('refuses shortened door labels or an em dash in public copy', () => {
-    const shortened = live.floater.replace("label: 'Sell your home'", "label: 'Sell'")
-    const dashed = live.floater.replace(
-      'Sell your home, buy your home, text us, get your home&apos;s value, or learn about us.',
-      'Sell your home — or buy.',
-    )
+    const shortened = live.floater.replace("label: 'List your home'", "label: 'List'")
+    const dashed = live.floater.replace('Learn more about us', 'Learn more\u2014about us')
     const shortP = dogFloaterProblems({ root: REPO, files: { ...live, floater: shortened } })
     const dashP = dogFloaterProblems({ root: REPO, files: { ...live, floater: dashed } })
     expect(DOG_FLOATER_DOOR_LABELS).toEqual([
-      'Sell your home',
-      'Buy your home',
-      'Text us',
+      'List your home',
+      'Read our reviews',
+      'Give us a call',
+      'Send us a message',
       "Get your home's value",
-      'Learn about us',
+      'Learn more about us',
     ])
     expect(shortP.join('\n')).toMatch(/Do not shorten|EXACTLY/)
     expect(dashP.join('\n')).toMatch(/em dash|U\+2014/)
   })
 
-  it('refuses a menu that drops Text us or invents a number', () => {
+  it('refuses a menu that drops Give us a call or invents a number', () => {
     const floater = live.floater
-      .replace('Text us', 'Call now')
-      .replace('sms:${CONTACT.phoneDirectTel}', 'sms:+15555550100')
+      .replace('Give us a call', 'Call now')
+      .replace('tel:${CONTACT.phoneDirectTel}', 'tel:+15555550100')
     const p = dogFloaterProblems({
       root: REPO,
       files: { ...live, floater },
     })
-    expect(p.join('\n')).toMatch(/Text us|CONTACT/)
+    expect(p.join('\n')).toMatch(/Give us a call|CONTACT/)
   })
 
   it('refuses an elevation shadow on the FAB', () => {
@@ -94,41 +91,37 @@ describe('ci:dog-floater lock', () => {
     expect(p.join('\n')).toMatch(/elevation|one-design-system|focus ring/i)
   })
 
-  it('refuses a FAB that cannot second-tap close or that fights Tour', () => {
+  it('refuses a FAB that cannot second-tap close or that ships a Close link', () => {
     const floater = live.floater
       .replaceAll('DialogTrigger', 'DialogRoot')
-      .replaceAll('v3-dog-floater--listing', 'v3-dog-floater--wide')
-    const css = live.css
-      .replaceAll('ease-in-out', 'ease-out')
-      .replaceAll('listing-ask-row', 'listing-cta-row')
+      .replace('data-v3-dog-place="mid-end"', 'data-v3-dog-place="bottom-end"')
+    const css = live.css.replaceAll('ease-in-out', 'ease-out')
+    const withClose = `${live.floater}\n<button type="button" className="v3-dog-floater-menu__close">Close</button>`
     const p = dogFloaterProblems({
       root: REPO,
       files: { ...live, floater, css },
     })
-    expect(p.join('\n')).toMatch(/DialogTrigger|listing|Tour|ease-in-out/)
+    const closeP = dogFloaterProblems({
+      root: REPO,
+      files: { ...live, floater: withClose },
+    })
+    expect(p.join('\n')).toMatch(/DialogTrigger|mid-end|ease-in-out/)
+    expect(closeP.join('\n')).toMatch(/Close/)
   })
 
-  it('refuses object-fit:cover and a 70% static idle', () => {
+  it('refuses object-fit:cover, a bottom cookie rest, and a continuous loop', () => {
     const css = live.css
       .replace('object-fit: contain', 'object-fit: cover')
+      .replace('top: 50%;', 'bottom: calc(var(--v3-space-md) + env(safe-area-inset-bottom, 0px));')
       .replace(
-        /@keyframes v3-dog-tilt \{[\s\S]*?\n\}/,
-        `@keyframes v3-dog-tilt {
-  0%,
-  70%,
-  100% {
-    transform: rotate(0deg);
-  }
-  80% {
-    transform: rotate(-5deg);
-  }
-}`,
+        'animation: v3-dog-notice 1.35s ease-in-out 1;',
+        'animation: v3-dog-notice 1.35s ease-in-out infinite;',
       )
     const p = dogFloaterProblems({
       root: REPO,
       files: { ...live, css },
     })
-    expect(p.join('\n')).toMatch(/object-fit:cover|contain|70%|frozen/i)
+    expect(p.join('\n')).toMatch(/object-fit:cover|contain|mid-end|cookie|infinite|continuous|bottom/i)
   })
 
   it('keeps jax-head silhouettes inset so the circle cannot crop the muzzle', async () => {
