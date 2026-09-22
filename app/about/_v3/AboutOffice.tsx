@@ -35,12 +35,12 @@ export function AboutOffice({ id = 'office' }: { id?: string } = {}) {
         </CardHeader>
         <CardContent>
           <p>
-            {street}, {cityLine}. Firm OREA {FIRM_LICENSE}.
+            {street}, {cityLine}. Firm OREA {FIRM_LICENSE.replace(/^OREA\s+/, '')}.
           </p>
         </CardContent>
         <CardFooter>
           <Button asChild>
-            <Link href={teamPath()}>The brokers are on /team</Link>
+            <Link href={teamPath()}>The brokers</Link>
           </Button>
         </CardFooter>
       </Card>

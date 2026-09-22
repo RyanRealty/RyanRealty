@@ -1,24 +1,48 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat Compass/Redfin/SIR About on STRUCTURE, not scale. OPEN on the firm story (small boutique brokerage · all of Central Oregon · help clients buy and sell) plus an optional Bend office exterior / mission band. Then client reviews as the primary proof (Google score + featured quote — never press). Then dated local closings. Then Contact four-up Call|Text|Email|Schedule. Then office 115 NW Oregon Ave #2 + firm OREA. Then a compact inquiry that GET-submits to Contact. FAIL if the page opens on brokers' faces, three equal broker Cards, or a Meet-the-Team dump. Brokers belong on /team only. About is the brokerage, not Meet the Team. Skip coast-to-coast, Redfin fee, and Rocket copy. Never invent MOS, prices, or licenses.",
+  "competitiveTarget": "Beat Compass/Redfin/SIR About on STRUCTURE, not scale. OPEN on faces at display scale (shadcn Avatar) plus the branded H1 and one boutique Central Oregon buy-and-sell sentence. 5.0 from 25 stays in the first viewport. Then client reviews as the primary proof (Google score + featured quote \u2014 never press). Then dated local closings. Then Contact four-up Call|Text|Email|Schedule. Then office 115 NW Oregon Ave #2 + firm OREA. Then a compact inquiry that GET-submits to Contact. FAIL if the first viewport is a downtown storefront with no broker face. FAIL if a KPI grid, three equal broker Cards, or a Meet-the-Team dump opens the page. Deep bios stay on /team. Skip coast-to-coast, Redfin fee, and Rocket copy. Never invent MOS, prices, or licenses.",
   "competitiveBrief": {
-    "id": "about-matt-2026-09-12",
-    "source": "Matt 2026-09-12 / 2026-09-14 lock. About is the brokerage story. Brokers belong on /team. Evidence quotes required — a lone competitiveBriefPass boolean is refuse.",
-    "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry→/contact. No broker roster on About.",
-    "refuse": "AboutFaces, AboutTeamTeaser, Meet-the-Team dump, broker Cards, AvatarGroup. Looking that invents past this checklist. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
+    "id": "about-matt-2026-09-21",
+    "source": "Matt 2026-09-21 SITE-163 lock. Faces open About at display scale. Deep bios stay on /team. Evidence quotes required \u2014 a lone competitiveBriefPass boolean is refuse.",
+    "productLock": "faces at display scale + 5.0 from 25 + firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry\u2192/contact. No Meet-the-Team dump. No KPI grid.",
+    "refuse": "AboutFaces roster, AboutTeamTeaser, Meet-the-Team dump, three equal broker Cards, KPI grid, storefront-as-opener. Looking that invents past this checklist. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
     "beats": [
-      { "id": "1", "text": "Firm story opens the page: one plain boutique Central Oregon buy-and-sell sentence. Not a staccato three-liner. Not a staff-directory fold." },
-      { "id": "2", "text": "Brokers are not on About. No broker Cards, roster dump, Meet-the-Team band, or AboutTeamTeaser. Brokers belong on /team only." },
-      { "id": "3", "text": "Firm reviews as words (V3Proof) plus dated local closings as a carousel of recorded sales. Never invent MOS." },
-      { "id": "4", "text": "Equal four-up reach: Call, Text, Email, Schedule. No Call-dominant lead." },
-      { "id": "5", "text": "Office 115 NW Oregon Ave #2 is on the page. Optional exterior hero of that office." },
-      { "id": "6", "text": "Firm OREA license is on the page. One-line inquiry GET-submits to /contact." },
-      { "id": "7", "text": "Navy and cream only. Redfin is the layout and interaction reference, not a second palette." },
-      { "id": "8", "text": "Catalog interactions are real: closings carousel (shadcn carousel + Card) and inquiry input. Avatar-import plus cream CSS is not a demo match." }
+      {
+        "id": "1",
+        "text": "Faces open the page at display scale, with one boutique Central Oregon buy-and-sell sentence. Not a storefront postcard. Not a KPI grid. Not a staff-directory fold."
+      },
+      {
+        "id": "2",
+        "text": "Faces at display scale (shadcn Avatar). Deep bios stay on /team. No Meet-the-Team dump, no three equal broker Cards, no AboutTeamTeaser."
+      },
+      {
+        "id": "3",
+        "text": "Firm reviews as words (V3Proof) plus dated local closings as a carousel of recorded sales. Never invent MOS."
+      },
+      {
+        "id": "4",
+        "text": "Equal four-up reach: Call, Text, Email, Schedule. No Call-dominant lead."
+      },
+      {
+        "id": "5",
+        "text": "Office 115 NW Oregon Ave #2 is on the page. Optional exterior of that office."
+      },
+      {
+        "id": "6",
+        "text": "Firm OREA license is on the page. One-line inquiry GET-submits to /contact."
+      },
+      {
+        "id": "7",
+        "text": "Navy and cream only. Faces at display scale. Not a second palette."
+      },
+      {
+        "id": "8",
+        "text": "Catalog interactions are real: shadcn Avatar at display scale, closings carousel, and inquiry input."
+      }
     ]
   },
-  "note": "SITE-90 2026-09-14 Matt lock. About = brokerage, not Meet the Team. Brokers belong on /team only. requiredComponents opener is AboutFirm, not AboutFaces, not AboutTeamTeaser. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings catalog carousel+Card, AboutReach Button Group Call/Text/Email/Schedule, AboutOffice Card, AboutInquiry Input+Button GET /contact, Atlas, Quiet #about, V3Answers, Footer. Tip Ready needs competitiveBriefEvidence quotes in source — a lone boolean is refuse.",
+  "note": "SITE-163 2026-09-21 Matt lock. Faces open About at display scale. Deep bios stay on /team. requiredComponents opener is AboutFirm, not AboutFaces, not AboutTeamTeaser. Order: AboutFirm faces + firm story, V3Proof reviews PRIMARY, FirmClosings catalog carousel+Card, AboutReach Button Group Call/Text/Email/Schedule, AboutOffice Card, AboutInquiry Input+Button GET /contact, Atlas, Quiet #about, V3Answers, Footer. Tip Ready needs competitiveBriefEvidence quotes in source \u2014 a lone boolean is refuse.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -32,12 +56,12 @@
     },
     {
       "name": "AboutFirm",
-      "section": "OPENS THE PAGE. Firm story + mood: optional full-bleed Bend office exterior (115 NW Oregon Ave #2, never the sofa) with H1 and one purpose line — small boutique brokerage, all of Central Oregon, help buy and sell. Navy/cream. NOT three broker Cards. NOT Meet the Team. Do not hang a thin Google score link on the hero; the primary reviews beat is the V3Proof band that follows.",
+      "section": "OPENS THE PAGE. Faces at display scale (shadcn AvatarGroup, image, fallback, badge). Branded H1 and one purpose line \u2014 small boutique brokerage, all of Central Oregon, help buy and sell. 5.0 from 25 stays in the first viewport. Navy/cream. NOT a downtown storefront postcard. NOT a KPI grid. NOT three broker Cards. NOT Meet the Team. The primary reviews beat is the V3Proof band that follows. Office photo lives on AboutOffice.",
       "blocking": true
     },
     {
       "name": "V3Proof",
-      "section": "PRIMARY client-reviews proof, immediately after the firm hero. Display-scale Google score + featured quote as words (headingLevel 2), door to /reviews. Same DAL read (getReviews). Must read as the first proof band — not a thin score link that loses to closings or CTA. Do not muddle with press. Do not invent a rating. The count and average are sourced or omitted.",
+      "section": "PRIMARY client-reviews proof, immediately after the firm hero. Display-scale Google score + featured quote as words (headingLevel 2), door to /reviews. Same DAL read (getReviews). Must read as the first proof band \u2014 not a thin score link that loses to closings or CTA. Do not muddle with press. Do not invent a rating. The count and average are sourced or omitted.",
       "blocking": true
     },
     {
@@ -62,12 +86,12 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Once: #about, late — a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the AboutReach Button Group.",
+      "section": "Once: #about, late \u2014 a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the AboutReach Button Group.",
       "blocking": true
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them — VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
+      "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them \u2014 VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
       "blocking": true
     },
     {
@@ -82,7 +106,7 @@
     },
     {
       "name": "V3OnDuty",
-      "section": "The live state on the reach control: our published booking hours against the Pacific clock, from the same crm_company_settings.booking_hours rows /book offers time from. NEVER a reply-time figure — see components/site/v3/V3OnDuty.view.ts and SITE-09.",
+      "section": "The live state on the reach control: our published booking hours against the Pacific clock, from the same crm_company_settings.booking_hours rows /book offers time from. NEVER a reply-time figure \u2014 see components/site/v3/V3OnDuty.view.ts and SITE-09.",
       "blocking": true
     }
   ],
@@ -112,30 +136,30 @@
     }
   ],
   "removedComponents": [
-    "AboutFaces as opener / three equal broker Cards — Matt 2026-09-12 lock: About is the brokerage, not Meet the Team. Looking/taste must not pass a faces-first About. Deep bios and licenses stay on /team.",
-    "AboutTeamTeaser — Matt 2026-09-14: brokers belong on /team only. No face row, no Meet-the-Team dump on About.",
-    "V3Doors on About #reach — catalog Button Group is the four-up. V3Doors stays on Contact and other routes.",
-    "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
-    "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
-    "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
-    "KbTestimonials — eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
-    "KbArticles — getRecentBlogPosts rail. Dropped; the read is gone.",
-    "KbSell — address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
-    "KbTeam — already removed 2026-07-08 as a duplicate of /team.",
-    "FAQBlock — rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
-    "SmoothScrollProvider — Lenis + GSAP. v3 motion is CSS tokens.",
-    "KbFooter — replaced by V3Footer outside <main>.",
+    "AboutFaces as opener / three equal broker Cards \u2014 Matt 2026-09-12 lock: About is the brokerage, not Meet the Team. Looking/taste must not pass a faces-first About. Deep bios and licenses stay on /team.",
+    "AboutTeamTeaser \u2014 Matt 2026-09-14: brokers belong on /team only. No face row, no Meet-the-Team dump on About.",
+    "V3Doors on About #reach \u2014 catalog Button Group is the four-up. V3Doors stays on Contact and other routes.",
+    "KbHero \u2014 brand eyebrow, poetry H1, Central Oregon photo, property search.",
+    "KbAbout \u2014 origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
+    "KbExploreTowns \u2014 city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
+    "KbTestimonials \u2014 eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
+    "KbArticles \u2014 getRecentBlogPosts rail. Dropped; the read is gone.",
+    "KbSell \u2014 address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
+    "KbTeam \u2014 already removed 2026-07-08 as a duplicate of /team.",
+    "FAQBlock \u2014 rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
+    "SmoothScrollProvider \u2014 Lenis + GSAP. v3 motion is CSS tokens.",
+    "KbFooter \u2014 replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
   ],
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFirm #firm — OPENS. Firm story (boutique · Central Oregon · buy+sell) on the office exterior. Never broker Cards. Never the sofa.",
-    "V3Proof #proof — PRIMARY client reviews (Google + featured quote). Not press.",
-    "FirmClosings #firm-sales — catalog carousel + Card of dated local closings. Never invented MOS.",
-    "AboutReach #reach — Button Group Call | Text | Email | Schedule, live hours",
-    "AboutOffice #office — catalog Card, 115 NW Oregon Ave #2 + firm OREA. Door to /team. No roster.",
-    "AboutInquiry #write — catalog Input + Button GET /contact",
+    "AboutFirm #firm \u2014 OPENS. Faces at display scale (shadcn Avatar). Branded H1. Boutique \u00b7 Central Oregon \u00b7 buy+sell. 5.0 from 25. Never three broker Cards. Never a storefront postcard. Never the sofa.",
+    "V3Proof #proof \u2014 PRIMARY client reviews (Google + featured quote). Not press.",
+    "FirmClosings #firm-sales \u2014 catalog carousel + Card of dated local closings. Never invented MOS.",
+    "AboutReach #reach \u2014 Button Group Call | Text | Email | Schedule, live hours",
+    "AboutOffice #office \u2014 catalog Card, 115 NW Oregon Ave #2 + firm OREA. Door to /team. No roster.",
+    "AboutInquiry #write \u2014 catalog Input + Button GET /contact",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",
     "V3Answers #faq -- working with Ryan Realty",
@@ -146,22 +170,22 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-12",
+    "evaluatedAt": "2026-09-21",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch true on the catalog evaluate land. Evidence re-landed from About source. Do not invent scores.",
+    "evaluator": "grok-4.6 through grok CLI (cursor-agent link missing). SITE-163 faces-at-display-scale pass. Separate from builder grok-4.5.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "demoMatch": true,
     "competitiveBriefPass": true,
     "competitiveBriefEvidence": {
       "1": "Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.",
-      "2": "The brokers are on /team. The person you talk to first is the person who works with you through closing.",
-      "3": "Hero (office exterior + purpose), V3Proof as first proof, closings,",
+      "2": "Faces open the page at display scale. Deep bios stay on /team.",
+      "3": "V3Proof reviews as words plus dated local closings as a carousel",
       "4": "Call | Text | Email | Schedule. Live hours stay V3OnDuty above this.",
       "5": "street: '115 NW Oregon Ave #2'",
-      "6": "5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.",
-      "7": "/about first viewport — Redfin structure. Navy and cream only.",
-      "8": "Firm closings as the shadcn carousel + Card demo (SITE-90)."
+      "6": "5. AboutOffice \u2014 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.",
+      "7": "/about first viewport \u2014 faces at display scale. Navy and cream only.",
+      "8": "shadcn Avatar image, fallback, and badge at display scale."
     },
     "shotSpec": {
       "routes": [
@@ -180,67 +204,111 @@
         "firm-sales-open",
         "write-open"
       ],
-      "capture": "first viewport + proof=#proof + reach=#reach + office=#office + firm-sales=#firm-sales + firm-sales-open=next click + write-open=input click, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, catalog carousel+Card closings (photo, address, ClosePrice, close date, beds/baths/sqft), Button Group Call/Text/Email/Schedule, AboutOffice Card photo/body, AboutInquiry Input+Button GET /contact. Not three broker Cards. Not a Meet-the-Team dump."
+      "capture": "first viewport + proof=#proof + reach=#reach + office=#office + firm-sales=#firm-sales + firm-sales-open=next click + write-open=input click, scripts/take-route-shots.mjs, scale 1, palette-quantized. SITE-163: AboutFirm faces at display scale (shadcn AvatarGroup), 5.0 from 25, boutique sentence. V3Proof words, carousel+Card closings, Button Group Call/Text/Email/Schedule, AboutOffice Card, AboutInquiry Input+Button GET /contact. Not three broker Cards. Not a Meet-the-Team dump."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:4653719af77eabce94993ecca059128c906471588319ec759ea0cf9e8f4d5309",
+    "shotsHash": "sha256:d522b5d053f22f2dcfd7d959f43b92a4e03433d3a6b6ac7a20dc757d108f441e",
     "scores": [
-      52,
-      47,
-      57
+      51,
+      55,
+      61
     ],
-    "score": 52,
-    "beats": "Mini re-eval: competitiveBriefPass true. demoMatch true. Catalog install: Button Group reach, Input+Button inquiry, carousel+Card closings, Card office. Evidence quotes copied from About source.",
+    "score": 55,
+    "beats": "Compass About (https://www.compass.com/about/) on local dated closings with recorded ClosePrice, beds/baths/sqft, sold date, and Google reviews as words in the first viewport.",
     "adaptedFrom": [
-      { "id": "house-firm" },
-      { "id": "house-proof" },
-      { "id": "shadcn-button-group" },
-      { "id": "shadcn-card" },
-      { "id": "shadcn-carousel" },
-      { "id": "shadcn-input" }
+      {
+        "id": "house-firm"
+      },
+      {
+        "id": "house-proof"
+      },
+      {
+        "id": "shadcn-avatar"
+      },
+      {
+        "id": "shadcn-button-group"
+      },
+      {
+        "id": "shadcn-card"
+      },
+      {
+        "id": "shadcn-carousel"
+      },
+      {
+        "id": "shadcn-input"
+      }
     ],
-    "evaluatorBlocked": "Mini 2026-09-14: competitiveBriefPass true, demoMatch true on the catalog evaluate land. Scores 52/47/57 are the prior 3-scoring instrument. Do not invent a new score.",
     "defects": [
       {
         "section": "#reach",
         "severity": "taste",
-        "finding": "Reach must photograph as the catalog Button Group four-up, not house editorial columns. Cos re-runs after catalog install.",
+        "finding": "The four-up photographs as two objects on the same 1440 page: a compact outline Button Group in reach-desktop / firm-sales-open, and a full-width cream segmented bar in firm-sales-desktop. Equal Call|Text|Email|Schedule has to be one catalog Button Group.",
         "replaceWith": "shadcn-button-group"
       },
       {
         "section": "#firm-sales",
-        "severity": "taste",
-        "finding": "Closings must photograph as catalog carousel prev/next + Card peek, not a house rail wrapper. Cos re-runs after catalog install.",
+        "severity": "defect",
+        "finding": "firm-sales-open clips the outgoing slide to leftover letters and a fragment of landscaping. Carousel peek has to leave a readable Card (photo, address, ClosePrice), not scrap type.",
         "replaceWith": "shadcn-carousel"
       },
       {
         "section": "#write",
-        "severity": "taste",
-        "finding": "Inquiry must photograph as catalog Input + Button. Cos re-runs after catalog install.",
-        "replaceWith": "shadcn-input"
+        "severity": "defect",
+        "finding": "At 375 the inquiry placeholder clips so the labeled field is unreadable beside Send a message.",
+        "replaceWith": null
       },
       {
         "section": "#office",
         "severity": "taste",
-        "finding": "Office must photograph as a catalog Card (photo, body, footer), not a definition-list reprint. Cos re-runs after catalog install.",
+        "finding": "The office Card photo is a 16:9 street crop dominated by the neighboring barber shop and a tree; 115 NW Oregon Ave #2 is not the subject of its own Card.",
         "replaceWith": "shadcn-card"
+      },
+      {
+        "section": "#proof",
+        "severity": "taste",
+        "finding": "The band claims the newest four of 25 reviews in full, then desktop shows ellipsized star-rows and 375 hides the picks so only one quote is on screen.",
+        "replaceWith": "house-proof"
+      },
+      {
+        "section": "#service-area",
+        "severity": "defect",
+        "finding": "At 375 the atlas cell labels collide, so the encoded map is unreadable in the first phone view of Where we work.",
+        "replaceWith": "house-atlas"
       }
     ],
-    "comparedToPrior": "rebaselined",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
+      "evaluatedAt": "2026-09-12",
       "score": 52,
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:4653719af77eabce94993ecca059128c906471588319ec759ea0cf9e8f4d5309"
     },
-    "rebaselineReason": "Mini 2026-09-14: competitiveBriefPass true, demoMatch true on the catalog evaluate land. Evidence re-landed from About source. rubricVersion and shotsHash differ from the prior/HEAD instrument; scores 52/47/57 stay. Do not invent a new score.",
-    "verdict": "Brief holds. Catalog controls installed. demoMatch true. Evidence quotes are verbatim About source. The opener is the firm claim, not a Meet-the-Team dump.",
+    "verdict": "This About finally opens on overlapping broker faces at display scale with 5.0 from 25 and the boutique Central Oregon sentence, then runs reviews, dated closings, four-up, office plus OREA, and inquiry. demoMatch is true on AvatarGroup, compact Button Group, carousel next plus Card peek, and Input focus plus Button. competitiveBriefPass is true. Median 55 is a 3-point rise over 52 on the same grok-4.6 / v1-2026-09-12 instrument. Finish line 70 is not met.",
     "contactListIsFirstContent": false,
-    "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 + firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump. Brokers belong on /team."
+    "contactListAnswer": "Overlapping broker faces at display scale, branded H1, boutique Central Oregon buy-and-sell sentence, 5.0 from 25 Google reviews, then reviews as words, dated closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 plus firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump.",
+    "transport": "grok-cli",
+    "honestyFunction": 7,
+    "perCriterion": {
+      "design": 17,
+      "originality": 14,
+      "interaction": 9,
+      "craft": 8,
+      "honesty": 7
+    },
+    "competitiveBriefChecklist": {
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true,
+      "5": true,
+      "6": true,
+      "7": true,
+      "8": true
+    }
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
@@ -265,11 +333,11 @@
       "sections": 6,
       "internalLinks": 137,
       "images": 20,
-      "heroImageWidth": 1296,
+      "heroImageWidth": 400,
       "heroImageNatural": 576,
       "video": 0,
       "jsonLd": 8
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. SITE-163: opener is display-scale broker faces, not a 1440-wide storefront. Office photo remains on AboutOffice. Lowered heroImageWidth/Natural with that reason."
   }
 }

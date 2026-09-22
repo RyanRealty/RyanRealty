@@ -1,7 +1,7 @@
 /* Placeholder fill for app/about/loading.tsx, and nothing else.
 
-   First screen is the opening Quiet (who we are + Call/Text), not the faces
-   poster. Tokens from components/site/v3/tokens.css via V3_ROOT_CLASS. */
+   First screen is faces at display scale, not a storefront postcard.
+   Tokens from components/site/v3/tokens.css via V3_ROOT_CLASS. */
 
 .v3 .about-loading__fill {
   background: var(--v3-hairline);
@@ -109,4 +109,38 @@
 
 .v3.about-loading__quiet .about-loading__line:nth-child(3) {
   width: 64%;
+}
+
+.v3.about-loading__faces {
+  display: grid;
+  gap: var(--v3-space-xs);
+  padding: var(--v3-space-lg) var(--v3-gutter) 0;
+}
+
+.about-loading__group {
+  display: flex;
+  align-items: end;
+}
+
+.about-loading__face {
+  flex: none;
+  width: calc(var(--v3-card-photo-w) * 0.85);
+  height: calc(var(--v3-card-photo-w) * 0.85);
+  border-radius: 50%;
+  border-bottom: 0;
+}
+
+.about-loading__face--display {
+  width: calc(var(--v3-card-photo-w) * 1.35);
+  height: calc(var(--v3-card-photo-w) * 1.35);
+}
+
+.about-loading__face + .about-loading__face {
+  margin-inline-start: calc(var(--v3-card-photo-w) * -0.32);
+}
+
+.v3.about-loading__faces .about-loading__line {
+  width: 12rem;
+  max-width: 70%;
+  height: calc(var(--v3-size-body-lg) * var(--v3-leading-heading));
 }

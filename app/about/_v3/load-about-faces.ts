@@ -1,8 +1,8 @@
 /**
- * /about firm closings loader. Brokers belong on /team — this file still
- * reads the roster only to assemble the brokerage closing set (each
- * broker's getBrokerSales plus office-name tiles, unique ListingKey).
- * About does not mount faces. Unknown is not zero. No invented rows.
+ * /about firm closings + fold-face loader. Deep bios stay on /team.
+ * Faces on AboutFirm are display-scale Avatars, not an AboutFaces roster.
+ * Closings still assemble each broker's getBrokerSales plus office-name
+ * tiles, unique ListingKey. Unknown is not zero. No invented rows.
  */
 
 import {

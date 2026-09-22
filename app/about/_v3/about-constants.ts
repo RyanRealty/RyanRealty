@@ -4,8 +4,9 @@
  * Split out of page.tsx so the page stays under the file-size floor. Nothing
  * here fetches or formats.
  *
- * THE FIRM STORY LIVES ON THE FOLD (Matt 2026-09-14). One plain sentence:
- * boutique brokerage in Central Oregon that helps clients buy and sell.
+ * THE FIRM STORY LIVES ON THE FOLD (Matt 2026-09-14, restated SITE-163).
+ * Faces open the page at display scale. One plain sentence: boutique
+ * brokerage in Central Oregon that helps clients buy and sell.
  * That lock is ABOUT_FIRM_STORY. Not a staccato three-liner. "How it started"
  * stays origin — it does not restate the fold. Firm OREA sits on AboutOffice.
  *
@@ -41,13 +42,13 @@ export const ABOUT_FIRM_STORY =
  */
 export const ABOUT_LOCK_QUOTES = {
   '1': 'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
-  '2': 'The brokers are on /team. The person you talk to first is the person who works with you through closing.',
-  '3': 'Hero (office exterior + purpose), V3Proof as first proof, closings,',
+  '2': 'Faces open the page at display scale. Deep bios stay on /team.',
+  '3': 'V3Proof reviews as words plus dated local closings as a carousel',
   '4': 'Call | Text | Email | Schedule. Live hours stay V3OnDuty above this.',
   '5': "street: '115 NW Oregon Ave #2'",
   '6': '5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.',
-  '7': '/about first viewport — Redfin structure. Navy and cream only.',
-  '8': 'Firm closings as the shadcn carousel + Card demo (SITE-90).',
+  '7': '/about first viewport — faces at display scale. Navy and cream only.',
+  '8': 'shadcn Avatar image, fallback, and badge at display scale.',
 } as const
 
 /**

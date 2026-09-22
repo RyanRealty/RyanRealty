@@ -11,7 +11,7 @@ const LOAD = readFileSync('app/about/_v3/load-about-faces.ts', 'utf8')
 const CLOSINGS = readFileSync('app/about/_v3/FirmClosings.tsx', 'utf8')
 const FOLD_JSX = PAGE.slice(PAGE.indexOf('className="about-fold"'), PAGE.indexOf('id="proof"'))
 
-describe('SITE-90 /about brokerage fold', () => {
+describe('SITE-163 /about faces fold', () => {
   it('parity cannot pass a Meet-the-Team About', () => {
     const parity = JSON.parse(
       readFileSync('design_system/ryan-realty/ui_kits/about/parity.json', 'utf8'),
@@ -32,12 +32,12 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(names).toContain('AboutInquiry')
     expect(names).not.toContain('AboutFaces')
     expect(names).not.toContain('AboutTeamTeaser')
-    expect(parity.competitiveTarget).toMatch(/FAIL if the page opens on brokers' faces/)
-    expect(parity.note).toMatch(/not Meet the Team/)
-    expect(parity.competitiveBrief.id).toBe('about-matt-2026-09-12')
+    expect(parity.competitiveTarget).toMatch(/FAIL if the first viewport is a downtown storefront/)
+    expect(parity.note).toMatch(/Faces open About at display scale/)
+    expect(parity.competitiveBrief.id).toBe('about-matt-2026-09-21')
     expect(parity.competitiveBrief.beats.map((b) => b.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
     expect(parity.competitiveBrief.beats[0]?.text).toMatch(/boutique/)
-    expect(parity.competitiveBrief.beats[1]?.text).toMatch(/belong on \/team/)
+    expect(parity.competitiveBrief.beats[1]?.text).toMatch(/\/team/)
     expect(parity.tasteReview.competitiveBriefPass).toBe(true)
     expect(parity.tasteReview.demoMatch).toBe(true)
     const opener = parity.requiredComponents.find((c) => c.name === 'AboutFirm')
@@ -47,8 +47,9 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(parity.removedComponents.some((row) => row.startsWith('AboutTeamTeaser'))).toBe(true)
   })
 
-  it('opens on the firm purpose, not three broker Cards', () => {
+  it('opens on faces at display scale, not three broker Cards', () => {
     expect(PAGE).toContain('<AboutFirm')
+    expect(PAGE).toContain('people={proof.faces}')
     expect(PAGE).not.toContain('<AboutFaces')
     expect(PAGE).not.toContain('<AboutTeamTeaser')
     expect(PAGE).not.toContain('Meet the team')
@@ -56,6 +57,7 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(PAGE).not.toContain('size="editorial"')
     expect(PAGE).not.toContain('openingFigures')
     expect(FIRM).toContain('ABOUT_FIRM_STORY')
+    expect(FIRM).toContain('AboutFirmFaces')
     expect(ABOUT_FIRM_STORY).toBe(
       'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
     )
@@ -66,9 +68,8 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(PAGE).not.toContain('Who you work with')
   })
 
-  it('puts Google reviews on V3Proof as the first proof band, not a hero score link', () => {
-    expect(FIRM).not.toContain('Google reviews')
-    expect(FIRM).not.toContain('proof.value')
+  it('puts Google reviews on the fold faces and on V3Proof, not a KPI grid', () => {
+    expect(FIRM).toContain('proof')
     expect(FIRM).not.toContain('quote.pull')
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('value: reviewAverage.toFixed(1)')
@@ -78,11 +79,12 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(PAGE).not.toContain('featuredQuote')
     expect(PAGE).not.toContain('firmBeat')
     expect(FOLD).toContain('about-fold__proof')
-    expect(FOLD).toContain('--v3-size-num-lead')
+    expect(FOLD).toContain('.about-fold__proof .v3-proof__face')
     expect(FIRM).toContain('about-firm__claim')
     expect(FIRM).not.toContain('about-firm__mission')
     expect(FIRM).not.toContain('onMedia')
     expect(FOLD).toContain('about-firm__claim')
+    expect(FOLD).toContain('about-firm__faces')
     expect(FOLD).not.toContain('v3-scrim-strong')
   })
 
@@ -117,17 +119,13 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(FOLD).toContain('.about-closings [data-slot=\'card\']')
   })
 
-  it('uses the office exterior as the mood hero, never the sofa', () => {
-    expect(FOLD_JSX).toContain('ryan-realty-bend-office-exterior-01.jpg')
+  it('keeps the office exterior on AboutOffice, never the sofa, never the opener', () => {
+    expect(FOLD_JSX).not.toContain('ryan-realty-bend-office-exterior-01.jpg')
     expect(FOLD_JSX).not.toContain('ryan-realty-bend-office-interior')
-    expect(FOLD_JSX).toContain('BEND OFFICE ·')
-    expect(FOLD_JSX).toContain('BRAND.address.street')
+    expect(OFFICE).toContain('ryan-realty-bend-office-exterior-01.jpg')
     expect(FOLD).not.toMatch(/70vh|64vh/)
-    expect(FOLD).toContain('object-position: center 68%')
-    expect(FOLD).toContain('aspect-ratio: 2.4 / 1')
-    expect(FOLD).not.toMatch(/grid-template-columns: minmax\(16rem/)
-    expect(FOLD).toContain('.about-firm__hero img')
-    expect(FOLD).toContain('width: 100%')
+    expect(FOLD).toContain('about-firm__faces')
+    expect(FOLD).not.toContain('.about-firm__hero img')
   })
 
   it('prints the Bend office and firm OREA, not a broker roster', () => {
@@ -137,8 +135,10 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(OFFICE).toContain('CardContent')
     expect(OFFICE).toContain('BRAND.address.street')
     expect(OFFICE).toContain('FIRM_LICENSE')
-    expect(OFFICE).toContain('The brokers are on /team')
+    expect(OFFICE).toContain('>The brokers<')
+    expect(OFFICE).toContain('teamPath()')
     expect((OFFICE.match(/Firm OREA/g) ?? []).length).toBe(1)
+    expect(OFFICE).toContain("FIRM_LICENSE.replace(/^OREA\\s+/, '')")
     expect(OFFICE).not.toContain('about-office__facts')
     expect(OFFICE).not.toContain('<dl')
     expect(OFFICE).not.toContain('about-office__license')
