@@ -20,8 +20,12 @@
 #
 # Coordination with the Claude cloud routine and any live Cursor session is the
 # claim tool alone (scripts/site-queue-status.ts): same table, same caps. A fire
-# that finds the fleet full or the queue empty prints one line and exits in
-# seconds, BEFORE any CLI boots.
+# that finds the fleet full prints one line and exits in seconds, BEFORE any
+# CLI boots. Empty eligible SITE is not STOP (Matt 2026-09-10): the fire runs
+# scripts/seed-gsc-ranking-queue.ts so ranking work exists. SITE-62 still bans
+# auto-seed from a taste score. Ranking apply is documented-safe: diagnose
+# rule + PAGE_OUTLINE winner URL, title prefix "GSC gap", upsert
+# ignoreDuplicates, never clobbers state. Dry-run: SITE_QUEUE_SEED_GSC_APPLY=0.
 #
 # Installed as LaunchAgent com.ryanrealty.site-queue (~/Library/LaunchAgents).
 #   Pause:   launchctl bootout gui/$(id -u)/com.ryanrealty.site-queue
@@ -72,17 +76,63 @@ if [ -z "$STATUS_JSON" ]; then
   log "site-queue-status --json returned nothing (env? Supabase?) — fire ends"
   exit 0
 fi
-GATE="$(printf '%s' "$STATUS_JSON" | node -e '
-  let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
-    const j = JSON.parse(s.slice(s.indexOf("{")))
-    const open = (j.items ?? []).filter((i) => i.state === "open" && i.eligible !== false).length
-    const live = Number(j.liveWorkers ?? 0), max = Number(j.maxWorkers ?? 3)
-    if (live >= max) return console.log(`STOP fleet full (${live}/${max} live: ${(j.items ?? []).filter((i) => i.state === "in_progress" && !i.stale).map((i) => i.owner).join(", ")})`)
-    if (open === 0) return console.log("STOP queue empty or fully blocked")
-    console.log(`GO ${open} open, ${live}/${max} live`)
-  })' 2>>"$LOG")"
+eval_gate() {
+  printf '%s' "$1" | node -e '
+    let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
+      const j = JSON.parse(s.slice(s.indexOf("{")))
+      const open = (j.items ?? []).filter((i) => i.state === "open" && i.eligible !== false).length
+      const live = Number(j.liveWorkers ?? 0), max = Number(j.maxWorkers ?? 3)
+      if (live >= max) return console.log(`STOP fleet full (${live}/${max} live: ${(j.items ?? []).filter((i) => i.state === "in_progress" && !i.stale).map((i) => i.owner).join(", ")})`)
+      if (open === 0) return console.log("SEED queue empty — GSC ranking seeder")
+      console.log(`GO ${open} open, ${live}/${max} live`)
+    })'
+}
+
+GATE="$(eval_gate "$STATUS_JSON" 2>>"$LOG")"
 log "$GATE"
-case "$GATE" in STOP*) exit 0 ;; esac
+if [ -z "$GATE" ]; then
+  log "gate unreadable — fire ends"
+  exit 0
+fi
+case "$GATE" in
+  STOP*) exit 0 ;;
+  SEED*)
+    # Empty of eligible is not a stop. Print ranking drafts; --apply upserts
+    # SITE nodes unless SITE_QUEUE_SEED_GSC_APPLY=0. Flags inlined (bash 3.2
+    # `set -u` + empty array).
+    GSC_CACHE=scratchpad/seo-aeo-gsc-2026-09-22.json
+    if [ "${SITE_QUEUE_SEED_GSC_APPLY:-1}" != "0" ]; then
+      log "GSC seeder --apply (set SITE_QUEUE_SEED_GSC_APPLY=0 for dry-run)"
+      if [ -f "$GSC_CACHE" ]; then
+        npx tsx scripts/seed-gsc-ranking-queue.ts --from-json "$GSC_CACHE" --apply >>"$LOG" 2>&1 || log "GSC seeder exited $?"
+      else
+        npx tsx scripts/seed-gsc-ranking-queue.ts --apply >>"$LOG" 2>&1 || log "GSC seeder exited $?"
+      fi
+    else
+      log "GSC seeder dry-run (SITE_QUEUE_SEED_GSC_APPLY=0)"
+      if [ -f "$GSC_CACHE" ]; then
+        npx tsx scripts/seed-gsc-ranking-queue.ts --from-json "$GSC_CACHE" >>"$LOG" 2>&1 || log "GSC seeder exited $?"
+      else
+        npx tsx scripts/seed-gsc-ranking-queue.ts >>"$LOG" 2>&1 || log "GSC seeder exited $?"
+      fi
+    fi
+    STATUS_JSON="$(npx tsx scripts/site-queue-status.ts --json 2>>"$LOG")"
+    if [ -z "$STATUS_JSON" ]; then
+      log "site-queue-status --json returned nothing after GSC seed — fire ends"
+      exit 0
+    fi
+    GATE="$(eval_gate "$STATUS_JSON" 2>>"$LOG")"
+    log "$GATE"
+    if [ -z "$GATE" ]; then
+      log "gate unreadable after GSC seed — fire ends"
+      exit 0
+    fi
+    case "$GATE" in
+      STOP*) exit 0 ;;
+      SEED*) log "GSC seeder printed drafts; queue still empty — fire ends (not silent STOP)"; exit 0 ;;
+    esac
+    ;;
+esac
 
 PROMPT="$(cat "$PROMPT_FILE")"
 STAMP="$(date '+%Y-%m-%d-%H')"
