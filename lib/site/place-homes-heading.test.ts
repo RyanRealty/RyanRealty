@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { placeHomesForSaleHeading } from './place-homes-heading'
+import { placeCityRealEstateHeading, placeHomesForSaleHeading } from './place-homes-heading'
 
 describe('placeHomesForSaleHeading', () => {
   it('names the place first, Redfin-like', () => {
@@ -16,5 +16,12 @@ describe('placeHomesForSaleHeading', () => {
   it('falls back when the place is empty', () => {
     expect(placeHomesForSaleHeading('')).toBe('Homes for sale')
     expect(placeHomesForSaleHeading('   ')).toBe('Homes for sale')
+  })
+})
+
+describe('placeCityRealEstateHeading', () => {
+  it('bids real estate, not homes for sale', () => {
+    expect(placeCityRealEstateHeading('Bend')).toBe('Bend real estate')
+    expect(placeCityRealEstateHeading('Redmond')).toBe('Redmond real estate')
   })
 })

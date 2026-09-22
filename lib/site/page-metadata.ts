@@ -208,6 +208,14 @@ export function publishPlaceHomesTitle(name: string, city: string | null | undef
   return `${heading} · ${cityName}, Oregon`
 }
 
+/** City document title. Does not bid "{city} homes for sale". */
+export function publishCityRealEstateTitle(city: string): string {
+  const name = city.trim()
+  if (!name) return 'Real estate'
+  if (/real estate$/i.test(name)) return name
+  return `${name} real estate`
+}
+
 export function pageMetadata(input: PageMetadataInput): Metadata {
   const site = getCanonicalSiteUrl()
   const path = input.path.startsWith('/') ? input.path : `/${input.path}`
