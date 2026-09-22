@@ -860,17 +860,6 @@ async function renderCityDetail({ params }: Props) {
     Boolean(quickFacts?.population),
   )
 
-  const citySchemas = buildCitySchemas({
-    cityName,
-    slug,
-    faq: marketFaq,
-    hasMap: true,
-  })
-  // The area guide as a VideoObject: the file is contentUrl, the channel upload
-  // is embedUrl, so the video indexes once and credits the channel.
-  const cityGuideSchema = areaGuideVideoSchema(cityName, `/cities/${slug}`, areaGuideVideo)
-  if (cityGuideSchema) citySchemas.push(cityGuideSchema)
-
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
@@ -891,6 +880,17 @@ async function renderCityDetail({ params }: Props) {
     buckets: openingListings,
     listings: foldLookListings,
   })
+  const citySchemas = buildCitySchemas({
+    cityName,
+    slug,
+    faq: marketFaq,
+    hasMap: true,
+    homes: foldPhotoCards,
+  })
+  // The area guide as a VideoObject: the file is contentUrl, the channel upload
+  // is embedUrl, so the video indexes once and credits the channel.
+  const cityGuideSchema = areaGuideVideoSchema(cityName, `/cities/${slug}`, areaGuideVideo)
+  if (cityGuideSchema) citySchemas.push(cityGuideSchema)
   return (
     <>
       <main className={`${V3_ROOT_CLASS} city-page`}>

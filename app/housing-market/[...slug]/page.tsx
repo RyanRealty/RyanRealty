@@ -13,7 +13,7 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (BreadcrumbList, WebPage, Dataset,
- * FAQPage), a rendered V3SectionTracker with pageType="market-report",
+ * FAQPage, ItemList of live homes), a rendered V3SectionTracker with pageType="market-report",
  * generateStaticParams over the 11 core slugs, dynamicParams true,
  * revalidate 300, and the route. MetadataBlock stays on the legacy register
  * (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
@@ -58,7 +58,7 @@ import { buildMarketFaq } from '@/lib/site/market-faq'
 import { latestSaleMedian } from '@/lib/market/latest-sale-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
-import type { SchemaInput } from '@/lib/site/json-ld'
+import { buildGeoMarketSchemas } from './_v3/geo-schemas'
 import { marketVerdict } from '@/lib/market/classify'
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -390,58 +390,26 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     homes,
     insightVariables,
   } = data
-  const { geoType, citySlug, geoName, cityName, communityName } = data.geo
+  const { citySlug, geoName, cityName, communityName } = data.geo
   const valuationHrefValue = valuationHref(canonicalPath)
   const detailYtd = timeframes?.ytd ?? null
   const detail = timeframes?.monthly ?? null
 
 
-  const schemas: SchemaInput[] = [
-    {
-      type: 'breadcrumb',
-      items: [
-        { name: 'Home', url: '/' },
-        { name: 'Housing market', url: '/housing-market' },
-        ...(communityName
-          ? [
-              { name: cityName, url: `/housing-market/${citySlug}` },
-              { name: communityName, url: canonicalPath },
-            ]
-          : [{ name: geoName, url: canonicalPath }]),
-      ],
-    },
-    {
-      type: 'webPage',
-      name: `${geoName} housing market`,
-      description: `Live ${geoName} market data: active inventory, median list price, months of supply, and pace. Single-family homes only.`,
-      url: canonicalPath,
-    },
-  ]
-
-  if (datasetVariables.length > 0 && refreshedAt) {
-    const publishedVariables = [...datasetVariables, ...insightVariables]
-    const metricNames = publishedVariables.map((variable) => variable.name.toLowerCase())
-    const metricList =
-      metricNames.length === 1
-        ? metricNames[0]
-        : `${metricNames.slice(0, -1).join(', ')}, and ${metricNames[metricNames.length - 1]}`
-    schemas.push({
-      type: 'dataset',
-      name: `${geoName}, Oregon real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
-      description:
-        `Live single-family home market data for ${geoName}, Oregon. ` +
-        `Includes ${metricList}. ` +
-        `Sourced from Oregon Data Share via Ryan Realty.`,
-      url: canonicalPath,
-      dateModified: asOfIso ?? undefined,
-      spatialCoverageName: `${geoName}, OR`,
-      variableMeasured: publishedVariables,
-    })
-  }
-
-  if (faqs.length > 0) {
-    schemas.push({ type: 'faqPage', items: faqs })
-  }
+  const schemas = buildGeoMarketSchemas({
+    geoName,
+    cityName,
+    citySlug,
+    communityName,
+    canonicalPath,
+    datasetVariables,
+    insightVariables,
+    asOfIso,
+    asOfLabel,
+    refreshedAt,
+    faqs,
+    homes,
+  })
 
   const yearSeries = buildYearSeries(chartMonths.months, 5)
   const cityChart = buildCityMedianChart(yearSeries, chartMonths.months, chartMonths.leftoverUsed)

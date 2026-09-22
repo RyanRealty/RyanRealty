@@ -39,6 +39,7 @@ describe('SITE-82 city fold composition', () => {
       /nth-child\(n \+ 5\)/,
     )
     expect(PAGE).toMatch(/placeLookPhotoCards/)
+    expect(PAGE).toMatch(/homes:\s*foldPhotoCards/)
     expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
     expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
     expect(PAGE).toMatch(/getPlaceAmenityLayers/)

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { buildJsonLd } from './json-ld'
+import {
+  buildJsonLd,
+  listingItemList,
+  listingItemListFromHomes,
+  listingItemListFromPhotoCards,
+  LISTING_ITEM_LIST_CAP,
+} from './json-ld'
 
 const rec = (v: unknown) => v as Record<string, unknown> | undefined
 
@@ -159,5 +165,87 @@ describe('buildJsonLd', () => {
     expect(rec(r.provider)?.['@id']).toMatch(/#organization$/)
     expect(rec(r.areaServed)).toMatchObject({ '@type': 'Place', name: 'Bend, Oregon' })
     expect(String(r.url)).toMatch(/\/sell\/valuation$/)
+  })
+})
+
+describe('listingItemList', () => {
+  it('withholds an empty set and builds ItemList input otherwise', () => {
+    expect(listingItemList('Homes for sale in Bend', [])).toBeNull()
+    expect(
+      listingItemList('Homes for sale in Bend', [
+        { name: '$750,000 · 1 Main St', url: '/homes-for-sale/bend/1-main-st-2201' },
+      ]),
+    ).toEqual({
+      type: 'itemList',
+      name: 'Homes for sale in Bend',
+      items: [{ name: '$750,000 · 1 Main St', url: '/homes-for-sale/bend/1-main-st-2201' }],
+    })
+  })
+
+  it('drops browse URLs that are not listing canonicals', () => {
+    expect(
+      listingItemList('Homes for sale in Bend', [
+        { name: 'Bend', url: '/homes-for-sale/bend' },
+        { name: 'Tetherow', url: '/homes-for-sale/bend/tetherow' },
+      ]),
+    ).toBeNull()
+  })
+
+  it(`caps at the homepage rail (${LISTING_ITEM_LIST_CAP})`, () => {
+    const items = Array.from({ length: LISTING_ITEM_LIST_CAP + 3 }, (_, i) => ({
+      name: `$${i + 1} Main`,
+      url: `/homes-for-sale/bend/${i + 1}-main-st-220${i + 1}`,
+    }))
+    expect(listingItemList('Homes for sale in Bend', items)?.items).toHaveLength(LISTING_ITEM_LIST_CAP)
+  })
+
+  it('buildJsonLd emits absolute listing URLs', () => {
+    const input = listingItemList('Homes for sale in Bend', [
+      { name: '$750,000 · 1 Main St', url: '/homes-for-sale/bend/1-main-st-2201' },
+    ])
+    expect(input).not.toBeNull()
+    const json = buildJsonLd(input!)
+    expect(json['@type']).toBe('ItemList')
+    const elements = json.itemListElement as Array<{ url: string; name: string }>
+    expect(elements[0]?.url).toMatch(/\/homes-for-sale\/bend\/1-main-st-2201$/)
+    expect(elements[0]?.name).toBe('$750,000 · 1 Main St')
+  })
+})
+
+describe('listingItemListFromPhotoCards', () => {
+  it('names price and street from the photographed card', () => {
+    const list = listingItemListFromPhotoCards('Homes for sale in Bend', [
+      { href: '/homes-for-sale/bend/1-main-st-2201', title: '1 Main St', price: '$795k' },
+    ])
+    expect(list?.items[0]).toEqual({
+      name: '$795k · 1 Main St',
+      url: '/homes-for-sale/bend/1-main-st-2201',
+    })
+  })
+
+  it('withholds when no photographed cards exist', () => {
+    expect(listingItemListFromPhotoCards('Homes for sale in Bend', [])).toBeNull()
+  })
+})
+
+describe('listingItemListFromHomes', () => {
+  const home = {
+    href: '/homes-for-sale/bend/tetherow/1-tetherow-rd-2201',
+    addressLine: '1 Tetherow Rd',
+    price: 750000,
+    propertyType: 'Residential',
+    photoUrl: 'https://example.com/a.jpg',
+  }
+
+  it('withholds homes without a photograph', () => {
+    expect(
+      listingItemListFromHomes('Homes for sale in Tetherow', [{ ...home, photoUrl: null }]),
+    ).toBeNull()
+  })
+
+  it('names the published ask and street', () => {
+    const list = listingItemListFromHomes('Homes for sale in Tetherow', [home])
+    expect(list?.items[0]?.name).toBe('$750,000 · 1 Tetherow Rd')
+    expect(list?.items[0]?.url).toBe('/homes-for-sale/bend/tetherow/1-tetherow-rd-2201')
   })
 })

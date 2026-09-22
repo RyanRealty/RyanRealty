@@ -778,6 +778,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
     datasetVariables,
     asOfIso,
     asOfLabel,
+    homes: placeHomes,
   })
   const neighborhoodGuideSchema = areaGuideVideoSchema(
     neighborhood.name,

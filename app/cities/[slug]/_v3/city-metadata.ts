@@ -1,7 +1,8 @@
 /**
  * The city node's JSON-LD, built once from the same arrays the page renders.
  *
- * BreadcrumbList + City Place + Dataset + FAQPage. V3Breadcrumb and V3Quiet carry
+ * BreadcrumbList + City Place + Dataset + FAQPage + live-home ItemList.
+ * V3Breadcrumb and V3Quiet carry
  * no structured data of their own, on purpose, so one derivation feeds the visible
  * copy and the markup and the two cannot disagree (CLAUDE.md section 0).
  *
@@ -12,7 +13,11 @@
  * to split, not to re-baseline. Nothing here fetches or formats a figure.
  */
 
-import type { SchemaInput } from '@/lib/site/json-ld'
+import {
+  listingItemListFromPhotoCards,
+  type ListingItemListPhotoCard,
+  type SchemaInput,
+} from '@/lib/site/json-ld'
 import type { buildMarketFaq } from '@/lib/site/market-faq'
 
 type MarketFaq = ReturnType<typeof buildMarketFaq>
@@ -57,6 +62,11 @@ export function buildCitySchemas(input: {
   faq: MarketFaq
   /** True when PlaceSplitView mounts the flagship map. */
   hasMap: boolean
+  /**
+   * SITE-176. Photographed fold cards the visitor sees (price + street +
+   * canonical listing URL). Empty inventory withholds the ItemList.
+   */
+  homes?: ReadonlyArray<ListingItemListPhotoCard>
 }): SchemaInput[] {
   const { cityName, slug, faq } = input
   const { faqs, datasetVariables, asOfIso, asOfLabel } = faq
@@ -97,6 +107,12 @@ export function buildCitySchemas(input: {
   }
 
   if (faqs.length > 0) schemas.push({ type: 'faqPage', items: faqs })
+
+  const homeList = listingItemListFromPhotoCards(
+    `Homes for sale in ${cityName}`,
+    input.homes ?? [],
+  )
+  if (homeList) schemas.push(homeList)
 
   return schemas
 }

@@ -5,12 +5,18 @@
  * in the already-verified figures.
  *
  * AI-citability: BreadcrumbList + Neighborhood Place + (when live figures
- * exist) a Dataset whose variables come from buildMarketFaq — the PAGE
- * CONTRACT requires the structured data on every render. (§0: every figure in
- * the dataset is the same verified figure the page prints.)
+ * exist) a Dataset whose variables come from buildMarketFaq + (when photographed
+ * homes exist) an ItemList of canonical listing URLs. The PAGE CONTRACT requires
+ * the structured data on every render. (§0: every figure in the dataset is the
+ * same verified figure the page prints.)
  */
 
-import type { SchemaInput, StatValue } from '@/lib/site/json-ld'
+import {
+  listingItemListFromHomes,
+  type ListingItemListHome,
+  type SchemaInput,
+  type StatValue,
+} from '@/lib/site/json-ld'
 
 export type NeighborhoodSchemaInput = {
   neighborhoodName: string
@@ -22,6 +28,11 @@ export type NeighborhoodSchemaInput = {
   datasetVariables: StatValue[]
   asOfIso: string | null
   asOfLabel: string | null
+  /**
+   * SITE-176. Photographed homes on #homes (price + street + canonical listing
+   * URL). Empty inventory withholds the ItemList.
+   */
+  homes?: ReadonlyArray<ListingItemListHome>
 }
 
 export function buildNeighborhoodSchemas({
@@ -34,6 +45,7 @@ export function buildNeighborhoodSchemas({
   datasetVariables,
   asOfIso,
   asOfLabel,
+  homes,
 }: NeighborhoodSchemaInput): SchemaInput[] {
   const url = `/cities/${citySlug}/${neighborhoodSlug}`
   const schemas: SchemaInput[] = [
@@ -75,5 +87,7 @@ export function buildNeighborhoodSchemas({
       variableMeasured: datasetVariables,
     })
   }
+  const homeList = listingItemListFromHomes(`Homes for sale in ${neighborhoodName}`, homes ?? [])
+  if (homeList) schemas.push(homeList)
   return schemas
 }
