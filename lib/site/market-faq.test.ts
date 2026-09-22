@@ -206,6 +206,35 @@ describe('buildMarketFaq', () => {
     expect(r.faqs[0].question).toContain('take to sell')
     expect(r.datasetVariables[0].name).toBe('Median Days to Pending')
   })
+
+  it('names the attendance schools and does not tell the reader to confirm an address', () => {
+    const r = buildMarketFaq('Tetherow', {
+      grain: 'neighborhood',
+      schoolDistrictName: 'Bend-La Pine Schools',
+      schoolDistrictSlug: 'bend-la-pine',
+      attendanceSchools: [
+        'William E Miller Elem',
+        'Cascade Middle',
+        'Pacific Crest Middle',
+        'Summit High',
+      ],
+    })
+    const school = r.faqs.find((f) => f.question.includes('school'))
+    expect(school?.question).toBe('What school district serves Tetherow?')
+    expect(school?.answer).toBe(
+      'Bend-La Pine Schools. Attendance areas covering Tetherow are William E Miller Elem, Cascade Middle, Pacific Crest Middle, and Summit High.',
+    )
+    expect(school?.answer).not.toMatch(/depends on its address|confirm|schools page/i)
+  })
+
+  it('omits the schools question when no attendance list came back', () => {
+    const r = buildMarketFaq('Brasada Ranch', {
+      grain: 'neighborhood',
+      schoolDistrictName: 'Redmond School District 2J',
+      schoolDistrictSlug: 'redmond',
+    })
+    expect(r.faqs.find((f) => f.question.includes('school'))).toBeUndefined()
+  })
 })
 
 /**

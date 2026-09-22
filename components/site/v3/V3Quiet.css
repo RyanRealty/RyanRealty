@@ -211,6 +211,11 @@
   list-style: none;
 }
 
+/* A named list (schools) is one column of rows, at every width. */
+.v3-quiet__item--doors-stack .v3-quiet__doors {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* Two columns at every width, not an auto-fit that becomes four cells on a
    desktop. Four equal cells in a row is the silhouette of the card grid this
    file is not allowed to draw; two wide columns read as a set of doors, hold a
@@ -447,6 +452,11 @@
    indexable rather than hiding behind a control. */
 .v3-quiet__item--prose {
   padding: var(--v3-space-md) 0;
+}
+
+/* A term with no passage is the label for the rows under it. */
+.v3-quiet__item--label {
+  padding-bottom: var(--v3-space-2xs);
 }
 
 /* THE MEASURE IS THE ROW (SITE-40). A passage with nothing to put beside it

@@ -38,6 +38,7 @@ import {
   getDetachedOverlays,
   cityDetachedSlug,
   getPlaceAmenityLayers,
+  getPlaceSchools,
 } from '@/lib/data'
 import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import {
@@ -325,6 +326,7 @@ async function renderCommunityDetail({ params }: Props) {
     placeDocuments,
     placeCharacter,
     openingListings,
+    placeSchools,
   ] = await Promise.all([
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
@@ -395,6 +397,7 @@ async function renderCommunityDetail({ params }: Props) {
       3000,
       'comm:openingListings',
     ),
+    withTimeoutFallback(getPlaceSchools('neighborhood', slug), [], 4500, 'comm:schools'),
   ])
   const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -535,6 +538,7 @@ async function renderCommunityDetail({ params }: Props) {
     hoaSubEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate) ?? null,
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
     schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
+    attendanceSchools: placeSchools.map((school) => school.name),
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(publicName, marketFaqInput)
 
@@ -792,8 +796,7 @@ async function renderCommunityDetail({ params }: Props) {
     aboutParagraphs: faceAbout ? aboutParagraphs : [],
     content: richContent,
     registry: registryEntry ?? null,
-    schoolDistrictName: schoolDistrictInfo?.district ?? null,
-    schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
+    schools: placeSchools,
     isResort,
     countIsAliasAware: aliasAwareCount != null,
     contactHref: `/contact?inquiryType=Buying&message=${encodeURIComponent(
@@ -1040,6 +1043,7 @@ async function renderCommunityDetail({ params }: Props) {
               name: publicName,
               content: richContent,
               hasMeasuredHoa: Boolean(measuredPlaceHoaInput(placeCharacter).measuredAnnual),
+              hasSchools: placeSchools.length > 0,
             })}
           />
         ) : null}

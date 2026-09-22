@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
-import { buildPlaceKnowledge, communityGuides } from './place-knowledge'
+import { buildPlaceKnowledge, communityGuides, placeKnowledgeSource } from './place-knowledge'
 
 describe('master-plan belonging Quiet', () => {
   it('opens with the membership number when HOA exists', () => {
@@ -25,8 +25,7 @@ describe('master-plan belonging Quiet', () => {
       registry: {
         subdivision_aliases: ['Tetherow', 'Sunrise Village', 'Roald West'],
       },
-      schoolDistrictName: null,
-      schoolDistrictSlug: null,
+      schools: [],
       isResort: true,
       countIsAliasAware: true,
       contactHref: '/contact',
@@ -62,8 +61,7 @@ describe('master-plan belonging Quiet', () => {
         name: 'Tetherow',
       } as ResortCommunityContent,
       registry: { subdivision_aliases: [] },
-      schoolDistrictName: null,
-      schoolDistrictSlug: null,
+      schools: [],
       isResort: true,
       countIsAliasAware: true,
       contactHref: '/contact',
@@ -98,8 +96,7 @@ describe('master-plan belonging Quiet', () => {
       registry: {
         subdivision_aliases: ['Tetherow', 'Sunrise Village', 'Roald West'],
       },
-      schoolDistrictName: null,
-      schoolDistrictSlug: null,
+      schools: [],
       isResort: true,
       countIsAliasAware: true,
       contactHref: '/contact',
@@ -122,8 +119,7 @@ describe('master-plan belonging Quiet', () => {
       aboutParagraphs: ['One about Tetherow.', 'Two about Tetherow.'],
       content: null,
       registry: null,
-      schoolDistrictName: null,
-      schoolDistrictSlug: null,
+      schools: [],
       isResort: false,
       countIsAliasAware: false,
       contactHref: '/contact',
@@ -166,8 +162,7 @@ describe('master-plan belonging Quiet', () => {
         name: 'Tetherow',
       } as ResortCommunityContent,
       registry: { subdivision_aliases: [] },
-      schoolDistrictName: null,
-      schoolDistrictSlug: null,
+      schools: [],
       isResort: false,
       countIsAliasAware: false,
       contactHref: '/contact',
@@ -184,8 +179,7 @@ describe('master-plan belonging Quiet', () => {
       aboutParagraphs: [],
       content: null,
       registry: null,
-      schoolDistrictName: null,
-      schoolDistrictSlug: null,
+      schools: [],
       isResort: true,
       countIsAliasAware: false,
       contactHref: '/contact',
@@ -198,6 +192,73 @@ describe('master-plan belonging Quiet', () => {
     expect(items.some((item) => item.kind === 'prose' && 'term' in item && item.term === 'Second homes')).toBe(
       false,
     )
+  })
+
+  it('lists the attendance schools and does not hedge with the district', () => {
+    const items = buildPlaceKnowledge({
+      name: 'Tetherow',
+      city: 'Bend',
+      aboutParagraphs: [],
+      content: null,
+      registry: null,
+      schools: [
+        { slug: 'summit-high', name: 'Summit High', level: 'high', share: 1 },
+        { slug: 'pacific-crest-middle', name: 'Pacific Crest Middle', level: 'middle', share: 0.135 },
+        { slug: 'cascade-middle', name: 'Cascade Middle', level: 'middle', share: 0.865 },
+        { slug: 'william-e-miller-elem', name: 'William E Miller Elem', level: 'elementary', share: 1 },
+      ],
+      isResort: false,
+      countIsAliasAware: false,
+      contactHref: '/contact',
+      amenityPosts: {},
+    })
+    const schools = items.find((item) => item.kind === 'prose' && item.term === 'Schools')
+    expect(schools && schools.kind === 'prose' ? schools.body : null).toBe('')
+    const doors = items.filter((item) => 'href' in item && item.href.startsWith('/schools/'))
+    expect(doors.map((door) => ('label' in door ? door.label : ''))).toEqual([
+      'William E Miller Elem',
+      'Cascade Middle',
+      'Pacific Crest Middle',
+      'Summit High',
+    ])
+    expect(doors.map((door) => ('detail' in door ? door.detail : ''))).toEqual([
+      'Elementary',
+      'Middle school',
+      'Middle school',
+      'High school',
+    ])
+    expect(doors.every((door) => 'stack' in door && door.stack === true)).toBe(true)
+    const text = JSON.stringify(items)
+    expect(text).not.toMatch(/confirm the school|Assignment is by address|Bend-La Pine/)
+    expect(text).not.toMatch(/0\.865|86\.5/)
+  })
+
+  it('omits Schools when the attendance read is empty', () => {
+    const items = buildPlaceKnowledge({
+      name: 'Tetherow',
+      city: 'Bend',
+      aboutParagraphs: [],
+      content: null,
+      registry: null,
+      schools: [],
+      isResort: false,
+      countIsAliasAware: false,
+      contactHref: '/contact',
+      amenityPosts: {},
+    })
+    expect(items.some((item) => 'term' in item && item.term === 'Schools')).toBe(false)
+    expect(items.some((item) => 'href' in item && String(item.href).startsWith('/schools/'))).toBe(false)
+  })
+
+  it('names the county attendance source when schools are listed', () => {
+    expect(
+      placeKnowledgeSource({
+        name: 'Tetherow',
+        content: null,
+        hasMeasuredHoa: false,
+        hasSchools: true,
+      }),
+    ).toBe('Schools are the Deschutes County attendance areas that cover this place.')
   })
 })
 

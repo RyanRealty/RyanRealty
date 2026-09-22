@@ -716,6 +716,12 @@ export type {
   SchoolDistrictGroup,
   SchoolsByLevel,
 } from '@/lib/data/schools/getSchools'
+export {
+  getPlaceSchools,
+  placeSchoolsFromRows,
+  PLACE_SCHOOL_MIN_SHARE,
+} from '@/lib/data/schools/getPlaceSchools'
+export type { PlaceSchool, PlaceSchoolRpcRow } from '@/lib/data/schools/getPlaceSchools'
 
 // Parks — registry-backed content pages. getParkDetail joins the registry to
 // the REAL active SFR homes near a park (listings bounding box); getParks

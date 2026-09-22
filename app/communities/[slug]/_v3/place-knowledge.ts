@@ -6,12 +6,13 @@
  * rather than re-baseline. Nothing here fetches, formats a figure, or derives a
  * market number: it takes the already-loaded, already-verified per-community
  * config (data/resort-community-<slug>.json, through lib/resort-community-content)
- * plus the resort registry and the school registry, and turns them into rows.
+ * plus the resort registry and the attendance schools for the place, and turns
+ * them into rows.
  *
  * THE SOURCE SET IS CLOSED, and it is the same set the KB overview read: the
  * config's prose, at-a-glance facts, drive times, course, membership and
- * builders, the registry's subdivision aliases and HOA estimate, the verified
- * city-to-district registry in data/co-schools.ts. Amenities left this Quiet
+ * builders, the registry's subdivision aliases and HOA estimate, and the
+ * attendance-area schools passed in from getPlaceSchools. Amenities left this Quiet
  * on SITE-116 — they render through #amenities. No fact is composed from two
  * sources and none is invented. A community with no config yields fewer rows,
  * which is what the page then shows.
@@ -56,13 +57,18 @@ export function placeKnowledgeSource(input: {
   name: string
   content: ResortCommunityContent | null
   hasMeasuredHoa: boolean
+  /** Attendance polygons covered this place, so the block names those schools. */
+  hasSchools?: boolean
 }): string | undefined {
   const publishers: string[] = []
   for (const s of input.content?.sources ?? []) {
     const p = s.publisher?.trim()
     if (p && !publishers.includes(p)) publishers.push(p)
   }
-  if (publishers.length === 0) return undefined
+  const schoolLine = input.hasSchools
+    ? 'Schools are the Deschutes County attendance areas that cover this place.'
+    : ''
+  if (publishers.length === 0) return schoolLine || undefined
   const list =
     publishers.length === 1
       ? publishers[0]
@@ -70,9 +76,10 @@ export function placeKnowledgeSource(input: {
         ? `${publishers[0]} and ${publishers[1]}`
         : `${publishers.slice(0, -1).join(', ')}, and ${publishers[publishers.length - 1]}`
   const authored = `The facts above come from ${input.name}'s recorded sources: ${list}.`
-  return input.hasMeasuredHoa
+  const withHoa = input.hasMeasuredHoa
     ? `${authored} The HOA figure is not authored — it comes from current listings here and carries its own basis on the row.`
     : authored
+  return schoolLine ? `${withHoa} ${schoolLine}` : withHoa
 }
 
 function childPlatItems(input: {
@@ -100,16 +107,32 @@ function childPlatItems(input: {
 /**
  * The authored knowledge rows, in reading order: what belonging costs, what the
  * place is, the child plats, how long it takes to get anywhere, what is there,
- * who built it, and where its children go to school.
+ * who built it, and which attendance-area schools cover it.
  */
+const SCHOOL_LEVEL_LABEL = {
+  elementary: 'Elementary',
+  middle: 'Middle school',
+  high: 'High school',
+} as const
+
+const SCHOOL_LEVEL_RANK = { elementary: 0, middle: 1, high: 2 } as const
+
 export function buildPlaceKnowledge(input: {
   name: string
   city: string
   aboutParagraphs: readonly string[]
   content: ResortCommunityContent | null
   registry: Registry | null
-  schoolDistrictName: string | null
-  schoolDistrictSlug: string | null
+  /**
+   * Attendance-area schools covering this place (getPlaceSchools). Empty
+   * means the section is omitted. A district name is not a substitute.
+   */
+  schools?: readonly {
+    slug: string
+    name: string
+    level: keyof typeof SCHOOL_LEVEL_LABEL
+    share: number
+  }[] | null
   isResort: boolean
   /**
    * True only when the published count WAS built from the alias set, the page's
@@ -265,16 +288,22 @@ export function buildPlaceKnowledge(input: {
     .filter(Boolean)
   if (builders.length > 0) items.push({ kind: 'chips', term: 'Builders', labels: builders })
 
-  if (input.schoolDistrictName) {
-    items.push({
-      kind: 'prose',
-      term: 'Schools',
-      body: `${name} is inside ${input.schoolDistrictName}, the district serving ${input.city}. Assignment is by address, so confirm the school for a specific home before you rely on it.`,
-    })
-    if (input.schoolDistrictSlug) {
+  const schools = [...(input.schools ?? [])]
+    .filter((school) => school.name.trim() && school.slug.trim() && SCHOOL_LEVEL_LABEL[school.level])
+    .sort(
+      (a, b) =>
+        SCHOOL_LEVEL_RANK[a.level] - SCHOOL_LEVEL_RANK[b.level] ||
+        b.share - a.share ||
+        a.name.localeCompare(b.name),
+    )
+  if (schools.length > 0) {
+    items.push({ kind: 'prose', term: 'Schools', body: '' })
+    for (const school of schools) {
       items.push({
-        label: `${input.schoolDistrictName}`,
-        href: `/schools/${input.schoolDistrictSlug}`,
+        label: school.name.trim(),
+        href: `/schools/${school.slug.trim()}`,
+        detail: SCHOOL_LEVEL_LABEL[school.level],
+        stack: true,
       })
     }
   }

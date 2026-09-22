@@ -176,6 +176,11 @@ export type V3QuietLink = {
   /** One quiet line under the label: what is behind the door. */
   detail?: string
   /**
+   * Full-width rows. A short named list (the schools that cover a place)
+   * is a list, not the two-up menu consecutive channel doors use.
+   */
+  stack?: boolean
+  /**
    * A live figure the reader sees BEFORE tapping, with its trace. This is what
    * turns a routing menu into a page that carries data: the market hub's five
    * doors print months of supply, the region's active count, and the closed
@@ -468,6 +473,7 @@ type RenderableLink = {
   mark: V3QuietMark
   media?: { src: string; alt: string }
   secondary: boolean
+  stack: boolean
 }
 
 type RenderableItem =
@@ -493,8 +499,10 @@ type RenderableItem =
 /**
  * Drops what cannot be rendered honestly: a link with no label would ship an
  * anchor with no accessible name (WCAG 2.4.4 and 4.1.2, and the arrow beside it
- * is aria-hidden so there is no second chance at a name), a link with no href
- * is not a door, and a passage with no body is a dangling lead-in.
+ * is aria-hidden so there is no second chance at a name), and a link with no
+ * href is not a door. A passage with a term and no body stays: it is the label
+ * for the doors that follow (Schools, then one row per school). A passage with
+ * neither term nor body is dropped.
  */
 function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
   const out: RenderableItem[] = []
@@ -508,10 +516,11 @@ function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
 
     if (item.kind === 'prose') {
       const body = paragraphs(item.body)
-      if (body.length === 0) continue
+      const term = text(item.term)
+      if (body.length === 0 && !term) continue
       out.push({
         kind: 'prose',
-        term: text(item.term),
+        term,
         body,
         id: text(item.id),
         figure: figureOf(item.figure),
@@ -568,6 +577,7 @@ function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
       figure: figureOf(item.figure),
       lead: item.lead === true,
       secondary: item.weight === 'secondary' && item.lead !== true,
+      stack: item.stack === true,
       mark: markFor(href, item.mark),
       ...(item.media && text(item.media.src)
         ? { media: { src: text(item.media.src) as string, alt: text(item.media.alt) ?? '' } }
@@ -877,6 +887,7 @@ export function V3Quiet({
                     'v3-quiet__item',
                     'v3-quiet__item--doors',
                     doors.length === 1 && 'v3-quiet__item--doors-one',
+                    doors.some((door) => door.stack) && 'v3-quiet__item--doors-stack',
                   )}
                 >
                   <ul className="v3-quiet__doors">
@@ -971,6 +982,7 @@ export function V3Quiet({
                     className={cn(
                       'v3-quiet__item',
                       'v3-quiet__item--prose',
+                      item.body.length === 0 && 'v3-quiet__item--label',
                       /* The measure IS the row when there is nothing to put beside
                          the words: one track, and the hairline stops where the
                          paragraph stops. */
@@ -999,13 +1011,15 @@ export function V3Quiet({
                     {item.term ? (
                       <dl className="v3-quiet__pair">
                         <dt className="v3-quiet__term">{item.term}</dt>
-                        <dd className="v3-quiet__body">
-                          {item.body.map((line, lineIndex) => (
-                            <p className="v3-quiet__para" key={lineIndex}>
-                              {line}
-                            </p>
-                          ))}
-                        </dd>
+                        {item.body.length > 0 ? (
+                          <dd className="v3-quiet__body">
+                            {item.body.map((line, lineIndex) => (
+                              <p className="v3-quiet__para" key={lineIndex}>
+                                {line}
+                              </p>
+                            ))}
+                          </dd>
+                        ) : null}
                       </dl>
                     ) : (
                       <div className="v3-quiet__body">

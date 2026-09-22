@@ -74,14 +74,18 @@ export type MarketFaqInput = {
   hoaSubEstimates?: ReadonlyArray<number | null | undefined> | null
   /**
    * Verified school district name for the community's city (e.g. "Bend-La Pine Schools").
-   * Sourced from data/co-schools.ts DISTRICT_CITIES + DISTRICTS constants — the only
-   * registry this data may come from (§0: never invented, never guessed from memory).
-   * When present, emits a schools FAQ. When null/undefined, no FAQ is emitted.
+   * Sourced from data/co-schools.ts. Named in the schools answer when attendance
+   * areas are also known. A district alone does not emit a question.
    */
   schoolDistrictName?: string | null
-  /** districtSlug matching the districtSlug in co-schools.ts (e.g. "bend-la-pine").
-   *  Used to construct the /schools anchor link. */
+  /** districtSlug matching the districtSlug in co-schools.ts (e.g. "bend-la-pine"). */
   schoolDistrictSlug?: string | null
+  /**
+   * Registry names of the attendance areas that cover this place, already
+   * ordered elementary, then middle, then high. From getPlaceSchools.
+   * When absent or empty, no schools question is emitted.
+   */
+  attendanceSchools?: readonly string[] | null
 }
 
 /**
@@ -133,6 +137,30 @@ function marketType(mos: number): string {
   // Thresholds via lib/market/classify.ts (audit p0.4b); short form for FAQ prose.
   const SHORT = { sellers: "seller's", balanced: 'balanced', buyers: "buyer's", unknown: 'balanced' } as const
   return SHORT[marketVerdict(mos).kind]
+}
+
+function attendanceSchoolNames(names: readonly string[] | null | undefined): string[] {
+  const out: string[] = []
+  for (const name of names ?? []) {
+    const trimmed = name.trim()
+    if (trimmed && !out.includes(trimmed)) out.push(trimmed)
+  }
+  return out
+}
+
+function joinSchoolNames(names: readonly string[]): string {
+  if (names.length <= 1) return names[0] ?? ''
+  if (names.length === 2) return `${names[0]} and ${names[1]}`
+  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
+}
+
+function attendanceSchoolAnswer(geoName: string, names: readonly string[], district: string | null): string {
+  const list = joinSchoolNames(names)
+  const areas =
+    names.length === 1
+      ? `The attendance area covering ${geoName} is ${list}.`
+      : `Attendance areas covering ${geoName} are ${list}.`
+  return district ? `${district}. ${areas}` : areas
 }
 
 export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): MarketFaqResult {
@@ -296,15 +324,18 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     })
   }
 
-  // Schools FAQ — only when the community's district is known from the verified registry
-  // (data/co-schools.ts getDistrictForCity). Attendance-zone schools vary by address
-  // within a district and are NOT listed here because we have no per-address boundary data.
-  // The answer names the verified district and links to /schools for the full list. (§0)
-  if (pulse.schoolDistrictName && pulse.schoolDistrictSlug) {
-    const districtName = pulse.schoolDistrictName
+  // Schools — attendance polygons that cover the place (getPlaceSchools).
+  // Deschutes County GIS is the source. A district name without that list is
+  // not an answer: Crook, Jefferson, Culver, and Gilchrist attendance is
+  // unpublished, and a hedge about confirming the address is not a school.
+  const attendanceSchools = attendanceSchoolNames(pulse.attendanceSchools)
+  if (attendanceSchools.length > 0) {
+    const districtName = pulse.schoolDistrictName?.trim() || null
     faqs.push({
-      question: `What school district serves ${geoName}?`,
-      answer: `Homes in ${geoName} are served by ${districtName}. The specific elementary, middle, and high school assigned to a home depends on its address within the district. Visit our schools page for the full list of schools in the district.`,
+      question: districtName
+        ? `What school district serves ${geoName}?`
+        : `Which schools cover ${geoName}?`,
+      answer: attendanceSchoolAnswer(geoName, attendanceSchools, districtName),
     })
   }
 
