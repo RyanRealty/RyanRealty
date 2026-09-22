@@ -1,3 +1,7 @@
+# Current — 2026-09-22 (Matt: align the CMA letter, avoid wrapping)
+
+Surface: Grok Build, primary checkout, `main` `20a975447`. Murphy letter column heads sit on the same edge as the figures. The ask path breaks on the clause, the same way in every column. The what-happened sentence stays one line. Five tight sales already live ($693,000–$735,000, recommended $716,000). Not sent. auto_send stays off. Node: none.
+
 # Current — 2026-09-22 (Matt: improve the amenities, do not remove them)
 
 Surface: Grok Build, primary checkout. Community #amenities names each place from the community guide, with its description and a usable access line. No share bar and no "on the ground" heading. Phone is one column. Node: none.
