@@ -3,7 +3,7 @@ import { ACTIVE_INVENTORY_CITIES } from '@/lib/data/analytics/snapshotActiveInve
 
 const snapshotMock = vi.hoisted(() => vi.fn())
 const createServiceClient = vi.hoisted(() =>
-  vi.fn(() => {
+  vi.fn((): { from: () => void } => {
     throw new Error('test must stub the service client')
   }),
 )
