@@ -32,12 +32,15 @@
   color: var(--v3-ink-muted);
 }
 
-.v3 .invest-tables [data-slot='table-container'] {
+.v3.invest-tables [data-slot='table-container'] {
   border-top: var(--v3-rule-section);
+  overflow-x: clip;
 }
 
 .v3 .invest-tables [data-slot='table'] {
   color: var(--v3-ink);
+  table-layout: fixed;
+  width: 100%;
 }
 
 .v3 .invest-tables [data-slot='table-head'] {
@@ -64,6 +67,7 @@
 .v3 .invest-tables [data-slot='table-cell'] {
   padding-block: 0.75rem;
   white-space: normal;
+  vertical-align: middle;
 }
 
 .v3 .invest-tables [data-slot='table-caption'] {
@@ -71,20 +75,97 @@
   text-align: left;
 }
 
-.invest-tables__link {
-  display: inline-flex;
+/*
+  One house per row: photograph + price + address + type/sqft.
+  City lives in the meta block, never as a flex sibling of the street
+  (that pairing made Bend an orphan column at 375).
+*/
+.invest-tables__home {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    'media address price'
+    'media meta price';
+  column-gap: var(--v3-space-md);
+  row-gap: var(--v3-space-3xs);
   align-items: center;
   min-height: 2.75rem;
   color: inherit;
+  text-decoration: none;
+}
+
+.invest-tables__media {
+  grid-area: media;
+  width: 5.5rem;
+  height: 4.125rem;
+  border-radius: var(--v3-radius-sm);
+  object-fit: cover;
+  background: var(--v3-navy);
+}
+
+.invest-tables__glyph {
+  display: grid;
+  place-items: center;
+  color: var(--v3-cream);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: 0;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.invest-tables__price {
+  grid-area: price;
+  justify-self: end;
+  align-self: center;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.invest-tables__address {
+  grid-area: address;
+  min-width: 0;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  overflow-wrap: break-word;
+  hyphens: manual;
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 
-.invest-tables__extra {
-  margin: 0.35rem 0 0;
+.invest-tables__meta {
+  grid-area: meta;
+  min-width: 0;
   color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  overflow-wrap: break-word;
+  hyphens: manual;
 }
 
-.invest-tables__facts {
-  color: var(--v3-ink-muted);
+@media (max-width: 30rem) {
+  .invest-tables__home {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    grid-template-areas:
+      'media price'
+      'media address'
+      'media meta';
+    align-items: start;
+  }
+
+  .invest-tables__media {
+    width: 4.5rem;
+    height: 3.375rem;
+    align-self: center;
+  }
+
+  .invest-tables__price {
+    justify-self: start;
+  }
 }

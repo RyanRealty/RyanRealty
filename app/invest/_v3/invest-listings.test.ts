@@ -56,11 +56,19 @@ describe('composeInvestListings', () => {
     expect(rows[0]?.address).toContain('Pine')
     expect(rows[0]?.beds).toBe('4 bd')
     expect(rows[0]?.baths).toBe('2 ba')
-    expect(rows[0]?.size).toBe('1,800 sqft')
+    expect(rows[0]?.size).toBe('1,800\u00a0sqft')
+    expect(rows[0]?.photoSrc).toBe('https://example.com/p.jpg')
+    expect(rows[0]?.photoAlt).toContain('Pine')
     expect(investListingFacts(rows[0]!)).toContain('Multi-family')
     expect(investListingFacts(rows[0]!)).toContain('bd')
-    expect(rows[1]?.size).toBe('2.50 acres')
+    expect(rows[1]?.size).toBe('2.50\u00a0acres')
     expect(investTypeLabel(tile({ listingKey: 'x', propertyType: 'D' }))).toBe('Lot')
+  })
+
+  it('drops the photograph when the feed sent none, and never invents one', () => {
+    const rows = composeInvestListings([[tile({ listingKey: 'mf-1', photoUrl: null })]])
+    expect(rows[0]?.photoSrc).toBeNull()
+    expect(rows[0]?.photoAlt).toContain('Pine')
   })
 
   it('drops a tile with no price or no street', () => {
@@ -92,9 +100,22 @@ describe('invest catalog import (Tip Ready route scan)', () => {
   it('imports the shadcn table from the installed source', () => {
     const src = readFileSync(new URL('./InvestTables.client.tsx', import.meta.url), 'utf8')
     const page = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
+    const css = readFileSync(new URL('./invest-table.css', import.meta.url), 'utf8')
     expect(src).toMatch(/from '@\/components\/ui\/table'/)
     expect(page).toMatch(/from '@\/components\/ui\/table'/)
     expect(src).not.toMatch(/<TableHead>Type<\/TableHead>/)
+    expect(src).toMatch(/invest-tables__home/)
+    expect(src).toMatch(/row\.photoSrc/)
+    expect(src).not.toMatch(/display:\s*inline-flex/)
+    expect(css).not.toMatch(/inline-flex/)
+    expect(css).toMatch(/hyphens:\s*manual/)
+  })
+
+  it('does not reprint the priced addresses on V3Ledger', () => {
+    const page = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
+    expect(page).not.toMatch(/Priced addresses on the income side/)
+    expect(page).not.toMatch(/listingDoorRows/)
+    expect(page).toMatch(/firstTypeRow/)
   })
 })
 

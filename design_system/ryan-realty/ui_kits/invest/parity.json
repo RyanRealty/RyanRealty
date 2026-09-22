@@ -31,12 +31,12 @@
     },
     {
       "name": "InvestTables",
-      "section": "#searches-table \u2014 shadcn Table of four live listings with price, address, and facts (type absorbed). No TYPE column.",
+      "section": "#searches-table \u2014 the one listing inventory. shadcn Table of four live listings as house rows (photograph + price + address + type/sqft). City sits in the meta line, not a flex sibling of the street. No TYPE column. No second priced-address list.",
       "blocking": true
     },
     {
       "name": "V3Ledger",
-      "section": "#searches \u2014 crawlable doors. Live listing rows (price + address + facts) when the tile read published any; otherwise one door per income property type.",
+      "section": "#searches \u2014 crawlable type doors (how each income type trades). Not a reprint of the listing table.",
       "blocking": true
     },
     {
@@ -60,8 +60,8 @@
     "V3Breadcrumb",
     "V3Pulse #place -- the finding, the H1, lots vs buildings on one track",
     "InvestInsight #place-insight -- InsightCards (Allocation + Liveline on every page)",
-    "InvestTables -- shadcn Table of four live listings",
-    "V3Ledger #searches -- crawlable listing or type doors",
+    "InvestTables -- shadcn Table of four live listings with photographs",
+    "V3Ledger #searches -- crawlable type doors",
     "V3Quiet #tools -- the cost of money and the math doors",
     "InvestAlertSheet -- the ask (id=alerts renders inside the component, matching HomeAlertSheet)",
     "V3Footer"
