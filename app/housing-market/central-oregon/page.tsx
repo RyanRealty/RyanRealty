@@ -193,28 +193,31 @@ export async function generateMetadata(): Promise<Metadata> {
     hud.medianList != null && hud.medianList > 0 ? formatPriceCompact(hud.medianList) : null
   const forSale =
     hud.active != null && hud.active > 0 ? hud.active.toLocaleString('en-US') : null
-  // SITE-103 SEO: the description carries the live verdict and the supply
-  // figure the H1 states, so the snippet is the answer instead of a promise of
-  // one. Both clauses ship only when their own figure resolved — a description
-  // is a published number and gets the same guard as the screen (section 0).
+  // SITE-178: this leaf is the report twin of /housing-market. PAGE_OUTLINE
+  // keeps one regional hub (hub = live, CO leaf = report). noindex,follow so
+  // the live hub is the only indexable Central Oregon housing-market URL.
+  // Description still carries sourced figures (section 0); the title does not
+  // repeat the hub's "Central Oregon Housing Market" query.
   const mosRawMeta = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const verdictMeta = marketVerdict(mosRawMeta)
   const supplyClause =
     mosRawMeta != null && verdictMeta.kind !== 'unknown'
       ? `${formatMonthsOfSupply(mosRawMeta)} months of supply — ${verdictMeta.label}. `
       : ''
-  const title = forSale && median
-    ? `Central Oregon housing market · ${forSale} for sale · ${median}`
-    : median
-      ? `Central Oregon housing market · ${median} median list`
-      : 'Central Oregon region deep dive'
+  const inventoryClause =
+    forSale && median
+      ? `${forSale} listed, median ${median}. `
+      : median
+        ? `Median list ${median}. `
+        : ''
   return pageMetadata({
-    title,
+    title: 'Central Oregon housing market report',
     description:
-      `${supplyClause}Central Oregon housing market: live single-family inventory, months of supply as homes for sale against a month of sales, the last twelve months of closed sale prices, and city doors for Bend, Redmond, Sisters, and the rest of the region. Oregon Data Share via Ryan Realty.`,
+      `${supplyClause}${inventoryClause}Central Oregon housing market report: city doors, closed-sales history, and live single-family inventory. Oregon Data Share via Ryan Realty.`,
     path: '/housing-market/central-oregon',
+    noindex: true,
     keywords: [
-      'Central Oregon housing market',
+      'Central Oregon housing market report',
       'Central Oregon real estate market',
       'Central Oregon region deep dive',
       'Bend Redmond Sisters market data',
@@ -400,12 +403,13 @@ export default async function CentralOregonRegionPage() {
   const forSaleLedger = buildForSaleLedger(forSaleTiles)
   const [firstForSaleRow, ...restForSaleRows] = forSaleLedger.rows
 
-  // The market summary, carried over from the KB ContentSection. The verdict itself
-  // is the Instrument headline and the formula and thresholds are in that section's
-  // trace, both from lib/market/classify.ts, so what is left here is the consequence
-  // of the verdict and the page's provenance. This block also guarantees the two
-  // Ledgers around it are never adjacent, which is why its outbound edge ships
-  // unconditionally.
+  // The market summary, carried over from the KB ContentSection. SITE-178: the
+  // Instrument headline is the report name (this URL is not the live hub). The
+  // live verdict stays on the MOS drawing and the figures; the formula and
+  // thresholds stay in that section's trace, both from lib/market/classify.ts.
+  // What is left here is the consequence of the verdict and the page's
+  // provenance. This block also guarantees the two Ledgers around it are never
+  // adjacent, which is why its outbound edge ships unconditionally.
   const summaryItems: V3QuietItem[] = []
   const consequence = MARKET_CONSEQUENCE[verdict.kind]
   if (consequence) {
@@ -464,14 +468,9 @@ export default async function CentralOregonRegionPage() {
     },
     {
       type: 'webPage',
-      name:
-        hud.active != null && hud.active > 0 && hud.medianList != null && hud.medianList > 0
-          ? `Central Oregon housing market · ${hud.active.toLocaleString('en-US')} for sale · ${formatPriceCompact(hud.medianList)}`
-          : hud.medianList != null && hud.medianList > 0
-            ? `Central Oregon housing market · ${formatPriceCompact(hud.medianList)} median list`
-            : 'Central Oregon housing market',
+      name: 'Central Oregon housing market report',
       description:
-        'Live Central Oregon regional market data: active inventory, median list price, months of supply as homes for sale vs a month of sales, newest houses with price and beds, and city doors. Single-family homes. Oregon Data Share via Ryan Realty.',
+        'Central Oregon housing market report: active inventory, median list price, months of supply as homes for sale vs a month of sales, newest houses with price and beds, and city doors. Single-family homes. Oregon Data Share via Ryan Realty.',
       url: '/housing-market/central-oregon',
     },
   ]
@@ -554,11 +553,7 @@ export default async function CentralOregonRegionPage() {
             level={1}
             className="hm-tremor"
             eyebrow={v3Text('Central Oregon')}
-            headline={v3Text(
-              verdict.kind === 'unknown'
-                ? 'Central Oregon housing market'
-                : `A ${verdict.label}`,
-            )}
+            headline={v3Text('Central Oregon housing market report')}
             figures={[firstLiveFigure, ...restLiveFigures]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). foldAfter={0} hid every
                figure behind a summary reading "ALL 42 FIGURES", a row count offered as

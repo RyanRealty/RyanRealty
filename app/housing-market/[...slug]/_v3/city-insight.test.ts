@@ -6,7 +6,7 @@ import {
   cityInsightSources,
 } from './city-insight'
 import { v3Text } from '@/components/site/v3'
-import { cityHomesRows } from './city-homes'
+import { CITY_HOMES_CAP, cityHomesRows } from './city-homes'
 import { closedTrace } from './geo-figures'
 import type { ListingTile } from '@/lib/data'
 
@@ -162,5 +162,43 @@ describe('cityHomesRows', () => {
     expect(rows[0]?.baths).toBe(2)
     expect(rows[0]?.sqft).toBe(1800)
     expect(rows[0]?.href).toMatch(/220111/)
+  })
+
+  it('keeps every fetched priced row up to the listing pull cap', () => {
+    expect(CITY_HOMES_CAP).toBe(8)
+    const tiles = Array.from({ length: 10 }, (_, i) => ({
+      listingKey: `k${i}`,
+      listNumber: `22011${i}`,
+      status: 'Active',
+      listPrice: 500000 + i,
+      closePrice: null,
+      closeDate: null,
+      beds: 3,
+      baths: 2,
+      sqft: 1600,
+      streetNumber: String(10 + i),
+      streetName: 'Ladera',
+      streetSuffix: 'Road',
+      city: 'Bend',
+      citySlug: 'bend',
+      postalCode: '97702',
+      subdivisionName: 'Ladera',
+      subdivisionSlug: 'ladera',
+      lat: null,
+      lng: null,
+      photoUrl: 'https://example.com/a.jpg',
+      propertyType: 'A',
+      propertySubType: 'Single Family Residence',
+      onMarketDate: null,
+      modifiedAt: null,
+      pricePerSqft: 300,
+      lotSizeAcres: null,
+      yearBuilt: 2018,
+      garageSpaces: null,
+      poolYn: null,
+      hasVirtualTour: false,
+      tourUrl: null,
+    })) as unknown as ListingTile[]
+    expect(cityHomesRows(tiles)).toHaveLength(CITY_HOMES_CAP)
   })
 })

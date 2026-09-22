@@ -1,5 +1,6 @@
-/* City fold — InsightCards, the two MOS bars, then the long view (SITE-102).
-   Tokens only. Matches the region fold so the class is one object. */
+/* City fold — MOS two-bar first in the DOM so a phone reads homes-for-sale vs
+   a month of sales without a second URL (SITE-178). Desktop keeps InsightCards
+   in the wide column. Tokens only. */
 
 .city-market-fold {
   display: grid;
@@ -12,6 +13,18 @@
     grid-template-columns: minmax(0, 1.45fr) minmax(15rem, 0.85fr);
     gap: var(--v3-space-xl);
     align-items: start;
+  }
+
+  .city-market-fold:has(.city-insight) {
+    grid-template-areas: 'insight mos';
+  }
+
+  .city-market-fold:has(.city-insight) .city-insight {
+    grid-area: insight;
+  }
+
+  .city-market-fold:has(.city-insight) .city-market-mos {
+    grid-area: mos;
   }
 }
 

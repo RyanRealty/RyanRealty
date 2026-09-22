@@ -8,6 +8,9 @@ import type { V3ListingRowData } from '@/components/site/v3'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingTileHref } from '@/lib/slug'
 
+/** Same cap as getCityListings on this route — show every fetched priced row. */
+export const CITY_HOMES_CAP = 8
+
 export function cityHomesRows(tiles: readonly ListingTile[]): V3ListingRowData[] {
   const rows: V3ListingRowData[] = []
   for (const tile of tiles) {
@@ -43,7 +46,7 @@ export function cityHomesRows(tiles: readonly ListingTile[]): V3ListingRowData[]
       tourUrl: tile.tourUrl,
       hasTour: tile.hasVirtualTour ?? Boolean(tile.tourUrl),
     })
-    if (rows.length >= 6) break
+    if (rows.length >= CITY_HOMES_CAP) break
   }
   return rows
 }

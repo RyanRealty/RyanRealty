@@ -162,6 +162,9 @@ export async function generateMetadata(): Promise<Metadata> {
     mosRawMeta != null && verdictMeta.kind !== 'unknown'
       ? `${formatMonthsOfSupply(mosRawMeta)} months of supply — ${verdictMeta.label}. `
       : ''
+  // SITE-178: this URL is the one indexable regional housing-market page.
+  // /housing-market/central-oregon is the report twin (noindex, follow).
+  // Title literal is locked by ci:seo-shell.
   return pageMetadata({
     title: 'Central Oregon Housing Market',
     description:
