@@ -2,14 +2,13 @@
  * /reviews - Google reviews as written, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Look (SITE-48, 2026-09-09): the page opens ON THE RATING. V3Proof is the
- * whole opening — the Google score face (5.0 drawn as stars, the count), the
- * span as context figures, one client's words in full, then the reach as a
- * slim action row, then the strip of every review on its month with the year
- * chips and the full-text archive. The reach was a V3Quiet list ABOVE all of
- * that until this pass, which meant four identical arrow rows were the first
- * thing a reader judging us met, with a blank band above them. Doors close
- * the page. The family's Sheet stays on /contact and /team/[slug].
+ * Look (SITE-48, 2026-09-09; SITE-167, 2026-09-21): the page opens ON THE
+ * RATING and a broker face. V3Proof is the whole opening: the Google score
+ * (5.0 drawn as stars, the count), the brokers who stand behind it (Google
+ * does not send reviewer photos), one client's words in full, then the reach
+ * as a slim action row, then the strip of every review on its month with the
+ * year chips and the full-text archive. Doors close the page. The family's
+ * Sheet stays on /contact and /team/[slug].
  *
  * Reviews are quoted as written. Brand-voice laws do not rewrite client text.
  * No aggregateRating on this page (self-serving on our own site).
