@@ -178,12 +178,17 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
   }
   if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__text--current[\s\S]{0,160}max-width:\s*none/.test(css)) {
     p.push(
-      `${PATHS.breadcrumbCss}: overlay-compact current crumb must not ellipsis at 52vw. SITE-128 rematch: 828 Florida clipped.`,
+      `${PATHS.breadcrumbCss}: desktop overlay-compact current crumb must stay max-width:none. 52vw ellipsis is refuse.`,
+    )
+  }
+  if (/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__text--current[\s\S]{0,80}52vw/.test(css)) {
+    p.push(
+      `${PATHS.breadcrumbCss}: overlay-compact current crumb must not ellipsis at 52vw. SITE-137: remaining-width ellipsis at phone only.`,
     )
   }
   if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__item:last-child[\s\S]{0,120}flex:\s*0 0 auto/.test(css)) {
     p.push(
-      `${PATHS.breadcrumbCss}: overlay-compact items must not shrink. Address end clipping is refuse.`,
+      `${PATHS.breadcrumbCss}: desktop overlay-compact items must stay flex 0 0 auto so the desktop path stays full.`,
     )
   }
   if (!/\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__link[\s\S]{0,280}font-size:\s*var\(--v3-size-source\)/.test(css)) {
@@ -194,6 +199,33 @@ export function breadcrumbFoldDensityProblems({ root = process.cwd(), files = {}
   if (!/@media \(max-width: 39\.99rem\)[\s\S]{0,800}\.v3\.v3-breadcrumb--overlay-compact \{[\s\S]{0,80}padding-inline:\s*var\(--v3-space-sm\)/.test(css)) {
     p.push(
       `${PATHS.breadcrumbCss}: overlay-compact phone wash must use space-sm, not the 20px gutter. Gutter clipped "Avenue" at 375.`,
+    )
+  }
+  if (
+    !/@media \(max-width: 39\.99rem\)[\s\S]{0,1400}\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__text[\s\S]{0,220}text-overflow:\s*ellipsis/.test(
+      css,
+    )
+  ) {
+    p.push(
+      `${PATHS.breadcrumbCss}: phone overlay-compact last rung must ellipsize. Hard clip "828 NW Florida Av" is refuse.`,
+    )
+  }
+  if (
+    !/@media \(max-width: 39\.99rem\)[\s\S]{0,1200}\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__item:last-child[\s\S]{0,160}min-width:\s*8ch/.test(
+      css,
+    )
+  ) {
+    p.push(
+      `${PATHS.breadcrumbCss}: phone last crumb must keep a readable min-width (8ch) so the address is not squeezed to a letter.`,
+    )
+  }
+  if (
+    !/@media \(max-width: 39\.99rem\)[\s\S]{0,900}\.v3\.v3-breadcrumb--overlay-compact \.v3-breadcrumb__list[\s\S]{0,120}overflow:\s*hidden/.test(
+      css,
+    )
+  ) {
+    p.push(
+      `${PATHS.breadcrumbCss}: phone overlay-compact list must overflow:hidden inside listing-detail clip. overflow:visible still paints "Av".`,
     )
   }
   return p

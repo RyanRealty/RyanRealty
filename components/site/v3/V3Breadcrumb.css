@@ -185,12 +185,13 @@
 
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {
   overflow: visible;
+  gap: 0;
   scrollbar-width: none;
 }
 
-/* SITE-128 rematch: the name-only place path must stay readable. Ellipsis
-   on the last crumb (52vw) clipped "828 NW Florida Avenue" at 375. Items
-   do not shrink; the list scrolls instead of chopping the address. */
+/* Desktop overlay: full name-only path (Bend / Old Bend / plat / address).
+   52vw ellipsis on the last crumb is refuse — it clipped Florida on a
+   wide mosaic. Items keep their content width. */
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item,
 .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {
   flex: 0 0 auto;
@@ -204,17 +205,51 @@
 }
 
 @media (max-width: 39.99rem) {
-  /* SITE-128 rematch: the 20px gutter left 8px of "Avenue" in the clip.
-     Source size + a tighter wash so Bend / Old Bend / plat / address
-     stay fully on the 375. overflow:visible — auto still chopped the end. */
+  /* SITE-137: listing-detail overflow-x:clip still chops overflow:visible
+     "Avenue" to "Av". Keep the painted place path; last rung uses remaining
+     width and ellipsizes. Desktop (above) stays the full trail. */
   .v3.v3-breadcrumb--overlay-compact {
     padding-inline: var(--v3-space-sm);
+    min-width: 0;
+  }
+
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__list {
+    overflow: hidden;
+    min-width: 0;
+    width: 100%;
+    gap: 0;
+  }
+
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item,
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {
+    min-width: 0;
+  }
+
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:not(:last-child) {
+    flex: 0 1 auto;
+    overflow: hidden;
+  }
+
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {
+    flex: 1 1 auto;
+    min-width: 8ch;
+    overflow: hidden;
   }
 
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text,
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__collapse {
     font-size: var(--v3-size-source);
+  }
+
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
   }
 
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item + .v3-breadcrumb__item::before {

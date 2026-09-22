@@ -127,7 +127,9 @@ function CrumbMark({ rung }: { rung: Rung }) {
   if (typeof rung.href === 'string') {
     return (
       <BreadcrumbLink asChild className="v3-breadcrumb__link">
-        <Link href={rung.href}>{rung.label}</Link>
+        <Link href={rung.href} title={rung.label}>
+          {rung.label}
+        </Link>
       </BreadcrumbLink>
     )
   }
@@ -137,6 +139,7 @@ function CrumbMark({ rung }: { rung: Rung }) {
         'v3-breadcrumb__text',
         rung.isCurrent && 'v3-breadcrumb__text--current',
       )}
+      title={rung.label}
     >
       {rung.label}
     </BreadcrumbPage>

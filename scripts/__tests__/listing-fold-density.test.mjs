@@ -158,21 +158,27 @@ describe('listing-fold-density lock', () => {
     expect(p.join('\n')).toMatch(/overflow:visible|overflow-x|clip|Avenue/i)
   })
 
-  it('refuses an overlay crumb that ellipsizes the address at 375', () => {
-    const css = live.breadcrumbCss
-      .replace(
-        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  max-width: none;',
-        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  max-width: min(18rem, 52vw);',
-      )
-      .replace(
-        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {\n  flex: 0 0 auto;',
-        '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {\n  flex: 0 1 auto;',
-      )
+  it('refuses 52vw address ellipsis on overlay-compact', () => {
+    const css = live.breadcrumbCss.replace(
+      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  max-width: none;',
+      '.v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text--current {\n  max-width: min(18rem, 52vw);',
+    )
     const p = breadcrumbFoldDensityProblems({
       root: REPO,
       files: { ...live, breadcrumbCss: css },
     })
-    expect(p.join('\n')).toMatch(/ellipsis|52vw|shrink|828 Florida|clip/i)
+    expect(p.join('\n')).toMatch(/52vw|max-width:none|ellipsis/i)
+  })
+
+  it('refuses a 375 last rung that hard-clips Avenue without ellipsis', () => {
+    const css = live.breadcrumbCss
+      .replace(/text-overflow:\s*ellipsis/, 'text-overflow: clip')
+      .replace(/min-width:\s*8ch/, 'min-width: max-content')
+    const p = breadcrumbFoldDensityProblems({
+      root: REPO,
+      files: { ...live, breadcrumbCss: css },
+    })
+    expect(p.join('\n')).toMatch(/ellipsis|Florida Av|8ch|overflow:hidden/i)
   })
 
   it('refuses a listing crumb that is not overlay', () => {
