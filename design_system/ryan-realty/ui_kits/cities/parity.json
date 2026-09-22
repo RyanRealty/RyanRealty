@@ -20,6 +20,16 @@
       "blocking": true
     },
     {
+      "name": "CitiesDirectory",
+      "section": "SITE-161 — first-viewport directory of photographed cities. Photo + name + live for-sale count. Each card a crawlable /cities/{slug} door.",
+      "blocking": true
+    },
+    {
+      "name": "V3Atlas",
+      "section": "The drawing — Central Oregon Atlas beside the directory, not a Google default embed.",
+      "blocking": true
+    },
+    {
       "name": "V3Ledger",
       "section": "Ledger — every city A–Z. Every row a door, the live count in the value column. Caption, not a five-number Instrument.",
       "blocking": true
@@ -80,6 +90,8 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
+    "CitiesDirectory #city-directory -- photo + name + live count in the first viewport",
+    "V3Atlas #atlas -- the drawing",
     "V3Ledger #featured-cities -- EVERY city A–Z in one ledger, live count on the row, each row a door",
     "V3Quiet #city-doors -- deep filter doors per featured city; ci:westside-backlog pins the Bend luxury door here",
     "RegionalAlertSheet -- the ask",
@@ -91,12 +103,13 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-16",
+    "evaluatedAt": "2026-09-21",
     "rubricVersion": "v1-2026-09-12",
-    "demoMatch": true,
-    "evaluator": "npx tsx scripts/taste-evaluate.ts cities --builder grok-4.6 --url http://127.0.0.1:3121/cities — cursor-agent not logged in, grok CLI missing, claude CLI missing. Separate judge claude-sonnet-5 via Cursor Task (three scorings of the ten PNGs in one call, rubric v1-2026-09-12). The builder, grok-4.6, did not grade the page.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "grok-4.6",
+    "demoMatch": false,
+    "evaluator": "npx tsx scripts/taste-evaluate.ts cities --builder grok-4.5 --evaluator auto --url http://127.0.0.1:3463/cities --shots desktop.png,mobile375.png,combo-open-desktop.png,combo-open-mobile375.png. Judge grok-4.6 through cursor-agent (cursor-grok-4.6-high). Three scorings of the four PNGs. The builder did not grade the page.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
+    "transport": "cursor-cli",
     "shotSpec": {
       "routes": [
         "/cities"
@@ -107,56 +120,50 @@
       ],
       "states": [
         "default",
-        "combo-open",
-        "insight-open",
-        "supply",
-        "reveal"
+        "combo-open"
       ],
-      "capture": "first viewport, node scripts/take-route-shots.mjs cities http://127.0.0.1:3121 --states insight-open/combo-open/supply/reveal --await .v3-drawing.is-drawn, scale 1, palette-quantized, next dev --webpack :3121"
+      "capture": "first viewport, 1440×900 and 375×812, scale 1, palette-quantized. combo-open = [data-taste=city-combo] input click. Lane next dev --webpack :3463."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/cities/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/cities/shots/mobile375.png",
       "comboOpenDesktop": "design_system/ryan-realty/ui_kits/cities/shots/combo-open-desktop.png",
-      "comboOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/combo-open-mobile375.png",
-      "insightOpenDesktop": "design_system/ryan-realty/ui_kits/cities/shots/insight-open-desktop.png",
-      "insightOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/insight-open-mobile375.png",
-      "supplyDesktop": "design_system/ryan-realty/ui_kits/cities/shots/supply-desktop.png",
-      "supplyMobile375": "design_system/ryan-realty/ui_kits/cities/shots/supply-mobile375.png",
-      "revealDesktop": "design_system/ryan-realty/ui_kits/cities/shots/reveal-desktop.png",
-      "revealMobile375": "design_system/ryan-realty/ui_kits/cities/shots/reveal-mobile375.png"
+      "comboOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/combo-open-mobile375.png"
     },
-    "shotsHash": "sha256:3682c41cc154e9c842ac1c31e2e0faba97d3f3c742f42f6b234477469f61cad8",
+    "shotsHash": "sha256:e93c0dc3a611d689f81653f2a9086caadc47389ebba552c935305b7a36dc1b49",
     "scores": [
-      56,
-      60,
-      63
+      51,
+      59,
+      54
     ],
-    "score": 60,
+    "score": 54,
     "criteria": {
-      "designQuality": 17,
-      "originality": 16,
-      "interaction": 11,
-      "craft": 8,
+      "designQuality": 16,
+      "originality": 15,
+      "interaction": 8,
+      "craft": 7,
       "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 17,
-      "originality": 16,
-      "interaction": 11,
-      "craft": 8,
+      "design": 16,
+      "originality": 15,
+      "interaction": 8,
+      "craft": 7,
       "honesty": 8
     },
-    "beats": "Beats Zillow Bend homes (zillow.com/bend-or) on sourced interactive market depth: a live city-vs-region comparison combobox and a two-named-bar months-of-supply gauge. Loses to Zillow on breadth of the visible city list and per-city photography.",
+    "beats": "Versus Zillow Bend homes (https://www.zillow.com/bend-or/): desktop has sourced 4.4-month named-bar MOS and a non-Google Atlas. Versus Visit Bend: photography now leads the INDEX fold (photo + name + live count). Versus NYT Upshot: bars encode leftover inventory on the row. First-viewport named cities are tappable at 1440 and 375.",
     "adaptedFrom": [
       {
-        "id": "beautifului-insight"
+        "id": "beui-infinite-masonry"
       },
       {
         "id": "beui-number"
       },
       {
         "id": "beui-combobox"
+      },
+      {
+        "id": "beautifului-insight"
       },
       {
         "id": "house-atlas"
@@ -168,45 +175,60 @@
         "id": "house-alerts"
       }
     ],
-    "tells": [],
-    "dullest": "The Homes in Bend and nearby photo carousel at the foot of the insight-open shot: a bare photo row with a 01/09 counter and no visible affordance beyond a half-cropped arrow.",
-    "verdict": "The fold now carries a navy-mark Atlas, a two-named-bar MOS gauge with a sourced verdict, a working beui combobox (search + checkmarked list, Central Oregon only) and a beautifului Insight card (pager + 335 face + scrub line). demoMatch true for the combobox and insight pieces on the evidence shown. Opening the combobox still squeezes the alerts sentence. Finish line 70 not reached.",
+    "tells": [
+      "Cream box. — combo-open: Overlay a city is a labeled hairline field whose cream popover is not the beUI combobox object (options restyled into a jammed grid, list inverted over the photographs, no visible check).",
+      "Cream box. — Directory / Tap a city: InfiniteMasonry is a clipped six-up photo strip (desktop) and a 2×2 tile grid (375), not the masonry demo (no load-more, no stacked columns, Bend's tall cell reads as a layout break)."
+    ],
+    "dullest": "The opened Overlay a city list: three cream rows parked on top of the new city photographs, with names jammed into the months (Bend3.4 mo), so the only compare on the page hides the only original move.",
+    "verdict": "SITE-161 put photographed city doors (Bend, Redmond, Sisters, Sunriver, and two more) with live for-sale counts in the first viewport at 1440 and 375. That is the class job. The table-instrument judge (grok-4.6) scored median 54 with demoMatch false: combobox open is still a cream popover, masonry is a clipped strip not the load-more demo, alerts clip under Jax at 375, Atlas $ pills smear (SITE-159 exclusive — not retouched). Finish line 70 not reached. Node stays in_progress.",
     "defects": [
       {
-        "section": "regional alert sheet, city-overlay-combobox open (desktop)",
+        "section": "Directory / Tap a city (cities-directory)",
+        "severity": "taste",
+        "finding": "The first viewport is a cropped photo row, not beUI infinite-masonry: six uneven tiles, Bend's taller cell looks broken, no load-more or stacked columns, and the navy underlines are too thin to feel magnitude before the numeral.",
+        "replaceWith": "beui:infinite-masonry"
+      },
+      {
+        "section": "Overlay a city against the region (combo-open)",
+        "severity": "taste",
+        "finding": "Opened control is a cream rectangle of three jammed rows covering the new photographs; city name runs into the months (Bend3.4 mo); search sits below the list; a person opening the beUI combobox demo would not recognize this as the same object.",
+        "replaceWith": "beui:combobox"
+      },
+      {
+        "section": "NEW LISTINGS / Hear about (CitiesAlertsStrip)",
         "severity": "defect",
-        "finding": "With the Overlay a city against the region combobox open, the alert sentence and its NEW LISTINGS 256 figure collapse into a narrow column that word-wraps and the figure disappears, breaking the layout-lock pairing of drawing plus figure beside the alerts sentence.",
-        "replaceWith": null
+        "finding": "Even in the resting desktop fold the ask is truncated to Hear about, and at 375 it reads Hear about new listings in Oregon the day they hit th — Jax and Cookies sit on the sentence.",
+        "replaceWith": "house-alerts"
       },
       {
-        "section": "Atlas map, Bend/Redmond corridor",
+        "section": "Atlas / Cities on the map",
         "severity": "taste",
-        "finding": "The navy marks overlap into a dark smear over the Bend-Redmond cluster instead of reading as distinct place-anchored marks.",
-        "replaceWith": null
+        "finding": "Navy marks and $K labels collide into a smear over the Bend–Redmond–Sisters cluster, so the drawing does not read as distinct places. SITE-159 owns Atlas chips — not retouched here.",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "months-of-supply threshold scale, right column",
-        "severity": "craft",
-        "finding": "The Balanced-market verdict is stated three times in a row (inline sentence, the scale labels, and the caption under the scale), which reads as padding rather than one confident claim.",
-        "replaceWith": null
-      },
-      {
-        "section": "Homes in Bend and nearby carousel",
+        "section": "mobile375 first viewport",
         "severity": "taste",
-        "finding": "The photo rail's only interaction cue is a faint partial arrow at the frame edge and a bare 01/09 counter; next to Atlas and Insight it reads as a stock template rail rather than a composed section with its own claim.",
-        "replaceWith": null
+        "finding": "The 375 fold is directory plus combobox plus a clipped ask — no Atlas drawing and no months-of-supply bars — which breaks the place-page lock that a drawing and a figure sit beside the alerts sentence.",
+        "replaceWith": "house-atlas"
+      },
+      {
+        "section": "months-of-supply scale (right column, desktop)",
+        "severity": "defect",
+        "finding": "Balanced is said three times in one column (Seller ≤4 · balanced 4–6 · buyer ≥6, the SELLER'S/BALANCED/BUYER'S labels, and Balanced market at 4.4 months), which is padding, not one claim.",
+        "replaceWith": "house-mos"
       }
     ],
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "evaluatorModel grok-4.6 to claude-sonnet-5 (grok CLI and cursor-agent missing; claude-sonnet-5 is the fallback judge). rubricVersion v1-2026-09-10 to v1-2026-09-12. shotsHash changed with combo-open and insight-open capture.",
+    "rebaselineReason": "evaluatorModel claude-sonnet-5 to grok-4.6 (table instrument via cursor-cli). shotsHash changed with SITE-161 directory fold (photo + name + live count in the first viewport).",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 46,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:58d39b34bc359dc110a673ed23d73c2b8bd59f2fe3b7fb4c34c6b324cc9f02e9"
+      "evaluatedAt": "2026-09-16",
+      "score": 60,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:3682c41cc154e9c842ac1c31e2e0faba97d3f3c742f42f6b234477469f61cad8"
     },
-    "notes": "honestyFunction 8, equal to the prior mark's 8. SEO rose: title names live inventory; CollectionPage ItemList covers the directory; listing ItemList plus FAQ/Dataset JSON-LD. Information rose: leftover detached count and Atlas all-types count are labeled on the same fold; listing rails carry priced homes; InsightCards publish leftover months. UX rose: installed InsightCards, beui-number, and beui combobox imported from app/cities/_v3. taste-evaluate.ts: all judge CLIs missing; JSON is the claude-sonnet-5 Task scoring of the same PNGs. No competitiveBrief on this class, so competitiveBriefPass is not required and is not invented."
+    "notes": "honestyFunction 8, equal to the prior mark. SEO: crawlable /cities/{slug} anchors in the served HTML of #city-directory plus CollectionPage ItemList. Information: each fold card carries a live for-sale count from leftover Market Truth / snapshot / index. UX: directory in the first viewport at 1440 and 375. demoMatch false — node stays in_progress. Atlas CSS not edited (SITE-159)."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

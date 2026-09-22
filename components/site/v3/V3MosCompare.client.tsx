@@ -22,7 +22,6 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
-  ComboboxValue,
 } from '@/components/motion/combobox'
 import { cn } from '@/lib/utils'
 import { answerScaleGeometry, type V3AnswerScale } from './V3Answers.marks'
@@ -94,7 +93,7 @@ export function V3MosCompare({
     [cities],
   )
 
-  const [selectedSlug, setSelectedSlug] = useState<string>(REGION_ONLY)
+  const [selectedSlug, setSelectedSlug] = useState<string>('')
   const selected = useMemo(
     () => overlayable.find((c) => c.slug === selectedSlug) ?? null,
     [overlayable, selectedSlug],
@@ -110,11 +109,10 @@ export function V3MosCompare({
 
   if (!geometry || !Number.isFinite(regionMos) || regionMos <= 0) return null
 
-  const activeBand = geometry.bands.find((b) => b.active)?.label ?? regionVerdict
   const idleRead =
     selected && selected.mosLabel && selected.verdictLabel
       ? `${selected.name} at ${selected.mosLabel} mo (${selected.verdictLabel}) · ${regionLabel} at ${regionMosLabel}`
-      : `${regionVerdict} at ${regionMosLabel} months · ${activeBand}`
+      : `${regionVerdict} at ${regionMosLabel} months`
 
   return (
     <figure
@@ -122,6 +120,49 @@ export function V3MosCompare({
       className={cn(V3_ROOT_CLASS, 'v3-mos-compare', className)}
       aria-labelledby={`${uid}-caption`}
     >
+      {overlayable.length > 0 ? (
+        <div className="v3-mos-compare__combo" data-taste="city-combo">
+          <p className="v3-mos-compare__label" id={`${uid}-combo-label`}>
+            Overlay a city against the region
+          </p>
+          <Combobox
+            value={selectedSlug}
+            onValueChange={(next) => setSelectedSlug(next === REGION_ONLY ? '' : next)}
+            className="v3-mos-compare__beui"
+          >
+            <ComboboxTrigger className="v3-mos-compare__beui-trigger">
+              <ComboboxInput placeholder="Search a city…" aria-label="Search a city with a published reading" />
+            </ComboboxTrigger>
+            <ComboboxContent align="start" className="v3-mos-compare__beui-content">
+              <ComboboxList ariaLabel="Cities with months of supply">
+                <ComboboxItem
+                  value={REGION_ONLY}
+                  textValue={`${regionLabel} only`}
+                  keywords={['region', 'clear', regionLabel]}
+                >
+                  {regionLabel} only
+                </ComboboxItem>
+                {overlayable.map((city) => (
+                  <ComboboxItem
+                    key={city.slug}
+                    value={city.slug}
+                    keywords={[city.name, city.mosLabel ?? '', city.verdictLabel ?? '']}
+                    textValue={city.name}
+                  >
+                    <span className="v3-mos-compare__option-name">{city.name}</span>
+                    <span className="v3-mos-compare__option-meta">
+                      {city.mosLabel} mo · {city.verdictLabel}
+                      {city.activeLabel ? ` · ${city.activeLabel}` : ''}
+                    </span>
+                  </ComboboxItem>
+                ))}
+              </ComboboxList>
+              <ComboboxEmpty>No published reading matches that name.</ComboboxEmpty>
+            </ComboboxContent>
+          </Combobox>
+        </div>
+      ) : null}
+
       <p className="v3-mos-compare__plain" id={`${uid}-caption`}>
         Seller ≤4 · balanced 4–6 · buyer ≥6
       </p>
@@ -169,54 +210,6 @@ export function V3MosCompare({
       <p className="v3-mos-compare__readout" aria-live="polite">
         {idleRead}
       </p>
-
-      {overlayable.length > 0 ? (
-        <div className="v3-mos-compare__combo" data-taste="city-combo">
-          <p className="v3-mos-compare__label" id={`${uid}-combo-label`}>
-            Overlay a city against the region
-          </p>
-          <Combobox
-            value={selectedSlug}
-            onValueChange={setSelectedSlug}
-            className="v3-mos-compare__beui"
-          >
-            <ComboboxTrigger className="v3-mos-compare__beui-trigger">
-              <ComboboxValue placeholder="Search a city with a published reading…">
-                {(value, label) =>
-                  value === REGION_ONLY ? `${regionLabel} only` : (label ?? 'Search a city with a published reading…')
-                }
-              </ComboboxValue>
-            </ComboboxTrigger>
-            <ComboboxContent align="start" className="v3-mos-compare__beui-content">
-              <ComboboxInput placeholder="Search a city…" aria-label="Search a city with a published reading" />
-              <ComboboxList ariaLabel="Cities with months of supply">
-                <ComboboxItem
-                  value={REGION_ONLY}
-                  textValue={`${regionLabel} only`}
-                  keywords={['region', 'clear', regionLabel]}
-                >
-                  {regionLabel} only
-                </ComboboxItem>
-                {overlayable.map((city) => (
-                  <ComboboxItem
-                    key={city.slug}
-                    value={city.slug}
-                    keywords={[city.name, city.mosLabel ?? '', city.verdictLabel ?? '']}
-                    textValue={city.name}
-                  >
-                    <span className="v3-mos-compare__option-name">{city.name}</span>
-                    <span className="v3-mos-compare__option-meta">
-                      {city.mosLabel} mo · {city.verdictLabel}
-                      {city.activeLabel ? ` · ${city.activeLabel}` : ''}
-                    </span>
-                  </ComboboxItem>
-                ))}
-              </ComboboxList>
-              <ComboboxEmpty>No published reading matches that name.</ComboboxEmpty>
-            </ComboboxContent>
-          </Combobox>
-        </div>
-      ) : null}
 
       <span className="sr-only">{source}</span>
     </figure>
