@@ -1468,6 +1468,61 @@ const SEEDS: readonly Seed[] = [
     accept:
       'At 1440 and 375 on /cities/redmond and one of Sisters/Sunriver/La Pine: a visitor can open a named neighborhood or in-city community from the first two screens. Clicking a priced listing photograph opens that listing, not /types/*. Dummy you@email.com is gone on the city alert field. Methodology “listing tiles” sentence is gone. Product hold. Rebaseline is not done. Do not twin SITE-161 or SITE-093.',
   },
+  {
+    versionGap: 'SITE-176',
+    domain: 'public-ux',
+    title: 'AEO: Place ItemList of live homes on city, community, neighborhood, and housing-market pages',
+    objective:
+      'Live 2026-09-22 JSON-LD: homepage ItemList of 8 photographed homes; /zip/97703 already lists homes; /cities/bend, /communities/tetherow, /housing-market/bend emit Place/Dataset/FAQ with zero ItemList of live homes. ChatGPT/Google cannot cite “homes for sale in Tetherow” as a list of URLs from the place page. listingItemList() now lives in lib/site/json-ld.ts. Exclusive: city-metadata, community-metadata, neighborhood-schemas, housing-market [...slug] JSON-LD. Do not change H1s. Do not restyle. Wire the same cards the visitor sees (price + street + canonical listing URL), cap like the homepage rail (8). Product hold. SITE-171 is a separate SEO-leftovers claim; SITE-175 is /new-construction.',
+    output:
+      'ItemList of live homes on /cities/bend, /communities/tetherow, one neighborhood, and /housing-market/bend JSON-LD; tests; 1440 source dump of the ListItem URLs.',
+    accept:
+      'Rendered JSON-LD on those four routes contains ItemList whose item URLs are canonical /homes-for-sale/... listing paths matching photographed cards on the page. Empty inventory withholds the list. H1s unchanged. ci:taste-canon not required (plumbing/schema, not a restyle).',
+  },
+  {
+    versionGap: 'SITE-172',
+    domain: 'public-ux',
+    title: 'AEO: place FAQ depth beyond pulse stats (what this place is, not only MOS)',
+    objective:
+      'Live 2026-09-22: /cities/bend and /housing-market/bend FAQPage is five pulse questions (one answer is 73 characters: “There are 582 active single-family listings in Bend as of September 2026.”). Tetherow already has HOA, schools, sale-to-list, and “what is my home worth.” City and neighborhood pages do not answer “what is Bend / Awbrey Butte” from sourced About prose, so answer engines cite Wikipedia or Zillow for the place and us only for a count. Exclusive: market-faq extras or city/neighborhood FAQ builders. Sourced sentences only (§0). Do not invent HOA, parks, or school assignments. Do not change H1s.',
+    output:
+      'City + neighborhood FAQPage with sourced place questions beside the pulse stats; tests that a missing source withholds the question.',
+    accept:
+      '/cities/bend FAQPage has more than pulse-stat questions and each new answer traces to a named source already on the page. Thin answers under ~120 characters that only restate a Dataset variable are not the new questions. H1s unchanged.',
+  },
+  {
+    versionGap: 'SITE-173',
+    domain: 'public-ux',
+    title: 'AEO: housing-market titles must not bid “{city} homes for sale”',
+    objective:
+      'Live 2026-09-22 <title> on /housing-market/bend is “Bend housing market 2026: 582 homes for sale | Ryan Realty, Central Oregon” while /cities/bend is “Bend homes for sale” and /homes-for-sale is “Central Oregon homes for sale.” Locked inventory: market pages must not keyword-bid {city} homes for sale. geoTitle() in app/housing-market/[...slug]/page.tsx appends the active count as “homes for sale.” Exclusive: that title helper. Do not change H1s (H1 is already “Bend housing market: a seller\'s market”).',
+    output:
+      'Market <title> names the housing market, not a competing homes-for-sale query; tests on geoTitle.',
+    accept:
+      '/housing-market/bend <title> does not contain the phrase “homes for sale.” H1 unchanged. City and listing browse titles still own that phrase.',
+  },
+  {
+    versionGap: 'SITE-174',
+    domain: 'public-ux',
+    title: 'AEO: middleware GOOD_BOT_RE must match robots AI allow-list',
+    objective:
+      'robots.txt allows Perplexity-User, YouBot, meta-externalagent, Amazonbot, and Bytespider. middleware.ts GOOD_BOT_RE has perplexitybot (does not substring-match Perplexity-User), and omits YouBot, meta-externalagent, Amazonbot. Those four fall through to the CN/HK/RU/SG geo screen — Meta and Amazon egress from Singapore — so robots.txt is a lie for the bots that actually fetch. Exclusive: middleware.ts GOOD_BOT_RE + scripts/check-ai-crawler-access.mjs reading both files. Do not restyle pages.',
+    output:
+      'GOOD_BOT_RE includes every AI bot robots.ts Allows; G39 fails if robots and middleware disagree; Bytespider stays off BAD_BOT_RE.',
+    accept:
+      'A request with User-Agent Perplexity-User, YouBot, meta-externalagent, or Amazonbot from a blocked country is not 403d by the geo screen. ci:ai-crawler-access reads middleware.ts.',
+  },
+  {
+    versionGap: 'SITE-175',
+    domain: 'public-ux',
+    title: 'AEO: /new-construction ItemList of live homes, not only community names',
+    objective:
+      'Live 2026-09-22 /new-construction JSON-LD ItemList is “Live Active Bend new-construction communities” (46 named plats). FAQ says 198 live Active new-construction homes. Answer engines citing “new homes in Bend” get community search URLs, not house URLs. Exclusive: app/new-construction JSON-LD graph. Cap the home list. Same cards the page shows. Do not change H1s.',
+    output:
+      'ItemList of live Bend new-construction homes (canonical listing URLs) beside or instead of a community-only list; test.',
+    accept:
+      'Rendered JSON-LD contains ListItem URLs under /homes-for-sale/ that match photographed new-construction homes on the page. Community list may remain. H1 unchanged.',
+  },
 
 ]
 

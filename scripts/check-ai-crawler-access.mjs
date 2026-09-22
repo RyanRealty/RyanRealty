@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ROBOTS = join(ROOT, 'app/robots.ts')
 const LLMS = join(ROOT, 'app/llms.txt/route.ts')
+const LLMS_GEO = join(ROOT, 'lib/site/llms-geo.ts')
 const QUERY_MAP = join(ROOT, 'lib/seo/ai-query-map.json')
 
 // The bots that actually drive AI citations + AI Overviews. Removing any of
@@ -81,13 +82,18 @@ const REQUIRED_LLMS_MARKERS = [
   { marker: 'northwest-crossing', why: 'Northwest Crossing community + filtered inventory' },
   { marker: 'beds=3', why: '3-bed/2-bath filtered inventory citation' },
   { marker: 'ai-query-map.json', why: 'F1 query map wired into llms.txt pillars' },
+  { marker: '/zip/97703', why: 'canonical ZIP pages on the AI map (parity with sitemap geo)' },
+  { marker: 'zipLlmsLines', why: 'ZIP lines from the shared llms-geo helper' },
+  { marker: '/new-construction', why: 'Bend new-construction inventory' },
+  { marker: '/housing-market/bend', why: 'city housing-market pages (not only weekly reports)' },
 ]
 
 if (!existsSync(LLMS)) {
   errors.push('app/llms.txt/route.ts is missing — /llms.txt (the AI content map) is no longer served.')
 } else {
   const mapSrc = existsSync(QUERY_MAP) ? readFileSync(QUERY_MAP, 'utf8') : ''
-  const llms = `${readFileSync(LLMS, 'utf8')}\n${mapSrc}`
+  const geoSrc = existsSync(LLMS_GEO) ? readFileSync(LLMS_GEO, 'utf8') : ''
+  const llms = `${readFileSync(LLMS, 'utf8')}\n${mapSrc}\n${geoSrc}`
   for (const { marker, why } of REQUIRED_LLMS_MARKERS) {
     if (!llms.includes(marker)) {
       errors.push(`llms.txt route no longer references "${marker}" (${why}) — AI assistants lose discovery of that family.`)
