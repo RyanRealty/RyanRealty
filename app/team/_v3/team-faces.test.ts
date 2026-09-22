@@ -24,6 +24,40 @@ describe('team fold', () => {
   })
 })
 
+describe('SITE-166 display-scale portraits', () => {
+  const TRIO = readFileSync('app/team/_v3/TeamTrio.tsx', 'utf8')
+  const TRIO_CSS = readFileSync('app/team/_v3/team-trio.css', 'utf8')
+  const FOLD_CSS = readFileSync('app/team/_v3/team-fold.css', 'utf8')
+
+  it('opens the fold on TeamTrio, not a 32px kicker above Matt Ryan', () => {
+    expect(FOLD.indexOf('<TeamTrio')).toBeGreaterThan(0)
+    expect(FOLD.indexOf('<TeamTrio')).toBeLessThan(FOLD.indexOf('<AboutFaces'))
+    expect(TRIO).toContain('team-trio__avatar--display')
+    expect(TRIO).toContain("from '@/components/ui/avatar'")
+    expect(TRIO).toContain('AvatarGroup')
+    expect(TRIO_CSS).toMatch(/\.team-trio__avatar--display \{[\s\S]*?width: var\(--v3-card-photo-w\)/)
+    expect(TRIO_CSS).toContain('calc(var(--v3-card-photo-w) * 1.45)')
+    expect(FOLD_CSS).toMatch(/\.team-fold__trio \{[\s\S]*?order: 0/)
+    expect(FOLD_CSS).toMatch(/grid-row: 1/)
+    expect(FOLD_CSS).not.toContain('5.5rem')
+  })
+
+  it('uses canonical PNG headshots and does not invent a rectangular box', () => {
+    expect(TRIO).toContain('person.src')
+    expect(TRIO).not.toContain('.jpg')
+    expect(TRIO_CSS).not.toContain('background: var(--v3-white)')
+    expect(TRIO_CSS).toContain('border-radius: 50%')
+    expect(PAGE).toContain('preload(faces[0].src')
+  })
+
+  it('keeps sourced closing counts on the editorial record, never a hard-coded tally', () => {
+    expect(FOLD).toContain('size="editorial"')
+    expect(PAGE).toContain('brokerRosterRecord')
+    expect(PAGE).not.toMatch(/['"]8['"]\s*\/\s*['"]3['"]/)
+    expect(PAGE).not.toContain('closings in the last 12 months')
+  })
+})
+
 describe('team roster', () => {
   it('does not print a second broker ledger under the faces', () => {
     expect(PAGE).not.toContain('V3Ledger')
