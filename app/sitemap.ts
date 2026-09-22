@@ -4,6 +4,7 @@ import { cityEntityKey, cityNeighborhoodPath, listingsBrowsePath, teamPath, valu
 import { filterRogueCityUrls } from '../lib/sitemap-guard'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
+import { isBendNewConstructionSearchTwinPath } from '@/lib/routing/bend-new-construction-search-twin'
 import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
 // Public sitemap — Coming Soon is excluded by policy. See
@@ -359,6 +360,8 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         // before: an unknown inventory state emits the URL rather than
         // silently dropping a live page from the sitemap.
         if (matrixCityPresetNoIndexFromSet(matrixCityPresetDecision, key, preset)) continue
+        // SITE-179: Bend new-construction lives at /new-construction.
+        if (isBendNewConstructionSearchTwinPath(`/homes-for-sale/${key}/${preset}`)) continue
         dynamicPages.push({
           url: `${baseUrl}/homes-for-sale/${key}/${preset}`,
           lastModified: now,
