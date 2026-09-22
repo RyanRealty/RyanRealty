@@ -25,7 +25,14 @@ import {
   bendNewConRowOffer,
   bendNewConRowOffers,
   bendNewConRowConcessionLine,
+  bendNewConRowConcessionHeadline,
   bendNewConRowConcessionReveal,
+  bendNewConHomeConcession,
+  bendNewConIsSunriverCaldera,
+  bendNewConIsUnspecifiedName,
+  bendNewConLiveCoverageAnswer,
+  extractPublicConcessionSentence,
+  groupBendNewConLiveTiles,
   financingHighlight,
   BEND_NEW_CON_SINGLE,
   BEND_NEW_CON_UNSPECIFIED,
@@ -310,6 +317,12 @@ describe('Bend new-construction snapshot', () => {
       BEND_NEW_CONSTRUCTION_TITLE,
       BEND_NEW_CONSTRUCTION_H1,
       BEND_NEW_CONSTRUCTION_DESCRIPTION,
+      bendNewConLiveCoverageAnswer({
+        namedCount: 47,
+        homeCount: 202,
+        unspecifiedCount: 18,
+        excludedCalderaCount: 14,
+      }),
       ...BEND_NEW_CON_FAQ.flatMap((item) => [item.question, item.answer]),
       ...BEND_NEW_CON_FINANCING.flatMap((offer) => [
         offer.builder,
@@ -370,6 +383,9 @@ describe('Bend new-construction snapshot', () => {
       'hayden-summer-savings',
     ])
     expect(bendNewConRowConcessionLine('Parkside Place Phase 1')).toBe('$10K, on listed homesites')
+    expect(bendNewConRowConcessionHeadline('Parkside Place Phase 1')).toBe('$10K, on listed homesites')
+    expect(bendNewConRowConcessionHeadline('Easton')).toBeNull()
+    expect(bendNewConRowConcessionHeadline('Discovery West Phase 8 & 9')).toBeNull()
     expect(bendNewConRowConcessionReveal('Parkside Place Phase 1')).toMatch(/Cascade homesite 67/)
 
     // A row with no sampled builder, and a row with a builder we did not
@@ -427,15 +443,177 @@ describe('Bend new-construction snapshot', () => {
 
     const faq = BEND_NEW_CON_FAQ.find((item) => item.id === 'faq-coverage')
     expect(faq).toBeDefined()
-    expect(faq!.answer).toContain(String(counts.total))
-    expect(faq!.answer).toContain(String(counts.shelf))
-    expect(faq!.answer).toContain(String(counts.rest))
-    expect(faq!.answer).toContain(String(counts.ledger))
-    expect(faq!.answer).toContain(String(counts.townhomes))
-    expect(faq!.answer).toContain(String(counts.single))
+    expect(faq!.answer).toMatch(/Active Bend new-construction/)
+    expect(faq!.answer).toMatch(/not a three-community shelf/)
+    expect(faq!.answer).toMatch(/2026-09-16/)
+    expect(faq!.answer).not.toMatch(MOS)
 
     const page = readFileSync(resolve('app/new-construction/page.tsx'), 'utf8')
-    expect(page).toContain('bendNewConCoverageCounts')
+    expect(page).toContain('loadBendNewConLiveMarket')
+    expect(page).toContain('id="communities"')
+    expect(page).toContain('ItemList')
+  })
+
+  it('drives the named community set from live tiles, not the 3-tab snapshot shelf (SITE-152)', () => {
+    const grouped = groupBendNewConLiveTiles([
+      {
+        listingKey: 'a',
+        subdivisionName: 'Easton',
+        listPrice: 449_900,
+        beds: 3,
+        baths: 2,
+        sqft: 1400,
+        propertySubType: 'Single Family Residence',
+      },
+      {
+        listingKey: 'b',
+        subdivisionName: 'Easton',
+        listPrice: 849_900,
+        beds: 4,
+        baths: 3,
+        sqft: 2200,
+        propertySubType: 'Townhouse',
+      },
+      {
+        listingKey: 'c',
+        subdivisionName: 'Pronghorn',
+        listPrice: 1_182_000,
+        beds: 3,
+        baths: 3,
+        sqft: 2100,
+        propertySubType: 'Single Family Residence',
+      },
+      {
+        listingKey: 'd',
+        subdivisionName: 'Caldera Springs',
+        listPrice: 1_699_000,
+        beds: 4,
+        baths: 4,
+        sqft: 2800,
+        propertySubType: 'Single Family Residence',
+      },
+      {
+        listingKey: 'e',
+        subdivisionName: null,
+        listPrice: 500_000,
+        beds: 3,
+        baths: 2,
+        sqft: 1500,
+        propertySubType: 'Single Family Residence',
+      },
+      {
+        listingKey: 'f',
+        subdivisionName: 'n/a',
+        listPrice: 510_000,
+        beds: 3,
+        baths: 2,
+        sqft: 1600,
+        propertySubType: 'Single Family Residence',
+      },
+    ])
+    expect(grouped.named.map((row) => row.name)).toEqual(['Easton', 'Pronghorn'])
+    expect(grouped.namedCount).toBe(2)
+    expect(grouped.unspecifiedCount).toBe(2)
+    expect(grouped.excluded).toEqual([{ name: 'Caldera Springs', count: 1 }])
+    expect(grouped.homeCount).toBe(5)
+    expect(grouped.named[0]?.count).toBe(2)
+    expect(grouped.named[0]?.href).toBe('/homes-for-sale/bend/easton?newConstruction=1')
+    expect(grouped.named[0]?.priceBand).toBe('$449,900–$849,900')
+    expect(grouped.named[1]?.snapshot).toBeNull()
+    expect(grouped.named[0]?.snapshot?.name).toBe('Easton')
+    expect(bendNewConIsSunriverCaldera('Caldera Springs')).toBe(true)
+    expect(bendNewConIsSunriverCaldera('Easton')).toBe(false)
+    expect(bendNewConIsUnspecifiedName('')).toBe(true)
+    expect(bendNewConIsUnspecifiedName('Undesignated')).toBe(true)
+    expect(bendNewConIsUnspecifiedName('Easton')).toBe(false)
+
+    const answer = bendNewConLiveCoverageAnswer({
+      namedCount: 47,
+      homeCount: 202,
+      unspecifiedCount: 18,
+      excludedCalderaCount: 14,
+    })
+    expect(answer).toContain('47 named communities')
+    expect(answer).toContain('202 live Active')
+    expect(answer).toContain('14 Caldera Springs')
+    expect(answer).toContain('18 listings have no usable subdivision name')
+    expect(answer).not.toMatch(MOS)
+
+    const page = readFileSync(resolve('app/new-construction/page.tsx'), 'utf8')
+    expect(page).toContain('loadBendNewConLiveMarket')
+    expect(page).toContain('<V3Atlas')
+    expect((page.match(/<V3Atlas/g) ?? []).length).toBe(1)
+    expect(page).not.toContain('V3ChartSwitch')
+    expect(page).toContain('id="communities"')
+    expect(page).toContain('ItemList')
+  })
+
+  it('puts WHOSE and WHAT on a home from public remarks or the named builder page (SITE-151)', () => {
+    const parksideRemark =
+      'LOT 22: Seller Credit up to $10,000 with the use of our trusted lenders. This end unit has a traditional backyard space.'
+    expect(extractPublicConcessionSentence(parksideRemark)).toMatch(/Seller Credit up to \$10,000/)
+    const scalehouse =
+      'Builder is currently offering a $20k Concession toward Closing Cos. Photos are representative.'
+    expect(extractPublicConcessionSentence(scalehouse)).toMatch(/\$20k Concession/)
+    expect(
+      extractPublicConcessionSentence(
+        'seller reserves the right to make minor changes to the floor plans Down payment assistance is also available!',
+      ),
+    ).toBe('Down payment assistance is also available!')
+    expect(extractPublicConcessionSentence('Open daily 10 to 5. Photos representative of plan.')).toBeNull()
+    const withPhone = extractPublicConcessionSentence(
+      'Seller credit of $4,000 toward closing. Call 541-555-0100 for details.',
+    )
+    expect(withPhone).toMatch(/Seller credit of \$4,000/)
+    expect(withPhone).not.toMatch(/541/)
+    expect(withPhone).not.toMatch(/555/)
+
+    const fromRemarks = bendNewConHomeConcession({
+      subdivisionName: 'Parkside Place Phase 1',
+      builderName: 'Hayden Homes',
+      publicRemarks: parksideRemark,
+    })
+    expect(fromRemarks?.whose).toBe('Hayden Homes')
+    expect(fromRemarks?.what).toMatch(/\$10,000/)
+    expect(fromRemarks?.source).toMatch(/public remarks/i)
+    expect(fromRemarks?.extra).toMatch(/\$10K/)
+
+    const fromBuilderPage = bendNewConHomeConcession({
+      subdivisionName: 'Stevens Ranch',
+      builderName: 'DR Horton',
+      publicRemarks: 'The Raven plan offers a great room and a 3-car garage.',
+    })
+    expect(fromBuilderPage?.whose).toBe('D.R. Horton')
+    expect(fromBuilderPage?.what).toMatch(/CONFLICT/)
+    expect(fromBuilderPage?.source).toMatch(/FlippingBook|transcribed/)
+
+    const none = bendNewConHomeConcession({
+      subdivisionName: 'Calaveras',
+      builderName: null,
+      publicRemarks: 'Single-level living near the park.',
+    })
+    expect(none).toBeNull()
+
+    const noInvented = bendNewConHomeConcession({
+      subdivisionName: 'Calaveras',
+      builderName: null,
+      publicRemarks: '',
+    })
+    expect(noInvented).toBeNull()
+    expect(JSON.stringify(fromRemarks)).not.toMatch(/private remarks?/i)
+    expect(JSON.stringify(fromRemarks)).not.toMatch(/\b\d{3}[.\-]\d{3}[.\-]\d{4}\b/)
+
+    const page = readFileSync(resolve('app/new-construction/page.tsx'), 'utf8')
+    const shelf = readFileSync(resolve('app/new-construction/_v3/NewConLeadShelf.client.tsx'), 'utf8')
+    const loader = readFileSync(resolve('app/new-construction/_v3/load-lead-shelf.ts'), 'utf8')
+    expect(shelf).toContain('concession.whose')
+    expect(shelf).toContain('concession.what')
+    expect(loader).toContain('getListingDetail')
+    expect(loader).toContain('publicRemarks')
+    expect(loader).not.toMatch(/from\(['"]listing_private['"]\)/)
+    expect(loader).not.toMatch(/private_data/)
+    expect(page).not.toMatch(/from\(['"]listing_private['"]\)/)
+    expect(page).not.toMatch(/private_data/)
   })
 
   it('wires the overview map, savings chips, and contact on the public page', () => {

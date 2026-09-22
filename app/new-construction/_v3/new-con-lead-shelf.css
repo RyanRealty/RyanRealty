@@ -17,21 +17,6 @@
   line-height: 1.45;
 }
 
-.newcon-lead__switch {
-  display: block;
-  min-width: 0;
-}
-
-.v3 .newcon-lead__switch > [role='tablist'] {
-  max-width: 100%;
-  margin: 0 var(--v3-gutter) var(--v3-space-xs);
-}
-
-.v3 .newcon-lead__switch [role='tab'] {
-  padding-inline: var(--v3-space-sm);
-  letter-spacing: 0.06em;
-}
-
 .newcon-lead__track {
   position: relative;
 }
@@ -75,36 +60,47 @@
   margin: var(--v3-space-sm) var(--v3-gutter) 0;
 }
 
-/* SITE-151: builder + published concession, attached directly beside the
-   real house cards it describes. */
-.newcon-lead__concession {
+/* SITE-151: WHOSE + WHAT sit on the home, not a page-level band. */
+.newcon-lead__card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.newcon-lead__card-offer {
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-3xs);
-  margin: var(--v3-space-sm) var(--v3-gutter) 0;
-  padding: var(--v3-space-sm);
-  border: var(--v3-rule-hairline);
-  border-radius: var(--v3-radius-card);
+  margin-top: var(--v3-space-xs);
+  padding-top: var(--v3-space-xs);
+  border-top: var(--v3-rule-hairline);
 }
 
-.newcon-lead__concession-builder {
+.newcon-lead__card-whose {
   margin: 0;
   color: var(--v3-ink);
   font-weight: var(--v3-weight-medium);
   font-size: var(--v3-size-body-sm);
 }
 
-.newcon-lead__concession-headline {
+.newcon-lead__card-what {
   margin: 0;
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
+  line-height: 1.4;
 }
 
-.newcon-lead__concession-deep {
+.newcon-lead__card-extra,
+.newcon-lead__card-source {
   margin: 0;
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-source);
   line-height: 1.45;
+}
+
+a.newcon-lead__card-source {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
 }
 
 @media (max-width: 40rem) {
@@ -121,20 +117,6 @@
   .newcon-lead__note,
   .newcon-lead__pos {
     display: none;
-  }
-
-  .v3 .newcon-lead__switch > [role='tablist'] {
-    display: flex;
-    width: calc(100% - 2 * var(--v3-gutter));
-    max-width: none;
-    margin-bottom: var(--v3-space-2xs);
-  }
-
-  .v3 .newcon-lead__switch [role='tab'] {
-    flex: 1 1 0;
-    padding-inline: var(--v3-space-2xs);
-    font-size: var(--v3-size-source);
-    letter-spacing: 0.04em;
   }
 
   .newcon-lead__empty {

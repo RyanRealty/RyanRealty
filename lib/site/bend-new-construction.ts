@@ -16,6 +16,8 @@ import { homesForSalePath, slugify } from '@/lib/slug'
 import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import type { SearchListingsAllFilter } from '@/lib/data/listings/searchListingsAll'
+import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
+import { isVisitorPlaceNoiseLabel } from '@/lib/site/visitor-place-noise'
 
 export const BEND_NEW_CONSTRUCTION_PATH = '/new-construction'
 export const BEND_NEW_CONSTRUCTION_RESEARCH_DATE = '2026-09-16'
@@ -816,6 +818,15 @@ export const BEND_NEW_CON_DISCLAIMER = {
 export const BEND_NEW_CON_INVENTORY_SOURCE =
   'Ryan Realty listings search DAL. Snapshot bands: 2026-09-16 PT, City = Bend, Active, new_construction_yn. List-price bands ignore ListPrice under $10,000. Builders are from sampled listing details, not every row. Coming Soon is not on the public path. A See N homes figure is the live Active new-construction match for that row’s exclusive search, not the 2026-09-16 snapshot count.'
 
+/** Live named-community set — not the 2026-09-16 snapshot arrays. */
+export const BEND_NEW_CON_LIVE_SOURCE =
+  'Ryan Realty listings. City Bend, Active, new construction. Named communities are the subdivision names on that search. Caldera Springs is Sunriver and is not in this Bend table. Listings with no usable subdivision name are counted, not named as a community.'
+
+export const BEND_NEW_CON_REMARKS_SOURCE = 'MLS public remarks, as written.'
+
+/** Same floor the 2026-09-16 snapshot used when it dropped placeholder prices. */
+export const BEND_NEW_CON_MIN_LIST_PRICE = 10_000
+
 export const BEND_NEW_CON_FINANCING_SOURCE =
   'Public builder pages and the D.R. Horton Stevens Ranch flyer, transcribed 2026-09-16 PT. Not a rate sheet and not a loan quote.'
 
@@ -982,6 +993,16 @@ export function bendNewConRowConcessionLine(name: string): string | null {
   return `${highlight.value}, ${highlight.label}`
 }
 
+/** Always-visible community line: only when a published program exists. */
+export function bendNewConRowConcessionHeadline(name: string): string | null {
+  const attach = bendNewConRowOffer(name)
+  if (!attach || attach.kind !== 'published') return null
+  const primary = bendNewConRowOffers(name)[0]
+  if (!primary) return null
+  if (financingHighlight(primary).label === 'no public concession') return null
+  return bendNewConRowConcessionLine(name)
+}
+
 /**
  * The row's tap-and-hold / hover deep line: every attached offer, its
  * builder, its flags, its eligibility caveat, and its public source link —
@@ -1114,10 +1135,8 @@ export const BEND_NEW_CON_FAQ: readonly NewConFaq[] = [
   {
     id: 'faq-coverage',
     question: 'Does this page cover every new-construction community in Bend?',
-    answer: (() => {
-      const c = bendNewConCoverageCounts()
-      return `Yes, by rule, not by accident. ${c.total} named Bend communities carried Active new-construction listings in the 2026-09-16 research pull. ${c.shelf} lead the top of the page with live SFR photos, lowest list band first; the other ${c.rest} are below in price order: ${c.ledger} more single-family communities, ${c.townhomes} Horton townhome communities, and ${c.single} communities with one Active home that day. Published builder pages are a separate, fourth group: four direct links to the builder sites behind the financing cards, not a subdivision list. Every community group opens that community’s live search.`
-    })(),
+    answer:
+      'The named communities on this page are today’s Active Bend new-construction SubdivisionName values from the Ryan Realty listings search, not a three-community shelf and not only the 2026-09-16 snapshot list. Caldera Springs is Sunriver and is not in the Bend table. Listings with no usable subdivision name are counted, not named as a community. Snapshot list-price research and builder financing cards stay dated 2026-09-16. Every named community opens that subdivision’s live new-construction search.',
   },
 ]
 
@@ -1189,4 +1208,303 @@ export function bendNewConCoverageCounts(): {
   const townhomes = BEND_NEW_CON_HORTON_TOWNHOME_NAMES.length
   const single = BEND_NEW_CON_SINGLE.length
   return { total, shelf, ledger, townhomes, single, rest: total - shelf }
+}
+
+export type BendNewConLiveTileLike = {
+  listingKey: string
+  subdivisionName: string | null
+  listPrice: number | null
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  propertySubType: string | null
+}
+
+export type BendNewConLiveCommunity = {
+  name: string
+  count: number
+  href: string
+  priceBand: string | null
+  typical: string | null
+  propertySubTypes: string[]
+  snapshot: NewConInventoryRow | null
+}
+
+export type BendNewConLiveGroup = {
+  named: BendNewConLiveCommunity[]
+  unspecifiedCount: number
+  excluded: { name: string; count: number }[]
+  homeCount: number
+  namedCount: number
+  priceMin: number | null
+  priceMax: number | null
+  median: number | null
+}
+
+export type NewConHomeConcession = {
+  whose: string
+  what: string
+  source: string
+  sourceHref?: string
+  extra?: string | null
+}
+
+const PHONE_SHAPE = /\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/g
+const CONCESSION_RE =
+  /concession|seller credit|closing cost|buydown|buy[ -]?down|rate incentive|special (?:interest )?rate|\$0 down|zero down|down payment assist|builder is currently offering|toward closing|towards closing|lender credit|main street stars|golden key|save up to \$|incentives available|incentive today/i
+
+export function bendNewConIsUnspecifiedName(name: string | null | undefined): boolean {
+  const t = (name ?? '').trim()
+  if (!t) return true
+  return isVisitorPlaceNoiseLabel(t)
+}
+
+/** Caldera Springs is Sunriver. MLS may file it as City=Bend; it is not this Bend table. */
+export function bendNewConIsSunriverCaldera(name: string | null | undefined): boolean {
+  const slug = slugify(name ?? '')
+  return slug === 'caldera-springs' || slug.startsWith('caldera-springs-')
+}
+
+export function bendNewConSnapshotRow(name: string): NewConInventoryRow | null {
+  return BEND_NEW_CON_NAMED.find((row) => row.name === name) ?? null
+}
+
+export function bendNewConUsablePrices(prices: readonly (number | null | undefined)[]): number[] {
+  return prices.filter(
+    (n): n is number => typeof n === 'number' && Number.isFinite(n) && n >= BEND_NEW_CON_MIN_LIST_PRICE,
+  )
+}
+
+export function bendNewConMedianPrice(prices: readonly number[]): number | null {
+  const vals = [...bendNewConUsablePrices(prices)].sort((a, b) => a - b)
+  if (vals.length === 0) return null
+  const mid = Math.floor(vals.length / 2)
+  if (vals.length % 2 === 1) return vals[mid]!
+  return Math.round((vals[mid - 1]! + vals[mid]!) / 2)
+}
+
+export function bendNewConLivePriceBand(
+  prices: readonly (number | null | undefined)[],
+): string | null {
+  const vals = bendNewConUsablePrices(prices)
+  if (vals.length === 0) return null
+  const min = Math.min(...vals)
+  const max = Math.max(...vals)
+  if (min === max) return formatPriceExact(min)
+  return `${formatPriceExact(min)}–${formatPriceExact(max)}`
+}
+
+export function bendNewConLivePriceSpanFold(min: number | null, max: number | null): string | null {
+  if (min == null || max == null) return null
+  if (min === max) return formatPriceCompact(min)
+  return `${formatPriceCompact(min)}–${formatPriceCompact(max)}`
+}
+
+function spanLabel(values: number[], suffix: string, format: (n: number) => string): string | null {
+  if (values.length === 0) return null
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  if (min === max) return `${format(min)} ${suffix}`
+  return `${format(min)}–${format(max)} ${suffix}`
+}
+
+export function bendNewConLiveTypical(
+  tiles: readonly Pick<BendNewConLiveTileLike, 'beds' | 'baths' | 'sqft'>[],
+): string | null {
+  const beds = tiles.map((t) => t.beds).filter((n): n is number => typeof n === 'number' && n > 0)
+  const baths = tiles.map((t) => t.baths).filter((n): n is number => typeof n === 'number' && n > 0)
+  const sqft = tiles.map((t) => t.sqft).filter((n): n is number => typeof n === 'number' && n > 0)
+  const bits = [
+    spanLabel(beds, 'beds', (n) => String(Math.round(n))),
+    spanLabel(baths, 'baths', (n) => String(Math.round(n))),
+    spanLabel(sqft, 'sqft', (n) => Math.round(n).toLocaleString('en-US')),
+  ].filter((bit): bit is string => Boolean(bit))
+  return bits.length > 0 ? bits.join(' · ') : null
+}
+
+export function bendNewConLiveWeight(count: number, maxCount: number): number {
+  if (!(maxCount > 0) || !(count > 0)) return 0
+  return count / maxCount
+}
+
+export function bendNewConLiveCoverageAnswer(live: {
+  namedCount: number
+  homeCount: number
+  unspecifiedCount: number
+  excludedCalderaCount: number
+}): string {
+  const caldera =
+    live.excludedCalderaCount > 0
+      ? ` ${live.excludedCalderaCount} Caldera Springs ${live.excludedCalderaCount === 1 ? 'home is' : 'homes are'} Sunriver and ${live.excludedCalderaCount === 1 ? 'is' : 'are'} not in this Bend table.`
+      : ' Caldera Springs is Sunriver and is not in the Bend table.'
+  const unspecified =
+    live.unspecifiedCount > 0
+      ? ` ${live.unspecifiedCount} ${live.unspecifiedCount === 1 ? 'listing has' : 'listings have'} no usable subdivision name and ${live.unspecifiedCount === 1 ? 'is' : 'are'} counted, not named as a community.`
+      : ''
+  return `Yes for today’s Active Bend search. ${live.namedCount} named ${live.namedCount === 1 ? 'community' : 'communities'} and ${live.homeCount} live Active new-construction ${live.homeCount === 1 ? 'home' : 'homes'} come from the Ryan Realty listings search (City Bend, Active, new construction).${caldera}${unspecified} Snapshot list-price research and builder financing cards stay dated 2026-09-16. Every named community opens that subdivision’s live new-construction search.`
+}
+
+export function groupBendNewConLiveTiles(
+  tiles: readonly BendNewConLiveTileLike[],
+): BendNewConLiveGroup {
+  const buckets = new Map<string, BendNewConLiveTileLike[]>()
+  const excludedMap = new Map<string, number>()
+  let unspecifiedCount = 0
+  for (const tile of tiles) {
+    const name = tile.subdivisionName?.trim() ?? ''
+    if (bendNewConIsUnspecifiedName(name)) {
+      unspecifiedCount += 1
+      continue
+    }
+    if (bendNewConIsSunriverCaldera(name)) {
+      excludedMap.set(name, (excludedMap.get(name) ?? 0) + 1)
+      continue
+    }
+    const list = buckets.get(name) ?? []
+    list.push(tile)
+    buckets.set(name, list)
+  }
+
+  const excludedTotal = [...excludedMap.values()].reduce((sum, n) => sum + n, 0)
+  const bendTiles = tiles.filter((tile) => {
+    const name = tile.subdivisionName?.trim() ?? ''
+    return !bendNewConIsSunriverCaldera(name)
+  })
+  const prices = bendNewConUsablePrices(bendTiles.map((tile) => tile.listPrice))
+  const named = [...buckets.entries()]
+    .map(([name, group]) => {
+      const subTypes = [
+        ...new Set(
+          group
+            .map((tile) => tile.propertySubType?.trim())
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ].sort((a, b) => a.localeCompare(b))
+      return {
+        name,
+        count: group.length,
+        href: bendNewConSearchHref(name),
+        priceBand: bendNewConLivePriceBand(group.map((tile) => tile.listPrice)),
+        typical: bendNewConLiveTypical(group),
+        propertySubTypes: subTypes,
+        snapshot: bendNewConSnapshotRow(name),
+      } satisfies BendNewConLiveCommunity
+    })
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+
+  return {
+    named,
+    unspecifiedCount,
+    excluded: [...excludedMap.entries()].map(([name, count]) => ({ name, count })),
+    homeCount: tiles.length - excludedTotal,
+    namedCount: named.length,
+    priceMin: prices.length ? Math.min(...prices) : null,
+    priceMax: prices.length ? Math.max(...prices) : null,
+    median: bendNewConMedianPrice(prices),
+  }
+}
+
+function stripPhones(text: string): string {
+  return text.replace(PHONE_SHAPE, '').replace(/\s{2,}/g, ' ').trim()
+}
+
+/**
+ * One or two public-remarks sentences that actually name a concession.
+ * Returns the listing’s own words. Does not invent a dollar or a program.
+ */
+export function extractPublicConcessionSentence(
+  remarks: string | null | undefined,
+): string | null {
+  const text = (remarks ?? '').replace(/\s+/g, ' ').trim()
+  if (!text) return null
+  const parts = text.split(/(?<=[.!?])\s+/)
+  const hits = parts.filter((part) => CONCESSION_RE.test(part)).map(stripPhones)
+  let sentence =
+    hits.length > 0
+      ? hits.slice(0, 2).join(' ')
+      : (() => {
+          const match = text.match(CONCESSION_RE)
+          if (!match || match.index == null) return ''
+          const start = Math.max(0, match.index - 40)
+          const end = Math.min(text.length, match.index + 200)
+          return stripPhones(text.slice(start, end))
+        })()
+  sentence = sentence.replace(/^[,;:\s]+/, '').replace(/[,;:\s]+$/, '').trim()
+  const keywordAt = sentence.search(CONCESSION_RE)
+  if (keywordAt > 24) sentence = sentence.slice(keywordAt).trim()
+  if (sentence.length < 12) return null
+  if (PHONE_SHAPE.test(sentence)) return null
+  if (sentence.length > 280) sentence = `${sentence.slice(0, 277).trim()}...`
+  return sentence
+}
+
+function publishedHomeOffer(name: string): NewConFinancingOffer | null {
+  const attach = bendNewConRowOffer(name)
+  if (!attach || attach.kind !== 'published') return null
+  const primary = bendNewConRowOffers(name)[0]
+  if (!primary) return null
+  const highlight = financingHighlight(primary)
+  if (highlight.label === 'no public concession') return null
+  return primary
+}
+
+function whoseForHome(
+  builderName: string | null | undefined,
+  subdivisionName: string | null | undefined,
+  offer: NewConFinancingOffer | null,
+): string {
+  const fromListing = builderName?.trim()
+  if (fromListing) return fromListing
+  const snapshot = subdivisionName ? bendNewConSnapshotRow(subdivisionName) : null
+  if (snapshot?.builders) return snapshot.builders
+  if (offer?.builder) return offer.builder
+  return 'Builder not named on the listing'
+}
+
+/**
+ * Per-home concession: public remarks first (this house), then the curated
+ * builder page that names this community. Nothing from listing_private.
+ */
+export function bendNewConHomeConcession(input: {
+  subdivisionName: string | null | undefined
+  builderName: string | null | undefined
+  publicRemarks: string | null | undefined
+}): NewConHomeConcession | null {
+  const name = input.subdivisionName?.trim() || ''
+  const remark = extractPublicConcessionSentence(input.publicRemarks)
+  const offer = name ? publishedHomeOffer(name) : null
+  if (!remark && !offer) return null
+  const whose = whoseForHome(input.builderName, name, offer)
+  const attach = name ? bendNewConRowOffer(name) : null
+  const eligibility =
+    attach?.kind === 'published' && attach.eligibilityNote ? attach.eligibilityNote : null
+  if (remark) {
+    const extra = offer
+      ? [
+          `${offer.builder}: ${financingHighlight(offer).value}, ${financingHighlight(offer).label}.`,
+          eligibility,
+          offer.sources[0] ? `Builder page: ${offer.sources[0].label}` : null,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      : null
+    return {
+      whose,
+      what: remark,
+      source: BEND_NEW_CON_REMARKS_SOURCE,
+      sourceHref: offer?.sources[0]?.href,
+      extra,
+    }
+  }
+  const highlight = financingHighlight(offer!)
+  const src = offer!.sources[0]
+  return {
+    whose: offer!.builder,
+    what: `${highlight.value}, ${highlight.label}`,
+    source: src
+      ? `${src.label}, transcribed ${BEND_NEW_CONSTRUCTION_RESEARCH_STAMP}`
+      : BEND_NEW_CON_FINANCING_SOURCE,
+    sourceHref: src?.href,
+    extra: eligibility,
+  }
 }
