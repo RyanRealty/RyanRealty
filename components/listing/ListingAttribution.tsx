@@ -10,10 +10,10 @@ import { Body, Caption, Stack } from '@/components/site/primitives'
  * and oregondatashare.com/datafeeds logo + disclaimer requirements.
  *
  * Required elements on each IDX listing detail page:
- *   (a) Listing brokerage attribution — "Listing courtesy of <Listing Office>"
- *       or the listing agent name when no office is available. ODS Section 5-3
- *       mandates that the listing firm be identified in a reasonably prominent
- *       location (per NAR Handbook on MLS Policy §7.58, which ODS incorporates).
+ *   (a) Listing brokerage attribution — "Listing courtesy of <Listing Office>".
+ *       The line is the brokerage name. Another listing broker's phone, email,
+ *       and name stay off this page (Matt 2026-09-22). ODS §5-3 still requires
+ *       the listing firm in a reasonably prominent location.
  *   (b) Data source line — identifies Oregon Data Share as the data provider.
  *       ODS requires the ODS logo on all IDX displays per the Data Licensing
  *       Agreement and oregondatashare.com/datafeeds logo policy.
@@ -22,8 +22,8 @@ import { Body, Caption, Stack } from '@/components/site/primitives'
  *       guaranteed and should be independently verified."
  *
  * The component is intentionally minimal. It omits fields rather than
- * fabricating values. If both listAgentName and listOfficeName are null
- * the courtesy line is omitted and only the ODS logo + disclaimer render.
+ * fabricating values. If the brokerage name is missing, the courtesy line
+ * is omitted and only the ODS logo + disclaimer render.
  *
  * Design token compliance:
  *   - No raw hex colors in JSX className (design tokens only).
@@ -33,17 +33,8 @@ import { Body, Caption, Stack } from '@/components/site/primitives'
  */
 
 type Props = {
-  /** Listing agent full name from MLS data. */
-  listAgentName: string | null
   /** Listing office / brokerage name from MLS data. */
   listOfficeName: string | null
-  /**
-   * Listing participant contact — ODS §5-3 P requires the email OR phone the
-   * listing participant provided, alongside the firm name, in typeface not
-   * smaller than the median used for listing data. Pass office phone first,
-   * else agent phone, else agent email.
-   */
-  listContact: string | null
   /**
    * ISO timestamp when this listing was last refreshed from the MLS feed.
    * Renders as "Data last updated <date>" for ODS transparency.
@@ -64,29 +55,22 @@ function formatRefreshedAt(iso: string | null): string | null {
 }
 
 export function ListingAttribution({
-  listAgentName,
   listOfficeName,
-  listContact,
   refreshedAt,
   className,
 }: Props) {
-  const courtesyLine = listOfficeName ?? listAgentName ?? null
+  const courtesyLine = listOfficeName?.trim() || null
   const refreshedFormatted = formatRefreshedAt(refreshedAt)
 
   return (
     <div className={className}>
       <Separator className="mb-4" />
       <Stack gap="tight">
-        {/* (a) Listing brokerage courtesy — ODS Section 5-3 */}
+        {/* (a) Listing brokerage name. No other broker's phone. */}
         {courtesyLine ? (
           <Body size="small" tone="muted">
             Listing courtesy of{' '}
             <span className="text-foreground font-medium">{courtesyLine}</span>
-            {listOfficeName && listAgentName ? (
-              <>, agent {listAgentName}</>
-            ) : null}
-            {/* ODS §5-3 P: listing participant's phone or email, same typeface. */}
-            {listContact ? <>, {listContact}</> : null}
           </Body>
         ) : null}
 

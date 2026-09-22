@@ -150,6 +150,8 @@ type Props = {
    * its trace behind a disclosure. Null prints the pills alone.
    */
   read?: PublishedListingPillRead | null
+  /** True when this listing is Ryan Realty's. Another brokerage's phone stays off. */
+  ours?: boolean
   className?: string
 }
 
@@ -182,6 +184,7 @@ export function PriceCtaStrip({
   alertsHref = '#listing-like-alerts',
   dropMark,
   read = null,
+  ours = false,
   className,
 }: Props) {
   // SITE-21. The four statuses under which nobody can buy this home. Read from
@@ -282,6 +285,7 @@ export function PriceCtaStrip({
     listOfficeName: listing.listOfficeName,
     listAgentPhone: listing.listAgentPhone,
     listOfficePhone: listing.listOfficePhone,
+    ours,
   })
   // MLS feeds mask private fields with `********` and stamp absent ones as
   // "N/A"; displaySubdivision() collapses every such sentinel to null so the

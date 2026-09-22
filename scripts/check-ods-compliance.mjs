@@ -8,9 +8,10 @@
  * §4-4 (Coming Soon), §7-3 (compilation-based advertising). The operative
  * rules this gate can assert statically:
  *
- *  §5-3 P/S/T — every IDX listing display identifies the listing firm AND the
- *    email or phone the listing participant provided, shows ODS as source,
- *    and carries the reliability + non-commercial-use disclaimer.
+ *  §5-3 P/S/T — every IDX listing display identifies the listing firm, shows
+ *    ODS as source, and carries the reliability + non-commercial-use disclaimer.
+ *    Matt 2026-09-22: a home that is not ours prints the listing brokerage
+ *    name and never the listing broker's phone, email, or personal name.
  *  §5-3 B/G + VOW K — seller internet opt-out (permit_internet_yn=false),
  *    address-only opt-out (permit_address_internet_yn=false), and non-IDX
  *    brokers (idx_participant=false) must never render publicly. Enforced in
@@ -51,11 +52,14 @@ must(attribution.includes('Listing courtesy of'), 'ListingAttribution: missing "
 must(attribution.includes('Oregon Data Share'), 'ListingAttribution: missing ODS source identification (ODS §5-3 S)')
 must(attribution.includes('deemed reliable'), 'ListingAttribution: missing reliability disclaimer (ODS §5-3 T)')
 must(attribution.includes('non-commercial'), 'ListingAttribution: missing non-commercial-use disclaimer (ODS §5-3 T)')
-must(attribution.includes('listContact'), 'ListingAttribution: missing listing-participant contact (email/phone) rendering (ODS §5-3 P)')
+must(!attribution.includes('listContact'), 'ListingAttribution: another brokerage contact must not render (Matt 2026-09-22)')
+must(!/listAgentPhone|listOfficePhone|listAgentEmail/.test(attribution), 'ListingAttribution: listing-broker phone or email leaked into the courtesy block')
 
 const listingPage = read('app/listing/[listingKey]/page.tsx')
 must(listingPage.includes('<ListingAttribution'), 'Listing detail page: ListingAttribution not rendered (ODS §5-3)')
-must(/listContact=\{/.test(listingPage), 'Listing detail page: listContact prop not passed to ListingAttribution (ODS §5-3 P)')
+must(!/listContact=\{/.test(listingPage), 'Listing detail page: listContact still passes another broker phone into ListingAttribution')
+const listedBy = read('lib/listing/publish-listing-listed-by.ts')
+must(listedBy.includes('return office ? `Listed by ${office}` : null'), 'Listed-by line no longer stops at the other brokerage name')
 
 must(existsSync('public/images/oregon-data-share-logo.svg'), 'ODS logo asset missing: public/images/oregon-data-share-logo.svg')
 

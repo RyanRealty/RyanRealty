@@ -770,6 +770,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         alertsHref={alertsHref}
         dropMark={dropMark}
         read={pillRead}
+        ours={listingAgent != null || /ryan realty/i.test(listing.listOfficeName ?? '')}
       />
       {/* SITE-33 — THIS IS NOT OUR MARKET, said before the page says anything
           else about the home. A reader who scrolls past the price strip on a
@@ -913,9 +914,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         </div>
       ) : null}
       <ListingAttribution
-        listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}
-        listContact={listing.listOfficePhone ?? listing.listAgentPhone ?? listing.listAgentEmail}
         refreshedAt={listing.refreshedAt}
       />
     </>
@@ -943,9 +942,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     photoUrls: (lcpPriority ? galleryPhotos : flightPhotos).map((p) => p.url),
     agent: listingAgent
       ? { fullName: listingAgent.fullName, email: listingAgent.email, phoneDirect: listingAgent.phoneDirect }
-      : listing.listAgentName
-        ? { fullName: listing.listAgentName, email: null, phoneDirect: listing.listAgentPhone ?? null }
-        : null,
+      : null,
   })
 
   return (

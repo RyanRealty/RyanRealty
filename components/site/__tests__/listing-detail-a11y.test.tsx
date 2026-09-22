@@ -160,7 +160,9 @@ describe('listing-detail CTA row accessible names', () => {
       })!.label,
     )
     expect(html).toMatch(/Price drop \$76K/)
-    expect(html).toMatch(/Listed by Matt Johnson, RE\/MAX Key Properties · 541-480-2153/)
+    expect(html).toMatch(/Listed by RE\/MAX Key Properties/)
+    expect(html).not.toMatch(/541-480-2153/)
+    expect(html).not.toMatch(/Matt Johnson/)
   })
 
   it('uses the street as the H1 and keeps one exact ask', () => {
