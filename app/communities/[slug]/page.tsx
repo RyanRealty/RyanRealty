@@ -129,6 +129,11 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { CommunityAlertsStrip } from './_v3/CommunityAlertSheet.client'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
+import {
+  communityFieldTypeIndex,
+  communityStockTypesFromListings,
+  loadCommunitySerpStock,
+} from './_v3/community-stock-types'
 import { resolveCommunityDisplayName } from './_v3/community-display-name'
 import { CommunityUnavailable } from './_v3/CommunityUnavailable'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
@@ -235,8 +240,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
-  const { rawName } = communityRegistryContext(community, slug)
+  const { rawName, registryEntry } = communityRegistryContext(community, slug)
   const resolved = await resolvePublicName(slug, rawName, community)
+  const childAliases = registryEntry
+    ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
+    : []
+  const stockRead = await withTimeoutFallbackResult(
+    loadCommunitySerpStock({
+      slug,
+      city: community.city,
+      subdivision: community.subdivision,
+      childAliases,
+    }),
+    { listedCount: 0, types: [] },
+    4500,
+    'comm:meta-stock',
+  )
+  const stock = stockRead.ok
+    ? {
+        listedCount: stockRead.value.listedCount > 0 ? stockRead.value.listedCount : null,
+        types: stockRead.value.types,
+      }
+    : { listedCount: null, types: [] }
   return pageMetadata(
     communityMetadataInput({
       slug,
@@ -244,6 +269,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       city: community.city,
       heroImageUrl: community.heroImageUrl,
       refused: resolved.kind === 'refuse',
+      stock,
     }),
   )
 }
@@ -833,6 +859,11 @@ async function renderCommunityDetail({ params }: Props) {
     browseHref,
   })
 
+  const listedStock = {
+    listedCount: placeHomes.length > 0 ? placeHomes.length : null,
+    types: communityStockTypesFromListings(placeHomes),
+  }
+  const fieldTypeIndex = communityFieldTypeIndex(placeHomes)
   const communitySchemas = buildCommunitySchemas({
     slug,
     name: publicName,
@@ -849,6 +880,7 @@ async function renderCommunityDetail({ params }: Props) {
     faqs: answerFaqs,
     amenityItems: amenityBoard ? amenityItemListItems(amenityBoard, `/communities/${slug}`) : undefined,
     homes: placeHomes,
+    stock: listedStock,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
@@ -955,6 +987,20 @@ async function renderCommunityDetail({ params }: Props) {
             />
             </div>
           </div>
+          {fieldTypeIndex.length > 1 ? (
+            <nav className="community-field-types" aria-label={`${publicName} listing types`}>
+              <ul>
+                {fieldTypeIndex.map((item) => (
+                  <li key={item.key}>
+                    <a href={`#homes-${item.key}`}>
+                      {item.heading}
+                      <span> · {item.countLabel}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ) : null}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
 

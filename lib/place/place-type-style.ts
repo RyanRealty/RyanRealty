@@ -66,3 +66,46 @@ export function placeTypeKey(
   if (type && TYPE_TO_KEY[type]) return TYPE_TO_KEY[type]
   return 'sfr'
 }
+
+/**
+ * SITE-177. Buyer groups on the community Field. Cabins are only a group when
+ * the MLS sub-type itself names a cabin — never remarks, never a size band.
+ * Land is "Lots" so the page can name lots only when those rows exist.
+ */
+export const PLACE_BUYER_GROUPS = [
+  'homes',
+  'cabins',
+  'attached',
+  'multifamily',
+  'lots',
+  'other',
+] as const
+
+export type PlaceBuyerGroup = (typeof PLACE_BUYER_GROUPS)[number]
+
+export const PLACE_BUYER_GROUP_HEADING: Record<PlaceBuyerGroup, string> = {
+  homes: 'Homes',
+  cabins: 'Cabins',
+  attached: 'Townhomes and condos',
+  multifamily: 'Multifamily',
+  lots: 'Lots',
+  other: 'Other property',
+}
+
+const CABIN_SUBTYPE = /\bcabin/i
+
+export function placeBuyerGroup(
+  propertyType?: string | null,
+  propertySubType?: string | null,
+): PlaceBuyerGroup {
+  const sub = (propertySubType ?? '').trim()
+  if (CABIN_SUBTYPE.test(sub)) return 'cabins'
+  const key = placeTypeKey(propertyType, propertySubType)
+  if (key === 'land' || key === 'farm') return 'lots'
+  if (key === 'condo' || key === 'townhome') return 'attached'
+  if (key === 'multifamily_2_4') return 'multifamily'
+  if (key === 'commercial_sale' || key === 'business') return 'other'
+  const type = (propertyType ?? '').trim().toUpperCase()
+  if (type === 'D' || type === 'LAND') return 'lots'
+  return 'homes'
+}

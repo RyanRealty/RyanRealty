@@ -66,6 +66,10 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).toMatch(/id="homes"/)
     expect(SRC).toMatch(/loadPlaceStockTiles/)
     expect(SRC).toMatch(/placeStockSectionsFromTiles/)
+    expect(SRC).toMatch(/community-field-types/)
+    expect(SRC).toMatch(/loadCommunitySerpStock/)
+    expect(SRC).toMatch(/belongingHeadline\(/)
+    expect(SRC).toMatch(/\{headline\}/)
     // seedRing keys on having a TRUSTED polygon (county plat-union first,
     // reliable stored boundary second) — not on hull reliability alone, which
     // left Black Butte Ranch's verified union undrawn (2026-09-01).

@@ -18,6 +18,8 @@ describe('SITE-129 community fold inventory', () => {
     expect(PAGE).toMatch(/homes:\s*placeHomes/)
     expect(PAGE).toMatch(/<PlaceSubdivisionHomes/)
     expect(PAGE).toMatch(/placeStockSectionsFromTiles/)
+    expect(PAGE).toMatch(/community-field-types/)
+    expect(PAGE).toMatch(/communityFieldTypeIndex/)
     expect(PAGE).not.toMatch(/<PlaceSplitView/)
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
   })

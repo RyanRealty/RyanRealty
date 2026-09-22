@@ -24,6 +24,12 @@ import { V3Carousel } from './V3Carousel.client'
 import { listingPhotoAlt } from './listing-photo-alt'
 import type { V3ListingRowData } from './V3ListingRow'
 import { V3SourceLine } from './V3SourceLine'
+import {
+  PLACE_BUYER_GROUP_HEADING,
+  PLACE_BUYER_GROUPS,
+  placeBuyerGroup,
+  type PlaceBuyerGroup,
+} from '@/lib/place/place-type-style'
 import './tokens.css'
 import './PlaceSubdivisionMap.css'
 
@@ -188,6 +194,29 @@ function PlaceHomeCard({ listing }: { listing: V3ListingRowData }) {
   )
 }
 
+function homesByBuyerGroup(listings: readonly V3ListingRowData[]): Array<{
+  key: PlaceBuyerGroup
+  heading: string
+  rows: V3ListingRowData[]
+}> {
+  const buckets: Record<PlaceBuyerGroup, V3ListingRowData[]> = {
+    homes: [],
+    cabins: [],
+    attached: [],
+    multifamily: [],
+    lots: [],
+    other: [],
+  }
+  for (const listing of listings) {
+    buckets[placeBuyerGroup(listing.propertyType, listing.propertySubType)].push(listing)
+  }
+  return PLACE_BUYER_GROUPS.flatMap((key) => {
+    const rows = buckets[key]
+    if (rows.length === 0) return []
+    return [{ key, heading: PLACE_BUYER_GROUP_HEADING[key], rows }]
+  })
+}
+
 export function PlaceSubdivisionHomes({ id }: { id: string }) {
   const { placeName, rail, homes, keysBySlug, source, asOf, selectedId } = usePlaceMap()
   const selected = rail.find((entry) => entry.id === selectedId) ?? null
@@ -197,7 +226,9 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
     const keys = new Set(keysBySlug[selectedId] ?? [])
     return homes.filter((home) => keys.has(home.listingKey))
   }, [homes, keysBySlug, selectedId])
+  const typeSections = useMemo(() => homesByBuyerGroup(visible), [visible])
   const countLabel = visible.length > 0 ? `${formatCount(visible.length)} for sale` : null
+  const typed = typeSections.length > 1
 
   return (
     <section id={id} className={cn(V3_ROOT_CLASS, 'place-homes')} aria-labelledby={`${id}-heading`}>
@@ -206,11 +237,27 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
       </V3Heading>
       {countLabel ? <p className="place-homes__count">{countLabel}</p> : null}
       {visible.length > 0 ? (
-        <V3Carousel mode="rail" label={`Homes in ${title}`}>
-          {visible.map((listing) => (
-            <PlaceHomeCard key={listing.listingKey} listing={listing} />
-          ))}
-        </V3Carousel>
+        typed ? (
+          typeSections.map((section) => (
+            <div key={section.key} id={`${id}-${section.key}`} className="place-homes__type">
+              <p className="place-homes__type-heading" id={`${id}-${section.key}-heading`}>
+                {section.heading}
+              </p>
+              <p className="place-homes__type-count">{`${formatCount(section.rows.length)} for sale`}</p>
+              <V3Carousel mode="rail" label={`${section.heading} in ${title}`}>
+                {section.rows.map((listing) => (
+                  <PlaceHomeCard key={listing.listingKey} listing={listing} />
+                ))}
+              </V3Carousel>
+            </div>
+          ))
+        ) : (
+          <V3Carousel mode="rail" label={`Homes in ${title}`}>
+            {visible.map((listing) => (
+              <PlaceHomeCard key={listing.listingKey} listing={listing} />
+            ))}
+          </V3Carousel>
+        )
       ) : (
         <p className="place-homes__empty">Nothing listed in {title} right now.</p>
       )}

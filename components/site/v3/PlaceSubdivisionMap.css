@@ -123,10 +123,22 @@
 }
 
 .place-homes__count,
-.place-homes__empty {
+.place-homes__empty,
+.place-homes__type-count {
   margin: 0 0 var(--v3-space-sm);
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
+}
+
+.place-homes__type + .place-homes__type {
+  margin-top: var(--v3-space-md);
+}
+
+.place-homes__type-heading {
+  margin: 0 0 0.2rem;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: 600;
 }
 
 .place-home-card {
