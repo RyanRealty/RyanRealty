@@ -76,15 +76,32 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
     edges.push({ label, href })
   }
 
-  if (lifestyleItems.length > 0) {
+  // Parks and trails are V3Ledger sections on the page (SITE-141), not this
+  // Quiet dump. Golf and events that are not a park or trail stay here so
+  // Around still carries those doors; omit the block when none remain.
+  const aroundLifestyle = lifestyleItems.filter((item) => item.kind === 'golf' || item.kind === 'event')
+  if (aroundLifestyle.length > 0) {
+    const kinds = new Set(aroundLifestyle.map((item) => item.kind))
+    const term =
+      kinds.has('golf') && kinds.has('event')
+        ? 'Golf and events nearby'
+        : kinds.has('golf')
+          ? 'Golf nearby'
+          : 'Events nearby'
+    const registry =
+      kinds.has('golf') && kinds.has('event')
+        ? 'golf courses and events'
+        : kinds.has('golf')
+          ? 'golf'
+          : 'events'
     edges.push({
       kind: 'prose',
-      term: 'Parks, trails, and golf nearby',
+      term,
       body:
         `Straight-line distance from the middle of the listings recorded in ${displayName}, ` +
-        `measured against the curated Central Oregon parks, trails, and golf registry.`,
+        `measured against the curated Central Oregon ${registry} registry.`,
     })
-    for (const item of lifestyleItems) {
+    for (const item of aroundLifestyle) {
       const depth = item.meta?.trim()
       push(
         depth
