@@ -1,3 +1,12 @@
+# Current — 2026-09-21 (audit D6 + D2 on origin/main)
+
+Surface: Grok Build. Branch `wt/audit-leftovers-20260921` fast-forwarded onto `origin/main`. HOLD owner email. S1–S7 (one place page, one search, one CMA, listings DAL, two maps, CRM 360) were not this pass.
+
+- **D6 green.** Full `test:unit` 1125 files, 11945 passed, 1 skipped. Letter ask-arc again prints the outcome sentence (`offer in N days`, `Came off after N days`, `Not on the market`). Hero Low/High, rebrand band, heading, and Distance row were relocked to the later letter contract. Auto-send not-ready tests stub the solicitation screen. Twilio webhook mock implements `select`.
+- **D2 inventory.** Cron imports `lib/data/analytics/snapshotActiveInventory.ts` and returns 500 unless the upsert writes every city. Live write: as_of 2026-09-22, 24 cities, totalActive 3287, methodology `active_ilike+service_area_v1`. Warehouse figure, not a published market stat.
+- **D2 meta ads.** Child returns 500 when Insights throws. Yesterday's call succeeded with zero campaigns and zero spend (`empty: true`); all 9 campaigns are PAUSED. `marketing_channel_daily.meta_ads` stays 344 rows, last fetched_at 2026-06-20. Do not turn ads on from this.
+- **Not in this push.** Primary checkout `main` is still ~41 commits ahead of the pre-push `origin/main` with the local site-queue merges. This push does not include them.
+
 # Current — 2026-09-21 (local worktrees torn down — everything on origin)
 
 Surface: Grok Build `grok-build-01a0c44c-20260921`. Primary checkout back on `main`. Cos Mini-lands. HOLD owner email. Do not merge from this session.
