@@ -120,11 +120,12 @@ function competitionScene(a: OpinionSceneArgs): string {
 function whatHappenedScene(a: OpinionSceneArgs): string {
   const audit = a.expiredAudit
   if (!audit || audit.findings.length === 0) return ''
+  const heading = whatHappenedHeading(a)
   return `
   <section class="sc sc-cream pack" id="what-happened">
     <div class="in wide">
       <div class="kick r">What happened</div>
-      <h2 class="h r">${esc(whatHappenedHeading(a))}</h2>
+      <h2 class="h r is-fit" style="--chars:${heading.length}">${esc(heading)}</h2>
       <div class="r">${whatHappenedGraphicHtml(a)}</div>
       ${failedAskBacktestHtml(a, 'immersive')}
     </div>

@@ -24,10 +24,15 @@ img{max-width:100%;display:block}
 .sc.pack{min-height:0;align-items:flex-start;padding-top:48px;padding-bottom:56px}
 .sc-cream{background:var(--cream)}
 .sc-navy{background:var(--navy);color:var(--cream)}
-.in{max-width:880px;margin:0 auto;width:100%}
+.in{max-width:880px;margin:0 auto;width:100%;container-type:inline-size}
 .in.wide{max-width:1120px}
 .kick{font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;opacity:.65;margin-bottom:18px}
-.h{font-family:'Amboqia Boriango',Georgia,serif;font-weight:400;font-size:clamp(30px,5vw,54px);line-height:1.08;letter-spacing:-.01em;margin-bottom:22px}
+.h{font-family:'Amboqia Boriango',Georgia,serif;font-weight:400;font-size:clamp(30px,5vw,54px);line-height:1.08;letter-spacing:-.01em;margin-bottom:22px;text-wrap:balance;overflow-wrap:normal}
+/* A sentence title stays one line in the column. 0.48em is wider than
+   Amboqia measures on this sentence, so the line fits instead of breaking
+   a price off its days. A phone is too narrow for that and wraps evenly. */
+.h.is-fit{font-size:min(54px, calc(100cqi / (var(--chars) * 0.48)));white-space:nowrap;text-wrap:nowrap}
+@media (max-width:760px){.h.is-fit{white-space:normal;text-wrap:balance;font-size:clamp(28px,8vw,40px)}}
 .sub{font-family:'Amboqia Boriango',Georgia,serif;font-weight:400;font-size:clamp(22px,3vw,30px);margin:56px 0 18px}
 .lede{font-size:clamp(16px,2vw,19px);color:inherit;opacity:.85;max-width:640px;margin-bottom:34px}
 .body{font-size:16px;opacity:.85;max-width:640px;margin-top:28px}
@@ -361,7 +366,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 .szn.is-hero{margin-top:36px}
 /* TOP, not bottom. The subject head carries one line the sale heads do not,
    so bottom alignment staircased six photos to six different heights. */
-table.comp-matrix thead th.v{vertical-align:top;text-align:center}
+table.comp-matrix thead th.v{vertical-align:top;text-align:right;overflow-wrap:normal}
 table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;margin:0 0 8px}
 table.comp-matrix .matrix-thumb.is-empty{background:rgba(16,39,66,.06)}
 table.comp-matrix .matrix-addr{display:block}
@@ -372,8 +377,9 @@ table.comp-matrix .matrix-addr{display:block}
 .pin-badge.is-subject{background:transparent;color:var(--navy)}
 .subhead.adjustments-h,h4.adjustments-h{margin-top:22px}
 .pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
-.addr-row{display:flex;align-items:center;justify-content:center}
-.addr-row .matrix-addr{min-width:0}
+.addr-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:6px}
+.addr-row .pin-badge{margin-right:0}
+.addr-row .matrix-addr{min-width:0;overflow-wrap:normal;text-align:right}
 .addr-row.is-card{justify-content:flex-start;gap:8px;margin:0 0 6px}
 .addr-row.is-card .pin-badge{margin-right:0}
 .addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
@@ -401,7 +407,9 @@ table.comp-matrix .matrix-addr{display:block}
 .worth-lead{font-size:clamp(16px,2vw,19px);opacity:.85;max-width:640px;margin-bottom:26px}
 .worth-lead+.worth-lead-note{margin-top:-18px}
 .worth-lead-note{font-size:clamp(15px,1.8vw,17px);max-width:640px;margin:0 0 26px;border-left:2px solid var(--navy);padding-left:12px}
-table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65}
+table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65;white-space:nowrap;text-align:right}
+table.comp-matrix .arc-asks,table.comp-matrix .arc-tail{display:block;white-space:nowrap;text-align:right;line-height:1.35}
+table.comp-matrix .arc-tail + .arc-tail{margin-top:1px}
 table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
 /* The price-path primitive (blueprint, Delta 1). Two layouts, one visible. */
 .pp-wrap{margin:10px 0 4px}
@@ -448,7 +456,8 @@ ul.rejected-list .rj-why{opacity:.7}
 .comp-stack-grid{display:grid;gap:4px;margin-top:10px}
 .comp-stack-line{display:flex;justify-content:space-between;gap:14px;font-size:14px;flex-wrap:nowrap;white-space:nowrap}
 .comp-stack-line .k{opacity:.6}
-.comp-stack-line .v{font-variant-numeric:tabular-nums;font-weight:600}
+.comp-stack-line .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.comp-stack-line .arc-asks,.comp-stack-line .arc-tail{display:block;white-space:nowrap;text-align:right;font-weight:600}
 /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
 table.realization{width:100%;table-layout:fixed;border-collapse:collapse;margin:16px 0 8px;font-size:15px}
 table.realization col.rz-weeks{width:38%}

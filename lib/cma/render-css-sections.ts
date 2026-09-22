@@ -611,12 +611,13 @@ export function cmaSectionStyles(): string {
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
   table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }
   /* TOP, not bottom: the subject head carries one line the sale heads do not. */
-  table.comp-matrix thead th.v { vertical-align: top; text-align: center; }
+  table.comp-matrix thead th.v { vertical-align: top; text-align: right; }
   table.comp-matrix .matrix-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; margin: 0 0 6px; }
   table.comp-matrix .matrix-thumb.is-empty { background: rgba(16, 39, 66, 0.06); }
   table.comp-matrix .matrix-addr { display: block; }
-  .addr-row { display: flex; align-items: center; justify-content: center; }
-  .addr-row .matrix-addr { min-width: 0; }
+  .addr-row { display: flex; align-items: center; justify-content: flex-end; flex-wrap: nowrap; gap: 4px; }
+  .addr-row .pin-badge { margin-right: 0; }
+  .addr-row .matrix-addr { min-width: 0; overflow-wrap: normal; text-align: right; }
   .addr-row.is-card { justify-content: flex-start; gap: 5px; margin: 0 0 6px; }
   .addr-row.is-card .pin-badge { margin-right: 0; }
   .addr-row.is-card .comp-stack-addr { margin: 0; flex: 1 1 auto; min-width: 0; }
@@ -647,10 +648,12 @@ export function cmaSectionStyles(): string {
      number: under nowrap + overflow hidden a long one ("401 Comparable Street
      Northwest" in a five-column table) was clipped mid-word on the sheet, and
      the clipped glyphs still sat in the PDF past the right margin
-     (page-safety: "+2.3pt SIDE right" on every matrix sheet). The head wraps;
-     the figure line under it stays on one line. */
-  table.comp-matrix thead th.v { white-space: normal; overflow-wrap: anywhere; }
-  table.comp-matrix thead th.v .matrix-sub { white-space: nowrap; }
+     (page-safety: "+2.3pt SIDE right" on every matrix sheet). The head wraps
+     at a space, right-aligned with the figures under it. It does not break
+     inside a word. */
+  table.comp-matrix thead th.v { white-space: normal; overflow-wrap: normal; text-align: right; }
+  table.comp-matrix thead th.v .matrix-sub { white-space: nowrap; text-align: right; }
+  table.comp-matrix .arc-asks, table.comp-matrix .arc-tail { display: block; white-space: nowrap; text-align: right; }
   table.comp-matrix td.is-note { text-align: left; font-size: 9.5px; line-height: 1.35; }
   table.comp-matrix th[hidden], table.comp-matrix td[hidden] { display: none; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }

@@ -746,7 +746,7 @@ function timelineBody(o: {
   // labels. Centering it put "where homes like yours sold" through $729K on
   // 20506 Murphy. Above the zone, the same caption sat under an ask near the
   // top and the line struck through it.
-  const askLabelYs = g.steps.map((s) => y(s.ask) - 9)
+  const askLabelYs = [...g.steps.map((s) => y(s.ask) - 9), endLabelY]
   const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, fs, top)
   // The zone label NAMES which range this is — the adjusted one — and that is
   // a longer string than the plot is wide on a phone. It shrinks to fit rather

@@ -258,8 +258,10 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Sold $/sqft', figure: true },
   { label: 'Seller concessions', figure: true },
   { label: 'Adjusted', figure: true },
-  // NOT `figure`: keep arc short; Tip Ready also bans wrapping crumbs.
-  { label: 'First ask → last ask → outcome', figure: false },
+  // Asks on one line, then each clause of the outcome on its own. One
+  // sentence in a six-column cell was breaking in a different place in every
+  // column. The full sentence stays in the title.
+  { label: 'First ask → last ask → outcome', figure: false, html: true },
 ]
 
 /**
@@ -325,16 +327,65 @@ function bedsBaths(beds: number | null | undefined, baths: number | null | undef
  * "$475K → sold $457K · offer in 1 day" — the tail is the outcome sentence,
  * which names the day-count (offer vs on market) or says the home is not
  * listed. `endLabel` is only the short close word when that sentence is absent.
+ *
+ * A six-column cell is about eighteen characters wide. Each clause stays on
+ * its own line, and a day-count stays with the words that name it, so every
+ * column breaks in the same place.
  */
-export function askArcCell(entry: MatrixEntry): string {
-  const bits: string[] = []
-  if (entry.firstAsk != null && entry.firstAsk > 0) bits.push(shortUsd(entry.firstAsk))
-  if (entry.lastAsk != null && entry.lastAsk > 0 && entry.lastAsk !== entry.firstAsk) {
-    bits.push(shortUsd(entry.lastAsk))
+function escCell(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+const ARC_LINE = 18
+
+function arcTokens(clause: string): string[] {
+  const glued = clause
+    .replace(/\bafter (\d+ days?)\b/gi, 'after\u00a0$1')
+    .replace(/(\d+)\s+(days?)\b/gi, '$1\u00a0$2')
+  return glued.split(/ +/).filter(Boolean).map((w) => w.replace(/\u00a0/g, ' '))
+}
+
+function arcLines(text: string): string[] {
+  const lines: string[] = []
+  for (const clause of text.split(' · ')) {
+    const trimmed = clause.trim()
+    if (!trimmed) continue
+    let current = ''
+    for (const word of arcTokens(trimmed)) {
+      const next = current ? `${current} ${word}` : word
+      if (current && next.length > ARC_LINE) {
+        lines.push(current)
+        current = word
+      } else {
+        current = next
+      }
+    }
+    if (current) lines.push(current)
   }
-  const tail = entry.outcome.trim() || entry.endLabel.trim()
-  if (tail) bits.push(tail)
-  return bits.length > 0 ? bits.join(' → ') : '-'
+  return lines
+}
+
+export function askArcCell(entry: MatrixEntry): string {
+  const asks: string[] = []
+  if (entry.firstAsk != null && entry.firstAsk > 0) asks.push(shortUsd(entry.firstAsk))
+  if (entry.lastAsk != null && entry.lastAsk > 0 && entry.lastAsk !== entry.firstAsk) {
+    asks.push(shortUsd(entry.lastAsk))
+  }
+  const path = asks.join(' → ')
+  const full = entry.outcome.trim() || entry.endLabel.trim()
+  if (!path && !full) return '-'
+  const asksHtml = path ? `<span class="arc-asks">${escCell(path)}</span>` : ''
+  const lines = full ? arcLines(full) : []
+  const tailHtml = lines
+    .map((line, i) =>
+      `<span class="arc-tail"${i === 0 ? ` title="${escCell(full)}"` : ''}>${escCell(line)}</span>`,
+    )
+    .join('')
+  return `${asksHtml}${tailHtml}`
 }
 
 /** The shared cells for one home, in SHARED_ROWS order. */
@@ -686,7 +737,7 @@ function matrixTable(
           const diff =
             row.html !== true && ci > 0 && val !== subjectVal && val !== '-' && subjectVal !== '-'
           const cell = row.html === true ? val : esc(val)
-          return `<td class="v${row.figure ? ' n' : ''}${row.html === true ? ' is-draw' : ''}${
+          return `<td class="v${row.figure ? ' n' : ''}${
             row.note === true ? ' is-note' : ''
           }${diff ? ' is-diff' : ''}">${cell}</td>`
         })

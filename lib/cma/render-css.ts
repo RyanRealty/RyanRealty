@@ -144,6 +144,8 @@ export function cmaStylesheet(siteUrl: string): string {
     padding-bottom: 6px;
     border-bottom: 2px solid var(--navy);
     display: inline-block;
+    text-wrap: balance;
+    overflow-wrap: normal;
   }
   h3.subhead {
     font-weight: 600;

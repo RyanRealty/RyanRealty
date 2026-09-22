@@ -103,6 +103,12 @@ describe('renderCompMatrixHtml', () => {
     expect(html).toContain('1978')
     expect(html).toContain('$495,000')
     expect(html).toContain('$465,744')
+    // The ask path breaks on the clause, the same way in every column, and
+    // the whole outcome sentence stays in the cell.
+    expect(html).toContain('title="sold $495K · offer in 8 days"')
+    expect(html).toContain('>sold $495K</span>')
+    expect(html).toContain('>offer in 8 days</span>')
+    expect(html).toContain('class="arc-asks">$499K</span>')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
     // No MLS photo on the fixture → honest empty thumb boxes so column heights align.
