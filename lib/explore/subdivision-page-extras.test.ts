@@ -103,7 +103,7 @@ describe('place list wiring', () => {
     const src = readFileSync('app/communities/[slug]/page.tsx', 'utf8')
     expect(src).toContain("href: '#homes'")
     expect(src).toMatch(/id="homes"/)
-    expect(src).toMatch(/<V3PlaceInventory/)
+    expect(src).toMatch(/<PlaceSubdivisionHomes/)
     expect(src).not.toMatch(/<PlaceSplitView/)
   })
 })

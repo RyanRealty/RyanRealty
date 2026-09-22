@@ -33,7 +33,7 @@ import { publishPlaceAffordability } from '@/lib/place/publish-place-affordabili
 import { resolveNeighborhoodMetricSlug } from '@/lib/data/market-truth/neighborhood-metric-slug'
 import {
   getAreaGuideVideo,
-  getListingTiles,
+
   getGeoBoundaryMapData,
   getCommunitySubdivisions,
   getAllCitySnapshots,
@@ -66,7 +66,7 @@ import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
-import { childStockDetails } from '@/lib/place/place-child-stock'
+import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
@@ -91,26 +91,30 @@ import {
   V3PlaceDocuments,
   V3Answers,
   V3PlaceAffordability,
-  V3PlaceIndex,
-  V3PlaceInventory,
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { V3Atlas, V3PlaceLook, type AtlasRegion } from '@/components/site/v3'
-import { listingsFromAtlasDots, listingsFromTileRows, placeLookPhotoCards } from '@/lib/place/first-look'
+import { type AtlasRegion } from '@/components/site/v3'
+import {
+  PlaceSubdivisionAtlas,
+  PlaceSubdivisionHomes,
+  PlaceSubdivisionMap,
+  PlaceSubdivisionRail,
+} from '@/components/site/v3/PlaceSubdivisionMap.client'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
-import { PlaceSplitView } from '@/components/search/PlaceSplitView'
+
 import {
   placeTypeCoverPhotos,
   publishPlaceTypeCards,
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
-import { overlaysFromChildCells, regionsFromChildCells } from '@/lib/place/child-rings'
+import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { childAtlasRegions, subjectAtlasRegions } from '@/lib/place/map-hierarchy'
+
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
@@ -136,7 +140,6 @@ import {
   neighborhoodFaceFigures,
   neighborhoodHeadline,
   neighborhoodMarketTrace,
-  neighborhoodSplitListings,
 } from './_v3/neighborhood-sections'
 import {
   activityRows,
@@ -375,7 +378,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
   const atlasRegions: AtlasRegion[] = boundaryMapData.polygon
     ? [
         { id: `neighborhood:${neighborhoodSlug}`, kind: 'town', kindLabel: 'Neighborhood', name: neighborhood.name, href: `/cities/${citySlug}/${neighborhoodSlug}`, geometry: boundaryMapData.polygon },
-        ...regionsFromChildCells(atlasPlats),
+        ...regionsFromChildCells(atlasPlats, 400),
       ]
     : []
   const inventory = inventoryRead
@@ -386,20 +389,6 @@ async function renderNeighborhoodDetail({ params }: Props) {
   // (inventory present, 0 keys) must not revive pin-only homes.
   const inventoryOk = inventory != null
   const countedKeys = inventoryOk ? inventory.listingKeys : []
-  const listingTiles =
-    countedKeys.length > 0
-      ? await withTimeoutFallback(
-          getListingTiles({
-            listingKeys: countedKeys,
-            status: 'active',
-            propertyType: 'A',
-            limit: Math.min(Math.max(countedKeys.length, 1), 5000),
-          }),
-          [],
-          4500,
-          'nbh:tiles',
-        )
-      : []
   const [boundaryStock, childStockRows] = await Promise.all([
     withTimeoutFallback(
       loadPlaceStockTiles({
@@ -420,7 +409,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
     ),
   ])
   const stockSections = placeStockSectionsFromTiles(boundaryStock)
-  const splitListings = inventoryOk ? neighborhoodSplitListings(listingTiles) : undefined
+  const placeHomes = stockSections.flatMap((section) => section.rows)
   const typeCovers = await withTimeoutFallback(
     loadPlaceTypeCoverPhotos({ city: cityName, neighborhood: neighborhood.name }),
     {},
@@ -441,7 +430,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
     sfrMedian: inventoryOk ? inventory.medianListPrice : null,
     sfrMos: null,
     segments: publicSegments,
-    covers: { ...placeTypeCoverPhotos(listingTiles), ...typeCovers },
+    covers: { ...placeTypeCoverPhotos(boundaryStock), ...typeCovers },
   })
   const headline = neighborhoodHeadline(neighborhood.name)
   const trail = neighborhoodPageTrail({ label: cityName, slug: citySlug }, neighborhood.name)
@@ -655,19 +644,20 @@ async function renderNeighborhoodDetail({ params }: Props) {
   // Every recorded subdivision inside the neighborhood, plus any community
   // row the neighborhood already named. The line under a name is that
   // subdivision's live property-type mix. The full home list stays here.
-  const childPlaceEntries = childStockDetails(
-    nameOnlyChildEntries([
-      atlasPlats.map((cell) => ({
-        name: cell.label,
-        href: `/subdivisions/${cell.slug}`,
-      })),
-      neighborhoodCommunities.map((c) => ({
-        name: c.subdivision,
-        href: `/subdivisions/${slugify(c.subdivision)}`,
-      })),
-    ]),
-    childStockRows,
-  )
+  const childRegions = childAtlasRegions(atlasRegions)
+  const namedChildren = nameOnlyChildEntries([
+    childRegions.map((region) => ({ name: region.name, href: region.href })),
+    neighborhoodCommunities.map((c) => ({
+      name: c.subdivision,
+      href: `/subdivisions/${slugify(c.subdivision)}`,
+    })),
+  ])
+  const railEntries = subdivisionRailEntries({
+    regions: childRegions.map((region) => ({ name: region.name, href: region.href })),
+    extras: childRegions.length > 0 ? [] : namedChildren,
+    rows: childStockRows,
+  })
+  const homesByChild = childListingKeys(childStockRows)
 
   // Live feed - fetched city-wide (the MLS carries no neighborhood scope), so
   // it is labeled with whichever scope the rows actually carry (§0).
@@ -777,7 +767,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
   const nearbyRecreation = recreationNearPoint(geo?.lat, geo?.lng, { omitHrefs: dailyHrefs })
   const [firstNearbyPark, ...restNearbyParks] = nearbyRecreation.parks
   const [firstNearbyTrail, ...restNearbyTrails] = nearbyRecreation.trails
-  const hasMap = Boolean(boundaryMapData.polygon) || (splitListings != null && splitListings.length > 0)
+  const hasMap = Boolean(boundaryMapData.polygon) || placeHomes.length > 0
   const neighborhoodSchemas: SchemaInput[] = buildNeighborhoodSchemas({
     neighborhoodName: neighborhood.name,
     neighborhoodSlug,
@@ -808,16 +798,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
-  // SITE-128 #1 first-look: Google + ONE neighborhood ring + photo cards.
-  // Atlas stays later so amenity gates still see <V3Atlas id="atlas">.
-  const foldLookListings =
-    splitListings != null && splitListings.length > 0
-      ? listingsFromTileRows(splitListings)
-      : listingsFromAtlasDots(atlasView.dots.filter((d) => d.t === 'house'))
-  const foldPhotoCards = placeLookPhotoCards({
-    buckets: openingListings,
-    listings: foldLookListings,
-  })
+  const subjectRegions = subjectAtlasRegions(atlasRegions)
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -855,29 +836,47 @@ async function renderNeighborhoodDetail({ params }: Props) {
             <p className="place-opening__caption place-opening__caption--doors">
               <a href={`/cities/${citySlug}`}>{cityName} real estate</a>
               {' · '}
-              <a href="#all-homes">{neighborhood.name} homes for sale</a>
+              <a href="#homes">{neighborhood.name} homes for sale</a>
               {' · '}
               <a href={`/housing-market/${citySlug}`}>{cityName} housing market</a>
             </p>
           </div>
         </div>
 
-        {/* SITE-128 #1: first-look is a real map + one neighborhood ring +
-            photo cards. Cream Atlas is not the fold. */}
+        <PlaceSubdivisionMap
+          placeName={neighborhood.name}
+          rail={railEntries}
+          homes={placeHomes}
+          keysBySlug={homesByChild}
+          source={`regional MLS through Oregon Data Share, every publicly active listing inside the recorded ${neighborhood.name} boundary: Active and Active Under Contract, every property type. Coming Soon is excluded. This is a wider set than the detached count on the fold.`}
+          asOf={leftoverStamp}
+        >
+          <div className="place-one-map">
+            <PlaceSubdivisionRail id="child-places" nameOnly />
+            <PlaceSubdivisionAtlas
+              id="atlas"
+              headingLevel={2}
+              headline={v3Text(neighborhood.name)}
+              headlineTone="eyebrow"
+              dots={atlasView.dots}
+              regions={subjectRegions}
+              childRegions={childRegions}
+              basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
+              fit="dots"
+              types={atlasView.types}
+              events={atlasView.events}
+              source={atlasView.source}
+              stamp={atlasView.stamp}
+              incomplete={!atlasView.complete}
+              amenities={amenityLayers}
+              hidePriceScrubber
+            />
+          </div>
+          <PlaceSubdivisionHomes id="homes" />
+        </PlaceSubdivisionMap>
+
         <div className="nbh-fold">
           <div className="nbh-fold__stage">
-            <div className="nbh-fold__drawing">
-              <V3PlaceLook
-                id="place-look"
-                headline={`${neighborhood.name} right now`}
-                claim={`${neighborhood.name} houses for sale: active and pending.`}
-                listings={foldLookListings}
-                boundaryGeojson={boundaryMapData.polygon}
-                placeQuery={`${neighborhood.name} ${cityName}`}
-                photoCards={foldPhotoCards}
-                source={atlasView.source}
-              />
-            </div>
             <aside className="nbh-fold__figure nbh-fold__figure--insight">
               <NeighborhoodInsight
                 id="place-insight"
@@ -946,56 +945,6 @@ async function renderNeighborhoodDetail({ params }: Props) {
         </div>
 
         <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
-
-        <div id="homes">
-          <PlaceSplitView
-            city={cityName}
-            neighborhood={neighborhood.name}
-            boundaryGeojson={boundaryMapData.polygon}
-            overlayBoundaries={overlaysFromChildCells(atlasPlats)}
-            seedRing
-            placeQuery={`${neighborhood.name} ${cityName}`}
-            listings={splitListings}
-            totalCount={inventoryOk ? inventory.activeCount : undefined}
-            degraded={!boundaryRead.ok && !inventoryOk}
-          />
-        </div>
-
-        <V3PlaceInventory
-          id="all-homes"
-          placeName={neighborhood.name}
-          sections={stockSections}
-          source={`regional MLS through Oregon Data Share, every publicly active listing inside the recorded ${neighborhood.name} boundary: Active and Active Under Contract, every property type. Coming Soon is excluded. This is a wider set than the detached count on the fold.`}
-          asOf={leftoverStamp}
-        />
-
-        <V3Atlas
-          id="atlas"
-          headingLevel={2}
-          headline={v3Text(`${neighborhood.name} right now`)}
-          headlineTone="eyebrow"
-          claimText={`${neighborhood.name} houses for sale: active and pending.`}
-          dots={atlasView.dots}
-          regions={subjectAtlasRegions(atlasRegions)}
-          childRegions={childAtlasRegions(atlasRegions)}
-          basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
-          fit="dots"
-          types={atlasView.types}
-          events={atlasView.events}
-          source={atlasView.source}
-          stamp={atlasView.stamp}
-          incomplete={!atlasView.complete}
-          amenities={amenityLayers}
-        />
-
-        <V3PlaceIndex
-          id="child-places"
-          heading={neighborhood.name}
-          nameOnly
-          entries={childPlaceEntries}
-          foldAfter={Math.max(childPlaceEntries.length, 1)}
-          source={`Oregon Data Share. The line under a subdivision counts publicly active listings inside that recorded subdivision: Active and Active Under Contract, every property type. Coming Soon is excluded. Every home in ${neighborhood.name} is listed on this page.`}
-        />
 
         {costChart && firstMarketFigure ? (
           <V3Instrument

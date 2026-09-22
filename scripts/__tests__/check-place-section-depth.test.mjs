@@ -18,6 +18,6 @@ describe('ci:place-section-depth', () => {
     const r = run()
     expect(r.ok, r.out).toBe(true)
     expect(r.out).toMatch(/ci:place-section-depth OK/)
-    expect(r.out).toMatch(/#amenities/)
+    expect(r.out).toMatch(/place routes hold their named sections/)
   })
 })

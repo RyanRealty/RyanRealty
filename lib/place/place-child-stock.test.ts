@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { childStockDetails, summarizeChildStock } from './place-child-stock'
+import { childListingKeys, childStockDetails, subdivisionRailEntries, summarizeChildStock } from './place-child-stock'
 
 describe('summarizeChildStock', () => {
   it('counts each listing once and omits empty types', () => {
@@ -50,5 +50,48 @@ describe('childStockDetails', () => {
     )
     expect(rows[0]?.detail).toBe('1 townhome or condo')
     expect(rows[1]?.detail).toBeUndefined()
+  })
+})
+
+describe('subdivisionRailEntries', () => {
+  it('keeps the drawn subdivision and drops a repeated slug', () => {
+    const rail = subdivisionRailEntries({
+      regions: [
+        { name: 'North Forty', href: '/subdivisions/north-forty' },
+        { name: 'Quiet Lot', href: '/subdivisions/quiet-lot' },
+      ],
+      extras: [{ name: 'North Forty again', href: '/subdivisions/north-forty' }],
+      rows: [
+        {
+          listing_key: 'a',
+          geo_slug: 'north-forty',
+          property_type: 'A',
+          property_sub_type: 'Single Family Residence',
+        },
+        {
+          listing_key: 'b',
+          geo_slug: 'north-forty',
+          property_type: 'A',
+          property_sub_type: 'Single Family Residence',
+        },
+      ],
+    })
+    expect(rail.map((row) => row.id)).toEqual(['north-forty', 'quiet-lot'])
+    expect(rail[0]?.detail).toBe('2 single-family')
+    expect(rail[1]?.detail).toBeUndefined()
+    expect(childListingKeys([
+      {
+        listing_key: 'a',
+        geo_slug: 'north-forty',
+        property_type: 'A',
+        property_sub_type: 'Single Family Residence',
+      },
+      {
+        listing_key: 'a',
+        geo_slug: 'north-forty',
+        property_type: 'A',
+        property_sub_type: 'Single Family Residence',
+      },
+    ])).toEqual({ 'north-forty': ['a'] })
   })
 })

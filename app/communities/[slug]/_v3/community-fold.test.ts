@@ -9,13 +9,13 @@ describe('SITE-129 community fold inventory', () => {
   it('imports page-local community-fold.css and hides the Atlas price range', () => {
     expect(PAGE).toMatch(/import '\.\/_v3\/community-fold\.css'/)
     expect(PAGE).toMatch(/className="community-fold"/)
-    expect(PAGE).toMatch(/community-fold__drawing/)
-    expect(PAGE).toMatch(/<V3Atlas[\s\S]*?hidePriceScrubber/)
+    expect(PAGE).toMatch(/className="place-one-map"/)
+    expect(PAGE).toMatch(/<PlaceSubdivisionAtlas[\s\S]*?hidePriceScrubber/)
     expect(FOLD_CSS).toMatch(/\.community-atlas \.v3-atlas__scrub[\s\S]{0,200}display:\s*none/)
   })
 
   it('keeps typed stock on the page and does not remount Split search', () => {
-    expect(PAGE).toMatch(/<V3PlaceInventory/)
+    expect(PAGE).toMatch(/<PlaceSubdivisionHomes/)
     expect(PAGE).toMatch(/placeStockSectionsFromTiles/)
     expect(PAGE).not.toMatch(/<PlaceSplitView/)
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
@@ -29,15 +29,15 @@ describe('SITE-129 community fold inventory', () => {
   })
 })
 
-describe('SITE-162 community first-look', () => {
-  it('opens on V3PlaceLook with priced photo cards, Atlas later', () => {
-    expect(PAGE).toMatch(/<V3PlaceLook[\s\S]*?id="place-look"/)
-    expect(PAGE).toMatch(/photoCards=\{foldPhotoCards\}/)
-    expect(PAGE).toMatch(/placeLookPhotoCards/)
-    expect(PAGE).toMatch(/<V3Atlas[\s\S]*?id="atlas"/)
-    expect(FOLD_CSS).toMatch(/\.community-fold__drawing \.v3-place-look__map/)
-    expect(FOLD_CSS).toMatch(/grid-template-areas:\s*'cards' 'map'/)
-    expect(FOLD_CSS).toMatch(/nth-child\(n \+ 3\)/)
-    expect(PAGE.indexOf('<V3PlaceLook')).toBeLessThan(PAGE.indexOf('<V3Atlas'))
+describe('community map', () => {
+  it('opens on one atlas with the subdivision list and the homes carousel', () => {
+    expect(PAGE).toMatch(/<PlaceSubdivisionAtlas[\s\S]*?id="atlas"/)
+    expect(PAGE).toMatch(/<PlaceSubdivisionRail[\s\S]*?id="child-places"/)
+    expect(PAGE).toMatch(/<PlaceSubdivisionHomes[\s\S]*?id="homes"/)
+    expect(PAGE).toMatch(/nameOnly/)
+    expect(PAGE).not.toMatch(/<V3PlaceLook/)
+    expect(PAGE).not.toMatch(/<V3Amenities/)
+    expect(PAGE).not.toMatch(/has on the ground/)
+    expect(PAGE.indexOf('id="atlas"')).toBeLessThan(PAGE.indexOf('id="homes"'))
   })
 })

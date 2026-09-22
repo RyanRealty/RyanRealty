@@ -58,7 +58,7 @@ describe('community first screen leftover face + split', () => {
   })
 
   it('opens on typed on-page inventory, not V3Stage/V3Field as the cage', () => {
-    expect(SRC).toMatch(/<V3PlaceInventory/)
+    expect(SRC).toMatch(/<PlaceSubdivisionHomes/)
     expect(SRC).not.toMatch(/<PlaceSplitView/)
     expect(SRC).not.toMatch(/<PlaceTypeSlider/)
     expect(SRC).toMatch(/<V3Heading/)
@@ -100,7 +100,7 @@ describe('community first screen leftover face + split', () => {
 
   it('uses one about paragraph and amenity blogs only', () => {
     expect(SRC).toMatch(/firstAboutParagraph\(aboutParagraphs\)/)
-    expect(SRC).toMatch(/getBlogPostsBySlugs/)
+    expect(SRC).not.toMatch(/getBlogPostsBySlugs/)
     expect(SRC).not.toMatch(/getRecentBlogPosts/)
     // 2026-09-07: id="guides" is the one area-guide door to the Ryan Realty
     // YouTube channel (areaGuideRow), below the fold. Still no recent-posts feed.
@@ -114,10 +114,7 @@ describe('community first screen leftover face + split', () => {
   })
 
   it('does not put an em dash in the atlas claim (Matt lock 2026-09-20)', () => {
-    const claims = [...SRC.matchAll(/(?:claim|claimText)=\{`([^`]*)`\}/g)].map((m) => m[1])
-    expect(claims.length).toBeGreaterThan(0)
-    for (const copy of claims) {
-      expect(copy).not.toContain('\u2014')
-    }
+    expect(SRC).not.toMatch(/claimText=/)
+    expect(SRC).not.toMatch(/every active and pending/)
   })
 })

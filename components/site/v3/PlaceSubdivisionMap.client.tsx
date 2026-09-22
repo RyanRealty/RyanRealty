@@ -1,0 +1,199 @@
+'use client'
+
+/**
+ * One map for a community or a neighborhood.
+ *
+ * The subdivisions sit to the left of the map, no taller than the map.
+ * Choosing one zooms the map to that recorded shape and the carousel below
+ * shows every publicly active home inside it. The place name at the top of
+ * the list shows every home in the place.
+ */
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import Link from 'next/link'
+import { cn } from '@/lib/utils'
+import { formatCount } from '@/lib/format/count'
+import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import type { SubdivisionRailEntry } from '@/lib/place/place-child-stock'
+import { V3_ROOT_CLASS, V3Heading } from './atoms'
+import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
+import { V3Carousel } from './V3Carousel.client'
+import { listingPhotoAlt } from './listing-photo-alt'
+import type { V3ListingRowData } from './V3ListingRow'
+import { V3SourceLine } from './V3SourceLine'
+import './tokens.css'
+import './PlaceSubdivisionMap.css'
+
+type PlaceMapState = {
+  placeName: string
+  rail: readonly SubdivisionRailEntry[]
+  homes: readonly V3ListingRowData[]
+  keysBySlug: Readonly<Record<string, readonly string[]>>
+  source: string
+  asOf: string | null
+  selectedId: string | null
+  setSelected: (id: string | null) => void
+}
+
+const PlaceMapContext = createContext<PlaceMapState | null>(null)
+
+function usePlaceMap(): PlaceMapState {
+  const value = useContext(PlaceMapContext)
+  if (!value) throw new Error('Place subdivision map pieces must render inside PlaceSubdivisionMap')
+  return value
+}
+
+export function PlaceSubdivisionMap({
+  placeName,
+  rail,
+  homes,
+  keysBySlug,
+  source,
+  asOf = null,
+  children,
+}: {
+  placeName: string
+  rail: readonly SubdivisionRailEntry[]
+  homes: readonly V3ListingRowData[]
+  keysBySlug: Readonly<Record<string, readonly string[]>>
+  source: string
+  asOf?: string | null
+  children: ReactNode
+}) {
+  const [selectedId, setSelected] = useState<string | null>(null)
+  const value = useMemo(
+    () => ({ placeName, rail, homes, keysBySlug, source, asOf, selectedId, setSelected }),
+    [placeName, rail, homes, keysBySlug, source, asOf, selectedId],
+  )
+  return <PlaceMapContext.Provider value={value}>{children}</PlaceMapContext.Provider>
+}
+
+export function PlaceSubdivisionRail({
+  id,
+  nameOnly = true,
+}: {
+  id: string
+  /** Name and property-type line. No sales bar. */
+  nameOnly?: boolean
+}) {
+  const { placeName, rail, selectedId, setSelected } = usePlaceMap()
+  return (
+    <nav
+      id={id}
+      className={cn('place-subdiv-rail', nameOnly && 'place-subdiv-rail--names')}
+      aria-label={`${placeName} subdivisions`}
+    >
+      <ul className="place-subdiv-rail__list">
+        <li>
+          <button
+            type="button"
+            className={cn('place-subdiv-rail__button', selectedId == null && 'is-selected')}
+            aria-pressed={selectedId == null}
+            onClick={() => setSelected(null)}
+          >
+            <span className="place-subdiv-rail__name">{placeName}</span>
+          </button>
+        </li>
+        {rail.map((entry) => (
+          <li key={entry.id}>
+            <button
+              type="button"
+              className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
+              aria-pressed={selectedId === entry.id}
+              onClick={() => setSelected(entry.id)}
+            >
+              <span className="place-subdiv-rail__name">{entry.name}</span>
+              {nameOnly && entry.detail ? (
+                <span className="place-subdiv-rail__detail">{entry.detail}</span>
+              ) : null}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+export function PlaceSubdivisionAtlas(props: V3AtlasProps) {
+  const { selectedId, setSelected } = usePlaceMap()
+  return (
+    <V3Atlas
+      {...props}
+      selectedSubdivisionId={selectedId}
+      onSubdivisionSelect={setSelected}
+    />
+  )
+}
+
+function homeMeta(listing: V3ListingRowData): string {
+  const parts: string[] = []
+  if (listing.beds != null) parts.push(`${Math.round(listing.beds).toLocaleString('en-US')} bd`)
+  if (listing.baths != null) parts.push(`${Math.round(listing.baths).toLocaleString('en-US')} ba`)
+  if (listing.sqft != null) parts.push(`${Math.round(listing.sqft).toLocaleString('en-US')} sqft`)
+  return parts.join(' · ')
+}
+
+function PlaceHomeCard({ listing }: { listing: V3ListingRowData }) {
+  const ask = formatPublishedSaleAsk({
+    price: listing.price,
+    propertyType: listing.propertyType,
+  })
+  const share = publishListingShareKind({
+    propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
+  })
+  const meta = homeMeta(listing)
+  return (
+    <Link href={listing.href} className="place-home-card">
+      <span className="place-home-card__media">
+        {listing.photoUrl ? (
+          <SparkSafeImage
+            src={listingRowPhotoSrc(listing.photoUrl)}
+            alt={listingPhotoAlt(listing)}
+            fill
+            sizes="280px"
+          />
+        ) : null}
+      </span>
+      {ask ? <span className="place-home-card__price">{ask}</span> : null}
+      {share ? <span className="place-home-card__share">{share}</span> : null}
+      <span className="place-home-card__addr">{listing.addressLine}</span>
+      {meta ? <span className="place-home-card__meta">{meta}</span> : null}
+    </Link>
+  )
+}
+
+export function PlaceSubdivisionHomes({ id }: { id: string }) {
+  const { placeName, rail, homes, keysBySlug, source, asOf, selectedId } = usePlaceMap()
+  const selected = rail.find((entry) => entry.id === selectedId) ?? null
+  const title = selected?.name ?? placeName
+  const visible = useMemo(() => {
+    if (!selectedId) return homes
+    const keys = new Set(keysBySlug[selectedId] ?? [])
+    return homes.filter((home) => keys.has(home.listingKey))
+  }, [homes, keysBySlug, selectedId])
+  const countLabel = visible.length > 0 ? `${formatCount(visible.length)} for sale` : null
+
+  return (
+    <section id={id} className={cn(V3_ROOT_CLASS, 'place-homes')} aria-labelledby={`${id}-heading`}>
+      <V3Heading level={2} size="field" id={`${id}-heading`}>
+        {title}
+      </V3Heading>
+      {countLabel ? <p className="place-homes__count">{countLabel}</p> : null}
+      {visible.length > 0 ? (
+        <V3Carousel mode="rail" label={`Homes in ${title}`}>
+          {visible.map((listing) => (
+            <PlaceHomeCard key={listing.listingKey} listing={listing} />
+          ))}
+        </V3Carousel>
+      ) : (
+        <p className="place-homes__empty">Nothing listed in {title} right now.</p>
+      )}
+      <V3SourceLine source={source} asOf={asOf} sourceName="Oregon Data Share" />
+    </section>
+  )
+}

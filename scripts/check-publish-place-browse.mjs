@@ -36,8 +36,8 @@ checks.push({
 const community = src('app/communities/[slug]/page.tsx')
 checks.push({
   label: 'community browse doors keep the place filter (getPlaceLinks)',
-  // P0 place inventory (2026-09-18): typed stock stays on the page (#homes /
-  // V3PlaceInventory). Opening caption is an in-page jump, not a regional door.
+  // P0 place inventory (2026-09-22): the carousel stays on the page (#homes /
+  // PlaceSubdivisionHomes). Opening caption is an in-page jump, not a regional door.
   // Place-filtered browse still comes from getPlaceLinks for alerts / amenities /
   // explore — same founding rule, re-expressed. A bare /homes-for-sale or /search
   // door fails.
@@ -48,7 +48,7 @@ checks.push({
       /browseHref=\{browseHref\}/.test(community) ||
       /browse: browseHref,/.test(community)) &&
     /href="#homes"/.test(community) &&
-    /\bV3PlaceInventory\b/.test(community) &&
+    /\bPlaceSubdivisionHomes\b/.test(community) &&
     !/href:\s*['"]\/homes-for-sale['"]/.test(community) &&
     !/href:\s*['"]\/search['"]/.test(community),
 })

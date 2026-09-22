@@ -87,15 +87,14 @@ describe('neighborhood page first screen', () => {
   const code = page.replace(/(^|[^:])\/\/.*$/gm, '$1').replace(/\/\*[\s\S]*?\*\//g, '')
 
   it('opens on Split + polygon-inventory face, not a Stage/Field cage', () => {
-    expect(page).toMatch(/from ['"]@\/components\/search\/PlaceSplitView['"]/)
+    expect(page).toMatch(/PlaceSubdivisionAtlas/)
+    expect(page).not.toMatch(/from ['"]@\/components\/search\/PlaceSplitView['"]/)
     expect(page).not.toMatch(/from ['"]@\/components\/place\/PlaceFaceStrip['"]/)
     expect(page).toMatch(/from ['"]@\/lib\/market\/publish-place-face['"]/)
     expect(code).toMatch(/publishPlaceFace\(\{/)
     expect(code).toMatch(/grain:\s*['"]neighborhood['"]/)
     expect(code).toMatch(/getNeighborhoodPublicInventory\(boundaryNeighborhoodSlug\)/)
-    expect(code).toMatch(/neighborhood=\{neighborhood\.name\}/)
-    expect(code).toMatch(/city=\{cityName\}/)
-    expect(code).toMatch(/boundaryGeojson=\{boundaryMapData\.polygon\}/)
+    expect(code).toMatch(/boundaryMapData\.polygon/)
     expect(code).toMatch(/cityStagePoster\(indexCities\[citySlug\]/)
     expect(code).toMatch(/cityLibraryHero\(citySlug\)/)
     expect(code).toMatch(/placeLibraryHero\('neighborhood'/)
@@ -103,7 +102,7 @@ describe('neighborhood page first screen', () => {
     expect(code).not.toMatch(/<V3Field\b/)
     expect(code).not.toMatch(/<V3Stage\b/)
     expect(code).toMatch(/neighborhoodHeadline\(\s*neighborhood\.name\s*\)/)
-    expect(code).toMatch(/overlayBoundaries=\{overlaysFromChildCells\(atlasPlats\)\}/)
+    expect(code).toMatch(/regionsFromChildCells\(atlasPlats/)
     expect(code).toMatch(/place-opening/)
   })
 

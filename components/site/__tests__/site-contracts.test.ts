@@ -465,12 +465,12 @@ describe('design directive contracts', () => {
   })
 
   // Community activity is place-scoped (or omitted when thin).
-  it('the community page carries the activity feed and amenity blogs only', () => {
+  it('the community page carries the activity feed and no recent-posts dump', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/id="activity"/)
     expect(src).toMatch(/buildActivityItems\(/)
     expect(src).toMatch(/placeActivity/)
-    expect(src).toMatch(/getBlogPostsBySlugs/)
+    expect(src).not.toMatch(/getBlogPostsBySlugs/)
     expect(src).not.toMatch(/getRecentBlogPosts/)
     // 2026-09-07: id="guides" is allowed for exactly one thing, the area-guide
     // door to the Ryan Realty YouTube channel (areaGuideRow). Still no generic
@@ -705,7 +705,7 @@ describe('design directive contracts', () => {
 
   it('community first fold is leftover face + on-page typed inventory, not Stage or an area-guide loop', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
-    expect(src).toMatch(/<V3PlaceInventory/)
+    expect(src).toMatch(/<PlaceSubdivisionHomes/)
     expect(src).not.toMatch(/<PlaceSplitView/)
     expect(src).toMatch(/publishPlaceFace\(\{\s*grain: 'community',\s*hud\s*\}\)/)
     expect(src).not.toMatch(/<CommunityStage/)
@@ -758,9 +758,8 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
     expect(src).toMatch(/buildPlaceKnowledge\(\{/)
     expect(src).toMatch(/knowledgeItems/)
-    expect(src).toMatch(/buildCommunityAmenityBoard/)
-    expect(src).toMatch(/<V3Amenities/)
-    expect(src).toMatch(/id="amenities"/)
+    expect(src).not.toMatch(/<V3Amenities/)
+    expect(src).not.toMatch(/has on the ground/)
     const knowledge = readSrc('app/communities/[slug]/_v3/place-knowledge.ts')
     expect(knowledge).toMatch(/Membership|Builders/i)
     const amenities = readSrc('app/communities/[slug]/_v3/community-amenities.ts')

@@ -37,8 +37,23 @@
       "blocking": true
     },
     {
-      "name": "V3PlaceLook",
-      "section": "SITE-162 first-look: Google + one community ring + priced listing photo cards in the fold. Same object as city / neighborhood. Cream Atlas is not the fold drawing.",
+      "name": "PlaceSubdivisionMap",
+      "section": "Matt 2026-09-22. One map for the community. The subdivision list sits beside it and a carousel of homes sits below.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceSubdivisionAtlas",
+      "section": "The one V3Atlas. No claim sentence and no reach list.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceSubdivisionRail",
+      "section": "#child-places. Every subdivision, name and property-type line, scrolling inside the map height.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceSubdivisionHomes",
+      "section": "#homes. Carousel of every publicly active home in the current selection.",
       "blocking": true
     },
     {
@@ -46,11 +61,7 @@
       "section": "Pattern 1, AFTER village bars. Slope or strip of THIS community's closes, never Bend's median. chartFirst + foldAfter={0}. Too-few closes render Quiet. MOS stays off this grain.",
       "blocking": true
     },
-    {
-      "name": "V3PlaceInventory",
-      "section": "On-page inventory (Matt 2026-09-18). Every active listing in this community, typed into Single-family / Multifamily / Townhomes and condos / Land. Empty types omit. No PlaceSplitView, price scrubber, or morphing search as the stock surface.",
-      "blocking": true
-    },
+
     {
       "name": "loadPlaceStockTiles",
       "section": "All-type active tiles for this community (boundary keys + subdivision aliases). Market HUD stays leftover SFR.",
@@ -96,11 +107,7 @@
       "section": "Leftover sold history below the face as its own series (median close / sold count / DTP). Never a Bend monthly chart. Never labeled as MOS on the face.",
       "blocking": true
     },
-    {
-      "name": "V3Atlas",
-      "section": "#atlas -- the living map scoped to the community: every active, pending, and 30-day-closed listing inside the recorded boundary as points over a heat field, the plats as touchable places, type toggles, a price scrubber. Same builder as the homepage (one source). Matt 2026-09-01: heat maps on every page.",
-      "blocking": true
-    },
+
     {
       "name": "V3CourseMap",
       "section": "#course -- the community's own golf course, drawn from its geometry: OSM greens, bunkers, tees and hole routings clipped to the course's named boundary, fairway turf traced out of Oregon's 2018 aerial, and a card per hole measured off the same shapes the map draws. ONE course per page even where the resort owns three (Sunriver, Eagle Crest): a map runs the height of the property, and the other courses are already exits in the closing Quiet block. Renders only for a community whose registry row names a course with a committed map file -- Tetherow, Crosswater, Sunriver, Eagle Crest today; Woodlands, Widgi Creek and Glaze Meadow map 17 of 18 holes in OSM and are refused at build. Per-hole par and yardage print only when they reconcile with the club's published card (CLAUDE.md \u00a70).",
@@ -111,24 +118,10 @@
       "section": "The first-screen ask (site queue SITE-01, Matt 2026-09-07): V3PlaceValue bound to this route's server actions. Address in, verdict and pace out with no contact asked (months of supply verdict, days to pending, cash share, comparable-close count, each with its source and date), then email required and phone optional to deliver the written valuation. Never a dollar figure on the page. Renders on every community page: where Market Truth publishes no verdict (Brasada Ranch, too few recent sales) the answer says so and still carries the comparable-close count from the CMA engine, the figure the written valuation is built on. The kill-list ban on a KPI strip as the first thing you read still holds: nothing prints until the visitor types their own address. Carries id=\"value\" (SITE-08): the closing answer set's last row links back to this field, and the id lives on the primitive so the anchor cannot drift from the control.",
       "blocking": true
     },
-    {
-      "name": "V3PlaceIndex",
-      "section": "Pattern 9, #child-places (SITE-128 Look punch, 2026-09-18). Name-only cards from the SAME Atlas plat cells plus registry aliases. No 'Neighborhoods in …' twin, no Subdivisions heading, no sales bars. A community with no recorded children renders nothing here. A–Z /subdivisions is the directory.",
-      "blocking": true
-    },
+
     {
       "name": "communityGuides",
       "section": "Pattern 3, #reading \u2014 the guides this community is the subject of (site queue SITE-30, 2026-09-09). THE SECTION ID IS #reading AND NOT #guides: #guides on this template is already the area-guide VIDEO ledger further down (live on broken-top and brasada-ranch), and two sections cannot share an id. The blog has linked INTO /communities/<slug> since 2026-07-28 through lib/blog-geo-links.ts; nothing linked back, verified live on sunriver, broken-top, brasada-ranch, northwest-crossing, tetherow and caldera-springs, all six carrying zero <a href=\"/blog/\u2026\"> while eleven community guides published the day before sat with no inbound link from the page each one is about. communityGuides (app/communities/[slug]/_v3/place-knowledge.ts) is that same matcher read BACKWARDS \u2014 a post belongs to a community exactly when matchGeoLinksForPost would have linked the post to it \u2014 so one rule decides both directions and they cannot drift. It reads getAllPublishedBlogRefs (every published post), never getRecentBlogPosts, whose 24-post recency window cannot answer \"which post is about THIS place\" once a community's guide falls out of it. Newest first, capped at four, rendered through the shared articleRows into V3Ledger layout=\"magazine\" \u2014 the same form the city page gives its guides. A community the matcher does not name renders NO section rather than the newest post about somewhere else; eight of the registry's communities matched at least one published post on 2026-09-09.",
-      "blocking": true
-    },
-    {
-      "name": "V3Amenities",
-      "section": "SITE-116. First-class amenity section (#amenities) for every master-planned community that has an authored amenities[] list. House chrome is V3Amenities; the interactive object is the installed beautifului InsightCards (AllocationCard pager + segmented bar + chips + pill). Quiet #belonging no longer carries amenity chips. A community with no authored amenities renders nothing here rather than inventing a club. ItemList JSON-LD is derived from the same list.",
-      "blocking": true
-    },
-    {
-      "name": "CommunityAmenities",
-      "section": "SITE-116 client island. Reconstructs InsightCards pages from buildCommunityAmenityBoard. requireRouteImport of @/components/motion/insight-cards lives here and in community-catalog.ts.",
       "blocking": true
     }
   ],
@@ -236,14 +229,12 @@
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
     "V3Heading (H1 `{Community} homes for sale`)",
-    "V3PlaceLook #place-look -- SITE-162 first-look: Google + one community ring + photo cards. Cream Atlas is not the fold drawing.",
-    "CommunityAlertsStrip #alerts (V3AlertsStrip: SITE-162 fold figure after the drawing. The listing-alert callout with this community's real 30-day count as the claim, the MLS-name scope line, the newest-first door, email, one ghost button; the sticky repeat from the same component, with its own one-line disclosure)",
-    "CommunityPlaceValue (the first-screen ask: address in, verdict and pace out, then the email that delivers the written valuation; on every community page; the answer names it when no verdict is published)",
-    "V3PlaceIndex #child-places (name-only Atlas/registry children; omitted when none)",
-    "V3PlaceInventory #homes (typed on-page stock; empty types omit)",
-    "V3Atlas #atlas -- the living map scoped to the community after the first-look fold (amenity layers, child plats hit-only). Sticky alerts still key off #atlas.",
-    "V3Instrument #market (this community's typical-price slope after villages; never Bend's median) or V3Quiet (too few / stated absence)",
-    "V3Amenities #amenities (SITE-116: authored amenity list as InsightCards; omitted when the config recorded none)",
+    "PlaceSubdivisionRail #child-places -- subdivisions beside the one map. Name and property-type line. No sales bars.",
+    "PlaceSubdivisionAtlas #atlas -- the one map. Selecting a subdivision zooms to it. No second map and no reach list.",
+    "PlaceSubdivisionHomes #homes -- carousel of every publicly active home in the place, or in the selected subdivision.",
+    "CommunityAlertsStrip #alerts (the 30-day new-listing count and the email ask, after the map)",
+    "CommunityPlaceValue (address in, verdict and pace out, then the email that delivers the written valuation)",
+    "V3Instrument #market (this community's typical-price slope; never Bend's median) or V3Quiet (too few / stated absence)",
     "V3Quiet #belonging",
     "V3CourseMap #course (the community's own course, when the registry names one with a map)",
     "V3PlaceCharacter",

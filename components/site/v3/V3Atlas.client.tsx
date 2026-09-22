@@ -399,6 +399,13 @@ export type V3AtlasProps = {
    * enough; the control cannot return in the DOM.
    */
   hidePriceScrubber?: boolean
+  /**
+   * Community and neighborhood pages: the subdivision list lives beside this
+   * map. Selecting one zooms to that shape. The reach list and the claim
+   * sentence stay off so the map is not explained twice.
+   */
+  selectedSubdivisionId?: string | null
+  onSubdivisionSelect?: (id: string | null) => void
 }
 
 /* -------------------------------------------------------------------------- */
@@ -523,6 +530,8 @@ export function V3Atlas({
   clusterStageHintPhone,
   amenities,
   hidePriceScrubber = false,
+  selectedSubdivisionId = null,
+  onSubdivisionSelect,
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
@@ -1210,11 +1219,33 @@ export function V3Atlas({
       // Child plat: zoom so THAT recorded boundary fills the frame.
       // Subject town: return home. Homepage / city places stay pin-only.
       // Listing pins keep their own click path.
-      if (shape.kind === 'town') setCam(ATLAS_CAM_HOME)
-      else if (childIdSet.has(shape.id)) fitCamToShape(shape)
+      if (shape.kind === 'town') {
+        setCam(ATLAS_CAM_HOME)
+        onSubdivisionSelect?.(null)
+      } else if (childIdSet.has(shape.id)) {
+        fitCamToShape(shape)
+        onSubdivisionSelect?.(
+          shape.id.startsWith('subdivision:') ? shape.id.slice('subdivision:'.length) : shape.id,
+        )
+      }
     },
-    [childIdSet, fitCamToShape, pointer, proj, toPx],
+    [childIdSet, fitCamToShape, onSubdivisionSelect, pointer, proj, toPx],
   )
+
+  const pairedSelection = typeof onSubdivisionSelect === 'function'
+  const zoomedSelection = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    if (!pairedSelection || !view) return
+    const next = selectedSubdivisionId ?? null
+    if (zoomedSelection.current === next) return
+    zoomedSelection.current = next
+    if (!next) {
+      setCam(ATLAS_CAM_HOME)
+      return
+    }
+    const shape = shapes.find((item) => item.id === `subdivision:${next}`)
+    if (shape && childIdSet.has(shape.id)) fitCamToShape(shape)
+  }, [pairedSelection, selectedSubdivisionId, view, shapes, childIdSet, fitCamToShape])
 
   /* Every place as a door a thumb can hit: on a phone most silhouettes are
      under 20px, so the chips carry the reach the map cannot (pass five, R2).
@@ -1795,6 +1826,7 @@ export function V3Atlas({
       className={cn(
         V3_ROOT_CLASS,
         'v3-atlas',
+        pairedSelection && 'v3-atlas--paired',
         subjectGrain && 'v3-atlas--subject-grain',
         wide && 'is-wide',
         fitsPhone && 'is-fits',
@@ -1820,7 +1852,7 @@ export function V3Atlas({
           >
             {headline}
           </Heading>
-          {quiet || !claim ? null : (
+          {quiet || pairedSelection || !claim ? null : (
             <p className="v3-atlas__claim" aria-live="polite">
               {claim}
             </p>
@@ -2351,7 +2383,7 @@ export function V3Atlas({
         {quiet ? null : dock}
 
         {/* The aside: the live line, the search, the source. */}
-        <div className="v3-atlas__aside">
+        {pairedSelection ? null : <div className="v3-atlas__aside">
           {events && events.length > 0 ? (
             <ul className="v3-atlas__live" aria-label="Latest activity">
               {events.slice(0, 3).map((e) => (
@@ -2461,7 +2493,7 @@ export function V3Atlas({
               </p>
             </details>
           ) : null}
-        </div>
+        </div>}
       </div>
     </section>
   )

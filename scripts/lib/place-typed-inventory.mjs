@@ -56,7 +56,11 @@ function placePageProblems(rel, src) {
     return p
   }
   const code = stripComments(src)
-  if (!/\bV3PlaceInventory\b/.test(code)) {
+  if (rel.includes('communities/')) {
+    if (!/\bPlaceSubdivisionHomes\b/.test(code)) {
+      p.push(`${rel}: homes stay on the page as PlaceSubdivisionHomes.`)
+    }
+  } else if (!/\bV3PlaceInventory\b/.test(code)) {
     p.push(`${rel}: typed stock stays on the page as V3PlaceInventory.`)
   }
   if (!/\bplaceStockSectionsFromTiles\b/.test(code)) {

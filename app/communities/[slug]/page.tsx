@@ -1,13 +1,13 @@
 /**
  * /communities/[slug] — master-plan grain. First screen is owned still + H1
  * `{Name} homes for sale`. Belonging facts (HOA, acres, membership) sit as a
- * caption on the still, not a KPI Instrument. First look is V3PlaceLook
- * (Google + one ring + priced photo cards). Atlas stays later.
+ * caption on the still, not a KPI Instrument. One map, subdivisions beside it.
+ * Choosing a subdivision zooms the map and loads its homes below.
  * MOS / sold / verdict / DTP stay off the face as a strip. They appear on the face
  * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
  * Matt 2026-09-07): an input-to-answer ask, not a number hero.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
- * regions. Inventory is V3PlaceInventory on this page, typed by property.
+ * regions. Homes stay on this page in the carousel.
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * leftoverHudKpis grain stays 'neighborhood', keyed by the bare community
@@ -30,7 +30,7 @@ import {
   getCommunitySubdivisions,
   getResortBoundaryGeoJSON,
   getResortCommunityBySlug,
-  getBlogPostsBySlugs,
+
   getAllPublishedBlogRefs,
   getAreaGuideVideo,
   getPriceHistory,
@@ -79,7 +79,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { communityPageTrail } from '@/lib/site/place-trail'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { skippableRail } from '@/lib/build-phase'
+
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
@@ -98,31 +98,27 @@ import {
   V3PlaceCharacter,
   V3Answers,
   V3Quiet,
-  V3Atlas,
   type AtlasRegion,
-  V3PlaceLook,
-  V3PlaceIndex,
-  V3PlaceInventory,
   V3SectionTracker,
-  V3Amenities,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
+import {
+  PlaceSubdivisionAtlas,
+  PlaceSubdivisionHomes,
+  PlaceSubdivisionMap,
+  PlaceSubdivisionRail,
+} from '@/components/site/v3/PlaceSubdivisionMap.client'
 import './_v3/community-fold.css'
 import { getCommunityCourseMap } from '@/lib/golf/community-course'
 import { courseMapKind } from '@/lib/golf/course-map'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { getPlaceOpeningListings, getSubdivisionOnMarketRows } from '@/lib/data'
-import {
-  capLookListings,
-  listingsFromAtlasDots,
-  listingsFromTiles,
-  placeLookPhotoCards,
-} from '@/lib/place/first-look'
+
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
-import { childStockDetails } from '@/lib/place/place-child-stock'
+import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -141,11 +137,7 @@ import {
   reconcilePlaceHoaFaq,
 } from './_v3/community-figures'
 import { buildPlaceKnowledge, communityGuides, placeKnowledgeSource } from './_v3/place-knowledge'
-import { CommunityAmenities } from './_v3/CommunityAmenities.client'
-import {
-  amenityItemListItems,
-  buildCommunityAmenityBoard,
-} from './_v3/community-amenities'
+
 import {
   PLACE_NEAR_RECREATION_TRACE,
   recreationNearPoint,
@@ -427,14 +419,6 @@ async function renderCommunityDetail({ params }: Props) {
   const belonging = belongingFigures(richContent, placeCharacter)
   const belongingLine = belongingCaption(belonging)
 
-  const amenityBlogSlugs = (richContent?.amenities ?? [])
-    .map((a) => a.blog_slug)
-    .filter((s): s is string => Boolean(s))
-  const amenityPosts =
-    amenityBlogSlugs.length > 0
-      ? await skippableRail(() => getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'comm:amenityPosts')
-      : {}
-
   const { measuredAnnual: hoaMeasuredAnnual, measuredBasis: hoaMeasuredBasis } =
     measuredPlaceHoaInput(placeCharacter)
   const resolvedHoa = publishPlaceHoa({
@@ -563,12 +547,6 @@ async function renderCommunityDetail({ params }: Props) {
   )
   const [firstNearbyPark, ...restNearbyParks] = nearbyRecreation.parks
   const [firstNearbyTrail, ...restNearbyTrails] = nearbyRecreation.trails
-  const amenityBoard = buildCommunityAmenityBoard({
-    placeName: publicName,
-    amenities: richContent?.amenities,
-    amenityPosts,
-    browseHref,
-  })
   const communityMarketHref = placeLinks.marketUrl
   const cityReportHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
 
@@ -683,7 +661,7 @@ async function renderCommunityDetail({ params }: Props) {
   // ONE array of child plats. The Atlas draws it and the index below names it,
   // so the map and the list are the same set by construction rather than by
   // two reads that happen to agree today.
-  const platRegions = regionsFromChildCells(platCells)
+  const platRegions = regionsFromChildCells(platCells, 400)
   const atlasRegions: AtlasRegion[] = mapPolygon
     ? [
         { id: `community:${slug}`, kind: 'town', kindLabel: 'Community', name: publicName, href: `/communities/${slug}`, geometry: mapPolygon },
@@ -697,16 +675,20 @@ async function renderCommunityDetail({ params }: Props) {
    * registry aliases, no "Neighborhoods in …" twin and no sales bars.
    * A community with no recorded children renders nothing here.
    */
-  const childPlaceEntries = childStockDetails(
-    nameOnlyChildEntries([
-      platRegions.map((region) => ({ name: region.name, href: region.href })),
-      childAliases.flatMap((alias) => {
-        const displayName = publishPlatDisplayName(alias)
-        return displayName ? [{ name: displayName, href: `/subdivisions/${slugify(alias)}` }] : []
-      }),
-    ]),
-    childStockRows,
-  )
+  const namedChildren = nameOnlyChildEntries([
+    platRegions.map((region) => ({ name: region.name, href: region.href })),
+    childAliases.flatMap((alias) => {
+      const displayName = publishPlatDisplayName(alias)
+      return displayName ? [{ name: displayName, href: `/subdivisions/${slugify(alias)}` }] : []
+    }),
+  ])
+  const railEntries = subdivisionRailEntries({
+    regions: platRegions.map((region) => ({ name: region.name, href: region.href })),
+    extras: platRegions.length > 0 ? [] : namedChildren,
+    rows: childStockRows,
+  })
+  const homesByChild = childListingKeys(childStockRows)
+  const placeHomes = stockSections.flatMap((section) => section.rows)
 
   /**
    * THE GUIDES THIS COMMUNITY IS THE SUBJECT OF (SITE-30).
@@ -813,7 +795,7 @@ async function renderCommunityDetail({ params }: Props) {
     contactHref: `/contact?inquiryType=Buying&message=${encodeURIComponent(
       `I have questions about short-term rental rules in ${publicName}.`,
     )}`,
-    amenityPosts,
+    amenityPosts: {},
     character: placeCharacter,
   })
 
@@ -852,14 +834,6 @@ async function renderCommunityDetail({ params }: Props) {
     // beside them from a second array, so the markup can never describe a
     // sentence the page does not print.
     faqs: answerFaqs,
-    amenityItems: amenityBoard
-      ? amenityItemListItems(
-          amenityBoard,
-          `/communities/${slug}`,
-          richContent?.amenities ?? [],
-          amenityPosts,
-        )
-      : undefined,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
@@ -872,18 +846,6 @@ async function renderCommunityDetail({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
-  // SITE-162 first-look: Google + ONE community ring + photo cards.
-  // Atlas stays later so amenity / child-plat gates still see the Atlas mount.
-  const foldHouseDots = atlasView.dots.filter((d) => d.t === 'house')
-  const foldLookListings = capLookListings(
-    foldHouseDots.length > 0
-      ? listingsFromAtlasDots(foldHouseDots)
-      : listingsFromTiles(fieldTiles),
-  )
-  const foldPhotoCards = placeLookPhotoCards({
-    buckets: openingListings,
-    listings: foldLookListings,
-  })
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -938,29 +900,51 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-162: drawing + figure + houses in the first viewport, same
-            lock as neighborhood. V3PlaceLook is the drawing (Google + one
-            ring + priced photo cards). The 30-day count via V3AlertsStrip is
-            the figure. MOS stays off this grain. CommunityPlaceValue stays
-            the filled ask, after the drawing. */}
+        <PlaceSubdivisionMap
+          placeName={publicName}
+          rail={railEntries}
+          homes={placeHomes}
+          keysBySlug={homesByChild}
+          source={inventorySource}
+          asOf={leftoverStamp}
+        >
+          <div className="place-one-map">
+            <PlaceSubdivisionRail id="child-places" nameOnly />
+            <div className="community-atlas">
+            <PlaceSubdivisionAtlas
+              id="atlas"
+              headingLevel={2}
+              headline={v3Text(publicName)}
+              headlineTone="eyebrow"
+              keyPlacement="head"
+              sourceName="Oregon Data Share"
+              dots={atlasView.dots}
+              regions={foldAtlasRegions}
+              childRegions={platRegions}
+              basemap={basemapForRegions(foldAtlasRegions, {
+                dots: atlasView.dots,
+                fit: 'dots',
+              })}
+              fit="dots"
+              types={atlasView.types}
+              events={atlasView.events}
+              source={atlasView.source}
+              stamp={atlasView.stamp}
+              incomplete={!atlasView.complete}
+              amenities={amenityLayers}
+              hidePriceScrubber
+              clusterPins
+              clusterCellPx={COMMUNITY_FOLD_CLUSTER_CELL_PX}
+              clusterStageHint={COMMUNITY_FOLD_CLUSTER_STAGE}
+              clusterStageHintPhone={COMMUNITY_FOLD_CLUSTER_STAGE_PHONE}
+            />
+            </div>
+          </div>
+          <PlaceSubdivisionHomes id="homes" />
+        </PlaceSubdivisionMap>
+
         <div className="community-fold">
           <div className="community-fold__stage">
-            <div className="community-fold__drawing">
-              <V3PlaceLook
-                id="place-look"
-                headline={`${publicName} right now`}
-                claim={`${publicName} houses for sale: active and pending.`}
-                listings={foldLookListings}
-                boundaryGeojson={mapPolygon}
-                placeQuery={`${publicName} ${cityName}`}
-                photoCards={foldPhotoCards}
-                source={
-                  foldLookListings.length > 0
-                    ? `Active and pending homes in ${publicName}, from Oregon Data Share listing tiles.`
-                    : atlasView.source
-                }
-              />
-            </div>
             <aside className="community-fold__figure">
               <CommunityAlertsStrip
                 id="alerts"
@@ -979,54 +963,6 @@ async function renderCommunityDetail({ params }: Props) {
           <div className="community-fold__ask">
             <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
           </div>
-        </div>
-
-        <V3PlaceIndex
-          id="child-places"
-          heading={publicName}
-          nameOnly
-          entries={childPlaceEntries}
-          foldAfter={Math.max(childPlaceEntries.length, 1)}
-          source="Oregon Data Share. The line under a subdivision counts publicly active listings there: Active and Active Under Contract, every property type. Coming Soon is excluded."
-        />
-
-        <V3PlaceInventory
-          id="homes"
-          placeName={publicName}
-          sections={stockSections}
-          source={inventorySource}
-          asOf={leftoverStamp}
-        />
-
-        <div className="community-atlas">
-          <V3Atlas
-            id="atlas"
-            headingLevel={2}
-            headline={v3Text(`${publicName} right now`)}
-            headlineTone="eyebrow"
-            claimText={`${publicName}: every active and pending mark is a live MLS listing.`}
-            keyPlacement="head"
-            sourceName="Oregon Data Share"
-            dots={atlasView.dots}
-            regions={foldAtlasRegions}
-            childRegions={platRegions}
-            basemap={basemapForRegions(foldAtlasRegions, {
-              dots: atlasView.dots,
-              fit: 'dots',
-            })}
-            fit="dots"
-            types={atlasView.types}
-            events={atlasView.events}
-            source={atlasView.source}
-            stamp={atlasView.stamp}
-            incomplete={!atlasView.complete}
-            amenities={amenityLayers}
-            hidePriceScrubber
-            clusterPins
-            clusterCellPx={COMMUNITY_FOLD_CLUSTER_CELL_PX}
-            clusterStageHint={COMMUNITY_FOLD_CLUSTER_STAGE}
-            clusterStageHintPhone={COMMUNITY_FOLD_CLUSTER_STAGE_PHONE}
-          />
         </div>
 
         {costChart && firstMarketFigure ? (
@@ -1051,17 +987,6 @@ async function renderCommunityDetail({ params }: Props) {
               variant: 'primary',
             }}
           />
-        ) : null}
-
-        {amenityBoard ? (
-          <V3Amenities
-            id="amenities"
-            eyebrow={`${publicName} · Amenities`}
-            heading={`What ${publicName} has on the ground`}
-            source={amenityBoard.source}
-          >
-            <CommunityAmenities board={amenityBoard} />
-          </V3Amenities>
         ) : null}
 
         {firstNearbyPark ? (

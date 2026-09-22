@@ -1,0 +1,125 @@
+/* One map. Subdivisions on the left, no taller than the map. Homes below. */
+
+.place-one-map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'map' 'list';
+  gap: var(--v3-space-sm);
+  width: 100%;
+  max-width: min(100%, 90rem);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+  align-items: start;
+}
+
+.place-one-map > .v3-atlas,
+.place-one-map > .community-atlas {
+  grid-area: map;
+}
+
+.place-one-map > .place-subdiv-rail {
+  grid-area: list;
+}
+
+@media (min-width: 64rem) {
+  .place-one-map {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    grid-template-areas: 'list map';
+    align-items: end;
+  }
+}
+
+.place-subdiv-rail {
+  max-height: min(62vh, calc(100dvh - 14rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-width: 0;
+}
+
+.place-subdiv-rail__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.place-subdiv-rail__button {
+  display: grid;
+  gap: 0.1rem;
+  width: 100%;
+  min-height: var(--v3-tap);
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-bottom: var(--v3-rule-hairline);
+  background: transparent;
+  color: var(--v3-ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.place-subdiv-rail__button.is-selected {
+  background: color-mix(in srgb, var(--v3-navy) 8%, transparent);
+}
+
+.place-subdiv-rail__name {
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-body);
+}
+
+.place-subdiv-rail__detail {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-body);
+}
+
+.place-homes {
+  width: 100%;
+  max-width: min(100%, 90rem);
+  margin-inline: auto;
+  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-lg);
+}
+
+.place-homes__count,
+.place-homes__empty {
+  margin: 0 0 var(--v3-space-sm);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.place-home-card {
+  display: grid;
+  gap: 0.15rem;
+  align-content: start;
+  color: inherit;
+  text-decoration: none;
+}
+
+.place-home-card__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+}
+
+.place-home-card__price {
+  margin-top: 0.35rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--v3-weight-medium);
+  font-size: var(--v3-size-body);
+}
+
+.place-home-card__share,
+.place-home-card__meta {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-body);
+}
+
+.place-home-card__addr {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}

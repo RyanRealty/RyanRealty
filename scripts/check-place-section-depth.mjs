@@ -10,7 +10,8 @@
  *
  * RULES:
  *   1. Each place route keeps the listed `id="…"` mounts.
- *   2. Community also keeps the amenity board import + V3Amenities mount.
+ *   2. Community homes stay on the page as PlaceSubdivisionHomes. The
+ *      amenities board is off the page (Matt 2026-09-22).
  *   3. The amenity board module must still read the authored amenities list
  *      and feed AllocationCard (the installed InsightCards object).
  *
@@ -26,13 +27,7 @@ const ROUTES = [
   {
     key: 'community',
     file: 'app/communities/[slug]/page.tsx',
-    ids: ['atlas', 'alerts', 'homes', 'market', 'amenities', 'belonging', 'faq'],
-    mustMatch: [
-      'CommunityAmenities',
-      'buildCommunityAmenityBoard',
-      'V3Amenities',
-      'id="amenities"',
-    ],
+    ids: ['atlas', 'alerts', 'homes', 'market', 'belonging', 'faq'],
   },
   {
     key: 'city',
@@ -57,7 +52,7 @@ const AMENITY_PRIMITIVE = 'components/site/v3/V3Amenities.tsx'
 
 // Mirrors lib/place/place-homes-heading.ts EVERY_HOME_LECTURE_REFUSE.
 const EVERY_HOME_LECTURE_REFUSE = /\bevery home for sale in\b/i
-const PLACE_INVENTORY_KEYS = new Set(['community', 'subdivision'])
+const PLACE_INVENTORY_KEYS = new Set(['subdivision'])
 
 const read = (rel) => {
   const path = join(ROOT, rel)
@@ -89,6 +84,15 @@ for (const route of ROUTES) {
   for (const token of route.mustMatch ?? []) {
     if (!src.includes(token)) {
       failures.push(`${route.file}: missing \`${token}\` — the amenity section mount cannot be stripped.`)
+    }
+  }
+  if (route.key === 'community') {
+    const code = stripComments(src)
+    if (!/\bPlaceSubdivisionHomes\b/.test(code)) {
+      failures.push(`${route.file}: missing PlaceSubdivisionHomes — the home carousel stays on the community page.`)
+    }
+    if (/<V3Amenities\b/.test(code) || /has on the ground/.test(code)) {
+      failures.push(`${route.file}: the amenities board is off the community page (Matt 2026-09-22).`)
     }
   }
   if (PLACE_INVENTORY_KEYS.has(route.key)) {
@@ -144,5 +148,5 @@ if (failures.length) {
 }
 
 console.log(
-  `ci:place-section-depth OK — ${ROUTES.length} place routes hold their named sections; community keeps #amenities.`,
+  `ci:place-section-depth OK — ${ROUTES.length} place routes hold their named sections.`,
 )

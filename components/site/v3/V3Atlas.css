@@ -1775,6 +1775,40 @@ a.v3-atlas__card-home {
   }
 }
 
+/* Community / neighborhood: the subdivision list is outside the map, so the
+   Atlas drops its own left column and keeps the frame at the list's height. */
+.v3-atlas.v3-atlas--paired .v3-atlas__grid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'head'
+    'body'
+    'dock';
+}
+
+.v3-atlas.v3-atlas--paired .v3-atlas__stage {
+  height: min(62vh, calc(100dvh - 14rem));
+  max-height: min(62vh, calc(100dvh - 14rem));
+}
+
+@media (min-width: 64rem) {
+  .v3-atlas.v3-atlas--paired .v3-atlas__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'head'
+      'dock'
+      'body';
+  }
+
+  .v3-atlas.v3-atlas--paired .v3-atlas__body {
+    position: static;
+  }
+
+  .v3-atlas.v3-atlas--paired .v3-atlas__frame {
+    border-left: 0;
+    border-top: var(--v3-rule-hairline);
+  }
+}
+
 /* A door under the map's aside: the same underline every door wears. */
 .v3-atlas__door {
   margin: var(--v3-space-2xs) 0 0;

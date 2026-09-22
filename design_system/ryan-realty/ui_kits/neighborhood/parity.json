@@ -25,8 +25,23 @@
       "blocking": true
     },
     {
-      "name": "PlaceSplitView",
-      "section": "Flagship Split. Seed ring from getGeoBoundaryMapData geoType neighborhood as boundaryGeojson. overlayBoundaries from overlaysFromChildCells on the nested subdivision set, the same class prop community uses. neighborhood={display name}, city from the route. Never ?shapes= on this URL.",
+      "name": "PlaceSubdivisionMap",
+      "section": "Matt 2026-09-22. One map for the neighborhood. Subdivisions on the left, homes carousel below. No second map.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceSubdivisionAtlas",
+      "section": "The one V3Atlas for this neighborhood.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceSubdivisionRail",
+      "section": "#child-places. Every subdivision beside the map.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceSubdivisionHomes",
+      "section": "#homes. Carousel of every publicly active home in the current selection.",
       "blocking": true
     },
     {
@@ -59,21 +74,13 @@
       "section": "Pattern 3, twice when both exist, never adjacent. Daily life (schools and parks) sits on the first path after the Field. Latest market activity (D93) keeps its scoped feed. A third Ledger for subdivision and peer counts stays deferred.",
       "blocking": true
     },
-    {
-      "name": "V3Atlas",
-      "section": "#atlas -- the living map scoped to the neighborhood: every active, pending, and 30-day-closed listing inside the recorded boundary as points over a heat field, its places as touchable silhouettes, type toggles, a price scrubber. Same builder as the homepage (one source). Matt 2026-09-01: heat maps on every page.",
-      "blocking": true
-    },
+
     {
       "name": "PlaceTypeSlider",
       "section": "Horizontal leftover type cards. Filters Split. Replaces stacked V3PlacePropertyTypes Instruments.",
       "blocking": true
     },
-    {
-      "name": "V3PlaceIndex",
-      "section": "#child-places — name-only cards for plats inside the neighborhood (SITE-128). No Subdivisions heading, no sales bars. A–Z /subdivisions is the directory.",
-      "blocking": true
-    },
+
     {
       "name": "V3PlaceDocuments",
       "section": "Pattern 3: the recorded governing documents, keyed by the METRIC slug. Renders null when the place has none on file.",
@@ -193,14 +200,13 @@
     "PlaceAreaHero (SITE-104: the shortened still — H1 and the three crawlable doors, nothing else. The two MOS bars used to float on it as a cream overlay; they are page one of the fold's insight pager now.)",
     "V3Breadcrumb",
     "V3Heading",
-    "V3PlaceLook #place-look -- SITE-128 first-look: Google + one neighborhood ring + photo cards. Cream Atlas is not the fold drawing.",
+    "PlaceSubdivisionRail #child-places -- subdivisions beside the one map",
+    "PlaceSubdivisionAtlas #atlas -- the one map",
+    "PlaceSubdivisionHomes #homes -- carousel of every publicly active home in the selection",
     "NeighborhoodInsight #place-insight (SITE-104) -- the fold's paged figure, beautifului's InsightCards (components/motion/insight-cards) wrapped by NeighborhoodInsight.client.tsx. Page one is the two named MOS bars (V3MosBars, the house primitive the layout lock protects) with the VERDICT above them, computed by marketVerdict() off the same hud.monthsSupply the bars divide and sitting above the threshold clause the bars' own source line already prints, so the sentence, the bars and the rule cannot disagree (scripts/check-market-formula.mjs). Page two is this neighborhood's OWN published monthly closed series on the catalog's AnomalyCard — median sale price on a pointer scrub, and a second metric chip for how many homes closed that month, which is published nowhere else on this page. The page hands it no rows at all when leftoverNeighborhoodOrCityMonthly fell back to the parent city (placeMonthly = leftoverUsed && !cityFallback), because a Bend-wide line under an Awbrey Butte heading is a section 0 lie. Both pills are real anchors out of the fold: /months-of-supply and the parent city's market report.",
     "nbh-fold__peers #also-in-city (SITE-104 SEO) -- \"Also in Bend\": six neighbour doors plus the city page's own neighborhoods index, a link row under the supply bars in the figure column. Until now the only answer to \"what is next to this neighborhood\" was the peer-neighborhoods Ledger twenty sections down. NAMES ONLY -- the peer active counts are an all-types count and the bars above these doors are detached-only, so both in one viewport would be two measures of one thing with one trace between them (CLAUDE.md section 0 rule 5; the class layout lock: inventory counts on the page must agree). The counts keep their trace in the peer-neighborhoods Ledger. Hidden below 40rem, where the row costs 166px the email field needs; the doors stay in the document either way.",
     "NeighborhoodAlertsStrip #alerts (V3AlertsStrip: the ask in the FIRST VIEWPORT, this neighborhood's real 30-day count as the claim, the city-scoped promise, email, one button; the sticky repeat past #atlas from the same component). SITE-104 makes the fold three columns — the drawing, the figure, the ask — so the callout sits third in source order inside .nbh-fold rather than directly under the opening, and inside its own column the order is CLAIM -> ASK -> PROOF at every width: the four proof cards (price, street, beds/baths/sqft each), the section-0 source trace, the SCOPE sentence that reconciles a neighborhood claim with a city-wide alert, and the browse door all sit UNDER the button. With them above it the submit's bottom edge measured 933 at 1440x900 and ~1058 at 375x812. It is still on the visitor's first screen at 1440 and at 375, it still carries the 30-day figure with its trace, and the sticky still keys off #atlas scrolling past. Its property-type control is the installed beUI combobox (NeighborhoodTypeCombobox.client.tsx -> V3TypeCombobox -> components/motion/combobox) handed down through renderTypes; the two flat Houses / Land rectangles it replaces are what the 2026-09-12 table named \"Cream box\".",
     "PlaceTypeSlider",
-    "#homes",
-    "V3Atlas #atlas -- the living map scoped to the neighborhood after the first-look fold (amenity layers). Type toggles and the price scrubber stay (the house-atlas interaction). Sticky alerts still key off #atlas. Renders only with a recorded boundary and at least one listing inside it.",
-    "#child-places",
     "#market",
     "#afford",
     "#daily-life",

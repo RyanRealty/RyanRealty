@@ -53,6 +53,61 @@ export function summarizeChildStock(rows: readonly ChildStockRow[]): string | nu
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
+export type SubdivisionRailEntry = {
+  id: string
+  name: string
+  detail?: string
+}
+
+/**
+ * One row per subdivision the map can name. Regions come first so a click
+ * matches a drawn shape. A later door with the same slug is dropped.
+ * Rows with a measured mix sort ahead of empty ones. An empty mix stays
+ * unlabeled.
+ */
+export function subdivisionRailEntries(input: {
+  regions: readonly { name: string; href: string }[]
+  extras?: readonly { name: string; href: string }[]
+  rows: readonly ChildStockRow[]
+}): SubdivisionRailEntry[] {
+  const detailed = childStockDetails(
+    [...input.regions, ...(input.extras ?? [])],
+    input.rows,
+  )
+  const seen = new Set<string>()
+  const out: SubdivisionRailEntry[] = []
+  for (const row of detailed) {
+    const id = slugFromPlaceHref(row.href)
+    const name = row.name.trim()
+    if (!id || !name || seen.has(id)) continue
+    seen.add(id)
+    out.push(row.detail ? { id, name, detail: row.detail } : { id, name })
+  }
+  out.sort((a, b) => {
+    const aStock = a.detail ? 0 : 1
+    const bStock = b.detail ? 0 : 1
+    if (aStock !== bStock) return aStock - bStock
+    return a.name.localeCompare(b.name)
+  })
+  return out
+}
+
+/** Listing keys inside each child boundary, deduped. */
+export function childListingKeys(rows: readonly ChildStockRow[]): Record<string, string[]> {
+  const acc = new Map<string, Set<string>>()
+  for (const row of rows) {
+    const slug = row.geo_slug.trim().toLowerCase()
+    const key = row.listing_key.trim()
+    if (!slug || !key) continue
+    const set = acc.get(slug) ?? new Set<string>()
+    set.add(key)
+    acc.set(slug, set)
+  }
+  const out: Record<string, string[]> = {}
+  for (const [slug, set] of acc) out[slug] = [...set]
+  return out
+}
+
 export function childStockDetails<T extends { href: string }>(
   children: readonly T[],
   rows: readonly ChildStockRow[],

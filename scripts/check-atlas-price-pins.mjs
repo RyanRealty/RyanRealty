@@ -31,7 +31,6 @@ const PLACE_PAGES = [
 ]
 const FOLD_PAGES = [
   'app/cities/[slug]/page.tsx',
-  'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
 ]
 
 const failures = []
@@ -136,7 +135,8 @@ if (tiles.includes('details->>StreetSuffix') || /StreetSuffix(?!:)/.test(tiles))
 
 for (const page of PLACE_PAGES) {
   const src = readFileSync(page, 'utf8')
-  if (!src.includes('<V3Atlas')) {
+  // Community and neighborhood mount the same Atlas through PlaceSubdivisionAtlas.
+  if (!src.includes('<V3Atlas') && !src.includes('<PlaceSubdivisionAtlas')) {
     failures.push(`${page} must still mount V3Atlas so place maps share the price pins`)
   }
 }

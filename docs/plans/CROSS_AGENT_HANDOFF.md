@@ -1,3 +1,7 @@
+# Current — 2026-09-22 (Matt: one map on community and neighborhood pages)
+
+Surface: Grok Build, primary checkout. One map. Subdivisions on the left, height locked to the map. Select zooms and the carousel below lists that subdivision's publicly active homes. The place name shows every home in the place. Reach list and the amenities board are off these pages. Node: none.
+
 # Current — 2026-09-21 (Matt: every available home stays on the place page)
 
 Surface: Grok Build, primary checkout, `main` `9a325c485`. Production READY `dpl_8FpNMGkD6rUxhtFoHJh6mSjo4ndE`. `deploy:verify` printed READY; `ryan-realty.com` GET 200. Node: none.
