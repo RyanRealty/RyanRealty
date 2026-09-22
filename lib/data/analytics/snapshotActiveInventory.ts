@@ -94,7 +94,7 @@ async function countActive(
   city: string,
 ): Promise<{ active: number | null; error: string | null }> {
   const listed = client.from('listings')
-  // stat-source-ok: writes analytics_inventory_snapshot, which no surface reads today. If anything ever renders this table, this count must move to lib/data/ first.
+  // stat-source-ok: operational warehouse count for analytics_inventory_snapshot. No public surface reads it.
   const { count, error } = await listed
     .select('*', { count: 'exact', head: true })
     .eq('City', city)
