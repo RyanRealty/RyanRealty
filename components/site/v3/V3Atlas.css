@@ -471,6 +471,9 @@
 .v3-atlas__pin {
   position: absolute;
   z-index: 2;
+  box-sizing: border-box;
+  left: var(--atlas-pin-x);
+  top: var(--atlas-pin-y);
   transform: translate(-50%, calc(-100% - 5px));
   padding: 0.14rem 0.42rem 0.18rem;
   background: var(--v3-navy);
@@ -482,6 +485,16 @@
   letter-spacing: 0.01em;
   line-height: 1.15;
   white-space: nowrap;
+}
+
+/* SITE-138: hanging translate(-50% / -100%) clips $440k+ at the 375 island.
+   Clamp the anchor so the pill stays inside the overflow:hidden stage.
+   Desktop (SITE-127 hover) keeps the live coordinate. */
+@media (max-width: 47.99rem) {
+  .v3-atlas__pin {
+    left: clamp(3.25rem, var(--atlas-pin-x), calc(100% - 3.25rem));
+    top: clamp(2rem, var(--atlas-pin-y), calc(100% - 0.5rem));
+  }
 }
 
 .v3-atlas__pin::after {
@@ -1605,6 +1618,7 @@ a.v3-atlas__card-home {
   margin-top: var(--v3-space-sm);
   padding-top: var(--v3-space-sm);
   border-top: var(--v3-rule-section);
+  container-type: inline-size;
 }
 
 .v3-atlas__reach-label {
@@ -1647,11 +1661,13 @@ a.v3-atlas__card-home {
    long prefix used to ellipsize to one identical string at 11rem, and at
    14rem four "Awbrey Glen Homesites Phase …" chips still did (the shared
    prefix is another place's name, which the door label must keep). 18rem
-   holds "Awbrey Glen Homesites Phase Eight" whole; the 100vw cap keeps a
-   long name inside the 375 column so the page does not scroll sideways. */
+   holds "Awbrey Glen Homesites Phase Eight" whole; 100cqi (not 100vw) keeps
+   a long name inside the 375 column so the page does not scroll sideways. */
 .v3-atlas__chip-name {
   min-width: 0;
-  max-width: min(18rem, calc(100vw - 6.5rem));
+  /* Viewport-width plus the place gutter scrolled the 375 page sideways.
+     Cap to the reach list, not the viewport. */
+  max-width: min(18rem, calc(100cqi - 2.5rem));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
