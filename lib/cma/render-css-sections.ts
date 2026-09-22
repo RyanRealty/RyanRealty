@@ -686,6 +686,20 @@ export function cmaSectionStyles(): string {
   .status-price { margin: 6px 0 16px; }
   .status-price .subhead { margin: 0 0 8px; }
   .status-price-table th.n, .status-price-table td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.kv.status-price-table,
+  table.kv.ppsf-status-table { table-layout: fixed; }
+  table.kv.status-price-table th,
+  table.kv.ppsf-status-table th { width: auto; padding: 4px 0 4px 8px; }
+  table.kv.status-price-table td,
+  table.kv.ppsf-status-table td { padding: 4px 0 4px 8px; }
+  table.kv.status-price-table th:first-child,
+  table.kv.ppsf-status-table th:first-child { padding-left: 0; text-align: left; }
+  table.kv.status-price-table col.sp-status,
+  table.kv.ppsf-status-table col.sp-status { width: 16%; }
+  table.kv.status-price-table col.sp-homes,
+  table.kv.ppsf-status-table col.sp-homes { width: 8%; }
+  table.kv.status-price-table col.sp-fig { width: 19%; }
+  table.kv.ppsf-status-table col.sp-band { width: 38%; }
   .ppsf-status { margin: 8px 0 16px; }
   .ppsf-status .subhead { margin: 0 0 6px; }
   .ppsf-status-table th.n, .ppsf-status-table td.n {

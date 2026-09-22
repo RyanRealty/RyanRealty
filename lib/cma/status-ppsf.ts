@@ -142,6 +142,7 @@ export function statusPpsfBoardHtml(rows: readonly StatusPpsfRow[]): string {
     "Each rate is that home's own ask or sale over its own living area. These are the homes in this report.",
   )}</p>
   <table class="kv is-wide ppsf-status-table">
+    <colgroup><col class="sp-status"><col class="sp-homes"><col class="sp-band"><col class="sp-band"></colgroup>
     <thead><tr><th>Status</th><th class="n">Homes</th><th class="n">List $/sf</th><th class="n">Sold $/sf</th></tr></thead>
     <tbody>${body}</tbody>
   </table>

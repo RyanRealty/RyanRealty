@@ -92,5 +92,6 @@ describe('status price bands', () => {
     expect(html).toContain('Median')
     expect(html).toContain('High')
     expect(html).toContain('data-status="pending"')
+    expect(html).toContain('col class="sp-fig"')
   })
 })

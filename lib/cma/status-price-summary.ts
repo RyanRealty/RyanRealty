@@ -125,6 +125,7 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
     `Low · Avg · Median · High over the ${countWord(n)} homes in this report. Closed uses sold price; Pending and Active use list price.`,
   )}</p>
   <table class="kv is-wide status-price-table">
+    <colgroup><col class="sp-status"><col class="sp-homes"><col class="sp-fig"><col class="sp-fig"><col class="sp-fig"><col class="sp-fig"></colgroup>
     <thead><tr><th>Status</th><th class="n">Homes</th><th class="n">Low</th><th class="n">Avg</th><th class="n">Median</th><th class="n">High</th></tr></thead>
     <tbody>${body}</tbody>
   </table>

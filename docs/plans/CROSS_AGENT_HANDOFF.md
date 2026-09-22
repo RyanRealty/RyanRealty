@@ -2,6 +2,10 @@
 
 Surface: Grok Build, primary checkout. On a community page, Schools lists the attendance areas that cover the place. Source is Deschutes County polygons in `boundaries` (`get_place_schools` / `getPlaceSchools`), kept when a school covers at least 5% of the place. The share is not printed. Tetherow: William E Miller Elem, Cascade Middle, Pacific Crest Middle, Summit High. No “confirm the address” sentence and no district-only door. An empty read omits the section (Brasada). Node: none.
 
+# Current — 2026-09-22 (Matt: the evidence price board was one string)
+
+Surface: Grok Build, primary checkout. Murphy evidence tables give Low, Avg, Median, High and the two $/sf columns their own width. The 38% key/value heading rule was stacking those dollars. Newest letter is still cma-20506-murphy. Not sent. auto_send stays off. Node: none.
+
 # Current — 2026-09-22 (Matt: align the CMA letter, avoid wrapping)
 
 Surface: Grok Build, primary checkout, `main` `20a975447`. Murphy letter column heads sit on the same edge as the figures. The ask path breaks on the clause, the same way in every column. The what-happened sentence stays one line. Five tight sales already live ($693,000–$735,000, recommended $716,000). Not sent. auto_send stays off. Node: none.

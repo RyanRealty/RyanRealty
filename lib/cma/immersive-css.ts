@@ -535,6 +535,28 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .letter-body table.kv{width:100%;border-collapse:collapse;font-size:15px}
 .letter-body table.kv th{text-align:left;font-weight:500;opacity:.7;padding:8px 16px 8px 0;border-bottom:1px solid var(--ink12);width:38%}
 .letter-body table.kv td{padding:8px 0;border-bottom:1px solid var(--ink12)}
+/* The status boards are many columns, not a label and one figure. The 38%
+   rule above landed on every heading, so Low, Avg, Median and High stacked
+   on top of each other and the dollars read as one string. */
+.letter-body table.kv.status-price-table,
+.letter-body table.kv.ppsf-status-table{table-layout:fixed}
+.letter-body table.kv.status-price-table th,
+.letter-body table.kv.ppsf-status-table th{width:auto;padding:10px 0 10px 18px}
+.letter-body table.kv.status-price-table td,
+.letter-body table.kv.ppsf-status-table td{padding:10px 0 10px 18px}
+.letter-body table.kv.status-price-table th:first-child,
+.letter-body table.kv.ppsf-status-table th:first-child{padding-left:0;text-align:left}
+.letter-body table.kv.status-price-table tbody th,
+.letter-body table.kv.ppsf-status-table tbody th{opacity:1;font-weight:600}
+.letter-body table.kv.status-price-table col.sp-status,
+.letter-body table.kv.ppsf-status-table col.sp-status{width:16%}
+.letter-body table.kv.status-price-table col.sp-homes,
+.letter-body table.kv.ppsf-status-table col.sp-homes{width:10%}
+.letter-body table.kv.status-price-table col.sp-fig{width:18.5%}
+.letter-body table.kv.ppsf-status-table col.sp-band{width:37%}
+.status-price,.ppsf-status{overflow-x:auto}
+.letter-body table.kv.status-price-table{min-width:760px}
+.letter-body table.kv.ppsf-status-table{min-width:680px}
 /* The net-at-list ledger, on screen. Same rows the letter prints, at reading
    size, with the money column right-aligned so the column adds up by eye. */
 .letter-body table.kv.netsheet th{width:62%;opacity:1;font-weight:500}
