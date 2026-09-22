@@ -79,7 +79,7 @@ import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
 import { cityResorts, resortActiveSfrCounts, resortLabelToSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
-import { communityImage, preferPlaceHero } from '@/lib/geo-images'
+import { preferPlaceHero } from '@/lib/geo-images'
 // Row shaping shared with the neighborhood + community place pages - one copy, so a
 // fix cannot land on one of the three and drift on the others.
 import { buildActivityItems, buildArticlePosts, buildOtherCityItems } from '@/lib/kb/place-sections'
@@ -141,6 +141,7 @@ import {
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { cityPlaceGrain } from '@/lib/place/city-place-grain'
+import { resolveCityCommunityRailPhoto } from '@/lib/place/city-community-rail-photo'
 import { subdivisionHref } from '@/lib/site/place-href'
 import { childAtlasRegions, subjectAtlasRegions } from '@/lib/place/map-hierarchy'
 import { cityChildStockSlug } from '@/lib/place/city-rail'
@@ -753,13 +754,14 @@ async function renderCityDetail({ params }: Props) {
       const curated = curatedComms.find((f) => c.subdivision.toLowerCase().includes(f.match))
       const cvUrl = communityVideoUrl(curated?.videoSlug)
       const registrySlug = resortSlug ?? c.slug
-      const img = preferPlaceHero(
-        c.heroImageUrl,
-        preferPlaceHero(
-          curated?.img ?? '',
-          preferPlaceHero(communityImage(registrySlug) ?? '', CITY_RESORT_LEDGER_IMG[registrySlug] ?? ''),
-        ),
-      )
+      const img =
+        resolveCityCommunityRailPhoto({
+          slug: registrySlug,
+          name: c.subdivision,
+          citySlug: slug,
+          liveHero: c.heroImageUrl,
+          curated: curated?.img ?? CITY_RESORT_LEDGER_IMG[registrySlug] ?? null,
+        }) ?? ''
       // When this community is a resort, show its ALIAS-AWARE count, so the
       // rail card matches the golf ledger and the real MLS total rather than
       // the literal-name undercount (§0).
