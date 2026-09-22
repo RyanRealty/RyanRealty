@@ -109,8 +109,9 @@ function parseEntry(raw: unknown): AliasPlatEntry | null {
   }
 }
 
+const aliasPlatRawEntries = (aliasPlats as RawFile).entries
 export const ALIAS_PLAT_ENTRIES: readonly AliasPlatEntry[] = (
-  Array.isArray((aliasPlats as RawFile).entries) ? (aliasPlats as RawFile).entries : []
+  Array.isArray(aliasPlatRawEntries) ? aliasPlatRawEntries : []
 )
   .map(parseEntry)
   .filter((row): row is AliasPlatEntry => row != null)

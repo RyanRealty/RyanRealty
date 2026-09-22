@@ -435,7 +435,6 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--v3-tap);
-  color: var(--v3-navy);
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);
   letter-spacing: 0;
@@ -445,9 +444,15 @@
   text-underline-offset: var(--v3-underline-offset);
 }
 
-.v3-footer__cluster-title a:hover,
-.v3-footer__cluster-title a:focus-visible {
-  text-decoration-color: currentColor;
+@layer base {
+  .v3-footer__cluster-title a {
+    color: var(--v3-navy);
+  }
+
+  .v3-footer__cluster-title a:hover,
+  .v3-footer__cluster-title a:focus-visible {
+    text-decoration-color: currentColor;
+  }
 }
 
 /* Thumb floor at every width. Unlayered so a utility or the old 1440

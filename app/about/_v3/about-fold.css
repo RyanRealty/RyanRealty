@@ -74,9 +74,11 @@
   line-height: var(--v3-leading-heading);
 }
 
-.about-firm__rating a {
-  color: inherit;
-  text-underline-offset: 0.12em;
+@layer base {
+  .about-firm__rating a {
+    color: inherit;
+    text-underline-offset: 0.12em;
+  }
 }
 
 .about-firm__claim {

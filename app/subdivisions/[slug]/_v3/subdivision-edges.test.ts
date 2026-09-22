@@ -109,11 +109,15 @@ function quietEdges(lifestyleItems: readonly LifestyleNearItem[]) {
 }
 
 function proseTerms(items: ReturnType<typeof buildSubdivisionEdges>): string[] {
-  return items.flatMap((item) => ('term' in item && item.kind === 'prose' ? [item.term] : []))
+  return items.flatMap((item) =>
+    'term' in item && item.kind === 'prose' && typeof item.term === 'string' ? [item.term] : [],
+  )
 }
 
 function labels(items: ReturnType<typeof buildSubdivisionEdges>): string[] {
-  return items.flatMap((item) => ('label' in item ? [item.label] : []))
+  return items.flatMap((item) =>
+    'label' in item && typeof item.label === 'string' ? [item.label] : [],
+  )
 }
 
 describe('SITE-141 Quiet no longer dumps parks and trails', () => {
