@@ -93,6 +93,7 @@ import {
   cityInsightMetaClause,
 } from './_v3/city-insight'
 import { cityHomesRows } from './_v3/city-homes'
+import { geoTitle } from './_v3/geo-title'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
   return CORE_CITY_SLUGS.map((s) => ({ slug: [s] }))
@@ -290,17 +291,6 @@ const loadGeoMarket = cache(async (slugKey: string) => {
  * formatMonthsOfSupply. The verdict word comes from marketVerdict() on the raw
  * value — the canonical thresholds in lib/market/classify.ts (ci:market-formula).
  */
-function geoTitle(input: {
-  geoName: string
-  datasetVariables: ReadonlyArray<{ name: string; value: string | number }>
-}): string {
-  const active = input.datasetVariables.find((v) => v.name === 'Active Listings')?.value ?? null
-  if (active == null) return `${input.geoName} housing market 2026`
-  // Inventory query ("homes for sale") belongs to the place / search URL.
-  // Market pages keep the live count without bidding that phrase (SITE-171).
-  return `${input.geoName} housing market 2026: ${Number(active).toLocaleString('en-US')} active listings`
-}
-
 function geoDescription(input: {
   geoName: string
   datasetVariables: ReadonlyArray<{ name: string; value: string | number; unitText?: string }>
