@@ -92,6 +92,7 @@ const HOP_ROUTES = new Map([
   ['/reports', { status: 308, pathname: '/housing-market/reports' }],
   ['/lp/tetherow', { status: 308, pathname: '/communities/tetherow' }],
   ['/lp/tetherow/heath', { status: 308, pathname: '/communities/tetherow' }],
+  ['/blog/tetherow-resort-living-real-estate', { status: 308, pathname: '/communities/tetherow' }],
   ['/lp/bend', { status: 308, pathname: '/cities/bend' }],
   ['/lp/seller-home-value', { status: 308, pathname: '/sell' }],
   ['/lp/sell-your-home', { status: 308, pathname: '/sell' }],
@@ -143,6 +144,7 @@ const INVENTORY_ROUTES = loadRoutesFromInventory()
 const ROUTES = INVENTORY_ROUTES
   ? [
       ...INVENTORY_ROUTES,
+      { path: '/blog/tetherow-resort-living-real-estate', name: 'tetherow blog hop' },
       ...(LISTING_KEY
         ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail (live)' }]
         : []),

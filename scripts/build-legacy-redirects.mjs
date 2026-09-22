@@ -349,6 +349,8 @@ async function main() {
     '/homes-for-sale/bend/awbrey-butte': '/cities/bend/awbrey-butte',
     '/homes-for-sale/bend/northwest-crossing': '/communities/northwest-crossing',
     '/homes-for-sale/bend/stevens-ranch': '/subdivisions/stevens-ranch',
+    // SITE-180: the live Next article is /blog/<slug>, not the WP permalink.
+    '/blog/tetherow-resort-living-real-estate': '/communities/tetherow',
   }
   Object.assign(map, OVERRIDES)
 

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { normalize, structuralProblems, uncoveredPaths } from '../check-legacy-redirects.mjs'
 
@@ -43,5 +44,30 @@ describe('uncoveredPaths', () => {
 
   it('ignores the root path', () => {
     expect(uncoveredPaths({}, ['/'])).toHaveLength(0)
+  })
+})
+
+describe('SITE-180 Tetherow blog slug hop', () => {
+  const map = JSON.parse(readFileSync(new URL('../../data/legacy-redirects.json', import.meta.url), 'utf8'))
+  const nextConfig = readFileSync(new URL('../../next.config.ts', import.meta.url), 'utf8')
+
+  it('hops the live /blog slug onto the community page, not a streamed 200', () => {
+    expect(map['/blog/tetherow-resort-living-real-estate']).toBe('/communities/tetherow')
+    expect(map['/tetherow-resort-living-real-estate']).toBe('/communities/tetherow')
+    expect(nextConfig).toMatch(/source:\s*'\/blog\/tetherow-resort-living-real-estate'/)
+    expect(nextConfig).toMatch(
+      /source:\s*'\/blog\/tetherow-resort-living-real-estate',\s*destination:\s*'\/communities\/tetherow',\s*permanent:\s*true/,
+    )
+  })
+
+  it('leaves the other named community guides as live /blog URLs', () => {
+    for (const slug of [
+      'caldera-springs-buyers-guide',
+      'eagle-crest-affordable-resort-redmond',
+      'sunriver-year-round-living-vs-vacation',
+    ]) {
+      expect(map[`/blog/${slug}`]).toBeUndefined()
+      expect(map[`/${slug}`]).toBe(`/blog/${slug}`)
+    }
   })
 })
