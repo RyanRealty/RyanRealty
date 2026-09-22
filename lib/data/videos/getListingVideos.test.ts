@@ -64,6 +64,14 @@ describe('normalizeEmbed — showcase-video eligibility', () => {
     expect(r?.embedType).toBe('iframe')
   })
 
+  it('Zillow 3D Home (view-3d-home) capture → iframe so the 3D tab still publishes', () => {
+    const r = normalizeEmbed(
+      'https://www.zillow.com/view-3d-home/865acc3a-e3d4-4402-ab96-f77e09bc5273/?utm_source=captureapp',
+    )
+    expect(showcase(r)).toBe(true)
+    expect(r?.embedType).toBe('iframe')
+  })
+
   it('Google Drive tour file → /preview iframe (agent-uploaded tour video)', () => {
     const r = normalizeEmbed('https://drive.google.com/file/d/1rlWsq0_6JmzEA6FRzIaqw0SantErbMXb/view?usp=share_link')
     expect(showcase(r)).toBe(true)

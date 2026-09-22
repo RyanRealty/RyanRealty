@@ -33,7 +33,7 @@ checks.push({
     /from ['"]@\/lib\/listing\/publish-listing-hero-video['"]/.test(videos) &&
     /isListingVirtualTour\(/.test(videos) &&
     videos.includes('isVirtualTour: true') &&
-    videos.includes('listing-videos-v12'),
+    videos.includes('listing-videos-v14'),
 })
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')

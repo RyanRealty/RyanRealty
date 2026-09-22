@@ -21,7 +21,7 @@ export function isOffsiteTourHost(url: string | null | undefined): boolean {
   if (host.includes('matterport.com')) return false
   if (host.includes('aryeo.com')) return false
   if (host.includes('cloudflarestream.com') || host.includes('videodelivery.net')) return false
-  if (host.includes('player.vimeo.com') || host.includes('youtube.com') || host.includes('youtu.be')) {
+  if (host.includes('vimeo.com') || host.includes('youtube.com') || host.includes('youtu.be')) {
     return false
   }
   if (host.includes('google.com') && path.includes('/file/d/')) return false

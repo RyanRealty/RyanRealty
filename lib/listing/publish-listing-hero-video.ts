@@ -11,21 +11,36 @@
 
 import type { VideoEmbed } from '@/lib/data/types/video'
 
+/** Progressive / hosted walkthrough reel. MLS often stuffs these in VirtualTours. */
+export function isListingWalkthroughVideo(url?: string | null): boolean {
+  const u = (url ?? '').toLowerCase()
+  if (!u) return false
+  if (u.includes('vimeo.com')) return true
+  if (u.includes('youtube.com') || u.includes('youtu.be')) return true
+  if (u.includes('drive.google.com/file')) return true
+  if (u.includes('dropbox.com') && /\.(mp4|m4v|mov|webm)(\?|#|$)/.test(u)) return true
+  if (u.includes('cloudflarestream.com') || u.includes('videodelivery.net')) return true
+  return /\.(mp4|webm|mov|m4v)(\?|#|$)/.test(u)
+}
+
 export function isListingVirtualTour(input: {
   url?: string | null
   name?: string | null
   hint?: string | null
   isVirtualTour?: boolean
 }): boolean {
+  // Trailmere (220225015): Vimeo "Walkthrough Video" sits in VirtualTours
+  // beside Zillow 3D. A walkthrough reel is never a 3D tour.
+  if (isListingWalkthroughVideo(input.url)) return false
+  const url = (input.url ?? '').toLowerCase()
+  if (url.includes('zillow.com/view-imx') || url.includes('zillow.com/view-3d-home')) return true
+  if (url.includes('matterport.com')) return true
+  if (url.includes('cloudpano.com')) return true
+  if (url.includes('initialviewtype=pano')) return true
   if (input.isVirtualTour) return true
   const hint = `${input.hint ?? ''} ${input.name ?? ''}`.toLowerCase()
   if (hint.includes('virtual-tour') || hint.includes('virtual tour')) return true
   if (/\b3d\b/.test(hint) && !hint.includes('video-tag')) return true
-  const url = (input.url ?? '').toLowerCase()
-  if (!url) return false
-  if (url.includes('zillow.com/view-imx')) return true
-  if (url.includes('matterport.com')) return true
-  if (url.includes('initialviewtype=pano')) return true
   return false
 }
 

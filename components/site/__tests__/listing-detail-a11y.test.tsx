@@ -317,6 +317,8 @@ describe('listing mosaic lead and empty thumbs', () => {
     expect(hero).toMatch(/listing-strip__tools/)
     expect(hero).toMatch(/listing-hero-carousel/)
     expect(hero).toMatch(/listing-frame__tabs/)
+    expect(hero).toMatch(/action === 'video'/)
+    expect(hero).toMatch(/data-listing-media="video"/)
     expect(hero).not.toMatch(/listing-frame__stage/)
     expect(css).not.toMatch(/grid-template-columns: 2fr 1fr/)
     expect(css).toMatch(/\.listing-strip\[data-open='true'\]/)

@@ -298,8 +298,11 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
       // A tour that is the SAME media as a Video above is dropped by mediaKey
       // dedup — so it never renders as a broken duplicate. Only a genuinely
       // distinct tour (different Matterport/3D/video) survives to its own viewer.
+      // Walkthrough reels stuffed into VirtualTours (Trailmere Vimeo) are
+      // tagged as video, not 3D, so the gallery chrome can show a Video tab.
       for (const raw of tourCandidates) {
-        pushEmbed(raw, 'virtual-tour', { isVirtualTour: true })
+        const isTour = isListingVirtualTour({ url: raw, hint: 'virtual-tour' })
+        pushEmbed(raw, isTour ? 'virtual-tour' : null, { isVirtualTour: isTour })
       }
     }
   }
@@ -335,7 +338,12 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // requests); evicts entries cached before the suppression check existed.
     // v12 bump 2026-08-17 — details.Videos 3D / Zillow-pano rows tagged
     // isVirtualTour so the hero Unmute path stays on marketing reels.
-    ['listing-videos-v12', listingKey],
+    // v13 bump 2026-09-22 — VirtualTours walkthroughs (Vimeo/YouTube/mp4/Drive)
+    // are video, not 3D. v12 tagged every VirtualTours URI isVirtualTour: true,
+    // so Trailmere's walkthrough never got a Video tab.
+    // v14 bump 2026-09-22 — zillow.com/view-3d-home is an iframe tour (same as
+    // view-imx). v13 cached it as embedType link, which dropped the 3D tab.
+    ['listing-videos-v14', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

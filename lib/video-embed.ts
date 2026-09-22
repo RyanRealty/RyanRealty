@@ -180,7 +180,8 @@ export function normalizeEmbed(
     low.includes('videodelivery.net') ||
     low.includes('player.vimeo.com') ||
     low.includes('matterport.com') ||
-    low.includes('zillow.com/view-imx')
+    low.includes('zillow.com/view-imx') ||
+    low.includes('zillow.com/view-3d-home')
   ) {
     return { url, embedType: 'iframe' }
   }
