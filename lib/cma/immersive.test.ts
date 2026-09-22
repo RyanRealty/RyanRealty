@@ -53,7 +53,9 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toMatch(/class="[^"]*ans-n[^"]*"[^>]*>\$609,000</)
     expect(html).not.toMatch(/class="ans-n[^"]*"[^>]*data-count/)
     expect(html).not.toMatch(/pin numbers match the map/i)
-    expect(html).toContain('$584,000')
+    // Hero Low/High are valueLow/valueHigh, not conservative/highEnd.
+    expect(html).toContain('$620,000')
+    expect(html).toContain('$635,000')
     expect(html).toContain('$619,999')
     expect(html).toContain('Prepared for Eric Demello')
     // Two tracked buttons (CMA_REIMAGINED_2026-09-07.md chapter 7).
