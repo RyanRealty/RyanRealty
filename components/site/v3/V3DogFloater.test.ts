@@ -13,7 +13,7 @@ describe('V3DogFloater · SITE-134 / SITE-135 / SITE-146', () => {
     expect(LAYOUT).toContain('<V3DogFloater')
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
     expect(BARREL).toContain("from './V3DogFloater.client'")
-    expect(CHROME).toContain('<V3WorkWithUs surface="chrome" placement="chrome"')
+    expect(CHROME).not.toMatch(/<V3WorkWithUs/)
   })
 
   it('opens the five named doors on real routes', () => {

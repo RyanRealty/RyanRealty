@@ -27,6 +27,13 @@
   background: var(--v3-surface);
   /* 64px cream bar, 2px navy rule (first-slice chrome). */
   border-bottom: var(--v3-chrome-rule);
+  /* SITE-155: sticky chrome is a bad scroll-anchor. When the root loading
+     shell swaps for real content, the browser would otherwise keep this
+     bar in view by yanking scrollY toward 0. */
+  overflow-anchor: none;
+  /* Overflow stays visible so an OPEN mega can drop below the bar. Closed
+     megas are clipped on .v3-chrome__group:not(.is-open), not here. Clipping
+     overflow on this box would also clip the open panel. */
 }
 
 /* The bar -------------------------------------------------------------------
@@ -104,10 +111,12 @@
   }
 }
 
-/* 1280-class bars: search + Work with us were clipping the phone number. */
+/* 1280-class bars: the closed search is icon-only through 84.99rem
+   (V3ChromeSearch matchMedia). This max-width is the backstop if JS is
+   late; the pill must never clip the placeholder to "Sear". */
 @media (min-width: 56.25rem) and (max-width: 84.99rem) {
   .v3-chrome__search-morph {
-    max-width: 8.5rem;
+    max-width: var(--v3-tap);
   }
 }
 
@@ -300,6 +309,14 @@
   position: relative;
   display: flex;
   align-items: center;
+}
+
+/* Closed mega panels are position:absolute + visibility:hidden, which still
+   widens document.scrollWidth (SITE-155, /cities/bend @1024: Market panel
+   right=1155px). Clip them to the group while closed; is-open restores
+   overflow so the visible panel can hang below the bar. */
+.v3-chrome__group:not(.is-open) {
+  overflow: hidden;
 }
 
 .v3-chrome__group-link {
@@ -532,6 +549,23 @@
   }
 }
 
+/* 1280-class: keep the tap-size phone icon, hide the digits so the number
+   does not run off 1024. aria-label on the link still names the number.
+   Full digits return at 85rem, beside the search pill. */
+@media (min-width: 56.25rem) and (max-width: 84.99rem) {
+  .v3-chrome__phone-num {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    border: 0;
+    clip-path: inset(50%);
+  }
+}
+
 /* Saved ---------------------------------------------------------------------
    The account affordance, not a nav word (ia-lock). It joins the bar at the
    same width as the destinations; below that it lives in the overlay, where its
@@ -564,63 +598,9 @@
   }
 }
 
-/* Work with us — sitewide outline ask (Matt / Critiquito 2026-09-19).
-   Visible at every width; the filled seller ask stays the one fill. */
-.v3.v3-chrome .v3-chrome__work {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-2xs);
-  white-space: nowrap;
-  font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-medium);
-}
-
-@media (min-width: 26rem) {
-  .v3.v3-chrome .v3-chrome__work {
-    padding: 0 var(--v3-space-xs);
-  }
-}
-
-/* 375 LOOK REMATCH (40c4a9a3b land): Menu clipped, document scrollWidth 391.
-   Logo + Search + Work with us + Sign in + Menu plus the 1.25rem gutter ran
-   16px past the phone viewport. Tighten the phone bar so Menu stays on the
-   canvas; clip is the backstop, not the hide. Work with us stays visible. */
-@media (max-width: 39.99rem) {
-  .v3.v3-chrome {
-    overflow-x: clip;
-  }
-
-  .v3-chrome__bar {
-    gap: var(--v3-space-3xs);
-    padding: 0 var(--v3-space-sm);
-    overflow-x: clip;
-  }
-
-  .v3-chrome__actions {
-    gap: 0;
-    min-width: 0;
-  }
-
-  .v3.v3-chrome .v3-chrome__work {
-    flex-shrink: 1;
-    min-width: 0;
-    padding: 0 var(--v3-space-3xs);
-    overflow: hidden;
-  }
-
-  .v3-chrome__signin {
-    padding: 0 var(--v3-space-3xs);
-  }
-
-  .v3-chrome__menu-btn {
-    overflow: hidden;
-    padding: 0;
-  }
-}
+/* Phone bar after Work with us left (SITE-155): logo | Search | Sign in |
+   Menu. Fit the row; do not clip it. overflow-x:clip was the 375 rematch
+   backstop while Work with us was still in the bar. */
 
 /* Menu and close ------------------------------------------------------------
    Icon-only at 390 and labelled from 40rem up. The word is never display:none:
@@ -1010,20 +990,19 @@
 .v3-chrome__account {
   display: inline-flex;
   align-items: center;
-  gap: var(--v3-space-3xs);
+  justify-content: center;
+  flex: none;
+  min-width: var(--v3-tap);
   min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-xs);
+  padding: 0;
   color: var(--v3-ink);
-  font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-medium);
   text-decoration: none;
 }
 
 .v3-chrome__account:hover,
-.v3-chrome__account:focus-visible,
-.v3-chrome__account[aria-current='page'] {
-  text-decoration: underline;
-  text-underline-offset: var(--v3-underline-offset);
+.v3-chrome__account:focus-visible {
+  background: var(--v3-wash);
+  border-radius: var(--v3-radius-control);
 }
 
 .v3-chrome__avatar {
@@ -1043,24 +1022,6 @@
   color: var(--v3-cream);
   font-size: 0.75rem;
   font-weight: var(--v3-weight-medium);
-}
-
-.v3-chrome__account-name {
-  max-width: 7rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (max-width: 39.99rem) {
-  .v3-chrome__account-name {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
 }
 
 .v3-chrome__panel-list--stacked { grid-template-columns: minmax(0, 1fr); }

@@ -9,10 +9,10 @@ const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
 const LISTING_PAGE = readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8')
 
 describe('V3WorkWithUs sheet · Matt / Critiquito CTA lock 2026-09-19', () => {
-  it('is the one sheet the header Work with us opens', () => {
-    expect(CHROME).toContain('V3WorkWithUs')
-    expect(CHROME).toContain("from './V3PhoneDock.client'")
+  it('still exists as a sheet, but the chrome no longer opens it (Matt 2026-09-21, SITE-155)', () => {
     expect(SRC).toContain('export function V3WorkWithUs')
+    expect(CHROME).not.toMatch(/<V3WorkWithUs/)
+    expect(CHROME).not.toMatch(/from '\.\/V3PhoneDock\.client'/)
     expect(LAYOUT).not.toMatch(/<V3PhoneDock/)
     expect(LISTING_PAGE).not.toMatch(/<ListingBrokerBar/)
     expect(LISTING_PAGE).not.toMatch(/<ListingMobileContactBar/)

@@ -16,10 +16,13 @@ describe('chrome homepage H-fixes', () => {
     expect(CHROME).toContain('PRIMARY_BAR_KEYS')
   })
 
-  it('mounts Work with us in the header at every width (CTA lock 2026-09-19)', () => {
-    expect(CHROME).toContain('<V3WorkWithUs surface="chrome" placement="chrome"')
-    expect(CHROME_CSS).toMatch(/\.v3\.v3-chrome \.v3-chrome__work \{[\s\S]*?display: inline-flex/)
-    expect(CHROME_CSS).not.toMatch(/\.v3-chrome__work[^{]*\{[^}]*display:\s*none/)
+  it('keeps Work with us OUT of the header (Matt 2026-09-21, SITE-155)', () => {
+    // This test used to assert the opposite. The 2026-09-19 CTA lock put an
+    // outline V3WorkWithUs trigger in the chrome at every width; Matt
+    // reversed that on 2026-09-21: "There's a 'Work with us' button that
+    // needs to be removed. We're going to use the dog for that."
+    expect(CHROME).not.toContain('<V3WorkWithUs')
+    expect(CHROME).not.toMatch(/from '\.\/V3PhoneDock\.client'/)
     const LAYOUT = readFileSync(resolve('app/layout.tsx'), 'utf8')
     expect(LAYOUT).not.toMatch(/V3PhoneDock/)
     expect(LAYOUT).toMatch(/<V3Chrome/)
@@ -105,16 +108,31 @@ describe('chrome homepage H-fixes', () => {
     expect(RAILS).not.toMatch(/\.home-rails > \.home-rail:first-child \{\s*padding-top: var\(--v3-space-sm\);/)
   })
 
-  it('clips the 375 chrome bar so Menu stays on the canvas', () => {
-    expect(CHROME_CSS).toMatch(
-      /@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3\.v3-chrome \{[\s\S]*?overflow-x: clip/,
+  it('fits the phone bar without clipping it (SITE-155)', () => {
+    const baseRule = CHROME_CSS.slice(
+      CHROME_CSS.indexOf('.v3.v3-chrome {'),
+      CHROME_CSS.indexOf('\n}', CHROME_CSS.indexOf('.v3.v3-chrome {')),
     )
-    expect(CHROME_CSS).toMatch(
-      /@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3-chrome__bar \{[\s\S]*?padding: 0 var\(--v3-space-sm\)/,
-    )
-    expect(CHROME_CSS).toMatch(
-      /@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3-chrome__menu-btn \{[\s\S]*?overflow: hidden/,
-    )
+    expect(baseRule).not.toContain('overflow-x: clip')
+    expect(CHROME_CSS).not.toMatch(/\.v3-chrome__account-name/)
+    expect(CHROME).toContain('referrerPolicy="no-referrer"')
+    expect(CHROME).not.toMatch(/v3-chrome__account-name/)
+    expect(CHROME_CSS).toMatch(/\.v3-chrome__group:not\(\.is-open\) \{[\s\S]*?overflow: hidden/)
     expect(CHROME_CSS).toMatch(/\.v3-chrome__menu-btn,[\s\S]*?position: relative/)
+  })
+
+  it('keeps the search icon-only through the whole 1280-class bar (SITE-155)', () => {
+    const SEARCH = readFileSync(resolve('components/site/v3/V3ChromeSearch.client.tsx'), 'utf8')
+    expect(SEARCH).toContain("window.matchMedia('(max-width: 84.99rem)')")
+    expect(CHROME_CSS).toMatch(
+      /1280-class bars[\s\S]*?@media \(min-width: 56\.25rem\) and \(max-width: 84\.99rem\)/,
+    )
+  })
+
+  it('uses a compact root loading shell so the document cannot shrink mid-load (SITE-155 / SITE-158)', () => {
+    const LOADING = readFileSync(resolve('app/loading.tsx'), 'utf8')
+    expect(LOADING).toContain('V3Loading')
+    expect(LOADING).not.toMatch(/min-h-\[520px\]/)
+    expect(LOADING).not.toMatch(/Just listed/)
   })
 })

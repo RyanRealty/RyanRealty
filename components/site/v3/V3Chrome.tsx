@@ -42,9 +42,13 @@
  * listing chrome never fill it. The door stays in the Sell nav group. The
  * footer never carries a second solid button (PUBLIC_UI.md section 1).
  *
- * WORK WITH US (Matt / Critiquito 2026-09-19): outline, every public width,
- * same V3WorkWithUs sheet as SITE-122. Not a bottom sticky bar. Call / Text
- * live inside that sheet (and the listing agent card), not as header verbs.
+ * WORK WITH US IS OUT OF THE CHROME (Matt 2026-09-21, SITE-155). The
+ * 2026-09-19 CTA lock put an outline V3WorkWithUs trigger in the header at
+ * every width; Matt reversed that: "There's a 'Work with us' button that
+ * needs to be removed. We're going to use the dog for that." V3DogFloater
+ * (SITE-153, mounted once in app/layout.tsx) is that door — do not re-add a
+ * chrome trigger. The V3WorkWithUs sheet itself is untouched and still
+ * opens from the listing agent card.
  *
  * SEARCH: catalog MorphingSearch via V3ChromeSearch (beUI install). Client
  * open, ⌘K / Ctrl+K, icon on phone / pill on desk. Suggest feed for places —
@@ -76,7 +80,6 @@ import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
 import { V3ChromeSearch } from './V3ChromeSearch.client'
 import { V3Icon } from './V3Icon'
-import { V3WorkWithUs } from './V3PhoneDock.client'
 import './tokens.css'
 import './V3Chrome.css'
 
@@ -563,9 +566,22 @@ export type V3ChromeProps = {
   live?: V3ChromeLive | null
 }
 
+function accountAriaLabel(viewer: AuthUser): string {
+  const raw = viewer.user_metadata?.full_name || viewer.user_metadata?.name || viewer.email
+  const name = typeof raw === 'string' ? raw.trim() : ''
+  return name ? `Account: ${name}` : 'Account'
+}
+
+function accountInitial(viewer: AuthUser): string {
+  const raw = viewer.user_metadata?.full_name || viewer.user_metadata?.name || viewer.email || 'A'
+  const ch = raw.trim().charAt(0)
+  return ch ? ch.toUpperCase() : 'A'
+}
+
 export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
   const [viewer, setViewer] = useState<AuthUser | null>(null)
   const [viewerReady, setViewerReady] = useState(false)
+  const [avatarFailed, setAvatarFailed] = useState(false)
   useEffect(() => {
     let alive = true
     fetch('/api/auth/me', { credentials: 'include' })
@@ -573,11 +589,13 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
       .then((data: { user: AuthUser | null } | null) => {
         if (!alive) return
         setViewer(data?.user ?? null)
+        setAvatarFailed(false)
         setViewerReady(true)
       })
       .catch(() => {
         if (!alive) return
         setViewer(null)
+        setAvatarFailed(false)
         setViewerReady(true)
       })
     return () => {
@@ -663,18 +681,26 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
-          {/* Mobile bar: logo | Search | Work with us | Sign in | hamburger.
-              Phone + seller ask stay desktop (and in the menu foot). */}
+          {/* Mobile bar: logo | Search | Sign in | hamburger. Work with us
+              lives in the dog floater (SITE-153), not the header (Matt
+              2026-09-21). Phone + seller ask stay desktop (and in the menu
+              foot). */}
           <V3ChromeSearch />
-          <V3WorkWithUs surface="chrome" placement="chrome" />
           {viewerReady && viewer ? (
+            // Avatar only, no printed name (Matt 2026-09-21). The name still
+            // reaches assistive tech through aria-label. viewer.avatar_url is
+            // normalized in lib/auth/avatar.ts (metadata, then every OAuth
+            // identity, Google first). Google's host 403s requests that
+            // arrive with a Referer — referrerPolicy="no-referrer" is why
+            // the picture used to work and then stopped. A signed-in user
+            // with no picture (email/password) still gets a navy initial.
             <Link
               href={ACCOUNT_HOME?.href ?? '/account'}
               className="v3-chrome__account"
               aria-current={isCurrentPath(path, ACCOUNT_HOME?.href ?? '/account') ? 'page' : undefined}
-              aria-label="Account"
+              aria-label={accountAriaLabel(viewer)}
             >
-              {viewer.avatar_url ? (
+              {viewer.avatar_url && !avatarFailed ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={viewer.avatar_url}
@@ -683,30 +709,14 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
                   width={28}
                   height={28}
                   decoding="async"
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarFailed(true)}
                 />
               ) : (
                 <span className="v3-chrome__avatar v3-chrome__avatar--initial" aria-hidden="true">
-                  {(
-                    viewer.user_metadata?.full_name ||
-                    viewer.user_metadata?.name ||
-                    viewer.email ||
-                    'A'
-                  )
-                    .trim()
-                    .charAt(0)
-                    .toUpperCase()}
+                  {accountInitial(viewer)}
                 </span>
               )}
-              <span className="v3-chrome__account-name">
-                {(
-                  viewer.user_metadata?.full_name ||
-                  viewer.user_metadata?.name ||
-                  viewer.email ||
-                  'Account'
-                )
-                  .trim()
-                  .split(/\s+/)[0]}
-              </span>
             </Link>
           ) : SIGN_IN ? (
             <Link

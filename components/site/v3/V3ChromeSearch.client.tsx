@@ -34,7 +34,11 @@ export function V3ChromeSearch() {
   const { suggestions } = useSearchSuggest(query)
 
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 56.24rem)')
+    // Icon-only through the whole 1280-class bar (V3Chrome.css: 56.25rem–
+    // 84.99rem), not just below the nav breakpoint. A compressed pill in
+    // that range clipped the placeholder to "Sear" and ran the phone off
+    // 1024 (SITE-155). The icon trigger is the tap floor (~44px).
+    const mq = window.matchMedia('(max-width: 84.99rem)')
     const apply = () => setIconOnly(mq.matches)
     apply()
     mq.addEventListener('change', apply)
