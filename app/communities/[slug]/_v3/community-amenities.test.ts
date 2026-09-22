@@ -3,10 +3,8 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { ResortAmenity } from '@/lib/resort-community-content'
 import {
-  AMENITY_INSIGHT_TITLE,
   amenityItemListItems,
   buildCommunityAmenityBoard,
-  integerShares,
   joinEnglish,
 } from './community-amenities'
 
@@ -14,22 +12,20 @@ const VISITOR_META =
   /authored amenity list|\bon file\b|records\s+\d+\s+[\w\s]*amenities on file|records one .+ amenity on file|amenity list is/i
 
 function visitorCopy(board: NonNullable<ReturnType<typeof buildCommunityAmenityBoard>>): string[] {
-  return [board.claim, board.mixNote, ...board.categories.map((category) => category.claim)]
+  return [
+    board.claim,
+    board.heading,
+    ...board.groups.flatMap((group) =>
+      group.places.flatMap((place) => [place.name, place.description, place.access].filter(Boolean) as string[]),
+    ),
+  ]
 }
 
 const amenities: ResortAmenity[] = [
   { category: 'Dining', name: 'Coorie', access: 'Open to public', description: 'Course-facing dining.' },
   { category: 'Dining', name: 'The Row', access: 'Walk-in' },
-  { category: 'Wellness', name: 'Tetherow Spa', blog_slug: 'tetherow-spa-guide' },
+  { category: 'Wellness', name: 'Tetherow Spa', blog_slug: 'tetherow-spa-guide', description: 'Massage and recovery.' },
 ]
-
-describe('integerShares', () => {
-  it('sums to 100 and prefers the largest remainder', () => {
-    expect(integerShares([3, 1])).toEqual([75, 25])
-    expect(integerShares([1, 1, 1])).toEqual([34, 33, 33])
-    expect(integerShares([0, 0])).toEqual([0, 0])
-  })
-})
 
 describe('joinEnglish', () => {
   it('joins two and three names without an invented serial comma on a pair', () => {
@@ -50,7 +46,7 @@ describe('buildCommunityAmenityBoard', () => {
     ).toBeNull()
   })
 
-  it('builds a mix page plus one page per category from the config list', () => {
+  it('groups places and keeps each description', () => {
     const board = buildCommunityAmenityBoard({
       placeName: 'Tetherow',
       amenities,
@@ -61,40 +57,35 @@ describe('buildCommunityAmenityBoard', () => {
     expect(board?.total).toBe(3)
     expect(board?.claim).toBe('Tetherow has Coorie, The Row, and Tetherow Spa.')
     expect(board?.claim).not.toMatch(/\d+\s+amenities/)
-    expect(board?.mix).toHaveLength(3)
-    expect(board?.mix.map((s) => s.name)).toEqual(['Coorie', 'The Row', 'Tetherow Spa'])
-    expect(board?.mix.map((s) => s.amount)).toEqual(['Coorie', 'The Row', 'Tetherow Spa'])
-    expect(board?.mix[0]?.label).toBe('Dining')
-    expect(board?.mix.map((s) => s.name).join(' ')).not.toMatch(/\b(DINI|RECR|WELL|OTHE)\b/)
-    expect(board?.mix.map((s) => s.amount).join(' ')).not.toMatch(/\b(Public|DINI|RECR|WELL|OTHE)\b/)
-    expect(board?.mix.reduce((sum, s) => sum + s.pct, 0)).toBe(100)
-    expect(board?.categories).toHaveLength(2)
-    expect(board?.categories[0]?.claim).toBe('Dining here is Coorie and The Row.')
-    expect(board?.categories[1]?.claim).toBe('Tetherow Spa is the wellness here.')
-    expect(board?.categories[0]?.pillHref).toBe('/homes-for-sale/bend/tetherow')
-    expect(board?.categories[1]?.pillHref).toBe('/blog/tetherow-spa-guide')
-    expect(board?.mixNote).toBe('Coorie, The Row, and Tetherow Spa.')
-    expect(board?.mixNote).not.toBe('Grouped by kind.')
+    expect(board?.heading).toBe('Dining and wellness')
+    expect(board?.groups.map((group) => group.label)).toEqual(['Dining', 'Wellness'])
+    expect(board?.groups[0]?.places.map((place) => place.name)).toEqual(['Coorie', 'The Row'])
+    expect(board?.groups[0]?.places[0]?.description).toBe('Course-facing dining.')
+    expect(board?.groups[0]?.places[0]?.access).toBe('Open to public')
+    expect(board?.groups[1]?.places[0]?.href).toBe('/blog/tetherow-spa-guide')
+    expect(board?.groups.flatMap((group) => group.places).map((place) => place.name).join(' ')).not.toMatch(
+      /\b(DINI|RECR|WELL|OTHE)\b/,
+    )
     expect(board?.source).toMatch(/Tetherow community guide/i)
     for (const line of visitorCopy(board!)) {
       expect(line).not.toMatch(VISITOR_META)
     }
   })
 
-  it('refuses CMS-dump language in claim, category.claim, and mixNote', () => {
+  it('drops a one-word access code and keeps a sentence', () => {
     const board = buildCommunityAmenityBoard({
-      placeName: 'Tetherow',
-      amenities,
+      placeName: 'Caldera',
+      amenities: [
+        { category: 'Dining', name: 'Lake House', access: 'Public', description: 'On the lake.' },
+        { category: 'Dining', name: 'The Row', access: 'Open to public · walk-in' },
+      ],
       browseHref: '/homes-for-sale/bend/tetherow',
     })
-    expect(board).not.toBeNull()
-    for (const line of visitorCopy(board!)) {
-      expect(line).not.toMatch(/authored/i)
-      expect(line).not.toMatch(VISITOR_META)
-    }
+    expect(board?.groups[0]?.places[0]?.access).toBeUndefined()
+    expect(board?.groups[0]?.places[1]?.access).toBe('Open to public · walk-in')
   })
 
-  it('writes Caldera Springs board copy without authored or inventory lectures', () => {
+  it('writes Caldera Springs from the guide, with descriptions and no share', () => {
     const caldera = JSON.parse(
       readFileSync(join(process.cwd(), 'data/resort-community-caldera-springs.json'), 'utf8'),
     ) as { name: string; amenities: ResortAmenity[] }
@@ -103,43 +94,34 @@ describe('buildCommunityAmenityBoard', () => {
       amenities: caldera.amenities,
       browseHref: '/homes-for-sale/sunriver/caldera-springs',
     })
-    expect(board).not.toBeNull()
-    expect(board?.claim).not.toMatch(/authored/i)
+    const places = board!.groups.flatMap((group) => group.places)
     expect(board?.claim).toContain('Lake House')
     expect(board?.claim).toContain('Forest House')
     expect(board?.claim).not.toMatch(/\d+\s+amenities/)
-    expect(board?.mix[0]?.name).toBe('Lake House')
-    expect(board?.mix[0]?.amount).toBe('Lake House')
-    expect(board?.mix[0]?.label).toBe('Dining')
-    expect(board?.mix.map((s) => s.name)).toEqual(
+    expect(places[0]?.name).toBe('Lake House')
+    expect(places[0]?.description).toMatch(/Obsidian Lake/)
+    expect(places[0]?.access).toBeUndefined()
+    expect(places.map((place) => place.name)).toEqual(
       expect.arrayContaining(['Lake House', 'Forest House', 'The Quarry', 'Caldera Links Golf Course', 'Lakes and Trails']),
     )
-    expect(board?.mix.map((s) => s.amount)).toEqual(
-      expect.arrayContaining(['Lake House', 'Forest House', 'Caldera Links Golf Course', 'Lakes and Trails']),
-    )
-    expect(board?.mix.map((s) => s.name).join(' ')).not.toMatch(/\b(DINI|RECR|WELL|OTHE)\b/)
-    expect(board?.mix.map((s) => s.amount).join(' ')).not.toMatch(/\b(Public|DINI|RECR|WELL|OTHE)\b/)
-    expect(board?.mixNote).not.toBe('Grouped by kind.')
-    expect(AMENITY_INSIGHT_TITLE).toBe("What's here")
-    expect(AMENITY_INSIGHT_TITLE).not.toBe('Amenities')
+    expect(JSON.stringify(board)).not.toMatch(/"pct"/)
     for (const line of visitorCopy(board!)) {
       expect(line).not.toMatch(VISITOR_META)
-    }
-    for (const amount of [
-      ...board!.mix.map((segment) => segment.amount),
-      ...board!.categories.flatMap((category) => category.segments.map((segment) => segment.amount)),
-    ]) {
-      expect(amount).not.toMatch(/\bon file\b/i)
+      expect(line).not.toMatch(/\b(DINI|RECR|WELL|OTHE)\b/)
     }
   })
 })
 
 describe('visitor chrome', () => {
-  it('does not title the pager Amenities, and does not repeat the claim as a section lede', () => {
+  it('mounts the place list and does not mount a share bar', () => {
     const client = readFileSync(join(process.cwd(), 'app/communities/[slug]/_v3/CommunityAmenities.client.tsx'), 'utf8')
     const page = readFileSync(join(process.cwd(), 'app/communities/[slug]/page.tsx'), 'utf8')
-    expect(client).toContain('AMENITY_INSIGHT_TITLE')
-    expect(client).not.toMatch(/title:\s*['"]Amenities['"]/)
+    expect(client).toMatch(/place\.description/)
+    expect(client).not.toMatch(/AllocationCard/)
+    expect(client).not.toMatch(/has on the ground/)
+    expect(page).toMatch(/<V3Amenities/)
+    expect(page).toMatch(/id="amenities"/)
+    expect(page).not.toMatch(/has on the ground/)
     expect(page).not.toMatch(/lede=\{amenityBoard\.claim\}/)
   })
 })
@@ -155,15 +137,7 @@ describe('amenityItemListItems', () => {
       amenityPosts: { 'tetherow-spa-guide': { slug: 'tetherow-spa-guide', title: 'The spa at Tetherow' } },
       browseHref: '/homes-for-sale/bend/tetherow',
     })
-    const items = amenityItemListItems(
-      board!,
-      '/communities/tetherow',
-      [
-        { category: 'Trails', name: 'Shevlin Park', url: 'https://www.bendparksandrec.org/park/shevlin-park/' },
-        ...amenities,
-      ],
-      { 'tetherow-spa-guide': { slug: 'tetherow-spa-guide', title: 'The spa at Tetherow' } },
-    )
+    const items = amenityItemListItems(board!, '/communities/tetherow')
     expect(items[0]?.url).toBe('https://www.bendparksandrec.org/park/shevlin-park/')
     expect(items.find((item) => item.name === 'Tetherow Spa')?.url).toBe('/blog/tetherow-spa-guide')
     expect(items.find((item) => item.name === 'Coorie')?.url).toBe('/communities/tetherow#amenities')

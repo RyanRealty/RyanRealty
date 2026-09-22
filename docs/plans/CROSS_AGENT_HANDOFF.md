@@ -1,3 +1,7 @@
+# Current — 2026-09-22 (Matt: improve the amenities, do not remove them)
+
+Surface: Grok Build, primary checkout. Community #amenities names each place from the community guide, with its description and a usable access line. No share bar and no "on the ground" heading. Phone is one column. Node: none.
+
 # Current — 2026-09-22 (Matt: listing photos on the subdivision list, phones included)
 
 Surface: Grok Build, primary checkout. Each subdivision with a home for sale shows that home's photograph in the list, on desktop and on a phone. The phone home row is one complete card. The list stays the same height as the map. Node: none.

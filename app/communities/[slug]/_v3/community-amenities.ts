@@ -1,78 +1,41 @@
 /**
- * SITE-116 — amenity names from the community config, shaped for InsightCards.
+ * Authored places on a community page.
  *
- * WHY IT IS NOT QUIET. Amenities used to be chip rows inside #belonging. That
- * made the thing a master-planned community is sold on — the course-facing
- * dining room, the spa, the courts, the park across the road — a supporting
- * list under HOA and drive times. Matt 2026-09-14/15: the amenities are the
- * page. This module does not invent a place. It groups the config's own
- * `amenities[]`. Shares are composition of that list, not a market figure.
- *
- * VISITOR COPY (Matt 2026-09-16). Public prose names what is on the grounds.
- * It never lectures "authored amenity list", "on file", or "records N
- * amenities". The catalog pager still prints a page count; the title is a
- * fixed visitor label, not "Amenities" + index.
- *
- * THE CARD IS THE CATALOG'S. AllocationCard (pager + segmented bar + chips)
- * is the installed beautifului InsightCards object. This file only supplies
- * serializable pages. The client reconstructs the Card identity so the
- * interaction stays the catalog's, not a cream-box lookalike.
+ * Each row is a place from the community guide: its name, what it is, and
+ * who can use it when that line is a sentence. A one-word access code
+ * (Public, DINI) is not a fact a visitor can use, so it stays off the page.
+ * Shares of a list are not a figure. Nothing here is invented.
  */
 
 import type { ResortAmenity } from '@/lib/resort-community-content'
 
-export type AmenityMixSegment = {
+export type AmenityPostRef = { slug: string; title: string }
+
+export type AmenityPlace = {
   name: string
-  label: string
-  count: number
-  pct: number
-  amount: string
-  cls: string
-  tone: string
+  category: string
+  description?: string
+  access?: string
+  href?: string
 }
 
-export type AmenityCategoryPage = {
-  key: string
+export type AmenityGroup = {
   label: string
-  claim: string
-  note: string
-  pill: string
-  pillHref: string
-  segments: AmenityMixSegment[]
+  places: AmenityPlace[]
 }
 
 export type CommunityAmenityBoard = {
   placeName: string
   total: number
+  /** Sentence of every place name. */
   claim: string
-  names: string[]
-  mix: AmenityMixSegment[]
-  mixNote: string
-  mixPill: string
-  mixPillHref: string
-  categories: AmenityCategoryPage[]
+  /** Short heading from the category names. */
+  heading: string
+  groups: AmenityGroup[]
   source: string
 }
 
-export type AmenityPostRef = { slug: string; title: string }
-
-/** Catalog pager title. Fixed visitor English — not "Amenities" + page index. */
-export const AMENITY_INSIGHT_TITLE = "What's here"
-
-/** Largest-remainder percents that sum to 100. Zero total yields zeros. */
-export function integerShares(weights: readonly number[]): number[] {
-  const cleaned = weights.map((w) => (Number.isFinite(w) && w > 0 ? w : 0))
-  const total = cleaned.reduce((sum, w) => sum + w, 0)
-  if (total <= 0) return cleaned.map(() => 0)
-  const raw = cleaned.map((w) => (w / total) * 100)
-  const floors = raw.map((n) => Math.floor(n))
-  const leftover = 100 - floors.reduce((sum, n) => sum + n, 0)
-  const order = raw
-    .map((n, i) => ({ i, frac: n - floors[i] }))
-    .sort((a, b) => b.frac - a.frac || a.i - b.i)
-  for (let k = 0; k < leftover; k += 1) floors[order[k]!.i] += 1
-  return floors
-}
+const ACCESS_CODE = /^(public|dini|recr|well|othe|members?)$/i
 
 export function joinEnglish(names: readonly string[]): string {
   if (names.length === 0) return ''
@@ -86,38 +49,34 @@ function trimmed(value: string | null | undefined): string | undefined {
   return t ? t : undefined
 }
 
-function amenityLabel(amenity: ResortAmenity): string | undefined {
-  return trimmed(amenity.name)
-}
-
 function categoryLabel(amenity: ResortAmenity): string {
   return trimmed(amenity.category) ?? 'On site'
 }
 
-/** Access codes (Public / DINI) are not the figure. The named place is. */
-function amenityHero(amenity: ResortAmenity): string {
-  return amenityLabel(amenity) ?? ''
-}
-
-function amenityNote(amenity: ResortAmenity): string {
-  return trimmed(amenity.description) ?? trimmed(amenity.access) ?? 'On site'
+function visitorAccess(access: string | null | undefined): string | undefined {
+  const line = trimmed(access)
+  if (!line || ACCESS_CODE.test(line)) return undefined
+  return line
 }
 
 function amenityHref(
   amenity: ResortAmenity,
   posts: Readonly<Record<string, AmenityPostRef>>,
-  fallback: string,
-): string {
+): string | undefined {
   const url = trimmed(amenity.url)
   if (url) return url
   const post = amenity.blog_slug ? posts[amenity.blog_slug] : undefined
   if (post?.slug) return `/blog/${post.slug}`
-  return fallback
+  return undefined
+}
+
+function categoryHeading(labels: readonly string[]): string {
+  const words = labels.map((label, i) => (i === 0 ? label : label.toLowerCase()))
+  return joinEnglish(words)
 }
 
 /**
- * The board behind #amenities. Empty when the config recorded no named amenity.
- * A community with no config is a fact about authoring, not a hole to fill.
+ * The board behind #amenities. Empty when the config recorded no named place.
  */
 export function buildCommunityAmenityBoard(input: {
   placeName: string
@@ -129,97 +88,44 @@ export function buildCommunityAmenityBoard(input: {
   const browseHref = trimmed(input.browseHref)
   if (!placeName || !browseHref) return null
 
-  const usable = (input.amenities ?? []).filter((amenity) => amenityLabel(amenity))
+  const usable = (input.amenities ?? []).filter((amenity) => trimmed(amenity.name))
   if (usable.length === 0) return null
 
   const posts = input.amenityPosts ?? {}
-  const names = usable.map((amenity) => amenityLabel(amenity)!)
-  const byCategory = new Map<string, ResortAmenity[]>()
+  const names = usable.map((amenity) => trimmed(amenity.name)!)
+  const groups: AmenityGroup[] = []
   for (const amenity of usable) {
-    const category = categoryLabel(amenity)
-    const list = byCategory.get(category) ?? []
-    list.push(amenity)
-    byCategory.set(category, list)
+    const label = categoryLabel(amenity)
+    const place: AmenityPlace = {
+      name: trimmed(amenity.name)!,
+      category: label,
+      ...(trimmed(amenity.description) ? { description: trimmed(amenity.description) } : {}),
+      ...(visitorAccess(amenity.access) ? { access: visitorAccess(amenity.access) } : {}),
+      ...(amenityHref(amenity, posts) ? { href: amenityHref(amenity, posts) } : {}),
+    }
+    const current = groups[groups.length - 1]
+    if (current && current.label === label) current.places.push(place)
+    else groups.push({ label, places: [place] })
   }
-
-  const categoryEntries = [...byCategory.entries()]
-  const nameShares = integerShares(usable.map(() => 1))
-  const mix: AmenityMixSegment[] = usable.map((amenity, i) => {
-    const name = amenityLabel(amenity)!
-    return {
-      name,
-      label: categoryLabel(amenity),
-      count: 1,
-      pct: nameShares[i] ?? 0,
-      amount: amenityHero(amenity),
-      cls: `insight-cards__alloc-seg--${i % 3}`,
-      tone: '',
-    }
-  })
-
-  const claim = `${placeName} has ${joinEnglish(names)}.`
-
-  const categories: AmenityCategoryPage[] = categoryEntries.map(([label, list], i) => {
-    const shares = integerShares(list.map(() => 1))
-    const first = list[0]!
-    const firstPost = first.blog_slug ? posts[first.blog_slug] : undefined
-    const categoryNames = list.map((amenity) => amenityLabel(amenity)!)
-    return {
-      key: `amenity-${i}-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-      label,
-      claim: categoryClaim(label, categoryNames),
-      note: amenityNote(first),
-      pill: firstPost?.title
-        ? firstPost.title
-        : `See ${placeName} homes`,
-      pillHref: amenityHref(first, posts, browseHref),
-      segments: list.map((amenity, j) => {
-        const amenityName = amenityLabel(amenity)!
-        return {
-          name: amenityName,
-          label: amenityName,
-          count: 1,
-          pct: shares[j] ?? 0,
-          amount: amenityHero(amenity),
-          cls: `insight-cards__alloc-seg--${j % 3}`,
-          tone: '',
-        }
-      }),
-    }
-  })
 
   return {
     placeName,
     total: usable.length,
-    claim,
-    names,
-    mix,
-    mixNote: joinEnglish(names) + '.',
-    mixPill: `See ${placeName} homes`,
-    mixPillHref: browseHref,
-    categories,
+    claim: `${placeName} has ${joinEnglish(names)}.`,
+    heading: categoryHeading(groups.map((group) => group.label)),
+    groups,
     source: `Amenity names come from the ${placeName} community guide. Not MLS inventory.`,
   }
-}
-
-function categoryClaim(label: string, names: readonly string[]): string {
-  const listed = joinEnglish(names)
-  if (label === 'On site' || label === 'Other') return `${listed}.`
-  if (names.length === 1) return `${listed} is the ${label.toLowerCase()} here.`
-  return `${label} here is ${listed}.`
 }
 
 export function amenityItemListItems(
   board: CommunityAmenityBoard,
   pageUrl: string,
-  amenities: readonly ResortAmenity[],
-  posts: Readonly<Record<string, AmenityPostRef>> = {},
 ): { name: string; url: string }[] {
-  return amenities
-    .map((amenity) => {
-      const name = amenityLabel(amenity)
-      if (!name) return null
-      return { name, url: amenityHref(amenity, posts, `${pageUrl}#amenities`) }
-    })
-    .filter((item): item is { name: string; url: string } => item != null)
+  return board.groups.flatMap((group) =>
+    group.places.map((place) => ({
+      name: place.name,
+      url: place.href ?? `${pageUrl}#amenities`,
+    })),
+  )
 }

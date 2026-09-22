@@ -1,56 +1,34 @@
-'use client'
-
 /**
- * SITE-116. beautifului InsightCards on the community amenity section.
- *
- * THE OBJECT IS THE CATALOG'S. InsightCards + AllocationCard are the installed
- * source at components/motion/insight-cards.tsx (beautifului.dev/r/insight-cards.json):
- * pager head, previous/next, prose claim, allocation bar, chips, pill.
- * This file supplies the amenity pages. It does not re-implement the control.
- * Pager title is AMENITY_INSIGHT_TITLE ("What's here"), not "Amenities" + index.
+ * The places on a community, from the community guide.
+ * Name, what it is, and who can go when that line is a sentence.
+ * No share bar. A place with a recorded page is a link.
  */
 
-import { useMemo } from 'react'
-import InsightCards, {
-  AllocationCard,
-  type InsightPage,
-} from '@/components/motion/insight-cards'
-import { AMENITY_INSIGHT_TITLE, type CommunityAmenityBoard } from './community-amenities'
+import type { CommunityAmenityBoard } from './community-amenities'
 
 export function CommunityAmenities({ board }: { board: CommunityAmenityBoard }) {
-  const pages = useMemo<InsightPage[]>(() => {
-    const mixPage: InsightPage = {
-      key: 'amenity-mix',
-      prose: <>{board.claim}</>,
-      Card: function AmenityMixCard() {
-        return (
-          <AllocationCard
-            segments={board.mix}
-            note={board.mixNote}
-          />
-        )
-      },
-      pill: board.mixPill,
-      pillHref: board.mixPillHref,
-    }
-
-    const categoryPages = board.categories.map((category) => ({
-      key: category.key,
-      prose: <>{category.claim}</>,
-      Card: function AmenityCategoryCard() {
-        return (
-          <AllocationCard
-            segments={category.segments}
-            note={category.note}
-          />
-        )
-      },
-      pill: category.pill,
-      pillHref: category.pillHref,
-    }))
-
-    return [mixPage, ...categoryPages]
-  }, [board])
-
-  return <InsightCards pages={pages} labels={{ title: AMENITY_INSIGHT_TITLE }} />
+  return (
+    <div className="v3-amenity-groups">
+      {board.groups.map((group) => (
+        <section key={group.label} className="v3-amenity-group" aria-label={group.label}>
+          <h3 className="v3-amenity-group__label">{group.label}</h3>
+          <ul className="v3-amenity-group__list">
+            {group.places.map((place) => (
+              <li key={place.name} className="v3-amenity-place">
+                {place.href ? (
+                  <a className="v3-amenity-place__name" href={place.href}>
+                    {place.name}
+                  </a>
+                ) : (
+                  <p className="v3-amenity-place__name">{place.name}</p>
+                )}
+                {place.description ? <p className="v3-amenity-place__body">{place.description}</p> : null}
+                {place.access ? <p className="v3-amenity-place__access">{place.access}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  )
 }

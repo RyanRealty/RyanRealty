@@ -57,6 +57,16 @@
       "blocking": true
     },
     {
+      "name": "V3Amenities",
+      "section": "#amenities. Each authored place, with what it is. No share bar.",
+      "blocking": true
+    },
+    {
+      "name": "CommunityAmenities",
+      "section": "The place list inside #amenities.",
+      "blocking": true
+    },
+    {
       "name": "V3Instrument",
       "section": "Pattern 1, AFTER village bars. Slope or strip of THIS community's closes, never Bend's median. chartFirst + foldAfter={0}. Too-few closes render Quiet. MOS stays off this grain.",
       "blocking": true
@@ -232,6 +242,7 @@
     "PlaceSubdivisionRail #child-places -- subdivisions beside the one map. Name and property-type line. No sales bars.",
     "PlaceSubdivisionAtlas #atlas -- the one map. Selecting a subdivision zooms to it. No second map and no reach list.",
     "PlaceSubdivisionHomes #homes -- carousel of every publicly active home in the place, or in the selected subdivision.",
+    "V3Amenities #amenities -- each authored place and what it is. No share bar.",
     "CommunityAlertsStrip #alerts (the 30-day new-listing count and the email ask, after the map)",
     "CommunityPlaceValue (address in, verdict and pace out, then the email that delivers the written valuation)",
     "V3Instrument #market (this community's typical-price slope; never Bend's median) or V3Quiet (too few / stated absence)",

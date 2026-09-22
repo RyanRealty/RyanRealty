@@ -11,9 +11,10 @@
  * RULES:
  *   1. Each place route keeps the listed `id="…"` mounts.
  *   2. Community homes stay on the page as PlaceSubdivisionHomes. The
- *      amenities board is off the page (Matt 2026-09-22).
- *   3. The amenity board module must still read the authored amenities list
- *      and feed AllocationCard (the installed InsightCards object).
+ *      amenity section names each authored place (Matt 2026-09-22: improve
+ *      the list, do not replace it with a share bar, do not drop it).
+ *   3. The amenity board reads the authored amenities list and publishes
+ *      each place's description. It does not mount AllocationCard.
  *
  * Usage: node scripts/check-place-section-depth.mjs
  * Wired as ci:place-section-depth.
@@ -27,7 +28,7 @@ const ROUTES = [
   {
     key: 'community',
     file: 'app/communities/[slug]/page.tsx',
-    ids: ['atlas', 'alerts', 'homes', 'market', 'belonging', 'faq'],
+    ids: ['atlas', 'homes', 'amenities', 'alerts', 'market', 'belonging', 'faq'],
   },
   {
     key: 'city',
@@ -91,8 +92,11 @@ for (const route of ROUTES) {
     if (!/\bPlaceSubdivisionHomes\b/.test(code)) {
       failures.push(`${route.file}: missing PlaceSubdivisionHomes — the home carousel stays on the community page.`)
     }
-    if (/<V3Amenities\b/.test(code) || /has on the ground/.test(code)) {
-      failures.push(`${route.file}: the amenities board is off the community page (Matt 2026-09-22).`)
+    if (!/<V3Amenities\b/.test(code) || !/\bCommunityAmenities\b/.test(code)) {
+      failures.push(`${route.file}: missing the amenity section. Name each place. Do not drop the section.`)
+    }
+    if (/has on the ground/.test(code) || /AllocationCard/.test(code)) {
+      failures.push(`${route.file}: amenities are the places and what they are, not a share bar or "on the ground".`)
     }
   }
   if (PLACE_INVENTORY_KEYS.has(route.key)) {
@@ -113,10 +117,13 @@ const board = read(AMENITY_BOARD)
 if (board == null) {
   failures.push(`${AMENITY_BOARD}: missing — amenities have no board.`)
 } else {
-  for (const token of ['amenities', 'AllocationCard', 'integerShares', 'buildCommunityAmenityBoard']) {
-    if (!board.includes(token) && token !== 'AllocationCard') {
+  for (const token of ['amenities', 'description', 'buildCommunityAmenityBoard']) {
+    if (!board.includes(token)) {
       failures.push(`${AMENITY_BOARD}: missing \`${token}\`.`)
     }
+  }
+  if (/integerShares|AllocationCard/.test(board)) {
+    failures.push(`${AMENITY_BOARD}: amenity shares are not a figure.`)
   }
   if (!/amenities/.test(board)) {
     failures.push(`${AMENITY_BOARD}: must read the authored amenities list.`)
@@ -127,10 +134,11 @@ const client = read(AMENITY_CLIENT)
 if (client == null) {
   failures.push(`${AMENITY_CLIENT}: missing.`)
 } else {
-  for (const token of ["from '@/components/motion/insight-cards'", 'AllocationCard', 'InsightCards']) {
-    if (!client.includes(token)) {
-      failures.push(`${AMENITY_CLIENT}: must import and mount the installed InsightCards source (\`${token}\`).`)
-    }
+  if (!/place\.description/.test(client)) {
+    failures.push(`${AMENITY_CLIENT}: each place prints its description.`)
+  }
+  if (/AllocationCard|InsightCards|integerShares/.test(client)) {
+    failures.push(`${AMENITY_CLIENT}: the amenity list is not an allocation bar.`)
   }
 }
 

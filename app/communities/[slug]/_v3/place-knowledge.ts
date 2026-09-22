@@ -207,11 +207,8 @@ export function buildPlaceKnowledge(input: {
     })
   }
 
-  // SITE-116: amenities left this Quiet. They are a first-class #amenities
-  // section (V3Amenities + InsightCards) so a chip row cannot stand in for
-  // the thing a master-planned community is sold on. amenityPosts still
-  // arrive so the page's existing call site does not fork; the doors live
-  // on that board.
+  // Amenities render in #amenities as the named places and their descriptions.
+  // amenityPosts still arrive so a published guide can link from that list.
   void input.amenityPosts
 
   const specs = content?.courseSpecs

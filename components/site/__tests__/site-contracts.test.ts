@@ -750,16 +750,15 @@ describe('design directive contracts', () => {
   })
 
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
-    // SITE-116: amenities are a first-class #amenities section
-    // (V3Amenities + InsightCards). Belonging Quiet still carries membership,
-    // builders, and the authored story. A page that fetches the config and
-    // renders nothing still fails ci:resort-definitions' renders-resort-content arm.
+    // Amenities are the named places and their descriptions. Belonging Quiet
+    // still carries membership, builders, and the authored story.
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
     expect(src).toMatch(/buildPlaceKnowledge\(\{/)
     expect(src).toMatch(/knowledgeItems/)
-    expect(src).not.toMatch(/<V3Amenities/)
+    expect(src).toMatch(/<V3Amenities/)
     expect(src).not.toMatch(/has on the ground/)
+    expect(src).not.toMatch(/AllocationCard/)
     const knowledge = readSrc('app/communities/[slug]/_v3/place-knowledge.ts')
     expect(knowledge).toMatch(/Membership|Builders/i)
     const amenities = readSrc('app/communities/[slug]/_v3/community-amenities.ts')

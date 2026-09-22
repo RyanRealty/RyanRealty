@@ -46,12 +46,13 @@ describe('SITE-156 Caldera master-plan look', () => {
       amenities: caldera.amenities,
       browseHref: '/homes-for-sale/sunriver/caldera-springs',
     })
-    expect(board?.mix[0]?.name).toBe('Lake House')
-    expect(board?.mix[0]?.amount).toBe('Lake House')
-    expect(board?.mix.map((s) => s.name).join(' ')).not.toMatch(/\b(DINI|RECR|WELL|OTHE)\b/)
-    expect(board?.mix.map((s) => s.amount).join(' ')).not.toMatch(/\b(Public|DINI|RECR|WELL|OTHE)\b/)
-    expect(board?.mixNote).not.toBe('Grouped by kind.')
-    expect(AMENITIES_CLIENT).toMatch(/board\.mix/)
+    const places = board!.groups.flatMap((group) => group.places)
+    expect(places[0]?.name).toBe('Lake House')
+    expect(places[0]?.description).toMatch(/Obsidian Lake/)
+    expect(places.map((place) => place.name).join(' ')).not.toMatch(/\b(DINI|RECR|WELL|OTHE)\b/)
+    expect(places.map((place) => place.access ?? '').join(' ')).not.toMatch(/\b(Public|DINI|RECR|WELL|OTHE)\b/)
+    expect(AMENITIES_CLIENT).toMatch(/place\.description/)
+    expect(AMENITIES_CLIENT).not.toMatch(/AllocationCard/)
   })
 
   it('does not repeat the new-listings sentence as a covering sticky', () => {

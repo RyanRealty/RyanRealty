@@ -2,6 +2,7 @@
  * /communities/[slug] — master-plan grain. First screen is owned still + H1
  * `{Name} homes for sale`. Belonging facts (HOA, acres, membership) sit as a
  * caption on the still, not a KPI Instrument. One map, subdivisions beside it.
+ * The amenity section names each place and what it is.
  * Choosing a subdivision zooms the map and loads its homes below.
  * MOS / sold / verdict / DTP stay off the face as a strip. They appear on the face
  * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
@@ -99,6 +100,7 @@ import {
   V3Answers,
   V3Quiet,
   type AtlasRegion,
+  V3Amenities,
   V3SectionTracker,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
@@ -115,6 +117,8 @@ import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atla
 import { getPlaceOpeningListings, getSubdivisionOnMarketRows } from '@/lib/data'
 
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
+import { CommunityAmenities } from './_v3/CommunityAmenities.client'
+import { amenityItemListItems, buildCommunityAmenityBoard } from './_v3/community-amenities'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
@@ -820,6 +824,12 @@ async function renderCommunityDetail({ params }: Props) {
   // Committed geometry, not a query; the catch is the prerender contract.
   const courseMap = await getCommunityCourseMap(slug).catch(() => null)
 
+  const amenityBoard = buildCommunityAmenityBoard({
+    placeName: publicName,
+    amenities: richContent?.amenities,
+    browseHref,
+  })
+
   const communitySchemas = buildCommunitySchemas({
     slug,
     name: publicName,
@@ -834,6 +844,7 @@ async function renderCommunityDetail({ params }: Props) {
     // beside them from a second array, so the markup can never describe a
     // sentence the page does not print.
     faqs: answerFaqs,
+    amenityItems: amenityBoard ? amenityItemListItems(amenityBoard, `/communities/${slug}`) : undefined,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
@@ -942,6 +953,12 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
+
+        {amenityBoard ? (
+          <V3Amenities id="amenities" heading={amenityBoard.heading} source={amenityBoard.source}>
+            <CommunityAmenities board={amenityBoard} />
+          </V3Amenities>
+        ) : null}
 
         <div className="community-fold">
           <div className="community-fold__stage">
