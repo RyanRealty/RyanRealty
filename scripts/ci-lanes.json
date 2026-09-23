@@ -672,6 +672,24 @@
       "app/actions/**",
       "app/api/cron/**"
     ],
+    "ci:identity-loop": [
+      "lib/identity/**",
+      "lib/crm/**",
+      "lib/comms/**",
+      "lib/cma/**",
+      "lib/alerts/**",
+      "lib/newsletter/**",
+      "lib/data/crm/**",
+      "lib/data/identity/**",
+      "lib/visitor-backfill.ts",
+      "app/actions/**",
+      "app/api/**",
+      "app/admin/(protected)/visitors/**",
+      "app/admin/(protected)/people/**",
+      "components/**",
+      "public/rr-doc-tracker.js",
+      "scripts/check-identity-loop.mjs"
+    ],
     "ci:integration-health": [
       "docs/plans/ENTERPRISE_MAP/integration-health-probes.json",
       "lib/data/loop/integration-health.ts",

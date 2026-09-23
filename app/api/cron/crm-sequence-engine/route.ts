@@ -22,7 +22,8 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { referencesCmaLink, findUnresolvedMergeTokens, attributeSiteLinks } from '@/lib/crm/merge'
+import { referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
+import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import {
   decideSuppressedSmsStep,
   isArchivedPlaceholder,
@@ -497,7 +498,7 @@ export async function GET(request: Request) {
               // Attribute BEFORE instrumenting (sendGovernedSms order, audit
               // 2026-09-01): the stored short-link target then carries
               // ?_pid=/?agent= so the click stitches the site session.
-              body = attributeSiteLinks(body, mailbox.slug, person.fub_legacy_id, person.id)
+              body = decorateOutboundText(body, { brokerSlug: mailbox.slug, personId: person.id, channel: 'sequence' })
               body = await instrumentSmsLinks(body, { personId: person.id, broker: mailbox.slug })
               const sent = seqFrom
                 ? await sendSms({ from: seqFrom, to: toPhone, body })

@@ -29,7 +29,7 @@ import { withSendIdempotency } from '@/lib/crm/idempotency'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
-import { attributeSiteLinks } from '@/lib/crm/merge'
+import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import { instrumentEmailHtml } from '@/lib/email-tracking'
 import { NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
 import {
@@ -176,14 +176,13 @@ async function sendNewsletterToContactCore(
     const u = unsubUrl(sub.unsubscribe_token as string)
     const actingSlug =
       access.brokerSlug ?? ((person.assigned_broker as string | null) ?? 'matt')
-    const fubId = (person.fub_legacy_id as number | null) ?? null
 
     // Build the HTML: shell + unsub footer, then attribute every site link to
     // the acting broker + stamp recipient identity, then instrument tracking with
     // the broker baked into the token (§5/H1) + a 180-day TTL (T-5).
     let html: string | undefined
     if (letter.body_html) {
-      const attributed = attributeSiteLinks(letter.body_html, actingSlug, fubId, personId)
+      const attributed = decorateOutboundText(letter.body_html, { brokerSlug: actingSlug, personId, channel: 'newsletter' })
       const wrapped = wrapNewsletterHtml({ bodyHtml: attributed, previewText: letter.preview_text, unsubscribeUrl: u })
       html = instrumentEmailHtml(wrapped, {
         personId,
@@ -194,7 +193,7 @@ async function sendNewsletterToContactCore(
       })
     }
     const text = letter.body_text
-      ? attributeSiteLinks(letter.body_text, actingSlug, fubId, personId) + newsletterTextFooter(u)
+      ? decorateOutboundText(letter.body_text, { brokerSlug: actingSlug, personId, channel: 'newsletter' }) + newsletterTextFooter(u)
       : undefined
 
     const res = await sendEmail({
