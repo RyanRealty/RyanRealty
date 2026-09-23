@@ -250,17 +250,27 @@ export function listingByKeyPath(publicId: string): string {
   return `/homes-for-sale/listing/${encodeURIComponent(publicId)}`
 }
 
-/** Every field the ONE listing-URL builder reads. Nothing else affects the path. */
+/**
+ * The fields a caller may hand the ONE listing-URL builder. Since P14 only the
+ * MLS fields move the path: listNumber (or listingKey), streetNumber,
+ * streetName, city (MLS City) and subdivisionName (MLS SubdivisionName).
+ */
 export type ListingUrlSubject = {
   listingKey?: string | null
   listNumber?: string | null
   streetNumber?: string | null
   streetName?: string | null
+  /** MLS City. The ONLY source of the city segment. */
   city?: string | null
-  /** Boundary city/neighborhood from the listing_tile_mv spatial xref — pass
-   *  these (a ListingTile carries them) so the URL gets the FULL hierarchy. */
+  /**
+   * Polygon classifier output (listing_tile_mv / listings boundary_* columns).
+   * ACCEPTED AND IGNORED since P14 (2026-09-23): a ListingTile carries these,
+   * so callers still pass the whole tile, but they never reach the path. See
+   * listingTileHref for why.
+   */
   boundaryCity?: string | null
   boundaryNeighborhood?: string | null
+  /** MLS SubdivisionName. The ONLY source of the community segment. */
   subdivisionName?: string | null
 }
 
@@ -291,10 +301,42 @@ export type ListingUrlSubject = {
  * 1.33% CTR at weighted position 13.5 against 1.56% and 11.5 for single-URL
  * ids. Do NOT read a rank change into that.
  *
- * The three fields most easily dropped — listNumber, boundaryNeighborhood,
- * subdivisionName — are the three that MOVE the path, which is why every
- * caller takes this whole shape rather than four positional arguments it can
- * partly fill.
+ * The two fields most easily dropped — listNumber and subdivisionName — move
+ * the path, which is why every caller takes this whole shape rather than
+ * positional arguments it can partly fill.
+ *
+ * P14 — THE PATH IS BUILT FROM MLS FIELDS ONLY (visibility audit 2026-09-22,
+ * gsc-trend-6; MATT 2026-09-23 "whatever it takes to be seen"):
+ *
+ *   /homes-for-sale/{MLS City}/[{MLS SubdivisionName}/]{street}-{MLS number}
+ *
+ * boundaryCity / boundaryNeighborhood are accepted and IGNORED. They are the
+ * polygon classifier's output, and every reclassification (SITE-22's 09-09
+ * builder, SITE-23's Brasada sentinel, SITE-27, SITE-33) minted a new
+ * canonical for homes that had not moved. Search Console 2026-08-23..09-19:
+ * 1,234 of 7,329 listing ids (16.8%) under more than one URL, 11,694 of
+ * 31,942 detail impressions; June 6.6%. The 4-segment /{city}/{neighborhood}/
+ * {community}/ shape existed only because of the polygon neighborhood.
+ *
+ * Choosing this over the alternatives, measured on the same 8,315 indexed
+ * listing URLs (7,004 ids, all resolved to a live listings row 2026-09-23):
+ *   today's polygon path, pinned per listing in a table ... 3,756 URLs keep
+ *     their address (45.2%), 13,266 impr, 194 of 364 clicks — but needs a
+ *     table, a pin writer for every new listing and the pinned path carried
+ *     into every tile read, or internal links point at redirects;
+ *   MLS City + address only .............................. 2,071 (24.9%),
+ *     9,046 impr, 96 clicks;
+ *   THIS: MLS City + MLS SubdivisionName + address ....... 3,730 (44.9%),
+ *     13,120 impr, 190 clicks — the pinned-table result with no table.
+ * The MLS SubdivisionName is stable in practice: of 6,288 indexed URLs
+ * (June + Aug-Sep) carrying a community segment, 5,864 (93.3%) equal today's
+ * value, 2 are a polygon neighborhood, 397 are the retired /na/ builder shape,
+ * and the other 25 are MLS edits or the retired /unknown/ shape. When the MLS
+ * does edit a field, middleware.ts 308s the old path to
+ * the new one (lib/routing/listing-canonical-hop.ts), so a change is a
+ * redirect, never a duplicate. lib/routing/listing-canonical-pins.json pins a
+ * fixture set: a builder change that moves any of them fails the unit test
+ * unless the pin file names the move.
  */
 export function listingTileHref(tile: ListingUrlSubject): string {
   // 'N/A' is MLS noise, not a plat. listingDetailPath drops it too (via
@@ -306,15 +348,8 @@ export function listingTileHref(tile: ListingUrlSubject): string {
   return listingDetailPath(
     String(tile.listingKey ?? tile.listNumber ?? ''),
     { streetNumber: tile.streetNumber ?? null, streetName: tile.streetName ?? null, city: tile.city ?? null },
-    {
-      // 'Outside Boundaries' is the classifier's sentinel, not a place;
-      // listingDetailPath refuses it and falls through to the MLS city, which
-      // is why /homes-for-sale/outside-boundaries/... is a RETIRED canonical
-      // shape GSC still remembers rather than one we can emit today.
-      city: tile.boundaryCity ?? tile.city ?? null,
-      neighborhood: tile.boundaryNeighborhood ?? null,
-      subdivision,
-    },
+    // MLS City and MLS SubdivisionName only; no neighborhood segment, ever.
+    { city: tile.city ?? null, neighborhood: null, subdivision },
     { mlsNumber: tile.listNumber ?? null },
   )
 }

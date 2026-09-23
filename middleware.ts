@@ -7,6 +7,8 @@ import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/c
 import { isPresetSlug } from '@/lib/search-presets'
 import { isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
 import { allowedCommunityUrlSlugs } from '@/lib/communities/community-public-pair'
+import { isRouterFlightRequest, resolveListingCanonicalHop } from '@/lib/routing/listing-canonical-hop'
+import { getListingCanonicalPathFieldsEdge } from '@/lib/data/listings/getListingCanonicalPathFieldsEdge'
 
 /**
  * Next.js Edge Middleware.
@@ -590,6 +592,37 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       status: 403,
       headers: { 'x-bot-screen': botBlockReason, 'cache-control': 'no-store' },
     })
+  }
+
+  // ─── (0e) Listing canonical hop → 308, before the listing page renders ──
+  // P14 (visibility audit 2026-09-22, gsc-trend-6). A listing page resolves the
+  // home from the MLS number at the END of its path and ignores the segments in
+  // front of it, so every old or invented path answered 200 with only a
+  // rel=canonical: 1,234 of 7,329 listing ids sat under more than one URL in
+  // Search Console 2026-08-23..09-19. Every path whose trailing key resolves to
+  // a displayable listing and is not that listing's canonical now gets a real
+  // 308 here; the page body cannot do it (app/loading.tsx flushes a 200 first).
+  // One indexed PostgREST read per id per isolate (lib/data/listings/
+  // getListingCanonicalPathFieldsEdge.ts). A miss, a refused row, an error or a
+  // timeout passes the request through untouched, so no real listing is ever
+  // 404'd and an unknown key renders exactly as it did before. Runs after the
+  // bot screen so a blocked scraper never costs a lookup, and skips the App
+  // Router's own prefetch/navigation requests (they follow hrefs the site built
+  // canonical). The query string is kept (utm tags on ad and email links).
+  // Browser caching of the 308 is capped at a day because the MLS can still
+  // edit a field the path is built from.
+  if (!pathname.startsWith('/api/') && !isRouterFlightRequest(request.headers, url.searchParams)) {
+    const listingDest = await resolveListingCanonicalHop(pathname, async (id) => {
+      const r = await getListingCanonicalPathFieldsEdge(id)
+      return r.kind === 'row' ? r.row : null
+    })
+    if (listingDest) {
+      const redirectUrl = url.clone()
+      redirectUrl.pathname = listingDest
+      const res = NextResponse.redirect(redirectUrl, 308)
+      res.headers.set('cache-control', 'private, max-age=86400')
+      return res
+    }
   }
 
   // ─── (1) Host-based rewrite for LP subdomains ──────────────────────────

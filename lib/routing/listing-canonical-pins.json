@@ -1,0 +1,332 @@
+{
+  "_doc": [
+    "Listing canonical pins (P14, visibility audit 2026-09-22, gsc-trend-6). Read by lib/routing/listing-canonical-hop.test.ts.",
+    "Each fixture is a real listings row (fields read live 2026-09-23) with the canonical it carried before P14 (\"pinned\") and",
+    "the URLs Search Console showed for it 2026-08-23..2026-09-19 that are not its canonical (\"indexedVariants\").",
+    "RULE: listingTileHref(input) must equal pinned followed through every migration for that id, in order.",
+    "A builder or data-shape change that moves any fixture fails the test until a migration entry here names the move",
+    "(from = the current end of the chain, to = the new path, change = the node or audit id, date). Never edit \"pinned\".",
+    "Every path in the chain before the last, and every indexedVariant, must 308 to the current canonical."
+  ],
+  "fixtures": [
+    {
+      "id": "220220863",
+      "note": "probe20: /outside-boundaries/brasada-ranch/ variant answered 200 with a rel=canonical",
+      "input": {
+        "listingKey": "20260507182313848211000000",
+        "listNumber": "220220863",
+        "streetNumber": null,
+        "streetName": "Brasada Ranch",
+        "city": "Powell Butte",
+        "subdivisionName": "Brasada Ranch",
+        "boundaryCity": "Powell Butte",
+        "boundaryNeighborhood": "Brasada Ranch"
+      },
+      "pinned": "/homes-for-sale/powell-butte/brasada-ranch/brasada-ranch-220220863",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/brasada-ranch/brasada-ranch-220220863"
+      ]
+    },
+    {
+      "id": "220226356",
+      "note": "probe20: GSC's top URL /homes-for-sale/bend/1522-locksley-220226356 (1,657 impressions) answered 200 with a rel=canonical",
+      "input": {
+        "listingKey": "20260731160357907738000000",
+        "listNumber": "220226356",
+        "streetNumber": "1522",
+        "streetName": "Locksley",
+        "city": "Bend",
+        "subdivisionName": "Providence",
+        "boundaryCity": "Bend",
+        "boundaryNeighborhood": "Mountain View"
+      },
+      "pinned": "/homes-for-sale/bend/mountain-view/providence/1522-locksley-220226356",
+      "indexedVariants": [
+        "/homes-for-sale/bend/1522-locksley-220226356",
+        "/homes-for-sale/bend/mountain-view/providence/1522-locksley-220226356"
+      ]
+    },
+    {
+      "id": "220227404",
+      "note": "probe20: three URLs in GSC as the Three Rivers polygon and the sentinel moved the canonical; the P14 path is the first of them Google indexed",
+      "input": {
+        "listingKey": "20260811220154672388000000",
+        "listNumber": "220227404",
+        "streetNumber": "17450",
+        "streetName": "Meadow",
+        "city": "Bend",
+        "subdivisionName": "Lazy River West",
+        "boundaryCity": "Outside Boundaries",
+        "boundaryNeighborhood": "Three Rivers"
+      },
+      "pinned": "/homes-for-sale/bend/three-rivers/lazy-river-west/17450-meadow-220227404",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/three-rivers/lazy-river-west/17450-meadow-220227404",
+        "/homes-for-sale/bend/three-rivers/lazy-river-west/17450-meadow-220227404"
+      ]
+    },
+    {
+      "id": "220225078",
+      "note": "SITE-22 Palla fixture: boundary_city is the 'Outside Boundaries' sentinel",
+      "input": {
+        "listingKey": "20260702213744696309000000",
+        "listNumber": "220225078",
+        "streetNumber": "63435",
+        "streetName": "Palla",
+        "city": "Bend",
+        "subdivisionName": "Lakes At Tanager PUD",
+        "boundaryCity": "Outside Boundaries",
+        "boundaryNeighborhood": null
+      },
+      "pinned": "/homes-for-sale/bend/lakes-at-tanager-pud/63435-palla-220225078",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/lakes-at-tanager-pud/63435-palla-220225078"
+      ]
+    },
+    {
+      "id": "220227961",
+      "note": "pre-P14 4-segment shape: polygon neighborhood Larkspur in front of MLS subdivision Gleneden",
+      "input": {
+        "listingKey": "20260831023154237930000000",
+        "listNumber": "220227961",
+        "streetNumber": "613",
+        "streetName": "Glencoe",
+        "city": "Bend",
+        "subdivisionName": "Gleneden",
+        "boundaryCity": "Bend",
+        "boundaryNeighborhood": "Larkspur"
+      },
+      "pinned": "/homes-for-sale/bend/larkspur/gleneden/613-glencoe-220227961",
+      "indexedVariants": [
+        "/homes-for-sale/bend/613-glencoe-220227961"
+      ]
+    },
+    {
+      "id": "220225597",
+      "note": "boundary_city is the 'Outside Boundaries' sentinel, MLS subdivision is N/A (GSC still holds the /na/ and /outside-boundaries/ variants)",
+      "input": {
+        "listingKey": "20260717235052371086000000",
+        "listNumber": "220225597",
+        "streetNumber": "1361",
+        "streetName": "Oxyoke",
+        "city": "Grants Pass",
+        "subdivisionName": "N/A",
+        "boundaryCity": "Outside Boundaries",
+        "boundaryNeighborhood": null
+      },
+      "pinned": "/homes-for-sale/grants-pass/1361-oxyoke-220225597",
+      "indexedVariants": [
+        "/homes-for-sale/grants-pass/na/1361-oxyoke-220225597",
+        "/homes-for-sale/outside-boundaries/1361-oxyoke-220225597"
+      ]
+    },
+    {
+      "id": "220223871",
+      "note": "polygon city Powell Butte, MLS City Redmond: P14 moves the city segment to the MLS City; apostrophe in the street",
+      "input": {
+        "listingKey": "20260622214603557548000000",
+        "listNumber": "220223871",
+        "streetNumber": null,
+        "streetName": "O'Neil Highway",
+        "city": "Redmond",
+        "subdivisionName": "N/A",
+        "boundaryCity": "Powell Butte",
+        "boundaryNeighborhood": null
+      },
+      "pinned": "/homes-for-sale/powell-butte/oneil-highway-220223871",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/oneil-highway-220223871",
+        "/homes-for-sale/redmond/na/oneil-highway-220223871"
+      ]
+    },
+    {
+      "id": "220227218",
+      "note": "MLS SubdivisionName 'N/A' never becomes a segment",
+      "input": {
+        "listingKey": "20260811162127429494000000",
+        "listNumber": "220227218",
+        "streetNumber": "5485",
+        "streetName": "Kane Creek",
+        "city": "Central Point",
+        "subdivisionName": "N/A",
+        "boundaryCity": "Outside Boundaries",
+        "boundaryNeighborhood": null
+      },
+      "pinned": "/homes-for-sale/central-point/5485-kane-creek-220227218",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/5485-kane-creek-220227218"
+      ]
+    },
+    {
+      "id": "220212462",
+      "note": "no MLS subdivision: two-segment path",
+      "input": {
+        "listingKey": "20251128183147800482000000",
+        "listNumber": "220212462",
+        "streetNumber": "625",
+        "streetName": "Barbara",
+        "city": "Grants Pass",
+        "subdivisionName": null,
+        "boundaryCity": "Outside Boundaries",
+        "boundaryNeighborhood": null
+      },
+      "pinned": "/homes-for-sale/grants-pass/625-barbara-220212462",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/625-barbara-220212462"
+      ]
+    },
+    {
+      "id": "220226789",
+      "note": "no StreetNumber: street name alone before the MLS number",
+      "input": {
+        "listingKey": "20260810180337878505000000",
+        "listNumber": "220226789",
+        "streetNumber": null,
+        "streetName": "Pinnacle",
+        "city": "Powell Butte",
+        "subdivisionName": "Brasada Ranch",
+        "boundaryCity": "Powell Butte",
+        "boundaryNeighborhood": "Brasada Ranch"
+      },
+      "pinned": "/homes-for-sale/powell-butte/brasada-ranch/pinnacle-220226789",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/brasada-ranch/pinnacle-220226789"
+      ]
+    },
+    {
+      "id": "220203399",
+      "note": "StreetNumber '0' is a placeholder and is withheld (publishStreetNumber)",
+      "input": {
+        "listingKey": "20250605154948189316000000",
+        "listNumber": "220203399",
+        "streetNumber": "0",
+        "streetName": "Brasada Ranch Rd",
+        "city": "Powell Butte",
+        "subdivisionName": "Brasada Ranch",
+        "boundaryCity": "Powell Butte",
+        "boundaryNeighborhood": "Brasada Ranch"
+      },
+      "pinned": "/homes-for-sale/powell-butte/brasada-ranch/brasada-ranch-rd-220203399",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/brasada-ranch/brasada-ranch-rd-220203399"
+      ]
+    },
+    {
+      "id": "220187041",
+      "note": "Southern Oregon (SITE-33 noindex city); no polygon fields at all",
+      "input": {
+        "listingKey": "20240725154624157093000000",
+        "listNumber": "220187041",
+        "streetNumber": "2131",
+        "streetName": "Owen",
+        "city": "Medford",
+        "subdivisionName": "Tower Retail Center Subdivision",
+        "boundaryCity": null,
+        "boundaryNeighborhood": null
+      },
+      "pinned": "/homes-for-sale/medford/tower-retail-center-subdivision/2131-owen-220187041",
+      "indexedVariants": []
+    },
+    {
+      "id": "220197219",
+      "note": "masked '********' subdivision never becomes a segment; Closed",
+      "input": {
+        "listingKey": "20250228224129370880000000",
+        "listNumber": "220197219",
+        "streetNumber": "42",
+        "streetName": "Greenwood",
+        "city": "Bend",
+        "subdivisionName": "********",
+        "boundaryCity": null,
+        "boundaryNeighborhood": "River West"
+      },
+      "pinned": "/homes-for-sale/bend/42-greenwood-220197219",
+      "indexedVariants": []
+    },
+    {
+      "id": "220218801",
+      "note": "three-segment path unchanged by P14",
+      "input": {
+        "listingKey": "20260408165243144570000000",
+        "listNumber": "220218801",
+        "streetNumber": "16711",
+        "streetName": "Brasada Ranch",
+        "city": "Powell Butte",
+        "subdivisionName": "Brasada Ranch",
+        "boundaryCity": "Powell Butte",
+        "boundaryNeighborhood": "Brasada Ranch"
+      },
+      "pinned": "/homes-for-sale/powell-butte/brasada-ranch/16711-brasada-ranch-220218801",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/brasada-ranch/16711-brasada-ranch-220218801",
+        "/homes-for-sale/powell-butte/16711-brasada-ranch-220218801"
+      ]
+    },
+    {
+      "id": "220221148",
+      "note": "two-segment path unchanged by P14; Pending",
+      "input": {
+        "listingKey": "20260505184807177568000000",
+        "listNumber": "220221148",
+        "streetNumber": "20735",
+        "streetName": "Mini",
+        "city": "Bend",
+        "subdivisionName": "N/A",
+        "boundaryCity": "Outside Boundaries",
+        "boundaryNeighborhood": null
+      },
+      "pinned": "/homes-for-sale/bend/20735-mini-220221148",
+      "indexedVariants": [
+        "/homes-for-sale/outside-boundaries/20735-mini-220221148"
+      ]
+    },
+    {
+      "id": "220224320",
+      "note": "Closed listing, no polygon fields; GSC also holds the 2-segment variant",
+      "input": {
+        "listingKey": "20260629185726598420000000",
+        "listNumber": "220224320",
+        "streetNumber": null,
+        "streetName": "Brasada Ranch",
+        "city": "Powell Butte",
+        "subdivisionName": "Brasada Ranch",
+        "boundaryCity": null,
+        "boundaryNeighborhood": null
+      },
+      "pinned": "/homes-for-sale/powell-butte/brasada-ranch/brasada-ranch-220224320",
+      "indexedVariants": [
+        "/homes-for-sale/powell-butte/brasada-ranch-220224320"
+      ]
+    }
+  ],
+  "migrations": [
+    {
+      "id": "220226356",
+      "from": "/homes-for-sale/bend/mountain-view/providence/1522-locksley-220226356",
+      "to": "/homes-for-sale/bend/providence/1522-locksley-220226356",
+      "change": "P14",
+      "date": "2026-09-23"
+    },
+    {
+      "id": "220227404",
+      "from": "/homes-for-sale/bend/three-rivers/lazy-river-west/17450-meadow-220227404",
+      "to": "/homes-for-sale/bend/lazy-river-west/17450-meadow-220227404",
+      "change": "P14",
+      "date": "2026-09-23"
+    },
+    {
+      "id": "220227961",
+      "from": "/homes-for-sale/bend/larkspur/gleneden/613-glencoe-220227961",
+      "to": "/homes-for-sale/bend/gleneden/613-glencoe-220227961",
+      "change": "P14",
+      "date": "2026-09-23"
+    },
+    {
+      "id": "220223871",
+      "from": "/homes-for-sale/powell-butte/oneil-highway-220223871",
+      "to": "/homes-for-sale/redmond/oneil-highway-220223871",
+      "change": "P14",
+      "date": "2026-09-23"
+    }
+  ]
+}

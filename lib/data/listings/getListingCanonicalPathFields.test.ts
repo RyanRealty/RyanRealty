@@ -25,6 +25,13 @@ const slimRow = {
   State: 'OR',
   PostalCode: '97701',
   SubdivisionName: 'Westside',
+}
+
+// P14 (2026-09-23): the polygon columns left the select and the mapped row.
+// The path is built from MLS fields only, so a boundary_* value the database
+// might still hand back must not ride through into the result.
+const rowWithPolygonNoise = {
+  ...slimRow,
   boundary_city: 'Bend',
   boundary_neighborhood: 'Old Bend',
   boundary_subdivision: 'Westside',
@@ -61,7 +68,7 @@ describe('getListingCanonicalPathFields', () => {
   })
 
   it('resolves the key then selects only path columns (never *)', async () => {
-    const sb = mockSb(slimRow)
+    const sb = mockSb(rowWithPolygonNoise)
     setSb(sb)
     const row = await getListingCanonicalPathFields('220189422')
     expect(resolveCanonicalListingKey).toHaveBeenCalledWith('220189422')
@@ -75,7 +82,7 @@ describe('getListingCanonicalPathFields', () => {
     expect(selectArg).toContain('State')
     expect(selectArg).toContain('PostalCode')
     expect(selectArg).toContain('SubdivisionName')
-    expect(selectArg).toContain('boundary_neighborhood')
+    expect(selectArg).not.toContain('boundary_')
     expect(selectArg).not.toMatch(/(^|[,\s])\*(?=$|[,\s])/)
     expect(selectArg).not.toContain('PhotoURL')
     expect(selectArg).not.toContain('public_remarks')
@@ -172,9 +179,19 @@ describe('listing by-key handler uses the slim lookup', () => {
     // route reaches the path through listingCanonicalHref, which is itself
     // pinned to listingDetailPath and to its output in lib/slug.test.ts, so the
     // chain is asserted end to end rather than by grepping this one file.
-    expect(src).toMatch(/listingCanonicalHref\(|listingTileHref\(|listingDetailPath\(/)
-    expect(src).toMatch(/boundary_neighborhood/)
-    expect(src).toMatch(/redirectTo\(canonicalPathFromFields\(row\), 308\)/)
+    //
+    // P14 (2026-09-23): the row -> path mapping moved into
+    // lib/data/listings/listingCanonicalPathCore.ts, shared with the Edge hop in
+    // middleware.ts, and it reads no polygon column.
+    const core = readFileSync(resolve('lib/data/listings/listingCanonicalPathCore.ts'), 'utf8')
+    expect(src).toMatch(/listingCanonicalPathFromFields\(row\)/)
+    expect(core).toMatch(/return listingCanonicalHref\(\{/)
+    expect(src).not.toMatch(/boundary_/)
+    expect(src).toMatch(/return redirectTo\(canonical, 308\)/)
+  })
+
+  it('never 308s to itself: a key-form canonical hands off to the refusal page instead', () => {
+    expect(src).toMatch(/canonical\.startsWith\('\/homes-for-sale\/listing\/'\)\) return redirectTo\(refusal, 307\)/)
   })
 
   /**
@@ -199,8 +216,8 @@ describe('listing by-key handler uses the slim lookup', () => {
 
   it('never renders a body — a miss hands off to the /listing refusal page', () => {
     expect(src).not.toMatch(/from 'next\/navigation'/)
-    expect(src).toMatch(/redirectTo\(`\/listing\//)
-    expect(src).toMatch(/307/)
+    expect(src).toMatch(/const refusal = `\/listing\/\$\{/)
+    expect(src).toMatch(/if \(!row\) return redirectTo\(refusal, 307\)/)
   })
 })
 
