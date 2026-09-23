@@ -119,6 +119,21 @@ describe('homeRailRows', () => {
     expect(keys).toEqual(['c'])
   })
 
+  it('omits a commercial lease (PropertyType G) — its ListPrice is rent, not a home for sale', () => {
+    // The homepage rails pull every active tile with no property-type filter.
+    // A photographed, priced 'G' row used to earn a card under "Homes for
+    // sale" / "Homes in Bend and nearby" even though its ListPrice is a rent
+    // rate (verified live 2026-09-23: 671 Greenwood Avenue, Bend, list_price
+    // 1.3-1.4). §0: a lease is not for sale.
+    const tiles = [
+      tile({ listingKey: 'lease', propertyType: 'G', propertySubType: null, listPrice: 1.3 }),
+      tile({ listingKey: 'sfr', streetNumber: '101' }),
+    ]
+    const rows = homeRailRows(tiles, hrefs)
+    const keys = rows.flatMap((r) => r.cards.map((c: HomeRailCard) => c.listingKey))
+    expect(keys).toEqual(['sfr'])
+  })
+
   it('passes open-house labels through publishListingCardBadges', () => {
     const tiles = [
       tile({ listingKey: 'oh1', city: 'Bend', streetNumber: '200' }),

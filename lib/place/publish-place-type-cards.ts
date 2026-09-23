@@ -16,6 +16,7 @@ import {
 } from '@/lib/data/market-truth/public-segments'
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import {
   LISTING_FIELD_LEAD_PHOTO_SIZE,
@@ -98,7 +99,10 @@ export function coverFromListingRow(row: CoverListingRow): PlaceTypeCover | null
   const listingKey = row.listingKey ?? row.ListingKey ?? null
   const listNumberRaw = row.listNumber ?? row.ListNumber
   const listNumber = listNumberRaw != null ? String(listNumberRaw) : null
-  const listPrice = row.ListPrice ?? row.listPrice ?? null
+  const propertyType = row.PropertyType ?? row.propertyType
+  // A commercial lease's ListPrice is rent, not a sale price (§0). Withhold
+  // rather than print a lease rate under this card's asking-price face.
+  const listPrice = listingPriceIsLeaseRate(propertyType) ? null : row.ListPrice ?? row.listPrice ?? null
   const street = publishStreetLine({
     streetNumber: row.streetNumber ?? row.StreetNumber,
     streetName: row.streetName ?? row.StreetName,
@@ -205,6 +209,12 @@ export function placeTypeCoverPhotos(
 ): Record<string, PlaceTypeCover> {
   const covers: Record<string, PlaceTypeCover> = {}
   for (const row of listings) {
+    // placeTypeKey has no key for 'G' (Commercial Lease) and falls to 'sfr' —
+    // without this, a leased building's photo becomes the "Single-family"
+    // card's cover on a city/neighborhood page whenever the type-specific,
+    // properly-filtered SFR cover fetch misses (§0). Never a sale, so never a
+    // candidate cover for any type bucket here.
+    if (listingPriceIsLeaseRate(row.PropertyType ?? row.propertyType)) continue
     const cover = coverFromListingRow(row)
     if (!cover) continue
     const key = placeTypeKey(

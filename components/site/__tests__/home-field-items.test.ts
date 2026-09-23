@@ -102,6 +102,18 @@ describe('homeFieldItems', () => {
     expect(items[0]?.meta ?? '').toMatch(/tenancy in common|share/i)
   })
 
+  it('drops a commercial lease (PropertyType G) — its ListPrice is rent, not an ask', () => {
+    // /buy pre-filters to Single Family Residence today, but this loop also
+    // feeds pools with no property-type filter; formatPublishedAsk (used for
+    // priceLabel here) is not sale-aware, so a 'G' tile would otherwise print
+    // its lease rate as a card ask (§0).
+    const items = homeFieldItems(
+      [tile({ propertyType: 'G', propertySubType: null, listPrice: 1.3 })],
+      9,
+    )
+    expect(items).toHaveLength(0)
+  })
+
   it('round-robins types so a house-heavy feed cannot hide lots', () => {
     const tiles = [
       tile({ listingKey: 'H1', listNumber: '1', propertySubType: 'Single Family Residence' }),

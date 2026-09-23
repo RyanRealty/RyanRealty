@@ -12,6 +12,7 @@ import {
   publishListingCardBadges,
   publishListingDropBadge,
 } from '@/lib/listing/publish-listing-card-badges'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
@@ -54,6 +55,11 @@ const RAIL_CARD_CAP = 12
 function isPhotographedPriced(tile: ListingTile): boolean {
   if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) return false
   if (!tile.photoUrl || tile.photoUrl.trim().length === 0) return false
+  // The homepage rails pull every active tile with no property-type filter,
+  // so a commercial lease (MLS PropertyType 'G') with a photo and a rent
+  // rate would otherwise earn a card under the "Homes for sale" / "Homes in
+  // Bend and nearby" heading — a lease is not for sale (§0).
+  if (listingPriceIsLeaseRate(tile.propertyType)) return false
   const street = publishStreetLine({
     streetNumber: tile.streetNumber,
     streetName: tile.streetName,

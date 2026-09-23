@@ -163,4 +163,39 @@ describe('placeStockSectionsFromTiles', () => {
       'two',
     ])
   })
+
+  it('671 Greenwood Avenue: a commercial lease (PropertyType G) is not a single-family home for sale', () => {
+    // Verified live 2026-09-23: three Active 'G' rows at 671 Greenwood
+    // Avenue, Bend (listing keys 20260514115056270451000000,
+    // 20260514123041461938000000, 20260514121750306188000000; list_price
+    // 1.3 / 1.4 / 1.4) printed as "Single-family homes ... for sale" on
+    // /subdivisions/center-addition-to-bend because placeTypeKey has no
+    // mapping for 'G' and falls to 'sfr'.
+    expect(placeStockIsForSale('G')).toBe(false)
+    expect(placeStockIsForSale('A')).toBe(true)
+    const sections = placeStockSectionsFromTiles([
+      tile({ listingKey: 'sfr-1' }),
+      tile({
+        listingKey: 'lease-671-greenwood-1',
+        listNumber: '220514001',
+        propertyType: 'G',
+        propertySubType: null,
+        subdivisionName: 'Center Addition to Bend',
+        listPrice: 1.3,
+      }),
+      tile({
+        listingKey: 'lease-671-greenwood-2',
+        listNumber: '220514002',
+        propertyType: 'G',
+        propertySubType: null,
+        subdivisionName: 'Center Addition to Bend',
+        listPrice: 1.4,
+      }),
+    ])
+    const sfr = sections.find((s) => s.key === 'sfr')
+    expect(sfr?.rows.map((row) => row.listingKey)).toEqual(['sfr-1'])
+    expect(sfr?.countLabel).toBe('1 for sale')
+    expect(sections.find((s) => s.key === 'other')).toBeUndefined()
+    expect(sections.flatMap((s) => s.rows)).toHaveLength(1)
+  })
 })

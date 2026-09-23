@@ -24,6 +24,7 @@ import { getAtlasTiles, type AtlasTile } from '@/lib/data'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { listingTileHref } from '@/lib/slug'
 import { formatDateTime } from '@/lib/format/date'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
@@ -154,10 +155,22 @@ export function tilesInside(tiles: readonly AtlasTile[], boundary: GeoJSON.Geome
   return tiles.filter((t) => t.lat != null && t.lng != null && pointInRings(t.lng, t.lat, rings))
 }
 
-/** Tiles to dots: coordinate, price, type, status, ages. Sold dots keep the heat window. */
+/**
+ * Tiles to dots: coordinate, price, type, status, ages. Sold dots keep the
+ * heat window.
+ *
+ * A commercial lease (MLS PropertyType 'G') is dropped before it becomes a
+ * dot. Its ListPrice is rent, not a sale price, so it is not a "for sale" or
+ * "sold" event: it inflated the map's own claim sentence ("N for sale") and,
+ * had its rate cleared the pin-price floor, would have painted a rent rate as
+ * a home's price pill. §0; verified live 2026-09-23, three Active 'G' rows at
+ * 671 Greenwood Avenue, Bend (list_price 1.3-1.4). Reuses
+ * listingPriceIsLeaseRate — see lib/listing/publish-listing-figure.ts.
+ */
 export function atlasDotsFromTiles(tiles: readonly AtlasTile[], nowMs = Date.now()): AtlasDot[] {
   return tiles.flatMap((tile): AtlasDot[] => {
     if (tile.lat == null || tile.lng == null) return []
+    if (listingPriceIsLeaseRate(tile.propertyType)) return []
     const s = dotStatus(tile.status)
     if (!s) return []
     const soldAgo = s === 'sold' ? daysAgo(nowMs, tile.closeDate) : null

@@ -43,6 +43,35 @@ describe('summarizeChildStock', () => {
       summarizeChildStock([{ listing_key: 'g', geo_slug: 'x', property_type: 'G', property_sub_type: null }]),
     ).toBeNull()
   })
+
+  it('drops a commercial lease (PropertyType G) rather than counting it as single-family', () => {
+    // Verified live 2026-09-23: 671 Greenwood Avenue, Bend carries three
+    // Active 'G' rows (list_price 1.3 / 1.4 / 1.4) under subdivision "Center
+    // Addition to Bend"; placeStockSectionKey falls to 'sfr' for 'G' via
+    // placeTypeKey's default, which printed them as single-family stock.
+    expect(
+      summarizeChildStock([
+        {
+          listing_key: 'lease-1',
+          geo_slug: 'center-addition-to-bend',
+          property_type: 'G',
+          property_sub_type: null,
+        },
+        {
+          listing_key: 'lease-2',
+          geo_slug: 'center-addition-to-bend',
+          property_type: 'G',
+          property_sub_type: null,
+        },
+        {
+          listing_key: 'sfr-1',
+          geo_slug: 'center-addition-to-bend',
+          property_type: 'A',
+          property_sub_type: 'Single Family Residence',
+        },
+      ]),
+    ).toBe('1 single-family')
+  })
 })
 
 describe('childStockDetails', () => {
