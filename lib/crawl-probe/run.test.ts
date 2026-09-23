@@ -113,7 +113,7 @@ describe('runCrawlProbe', () => {
     expect(fail('sitemap_child', '/sitemaps/geo.xml')?.failures[0]).toBe('/sitemaps/geo.xml returned HTTP 504')
     expect(fail('sitemap_child', '/sitemaps/core.xml')?.failures).toEqual([
       '1 duplicate URL(s) in /sitemaps/core.xml (first: /about)',
-      '1 redirect source(s) in /sitemaps/core.xml (first: /luxury-homes-bend -> /homes-for-sale/bend?minPrice=1500000)',
+      '1 redirect source(s) in /sitemaps/core.xml (first: /luxury-homes-bend -> /homes-for-sale/bend/luxury)',
     ])
     // listings.xml lists 1 URL against yesterday's 10.
     expect(fail('sitemap_child', '/sitemaps/listings.xml')?.failures[0]).toMatch(/lists 1 URLs, -90\.0% from the expected 10 \(crawl probe 2026-09-22\)/)

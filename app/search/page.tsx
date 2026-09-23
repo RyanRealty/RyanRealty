@@ -69,7 +69,22 @@ import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import { SplitViewBodyLock } from '@/components/search/SplitViewBodyLock'
 
-const DEFAULT_VIEW = 'split'
+/**
+ * The bare, indexable `/homes-for-sale` opens the REGIONAL LIST (UXLIVE-4,
+ * visibility audit 2026-09-22; Matt 2026-09-23: "nothing is permanent").
+ *
+ * It used to open the split view, whose camera is Bend-bounded
+ * (BEND_DEFAULT_BOUNDS): the live page read "471 homes in view" under a
+ * "Central Oregon homes for sale" title, so every regional door on the site
+ * (chrome Homes, homepage See homes, /cities) had to link `?view=list` to show
+ * the Central Oregon set (fleet 2026-08-17, ci:publish-regional-search-href).
+ * `?view=` is noindex with a canonical to this URL, so the site's strongest
+ * repeated "homes for sale" link pointed at a URL Google is told not to index.
+ * Now the indexable URL IS the regional list and every door links it clean.
+ * Split and map stay one tap away (the view toggle writes `?view=split|map`,
+ * still noindex) — the view is client state, not a crawlable URL.
+ */
+const DEFAULT_VIEW = 'list'
 
 /**
  * Resolve a data promise to a fallback if it rejects OR exceeds the budget.
@@ -245,7 +260,10 @@ export default async function SearchPage({
 }) {
   const sp = await searchParams
   const filters = parseFilters(sp)
-  const view = (sp.view === 'list' || sp.view === 'map' ? sp.view : 'split') as 'split' | 'list' | 'map'
+  const view = (sp.view === 'split' || sp.view === 'map' || sp.view === 'list' ? sp.view : DEFAULT_VIEW) as
+    | 'split'
+    | 'list'
+    | 'map'
 
   // Camera default only — never a city filter. List already skipped the silent
   // Bend inject (`view !== 'list' ? defaultCity`). Split/map now match that
@@ -260,7 +278,7 @@ export default async function SearchPage({
 
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
 
-  // SPLIT (default, the mockup target): unified search-as-you-move. ONE viewport
+  // SPLIT (?view=split; the default was the list since UXLIVE-4): unified search-as-you-move. ONE viewport
   // fetch seeds BOTH the list and the map markers so they can never diverge.
   // Initial bounds come from the city's authoritative boundary bbox (DAL); the
   // map refines to the real viewport on first idle.
@@ -419,7 +437,9 @@ export default async function SearchPage({
     maxBaths: sp.maxBaths ?? '',
     status: sp.status ?? 'Active',
     sort: sp.sort ?? 'newest',
-    view: sp.view ?? DEFAULT_VIEW,
+    // The RESOLVED view, so the toggle marks what the server actually rendered
+    // (an unknown ?view= falls back to DEFAULT_VIEW on both sides).
+    view,
     minSqFt: sp.minSqFt ?? '',
     maxSqFt: sp.maxSqFt ?? '',
     lotAcresMin: sp.lotAcresMin ?? '',

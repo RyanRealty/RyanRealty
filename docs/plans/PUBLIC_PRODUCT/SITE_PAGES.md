@@ -43,11 +43,13 @@ Chrome: **Homes · Places · Market · Sell · About**. Saved is an account icon
 
 | Menu | Goes to | Children that stay | Children that fold |
 |---|---|---|---|
-| Homes | `/homes-for-sale` (one map+list) | Open houses, price drops, our listings, sold as a **filter**, invest | Luxury as a filter of search (keep the URL as 301). Compare as a mode of search. Video tours stay as `/videos` until they live on the listing. Listing alerts: on-page Sheet, not `/lp/…` |
+| Homes | `/homes-for-sale` (one map+list; opens on the regional list, map one tap away) | Open houses, price drops, our listings, sold as a **filter**, invest | Luxury as a filter of search: the chrome links the indexable preset `/homes-for-sale/bend/luxury`, and `/luxury-homes-bend` 301s there. Compare as a mode of search. Video tours stay as `/videos` until they live on the listing. Listing alerts: on-page Sheet, not `/lp/…` |
 | Places | `/cities` | Cities, neighborhoods, communities, subdivisions, Tetherow and the other resorts, schools, parks, trails, events, golf | `/area-guides` → indexes. Venues can live under events. |
-| Market | `/housing-market` | How we get our numbers, blog, FAQ | Months of supply and activity **fold into** the market page as sections. Reports index stays if it is real published reports. Calculators: payment lives on the listing; rental/appreciation on `/invest`. |
+| Market | `/housing-market` | How we get our numbers, months of supply (the definition URL stays, see Fold), blog, FAQ | Activity **folds into** the market page as a section. Reports index stays if it is real published reports. Calculators: payment lives on the listing; rental/appreciation are linked from `/invest`. |
 | Sell | `/sell` | Value my home (the field), written valuation, our listings | `/home-valuation`, `/lp/seller-home-value`, `/lp/sell-your-home` → `/sell`. FSBO / expired → `/sell/…` |
 | About | `/about` | Team, reviews, contact | Join / refer stay as About children, not a second look |
+
+**Chrome links are clean paths (2026-09-23, UXLIVE-4/8, `ci:chrome-links`).** Every header, menu, dialog and footer href is the indexable URL itself: no `?view=` (or any other query), no URL that `next.config.ts` or `data/legacy-redirects.json` redirects. A mode of a page (list / split / map) is client state, not a chrome door.
 
 Footer matches the same five columns. No second solid button. Flagship search gets the same footer as everyone else.
 
@@ -89,7 +91,7 @@ Content is the point. **URLs** are what we cut.
 |---|---|
 | `/homes-for-sale/bend` as a **different app** (pagination, COLUMNS, alert banner) | Same Field as `/homes-for-sale?city=bend` |
 | `/months-of-supply` | **Keep** as the definition URL (not a tile wall). Hub doors to it. |
-| `/activity`, `/pulse` | Section on `/housing-market` (and a slice on the place page) |
+| `/activity`, `/pulse` | Section on `/housing-market` (and a slice on the place page). Both 301 to `/housing-market` since 2026-09-23 (GSC 16 months: `/activity` 3 impressions, 0 clicks; `/pulse` none). The place-page slice ships; the market-page section is still to build. |
 | `/area-guides` | `/cities` + `/communities` |
 | `/reports` (if it only re-exports) | `/housing-market/reports` |
 | `/dashboard` | `/account` |
@@ -97,10 +99,11 @@ Content is the point. **URLs** are what we cut.
 | `/feed` | `/videos` |
 | `/home-valuation` | `/sell` |
 | `/tools/mortgage-calculator` | Payment block on the listing (one formula). Hub link can 301. |
-| `/tools/rental-property-calculator`, `/tools/appreciation` | `/invest` |
+| `/tools/rental-property-calculator`, `/tools/appreciation` | Linked from `/invest`, **not** 301'd (amended 2026-09-23 with GSC evidence: `/tools/appreciation` 992 impressions in 16 months, position 20.8, for "appreciation calculator"; `/invest` has no appreciation calculator, so a 301 would drop that demand). `/site-index` also links it. |
 | `/compare` | Mode of search |
-| `/luxury-homes-bend` | Filter of search (keep 301 for SEO) |
-| `/buy/[intent]` | Homes or Sell, not a third chrome |
+| `/luxury-homes-bend` | Filter of search (keep 301 for SEO; target is the indexable `/homes-for-sale/bend/luxury`, not a noindex `?minPrice=` URL) |
+| `/buy` | 301 to `/homes-for-sale` since 2026-09-23 (GSC 16 months: 0 impressions, checked two ways). |
+| `/buy/[intent]` | Homes or Sell, not a third chrome (still open: `/buy/relocation` 20 impressions, `/buy/investment` 1) |
 | Schools/parks **black-square indexes** | Same row primitive the listing already uses |
 
 ### 301 (ads and old paths keep working)

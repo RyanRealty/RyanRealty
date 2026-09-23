@@ -136,12 +136,12 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       priority: 0.6,
     })),
     { url: `${baseUrl}/open-houses`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
-    { url: `${baseUrl}/activity`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+    // /activity and /buy are not listed: both 301 (to /housing-market and
+    // /homes-for-sale) since UXLIVE-8, and a sitemap never submits a redirect.
     { url: `${baseUrl}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/sell`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}${valuationPath()}`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/buy`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     // Sell + buy intent pages (indexable, proper metadata) — added so the
     // long-tail intent landing pages are crawlable.
     { url: `${baseUrl}/sell/for-sale-by-owner`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },

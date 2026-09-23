@@ -229,8 +229,10 @@ export default async function CommunitiesPage() {
           eyebrow="Central Oregon"
           heading="Find a home, or price the one you have"
           items={[
-            { label: 'Search all listings', href: '/search' },
-            { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' },
+            // Destinations, not hops: /search and /luxury-homes-bend both 308
+            // (UXLIVE-8, visibility audit 2026-09-22).
+            { label: 'Search all listings', href: '/homes-for-sale' },
+            { label: 'Luxury homes in Bend', href: '/homes-for-sale/bend/luxury' },
             { label: 'Subdivisions', href: '/subdivisions' },
             { label: 'Value my home', href: valuationHref('/communities') },
             { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },

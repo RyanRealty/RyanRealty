@@ -131,20 +131,36 @@ const COMMUNITY_LINKS: NavLink[] = [
   { href: '/communities/three-rivers', label: 'Three Rivers' },
 ]
 
-/** Canonical map entry — never bare `/search` (that 301s to homes-for-sale). */
-export const MAP_SEARCH: NavLink = {
-  href: '/homes-for-sale?view=map',
-  label: 'Map search',
+/**
+ * Regional inventory door: the INDEXABLE `/homes-for-sale`, with no query.
+ *
+ * UXLIVE-4 / EXP-11 (visibility audit 2026-09-22): every chrome door used to
+ * point at `?view=list` / `?view=map`, which serve `noindex, follow` with a
+ * canonical to the bare URL, so the site's strongest repeated link for "homes
+ * for sale" landed on a URL Google is told not to index. The bare URL now
+ * DEFAULTS to the regional list (app/search/page.tsx), so the chrome links it
+ * clean and the view (list / split / map) stays client state on the page.
+ * There is no separate "Map search" door: the map is one tap away inside the
+ * one Field, and a `?view=map` link is a noindex variant (ci:chrome-links).
+ */
+export const REGIONAL_SEARCH: NavLink = {
+  href: '/homes-for-sale',
+  label: 'All homes for sale',
 }
 
 /**
- * Regional inventory door. Bare `/homes-for-sale` is split/map and injects
- * city=Bend. List view is the Central Oregon set (publishRegionalSearchHref).
+ * Luxury is a filter of search (SITE_PAGES.md). Link the indexable preset
+ * path, never `/luxury-homes-bend`: that URL 308s to a `?minPrice=` query the
+ * search page noindexes (UXLIVE-8). The legacy URL keeps redirecting, now to
+ * this same path, for the links other sites hold.
  */
-export const REGIONAL_SEARCH: NavLink = {
-  href: '/homes-for-sale?view=list',
-  label: 'All homes for sale',
+const LUXURY_BEND: NavLink = {
+  href: '/homes-for-sale/bend/luxury',
+  label: 'Luxury homes in Bend',
 }
+
+/** Income property. SITE_PAGES.md lists invest as a Homes child that stays. */
+const INVEST: NavLink = { href: '/invest', label: 'Invest' }
 
 /** Global chrome valuation CTA — on-page form on /sell (Matt Wave 0). */
 export const VALUATION_FORM: NavLink = {
@@ -175,7 +191,6 @@ export const KB_TOP_NAV: TopNavGroup[] = [
     href: REGIONAL_SEARCH.href,
     children: [
       REGIONAL_SEARCH,
-      MAP_SEARCH,
       // gsc-trend-5 (visibility audit 2026-09-23, owner directive MATT
       // 2026-09-23): the city search pages own "{City} homes for sale" since
       // c29c2d79f moved /cities/{city} to "{City} real estate", yet no chrome
@@ -187,13 +202,10 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/homes-for-sale/sisters', label: 'Sisters homes for sale' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      // Was /luxury-homes-bend, which 308s to /homes-for-sale/bend?minPrice=
-      // 1500000, a filter URL the site noindexes: the menu spent its link on a
-      // redirect into a page barred from the index. The indexable luxury page
-      // is the preset, which the sitemap submits.
-      { href: '/homes-for-sale/bend/luxury', label: 'Luxury homes in Bend' },
+      LUXURY_BEND,
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
+      INVEST,
     ],
   },
   {
@@ -278,14 +290,12 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
     title: 'Buy',
     links: [
       { href: REGIONAL_SEARCH.href, label: 'Search homes' },
-      MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      // The indexable luxury page (see the Buy panel note above), not the
-      // /luxury-homes-bend redirect into a noindexed ?minPrice= URL.
-      { href: '/homes-for-sale/bend/luxury', label: 'Luxury homes' },
+      { href: LUXURY_BEND.href, label: 'Luxury homes' },
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
+      INVEST,
       { href: '/videos', label: 'Video tours' },
     ],
   },
@@ -375,10 +385,9 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       heading: 'Buy',
       links: [
         { href: REGIONAL_SEARCH.href, label: 'Search homes' },
-        MAP_SEARCH,
         { href: '/open-houses', label: 'Open houses' },
         { href: '/price-drops', label: 'Price drops' },
-        { href: '/homes-for-sale/bend/luxury', label: 'Luxury homes in Bend' },
+        LUXURY_BEND,
         { href: '/new-construction', label: 'New construction in Bend' },
         { href: '/our-homes', label: 'Our listings' },
       ],

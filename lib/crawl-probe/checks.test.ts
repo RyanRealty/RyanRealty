@@ -60,7 +60,7 @@ describe('parsers', () => {
 describe('knownRedirectSources (the middleware resolvers, in middleware order)', () => {
   it('flags legacy-map sources: the /luxury-homes-bend and 301d blog cases live on 2026-09-23', () => {
     expect(knownRedirectSources(['/luxury-homes-bend', '/blog/tetherow-resort-living-real-estate', '/about'])).toEqual([
-      { path: '/luxury-homes-bend', to: '/homes-for-sale/bend?minPrice=1500000' },
+      { path: '/luxury-homes-bend', to: '/homes-for-sale/bend/luxury' },
       { path: '/blog/tetherow-resort-living-real-estate', to: '/communities/tetherow' },
     ])
   })
@@ -185,7 +185,7 @@ describe('evaluateSitemapChild', () => {
     expect(c.failures).toEqual([
       '1 duplicate URL(s) in /sitemaps/core.xml (first: /cities/bend)',
       `1 URL(s) in /sitemaps/core.xml are not on ${ORIGIN} (first: https://www.ryan-realty.com/x)`,
-      '1 redirect source(s) in /sitemaps/core.xml (first: /luxury-homes-bend -> /homes-for-sale/bend?minPrice=1500000)',
+      '1 redirect source(s) in /sitemaps/core.xml (first: /luxury-homes-bend -> /homes-for-sale/bend/luxury)',
     ])
     expect(c.data.expectedSource).toBe('no baseline: no earlier probe count and no Search Console count from the last 2 days')
   })
