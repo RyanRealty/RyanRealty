@@ -316,7 +316,7 @@ export function TumaloPlaceNode({
           </div>
         </div>
         <p className="v3-source">
-          {`Source: market_pulse_live, geo_type city, geo_slug ${parentCity.toLowerCase()}, property type A, single family. Months of supply ${mos == null ? NA : mos.toFixed(1)} read against the thresholds at 4 and 6. The ${place} row in the same view reports ${placePulse?.activeCount ?? 0} active and ${placePulse?.closedLast30Days ?? 0} closings in the last 30 days.`}
+          {`Source: market_pulse_live, geo_type city, geo_slug ${parentCity.toLowerCase()}, property type A, single family. Months of supply ${mos == null ? NA : mos.toFixed(1)} read against the thresholds at 4 and 6. The ${place} row in the same view reports ${placePulse?.activeCount ?? 0} active${placePulse?.closedLast30Days == null ? '' : ` and ${placePulse.closedLast30Days} closings in the last 30 days`}.`}
         </p>
       </section>
 
