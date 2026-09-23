@@ -695,7 +695,10 @@ def mix_into(bus, clip, at):
 
 # ── build ──────────────────────────────────────────────────────────────────
 
-def build(d, draft, lab_file="lab.json", name="reel"):
+def build(d, draft, lab_file="lab.json", name="reel", music=True, video_from=None):
+    """The reel. music=False keeps only the film's own sound (projector, the
+    ring, the pickup) for a post whose song is added in the app; video_from
+    reuses final/<name>-video.mp4 from an earlier build instead of re-rendering."""
     edl = load_json(os.path.join(d, "edl.json"))
     lab_all = load_json(os.path.join(d, lab_file))
     segs = edl["segments"]
@@ -707,7 +710,7 @@ def build(d, draft, lab_file="lab.json", name="reel"):
     print(f"reel: {len(segs)} segments, {total:.2f}s")
 
     graded = {}
-    for s in segs:
+    for s in segs if not video_from else []:
         if s["role"] in ("break", "end"):
             continue
         if not s.get("clip") and not s.get("still"):
@@ -725,12 +728,17 @@ def build(d, draft, lab_file="lab.json", name="reel"):
         phone = {k: np.array(Image.open(f"{assets}/phone-{k}.png").convert("RGB").resize((W, H), Image.LANCZOS))
                  for k in ("page", "pressed", "calling")}
 
+    n_frames = int(round(total * FPS))
+    if video_from:
+        out_video = os.path.join(d, "final", f"{video_from}-video.mp4")
+        if not os.path.exists(out_video):
+            sys.exit(f"--video-from: {os.path.relpath(out_video, ROOT)} does not exist; build it first")
+        return build_audio(d, edl, segs, starts, total, name, music, out_video, n_frames)
     out_video = os.path.join(d, "final", f"{name}-video.mp4")
     os.makedirs(os.path.dirname(out_video), exist_ok=True)
     enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
                             "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium" if draft else "slow",
                             "-crf", "18", "-pix_fmt", "yuv420p", out_video], stdin=subprocess.PIPE)
-    n_frames = int(round(total * FPS))
     cap = edl.get("caption")
     last_film = None
     for k in range(n_frames):
@@ -755,14 +763,19 @@ def build(d, draft, lab_file="lab.json", name="reel"):
         enc.stdin.write(frame.tobytes())
     enc.stdin.close()
     enc.wait()
+    return build_audio(d, edl, segs, starts, total, name, music, out_video, n_frames)
 
-    # Sound.
+
+def build_audio(d, edl, segs, starts, total, name, music, out_video, n_frames):
     rng = np.random.default_rng(1982)
     bus = np.zeros((int(total * SR) + SR, 2), np.float32)
     seg_at = {s["role"]: (starts[j], s) for j, s in enumerate(segs)}
     call_t, call = seg_at["call"]
     end_t, _ = seg_at["end"]
-    music = load_audio(os.path.join(d, edl["music"]["file"]))
+    if music:
+        music = load_audio(os.path.join(d, edl["music"]["file"]))
+    else:  # silence where the score was: every cue below still lands, unscored
+        music = np.zeros((int((edl["music"]["endChordAt"] + total + 10) * SR), 2), np.float32)
     off = int(edl["music"].get("offset", 0.0) * SR)
     if "break" not in seg_at:
         # The phone stays inside the film. The music stops dead on the call
@@ -782,7 +795,7 @@ def build(d, draft, lab_file="lab.json", name="reel"):
         ring_at = call_t + float(call.get("ringAt", 0.45))
         mix_into(bus, ringback(float(call.get("ringSeconds", 2.0))) * 0.8, ring_at)
         mix_into(bus, click(0.3, 0.02, 900), call_t + float(call.get("pickupAt", call["seconds"] - 0.4)))
-        return finish_audio(d, name, bus, total, out_video, n_frames)
+        return finish_audio(d, name, bus, total, out_video, n_frames, -14 if music is not None and music.any() else -24)
     brk_t, brk = seg_at["break"]
     body = music[off: off + int(brk_t * SR)].copy()
     fade = int(0.08 * SR)
@@ -803,16 +816,18 @@ def build(d, draft, lab_file="lab.json", name="reel"):
     ring = ringback(2.0)
     mix_into(bus, ring, brk_t + brk["callAt"])
     mix_into(bus, click(0.3, 0.02, 900), brk_t + brk["callAt"] + 2.25)
-    return finish_audio(d, name, bus, total, out_video, n_frames)
+    return finish_audio(d, name, bus, total, out_video, n_frames, -14 if music.any() else -24)
 
 
-def finish_audio(d, name, bus, total, out_video, n_frames):
+def finish_audio(d, name, bus, total, out_video, n_frames, lufs=-14):
+    """Loudness: -14 LUFS with the score; -24 without, so the song added in the
+    app sits on top of the projector and the ring instead of fighting them."""
     bus = bus[: int(total * SR)]
     wav = os.path.join(d, "final", f"{name}-audio.f32")
     bus.astype(np.float32).tofile(wav)
     final = os.path.join(d, "final", f"{name}.mp4")
     run(["ffmpeg", "-v", "error", "-y", "-i", out_video, "-f", "f32le", "-ar", str(SR), "-ac", "2", "-i", wav,
-         "-c:v", "copy", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
+         "-c:v", "copy", "-af", f"loudnorm=I={lufs}:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
          "-movflags", "+faststart", "-shortest", final])
     print(json.dumps({"final": os.path.relpath(final, ROOT), "seconds": round(total, 2), "frames": n_frames}))
 
@@ -829,6 +844,9 @@ def main():
     # A second look of the same edit: story-film.ts `look` writes lab-<era>.json.
     ap.add_argument("--lab", default="lab.json")
     ap.add_argument("--name", default="reel")
+    # For a post whose song is picked in the app: the film's own sound only.
+    ap.add_argument("--no-music", action="store_true")
+    ap.add_argument("--video-from", default=None)
     a = ap.parse_args()
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", a.name):
         sys.exit("--name must be lower-case letters, digits, - or _")
@@ -861,7 +879,7 @@ def main():
         json.dump(default_edl(d), open(path, "w"), indent=2)
         print(f"wrote {os.path.relpath(path, ROOT)}")
     else:
-        build(d, a.draft, a.lab, a.name)
+        build(d, a.draft, a.lab, a.name, music=not a.no_music, video_from=a.video_from)
 
 
 if __name__ == "__main__":
