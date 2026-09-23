@@ -27,11 +27,47 @@ import SearchFilters from '@/components/search/SearchFilters'
 import { UrlSearchParamsProvider } from '@/lib/search/url-search-params.client'
 import { queryStringFromSearchParams } from '@/lib/search/search-params-query'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3_LEDGER_CLASS } from '@/components/site/v3'
+import {
+  V3_ROOT_CLASS,
+  V3_LEDGER_CLASS,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+} from '@/components/site/v3'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
+import SearchPageJsonLd from '../SearchPageJsonLd'
+import { buildCityMarketDatasetSchema } from '../city-market-dataset'
 import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
 import { type SearchParams } from '../page-filters'
+import { SearchSeoTail } from './SeoTail'
+import { type CitySplitDepth } from './city-split-depth'
+
+/**
+ * How long the plain city page may wait for its below-map depth AFTER the
+ * viewport fetch has settled. The depth read starts beside the viewport fetch
+ * (page.tsx), so on a warm cache it is already resolved by the time it is
+ * awaited; this grace only bounds a cold read. A miss omits the market band,
+ * FAQ, Dataset and related searches for that response and keeps the page's
+ * WebPage + BreadcrumbList + Place + ItemList nodes, which need no read.
+ */
+export const SPLIT_CITY_DEPTH_GRACE_MS = 1500
+
+/**
+ * What the map/split branch needs to publish the plain /homes-for-sale/[city]
+ * page as the one winner for "{City} homes for sale" (SITE-190 / SITE-192):
+ * the JSON-LD the grid branch always shipped, and the below-map depth.
+ * Null on every other shape this branch serves (areas, presets, filtered and
+ * view= variants, self-city pages that canonical to their community).
+ */
+export type SplitCitySeo = {
+  siteUrl: string
+  cityMetaDescription: string | undefined
+  placeName: string
+  relatedCitySlug: string
+  /** Started in page.tsx beside the map's own fetch; never rejects. */
+  cityDepth: Promise<CitySplitDepth | null>
+}
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -101,6 +137,8 @@ export async function renderMapSplitView(props: {
   initialPolygon: ReturnType<typeof decodeMapPolygon>
   presetChips: readonly { label: string; param: string }[]
   perPageParam: string
+  /** Plain, indexable city page only. See SplitCitySeo. */
+  citySeo?: SplitCitySeo | null
 }) {
   const {
     sp,
@@ -277,6 +315,15 @@ export async function renderMapSplitView(props: {
     viewportSettled.degraded ||
     ('fetchDegraded' in viewport && Boolean(viewport.fetchDegraded))
 
+  // Plain city page: the depth read has been running beside the viewport
+  // fetch since page.tsx; give it the grace and no more. A degraded viewport
+  // publishes no ItemList (unknown is not a list of ten homes, §0).
+  const citySeo = props.citySeo ?? null
+  const cityDepth = citySeo
+    ? await withTimeout(citySeo.cityDepth, null, SPLIT_CITY_DEPTH_GRACE_MS)
+    : null
+  const jsonLdListings = viewportDegraded ? [] : viewport.listings
+
   // Registry URL params ride along so pan/zoom refetches keep advanced filters.
   const registryParamsFromUrl: Record<string, string> = {}
   const spRecord = sp as Record<string, string | undefined>
@@ -334,7 +381,34 @@ export async function renderMapSplitView(props: {
   // V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
   // (THE LOOK, PUBLIC_UI.md section 6).
   return (
+    <>
     <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'search-app-frame w-full bg-muted')}>
+    {/* SITE-190 / SITE-192: the plain city page is the one winner for "{City}
+        homes for sale" and this branch serves it. WebPage (name = the h1,
+        description = the page's meta description), BreadcrumbList (absolute
+        URLs), Place, and an ItemList of the homes the map's own fetch already
+        holds. The Dataset rides the depth read below when it resolved. */}
+    {citySeo && city ? (
+      <SearchPageJsonLd
+        displayName={city}
+        city={city}
+        subdivision={undefined}
+        subdivisionBlurb={null}
+        cityMetaDescription={citySeo.cityMetaDescription}
+        bannerUrl={null}
+        siteUrl={citySeo.siteUrl}
+        canonicalPath={props.searchPagePath}
+        name={headline}
+        description={citySeo.cityMetaDescription}
+        listings={jsonLdListings}
+        totalCount={viewportDegraded ? undefined : viewport.totalCount}
+        datasetSchema={buildCityMarketDatasetSchema({
+          city,
+          searchPagePath: props.searchPagePath,
+          cityMarketFaq: cityDepth?.market.cityMarketFaq ?? null,
+        })}
+      />
+    ) : null}
     {/* Dynamic page: the request's query seeds the static-safe URL store the
         filter tree reads (SITE-29), so the chips are in the HTML as before. */}
     <UrlSearchParamsProvider search={queryStringFromSearchParams(sp as Record<string, string | string[] | undefined>)}>
@@ -377,5 +451,50 @@ export async function renderMapSplitView(props: {
       </div>
     </UrlSearchParamsProvider>
     </main>
+    {/* Below the Field, outside the viewport-fit app-frame (globals.css pins
+        .search-app-frame to the fold with overflow hidden), so the split view
+        stays the first screen and the page scrolls to the depth the grid
+        branch always carried: the visible trail the BreadcrumbList mirrors,
+        the market band, the price ladder, the city FAQ (+ FAQPage node), and
+        the related-search doors. Every figure comes from buildMarketFaq /
+        publishCityInventory / the price ladder; a null figure is omitted.
+        The footer follows because the document no longer ends at the map. */}
+    {citySeo && city ? (
+      <>
+        <section
+          id="city-search-depth"
+          aria-label={`${city} market and related searches`}
+          className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-background')}
+        >
+          <V3Breadcrumb trail={props.searchBreadcrumbItems} belowNav={false} />
+          {cityDepth ? (
+            <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6">
+              <SearchSeoTail
+                isPlainCityPage
+                relatedCitySlug={citySeo.relatedCitySlug}
+                city={city}
+                published={cityDepth.market.publishedCityInventory}
+                priceLadder={cityDepth.market.priceLadder}
+                publicPace={cityDepth.market.publicPace}
+                publicSegments={cityDepth.market.publicSegments}
+                cityMarketFaq={cityDepth.market.cityMarketFaq}
+                presetDepth={null}
+                presetBandLinks={[]}
+                presetCityLinks={[]}
+                relatedAllHomes={cityDepth.relatedAllHomes}
+                relatedSearches={cityDepth.relatedSearches}
+                placeName={citySeo.placeName}
+                subdivision={undefined}
+                preset={props.resolved.preset}
+              />
+            </div>
+          ) : null}
+        </section>
+        {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
+            only when it is NOT nested in sectioning content. */}
+        <V3Footer columns={V3_FOOTER_COLUMNS} />
+      </>
+    ) : null}
+    </>
   )
 }

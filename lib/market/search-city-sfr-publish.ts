@@ -66,7 +66,15 @@ export async function loadSearchCityMarketLayer(args: {
   relatedCitySlug: string | null
   isPlainCityPage: boolean
   isPresetDepthPage: boolean
-  citySfrTiles: ReadonlyArray<FractionalInterestSubject & { listPrice?: number | null }>
+  /**
+   * The city SFR tile census, or the in-flight read of it. The map/split branch
+   * of the search route starts this read beside its own viewport fetch and
+   * hands the promise over, so the overlay + pace + segment reads below run
+   * in the same window instead of after it.
+   */
+  citySfrTiles:
+    | ReadonlyArray<FractionalInterestSubject & { listPrice?: number | null }>
+    | Promise<ReadonlyArray<FractionalInterestSubject & { listPrice?: number | null }>>
 }): Promise<{
   cityFaqInput: MarketFaqInput | null
   publishedCityInventory: CityInventoryPublish | null
@@ -83,7 +91,7 @@ export async function loadSearchCityMarketLayer(args: {
   const cacheSlug = args.relatedCitySlug ? canonicalCityCacheSlug(args.relatedCitySlug) : ''
   const wantHud = Boolean((args.isPlainCityPage || args.isPresetDepthPage) && cacheSlug)
   const wantStrip = Boolean(args.isPlainCityPage && cacheSlug)
-  const [overlays, publicPace, publicSegments] = await Promise.all([
+  const [overlays, publicPace, publicSegments, citySfrTiles] = await Promise.all([
     wantHud
       ? getDetachedOverlays([{ geoType: 'city', geoSlug: cacheSlug }]).catch(() => new Map())
       : Promise.resolve(new Map()),
@@ -103,6 +111,7 @@ export async function loadSearchCityMarketLayer(args: {
           'search:publicSegments',
         )
       : Promise.resolve([] as PublicSegmentRow[]),
+    Promise.resolve(args.citySfrTiles),
   ])
   const layers = cacheSlug ? overlays.get(`city:${cityDetachedSlug(cacheSlug)}`) : undefined
   const hud = leftoverHudKpis({
@@ -126,7 +135,7 @@ export async function loadSearchCityMarketLayer(args: {
       } satisfies MarketFaqInput)
     : null
   const publishedCityInventory =
-    args.isPlainCityPage && args.city ? publishSearchCityInventory(args.citySfrTiles) : null
+    args.isPlainCityPage && args.city ? publishSearchCityInventory(citySfrTiles) : null
   const cityMarketFaq =
     args.isPlainCityPage && args.city && leftoverFaq
       ? buildSearchCityMarketFaq(args.city, hud, asOf)
@@ -135,7 +144,7 @@ export async function loadSearchCityMarketLayer(args: {
     args.isPlainCityPage && args.city
       ? buildSearchPriceLadder({
           city: args.city,
-          tiles: args.citySfrTiles,
+          tiles: citySfrTiles,
           published: publishedCityInventory,
         })
       : null
