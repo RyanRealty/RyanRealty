@@ -1,5 +1,5 @@
 {
-  "note": "F1 query → citable URL map. Assistants and Google should cite these survivor paths (never a 308 hop). Consumed by app/llms.txt/route.ts and scripts/check-ai-query-battery.mjs.",
+  "note": "F1 query → citable URL map. Assistants and Google should cite these survivor paths (never a 308 hop, never a key in data/legacy-redirects.json). Each pillar path appears once. Consumed by app/llms.txt/route.ts, scripts/check-ai-query-battery.mjs and the monthly citation battery (lib/seo/answer-engine-battery.ts).",
   "hopForbiddenPathnames": [
     "/reports",
     "/search",
@@ -8,64 +8,52 @@
   ],
   "pillars": [
     {
-      "section": "listings",
-      "label": "Northwest Crossing homes for sale, Bend",
-      "path": "/homes-for-sale/bend/northwest-crossing"
-    },
-    {
-      "section": "listings",
-      "label": "3-bedroom, 2-bath homes in Northwest Crossing, Bend",
-      "path": "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2"
-    },
-    {
       "section": "guides",
       "label": "Closing Costs for Home Buyers in Bend, Oregon",
-      "path": "/blog/closing-costs-buyers-bend-oregon"
-    },
-    {
-      "section": "tools",
-      "label": "Value my home",
-      "path": "/sell"
+      "path": "/blog/closing-costs-buyers-bend-oregon",
+      "description": "the line items a Bend buyer pays at closing, each one sourced"
     },
     {
       "section": "brokerage",
       "label": "About Ryan Realty",
-      "path": "/about"
+      "path": "/about",
+      "description": "who we are, the brokers, verbatim Google reviews, recent closings, and the Bend office"
     },
     {
       "section": "brokerage",
       "label": "Client reviews",
-      "path": "/reviews"
+      "path": "/reviews",
+      "description": "every Google review, word for word"
     },
     {
       "section": "brokerage",
       "label": "Brokers",
-      "path": "/team"
+      "path": "/team",
+      "description": "each broker's Oregon license, recorded closings, and direct line"
     },
     {
       "section": "brokerage",
       "label": "Value my home",
-      "path": "/sell"
+      "path": "/sell",
+      "description": "start a home valuation and see how we list and sell a Central Oregon home"
     },
     {
       "section": "brokerage",
       "label": "Written home valuation",
-      "path": "/sell/valuation"
+      "path": "/sell/valuation",
+      "description": "a free written comparative market analysis, with no listing agreement"
     },
     {
       "section": "brokerage",
       "label": "Contact",
-      "path": "/contact"
+      "path": "/contact",
+      "description": "call, text, or email the brokerage, or visit the Bend office"
     },
     {
       "section": "brokerage",
       "label": "Refer a client to Central Oregon",
-      "path": "/refer-a-client"
-    },
-    {
-      "section": "brokerage",
-      "label": "Refer a client to Central Oregon",
-      "path": "/refer-a-client"
+      "path": "/refer-a-client",
+      "description": "for licensed brokers sending a buyer or seller to Central Oregon"
     }
   ],
   "queries": [
@@ -98,27 +86,15 @@
       "source": "f1",
       "query": "I need a 3-bedroom, 2-bath in Northwest Crossing",
       "intent": "filtered-inventory-plus-place",
-      "citablePaths": [
-        "/communities/northwest-crossing",
-        "/homes-for-sale/bend/northwest-crossing",
-        "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2"
-      ],
-      "why": "Google should cite the community page (indexable Place JSON-LD) and the unfiltered browse path. The beds=3&baths=2 URL stays on the AI map so assistants can fetch filtered inventory. Faceted search is noindex by design (shouldNoIndexSearchVariant).",
+      "citablePaths": ["/communities/northwest-crossing"],
+      "why": "Cite the community page: indexable Place JSON-LD and its live inventory. AEO-2 (2026-09-22): /homes-for-sale/bend/northwest-crossing, with or without ?beds=3&baths=2, is a key in data/legacy-redirects.json since SITE-171 (e952d8492), and middleware 301s it to the community page and drops the filter, so neither URL is citable. Faceted search stays noindex by design (shouldNoIndexSearchVariant).",
       "jsonLd": [
         {
           "file": "app/communities/[slug]/page.tsx",
           "all": ["MetadataBlock", "buildMarketFaq"]
-        },
-        {
-          "file": "app/search/[...slug]/page-filters.ts",
-          "all": ["minBeds: sp.beds", "minBaths: sp.baths"]
         }
       ],
-      "llmsSubstrings": [
-        "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2",
-        "/homes-for-sale/bend/northwest-crossing",
-        "northwest-crossing"
-      ]
+      "llmsSubstrings": ["/communities/", "northwest-crossing"]
     },
     {
       "id": "home-value-bend",

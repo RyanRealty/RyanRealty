@@ -76,7 +76,7 @@ describe('buildPlaceFaqExtras', () => {
     expect(row!.answer).toContain('Awbrey Butte')
     expect(row!.answer).toContain('Century West')
     expect(row!.answer).toContain('1 more named on this page')
-    expect(row!.answer).toContain('live single-family count')
+    expect(row!.answer).toContain('single-family homes for sale there right now')
     expect(row!.source).toBe(PLACE_COUNT_TRACE)
     expect(row!.question).not.toMatch(PULSE_QUESTION)
   })
@@ -198,7 +198,7 @@ describe('buildPlaceFaqExtras', () => {
     const row = extras.find((e) => e.question === 'How many new houses listed in Bend in the last 30 days?')
     expect(row?.answer).toContain('148')
     expect(row?.answer).toContain('last 30 days')
-    expect(row?.answer).toContain('Coming Soon excluded')
+    expect(row?.answer).toContain('not counting Coming Soon')
     expect(row?.answer.length).toBeGreaterThanOrEqual(MIN_PLACE_FAQ_EXTRA_CHARS)
     expect(row?.source).toBe(ALERTS_TRACE)
   })
@@ -234,6 +234,43 @@ describe('buildPlaceFaqExtras', () => {
     expect(row?.answer).toContain('not a single-family-only figure')
     expect(row?.answer.length).toBeGreaterThanOrEqual(MIN_PLACE_FAQ_EXTRA_CHARS)
     expect(row?.source).toBe(MART_TRACE)
+  })
+
+  it('answers in plain words, with provenance left to the source line (AEO-5)', () => {
+    const extras = buildPlaceFaqExtras({
+      placeName: 'Bend',
+      grain: 'city',
+      neighborhoods: [{ name: 'Awbrey Butte' }, { name: 'Century West' }],
+      neighborhoodsSource: PLACE_COUNT_TRACE,
+      communities: [{ name: 'Tetherow' }, { name: 'Broken Top' }],
+      communitiesSource: PLACE_COUNT_TRACE,
+      parks: [{ name: 'Drake Park' }],
+      parksSource: PARKS_TRACE,
+      trails: [{ name: 'Deschutes River Trail' }],
+      trailsSource: TRAILS_TRACE,
+      openHouses: [{ address: '123 NW Bond Street', when: 'Sat 1:00 PM-3:00 PM' }],
+      openHousesSource: OPEN_HOUSE_TRACE,
+      saleToOriginalPct: 97.6,
+      saleToOriginalSource: MARKET_TRACE,
+      cashShare: 0.275,
+      mixSource: MIX_TRACE,
+      newListings30d: 148,
+      newListingsSource: ALERTS_TRACE,
+      medianListPrice: 899_000,
+      medianListSource: MEDIAN_TRACE,
+      yearClosed: { year: 2025, volume: '$3.9B', soldCount: 4122 },
+      yearClosedSource: MART_TRACE,
+    })
+    expect(extras.length).toBeGreaterThanOrEqual(10)
+    const provenance =
+      /not a guess|not an invented|not a guessed|already (prints|shows|publishes)|OpenHouses pull|ledger|Market Truth|same MLS feed|registry list|separate inventory|—/i
+    for (const row of extras) {
+      expect(row.answer, row.question).not.toMatch(provenance)
+      expect(row.source.length).toBeGreaterThan(0)
+    }
+    expect(extras.find((e) => e.question === 'Are there open houses in Bend this week?')?.answer).toContain(
+      'There is 1 open house in Bend',
+    )
   })
 
   it('never invents HOA dollars or school numbers', () => {

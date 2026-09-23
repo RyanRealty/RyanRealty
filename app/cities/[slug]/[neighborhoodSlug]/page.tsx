@@ -7,9 +7,11 @@
  * community uses. Do not write ?shapes= onto this URL. Do not cage the first
  * screen in V3Stage or V3Field. Do not print leftover KPIs on the photo.
  *
- * Face SoR is getNeighborhoodPublicInventory. leftoverHudKpis still feeds
- * buildMarketFaq JSON-LD. MOS, sold count, verdict, and DTP do not print on
- * the face. Leftover monthly charts only when cityFallback is false.
+ * Face SoR is getNeighborhoodPublicInventory, and it also feeds the Dataset's
+ * "Active Listings" and "Median List Price" (AEO-1, neighborhood-market.ts).
+ * leftoverHudKpis feeds the supply ratio, days to pending and the sold count.
+ * MOS, sold count, verdict, and DTP do not print on the face. Leftover monthly
+ * charts only when cityFallback is false.
  *
  * Section order: design_system/ryan-realty/ui_kits/neighborhood/parity.json.
  */
@@ -76,7 +78,7 @@ import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { noteDegradedHead, placeNameFromSlug, PLACE_HEAD_READ_MS } from '@/lib/site/place-head-fallback'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail, skippableRailResult } from '@/lib/build-phase'
-import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
+import { buildMarketFaq } from '@/lib/site/market-faq'
 import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import { buildPlaceFaqExtras } from '@/lib/site/place-faq-extras'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -122,6 +124,11 @@ import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
 import { buildNeighborhoodSchemas } from './neighborhood-schemas'
+import {
+  neighborhoodCountNote,
+  neighborhoodMarketFaqInput,
+  neighborhoodPublishedFigures,
+} from './neighborhood-market'
 import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 import {
   leftoverClosedCount,
@@ -512,17 +519,17 @@ async function renderNeighborhoodDetail({ params }: Props) {
     leftoverHouses30d: publicPace.newCount30d,
     buckets: openingListings,
   })
-  const marketFaqInput: MarketFaqInput = {
-    grain: 'neighborhood',
-    source: 'market-truth',
-    activeCount: hud.active,
-    pulseActiveCount: hud.active,
-    medianListPrice: hud.medianList,
+  // AEO-1: "Active Listings" and "Median List Price" come off ONE read, the
+  // boundary inventory the face and the Q&A print, for the Dataset too. The
+  // overlay (hud.active) stays the supply ratio's own numerator only.
+  const published = neighborhoodPublishedFigures(inventoryOk ? inventory : null)
+  const marketFaqInput = neighborhoodMarketFaqInput({
+    published,
     monthsOfSupply: null,
     medianDaysToPending: hud.daysToPending,
     soldCount12mo: publicPace.closedCount ?? null,
     refreshedAt: leftoverStamp,
-  }
+  })
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
 
   const dailyRows = dailyLifeRows(richContent, cityName)
@@ -573,7 +580,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
      publishes the count this PAGE publishes — the one in its own Field — and
      the verdict's trace names the 49 its own ratio was computed on, so the two
      figures can never be read as one number disagreeing with itself (§0 rule 5). */
-  const nbhAnswerActive = inventoryOk ? inventory.activeCount : null
+  const nbhAnswerActive = published.activeCount
   const metricKey = `neighborhood:${metricNeighborhoodSlug}`
   const { answers: placeAnswers, traces: answerTraces, sourceKey: answerSourceKey } = buildPlaceAnswers({
     placeName: neighborhood.name,
@@ -583,19 +590,16 @@ async function renderNeighborhoodDetail({ params }: Props) {
       monthsOfSupplyActiveCount: hud.active,
       activeCount: nbhAnswerActive,
       activeCountTrace: `the recorded ${neighborhood.name} boundary, single-family homes in a publicly active MLS status at the last sync`,
-      // SAY WHY THE TWO COUNTS DIFFER, IN THE ANSWER. Both traces were already
-      // correct and each named its own population, but the verdict row and the
-      // inventory row sit a few rows apart and both use the word "active" —
-      // 48 in one, 57 in the other on Awbrey Butte. A separate evaluator read
-      // that as an unreconciled contradiction (2026-09-08), and it was right
-      // that a reader has to be TOLD, not left to reconstruct it from two
-      // trace lines. §0 rule 5: reconcile the narrative to the data.
-      activeCountNotes:
-        nbhAnswerActive != null && hud.active != null && nbhAnswerActive !== hud.active
-          ? [
-              `The supply verdict above divides ${hud.active}, not this ${nbhAnswerActive}. That ratio counts the homes the market layer assigns to ${neighborhood.name} by place membership; this count is the homes inside its neighborhood lines. Two honest counts of two populations, and neither is a correction of the other.`,
-            ]
-          : null,
+      // SAY WHY THE TWO COUNTS DIFFER, IN THE ANSWER (§0 rule 5), in plain
+      // words: both numbers, both populations, no pipeline talk (AEO-5).
+      activeCountNotes: (() => {
+        const note = neighborhoodCountNote({
+          placeName: neighborhood.name,
+          supplyCount: hud.active,
+          boundaryCount: nbhAnswerActive,
+        })
+        return note ? [note] : null
+      })(),
       closedCount:
         publicPace.closedCount != null && publicPace.closedCount > 0
           ? { count: publicPace.closedCount, windowLabel: 'over the past 12 months' }
@@ -610,7 +614,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
         publicPace.medianClose != null && publicPace.medianClose > 0
           ? { price: publicPace.medianClose, windowLabel: 'over the past 12 months' }
           : null,
-      medianListPrice: inventoryOk ? inventory.medianListPrice : null,
+      medianListPrice: published.medianListPrice,
       // The list median comes off the SAME boundary read as the active count,
       // not off the metric layer, so it carries that read's clause and not the
       // page's default one (§0: one trace per query).
@@ -835,6 +839,9 @@ async function renderNeighborhoodDetail({ params }: Props) {
     hasMap,
     geo,
     datasetVariables,
+    // AEO-1: the Dataset and Place markup may not carry a number the FAQPage
+    // below contradicts under the same label (reconcileDatasetToFaq).
+    faqItems: answerFaqs,
     asOfIso,
     asOfLabel,
     homes: placeHomes,

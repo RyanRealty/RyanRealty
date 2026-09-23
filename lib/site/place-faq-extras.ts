@@ -122,6 +122,16 @@ function moreClause(more: number): string {
   return ` and ${more.toLocaleString('en-US')} more named on this page`
 }
 
+/*
+ * AEO-5 / VOICE-5 (visibility audit 2026-09-22): every answer below is the
+ * fact in plain words, the way a broker would say it. Where the number came
+ * from rides in `source`, which the page prints as the row's source line and
+ * keeps as data-source-key; it no longer rides inside the sentence ("not a
+ * guess", "the same MLS OpenHouses pull the open-house ledger uses", "this is
+ * the registry list this page already shows"). Answer engines quote the
+ * sentence, so the sentence is the part a reader should be able to repeat.
+ */
+
 function pushExtra(out: PlaceFaqExtraItem[], item: PlaceFaqExtraItem): void {
   const question = item.question.trim()
   const answer = item.answer.trim()
@@ -148,9 +158,8 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     pushExtra(extras, {
       question: `Which neighborhoods are in ${subject}?`,
       answer:
-        `${subject}'s ${kind} on this page include ${text}${moreClause(more)}. ` +
-        `Each row is that district's live single-family count from the same MLS feed the neighborhood ledger uses, not a guess. ` +
-        `Open a neighborhood for its own homes and market figures.`,
+        `${subject}'s ${kind} include ${text}${moreClause(more)}. ` +
+        `Each neighborhood has its own page with the single-family homes for sale there right now and its own market figures.`,
       source: input.neighborhoodsSource,
     })
   }
@@ -161,9 +170,9 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     pushExtra(extras, {
       question: `Which communities are in ${place}?`,
       answer:
-        `Communities listed on this ${place} page include ${text}${moreClause(more)}. ` +
-        `Those names are the in-city community and golf or master-planned doors this page already publishes. ` +
-        `Each count comes from the same live MLS feed as the community ledger, not a separate inventory.`,
+        `Communities in ${place} include ${text}${moreClause(more)}. ` +
+        `They are the golf, resort, and master-planned communities with pages of their own, ` +
+        `and each one shows the homes for sale there right now.`,
       source: input.communitiesSource,
     })
   }
@@ -175,9 +184,8 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     pushExtra(extras, {
       question: `What parks are ${where}?`,
       answer:
-        `Parks named on this page include ${text}${moreClause(more)}. ` +
-        `Features, parking, hours, and acreage print on those rows only when the official park page states them. ` +
-        `This is the Central Oregon parks registry list this page already shows, not an invented complete inventory.`,
+        `Parks ${where} include ${text}${moreClause(more)}. ` +
+        `Each park has its own page with the features, parking, hours, and acreage its official park page lists.`,
       source: input.parksSource,
     })
   }
@@ -189,9 +197,8 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     pushExtra(extras, {
       question: `What trails are ${where}?`,
       answer:
-        `Trails named on this page include ${text}${moreClause(more)}. ` +
-        `Distance and difficulty print on those rows only when the land manager publishes them. ` +
-        `This is the Central Oregon trails registry list this page already shows, not a guessed trail network.`,
+        `Trails ${where} include ${text}${moreClause(more)}. ` +
+        `Each trail has its own page with the distance and difficulty the land manager publishes, so you can pick one before you go.`,
       source: input.trailsSource,
     })
   }
@@ -207,13 +214,16 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     const samples = openHouses.slice(0, NAME_CAP).map((row) =>
       row.when ? `${row.address} (${row.when})` : row.address,
     )
-    const extra = n > samples.length ? ` and ${n - samples.length} more on this page` : ''
+    const extra = n > samples.length ? ` and ${n - samples.length} more` : ''
+    const lead =
+      n === 1
+        ? `Yes. There is 1 open house in ${place} in the next 7 days`
+        : `Yes. There are ${n.toLocaleString('en-US')} open houses in ${place} in the next 7 days`
     pushExtra(extras, {
       question: `Are there open houses in ${place} this week?`,
       answer:
-        `Yes. This page lists ${n.toLocaleString('en-US')} open house${n === 1 ? '' : 's'} scheduled in the next 7 days, including ${joinNames(samples)}${extra}. ` +
-        `Times and addresses are the same MLS OpenHouses pull the open-house ledger uses. ` +
-        `The full weekend list is on this city's open-houses page.`,
+        `${lead}, including ${joinNames(samples)}${extra}. ` +
+        `The full list, with every time and address, is on the ${place} open houses page.`,
       source: input.openHousesSource,
     })
   }
@@ -230,8 +240,7 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
       question: `Do homes in ${place} sell for the asking price?`,
       answer:
         `The typical detached single-family home in ${place} closed at ${shown} of the price it was first listed at, over the last 12 months. ` +
-        `Under 100% means sellers generally came down from their first number before the home sold. Over 100% means buyers bid past it. ` +
-        `That is the same sale-to-original share this page's market section already prints.`,
+        `Under 100% means sellers generally came down from their first number before the home sold. Over 100% means buyers bid past it.`,
       source: input.saleToOriginalSource,
     })
   }
@@ -250,10 +259,10 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     }
     if (financing.length > 0) {
       const bits = financing.slice(0, 4).map((bit) => `${bit.label.trim()} ${bit.name.trim()}`)
-      sentences.push(`The same financing mix on this page also shows ${joinNames(bits)}.`)
+      sentences.push(`By how they paid: ${joinNames(bits)}.`)
     }
     sentences.push(
-      `Shares under 5% are not published, so these do not add to 100%. This is how other buyers paid on detached closings; it is not a suggestion about your down payment.`,
+      `Payment types under 5% are left out, so these do not add up to 100%. This is how other buyers paid, and it is not a suggestion about your down payment.`,
     )
     pushExtra(extras, {
       question: `How do buyers in ${place} pay?`,
@@ -268,9 +277,8 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     pushExtra(extras, {
       question: `How many new houses listed in ${place} in the last 30 days?`,
       answer:
-        `${newN.toLocaleString('en-US')} detached single-family ${houses} came on the market in ${place} in the last 30 days. ` +
-        `That count is Market Truth new listings of detached single-family homes, Coming Soon excluded — the same figure the alerts strip on this page prints. ` +
-        `The email alert follows this page's filter, which is wider than houses alone.`,
+        `${newN.toLocaleString('en-US')} detached single-family ${houses} came on the market in ${place} in the last 30 days, not counting Coming Soon listings. ` +
+        `The email alert on this page tells you about the next ones, and it covers other home types too, not only houses.`,
       source: input.newListingsSource,
     })
   }
@@ -284,13 +292,13 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     const rateSentence =
       rate && Number.isFinite(rate.pct) && rate.pct > 0 && rate.weekLabel.trim() && rate.sourceName.trim()
         ? `The 30-year rate on that calculator is ${rate.pct}% for the week of ${rate.weekLabel.trim()}, from ${rate.sourceName.trim()}.`
-        : `When a measured 30-year rate is not on this page, the calculator says the rate is an assumption you set.`
+        : `Put in your own interest rate and the payment updates.`
     pushExtra(extras, {
       question: `How much house can I afford in ${place}?`,
       answer:
-        `This page's calculator opens on ${place}'s median asking price of ${formatPriceExact(median)} for the single-family homes now listed. ` +
+        `The median asking price for a single-family home in ${place} is ${formatPriceExact(median)}, and the calculator on this page starts there. ` +
         `Move the monthly payment or the price and the other follows. ${rateSentence} ` +
-        `It does not count how many homes sit under your ceiling — that search is one tap from the calculator.`,
+        `To see the homes that fit your budget, search from the calculator.`,
       source: input.medianListSource,
     })
   }
@@ -307,8 +315,8 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     pushExtra(extras, {
       question: `How much ${place} real estate closed in ${year.year}?`,
       answer:
-        `Closed MLS sales in ${place} across all property types totaled ${year.volume.trim()} in calendar year ${year.year}, from ${year.soldCount.toLocaleString('en-US')} sales. ` +
-        `That is not active inventory and not a single-family-only figure. It is the same calendar-year volume this page's market section already prints.`,
+        `Closed sales in ${place} across all property types added up to ${year.volume.trim()} in ${year.year}, from ${year.soldCount.toLocaleString('en-US')} sales. ` +
+        `That total covers every kind of property that sold, so it is not a single-family-only figure.`,
       source: input.yearClosedSource,
     })
   }

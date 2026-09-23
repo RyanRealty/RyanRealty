@@ -50,7 +50,7 @@ import {
 } from '@/components/site/v3'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
+import { aboutFaqItems, FIRM_LICENSE } from './_v3/about-constants'
 import { AboutFirm } from './_v3/AboutFirm'
 import { AboutInquiry } from './_v3/AboutInquiry'
 import { AboutOffice } from './_v3/AboutOffice'
@@ -137,7 +137,11 @@ async function renderAboutPage() {
     },
   ]
 
-  const faqAnswers: V3Answer[] = ABOUT_FAQ_ITEMS.map((item, index) => ({
+  // AEO-5 / VOICE-5: the brokers' names and roles come from the roster this
+  // render already loaded, so the FAQ and its FAQPage name the same people
+  // the fold shows.
+  const faqItems = aboutFaqItems(proof.faces)
+  const faqAnswers: V3Answer[] = faqItems.map((item, index) => ({
     question: item.question,
     body: item.answer,
     open: index === 0,
@@ -171,7 +175,7 @@ async function renderAboutPage() {
     },
     {
       type: 'faqPage',
-      items: [...ABOUT_FAQ_ITEMS],
+      items: faqItems,
     },
     {
       type: 'itemList',

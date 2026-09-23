@@ -186,6 +186,12 @@ function faceCredential(person: AboutFace) {
   )
 }
 
+/** The broker's own first bio sentence (editorial size only; see AboutFace.lede). */
+function faceLede(person: AboutFace) {
+  const lede = person.lede?.trim()
+  return lede ? <p className="about-faces__lede">{lede}</p> : null
+}
+
 function editorialReach(person: AboutFace) {
   return (
     <div className="about-faces__reach-row">
@@ -481,6 +487,7 @@ export function AboutFaces({
                 {leadPerson.name}
               </Link>
               {faceCredential(leadPerson)}
+              {faceLede(leadPerson)}
               {proof ? (
                 <p className="about-faces__face-proof">
                   <Avatar className="about-faces__face-proof-avatar" size="sm">
@@ -510,6 +517,7 @@ export function AboutFaces({
                       {person.name}
                     </Link>
                     {faceCredential(person)}
+                    {faceLede(person)}
                     {faceRecord(person.record)}
                     {reach ? editorialReach(person) : null}
                   </div>

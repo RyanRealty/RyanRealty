@@ -63,6 +63,7 @@ import { ATLAS_TYPES } from '@/lib/atlas/build-place-atlas'
 import { formatDate } from '@/lib/format/date'
 import { TEAM_RANK } from './_v3/team-constants'
 import { brokerRosterRecord } from './_v3/broker-roster-record'
+import { brokerLede } from './_v3/broker-lede'
 import './_v3/team-fold.css'
 
 export const metadata: Metadata = pageMetadata({
@@ -122,7 +123,10 @@ export default async function TeamPage() {
     .map((b): AboutFace | null => {
       const face = aboutFaceFromBroker(b)
       if (!face) return null
-      return { ...face, record: recordBySlug.get(b.slug)?.record ?? null }
+      // VOICE-5 / AEO-5: each card opens on the broker's own first bio
+      // sentence, verbatim from public.brokers.bio (deep bios stay on
+      // /team/<slug>). A broker with no bio gets no line, never a made-up one.
+      return { ...face, record: recordBySlug.get(b.slug)?.record ?? null, lede: brokerLede(b.bio) }
     })
     .filter((face): face is AboutFace => face !== null)
 

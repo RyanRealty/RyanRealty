@@ -102,6 +102,15 @@ describe('publishPlaceAffordability · the rate is measured or it is an assumpti
     expect(props.fallbackRatePct).toBe(7)
   })
 
+  it('names the FRED copy of the Freddie Mac survey by publisher, not by series id (AEO-5)', () => {
+    const props = publishPlaceAffordability({
+      ...bend,
+      rate: { ...liveRate, source: 'fred:MORTGAGE30US' },
+    })!
+    expect(props.rate!.sourceName).toBe('Freddie Mac 30-year fixed, via FRED')
+    expect(props.rate!.sourceName).not.toContain('MORTGAGE30US')
+  })
+
   it('never claims Freddie for a source string it did not recognise', () => {
     const props = publishPlaceAffordability({
       ...bend,

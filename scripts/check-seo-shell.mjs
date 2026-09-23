@@ -61,7 +61,7 @@ const REQUIRED = [
   {
     file: 'app/page.tsx',
     // Home lock 2026-09-06: visible Stage H1 is the buyer job line. Brand stays
-    // in metadata title/OG only (absolute "Ryan Realty, Bend"). KB spelled the
+    // in metadata title/OG only (absolute, brand first). KB spelled the
     // H1 as titleTop/titleBottom; v3 takes `headline`. BOTH ARMS ARE EXACT
     // LITERALS. D11 lead sentence must appear as a literal in this file
     // (the gate does not scan app/_v3/).
@@ -79,8 +79,14 @@ const REQUIRED = [
         msg: 'Homepage Stage action is search (HomeHeroSearch), not a leftover count sentence',
       },
       {
-        re: /title:\s*\{\s*absolute:\s*['"]Homes for Sale in Central Oregon \| Ryan Realty, Bend['"]/,
-        msg: 'metadata title must be "Homes for Sale in Central Oregon | Ryan Realty, Bend" (Matt 2026-09-07; absolute, so the layout suffix does not double the brand)',
+        // gsc-trend-11 (visibility audit 2026-09-22, Matt 2026-09-23 "nothing is
+        // permanent"): the brand now LEADS the title. The 2026-09-07 keyword
+        // title carried it as the tail and / ranked p45 for "ryan realty" in
+        // both July and September (GSC API) while /?utm_source=gbp ranked p3.
+        // The head term stays exactly "Homes for Sale in Central Oregon"; "Bend"
+        // rides with the brand so /homes-for-sale/bend keeps "Bend homes for sale".
+        re: /title:\s*\{\s*absolute:\s*['"]Ryan Realty, Bend \| Homes for Sale in Central Oregon['"]/,
+        msg: 'metadata title must be "Ryan Realty, Bend | Homes for Sale in Central Oregon" (gsc-trend-11, 2026-09-23; absolute, so the layout suffix does not double the brand)',
       },
     ],
   },

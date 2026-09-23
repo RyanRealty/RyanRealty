@@ -169,7 +169,13 @@ async function _getPublishedGuidesUncached(_limit: number): Promise<GuideRow[]> 
   }
   const rows = (data ?? []) as GuideRow[]
   if (rows.length > 0) return rows
-  return getGeneratedGuidesFromStats(12)
+  const generated = await getGeneratedGuidesFromStats(12)
+  // An empty generated set is a failed read, not a fact: market_stats_cache
+  // holds monthly rows for 14 cities (read 2026-09-23). Throwing keeps
+  // unstable_cache from storing it, and makeResilientCached retries once
+  // uncached (AEO-4: /llms.txt Guides dropped from 14 entries to 2).
+  if (generated.length === 0) throw new Error('[getPublishedGuides] no authored or generated guides')
+  return generated
 }
 
 export const getPublishedGuides = makeResilientCached(

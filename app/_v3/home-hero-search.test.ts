@@ -20,9 +20,11 @@ describe('homepage hero search uses the public search stack', () => {
     expect(PAGE).toContain('listedNow.toLocaleString')
     expect(PAGE).not.toContain('home-hero-search__job')
     expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
-    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Homes for Sale in Central Oregon \| Ryan Realty, Bend'\s*\}/)
-    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Homes for Sale in Central Oregon \| Ryan Realty, Bend'/)
-    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Homes for Sale in Central Oregon \| Ryan Realty, Bend'/)
+    // gsc-trend-11 (2026-09-23): the brand leads the title; the head term stays
+    // "Homes for Sale in Central Oregon" (Bend homes for sale is /homes-for-sale/bend's).
+    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty, Bend \| Homes for Sale in Central Oregon'\s*\}/)
+    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty, Bend \| Homes for Sale in Central Oregon'/)
+    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty, Bend \| Homes for Sale in Central Oregon'/)
     expect(PAGE).toMatch(/<HomeHeroSearch[^>]*valuationHref=/)
   })
 
