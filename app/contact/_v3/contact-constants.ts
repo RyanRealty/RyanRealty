@@ -11,6 +11,15 @@ export const CONTACT_FIELD_IDS = {
   message: 'contact-message',
 } as const
 
+/**
+ * The contact form's honeypot (FUNNEL-1, 2026-09-23). The same bait name and
+ * label the alerts sheet and the place-page ask use (`company`): a script fills
+ * every field it finds, a person never sees this one. A filled trap does not
+ * drop the submit; it is one signal to the intake screen (lib/crm/lead-quality),
+ * which keeps the row and tags it.
+ */
+export const CONTACT_TRAP = { name: 'company', label: 'Company' } as const
+
 export const CONTACT_FAQ_ITEMS = [
   {
     question: 'What areas does Ryan Realty serve?',

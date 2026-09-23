@@ -7,6 +7,14 @@ import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/c
 import { isPresetSlug } from '@/lib/search-presets'
 import { isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
 import { allowedCommunityUrlSlugs } from '@/lib/communities/community-public-pair'
+import {
+  LEGACY_NEXT_IMAGE_CACHE_SECONDS,
+  LEGACY_NEXT_IMAGE_GONE_BODY,
+  LEGACY_NEXT_IMAGE_PATH,
+  resolveLegacyNextImage,
+} from '@/lib/routing/legacy-next-image'
+import { isRouterFlightRequest, resolveListingCanonicalHop } from '@/lib/routing/listing-canonical-hop'
+import { getListingCanonicalPathFieldsEdge } from '@/lib/data/listings/getListingCanonicalPathFieldsEdge'
 
 /**
  * Next.js Edge Middleware.
@@ -464,6 +472,30 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const pathname = url.pathname
   const host = (request.headers.get('host') ?? '').toLowerCase()
 
+  // ─── (000) Retired /_next/image optimizer URL (TRACK-3) ─────────────────
+  // images.unoptimized (Matt lock 2026-09-13) removed the optimizer, so every
+  // stale /_next/image?url=X rendered the ~143 KB HTML 404 page. Answer it here,
+  // first, so it never reaches the app: 308 to the image, or a 4-byte 410.
+  // Mapping + allowlist: lib/routing/legacy-next-image.ts.
+  if (pathname === LEGACY_NEXT_IMAGE_PATH || pathname === `${LEGACY_NEXT_IMAGE_PATH}/`) {
+    const decision = resolveLegacyNextImage(url)
+    const cacheControl = `public, max-age=${LEGACY_NEXT_IMAGE_CACHE_SECONDS}`
+    if (decision.kind === 'redirect') {
+      const res = NextResponse.redirect(decision.location, 308)
+      res.headers.set('cache-control', cacheControl)
+      return res
+    }
+    return new NextResponse(LEGACY_NEXT_IMAGE_GONE_BODY, {
+      status: 410,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': cacheControl,
+        'x-robots-tag': 'noindex',
+        'x-legacy-image': decision.reason,
+      },
+    })
+  }
+
   // ─── (00) Canonical host — funnel the Vercel alias to ryan-realty.com ──
   // Runs before everything else so OAuth initiation AND /auth/callback always
   // land on the canonical host (where the PKCE verifier cookie lives). Never
@@ -592,6 +624,37 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     })
   }
 
+  // ─── (0e) Listing canonical hop → 308, before the listing page renders ──
+  // P14 (visibility audit 2026-09-22, gsc-trend-6). A listing page resolves the
+  // home from the MLS number at the END of its path and ignores the segments in
+  // front of it, so every old or invented path answered 200 with only a
+  // rel=canonical: 1,234 of 7,329 listing ids sat under more than one URL in
+  // Search Console 2026-08-23..09-19. Every path whose trailing key resolves to
+  // a displayable listing and is not that listing's canonical now gets a real
+  // 308 here; the page body cannot do it (app/loading.tsx flushes a 200 first).
+  // One indexed PostgREST read per id per isolate (lib/data/listings/
+  // getListingCanonicalPathFieldsEdge.ts). A miss, a refused row, an error or a
+  // timeout passes the request through untouched, so no real listing is ever
+  // 404'd and an unknown key renders exactly as it did before. Runs after the
+  // bot screen so a blocked scraper never costs a lookup, and skips the App
+  // Router's own prefetch/navigation requests (they follow hrefs the site built
+  // canonical). The query string is kept (utm tags on ad and email links).
+  // Browser caching of the 308 is capped at a day because the MLS can still
+  // edit a field the path is built from.
+  if (!pathname.startsWith('/api/') && !isRouterFlightRequest(request.headers, url.searchParams)) {
+    const listingDest = await resolveListingCanonicalHop(pathname, async (id) => {
+      const r = await getListingCanonicalPathFieldsEdge(id)
+      return r.kind === 'row' ? r.row : null
+    })
+    if (listingDest) {
+      const redirectUrl = url.clone()
+      redirectUrl.pathname = listingDest
+      const res = NextResponse.redirect(redirectUrl, 308)
+      res.headers.set('cache-control', 'private, max-age=86400')
+      return res
+    }
+  }
+
   // ─── (1) Host-based rewrite for LP subdomains ──────────────────────────
   // seller.ryan-realty.com/ → /sell (transparent rewrite —
   // browser still shows seller.ryan-realty.com/). Only rewrites the root path
@@ -651,8 +714,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
 // Run on everything that isn't a Next.js internal or static asset.
 // (Static files with extensions skip middleware — significant perf win.)
+//
+// The second entry matches the retired /_next/image optimizer path ONLY
+// (exact, no suffix), which the first pattern still excludes. Next runs
+// middleware before its filesystem check, so a matcher entry is all it takes
+// for middleware to answer that path (TRACK-3, see branch (000) above).
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|_next/data|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\..*).*)',
+    '/_next/image',
   ],
 }

@@ -14,7 +14,8 @@
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import type { Broker } from '@/lib/data/types/broker'
 import { teamPath } from '@/lib/slug'
-import { BRAND, CONTACT, SOCIAL_PROFILES } from '@/lib/brand/contact'
+import { BRAND, CONTACT, ENTITY_SAME_AS } from '@/lib/brand/contact'
+import { brokerPersonId, brokerSameAs } from '@/lib/site/broker-entity'
 
 /** "541.213.6706" -> "+1-541-213-6706" (schema.org E.164-ish telephone). */
 function toTel(dotted: string | null | undefined): string | undefined {
@@ -36,9 +37,11 @@ function prune<T extends Record<string, unknown>>(obj: T): T {
 
 function brokerAgent(b: Broker, baseUrl: string): Record<string, unknown> {
   const url = `${baseUrl}${teamPath(b.slug)}`
+  const sameAs = brokerSameAs(b.slug)
   return prune({
     '@type': 'RealEstateAgent',
-    '@id': `${url}#person`,
+    // AEO-6: the same id /team/[slug] gives its page node (brokerPersonId).
+    '@id': brokerPersonId(baseUrl, b.slug),
     name: b.fullName,
     jobTitle: b.title,
     url,
@@ -49,6 +52,7 @@ function brokerAgent(b: Broker, baseUrl: string): Record<string, unknown> {
     identifier: b.licenseNumber
       ? { '@type': 'PropertyValue', propertyID: 'Oregon Real Estate License', value: b.licenseNumber }
       : undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
   })
 }
 
@@ -63,6 +67,7 @@ export default async function JsonLd() {
     '@type': ['RealEstateAgent', 'LocalBusiness'],
     '@id': `${baseUrl}#organization`,
     name: BRAND.name,
+    alternateName: [...BRAND.alternateNames],
     legalName: BRAND.legalName,
     description:
       'Ryan Realty covers Bend, Redmond, Sisters, Sunriver, and Central Oregon. Browse homes for sale, search by city and neighborhood, and see live market data.',
@@ -83,7 +88,7 @@ export default async function JsonLd() {
       postalCode: BRAND.address.postalCode,
       addressCountry: 'US',
     },
-    sameAs: SOCIAL_PROFILES,
+    sameAs: ENTITY_SAME_AS,
     founder: principal ? brokerAgent(principal, baseUrl) : undefined,
     employee: team.length > 0 ? team.map((b) => brokerAgent(b, baseUrl)) : undefined,
   })

@@ -82,6 +82,8 @@ export type V3ListingRowData = {
   badge?: { kind: V3ListingRowBadge; label: string }
   /** Overlay pills. When set, this is the whole set; `badge` is ignored. */
   badges?: Array<{ kind: V3ListingRowBadge; label: string }>
+  /** "Pending" for an under-contract listing. Printed by the rail card, not the row. */
+  statusLabel?: string | null
 }
 
 /** Badge kinds that print solid navy; the rest are hairline outline tags. */

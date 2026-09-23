@@ -24,6 +24,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { communityPublicPair } from '@/lib/communities/community-public-pair'
 import { communityImage } from '@/lib/geo-images'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
+import { isSoldAttributionTrusted, publishSoldCount } from '@/lib/market/geo-grain-trust'
 import {
   getResortCommunityBySlug,
   type ResortCommunityEntry,
@@ -82,7 +83,14 @@ export function homeFeaturedSalesFigures(input: {
       n: median,
     })
   }
-  const closed = input.pulse?.closedLast30Days
+  // Closed-side pulse figures print only at a grain whose closes are attributed
+  // like its actives (lib/market/geo-grain-trust.ts). The loader reads the
+  // neighborhood pulse row, whose sold count and days to pending come from a
+  // subdivision-name join, not the community's homes (audit DATA-7, 2026-09-22).
+  const grain = input.pulse?.geoType
+  const closed = grain
+    ? publishSoldCount({ value: input.pulse?.closedLast30Days, grain })
+    : null
   if (closed != null && Number.isFinite(closed) && closed > 0) {
     out.push({
       value: formatCount(closed),
@@ -98,7 +106,7 @@ export function homeFeaturedSalesFigures(input: {
       n: fresh,
     })
   }
-  const daysRaw = input.pulse?.medianDaysToPending
+  const daysRaw = isSoldAttributionTrusted(grain) ? input.pulse?.medianDaysToPending : null
   const days = publishDaysFigure(daysRaw ?? null)
   if (days && daysRaw != null && Number.isFinite(daysRaw) && daysRaw > 0) {
     out.push({

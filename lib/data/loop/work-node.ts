@@ -72,6 +72,12 @@ export function siteServeTier(versionGap: string | null | undefined, title: stri
   if (fleet < 2) return fleet
   const g = versionGap ?? ''
   if (g === 'SITE-31' || /^SITE-(4\d|5[0-3])$/.test(g)) return 2
+  // A Search Console gap (lost query, split landing, slipping page class) is
+  // served with round three, ahead of the rest of the queue (visibility audit
+  // 2026-09-22, PROCESS-1; Matt 2026-09-23 "nothing is permanent" — being seen
+  // is the goal, and the brief served UX work while money pages lost rank).
+  // Fleet p0/major and Matt ADD/CHANGE still come first.
+  if (title.startsWith('GSC gap')) return 2
   return 3
 }
 

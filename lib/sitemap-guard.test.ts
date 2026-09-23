@@ -83,3 +83,50 @@ describe('filterRogueCityUrls (W1.3/P0.3 output-based drift backstop)', () => {
     expect(String(errSpy.mock.calls[0][0])).toContain('rogue 2-segment /cities')
   })
 })
+
+import { finalizeSitemapEntries } from './sitemap-guard'
+
+describe('finalizeSitemapEntries (visibility audit 2026-09-22: redirect sources, neighborhood twins, duplicates)', () => {
+  let errSpy2: ReturnType<typeof vi.spyOn>
+  beforeEach(() => {
+    errSpy2 = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => errSpy2.mockRestore())
+
+  it('drops the browse twin of a sanctioned neighborhood (it 301s to the neighborhood page)', () => {
+    const entries = [
+      { url: `${BASE}/homes-for-sale/bend/larkspur` }, // twin of /cities/bend/larkspur
+      { url: `${BASE}/homes-for-sale/bend/some-plat` }, // not a neighborhood: kept
+      { url: `${BASE}/cities/bend/larkspur` },
+    ]
+    expect(finalizeSitemapEntries(entries, allowed).map((e) => e.url)).toEqual([
+      `${BASE}/homes-for-sale/bend/some-plat`,
+      `${BASE}/cities/bend/larkspur`,
+    ])
+  })
+
+  it('drops every path next.config permanently redirects (data/legacy-redirects.json)', () => {
+    const entries = [
+      { url: `${BASE}/luxury-homes-bend` }, // 308 -> /homes-for-sale/bend?minPrice=1500000
+      { url: `${BASE}/blog/tetherow-resort-living-real-estate` }, // 308 -> /communities/tetherow (SITE-180)
+      { url: `${BASE}/communities/tetherow` },
+    ]
+    expect(finalizeSitemapEntries(entries, allowed).map((e) => e.url)).toEqual([`${BASE}/communities/tetherow`])
+  })
+
+  it('emits each URL once, first occurrence wins, trailing slash ignored', () => {
+    const entries = [
+      { url: `${BASE}/cities/bend`, priority: 0.8 },
+      { url: `${BASE}/cities/bend/`, priority: 0.7 },
+      { url: `${BASE}/homes-for-sale/bend` },
+      { url: `${BASE}/homes-for-sale/bend` },
+    ]
+    const out = finalizeSitemapEntries(entries, allowed)
+    expect(out.map((e) => e.url)).toEqual([`${BASE}/cities/bend`, `${BASE}/homes-for-sale/bend`])
+    expect(out[0].priority).toBe(0.8)
+  })
+
+  it('still applies the rogue 2-segment /cities backstop', () => {
+    expect(finalizeSitemapEntries([{ url: rogueTemplate }], allowed)).toEqual([])
+  })
+})

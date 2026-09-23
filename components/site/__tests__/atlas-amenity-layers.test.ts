@@ -19,10 +19,16 @@ describe('SITE-128 Atlas amenity layers', () => {
     expect(NBH).toMatch(/getPlaceAmenityLayers/)
     expect(COMM).toMatch(/getPlaceAmenityLayers/)
     expect(SUB).toMatch(/getPlaceAmenityLayers/)
-    expect(CITY).toMatch(/amenities=\{amenityLayers\}/)
-    expect(NBH).toMatch(/amenities=\{amenityLayers\}/)
-    expect(COMM).toMatch(/amenities=\{amenityLayers\}/)
-    expect(SUB).toMatch(/amenities=\{amenityLayers\}/)
+    // UXLIVE-3: a page may hand the layers through deferredAtlasProps, which
+    // ships the same recorded geometry at the precision the frame can draw.
+    const wired = (src: string) =>
+      /amenities=\{amenityLayers\}/.test(src) ||
+      (/deferredAtlasProps\(\{[\s\S]*?amenities:\s*amenityLayers[\s\S]*?\}\)/.test(src) &&
+        /amenities=\{atlasProps\.amenities\}/.test(src))
+    expect(wired(CITY)).toBe(true)
+    expect(wired(NBH)).toBe(true)
+    expect(wired(COMM)).toBe(true)
+    expect(wired(SUB)).toBe(true)
     expect(ATLAS).toMatch(/data-atlas-amenity-layer/)
     expect(ATLAS).toMatch(/data-atlas-amenity="park"/)
     expect(ATLAS).toMatch(/data-atlas-amenity="trail"/)

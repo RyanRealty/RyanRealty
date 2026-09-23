@@ -172,6 +172,7 @@ import {
   dbGeoSlug,
 } from './_v3/annual-constants'
 import { CLOSED_LEAD_FIGURES, MARKET_LEAD_FIGURES } from '../_v3/opening'
+import { CITY_FOOTNOTE_TERM } from '@/lib/market/city-footnote-fact'
 import { buildPaceTailFigures } from '../_v3/tail-figures'
 import {
   CITY_REPORTS_PATH,
@@ -505,10 +506,11 @@ export default async function AnnualReviewPage() {
     coverage.push({
       kind: 'prose',
       // The facts under this heading STATE a figure for most cities ("Madras
-      // has 74 active..."), so a heading claiming "no live inventory figure"
-      // contradicted its own body (2026-08-27 audit). The hub's wording is the
-      // honest one.
-      term: 'Cities not in the tables above',
+      // has 74 single-family homes for sale..."), so a heading claiming "no live
+      // inventory figure" contradicted its own body (2026-08-27 audit). VOICE-6
+      // (2026-09-22): the same term and the same sentences as the hub, the city
+      // report and the region report (lib/market/city-footnote-fact.ts).
+      term: CITY_FOOTNOTE_TERM,
       body: `${inventory.missing.map((c) => c.fact).join('. ')}.`,
     })
   }

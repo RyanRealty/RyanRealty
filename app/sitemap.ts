@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { cityEntityKey, cityNeighborhoodPath, listingsBrowsePath, teamPath, valuationPath } from '../lib/slug'
-import { filterRogueCityUrls } from '../lib/sitemap-guard'
+import { finalizeSitemapEntries } from '../lib/sitemap-guard'
+import { LLMS_ZIPS } from '@/lib/site/llms-geo'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
 import { isBendNewConstructionSearchTwinPath } from '@/lib/routing/bend-new-construction-search-twin'
@@ -20,7 +21,8 @@ import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
-import { getSubdivisionBrowsePairsByCity } from '@/lib/data/subdivisions/getSubdivisionCityInventory'
+import { getBrowsePairSitemapPaths } from '@/lib/seo/getBrowsePairDecision'
+import { cityPresetTypeTwin, placeTypeSitemapPaths } from '@/lib/seo/place-type-twin'
 import {
   getSearchMatrixSitemapEntries,
   getMatrixCityPresetDecisionSet,
@@ -43,13 +45,12 @@ import { CO_PARKS } from '@/data/co-parks'
 // which included ~31 junk subdivision slugs ("Industrial, Madras Oregon").
 const RESORT_COMMUNITY_SLUGS: string[] = getAllResortCommunities().map((c) => publicCommunitySlug(c))
 
-// Lifetime-listing floor for a (city, subdivision) browse URL to earn a
-// sitemap slot. The threshold counts every status bucket (active + pending +
-// closed), so a subdivision with real sold history KEEPS its URL after the
-// last active listing closes — active-only sourcing made these pages
-// evaporate from the index between listings, exactly when their sold-history
-// content is the page's value.
-const SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS = 3
+// The (city, subdivision) browse-pair floor that lived here
+// (SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS = 3, every status) is retired
+// (visibility audit 2026-09-22, EXP-2): it submitted pages with no listing and
+// no sold history to show. The emission rule is now the shared browse-pair
+// decision (lib/seo/browse-pair-decision.ts, BROWSE_PAIR_MIN_LIFETIME_SALES),
+// which the search route's robots and canonical read too.
 
 /**
  * NOT THE SERVED SITEMAP ANY MORE — this file is the URL-UNIVERSE BUILDER.
@@ -135,12 +136,12 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       priority: 0.6,
     })),
     { url: `${baseUrl}/open-houses`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
-    { url: `${baseUrl}/activity`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+    // /activity and /buy are not listed: both 301 (to /housing-market and
+    // /homes-for-sale) since UXLIVE-8, and a sitemap never submits a redirect.
     { url: `${baseUrl}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/sell`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}${valuationPath()}`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/buy`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     // Sell + buy intent pages (indexable, proper metadata) — added so the
     // long-tail intent landing pages are crawlable.
     { url: `${baseUrl}/sell/for-sale-by-owner`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
@@ -269,7 +270,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
   if (!supabaseUrl || !supabaseKey) {
-    return filterRogueCityUrls(staticPages, allowedNeighborhoodPaths)
+    return finalizeSitemapEntries(staticPages, allowedNeighborhoodPaths)
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey)
@@ -301,14 +302,19 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     withTimeoutFallback(work, fallback, remainingMs(), `sitemap:${label}`)
 
   try {
-    // Cities — paginate to get ALL cities (Supabase caps at 1,000 per request)
+    // Cities — paginate to get ALL cities (Supabase caps at 1,000 per request).
+    // Fallback is the ten seeded site cities, not []: this raw-listings scan hit
+    // the statement timeout 11 times in 24h on 2026-09-22, and an empty
+    // fallback silently dropped every /cities, /homes-for-sale/{city}/{preset}
+    // and /open-houses family from that hour's sitemap (visibility audit,
+    // DATA-4). cityEntityKey is slugify(), so a slug maps to itself.
     const cityRows = await leg(
       'cities',
       fetchAllRows<{ City?: string | null }>(
         supabase, 'listings', 'City',
         (q) => q.or(ACTIVE_STATUS_OR).not('City', 'is', null),
       ),
-      [] as Array<{ City?: string | null }>,
+      SITE_CITY_SLUGS.map((slug) => ({ City: slug })) as Array<{ City?: string | null }>,
     )
 
     const cities = Array.from(
@@ -371,6 +377,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         if (matrixCityPresetNoIndexFromSet(matrixCityPresetDecision, key, preset)) continue
         // SITE-179: Bend new-construction lives at /new-construction.
         if (isBendNewConstructionSearchTwinPath(`/homes-for-sale/${key}/${preset}`)) continue
+        // EXP-6: a type preset with verified inventory canonicalizes to
+        // /cities/{city}/types/{type}; the types leg below submits that page
+        // instead (lib/seo/place-type-twin.ts — the search route's metadata
+        // reads the same rule).
+        if (cityPresetTypeTwin(key, preset, matrixCityPresetDecision?.positiveCityPresets ?? null)) continue
         dynamicPages.push({
           url: `${baseUrl}/homes-for-sale/${key}/${preset}`,
           lastModified: now,
@@ -378,6 +389,15 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
           priority: 0.8,
         })
       }
+    }
+
+    // Place-type pages (EXP-6): /cities/{city}/types/{type} and
+    // /communities/{community}/types/{type}, each only with a VERIFIED positive
+    // active count from the same matrix decision set as the preset loop above,
+    // so a type page is submitted exactly when its preset twin is not. A failed
+    // matrix read submits none (the twins then stay in, fail-open as before).
+    for (const path of placeTypeSitemapPaths(cities.map((c) => cityEntityKey(c)), matrixCityPresetDecision)) {
+      dynamicPages.push({ url: `${baseUrl}${path}`, lastModified: now, changeFrequency: 'daily', priority: 0.75 })
     }
 
     // Communities — ONLY the curated resort registry (slugs with a real page).
@@ -392,12 +412,28 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       })
     }
 
-    // Subdivisions. Persistent (city, subdivision) pairs across ALL listing
-    // statuses, thresholded by SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS, NOT
-    // just currently-active pairs (active-only sourcing dropped a subdivision
-    // URL from the sitemap the day its last listing closed). City scoping
-    // stays on the CENTRAL_OREGON_CITY_SLUGS allowlist, independent of live
-    // inventory, so a city with zero actives keeps its subdivision URLs too.
+    // Subdivision browse pairs (/homes-for-sale/{city}/{sub}). Emitted exactly
+    // when the SHARED browse-pair decision says so
+    // (lib/seo/browse-pair-decision.ts — the search route's robots and
+    // canonical read the same function, so a submitted pair is always
+    // indexable and self-canonical). Visibility audit 2026-09-22 (EXP-2,
+    // EXP-4, SEO-6). The live MVs run through this code on 2026-09-23, against
+    // the 1,815 browse locs the live geo.xml carried under the old floor (>= 3
+    // lifetime listings of any status; 1,051 of them had nothing for sale):
+    // 748 stay; 662 plat twins of the same place (same city; 16 across a word
+    // break) now carry rel=canonical to /subdivisions/{plat slug}, 17 community
+    // twins to /communities/{slug}, 146 carry an MLS code as their only name,
+    // 179 have no listing for sale and under 10 sales on record, 61 have
+    // listings but under 10 sales (indexable while they do, never submitted),
+    // and 2 are neighborhood slugs finalizeSitemapEntries already drops. What
+    // stays is every pair with >= BROWSE_PAIR_MIN_LIFETIME_SALES (10) closed sales under
+    // its name: a page that always has content (the listings when there are
+    // any, the sold-history section always), and a set decided on LIFETIME
+    // depth, so it still does not flap as listings come and go — the reason
+    // the old comment here gave for counting every status (active-only
+    // sourcing dropped a subdivision URL the day its last listing closed).
+    // City scoping stays on the CENTRAL_OREGON_CITY_SLUGS allowlist, so a city
+    // with zero actives keeps its pairs.
     // /cities/{city}/{sub} is deliberately NOT emitted here: that route only
     // resolves for boundary-neighborhood rows (anything else 404s), and
     // submitting 404s poisons the programmatic-page quality signal. The
@@ -421,25 +457,21 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // 504 'Task timed out after 300 seconds' twice on 2026-09-09.
     //
     // The aggregate now happens once a night inside the MV. Same rows, same
-    // classification (classifyLifetimeBuckets), same floor, same output set —
-    // see lib/data/subdivisions/getSubdivisionCityInventory.ts.
+    // classification (classifyLifetimeBuckets) — see
+    // lib/data/subdivisions/getSubdivisionCityInventory.ts.
     const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
-    const subdivisionSlugsByCity = await leg(
+    const browsePairPaths = await leg(
       'subdivision-browse-pairs',
-      getSubdivisionBrowsePairsByCity(subdivisionCitySlugs, SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS),
-      new Map<string, string[]>(),
+      getBrowsePairSitemapPaths(subdivisionCitySlugs),
+      [] as string[],
     )
-    for (const [citySlug, subSlugs] of subdivisionSlugsByCity) {
-      for (const subSlug of subSlugs) {
-        // SITE-183 / SITE-182: a registry community's area twin
-        // (/homes-for-sale/bend/broken-top) 301s onto the community page,
-        // which the resort loop above already lists. A sitemap lists
-        // canonicals, never a redirect source.
-        if (redirectsAwayFromSearch(`/homes-for-sale/${citySlug}/${subSlug}`)) continue
-        dynamicPages.push(
-          { url: `${baseUrl}/homes-for-sale/${citySlug}/${subSlug}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-        )
-      }
+    for (const path of browsePairPaths) {
+      // SITE-183 / SITE-182: a registry community's area twin
+      // (/homes-for-sale/bend/broken-top) 301s onto the community page,
+      // which the resort loop above already lists. A sitemap lists
+      // canonicals, never a redirect source.
+      if (redirectsAwayFromSearch(path)) continue
+      dynamicPages.push({ url: `${baseUrl}${path}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 })
     }
 
     // Subdivision DETAIL pages (/subdivisions/[slug]) — the plat-boundary pages
@@ -450,6 +482,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // lib/data/subdivisions/subdivision-index.test.ts). Distinct from the
     // browse-pair floor above: detail pages carry the sold-history section, so
     // they earn indexation with real sold depth, not a listing trickle.
+    // Since 2026-09-23 (Matt: multi-phase subdivisions grouped under one main
+    // page; SEO-7) the same set also carries each plat FAMILY's main page
+    // (/subdivisions/ridge-at-eagle-crest) and leaves out a plat recorded under
+    // a city, neighborhood or community name (/subdivisions/bend, /sisters,
+    // /la-pine). Nothing to change here: the set decides, this leg submits it.
     const indexableSubdivisions = await leg('indexable-subdivisions', getIndexableSubdivisions(), [])
     for (const url of subdivisionSitemapUrls(indexableSubdivisions, baseUrl)) {
       dynamicPages.push({
@@ -526,23 +563,15 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       })
     }
 
-    // ZIP codes — paginate
-    const zipRows = await leg(
-      'zips',
-      fetchAllRows<{ PostalCode?: string | null }>(
-        supabase, 'listings', 'PostalCode',
-        (q) => q.or(ACTIVE_STATUS_OR).not('PostalCode', 'is', null),
-      ),
-      [] as Array<{ PostalCode?: string | null }>,
-    )
-
-    const zips = Array.from(
-      new Set(
-        zipRows
-          .map((r) => (r.PostalCode ?? '').replace(/\D/g, '').slice(0, 5))
-          .filter((z) => z.length === 5)
-      )
-    )
+    // ZIP codes — exactly the ZIPs the route serves. app/zip/[zip] is
+    // dynamicParams=false over CANONICAL_ZIPS (10 ZIPs), so anything else
+    // 404s. Until 2026-09-22 this leg enumerated every PostalCode with an
+    // active listing statewide by scanning raw `listings` (a query that hit
+    // the statement timeout 42 times in 24h and then silently dropped the
+    // whole family), which submitted 105 URLs that returned 404 (visibility
+    // audit 2026-09-22, EXP-5 / DATA-4). LLMS_ZIPS is pinned byte-identical
+    // to CANONICAL_ZIPS by lib/site/llms-geo.test.ts and is server-safe.
+    const zips = LLMS_ZIPS.map((z) => z.zip)
     for (const zip of zips) {
       dynamicPages.push({
         url: `${baseUrl}/zip/${zip}`,
@@ -596,6 +625,10 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   }
 
   // Output-based drift backstop: drop any non-sanctioned 2-seg /cities URL,
-  // however built (template/concat/join/aliased). Inspects final URL strings.
-  return filterRogueCityUrls([...staticPages, ...dynamicPages], allowedNeighborhoodPaths)
+  // however built (template/concat/join/aliased), drop the browse twin of
+  // every neighborhood (/homes-for-sale/{city}/{slug} 301s to the neighborhood
+  // page), and emit each URL once (the static seed and the city loop both
+  // pushed /cities/{c}, /homes-for-sale/{c}, /open-houses/{c}: 30 duplicates
+  // on 2026-09-22). Inspects final URL strings.
+  return finalizeSitemapEntries([...staticPages, ...dynamicPages], allowedNeighborhoodPaths)
 }

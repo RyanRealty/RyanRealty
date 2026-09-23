@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-23T20:55:42.632Z
+**Generated:** 2026-09-23T23:37:57.071Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -244,7 +244,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ### `listing_tile_mv` · **rows ≈ 596,428**
 
-Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
+Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed every 30 minutes by pg_cron job `refresh_listing_tile_mv_30min` (:02/:32). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -539,7 +539,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 529**
+### `cmas` · **rows ≈ 530**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -629,7 +629,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 514**
+### `expired_listings` · **rows ≈ 515**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -689,7 +689,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_idempotency_key` | text | yes |  |
 | `outreach_email_queued_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 995**
+### `marketing_brain_actions` · **rows ≈ 996**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|

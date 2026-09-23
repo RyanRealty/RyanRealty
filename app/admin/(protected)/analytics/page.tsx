@@ -39,6 +39,7 @@ import { RangeControl } from './_components/v2/RangeControl'
 import { SalesFunnelTab } from './_components/SalesFunnelTab'
 import { HorizontalBarChart, TimeSeriesChart, BrokerPieChart, StackedBarMix } from './_components/charts'
 import ReportCatalog from './_components/ReportCatalog'
+import { Ga4MirrorNotice } from './_components/Ga4MirrorNotice'
 import { getLeadSources } from '@/lib/data/analytics/leadSources'
 import { getBookConversion } from '@/lib/data/analytics/bookConversion'
 
@@ -147,6 +148,8 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
 
   return (
     <>
+      {/* TRACK-1: sessions, users, engagement, bounce and top source are mirror-shaped. */}
+      <Ga4MirrorNotice />
       <Figures
         figures={[
           { label: 'Sessions', value: formatInt(d.sessions) },
@@ -379,6 +382,8 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
       <FirstPartyAcquisition range={range} />
 
       <SectionHead>Google Analytics — behaviour only</SectionHead>
+      {/* TRACK-1: GA4 session and source figures below are mirror-shaped. */}
+      <Ga4MirrorNotice />
       <p className="av2-note">
         GA4 reports no traffic source for visitors who never answered the cookie banner, which is
         almost all of them. Read the section above for where visits came from; these blocks are

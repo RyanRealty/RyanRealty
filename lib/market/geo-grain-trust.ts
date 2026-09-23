@@ -56,6 +56,15 @@
  *
  * When the neighborhood writer is repaired, add 'neighborhood' here in the same
  * commit that lands the migration, with the counts that prove it.
+ *
+ * 2026-09-23 (audit DATA-7): migration
+ * 20260923014700_pulse_withhold_unverified_closed_side.sql (written 2026-09-23,
+ * applied only once a DDL path runs it) makes the neighborhood writer store
+ * NULL for every closed-side column (months of supply, absorption, sold 30/90
+ * days, median close, days to pending, sale-to-list)
+ * instead of the alias-join figures. That is a withhold, not a repair: the
+ * grain stays untrusted here, and Market Truth (place_membership on both sides)
+ * remains the only published neighborhood months of supply.
  */
 
 import type { GeoType } from '@/lib/data/types/shared'

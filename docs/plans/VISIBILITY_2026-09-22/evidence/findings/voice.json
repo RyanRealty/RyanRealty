@@ -1,0 +1,361 @@
+{
+  "area": "voice",
+  "notes_path": "/tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/voice/notes.md",
+  "summary": "I harvested the rendered copy of 13 production pages with a Chrome UA (Playwright innerText, plus curl for the listing page and server HTML for /, the ridge subdivision, Awbrey Butte, and /team/matthew-ryan), traced every bad line to its source file, inventoried the mechanical rules that still shape copy after Matt's 2026-09-07 retirement, read the site-queue accept test and TASTE rubric for any voice criterion, and pulled three competitor/place-owner pages for tone. Saved copy, HTML and scripts are under the scratch dir named above; git status is clean and no MCP tool was used. The site's copy has three sources: 27 hand-authored place JSON files with citations (the best writing on the site, e.g. Tetherow and Awbrey Butte about_prose), route-local constants (about/home), and roughly ten TypeScript sentence generators that template figures across ~3,400 subdivision, 28 neighborhood and city/community pages; plus 20 seeded blog spotlights and three broker bios in Supabase that render only on /team/<slug>. Grok is not used for public place copy. The 'awful voice' is mostly the generators and the source lines: engineer-first traces are auto-cut into the visible source name ('market_metric financing_mix', 'leftover membership', 'Median asking price $1'), instruction copy reads as content ('Hover, tap or tab another cut for its home and dollars.'), self-referential sentences ('You are on the Bend housing market report'), templated headings ('Awbrey Butte questions, answered with the number', four bare 'Bend' H2s), raw MLS abbreviations on /price-drops ('Bend · Oww', 'La Pine · DrrhLp'), and sentences cut at abbreviations ('Camp Abbot, a U.S.'). The one p0 is not voice but shipped data: components/motion/number.tsx AnimatedNumber defaults settleOnMount=false and renders format(0) on the server, so the server HTML of / carries '$0 median list price' and 'houses for sale 0' for every community and city card, and /subdivisions/ridge-at-eagle-crest ships 'The middle asking price of the 0 homes for sale … is $0' beside '88 homes' and '14 homes' for the same phrase; five islands never pass settleOnMount. Nothing in the loop reads text: the site-queue accept test is catalog/tokens/floor/score, the TASTE rubric has no copy row, the evaluator scores screenshots, and the content floor counts words, which rewards more sentences. Surviving mechanical residue is small: the em-dash lock (Matt 2026-09-20, a 22-path allowlist), a banned-word regex in check-market-narrative-integrity, ten dead 'brand-voice:exempt' markers. I also observed intermittent production 502s ('upstream request failed') on 4 of ~22 loads. Proposal: one voice model plus per-class exemplar files that generators must draw from, a separate text-reading evaluator recorded as voiceReview beside tasteReview, decidable gates only for honesty and jargon (settleOnMount, reader-facing source names, publishPlatDisplayName everywhere, no URL paths in prose), and surfacing the copy that already sounds right (bios, VOICE.md homepage lead, about_prose paragraphs).",
+  "facts": [
+    {
+      "fact": "VOICE.md is 64 lines with no word lists or gates; brand-voice/SKILL.md is 9 lines ('No mechanical checks'). The 2026-09-07 retirement commit is not in this 130-commit shallow clone (git log for VOICE.md shows only ad34dcd 2026-09-19).",
+      "evidence": "Read marketing_brain_skills/brand-voice/VOICE.md (lines 1-64) and SKILL.md (lines 1-9); `git log --oneline | wc -l` = 130; `git log -- marketing_brain_skills/brand-voice/VOICE.md` = ad34dcd only."
+    },
+    {
+      "fact": "Server HTML of / renders '$0' and '0' as the figure values of every featured community card and 'houses for sale 0' for every town in Browse places; the rendered DOM in headless Chromium after scrolling shows 9 cards reading '0 homes for sale | $0 median list price'.",
+      "evidence": "home-raw.html: `<span class=\"tabular-nums home-featured-community__figure-value\">$0</span> <span class=\"home-featured-community__figure-label\">median list price</span>` and `houses for sale 0 <div data-slot=\"card-footer\"`; scroll-test.mjs output: `zero-card count: '0 homes for sale'=9 '$0 median'=9`; home.txt lines 265-390."
+    },
+    {
+      "fact": "components/motion/number.tsx AnimatedNumber defaults settleOnMount=false and its server face is format(0); its own comment says this ships '$0 median list price' in HTML. 13 usages in app/+components/, 5 pass settleOnMount; five files never do.",
+      "evidence": "components/motion/number.tsx lines 14-27 and `useState(settleOnMount ? value : 0)`; grep: 13 `<AnimatedNumber`, 5 with settleOnMount; files without it: app/_v3/HomeBrowsePlaces.tsx, app/_v3/HomeFeaturedCommunity.client.tsx, app/cities/[slug]/_v3/CityInsight.client.tsx, app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodInsight.client.tsx, app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx."
+    },
+    {
+      "fact": "Server HTML of /subdivisions/ridge-at-eagle-crest contains three different counts under one phrase: '88 homes for sale in Ridge at Eagle Crest' (3x), '14 homes for sale in Ridge at Eagle Crest' (2x) and 'The middle asking price of the 0 homes for sale in Ridge at Eagle Crest is $0'.",
+      "evidence": "ridge-raw.html grep: `2 14 homes for sale in Ridge at Eagle Crest`, `3 88 homes for sale in Ridge at Eagle Crest`, and the $0 sentence; source app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx lines 80-98 (AnimatedNumber without settleOnMount)."
+    },
+    {
+      "fact": "The visible source name on the Awbrey Butte affordability section is 'Median asking price $1' because the trace is built as 'Median asking price $1,312,500,, …' and the name is cut at the first comma.",
+      "evidence": "awbrey-raw.html: `<span class=\"v3-source__name\">Median asking price $1</span>` and `Median asking price $1,312,500,,` (3x); lib/place/publish-place-affordability.ts:121 (`Median asking price ${formatPriceExact(median)},` then `.join(', ')`); components/site/v3/V3SourceLine.tsx:112-124 sourceNameFromTrace (shorter of first-comma / first-stop segment)."
+    },
+    {
+      "fact": "Engineer identifiers are the visible source name on public pages: 'market_metric financing_mix' (Awbrey), 'leftover membership' (listing), 'Market Truth (market_metric, detached): …' (listing pill), and the RSC payload carries 'public.market_metric · stat_id=pct_with_price_cut …' as a source field.",
+      "evidence": "awbrey-raw.html `v3-source__name\">market_metric financing_mix`; listing-raw.html `v3-source__name\">leftover membership` and `\"source\":\"public.market_metric · stat_id=pct_with_price_cut · geo_type=city · geo_slug=bend`; lib/place/publish-place-affordability.ts:144; lib/listing/publish-listing-pill-read.ts:84. lib/site/place-answers.ts:170-186 moved its handle to data-source-key after a 2026-09-08 evaluator flagged the same tell."
+    },
+    {
+      "fact": "/price-drops prints raw MLS subdivision abbreviations in visitor rows: 'Bend · Oww', 'La Pine · DrrhLp', 'Redmond · Aspen Creek Mob Pk', 'Bend · Deschutes River Trac', 'Bend · Inn Of The 7th'.",
+      "evidence": "price-drops.txt lines 129-147; app/price-drops/_v3/drops-field-items.ts:66 calls displaySubdivision (lib/slug.ts:34-41, sentinel filter only), not publishPlatDisplayName; scripts/check-publish-place-names.mjs header names 'Oww / DrrhTrs' as its founding case but pins only the subdivision route."
+    },
+    {
+      "fact": "The brokers table holds real bios (866, 899, 1,059 chars) that read like VOICE.md; /team index renders no bio sentence by design and /about's fold sentence and 'The brokers are on /team.' are hard-coded constants (Matt lock 2026-09-14).",
+      "evidence": "brokers.mjs via scratch sb.mjs helper: 3 rows, bio_len 866/899/1059, Matt's bio opens 'Matt Ryan is the owner and principal broker of Ryan Realty in Bend, Oregon. He has been licensed in Oregon since 2012…'; team.txt has no bio text; app/team/page.tsx lines 9-20; app/about/_v3/about-constants.ts:34-36 and :89; curl /team/matthew-ryan contains the bio (team-matt-raw.html)."
+    },
+    {
+      "fact": "Copy on public place pages is generated by TypeScript sentence builders, not Grok: lib/site/place-answers.ts, market-faq.ts, place-faq-extras.ts, place-recreation.ts, lib/place/publish-place-affordability.ts, app/subdivisions/[slug]/_v3/plat-caption.ts, subdivision-traces.ts, app/_v3/home-pulse.ts, lib/listing/publish-listing-pill-read.ts, app/housing-market/[...slug]/_v3/geo-figures.ts. Hand-authored prose lives in 27 data/resort-community-*.json files with sources; 20 blog spotlights are seeded from scripts/blog-content/community-spotlights.ts.",
+      "evidence": "Read each file; `ls data/resort-community-*.json | wc -l` = 27; grep of lib/grok imports across app/cities, app/communities, app/subdivisions, app/housing-market, lib/site, lib/place returns only app/communities/[slug]/_v3/place-value-actions.ts; community-spotlights.ts has 20 `title:` entries and the Tetherow seed at lines 580-595 with an Unsplash hero_image_url."
+    },
+    {
+      "fact": "Page class sizes for the generator templates: 3,427 subdivision boundaries and 28 neighborhood boundaries.",
+      "evidence": "classsize.mjs via the scratch helper: {\"boundaries_subdivision\":3427,\"boundaries_neighborhood\":28}."
+    },
+    {
+      "fact": "Neither the site-queue accept test nor the TASTE rubric contains a voice or copy criterion; the frozen evaluator scores screenshots; the content floor counts words.",
+      "evidence": ".claude/skills/site-queue/SKILL.md lines 55-80 (accept test: catalog installed, tokens, content floor incl. 'words', score); design_system/public/TASTE.md rubric table (design 30 / originality 30 / interaction 15 / craft 15 / honesty 10) and tells list; taste-evaluator.v1-2026-09-12.md (shots, shotsHash; copy appears only as 'raw slugs, internal labels, methodology jargon'); taste-rule-freeze.json forbids rubric changes without a full table."
+    },
+    {
+      "fact": "Mechanical rules still shaping copy after 2026-09-07: ci:no-public-em-dash (Matt lock 2026-09-20, 22 hand-listed roots; 58 U+2014 hits remain in lib/site, lib/place, app/subdivisions, app/communities, app/listing, components/site/v3, mostly §0 report traces; visible text had 2 em dashes across 13 pages), ci:naked-verb-headings (closed list of 10 words), ci:market-question (mandates the buyer's/seller's question on 6 grains), check-market-narrative-integrity BANNED_WORDS/BANNED_PUNCT (scope: market-narrative.ts only), placeHomesForSaleHeading refuse, TITLE_BUDGET, v3Text non-empty; 10 dead 'brand-voice:exempt' markers; the pre-tool-use hook has no copy rule.",
+      "evidence": "scripts/check-no-public-em-dash.mjs lines 28-52; check-naked-verb-headings.mjs lines 34-37; check-market-question-heading.mjs lines 81-137; check-market-narrative-integrity.mjs lines 79-80; lib/place/place-homes-heading.ts; lib/site/page-metadata.ts:58-66; grep counts: 58 em-dash hits, 10 exempt markers, 0 copy matches in .claude/hooks/pre-tool-use.mjs; em-dash counts per harvested page (sell 1, ridge 1, others 0)."
+    },
+    {
+      "fact": "The gate-mandated question 'Is {place} a buyer's or seller's market?' renders on thin grains with the answer 'has had fewer sales we can attribute to it on its own than a fair buyer's or seller's verdict needs, so we are not printing one.'",
+      "evidence": "communities-tetherow.txt line 533; subdivisions-ridge-at-eagle-crest.txt line 910; lib/site/place-answers.ts:362-399; scripts/check-market-question-heading.mjs requires two emitters of the question."
+    },
+    {
+      "fact": "Sentences on production that no person would say, each traced to source: 'In August 2026 the middle house in Bend sold for $750K. A year earlier, in August 2025, it was $795K, −5.7%, less than the same month last year. Drag across the lines to read any other month.'; 'You are on the Bend housing market report. The live hub and Central Oregon region report are separate pages.'; 'Tumalo has no published active single-family count.'; 'Hover, tap or tab another cut for its home and dollars.'; 'The full conversation continues on Contact.'; 'Oregon Data Share via MarketPulse. Alias-aware active inventory and median list for each resort community.'",
+      "evidence": "housing-market-bend.txt lines 138, 348, 384; price-drops.txt line 236; about.txt line 272; home.txt line 396; sources app/housing-market/[...slug]/_v3/CityInsight.client.tsx:229, geo-figures.ts:435, app/housing-market/_v3/hub-sections.ts:92, app/price-drops/_v3/drops-drawing.ts:88, app/_v3/home-featured-community-shared.ts:28."
+    },
+    {
+      "fact": "Templated and repeated headings: '{place} questions, answered with the number' on three grains; 'Hear about new listings in Bend the day they hit the market.' as an H2 on the Awbrey Butte page; four bare 'Bend' H2s on /cities/bend and three 'Awbrey Butte' H2s; 'how we calculate this' 14 times on /cities/bend and /cities/bend/awbrey-butte; H1 'Single-family in Bend' under a 757-count title; H1 'About Ryan Realty · Bend'; H1 'The brokers'.",
+      "evidence": "Harvest headers H1/H2 arrays in cities-bend.txt, cities-bend-awbrey-butte.txt, communities-tetherow.txt, subdivisions-ridge-at-eagle-crest.txt, cities-bend-types-single-family.txt, about.txt, team.txt; grep counts of 'how we calculate this' (14/14/7/9/2); sources app/cities/[slug]/[neighborhoodSlug]/page.tsx:1111, app/subdivisions/[slug]/page.tsx:1837, app/communities/[slug]/page.tsx:1189."
+    },
+    {
+      "fact": "firstSentence cuts blurbs at abbreviations: 'Sunriver sits 15 miles south of Bend … on land that started out as Camp Abbot, a U.S.' on the homepage and 'Sawyer Park spreads across 53 acres on both sides of the Deschutes off O.B.' on trails.",
+      "evidence": "home.txt line 370; cities-bend.txt line 2560; lib/site/place-recreation.ts:37-43 regex `^.+?[.!?](?:\\s|$)`; app/_v3/home-featured-communities.ts:113-130 imports firstSentence from app/cities/_v3/cities-index-constants."
+    },
+    {
+      "fact": "Two counts for 'single-family homes for sale in Bend' published the same day under the same reader label: 757 (type page title/meta, 'every active single-family home with a Bend address', read Sep 22 12:45 PM) and 581 (/housing-market/bend and /sell, 'detached homes for sale').",
+      "evidence": "cities-bend-types-single-family.txt TITLE and line 16; housing-market-bend.txt lines 130 and 311; sell.txt line 73."
+    },
+    {
+      "fact": "Numbers/timelines shipped without a named basis: 'Written valuation in 24 hours' (home), 'sends a price range within 24 hours' (about FAQ, emitted as FAQPage JSON-LD), 'Typically 5 to 7 business days', 'Professional photos happen within 48 hours', 'Email to 300 nearby homeowners', 'Printed mailers to 200 neighbors', 'Outreach to 50 top agents' (/sell).",
+      "evidence": "app/page.tsx:186 hard-coded v3Text; app/about/_v3/about-constants.ts:107; sell.txt lines 197-200, 237; CLAUDE.md §0 'Invented timelines' (Matt 2026-07-29)."
+    },
+    {
+      "fact": "No fair-housing 'who should live here' copy found in the 13 harvested pages; the listing's 'one of Bend's most desirable neighborhoods' is the listing broker's MLS remark shown as written.",
+      "evidence": "grep of harvested texts for family/retiree/young/professional-type audience language returned nothing beyond the MLS remark at listing-220222277.txt line 220 ('Listing courtesy of RE/MAX Key Properties', line 1099)."
+    },
+    {
+      "fact": "Production returned HTTP 502 'upstream request failed' intermittently: first load of /subdivisions/ridge-at-eagle-crest (502), two of three homepage loads in scroll-test.mjs, and a 502 resource in the /about console.",
+      "evidence": "harvest-index.json entry status 502 with body 'upstream request failed'; scroll-test output 'upstream request failed' for 'default, no scroll' and 'reduced motion, no scroll'; about.txt CONSOLE_ERRORS. Cause UNVERIFIED (proxy vs origin); Playwright and curl both go through the sandbox proxy."
+    },
+    {
+      "fact": "Competitor tone: Compass West Village guide is short sensory declaratives with no figures; Brooks Resources' NorthWest Crossing page is an origin story with names, dates and acres. Redfin served a Bellevue/South San Francisco page to this proxy; Cascade Sotheby's 403; Duke Warner 404; Zillow/Niche 403.",
+      "evidence": "competitor-compass-west-village.txt ('Lazy strolls along the tree-lined streets, stylish cafes, and gastropubs at every criss-crossed corner.'); competitor-northwest-crossing-brooksresources-com.txt ('Mike Hollern of Brooks Resources and Mike Tennant … 486 acres'); competitor-bellevue-wa-*.txt title; curl status lines in the transcript."
+    },
+    {
+      "fact": "Team page Atlas prints a negative overflow count '+ -13 more'; About Atlas prints raw MLS casing 'Just listed in PrineVille - Second, $195,000'.",
+      "evidence": "team.txt line 224; about.txt line 286; components/site/v3/V3Atlas.client.tsx:2468-2471 (`chipPlaces.length - CHIP_FOLD_AT` unclamped)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "VOICE-1",
+      "title": "AnimatedNumber ships 0 / $0 figures in server HTML on home, city, neighborhood and subdivision pages",
+      "severity": "p0",
+      "category": "data",
+      "claim": "Five client islands render figures through the beUI AnimatedNumber with its default settleOnMount=false, so the server-rendered face is format(0): every homepage community card reads '$0 median list price / 0 homes for sale', every town reads 'houses for sale 0', and every subdivision insight reads 'The middle asking price of the 0 homes for sale in {plat} is $0'. A crawler or answer engine reading raw HTML, and any reader whose motion never settles, gets a fabricated zero.",
+      "evidence": "home-raw.html `<span class=\"tabular-nums home-featured-community__figure-value\">$0</span>…median list price` and `houses for sale 0`; ridge-raw.html 'The middle asking price of the 0 homes for sale in Ridge at Eagle Crest is $0'; components/motion/number.tsx lines 14-27 and useState(settleOnMount ? value : 0); grep: 13 usages, 5 with settleOnMount; scroll-test.mjs still shows 9 zero cards after scrolling (crawler-renderer behavior UNVERIFIED).",
+      "why_it_matters": "§0 forbids a wrong number in front of a human or a crawler; the primitive's own comment says so. It also makes the voice absurd ('$0 median list price') on the highest-traffic page and on 3,427 subdivision pages, and the homepage is the page an AI engine quotes first.",
+      "proposed_fix": "Flip the default in components/motion/number.tsx to settleOnMount=true (animate only on later value changes), or forbid direct AnimatedNumber imports outside components/motion and route everything through V3Number. Add a gate: any `<AnimatedNumber` in app/ or components/ (outside components/motion) without settleOnMount fails. Verify with Search Console URL Inspection rendered HTML on / and one /subdivisions/* page.",
+      "fix_size": "small",
+      "files": [
+        "components/motion/number.tsx",
+        "components/site/v3/V3Number.client.tsx",
+        "app/_v3/HomeBrowsePlaces.tsx",
+        "app/_v3/HomeFeaturedCommunity.client.tsx",
+        "app/cities/[slug]/_v3/CityInsight.client.tsx",
+        "app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodInsight.client.tsx",
+        "app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx"
+      ]
+    },
+    {
+      "id": "VOICE-2",
+      "title": "Visible source names are auto-cut from engineer-first traces ('market_metric financing_mix', 'leftover membership', 'Median asking price $1')",
+      "severity": "major",
+      "category": "voice",
+      "claim": "V3SourceLine derives the visible 'Source' name by cutting the trace at the first comma or stop, and most traces open with a table, column or internal layer name, so visitors read database identifiers as the source of a figure; one cut lands inside a thousands-formatted price and prints 'Median asking price $1'.",
+      "evidence": "awbrey-raw.html v3-source__name values 'Median asking price $1' and 'market_metric financing_mix'; listing-raw.html v3-source__name 'leftover membership'; lib/listing/publish-listing-pill-read.ts:84 'Market Truth (market_metric, detached): …'; listing RSC source 'public.market_metric · stat_id=pct_with_price_cut …'; components/site/v3/V3SourceLine.tsx:112-124; lib/place/publish-place-affordability.ts:121,144. lib/site/place-answers.ts:170-186 already moved its machine handle to data-source-key for this exact tell.",
+      "why_it_matters": "TASTE.md bans 'raw slugs, internal labels, methodology jargon' in anything a visitor reads, and VOICE.md says specific beats generic in a person's words. A reader cannot check 'leftover membership'; an answer engine may quote it. '$1' is a false number.",
+      "proposed_fix": "Make `name` a required, reader-facing prop on V3SourceLine (e.g. 'Bend detached closed sales, last 12 months') and move the machine handle to data-source-key like place-answers does; fix the comma in publish-place-affordability.ts:121; add a decidable gate that the rendered v3-source__name may not match /(public\\.|market_metric|_mv\\b|stat_id=|leftover|[a-z]+_[a-z]+)/ or end in a truncated currency.",
+      "fix_size": "medium",
+      "files": [
+        "components/site/v3/V3SourceLine.tsx",
+        "lib/place/publish-place-affordability.ts",
+        "lib/listing/publish-listing-pill-read.ts",
+        "app/cities/[slug]/_v3/city-market-charts-data.ts",
+        "lib/site/place-answers.ts"
+      ]
+    },
+    {
+      "id": "VOICE-3",
+      "title": "Raw MLS subdivision abbreviations leak on /price-drops and the Atlas pulse",
+      "severity": "major",
+      "category": "voice",
+      "claim": "Price-drop rows print the MLS SubdivisionName through displaySubdivision (a sentinel filter), not publishPlatDisplayName, so visitors read 'Oww', 'DrrhLp', 'Mob Pk', 'Trac', 'Inn Of The 7th'; the About atlas pulse prints 'PrineVille - Second'. The founding case of ci:publish-place-names was this exact defect on another route.",
+      "evidence": "price-drops.txt lines 129-147; about.txt line 286; app/price-drops/_v3/drops-field-items.ts:66; lib/slug.ts:34-41; scripts/check-publish-place-names.mjs header ('More areas printed Oww / DrrhTrs').",
+      "why_it_matters": "It is the most visible jargon on a page built to be shared weekly, it names places no buyer recognizes, and the gate that exists for it does not cover the route.",
+      "proposed_fix": "Route every visitor-facing subdivision label (price drops, atlas pulse, listing cards, similar-homes lines) through publishPlatDisplayName (withhold abbreviations) and extend ci:publish-place-names to pin those call sites.",
+      "fix_size": "small",
+      "files": [
+        "app/price-drops/_v3/drops-field-items.ts",
+        "lib/slug.ts",
+        "lib/market/publish-plat-display-name.ts",
+        "components/site/v3/V3Atlas.client.tsx",
+        "scripts/check-publish-place-names.mjs"
+      ]
+    },
+    {
+      "id": "VOICE-4",
+      "title": "Nothing in the loop reads the text: no voice criterion in the accept test, the TASTE rubric or the evaluator",
+      "severity": "major",
+      "category": "process",
+      "claim": "The site-queue accept test is catalog/tokens/content-floor/score; the TASTE rubric has no copy row; the frozen evaluator scores screenshots; the content floor counts words. Copy therefore drifts toward templated headings and instruction sentences that a screenshot cannot flag, and adding sentences is rewarded.",
+      "evidence": ".claude/skills/site-queue/SKILL.md lines 55-80; design_system/public/TASTE.md rubric table; taste-evaluator.v1-2026-09-12.md (shotsHash, only 'raw slugs' tell touches copy); repeated production phrases: '{place} questions, answered with the number' on 3 grains, 'how we calculate this' 14x on /cities/bend, four bare 'Bend' H2s, 'Hover, tap or tab another cut…', 'You are on the Bend housing market report…'.",
+      "why_it_matters": "Matt's complaint is the voice, and the only feedback loop the builders optimize against cannot see it. VOICE.md retired mechanical rules, which leaves human-quality judgment as the mechanism, and no human or model is assigned to read the words.",
+      "proposed_fix": "Add a separate text-reading evaluator per page class (innerText, chrome stripped), scored on: sounds like a person who knows Central Oregon, jargon/identifiers, repetition (same phrase >2x per page), self-reference, fragments, fake precision; record it as voiceReview beside tasteReview in parity.json with builder ≠ evaluator and the same rise discipline; drop the word count from the content floor as a quality proxy. Matt reads one page per class per round.",
+      "fix_size": "medium",
+      "files": [
+        ".claude/skills/site-queue/SKILL.md",
+        "design_system/public/TASTE.md",
+        "design_system/public/taste-evaluator.v1-2026-09-12.md",
+        "design_system/public/taste-rule-freeze.json",
+        "scripts/lib/taste-receipt.mjs",
+        "scripts/check-route-content-floor.mjs"
+      ]
+    },
+    {
+      "id": "VOICE-5",
+      "title": "The copy that already sounds like VOICE.md is hidden: no bio on /team, a generic locked sentence on /about, no VOICE.md lead on /",
+      "severity": "major",
+      "category": "voice",
+      "claim": "The brokers table holds three real bios that read like the VOICE.md exemplar, but /team's H1 is 'The brokers' and the index renders licenses and counts only; /about opens on 'helps clients buy and sell their properties' (a 2026-09-14 lock) and answers 'Who are the brokers?' with 'The brokers are on /team.'; the homepage lead exemplar from VOICE.md is not on the homepage.",
+      "evidence": "brokers.mjs output (bio_len 866/899/1059); team.txt (no bio sentence); app/team/page.tsx:9-20; app/about/_v3/about-constants.ts:34-36, 89; home.txt hero lines 20-26; team-matt-raw.html contains the bio one click deeper.",
+      "why_it_matters": "The three pages an AI engine reads to describe the brokerage carry the least human copy on the site, while the best sentences sit on pages nobody links to from the nav.",
+      "proposed_fix": "Put each broker's first bio sentence on the /team index card and one on /about's fold; use the VOICE.md homepage lead under the hero H1; replace '/team' in the FAQ answer with names or a link text; keep the deep bios on /team/<slug>. Needs Matt to lift the 2026-09-14 fold lock.",
+      "fix_size": "small",
+      "files": [
+        "app/team/page.tsx",
+        "app/about/_v3/about-constants.ts",
+        "app/about/page.tsx",
+        "app/page.tsx",
+        "marketing_brain_skills/brand-voice/VOICE.md"
+      ]
+    },
+    {
+      "id": "VOICE-6",
+      "title": "Generator sentences that no person says (chart lede, self-referential nav copy, instruction copy as content)",
+      "severity": "major",
+      "category": "voice",
+      "claim": "Roughly a dozen sentence templates produce lines that read as machine output on every page they touch: the chart lede with a dangling '−5.7%, less than', 'You are on the {city} housing market report…', '{city} has no published active single-family count.', 'Hover, tap or tab another cut for its home and dollars.', 'Select a band to see how many sit in it.', 'Move either number below and the other one follows.', 'The full conversation continues on Contact.', 'Oregon Data Share via MarketPulse. Alias-aware…'.",
+      "evidence": "housing-market-bend.txt lines 138, 348, 384; price-drops.txt 236; cities-bend.txt 2419-2456; about.txt 272; home.txt 396; sources app/housing-market/[...slug]/_v3/CityInsight.client.tsx:229, geo-figures.ts:434-435, app/housing-market/_v3/hub-sections.ts:92, app/price-drops/_v3/drops-drawing.ts:88, app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx:80-98, app/_v3/home-featured-community-shared.ts:28.",
+      "why_it_matters": "These are the sentences Matt calls the awful voice; each is one string in one file and each ships to hundreds or thousands of pages, so a small rewrite has the largest reach of anything in this audit.",
+      "proposed_fix": "Rewrite the listed strings against VOICE.md exemplars (state the fact, then stop; describe the reader's situation, not the page's), delete the 'Where you are' / 'Cities not in the table above' rows, and move control hints into aria/tooltips instead of body copy. Collect all generator sentences per page class into one sentences.ts so a person can read everything the class can say.",
+      "fix_size": "small",
+      "files": [
+        "app/housing-market/[...slug]/_v3/CityInsight.client.tsx",
+        "app/housing-market/[...slug]/_v3/geo-figures.ts",
+        "app/housing-market/_v3/hub-sections.ts",
+        "app/price-drops/_v3/drops-drawing.ts",
+        "app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx",
+        "app/_v3/home-featured-community-shared.ts",
+        "lib/place/publish-place-affordability.ts",
+        "components/site/v3/V3PlaceAffordability.view.ts"
+      ]
+    },
+    {
+      "id": "VOICE-7",
+      "title": "Same-day disagreement on 'single-family homes for sale in Bend': 757 vs 581",
+      "severity": "major",
+      "category": "data",
+      "claim": "The type page title and meta say '757 single-family homes for sale in Bend, Oregon' (every active single-family with a Bend address) while /housing-market/bend, /sell and the FAQ JSON-LD say 581 (pulse, detached) on the same day; the populations differ but the reader label is the same words.",
+      "evidence": "cities-bend-types-single-family.txt TITLE/META and line 16 (read Sep 22 12:45 PM); housing-market-bend.txt lines 130, 311 ('There are 581 active single-family listings in Bend as of September 2026'); sell.txt line 73.",
+      "why_it_matters": "§0 rule 5 (narrative reconciles to data) and answer engines quoting one figure beside the other; the 2026-09-07 note in market-faq.ts shows an engine already misquoted a Bend figure once.",
+      "proposed_fix": "Publish one city SFR count through the existing publishSearchCount / search-city-sfr-publish path for titles, FAQ and pulse, or label the two populations differently in the reader's words ('with a Bend mailing address' vs 'inside Bend city limits, detached').",
+      "fix_size": "medium",
+      "files": [
+        "app/cities/[slug]/types/[type]/page.tsx",
+        "lib/market/search-city-sfr-publish.ts",
+        "lib/search/publish-search-count.ts",
+        "lib/site/market-faq.ts"
+      ]
+    },
+    {
+      "id": "VOICE-8",
+      "title": "Three counts of 'homes for sale in Ridge at Eagle Crest' on one subdivision page (88, 14, 0)",
+      "severity": "major",
+      "category": "data",
+      "claim": "The subdivision page prints 88 (boundary query, every property type), 14 (counted single-family set) and 0 (AnimatedNumber server face) under the same phrase 'homes for sale in Ridge at Eagle Crest', and the traces that distinguish them are in the fine print.",
+      "evidence": "ridge-raw.html grep counts (3x '88 homes for sale in Ridge at Eagle Crest', 2x '14 homes for sale…', 1x '0 homes for sale… is $0'); app/subdivisions/[slug]/_v3/subdivision-traces.ts populations 1-2; subdivisions-ridge-at-eagle-crest.txt lines 116, 130, 135.",
+      "why_it_matters": "This is the template for 3,427 pages and the exact §0 rule-5 defect the traces file was written to prevent; a reader sees the site disagreeing with itself in one scroll.",
+      "proposed_fix": "One counted set per page for the phrase 'homes for sale in {plat}' (the single-family set the Field lists), with the every-type boundary count relabeled in the reader's words ('88 listings of every kind inside the boundary') and VOICE-1 fixed for the zero.",
+      "fix_size": "medium",
+      "files": [
+        "app/subdivisions/[slug]/page.tsx",
+        "app/subdivisions/[slug]/_v3/subdivision-traces.ts",
+        "app/subdivisions/[slug]/_v3/plat-caption.ts",
+        "app/subdivisions/[slug]/_v3/SubdivisionInsight.client.tsx"
+      ]
+    },
+    {
+      "id": "VOICE-9",
+      "title": "Timelines and process counts with no named basis ('24 hours', '48 hours', '300 homeowners', '50 top agents')",
+      "severity": "minor",
+      "category": "data",
+      "claim": "Home, About FAQ (also FAQPage JSON-LD) and /sell publish service timelines and outreach counts as facts with no source line, which CLAUDE.md §0 (2026-07-29) treats as numbers that need a named basis.",
+      "evidence": "app/page.tsx:186 ('Written valuation in 24 hours'); app/about/_v3/about-constants.ts:107; sell.txt lines 197-200 and 237.",
+      "why_it_matters": "They are promises a licensed broker is held to, and one missed 24-hour valuation makes the FAQ schema false.",
+      "proposed_fix": "Matt confirms each as a standing commitment (then it ships as 'we send…' with the commitment named in the plan) or it is softened to the condition ('the day after photos come back').",
+      "fix_size": "small",
+      "files": [
+        "app/page.tsx",
+        "app/about/_v3/about-constants.ts",
+        "app/sell/page.tsx"
+      ]
+    },
+    {
+      "id": "VOICE-10",
+      "title": "firstSentence cuts blurbs at abbreviations ('Camp Abbot, a U.S.', 'off O.B.')",
+      "severity": "minor",
+      "category": "voice",
+      "claim": "The homepage community cards and trail overviews take the first sentence of authored prose with a regex that stops at any period, so a sentence containing 'U.S.' or 'O.B.' ships truncated.",
+      "evidence": "home.txt line 370; cities-bend.txt line 2560; lib/site/place-recreation.ts:37-43; app/_v3/home-featured-communities.ts:113-130 (imports firstSentence from app/cities/_v3/cities-index-constants).",
+      "why_it_matters": "A cut sentence on the homepage reads as broken to a person and as low quality to an engine.",
+      "proposed_fix": "Author a one-line `blurb` field in the 27 place JSON files and trail registry (no splitting), or make the splitter abbreviation-aware and require the result to end in a full stop after a lowercase word.",
+      "fix_size": "small",
+      "files": [
+        "app/_v3/home-featured-communities.ts",
+        "app/cities/_v3/cities-index-constants.ts",
+        "lib/site/place-recreation.ts",
+        "data/resort-community-sunriver.json",
+        "data/co-trails.ts"
+      ]
+    },
+    {
+      "id": "VOICE-11",
+      "title": "Heading hygiene the naked-verb gate cannot see (bare place-name H2s, fragments, all-caps, middle dots)",
+      "severity": "minor",
+      "category": "voice",
+      "claim": "Headings on the harvested pages include four bare 'Bend' H2s and three 'Awbrey Butte' H2s, 'Single-family in Bend' as an H1, 'HOMES FOR SALE' and 'RIDGE AT EAGLE CREST RIGHT NOW' all-caps H2s, 'About Ryan Realty · Bend' and 'The brokers' as H1s, 'The window', 'Reach list', 'Where to next', 'Run the number both ways', and '{place} questions, answered with the number' on three grains; the closed 10-word naked-verb list catches none of these.",
+      "evidence": "H1/H2 arrays in cities-bend.txt, cities-bend-awbrey-butte.txt, cities-bend-types-single-family.txt, subdivisions-ridge-at-eagle-crest.txt, about.txt, team.txt; scripts/check-naked-verb-headings.mjs lines 34-37.",
+      "why_it_matters": "Headings are what search snippets and answer engines lift; VOICE.md's retired line 'headings say something specific' is still the right bar and nothing enforces or reviews it.",
+      "proposed_fix": "Per-class heading exemplars in the exemplar files (VOICE-4) plus a decidable check that an H2 is not identical to the page's place name and not all-caps; rename the three templated section headings to the question they answer.",
+      "fix_size": "small",
+      "files": [
+        "app/cities/[slug]/page.tsx",
+        "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+        "app/cities/[slug]/types/[type]/page.tsx",
+        "app/subdivisions/[slug]/page.tsx",
+        "app/communities/[slug]/page.tsx",
+        "app/about/page.tsx",
+        "app/team/page.tsx",
+        "scripts/check-naked-verb-headings.mjs"
+      ]
+    },
+    {
+      "id": "VOICE-12",
+      "title": "Mechanical residue after the 2026-09-07 retirement: dead exempt markers, a banned-word regex, an allowlisted em-dash gate",
+      "severity": "minor",
+      "category": "process",
+      "claim": "Ten '// brand-voice:exempt' markers remain for a deleted gate; check-market-narrative-integrity keeps BANNED_WORDS/BANNED_PUNCT (contradicting 'no word lists', though scoped to one file); the em-dash lock (Matt 2026-09-20, which post-dates and overrides VOICE.md on this point) scans a 22-path allowlist while generator directories outside it hold 58 U+2014 literals (mostly §0 traces; visible leakage was 2 em dashes across 13 pages).",
+      "evidence": "grep counts (10 exempt markers; 58 em-dash hits in lib/site, lib/place, app/subdivisions, app/communities, app/listing, components/site/v3); scripts/check-market-narrative-integrity.mjs:79-80; scripts/check-no-public-em-dash.mjs:28-52; per-page em-dash counts sell 1, ridge 1.",
+      "why_it_matters": "Contradictory residue is what makes an agent unsure which rule binds; the em-dash gate's coverage gap means the lock is a list, not a rule.",
+      "proposed_fix": "Delete the exempt markers; keep part A (numbers trace) of the narrative gate and drop parts B's word list; make the em-dash gate walk all public string literals under app/ (non-admin), components/site, lib/site, lib/place, lib/listing with the same AST visitor it already has.",
+      "fix_size": "small",
+      "files": [
+        "scripts/check-no-public-em-dash.mjs",
+        "scripts/check-market-narrative-integrity.mjs",
+        "lib/site/place-answers.ts",
+        "lib/site/market-faq.ts",
+        "lib/site/place-faq-extras.ts"
+      ]
+    },
+    {
+      "id": "VOICE-13",
+      "title": "Seeded blog spotlights (20 posts) with stock heroes and portal-guide phrasing surface as 'area guide' rows on community pages",
+      "severity": "minor",
+      "category": "voice",
+      "claim": "Community pages pull reading rows from blog_posts seeded by scripts/blog-content/community-spotlights.ts; the Tetherow post is titled 'Tetherow Where Resort Living Meets Real Estate', its excerpt promises 'what that actually means for your wallet and lifestyle', and its hero is an Unsplash stock photo, so the brand's best-sourced place page ends on a generic guide.",
+      "evidence": "communities-tetherow.txt lines 497-498; scripts/blog-content/community-spotlights.ts:580-595 (title, excerpt, hero_image_url images.unsplash.com); 20 `title:` entries in the file.",
+      "why_it_matters": "These posts carry the brand into search results for '{community} guide' queries and they read like every other portal's guide; the stock hero contradicts the locked hero-photo rule in CLAUDE.md §3.",
+      "proposed_fix": "Re-edit the 20 seeds against VOICE.md (specific, first person plural, no 'here is what it means for your wallet'), replace hero_image_url with the community's own photo from the asset library, and re-seed.",
+      "fix_size": "medium",
+      "files": [
+        "scripts/blog-content/community-spotlights.ts",
+        "scripts/seed-blog-posts.ts",
+        "app/communities/[slug]/page.tsx"
+      ]
+    },
+    {
+      "id": "VOICE-14",
+      "title": "Intermittent HTTP 502 'upstream request failed' from production during the harvest",
+      "severity": "p0",
+      "category": "visibility",
+      "claim": "Four of roughly twenty-two production loads in forty minutes returned a 502 body 'upstream request failed' (first load of /subdivisions/ridge-at-eagle-crest, two of three homepage loads in scroll-test.mjs) and /about logged a 502 resource; a crawler hitting that response indexes nothing.",
+      "evidence": "harvest-index.json (status 502, innerText 'upstream request failed'); scroll-test.mjs output for two contexts; about.txt CONSOLE_ERRORS. Cause UNVERIFIED: all requests traverse the sandbox proxy; the body text is an origin-style error, not a proxy page. Outside this reader's area; recorded for the seo-technical reader.",
+      "why_it_matters": "A 502 to Googlebot or an AI crawler directly suppresses visibility and is the first thing to rule out when rankings slip.",
+      "proposed_fix": "The seo-technical/infra lane checks Vercel function errors and timeouts for the place and home routes over the last 7 days and correlates with Search Console crawl stats; if the origin is throwing, add the route to the degraded-ISR path so a cached page serves instead of a 502.",
+      "fix_size": "medium",
+      "files": [
+        "middleware.ts",
+        "lib/site/degraded-isr.ts",
+        "app/subdivisions/[slug]/page.tsx",
+        "app/page.tsx"
+      ]
+    }
+  ],
+  "questions_for_matt": [
+    "The /about fold sentence ('helps clients buy and sell their properties') and the no-bio /team index are your 2026-09-14 locks. Will you lift them so the first bio sentence of each broker appears on /team and /about, and the VOICE.md homepage lead appears under the homepage H1?",
+    "Are 'written valuation in 24 hours', 'photos within 48 hours', '5 to 7 business days to MLS', 'email to 300 nearby homeowners', 'mailers to 200 neighbors' and 'outreach to 50 top agents' standing commitments you will honor on every listing, or should they be softened to conditions?",
+    "The em-dash lock (2026-09-20) is a 22-path allowlist today. Keep it, and should it cover every public string in the repo?",
+    "The gate requires 'Is {place} a buyer's or seller's market?' on all six grains; on Tetherow and Ridge at Eagle Crest the answer is 'we are not printing one'. Keep asking on thin grains, or ask only the questions the grain can answer with a number?",
+    "Who owns copy review at 3,000-page scale: a separate evaluator model reading the text with your sign-off on one page per class per round, or you alone? What cadence can you actually give it?",
+    "Should every visible 'Source' name be plain English (e.g. 'Bend detached closed sales, last 12 months') with the table and column moved to a data attribute, as place-answers already does?",
+    "On /price-drops and listing cards, when the MLS subdivision value is an abbreviation ('Oww', 'DrrhLp'), withhold it or expand it from the plat registry?",
+    "Are the 20 community spotlight blog posts something you wrote or approved, or should they be re-edited and their Unsplash heroes replaced before they keep ranking for '{community} guide'?"
+  ]
+}

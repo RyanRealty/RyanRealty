@@ -13,7 +13,10 @@
  * prints is a count or a median over these dots; the source line names the
  * population and both windows.
  *
- * Server only: it reads the DAL. The Atlas itself never fetches.
+ * Server only: it reads the DAL. Since 2026-09-23 (UXLIVE-3) a place page
+ * renders its counts from this population on the server and the Atlas loads
+ * the dots themselves after paint from app/api/atlas/dots, which reads the
+ * SAME cached core through buildAtlasDots.
  */
 import 'server-only'
 import { unstable_cache } from 'next/cache'
@@ -21,6 +24,7 @@ import { getAtlasTiles, type AtlasTile } from '@/lib/data'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { listingTileHref } from '@/lib/slug'
 import { formatDateTime } from '@/lib/format/date'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
@@ -151,10 +155,22 @@ export function tilesInside(tiles: readonly AtlasTile[], boundary: GeoJSON.Geome
   return tiles.filter((t) => t.lat != null && t.lng != null && pointInRings(t.lng, t.lat, rings))
 }
 
-/** Tiles to dots: coordinate, price, type, status, ages. Sold dots keep the heat window. */
+/**
+ * Tiles to dots: coordinate, price, type, status, ages. Sold dots keep the
+ * heat window.
+ *
+ * A commercial lease (MLS PropertyType 'G') is dropped before it becomes a
+ * dot. Its ListPrice is rent, not a sale price, so it is not a "for sale" or
+ * "sold" event: it inflated the map's own claim sentence ("N for sale") and,
+ * had its rate cleared the pin-price floor, would have painted a rent rate as
+ * a home's price pill. §0; verified live 2026-09-23, three Active 'G' rows at
+ * 671 Greenwood Avenue, Bend (list_price 1.3-1.4). Reuses
+ * listingPriceIsLeaseRate — see lib/listing/publish-listing-figure.ts.
+ */
 export function atlasDotsFromTiles(tiles: readonly AtlasTile[], nowMs = Date.now()): AtlasDot[] {
   return tiles.flatMap((tile): AtlasDot[] => {
     if (tile.lat == null || tile.lng == null) return []
+    if (listingPriceIsLeaseRate(tile.propertyType)) return []
     const s = dotStatus(tile.status)
     if (!s) return []
     const soldAgo = s === 'sold' ? daysAgo(nowMs, tile.closeDate) : null
@@ -202,6 +218,20 @@ function placeOf(tile: AtlasTile, fallback: string): string {
   return publishPlatDisplayName(tile.subdivisionName) ?? tile.city ?? fallback
 }
 
+/**
+ * An event before the scope's own name is known: the place the tile names
+ * itself (null when it names none), so a cached population carries no
+ * page-specific text (see buildAtlasCore).
+ */
+type AtlasEventSeed = {
+  kind: AtlasEvent['kind']
+  verb: string
+  key: string
+  place: string | null
+  price: string
+  href: string
+}
+
 function priceOf(tile: AtlasTile): string | null {
   const v =
     tile.status === 'Closed' && tile.closePrice != null
@@ -226,30 +256,66 @@ function eventOf(tile: AtlasTile, kind: AtlasEvent['kind'], verb: string, fallba
 const byNewest = (a: string | null | undefined, b: string | null | undefined) =>
   (Date.parse(b ?? '') || 0) - (Date.parse(a ?? '') || 0)
 
-/** The live line: the newest listing, the newest pending, the newest close. */
-export function atlasEventsFromTiles(tiles: readonly AtlasTile[], fallbackPlace: string): AtlasEvent[] {
+/** The newest listing, the newest pending, the newest close. */
+function newestEventTiles(tiles: readonly AtlasTile[]): { kind: AtlasEvent['kind']; verb: string; tile: AtlasTile }[] {
   const listed = [...tiles].filter((t) => t.status === 'Active' && t.onMarketDate).sort((a, b) => byNewest(a.onMarketDate, b.onMarketDate))[0]
   const pending = [...tiles]
     .filter((t) => (t.status === 'Pending' || t.status === 'Active Under Contract') && t.modifiedAt)
     .sort((a, b) => byNewest(a.modifiedAt, b.modifiedAt))[0]
   const sold = [...tiles].filter((t) => t.status === 'Closed' && t.closeDate).sort((a, b) => byNewest(a.closeDate, b.closeDate))[0]
   return [
-    listed ? eventOf(listed, 'new', 'Just listed', fallbackPlace) : null,
-    pending ? eventOf(pending, 'pending', 'Went pending', fallbackPlace) : null,
-    sold ? eventOf(sold, 'sold', 'Sold', fallbackPlace) : null,
-  ].filter((e): e is AtlasEvent => e !== null)
+    listed ? { kind: 'new' as const, verb: 'Just listed', tile: listed } : null,
+    pending ? { kind: 'pending' as const, verb: 'Went pending', tile: pending } : null,
+    sold ? { kind: 'sold' as const, verb: 'Sold', tile: sold } : null,
+  ].filter((e): e is { kind: AtlasEvent['kind']; verb: string; tile: AtlasTile } => e !== null)
 }
 
-/** A short stable hash for a boundary, so the cache key can carry it. */
-function hashGeometry(g: GeoJSON.Geometry | null | undefined): string {
-  if (!g) return 'none'
-  const text = JSON.stringify(g)
+/** The live line: the newest listing, the newest pending, the newest close. */
+export function atlasEventsFromTiles(tiles: readonly AtlasTile[], fallbackPlace: string): AtlasEvent[] {
+  return newestEventTiles(tiles)
+    .map(({ kind, verb, tile }) => eventOf(tile, kind, verb, fallbackPlace))
+    .filter((e): e is AtlasEvent => e !== null)
+}
+
+function eventSeedsFromTiles(tiles: readonly AtlasTile[]): AtlasEventSeed[] {
+  return newestEventTiles(tiles).flatMap(({ kind, verb, tile }): AtlasEventSeed[] => {
+    const price = priceOf(tile)
+    if (!price) return []
+    return [
+      {
+        kind,
+        verb,
+        key: `${kind}:${tile.listingKey}`,
+        place: publishPlatDisplayName(tile.subdivisionName) ?? tile.city ?? null,
+        price,
+        href: listingTileHref(tile),
+      },
+    ]
+  })
+}
+
+function eventsFromSeeds(seeds: readonly AtlasEventSeed[], fallbackPlace: string): AtlasEvent[] {
+  return seeds.map((s) => ({
+    key: s.key,
+    kind: s.kind,
+    label: `${s.verb} in ${s.place ?? fallbackPlace}, ${s.price}`,
+    href: s.href,
+  }))
+}
+
+/** A short stable hash of any JSON value. */
+function hashJson(value: unknown): string {
+  const text = JSON.stringify(value)
   let h = 5381
   for (let i = 0; i < text.length; i += 1) h = ((h << 5) + h + text.charCodeAt(i)) | 0
   return `${text.length}:${(h >>> 0).toString(36)}`
 }
 
-/** The whole population for a scope, in one call — the compact form. */
+/** A short stable hash for a boundary, so the cache key and the dots URL can carry it. */
+export function hashAtlasBoundary(g: GeoJSON.Geometry | null | undefined): string {
+  return g ? hashJson(g) : 'none'
+}
+
 /**
  * The population a page renders when the read did not complete: no dots, no
  * counts, `complete: false`, so the Atlas prints its one honest sentence
@@ -266,25 +332,100 @@ export const EMPTY_PLACE_ATLAS: AtlasPopulation = {
   complete: false,
 }
 
-async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promise<Omit<AtlasPopulation, 'tiles'>> {
+/**
+ * What a scope's population is before anyone names it: the dots, the types
+ * present, the counts and the event seeds. Label-free on purpose (UXLIVE-3,
+ * 2026-09-23): the same cache entry now feeds a page's server render AND the
+ * public dots route (app/api/atlas/dots), and a route must never be able to
+ * write page text into a shared entry. The page's own name enters in
+ * buildPlaceAtlas, after the cache.
+ */
+type AtlasCore = {
+  dots: AtlasDot[]
+  types: AtlasType[]
+  eventSeeds: AtlasEventSeed[]
+  counts: AtlasPopulation['counts']
+  readAt: number
+  complete: boolean
+}
+
+type AtlasCoreScope = Pick<AtlasScope, 'cities' | 'boundary' | 'listingKeys'>
+
+async function buildAtlasCoreUncached(scope: AtlasCoreScope, nowMs: number): Promise<AtlasCore> {
   const { tiles: all, complete, readAt } = await readAtlasTiles(scope.cities, nowMs)
   const keys = scope.listingKeys && scope.listingKeys.length > 0 ? new Set(scope.listingKeys) : null
   const tiles = keys
     ? all.filter((t) => keys.has(String(t.listingKey)))
     : tilesInside(all, scope.boundary)
   const dots = atlasDotsFromTiles(tiles, nowMs)
-  const counts = {
-    forSale: dots.filter((d) => d.s === 'active').length,
-    pending: dots.filter((d) => d.s === 'pending').length,
-    sold: dots.filter((d) => isAtlasPulseSold(d)).length,
-    cities: new Set(tiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size,
+  return {
+    dots,
+    types: atlasTypesPresent(dots),
+    eventSeeds: eventSeedsFromTiles(tiles),
+    counts: {
+      forSale: dots.filter((d) => d.s === 'active').length,
+      pending: dots.filter((d) => d.s === 'pending').length,
+      sold: dots.filter((d) => isAtlasPulseSold(d)).length,
+      cities: new Set(tiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size,
+    },
+    readAt,
+    complete,
   }
-  const where = keys
+}
+
+/**
+ * The cache key for a scope's population on a day. Every input that changes
+ * WHICH listings are in it is in the key: the cities read, the boundary, and
+ * (fixed 2026-09-23, visibility audit P13) the listing keys. Before, the keys
+ * were not in it, so every boundary-less keyed scope in one city (a plat the
+ * county never filed) and a listing page's whole-city scope shared ONE entry
+ * per day, and whichever rendered first set the dots for all of them.
+ */
+export function atlasPopulationCacheKey(scope: AtlasCoreScope, nowMs: number): string {
+  const day = new Date(nowMs).toISOString().slice(0, 10)
+  const cities = [...scope.cities].map((c) => c.toLowerCase().trim()).sort().join('|') || '*'
+  const keys =
+    scope.listingKeys && scope.listingKeys.length > 0
+      ? hashJson([...new Set(scope.listingKeys.map(String))].sort())
+      : 'all'
+  return `${cities}::${hashAtlasBoundary(scope.boundary)}::${keys}::${day}`
+}
+
+/**
+ * The population for a scope, cached in its compact, label-free form. The raw
+ * rows are over Next's per-entry cache ceiling, which is why the rows are not
+ * what gets cached. A short read (`complete: false`) is never cached: the next
+ * render tries again, and draws what the instance last read meanwhile.
+ */
+async function buildAtlasCore(scope: AtlasCoreScope, nowMs: number): Promise<AtlasCore> {
+  const cached = unstable_cache(
+    async () => {
+      const core = await buildAtlasCoreUncached(scope, nowMs)
+      if (!core.complete) throw new Error('[build-place-atlas] short read is not cached')
+      return core
+    },
+    ['atlas-core-v1', atlasPopulationCacheKey(scope, nowMs)],
+    { revalidate: CACHE_WINDOWS.listingsByGeo, tags: [cacheTag.listings] },
+  )
+  try {
+    return await cached()
+  } catch {
+    // The short-read path: draw what the instance last read, say so, and
+    // leave nothing in the cache.
+    return buildAtlasCoreUncached(scope, nowMs)
+  }
+}
+
+/** The page-facing population: the cached core, named for the page. */
+export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Promise<AtlasPopulation> {
+  const core = await buildAtlasCore(scope, nowMs)
+  const keyed = Boolean(scope.listingKeys && scope.listingKeys.length > 0)
+  const where = keyed
     ? `the MLS files under ${scope.label}`
     : scope.boundary
     ? `inside the recorded boundary of ${scope.label}`
-    : counts.cities > 1
-      ? `across ${counts.cities} Central Oregon cities`
+    : core.counts.cities > 1
+      ? `across ${core.counts.cities} Central Oregon cities`
       : `in ${scope.label}`
   // The map counts what it read and says so. Whether any of it falls outside
   // the frame is something only the frame knows, so the Atlas appends that
@@ -297,42 +438,28 @@ async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promis
     `Pulses and the sold count are the closes of the last ${ATLAS_PULSE_WINDOW_DAYS} days. ` +
     `Counts and medians cover every listing read for this map.`
   return {
-    dots,
-    types: atlasTypesPresent(dots),
-    events: atlasEventsFromTiles(tiles, scope.label),
+    dots: core.dots,
+    types: core.types,
+    events: eventsFromSeeds(core.eventSeeds, scope.label),
     source,
-    stamp: formatDateTime(new Date(readAt)),
-    counts,
-    complete,
+    stamp: formatDateTime(new Date(core.readAt)),
+    counts: core.counts,
+    tiles: [],
+    complete: core.complete,
   }
 }
 
 /**
- * The population for a scope, cached in its COMPACT form (dots, events,
- * counts — ~400KB for the whole service area). The raw rows are 2.2MB,
- * over Next's per-entry cache ceiling, which is why the rows are not what
- * gets cached. A short read (`complete: false`) is never cached: the next
- * render tries again.
+ * The dots alone, for the public dots route: the SAME cached core a page's
+ * buildPlaceAtlas reads for the same cities and boundary, so the marks a
+ * visitor's browser fetches after paint are the population the page's
+ * server-rendered counts were computed from. Takes no label and returns no
+ * text but the read stamp.
  */
-export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Promise<AtlasPopulation> {
-  const day = new Date(nowMs).toISOString().slice(0, 10)
-  const key = `${[...scope.cities].map((c) => c.toLowerCase().trim()).sort().join('|') || '*'}::${hashGeometry(scope.boundary)}::${day}`
-  const cached = unstable_cache(
-    async () => {
-      const population = await buildPlaceAtlasUncached(scope, nowMs)
-      if (!population.complete) throw new Error('[build-place-atlas] short read is not cached')
-      return population
-    },
-    ['atlas-population-v3', key],
-    { revalidate: CACHE_WINDOWS.listingsByGeo, tags: [cacheTag.listings] },
-  )
-  try {
-    const population = await cached()
-    return { ...population, tiles: [] }
-  } catch {
-    // The short-read path: draw what the instance last read, say so, and
-    // leave nothing in the cache.
-    const population = await buildPlaceAtlasUncached(scope, nowMs)
-    return { ...population, tiles: [] }
-  }
+export async function buildAtlasDots(
+  scope: Pick<AtlasScope, 'cities' | 'boundary'>,
+  nowMs = Date.now(),
+): Promise<{ dots: AtlasDot[]; stamp: string; complete: boolean }> {
+  const core = await buildAtlasCore({ cities: scope.cities, boundary: scope.boundary }, nowMs)
+  return { dots: core.dots, stamp: formatDateTime(new Date(core.readAt)), complete: core.complete }
 }

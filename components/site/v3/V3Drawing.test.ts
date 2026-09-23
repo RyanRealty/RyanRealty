@@ -46,7 +46,10 @@ describe('every drawn figure owes a claim and a source', () => {
   })
 
   it('renders the trace on the figure, never pooled at the foot of the section', () => {
-    expect(src).toContain('<V3SourceDisclosure className="v3-drawing__source" source={figure.source} />')
+    // VOICE-2 (2026-09-22): the figure's own reader-facing name rides along.
+    expect(src).toMatch(
+      /<V3SourceDisclosure\s+className="v3-drawing__source"\s+source=\{figure\.source\}\s+sourceName=\{figure\.sourceName\}\s*\/>/,
+    )
   })
 })
 

@@ -4,8 +4,8 @@ import {
   marketHubChooser,
   marketNavChildren,
   marketReportDoorLinks,
-  marketReportHereBody,
 } from './report-doors'
+import * as doors from './report-doors'
 
 describe('market report doors', () => {
   it('lists one door per market family URL in hierarchy order', () => {
@@ -35,7 +35,10 @@ describe('market report doors', () => {
     const fromHub = marketReportDoorLinks('hub')
     expect(fromHub.map((d) => d.href)).not.toContain('/housing-market')
     expect(fromHub[0]?.href).toBe('/housing-market/central-oregon')
-    expect(marketReportHereBody('hub')).toMatch(/live Central Oregon market/)
+  })
+
+  it('carries no "You are on the …" prose row any more (VOICE-6, 2026-09-22)', () => {
+    expect('marketReportHereBody' in doors).toBe(false)
   })
 
   it('nav children stay the same set as Quiet doors', () => {

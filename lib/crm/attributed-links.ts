@@ -11,8 +11,8 @@
  * This module is the ONE place every send path calls. It composes the two
  * existing primitives in the correct order:
  *
- *   1. `attributeSiteLinks` (lib/crm/merge.ts) — stamps ?agent=<broker> (and
- *      optionally ?_fuid=<id> / ?_pid=<id>) plus missing CRM UTMs
+ *   1. `decorateOutboundText` (lib/identity/outbound-links.ts, P7) — stamps
+ *      ?agent=<broker> and the SIGNED ?_pid=<token> plus missing CRM UTMs
  *      (`utm_source=crm&utm_medium=email&utm_content=agent-<slug>`) onto every
  *      public ryan-realty.com link, so a click routes the lead AND attributes
  *      the GA session to email/CRM + that broker.
@@ -30,8 +30,9 @@
  * through /api/track/e. Running `attributeOutbound` twice on the same HTML
  * therefore does not double-encode or break a link.
  */
-import { attributeSiteLinks } from '@/lib/crm/merge'
 import { instrumentEmailHtml } from '@/lib/email-tracking'
+import { channelFromEmailKey, decorateOutboundText } from '@/lib/identity/outbound-links'
+import type { LinkChannel } from '@/lib/identity/link-token'
 
 export interface AttributeOutboundOptions {
   /** brokers.slug of the broker who owns this contact / send (e.g. 'matt-ryan'). */
@@ -53,6 +54,8 @@ export interface AttributeOutboundOptions {
   broker?: string
   /** Optional token TTL (newsletter links set 180d); omitted = non-expiring, unchanged. */
   ttlSeconds?: number
+  /** Identity-loop channel for the signed ?_pid= token; derived from emailKey when omitted. */
+  channel?: LinkChannel
 }
 
 /**
@@ -75,12 +78,15 @@ export function attributeOutbound(html: string, opts: AttributeOutboundOptions):
     ? opts.personId
     : null
 
-  // 1) Broker attribution on the real destination links (idempotent on its own
-  //    for clean HTML: a link already carrying ?agent= is left untouched).
-  //    _fuid (legacy id) and _pid (native crm_people.id) both stamp here, so a
-  //    click stitches the web session even for post-cutover contacts that have
-  //    no fub_legacy_id.
-  const attributed = attributeSiteLinks(html, opts.brokerSlug, opts.fubPersonId ?? null, personId)
+  // 1) Broker attribution + the SIGNED person token on the real destination
+  //    links, through the one decoration helper (P7 identity loop): a click
+  //    identifies the visit server-side in /api/visitors/track. Idempotent for
+  //    clean HTML: a link already carrying ?agent= and a token is untouched.
+  const attributed = decorateOutboundText(html, {
+    brokerSlug: opts.brokerSlug,
+    personId,
+    channel: opts.channel ?? channelFromEmailKey(opts.emailKey),
+  })
 
   // 2) Open + click tracking — only when we have a recipient to attribute it to.
   if (personId === null) return attributed
@@ -107,9 +113,12 @@ export function attributeOutbound(html: string, opts: AttributeOutboundOptions):
 export function attributeUrl(
   url: string,
   brokerSlug: string,
-  fubPersonId?: number | null,
+  // Retired vendor-CRM id: accepted so existing call sites compile, never
+  // stamped (an unsigned id identifies nobody; P7 identity loop 2026-09-23).
+  _legacyPersonId?: number | null,
   crmPersonId?: number | null,
+  channel: LinkChannel = 'email',
 ): string {
   if (typeof url !== 'string' || url.length === 0) return url
-  return attributeSiteLinks(url, brokerSlug, fubPersonId ?? null, crmPersonId ?? null)
+  return decorateOutboundText(url, { brokerSlug, personId: crmPersonId ?? null, channel })
 }

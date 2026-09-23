@@ -15,17 +15,23 @@ import { execSync } from 'node:child_process'
 export const AUDIT_ARM_PATTERN = /(AUDIT|PUNCH|E2E|audit-|punch)/i
 export const NODES_LINE_PATTERN = /^Nodes?:\s*[0-9a-f-]{36}/m
 
-/** Cos / site-queue land path: Tip Ready is only --ship exit 0 (Matt 2026-09-14). */
+/**
+ * The land-path documents: Tip Ready is only `--ship` exit 0 (Matt 2026-09-14),
+ * and every one of them boots from docs/RUN_LOOP.md (2026-09-23).
+ */
 export const TIP_READY_LAND_PATHS = Object.freeze([
+  'docs/RUN_LOOP.md',
   '.claude/skills/site-queue/SKILL.md',
   '.cursor/skills/site-queue/SKILL.md',
   'scripts/site-queue-routine-prompt.md',
 ])
 
 /**
- * Executable refuse: Cos may not label Tip Ready unless the land path names
- * `node scripts/lib/taste-receipt.mjs --ship` and forbids house paint after
- * demoMatch false.
+ * Executable refuse: nobody may label Tip Ready unless the land path names
+ * `node scripts/lib/taste-receipt.mjs --ship`, and a land-path document other
+ * than RUN_LOOP.md points at docs/RUN_LOOP.md. Matt 2026-09-23 made demoMatch a
+ * recorded note, so the old "house patch after demoMatch false is FORBIDDEN"
+ * phrase is no longer required (visibility audit PROCESS-3 / UXLIVE-11).
  *
  * @param {Array<{ path: string, content: string }>} files
  * @returns {string[]}
@@ -36,11 +42,11 @@ export function checkTipReadyLandPath(files) {
     const src = String(content ?? '')
     if (!src.includes('node scripts/lib/taste-receipt.mjs --ship')) {
       fails.push(
-        `${path}: Tip Ready land path must name \`node scripts/lib/taste-receipt.mjs --ship\` — Cos may not label Tip Ready without --ship exit 0`,
+        `${path}: Tip Ready land path must name \`node scripts/lib/taste-receipt.mjs --ship\` — nobody labels Tip Ready without --ship exit 0`,
       )
     }
-    if (!/house patch after[\s\S]{0,40}demoMatch[\s\S]{0,20}false[\s\S]{0,20}FORBIDDEN/i.test(src)) {
-      fails.push(`${path}: must say house patch after demoMatch false is FORBIDDEN`)
+    if (path !== 'docs/RUN_LOOP.md' && !src.includes('docs/RUN_LOOP.md')) {
+      fails.push(`${path}: a land-path document must point at docs/RUN_LOOP.md (the one protocol for every tool)`)
     }
   }
   return fails

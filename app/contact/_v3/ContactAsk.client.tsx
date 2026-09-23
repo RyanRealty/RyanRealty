@@ -11,12 +11,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 // under webpack. V3Ask is itself a client primitive.
 import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3/V3Ask.client'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import './contact-ask.css'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { submitContactForm } from '../actions'
 import { publishTourConfirmation } from '@/lib/contact/publish-tour-confirmation'
-import { CONTACT_FIELD_IDS } from './contact-constants'
+import { CONTACT_FIELD_IDS, CONTACT_TRAP } from './contact-constants'
 import { ContactField } from './ContactField.client'
 import { ContactFieldDemoContext, type ContactFieldDemo } from './contact-field-demo'
 
@@ -136,6 +138,8 @@ export function ContactAsk({
       }
       formData.set('message', message)
       if (smsConsent) formData.set('smsConsent', 'yes')
+      // Forward the trap verbatim: hardcoding it empty is the same as no trap.
+      formData.set(CONTACT_TRAP.name, answers[CONTACT_TRAP.name] ?? '')
       const rrSession = readRrSessionId() // hydration-safe: event/effect storage only
       if (rrSession) formData.set('sessionId', rrSession)
       if (listingKey) formData.set('listingKey', listingKey)
@@ -149,10 +153,14 @@ export function ContactAsk({
       if (!result.success) {
         return { ok: false, message: result.error || 'The message did not send. Call or text instead, or try again.' }
       }
-      if (result.eventId && typeof window !== 'undefined' && window.fbq) {
-        window.fbq('track', 'Lead', { content_name: formData.get('inquiryType') }, { eventID: result.eventId })
+      // No eventId = the intake screen flagged the submit (FUNNEL-1): the visitor
+      // still sees the sent state, the ad platforms and GA4 do not count a lead.
+      if (result.eventId) {
+        if (typeof window !== 'undefined' && window.fbq) {
+          window.fbq('track', 'Lead', { content_name: formData.get('inquiryType') }, { eventID: result.eventId })
+        }
+        trackEvent('generate_lead', { source: 'contact_page', inquiry: formData.get('inquiryType') })
       }
-      trackEvent('generate_lead', { source: 'contact_page', inquiry: formData.get('inquiryType') })
       // SITE-09: the sent state says what is happening now. No duration promise.
       return {
         ok: true,
@@ -199,7 +207,18 @@ export function ContactAsk({
           lede={isTour && listingSummary ? listingSummary : undefined}
           fields={fields}
           Field={ContactField}
-          consent={<SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />}
+          consent={
+            <>
+              {/* Honeypot (FUNNEL-1): inside the form so V3Ask collects it, off
+                  screen by CSS (a scripted filler skips display:none), out of
+                  the tab order, hidden from assistive tech. */}
+              <div className="contact-ask__trap" aria-hidden="true">
+                <Label htmlFor="contact-trap">{CONTACT_TRAP.label}</Label>
+                <Input id="contact-trap" name={CONTACT_TRAP.name} type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+              </div>
+              <SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />
+            </>
+          }
           submitLabel={isTour ? 'Request a tour' : 'Send message'}
           onSubmit={send}
           previewSent={previewSent}

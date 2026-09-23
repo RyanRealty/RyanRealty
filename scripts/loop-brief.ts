@@ -19,11 +19,14 @@ import { config } from 'dotenv'
 import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/data/loop/domains'
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
+import { formatCrawlProbeLine } from '../lib/data/crawl-probe/rows'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
 import { siteServeTier, isMeasurementWindowDue, isSiteClaim, isStaleInProgress, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
-import { classifyFeed, formatSilentZeroReport } from '../lib/data/loop/silent-zero'
+import { classifyFeed, classifyWatchedSeries, formatSilentZeroReport, formatWatchReport, WATCHED_SERIES, watchKey, type WatchPoint } from '../lib/data/loop/silent-zero'
+import { seedClassSlipNodes } from '../lib/data/loop/gsc-ranking-seed'
+import { formatMeasurerBrief, readLatestScoreboardSnapshot } from '../lib/data/loop/scoreboard-snapshot'
 
 config({ path: '.env.local' })
 
@@ -50,13 +53,39 @@ function gapOrder(gap: string | null): number {
   return n ? Number(n) : 9999
 }
 
+// The WHOLE Current block, never a line cap: on 2026-09-22 an 18-line slice of
+// a 52-block stack hid six of Matt's ten directives at boot (PROCESS-8). The
+// file holds one block (ci:handoff-current); it runs from `# Current` to the
+// next top-level `# ` heading outside a code fence (a `# comment` in a fenced
+// shell snippet is not a heading). Same rule as scripts/lib/handoff-current.mjs.
 function handoffCurrent(): string {
   try {
-    const src = readFileSync('docs/plans/CROSS_AGENT_HANDOFF.md', 'utf8')
-    const start = src.indexOf('# Current')
-    const end = src.indexOf('# Prior', start)
-    const block = src.slice(start, end > start ? end : start + 2000).trim()
-    return block.split('\n').slice(0, 18).join('\n')
+    const lines = readFileSync('docs/plans/CROSS_AGENT_HANDOFF.md', 'utf8').split('\n')
+    let fence: string | null = null
+    const fenced = lines.map((l) => {
+      const m = /^\s{0,3}(```|~~~)/.exec(l)
+      if (m) {
+        if (fence == null) fence = m[1]
+        else if (m[1] === fence) fence = null
+        return true
+      }
+      return fence != null
+    })
+    const isCurrent = (i: number) => !fenced[i] && /^# Current\b/.test(lines[i])
+    const start = lines.findIndex((_, i) => isCurrent(i))
+    if (start < 0) return 'UNREADABLE: no "# Current" block in docs/plans/CROSS_AGENT_HANDOFF.md'
+    let end = lines.length
+    for (let i = start + 1; i < lines.length; i += 1) {
+      if (!fenced[i] && /^# \S/.test(lines[i])) {
+        end = i
+        break
+      }
+    }
+    const stacked = lines.filter((_, i) => isCurrent(i)).length
+    const block = lines.slice(start, end).join('\n').trim()
+    return stacked > 1
+      ? `${block}\n\nWARNING: ${stacked} "# Current" blocks in the handoff; only the first is shown. ci:handoff-current fails this.`
+      : block
   } catch {
     return 'UNREADABLE: docs/plans/CROSS_AGENT_HANDOFF.md'
   }
@@ -266,6 +295,7 @@ async function main() {
   push(
     `gsc: ${signals.gsc.status} ${signals.gsc.rows28d} target_query_benchmark rows / 28d (${signals.gsc.source})`,
   )
+  push(`crawl probe: ${formatCrawlProbeLine(signals.crawlProbe)}`)
   {
     const siteEligibleCount = eligible.filter((n) => (n.version_gap ?? '').startsWith('SITE-')).length
     if (siteEligibleCount === 0) {
@@ -277,6 +307,31 @@ async function main() {
   push(
     `tokens needing re-auth: ${needsReauth.length ? needsReauth.map((t) => `${t.table} (PARKED unless Matt wants it)`).join(', ') : 'none — the rest auto-refresh via the daily heartbeat'}`,
   )
+  push('')
+  // The Monday measurer's record, and search visibility by page class (visibility
+  // audit 2026-09-22, PROCESS-1 / TRACK-11 / gsc-trend-1). A degraded money class
+  // becomes a ranking node here too, deduped, so a slip is work the same day the
+  // brief sees it instead of the next Monday.
+  push('--- WEEKLY MEASURER (scoreboard snapshot + GSC by page class) ---')
+  try {
+    const snapshot = await readLatestScoreboardSnapshot(sb)
+    for (const line of formatMeasurerBrief({ snapshot, live: signals.gsc.trend, now })) push(line)
+    if (signals.gsc.trend.degraded.length) {
+      const seeded = await seedClassSlipNodes(sb, {
+        degraded: signals.gsc.trend.degraded,
+        anchor: signals.gsc.trend.anchor,
+        apply: true,
+        now,
+      })
+      if (seeded.error) push(`  class-slip seed failed: ${seeded.error}`)
+      else if (seeded.drafts.length) {
+        push(`  class-slip nodes: ${seeded.inserted} inserted of ${seeded.drafts.length} drafted (upsert on version_gap, existing nodes untouched)`)
+        for (const d of seeded.drafts) push(`  + ${d.versionGap} ${d.title}`)
+      }
+    }
+  } catch (err) {
+    push(`measurer block unavailable: ${(err as Error).message.slice(0, 160)}`)
+  }
   push('')
   push('--- FLEET INTAKE (ran at this boot) ---')
   push(
@@ -335,14 +390,16 @@ async function main() {
     // catch. `.order()` is not optional: an unordered range() re-shuffles
     // between requests and silently drops rows.
     const PAGE = 1000
-    const feedRows: Array<{ channel: string; metric: string; value: number; date: string }> = []
+    const feedRows: Array<{ channel: string; scope: string; scope_id: string; metric: string; value: number; date: string }> = []
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await sb
         .from('marketing_channel_daily')
-        .select('channel,metric,value,date')
+        .select('channel,scope,scope_id,metric,value,date')
         .gte('date', since)
         .order('date', { ascending: true })
         .order('channel', { ascending: true })
+        .order('scope', { ascending: true })
+        .order('scope_id', { ascending: true })
         .order('metric', { ascending: true })
         .range(from, from + PAGE - 1)
       if (error) throw error
@@ -351,10 +408,15 @@ async function main() {
       if (page.length < PAGE) break
     }
 
+    // Keyed channel x scope x metric (TRACK-2, 2026-09-23): with scope
+    // collapsed, ga4 event_count summed page_view into session_start's pair.
     type Agg = { rows: number; total: number; nonZeroRows: number; latest: string | null }
     const byKey = new Map<string, Agg>()
+    const landedByChannel = new Map<string, Set<string>>()
+    const watchPoints = new Map<string, WatchPoint[]>()
+    const watched = new Set(WATCHED_SERIES.map(watchKey))
     for (const r of feedRows) {
-      const key = `${r.channel}\u0000${r.metric}`
+      const key = `${r.channel}\u0000${r.scope}\u0000${r.metric}`
       const a = byKey.get(key) ?? { rows: 0, total: 0, nonZeroRows: 0, latest: null }
       a.rows += 1
       const v = Number(r.value) || 0
@@ -362,12 +424,39 @@ async function main() {
       if (v !== 0) a.nonZeroRows += 1
       if (!a.latest || r.date > a.latest) a.latest = r.date
       byKey.set(key, a)
+      const landed = landedByChannel.get(r.channel) ?? new Set<string>()
+      landed.add(r.date)
+      landedByChannel.set(r.channel, landed)
+      const wk = watchKey({ channel: r.channel, scope: r.scope, scopeId: r.scope_id, metric: r.metric })
+      if (watched.has(wk)) watchPoints.set(wk, [...(watchPoints.get(wk) ?? []), { date: r.date, value: v }])
     }
     const verdicts = [...byKey.entries()].map(([key, a]) => {
-      const [channel, metric] = key.split('\u0000')
-      return classifyFeed({ channel: channel ?? '', metric: metric ?? '', ...a })
+      const [channel, scope, metric] = key.split('\u0000')
+      return classifyFeed({ channel: channel ?? '', scope: scope ?? '', metric: metric ?? '', ...a })
     })
     for (const line of formatSilentZeroReport(verdicts)) push(line)
+
+    // Watched series: judged on their latest landed days, not the whole window.
+    const watchVerdicts = WATCHED_SERIES.map((s) =>
+      classifyWatchedSeries(s, watchPoints.get(watchKey(s)) ?? [], [...(landedByChannel.get(s.channel) ?? [])]),
+    )
+    // The failing health verdict's reasons live in its row metadata.
+    const details = new Map<string, string[]>()
+    for (const v of watchVerdicts) {
+      if (v.verdict !== 'unhealthy' || !v.latest) continue
+      const { data } = await sb
+        .from('marketing_channel_daily')
+        .select('metadata')
+        .eq('channel', v.series.channel)
+        .eq('scope', v.series.scope)
+        .eq('scope_id', v.series.scopeId)
+        .eq('metric', v.series.metric)
+        .eq('date', v.latest)
+        .limit(1)
+      const failures = (data?.[0]?.metadata as { failures?: unknown } | undefined)?.failures
+      if (Array.isArray(failures)) details.set(watchKey(v.series), failures.map(String))
+    }
+    for (const line of formatWatchReport(watchVerdicts, details)) push(line)
   } catch (err) {
     // Never block the boot on a diagnostic.
     push(`silent-zero check unavailable: ${(err as Error).message.slice(0, 120)}`)

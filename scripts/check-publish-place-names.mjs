@@ -38,6 +38,19 @@ checks.push({
   ok: helper.includes("triple: 'Triple Knot'") && helper.includes('RECORDED_PLAT_DISPLAY'),
 })
 
+// VOICE-3 (visibility audit 2026-09-22): /price-drops printed 'Bend · Oww',
+// 'La Pine · DrrhLp' and 'Deschutes River Trac' through displaySubdivision,
+// which only drops sentinels. Its rows gate through the publish helper now.
+const drops = src('app/price-drops/_v3/drops-field-items.ts')
+checks.push({
+  label: 'price-drop rows gate the plat name through publishPlatDisplayName',
+  ok: /publishPlatDisplayName\(drop\.subdivisionName\)/.test(drops) && !/displaySubdivision\(/.test(drops),
+})
+checks.push({
+  label: 'publishPlatDisplayName withholds MLS width truncations (Trac, Mob Pk, bare ordinal)',
+  ok: helper.includes('MLS_TRUNCATED_TAIL_RE') && helper.includes('MLS_TRAILING_ORDINAL_RE'),
+})
+
 const platPage = src('app/subdivisions/[slug]/page.tsx')
 checks.push({
   label: 'plat page visitor name gates through publishPlatDisplayName',

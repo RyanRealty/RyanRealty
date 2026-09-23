@@ -46,6 +46,7 @@ import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { unstable_cache } from 'next/cache'
 import { getSetupComplete } from '@/app/actions/admin-setup'
+import { isGa4PageViewMirrorOn } from '@/lib/analytics/ga4-mirror'
 import {
   getDashboardSyncData,
   getDashboardLeadData,
@@ -126,7 +127,11 @@ export default async function AdminDashboardPage() {
     {
       key: 'sessions',
       // GA4 only — not product traffic. Primary volume = visitor_sessions (see docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md).
-      label: 'GA4 sessions, 30 days (not primary traffic)',
+      // TRACK-1 (visibility audit 2026-09-22): while the Measurement Protocol
+      // page-view mirror runs, GA4 counts sessions it never measured, so say so.
+      label: isGa4PageViewMirrorOn(new Date().toISOString().slice(0, 10))
+        ? 'GA4 sessions, 30 days (inflated by the server page-view mirror)'
+        : 'GA4 sessions, 30 days (not primary traffic)',
       value: ga4.ok ? nf.format(ga4.sessions) : '—',
       delta: {
         direction: 'flat',

@@ -153,6 +153,96 @@ export function pointInRings(lon: number, lat: number, rings: readonly Ring[]): 
   return false
 }
 
+/** Shortest distance from a point to one segment, in projected units. */
+function distanceToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const lenSq = dx * dx + dy * dy
+  const t = lenSq > 0 ? Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lenSq)) : 0
+  const cx = x1 + t * dx
+  const cy = y1 + t * dy
+  return Math.hypot(px - cx, py - cy)
+}
+
+/**
+ * Shortest distance from (lon, lat) to the nearest edge of a set of rings.
+ * Longitude is scaled by `kx` (cos of the shape's mid-latitude) first, so the
+ * distance approximates screen pixels rather than raw degrees — the same
+ * anisotropy `makeProjection` corrects for the drawn map.
+ */
+function distanceToRingsEdge(lon: number, lat: number, rings: readonly Ring[], kx: number): number {
+  let best = Infinity
+  const px = lon * kx
+  const py = lat
+  for (const ring of rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [x1, y1] = ring[j]!
+      const [x2, y2] = ring[i]!
+      const d = distanceToSegment(px, py, x1 * kx, y1, x2 * kx, y2)
+      if (d < best) best = d
+    }
+  }
+  return best
+}
+
+/**
+ * An approximate pole of inaccessibility: the point INSIDE the polygon
+ * farthest from every edge, for a label that must not sit on the boundary or
+ * spill outside a concave shape. Coarse-to-fine grid search (a simplified,
+ * dependency-free cousin of Mapbox's polylabel) — good enough for a
+ * subdivision-sized silhouette; not a survey and not exact for a fractal
+ * coastline, which this atlas never draws.
+ *
+ * Returns null when no sampled point falls inside the rings at all (a shape
+ * thinner than the coarsest grid cell) — a caller adjusts a centroid or
+ * omits the label rather than trusting a point that might sit outside.
+ */
+export function polygonInteriorPoint(rings: readonly Ring[]): LonLat | null {
+  const bbox = bboxOfRings(rings)
+  if (!bbox) return null
+  const kx = Math.cos((((bbox.minLat + bbox.maxLat) / 2) * Math.PI) / 180) || 1
+  const GRID = 9
+  const ROUNDS = 5
+  let frame = bbox
+  let best: LonLat | null = null
+  let bestD = -Infinity
+  for (let round = 0; round < ROUNDS; round += 1) {
+    const spanLon = frame.maxLon - frame.minLon
+    const spanLat = frame.maxLat - frame.minLat
+    if (spanLon <= 0 || spanLat <= 0) break
+    let roundBest: LonLat | null = null
+    let roundBestD = -Infinity
+    for (let ix = 0; ix < GRID; ix += 1) {
+      for (let iy = 0; iy < GRID; iy += 1) {
+        const lon = frame.minLon + ((ix + 0.5) / GRID) * spanLon
+        const lat = frame.minLat + ((iy + 0.5) / GRID) * spanLat
+        if (!pointInRings(lon, lat, rings)) continue
+        const d = distanceToRingsEdge(lon, lat, rings, kx)
+        if (d > roundBestD) {
+          roundBestD = d
+          roundBest = [lon, lat]
+        }
+      }
+    }
+    if (!roundBest) break
+    if (roundBestD > bestD) {
+      bestD = roundBestD
+      best = roundBest
+    }
+    // Zoom the frame into the best cell plus a one-cell margin, so the next
+    // round refines around it instead of resampling the whole shape.
+    const cellLon = (spanLon / GRID) * 1.5
+    const cellLat = (spanLat / GRID) * 1.5
+    frame = {
+      minLon: roundBest[0] - cellLon,
+      maxLon: roundBest[0] + cellLon,
+      minLat: roundBest[1] - cellLat,
+      maxLat: roundBest[1] + cellLat,
+    }
+  }
+  return best
+}
+
 /** Centroid of the largest ring's bbox — a label anchor, not a true centroid. */
 export function labelAnchor(rings: readonly Ring[]): LonLat | null {
   let best: Ring | null = null

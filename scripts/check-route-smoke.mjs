@@ -111,6 +111,8 @@ function timeoutFor(path) {
 // CONCURRENCY caps parallel HTTP requests so the smoke covers the
 // full canonical set without overwhelming the dev/start:ci server.
 const CONCURRENCY = Number(process.env.SMOKE_CONCURRENCY ?? 6)
+// Pause before re-fetching pages that timed out in the concurrent pass.
+const RETRY_SETTLE_MS = Number(process.env.SMOKE_RETRY_SETTLE_MS ?? 10_000)
 
 // Read the canonical public-route set from docs/ROUTE_INVENTORY.md
 // (G16-style sources-of-truth pattern). The inventory is regenerated
@@ -142,10 +144,27 @@ function loadRoutesFromInventory() {
   return routes
 }
 
+// COLD ISR PLAT RENDERS (P3 — DATA-6, SEO-2, EXP-7, 2026-09-23). The route
+// inventory cannot enumerate /subdivisions/*, and that blind spot is how a
+// class-wide 500 shipped: runPublishedPageRender called unstable_noStore() on
+// any degraded read, which inside a runtime ISR render Next 16 answers with
+// "Dynamic server usage: ... couldn't be rendered statically because it used
+// unstable_noStore()" (digest DYNAMIC_SERVER_USAGE) and HTTP 500.
+// /subdivisions/elkai-woods degraded on EVERY render (its cma_subdivision_ring
+// read took 8.4 to 11.2 s against a 3.5 s budget) and 500'd on every fetch, so
+// it is the deterministic case; blakley-heights is a sitemapped plat that did
+// the same. Neither is prerendered, so against `start:ci` each is a cold
+// on-demand ISR render, the exact path that failed.
+const PLAT_ISR_ROUTES = [
+  { path: '/subdivisions/elkai-woods', name: 'plat cold ISR render (elkai-woods, P3)' },
+  { path: '/subdivisions/blakley-heights', name: 'plat cold ISR render (blakley-heights, P3)' },
+]
+
 const INVENTORY_ROUTES = loadRoutesFromInventory()
 const ROUTES = INVENTORY_ROUTES
   ? [
       ...INVENTORY_ROUTES,
+      ...PLAT_ISR_ROUTES,
       { path: '/blog/tetherow-resort-living-real-estate', name: 'tetherow blog hop' },
       ...(LISTING_KEY
         ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail (live)' }]
@@ -161,6 +180,7 @@ const ROUTES = INVENTORY_ROUTES
       { path: '/contact', name: 'contact' },
       { path: '/sell', name: 'sell' },
       { path: '/housing-market', name: 'housing market hub' },
+      ...PLAT_ISR_ROUTES,
       ...(LISTING_KEY
         ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail' }]
         : []),
@@ -206,6 +226,16 @@ const REFUSAL_ROUTES = [
     name: 'canonical listing URL — refusal body',
   },
   { path: `/listing/by-key/${SMOKE_MISSING_KEY}`, name: 'listing by-key — refusal body' },
+  // SEO-1 (visibility audit 2026-09-22): a made-up area segment under a real
+  // city answered 200, "index, follow", a self canonical and an H1 title-cased
+  // from the slug (live 2026-09-23: /homes-for-sale/prineville/p1-no-such-place
+  // -> "P1 No Such Place homes for sale"). It must render the refusal
+  // (app/search/[...slug]/sections/AreaUnavailable.tsx) with noindex. Two
+  // cities, so a fix keyed to one city cannot pass. No subdivision name,
+  // boundary slug or registry community contains "smoke" (checked 2026-09-23
+  // against subdivision_city_inventory_mv and boundaries: 0 rows each).
+  { path: '/homes-for-sale/bend/rr-smoke-no-such-area', name: 'search area (Bend) — refusal body' },
+  { path: '/homes-for-sale/prineville/rr-smoke-no-such-area', name: 'search area (Prineville) — refusal body' },
   {
     // A key too long to be a key. This was a SECOND route into the same blank
     // 200: getListingDetail validated its input with a throwing zod parse
@@ -373,12 +403,48 @@ async function discoverResolvingListingKey() {
       await new Promise((r) => setTimeout(r, wait))
     }
   }
-  if (status !== 200) return { key: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
+  if (status !== 200) return { key: null, path: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
   // Canonical detail URLs end in -<mlsNumber>; getListingCanonicalPathFields
   // accepts an MLS number as well as a ListingKey.
-  const m = body.match(/<loc>[^<]*\/homes-for-sale\/[^<]*?-(\d{5,})<\/loc>/)
-  if (!m) return { key: null, why: 'no canonical listing URL in sitemaps/listings.xml' }
-  return { key: m[1], why: null }
+  const m = body.match(/<loc>([^<]*\/homes-for-sale\/[^<]*?-(\d{5,}))<\/loc>/)
+  if (!m) return { key: null, path: null, why: 'no canonical listing URL in sitemaps/listings.xml' }
+  return { key: m[2], path: locationPathname(m[1]), why: null }
+}
+
+/**
+ * LISTING CANONICAL HOP (P14, visibility audit 2026-09-22, gsc-trend-6).
+ *
+ * A listing page renders from the MLS number at the END of its path, so any
+ * segments in front of it used to answer 200 with only a rel=canonical: 1,234
+ * of 7,329 listing ids sat under more than one URL in Search Console
+ * 2026-08-23..09-19. middleware.ts now 308s every such path to the canonical
+ * before render (lib/routing/listing-canonical-hop.ts). The unit tests prove the
+ * decision; only a running server proves the Edge bundle, its inlined Supabase
+ * env and the real runtime actually emit it. The probe takes the discovered
+ * sitemap URL's last segment under the retired /outside-boundaries/ city (690
+ * of those ids had such a variant in Search Console) and wants: a 308, a
+ * Location that is not the probe and ends in the same listing segment, and a
+ * Location that does not redirect again.
+ */
+async function checkListingCanonicalHop(route, url) {
+  try {
+    const { status, location } = await fetchWithTimeout(url, timeoutFor(route.path), { redirect: 'manual' })
+    const pathname = locationPathname(location)
+    const reasons = []
+    if (status !== 308) reasons.push(`HTTP ${status} (want 308 — a non-canonical listing path must hop before render)`)
+    if (!pathname) reasons.push('no Location header')
+    else if (pathname === route.path) reasons.push(`Location points back at itself (${pathname})`)
+    else if (!pathname.endsWith(`/${route.listingSegment}`)) reasons.push(`Location ${pathname} is not this listing (want .../${route.listingSegment})`)
+    if (reasons.length === 0) {
+      const again = await fetchWithTimeout(BASE + pathname, timeoutFor(pathname), { redirect: 'manual' })
+      if (again.status >= 300 && again.status < 400) {
+        reasons.push(`the canonical ${pathname} redirects again (HTTP ${again.status} -> ${locationPathname(again.location)})`)
+      }
+    }
+    return { ...route, url, status, ok: reasons.length === 0, reasons, title: pathname || null }
+  } catch (e) {
+    return { ...route, url, ok: false, status: 0, reasons: [String(e?.message ?? e)], title: null }
+  }
 }
 
 async function checkResolvingRedirect(route, url) {
@@ -416,16 +482,39 @@ async function checkRoute(route) {
   const url = BASE + route.path
   if (route.predetermined) return { ...route, url, title: null, ...route.predetermined }
   if (route.resolvingRedirect) return checkResolvingRedirect(route, url)
+  if (route.listingSegment) return checkListingCanonicalHop(route, url)
   if (route.refusal) return checkRefusal(route, url)
   const skipReason = SKIP_ROUTES.get(route.path)
   if (skipReason) return { ...route, url, ok: true, skipped: true, status: 0, reasons: [skipReason], title: null }
   const hop = HOP_ROUTES.get(route.path)
   if (hop) return checkHop(route, url, hop)
-  let result = await checkFullPage(route, url)
-  if (!result.ok && result.status === 0 && /aborted/i.test(result.reasons[0] ?? '')) {
-    result = await checkFullPage(route, url)
-  }
-  return result
+  return checkFullPage(route, url)
+}
+
+/**
+ * A full page that gave no answer inside its budget during the concurrent
+ * pass. It is fetched again AFTER the pass, one at a time (see main).
+ *
+ * The retry used to run immediately, inside the same six-wide pool, so it
+ * met the same contention: on a 2-core runner with every data cache cold,
+ * /housing-market/history and /housing-market/reports each aborted twice at
+ * 15s (run 35920741632, 2026-09-23) on a commit whose app code had passed an
+ * hour earlier, while production answered /housing-market/history in 0.39s
+ * and /housing-market/reports in 1.56s warm (15.0s cold). A route must still
+ * answer inside its budget with the server to itself, so a page that is
+ * slow on its own still fails.
+ */
+function timedOutFullPage(result) {
+  return (
+    !result.ok &&
+    result.status === 0 &&
+    /aborted/i.test(result.reasons[0] ?? '') &&
+    !result.predetermined &&
+    !result.resolvingRedirect &&
+    !result.listingSegment &&
+    !result.refusal &&
+    !HOP_ROUTES.has(result.path)
+  )
 }
 
 async function runWithConcurrency(items, worker, concurrency) {
@@ -454,6 +543,17 @@ async function main() {
           name: 'listing by-key — RESOLVING key must emit a real 3xx',
           resolvingRedirect: true,
         },
+        // P14: the same discovered listing under a retired city segment. A
+        // discovery failure is already reported once, by the route above.
+        ...(discovered.path
+          ? [
+              {
+                path: `/homes-for-sale/outside-boundaries/${discovered.path.split('/').at(-1)}`,
+                name: 'listing canonical hop — a non-canonical listing path must 308 to the canonical before render',
+                listingSegment: discovered.path.split('/').at(-1),
+              },
+            ]
+          : []),
       ]
     : [
         {
@@ -487,6 +587,16 @@ async function main() {
     ? [...refusals, ...resolvingRoutes]
     : [...smokeRoutes, ...refusals, ...resolvingRoutes]
   const results = await runWithConcurrency(toCheck, checkRoute, CONCURRENCY)
+  // The server keeps rendering a page after the client gives up on it, so the
+  // renders the pool abandoned drain before the serial retries begin.
+  if (results.some(timedOutFullPage)) await new Promise((r) => setTimeout(r, RETRY_SETTLE_MS))
+  for (let i = 0; i < results.length; i += 1) {
+    if (!timedOutFullPage(results[i])) continue
+    const retry = await checkFullPage(toCheck[i], BASE + toCheck[i].path)
+    results[i] = retry.ok
+      ? { ...retry, title: `${retry.title ?? ''} (answered on a serial retry after timing out in the concurrent pass)` }
+      : retry
+  }
   const failed = results.filter((r) => !r.ok)
 
   if (JSON_OUT) {

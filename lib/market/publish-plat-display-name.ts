@@ -53,6 +53,67 @@ const MLS_DUMP_TOKEN_RE = /\b(sfr|olu)\b/i
  */
 const MLS_LETTER_PHASE_RE = /\bphase\s+[a-z](?:-?\d+)?\b/i
 
+/**
+ * MLS field-length truncations that end a name mid-word. The MLS cuts
+ * SubdivisionName at a fixed width, so a plat filed as "Deschutes River
+ * Tract" or "Aspen Creek Mobile Park" arrives as "Deschutes River Trac" /
+ * "Aspen Creek Mob Pk". The visitor name is not knowable from the token, so
+ * the whole name is withheld rather than expanded (visibility audit
+ * 2026-09-22, VOICE-3: /price-drops printed "Bend · Deschutes River Trac",
+ * "Redmond · Aspen Creek Mob Pk", "Bend · Inn Of The 7th"). Readable
+ * abbreviations (Mtn, Est, Addn, Sub) are left alone.
+ */
+const MLS_TRUNCATED_TAIL_RE = /\b(trac|tr|mob|pk|prk|mhpk|sec)$/i
+
+/**
+ * A name that stops on a bare ordinal ("Inn Of The 7th") is a truncation:
+ * the noun the ordinal qualified was cut. "7th Mountain" and "Phase 3" keep
+ * their noun or number and are untouched.
+ */
+const MLS_TRAILING_ORDINAL_RE = /\b\d+(st|nd|rd|th)$/i
+
+/** Short letter tokens that read as words or recorded forms, not MLS codes. */
+const NO_VOWEL_WORD_ALLOW = new Set(['mtn', 'mkt', 'blvd', 'hwy', 'mhc'])
+
+/**
+ * Two or more vowel-less words of three or more letters is an MLS code dump
+ * ("Desc Rvr Hmst Rimrk"). One such word is usually a readable abbreviation
+ * ("Mtn Village", "Reed Mkt East") and stays.
+ */
+function hasNoVowelCodeRun(name: string): boolean {
+  const words = name.split(/[\s,-]+/).filter(Boolean)
+  const codes = words.filter(
+    (word) =>
+      /^[A-Za-z]{3,6}$/.test(word) &&
+      !NO_VOWEL_WORD_ALLOW.has(word.toLowerCase()) &&
+      !/^[ivxlcdm]+$/i.test(word) &&
+      (word.match(/[aeiouyAEIOUY]/g) ?? []).length === 0,
+  )
+  return codes.length >= 2
+}
+
+/**
+ * City names the MLS sometimes stores with a stray interior capital
+ * ("PrineVille - Fifth"). Recasing a city's own name is casing, not a rename.
+ */
+const CITY_CASING: Record<string, string> = {
+  prineville: 'Prineville',
+  redmond: 'Redmond',
+  bend: 'Bend',
+  sisters: 'Sisters',
+  sunriver: 'Sunriver',
+  terrebonne: 'Terrebonne',
+  madras: 'Madras',
+  tumalo: 'Tumalo',
+}
+
+function recaseCityWords(name: string): string {
+  return name.replace(/[A-Za-z]+/g, (word) => {
+    const fixed = CITY_CASING[word.toLowerCase()]
+    return fixed && word !== fixed && /[a-z][A-Z]/.test(word) ? fixed : word
+  })
+}
+
 function compactLetters(name: string): string {
   return name.replace(/[^A-Za-z0-9]/g, '')
 }
@@ -63,6 +124,9 @@ export function looksLikeMlsAbbreviation(name: string): boolean {
   if (KNOWN_MLS_ABBREVIATIONS.has(trimmed.toLowerCase())) return true
   if (MLS_DUMP_TOKEN_RE.test(trimmed)) return true
   if (MLS_LETTER_PHASE_RE.test(trimmed)) return true
+  if (MLS_TRUNCATED_TAIL_RE.test(trimmed)) return true
+  if (MLS_TRAILING_ORDINAL_RE.test(trimmed)) return true
+  if (hasNoVowelCodeRun(trimmed)) return true
   if (/^[A-Z]{2,5}\d{0,2}$/.test(trimmed)) return true
   if (/^[A-Za-z]{2,4}\s+\d+$/.test(trimmed)) return true
   if (/\bVill\b/i.test(trimmed)) return true
@@ -148,5 +212,5 @@ export function publishPlatDisplayName(raw: string | null | undefined): string |
   // The abbreviation test runs on the CLEANED name, before casing, because
   // casing must not turn a withheld token into a publishable one.
   if (looksLikeMlsFilingLabel(cleaned)) return null
-  return titleCasePlaceName(cleaned)
+  return titleCasePlaceName(recaseCityWords(cleaned))
 }

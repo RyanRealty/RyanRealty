@@ -136,6 +136,12 @@ export default async function InvestPage() {
       lead: true,
     },
     { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
+    // SITE_PAGES.md: rental and appreciation math live on /invest. The
+    // appreciation tool keeps its own URL (UXLIVE-8: 992 GSC impressions in 16
+    // months for "appreciation calculator" queries, and this page carries no
+    // appreciation calculator of its own), so /invest links it instead of
+    // absorbing it with a 301.
+    { label: 'Home appreciation calculator', href: '/tools/appreciation' },
     { label: 'Central Oregon market report', href: '/housing-market' },
     { label: 'Every city', href: '/cities' },
     { label: 'Talk to a broker', href: '/contact' },
@@ -215,7 +221,7 @@ export default async function InvestPage() {
                 kind: 'prose',
                 body: 'The live counts are not reading right now. Every multi-family, commercial, land, farm, and business listing on the regional MLS across Central Oregon is still browsable below.',
               },
-              { label: 'Every home for sale', href: '/homes-for-sale?view=list' },
+              { label: 'Every home for sale', href: '/homes-for-sale' },
             ]}
           />
         )}
@@ -231,7 +237,7 @@ export default async function InvestPage() {
             heading={v3Text('What is for sale, and how it trades')}
             rows={[firstTypeRow, ...restTypeRows]}
             source={v3Text(SEGMENT_TRACE)}
-            action={{ label: v3Text('Every home for sale'), href: '/homes-for-sale?view=list' }}
+            action={{ label: v3Text('Every home for sale'), href: '/homes-for-sale' }}
           />
         ) : null}
 

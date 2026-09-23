@@ -17,6 +17,7 @@ import {
   type SchemaInput,
   type StatValue,
 } from '@/lib/site/json-ld'
+import { reconcileDatasetToFaq, type FaqPair } from '@/lib/site/dataset-faq-contract'
 
 export type NeighborhoodSchemaInput = {
   neighborhoodName: string
@@ -26,6 +27,12 @@ export type NeighborhoodSchemaInput = {
   hasMap: boolean
   geo?: { lat: number; lng: number }
   datasetVariables: StatValue[]
+  /**
+   * AEO-1. The FAQPage items the page emits beside this markup. When given,
+   * a Dataset / Place variable whose FAQ answer prints a different number
+   * under the same label is withheld (lib/site/dataset-faq-contract.ts).
+   */
+  faqItems?: readonly FaqPair[]
   asOfIso: string | null
   asOfLabel: string | null
   /**
@@ -42,12 +49,14 @@ export function buildNeighborhoodSchemas({
   citySlug,
   hasMap,
   geo,
-  datasetVariables,
+  datasetVariables: measured,
+  faqItems,
   asOfIso,
   asOfLabel,
   homes,
 }: NeighborhoodSchemaInput): SchemaInput[] {
   const url = `/cities/${citySlug}/${neighborhoodSlug}`
+  const datasetVariables = faqItems ? reconcileDatasetToFaq(measured, faqItems) : measured
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',

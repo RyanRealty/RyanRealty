@@ -62,14 +62,33 @@ export { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannere
 export const RECEIPT_V2_FROM = '2026-09-08'
 
 /**
- * Catalog demoMatch rule (Matt 2026-09-12). Receipts on this date / rubric
- * that name a catalog adaptedFrom id cannot claim rise or the 70 finish
- * line without demoMatch: true. Older receipts stay valid so ci:taste-canon
- * stays green for honest pre-rule marks.
+ * THE OBJECTIVE CHANGED (Matt 2026-09-22 / 2026-09-23, visibility audit
+ * PROCESS-3 + UXLIVE-11). The site queue is scored on being seen (Search
+ * Console clicks and position, AI referrals) and converting; the taste median
+ * is a FLOOR that may not regress, not the score (docs/RUN_LOOP.md §1, §4).
+ * Matt 2026-09-23: "Don't assume any rules from the past that might keep us
+ * from hitting our goals are permanent." Evidence: 0 of 27 classes reached the
+ * 70 finish line on the frozen table (best 67), so the queue could never
+ * finish, and 172 September nodes were steered by a score that has no
+ * visibility or conversion term. So:
+ *   - demoMatch and competitiveBriefPass are RECORDED notes (true | false, never
+ *     invented), not completion gates;
+ *   - FINISH_LINE is a reference mark the taste table prints; it no longer
+ *     decides done (it stays exported because ci:rubric-freeze pins it);
+ *   - Tip Ready (`--ship`) requires NO REGRESSION on the same instrument:
+ *     comparedToPrior "first" | "rose" | "held" | "rebaselined", where "held"
+ *     may sit below the prior mark only by less than the rise floor (a smaller
+ *     move is the judge's own noise, riseFloorBasis in taste-rule-freeze.json).
+ * The rubric itself is unchanged (v1-2026-09-12).
+ *
+ * DEMO_MATCH_RULE_FROM: receipts on this date / rubric that name a catalog
+ * adaptedFrom id must RECORD demoMatch as true or false.
  */
 export const DEMO_MATCH_RULE_FROM = '2026-09-12'
 export const DEMO_MATCH_RUBRIC = 'v1-2026-09-12'
 export const FINISH_LINE = 70
+/** The date the objective moved off the finish line (Matt 2026-09-23). */
+export const TASTE_FLOOR_FROM = '2026-09-23'
 
 /**
  * The rise floor (Matt 2026-09-12: "there can be no gaps"). "Score must rise"
@@ -91,6 +110,43 @@ export const RISE_FLOOR_FROM = '2026-09-13'
 /** The minimum rise a receipt evaluated on `evaluatedAt` owes over its prior mark. */
 export function riseFloorFor(evaluatedAt) {
   return String(evaluatedAt ?? '') >= RISE_FLOOR_FROM ? RISE_FLOOR : 1
+}
+
+/**
+ * How far a "held" mark may sit under its prior mark on the same instrument
+ * before it is a regression: one less than the rise floor. The rise floor is
+ * the smallest move the judge can tell from its own noise, in either
+ * direction, so a smaller drop is the judge disagreeing with itself, and a
+ * drop of the full floor or more is the page getting worse (Matt 2026-09-23:
+ * taste is a floor that may not regress).
+ */
+export function regressionToleranceFor(evaluatedAt) {
+  return riseFloorFor(evaluatedAt) - 1
+}
+
+/**
+ * The look floor on one receipt: did the median fall on the same instrument,
+ * and did honesty fall? Empty = no regression. A "first" or "rebaselined"
+ * mark has no comparable prior, so only the honesty hold applies to it.
+ */
+export function tasteFloorProblems(tr, { headReceipt = null } = {}) {
+  if (!isPlainObject(tr)) return []
+  const p = []
+  const prior = isPlainObject(tr.priorMark) ? tr.priorMark : null
+  const cmp = String(tr.comparedToPrior ?? '')
+  if (prior && Number.isInteger(prior.score) && Number.isInteger(tr.score) && (cmp === 'rose' || cmp === 'held')) {
+    const drift = identityDrift(tr, prior, headReceipt)
+    if (drift.length === 0) {
+      const tol = regressionToleranceFor(tr.evaluatedAt)
+      if (tr.score < prior.score - tol) {
+        p.push(
+          `taste floor regressed: median ${tr.score} is ${prior.score - tr.score} under the prior mark ${prior.score} on the same instrument (a drop of ${tol + 1} or more is outside the judge's noise). Fix the page; taste may not regress (Matt 2026-09-23).`,
+        )
+      }
+    }
+  }
+  p.push(...productHoldProblems(tr, prior))
+  return p
 }
 
 /** The three identity keys that decide whether two marks are the same instrument. */
@@ -286,11 +342,11 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null, co
       : null
   if (headScored && (cmp === 'first' || prior == null)) {
     p.push(
-      `this route's committed tasteReview already scored ${headScored.score} on ${headScored.evaluatedAt}. Name it in priorMark and set comparedToPrior "rose" or "rebaselined" — "first" is not an exit from the rise rule.`,
+      `this route's committed tasteReview already scored ${headScored.score} on ${headScored.evaluatedAt}. Name it in priorMark and set comparedToPrior "rose", "held" or "rebaselined" — "first" is not an exit from the no-regression rule.`,
     )
   }
-  if (!['first', 'rose', 'rebaselined'].includes(cmp)) {
-    p.push('comparedToPrior must be "first", "rose", or "rebaselined".')
+  if (!['first', 'rose', 'held', 'rebaselined'].includes(cmp)) {
+    p.push('comparedToPrior must be "first", "rose", "held", or "rebaselined".')
   } else if (cmp === 'first') {
     if (prior != null) p.push('comparedToPrior "first" but priorMark is set. A first mark has no prior.')
   } else {
@@ -300,7 +356,23 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null, co
       p.push('priorMark.score must be the integer mark it is being compared to.')
     } else {
       const drift = identityDrift(tr, prior, headScored)
-      if (cmp === 'rose') {
+      if (cmp === 'held') {
+        // Matt 2026-09-23: a pass may improve visibility or information and
+        // leave the look where it was. "held" records that the median did not
+        // fall outside the judge's noise on the same instrument.
+        if (drift.length > 0) {
+          p.push(
+            `comparedToPrior "held" but the prior mark differs on ${drift.join(', ')} — a different instrument is NOT a baseline. Set comparedToPrior "rebaselined".`,
+          )
+        } else {
+          const tol = regressionToleranceFor(tr.evaluatedAt)
+          if (!(Number.isInteger(tr.score) && tr.score >= prior.score - tol)) {
+            p.push(
+              `score ${tr.score} fell below the prior mark ${prior.score} by more than the judge's noise (${tol}) on the same instrument. The look regressed; fix the page (Matt 2026-09-23: taste is a floor).`,
+            )
+          }
+        }
+      } else if (cmp === 'rose') {
         if (drift.length > 0) {
           p.push(
             `comparedToPrior "rose" but the prior mark differs on ${drift.join(', ')} — a different instrument is NOT a baseline. Set comparedToPrior "rebaselined".`,
@@ -310,15 +382,15 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null, co
           if (!(Number.isInteger(tr.score) && tr.score >= prior.score + floor)) {
             p.push(
               floor > 1
-                ? `score ${tr.score} did not rise by the floor of ${floor} over the prior mark ${prior.score} (needs ${prior.score + floor}). A smaller rise is inside the judge's own noise — the item is not done (TASTE.md).`
-                : `score ${tr.score} did not rise above the prior mark ${prior.score}. The item is not done (TASTE.md).`,
+                ? `score ${tr.score} did not rise by the floor of ${floor} over the prior mark ${prior.score} (needs ${prior.score + floor}). A smaller rise is inside the judge's own noise: record comparedToPrior "held", not "rose" (TASTE.md).`
+                : `score ${tr.score} did not rise above the prior mark ${prior.score}: record comparedToPrior "held", not "rose" (TASTE.md).`,
             )
           }
         }
       } else {
         if (drift.length === 0) {
           p.push(
-            'comparedToPrior "rebaselined" but the prior mark matches on evaluatorModel, rubricVersion and shotsHash — it IS comparable, so the score must rise.',
+            'comparedToPrior "rebaselined" but the prior mark matches on evaluatorModel, rubricVersion and shotsHash — it IS comparable: record "rose" or "held".',
           )
         } else if (!isNonEmptyString(tr.rebaselineReason, 10) || !drift.some((k) => tr.rebaselineReason.includes(k))) {
           p.push(`rebaselineReason must name the key(s) that differ: ${drift.join(', ')}.`)
@@ -336,13 +408,13 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null, co
   p.push(...productHoldProblems(tr, holdPrior))
   if (headScored && holdPrior !== headScored) p.push(...productHoldProblems(tr, headScored))
 
-  // 9. Catalog adaptedFrom + rise/done without demoMatch true is a cream box
-  //    (Matt 2026-09-12). Score rise is not Tip Ready.
+  // 9. Catalog adaptedFrom: demoMatch is RECORDED true or false (Matt
+  //    2026-09-12), a note, not a completion gate (Matt 2026-09-23).
   p.push(...catalogDemoMatchProblems(tr))
 
-  // 10. Per-route competitiveBrief (About first, Matt 2026-09-12). Rise / 70
-  //     without competitiveBriefPass true (or checklist all true) is refuse.
-  //     Omit is refuse. Do not invent true.
+  // 10. Per-route competitiveBrief (About first, Matt 2026-09-12):
+  //     competitiveBriefPass is RECORDED true or false. Omit is refuse; do not
+  //     invent true. A false no longer blocks done (Matt 2026-09-23).
   p.push(...competitiveBriefProblems(tr, competitiveBrief))
 
   return p
@@ -369,9 +441,10 @@ export function underDemoMatchRule(tr) {
 }
 
 /**
- * A catalog-class receipt that claims rise or the finish line without
- * demoMatch: true is not done. Omitting demoMatch on a post-rule receipt
- * is the same as false.
+ * A post-rule catalog-class receipt records the judge's demoMatch verdict as
+ * true or false. Omitting it hides the verdict, so it is refused. Since Matt
+ * 2026-09-23 a false is an honest note: it no longer blocks a rise, the finish
+ * line, or done.
  */
 export function catalogDemoMatchProblems(tr) {
   if (!isPlainObject(tr)) return []
@@ -380,18 +453,10 @@ export function catalogDemoMatchProblems(tr) {
   if (!underDemoMatchRule(tr)) return []
 
   const named = catalogIds.join(', ')
-  const demo = tr.demoMatch
   const p = []
-  if (typeof demo !== 'boolean') {
+  if (typeof tr.demoMatch !== 'boolean') {
     p.push(
-      `demoMatch must be true or false when adaptedFrom names catalog modules (${named}). Omitting it is a cream-box receipt.`,
-    )
-  }
-  const claimsRiseOrDone =
-    String(tr.comparedToPrior ?? '') === 'rose' || (Number.isInteger(tr.score) && tr.score >= FINISH_LINE)
-  if (claimsRiseOrDone && demo !== true) {
-    p.push(
-      `score rise / finish line is not done while demoMatch is ${demo === false ? 'false' : 'missing'} (adaptedFrom: ${named}). A cream-box import is not a demo match. Leave the node in_progress.`,
+      `demoMatch must be recorded true or false when adaptedFrom names catalog modules (${named}). It is a note, not a gate (Matt 2026-09-23); record the judge's verdict, never invent it.`,
     )
   }
   return p
@@ -502,9 +567,9 @@ export function underCompetitiveBriefRule(tr) {
 }
 
 /**
- * A route that publishes a competitiveBrief cannot claim rise or the finish
- * line without competitiveBriefPass: true (or checklist all true). Omit is
- * refuse. Honest false below 70 on a rebaseline stays valid.
+ * A route that publishes a competitiveBrief records competitiveBriefPass as
+ * true or false (or a complete checklist). Omit is refuse. Since Matt
+ * 2026-09-23 a false is an honest note, not a block on rise or done.
  */
 export function competitiveBriefProblems(tr, brief) {
   const parsed = parseCompetitiveBrief(brief)
@@ -516,23 +581,19 @@ export function competitiveBriefProblems(tr, brief) {
   const p = []
   if (verdict === undefined) {
     p.push(
-      'competitiveBriefPass must be true or false when the route has a competitiveBrief. Omitting it is refuse. Do not invent true. Checklist all true is the other pass path.',
-    )
-  }
-  const claimsRiseOrDone =
-    String(tr.comparedToPrior ?? '') === 'rose' || (Number.isInteger(tr.score) && tr.score >= FINISH_LINE)
-  if (claimsRiseOrDone && verdict !== true) {
-    p.push(
-      `score rise / finish line is not done while competitiveBriefPass is ${verdict === false ? 'false' : 'missing'}. Looking that invents past the Researchy checklist is refuse. Leave the node in_progress.`,
+      'competitiveBriefPass must be recorded true or false when the route has a competitiveBrief. Omitting it is refuse. Do not invent true. Checklist all true is the other pass path.',
     )
   }
   return p
 }
 
 /**
- * Tip Ready / node-complete: the receipt itself must show demoMatch true
- * and, when a competitiveBrief exists, competitiveBriefPass true.
- * Used by completeWorkNode and `node scripts/lib/taste-receipt.mjs --ship`.
+ * Tip Ready / node-complete (Matt 2026-09-23): the receipt was signed by the
+ * judge chain, records its verdicts (demoMatch for catalog modules,
+ * competitiveBriefPass when a brief exists) without inventing them, and did
+ * not regress on the same instrument (tasteFloorProblems). A true verdict is
+ * no longer required. Used by `node scripts/lib/taste-receipt.mjs --ship`;
+ * lib/data/loop/site-queue-done.ts mirrors it for completeWorkNode.
  */
 export const TIP_READY_EVALUATOR = EVALUATOR_MODEL
 /** The judge chain: grok-4.6 first, the claude CLI when grok is missing or 402. */
@@ -582,24 +643,26 @@ export function tipReadyReceiptProblems(
   const p = []
   if (!isTipReadyEvaluator(tr.evaluatorModel)) {
     p.push(
-      `evaluatorModel must be one of the judge chain (${TIP_READY_EVALUATORS.join(', ')}) — the same instrument as demoMatch. Leave the node in_progress.`,
+      `evaluatorModel must be one of the judge chain (${TIP_READY_EVALUATORS.join(', ')}) — a mark from anywhere else is not a measurement. Leave the node in_progress.`,
     )
   }
-  if (typeof tr.demoMatch !== 'boolean') {
-    p.push('demoMatch must be true or false — do not invent it. Leave the node in_progress.')
-  } else if (tr.demoMatch !== true) {
-    p.push('demoMatch is false. Honest false stays in_progress. Do not invent demoMatch.')
+  if (tr.demoMatch !== undefined && typeof tr.demoMatch !== 'boolean') {
+    p.push('demoMatch, when recorded, is the boolean the judge returned. Do not invent it.')
+  } else if (adaptedFromCatalogIds(tr.adaptedFrom).length && typeof tr.demoMatch !== 'boolean') {
+    p.push('demoMatch must be recorded true or false when adaptedFrom names catalog modules (a note, not a gate). Do not invent it.')
   }
   const parsed = parseCompetitiveBrief(competitiveBrief) || parseCompetitiveBrief(tr.competitiveBrief)
   if (requireBrief || parsed) {
-    if (tr.competitiveBriefPass !== true) {
+    if (typeof tr.competitiveBriefPass !== 'boolean') {
       p.push(
-        'parity tasteReview.competitiveBriefPass must be the boolean true. Bare evidence prose is refuse. Leave the node in_progress.',
+        'parity tasteReview.competitiveBriefPass must be recorded as the boolean the judge returned. Bare evidence prose is refuse. Leave the node in_progress.',
       )
-    } else if (isAboutLockBrief(parsed, kit)) {
+    } else if (tr.competitiveBriefPass === true && isAboutLockBrief(parsed, kit)) {
+      // Claiming the About pass still needs its quotes from the live source.
       p.push(...aboutTipReadyProblems(tr, parsed, { root, sourceText, kit }))
     }
   }
+  p.push(...tasteFloorProblems(tr))
   p.push(...defectReplaceWithProblems(tr))
   if (tr.shotsHash != null && !HASH_RE.test(String(tr.shotsHash).trim())) {
     p.push('tasteReview.shotsHash must be sha256:<64 hex> like a v2 receipt.')
@@ -648,14 +711,9 @@ export function openStateEvidenceProblems(tr, opts = {}) {
 
 export function tasteDoneProblems(tr, { competitiveBrief = null, catalog = null, route = null, root = process.cwd(), catalogIo = null, catalogClass = false, kit = null, sourceText } = {}) {
   if (!isPlainObject(tr)) return ['tasteReview is required to mark a SITE node done.']
-  const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
   const p = tipReadyReceiptProblems(tr, { competitiveBrief, kit, root, sourceText })
+  // Matt's dated copy calls (2026-09-14..18), recorded in VOICE.md "Matt's calls on site copy".
   p.push(...manneredPublicCopyProblems(resolveCopySourceForTaste({ sourceText, route, kit, root })))
-  if (catalogIds.length && tr.demoMatch !== true) {
-    p.push(
-      `adaptedFrom names catalog modules (${catalogIds.join(', ')}) but demoMatch is not true. File-on-disk / score rise is not a demo match.`,
-    )
-  }
   p.push(...openStateEvidenceProblems(tr, { catalogClass }))
   p.push(...tipReadyCatalogInstallProblems(tr.adaptedFrom, { catalog, route, root, catalogIo }))
   const listingKit = kit === 'listing-detail' || route === 'app/listing/[listingKey]/page.tsx'
@@ -680,11 +738,12 @@ export function tasteDoneProblems(tr, { competitiveBrief = null, catalog = null,
 }
 
 /**
- * SITE-* done evidence must record a demoMatch: true from the judge chain
- * (grok-4.6, or the claude CLI when grok was missing / 402). A 402 or CLI
- * miss with no verdict behind it is an honest fail, not Tip Ready. A 402
- * that was followed by the fallback judge is fine, but then the receipt on
- * disk has to exist and pass — prose is not the receipt.
+ * SITE-* done evidence (Matt 2026-09-23). The accept test is docs/RUN_LOOP.md
+ * §4 (visibility, information, voice, floors, measurement); demoMatch and
+ * competitiveBriefPass are notes. What this still refuses: empty evidence; a
+ * judge failure (402, CLI missing) offered with no signed receipt behind it; a
+ * named receipt whose look regressed on the same instrument; "Tip Ready" prose
+ * without the --ship exit 0; place craft without its first-look evidence.
  */
 export const JUDGE_UNREACHABLE_RE = /\b402\b|payment required|balance exhausted|no grok CLI|grok CLI missing|GROK_CLI|claude CLI missing|both judges/i
 
@@ -714,79 +773,46 @@ function loadKitParity(kit, root = process.cwd()) {
 
 export function siteQueueDoneEvidenceProblems(
   evidence,
-  { versionGap, competitiveBriefRequired, tasteReview, competitiveBrief, parity, loadParity, root } = {},
+  { versionGap, tasteReview, competitiveBrief, parity, loadParity, root } = {},
 ) {
   const gap = String(versionGap ?? '')
   if (gap && !/^SITE-\d+/.test(gap)) return []
   const text = String(evidence ?? '')
   if (!text.trim()) return ['evidence is required — a node is done when the environment says so']
   const judgeUnreachable = JUDGE_UNREACHABLE_RE.test(text)
-  const claimsDemoMatch = /\bdemoMatch\b\s*[:=]\s*true\b/i.test(text)
-  if (/\bdemoMatch\b\s*[:=]\s*false\b/i.test(text)) {
-    return ['evidence records demoMatch false — not done. Leave the node in_progress.']
-  }
-  if (!claimsDemoMatch) {
-    if (/\b402\b|payment required|balance exhausted/i.test(text)) {
-      return ['grok CLI 402 and no fallback verdict — do not invent demoMatch. Run taste-evaluate again (the claude CLI is link 2). Leave the node in_progress.']
-    }
-    if (judgeUnreachable) {
-      return ['judge CLI missing and no fallback verdict — do not invent demoMatch. Leave the node in_progress.']
-    }
-    return [
-      `SITE done evidence must include demoMatch: true from the judge chain (${TIP_READY_EVALUATORS.join(', ')}). Score rise without a demo match is not Tip Ready.`,
-    ]
-  }
-  if (/\bcompetitiveBriefPass\b\s*[:=]\s*false\b/i.test(text)) {
-    return [
-      'evidence records competitiveBriefPass false — Looking invented past the brief, or the checklist is not all true. Not done. Leave the node in_progress.',
-    ]
-  }
 
   const kit = resolveSiteQueueKit(text, gap)
   const loaded = loadParity === false ? null : isPlainObject(parity) ? parity : loadKitParity(kit, root)
   const tr = isPlainObject(tasteReview) ? tasteReview : loaded?.tasteReview
   const brief = competitiveBrief ?? loaded?.competitiveBrief
-  const needsBrief =
-    competitiveBriefRequired === true ||
-    Boolean(parseCompetitiveBrief(brief)) ||
-    /SITE-90/.test(gap) ||
-    /taste-evaluate(?:\.ts)?\s+about\b/i.test(text) ||
-    /ui_kits\/about/i.test(text)
-  const claimsBriefPass = /\bcompetitiveBriefPass\b\s*[:=]\s*true\b/i.test(text)
-
-  if (needsBrief && !claimsBriefPass) {
-    return [
-      'SITE done evidence must include competitiveBriefPass: true. Score rise without the Researchy brief is not Tip Ready.',
-    ]
-  }
   const copyRoot = root ?? process.cwd()
-  const receiptProblems =
-    needsBrief || claimsBriefPass
-      ? tipReadyReceiptProblems(tr, {
-          competitiveBrief: brief,
-          requireBrief: true,
-          kit,
-          root: copyRoot,
-        })
-      : judgeUnreachable
-        ? tipReadyReceiptProblems(tr, { competitiveBrief: brief, kit, root: copyRoot })
-        : []
-  if (isPlainObject(tr)) {
-    receiptProblems.push(
-      ...manneredPublicCopyProblems(resolveCopySourceForTaste({ route: loaded?.route, kit, root: copyRoot })),
-    )
+
+  // A verdict is a note now, but it is still never invented: evidence that
+  // claims true against a receipt that records false is refused.
+  for (const key of ['demoMatch', 'competitiveBriefPass']) {
+    const claimsTrue = new RegExp(`\\b${key}\\b\\s*[:=]\\s*true\\b`, 'i').test(text)
+    if (claimsTrue && isPlainObject(tr) && tr[key] === false) {
+      return [`evidence says ${key}: true but the route's receipt records false. Do not invent a verdict.`]
+    }
   }
-  if (judgeUnreachable && receiptProblems.length && !(needsBrief || claimsBriefPass)) {
-    return [`evidence records a judge failure; the fallback verdict must be on the route's parity.json tasteReview. ${receiptProblems[0]}`]
+
+  if (judgeUnreachable) {
+    const receiptProblems = tipReadyReceiptProblems(tr, { competitiveBrief: brief, kit, root: copyRoot })
+    if (receiptProblems.length) {
+      return [
+        `evidence records a judge failure (402 / CLI missing); a failed judge is not a score. Either the look did not change (say so and cite no score) or the fallback verdict is on the route's parity.json tasteReview. ${receiptProblems[0]}`,
+      ]
+    }
   }
-  if (receiptProblems.length) return receiptProblems
   if (isPlainObject(tr)) {
-    const open = openStateEvidenceProblems(tr)
-    if (open.length) return open
+    const floor = tasteFloorProblems(tr)
+    if (floor.length) return floor
+    const copy = manneredPublicCopyProblems(resolveCopySourceForTaste({ route: loaded?.route, kit, root: copyRoot }))
+    if (copy.length) return copy
   }
   if (/\bTip Ready\b/i.test(text) && !/--ship\b/.test(text) && !/\bship OK\b/i.test(text)) {
     return [
-      'Tip Ready language without `node scripts/lib/taste-receipt.mjs --ship` exit 0 is refuse. Cos prose is not Tip Ready.',
+      'Tip Ready language without `node scripts/lib/taste-receipt.mjs --ship` exit 0 is refuse. Prose is not Tip Ready.',
     ]
   }
   if (isPlaceCraftDoneClaim(text, gap) || isPlaceCraftDocument(loaded)) {
@@ -1036,11 +1062,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       console.error(problems.join('\n'))
       process.exit(1)
     }
-    console.log(
-      parseCompetitiveBrief(d?.competitiveBrief)
-        ? 'ship OK — demoMatch true · competitiveBriefPass true · open-state · catalog-install'
-        : 'ship OK — demoMatch true · open-state · catalog-install',
-    )
+    const tr = d?.tasteReview ?? {}
+    const notes = [`demoMatch ${typeof tr.demoMatch === 'boolean' ? tr.demoMatch : 'n/a'}`]
+    if (parseCompetitiveBrief(d?.competitiveBrief)) notes.push(`competitiveBriefPass ${tr.competitiveBriefPass}`)
+    console.log(`ship OK — no regression (${String(tr.comparedToPrior ?? 'first')}) · ${notes.join(' · ')} (notes) · open-state · catalog-install`)
     process.exit(0)
   }
   if (args.length === 0) {

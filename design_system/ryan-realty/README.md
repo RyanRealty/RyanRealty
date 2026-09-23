@@ -12,7 +12,7 @@ Everything here was drawn from two bodies of work:
 
 | Source | What it contributed |
 |---|---|
-| **`Brand/` kit from Rise Wise** (uploaded) | The real identity. Amboqia Boriango OTF (primary display), Azo Sans Medium TTF (accent), the blue-dog mascot, 14 numbered logo lockups, 2 Central Oregon landmark scenes (Tower Theater, Water Pageant), yard sign, postcard magnet, email banner, Instagram highlight covers, QR code, the "Its About Relationships" lockup, and the "For Sale / Building Community / 541.213.6706 / ryan-realty.com" yard sign template with brokerage phone and URL. |
+| **`Brand/` kit from Rise Wise** (uploaded) | The real identity. Amboqia Boriango OTF (primary display), Azo Sans Medium TTF (accent), the blue-dog mascot, 14 numbered logo lockups, 2 Central Oregon landmark scenes (Tower Theater, Water Pageant), yard sign, postcard magnet, email banner, Instagram highlight covers, QR code, the "Its About Relationships" lockup, and the "For Sale / Building Community / 541.213.6706 / ryan-realty.com" yard sign template with brokerage phone and URL (the template's printed 541.213.6706 predates the 2026-06-24 Twilio cutover; every reprint uses 541.703.3095). |
 | **`RyanRealty/RyanRealty` repo** (github) | The shipped Next.js 16 + Tailwind v4 + shadcn/ui web platform. `app/globals.css` tokens (stone radix-nova base), the custom navy primary `oklch(0.270 0.058 253.912)`, the consumer homepage flow, icon libraries in use (Heroicons + HugeIcons), content voice, and the Deschutes-River hero photography. |
 
 Both live here as one system because they already share a designer's intent: **warm stone neutrals, single brand navy, Central Oregon place imagery, tabular data-first market copy**. The heritage layer adds the mascot, Americana illustrations, and the Amboqia display face; the web layer turns that into an accessible, production-shipped product surface.
@@ -74,7 +74,7 @@ Our mission: **building community through authentic relationships and exceptiona
 
 ### Brokerage facts (always these values)
 - Location: **Bend, Oregon** (sometimes `BEND · OREGON` with a middle dot on signage)
-- Phone: **541.213.6706** (dotted; it's how the yard sign is typeset)
+- Phone: **541.703.3095** (dotted; the Twilio brand line from `lib/brand/contact.ts`. 541.213.6706 is a private forward target and is never printed)
 - Web: **ryan-realty.com** (hyphenated; lowercase)
 - Service area: Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Madras, Prineville, Powell Butte, Terrebonne, Crooked River Ranch — *"Central Oregon"* covers them all
 
@@ -96,7 +96,7 @@ Our mission: **building community through authentic relationships and exceptiona
 - Never "I".
 
 ### Numbers, facts, and units
-- **Phone = dotted:** `541.213.6706`.
+- **Phone = dotted:** `541.703.3095`.
 - **Currency = rounded:** `$895,000` not `$894,750`.
 - **Days = integer + "days":** `38 days`.
 - **Unavailable = em-dash:** `—` not `N/A`.
@@ -258,11 +258,11 @@ Full bios + headshots at `assets/team/`. Source of truth for the broker roster a
 
 | Slug | Name | Title | Phone | Email |
 |---|---|---|---|---|
-| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (bio / lead-capture) | matt@ryan-realty.com |
-| `paul-stevenson` | Paul Stevenson | Broker | `541.977.6841` | — |
-| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `415.308.9087` | — |
+| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (brand line) | matt@ryan-realty.com |
+| `paul-stevenson` | Paul Stevenson | Broker | `541.502.3436` | paul@ryan-realty.com |
+| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `541.250.3380` | rebeccapeterson@ryan-realty.com |
 
-**Brand-voice phone:** `541.213.6706` (Matt direct — the yard sign number). Use this on signage, video VO, and signature heritage moments. Use the **bio / lead-capture phone** (`541.703.3095`) on social profiles, ads, and any lead-capture surface so inbound calls land on the brokerage main line.
+**Brand phone:** `541.703.3095` on every surface: signage, video VO, heritage moments, social profiles, ads and lead capture, so every inbound call lands on the brokerage line and is logged. Each broker's number in the table is their public Twilio line. Private cells, including Matt's old `541.213.6706`, are forward targets only and are never printed. Source of truth: `lib/brand/contact.ts`. Reconciled 2026-09-23 (AEO-7).
 
 Files: `matt-ryan.png` / `paul-stevenson.png` / `rebecca-peterson.png` (transparent, default) and `.jpg` (white bg, legacy). 800×1200 · 552px head height · 20px top whitespace · face horizontally centered. Web mirror at `public/images/brokers/`.
 

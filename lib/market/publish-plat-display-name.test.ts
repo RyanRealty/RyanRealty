@@ -108,3 +108,36 @@ describe('English title case, not per-word capitalisation', () => {
     expect(publishPlatDisplayName('Farm The')).toBe('The Farm')
   })
 })
+
+describe('MLS width truncations (visibility audit 2026-09-22, VOICE-3)', () => {
+  it('withholds names cut mid-word by the MLS field width', () => {
+    expect(publishPlatDisplayName('Deschutes River Trac')).toBeNull()
+    expect(publishPlatDisplayName('Deschutes River Tr')).toBeNull()
+    expect(publishPlatDisplayName('Aspen Creek Mob Pk')).toBeNull()
+    expect(publishPlatDisplayName('Green Pastures Mob')).toBeNull()
+    expect(publishPlatDisplayName('Pioneer Business Prk')).toBeNull()
+  })
+
+  it('withholds a name that stops on a bare ordinal', () => {
+    expect(publishPlatDisplayName('Inn Of The 7th')).toBeNull()
+    expect(publishPlatDisplayName('Steve W Yancey 2nd')).toBeNull()
+    expect(publishPlatDisplayName('Inn Of The 7th Mountain')).toBe('Inn of the 7th Mountain')
+  })
+
+  it('withholds a run of vowel-less codes but keeps one readable abbreviation', () => {
+    expect(publishPlatDisplayName('Desc Rvr Hmst Rimrk')).toBeNull()
+    expect(publishPlatDisplayName('Mtn Village East')).toBe('Mtn Village East')
+    expect(publishPlatDisplayName('Reed Mkt East')).toBe('Reed Mkt East')
+    expect(publishPlatDisplayName('Terrebonne Est')).toBe('Terrebonne Est')
+  })
+
+  it('keeps brand names with interior capitals', () => {
+    expect(publishPlatDisplayName('NorthWest Crossing')).toBe('NorthWest Crossing')
+    expect(publishPlatDisplayName('SaddleStone')).toBe('SaddleStone')
+    expect(publishPlatDisplayName('Deschutes RiverWoods')).toBe('Deschutes RiverWoods')
+  })
+
+  it("recases a city's own name without renaming the plat", () => {
+    expect(publishPlatDisplayName('PrineVille - Fifth')).toBe('Prineville - Fifth')
+  })
+})

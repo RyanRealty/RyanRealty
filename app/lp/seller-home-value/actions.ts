@@ -23,7 +23,6 @@ import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
 import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
 
 // ─── Broker routing constants ─────────────────────────────────────────────
 const CRM_DESK_MATT = 1
@@ -350,7 +349,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const eventResult = await sendEvent({
       type: 'Seller Inquiry',
       person,
-      source: resolveLeadSource(originUtmSource, source),
+      // The door when there is no paid source (FUNNEL-4, 2026-09-23): the fallback
+      // was the site host, which said nothing a report could use.
+      source: resolveLeadSource(originUtmSource, lpSource),
       sourceUrl: leadSourceUrl,
       pageTitle: 'Seller LP — Home Value',
       message: `Seller LP submission. Address: ${parsed.full}. Timeline: ${timeline ?? 'unspecified'}. Tier: ${classification}. Assigned: ${assignment.broker}.`,

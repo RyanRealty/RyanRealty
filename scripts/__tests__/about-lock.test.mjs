@@ -87,6 +87,13 @@ describe('aboutLockSourceProblems — live tree', () => {
     expect(p.join('\n')).toMatch(/staccato|small boutique brokerage|beat 1/)
   })
 
+  it('fails a source that answers "Who are the brokers?" without the live-roster answer (Matt 2026-09-23)', () => {
+    const p = aboutLockSourceProblems({
+      sourceText: "question: 'Who are the brokers?', answer: 'The brokers are on /team.'",
+    })
+    expect(p.join('\n')).toMatch(/aboutBrokersAnswer/)
+  })
+
   it('fails a FAQ that dumps broker license numbers', () => {
     const p = aboutLockSourceProblems({
       sourceText: 'Who are the brokers?\nMatt Ryan OR #201217889, Rebecca Peterson OR #201239012.',
@@ -152,7 +159,7 @@ describe('aboutTipReadyProblems + tasteDoneProblems', () => {
     expect(p.join('\n')).toMatch(/empty replaceWith/)
   })
 
-  it('refuses catalog adaptedFrom without demoMatch true', () => {
+  it('records demoMatch false on About without refusing (Matt 2026-09-23)', () => {
     const p = tasteDoneProblems(
       {
         ...PASSING_TR,
@@ -160,7 +167,7 @@ describe('aboutTipReadyProblems + tasteDoneProblems', () => {
       },
       { competitiveBrief: ABOUT_BRIEF, kit: 'about', sourceText: Object.values(ABOUT_LOCK_QUOTES).join('\n') },
     )
-    expect(p.join('\n')).toMatch(/demoMatch is false/)
+    expect(p.join('\n')).not.toMatch(/demoMatch/)
   })
 
   it('passes Tip Ready only with evidence, demoMatch, and the live source lock', () => {

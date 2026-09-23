@@ -249,10 +249,11 @@ export function V3WorkWithUs({
           </DrawerDescription>
         </div>
         <nav className="v3-dock-sheet__doors" aria-label="Buy or sell with Ryan Realty">
-          <Link href="/buy" className="v3-dock-sheet__door" onClick={door('buy')}>
+          {/* /buy 301s to /homes-for-sale (UXLIVE-8); link the destination. */}
+          <Link href="/homes-for-sale" className="v3-dock-sheet__door" onClick={door('buy')}>
             <span className="v3-dock-sheet__kicker">Buy</span>
             <span className="v3-dock-sheet__label">Buy a home</span>
-            <span className="v3-dock-sheet__fact">See homes on the map.</span>
+            <span className="v3-dock-sheet__fact">See every home for sale.</span>
             <span className="v3-dock-sheet__arrow" aria-hidden="true">
               &#8594;
             </span>

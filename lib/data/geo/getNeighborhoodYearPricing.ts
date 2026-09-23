@@ -10,8 +10,9 @@
  * supabase/migrations/20260819234500_neighborhood_year_pricing_mv.sql). The MV
  * stores the aggregate because computing it live is a 53K-row scan of a very
  * wide MV — 9.2s warm, measured 2026-08-19 — and the answer is only ~420 rows.
- * It refreshes from /api/cron/refresh-mvs right after listing_tile_mv, the view
- * it derives from. The whole table is pulled once under one cache key; per
+ * pg_cron job refresh_dal_mvs_15min refreshes it every 15 minutes (migration
+ * 20260923014600; until that is applied, the hourly /api/cron/refresh-mvs does)
+ * from listing_tile_mv, the view it derives from. The whole table is pulled once under one cache key; per
  * district reads filter the cached pull, so one entry serves all thirteen
  * pages.
  *

@@ -241,16 +241,30 @@
   background: color-mix(in srgb, var(--v3-navy) 2%, var(--v3-cream));
   overflow: hidden;
   touch-action: none;
-  cursor: grab;
+  /* Matt 2026-09-23: "make the mouse a bright tennis ball." Scoped to the
+     map surface only — the zoom buttons, the dock's type toggles and price
+     scrubber, and every other control sit outside .v3-atlas__stage and keep
+     their normal cursor. The url() color itself is off-palette on purpose
+     (see the asset file's own comment) and lives nowhere in this stylesheet. */
+  cursor: url('/images/cursors/tennis-ball.svg') 16 16, grab;
 }
 
 .v3-atlas__stage:active {
-  cursor: grabbing;
+  cursor: url('/images/cursors/tennis-ball.svg') 16 16, grabbing;
 }
 
 .v3-atlas__world {
   position: absolute;
   inset: 0;
+}
+
+/* Matt 2026-09-23, requirement 4: a fit (a rail selection, a return home)
+   plays as a move, not a jump — but ONLY while `.is-fitting` is applied for
+   that one beat; a live drag or wheel zoom never carries this class, so
+   direct manipulation stays 1:1 with the pointer. Reduced motion collapses
+   --v3-dur-rise through the existing blanket rule in tokens.css. */
+.v3-atlas__world.is-fitting {
+  transition: transform var(--v3-dur-rise) var(--v3-ease-out);
 }
 
 /* In a narrow column — a listing page's main column, or any phone — the stage
@@ -390,6 +404,14 @@
   color: var(--v3-ink-muted);
 }
 
+/* UXLIVE-3: until a deferred map's listings land, the type toggles and the
+   price range hold (a filtered count needs the listings). They keep their
+   look; only the cursor says wait. */
+.v3-atlas__type:disabled,
+.v3-atlas__range:disabled {
+  cursor: progress;
+}
+
 /* A switch, not a colour key: the mark says on or off, and a reader who
    matches it against the map finds no ink that belongs to this type alone. */
 .v3-atlas__type-mark {
@@ -526,7 +548,8 @@
   outline-offset: 1px;
 }
 
-/* SITE-127 — cluster face is a $ pill (735K+ / $1.5M), not a bare count disc. */
+/* SITE-127 — cluster face is a $ pill, not a bare count disc. UXLIVE-6: the
+   figure is the median ask of the homes inside ("median $735k"). */
 .v3-atlas__pin.is-cluster {
   z-index: 3;
   display: inline-flex;
@@ -541,6 +564,27 @@
   outline-offset: 0;
   transform: translate(-50%, calc(-100% - 5px));
   font-size: var(--v3-size-label);
+}
+
+/* UXLIVE-6 (2026-09-23): the cluster face is the MEDIAN ask of the homes in
+   the bubble, so it says so: the word on a small line over the figure. Two
+   lines keep the pill's width (ATLAS_CLUSTER_PILL in lib/atlas/cluster-pins.ts
+   carries the taller box for overlap merging and edge clamping). */
+.v3-atlas__pin.is-cluster:has(.v3-atlas__pin-kind) {
+  flex-direction: column;
+  gap: 0.05rem;
+  line-height: 1.05;
+}
+
+.v3-atlas__pin-kind {
+  font-size: 0.8em;
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--v3-cream) 82%, transparent);
+}
+
+.v3-atlas__pin-ask {
+  font-weight: var(--v3-weight-strong, 600);
 }
 
 .v3-atlas__pin.is-cluster[data-atlas-cluster-size='md'] {
@@ -1066,6 +1110,18 @@
   --atlas-stroke-d: color-mix(in srgb, var(--v3-navy) 34%, transparent);
 }
 
+/* Matt 2026-09-23, requirement 1: the RAIL-selected district — distinct
+   from hover/pinned (.is-active) and unaffected by .is-empty: a district
+   with no matching listings still gets shaded once selected. Placed after
+   both of those rules (equal specificity, two classes each) so source order
+   settles the tie in this rule's favor on every place, child or not. */
+.v3-atlas__place.is-selected,
+.v3-atlas__place--child.is-selected {
+  --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 18%, transparent);
+  --atlas-stroke-d: var(--v3-navy);
+  --atlas-width-d: 2.8px;
+}
+
 /* Hit strokes: the places cloned UNDER themselves with a wide transparent
    edge, live only where a thumb needs it. Under, not over: an interior tap
    reaches the place's own fill first, and the wide edge only takes the taps
@@ -1320,6 +1376,58 @@
   text-transform: uppercase;
   white-space: nowrap;
   max-width: none;
+}
+
+/* Matt 2026-09-23, requirement 5: named local streets. Quiet on purpose —
+   smaller than a place name, muted ink, no uppercase — so a street reads as
+   ground truth under the map rather than competing with a price pill or the
+   district label. Inherits .v3-atlas__label's cream halo for legibility. */
+.v3-atlas__label--street {
+  max-width: 6.5rem;
+  font-size: 0.6rem;
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--v3-ink-muted);
+}
+
+/* Matt 2026-09-23, requirement 1: the RAIL-selected district's own name, at
+   its interior label point. Deliberately unlike a price pill — cream on
+   navy is the pill's face, so this is navy-on-cream, bordered, and reads as
+   a PLACE. Opaque (not the pill's translucent-adjacent field) and the
+   highest z-index in the stage, so it stays legible even directly over a
+   pill it happens to sit near. left/top transition so moving between two
+   different selections reads as a move, not a jump; reduced motion
+   collapses the duration through the tokens.css blanket rule. */
+.v3-atlas__district-label {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  padding: 0.3rem 0.65rem;
+  background: var(--v3-cream);
+  border: 1.5px solid var(--v3-navy);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong, 600);
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  white-space: nowrap;
+  pointer-events: none;
+  transition:
+    left var(--v3-dur-state) var(--v3-ease-out),
+    top var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* Matt 2026-09-23, requirement 6: the assessor disclaimer beside the map,
+   not in a footer (lib/data/geo/getTaxlots.ts, TAXLOT_DISCLAIMER) — a plain
+   caption in the same register the source line under the map already uses. */
+.v3-atlas__taxlot-note {
+  margin: 0;
+  padding-top: var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  line-height: var(--v3-leading-body);
 }
 
 /* The card ----------------------------------------------------------------

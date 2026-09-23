@@ -25,6 +25,7 @@ import {
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
 import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
+import { cityFootnoteFact } from '@/lib/market/city-footnote-fact'
 import { CITY_LABELS, CITY_SLUG, HISTORY_PATH } from './hub-constants'
 import {
   buildAllTypeFigures,
@@ -83,22 +84,8 @@ export function buildCityLedger(
   const footnotes: CityFootnote[] = CITY_LABELS.filter(
     (label) => CITY_SLUG[label] !== undefined && !rowed.has(label),
   ).map((label) => {
-    const snapshot = snapshotByLabel.get(label)
-    const slug = CITY_SLUG[label]
-    if (!snapshot) {
-      return { label, slug, fact: `${label} returned no market row in the latest sync` }
-    }
-    if (snapshot.active_count == null) {
-      return { label, slug, fact: `${label} has no published active single-family count` }
-    }
-    if (snapshot.active_count === 0) {
-      return { label, slug, fact: `${label} shows no active single-family listings` }
-    }
-    return {
-      label,
-      slug,
-      fact: `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median`,
-    }
+    // VOICE-6: one wording for the four market tables (lib/market/city-footnote-fact).
+    return { label, slug: CITY_SLUG[label], fact: cityFootnoteFact(label, snapshotByLabel.get(label)) }
   })
   const remainder = namePulseCityRemainder({
     regionActive: options?.regionActive,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { childListingKeys, childStockDetails, subdivisionRailEntries, summarizeChildStock } from './place-child-stock'
+import { childListingKeys, childStockDetails, railDoorHref, subdivisionRailEntries, summarizeChildStock } from './place-child-stock'
 import { firstListedPhoto } from './rail-photo'
 
 describe('summarizeChildStock', () => {
@@ -30,6 +30,47 @@ describe('summarizeChildStock', () => {
 
   it('returns null when nothing is measured', () => {
     expect(summarizeChildStock([])).toBeNull()
+  })
+
+  it('counts a commercial sale as commercial and never a commercial lease', () => {
+    expect(
+      summarizeChildStock([
+        { listing_key: 'f', geo_slug: 'x', property_type: 'F', property_sub_type: null },
+        { listing_key: 'g', geo_slug: 'x', property_type: 'G', property_sub_type: null },
+      ]),
+    ).toBe('1 commercial')
+    expect(
+      summarizeChildStock([{ listing_key: 'g', geo_slug: 'x', property_type: 'G', property_sub_type: null }]),
+    ).toBeNull()
+  })
+
+  it('drops a commercial lease (PropertyType G) rather than counting it as single-family', () => {
+    // Verified live 2026-09-23: 671 Greenwood Avenue, Bend carries three
+    // Active 'G' rows (list_price 1.3 / 1.4 / 1.4) under subdivision "Center
+    // Addition to Bend"; placeStockSectionKey falls to 'sfr' for 'G' via
+    // placeTypeKey's default, which printed them as single-family stock.
+    expect(
+      summarizeChildStock([
+        {
+          listing_key: 'lease-1',
+          geo_slug: 'center-addition-to-bend',
+          property_type: 'G',
+          property_sub_type: null,
+        },
+        {
+          listing_key: 'lease-2',
+          geo_slug: 'center-addition-to-bend',
+          property_type: 'G',
+          property_sub_type: null,
+        },
+        {
+          listing_key: 'sfr-1',
+          geo_slug: 'center-addition-to-bend',
+          property_type: 'A',
+          property_sub_type: 'Single Family Residence',
+        },
+      ]),
+    ).toBe('1 single-family')
   })
 })
 
@@ -78,6 +119,9 @@ describe('subdivisionRailEntries', () => {
       ],
     })
     expect(rail.map((row) => row.id)).toEqual(['north-forty', 'quiet-lot'])
+    // EXP-3: every rail row carries its page, so the rail can render a real
+    // anchor beside the map-select button.
+    expect(rail.map((row) => row.href)).toEqual(['/subdivisions/north-forty', '/subdivisions/quiet-lot'])
     expect(rail[0]?.detail).toBe('2 single-family')
     expect(rail[1]?.detail).toBeUndefined()
     expect(childListingKeys([
@@ -112,5 +156,14 @@ describe('firstListedPhoto', () => {
     expect(firstListedPhoto([{ listingKey: 'c', photoUrl: 'https://cdn.example/other.jpg' }], ['a'])).toBeNull()
     expect(firstListedPhoto([{ listingKey: 'a', photoUrl: 'https://cdn.example/north.jpg' }], [])).toBeNull()
     expect(firstListedPhoto([{ listingKey: 'a', photoUrl: 'https://cdn.example/north.jpg' }], undefined)).toBeNull()
+  })
+})
+
+describe('railDoorHref (EXP-3 doors never land on a redirect)', () => {
+  it('opens a redirected plat slug at its destination and drops a door back to the page itself', () => {
+    expect(railDoorHref('/subdivisions/park-place')).toBe('/subdivisions/park-place')
+    expect(railDoorHref('/subdivisions/eagle-crest')).toBe('/communities/eagle-crest')
+    expect(railDoorHref('/subdivisions/eagle-crest', '/communities/eagle-crest')).toBeUndefined()
+    expect(railDoorHref('not-a-path')).toBeUndefined()
   })
 })

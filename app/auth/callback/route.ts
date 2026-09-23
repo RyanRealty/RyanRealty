@@ -4,6 +4,9 @@ import { trackSignedInUser } from '@/lib/crm/send-event'
 import { stitchVisitorIdentity } from '@/lib/visitor-backfill'
 import { claimGuestSavedSearches } from '@/lib/data/savedSearches'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
+// The rr_pid value is a SIGNED token since 2026-09-23 (P7 identity loop): a
+// bare id in a cookie let anyone claim any contact's identity.
+import { PERSON_COOKIE, personCookieOptions, personCookieValue } from '@/lib/identity/person-cookie'
 import type { User } from '@supabase/supabase-js'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
@@ -18,8 +21,6 @@ import {
 } from '@/lib/auth/google-comms-consent'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
-const PERSON_ID_COOKIE = 'rr_pid'
-const PERSON_ID_MAX_AGE = 90 * 24 * 60 * 60 // 90 days — matches app/actions/identity-bridge.ts
 
 /**
  * Stamp the durable rr_pid cookie on a freshly signed-in visitor by resolving
@@ -48,13 +49,7 @@ async function stampPersonIdFromEmail(
     const matchIds = await personIdsByEmailCi(sb, normalized).catch(() => [] as number[])
     const personId = matchIds[0] ?? null
     if (personId) {
-      res.cookies.set(PERSON_ID_COOKIE, String(personId), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: PERSON_ID_MAX_AGE,
-        path: '/',
-      })
+      res.cookies.set(PERSON_COOKIE, personCookieValue(personId), personCookieOptions())
     }
     // Guest listing-save absorb: if this browser's identity-map row still holds
     // a minutes-old guest capture under a different email, fold it into the

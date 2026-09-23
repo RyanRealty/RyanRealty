@@ -50,29 +50,45 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getSubdivisionBoundarySlugs } from '@/lib/data/subdivisions/getSubdivisionBoundarySlugs'
 import { getPlatClosedCounts } from '@/lib/data/subdivisions/getPlatClosedCounts'
+import { getRecordedPlatTree } from '@/lib/data/subdivisions/getRecordedPlatTree'
+import { getPlatFamilies, reservedPlaceSlugs } from '@/lib/data/subdivisions/getPlatFamilies'
 import {
   buildIndexableSubdivisions,
   type IndexableSubdivision,
 } from '@/lib/data/subdivisions/subdivision-index'
 
 async function fetchIndexableSubdivisions(): Promise<IndexableSubdivision[]> {
-  const [boundarySlugs, platCounts] = await Promise.all([
+  const [boundarySlugs, platCounts, tree, families] = await Promise.all([
     getSubdivisionBoundarySlugs(),
     getPlatClosedCounts(),
+    getRecordedPlatTree(),
+    getPlatFamilies(),
   ])
 
-  // Both reads throw on failure inside their own resilient wrappers and fall
-  // back to []. An empty either side here means the fallback fired, and
-  // building an "indexable set" out of a fallback would noindex the class for
-  // this cache window — so throw and let THIS wrapper retry uncached too.
+  // Every read throws on failure inside its own resilient wrapper and falls
+  // back to []. An empty one here means the fallback fired, and building an
+  // "indexable set" out of a fallback would noindex the class (or every family
+  // page) for this cache window — so throw and let THIS wrapper retry uncached.
   if (boundarySlugs.length === 0) {
     throw new Error('getIndexableSubdivisions: boundary slug set came back empty')
   }
   if (platCounts.length === 0) {
     throw new Error('getIndexableSubdivisions: plat closed-count set came back empty')
   }
+  if (tree.plats.length === 0) {
+    throw new Error('getIndexableSubdivisions: recorded plat tree came back empty')
+  }
+  if (families.length === 0) {
+    throw new Error('getIndexableSubdivisions: plat families came back empty')
+  }
 
-  return buildIndexableSubdivisions(new Set(boundarySlugs), platCounts)
+  // SEO-7 / Matt 2026-09-23 (visibility audit 2026-09-22): a plat recorded
+  // under a city, neighborhood or community name loses its index slot, and a
+  // family's main page gains one.
+  return buildIndexableSubdivisions(new Set(boundarySlugs), platCounts, undefined, {
+    reservedSlugs: reservedPlaceSlugs(tree),
+    families,
+  })
 }
 
 /**
@@ -80,13 +96,14 @@ async function fetchIndexableSubdivisions(): Promise<IndexableSubdivision[]> {
  * (closed-sale counts) only move on closings, and the sitemap itself
  * regenerates hourly, so 6h staleness is invisible.
  *
- * KEY IS v2-polygon, NOT v1. The v1 key holds the text-join verdicts, and a
- * deploy that kept the key would have served the old noindex answers for up to
- * six more hours out of a warm cache while claiming the fix had shipped.
+ * KEY IS v3-families, NOT v2. The v2 key holds the set without family heads
+ * and with /subdivisions/bend, /sisters and /la-pine still in it; a deploy that
+ * kept the key would serve those verdicts for up to six more hours out of a
+ * warm cache while claiming the fix had shipped (the same reason v1 became v2).
  */
 export const getIndexableSubdivisions = makeResilientCached(
   fetchIndexableSubdivisions,
-  ['indexable-subdivisions-v2-polygon'],
+  ['indexable-subdivisions-v3-families'],
   {
     revalidate: CACHE_WINDOWS.marketStats,
     tags: [cacheTag.market, 'boundaries'],

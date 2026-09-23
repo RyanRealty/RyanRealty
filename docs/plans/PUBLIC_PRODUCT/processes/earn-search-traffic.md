@@ -78,6 +78,14 @@ index and its children share one host (`app/sitemaps/index.xml/route.ts:40-43`).
   - The crawler roster enumerated in `app/robots.ts:29-49`, plus social scrapers via
     `/api/og` (`:22-25`).
   - `warm-sitemaps` cron, hourly (`vercel.json:244-247`).
+  - `crawl-probe` cron, daily 11:55 UTC (`app/api/cron/crawl-probe/route.ts`, visibility
+    audit 2026-09-22 gsc-trend-7): fetches the index and every child as Googlebot (200
+    inside 20 s, count within 5% of the previous day, unique, no redirect sources), a
+    day-rotating sample of up to 10 URLs per page class at concurrency 8 (5xx, 3xx/4xx,
+    noindex, foreign canonical, over 5 s), parses the homepage's inline scripts and GTM
+    loader, and reads Search Console (Sitemaps API + URL Inspection). One `site_signal` row
+    per check (source `crawl_probe`); any failure queues one owner text through
+    `queueBrokerHealthAlert`; the loop brief and scoreboard print the latest run.
   - ISR revalidation on every discovery surface (3600s) and on the pages crawlers fetch —
     72 `page.tsx` files export `revalidate` (repo grep this run; e.g. homepage
     `revalidate = 60`, `app/page.tsx:45`).

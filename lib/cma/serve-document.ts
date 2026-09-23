@@ -33,13 +33,18 @@ import {
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { adminReviewBannerHtml, injectAdminReviewBanner } from '@/lib/cma/review-banner'
+import { IDENTITY_LINK_PARAM, verifyPersonLinkToken } from '@/lib/identity/link-token'
+import { PERSON_COOKIE, signedPersonIdFromCookie } from '@/lib/identity/person-cookie'
 
-/** The first-party identity cookie PersonIdentityBridge writes from ?_pid=. */
-const RR_PID_COOKIE = 'rr_pid'
-
-function parseCmaPersonId(v: string | null | undefined): number | null {
-  const n = Number.parseInt(String(v ?? '').trim(), 10)
-  return Number.isFinite(n) && n > 0 ? n : null
+/**
+ * The recipient a request PROVES it is: the signed `?_pid=` token on the link we
+ * sent, or the signed rr_pid cookie that link set (P7 identity loop,
+ * 2026-09-23). A bare id identifies nobody: CMA slugs are street addresses and
+ * person ids are sequential, so an unsigned id let anyone open a client's
+ * private valuation.
+ */
+function recipientFromParam(v: string | null | undefined): number | null {
+  return verifyPersonLinkToken(v)?.personId ?? null
 }
 
 export const CMA_DOC_HEADERS = {
@@ -211,8 +216,8 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
     // attributeOutbound); PersonIdentityBridge copies it into rr_pid, so a
     // return visit without the parameter still matches.
     const recipientPersonId =
-      parseCmaPersonId(new URL(opts.requestUrl).searchParams.get('_pid')) ??
-      parseCmaPersonId(jar.get(RR_PID_COOKIE)?.value)
+      recipientFromParam(new URL(opts.requestUrl).searchParams.get(IDENTITY_LINK_PARAM)) ??
+      signedPersonIdFromCookie(jar.get(PERSON_COOKIE)?.value)
     const decision = decideCmaAccess({
       isAdmin: false,
       viewerEmail: opts.viewerEmail,

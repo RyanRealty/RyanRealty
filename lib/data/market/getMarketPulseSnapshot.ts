@@ -26,7 +26,10 @@ export type MarketPulseSnapshot = {
   median_list_price: number | null
   months_of_supply: number | null
   market_health_label: string | null
-  sold_count_30d: number
+  /** Null when withheld (neighborhood grain has no same-population close
+   *  attribution — migration 20260923014700, DATA-7) or unknown. Never 0 to
+   *  mean unknown — omit the figure, don't coalesce. */
+  sold_count_30d: number | null
   /**
    * Closings in the last 90 days — the SAME window and filters the row's
    * `median_days_to_pending` was measured in, minus that aggregate's own
@@ -35,8 +38,9 @@ export type MarketPulseSnapshot = {
    * projected for one purpose: telling "this town closed nothing in the
    * window" apart from "it closed too few to publish a median" when the
    * median is withheld. (§0, shipped refresh_market_pulse, 2026-08-19)
+   * Null when withheld or unknown — never 0 for "unknown" (DATA-7).
    */
-  sold_count_90d: number
+  sold_count_90d: number | null
   new_count_7d: number
   median_active_dom: number | null
   /** Median days LIST->PENDING for homes that went under contract. A different
@@ -69,8 +73,8 @@ function toSnapshot(d: Record<string, unknown>): MarketPulseSnapshot {
     median_list_price: d.median_list_price != null ? Number(d.median_list_price) : null,
     months_of_supply: d.months_of_supply != null ? Number(d.months_of_supply) : null,
     market_health_label: (d.market_health_label as string | null) ?? null,
-    sold_count_30d: Number(d.sold_count_30d ?? 0),
-    sold_count_90d: Number(d.sold_count_90d ?? 0),
+    sold_count_30d: d.sold_count_30d != null ? Number(d.sold_count_30d) : null,
+    sold_count_90d: d.sold_count_90d != null ? Number(d.sold_count_90d) : null,
     new_count_7d: Number(d.new_count_7d ?? 0),
     median_active_dom: d.median_active_dom != null ? Number(d.median_active_dom) : null,
     median_days_to_pending: d.median_days_to_pending != null ? Number(d.median_days_to_pending) : null,

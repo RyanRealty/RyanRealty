@@ -17,6 +17,19 @@
  * one of these routes is a deliberate decision: remove the route from this
  * list in the same commit and say why in the commit message.
  *
+ * CAPPED ROUTES (Matt 2026-09-23: "Nothing is permanent… evaluate it and
+ * likely change it"). /subdivisions/[slug] left ZERO_PRERENDER on 2026-09-23
+ * (P3 — SEO-2, DATA-6). Evidence: the plat 500s crawlers saw came from the
+ * degraded-render noStore() in lib/site/degraded-isr.ts, not from this budget;
+ * a degraded cold plat render is now a 200; 436 plat URLs drew 1,417 Search
+ * Console impressions 2026-08-23..2026-09-19 and the top 25 sitemapped plats
+ * hold 594 of them (41.9%). So those 25 prerender, from a committed list
+ * (data/plat-prerender.json) with no build-time DB read. Measured cost: 124.5 s
+ * of serial render for the 25 (P3 harness, uncached, 2026-09-23), about 18 s
+ * across the 7 workers above. A capped route's generateStaticParams must be
+ * exactly `return <helper>()`, and the list it reads must stay within the cap
+ * that the helper module also declares.
+ *
  * Usage:
  *   node scripts/check-ssg-budget.mjs            # CI mode
  *   node scripts/check-ssg-budget.mjs --report   # never exits 1
@@ -30,7 +43,6 @@ const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const REPORT = process.argv.includes('--report')
 
 const ZERO_PRERENDER = [
-  'app/subdivisions/[slug]/page.tsx',
   'app/oregon/[city]/page.tsx',
   // SITE-29: the blog post and the blog index's category/page views serve
   // on demand under `revalidate`. A segment with NO generateStaticParams is
@@ -42,27 +54,78 @@ const ZERO_PRERENDER = [
   'app/blog/category/[category]/page/[n]/page.tsx',
 ]
 
+// Routes whose build-time prerender is a fixed, data-driven list under a cap.
+const CAPPED_PRERENDER = [
+  {
+    route: 'app/subdivisions/[slug]/page.tsx',
+    helper: 'platPrerenderParams',
+    module: 'lib/site/plat-prerender.ts',
+    capConst: 'PLAT_PRERENDER_CAP',
+    list: 'data/plat-prerender.json',
+    listKey: 'plats',
+    cap: 25,
+  },
+]
+
 const failures = []
 
-for (const rel of ZERO_PRERENDER) {
+function readGenerateStaticParams(rel) {
   const file = join(ROOT, rel)
   let source
   try {
     source = readFileSync(file, 'utf8')
   } catch {
-    failures.push(`${rel}: file missing — update ZERO_PRERENDER in scripts/check-ssg-budget.mjs`)
-    continue
+    failures.push(`${rel}: file missing — update ZERO_PRERENDER / CAPPED_PRERENDER in scripts/check-ssg-budget.mjs`)
+    return null
   }
   const sf = ts.createSourceFile(rel, source, ts.ScriptTarget.Latest, true)
-
   let fn = null
   for (const stmt of sf.statements) {
     if (ts.isFunctionDeclaration(stmt) && stmt.name?.text === 'generateStaticParams') fn = stmt
   }
   if (!fn || !fn.body) {
     failures.push(`${rel}: no generateStaticParams function declaration found`)
-    continue
+    return null
   }
+  return fn
+}
+
+for (const c of CAPPED_PRERENDER) {
+  const fn = readGenerateStaticParams(c.route)
+  if (!fn) continue
+  const stmts = fn.body.statements
+  const ret = stmts.length === 1 && ts.isReturnStatement(stmts[0]) ? stmts[0].expression : null
+  const callsHelper =
+    ret != null &&
+    ts.isCallExpression(ret) &&
+    ts.isIdentifier(ret.expression) &&
+    ret.expression.text === c.helper &&
+    ret.arguments.length === 0
+  if (!callsHelper) {
+    failures.push(`${c.route}: generateStaticParams must be exactly \`return ${c.helper}()\` — this route's build-time prerender is capped at ${c.cap}`)
+  }
+  let moduleSrc = ''
+  try {
+    moduleSrc = readFileSync(join(ROOT, c.module), 'utf8')
+  } catch {
+    failures.push(`${c.module}: file missing — the capped prerender helper for ${c.route}`)
+  }
+  const capMatch = moduleSrc.match(new RegExp(`export const ${c.capConst} = (\\d+)`))
+  if (moduleSrc && (!capMatch || Number(capMatch[1]) > c.cap)) {
+    failures.push(`${c.module}: ${c.capConst} must be declared and at most ${c.cap}`)
+  }
+  try {
+    const list = JSON.parse(readFileSync(join(ROOT, c.list), 'utf8'))[c.listKey]
+    if (!Array.isArray(list)) failures.push(`${c.list}: "${c.listKey}" must be an array`)
+    else if (list.length > c.cap) failures.push(`${c.list}: ${list.length} entries exceeds the cap of ${c.cap}`)
+  } catch (err) {
+    failures.push(`${c.list}: unreadable (${err instanceof Error ? err.message : err})`)
+  }
+}
+
+for (const rel of ZERO_PRERENDER) {
+  const fn = readGenerateStaticParams(rel)
+  if (!fn) continue
 
   const stmts = fn.body.statements
   const onlyReturnsEmptyArray =
@@ -80,7 +143,9 @@ for (const rel of ZERO_PRERENDER) {
 }
 
 if (failures.length === 0) {
-  console.log(`ci:ssg-budget OK — ${ZERO_PRERENDER.length} route(s) hold a zero build-time fan-out`)
+  console.log(
+    `ci:ssg-budget OK — ${ZERO_PRERENDER.length} route(s) hold a zero build-time fan-out, ${CAPPED_PRERENDER.length} a capped one`,
+  )
   process.exit(0)
 }
 

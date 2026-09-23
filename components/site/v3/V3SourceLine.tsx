@@ -148,6 +148,12 @@ function balancedCut(text: string, cuts: string): number {
       // printed number equals the shipped one, and a fold that cuts inside a
       // figure breaks that on every page whose trace opens with one.
       if (ch === '.' && /[0-9]/.test(text[i - 1] ?? '') && /[0-9]/.test(text[i + 1] ?? '')) continue
+      // NOR IS A THOUSANDS COMMA A CLAUSE END (VOICE-2, visibility audit
+      // 2026-09-22). Same defect as the decimal, one character over: the
+      // affordability trace "Median asking price $1,312,500, …" folded to
+      // "Median asking price $1" on /cities/bend/awbrey-butte, a wrong printed
+      // figure in the one clause a reader sees before opening anything.
+      if (ch === ',' && /[0-9]/.test(text[i - 1] ?? '') && /[0-9]/.test(text[i + 1] ?? '')) continue
       return i
     }
   }

@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { autoEnrollPerson, ENROLLMENT_EPOCH, type AutoEnrollResult } from '@/lib/crm/enroll'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
-import { classifyLeadSource } from '@/lib/data/crm/leadSourceTaxonomy'
+import { isOutreachListOnly } from '@/lib/crm/lead-source'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
@@ -128,8 +128,11 @@ export async function GET(request: Request) {
     // that native rows are swept, the exclusion is explicit and principled:
     // the same taxonomy line every lead KPI draws. Homeowners who submitted
     // OUR forms (expired-lp / fsbo-lp sources) classify as inbound and still
-    // enroll.
-    if (classifyLeadSource(p.source as string | null).outreachList) {
+    // enroll. Since FUNNEL-4 (2026-09-23) source is first-touch, so a listed
+    // owner who later submits one of our forms keeps the list source and is
+    // recognised by the form's source:<door> tag: the same predicate
+    // autoEnrollPerson uses (isOutreachListOnly).
+    if (isOutreachListOnly(p.source as string | null, (p.tags ?? []) as string[])) {
       skipped['outreach-list source (manual outreach only)'] =
         (skipped['outreach-list source (manual outreach only)'] ?? 0) + 1
       continue

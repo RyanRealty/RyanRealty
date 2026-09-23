@@ -131,7 +131,7 @@ async function renderPlaceTypeAtlasSection({
   const boundary = await resolveBoundary(source)
   if (!boundary) {
     // Unknown is not empty: do not let the full-route cache keep this render.
-    refuseDegradedIsr('place-type-atlas', ['place-type:boundary'])
+    await refuseDegradedIsr('place-type-atlas', ['place-type:boundary'])
     return (
       <PlaceTypeAtlasStandin
         id={id}

@@ -10,10 +10,10 @@ your task touches.
 [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md)
 and the current block in [`docs/plans/CROSS_AGENT_HANDOFF.md`](docs/plans/CROSS_AGENT_HANDOFF.md).
 The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for what exists,
-what is verified, and what is open — not a side doc. Subject work (admin, CRM, growth)
-still runs; it does not erase other planes from Sense.
+what is verified, and what is open. Subject work (admin, CRM, growth) still runs; it
+does not erase other planes from Sense.
 
-**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run push` and one `deploy:verify`. Do not rebuild after each bot finding.
+**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run push` and one `deploy:verify`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**, one page for all tools.
 One self-improving cycle: ingest telemetry → diagnose → prioritize → fix the class → verify
 exhaustively → ship → measure → learn → lock behind a gate → compete. It carries the preflight
 contract, the live-environment rules, the escape-ledger protocol, and the approval model.
@@ -22,7 +22,11 @@ Enforced by G44 (`ci:process-canon`).
 **A rule that lives only in chat history is lost next session.** When Matt issues a directive
 that creates a permanent rule, do both: apply it to the immediate work, AND write it here (or
 into the producer SKILL.md that owns the surface). See §6 — if a rule keeps being violated, the
-answer is a new mechanical gate, not more prose.
+answer is a new mechanical gate, not more prose. No past rule is permanent (Matt 2026-09-23).
+**Identity loop** (a known contact is one person on every visit; `ci:identity-loop`):
+[TRACKING_POLICY](docs/TRACKING_POLICY.md) "The known-contact identity loop".
+**Subdivision families** (phases group under one main page; `ci:plat-families`):
+[PLACE_PAGES](docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md) "Subdivision families".
 
 ---
 
@@ -146,17 +150,18 @@ shown to Matt before they enter a distribution path.
 
 ---
 
-# §2. Voice — one voice, one document, no gates (Matt 2026-09-07)
+# §2. Voice — one voice, one document (Matt 2026-09-07)
 
 **The only voice document: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).**
 Everything we publish uses it: site, bios, emails, texts, social, reports, packets. Read it
 before writing anything a client or the public reads.
 
-Matt retired the old canon and every mechanical voice rule on 2026-09-07: the banned-word
-lists, the punctuation rules, the "say the fact then stop" cadence, the commit gate, and
-the runtime checker that blocked sends. Copy is judged by one question: does it sound like
-a person who knows Central Oregon and wants to help. What still binds is not style: real
-numbers (§0), real quotes, fair housing, and MLS remarks shown as written.
+Matt retired the old canon and every mechanical voice rule on 2026-09-07. His later calls
+are recorded in VOICE.md and are the only voice rules a gate holds: **no em dashes in
+public copy** (2026-09-20, `ci:no-public-em-dash`) and the site-copy calls of 2026-09-14
+to 09-18. Otherwise copy is judged by one question: does it sound like a person who knows
+Central Oregon and wants to help. What still binds is not style: real numbers (§0), real
+quotes, fair housing, and MLS remarks shown as written.
 
 ---
 
@@ -171,8 +176,7 @@ never a literal hex. The spec is
 [`design_system/public/PUBLIC_UI.md`](design_system/public/PUBLIC_UI.md); the pattern set is
 OPEN (build a new barrel primitive when a section needs one) and the only rhythm rule is that
 no two adjacent sections share a pattern. Held by `ci:one-design-system` and
-`ci:chrome-single-source`. The KB register, the legacy chrome, and the per-surface mockups
-were deleted 2026-08-27.
+`ci:chrome-single-source`. The KB register and the legacy chrome were deleted 2026-08-27.
 
 **TASTE IS A GATE (Matt 2026-09-01).** Before any public page work, read
 [`design_system/public/TASTE.md`](design_system/public/TASTE.md): the page to beat, banned
@@ -230,12 +234,11 @@ fade-up · 2s loops · 20s Ken Burns; ease-out entrances, ≤16px travel, always
 and "the design system" are the same thing here, not a choice. Build every UI element from
 `@/components/ui/`. Do NOT hand-roll raw HTML controls on product surfaces.
 
-**There is no per-surface mockup any more.** The eleven `ui_kits/<surface>/index.html` files
-were KB-era targets, retired 2026-08-26 and deleted 2026-08-27; the visual target for a public
-page is the pattern set in `design_system/public/PUBLIC_UI.md`, built from `components/site/v3`.
-The surviving `parity.json` beside each still binds — its `requiredComponents` list is what
-stops a page silently losing a section, and `ci:mockup-parity` reads it with or without a
-mockup.
+**No per-surface mockup is a target.** Eleven `ui_kits/<surface>/index.html` files remain on
+disk as KB-era history, retired 2026-08-26; the visual target for a public page is the
+pattern set in `design_system/public/PUBLIC_UI.md`, built from `components/site/v3`. Each
+`parity.json` still binds: its `requiredComponents` list stops a page silently losing a
+section, and `ci:mockup-parity` reads it.
 
 **The table below is for ADMIN and PRODUCT surfaces.** On the public site the equivalent
 rule is: build from the v3 barrel, and a section that fits no existing pattern gets a NEW
@@ -350,20 +353,15 @@ npm run ci:gates
 ```
 
 **[`package.json`](package.json) → `ci:gates` is the authoritative chain — do not re-enumerate
-it in prose, it drifts.** It runs design-tokens, seo-routes, DAL boundary, mockup
-parity, page DAL, static params, cron-registered, and the meta-gate `ci:gates-wired`, among
-many others.
+it in prose, it drifts.**
 
-The meta-gate fails on any `scripts/check-*.mjs` that runs nowhere — closing the blind spot the
-2026-06-20 audit found (28 gate files ran nowhere while docs called some "enforced"). 7 remain
-a tracked orphan backlog in `scripts/gates-wired-baseline.json`; the count may only shrink.
+The meta-gate `ci:gates-wired` fails on any `scripts/check-*.mjs` that runs nowhere — the
+2026-06-20 audit found 28 gate files running nowhere. Its orphan baseline
+(`scripts/gates-wired-baseline.json`) is empty and may only shrink.
 
-**Mockup parity** (`scripts/check-mockup-parity.mjs`) is the one added 2026-05-28 that matters
-most: every Wave 3 page rebuild must satisfy
-`design_system/ryan-realty/ui_kits/<route>/parity.json`, which enumerates every component the
-mockup says the page must import. Editing `app/<route>/page.tsx` without the matching
-components fails CI. New gated route: place the mockup, create `parity.json`, the gate picks it
-up.
+**Mockup parity** (`scripts/check-mockup-parity.mjs`): a gated `app/<route>/page.tsx` must
+import every component its `design_system/ryan-realty/ui_kits/<route>/parity.json` lists. New
+gated route: create `parity.json`; the gate picks it up.
 
 DB-dependent gates (G16 `ci:data-access`) run locally/nightly — they hit live Supabase, so they
 are NOT in the secret-less static chain.

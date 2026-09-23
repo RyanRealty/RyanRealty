@@ -23,5 +23,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted mid-end, brief flip/spin/invert, full-seal inner head with 4–8% pad, exact six doors, no Close link, no em dash, sticky phone dock stays down.`,
+  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted mid-end, brief flip/spin/invert, full-seal inner head with 4–8% pad, exact six doors, no Close link, sticky phone dock stays down.`,
 )

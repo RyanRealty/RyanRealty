@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { classifyFeed, formatSilentZeroReport, RETIRED_METRICS, type FeedWindow } from './silent-zero'
+import {
+  classifyFeed,
+  classifyWatchedSeries,
+  formatSilentZeroReport,
+  formatWatchReport,
+  RETIRED_METRICS,
+  WATCHED_SERIES,
+  watchKey,
+  type FeedWindow,
+  type WatchedSeries,
+} from './silent-zero'
 
 // The generic fixture uses `reach`, a metric that is still LIVE. It used to use
 // `impressions` — the original real case — but that name is now classified
@@ -146,5 +156,109 @@ describe('retired metrics are named, not chased', () => {
     expect(joined).toContain('ONLY ZEROS')
     // The retired one must NOT be counted among the feeds to chase.
     expect(joined).toContain('1 feed(s) landing on schedule and reporting ONLY ZEROS')
+  })
+})
+
+describe('scope in the generic key', () => {
+  it('labels a scoped feed channel.scope.metric and keeps the dormant lookup on channel:metric', () => {
+    const v = classifyFeed({ channel: 'youtube', scope: 'account', metric: 'views', rows: 30, total: 0, nonZeroRows: 0, latest: '2026-09-21' })
+    expect(v.verdict).toBe('dormant')
+    const out = formatSilentZeroReport([classifyFeed({ ...w(), scope: 'post' })]).join('\n')
+    expect(out).toContain('instagram.post.reach')
+  })
+})
+
+describe('watched series — TRACK-2 would have been caught', () => {
+  const series = (id: string): WatchedSeries => {
+    const s = WATCHED_SERIES.find((x) => x.scopeId === id || x.metric === id)
+    if (!s) throw new Error(`no watched series ${id}`)
+    return s
+  }
+  // The real daily shape (marketing_channel_daily, ga4 event rows): session_start
+  // 72 / 87 / 10 / 1 on 09-15..09-18, then NO ROW on 09-19..09-21 while the
+  // channel kept landing page_view rows every day.
+  const landed = ['2026-09-15', '2026-09-16', '2026-09-17', '2026-09-18', '2026-09-19', '2026-09-20', '2026-09-21']
+  const sessionStart = [
+    { date: '2026-09-15', value: 72 },
+    { date: '2026-09-16', value: 87 },
+    { date: '2026-09-17', value: 10 },
+    { date: '2026-09-18', value: 1 },
+  ]
+
+  it('watches ga4 session_start and first_visit by scope_id, plus the daily health verdict', () => {
+    const keys = WATCHED_SERIES.map((s) => `${s.channel}.${s.scope}.${s.scopeId}.${s.metric}`)
+    expect(keys).toContain('ga4.event.session_start.event_count')
+    expect(keys).toContain('ga4.event.first_visit.event_count')
+    expect(keys).toContain('ga4.account..tracking_health_ok')
+  })
+
+  it('flags session_start the first landed day it reads no row', () => {
+    const v = classifyWatchedSeries(series('session_start'), sessionStart, landed.slice(0, 5))
+    expect(v.verdict).toBe('went-silent')
+    expect(v.run).toBe(1)
+    expect(v.lastGood).toBe('2026-09-18')
+  })
+
+  it('reports the full run on 2026-09-22 (three dead landed days)', () => {
+    const v = classifyWatchedSeries(series('session_start'), sessionStart, landed)
+    expect(v.verdict).toBe('went-silent')
+    expect(v.run).toBe(3)
+    expect(v.note).toContain('through 2026-09-21')
+  })
+
+  it('an explicit 0 row counts the same as a missing row', () => {
+    const v = classifyWatchedSeries(series('session_start'), [...sessionStart, { date: '2026-09-19', value: 0 }], landed.slice(0, 5))
+    expect(v.verdict).toBe('went-silent')
+  })
+
+  it('stays healthy while the latest landed day is non-zero', () => {
+    const v = classifyWatchedSeries(series('session_start'), sessionStart, landed.slice(0, 4))
+    expect(v.verdict).toBe('healthy')
+  })
+
+  it('first_visit needs two dead days (a healthy day can carry 3)', () => {
+    const fv = [{ date: '2026-09-17', value: 1 }]
+    expect(classifyWatchedSeries(series('first_visit'), fv, landed.slice(0, 4)).verdict).toBe('healthy')
+    expect(classifyWatchedSeries(series('first_visit'), fv, landed.slice(0, 5)).verdict).toBe('went-silent')
+  })
+
+  it('the old channel x metric window pass could not see it', () => {
+    // event_count summed across events stayed non-zero every day (page_view).
+    const v = classifyFeed({ channel: 'ga4', metric: 'event_count', rows: 1200, total: 90_000, nonZeroRows: 1150, latest: '2026-09-21' })
+    expect(v.verdict).toBe('healthy')
+  })
+})
+
+describe('watched health verdict', () => {
+  const health = WATCHED_SERIES.find((s) => s.metric === 'tracking_health_ok')!
+
+  it('flags the latest failing day and counts the run', () => {
+    const v = classifyWatchedSeries(
+      health,
+      [
+        { date: '2026-09-18', value: 1 },
+        { date: '2026-09-19', value: 0 },
+        { date: '2026-09-20', value: 0 },
+      ],
+      [],
+    )
+    expect(v.verdict).toBe('unhealthy')
+    expect(v.run).toBe(2)
+    expect(v.lastGood).toBe('2026-09-18')
+  })
+
+  it('a guard that has not written yet is info, not an alarm', () => {
+    const v = classifyWatchedSeries(health, [], ['2026-09-21'])
+    expect(v.verdict).toBe('absent')
+    const out = formatWatchReport([v]).join('\n')
+    expect(out).toContain('none went quiet')
+    expect(out).toContain('(info)')
+  })
+
+  it('prints the stored failure reasons under the alarm', () => {
+    const v = classifyWatchedSeries(health, [{ date: '2026-09-20', value: 0 }], [])
+    const out = formatWatchReport([v], new Map([[watchKey(health), ['browser session_start was 0']]])).join('\n')
+    expect(out).toContain('WATCHED series FAILING')
+    expect(out).toContain('- browser session_start was 0')
   })
 })

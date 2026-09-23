@@ -141,7 +141,7 @@ const GROUPS = [
     match: (t) => ['listing_tile_mv', 'similar_listings_mv', 'listing_detail_mv'].includes(t),
     notes: {
       listing_tile_mv:
-        'Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed hourly via `/api/cron/refresh-mvs`. The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.',
+        'Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed every 30 minutes by pg_cron job `refresh_listing_tile_mv_30min` (:02/:32). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.',
       similar_listings_mv:
         '(anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).',
       listing_detail_mv:

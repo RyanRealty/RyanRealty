@@ -16,7 +16,9 @@
  *     findUnresolvedMergeTokens still surfaces it as a composer warning and
  *     the fail-closed gate still blocks automated sends of broken copy.
  *     (Exception: %contact_first_name% falls back to 'there' — long-standing
- *     deliberate behavior for greeting lines.)
+ *     deliberate behavior for greeting lines — when no name is on file. A
+ *     captured first name that fails isPlausibleFirstName, or the 'Lead
+ *     <email>' placeholder, drops the salutation and its comma instead.)
  *   - Custom-field tokens (%customX%) resolve from person.custom.
  *
  * Server send paths build the context via lib/crm/merge-context.ts
@@ -24,6 +26,7 @@
  */
 import { stampCrmOutboundUtms } from '@/lib/analytics/visit-broker'
 import { formatDate } from '@/lib/format/date'
+import { isRandomToken } from '@/lib/crm/lead-quality'
 
 export type MergeToken = {
   token: string
@@ -195,6 +198,79 @@ export function splitName(name: string | null | undefined): { first: string | nu
 }
 
 /**
+ * The stand-in name a nameless native row is stored under
+ * (lib/data/crm/ensureNativeLead.ts nativeLeadName): 'Lead <email>',
+ * 'Lead <phone>', 'Website lead'. Its first word is not a first name — the
+ * alerts sheet asks for an email only, and 30 of 78 buyer drip subjects in the
+ * 30 days to 2026-09-23T02:48Z read "Your Bend home search is set, Lead".
+ */
+export function isPlaceholderLeadName(name: string | null | undefined): boolean {
+  const s = String(name ?? '').trim()
+  return /^website lead$/i.test(s) || /^Lead\s+(?:\S+@\S+|\+?[\d\s().-]{7,})$/.test(s)
+}
+
+/**
+ * Would a person greet someone by this word? (FUNNEL-8, 2026-09-23.) %first%
+ * used to merge whatever the form captured, so the drip went out as "Your Bend
+ * home search is set, bJSKIwsurKTralgVeDiGblO". A first name passes when it is
+ * letters (any script), with an apostrophe, hyphen or period inside, carries a
+ * vowel when it is plain ASCII, is at most 20 characters, and is not a random
+ * run of mixed case (lib/crm/lead-quality.ts isRandomToken).
+ */
+export function isPlausibleFirstName(first: string | null | undefined): boolean {
+  const s = String(first ?? '').trim()
+  if (!s || s.length > 20) return false
+  if (!/^[\p{L}\p{M}]+(?:['’.-][\p{L}\p{M}]+)*\.?$/u.test(s)) return false
+  if (/^[A-Za-z'’.-]+$/.test(s) && !/[aeiouy]/i.test(s)) return false
+  if (isRandomToken(s.replace(/['’.-]/g, ''))) return false
+  return true
+}
+
+/**
+ * The seller-property address a lead's intake stored, whichever door wrote it.
+ * The merge used to read only the CRM-era keys (customSellerPropertyAddress /
+ * customPropertyAddress) while the seller, FSBO and expired LPs write
+ * `sellerPropertyAddress` and the place pages write `subjectAddress`, so Seller
+ * Master enrollments from the site stopped at step 0 on an unresolved %address%
+ * (FUNNEL-6: 7 all-time to 2026-09-23; 3 of those people had the address stored
+ * under sellerPropertyAddress and resolve now). 'unspecified' is the expired
+ * LP's no-address marker, never an address.
+ */
+export const SELLER_ADDRESS_KEYS = [
+  'customSellerPropertyAddress',
+  'customPropertyAddress',
+  'sellerPropertyAddress',
+  'subjectAddress',
+  'subjectPropertyAddress',
+] as const
+
+export function sellerAddressOf(custom: Record<string, unknown> | null | undefined): string | null {
+  for (const key of SELLER_ADDRESS_KEYS) {
+    const v = val(custom?.[key])
+    if (v && v.toLowerCase() !== 'unspecified') return v
+  }
+  return null
+}
+
+/** Stands in for a dropped salutation until the punctuation around it is tidied. */
+const NO_NAME = '\u0000no-name\u0000'
+
+/**
+ * Remove the dropped-name marker and the punctuation that only existed to hold
+ * a name: "Hi %first%, thanks" → "Hi, thanks"; "home search is set, %first%" →
+ * "home search is set"; "%first%, your alert is on" → "Your alert is on".
+ */
+function dropSalutation(text: string): string {
+  if (!text.includes(NO_NAME)) return text
+  return text
+    .replace(new RegExp(`,[ \\t]*${NO_NAME}(?=[ \\t]*(?:[.!?]|$))`, 'gm'), '')
+    .replace(new RegExp(`^([ \\t]*)${NO_NAME}[ \\t]*,[ \\t]*(\\p{Ll})`, 'gmu'), (_m, lead: string, c: string) => lead + c.toUpperCase())
+    .replace(new RegExp(`^([ \\t]*)${NO_NAME}[ \\t]*,[ \\t]*`, 'gm'), '$1')
+    .replace(new RegExp(`[ \\t]+${NO_NAME}`, 'g'), '')
+    .replace(new RegExp(NO_NAME, 'g'), '')
+}
+
+/**
  * Resolve every merge token in `text` against the person + context.
  * Tokens whose data is unknown/empty stay LITERAL (the composer warning +
  * fail-closed automated-send gate catch them); %contact_first_name% keeps its
@@ -205,8 +281,14 @@ export function renderCrmMerge(
   person: MergePersonLike,
   ctx?: MergeContext,
 ): string {
-  const nameSplit = splitName(person.name)
-  const first = val(person.first_name) ?? nameSplit.first ?? 'there'
+  // A placeholder row name ('Lead <email>') is no name at all, and a captured
+  // first name that fails the shape test is junk: both drop the salutation
+  // (FUNNEL-8). A person with no name recorded anywhere keeps the long-standing
+  // 'there'.
+  const placeholder = isPlaceholderLeadName(person.name)
+  const nameSplit = placeholder ? { first: null, last: null } : splitName(person.name)
+  const rawFirst = val(person.first_name) ?? nameSplit.first
+  const first = rawFirst === null ? (placeholder ? NO_NAME : 'there') : isPlausibleFirstName(rawFirst) ? rawFirst : NO_NAME
   const last = val(person.last_name) ?? nameSplit.last
 
   const addr = firstAddress(person.addresses)
@@ -218,10 +300,7 @@ export function renderCrmMerge(
     .filter(Boolean)
     .join(', ') || null
 
-  const customAddress =
-    val(person.custom?.customSellerPropertyAddress) ??
-    val(person.custom?.customPropertyAddress) ??
-    val(ctx?.property?.address)
+  const customAddress = sellerAddressOf(person.custom) ?? val(ctx?.property?.address)
   const cmaLink = val(person.custom?.cmaLink)
 
   const lenderSplit = splitName(person.lender_name)
@@ -306,9 +385,11 @@ export function renderCrmMerge(
   // resolved from person.custom; unknown/empty tokens stay literal so the
   // composer's unresolved-token warning can catch them before send.
   const custom = (k: string): string | null => val(person.custom?.[k])
-  return out
-    .replace(/%(custom[A-Za-z0-9_]+)%/g, (m, k: string) => custom(k) ?? m)
-    .replace(/\{\{(custom[A-Za-z0-9_]+)\}\}/g, (m, k: string) => custom(k) ?? m)
+  return dropSalutation(
+    out
+      .replace(/%(custom[A-Za-z0-9_]+)%/g, (m, k: string) => custom(k) ?? m)
+      .replace(/\{\{(custom[A-Za-z0-9_]+)\}\}/g, (m, k: string) => custom(k) ?? m),
+  )
 }
 
 /**
@@ -326,11 +407,17 @@ export function attributeSiteLinks(
   text: string,
   brokerSlug: string | null | undefined,
   fubPersonId?: number | null,
-  crmPersonId?: number | null,
+  // A signed person token (lib/identity/link-token.ts) from the ONE decoration
+  // helper, lib/identity/outbound-links.ts (P7, 2026-09-23). Send paths never
+  // call this directly any more; ci:identity-loop holds that.
+  crmPersonId?: number | string | null,
 ): string {
   const slug = (brokerSlug ?? '').trim()
   const fuid = typeof fubPersonId === 'number' && Number.isInteger(fubPersonId) && fubPersonId > 0 ? String(fubPersonId) : ''
-  const pid = typeof crmPersonId === 'number' && Number.isInteger(crmPersonId) && crmPersonId > 0 ? String(crmPersonId) : ''
+  const pid =
+    typeof crmPersonId === 'string'
+      ? /^[A-Za-z0-9._-]{1,80}$/.test(crmPersonId) ? crmPersonId : ''
+      : typeof crmPersonId === 'number' && Number.isInteger(crmPersonId) && crmPersonId > 0 ? String(crmPersonId) : ''
   if (!slug && !fuid && !pid) return text
   return text.replace(/https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g, (url) => {
     if (url.includes('/admin')) return url

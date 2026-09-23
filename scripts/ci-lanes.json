@@ -112,9 +112,25 @@
     "ci:streamed-redirect",
     "ci:toast-discipline",
     "ci:untracked-imports",
-    "ci:vercel-config"
+    "ci:vercel-config",
+    "ci:handoff-current",
+    "ci:process-canon",
+    "ci:claude-canon",
+    "ci:loop-skills-canon"
   ],
   "path": {
+    "ci:plat-families": [
+      "app/subdivisions/**",
+      "app/communities/**",
+      "app/cities/**",
+      "lib/market/plat-family*",
+      "lib/market/__fixtures__/plat-family-*",
+      "lib/data/subdivisions/**",
+      "components/site/v3/PlaceSubdivisionMap*",
+      "components/site/v3/V3PlaceDirectory*",
+      "docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md",
+      "scripts/check-plat-families.mjs"
+    ],
     "ci:access-denied": [
       "app/admin/**",
       "components/admin/**",
@@ -383,16 +399,6 @@
       "middleware.ts",
       "next.config.*",
       "scripts/check-city-route-guard.mjs"
-    ],
-    "ci:claude-canon": [
-      "CLAUDE.md",
-      "AGENTS.md",
-      "docs/README.md",
-      "docs/FEATURES.md",
-      "docs/MASTER_SPEC.md",
-      "docs/SITE_SPEC.md",
-      "docs/DEVELOPMENT_PROCESS.md",
-      "scripts/claude-canon-baseline.json"
     ],
     "ci:cma-exemplar": [
       "lib/cma/**",
@@ -672,6 +678,24 @@
       "app/actions/**",
       "app/api/cron/**"
     ],
+    "ci:identity-loop": [
+      "lib/identity/**",
+      "lib/crm/**",
+      "lib/comms/**",
+      "lib/cma/**",
+      "lib/alerts/**",
+      "lib/newsletter/**",
+      "lib/data/crm/**",
+      "lib/data/identity/**",
+      "lib/visitor-backfill.ts",
+      "app/actions/**",
+      "app/api/**",
+      "app/admin/(protected)/visitors/**",
+      "app/admin/(protected)/people/**",
+      "components/**",
+      "public/rr-doc-tracker.js",
+      "scripts/check-identity-loop.mjs"
+    ],
     "ci:integration-health": [
       "docs/plans/ENTERPRISE_MAP/integration-health-probes.json",
       "lib/data/loop/integration-health.ts",
@@ -694,10 +718,6 @@
       "app/**",
       "middleware.ts",
       "lib/redirects*"
-    ],
-    "ci:loop-skills-canon": [
-      ".claude/skills/**",
-      ".cursor/rules/**"
     ],
     "ci:lp-conversion": [
       "app/lp/**",
@@ -820,14 +840,20 @@
       "supabase/migrations/**",
       "supabase/**"
     ],
-    "ci:naked-verb-headings": [
-      "app/**/page.tsx",
-      "components/**"
-    ],
     "ci:nav-reachability": [
       "lib/site-nav.ts",
       "components/site/**",
       "app/**/layout.tsx"
+    ],
+    "ci:chrome-links": [
+      "lib/site-nav.ts",
+      "lib/site/publish-newsletter-href.ts",
+      "components/site/v3/V3Chrome.tsx",
+      "components/site/v3/V3Footer.tsx",
+      "next.config.*",
+      "data/legacy-redirects.json",
+      "scripts/check-chrome-links.mjs",
+      "scripts/__tests__/check-chrome-links.test.mjs"
     ],
     "ci:newsletter-authz": [
       "lib/newsletter/**",
@@ -971,6 +997,8 @@
       "app/zip/[zip]/page.tsx",
       "app/zip/[zip]/_v3/ZipHomesField.tsx",
       "app/zip/[zip]/_v3/ZipInsight.client.tsx",
+      "components/site/v3/V3DogFloater.client.tsx",
+      "lib/marketing-brain/deliverable-share.ts",
       "public/manifest.json"
     ],
     "ci:no-visits-reads": [
@@ -1016,14 +1044,6 @@
       "scripts/wait-for-server.mjs",
       ".github/workflows/**",
       "middleware.ts"
-    ],
-    "ci:process-canon": [
-      "docs/plans/**",
-      "docs/DEVELOPMENT_PROCESS.md",
-      "CLAUDE.md",
-      "AGENTS.md",
-      "marketing_brain_skills/producers/TEMPLATE.md",
-      "lib/marketing-brain/producer-output-class.ts"
     ],
     "ci:program-complete": [
       "docs/plans/PROGRAM_2026-07-21/**",
@@ -1200,7 +1220,9 @@
       "app/api/**"
     ],
     "ci:ssg-budget": [
-      "app/**"
+      "app/**",
+      "data/plat-prerender.json",
+      "lib/site/plat-prerender.ts"
     ],
     "ci:stat-source": [
       "lib/data/**",
@@ -1468,6 +1490,18 @@
       "components/site/v3/V3Answers.css",
       "scripts/check-aeo-hub-guides.mjs",
       "scripts/lib/homepage-fold-density.mjs"
+    ],
+    "ci:atlas-props-budget": [
+      "app/about/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/api/atlas/**",
+      "components/site/v3/V3Atlas.client.tsx",
+      "components/site/v3/PlaceSubdivisionMap.client.tsx",
+      "lib/atlas/**",
+      "lib/geo/basemap-source.ts",
+      "scripts/check-atlas-props-budget.mjs",
+      "scripts/lib/atlas-props-weight.mjs"
     ]
   },
   "nightly": [

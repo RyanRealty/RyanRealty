@@ -6,7 +6,15 @@ import 'server-only'
  * (Oregon 8pm). Do not reintroduce a local 9pm copy.
  */
 
-import { attributeSiteLinks, renderCrmMerge, type MergeContext, type MergePersonLike } from '@/lib/crm/merge'
+import {
+  isPlaceholderLeadName,
+  primaryValue,
+  renderCrmMerge,
+  type MergeContext,
+  type MergePersonLike,
+} from '@/lib/crm/merge'
+import { classifyLeadQuality, hasSuspectTag } from '@/lib/crm/lead-quality'
+import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import {
   hourInTimeZone,
   inSmsQuietHours as canonicalInSmsQuietHours,
@@ -63,6 +71,73 @@ export type Step = {
   type?: string
 }
 
+// ── FUNNEL-3: a suppressed SMS step (2026-09-23) ─────────────────────────────
+//
+// An SMS step used to FINISH the whole enrollment when texting was suppressed
+// for the contact. Every site form that does not tick the consent box writes an
+// sms suppression (lib/crm/enroll.ts, fail-closed A2P/TCPA, untouched here), so
+// 78 of 81 Buyer Master enrollments in the 30 days to 2026-09-23T02:49Z ended
+// 'suppressed' at step 1 after one email and never reached the broker-confirmed
+// task. Now a person
+// whose only block is the sms channel skips the text and moves on; a suspect
+// never advances; anything wider (all-channel, a compliance tag, a failed
+// check) still halts. Steps are not reordered.
+
+/**
+ * Env switch that lets a suppressed SMS step send the step's own
+ * fallbackEmailBody instead of simply skipping. OFF unless set to 'on': the
+ * Buyer Master fallback copy tells every recipient their listing alerts are
+ * live, which is false for a contact-form buyer, and that copy is Matt's call.
+ */
+export const SUPPRESSED_SMS_FALLBACK_EMAIL_FLAG = 'CRM_SEQ_SUPPRESSED_SMS_FALLBACK_EMAIL'
+
+export function suppressedSmsFallbackEmailEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return String(env[SUPPRESSED_SMS_FALLBACK_EMAIL_FLAG] ?? '').trim().toLowerCase() === 'on'
+}
+
+export type SuppressedSmsStepDecision = 'halt' | 'skip' | 'fallback-email'
+
+/**
+ * What to do with an SMS step when isSuppressed(person, 'sms') said no.
+ * `reasons` is isSuppressed's list: `<channel>:<reason>` for suppression rows,
+ * `tag:<tag>` for compliance tags, `*-check-failed: …` for a read error.
+ */
+export function decideSuppressedSmsStep(input: {
+  reasons: readonly string[]
+  suspect: boolean
+  hasFallbackEmail: boolean
+  fallbackEmailEnabled: boolean
+}): SuppressedSmsStepDecision {
+  if (input.suspect) return 'halt'
+  if (input.reasons.length === 0) return 'halt'
+  // Only a row on the sms channel itself (no-sms-consent, a STOP reply) is a
+  // text-only block. 'all:' rows, compliance tags and check failures halt.
+  if (!input.reasons.every((r) => r.startsWith('sms:'))) return 'halt'
+  if (input.fallbackEmailEnabled && input.hasFallbackEmail) return 'fallback-email'
+  return 'skip'
+}
+
+/**
+ * The engine's belt on the intake screen: the quality:suspect tag, or the same
+ * classifier run on the stored name and address (catches rows created before
+ * the screen existed). Used only to refuse an advance, never to send.
+ */
+export function looksSuspect(person: {
+  tags?: unknown
+  name?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  emails?: unknown
+}): boolean {
+  if (hasSuspectTag(person.tags)) return true
+  const typed =
+    [person.first_name, person.last_name].filter((s) => typeof s === 'string' && s.trim()).join(' ').trim() ||
+    (isPlaceholderLeadName(person.name) ? '' : String(person.name ?? '').trim())
+  return classifyLeadQuality({ name: typed, email: primaryValue(person.emails) }).suspect
+}
+
 export function renderMerge(
   text: string,
   person: MergePersonLike & {
@@ -81,10 +156,12 @@ export function renderMerge(
   // and every contact has one. Passing only _fuid left 4,890 people — everyone
   // created since the CRM cutover, and the only segment still growing —
   // permanently unidentifiable no matter how many links they clicked.
-  return attributeSiteLinks(
-    renderCrmMerge(text, person, ctx),
-    person.assigned_broker ?? 'matt',
-    person.fub_legacy_id ?? null,
-    person.id ?? null,
-  )
+  //
+  // Since 2026-09-23 (P7) the recipient id rides as a SIGNED token through the
+  // one decoration helper; an unsigned id identifies nobody.
+  return decorateOutboundText(renderCrmMerge(text, person, ctx), {
+    brokerSlug: person.assigned_broker ?? 'matt',
+    personId: person.id ?? null,
+    channel: 'sequence',
+  })
 }

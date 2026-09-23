@@ -39,6 +39,7 @@ import { countCmasInRange } from '@/lib/data/sync/syncWrites'
 import { getLeadIntake } from '@/lib/data'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
+import { Ga4MirrorNotice } from '@/app/admin/(protected)/analytics/_components/Ga4MirrorNotice'
 import { resolveDateRange } from '@/app/admin/(protected)/analytics/_lib/queries'
 import {
   SectionHead,
@@ -456,6 +457,9 @@ async function LeadFlowContent({
           )}
         </VerdictLine>
       </div>
+
+      {/* TRACK-1: the GA4 session count above (the funnel's denominator) is mirror-shaped. */}
+      {ga4Ok ? <Ga4MirrorNotice /> : null}
 
       {!ga4Ok ? (
         <>

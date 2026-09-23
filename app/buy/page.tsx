@@ -69,11 +69,19 @@ import {
 
 export const revalidate = 3600
 
+// UNREACHABLE SINCE 2026-09-23: next.config.ts redirects() 301s /buy to
+// /homes-for-sale before this route resolves (UXLIVE-8; SITE_PAGES.md "/buy is
+// Homes, not a third chrome"; GSC 16 months: 0 impressions). The body stays
+// until its gate arms (aeo-hub-guides, seo-shell, taste class, public-isr-ttl,
+// sitemap-resolvable) are retired with it. If the redirect is ever removed,
+// this page still points search at its successor: canonical /homes-for-sale,
+// noindex, so it cannot compete with the Homes page again.
 export const metadata = pageMetadata({
   title: 'Buy a home in Central Oregon · Ryan Realty',
   description:
     'Homes for sale across Bend, Redmond, Sisters, Sunriver, and the towns around them. Live MLS data, local experts, and one broker who stays with you from your first search to closing.',
-  path: '/buy',
+  path: '/homes-for-sale',
+  noindex: true,
   ogImage: '/images/homepage/sisters-downtown-three-peaks.jpg',
   keywords: [
     'buy home Bend Oregon',

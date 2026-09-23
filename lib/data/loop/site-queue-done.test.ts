@@ -1,137 +1,127 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { siteQueueDoneEvidenceProblems } from './site-queue-done'
+import {
+  SITE_DONE_RISE_FLOOR,
+  SITE_DONE_RISE_FLOOR_FROM,
+  siteQueueDoneEvidenceProblems,
+  tasteFloorProblems,
+} from './site-queue-done'
 
-const PASSING_RECEIPT = {
-  competitiveBriefPass: true,
-  demoMatch: true,
+// Matt 2026-09-23 (visibility audit PROCESS-3 / UXLIVE-11): done is the
+// docs/RUN_LOOP.md accept test; demoMatch / competitiveBriefPass are notes and
+// the taste median is a floor that may not regress on the same instrument.
+
+const RECEIPT = {
   evaluatorModel: 'grok-4.6',
+  rubricVersion: 'v1-2026-09-12',
+  evaluatedAt: '2026-09-23',
   shotsHash: `sha256:${'a'.repeat(64)}`,
-  competitiveBriefEvidence: {
-    '1': 'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
-    '2': 'Faces open the page at display scale. Deep bios stay on /team.',
-    '3': 'V3Proof reviews as words plus dated local closings as a carousel',
-    '4': 'Call | Text | Email | Schedule. Live hours stay V3OnDuty above this.',
-    '5': "street: '115 NW Oregon Ave #2'",
-    '6': '5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.',
-    '7': '/about first viewport — faces at display scale. Navy and cream only.',
-    '8': 'shadcn Avatar image, fallback, and badge at display scale.',
-  },
+  demoMatch: false,
+  score: 60,
+  comparedToPrior: 'held',
+  priorMark: { score: 61, evaluatorModel: 'grok-4.6', rubricVersion: 'v1-2026-09-12' },
 } as const
 
-describe('siteQueueDoneEvidenceProblems', () => {
-  it('blocks Tip Ready on a cream-box score rise', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'SITE-90 About: FacePortrait imported Avatar, ci:catalog-install green, score rose 31 → 48. Tip Ready.',
-      { versionGap: 'SITE-90' },
-    )
-    expect(p.join('\n')).toMatch(/demoMatch: true/)
+describe('siteQueueDoneEvidenceProblems (Matt 2026-09-23)', () => {
+  it('stays in lockstep with the frozen rise floor (taste-rule-freeze.json, pinned to taste-receipt.mjs by ci:rubric-freeze)', () => {
+    const freeze = JSON.parse(readFileSync('design_system/public/taste-rule-freeze.json', 'utf8')) as {
+      riseFloor: number
+      riseFloorFrom: string
+    }
+    expect(SITE_DONE_RISE_FLOOR).toBe(freeze.riseFloor)
+    expect(SITE_DONE_RISE_FLOOR_FROM).toBe(freeze.riseFloorFrom)
   })
 
-  it('blocks SITE-99 with no demoMatch (CLI missing, no fallback verdict)', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'eight catalog files imported; Tip Ready; no grok CLI at GROK_CLI',
-      { versionGap: 'SITE-99' },
-    )
-    expect(p.join('\n')).toMatch(/CLI missing/)
+  it('accepts a visibility node with live evidence and no taste score at all', () => {
+    expect(
+      siteQueueDoneEvidenceProblems(
+        'READY dpl_x at 1a2b3c. /communities/tetherow title now "Tetherow homes for sale"; canonical self; in sitemap once. Blocked to 2026-10-21 for GSC position.',
+        { versionGap: 'SITE-182' },
+      ),
+    ).toEqual([])
   })
 
-  it('blocks a bare 402 with no fallback verdict', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'taste-evaluate: grok CLI 402 (subscription/quota). Tip Ready anyway, files on disk.',
-      { versionGap: 'SITE-99' },
-    )
-    expect(p.join('\n')).toMatch(/402 and no fallback verdict/)
+  it('no longer refuses a recorded demoMatch false or competitiveBriefPass false', () => {
+    expect(
+      siteQueueDoneEvidenceProblems('grok-4.6 median 60, demoMatch: false, competitiveBriefPass: false. Live page checked.', {
+        versionGap: 'SITE-90',
+        loadParity: false,
+      }),
+    ).toEqual([])
+  })
+
+  it('refuses empty evidence', () => {
+    expect(siteQueueDoneEvidenceProblems('  ', { versionGap: 'SITE-9' }).join('\n')).toMatch(/evidence is required/)
+  })
+
+  it('refuses a judge failure with no signed receipt behind it', () => {
+    const p = siteQueueDoneEvidenceProblems('taste-evaluate: grok CLI 402. Tip Ready anyway, files on disk.', {
+      versionGap: 'SITE-99',
+      loadParity: false,
+    })
+    expect(p.join('\n')).toMatch(/a failed judge is not a score/)
   })
 
   it('accepts a 402 followed by the claude fallback when the receipt backs it', () => {
     expect(
-      siteQueueDoneEvidenceProblems(
-        'grok 402 → fell back to claude-sonnet-5 via taste-evaluate.ts listing-detail — demoMatch: true, competitiveBriefPass: true, median 72',
-        {
-          versionGap: 'SITE-99',
-          tasteReview: {
-            demoMatch: true,
-            competitiveBriefPass: true,
-            evaluatorModel: 'claude-sonnet-5',
-            shotsHash: PASSING_RECEIPT.shotsHash,
-          },
+      siteQueueDoneEvidenceProblems('grok 402, fell back to claude-sonnet-5 via taste-evaluate.ts listing-detail, median 60', {
+        versionGap: 'SITE-99',
+        // listing-detail publishes a competitiveBrief, so the receipt records that verdict too.
+        tasteReview: {
+          ...RECEIPT,
+          evaluatorModel: 'claude-sonnet-5',
+          priorMark: undefined,
+          comparedToPrior: 'rebaselined',
+          competitiveBriefPass: false,
         },
-      ),
+      }),
     ).toEqual([])
   })
 
-  it('refuses a 402 + claimed fallback when no receipt is on disk', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'grok 402 → fell back to claude — demoMatch: true, median 72',
-      { versionGap: 'SITE-99', loadParity: false },
-    )
-    expect(p.join('\n')).toMatch(/fallback verdict must be on the route/)
-  })
-
-  it('refuses a builder model signing as the judge', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'npx tsx scripts/taste-evaluate.ts about — demoMatch: true, competitiveBriefPass: true, median 71',
-      { versionGap: 'SITE-90', tasteReview: { ...PASSING_RECEIPT, evaluatorModel: 'grok-4.5' } },
-    )
+  it('refuses a builder model signing as the judge after a judge failure', () => {
+    const p = siteQueueDoneEvidenceProblems('no grok CLI; scored it myself', {
+      versionGap: 'SITE-99',
+      tasteReview: { ...RECEIPT, evaluatorModel: 'grok-4.5' },
+    })
     expect(p.join('\n')).toMatch(/evaluatorModel must be one of the judge chain/)
   })
 
-  it('accepts claude-opus-5 as the fallback judge on a briefed route', () => {
+  it('refuses a receipt whose median fell by the rise floor on the same instrument', () => {
+    const p = siteQueueDoneEvidenceProblems('npx tsx scripts/taste-evaluate.ts about — median 58', {
+      versionGap: 'SITE-90',
+      tasteReview: { ...RECEIPT, score: 58 },
+    })
+    expect(p.join('\n')).toMatch(/taste floor regressed/)
+  })
+
+  it('accepts a fall inside the judge noise as held', () => {
+    expect(tasteFloorProblems({ ...RECEIPT, score: 59 })).toEqual([])
+  })
+
+  it('does not compare across instruments', () => {
     expect(
-      siteQueueDoneEvidenceProblems(
-        'npx tsx scripts/taste-evaluate.ts about — claude-opus-5 demoMatch: true, competitiveBriefPass: true, median 71',
-        { versionGap: 'SITE-90', tasteReview: { ...PASSING_RECEIPT, evaluatorModel: 'claude-opus-5' } },
-      ),
+      tasteFloorProblems({ ...RECEIPT, score: 40, priorMark: { ...RECEIPT.priorMark, evaluatorModel: 'claude-sonnet-5' } }),
     ).toEqual([])
   })
 
-  it('refuses a hand-typed competitiveBriefPass:true when parity pass is false', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71',
-      {
-        versionGap: 'SITE-90',
-        tasteReview: {
-          competitiveBriefPass: false,
-          demoMatch: false,
-          evaluatorModel: 'grok-4.6',
-        },
-      },
-    )
-    expect(p.join('\n')).toMatch(/competitiveBriefPass must be the boolean true/)
-    expect(p.join('\n')).toMatch(/Bare evidence prose/)
-  })
-
-  it('refuses SITE-90 Tip Ready when competitiveBriefPass is omitted', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, median 71',
-      { versionGap: 'SITE-90' },
-    )
-    expect(p.join('\n')).toMatch(/competitiveBriefPass: true/)
-  })
-
-  it('refuses competitiveBriefPass false', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'grok-4.6 demoMatch: true, competitiveBriefPass: false',
-      { versionGap: 'SITE-90' },
-    )
-    expect(p.join('\n')).toMatch(/competitiveBriefPass false/)
-  })
-
-  it('accepts a real demo match only when the receipt boolean is true', () => {
-    expect(
-      siteQueueDoneEvidenceProblems(
-        'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71',
-        { versionGap: 'SITE-90', tasteReview: PASSING_RECEIPT },
-      ),
-    ).toEqual([])
+  it('refuses an honesty drop', () => {
+    const p = tasteFloorProblems({
+      ...RECEIPT,
+      criteria: { honestyFunction: 7 },
+      priorMark: { ...RECEIPT.priorMark, criteria: { honestyFunction: 9 } },
+    })
+    expect(p.join('\n')).toMatch(/honestyFunction 7 fell below the prior mark 9/)
   })
 
   it('refuses Tip Ready language without --ship exit 0', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71. Tip Ready.',
-      { versionGap: 'SITE-90', tasteReview: PASSING_RECEIPT },
-    )
+    const p = siteQueueDoneEvidenceProblems('median 60, held. Tip Ready.', {
+      versionGap: 'SITE-90',
+      tasteReview: RECEIPT,
+    })
     expect(p.join('\n')).toMatch(/--ship/)
-    expect(p.join('\n')).toMatch(/Cos prose is not Tip Ready/)
+  })
+
+  it('does not bind a non-SITE node', () => {
+    expect(siteQueueDoneEvidenceProblems('shipped', { versionGap: 'G12' })).toEqual([])
   })
 })

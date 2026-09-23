@@ -296,7 +296,11 @@ function sealSourceProblems(builder, label = PATHS.builder) {
   return p
 }
 
-/** Matt lock: exact six door strings, in order. No shorten. No U+2014 in public copy. */
+/**
+ * Matt lock: exact six door strings, in order. No shorten. (The incidental em
+ * dash check here was removed 2026-09-23, PROCESS-7: ci:no-public-em-dash is
+ * the one gate for Matt's 2026-09-20 lock, recorded in VOICE.md.)
+ */
 export function doorLabelProblems(floater, label = PATHS.floater) {
   const p = []
   const found = menuDoorLabels(floater)
@@ -308,10 +312,6 @@ export function doorLabelProblems(floater, label = PATHS.floater) {
     p.push(
       `${label}: door labels must stay EXACTLY ${DOG_FLOATER_DOOR_LABELS.join(' / ')}. Do not shorten.`,
     )
-  }
-  const publicSrc = stripComments(floater)
-  if (publicSrc.includes('\u2014')) {
-    p.push(`${label}: no em dashes (U+2014) in public copy (Matt 2026-09-20).`)
   }
   return p
 }

@@ -6,8 +6,8 @@
 
 - Status: **deepened**
 - Cadence: **event-driven** (a visitor-built shortlist triggers it; no cron owns any step.
-  Upstream freshness: `sync-delta` every 15 min feeds `listings`, `refresh-mvs` hourly
-  rebuilds `listing_tile_mv`, the DAL caches 60s)
+  Upstream freshness: `sync-delta` every 15 min feeds `listings`, pg_cron job
+  `refresh_listing_tile_mv_30min` rebuilds `listing_tile_mv` at :02/:32, the DAL caches 60s)
 - Verdict: **PROPOSAL — MERGE→find-a-home.** This is the shortlist-decision utility inside
   find-a-home's browse loop, not a distinct visitor process: every inception is a find-a-home
   surface (compare toggles on search tiles and listing detail, the global tray), the primary
@@ -73,8 +73,9 @@ defect 7). On the page itself, `KbSectionTracker pageType="compare"`
   CSS-grid/overflow-x responsive (`CompareClient.tsx:180,207`).
 - **Automated actors:** none own a step of this process. Upstream data maintenance only:
   `sync-delta` every 15 min (`3,18,33,48 * * * *`, `vercel.json:225-226`, opened this run),
-  `refresh-mvs` hourly at :08 rebuilding `listing_tile_mv`
-  (`vercel.json:196-199`; `app/api/cron/refresh-mvs/route.ts:57-60`).
+  pg_cron `refresh_listing_tile_mv_30min` at :02/:32 rebuilding `listing_tile_mv`
+  (`supabase/migrations/20260731140000_split_mv_refresh_jobs.sql`; the hourly
+  Vercel `refresh-mvs` duplicate was removed from this path 2026-09-23, audit DATA-2).
 - **Accountable for completion:** the visitor self-serves end to end. No broker touches this
   process; a broker enters only after the listing-detail hand-off (find-a-home's captures).
 
@@ -227,9 +228,11 @@ uncaptured artifact is the structural core of the MERGE proposal (§0).
   `revalidate = 60` (`:69`) is effectively inert for them — the real shield is the DAL's
   60s `listingTile` TTL (`lib/data/cache/unstable-cache.ts:22`) and the ≤4-key fetch shape.
 - **Freshness ladder (what "stale" means)**: a price change crosses `sync-delta` (≤15 min)
-  → `listing_tile_mv` hourly refresh at :08 (`vercel.json:196-199`;
-  `app/api/cron/refresh-mvs/route.ts:57-60`) → DAL cache ≤60s. Worst case a fresh MLS
-  change shows here roughly 76 minutes later, dominated by the hourly MV refresh. No
+  → `listing_tile_mv` refresh every 30 min (pg_cron `refresh_listing_tile_mv_30min` :02/:32)
+  → DAL cache ≤60s. Worst case a fresh MLS change shows here about 54 minutes later:
+  15 (sync-delta cadence) + 30 (tile cadence) + 8 (the tile job's own run; the :02 run
+  stamped `mv_refresh_state` at 00:09:39 UTC on 2026-09-23) + 1 (DAL cache), dominated by
+  the tile cadence. No
   freshness claim appears on the page, so nothing overstates (contrast the
   motivated-sellers defect).
 - **PDF latency + abuse budget**: each download re-runs the two-arm DAL + photo fetch +
@@ -291,8 +294,7 @@ uncaptured artifact is the structural core of the MERGE proposal (§0).
   3. **Two permanently dead rows** — HOA and Taxes are hardcoded `null`
      (`page.tsx:140-141`) yet carry `best:'low'` semantics in the table
      (`CompareClient.tsx:61-62`); every cell renders "—". `listing_search_mv` was built to
-     carry HOA/taxes per the refresh route's own comment
-     (`app/api/cron/refresh-mvs/route.ts:102`) — the data path exists and is unwired here.
+     carry HOA/taxes (`supabase/migrations/20260711160000_listing_search_mv.sql`) — the data path exists and is unwired here.
   4. **Map comment/implementation mismatch** — "Static Map with pins" comment over an Embed
      v1 `place`-mode iframe with pipe-joined coords (`CompareClient.tsx:275-282`);
      multi-pin rendering unverified and doubtful.
@@ -335,9 +337,9 @@ frames it (`find-a-home.md:279-280`). Target shape derives from the job:
   is only ever achieved through the visitor objective (binding directive #3): the share
   must get better for the visitor (live prices for the recipient, a durable shortlist),
   not gated.
-- **Data completeness before table growth**: wire HOA/taxes from `listing_search_mv` (the
-  refresh route already builds it for exactly these fields,
-  `app/api/cron/refresh-mvs/route.ts:102`) or cut the rows; resolve the sold-display and
+- **Data completeness before table growth**: wire HOA/taxes from `listing_search_mv` (pg_cron
+  `refresh_dal_mvs_15min` already refreshes it with exactly these fields,
+  `supabase/migrations/20260711160000_listing_search_mv.sql`) or cut the rows; resolve the sold-display and
   attribution questions (§6) before the merged utility inherits them.
 - **Wire-or-delete `AICompare`** per its own HOLD conditions (`page.tsx:240-256`) — a P3
   line item, not a default.
@@ -431,7 +433,7 @@ Prove the process end-to-end. Persist; never delete.
 15. **Dead-row marker (defect 3)**: rendered HTML shows "—" in every HOA/mo and Taxes/yr
     cell (`page.tsx:140-141`). When the rows are wired or cut, update this check.
 16. **Freshness wiring**:
-    `grep -A1 '"path": "/api/cron/refresh-mvs"' vercel.json` → `"8 * * * *"`;
+    `grep -n "refresh_listing_tile_mv_30min" supabase/migrations/20260731140000_split_mv_refresh_jobs.sql` → hit (`'2,32 * * * *'`);
     `grep -n 'listingTile: 60' lib/data/cache/unstable-cache.ts` → hit
     (`unstable-cache.ts:22`).
 17. **Orphan watch (defect 5)**:

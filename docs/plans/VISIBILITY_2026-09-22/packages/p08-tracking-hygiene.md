@@ -1,0 +1,15 @@
+# p08-tracking-hygiene
+
+WIP branch: `claude/admiring-feynman-7lgwc3--wip-p08-tracking-hygiene` (snapshot of the agent worktree). Original worktree: `.claude/worktrees/agent-ae08518f8d038f1c6`.
+
+## Package spec (as given to the fix agent)
+
+Read docs/plans/VISIBILITY_2026-09-22/FIX_BRIEF.md first and follow it exactly.
+
+PACKAGE P8: tracking hygiene. Verdicts: docs/plans/VISIBILITY_2026-09-22/evidence/verdicts/tracking.json (TRACK-1, TRACK-2, TRACK-3). The GTM bootstrap syntax error (TRACK-2) is already fixed in your base commit (lib/analytics/gtm-bootstrap.ts + test); do not redo it.
+1. TRACK-3: since the 2026-09-13 Matt lock `images.unoptimized: true` (next.config.ts), every old /_next/image?url=X URL renders the 142 KB HTML 404 page. Answer /_next/image directly: redirect `/_next/image?url=X` to X when X is a same-origin path or an allow-listed image host already used by the site (Spark CDN, Supabase storage; read next.config.ts remotePatterns), else a tiny 410. Confirm whether Next 16 middleware can match /_next/image (middleware.ts matcher excludes it today); if it cannot, use a vercel.json or next.config redirect with a `has` query condition, or a route handler rewrite. Add a unit test for the URL mapping. Do not re-enable image optimization (Matt lock).
+2. app/api/web-vitals/route.ts: drop FID from ALLOWED, clamp absurd values (e.g. > 120,000 ms), store the page type (lib/analytics/page-type.ts pageTypeFromPath) if the table has a column for it (check docs/DATABASE_SCHEMA_SNAPSHOT.md; do not add a column).
+3. Deploy verification: in the post-deploy check script (scripts/check-vercel-deploy.mjs or whatever `npm run deploy:verify` runs), fetch https://ryan-realty.com/ and fail when any inline <script> body does not parse (node's vm.Script or new Function), and when the page has no googletagmanager.com/gtm.js loader text.
+4. TRACK-1 labeling: while the Measurement Protocol page_view mirror is on, the GA4 snapshot cron (app/api/cron/marketing-snapshot-ga4 and lib/marketing-brain/snapshot.ts) stores sessions, bounce, engagement, new users and source-scope sessions that are artifacts of the mirror. Stamp those rows metadata.mirror_inflated=true (check the table's columns in the schema snapshot) and label the admin GA4 panels that show them. Also give the GA4 ingestor a settle/re-pull window like the GSC one (today-3..today-1) so a late-arriving day is corrected.
+5. scripts/loop-brief.ts silent-zero guard: key its watchlist by channel x scope x metric so ga4 event session_start and first_visit going to zero is caught (TRACK-2 would have been caught).
+Files: middleware.ts or vercel.json/next.config.ts redirect, app/api/web-vitals/route.ts, scripts/check-vercel-deploy.mjs (or the deploy:verify script), app/api/cron/marketing-snapshot-ga4/**, lib/marketing-brain/snapshot.ts, the admin GA4 panel components, scripts/loop-brief.ts (silent-zero block only; another agent edits other parts of loop-brief), tests, gates (ci:tracking-policy, ci:cron-registered). Another agent (P7) edits app/api/visitors/track/route.ts and VisitTracker; do not touch them.

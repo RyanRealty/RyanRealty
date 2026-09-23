@@ -1,0 +1,40 @@
+// Audit-only Supabase reader for scratch scripts. Run from the repo root with:
+//   node /tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/lib/sb.mjs '<json spec>'
+// or import { sb, count, rows, all } from this file in your own .mjs under the scratch dir.
+// Uses the service-role env already present in the sandbox. Never use the MCP execute_sql tool: it prompts the owner.
+import { createRequire } from 'node:module'
+const require = createRequire('/home/user/RyanRealty/package.json')
+const { createClient } = require('@supabase/supabase-js')
+export const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+export async function count(table, apply = (q) => q) {
+  const { count: n, error } = await apply(sb.from(table).select('*', { count: 'exact', head: true }))
+  if (error) throw new Error(`${table}: ${error.message}`)
+  return n
+}
+export async function rows(table, select = '*', apply = (q) => q, limit = 200) {
+  const { data, error } = await apply(sb.from(table).select(select)).limit(limit)
+  if (error) throw new Error(`${table}: ${error.message}`)
+  return data
+}
+// Page through every matching row (PostgREST caps a single call at 1,000).
+export async function all(table, select = '*', apply = (q) => q, page = 1000, max = 200000) {
+  const out = []
+  for (let from = 0; from < max; from += page) {
+    const { data, error } = await apply(sb.from(table).select(select)).range(from, from + page - 1)
+    if (error) throw new Error(`${table}: ${error.message}`)
+    out.push(...(data ?? []))
+    if (!data || data.length < page) break
+  }
+  return out
+}
+if (process.argv[1] && process.argv[1].endsWith('sb.mjs') && process.argv[2]) {
+  // CLI spec: {"table":"site_signal","select":"date,value","filters":[["eq","source","rum"],["gte","date","2026-09-01"]],"order":["date",false],"limit":50,"count":true,"head":false}
+  const spec = JSON.parse(process.argv[2])
+  let q = sb.from(spec.table).select(spec.select ?? '*', spec.count ? { count: 'exact', head: !!spec.head } : {})
+  for (const [op, col, val] of spec.filters ?? []) q = q[op](col, val)
+  if (spec.order) q = q.order(spec.order[0], { ascending: spec.order[1] !== false })
+  q = q.limit(spec.limit ?? 100)
+  const { data, count: n, error } = await q
+  if (error) { console.error(error.message); process.exit(1) }
+  console.log(JSON.stringify({ count: n, rows: data }, null, 1))
+}

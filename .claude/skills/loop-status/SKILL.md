@@ -36,4 +36,4 @@ state. Under it, three lines and nothing more:
    and the queue table in `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`.
 
 Do not editorialize, forecast, or propose new items here. Status is a reading of the
-graph, not a plan. If Matt then says "run loop", that is `.claude/skills/site-queue/SKILL.md`.
+graph, not a plan. If Matt then says "run loop", that is `docs/RUN_LOOP.md` (the site queue).

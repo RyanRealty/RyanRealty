@@ -583,3 +583,38 @@
     font-size: var(--v3-size-body-lg);
   }
 }
+
+/* The link up to the plat family (Matt 2026-09-23). One quiet sentence under
+   the opening band, in the page's own column, so it shows on every width
+   whatever the band clips. The anchor sits inside a sentence, so it keeps the
+   sentence's line height (WCAG 2.5.8 inline exception). */
+.plat-family-line {
+  max-width: var(--v3-measure);
+  margin: var(--v3-space-xs) auto 0;
+  padding: 0 var(--v3-gutter);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+/* `color` on a bare `a` lives in @layer base so Tailwind's utilities layer
+   keeps winning (ci:css-layers). */
+@layer base {
+  .plat-family-line a {
+    color: var(--v3-ink);
+  }
+}
+
+.plat-family-line a {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.plat-family-line a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.plat-family-line a:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}

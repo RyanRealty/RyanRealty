@@ -1,0 +1,366 @@
+{
+  "area": "ux-live",
+  "notes_path": "/tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/ux-live/notes.md",
+  "summary": "I looked at 13 production routes at 1440x900 and 9 at 375x812 (full-page PNGs under scratchpad/ux-live/shots/) and checked them against the repo. On 2026-09-23 I re-checked the two p0s with fresh curls (Chrome UA) and one site_signal read. The sandbox proxy dropped about 40% of tunnels, so Playwright DCL/LCP numbers are inflated and not reported as production figures. I dropped every claim that rested only on the proxy (CSS preload warnings, the aborted hero-video fetch). TTFB is fine: 0.18 to 0.56 s median with the edge cache on. The problems are what gets served and what a person sees first. (1) Tracking is broken. The inline GTM bootstrap has a syntax error (`'gtm.start':}}`) committed 2026-09-17 by a Cursor session, and production still serves it today. window.google_tag_manager is missing and no googletagmanager.com request goes out. GA4 still counts sessions only through the server-side Measurement Protocol mirror. On 2026-09-18, 684 of 685 GA4 sessions in site_signal had source '(not set)', and from 09-19 it was 100%; every attributed source (direct, crm/doc, email-click, chatgpt, gbp, google/organic) is gone. Another session has a fix staged but not committed (lib/analytics/gtm-bootstrap.ts); it is not in HEAD and not live. (2) The homepage HTML still carries 54 zero-valued figures ('Bend · houses for sale · 0', 'Tetherow · $0 median list price'). Non-JS crawlers and AI engines read those zeros. (3) Place pages and /about ship 0.9 to 4.7 MB of HTML, mostly listing-dot arrays serialized as RSC props plus a 982 KB inline SVG. (4) Place pages open on a panel that looks like GIS software: legend, checkboxes, grey heat map with '$50k+' pills (each pill is the cheapest ask in its cluster), plat-phase lists. They do not open on the place or a house. This holds on desktop and mobile. The search page opens on a navy slab slider and a map with no basemap. (5) The same Bend figure appears as 581, 708, 757, 495/478 and 1,181+ with no stated definition. (6) On mobile, none of the 9 routes captured has a tappable phone in the first viewport; the header shows Sign in instead. A fixed 68 px Jax 'menu' button and the Cookies pill cover content and links on every page. (7) Menu and IA: 'Homes' links a noindex URL, 'Luxury' links a 308, and /buy, /activity and /tools/appreciation are indexed with zero internal links (header, footer, mobile dialog, 5 page bodies and /site-index checked). (8) AdSense Auto ads auctions run on every page. The catalog-demo method gave demoMatch:true to a spinner-looking button icon, a carousel placed below the map, and a count-up that TASTE.md itself bans (lines 540-541). None of the verdicts names a buyer task. Full notes, critiques, competitor comparison and screenshot list: /tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/ux-live/notes.md.",
+  "facts": [
+    {
+      "fact": "Production still serves the broken GTM bootstrap as of 2026-09-23.",
+      "evidence": "curl -A <Chrome 140 UA> https://ryan-realty.com/ → 200; grep -o \"gtm.start'[^;]{0,40}\" → \"gtm.start':}}\". HEAD b30f361b8: `git show HEAD:components/GTMHead.tsx` lines 78-79 contain `w[l].push({'gtm.start':}}` then `new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], // hydration-safe — GTM bootstrap stamp`. Last commit touching the file: f1e2a90f9 2026-09-17 20:42 UTC, Cursor Agent, 'fix: attribute crm email clicks to the sending broker in ga4'."
+    },
+    {
+      "fact": "Another session has a GTM bootstrap fix (and edits to components/motion/number.tsx) staged but not committed in the shared working tree. It is not in HEAD and not deployed.",
+      "evidence": "git status --short: ' M components/GTMHead.tsx', ' M components/motion/number.tsx', ' M scripts/check-tracking-policy.mjs', '?? lib/analytics/gtm-bootstrap.ts', '?? lib/analytics/gtm-bootstrap.test.ts'. The working-tree GTMHead.tsx:74 calls gtmBootstrapScript(pageType, GTM_ID) from the untracked file. By the end of this pass another session had staged these (git status: \"M  components/GTMHead.tsx\", \"A  lib/analytics/gtm-bootstrap.ts\", \"M  components/motion/number.tsx\"). They were still uncommitted; HEAD is b30f361b8."
+    },
+    {
+      "fact": "From 2026-09-19, every GA4 session in site_signal has source '(not set)' (on 09-18, 684 of 685); all attributed sources disappeared right after the GTM break.",
+      "evidence": "node scratchpad/ux-live/ga4-src.mjs (site_signal source='ga4_data_api', scope='source', metric='sessions'): 2026-09-16 → (not set) 1094, (direct)/(none) 41, crm/doc 5, (data not available) 4, email-click 3, gbp/organic 1, chatgpt.com/ai-assistant 1; 2026-09-17 → (not set) 637, email-click 6+1, crm/doc 3, direct 2; 2026-09-18 → (not set) 684, crm/doc 1; 2026-09-19 → (not set) 699 only; 09-20 → 434 only; 09-21 → 205 only. Account sessions continue (685, 699, 434, 205), which fits the server-side Measurement Protocol mirror in app/api/visitors/track/route.ts:493-508 ('no `_ga` … server-fill the gap'). Even before the break, (not set) was 85-97% of sessions (09-12: 361/423; 09-15: 1444/1490)."
+    },
+    {
+      "fact": "In the browser, window.google_tag_manager is absent and no googletagmanager.com or google-analytics.com request fires. gtag and consent-default pushes do exist from another script.",
+      "evidence": "tracking-probe.json for '/': gtmObj false, gtmIds [], gaGlobal false, gtagType 'function', dataLayerLen 12 incl. consent default/update; tagReqs list only connect.facebook.net, pagead2.googlesyndication.com, googleads.g.doubleclick.net; errors ['SyntaxError: Unexpected token \\'}\\'']. components/GoogleAnalytics.tsx:73 `const hasGA4 = !!GA4_ID && !hasGTM`, so there is no client-side GA4 fallback."
+    },
+    {
+      "fact": "The homepage HTML still carries 54 zero-valued figure elements (re-probed 2026-09-23).",
+      "evidence": "node zeros.js home-recheck.html → 'zero-figure elements = 54; by class: tabular-nums 9, home-featured-community__figure-value 32, home-browse-places__count 13'. Samples: 'Tetherow Bend · 0 homes for sale $0 median list price 0 homes sold, last 30 days 0 new this week 0 days to an offer', 'Caldera Springs Sunriver · 0 homes for sale'. bend.html and tetherow.html (saved 09-22) → 0 zero figures."
+    },
+    {
+      "fact": "TTFB is healthy and the edge cache is on. Transfer and parse weight is the cost.",
+      "evidence": "ttfb.txt (curl, Chrome UA, 3 samples, successful samples only): median / 0.22s, /buy 0.24, /sell 0.45, /cities/bend 0.28, /cities/bend/awbrey-butte 0.32, /communities/tetherow 0.22, /subdivisions/ridge-at-eagle-crest 0.21, /cities/bend/types/single-family 0.33, /homes-for-sale/bend 0.54, /listing/220222277 0.56, /housing-market/bend 0.18, /about 0.24, /contact 0.24. Headers: cache-control public, s-maxage=60|300, stale-while-revalidate; x-vercel-cache STALE|HIT."
+    },
+    {
+      "fact": "Decoded HTML sizes and request counts (1440 px): /about 4.68 MB/195 req, /cities/bend 3.77 MB/321, awbrey-butte 2.01 MB/247, single-family 1.68 MB/189, ridge-at-eagle-crest 1.07 MB/348, /listing/220222277 948 KB/278, tetherow 921 KB/220, /homes-for-sale/bend 726 KB/213, / 536 KB/233, /buy 388 KB/218, /housing-market/bend 331 KB/133, /sell 283 KB/147, /contact 209 KB/175.",
+      "evidence": "metrics.json htmlBytes/reqCount; audit.log. Brotli wire bytes: / 57,560, tetherow 146,189, /cities/bend 576,344, /about 868,253."
+    },
+    {
+      "fact": "/about ships 5,671 listing records and a 982 KB inline SVG; /cities/bend ships 1,664 listing records in its RSC flight data.",
+      "evidence": "about.html: 47 self.__next_f.push chunks totalling 3,526,531 bytes, largest 3,381,549; grep '\\\"lat\\\":' = 5,671 and '\\\"photo\\\":' = 5,671; largest <svg> 982,414 bytes (class v3-atlas__svg). bend.html: lat 1,664, photo 1,664. Source: app/about/page.tsx:252-256 `<V3Atlas … dots={atlas.dots}>`."
+    },
+    {
+      "fact": "On mobile (375x812), none of the 9 captured routes has a visible tappable phone in the first viewport. The header shows wordmark, search, Sign in and menu, and the only phone links at top=0 are inside the hidden menu dialog.",
+      "evidence": "metrics-mobile.json telLinks: / first visible tel y=5,135; /buy 8,576; /sell 1,479 ('Call Matt Ryan'); /cities/bend 25,470; awbrey-butte 21,104; tetherow 15,653; ridge-at-eagle-crest 24,032; single-family 17,518; /homes-for-sale/bend none outside the dialog. Screenshots home--mobile--fold.png, sell--mobile--fold.png, cities_bend--mobile--fold.png, homes-for-sale_bend--mobile--fold.png show no phone in the bar. At 1440 the phone is in the header on every route (top=10)."
+    },
+    {
+      "fact": "A fixed 68x68 Jax button labelled 'Open Ryan Realty menu' sits at 50% of viewport height on every route (top 372 at 375, 416 at 1440) and covers content.",
+      "evidence": "metrics*.json firstViewport entry {label:'Open Ryan Realty menu', top:372|416, h:68, w:68} on all 22 captures; components/site/v3/V3DogFloater.css:9-17 `position: fixed; top: 50%; right: …; z-index: 95`. On sell--mobile--fold.png it covers the 'how we calculate this' link; on home--mobile--fold.png it covers the second listing card's badge; on homes-for-sale_bend--mobile--fold.png it covers a map cluster."
+    },
+    {
+      "fact": "The header Homes link and footer 'Search homes' point to /homes-for-sale?view=list, which is noindex. The clean /homes-for-sale is indexable but only one link to it was found, in the body of /about.",
+      "evidence": "route-status.txt: '/homes-for-sale?view=list | 200 | canon=https://ryan-realty.com/homes-for-sale | robots=noindex, follow'. lib/site-nav.ts:145 `href: '/homes-for-sale?view=list'`. app/search/page.tsx:221-226 `noindex = shouldNoIndexSearchVariant(sp)`. next.config.ts:468 rewrites /homes-for-sale → /search. grep href=\"/homes-for-sale\" → home 0, bend 0, tetherow 0, listing 0, about 1."
+    },
+    {
+      "fact": "/buy, /activity and /tools/appreciation are 200 and index,follow with self-canonicals, but nothing links to them from the header, footer, mobile dialog, the bodies of 5 sampled pages, or /site-index.",
+      "evidence": "route-status.txt rows for /buy, /activity, /tools/appreciation. grep href=\"/buy\" etc. across home.html, bend.html, tetherow.html, listing.html, about.html → 0 each; curl /site-index (2026-09-23) → /buy 0, /activity 0, /tools/appreciation 0 (/videos 1, /central-oregon/golf 1)."
+    },
+    {
+      "fact": "'Luxury homes in Bend' in the Homes mega-menu, the mobile dialog and the footer points to a 308 redirect.",
+      "evidence": "lib/site-nav.ts:181,271,366 href '/luxury-homes-bend'; next.config.ts:434 → '/homes-for-sale/bend?minPrice=1500000' permanent; route-status.txt '/luxury-homes-bend | 308'. SITE_PAGES.md:102 wants luxury as a filter of search, keeping the 301 for inbound SEO."
+    },
+    {
+      "fact": "AdSense Auto ads auctions run on the brokerage pages. All four probes came back unfilled.",
+      "evidence": "ads-probe.json for / desktop+mobile, /listing/220222277 mobile and /cities/bend mobile: adsbygoogle.js?client=pub-5928669094439003, getconfig/abg_config?…ama_t=adsense, googleads.g.doubleclick.net/pagead/ads?client=…; DOM ins.adsbygoogle status 'unfilled', box 0x0; aswift_0 iframe; autoAdsAttr true. components/GoogleAnalytics.tsx:215 loads the script when NEXT_PUBLIC_ADSENSE_CLIENT_ID is set."
+    },
+    {
+      "fact": "Heat-map cluster pills show the lowest ask in the cluster followed by '+', so the Bend map shows '$50k+', '$74k+' and '$99k+' in a city whose recent median sale is ~$750K.",
+      "evidence": "lib/atlas/pin-price.ts:41-51 formatAtlasClusterPin: 'A mixed pile prints the low ask with +'. cities_bend--mobile--fold.png shows $50k+, $74k+, $99k+, $100k+ … $624k+ under legend '708 for sale · 328 pending · 10 parks · 12 trails'."
+    },
+    {
+      "fact": "The same afternoon, the site states at least five different counts of Bend homes for sale with no definition shown.",
+      "evidence": "Menu 'Bend581' (linktree-home.json) and /housing-market/bend 'Homes for sale 581'; /cities/bend legend '708 for sale' (cities_bend--mobile--fold.png); /cities/bend/types/single-family '757 homes' ('every active single-family home with a Bend address'); /homes-for-sale/bend desktop '495 homes on this map' plus row caption 'middle half of 478 on this map' (crop--hfs-bend-row.png); /homes-for-sale/bend mobile '1,181+ homes for sale · 490 on this map' (homes-for-sale_bend--mobile--fold.png)."
+    },
+    {
+      "fact": "/housing-market/bend is internally consistent with the §0 thresholds.",
+      "evidence": "housing-market_bend--desktop--fold.png: 'Homes for sale 581 · A month of sales 175 · SOURCE Oregon Data Share MLS · as of Sep 21, 2026'; 581/175 = 3.32 months → 'seller's market' H1 (≤4 = seller's)."
+    },
+    {
+      "fact": "JSON-LD by route: the search page carries only the sitewide types, while place and listing pages carry rich types.",
+      "evidence": "metrics.json jsonLdTypes: /homes-for-sale/bend [RealEstateAgent/LocalBusiness, WebSite]; /cities/bend adds BreadcrumbList, City, Dataset, FAQPage, ItemList, VideoObject; /listing/220222277 adds BreadcrumbList, RealEstateListing; / adds ItemList, FAQPage."
+    },
+    {
+      "fact": "The three landed demoMatch:true catalog installs judged: sell (score 73), place-type (57) and community (64). The only demoMatch:false record is cities (54).",
+      "evidence": "design_system/ryan-realty/ui_kits/{sell,place-type,community,cities}/parity.json tasteReview. sell: 'cream accent tile growing … dotted-chevron trail … matching the beUI layout-size expand'. place-type: 'carousel-open shows the shadcn object'. community: 'the 30-day count is AnimatedNumber (beui-number) via V3Number'. TASTE.md:540-541: 'Motion that decorates (bounce, entrance on every section, numbers counting up on load) stays banned.'"
+    },
+    {
+      "fact": "Console on every captured route shows the GTM SyntaxError, the google.maps.places.Autocomplete legacy warning, and 'AdSense head tag doesn't support data-nscript attribute'.",
+      "evidence": "metrics-mobile.json consoleErrors for '/': [\"pageerror: SyntaxError: Unexpected token '}'\", \"warning: As of March 1st, 2025, google.maps.places.Autocomplete is not available to new customers…\", \"warning: AdSense head tag doesn't support data-nscript attribute.\"]."
+    },
+    {
+      "fact": "Competitor first viewports: Redfin Bend and tetherow.com/enjoybendlife.com could be captured; bendrealestate.com, cascadehasson.com, bendpremierrealestate.com, homes.com and zillow.com returned bot blocks to headless Chromium, so they were not compared.",
+      "evidence": "shots/competitor--redfin-bend--fold.png ('1,499 homes', photo cards, basemap with price pins); competitor--tetherow-resort--fold.png (golden-hour fairway, one ask); competitor--enjoybendlife-tetherow--fold.png; competitor--zillow-bend--fold.png and competitor--homes-com-tetherow--fold.png are 24 KB block pages."
+    },
+    {
+      "fact": "Environment caveat: the sandbox proxy dropped tunnels throughout, so the Playwright DCL/LCP values here are not production numbers.",
+      "evidence": "curl probe 4/10 requests died at ~11 s (ws_closed_mid_exchange); metrics*.json proxyRetriesDuringPage 8-85 per page; e.g. /contact desktop ttfb 38,068 ms in Playwright vs 0.24 s by curl. Only request counts, HTML bytes, curl TTFB, DOM geometry and screenshots are used as evidence."
+    }
+  ],
+  "findings": [
+    {
+      "id": "UXLIVE-1",
+      "title": "GTM bootstrap ships a syntax error. Since 2026-09-17 no GTM tag loads, and GA4 has lost all source attribution",
+      "severity": "p0",
+      "category": "tracking",
+      "claim": "The inline GTM bootstrap committed in f1e2a90f9 (2026-09-17) reads `w[l].push({'gtm.start':}}` followed by a stray `// hydration-safe` comment. The whole inline script fails to parse, so the GTM-WV6R4NZ5 loader never runs. GoogleAnalytics.tsx deliberately skips its own GA4 config whenever GTM_ID is set, so browsers have no client-side GA4. GA4 still counts sessions through the server-side Measurement Protocol mirror, but from 2026-09-19 every session carries source '(not set)' (on 09-18, 684 of 685). Organic, direct, CRM/email-click, ChatGPT and GBP attribution are all gone. Production still serves the bug on 2026-09-23. Another session has an uncommitted fix in the working tree that is not in HEAD and not deployed.",
+      "evidence": "curl / (Chrome UA, 2026-09-23) → inline script contains \"gtm.start':}}\". `git show HEAD:components/GTMHead.tsx` lines 78-79; `git log -- components/GTMHead.tsx` newest = f1e2a90f9 Cursor Agent 2026-09-17. tracking-probe.json: gtmObj false, no googletagmanager.com/google-analytics.com request, error \"SyntaxError: Unexpected token '}'\" on / and /cities/bend (same pageerror on all 22 Playwright captures). components/GoogleAnalytics.tsx:73 `hasGA4 = !!GA4_ID && !hasGTM`. site_signal ga4_data_api scope=source metric=sessions: 09-16 had 7 source rows ((direct) 41, crm/doc 5, email-click 3, chatgpt 1, gbp 1 …); 09-19, 09-20 and 09-21 each have exactly one row, '(not set)' 699 / 434 / 205. app/api/visitors/track/route.ts:493-508 server-fills page_view when no `_ga` cookie exists. scripts/check-tracking-policy.mjs greps for the consent call and never parses the script. git status: ' M components/GTMHead.tsx', '?? lib/analytics/gtm-bootstrap.ts' (uncommitted, another session).",
+      "why_it_matters": "The loop's measure step reads GA4. Every channel decision since 09-17 (organic vs AI vs CRM vs GBP) is being made against a property where 100% of sessions are unattributed. Any 'traffic moved' diagnosis this week is an artifact, and GTM-managed conversion and remarketing tags have been dead for six days. Three agent tools ran on the repo in that window and no gate caught it, because none parses the script.",
+      "proposed_fix": "Land the fix that is already staged in the working tree, after coordinating with the session that owns it so the work is not lost or duplicated. The script must read `w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});`. Keep the unit test that runs the bootstrap through `new Function()`. Extend check-tracking-policy.mjs to parse every inline tracking body and fail on a syntax error. Add a deploy:verify assertion that `window.google_tag_manager['GTM-WV6R4NZ5']` exists on `/`. Separately, find out why '(not set)' was already 85-97% of sessions before the break (the Measurement Protocol mirror sends no source).",
+      "fix_size": "small",
+      "files": [
+        "components/GTMHead.tsx",
+        "lib/analytics/gtm-bootstrap.ts",
+        "components/GoogleAnalytics.tsx",
+        "scripts/check-tracking-policy.mjs",
+        "app/api/visitors/track/route.ts",
+        "lib/ga4-measurement-protocol.ts"
+      ]
+    },
+    {
+      "id": "UXLIVE-2",
+      "title": "Homepage HTML tells crawlers and AI engines that Bend has 0 houses for sale and Tetherow a $0 median",
+      "severity": "p0",
+      "category": "data",
+      "claim": "The server-rendered homepage carries 54 zero-valued figures. AnimatedNumber renders format(0) on the server and only settles in view on the client, and HomeBrowsePlaces and HomeFeaturedCommunity do not pass the `settleOnMount` opt-in that the component documents as the CLAUDE.md §0 fix. Non-JS readers (GPTBot, ClaudeBot, PerplexityBot, any fetch-and-parse) read 'Bend · houses for sale · 0' and 'Tetherow · Bend · 0 homes for sale · $0 median list price · 0 homes sold, last 30 days'. Even after scrolling, a human still sees 36 zeros on off-screen carousel slides. The problem reproduces on 2026-09-23.",
+      "evidence": "node zeros.js home-recheck.html (fresh curl 2026-09-23) → 54: tabular-nums 9, home-featured-community__figure-value 32, home-browse-places__count 13 (all 13 town counts are '0'). bend.html and tetherow.html → 0 (they use V3Number settle). components/motion/number.tsx:16-23 comment names the '$0 median list price' failure and CLAUDE.md §0. scrolled.json '/': zerosBefore 67 → zerosAfter 36; after scrolling, town counts are Bend 581, La Pine 142, Redmond 196, Sunriver 47, Sisters 91, Terrebonne 42. components/motion/number.tsx has uncommitted edits in the working tree from another session (not live).",
+      "why_it_matters": "The highest-authority URL on the domain publishes false market figures in the HTML that AI answer engines and non-rendering crawlers ingest. That is the §0 failure on the page the mission depends on most. Google does render JS, but below-the-fold settles that wait on IntersectionObserver are not guaranteed to fire during its render.",
+      "proposed_fix": "Pass settleOnMount (or render through V3Number settle) on every AnimatedNumber that carries a sourced figure: HomeBrowsePlaces, HomeFeaturedCommunity and any other home rail. Better, drop the count-up, which TASTE.md:540-541 already bans. Add a gate that fetches `/` (or renders the page server-side in test), strips scripts, and fails on a bare `0` or `$0` inside any *__count or *figure-value element. Coordinate with the session that has number.tsx open.",
+      "fix_size": "small",
+      "files": [
+        "app/_v3/HomeBrowsePlaces.tsx",
+        "app/_v3/HomeFeaturedCommunity.client.tsx",
+        "app/_v3/home-featured-communities.ts",
+        "components/motion/number.tsx",
+        "components/site/v3/V3Number.client.tsx",
+        "app/page.tsx"
+      ]
+    },
+    {
+      "id": "UXLIVE-3",
+      "title": "Place pages and /about ship 0.9-4.7 MB of HTML because whole-region listing arrays and a 1 MB inline SVG are serialized into the page",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "/about is 4.68 MB decoded (868 KB brotli). One RSC push of 3,381,549 bytes carries the V3Atlas 'Where we work' dots, 5,671 listing records (lat, lng, photo, street, beds, baths, sqft, href), plus a 982 KB inline `<svg class=\"v3-atlas__svg\">`. /cities/bend is 3.77 MB (576 KB brotli) with 1,664 listing records in flight data, 41 inline SVGs, 787 <img>, 995 <a> and 321 requests. Awbrey Butte is 2.0 MB, single-family 1.68 MB, Ridge at Eagle Crest 1.07 MB with 348 requests, Tetherow 921 KB. Server time is not the problem (TTFB 0.2-0.5 s). Transfer, parse and hydration on a phone are.",
+      "evidence": "about.html: 47 __next_f pushes totalling 3,526,531 B; '\\\"lat\\\":' ×5,671; largest svg 982,414 B. bend.html '\\\"lat\\\":' ×1,664. app/about/page.tsx:252-256 `<V3Atlas … dots={atlas.dots}>`. metrics.json htmlBytes/reqCount; ttfb.txt medians. Googlebot's 15 MB HTML fetch cap is NOT reached, so this is not a truncation problem for Google. Whether AI crawlers truncate multi-MB documents is UNVERIFIED.",
+      "why_it_matters": "The pages built to 'expose so much information' are the heaviest on the site. On a mid-range phone, 0.5-0.9 MB compressed and 2-3.4 MB of flight data must download and hydrate before the page responds. That hurts field LCP and INP, which feed ranking, and it lengthens every crawler fetch. Most of the payload is a dot cloud, not text an engine can use.",
+      "proposed_fix": "Keep counts, boundary and text in SSR. Load atlas dot arrays after paint from a cached per-geo JSON route or static file. Serve the basemap SVG as an <img> or <use> asset instead of 481 inline paths. On city pages, link the neighborhood list instead of shipping 786 thumbnails. Add a gate on served HTML size per public route class (for example 400 KB decoded), measured on the build output.",
+      "fix_size": "medium",
+      "files": [
+        "app/about/page.tsx",
+        "lib/atlas/build-place-atlas.ts",
+        "components/site/v3/V3Atlas.client.tsx",
+        "app/cities/[slug]/page.tsx",
+        "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+        "app/subdivisions/[slug]/page.tsx",
+        "app/communities/[slug]/page.tsx"
+      ]
+    },
+    {
+      "id": "UXLIVE-4",
+      "title": "The sitewide 'Homes' link points to a noindex URL, and the indexable /homes-for-sale is linked almost nowhere",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "The header 'Homes' link, the mega-menu 'All homes for sale', the mobile dialog and the footer 'Search homes' all go to /homes-for-sale?view=list. That URL serves `robots: noindex, follow` with canonical /homes-for-sale. The clean /homes-for-sale is index,follow, yet across header, footer and 5 sampled page bodies it has exactly one link (in /about). 'Map search' likewise links ?view=map. SITE_PAGES.md:46 names `/homes-for-sale` as the Homes primary.",
+      "evidence": "lib/site-nav.ts:145 `href: '/homes-for-sale?view=list'`; route-status.txt '/homes-for-sale?view=list | 200 | canon=/homes-for-sale | robots=noindex, follow'; app/search/page.tsx:221-226 (noindex on search variants); next.config.ts:468 rewrite /homes-for-sale → /search; grep href=\"/homes-for-sale\" → home 0, bend 0, tetherow 0, listing 0, about 1.",
+      "why_it_matters": "The strongest internal link for the money query ('homes for sale'), repeated on every page, lands on a URL Google is told not to index. Because the target is 'follow', equity still flows, but Google documents noindex combined with a canonical as a conflicting signal. AI crawlers follow the literal href.",
+      "proposed_fix": "Point every chrome Homes/Search link at /homes-for-sale with no query string and let the page default to list view. Keep ?view=map as unlinked client state. Add a chrome-link check: every header, footer or dialog href must return 200, index, and no redirect.",
+      "fix_size": "small",
+      "files": [
+        "lib/site-nav.ts",
+        "lib/site/chrome-mega.ts",
+        "components/site/v3/V3Chrome.tsx",
+        "components/site/v3/V3Footer.tsx",
+        "app/search/page.tsx"
+      ]
+    },
+    {
+      "id": "UXLIVE-5",
+      "title": "AdSense Auto ads auctions run on every page of the brokerage site",
+      "severity": "major",
+      "category": "conversion",
+      "claim": "Every route loads adsbygoogle.js?client=pub-5928669094439003 and runs Auto-ads auctions (abg_config ama_t=adsense, doubleclick pagead/ads). An `ins.adsbygoogle` and an aswift_0 iframe are in the DOM of /, /listing/220222277 and /cities/bend at both viewports. All four probes were unfilled (0x0), so no ad rendered in these captures. The auction is live, though, and a fill would put Google-chosen ads, real-estate advertisers included, on Ryan Realty pages.",
+      "evidence": "ads-probe.json (4 probes: autoAdsAttr true, ins status 'unfilled', box [0,0,0,0]); tracking-probe.json tagReqs (9 ad requests per page); components/GoogleAnalytics.tsx:215; docs/plans/ENTERPRISE_MAP/matrix/INTEGRATIONS.md INT-036 'KEEP · Monetization'; console warning on every route.",
+      "why_it_matters": "A boutique brokerage converts on trust that the page is theirs. Auto ads choose their own placement, including anchors and vignettes, and portals and competing brokerages buy real-estate intent. It is also third-party weight on pages that are supposed to rank. Matt has to decide whether the revenue is worth it.",
+      "proposed_fix": "Matt decides (see questions). If AdSense stays, turn off Auto ads in the AdSense account and keep only explicit slots on the few non-transactional tools pages. Otherwise unset NEXT_PUBLIC_ADSENSE_CLIENT_ID, remove AdUnit, and record the ruling in INT-036.",
+      "fix_size": "small",
+      "files": [
+        "components/GoogleAnalytics.tsx",
+        "components/AdUnit.tsx",
+        "docs/plans/ENTERPRISE_MAP/matrix/INTEGRATIONS.md"
+      ]
+    },
+    {
+      "id": "UXLIVE-6",
+      "title": "Place pages open on a GIS panel instead of the place: legend, checkboxes, grey heat map with '$50k+' pills, plat-phase lists",
+      "severity": "major",
+      "category": "ux",
+      "claim": "At both 1440x900 and 375x812, /cities/bend, /cities/bend/awbrey-butte and /communities/tetherow open the same way: a thin dimmed photo band with the H1, then a legend ('708 for sale · 328 pending · 10 parks · 12 trails'), property-type and Parks/Trails checkboxes, and a grey heat-cell map. Each cluster pill prints the cheapest ask in the cluster plus '+' ('$50k+', '$74k+', '$99k+' in Bend; '$90k+', '$185k+' on the single-family page, whose own nine-in-ten floor is $379,500). On desktop there is also an empty 380x280 quadrant, and the left list shows plat phases ('Awbrey Butte Homesites Phase Eighteen · 1 single-family', 'Highlands Ridge Phase 3 & 4'). No house and no place photograph at display scale appears in the first viewport. The Tetherow course map, the page's best asset, sits about 9,000 px down.",
+      "evidence": "shots/cities_bend--desktop--fold.png, cities_bend--mobile--fold.png (legend + $50k+/$74k+/$99k+ pills fill the 812 px), cities_bend_awbrey-butte--desktop--fold.png, communities_tetherow--desktop--fold.png, cities_bend_types_single-family--desktop--fold.png, communities_tetherow--desktop--full-scrolled.png. lib/atlas/pin-price.ts:41-51 ('A mixed pile prints the low ask with +'). Contrast: competitor--redfin-bend--fold.png (photo cards and a basemap with price pins), competitor--tetherow-resort--fold.png (fairway photo, one ask).",
+      "why_it_matters": "These are the landing pages for the subdivision and neighborhood long-tail queries Matt sees as the moat. A buyer arriving from 'tetherow homes for sale' sees a legend and a plat list, while the resort's own site shows the fairway. A '$50k+' pill over Bend reads as a wrong price. The first viewport decides pogo-sticking.",
+      "proposed_fix": "Write one first-viewport contract per place class into PLACE_PAGES.md and check it in the taste evaluator: photograph at display scale, H1, one sentence a person would say, the two or three numbers that matter (for sale, median, days to offer), and the listing film. Put the map second with its controls inside it, and keep plat names out of the fold. Cluster pills should show the cluster median, or the lowest ask within the page's own type filter.",
+      "fix_size": "large",
+      "files": [
+        "app/cities/[slug]/page.tsx",
+        "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+        "app/communities/[slug]/page.tsx",
+        "app/subdivisions/[slug]/page.tsx",
+        "components/site/v3/V3Atlas.client.tsx",
+        "lib/atlas/pin-price.ts",
+        "docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md",
+        "design_system/public/TASTE.md"
+      ]
+    },
+    {
+      "id": "UXLIVE-7",
+      "title": "At least five different 'Bend homes for sale' counts are live at once, none with a stated definition",
+      "severity": "major",
+      "category": "data",
+      "claim": "Within one session the site states: Bend 581 (menu, homepage town card, /housing-market/bend; active detached SFR), 708 for sale (/cities/bend legend, all types), 757 (/cities/bend/types/single-family, 'every active single-family home with a Bend address'), 495 on this map with a 478 row caption in the same viewport (/homes-for-sale/bend desktop), and 1,181+ homes for sale · 490 on this map (/homes-for-sale/bend mobile). Two of these (581 and 757) are both presented as Bend single-family and differ by 176. The pages never name the definitions behind them (city limits vs postal address, detached vs all residential, with vs without land).",
+      "evidence": "linktree-home.json 'Bend581'; housing-market_bend--desktop--fold.png '581'; cities_bend--mobile--fold.png '708 for sale'; cities_bend_types_single-family--desktop--fold.png '757 homes'; homes-for-sale_bend--desktop--fold.png '495' + crop--hfs-bend-row.png '478'; homes-for-sale_bend--mobile--fold.png '1,181+ … 490'. Which definition each uses was not verified against the database (no listings aggregate run).",
+      "why_it_matters": "§0 requires one truth per figure. A reader who clicks 'Bend 581' and lands on '757 homes' stops trusting both, and AI engines quote whichever number they crawled. It also makes the site look careless next to Redfin's single number.",
+      "proposed_fix": "Name the definition beside each figure. Feed the menu, city page, type page and search header from one DAL read per definition. Add a cross-page reconciliation to check-market-formula (or a new gate): the same geo with the same definition must print the same number. The search header should say what its count includes.",
+      "fix_size": "medium",
+      "files": [
+        "lib/site-nav.ts",
+        "lib/site/chrome-mega.ts",
+        "app/page.tsx",
+        "app/cities/[slug]/page.tsx",
+        "app/cities/[slug]/types/[type]/page.tsx",
+        "app/search/[...slug]/page.tsx",
+        "scripts/check-market-formula.mjs"
+      ]
+    },
+    {
+      "id": "UXLIVE-8",
+      "title": "Menu links a redirect, and three live indexed pages are orphaned outside the SITE_PAGES plan",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "The header (Homes · Places · Market · Sell · About) matches SITE_PAGES.md. But 'Luxury homes in Bend' appears in the Homes mega-menu, the mobile dialog and the footer as /luxury-homes-bend, a 308 to /homes-for-sale/bend?minPrice=1500000. SITE_PAGES wants luxury as a search filter, keeping the redirect only for inbound SEO. /buy, /activity and /tools/appreciation return 200, index,follow, and have zero internal links in header, footer, mobile dialog, 5 sampled page bodies and /site-index. SITE_PAGES folds /activity into /housing-market, routes /tools/appreciation to /invest, and says 'Homes or Sell, not a third chrome' for /buy/[intent]. /buy is a second homepage competing with / and /homes-for-sale. The mobile dialog carries Video tours, Golf, Parks and Monthly briefing, which the desktop mega-menu lacks. SITE_PAGES contradicts itself on /months-of-supply ('fold into' at :48, 'Keep as the definition URL' at :91).",
+      "evidence": "lib/site-nav.ts:181,271,366 ('/luxury-homes-bend'); next.config.ts:434; route-status.txt (/buy, /activity, /tools/appreciation 200 index; /luxury-homes-bend 308); grep of home/bend/tetherow/listing/about HTML and a fresh /site-index curl → 0 links to /buy, /activity, /tools/appreciation; linktree-home.json (desktop mega 5 groups; dialog 57 links); docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md:46,48,91,92,100,102,103.",
+      "why_it_matters": "Internal links are the crawl map. A sitewide link that 308s spends each page's link equity on a redirect hop. Indexed pages with no internal links get treated as low value and dilute the site's quality signals. Two homepage-shaped pages split the head query.",
+      "proposed_fix": "Link the luxury destination directly (the search URL with its filter, or a real indexed luxury filter page). 301 /buy to /homes-for-sale, or give it a unique job and put it in the menu. Fold /activity into /housing-market and /tools/appreciation into /invest as the plan says, or amend the plan. Resolve the /months-of-supply contradiction in SITE_PAGES. Add a gate: every chrome href must return 200 with no redirect, and every indexable public route must be linked from the header, footer, a hub, or /site-index.",
+      "fix_size": "medium",
+      "files": [
+        "lib/site-nav.ts",
+        "lib/site/chrome-mega.ts",
+        "components/site/v3/V3Footer.tsx",
+        "next.config.ts",
+        "app/buy/page.tsx",
+        "app/activity/page.tsx",
+        "app/site-index/page.tsx",
+        "docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md"
+      ]
+    },
+    {
+      "id": "UXLIVE-9",
+      "title": "Search results page: slab slider, map with no basemap, a line through the $/sqft caption, conflicting counts, thin JSON-LD",
+      "severity": "major",
+      "category": "ux",
+      "claim": "At 1440 and 375, /homes-for-sale/bend shows the 'Any price' slider as a full-width navy bar with two white ticks, which reads as a loading bar. The map is a grey Bend outline with cluster bubbles on a blank canvas: no basemap, roads or labels. A hairline runs through the first line of each row's '$608/SQFT · ABOVE MIDDLE HALF OF 478 ON THIS MAP' caption. The header count disagrees with the caption (495 vs 478 on desktop; '1,181+ homes for sale · 490 on this map' on mobile). The page's JSON-LD is only the sitewide RealEstateAgent and WebSite.",
+      "evidence": "shots/homes-for-sale_bend--desktop--fold.png, homes-for-sale_bend--mobile--fold.png (navy slab under 'PRICE Any price'; clusters 382/16/15/12/11/9 over a bare outline), crop--hfs-bend-row.png (2x crop: rule passes through '$608/SQFT · ABOVE MIDDLE'); metrics.json jsonLdTypes for the route; competitor--redfin-bend--fold.png.",
+      "why_it_matters": "This is where the buyer's job gets done. Redfin opens on large photo cards beside a basemap with price pins. Ours makes the buyer decode a slab and a blank outline, and the struck-through caption reads as 'this price is wrong'. Without ItemList or BreadcrumbList, engines get nothing structured from the highest-intent page.",
+      "proposed_fix": "Put basemap tiles (or the house-styled basemap) under the clusters. Use a real two-thumb slider that shows its values. Fix the caption rule's position or remove it. Show one count with its definition. Add ItemList and BreadcrumbList JSON-LD to search pages.",
+      "fix_size": "medium",
+      "files": [
+        "app/search/page.tsx",
+        "app/search/[...slug]/page.tsx",
+        "app/search/_v3",
+        "app/search/SearchRootJsonLd.tsx",
+        "components/site/v3/V3Atlas.client.tsx"
+      ]
+    },
+    {
+      "id": "UXLIVE-10",
+      "title": "Listing page shows no price, address or facts in the first 900 px on desktop, and the Cookies pill covers the Street view control",
+      "severity": "minor",
+      "category": "conversion",
+      "claim": "At 1440x900, /listing/220222277 shows only the photo, breadcrumb, media tabs and filmstrip. The H1, price, beds/baths and the Tour/Save/'Questions about this home' ask start around 1,000 px. The Cookies pill sits on top of the filmstrip's 'Street view' control. The DOM stacks 35 'View photo N of 35' buttons before the price, so a keyboard user hits 35 focus stops first. Below the fold, this is the most complete page on the site: facts, remarks, payment, nearby-sales map, schools, parks, trails, price vs median, tax and sale history, CC&Rs, price-watch form.",
+      "evidence": "shots/listing_220222277--desktop--fold.png, --full-scrolled.png, crop--listing-cookies.png; metrics.json firstViewport for the route (35 buttons 1440x792 at top 66; 'Watch this price' form top 8,592). Matt's 2026-09-10 layout lock restored the full-bleed hero (taste-catalog listing-detail). Not captured at 375 (mobile run did not reach this route).",
+      "why_it_matters": "Matt locked the full-bleed hero, so the missing price is a trade-off, not a defect. Still, a buyer coming from a portal who sees no price in the first screen is a likely bounce. The overlap is a plain bug.",
+      "proposed_fix": "Keep the bleed and overlay price, address and beds/baths on the hero's lower-left, the way it already carries the breadcrumb. Move the cookie pill clear of the filmstrip on listing routes. Make the 35 photo buttons one control with roving focus.",
+      "fix_size": "small",
+      "files": [
+        "components/site/listing-detail/ListingHero.tsx",
+        "components/site/listing-detail/ListingDetailShell.tsx",
+        "components/site/listing-detail/PriceCtaStrip.tsx",
+        "components/CookieConsentBanner.tsx"
+      ]
+    },
+    {
+      "id": "UXLIVE-11",
+      "title": "The catalog-demo finish line rewards installing a widget, not a better page for the buyer",
+      "severity": "major",
+      "category": "process",
+      "claim": "I judged the three landed demoMatch:true nodes on the live control. On sell (score 73), the beUI layout-size expand puts a three-dot tile on the page's one important button, and it reads as a spinner at both viewports. On place-type (57), the shadcn carousel is the only control that shows a house, but it sits about 860 px down under a map. On community (64), beui-number animates the 30-day count, a count-up that TASTE.md:540-541 explicitly bans. The same AnimatedNumber primitive, used without settle, is what ships 54 zeros on the homepage. All three parity verdicts describe catalog objects in open-state screenshots, and none names a buyer task done faster. The one demoMatch:false record (cities, 54) is the most honest review.",
+      "evidence": "design_system/ryan-realty/ui_kits/{sell,place-type,community,cities}/parity.json tasteReview (sell: 'cream accent tile growing … dotted-chevron trail … matching the beUI layout-size expand'; place-type: 'carousel-open shows the shadcn object'; community: 'the 30-day count is AnimatedNumber (beui-number) via V3Number'); TASTE.md:321-351 (rise ≥ 3 AND demoMatch required to complete a SITE node) and :540-541; shots/sell--desktop--fold.png, sell--mobile--fold.png, cities_bend_types_single-family--desktop--fold.png.",
+      "why_it_matters": "This is the mechanism behind 'it builds pages, kind of, but it's not thoughtful'. The finish line is a screenshot of a catalog object, so the loop optimizes for visible widgets and leaves the first viewport a legend. The rubric cannot see 3.7 MB of HTML, a $0 in the served markup, or a missing phone on mobile.",
+      "proposed_fix": "Keep the separate evaluator but change what it scores: (a) the served HTML (bytes, zero or placeholder figures, JSON-LD) on the live URL; (b) the first viewport at 375 and 1440 against a per-class contract (photo, sentence, three numbers, film, tappable phone); (c) one timed buyer task. Keep demoMatch as a recorded note, not a completion gate. This changes a Matt ruling (2026-09-07/09-12), so it needs his yes.",
+      "fix_size": "medium",
+      "files": [
+        "design_system/public/TASTE.md",
+        "design_system/public/taste-evaluator.v1-2026-09-12.md",
+        "scripts/taste-evaluate.ts",
+        "design_system/public/taste-catalog.json",
+        ".claude/skills/site-queue/SKILL.md"
+      ]
+    },
+    {
+      "id": "UXLIVE-12",
+      "title": "Page hygiene tells: boxed breadcrumb band under a full-bleed hero, spinner-looking button icon, keyboard hint on a consumer search, phone number split across lines, legacy Maps autocomplete",
+      "severity": "minor",
+      "category": "ux",
+      "claim": "On /sell at 1440, the navy 'Sell' breadcrumb band spans only x≈144-1296 while the hero below is full-bleed. The 'Value my home' button's icon tile is three dots on an arc that reads as a loading spinner (desktop and mobile). The desktop home search field shows a keyboard-shortcut badge (shortcut=\"f\") and clips its own placeholder. On /contact the display phone breaks mid-number ('541.703.' / '3095'), and a stray 'for a text back' label floats above the Phone field. Address fields use google.maps.places.Autocomplete, which logs Google's deprecation warning on every page that loads it.",
+      "evidence": "shots/sell--desktop--fold.png, sell--mobile--fold.png, contact--desktop--fold.png, home--desktop--fold.png; components/site/v3/V3MorphSearch.tsx:73 `shortcut=\"f\"`; console warning in metrics*.json. Claims that rested on proxy-degraded loads (CSS 'preloaded but not used' warnings, the hero video fetched and aborted) were dropped.",
+      "why_it_matters": "Each one is small. Together they are the 'template' tells a demanding owner sees in the first ten seconds.",
+      "proposed_fix": "Give the breadcrumb band one width rule. Replace the expanding three-dot tile with a plain arrow. Drop the kbd badge on consumer search and widen the field. Keep the phone number on one line (nowrap) and attach the helper text to its field. Migrate to PlaceAutocompleteElement.",
+      "fix_size": "small",
+      "files": [
+        "components/site/v3/V3Breadcrumb.tsx",
+        "components/site/v3/V3Breadcrumb.css",
+        "components/motion/expanding-arrow-button.tsx",
+        "components/site/v3/V3MorphSearch.tsx",
+        "app/_v3/home-hero-search.css",
+        "app/contact/page.tsx"
+      ]
+    },
+    {
+      "id": "UXLIVE-13",
+      "title": "On mobile, no page shows a tappable phone number in the first screen, and the header offers 'Sign in' instead",
+      "severity": "major",
+      "category": "conversion",
+      "claim": "At 375x812 the header shows wordmark, search, 'Sign in' and a hamburger. The only tel: links at the top are inside the hidden menu dialog. On all 9 mobile routes captured, the first visible tappable phone is below the first viewport: /sell at y=1,479, / at 5,135, /buy at 8,576, Tetherow at 15,653, single-family at 17,518, Awbrey Butte at 21,104, Ridge at Eagle Crest at 24,032, /cities/bend at 25,470. /homes-for-sale/bend has none outside the dialog. At 1440 the phone is in the header on every route.",
+      "evidence": "metrics-mobile.json asks.telLinks per route (two 541.703.3095 links at top 0 = dialog; next visible link at the y values above); shots/home--mobile--fold.png, sell--mobile--fold.png, cities_bend--mobile--fold.png, homes-for-sale_bend--mobile--fold.png. Mobile run covered 9 of 13 routes (listing, housing-market, about, contact not captured at 375).",
+      "why_it_matters": "Most real-estate search traffic is mobile, and a call is the highest-intent conversion a brokerage gets. Giving a scarce header slot to 'Sign in', an account feature few visitors use, over the phone costs calls on every landing page.",
+      "proposed_fix": "At narrow widths, swap 'Sign in' for a phone icon link (tel:+15417033095) in the bar and move Sign in into the menu. On listing routes, use the listing agent's number per the listing-agent rule. Add a first-viewport check at 375 to the class contract: a tappable phone or a primary ask must be visible.",
+      "fix_size": "small",
+      "files": [
+        "components/site/v3/V3Chrome.tsx",
+        "components/site/v3/V3Chrome.css",
+        "lib/site-nav.ts"
+      ]
+    },
+    {
+      "id": "UXLIVE-14",
+      "title": "A fixed Jax 'menu' button at mid-screen and the Cookies pill cover content and links on every page",
+      "severity": "minor",
+      "category": "ux",
+      "claim": "V3DogFloater is a second 'Open Ryan Realty menu' button, 68x68, `position: fixed; top: 50%; z-index: 95`, present on all 22 captures. It covers the second listing card's badge on / (375), the 'how we calculate this' source link on /sell (375, which makes the link untappable there), a map cluster on /homes-for-sale/bend (375), and sits over hero photos at 1440. The Cookies pill (bottom-right) covers 'See price cuts' on / and the Street view control on the listing page.",
+      "evidence": "components/site/v3/V3DogFloater.css:9-17; metrics*.json firstViewport {label:'Open Ryan Realty menu', top:372 (375) / 416 (1440), 68x68}; shots/home--mobile--fold.png, sell--mobile--fold.png, homes-for-sale_bend--mobile--fold.png, sell--desktop--fold.png, crop--listing-cookies.png.",
+      "why_it_matters": "A floating control at mid-screen blocks whatever content scrolls under it, including sourcing links that §0 wants readable. On a phone it is a second menu button competing with the real one. Small individually, but it is on every page.",
+      "proposed_fix": "Remove the floater, or dock it in the header or footer. If Matt wants Jax present, place him in content (end cards, footer), not as a fixed overlay. Keep the cookie pill clear of primary controls, for example by collapsing it after first dismiss or docking it bottom-left on listing and search routes.",
+      "fix_size": "small",
+      "files": [
+        "components/site/v3/V3DogFloater.client.tsx",
+        "components/site/v3/V3DogFloater.css",
+        "app/layout.tsx",
+        "components/CookieConsentBanner.tsx"
+      ]
+    }
+  ],
+  "questions_for_matt": [
+    "AdSense Auto ads is live on every page (INT-036 says 'KEEP · Monetization'). Do you want Google-chosen ads, possibly including portals and other brokerages, on ryan-realty.com, or should they come off?",
+    "Which Bend count is the public one: detached single-family inside city limits (581), anything with a Bend postal address (757), or all active types (708)? The site shows all three, plus search counts, with no definition.",
+    "The 2026-09-10 lock put the full-bleed photo above the listing grid, leaving no price in the first 900 px on desktop. OK to overlay price, address and beds/baths on the hero while keeping the bleed?",
+    "On mobile, should the header show the phone (tap to call) in place of 'Sign in'?",
+    "Should Jax stay as a floating mid-screen menu button, or move into the header, footer or end cards?",
+    "Should the site queue's completion gate keep requiring demoMatch:true (your 2026-09-07/09-12 ruling), or should it score the served HTML, the first viewport per class contract, and one buyer task instead?",
+    "/buy is a second homepage with no internal links. Should it 301 to /homes-for-sale, or get a unique job and a menu slot?",
+    "A GTM fix is sitting uncommitted in the working tree from another session. Which session owns landing it, so GA4 attribution comes back without two agents colliding?"
+  ]
+}

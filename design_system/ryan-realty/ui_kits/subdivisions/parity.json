@@ -15,6 +15,11 @@
       "blocking": true
     },
     {
+      "name": "V3PlaceDirectory",
+      "section": "#directory, added 2026-09-23 (visibility audit SEO-4 / EXP-3; Matt 2026-09-23 plat families): every indexable subdivision page and every multi-phase family, town by town, each family's recorded phases nested under its name. Every anchor in the served HTML, so no sitemapped subdivision page is an orphan. Built by app/subdivisions/_v3/subdivision-directory.ts; the directory test pins that every indexable slug is an href.",
+      "blocking": true
+    },
+    {
       "name": "V3Breadcrumb",
       "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
       "blocking": true

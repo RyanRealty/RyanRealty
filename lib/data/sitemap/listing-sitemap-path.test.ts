@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { assembleListingSitemapRows, listingSitemapPath } from './listing-sitemap-path'
 
 describe('listingSitemapPath', () => {
-  it('matches the listing-page canonical (boundary city + neighborhood + MLS tail)', () => {
+  // P14 (2026-09-23): the canonical is MLS City + MLS SubdivisionName +
+  // address-MLS; the polygon neighborhood (Orchard District) is not a segment.
+  it('matches the listing-page canonical (MLS city + MLS subdivision + MLS tail, no polygon segment)', () => {
     expect(
       listingSitemapPath({
         listing_key: 'abc',
@@ -14,7 +16,7 @@ describe('listingSitemapPath', () => {
         boundary_city: 'Bend',
         boundary_neighborhood: 'Orchard District',
       }),
-    ).toBe('/homes-for-sale/bend/orchard-district/1st-addition-bend-pk/438-9th-220208193')
+    ).toBe('/homes-for-sale/bend/1st-addition-bend-pk/438-9th-220208193')
   })
 
   it('drops N/A subdivision and still emits a city + address-MLS path', () => {

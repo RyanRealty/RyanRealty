@@ -99,6 +99,12 @@ export type V3DrawingFigure = {
   caption: string
   /** The section-0 trace for THIS figure: table, filter, window, n, read date. */
   source: string
+  /**
+   * The source's name for the folded line, in the reader's words, when the
+   * caller has it ("live MLS through Oregon Data Share"). Skip it and the name
+   * is derived from the trace's leading clause (V3SourceLine).
+   */
+  sourceName?: string | null
   /** `pair`: the two named counts. */
   bars?: readonly V3DrawingBar[]
   /** `pair`: the verdict, as the figure's caption under the bars. */
@@ -471,7 +477,11 @@ function V3DrawingFigureView({
         ) : (
           <span />
         )}
-        <V3SourceDisclosure className="v3-drawing__source" source={figure.source} />
+        <V3SourceDisclosure
+          className="v3-drawing__source"
+          source={figure.source}
+          sourceName={figure.sourceName}
+        />
       </div>
 
       {/* The hidden reading list: every drawn value in the accessibility tree,

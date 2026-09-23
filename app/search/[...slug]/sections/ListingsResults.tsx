@@ -25,6 +25,7 @@ export function ListingsResults({
   searchPagePath,
   priceChangeKeys,
   degraded = false,
+  emptyNote,
 }: {
   city: string | undefined
   hasFilterOnly: boolean
@@ -39,6 +40,11 @@ export function ListingsResults({
   priceChangeKeys: Set<string>
   /** Timeout or data-layer error — do not paint as an empty market. */
   degraded?: boolean
+  /**
+   * The zero-result line for an unfiltered area page, which names the place
+   * instead of telling the visitor to adjust filters they never set (EXP-2).
+   */
+  emptyNote?: string
 }) {
   const kind = listingsResultsKind({
     city,
@@ -69,7 +75,9 @@ export function ListingsResults({
   }
   if (kind === 'empty') {
     return (
-      <p className="mt-10">No homes match this search right now. Adjust the filters or try a related search below.</p>
+      <p className="mt-10">
+        {emptyNote ?? 'No homes match this search right now. Adjust the filters or try a related search below.'}
+      </p>
     )
   }
   return (

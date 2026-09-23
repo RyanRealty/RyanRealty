@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { BROKERS } from '@/lib/brand/contact'
 import { aboutDisplayName, aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces'
-import { ABOUT_FAQ_ITEMS } from '@/app/about/_v3/about-constants'
+import { ABOUT_BROKERS_QUESTION, aboutBrokersAnswer, aboutFaqItems } from '@/app/about/_v3/about-constants'
 
 describe('about faces fold', () => {
   it('names the photo door so pa11y does not see an empty link', () => {
@@ -65,14 +65,38 @@ describe('about page copy', () => {
 describe('one name per broker on /about', () => {
   const rebecca = BROKERS.rebecca
 
-  it('answers "Who are the brokers?" by sending the reader to /team', () => {
-    const answer = ABOUT_FAQ_ITEMS.find((i) => i.question === 'Who are the brokers?')?.answer
-    expect(answer).toMatch(/\/team/)
-    expect(answer).not.toMatch(/OR #/)
+  /**
+   * Changed 2026-09-23 (Matt: no past lock is permanent when it keeps us from
+   * being seen; AEO-5 / VOICE-5). This used to assert the answer was a door to
+   * /team with no broker named. Answer engines read the FAQPage answer, so it
+   * now names each broker and role, built from the roster the page loads
+   * (display names, so Rebecca stays one name on the page).
+   */
+  it('answers "Who are the brokers?" with each name and role from the roster', () => {
+    const roster = [
+      { name: aboutDisplayName(BROKERS.matt.slug, BROKERS.matt.name), title: BROKERS.matt.title },
+      { name: aboutDisplayName(rebecca.slug, rebecca.name), title: rebecca.title },
+      { name: aboutDisplayName(BROKERS.paul.slug, BROKERS.paul.name), title: BROKERS.paul.title },
+    ]
+    const answer = aboutBrokersAnswer(roster)
+    expect(answer).toContain(`${BROKERS.matt.nameShort}, owner and principal broker`)
+    expect(answer).toContain(`${rebecca.nameShort}, broker`)
+    expect(answer).toContain(`${BROKERS.paul.nameShort}, broker`)
+    expect(answer).toMatch(/^Ryan Realty has three licensed brokers: /)
     expect(answer).not.toContain(rebecca.name)
-    expect(answer).not.toContain(rebecca.nameShort)
-    expect(answer).not.toContain(BROKERS.matt.nameShort)
-    expect(answer).not.toContain(BROKERS.paul.nameShort)
+    expect(answer).not.toMatch(/OR #|\/team/)
+
+    const faq = aboutFaqItems(roster)
+    expect(faq[0]).toEqual({ question: ABOUT_BROKERS_QUESTION, answer })
+    expect(faq.filter((i) => i.question === ABOUT_BROKERS_QUESTION)).toHaveLength(1)
+  })
+
+  it('names no one when the roster did not load', () => {
+    const answer = aboutBrokersAnswer([])
+    expect(answer).toMatch(/team page/)
+    for (const key of ['matt', 'paul', 'rebecca'] as const) {
+      expect(answer).not.toContain(BROKERS[key].nameShort)
+    }
   })
 
   it('resolves the door label and the face to the same name', () => {

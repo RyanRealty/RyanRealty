@@ -11,6 +11,7 @@ export function ListingAskInstrument({ claim }: { claim: ListingAskClaim }) {
       figures={claim.figures}
       foldAfter={3}
       source={v3Text(claim.source)}
+      sourceName={v3Text(claim.sourceName)}
       updated={claim.updated ? v3Text(claim.updated) : undefined}
       action={
         claim.action

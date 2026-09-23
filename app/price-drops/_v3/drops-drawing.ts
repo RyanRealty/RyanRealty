@@ -28,20 +28,28 @@ function drawablePct(drop: PriceDrop): number | null {
   return pct
 }
 
+/** The parts of one drawable cut, or null when it cannot be placed or named. */
+function cutParts(
+  drop: PriceDrop,
+): { pct: number; street: string; place: string | null; amount: string | null } | null {
+  const pct = drawablePct(drop)
+  if (pct == null) return null
+  // A suffix with no name ("Ct") is what publishStreetLine returns when the
+  // MV row has only that; it is not an address, and a mark whose reading is
+  // "Ct, Bend" names nothing. Require the name the reader would recognise.
+  const street = drop.streetName?.trim() ? listingMlsStreetLine(drop) : ''
+  if (!street) return null
+  const cut = drop.lastDropAmount
+  const amount = cut != null && Number.isFinite(cut) && cut > 0 ? formatPriceCompact(cut) : null
+  return { pct, street, place: drop.city?.trim() || null, amount }
+}
+
 export function priceDropPoints(drops: readonly PriceDrop[]): V3DrawingPoint[] {
   const points: V3DrawingPoint[] = []
   for (const drop of drops) {
-    const pct = drawablePct(drop)
-    if (pct == null) continue
-    // A suffix with no name ("Ct") is what publishStreetLine returns when the
-    // MV row has only that; it is not an address, and a mark whose reading is
-    // "Ct, Bend" names nothing. Require the name the reader would recognise.
-    const street = drop.streetName?.trim() ? listingMlsStreetLine(drop) : ''
-    if (!street) continue
-    const cut = drop.lastDropAmount
-    const amount =
-      cut != null && Number.isFinite(cut) && cut > 0 ? formatPriceCompact(cut) : null
-    const place = drop.city?.trim()
+    const parts = cutParts(drop)
+    if (!parts) continue
+    const { pct, street, place, amount } = parts
     points.push({
       id: drop.listingKey,
       at: pct,
@@ -54,6 +62,29 @@ export function priceDropPoints(drops: readonly PriceDrop[]): V3DrawingPoint[] {
   }
   return points.sort((a, b) => a.at - b.at)
 }
+
+/**
+ * The line under the drawing before anyone touches it (VOICE-6, visibility
+ * audit 2026-09-22). It used to be the mark's data readout followed by
+ * "Hover, tap or tab another cut for its home and dollars." Now it names the
+ * middle cut in a sentence and keeps one plain affordance, since this sits in
+ * an aria-live region and is also what a keyboard user hears first.
+ */
+export function priceDropAskHint(drop: PriceDrop | undefined): string | null {
+  const parts = drop ? cutParts(drop) : null
+  if (!parts) return null
+  const { pct, street, place, amount } = parts
+  return (
+    `The middle cut is ${street}${place ? ` in ${place}` : ''}, down ${pct.toFixed(1)}%` +
+    `${amount ? `, a ${amount} cut` : ''}. Tap, hover or tab to any other mark to see that home and its cut.`
+  )
+}
+
+/**
+ * The folded source line's name, in words (VOICE-2). The trace opens with it,
+ * so the name a reader sees is always the first clause of the full record.
+ */
+export const PRICE_DROPS_SOURCE_NAME = 'live MLS through Oregon Data Share'
 
 /**
  * The figure the page draws above the grid. `claim` is the sentence a person
@@ -85,9 +116,12 @@ export function priceDropDistribution(input: {
     sampleKey: 'cuts',
     // What the marks actually give up. The primitive's default names a month,
     // which these marks do not carry.
-    askHint: `${median.label}. Hover, tap or tab another cut for its home and dollars.`,
+    askHint:
+      priceDropAskHint(input.drops.find((drop) => drop.listingKey === median.id)) ??
+      'Tap, hover or tab to any mark to see that home and its cut.',
+    sourceName: PRICE_DROPS_SOURCE_NAME,
     source:
-      `Active single-family listings in the ${input.placeLabel} service area with a documented asking-price cut in the last ${input.windowDays} days ` +
+      `${PRICE_DROPS_SOURCE_NAME}, active single-family listings in the ${input.placeLabel} service area with a documented asking-price cut in the last ${input.windowDays} days ` +
       `(the same pull the list below renders). ${input.total} cuts are in the window and the pull is capped at ${input.cap}, ` +
       `so ${input.total > input.cap ? `${input.total - input.cap} of them are not on this page at all` : 'every one of them is here'}. ` +
       `One mark per cut, placed at the cut as a percent of the previous ask; ` +

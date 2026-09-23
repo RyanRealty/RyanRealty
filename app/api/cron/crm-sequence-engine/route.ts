@@ -22,8 +22,19 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { referencesCmaLink, findUnresolvedMergeTokens, attributeSiteLinks } from '@/lib/crm/merge'
-import { isArchivedPlaceholder, laHour, inSmsQuietHours, nextSendWindow, renderMerge, type Step } from './helpers'
+import { referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
+import { decorateOutboundText } from '@/lib/identity/outbound-links'
+import {
+  decideSuppressedSmsStep,
+  isArchivedPlaceholder,
+  laHour,
+  inSmsQuietHours,
+  looksSuspect,
+  nextSendWindow,
+  renderMerge,
+  suppressedSmsFallbackEmailEnabled,
+  type Step,
+} from './helpers'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
@@ -71,7 +82,9 @@ export async function GET(request: Request) {
   }
 
   let executed = 0, paused = 0, completed = 0, skippedDupEmail = 0, suppressed = 0, errored = 0, queuedSms = 0
-  const skippedSms = 0 // reserved for future direct-SMS skip tracking; currently unused
+  // SMS steps passed over because texting is off for the contact (FUNNEL-3).
+  let skippedSms = 0
+  const fallbackOnSuppressedSms = suppressedSmsFallbackEmailEnabled()
 
   // A2P campaign status — one Twilio call per run. Until VERIFIED, SMS steps
   // queue visibly (timeline row with the rendered text) instead of erroring,
@@ -309,178 +322,224 @@ export async function GET(request: Request) {
         }
         // emailClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
       } else if (step.channel === 'sms') {
+        const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
+        // The step's email stand-in for a text. ONE send site, two callers: A2P
+        // not live (below), and the FUNNEL-3 suppressed-SMS switch when it is on.
+        // 'hold' = no deliverable address; 'retry'/'blocked' = already handled.
+        const sendSmsFallbackEmail = async (): Promise<'sent' | 'hold' | 'retry' | 'blocked'> => {
+          const fbTo = (person.emails as Array<{ value?: string }>)?.[0]?.value
+          if (!step.fallbackEmailBody || !fbTo || (await isSuppressed(person.id, 'email')).suppressed) return 'hold'
+          const fbSubject = renderMerge(step.fallbackEmailSubject ?? 'A quick note from Ryan Realty', person, mergeCtx)
+          const fbBody = renderMerge(step.fallbackEmailBody, person, mergeCtx)
+          // Fail-closed, same rule as every other automated send.
+          const fbUnresolved = findUnresolvedMergeTokens(`${fbSubject} ${fbBody}`)
+          if (fbUnresolved.length) {
+            await finish({ status: 'stopped' })
+            await log(`Sequence "${seq.name}" stopped — unresolved merge tokens in the email fallback (${fbUnresolved.join(', ')})`)
+            errored++
+            return 'blocked'
+          }
+          // Claim the step before the fallback send (at-most-once across a crash).
+          const fbClaim = await claimSend('email-fallback')
+          if (fbClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email claim failed, retrying in 30m'); errored++; return 'retry' }
+          if (fbClaim === 'claimed') {
+            const sent = await sendCrmEmail({
+              fromMailbox: mailbox.email,
+              to: fbTo,
+              subject: fbSubject,
+              bodyText: fbBody,
+              withSignature: true,
+              track: {
+                personId: person.id,
+                emailKey: `seq:${seq.name}:${en.step_index}:sms-fallback`,
+                label: fbSubject,
+                broker: mailbox.slug,
+              },
+            })
+            if (!sent.ok) { await releaseSend(); await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email send failed, retrying in 30m', sent.error); errored++; return 'retry' }
+            await recordSequenceOutbound(sb, {
+              personId: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,
+              payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, via: 'sms-email-fallback', to: fbTo },
+              broker: mailbox.slug, dedupeKey: `gmail:${sent.gmailId}:p${person.id}`,
+            })
+          }
+          // fbClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
+          return 'sent'
+        }
+
         // Gate order matters: suppression first (suppressed people never even
         // show a queued text), then CMA hold + A2P queue (visible immediately,
         // even during quiet hours — nothing is being sent), then quiet hours
         // for the actual send.
         const gate = await isSuppressed(person.id, 'sms')
-        if (gate.suppressed) {
+        // FUNNEL-3 (2026-09-23): a text-only block skips THIS step instead of
+        // ending the enrollment; suspects and wider blocks still halt. The
+        // consent suppression itself is written in lib/crm/enroll.ts, untouched.
+        const onSuppressed = gate.suppressed
+          ? decideSuppressedSmsStep({
+              reasons: gate.reasons,
+              suspect: looksSuspect(person),
+              hasFallbackEmail: Boolean(step.fallbackEmailBody),
+              fallbackEmailEnabled: fallbackOnSuppressedSms,
+            })
+          : null
+        if (onSuppressed === 'halt') {
           await finish({ status: 'suppressed' })
           await log(`Sequence "${seq.name}" halted — suppressed (${gate.reasons.join(', ')})`)
           suppressed++
           continue
         }
-        let toPhone =
-          (person.phones as Array<{ value?: string; isPrimary?: number | boolean }> | null)
-            ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value ?? ''
-        if (!toPhone) {
-          const { data: pt } = await sb.from('crm_contact_points').select('value').eq('person_id', person.id).eq('kind', 'phone').limit(1).maybeSingle()
-          toPhone = pt?.value ?? ''
+        let smsSkipped = false
+        if (onSuppressed === 'fallback-email') {
+          // The email fallback can link the CMA too: never mail a dead link.
+          const fbCustom = (person.custom as Record<string, unknown> | null) ?? {}
+          if (referencesCmaLink(`${step.fallbackEmailSubject ?? ''} ${step.fallbackEmailBody ?? ''}`) && !fbCustom.cmaLink) {
+            await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
+            continue
+          }
+          const outcome = await sendSmsFallbackEmail()
+          if (outcome === 'retry' || outcome === 'blocked') continue
+          smsSkipped = outcome === 'hold'
+        } else if (onSuppressed === 'skip') {
+          smsSkipped = true
         }
-        if (!toPhone) {
-          await finish({ status: 'stopped' })
-          await log(`Sequence "${seq.name}" stopped — no phone on file`)
-          errored++
-          continue
+        if (smsSkipped) {
+          await log(`Sequence "${seq.name}" step ${en.step_index} skipped — no texting for this contact (${gate.reasons.join(', ')}); moving to the next step`)
+          skippedSms++
         }
-        let body = step.body ?? ''
-        if (step.templateKey) {
-          const tpl = await loadTemplate(step.templateKey)
-          if (tpl.body) body = tpl.body
-        }
-        // Broker-edited first touch (set at approval) wins over the template.
-        if (en.step_index === 0 && (en as { first_touch_override?: string | null }).first_touch_override) {
-          body = (en as { first_touch_override?: string | null }).first_touch_override as string
-        }
-        if (!body.trim()) {
-          await finish({ status: 'stopped' })
-          await log(`Sequence "${seq.name}" stopped — empty SMS step`)
-          errored++
-          continue
-        }
-        // Same archived-placeholder guard as the email path (CRM-archived
-        // templates import body = the literal "archived").
-        if (isArchivedPlaceholder(body, body)) {
-          await finish({ status: 'stopped' })
-          await log(`Sequence "${seq.name}" stopped — archived/placeholder SMS template`)
-          errored++
-          continue
-        }
+        if (onSuppressed === null) {
+          let toPhone =
+            (person.phones as Array<{ value?: string; isPrimary?: number | boolean }> | null)
+              ?.sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value ?? ''
+          if (!toPhone) {
+            const { data: pt } = await sb.from('crm_contact_points').select('value').eq('person_id', person.id).eq('kind', 'phone').limit(1).maybeSingle()
+            toPhone = pt?.value ?? ''
+          }
+          if (!toPhone) {
+            await finish({ status: 'stopped' })
+            await log(`Sequence "${seq.name}" stopped — no phone on file`)
+            errored++
+            continue
+          }
+          let body = step.body ?? ''
+          if (step.templateKey) {
+            const tpl = await loadTemplate(step.templateKey)
+            if (tpl.body) body = tpl.body
+          }
+          // Broker-edited first touch (set at approval) wins over the template.
+          if (en.step_index === 0 && (en as { first_touch_override?: string | null }).first_touch_override) {
+            body = (en as { first_touch_override?: string | null }).first_touch_override as string
+          }
+          if (!body.trim()) {
+            await finish({ status: 'stopped' })
+            await log(`Sequence "${seq.name}" stopped — empty SMS step`)
+            errored++
+            continue
+          }
+          // Same archived-placeholder guard as the email path (CRM-archived
+          // templates import body = the literal "archived").
+          if (isArchivedPlaceholder(body, body)) {
+            await finish({ status: 'stopped' })
+            await log(`Sequence "${seq.name}" stopped — archived/placeholder SMS template`)
+            errored++
+            continue
+          }
 
-        // Hold until the CMA the text links to actually exists (the expired
-        // opening text merges %cma_link%; never send a dead or empty link).
-        const custom = (person.custom as Record<string, unknown> | null) ?? {}
-        if (referencesCmaLink(body) && !custom.cmaLink) {
-          await sb.from('crm_timeline').upsert(
-            {
-              person_id: person.id, kind: 'system',
-              title: 'Text holding — waiting for the CMA to be built',
-              body: `Step ${en.step_index} of "${seq.name}" links the property CMA. It sends once the CMA link is on the contact.`,
-              source: 'sequence', dedupe_key: `sms-hold-cma:e${en.id}:s${en.step_index}`,
-            },
-            { onConflict: 'dedupe_key', ignoreDuplicates: true },
-          )
-          await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
-          queuedSms++
-          continue
-        }
-
-        body = renderMerge(body, person, mergeCtx)
-
-        // Fail-closed: never text literal %token% / {{token}} content to a client.
-        const smsUnresolved = findUnresolvedMergeTokens(body)
-        if (smsUnresolved.length) {
-          await finish({ status: 'stopped' })
-          await log(`Sequence "${seq.name}" stopped — unresolved merge tokens (${smsUnresolved.join(', ')})`)
-          errored++
-          continue
-        }
-
-        // ── Channel decision (Matt 2026-06-13): text via Twilio if A2P is live;
-        // else the Mac iMessage relay as backup; else the step's email fallback
-        // ("optional email or text"); else hold + queue visibly until A2P clears.
-        const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
-        if (a2pStatus === 'VERIFIED') {
-          // Quiet hours gate the actual Twilio send only (8 AM to 8 PM PT).
-          if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }
-          // Daily cap (#3): hold once the engine hits its daily budget so a big
-          // backlog can't blast past the low-volume campaign's carrier cap.
-          if ((smsSentToday ?? 0) + smsThisRun >= SMS_DAILY_CAP) {
-            await finish({ next_run_at: nextSendWindow().toISOString() })
-            await log(`Sequence SMS held — daily cap ${SMS_DAILY_CAP} reached; resumes next window`)
+          // Hold until the CMA the text links to actually exists (the expired
+          // opening text merges %cma_link%; never send a dead or empty link).
+          const custom = (person.custom as Record<string, unknown> | null) ?? {}
+          if (referencesCmaLink(body) && !custom.cmaLink) {
+            await sb.from('crm_timeline').upsert(
+              {
+                person_id: person.id, kind: 'system',
+                title: 'Text holding — waiting for the CMA to be built',
+                body: `Step ${en.step_index} of "${seq.name}" links the property CMA. It sends once the CMA link is on the contact.`,
+                source: 'sequence', dedupe_key: `sms-hold-cma:e${en.id}:s${en.step_index}`,
+              },
+              { onConflict: 'dedupe_key', ignoreDuplicates: true },
+            )
+            await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
             queuedSms++
             continue
           }
-          // Broker's OWN Twilio line for a consistent caller ID (composer model); pooled MS is the fallback.
-          const seqFrom = await brokerTwilioNumber(mailbox.slug)
-          // Claim the step before the send (at-most-once across a crash).
-          const smsClaim = await claimSend('sms')
-          if (smsClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Sequence SMS claim failed, retrying in 30m'); errored++; continue }
-          if (smsClaim === 'claimed') {
-            // W1.4: track sequence-SMS link clicks per person (parity with composer/prospecting sends).
-            // Attribute BEFORE instrumenting (sendGovernedSms order, audit
-            // 2026-09-01): the stored short-link target then carries
-            // ?_pid=/?agent= so the click stitches the site session.
-            body = attributeSiteLinks(body, mailbox.slug, person.fub_legacy_id, person.id)
-            body = await instrumentSmsLinks(body, { personId: person.id, broker: mailbox.slug })
-            const sent = seqFrom
-              ? await sendSms({ from: seqFrom, to: toPhone, body })
-              : await sendSmsViaMessagingService({ to: toPhone, body })
-            if (!sent.ok) {
-              await releaseSend()
-              await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
-              await log(`Sequence SMS send failed, retrying in 30m`, sent.error)
-              errored++
+
+          body = renderMerge(body, person, mergeCtx)
+
+          // Fail-closed: never text literal %token% / {{token}} content to a client.
+          const smsUnresolved = findUnresolvedMergeTokens(body)
+          if (smsUnresolved.length) {
+            await finish({ status: 'stopped' })
+            await log(`Sequence "${seq.name}" stopped — unresolved merge tokens (${smsUnresolved.join(', ')})`)
+            errored++
+            continue
+          }
+
+          // ── Channel decision (Matt 2026-06-13): text via Twilio if A2P is live;
+          // else the Mac iMessage relay as backup; else the step's email fallback
+          // ("optional email or text"); else hold + queue visibly until A2P clears.
+          if (a2pStatus === 'VERIFIED') {
+            // Quiet hours gate the actual Twilio send only (8 AM to 8 PM PT).
+            if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }
+            // Daily cap (#3): hold once the engine hits its daily budget so a big
+            // backlog can't blast past the low-volume campaign's carrier cap.
+            if ((smsSentToday ?? 0) + smsThisRun >= SMS_DAILY_CAP) {
+              await finish({ next_run_at: nextSendWindow().toISOString() })
+              await log(`Sequence SMS held — daily cap ${SMS_DAILY_CAP} reached; resumes next window`)
+              queuedSms++
               continue
             }
-            smsThisRun++
-            await recordSequenceOutbound(sb, {
-              personId: person.id, kind: 'sms_out', title: 'Text sent', body,
-              payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
-              broker: mailbox.slug, dedupeKey: `twilio:${sent.sid}:p${person.id}`,
-            })
-          }
-          // smsClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
-        } else if (step.fallbackEmailBody) {
-          // A2P not live. Never route a lead text through a personal iMessage
-          // (incident 2026-06-16). Fall back to email so the touch still lands.
-          const fbTo = (person.emails as Array<{ value?: string }>)?.[0]?.value
-          if (fbTo && !(await isSuppressed(person.id, 'email')).suppressed) {
-            // Claim the step before the fallback send (at-most-once across a crash).
-            const fbClaim = await claimSend('email-fallback')
-            if (fbClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email claim failed, retrying in 30m'); errored++; continue }
-            if (fbClaim === 'claimed') {
-              const fbSubject = renderMerge(step.fallbackEmailSubject ?? 'A quick note from Ryan Realty', person, mergeCtx)
-              const fbBody = renderMerge(step.fallbackEmailBody, person, mergeCtx)
-              const sent = await sendCrmEmail({
-                fromMailbox: mailbox.email,
-                to: fbTo,
-                subject: fbSubject,
-                bodyText: fbBody,
-                withSignature: true,
-                track: {
-                  personId: person.id,
-                  emailKey: `seq:${seq.name}:${en.step_index}:sms-fallback`,
-                  label: fbSubject,
-                  broker: mailbox.slug,
-                },
-              })
-              if (!sent.ok) { await releaseSend(); await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email send failed, retrying in 30m', sent.error); errored++; continue }
+            // Broker's OWN Twilio line for a consistent caller ID (composer model); pooled MS is the fallback.
+            const seqFrom = await brokerTwilioNumber(mailbox.slug)
+            // Claim the step before the send (at-most-once across a crash).
+            const smsClaim = await claimSend('sms')
+            if (smsClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Sequence SMS claim failed, retrying in 30m'); errored++; continue }
+            if (smsClaim === 'claimed') {
+              // W1.4: track sequence-SMS link clicks per person (parity with composer/prospecting sends).
+              // Attribute BEFORE instrumenting (sendGovernedSms order, audit
+              // 2026-09-01): the stored short-link target then carries
+              // ?_pid=/?agent= so the click stitches the site session.
+              body = decorateOutboundText(body, { brokerSlug: mailbox.slug, personId: person.id, channel: 'sequence' })
+              body = await instrumentSmsLinks(body, { personId: person.id, broker: mailbox.slug })
+              const sent = seqFrom
+                ? await sendSms({ from: seqFrom, to: toPhone, body })
+                : await sendSmsViaMessagingService({ to: toPhone, body })
+              if (!sent.ok) {
+                await releaseSend()
+                await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
+                await log(`Sequence SMS send failed, retrying in 30m`, sent.error)
+                errored++
+                continue
+              }
+              smsThisRun++
               await recordSequenceOutbound(sb, {
-                personId: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,
-                payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, via: 'sms-email-fallback', to: fbTo },
-                broker: mailbox.slug, dedupeKey: `gmail:${sent.gmailId}:p${person.id}`,
+                personId: person.id, kind: 'sms_out', title: 'Text sent', body,
+                payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
+                broker: mailbox.slug, dedupeKey: `twilio:${sent.sid}:p${person.id}`,
               })
             }
-            // fbClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
+            // smsClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
+          } else if (step.fallbackEmailBody) {
+            // A2P not live. Never route a lead text through a personal iMessage
+            // (incident 2026-06-16). Fall back to email so the touch still lands.
+            const outcome = await sendSmsFallbackEmail()
+            if (outcome === 'retry' || outcome === 'blocked') continue
+            if (outcome === 'hold') { await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() }); queuedSms++; continue }
           } else {
-            await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() }); queuedSms++; continue
+            // No live text channel and no email fallback — queue visibly.
+            await sb.from('crm_timeline').upsert(
+              {
+                person_id: person.id, kind: 'system',
+                title: 'Text queued — sends when A2P campaign is approved',
+                body,
+                payload: { sequence: seq.name, step: en.step_index, to: toPhone, a2pStatus: a2pStatus ?? 'UNKNOWN', queued: true },
+                source: 'sequence', dedupe_key: `sms-queued-a2p:e${en.id}:s${en.step_index}`,
+              },
+              { onConflict: 'dedupe_key', ignoreDuplicates: true },
+            )
+            await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
+            queuedSms++
+            continue
           }
-        } else {
-          // No live text channel and no email fallback — queue visibly.
-          await sb.from('crm_timeline').upsert(
-            {
-              person_id: person.id, kind: 'system',
-              title: 'Text queued — sends when A2P campaign is approved',
-              body,
-              payload: { sequence: seq.name, step: en.step_index, to: toPhone, a2pStatus: a2pStatus ?? 'UNKNOWN', queued: true },
-              source: 'sequence', dedupe_key: `sms-queued-a2p:e${en.id}:s${en.step_index}`,
-            },
-            { onConflict: 'dedupe_key', ignoreDuplicates: true },
-          )
-          await finish({ next_run_at: new Date(Date.now() + 4 * 3600e3).toISOString() })
-          queuedSms++
-          continue
         }
       } else if (step.channel === 'task') {
         await sb.from('crm_tasks').insert({

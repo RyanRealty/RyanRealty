@@ -2,8 +2,11 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  cityTypeMetaWhere,
+  cityTypeScopeNote,
   placeTypeAtlasEyebrow,
   placeTypeClaim,
+  placeTypeMetadataCopy,
   resolvePlaceTypePage,
 } from '@/lib/place/place-type-page'
 import {
@@ -94,14 +97,19 @@ describe('place-type pages', () => {
   })
 
   it('claims count + useful band without repeating the H1 type (SITE-106)', () => {
-    expect(CITY).toMatch(/homes ask/)
     expect(CITY).toMatch(/formatPriceExact\(lowAsk\)/)
     expect(CITY).toMatch(/formatPriceExact\(bandHigh\)/)
     expect(CITY).toMatch(/city-type:p90/)
     expect(CITY).not.toMatch(/The map marks for-sale homes inside city limits/)
-    expect(CITY).toMatch(/for nine in ten/)
-    // Claim body: count + "homes", not `${count} ${spec.nounMany}`
-    expect(CITY).toMatch(/\$\{activeCount\.toLocaleString\('en-US'\)\} homes ask/)
+    // VOICE-7 (2026-09-22): the count names its population beside the number
+    // ("758 homes for sale with a Bend address"), and the band is a sentence
+    // ("Nine in ten ask between …") rather than "757 homes ask $X to $Y for
+    // nine in ten". Claim body: count + "homes", not `${count} ${spec.nounMany}`.
+    expect(CITY).toMatch(
+      /\$\{activeCount\.toLocaleString\('en-US'\)\} homes for sale with a \$\{cityName\} address\. Nine in ten ask between/,
+    )
+    expect(CITY).toMatch(/scopeNote: cityTypeScopeNote\(cityName\)/)
+    expect(CITY).toMatch(/where: cityTypeMetaWhere\(cityName\)/)
     // SEO increment lives in generateMetadata title + ItemList JSON-LD
     expect(CITY).toMatch(/activeCount\.toLocaleString\('en-US'\)/)
     expect(CITY).toMatch(/placeTypeSchemas/)
@@ -250,6 +258,32 @@ describe('placeTypeClaim', () => {
     expect(
       placeTypeClaim({ spec, placeName: 'Bend', inventory: { ...base, low: 5_000_000 } }),
     ).toBeNull()
+  })
+})
+
+describe('city type page population words (VOICE-7)', () => {
+  const spec = resolvePlaceTypePage('single-family')!
+
+  it('names the MLS-address population and the under-contract listings it includes', () => {
+    const claim = placeTypeClaim({
+      spec,
+      placeName: 'Bend',
+      inventory: { count: 758, low: 379_500, high: 2_125_000, stamp: null, scopeNote: cityTypeScopeNote('Bend') },
+    })
+    expect(claim?.source).toBe(
+      'Every active single-family home with a Bend address, including any already under contract that are still listed, from the regional MLS through Oregon Data Share',
+    )
+  })
+
+  it('says where the counted homes are, and that under-contract ones count, in the meta description', () => {
+    const copy = placeTypeMetadataCopy({ spec, placeName: 'Bend', count: 758, where: cityTypeMetaWhere('Bend') })
+    expect(copy.description).toBe(
+      '758 single-family homes for sale with a Bend, Oregon address, including any under contract. Live list prices from the regional MLS.',
+    )
+    // without `where`, the community pages read exactly as before
+    expect(placeTypeMetadataCopy({ spec, placeName: 'Tetherow', count: 16 }).description).toBe(
+      '16 single-family homes for sale in Tetherow, Oregon. Live list prices from the regional MLS.',
+    )
   })
 })
 

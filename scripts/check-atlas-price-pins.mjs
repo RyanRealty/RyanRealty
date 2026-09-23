@@ -41,7 +41,14 @@ const js = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText
 const mod = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
-const { formatAtlasPinPrice, formatAtlasClusterPin, atlasClusterAskSpan, atlasPinShouldPaint } = mod
+const {
+  formatAtlasPinPrice,
+  formatAtlasClusterMedian,
+  atlasClusterMedianAsk,
+  atlasClusterAskSpan,
+  atlasPinShouldPaint,
+  ATLAS_CLUSTER_PIN_LABEL,
+} = mod
 
 function expect(label, actual, wanted) {
   if (!Object.is(actual, wanted)) {
@@ -55,12 +62,17 @@ expect('$650k', formatAtlasPinPrice(650_000), '$650k')
 expect('$1.2M', formatAtlasPinPrice(1_200_000), '$1.2M')
 expect('$1.5M', formatAtlasPinPrice(1_500_000), '$1.5M')
 expect('$1M', formatAtlasPinPrice(1_000_000), '$1M')
-expect('cluster same ask', formatAtlasClusterPin(735_000, 735_400), '$735k')
-expect('cluster span', formatAtlasClusterPin(735_000, 1_500_000), '$735k+')
+// UXLIVE-6 (visibility audit 2026-09-22): a cluster pill prints the MEDIAN ask
+// of its members, labelled, never the lowest ask with "+". The old face read
+// "$50k+" over Bend because one land lot sat in each pile.
+expect('cluster same ask', formatAtlasClusterMedian([735_000, 735_400]), '$735k')
+expect('cluster median, not low+', formatAtlasClusterMedian([50_000, 689_000, 735_000, 749_900, 1_200_000]), '$735k')
+expect('even pile median', atlasClusterMedianAsk([699_000, 700_000]), 699_500)
 expect('token $1.32 is not $0k', formatAtlasPinPrice(1.32), '')
 expect('token $3k is not a pin', formatAtlasPinPrice(3_000), '')
-expect('never $0k+', formatAtlasClusterPin(1.32, 5_285_000), '')
-expect('real NC span', formatAtlasClusterPin(185_000, 5_285_000), '$185k+')
+expect('median skips tokens', atlasClusterMedianAsk([1.32, 3_000, 185_000]), 185_000)
+expect('no real ask, no face', formatAtlasClusterMedian([1.32, 3_000]), '')
+expect('cluster label is plain', ATLAS_CLUSTER_PIN_LABEL, 'median')
 expect(
   'cluster span skips tokens',
   JSON.stringify(atlasClusterAskSpan([1.32, 3_000, 185_000, 5_285_000])),
@@ -94,7 +106,8 @@ expect('spaced pin stays', piled[1]?.count, 1)
 const atlas = readFileSync(ATLAS, 'utf8')
 for (const needle of [
   'formatAtlasPinPrice',
-  'formatAtlasClusterPin',
+  'atlasClusterMedianAsk',
+  'ATLAS_CLUSTER_PIN_LABEL',
   'atlasClusterAskSpan',
   'atlasPinShouldPaint',
   'clusterAtlasPins',
@@ -111,6 +124,9 @@ for (const needle of [
 }
 if (/>\s*\{mark\.count\}\s*</.test(atlas)) {
   failures.push(`${ATLAS}: cluster pills must print $795k/$1.2M, not a bare count`)
+}
+if (/formatAtlasClusterPin|`\$\{lo\}\+`/.test(atlas)) {
+  failures.push(`${ATLAS}: cluster pills print the labelled median (UXLIVE-6), never the low ask with +`)
 }
 
 const builder = readFileSync(BUILDER, 'utf8')

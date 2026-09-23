@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  coverFromListingRow,
   PLACE_TYPE_PAGE_SLUGS,
   PLACE_TYPE_SEARCH_PRESET,
   placeTypeCoverPhotos,
@@ -186,5 +187,31 @@ describe('placeTypeCoverPhotos', () => {
     )
     expect(covers.sfr?.listingHref).toMatch(/220123456/)
     expect(covers.sfr?.listingHref).not.toMatch(/\/types\//)
+  })
+
+  it('671 Greenwood Avenue: a commercial lease never becomes the single-family cover', () => {
+    // Verified live 2026-09-23. placeTypeKey has no key for 'G' and falls to
+    // 'sfr', so an unfiltered mixed-type pull would have bucketed a leased
+    // building's photo as the "Single-family" card's cover whenever the
+    // type-specific SFR cover fetch missed.
+    const covers = placeTypeCoverPhotos([
+      {
+        photoUrl: 'https://cdn.example/lease.jpg',
+        propertyType: 'G',
+        propertySubType: null,
+        listPrice: 1.3,
+      },
+    ])
+    expect(covers.sfr).toBeUndefined()
+  })
+
+  it('coverFromListingRow withholds a lease rate as an asking price', () => {
+    const cover = coverFromListingRow({
+      photoUrl: 'https://cdn.example/lease.jpg',
+      propertyType: 'G',
+      listPrice: 1.3,
+    })
+    expect(cover?.photoUrl).toBeTruthy()
+    expect(cover?.price).toBeNull()
   })
 })
