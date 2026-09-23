@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { childListingKeys, childStockDetails, subdivisionRailEntries, summarizeChildStock } from './place-child-stock'
+import { childListingKeys, childStockDetails, railDoorHref, subdivisionRailEntries, summarizeChildStock } from './place-child-stock'
 import { firstListedPhoto } from './rail-photo'
 
 describe('summarizeChildStock', () => {
@@ -78,6 +78,9 @@ describe('subdivisionRailEntries', () => {
       ],
     })
     expect(rail.map((row) => row.id)).toEqual(['north-forty', 'quiet-lot'])
+    // EXP-3: every rail row carries its page, so the rail can render a real
+    // anchor beside the map-select button.
+    expect(rail.map((row) => row.href)).toEqual(['/subdivisions/north-forty', '/subdivisions/quiet-lot'])
     expect(rail[0]?.detail).toBe('2 single-family')
     expect(rail[1]?.detail).toBeUndefined()
     expect(childListingKeys([
@@ -112,5 +115,14 @@ describe('firstListedPhoto', () => {
     expect(firstListedPhoto([{ listingKey: 'c', photoUrl: 'https://cdn.example/other.jpg' }], ['a'])).toBeNull()
     expect(firstListedPhoto([{ listingKey: 'a', photoUrl: 'https://cdn.example/north.jpg' }], [])).toBeNull()
     expect(firstListedPhoto([{ listingKey: 'a', photoUrl: 'https://cdn.example/north.jpg' }], undefined)).toBeNull()
+  })
+})
+
+describe('railDoorHref (EXP-3 doors never land on a redirect)', () => {
+  it('opens a redirected plat slug at its destination and drops a door back to the page itself', () => {
+    expect(railDoorHref('/subdivisions/park-place')).toBe('/subdivisions/park-place')
+    expect(railDoorHref('/subdivisions/eagle-crest')).toBe('/communities/eagle-crest')
+    expect(railDoorHref('/subdivisions/eagle-crest', '/communities/eagle-crest')).toBeUndefined()
+    expect(railDoorHref('not-a-path')).toBeUndefined()
   })
 })

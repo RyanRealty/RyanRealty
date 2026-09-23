@@ -445,6 +445,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // lib/data/subdivisions/subdivision-index.test.ts). Distinct from the
     // browse-pair floor above: detail pages carry the sold-history section, so
     // they earn indexation with real sold depth, not a listing trickle.
+    // Since 2026-09-23 (Matt: multi-phase subdivisions grouped under one main
+    // page; SEO-7) the same set also carries each plat FAMILY's main page
+    // (/subdivisions/ridge-at-eagle-crest) and leaves out a plat recorded under
+    // a city, neighborhood or community name (/subdivisions/bend, /sisters,
+    // /la-pine). Nothing to change here: the set decides, this leg submits it.
     const indexableSubdivisions = await leg('indexable-subdivisions', getIndexableSubdivisions(), [])
     for (const url of subdivisionSitemapUrls(indexableSubdivisions, baseUrl)) {
       dynamicPages.push({

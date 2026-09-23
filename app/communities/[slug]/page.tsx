@@ -71,6 +71,12 @@ import {
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import {
+  familiesNestedInCommunity,
+  platFamilyDisplayName,
+  platMemberDisplayName,
+} from '@/lib/market/plat-family'
+import { getPlatFamilies } from '@/lib/data/subdivisions/getPlatFamilies'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
@@ -123,7 +129,7 @@ import { amenityItemListItems, buildCommunityAmenityBoard } from './_v3/communit
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
-import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
+import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -716,10 +722,35 @@ async function renderCommunityDetail({ params }: Props) {
       return displayName ? [{ name: displayName, href: `/subdivisions/${slugify(alias)}` }] : []
     }),
   ])
+  /* THE COMMUNITY IS ITS FAMILY'S MAIN PAGE (Matt 2026-09-23: phases "go
+     into the same main neighborhood page, and then they can jump into the
+     different phases after that"). Every recorded phase of a plat family
+     this community owns (lib/market/plat-family.ts: Tetherow Phase 1-7,
+     Broken Top's 27, Crooked River Ranch No. 4 and No. 5) is a row in the
+     rail, and the rail row is a real anchor. Containment already draws most of
+     them; a phase it does not (a community with no polygon) joins here, and
+     subdivisionRailEntries drops the duplicates by slug. */
+  const platFamilies = await withTimeoutFallback(getPlatFamilies(), [], 3000, 'comm:families')
+  const ownFamilies = platFamilies.filter((family) => family.communitySlug === slug)
+  const familyPhaseDoors = ownFamilies.flatMap((family) =>
+    family.members
+      .filter((member) => member.slug !== slug)
+      .map((member) => ({ name: platMemberDisplayName(member.label), href: `/subdivisions/${member.slug}` })),
+  )
+  /* A FAMILY INSIDE THE COMMUNITY (Ridge At Eagle Crest in Eagle Crest, 60
+     recorded phases; Painted Ridge At Broken Top in Broken Top) keeps its own
+     main page, and the community links DOWN to it, so the walk is community,
+     then family, then phase, each a real anchor. */
+  const containedPlatSlugs = new Set(platRegions.map((region) => slugFromPlaceHref(region.href)))
+  const nestedFamilyDoors = familiesNestedInCommunity(platFamilies, slug, containedPlatSlugs).map((family) => ({
+    name: platFamilyDisplayName(family),
+    href: family.mainHref,
+  }))
   const railEntries = subdivisionRailEntries({
     regions: platRegions.map((region) => ({ name: region.name, href: region.href })),
-    extras: platRegions.length > 0 ? [] : namedChildren,
+    extras: [...(platRegions.length > 0 ? [] : namedChildren), ...nestedFamilyDoors, ...familyPhaseDoors],
     rows: childStockRows,
+    selfHref: `/communities/${slug}`,
   })
   const homesByChild = childListingKeys(childStockRows)
   const placeHomes = stockSections.flatMap((section) => section.rows)

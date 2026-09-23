@@ -122,7 +122,8 @@ import {
   TOO_FEW_SALES_LINE,
 } from '@/app/cities/[slug]/_v3/place-graphics'
 import { communityImage } from '@/lib/geo-images'
-import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
+import { getPlatPublicInventory, type PlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
+import { getPlatFamilyInventory } from '@/lib/data/subdivisions/getPlatFamilyInventory'
 import {
   EMPTY_SUBDIVISION_COUNTS,
   getSubdivisionCounts,
@@ -140,11 +141,28 @@ import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
 import { getSubdivisionRing } from '@/lib/data/geo/subdivision-ring'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getPlatClosedCount } from '@/lib/data/subdivisions/getPlatClosedCounts'
+import { getPlatFamilies } from '@/lib/data/subdivisions/getPlatFamilies'
+import {
+  getPlatFamilyClosedSales,
+  getPlatFamilyFootprint,
+} from '@/lib/data/subdivisions/getPlatFamilyFootprint'
+import { platFamilyDisplayName, platFamilyRole } from '@/lib/market/plat-family'
+import {
+  familyClosedTrace,
+  familyCrumb,
+  familyMemberLine,
+  familyOutlineNote,
+  familyPhaseEntries,
+  familyPhaseTrace,
+  platAtlasClaim,
+  platDocumentTitle,
+  platPhaseDescription,
+  withFamilyCrumb,
+} from './_v3/plat-family-view'
 import { getPlatUnsoldOutcome } from '@/lib/data/subdivisions/getPlatUnsoldOutcomes'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { publishPlatUnsold } from '@/lib/site/publish-plat-unsold'
 import { getPlatBoundaryCity } from '@/lib/data/subdivisions/getPlatBoundaryCity'
-import { platPageTitle } from './_v3/plat-title'
 import { platCaption } from './_v3/plat-caption'
 import './_v3/plat-opening.css'
 import './_v3/plat-fold.css'
@@ -350,18 +368,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // plat with no listing on record — courtyard-garages-at-broken-top, a garage
   // tract with zero sales inside it — has no listing-derived city at all, but
   // its polygon sits inside a neighborhood polygon inside the Bend city polygon.
-  const indexableEntry = (await getIndexableSubdivisions()).find((s) => s.slug === slug)
+  //
+  // THE FAMILY (Matt 2026-09-23). The indexable set now carries each plat
+  // family's main page (/subdivisions/ridge-at-eagle-crest, 60 recorded
+  // phases, served noindex until this change while every phase was submitted)
+  // and drops a plat recorded under a city, neighborhood or community name
+  // (/subdivisions/bend, /sisters, /la-pine), so `indexableEntry` is still the
+  // whole robots rule. A PHASE keeps its own index slot on the SITE-24 rule and
+  // titles itself as part of its family, so the family page is the one that
+  // bids for the family's name.
+  const [indexableSet, families] = await Promise.all([getIndexableSubdivisions(), getPlatFamilies()])
+  const indexableEntry = indexableSet.find((s) => s.slug === slug)
+  const role = platFamilyRole(families, slug)
   const cityName =
     registryMatch?.city ??
     titleCaseSlug(indexableEntry?.citySlug) ??
+    titleCaseSlug(role?.family.citySlug) ??
     derivePlatCity((await loadSubdivisionCore(slug)).mapTiles)?.city ??
     (await getPlatBoundaryCity(slug))?.city ??
     null
+  const headName = role?.role === 'head' ? platFamilyDisplayName(role.family) : name
   return pageMetadata({
-    title: platPageTitle(name, cityName),
-    description: cityName
-      ? `Active homes in ${name}, a subdivision in ${cityName}. Boundary map and live MLS listings.`
-      : `Active homes in ${name}, a Central Oregon subdivision. Boundary map and live MLS listings.`,
+    title: platDocumentTitle({ displayName: headName, cityName, role }),
+    description:
+      platPhaseDescription(role, cityName) ??
+      (role?.role === 'head'
+        ? `Homes for sale across the ${role.family.members.length} recorded phases of ${headName}${cityName ? ` in ${cityName}` : ''}, with a link to each phase, the boundary map and what sold.`
+        : cityName
+          ? `Active homes in ${name}, a subdivision in ${cityName}. Boundary map and live MLS listings.`
+          : `Active homes in ${name}, a Central Oregon subdivision. Boundary map and live MLS listings.`),
     path: `/subdivisions/${slug}`,
     noindex: indexableEntry == null,
   })
@@ -373,7 +408,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // — the same architecture as resolveSubdivisionRoute before the v3 rebuild.
 // ---------------------------------------------------------------------------
 const loadSubdivisionCore = cache(async (slug: string) => {
-  const [boundaryRead, inventoryRead, mtCounts] = await Promise.all([
+  const [boundaryRead, inventoryRead, mtCounts, families] = await Promise.all([
     withTimeoutFallbackResult(
       getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
       { polygon: null, pins: [] },
@@ -382,11 +417,55 @@ const loadSubdivisionCore = cache(async (slug: string) => {
     ),
     withTimeoutFallbackResult(getPlatPublicInventory(slug), null, 4500, 'sub:inventory'),
     withTimeoutFallback(getSubdivisionCounts(slug), EMPTY_SUBDIVISION_COUNTS, 3500, 'sub:mtCounts'),
+    withTimeoutFallback(getPlatFamilies(), [], 4500, 'sub:families'),
   ])
   const boundary = boundaryRead.value
-  const inventory = inventoryRead.ok ? inventoryRead.value : null
+  const registryInventory = inventoryRead.ok ? inventoryRead.value : null
   const hasBoundary = Boolean(boundary.polygon)
   const registryMatch = resolveRegistryAlias(slug)
+  // Where this URL sits in its plat family (lib/market/plat-family.ts). A
+  // family HEAD draws the union of every recorded phase, so its map and its
+  // homes are the whole family's, and it always renders: the phases are on
+  // record even when no single plat carries the bare name.
+  const familyRole = platFamilyRole(families, slug)
+  const headFamily = familyRole?.role === 'head' ? familyRole.family : null
+
+  // THE FAMILY'S COUNTED SET. A family's main page counts the single-family
+  // homes inside ANY of its recorded phases, each once, and that set outranks
+  // a registry plat's name-filed set: Ridge at Eagle Crest had 14 active
+  // single-family listings FILED under the name and 47 standing inside its 60
+  // recorded phases (2026-09-23), because agents file many of them as "Eagle
+  // Crest". The map and the Field already drew the 47; the headline counted
+  // 14 under the same words (VOICE-8). The /subdivisions index row reads the
+  // same family set (app/subdivisions/page.tsx), so the two pages agree. If the
+  // family read does not answer, the registry set is the fallback, with its own
+  // trace.
+  const familyInventoryRead = headFamily
+    ? await withTimeoutFallbackResult(
+        getPlatFamilyInventory(headFamily.members.map((m) => m.slug)),
+        null,
+        4500,
+        'sub:familyInventory',
+      )
+    : null
+  const familyInventory = familyInventoryRead?.ok ? familyInventoryRead.value : null
+  const inventory: PlatPublicInventory | null =
+    familyInventory && headFamily
+      ? {
+          key: `${headFamily.citySlug}:${slug}`,
+          label: headFamily.name,
+          slug,
+          city: headFamily.citySlug,
+          citySlug: headFamily.citySlug,
+          activeCount: familyInventory.activeCount,
+          medianListPrice: familyInventory.medianListPrice,
+          listingKeys: familyInventory.listingKeys,
+          href: `/subdivisions/${slug}`,
+          readAt: familyInventory.readAt,
+        }
+      : registryInventory
+  const inventoryScope: 'registry' | 'family' | null =
+    familyInventory && headFamily ? 'family' : registryInventory ? 'registry' : null
 
   // THE COUNTED SET. Same payload as the /subdivisions index tiles.
   const inventoryOk = inventory != null
@@ -453,17 +532,27 @@ const loadSubdivisionCore = cache(async (slug: string) => {
 
      Read ONLY when the exact slug missed, and after the tiles, because the
      third resolution path is the `boundary_subdivision` the tiles carry. */
-  const footprintRead = hasBoundary
-    ? null
-    : await withTimeoutFallbackResult(
-        getSubdivisionFootprint({
-          slug,
-          memberNames: mapTiles.map((t) => t.boundarySubdivision),
+  const footprintRead = headFamily
+    ? await withTimeoutFallbackResult(
+        getPlatFamilyFootprint({
+          familySlug: slug,
+          memberSlugs: headFamily.members.map((m) => m.slug),
         }),
         null,
         4500,
-        'sub:footprint',
+        'sub:familyFootprint',
       )
+    : hasBoundary
+      ? null
+      : await withTimeoutFallbackResult(
+          getSubdivisionFootprint({
+            slug,
+            memberNames: mapTiles.map((t) => t.boundarySubdivision),
+          }),
+          null,
+          4500,
+          'sub:footprint',
+        )
   const footprint: PlatFootprint | null = footprintRead?.ok ? footprintRead.value : null
 
   // REFUSAL, not notFound(): under the streamed shell a throw ships a hollow
@@ -474,6 +563,7 @@ const loadSubdivisionCore = cache(async (slug: string) => {
   // place whether or not one of its homes happens to be for sale today.
   const hasListings = mapTiles.length > 0
   const refused =
+    !headFamily &&
     !hasBoundary &&
     !registryMatch &&
     !hasListings &&
@@ -483,7 +573,7 @@ const loadSubdivisionCore = cache(async (slug: string) => {
     (footprintRead == null || footprintRead.ok) &&
     (nameTilesRead == null || nameTilesRead.ok)
 
-  return { boundaryRead, inventoryRead, mtCounts, boundary, footprint, inventory, hasBoundary, registryMatch, inventoryOk, countedKeys, mapTiles, refused }
+  return { boundaryRead, inventoryRead, mtCounts, boundary, footprint, inventory, hasBoundary, registryMatch, inventoryOk, countedKeys, mapTiles, refused, familyRole, headFamily, inventoryScope }
 })
 
 // ---------------------------------------------------------------------------
@@ -497,12 +587,27 @@ export default async function SubdivisionPage(props: Props) {
 async function renderSubdivisionPage({ params }: Props) {
   const { slug } = await params
 
-  const { inventoryRead, mtCounts, boundary, footprint, inventory, hasBoundary, registryMatch, mapTiles, refused } =
-    await loadSubdivisionCore(slug)
+  const {
+    mtCounts,
+    boundary,
+    footprint,
+    inventory,
+    hasBoundary,
+    registryMatch,
+    mapTiles,
+    refused,
+    familyRole,
+    headFamily,
+    inventoryScope,
+  } = await loadSubdivisionCore(slug)
   if (refused) return <SubdivisionUnavailable />
 
   // ── NAME AND CITY ────────────────────────────────────────────────────────
-  const displayName = publishSubdivisionPageName(slug, registryMatch)
+  // A family's main page is named by the family's RECORDED name (county,
+  // registry or MLS; lib/market/plat-family.ts never invents one).
+  const displayName = headFamily
+    ? platFamilyDisplayName(headFamily)
+    : publishSubdivisionPageName(slug, registryMatch)
   // Parent city for plain GIS plats (W2.4 parent cross-link): the MODAL city
   // among the plat's own in-boundary listings, already fetched — derived from
   // data, never guessed (§0). Claimed only when a strict majority agrees.
@@ -523,18 +628,46 @@ async function renderSubdivisionPage({ params }: Props) {
     2500,
     'sub:boundaryCity',
   )
-  const cityName = registryMatch?.city ?? derivedPlatCity?.city ?? boundaryCity?.city ?? 'Central Oregon'
-  const citySlug = registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? boundaryCity?.citySlug ?? null
+  // Fifth source, last: the city the plat's family sits in (county boundary
+  // tree first, filed-sales city second; getPlatFamilies).
+  const familyCitySlug = familyRole?.family.citySlug || null
+  const cityName =
+    registryMatch?.city ??
+    derivedPlatCity?.city ??
+    boundaryCity?.city ??
+    titleCaseSlug(familyCitySlug) ??
+    'Central Oregon'
+  const citySlug =
+    registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? boundaryCity?.citySlug ?? familyCitySlug ?? null
   const resortLabel = registryMatch?.resortLabel ?? null
   const resortSlug = registryMatch?.resortSlug ?? null
   const placeCity = cityName === 'Central Oregon' ? null : cityName
+
+  /* THE FAMILY, UP AND DOWN (Matt 2026-09-23). A phase names its family in the
+     breadcrumb and in a visible link under its H1. When the family's own page
+     is a /subdivisions/ page inside a registry resort (Ridge at Eagle Crest in
+     Eagle Crest), the trail also names the resort, so a phase reads
+     Redmond / Eagle Crest / Ridge at Eagle Crest / Ridge at Eagle Crest 36.
+     The resort is used for the TRAIL only: photos, figures and doors keep the
+     plat's own registry answer. */
+  const familyUp = familyCrumb(familyRole)
+  const familyResort =
+    !resortSlug && familyRole?.role === 'member' && familyRole.family.mainKind === 'subdivision'
+      ? resolveRegistryAlias(familyRole.family.slug)
+      : null
+  const trailResortSlug = resortSlug ?? familyResort?.resortSlug ?? null
+  const trailResortLabel = resortLabel ?? familyResort?.resortLabel ?? null
+  const familyLine = familyMemberLine(familyRole)
 
   // §0 UNKNOWN IS NOT ZERO. The inventory read is the only source for this
   // count; a read that did not answer leaves null, and null suppresses the claim
   // rather than publishing a zero under a live-MLS trace.
   const activeCount: number | null = inventory?.activeCount ?? null
 
-  const platScope: PlatScope = hasBoundary
+  const platScope: PlatScope =
+    inventoryScope === 'family' && headFamily
+      ? { kind: 'family', displayName, phases: headFamily.members.length }
+      : hasBoundary
     ? { kind: 'boundary', displayName }
     : registryMatch
       ? // The PUBLISHED name, not the raw MLS alias. The alias capitalises every
@@ -552,8 +685,18 @@ async function renderSubdivisionPage({ params }: Props) {
      page never joins geometry itself, and never hulls pins into a fake plat.
      What the shape IS travels with it as a sentence (footprintProvenance) and
      is printed under the map, because a drawn boundary is a claim (§0). */
-  const platPolygon = boundary.polygon ?? footprint?.geometry ?? null
-  const footprintNote = footprint ? footprintProvenance(footprint, displayName) : null
+  // A family head draws its phases' union FIRST, even when the county also
+  // recorded the bare name as one plat (Tetherow Crossing): the page is the
+  // family's, so its outline is the family's.
+  const platPolygon = headFamily
+    ? (footprint?.geometry ?? boundary.polygon ?? null)
+    : (boundary.polygon ?? footprint?.geometry ?? null)
+  const footprintNote =
+    headFamily && footprint
+      ? familyOutlineNote(displayName, footprint.partSlugs.length)
+      : footprint
+        ? footprintProvenance(footprint, displayName)
+        : null
   // Split listings are the counted plat inventory, not a viewport fetch.
   // Seed a ring only when GIS actually stored a usable polygon. Ridge has
   // none historically — pin bbox is the camera, never a convex hull.
@@ -729,7 +872,36 @@ async function renderSubdivisionPage({ params }: Props) {
       // read the indexability gate makes, off the same 6h cache, so the figure
       // the page prints and the verdict the robots tag publishes can never
       // disagree. null on a miss — the figure is then absent, never a zero.
-      withTimeoutFallback(getPlatClosedCount(slug), null, 4500, 'sub:platClosed'),
+      //
+      // ON A FAMILY'S MAIN PAGE the same question is asked of the whole family:
+      // every closed sale inside the union of its recorded phases, each sale
+      // counted ONCE (getPlatFamilyClosedSales). The per-phase MV rows cannot be
+      // summed, because a replat's sales also sit inside the phase it replats.
+      headFamily
+        ? withTimeoutFallback(
+            getPlatFamilyClosedSales(
+              slug,
+              headFamily.members.map((m) => m.slug),
+            ).then((sales) =>
+              sales
+                ? {
+                    slug,
+                    label: headFamily.name,
+                    closedCount: sales.closedCount,
+                    closedInPolygon: sales.closedCount,
+                    closedByName: 0,
+                    closedCountSfr: 0,
+                    topCityLower: null,
+                    lastCloseDate: null,
+                    closedByYear: sales.closedByYear,
+                  }
+                : null,
+            ),
+            null,
+            8000,
+            'sub:familyClosed',
+          )
+        : withTimeoutFallback(getPlatClosedCount(slug), null, 4500, 'sub:platClosed'),
       // POPULATION 6 (SITE-55): the other half of the same question. The plat's
       // twelve-month DID-NOT-SELL aggregate, attributed the same two ways the
       // closed count is, from public.subdivision_plat_unsold_mv. null is the
@@ -1016,6 +1188,11 @@ async function renderSubdivisionPage({ params }: Props) {
   // the recorded plat has a real sale history. §0: printed only when the read
   // answered with a real count — a miss is absent, never a zero.
   const lifetimeClosed = platClosed && platClosed.closedCount > 0 ? platClosed.closedCount : null
+  // The sentence that says which set the lifetime count is: this plat's own
+  // recorded boundary, or on a family's main page the union of its phases.
+  const lifetimeTrace = headFamily
+    ? familyClosedTrace(displayName, headFamily.members.length)
+    : platLifetimeClosedTrace(displayName)
   if (lifetimeClosed != null) {
     marketFigures.push({
       value: v3Text(String(lifetimeClosed)),
@@ -1066,7 +1243,7 @@ async function renderSubdivisionPage({ params }: Props) {
     // chart and the yearly Ledger below share one population and one sentence;
     // the boundary chart shares the lifetime count's.
     nameJoinChart ? salesHistoryTrace(displayName) : null,
-    lifetimeClosed != null ? platLifetimeClosedTrace(displayName) : null,
+    lifetimeClosed != null ? lifetimeTrace : null,
     countFigures.length > 0 ? platCountsTrace(displayName) : null,
     cacheFigures.length > 0 ? platStatsTrace(displayName, cityName, statsPeriodLabel) : null,
   ].filter((clause): clause is string => clause !== null)
@@ -1163,11 +1340,16 @@ async function renderSubdivisionPage({ params }: Props) {
       items: [
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
-        ...(resortSlug
-          ? [{ name: resortLabel ?? displayName, url: `/communities/${resortSlug}` }]
+        ...(trailResortSlug
+          ? [{ name: trailResortLabel ?? displayName, url: `/communities/${trailResortSlug}` }]
           : citySlug
             ? [{ name: cityName, url: `/cities/${citySlug}` }]
             : []),
+        // The family this phase belongs to, the same crumb the visible trail
+        // carries (Matt 2026-09-23), unless the resort crumb already is it.
+        ...(familyUp && familyUp.href !== `/communities/${trailResortSlug ?? ''}`
+          ? [{ name: familyUp.label, url: familyUp.href }]
+          : []),
         { name: displayName, url: `/subdivisions/${slug}` },
       ],
     },
@@ -1243,7 +1425,7 @@ async function renderSubdivisionPage({ params }: Props) {
         // Tetherow is a townhome plat — "7 single-family homes closed" would be
         // §0 rule 5 in one word.
         populationLabel: 'homes',
-        trace: platLifetimeClosedTrace(displayName),
+        trace: lifetimeTrace,
         priorWindow: boundaryPrior
           ? { count: boundaryPrior.closedCount, label: `in ${boundaryPrior.year}` }
           : null,
@@ -1290,7 +1472,7 @@ async function renderSubdivisionPage({ params }: Props) {
       // §0: printed only when the read answered; a miss is absent, not a zero.
       lifetimeClosedCount:
         lifetimeClosed != null
-          ? { count: lifetimeClosed, trace: platLifetimeClosedTrace(displayName) }
+          ? { count: lifetimeClosed, trace: lifetimeTrace }
           : null,
       daysOnMarket:
         subdivisionStats?.medianDaysOnMarket != null && subdivisionStats.medianDaysOnMarket > 0
@@ -1362,7 +1544,7 @@ async function renderSubdivisionPage({ params }: Props) {
     closedYears: insightSoldYears,
     inventorySource: platInventoryTrace(platScope),
     soldSource:
-      completeYears.length > 0 ? salesHistoryTrace(displayName) : platLifetimeClosedTrace(displayName),
+      completeYears.length > 0 ? salesHistoryTrace(displayName) : lifetimeTrace,
     soldHref: '/how-we-get-our-numbers',
     soldHrefLabel: 'How we get our numbers',
   })
@@ -1385,7 +1567,9 @@ async function renderSubdivisionPage({ params }: Props) {
   const indexablePlats = await getIndexableSubdivisions()
   const sisterPlats = citySlug
     ? indexablePlats
-        .filter((p) => p.citySlug === citySlug)
+        // A family page whose count is its phases' SUM stays out of this
+        // numbered list: that sum can count a replatted lot's sale twice (§0).
+        .filter((p) => p.citySlug === citySlug && (!p.family || p.family.ownPlat))
         .slice()
         .sort((a, b) => b.closedCount - a.closedCount || a.name.localeCompare(b.name))
         .slice(0, PLAT_SISTER_CAP)
@@ -1419,16 +1603,17 @@ async function renderSubdivisionPage({ params }: Props) {
   // then from its own lifetime read, and otherwise the row carries no numeral
   // at all (§0: unknown is not zero).
   const selfIndexable = indexablePlats.find((p) => p.slug === slug)
+  // On a family's main page the page's own row carries the SAME count the
+  // page prints (the family's distinct closed sales, lifetimeClosed), never the
+  // head plat's own count or the phases' sum: one place, one number (§0 rule 5).
+  const selfCount = headFamily
+    ? (lifetimeClosed ?? -1)
+    : selfIndexable && !(selfIndexable.family && !selfIndexable.family.ownPlat)
+      ? selfIndexable.closedCount
+      : (lifetimeClosed ?? -1)
   const pickerRows = sisterRows.some((row) => row.slug === slug)
-    ? sisterRows
-    : [
-        {
-          slug,
-          name: displayName,
-          closedCount: selfIndexable?.closedCount ?? lifetimeClosed ?? -1,
-        },
-        ...sisterRows,
-      ]
+    ? sisterRows.map((row) => (row.slug === slug ? { ...row, name: displayName, closedCount: selfCount } : row))
+    : [{ slug, name: displayName, closedCount: selfCount }, ...sisterRows]
   const pickerOptions = pickerRows.map((row) => ({
     key: row.slug,
     label: row.name,
@@ -1448,12 +1633,18 @@ async function renderSubdivisionPage({ params }: Props) {
   const mixedAtlas = platFoldHasMixedTypes(atlasView.dots)
   const foldListedCount = platFoldListedCount(foldAtlasDots)
   const foldHouseCount = activeCount ?? (foldAtlasDots.filter((d) => d.t === 'house').length || null)
-  const atlasClaimText =
-    mixedAtlas && foldListedCount > 0
-      ? `${foldListedCount} homes for sale in ${displayName}. Toggle house, land, or other types on the map.`
-      : foldHouseCount != null && foldHouseCount > 0
-        ? `${foldHouseCount} homes for sale in ${displayName}.`
-        : `Homes for sale in ${displayName}.`
+  // VOICE-8 (visibility audit 2026-09-22): "homes for sale in {place}" is the
+  // single-family counted set every other figure on this page uses. The map's
+  // every-kind count is said in its own words, never under that phrase
+  // (Ridge at Eagle Crest printed 88 and 14 under the same words).
+  const unsoldTypeKeys = new Set(foldAtlasDots.filter((d) => d.s !== 'sold').map((d) => d.t))
+  const atlasClaimText = platAtlasClaim({
+    displayName,
+    mixed: mixedAtlas,
+    listedCount: foldListedCount,
+    houseCount: foldHouseCount,
+    typeLabels: foldAtlasTypes.filter((t) => unsoldTypeKeys.has(t.key)).map((t) => t.label),
+  })
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -1473,10 +1664,13 @@ async function renderSubdivisionPage({ params }: Props) {
           <PlaceAreaHero posterSrc={stagePosterSrc} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb
-            trail={subdivisionPageTrail(
-              citySlug && placeCity ? { label: cityName, slug: citySlug } : null,
-              resortSlug ? { label: resortLabel ?? displayName, slug: resortSlug } : null,
-              displayName,
+            trail={withFamilyCrumb(
+              subdivisionPageTrail(
+                citySlug && placeCity ? { label: cityName, slug: citySlug } : null,
+                trailResortSlug ? { label: trailResortLabel ?? displayName, slug: trailResortSlug } : null,
+                displayName,
+              ),
+              familyUp,
             )}
             tone={stagePosterSrc ? 'on-media' : 'surface'}
             overlay={Boolean(stagePosterSrc)}
@@ -1488,6 +1682,19 @@ async function renderSubdivisionPage({ params }: Props) {
             {posterCaption ? <p className="place-opening__caption">{posterCaption}</p> : null}
           </div>
         </div>
+
+        {/* The link UP to the family (Matt 2026-09-23): a real anchor in the
+            served HTML directly under the opening band, so a reader who landed
+            on one phase sees the whole place is one tap away. Outside the band
+            on purpose: the plat opening hides its captions and clips at 7.75rem
+            on a phone (plat-fold.css), and this line must always show. */}
+        {familyLine ? (
+          <p className="plat-family-line">
+            {familyLine.lead}
+            <a href={familyLine.href}>{familyLine.linkLabel}</a>
+            {familyLine.tail}
+          </p>
+        ) : null}
 
         {/* SITE-86: drawing + figure in the first viewport. Atlas is the drawing
             (type toggles; price scrubber is off). MOS two-bar + alerts/V3Number are
@@ -1566,6 +1773,12 @@ async function renderSubdivisionPage({ params }: Props) {
                       <a href={`/communities/${resortSlug}`}>{resortLabel ?? 'Resort'} overview</a>
                     </>
                   ) : null}
+                  {familyUp && familyUp.href !== `/communities/${resortSlug ?? ''}` ? (
+                    <>
+                      {' · '}
+                      <a href={familyUp.href}>All of {familyUp.label}</a>
+                    </>
+                  ) : null}
                 </p>
               </div>
               {/* SITE-112: the fold figure is ONE paged object (beautifului
@@ -1633,6 +1846,24 @@ async function renderSubdivisionPage({ params }: Props) {
             <V3SourceLine source={inventorySource} asOf={inventory?.readAt ?? null} sourceName={PLAT_FEED} />
           </>
         )}
+
+        {/* THE PHASES (Matt 2026-09-23): "all those go into the same main
+            neighborhood page, and then they can jump into the different
+            phases after that." Every recorded phase of this family, a real
+            anchor each, deepest sale history first, each with its own
+            lifetime count and the trace that says what the count is. */}
+        {headFamily ? (
+          <V3PlaceIndex
+            id="phases"
+            eyebrow={`${displayName} · ${headFamily.members.length} recorded phases`}
+            heading={`The phases of ${displayName}`}
+            lede={`${displayName} was recorded with the county as ${headFamily.members.length} separate phases. Each phase has its own map, its own sales and its own page.`}
+            countLabel="sold"
+            entries={familyPhaseEntries(headFamily)}
+            foldAfter={24}
+            source={familyPhaseTrace(displayName, headFamily.members.length)}
+          />
+        ) : null}
 
         <V3PlaceIndex
           id="nearby-subdivisions"
@@ -1839,6 +2070,9 @@ async function renderSubdivisionPage({ params }: Props) {
           sourceKey={platSourceKey}
           doors={[
             { label: 'Homes for sale here', href: '#homes' },
+            ...(familyUp && familyUp.href !== `/communities/${resortSlug ?? ''}`
+              ? [{ label: `All of ${familyUp.label}`, href: familyUp.href }]
+              : []),
             ...(resortSlug
               ? [{ label: `${resortLabel ?? displayName} overview`, href: `/communities/${resortSlug}` }]
               : citySlug

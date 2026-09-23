@@ -438,6 +438,10 @@ async function renderCityDetail({ params }: Props) {
    * bars. Bend's crawlable children are the designated districts in
    * #neighborhoods. A–Z `/subdivisions` is the directory. Atlas-drawn plats
    * (non-Bend cities) stay as name-only cards after those bars.
+   * EXP-3 (visibility audit 2026-09-22): each #child-places card now carries a
+   * real <a href> to its own page beside the map-select button
+   * (PlaceSubdivisionRail). Still name-only, no bars, no dump above the
+   * neighborhood bars; the rail simply stopped being a dead end for crawlers.
    */
   const atlasPlatEntries = atlasRegions
     .filter((r) => typeof r.href === 'string' && r.href.startsWith('/subdivisions/'))

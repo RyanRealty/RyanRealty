@@ -115,6 +115,18 @@
     "ci:vercel-config"
   ],
   "path": {
+    "ci:plat-families": [
+      "app/subdivisions/**",
+      "app/communities/**",
+      "app/cities/**",
+      "lib/market/plat-family*",
+      "lib/market/__fixtures__/plat-family-*",
+      "lib/data/subdivisions/**",
+      "components/site/v3/PlaceSubdivisionMap*",
+      "components/site/v3/V3PlaceDirectory*",
+      "docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md",
+      "scripts/check-plat-families.mjs"
+    ],
     "ci:access-denied": [
       "app/admin/**",
       "components/admin/**",

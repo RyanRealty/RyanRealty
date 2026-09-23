@@ -48,7 +48,7 @@
     },
     {
       "name": "PlaceSubdivisionRail",
-      "section": "#child-places. Every subdivision, name and property-type line, scrolling inside the map height.",
+      "section": "#child-places. Every subdivision, name and property-type line, scrolling inside the map height. Since 2026-09-23 (Matt: multi-phase subdivisions grouped under one main page; visibility audit EXP-3) each row also carries a real <a href> door to its own page, the rows include every recorded phase of the subdivision family this community owns (Tetherow Phase 1-7, Broken Top's 27), and a family INSIDE the community (Ridge at Eagle Crest in Eagle Crest, Painted Ridge at Broken Top in Broken Top) gets a row linking down to its own family page (lib/market/plat-family.ts familiesNestedInCommunity).",
       "blocking": true
     },
     {
