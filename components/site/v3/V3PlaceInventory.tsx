@@ -10,6 +10,12 @@
  * instead of a ledger. Same sections, same rows, same source line: every
  * listing the ledger would list is a card, a type with one listing still
  * gets its carousel, and the count stays under the heading.
+ *
+ * `layout="dial"` (Matt 2026-09-23, "an alternative to a carousel ... a
+ * primary card ... a smaller dial with thumbnails"): each type is one
+ * V3ListingDial, one listing large with the rest of that type as thumbnails
+ * beside it and "03 / 12" over them. Same sections, same rows, same source
+ * line, and every listing is still an <a href> in the served HTML.
  */
 import { cn } from '@/lib/utils'
 import { V3_LEDGER_CLASS, V3_ROOT_CLASS, V3Heading } from './atoms'
@@ -19,6 +25,7 @@ import { V3SourceLine } from './V3SourceLine'
 import type { PlaceStockSection } from '@/lib/place/place-inventory-stock'
 import { HomeListingRail } from '@/app/_v3/HomeListingRail.client'
 import { railCardFromListingRow } from '@/app/_v3/home-rail-items'
+import { V3ListingDial } from './V3ListingDial.client'
 import './tokens.css'
 import './V3PlaceInventory.css'
 
@@ -28,8 +35,11 @@ export type V3PlaceInventoryProps = {
   sections: readonly PlaceStockSection[]
   source: string
   asOf?: string | null
-  /** 'rows' (default): the ledger. 'rails': one card carousel per type. */
-  layout?: 'rows' | 'rails'
+  /**
+   * 'rows' (default): the ledger. 'rails': one card carousel per type.
+   * 'dial': one V3ListingDial per type.
+   */
+  layout?: 'rows' | 'rails' | 'dial'
 }
 
 export function V3PlaceInventory({
@@ -48,6 +58,25 @@ export function V3PlaceInventory({
         heading={`Homes in ${placeName}`}
         items={[{ kind: 'prose', body: `Nothing listed in ${placeName} right now.` }]}
       />
+    )
+  }
+
+  if (layout === 'dial') {
+    return (
+      <div id={id} className={cn(V3_ROOT_CLASS, 'v3-place-stock', 'v3-place-stock--dial')}>
+        {live.map((section) => (
+          <V3ListingDial
+            key={section.key}
+            id={`${id}-${section.key}`}
+            heading={section.heading}
+            headingLevel={2}
+            countLabel={section.countLabel}
+            label={`${section.heading} in ${placeName}`}
+            listings={section.rows}
+          />
+        ))}
+        <V3SourceLine source={source} asOf={asOf ?? null} sourceName="Oregon Data Share" />
+      </div>
     )
   }
 

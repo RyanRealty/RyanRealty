@@ -212,6 +212,29 @@
   margin-top: var(--v3-space-md);
 }
 
+/* The dial layout (neighborhood pages): each buyer group is one
+   V3ListingDial across the whole band the map above it spans (the dial
+   lays its card on its side at that width, copy under the subdivision list
+   and photograph under the map), ruled apart by a hairline. */
+.place-homes--dial .place-homes__count {
+  margin-bottom: var(--v3-space-lg);
+}
+
+.v3.v3-dial.place-homes__dial {
+  max-width: none;
+}
+
+/* (0,3,0): tokens.css zeroes the source line's margin at (0,2,0). */
+.place-homes .place-homes__dial + .v3-source {
+  margin-top: var(--v3-space-xl);
+}
+
+.place-homes__dial + .place-homes__dial {
+  margin-top: var(--v3-space-xl);
+  padding-top: var(--v3-space-xl);
+  border-top: var(--v3-rule-hairline);
+}
+
 .place-homes__type-heading {
   margin: 0 0 0.2rem;
   color: var(--v3-ink);

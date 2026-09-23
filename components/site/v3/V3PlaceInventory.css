@@ -43,6 +43,26 @@
   width: 100%;
 }
 
+/* Dial: one V3ListingDial per type, separated by a hairline and generous air
+   (an enumeration is one section, so its members are ruled apart lightly,
+   never with the 2px navy rule that opens a section). The same minmax(0, 1fr)
+   column and explicit width as the rails, for the same reason: a grid item's
+   automatic minimum is its content, and the dial's strip is wide on a phone. */
+.v3-place-stock--dial {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xl);
+}
+
+.v3-place-stock--dial > * {
+  min-width: 0;
+  width: 100%;
+}
+
+.v3-place-stock--dial > .v3-dial + .v3-dial {
+  padding-top: var(--v3-space-xl);
+  border-top: var(--v3-rule-hairline);
+}
+
 .v3-place-stock--rails .v3-place-stock__source {
   padding-inline: var(--v3-gutter);
 }

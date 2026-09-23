@@ -128,6 +128,8 @@ ZIP is this job without a still: houses first.
 
 Do not open with a number hero. Do not put subdivisions after a long “about” essay.
 
+**The homes under the map are dials (Matt 2026-09-23).** `PlaceSubdivisionHomes layout="dial"`: each buyer group in the current map selection is one `V3ListingDial`, the same primitive the plat pages use, so a reader looking at River West's multifamily homes sees one of them large and flips through the rest on the dial beside it, with "01 / 02" over it. Choosing a subdivision on the map still decides what is in the dials (each re-opens on the first home of the new selection). The neighborhood band is 90rem, so the dial lays its card on its side there: copy under the subdivision list's edge, photograph under the map's. City and community pages keep the carousel (`PlaceSubdivisionHomes` default).
+
 ---
 
 ## Master-plan / resort — `/communities/tetherow`, Caldera Springs, Broken Top, Widgi Creek
@@ -160,12 +162,12 @@ A master-plan page that opens like Bend has already lost to tetherow.com.
 
 **Job.** The homes on this plat. Parent is obvious. Do not dress four listings in a city hero.
 
-**One carousel per property type (Matt 2026-09-23: "we need to see carousels of all available property types if there are any; we haven't been doing commercial and multi family").** The inventory is `V3PlaceInventory layout="rails"`: a card carousel for each type with active stock, in the order single-family, multi-family, townhomes and condos, land, commercial. A type with one listing still gets its carousel; an empty type is omitted. Every listing the ledger would list is a card (no photo or no price does not drop it; "Price not published" is the unpriced ask). A commercial lease (MLS PropertyType G) is not for sale, so it is never in these carousels or their counts. City and neighborhood pages keep the ledger rows until Matt says otherwise.
+**One dial per property type (Matt 2026-09-23: "we need to see carousels of all available property types if there are any; we haven't been doing commercial and multi family"; then, the same day, "an alternative to a carousel ... a primary card ... a smaller dial with thumbnails of the other photos ... some kind of indicator of how many total cards are in the dial").** The inventory is `V3PlaceInventory layout="dial"`: for each type with active stock, in the order single-family, multi-family, townhomes and condos, land, commercial, one `V3ListingDial`. One listing shows large (its lead photograph, then the rail card's copy: ask, facts, address, a door to the listing), the rest of that type are thumbnails on a dial beside it with no scrollbar, and "03 / 12" with a filling rule sits over the dial. The dial turns by thumbnail, previous/next, arrow keys, Home/End, and a swipe on the photograph on a phone, where the dial becomes a strip under the card. A type with one listing is the card alone, with no dial and no count. An empty type is omitted. Every listing is still an `<a href>` in the served HTML (the cards not showing carry `hidden`), and every listing the ledger would list is in the dial (no photo or no price does not drop it; "Price not published" is the unpriced ask). A commercial lease (MLS PropertyType G) is not for sale, so it is never in a dial or its count. `layout="rails"` (one card carousel per type) and the default ledger rows stay available.
 
 | Order | Section | Why |
 |---|---|---|
 | 1 | Name + breadcrumb to neighborhood **or** resort, then city | Hierarchy. |
-| 2 | The homes: map if the pins earn it, then one carousel per property type | The whole page. Lot lines / taxlots when we have them. |
+| 2 | The homes: map if the pins earn it, then one dial per property type | The whole page. Lot lines / taxlots when we have them. |
 | 3 | Recorded CC&Rs for this plat | When published. Official resort homepages do not offer this. |
 | 4 | Peer plats in the same parent | Other children. |
 | 5 | Schools (doors) | Inherited assignment, not a second city schools index. |

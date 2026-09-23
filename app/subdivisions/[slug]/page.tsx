@@ -1945,11 +1945,13 @@ async function renderSubdivisionPage({ params }: Props) {
           entries={otherSubdivEntries}
         />
 
-        {/* One carousel per property type with stock, commercial and
-            multi-family included (Matt 2026-09-23). */}
+        {/* One dial per property type with stock, commercial and
+            multi-family included (Matt 2026-09-23: every type; then the dial,
+            "an alternative to a carousel": one listing large, the rest of
+            the type as thumbnails beside it, "03 / 12" over them). */}
         <V3PlaceInventory
           id="homes"
-          layout="rails"
+          layout="dial"
           placeName={displayName}
           sections={stockSections}
           source={inventorySource}

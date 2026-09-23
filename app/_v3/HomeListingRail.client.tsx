@@ -8,11 +8,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
-import {
-  publishListingShareKind,
-  publishListingSharePricePerSqft,
-} from '@/lib/listing/publish-listing-share'
+import { publishListingCardFacts } from '@/lib/listing/publish-listing-card-facts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Carousel,
@@ -39,29 +35,9 @@ export function HomeRailCardFace({
   card: HomeRailCard
   priority?: boolean
 }) {
-  const ask = formatPublishedSaleAsk({ price: card.price, propertyType: card.propertyType })
-  const shareKind = publishListingShareKind({
-    propertySubType: card.propertySubType,
-    subdivisionName: card.subdivisionName,
-    city: card.city,
-    listNumber: card.listNumber,
-  })
-  const meta: string[] = []
-  if (card.beds != null) meta.push(`${Math.round(card.beds).toLocaleString('en-US')} bd`)
-  if (card.baths != null) meta.push(`${Math.round(card.baths).toLocaleString('en-US')} ba`)
-  if (card.sqft != null) meta.push(`${Math.round(card.sqft).toLocaleString('en-US')} sqft`)
-  if (card.statusLabel) meta.push(card.statusLabel)
-  const publishedPpsf = publishListingSharePricePerSqft({
-    propertyType: card.propertyType,
-    propertySubType: card.propertySubType,
-    subdivisionName: card.subdivisionName,
-    city: card.city,
-    listNumber: card.listNumber,
-    pricePerSqft: card.pricePerSqft,
-  })
-  if (publishedPpsf != null && publishedPpsf > 0) {
-    meta.push(`$${Math.round(publishedPpsf).toLocaleString('en-US')}/sqft`)
-  }
+  // The same copy the place-page dial's primary card prints (one definition,
+  // lib/listing/publish-listing-card-facts.ts).
+  const { ask, kind: shareKind, meta } = publishListingCardFacts(card)
 
   return (
     <Card size="sm" className={cn(V3_ROOT_CLASS, 'home-rail__card')}>

@@ -9,6 +9,7 @@ const RAILS = readFileSync(resolve('app/_v3/HomeHomesRails.tsx'), 'utf8')
 const RAIL_CLIENT = readFileSync(resolve('app/_v3/HomeListingRail.client.tsx'), 'utf8')
 const RAIL_CSS = readFileSync(resolve('app/_v3/home-homes-rails.css'), 'utf8')
 const RAIL_ITEMS = readFileSync(resolve('app/_v3/home-rail-items.ts'), 'utf8')
+const CARD_FACTS = readFileSync(resolve('lib/listing/publish-listing-card-facts.ts'), 'utf8')
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 const PLACES = readFileSync(resolve('app/_v3/HomeBrowsePlaces.tsx'), 'utf8')
 const FEATURED = readFileSync(resolve('app/_v3/HomeFeaturedCommunity.client.tsx'), 'utf8')
@@ -352,7 +353,12 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(RAIL_CLIENT).not.toContain('toggleSavedListing')
     expect(RAIL_CLIENT).not.toContain('home-rail__save')
     expect(RAIL_CSS).not.toContain('home-rail__save')
-    expect(RAIL_CLIENT).toContain('publishListingShareKind')
+    // The card's copy goes through the fractional-share guards. Since
+    // 2026-09-23 it does so in one definition the rail card and the place
+    // dial share (publishListingCardFacts), so follow the call one hop.
+    expect(RAIL_CLIENT).toContain('publishListingCardFacts(card)')
+    expect(CARD_FACTS).toContain('publishListingShareKind(')
+    expect(CARD_FACTS).toContain('publishListingSharePricePerSqft(')
     expect(RAIL_CLIENT).toContain('tags={card.badges}')
     expect(RAIL_ITEMS).toContain('publishListingCardBadges')
     expect(RAIL_ITEMS).toContain('openHouseLabel')

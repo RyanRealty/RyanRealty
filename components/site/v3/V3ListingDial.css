@@ -1,0 +1,647 @@
+/* ===========================================================================
+   V3ListingDial — one listing large, the rest on a dial beside it.
+   Tokens only (components/site/v3/tokens.css). Broadside: radius 0, no
+   elevation, rule weight as the hierarchy, photography unframed.
+
+   Wide: [ card ][ dial ]      the dial is a column of thumbnails as tall as
+                                the card, previous at its head, next at its foot.
+   Phone (40rem and under): the card, then the dial as a strip under it.
+   One listing: the card alone, and from 48rem the card lies on its side
+   (photograph left, copy right) instead of standing a lone card in a column
+   built for a dial.
+   =========================================================================== */
+
+.v3.v3-dial {
+  --v3-dial-rail-w: 10rem;
+  --v3-dial-gap: var(--v3-space-lg);
+  --v3-dial-copy-w: 22rem;
+  --v3-dial-thumb-w: 5.75rem;
+  --v3-dial-fade: var(--v3-space-xl);
+  /* The card's shape answers the width it is given, not the window's: the
+     same dial is 72rem inside a plat's inventory and 90rem under a
+     neighborhood's map. */
+  container: v3-dial / inline-size;
+  position: relative;
+  width: 100%;
+  max-width: var(--v3-measure);
+  min-width: 0;
+  background: transparent;
+}
+
+/* Head: the set's name on the left, the readout over the dial on the right. */
+.v3-dial__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--v3-dial-rail-w);
+  column-gap: var(--v3-dial-gap);
+  align-items: end;
+  margin-bottom: var(--v3-space-md);
+}
+
+.v3-dial--single .v3-dial__head {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.v3-dial__title {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+}
+
+.v3-dial__heading {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  text-wrap: balance;
+}
+
+/* Inside a section that already carries the display h2 (the map's homes). */
+.v3-dial__heading--3 {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: 0;
+  line-height: var(--v3-leading-control);
+}
+
+.v3-dial__count {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* THE READOUT. The position in Amboqia (the number is the spectacle), the
+   total in the body face, and a rule that fills navy to the position. It is
+   the width of the dial and sits on top of it, so it reads as the dial's own
+   face rather than a counter floating in the heading. */
+.v3-dial__pos {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.v3-dial__pos-figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--v3-space-3xs);
+  white-space: nowrap;
+}
+
+.v3-dial__pos-now {
+  color: var(--v3-ink);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-display-2);
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-display);
+}
+
+.v3-dial__pos-of {
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-dial__pos-rule {
+  position: relative;
+  display: block;
+  height: var(--v3-rule-weight-section);
+  overflow: hidden;
+  background: var(--v3-hairline);
+}
+
+.v3-dial__pos-rule::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--v3-dial-p, 0%);
+  background: var(--v3-navy);
+  transition: width var(--v3-dur-enter) var(--v3-ease-out);
+}
+
+/* Body ------------------------------------------------------------------- */
+.v3-dial__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--v3-dial-rail-w);
+  gap: var(--v3-dial-gap);
+}
+
+.v3-dial--single .v3-dial__body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Every card sits in the one cell; `hidden` takes the rest out. The card
+   turning away is lifted over the one arriving and dissolves, so a turn is a
+   photograph becoming the next photograph, never a flash of empty cream. */
+.v3-dial__stage {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+
+.v3-dial__card {
+  grid-area: 1 / 1;
+  min-width: 0;
+  background: var(--v3-surface);
+}
+
+.v3-dial__card[hidden] {
+  display: none;
+}
+
+.v3-dial__card.is-leaving {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--v3-dur-enter) var(--v3-ease-out);
+}
+
+/* The lead photograph: SplitCardMedia's box, sized for a lead. */
+.v3-dial__media {
+  position: relative;
+}
+
+.v3-dial__media .v3-lrow__media {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  max-height: 72vh;
+  background: var(--v3-wash);
+}
+
+.v3-dial__media .v3-lrow__addr-tip {
+  display: none;
+}
+
+.v3-dial__media .v3-lrow__photo-tags {
+  top: var(--v3-space-sm);
+  left: var(--v3-space-sm);
+}
+
+.v3-dial__nophoto {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+/* The copy: the ask and its facts on the left, where it is on the right. */
+.v3-dial__copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  align-items: end;
+  gap: var(--v3-space-sm) var(--v3-space-xl);
+  padding-top: var(--v3-space-md);
+  color: inherit;
+  text-decoration: none;
+}
+
+.v3-dial__figures {
+  display: grid;
+  justify-items: start;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.v3-dial__kind {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-control);
+  text-transform: uppercase;
+}
+
+.v3-dial__ask {
+  color: var(--v3-ink);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-display);
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+}
+
+.v3-dial__ask--none {
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+}
+
+.v3-dial__meta {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+.v3-dial__where {
+  display: grid;
+  justify-items: end;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+  max-width: 24rem;
+  text-align: right;
+}
+
+.v3-dial__addr {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  overflow-wrap: anywhere;
+}
+
+.v3-dial__city {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+}
+
+.v3-dial__open {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  line-height: var(--v3-leading-control);
+  text-decoration: underline;
+  text-decoration-thickness: var(--v3-rule-weight-hairline);
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-dial__copy:hover .v3-dial__addr {
+  text-decoration: underline;
+  text-decoration-thickness: var(--v3-rule-weight-hairline);
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+/* The dial ---------------------------------------------------------------- */
+
+/* The column takes the card's height and gives none back: the frame is lifted
+   out of flow, so however many thumbnails there are, the card sets the height
+   and the thumbnails scroll inside it. */
+.v3-dial__rail {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.v3-dial__rail-frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.v3-dial__step {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  color: var(--v3-ink);
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-dial__step:hover {
+  background: var(--v3-wash);
+}
+
+.v3-dial__step--prev .v3-dial__step-icon {
+  transform: rotate(180deg);
+}
+
+/* No scrollbar, in any engine: the thumbnails are the only thing that shows.
+   A soft fade at an end that has more past it is the sign there is more. */
+.v3-dial__thumbs {
+  --v3-dial-fade-a: 0px;
+  --v3-dial-fade-b: 0px;
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--v3-space-2xs);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--v3-navy) var(--v3-dial-fade-a),
+    var(--v3-navy) calc(100% - var(--v3-dial-fade-b)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--v3-navy) var(--v3-dial-fade-a),
+    var(--v3-navy) calc(100% - var(--v3-dial-fade-b)),
+    transparent 100%
+  );
+}
+
+.v3-dial__thumbs::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.v3-dial__thumbs[data-more-before] {
+  --v3-dial-fade-a: var(--v3-dial-fade);
+}
+
+.v3-dial__thumbs[data-more-after] {
+  --v3-dial-fade-b: var(--v3-dial-fade);
+}
+
+.v3-dial__thumb {
+  flex: none;
+  display: grid;
+  gap: var(--v3-space-2xs);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--v3-tap);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--v3-radius-control);
+  background: none;
+  color: var(--v3-ink-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+  scroll-margin: var(--v3-space-2xs);
+}
+
+.v3-dial__thumb-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: var(--v3-wash);
+}
+
+.v3-dial__thumb-media img {
+  object-fit: cover;
+  opacity: 0.58;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-dial__thumb:hover .v3-dial__thumb-media img,
+.v3-dial__thumb:focus-visible .v3-dial__thumb-media img,
+.v3-dial__thumb[aria-selected='true'] .v3-dial__thumb-media img {
+  opacity: 1;
+}
+
+/* The one showing wears a navy frame with a cream mat inside it: a ring, not
+   an elevation, and it sits on the photograph so it can never be clipped. */
+.v3-dial__thumb-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.v3-dial__thumb[aria-selected='true'] .v3-dial__thumb-media::after {
+  box-shadow:
+    inset 0 0 0 var(--v3-rule-weight-section) var(--v3-navy),
+    inset 0 0 0 calc(var(--v3-rule-weight-section) * 2) var(--v3-cream);
+}
+
+.v3-dial__thumb-none {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.v3-dial__thumb-cap {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+  line-height: var(--v3-leading-control);
+}
+
+.v3-dial__thumb-ask {
+  font-size: var(--v3-size-source);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.v3-dial__thumb-addr {
+  overflow: hidden;
+  font-size: var(--v3-size-source);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v3-dial__thumb[aria-selected='true'] .v3-dial__thumb-ask {
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-strong);
+}
+
+.v3-dial__thumb[aria-selected='true'] .v3-dial__thumb-addr {
+  color: var(--v3-ink);
+}
+
+/* Read to a screen reader when a button or a swipe turns the dial. */
+.v3-dial__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A WIDE DIAL (76rem and up, the neighborhood's 90rem band under its map):
+   the card lies across the band as the map above it does. The copy takes a
+   22rem column on the left, the width of the subdivision list over it, and
+   the photograph starts where the map starts, so the homes line up with the
+   map they belong to instead of standing a 72rem card in a 90rem band. The
+   `:not([hidden])` keeps a card that is not showing out of the grid. */
+@container v3-dial (min-width: 76rem) {
+  .v3-dial--multi .v3-dial__card:not([hidden]) {
+    display: grid;
+    grid-template-columns: var(--v3-dial-copy-w) minmax(0, 1fr);
+    column-gap: var(--v3-space-sm);
+  }
+
+  .v3-dial--multi .v3-dial__media {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .v3-dial--multi .v3-dial__copy {
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: end;
+    row-gap: var(--v3-space-lg);
+    padding: 0 var(--v3-space-lg) 0 0;
+  }
+
+  .v3-dial--multi .v3-dial__where {
+    justify-items: start;
+    max-width: none;
+    text-align: left;
+  }
+}
+
+/* One listing, 44rem and up: the card on its side. ----------------------- */
+@container v3-dial (min-width: 44rem) {
+  .v3-dial--single .v3-dial__card:not([hidden]) {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: end;
+    column-gap: var(--v3-space-xl);
+  }
+
+  .v3-dial--single .v3-dial__copy {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--v3-space-md);
+    padding-top: 0;
+  }
+
+  .v3-dial--single .v3-dial__where {
+    justify-items: start;
+    max-width: none;
+    text-align: left;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Phone. LAST IN THE FILE ON PURPOSE: every rule above is single-class, so a
+   narrow override written earlier would lose the cascade to the base rule.
+   --------------------------------------------------------------------------- */
+@media (max-width: 40rem) {
+  .v3.v3-dial {
+    --v3-dial-gap: var(--v3-space-sm);
+    --v3-dial-fade: var(--v3-space-lg);
+  }
+
+  .v3-dial__head {
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
+    column-gap: var(--v3-space-sm);
+  }
+
+  .v3-dial__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The photograph is the MLS's own 4:3 on a phone: nothing cropped. */
+  .v3-dial__media .v3-lrow__media {
+    aspect-ratio: 4 / 3;
+  }
+
+  .v3-dial__copy {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: var(--v3-space-sm);
+  }
+
+  .v3-dial__where {
+    justify-items: start;
+    max-width: none;
+    text-align: left;
+  }
+
+  .v3-dial__open {
+    margin-top: var(--v3-space-2xs);
+  }
+
+  .v3-dial__rail,
+  .v3-dial__rail-frame {
+    position: static;
+  }
+
+  .v3-dial__rail-frame {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .v3-dial__step {
+    min-height: 0;
+  }
+
+  .v3-dial__step--prev .v3-dial__step-icon {
+    transform: rotate(90deg);
+  }
+
+  .v3-dial__step--next .v3-dial__step-icon {
+    transform: rotate(-90deg);
+  }
+
+  .v3-dial__thumbs {
+    flex-direction: row;
+    gap: var(--v3-space-xs);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      var(--v3-navy) var(--v3-dial-fade-a),
+      var(--v3-navy) calc(100% - var(--v3-dial-fade-b)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      var(--v3-navy) var(--v3-dial-fade-a),
+      var(--v3-navy) calc(100% - var(--v3-dial-fade-b)),
+      transparent 100%
+    );
+  }
+
+  .v3-dial__thumb {
+    width: var(--v3-dial-thumb-w);
+  }
+
+  .v3-dial__thumb-addr {
+    display: none;
+  }
+}

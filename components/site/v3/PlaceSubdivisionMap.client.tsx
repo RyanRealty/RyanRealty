@@ -21,6 +21,7 @@ import { firstListedPhoto } from '@/lib/place/rail-photo'
 import { V3_ROOT_CLASS, V3Heading } from './atoms'
 import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
 import { V3Carousel } from './V3Carousel.client'
+import { V3ListingDial } from './V3ListingDial.client'
 import { listingPhotoAlt } from './listing-photo-alt'
 import type { V3ListingRowData } from './V3ListingRow'
 import { V3SourceLine } from './V3SourceLine'
@@ -243,7 +244,19 @@ function homesByBuyerGroup(listings: readonly V3ListingRowData[]): Array<{
   })
 }
 
-export function PlaceSubdivisionHomes({ id }: { id: string }) {
+/**
+ * `layout="dial"` (Matt 2026-09-23, neighborhood pages): each buyer group is a
+ * V3ListingDial instead of a carousel. The map still decides what is in it:
+ * choosing a subdivision re-keys every dial, so it opens on the first home of
+ * the new selection with the readout counting that selection.
+ */
+export function PlaceSubdivisionHomes({
+  id,
+  layout = 'rails',
+}: {
+  id: string
+  layout?: 'rails' | 'dial'
+}) {
   const { placeName, rail, homes, keysBySlug, source, asOf, selectedId } = usePlaceMap()
   const selected = rail.find((entry) => entry.id === selectedId) ?? null
   const title = selected?.name ?? placeName
@@ -255,14 +268,42 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
   const typeSections = useMemo(() => homesByBuyerGroup(visible), [visible])
   const countLabel = visible.length > 0 ? `${formatCount(visible.length)} for sale` : null
   const typed = typeSections.length > 1
+  const dialKey = selectedId ?? 'all'
 
   return (
-    <section id={id} className={cn(V3_ROOT_CLASS, 'place-homes')} aria-labelledby={`${id}-heading`}>
+    <section
+      id={id}
+      className={cn(V3_ROOT_CLASS, 'place-homes', layout === 'dial' && 'place-homes--dial')}
+      aria-labelledby={`${id}-heading`}
+    >
       <V3Heading level={2} size="field" id={`${id}-heading`}>
         {title}
       </V3Heading>
       {countLabel ? <p className="place-homes__count">{countLabel}</p> : null}
-      {visible.length > 0 ? (
+      {visible.length > 0 && layout === 'dial' ? (
+        typed ? (
+          typeSections.map((section) => (
+            <V3ListingDial
+              key={`${dialKey}-${section.key}`}
+              id={`${id}-${section.key}`}
+              className="place-homes__dial"
+              heading={section.heading}
+              headingLevel={3}
+              countLabel={`${formatCount(section.rows.length)} for sale`}
+              label={`${section.heading} in ${title}`}
+              listings={section.rows}
+            />
+          ))
+        ) : (
+          <V3ListingDial
+            key={dialKey}
+            id={`${id}-all`}
+            className="place-homes__dial"
+            label={`Homes in ${title}`}
+            listings={visible}
+          />
+        )
+      ) : visible.length > 0 ? (
         typed ? (
           typeSections.map((section) => (
             <div key={section.key} id={`${id}-${section.key}`} className="place-homes__type">

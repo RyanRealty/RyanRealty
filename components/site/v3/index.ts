@@ -679,6 +679,26 @@ export { V3PlaceInventory } from './V3PlaceInventory'
 
 export type { V3PlaceInventoryProps } from './V3PlaceInventory'
 
+/**
+ * The dial (Matt 2026-09-23): one listing large, the rest of a set as
+ * thumbnails on a dial beside it, "03 / 12" over the dial. A master-detail
+ * gallery modelled as tabs; every listing stays an <a href> in the served
+ * HTML. The place inventory's `layout="dial"` and the map's homes
+ * (PlaceSubdivisionHomes `layout="dial"`) mount it.
+ */
+export { V3ListingDial } from './V3ListingDial.client'
+
+export type { V3ListingDialProps } from './V3ListingDial.client'
+
+export {
+  dialKeyTarget,
+  dialPosition,
+  dialStep,
+  dialSwipeDelta,
+  dialThumbLabel,
+  dialWrap,
+} from './V3ListingDial.logic'
+
 /* -------------------------------------------------------------------------- */
 /* CHROME: the persistent frame the six patterns sit inside                    */
 /* -------------------------------------------------------------------------- */
