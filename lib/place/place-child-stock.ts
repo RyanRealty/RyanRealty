@@ -4,6 +4,7 @@
  * rows gets null — not a zero.
  */
 import { formatCount } from '@/lib/format/count'
+import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import {
   PLACE_STOCK_SECTION_ORDER,
   placeStockSectionKey,
@@ -57,6 +58,12 @@ export type SubdivisionRailEntry = {
   id: string
   name: string
   detail?: string
+  /**
+   * The place's own page (EXP-3, visibility audit 2026-09-22). The rail's
+   * button only selects the place on the map; this is the crawlable door the
+   * rail renders beside it. Absent when the caller had no page to open.
+   */
+  href?: string
 }
 
 /**
@@ -65,10 +72,26 @@ export type SubdivisionRailEntry = {
  * Rows with a measured mix sort ahead of empty ones. An empty mix stays
  * unlabeled.
  */
+/**
+ * The page a rail door opens. A /subdivisions/ slug middleware 308s elsewhere
+ * (the county plat recorded as "Eagle Crest" is /communities/eagle-crest)
+ * opens its destination directly, so a crawler never follows a redirect; a
+ * door back to the page the rail sits on is no door at all.
+ */
+export function railDoorHref(href: string, selfHref?: string): string | undefined {
+  const h = href.trim()
+  if (!h.startsWith('/')) return undefined
+  const plat = /^\/subdivisions\/([^/?#]+)$/.exec(h)
+  const dest = (plat ? resolveSubdivisionAreaRedirect(plat[1]!) : null) ?? h
+  return selfHref && dest === selfHref ? undefined : dest
+}
+
 export function subdivisionRailEntries(input: {
   regions: readonly { name: string; href: string }[]
   extras?: readonly { name: string; href: string }[]
   rows: readonly ChildStockRow[]
+  /** The page the rail sits on: no row gets a door back to it. */
+  selfHref?: string
 }): SubdivisionRailEntry[] {
   const detailed = childStockDetails(
     [...input.regions, ...(input.extras ?? [])],
@@ -81,7 +104,8 @@ export function subdivisionRailEntries(input: {
     const name = row.name.trim()
     if (!id || !name || seen.has(id)) continue
     seen.add(id)
-    out.push(row.detail ? { id, name, detail: row.detail } : { id, name })
+    const href = railDoorHref(row.href, input.selfHref)
+    out.push({ id, name, ...(row.detail ? { detail: row.detail } : {}), ...(href ? { href } : {}) })
   }
   out.sort((a, b) => {
     const aStock = a.detail ? 0 : 1

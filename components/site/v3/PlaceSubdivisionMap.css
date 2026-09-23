@@ -125,6 +125,57 @@
   overflow-wrap: break-word;
 }
 
+/* A rail row with its own page: the select button and a 44px door to the
+   place's page side by side (EXP-3). The door carries the name as its anchor
+   text for readers of assistive tech and for crawlers; the eye sees a chevron
+   in the row's own ink. */
+.place-subdiv-rail__item--linked {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--v3-tap);
+  align-items: stretch;
+}
+
+.place-subdiv-rail__open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  border-bottom: var(--v3-rule-hairline);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  text-decoration: none;
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.place-subdiv-rail__open:hover,
+.place-subdiv-rail__open:focus-visible {
+  color: var(--v3-ink);
+}
+
+.place-subdiv-rail__open:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: calc(var(--v3-focus-offset) * -1);
+}
+
+.place-subdiv-rail__open-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place-subdiv-rail__open {
+    transition: none;
+  }
+}
+
 .place-homes {
   container-type: inline-size;
   width: 100%;

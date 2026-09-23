@@ -1,0 +1,1347 @@
+{
+ "note": "Real Deschutes County plat labels (public.boundaries geo_type=subdivision, read 2026-09-23) for the families Matt named and the hardest cases, plus lookalikes that must stay out. Expected member counts are what derivePlatFamilies produced over the full 3,427-plat set on 2026-09-23.",
+ "plats": [
+  {
+   "slug": "awbrey-butte-homesites-phase-i",
+   "label": "Awbrey Butte Homesites Phase I",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-ii",
+   "label": "Awbrey Butte Homesites Phase II",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-iii",
+   "label": "Awbrey Butte Homesites Phase III",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-iv",
+   "label": "Awbrey Butte Homesites Phase IV",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-v",
+   "label": "Awbrey Butte Homesites Phase V",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-vi",
+   "label": "Awbrey Butte Homesites Phase VI",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-seven",
+   "label": "Awbrey Butte Homesites Phase Seven",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-eight",
+   "label": "Awbrey Butte Homesites Phase Eight",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-nine",
+   "label": "Awbrey Butte Homesites Phase Nine",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-ten",
+   "label": "Awbrey Butte Homesites Phase Ten",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-ten-replat-block-8-lots-15-16-and-17",
+   "label": "Awbrey Butte Homesites Phase Ten Replat Block 8 Lots 15, 16 & 17",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-eleven",
+   "label": "Awbrey Butte Homesites Phase Eleven",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twelve",
+   "label": "Awbrey Butte Homesites Phase Twelve",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-thirteen",
+   "label": "Awbrey Butte Homesites Phase Thirteen",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-fourteen",
+   "label": "Awbrey Butte Homesites Phase Fourteen",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-fifteen",
+   "label": "Awbrey Butte Homesites Phase Fifteen",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-sixteen",
+   "label": "Awbrey Butte Homesites Phase Sixteen",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-seventeen",
+   "label": "Awbrey Butte Homesites Phase Seventeen",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-eighteen",
+   "label": "Awbrey Butte Homesites Phase Eighteen",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-nineteen",
+   "label": "Awbrey Butte Homesites Phase Nineteen",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty",
+   "label": "Awbrey Butte Homesites Phase Twenty",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-one",
+   "label": "Awbrey Butte Homesites Phase Twenty-one",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-two",
+   "label": "Awbrey Butte Homesites Phase Twenty-two",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-three",
+   "label": "Awbrey Butte Homesites Phase Twenty-three",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-four",
+   "label": "Awbrey Butte Homesites Phase Twenty-four",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-five",
+   "label": "Awbrey Butte Homesites Phase Twenty-five",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-six",
+   "label": "Awbrey Butte Homesites Phase Twenty-six",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-seven",
+   "label": "Awbrey Butte Homesites Phase Twenty-seven",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-eight",
+   "label": "Awbrey Butte Homesites Phase Twenty-eight",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-twenty-nine",
+   "label": "Awbrey Butte Homesites Phase Twenty-nine",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-thirty",
+   "label": "Awbrey Butte Homesites Phase Thirty",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-thirty-one",
+   "label": "Awbrey Butte Homesites Phase Thirty-one",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-thirty-two",
+   "label": "Awbrey Butte Homesites Phase Thirty-two",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-butte-homesites-phase-thirty-three",
+   "label": "Awbrey Butte Homesites Phase Thirty-three",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-i-a-replat-lots-47-thru-51",
+   "label": "Broken Top Phase I-a Replat Lots 47 Thru 51",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-i-e-lots-72-thru-99-lots-110-thru-112-and-tracts-k-l-and-m",
+   "label": "Broken Top Phase I-e Lots 72 Thru 99 Lots 110 Thru 112 & Tracts K, L & M",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-i-f-lots-113-116",
+   "label": "Broken Top Phase I-f Lots 113-116",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phases-1-c-and-1-d-lots-1-thru-28-and-tracts-a-thru-i",
+   "label": "Broken Top Phases 1-c & 1-d Lots 1 Thru 28 And Tracts A Thru I",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-a-lots-179-thru-194",
+   "label": "Broken Top Phase Ii-a Lots 179 Thru 194",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-b-lots-227-228-236-thru-239",
+   "label": "Broken Top Phase Ii-b Lots 227, 228, 236 Thru 239",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-c-lots-117-thru-143",
+   "label": "Broken Top Phase Ii-c Lots 117 Thru 143",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-d-lots-195-thru-202",
+   "label": "Broken Top Phase Ii-d Lots 195 Thru 202",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-e-lots-156-thru-178",
+   "label": "Broken Top Phase Ii-e Lots 156 Thru 178",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-f-lots-144-thru-155-and-tract-n",
+   "label": "Broken Top Phase Ii-f Lots 144 Thru 155 And Tract N",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-g-lots-247-thru-274-and-tract-o",
+   "label": "Broken Top Phase Ii-g Lots 247 Thru 274 And Tract O",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-h-lots-203-thru-226",
+   "label": "Broken Top Phase Ii-h Lots 203 Thru 226",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-ii-l-lots-229-235-240-246",
+   "label": "Broken Top Phase Ii-l Lots 229-235, 240-246",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iii-a-lots-275-thru-301-and-372",
+   "label": "Broken Top Phase Iii-a Lots 275 Thru 301& 372",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iii-b-and-phase-iii-c-replat-of-lots-311-thru-315",
+   "label": "Broken Top Phase Iii-b And Phase Iii-c Replat Of Lots 311 Thru 315",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iii-b-lots-302-thru-314",
+   "label": "Broken Top Phase Iii-b Lots 302 Thru 314",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iii-c-lots-315-thru-323-345-thru-354",
+   "label": "Broken Top Phase Iii-c Lots 315 Thru 323, 345 Thru 354",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iii-d-lots-355-thru-371-and-tracts-r-and-s",
+   "label": "Broken Top Phase Iii-d Lots 355 Thru 371 And Tracts R & S",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iii-e-lots-373-thru-382-tract-u-tract-v-and-tract-dd",
+   "label": "Broken Top Phase Iii-e Lots 373 Thru 382,tract U, Tract V And Tract Dd",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iii-f-lots-383-thru-405-tract-w-and-tract-x",
+   "label": "Broken Top Phase Iii-f Lots 383 Thru 405, Tract W And Tract X",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iii-h-lots-324-thru-344",
+   "label": "Broken Top Phase Iii-h Lots 324 Thru 344",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-iv-h-lots-458-thru-465",
+   "label": "Broken Top Phase Iv-h Lots 458 Thru 465",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phases-iv-a-iv-b-and-iv-c-tract-cc-ff-gg-hh-lots-406-451-and-464-465",
+   "label": "Broken Top Phases Iv-a, Iv-b & Iv- C Tract Cc, Ff, Gg, Hh Lots 406-451 & 464-465",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-v-b-lots-452-thru-454",
+   "label": "Broken Top Phase V-b Lots 452 Thru 454",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phase-v-c",
+   "label": "Broken Top Phase V-c",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phases-v-a-and-vi-a",
+   "label": "Broken Top Phases V-a And Vi-a",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "broken-top-phases-1-a-and-1-b-lots-29-thru-71-lots-100-thru-109-and-tract-j",
+   "label": "Broken Top Phases 1-a & 1-b Lots 29 Thru 71 Lots 100 Thru 109 & Tract J",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-blocks-14-17",
+   "label": "Deschutes River Recreation Homesites Inc. Blocks 14-17",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-blocks-14-17-06708",
+   "label": "Deschutes River Recreation Homesites Inc. Blocks 14-17",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-blocks-18-22",
+   "label": "Deschutes River Recreation Homesites Inc. Blocks 18-22",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-blocks-23-31",
+   "label": "Deschutes River Recreation Homesites Inc. Blocks 23-31",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-blocks-25-31-and-32-37",
+   "label": "Deschutes River Recreation Homesites Inc. Blocks 25-31 & 32-37",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-4",
+   "label": "Deschutes River Recreation Homesites Inc. Block 4",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-5",
+   "label": "Deschutes River Recreation Homesites Inc. Block 5",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-6",
+   "label": "Deschutes River Recreation Homesites Inc. Block 6",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-unit-6-part-i-blocks-62-75",
+   "label": "Deschutes River Recreation Homesites Unit 6 Part I Blocks 62-75",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-unit-6-part-i-blocks-66-68-and-69",
+   "label": "Deschutes River Recreation Homesites Unit 6 Part I Blocks 66, 68 & 69",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-unit-6-part-ii-blocks-70-79-replat",
+   "label": "Deschutes River Recreation Homesites Unit 6 Part II Blocks 70-79 Replat",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-unit-6-part-ii-blocks-70-84",
+   "label": "Deschutes River Recreation Homesites Unit 6 Part II Blocks 70-84",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-7",
+   "label": "Deschutes River Recreation Homesites Inc. Block 7",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-8",
+   "label": "Deschutes River Recreation Homesites Inc. Block 8",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-unit-8-part-i-blocks-86-88",
+   "label": "Deschutes River Recreation Homesites Unit 8 Part I Blocks 86-88",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-unit-9-part-2-blocks-41-61",
+   "label": "Deschutes River Recreation Homesites Unit 9 Part 2 Blocks 41-61",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-unit-9-part-2-blocks-50-5-1-and-58",
+   "label": "Deschutes River Recreation Homesites Unit 9 Part 2 Blocks 50, 5 1& 58",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-unit-9-part-i-blocks-41-42-and-53",
+   "label": "Deschutes River Recreation Homesites Unit 9 Part I Blocks 41, 42 & 53",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-10",
+   "label": "Deschutes River Recreation Homesites Inc. Block 10",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-11",
+   "label": "Deschutes River Recreation Homesites Inc. Block 11",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-12",
+   "label": "Deschutes River Recreation Homesites Inc. Block 12",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "deschutes-river-recreation-homesites-inc-block-13",
+   "label": "Deschutes River Recreation Homesites Inc. Block 13",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "discovery-west-phase-1",
+   "label": "Discovery West, Phase 1",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "discovery-west-phase-2a-and-2b",
+   "label": "Discovery West, Phase 2a And 2b",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "discovery-west-phase-3",
+   "label": "Discovery West Phase 3",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "discovery-west-phase-4-pz-19-0370",
+   "label": "Discovery West Phase 4 Pz 19-0370",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "discovery-west-phase-5-pz-19-0370",
+   "label": "Discovery West, Phase 5 Pz 19-0370",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "discovery-west-phase-6-and-7-plld20210285",
+   "label": "Discovery West, Phase 6 And 7 Plld20210285",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "discovery-west-phase-8-and-9-plld20210285",
+   "label": "Discovery West Phase 8 And 9 Plld20210285",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "estates-at-pronghorn-phase-1",
+   "label": "Estates At Pronghorn Phase 1",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "estates-at-pronghorn-phase-2",
+   "label": "Estates At Pronghorn Phase 2",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "estates-at-pronghorn-phase-3",
+   "label": "Estates At Pronghorn Phase 3",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "estates-at-pronghorn-phase-4",
+   "label": "Estates At Pronghorn Phase 4",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "estates-at-pronghorn-phase-5",
+   "label": "Estates At Pronghorn Phase 5",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "estates-at-pronghorn-phase-6",
+   "label": "Estates At Pronghorn Phase 6",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phases-20-22",
+   "label": "Northwest Crossing Phases 20-22",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-1",
+   "label": "Northwest Crossing Phase 1",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phases-2-and-3",
+   "label": "Northwest Crossing Phases 2 & 3",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-4",
+   "label": "Northwest Crossing Phase 4",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-5",
+   "label": "Northwest Crossing Phase 5",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-6",
+   "label": "Northwest Crossing Phase 6",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phases-7-and-11",
+   "label": "Northwest Crossing Phases 7 And 11",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-8",
+   "label": "Northwest Crossing Phase 8",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phases-9-and-10",
+   "label": "Northwest Crossing Phases 9 And 10",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-12",
+   "label": "Northwest Crossing Phase 12",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-13",
+   "label": "Northwest Crossing Phase 13",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-14",
+   "label": "Northwest Crossing Phase 14",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-15",
+   "label": "Northwest Crossing Phase 15",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-16",
+   "label": "Northwest Crossing Phase 16",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-17",
+   "label": "Northwest Crossing Phase 17",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-18",
+   "label": "Northwest Crossing Phase 18",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-19",
+   "label": "Northwest Crossing Phase 19",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-23",
+   "label": "Northwest Crossing, Phase 23",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-24",
+   "label": "Northwest Crossing Phase 24",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-25",
+   "label": "Northwest Crossing Phase 25",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-26",
+   "label": "Northwest Crossing Phase 26",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-27",
+   "label": "Northwest Crossing Phase 27",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-29",
+   "label": "Northwest Crossing Phase 29",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "northwest-crossing-phase-30",
+   "label": "Northwest Crossing, Phase 30",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "shevlin-bluffs-phase-1",
+   "label": "Shevlin Bluffs Phase 1",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "shevlin-bluffs-phase-2",
+   "label": "Shevlin Bluffs, Phase 2",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "shevlin-bluffs-phases-3-and-4",
+   "label": "Shevlin Bluffs, Phases 3 And 4",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-1",
+   "label": "Skyliner Summit At Broken Top Phase 1",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-2",
+   "label": "Skyliner Summit At Broken Top Phase 2",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-3",
+   "label": "Skyliner Summit At Broken Top Phase 3",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-4",
+   "label": "Skyliner Summit At Broken Top Phase 4",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-5",
+   "label": "Skyliner Summit At Broken Top Phase 5",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phases-7-and-8",
+   "label": "Skyliner Summit At Broken Top Phases 7 And 8",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-9",
+   "label": "Skyliner Summit At Broken Top Phase 9",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-10",
+   "label": "Skyliner Summit At Broken Top Phase 10",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-10d",
+   "label": "Skyliner Summit At Broken Top Phase 10d",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "skyliner-summit-at-broken-top-phase-11",
+   "label": "Skyliner Summit At Broken Top Phase 11",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tetherow-phase-1",
+   "label": "Tetherow Phase 1",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tetherow-phase-2",
+   "label": "Tetherow Phase 2",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tetherow-phase-3",
+   "label": "Tetherow Phase 3",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tetherow-phase-4",
+   "label": "Tetherow Phase 4",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tetherow-phase-5",
+   "label": "Tetherow Phase 5",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tetherow-phase-6",
+   "label": "Tetherow Phase 6",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tetherow-phase-7",
+   "label": "Tetherow Phase 7",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "highlands-at-broken-top-phase-1",
+   "label": "Highlands At Broken Top Phase 1",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "highlands-at-broken-top-phase-2",
+   "label": "Highlands At Broken Top Phase 2",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "highlands-at-broken-top-phase-3",
+   "label": "Highlands At Broken Top Phase 3",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "highlands-at-broken-top-phase-4",
+   "label": "Highlands At Broken Top Phase 4",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-13th-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section 13th Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-first-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section First Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-second-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Second Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-third-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Third Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-fourth-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Fourth Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-fifth-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Fifth Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-sixth-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Sixth Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-seventh-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Seventh Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-eighth-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Eighth Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-ninth-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Ninth Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-tenth-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Tenth Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-eleventh-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Eleventh Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "glaze-meadow-homesite-section-twelfth-addition-of-black-butte-ranch",
+   "label": "Glaze Meadow Homesite Section Twelfth Addition Of Black Butte Ranch",
+   "citySlug": "black-butte-ranch"
+  },
+  {
+   "slug": "canyon-ridge-phases-1-and-2",
+   "label": "Canyon Ridge, Phases 1 And 2",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "canyon-ridge-phase-2a",
+   "label": "Canyon Ridge, Phase 2a",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "canyon-ridge-phase-3",
+   "label": "Canyon Ridge, Phase 3",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "canyon-ridge-phase-4-711-18-000032-sub",
+   "label": "Canyon Ridge, Phase 4 711-18-000032-sub",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "canyon-ridge-phase-5-and-5a",
+   "label": "Canyon Ridge, Phase 5 And 5a",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "canyon-ridge-phase-6-711-18-000032-sub",
+   "label": "Canyon Ridge, Phase 6 711-18-000032-sub",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-ii",
+   "label": "Ridge At Eagle Crest II",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-iii",
+   "label": "Ridge At Eagle Crest III",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-iv",
+   "label": "Ridge At Eagle Crest IV",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-5",
+   "label": "Ridge At Eagle Crest 5",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-6",
+   "label": "Ridge At Eagle Crest 6",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-7",
+   "label": "Ridge At Eagle Crest 7",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-8",
+   "label": "Ridge At Eagle Crest 8",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-9",
+   "label": "Ridge At Eagle Crest 9",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-10",
+   "label": "Ridge At Eagle Crest 10",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-11",
+   "label": "Ridge At Eagle Crest 11",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-11-replat-lots-21-28",
+   "label": "Ridge At Eagle Crest 11 Replat Lots 21-28",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-12",
+   "label": "Ridge At Eagle Crest 12",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-12-replat-lots-41-48-and-57-60-and-common",
+   "label": "Ridge At Eagle Crest 12 Replat Lots 41-48 & 57-60 & Common",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-13",
+   "label": "Ridge At Eagle Crest 13",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-14",
+   "label": "Ridge At Eagle Crest 14",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-14-replat-lots-97-099",
+   "label": "Ridge At Eagle Crest 14 Replat Lots 97-099",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-15",
+   "label": "Ridge At Eagle Crest 15",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-16",
+   "label": "Ridge At Eagle Crest 16",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-17",
+   "label": "Ridge At Eagle Crest 17",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-18",
+   "label": "Ridge At Eagle Crest 18",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-19",
+   "label": "Ridge At Eagle Crest 19",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-20",
+   "label": "Ridge At Eagle Crest 20",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-21",
+   "label": "Ridge At Eagle Crest 21",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-22",
+   "label": "Ridge At Eagle Crest 22",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-23",
+   "label": "Ridge At Eagle Crest 23",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-24",
+   "label": "Ridge At Eagle Crest 24",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-25",
+   "label": "Ridge At Eagle Crest 25",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-26",
+   "label": "Ridge At Eagle Crest 26",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-27",
+   "label": "Ridge At Eagle Crest 27",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-28",
+   "label": "Ridge At Eagle Crest 28",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-29",
+   "label": "Ridge At Eagle Crest 29",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-31",
+   "label": "Ridge At Eagle Crest 31",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-32",
+   "label": "Ridge At Eagle Crest 32",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-33",
+   "label": "Ridge At Eagle Crest 33",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-34",
+   "label": "Ridge At Eagle Crest 34",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-35",
+   "label": "Ridge At Eagle Crest 35",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-36",
+   "label": "Ridge At Eagle Crest 36",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-37",
+   "label": "Ridge At Eagle Crest 37",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-38",
+   "label": "Ridge At Eagle Crest 38",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-39",
+   "label": "Ridge At Eagle Crest 39",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-40",
+   "label": "Ridge At Eagle Crest 40",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-41",
+   "label": "Ridge At Eagle Crest 41",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-42",
+   "label": "Ridge At Eagle Crest 42",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-43",
+   "label": "Ridge At Eagle Crest 43",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-44",
+   "label": "Ridge At Eagle Crest 44",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-45",
+   "label": "Ridge At Eagle Crest 45",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-46",
+   "label": "Ridge At Eagle Crest 46",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-47",
+   "label": "Ridge At Eagle Crest 47",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-48",
+   "label": "Ridge At Eagle Crest 48",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-49",
+   "label": "Ridge At Eagle Crest 49",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-50",
+   "label": "Ridge At Eagle Crest 50",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-53",
+   "label": "Ridge At Eagle Crest 53",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-54",
+   "label": "Ridge At Eagle Crest 54",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-55",
+   "label": "Ridge At Eagle Crest 55",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-56",
+   "label": "Ridge At Eagle Crest 56",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-57",
+   "label": "Ridge At Eagle Crest 57",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-58",
+   "label": "Ridge At Eagle Crest 58",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-59",
+   "label": "Ridge At Eagle Crest 59",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-60",
+   "label": "Ridge At Eagle Crest 60",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "ridge-at-eagle-crest-61",
+   "label": "Ridge At Eagle Crest 61",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "tetherow-crossing",
+   "label": "Tetherow Crossing",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "tetherow-crossing-revised",
+   "label": "Tetherow Crossing Revised",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "tetherow-crossing-phase-ii",
+   "label": "Tetherow Crossing Phase II",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "tetherow-crossing-phase-iii",
+   "label": "Tetherow Crossing Phase III",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "tetherow-crossing-phase-iv",
+   "label": "Tetherow Crossing Phase IV",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "tetherow-crossing-phase-v",
+   "label": "Tetherow Crossing Phase V",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "tetherow-crossing-phase-vi",
+   "label": "Tetherow Crossing Phase VI",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "tetherow-crossing-phase-vii",
+   "label": "Tetherow Crossing Phase VII",
+   "citySlug": "redmond"
+  },
+  {
+   "slug": "caldera-springs-olu-phase-c1-247-22-000182-tp",
+   "label": "Caldera Springs Olu Phase C1 247-22-000182-tp",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-olu-phase-a",
+   "label": "Caldera Springs Olu, Phase A",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-olu-phase-b",
+   "label": "Caldera Springs Olu, Phase B",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-olu-phase-d-247-24-000360-tp",
+   "label": "Caldera Springs Olu, Phase D 247-24-000360-tp",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-olu-phase-e1-247-25-00292-tp",
+   "label": "Caldera Springs Olu, Phase E1 247-25-00292-tp",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-c1-sfr-247-22-000183-tp",
+   "label": "Caldera Springs Phase C1 Sfr 247-22-000183-tp",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-a",
+   "label": "Caldera Springs, Phase A",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-b",
+   "label": "Caldera Springs, Phase B",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-d-247-24-000360-tp",
+   "label": "Caldera Springs, Phase D 247-24-000360-tp",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-e1-247-25-00291-tp",
+   "label": "Caldera Springs, Phase E1 247-25-00291-tp",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-one",
+   "label": "Caldera Springs Phase One",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-two",
+   "label": "Caldera Springs Phase Two",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-three",
+   "label": "Caldera Springs Phase Three",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-olu-phase-c-2",
+   "label": "Caldera Springs Olu, Phase C-2",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "caldera-springs-phase-c-2",
+   "label": "Caldera Springs, Phase C-2",
+   "citySlug": "sunriver"
+  },
+  {
+   "slug": "golf-homes-at-tetherow",
+   "label": "Golf Homes At Tetherow",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tetherow-rim",
+   "label": "Tetherow Rim",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "golf-tracts-at-broken-top",
+   "label": "Golf Tracts At Broken Top",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "tennis-tracts-at-broken-top",
+   "label": "Tennis Tracts At Broken Top",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "north-rim-on-awbrey-butte-phase-1",
+   "label": "North Rim On Awbrey Butte Phase 1",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "awbrey-glen-homesites-phase-one",
+   "label": "Awbrey Glen Homesites Phase One",
+   "citySlug": "bend"
+  },
+  {
+   "slug": "eagle-crest-iii",
+   "label": "Eagle Crest III",
+   "citySlug": "redmond"
+  }
+ ],
+ "mlsNames": [
+  {
+   "name": "Shevlin Bluffs",
+   "citySlug": "bend"
+  },
+  {
+   "name": "The Highlands at Broken Top",
+   "citySlug": "bend"
+  }
+ ],
+ "expected": {
+  "/subdivisions/awbrey-butte-homesites": {
+   "name": "Awbrey Butte Homesites",
+   "members": 34
+  },
+  "/communities/broken-top": {
+   "name": "Broken Top",
+   "members": 27
+  },
+  "/subdivisions/deschutes-river-recreation-homesites": {
+   "name": "Deschutes River Recreation Homesites",
+   "members": 22
+  },
+  "/subdivisions/discovery-west": {
+   "name": "Discovery West",
+   "members": 7
+  },
+  "/subdivisions/estates-at-pronghorn": {
+   "name": "Estates At Pronghorn",
+   "members": 6
+  },
+  "/communities/northwest-crossing": {
+   "name": "NorthWest Crossing",
+   "members": 24
+  },
+  "/subdivisions/shevlin-bluffs": {
+   "name": "Shevlin Bluffs",
+   "members": 3
+  },
+  "/subdivisions/skyliner-summit-at-broken-top": {
+   "name": "Skyliner Summit At Broken Top",
+   "members": 10
+  },
+  "/communities/tetherow": {
+   "name": "Tetherow",
+   "members": 7
+  },
+  "/subdivisions/the-highlands-at-broken-top": {
+   "name": "The Highlands at Broken Top",
+   "members": 4
+  },
+  "/subdivisions/glaze-meadow-homesite-section-of-black-butte-ranch": {
+   "name": "Glaze Meadow Homesite Section Of Black Butte Ranch",
+   "members": 14
+  },
+  "/subdivisions/canyon-ridge": {
+   "name": "Canyon Ridge",
+   "members": 6
+  },
+  "/subdivisions/ridge-at-eagle-crest": {
+   "name": "Ridge At Eagle Crest",
+   "members": 60
+  },
+  "/subdivisions/tetherow-crossing": {
+   "name": "Tetherow Crossing",
+   "members": 8
+  },
+  "/communities/caldera-springs": {
+   "name": "Caldera Springs",
+   "members": 15
+  }
+ }
+}

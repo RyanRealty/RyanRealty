@@ -112,7 +112,7 @@ export function PlaceSubdivisionRail({
         {rail.map((entry) => {
           const photo = firstListedPhoto(homes, keysBySlug[entry.id])
           return (
-            <li key={entry.id}>
+            <li key={entry.id} className={cn(entry.href && 'place-subdiv-rail__item--linked')}>
               <button
                 type="button"
                 className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
@@ -146,6 +146,16 @@ export function PlaceSubdivisionRail({
                   ) : null}
                 </span>
               </button>
+              {/* THE DOOR (visibility audit 2026-09-22, EXP-3). The row's button
+                  selects the place on the map; this anchor opens the place's
+                  own page, and it is a real <a href> in the served HTML, which
+                  the button can never be. The name is the anchor text. */}
+              {entry.href ? (
+                <Link className="place-subdiv-rail__open" href={entry.href}>
+                  <span className="place-subdiv-rail__open-label">{`${entry.name} page`}</span>
+                  <span aria-hidden="true">›</span>
+                </Link>
+              ) : null}
             </li>
           )
         })}
