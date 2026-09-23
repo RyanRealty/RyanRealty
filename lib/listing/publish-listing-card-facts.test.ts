@@ -42,4 +42,27 @@ describe('publishListingCardFacts', () => {
   it('publishes no ask when the row has none', () => {
     expect(publishListingCardFacts({ ...base, price: null }).ask).toBeNull()
   })
+
+  it('gives a commercial lease its rate with the unit and the "For lease" label', () => {
+    const facts = publishListingCardFacts({
+      ...base,
+      propertyType: 'G',
+      price: 1.4,
+      beds: null,
+      baths: null,
+      leaseRateOption: '$/SF/Mo',
+    })
+    expect(facts.ask).toBeNull()
+    expect(facts.lease).toEqual({ rate: '$1.40/sq ft/mo', text: '$1.40/sq ft/mo', label: 'For lease' })
+  })
+
+  it('says "Lease rate not published" for a lease with no unit, never a bare number', () => {
+    const facts = publishListingCardFacts({ ...base, propertyType: 'G', price: 1.2 })
+    expect(facts.lease?.rate).toBeNull()
+    expect(facts.lease?.text).toBe('Lease rate not published')
+  })
+
+  it('leaves lease null on a sale listing, even if a unit rides along', () => {
+    expect(publishListingCardFacts({ ...base, leaseRateOption: '$/SF/Mo' }).lease).toBeNull()
+  })
 })

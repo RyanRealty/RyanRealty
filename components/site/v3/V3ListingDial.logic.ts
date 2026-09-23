@@ -94,6 +94,21 @@ export function dialSwipeDelta(dx: number, dy: number, minPx = DIAL_SWIPE_MIN_PX
 export const DIAL_NO_ASK = 'Price not published'
 
 /**
+ * What the dial prints in the price slot, and whether it is a withheld line
+ * rather than a figure (the card sets it quieter). A commercial lease prints
+ * its rate with the unit, or its own withheld line; a sale listing its ask, or
+ * DIAL_NO_ASK. `lease` is publishListingCardFacts' own, never built here.
+ */
+export function dialPriceSlot(facts: {
+  ask: string | null
+  lease: { rate: string | null; text: string } | null
+}): { text: string; withheld: boolean } {
+  if (facts.lease) return { text: facts.lease.text, withheld: facts.lease.rate == null }
+  if (facts.ask) return { text: facts.ask, withheld: false }
+  return { text: DIAL_NO_ASK, withheld: true }
+}
+
+/**
  * A thumbnail's accessible name: the ask, then the street, in the order the
  * thumbnail prints them, so the visible caption is inside the name
  * (WCAG 2.5.3). "$649,000, 1234 NW Portland Ave".

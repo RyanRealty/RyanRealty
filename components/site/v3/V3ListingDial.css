@@ -461,11 +461,17 @@
   line-height: var(--v3-leading-control);
 }
 
+/* Wraps at its spaces rather than running into the next caption: a lease
+   rate ("$2.50/sq ft/mo") or a withheld line ("Lease rate not published") is
+   wider than a phone thumbnail, and at 390 it ran into its neighbour
+   (2026-09-23). Never clipped: a rate cut off before its unit is not a rate.
+   An ask has no spaces, so "$1,250,000" stays on one line as before. */
 .v3-dial__thumb-ask {
+  overflow: hidden;
   font-size: var(--v3-size-source);
   font-weight: var(--v3-weight-medium);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .v3-dial__thumb-addr {

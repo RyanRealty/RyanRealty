@@ -278,3 +278,25 @@
   line-height: var(--v3-leading-body);
   overflow-wrap: break-word;
 }
+
+/* A lease with no publishable rate reads "Lease rate not published": a
+   withheld line, set quieter than a figure. */
+.place-home-card__price--none {
+  color: var(--v3-ink-muted);
+  font-weight: var(--v3-weight-body);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* Commercial space for lease follows every for-sale group, ruled apart from
+   them, because it is not one of them. (0,2,0) and later in the file than
+   `.place-homes__type + .place-homes__type`, so it wins the margin. */
+.place-homes .place-homes__type--lease {
+  margin-top: var(--v3-space-xl);
+  padding-top: var(--v3-space-xl);
+  border-top: var(--v3-rule-hairline);
+}
+
+/* The same door under the map's lease block. */
+.place-homes__more {
+  margin: var(--v3-space-sm) 0 0;
+}

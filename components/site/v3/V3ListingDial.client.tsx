@@ -37,7 +37,9 @@
  *
  * Every figure is the row's own (CLAUDE.md section 0): the ask and the facts
  * come through the lib publishers, and a row with no ask reads "Price not
- * published", never a seller offer the row does not make.
+ * published", never a seller offer the row does not make. A commercial lease
+ * reads its rent with the unit, or "Lease rate not published", under "For
+ * lease" (publishListingCardFacts `lease`, dialPriceSlot).
  */
 import {
   memo,
@@ -66,10 +68,10 @@ import { V3Icon } from './V3Icon'
 import { SplitCardMedia } from './SplitCardMedia'
 import type { V3ListingRowData } from './V3ListingRow'
 import {
-  DIAL_NO_ASK,
   dialKeyTarget,
   dialPanelId,
   dialPosition,
+  dialPriceSlot,
   dialRevealOffset,
   dialStep,
   dialSwipeDelta,
@@ -155,6 +157,7 @@ function factsOf(listing: V3ListingRowData) {
     sqft: listing.sqft,
     pricePerSqft: listing.pricePerSqft ?? null,
     statusLabel: listing.statusLabel ?? null,
+    leaseRateOption: listing.leaseRateOption ?? null,
   })
 }
 
@@ -169,8 +172,13 @@ type CardProps = {
 /** The primary card: the lead photograph and the rail card's copy. */
 const DialCard = memo(function DialCard({ listing, panelId, tabId, shown, leaving }: CardProps) {
   const facts = factsOf(listing)
+  const price = dialPriceSlot(facts)
   const photo = listing.photoUrl?.trim() || null
-  const kind = [subTypeLabel(listing.propertySubType), facts.kind].filter(Boolean).join(' · ')
+  // A lease leads its kind line with "For lease", where a sale listing has no
+  // status word: the label is the lease's, from publishListingCardFacts.
+  const kind = [facts.lease?.label, subTypeLabel(listing.propertySubType), facts.kind]
+    .filter(Boolean)
+    .join(' · ')
   const tags = listing.badges ?? (listing.badge ? [listing.badge] : [])
   const visible = shown || leaving
   return (
@@ -202,11 +210,7 @@ const DialCard = memo(function DialCard({ listing, panelId, tabId, shown, leavin
       <Link href={listing.href} className="v3-dial__copy">
         <span className="v3-dial__figures">
           {kind ? <span className="v3-dial__kind">{kind}</span> : null}
-          {facts.ask ? (
-            <span className="v3-dial__ask">{facts.ask}</span>
-          ) : (
-            <span className="v3-dial__ask v3-dial__ask--none">{DIAL_NO_ASK}</span>
-          )}
+          <span className={cn('v3-dial__ask', price.withheld && 'v3-dial__ask--none')}>{price.text}</span>
           {facts.meta.length > 0 ? <span className="v3-dial__meta">{facts.meta.join(' · ')}</span> : null}
         </span>
         <span className="v3-dial__where">
@@ -241,7 +245,7 @@ const DialThumb = memo(function DialThumb({
   onWarm,
   setRef,
 }: ThumbProps) {
-  const { ask } = factsOf(listing)
+  const price = dialPriceSlot(factsOf(listing))
   const src = thumbSrc(listing)
   return (
     <button
@@ -251,7 +255,7 @@ const DialThumb = memo(function DialThumb({
       id={dialTabId(dialId, index)}
       aria-selected={selected}
       aria-controls={dialPanelId(dialId, index)}
-      aria-label={dialThumbLabel(listing.addressLine, ask)}
+      aria-label={dialThumbLabel(listing.addressLine, price.text)}
       tabIndex={selected ? 0 : -1}
       className="v3-dial__thumb"
       onClick={() => onSelect(index)}
@@ -266,7 +270,7 @@ const DialThumb = memo(function DialThumb({
         )}
       </span>
       <span className="v3-dial__thumb-cap">
-        <span className="v3-dial__thumb-ask">{ask ?? DIAL_NO_ASK}</span>
+        <span className="v3-dial__thumb-ask">{price.text}</span>
         <span className="v3-dial__thumb-addr">{listing.addressLine}</span>
       </span>
     </button>
@@ -336,7 +340,9 @@ export function V3ListingDial({
         const pos = dialPosition(target, count)
         const listing = listings[target]
         if (pos && listing) {
-          setLive(`${pos.shown} of ${pos.count}. ${dialThumbLabel(listing.addressLine, factsOf(listing).ask)}`)
+          setLive(
+            `${pos.shown} of ${pos.count}. ${dialThumbLabel(listing.addressLine, dialPriceSlot(factsOf(listing)).text)}`,
+          )
         }
       }
     },
