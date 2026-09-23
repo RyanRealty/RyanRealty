@@ -69,6 +69,31 @@ beforeEach(() => {
 })
 
 describe('runMarketReportSend — cadence + skip taxonomy', () => {
+  it('signs a due report as the assigned broker, web slug included', async () => {
+    const deps = makeDeps({
+      fetchSubscribers: vi.fn(async () => [sub({ assignedBroker: 'paul-stevenson', personName: 'Casey' })]),
+    })
+    const s = await runMarketReportSend({ now: NOW, deps })
+    expect(s.sent).toBe(1)
+    const arg = vi.mocked(deps.sendOne).mock.calls[0]?.[0]
+    expect(arg?.brokerSlug).toBe('paul-stevenson')
+    expect(arg?.html).toContain('Paul Stevenson')
+    expect(arg?.html).toContain('541.502.3436')
+    expect(arg?.html).not.toContain('977-6841')
+    expect(arg?.html).not.toContain('Matt Ryan')
+  })
+
+  it('an unassigned subscriber is signed by Matt', async () => {
+    const deps = makeDeps({
+      fetchSubscribers: vi.fn(async () => [sub({ assignedBroker: null })]),
+    })
+    await runMarketReportSend({ now: NOW, deps })
+    const arg = vi.mocked(deps.sendOne).mock.calls[0]?.[0]
+    expect(arg?.brokerSlug).toBe('matt')
+    expect(arg?.html).toContain('Matt Ryan')
+    expect(arg?.html).toContain('541.703.3095')
+  })
+
   it('sends a due, never-sent subscriber and stamps last_sent_at', async () => {
     const deps = makeDeps()
     const s = await runMarketReportSend({ now: NOW, deps })

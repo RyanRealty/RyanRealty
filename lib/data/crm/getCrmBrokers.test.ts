@@ -16,6 +16,7 @@ describe('mapCrmBrokerRow', () => {
       name: 'Matt Ryan',
       email: 'matt@ryan-realty.com',
       phone: null,
+      publishedPhone: null,
       title: null,
       crmActive: true,
       routingEligible: true,
@@ -34,7 +35,22 @@ describe('mapCrmBrokerRow', () => {
       routing_eligible: true,
     })
     expect(b?.phone).toBe('541.213.6706')
+    expect(b?.publishedPhone).toBeNull()
     expect(b?.title).toBe('Principal Broker')
+  })
+
+  it('keeps a personal cell off the published line', () => {
+    const b = mapCrmBrokerRow({
+      crm_slug: 'rebecca',
+      display_name: 'Rebecca Peterson',
+      email: 'rebeccapeterson@ryan-realty.com',
+      phone: '(415) 308-9087',
+      twilio_number: '+15412503380',
+      crm_active: true,
+      routing_eligible: true,
+    })
+    expect(b?.phone).toBe('(415) 308-9087')
+    expect(b?.publishedPhone).toBe('+15412503380')
   })
 
   it('coerces a blank title to null', () => {
@@ -87,6 +103,7 @@ describe('mapCrmBrokerRow', () => {
       name: 'Rebecca Peterson',
       email: null,
       phone: null,
+      publishedPhone: null,
       title: null,
       crmActive: false,
       routingEligible: false,

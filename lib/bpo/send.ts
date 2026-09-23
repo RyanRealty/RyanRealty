@@ -31,6 +31,8 @@ import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { getContactSendTarget } from '@/lib/data/crm/getContactSendTarget'
 import { assertClientSafe, stripOfferStrategy } from '@/lib/bpo/render'
 import { CONTACT } from '@/lib/brand/contact'
+import { normalizeAgentSlug } from '@/lib/agent-attribution'
+import { formatPublishedPhone } from '@/lib/cma/format-phone'
 import { wrapBrandedEmail, brandedTextFooter, escapeHtml, type ShellBroker } from '@/lib/email/shell'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { isSuppressed } from '@/lib/crm/suppressions'
@@ -170,12 +172,15 @@ Here is our broker price opinion for ${opts.subjectAddress}. The full report is 
 It walks through the comparable sales, the market conditions, and how the property's listing history shapes the number. Happy to talk any of it through.`
 }
 
-async function resolveBpoShellBroker(brokerSlug: string | null): Promise<{ broker: ShellBroker; phone: string | null }> {
+async function resolveBpoShellBroker(brokerSlug: string | null): Promise<{ broker: ShellBroker; phone: string | null; email: string }> {
   const brokerRaw = await getCmaBrokerBySlugOrEmail({ slug: brokerSlug })
   const brokerEmail = (brokerRaw?.email as string | null) ?? 'matt@ryan-realty.com'
   const brokerName = (brokerRaw?.display_name as string) ?? 'Matt Ryan'
-  const brokerPhone = (brokerRaw?.phone as string | null) ?? null
+  // twilio_number is the only column this read selects. brokers.phone is a
+  // personal cell for Paul and Rebecca and is never the line on a BPO.
+  const brokerPhone = formatPublishedPhone((brokerRaw?.twilio_number as string | null) ?? null)
   const brokerPhoto = (brokerRaw?.photo_url as string | null) ?? null
+  const resolvedSlug = (brokerRaw?.slug as string | null) ?? brokerSlug
   return {
     broker: {
       name: brokerName,
@@ -188,9 +193,10 @@ async function resolveBpoShellBroker(brokerSlug: string | null): Promise<{ broke
           ? brokerPhoto
           : `${SITE_URL}${brokerPhoto}`
         : `${SITE_URL}/images/brokers/ryan-matt.png`,
-      isOwner: (brokerSlug ?? '') === 'matthew-ryan',
+      isOwner: brokerRaw ? normalizeAgentSlug(resolvedSlug) === 'matt' : true,
     },
     phone: brokerPhone,
+    email: brokerEmail,
   }
 }
 
@@ -318,6 +324,9 @@ export async function sendBpoToLead(opts: {
       return { ok: false, error: 'The internal offer strategy could not be removed for a client-safe send. Nothing was sent.' }
     }
   }
+  const { broker: shellBroker, phone: brokerPhone, email: brokerEmail } = await resolveBpoShellBroker(
+    (row.broker_slug as string | null) ?? null,
+  )
   let pdf: Buffer
   try {
     // Running marks live in the @page margin strips, so body content cannot
@@ -329,7 +338,7 @@ export async function sendBpoToLead(opts: {
       marks: {
         headerLeft: 'RYAN REALTY',
         headerRight: 'BROKER PRICE OPINION',
-        footerLeft: `Ryan Realty · ${CONTACT.phoneDirect}`,
+        footerLeft: `Ryan Realty · ${brokerPhone ?? CONTACT.phoneDirect}`,
       },
     })
   } catch (e) {
@@ -337,25 +346,6 @@ export async function sendBpoToLead(opts: {
   }
   if (pdf.byteLength > MAX_PDF_BYTES) {
     return { ok: false, error: 'The rendered PDF exceeds the 25 MB attachment cap.' }
-  }
-
-  const brokerRaw = await getCmaBrokerBySlugOrEmail({ slug: (row.broker_slug as string | null) ?? null })
-  const brokerEmail = (brokerRaw?.email as string | null) ?? 'matt@ryan-realty.com'
-  const brokerName = (brokerRaw?.display_name as string) ?? 'Matt Ryan'
-  const brokerPhone = (brokerRaw?.phone as string | null) ?? null
-  const brokerPhoto = (brokerRaw?.photo_url as string | null) ?? null
-  const shellBroker: ShellBroker = {
-    name: brokerName,
-    firstName: brokerName.split(/\s+/)[0]!,
-    title: (brokerRaw?.title as string) ?? 'Owner & Principal Broker',
-    phone: brokerPhone,
-    email: brokerEmail,
-    headshotUrl: brokerPhoto
-      ? brokerPhoto.startsWith('http')
-        ? brokerPhoto
-        : `${SITE_URL}${brokerPhoto}`
-      : `${SITE_URL}/images/brokers/ryan-matt.png`,
-    isOwner: ((row.broker_slug as string | null) ?? '') === 'matthew-ryan',
   }
 
   const body = buildBody({

@@ -402,8 +402,18 @@ export async function getCmaBrokerBySlugOrEmail(opts: {
   const cols =
     'id, slug, display_name, title, license_number, email, twilio_number, photo_url, is_active'
   if (opts.slug?.trim()) {
-    const { data } = await sb.from('brokers').select(cols).eq('slug', opts.slug.trim()).eq('is_active', true).maybeSingle()
+    const wanted = opts.slug.trim()
+    // cmas.broker_slug stores the web slug (paul-stevenson). CRM assignment
+    // and some callers pass the short slug (paul). Either one is that broker.
+    const { data } = await sb.from('brokers').select(cols).eq('slug', wanted).eq('is_active', true).maybeSingle()
     if (data) return data as Record<string, unknown>
+    const { data: byCrm } = await sb
+      .from('brokers')
+      .select(cols)
+      .eq('crm_slug', wanted)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (byCrm) return byCrm as Record<string, unknown>
   }
   if (opts.email?.trim()) {
     const { data } = await sb.from('brokers').select(cols).ilike('email', opts.email.trim()).eq('is_active', true).maybeSingle()

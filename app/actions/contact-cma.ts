@@ -34,6 +34,7 @@ import { sendCmaToLead } from '@/lib/cma/send'
 import { slugifyAddress } from '@/lib/cma-request'
 import { resolveWritableCmaSlot } from '@/lib/cma/versions'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
+import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
@@ -154,6 +155,9 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
     })
     if (!slot.ok) return { ok: false, error: slot.error }
     const slug = slot.slug
+    // The lead's assigned broker signs. Matt is only the fallback when nobody
+    // is assigned (Matt 2026-08-04). The actor who tapped Build is not the signer.
+    const signer = await resolveSigningBrokerForPerson(personId)
     const built = await buildCma({
       slug,
       rawAddress: parsed.rawAddress,
@@ -165,6 +169,8 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
         phone: ctx.leadPhone,
         notes: null,
       },
+      brokerSlug: signer.slug,
+      personId,
       requestSource: 'crm-contact-card',
     })
 

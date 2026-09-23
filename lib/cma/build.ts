@@ -20,6 +20,7 @@ import {
   getPricingMarketIndex,
   type CmaCompInsert,
 } from '@/lib/data'
+import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
 import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
@@ -97,8 +98,17 @@ export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
 const DEFAULT_BROKER_SLUG = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'matthew-ryan').trim().toLowerCase()
 
 async function resolveBroker(input: CmaBuildInput): Promise<CmaBroker> {
+  // An explicit slug or email is the signer (rebuild, rebrand, the admin
+  // select). When neither was passed, the linked person's assigned broker
+  // signs. Matt is only the fallback when that person has no assignment.
+  let slug = input.brokerSlug?.trim() || null
+  const email = input.brokerEmail?.trim() || null
+  if (!slug && !email && input.personId) {
+    const signer = await resolveSigningBrokerForPerson(input.personId)
+    slug = signer.slug?.trim() || null
+  }
   const row =
-    (await getCmaBrokerBySlugOrEmail({ slug: input.brokerSlug, email: input.brokerEmail })) ??
+    (await getCmaBrokerBySlugOrEmail({ slug, email })) ??
     (await getCmaBrokerBySlugOrEmail({ slug: DEFAULT_BROKER_SLUG }))
   if (row) {
     return {

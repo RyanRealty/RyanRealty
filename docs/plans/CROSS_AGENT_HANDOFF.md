@@ -1,3 +1,7 @@
+# Current — 2026-09-22 (Matt: the assigned broker signs)
+
+Surface: Grok Build, primary checkout. A CMA, BPO, market report, or newsletter is signed by the contact's assigned broker. Matt signs only when nobody is assigned. The published business line is the number on the document. A web slug (paul-stevenson) is that broker. Existing stored letters stay as stored until a rebuild. Nothing sent. auto_send stays off. Node: none.
+
 # Current — 2026-09-22 (Matt: Tetherow real estate in the title)
 
 Surface: Grok Build, primary checkout. `/communities/tetherow` title is “Tetherow real estate | Homes for Sale | Bend, OR”. The description opens “Tetherow real estate in Bend, Oregon.” The heading stays “Tetherow homes for sale.” Node: none.

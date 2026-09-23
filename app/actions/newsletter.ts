@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { resolveLeadAssignedBroker, getGuestAlertLead } from '@/lib/data/crm/leadAssignedBroker'
+import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import { enqueueNewsletter, enqueueNewsletterToEmails, NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
 import { parseEmailList } from '@/lib/newsletter/parse-emails'
 import { getAudienceEligiblePeople } from '@/lib/data/crm/getAudienceEligiblePeople'
@@ -336,11 +337,8 @@ export async function adminBulkOneOffSendAction(
 // Rendering lives in lib/newsletter/preview.ts — the review page (server) and
 // these actions (client refresh) share the exact same render path.
 
-const NL_KNOWN_BROKERS = new Set(['matt', 'rebecca', 'paul'])
-
 function nlNormalizeBroker(slug: string | null | undefined): string {
-  const s = (slug ?? '').trim().toLowerCase()
-  return NL_KNOWN_BROKERS.has(s) ? s : 'matt'
+  return normalizeAgentSlug(slug) ?? 'matt'
 }
 
 /**
