@@ -89,7 +89,11 @@ export const PLACE_BUYER_GROUP_HEADING: Record<PlaceBuyerGroup, string> = {
   attached: 'Townhomes and condos',
   multifamily: 'Multifamily',
   lots: 'Lots',
-  other: 'Other property',
+  // placeBuyerGroup files only MLS commercial sales (F) and business
+  // opportunities (H) here, so the group says what it is (Matt 2026-09-23:
+  // "we haven't been doing commercial"). Commercial leases never reach it:
+  // the rows come from placeStockSectionsFromTiles, which drops them.
+  other: 'Commercial property',
 }
 
 const CABIN_SUBTYPE = /\bcabin/i
