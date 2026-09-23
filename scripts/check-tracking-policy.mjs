@@ -160,6 +160,33 @@ check('Offline-conversion is idempotent (stable event_id)', /event_id/.test(offl
 check('Offline-conversion uses system_generated action_source', /system_generated/.test(offline),
   "lib/meta-offline-conversions.ts must use action_source 'system_generated' (the conversion did not happen on the website).")
 
+// ── 8. Measurement hygiene (visibility audit 2026-09-22, TRACK-1/2/3) ─────────
+// Unit tests prove each piece (legacy-next-image, web-vitals-sample,
+// inline-script-health, ga4-mirror, ga4-tracking-health, silent-zero). These
+// checks pin the WIRING a unit test cannot see: that production actually runs
+// the pieces.
+// TRACK-3: the retired /_next/image optimizer URL is answered in middleware, so
+// the matcher must name the path and the handler must use the shared mapping.
+check('Middleware answers the retired /_next/image URL',
+  /['"]\/_next\/image['"]\s*,?\s*\n?\s*\]/.test(mw) && /resolveLegacyNextImage\(/.test(mw),
+  "middleware.ts must keep '/_next/image' as its own matcher entry and call resolveLegacyNextImage() (lib/routing/legacy-next-image.ts). Without it every stale optimizer URL renders the ~143 KB HTML 404 page and pollutes RUM (TRACK-3).")
+// TRACK-3: RUM ingest validates through one module (FID dropped, >120 s dropped, no /_next or /api paths).
+const vitalsRoute = read('app/api/web-vitals/route.ts')
+check('RUM ingest validates every sample', /parseWebVitalSample\(/.test(vitalsRoute),
+  'app/api/web-vitals/route.ts must pass every beacon through parseWebVitalSample() (lib/analytics/web-vitals-sample.ts).')
+// TRACK-2: deploy:verify parses the homepage's inline scripts and requires the GTM loader.
+const deployVerify = read('scripts/check-vercel-deploy.mjs')
+check('deploy:verify parses production inline scripts', /checkInlineScripts\(/.test(deployVerify),
+  'scripts/check-vercel-deploy.mjs must run checkInlineScripts() on https://ryan-realty.com/ (scripts/lib/inline-script-health.mjs): a parse error in an inline <script> silenced browser GA4 for five days in September 2026.')
+// TRACK-1/2 + owner directive 2026-09-23: the GA4 ingestor re-pulls a settle
+// window, stamps mirror-shaped rows, and writes the daily health verdict.
+const ga4Cron = read('app/api/cron/marketing-snapshot-ga4/route.ts')
+check('GA4 ingestor re-pulls a settle window', /parseDateRange\(\s*request\s*,\s*SETTLE_WINDOW\s*\)/.test(ga4Cron),
+  'app/api/cron/marketing-snapshot-ga4/route.ts must default to the today-3..today-1 settle window (a yesterday-only pull stores a partial day forever).')
+check('GA4 ingestor stamps mirror-shaped rows and writes the health guard',
+  /buildGa4DayRows\(/.test(ga4Cron) && /isGa4PageViewMirrorOn\(/.test(ga4Cron) && /healthRows\(/.test(ga4Cron),
+  'app/api/cron/marketing-snapshot-ga4/route.ts must build rows with buildGa4DayRows (mirror stamp + exact browser counts) and write healthRows (the daily GA4 tracking-health verdict).')
+
 // ── report ───────────────────────────────────────────────────────────────────
 if (failures.length) {
   console.error(`\n✗ tracking-policy: ${failures.length} invariant(s) regressed:\n`)

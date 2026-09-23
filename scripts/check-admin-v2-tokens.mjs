@@ -89,6 +89,10 @@ const SCAN_DIRS = [
   'app/admin/(protected)/analytics/lp-leaderboard/page.tsx',
   'app/admin/(protected)/analytics/meta-health/page.tsx',
   'app/admin/(protected)/analytics/page.tsx',
+  // TRACK-1 (visibility audit 2026-09-22): the GA4 mirror label, built on v2
+  // VerdictLine and mounted by analytics, operations, reports/traffic-sources
+  // and reports/lead-flow.
+  'app/admin/(protected)/analytics/_components/Ga4MirrorNotice.tsx',
   'app/admin/(protected)/analytics/social/page.tsx',
   'app/admin/(protected)/approval-queue/page.tsx',
   'app/admin/(protected)/audiences/page.tsx',

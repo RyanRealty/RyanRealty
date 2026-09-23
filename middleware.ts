@@ -7,6 +7,12 @@ import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/c
 import { isPresetSlug } from '@/lib/search-presets'
 import { isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
 import { allowedCommunityUrlSlugs } from '@/lib/communities/community-public-pair'
+import {
+  LEGACY_NEXT_IMAGE_CACHE_SECONDS,
+  LEGACY_NEXT_IMAGE_GONE_BODY,
+  LEGACY_NEXT_IMAGE_PATH,
+  resolveLegacyNextImage,
+} from '@/lib/routing/legacy-next-image'
 
 /**
  * Next.js Edge Middleware.
@@ -464,6 +470,30 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const pathname = url.pathname
   const host = (request.headers.get('host') ?? '').toLowerCase()
 
+  // ─── (000) Retired /_next/image optimizer URL (TRACK-3) ─────────────────
+  // images.unoptimized (Matt lock 2026-09-13) removed the optimizer, so every
+  // stale /_next/image?url=X rendered the ~143 KB HTML 404 page. Answer it here,
+  // first, so it never reaches the app: 308 to the image, or a 4-byte 410.
+  // Mapping + allowlist: lib/routing/legacy-next-image.ts.
+  if (pathname === LEGACY_NEXT_IMAGE_PATH || pathname === `${LEGACY_NEXT_IMAGE_PATH}/`) {
+    const decision = resolveLegacyNextImage(url)
+    const cacheControl = `public, max-age=${LEGACY_NEXT_IMAGE_CACHE_SECONDS}`
+    if (decision.kind === 'redirect') {
+      const res = NextResponse.redirect(decision.location, 308)
+      res.headers.set('cache-control', cacheControl)
+      return res
+    }
+    return new NextResponse(LEGACY_NEXT_IMAGE_GONE_BODY, {
+      status: 410,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': cacheControl,
+        'x-robots-tag': 'noindex',
+        'x-legacy-image': decision.reason,
+      },
+    })
+  }
+
   // ─── (00) Canonical host — funnel the Vercel alias to ryan-realty.com ──
   // Runs before everything else so OAuth initiation AND /auth/callback always
   // land on the canonical host (where the PKCE verifier cookie lives). Never
@@ -651,8 +681,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
 // Run on everything that isn't a Next.js internal or static asset.
 // (Static files with extensions skip middleware — significant perf win.)
+//
+// The second entry matches the retired /_next/image optimizer path ONLY
+// (exact, no suffix), which the first pattern still excludes. Next runs
+// middleware before its filesystem check, so a matcher entry is all it takes
+// for middleware to answer that path (TRACK-3, see branch (000) above).
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|_next/data|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\..*).*)',
+    '/_next/image',
   ],
 }
