@@ -16,6 +16,7 @@ import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCity, SITE_CITY_SLUGS } from 
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { selfCitySearchUrlLeavesSitemap } from '@/lib/communities/self-city-community'
+import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
@@ -430,6 +431,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     )
     for (const [citySlug, subSlugs] of subdivisionSlugsByCity) {
       for (const subSlug of subSlugs) {
+        // SITE-183 / SITE-182: a registry community's area twin
+        // (/homes-for-sale/bend/broken-top) 301s onto the community page,
+        // which the resort loop above already lists. A sitemap lists
+        // canonicals, never a redirect source.
+        if (redirectsAwayFromSearch(`/homes-for-sale/${citySlug}/${subSlug}`)) continue
         dynamicPages.push(
           { url: `${baseUrl}/homes-for-sale/${citySlug}/${subSlug}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
         )

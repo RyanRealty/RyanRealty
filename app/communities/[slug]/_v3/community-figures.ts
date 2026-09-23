@@ -215,9 +215,21 @@ export function buildExploreEdges(input: {
   // The groups already existed in the reading order below; they were simply not
   // named. V3Answers renders them in first-appearance order, so naming them
   // moves no door.
+  // SITE-183 / SITE-182: every registry community's area twin 301s home, so
+  // getPlaceLinks hands a non-self-city community the plain CITY search as its
+  // browse door. "Search Broken Top homes" -> /homes-for-sale/bend is a
+  // mislabeled door and a duplicate of the city group's "Bend homes for sale"
+  // (same href; splitQuietItems keeps the first). The community's own
+  // inventory is this page's Field; its newest-listings door is the alerts
+  // strip. A self-city community's city search IS the community, so it keeps
+  // the door under its own name.
+  const browseCity = (input.browseHref.split('?')[0] ?? '').match(/^\/homes-for-sale\/([a-z0-9-]+)\/?$/)?.[1]
+  const browseIsCityWide = Boolean(browseCity) && !selfCityCommunitySlug(browseCity)
   return [
     ...input.documentItems.map((item) => withGroup(item, 'Recorded documents')),
-    { label: `Search ${input.communityName} homes`, href: input.browseHref, group: input.communityName },
+    ...(browseIsCityWide
+      ? []
+      : [{ label: `Search ${input.communityName} homes`, href: input.browseHref, group: input.communityName }]),
     // SITE-171: /housing-market/bend/tetherow 301s onto this community page.
     // A "market report" door that bounces back is not a door.
     ...(redirectsAwayFromSearch(input.communityMarketHref)

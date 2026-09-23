@@ -4,6 +4,7 @@
  * Plat live figures go through publishPlatFigures — do not fetch parent pulse here.
  */
 
+import { childAliasesOf } from '@/lib/communities/community-own-names'
 import { listingTileHref, slugify } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
@@ -30,7 +31,12 @@ export function peerPlatsForResort(
     (c) => c.slug === resortSlug,
   )
   if (!entry) return []
-  return entry.subdivision_aliases
+  // The community's own name is an alias too (it is the MLS filing name), and
+  // it is not a peer plat: "Tetherow" -> /subdivisions/tetherow is not a page.
+  // SITE-183 / SITE-182 made every spatial member of a community a peer
+  // candidate, so the own-name filter the community page already applies
+  // (childAliasesOf) applies here.
+  return childAliasesOf(entry, entry.subdivision_aliases)
     .filter((a) => slugify(a) !== selfSlug)
     .map((a): KbTownItem | null => {
       const name = publishPlatDisplayName(a)

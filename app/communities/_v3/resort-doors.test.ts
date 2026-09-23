@@ -27,15 +27,18 @@ describe('resortQuietItems', () => {
 })
 
 describe('place follows from a master-plan', () => {
-  it('Tetherow Homes and Market keep the Tetherow filter', () => {
+  // SITE-183 / SITE-182: the area twin (/homes-for-sale/bend/tetherow) 301s
+  // onto the community page, so the browse door is the registry city's
+  // search; Market keeps the community filter.
+  it('Tetherow browses its city and Market keeps the Tetherow filter', () => {
     const links = getPlaceLinks({ type: 'community', slug: 'tetherow', citySlug: 'bend' })
-    expect(links.browseUrl).toBe('/homes-for-sale/bend/tetherow')
+    expect(links.browseUrl).toBe('/homes-for-sale/bend')
     expect(links.marketUrl).toBe('/housing-market/bend/tetherow')
   })
 
-  it('Caldera Springs Homes and Market keep the Caldera filter', () => {
+  it('Caldera Springs browses its city and Market keeps the Caldera filter', () => {
     const links = getPlaceLinks({ type: 'community', slug: 'caldera-springs', citySlug: 'sunriver' })
-    expect(links.browseUrl).toBe('/homes-for-sale/sunriver/caldera-springs')
+    expect(links.browseUrl).toBe('/homes-for-sale/sunriver')
     expect(links.marketUrl).toBe('/housing-market/sunriver/caldera-springs')
   })
 })

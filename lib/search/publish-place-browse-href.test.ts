@@ -31,16 +31,17 @@ describe('publishPlaceBrowseHref', () => {
   })
 
   it('withholds a path middleware 301s away — Tetherow bounces back to its own page', () => {
-    // getPlaceLinks returns this exact path for the Tetherow community, and
-    // data/legacy-redirects.json maps it to /communities/tetherow, which
-    // middleware.ts applies before any route resolves. A door built from it
-    // would take a visitor on /communities/tetherow back to where they stand.
+    // data/legacy-redirects.json maps the area twin to /communities/tetherow,
+    // which middleware.ts applies before any route resolves. A door built from
+    // it would take a visitor on /communities/tetherow back to where they
+    // stand. SITE-183 / SITE-182: getPlaceLinks no longer hands a registry
+    // community that path; its browse door is the city search, which publishes.
     const tetherow = getPlaceLinks({ type: 'community', slug: 'tetherow' })
-    expect(tetherow.browseUrl).toBe('/homes-for-sale/bend/tetherow')
+    expect(tetherow.browseUrl).toBe('/homes-for-sale/bend')
+    expect(publishPlaceBrowseHref(tetherow.browseUrl)).toBe('/homes-for-sale/bend')
     expect((legacyRedirects as Record<string, string>)['/homes-for-sale/bend/tetherow']).toBe(
       '/communities/tetherow',
     )
-    expect(publishPlaceBrowseHref(tetherow.browseUrl)).toBeNull()
     expect(publishPlaceBrowseHref('/homes-for-sale/bend/tetherow')).toBeNull()
     expect(publishPlaceHeroCta('/homes-for-sale/bend/tetherow', 'See Tetherow homes')).toBeNull()
     // Normalised the way middleware normalises: trailing slash and case.
@@ -88,22 +89,38 @@ describe('publishPlaceBrowseHref', () => {
     expect(redirectsAwayFromSearch('/homes-for-sale/redmond/ridge-at-eagle-crest')).toBe(false)
   })
 
-  it('maps leftover area-search URLs and keeps the Tetherow hop', () => {
+  it('maps leftover area-search URLs and every registry community twin', () => {
     const keys = Object.keys(legacyRedirects as Record<string, string>).filter((k) =>
       k.startsWith('/homes-for-sale'),
     )
-    expect(keys).toEqual([
-      '/homes-for-sale/bend/awbrey-butte',
-      '/homes-for-sale/bend/northwest-crossing',
-      '/homes-for-sale/bend/stevens-ranch',
+    // The two hand-listed non-community places (a neighborhood, a plat).
+    expect(keys).toContain('/homes-for-sale/bend/awbrey-butte')
+    expect(keys).toContain('/homes-for-sale/bend/stevens-ranch')
+    // SITE-183 / SITE-182: every registry community's area twin, derived in
+    // scripts/lib/registry-area-twins.mjs (its test pins the full set). The
+    // hand-listed instances that preceded the rule are reproduced exactly.
+    for (const twin of [
       '/homes-for-sale/bend/tetherow',
-      // SITE-184: both Black Butte Ranch area twins, and the Crooked River
-      // Ranch twin of the same shape, 301 to their community page.
+      '/homes-for-sale/bend/broken-top',
+      '/homes-for-sale/bend/northwest-crossing',
       '/homes-for-sale/black-butte-ranch/black-butte-ranch',
       '/homes-for-sale/sisters/black-butte-ranch',
       '/homes-for-sale/sunriver/sunriver',
       '/homes-for-sale/terrebonne/crooked-river-ranch',
-    ])
+    ]) {
+      expect(keys).toContain(twin)
+      expect(redirectsAwayFromSearch(twin)).toBe(true)
+    }
+    expect((legacyRedirects as Record<string, string>)['/homes-for-sale/bend/broken-top']).toBe(
+      '/communities/broken-top',
+    )
+    // Exactly two segments: a listing URL and a preset variant keep rendering.
+    for (const key of keys) expect(key.split('/').length).toBe(4)
+    expect(redirectsAwayFromSearch('/homes-for-sale/bend/broken-top/luxury')).toBe(false)
+    expect(redirectsAwayFromSearch('/homes-for-sale/bend/broken-top/new-listings-30')).toBe(false)
+    expect(
+      redirectsAwayFromSearch('/homes-for-sale/bend/broken-top/19570-golden-meadow-220200001'),
+    ).toBe(false)
   })
 
   it('SITE-187 keeps a self-city community page as the plain inventory door', () => {

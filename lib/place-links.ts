@@ -29,6 +29,25 @@ function titleFromSlug(s: string): string {
     .join(' ')
 }
 
+/**
+ * The newest-listings door for a registry community's alerts strip ("See the
+ * newest Broken Top listings"). The area twin 301s home (SITE-183 / SITE-182)
+ * and a city-wide search under a community label would be a mislabeled door,
+ * so a non-self-city community uses the area x preset search
+ * /homes-for-sale/<city>/<slug>/new-listings-30 (lib/search-presets.ts: the
+ * last 30 days, newest first, the same window the strip's own count measures;
+ * three segments, so the two-segment twin rule never catches it). A self-city
+ * community's own city search already IS the community. The alerts sheet adds
+ * the newest-first sort itself (newestFirstHref), as on every place grain.
+ * Null for a slug that is not in the registry.
+ */
+export function communityNewestListingsHref(slug: string): string | null {
+  const durable = resolveDurableCommunitySlug(canonicalCommunitySlug(slug.trim().toLowerCase()))
+  const cityName = RESORT_SLUG_TO_CITY[durable]
+  if (!cityName) return null
+  return selfCitySearchPath(durable) ?? `${homesForSalePath(cityName, durable)}/new-listings-30`
+}
+
 /** Prefer bare resort slug over city-prefixed compound (bend-tetherow → tetherow). */
 export function canonicalCommunitySlug(slug: string): string {
   const normalised = slug.trim().toLowerCase()
@@ -78,16 +97,26 @@ export function getPlaceLinks(input: {
   const pair = communityPublicPairForPlace({ slug: durable })
   const cityName = RESORT_SLUG_TO_CITY[durable]
   const citySlug = cityName ? slugify(cityName) : (input.citySlug ?? 'bend')
-  // Browse / market stay on the durable MLS identity (Pronghorn listings,
-  // bend:pronghorn cache). The visitor door is the public pair.
-  const browseLabel = titleFromSlug(durable)
-  // SITE-187 / SITE-184: a self-city community (Sunriver, Black Butte Ranch)
-  // IS its own city. The area twins (/homes-for-sale/sunriver/sunriver,
-  // /homes-for-sale/sisters/black-butte-ranch) 301 onto the community page
-  // (the place page is the Field), so the search door is the community's OWN
-  // city search: /homes-for-sale/black-butte-ranch, never Sisters'.
+  // Market stays on the durable MLS identity (bend:pronghorn cache). The
+  // visitor door is the public pair.
+  //
+  // SITE-183 / SITE-182 (2026-09-23): EVERY registry community's area twin
+  // /homes-for-sale/<city>/<slug> 301s onto the community page
+  // (scripts/lib/registry-area-twins.mjs, PAGE_OUTLINE "301 area search URLs
+  // to the place URL"). A browse door built from that path took a visitor on
+  // /communities/broken-top straight back to /communities/broken-top, so the
+  // search door for a registry community is a CITY search: the community's
+  // own city for a self-city (SITE-187 / SITE-184: /homes-for-sale/
+  // black-butte-ranch, never Sisters'), else its registry city
+  // (/homes-for-sale/bend for Broken Top). The community's own inventory is
+  // the page's Field (#homes); its newest listings door is
+  // communityNewestListingsHref below. A compound slug that is NOT in the
+  // registry keeps the area-filtered path: nothing 301s it.
   const browseUrl =
-    selfCitySearchPath(durable) ?? homesForSalePath(cityName ?? titleFromSlug(citySlug), browseLabel)
+    selfCitySearchPath(durable) ??
+    (cityName
+      ? homesForSalePath(cityName)
+      : homesForSalePath(titleFromSlug(citySlug), titleFromSlug(durable)))
   return {
     placeUrl: pair?.href ?? `/communities/${publicSlug}`,
     browseUrl,

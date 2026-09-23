@@ -26,11 +26,42 @@ describe('master-plan place follows', () => {
       resortItems: resortQuietItems(),
     })
     const byLabel = new Map(items.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
-    expect(byLabel.get('Search Tetherow homes')).toBe('/homes-for-sale/bend/tetherow')
+    // SITE-183 / SITE-182: the area twin 301s onto this page, so the browse
+    // door is the city search and carries the city's name; no door is labelled
+    // with the community and pointed at every home in Bend.
+    expect(tetherow.browseUrl).toBe('/homes-for-sale/bend')
+    expect(byLabel.get('Search Tetherow homes')).toBeUndefined()
+    expect(byLabel.get('Bend homes for sale')).toBe('/homes-for-sale/bend')
     expect(byLabel.get('Tetherow market report')).toBeUndefined()
     expect(byLabel.get('Bend market report')).toBe('/housing-market/bend')
-    expect(byLabel.get('Search Tetherow homes')).not.toBe('/homes-for-sale')
-    expect(byLabel.get('Search Tetherow homes')).not.toBe('/search')
+    const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
+    expect(hrefs).not.toContain('/homes-for-sale')
+    expect(hrefs).not.toContain('/search')
+    expect(hrefs).not.toContain('/homes-for-sale/bend/tetherow')
+  })
+
+  it('SITE-183 Broken Top has no door that 301s back onto its own page', () => {
+    const brokenTop = getPlaceLinks({ type: 'community', slug: 'broken-top', citySlug: 'bend' })
+    expect(brokenTop.browseUrl).toBe('/homes-for-sale/bend')
+    const items = buildExploreEdges({
+      communityName: 'Broken Top',
+      cityName: 'Bend',
+      citySlug: 'bend',
+      browseHref: brokenTop.browseUrl,
+      communityMarketHref: brokenTop.marketUrl,
+      cityReportHref: '/housing-market/bend',
+      pagePath: '/communities/broken-top',
+      faqs: [],
+      documentItems: [],
+      golfCourses: [],
+      resortItems: resortQuietItems(),
+    })
+    const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
+    expect(hrefs).not.toContain('/homes-for-sale/bend/broken-top')
+    expect(hrefs).toContain('/homes-for-sale/bend')
+    expect(hrefs).toContain('/housing-market/bend/broken-top')
+    // One door per href: the city search is not listed twice under two labels.
+    expect(hrefs.filter((h) => h === '/homes-for-sale/bend')).toHaveLength(1)
   })
 
   it('recorded documents render as legal doors with per-item provenance', () => {
