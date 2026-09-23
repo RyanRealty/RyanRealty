@@ -295,3 +295,8 @@
   padding-top: var(--v3-space-xl);
   border-top: var(--v3-rule-hairline);
 }
+
+/* The same door under the map's lease block. */
+.place-homes__more {
+  margin: var(--v3-space-sm) 0 0;
+}

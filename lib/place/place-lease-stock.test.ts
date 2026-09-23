@@ -3,6 +3,7 @@ import type { ListingTile } from '@/lib/data'
 import { placeStockSectionsFromTiles } from './place-inventory-stock'
 import {
   PLACE_LEASE_HEADING,
+  leaseRowsRatesFirst,
   loadPlaceLeaseSection,
   placeLeaseSectionFromTiles,
   placeLeaseTiles,
@@ -119,6 +120,18 @@ describe('placeLeaseSectionFromTiles', () => {
     expect(forSale.find((s) => s.key === 'sfr')!.countLabel).toBe('1 for sale')
     const lease = placeLeaseSectionFromTiles(tiles, UNITS)!
     expect(lease.rows.some((r) => saleKeys.includes(r.listingKey))).toBe(false)
+  })
+})
+
+describe('leaseRowsRatesFirst', () => {
+  it('leads with the leases whose rent publishes, keeping each group in order', () => {
+    const section = placeLeaseSectionFromTiles([LEASE_NO_UNIT, LEASE_140, LEASE_130], UNITS)!
+    expect(section.rows.map((r) => r.listingKey)).toEqual([
+      LEASE_140.listingKey,
+      LEASE_130.listingKey,
+      LEASE_NO_UNIT.listingKey,
+    ])
+    expect(leaseRowsRatesFirst([])).toEqual([])
   })
 })
 

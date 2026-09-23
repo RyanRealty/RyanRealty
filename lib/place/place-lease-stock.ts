@@ -16,6 +16,7 @@ import { getLeaseRateOptions, type LeaseRateOptionsByKey, type ListingTile } fro
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { formatCount } from '@/lib/format/count'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
+import { publishListingLeaseFigure } from '@/lib/listing/publish-lease-rate'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { placeStockRowFromTile } from '@/lib/place/place-inventory-stock'
 import { PLACE_LEASE_HEADING } from '@/lib/place/place-lease-heading'
@@ -54,6 +55,26 @@ export function placeLeaseRowFromTile(
 }
 
 /**
+ * Leases whose rent publishes first, the rest after, each group in the order
+ * given. A dial opens on its first row, and a lead card that reads "Lease rate
+ * not published" tells a reader less than one that shows its rent.
+ */
+export function leaseRowsRatesFirst<T extends V3ListingRowData>(rows: readonly T[]): T[] {
+  const priced: T[] = []
+  const withheld: T[] = []
+  for (const row of rows) {
+    const lease = publishListingLeaseFigure({
+      price: row.price,
+      propertyType: row.propertyType,
+      leaseRateOption: row.leaseRateOption ?? null,
+    })
+    if (lease?.rate) priced.push(row)
+    else withheld.push(row)
+  }
+  return [...priced, ...withheld]
+}
+
+/**
  * The lease section for a place, or null when it has no active lease. Pure:
  * the page passes the tiles it already read and the units it looked up.
  */
@@ -61,10 +82,12 @@ export function placeLeaseSectionFromTiles(
   tiles: readonly ListingTile[],
   rateOptions: Readonly<LeaseRateOptionsByKey>,
 ): PlaceLeaseSection | null {
-  const rows = placeLeaseTiles(tiles).flatMap((tile) => {
-    const row = placeLeaseRowFromTile(tile, rateOptions)
-    return row ? [row] : []
-  })
+  const rows = leaseRowsRatesFirst(
+    placeLeaseTiles(tiles).flatMap((tile) => {
+      const row = placeLeaseRowFromTile(tile, rateOptions)
+      return row ? [row] : []
+    }),
+  )
   if (rows.length === 0) return null
   return {
     key: 'lease',

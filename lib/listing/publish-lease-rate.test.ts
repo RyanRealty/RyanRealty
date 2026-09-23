@@ -5,6 +5,7 @@ import {
   LEASE_RATE_OPTIONS,
   leaseRateOption,
   publishLeaseRate,
+  publishLeaseRateRange,
   publishListingLeaseFigure,
 } from './publish-lease-rate'
 
@@ -112,5 +113,30 @@ describe('publishListingLeaseFigure', () => {
     const figure = publishListingLeaseFigure({ price: 1.2, propertyType: 'G', leaseRateOption: null })
     expect(figure).toEqual({ rate: null, text: LEASE_RATE_NOT_PUBLISHED, label: 'For lease' })
     expect(publishListingLeaseFigure({ price: 1.2, propertyType: 'G' })?.text).toBe('Lease rate not published')
+  })
+})
+
+describe('publishLeaseRateRange', () => {
+  const rows = [
+    { listPrice: 1.4, rateOption: '$/SF/Mo' },
+    { listPrice: 0.9, rateOption: '$/SF/Mo' },
+    { listPrice: 2.5, rateOption: '$/SF/Mo' },
+    { listPrice: 985, rateOption: '$ Amt/Mo' },
+    { listPrice: 3000, rateOption: '$/SF/Mo' },
+    { listPrice: 1.2, rateOption: null },
+  ]
+
+  it('spans the rents in one unit, leaving other units and contradictions out', () => {
+    expect(publishLeaseRateRange(rows, '$/SF/Mo')).toBe('$0.90 to $2.50 per sq ft per month')
+  })
+
+  it('prints the one rent when the rents agree or there is only one', () => {
+    expect(publishLeaseRateRange([{ listPrice: 1.4, rateOption: '$/SF/Mo' }], '$/SF/Mo')).toBe('$1.40 per sq ft per month')
+    expect(publishLeaseRateRange(rows, '$ Amt/Mo')).toBe('$985 per month')
+  })
+
+  it('is null when nothing publishes in that unit', () => {
+    expect(publishLeaseRateRange(rows, '$/SF/Yr')).toBeNull()
+    expect(publishLeaseRateRange([], '$/SF/Mo')).toBeNull()
   })
 })

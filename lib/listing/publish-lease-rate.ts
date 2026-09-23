@@ -145,6 +145,35 @@ export function publishLeaseRate(
   return unit.basis === 'sqft' ? `${amount} per sq ft ${per}` : `${amount} ${per}`
 }
 
+/**
+ * The span of several leases' rents in ONE unit: "$0.90 to $2.50 per sq ft per
+ * month", the one rent when they agree, or null when none of them publishes in
+ * that unit. A lease in another unit, or whose rent does not publish, is left
+ * out, never converted: a monthly amount for a whole space and a monthly rate
+ * per square foot are not the same number.
+ */
+export function publishLeaseRateRange(
+  rows: readonly LeaseRateInput[],
+  unit: LeaseRateOption,
+): string | null {
+  const values: number[] = []
+  for (const row of rows) {
+    if (leaseRateOption(row.rateOption) !== unit) continue
+    if (publishLeaseRate(row) == null) continue
+    values.push(row.listPrice as number)
+  }
+  if (values.length === 0) return null
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
+  const high = publishLeaseRate({ listPrice: hi, rateOption: unit })
+  if (!high) return null
+  if (lo === hi) return high
+  const low = publishLeaseRate({ listPrice: lo, rateOption: unit })
+  if (!low) return null
+  // "$0.90 per sq ft per month" -> "$0.90": the amount never contains a space.
+  return `${low.split(' ')[0]} to ${high}`
+}
+
 export type ListingLeaseFigure = {
   /** The published rate, or null when it cannot publish. */
   rate: string | null

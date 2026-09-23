@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-23T21:00:42.505Z
+**Generated:** 2026-09-23T21:20:32.417Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2871,6 +2871,12 @@ Companion files:
 **TTL windows:** `CACHE_WINDOWS.marketPulse`
 
 **Cache tags:** `cacheTag.listings, 'boundaries'`
+
+---
+
+### `lib/data/listings/getCommercialLeaseListings.ts`
+
+**Exports:** `COMMERCIAL_LEASE_CAP`, `getCommercialLeaseListings`
 
 ---
 

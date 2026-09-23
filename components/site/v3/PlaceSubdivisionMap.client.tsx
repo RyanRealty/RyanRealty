@@ -20,12 +20,16 @@ import { formatCount } from '@/lib/format/count'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishListingLeaseFigure } from '@/lib/listing/publish-lease-rate'
-import { PLACE_LEASE_HEADING } from '@/lib/place/place-lease-heading'
+import {
+  COMMERCIAL_LEASE_ALL_LABEL,
+  COMMERCIAL_LEASE_PATH,
+  PLACE_LEASE_HEADING,
+} from '@/lib/place/place-lease-heading'
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { SubdivisionRailEntry } from '@/lib/place/place-child-stock'
 import { firstListedPhoto } from '@/lib/place/rail-photo'
-import { V3_ROOT_CLASS, V3Heading } from './atoms'
+import { V3_ROOT_CLASS, V3Button, V3Heading } from './atoms'
 import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
 import { V3Carousel } from './V3Carousel.client'
 import { V3ListingDial } from './V3ListingDial.client'
@@ -395,6 +399,13 @@ export function PlaceSubdivisionHomes({
             ))}
           </V3Carousel>
         </div>
+      ) : null}
+      {leaseCount ? (
+        <p className="place-homes__more">
+          <V3Button href={COMMERCIAL_LEASE_PATH} variant="ghost">
+            {COMMERCIAL_LEASE_ALL_LABEL}
+          </V3Button>
+        </p>
       ) : null}
       <V3SourceLine source={source} asOf={asOf} sourceName="Oregon Data Share" />
     </section>

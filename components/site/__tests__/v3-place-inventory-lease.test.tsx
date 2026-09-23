@@ -133,6 +133,11 @@ describe.each(['rows', 'rails', 'dial'] as const)('V3PlaceInventory layout="%s" 
     }
   })
 
+  it('opens a door to every commercial lease in Central Oregon', () => {
+    expect(html).toContain('href="/commercial-space-for-lease"')
+    expect(html).toContain('See all commercial space for lease')
+  })
+
   it('keeps the leases out of the for-sale sections', () => {
     const sfrStart = html.indexOf('Single-family homes')
     const commercialStart = html.indexOf('Commercial property')
@@ -171,6 +176,26 @@ describe('V3PlaceInventory with no leases', () => {
     )
     expect(html).not.toContain('Commercial space for lease')
     expect(html).not.toContain('for lease')
+    expect(html).not.toContain('/commercial-space-for-lease')
+  })
+
+  it('takes any section shape and its own accessible label (the all-leases page passes towns)', () => {
+    const towns = renderToStaticMarkup(
+      <V3PlaceInventory
+        id="lease"
+        layout="dial"
+        placeName="Central Oregon"
+        sections={[
+          { key: 'bend', heading: 'Bend', countLabel: '3 for lease', label: 'Commercial space for lease in Bend', rows: LEASE.rows },
+        ]}
+        source="regional MLS through Oregon Data Share"
+      />,
+    )
+    expect(towns).toContain('id="lease-bend"')
+    expect(towns).toContain('>Bend</h2>')
+    expect(towns).toContain('3 for lease')
+    // A town section is not the place-page lease section: no door back to its own page.
+    expect(towns).not.toContain('See all commercial space for lease')
   })
 })
 
@@ -202,6 +227,7 @@ describe.each(['rails', 'dial'] as const)('PlaceSubdivisionHomes layout="%s" wit
     for (const row of LEASE.rows) {
       expect(html).toContain(`href="${row.href}"`)
     }
+    expect(html).toContain('href="/commercial-space-for-lease"')
   })
 
   it('says nothing is for sale, not that nothing is listed, when a place has only leases', () => {
