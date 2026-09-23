@@ -9,7 +9,7 @@ import {
 import { getSession } from '../../actions/auth'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingTileHref } from '../../../lib/slug'
+import { cityEntityKey, homesForSalePath, listingTileHref } from '../../../lib/slug'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -47,7 +47,11 @@ import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 import { generateStaticParams as buildSearchStaticParams, IS_PRODUCTION_BUILD } from './search-static'
 import { withTimeout, LISTINGS_FETCH_TIMEOUT_MS } from './fetch-guards'
-import { resolveSlug, buildCanonicalPath } from './resolve-slug'
+import { resolveSlug, buildCanonicalPath, printableAreaName, unnamedAreaPhrase } from './resolve-slug'
+import { isRefusedBrowsePair } from '@/lib/seo/browse-pair-decision'
+import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
+import { SearchAreaUnavailable, refusalPlatDoor } from './sections/AreaUnavailable'
+import { AreaSoldHistory, areaSoldHistoryModel } from './sections/AreaSoldHistory'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { buildSearchSlugMetadata } from './search-metadata'
 import { resolvePlaceBannerUrl } from './place-banner'
@@ -77,8 +81,10 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
   // The full assembly lives in ./search-metadata (file-size split 2026-07-31);
   // the alternates.canonical contract stays pinned in this route file
-  // (ci:seo-routes file contract + lib/seo-route-contracts.test.ts).
+  // (ci:seo-routes file contract + lib/seo-route-contracts.test.ts). A null
+  // canonical is the SEO-1 refusal: never canonicalise a URL naming no place.
   const { canonicalUrl, metadata } = await buildSearchSlugMetadata(props)
+  if (!canonicalUrl) return metadata
   return { ...metadata, alternates: { canonical: canonicalUrl } }
 }
 
@@ -99,8 +105,25 @@ export default async function SearchPage({
   }
   const { city: cityResolved, preset } = resolved
   const city = cityResolved ?? undefined
+  // SEO-1: an area segment no source knows renders the refusal (a real <h1>,
+  // doors onward, noindex from the metadata) instead of a search about a
+  // place title-cased out of the URL. Rendered, not thrown: a notFound() here
+  // would stream a 200 under app/loading.tsx anyway.
+  if (resolved.area && isRefusedBrowsePair(resolved.area)) {
+    // The city is named only when it is a service-area city: any other first
+    // segment may itself be invented (/homes-for-sale/central-oregon/...).
+    const serviceCity = CENTRAL_OREGON_CITY_SLUGS.has((slug[0] ?? '').trim().toLowerCase()) ? (city ?? null) : null
+    return <SearchAreaUnavailable city={serviceCity} plat={refusalPlatDoor(resolved.areaFacts)} />
+  }
   const subdivision = resolved.subdivisionSlug ?? undefined
   const decodedSubdivision = resolved.subdivisionDisplayName ?? (subdivision ? decodeURIComponent(subdivision) : undefined)
+  // What the page may PRINT for the area. The filter above runs on the MLS
+  // string; an MLS code (publishPlatDisplayName) or an unconfirmed area is
+  // never printed as a place name.
+  const areaPrint = subdivision ? printableAreaName(resolved) : null
+  const areaCrumb = subdivision
+    ? (areaPrint ?? (resolved.area?.kind === 'withheld-name' ? 'MLS-coded area' : 'This area'))
+    : null
   // When the slug is a known neighborhood (boundary_neighborhood), drive the
   // single-indexed fast path. getListings prefers the neighborhood branch over
   // the subdivision-name match, so the page serves the full neighborhood (e.g.
@@ -150,10 +173,16 @@ export default async function SearchPage({
       : 'active'
 
   const placeName = filterSubdivision && decodedSubdivision
-    ? getSubdivisionDisplayName(decodedSubdivision)
+    ? (areaPrint ?? unnamedAreaPhrase(city, resolved.area?.kind))
     : (filterCity ?? city ?? 'Central Oregon')
   const displayName = preset ? `${placeName} ${preset.shortLabel}` : (presetLabel ?? placeName)
   const searchPagePath = buildCanonicalPath(city ?? null, decodedSubdivision ?? null, subdivision ?? null, resolved.presetSlug)
+  // EXP-2: the sold-history section for a 2-segment area page (the shared
+  // browse-pair decision's own counts; null when there is nothing true to say).
+  const areaHistory =
+    slug.length === 2 && !preset
+      ? areaSoldHistoryModel({ decision: resolved.area, facts: resolved.areaFacts, city, pagePath: searchPagePath })
+      : null
 
   const searchBreadcrumbItems: { label: string; href?: string }[] = [
     { label: 'Home', href: '/' },
@@ -166,7 +195,9 @@ export default async function SearchPage({
   // navigated users off production onto the staging domain.) Absolute URLs live in
   // the JSON-LD BreadcrumbList (SearchPageJsonLd), where schema.org requires them.
   if (city) searchBreadcrumbItems.push({ label: cityLabel, href: subdivision || resolved.presetSlug ? homesForSalePath(city) : undefined })
-  if (subdivision && decodedSubdivision) searchBreadcrumbItems.push({ label: getSubdivisionDisplayName(decodedSubdivision), href: resolved.presetSlug ? homesForSalePath(city!, decodedSubdivision) : undefined })
+  if (subdivision && decodedSubdivision && areaCrumb) {
+    searchBreadcrumbItems.push({ label: areaCrumb, href: resolved.presetSlug ? homesForSalePath(city!, decodedSubdivision) : undefined })
+  }
   if (preset) searchBreadcrumbItems.push({ label: preset.shortLabel })
   if (!city && presetLabel) searchBreadcrumbItems.push({ label: presetLabel })
 
@@ -211,7 +242,11 @@ export default async function SearchPage({
       headline:
         filterCity && !preset && !filterSubdivision && !neighborhood
           ? placeHomesForSaleHeading(filterCity)
-          : placeHomesForSaleHeading(displayName),
+          : subdivision && !areaPrint
+            ? preset
+              ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
+              : `Homes for sale in ${placeName}`
+            : placeHomesForSaleHeading(displayName),
       searchPagePath,
       searchBreadcrumbItems,
       savedKeys,
@@ -314,7 +349,11 @@ export default async function SearchPage({
     ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
     : presetLabel
       ? `${presetLabel} homes in Central Oregon`
-      : placeHomesForSaleHeading(placeName)
+      : subdivision && !areaPrint
+        ? // No printable name (an MLS code, or an unconfirmed area): the phrase
+          // reads as the object of "in", never as a place name before "homes".
+          `Homes for sale in ${placeName}`
+        : placeHomesForSaleHeading(placeName)
 
   // Related searches — SEO internal-linking for a city/preset page. Cross-link to
   // that city's other popular searches plus an "All [City] homes" link.
@@ -441,6 +480,7 @@ export default async function SearchPage({
             displayName={displayName}
             city={city}
             subdivision={decodedSubdivision}
+            subdivisionLabel={areaCrumb ?? undefined}
             subdivisionBlurb={subdivisionBlurb}
             cityMetaDescription={cityContent?.metaDescription}
             bannerUrl={bannerUrl ?? null}
@@ -452,7 +492,9 @@ export default async function SearchPage({
             suppressPlace={
               // When we also render ResortCommunityJsonLd for this URL, suppress
               // the generic Place so two nodes do not declare the same entity.
-              Boolean(city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys))
+              // An area with no printable name declares no Place at all.
+              Boolean(city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys)) ||
+              Boolean(subdivision && !areaPrint)
             }
             datasetSchema={
               cityMarketFaq && cityMarketFaq.datasetVariables.length > 0
@@ -585,7 +627,16 @@ export default async function SearchPage({
         searchPagePath={searchPagePath}
         priceChangeKeys={priceChangeKeys}
         degraded={Boolean(listingsResult.degraded)}
+        emptyNote={
+          areaHistory && !shouldNoIndexSearchVariant(sp)
+            ? `No homes are for sale in ${areaHistory.name} right now. New listings show up here once the MLS publishes them.`
+            : undefined
+        }
       />
+
+      {/* EXP-2: an area page always says what the MLS holds for it, so a
+          quiet market is sold history and a plat door, not one line. */}
+      {areaHistory ? <AreaSoldHistory model={areaHistory} /> : null}
 
       {/* Below-fold SEO depth. Results + filters stay the only above-fold job. */}
       <SearchSeoTail
@@ -602,7 +653,10 @@ export default async function SearchPage({
         presetCityLinks={presetCityLinks}
         relatedAllHomes={relatedAllHomes}
         relatedSearches={relatedSearches}
-        placeName={placeName}
+        // The related searches are CITY-scoped links; on an area page they were
+        // labeled with the area ("Cambria under $500k" opened every Bend home
+        // under $500k). Label them with the place they actually search.
+        placeName={subdivision ? (city ?? placeName) : placeName}
         subdivision={subdivision}
         preset={preset}
       />

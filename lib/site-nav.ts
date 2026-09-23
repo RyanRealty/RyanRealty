@@ -176,9 +176,22 @@ export const KB_TOP_NAV: TopNavGroup[] = [
     children: [
       REGIONAL_SEARCH,
       MAP_SEARCH,
+      // gsc-trend-5 (visibility audit 2026-09-23, owner directive MATT
+      // 2026-09-23): the city search pages own "{City} homes for sale" since
+      // c29c2d79f moved /cities/{city} to "{City} real estate", yet no chrome
+      // door reached them (Search Console's referring URLs for
+      // /homes-for-sale/bend: two deep pages). The three cities are the ones
+      // the p1 city-buy target queries name.
+      { href: '/homes-for-sale/bend', label: 'Bend homes for sale' },
+      { href: '/homes-for-sale/redmond', label: 'Redmond homes for sale' },
+      { href: '/homes-for-sale/sisters', label: 'Sisters homes for sale' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
+      // Was /luxury-homes-bend, which 308s to /homes-for-sale/bend?minPrice=
+      // 1500000, a filter URL the site noindexes: the menu spent its link on a
+      // redirect into a page barred from the index. The indexable luxury page
+      // is the preset, which the sitemap submits.
+      { href: '/homes-for-sale/bend/luxury', label: 'Luxury homes in Bend' },
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
     ],
@@ -268,7 +281,9 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      { href: '/luxury-homes-bend', label: 'Luxury homes' },
+      // The indexable luxury page (see the Buy panel note above), not the
+      // /luxury-homes-bend redirect into a noindexed ?minPrice= URL.
+      { href: '/homes-for-sale/bend/luxury', label: 'Luxury homes' },
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
       { href: '/videos', label: 'Video tours' },
@@ -363,7 +378,7 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
         MAP_SEARCH,
         { href: '/open-houses', label: 'Open houses' },
         { href: '/price-drops', label: 'Price drops' },
-        { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
+        { href: '/homes-for-sale/bend/luxury', label: 'Luxury homes in Bend' },
         { href: '/new-construction', label: 'New construction in Bend' },
         { href: '/our-homes', label: 'Our listings' },
       ],

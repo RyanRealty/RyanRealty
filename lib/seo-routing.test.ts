@@ -17,8 +17,18 @@ describe('shouldNoIndexSearchVariant', () => {
   it('returns true when any filter is present', () => {
     expect(shouldNoIndexSearchVariant({ minPrice: '800000' })).toBe(true)
     expect(shouldNoIndexSearchVariant({ statusFilter: 'pending' })).toBe(true)
-    expect(shouldNoIndexSearchVariant({ view: 'map' })).toBe(true)
-    expect(shouldNoIndexSearchVariant({ bbox: '-121.4,44.0,-121.2,44.1' })).toBe(true)
+    expect(shouldNoIndexSearchVariant({ view: 'map', minPrice: '800000' })).toBe(true)
+  })
+
+  // gsc-trend-5 (2026-09-23): the map writes ?bbox= on its first settle via
+  // router.replace, which re-runs metadata. A camera key that noindexed turned
+  // /homes-for-sale/bend into "Excluded by 'noindex' tag" in Search Console.
+  // The canonical strips both keys; that is the consolidation signal.
+  it('does NOT noindex camera-only variants (view, bbox)', () => {
+    expect(shouldNoIndexSearchVariant({ view: 'map' })).toBe(false)
+    expect(shouldNoIndexSearchVariant({ view: 'split' })).toBe(false)
+    expect(shouldNoIndexSearchVariant({ bbox: '-121.4,44.0,-121.2,44.1' })).toBe(false)
+    expect(shouldNoIndexSearchVariant({ view: 'list', bbox: '-121.4,44.0,-121.2,44.1' })).toBe(false)
   })
 
   it('ignores empty filter values', () => {

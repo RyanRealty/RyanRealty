@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
  * G7 lock: every WESTSIDE_BACKLOG row has a disposition, luxury money
- * surfaces link /luxury-homes-bend, and deal-close stages a review-ask
+ * surfaces link the Bend luxury page (the chrome: /homes-for-sale/bend/luxury
+ * since 2026-09-23; the city and index pages: /luxury-homes-bend), and
+ * deal-close stages a review-ask
  * draft without sending.
  *
  *   node scripts/check-westside-backlog.mjs
@@ -37,12 +39,22 @@ checks.push({
   detail: undisposed.join(' | '),
 })
 
+// The chrome's luxury link moved to the INDEXABLE luxury page (visibility
+// audit 2026-09-23, gsc-trend-5; owner directive MATT 2026-09-23, "nothing is
+// permanent"). /luxury-homes-bend 308s (next.config.ts) to
+// /homes-for-sale/bend?minPrice=1500000, which serves "noindex, follow"
+// (shouldNoIndexSearchVariant), so a chrome link there spent the site's
+// strongest internal link on a redirect into a page barred from the index.
+// /homes-for-sale/bend/luxury is 200, "index, follow", self-canonical and in
+// the sitemap (curl + live sitemaps, 2026-09-23). The rule this check locks is
+// unchanged: the Buy rail links the Bend luxury page.
 const nav = src('lib/site-nav.ts')
 checks.push({
-  label: 'site-nav buy rail links /luxury-homes-bend',
+  label: 'site-nav buy rail links the indexable Bend luxury page, not the redirect',
   ok:
-    nav.includes("href: '/luxury-homes-bend'") &&
-    /KB_TOP_NAV[\s\S]*luxury-homes-bend/.test(nav),
+    nav.includes("href: '/homes-for-sale/bend/luxury'") &&
+    /KB_TOP_NAV[\s\S]*homes-for-sale\/bend\/luxury/.test(nav) &&
+    !nav.includes("href: '/luxury-homes-bend'"),
 })
 
 // The city page moved onto components/site/v3 (2026-08-26) and its

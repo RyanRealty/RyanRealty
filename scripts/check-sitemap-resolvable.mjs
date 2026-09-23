@@ -52,7 +52,9 @@ const src = readFileSync(SITEMAP, 'utf8')
 const FAMILIES = [
   { id: 'root', roots: [''], resolvers: ['app/page.tsx'] },
   { id: 'luxury-homes-bend', roots: ['luxury-homes-bend'], resolvers: ['app/luxury-homes-bend/page.tsx'] },
-  { id: 'cities', roots: ['cities'], resolvers: ['app/cities/page.tsx', 'app/cities/[slug]/page.tsx', 'app/cities/[slug]/[neighborhoodSlug]/page.tsx'] },
+  // /cities/{city}/types/{type} joined the sitemap 2026-09-23 (EXP-6, types leg
+  // via lib/seo/place-type-twin.ts), so its resolver is declared here.
+  { id: 'cities', roots: ['cities'], resolvers: ['app/cities/page.tsx', 'app/cities/[slug]/page.tsx', 'app/cities/[slug]/[neighborhoodSlug]/page.tsx', 'app/cities/[slug]/types/[type]/page.tsx'] },
   // /homes-for-sale/* rewrites (next.config): browse + preset paths -> /search/*;
   // /homes-for-sale/listing/:key -> /listing/by-key; and ADDRESS-shaped detail
   // URLs (slug ending -{5+digits} or containing ~) -> /listing/by-address/[...].
@@ -64,7 +66,7 @@ const FAMILIES = [
   // whole response and can set the header.
   { id: 'homes-for-sale', roots: ['homes-for-sale'], resolvers: ['app/search/page.tsx', 'app/search/[...slug]/page.tsx', 'app/listing/by-key/[listingKey]/route.ts', 'app/listing/by-address/[...slug]/page.tsx'] },
   { id: 'open-houses', roots: ['open-houses'], resolvers: ['app/open-houses/page.tsx', 'app/open-houses/[city]/page.tsx'] },
-  { id: 'communities', roots: ['communities'], resolvers: ['app/communities/page.tsx', 'app/communities/[slug]/page.tsx'] },
+  { id: 'communities', roots: ['communities'], resolvers: ['app/communities/page.tsx', 'app/communities/[slug]/page.tsx', 'app/communities/[slug]/types/[type]/page.tsx'] },
   // /neighborhoods/[slug] is GONE (2026-08-19). It only permanentRedirect()ed the
   // 13 Bend districts and could not set a Location header under the streaming
   // shell; middleware 308s them now (lib/routing/pre-render-hops.ts). Only the

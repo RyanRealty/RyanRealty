@@ -193,7 +193,8 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/homes-for-sale?view=map',
       '/open-houses',
       '/price-drops',
-      '/luxury-homes-bend',
+      // gsc-trend-5: the indexable preset, not the 308 into a noindexed filter URL.
+      '/homes-for-sale/bend/luxury',
       '/new-construction',
       '/our-homes',
       '/sell',

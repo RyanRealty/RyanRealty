@@ -60,6 +60,66 @@ const CHECKS = [
     guards: ['getMatrixCityPresetNoIndex'],
     why: 'resolveMatrixNoIndex must actually consult the 2-segment count',
   },
+  // ── The 2-segment {city}/{area} browse pair (visibility audit 2026-09-22:
+  // SEO-1, SEO-6, EXP-2, EXP-4). ONE decision (lib/seo/browse-pair-decision.ts,
+  // decideBrowsePair) says whether an area exists, whether it may be indexed,
+  // where its canonical points and whether the sitemap submits it. Every link
+  // must hold, or the page and the sitemap drift apart again: the sitemap
+  // submitting 1,815 pairs (live 2026-09-23) of which 662 were plat twins of
+  // the same place, 17 community twins, 146 printed an MLS code and 1,051 had nothing
+  // for sale and rendered one line, while any made-up segment rendered as an
+  // indexable page about an invented place.
+  {
+    file: 'app/sitemap.ts',
+    guards: ['getBrowsePairSitemapPaths'],
+    why: 'submit exactly the browse pairs the shared decision emits',
+  },
+  {
+    file: 'lib/seo/getBrowsePairDecision.ts',
+    guards: ['decideBrowsePair'],
+    why: 'feed both the page decision and the sitemap leg from decideBrowsePair',
+  },
+  {
+    file: 'app/search/[...slug]/resolve-slug.ts',
+    guards: ['getBrowsePairDecision'],
+    why: 'resolve the area segment through the shared decision (SEO-1: fail closed on an unknown area)',
+  },
+  {
+    file: 'app/search/[...slug]/search-metadata.ts',
+    guards: ['isRefusedBrowsePair'],
+    why: 'noindex + drop the canonical for an area no source knows',
+  },
+  {
+    file: 'app/search/[...slug]/page.tsx',
+    guards: ['isRefusedBrowsePair', 'areaSoldHistoryModel'],
+    why: 'render the refusal for an unknown area and the sold history for a quiet one',
+  },
+  // A plat slug is county-wide and a browse slug is per city: bend/north-rim
+  // (25 closed sales filed "North Rim" in Bend) is not the Redmond plat
+  // north-rim. 87 of 758 exact slug matches were in another city, and 16
+  // same-city plats matched only across a word break (2026-09-23).
+  {
+    file: 'lib/seo/browse-pair-decision.ts',
+    guards: ['isSameCityPlat'],
+    why: 'twin a browse pair to a plat only when the plat is in the same city',
+  },
+  {
+    file: 'app/search/[...slug]/sections/AreaSoldHistory.tsx',
+    guards: ['isSameCityPlat'],
+    why: 'keep the plat door to a plat in the same city',
+  },
+  // ── Place-type twins (EXP-6): the type page is submitted exactly when its
+  // preset twin canonicalizes to it.
+  {
+    file: 'app/sitemap.ts',
+    guards: ['placeTypeSitemapPaths', 'cityPresetTypeTwin'],
+    why: 'submit the type pages and drop their preset twins by the same rule',
+  },
+  {
+    file: 'app/search/[...slug]/search-metadata.ts',
+    guards: ['resolvePresetTypeTwinPath'],
+    why: 'point the canonical of a type preset at its type page',
+  },
 ]
 
 const problems = []
@@ -99,10 +159,12 @@ for (const { file, guards, why } of CHECKS) {
 console.log('Sitemap 2-segment inventory gate (ci:sitemap-inventory-gate)')
 console.log('===========================================================')
 if (problems.length) {
-  console.error('\nThe zero-inventory city×preset guard is not wired end-to-end:')
+  console.error('\nA shared sitemap/page decision is not wired end-to-end:')
   for (const p of problems) console.error(`  ✗ ${p}`)
   console.error(`\n\x1b[31m✗ ci:sitemap-inventory-gate: ${problems.length} problem(s).\x1b[0m`)
   process.exit(1)
 }
-console.log(`✓ All ${CHECKS.length} surfaces wire the 2-segment guard — no zero-inventory {city}/{preset} URL is submitted or indexable.`)
+console.log(
+  `✓ All ${CHECKS.length} links wired — no zero-inventory {city}/{preset} URL, no browse pair the shared decision refuses, and no type-preset twin is submitted or indexable.`,
+)
 process.exit(0)

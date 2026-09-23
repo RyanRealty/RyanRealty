@@ -32,10 +32,10 @@
  * had started dropping them on recrawl. The threshold was never the variable.
  * The join was, and the floor below is unchanged at 10.
  *
- * NOTE this is deliberately stricter than the /homes-for-sale/{city}/{sub}
- * browse-pair floor (SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS = 3, all
- * statuses, app/sitemap.ts): a detail page earns its index slot with real
- * sold-history depth (the sales-history section), not just a listing trickle.
+ * The /homes-for-sale/{city}/{sub} browse pair now needs the same floor to be
+ * submitted (BROWSE_PAIR_MIN_LIFETIME_SALES in lib/seo/browse-pair-decision.ts,
+ * visibility audit 2026-09-22, EXP-2). Its old floor (3 lifetime listings of
+ * any status) submitted pages with nothing for sale and no sold history shown.
  */
 
 import { slugify } from '@/lib/slug'

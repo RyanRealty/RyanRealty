@@ -907,7 +907,9 @@ describe('search index filter dock (E-SEARCH-REFINE)', () => {
     expect(page).not.toMatch(/return 'Homes for Sale'/)
   })
 
-  it('canonical strips view/bbox and noindexes those variants', () => {
+  // gsc-trend-5 (2026-09-23): view/bbox consolidate through the canonical and
+  // no longer noindex (lib/seo-routing.ts); filter variants still do.
+  it('canonical strips view/bbox and the variant policy helper runs', () => {
     expect(page).toMatch(/appendIndexableSearchParams\(canonical, sp\)/)
     expect(page).toMatch(/shouldNoIndexSearchVariant\(sp\)/)
     expect(page).not.toMatch(/canonical\.searchParams\.set\(k, String\(v\)\)/)
