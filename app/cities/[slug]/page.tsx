@@ -98,6 +98,7 @@ import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
+import { noteDegradedHead, placeNameFromSlug, PLACE_HEAD_READ_MS } from '@/lib/site/place-head-fallback'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import {
@@ -238,9 +239,19 @@ function asPlaceBoundary(value: unknown): { type?: string; coordinates?: unknown
 // Metadata - unchanged from the KB page.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
-  if (!snapshot) notFound()
-  const cityName = snapshot.geoLabel
+  // RACED (P3 — DATA-6, 2026-09-23; lib/site/place-head-fallback.ts). A read
+  // that did not answer is unknown, not absent: the head keeps this city's
+  // path and names it from its own URL for one short ISR window. notFound()
+  // only when the read answered with no row.
+  const snapshotRead = await withTimeoutFallbackResult(
+    getGeoSnapshot({ geoType: 'city', geoKey: slug }),
+    null,
+    PLACE_HEAD_READ_MS,
+    'city:meta-snapshot',
+  )
+  if (snapshotRead.ok && !snapshotRead.value) notFound()
+  if (!snapshotRead.ok) await noteDegradedHead('city', 'city:meta-snapshot')
+  const cityName = snapshotRead.value?.geoLabel ?? placeNameFromSlug(slug)
   return pageMetadata({
     title: publishCityRealEstateTitle(cityName),
     description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, subdivisions, open houses, and MLS market data from Oregon Data Share.`,

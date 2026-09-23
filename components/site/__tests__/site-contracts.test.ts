@@ -826,15 +826,17 @@ describe('place-family indexes', () => {
     expect(neighborhood).not.toMatch(/generateStaticParams[\s\S]{0,200}return\s*\[\s*\]/)
   })
 
-  it('plat detail holds the G70 zero build-time fan-out and still serves every slug', () => {
-    // Deliberately inverted from the neighborhood contract above: build-time
-    // prerender of ~100 plat pages was the top Vercel build cost and baked
-    // empty rails into deployed HTML (ci:ssg-budget). Serving every slug needs
-    // the resolution path + dynamicParams, so those stay asserted.
+  it('plat detail holds the G70 capped build-time fan-out and still serves every slug', () => {
+    // Build-time prerender of ~100 plat pages was the top Vercel build cost and
+    // baked empty rails into deployed HTML (ci:ssg-budget, 2026-08-21). Since
+    // 2026-09-23 (P3, Matt's "nothing is permanent" directive) only the top 25
+    // plats by Search Console impressions prerender, from a committed list the
+    // gate caps. Serving every other slug needs the resolution path +
+    // dynamicParams, so those stay asserted.
     const plat = readSrc('app/subdivisions/[slug]/page.tsx')
     expect(plat).toMatch(/resolveSubdivisionAreaRedirect/)
     expect(plat).toMatch(/export const dynamicParams = true/)
-    expect(plat).toMatch(/generateStaticParams[\s\S]{0,80}return\s*\[\s*\]/)
+    expect(plat).toMatch(/generateStaticParams[\s\S]{0,80}return platPrerenderParams\(\)/)
   })
 
   it('plat detail serves on demand under revalidate now that the render reads no request state', () => {

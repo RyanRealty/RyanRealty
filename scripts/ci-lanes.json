@@ -1200,7 +1200,9 @@
       "app/api/**"
     ],
     "ci:ssg-budget": [
-      "app/**"
+      "app/**",
+      "data/plat-prerender.json",
+      "lib/site/plat-prerender.ts"
     ],
     "ci:stat-source": [
       "lib/data/**",

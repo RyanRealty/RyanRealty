@@ -47,12 +47,23 @@ export async function getSubdivisionRing(
   lng: number | null,
 ): Promise<SubdivisionRing | null> {
   if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return null
-  const sb = createServiceClient()
-  const { data, error } = await sb.rpc('cma_subdivision_ring', { p_lat: lat, p_lng: lng })
-  if (error) {
-    console.error('[getSubdivisionRing]', error.message)
+  try {
+    return await readSubdivisionRing(lat, lng)
+  } catch (err) {
+    console.error('[getSubdivisionRing]', err instanceof Error ? err.message : err)
     return null
   }
+}
+
+/**
+ * The same read, THROWING on an RPC error so a cache wrapper can tell a failed
+ * read from a point that sits in no plat (the poison-null rule; see
+ * lib/data/cache/resilient.ts). Null only for a genuine miss.
+ */
+export async function readSubdivisionRing(lat: number, lng: number): Promise<SubdivisionRing | null> {
+  const sb = createServiceClient()
+  const { data, error } = await sb.rpc('cma_subdivision_ring', { p_lat: lat, p_lng: lng })
+  if (error) throw new Error(`[readSubdivisionRing] ${error.message}`)
   const rows = (data ?? []) as RingRow[]
   const home = rows[0]
   if (!home?.home_slug) return null

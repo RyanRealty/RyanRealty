@@ -80,6 +80,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { communityPageTrail } from '@/lib/site/place-trail'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
+import { noteDegradedHead, placeNameFromSlug, PLACE_HEAD_READ_MS } from '@/lib/site/place-head-fallback'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -238,10 +239,39 @@ function communityRegistryContext(community: { citySlug: string; subdivision: st
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const community = await getCommunityBySlug(slug)
+  // RACED (P3 — DATA-6, 2026-09-23; lib/site/place-head-fallback.ts). A read
+  // that did not answer is unknown, not absent: the head names the community
+  // from the registry (or its own URL), keeps this path, and stands for one
+  // short ISR window. notFound() only when the read answered with no community.
+  const communityRead = await withTimeoutFallbackResult(
+    getCommunityBySlug(slug),
+    null,
+    PLACE_HEAD_READ_MS,
+    'comm:meta-community',
+  )
+  if (!communityRead.ok) {
+    await noteDegradedHead('community', 'comm:meta-community')
+    const entry = getResortCommunityBySlug(slug)
+    return pageMetadata(
+      communityMetadataInput({
+        slug,
+        name: entry?.label ?? placeNameFromSlug(slug),
+        city: entry?.city ?? 'Central Oregon',
+      }),
+    )
+  }
+  const community = communityRead.value
   if (!community) notFound()
   const { rawName, registryEntry } = communityRegistryContext(community, slug)
-  const resolved = await resolvePublicName(slug, rawName, community)
+  const resolvedRead = await withTimeoutFallbackResult(
+    resolvePublicName(slug, rawName, community),
+    null,
+    PLACE_HEAD_READ_MS,
+    'comm:meta-name',
+  )
+  // Unknown is neither "publish" nor "refuse": the raw name for one short window.
+  if (!resolvedRead.ok) await noteDegradedHead('community', 'comm:meta-name')
+  const resolved = resolvedRead.value
   const childAliases = registryEntry
     ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
     : []
@@ -265,10 +295,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return pageMetadata(
     communityMetadataInput({
       slug,
-      name: resolved.kind === 'publish' ? resolved.name : rawName,
+      name: resolved?.kind === 'publish' ? resolved.name : rawName,
       city: community.city,
       heroImageUrl: community.heroImageUrl,
-      refused: resolved.kind === 'refuse',
+      refused: resolved?.kind === 'refuse',
       stock,
     }),
   )
