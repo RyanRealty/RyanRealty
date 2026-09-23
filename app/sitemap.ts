@@ -19,7 +19,8 @@ import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
-import { getSubdivisionBrowsePairsByCity } from '@/lib/data/subdivisions/getSubdivisionCityInventory'
+import { getBrowsePairSitemapPaths } from '@/lib/seo/getBrowsePairDecision'
+import { cityPresetTypeTwin, placeTypeSitemapPaths } from '@/lib/seo/place-type-twin'
 import {
   getSearchMatrixSitemapEntries,
   getMatrixCityPresetDecisionSet,
@@ -42,13 +43,12 @@ import { CO_PARKS } from '@/data/co-parks'
 // which included ~31 junk subdivision slugs ("Industrial, Madras Oregon").
 const RESORT_COMMUNITY_SLUGS: string[] = getAllResortCommunities().map((c) => publicCommunitySlug(c))
 
-// Lifetime-listing floor for a (city, subdivision) browse URL to earn a
-// sitemap slot. The threshold counts every status bucket (active + pending +
-// closed), so a subdivision with real sold history KEEPS its URL after the
-// last active listing closes — active-only sourcing made these pages
-// evaporate from the index between listings, exactly when their sold-history
-// content is the page's value.
-const SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS = 3
+// The (city, subdivision) browse-pair floor that lived here
+// (SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS = 3, every status) is retired
+// (visibility audit 2026-09-22, EXP-2): it submitted pages with no listing and
+// no sold history to show. The emission rule is now the shared browse-pair
+// decision (lib/seo/browse-pair-decision.ts, BROWSE_PAIR_MIN_LIFETIME_SALES),
+// which the search route's robots and canonical read too.
 
 /**
  * NOT THE SERVED SITEMAP ANY MORE — this file is the URL-UNIVERSE BUILDER.
@@ -371,6 +371,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         if (matrixCityPresetNoIndexFromSet(matrixCityPresetDecision, key, preset)) continue
         // SITE-179: Bend new-construction lives at /new-construction.
         if (isBendNewConstructionSearchTwinPath(`/homes-for-sale/${key}/${preset}`)) continue
+        // EXP-6: a type preset with verified inventory canonicalizes to
+        // /cities/{city}/types/{type}; the types leg below submits that page
+        // instead (lib/seo/place-type-twin.ts — the search route's metadata
+        // reads the same rule).
+        if (cityPresetTypeTwin(key, preset, matrixCityPresetDecision?.positiveCityPresets ?? null)) continue
         dynamicPages.push({
           url: `${baseUrl}/homes-for-sale/${key}/${preset}`,
           lastModified: now,
@@ -378,6 +383,15 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
           priority: 0.8,
         })
       }
+    }
+
+    // Place-type pages (EXP-6): /cities/{city}/types/{type} and
+    // /communities/{community}/types/{type}, each only with a VERIFIED positive
+    // active count from the same matrix decision set as the preset loop above,
+    // so a type page is submitted exactly when its preset twin is not. A failed
+    // matrix read submits none (the twins then stay in, fail-open as before).
+    for (const path of placeTypeSitemapPaths(cities.map((c) => cityEntityKey(c)), matrixCityPresetDecision)) {
+      dynamicPages.push({ url: `${baseUrl}${path}`, lastModified: now, changeFrequency: 'daily', priority: 0.75 })
     }
 
     // Communities — ONLY the curated resort registry (slugs with a real page).
@@ -392,12 +406,28 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       })
     }
 
-    // Subdivisions. Persistent (city, subdivision) pairs across ALL listing
-    // statuses, thresholded by SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS, NOT
-    // just currently-active pairs (active-only sourcing dropped a subdivision
-    // URL from the sitemap the day its last listing closed). City scoping
-    // stays on the CENTRAL_OREGON_CITY_SLUGS allowlist, independent of live
-    // inventory, so a city with zero actives keeps its subdivision URLs too.
+    // Subdivision browse pairs (/homes-for-sale/{city}/{sub}). Emitted exactly
+    // when the SHARED browse-pair decision says so
+    // (lib/seo/browse-pair-decision.ts — the search route's robots and
+    // canonical read the same function, so a submitted pair is always
+    // indexable and self-canonical). Visibility audit 2026-09-22 (EXP-2,
+    // EXP-4, SEO-6). The live MVs run through this code on 2026-09-23, against
+    // the 1,815 browse locs the live geo.xml carried under the old floor (>= 3
+    // lifetime listings of any status; 1,051 of them had nothing for sale):
+    // 748 stay; 662 plat twins of the same place (same city; 16 across a word
+    // break) now carry rel=canonical to /subdivisions/{plat slug}, 17 community
+    // twins to /communities/{slug}, 146 carry an MLS code as their only name,
+    // 179 have no listing for sale and under 10 sales on record, 61 have
+    // listings but under 10 sales (indexable while they do, never submitted),
+    // and 2 are neighborhood slugs finalizeSitemapEntries already drops. What
+    // stays is every pair with >= BROWSE_PAIR_MIN_LIFETIME_SALES (10) closed sales under
+    // its name: a page that always has content (the listings when there are
+    // any, the sold-history section always), and a set decided on LIFETIME
+    // depth, so it still does not flap as listings come and go — the reason
+    // the old comment here gave for counting every status (active-only
+    // sourcing dropped a subdivision URL the day its last listing closed).
+    // City scoping stays on the CENTRAL_OREGON_CITY_SLUGS allowlist, so a city
+    // with zero actives keeps its pairs.
     // /cities/{city}/{sub} is deliberately NOT emitted here: that route only
     // resolves for boundary-neighborhood rows (anything else 404s), and
     // submitting 404s poisons the programmatic-page quality signal. The
@@ -421,20 +451,16 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // 504 'Task timed out after 300 seconds' twice on 2026-09-09.
     //
     // The aggregate now happens once a night inside the MV. Same rows, same
-    // classification (classifyLifetimeBuckets), same floor, same output set —
-    // see lib/data/subdivisions/getSubdivisionCityInventory.ts.
+    // classification (classifyLifetimeBuckets) — see
+    // lib/data/subdivisions/getSubdivisionCityInventory.ts.
     const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
-    const subdivisionSlugsByCity = await leg(
+    const browsePairPaths = await leg(
       'subdivision-browse-pairs',
-      getSubdivisionBrowsePairsByCity(subdivisionCitySlugs, SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS),
-      new Map<string, string[]>(),
+      getBrowsePairSitemapPaths(subdivisionCitySlugs),
+      [] as string[],
     )
-    for (const [citySlug, subSlugs] of subdivisionSlugsByCity) {
-      for (const subSlug of subSlugs) {
-        dynamicPages.push(
-          { url: `${baseUrl}/homes-for-sale/${citySlug}/${subSlug}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-        )
-      }
+    for (const path of browsePairPaths) {
+      dynamicPages.push({ url: `${baseUrl}${path}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 })
     }
 
     // Subdivision DETAIL pages (/subdivisions/[slug]) — the plat-boundary pages

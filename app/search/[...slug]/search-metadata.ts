@@ -3,12 +3,14 @@ import { getBannerUrl } from '../../actions/banners'
 import { getSubdivisionDescription } from '../../actions/subdivision-descriptions'
 import { shareDescription, OG_IMAGE_WIDTH, OG_IMAGE_HEIGHT } from '../../../lib/share-metadata'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, subdivisionEntityKey, getSubdivisionDisplayName } from '../../../lib/slug'
+import { cityEntityKey, subdivisionEntityKey } from '../../../lib/slug'
 import { isSortOnlyPreset } from '@/lib/site/preset-faq'
 import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
-import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
+import { resolveMatrixNoIndex, resolvePresetTypeTwinPath } from '@/lib/seo/getSearchMatrixEntries'
+import { isRefusedBrowsePair } from '@/lib/seo/browse-pair-decision'
 import { withTimeout } from './fetch-guards'
-import { resolveSlug, buildCanonicalPath } from './resolve-slug'
+import { refusalPlatDoor, searchAreaUnavailableHeading } from './sections/AreaUnavailable'
+import { resolveSlug, buildCanonicalPath, printableAreaName, unnamedAreaPhrase } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import {
   BEND_NEW_CONSTRUCTION_CANONICAL_PATH,
@@ -16,9 +18,22 @@ import {
 } from '@/lib/routing/bend-new-construction-search-twin'
 
 /**
+ * Metadata for an area segment that names no place (SEO-1, visibility audit
+ * 2026-09-22). The route cannot answer 404 under app/loading.tsx, so noindex is
+ * what keeps the 200 out of the index, and the title says what is true instead
+ * of title-casing the slug into a place. No canonical: never canonicalise a URL
+ * we are refusing to serve. Same contract as SUBDIVISION_UNAVAILABLE_METADATA.
+ */
+export const SEARCH_AREA_UNAVAILABLE_METADATA = {
+  title: 'No area at this address',
+  robots: { index: false, follow: true },
+} as const satisfies Metadata
+
+/**
  * Full metadata assembly for the slug search route. page.tsx's generateMetadata
  * wrapper attaches `alternates: { canonical: canonicalUrl }` — the canonical
- * contract stays pinned in the route file (ci:seo-routes file contract).
+ * contract stays pinned in the route file (ci:seo-routes file contract). A null
+ * canonicalUrl is the refusal: the wrapper emits no canonical.
  */
 export async function buildSearchSlugMetadata({
   params,
@@ -26,20 +41,35 @@ export async function buildSearchSlugMetadata({
 }: {
   params: Promise<{ slug: string[] }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
-}): Promise<{ canonicalUrl: string; metadata: Metadata }> {
+}): Promise<{ canonicalUrl: string | null; metadata: Metadata }> {
   const { slug = [] } = await params
   const sp = await searchParams
-  const { city, subdivisionDisplayName, subdivisionSlug, presetSlug, preset } = await resolveSlug(slug)
+  const resolved = await resolveSlug(slug)
+  const { city, subdivisionDisplayName, subdivisionSlug, presetSlug, preset, area } = resolved
   const hasInvalidPresetSegment = slug.length >= 3 && !!presetSlug && !preset
-  const placeName = subdivisionDisplayName ? getSubdivisionDisplayName(subdivisionDisplayName) : (city ?? 'Central Oregon')
+
+  // SEO-1: an area segment no source knows fails CLOSED — honest title,
+  // noindex,follow, no canonical — instead of an indexable page about a place
+  // title-cased out of the URL.
+  if (area && isRefusedBrowsePair(area)) {
+    const title = searchAreaUnavailableHeading(refusalPlatDoor(resolved.areaFacts))
+    return { canonicalUrl: null, metadata: { ...SEARCH_AREA_UNAVAILABLE_METADATA, title } }
+  }
+
+  // What the page may PRINT for the area: a withheld MLS code or an unknown
+  // area is never a place name (publishPlatDisplayName).
+  const areaPrint = subdivisionSlug ? printableAreaName(resolved) : null
+  const placeName = subdivisionSlug
+    ? (areaPrint ?? unnamedAreaPhrase(city, area?.kind))
+    : (city ?? 'Central Oregon')
   const displayName = preset ? `${placeName} ${preset.shortLabel}` : placeName
   const content = city ? getCityContent(city) : null
   const subdivisionDesc =
-    subdivisionDisplayName && city
+    areaPrint && subdivisionDisplayName && city
       ? await withTimeout(getSubdivisionDescription(city, subdivisionDisplayName), null, 1200)
       : null
   const rawMetaDesc =
-    (subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
+    (areaPrint && subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
     content?.metaDescription ??
     (preset
       ? `${preset.label} in ${placeName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`
@@ -53,13 +83,37 @@ export async function buildSearchSlugMetadata({
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const defaultOgImage = `${siteUrl}/api/og?type=default`
   const isBendNewConstructionTwin = isBendNewConstructionSearchTwinSlug(slug, sp)
+
+  // EXP-6: a type preset with a verified-positive count has a richer twin at
+  // /cities/{city}/types/{type} or /communities/{c}/types/{type}; the preset
+  // page points its canonical there (the sitemap submits the type page and
+  // drops this one — lib/seo/place-type-twin.ts, one rule for both). A query
+  // variant keeps the preset canonical: its own facets are a different page.
+  const typeTwinPath =
+    preset && !hasInvalidPresetSegment && !shouldNoIndexSearchVariant(sp)
+      ? await withTimeout(resolvePresetTypeTwinPath(slug, preset.slug), null, 2500)
+      : null
+
   const canonicalPath = isBendNewConstructionTwin
     ? BEND_NEW_CONSTRUCTION_CANONICAL_PATH
-    : buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
-  const dynamicOgImage = slug.length > 0
+    : typeTwinPath
+      ? typeTwinPath
+      : area && slug.length === 2
+        ? // EXP-4 / SEO-6: a plat twin or a community twin consolidates onto its
+          // place page; every other pair is self-canonical.
+          (area.canonicalPath ?? buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug))
+        : buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
+  // The OG card route title-cases the URL segments, so an area with no
+  // printable name (an MLS code, or a read that could not name it) takes the
+  // default card rather than a picture of the code.
+  const dynamicOgImage = slug.length > 0 && (!subdivisionSlug || areaPrint)
     ? `${siteUrl}/search/og/${slug.map((part) => encodeURIComponent(part)).join('/')}`
     : defaultOgImage
-  const title = preset ? `${preset.label} in ${placeName}` : placeHomesForSaleHeading(placeName)
+  const title = preset
+    ? `${preset.label} in ${placeName}`
+    : areaPrint || !subdivisionSlug
+      ? placeHomesForSaleHeading(placeName)
+      : `Homes for sale in ${placeName}`
   // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
   // VERIFIED zero active-inventory count stays renderable but is noindexed —
   // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with
@@ -71,6 +125,11 @@ export async function buildSearchSlugMetadata({
     false,
     2500,
   )
+  // EXP-2 / SEO-1: the shared browse-pair decision. A 2-segment pair indexes
+  // only with real content (sold-history depth or homes for sale now) and a
+  // printable name; a 3-segment combo on an MLS-coded or unknown area never
+  // indexes (its title cannot name the place).
+  const areaNoIndex = area ? (slug.length === 2 ? !area.index : area.publicName == null) : false
   const canonicalUrl = `${siteUrl}${canonicalPath}`
   return {
     canonicalUrl,
@@ -85,7 +144,8 @@ export async function buildSearchSlugMetadata({
         hasInvalidPresetSegment ||
         (!!preset && isSortOnlyPreset(preset)) ||
         shouldNoIndexSearchVariant(sp) ||
-        matrixNoIndex
+        matrixNoIndex ||
+        areaNoIndex
           ? { index: false, follow: true }
           : { index: true, follow: true },
       openGraph: {

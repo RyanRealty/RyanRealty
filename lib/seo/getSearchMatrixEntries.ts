@@ -53,6 +53,7 @@ import {
   type MatrixEntry,
   type MatrixGeo,
 } from './search-matrix'
+import { cityPresetTypeTwin, communityPresetTypeTwin, isPlaceTypePresetSlug } from './place-type-twin'
 
 /** Batch width for the per-city subdivision RPC (matches app/sitemap.ts). */
 const SUBDIVISION_RPC_BATCH = 6
@@ -273,12 +274,35 @@ export async function getSearchMatrixSitemapEntries(
   const matrix = await getSearchMatrix()
   if (!matrix) return []
   const base = baseUrl.replace(/\/$/, '')
-  return matrix.entries.map((entry) => ({
-    url: `${base}${entry.path}`,
-    lastModified: now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.55,
-  }))
+  return matrix.entries
+    // EXP-6: a community x type combo canonicalizes to its
+    // /communities/{c}/types/{type} page, which the sitemap's types leg
+    // submits instead (lib/seo/place-type-twin.ts).
+    .filter((entry) => !communityPresetTypeTwin(entry.citySlug, entry.areaSlug, entry.presetSlug, matrix.positivePaths))
+    .map((entry) => ({
+      url: `${base}${entry.path}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.55,
+    }))
+}
+
+/**
+ * EXP-6: the place-type page a preset search URL canonicalizes to, or null.
+ * 2 segments: /homes-for-sale/{city}/{type} -> /cities/{city}/types/{type}.
+ * 3 segments: /homes-for-sale/{city}/{community}/{type} ->
+ * /communities/{c}/types/{type}. Needs a VERIFIED positive count at that scope
+ * from the same matrix read the robots decision uses; unknown -> null (the page
+ * keeps its own canonical), exactly the fail-open of the noindex rule.
+ */
+export async function resolvePresetTypeTwinPath(slug: string[], presetSlug: string | null): Promise<string | null> {
+  if (!presetSlug || !isPlaceTypePresetSlug(presetSlug)) return null
+  const matrix = await getSearchMatrix()
+  if (!matrix) return null
+  const city = (slug[0] ?? '').trim().toLowerCase()
+  if (slug.length === 2) return cityPresetTypeTwin(city, presetSlug, matrix.positiveCityPresets)
+  if (slug.length === 3) return communityPresetTypeTwin(city, slug[1] ?? '', presetSlug, matrix.positivePaths)
+  return null
 }
 
 /**
@@ -351,10 +375,16 @@ export async function getMatrixCityPresetNoIndex(citySlug: string, presetSlug: s
 export async function getMatrixCityPresetDecisionSet(): Promise<{
   positiveCityPresets: Set<string>
   cityPresetKeys: Set<string>
+  /** Verified-positive 3-segment combos — the community type-twin decision (EXP-6). */
+  positivePaths: Set<string>
 } | null> {
   const matrix = await getSearchMatrix()
   if (!matrix) return null
-  return { positiveCityPresets: matrix.positiveCityPresets, cityPresetKeys: matrix.cityPresetKeys }
+  return {
+    positiveCityPresets: matrix.positiveCityPresets,
+    cityPresetKeys: matrix.cityPresetKeys,
+    positivePaths: matrix.positivePaths,
+  }
 }
 
 /**

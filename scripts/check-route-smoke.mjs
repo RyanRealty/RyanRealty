@@ -204,6 +204,16 @@ const REFUSAL_ROUTES = [
     name: 'canonical listing URL — refusal body',
   },
   { path: `/listing/by-key/${SMOKE_MISSING_KEY}`, name: 'listing by-key — refusal body' },
+  // SEO-1 (visibility audit 2026-09-22): a made-up area segment under a real
+  // city answered 200, "index, follow", a self canonical and an H1 title-cased
+  // from the slug (live 2026-09-23: /homes-for-sale/prineville/p1-no-such-place
+  // -> "P1 No Such Place homes for sale"). It must render the refusal
+  // (app/search/[...slug]/sections/AreaUnavailable.tsx) with noindex. Two
+  // cities, so a fix keyed to one city cannot pass. No subdivision name,
+  // boundary slug or registry community contains "smoke" (checked 2026-09-23
+  // against subdivision_city_inventory_mv and boundaries: 0 rows each).
+  { path: '/homes-for-sale/bend/rr-smoke-no-such-area', name: 'search area (Bend) — refusal body' },
+  { path: '/homes-for-sale/prineville/rr-smoke-no-such-area', name: 'search area (Prineville) — refusal body' },
   {
     // A key too long to be a key. This was a SECOND route into the same blank
     // 200: getListingDetail validated its input with a throwing zod parse

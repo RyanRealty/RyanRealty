@@ -233,7 +233,9 @@ const REQUIRED = [
       },
       {
         re: /shouldNoIndexSearchVariant\(/,
-        msg: 'search index must noindex view/bbox/filter variants',
+        // gsc-trend-5 (2026-09-23): camera keys view/bbox consolidate through
+        // the canonical, not noindex (lib/seo-routing.ts); filters still noindex.
+        msg: 'search index must apply the variant noindex policy (filter/sort/page variants)',
       },
     ],
   },
