@@ -23,9 +23,10 @@ export interface PipelineCheck {
 
 /**
  * Staleness thresholds, calibrated to each pipeline's real cadence:
- * - sync-delta ingest: continuous; listing_tile_mv refreshes hourly
- *   (/api/cron/refresh-mvs at :08) so max(modified_at) should never trail 2h.
- * - listing_search_mv: refreshed by the same hourly cron.
+ * - sync-delta ingest: continuous; listing_tile_mv refreshes every 30 minutes
+ *   (pg_cron refresh_listing_tile_mv_30min at :02/:32) so max(modified_at)
+ *   should never trail 2h.
+ * - listing_search_mv: pg_cron refresh_dal_mvs_15min at :05/:20/:35/:50.
  * - FSBO: /api/cron/detect-fsbo-listings daily 09:35 UTC → 3 days = cadence + slack.
  * - Expired: low natural volume; 7 days with no detections is only a WARN.
  * - Saved-search: /api/cron/saved-search-alerts hourly; 26h = a full day + slack.
@@ -112,7 +113,7 @@ export function evalSearchMv(refreshedAt: string | null, now: Date): PipelineChe
     status: stale ? 'red' : 'green',
     value: `refreshed ${formatAge(age)} ago`,
     note: stale
-      ? 'listing_search_mv is not refreshing. Search results and filters serve stale rows. Check /api/cron/refresh-mvs (hourly) and the refresh RPC timeout.'
+      ? 'listing_search_mv is not refreshing. Search results and filters serve stale rows. Check pg_cron job refresh_dal_mvs_15min (:05/:20/:35/:50) in cron.job_run_details and the refresh RPC timeout.'
       : undefined,
   }
 }

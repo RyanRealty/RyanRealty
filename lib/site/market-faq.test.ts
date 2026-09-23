@@ -301,10 +301,18 @@ describe('buildMarketFaq at an untrusted grain', () => {
     )
   })
 
-  it('publishes both figures at city grain from the identical input', () => {
-    const { faqs, datasetVariables } = buildMarketFaq('Bend', { grain: 'city', ...centuryWest })
+  it('publishes both figures at city grain from the same ratio on a real sample', () => {
+    // 400 active at 48 months implies 50 six-month closes, above the Market
+    // Truth floor of 30; only the grain separates this from the neighborhood.
+    const scaled = { ...centuryWest, activeCount: 400, soldCount12mo: 75 }
+    const { faqs, datasetVariables } = buildMarketFaq('Bend', { grain: 'city', ...scaled })
     expect(faqs.map((f) => f.question).join(' ')).toMatch(/how many homes sold/i)
     expect(datasetVariables.find((v) => v.name === 'Months of Supply')?.value).toBe(48)
+  })
+
+  it('withholds months of supply at city grain on the live 16-active row (2 implied closes, DATA-7 floor)', () => {
+    const { datasetVariables } = buildMarketFaq('Bend', { grain: 'city', ...centuryWest })
+    expect(datasetVariables.find((v) => v.name === 'Months of Supply')).toBeUndefined()
   })
 
   it('publishes Market Truth neighborhood MOS when the source is declared and counts match', () => {

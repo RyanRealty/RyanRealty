@@ -205,7 +205,7 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
     alarms.push({
       key: 'listing-tile-mv-stale',
       severity: 'critical',
-      message: `listing_tile_mv refresh stamp is ${formatHours(signals.mvRefreshAgeHours)} old. The tile job is not completing — check refresh_listing_tile_mv_30min (pg_cron :02/:32) and /api/cron/refresh-mvs.`,
+      message: `listing_tile_mv refresh stamp is ${formatHours(signals.mvRefreshAgeHours)} old. The tile job is not completing — check pg_cron job refresh_listing_tile_mv_30min (:02/:32) in cron.job_run_details.`,
     })
   }
 

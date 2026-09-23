@@ -12,7 +12,9 @@
  * Source order: the mv_refresh_state row 'place_membership' that
  * refresh_place_membership_changed() stamps on every successful run
  * (migration 20260923014500, pg_cron every 15 minutes); when that row does not
- * exist yet, the newest place_membership.computed_at.
+ * exist yet, the newest place_membership.computed_at, which the interim hourly
+ * rebuild in /api/cron/refresh-mvs advances whenever a listing changed
+ * (lib/data/market-truth/refreshPlaceMembership.ts).
  * reachability: collectCompanyScoreboardSignals (lib/data/loop/signals.ts)
  */
 import type { SupabaseClient } from '@supabase/supabase-js'

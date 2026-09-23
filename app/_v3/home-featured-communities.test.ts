@@ -44,7 +44,7 @@ const content = (about: string[]): ResortCommunityContent =>
   }) as ResortCommunityContent
 
 describe('homeFeaturedSalesFigures', () => {
-  it('publishes alias-aware active + median and pulse sales when positive', () => {
+  it('publishes alias-aware active + median and new-this-week; withholds alias-attributed closes (DATA-7)', () => {
     const figures = homeFeaturedSalesFigures({
       figures: { activeCount: 35, medianListPrice: 1_250_000 },
       pulse: {
@@ -60,17 +60,55 @@ describe('homeFeaturedSalesFigures', () => {
         refreshedAt: '2026-09-01T00:00:00.000Z',
       },
     })
+    // The community pulse row's sold count and days to pending come from a
+    // subdivision-name join (lib/market/geo-grain-trust.ts): never printed.
     expect(figures.map((f) => f.label)).toEqual([
       'homes for sale',
       'median list price',
-      'homes sold, last 30 days',
       'new this week',
-      'days to an offer',
     ])
     expect(figures[0]?.value).toBe('35')
     expect(figures[0]?.n).toBe(35)
     expect(figures[1]?.value).toContain('1,250,000')
     expect(figures[1]?.n).toBe(1_250_000)
+  })
+
+  it('keeps closed-side figures at a grain whose closes share the actives predicate', () => {
+    const figures = homeFeaturedSalesFigures({
+      figures: null,
+      pulse: {
+        geoType: 'city',
+        geoSlug: 'sisters',
+        activeCount: null,
+        medianListPrice: null,
+        newThisWeek: 0,
+        priceDropsThisWeek: 0,
+        closedLast30Days: 4,
+        monthsOfSupply: null,
+        medianDaysToPending: 39.5,
+        refreshedAt: '2026-09-01T00:00:00.000Z',
+      },
+    })
+    expect(figures.map((f) => f.label)).toEqual(['homes sold, last 30 days', 'days to an offer'])
+  })
+
+  it('never prints the neighborhood pulse closes the loader reads', () => {
+    const figures = homeFeaturedSalesFigures({
+      figures: null,
+      pulse: {
+        geoType: 'neighborhood',
+        geoSlug: 'tetherow',
+        activeCount: null,
+        medianListPrice: null,
+        newThisWeek: 0,
+        priceDropsThisWeek: 0,
+        closedLast30Days: 3,
+        monthsOfSupply: null,
+        medianDaysToPending: 21,
+        refreshedAt: '2026-09-01T00:00:00.000Z',
+      },
+    })
+    expect(figures).toEqual([])
   })
 
   it('withholds zeros and missing overlay figures', () => {
