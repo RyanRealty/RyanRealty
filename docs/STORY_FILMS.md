@@ -195,6 +195,12 @@ python3 scripts/studio/story_reel.py sign-clip --dir out/story/<id> --role call 
 python3 scripts/studio/story_reel.py build --dir out/story/<id> --lab lab-cine16_1978.json --name reel-v2
 ```
 
+v3 (Matt: "make it interesting"): a black Lab in the car opens the reel (`car-wave-lab`), après
+with friends by the fire is a new optional arc role (`apres`, kept only where a beat fits, so a
+summer piece skips it), and the same Lab sits deadpan between them in the last frame
+(`call-deadpan-lab`). One prompt line, "a young black Labrador retriever with a red collar",
+held the dog across generations. Billed $1.42.
+
 Cost of the v2 reshoot: 8 stills and 5 motion clips, $2.73 as billed by xAI (the ledger now
 books xAI's own `cost_in_usd_ticks`, 1e10 ticks to the dollar). Reference-conditioned stills
 bill about $0.075 each, not the $0.04 rate card, so the piece cap trips on real spend.

@@ -26,6 +26,8 @@ export type ArcSlot = {
   /** Seconds on screen in the finished cut. */
   seconds: number
   because: string
+  /** Kept only when the piece pins a beat or one fits the year and season (no summer après). */
+  optional?: boolean
 }
 
 export const VISITOR_ARC: ArcSlot[] = [
@@ -37,6 +39,12 @@ export const VISITOR_ARC: ArcSlot[] = [
   { role: 'arrive', seconds: 2.6, because: 'The road runs at the mountain: where they are, before anything happens.' },
   { role: 'play', seconds: 2.8, because: 'The thing people come here to do, done badly and happily.' },
   { role: 'play_pair', seconds: 2.6, because: 'Both of them in one frame: the period selfie is the first laugh.' },
+  {
+    role: 'apres',
+    seconds: 2.9,
+    because: 'Friends and a fire after the cold: the biggest laugh in the reel, before it goes quiet.',
+    optional: true,
+  },
   { role: 'eat', seconds: 3.0, because: 'Warmth after cold; the reel gets darker and closer.' },
   {
     role: 'town',
@@ -98,7 +106,8 @@ export function planStory(input: PlanStoryInput): StoryPlan {
   const warnings: string[] = []
   const shots: PlannedStoryShot[] = []
 
-  arc.forEach((slot, index) => {
+  arc.forEach((slot) => {
+    const index = shots.length
     if (slot.role === 'break') {
       shots.push({ index, ...slot, kind: 'phone_ui', beat: null })
       return
@@ -122,6 +131,7 @@ export function planStory(input: PlanStoryInput): StoryPlan {
       }
     } else {
       beat = BEATS.find((b) => b.role === slot.role && beatFits(b, year, input.season)) ?? null
+      if (!beat && slot.optional) return
       if (!beat) throw new Error(`planStory: no ${slot.role} beat fits ${input.season} ${year}`)
     }
     shots.push({ index, ...slot, kind: 'generated', beat })
@@ -138,7 +148,7 @@ export function planStory(input: PlanStoryInput): StoryPlan {
   for (const shot of shots) {
     const beat = shot.beat
     if (!beat || beat.refs.length > 0) continue
-    const interior = beat.exposure === 'interior_low' || beat.id === 'car-wave'
+    const interior = beat.exposure === 'interior_low' || beat.id.startsWith('car-wave') // the cabin is the place
     if (!interior) warnings.push(`${beat.id} has no reference still: it fails the reference test until one is added`)
   }
 

@@ -29,6 +29,7 @@ export type BeatRole =
   | 'arrive'
   | 'play'
   | 'play_pair'
+  | 'apres'
   | 'eat'
   | 'town'
   | 'stroll'
@@ -106,6 +107,28 @@ export const BEATS: BeatDef[] = [
     exposure: 'day',
     action: '{A} turns from the window to the camera, laughing, and waves',
     props: 'a boxy period dashboard in brown vinyl',
+    move: 'hold',
+  },
+  {
+    id: 'car-wave-lab',
+    role: 'hook',
+    label: 'She waves; the Lab gets there first',
+    years: [1950, 2100],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    place: 'inside the car on the highway into Bend, tall ponderosa pines passing the passenger window',
+    refs: [],
+    cast: ['A'],
+    wardrobe: 'travel',
+    framing:
+      'filmed by the driver: the camera looks across the front seat at her in the PASSENGER seat, the passenger window and ' +
+      'the pines behind her, the dog pushing forward between the two front seats, 28mm',
+    light: 'flat overcast daylight through the windshield, cool on her face, the cabin a stop darker',
+    periodCues: ['vehicles'],
+    exposure: 'day',
+    action:
+      '{A} turns from the window to the camera, laughing and waving, while their black Labrador pushes its head between the front seats and licks her cheek',
+    props:
+      'a boxy period dashboard in brown vinyl; a young black Labrador retriever with a red collar in the back seat',
     move: 'hold',
   },
   // ── arrive ──────────────────────────────────────────────────────────────
@@ -208,6 +231,33 @@ export const BEATS: BeatDef[] = [
     props:
       'dull matte fabrics with no logos or emblems, a simple wooden-slat double chair with a single steel safety bar',
     move: 'armLength',
+  },
+  // ── apres ───────────────────────────────────────────────────────────────
+  {
+    id: 'apres-lodge',
+    role: 'apres',
+    label: 'Après with friends by the fire',
+    years: [1958, 2100],
+    yearsWhy: 'Skiing opened on Bachelor Butte in 1958.',
+    seasons: ['winter'],
+    place:
+      'the bar of a timber ski lodge at the foot of the mountain at dusk: log beams, a big stone fireplace burning, ' +
+      'wet parkas and wool hats on pegs, the tall windows gone deep blue with falling snow',
+    refs: [],
+    periodCues: ['rooms'],
+    cast: ['A', 'B'],
+    wardrobe: 'ski',
+    framing:
+      'a wide shot at table height from the end of a long wooden table, 28mm: four friends crowded along both sides, ' +
+      'the couple in the middle, the fire behind them',
+    light: 'warm firelight and amber pendant lamps, 2700K, faces glowing, the windows cool blue behind',
+    exposure: 'interior_low',
+    action:
+      'the whole table bursts out laughing at something {B} just said; {A} laughs into his shoulder; two friends clink mugs',
+    props:
+      'the friends in early-1980s ski sweaters with snowflake yokes and turtlenecks; glass mugs of hot buttered rum and ' +
+      'Irish coffee, a pitcher of beer, ski gloves drying on the table',
+    move: 'hold',
   },
   // ── eat ─────────────────────────────────────────────────────────────────
   {
@@ -422,6 +472,35 @@ export const BEATS: BeatDef[] = [
     action:
       '{B} holds the black smartphone to his ear and waits while {A} stands beside him with her hands in her coat pockets; ' +
       'both look straight into the lens with calm, straight faces',
+    move: 'tripod',
+    composite: 'yard_sign',
+    alsoReject: [
+      'any letters, numbers, or marks on the sign panel',
+      'either of them grinning or gesturing at the camera',
+    ],
+    allowAnachronism: 'the thin black modern smartphone at his ear (it is the joke)',
+  },
+  {
+    id: 'call-deadpan-lab',
+    role: 'call',
+    label: 'He makes the call; nobody smiles, including the dog',
+    years: [1925, 2100],
+    seasons: ['winter'],
+    place:
+      'the front yard of the same 1920s craftsman bungalow in Old Bend at dusk: porch light on, lit windows, snow on the lawn, ' +
+      'a white wooden yard-sign post in the snow with a plain blank white square panel hanging from its arm',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A', 'B'],
+    wardrobe: 'evening',
+    framing:
+      'a centered, frontal medium-wide shot from the sidewalk, 40mm, level horizon: the two of them standing side by side ' +
+      'on the snowy lawn facing the camera, the lit porch centered behind them, the sign post in the right third of the frame',
+    light: 'blue dusk skylight with the warm porch light and lit windows behind them, 3000K practicals',
+    exposure: 'night',
+    action:
+      '{B} holds the black smartphone to his ear and waits while {A} stands beside him with her hands in her coat pockets ' +
+      'and their black Labrador sits in the snow at their feet; all three look straight into the lens with calm, straight faces',
+    props: 'a young black Labrador retriever with a red collar, sitting still',
     move: 'tripod',
     composite: 'yard_sign',
     alsoReject: [

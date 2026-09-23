@@ -36,6 +36,14 @@ describe('visitor arc', () => {
     expect(plan.shots.find((s) => s.role === 'break')?.kind).toBe('phone_ui')
   })
 
+  it('keeps après for a winter piece and drops the optional slot where no beat fits (no summer après)', () => {
+    expect(planStory({ era, season: 'winter', beats: piece.beats }).shots.some((s) => s.role === 'apres')).toBe(true)
+    const arc = VISITOR_ARC.filter((slot) => ['hook', 'apres', 'end'].includes(slot.role))
+    const summer = planStory({ era, season: 'summer', arc })
+    expect(summer.shots.map((s) => s.role)).toEqual(['hook', 'end'])
+    expect(summer.shots.map((s) => s.index)).toEqual([0, 1])
+  })
+
   it('pins the Tower dinner to the years the Tower was a movie house on Wall Street', () => {
     const tower = BEATS.find((b) => b.id === 'supper-tower-window')!
     expect(tower.years[0]).toBe(1940)
