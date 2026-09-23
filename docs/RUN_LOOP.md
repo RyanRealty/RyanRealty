@@ -53,7 +53,10 @@ The tool is where the caps live (`MAX_SITE_WORKERS`, `MAX_SITE_CLAIMS_PER_SESSIO
 `SITE_CLAIM_IDLE_HOURS` in `lib/data/loop/work-node.ts`, reported as `maxWorkers` in the
 JSON). Claims are optimistic: a non-zero exit means you got nothing. Never write a claim by
 hand. Take items in the JSON's order (`siteServeTier` in the same file is the one serve
-order); skip one whose route family another owner holds.
+order); skip one whose route family another owner holds. A `GSC gap` node (a lost query, a
+split landing, or a money page class that lost rank, seeded by the Monday measurer
+`/api/cron/loop-weekly-measure` or the boot brief) is served with round three, behind only a
+fleet p0/major and Matt's ADD/CHANGE.
 
 ## 4. The accept test for a public page node
 

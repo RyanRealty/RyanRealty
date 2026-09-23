@@ -6,7 +6,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { isExpiredUnlearned } from './ledger-draft'
+import { readGscTrend, type GscTrend } from './gsc-trend'
+import { isExpiredUnlearned, isLedgerRowOpen } from './ledger-draft'
 import { readJoinConversionStats } from './join-conversion'
 import { readLookWalkBaseline } from './look-walk'
 import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hold'
@@ -110,9 +111,17 @@ export type CompanyScoreboardSignals = {
     byMethodology: CountByKey
     source: string
   }
+  /**
+   * Search visibility by page class (visibility audit 2026-09-22, gsc-trend-1).
+   * 'degraded' = a Central Oregon money class lost >= 15% impressions or >= 3
+   * positions, 28d vs the prior 28d (./gsc-trend). It used to be 'ok' whenever
+   * a count of target_query_benchmark rows did not error.
+   */
   gsc: {
-    status: SignalStatus
+    status: SignalStatus | 'degraded'
+    /** target_query_benchmark rows in the last 28d (exact-match view since migration 20260923150000). */
     rows28d: number
+    trend: GscTrend
     source: string
   }
   sequences: {
@@ -310,6 +319,7 @@ export async function collectCompanyScoreboardSignals(
     joinStats,
     heartbeatRes,
     placeMembership,
+    gscTrend,
     ...tokenResults
   ] = await Promise.all([
     countCrmStages(sb),
@@ -317,7 +327,7 @@ export async function collectCompanyScoreboardSignals(
     sb.from('marketing_brain_actions').select('status'),
     sb.from('sync_state').select('last_delta_sync_at,last_full_sync_at').eq('id', 'default').maybeSingle(),
     sb.from('tc_commissions').select('status,gci'),
-    sb.from('site_improvement_ledger').select('domain,actual_delta,shipped_at,window_days'),
+    sb.from('site_improvement_ledger').select('domain,actual_delta,verdict,shipped_at,window_days'),
     sb.from('newsletter_subscribers').select('id', { count: 'exact', head: true }).not('email', 'ilike', '%fleet-test%'),
     sb.from('brokers').select('id', { count: 'exact', head: true }),
     sb.from('market_pulse_live').select('methodology_version'),
@@ -350,6 +360,7 @@ export async function collectCompanyScoreboardSignals(
       .order('logged_at', { ascending: false })
       .limit(200),
     readPlaceMembershipFreshness(sb, now),
+    readGscTrend(sb, now),
     ...SOCIAL_TABLES.map((table) =>
       sb.from(table).select(NO_REFRESH_COLUMN.has(table) ? 'expires_at' : 'expires_at,refresh_token'),
     ),
@@ -449,19 +460,22 @@ export async function collectCompanyScoreboardSignals(
     expiredUnlearned: 0,
     expiredByDomain: {},
     byDomain: {},
-    source: 'site_improvement_ledger.domain + actual_delta + shipped_at + window_days',
+    source: 'site_improvement_ledger.domain + actual_delta + verdict + shipped_at + window_days (open = no actual_delta and no verdict)',
   }
   if (!ledgerRes.error && ledgerRes.data) {
     ledger.rows = ledgerRes.data.length
     for (const row of ledgerRes.data) {
       const domain = (row.domain as string | null) || '(null)'
       bump(ledger.byDomain, domain)
-      if (row.actual_delta == null) ledger.openWindows += 1
+      const actualDelta = row.actual_delta == null ? null : Number(row.actual_delta)
+      const verdict = (row.verdict as string | null) ?? null
+      if (isLedgerRowOpen({ actualDelta, verdict })) ledger.openWindows += 1
       const stranded = isExpiredUnlearned(
         {
           shippedAt: String(row.shipped_at ?? fetchedAt),
           windowDays: Number(row.window_days ?? 14),
-          actualDelta: row.actual_delta == null ? null : Number(row.actual_delta),
+          actualDelta,
+          verdict,
         },
         now,
       )
@@ -497,10 +511,15 @@ export async function collectCompanyScoreboardSignals(
     }
   }
 
+  // The status is the page-class trend, never a row count (gsc-trend-1).
   const gsc: CompanyScoreboardSignals['gsc'] = {
-    status: gscRes.error ? 'unreadable' : 'ok',
-    rows28d: gscRes.count ?? 0,
-    source: 'target_query_benchmark date >= now-28d',
+    status: gscTrend.status,
+    rows28d: gscRes.error ? 0 : (gscRes.count ?? 0),
+    trend: gscTrend,
+    source:
+      gscTrend.status === 'unreadable'
+        ? `UNREADABLE: ${gscTrend.note}`
+        : `${gscTrend.source}; ${gscTrend.note}${gscTrend.degraded.length ? `; degraded: ${gscTrend.degraded.map((d) => `${d.pageClass}/${d.market}`).join(', ')}` : ''}`,
   }
 
   const sequences: CompanyScoreboardSignals['sequences'] = {
