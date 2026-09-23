@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { makeProjection, padBbox } from '@/lib/geo/project-svg'
 import { recordFrame } from '@/lib/geo/record-frame'
 import {
+  ATLAS_CLUSTER_PILL,
   ATLAS_PIN_CLUSTER_CELL_PX,
   ATLAS_PIN_HANG_PX,
   ATLAS_PIN_ISLAND_MARGIN_PX,
@@ -58,6 +59,24 @@ describe('clusterAtlasPins', () => {
   it('does not merge pills that already have air between them', () => {
     const grid = clusterAtlasPins([pin(0, 40, 40), pin(1, 200, 180)], 160)
     expect(mergeOverlappingAtlasClusters(grid)).toHaveLength(2)
+  })
+
+  it('UXLIVE-6: a two-line cluster pill (median over the figure) overlaps by its own height', () => {
+    // 30px apart vertically: two lone asks (26px tall) clear each other, but a
+    // two-line cluster pill (34px) above a lone ask would sit on it.
+    const lone = [
+      { id: 'c-0', x: 100, y: 100, indices: [0], count: 1 },
+      { id: 'c-1', x: 110, y: 130, indices: [1], count: 1 },
+    ]
+    expect(mergeOverlappingAtlasClusters(lone)).toHaveLength(2)
+    const withCluster = [
+      { id: 'c-0', x: 100, y: 100, indices: [0, 2, 3], count: 3 },
+      { id: 'c-1', x: 110, y: 130, indices: [1], count: 1 },
+    ]
+    const merged = mergeOverlappingAtlasClusters(withCluster)
+    expect(merged).toHaveLength(1)
+    expect(merged[0]!.indices).toEqual([0, 1, 2, 3])
+    expect(ATLAS_CLUSTER_PILL.h).toBeGreaterThan(ATLAS_PIN_PILL.h)
   })
 
   it('does not chain a street across cell edges into one city-wide blob', () => {

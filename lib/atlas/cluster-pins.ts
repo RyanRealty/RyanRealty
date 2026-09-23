@@ -214,6 +214,12 @@ export function clusterAtlasPins(
  */
 export const ATLAS_PIN_PILL = { w: 56, h: 26 }
 
+/**
+ * A cluster pill is two lines: the word "median" over the figure (UXLIVE-6,
+ * 2026-09-23), so it stands taller than a lone ask. Same width budget.
+ */
+export const ATLAS_CLUSTER_PILL = { w: 56, h: 34 }
+
 /** SITE-127 caret hang: `translate(-50%, calc(-100% - 5px))`. */
 export const ATLAS_PIN_HANG_PX = 5
 /** Air between a pill edge and the island so overflow:hidden cannot clip it. */
@@ -252,11 +258,15 @@ export function clampAtlasPinToIsland(
 export function mergeOverlappingAtlasClusters(
   clusters: readonly AtlasPinCluster[],
   pill: { w: number; h: number } = ATLAS_PIN_PILL,
+  clusterPill: { w: number; h: number } = ATLAS_CLUSTER_PILL,
 ): AtlasPinCluster[] {
   const items: AtlasPinCluster[] = clusters.map((c) => ({
     ...c,
     indices: [...c.indices],
   }))
+  // The taller of the two faces decides the overlap: a two-line cluster pill
+  // over a lone ask still covers it.
+  const boxOf = (c: AtlasPinCluster) => (c.count > 1 ? clusterPill : pill)
   let merged = true
   while (merged) {
     merged = false
@@ -264,7 +274,9 @@ export function mergeOverlappingAtlasClusters(
       for (let j = i + 1; j < items.length; j += 1) {
         const a = items[i]!
         const b = items[j]!
-        if (Math.abs(a.x - b.x) >= pill.w || Math.abs(a.y - b.y) >= pill.h) continue
+        const w = Math.max(boxOf(a).w, boxOf(b).w)
+        const h = Math.max(boxOf(a).h, boxOf(b).h)
+        if (Math.abs(a.x - b.x) >= w || Math.abs(a.y - b.y) >= h) continue
         const indices = [...a.indices, ...b.indices].sort((x, y) => x - y)
         const count = indices.length
         items[i] = {

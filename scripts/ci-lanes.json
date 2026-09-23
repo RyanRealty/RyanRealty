@@ -1468,6 +1468,18 @@
       "components/site/v3/V3Answers.css",
       "scripts/check-aeo-hub-guides.mjs",
       "scripts/lib/homepage-fold-density.mjs"
+    ],
+    "ci:atlas-props-budget": [
+      "app/about/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/api/atlas/**",
+      "components/site/v3/V3Atlas.client.tsx",
+      "components/site/v3/PlaceSubdivisionMap.client.tsx",
+      "lib/atlas/**",
+      "lib/geo/basemap-source.ts",
+      "scripts/check-atlas-props-budget.mjs",
+      "scripts/lib/atlas-props-weight.mjs"
     ]
   },
   "nightly": [

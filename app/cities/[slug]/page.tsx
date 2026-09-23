@@ -124,7 +124,8 @@ import {
   PlaceSubdivisionMap,
   PlaceSubdivisionRail,
 } from '@/components/site/v3/PlaceSubdivisionMap.client'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
+import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import {
   ATLAS_PIN_CLUSTER_CELL_PX,
@@ -968,6 +969,28 @@ async function renderCityDetail({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // UXLIVE-3 (visibility audit 2026-09-22): the Atlas's 1,664 dots on Bend
+  // (594 KB of RSC payload), the sales heat drawn from them (558 KB of SVG)
+  // and the basemap load after paint; the counts, outlines and text stay in
+  // the server HTML, and the parks, trails and plats ship at the precision
+  // the frame can draw. The route rebuilds the population from the boundary
+  // this page read, named by where it came from.
+  const atlasProps = deferredAtlasProps({
+    population: atlasView,
+    scope: {
+      cities: [cityName],
+      boundaryRef: asPlaceBoundary(cityBoundary)
+        ? { kind: 'geo', geoType: 'city', geoSlug: slug }
+        : { kind: 'city-row', cityName },
+      boundary: atlasBoundary,
+    },
+    regions: subjectRegions,
+    childRegions,
+    amenities: amenityLayers,
+    types: atlasView.types,
+    fit: 'dots',
+    basemapFrame: basemapFrameForRegions(subjectRegions, { dots: atlasView.dots, fit: 'dots' }),
+  })
   // SITE-82: fold Atlas defaults to Houses so the for-sale count agrees with
   // MOS / leftover HUD detached (same inventory question, one answer). Other
   // types stay available via the type toggles when their marks are present —
@@ -1089,20 +1112,19 @@ async function renderCityDetail({ params }: Props) {
                 clusterCellPx={ATLAS_PIN_CLUSTER_CELL_PX}
                 clusterStageHint={CITY_FOLD_CLUSTER_STAGE}
                 clusterStageHintPhone={CITY_FOLD_CLUSTER_STAGE_PHONE}
-                dots={atlasView.dots}
-                regions={subjectRegions}
-                childRegions={childRegions}
-                basemap={basemapForRegions(subjectRegions, {
-                  dots: atlasView.dots,
-                  fit: 'dots',
-                })}
+                dots={atlasProps.dots}
+                dotsSrc={atlasProps.dotsSrc}
+                dotsSummary={atlasProps.dotsSummary}
+                regions={atlasProps.regions}
+                childRegions={atlasProps.childRegions}
+                basemapSrc={atlasProps.basemapSrc}
                 fit="dots"
                 types={atlasView.types}
                 events={atlasView.events}
                 source={atlasView.source}
                 stamp={atlasView.stamp}
                 incomplete={!atlasView.complete}
-                amenities={amenityLayers}
+                amenities={atlasProps.amenities}
                 hidePriceScrubber
               />
             </div>

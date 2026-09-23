@@ -500,6 +500,10 @@ const nextConfig: NextConfig = {
     'app/subdivisions/[slug]/page': ['./data/basemap/streets/*.json'],
     'app/listing/[listingKey]/page': ['./data/basemap/streets/*.json'],
     'app/team/[slug]/page': ['./data/basemap/streets/*.json'],
+    // UXLIVE-3 (visibility audit 2026-09-22): the place pages' Atlas now
+    // fetches its basemap after paint from this route, which runs the same
+    // basemapForFrame (and so the same street tiles) the pages used to inline.
+    'app/api/atlas/basemap/route': ['./data/basemap/streets/*.json'],
     'app/api/cma/[slug]/pdf/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
       './node_modules/puppeteer-core/**',

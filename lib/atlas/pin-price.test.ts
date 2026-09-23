@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ATLAS_CLUSTER_PIN_LABEL,
   atlasClusterAskSpan,
+  atlasClusterMedianAsk,
   atlasPinShouldPaint,
-  formatAtlasClusterPin,
+  formatAtlasClusterMedian,
   formatAtlasClusterRange,
   formatAtlasPinPrice,
 } from './pin-price'
@@ -59,21 +61,44 @@ describe('formatAtlasClusterRange', () => {
   })
 })
 
-describe('formatAtlasClusterPin', () => {
-  it('prints the same face as a lone pin when the pile is one ask', () => {
-    expect(formatAtlasClusterPin(735_000, 735_400)).toBe('$735k')
-    expect(formatAtlasClusterPin(1_500_000, 1_500_000)).toBe('$1.5M')
+describe('atlasClusterMedianAsk (UXLIVE-6)', () => {
+  it('is the middle ask of an odd pile', () => {
+    expect(atlasClusterMedianAsk([1_500_000, 735_000, 50_000])).toBe(735_000)
   })
 
-  it('prints the low ask with + when the pile spans, never a bare count', () => {
-    expect(formatAtlasClusterPin(735_000, 1_500_000)).toBe('$735k+')
-    expect(formatAtlasClusterPin(1_000_000, 2_400_000)).toBe('$1M+')
-    expect(formatAtlasClusterPin(185_000, 5_285_000)).toBe('$185k+')
+  it('is the mean of the two middle asks of an even pile, to the dollar', () => {
+    expect(atlasClusterMedianAsk([500_000, 700_001, 900_000, 50_000])).toBe(600_001)
+    expect(atlasClusterMedianAsk([699_000, 700_000])).toBe(699_500)
   })
 
-  it('does not paint 0K+ when the low ask is an MLS token', () => {
-    expect(formatAtlasClusterPin(1.32, 5_285_000)).toBe('')
-    expect(formatAtlasClusterPin(3_000, 5_285_000)).toBe('')
+  it('does not let one cheap lot set the figure (the $50k+ over Bend)', () => {
+    // One land lot at $50k among houses. The old face printed "$50k+".
+    const pile = [50_000, 689_000, 715_000, 735_000, 749_900, 1_200_000]
+    expect(atlasClusterMedianAsk(pile)).toBe(725_000)
+    expect(formatAtlasClusterMedian(pile)).toBe('$725k')
+  })
+
+  it('skips token asks and missing asks, and is null when nothing real is left', () => {
+    expect(atlasClusterMedianAsk([1.32, 3_000, null, undefined, 185_000, 5_285_000])).toBe(2_735_000)
+    expect(atlasClusterMedianAsk([1.32, 3_000, null])).toBeNull()
+    expect(atlasClusterMedianAsk([])).toBeNull()
+  })
+})
+
+describe('formatAtlasClusterMedian', () => {
+  it('prints the lone-pin face, never a + and never a bare count', () => {
+    expect(formatAtlasClusterMedian([735_000, 735_400])).toBe('$735k')
+    expect(formatAtlasClusterMedian([1_500_000, 1_500_000])).toBe('$1.5M')
+    expect(formatAtlasClusterMedian([735_000, 1_500_000, 2_400_000])).toBe('$1.5M')
+    expect(formatAtlasClusterMedian([185_000, 5_285_000])).not.toMatch(/\+/)
+  })
+
+  it('prints nothing when the pile has no real ask', () => {
+    expect(formatAtlasClusterMedian([1.32, 3_000])).toBe('')
+  })
+
+  it('labels the figure plainly', () => {
+    expect(ATLAS_CLUSTER_PIN_LABEL).toBe('median')
   })
 })
 
