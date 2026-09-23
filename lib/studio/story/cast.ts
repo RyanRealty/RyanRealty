@@ -14,7 +14,7 @@ import type { EraPack } from './eras'
 
 export type CastSlot = 'A' | 'B'
 
-export type WardrobeKey = 'travel' | 'ski' | 'dinner' | 'evening' | 'summer'
+export type WardrobeKey = 'travel' | 'ski' | 'apres' | 'dinner' | 'evening' | 'summer'
 
 export type CastMember = {
   slot: CastSlot
@@ -43,7 +43,10 @@ export function wardrobeFor(member: CastMember, key: WardrobeKey): string {
  * deliberately NOT a period film frame; the sheet exists to carry identity, so
  * it is lit and framed for identity.
  */
-export function castSheetSpec(member: CastMember, era: EraPack): {
+export function castSheetSpec(
+  member: CastMember,
+  era: EraPack,
+): {
   framing: string
   light: string
   action: string

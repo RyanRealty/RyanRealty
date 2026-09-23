@@ -242,11 +242,11 @@ export const BEATS: BeatDef[] = [
     seasons: ['winter'],
     place:
       'the bar of a timber ski lodge at the foot of the mountain at dusk: log beams, a big stone fireplace burning, ' +
-      'wet parkas and wool hats on pegs, the tall windows gone deep blue with falling snow',
+      'their parkas and wet wool hats hung on pegs by the door, the tall windows gone deep blue with falling snow',
     refs: [],
     periodCues: ['rooms'],
     cast: ['A', 'B'],
-    wardrobe: 'ski',
+    wardrobe: 'apres',
     framing:
       'a wide shot at table height from the end of a wooden table, 28mm: the couple side by side on the left; across from them, ' +
       'side by side on the right, their friends: a blonde woman and her bearded husband; the fire behind',

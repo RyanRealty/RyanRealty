@@ -71,6 +71,8 @@ export const STORY_PIECES: StoryPiece[] = [
         wardrobe: {
           travel: 'a cream cable-knit turtleneck under a burgundy down vest, grey wool mittens',
           ski: 'a fitted powder-blue one-piece ski suit in matte nylon with one thin red and white stripe across the chest, a white knit hat with a pom-pom',
+          apres:
+            'a navy Nordic ski sweater with a white snowflake yoke over a turtleneck, the white knit hat pushed back on her head',
           dinner: 'a dark green wrap dress and small gold hoop earrings, her hair down',
           evening: 'a long camel wool coat, a cream knit scarf, and a cream knit cap',
         },
@@ -82,6 +84,7 @@ export const STORY_PIECES: StoryPiece[] = [
         wardrobe: {
           travel: 'a tan corduroy jacket with a sheepskin collar over a navy turtleneck',
           ski: 'a boxy, dull navy nylon ski parka with no emblem over red bib ski pants, a red knit cap',
+          apres: 'a cream fisherman cable-knit sweater, the red knit cap still on',
           dinner: 'a pale blue oxford shirt under a brown tweed blazer',
           evening: 'the tan corduroy jacket with the sheepskin collar turned up, a navy knit cap',
         },
