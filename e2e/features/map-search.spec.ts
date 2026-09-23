@@ -16,7 +16,9 @@ import { test, expect } from '@playwright/test'
  */
 
 const DATA_TIMEOUT = 90_000
-const MAP_URL = '/homes-for-sale'
+// The bare /homes-for-sale opens on the regional LIST since UXLIVE-4
+// (visibility audit 2026-09-22), so the map surface is the explicit split view.
+const MAP_URL = '/homes-for-sale?view=split'
 
 test.describe('Map search', () => {
   test.setTimeout(DATA_TIMEOUT)

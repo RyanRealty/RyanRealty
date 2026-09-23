@@ -16,7 +16,8 @@ export function cityFeaturedLinks(slug: string, name: string): V3QuietItem[] {
     { label: `Open houses in ${name}`, href: `/open-houses/${slug}` },
   ]
   if (slug === 'bend') {
-    items.push({ label: 'Luxury homes in Bend', href: '/luxury-homes-bend' })
+    // Indexable preset path; /luxury-homes-bend 308s here (UXLIVE-8).
+    items.push({ label: 'Luxury homes in Bend', href: '/homes-for-sale/bend/luxury' })
   }
   return items
 }

@@ -42,7 +42,8 @@ describe('buyHeroInventory · what publishes', () => {
 
   it('sends every figure to a surface that publishes that same figure', () => {
     const [count, median, pace] = buyHeroInventory(ROW)!.figures
-    expect(count?.href).toBe('/homes-for-sale?view=list')
+    // UXLIVE-4: the regional door is the indexable bare path (list by default).
+    expect(count?.href).toBe('/homes-for-sale')
     expect(median?.href).toBe('/housing-market/central-oregon#market')
     expect(pace?.href).toBe('/housing-market/central-oregon#pace')
   })

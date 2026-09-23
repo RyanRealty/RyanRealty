@@ -7,7 +7,15 @@ import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
-const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim()
+// AdSense is NOT loaded here any more (UXLIVE-5, visibility audit 2026-09-22).
+// Loading adsbygoogle.js on every route ran Auto-ads auctions on every
+// brokerage page (/, listings, place pages): all four live probes came back
+// unfilled, so it earned nothing while adding third-party weight to pages that
+// are meant to rank and convert, and a fill would have put Google-chosen ads,
+// portals and competing brokerages included, beside our own listings.
+// components/AdUnit.tsx loads the script itself, only where an explicit slot
+// renders (the non-transactional tools pages) and only with marketing consent.
+// INT-036 in docs/plans/ENTERPRISE_MAP/matrix/INTEGRATIONS.md records the ruling.
 const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim()
 
 /**
@@ -71,9 +79,8 @@ export default function GoogleAnalytics() {
   // gtag('config', G-ST40W4WM6T) doubles page_view and inflates Unassigned
   // sessions. When GTM is present, consent defaults still run; GA4 config does not.
   const hasGA4 = !!GA4_ID && !hasGTM
-  const hasAdSense = !!ADSENSE_ID
   const hasGoogleAds = !!GOOGLE_ADS_ID
-  if (!hasGA4 && !hasAdSense && !hasGoogleAds && !hasGTM) return null
+  if (!hasGA4 && !hasGoogleAds && !hasGTM) return null
   // Never load a Google tag from a dev server or a preview deploy.
   if (IS_NON_PRODUCTION_BUILD) return null
 
@@ -196,27 +203,6 @@ export default function GoogleAnalytics() {
             `}
           </Script>
         </>
-      )}
-
-      {/* AdSense — loaded during browser idle (lazyOnload), AFTER hydration
-          completes. With afterInteractive the ad script could execute while
-          React was still hydrating a large page, and adsbygoogle.js mutates
-          the DOM (auto-ads insertion + relocating its own tag, logging
-          "AdSense head tag doesn't support data-nscript attribute") — the
-          intermittent "Hydration failed because the server rendered HTML
-          didn't match the client" errors the 2026-06-10 site audit caught on
-          /communities, /cities, and /about (P0-5). Manual <AdUnit> slots are
-          unaffected: they push to the window.adsbygoogle queue, which the
-          script drains whenever it loads. Its ad-display logic still respects
-          the consent state Google already knows about. */}
-      {hasAdSense && (
-        <Script
-          id="adsense"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`}
-          strategy="lazyOnload"
-          crossOrigin="anonymous"
-          async
-        />
       )}
     </>
   )

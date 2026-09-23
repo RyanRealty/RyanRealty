@@ -676,9 +676,10 @@ export function cityExploreItems(
   ]
   // The westside-luxury door (ci:westside-backlog): Bend keeps its edge to the
   // luxury page. KbPopularSearches carried it on the KB register; the closing
-  // Quiet is where the graph's outbound edges live on the barrel.
+  // Quiet is where the graph's outbound edges live on the barrel. The door is
+  // the indexable preset path; /luxury-homes-bend 308s there (UXLIVE-8).
   if (slug === 'bend') {
-    items.splice(1, 0, { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' })
+    items.splice(1, 0, { label: 'Luxury homes in Bend', href: '/homes-for-sale/bend/luxury' })
   }
   if (hasPopulation) items.push({ label: 'U.S. Census Bureau', href: 'https://www.census.gov' })
   return items

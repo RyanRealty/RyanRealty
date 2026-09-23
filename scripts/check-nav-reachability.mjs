@@ -35,9 +35,14 @@ const __dirname = dirname(__filename)
 const NAV_FILE = join(__dirname, '..', 'lib', 'site-nav.ts')
 
 // Every top-level section that must be reachable from the site navigation.
+// UXLIVE-4 (visibility audit 2026-09-22): the Homes door is the indexable
+// bare /homes-for-sale, which now defaults to the regional list. The old
+// ?view=list / ?view=map doors were noindex variants; ci:chrome-links keeps
+// them (and every redirect source) out of the chrome.
 const REQUIRED_HREFS = [
-  '/homes-for-sale?view=list',
-  '/homes-for-sale?view=map',
+  '/homes-for-sale',
+  '/homes-for-sale/bend/luxury',
+  '/invest',
   '/open-houses',
   '/communities',
   '/neighborhoods',

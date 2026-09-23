@@ -335,7 +335,10 @@ async function main() {
     // /luxury-homes-bend exists and is indexed, but the legacy luxury URL was
     // dumping its equity on generic /homes-for-sale while Google ranked our
     // sitemap page for "luxury homes bend" (144 imp, 0 clicks).
-    '/luxury-homes-bend-oregon': '/homes-for-sale/bend?minPrice=1500000',
+    // UXLIVE-8 (2026-09-23): both luxury URLs land on the indexable preset
+    // path. The old ?minPrice=1500000 target is a noindex search variant.
+    '/luxury-homes-bend': '/homes-for-sale/bend/luxury',
+    '/luxury-homes-bend-oregon': '/homes-for-sale/bend/luxury',
     // Tetherow: one URL. LP chrome, the Heath LP (not its own MLS plat),
     // the city/community search surface, and the blog slug that cannibalized
     // the community page all 301 to /communities/tetherow.

@@ -99,7 +99,8 @@ describe('trackedDocLink — listing', () => {
   it('NULL-SAFE: nothing at all still returns the regional search', () => {
     const u = parsed(trackedDocLink('listing', null, CTX))
     expect(u.pathname).toBe('/homes-for-sale')
-    expect(u.searchParams.get('view')).toBe('list')
+    // UXLIVE-4: the bare, indexable path IS the regional list; no ?view=.
+    expect(u.searchParams.get('view')).toBeNull()
   })
 })
 
@@ -155,10 +156,10 @@ describe('trackedDocLink — search, book, site', () => {
     expect(parsed(trackedDocLink('search', 'Redmond', CTX)).pathname).toBe('/homes-for-sale/redmond')
   })
 
-  it('keeps the regional view param the search helper sets', () => {
+  it('lands on the clean regional search path the helper sets (UXLIVE-4)', () => {
     const u = parsed(trackedDocLink('search', null, CTX))
     expect(u.pathname).toBe('/homes-for-sale')
-    expect(u.searchParams.get('view')).toBe('list')
+    expect(u.searchParams.get('view')).toBeNull()
     expect(u.searchParams.get('utm_campaign')).toBe('cma-1975-harriman')
   })
 

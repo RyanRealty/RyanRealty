@@ -444,9 +444,10 @@
 }
 
 /* Sign in -------------------------------------------------------------------
-   Sign in on every width (mobile and desktop). Desktop also keeps phone. */
+   In the bar from 56.25rem up. Below that the slot is the phone (UXLIVE-13)
+   and Sign in is reached in the menu, whose account group lists it. */
 .v3-chrome__signin {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   /* Two words, one line. At 1440 with the search field in the bar this wrapped
@@ -469,12 +470,20 @@
   text-decoration-color: currentColor;
 }
 
+@media (min-width: 56.25rem) {
+  .v3-chrome__signin {
+    display: inline-flex;
+  }
+}
+
 
 /* Phone ---------------------------------------------------------------------
-   Desktop only (mobile bar is logo | Sign in | hamburger). Number stays in the
-   menu foot and footer. */
+   Every width. Mobile bar is logo | Search | Call | Menu (UXLIVE-13, Matt
+   2026-09-23 directive): a tappable brokerage line in the first screen of
+   every route. Icon-only at 390 (the link's aria-label names the number),
+   digits from 40rem. The number also stays in the menu foot and footer. */
 .v3-chrome__phone {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--v3-space-3xs);
@@ -529,26 +538,6 @@
   }
 }
 
-@media (min-width: 56.25rem) {
-  .v3-chrome__phone {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--v3-space-3xs);
-    box-sizing: border-box;
-    flex: none;
-    min-width: var(--v3-tap);
-    min-height: var(--v3-tap);
-    color: var(--v3-ink);
-    font-size: var(--v3-size-body-sm);
-    font-weight: var(--v3-weight-medium);
-    font-variant-numeric: tabular-nums;
-    text-decoration: underline;
-    text-decoration-color: transparent;
-    text-underline-offset: var(--v3-underline-offset);
-  }
-}
-
 /* 1280-class: keep the tap-size phone icon, hide the digits so the number
    does not run off 1024. aria-label on the link still names the number.
    Full digits return at 85rem, beside the search pill. */
@@ -598,9 +587,10 @@
   }
 }
 
-/* Phone bar after Work with us left (SITE-155): logo | Search | Sign in |
-   Menu. Fit the row; do not clip it. overflow-x:clip was the 375 rematch
-   backstop while Work with us was still in the bar. */
+/* Phone bar after Work with us left (SITE-155), with the phone in Sign in's
+   old slot (UXLIVE-13): logo | Search | Call | Menu. Fit the row; do not clip
+   it. overflow-x:clip was the 375 rematch backstop while Work with us was
+   still in the bar. */
 
 /* Menu and close ------------------------------------------------------------
    Icon-only at 390 and labelled from 40rem up. The word is never display:none:

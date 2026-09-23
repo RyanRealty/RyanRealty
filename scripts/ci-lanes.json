@@ -829,6 +829,16 @@
       "components/site/**",
       "app/**/layout.tsx"
     ],
+    "ci:chrome-links": [
+      "lib/site-nav.ts",
+      "lib/site/publish-newsletter-href.ts",
+      "components/site/v3/V3Chrome.tsx",
+      "components/site/v3/V3Footer.tsx",
+      "next.config.*",
+      "data/legacy-redirects.json",
+      "scripts/check-chrome-links.mjs",
+      "scripts/__tests__/check-chrome-links.test.mjs"
+    ],
     "ci:newsletter-authz": [
       "lib/newsletter/**",
       "lib/email/**",

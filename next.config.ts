@@ -328,7 +328,17 @@ const nextConfig: NextConfig = {
       { source: '/builders', destination: '/new-construction', permanent: true },
       { source: '/builders/:slug', destination: '/new-construction', permanent: true },
       { source: '/resources', destination: '/housing-market', permanent: true },
-      { source: '/pulse', destination: '/activity', permanent: true },
+      // UXLIVE-8 (visibility audit 2026-09-22): SITE_PAGES.md folds /activity
+      // (and /pulse) into /housing-market and makes /buy "Homes, not a third
+      // chrome". Both were 200 + index,follow with zero internal links. R-122
+      // evidence, GSC 2025-05-28..2026-09-20: /buy 0 impressions (page equals
+      // AND page contains "/buy" — only /buy/relocation 20 and
+      // /buy/investment 1 carry any, and they keep their own route);
+      // /activity 3 impressions, 0 clicks. One hop each, straight to the
+      // successor (no /pulse -> /activity -> /housing-market chain).
+      { source: '/buy', destination: '/homes-for-sale', permanent: true },
+      { source: '/activity', destination: '/housing-market', permanent: true },
+      { source: '/pulse', destination: '/housing-market', permanent: true },
       // IA lock (P5): deal-signal survivor is /price-drops. Page-level
       // permanentRedirect() under Next 16 prerender/streaming returns HTTP 200
       // with no h1/main (fleet 57eefae9 / df8ca55f). The 308 must live here.
@@ -431,14 +441,20 @@ const nextConfig: NextConfig = {
       { source: '/lp/expired-listing', destination: '/sell/expired-listings', permanent: true },
       { source: '/lp/fsbo', destination: '/sell/for-sale-by-owner', permanent: true },
       { source: '/lp/central-oregon-golf', destination: '/central-oregon/golf', permanent: true },
-      { source: '/luxury-homes-bend', destination: '/homes-for-sale/bend?minPrice=1500000', permanent: true },
+      // UXLIVE-8: the old destination (?minPrice=1500000) is a noindex search
+      // variant canonicalizing to /homes-for-sale/bend, so the URL's equity
+      // (GSC 430 impressions, avg position 32.5, 2026-06-23..09-20) landed on a
+      // page Google is told not to index. The luxury preset path is 200,
+      // index,follow, self-canonical, H1 "Luxury Homes in Bend".
+      { source: '/luxury-homes-bend', destination: '/homes-for-sale/bend/luxury', permanent: true },
       { source: '/fsbo', destination: '/sell/for-sale-by-owner', permanent: true },
       { source: '/sell/inherited-home', destination: '/sell', permanent: true },
       // /lp/listings/<key> was never a route; the listing itself lives at /listing/<key>.
       { source: '/lp/listings/:listingKey', destination: '/listing/:listingKey', permanent: true },
 
-      // Removed demo route still drawing traffic → the live Market Pulse page.
-      { source: '/pulse-video-demo', destination: '/activity', permanent: true },
+      // Removed demo route still drawing traffic → the live market page
+      // (/activity folded into /housing-market, UXLIVE-8).
+      { source: '/pulse-video-demo', destination: '/housing-market', permanent: true },
 
       // Admin route moved under the (protected) group.
       { source: '/admin/social', destination: '/admin/analytics/social', permanent: false },

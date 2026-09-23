@@ -6,15 +6,23 @@ import {
 } from './publish-regional-search-href'
 
 describe('publishRegionalSearchHref', () => {
-  it('opens list view with no city', () => {
-    expect(publishRegionalSearchHref()).toBe('/homes-for-sale?view=list')
-    expect(REGIONAL_SEARCH_HREF).toBe('/homes-for-sale?view=list')
+  it('is the clean, indexable path with no view and no city (UXLIVE-4)', () => {
+    expect(publishRegionalSearchHref()).toBe('/homes-for-sale')
+    expect(REGIONAL_SEARCH_HREF).toBe('/homes-for-sale')
+    expect(REGIONAL_SEARCH_HREF).not.toContain('?')
     expect(isRegionalSearchHref(publishRegionalSearchHref())).toBe(true)
   })
 
-  it('rejects the silent Bend door', () => {
-    expect(isRegionalSearchHref('/homes-for-sale')).toBe(false)
+  it('still accepts the explicit list view as the same regional set', () => {
+    expect(isRegionalSearchHref('/homes-for-sale?view=list')).toBe(true)
+  })
+
+  it('rejects the Bend-camera views and any city scope', () => {
     expect(isRegionalSearchHref('/homes-for-sale?view=map')).toBe(false)
+    expect(isRegionalSearchHref('/homes-for-sale?view=split')).toBe(false)
+    expect(isRegionalSearchHref('/homes-for-sale?city=Bend')).toBe(false)
     expect(isRegionalSearchHref('/homes-for-sale?view=list&city=Bend')).toBe(false)
+    expect(isRegionalSearchHref('/homes-for-sale/bend')).toBe(false)
+    expect(isRegionalSearchHref('')).toBe(false)
   })
 })
