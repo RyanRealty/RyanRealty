@@ -32,10 +32,16 @@ This is the authoritative rule for data architecture decisions. If any older doc
 
 ## 3) Listing URL contract (required)
 
-- Canonical listing URL:
-  - `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}`
+- Canonical listing URL (P14, 2026-09-23; built by `listingTileHref` / `listingCanonicalHref` in `lib/slug.ts`):
+  - `/homes-for-sale/{city}/{community}/{address-slug}-{mlsNumber}`
+  - `{city}` is the MLS `City` and `{community}` the MLS `SubdivisionName`, ONLY. The polygon
+    `boundary_city` / `boundary_neighborhood` never enter the path: every reclassification moved
+    the canonical (GSC 2026-08-23..09-19: 1,234 of 7,329 listing ids under more than one URL).
+  - Every other path that ends in the listing's key 308s to the canonical in `middleware.ts`
+    (`lib/routing/listing-canonical-hop.ts`). A canonical move needs an entry in
+    `lib/routing/listing-canonical-pins.json` or `lib/routing/listing-canonical-hop.test.ts` fails.
 - Segment behavior:
-  - Include neighborhood only when defined for the community.
+  - No neighborhood segment (retired by P14).
   - Omit community segment when community data is unavailable:
     - `/homes-for-sale/{city}/{address-slug}-{mlsNumber}`
   - Fallback when location data is insufficient:

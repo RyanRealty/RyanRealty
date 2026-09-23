@@ -371,12 +371,48 @@ async function discoverResolvingListingKey() {
       await new Promise((r) => setTimeout(r, wait))
     }
   }
-  if (status !== 200) return { key: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
+  if (status !== 200) return { key: null, path: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
   // Canonical detail URLs end in -<mlsNumber>; getListingCanonicalPathFields
   // accepts an MLS number as well as a ListingKey.
-  const m = body.match(/<loc>[^<]*\/homes-for-sale\/[^<]*?-(\d{5,})<\/loc>/)
-  if (!m) return { key: null, why: 'no canonical listing URL in sitemaps/listings.xml' }
-  return { key: m[1], why: null }
+  const m = body.match(/<loc>([^<]*\/homes-for-sale\/[^<]*?-(\d{5,}))<\/loc>/)
+  if (!m) return { key: null, path: null, why: 'no canonical listing URL in sitemaps/listings.xml' }
+  return { key: m[2], path: locationPathname(m[1]), why: null }
+}
+
+/**
+ * LISTING CANONICAL HOP (P14, visibility audit 2026-09-22, gsc-trend-6).
+ *
+ * A listing page renders from the MLS number at the END of its path, so any
+ * segments in front of it used to answer 200 with only a rel=canonical: 1,234
+ * of 7,329 listing ids sat under more than one URL in Search Console
+ * 2026-08-23..09-19. middleware.ts now 308s every such path to the canonical
+ * before render (lib/routing/listing-canonical-hop.ts). The unit tests prove the
+ * decision; only a running server proves the Edge bundle, its inlined Supabase
+ * env and the real runtime actually emit it. The probe takes the discovered
+ * sitemap URL's last segment under the retired /outside-boundaries/ city (690
+ * of those ids had such a variant in Search Console) and wants: a 308, a
+ * Location that is not the probe and ends in the same listing segment, and a
+ * Location that does not redirect again.
+ */
+async function checkListingCanonicalHop(route, url) {
+  try {
+    const { status, location } = await fetchWithTimeout(url, timeoutFor(route.path), { redirect: 'manual' })
+    const pathname = locationPathname(location)
+    const reasons = []
+    if (status !== 308) reasons.push(`HTTP ${status} (want 308 — a non-canonical listing path must hop before render)`)
+    if (!pathname) reasons.push('no Location header')
+    else if (pathname === route.path) reasons.push(`Location points back at itself (${pathname})`)
+    else if (!pathname.endsWith(`/${route.listingSegment}`)) reasons.push(`Location ${pathname} is not this listing (want .../${route.listingSegment})`)
+    if (reasons.length === 0) {
+      const again = await fetchWithTimeout(BASE + pathname, timeoutFor(pathname), { redirect: 'manual' })
+      if (again.status >= 300 && again.status < 400) {
+        reasons.push(`the canonical ${pathname} redirects again (HTTP ${again.status} -> ${locationPathname(again.location)})`)
+      }
+    }
+    return { ...route, url, status, ok: reasons.length === 0, reasons, title: pathname || null }
+  } catch (e) {
+    return { ...route, url, ok: false, status: 0, reasons: [String(e?.message ?? e)], title: null }
+  }
 }
 
 async function checkResolvingRedirect(route, url) {
@@ -414,6 +450,7 @@ async function checkRoute(route) {
   const url = BASE + route.path
   if (route.predetermined) return { ...route, url, title: null, ...route.predetermined }
   if (route.resolvingRedirect) return checkResolvingRedirect(route, url)
+  if (route.listingSegment) return checkListingCanonicalHop(route, url)
   if (route.refusal) return checkRefusal(route, url)
   const skipReason = SKIP_ROUTES.get(route.path)
   if (skipReason) return { ...route, url, ok: true, skipped: true, status: 0, reasons: [skipReason], title: null }
@@ -452,6 +489,17 @@ async function main() {
           name: 'listing by-key — RESOLVING key must emit a real 3xx',
           resolvingRedirect: true,
         },
+        // P14: the same discovered listing under a retired city segment. A
+        // discovery failure is already reported once, by the route above.
+        ...(discovered.path
+          ? [
+              {
+                path: `/homes-for-sale/outside-boundaries/${discovered.path.split('/').at(-1)}`,
+                name: 'listing canonical hop — a non-canonical listing path must 308 to the canonical before render',
+                listingSegment: discovered.path.split('/').at(-1),
+              },
+            ]
+          : []),
       ]
     : [
         {

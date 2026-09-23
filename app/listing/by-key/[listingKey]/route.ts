@@ -18,11 +18,16 @@
  * client. That gap is why check-route-smoke.mjs now probes a RESOLVING key too.
  *
  * A route handler owns its whole response and never streams a shell, so it can
- * set a real Location header. Neither middleware nor next.config.ts can do this
- * hop: it needs a listings lookup.
+ * set a real Location header. next.config.ts cannot do this hop: it needs a
+ * listings lookup. (middleware.ts now does one for the PRETTY paths, P14,
+ * through lib/routing/listing-canonical-hop.ts; this key-form path stays here,
+ * where unstable_cache keeps the lookup warm across instances.)
  *
  * BRANCHES
  *   row found  -> 308 to the canonical /homes-for-sale/<city>/<slug>-<mls> URL.
+ *                 If that canonical is THIS key-form path (a row with no MLS
+ *                 City), 307 to /listing/<key> instead: a hop that targets
+ *                 itself is an infinite redirect.
  *   no row     -> 307 to /listing/<key>, which renders the ListingUnavailable
  *                 refusal (h1 + robots noindex). Temporary, not permanent: a
  *                 Coming Soon or opted-out row can become displayable later.
@@ -32,23 +37,8 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { getListingCanonicalPathFields } from '@/lib/data/listings/getListingCanonicalPathFields'
-import { listingCanonicalHref, listingKeyFromSlug } from '@/lib/slug'
-
-function canonicalPathFromFields(
-  row: NonNullable<Awaited<ReturnType<typeof getListingCanonicalPathFields>>>,
-): string {
-  // SITE-22: one builder for the canonical and everything that points at it.
-  return listingCanonicalHref({
-    listingKey: row.ListingKey,
-    listNumber: row.ListNumber,
-    streetNumber: row.StreetNumber,
-    streetName: row.StreetName,
-    city: row.City,
-    boundaryCity: row.boundary_city,
-    boundaryNeighborhood: row.boundary_neighborhood,
-    subdivisionName: row.SubdivisionName,
-  })
-}
+import { listingCanonicalPathFromFields } from '@/lib/data/listings/listingCanonicalPathCore'
+import { listingKeyFromSlug } from '@/lib/slug'
 
 async function lookupPathFields(listingKey: string) {
   const raw = String(listingKey ?? '').trim()
@@ -89,8 +79,11 @@ export async function GET(
   void request
   const { listingKey } = await context.params
   const row = await lookupPathFields(listingKey)
-  if (!row) {
-    return redirectTo(`/listing/${encodeURIComponent(String(listingKey ?? '').trim())}`, 307)
-  }
-  return redirectTo(canonicalPathFromFields(row), 308)
+  const refusal = `/listing/${encodeURIComponent(String(listingKey ?? '').trim())}`
+  if (!row) return redirectTo(refusal, 307)
+  // SITE-22: one builder for the canonical and everything that points at it
+  // (listingCanonicalHref, through the core both lookups share).
+  const canonical = listingCanonicalPathFromFields(row)
+  if (canonical.startsWith('/homes-for-sale/listing/')) return redirectTo(refusal, 307)
+  return redirectTo(canonical, 308)
 }

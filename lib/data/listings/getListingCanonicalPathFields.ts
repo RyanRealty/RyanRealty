@@ -5,94 +5,46 @@
  * getListingRawRowByKey / getListingDetail here — those pull photos,
  * agents, remarks, and the rest of the wide row for a hop that never
  * renders them.
+ *
+ * The column list, the display-permission refusal and the row → path mapping
+ * live in ./listingCanonicalPathCore so the Edge twin
+ * (./getListingCanonicalPathFieldsEdge, read by middleware.ts) cannot disagree
+ * with this one about which row is a hit or where it points.
  */
 
 import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { resolveCanonicalListingKey } from './resolveCanonicalListingKey'
+import {
+  LISTING_CANONICAL_PATH_COLUMNS,
+  mapListingCanonicalPathRow,
+  mayDisplayListingPublicly,
+  type ListingCanonicalPathFields,
+} from './listingCanonicalPathCore'
 
-const PATH_SELECT = [
-  'ListingKey',
-  'ListNumber',
-  'StreetNumber',
-  'StreetName',
-  'City',
-  'State',
-  'PostalCode',
-  'SubdivisionName',
-  'boundary_city',
-  'boundary_neighborhood',
-  'boundary_subdivision',
-  // Display permissions. Not path fields — read only to REFUSE. See
-  // mayDisplayPublicly below.
-  'permit_internet_yn',
-  'permit_address_internet_yn',
-  'idx_participant',
-].join(', ')
+export type { ListingCanonicalPathFields } from './listingCanonicalPathCore'
 
-/**
+const PATH_SELECT = LISTING_CANONICAL_PATH_COLUMNS.join(', ')
+
+/*
  * IDX compliance (ODS Rule B/G, NAR 7.58) — the same gate getListingDetail
  * applies, applied here too (2026-08-19).
  *
- * This lookup feeds /listing/by-key, whose generateMetadata publishes the
+ * This lookup feeds /listing/by-key, whose generateMetadata published the
  * street address in the <title> and a self-canonical to the pretty URL. Without
- * this gate it did that for a listing whose seller opted out of internet
+ * the gate it did that for a listing whose seller opted out of internet
  * display: https://ryan-realty.com/homes-for-sale/listing/220215050 served
  * `<title>1801 Rosa Parks, Portland | …</title>` and a canonical to
  * /homes-for-sale/outside-boundaries/1801-rosa-parks-220215050 while the detail
  * page for that same row correctly refused. A hop that may not show the home
- * may not publish its address either.
+ * may not publish its address either. The predicate is
+ * mayDisplayListingPublicly in ./listingCanonicalPathCore.
  *
  * Coming Soon needs no check here: the `Public read listings excludes coming
  * soon` RLS policy on `listings` already hides those rows from the anon client
  * this module uses.
  */
-function mayDisplayPublicly(row: Record<string, unknown>): boolean {
-  return (
-    row.permit_internet_yn !== false &&
-    row.permit_address_internet_yn !== false &&
-    row.idx_participant !== false
-  )
-}
-
-export type ListingCanonicalPathFields = {
-  ListingKey: string
-  ListNumber: string | null
-  StreetNumber: string | null
-  StreetName: string | null
-  City: string | null
-  State: string | null
-  PostalCode: string | null
-  SubdivisionName: string | null
-  boundary_city: string | null
-  boundary_neighborhood: string | null
-  boundary_subdivision: string | null
-}
-
-function asNullableString(value: unknown): string | null {
-  if (value == null) return null
-  const s = String(value).trim()
-  return s ? s : null
-}
-
-function mapRow(row: Record<string, unknown>): ListingCanonicalPathFields | null {
-  const listingKey = asNullableString(row.ListingKey)
-  if (!listingKey) return null
-  return {
-    ListingKey: listingKey,
-    ListNumber: asNullableString(row.ListNumber),
-    StreetNumber: asNullableString(row.StreetNumber),
-    StreetName: asNullableString(row.StreetName),
-    City: asNullableString(row.City),
-    State: asNullableString(row.State),
-    PostalCode: asNullableString(row.PostalCode),
-    SubdivisionName: asNullableString(row.SubdivisionName),
-    boundary_city: asNullableString(row.boundary_city),
-    boundary_neighborhood: asNullableString(row.boundary_neighborhood),
-    boundary_subdivision: asNullableString(row.boundary_subdivision),
-  }
-}
 
 async function fetchPathFields(listingKey: string): Promise<ListingCanonicalPathFields | null> {
   const sb = supabaseAnon()
@@ -106,8 +58,8 @@ async function fetchPathFields(listingKey: string): Promise<ListingCanonicalPath
   // getListingDetail — the caller then renders the refusal instead of a
   // redirect that names the address. poison-null-ok — a permission flag is
   // durable, not transient.
-  if (!mayDisplayPublicly(row)) return null
-  return mapRow(row)
+  if (!mayDisplayListingPublicly(row)) return null
+  return mapListingCanonicalPathRow(row)
 }
 
 /** Resolve ListNumber or ListingKey, then return path fields only. */
@@ -128,7 +80,10 @@ export async function getListingCanonicalPathFields(
     // rebuilding, /homes-for-sale/listing/220221984 still served
     // "71 Graham, Portland" from the v1 entry while two uncached refused rows
     // correctly rendered the refusal.
-    ['listing-canonical-path-fields-v2', listingKey],
+    //
+    // v3 bump 2026-09-23 (P14) — the selected columns changed (the boundary_*
+    // columns left the row), so a v2 entry is a different shape.
+    ['listing-canonical-path-fields-v3', listingKey],
     { revalidate: CACHE_WINDOWS.listingDetail, tags: [cacheTag.listings] }
   )()
 }
