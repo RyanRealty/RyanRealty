@@ -40,6 +40,7 @@ import { captureHotAnonymous } from '@/lib/data/crm/captureHotAnonymous'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { visitorEscalateEmailEnabled } from '@/lib/crm/visitor-escalate'
+import { hasSuspectTag } from '@/lib/crm/lead-quality'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -80,7 +81,8 @@ type HotSession = {
   ip_country: string | null
 }
 
-type NativePerson = { personId: number; assignedBroker: CrmBrokerSlug | null }
+/** `suspect`: the intake screen flagged this person's submit (quality:suspect). */
+type NativePerson = { personId: number; assignedBroker: CrmBrokerSlug | null; suspect: boolean }
 
 type TopEvent = {
   session_id: string
@@ -163,16 +165,24 @@ async function resolveNativePersons(sessions: HotSession[]): Promise<Map<string,
   const byId = new Map<number, NativePerson>()
   const byFubId = new Map<number, NativePerson>()
   if (crmIds.length > 0) {
-    const { data } = await supabase.from('crm_people').select('id, assigned_broker').in('id', crmIds)
+    const { data } = await supabase.from('crm_people').select('id, assigned_broker, tags').in('id', crmIds)
     for (const row of data ?? []) {
-      byId.set(Number(row.id), { personId: Number(row.id), assignedBroker: coerceBroker(row.assigned_broker) })
+      byId.set(Number(row.id), {
+        personId: Number(row.id),
+        assignedBroker: coerceBroker(row.assigned_broker),
+        suspect: hasSuspectTag(row.tags),
+      })
     }
   }
   if (fubIds.length > 0) {
-    const { data } = await supabase.from('crm_people').select('id, assigned_broker, fub_legacy_id').in('fub_legacy_id', fubIds)
+    const { data } = await supabase.from('crm_people').select('id, assigned_broker, fub_legacy_id, tags').in('fub_legacy_id', fubIds)
     for (const row of data ?? []) {
       if (row.fub_legacy_id == null) continue
-      byFubId.set(Number(row.fub_legacy_id), { personId: Number(row.id), assignedBroker: coerceBroker(row.assigned_broker) })
+      byFubId.set(Number(row.fub_legacy_id), {
+        personId: Number(row.id),
+        assignedBroker: coerceBroker(row.assigned_broker),
+        suspect: hasSuspectTag(row.tags),
+      })
     }
   }
 
@@ -298,12 +308,25 @@ export async function GET(request: NextRequest) {
   let tasksCreated = 0
   let emailsSent = 0
   let anonymousCaptured = 0
+  let suspectsSkipped = 0
   const anonymousSkipped: Record<string, number> = {}
   const errors: string[] = []
 
   for (const session of sessions) {
     const person = personBySession.get(session.session_id) ?? null
     const isIdentified = !!person
+
+    // 0. Intake screen (FUNNEL-1). A person whose submit was flagged as a likely
+    //    script is not a hot lead: the scripts fetch every link in the drip and
+    //    confirmation mail within seconds, which is what pushed their sessions
+    //    over the threshold (19 "Hot seller intent lead, call within 5 min"
+    //    tasks on contact/join bots in the 30 days to 2026-09-22). Mark the
+    //    session fired so it is not re-read every 15 minutes, and move on.
+    if (person?.suspect) {
+      suspectsSkipped += 1
+      firedSessionIds.push(session.session_id)
+      continue
+    }
 
     // 1. Native 5-minute call task for identified sessions (crm_tasks)
     if (person) {
@@ -369,6 +392,7 @@ export async function GET(request: NextRequest) {
     escalated: firedSessionIds.length,
     tasksCreated,
     emailsSent,
+    suspectsSkipped,
     anonymousCaptured,
     anonymousSkipped,
     errors,

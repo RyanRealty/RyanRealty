@@ -66,9 +66,18 @@ checks.push({
   ok: /recordSequenceOutbound\(sb,\s*\{[\s\S]*?kind:\s*'sms_out'/.test(seq),
 })
 const outbound = readFileSync('lib/crm/sequence-outbound.ts', 'utf8')
+// FUNNEL-5 / TRACK-8 (2026-09-23): the drip rail advances Lead → Nurture on
+// first-outbound (G3, unchanged) but no longer writes first_broker_action_at —
+// a machine send is not a broker's first action (SITE-09). It used to reach the
+// advance through stampFirstBrokerActionIfEmpty, which also wrote the stamp: 37
+// of 143 stamped people (read 2026-09-23T02:48Z) were stamped by a drip send.
 checks.push({
-  label: 'sequence outbound helper stamps first-outbound',
-  ok: /stampFirstBrokerActionIfEmpty\(sb,\s*input\.personId/.test(outbound),
+  label: 'sequence outbound helper advances first-outbound',
+  ok: /advanceJourneyStage\(\{\s*personId:\s*input\.personId,\s*trigger:\s*'first-outbound'\s*\}\)/.test(outbound),
+})
+checks.push({
+  label: 'sequence outbound helper does not stamp first_broker_action (a drip is not a human touch)',
+  ok: !/stampFirstBrokerActionIfEmpty\s*\(/.test(outbound),
 })
 checks.push({
   label: 'sequence engine change_stage names sequence-change-stage',

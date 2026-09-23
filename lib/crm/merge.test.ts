@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   MERGE_TOKENS,
+  SELLER_ADDRESS_KEYS,
   findUnresolvedMergeTokens,
   greetingFor,
+  isPlaceholderLeadName,
+  isPlausibleFirstName,
   renderCrmMerge,
+  sellerAddressOf,
   splitName,
   type MergeContext,
   type MergePersonLike,
@@ -187,5 +192,96 @@ describe('renderCrmMerge purity — %greeting% needs a caller clock', () => {
   it('stays literal without ctx.now (hydration-safe: no ambient Date read)', () => {
     const ctx: MergeContext = { ...FULL_CTX, now: undefined }
     expect(renderCrmMerge('%greeting%', FULL_PERSON, ctx)).toBe('%greeting%')
+  })
+})
+
+/**
+ * FUNNEL-6 (visibility audit 2026-09-22): every Seller Master enrollment from the
+ * site stopped at step 0 on an unresolved %address%, because the seller LP stores
+ * the address as custom.sellerPropertyAddress while the merge read only the
+ * CRM-era keys. Pinned against the LP file itself: rename the key there and this
+ * fails until the merge follows.
+ */
+describe('%address% — resolves the key the intake doors write', () => {
+  const read = (p: string) => readFileSync(p, 'utf8')
+
+  it('the seller LP still stores sellerPropertyAddress', () => {
+    expect(read('app/lp/seller-home-value/actions.ts')).toMatch(/sellerPropertyAddress:\s*parsed\.full/)
+    expect(SELLER_ADDRESS_KEYS).toContain('sellerPropertyAddress')
+  })
+
+  it('the place pages still store subjectAddress', () => {
+    expect(read('app/communities/[slug]/_v3/place-value-actions.ts')).toMatch(/subjectAddress:\s*address/)
+    expect(SELLER_ADDRESS_KEYS).toContain('subjectAddress')
+  })
+
+  it('renders the Seller Master step 0 for an LP seller', () => {
+    const person: MergePersonLike = {
+      first_name: 'Janell',
+      name: 'Janell k winegar',
+      custom: { sellerPropertyAddress: '1130 Canter Ct, Sisters, OR 97759, USA' },
+    }
+    const out = renderCrmMerge('We have your request for %address%.', person)
+    expect(out).toBe('We have your request for 1130 Canter Ct, Sisters, OR 97759, USA.')
+    expect(findUnresolvedMergeTokens(out)).toEqual([])
+    expect(renderCrmMerge('%customSellerPropertyAddress%', person)).toBe('1130 Canter Ct, Sisters, OR 97759, USA')
+  })
+
+  it('reads a place-page subjectAddress, prefers the CRM-era key, never an "unspecified" marker', () => {
+    expect(sellerAddressOf({ subjectAddress: '61425 Daybreak, Bend' })).toBe('61425 Daybreak, Bend')
+    expect(sellerAddressOf({ customSellerPropertyAddress: 'A', sellerPropertyAddress: 'B' })).toBe('A')
+    expect(sellerAddressOf({ sellerPropertyAddress: 'unspecified' })).toBeNull()
+    // No address anywhere: the token stays literal and the fail-closed gate holds the send.
+    expect(renderCrmMerge('%address%', { first_name: 'Kim', custom: { sellerPropertyAddress: 'unspecified' } })).toBe(
+      '%address%',
+    )
+  })
+})
+
+/**
+ * FUNNEL-8: %first% merged whatever the form captured. 30 of 78 buyer drip
+ * subjects in the 30 days to 2026-09-23T02:48Z read "…is set, Lead" (the 'Lead
+ * <email>' placeholder) and 46 carried a scripted random token.
+ */
+describe('%first% — a junk or placeholder name drops the salutation', () => {
+  const SUBJECT = 'Your Bend home search is set, %first%'
+  const BODY = 'Hi %first%, thanks for reaching out to Ryan Realty.'
+
+  it('keeps a real first name, any script, caps lock and hyphen included', () => {
+    for (const first of ['Tengiz', 'ROBERT', 'Mary-Jane', "O'Neil", 'José', 'Zoë', 'Lynn']) {
+      expect(isPlausibleFirstName(first), first).toBe(true)
+      expect(renderCrmMerge(BODY, { first_name: first })).toBe(`Hi ${first}, thanks for reaching out to Ryan Realty.`)
+    }
+  })
+
+  it('drops a scripted token: no name, no dangling comma', () => {
+    const person: MergePersonLike = { first_name: 'bJSKIwsurKTralgVeDiGblO', name: 'bJSKIwsurKTralgVeDiGblO' }
+    expect(renderCrmMerge(SUBJECT, person)).toBe('Your Bend home search is set')
+    expect(renderCrmMerge(BODY, person)).toBe('Hi, thanks for reaching out to Ryan Realty.')
+  })
+
+  it("drops the 'Lead <email>' placeholder a nameless alerts signup is stored under", () => {
+    const person: MergePersonLike = { first_name: null, name: 'Lead jordy@example.com' }
+    expect(isPlaceholderLeadName(person.name)).toBe(true)
+    expect(renderCrmMerge(SUBJECT, person)).toBe('Your Bend home search is set')
+    expect(renderCrmMerge('%contact_last_name%', person)).toBe('%contact_last_name%')
+  })
+
+  it('tidies the other places a name sits', () => {
+    const junk: MergePersonLike = { first_name: 'Bsdfg' }
+    expect(renderCrmMerge('%first%, your alert is on.', junk)).toBe('Your alert is on.')
+    expect(renderCrmMerge('Thanks %first%!', junk)).toBe('Thanks!')
+    expect(renderCrmMerge('Call %first% to set the buyer consult', junk)).toBe('Call to set the buyer consult')
+    expect(renderCrmMerge('Line one\nHi %first%,\nThanks,\nMatt', junk)).toBe('Line one\nHi,\nThanks,\nMatt')
+  })
+
+  it('rejects digits, an @, no vowel, and over-long runs', () => {
+    for (const first of ['Lead2', 'a@b.com', 'Bsdfg', 'Aaaaaaaaaaaaaaaaaaaaa', 'J.']) {
+      expect(isPlausibleFirstName(first), first).toBe(false)
+    }
+  })
+
+  it('no name on file anywhere still greets "there" (long-standing contract)', () => {
+    expect(renderCrmMerge('Hi %first%', {})).toBe('Hi there')
   })
 })

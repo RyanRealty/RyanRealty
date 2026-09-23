@@ -5,6 +5,13 @@ import { buildNativePersonRow } from './nativeCreate'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { pickRoutedBroker } from '@/lib/crm/lead-routing'
 import { canonicalTagsToAdd } from '@/lib/crm/tag-canonical'
+import { reuseSourcePatch } from '@/lib/crm/lead-source'
+import {
+  classifyLeadQuality,
+  describeSignals,
+  qualityTags,
+  type LeadQualityVerdict,
+} from '@/lib/crm/lead-quality'
 
 /** Address shape the canonical tagger reads (subset of crm_people.addresses). */
 type CanonicalAddr = { type?: string | null; street?: string | null; city?: string | null; state?: string | null }
@@ -58,9 +65,31 @@ export type EnsureNativeLeadInput = {
    * routes a Rebecca/Paul ad lead to the right broker instead of Matt.
    */
   assignedBroker?: CrmBrokerSlug
+  /**
+   * Public-form intake screen (FUNNEL-1, 2026-09-23). When present, the typed
+   * name and the email run through classifyLeadQuality (lib/crm/lead-quality.ts).
+   * A suspect CREATE is written like any lead, plus the quality:suspect and
+   * quality:signal:* tags and a timeline note saying why; every machine that acts
+   * on a new lead reads that tag and stands down. A suspect submit that matches
+   * an EXISTING person changes nothing on that person (a script used their
+   * address; it is not their request) and leaves a timeline note instead.
+   * Omit it on internal paths (imports, TC deals, prospecting): those are not
+   * public submits and the screen was never measured on them.
+   */
+  screen?: {
+    /** The form's hidden trap field came back filled. */
+    honeypot?: boolean
+    /** What the visitor wrote, kept on the note so a broker can judge the flag. */
+    note?: string | null
+  }
 }
 
-export type EnsureNativeLeadResult = { personId: number; created: boolean }
+export type EnsureNativeLeadResult = {
+  personId: number
+  created: boolean
+  /** The screen's verdict on THIS submit. Undefined when the caller did not screen. */
+  quality?: LeadQualityVerdict
+}
 
 /**
  * The find-or-create DECISION, pure + unit-tested (no Supabase). Given the
@@ -168,6 +197,17 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
     input = { ...input, tags: [...(input.tags ?? []), FLEET_TEST_TAG] }
   }
 
+  // Intake screen (FUNNEL-1). The fleet identity is ours and is never screened.
+  const quality =
+    input.screen && !isFleetTest
+      ? classifyLeadQuality({
+          name: input.name,
+          email: input.email,
+          honeypot: input.screen.honeypot === true,
+        })
+      : undefined
+  const suspect = quality?.suspect === true
+
   const sb = createServiceClient()
 
   // Email-first lookup, then phone — the CRM-independent join keys.
@@ -180,7 +220,10 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
     ? await lookupPersonIdByContactPoint(sb, 'phone', normalizedPhone)
     : null
 
+  // A suspect submit never merges two people: a script pairing one person's
+  // harvested address with another's number is not evidence they are one.
   if (
+    !suspect &&
     emailMatchPersonId != null &&
     phoneMatchPersonId != null &&
     emailMatchPersonId !== phoneMatchPersonId
@@ -197,7 +240,7 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
           source: input.source,
           assignedBroker: input.assignedBroker,
         })
-        return { personId: mergeRes.survivorId, created: false }
+        return { personId: mergeRes.survivorId, created: false, quality }
       }
     } catch (e) {
       console.warn(
@@ -219,21 +262,29 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   })
 
   if (decision.action === 'reuse') {
-    // REUSE: merge the caller's tags into the existing person + refresh source /
-    // assigned_broker when provided. Without this the second touch from an LP
-    // (the same email/phone re-submitting a different form) would silently drop
-    // the new audience:/source:/intent: tags and the routed broker — the lead
-    // would keep its first-touch attribution forever. Merge, never overwrite the
-    // tag set. Non-fatal on a DB hiccup (the lead already exists).
+    // A suspect submit carrying a known person's address is a script using that
+    // address, not the person asking. Nothing on the person changes; the note
+    // records that it happened.
+    if (suspect) {
+      await noteSuspectSubmit(sb, decision.personId, quality!, input, false)
+      return { personId: decision.personId, created: false, quality }
+    }
+    // REUSE: merge the caller's tags into the existing person + route the broker
+    // when provided. Without this the second touch from an LP (the same
+    // email/phone re-submitting a different form) would silently drop the new
+    // audience:/source:/intent: tags and the routed broker. Merge, never
+    // overwrite the tag set. `source` is FIRST-touch (FUNNEL-4): it is only
+    // filled when empty, and a later door lands as a source:<door> tag.
+    // Non-fatal on a DB hiccup (the lead already exists).
     await mergeReuseEnrichment(sb, decision.personId, {
       tags: input.tags,
       source: input.source,
       assignedBroker: input.assignedBroker,
     })
-    return { personId: decision.personId, created: false }
+    return { personId: decision.personId, created: false, quality }
   }
   if (decision.action === 'skip') {
-    return { personId: 0, created: false }
+    return { personId: 0, created: false, quality }
   }
 
   // Create — person row first, then its contact points keyed on the same
@@ -256,7 +307,7 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
     assignedBroker: routedBroker,
     emails: emailObjs,
     phones: phoneObjs,
-    tags: input.tags,
+    tags: suspect ? [...(input.tags ?? []), ...qualityTags(quality!)] : input.tags,
   })
 
   const { data: created, error: createError } = await sb
@@ -299,8 +350,49 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
     }
   }
 
-  return { personId, created: true }
+  if (suspect) await noteSuspectSubmit(sb, personId, quality!, input, true)
+
+  return { personId, created: true, quality }
 }
+
+/**
+ * The timeline record of a screened-out submit, on the person it created or
+ * on the existing person whose address it carried. Plain words, the signals,
+ * what they wrote, and how to undo it. Best-effort: never fails the capture.
+ */
+async function noteSuspectSubmit(
+  sb: ReturnType<typeof createServiceClient>,
+  personId: number,
+  quality: LeadQualityVerdict,
+  input: EnsureNativeLeadInput,
+  created: boolean,
+): Promise<void> {
+  const typed = String(input.name ?? '').trim()
+  const wrote = String(input.screen?.note ?? '').trim()
+  const body = [
+    created
+      ? `This submit was screened as a likely script: ${describeSignals(quality.signals)}. The person is kept and tagged quality:suspect, so no workflow, broker text, call task or response-clock flag runs for them. Remove the tag to treat them as a lead.`
+      : `A submit that used this person's address was screened as a likely script: ${describeSignals(quality.signals)}. Nothing on this person was changed and nothing was sent.`,
+    `Door: ${input.source}.${typed ? ` Name typed: ${typed.slice(0, 80)}.` : ''}`,
+    wrote ? `They wrote: ${wrote.slice(0, 1200)}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+  try {
+    const { error } = await sb.from('crm_timeline').insert({
+      person_id: personId,
+      kind: 'system',
+      title: created ? 'Intake screen: likely script' : 'Intake screen: script used this address',
+      body,
+      payload: { signals: quality.signals, door: input.source, created },
+      source: 'intake-screen',
+    })
+    if (error) console.warn('[ensureNativeLead] intake-screen note failed:', error.message)
+  } catch (err) {
+    console.warn('[ensureNativeLead] intake-screen note threw:', err instanceof Error ? err.message : String(err))
+  }
+}
+
 
 /** Dedupe + trim a tag list, dropping empties and over-long tags (CRM parity: <=80). */
 export function cleanTags(tags: Array<string | null | undefined> | undefined): string[] {
@@ -315,10 +407,10 @@ export function cleanTags(tags: Array<string | null | undefined> | undefined): s
 
 /**
  * REUSE-path enrichment: union the new tags onto the existing crm_people.tags
- * array, and update source / assigned_broker when the caller supplied them. Reads
- * the current tags first (Postgres text[] has no in-place merge via supabase-js),
- * then writes the union. Best-effort — logs and swallows on error so a re-submit
- * never breaks the LP response.
+ * array, route assigned_broker when the caller supplied one, and keep `source`
+ * first-touch (reuseSourcePatch). Reads the current row first (Postgres text[]
+ * has no in-place merge via supabase-js), then writes the union. Best-effort —
+ * logs and swallows on error so a re-submit never breaks the LP response.
  */
 async function mergeReuseEnrichment(
   sb: ReturnType<typeof createServiceClient>,
@@ -333,7 +425,7 @@ async function mergeReuseEnrichment(
   try {
     const { data: existing, error: readError } = await sb
       .from('crm_people')
-      .select('tags, custom, addresses, stage')
+      .select('tags, custom, addresses, stage, source')
       .eq('id', personId)
       .maybeSingle()
     if (readError) {
@@ -342,7 +434,9 @@ async function mergeReuseEnrichment(
     }
     const current = Array.isArray(existing?.tags) ? (existing!.tags as string[]) : []
     const update: Record<string, unknown> = {}
-    const merged = incoming.length > 0 ? Array.from(new Set([...current, ...incoming])) : current
+    const sourcePatch = reuseSourcePatch((existing?.source as string | null) ?? null, input.source)
+    const withDoor = sourcePatch.tag ? cleanTags([...incoming, sourcePatch.tag]) : incoming
+    const merged = withDoor.length > 0 ? Array.from(new Set([...current, ...withDoor])) : current
     // Streamline v2: canonicalize on re-touch too (additive) so a re-submitting lead
     // gains its segment/realtor tags and appears in the right smart list.
     const derived = canonicalTagsToAdd({
@@ -353,7 +447,7 @@ async function mergeReuseEnrichment(
     })
     const finalTags = derived.length > 0 ? Array.from(new Set([...merged, ...derived])) : merged
     if (finalTags.length !== current.length) update.tags = finalTags
-    if (hasSource) update.source = input.source!.trim()
+    if (sourcePatch.source) update.source = sourcePatch.source
     if (hasBroker) update.assigned_broker = input.assignedBroker
     if (Object.keys(update).length === 0) return
     const { error: updateError } = await sb.from('crm_people').update(update).eq('id', personId)
@@ -481,8 +575,11 @@ export async function createNativeTask(input: CreateNativeTaskInput): Promise<vo
   try {
     const sb = createServiceClient()
     // Fleet test identity never wakes a broker — no call task, no phone buzz.
+    // Neither does a submit the intake screen flagged (FUNNEL-1): the task
+    // list is where a broker looks for people to call.
     {
       const { hasFleetTestTag } = await import('@/lib/crm/fleet-test-identity')
+      const { hasSuspectTag } = await import('@/lib/crm/lead-quality')
       const { data: person } = await sb
         .from('crm_people')
         .select('tags')
@@ -490,6 +587,10 @@ export async function createNativeTask(input: CreateNativeTaskInput): Promise<vo
         .maybeSingle()
       if (hasFleetTestTag(person?.tags)) {
         console.log('[createNativeTask] fleet:test person — wake task skipped by design')
+        return
+      }
+      if (hasSuspectTag(person?.tags)) {
+        console.log(`[createNativeTask] quality:suspect person ${input.personId} — call task skipped`)
         return
       }
     }

@@ -110,6 +110,19 @@ export function isHumanTouch(row: TimelineRowLike): boolean {
   return true
 }
 
+/**
+ * The earliest row a person (not a rail) sent, or null. The first-broker-action
+ * backfill stamps from this and nothing else (FUNNEL-5 / TRACK-8, 2026-09-23).
+ */
+export function firstHumanTouchRow<T extends TimelineRowLike>(rows: readonly T[]): T | null {
+  let best: T | null = null
+  for (const row of rows) {
+    if (!isHumanTouch(row)) continue
+    if (!best || String(row.ts ?? '') < String(best.ts ?? '')) best = row
+  }
+  return best
+}
+
 // ── Which leads the clock watches ────────────────────────────────────────────
 
 /**

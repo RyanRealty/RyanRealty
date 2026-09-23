@@ -56,13 +56,32 @@ export type SendEventParams = {
     term?: string
     content?: string
   }
+  /**
+   * The intake screen (FUNNEL-1, lib/crm/lead-quality.ts). ON by default: this is
+   * the public write entry, and a public form is where scripted submits arrive.
+   * Pass the form's honeypot result so a filled trap is recorded as a signal
+   * rather than silently dropped. `false` is for a broker keying a contact in by
+   * hand (crm-quick-add), which is not a public submit.
+   */
+  screen?: false | { honeypot?: boolean }
 }
+
+export type SendEventResult =
+  | {
+      ok: true
+      status: number
+      personId: number | null
+      /** The intake screen flagged THIS submit (quality:suspect). Callers skip
+       *  their own visitor confirmation, conversion pixels and enrichment. */
+      suspect: boolean
+    }
+  | { ok: false; status?: number; error?: string }
 
 /**
  * Capture a site event as a native CRM lead (creates or reuses the person).
  * Use type "Registration" for sign-ups; matching is by email to avoid duplicates.
  */
-export async function sendEvent(params: SendEventParams): Promise<{ ok: true; status: number; personId: number | null } | { ok: false; status?: number; error?: string }> {
+export async function sendEvent(params: SendEventParams): Promise<SendEventResult> {
   try {
     const email = params.person?.emails?.[0]?.value ?? null
     const phone = params.person?.phones?.[0]?.value ?? null
@@ -80,8 +99,17 @@ export async function sendEvent(params: SendEventParams): Promise<{ ok: true; st
     const slug = params.brokerAttribution?.brokerSlug
     const assignedBroker = slug === 'matt' || slug === 'rebecca' || slug === 'paul' ? slug : undefined
     const { ensureNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
-    const native = await ensureNativeLead({ name, email, phone, source: params.source, tags, assignedBroker })
-    return { ok: true, status: 200, personId: native.personId > 0 ? native.personId : null }
+    const screen =
+      params.screen === false
+        ? undefined
+        : { honeypot: params.screen?.honeypot === true, note: params.message ?? null }
+    const native = await ensureNativeLead({ name, email, phone, source: params.source, tags, assignedBroker, screen })
+    return {
+      ok: true,
+      status: 200,
+      personId: native.personId > 0 ? native.personId : null,
+      suspect: native.quality?.suspect === true,
+    }
   } catch (err) {
     console.error('[sendEvent] capture failed:', err)
     return { ok: false, error: 'native capture failed' }
