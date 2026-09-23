@@ -434,7 +434,10 @@
 .v3-footer__cluster-title a {
   display: inline-flex;
   align-items: center;
+  /* Both axes: a short city name ("Bend") measured 36x44 at 1440 and failed
+     ci:tap-targets (WCAG 2.5.5); the box, not the text, is the target. */
   min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);
   letter-spacing: 0;
