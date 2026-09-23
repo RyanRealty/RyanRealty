@@ -8,7 +8,7 @@
  * shows every publicly active home inside it. The place name at the top of
  * the list shows every home in the place.
  */
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useId, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatCount } from '@/lib/format/count'
@@ -89,6 +89,7 @@ export function PlaceSubdivisionRail({
   label?: string
 }) {
   const { placeName, rail, homes, keysBySlug, selectedId, setSelected } = usePlaceMap()
+  const detailBase = useId()
   return (
     <nav
       id={id}
@@ -116,6 +117,14 @@ export function PlaceSubdivisionRail({
                 type="button"
                 className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
                 aria-pressed={selectedId === entry.id}
+                /* The button's name is the place's name, exactly as the map
+                   polygon's: that is how WCAG 2.5.8 Equivalent pairs a small
+                   polygon with this full-size control. With the detail line in
+                   the name, /cities/bend "Old Bend" (39x31 on the map) had no
+                   partner and failed ci:tap-targets (visibility audit
+                   2026-09-22, PR #352). The detail stays as a description. */
+                aria-label={entry.name}
+                aria-describedby={nameOnly && entry.detail ? `${detailBase}-${entry.id}` : undefined}
                 onClick={() => setSelected(entry.id)}
               >
                 {photo ? (
@@ -131,7 +140,9 @@ export function PlaceSubdivisionRail({
                 <span className="place-subdiv-rail__copy">
                   <span className="place-subdiv-rail__name">{entry.name}</span>
                   {nameOnly && entry.detail ? (
-                    <span className="place-subdiv-rail__detail">{entry.detail}</span>
+                    <span id={`${detailBase}-${entry.id}`} className="place-subdiv-rail__detail">
+                      {entry.detail}
+                    </span>
                   ) : null}
                 </span>
               </button>
