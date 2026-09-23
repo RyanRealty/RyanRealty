@@ -14,24 +14,16 @@
 // grouped by purpose. The check-data-access.mjs gate diffs the
 // committed file against a fresh snapshot to detect drift.
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
+import { loadEnv } from '../lib/platform/env.mjs'
 import { resolve } from 'node:path'
 
-// Cloud sessions carry these in the process environment, not a .env.local file.
-const envText = existsSync('.env.local') ? readFileSync('.env.local', 'utf8') : ''
-const env = Object.fromEntries(
-  envText
-    .split('\n')
-    .filter((l) => l && !l.startsWith('#') && l.includes('='))
-    .map((l) => {
-      const i = l.indexOf('=')
-      return [l.slice(0, i).trim(), l.slice(i + 1).trim()]
-    }),
-)
-const URL = env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const KEY = env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+// .env.local on a Mac, the process environment on a cloud VM (lib/platform/env.mjs).
+await loadEnv()
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!URL || !KEY) {
-  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local')
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY (.env.local or environment)')
   process.exit(1)
 }
 
