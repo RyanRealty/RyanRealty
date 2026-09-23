@@ -27,12 +27,21 @@ import { VERDICT_LABEL, verdictRank } from './verdict'
 export type LineageDoc = {
   id: string
   name: string
+  contentType?: string | null
+  bytes?: number | null
   sha256: string | null
   ingestedAt: string
   /** Checklist rows this document sits on now. */
   linkedItemIds: string[]
   /** A person archived or restored this document: the reader never moves it. */
   personDecided: boolean
+  /** A source document of a signing envelope: the envelope points at it, so it never moves. */
+  inEnvelope?: boolean
+  /**
+   * The Vault made this file (a sealed envelope, a filled OREF form, a CDA):
+   * who signed it is a fact in tc_envelope_recipients, not a reading.
+   */
+  generated?: boolean
   verdict: DocumentVerdict | null
 }
 
@@ -65,6 +74,19 @@ export type LineagePlan = {
   instances: InstanceSummary[]
 }
 
+/**
+ * An image an email carried inline (a logo, a signature graphic) that the old
+ * mail filer stored as a document: small, and named the way mail clients name
+ * embedded parts (image001.png, _WRD0005.jpg, "img <uuid> 217.png", noname).
+ * A real photo of a signed page is large and named by a person.
+ */
+export function isEmailEmbed(d: Pick<LineageDoc, 'name' | 'contentType' | 'bytes'>): boolean {
+  const type = (d.contentType ?? '').toLowerCase()
+  if (type === 'application/pdf') return false
+  if ((d.bytes ?? 0) > 200_000) return false
+  return /^(image\d{3}|_wrd\d+|img [0-9a-f]{8} - |noname)/i.test(d.name.trim())
+}
+
 /** Signing parties that closed out a deal: nothing is still in flight. */
 export function cycleIsFinished(stage: string | null | undefined): boolean {
   return stage === 'closed' || stage === 'dead'
@@ -89,6 +111,11 @@ function isSubset(a: Set<string>, b: Set<string>): boolean {
 }
 
 type Member = { doc: LineageDoc; form: FormVerdict }
+
+/** Identified by the printed lines alone, or its printed number contradicts its title. */
+function unsure(f: FormVerdict): boolean {
+  return f.basis === 'lines' || f.numberConflict
+}
 
 function describe(f: FormVerdict): string {
   const n = f.instanceNumber ? ` #${f.instanceNumber}` : ''
@@ -115,13 +142,18 @@ export function planLineage(input: {
   const actions: LineageAction[] = []
   const instances: InstanceSummary[] = []
   const finished = cycleIsFinished(input.stage)
-  const archived = new Map<string, { reason: string; by: string | null }>()
+  const archived = new Map<string, { reason: string; by: string | null; identical?: boolean }>()
   const itemById = new Map(input.items.map((i) => [i.id, i]))
 
-  const movable = (d: LineageDoc) => !d.personDecided
-  const archive = (d: LineageDoc, reason: string, by: string | null) => {
+  const movable = (d: LineageDoc) => !d.personDecided && !d.inEnvelope && !d.generated
+  const archive = (d: LineageDoc, reason: string, by: string | null, identical = false) => {
     if (!movable(d) || archived.has(d.id)) return
-    archived.set(d.id, { reason, by })
+    archived.set(d.id, { reason, by, identical })
+  }
+
+  // 0. Images an email carried inline are not transaction documents.
+  for (const d of input.docs) {
+    if (isEmailEmbed(d)) archive(d, 'Not a transaction document: an image embedded in an email (a logo or signature graphic).', null)
   }
 
   // 1. Identical files: keep the one on the checklist, else the first filed.
@@ -136,10 +168,12 @@ export function planLineage(input: {
     const keep = [...group].sort(
       (a, b) =>
         Number(b.personDecided) - Number(a.personDecided) ||
+        Number(!!b.inEnvelope) - Number(!!a.inEnvelope) ||
+        Number(!!b.generated) - Number(!!a.generated) ||
         b.linkedItemIds.length - a.linkedItemIds.length ||
         a.ingestedAt.localeCompare(b.ingestedAt),
     )[0]
-    for (const d of group) if (d.id !== keep.id) archive(d, `Duplicate of "${keep.name}" (identical file).`, keep.id)
+    for (const d of group) if (d.id !== keep.id) archive(d, `Duplicate of "${keep.name}" (identical file).`, keep.id, true)
   }
 
   // 2. Group form instances across documents.
@@ -177,7 +211,7 @@ export function planLineage(input: {
     })
     const distinctDocs = new Set(members.map((m) => m.doc.id))
     if (distinctDocs.size < 2) continue
-    if (members.some((m) => m.form.weakKey || m.form.basis === 'lines' || m.form.numberConflict)) {
+    if (members.some((m) => m.form.weakKey || unsure(m.form))) {
       // On a finished deal unfinished copies leave by the rule below anyway;
       // asking a person to pick between them is noise.
       const allUnfinished = members.every((m) => IN_PROGRESS.has(m.form.verdict) || m.form.verdict === 'blank')
@@ -192,6 +226,20 @@ export function planLineage(input: {
       }
       continue
     }
+    // One copy says executed and another says rejected: they cannot both be
+    // the same instance's final record. A person reads them.
+    const finals = new Set(members.map((m) => m.form.verdict).filter((v) => v === 'fully_executed' || v === 'rejected'))
+    if (finals.size > 1) {
+      for (const m of ranked.slice(1)) {
+        if (m.doc.id === top.doc.id) continue
+        actions.push({
+          kind: 'flag',
+          docId: m.doc.id,
+          reason: `One copy of ${describe(m.form)} reads fully executed and another reads rejected. A person decides which is the final record.`,
+        })
+      }
+      continue
+    }
     const topSigned = signedNames(top.form)
     for (const m of ranked.slice(1)) {
       if (m.doc.id === top.doc.id) continue
@@ -201,6 +249,14 @@ export function planLineage(input: {
       if (dominated) superseded.set(m.doc.id, [...(superseded.get(m.doc.id) ?? []), { form: m.form, by: top }])
     }
   }
+
+  // The deal's contract is on file when some sale agreement copy is executed or
+  // signed-and-countered, or some counteroffer was accepted.
+  const contractOnFile = live.some((d) =>
+    d.verdict!.forms.some(
+      (f) => OFFER_PROFILES.has(f.profileKey ?? '') && (f.verdict === 'fully_executed' || f.verdict === 'countered'),
+    ),
+  )
 
   // 3. A document goes to the archive only when every form in it was superseded
   //    (a packet whose addendum lives on elsewhere still holds the sale agreement).
@@ -221,9 +277,19 @@ export function planLineage(input: {
       )
       continue
     }
-    if (d.verdict!.verdict === 'blank') {
-      archive(d, 'Blank form: nothing filled in or signed.', null)
-      continue
+    // A blank copy goes only when a better copy of the same form is on file:
+    // an unsigned pamphlet may be the only record that it was delivered.
+    if (d.verdict!.verdict === 'blank' && forms.every((f) => !unsure(f))) {
+      const better = live.find(
+        (o) =>
+          o.id !== d.id &&
+          !archived.has(o.id) &&
+          o.verdict!.forms.some((of) => forms.some((f) => f.profileKey && of.profileKey === f.profileKey) && verdictRank(of.verdict) > verdictRank('blank')),
+      )
+      if (better) {
+        archive(d, `Blank form: nothing filled in or signed. The filled copy is "${better.name}".`, better.id)
+        continue
+      }
     }
     // A finished deal: an offer copy nobody accepted leaves the file (kept, per
     // OAR 863-015-0250). Any other form whose only copy is unfinished is a
@@ -233,7 +299,9 @@ export function planLineage(input: {
       const f = forms[0]
       const missing = waitingOn(f)
       const never = missing.length ? `, never signed by ${missing.join(', ')}` : ''
-      if (forms.every((x) => OFFER_PROFILES.has(x.profileKey ?? '') && x.basis !== 'lines' && !x.numberConflict)) {
+      // Only when the deal's executed contract is on file: otherwise this copy
+      // may be the only record of the contract, and that is a gap to report.
+      if (contractOnFile && forms.every((x) => OFFER_PROFILES.has(x.profileKey ?? '') && !unsure(x))) {
         archive(d, `Offer copy not accepted: ${describe(f)} ${VERDICT_LABEL[f.verdict].toLowerCase()}${never}. Kept per OAR 863-015-0250.`, null)
       } else {
         actions.push({ kind: 'flag', docId: d.id, reason: `No fully executed copy of ${describe(f)} on this closed file${never}.` })
@@ -277,11 +345,13 @@ export function planLineage(input: {
         itemId,
         reason: gone ? (gone.by ? 'Archived: a better copy replaces it.' : 'Archived (see the archive reason).') : `Not fully executed (${VERDICT_LABEL[docVerdict!].toLowerCase()}).`,
       })
-      if (replacement && !replacement.linkedItemIds.includes(itemId) && !archived.has(replacement.id)) {
-        const rv = replacement.verdict?.verdict
-        if (rv && (DONE.has(rv) || rv === 'reference' || verdictRank(rv) >= verdictRank(docVerdict ?? 'needs_review'))) {
-          link(replacement.id, itemId, `Replaces "${d.name}" on this row.`)
-        }
+      if (replacement && !replacement.linkedItemIds.includes(itemId) && !archived.has(replacement.id) && item) {
+        // The same file keeps whatever placement it already had (a packet
+        // filed under several rows). A different, better copy takes the row
+        // only when the row fits its form: rows set by the old keyword filer
+        // are not carried forward.
+        const fits = (replacement.verdict?.forms ?? []).some((f) => input.match([item], f.formName).length > 0)
+        if (gone?.identical || fits) link(replacement.id, itemId, `Replaces "${d.name}" on this row.`)
       }
     }
   }
@@ -301,7 +371,7 @@ export function planLineage(input: {
     if (d.personDecided || d.linkedItemIds.length || actions.some((a) => a.kind === 'link' && a.docId === docId)) continue
     for (const f of forms) {
       const executed = f.verdict === 'fully_executed' || (f.verdict === 'countered' && f.profileKey !== null)
-      if (!executed || f.basis === 'lines' || f.basis === 'generic' || f.numberConflict) continue
+      if (!executed || f.basis === 'generic' || unsure(f)) continue
       const candidates = input.match(input.items, f.formName).filter((i) => !i.locked && (f.numbered || !occupied.has(i.id)))
       if (candidates.length !== 1) continue
       occupied.add(candidates[0].id)

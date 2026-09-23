@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { planLineage, type LineageDoc, type LineageItem } from './lineage'
+import { isEmailEmbed, planLineage, type LineageDoc, type LineageItem } from './lineage'
 import { documentVerdict, type FormVerdict, type ExecutionVerdict, type SignerStatus } from './verdict'
 
 const signer = (party: SignerStatus['party'], name: string, isSigned: boolean): SignerStatus => ({
@@ -94,9 +94,39 @@ describe('planLineage', () => {
       verdict: 'partially_executed',
       signers: [signer('buyer', 'Other Buyer', true), signer('seller', 'Mary Bowman', false)],
     })
-    const plan = planLineage({ stage: 'closed', docs: [doc('offer', [offer])], items, match })
+    const contract = fv({
+      profileKey: 'oref-001-rsa',
+      formName: 'Residential Real Estate Sale Agreement',
+      instanceNumber: null,
+      instanceKey: 'oref-001-rsa|b:nicoll',
+      verdict: 'fully_executed',
+      signers: executed.signers,
+    })
+    const plan = planLineage({ stage: 'closed', docs: [doc('offer', [offer]), doc('contract', [contract])], items, match })
     const a = plan.actions.find((x) => x.kind === 'archive')
     expect(a && a.kind === 'archive' && a.reason).toMatch(/^Offer copy not accepted: .*never signed by Mary Bowman \(seller\)\. Kept per OAR 863-015-0250\.$/)
+
+    // Without the executed contract on file the copy may be the only record of it: a gap, not an archive.
+    const alone = planLineage({ stage: 'closed', docs: [doc('offer', [offer])], items, match })
+    expect(alone.actions).toEqual([expect.objectContaining({ kind: 'flag', docId: 'offer', reason: expect.stringMatching(/^No fully executed copy of Residential Real Estate Sale Agreement/) })])
+  })
+
+  it('an executed copy and a rejected copy of one instance go to a person', () => {
+    const rejected = { ...executed, verdict: 'rejected' as const }
+    const plan = planLineage({ stage: 'closed', docs: [doc('ok', [executed]), doc('no', [rejected])], items, match })
+    expect(plan.actions.some((a) => a.kind === 'archive')).toBe(false)
+    expect(plan.actions).toContainEqual(expect.objectContaining({ kind: 'flag', docId: 'no' }))
+  })
+
+  it('never archives a signing envelope\'s source document', () => {
+    const plan = planLineage({
+      stage: 'pending',
+      docs: [doc('draft', [sellerOnly], { inEnvelope: true, sha256: 'same' }), doc('copy', [sellerOnly], { sha256: 'same' })],
+      items,
+      match,
+    })
+    expect(plan.actions).toContainEqual(expect.objectContaining({ kind: 'archive', docId: 'copy', supersededBy: 'draft' }))
+    expect(plan.actions.some((a) => a.kind === 'archive' && a.docId === 'draft')).toBe(false)
   })
 
   it('on a closed deal the only, partially signed disclosure stays on its row and is reported', () => {
@@ -114,15 +144,21 @@ describe('planLineage', () => {
     ])
   })
 
-  it('the executed copy takes the row its superseded copy was on', () => {
-    const plan = planLineage({
-      stage: 'closed',
-      docs: [doc('partial', [sellerOnly], { linkedItemIds: ['item-custom'] }), doc('final', [executed])],
-      items: [...items, { id: 'item-custom', name: 'Repairs agreed', typeName: null, locked: false }],
-      match,
-    })
-    expect(plan.actions).toContainEqual(expect.objectContaining({ kind: 'link', docId: 'final', itemId: 'item-custom' }))
-    expect(plan.actions.some((a) => a.kind === 'link' && a.itemId === 'item-add')).toBe(false)
+  it('a better copy takes its predecessor\'s row only when the row fits the form; an identical file keeps any row', () => {
+    const rows = [...items, { id: 'item-hoa', name: 'Association & CCRs Documents', typeName: null, locked: false }]
+    // The old keyword filer put an addendum on the HOA row: not carried forward.
+    const plan = planLineage({ stage: 'closed', docs: [doc('partial', [sellerOnly], { linkedItemIds: ['item-hoa'] }), doc('final', [executed])], items: rows, match })
+    expect(plan.actions.some((a) => a.kind === 'link' && a.itemId === 'item-hoa')).toBe(false)
+    // On the addenda row it is.
+    const fit = planLineage({ stage: 'closed', docs: [doc('partial', [sellerOnly], { linkedItemIds: ['item-add'] }), doc('final', [executed])], items: rows, match })
+    expect(fit.actions).toContainEqual(expect.objectContaining({ kind: 'link', docId: 'final', itemId: 'item-add' }))
+    // The same bytes filed under the HOA row keep that row.
+    const same = planLineage({ stage: 'closed', docs: [doc('a', [executed], { sha256: 'x' }), doc('bb', [executed], { sha256: 'x', linkedItemIds: ['item-hoa'] }), doc('ccc', [executed], { sha256: 'x', linkedItemIds: ['item-add'] })], items: rows, match })
+    // bb (on a row, filed first) stays; ccc's addenda row moves onto it; bb keeps its HOA row.
+    expect(same.actions.filter((a) => a.kind === 'link')).toEqual([
+      { kind: 'link', docId: 'bb', itemId: 'item-add', reason: 'Replaces "ccc.pdf" on this row.' },
+    ])
+    expect(same.actions.some((a) => a.kind === 'unlink' && a.docId === 'bb')).toBe(false)
   })
 
   it('a packet whose addendum is superseded elsewhere stays: it still holds the executed sale agreement', () => {
@@ -170,5 +206,31 @@ describe('planLineage', () => {
     const lines = fv({ profileKey: null, basis: 'lines', verdict: 'fully_executed', instanceKey: 'title:noticeofdisapproval|b:nicoll' })
     const plan = planLineage({ stage: 'pending', docs: [doc('n1', [lines]), doc('n22', [{ ...lines, verdict: 'partially_executed' }])], items, match })
     expect(plan.actions.some((a) => a.kind === 'archive' || a.kind === 'link')).toBe(false)
+  })
+
+  it('archives images an email carried inline, never a real photo or a PDF', () => {
+    expect(isEmailEmbed({ name: 'image001_112.jpg', contentType: 'image/jpeg', bytes: 29787 })).toBe(true)
+    expect(isEmailEmbed({ name: '_WRD0005_767.jpg', contentType: 'image/jpeg', bytes: 823 })).toBe(true)
+    expect(isEmailEmbed({ name: 'img 2e65b90d - af86 - 463a - 852b - 97a1f645fa04 217.png', contentType: 'image/png', bytes: 547 })).toBe(true)
+    expect(isEmailEmbed({ name: 'noname_303', contentType: 'application/octet-stream', bytes: 68223 })).toBe(true)
+    expect(isEmailEmbed({ name: 'Commons___Irrigation-Water-0001.jpg', contentType: 'image/jpeg', bytes: 4560248 })).toBe(false)
+    expect(isEmailEmbed({ name: 'image001.pdf', contentType: 'application/pdf', bytes: 2000 })).toBe(false)
+    const plan = planLineage({ stage: 'pending', docs: [{ ...doc('logo', []), name: 'image002_786.png', contentType: 'image/png', bytes: 18546, verdict: null }], items, match })
+    expect(plan.actions).toEqual([
+      { kind: 'archive', docId: 'logo', reason: 'Not a transaction document: an image embedded in an email (a logo or signature graphic).', supersededBy: null },
+    ])
+  })
+
+  it('a blank copy goes only when a filled copy of the same form is on file', () => {
+    const blank = { ...executed, verdict: 'blank' as const, signers: [] }
+    const alone = planLineage({ stage: 'pending', docs: [doc('blank', [blank])], items, match })
+    expect(alone.actions.some((a) => a.kind === 'archive')).toBe(false)
+    const withFilled = planLineage({ stage: 'pending', docs: [doc('blank', [{ ...blank, instanceKey: 'other' }]), doc('filled', [executed])], items, match })
+    expect(withFilled.actions).toContainEqual(expect.objectContaining({ kind: 'archive', docId: 'blank', supersededBy: 'filled' }))
+  })
+
+  it('never moves a file the Vault produced (a sealed envelope reads as its own record)', () => {
+    const plan = planLineage({ stage: 'pending', docs: [doc('sealed', [sellerOnly], { generated: true, sha256: 'x' }), doc('sealed2', [sellerOnly], { generated: true, sha256: 'x' })], items, match })
+    expect(plan.actions.some((a) => a.kind === 'archive')).toBe(false)
   })
 })

@@ -214,6 +214,26 @@ export async function readImagesStructured<T>(input: {
       : { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${p.jpeg.toString('base64')}`, detail: p.detail ?? 'high' } },
   )
   const t0 = Date.now()
+  // One retry when the reply is not the JSON the schema promised (seen once in
+  // 1,587 document reads, 2026-09-23: trailing text after the object).
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await structuredAttempt<T>(model, content, input, t0)
+    } catch (e) {
+      lastError = e
+      if (!(e instanceof SyntaxError)) throw e
+    }
+  }
+  throw lastError
+}
+
+async function structuredAttempt<T>(
+  model: string,
+  content: unknown[],
+  input: { system: string; schema: Record<string, unknown>; schemaName: string; maxTokens?: number; timeoutMs?: number },
+  t0: number,
+): Promise<StructuredVisionResult<T>> {
   const res = await xaiFetch(
     '/chat/completions',
     {

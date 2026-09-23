@@ -40,7 +40,8 @@ Who must sign comes from the canonical library, [`oref-form-library.md`](../.cla
 - **One-side forms.** Advisories, FIRPTA and one-way notices are complete when that side signs. An advisory's "Client" line counts as the client's signature.
 - **Receipts.** An earnest money receipt is executed by the title company's "By:" signature.
 - **Conditional lines** ("sellers claiming exclusion", "if applicable") are not missing when unsigned.
-- **Reports and informational documents** (title reports, inspections, audit summaries with no signature lines) are **Reference**.
+- **Reports and informational documents** (title reports, inspections, the OREF 000 guides, audit summaries with no signature lines) are **Reference**.
+- **Receipts** can repeat on a deal (initial and additional earnest money), so two receipts are never treated as copies of each other without a telling detail.
 - **Forms not in the library** take their signers from the lines printed on them. They are marked as such and never drive an automatic change.
 
 Names come from the form only. A 2026-09-23 dry run showed the deal's people records can hold a sale's sellers as its buyers.
@@ -53,21 +54,26 @@ A form instance is one form, number and Sale Agreement # for one set of buyers. 
 
 | Situation | What happens |
 |---|---|
+| An image an email carried inline (a logo, a signature graphic: small, named `image001.png`, `_WRD0005.jpg`, `noname`) | Archived: not a transaction document. The old filer stored these; the reader reads only PDFs. |
 | Identical files | One stays: the one on the checklist, else the first filed. |
 | A fully executed (or signed-and-countered, or signed-and-rejected) copy exists | Every other copy of that instance is archived with "Superseded … the fully executed copy is …" and `superseded_by` pointing at it. |
 | One copy's signers are a subset of another's | The subset copy is archived as an earlier copy. |
 | Live deal, only copy is partially signed | It stays, off the checklist, shown as waiting on the named people. |
-| Closed deal, an offer or counteroffer copy nobody accepted | Archived: "Offer copy not accepted … Kept per OAR 863-015-0250". |
+| A blank copy, when a filled copy of the same form is on file | Archived, pointing at the filled copy. A blank copy that is the only one stays. |
+| An executed copy and a rejected copy of the same instance | Flagged: they cannot both be the final record. |
+| Closed deal, an offer or counteroffer copy nobody accepted, when the deal's executed contract is on file | Archived: "Offer copy not accepted … Kept per OAR 863-015-0250". Without the executed contract on file it is flagged instead, because it may be the only record of the contract. |
 | Closed deal, the only copy of any other form is partially signed | It stays where it is and is flagged: "No fully executed copy of … on this closed file". The partial copy is the only record; hiding it would hide the gap. |
 | Copies the reader cannot tell apart (no names, no number or terms), a form outside the library, or a printed number that contradicts the title | Flagged for a person. Nothing moves. |
 
 **Checklist.**
-- An archived copy comes off its rows, and the copy that replaced it goes on the same rows.
+- An archived copy comes off its rows. An identical file that replaces it keeps those rows (a SkySlope packet filed under several rows). A different, better copy takes a row only when the row fits its form, so rows the old keyword filer set are not carried forward.
 - An executed copy on no row goes on the one row its form matches: an empty row for one-per-deal forms, or the matching row for forms a deal has several of (addenda, counteroffers, notices).
 - Filing (mail and text) no longer puts documents on the checklist. The reader places them after reading.
 
 **Never automatic:**
 - a document a person archived or restored
+- a file the Vault made (a sealed envelope, a filled OREF form, a CDA): who signed it is a fact in `tc_envelope_recipients`, not a reading
+- a source document of a signing envelope
 - a checklist row the principal already approved (flagged instead)
 - a removal whose only ground is "not fully executed" unless a second, different model (`GROK_MODELS.documentsConfirm`) reads the document and agrees
 

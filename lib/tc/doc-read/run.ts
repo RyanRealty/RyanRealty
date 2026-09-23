@@ -25,6 +25,9 @@ import { planLineage, type LineageAction, type LineageDoc, type LineageItem, typ
 
 export const READER_ACTOR = 'vault-reader'
 
+/** classification.source values for files the Vault itself produced. */
+const VAULT_MADE: ReadonlySet<string> = new Set(['envelope_executed', 'envelope_our_side_signed', 'oref_fill', 'oref_sealed', 'cda', 'listing_duplicate'])
+
 type DocRow = {
   id: string
   name: string
@@ -156,6 +159,7 @@ export async function readStoredDocument(
     const { data: blob, error } = await sb.storage.from('tc-documents').download(doc.storage_path)
     if (error || !blob) return { ok: false, documentId, error: `download failed: ${error?.message ?? 'empty'}` }
     const bytes = new Uint8Array(await blob.arrayBuffer())
+    if (Buffer.from(bytes.subarray(0, 1024)).indexOf('%PDF') < 0) return { ok: false, documentId, error: 'not a PDF' }
     if (!sha) sha = createHash('sha256').update(bytes).digest('hex')
     try {
       const read = await readDocumentBytes(bytes, { model })
@@ -229,7 +233,7 @@ export async function planCycleDocuments(sb: SupabaseClient, cycleId: string): P
   if (!ctx) return null
   const { data: docs } = await sb
     .from('tc_documents')
-    .select('id, name, sha256, ingested_at, classification')
+    .select('id, name, content_type, bytes, sha256, ingested_at, classification')
     .eq('cycle_id', cycleId)
     .eq('archived', false)
     // Broker Notes are our own audit summaries, not transaction documents.
@@ -247,6 +251,10 @@ export async function planCycleDocuments(sb: SupabaseClient, cycleId: string): P
         .in('document_id', ids)
         .in('action', ['document_archived', 'document_unarchived'])
     : { data: [] as Array<{ document_id: string; actor: string }> }
+  const { data: envDocs } = ids.length
+    ? await sb.from('tc_envelope_documents').select('document_id').in('document_id', ids)
+    : { data: [] as Array<{ document_id: string }> }
+  const inEnvelope = new Set((envDocs ?? []).map((e) => String(e.document_id)))
   const personDecided = new Set(
     (decisions ?? [])
       .filter((e) => !String(e.actor).startsWith('system') && e.actor !== READER_ACTOR)
@@ -267,10 +275,14 @@ export async function planCycleDocuments(sb: SupabaseClient, cycleId: string): P
     lineageDocs.push({
       id: String(d.id),
       name: String(d.name),
+      contentType: (d.content_type as string | null) ?? null,
+      bytes: (d.bytes as number | null) ?? null,
       sha256: (d.sha256 as string | null) ?? null,
       ingestedAt: String(d.ingested_at),
       linkedItemIds: (assigns ?? []).filter((a) => String(a.document_id) === String(d.id)).map((a) => String(a.item_id)),
       personDecided: personDecided.has(String(d.id)),
+      inEnvelope: inEnvelope.has(String(d.id)),
+      generated: VAULT_MADE.has(String((d.classification as { source?: string } | null)?.source ?? '')),
       verdict,
     })
   }
@@ -296,7 +308,9 @@ export async function planCycleDocuments(sb: SupabaseClient, cycleId: string): P
  * loses nothing, so it needs none.
  */
 export function needsConfirmation(a: LineageAction): boolean {
-  if (a.kind === 'archive') return a.supersededBy === null && !/^Blank form|^Duplicate of/.test(a.reason)
+  // A blank form is a judgment about the page too; only an identical file or
+  // an email's inline image needs no second look.
+  if (a.kind === 'archive') return a.supersededBy === null && !/^Duplicate of|^Not a transaction document/.test(a.reason)
   if (a.kind === 'unlink') return /^Not fully executed/.test(a.reason)
   return false
 }
@@ -320,7 +334,9 @@ export async function applyCyclePlan(
     let agrees = false
     if (r.ok) {
       res.costUsd += r.costUsd
-      agrees = r.verdict.verdict !== 'fully_executed' && r.verdict.verdict !== 'needs_review'
+      // The second reader must also find it unfinished (or blank): an executed,
+      // reference or unsure reading stops the removal.
+      agrees = ['partially_executed', 'unsigned', 'blank'].includes(r.verdict.verdict)
     }
     confirmed.set(docId, agrees)
     if (!agrees) res.confirmedDisagreed += 1
@@ -422,6 +438,8 @@ export async function unreadDocumentIds(sb: SupabaseClient, limit: number): Prom
       .select('id, classification')
       .eq('archived', false)
       .eq('is_broker_notes', false)
+      // The reader reads PDFs; images and mail files are not forms.
+      .or('content_type.eq.application/pdf,content_type.is.null')
       .not('storage_path', 'is', null)
       .order('ingested_at', { ascending: true })
       .range(from, from + 999)

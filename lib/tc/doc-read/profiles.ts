@@ -77,8 +77,11 @@ export const FORM_PROFILES: readonly FormProfile[] = [
 
 /** Non-OREF documents, from the reference's "Non-OREF document categories" table. */
 export const OTHER_PROFILES: readonly FormProfile[] = [
-  { key: 'earnest-money-receipt', name: 'Earnest Money Receipt', oref: [], title: /earnest\s+money|receipt\s+(?:for|of)\s+(?:funds|deposit)/i, obligation: { kind: 'all', parties: ['escrow'] }, checklistTerms: ['earnest money', 'em receipt'] },
-  { key: 'funds-to-close-receipt', name: 'Funds to Close Receipt', oref: [], title: /funds\s+to\s+close/i, obligation: { kind: 'all', parties: ['escrow'] }, checklistTerms: ['funds to close'] },
+  // A deal can take several deposits (initial and additional earnest money), so receipts are numbered-like: two receipts are never one another's copy without a telling detail.
+  { key: 'earnest-money-receipt', name: 'Earnest Money Receipt', oref: [], title: /earnest\s+money|receipt\s+(?:for|of)\s+(?:funds|deposit)/i, obligation: { kind: 'all', parties: ['escrow'] }, numbered: true, checklistTerms: ['earnest money', 'em receipt'] },
+  { key: 'funds-to-close-receipt', name: 'Funds to Close Receipt', oref: [], title: /funds\s+to\s+close/i, obligation: { kind: 'all', parties: ['escrow'] }, numbered: true, checklistTerms: ['funds to close'] },
+  // OREF 000 / 000A-C guides: read and kept, never signed (lib/tc/library-signers-from-name.ts: not_applicable).
+  { key: 'oref-000-guide', name: 'Things to Know Before Signing', oref: ['000', '000A', '000B', '000C'], title: /things\s+to\s+know|before\s+signing/i, obligation: { kind: 'reference' }, checklistTerms: ['things to know'] },
   { key: 'preliminary-title-report', name: 'Preliminary Title Report', oref: [], title: /preliminary\s+(?:title\s+)?report|title\s+commitment/i, obligation: { kind: 'reference' }, checklistTerms: ['title report', 'prelim'] },
   { key: 'settlement-statement', name: 'Settlement Statement', oref: [], title: /settlement\s+statement|closing\s+statement|alta\s+settlement/i, obligation: { kind: 'reference' }, checklistTerms: ['settlement statement', 'closing statement', 'alta'] },
   { key: 'closing-disclosure', name: 'Closing Disclosure', oref: [], title: /closing\s+disclosure/i, obligation: { kind: 'reference' }, checklistTerms: ['closing disclosure'] },
@@ -121,7 +124,7 @@ export function normalizeOref(raw: string | null | undefined): string | null {
 export function profileFor(input: { title: string | null; formNumber: string | null }): ProfileMatch | null {
   const title = (input.title ?? '').trim()
   const num = normalizeOref(input.formNumber)
-  const byNumber = num ? FORM_PROFILES.find((p) => p.oref.includes(num)) ?? null : null
+  const byNumber = num ? [...FORM_PROFILES, ...OTHER_PROFILES].find((p) => p.oref.includes(num)) ?? null : null
 
   const titleHits = title ? [...FORM_PROFILES, ...OTHER_PROFILES].filter((p) => p.title.test(title)) : []
   // Prefer the hit whose number matches, then the longest title match.
@@ -133,7 +136,8 @@ export function profileFor(input: { title: string | null; formNumber: string | n
   if (byTitle && byNumber && byTitle.key === byNumber.key) return { profile: byTitle, basis: 'library', numberConflict: false }
   // A printed OREF number the title's profile does not carry (083A under an
   // 083 title match) is a different form until the library says otherwise.
-  const foreignNumber = !!num && /OREF/i.test(input.formNumber ?? '') && !!byTitle?.oref.length && !byTitle.oref.includes(num)
+  const orefShaped = /^\s*(?:OREF\s*[-#]?\s*)?\d{3}[A-Z]?\s*$/i.test(input.formNumber ?? '')
+  const foreignNumber = !!num && orefShaped && !!byTitle?.oref.length && !byTitle.oref.includes(num)
   if (byTitle) return { profile: byTitle, basis: 'title', numberConflict: (!!byNumber && byNumber.key !== byTitle.key) || foreignNumber }
   if (byNumber) return { profile: byNumber, basis: 'number', numberConflict: false }
   const generic = title ? GENERIC.find((p) => p.title.test(title)) : null

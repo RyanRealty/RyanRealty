@@ -258,8 +258,14 @@ describe('other forms', () => {
     expect(v.reasons.join(' ')).toMatch(/not in the form library/)
   })
 
-  it('a blank form is blank', () => {
-    expect(verdictFor(form({ blankTemplate: true })).verdict).toBe('blank')
+  it('a blank form with signature lines is blank; one with nothing to sign is informational (OREF 000A guide)', () => {
+    expect(verdictFor(form({ blankTemplate: true, signatureLines: [line({ page: 14, party: 'buyer', section: OFFER })] })).verdict).toBe('blank')
+    expect(verdictFor(form({ title: 'THINGS TO KNOW BEFORE SIGNING', formNumber: 'OREF 000A', blankTemplate: true })).verdict).toBe('reference')
+  })
+
+  it('two earnest money receipts with nothing telling them apart are not copies of each other', () => {
+    const receipt = verdictFor(form({ title: 'RECEIPT FOR DEPOSIT', formNumber: null, signatureLines: [] }))
+    expect(receipt.weakKey).toBe(true)
   })
 
   it('the file is only as executed as its least executed form', () => {

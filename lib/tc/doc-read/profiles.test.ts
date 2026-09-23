@@ -79,6 +79,11 @@ describe('profileFor', () => {
     expect(OTHER_PROFILES.find((p) => p.key === 'inspection-report')?.obligation.kind).toBe('reference')
   })
 
+  it('a printed OREF number points at its own form even when the page header reads like another (000A guide)', () => {
+    const m = profileFor({ title: 'OREF Residential Real Estate Sale Agreement', formNumber: '000A' })
+    expect(m?.numberConflict).toBe(true)
+  })
+
   it('an unknown title is unknown', () => {
     expect(profileFor({ title: 'AGREEMENT TO OCCUPY AFTER CLOSING', formNumber: null })).toBeNull()
   })

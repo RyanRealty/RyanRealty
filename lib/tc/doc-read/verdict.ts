@@ -298,6 +298,10 @@ export function verdictFor(form: FormReading): FormVerdict {
   } else if (!profile && !lines.length) {
     verdict = 'reference'
     reasons.push('No signature lines on the pages read: an informational document.')
+  } else if (form.blankTemplate && !lines.length) {
+    // Nothing to fill in and nothing to sign: a guide or notice, not a blank form.
+    verdict = 'reference'
+    reasons.push('No fields and no signature lines: an informational document.')
   } else if (form.blankTemplate) {
     verdict = 'blank'
     reasons.push('Nothing is filled in: a blank form.')
