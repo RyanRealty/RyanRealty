@@ -49,6 +49,13 @@ const FINANCING_NAME: Record<string, string> = {
   other: 'Other financing',
 }
 
+/**
+ * The names the folded source lines show, in the words a reader uses. The same
+ * two names the rest of a place page already prints for the same feeds.
+ */
+export const AFFORDABILITY_MEDIAN_SOURCE_NAME = 'live MLS through Oregon Data Share'
+export const AFFORDABILITY_MIX_SOURCE_NAME = 'closed MLS sales through Oregon Data Share'
+
 /** The slider's floor. Below this a Central Oregon house is a data error. */
 const PRICE_FLOOR = 100_000
 /** How far above the local middle the slider reaches before you type instead. */
@@ -114,20 +121,27 @@ export function publishPlaceAffordability(
     Math.ceil((opening * PRICE_HEADROOM) / PRICE_STEP) * PRICE_STEP,
   )
 
+  // THE TRACE OPENS WITH ITS SOURCE'S NAME, in the reader's words (VOICE-2,
+  // visibility audit 2026-09-22). V3SourceLine shows the leading clause before
+  // anyone opens the disclosure, and this trace used to open "Median asking
+  // price $1,312,500,, market_metric …": a doubled comma, a table name, and a
+  // fold that printed "$1". The shape every other trace here uses is "<feed>,
+  // <population>", so this one does too, and it hands the name over
+  // explicitly as well. The machine handle stays in the full trace, in
+  // parentheses, where a reviewer auditing section 0 can find it.
+  const medianSourceName =
+    median == null ? `${placeName} median asking price` : AFFORDABILITY_MEDIAN_SOURCE_NAME
   const medianSource =
     median == null
       ? `${placeName} publishes no median asking price for single-family homes right now, so the calculator opens on a round number rather than on this market.`
       : [
-          `Median asking price ${formatPriceExact(median)},`,
+          `${AFFORDABILITY_MEDIAN_SOURCE_NAME}, median asking price ${formatPriceExact(median)} across the`,
+          activeCount != null ? ` ${activeCount}` : '',
           grain === 'city'
-            ? `market_metric median_list_active, ${placeName} detached, the same row this page's market section prints`
-            : `the single-family homes for sale inside ${placeName}'s recorded boundary, the same population this page's own count prints`,
-          activeCount != null ? `over ${activeCount} homes for sale` : null,
-          computedAt ? `read ${formatDate(computedAt)}.` : "read on this page's last refresh.",
-        ]
-          .filter(Boolean)
-          .join(', ')
-          .replace(/,\s*\./g, '.')
+            ? ` single-family homes for sale in ${placeName}, the same row this page's market section prints (market_metric median_list_active, detached)`
+            : ` single-family homes for sale inside ${placeName}'s recorded boundary, the same population this page's own count prints`,
+          computedAt ? `, read ${formatDate(computedAt)}.` : ", read on this page's last refresh.",
+        ].join('')
 
   const slices: AffordabilityMixSlice[] = mix.financing
     .filter((bit) => Number.isFinite(bit.share) && bit.share > 0)
@@ -139,9 +153,11 @@ export function publishPlaceAffordability(
       label: bit.floor ? `at least ${formatPaceShare(bit.share)}` : formatPaceShare(bit.share),
     }))
 
+  const mixSourceName =
+    slices.length > 0 ? AFFORDABILITY_MIX_SOURCE_NAME : `${placeName} financing mix`
   const mixSource =
     slices.length > 0
-      ? `market_metric financing_mix, ${placeName} detached closed sales, 12-month window widened by the metric registry's ladder where a place is thin. Shares under 5% are not published, so these do not add to 100%. This is how OTHER buyers paid; it is not a suggestion about your down payment.`
+      ? `${AFFORDABILITY_MIX_SOURCE_NAME}, how buyers paid for the detached single-family homes that closed in ${placeName} over the last 12 months, reaching further back where too few sold to publish (market_metric financing_mix). Shares under 5% are not published, so these do not add to 100%. This is how OTHER buyers paid; it is not a suggestion about your down payment.`
       : `${placeName} has not published a financing mix for detached sales.`
 
   return {
@@ -152,6 +168,7 @@ export function publishPlaceAffordability(
     grain,
     medianListPrice: median,
     medianSource,
+    medianSourceName,
     rate: rate
       ? {
           pct: rate.ratePct,
@@ -165,6 +182,7 @@ export function publishPlaceAffordability(
     fallbackRatePct,
     mix: slices,
     mixSource,
+    mixSourceName,
     cashShare: cashShare != null && Number.isFinite(cashShare) ? cashShare : null,
     browseHref,
     priceMin: PRICE_FLOOR,

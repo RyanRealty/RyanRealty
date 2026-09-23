@@ -53,8 +53,20 @@ describe('publishPlaceAffordability · the calculator opens on this market', () 
   it('carries the median`s count and read date into the trace', () => {
     const props = publishPlaceAffordability(bend)!
     expect(props.medianSource).toContain('$947,000')
-    expect(props.medianSource).toContain('664 homes for sale')
+    expect(props.medianSource).toContain('664 single-family homes for sale in Bend')
     expect(props.medianSource).toContain('median_list_active')
+    // VOICE-2: one comma at a time, never ",," and never ", ."
+    expect(props.medianSource).not.toMatch(/,\s*[,.]/)
+  })
+
+  it('opens every trace with the source`s name in words and hands that name over', () => {
+    for (const grain of ['city', 'neighborhood'] as const) {
+      const props = publishPlaceAffordability({ ...bend, grain, medianListPrice: 1_312_500 })!
+      expect(props.medianSourceName).toBe('live MLS through Oregon Data Share')
+      expect(props.medianSource.startsWith(`${props.medianSourceName},`)).toBe(true)
+      expect(props.mixSourceName).toBe('closed MLS sales through Oregon Data Share')
+      expect(props.mixSource.startsWith(`${props.mixSourceName},`)).toBe(true)
+    }
   })
 
   it('says so plainly when the place publishes no median, and opens anyway', () => {
