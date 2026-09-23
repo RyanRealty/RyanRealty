@@ -19,6 +19,7 @@ import { config } from 'dotenv'
 import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/data/loop/domains'
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
+import { formatCrawlProbeLine } from '../lib/data/crawl-probe/rows'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
 import { siteServeTier, isMeasurementWindowDue, isSiteClaim, isStaleInProgress, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
@@ -266,6 +267,7 @@ async function main() {
   push(
     `gsc: ${signals.gsc.status} ${signals.gsc.rows28d} target_query_benchmark rows / 28d (${signals.gsc.source})`,
   )
+  push(`crawl probe: ${formatCrawlProbeLine(signals.crawlProbe)}`)
   {
     const siteEligibleCount = eligible.filter((n) => (n.version_gap ?? '').startsWith('SITE-')).length
     if (siteEligibleCount === 0) {

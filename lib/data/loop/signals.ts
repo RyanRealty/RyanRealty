@@ -19,6 +19,7 @@ import {
   classifyTokenHealth,
   consecutiveHeartbeatFailures,
 } from './token-health'
+import { readCrawlProbeStatus, type CrawlProbeStatus } from '@/lib/data/crawl-probe/rows'
 
 export type SignalStatus = 'ok' | 'unreadable'
 
@@ -65,6 +66,12 @@ export type CompanyScoreboardSignals = {
     lastFullSyncAt: string | null
     source: string
   }
+  /**
+   * Latest daily crawl-surface probe (/api/cron/crawl-probe; visibility audit
+   * 2026-09-22, gsc-trend-7): sitemaps, sampled pages as Googlebot, homepage
+   * scripts, Search Console. stale = no run in CRAWL_PROBE_STALE_HOURS.
+   */
+  crawlProbe: CrawlProbeStatus
   commissions: {
     status: SignalStatus
     rows: number
@@ -386,6 +393,10 @@ export async function collectCompanyScoreboardSignals(
     source: 'sync_state id=default',
   }
 
+  // One small row, read after the batch; a failure degrades to 'unreadable'
+  // on this signal alone.
+  const crawlProbe = await readCrawlProbeStatus(sb, now)
+
   const commissions: CompanyScoreboardSignals['commissions'] = {
     status: commissionsRes.error ? 'unreadable' : 'ok',
     rows: 0,
@@ -595,6 +606,7 @@ export async function collectCompanyScoreboardSignals(
       source: SOCIAL_TABLES.join(', '),
     },
     sync,
+    crawlProbe,
     commissions,
     ledger,
     newsletter,
