@@ -13,6 +13,7 @@ import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hol
 import { readIntegrationHealth } from './integration-health'
 import { readSearchCompletenessAccept } from './search-completeness'
 import { readVideoDecisionDocket } from './video-docket'
+import { readAnswerEngineCitations, type AnswerEngineCitations } from './answer-engine-citations'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
 import {
   AUTH_TABLE_TO_HEARTBEAT,
@@ -186,6 +187,13 @@ export type CompanyScoreboardSignals = {
     ttfbBendMs: number | null
     source: string
   }
+  /**
+   * AEO-9: the newest monthly answer-engine citation battery (is
+   * ryan-realty.com cited per target query, and who is instead). The leading
+   * indicator beside the ai_assistant_sessions traffic series. 'unread' when
+   * no run has landed in the window.
+   */
+  answerEngine: AnswerEngineCitations
 }
 
 const SOCIAL_TABLES = [
@@ -243,6 +251,9 @@ export async function collectCompanyScoreboardSignals(
   now: Date = new Date(),
 ): Promise<CompanyScoreboardSignals> {
   const fetchedAt = now.toISOString()
+  // AEO-9, additive: started first, awaited at the end, so it runs beside the
+  // big read below instead of after it.
+  const answerEnginePromise = readAnswerEngineCitations(sb, now)
   const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const since28d = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
@@ -611,5 +622,6 @@ export async function collectCompanyScoreboardSignals(
     video,
     integrations,
     searchCompleteness,
+    answerEngine: await answerEnginePromise,
   }
 }

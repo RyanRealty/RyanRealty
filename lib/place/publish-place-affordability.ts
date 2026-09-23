@@ -156,10 +156,16 @@ export function publishPlaceAffordability(
       ? {
           pct: rate.ratePct,
           weekLabel: formatDate(rate.weekStart),
+          // fred:MORTGAGE30US is the same Freddie Mac weekly survey, republished
+          // by FRED (lib/market-national-series.ts reads FRED first). Naming it
+          // by its series id put "(fred:MORTGAGE30US)" into the Bend FAQPage
+          // answer (AEO-5, visibility audit 2026-09-22); say who publishes it.
           sourceName:
             rate.source === 'freddie:pmms30'
               ? 'Freddie Mac 30-year fixed'
-              : `published 30-year fixed (${rate.source})`,
+              : rate.source === 'fred:MORTGAGE30US'
+                ? 'Freddie Mac 30-year fixed, via FRED'
+                : `published 30-year fixed (${rate.source})`,
         }
       : null,
     fallbackRatePct,

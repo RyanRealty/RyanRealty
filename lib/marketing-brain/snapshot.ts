@@ -30,6 +30,8 @@ export type Channel =
   | 'pinterest'
   | 'email'
   | 'google_ads'
+  /** Monthly answer-engine citation battery (AEO-9, lib/seo/answer-engine-battery.ts). */
+  | 'answer_engine'
 
 export type Scope =
   | 'account'

@@ -110,7 +110,9 @@ describe('buildPlaceAnswers — the verdict is the number, drawn', () => {
     })
     const verdict = answers.find((a) => a.id === 'answer-verdict')
     expect(verdict?.question).toBe("Is Tetherow a buyer's or seller's market?")
-    expect(String(verdict?.body)).toContain('fewer sales we can attribute to it on its own')
+    // AEO-5 / VOICE-5: the refusal is said in plain words, not pipeline talk.
+    expect(String(verdict?.body)).toContain('Too few homes have sold in Tetherow on their own')
+    expect(String(verdict?.body)).not.toMatch(/we can attribute|not printing one/)
     expect(verdict?.figure?.value).toBe('24')
     expect(verdict?.figure?.mark).toMatchObject({ kind: 'tally', count: 24 })
   })

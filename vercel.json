@@ -11,6 +11,10 @@
       "schedule": "30 14 * * *"
     },
     {
+      "path": "/api/cron/answer-engine-citations",
+      "schedule": "0 16 2 * *"
+    },
+    {
       "path": "/api/cron/blog-monthly-city-report",
       "schedule": "0 15 3 * *"
     },

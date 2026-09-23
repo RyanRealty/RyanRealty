@@ -5,7 +5,7 @@ description: Ryan Realty brand system — Bend, Oregon real estate. Two register
 
 # Ryan Realty — Brand Skill
 
-Use this skill when designing any artifact for **Ryan Realty**, a Bend, Oregon real estate brokerage serving Central Oregon. **Tagline: "It's About Relationships."** Brand-voice phone: `541.213.6706` (Matt direct, yard sign). Bio / FUB-tracked phone: `541.703.3095` (use on social profiles + ads + lead-capture). Web: `ryan-realty.com`. Mascot: **Jax** the blue lab.
+Use this skill when designing any artifact for **Ryan Realty**, a Bend, Oregon real estate brokerage serving Central Oregon. **Tagline: "It's About Relationships."** Phone: `541.703.3095`, the brokerage brand line, on every surface (signage, video VO, social profiles, ads, lead capture, GBP replies). Source of truth: `lib/brand/contact.ts` `CONTACT.phoneDirect`. Web: `ryan-realty.com`. Mascot: **Jax** the blue lab.
 
 **Locked palette (2026-05-13):** navy `#102742` + cream `#faf8f4`. The previous accents — navy-deep, sand, fir, sky, gold — are retired and must not be reintroduced.
 
@@ -30,9 +30,9 @@ Headshots live at `assets/team/{slug}.png` (transparent, default) and `.jpg` (wh
 
 | Slug | Name | Title | Phone | Email |
 |---|---|---|---|---|
-| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (bio/FUB) | matt@ryan-realty.com |
-| `paul-stevenson` | Paul Stevenson | Broker | `541.977.6841` | — |
-| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `415.308.9087` | — |
+| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (brand line) | matt@ryan-realty.com |
+| `paul-stevenson` | Paul Stevenson | Broker | `541.502.3436` | paul@ryan-realty.com |
+| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `541.250.3380` | rebeccapeterson@ryan-realty.com |
 
 **Listing-agent rule.** On any per-listing deliverable, include the listing agent's headshot. The listing's broker is in the Supabase `listings` row (`ListAgentEmail` / `ListAgentFullName` — resolve to one of the three above). For brand-led content (market reports, news, memes, neighborhood guides), drop the headshot and use Jax (`assets/brand/blue-dog.png`) instead. Never fake a rectangular frame behind a transparent portrait.
 
@@ -59,7 +59,7 @@ Let what we say create the tone. **Never describe the tone overtly.** Warmth, tr
 - **Tagline "It's About Relationships."** is a signature line — with the wordmark, not sprinkled in body copy.
 - **Extended promise:** *"Building community through authentic relationships and exceptional customer service."* — verbatim.
 - **Mantras:** *"Love where you live."* · *"Local Expertise."* · *"Quality · Local · Service."*
-- **Phone:** brand-voice `541.213.6706` (Matt direct — yard sign, signage, video VO) · bio/FUB-tracked `541.703.3095` (social profiles, ads, lead-capture).
+- **Phone:** `541.703.3095` everywhere: yard sign, signage, video VO, social profiles, ads, lead capture, GBP replies. It is the Twilio brand line (every call and text is recorded, logged to the CRM timeline and routed to the right broker). Matt's old direct number `541.213.6706` has been a private forward target since the 2026-06-24 cutover and is never printed (AEO-7, 2026-09-23: an answer engine was still quoting it as the brokerage phone). Source of truth: `lib/brand/contact.ts`.
 - **URL:** `ryan-realty.com`. **Social:** `@ryanrealtybend` on every platform (IG, TikTok, Threads, YouTube, X, Pinterest), `/ryanrealtybend` on FB + LinkedIn. **Hashtag:** every caption on a hashtag-supporting platform includes `#RyanRealtyBend` as the first hashtag in the trailing block.
 - **Sentence case** for web headings; Title Case only for the hero H1.
 - **"You/your"** is the subject. **"We/our team"** when the broker identity matters. **Never "I".**

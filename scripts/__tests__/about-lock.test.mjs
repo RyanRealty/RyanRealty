@@ -87,6 +87,13 @@ describe('aboutLockSourceProblems — live tree', () => {
     expect(p.join('\n')).toMatch(/staccato|small boutique brokerage|beat 1/)
   })
 
+  it('fails a source that answers "Who are the brokers?" without the live-roster answer (Matt 2026-09-23)', () => {
+    const p = aboutLockSourceProblems({
+      sourceText: "question: 'Who are the brokers?', answer: 'The brokers are on /team.'",
+    })
+    expect(p.join('\n')).toMatch(/aboutBrokersAnswer/)
+  })
+
   it('fails a FAQ that dumps broker license numbers', () => {
     const p = aboutLockSourceProblems({
       sourceText: 'Who are the brokers?\nMatt Ryan OR #201217889, Rebecca Peterson OR #201239012.',

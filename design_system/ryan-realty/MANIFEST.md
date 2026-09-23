@@ -67,11 +67,11 @@ Source-of-truth headshots in `assets/team/`. Each broker has `.png` (transparent
 
 | Slug | Name | Title | Phone | Email |
 |---|---|---|---|---|
-| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (FUB) | matt@ryan-realty.com |
-| `paul-stevenson` | Paul Stevenson | Broker | `541.977.6841` | — |
-| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `415.308.9087` | — |
+| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (brand line) | matt@ryan-realty.com |
+| `paul-stevenson` | Paul Stevenson | Broker | `541.502.3436` | paul@ryan-realty.com |
+| `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `541.250.3380` | rebeccapeterson@ryan-realty.com |
 
-**Brand-voice phone:** `541.213.6706` (Matt direct — the yard-sign number). Use on signage, video VO, signature heritage moments.
+**Brand phone:** `541.703.3095`, the Twilio brand line, on signage, video VO and every heritage moment too. Each broker's number above is their public Twilio line; a broker's private cell (and Matt's old `541.213.6706`) is a forward target only and is never printed. Source of truth: `lib/brand/contact.ts` (`CONTACT`, `BROKERS`). Reconciled 2026-09-23 (AEO-7).
 
 **Listing-agent rule.** Per-listing deliverables include the listing agent's headshot — resolve via Supabase `listings.ListAgentEmail / ListAgentFullName`. Brand-led content uses Jax (`assets/brand/blue-dog.png`) instead.
 

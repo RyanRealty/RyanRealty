@@ -169,8 +169,12 @@ const REQUIRED_LLMS_MARKERS = [
   { marker: '/reviews', why: 'client reviews (no aggregateRating)' },
   { marker: '/sell/valuation', why: 'written CMA door' },
   { marker: 'Value my home', why: 'D11 valuation label on the citable map' },
-  { marker: 'northwest-crossing', why: 'Northwest Crossing community + filtered inventory' },
-  { marker: 'beds=3', why: '3-bed/2-bath filtered inventory citation' },
+  { marker: 'northwest-crossing', why: 'Northwest Crossing community (the F1 3-bed/2-bath query cites it)' },
+  // AEO-2 (2026-09-22): the beds=3 marker pinned /homes-for-sale/bend/northwest-crossing?beds=3&baths=2,
+  // which middleware 301s to /communities/northwest-crossing (data/legacy-redirects.json, SITE-171).
+  // AEO-4: the city property-type pages and the secondary plat file are the families that replace it.
+  { marker: '/types/', why: 'city property-type pages (/cities/{city}/types/{type}) with one-line descriptions' },
+  { marker: 'LLMS_SUBDIVISIONS_PATH', why: 'the plat list lives in /llms-subdivisions.txt, linked under ## Optional' },
   { marker: 'ai-query-map.json', why: 'F1 query map wired into llms.txt pillars' },
   { marker: '/zip/97703', why: 'canonical ZIP pages on the AI map (parity with sitemap geo)' },
   { marker: 'zipLlmsLines', why: 'ZIP lines from the shared llms-geo helper' },

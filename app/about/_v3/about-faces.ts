@@ -66,6 +66,12 @@ export type AboutFace = {
   phoneDisplay: string | null
   /** This broker's own MLS record, when there is one. See AboutFaceRecord. */
   record?: AboutFaceRecord | null
+  /**
+   * The first sentence of this broker's own bio, verbatim (app/team/_v3/
+   * broker-lede.ts). Only the /team index card prints it (VOICE-5 / AEO-5,
+   * Matt 2026-09-23); null or absent prints nothing.
+   */
+  lede?: string | null
 }
 
 const CANONICAL_HEADSHOT = /^\/images\/brokers\/[a-z0-9-]+\.png$/

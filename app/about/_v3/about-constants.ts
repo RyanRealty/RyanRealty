@@ -22,10 +22,20 @@
  * question cut from the structured data too — which is the point: the page and
  * its JSON-LD answer the same four things.
  *
- * NO BROKER NAME IS TYPED IN THIS FILE. Brokers belong on /team. The FAQ
- * answers "Who are the brokers?" with a door, not a roster. Held by
- * components/site/__tests__/about-faces.test.ts — do not spell a broker's
- * name in a comment either.
+ * NO BROKER NAME IS TYPED IN THIS FILE, AND THE FAQ STILL NAMES THEM.
+ * Until 2026-09-23 the FAQ answered "Who are the brokers?" with a door, "The
+ * brokers are on /team", under the 2026-09-14 lock. The visibility audit of
+ * 2026-09-22 (AEO-5, VOICE-5) found that answer in the FAQPage JSON-LD every
+ * answer engine reads: a question about who the brokers are, answered with a
+ * URL path and no names. Matt 2026-09-23: "Don't assume any rules from the
+ * past that might keep us from hitting our goals are permanent." So the
+ * answer now names each broker and role, and the names come FROM THE LIVE
+ * ROSTER (public.brokers through loadAboutProof, the same faces the fold
+ * shows), never typed here. Still no license numbers in the answer (those sit
+ * on the faces and /team) and still no roster section: deep bios stay on
+ * /team. Held by components/site/__tests__/about-faces.test.ts and
+ * scripts/lib/about-lock.mjs beat 2. Do not spell a broker's name in a
+ * comment either.
  */
 
 /** Firm license as published on the pre-v3 about page (OREA 201253677). */
@@ -82,12 +92,45 @@ export const ABOUT_CITY_SLUG: Record<(typeof ABOUT_CITY_LABELS)[number], string>
   Prineville: 'prineville',
 }
 
+export const ABOUT_BROKERS_QUESTION = 'Who are the brokers?'
+
+const COUNT_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+
+/** "Owner & Principal Broker" -> "owner and principal broker". */
+function roleWords(title: string): string {
+  return title.trim().replace(/\s*&\s*/g, ' and ').toLowerCase()
+}
+
+/**
+ * The answer to "Who are the brokers?", built from the roster the page
+ * already loaded (display name + title from public.brokers). With no roster
+ * it names no one and says where they are, rather than inventing a line.
+ */
+export function aboutBrokersAnswer(people: ReadonlyArray<{ name: string; title: string }>): string {
+  const named = people.filter((p) => p.name.trim())
+  if (named.length === 0) {
+    return 'Every Ryan Realty broker is on the team page, with their Oregon license and the homes they have closed.'
+  }
+  const parts = named.map((p) => (p.title.trim() ? `${p.name.trim()}, ${roleWords(p.title)}` : p.name.trim()))
+  const list =
+    parts.length === 1
+      ? parts[0]
+      : parts.length === 2
+        ? `${parts[0]}; and ${parts[1]}`
+        : `${parts.slice(0, -1).join('; ')}; and ${parts[parts.length - 1]}`
+  const count = COUNT_WORDS[named.length] ?? String(named.length)
+  const noun = named.length === 1 ? 'broker' : 'brokers'
+  return `Ryan Realty has ${count} licensed ${noun}: ${list}. Each one's license, recorded closings, and direct line are on the team page.`
+}
+
+/** The FAQ as the page renders it and as FAQPage emits it: one array, two sinks. */
+export function aboutFaqItems(
+  people: ReadonlyArray<{ name: string; title: string }>,
+): Array<{ question: string; answer: string }> {
+  return [{ question: ABOUT_BROKERS_QUESTION, answer: aboutBrokersAnswer(people) }, ...ABOUT_FAQ_ITEMS]
+}
+
 export const ABOUT_FAQ_ITEMS = [
-  {
-    question: 'Who are the brokers?',
-    answer:
-      'The brokers are on /team. The person you talk to first is the person who works with you through closing.',
-  },
   {
     // The sentence the origin prose already carries — "the broker you first
     // speak to is the broker who works your purchase or sale through to close.

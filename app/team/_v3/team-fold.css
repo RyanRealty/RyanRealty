@@ -155,3 +155,13 @@
     flex-wrap: nowrap;
   }
 }
+
+/* VOICE-5 / AEO-5 (2026-09-23): the broker's own first bio sentence on the
+   index card, under the title and license, in the body register. */
+.team-fold .about-faces__lede {
+  margin: var(--v3-space-2xs) 0 0;
+  max-width: 62ch;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: 1.55;
+}

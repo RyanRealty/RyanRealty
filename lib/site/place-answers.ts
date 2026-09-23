@@ -370,8 +370,11 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       open: true,
       question: `Is ${place} a buyer's or seller's market?`,
       body: [
-        `${place} has had fewer sales we can attribute to it on its own than a fair buyer's or seller's verdict needs, so we are not printing one.`,
-        `${count.toLocaleString('en-US')} ${closedHomes} closed in ${place} ${windowLabel}${city ? `, and ${city} as a whole is the wider reading we do stand behind` : ''}. Ask us and we will read the comparable sales for your street instead.`,
+        // AEO-5 / VOICE-5 (visibility audit 2026-09-22): the fact in plain
+        // words; "sales we can attribute" and "we are not printing one" were
+        // how the pipeline talks, and an answer engine quotes this sentence.
+        `Too few homes have sold in ${place} on their own to call it a buyer's or seller's market with confidence.`,
+        `${count.toLocaleString('en-US')} ${closedHomes} closed in ${place} ${windowLabel}${city ? `, so the ${city} market as a whole is the better guide` : ''}. Ask us and we will read the comparable sales for your street instead.`,
         // The drawing carries the window before as a second run of marks, so
         // the sentence carries it too — the FAQPage payload is derived from
         // these lines, and a schema that omits what the page shows is the
@@ -487,7 +490,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       question: `How long do homes stay on the market in ${place}?`,
       body: [
         `${homes.charAt(0).toUpperCase()}${homes.slice(1)} in ${place} had a median of ${days} days on market ${f.daysOnMarket.windowLabel}.`,
-        `Days on market counts from the day a home is listed. It is a longer measure than how fast a home goes under contract, and it is the one we can attribute at this grain.`,
+        `Days on market counts from the day a home is listed, so it runs longer than the time it takes a home to go under contract.`,
       ],
       figure: {
         value: `${days} days`,
