@@ -564,6 +564,36 @@ describe('the closing does not solicit somebody else\'s listing', () => {
     expect(nextStepButtonsHtml(withdrawn)).toBe('')
   })
 
+  it('puts the signing broker on the phone, the email, and the calendar', () => {
+    const paul: OpinionPageArgs = {
+      ...active,
+      broker: {
+        ...active.broker!,
+        slug: 'paul-stevenson',
+        displayName: 'Paul Stevenson',
+        title: 'Broker',
+        email: 'paul@ryan-realty.com',
+        phone: '5415023436',
+      },
+      subjectStatus: {
+        standardStatus: 'Withdrawn',
+        isActiveWithOtherBrokerage: false,
+        isWithdrawnNotExpired: true,
+        listingAgentIsUs: false,
+        note: null,
+      },
+    }
+    const note = nextStepNoteHtml(paul)
+    expect(note).toContain('tel:+15415023436')
+    expect(note).toContain('sms:+15415023436')
+    expect(note).toContain('mailto:paul@ryan-realty.com')
+    expect(note).toContain('Pick a time with Paul')
+    expect(note).toContain('agent=paul')
+    expect(note).not.toContain('541.703.3095')
+    expect(note).not.toContain('matt@ryan-realty.com')
+    expect(note).not.toContain('agent=paul-stevenson')
+  })
+
   it('says nothing extra on a plain expired row', () => {
     expect(closingComplianceSentence(args())).toBe('')
   })

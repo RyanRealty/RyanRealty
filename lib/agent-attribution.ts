@@ -27,6 +27,9 @@ export type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 const SLUG_NORMALIZE: Record<string, BrokerSlug> = {
   'matt': 'matt',
   'matt-ryan': 'matt',
+  // brokers.slug, the value a CMA stores. Without it a letter signed by
+  // Matt still failed to name him on /book and fell through as unknown.
+  'matthew-ryan': 'matt',
   'rebecca': 'rebecca',
   'rebecca-peterson': 'rebecca',
   'paul': 'paul',

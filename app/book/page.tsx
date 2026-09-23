@@ -21,6 +21,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3_ROOT_CLASS,
 } from '@/components/site/v3'
+import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import BookingClient from './BookingClient'
 
 /**
@@ -38,8 +39,6 @@ export const dynamic = 'force-dynamic'
 /** How far ahead the public surface will offer time. */
 const HORIZON_DAYS = 21
 
-const BROKER_SLUGS = ['matt', 'rebecca', 'paul'] as const
-
 export const metadata: Metadata = pageMetadata({
   path: '/book',
   title: 'Book time with a broker',
@@ -55,8 +54,9 @@ export default async function BookPage({
   searchParams: Promise<{ agent?: string; listing?: string }>
 }) {
   const params = await searchParams
-  const requested = String(params.agent ?? '').trim().toLowerCase()
-  const brokerSlug = (BROKER_SLUGS as readonly string[]).includes(requested) ? requested : 'matt'
+  // Full web slugs (paul-stevenson, matthew-ryan) are what a CMA stamps.
+  // The short form is what the calendar is keyed on. Unknown stays Matt.
+  const brokerSlug = normalizeAgentSlug(params.agent) ?? 'matt'
 
   // SITE-06: a tour booked from a listing page carries the house with it.
   // The KEY comes from the query string; the ADDRESS is read back off the

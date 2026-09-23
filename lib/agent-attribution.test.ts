@@ -29,6 +29,7 @@ describe('agent attribution (lead routing)', () => {
     it('maps every variant to the canonical short slug', () => {
       expect(normalizeAgentSlug('matt')).toBe('matt')
       expect(normalizeAgentSlug('matt-ryan')).toBe('matt')
+      expect(normalizeAgentSlug('matthew-ryan')).toBe('matt')
       expect(normalizeAgentSlug('rebecca-peterson')).toBe('rebecca')
       expect(normalizeAgentSlug('paul-stevenson')).toBe('paul')
     })

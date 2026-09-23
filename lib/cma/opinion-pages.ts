@@ -17,6 +17,7 @@ import {
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
+import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import { BRAND } from '@/lib/brand/contact'
 import { UNADDRESSED_DOC_LINKS, cleanText, countWord, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
@@ -1326,11 +1327,17 @@ export function nextStepReachHtml(a: OpinionPageArgs): string {
   const b = a.broker
   if (!b) return ''
   const ctx = a.docLinks ?? UNADDRESSED_DOC_LINKS
-  const book = trackedDocLink('book', '', ctx)
+  const bookUrl = new URL(trackedDocLink('book', '', ctx))
+  // The calendar is keyed on the short slug. A CMA stores the web slug
+  // (paul-stevenson). Leaving that on ?agent= opened Matt's book.
+  const agent = normalizeAgentSlug(b.slug)
+  if (agent) bookUrl.searchParams.set('agent', agent)
+  const book = bookUrl.toString()
   const search = trackedDocLink('search', a.subject.city, ctx)
   const site = trackedDocLink('site', BRAND.url, ctx)
   const tel = phoneHref(b.phone)
   const shown = dottedPhone(b.phone)
+  const first = b.displayName.trim().split(/\s+/)[0] || 'us'
   const rows: string[] = []
   if (shown && tel) {
     rows.push(reachRow('Call', `<a href="tel:${tel}">${esc(shown)}</a>`))
@@ -1339,7 +1346,7 @@ export function nextStepReachHtml(a: OpinionPageArgs): string {
     rows.push(reachRow('Call', esc(shown)))
   }
   if (b.email) rows.push(reachRow('Email', `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a>`))
-  rows.push(reachRow('Calendar', `<a href="${esc(book)}" data-rr-track="cma-book">Pick a time</a>`))
+  rows.push(reachRow('Calendar', `<a href="${esc(book)}" data-rr-track="cma-book">Pick a time with ${esc(first)}</a>`))
   rows.push(
     reachRow(
       'Office',
