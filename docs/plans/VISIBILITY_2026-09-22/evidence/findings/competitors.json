@@ -1,0 +1,261 @@
+{
+  "area": "competitors",
+  "notes_path": "/tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/competitors/notes.md",
+  "summary": "I ran the 12 target queries through WebSearch (its US view, not a logged-out Google SERP), pulled our own Google position for the same queries from site_signal (GSC snapshot, top-25-per-day cap), fetched our equivalent pages and the reachable competitor pages with a Chrome UA, and measured them with one script (words, headings, JSON-LD, links, price tokens, HTML weight). Result: ryan-realty.com is absent from the top 10 for all 11 non-brand queries; for the brand query our home page is 6th behind LinkedIn, ZoomInfo, Zillow, Facebook and Yelp. The local sites that do rank are bendpremierrealestate.com, cascadehasson.com and bendrealestate.com (7 of 11 queries each), plus enjoybendlife.com and dukewarner.com. The one query class with zero portals in the top 10, 'best neighborhoods in bend oregon', is 9/9 local brokerages and guides, and we are not there (GSC: pos 1.0 for two days in Feb 2026, never since; our three best-neighborhoods guides sit at pos 7-27). GSC confirms the picture: 'awbrey butte homes for sale', 'sunriver homes for sale' and 'redmond oregon homes for sale' have never entered our daily top-25 query list; 'bend oregon homes for sale' was pos 25-42 and is absent for the last 8 weeks; the only Tetherow rows are literal-quoted queries at pos 17.2 all-time and 21.2 in the last 8 weeks with 0 clicks. Page-level, our page-1 assets for place queries are blog guides (Sunriver guide pos 6.8, 890 impressions, 28 clicks in 8 weeks; Tetherow guide pos 7-9) while the place pages that carry the head H1s sit at 38-46 or never appear. Today (2026-09-22, commit 136088ad1, SITE-180) the ranking Tetherow guide was 301'd onto the pos-41 community page. Page comparison: our place pages are fully server-rendered with sourced FAQs and Place/Dataset/FAQPage JSON-LD, which the portals lack, but they are 2-8x heavier (/cities/bend 3.77 MB with a 1.3 MB inlined polygon chunk and 741 listing links; Redfin's Bend page 1.57 MB) and the Tetherow page prints five different inventory counts (11 / 24 / 25 / 131) on one page. Competitors expose price-band, type and sold sub-pages per neighborhood and dated monthly market posts; our matrix pages exist but the community page links to none of them. Structurally: our domain dates from 2023 vs 1996-2012 for the winners, 'Ryan Realty' collides with at least six unrelated brokerages, and the only third-party pages mentioning ryan-realty.com are ZoomInfo and realty.com. UNVERIFIED: Bing (served unrelated cached SERPs and an empty shell), the Google Business Profile panel (not observable via WebSearch), and the internals of Bend Premier / Cascade Hasson / bendrealestate.com / homes.com / Zillow pages (Cloudflare, Digital Sentinel and Akamai walls blocked curl, WebFetch, headless Chromium, and archive.org is blocked by egress policy). Long-form notes with every table: /tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/competitors/notes.md.",
+  "facts": [
+    {
+      "fact": "ryan-realty.com does not appear in the top 9-10 WebSearch results for any of the 11 non-brand target queries; for 'ryan realty bend' the home page is 6th behind LinkedIn, ZoomInfo, Zillow, Facebook and Yelp.",
+      "evidence": "WebSearch calls 2026-09-22 for all 12 queries; per-query result lists saved in scratchpad/competitors/websearch-results.md (e.g. 'tetherow homes for sale': redfin, zillow, engelvoelkers, homes.com, bendpremierrealestate.com x2, cascadehasson.com/Tetherow, tetherow.com/live, bendrealestate.com/tetherow)."
+    },
+    {
+      "fact": "The local winners are bendpremierrealestate.com, cascadehasson.com and bendrealestate.com (each in the top 10 for 7 of 11 non-brand queries), plus enjoybendlife.com (2) and dukewarner.com (2).",
+      "evidence": "Tally over the 11 WebSearch result lists in websearch-results.md."
+    },
+    {
+      "fact": "'best neighborhoods in bend oregon' returns 9/9 local brokerage, agent, or local-guide pages and zero portals; our site is absent. GSC shows us at pos 1.0 for that query on 2026-02-24/25 only (2 impressions) and never since.",
+      "evidence": "WebSearch list (bendpremierrealestate.com blog #1, movingtobend, dukewarner, bernardrealestategroup, movetobend, brokererinmartin, amandakrealestate, allthingsbend x2); site_signal query: surface='query:best neighborhoods in bend oregon' -> first_seen 2026-02-24, last_seen 2026-02-25, days 2, avg_pos 1.0, impr 2."
+    },
+    {
+      "fact": "Three of the 12 target queries ('awbrey butte homes for sale', 'sunriver homes for sale', 'redmond oregon homes for sale') have never produced a row in site_signal's GSC query snapshot; 'bend oregon homes for sale' averaged pos 42.4 (14 days, older) and 25.0 (2 days, prior 8w) and is absent in the last 8 weeks; 'bend oregon real estate agents' was pos 29.2 over 79 days and last seen 2026-05-29.",
+      "evidence": "site_signal aggregate (source='gsc_search_analytics_api', scope='campaign') grouped by surface and window; rows in notes.md section 2. Snapshot stores the top 25 queries by impressions per day (app/api/cron/marketing-snapshot-gsc/route.ts:62-97)."
+    },
+    {
+      "fact": "Our only Tetherow query rows are literal-quoted queries: '\"tetherow homes for sale\"' first seen 2026-05-23, 111 days, avg pos 17.2, 395 impressions, 0 clicks all-time; last 8 weeks 45 days, pos 21.2, 147 impressions, 0 clicks. '\"tetherow real estate\"' pos 32.4 (85 days, 281 impr, 0 clicks).",
+      "evidence": "site_signal aggregate by surface; app/actions/search-console-report.ts:33 stores GSC row.keys[0] verbatim, so the quotes are in the searches themselves."
+    },
+    {
+      "fact": "Since 2026-05-23 the daily top-25 GSC query snapshot is dominated by literal-quoted, zero-click queries (13 'greenwood playhouse' variants, 'brasada ranch real estate agent' pos 1.0/151 impr, 'golf course homes bend' 5.2/91) and single street-address queries; plain human queries ('bend real estate agent' family, 'ryan realty') stop appearing after 2026-05-31 / 2026-08-08.",
+      "evidence": "site_signal aggregate for scope='campaign', date >= 2026-07-28, ordered by impressions (top 60 rows in this session; excerpt in notes.md section 2). Interpretation (automated / AI-agent searches) is UNVERIFIED."
+    },
+    {
+      "fact": "Page-level, our page-1 assets for place queries are blog guides, and the place pages that carry the head H1 are at 38-46 or absent: last 8 weeks /blog/sunriver-year-round-living-vs-vacation pos 6.8, 890 impr, 28 clicks; /blog/tetherow-resort-living-real-estate pos 7.8, 84 impr; /communities/tetherow pos 41.1 (1 day, 10 impr); /communities/sunriver one day in June at 44.9; /cities/bend, /cities/bend/awbrey-butte, /communities/northwest-crossing, /cities/redmond never in the top-25 page list.",
+      "evidence": "site_signal aggregate scope='page' for place surfaces (notes.md section 2). Monthly: /communities/tetherow Jun 24.2 -> Jul 33.5 -> Aug 41.1 -> Sep absent."
+    },
+    {
+      "fact": "On 2026-09-22 the ranking Tetherow guide was 301'd onto the non-ranking community page (SITE-180); the node's own text records blog 807 impr / pos 9.6 vs community 261 impr / pos 41.5.",
+      "evidence": "git log: 136088ad1 'fix(seo): 301 tetherow blog onto /communities/tetherow', merge 3e08ce120 'Node: none (merge land Tetherow blog 308)'; next.config.ts:423; scripts/seed-site-queue.ts:1490-1499; live curl -A Chrome /blog/tetherow-resort-living-real-estate -> 308 -> https://ryan-realty.com/communities/tetherow; blog_posts row content 9,551 chars, published 2025-08-20."
+    },
+    {
+      "fact": "The home page's GSC impressions fell from 4,851 (Mar 2026) to 211 (Sep to date) with avg position 27 -> 34.7 (Aug), while site-wide weekly clicks rose from 4-20 (Mar-May) to 86-151 (Jun-Sep; peak 151 wk of 2026-08-24, impressions peak 13,328 wk of 08-31; wk of 09-14: 123 clicks, 8,543 impr, pos 9.7).",
+      "evidence": "site_signal aggregates scope='page' surface='https://ryan-realty.com/' by month and scope='account' by week (notes.md section 2)."
+    },
+    {
+      "fact": "Our /communities/tetherow HTML prints five different inventory figures for one place: '11 homes for sale' (headline), '24 for sale 4 pending' (map), 'Tetherow 25 for sale / Homes 15 / Townhomes and condos 9 / Lots 1' (type rail), FAQ '11 single-family ... 24 homes when every property type is counted', and 'HOA $2,052 a year median of the 131 current listings that report dues' (x3). Portals print one count (Redfin description: 26; Zillow: 35).",
+      "evidence": "regex over visible text of scratchpad/competitors/ours-communities_tetherow.html (fetched 2026-09-22 with Chrome UA); comp/redfin-tetherow.html meta description 'Search 26 homes for sale in Tetherow'."
+    },
+    {
+      "fact": "Our place pages are 2-8x heavier than the portal equivalents: /cities/bend 3.77 MB (55% inline script; one 1,305,913-byte self.__next_f chunk for place-one-map with 22,005 coordinate tokens; 741 listing-detail links; 980 internal links), /cities/bend/awbrey-butte 2.01 MB, /cities/redmond 1.65 MB, /team 1.70 MB (75% script), /communities/tetherow 0.92 MB; Redfin Bend 1.57 MB, Redfin Tetherow 0.48 MB, enjoybendlife Awbrey Butte 0.27 MB (1% script).",
+      "evidence": "curl -w size_download and analyze.py over ours-*.html and comp/*.html (ours-analysis.jsonl, comp-analysis.jsonl)."
+    },
+    {
+      "fact": "Our pages are fully server-rendered with H1, counts, listing cards (price, address, beds, baths, sqft in anchor text) and JSON-LD present in raw HTML: Tetherow carries RealEstateAgent/LocalBusiness, WebSite, BreadcrumbList, Place (geo, address, hasMap), Dataset, FAQPage with 6 sourced Q&As, ItemList x2, VideoObject; Redfin Tetherow carries Organization, ~30 SingleFamilyResidence+Product, Event (open houses), BreadcrumbList; enjoybendlife carries RealEstateAgent, WebSite, BreadcrumbList; bendpropertysource and sunriverrealty carry none.",
+      "evidence": "analyze.py JSON-LD parse (ld field) in ours-analysis.jsonl and comp-analysis.jsonl; FAQ answers quoted in notes.md section 4."
+    },
+    {
+      "fact": "Competitors index price-band, type and sold sub-pages per neighborhood (bendrealestate.com/tetherow-by-price-1750000-2250000/ and four more bands; homes.com …/awbrey-butte-neighborhood/sold/, /condos-for-sale/, /3-bedroom/, /under-500k/) and sub-community pages inside Tetherow (cascadehasson.com Tartan-Druim, timberline-collective-at-tetherow); our /communities/tetherow links to 0 filtered /homes-for-sale/* pages (8 links to the root only) and /homes-for-sale/bend/tetherow 301s back to the community page.",
+      "evidence": "WebSearch domain-scoped results for bendrealestate.com, homes.com, cascadehasson.com; link-class count on ours-communities_tetherow.html (homes-for-sale/root 8, homes-for-sale/filtered 0); curl /homes-for-sale/bend/tetherow -> 301 /communities/tetherow."
+    },
+    {
+      "fact": "Domain age: ryan-realty.com registered 2023-01-01; bendrealestate.com 1996-10-07; bendoregonhomes.com 2003-03-09; bendpremierrealestate.com 2010-12-07; bendpropertysource.com 2012-02-21; enjoybendlife.com 2019-05-08; cascadehasson.com 2022-05-20.",
+      "evidence": "curl -L https://rdap.org/domain/<domain>, events.registration."
+    },
+    {
+      "fact": "Third-party mentions of ryan-realty.com in WebSearch are limited to ZoomInfo and a realty.com office profile; 'Ryan Realty' collides with at least six unrelated brokerages (Tampa FL, Plymouth MA, ryanrealty.org, Walnut Ridge AR, Panama City Beach C21, ryanrealtyproperties.com); '\"Ryan Realty\" Bend Oregon -site:' surfaces only LinkedIn, Facebook and Yelp.",
+      "evidence": "WebSearch '\"ryan-realty.com\" -site:ryan-realty.com' and '\"Ryan Realty\" Bend Oregon -site:ryan-realty.com' result lists (notes.md section 5)."
+    },
+    {
+      "fact": "Legacy URLs are still in the brand SERP and some redirect in two hops: /explore/bend/ -> 2 redirects -> /cities/bend; /sellers/ -> 2 redirects -> /sell; /team/matt-ryan -> 301 -> /team/matthew-ryan (both titles appear for the brand query); /cities/bend/neighborhoods returns 200 'Page not found' (noindex).",
+      "evidence": "curl -A Chrome -L -w num_redirects on each path 2026-09-22; ours-cities_bend_neighborhoods.html title 'Page not found', robots 'noindex, follow'."
+    },
+    {
+      "fact": "UNVERIFIED: Bing presence. Bing returned unrelated cached SERPs ('souperior meatloaf', 'Half Price Books') to curl with a Chrome UA and a 200 shell with zero b_algo results to headless Chromium; DuckDuckGo html endpoint returned 202/502.",
+      "evidence": "scratchpad/competitors/bing-tetherow.html, bing2.html, pw/bing-tetherow.html parse output."
+    },
+    {
+      "fact": "UNVERIFIED: internals of the Bend Premier, Cascade Hasson, bendrealestate.com, homes.com and Zillow pages. Every path returned a bot wall (Cloudflare 'Attention Required' on cascadehasson.com/reliancenetwork.com and bendrealestate.com; 'Digital Sentinel' PoW on bendpremierrealestate.com; Akamai 'Access Denied' on homes.com) for curl, WebFetch (403 x12) and Playwright chromium-1194; archive.org is 'Blocked by egress policy'.",
+      "evidence": "curl status lines, WebFetch 403 results, pw/*.txt block pages, wb/*.html body 'Blocked by egress policy'."
+    }
+  ],
+  "findings": [
+    {
+      "id": "COMP-1",
+      "title": "Ranking Tetherow guide was 301'd onto the pos-41 community page today with no merge proof or rollback test",
+      "severity": "p0",
+      "category": "visibility",
+      "claim": "Our only page-1 asset for Tetherow queries (/blog/tetherow-resort-living-real-estate, pos 7.8-9.6, 807 impressions) was redirected on 2026-09-22 onto /communities/tetherow (pos 41-46, 0 clicks) as SITE-180, and nothing in the repo verifies that the guide's 9,551-char prose was merged into the target or sets a date/metric to reverse the bet if the community page does not inherit the ranking.",
+      "evidence": "git 136088ad1 + merge 3e08ce120 (Node: none); next.config.ts:423; scripts/seed-site-queue.ts:1490-1499 records blog 807 impr / pos 9.6 vs community 261 impr / pos 41.5 and says 'Do not edit app/communities/[slug]/page.tsx'; live curl /blog/tetherow-resort-living-real-estate -> 308 -> /communities/tetherow; site_signal page rows: community Jun 24.2 -> Jul 33.5 -> Aug 41.1 -> Sep absent; blog_posts row content 9,551 chars.",
+      "why_it_matters": "For 'tetherow homes for sale' we already sit at pos 17-21 with 0 clicks; the guide was the one URL Google rated on page 1 for Tetherow intent. A 301 from a guide onto a data page of a different intent can transfer nothing, in which case we lose ~800 impressions/month and every page-1 Tetherow appearance while the loop records the node as done.",
+      "proposed_fix": "Keep the redirect only under a measured bet: record in the node the GSC page rows for /communities/tetherow (impressions, position on tetherow* queries) at day 0/14/28; if the community page is not <= pos 15 for 'tetherow homes for sale' by day 28, restore the guide at its slug (remove next.config.ts:423) and cross-link the two instead. Before that deadline, merge the guide's prose into the community page's 'More about Tetherow' block. Add a loop rule + gate: no 301 from a URL with GSC position <= 15 onto a URL with position > 30 unless the node carries the merge diff and a rollback date.",
+      "fix_size": "small",
+      "files": [
+        "next.config.ts",
+        "data/legacy-redirects.json",
+        "scripts/seed-site-queue.ts",
+        "app/communities/[slug]/page.tsx",
+        "app/communities/[slug]/_v3/place-knowledge.ts",
+        "site_signal"
+      ]
+    },
+    {
+      "id": "COMP-2",
+      "title": "Head place pages never rank for their own H1 queries; the loop is polishing pages Google does not rate",
+      "severity": "p0",
+      "category": "visibility",
+      "claim": "The pages built to own the head queries (/cities/bend, /cities/bend/awbrey-butte, /communities/northwest-crossing, /communities/sunriver, /cities/redmond) have never entered our GSC top-25 page list, and 3 of the 12 target queries have never produced a query row, while competitors rank with brokerage-authored guide pages and hand-written neighborhood prose; the site's page-1 place assets are four blog guides.",
+      "evidence": "site_signal scope='page' last 8 weeks: /blog/sunriver-year-round-living-vs-vacation pos 6.8 / 890 impr / 28 clicks, /blog/best-neighborhoods-bend-buyers 7.1, /blog/tetherow-resort-living-real-estate 7.8; /communities/tetherow 41.1; the five city/neighborhood pages absent. scope='campaign': 'awbrey butte homes for sale', 'sunriver homes for sale', 'redmond oregon homes for sale' never present; 'bend oregon homes for sale' 42.4 -> 25.0 -> absent. WebSearch: 0/11 non-brand queries show us; bendpremierrealestate.com/cascadehasson.com/bendrealestate.com show for 7/11 each.",
+      "why_it_matters": "Matt's thesis (expose subdivisions and property types) only pays if the exposure pages are the ones that rank; today the ranking pages are guides the loop treats as secondary (and, per COMP-1, deletes), and the accept test scores taste on pages with no search presence.",
+      "proposed_fix": "Make GSC page position for the page's own target query a first-class field of every SITE node and of the accept test (fail if the page still has no GSC row after 28 days). Put a bylined guide block (500-800 words of place prose from a broker, not a template) on each city/community/neighborhood page, and treat the blog guides as spokes that link to the hub, never as twins to delete. Seed nodes from the query gap list (the 3 never-seen queries first) rather than from taste scores.",
+      "fix_size": "large",
+      "files": [
+        "scripts/seed-site-queue.ts",
+        ".claude/skills/site-queue/SKILL.md",
+        "app/cities/[slug]/page.tsx",
+        "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+        "app/communities/[slug]/page.tsx",
+        "lib/data/loop/signals.ts",
+        "site_signal"
+      ]
+    },
+    {
+      "id": "COMP-3",
+      "title": "Tetherow page prints five inventory counts (11 / 24 / 25 / 131) for one place",
+      "severity": "p0",
+      "category": "data",
+      "claim": "The flagship long-tail page prints '11 homes for sale' in the headline, '24 for sale 4 pending' on the map, 'Tetherow 25 for sale' in the type rail, '11 single-family / 24 all types' in the FAQ, and 'median of the 131 current listings that report dues' for HOA, which fails CLAUDE.md section 0 rule 5 (reconcile narrative to data) and undercounts the query's intent (portals count all residential: Redfin 26, Zillow 35).",
+      "evidence": "Regex over visible text of scratchpad/competitors/ours-communities_tetherow.html: '11 homes for sale' x2, '24 for sale 4 pending', 'Tetherow 25 for sale Homes 15 for sale Townhomes and condos 9 for sale Lots 1 for sale', '131 current listings that report dues' x3; comp/redfin-tetherow.html description 'Search 26 homes for sale in Tetherow'.",
+      "why_it_matters": "An answer engine or a buyer comparing us to Redfin sees a page that cannot agree with itself; 131 dues-reporting listings on a place with 24-25 listings is a wrong number on a public page under a licensed broker's name.",
+      "proposed_fix": "One inventory population per place page (all residential, with single-family as a labelled sub-row), one count computed once and passed to headline, map, rail and FAQ; compute the HOA median over that same population or print its actual basis ('N of the M listings here report dues'). Add a check that every 'N for sale' phrase on a place page equals the page's canonical count.",
+      "fix_size": "medium",
+      "files": [
+        "app/communities/[slug]/page.tsx",
+        "app/communities/[slug]/_v3/place-knowledge.ts",
+        "lib/data/places/",
+        "scripts/check-place-hero-grain.mjs"
+      ]
+    },
+    {
+      "id": "COMP-4",
+      "title": "Place pages are 2-8x heavier than portal equivalents because polygons and hundreds of listing cards are inlined",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "/cities/bend is 3.77 MB of HTML with a single 1.3 MB RSC chunk carrying 22,005 polygon coordinate tokens and 741 listing-detail links; Awbrey Butte 2.0 MB, Redmond 1.65 MB, /team 1.7 MB; Redfin's Bend page is 1.57 MB and its Tetherow page 0.48 MB, enjoybendlife's Awbrey Butte page 0.27 MB.",
+      "evidence": "curl size_download per page; analyze.py script_pct; largest-script scan of ours-cities_bend.html (1,305,913 bytes, head 'place-one-map', 22,005 coordinate-looking tokens, 3,236 photo URLs); link-class count 741 listing-detail links.",
+      "why_it_matters": "Crawl budget and render cost scale with HTML bytes across 3,000+ place URLs; a 3.8 MB city page competes with a 1.5 MB portal page for the same query, and Google samples fewer of our pages per crawl.",
+      "proposed_fix": "Cap listing cards on city pages (24-48) with a link into /homes-for-sale/<city>; ship polygon geometry as a static JSON/PMTiles asset fetched by the map client, not in the RSC payload; target < 600 KB HTML on every place page and add a size gate to the route shots.",
+      "fix_size": "medium",
+      "files": [
+        "app/cities/[slug]/page.tsx",
+        "components/site/v3",
+        "lib/data/places/"
+      ]
+    },
+    {
+      "id": "COMP-5",
+      "title": "Target-query position is unmeasurable for most target queries because the GSC snapshot only stores the daily top 25",
+      "severity": "major",
+      "category": "tracking",
+      "claim": "The snapshot keeps the top 25 queries by impressions per day, so 3 of 12 target queries have never produced a row, plain human queries fell out of the list after 2026-05-31 when literal-quoted zero-click queries took the slots, and the loop cannot see whether a fix moved 'awbrey butte homes for sale' or 'sunriver homes for sale' at all.",
+      "evidence": "app/api/cron/marketing-snapshot-gsc/route.ts:62-97 ('top 25 queries by impressions'); app/actions/search-console-report.ts:33 key=row.keys[0]; site_signal scope='campaign' last-8w top 60 surfaces are quoted queries and street addresses with 0 clicks; target queries 'awbrey butte homes for sale', 'sunriver homes for sale', 'redmond oregon homes for sale' have no rows in any window.",
+      "why_it_matters": "A loop that seeds and accepts visibility work needs a per-target-query position series; today the signal is a side-effect of whatever crowded the top 25 that day.",
+      "proposed_fix": "In the GSC ingestor, issue one additional Search Analytics request per target query (dimensionFilterGroups query equals, dimensions page+date) and upsert daily rows for every target regardless of rank; store page x query pairs for targets; flag quoted-query rows separately so they do not pollute the human-query series.",
+      "fix_size": "small",
+      "files": [
+        "app/api/cron/marketing-snapshot-gsc/route.ts",
+        "app/actions/search-console-report.ts",
+        "scripts/seed-gsc-ranking-queue.ts",
+        "lib/data/loop/signals.ts",
+        "site_signal"
+      ]
+    },
+    {
+      "id": "COMP-6",
+      "title": "We are absent from the one query class local sites win outright (neighborhood guides) and have no dated market-update series",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "'best neighborhoods in bend oregon' is 9/9 local brokerages, agents and guides with no portals, and 'bend oregon housing market' is won locally by dated monthly posts with the number in the title (Bend Premier 'March 2026: Prices Drop 7.4%, Sales Surge'; Ladd Group monthly updates); we have three overlapping best-neighborhoods guides at pos 7-27 and one evergreen /housing-market/bend page at pos 12-20.",
+      "evidence": "WebSearch lists for both queries; domain-scoped WebSearch on bendpremierrealestate.com and bendpropertysource.com; site_signal page rows for /blog/best-neighborhoods-bend-{retirees,families,buyers} (pos 21.7 / 27.2 / 7.1) and /housing-market/bend (18.6, 131 impr); query row 'best neighborhoods in bend oregon' pos 1.0 on 2026-02-24/25 only.",
+      "why_it_matters": "This is the cheapest visibility on the list: no portal to beat, the competitors are single-agent blogs, and we already held pos 1 for two days in February.",
+      "proposed_fix": "One bylined 'Best neighborhoods in Bend' hub (the 13 districts, each with a sourced median price and a link to its neighborhood page) with the retirees/families/buyers posts as linked sections or spokes, not three near-twins; a monthly dated market post per city generated from the statistics engine with the headline number in the title, linked from /housing-market/<city>.",
+      "fix_size": "medium",
+      "files": [
+        "blog_posts",
+        "app/blog",
+        "lib/seo/aeo-hub-guides.ts",
+        "app/housing-market/[city]/page.tsx"
+      ]
+    },
+    {
+      "id": "COMP-7",
+      "title": "Community pages do not link to the price-band, type and sold pages that competitors index",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "bendrealestate.com indexes five Tetherow price-band pages and homes.com indexes sold / condos / 3-bedroom / under-$500k pages per neighborhood; our matrix pages exist (/homes-for-sale/sunriver/under-400k ranked pos 5 for a day) but /communities/tetherow links to zero filtered /homes-for-sale/* pages and /homes-for-sale/bend/tetherow 301s back to the community page.",
+      "evidence": "Domain-scoped WebSearch results (bendrealestate.com/tetherow-by-price-1750000-2250000/ etc.; homes.com/bend-or/awbrey-butte-neighborhood/sold/); link-class count on ours-communities_tetherow.html: homes-for-sale/root 8, homes-for-sale/filtered 0; curl /homes-for-sale/bend/tetherow -> 301 /communities/tetherow.",
+      "why_it_matters": "The long-tail moat Matt describes is exactly these pages; without hub links they are orphans to crawlers and never accumulate the internal PageRank the hub has (980 links on /cities/bend go mostly to listing details).",
+      "proposed_fix": "Add a 'Tetherow by price / by type / recently sold' link block to every community and neighborhood page pointing at the existing matrix URLs; trade 600+ listing-detail links on city pages for these class links.",
+      "fix_size": "small",
+      "files": [
+        "app/communities/[slug]/page.tsx",
+        "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+        "components/site/v3",
+        "app/sitemaps"
+      ]
+    },
+    {
+      "id": "COMP-8",
+      "title": "Off-site footprint is thin and the brand name is ambiguous",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "For the brand query our home page ranks 6th behind LinkedIn, ZoomInfo, Zillow, Facebook and Yelp; the only third-party pages mentioning ryan-realty.com are ZoomInfo and realty.com; 'Ryan Realty' is shared with at least six unrelated brokerages; the domain dates from 2023 while the winners date from 1996-2012.",
+      "evidence": "WebSearch 'ryan realty bend' (positions 1-5 are profile sites); '\"ryan-realty.com\" -site:' and '\"Ryan Realty\" Bend Oregon -site:' result lists; RDAP registration dates.",
+      "why_it_matters": "Age and links are the structural reason the same three local sites hold 7 of 11 queries; no on-site work closes that gap, and an ambiguous brand splits the little entity signal we have.",
+      "proposed_fix": "Use 'Ryan Realty Bend' consistently in titles, profiles and JSON-LD name/alternateName; make every profile (GBP, Zillow, Yelp, LinkedIn, Facebook, Instagram) link to the home page with identical NAP; pursue local mentions (Bend Bulletin, Source Weekly, sponsorships, chamber, association pages) as a standing quarterly task; consolidate the two broker URLs so one team page carries the reviews.",
+      "fix_size": "medium",
+      "files": [
+        "app/layout.tsx",
+        "lib/seo",
+        "scripts/gbp-audit-nap-consistency.mjs",
+        "docs/plans"
+      ]
+    },
+    {
+      "id": "COMP-9",
+      "title": "Legacy URLs still in the brand SERP redirect in two hops or soft-404",
+      "severity": "minor",
+      "category": "visibility",
+      "claim": "/explore/bend/ and /sellers/ each take two redirects to reach /cities/bend and /sell; /team/matt-ryan and /team/matthew-ryan both appear for the brand query (matt-ryan 301s to matthew-ryan); /cities/bend/neighborhoods returns 200 'Page not found' with noindex instead of a 404 or a redirect to /neighborhoods.",
+      "evidence": "curl -L -w num_redirects: /explore/bend/ redirects=2, /sellers/ redirects=2; /team/matt-ryan -> 301 /team/matthew-ryan; ours-cities_bend_neighborhoods.html title 'Page not found', robots 'noindex, follow'; WebSearch brand results list both team URLs and /sellers/, /explore/bend/.",
+      "why_it_matters": "Chains and soft-404s waste crawl on a 2023 domain that gets little of it, and split the brand SERP across stale URLs.",
+      "proposed_fix": "Collapse each chain to one 301 in next.config.ts / data/legacy-redirects.json; 301 /cities/bend/neighborhoods to /neighborhoods; pick one broker slug and 301 the other.",
+      "fix_size": "small",
+      "files": [
+        "next.config.ts",
+        "data/legacy-redirects.json",
+        "middleware.ts",
+        "app/team/[slug]/page.tsx"
+      ]
+    },
+    {
+      "id": "COMP-10",
+      "title": "Answer copy on place pages is system-voice next to competitors' plain broker prose",
+      "severity": "minor",
+      "category": "voice",
+      "claim": "Our sourced FAQs read like the pipeline that produced them ('Tetherow has had fewer sales we can attribute to it on its own than a fair buyer's or seller's verdict needs, so we are not printing one'; 'That 11 is single-family only, which is the population every figure on this page measures'; 'the 45 listings this layer counts as active') while the ranking local pages write 'Buyers who value walkability and community often gravitate toward Northwest Crossing'.",
+      "evidence": "FAQ text extracted from ours-communities_tetherow.html and ours-cities_bend_awbrey-butte.html; Bend Premier prose from WebSearch summary of bendpremierrealestate.com/blog/2026/03/05/...",
+      "why_it_matters": "Answer engines quote sentences; a sentence about 'this layer' or 'the population every figure measures' is not quotable, and it is the voice Matt calls awful. The voice reader owns the full treatment; this is the competitor contrast.",
+      "proposed_fix": "Keep the number and the source line, rewrite the sentence as a broker would say it to a client ('Only 26 homes closed in Tetherow in the last 12 months, too few to call it a buyer's or seller's market on its own; Bend as a whole is at 3.3 months'), and have an evaluator read the text, not the screenshot.",
+      "fix_size": "medium",
+      "files": [
+        "app/communities/[slug]/_v3/place-knowledge.ts",
+        "lib/place",
+        "marketing_brain_skills/brand-voice/VOICE.md"
+      ]
+    }
+  ],
+  "questions_for_matt": [
+    "Do you want the brand written as 'Ryan Realty Bend' everywhere (titles, profiles, schema) to separate us from the six other 'Ryan Realty' brokerages, or keep plain 'Ryan Realty'?",
+    "Should the headline 'homes for sale' count on place pages include townhomes, condos and lots the way every portal and competitor counts them, with single-family as a labelled sub-row, or stay single-family-only per the section 7 convention?",
+    "Is there appetite and budget for off-site work code cannot do (local press, sponsorships, association and chamber listings, getting the GBP/Zillow/Yelp/LinkedIn profiles to link the home page) as a standing quarterly task?",
+    "If the Tetherow community page has not reached page 2 for 'tetherow homes for sale' 28 days after today's 301, do you approve restoring the guide at its old URL and cross-linking instead?"
+  ]
+}

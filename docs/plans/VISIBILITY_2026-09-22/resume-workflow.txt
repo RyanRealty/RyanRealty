@@ -1,0 +1,64 @@
+export const meta = {
+  name: 'visibility-resume',
+  description: 'Resume the 2026-09-22 visibility fix packages from their WIP branches, finish, verify, and report branches to merge',
+  whenToUse: 'After a session limit or container loss interrupted the 15 visibility fix agents (docs/plans/VISIBILITY_2026-09-22/README.md).',
+  phases: [
+    { title: 'Finish', detail: 'one agent per package, isolated worktree, starts from its WIP branch' },
+    { title: 'Verify', detail: 'one adversarial verifier per finished package' },
+  ],
+}
+
+// Usage: Workflow({ scriptPath: 'docs/plans/VISIBILITY_2026-09-22/resume-workflow.txt', args: ['p01-search-honesty', ...] })
+// With no args every package runs. Pass only the unfinished ones when some already merged.
+const ALL = [
+  'p04-copy-source-lines', 'p09-data-pipeline', 'p08-tracking-hygiene', 'p15-crawl-monitor', 'p03-plat-500s',
+  'p14-listing-urls', 'p01-search-honesty', 'p02-subdivision-families', 'p13-payload', 'p05-chrome-links',
+  'p12-aeo', 'p06-crm-intake', 'p07-identity-loop', 'p11-weekly-measurer', 'p10-loop-canon',
+]
+const PKGS = Array.isArray(args) && args.length ? args : ALL
+const DIR = 'docs/plans/VISIBILITY_2026-09-22'
+
+const REPORT = {
+  type: 'object',
+  properties: {
+    pkg: { type: 'string' },
+    branch: { type: 'string' },
+    commits: { type: 'array', items: { type: 'string' } },
+    done: { type: 'boolean' },
+    tests_and_gates: { type: 'string' },
+    not_done: { type: 'string' },
+    questions_for_matt: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['pkg', 'branch', 'commits', 'done', 'tests_and_gates', 'not_done', 'questions_for_matt'],
+}
+const VERDICT = {
+  type: 'object',
+  properties: {
+    pkg: { type: 'string' },
+    mergeable: { type: 'boolean' },
+    problems: { type: 'array', items: { type: 'string' } },
+    evidence: { type: 'string' },
+  },
+  required: ['pkg', 'mergeable', 'problems', 'evidence'],
+}
+
+const finishPrompt = (pkg) => `You are resuming fix package ${pkg} of the Ryan Realty visibility pass. An earlier agent was cut off mid-work.
+1. In your worktree: git fetch origin claude/admiring-feynman-7lgwc3 claude/admiring-feynman-7lgwc3--wip-${pkg}; git checkout -B resume-${pkg} origin/claude/admiring-feynman-7lgwc3--wip-${pkg}. If the WIP branch holds a synthetic "WIP snapshot" commit, keep its changes but treat them as unverified drafts. Merge origin/claude/admiring-feynman-7lgwc3 in if it moved (a merge commit, no rebase).
+2. Link deps: ln -s /home/user/RyanRealty/node_modules node_modules; ln -s /home/user/RyanRealty/.env.local .env.local (if present). Do not npm install.
+3. Read ${DIR}/README.md, ${DIR}/FIX_BRIEF.md (binding), ${DIR}/packages/${pkg}.md (your spec), the ${pkg.slice(0, 3)} line of ${DIR}/FOLLOWUPS.md, and the evidence files your spec names under ${DIR}/evidence/.
+4. Review the draft changes against the spec, finish every item, and verify: path-scoped vitest (--project unit --project gates), eslint on changed files, every scripts/check-*.mjs that reads your files. Do not use --no-verify (the repo hook refuses it); commit normally and let the hook run.
+5. Never call MCP tools. DB reads only through a copy of ${DIR}/sb-read.mjs.txt (saved as sb.mjs in a scratch dir). No sends, no ad spend, no OAuth, no posts.
+6. Push your branch to origin as claude/admiring-feynman-7lgwc3--wip-${pkg} (fast-forward only) so work survives, then return the report.`
+
+const verifyPrompt = (r) => `Adversarially review fix package ${r.pkg} of the Ryan Realty visibility pass before it merges into claude/admiring-feynman-7lgwc3. Branch: ${r.branch}. Spec: ${DIR}/packages/${r.pkg}.md, brief: ${DIR}/FIX_BRIEF.md.
+Read the full diff (git diff origin/claude/admiring-feynman-7lgwc3...${r.branch}). Try to find: behavior the spec asked for that is missing; a regression (a removed test, a weakened gate, a public figure with no §0 trace, public copy that breaks VOICE.md or has an em dash); a send to real people, ad spend or OAuth; secrets committed; changes outside the package that are not needed. Run the package's tests and gates yourself. Never call MCP tools. mergeable=true only if nothing blocking remains.`
+
+phase('Finish')
+const results = await pipeline(
+  PKGS,
+  (pkg) => agent(finishPrompt(pkg), { label: `finish:${pkg}`, phase: 'Finish', schema: REPORT, isolation: 'worktree', agentType: 'general-purpose' }),
+  (r) => (r ? agent(verifyPrompt(r), { label: `verify:${r.pkg}`, phase: 'Verify', schema: VERDICT, agentType: 'general-purpose' }).then((v) => ({ ...r, verdict: v })) : null),
+)
+const done = results.filter(Boolean)
+log(`${done.filter((r) => r.verdict && r.verdict.mergeable).length} of ${PKGS.length} packages mergeable`)
+return done
