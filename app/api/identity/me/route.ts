@@ -36,11 +36,10 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createHash } from 'node:crypto'
 import { getSession } from '@/app/actions/auth'
+import { PERSON_COOKIE, readPersonCookie } from '@/lib/identity/person-cookie'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-const PERSON_ID_COOKIE = 'rr_pid'
 
 function sha256(input: string): string {
   return createHash('sha256').update(input).digest('hex')
@@ -49,9 +48,10 @@ function sha256(input: string): string {
 export async function GET(): Promise<NextResponse> {
   const [cookieStore, session] = await Promise.all([cookies(), getSession()])
 
-  const cookieRaw = cookieStore.get(PERSON_ID_COOKIE)?.value?.trim()
-  const personId = cookieRaw ? parseInt(cookieRaw, 10) : null
-  const personIdValid = Number.isFinite(personId) && (personId ?? 0) > 0
+  // Signed rr_pid (P7) or, until legacy cookies age out, a bare id: this only
+  // feeds a HASHED GA4 user_id, never an access decision.
+  const personId = readPersonCookie(cookieStore.get(PERSON_COOKIE)?.value)?.personId ?? null
+  const personIdValid = personId != null
 
   const rawEmail = session?.user?.email?.trim().toLowerCase()
   const email = rawEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : null

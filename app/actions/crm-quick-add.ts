@@ -37,6 +37,8 @@ export async function createQuickContactAction(
       phones: input.phone ? [{ value: input.phone }] : undefined,
     },
     brokerAttribution: { brokerSlug: broker },
+    // A broker keying a contact in by hand is not a public submit (FUNNEL-1).
+    screen: false,
   })
   if (!sent.ok) return { ok: false, error: `Lead create failed: ${'error' in sent ? sent.error : sent.status}` }
 

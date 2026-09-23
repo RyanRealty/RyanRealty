@@ -65,4 +65,21 @@ describe('V3DogFloater · SITE-153', () => {
     expect(CSS).toContain('prefers-reduced-motion')
     expect(CSS).toMatch(/z-index:\s*95/)
   })
+
+  it('the eyes follow the pointer without redrawing the mascot (Matt 2026-09-23)', () => {
+    expect(SRC).toContain("from '@/lib/geo/pupil-offset'")
+    expect(SRC).toContain("addEventListener('pointermove'")
+    expect(SRC).toContain('{ passive: true }')
+    expect(SRC).toContain('requestAnimationFrame')
+    expect(SRC).toContain('cancelAnimationFrame')
+    expect(SRC).toContain('removeEventListener')
+    expect(SRC).toContain("matchMedia('(prefers-reduced-motion: reduce)')")
+    expect(SRC).toContain('v3-dog-floater__pupil--cream')
+    expect(SRC).toContain('v3-dog-floater__pupil--navy')
+    // Still the two head PNGs, not a hand-redrawn dog.
+    expect(SRC).toContain('/brand/jax-head-cream.png')
+    expect(SRC).toContain('/brand/jax-head-navy.png')
+    expect(CSS).toContain('.v3-dog-floater__pupil {')
+    expect(CSS).not.toMatch(/box-shadow\s*:\s*(?!none)[^;]*\d+px\s+\d+px/)
+  })
 })

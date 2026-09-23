@@ -59,7 +59,7 @@ describe('ci:dog-floater lock', () => {
     expect(p.join('\n')).toMatch(/brand-kit\/rasta|jax-navy|jax-white/)
   })
 
-  it('refuses shortened door labels or an em dash in public copy', () => {
+  it('refuses shortened or altered door labels', () => {
     const shortened = live.floater.replace("label: 'List your home'", "label: 'List'")
     const dashed = live.floater.replace('Learn more about us', 'Learn more\u2014about us')
     const shortP = dogFloaterProblems({ root: REPO, files: { ...live, floater: shortened } })
@@ -73,7 +73,10 @@ describe('ci:dog-floater lock', () => {
       'Learn more about us',
     ])
     expect(shortP.join('\n')).toMatch(/Do not shorten|EXACTLY/)
-    expect(dashP.join('\n')).toMatch(/em dash|U\+2014/)
+    // PROCESS-7 (2026-09-23): the em dash itself is ci:no-public-em-dash's job;
+    // here the altered label fails the exact-six-doors lock.
+    expect(dashP.join('\n')).toMatch(/EXACTLY/)
+    expect(dashP.join('\n')).not.toMatch(/em dash|U\+2014/)
   })
 
   it('refuses a menu that drops Give us a call or invents a number', () => {

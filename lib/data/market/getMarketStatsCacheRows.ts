@@ -100,13 +100,18 @@ export async function getMarketStatsCacheRowsByGeoType(options: {
   if (!sb) return []
   const columns =
     options.columns ?? 'geo_slug, median_sale_price, median_dom, sold_count, period_end'
-  const { data } = await sb
+  const { data, error } = await sb
     .from('market_stats_cache')
     .select(columns)
     .eq('geo_type', options.geoType)
     .eq('period_type', options.periodType ?? 'monthly')
     .order('period_end', { ascending: false })
     .limit(options.limit)
+  // THROW, never `[]`, on a failed read (AEO-4, 2026-09-22). Its one caller,
+  // getPublishedGuides, is resilient-cached: a swallowed error became a cached
+  // empty list, and /llms.txt's Guides section fell from 14 entries to 2 between
+  // two hourly builds while the same query answered 48 rows / 14 cities.
+  if (error) throw new Error(`[getMarketStatsCacheRowsByGeoType] ${error.message}`)
   return (data ?? []) as unknown as Array<Record<string, unknown>>
 }
 

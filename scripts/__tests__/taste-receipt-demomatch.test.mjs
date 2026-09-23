@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   catalogDemoMatchProblems,
+  regressionToleranceFor,
   siteQueueDoneEvidenceProblems,
   tasteDoneProblems,
+  tasteFloorProblems,
 } from '../lib/taste-receipt.mjs'
+
+// Matt 2026-09-23 (visibility audit PROCESS-3 / UXLIVE-11): demoMatch is a
+// RECORDED note, not a completion gate; the taste median is a floor that may
+// not regress on the same instrument; the 70 finish line no longer decides done.
 
 const catalogAdapted = [{ id: 'shadcn-avatar' }, { id: 'house-faces' }]
 
@@ -19,33 +25,22 @@ function receipt(over = {}) {
   }
 }
 
-describe('catalogDemoMatchProblems — cream box vs demo match', () => {
-  it('fails a cream-box receipt that claims rise without demoMatch', () => {
+describe('catalogDemoMatchProblems — the verdict is recorded, not required true', () => {
+  it('refuses a post-rule catalog receipt that omits demoMatch (a hidden verdict)', () => {
     const tr = receipt()
     delete tr.demoMatch
-    const p = catalogDemoMatchProblems(tr)
-    expect(p.join('\n')).toMatch(/demoMatch must be true or false/)
-    expect(p.join('\n')).toMatch(/not done/)
+    expect(catalogDemoMatchProblems(tr).join('\n')).toMatch(/demoMatch must be recorded true or false/)
   })
 
-  it('fails a cream-box receipt that claims rise with demoMatch false', () => {
-    const p = catalogDemoMatchProblems(receipt({ demoMatch: false }))
-    expect(p.join('\n')).toMatch(/demoMatch is false/)
-    expect(p.join('\n')).toMatch(/cream-box/)
+  it('accepts demoMatch false on a rise (a note, Matt 2026-09-23)', () => {
+    expect(catalogDemoMatchProblems(receipt({ demoMatch: false }))).toEqual([])
   })
 
-  it('fails a finish-line score without demoMatch true', () => {
-    const p = catalogDemoMatchProblems(
-      receipt({ comparedToPrior: 'rebaselined', score: 71, demoMatch: false }),
-    )
-    expect(p.join('\n')).toMatch(/finish line is not done/)
+  it('accepts demoMatch false at or above the old 70 line', () => {
+    expect(catalogDemoMatchProblems(receipt({ comparedToPrior: 'rebaselined', score: 71, demoMatch: false }))).toEqual([])
   })
 
-  it('passes a catalog receipt with demoMatch true and a rise', () => {
-    expect(catalogDemoMatchProblems(receipt())).toEqual([])
-  })
-
-  it('lets a pre-rule city-style rise sit (honest legacy, no demoMatch field)', () => {
+  it('lets a pre-rule receipt with no demoMatch field sit', () => {
     expect(
       catalogDemoMatchProblems({
         evaluatedAt: '2026-09-10',
@@ -57,41 +52,69 @@ describe('catalogDemoMatchProblems — cream box vs demo match', () => {
     ).toEqual([])
   })
 
-  it('lets an in-progress rebaseline record demoMatch false below 70', () => {
-    expect(
-      catalogDemoMatchProblems(
-        receipt({ comparedToPrior: 'rebaselined', score: 57, demoMatch: false }),
-      ),
-    ).toEqual([])
-  })
-
   it('ignores house-only adaptedFrom', () => {
     expect(
-      catalogDemoMatchProblems(
-        receipt({ adaptedFrom: [{ id: 'house-atlas' }, { id: 'V3Proof' }], demoMatch: undefined }),
-      ),
+      catalogDemoMatchProblems(receipt({ adaptedFrom: [{ id: 'house-atlas' }, { id: 'V3Proof' }], demoMatch: undefined })),
     ).toEqual([])
   })
 })
 
+describe('tasteFloorProblems — no regression on the same instrument', () => {
+  const prior = { score: 61, evaluatorModel: 'grok-4.6', rubricVersion: 'v1-2026-09-12', evaluatedAt: '2026-09-13' }
+  const held = (score, over = {}) => ({
+    evaluatedAt: '2026-09-23',
+    evaluatorModel: 'grok-4.6',
+    rubricVersion: 'v1-2026-09-12',
+    comparedToPrior: 'held',
+    score,
+    priorMark: prior,
+    ...over,
+  })
+
+  it('the tolerance is one less than the rise floor', () => {
+    expect(regressionToleranceFor('2026-09-23')).toBe(2)
+    expect(regressionToleranceFor('2026-09-10')).toBe(0)
+  })
+
+  it('accepts a held mark inside the judge noise', () => {
+    expect(tasteFloorProblems(held(59))).toEqual([])
+    expect(tasteFloorProblems(held(61))).toEqual([])
+  })
+
+  it('refuses a fall of the full rise floor', () => {
+    expect(tasteFloorProblems(held(58)).join('\n')).toMatch(/taste floor regressed/)
+  })
+
+  it('does not compare a mark from another judge', () => {
+    expect(tasteFloorProblems(held(40, { evaluatorModel: 'claude-sonnet-5' }))).toEqual([])
+  })
+
+  it('still holds honesty', () => {
+    const p = tasteFloorProblems(
+      held(61, { criteria: { honestyFunction: 8 }, priorMark: { ...prior, criteria: { honestyFunction: 9 } } }),
+    )
+    expect(p.join('\n')).toMatch(/honestyFunction 8 fell below the prior mark 9/)
+  })
+})
+
 describe('tasteDoneProblems — Tip Ready / node-complete', () => {
-  it('refuses omitted demoMatch', () => {
-    expect(tasteDoneProblems({ score: 80, adaptedFrom: catalogAdapted }).join('\n')).toMatch(
-      /demoMatch must be true or false/,
+  it('refuses an omitted demoMatch on a catalog receipt', () => {
+    expect(tasteDoneProblems({ score: 80, evaluatorModel: 'grok-4.6', adaptedFrom: catalogAdapted }).join('\n')).toMatch(
+      /demoMatch must be recorded true or false/,
     )
   })
 
-  it('refuses demoMatch false', () => {
-    expect(tasteDoneProblems({ demoMatch: false, adaptedFrom: catalogAdapted }).join('\n')).toMatch(
-      /demoMatch is false/,
-    )
+  it('no longer refuses demoMatch false', () => {
+    expect(
+      tasteDoneProblems({ demoMatch: false, evaluatorModel: 'grok-4.6', adaptedFrom: [{ id: 'house-faces' }] }).join('\n'),
+    ).not.toMatch(/demoMatch is false|not a demo match/)
   })
 
-  it('passes demoMatch true on the grok-4.6 instrument when open-state + route import hold', () => {
+  it('passes a recorded verdict on the judge chain when open-state + route import hold', () => {
     expect(
       tasteDoneProblems(
         {
-          demoMatch: true,
+          demoMatch: false,
           evaluatorModel: 'grok-4.6',
           adaptedFrom: catalogAdapted,
           shots: { 'desktop-search-open': 'shots/search-open.png' },
@@ -123,69 +146,43 @@ describe('tasteDoneProblems — Tip Ready / node-complete', () => {
 })
 
 describe('siteQueueDoneEvidenceProblems — SITE evidence text', () => {
-  it('refuses SITE evidence without demoMatch true', () => {
-    const p = siteQueueDoneEvidenceProblems('score rose 55 → 72, adaptedFrom shadcn-avatar', {
-      versionGap: 'SITE-90',
-    })
-    expect(p.join('\n')).toMatch(/demoMatch: true/)
-    expect(p.join('\n')).toMatch(/Tip Ready/)
+  it('accepts evidence with no taste score (a visibility node)', () => {
+    expect(
+      siteQueueDoneEvidenceProblems('READY at 1a2b3c; title and canonical live on /communities/tetherow.', {
+        versionGap: 'SITE-182',
+      }),
+    ).toEqual([])
   })
 
-  it('refuses a recorded false verdict', () => {
-    const p = siteQueueDoneEvidenceProblems('grok-4.6 median 72, demoMatch: false', {
-      versionGap: 'SITE-90',
-    })
-    expect(p.join('\n')).toMatch(/demoMatch false/)
+  it('accepts a recorded demoMatch false', () => {
+    expect(
+      siteQueueDoneEvidenceProblems('grok-4.6 median 60, demoMatch: false. Live page checked.', {
+        versionGap: 'SITE-93',
+        loadParity: false,
+      }),
+    ).toEqual([])
   })
 
-  it('refuses a 402 with no invented pass', () => {
+  it('refuses a 402 with no receipt behind it', () => {
     const p = siteQueueDoneEvidenceProblems('taste-evaluate grok CLI 402 payment required', {
       versionGap: 'SITE-99',
+      loadParity: false,
     })
     expect(p.join('\n')).toMatch(/402/)
-    expect(p.join('\n')).toMatch(/do not invent demoMatch/i)
+    expect(p.join('\n')).toMatch(/a failed judge is not a score/)
   })
 
-  it('refuses a missing CLI', () => {
+  it('refuses a missing CLI with no receipt behind it', () => {
     const p = siteQueueDoneEvidenceProblems('no grok CLI; claimed Tip Ready from score rise', {
       versionGap: 'SITE-99',
+      loadParity: false,
     })
     expect(p.join('\n')).toMatch(/CLI missing/)
   })
 
-  it('passes honest grok-4.6 demoMatch true evidence only with a true receipt', () => {
-    expect(
-      siteQueueDoneEvidenceProblems(
-        'grok-4.6 median 72 (70/74/72) demoMatch: true, competitiveBriefPass: true. SEO title + inventory facts on cards.',
-        {
-          versionGap: 'SITE-90',
-          tasteReview: {
-            competitiveBriefPass: true,
-            demoMatch: true,
-            evaluatorModel: 'grok-4.6',
-            shotsHash: `sha256:${'a'.repeat(64)}`,
-            competitiveBriefEvidence: {
-              '1': 'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
-              '2': 'Faces open the page at display scale. Deep bios stay on /team.',
-              '3': 'V3Proof reviews as words plus dated local closings as a carousel',
-              '4': 'Call | Text | Email | Schedule. Live hours stay V3OnDuty above this.',
-              '5': "street: '115 NW Oregon Ave #2'",
-              '6': '5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.',
-              '7': '/about first viewport — faces at display scale. Navy and cream only.',
-              '8': 'shadcn Avatar image, fallback, and badge at display scale.',
-            },
-          },
-        },
-      ),
-    ).toEqual([])
-  })
-
-  it('refuses SITE-90 evidence that omits competitiveBriefPass', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'grok-4.6 median 72 (70/74/72) demoMatch: true. SEO title + inventory facts on cards.',
-      { versionGap: 'SITE-90' },
-    )
-    expect(p.join('\n')).toMatch(/competitiveBriefPass: true/)
+  it('refuses Tip Ready prose without --ship', () => {
+    const p = siteQueueDoneEvidenceProblems('grok-4.6 median 72. Tip Ready.', { versionGap: 'SITE-93', loadParity: false })
+    expect(p.join('\n')).toMatch(/--ship/)
   })
 
   it('does not bind a non-SITE node', () => {

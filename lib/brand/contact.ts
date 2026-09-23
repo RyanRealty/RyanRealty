@@ -69,6 +69,44 @@ export const BRAND = {
      *  Closes the entity loop for the brand SERP (westside backlog #3). */
     googleBusinessProfile: 'https://maps.google.com/?cid=11038319841912529644',
   },
+  /**
+   * Other spellings of this entity that other sites use (schema.org
+   * alternateName). AEO-6 / COMP-8 (visibility audit 2026-09-22): the brand
+   * query "ryan realty bend" returns our LinkedIn, Zillow, Facebook and Yelp
+   * profiles ABOVE the site, under these names. `name` stays exactly
+   * 'Ryan Realty' (the local-seo NAP canon: no keyword suffix, ever); these
+   * only tell an engine the other spellings are the same business.
+   *   'Ryan Realty Bend'              Zillow screen name + Facebook page name
+   *   'Ryan Realty LLC (Bend Oregon)' LinkedIn company name
+   */
+  alternateNames: ['Ryan Realty Bend', 'Ryan Realty LLC (Bend Oregon)'],
+  /**
+   * Third-party directory profiles of the brokerage, for JSON-LD sameAs only
+   * (not the footer's social icons, which read `social`). AEO-6 / COMP-8.
+   * Each verified before it was added (2026-09-23):
+   *   zillow  curl (Chrome UA) 200 three times on 2026-09-23, title "Matthew
+   *           Ryan - Real Estate Agent in Bend, OR - Reviews | Zillow",
+   *           screenName "Ryan Realty Bend", businessName "Ryan Realty LLC",
+   *           phone (541) 703-3095, links ryan-realty.com. It is Matt's agent
+   *           profile under the brokerage screen name, so it is also on his
+   *           person node (BROKER_SAME_AS). Zillow's bot wall sometimes answers
+   *           403; that is the wall, not a dead profile.
+   *   yelp    DataDome answers every bot fetch with 403 (a made-up slug gets
+   *           the same 403), so curl cannot separate live from dead here. The
+   *           search index lists this exact URL as "RYAN REALTY - Updated
+   *           August 2026 ... 115 NW Oregon Ave, Bend, Oregon - Real Estate
+   *           Agents" (2026-09-23), and docs/audits/PROFILE_CONSISTENCY_2026-08-03.md
+   *           verified the claimed listing live in a browser (name, address,
+   *           website match). That listing still shows 541.213.6706, the
+   *           private forward target (AEO-7): a profile edit for Matt, not code.
+   * Realtor.com is NOT here: no profile URL for the brokerage or a broker
+   * could be found (search index has none, public.brokers.realtor_id is null,
+   * realtor.com answers bots with 429). Add it when Matt supplies the URL.
+   */
+  directoryProfiles: {
+    zillow: 'https://www.zillow.com/profile/Ryan%20Realty%20Bend',
+    yelp: 'https://www.yelp.com/biz/ryan-realty-bend',
+  },
 } as const
 
 /** Direct "leave a review" URL for the GBP listing — use in review-request
@@ -79,6 +117,25 @@ export const GBP_REVIEW_URL =
 /** Ordered social-profile URL list for JSON-LD `sameAs` (byte-identical to the
  *  prior hardcoded SAME_AS array). */
 export const SOCIAL_PROFILES: string[] = Object.values(BRAND.social)
+
+/** Organization JSON-LD sameAs: the social profiles, then the directory
+ *  profiles (AEO-6 / COMP-8). Social order is unchanged. */
+export const ENTITY_SAME_AS: string[] = [...SOCIAL_PROFILES, ...Object.values(BRAND.directoryProfiles)]
+
+/**
+ * Per-broker sameAs for the RealEstateAgent person nodes, keyed by the
+ * public.brokers slug. Only profiles that were verified to be THIS person:
+ *   matthew-ryan  Zillow agent profile (see BRAND.directoryProfiles.zillow), and the
+ *                 LinkedIn profile that Zillow page itself links to as his
+ *                 (linkedin.com/in/mattmryan; LinkedIn answers bots with 999,
+ *                 the search index titles it "Matthew Ryan - Ryan Realty LLC
+ *                 (Bend Oregon) | LinkedIn").
+ * Paul and Rebecca have no verified third-party profile yet (public.brokers
+ * zillow_id / realtor_id / yelp_id / social_* are null for both, 2026-09-23).
+ */
+export const BROKER_SAME_AS: Readonly<Record<string, readonly string[]>> = {
+  'matthew-ryan': [BRAND.directoryProfiles.zillow, 'https://www.linkedin.com/in/mattmryan'],
+}
 
 export const CONTACT = {
   /** Brokerage brand line. As of the Twilio cutover (2026-06-24) this is the

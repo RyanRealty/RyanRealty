@@ -18,7 +18,8 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { withSendIdempotency } from '@/lib/crm/idempotency'
 import { getSendTarget } from '@/lib/data/crm/getSendTarget'
-import { renderCrmMerge, attributeSiteLinks } from '@/lib/crm/merge'
+import { renderCrmMerge } from '@/lib/crm/merge'
+import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } from '@/lib/crm/twilio'
 import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
@@ -48,12 +49,11 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
     // Merge tokens — a template body with %first% must never reach a client
     // literally. Same context resolution as every other send surface.
     const ctx = await buildMergeContext({ person, senderSlug: slug })
-    const mergedBody = attributeSiteLinks(
-      renderCrmMerge(req.payload.body, person, ctx),
-      slug,
-      person.fub_legacy_id as number | null,
-      req.personId,
-    )
+    const mergedBody = decorateOutboundText(renderCrmMerge(req.payload.body, person, ctx), {
+      brokerSlug: slug,
+      personId: req.personId,
+      channel: 'sms',
+    })
 
     // Send from the broker's OWN Twilio business line, else the A2P service.
     const fromNumber = await brokerTwilioNumber(slug)

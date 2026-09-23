@@ -56,9 +56,12 @@ export function taxlotSourceCounties(): string[] {
   return Object.keys(TAXLOT_SOURCES)
 }
 
-/** What a page must print beside any drawn parcel line. */
-export const TAXLOT_DISCLAIMER =
-  'Lot lines come from the county assessor’s tax maps. They show the recorded shape of a parcel, not a survey, and they are not a legal boundary. Order a survey before you rely on a line.'
+/**
+ * What a page must print beside any drawn parcel line. Re-exported from its
+ * own zero-import file so a client component can read it without the RPC
+ * calls below (see lib/data/geo/taxlot-disclaimer.ts).
+ */
+export { TAXLOT_DISCLAIMER } from './taxlot-disclaimer'
 
 export type Taxlot = {
   /** The county's own tax lot identifier, e.g. "171219DB02100". */

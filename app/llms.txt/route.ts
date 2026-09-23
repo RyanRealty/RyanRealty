@@ -3,12 +3,13 @@ import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsFor
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
-import { subdivisionLlmsLines } from '@/lib/data/subdivisions/subdivision-index'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { PRIMARY_CITIES } from '@/lib/cities'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import aiQueryMap from '@/lib/seo/ai-query-map.json' assert { type: 'json' }
 import { CORE_CITY_SLUGS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
-import { marketCityLlmsLines, zipLlmsLines } from '@/lib/site/llms-geo'
+import { cityTypeLlmsLines, dedupeLlmsLines, marketCityLlmsLines, zipLlmsLines, LLMS_SUBDIVISIONS_PATH } from '@/lib/site/llms-geo'
+import { BRAND, CONTACT } from '@/lib/brand/contact'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -17,12 +18,22 @@ export const revalidate = 3600
 /**
  * llms.txt — the AI-crawler map of the site (growth-loop class fix 2026-06-10).
  *
- * Was a static hardcoded list, which silently omitted the highest-citation-value
- * families (blog posts, market reports, guides, tools). The dynamic sections now
- * pull from the same cached DAL the pages render from, so new content is
- * discoverable here the hour it publishes. Every fetcher is resilient-cached
- * (returns [] on failure) so the curated pillar sections always serve.
- * Coverage enforced by scripts/check-ai-crawler-access.mjs.
+ * The dynamic sections pull from the same cached DAL the pages render from, so
+ * new content is discoverable here the hour it publishes. Every fetcher is
+ * resilient-cached (returns [] on failure) so the curated sections always serve.
+ * Coverage enforced by scripts/check-ai-crawler-access.mjs and
+ * scripts/check-ai-query-battery.mjs.
+ *
+ * SHAPE (AEO-2 / AEO-4, visibility audit 2026-09-22). The file used to be 281 KB
+ * and 2,892 links, 2,642 of them (91%) bare subdivision plat URLs, with the
+ * Guides, Blog, Tools and Brokerage sections sitting after the plat block and
+ * three pillars listed twice. It now leads with who we are and the pages an
+ * assistant most needs (brokerage, listings, homes by type per city, market
+ * data, places), carries a one-line description on the new type pages, prints
+ * each URL once (dedupeLlmsLines), and moves the plat list to its own linked
+ * file under "## Optional", which the llms.txt convention reserves for
+ * secondary links a reader can skip. The plat set itself is unchanged: it is
+ * still the same list the sitemap submits (subdivision-index parity test).
  */
 export async function GET() {
   const [posts, guides, reports, neighborhoods, subdivisions] = await Promise.all([
@@ -30,61 +41,68 @@ export async function GET() {
     getPublishedGuides(50),
     listMarketReports(12),
     getAllNeighborhoodsWithCity().catch(() => []),
-    // The SAME shared set app/sitemap.ts submits (GIS polygon + lifetime
-    // closed-sales threshold) — parity pinned by
-    // lib/data/subdivisions/subdivision-index.test.ts. Resilient-cached: [].
+    // Counted only, for the pointer line to the secondary file. Same shared set
+    // app/sitemap.ts submits. Resilient-cached: [].
     getIndexableSubdivisions(),
   ])
 
-  // Each dynamic block prefixes its own newline so an empty result (no rows
-  // published yet, or the resilient-cache fallback) leaves no dangling blank line.
-  const lines = (items: string[]) => (items.length ? '\n' + items.join('\n') : '')
-  const blogLines = lines(posts.map((p) => `- ${p.title}: ${SITE_URL}/blog/${p.slug}`))
-  const guideLines = lines(guides.map((g) => `- ${g.title}: ${SITE_URL}/blog/${g.slug}`))
-  const reportLines = lines(
-    reports.map((r) => `- ${r.title}: ${SITE_URL}/housing-market/reports/${r.slug}`)
-  )
+  const seen = new Set<string>()
+  // Each block prefixes its own newline so an empty result (no rows published
+  // yet, or the resilient-cache fallback) leaves no dangling blank line. Every
+  // URL prints once across the whole file: the first section to list it wins.
+  const lines = (items: string[]) => {
+    const kept = dedupeLlmsLines(items, seen)
+    return kept.length ? '\n' + kept.join('\n') : ''
+  }
+  const pillars = (section: string) =>
+    (aiQueryMap.pillars as Array<{ section: string; label: string; path: string; description?: string }>)
+      .filter((p) => p.section === section)
+      .map((p) =>
+        p.description
+          ? `- [${p.label}](${SITE_URL}${p.path}): ${p.description}`
+          : `- ${p.label}: ${SITE_URL}${p.path}`,
+      )
 
-  // Confirmed-upcoming events first, then the annual anchors — both link to the
-  // detail page. Dates are the verified registry dates, never generated (§0).
-  const { upcoming, anchors } = getEventsForIndex()
-  const eventLines = lines(
-    [...upcoming, ...anchors].map(
-      (e) => `- ${e.name}: ${SITE_URL}/central-oregon/events/${e.slug}`,
-    ),
-  )
-  const { music, performingArts } = getVenuesForIndex()
-  const venueLines = lines(
-    [...music, ...performingArts]
-      .filter((v, i, arr) => arr.findIndex((x) => x.slug === v.slug) === i)
-      .map((v) => `- ${v.name} (${v.city}): ${SITE_URL}/central-oregon/venues/${v.slug}`),
-  )
-  const golfLines = lines(
-    GOLF_COURSES.map(
-      (c) => `- ${c.name} (${c.city.replace(/\s*\(.*?\)/g, '')}): ${SITE_URL}/central-oregon/golf/${c.slug}`,
-    ),
-  )
-  const { hiking, biking } = getTrailsForIndex()
-  const trailLines = lines(
-    [...hiking, ...biking]
-      .filter((t, i, arr) => arr.findIndex((x) => x.slug === t.slug) === i)
-      .map((t) => `- ${t.name} (${t.city}): ${SITE_URL}/central-oregon/trails/${t.slug}`),
-  )
-
-  // Full geo index — the same three sources the sitemap emits from, so the AI
-  // crawler map and the Google crawler map can never disagree on which geo
-  // pages exist: SITE_CITY_SLUGS (city pages), the curated resort registry
-  // (/communities/*), and boundary neighborhoods (/cities/{city}/{slug}).
   const cityLabel = (slug: string) =>
     slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-  const cityLines = lines(
-    SITE_CITY_SLUGS.map((slug) => `- ${cityLabel(slug)}: ${SITE_URL}/cities/${slug}`),
-  )
-  const communityLines = lines(
-    getAllResortCommunities().map(
+
+  const brokerageLines = lines(pillars('brokerage'))
+  const listingLines = lines([
+    `- Homes for sale: ${SITE_URL}/homes-for-sale`,
+    `- Bend homes for sale: ${SITE_URL}/homes-for-sale/bend`,
+    `- Redmond homes for sale: ${SITE_URL}/homes-for-sale/redmond`,
+    `- Sisters homes for sale: ${SITE_URL}/homes-for-sale/sisters`,
+    `- Sunriver homes for sale: ${SITE_URL}/homes-for-sale/sunriver`,
+    `- La Pine homes for sale: ${SITE_URL}/homes-for-sale/la-pine`,
+    `- Open houses: ${SITE_URL}/open-houses`,
+    `- New construction in Bend: ${SITE_URL}/new-construction`,
+    `- Price Drop Radar (Central Oregon): ${SITE_URL}/price-drops`,
+    `- Bend price drops: ${SITE_URL}/price-drops/bend`,
+    `- Redmond price drops: ${SITE_URL}/price-drops/redmond`,
+    `- Sisters price drops: ${SITE_URL}/price-drops/sisters`,
+    ...pillars('listings'),
+  ])
+  const typeLines = lines(cityTypeLlmsLines(SITE_URL, PRIMARY_CITIES))
+  const marketLines = lines([
+    `- Housing market hub: ${SITE_URL}/housing-market`,
+    `- Market reports: ${SITE_URL}/housing-market/reports`,
+    ...reports.map((r) => `- ${r.title}: ${SITE_URL}/housing-market/reports/${r.slug}`),
+    ...marketCityLlmsLines(SITE_URL, CORE_CITY_SLUGS, cityLabel),
+  ])
+  // Full geo index: the same three sources the sitemap emits from, so the AI
+  // crawler map and the Google crawler map cannot disagree on which geo pages
+  // exist: SITE_CITY_SLUGS (city pages), the curated resort registry
+  // (/communities/*), and boundary neighborhoods (/cities/{city}/{slug}).
+  const cityLines = lines([
+    `- All cities: ${SITE_URL}/cities`,
+    ...SITE_CITY_SLUGS.map((slug) => `- ${cityLabel(slug)}: ${SITE_URL}/cities/${slug}`),
+  ])
+  const communityLines = lines([
+    `- All communities: ${SITE_URL}/communities`,
+    ...getAllResortCommunities().map(
       (c) => `- ${c.label} (${c.city}): ${SITE_URL}/communities/${publicCommunitySlug(c)}`,
     ),
-  )
+  ])
   const neighborhoodLines = lines(
     neighborhoods
       .map((n) => {
@@ -94,85 +112,94 @@ export async function GET() {
       })
       .filter((line): line is string => line !== null),
   )
-  // Subdivision plat pages — built from the same list the sitemap emits, via
-  // the shared line builder (never a copy of the URL logic).
-  const subdivisionLines = lines(subdivisionLlmsLines(subdivisions, SITE_URL))
   const zipLines = lines(zipLlmsLines(SITE_URL))
-  const marketCityLines = lines(marketCityLlmsLines(SITE_URL, CORE_CITY_SLUGS, cityLabel))
+  const guideLines = lines([
+    `- All guides: ${SITE_URL}/blog`,
+    ...pillars('guides'),
+    ...guides.map((g) => `- ${g.title}: ${SITE_URL}/blog/${g.slug}`),
+  ])
+  // "All posts" shares /blog with "All guides" above, so the dedupe drops it.
+  const blogLines = lines([
+    `- All posts: ${SITE_URL}/blog`,
+    ...posts.map((p) => `- ${p.title}: ${SITE_URL}/blog/${p.slug}`),
+  ])
+  const toolLines = lines([
+    `- Mortgage calculator: ${SITE_URL}/tools/mortgage-calculator`,
+    `- Rental property calculator: ${SITE_URL}/tools/rental-property-calculator`,
+    `- Home appreciation tool: ${SITE_URL}/tools/appreciation`,
+    ...pillars('tools'),
+  ])
 
-  const pillarLines = (section: string) =>
-    (aiQueryMap.pillars as Array<{ section: string; label: string; path: string }>)
-      .filter((p) => p.section === section)
-      .map((p) => `- ${p.label}: ${SITE_URL}${p.path}`)
-      .join('\n')
+  // Confirmed-upcoming events first, then the annual anchors, both linking to
+  // the detail page. Dates are the verified registry dates, never generated (§0).
+  const { upcoming, anchors } = getEventsForIndex()
+  const eventLines = lines([
+    `- Central Oregon events: ${SITE_URL}/central-oregon/events`,
+    ...[...upcoming, ...anchors].map((e) => `- ${e.name}: ${SITE_URL}/central-oregon/events/${e.slug}`),
+  ])
+  const { music, performingArts } = getVenuesForIndex()
+  const venueLines = lines([
+    `- Central Oregon live music and show venues: ${SITE_URL}/central-oregon/venues`,
+    ...[...music, ...performingArts]
+      .filter((v, i, arr) => arr.findIndex((x) => x.slug === v.slug) === i)
+      .map((v) => `- ${v.name} (${v.city}): ${SITE_URL}/central-oregon/venues/${v.slug}`),
+  ])
+  const golfLines = lines(
+    GOLF_COURSES.map(
+      (c) => `- ${c.name} (${c.city.replace(/\s*\(.*?\)/g, '')}): ${SITE_URL}/central-oregon/golf/${c.slug}`,
+    ),
+  )
+  const { hiking, biking } = getTrailsForIndex()
+  const trailLines = lines([
+    `- Central Oregon hiking and mountain-bike trails: ${SITE_URL}/central-oregon/trails`,
+    ...[...hiking, ...biking]
+      .filter((t, i, arr) => arr.findIndex((x) => x.slug === t.slug) === i)
+      .map((t) => `- ${t.name} (${t.city}): ${SITE_URL}/central-oregon/trails/${t.slug}`),
+  ])
 
-  const body = `# Ryan Realty Central Oregon Real Estate
+  const subdivisionPointer =
+    subdivisions.length > 0
+      ? `\n- Subdivisions (${subdivisions.length.toLocaleString('en-US')} pages, one link each): ${SITE_URL}${LLMS_SUBDIVISIONS_PATH}`
+      : `\n- Subdivisions: ${SITE_URL}${LLMS_SUBDIVISIONS_PATH}`
 
-> Ryan Realty serves Central Oregon buyers and sellers with live listings, market reports, and neighborhood guidance.
+  const body = `# ${BRAND.name}
 
-## Listings
-- Homes for sale: ${SITE_URL}/homes-for-sale
-- Bend homes for sale: ${SITE_URL}/homes-for-sale/bend
-- Redmond homes for sale: ${SITE_URL}/homes-for-sale/redmond
-- Sisters homes for sale: ${SITE_URL}/homes-for-sale/sisters
-- Sunriver homes for sale: ${SITE_URL}/homes-for-sale/sunriver
-- La Pine homes for sale: ${SITE_URL}/homes-for-sale/la-pine
-- Open houses: ${SITE_URL}/open-houses
-- New construction in Bend: ${SITE_URL}/new-construction
-${pillarLines('listings')}
+> ${BRAND.name} is a boutique real estate brokerage in Bend, Oregon, that helps people buy and sell homes across Central Oregon: Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the resort communities around them. Its city, community, neighborhood, and ZIP pages list the homes for sale there now, from the regional MLS, with that place's market figures.
 
-## Price Drops
-- Price Drop Radar (Central Oregon): ${SITE_URL}/price-drops
-- Bend price drops: ${SITE_URL}/price-drops/bend
-- Redmond price drops: ${SITE_URL}/price-drops/redmond
-- Sisters price drops: ${SITE_URL}/price-drops/sisters
+Office: ${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}. Phone: ${CONTACT.phoneDirect}. Web: ${BRAND.url}
 
-## Market Data
-- Housing market hub: ${SITE_URL}/housing-market
-- Market reports: ${SITE_URL}/housing-market/reports${reportLines}${marketCityLines}
+## Brokerage${brokerageLines}
 
-## Local Areas
-- Cities: ${SITE_URL}/cities
-- Communities: ${SITE_URL}/communities
+## Listings${listingLines}
 
-## Cities
-- All cities: ${SITE_URL}/cities${cityLines}
+## Homes by type
+One page per property type in each city: the ones for sale now, live from the regional MLS, with prices, photos, and a map.${typeLines}
 
-## Communities
-- All communities: ${SITE_URL}/communities${communityLines}
+## Market Data${marketLines}
+
+## Cities${cityLines}
+
+## Communities${communityLines}
 
 ## Neighborhoods${neighborhoodLines}
 
 ## ZIP codes${zipLines}
 
-## Subdivisions${subdivisionLines}
+## Guides${guideLines}
 
-## Local Events
-- Central Oregon events: ${SITE_URL}/central-oregon/events${eventLines}
+## Blog${blogLines}
 
-## Live Music & Shows (venues)
-- Central Oregon live music & show venues: ${SITE_URL}/central-oregon/venues${venueLines}
+## Tools${toolLines}
+
+## Local Events${eventLines}
+
+## Live Music & Shows (venues)${venueLines}
 
 ## Golf${golfLines}
 
-## Trails
-- Central Oregon hiking & mountain-bike trails: ${SITE_URL}/central-oregon/trails${trailLines}
+## Trails${trailLines}
 
-## Guides
-- All guides: ${SITE_URL}/blog
-${pillarLines('guides')}${guideLines}
-
-## Blog
-- All posts: ${SITE_URL}/blog${blogLines}
-
-## Tools
-- Mortgage calculator: ${SITE_URL}/tools/mortgage-calculator
-- Rental property calculator: ${SITE_URL}/tools/rental-property-calculator
-- Home appreciation tool: ${SITE_URL}/tools/appreciation
-${pillarLines('tools')}
-
-## Brokerage
-${pillarLines('brokerage')}
+## Optional${subdivisionPointer}
 `
 
   return new NextResponse(body, {

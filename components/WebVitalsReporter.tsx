@@ -1,6 +1,7 @@
 'use client'
 
 import { useReportWebVitals } from 'next/web-vitals'
+import { isNonPagePath } from '@/lib/analytics/web-vitals-sample'
 
 /**
  * Real-user Core Web Vitals reporter.
@@ -15,9 +16,18 @@ import { useReportWebVitals } from 'next/web-vitals'
  *
  * Mounted once in the root layout. Client component (the API is browser-only).
  */
+// isNonPagePath is shared with the server twin in app/api/web-vitals/route.ts
+// (lib/analytics/web-vitals-sample.ts), so the two filters cannot drift.
+
 export function WebVitalsReporter() {
   useReportWebVitals((metric) => {
     if (typeof window === 'undefined') return
+    // Not a page. A missing /_next/image URL renders the app's 404 page with
+    // the root layout mounted, so this reporter fired for image-optimizer
+    // misses and /api paths: 20,306 of 45,354 LCP rows in the 14 days to
+    // 2026-09-22 carried path /_next/image (visibility audit, TRACK-3), which
+    // made the "other" class p75 LCP 9.1 s and hid the real routes.
+    if (isNonPagePath(window.location.pathname)) return
     const device = window.innerWidth > 0 && window.innerWidth < 768 ? 'mobile' : 'desktop'
     const payload = {
       name: metric.name,

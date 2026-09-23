@@ -3,12 +3,25 @@
  * GA4 daily snapshot ingestor.
  *
  * Fetches website analytics from GA4 via getGA4Summary() and decomposes
- * the response into marketing_channel_daily rows.
+ * the response into marketing_channel_daily rows (lib/marketing-brain/
+ * ga4-snapshot-rows.ts).
  *
- * Default behavior: pulls yesterday only (for the daily Vercel cron).
- * Backfill: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD pulls one row per
- * day in that range, calling GA4 once per day to keep per-day attribution
- * accurate.
+ * Default behavior: re-pulls a settle window, today-3..today-1, every run.
+ * GA4 keeps processing a day after it ends, and the old yesterday-only pull
+ * stored whatever it saw on the first try forever (visibility audit
+ * 2026-09-22, TRACK-2). upsertMetricRows is keyed on the day, so a late day is
+ * corrected in place — the same pattern as the GSC ingestor's today-9..today-2.
+ * Backfill: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD pulls one row per day in
+ * that range, calling GA4 once per day to keep per-day attribution accurate.
+ *
+ * Also written each day (visibility audit 2026-09-22 / owner directive
+ * 2026-09-23):
+ *   - metadata.mirror_inflated=true on the rows the Measurement Protocol
+ *     page-view mirror shapes (TRACK-1, lib/analytics/ga4-mirror.ts).
+ *   - exact session_start / first_visit / google-organic counts, zero included.
+ *   - ga4 account `tracking_health_ok` (1/0) and, once Search Console has
+ *     settled, `organic_to_gsc_click_ratio_7d` — the daily guard that catches a
+ *     dead browser stream in one day (lib/analytics/ga4-tracking-health.ts).
  *
  * Auth: requires Authorization: Bearer $CRON_SECRET.
  */
@@ -16,15 +29,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGA4Summary } from '@/app/actions/ga4-report'
 import {
   IngestorResult,
-  MetricRow,
   parseDateRange,
+  readMetricSeries,
   upsertMetricRows,
 } from '@/lib/marketing-brain/snapshot'
+import { buildGa4DayRows, GA4_SNAPSHOT_SOURCE } from '@/lib/marketing-brain/ga4-snapshot-rows'
+import { fetchGa4HealthCounts } from '@/lib/marketing-brain/ga4-health-counts'
+import { isGa4PageViewMirrorOn } from '@/lib/analytics/ga4-mirror'
+import {
+  evaluateGa4TrackingHealth,
+  GOOGLE_ORGANIC_SESSIONS_METRIC,
+  healthRows,
+  isoAddDays,
+  ORGANIC_WINDOW_DAYS,
+} from '@/lib/analytics/ga4-tracking-health'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const maxDuration = 300
 
-const SOURCE = 'ga4_data_api'
+/** today-3..today-1: the window re-pulled on every scheduled run. */
+const SETTLE_WINDOW = { fromDaysAgo: 3, toDaysAgo: 1 }
 
 function* dateIter(startDate: string, endDate: string): Generator<string> {
   const start = new Date(`${startDate}T00:00:00Z`)
@@ -34,172 +58,6 @@ function* dateIter(startDate: string, endDate: string): Generator<string> {
   }
 }
 
-function rowsForDay(date: string, summary: Awaited<ReturnType<typeof getGA4Summary>>): MetricRow[] {
-  if (!summary.ok) return []
-  const d = summary.data
-  const base = { date, channel: 'ga4' as const, source: SOURCE }
-  const accountRows: MetricRow[] = [
-    { ...base, scope: 'account', scope_id: '', metric: 'sessions', value: d.sessions },
-    { ...base, scope: 'account', scope_id: '', metric: 'total_users', value: d.totalUsers },
-    { ...base, scope: 'account', scope_id: '', metric: 'new_users', value: d.newUsers },
-    {
-      ...base,
-      scope: 'account',
-      scope_id: '',
-      metric: 'avg_session_duration_seconds',
-      value: d.averageSessionDurationSeconds,
-    },
-    { ...base, scope: 'account', scope_id: '', metric: 'engagement_rate', value: d.engagementRate },
-    { ...base, scope: 'account', scope_id: '', metric: 'bounce_rate', value: d.bounceRate },
-    { ...base, scope: 'account', scope_id: '', metric: 'total_lead_events', value: d.totalLeadEvents },
-    { ...base, scope: 'account', scope_id: '', metric: 'lead_event_rate', value: d.leadEventRate },
-  ]
-
-  const sourceRows: MetricRow[] = d.topSources.flatMap((s) => [
-    {
-      ...base,
-      scope: 'source',
-      scope_id: s.sourceMedium,
-      metric: 'sessions',
-      value: s.sessions,
-      metadata: { source_medium: s.sourceMedium },
-    },
-    {
-      ...base,
-      scope: 'source',
-      scope_id: s.sourceMedium,
-      metric: 'users',
-      value: s.users,
-      metadata: { source_medium: s.sourceMedium },
-    },
-    {
-      ...base,
-      scope: 'source',
-      scope_id: s.sourceMedium,
-      metric: 'engaged_sessions',
-      value: s.engagedSessions,
-      metadata: { source_medium: s.sourceMedium },
-    },
-  ])
-
-  const pageRows: MetricRow[] = d.topPages.flatMap((p) => [
-    {
-      ...base,
-      scope: 'page',
-      scope_id: p.pagePath,
-      metric: 'page_views',
-      value: p.views,
-      metadata: { page_title: p.pageTitle },
-    },
-    {
-      ...base,
-      scope: 'page',
-      scope_id: p.pagePath,
-      metric: 'page_users',
-      value: p.users,
-      metadata: { page_title: p.pageTitle },
-    },
-  ])
-
-  const leadEventRows: MetricRow[] = d.topLeadEvents.flatMap((e) => [
-    {
-      ...base,
-      scope: 'campaign',
-      scope_id: `lead_event:${e.eventName}`,
-      metric: 'event_count',
-      value: e.eventCount,
-      metadata: { event_name: e.eventName },
-    },
-  ])
-
-  const leadSourceRows: MetricRow[] = d.leadSources.flatMap((s) => [
-    {
-      ...base,
-      scope: 'source',
-      scope_id: `lead_source:${s.sourceMedium}`,
-      metric: 'lead_events',
-      value: s.leadEvents,
-      metadata: { source_medium: s.sourceMedium },
-    },
-  ])
-
-  // Per-LP-variant funnel — scope `lp`, scope_id is the variant slug,
-  // metric encodes the event ('view_landing_page_count', 'generate_lead_count', etc.)
-  // The downstream brain dashboard joins on lp_variant + computes
-  // conversion_pct = generate_lead_count / view_landing_page_count.
-  const lpFunnelRows: MetricRow[] = d.lpFunnels.map((f) => ({
-    ...base,
-    scope: 'lp',
-    scope_id: f.lpVariant,
-    metric: `${f.eventName}_count`,
-    value: f.eventCount,
-    metadata: { lp_variant: f.lpVariant, event_name: f.eventName, users: f.users },
-  }))
-
-  // Per-event aggregates — scope `event`, scope_id is the event_name.
-  // Captures the rich engagement-event taxonomy from lib/tracking.ts beyond
-  // just the 9 LEAD_EVENT_NAMES. Used by audit-website's engagement signal.
-  const eventRows: MetricRow[] = d.topEvents.map((e) => ({
-    ...base,
-    scope: 'event',
-    scope_id: e.eventName,
-    metric: 'event_count',
-    value: e.eventCount,
-    metadata: { event_name: e.eventName, users: e.users },
-  }))
-
-  const socialChannelRows: MetricRow[] = d.socialChannels.flatMap((c) => [
-    {
-      ...base,
-      scope: 'channel',
-      scope_id: `social:${c.channel}`,
-      metric: 'sessions',
-      value: c.sessions,
-      metadata: { channel: c.channel },
-    },
-    {
-      ...base,
-      scope: 'channel',
-      scope_id: `social:${c.channel}`,
-      metric: 'users',
-      value: c.users,
-      metadata: { channel: c.channel },
-    },
-  ])
-
-  // AI-assistant referral traffic — the forward-looking "traffic through AI"
-  // signal. GA4's native AI Assistant channel (added 2026-05-13) covers only
-  // ChatGPT/Gemini/Claude and has NO backfill, so we instrument our own daily
-  // series now. d.aiReferrers (classified via lib/ai-referrers across the full
-  // engine set) gives one entry per engine; write a daily account TOTAL (even 0,
-  // so the metric never goes falsely stale) plus a per-engine breakdown so the
-  // scoreboard can show which LLMs drive traffic over time.
-  const aiTotalSessions = d.aiReferrers.reduce((sum, r) => sum + r.sessions, 0)
-  const aiRows: MetricRow[] = [
-    { ...base, scope: 'account', scope_id: '', metric: 'ai_assistant_sessions', value: aiTotalSessions },
-    ...d.aiReferrers.map((r) => ({
-      ...base,
-      scope: 'source' as const,
-      scope_id: r.engine,
-      metric: 'ai_assistant_sessions',
-      value: r.sessions,
-      metadata: { engine: r.engine, users: r.users },
-    })),
-  ]
-
-  return [
-    ...accountRows,
-    ...sourceRows,
-    ...pageRows,
-    ...leadEventRows,
-    ...leadSourceRows,
-    ...socialChannelRows,
-    ...lpFunnelRows,
-    ...eventRows,
-    ...aiRows,
-  ]
-}
-
 export async function GET(request: NextRequest) {
   const denied = requireCronAuth(request)
   if (denied) return denied
@@ -207,7 +65,7 @@ export async function GET(request: NextRequest) {
   let startDate: string
   let endDate: string
   try {
-    ;({ startDate, endDate } = parseDateRange(request))
+    ;({ startDate, endDate } = parseDateRange(request, SETTLE_WINDOW))
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'invalid date range' },
@@ -219,6 +77,13 @@ export async function GET(request: NextRequest) {
   const metricsCovered = new Set<string>()
   let totalRows = 0
 
+  // Exact browser-only counts for the whole window in two small reports. On
+  // failure the top-50 event rows still land and the health guard is skipped:
+  // a guard that cannot read its inputs must not write a verdict.
+  const exactCounts = await fetchGa4HealthCounts(startDate, endDate)
+  if (!exactCounts.ok) errors.push(`health counts: ${exactCounts.error}`)
+
+  const ingestedDays: string[] = []
   for (const day of dateIter(startDate, endDate)) {
     try {
       const summary = await getGA4Summary(day, day)
@@ -226,16 +91,52 @@ export async function GET(request: NextRequest) {
         errors.push(`${day}: ${summary.error}`)
         continue
       }
-      const rows = rowsForDay(day, summary)
+      const rows = buildGa4DayRows(day, summary.data, {
+        mirrorOn: isGa4PageViewMirrorOn(day),
+        exact: exactCounts.ok ? (exactCounts.byDate.get(day) ?? null) : null,
+      })
       const upserted = await upsertMetricRows(rows)
       totalRows += upserted
       rows.forEach((r) => metricsCovered.add(r.metric))
+      ingestedDays.push(day)
     } catch (e) {
       errors.push(`${day}: ${e instanceof Error ? e.message : String(e)}`)
     }
   }
 
-  const result: IngestorResult = {
+  // ── daily tracking-health guard ────────────────────────────────────────
+  const health: Array<{ date: string; ok: boolean; failures: string[] }> = []
+  if (exactCounts.ok && ingestedDays.length > 0) {
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      const from = isoAddDays(ingestedDays[0], -(ORGANIC_WINDOW_DAYS - 1))
+      const to = ingestedDays[ingestedDays.length - 1]
+      const [ga4GoogleOrganic, gscClicks] = await Promise.all([
+        readMetricSeries({ channel: 'ga4', scope: 'account', scope_id: '', metric: GOOGLE_ORGANIC_SESSIONS_METRIC, from, to }),
+        readMetricSeries({ channel: 'gsc', scope: 'account', scope_id: '', metric: 'clicks', from, to }),
+      ])
+      for (const day of ingestedDays) {
+        const counts = exactCounts.byDate.get(day)
+        if (!counts) continue
+        const verdict = evaluateGa4TrackingHealth({
+          date: day,
+          today,
+          browserSessionStart: counts.sessionStart,
+          browserFirstVisit: counts.firstVisit,
+          ga4GoogleOrganic,
+          gscClicks,
+        })
+        const rows = healthRows(verdict, GA4_SNAPSHOT_SOURCE)
+        totalRows += await upsertMetricRows(rows)
+        rows.forEach((r) => metricsCovered.add(r.metric))
+        health.push({ date: day, ok: verdict.ok, failures: verdict.failures })
+      }
+    } catch (e) {
+      errors.push(`health guard: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  const result: IngestorResult & { health: typeof health } = {
     channel: 'ga4',
     startDate,
     endDate,
@@ -243,6 +144,7 @@ export async function GET(request: NextRequest) {
     metricsCovered: [...metricsCovered],
     errors,
     fetchedAt: new Date().toISOString(),
+    health,
   }
 
   return NextResponse.json(result)

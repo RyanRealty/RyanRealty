@@ -44,6 +44,33 @@ import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
 import { AGENT_ATTRIB_COOKIE } from '@/lib/agent-attribution'
 import { resolveVisitBrokerSlug, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
 import { stripIdentityParams } from './strip-identity'
+// P7 identity loop (2026-09-23, docs/TRACKING_POLICY.md "The known-contact
+// identity loop"): a SIGNED ?_pid= token on a link we sent identifies the visit
+// here, server-side, on the landing page view; the durable rr_vid and the
+// signed rr_pid cookie carry it to every later visit on the browser.
+import { verifyPersonLinkToken } from '@/lib/identity/link-token'
+import { arrivalTokenFrom, planArrivalIdentity, type ArrivalDecision } from '@/lib/identity/arrival'
+import {
+  PERSON_COOKIE,
+  personCookieOptions,
+  personCookieValue,
+  signedPersonIdFromCookie,
+} from '@/lib/identity/person-cookie'
+import {
+  clearProvisionalAutomation,
+  identifySessionAndBrowser,
+  insertVisitorSession,
+  readIdentityMapForVid,
+  readSessionIdentity,
+  stampSessionEmailOnly,
+} from '@/lib/data/identity/sessionIdentity'
+import { personExistsById } from '@/lib/data/crm/personExistsById'
+import {
+  PROVISIONAL_AUTOMATION_REASONS,
+  classifyArrivalShape,
+  classifyAutomation,
+} from '@/lib/analytics/automation'
+import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -175,6 +202,21 @@ type TrackBody = {
    * Server re-normalizes; unknown values are ignored.
    */
   agent?: string
+  /**
+   * The signed person token from a link we sent (?_pid=). Usually read straight
+   * off `pageUrl`; forwarded explicitly when PersonIdentityBridge cleaned the
+   * address bar before the tracker posted. Verified server-side; an unsigned or
+   * forged value identifies nobody.
+   */
+  identityToken?: string
+  /** navigator.webdriver, an automation signal (lib/analytics/automation.ts). */
+  webdriver?: boolean
+  /**
+   * The visit this event belongs to (VisitTracker): the Unix second it began,
+   * the browser's running visit count, and whether this event starts it. Feeds
+   * the GA4 mirror's per-visit session_id (TRACK-1).
+   */
+  visit?: { id?: number; number?: number; start?: boolean }
 }
 
 function getSupabase() {
@@ -372,6 +414,38 @@ export async function POST(request: NextRequest) {
   const rrVidCookie = request.cookies.get('rr_vid')?.value
   const rrVid = rrVidCookie && UUID_V4.test(rrVidCookie) ? rrVidCookie : undefined
 
+  // ─── Automation class + arrival identity (P7) ──────────────────────────
+  // Classified from the UA HEADER at every tier; only the class label is
+  // stored, never the UA string itself at essential (docs/TRACKING_POLICY.md).
+  const automation = classifyAutomation({
+    userAgent: request.headers.get('user-agent'),
+    webdriver: body.webdriver,
+  })
+  const rawToken = arrivalTokenFrom({ identityToken: body.identityToken, pageUrl })
+  const token = rawToken ? verifyPersonLinkToken(rawToken) : null
+  // Behavioural and PROVISIONAL (lib/analytics/automation.ts): the listing
+  // contact-form deep link a crawler lands on. Stored at birth, cleared below
+  // by the session's next event; never blocks identification.
+  const arrivalShape = automation.automated
+    ? { automated: false, reason: null }
+    : classifyArrivalShape({ landingPage: body.landingPage, referrer: body.referrer, hasToken: !!rawToken })
+  const birthClass = automation.automated ? automation : arrivalShape
+  let tokenPersonExists = true
+  if (token && !automation.automated) {
+    const [owner, exists] = await Promise.all([
+      readSessionIdentity(supabase, sessionId),
+      personExistsById(token.personId).catch(() => false),
+    ])
+    tokenPersonExists = exists
+    const pre = planArrivalIdentity({ token, tokenPersonExists, session: owner })
+    if (pre.kind === 'rotate') {
+      // This browser session belongs to another contact (shared device,
+      // forwarded email). Record nothing under it: the tracker starts a fresh
+      // session and re-sends, so the visit lands on the person who clicked.
+      return NextResponse.json({ ok: true, rotateSession: true }, { headers: corsHeaders(origin) })
+    }
+  }
+
   const sessionInsert = {
     session_id: sessionId,
     rr_vid: rrVid,
@@ -401,13 +475,22 @@ export async function POST(request: NextRequest) {
   // constraint on session_id (PK) will reject — that's fine, we silently
   // ignore. We do NOT want to OVERWRITE the first-touch fields on a return
   // event; first-touch attribution is by definition the FIRST time we saw
-  // this session.
-  const { error: insertSessionErr } = await supabase
-    .from('visitor_sessions')
-    .insert(cleanSessionInsert)
-  if (insertSessionErr && insertSessionErr.code !== '23505') {
+  // this session. The automation class rides as an optional column pair
+  // (migration 20260923120000); before that migration is applied the insert
+  // retries without them.
+  const sessionWrite = await insertVisitorSession(supabase, cleanSessionInsert, {
+    is_automated: birthClass.automated,
+    automation_reason: birthClass.reason,
+  })
+  if (!sessionWrite.inserted && sessionWrite.code !== '23505') {
     // 23505 = unique_violation = session already exists, expected on revisit.
-    console.warn('[visitors/track] session insert failed:', insertSessionErr.message)
+    console.warn('[visitors/track] session insert failed:', sessionWrite.message)
+  }
+  // A later event on a session that was born with the provisional shape (the
+  // tracker re-sends the same landing page on every event) proves a person is
+  // reading on: clear the flag. Only sessions with that landing pay the write.
+  if (!sessionWrite.inserted && sessionWrite.code === '23505' && arrivalShape.automated) {
+    await clearProvisionalAutomation(supabase, sessionId, PROVISIONAL_AUTOMATION_REASONS)
   }
 
   // Identity carryover at session birth (2026-09-01). stitchVisitorIdentity
@@ -418,28 +501,31 @@ export async function POST(request: NextRequest) {
   // identified session days old). On a brand-new session whose browser
   // carries a durable rr_vid, resolve the identity map once (PK read) and
   // stamp the same fields the stitch writes. Best-effort, never blocks.
-  if (!insertSessionErr && rrVid) {
-    try {
-      const { data: known } = await supabase
-        .from('visitor_identity_map')
-        .select('crm_person_id, fub_person_id, email')
-        .eq('rr_vid', rrVid)
-        .maybeSingle()
-      const carriedId = Number(known?.crm_person_id ?? known?.fub_person_id ?? 0)
-      if (known && (carriedId > 0 || known.email)) {
-        const patch: Record<string, unknown> = {
-          identified_at: new Date().toISOString(),
-          identified_via: 'rr_vid_carryover',
-        }
-        if (carriedId > 0) {
-          patch.crm_person_id = carriedId
-          patch.fub_person_id = carriedId
-        }
-        if (known.email) patch.identified_email = String(known.email).toLowerCase()
-        await supabase.from('visitor_sessions').update(patch).eq('session_id', sessionId)
+  // A token on this very request outranks the map (lib/identity/arrival.ts);
+  // automation is never identified.
+  let identifiedNow = false
+  // The signed rr_pid cookie is (re)issued whenever this request identifies a
+  // browser, so /api/identity/me and the landing-page forms know them too.
+  let setPersonCookieFor: number | null = null
+  if (sessionWrite.inserted && rrVid && !token && !automation.automated) {
+    const known = await readIdentityMapForVid(supabase, rrVid)
+    if (known?.personId) {
+      const res = await identifySessionAndBrowser(supabase, {
+        sessionId,
+        rrVid,
+        personId: known.personId,
+        via: 'rr_vid_carryover',
+        email: known.email,
+        stitchBrowser: false,
+      })
+      identifiedNow = res.sessionStamped
+      if (res.sessionStamped) setPersonCookieFor = known.personId
+      // A browser already mapped to a contact is a person, whatever it landed on.
+      if (res.sessionStamped && arrivalShape.automated) {
+        await clearProvisionalAutomation(supabase, sessionId, PROVISIONAL_AUTOMATION_REASONS)
       }
-    } catch (err) {
-      console.warn('[visitors/track] rr_vid carryover failed:', err)
+    } else if (known?.email) {
+      await stampSessionEmailOnly(supabase, sessionId, known.email)
     }
   }
 
@@ -500,7 +586,11 @@ export async function POST(request: NextRequest) {
     eventType === 'welcome_back' ||
     eventType === 'email_opt' ||
     eventType === 'sms_opt'
-  if (mirrorGa4) {
+  // Automation never reaches GA4: a crawler render mirrored as a page_view is
+  // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
+  // not see Measurement Protocol hits. A provisional contact-deep-link session
+  // loses only its first view; a later event proves a person and mirrors.
+  if (mirrorGa4 && !automation.automated && !(sessionWrite.inserted && arrivalShape.automated)) {
     try {
       const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
         '@/lib/ga4-measurement-protocol'
@@ -532,9 +622,16 @@ export async function POST(request: NextRequest) {
             utmTerm: campaign?.term,
           }),
         )
+        // TRACK-1: a per-visit numeric session id (not the browser-lifetime
+        // rr_session_id) and, on the first event of a visit, campaign_details
+        // with the source / medium / campaign the tracker captured, so GA4 can
+        // draw sessions and attribute them.
+        const visit = parseVisit(body.visit)
+        const campaignDetails = visit?.start ? campaignDetailsParams(campaign ?? body.campaign) : null
         void fireGa4Event({
           eventName: isView ? 'page_view' : eventType,
           clientId: fromCookie || clientIdFromSessionId(sessionId),
+          precedingEvents: campaignDetails ? [{ name: 'campaign_details', params: campaignDetails }] : undefined,
           userProperties: {
             ...(intent ? { intent } : {}),
             ...(broker?.userProperties ?? {}),
@@ -547,8 +644,7 @@ export async function POST(request: NextRequest) {
             page_referrer: stripIdentityParams(body.referrer),
             page_path: pagePath,
             page_type: pageType,
-            // First-party session stitch (optional custom dim later)
-            session_id: sessionId.slice(0, 36),
+            ...ga4SessionParams(visit, sessionId),
             intent,
             source,
             thing,
@@ -578,6 +674,37 @@ export async function POST(request: NextRequest) {
   }
 
   const session = sessRow ?? null
+
+  // ─── Identify the visit (P7) ─────────────────────────────────────────────
+  // The signed token on the link just clicked, else the signed rr_pid cookie
+  // from an earlier identification on this browser. Identifies the session AND
+  // back-stitches every anonymous session on the same rr_vid, and maps the
+  // rr_vid so the next visit, and this person's other devices once they click
+  // from them, are born identified.
+  const cookiePersonId = signedPersonIdFromCookie(request.cookies.get(PERSON_COOKIE)?.value)
+  const decision: ArrivalDecision = planArrivalIdentity({
+    token,
+    tokenPersonExists,
+    session: session ? { crmPersonId: typeof session.crm_person_id === 'number' ? session.crm_person_id : null } : null,
+    cookiePersonId,
+    automated: automation.automated,
+  })
+  if (session && decision.kind === 'identify') {
+    const res = await identifySessionAndBrowser(supabase, {
+      sessionId,
+      rrVid,
+      personId: decision.personId,
+      via: decision.via,
+    })
+    if (res.sessionStamped) {
+      identifiedNow = true
+      session.crm_person_id = decision.personId
+      session.fub_person_id = decision.personId
+      session.identified_at = session.identified_at ?? new Date().toISOString()
+    }
+    if (res.sessionStamped && cookiePersonId !== decision.personId) setPersonCookieFor = decision.personId
+  }
+  if (setPersonCookieFor && setPersonCookieFor === cookiePersonId) setPersonCookieFor = null
 
   // ─── Looking-at wake (D3) ────────────────────────────────────────────────
   // Identified person (crm_people.id) + a specific home. GPC already dropped
@@ -657,7 +784,7 @@ export async function POST(request: NextRequest) {
       console.warn('[visitors/track] cma-opened alert failed:', err)
     }
   }
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       ok: true,
       session: session
@@ -671,7 +798,14 @@ export async function POST(request: NextRequest) {
               : null,
           }
         : null,
+      // The tracker dispatches `person-identified` on identifiedNow so the
+      // analytics bridge picks up the hashed GA4 user id. No id is returned.
+      identity: { identifiedNow },
     },
     { headers: corsHeaders(origin) },
   )
+  if (setPersonCookieFor) {
+    response.cookies.set(PERSON_COOKIE, personCookieValue(setPersonCookieFor), personCookieOptions())
+  }
+  return response
 }

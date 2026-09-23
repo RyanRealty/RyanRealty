@@ -9,16 +9,14 @@
  */
 
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { fetchOnMarketHomesInBox, type NearbyHomeStats } from '@/lib/data/geo/nearby-on-market-homes'
 import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
 import { cityToGeoSlug } from '@/lib/golf-format'
 import { leftoverCityAreaMarket } from '@/lib/data/market-truth/leftover-area-market'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
-import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 const LAT_PAD = 0.022
 const LNG_PAD = 0.028
@@ -53,63 +51,8 @@ export type GolfDetail = {
   cityMarket: AreaMarket | null
 }
 
-type RawRow = {
-  ListingKey: string | null
-  ListPrice: number | null
-  BedroomsTotal: number | null
-  BathroomsTotal: number | null
-  TotalLivingAreaSqFt: number | null
-  StreetNumber: string | null
-  StreetName: string | null
-  City: string | null
-  PostalCode: string | null
-  Latitude: number | null
-  Longitude: number | null
-  PhotoURL: string | null
-}
-
-const PROJECTION = [
-  'ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt',
-  'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
-].join(', ')
-
-
 function getCourseBySlug(slug: string): GolfCourse | undefined {
   return GOLF_COURSES.find((c) => c.slug === slug)
-}
-
-function rowToHome(row: RawRow): GolfHomeTile {
-  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
-  const cityLine = [[row.City, 'OR'].filter(Boolean).join(', '), row.PostalCode]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-  return {
-    listingKey: row.ListingKey ?? '',
-    href: `/listing/${row.ListingKey ?? ''}`,
-    price: row.ListPrice,
-    beds: row.BedroomsTotal,
-    baths: row.BathroomsTotal,
-    sqft: row.TotalLivingAreaSqFt,
-    addressLine: street || 'Address available on request',
-    cityLine: cityLine || 'Central Oregon',
-    lat: row.Latitude,
-    lng: row.Longitude,
-    photoUrl: row.PhotoURL,
-    video: null,
-    hasTour: false,
-  }
-}
-
-function medianListPrice(homes: GolfHomeTile[]): number | null {
-  const prices = homes
-    .map((h) => h.price)
-    .filter((p): p is number => typeof p === 'number' && p > 0)
-    .sort((a, b) => a - b)
-  if (prices.length === 0) return null
-  const mid = Math.floor(prices.length / 2)
-  const raw = prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid]
-  return Math.round(raw / 1000) * 1000
 }
 
 async function attachTileVideos(homes: GolfHomeTile[]): Promise<void> {
@@ -133,22 +76,23 @@ async function attachTileVideos(homes: GolfHomeTile[]): Promise<void> {
   homes.sort((a, b) => (a.video ? 0 : a.hasTour ? 1 : 2) - (b.video ? 0 : b.hasTour ? 1 : 2))
 }
 
-async function fetchCourseHomes(course: GolfCourse): Promise<GolfHomeTile[]> {
-  const supabase = supabaseAnon()
-  if (!supabase) return []
-  const { data, error } = await supabase
-    .from('listings')
-    .select(PROJECTION)
-    .in('StandardStatus', ACTIVE_STATUSES)
-    .eq('PropertyType', 'A')
-    .gte('Latitude', course.lat - LAT_PAD)
-    .lte('Latitude', course.lat + LAT_PAD)
-    .gte('Longitude', course.lng - LNG_PAD)
-    .lte('Longitude', course.lng + LNG_PAD)
-    .order('ListPrice', { ascending: false, nullsFirst: false })
-    .limit(MAX_HOMES)
-  if (error) throw new Error(`[getGolfDetail] supabase error: ${error.message}`)
-  return (data ?? []).map((r) => rowToHome(r as unknown as RawRow))
+/**
+ * Every public on-market PropertyType 'A' home in the box, from listing_search_mv.
+ * `stats` covers the full set; `homes` is its price-desc top slice (DATA-3/8).
+ */
+async function fetchCourseHomes(course: GolfCourse): Promise<{ homes: GolfHomeTile[]; stats: NearbyHomeStats }> {
+  const { homes, stats } = await fetchOnMarketHomesInBox({
+    label: '[getGolfDetail] course homes',
+    lat: course.lat,
+    lng: course.lng,
+    latPad: LAT_PAD,
+    lngPad: LNG_PAD,
+    maxTiles: MAX_HOMES,
+  })
+  return {
+    homes: homes.map((h) => ({ ...h, video: null, hasTour: false })),
+    stats,
+  }
 }
 
 async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
@@ -156,7 +100,7 @@ async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
   if (!course) return null
 
   const geoSlug = cityToGeoSlug(course.city)
-  const homes = await fetchCourseHomes(course)
+  const { homes, stats } = await fetchCourseHomes(course)
   await attachTileVideos(homes)
   const relatedCourses = GOLF_COURSES.filter(
     (c) => c.slug !== course.slug && cityToGeoSlug(c.city) === geoSlug,
@@ -171,14 +115,14 @@ async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
     course,
     geoSlug,
     homes,
-    stats: { count: homes.length, medianListPrice: medianListPrice(homes) },
+    stats,
     relatedCourses,
     cityMarket,
   }
 }
 
 export function getGolfDetail(slug: string): Promise<GolfDetail | null> {
-  return unstable_cache(() => fetchGolfDetail(slug), ['golf-detail-v3-leftover', slug], {
+  return unstable_cache(() => fetchGolfDetail(slug), ['golf-detail-v4-full-set', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'golf'],
   })()

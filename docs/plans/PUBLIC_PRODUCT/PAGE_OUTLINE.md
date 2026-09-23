@@ -120,6 +120,7 @@ Draft art: `design_system/ryan-realty/assets/footer/bend-cityscape-16x9-draft.jp
 
 **Win.** `Ryan Realty` · `Ryan Realty Bend` (disambiguates Florida/NY/MA shops of the same name).  
 **Title / H1.** **Ryan Realty** or **Ryan Realty, Bend** — never “Homes for Sale in Central Oregon” (live H1; that query belongs to `/homes-for-sale`).  
+**Live title 2026-09-23 (gsc-trend-11).** `Ryan Realty, Bend | Homes for Sale in Central Oregon`: the brand and its disambiguator now lead, because `/` ranked p45 for “ryan realty” in July and September (GSC) while the GBP-tagged URL ranked p3. The head term Matt picked 2026-09-07 stays in the tail (the H1 and `ci:seo-shell` still pin it); dropping it for the brand alone is the open call in this section.  
 **Purpose.** Door to the shop. Prove we exist in Bend.  
 **Do.** Search, open a house, or tap Value my home.
 

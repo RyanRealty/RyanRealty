@@ -71,6 +71,15 @@ describe('Imagine produce captions (D11)', () => {
     expect(caption.endsWith('Value my home.')).toBe(true)
     expect(caption).not.toMatch(/[—–;!]/)
   })
+
+  it('omits the closed-30d sentence when withheld (null is not zero, DATA-7)', () => {
+    const caption = gbpDraftCaption({ ...PULSE, closedLast30Days: null })
+    expect(caption).not.toMatch(/closed in 30 days/)
+    expect(caption).not.toMatch(/\bnull\b/)
+    // The rest of the caption still prints.
+    expect(caption).toContain('412 active listings')
+    expect(caption).toContain('4.2 months of supply')
+  })
 })
 
 describe('isTempImagineUrl', () => {

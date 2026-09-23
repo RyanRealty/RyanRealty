@@ -15,15 +15,13 @@
  */
 
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { fetchOnMarketHomesInBox, type NearbyHomeStats } from '@/lib/data/geo/nearby-on-market-homes'
 import { getEventBySlug, CO_EVENTS, type CoEvent } from '@/data/co-events'
 import { leftoverCityAreaMarket } from '@/lib/data/market-truth/leftover-area-market'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
-import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /** A silent, chrome-less MLS background loop that autoplays in a featured tile. */
 export type TileVideo = { url: string; embedType: 'iframe' | 'video-tag' } | null
@@ -55,9 +53,9 @@ export type EventHomeTile = {
 }
 
 export type EventStats = {
-  /** Active SFR homes near the venue, from our listings. */
+  /** Every public on-market PropertyType 'A' home near the venue (not the display slice). */
   count: number
-  /** Median list price across those homes (rounded to nearest $1k), or null. */
+  /** percentile_cont median list price across ALL of them, rounded to $1k; null under 10 priced homes. */
   medianListPrice: number | null
 }
 
@@ -69,50 +67,6 @@ export type EventDetail = {
   relatedEvents: CoEvent[]
   /** Live city market snapshot (the real-estate moat). Null when unavailable. */
   cityMarket: AreaMarket | null
-}
-
-type RawRow = {
-  ListingKey: string | null
-  ListPrice: number | null
-  BedroomsTotal: number | null
-  BathroomsTotal: number | null
-  TotalLivingAreaSqFt: number | null
-  StreetNumber: string | null
-  StreetName: string | null
-  City: string | null
-  PostalCode: string | null
-  Latitude: number | null
-  Longitude: number | null
-  PhotoURL: string | null
-}
-
-const PROJECTION = [
-  'ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt',
-  'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
-].join(', ')
-
-
-function rowToHome(row: RawRow): EventHomeTile {
-  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
-  const cityLine = [[row.City, 'OR'].filter(Boolean).join(', '), row.PostalCode]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-  return {
-    listingKey: row.ListingKey ?? '',
-    href: `/listing/${row.ListingKey ?? ''}`,
-    price: row.ListPrice,
-    beds: row.BedroomsTotal,
-    baths: row.BathroomsTotal,
-    sqft: row.TotalLivingAreaSqFt,
-    addressLine: street || 'Address available on request',
-    cityLine: cityLine || 'Central Oregon',
-    lat: row.Latitude,
-    lng: row.Longitude,
-    photoUrl: row.PhotoURL,
-    video: null,
-    hasTour: false,
-  }
 }
 
 /**
@@ -142,49 +96,33 @@ async function attachTileVideos(homes: EventHomeTile[]): Promise<void> {
   homes.sort((a, b) => (a.video ? 0 : a.hasTour ? 1 : 2) - (b.video ? 0 : b.hasTour ? 1 : 2))
 }
 
-/** Median list price over the homes, rounded to the nearest $1k. Null when empty. */
-function medianListPrice(homes: EventHomeTile[]): number | null {
-  const prices = homes
-    .map((h) => h.price)
-    .filter((p): p is number => typeof p === 'number' && p > 0)
-    .sort((a, b) => a - b)
-  if (prices.length === 0) return null
-  const mid = Math.floor(prices.length / 2)
-  const raw = prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid]
-  return Math.round(raw / 1000) * 1000
-}
-
-async function fetchEventHomes(event: CoEvent): Promise<EventHomeTile[]> {
-  if (typeof event.lat !== 'number' || typeof event.lng !== 'number') return []
-  const supabase = supabaseAnon()
-  if (!supabase) return []
-
-  const { data, error } = await supabase
-    .from('listings')
-    .select(PROJECTION)
-    .in('StandardStatus', ACTIVE_STATUSES)
-    .eq('PropertyType', 'A')
-    .gte('Latitude', event.lat - LAT_PAD)
-    .lte('Latitude', event.lat + LAT_PAD)
-    .gte('Longitude', event.lng - LNG_PAD)
-    .lte('Longitude', event.lng + LNG_PAD)
-    .order('ListPrice', { ascending: false, nullsFirst: false })
-    .limit(MAX_HOMES)
-
-  if (error) {
-    // THROW (do not return []) so a transient error is never cached as
-    // "0 homes near this venue" for the full TTL. The next request retries.
-    throw new Error(`[getEventDetail] supabase error: ${error.message}`)
+/**
+ * Every public on-market PropertyType 'A' home in the box, from listing_search_mv.
+ * `stats` covers the full set; `homes` is its price-desc top slice (DATA-3/8).
+ */
+async function fetchEventHomes(event: CoEvent): Promise<{ homes: EventHomeTile[]; stats: NearbyHomeStats }> {
+  if (typeof event.lat !== 'number' || typeof event.lng !== 'number') {
+    return { homes: [], stats: { count: 0, medianListPrice: null } }
   }
-
-  return (data ?? []).map((r) => rowToHome(r as unknown as RawRow))
+  const { homes, stats } = await fetchOnMarketHomesInBox({
+    label: '[getEventDetail] event homes',
+    lat: event.lat,
+    lng: event.lng,
+    latPad: LAT_PAD,
+    lngPad: LNG_PAD,
+    maxTiles: MAX_HOMES,
+  })
+  return {
+    homes: homes.map((h) => ({ ...h, video: null, hasTour: false })),
+    stats,
+  }
 }
 
 async function fetchEventDetail(slug: string): Promise<EventDetail | null> {
   const event = getEventBySlug(slug)
   if (!event) return null
 
-  const homes = await fetchEventHomes(event)
+  const { homes, stats } = await fetchEventHomes(event)
   await attachTileVideos(homes)
   const relatedEvents = CO_EVENTS.filter((e) => e.slug !== event.slug && e.city === event.city)
 
@@ -197,7 +135,7 @@ async function fetchEventDetail(slug: string): Promise<EventDetail | null> {
   return {
     event,
     homes,
-    stats: { count: homes.length, medianListPrice: medianListPrice(homes) },
+    stats,
     relatedEvents,
     cityMarket,
   }
@@ -209,7 +147,7 @@ async function fetchEventDetail(slug: string): Promise<EventDetail | null> {
  * refresh alongside the rest of the site's listing data.
  */
 export function getEventDetail(slug: string): Promise<EventDetail | null> {
-  return unstable_cache(() => fetchEventDetail(slug), ['event-detail-v2-leftover', slug], {
+  return unstable_cache(() => fetchEventDetail(slug), ['event-detail-v3-full-set', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'events'],
   })()

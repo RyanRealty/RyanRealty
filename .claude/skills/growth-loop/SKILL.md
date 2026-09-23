@@ -1,11 +1,11 @@
 ---
 name: growth-loop
-description: Run ONE iteration of the Growth loop (Loop 1, the orchestrator) — ingest the real scoreboard (GA4, Search Console, web vitals, competitor benchmark), diagnose by canon rules, ship the single top-scored fix per THE LOOP, stamp the measurement, learn, lock a gate. Also arbitrates cross-loop conflicts per the topology. Use when Matt says "/growth-loop", "growth iteration", "measure the site", "seed the next round", or when a /loop firing carries this protocol. "run loop" and "run the loop" are NOT this skill; they always mean .claude/skills/site-queue/SKILL.md (Matt 2026-09-09).
+description: Run ONE iteration of the Growth loop (Loop 1, the orchestrator) — ingest the real scoreboard (GA4, Search Console, web vitals, competitor benchmark), diagnose by canon rules, ship the single top-scored fix per THE LOOP, stamp the measurement, learn, lock a gate. Also arbitrates cross-loop conflicts per the topology. Use when Matt says "/growth-loop", "growth iteration", "measure the site", "seed the next round", or when a /loop firing carries this protocol. "run loop" and "run the loop" are NOT this skill; they always mean docs/RUN_LOOP.md, the site queue (Matt 2026-09-09).
 ---
 
 # Growth loop — one iteration of THE LOOP, run by the orchestrator
 
-**The public site is not shipped from here (Matt 2026-09-09, replacing the 2026-09-07 "site queue first" flip).** "run loop" and "run the loop" always mean `.claude/skills/site-queue/SKILL.md`, whether or not a SITE node is open; ownership never flips back to this file. For the public site (`app/**`, `components/site/**`), this loop is the MEASURER: it ingests the scoreboard (`node scripts/_gsc-by-class.mjs`, the taste table `design_system/public/taste-table.json`, target queries, windows coming due), diagnoses by the canon rules, and its output is SITE nodes with accept tests and the mark to beat, seeded through `scripts/seed-site-queue.ts`, which the site queue then builds, scores and lands. It does not commit to `app/**` or `components/site/**` itself. Two decision paths for one surface is how the site derailed twenty-two programs in a row; one path measures, the other builds. Every other domain (CRM, TC, admin, growth plumbing) keeps this loop's full iteration, including the ship.
+**The public site is not shipped from here (Matt 2026-09-09, replacing the 2026-09-07 "site queue first" flip).** "run loop" and "run the loop" always mean `docs/RUN_LOOP.md` (the site queue), whether or not a SITE node is open; ownership never flips back to this file. For the public site (`app/**`, `components/site/**`), this loop is the MEASURER: it ingests the scoreboard (`node scripts/_gsc-by-class.mjs`, the taste table `design_system/public/taste-table.json`, target queries, windows coming due), diagnoses by the canon rules, and its output is SITE nodes with accept tests and the mark to beat, seeded through `scripts/seed-gsc-ranking-queue.ts` (ranking losses) and `scripts/seed-site-queue.ts`, which the site queue then builds, scores and lands. It does not commit to `app/**` or `components/site/**` itself. Two decision paths for one surface is how the site derailed twenty-two programs in a row; one path measures, the other builds. Every other domain (CRM, TC, admin, growth plumbing) keeps this loop's full iteration, including the ship.
 
 This is Loop 1 of the five-loop topology in `docs/DEVELOPMENT_PROCESS.md` §Loop topology (canon, v1.6.0). **Clean-finish handoff (zero-gap chain):** after the served ship class is completed and the handoff pushed, run `curl -s -H "Authorization: Bearer $CRON_SECRET" "https://ryan-realty.com/api/cron/loop-sentinel?handoff=1"` (CRON_SECRET is in .env.local; cloud agents get RR_CHAIN_SECRET injected instead) — the next iteration launches immediately if eligible work remains. **Boot every iteration with `npx tsx scripts/loop-brief.ts`** — it prints the handoff, scoreboard headline, stranded windows, the durable work graph, and the next **ship class**. Work the whole class: claim every printed node (`claimShipClass`), do each class on every blast-radius plane, accept locally against each node's own accept test. If the brief serves FLEET-PUNCH, the class is the printed punch-line slice (one surface family, capped) — claim the parent only, mark served lines fixed/rejected (`resolvePunchLines`), and do not `completeWorkNode` until zero open punch lines remain. **Do not run `npm run push` or `deploy:verify` after an individual node.** After the printed set is locally accepted or blocked: ONE push, ONE `deploy:verify`, then `completeWorkNode` on each shipped node with that READY SHA. Planned G-rows stay a class of one. Version manifest: `docs/plans/ENTERPRISE_MAP/VERSION-1.md`; a domain with expired unlearned ledger windows is frozen (the insert guard refuses) until `closeImprovementLedgerRow` writes the Learn; manifest shrinkage fails G56.
 
@@ -20,14 +20,14 @@ This is Loop 1 of the five-loop topology in `docs/DEVELOPMENT_PROCESS.md` §Loop
 - The competitor benchmark (rankings / CTR / conversion vs named local competitors)
 - Cross-loop arbitration (this session is the orchestrator — see §Arbitration)
 
-NOT owned: page *structure* under active Experience migration (frozen — check the rollout ledger), outbound comms (Nurture), ad spend (Demand), anything legally binding (Transaction).
+NOT owned: the public site build (the site queue, `docs/RUN_LOOP.md`), outbound comms (Nurture), ad spend (Demand), anything legally binding (Transaction).
 
 ## The iteration
 
 ### 0. Orient (always, cheap)
 1. Read `docs/DEVELOPMENT_PROCESS.md` — the cycle, the topology, the preflight contract, the approval model. The canon outranks this skill; if they disagree, fix this skill.
 2. Read `docs/plans/COMPANY_SCOREBOARD.md` and `docs/plans/COMPANY_IMPROVEMENT.md` — company ingest, not Growth-only. A higher-scored non-SEO domain wins the cycle.
-3. Read `docs/EXPERIENCE_SYSTEM.md` §Rollout status — every page family currently mid-migration is **frozen to Growth** this iteration.
+3. No page family is frozen to Growth: the Experience loop and its `EXPERIENCE_SYSTEM.md` ledger were retired and deleted 2026-08-27 (`docs/DEVELOPMENT_PROCESS.md` topology row 5). Public-page changes go to the site queue as nodes (`docs/RUN_LOOP.md`).
 4. Query `site_improvement_ledger` via `listOpenImprovementWindows` / `getChangeClassConfidence` from `lib/data/loop/` (not the `@/lib/data` barrel — file-size budget). Open experiments, their windows, anything whose window closed and needs its `actual_delta` written (that is a Learn step and takes priority over starting new work). Every new row must set `domain` from `COMPANY_IMPROVEMENT_DOMAINS`. A new statistic that reporting, newsletters, CMA, or ads will show must be one DAL function, not a second query.
 
 ### 1. Ingest the scoreboard
@@ -45,7 +45,7 @@ Pull fresh — never from memory: GA4 (sessions, conversions, bounce by surface)
 - Page missing JSON-LD fields / not in llms.txt / thin (< the archetype's content floor) → AI-visibility fix
 
 ### 3. Prioritize
-`score = reach × gap-to-benchmark × confidence ÷ effort`, confidence = the learned win-rate for that change-class from `site_improvement_ledger` by `domain`. Skip candidates in frozen families. ONE class wins the iteration. Company domains compete with Growth candidates on the same score.
+`score = reach × gap-to-benchmark × confidence ÷ effort`, confidence = the learned win-rate for that change-class from `site_improvement_ledger` by `domain`. ONE class wins the iteration. Company domains compete with Growth candidates on the same score.
 
 Content-moat candidates from `data/growth/content-moat-backlog.md` enter this same scoring alongside scoreboard-derived candidates (evidence stamps in that file expire after 30 days — re-verify before scoring on them). New content pieces are drafts → `marketing_brain_skills/produce/` action row → Matt approval, per the backlog's standing constraints.
 
@@ -71,7 +71,7 @@ One tight block: what shipped (with evidence), what is now measuring (metric + w
 
 ## Arbitration (orchestrator duty, every iteration)
 
-Check for cross-loop conflicts before picking work: a family Experience is migrating that Growth wants to edit (Growth yields), a Demand LP test that needs a Growth page change (Growth executes it as a scored candidate), a Nurture journey-stage change another loop depends on (sequence it explicitly in the report). Topology collision rules in the canon are the law; log any arbitration call in the iteration report.
+Check for cross-loop conflicts before picking work: a public-page change (it becomes a site-queue node; Growth does not ship it), a Demand LP test that needs a Growth page change (Growth executes it as a scored candidate), a Nurture journey-stage change another loop depends on (sequence it explicitly in the report). Topology collision rules in the canon are the law; log any arbitration call in the iteration report.
 
 ## Target-query benchmark (canon step 10 substrate — live 2026-06-10)
 

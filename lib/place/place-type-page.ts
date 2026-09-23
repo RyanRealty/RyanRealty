@@ -290,17 +290,45 @@ export function placeTypeListingRows(tiles: readonly ListingTile[]): V3ListingRo
   return rows
 }
 
+/**
+ * What a CITY type page counts, in the reader's words (VOICE-7, visibility
+ * audit 2026-09-22). The count is listing_tile_mv's city match, which is the
+ * MLS City field, so "with a Bend address" is the population; and "active"
+ * there is Active plus Active Under Contract (PUBLIC_ACTIVE_STATUSES), which
+ * the market report's Active-only count does not include. Both halves are
+ * named so the same words never carry two numbers.
+ */
+export function cityTypeScopeNote(cityName: string): string {
+  return `with a ${cityName} address, including any already under contract that are still listed`
+}
+
+/**
+ * The same population for the CITY type page's meta description, so the
+ * snippet a searcher reads names what the count includes (VOICE-7). The
+ * market report's snippet for the same town counts Active only.
+ */
+export function cityTypeMetaWhere(cityName: string): string {
+  return `with a ${cityName}, Oregon address, including any under contract`
+}
+
 export function placeTypeMetadataCopy(input: {
   spec: PlaceTypePageSpec
   placeName: string
   count: number | null
+  /**
+   * Where the count's homes are, in the reader's words, when that is more
+   * specific than "in {place}, Oregon" (a city page: "with a Bend, Oregon
+   * address"). Omitted, the description reads as before.
+   */
+  where?: string
 }): { title: string; description: string } {
   const title = `${input.spec.h1Type} in ${input.placeName}, Oregon`
   const noun =
     input.count === 1 ? input.spec.nounOne : input.spec.nounMany
+  const where = input.where?.trim() || `in ${input.placeName}, Oregon`
   const description =
     input.count != null && input.count > 0
-      ? `${input.count.toLocaleString('en-US')} ${noun} for sale in ${input.placeName}, Oregon. Live list prices from the regional MLS.`
+      ? `${input.count.toLocaleString('en-US')} ${noun} for sale ${where}. Live list prices from the regional MLS.`
       : `${input.spec.h1Type} for sale in ${input.placeName}, Oregon. Live list prices from the regional MLS.`
   return { title, description }
 }

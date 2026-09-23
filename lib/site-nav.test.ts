@@ -7,7 +7,6 @@ import {
   KB_MENU_GROUPS,
   KB_TOP_LINKS,
   KB_TOP_NAV,
-  MAP_SEARCH,
   PRIMARY_NAV,
   VALUATION_FORM,
   footerColumnLinks,
@@ -18,7 +17,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
   it('SSOT still carries five intent groups (including first-class Market)', () => {
     expect(KB_TOP_LINKS.map((l) => l.label)).toEqual(['Buy', 'Areas', 'Market', 'Sell', 'About'])
     expect(KB_TOP_LINKS.map((l) => l.href)).toEqual([
-      '/homes-for-sale?view=list',
+      '/homes-for-sale',
       '/cities',
       '/housing-market',
       '/sell',
@@ -94,22 +93,37 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     expect(about?.links.some((l) => l.href === '/join')).toBe(true)
   })
 
-  it('uses the regional list door for Homes / All homes, not the Bend inject', () => {
+  it('uses the clean, indexable regional door for Homes / All homes (UXLIVE-4)', () => {
     const buy = KB_TOP_NAV.find((g) => g.label === 'Buy')
-    expect(buy?.href).toBe('/homes-for-sale?view=list')
-    expect(buy?.children[0]?.href).toBe('/homes-for-sale?view=list')
-    expect(KB_MENU_GROUPS.find((g) => g.title === 'Buy')?.links[0]?.href).toBe(
-      '/homes-for-sale?view=list',
+    expect(buy?.href).toBe('/homes-for-sale')
+    expect(buy?.children[0]?.href).toBe('/homes-for-sale')
+    expect(KB_MENU_GROUPS.find((g) => g.title === 'Buy')?.links[0]?.href).toBe('/homes-for-sale')
+  })
+
+  it('never links a ?view= variant or the luxury redirect from any chrome projection', () => {
+    const all = [
+      ...KB_TOP_NAV.flatMap((g) => [g.href, ...g.children.map((c) => c.href)]),
+      ...KB_MENU_GROUPS.flatMap((g) => g.links.map((l) => l.href)),
+      ...KB_FOOTER_COLUMNS.flatMap((c) => footerColumnLinks(c).map((l) => l.href)),
+    ]
+    expect(all.filter((h) => h.includes('view='))).toEqual([])
+    expect(all).not.toContain('/luxury-homes-bend')
+    // Luxury is a filter of search: the indexable preset path (UXLIVE-8).
+    expect(all).toContain('/homes-for-sale/bend/luxury')
+  })
+
+  it('carries Invest under Homes, as SITE_PAGES lists it', () => {
+    const buy = KB_TOP_NAV.find((g) => g.label === 'Buy')
+    expect(buy?.children.some((l) => l.href === '/invest')).toBe(true)
+    expect(KB_MENU_GROUPS.find((g) => g.title === 'Buy')?.links.some((l) => l.href === '/invest')).toBe(
+      true,
     )
   })
 
-  it('uses canonical map + valuation destinations', () => {
-    expect(MAP_SEARCH.href).toBe('/homes-for-sale?view=map')
+  it('uses the canonical valuation destination', () => {
     // One valuation spine (Matt-granted): every global CTA anchors the on-page /sell form.
     expect(VALUATION_FORM.href).toBe('/sell#get-value')
     expect(VALUATION_FORM.label).toBe('Value my home')
-    const buy = KB_MENU_GROUPS.find((g) => g.title === 'Buy')
-    expect(buy?.links.some((l) => l.href === MAP_SEARCH.href)).toBe(true)
   })
 
   it('footer Company and Contact columns carry team trust and ask links', () => {
@@ -189,8 +203,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     const actions = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Buy · Sell · Join')
     expect(actions?.groups?.map((g) => g.heading)).toEqual(['Buy', 'Sell', 'Join'])
     expect(footerColumnLinks(actions!).map((l) => l.href)).toEqual([
-      '/homes-for-sale?view=list',
-      '/homes-for-sale?view=map',
+      '/homes-for-sale',
       '/open-houses',
       '/price-drops',
       '/homes-for-sale/bend/luxury',

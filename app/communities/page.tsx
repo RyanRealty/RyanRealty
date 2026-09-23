@@ -230,7 +230,8 @@ export default async function CommunitiesPage() {
           eyebrow="Central Oregon"
           heading="Find a home, or price the one you have"
           items={[
-            { label: 'Search all listings', href: '/search' },
+            // A destination, not a hop: /search 308s (UXLIVE-8, visibility audit 2026-09-22).
+            { label: 'Search all listings', href: '/homes-for-sale' },
             bendLuxuryHomesDoor(),
             { label: 'Subdivisions', href: '/subdivisions' },
             { label: 'Value my home', href: valuationHref('/communities') },

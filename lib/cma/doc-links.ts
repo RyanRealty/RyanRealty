@@ -22,9 +22,10 @@
  * The five stamped params:
  *   agent=<brokerSlug>   routes the lead to the broker whose document this is
  *                        (AgentAttributionBridge writes the 90-day cookie).
- *   _pid=<crm_people.id> stitches the browser session to the contact
- *                        (PersonIdentityBridge → /api/track/e/identify), the
- *                        same param `attributeSiteLinks` stamps on email links.
+ *   _pid=<signed token>  stitches the browser session to the contact: the
+ *                        track route verifies it (lib/identity/link-token.ts,
+ *                        channel 'document'), the same param the one decoration
+ *                        helper stamps on email and SMS links.
  *   utm_source=cma
  *   utm_medium=document
  *   utm_campaign=<cmaSlug>  which DOCUMENT the tap came out of. Without it a
@@ -47,6 +48,7 @@ import {
   slugify,
 } from '@/lib/slug'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
+import { IDENTITY_LINK_PARAM, signPersonLinkToken } from '@/lib/identity/link-token'
 import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
 import {
   cmaCityHref,
@@ -70,7 +72,7 @@ export type TrackedDocLinkKind = 'listing' | 'place' | 'market' | 'search' | 'bo
 export type TrackedDocLinkCtx = {
   /** brokers slug for ?agent= — the broker whose document this is. */
   brokerSlug?: string | null
-  /** crm_people.id for ?_pid= — the recipient this copy was built for. */
+  /** crm_people.id the signed ?_pid= token names — the recipient this copy was built for. */
   personId?: number | null
   /** cmas.slug for ?utm_campaign= — WHICH document the tap came out of. */
   cmaSlug: string
@@ -262,9 +264,11 @@ export function trackedDocLink(
   const broker = clean(ctx.brokerSlug)
   if (broker) url.searchParams.set('agent', broker)
 
+  // The recipient rides as a SIGNED token (P7 identity loop, 2026-09-23): an
+  // unsigned id in a stored document let anyone be recorded as the recipient.
   const pid = ctx.personId
   if (typeof pid === 'number' && Number.isInteger(pid) && pid > 0) {
-    url.searchParams.set('_pid', String(pid))
+    url.searchParams.set(IDENTITY_LINK_PARAM, signPersonLinkToken(pid, 'document'))
   }
 
   url.searchParams.set('utm_source', CMA_DOC_UTM_SOURCE)

@@ -8,11 +8,14 @@
  * has posted the page_view that creates the visitor session, so the backfill
  * finds the session row.
  *
- * Same trust model and the same code path as the React bridge: the id came
- * from a link WE emailed to the contact, is validated against crm_people
- * before anything is cookied, and identification runs through
- * identifyPersonFromEmailClick(Native) — rr_pid cookie + session backfill
- * (identified_via email_click_pid / email_click_fuid).
+ * Same trust model and the same code path as the React bridge: `_pid` is the
+ * SIGNED person token a link we sent carries (P7 identity loop, 2026-09-23),
+ * verified and re-checked against crm_people before anything is cookied, then
+ * identifyPersonFromEmailClickNative stamps rr_pid + backfills the session
+ * (identified_via tracked_link:<channel>). The track route already identified
+ * the visit from the same token on the page_view; this is the second path.
+ * `_fuid` (the retired vendor id) is refused: an unsigned id identifies nobody.
+ * GPC and a cookie decline are honored inside the action.
  *
  * Response is 204 always (even on a bad id): this is a fire-and-forget beacon
  * and must never surface an error into the client document.

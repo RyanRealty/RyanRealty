@@ -131,11 +131,8 @@ import {
   regionInsightPageCount,
   regionInsightTemporalCoverage,
 } from './central-oregon/_v3/region-insight'
-import {
-  marketHubChooser,
-  marketReportDoorLinks,
-  marketReportHereBody,
-} from '@/lib/market/report-doors'
+import { marketHubChooser, marketReportDoorLinks } from '@/lib/market/report-doors'
+import { CITY_FOOTNOTE_TERM } from '@/lib/market/city-footnote-fact'
 import { publicMarketPulseSource } from '@/lib/market/publish-public-methodology'
 import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
@@ -550,12 +547,10 @@ export default async function HousingMarketHubPage() {
 
   // The closing edges. Every internal link the KB hub carried, plus the outbound MLS
   // citation MarketSources used to render, plus any city with no live row.
+  // VOICE-6 (2026-09-22): no "Where you are / You are on the live Central
+  // Oregon market" row. It described the site, not the market; the door links
+  // below carry the navigation.
   const exploreItems: V3QuietItem[] = [
-    {
-      kind: 'prose',
-      term: 'Where you are',
-      body: marketReportHereBody('hub'),
-    },
     ...marketReportDoorLinks('hub'),
     { label: 'All Central Oregon cities', href: '/cities' },
     { label: 'Communities and neighborhoods', href: '/communities' },
@@ -567,7 +562,7 @@ export default async function HousingMarketHubPage() {
   if (cityFootnotes.length > 0) {
     exploreItems.push({
       kind: 'prose',
-      term: 'Cities not in the table above',
+      term: CITY_FOOTNOTE_TERM,
       body: `${cityFootnotes.map((c) => c.fact).join('. ')}.`,
     })
     for (const city of cityFootnotes) {

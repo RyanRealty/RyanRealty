@@ -32,10 +32,10 @@
  * had started dropping them on recrawl. The threshold was never the variable.
  * The join was, and the floor below is unchanged at 10.
  *
- * NOTE this is deliberately stricter than the /homes-for-sale/{city}/{sub}
- * browse-pair floor (SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS = 3, all
- * statuses, app/sitemap.ts): a detail page earns its index slot with real
- * sold-history depth (the sales-history section), not just a listing trickle.
+ * The /homes-for-sale/{city}/{sub} browse pair now needs the same floor to be
+ * submitted (BROWSE_PAIR_MIN_LIFETIME_SALES in lib/seo/browse-pair-decision.ts,
+ * visibility audit 2026-09-22, EXP-2). Its old floor (3 lifetime listings of
+ * any status) submitted pages with nothing for sale and no sold history shown.
  */
 
 import { slugify } from '@/lib/slug'
@@ -97,8 +97,51 @@ export type IndexableSubdivision = {
    * says nothing about the city rather than naming one that may not apply.
    */
   citySlug: string
-  /** Lifetime closed sales inside the plat polygon. */
+  /**
+   * Lifetime closed sales inside the plat polygon. On a FAMILY page this is the
+   * sum of its phases' counts, which can count a replatted lot's sale twice:
+   * an ordering and threshold input only, never a published figure (§0). Read
+   * `family` before printing it.
+   */
   closedCount: number
+  /**
+   * Present when this URL is a plat family's main page (Matt 2026-09-23): the
+   * page that owns the family's name and lists its phases. `phases` is how many
+   * recorded plats the family groups. `ownPlat` is true when the county also
+   * recorded the bare name as a plat, so `closedCount` is that plat's own
+   * count; when false, `closedCount` is the phases' SUM and is not printable.
+   */
+  family?: { phases: number; ownPlat: boolean }
+}
+
+/** The family heads buildIndexableSubdivisions needs, structurally. */
+export type IndexableFamilyInput = {
+  slug: string
+  name: string
+  citySlug: string
+  mainKind: 'community' | 'subdivision'
+  members: readonly { slug: string }[]
+  closedCountSum: number
+}
+
+export type BuildIndexableOptions = {
+  /**
+   * Slugs that name another kind of place — a city, a neighborhood or resort
+   * polygon, a registry community (SEO-7). A plat recorded under one of those
+   * words (/subdivisions/bend is a plat the county labels "Bend", not the city)
+   * keeps its page but never its index slot, so it cannot bid for the place's
+   * name.
+   */
+  reservedSlugs?: ReadonlySet<string>
+  /**
+   * Plat families (lib/market/plat-family.ts). A family whose main page is a
+   * /subdivisions/ URL is indexable when its phases together clear the same
+   * floor a single plat must clear. The county never files a plat under the
+   * bare family name in most cases, which is exactly why
+   * /subdivisions/ridge-at-eagle-crest (60 recorded phases, the richest page
+   * of the class) served noindex while each phase was submitted (SEO-7).
+   */
+  families?: readonly IndexableFamilyInput[]
 }
 
 /**
@@ -111,18 +154,25 @@ export type IndexableSubdivision = {
  * is required anyway: it keeps the two-condition contract visible in one pure
  * function, and it is the guard that stops a plat surviving in a stale MV after
  * its polygon was withdrawn from `boundaries`.
+ *
+ * Family heads join the set on the family rule (see BuildIndexableOptions).
+ * Their phases keep their own slots on the SITE-24 rule unchanged: each is a
+ * distinct recorded polygon with its own sold history.
  */
 export function buildIndexableSubdivisions(
   boundarySlugs: ReadonlySet<string>,
   platCounts: readonly PlatClosedCount[],
   minLifetimeSales: number = SUBDIVISION_INDEX_MIN_LIFETIME_SALES,
+  options: BuildIndexableOptions = {},
 ): IndexableSubdivision[] {
   const out: IndexableSubdivision[] = []
   const seen = new Set<string>()
+  const reserved = options.reservedSlugs ?? new Set<string>()
 
   for (const row of platCounts) {
     const slug = (row.slug ?? '').trim()
     if (!slug || slug === 'unknown' || slug === 'n-a') continue
+    if (reserved.has(slug)) continue
     // Polygon requirement: no GIS plat boundary, no index slot.
     if (!boundarySlugs.has(slug)) continue
     if (row.closedCount < minLifetimeSales) continue
@@ -141,6 +191,30 @@ export function buildIndexableSubdivisions(
       name,
       citySlug: citySlug === 'unknown' ? '' : citySlug,
       closedCount: row.closedCount,
+    })
+  }
+
+  for (const family of options.families ?? []) {
+    if (family.mainKind !== 'subdivision') continue
+    const slug = (family.slug ?? '').trim()
+    if (!slug || reserved.has(slug)) continue
+    if (family.members.length < 2) continue
+    if (family.closedCountSum < minLifetimeSales) continue
+    const existing = out.find((row) => row.slug === slug)
+    if (existing) {
+      // The county recorded the bare name as a plat of its own (Tetherow
+      // Crossing): one URL, already indexed as a plat, now also the family page.
+      existing.family = { phases: family.members.length, ownPlat: true }
+      continue
+    }
+    if (seen.has(slug)) continue
+    seen.add(slug)
+    out.push({
+      slug,
+      name: family.name,
+      citySlug: family.citySlug,
+      closedCount: family.closedCountSum,
+      family: { phases: family.members.length, ownPlat: false },
     })
   }
 

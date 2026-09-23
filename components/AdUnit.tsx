@@ -1,6 +1,19 @@
 'use client'
 
+/**
+ * One explicit AdSense slot, and the ONLY place adsbygoogle.js loads.
+ *
+ * UXLIVE-5 (visibility audit 2026-09-22): the script used to load sitewide from
+ * components/GoogleAnalytics.tsx, which ran Auto-ads auctions on every
+ * brokerage page. It now loads here, so it reaches a page only when that page
+ * renders an explicit slot, and only after marketing consent. The one live
+ * slot is on /tools/appreciation, a non-transactional tools page. Do not put a
+ * slot on a listing, place, search, sell, or home page: those pages exist to
+ * convert, and an auto-placed ad on them can be a competitor's.
+ */
+
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import Script from 'next/script'
 import { Card, CardContent } from '@/components/ui/card'
 import { hasMarketingConsent } from '@/components/CookieConsentBanner'
 
@@ -72,9 +85,27 @@ export default function AdUnit({ slot, format = 'auto', className, showLabel = t
     }
   }, [clientId, slot, canRender])
 
-  if (!clientId || !slot || !canRender || unfilled) return null
+  if (!clientId || !slot || !canRender) return null
+
+  // lazyOnload: the script runs at browser idle, AFTER hydration. It mutates
+  // the DOM, and under afterInteractive that produced the intermittent
+  // hydration mismatches the 2026-06-10 audit caught (P0-5). The push above
+  // queues on window.adsbygoogle, which the script drains when it loads.
+  // next/script dedupes by id, so two slots on one page load it once.
+  const script = (
+    <Script
+      id="adsense"
+      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`}
+      strategy="lazyOnload"
+      crossOrigin="anonymous"
+    />
+  )
+
+  if (unfilled) return script
 
   return (
+    <>
+    {script}
     <Card className={className}>
       <CardContent className="p-4">
         {showLabel && <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Sponsored</p>}
@@ -89,5 +120,6 @@ export default function AdUnit({ slot, format = 'auto', className, showLabel = t
         />
       </CardContent>
     </Card>
+    </>
   )
 }

@@ -84,7 +84,14 @@ export function mapHierarchySourceProblems({ root = process.cwd(), files = {} } 
     if (!/childRegions/.test(atlas) || !/fitCamToShape/.test(atlas) || !/subjectGrain/.test(atlas)) {
       p.push(`${PATHS.atlas}: must keep childRegions, fitCamToShape (child zoom), and subjectGrain.`)
     }
-    if (!/atlasFramePad/.test(atlas)) {
+    // UXLIVE-3 (visibility audit 2026-09-22): the frame moved into the shared
+    // atlasFrameBox (lib/atlas/atlas-derive.ts) so the server summary and the
+    // component frame a map with one function; the pad rule lives there now.
+    const derive = readRel(root, 'lib/atlas/atlas-derive.ts', files.derive ?? files['lib/atlas/atlas-derive.ts'])
+    const padded =
+      /atlasFramePad/.test(atlas) ||
+      (/atlasFrameBox\(/.test(atlas) && derive != null && /atlasFramePad\(subjectGrain\)/.test(derive))
+    if (!padded) {
       p.push(`${PATHS.atlas}: subject grain must use atlasFramePad — 0.6 pad made DRW faint/tiny.`)
     }
     if (!/hierarchyChildIdSet/.test(atlas)) {

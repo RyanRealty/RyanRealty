@@ -596,6 +596,21 @@ export { V3PlaceIndex, placeIndexNameRows, placeIndexRows } from './V3PlaceIndex
 
 export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
 
+/**
+ * Pattern 9b, DIRECTORY (visibility audit 2026-09-22 SEO-4 / EXP-3; Matt
+ * 2026-09-23 plat families). The whole tree of one grain in server HTML: towns
+ * as disclosures, places in columns, a multi-phase place's phases nested under
+ * its name. V3PlaceIndex is a flat set of measured siblings; this is the tree.
+ */
+export { V3PlaceDirectory } from './V3PlaceDirectory'
+
+export type {
+  V3PlaceDirectoryProps,
+  V3PlaceDirectoryGroup,
+  V3PlaceDirectoryEntry,
+  V3PlaceDirectoryChild,
+} from './V3PlaceDirectory'
+
 /* -------------------------------------------------------------------------- */
 /* Amenities — first-class on-the-ground list (SITE-116)                       */
 /* -------------------------------------------------------------------------- */
@@ -663,6 +678,26 @@ export type { PlaceSegmentInput } from './V3PlacePropertyTypes'
 export { V3PlaceInventory } from './V3PlaceInventory'
 
 export type { V3PlaceInventoryProps } from './V3PlaceInventory'
+
+/**
+ * The dial (Matt 2026-09-23): one listing large, the rest of a set as
+ * thumbnails on a dial beside it, "03 / 12" over the dial. A master-detail
+ * gallery modelled as tabs; every listing stays an <a href> in the served
+ * HTML. The place inventory's `layout="dial"` and the map's homes
+ * (PlaceSubdivisionHomes `layout="dial"`) mount it.
+ */
+export { V3ListingDial } from './V3ListingDial.client'
+
+export type { V3ListingDialProps } from './V3ListingDial.client'
+
+export {
+  dialKeyTarget,
+  dialPosition,
+  dialStep,
+  dialSwipeDelta,
+  dialThumbLabel,
+  dialWrap,
+} from './V3ListingDial.logic'
 
 /* -------------------------------------------------------------------------- */
 /* CHROME: the persistent frame the six patterns sit inside                    */

@@ -34,6 +34,21 @@
  * 1.33% CTR at weighted position 13.5 against 1.56% and 11.5 for single-URL
  * ids. That is not a rank claim about any page.
  *
+ * P14 (visibility audit 2026-09-22, gsc-trend-6; MATT 2026-09-23 "nothing is
+ * permanent") — the canonical kept MOVING even with one builder, because the
+ * builder read the polygon classifier: 1,234 of 7,329 listing ids (16.8%) under
+ * more than one URL in Search Console 2026-08-23..09-19, against 6.6% in June,
+ * and every old path answered 200 with a rel=canonical. Three more rules:
+ *
+ *   3. listingTileHref builds the path from MLS fields only (no boundaryCity,
+ *      no boundaryNeighborhood, no neighborhood segment), and the canonical-path
+ *      lookups select no boundary_* column.
+ *   4. middleware.ts 308s every non-canonical listing path through
+ *      resolveListingCanonicalHop with the Edge lookup, before render.
+ *   5. lib/routing/listing-canonical-pins.json exists, is internally consistent
+ *      (every migration names a fixture and continues its chain), and the unit
+ *      test that replays it against the real builder exists.
+ *
  *   node scripts/check-listing-canonical-single.mjs
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -112,31 +127,114 @@ checks.push({
 })
 
 // The two builders the node named by line. Both are fed rows that already
-// carry the fields; the TYPE was what dropped them.
+// carry the fields; the TYPE was what dropped them. (The boundary-neighborhood
+// half of this check retired with P14: the builder no longer reads it.)
 const placeSections = src('lib/kb/place-sections.ts')
 checks.push({
-  label: 'place-sections activity + open-house rows pass listNumber and the boundary neighborhood',
+  label: 'place-sections activity + open-house rows pass listNumber and the MLS subdivision',
   ok:
     /ListNumber\?: string \| null/.test(placeSections) &&
-    /NeighborhoodName\?: string \| null/.test(placeSections) &&
     /listNumber: a\.ListNumber \?\? null/.test(placeSections) &&
-    /boundaryNeighborhood: a\.NeighborhoodName \?\? null/.test(placeSections) &&
     /subdivisionName: a\.SubdivisionName \?\? null/.test(placeSections) &&
     /listNumber: oh\.list_number \?\? null/.test(placeSections),
 })
 
 // The redirect hops must land ON the canonical, or the hop itself mints a
 // duplicate. /listing/odsmls passed {city, subdivision} until 2026-09-08.
+// /listing/by-key reaches the builder through listingCanonicalPathFromFields,
+// the row -> path mapping it shares with the Edge hop (P14); that mapping must
+// itself be listingCanonicalHref.
+const pathCore = code(src('lib/data/listings/listingCanonicalPathCore.ts'))
 for (const [path, label] of [
   ['app/listing/by-key/[listingKey]/route.ts', '/listing/by-key'],
   ['app/listing/odsmls/[...slug]/route.ts', '/listing/odsmls'],
 ]) {
-  const text = src(path)
+  const text = code(src(path))
   checks.push({
     label: `${label} redirects to the canonical builder's URL, not a hand-rolled copy`,
-    ok: /listingCanonicalHref\(/.test(text) && !/listingDetailPath\(/.test(text),
+    ok:
+      (/listingCanonicalHref\(/.test(text) ||
+        (/listingCanonicalPathFromFields\(/.test(text) && /return listingCanonicalHref\(\{/.test(pathCore))) &&
+      !/listingDetailPath\(/.test(text),
   })
 }
+
+// ── P14.3 The path is built from MLS fields only ───────────────────────────
+function fnBody(text, signature) {
+  const start = text.indexOf(signature)
+  if (start === -1) return ''
+  const next = text.indexOf('\nexport ', start + signature.length)
+  return text.slice(start, next === -1 ? undefined : next)
+}
+const tileHrefBody = code(fnBody(slug, 'export function listingTileHref('))
+checks.push({
+  label: 'P14: listingTileHref reads no polygon field and emits no neighborhood segment',
+  ok:
+    tileHrefBody.length > 0 &&
+    !/tile\.boundaryCity|tile\.boundaryNeighborhood/.test(tileHrefBody) &&
+    /city: tile\.city \?\? null, neighborhood: null, subdivision/.test(tileHrefBody),
+})
+checks.push({
+  label: 'P14: the canonical-path lookups select no boundary_* column',
+  ok:
+    /export const LISTING_CANONICAL_PATH_COLUMNS/.test(pathCore) &&
+    !/'boundary_/.test(pathCore) &&
+    /LISTING_CANONICAL_PATH_COLUMNS/.test(src('lib/data/listings/getListingCanonicalPathFields.ts')) &&
+    /LISTING_CANONICAL_PATH_COLUMNS/.test(src('lib/data/listings/getListingCanonicalPathFieldsEdge.ts')),
+})
+
+// ── P14.4 Middleware 308s every non-canonical listing path ─────────────────
+const middleware = code(src('middleware.ts'))
+const hopAt = middleware.indexOf('resolveListingCanonicalHop(pathname')
+checks.push({
+  label: 'P14: middleware.ts 308s non-canonical listing paths via resolveListingCanonicalHop + the Edge lookup',
+  ok:
+    /import \{ (isRouterFlightRequest, )?resolveListingCanonicalHop \} from '@\/lib\/routing\/listing-canonical-hop'/.test(middleware) &&
+    /import \{ getListingCanonicalPathFieldsEdge \} from '@\/lib\/data\/listings\/getListingCanonicalPathFieldsEdge'/.test(
+      middleware,
+    ) &&
+    hopAt !== -1 &&
+    /getListingCanonicalPathFieldsEdge\(id\)/.test(middleware.slice(hopAt, hopAt + 600)) &&
+    /NextResponse\.redirect\(redirectUrl, 308\)/.test(middleware.slice(hopAt, hopAt + 900)),
+})
+// The unit tests prove the decision; only a running server proves the Edge
+// bundle emits it. ci:route-smoke carries that probe (red on production
+// 2026-09-23 before this change: HTTP 200, no Location; green on a local server
+// with it: 308 to the sitemap's own URL, which does not redirect again).
+const routeSmoke = code(src('scripts/check-route-smoke.mjs'))
+checks.push({
+  label: 'P14: ci:route-smoke probes a non-canonical listing path on the running server and wants a 308',
+  ok:
+    /async function checkListingCanonicalHop\(/.test(routeSmoke) &&
+    /status !== 308/.test(routeSmoke) &&
+    /\/homes-for-sale\/outside-boundaries\/\$\{discovered\.path\.split\('\/'\)\.at\(-1\)\}/.test(routeSmoke) &&
+    /if \(route\.listingSegment\) return checkListingCanonicalHop\(route, url\)/.test(routeSmoke),
+})
+
+// ── P14.5 The pin file is consistent and replayed by a unit test ───────────
+const pins = JSON.parse(src('lib/routing/listing-canonical-pins.json'))
+const fixtureIds = new Set((pins.fixtures ?? []).map((f) => f.id))
+const chainEnd = new Map((pins.fixtures ?? []).map((f) => [f.id, f.pinned]))
+const pinProblems = []
+if ((pins.fixtures ?? []).length < 12) pinProblems.push(`only ${(pins.fixtures ?? []).length} fixtures (want >= 12)`)
+for (const f of pins.fixtures ?? []) {
+  if (!f.id || !f.input || typeof f.pinned !== 'string' || !f.pinned.startsWith('/homes-for-sale/')) {
+    pinProblems.push(`fixture ${f.id ?? '?'} is missing id/input/pinned`)
+  }
+}
+for (const m of pins.migrations ?? []) {
+  if (!fixtureIds.has(m.id)) pinProblems.push(`migration names unknown fixture ${m.id}`)
+  else if (chainEnd.get(m.id) !== m.from) pinProblems.push(`migration for ${m.id} does not continue its chain (from ${m.from})`)
+  else if (m.from === m.to) pinProblems.push(`migration for ${m.id} moves nothing`)
+  else if (!m.change || !m.date) pinProblems.push(`migration for ${m.id} names no change/date`)
+  else chainEnd.set(m.id, m.to)
+}
+const pinTest = src('lib/routing/listing-canonical-hop.test.ts')
+checks.push({
+  label: `P14: listing-canonical-pins.json is consistent (${fixtureIds.size} fixtures, ${(pins.migrations ?? []).length} migrations) and replayed by the unit test`,
+  ok: pinProblems.length === 0 && /listing-canonical-pins\.json/.test(pinTest) && /listingTileHref\(/.test(pinTest),
+  detail: pinProblems.join('; '),
+})
 
 // ── 3. No PUBLIC page builds an href with a raw listingDetailPath call ─────
 //

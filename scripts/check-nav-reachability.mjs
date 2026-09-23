@@ -35,9 +35,14 @@ const __dirname = dirname(__filename)
 const NAV_FILE = join(__dirname, '..', 'lib', 'site-nav.ts')
 
 // Every top-level section that must be reachable from the site navigation.
+// UXLIVE-4 (visibility audit 2026-09-22): the Homes door is the indexable
+// bare /homes-for-sale, which now defaults to the regional list. The old
+// ?view=list / ?view=map doors were noindex variants; ci:chrome-links keeps
+// them (and every redirect source) out of the chrome.
 const REQUIRED_HREFS = [
-  '/homes-for-sale?view=list',
-  '/homes-for-sale?view=map',
+  '/homes-for-sale',
+  '/homes-for-sale/bend/luxury',
+  '/invest',
   '/open-houses',
   '/communities',
   '/neighborhoods',
@@ -74,6 +79,15 @@ const found = new Set()
 let m
 while ((m = HREF_RE.exec(src)) !== null) {
   found.add(m[1])
+}
+
+// SITE-185: the Bend luxury door is one helper (lib/site/bend-luxury-homes.ts)
+// so nothing hand-types the path. A bendLuxuryHomesDoor() call in the nav
+// counts as the helper's own BEND_LUXURY_HOMES_PATH.
+if (/bendLuxuryHomesDoor\(\)/.test(src)) {
+  const helper = readFileSync(join(__dirname, '..', 'lib', 'site', 'bend-luxury-homes.ts'), 'utf8')
+  const path = /BEND_LUXURY_HOMES_PATH\s*=\s*['"]([^'"]+)['"]/.exec(helper)?.[1]
+  if (path) found.add(path)
 }
 
 const failures = []

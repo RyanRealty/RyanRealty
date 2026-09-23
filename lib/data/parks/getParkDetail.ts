@@ -1,20 +1,20 @@
 /**
- * getParkDetail — resolve a park registry entry + the REAL active single-family
- * homes near it (from our own MLS listings) for the /parks/[slug] page.
+ * getParkDetail — resolve a park registry entry + the REAL on-market homes near
+ * it (from our own MLS listings) for the /parks/[slug] page.
  *
- * Nearby-homes resolution — a lat/lng bounding box around the park centroid:
- *
- *   SELECT ... FROM listings
- *   WHERE "StandardStatus" IN ('Active', 'Coming Soon', 'Active Under Contract')
- *     AND "PropertyType"   = 'A'                              -- SFR + residential
- *     AND "Latitude"  BETWEEN c.lat - LAT_PAD  AND c.lat + LAT_PAD
- *     AND "Longitude" BETWEEN c.lng - LNG_PAD  AND c.lng + LNG_PAD
+ * Nearby-homes resolution — a lat/lng bounding box around the park centroid,
+ * read from listing_search_mv by fetchOnMarketHomesInBox
+ * (lib/data/geo/nearby-on-market-homes.ts): public active statuses
+ * (PUBLIC_ACTIVE_STATUSES), PropertyType 'A', lat/lng inside the box.
  *
  * The box is roughly 1.5 miles in each direction. LAT_PAD = 0.022 deg
  * (~1.5 mi N/S) and LNG_PAD = 0.028 deg (~1.4 mi E/W at 44° N, where a degree
- * of longitude is ~50 miles). Homes are sorted price-desc; the page slices its
- * own card + pin caps. Stats (count, median list price) are computed in memory
- * over the FULL returned set so the numbers are accurate.
+ * of longitude is ~50 miles). Count and median list price cover EVERY matching
+ * home; `homes` is the price-desc top MAX_HOMES the page slices its cards and
+ * pins from. Until 2026-09-23 the stats were computed over that 60-home display
+ * slice, so the Pilot Butte page printed 60 homes and a $692,450 median where
+ * the box held 114 homes with a $597,000 median (audit DATA-3/8). The median
+ * publishes on at least 10 priced homes (Market Truth median floor).
  *
  * No academic/park-fact data is invented here — the registry carries the
  * sourced blurb + amenities. This DAL only joins the park to live listings.
@@ -24,11 +24,9 @@
  */
 
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { fetchOnMarketHomesInBox, type NearbyHomeStats } from '@/lib/data/geo/nearby-on-market-homes'
 import { getParkBySlug, CO_PARKS, type CoPark } from '@/data/co-parks'
-import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /** Half-width of the bounding box in degrees. ~1.5 mi N/S, ~1.4 mi E/W at 44° N. */
 const LAT_PAD = 0.022
@@ -55,9 +53,9 @@ export type ParkHomeTile = {
 }
 
 export type ParkStats = {
-  /** Active SFR homes near this park, from our listings. */
+  /** Every public on-market PropertyType 'A' home near this park (not the display slice). */
   count: number
-  /** Median list price across those homes (rounded to nearest $1k), or null. */
+  /** percentile_cont median list price across ALL of them, rounded to $1k; null under 10 priced homes. */
   medianListPrice: number | null
 }
 
@@ -69,104 +67,34 @@ export type ParkDetail = {
   nearbyParks: CoPark[]
 }
 
-/** Raw row shape returned by the listings projection (PostgREST column names). */
-type RawRow = {
-  ListingKey: string | null
-  ListPrice: number | null
-  BedroomsTotal: number | null
-  BathroomsTotal: number | null
-  TotalLivingAreaSqFt: number | null
-  StreetNumber: string | null
-  StreetName: string | null
-  City: string | null
-  PostalCode: string | null
-  Latitude: number | null
-  Longitude: number | null
-  PhotoURL: string | null
-}
-
-const PROJECTION = [
-  'ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt',
-  'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
-].join(', ')
-
-
-function rowToHome(row: RawRow): ParkHomeTile {
-  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
-  const cityLine = [
-    [row.City, 'OR'].filter(Boolean).join(', '),
-    row.PostalCode,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-  return {
-    listingKey: row.ListingKey ?? '',
-    href: `/listing/${row.ListingKey ?? ''}`,
-    price: row.ListPrice,
-    beds: row.BedroomsTotal,
-    baths: row.BathroomsTotal,
-    sqft: row.TotalLivingAreaSqFt,
-    addressLine: street || 'Address available on request',
-    cityLine: cityLine || 'Central Oregon',
-    lat: row.Latitude,
-    lng: row.Longitude,
-    photoUrl: row.PhotoURL,
-  }
-}
-
-/** Median list price over the homes, rounded to the nearest $1k. Null when empty. */
-function medianListPrice(homes: ParkHomeTile[]): number | null {
-  const prices = homes
-    .map((h) => h.price)
-    .filter((p): p is number => typeof p === 'number' && p > 0)
-    .sort((a, b) => a - b)
-  if (prices.length === 0) return null
-  const mid = Math.floor(prices.length / 2)
-  const raw = prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid]
-  return Math.round(raw / 1000) * 1000
-}
-
-async function fetchParkHomes(park: CoPark): Promise<ParkHomeTile[]> {
-  const supabase = supabaseAnon()
-  if (!supabase) return []
-
-  const { data, error } = await supabase
-    .from('listings')
-    .select(PROJECTION)
-    .in('StandardStatus', ACTIVE_STATUSES)
-    .eq('PropertyType', 'A')
-    .gte('Latitude', park.lat - LAT_PAD)
-    .lte('Latitude', park.lat + LAT_PAD)
-    .gte('Longitude', park.lng - LNG_PAD)
-    .lte('Longitude', park.lng + LNG_PAD)
-    .order('ListPrice', { ascending: false, nullsFirst: false })
-    .limit(MAX_HOMES)
-
-  if (error) {
-    // THROW (do not return []) so a transient error is never cached as
-    // "0 homes near this park" for the full TTL. The next request retries.
-    throw new Error(`[getParkDetail] supabase error: ${error.message}`)
-  }
-
-  return (data ?? []).map((r) => rowToHome(r as unknown as RawRow))
+/**
+ * Every public on-market PropertyType 'A' home in the box, from listing_search_mv.
+ * `stats` covers the full set; `homes` is its price-desc top slice (DATA-3/8).
+ */
+async function fetchParkHomes(park: CoPark): Promise<{ homes: ParkHomeTile[]; stats: NearbyHomeStats }> {
+  const { homes, stats } = await fetchOnMarketHomesInBox({
+    label: '[getParkDetail] park homes',
+    lat: park.lat,
+    lng: park.lng,
+    latPad: LAT_PAD,
+    lngPad: LNG_PAD,
+    maxTiles: MAX_HOMES,
+  })
+  return { homes, stats }
 }
 
 async function fetchParkDetail(slug: string): Promise<ParkDetail | null> {
   const park = getParkBySlug(slug)
   if (!park) return null
 
-  const homes = await fetchParkHomes(park)
+  const { homes, stats } = await fetchParkHomes(park)
 
   const nearbyParks = CO_PARKS.filter((p) => p.slug !== park.slug && p.city === park.city)
 
   return {
     park,
     homes,
-    stats: {
-      count: homes.length,
-      medianListPrice: medianListPrice(homes),
-    },
+    stats,
     nearbyParks,
   }
 }
@@ -179,7 +107,7 @@ async function fetchParkDetail(slug: string): Promise<ParkDetail | null> {
 export function getParkDetail(slug: string): Promise<ParkDetail | null> {
   return unstable_cache(
     () => fetchParkDetail(slug),
-    ['park-detail-v1', slug],
+    ['park-detail-v2-full-set', slug],
     {
       revalidate: CACHE_WINDOWS.listingsByGeo,
       tags: [cacheTag.listings, 'parks'],

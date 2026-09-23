@@ -95,7 +95,9 @@ test.describe('Listing Detail', () => {
 test.describe('Team Page', () => {
   test('loads and shows team content', async ({ page }) => {
     await page.goto('/team')
-    await expect(page).toHaveTitle(/team/i)
+    // The page is titled for its searchers ("Bend brokers · Oregon licenses and
+    // recorded closings", 8f54aa296), not with the word "team".
+    await expect(page).toHaveTitle(/brokers/i)
     await expect(page.locator('main').first()).toBeVisible()
   })
 })

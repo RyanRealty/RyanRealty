@@ -22,10 +22,7 @@ import { ReportsInquirySheet } from "./_v3/ReportsInquirySheet.client"
 import { RangeTableSection, SalesAndWeeklySection } from "./_v3/ReportsIslands"
 import { CANONICAL_PATH, SELL_HREF, siteUrl } from "./_v3/hub-constants"
 import { parseReportsParams } from "./_v3/hub-sections"
-import {
-  marketReportDoorLinks,
-  marketReportHereBody,
-} from "@/lib/market/report-doors"
+import { marketReportDoorLinks } from "@/lib/market/report-doors"
 import { PUBLIC_MARKET_PULSE_SOURCE } from "@/lib/market/publish-public-methodology"
 
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -124,11 +121,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
           eyebrow="Sales and weekly"
           heading="What each report is"
           items={[
-            {
-              kind: "prose",
-              term: "Where you are",
-              body: marketReportHereBody("published"),
-            },
+            // VOICE-6: no "Where you are" row; the doors carry the navigation.
             ...marketReportDoorLinks("published"),
             { label: "Homes for sale", href: "/homes-for-sale?view=list" },
             { label: "Value my home", href: SELL_HREF },

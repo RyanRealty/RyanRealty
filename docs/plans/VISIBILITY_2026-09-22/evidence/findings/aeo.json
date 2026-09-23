@@ -1,0 +1,335 @@
+{
+  "area": "aeo",
+  "notes_path": "/tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/aeo/notes.md",
+  "summary": "I checked AI-engine visibility from four sides: crawler access, the entity/structured-data layer, the shape of the text an engine would quote, and whether engines cite us today. Access is not the problem. Twelve AI and search User-Agents (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, PerplexityBot, Google-Extended, Bytespider, CCBot, Amazonbot, meta-externalagent, Claude-User, Perplexity-User) all received the real 200 page on /, /cities/bend, /communities/tetherow and /subdivisions/ridge-at-eagle-crest with identical titles; only a bare curl UA gets the 403 bot screen; the Vercel project has no firewall configuration at all (one MCP read before the orchestrator's rule change returned 'Seawall Config not found'); robots.txt allows every named bot; this session's own WebFetch read a place page. The entity layer is mostly sound: 69 JSON-LD blocks across 11 production pages all parse, the Organization carries NAP, license identifiers for all three brokers, foundingDate and a sameAs list that includes the GBP cid; listing pages carry RealEstateListing + Offer + geo; place pages carry Place/City/Neighborhood + Dataset + FAQPage built from live data. What is wrong is inside that layer and around it. (1) The neighborhood page publishes two different values for the same named figure in machine-readable form: Awbrey Butte's Dataset and Place nodes say Median List Price $1,350,000 / Active Listings 45 (market-truth overlay via leftoverHudKpis) while its FAQPage and visible text say $1,312,500 / 54 (boundary inventory) — a §0 failure on the exact surface engines read. (2) The F1 'filtered inventory' pillar path listed in llms.txt (/homes-for-sale/bend/northwest-crossing?beds=3&baths=2) started 301-ing to the unfiltered community page today (commit e952d8492, middleware.ts), and check-ai-query-battery still passes because it only looks for redirects in next.config.ts. (3) llms.txt is a 282 KB, 2,904-link file, 91% of it subdivision plat URLs, with duplicate lines and no property-type pages, and a sample of its subdivision URLs returns persistent 500s (3 of 69 in the first sample; 14 of 123 server responses, 11.4%, in a second 150-URL sample, 6 of 8 persisting on retry); no gate fetches those URLs live. (4) The FAQPage answers engines would quote are full of provenance disclaimers written for an auditor ('not a guess', 'the same MLS OpenHouses pull the open-house ledger uses', 'the market layer assigns ... by place membership'): 32 such phrases in 43 Q&A across five pages; /about answers 'Who are the brokers?' with 'The brokers are on /team.' (5) Broker RealEstateAgent nodes have no sameAs and the brokers table's zillow/realtor/yelp/google-business columns are null for all three, while Zillow and LinkedIn profiles exist; Organization sameAs omits Zillow/Yelp/Realtor.com. (6) The search index still holds legacy WordPress URLs and titles for the brand query, and the answer engine repeated the retired phone 541-213-6706 from the old /contact/ title; legacy URLs resolve through two hops. (7) Answer-engine reality check: ryan-realty.com appears in none of five non-brand WebSearch queries (Tetherow, Awbrey Butte, best neighborhoods, Bend housing market 2026, months of supply); bendpremierrealestate.com appears in four of five with dated monthly narrative reports. The AEO plan's promised monthly citation battery has no automation, and the local-seo skill's persistence folder data/local-seo/ does not exist. Page weight is a fetch-cost issue: /about is 4.68 MB of HTML for 10 KB of visible text (a 3.38 MB RSC chunk of 5,671 map dots plus a 982 KB inline SVG basemap); /cities/bend is 3.77 MB. Long-form notes with every command, row and file:line are at the notes_path. Tree note: git status was clean at my start; at finish six tracked files (app/sitemap.ts, components/motion/number.tsx, lib/sitemap-guard.ts and its tests, scripts/check-sitemap-resolvable.mjs) show hand-written edits with mtimes 20:07-20:12 UTC from a concurrent session on this shared checkout; none of my commands write into the tree, so I left them untouched rather than revert another agent's work (notes §13).",
+  "facts": [
+    {
+      "fact": "No AI or search crawler is blocked: 12 AI/search UAs got HTTP 200 with the real page (same <title>, one <h1>) on /, /cities/bend, /communities/tetherow, /subdivisions/ridge-at-eagle-crest; bare curl/8.5.0 gets 403 with x-bot-screen: bad-ua.",
+      "evidence": "scratchpad/aeo/ua_matrix.txt (curl -A <UA> -w '%{http_code} %{size_download}' https://ryan-realty.com/...); e.g. 'GPTBot | /cities/bend | 200 3773835' ... 'bare-curl | / | 403 9 ... x-bot-screen: bad-ua'. middleware.ts:150-151 GOOD_BOT_RE, :170-171 BAD_BOT_RE, :202-223 screenBotRequest. Proxy resets ('000') were retried and all resolved to 200."
+    },
+    {
+      "fact": "The Vercel project ryanrealty (prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA, team team_zwYQPapH0CpleD7RzJ7WctGO) has no custom firewall configuration; attack-challenge state beyond that is UNVERIFIED.",
+      "evidence": "mcp__Vercel__get_firewall_config(configVersion=active) and get_active_attack_status(since=7) both returned 404 {\"code\":\"not_found\",\"message\":\"Seawall Config not found.\"} (single calls made before the orchestrator's no-MCP rule; not retried)."
+    },
+    {
+      "fact": "robots.txt live: '*' group Allow / , /api/og, /llms.txt and Disallow /admin/ /dashboard/ /account/ /api/ /auth/ /mockup-preview/ /dev/; then 19 named groups (OAI-SearchBot ... Bytespider) each containing only 'Allow: /'.",
+      "evidence": "scratchpad/aeo/live_robots.txt (curl -A Chrome https://ryan-realty.com/robots.txt, 200, 883 bytes); app/robots.ts:19-50."
+    },
+    {
+      "fact": "Live /llms.txt is 282,193 bytes, 2,941 lines, 2,904 bullets; 2,642 (91.0%) are /subdivisions/ plat URLs; sections: Listings 10, Price Drops 4, Market Data 25, Cities 11, Communities 20, Neighborhoods 13, ZIP 10, Subdivisions 2642, Events 49, Venues 21, Golf 26, Trails 20, Guides 14, Blog 25, Tools 4, Brokerage 8. /llms-full.txt is 404. No /types/ URL is listed. 'Value my home: /sell' and 'Refer a client ...: /refer-a-client' each appear twice.",
+      "evidence": "scratchpad/aeo/live_llms.txt; awk section count; grep -c '/types/' = 0; grep -n 'Value my home|Refer a client' -> lines 2931, 2937, 2940, 2941; lib/seo/ai-query-map.json pillars[] lists /sell twice (tools+brokerage) and /refer-a-client twice (lines 60-69). curl /llms-full.txt -> status=404 size=142610 text/html."
+    },
+    {
+      "fact": "llms.txt is fresh: the newest weekly report listed is weekly-2026-09-13 (Sep 13-19, 2026) and both August monthly city reports are listed; the route revalidates hourly.",
+      "evidence": "live_llms.txt Market Data section line 'Central Oregon Market Report: September 13, 2026 to September 19, 2026: .../housing-market/reports/weekly-2026-09-13'; grep -c 'market-report-august-2026' = 2; app/llms.txt/route.ts:15 'export const revalidate = 3600', :181 's-maxage=3600'."
+    },
+    {
+      "fact": "Of 69 distinct llms.txt URLs sampled, 61 returned 200, 1 returned 301 (the F1 pillar /homes-for-sale/bend/northwest-crossing?beds=3&baths=2 -> /communities/northwest-crossing), 1 returned 308 (/communities/mountain-high -> /subdivisions/mountain-high), 6 returned 500; on retry 3 stayed 500 (/subdivisions/ridge-at-eagle-crest-13, skyliner-summit-at-broken-top-phase-9, steve-w-yancey; each 4.5-5.2 s, '<title>500: Internal Server Error') and 3 recovered.",
+      "evidence": "scratchpad/aeo/llms_resolve.txt and the retry block in the tool log; sampling: every 73rd URL plus every 9th non-subdivision URL (llms_sample2.txt)."
+    },
+    {
+      "fact": "Second sample of 150 subdivision URLs (every 17th /subdivisions/ line in llms.txt): 109 x 200, 14 x 500, 27 sandbox-proxy resets (14/123 server responses = 11.4% 500); retry of the first 8 500s: 6 stayed 500, 1 -> 200, 1 proxy; re-fetch of 17 proxy-reset URLs: 16 -> 200, 1 -> 500. Every 500 took 5.0-10.1 s. 500 slugs: awbrey-butte-homesites-phase-thirty-one, awbrey-glen-homesites-phase-five, blakley-heights, broken-top-phase-iii-d-lots-355-thru-371-and-tracts-r-and-s, college-park-phase-1-and-2, cottonwood-condominium, discovery-west-phase-3, full-moon-estates-phase-i, newsoms, northpointe-phase-ii, ridge-at-eagle-crest-31, ridge-at-eagle-crest-5, saddleback, squaw-creek-canyon-recreational-estates-first-addition.",
+      "evidence": "scratchpad/aeo/sub_sample_results.txt, sub_500_retry.txt, sub_000_retry.txt. Final tally in notes.md §11."
+    },
+    {
+      "fact": "No CI gate fetches subdivision (or any) URLs live: ci:sitemap-resolvable maps roots to route files statically; the subdivision page itself records that 'every /subdivisions/* URL served a 500 from 2026-07-15 to 2026-09-01' as a silent class.",
+      "evidence": "scripts/check-sitemap-resolvable.mjs:73 '{ id: \"subdivisions\", roots: [\"subdivisions\"], resolvers: [\"app/subdivisions/page.tsx\", \"app/subdivisions/[slug]/page.tsx\"] }'; app/subdivisions/[slug]/page.tsx:258-270 (SITE-29 comment), revalidate = 900, maxDuration = 60, generateStaticParams returns []."
+    },
+    {
+      "fact": "All three AI gates pass locally today: ci:ai-query-battery ('10 queries, 12 llms.txt pillars, hop URLs excluded. LIVE /llms.txt contains every pillar path.'), ci:ai-crawler-access ('15 citation bots allowed...'), ci:ai-structured-data ('34 surfaces emit AI structured data'). All three are static token/presence checks; the battery's hop check reads only next.config.ts (isPermanentHop, lines 29-38).",
+      "evidence": "node scripts/check-ai-query-battery.mjs; node scripts/check-ai-crawler-access.mjs; node scripts/check-ai-structured-data.mjs (outputs in the tool log); scripts/check-ai-query-battery.mjs:29-38, :95-100."
+    },
+    {
+      "fact": "The F1 pillar paths /homes-for-sale/bend/northwest-crossing and /homes-for-sale/bend/northwest-crossing?beds=3&baths=2 both 301 to https://ryan-realty.com/communities/northwest-crossing (filter dropped); the redirect landed 2026-09-22 in commit e952d8492 'fix(seo): 301 leftover area-search URLs onto place pages' (middleware.ts).",
+      "evidence": "curl -A Chrome -w '%{http_code} loc=%{redirect_url}' -> '301 loc=https://ryan-realty.com/communities/northwest-crossing' for both; git log --format='%ad %h %s' --date=short -S'communities/northwest-crossing' -- middleware.ts ... -> '2026-09-22 e952d8492 ...'; lib/seo/ai-query-map.json 'nwx-3bed-2bath' citablePaths and note 'never a 308 hop'."
+    },
+    {
+      "fact": "Awbrey Butte page (/cities/bend/awbrey-butte) publishes Median List Price 1,350,000 and Active Listings 45 in its Neighborhood.additionalProperty and Dataset.variableMeasured, while its FAQPage, face and source line say $1,312,500 and 54.",
+      "evidence": "scratchpad/aeo/jsonld_cities_bend_awbrey-butte.json: [{name:'Median List Price',value:1350000},{name:'Active Listings',value:45},...] twice; FAQPage answer 'The homes on the market right now are asking a median of $1,312,500' and '54 single-family homes are on the market in Awbrey Butte right now. The supply verdict above divides 45, not this 54.'; text_cities_bend_awbrey-butte.txt '54 Single-family in Awbrey Butte $1,312,500'. Code: app/cities/[slug]/[neighborhoodSlug]/page.tsx:345 hud = leftoverHudKpis(...), :486-498 buildMarketFaq(..., {activeCount: hud.active, medianListPrice: hud.medianList}), :385-390 inventory = getNeighborhoodPublicInventory (comment forbids mixing populations), :550/:612/:827 FAQPage from buildPlaceAnswers."
+    },
+    {
+      "fact": "/cities/bend publishes Bend active single-family = 581 (FAQ, Dataset, 'Homes for sale 581 ... Source Oregon Data Share as of Sep 21, 2026') while its own menu says 'Single-family in Bend 757 homes' and /cities/bend/types/single-family is titled '757 single-family homes for sale in Bend, Oregon'.",
+      "evidence": "text_cities_bend.txt grep contexts for 581 and 757; analysis.json title for cities_bend_types_single-family.html."
+    },
+    {
+      "fact": "Tetherow FAQ: 'Annual HOA dues run $2,052, the median of the 131 current listings that report dues' on a page that also says 11 single-family homes are for sale and 'Tetherow also has 24 homes listed across its named subdivisions when every property type is counted'.",
+      "evidence": "jsonld_communities_tetherow.json FAQPage; text_communities_tetherow.txt; lib/market/publish-place-hoa.ts:41-43 (measured basis from getPlaceCharacter member listings)."
+    },
+    {
+      "fact": "FAQPage answers on five place/market pages contain 32 pipeline-provenance phrases across 43 Q&A ('not a guess', 'not an invented complete inventory', 'the same MLS OpenHouses pull the open-house ledger uses', 'the market layer assigns ... by place membership', 'we are not printing one'); /about's FAQ answers 'Who are the brokers?' with 'The brokers are on /team.'",
+      "evidence": "node count over jsonld_*.json: cities_bend 15 hits/14 Q&A, awbrey-butte 12/11, tetherow 2/8, ridge 3/5, housing-market_bend 0/5; jsonld_about.json FAQPage."
+    },
+    {
+      "fact": "Organization JSON-LD is consistent on-site (RealEstateAgent+LocalBusiness, telephone +15417033095, 115 NW Oregon Ave #2, Bend, OR 97703, foundingDate 2023-06-21, sameAs 8 socials + https://maps.google.com/?cid=11038319841912529644, founder + 2 employees with Oregon license identifiers 201206613/201259123/201254727); all 11 pages render 541.703.3095 and '115 NW Oregon Ave #2'.",
+      "evidence": "jsonld_listing_220222277.json ORG block; analysis.json phones/addr per page; components/JsonLd.tsx:61-89; lib/brand/contact.ts:24-98."
+    },
+    {
+      "fact": "Broker RealEstateAgent nodes carry no sameAs; public.brokers has zillow_id, realtor_id, yelp_id, google_business_id, google_review_url, zillow_review_url, mls_id = null for all 3 rows; Paul's and Rebecca's social_* are null; Matt's social_* hold brokerage handles. Zillow (zillow.com/profile/Ryan%20Realty%20Bend) and LinkedIn (linkedin.com/in/mattmryan/) profiles exist.",
+      "evidence": "scratchpad/aeo/brokers_rows.txt (rows via scratchpad/lib/sb.mjs, 3 rows); components/JsonLd.tsx:37-53 brokerAgent(); /team/matthew-ryan JSON-LD: RealEstateAgent '(no sameAs)'; WebSearch 'Matt Ryan Ryan Realty Bend Oregon Zillow agent profile'."
+    },
+    {
+      "fact": "WebSearch (not a logged-out Google SERP): ryan-realty.com absent from all five non-brand queries; bendpremierrealestate.com present in 4 of 5, plus bendrealestate.com, cascadehasson.com, movetobend.com, isellbendoregon.com, gregpowellhomes.com and the portals. Brand query returns legacy URLs /matt-ryan/, /contact/ (title '541-213-6706 | Bend Oregon Broker - Contact Ryan Realty'), /properties/, /sell-your-bend-oregon-home, and the synthesized answer states the phone as 541-213-6706.",
+      "evidence": "WebSearch results for 'Tetherow homes for sale', 'Awbrey Butte real estate', 'best neighborhoods in Bend Oregon for families', 'Bend Oregon housing market 2026', 'months of supply Bend Oregon', 'Ryan Realty Bend' (tool log, notes §7)."
+    },
+    {
+      "fact": "Legacy brand URLs resolve via two hops: /matt-ryan/ -> 308 /matt-ryan -> 301 /team/matthew-ryan; /properties/ -> 308 /properties -> 308 /homes-for-sale; /featured-listings/ -> 308 -> 301 /our-homes; /team/matt-ryan -> 301 /team/matthew-ryan; /sell-your-bend-oregon-home -> 301 /sell.",
+      "evidence": "scratchpad/aeo/legacy_urls.txt and the hop checks in the tool log (curl -A Chrome -w '%{http_code} loc=%{redirect_url}')."
+    },
+    {
+      "fact": "Competitor pages cannot be fetched from this sandbox (bendpremierrealestate.com, bendrealestate.com, cascadehasson.com, movetobend.com return 403 to WebFetch and to a Chrome-UA curl), so the content-shape comparison rests on search snippets only: their cited pages are dated monthly narrative reports ('March 2026: Prices Drop 7.4%, Sales Surge', 'Updated May 2026').",
+      "evidence": "curl -sSL -A Chrome ... -> '403 16813 https://www.bendpremierrealestate.com/...'; WebFetch -> 'HTTP 403 Forbidden' for both tried URLs."
+    },
+    {
+      "fact": "Page weight: /about 4,682,636 bytes HTML (scripts 3.55 MB, of which one RSC chunk of 3.38 MB carrying 5,671 map dots with href/lat/lng/photo/street/beds/baths/sqft; inline SVG 1,000 KB incl. a 982 KB atlas basemap; visible text 10 KB / 1,800 words); /cities/bend 3,773,792 (RSC 2.06 MB, SVG 923 KB, text 66 KB); /cities/bend/awbrey-butte 2,011,675; /team 1,702,333; /cities/bend/types/single-family 1,684,335. TTFB 0.25-1.9 s.",
+      "evidence": "scratchpad/aeo/analysis.json; RSC chunk key counts from the inspection script in the tool log ('top keys: href 5711, lat 5671, ...'); page fetch timings in the tool log."
+    },
+    {
+      "fact": "Numbers on place pages live in HTML text, not only in SVG/canvas (<=3 numeric SVG <text> nodes per page); no <table> element exists on any place or market page; /cities/bend has three <h2> reading just 'Bend' and /cities/bend/awbrey-butte three reading 'Awbrey Butte'.",
+      "evidence": "analysis.json svgTextNums, tables, h2 arrays; grep '<h2[^>]*>Bend</h2>' pages/cities_bend.html = 3."
+    },
+    {
+      "fact": "AEO plan (docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md): 14 of the 15 guide slugs and both August monthly reports return 200 with a FAQPage block (cost-of-living-bend-oregon UNVERIFIED: its fetch hit a proxy reset); lib/blog/publish-blog-faq.ts, lib/blog/monthly-city-report.ts, lib/auth/signin-prompt-policy.ts (blog -> 'guide', line 29) exist; cron blog-monthly-city-report registered (vercel.json:14). The 'reruns the battery monthly' promise has no cron/routine/script; the doc's own baseline says no engine cited any F1 path.",
+      "evidence": "scratchpad/aeo/aeo_guides_live.txt; ls of the files; grep -rn -i 'answer-share|ai-answer|aeo' vercel.json package.json scripts/ -> only ci:aeo-hub-guides and ci:ai-query-battery (static)."
+    },
+    {
+      "fact": ".claude/skills/local-seo/SKILL.md promises persisted state in data/local-seo/{profile,competitors,citations}.json; the directory does not exist. Its referenced knowledge base, corpus and cron route do exist.",
+      "evidence": "ls data/local-seo -> 'No such file or directory'; ls marketing_brain_skills/platforms/gbp/SKILL.md, marketing_brain_skills/brand-voice/corpus/gbp_responses.md, app/api/cron/marketing-snapshot-gbp/route.ts -> present."
+    },
+    {
+      "fact": "/subdivisions/ridge-at-eagle-crest (the parent plat, 14 active, 26 closed in 2025 per its own FAQ) renders robots 'noindex, follow' and is not in sitemaps/geo.xml, while 56 phase/replat children (e.g. 'Ridge At Eagle Crest 11 Replat Lots 21-28') are indexable and listed in llms.txt.",
+      "evidence": "analysis.json robots for subdivisions_ridge-at-eagle-crest.html = 'noindex, follow'; grep -c 'subdivisions/ridge-at-eagle-crest<' sitemap_geo.xml = 0; grep -c 'subdivisions/ridge-at-eagle-crest' live_llms.txt = 56 (children); lib/data/subdivisions/subdivision-index.ts:48 threshold 10 + polygon rule."
+    },
+    {
+      "fact": "Per Google's robots.txt spec, 'User agent specific groups and global groups (*) are not combined', so the 19 named bots on our robots.txt are bound only by 'Allow: /' and not by the Disallow list; middleware never screens /api/* (screenBotRequest line 204).",
+      "evidence": "WebFetch of developers.google.com/search/docs/crawling-indexing/robots/robots_txt (quotes in notes §2); live_robots.txt; middleware.ts:204."
+    }
+  ],
+  "findings": [
+    {
+      "id": "AEO-1",
+      "title": "Neighborhood pages publish two values for the same named figure: Dataset/Place JSON-LD vs FAQPage + visible text",
+      "severity": "p0",
+      "category": "data",
+      "claim": "On /cities/bend/awbrey-butte the machine-readable Neighborhood.additionalProperty and Dataset.variableMeasured state Median List Price $1,350,000 and Active Listings 45, while the FAQPage JSON-LD, the page face and the source line state $1,312,500 and 54. The two come from two populations (leftoverHudKpis market-truth overlay vs getNeighborhoodPublicInventory boundary count) wired into two builders on the same page, in violation of the page's own comment and CLAUDE.md §0 ('every sentence ... must be consistent with the number it sits next to'). The class applies to every neighborhood page built from this template.",
+      "evidence": "scratchpad/aeo/jsonld_cities_bend_awbrey-butte.json (Dataset + Neighborhood: 1350000 / 45; FAQPage: '$1,312,500', '54 single-family homes are on the market ... The supply verdict above divides 45, not this 54'); text_cities_bend_awbrey-butte.txt ('54 Single-family in Awbrey Butte $1,312,500'); app/cities/[slug]/[neighborhoodSlug]/page.tsx:345 (hud = leftoverHudKpis), :486-498 (buildMarketFaq fed hud.active / hud.medianList -> datasetVariables), :385-390 (comment: 'Do not fall back to ... pulse.active_count ... those are different populations (Awbrey Butte 52 / 62 / 63, 2026-08-16)'), :550/:612/:827 (FAQPage from buildPlaceAnswers on inventory).",
+      "why_it_matters": "Dataset and FAQPage are exactly the nodes answer engines and Google's AI features read; two contradictory values for one labeled statistic on one URL either get discarded as unreliable or get quoted wrongly under Ryan Realty's name, and a licensed broker publishing conflicting market figures is the §0 compliance risk the canon is written to prevent.",
+      "proposed_fix": "Feed buildMarketFaq's datasetVariables and the Place additionalProperty from the same inventory read the FAQ/face use (or omit the list-price and active-count variables when they are not from that read), then add a gate that renders or fetches each place-page class, parses every JSON-LD block, and fails when a named PropertyValue (Median List Price, Active Listings, Months of Supply, Homes Sold) differs from the FAQPage/visible figure of the same name.",
+      "fix_size": "medium",
+      "files": [
+        "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+        "lib/site/market-faq.ts",
+        "lib/site/place-answers.ts",
+        "lib/market/publish-leftover-hud.ts",
+        "scripts/check-ai-structured-data.mjs"
+      ]
+    },
+    {
+      "id": "AEO-2",
+      "title": "F1 'filtered inventory' pillar on llms.txt now 301s to the unfiltered community page; the battery gate cannot see middleware redirects",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "lib/seo/ai-query-map.json keeps /homes-for-sale/bend/northwest-crossing?beds=3&baths=2 on the AI map 'so assistants can fetch filtered inventory' and forbids hop URLs; since commit e952d8492 (2026-09-22, middleware.ts) both that URL and /homes-for-sale/bend/northwest-crossing 301 to /communities/northwest-crossing, dropping the beds/baths filter. llms.txt still lists both, and ci:ai-query-battery passes because isPermanentHop only inspects next.config.ts.",
+      "evidence": "curl -A Chrome -w '%{http_code} loc=%{redirect_url}': '/homes-for-sale/bend/northwest-crossing?beds=3&baths=2 -> 301 loc=https://ryan-realty.com/communities/northwest-crossing'; git log -S'communities/northwest-crossing' -- middleware.ts -> '2026-09-22 e952d8492 fix(seo): 301 leftover area-search URLs onto place pages'; scripts/check-ai-query-battery.mjs:29-38 isPermanentHop(pathname, configSrc) reads next.config.ts only; local run: 'AI-query-battery passed ... hop URLs excluded'; live_llms.txt lines 14-15.",
+      "why_it_matters": "The one query the battery was built for ('I need a 3-bedroom, 2-bath in Northwest Crossing') now points assistants at a redirect that loses the filter, and the gate that exists to catch exactly this reports green — the mechanism is decorative.",
+      "proposed_fix": "Either exempt /homes-for-sale/<city>/<community> browse paths (with query) from the new middleware rule or repoint the pillar and llms.txt line at a surviving filtered URL; extend check-ai-query-battery to resolve every pillar/citable path against middleware's redirect functions (or fetch each live with CI_PROBE_HEADERS and fail on any 3xx), and dedupe the pillars array.",
+      "fix_size": "small",
+      "files": [
+        "middleware.ts",
+        "lib/seo/ai-query-map.json",
+        "scripts/check-ai-query-battery.mjs",
+        "app/llms.txt/route.ts"
+      ]
+    },
+    {
+      "id": "AEO-3",
+      "title": "A material share of the 2,642 subdivision URLs on llms.txt and the sitemap return HTTP 500, and no gate fetches them",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "Sampling llms.txt subdivision URLs with a Chrome UA returns persistent 500s: first sample 3 of 69 URLs stayed 500 on retry; second sample of 150 subdivision URLs (every 17th line) returned 109 x 200, 14 x 500 and 27 sandbox-proxy resets, i.e. 14 of 123 server responses (11.4%) were 500; 17 of the proxy-reset URLs re-fetched as 16 x 200 and 1 x 500; 6 of the first 8 500s were still 500 on retry (each 5-10 s, '<title>500: Internal Server Error'). If the rate holds across the 2,642 listed plats that is on the order of 250-300 URLs, an estimate from the sample, not a count. The page is ISR (revalidate 900, maxDuration 60) and no CI gate fetches these URLs; ci:sitemap-resolvable is a static route-file check. Root cause UNVERIFIED (Vercel logs not read under the no-MCP rule).",
+      "evidence": "scratchpad/aeo/llms_resolve.txt (500: ridge-at-eagle-crest-13, skyliner-summit-at-broken-top-phase-9, steve-w-yancey, persisting on 2 retries); sub_sample_results.txt + sub_500_retry.txt (awbrey-butte-homesites-phase-thirty-one, awbrey-glen-homesites-phase-five, blakley-heights, broken-top-phase-iii-d-lots-355-thru-371-and-tracts-r-and-s, college-park-phase-1-and-2, cottonwood-condominium, discovery-west-phase-3, full-moon-estates-phase-i); scripts/check-sitemap-resolvable.mjs:73; app/subdivisions/[slug]/page.tsx:257-283 (SITE-29 comment: 'every /subdivisions/* URL served a 500 from 2026-07-15 to 2026-09-01'); sitemap_geo.xml has 2,643 /subdivisions/ URLs.",
+      "why_it_matters": "Every 500 is a URL we hand to Google and to AI crawlers in two maps and then fail to serve; at the observed rate that is on the order of a hundred-plus plat pages, it wastes crawl budget, teaches crawlers the class is unreliable, and this exact class silently 500'd for seven weeks this summer with no gate.",
+      "proposed_fix": "Read the Vercel runtime errors for /subdivisions/[slug] to name the exception, fix it, and add a live-fetch gate (nightly or deploy:verify) that samples N URLs from each sitemap file with the CI probe UA and fails on any 5xx, recording the sample in site_signal.",
+      "fix_size": "medium",
+      "files": [
+        "app/subdivisions/[slug]/page.tsx",
+        "scripts/check-sitemap-resolvable.mjs",
+        "app/llms.txt/route.ts",
+        "lib/data/subdivisions/getIndexableSubdivisions.ts"
+      ]
+    },
+    {
+      "id": "AEO-4",
+      "title": "llms.txt is a 282 KB sitemap in Markdown: 91% plat URLs, duplicates, no property-type pages, no llms-full.txt",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "The live /llms.txt has 2,904 links, 2,642 of them subdivision plats named like 'Ridge At Eagle Crest 11 Replat Lots 21-28 (Redmond)', with no descriptions or figures; 'Value my home' and 'Refer a client' lines are duplicated from duplicated pillars; the /cities/<city>/types/<type> family is absent; /llms-full.txt is 404. The llms.txt proposal says the file 'stays small enough to fit in context' with detail behind the links, and distinguishes it from a sitemap.",
+      "evidence": "live_llms.txt (282,193 bytes; section counts in notes §1); grep -c '/types/' = 0; duplicate lines 2931/2937 and 2940/2941; lib/seo/ai-query-map.json pillars lines 26-29, 45-49, 60-69; curl /llms-full.txt -> 404; WebFetch llmstxt.org quotes (notes §1).",
+      "why_it_matters": "An assistant that reads llms.txt gets a plat directory instead of the curated map of cities, neighborhoods, communities, property types and market answers Matt wants exposed; the highest-value pages are buried under 2,600 lines of replat names and the file may be truncated before it reaches them.",
+      "proposed_fix": "Rebuild llms.txt as a curated map (cities, neighborhoods, communities, property-type pages, market pages, guides, brokerage) with one-line descriptions carrying the page's headline figure and date; move the plat list to a linked llms-subdivisions.txt (or leave it to the sitemap); publish llms-full.txt from the same DAL; dedupe pillars; update check-ai-crawler-access markers accordingly.",
+      "fix_size": "small",
+      "files": [
+        "app/llms.txt/route.ts",
+        "lib/seo/ai-query-map.json",
+        "lib/data/subdivisions/subdivision-index.ts",
+        "scripts/check-ai-crawler-access.mjs"
+      ]
+    },
+    {
+      "id": "AEO-5",
+      "title": "The quotable FAQPage answers are written for the auditor, not the buyer",
+      "severity": "major",
+      "category": "voice",
+      "claim": "FAQPage answers on place and market pages (the text engines quote verbatim) carry provenance disclaimers and internal vocabulary: 32 phrases across 43 Q&A on five pages such as 'the same MLS OpenHouses pull the open-house ledger uses', 'not an invented complete inventory', 'the market layer assigns to Awbrey Butte by place membership', 'Two honest counts of two populations, and neither is a correction of the other', 'we are not printing one'; /about answers 'Who are the brokers?' with 'The brokers are on /team.' None of this is VOICE.md's 'a person who knows Central Oregon and wants to help'.",
+      "evidence": "jsonld_cities_bend.json, jsonld_cities_bend_awbrey-butte.json, jsonld_communities_tetherow.json, jsonld_subdivisions_ridge-at-eagle-crest.json, jsonld_about.json FAQPage blocks; phrase count script in the tool log (cities_bend 15 hits/14 Q&A, awbrey-butte 12/11, tetherow 2/8, ridge 3/5); generators lib/site/place-answers.ts and lib/site/market-faq.ts (market-faq.ts:1 marks itself brand-voice:exempt).",
+      "why_it_matters": "An answer engine selects the sentence with the number and the date; ours wrap that sentence in defensive pipeline commentary, which lowers the chance of being quoted and, when quoted, reads as a system explaining itself rather than a brokerage answering a buyer.",
+      "proposed_fix": "Split every answer into (a) the answer: one figure, its date, the population in plain words, and (b) a separate trace/source field rendered as a source line and kept out of acceptedAnswer.text; remove the brand-voice exemption on market-faq.ts and add an evaluator that reads the FAQPage text (not the screenshot) against VOICE.md exemplars per page class.",
+      "fix_size": "medium",
+      "files": [
+        "lib/site/place-answers.ts",
+        "lib/site/market-faq.ts",
+        "app/about/page.tsx",
+        "marketing_brain_skills/brand-voice/VOICE.md"
+      ]
+    },
+    {
+      "id": "AEO-6",
+      "title": "Broker entities have no sameAs and the third-party profile columns are empty; Organization sameAs omits Zillow/Yelp/Realtor.com",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "brokerAgent() emits RealEstateAgent nodes with license identifiers but no sameAs; public.brokers zillow_id, realtor_id, yelp_id, google_business_id, google_review_url, zillow_review_url are null for all three brokers, and Paul's and Rebecca's social_* are null. Zillow and LinkedIn profiles exist for Matt. The Organization sameAs lists 8 socials + GBP but not Zillow, Yelp, Realtor.com or Homes.com. The AEO doc itself records that engines rank 'best broker' by third-party review counts and named completing third-party profiles as the next step.",
+      "evidence": "scratchpad/aeo/brokers_rows.txt (3 rows via sb.mjs); components/JsonLd.tsx:37-53; /team/matthew-ryan JSON-LD 'RealEstateAgent (no sameAs)'; jsonld_listing_220222277.json ORG.sameAs (9 entries); WebSearch: zillow.com/profile/Ryan%20Realty%20Bend, linkedin.com/in/mattmryan/, yelp.com/biz/ryan-realty-bend; docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md 'Market page price answer' section.",
+      "why_it_matters": "Entity reconciliation is how an engine decides that the Matt Ryan on Zillow with reviews, the one on LinkedIn, and the one on ryan-realty.com are one person; without sameAs the review signal that decides 'best broker in Bend' never attaches to our entity.",
+      "proposed_fix": "Populate the brokers rows with verified profile URLs (Zillow, Realtor.com, LinkedIn personal, Yelp, Google), emit sameAs on each broker node and on the /team/[slug] page node (same @id as the founder/employee node), and add Zillow/Yelp/Realtor.com/Homes.com brokerage profiles to BRAND.social; verify each URL resolves before shipping.",
+      "fix_size": "small",
+      "files": [
+        "components/JsonLd.tsx",
+        "lib/brand/contact.ts",
+        "lib/data/brokers/getBrokers.ts",
+        "app/team/[slug]/page.tsx",
+        "public.brokers"
+      ]
+    },
+    {
+      "id": "AEO-7",
+      "title": "The search index still serves the legacy site's URLs and phone number for the brand; legacy paths resolve through two hops",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "For 'Ryan Realty Bend', WebSearch returns /matt-ryan/, /contact/ (indexed title '541-213-6706 | Bend Oregon Broker - Contact Ryan Realty'), /properties/, /sell-your-bend-oregon-home and /featured-listings/, and its synthesized answer states the brokerage phone as 541-213-6706 (canon: 541.703.3095). Three URLs exist for Matt in the index (/matt-ryan/, /team/matt-ryan, /team/matthew-ryan). Trailing-slash legacy URLs take two hops (Next 308 trailing-slash then the 301 map): /matt-ryan/ -> 308 -> 301, /properties/ -> 308 -> 308, /featured-listings/ -> 308 -> 301.",
+      "evidence": "WebSearch 'Ryan Realty Bend' and 'Matt Ryan Ryan Realty Bend Oregon Zillow agent profile' (tool log); scratchpad/aeo/legacy_urls.txt; lib/brand/contact.ts:86-89 ('Matt's old direct line (541.213.6706) is now a private forward target only, off the public site'); live /contact title in analysis.json.",
+      "why_it_matters": "The brand query is the one query we already win, and the AI answer built on it gives a retired phone number and points at redirecting URLs; every extra hop and every stale title delays consolidation of the old domain's equity onto the pages that now carry the entity.",
+      "proposed_fix": "Handle the legacy map before Next's trailing-slash 308 so each legacy URL is one 301; submit the legacy URLs for recrawl/removal in Search Console and Bing Webmaster; audit off-site listings (Yelp shows '115 NW Oregon Ave' without '#2'; GBP UNVERIFIED) for the retired 541-213-6706 and correct them through the local-seo approval path.",
+      "fix_size": "small",
+      "files": [
+        "middleware.ts",
+        "lib/legacy-redirects.json",
+        "next.config.ts",
+        ".claude/skills/local-seo/SKILL.md"
+      ]
+    },
+    {
+      "id": "AEO-8",
+      "title": "Place, about and team pages ship megabytes of map data in the HTML for kilobytes of readable text",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "/about is 4.68 MB of HTML: a 3.38 MB RSC chunk serializing 5,671 map dots (href, lat, lng, age, photo, street, beds, baths, sqft) for the 'Where we work' atlas plus a 982 KB inline SVG basemap, against 10 KB of visible text (0.2%). /cities/bend is 3.77 MB (1.3 MB dots chunk + 451 KB of 713 listing cards + 899 KB SVG), /cities/bend/awbrey-butte 2.0 MB, /team 1.7 MB, /cities/bend/types/single-family 1.68 MB. Fetch-size caps for OpenAI/Anthropic/Perplexity fetchers are UNVERIFIED (unpublished); Google documents a 15 MB cap.",
+      "evidence": "scratchpad/aeo/analysis.json (total/scripts/rsc/svg/textBytes per page); RSC inspection in the tool log ('about rsc chunks=48 top sizes=3381KB ... top keys: href 5711, lat 5671 ...'; 'cities_bend ... top sizes=1306KB,451KB ... listingKey 713'); curl timings (TTFB 0.25-1.9 s).",
+      "why_it_matters": "Every crawler and answer-engine fetch pays multi-megabyte transfer and parse for a few kilobytes of quotable text; on the pages that carry the brokerage's entity and the city's market answer, that is the worst possible ratio, and it also drags LCP for humans.",
+      "proposed_fix": "Stop serializing the full dot set into the RSC payload (load atlas dots client-side after hydration from a cached JSON endpoint, or cap to the visible subset), serve the basemap SVG as an external cached asset, and add a per-class HTML-size budget to ci:file-size-budget or a new gate measured from the rendered page.",
+      "fix_size": "medium",
+      "files": [
+        "components/site/v3/atlas (V3Atlas / buildPlaceAtlas)",
+        "app/about/page.tsx",
+        "app/team/page.tsx",
+        "app/cities/[slug]/page.tsx",
+        "scripts/check-file-size-budget.mjs"
+      ]
+    },
+    {
+      "id": "AEO-9",
+      "title": "Nothing measures whether answer engines cite us; the AEO plan's monthly battery and the local-seo persistence do not exist",
+      "severity": "major",
+      "category": "process",
+      "claim": "Today ryan-realty.com appears in none of five non-brand WebSearch queries while bendpremierrealestate.com appears in four with dated monthly reports. The AEO plan says 'the sibling session reruns the battery monthly' and its own baseline says no engine cited any F1 path; no cron, routine or script performs a citation measurement (the two AEO gates are static source checks). The local-seo skill's required state files in data/local-seo/ have never been written.",
+      "evidence": "WebSearch results (notes §7); grep -rn -i 'answer-share|ai-answer|aeo' vercel.json package.json scripts/ -> only ci:aeo-hub-guides and ci:ai-query-battery; docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md lines 169-176; ls data/local-seo -> missing; .claude/skills/local-seo/SKILL.md §2 persistence claims.",
+      "why_it_matters": "The loop cannot learn about AI visibility because nothing observes it; a ranking or citation loss today never becomes a node, and the plan's next steps (dated monthly reports, third-party profiles) are unmeasured.",
+      "proposed_fix": "Add a monthly answer-engine battery (fixed query list incl. the F1 three and the six used here) that records per-engine presence/position into site_signal (source 'ai_answer_battery') via a cron or Routine, feed it to loop-brief/seed, and make the local-seo skill write its profile/competitor/citation JSON on first run; treat 'not cited' as the objective the AEO nodes score against.",
+      "fix_size": "medium",
+      "files": [
+        "docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md",
+        ".claude/skills/local-seo/SKILL.md",
+        "lib/data/loop/signals.ts",
+        "vercel.json"
+      ]
+    },
+    {
+      "id": "AEO-10",
+      "title": "Bend publishes two active single-family counts in the same hour: 581 and 757",
+      "severity": "minor",
+      "category": "data",
+      "claim": "/cities/bend states Bend active single-family = 581 in its FAQ, Dataset and market section ('Source Oregon Data Share as of Sep 21, 2026') while the same page's menu says 'Single-family in Bend 757 homes' and /cities/bend/types/single-family is titled '757 single-family homes for sale in Bend, Oregon'. Two populations (city-cache SFR vs listing-tile SFR) are published under one label.",
+      "evidence": "text_cities_bend.txt contexts for '581' and '757'; analysis.json title for cities_bend_types_single-family.html; jsonld_cities_bend.json Dataset 'Active Listings 581'.",
+      "why_it_matters": "An engine reading the city page and the type page gets two answers to 'how many single-family homes are for sale in Bend' from the same brokerage on the same day.",
+      "proposed_fix": "Publish one SFR active count per city per day from one read (or label the second one by its population) and add the cross-page check to the JSON-LD/visible consistency gate proposed in AEO-1.",
+      "fix_size": "small",
+      "files": [
+        "app/cities/[slug]/page.tsx",
+        "app/cities/[slug]/types/[type]/page.tsx",
+        "lib/search/publish-search-count.ts"
+      ]
+    },
+    {
+      "id": "AEO-11",
+      "title": "Tetherow HOA answer cites '131 current listings that report dues' on a page that counts 11 and 24 current listings",
+      "severity": "minor",
+      "category": "data",
+      "claim": "The FAQPage answer 'Annual HOA dues run $2,052, the median of the 131 current listings that report dues' sits beside '11 single-family homes are on the market in Tetherow right now' and 'Tetherow also has 24 homes listed across its named subdivisions when every property type is counted'. The HOA sample population (getPlaceCharacter member listings) is not the population the page counts; which figure is right is UNVERIFIED.",
+      "evidence": "jsonld_communities_tetherow.json FAQPage; text_communities_tetherow.txt ('HOA from homes here $2,052 a year median of the 131 current listings that report dues'); lib/market/publish-place-hoa.ts:41-43; lib/data/places/getPlaceCharacter.ts.",
+      "why_it_matters": "A quotable sentence that contradicts the counts around it is exactly what makes an engine distrust the page's numbers.",
+      "proposed_fix": "State the HOA sample's population in the sentence (status set and scope) or restrict it to the same current-listing set the page counts; add the case to publish-place-hoa tests.",
+      "fix_size": "small",
+      "files": [
+        "lib/data/places/getPlaceCharacter.ts",
+        "lib/market/publish-place-hoa.ts",
+        "lib/site/place-answers.ts"
+      ]
+    },
+    {
+      "id": "AEO-12",
+      "title": "robots.txt's 19 named bot groups drop the Disallow list for those bots",
+      "severity": "minor",
+      "category": "visibility",
+      "claim": "Each named group (GPTBot, ClaudeBot, PerplexityBot, CCBot, Bytespider, Googlebot, Bingbot ...) contains only 'Allow: /'; per Google's spec specific groups and the '*' group are not combined, so those bots are not subject to Disallow /admin/ /dashboard/ /account/ /api/ /auth/, and middleware never screens /api/*. The groups add nothing the '*' group does not already grant.",
+      "evidence": "live_robots.txt; app/robots.ts:29-49; WebFetch of developers.google.com robots spec: 'User agent specific groups and global groups (*) are not combined.'; middleware.ts:204.",
+      "why_it_matters": "Crawl budget from the most important AI bots can be spent on /api/* and auth surfaces, and the file gives a false sense that the disallows apply to everyone.",
+      "proposed_fix": "Either delete the named groups (the '*' group already allows all content) or repeat the Disallow list inside each named group; update check-ai-crawler-access to assert the Disallow set appears in every group that names a REQUIRED_BOT.",
+      "fix_size": "small",
+      "files": [
+        "app/robots.ts",
+        "scripts/check-ai-crawler-access.mjs"
+      ]
+    },
+    {
+      "id": "AEO-13",
+      "title": "The parent plat a person searches for is noindex while its 56 phase/replat fragments are indexable and on the AI map",
+      "severity": "minor",
+      "category": "visibility",
+      "claim": "/subdivisions/ridge-at-eagle-crest (14 active, 26 closed in 2025, 21 in 2024 by its own FAQ) renders 'noindex, follow' and is absent from sitemaps/geo.xml, because the indexable rule requires a GIS polygon and the parent name has none; 56 children such as 'Ridge At Eagle Crest 11 Replat Lots 21-28' are indexable and listed in llms.txt. The entity an engine looks for is the parent.",
+      "evidence": "analysis.json robots for subdivisions_ridge-at-eagle-crest.html; grep -c 'subdivisions/ridge-at-eagle-crest<' sitemap_geo.xml = 0; grep -c 'subdivisions/ridge-at-eagle-crest' live_llms.txt = 56; lib/data/subdivisions/subdivision-index.ts:13-18,48; jsonld_subdivisions_ridge-at-eagle-crest.json FAQPage.",
+      "why_it_matters": "For 'Ridge at Eagle Crest homes for sale' we offer engines 56 fragment pages and hide the one whose name matches the query; the exposure model indexes recorder residue and noindexes the place.",
+      "proposed_fix": "Treat a parent/alias plat with attributed inventory and closed sales as indexable (aggregate its children's polygons or use the registry footprint), and list the parent rather than every replat in llms.txt; coordinate with the exposure reader's consolidation call.",
+      "fix_size": "medium",
+      "files": [
+        "lib/data/subdivisions/subdivision-index.ts",
+        "lib/data/subdivisions/getIndexableSubdivisions.ts",
+        "app/subdivisions/[slug]/page.tsx",
+        "app/llms.txt/route.ts"
+      ]
+    }
+  ],
+  "questions_for_matt": [
+    "Which third-party profile URLs are the canonical ones for each broker (Zillow, Realtor.com, LinkedIn personal, Yelp, Google) so they can be written into public.brokers and emitted as sameAs? The Zillow profile found is zillow.com/profile/Ryan%20Realty%20Bend and Matt's LinkedIn is linkedin.com/in/mattmryan/; nothing exists on file for Paul or Rebecca.",
+    "Is the retired 541-213-6706 line still answered or forwarded? It is still what an answer engine reports as the brokerage phone from the old /contact/ title, and off-site listings may still carry it.",
+    "Should llms.txt remain a full plat directory (2,642 subdivision lines) or become a curated map with the plats behind a separate file? This is a positioning call about what an assistant should see first.",
+    "Do you want the FAQ provenance language (the 'not a guess / same ledger' sentences) kept anywhere public, or moved entirely to a source line / citations attribute that engines do not quote?"
+  ]
+}

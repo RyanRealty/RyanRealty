@@ -93,7 +93,11 @@ describe('buildListingAskClaim', () => {
     expect(claim?.figures[1]?.value).toBe('$1,000,000')
     expect(claim?.figures[1]?.label).toBe('Tetherow median list')
     expect(claim?.figures.map((f) => f.label).join(' ')).not.toMatch(/Median to pending/)
-    expect(claim?.source).toMatch(/leftover membership, active single-family houses in Tetherow/)
+    // VOICE-2 (2026-09-22): the folded line showed "leftover membership". The
+    // trace now opens with the feed in words and hands that name over.
+    expect(claim?.source).toMatch(/^live MLS through Oregon Data Share, active single-family houses in Tetherow/)
+    expect(claim?.sourceName).toBe('live MLS through Oregon Data Share')
+    expect(claim?.source).not.toMatch(/leftover/)
     expect(claim?.source).toMatch(/This price is the published list price/)
     expect(claim?.source).not.toMatch(/\bask\b/i)
     expect(claim?.headline).not.toMatch(/ask/i)
@@ -111,7 +115,7 @@ describe('buildListingAskClaim', () => {
     })
     expect(claim?.figures.some((f) => f.label === 'months of supply')).toBe(true)
     expect(claim?.figures.find((f) => f.label === 'months of supply')?.value).toBeTruthy()
-    expect(claim?.source).toMatch(/leftover membership, active single-family houses in Bend/)
+    expect(claim?.source).toMatch(/^live MLS through Oregon Data Share, active single-family houses in Bend/)
   })
 
   it('sends a core grain to its market report, not search', () => {

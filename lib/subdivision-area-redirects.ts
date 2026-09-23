@@ -77,9 +77,14 @@ function buildRedirectMap(): Map<string, string> {
   // exactly the soft-404 this module exists to prevent. Both destinations are
   // verified to render a real <h1>.
   //   the-farm       -> the county plat is recorded as "Farm (the)", slug farm-the.
-  //   shevlin-bluffs -> spans three county plats (Phase 1, Phase 2, Phases 3 & 4),
-  //                     so no single /subdivisions page is the honest canonical;
-  //                     the browse pair carries the whole MLS subdivision.
+  //   shevlin-bluffs -> REMOVED 2026-09-23 (Matt: "When there are multiple
+  //                     phases in a subdivision, we want all those to go into
+  //                     the same main neighborhood page"). It 308-ed to the
+  //                     browse pair because it spans three county plats (Phase
+  //                     1, Phase 2, Phases 3 & 4) and no single plat page was
+  //                     the honest canonical. The plat-family page now is:
+  //                     /subdivisions/shevlin-bluffs renders the union of the
+  //                     three phases and links each (lib/market/plat-family.ts).
   // Never overwrite a registry- or GIS-derived key: those are canonical.
   //   campbell-road  -> the county records it as "Campbell Road Subdivision"
   //                     (CSNUM 16724), a plat NESTED inside First On The Hill
@@ -100,7 +105,6 @@ function buildRedirectMap(): Map<string, string> {
   //                     (PLACE_MEMBERSHIP_MISSION step 2, 2026-09-01).
   for (const [alias, dest] of [
     ['the-farm', '/subdivisions/farm-the'],
-    ['shevlin-bluffs', '/homes-for-sale/bend/shevlin-bluffs'],
     ['campbell-road', '/subdivisions/campbell-road-subdivision'],
     ['cline-falls-mob-park', '/subdivisions/city-of-cline-falls'],
     ['first-on-the-hill-sites', '/subdivisions/1st-on-the-hillsites'],

@@ -31,6 +31,7 @@ import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { formatPriceCompact } from '@/lib/format/money'
+import { yearAgoClause } from '@/lib/market/year-ago-clause'
 import type { MedianMonth } from '../../_v3/market-charts'
 import { compositionParts, pickLatestMartYear } from '../../_v3/closed-kpis'
 
@@ -357,16 +358,20 @@ export function regionInsightFaqs(
   const recent = board.compare?.cells[board.compare.cells.length - 1]
   const prior = board.compare?.priorCells[board.compare.priorCells.length - 1]
   if (recent?.median != null && prior?.median != null) {
-    const delta = insightDelta(recent.median, prior.median)
-    const direction =
-      recent.median > prior.median ? 'higher' : recent.median < prior.median ? 'lower' : 'level'
+    // VOICE-6: the same one-subject comparison the board's lede prints.
+    const versus = yearAgoClause({
+      now: recent.median,
+      then: prior.median,
+      thenMoney: insightMoney(prior.median),
+      thenLabel: prior.label,
+      delta: insightDelta(recent.median, prior.median),
+    })
     out.push({
       question: 'What is a house actually selling for in Central Oregon right now?',
       answer:
         `In ${recent.label} the middle single-family sale across Central Oregon closed at ` +
-        `${insightMoney(recent.median)}. A year earlier, in ${prior.label}, the middle sale was ` +
-        `${insightMoney(prior.median)}${delta ? `, ${delta}` : ''}, so sale prices are ${direction} ` +
-        'than the same month last year. This is what buyers paid, not what sellers are asking; ' +
+        `${insightMoney(recent.median)}${versus ? `, ${versus}` : ''}. ` +
+        'This is what buyers paid, not what sellers are asking; ' +
         'asking prices sit higher. Source: closed single-family sales through Oregon Data Share MLS.',
     })
   }

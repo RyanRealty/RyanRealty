@@ -4,7 +4,7 @@
  * higher rank keeps the slot, a colliding lower-rank name is dropped.
  */
 
-export type AtlasLabelKind = 'town' | 'place' | 'active' | 'home'
+export type AtlasLabelKind = 'town' | 'place' | 'active' | 'home' | 'street'
 
 export type PackedAtlasLabel = {
   id: string
@@ -25,8 +25,8 @@ export type AtlasLabelCandidate = PackedAtlasLabel & {
 
 /** Approximate the painted box so packing can run without measuring the DOM. */
 export function atlasLabelBox(text: string, kind: AtlasLabelKind): { hw: number; hh: number } {
-  const fs = kind === 'place' ? 11 : kind === 'active' || kind === 'home' ? 13 : 12
-  const maxW = kind === 'active' || kind === 'home' ? 220 : 120
+  const fs = kind === 'street' ? 9.5 : kind === 'place' ? 11 : kind === 'active' || kind === 'home' ? 13 : 12
+  const maxW = kind === 'active' || kind === 'home' ? 220 : kind === 'street' ? 92 : 120
   const content = Math.max(28, text.length * fs * 0.58)
   const w = Math.min(maxW, content)
   const lines = content > maxW ? 2 : 1

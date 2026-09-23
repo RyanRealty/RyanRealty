@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-09-23T20:12:51.711Z",
+  "updated_at": "2026-09-23T23:14:53.919Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -49590,6 +49590,76 @@
       "surface_tags": [],
       "vision_grade": null,
       "file_path": "public/asset-library/photos/wikimedia/f135a831-63b5-4aa4-a083-22be32f832b4.JPG"
+    },
+    {
+      "id": "e4e83846-4ccf-4c06-82f2-5f7e6be70a0e",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "story-film:winter-1982:lab-ref",
+      "license": "generated (Grok Imagine, owned by Ryan Realty)",
+      "license_metadata": {},
+      "creator": "Ryan Realty Studio",
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/e4e83846-4ccf-4c06-82f2-5f7e6be70a0e.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/e4e83846-4ccf-4c06-82f2-5f7e6be70a0e.jpg",
+      "file_size_bytes": 89864,
+      "geo_tags": [
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "dog",
+        "black-labrador",
+        "story-film-cast"
+      ],
+      "search_query": "story film black lab reference",
+      "width": 500,
+      "height": 564,
+      "duration_sec": null,
+      "registered_at": "2026-09-23T23:14:23.2+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Companion reference for story films: the black Labrador with the red collar from \"Winter, 1982\" (crop of the car still). Fed to every shot with the dog so it stays one dog.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/e4e83846-4ccf-4c06-82f2-5f7e6be70a0e.jpg"
+    },
+    {
+      "id": "c9fce792-26ab-4837-81a0-cfaf943b8c43",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "story-film:winter-1982:lab-ref-frontal",
+      "license": "generated (Grok Imagine, owned by Ryan Realty)",
+      "license_metadata": {},
+      "creator": "Ryan Realty Studio",
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/c9fce792-26ab-4837-81a0-cfaf943b8c43.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/c9fce792-26ab-4837-81a0-cfaf943b8c43.jpg",
+      "file_size_bytes": 25383,
+      "geo_tags": [
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "dog",
+        "black-labrador",
+        "story-film-cast"
+      ],
+      "search_query": "story film black lab reference",
+      "width": 280,
+      "height": 304,
+      "duration_sec": null,
+      "registered_at": "2026-09-23T23:14:50.099+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Companion reference for story films: the black Labrador with the red collar from \"Winter, 1982\" (frontal crop from the final tableau still). Fed to every shot with the dog so it stays one dog.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/c9fce792-26ab-4837-81a0-cfaf943b8c43.jpg"
     }
   ]
 }

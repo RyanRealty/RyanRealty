@@ -62,12 +62,19 @@ export type AffordabilityViewInput = {
   medianMonthly: number | null
   /** The section-0 trace behind the median. */
   medianSource: string
+  /** That trace's source in the reader's words, for the folded line (VOICE-2). */
+  medianSourceName?: string | null
   /** The section-0 trace behind the terms the visitor is running. */
   termsSource: string
   /** The local financing mix, biggest share first. Empty withholds the figure. */
   mix: readonly AffordabilityMixSlice[]
   mixSource: string
+  /** The mix trace's source in the reader's words, for the folded line. */
+  mixSourceName?: string | null
 }
+
+/** The folded name of the one figure that is arithmetic, not a measurement. */
+export const AFFORDABILITY_ARITHMETIC_SOURCE_NAME = 'Arithmetic on the price you set'
 
 /** The one sentence the section opens on, before any figure. */
 export function affordabilityClaim(input: {
@@ -118,7 +125,19 @@ export function affordabilitySearchLabel(placeName: string, ceiling: number): st
  * source is the thing section 0 exists to stop.
  */
 export function affordabilityFigures(input: AffordabilityViewInput): V3DrawingFigure[] {
-  const { placeName, mode, solved, medianListPrice, medianMonthly, medianSource, termsSource, mix, mixSource } = input
+  const {
+    placeName,
+    mode,
+    solved,
+    medianListPrice,
+    medianMonthly,
+    medianSource,
+    medianSourceName,
+    termsSource,
+    mix,
+    mixSource,
+    mixSourceName,
+  } = input
   const figures: V3DrawingFigure[] = []
 
   // 1. What you bring against what you borrow. The LEAD, because it is the
@@ -129,7 +148,8 @@ export function affordabilityFigures(input: AffordabilityViewInput): V3DrawingFi
       draw: 'pair',
       claim: `At ${formatPriceExact(solved.ceiling)}, here is what you bring and what you borrow.`,
       caption: 'cash in and loan',
-      source: `Arithmetic on the price you set, not a figure we measured: ${termsSource} The two add up to ${formatPriceExact(solved.ceiling)} exactly — closing costs are not in either bar.`,
+      source: `${AFFORDABILITY_ARITHMETIC_SOURCE_NAME}, not a figure we measured: ${termsSource} The two add up to ${formatPriceExact(solved.ceiling)} exactly — closing costs are not in either bar.`,
+      sourceName: AFFORDABILITY_ARITHMETIC_SOURCE_NAME,
       bars: [
         {
           name: 'You bring',
@@ -160,6 +180,7 @@ export function affordabilityFigures(input: AffordabilityViewInput): V3DrawingFi
       claim: `Your monthly number against the middle of ${placeName}.`,
       caption: 'monthly payment',
       source: `${medianSource} The two payments are principal and interest only, on the terms you set: ${termsSource} Taxes, insurance and any HOA sit on top.`,
+      sourceName: medianSourceName ?? null,
       bars: [
         {
           name: 'Yours',
@@ -192,6 +213,7 @@ export function affordabilityFigures(input: AffordabilityViewInput): V3DrawingFi
       claim: `How people actually paid for a house in ${placeName}.`,
       caption: 'financing mix',
       source: mixSource,
+      sourceName: mixSourceName ?? null,
       bars: drawableMix.map((slice) => ({
         name: slice.name,
         value: slice.share,

@@ -1,6 +1,7 @@
 import 'server-only'
 import { randomBytes } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
+import { decorateOutboundUrl } from '@/lib/identity/outbound-links'
 
 /**
  * Trackable short links for outbound SMS — the Twilio "click tracking" feature,
@@ -136,7 +137,11 @@ export type ResolvedShortLink = { targetUrl: string; personId: number; broker: s
 
 /**
  * Stamp the clicker's identity onto OUR OWN site URLs so the visit stitches
- * (PersonIdentityBridge reads ?_pid=; AgentAttributionBridge reads ?agent=).
+ * (/api/visitors/track verifies the signed ?_pid= token; AgentAttributionBridge
+ * reads ?agent=). The person comes from OUR short-link row, so it is trusted:
+ * the redirect mints a fresh SIGNED token through the one decoration helper
+ * and drops any unsigned `_pid` a pre-2026-09-23 stored target still carries
+ * (P7 identity loop).
  * The short link knows exactly who it was texted to, so the /r/<code> redirect
  * closes the attribution loop for every SMS sender — including any call site
  * that forgot the attributeSiteLinks pass before instrumenting (the 2026-09-01
@@ -152,9 +157,7 @@ export function stampIdentityOnOwnSite(
     const u = new URL(target)
     const host = u.hostname.toLowerCase().replace(/^www\./, '')
     if (host !== 'ryan-realty.com') return target
-    if (personId > 0 && !u.searchParams.has('_pid')) u.searchParams.set('_pid', String(personId))
-    if (broker && !u.searchParams.has('agent')) u.searchParams.set('agent', broker)
-    return u.toString()
+    return decorateOutboundUrl(u.toString(), { brokerSlug: broker, personId, channel: 'sms' })
   } catch {
     return target
   }

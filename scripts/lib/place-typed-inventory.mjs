@@ -113,8 +113,12 @@ export function placeTypedInventorySourceProblems({ root = process.cwd(), files 
     p.push(`${PATHS.stock}: missing place-inventory-stock.`)
   } else {
     const code = stripComments(stock)
-    if (!/PLACE_STOCK_SECTION_ORDER = \['sfr', 'multifamily', 'attached', 'land'\]/.test(code)) {
-      p.push(`${PATHS.stock}: four buyer buckets are sfr / multifamily / attached / land.`)
+    // Five buyer buckets since Matt 2026-09-23 ("carousels of all available
+    // property types ... we haven't been doing commercial and multi family"):
+    // commercial joined the four, so a commercial sale no longer hides under
+    // "Other property".
+    if (!/PLACE_STOCK_SECTION_ORDER = \['sfr', 'multifamily', 'attached', 'land', 'commercial'\]/.test(code)) {
+      p.push(`${PATHS.stock}: five buyer buckets are sfr / multifamily / attached / land / commercial.`)
     }
     if (!/if \(rows\.length === 0\) return \[\]/.test(code)) {
       p.push(`${PATHS.stock}: a type with zero actives is omitted — no empty stub.`)

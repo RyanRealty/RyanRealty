@@ -1,0 +1,249 @@
+{
+  "area": "funnel",
+  "notes_path": "/tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/funnel/notes.md",
+  "summary": "I inventoried every public capture surface live (curl with a Chrome UA on /, /buy, /sell, /contact, /about, /team, /join, /price-drops, /cities/bend, /communities/tetherow, /listing/220222277, /housing-market/bend), traced each form to its server action, sendEvent call, tags, sequence and confirmation in code, ran the company-scoreboard probe, row-read the CRM tables, and then aggregated 30 days of crm_people, enrollments, broker alerts, tasks, alerts and timeline rows in JavaScript through the scratch helper. Long-form notes with every command, SQL and excerpt: /tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/funnel/notes.md. Git tree unchanged; nothing sent; no MCP calls after the rule change.\n\nWhat the funnel actually does today: buyers arrive through the listing-alerts sheet and the contact form (listing Tour/Ask lands on the contact form), sellers through /sell and the place-page value ask, broker-seekers through /join which has no form of its own and hands off to /contact?inquiry=Join the team. Every door writes a crm_people row via ensureNativeLead with stage Lead, assigned_broker matt, and source 'ryan-realty.com' (sendEvent drops sourceUrl, pageUrl, message and UTM campaign), auto-enrolls in a master sequence (which flips the stage to Nurture within 4 seconds), sends a same-minute confirmation, and texts Matt.\n\nThe numbers (30-day window, 2026-08-23..09-22): 278 non-test people created; 88 carry a site door tag (contact 47, alerts 30, join 7, seller 2, sign-in 1, booking 1); 65 of those 88 (74%) match a bot pattern (random-letter names like 'bJSKIwsurKTralgVeDiGblO', dotted-gmail locals); the contact form has no honeypot, rate limit or captcha. 277 of 278 arrivals are assigned to Matt. Buyer-sequence enrollments: 73 of 76 ended 'suppressed' at the SMS step because nobody ticks SMS consent, so the confirm-task step never runs; the one email they get says 'Your listing alerts are live' even to contact-form leads. Human follow-up: 3 of 88 site leads received any non-machine touch; 75 of 88 carry response-clock:untouched; Matt's phone received 253 alert texts in 7 days (36/day: 123 untouched escalations, 63 new-lead, 24 CMA-ready, 22 health, 7 task digests), all delivered. Open tasks: 1,006, 1,005 overdue (507 are the 5-minute lp-form call tasks, 251 pre-epoch fub-import). The seller lane's top of funnel is nearly empty: 2 site seller people in 30 days, 1 real /sell submit (2026-09-14); every recent Seller-sequence enrollment and all 24 CMA-ready texts come from expired-listing-cron prospecting rows. Newsletter: zero site signups in 30 days. Portal leads: none since 2026-08-01; Meta lead-ad tagged rows: none. Organic attribution never reaches the person record; it survives only in visitor_sessions (utm/referrer/landing/gclid) stitched by rr_vid, and referrer was null on every sampled row.\n\nThe machine half of follow-up works (confirmation in <=7 s, drip in ~7 min, broker text in ~30 s, 5-min and 24-h clocks). The human half does not, and the bot flood plus health/task noise on the same rail is why. UNVERIFIED: Vercel cron error logs (MCP barred), whether the footer newsletter form renders as a form, and which filter the task digest uses (it says 300 while the table shows 1,006 open).",
+  "facts": [
+    {
+      "fact": "Contact form has no honeypot, rate limit or captcha; the alerts, newsletter and place-value actions do have honeypot + fail-closed per-IP limiter.",
+      "evidence": "Full read of app/contact/actions.ts (282 lines): no honeypot/limiter; `grep -n -i -E 'honeypot|company|limiter|rate' app/contact/actions.ts app/contact/_v3/ContactAsk.client.tsx` returns only tracking lines. app/actions/search-alert-capture.ts:48-74, app/actions/newsletter-subscribe.ts:31-58, app/communities/[slug]/_v3/place-value-actions.ts:65-78,195-200 implement honeypot + limiter. Repo grep for turnstile|recaptcha|hcaptcha|captcha hits only OutOfAreaReferralSheet, ListingVideoEmbed and two publish scripts."
+    },
+    {
+      "fact": "74% of 30-day site arrivals match a bot pattern; recent contact/alert rows carry random-letter names and obfuscated gmail locals.",
+      "evidence": "quantify.mjs (2026-09-22): crm_people created >= 2026-08-23, deleted=false, non-fleet: 278 rows; 88 with a site door tag; bot heuristic 65/88. Row read `SELECT id, name, emails->0->>'value' … WHERE source IN (site sources) ORDER BY created_at DESC LIMIT 25`: names wriGVtBlPLxMRdxYUpcvg, bJSKIwsurKTralgVeDiGblO, EXkQqQIiphkRmtSNFSBGgRnT, QKlvETWISqnRlVJW; emails k.el.v.f.ee@gmail.com, ny.s.h.ro.c.k@gmail.com, jordyaprobertsgxi97@gmail.com, francogaflatleycvp84@gmail.com."
+    },
+    {
+      "fact": "Every site door labels the person source 'ryan-realty.com'; sendEvent drops sourceUrl, pageUrl, message and campaign; source is overwritten on re-touch; source_url is null.",
+      "evidence": "lib/crm/send-event.ts:82-83 forwards only {name,email,phone,source,tags,assignedBroker}; lib/data/crm/ensureNativeLead.ts:356 `if (hasSource) update.source = input.source` on reuse; row read of 6 most recent source='ryan-realty.com' rows: source_url null on all; all 30 most recent rows have custom->>'utm_source' null. visitor_sessions rows for 10 site-lead ids (sessions.mjs): 12 rows with utm_source/landing_page/gclid populated, referrer null on all sampled."
+    },
+    {
+      "fact": "Stage flips Lead -> Nurture within ~4 seconds of create on auto-enroll; 79 of 88 site arrivals are Nurture; crm_people.custom.first_broker_action_* is stamped by the system confirmation email.",
+      "evidence": "Timeline row read for person 64105: lead_created 17:21:35.913 -> 'Stage: Lead → Nurture' source sequence-enroll 17:21:40.060; lib/crm/enroll.ts:177-180 advanceJourneyStage('sequence-enroll'); lib/crm/journey-advance.ts:63-70. Row read of 64099 custom: first_broker_action_at 03:21:02 kind email_out; timeline shows that row is email_out initiator=system purpose=alert:confirmation. quantify.mjs site.byStage Nurture 79, Lead 8, Engaged 1."
+    },
+    {
+      "fact": "Buyer Master Workflow ends at the SMS step for anyone without SMS consent; 73 of 76 buyer enrollments in 30 days are 'suppressed' at step_index 1; the confirm task step never fires.",
+      "evidence": "quantify.mjs enrollments30d: {'2:suppressed':73,'2:running':2,'2:stopped':1}; steps row read: seq 2 = [email, sms delay 30, task confirm:true]; app/api/cron/crm-sequence-engine/route.ts:316-321 `isSuppressed(person.id,'sms')` -> `finish({status:'suppressed'})`; lib/crm/enroll.ts:305-310 adds sms suppression unless smsConsent:true; app/actions/search-alert-capture.ts:160-161 calls autoEnrollByPersonId(nativeId) with no opts; place-value-actions.ts:280 passes {smsConsent:false}. Timeline 64105: 'Sequence \"Buyer Lead — Master Workflow\" halted — suppressed (sms:no-sms-consent,'."
+    },
+    {
+      "fact": "Only 3 of 88 site leads in 30 days received a non-machine touch; 75 of 88 carry response-clock:untouched.",
+      "evidence": "quantify.mjs humanTouchesOnSiteLeads30d: 160 outbound crm_timeline rows read for the 88 ids, 3 leads with a touch whose source is not in the machine list and initiator != system. Row read of the 20 latest human-touch rows overall: all Gmail-synced escrow/title threads on persons 9289/57300/6561/8183 plus one inbound call."
+    },
+    {
+      "fact": "Matt's phone received 253 broker alert texts in 7 days (36/day), all delivered; 123 were 'Untouched' escalations, 63 'New lead', 24 'CMA ready', 22 health alarms, 7 task digests.",
+      "evidence": "quantify.mjs brokerAlerts7d over crm_broker_alerts created >= 2026-09-15: rowsRead 253, byBroker {matt:253}, byStatus {sent:253}. Row read LIMIT 25: sent_at within ~30 s of created_at; bodies 'Untouched 1 day: QKlvETWISqnRlVJW asked for to talk to a broker', 'New lead: bJSKIwsurKTralgVeDiGblO', '[crm-health:inbound-webhook-stale] …', '300 tasks need attention (299 overdue, 1 due today)'."
+    },
+    {
+      "fact": "All arrivals route to Matt: 277 of 278 people created in 30 days have assigned_broker matt (1 paul).",
+      "evidence": "quantify.mjs people30d.byBroker {matt:277,paul:1}; lib/crm/lead-routing.ts:23-25 'Behavior is all-to-Matt until an owner changes the strategy in /admin/crm/settings/assignment'; lib/data/crm/nativeCreate.ts:22 NATIVE_DEFAULT_BROKER='matt'."
+    },
+    {
+      "fact": "Seller lane top-of-funnel: 2 site seller people in 30 days; 1 real /sell valuation_requests row (2026-09-14), the other 5 latest are fleet tests from ryanrealty.vercel.app; every recent Seller-sequence enrollment and all 24 CMA-ready texts are expired-listing-cron prospecting rows.",
+      "evidence": "quantify.mjs site.byDoor seller 2; valuationRequests latest 6 source_url: 1 x https://ryan-realty.com/sell (2026-09-14), 5 x https://ryanrealty.vercel.app/sell (2026-09-08); createdLast30d 16. Tag counter-query: audience:seller non-cron rows = 63952 (Website booking) + 4 fleet:test. Enrollments seq 1 in 30d: 4 stopped at step 0. Alert rows 1640/1637/1634 'CMA ready' are persons 64108/64106/64104, all source expired-listing-cron."
+    },
+    {
+      "fact": "1,006 open CRM tasks, 1,005 overdue; 507 are lp-form 5-minute call tasks, 251 pre-epoch fub-import, 172 smart-followup; 968 assigned to Matt.",
+      "evidence": "quantify.mjs openTasks over crm_tasks completed_at IS NULL: rowsRead 1006, overdue {yes:1005,no:1}, byOrigin {lp-form:507,fub-import:251,smart-followup:172,twilio:41,dual-write:23,sequence:10,app:2}. Row read LIMIT 12 by due_at: fub-import tasks due 2025-10-27 'Add buyer, seller… tag for automation - see cheat sheet'."
+    },
+    {
+      "fact": "Listing alerts are the one lane delivering: 59 rows, 54 active, 40 created in 30 days, every row has crm_person_id and last_notified_at; identified sessions show alert-email click-backs.",
+      "evidence": "quantify.mjs listingAlerts: rowsRead 59, byActive {true:54,false:5}, createdLast30d 40, everNotified 59, withPerson 59, byOrigin user/idx-registration 50. sessions.mjs sample 64064: landing /homes-for-sale?propertyType=A&utm_source=ryan-realty&utm_medium=email&utm_campaign=listing-alerts, engagement_score 29."
+    },
+    {
+      "fact": "Newsletter lane produced no site signup in 30 days; portal intake has no row since 2026-08-01; no crm_people carry Facebook/Meta lead tags.",
+      "evidence": "quantify.mjs newsletterRecent: createdLast30d 5, all source crm-bulk-assign; latest non-bulk rows are 'test'/'one-off' 2026-07-30 unsubscribed. Lane counter-queries (row reads): source='newsletter' 0 rows, tags @> {source:newsletter} 0 rows; realtor.com last 2026-08-01, zillow 2026-07-15; tags && {channel:fb-ads,source:fb-ads-seller,source:fb-ads-buyer,source:meta-lead-form} 0 rows."
+    },
+    {
+      "fact": "/join has no form; its CTA goes to /contact?inquiry=Join%20the%20team; recruits land as Lead with recruit:join, no sequence; 7 in 30 days; sample names are bot strings; probe counts 4 join conversions in 7 days.",
+      "evidence": "live/join.html: 0 <form>, href /contact?inquiry=Join%20the%20team; app/contact/actions.ts:146-154,167-170 isJoinInquiry -> recordJoinConversion + tagRecruitJoin; rows 64100 'EXkQqQIiphkRmtSNFSBGgRnT' and 64097 'LdJxqaFNBYKDdRGK' tags [source:ryan-realty.com, recruit:join] stage Lead; probe join.conversions7d 4."
+    },
+    {
+      "fact": "CRM crons leave no sync_logs rows; the crm-e2e battery output is absent; cron error state is UNVERIFIED.",
+      "evidence": "Row reads `sync_logs WHERE endpoint ILIKE '%crm-sequence-engine%' OR … LIMIT 40` -> 0 rows and `WHERE endpoint ILIKE '%crm%' OR '%enroll%' OR '%sequence%' OR '%alert%'` -> 0 rows; `ls tmp/crm-e2e-latest.json` -> missing. Vercel runtime logs not read (MCP barred mid-task). Delivery evidence that the crons run: enrollments advance step_index, alerts sent_at ~30 s after created_at, response-clock rows every 5 min."
+    },
+    {
+      "fact": "Buyer step-0 email tells contact-form leads their listing alerts are live and merges the raw (bot) name into the subject.",
+      "evidence": "crm_sequences row 2 step 0: subject 'Your Bend home search is set, %first%', body 'Hi %first%, thanks for reaching out to Ryan Realty. Your listing alerts are live and the f…'; timeline 64105 (tags source:contact-form, no listing_alerts row) email_out source sequence title 'Your Bend home search is set, bJSKIwsurKTralgVeDiGblO'."
+    },
+    {
+      "fact": "Test residue in production CRM: 3 lowercase 'lead'-stage test:email-harness rows, 5 fleet-test valuation_requests from ryanrealty.vercel.app, 9 fleet:test people in 30 days.",
+      "evidence": "Row read stage='lead': ids 63543-63545 source buyer-lp tags [buyer, test:email-harness] 2026-08-25; valuationRequests latest 6 include 5 source_url https://ryanrealty.vercel.app/sell; quantify.mjs rowsRead 287 vs nonFleet 278."
+    }
+  ],
+  "findings": [
+    {
+      "id": "FUNNEL-1",
+      "title": "Contact form and alerts sheet are being flooded by bots; each bot becomes a CRM person, a drip email and up to three broker texts",
+      "severity": "p0",
+      "category": "conversion",
+      "claim": "About three quarters of site-originated CRM arrivals in the last 30 days (65 of 88) are synthetic submissions. The contact form (app/contact/actions.ts) has no honeypot, rate limit or captcha, and the alerts sheet's honeypot passes these bots. Each one is created as a person, auto-enrolled, emailed, texted to Matt as 'New lead', escalated as 'Untouched' at 5 minutes and 24 hours, and given a 5-minute call task.",
+      "evidence": "quantify.mjs 2026-09-22: 88 site-door people in 30 d, bot heuristic 65; row read of 25 most recent site rows shows names wriGVtBlPLxMRdxYUpcvg, bJSKIwsurKTralgVeDiGblO, QKlvETWISqnRlVJW and emails k.el.v.f.ee@gmail.com, jordyaprobertsgxi97@gmail.com. Full read of app/contact/actions.ts: no honeypot/limiter; grep confirms. Timeline 64105: lead_created -> enroll -> confirmation email -> sequence email -> untouched-5m alert -> new-lead alert, all machine. crm_broker_alerts 7 d: 63 new-lead + 123 untouched texts.",
+      "why_it_matters": "The real handful of organic leads is buried in spam on the broker's phone and in the task list, so nobody answers them (3 of 88 touched). Bot addresses receive drip mail from the brokerage domain, which risks sender reputation for the alerts that do convert. Every scoreboard figure built on crm_people (created-7d 96, join conversions 4) is inflated.",
+      "proposed_fix": "Add the same honeypot + fail-closed per-IP limiter to submitContactForm that submitSearchAlertSignup already has; add a server-side suspect classifier at the ensureNativeLead chokepoint (random-letter name, dotted-gmail local, disposable domains) that tags quality:suspect and makes autoEnrollByPersonId, queueBrokerAlert, createNativeTask and the response clock skip that tag; consider Cloudflare Turnstile on /contact and the alerts sheet (Matt decision). Add a check-*.mjs gate asserting every public capture action carries the honeypot + limiter.",
+      "fix_size": "medium",
+      "files": ["app/contact/actions.ts", "app/contact/_v3/ContactAsk.client.tsx", "app/actions/search-alert-capture.ts", "lib/data/crm/ensureNativeLead.ts", "lib/crm/enroll.ts", "lib/crm/broker-alerts.ts", "lib/crm/response-clock-run.ts"]
+    },
+    {
+      "id": "FUNNEL-2",
+      "title": "Site leads get no human follow-up: 3 of 88 touched in 30 days, 75 of 88 flagged untouched",
+      "severity": "p0",
+      "category": "conversion",
+      "claim": "The machine half of follow-up runs (confirmation email in <=7 s, drip in ~7 min, broker text in ~30 s, 5-min and 24-h clocks), but almost no site lead is answered by a person. Everything routes to one broker whose phone receives 36 alert texts a day, so the real leads (mostly the alerts lane) are indistinguishable from the bots.",
+      "evidence": "quantify.mjs humanTouchesOnSiteLeads30d: 3 of 88 site leads with a non-machine outbound row (160 rows read); 75/88 carry response-clock:untouched; brokerAlerts7d 253 rows all to matt (untouched 123, new-lead 63, health 22, task-digest 7); people30d.byBroker matt 277 / paul 1; row read of latest 20 human touches: all escrow/title Gmail threads on existing clients.",
+      "why_it_matters": "Being seen only pays if the visitor who converts is answered. The site is producing real alert signups (kwagnera@hotmail.com, chris@centralvalleycoalition.com, brett.whitney@pets-global.com with alert click-backs) that go untouched for a day and then only get an escalation text.",
+      "proposed_fix": "After FUNNEL-1 removes the noise: collapse new-lead + untouched-5m + untouched-24h into one text per real lead and move health alarms and task digests off the lead rail (email or admin); switch crm_assignment_config from all_to_one to round_robin or by_source so Rebecca and Paul share site leads (Matt decision); add 'site leads answered by a human within 5 min / 24 h' to the weekly scoreboard so the loop can see it.",
+      "fix_size": "medium",
+      "files": ["lib/crm/broker-alerts.ts", "lib/crm/response-clock-run.ts", "lib/crm/broker-notify-prefs.ts", "lib/crm/lead-routing.ts", "lib/data/loop/signals.ts"]
+    },
+    {
+      "id": "FUNNEL-3",
+      "title": "Buyer master workflow halts at the SMS step for everyone who did not tick SMS consent, so the broker task step never fires",
+      "severity": "major",
+      "category": "conversion",
+      "claim": "73 of 76 buyer enrollments in 30 days ended with status 'suppressed' at step_index 1. The sequence engine ends the whole enrollment when the SMS channel is suppressed (no-sms-consent), and the alerts sheet and place-page value ask never pass consent, so the buyer drip is one email and the confirm:true task that would put the lead on a broker's list never runs.",
+      "evidence": "quantify.mjs enrollments30d {'2:suppressed':73,'2:running':2,'2:stopped':1}; steps row read seq 2 = [email, sms delay 30, task confirm:true]; app/api/cron/crm-sequence-engine/route.ts:316-321 finish({status:'suppressed'}); lib/crm/enroll.ts:305-310 sms suppression default; app/actions/search-alert-capture.ts:160-161 autoEnrollByPersonId(nativeId) with no smsConsent; timeline 64105 'halted — suppressed (sms:no-sms-consent'.",
+      "why_it_matters": "The one nurture path buyers have is dead after the first email for essentially every organic buyer; the broker never gets the workflow task, so 'auto-enroll' produces no human action.",
+      "proposed_fix": "In the engine, treat a suppressed channel as 'skip this step and advance' (log it) rather than finishing the enrollment; or reorder the buyer sequence to email -> task -> sms so the task fires before the consent gate. Keep the fail-closed SMS gate itself untouched (ci:sms-consent). Add a check that no active sequence has a channel step that can end the enrollment before its task step.",
+      "fix_size": "small",
+      "files": ["app/api/cron/crm-sequence-engine/route.ts", "lib/crm/enroll.ts", "app/actions/search-alert-capture.ts", "app/communities/[slug]/_v3/place-value-actions.ts"]
+    },
+    {
+      "id": "FUNNEL-4",
+      "title": "Organic attribution never reaches the CRM person: source is the host name, UTM/landing/referrer are dropped, and source is overwritten on re-touch",
+      "severity": "major",
+      "category": "tracking",
+      "claim": "sendEvent forwards only name/email/phone/source/tags/broker and discards sourceUrl, pageUrl, message and campaign; every site door stamps source 'ryan-realty.com'; ensureNativeLead's reuse path overwrites source with the latest touch; crm_people.source_url is null. First-touch channel (organic/paid/direct), landing page and referrer exist only in visitor_sessions via the rr_vid stitch, and referrer was null on every sampled row.",
+      "evidence": "lib/crm/send-event.ts:82-83; lib/data/crm/ensureNativeLead.ts:356; row read of 6 recent source='ryan-realty.com' rows: source_url null; 30 recent rows custom utm_source null; sessions.mjs: visitor_sessions has utm_*/landing_page/gclid/fbclid, 12 rows for 10 site-lead ids, referrer null on all sampled.",
+      "why_it_matters": "The mission is organic visibility that converts; today no report can say which lead came from Google, which page converted it, or whether a ranking change moved leads. The loop cannot learn from what it cannot attribute.",
+      "proposed_fix": "At create, freeze custom.first_touch = {door, landing_page, referrer, utm_source/medium/campaign, gclid/fbclid} from the stitched visitor_session (or the action's own headers) and never overwrite it; write source as the door label ('contact-form', 'idx-registration', 'seller-lp', 'place-page', 'join') instead of the host; extend ci:crm-lead-integrity to require a door source. Keep leadSourceTaxonomy in step (it already classifies these labels as web).",
+      "fix_size": "medium",
+      "files": ["lib/crm/send-event.ts", "lib/data/crm/ensureNativeLead.ts", "lib/visitor-backfill.ts", "lib/data/crm/leadSourceTaxonomy.ts", "scripts/check-crm-lead-integrity.mjs"]
+    },
+    {
+      "id": "FUNNEL-5",
+      "title": "Stage is machine-driven: Lead becomes Nurture 4 seconds after create, and the system confirmation email is recorded as the first broker action",
+      "severity": "major",
+      "category": "data",
+      "claim": "auto-enroll advances the stage to Nurture on enrollment, so 79 of 88 site arrivals are 'Nurture' seconds after they exist and 'Lead' now means 'not enrolled' (mostly expired-listing prospecting rows). custom.first_broker_action_at/kind is stamped by the system confirmation email (initiator=system). The stage mix therefore says nothing about human response, which is the product defect COMPANY_IMPROVEMENT names.",
+      "evidence": "Timeline 64105: created 17:21:35.913, 'Stage: Lead → Nurture' 17:21:40.060 source sequence-enroll; lib/crm/enroll.ts:177-180; lib/crm/journey-advance.ts:15,63-70; row read 64099 custom.first_broker_action_at 03:21:02 kind email_out = the alert:confirmation system email; quantify site.byStage Nurture 79 / Lead 8; probe byStage Lead 203 of 23,001.",
+      "why_it_matters": "Brokers and the scoreboard cannot see which leads are waiting for a person; the response clock had to reinvent that truth outside the stage model.",
+      "proposed_fix": "Advance Lead -> Nurture only on a human first-outbound (initiator != system, source not in the machine list) or an inbound reply; record sequence-enroll as a timeline row/tag, not a stage change; exclude initiator=system from first_broker_action stamping. Update scripts/check-stage-truth.mjs (which currently locks the sequence-enroll advance) in the same change.",
+      "fix_size": "medium",
+      "files": ["lib/crm/journey-advance.ts", "lib/crm/enroll.ts", "lib/crm/first-broker-action.ts", "lib/crm/sequence-outbound.ts", "scripts/check-stage-truth.mjs"]
+    },
+    {
+      "id": "FUNNEL-6",
+      "title": "The seller lane's top of funnel is nearly empty despite a 'Value my home' ask on every page",
+      "severity": "major",
+      "category": "conversion",
+      "claim": "In 30 days the site produced 2 seller people (one real /sell submit on 2026-09-14, one booking); the other recent valuation_requests are fleet tests from ryanrealty.vercel.app. Every recent Seller-sequence enrollment and all 24 'CMA ready' texts in 7 days come from expired-listing-cron prospecting rows, not site visitors. Meanwhile 'Value my home' appears 5-17 times per public page and a sticky ask follows the visitor.",
+      "evidence": "quantify.mjs site.byDoor seller 2; valuationRequests latest 6: 1 x ryan-realty.com/sell, 5 x ryanrealty.vercel.app/sell; audience:seller non-cron tag query = 63952 + 4 fleet:test; enrollments seq 1 in 30 d = 4 stopped at step 0; alerts 1640/1637/1634 CMA ready are persons 64108/64106/64104 source expired-listing-cron; live HTML counts: /sell 17, /communities/tetherow 8, /cities/bend 7, / 6 occurrences of 'Value my home'.",
+      "why_it_matters": "The seller ask is the site's most repeated conversion element and it is converting organic visitors at roughly zero; the loop has no weekly number for it, so nothing corrects it.",
+      "proposed_fix": "Put the seller funnel on the scoreboard weekly (GSC clicks to /sell and place pages -> address_submit -> qualify -> submit, all already fired by trackEvent) and exclude fleet/vercel.app rows; make the place-page ask return something before asking for email (it already answers ungated, keep that) and stop repeating the ask more than once per viewport; treat the ask copy and placement as a measured node, not a fixed chrome element.",
+      "fix_size": "medium",
+      "files": ["app/sell/_v3/SellValueForm.tsx", "components/site/v3/V3StickyAsk.client.tsx", "components/site/v3/V3PlaceValue.client.tsx", "lib/data/loop/signals.ts", "docs/plans/COMPANY_SCOREBOARD.md"]
+    },
+    {
+      "id": "FUNNEL-7",
+      "title": "One task backlog nobody can work: 1,006 open tasks, 1,005 overdue, 507 of them the automatic 5-minute call task",
+      "severity": "major",
+      "category": "process",
+      "claim": "Every site submit (bots included) creates a 5-minute lp-form call task; pre-epoch fub-import tasks from 2025 were never purged; smart-followup adds more. 968 of the open tasks sit on Matt. The daily digest text reports 300, the table shows 1,006.",
+      "evidence": "quantify.mjs openTasks: rowsRead 1006, overdue 1005, byOrigin {lp-form:507, fub-import:251, smart-followup:172, twilio:41, dual-write:23, sequence:10}, byBroker matt 968; row read by due_at: fub-import tasks due 2025-10-27; alert 1630 body '300 tasks need attention (299 overdue, 1 due today)'; task creation at app/actions/search-alert-capture.ts:147,321,496 and lib/data/crm/ensureNativeLead.ts:475.",
+      "why_it_matters": "A task list that is 100% overdue is not a to-do list; the real 5-minute call never stands out, and the digest under-reports it.",
+      "proposed_fix": "Do not create the call task for quality:suspect leads (FUNNEL-1); auto-complete lp-form tasks when the response clock records 'answered' or the enrollment is suppressed/stopped; archive fub-import tasks older than the enrollment epoch; reconcile the digest's filter with the table.",
+      "fix_size": "small",
+      "files": ["lib/data/crm/ensureNativeLead.ts", "app/actions/search-alert-capture.ts", "lib/crm/response-clock-run.ts", "app/api/cron/crm-task-reminders/route.ts"]
+    },
+    {
+      "id": "FUNNEL-8",
+      "title": "The buyer drip tells contact-form leads their listing alerts are live and merges raw names into the subject",
+      "severity": "major",
+      "category": "voice",
+      "claim": "Buyer Master step 0 is one email for every buyer door; a contact-form 'Buying' inquiry with no listing_alerts row receives 'Your Bend home search is set … Your listing alerts are live', and %first% merges whatever the form captured, including bot strings.",
+      "evidence": "crm_sequences row 2 step 0 subject/body (row read); timeline 64105 (tags source:contact-form, no alert row) email_out source sequence title 'Your Bend home search is set, bJSKIwsurKTralgVeDiGblO'.",
+      "why_it_matters": "A brokerage email that states a service is running when it is not fails the honesty bar in CLAUDE.md §0 and sounds like a machine, the opposite of VOICE.md.",
+      "proposed_fix": "Give each door its own first touch (contact-form: 'we got your note, here is what happens next'; alerts: the alerts copy) by keying the automation rule on source:contact-form vs source:idx-registration, or add a condition step; guard %first% so a name that is not a name falls back to no salutation.",
+      "fix_size": "small",
+      "files": ["lib/crm/enroll.ts", "lib/crm/merge.ts", "app/admin/(protected)/crm/sequences"]
+    },
+    {
+      "id": "FUNNEL-9",
+      "title": "Broker-seeker lane has no capture of its own and its conversion count is bot-inflated",
+      "severity": "minor",
+      "category": "conversion",
+      "claim": "/join has no form; the CTA hands off to the general contact form; a recruit lands as a Lead with recruit:join, no owner path and no sequence; 7 arrivals in 30 days, the sampled ones are bot names, and the probe counts them as 4 join conversions in 7 days.",
+      "evidence": "live/join.html 0 <form>, href /contact?inquiry=Join%20the%20team; app/contact/actions.ts:146-154,167-170; rows 64100 and 64097 names EXkQqQIiphkRmtSNFSBGgRnT / LdJxqaFNBYKDdRGK tags [source:ryan-realty.com, recruit:join]; probe join.conversions7d 4; quantify site.byDoor join 7.",
+      "why_it_matters": "Recruiting is a first-order outcome (join-the-brokerage.md) and the only number the loop has for it is noise.",
+      "proposed_fix": "Give /join a short recruit ask (name, license number or 'not yet licensed', current brokerage, phone) that posts with source 'join' and quality gating, and count join conversions only for non-suspect persons; route recruit leads to Matt with a distinct alert kind.",
+      "fix_size": "small",
+      "files": ["app/join/page.tsx", "app/join/_v3/join-constants.ts", "lib/data/loop/join-conversion.ts", "app/contact/actions.ts"]
+    },
+    {
+      "id": "FUNNEL-10",
+      "title": "Newsletter, portal and Meta lead lanes show no site-originated arrivals",
+      "severity": "minor",
+      "category": "data",
+      "claim": "No newsletter_subscribers row from the site in 30 days (5 rows, all crm-bulk-assign) and zero crm_people tagged source:newsletter despite 5,351 subscribers; last Realtor.com portal person 2026-08-01, last Zillow 2026-07-15; no crm_people carry Facebook/Meta lead tags at all.",
+      "evidence": "quantify.mjs newsletterRecent createdLast30d 5 all crm-bulk-assign, latest non-bulk rows 'test'/'one-off' 2026-07-30 unsubscribed; lane counter-queries: source='newsletter' 0 rows, tags @> {source:newsletter} 0 rows, realtor.com 2026-08-01, zillow 2026-07-15, fb tag set 0 rows.",
+      "why_it_matters": "Either these feeds are intentionally off (then their crons, docs and scoreboard rows are dead weight) or they are silently broken; both hurt the loop's picture of where leads come from. Whether the footer newsletter form renders and posts is UNVERIFIED.",
+      "proposed_fix": "Matt confirms which feeds are live; for live ones add a per-lane last-arrival age to the scoreboard (source: crm_people max created_at per door) and a health alarm when it exceeds the expected cadence; for parked ones delete the cron and the doc path.",
+      "fix_size": "small",
+      "files": ["app/api/cron/crm-portal-lead-intake/route.ts", "app/api/meta/lead-webhook/route.ts", "app/actions/newsletter-subscribe.ts", "lib/data/loop/signals.ts", "vercel.json"]
+    },
+    {
+      "id": "FUNNEL-11",
+      "title": "CRM cron health is unobservable from the database; the e2e battery output is missing",
+      "severity": "minor",
+      "category": "process",
+      "claim": "The CRM crons (sequence engine, scheduled sends, auto-enroll, alert drain, response clock) write no sync_logs rows; the only evidence they run is their side effects; tmp/crm-e2e-latest.json does not exist, so the crm-e2e guardian has not left a result in this checkout.",
+      "evidence": "sync_logs row reads with two shapes (specific endpoint names; ILIKE '%crm%' OR '%enroll%' OR '%sequence%' OR '%alert%') both 0 rows; `ls tmp/crm-e2e-latest.json` missing; side-effect evidence: enrollments advance, alerts sent_at ~30 s, response-clock rows every 5 min. Vercel runtime logs not read (rule change) — error state UNVERIFIED.",
+      "why_it_matters": "A stalled follow-up cron would look identical to a quiet day; the loop's 'follow-up works' claim rests on nothing it can read.",
+      "proposed_fix": "Have each CRM cron write one sync_logs heartbeat row per run (endpoint 'cron:<name>', duration, records) through the existing sync-log DAL, and add lastRunAt per cron to collectCompanyScoreboardSignals.",
+      "fix_size": "small",
+      "files": ["app/api/cron/crm-sequence-engine/route.ts", "app/api/cron/crm-scheduled-sends/route.ts", "app/api/cron/crm-auto-enroll/route.ts", "app/api/cron/crm-alert-drain/route.ts", "app/api/cron/crm-response-clock/route.ts", "lib/data/loop/signals.ts"]
+    },
+    {
+      "id": "FUNNEL-12",
+      "title": "Test residue sits in the production CRM and leaks into counts",
+      "severity": "minor",
+      "category": "data",
+      "claim": "Three lowercase 'lead'-stage rows tagged test:email-harness, five fleet-test valuation_requests from ryanrealty.vercel.app, and nine fleet:test people in 30 days remain; the probe excludes fleet:test but nothing excludes test:email-harness or vercel.app-sourced rows.",
+      "evidence": "Row read stage='lead': ids 63543-63545 buyer-lp tags [buyer, test:email-harness]; valuationRequests latest 6 include 5 x https://ryanrealty.vercel.app/sell; quantify rowsRead 287 vs nonFleet 278; lib/data/loop/signals.ts:231 excludes only fleet:test.",
+      "why_it_matters": "Small, but every inflated denominator makes the funnel look busier than it is.",
+      "proposed_fix": "Delete or mark deleted the test:email-harness rows and vercel.app valuation_requests; extend the scoreboard exclusion to test:* tags and non-canonical hosts; extend ci:int-test-residue to cover these shapes.",
+      "fix_size": "small",
+      "files": ["scripts/check-int-test-residue.mjs", "lib/data/loop/signals.ts"]
+    },
+    {
+      "id": "FUNNEL-13",
+      "title": "Listing alerts is the one lane that works end to end and it is not on the scoreboard as a funnel",
+      "severity": "minor",
+      "category": "tracking",
+      "claim": "59 listing_alerts rows, 40 created in 30 days, every one linked to a person and notified; identified sessions show alert-email click-backs raising engagement scores; yet the scoreboard reports only counts, not signups per week, bot-filtered, or click-back rate.",
+      "evidence": "quantify listingAlerts rowsRead 59, createdLast30d 40, everNotified 59, withPerson 59, botHeuristicEmails 13; sessions.mjs 64064 utm_campaign=listing-alerts engagement 29; probe search.listingAlerts 55/51 active.",
+      "why_it_matters": "This is the visitor-to-return-loop that organic search feeds; measuring it weekly is the cheapest truthful conversion signal the loop can ingest.",
+      "proposed_fix": "Add weekly rows: alerts created (non-suspect), alert emails sent/opened/clicked, click-back sessions, and first human touch on alert signups to collectCompanyScoreboardSignals and COMPANY_SCOREBOARD.md.",
+      "fix_size": "small",
+      "files": ["lib/data/loop/signals.ts", "docs/plans/COMPANY_SCOREBOARD.md"]
+    },
+    {
+      "id": "FUNNEL-14",
+      "title": "Lead-flow docs describe paths that no longer exist",
+      "severity": "minor",
+      "category": "process",
+      "claim": "docs/AUTH_AND_CRM.md still documents a CRM_WEBHOOK_URL/Zapier hand-off and the legacy saved_searches table; docs/MARKETING_LEAD_FLOW.md Path D cites submitExitIntentLead (removed) and Path C /home-valuation as the seller entry while /sell owns it.",
+      "evidence": "docs/AUTH_AND_CRM.md:31-37; docs/MARKETING_LEAD_FLOW.md:150-158,134-147; app/actions/lead-capture.ts:72-74 'the only stitch call in this file rode the removed submitExitIntentLead'; probe savedSearchesLegacy 2.",
+      "why_it_matters": "A 'run the loop' session told to read these docs learns a funnel that is not the live one.",
+      "proposed_fix": "Delete the CRM section of AUTH_AND_CRM.md; rewrite MARKETING_LEAD_FLOW.md paths B-F to the live doors listed in this audit's table; point both at ensureNativeLead as the single write.",
+      "fix_size": "small",
+      "files": ["docs/AUTH_AND_CRM.md", "docs/MARKETING_LEAD_FLOW.md"]
+    }
+  ],
+  "questions_for_matt": [
+    "Are Meta lead ads and the Zillow/Realtor.com portal feeds meant to be running today? No CRM row carries a Meta tag and the last portal lead is 2026-08-01.",
+    "Should site leads keep routing all-to-Matt, or move to round-robin / by-source so Rebecca and Paul answer some of them?",
+    "Is a captcha (Cloudflare Turnstile) acceptable on /contact and the alerts sheet, or should the bot gate stay honeypot + rate limit + server-side classifier only?",
+    "When a buyer has not given SMS consent, should the workflow skip the text and continue to the broker task (recommended), or halt as it does today?",
+    "Who is expected to answer a site lead inside 5 minutes today, and would one daily 'real leads' list replace the 5-minute and 24-hour escalation texts?",
+    "May the 251 pre-epoch fub-import tasks and the 507 stale lp-form call tasks be archived?"
+  ]
+}

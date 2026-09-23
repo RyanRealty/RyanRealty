@@ -107,7 +107,9 @@ describe("the pills' plain read", () => {
     const html = strip({
       read: {
         sentence: '112 days listed is about 4.9 times the 23 a typical Bend home takes to go under contract.',
-        source: 'Market Truth (market_metric, detached): median days from listing to contract, detached homes in Bend, trailing 90 days.',
+        source:
+          'regional MLS through Oregon Data Share, median days from listing to contract, detached homes in Bend, trailing 90 days (market_metric, detached).',
+        sourceName: 'regional MLS through Oregon Data Share',
       },
     })
     expect(html).toContain('class="listing-read"')

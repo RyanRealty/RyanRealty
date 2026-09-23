@@ -3,6 +3,8 @@ import { verifyEmailToken } from '@/lib/email-tracking'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
 import { recordNewsletterEngagement } from '@/lib/newsletter/track-ledger'
+import { channelFromEmailKey, decorateOutboundUrl } from '@/lib/identity/outbound-links'
+import { stripIdentityParams } from '@/app/api/visitors/track/strip-identity'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,6 +19,9 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com')
 export async function GET(req: NextRequest) {
   const ctx = verifyEmailToken(req.nextUrl.searchParams.get('t'))
   const target = ctx?.url && /^https?:\/\//i.test(ctx.url) ? ctx.url : SITE_URL
+  // What we LOG never carries the person token (it names the person the row is
+  // already about, and a stored URL is read, exported and joined everywhere).
+  const logged = stripIdentityParams(target) ?? target
   if (ctx && Number.isFinite(ctx.personId)) {
     try {
       const sb = createServiceClient()
@@ -30,9 +35,9 @@ export async function GET(req: NextRequest) {
           source: 'email-tracking',
           broker: ctx.broker ?? null,
           title: ctx.label ? `Clicked a link in: ${ctx.label}` : 'Clicked an email link',
-          body: target,
-          payload: { emailKey: ctx.emailKey, label: ctx.label ?? null, url: target },
-          dedupe_key: `track:click:${ctx.personId}:${ctx.emailKey}:${target}`,
+          body: logged,
+          payload: { emailKey: ctx.emailKey, label: ctx.label ?? null, url: logged },
+          dedupe_key: `track:click:${ctx.personId}:${ctx.emailKey}:${logged}`,
         },
         { onConflict: 'dedupe_key', ignoreDuplicates: true },
       )
@@ -53,7 +58,7 @@ export async function GET(req: NextRequest) {
         event: 'click',
         emailKey: ctx.emailKey || null,
         subject: ctx.label || null,
-        meta: { url: target },
+        meta: { url: logged },
       })
       if (!res.ok) console.warn('[track/click] email_events error:', res.error)
 
@@ -66,11 +71,34 @@ export async function GET(req: NextRequest) {
         emailKey: ctx.emailKey,
         broker: ctx.broker ?? null,
         event: 'click',
-        url: target,
+        url: logged,
       })
     } catch (err) {
       console.warn('[track/click] log failed:', err)
     }
   }
-  return NextResponse.redirect(target, 302)
+  return NextResponse.redirect(ctx ? identityCarryingTarget(target, ctx) : target, 302)
+}
+
+/**
+ * The redirect is where every email link already in an inbox becomes a SIGNED
+ * identity link (P7 identity loop, 2026-09-23). The click token is HMAC-verified
+ * and names the recipient, so an our-domain target gets a fresh signed `_pid`
+ * token (and any unsigned `_pid` / `_fuid` a pre-signing send baked in is
+ * dropped). Third-party targets are returned untouched: a person token never
+ * leaves ryan-realty.com. The logged URL above stays token-free.
+ */
+function identityCarryingTarget(target: string, ctx: { personId: number; emailKey: string; broker?: string }): string {
+  try {
+    const host = new URL(target).hostname.toLowerCase().replace(/^www\./, '')
+    if (host !== 'ryan-realty.com') return target
+    if (/\/(?:api\/|admin)/.test(new URL(target).pathname)) return target
+    return decorateOutboundUrl(target, {
+      brokerSlug: ctx.broker ?? null,
+      personId: Number.isInteger(ctx.personId) && ctx.personId > 0 ? ctx.personId : null,
+      channel: channelFromEmailKey(ctx.emailKey),
+    })
+  } catch {
+    return target
+  }
 }

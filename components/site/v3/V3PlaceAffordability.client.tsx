@@ -102,6 +102,8 @@ export type V3PlaceAffordabilityProps = {
   medianListPrice: number | null
   /** The section-0 trace behind that median. */
   medianSource: string
+  /** That trace's source, named in the reader's words, for the folded line. */
+  medianSourceName?: string | null
   /** A measured, dated rate. Null means we publish none and the visitor sets one. */
   rate: V3PlaceAffordabilityRate | null
   /** The starting rate when `rate` is null — an assumption, labelled as one. */
@@ -109,6 +111,8 @@ export type V3PlaceAffordabilityProps = {
   /** The local financing mix, biggest share first. */
   mix: readonly AffordabilityMixSlice[]
   mixSource: string
+  /** The mix trace's source, named in the reader's words, for the folded line. */
+  mixSourceName?: string | null
   /** Share of closed sales that were cash, 0 to 1. Seeds the opening mode only. */
   cashShare: number | null
   /** The page's OWN homes link. The ceiling is appended to it, never invented. */
@@ -144,10 +148,12 @@ export function V3PlaceAffordability(props: V3PlaceAffordabilityProps) {
     grain,
     medianListPrice,
     medianSource,
+    medianSourceName,
     rate,
     fallbackRatePct,
     mix,
     mixSource,
+    mixSourceName,
     cashShare,
     browseHref,
     priceMin,
@@ -256,9 +262,11 @@ export function V3PlaceAffordability(props: V3PlaceAffordabilityProps) {
     medianListPrice,
     medianMonthly,
     medianSource,
+    medianSourceName,
     termsSource,
     mix,
     mixSource,
+    mixSourceName,
   })
 
   const rateNote = rate

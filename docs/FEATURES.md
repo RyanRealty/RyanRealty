@@ -46,7 +46,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 
 **Canonical URLs:**
 
-- `/homes-for-sale/{city}/[{neighborhood}/]{community}/{address-slug}-{mlsNumber}`
+- `/homes-for-sale/{city}/{community}/{address-slug}-{mlsNumber}` (MLS `City` + MLS `SubdivisionName`; the polygon neighborhood segment was retired by P14 on 2026-09-23, and every other path ending in the key 308s to the canonical in `middleware.ts`)
 - `/homes-for-sale/{city}/{address-slug}-{mlsNumber}` when community data is missing
 - `/homes-for-sale/listing/{mlsNumber}` fallback when location data is insufficient
 

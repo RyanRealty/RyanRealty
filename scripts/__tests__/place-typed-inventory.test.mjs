@@ -60,12 +60,13 @@ describe('place-typed-inventory lock', () => {
       root: REPO,
       files: {
         stock: `
-          export const PLACE_STOCK_SECTION_ORDER = ['sfr', 'multifamily', 'attached', 'land']
+          export const PLACE_STOCK_SECTION_ORDER = ['sfr', 'multifamily', 'attached', 'land', 'commercial']
           export const PLACE_STOCK_HEADINGS = {
             sfr: 'Single-family homes',
             multifamily: 'Multifamily homes',
             attached: 'Townhomes and condos',
             land: 'Land',
+            commercial: 'Commercial property',
           }
           export function placeStockSectionsFromTiles() {
             return PLACE_STOCK_SECTION_ORDER.map((key) => ({ key, rows: [] }))
@@ -74,6 +75,21 @@ describe('place-typed-inventory lock', () => {
       },
     })
     expect(p.join('\n')).toMatch(/zero actives|empty stub/)
+  })
+
+  it('refuses the old four buckets: commercial is a type of its own (Matt 2026-09-23)', () => {
+    const p = placeTypedInventorySourceProblems({
+      root: REPO,
+      files: {
+        stock: `
+          export const PLACE_STOCK_SECTION_ORDER = ['sfr', 'multifamily', 'attached', 'land']
+          export function placeStockSectionsFromTiles() {
+            return [].flatMap(() => { if (rows.length === 0) return [] })
+          }
+        `,
+      },
+    })
+    expect(p.join('\n')).toMatch(/five buyer buckets/)
   })
 })
 

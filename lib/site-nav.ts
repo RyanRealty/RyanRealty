@@ -132,20 +132,25 @@ const COMMUNITY_LINKS: NavLink[] = [
   { href: '/communities/three-rivers', label: 'Three Rivers' },
 ]
 
-/** Canonical map entry — never bare `/search` (that 301s to homes-for-sale). */
-export const MAP_SEARCH: NavLink = {
-  href: '/homes-for-sale?view=map',
-  label: 'Map search',
-}
-
 /**
- * Regional inventory door. Bare `/homes-for-sale` is split/map and injects
- * city=Bend. List view is the Central Oregon set (publishRegionalSearchHref).
+ * Regional inventory door: the INDEXABLE `/homes-for-sale`, with no query.
+ *
+ * UXLIVE-4 / EXP-11 (visibility audit 2026-09-22): every chrome door used to
+ * point at `?view=list` / `?view=map`, which serve `noindex, follow` with a
+ * canonical to the bare URL, so the site's strongest repeated link for "homes
+ * for sale" landed on a URL Google is told not to index. The bare URL now
+ * DEFAULTS to the regional list (app/search/page.tsx), so the chrome links it
+ * clean and the view (list / split / map) stays client state on the page.
+ * There is no separate "Map search" door: the map is one tap away inside the
+ * one Field, and a `?view=map` link is a noindex variant (ci:chrome-links).
  */
 export const REGIONAL_SEARCH: NavLink = {
-  href: '/homes-for-sale?view=list',
+  href: '/homes-for-sale',
   label: 'All homes for sale',
 }
+
+/** Income property. SITE_PAGES.md lists invest as a Homes child that stays. */
+const INVEST: NavLink = { href: '/invest', label: 'Invest' }
 
 /** Global chrome valuation CTA — on-page form on /sell (Matt Wave 0). */
 export const VALUATION_FORM: NavLink = {
@@ -176,12 +181,21 @@ export const KB_TOP_NAV: TopNavGroup[] = [
     href: REGIONAL_SEARCH.href,
     children: [
       REGIONAL_SEARCH,
-      MAP_SEARCH,
+      // gsc-trend-5 (visibility audit 2026-09-23, owner directive MATT
+      // 2026-09-23): the city search pages own "{City} homes for sale" since
+      // c29c2d79f moved /cities/{city} to "{City} real estate", yet no chrome
+      // door reached them (Search Console's referring URLs for
+      // /homes-for-sale/bend: two deep pages). The three cities are the ones
+      // the p1 city-buy target queries name.
+      { href: '/homes-for-sale/bend', label: 'Bend homes for sale' },
+      { href: '/homes-for-sale/redmond', label: 'Redmond homes for sale' },
+      { href: '/homes-for-sale/sisters', label: 'Sisters homes for sale' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
       bendLuxuryHomesDoor(),
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
+      INVEST,
     ],
   },
   {
@@ -266,12 +280,12 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
     title: 'Buy',
     links: [
       { href: REGIONAL_SEARCH.href, label: 'Search homes' },
-      MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
       bendLuxuryHomesDoor(),
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
+      INVEST,
       { href: '/videos', label: 'Video tours' },
     ],
   },
@@ -373,7 +387,6 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       heading: 'Buy',
       links: [
         { href: REGIONAL_SEARCH.href, label: 'Search homes' },
-        MAP_SEARCH,
         { href: '/open-houses', label: 'Open houses' },
         { href: '/price-drops', label: 'Price drops' },
         bendLuxuryHomesDoor(),

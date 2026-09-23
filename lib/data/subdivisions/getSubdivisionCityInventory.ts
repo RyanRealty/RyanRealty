@@ -183,8 +183,10 @@ export async function getSubdivisionCityInventoryByCityLower(): Promise<
 }
 
 /**
- * citySlug -> subdivision slugs clearing `minLifetimeListings`, the sitemap's
- * /homes-for-sale/<city>/<subdivision> browse-pair set.
+ * citySlug -> subdivision slugs clearing `minLifetimeListings`, which WAS the
+ * sitemap's /homes-for-sale/<city>/<subdivision> browse-pair set. No caller
+ * since 2026-09-23: app/sitemap.ts reads getBrowsePairSitemapPaths
+ * (lib/seo/getBrowsePairDecision.ts), the decision the search route shares.
  *
  * The direct replacement for getSubdivisionBrowseSlugsByCity (deleted 2026-09-09,
  * SITE-54). Same city allowlist, same pure aggregator

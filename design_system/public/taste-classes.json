@@ -13,11 +13,6 @@
       "url": "/blog/awbrey-glen-median-price-hoa-dues-2026"
     },
     {
-      "key": "buy",
-      "route": "app/buy/page.tsx",
-      "url": "/buy"
-    },
-    {
       "key": "cities",
       "route": "app/cities/page.tsx",
       "url": "/cities"

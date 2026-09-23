@@ -124,15 +124,27 @@ describe('tasteDoneProblems — Tip Ready open-state + catalog-install', () => {
     expect(p.join('\n')).toMatch(/\*-open/)
   })
 
-  it('FAILS adaptedFrom catalog id with demoMatch false', () => {
-    const p = tasteDoneProblems(doneReceipt({ demoMatch: false }), {
+  it('PASSES adaptedFrom catalog id with a recorded demoMatch false (a note, Matt 2026-09-23)', () => {
+    expect(
+      tasteDoneProblems(doneReceipt({ demoMatch: false }), {
+        competitiveBrief: ABOUT_BRIEF,
+        catalog,
+        route: 'app/about/page.tsx',
+        catalogIo: passingIo,
+      }),
+    ).toEqual([])
+  })
+
+  it('FAILS adaptedFrom catalog id with demoMatch omitted (a hidden verdict)', () => {
+    const tr = doneReceipt()
+    delete tr.demoMatch
+    const p = tasteDoneProblems(tr, {
       competitiveBrief: ABOUT_BRIEF,
       catalog,
       route: 'app/about/page.tsx',
       catalogIo: passingIo,
     })
-    expect(p.join('\n')).toMatch(/demoMatch is false/)
-    expect(p.join('\n')).toMatch(/adaptedFrom names catalog modules/)
+    expect(p.join('\n')).toMatch(/demoMatch must be recorded true or false/)
   })
 
   it('FAILS when only the house primitive imports the catalog (route does not)', () => {
@@ -209,7 +221,7 @@ describe('siteQueueDoneEvidenceProblems — Tip Ready language without --ship', 
       },
     )
     expect(p.join('\n')).toMatch(/--ship/)
-    expect(p.join('\n')).toMatch(/Cos prose is not Tip Ready/)
+    expect(p.join('\n')).toMatch(/prose is not Tip Ready/i)
   })
 
   it('passes when evidence records --ship exit 0', () => {

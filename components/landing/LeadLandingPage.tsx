@@ -46,7 +46,8 @@ export default function LeadLandingPage({ config }: Props) {
 
   const audienceCrumb = config.audience === 'seller'
     ? { label: 'Sell', href: '/sell' }
-    : { label: 'Buy', href: '/buy' }
+    : // /buy 301s to /homes-for-sale (UXLIVE-8): the buyer crumb is Homes.
+      { label: 'Homes', href: '/homes-for-sale' }
 
   const audienceLabel = config.audience === 'seller' ? 'Seller' : 'Buyer'
 

@@ -16,12 +16,23 @@
  *   3. ROGUE PLANS — a new .md lands in docs/plans/ without being registered
  *      in the canon's "Registered plan documents" table. Plans are inputs to
  *      THE LOOP, not parallel processes.
+ *   4. RUN_LOOP DRIFT (visibility audit PROCESS-5/6, 2026-09-23) —
+ *      docs/RUN_LOOP.md is the one page "run the loop" boots on. It must exist
+ *      and stay at or under 150 lines; every pointer file must link it; and no
+ *      pointer file may restate a cap, the rise floor, the claim command, a
+ *      cadence or a land path of its own (each restatement drifted: cap 3 vs
+ *      6, rise floor 6 vs 3, hourly vs every four hours, push vs PR).
+ *   5. LEDGER TRAILER (gsc-trend-3) — a ranking-affecting commit in the push
+ *      range without a `Ledger:` trailer is reported. WARN by default;
+ *      LEDGER_TRAILER_STRICT=1 fails. Logic: scripts/lib/ledger-trailer.mjs.
  *
  * Usage: node scripts/check-process-canon.mjs
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { checkNewAuditDocsNameNodes, checkTipReadyLandPath, newPlanDocPaths, TIP_READY_LAND_PATHS } from './lib/process-canon-audit-arm.mjs'
+import { runLoopProblems, RUN_LOOP_DOC, RUN_LOOP_POINTERS } from './lib/run-loop-canon.mjs'
+import { formatLedgerFinding, ledgerTrailerFindings } from './lib/ledger-trailer.mjs'
 
 const CANON = 'docs/DEVELOPMENT_PROCESS.md'
 
@@ -238,9 +249,24 @@ for (const missing of TIP_READY_LAND_PATHS.filter((p) => !existsSync(p))) {
 }
 for (const f of checkTipReadyLandPath(tipReadyFiles)) fails.push(f)
 
+// --- RUN_LOOP.md: one boot page, pointers that do not restate it (PROCESS-5/6) ---
+const runLoopFiles = [RUN_LOOP_DOC, ...RUN_LOOP_POINTERS].map((p) => ({
+  path: p,
+  content: existsSync(p) ? readFileSync(p, 'utf8') : null,
+}))
+for (const f of runLoopProblems(runLoopFiles)) fails.push(f)
+
+// --- Ledger trailer on ranking-affecting commits (gsc-trend-3) ---
+const warns = []
+const ledgerStrict = process.env.LEDGER_TRAILER_STRICT === '1'
+for (const finding of ledgerTrailerFindings()) {
+  ;(ledgerStrict ? fails : warns).push(formatLedgerFinding(finding))
+}
+
 console.log('Process-canon sync check (G44)')
 console.log('==============================')
-console.log(`Canon version: v${version ?? '?'} · entry points: ${ENTRY_POINTS.length} · plan docs: ${planFiles.length}`)
+console.log(`Canon version: v${version ?? '?'} · entry points: ${ENTRY_POINTS.length} · plan docs: ${planFiles.length} · run-loop pointers: ${RUN_LOOP_POINTERS.length}`)
+for (const w of warns) console.log('WARN  ' + w)
 if (fails.length === 0) {
   console.log('THE LOOP canon, pointers, and plan registry are in sync.')
   process.exit(0)

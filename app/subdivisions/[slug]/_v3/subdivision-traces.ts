@@ -10,9 +10,11 @@
  *      different things. The GIS path counts the pins the `listings_in_boundary`
  *      RPC returned, filtered on StandardStatus='Active' only, so it holds every
  *      property type inside the plat. The registry path counts the set
- *      getCommunityListings returned for the MLS subdivision name, and that call
- *      stops at 14 rows, so the sentence says so rather than implying the count
- *      is the whole plat.
+ *      getPlatPublicInventory returned for the MLS subdivision name (paged, no
+ *      row cap since the getCommunityListings 14-row read was replaced;
+ *      re-checked 2026-09-23 for VOICE-8). A plat FAMILY's main page counts
+ *      the single-family listings inside any of its recorded phases, each once
+ *      (getPlatFamilyInventory), and says so.
  *   2. THE PLAT'S ACTIVE SINGLE-FAMILY LISTINGS. The Field's rows and pins come
  *      from getListingTiles with propertyType 'A', a strict subset of (1). A
  *      single sentence covering both would be false at one end or the other.
@@ -53,6 +55,18 @@ export type PlatScope =
   | { kind: 'boundary'; displayName: string }
   | { kind: 'registry'; subdivisionName: string; city: string }
   | { kind: 'pins'; displayName: string }
+  /**
+   * A plat family's main page (Matt 2026-09-23): the counted set is every
+   * listing inside ANY of the family's recorded phases, each counted once
+   * (listing_boundary_xref_mv over the member slugs).
+   */
+  | { kind: 'family'; displayName: string; phases: number }
+
+/** Where a boundary-derived count sits, in words, for the non-registry scopes. */
+function insideScope(scope: Exclude<PlatScope, { kind: 'registry' }>, suffix: 'plat' | 'plat boundary'): string {
+  if (scope.kind === 'family') return `inside the ${scope.phases} recorded phases of ${scope.displayName}`
+  return `inside the recorded ${scope.displayName} ${suffix}`
+}
 
 /**
  * Trace for the plat's active count (population 1). "Every property type" is not
@@ -69,9 +83,9 @@ export function activeCountTrace(scope: PlatScope): string {
     )
   }
   const where =
-    scope.kind === 'boundary'
-      ? `inside the recorded ${scope.displayName} plat boundary`
-      : `the boundary query returned for ${scope.displayName}`
+    scope.kind === 'pins'
+      ? `the boundary query returned for ${scope.displayName}`
+      : insideScope(scope, 'plat boundary')
   return `${FEED}, active listings ${where}, every property type the plat holds.`
 }
 
@@ -81,9 +95,7 @@ export function homesLedgerTrace(scope: PlatScope): string {
     return `${FEED}, active single-family listings under the ${scope.subdivisionName} name in ${scope.city}.`
   }
   const where =
-    scope.kind === 'boundary'
-      ? `inside the recorded ${scope.displayName} plat`
-      : `returned for ${scope.displayName}`
+    scope.kind === 'pins' ? `returned for ${scope.displayName}` : insideScope(scope, 'plat')
   return `${FEED}, active single-family listings ${where}.`
 }
 
@@ -92,7 +104,7 @@ export function fieldTrace(scope: PlatScope): string {
   const where =
     scope.kind === 'registry'
       ? `recorded under the ${scope.subdivisionName} subdivision name in ${scope.city}`
-      : `inside the recorded ${scope.displayName} plat boundary`
+      : insideScope(scope, 'plat boundary')
   return `${FEED}, active single-family listings ${where}. Map and list are the same set.`
 }
 
@@ -133,7 +145,7 @@ export function platInventoryTrace(scope: PlatScope): string {
   const where =
     scope.kind === 'registry'
       ? `recorded under the ${scope.subdivisionName} subdivision name in ${scope.city}`
-      : `inside the recorded ${scope.displayName} plat`
+      : insideScope(scope, 'plat')
   return `${FEED}, the list prices of the active single-family listings ${where}.`
 }
 

@@ -53,8 +53,20 @@ describe('publishPlaceAffordability · the calculator opens on this market', () 
   it('carries the median`s count and read date into the trace', () => {
     const props = publishPlaceAffordability(bend)!
     expect(props.medianSource).toContain('$947,000')
-    expect(props.medianSource).toContain('664 homes for sale')
+    expect(props.medianSource).toContain('664 single-family homes for sale in Bend')
     expect(props.medianSource).toContain('median_list_active')
+    // VOICE-2: one comma at a time, never ",," and never ", ."
+    expect(props.medianSource).not.toMatch(/,\s*[,.]/)
+  })
+
+  it('opens every trace with the source`s name in words and hands that name over', () => {
+    for (const grain of ['city', 'neighborhood'] as const) {
+      const props = publishPlaceAffordability({ ...bend, grain, medianListPrice: 1_312_500 })!
+      expect(props.medianSourceName).toBe('live MLS through Oregon Data Share')
+      expect(props.medianSource.startsWith(`${props.medianSourceName},`)).toBe(true)
+      expect(props.mixSourceName).toBe('closed MLS sales through Oregon Data Share')
+      expect(props.mixSource.startsWith(`${props.mixSourceName},`)).toBe(true)
+    }
   })
 
   it('says so plainly when the place publishes no median, and opens anyway', () => {
@@ -88,6 +100,15 @@ describe('publishPlaceAffordability · the rate is measured or it is an assumpti
     const props = publishPlaceAffordability({ ...bend, rate: null })!
     expect(props.rate).toBeNull()
     expect(props.fallbackRatePct).toBe(7)
+  })
+
+  it('names the FRED copy of the Freddie Mac survey by publisher, not by series id (AEO-5)', () => {
+    const props = publishPlaceAffordability({
+      ...bend,
+      rate: { ...liveRate, source: 'fred:MORTGAGE30US' },
+    })!
+    expect(props.rate!.sourceName).toBe('Freddie Mac 30-year fixed, via FRED')
+    expect(props.rate!.sourceName).not.toContain('MORTGAGE30US')
   })
 
   it('never claims Freddie for a source string it did not recognise', () => {

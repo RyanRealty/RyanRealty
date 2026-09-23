@@ -8,8 +8,11 @@ import { resolvingNodeModules } from '../lib/resolve-node-modules.mjs'
 /**
  * Break-tests for ci:ssg-budget (scripts/check-ssg-budget.mjs, G70).
  *
- * The gate pins two DB-heavy geo routes to a zero build-time SSG fan-out
- * (generateStaticParams must be exactly `return []`). Each case copies the
+ * The gate pins DB-heavy routes to a zero build-time SSG fan-out
+ * (generateStaticParams must be exactly `return []`) and, since 2026-09-23
+ * (P3, Matt's "nothing is permanent" directive), holds /subdivisions/[slug]
+ * to a CAPPED list: `return platPrerenderParams()` over
+ * data/plat-prerender.json, at most 25 plats. Each case copies the
  * real inspected files into a sandbox outside the repo (node_modules
  * symlinked so `import ts from 'typescript'` resolves; an in-repo scratch
  * dir dies to a concurrent session's `git clean -fd`), then mutates exactly
@@ -23,6 +26,8 @@ const GATE = join(SANDBOX, 'scripts/check-ssg-budget.mjs')
 const FILES = [
   'scripts/check-ssg-budget.mjs',
   'app/subdivisions/[slug]/page.tsx',
+  'lib/site/plat-prerender.ts',
+  'data/plat-prerender.json',
   'app/oregon/[city]/page.tsx',
   // SITE-29: the blog post and the index's category/page views joined the
   // zero-fan-out list (on-demand ISR).
@@ -51,6 +56,8 @@ function run() {
   }
 }
 
+// The zero-budget example. The plat page is the capped example (SUB_PAGE).
+const ZERO_PAGE = 'app/oregon/[city]/page.tsx'
 const SUB_PAGE = 'app/subdivisions/[slug]/page.tsx'
 
 describe('check-ssg-budget', () => {
@@ -65,17 +72,17 @@ describe('check-ssg-budget', () => {
 
   it('fails when a budgeted route regrows a fan-out', () => {
     reset()
-    const file = join(SANDBOX, SUB_PAGE)
+    const file = join(SANDBOX, ZERO_PAGE)
     const src = readFileSync(file, 'utf8')
-    writeFileSync(file, src.replace('return []', "return [{ slug: 'awbrey-glen' }]"))
+    writeFileSync(file, src.replace('return []', "return [{ city: 'eugene' }]"))
     const r = run()
     expect(r.code).toBe(1)
-    expect(r.out).toContain(SUB_PAGE)
+    expect(r.out).toContain(ZERO_PAGE)
   })
 
   it('fails when a budgeted route regrows a computed fan-out', () => {
     reset()
-    const file = join(SANDBOX, SUB_PAGE)
+    const file = join(SANDBOX, ZERO_PAGE)
     const src = readFileSync(file, 'utf8')
     writeFileSync(
       file,
@@ -83,7 +90,7 @@ describe('check-ssg-budget', () => {
     )
     const r = run()
     expect(r.code).toBe(1)
-    expect(r.out).toContain(SUB_PAGE)
+    expect(r.out).toContain(ZERO_PAGE)
   })
 
   it('fails when generateStaticParams disappears from a budgeted route', () => {
@@ -116,10 +123,48 @@ describe('check-ssg-budget', () => {
 
   it('stays green when only comments change around the empty return', () => {
     reset()
-    const file = join(SANDBOX, SUB_PAGE)
+    const file = join(SANDBOX, ZERO_PAGE)
     const src = readFileSync(file, 'utf8')
     writeFileSync(file, src.replace('return []', '// still budgeted to zero\n  return []'))
     const r = run()
     expect(r.code).toBe(0)
+  })
+
+  it('fails when the capped plat route computes its own fan-out', () => {
+    reset()
+    const file = join(SANDBOX, SUB_PAGE)
+    const src = readFileSync(file, 'utf8')
+    const grown = src.replace(
+      'return platPrerenderParams()',
+      'return (await getIndexableSubdivisions()).map((p) => ({ slug: p.slug }))',
+    )
+    expect(grown).not.toBe(src)
+    writeFileSync(file, grown)
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('generateStaticParams must be exactly `return platPrerenderParams()`')
+  })
+
+  it('fails when the plat list outgrows the cap', () => {
+    reset()
+    const file = join(SANDBOX, 'data/plat-prerender.json')
+    const doc = JSON.parse(readFileSync(file, 'utf8'))
+    doc.plats = Array.from({ length: 26 }, (_, i) => ({ slug: `plat-${i}`, impressions: 1, clicks: 0 }))
+    writeFileSync(file, JSON.stringify(doc))
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('26 entries exceeds the cap of 25')
+  })
+
+  it('fails when the helper raises its own cap past the gate', () => {
+    reset()
+    const file = join(SANDBOX, 'lib/site/plat-prerender.ts')
+    const src = readFileSync(file, 'utf8')
+    const raised = src.replace('export const PLAT_PRERENDER_CAP = 25', 'export const PLAT_PRERENDER_CAP = 400')
+    expect(raised).not.toBe(src)
+    writeFileSync(file, raised)
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('PLAT_PRERENDER_CAP must be declared and at most 25')
   })
 })

@@ -1,89 +1,24 @@
 ---
-description: "run loop" means the site queue — the claim tool, the caps, the evaluator, the finish line. Applies to every agent in this repo, Cursor or Grok included.
+description: "run loop" means docs/RUN_LOOP.md (the site queue). Applies to every agent in this repo, Cursor or Grok included.
 alwaysApply: true
 ---
 
-# "run loop" = the site queue
+# "run loop" = docs/RUN_LOOP.md
 
-When Matt says **run loop**, **run the loop**, **go**, **keep going until the site is
-done**, or **continue as new nodes get entered**, he means the site queue. Not the
-growth loop, not an audit, not a plan (Matt 2026-09-09: "run loop" never flips to
-another skill). Empty of eligible is not a stop: keep the scheduled wake
-(Matt 2026-09-10).
+When Matt says **run loop**, **run the loop**, **go**, **keep going until the site is done**,
+or **continue as new nodes get entered**, he means the site queue, and the protocol is
+**`docs/RUN_LOOP.md`**: the objective (be seen by search and AI engines, then convert), the
+boot commands, the one claim path, the accept test, the one land path, and the stop rule.
+Not the growth loop, not an audit, not a plan (Matt 2026-09-09). Empty of eligible is not a
+stop (Matt 2026-09-10).
 
-**Read first:** `.cursor/skills/site-queue/SKILL.md` — the pointer skill for a non-Claude
-builder, which names the canonical protocol (`.claude/skills/site-queue/SKILL.md`) and the
-four mission documents. Then work. Do not re-audit the site; the backlog already exists.
+Then `.cursor/skills/site-queue/SKILL.md` for what differs when the builder is Cursor or
+Grok. Do not re-audit the site; the backlog is the work graph.
 
-## The three commands
+Never:
 
-```bash
-npx tsx scripts/site-queue-status.ts --json                                    # what to take, in serve order
-npx tsx scripts/site-queue-status.ts --claim SITE-XX,SITE-YY --owner <owner>   # the ONLY claim path
-npx tsx scripts/site-queue-status.ts --touch SITE-XX,SITE-YY --owner <owner>   # hourly, while you hold
-```
-
-`--json` carries `liveWorkers`, `maxWorkers` and `staleClaims`. **If `liveWorkers` is at or
-above `maxWorkers` (3), stop and say so** — every worker spends one shared account
-allowance, and four at once exhausted it and killed all of them on 2026-09-08. Otherwise
-claim the first two eligible items in the JSON's order on disjoint file sets. A non-zero
-exit means you got nothing: read the message, do not hand-write a claim. Claude sessions
-and Grok sessions coexist by this tool alone; never coordinate by hand.
-
-Owner name: `grok-<model>-<YYYY-MM-DD>`, or `cursor-<model>-<date>`. A claim whose
-heartbeat is older than three hours is released to the next worker, so heartbeat hourly or
-lose the node.
-
-## The bar
-
-Every SITE node's accept test is the same four steps, in order (Matt 2026-09-12): (1)
-catalog source installed and imported by the route's v3 primitive (`ci:catalog-install`);
-(2) navy / cream / Geist / Amboqia intact (`ci:one-design-system`); (3) no regression —
-`ci:runtime-gates` ends with `ci:route-content-floor`, which holds the route's
-`contentFloor` (hero width and resolution, images, video, sections, words, links, JSON-LD)
-on the built page; (4) only then a **separate evaluator** — a different
-model from the builder — scores the page class from shots at 1440 and 375
-(`scripts/take-route-shots.mjs`), three scorings in one call, median, and the score must
-rise **by at least the rise floor, 3 on grok-4.6** (a smaller rise is inside the judge's measured noise,
-`taste-rule-freeze.json` `riseFloorBasis`). Receipt in the route's `parity.json` per `design_system/public/TASTE.md`, shape
-checked by `scripts/lib/taste-receipt.mjs`. The instrument is the judge chain, and it
-starts at the **round judge**: whatever model scored the current table
-(`taste-table.json` `instrument.evaluatorModel`, `claude-sonnet-5` since 2026-09-12)
-grades every route this round through the **claude CLI**; a builder of that family gets
-the other claude alias and the route rebaselines once. **grok-4.6** returns only at the
-next full table run, through the `grok` CLI or through the Cursor CLI (`cursor-agent
---model cursor-grok-4.6-high`, Matt's Cursor plan; same model, same ruler, the table's own
-link first), and when both grok-4.6 links are missing or out, the claude CLI is the last
-link. Every link is a subscription: **no per-token console keys, ever** (Matt 2026-09-12;
-`XAI_API_KEY` and `ANTHROPIC_API_KEY` are stripped — `CURSOR_API_KEY` is the Cursor plan
-itself and is allowed). Run it with
-`npx tsx scripts/taste-evaluate.ts <route-key> --builder <model>` and copy the
-`evaluatorModel` it prints. A Grok lane builds with **grok-4.5**, because the gate refuses
-a model grading its own page. **Who builds is also a chain** (Matt 2026-09-12):
-`scripts/site-queue-routine.sh` tries the `grok` CLI, then `cursor-agent`, then the
-`claude` CLI (Opus, so Sonnet stays the judge), skipping a link only on 402, not
-logged in, or missing; the LaunchAgent `com.ryanrealty.site-queue` fires it six times
-a day. The
-rubric is frozen at `v1-2026-09-12` until every class has a table row on it
-(`ci:rubric-freeze`) — fix the page or the tool, never add a rule. **Finish line: every public
-page class at 70 or above on that table** (Matt 2026-09-09). Before composing a
-section, `node scripts/lib/taste-catalog.mjs <class>` and fetch the modules it
-prints from beautifului.dev, beui.dev, rareui.com, transitions.dev, and
-ui.shadcn.com. Adapt into v3. If the job has no house primitive, add one to
-`components/site/v3` (OPEN set — not a second kit). Navy, cream, Geist,
-Amboqia stay. Do not invent a layout from adjectives. The evaluator prompt
-includes that catalog.
-
-Then the gates (`npm run ci:gates`), the `Node: <id>` trailer on every commit touching
-`app/**` or `components/site/**` (G72), ONE `npm run push` per round from the main
-checkout, `deploy:verify`, a live check on ryan-realty.com, and the evidence written on
-the node — done, or blocked with `blocked_until` so it reopens itself, or blocked on Matt
-with the question in ONE line in `blocked_reason`.
-
-## Never
-
-- Never wait on Matt mid-round: take the safe path the skill allows, write what you chose
-  on the node, keep going.
-- Never mark a node done from a self-report; evidence is what the environment showed.
-- Never leave finished work on a branch — merge and push, or write it into
-  `docs/plans/CROSS_AGENT_HANDOFF.md` before you stop.
+- wait on Matt mid-round: take the safe path RUN_LOOP.md allows and write the choice on the
+  node;
+- mark a node done from a self-report: evidence is what the environment showed;
+- leave finished work on a branch: land it, or name it in the ONE `# Current` block of
+  `docs/plans/CROSS_AGENT_HANDOFF.md`.

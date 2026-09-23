@@ -113,9 +113,6 @@ async function checkBehavior() {
     if (/\d/.test(cap)) {
       problems.push(`${MODULE}: captionFor(${JSON.stringify(t)}) contains a digit. Share captions must be qualitative — a broker adds specifics, so no number can be fabricated.`)
     }
-    if (/[—–;]/.test(cap)) {
-      problems.push(`${MODULE}: captionFor(${JSON.stringify(t)}) contains an em-dash/en-dash/semicolon (brand voice).`)
-    }
   }
 }
 

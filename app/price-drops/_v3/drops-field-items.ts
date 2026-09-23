@@ -1,7 +1,8 @@
 import type { V3FieldItem } from '@/components/site/v3'
 import type { PriceDrop } from '@/lib/data'
 import { formatPrice } from '@/lib/format/money'
-import { listingTileHref, displaySubdivision } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { listingMlsStreetLine, publishCardAddress } from '@/lib/listing/publish-street-line'
 
 export type PriceDropFieldItem = V3FieldItem & {
@@ -63,7 +64,10 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
     const dropLine =
       was && pct ? `was ${was}, ${pct}` : pct ? pct : was ? `was ${was}` : null
 
-    const subdivision = displaySubdivision(drop.subdivisionName)
+    // publishPlatDisplayName, not displaySubdivision: the MLS value is often an
+    // abbreviation ('Oww', 'DrrhLp', 'Mob Pk') that no buyer recognizes; it is
+    // withheld rather than printed (visibility audit 2026-09-22, VOICE-3).
+    const subdivision = publishPlatDisplayName(drop.subdivisionName)
     const city = drop.city?.trim() || null
     const citySlug = drop.citySlug?.trim() || null
     const inventory = [

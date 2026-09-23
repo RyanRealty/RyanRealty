@@ -16,6 +16,7 @@
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
@@ -115,6 +116,10 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
   for (const tile of tiles) {
     if (items.length >= limit) break
     if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) continue
+    // A commercial lease's ListPrice is rent, not a sale price — this loop's
+    // callers pass whole active pools with no property-type filter, and
+    // formatPublishedAsk below is not sale-aware (§0).
+    if (listingPriceIsLeaseRate(tile.propertyType)) continue
 
     const street = publishStreetLine({
       streetNumber: tile.streetNumber,

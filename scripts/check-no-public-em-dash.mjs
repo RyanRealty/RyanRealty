@@ -49,6 +49,13 @@ const ROOTS = [
   'app/zip/[zip]/page.tsx',
   'app/zip/[zip]/_v3/ZipHomesField.tsx',
   'app/zip/[zip]/_v3/ZipInsight.client.tsx',
+  // Visibility audit PROCESS-7 (2026-09-23): ci:dog-floater and
+  // ci:deliverable-share-safety each carried their own dash check. They were
+  // removed so this gate is the one owner of Matt's 2026-09-20 lock, and the
+  // two surfaces they guarded moved here: the dog floater's door labels and
+  // the share captions a broker posts publicly.
+  'components/site/v3/V3DogFloater.client.tsx',
+  'lib/marketing-brain/deliverable-share.ts',
 ]
 
 /** JSON the visitor can read; not walked as TypeScript. */

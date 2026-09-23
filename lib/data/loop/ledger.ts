@@ -6,7 +6,8 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { confidenceFromVerdicts, type CompanyImprovementDomain, type LedgerVerdict } from './domains'
-import { assertLedgerDraft, isExpiredUnlearned, type ImprovementLedgerDraft } from './ledger-draft'
+import { closeLedgerRowWith } from './learn-close'
+import { assertLedgerDraft, isExpiredUnlearned, isLedgerRowOpen, type ImprovementLedgerDraft } from './ledger-draft'
 
 export type { ImprovementLedgerDraft }
 
@@ -28,7 +29,7 @@ export type ImprovementLedgerRow = {
 }
 
 function isVerdict(value: string | null): value is LedgerVerdict {
-  return value === 'win' || value === 'loss' || value === 'flat' || value === 'inconclusive'
+  return value === 'win' || value === 'loss' || value === 'flat' || value === 'inconclusive' || value === 'unmeasurable'
 }
 
 export async function insertImprovementLedgerRow(
@@ -42,16 +43,21 @@ export async function insertImprovementLedgerRow(
     // refuses the insert (audit 2026-08-15 — the old path failed open on read
     // error). The DB trigger site_improvement_ledger_guard enforces the same
     // rules below us for any writer that bypasses this DAL.
-    const { data: openRows, error: readErr } = await sb
+    // Open = no actual_delta AND no verdict: an unmeasurable window is closed
+    // with a verdict and a NULL delta (audit 2026-09-22, gsc-trend-2).
+    const { data: candidateRows, error: readErr } = await sb
       .from('site_improvement_ledger')
-      .select('id,shipped_at,window_days,actual_delta')
+      .select('id,shipped_at,window_days,actual_delta,verdict')
       .eq('domain', draft.domain)
       .is('actual_delta', null)
     if (readErr) {
       return { data: null, error: `ledger unreadable (${readErr.message}) — refusing to open a class blind` }
     }
+    const openRows = (candidateRows ?? []).filter((r) =>
+      isLedgerRowOpen({ actualDelta: null, verdict: (r.verdict as string | null) ?? null }),
+    )
     const now = new Date()
-    const stranded = (openRows ?? []).filter((r) =>
+    const stranded = openRows.filter((r) =>
       isExpiredUnlearned(
         { shippedAt: String(r.shipped_at), windowDays: Number(r.window_days ?? 14), actualDelta: null },
         now,
@@ -64,11 +70,11 @@ export async function insertImprovementLedgerRow(
         error: `domain "${draft.domain}" has ${stranded.length} expired unlearned window(s) — write actual_delta + verdict via closeImprovementLedgerRow before opening a new class. Stranded ids: ${ids}`,
       }
     }
-    if ((openRows ?? []).length > 0) {
-      const ids = (openRows ?? []).map((r) => r.id).join(', ')
+    if (openRows.length > 0) {
+      const ids = openRows.map((r) => r.id).join(', ')
       return {
         data: null,
-        error: `domain "${draft.domain}" already has ${openRows!.length} open class(es) — one open class per domain; close or supersede first. Open ids: ${ids}`,
+        error: `domain "${draft.domain}" already has ${openRows.length} open class(es) — one open class per domain; close or supersede first. Open ids: ${ids}`,
       }
     }
     const { data, error } = await sb
@@ -106,6 +112,7 @@ export async function listOpenImprovementWindows(): Promise<ImprovementLedgerRow
       'id,domain,change_class,surface,description,metric,baseline_value,predicted_delta,actual_delta,window_days,shipped_at,measured_at,verdict,commit_sha',
     )
     .is('actual_delta', null)
+    .is('verdict', null)
     .order('shipped_at', { ascending: false })
   if (error) {
     console.error('[listOpenImprovementWindows]', error.message)
@@ -134,35 +141,23 @@ export async function listExpiredUnlearnedWindows(input?: {
 /**
  * The Learn step, mechanical. Writes the measured outcome and verdict so the
  * class is closed and the domain may open its next class.
+ *
+ * actualDelta may be null only with verdict 'inconclusive' or 'unmeasurable':
+ * a window with no data is closed by its verdict, never by a written 0
+ * (visibility audit 2026-09-22, gsc-trend-2). Notes replace the row's notes;
+ * pass the old notes plus the new line to keep history.
  */
 export async function closeImprovementLedgerRow(input: {
   id: string
-  actualDelta: number
+  actualDelta: number | null
   verdict: LedgerVerdict
   notes?: string | null
 }): Promise<{ data: { id: string } | null; error: string | null }> {
   try {
-    if (!input.id.trim()) return { data: null, error: 'id is required' }
-    if (!Number.isFinite(input.actualDelta)) return { data: null, error: 'actualDelta must be a finite number' }
     if (!isVerdict(input.verdict)) return { data: null, error: `unknown verdict "${input.verdict}"` }
-    const sb = createServiceClient()
-    const patch: Record<string, unknown> = {
-      actual_delta: input.actualDelta,
-      verdict: input.verdict,
-      measured_at: new Date().toISOString(),
-    }
-    if (input.notes != null) patch.notes = input.notes
-    const { data, error } = await sb
-      .from('site_improvement_ledger')
-      .update(patch)
-      .eq('id', input.id)
-      .select('id')
-      .single()
-    if (error || !data?.id) {
-      console.error('[closeImprovementLedgerRow]', error?.message)
-      return { data: null, error: error?.message ?? 'update matched no row' }
-    }
-    return { data: { id: data.id as string }, error: null }
+    const res = await closeLedgerRowWith(createServiceClient(), input)
+    if (res.error) console.error('[closeImprovementLedgerRow]', res.error)
+    return { data: res.data, error: res.error }
   } catch (err) {
     console.error('[closeImprovementLedgerRow]', err)
     return { data: null, error: err instanceof Error ? err.message : 'close failed' }

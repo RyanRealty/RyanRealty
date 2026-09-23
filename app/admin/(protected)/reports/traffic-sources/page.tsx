@@ -41,6 +41,7 @@ import { createClient } from '@supabase/supabase-js'
 import { getGA4SummaryCached as getGA4Summary } from '@/lib/ga4-cache'
 import type { GA4Summary } from '@/app/actions/ga4-report'
 import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
+import { Ga4MirrorNotice } from '@/app/admin/(protected)/analytics/_components/Ga4MirrorNotice'
 import { resolveDateRange } from '@/app/admin/(protected)/analytics/_lib/queries'
 import {
   SectionHead,
@@ -370,6 +371,9 @@ async function TrafficSourcesContent({
         </VerdictLine>
       </div>
 
+      {/* TRACK-1: GA4 sessions and source/medium below are mirror-shaped. */}
+      {ga4Ok ? <Ga4MirrorNotice /> : null}
+
       {!ga4Ok ? (
         <>
           <ReportError what="The GA4 Data API" href={refreshHref} />
@@ -420,8 +424,9 @@ async function TrafficSourcesContent({
           />
           {overflowNote(Math.min(CAP_TABLE, ga4.topSources.length), ga4.topSources.length)}
           <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
-            Aggregated by GA4&apos;s default attribution. Use this view for high-level channel-mix
-            decisions.
+            Aggregated by GA4&apos;s default attribution. While the server page-view mirror runs,
+            its sessions carry no traffic source and land in (not set), so this table is not a
+            channel mix. Use the first-touch table below for that.
           </p>
         </>
       ) : null}

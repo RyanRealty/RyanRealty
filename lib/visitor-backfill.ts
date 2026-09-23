@@ -26,7 +26,18 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-type IdentifiedVia = 'google' | 'facebook' | 'email_click_fuid' | 'email_click_pid' | 'form_submit' | 'magic_link'
+// `tracked_link:<channel>` = a SIGNED person token on a link we sent
+// (lib/identity/link-token.ts, P7 identity loop 2026-09-23); `rr_pid_cookie` =
+// the signed first-party identity cookie on a browser we identified before.
+export type IdentifiedVia =
+  | 'google'
+  | 'facebook'
+  | 'email_click_fuid'
+  | 'email_click_pid'
+  | 'form_submit'
+  | 'magic_link'
+  | 'rr_pid_cookie'
+  | `tracked_link:${string}`
 
 export type BackfillResult = {
   ok: boolean
@@ -152,6 +163,26 @@ export async function stitchVisitorIdentity(params: {
       /* never block sign-in on a session-stitch write */
     }
   }
+}
+
+/**
+ * The identity loop's browser stitch (P7, 2026-09-23), keyed on the native
+ * crm_people.id. Same TRACK3 seam idea as stitchFormSubmitIdentity: new callers
+ * never spell the historical person-id key. Maps the rr_vid to the person and
+ * back-stitches every anonymous session on it.
+ */
+export async function stitchBrowserToPerson(params: {
+  rrVid: string | null | undefined
+  personId: number
+  sessionId?: string | null
+  source: string
+}): Promise<void> {
+  await stitchVisitorIdentity({
+    rrVid: params.rrVid,
+    fubPersonId: params.personId,
+    sessionId: params.sessionId ?? null,
+    source: params.source,
+  })
 }
 
 type EventRow = {

@@ -40,6 +40,31 @@ describe('chrome homepage H-fixes', () => {
     expect(hideAt).toBeGreaterThan(baseAt)
   })
 
+  it('puts the tappable phone in the bar at every width; Sign in moves to the menu on phones (UXLIVE-13)', () => {
+    // Base rule (no media query) shows the phone: a call in the first screen
+    // of every route at 375, where the 2026-09-06 bar gave the slot to Sign in.
+    const phoneBase = CHROME_CSS.slice(
+      CHROME_CSS.indexOf('.v3-chrome__phone {'),
+      CHROME_CSS.indexOf('\n}', CHROME_CSS.indexOf('.v3-chrome__phone {')),
+    )
+    expect(phoneBase).toMatch(/display: inline-flex/)
+    expect(phoneBase).not.toMatch(/display: none/)
+    expect(CHROME).toMatch(/href=\{`tel:\$\{CONTACT\.phoneDirectTel\}`\}\s*className="v3-chrome__phone"/)
+    // Sign in: hidden in the base rule, shown from the desktop breakpoint.
+    const signinBase = CHROME_CSS.slice(
+      CHROME_CSS.indexOf('.v3-chrome__signin {'),
+      CHROME_CSS.indexOf('\n}', CHROME_CSS.indexOf('.v3-chrome__signin {')),
+    )
+    expect(signinBase).toMatch(/display: none/)
+    expect(CHROME_CSS).toMatch(
+      /@media \(min-width: 56\.25rem\) \{\s*\.v3-chrome__signin \{\s*display: inline-flex;/,
+    )
+    // ...and the menu still reaches it: the account group renders in the overlay.
+    expect(CHROME).toMatch(/PRIMARY_BAR_KEYS\.has\(group\.key\) \|\| group\.key === ACCOUNT_KEY/)
+    const NAV = readFileSync(resolve('lib/site-nav.ts'), 'utf8')
+    expect(NAV).toMatch(/title: 'Your account',[\s\S]*?\{ href: '\/login', label: 'Sign in' \}/)
+  })
+
   it('keeps phone at the 44px tap floor (H7)', () => {
     expect(CHROME_CSS).toMatch(/\.v3-chrome__phone \{[\s\S]*?flex: none/)
     expect(CHROME_CSS).toMatch(/\.v3-chrome__phone \{[\s\S]*?min-width: var\(--v3-tap\)/)

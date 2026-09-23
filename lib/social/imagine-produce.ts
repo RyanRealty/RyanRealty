@@ -52,7 +52,9 @@ export function listingDraftCaption(listing: {
 export function gbpDraftCaption(pulse: {
   activeCount: number | null
   medianListPrice: number | null
-  closedLast30Days: number
+  /** Null when withheld or unknown (CLAUDE.md §0, DATA-7) — the sentence is
+   *  skipped, never printed as "0 closed" or "null closed". */
+  closedLast30Days: number | null
   monthsOfSupply: number | null
 }): string {
   const parts =
@@ -62,7 +64,9 @@ export function gbpDraftCaption(pulse: {
   if (pulse.medianListPrice != null && Number.isFinite(pulse.medianListPrice)) {
     parts.push(`Median list ${usd(pulse.medianListPrice)}.`)
   }
-  parts.push(`${pulse.closedLast30Days} closed in 30 days.`)
+  if (pulse.closedLast30Days != null && Number.isFinite(pulse.closedLast30Days)) {
+    parts.push(`${pulse.closedLast30Days} closed in 30 days.`)
+  }
   if (pulse.monthsOfSupply != null && Number.isFinite(pulse.monthsOfSupply)) {
     parts.push(`${pulse.monthsOfSupply} months of supply.`)
   }

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 import { pageTypeFromPath } from '@/lib/analytics/page-type'
 import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
+import { gtmBootstrapScript } from '@/lib/analytics/gtm-bootstrap'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 
@@ -70,16 +71,7 @@ export default function GTMHead() {
   return (
     <script
       dangerouslySetInnerHTML={{
-        __html: `window.dataLayer=window.dataLayer||[];
-function gtag(){dataLayer.push(arguments);}
-gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
-window.dataLayer.push({page_type:'${pageType.replace(/'/g, "\\'")}'});
-(function(){try{var a=new URLSearchParams(location.search||'').get('agent');if(!a){var m=document.cookie.match(/(?:^|; )rr_agent_attribution=([^;]*)/);if(m){try{var j=JSON.parse(decodeURIComponent(m[1]));a=j&&j.slug}catch(e){a=decodeURIComponent(m[1])}}}if(!a)return;a=String(a).trim().toLowerCase();var map={matt:'matt','matt-ryan':'matt',rebecca:'rebecca','rebecca-peterson':'rebecca',paul:'paul','paul-stevenson':'paul'};var s=map[a];if(!s)return;gtag('set','user_properties',{assigned_broker:s});window.dataLayer.push({broker_slug:s,assigned_broker:s})}catch(e){}})();
-(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':}}
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], // hydration-safe — GTM bootstrap stamp
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;if(f&&f.parentNode)f.parentNode.insertBefore(j,f);else d.head.appendChild(j);
-})(window,document,'script','dataLayer','${GTM_ID}');`,
+        __html: gtmBootstrapScript(pageType, GTM_ID), // hydration-safe: the Date call lives inside the inline script string and runs in the browser, not during render
       }}
     />
   )

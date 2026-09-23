@@ -44,6 +44,7 @@ import InsightCards, {
 import { DigitSwap } from '@/components/motion/digit-swap'
 import { AnimatedNumber } from '@/components/motion/number'
 import { listingsBrowsePath } from '@/lib/slug'
+import { yearAgoClause } from '@/lib/market/year-ago-clause'
 import {
   insightCount,
   insightDelta,
@@ -259,21 +260,21 @@ function compareProse(
   const cell = compare.cells[index] ?? null
   const prior = compare.priorCells[index] ?? null
   if (!cell || !prior || cell.median == null || prior.median == null) return null
-  const delta = insightDelta(cell.median, prior.median)
-  const direction =
-    cell.median > prior.median ? 'more' : cell.median < prior.median ? 'less' : 'the same'
+  // VOICE-6: one subject, one direction (lib/market/year-ago-clause.ts).
+  const versus = yearAgoClause({
+    now: cell.median,
+    then: prior.median,
+    thenMoney: insightMoney(prior.median),
+    thenLabel: prior.label,
+    delta: insightDelta(cell.median, prior.median),
+  })
   return {
     cell,
     prose: (
       <>
         In {cell.label} the middle house in Central Oregon sold for{' '}
-        <strong>{insightMoney(cell.median)}</strong>. A year earlier, in {prior.label}, it was{' '}
-        {insightMoney(prior.median)}
-        {delta ? `, ${delta}, ` : ', '}
-        {direction === 'the same'
-          ? 'level with a year ago'
-          : `${direction} than the same month last year`}
-        . Drag across the lines to read any other month.
+        <strong>{insightMoney(cell.median)}</strong>
+        {versus ? `, ${versus}` : ''}. Drag across the lines to read any other month.
       </>
     ),
   }

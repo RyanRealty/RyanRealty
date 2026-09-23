@@ -22,6 +22,49 @@ const formatMoney = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`
 const formatCount = (v: number) => Math.round(v).toLocaleString('en-US')
 
 /**
+ * SITE overflow fix (2026-09-23). Liveline's own value badge (`badge: true`
+ * by default on a single-series card — a small pill that tracks the line's
+ * tip, built as absolute-positioned DOM, not drawn on the canvas) lives in
+ * the `padding.right` gutter its layout reserves:
+ * `badgeLeft = w - pad.right + 8 - PAD_X - tailLen` (Liveline's own
+ * constants: `PAD_X` 10, `tailLen` 5), badge width
+ * `tailLen + textW + PAD_X*2`, where `textW` is a canvas `measureText` of
+ * the formatted value with every digit swapped to `'8'`. Solving
+ * `badgeLeft + width <= w` for `pad.right` reduces to `pad.right >= 18 +
+ * textW`.
+ *
+ * AnomalyCard passed `right: 0` — no gutter at all — so the badge always
+ * sat outside the chart's OWN box by `18 + textW`px, a DOM element the
+ * canvas's self-clipping never protects against. On a wide fold that slop
+ * landed in the page's own right margin and never showed; at phone widths
+ * the fold has no spare margin, so it became a real horizontal scrollbar
+ * (`document.documentElement.scrollWidth` > viewport width) on every route
+ * that mounts this card — subdivisions, cities, neighborhoods, zips, the
+ * region and cities hubs — measured on /subdivisions/keystone-terrace.
+ *
+ * `textW` needs a live canvas to measure exactly, which this helper does
+ * not have, so it estimates from character count. `BADGE_CHAR_PX` is the
+ * label font's (`11px "SF Mono", Menlo, Monaco, "Cascadia Code",
+ * monospace`) measured advance width on this stack's own Chromium render —
+ * 6.6226px per character, every character, because the fallback stack
+ * lands on a true monospace font — plus a ~12% margin, so the estimate
+ * always reserves AT LEAST as much room as the real badge will need.
+ * Clamped so one freak long value cannot swallow the whole chart, and so a
+ * one-digit value still gets a usable gutter.
+ */
+const BADGE_CHAR_PX = 7.4
+const BADGE_GUTTER_BASE = 18
+const MIN_BADGE_GUTTER = 32
+const MAX_BADGE_GUTTER = 140
+
+/** Exported for its regression test (components/site/__tests__). */
+export function estimateBadgeGutter(labels: readonly string[]): number {
+  const longest = labels.reduce((max, label) => Math.max(max, label.length), 0)
+  const gutter = Math.ceil(BADGE_GUTTER_BASE + longest * BADGE_CHAR_PX)
+  return Math.min(MAX_BADGE_GUTTER, Math.max(MIN_BADGE_GUTTER, gutter))
+}
+
+/**
  * LIVELINE FILTERS AGAINST THE WALL CLOCK (SITE-103, and this is why every
  * Liveline on this site read "No data to display").
  *
@@ -408,6 +451,12 @@ export function AnomalyCard({
   const formatUsage = l.formatUsage ?? ((v: number) => `${Math.round(v)} kWh`)
   const format = metric === 'spend' ? formatSpend : formatUsage
   const moneyLabel = formatSpend(spend.at(-1)?.value ?? 0)
+  // Sized off BOTH metrics' real faces so the badge stays inside the chart's
+  // own box no matter which chip is active — see estimateBadgeGutter above.
+  const badgeGutter = useMemo(
+    () => estimateBadgeGutter([...anomaly.spend.map(formatSpend), ...anomaly.usage.map(formatUsage)]),
+    [anomaly.spend, anomaly.usage, formatSpend, formatUsage],
+  )
 
   return (
     <div className="insight-cards__card">
@@ -477,7 +526,7 @@ export function AnomalyCard({
           window={49}
           lineWidth={2.25}
           cursor="crosshair"
-          padding={{ top: 34, right: 0, bottom: 22, left: 0 }}
+          padding={{ top: 34, right: badgeGutter, bottom: 22, left: 0 }}
           formatValue={format}
           {...(ticks ? { formatTime: ticks } : formatTime ? { formatTime } : {})}
         />

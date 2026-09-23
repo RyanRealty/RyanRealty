@@ -52,6 +52,13 @@
   min-width: 0;
 }
 
+.home-rail__count {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+}
+
 .home-rail__title {
   margin: 0;
   color: var(--v3-ink);
@@ -252,6 +259,13 @@
   font-size: var(--v3-size-display-2);
   font-weight: var(--v3-weight-medium);
   color: var(--v3-ink);
+}
+
+.home-rail__card [data-slot='card-title'].home-rail__ask-none {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink-muted);
 }
 
 .home-rail__card [data-slot='card-description'],

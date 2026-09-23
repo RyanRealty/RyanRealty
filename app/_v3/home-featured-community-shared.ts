@@ -24,6 +24,15 @@ export type HomeFeaturedCommunitySlide = {
   figures: HomeFeaturedCommunityFigure[]
 }
 
+/*
+ * VOICE-6 (visibility audit 2026-09-22): this line read "Alias-aware active
+ * inventory and median list for each resort community." "Alias-aware" is our
+ * word for counting every MLS subdivision name a community goes by, so the
+ * sentence now says that in the reader's words. It covers only the two figures
+ * that count that way (lib/kb/registry-resort-public-figures.ts, active
+ * single-family tiles); the sales, new-this-week and days figures come from the
+ * community's MarketPulse row, which the prefix already names.
+ */
 export const HOME_FEATURED_COMMUNITY_SOURCE = publicMarketPulseSource(
-  'Alias-aware active inventory and median list for each resort community.',
+  "Homes for sale and the median list price count every single-family listing the MLS files under any of the community's subdivision names.",
 )

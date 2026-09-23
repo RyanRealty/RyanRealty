@@ -216,10 +216,12 @@ describe('slug', () => {
   })
 
   // CONTRACT: every internal listing link must produce the SAME canonical URL as
-  // the detail page (generateMetadata) + the sitemap — the full
-  // city/neighborhood/subdivision/address-mls hierarchy. A regression to a
-  // shorter URL (e.g. dropping the neighborhood segment) fails here.
-  it('listingTileHref builds the full city/neighborhood/subdivision/address-mls canonical', () => {
+  // the detail page (generateMetadata) + the sitemap. P14 (2026-09-23): that
+  // URL is /{MLS City}/[{MLS SubdivisionName}/]{street}-{mls}. The polygon
+  // neighborhood no longer earns a segment — it moved the canonical every time
+  // the classifier moved (lib/routing/listing-canonical-pins.json pins real
+  // rows; this is the synthetic half).
+  it('listingTileHref builds the MLS city/subdivision/address-mls canonical and ignores the polygon neighborhood', () => {
     expect(
       listingTileHref({
         listingKey: 'spark-key-12345',
@@ -231,7 +233,7 @@ describe('slug', () => {
         boundaryNeighborhood: 'Westside',
         subdivisionName: 'Northwest Crossing',
       }),
-    ).toBe('/homes-for-sale/bend/westside/northwest-crossing/100-main-st-220189456')
+    ).toBe('/homes-for-sale/bend/northwest-crossing/100-main-st-220189456')
   })
 
   it('withholds placeholder street number 0 from the Moonshadow listing segment', () => {
@@ -260,7 +262,9 @@ describe('slug', () => {
     ).toBe('/homes-for-sale/bend/moonshadow-court-220221237')
   })
 
-  it('listingTileHref prefers boundaryCity and drops the N/A subdivision sentinel', () => {
+  it('listingTileHref takes the city from the MLS City, never boundaryCity, and drops the N/A subdivision sentinel', () => {
+    // P14: the polygon city used to win here. 220223871 (MLS City Redmond,
+    // boundary_city Powell Butte) is the real row in the pin file.
     expect(
       listingTileHref({
         listingKey: 'k',
@@ -271,7 +275,7 @@ describe('slug', () => {
         boundaryCity: 'Redmond',
         subdivisionName: 'N/A',
       }),
-    ).toBe('/homes-for-sale/redmond/100-main-st-220189456')
+    ).toBe('/homes-for-sale/bend/100-main-st-220189456')
   })
 
   /*

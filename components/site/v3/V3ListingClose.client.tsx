@@ -350,7 +350,11 @@ export function V3ListingClose({
             </figcaption>
 
             <p className="v3-close__window">{view.windowLine}</p>
-            <V3SourceDisclosure source={view.source} className="v3-close__source" />
+            <V3SourceDisclosure
+              source={view.source}
+              sourceName={view.sourceName}
+              className="v3-close__source"
+            />
           </figure>
         ) : null}
 
