@@ -43,10 +43,16 @@ export type StoryPiece = {
    * as a listing). Default 'town'.
    */
   phoneHeroRole?: BeatRole
+  /**
+   * A real photograph for the phone screen's hero (an asset-library ref),
+   * preferred over phoneHeroRole: the phone is the present, so it shows the
+   * real place, not a frame of the cast.
+   */
+  phoneHeroRef?: string
   /** Top caption over the reel's first seconds. */
   openCaption: string
-  /** The end-card line under the wordmark. */
-  endLine: string
+  /** The end-card line under the wordmark. Omit for a card with only the wordmark and contact. */
+  endLine?: string
 }
 
 export const STORY_PIECES: StoryPiece[] = [
@@ -84,20 +90,22 @@ export const STORY_PIECES: StoryPiece[] = [
     beats: {
       hook: 'car-wave',
       arrive: 'road-to-bachelor',
-      play: 'ski-toward-lens',
+      play: 'ski-follow',
       play_pair: 'chairlift-selfie',
-      eat: 'supper-toast',
+      eat: 'supper-tower-window',
       town: 'drake-park-bike',
       stroll: 'old-bend-walk',
       discover: 'she-points',
       sign: 'yard-sign-bungalow',
-      phone: 'phone-out',
-      call: 'on-the-phone',
+      phone: 'phone-glow',
+      call: 'call-deadpan',
     },
     continuity: { discover: 'stroll', sign: 'stroll', phone: 'sign', call: 'sign' },
     payoff: { kind: 'neighborhood_inventory', geoSlug: 'bend-old-bend', placeLabel: 'Old Bend' },
+    // Drake Park at the edge of Old Bend, Carol M. Highsmith, Library of Congress (public domain).
+    phoneHeroRef: 'asset:0c6777d4-f8b3-4b2c-a399-67810745cea3',
     openCaption: 'Bend, Oregon. Winter, 1982.',
-    endLine: 'People have been falling for Bend on a weekend visit for a long time. We’ll help you stay.',
+    // Matt 2026-09-23: nothing corny at the end. The last shot is the joke; the card only signs it.
   },
 ]
 

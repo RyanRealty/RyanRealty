@@ -6,7 +6,10 @@
   comes from payoff.json, resolved through the DAL and traced in
   citations.json (CLAUDE.md §0). Tokens mirror components/site/v3/tokens.css.
 
-  States (query string ?state=): page | pressed | calling
+  States (query string ?state=): page | pressed | calling | glance
+  glance is the screen as it sits INSIDE the film (a phone in a gloved hand,
+  composited by story_reel.py over the lit blank screen): a full-height phone
+  screen with the place and its median set large enough to read at a glance.
 -->
 <html>
 <head>
@@ -25,7 +28,7 @@
     --v3-pressed: color-mix(in srgb, var(--v3-navy) 85%, transparent);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 390px; height: 693px; overflow: hidden; background: var(--v3-cream); }
+  html, body { width: 390px; height: 100%; overflow: hidden; background: var(--v3-cream); }
   body { font-family: 'Geist', system-ui, sans-serif; color: var(--v3-navy); -webkit-font-smoothing: antialiased; }
   .status { height: 40px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 15px; }
   .status svg { display: block; }
@@ -54,6 +57,15 @@
   .calling .dots { margin-top: 170px; display: flex; justify-content: center; gap: 34px; }
   .calling .dots i { width: 64px; height: 64px; border-radius: 50%; background: color-mix(in srgb, var(--v3-cream) 14%, transparent); display: block; }
   .calling .status { color: var(--v3-cream); }
+  body.is-glance .hero { height: 230px; }
+  body.is-glance .body { padding-top: 26px; }
+  body.is-glance h1 { font-size: 60px; }
+  body.is-glance .stats { grid-template-columns: 1fr; gap: 12px; margin-top: 22px; }
+  body.is-glance .stat:last-child { order: -1; }
+  body.is-glance .stat b { font-size: 46px; }
+  body.is-glance .stat span { font-size: 15px; }
+  body.is-glance .source { font-size: 12px; margin-top: 14px; }
+  body.is-glance .cta { margin-top: 26px; height: 60px; font-size: 18px; }
 </style>
 </head>
 <body class="is-{{STATE}}">

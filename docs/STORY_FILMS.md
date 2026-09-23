@@ -166,6 +166,39 @@ the original instead of over it.
 Borrow the register, never the character: our in-world merch is ours (a Ryan Realty knit cap
 or pennant, composited in post, never generated).
 
+## "Winter, 1982" v2: Matt's notes, and the ending the lane now defaults to
+
+Matt picked the pastel stock and gave four notes (2026-09-23). Each became a reusable part:
+
+| Note | What changed | Where |
+|---|---|---|
+| Dinner downtown with the Tower behind them, something from then on the marquee | Beat `supper-tower-window`: a window table on Wall Street, the Tower across the street, an 85mm lens so the marquee is large between their profiles. The marquee boards are plated in post (`marquee` composite) with a film that was actually in wide release that week: *On Golden Pond* was #1 nationally the weekend of Feb 5-7, 1982 (Box Office Mojo weekend chart). The Tower was a single-screen movie house until it was twinned in March 1983 (Cinema Treasures; Oregon Theater Project). The reference photo is the 2012 restored facade (CC BY-SA 3.0, Another Believer); the 1982 marquee is undocumented. | `lib/studio/story/beats.ts`, `story_reel.py sign-clip --panel` |
+| The ski shot: one following the other | Beat `ski-follow`: framed up the fall line at 85mm, she in front and he a few turns behind. "Keeps his place behind her, following her exact line" stopped them weaving through each other. | `beats.ts` |
+| Don't make it corny at the end | No tagline on the card (`endLine` is optional). The last shot is `call-deadpan`: a centered tripod tableau, phone at his ear, straight faces, our sign on the lawn. The music stops dead on the cut, the line rings once in the hush, a pickup click, then the card lands on the last chord. | `beats.ts`, `pieces.ts`, `story_reel.py` |
+| The website phone scene is lame | The full-frame phone takeover is gone. `phone-glow` keeps the phone inside the film: he holds it up to the lens, and after the lab the lit blank screen is found per frame and our page (`phone-ui.html` state `glance`) is laid on it. That makes the screen the only sharp, ungraded thing in the frame. A slow lab push-in makes the figure readable. `planStory` drops the break whenever the phone beat is a `phone_screen` composite. | `arc.ts`, `story_reel.py composite_screen`, `phone-ui.html` |
+
+The phone's hero photo is a real, public-domain photo of Drake Park (Carol M. Highsmith,
+Library of Congress, via `phoneHeroRef`), never a frame of the cast. The phone is the present,
+so it shows the real place. It never shows a listing: the live Old Bend page carries other
+brokers' listings with prices, and those don't belong in our ad.
+
+Post, in order, for a v2-style piece (after `select`):
+
+```bash
+npx tsx scripts/studio/story-film.ts payoff --piece <id>           # figure, two reads
+npx tsx scripts/studio/story-film.ts phone  --piece <id>           # renders phone-glance.png
+npx tsx scripts/studio/story-film.ts look   --piece <id> --era cine16_1978
+# plates: a still-size quad on a 2x-upscaled clip keeps lettering crisp
+python3 scripts/studio/story_reel.py sign-clip --dir out/story/<id> --role eat  --panel assets/marquee-panel.png --corners ...
+python3 scripts/studio/story_reel.py sign-clip --dir out/story/<id> --role call --corners ...
+# edl.json: the phone segment carries "screen": {"image": "assets/phone-glance.png", "search": [x0,y0,x1,y1]}
+python3 scripts/studio/story_reel.py build --dir out/story/<id> --lab lab-cine16_1978.json --name reel-v2
+```
+
+Cost of the v2 reshoot: 8 stills and 5 motion clips, $2.73 as billed by xAI (the ledger now
+books xAI's own `cost_in_usd_ticks`, 1e10 ticks to the dollar). Reference-conditioned stills
+bill about $0.075 each, not the $0.04 rate card, so the piece cap trips on real spend.
+
 ## Distribution notes
 
 Label every piece as AI-generated on each platform (TikTok AIGC label, Meta "AI info"); the

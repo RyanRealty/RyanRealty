@@ -15,19 +15,45 @@ const era = getEra('super8_1982')!
 describe('visitor arc', () => {
   it('fills every role of the winter 1982 piece with a beat that fits the year and season', () => {
     const plan = planStory({ era, season: piece.season, beats: piece.beats })
-    expect(plan.shots).toHaveLength(VISITOR_ARC.length)
+    // The piece's phone lives inside the film, so the full-frame break drops out.
+    expect(plan.shots).toHaveLength(VISITOR_ARC.length - 1)
     for (const shot of plan.shots) {
       if (shot.kind !== 'generated') continue
       expect(shot.beat, shot.role).not.toBeNull()
       expect(beatFits(shot.beat!, 1982, 'winter'), shot.role).toBe(true)
     }
-    expect(plan.shots.find((s) => s.role === 'break')?.kind).toBe('phone_ui')
+    expect(plan.shots.some((s) => s.role === 'break')).toBe(false)
     expect(plan.shots.at(-1)?.kind).toBe('end_card')
+  })
+
+  it('keeps the full-frame break for a phone beat that is not composited in the film', () => {
+    const plan = planStory({
+      era,
+      season: piece.season,
+      beats: { ...piece.beats, phone: 'phone-out', call: 'on-the-phone' },
+    })
+    expect(plan.shots).toHaveLength(VISITOR_ARC.length)
+    expect(plan.shots.find((s) => s.role === 'break')?.kind).toBe('phone_ui')
+  })
+
+  it('pins the Tower dinner to the years the Tower was a movie house on Wall Street', () => {
+    const tower = BEATS.find((b) => b.id === 'supper-tower-window')!
+    expect(tower.years[0]).toBe(1940)
+    expect(tower.composite).toBe('marquee')
+    expect(tower.refs.every((r) => r.startsWith('asset:') && !r.includes('PENDING'))).toBe(true)
+  })
+
+  it('moves only the sign still in the lab; every other composite shot still gets motion', () => {
+    for (const beat of BEATS.filter((b) => b.composite)) {
+      expect(beat.stillOnly === true, beat.id).toBe(beat.id === 'yard-sign-bungalow')
+    }
   })
 
   it('refuses a pinned beat that cannot honestly appear in the era', () => {
     // Skiing opened on Bachelor Butte in 1958; a 1955 reel cannot ski there.
-    expect(() => planStory({ era: ERAS.bw16mm_1955, season: 'winter', beats: { play: 'ski-toward-lens' } })).toThrow(/cannot appear/)
+    expect(() => planStory({ era: ERAS.bw16mm_1955, season: 'winter', beats: { play: 'ski-toward-lens' } })).toThrow(
+      /cannot appear/,
+    )
   })
 
   it('refuses a pinned beat in the wrong role', () => {
@@ -47,7 +73,8 @@ describe('visitor arc', () => {
 })
 
 describe('story prompts', () => {
-  const prompts = (id: string) => storyShotPrompts({ beat: getBeat(id)!, era, cast: piece.cast, sources: ['a reference'] })
+  const prompts = (id: string) =>
+    storyShotPrompts({ beat: getBeat(id)!, era, cast: piece.cast, sources: ['a reference'] })
 
   it('never carries booster tokens', () => {
     for (const beat of BEATS.filter((b) => beatFits(b, 1982, 'winter'))) {
@@ -84,7 +111,14 @@ describe('story prompts', () => {
   })
 
   it('states positives only: no "no text" style negatives that induce what they name', () => {
-    for (const id of ['car-wave', 'yard-sign-bungalow', 'phone-out']) {
+    for (const id of [
+      'car-wave',
+      'yard-sign-bungalow',
+      'phone-out',
+      'supper-tower-window',
+      'phone-glow',
+      'call-deadpan',
+    ]) {
       expect(prompts(id).still, id).not.toMatch(/\bno (text|signage|lettering|logos)\b/i)
     }
   })
@@ -150,7 +184,11 @@ describe('fiscal controls', () => {
       delete process.env.XAI_CREATIVE_API_KEY
       expect(grokApiKey()).toBe('prod-key')
     } finally {
-      for (const [k, v] of [['XAI_API_KEY', saved.a], ['XAI_CREATIVE_API_KEY', saved.c], ['GROK_BILLING', saved.b]] as const) {
+      for (const [k, v] of [
+        ['XAI_API_KEY', saved.a],
+        ['XAI_CREATIVE_API_KEY', saved.c],
+        ['GROK_BILLING', saved.b],
+      ] as const) {
         if (v === undefined) delete process.env[k]
         else process.env[k] = v
       }

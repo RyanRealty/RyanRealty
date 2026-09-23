@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-09-23T16:37:42.030Z",
+  "updated_at": "2026-09-23T20:12:51.711Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -49548,6 +49548,48 @@
       "surface_tags": [],
       "vision_grade": null,
       "file_path": "public/asset-library/photos/loc/3998dd63-9c9a-4e1a-a301-f0371a4b2860.jpg"
+    },
+    {
+      "id": "f135a831-63b5-4aa4-a083-22be32f832b4",
+      "type": "photo",
+      "source": "wikimedia",
+      "source_id": "commons:File:Tower_Theatre,_Bend,_OR_-_2012.JPG",
+      "license": "CC BY-SA 3.0 (Wikimedia Commons; attribution: Another Believer)",
+      "license_metadata": {
+        "url": "https://commons.wikimedia.org/wiki/File:Tower_Theatre,_Bend,_OR_-_2012.JPG",
+        "license": "CC BY-SA 3.0",
+        "attribution": "Another Believer"
+      },
+      "creator": "Another Believer",
+      "creator_url": "https://commons.wikimedia.org/wiki/File:Tower_Theatre,_Bend,_OR_-_2012.JPG",
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/wikimedia/f135a831-63b5-4aa4-a083-22be32f832b4.JPG",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/wikimedia/f135a831-63b5-4aa4-a083-22be32f832b4.JPG",
+      "file_size_bytes": 2426424,
+      "geo_tags": [
+        "bend",
+        "downtown-bend",
+        "wall-street",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "tower-theatre",
+        "marquee",
+        "theater",
+        "storefronts"
+      ],
+      "search_query": "tower theatre bend oregon",
+      "width": 4000,
+      "height": 3000,
+      "duration_sec": null,
+      "registered_at": "2026-09-23T20:12:51.469+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Reference still for story films (the Tower Theatre on Wall Street, straight-on, post-2004 restoration; daylight). Downloaded 2026-09-23.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/wikimedia/f135a831-63b5-4aa4-a083-22be32f832b4.JPG"
     }
   ]
 }

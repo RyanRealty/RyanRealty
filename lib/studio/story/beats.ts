@@ -65,8 +65,14 @@ export type BeatDef = {
   alsoReject?: string[]
   /** The one thing in frame that is allowed to be out of period. */
   allowAnachronism?: string
-  /** A post composite this beat needs (the brand never goes through a generator). */
-  composite?: 'yard_sign'
+  /**
+   * A post composite this beat needs. The brand and any lettering never go
+   * through a generator: the frame carries a blank panel, marquee board, or
+   * lit screen, and story_reel.py lays ours on it.
+   */
+  composite?: 'yard_sign' | 'marquee' | 'phone_screen'
+  /** A still moved by the lab camera instead of generated motion. */
+  stillOnly?: boolean
   /**
    * Which era cues this frame needs. Default none. Era cues are scene
    * content: handing "brick storefronts" to every exterior put a downtown
@@ -76,6 +82,10 @@ export type BeatDef = {
 }
 
 const ALWAYS: [number, number] = [1900, 2100]
+
+/** The Tower Theatre on Wall Street, a freely licensed photograph in the asset library. */
+// Another Believer, 2012, CC BY-SA 3.0: the restored facade, straight on (the 1982 marquee is undocumented).
+const TOWER_REF = 'asset:f135a831-63b5-4aa4-a083-22be32f832b4'
 
 export const BEATS: BeatDef[] = [
   // ── hook ────────────────────────────────────────────────────────────────
@@ -89,7 +99,8 @@ export const BEATS: BeatDef[] = [
     refs: [],
     cast: ['A'],
     wardrobe: 'travel',
-    framing: 'filmed by the driver: the camera looks across the front seat at her in the PASSENGER seat, the passenger window and the pines behind her, 28mm',
+    framing:
+      'filmed by the driver: the camera looks across the front seat at her in the PASSENGER seat, the passenger window and the pines behind her, 28mm',
     light: 'flat overcast daylight through the windshield, cool on her face, the cabin a stop darker',
     periodCues: ['vehicles'],
     exposure: 'day',
@@ -109,7 +120,8 @@ export const BEATS: BeatDef[] = [
       'snow-covered Mount Bachelor rising ahead',
     refs: ['asset:d7f06007-475f-4a93-ad09-f2aa31633aad'],
     cast: [],
-    framing: 'through the windshield from the passenger seat, 35mm, the top of the dashboard along the bottom edge, an empty road ahead',
+    framing:
+      'through the windshield from the passenger seat, 35mm, the top of the dashboard along the bottom edge, an empty road ahead',
     light: 'clear winter afternoon sun from camera-left, 5600K, blue sky, bright snow on the shoulders',
     exposure: 'day',
     action: 'the road rolls toward the mountain as the car drives on',
@@ -121,9 +133,11 @@ export const BEATS: BeatDef[] = [
     role: 'play',
     label: 'She skis to the lens and stops in a spray',
     years: [1958, 2100],
-    yearsWhy: 'Skiing opened on Bachelor Butte in 1958; it was renamed Mt. Bachelor in 1983. On-screen text in a pre-1983 piece says Bachelor Butte.',
+    yearsWhy:
+      'Skiing opened on Bachelor Butte in 1958; it was renamed Mt. Bachelor in 1983. On-screen text in a pre-1983 piece says Bachelor Butte.',
     seasons: ['winter'],
-    place: 'a groomed run high on Mount Bachelor, open snow all around, the snowy summit cone behind, wind-sculpted snow ghost trees, nothing but mountain in the background',
+    place:
+      'a groomed run high on Mount Bachelor, open snow all around, the snowy summit cone behind, wind-sculpted snow ghost trees, nothing but mountain in the background',
     refs: ['asset:9671ec09-6f90-4aea-9f11-8669d83feb4f'],
     cast: ['A'],
     wardrobe: 'ski',
@@ -131,6 +145,30 @@ export const BEATS: BeatDef[] = [
     light: 'hard high-altitude sun from camera-left, 5600K, deep blue sky, bright snow',
     exposure: 'day',
     action: '{A} skis toward the camera and stops sideways in a spray of snow, poles raised, laughing',
+    props: 'long, narrow, nearly straight early-1980s skis with no sidecut, thin aluminum poles with leather baskets',
+    move: 'follow',
+  },
+  {
+    id: 'ski-follow',
+    role: 'play',
+    label: 'She leads, he follows in her tracks',
+    years: [1958, 2100],
+    yearsWhy:
+      'Skiing opened on Bachelor Butte in 1958; it was renamed Mt. Bachelor in 1983. On-screen text in a pre-1983 piece says Bachelor Butte.',
+    seasons: ['winter'],
+    place:
+      'a groomed run high on Mount Bachelor, open snow all around, the snowy summit cone behind, wind-sculpted snow ghost trees, nothing but mountain in the background',
+    refs: ['asset:9671ec09-6f90-4aea-9f11-8669d83feb4f'],
+    cast: ['A', 'B'],
+    wardrobe: 'ski',
+    framing:
+      'from low on the run looking up the fall line, 85mm: the two of them skiing single file straight toward the camera, ' +
+      'she in front, he a few turns behind her and smaller in the frame, the summit cone behind them',
+    light: 'hard high-altitude sun from camera-left, 5600K, deep blue sky, bright snow',
+    exposure: 'day',
+    action:
+      '{A} carves toward the camera in smooth linked turns and {B} keeps his place a few meters behind her, following her exact line; ' +
+      'both concentrate on the snow',
     props: 'long, narrow, nearly straight early-1980s skis with no sidecut, thin aluminum poles with leather baskets',
     move: 'follow',
   },
@@ -157,18 +195,50 @@ export const BEATS: BeatDef[] = [
     label: 'Both of them on the chair, camera at arm’s length',
     years: [1958, 2100],
     seasons: ['winter'],
-    place: 'high above the snow on a two-person chairlift on Mount Bachelor, the snowy summit and ponderosa-dotted slopes falling away behind, nothing but mountain in the background',
+    place:
+      'high above the snow on a two-person chairlift on Mount Bachelor, the snowy summit and ponderosa-dotted slopes falling away behind, nothing but mountain in the background',
     refs: ['asset:9671ec09-6f90-4aea-9f11-8669d83feb4f'],
     cast: ['A', 'B'],
     wardrobe: 'ski',
     framing: 'the camera held at arm’s length by him, 21mm wide, both faces in frame',
     light: 'hard high-altitude sun, 5600K, deep blue sky',
     exposure: 'day',
-    action: '{A} and {B} lean their heads together to fit in the frame and grin, his arm reaching out of frame toward the camera',
-    props: 'dull matte fabrics with no logos or emblems, a simple wooden-slat double chair with a single steel safety bar',
+    action:
+      '{A} and {B} lean their heads together to fit in the frame and grin, his arm reaching out of frame toward the camera',
+    props:
+      'dull matte fabrics with no logos or emblems, a simple wooden-slat double chair with a single steel safety bar',
     move: 'armLength',
   },
   // ── eat ─────────────────────────────────────────────────────────────────
+  {
+    id: 'supper-tower-window',
+    role: 'eat',
+    label: 'Supper at a Wall Street window, the Tower across the street',
+    years: [1940, 2100],
+    yearsWhy:
+      'The Tower Theatre opened on Wall Street on March 6, 1940, ran as a single-screen movie house until it was twinned in March 1983, and showed films into the early 1990s (Cinema Treasures; Oregon Theater Project).',
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    place:
+      'a window table in a small restaurant on Wall Street in downtown Bend at night; through the tall front window, ' +
+      'across the snowy street, the Tower Theatre with its tall vertical blade sign and its lit marquee',
+    refs: [TOWER_REF],
+    periodCues: ['rooms', 'street', 'vehicles'],
+    cast: ['A', 'B'],
+    wardrobe: 'dinner',
+    framing:
+      'a symmetrical two-shot from inside at table height, 85mm compressing the street: the two of them in profile facing each ' +
+      'other across a small table set against the window, the theater directly across the street, its lit marquee large and ' +
+      'centered in the window between their profiles',
+    light:
+      'warm tungsten from a candle on the table, 2700K, with the marquee glowing white through the glass behind them, the room a stop darker',
+    exposure: 'interior_low',
+    action: '{A} and {B} raise their wine glasses to each other and drink',
+    props:
+      'a candle in a red glass globe, a white tablecloth, two wine glasses, light snow falling past the window, the marquee board lit plain white',
+    move: 'tripod',
+    composite: 'marquee',
+    alsoReject: ['the theater is missing from the window', 'the marquee is hidden behind a head'],
+  },
   {
     id: 'supper-toast',
     role: 'eat',
@@ -203,7 +273,8 @@ export const BEATS: BeatDef[] = [
     framing: 'from the sidewalk, 35mm',
     light: 'warm shop windows and incandescent street lamps, 2400K, snow lit from below',
     exposure: 'night',
-    action: 'a man in a wool coat rides a bicycle slowly past with a shaggy dog trotting beside him, and raises a hand to the camera',
+    action:
+      'a man in a wool coat rides a bicycle slowly past with a shaggy dog trotting beside him, and raises a hand to the camera',
     move: 'pan',
   },
   {
@@ -221,7 +292,8 @@ export const BEATS: BeatDef[] = [
     framing: 'from the edge of the path at waist height, 35mm',
     light: 'deep blue dusk skylight with warm window light across the pond, 3000K practicals, soft shadows on the snow',
     exposure: 'night',
-    action: 'a man in a wool coat and knit cap rides a bicycle slowly along the path past the camera with a shaggy dog trotting beside him, and raises a hand to wave',
+    action:
+      'a man in a wool coat and knit cap rides a bicycle slowly along the path past the camera with a shaggy dog trotting beside him, and raises a hand to wave',
     move: 'pan',
   },
   // ── stroll ──────────────────────────────────────────────────────────────
@@ -276,12 +348,40 @@ export const BEATS: BeatDef[] = [
     framing: 'from the sidewalk, 50mm, the sign large in the right third of the frame and the house behind it',
     light: 'blue dusk skylight with the warm porch light and lit windows, 3000K practicals',
     exposure: 'night',
-    action: 'a white wooden yard-sign post stands in the snow with a plain blank white square panel hanging still from its arm, facing the camera',
+    action:
+      'a white wooden yard-sign post stands in the snow with a plain blank white square panel hanging still from its arm, facing the camera',
     move: 'hold',
     composite: 'yard_sign',
-    alsoReject: ['any letters, numbers, or marks on the sign panel', 'the sign panel is not a clean flat rectangle facing the camera'],
+    stillOnly: true,
+    alsoReject: [
+      'any letters, numbers, or marks on the sign panel',
+      'the sign panel is not a clean flat rectangle facing the camera',
+    ],
   },
   // ── phone ───────────────────────────────────────────────────────────────
+  {
+    id: 'phone-glow',
+    role: 'phone',
+    label: 'Over his shoulder, the phone lights his glove',
+    years: ALWAYS,
+    seasons: ['winter'],
+    place: 'the Old Bend sidewalk at dusk, snow on the ground, the warm porch light of the bungalow soft behind them',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A', 'B'],
+    wardrobe: 'evening',
+    framing:
+      'an insert close-up, 50mm: his brown-gloved hand holds a thin black modern smartphone upright in the center of the frame, ' +
+      'the lit screen facing the camera square-on and a third of the frame tall; behind it, soft and out of focus, her face and the porch light',
+    light: 'blue dusk skylight, the phone screen glowing cool white and lighting his glove and both faces from below',
+    exposure: 'night',
+    action:
+      '{B} holds the phone still in his gloved hand while {A}, soft in the background, looks at it with a straight face',
+    props: 'brown leather gloves, the phone screen an evenly lit plain white rectangle',
+    move: 'hold',
+    composite: 'phone_screen',
+    alsoReject: ['a yard sign, sign post, or blank panel is in the frame (the sign belongs to the previous shot)'],
+    allowAnachronism: 'the thin black modern smartphone in his hand (it is the joke)',
+  },
   {
     id: 'phone-out',
     role: 'phone',
@@ -295,12 +395,41 @@ export const BEATS: BeatDef[] = [
     framing: 'a closer waist-up shot facing them on the sidewalk, 50mm, the lit porch soft behind them',
     light: 'blue dusk skylight with a warm porch light behind them, 3000K',
     exposure: 'night',
-    action: '{B} pulls a thin black modern smartphone out of his jacket and looks down at it while {A} stands beside him looking straight into the lens',
+    action:
+      '{B} pulls a thin black modern smartphone out of his jacket and looks down at it while {A} stands beside him looking straight into the lens',
     move: 'hold',
     alsoReject: ['a yard sign, sign post, or blank panel is in the frame (the sign belongs to the previous shot)'],
     allowAnachronism: 'the thin black modern smartphone in his hand (it is the joke)',
   },
   // ── call ────────────────────────────────────────────────────────────────
+  {
+    id: 'call-deadpan',
+    role: 'call',
+    label: 'He makes the call; nobody smiles',
+    years: [1925, 2100],
+    seasons: ['winter'],
+    place:
+      'the front yard of the same 1920s craftsman bungalow in Old Bend at dusk: porch light on, lit windows, snow on the lawn, ' +
+      'a white wooden yard-sign post in the snow with a plain blank white square panel hanging from its arm',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A', 'B'],
+    wardrobe: 'evening',
+    framing:
+      'a centered, frontal medium-wide shot from the sidewalk, 40mm, level horizon: the two of them standing side by side ' +
+      'on the snowy lawn facing the camera, the lit porch centered behind them, the sign post in the right third of the frame',
+    light: 'blue dusk skylight with the warm porch light and lit windows behind them, 3000K practicals',
+    exposure: 'night',
+    action:
+      '{B} holds the black smartphone to his ear and waits while {A} stands beside him with her hands in her coat pockets; ' +
+      'both look straight into the lens with calm, straight faces',
+    move: 'tripod',
+    composite: 'yard_sign',
+    alsoReject: [
+      'any letters, numbers, or marks on the sign panel',
+      'either of them grinning or gesturing at the camera',
+    ],
+    allowAnachronism: 'the thin black modern smartphone at his ear (it is the joke)',
+  },
   {
     id: 'on-the-phone',
     role: 'call',
@@ -314,7 +443,8 @@ export const BEATS: BeatDef[] = [
     framing: 'a closer waist-up shot facing them on the sidewalk, 50mm, the lit porch soft behind them',
     light: 'blue dusk skylight with a warm porch light behind them, 3000K',
     exposure: 'night',
-    action: '{B} holds the black smartphone to his ear, grinning, and gives the camera a thumbs up while {A} hugs his arm',
+    action:
+      '{B} holds the black smartphone to his ear, grinning, and gives the camera a thumbs up while {A} hugs his arm',
     move: 'hold',
     alsoReject: ['a yard sign, sign post, or blank panel is in the frame (the sign belongs to the previous shot)'],
     allowAnachronism: 'the thin black modern smartphone at his ear (it is the joke)',

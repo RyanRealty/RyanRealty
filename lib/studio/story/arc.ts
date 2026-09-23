@@ -29,15 +29,27 @@ export type ArcSlot = {
 }
 
 export const VISITOR_ARC: ArcSlot[] = [
-  { role: 'hook', seconds: 2.6, because: 'A face at the lens in unmistakable period film reads at gist speed and promises a trip.' },
+  {
+    role: 'hook',
+    seconds: 2.6,
+    because: 'A face at the lens in unmistakable period film reads at gist speed and promises a trip.',
+  },
   { role: 'arrive', seconds: 2.6, because: 'The road runs at the mountain: where they are, before anything happens.' },
   { role: 'play', seconds: 2.8, because: 'The thing people come here to do, done badly and happily.' },
   { role: 'play_pair', seconds: 2.6, because: 'Both of them in one frame: the period selfie is the first laugh.' },
   { role: 'eat', seconds: 3.0, because: 'Warmth after cold; the reel gets darker and closer.' },
-  { role: 'town', seconds: 2.8, because: 'The lifestyle cue a city visitor notices: a stranger waves, a dog trots along.' },
+  {
+    role: 'town',
+    seconds: 2.8,
+    because: 'The lifestyle cue a city visitor notices: a stranger waves, a dog trots along.',
+  },
   { role: 'stroll', seconds: 3.4, because: 'Ma. The breathing beat before the turn, no cut inside it.' },
   { role: 'discover', seconds: 2.8, because: 'She sees something off-frame: the gap opens.' },
-  { role: 'sign', seconds: 2.4, because: 'The answer, zoomed to like an amateur would: our sign in front of a lamplit house.' },
+  {
+    role: 'sign',
+    seconds: 2.4,
+    because: 'The answer, zoomed to like an amateur would: our sign in front of a lamplit house.',
+  },
   { role: 'phone', seconds: 2.4, because: 'The violation: a modern phone comes out of a period coat.' },
   { role: 'break', seconds: 3.6, because: 'The present, full frame and sharp: the app, the price, the call button.' },
   { role: 'call', seconds: 2.8, because: 'Back in the reel, resolved: on the phone, thumbs up, a hug.' },
@@ -77,7 +89,11 @@ export type PlanStoryInput = {
  * or season (a 1982 reel asking for the 1988 brewery is a bug, not a warning).
  */
 export function planStory(input: PlanStoryInput): StoryPlan {
-  const arc = input.arc ?? VISITOR_ARC
+  // A phone beat whose screen is composited inside the film carries the
+  // present on its own; the full-frame break would say it twice.
+  const pinnedPhone = input.beats?.phone ? getBeat(input.beats.phone) : null
+  const phoneInFilm = pinnedPhone?.composite === 'phone_screen'
+  const arc = (input.arc ?? VISITOR_ARC).filter((slot) => !(phoneInFilm && slot.role === 'break'))
   const year = input.era.year
   const warnings: string[] = []
   const shots: PlannedStoryShot[] = []
@@ -96,7 +112,8 @@ export function planStory(input: PlanStoryInput): StoryPlan {
     if (pinned) {
       beat = getBeat(pinned)
       if (!beat) throw new Error(`planStory: no beat "${pinned}" for role ${slot.role}`)
-      if (beat.role !== slot.role) throw new Error(`planStory: beat "${pinned}" is a ${beat.role} beat, not ${slot.role}`)
+      if (beat.role !== slot.role)
+        throw new Error(`planStory: beat "${pinned}" is a ${beat.role} beat, not ${slot.role}`)
       if (!beatFits(beat, year, input.season)) {
         throw new Error(
           `planStory: beat "${pinned}" cannot appear in ${input.season} ${year} ` +

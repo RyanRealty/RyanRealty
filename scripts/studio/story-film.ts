@@ -305,6 +305,20 @@ function assetById(id: string): AssetRow {
   return row
 }
 
+/**
+ * What xAI actually billed for a call, from its cost_in_usd_ticks (1e10 ticks
+ * to the dollar: a 4s 480p clip reports 3.3e9 ticks, two reference-conditioned
+ * stills 1.5e9, i.e. $0.33 and $0.15), falling back to the rate card when a
+ * response carries no ticks. The piece cap is enforced on this number, so it
+ * trips on real spend: edits run ~$0.075 an image against a $0.04 card
+ * (measured 2026-09-23).
+ */
+function billedUsd(rateCardUsd: number, ticks: number | null | undefined): number {
+  return typeof ticks === 'number' && Number.isFinite(ticks) && ticks > 0
+    ? Number((ticks / 1e10).toFixed(6))
+    : rateCardUsd
+}
+
 /** A reference ("asset:<id>" or "file:<path>") as a local file, downloading from the bucket if needed. */
 async function resolveRef(ref: string): Promise<string> {
   if (ref.startsWith('file:')) return path.join(ROOT, ref.slice(5))
@@ -434,7 +448,7 @@ async function judge(input: {
   }
   addSpend(input.ledger, {
     step: input.step,
-    usd: VISION_CALL_USD,
+    usd: billedUsd(VISION_CALL_USD, verdict.costTicks),
     ticks: verdict.costTicks ?? null,
   })
   return verdict
@@ -485,7 +499,7 @@ async function stageCast(
     })
     addSpend(manifest.ledger, {
       step: `cast ${slot} x${result.images.length}`,
-      usd: imageCost(result.model, result.images.length),
+      usd: billedUsd(imageCost(result.model, result.images.length), result.costTicks),
       ticks: result.costTicks,
     })
     const at = stamp()
@@ -611,7 +625,7 @@ async function stageStills(
             })
         addSpend(manifest.ledger, {
           step: `stills ${shot.role} x${result.images.length}`,
-          usd: imageCost(result.model, result.images.length),
+          usd: billedUsd(imageCost(result.model, result.images.length), result.costTicks),
           ticks: result.costTicks,
         })
         const dir = path.join(dirFor(piece), 'stills', shot.role)
@@ -703,8 +717,8 @@ async function stageMotion(
   const jobs: Array<{ shot: PlannedStoryShot; take: number }> = []
   for (const shot of plan.shots) {
     if (shot.kind !== 'generated' || (roles && !roles.includes(shot.role))) continue
-    if (shot.beat?.composite === 'yard_sign') {
-      // The sign shot is a still moved in the lab (the brand never goes through a generator).
+    if (shot.beat?.stillOnly) {
+      // A still moved in the lab (the sign shot: the brand never goes through a generator).
       console.log(`${shot.role}: still + lab camera, no motion generated`)
       continue
     }
@@ -733,7 +747,7 @@ async function stageMotion(
     })
     addSpend(manifest.ledger, {
       step: `motion ${shot.role} ${clip.durationSeconds}s ${resolution}`,
-      usd: videoCost(clip.model, clip.durationSeconds),
+      usd: billedUsd(videoCost(clip.model, clip.durationSeconds), clip.costTicks),
       ticks: clip.costTicks,
     })
     const res = await fetch(clip.url)
@@ -881,12 +895,12 @@ async function stageSheet(
     }
     const prompts = storyShotPrompts({ beat: shot.beat, era, cast: piece.cast, sources: sources.labels })
     writeFileSync(path.join(dir, 'still-prompt.txt'), prompts.still + '\n')
-    const motion = shot.beat.composite ? null : prompts.motion
+    const motion = shot.beat.stillOnly ? null : prompts.motion
     if (motion) writeFileSync(path.join(dir, 'motion-prompt.txt'), motion + '\n')
     out.push(
       `## ${String(n).padStart(2, '0')} ${shot.role}: ${shot.beat.label}`,
       `- references: ${sources.labels.map((l, i) => `ref-${i + 1} = ${l}`).join('; ') || 'none'}`,
-      `- ${motion ? 'MOTION: yes, after you pick a still' : 'STILL ONLY: the lab moves this one (the sign is composited in post)'}`,
+      `- ${motion ? 'MOTION: yes, after you pick a still' : 'STILL ONLY: the lab moves this one'}${shot.beat.composite ? ` (the ${shot.beat.composite.replace('_', ' ')} is composited in post)` : ''}`,
       `- on screen for ${shot.seconds.toFixed(1)}s`,
       '',
     )
@@ -1103,7 +1117,14 @@ async function stagePhone(piece: StoryPiece, era: EraPack, manifest: Manifest): 
   // place, now. Never a generated house above the figures: a house photo over a
   // price reads as a listing, and the house in the film is a mock-up (Matt 2026-09-23).
   const hero = path.join(assets, 'neighborhood-hero.jpg')
-  if (!existsSync(hero)) {
+  if (piece.phoneHeroRef) {
+    const src = await resolveRef(piece.phoneHeroRef)
+    const meta = await sharp(src).metadata()
+    const width = meta.width ?? 1024
+    const height = Math.min(meta.height ?? width, Math.round(width / 1.56))
+    const top = Math.max(0, Math.round(((meta.height ?? height) - height) / 2))
+    await sharp(src).extract({ left: 0, top, width, height }).jpeg({ quality: 94 }).toFile(hero)
+  } else if (!existsSync(hero)) {
     const heroRole = piece.phoneHeroRole ?? 'town'
     const still = manifest.shots[heroRole]?.selectedStill
     if (!still) throw new Error(`phone: select a ${heroRole} still first; the phone hero is that frame, crisp`)
@@ -1126,7 +1147,9 @@ async function stagePhone(piece: StoryPiece, era: EraPack, manifest: Manifest): 
       viewport: { width: 390, height: 693 },
       deviceScaleFactor: 1080 / 390,
     })
-    for (const state of ['page', 'pressed', 'calling']) {
+    for (const state of ['page', 'pressed', 'calling', 'glance']) {
+      // glance is the in-film screen: a whole phone screen, not the break's frame.
+      await page.setViewportSize({ width: 390, height: state === 'glance' ? 844 : 693 })
       const html = template
         .replaceAll('{{ROOT}}', `file://${ROOT}`)
         .replaceAll('{{STATE}}', state)

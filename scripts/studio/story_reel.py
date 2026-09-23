@@ -229,6 +229,73 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
     return {"frames": k, "fps": fps, "maxCornerTravelPx": round(drift, 1), "out": out_path}
 
 
+def order_quad(pts):
+    """Four points as top-left, top-right, bottom-right, bottom-left."""
+    pts = np.array(pts, np.float32).reshape(4, 2)
+    s, d = pts.sum(1), np.diff(pts, axis=1).ravel()
+    return np.array([pts[s.argmin()], pts[d.argmin()], pts[s.argmax()], pts[d.argmax()]], np.float32)
+
+
+def composite_screen(frames, screen_path, search=None):
+    """A crisp, ungraded phone screen on the lit screen of a GRADED clip.
+
+    The frame carries the phone with its screen an evenly lit blank rectangle
+    (the generator never draws our page). After the lab, that rectangle is the
+    brightest large shape in a dusk frame, so it is found per frame by
+    brightness, smoothed over time, and our screen is warped onto it. Only the
+    screen is modern: no grain, no fade, no weave of its own beyond the gate's.
+    A thumb or glove over the edge stays in front (the art lands only where the
+    frame is still screen-bright), and the lab's halation around it stays.
+    """
+    art = np.array(Image.open(screen_path).convert("RGB")).astype(np.float32) / 255.0
+    ah, aw = art.shape[:2]
+    art_corners = np.array([[0, 0], [aw - 1, 0], [aw - 1, ah - 1], [0, ah - 1]], np.float32)
+    rr = rounded_rect_mask(aw, ah, int(aw * 0.07))
+    n, h, w = frames.shape[:3]
+    x0, y0, x1, y1 = (0, 0, w, h) if search is None else search
+    out, prev, found = [], None, 0
+    for k in range(n):
+        f = frames[k]
+        lum = cv2.cvtColor(f, cv2.COLOR_RGB2GRAY).astype(np.float32)
+        roi = lum[y0:y1, x0:x1]
+        top = float(np.percentile(roi, 99.5))
+        m = (roi >= top * 0.8).astype(np.uint8)
+        m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+        cnts, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        quad = None
+        if cnts:
+            c = max(cnts, key=cv2.contourArea)
+            area = cv2.contourArea(c)
+            if area > 0.004 * roi.size:
+                approx = cv2.approxPolyDP(c, 0.03 * cv2.arcLength(c, True), True)
+                pts = approx.reshape(-1, 2) if len(approx) == 4 else cv2.boxPoints(cv2.minAreaRect(c))
+                quad = order_quad(pts) + np.array([x0, y0], np.float32)
+                if prev is not None:
+                    a0 = cv2.contourArea(prev.reshape(-1, 1, 2))
+                    if a0 > 0 and abs(cv2.contourArea(quad.reshape(-1, 1, 2)) - a0) / a0 > 0.35:
+                        quad = None  # a glove took a bite out of it: hold the last good shape
+        if quad is None:
+            quad = prev
+        else:
+            found += 1
+            quad = quad if prev is None else prev * 0.55 + quad * 0.45
+        if quad is None:
+            out.append(f)
+            continue
+        prev = quad
+        M = cv2.getPerspectiveTransform(art_corners, quad)
+        warped = cv2.warpPerspective(art, M, (w, h), flags=cv2.INTER_AREA)
+        shape = cv2.warpPerspective(rr, M, (w, h), flags=cv2.INTER_LINEAR)
+        key = smoothstep_np(top * 0.45, top * 0.7, lum)
+        alpha = cv2.GaussianBlur(shape * key, (0, 0), 0.7)[..., None]
+        plate = f.astype(np.float32) / 255.0
+        o = plate * (1 - alpha) + warped * alpha
+        out.append((np.clip(o, 0, 1) * 255 + 0.5).astype(np.uint8))
+    if found < n * 0.6:
+        sys.exit(f"screen found on only {found}/{n} frames; give the segment a screen.search box [x0,y0,x1,y1]")
+    return np.stack(out)
+
+
 def smoothstep_np(e0, e1, x):
     t = np.clip((x - e0) / (e1 - e0), 0.0, 1.0)
     return t * t * (3 - 2 * t)
@@ -268,7 +335,7 @@ def default_edl(d):
     return {
         "music": {"file": "audio/music-take3.mp3", "offset": 0.0, "endChordAt": 36.9},
         "caption": {"text": piece["openCaption"], "from": 0.25, "to": 3.3},
-        "end": {"lines": [piece["endLine"]], "sub": "ryan-realty.com  ·  541.703.3095", "disclosure": "Made with AI"},
+        "end": {"lines": [piece["endLine"]] if piece.get("endLine") else [], "sub": "ryan-realty.com  ·  541.703.3095", "disclosure": "Made with AI"},
         "segments": segments,
     }
 
@@ -461,13 +528,13 @@ def end_card(t, seconds, cfg, last_film):
     v = min(1.0, max(0.0, (t - burn - 0.35) / 0.5))
     col = tuple(int(CREAM[i] + (NAVY[i] - CREAM[i]) * v) for i in range(3))
     y = 1000
-    for n, line in enumerate(cfg["lines"]):
+    sub_col = tuple(int(CREAM[i] + (NAVY[i] - CREAM[i]) * v * 0.72) for i in range(3))
+    for n, line in enumerate(cfg.get("lines") or []):
         f = font(AMBOQIA, 58) if n == 0 else font(GEIST_MED, 40)
         for chunk in balanced_wrap(dr, line, f, 900):
             bb = dr.textbbox((0, 0), chunk, font=f)
             dr.text(((W - (bb[2] - bb[0])) // 2, y), chunk, font=f, fill=col)
             y += 70 if n == 0 else 54
-        sub_col = tuple(int(CREAM[i] + (NAVY[i] - CREAM[i]) * v * 0.72) for i in range(3))
     bb = dr.textbbox((0, 0), cfg["sub"], font=font(GEIST, 32))
     dr.text(((W - (bb[2] - bb[0])) // 2, y + 22), cfg["sub"], font=font(GEIST, 32), fill=sub_col)
     if cfg.get("disclosure"):
@@ -621,12 +688,18 @@ def build(d, draft, lab_file="lab.json", name="reel"):
             continue
         if not s.get("clip") and not s.get("still"):
             sys.exit(f"segment {s['role']} has no clip or still in edl.json")
-        graded[s["role"]] = read_video(grade_segment(d, s, lab_all, draft))
+        frames, gfps = read_video(grade_segment(d, s, lab_all, draft))
+        if s.get("screen"):
+            frames = composite_screen(frames, os.path.join(d, s["screen"]["image"]), s["screen"].get("search"))
+            print(f"  screen on {s['role']}")
+        graded[s["role"]] = (frames, gfps)
         print(f"  graded {s['role']}")
 
     assets = d + "/assets"
-    phone = {k: np.array(Image.open(f"{assets}/phone-{k}.png").convert("RGB").resize((W, H), Image.LANCZOS))
-             for k in ("page", "pressed", "calling")}
+    phone = None
+    if any(s["role"] == "break" for s in segs):
+        phone = {k: np.array(Image.open(f"{assets}/phone-{k}.png").convert("RGB").resize((W, H), Image.LANCZOS))
+                 for k in ("page", "pressed", "calling")}
 
     out_video = os.path.join(d, "final", f"{name}-video.mp4")
     os.makedirs(os.path.dirname(out_video), exist_ok=True)
@@ -663,11 +736,30 @@ def build(d, draft, lab_file="lab.json", name="reel"):
     rng = np.random.default_rng(1982)
     bus = np.zeros((int(total * SR) + SR, 2), np.float32)
     seg_at = {s["role"]: (starts[j], s) for j, s in enumerate(segs)}
-    brk_t, brk = seg_at["break"]
-    call_t, _ = seg_at["call"]
+    call_t, call = seg_at["call"]
     end_t, _ = seg_at["end"]
     music = load_audio(os.path.join(d, edl["music"]["file"]))
     off = int(edl["music"].get("offset", 0.0) * SR)
+    if "break" not in seg_at:
+        # The phone stays inside the film. The music stops dead on the call
+        # shot; in the hush the line rings, someone picks up, and the card lands
+        # on the song's last chord. The joke is the silence, not a sting.
+        body = music[off: off + int(call_t * SR)].copy()
+        fade = int(0.04 * SR)
+        body[-fade:] *= np.linspace(1, 0, fade)[:, None]
+        mix_into(bus, body * 0.9, 0.0)
+        chord_at = edl["music"]["endChordAt"]
+        tail = music[int(chord_at * SR):].copy()
+        tail[: int(0.02 * SR)] *= np.linspace(0, 1, int(0.02 * SR))[:, None]
+        mix_into(bus, tail * 0.95, end_t + float(edl["music"].get("chordAt", 0.5)))
+        mix_into(bus, projector(end_t, rng), 0.0)
+        mix_into(bus, room_tone(end_t - call_t + 0.4, rng), call_t)
+        mix_into(bus, flap(1.3, rng), end_t)
+        ring_at = call_t + float(call.get("ringAt", 0.45))
+        mix_into(bus, ringback(float(call.get("ringSeconds", 2.0))) * 0.8, ring_at)
+        mix_into(bus, click(0.3, 0.02, 900), call_t + float(call.get("pickupAt", call["seconds"] - 0.4)))
+        return finish_audio(d, name, bus, total, out_video, n_frames)
+    brk_t, brk = seg_at["break"]
     body = music[off: off + int(brk_t * SR)].copy()
     fade = int(0.08 * SR)
     body[-fade:] *= np.linspace(1, 0, fade)[:, None]
@@ -687,10 +779,13 @@ def build(d, draft, lab_file="lab.json", name="reel"):
     ring = ringback(2.0)
     mix_into(bus, ring, brk_t + brk["callAt"])
     mix_into(bus, click(0.3, 0.02, 900), brk_t + brk["callAt"] + 2.25)
+    return finish_audio(d, name, bus, total, out_video, n_frames)
+
+
+def finish_audio(d, name, bus, total, out_video, n_frames):
     bus = bus[: int(total * SR)]
     wav = os.path.join(d, "final", f"{name}-audio.f32")
     bus.astype(np.float32).tofile(wav)
-
     final = os.path.join(d, "final", f"{name}.mp4")
     run(["ffmpeg", "-v", "error", "-y", "-i", out_video, "-f", "f32le", "-ar", str(SR), "-ac", "2", "-i", wav,
          "-c:v", "copy", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
@@ -704,6 +799,8 @@ def main():
     ap.add_argument("--role", default=None)
     ap.add_argument("--dir", required=True)
     ap.add_argument("--corners", default=None)
+    # sign-clip: the art laid on the blank plate (the yard sign, or a marquee board).
+    ap.add_argument("--panel", default="assets/yard-sign-panel.png")
     ap.add_argument("--draft", action="store_true")
     # A second look of the same edit: story-film.ts `look` writes lab-<era>.json.
     ap.add_argument("--lab", default="lab.json")
@@ -728,7 +825,7 @@ def main():
         still = Image.open(os.path.join(ROOT, state["selectedStill"]))
         corners = [float(v) for v in a.corners.split(",")]
         out = os.path.join(d, "assets", f"{a.role}-signed.mp4")
-        info = track_sign(clip, os.path.join(d, "assets/yard-sign-panel.png"), out, corners, still.size,
+        info = track_sign(clip, os.path.join(d, a.panel), out, corners, still.size,
                           debug=os.path.join(d, "assets", f"{a.role}-signed"))
         print(json.dumps(info))
     elif a.cmd == "edl":
