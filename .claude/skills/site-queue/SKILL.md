@@ -235,7 +235,10 @@ gets rebuilt).
 **Serve order (Matt 2026-09-09):** a fleet p0 or major first; then round three, the taste-sourced
 primitive nodes SITE-40 to SITE-53, and SITE-31, ahead of everything else; then the rest, oldest
 first. `siteServeTier` in `lib/data/loop/work-node.ts` is the one function; the brief, `loop
-status` and the routine all read it. Take the first eligible items in that order.
+status` and the routine all read it. Take the first eligible items in that order. Since the
+2026-09-22 visibility audit a `GSC gap` node (a lost query, a split landing, or a money page
+class that lost rank, seeded by the Monday measurer `/api/cron/loop-weekly-measure` or the
+boot brief) is served in the round-three tier, ahead of the rest.
 
 Up to four lanes per round, each on a disjoint file set. The lane plan and the
 shared files to watch are in `docs/plans/CROSS_AGENT_HANDOFF.md` ("Parallel lanes").

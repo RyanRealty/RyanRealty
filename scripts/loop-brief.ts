@@ -25,6 +25,8 @@ import { siteServeTier, isMeasurementWindowDue, isSiteClaim, isStaleInProgress, 
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
 import { classifyFeed, classifyWatchedSeries, formatSilentZeroReport, formatWatchReport, WATCHED_SERIES, watchKey, type WatchPoint } from '../lib/data/loop/silent-zero'
+import { seedClassSlipNodes } from '../lib/data/loop/gsc-ranking-seed'
+import { formatMeasurerBrief, readLatestScoreboardSnapshot } from '../lib/data/loop/scoreboard-snapshot'
 
 config({ path: '.env.local' })
 
@@ -279,6 +281,31 @@ async function main() {
   push(
     `tokens needing re-auth: ${needsReauth.length ? needsReauth.map((t) => `${t.table} (PARKED unless Matt wants it)`).join(', ') : 'none — the rest auto-refresh via the daily heartbeat'}`,
   )
+  push('')
+  // The Monday measurer's record, and search visibility by page class (visibility
+  // audit 2026-09-22, PROCESS-1 / TRACK-11 / gsc-trend-1). A degraded money class
+  // becomes a ranking node here too, deduped, so a slip is work the same day the
+  // brief sees it instead of the next Monday.
+  push('--- WEEKLY MEASURER (scoreboard snapshot + GSC by page class) ---')
+  try {
+    const snapshot = await readLatestScoreboardSnapshot(sb)
+    for (const line of formatMeasurerBrief({ snapshot, live: signals.gsc.trend, now })) push(line)
+    if (signals.gsc.trend.degraded.length) {
+      const seeded = await seedClassSlipNodes(sb, {
+        degraded: signals.gsc.trend.degraded,
+        anchor: signals.gsc.trend.anchor,
+        apply: true,
+        now,
+      })
+      if (seeded.error) push(`  class-slip seed failed: ${seeded.error}`)
+      else if (seeded.drafts.length) {
+        push(`  class-slip nodes: ${seeded.inserted} inserted of ${seeded.drafts.length} drafted (upsert on version_gap, existing nodes untouched)`)
+        for (const d of seeded.drafts) push(`  + ${d.versionGap} ${d.title}`)
+      }
+    }
+  } catch (err) {
+    push(`measurer block unavailable: ${(err as Error).message.slice(0, 160)}`)
+  }
   push('')
   push('--- FLEET INTAKE (ran at this boot) ---')
   push(

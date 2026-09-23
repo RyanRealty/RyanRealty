@@ -7,6 +7,7 @@ import {
   isLegalTransition,
   isStaleInProgress,
   shouldAutoRelease,
+  siteServeTier,
 } from './work-node'
 
 describe('work-node contract (a node is a bounded job)', () => {
@@ -65,6 +66,14 @@ describe('queue priority (fleet + Matt steering outrank planned gaps)', () => {
     expect(fleetNodePriority('Matt ADD [major]: xAI-only image, video, voice, and content gen')).toBe(1)
     expect(fleetNodePriority('Matt CHANGE [major]: rebuild on xAI')).toBe(1)
     expect(fleetNodePriority('CMA/pricing production residual')).toBe(2)
+  })
+
+  it('serves a GSC gap with round three, after fleet p0/major, ahead of the rest (audit 2026-09-22, PROCESS-1)', () => {
+    const gsc = 'GSC gap [class-slip] community → /communities/[slug] (central-oregon) (impr -41.7%)'
+    expect(siteServeTier('SITE-193', gsc)).toBe(2)
+    expect(siteServeTier('SITE-45', 'Round three primitive')).toBe(2)
+    expect(siteServeTier('SITE-120', 'Sell page polish')).toBe(3)
+    expect(siteServeTier('SITE-194', 'Fleet finding [major]: broken form')).toBe(1)
   })
 })
 

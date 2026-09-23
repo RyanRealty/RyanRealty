@@ -135,6 +135,10 @@
       "schedule": "*/10 * * * *"
     },
     {
+      "path": "/api/cron/loop-weekly-measure",
+      "schedule": "0 13 * * 1"
+    },
+    {
       "path": "/api/cron/market-history-snapshot",
       "schedule": "0 13 * * 1"
     },

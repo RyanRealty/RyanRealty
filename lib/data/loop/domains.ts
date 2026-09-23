@@ -35,7 +35,12 @@ export const COMPANY_IMPROVEMENT_DOMAINS = [
 
 export type CompanyImprovementDomain = (typeof COMPANY_IMPROVEMENT_DOMAINS)[number]
 
-export type LedgerVerdict = 'win' | 'loss' | 'flat' | 'inconclusive'
+/**
+ * 'unmeasurable' (visibility audit 2026-09-22, gsc-trend-2): the window closed
+ * with no usable data; actual_delta stays NULL rather than a false zero.
+ * Needs migration 20260923150000 for the DB check constraint.
+ */
+export type LedgerVerdict = 'win' | 'loss' | 'flat' | 'inconclusive' | 'unmeasurable'
 
 export function isCompanyImprovementDomain(value: string): value is CompanyImprovementDomain {
   return (COMPANY_IMPROVEMENT_DOMAINS as readonly string[]).includes(value)
