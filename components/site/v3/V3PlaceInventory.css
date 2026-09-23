@@ -22,6 +22,31 @@
   min-width: 0;
 }
 
+/* Rails: each carousel brings its own gutter (home-rail__head, the track),
+   so the wrapper drops its padding instead of doubling it. The column is
+   minmax(0, 1fr) because a grid item's automatic minimum is its min-content
+   width, which for a rail is its whole track: without it a phone page grew
+   to 560px for two cards and 1,120px for four (measured at 390, 2026-09-23).
+   The homepage mounts the same rails in a block, which never had the bug. */
+.v3-place-stock--rails {
+  grid-template-columns: minmax(0, 1fr);
+  padding-inline: 0;
+  gap: var(--v3-space-lg);
+}
+
+/* ...and each rail (the grid item) gives up the same content minimum and
+   takes the column's width outright: .home-rail centres itself with
+   `margin: 0 auto`, and an auto margin on a grid item turns off stretch, so
+   without an explicit width the rail sized to its track anyway. */
+.v3-place-stock--rails > * {
+  min-width: 0;
+  width: 100%;
+}
+
+.v3-place-stock--rails .v3-place-stock__source {
+  padding-inline: var(--v3-gutter);
+}
+
 .v3-place-stock__count {
   margin: 0;
   font-family: var(--v3-font-body);

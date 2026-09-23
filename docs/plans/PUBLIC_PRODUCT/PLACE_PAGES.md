@@ -158,12 +158,14 @@ A master-plan page that opens like Bend has already lost to tetherow.com.
 
 **Search to beat:** the plat name plus the parent (neighborhood or resort).
 
-**Job.** The homes on this plat. Parent is obvious. Short plat is a list. Do not dress four listings in a city hero.
+**Job.** The homes on this plat. Parent is obvious. Do not dress four listings in a city hero.
+
+**One carousel per property type (Matt 2026-09-23: "we need to see carousels of all available property types if there are any; we haven't been doing commercial and multi family").** The inventory is `V3PlaceInventory layout="rails"`: a card carousel for each type with active stock, in the order single-family, multi-family, townhomes and condos, land, commercial. A type with one listing still gets its carousel; an empty type is omitted. Every listing the ledger would list is a card (no photo or no price does not drop it; "Price not published" is the unpriced ask). A commercial lease (MLS PropertyType G) is not for sale, so it is never in these carousels or their counts. City and neighborhood pages keep the ledger rows until Matt says otherwise.
 
 | Order | Section | Why |
 |---|---|---|
 | 1 | Name + breadcrumb to neighborhood **or** resort, then city | Hierarchy. |
-| 2 | The homes (list if few; map if the pins earn it) | The whole page. Lot lines / taxlots when we have them. |
+| 2 | The homes: map if the pins earn it, then one carousel per property type | The whole page. Lot lines / taxlots when we have them. |
 | 3 | Recorded CC&Rs for this plat | When published. Official resort homepages do not offer this. |
 | 4 | Peer plats in the same parent | Other children. |
 | 5 | Schools (doors) | Inherited assignment, not a second city schools index. |

@@ -214,9 +214,11 @@ export function BuyHomesShelf({ row }: { row: HomeRailRow }) {
       ) : (
         <BuyShelfTrack cards={sortByAsk(row.cards)} label={row.heading} priority />
       )}
-      <V3Button href={row.seeAll.href} variant="ghost" className="buy-shelf__see-all">
-        {row.seeAll.label}
-      </V3Button>
+      {row.seeAll ? (
+        <V3Button href={row.seeAll.href} variant="ghost" className="buy-shelf__see-all">
+          {row.seeAll.label}
+        </V3Button>
+      ) : null}
     </section>
   )
 }

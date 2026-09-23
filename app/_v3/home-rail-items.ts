@@ -15,7 +15,7 @@ import {
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
-import type { V3ListingRowBadge } from '@/components/site/v3'
+import type { V3ListingRowBadge, V3ListingRowData } from '@/components/site/v3'
 import type {
   ListingCardExtras,
   ListingCardPriceDrop,
@@ -166,8 +166,50 @@ function takeCards(
 export type HomeRailRow = {
   id: string
   heading: string
-  seeAll: { href: string; label: string }
+  /** Omitted when the rail already holds every listing it could link to. */
+  seeAll?: { href: string; label: string }
+  /** A short line under the heading, e.g. "3 for sale" on a place page. */
+  countLabel?: string
+  /**
+   * Cards whose first photo loads eagerly. Defaults to 2, right for a rail
+   * near the top of the page; a rail far down (a place page's inventory)
+   * passes 0 so it does not compete with the fold.
+   */
+  priorityCount?: number
   cards: HomeRailCard[]
+}
+
+/**
+ * A place page's inventory row as a rail card (Matt 2026-09-23: "carousels of
+ * all available property types" on subdivision pages). Unlike the homepage
+ * shelves, a place rail keeps every listing it is given: an unphotographed or
+ * unpriced listing is still for sale in that place, so it shows with an empty
+ * frame or "Price not published" instead of vanishing from the count above it.
+ */
+export function railCardFromListingRow(row: V3ListingRowData): HomeRailCard {
+  const photo = row.photoUrl?.trim()
+  return {
+    listingKey: row.listingKey,
+    href: row.href,
+    photoUrls: photo ? [listingRowPhotoSrc(photo, LISTING_FIELD_LEAD_PHOTO_SIZE)] : [],
+    price: row.price,
+    addressLine: row.addressLine,
+    cityLine: row.cityLine,
+    beds: row.beds,
+    baths: row.baths,
+    sqft: row.sqft,
+    pricePerSqft: row.pricePerSqft ?? null,
+    propertyType: row.propertyType,
+    propertySubType: row.propertySubType,
+    subdivisionName: row.subdivisionName,
+    city: row.city,
+    listNumber: row.listNumber,
+    badges: row.badges ?? (row.badge ? [row.badge] : []),
+    hasTour: row.hasTour ?? Boolean(row.tourUrl),
+    tourUrl: row.tourUrl?.trim() || null,
+    tourLabel: '3D Walkthrough',
+    statusLabel: row.statusLabel ?? null,
+  }
 }
 
 /**

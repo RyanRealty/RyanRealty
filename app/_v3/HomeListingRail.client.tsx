@@ -80,7 +80,15 @@ export function HomeRailCardFace({
       </div>
       <Link href={card.href} className="home-rail__copy-link">
         <CardHeader className="home-rail__copy">
-          <CardTitle>{ask ?? 'Price on request'}</CardTitle>
+          {/* A place rail keeps unpriced listings (railCardFromListingRow);
+              the homepage shelves never carry one. "Price on request" would
+              claim a seller's offer the MLS row does not make, and in the
+              display face it wrapped to "Price on" at rail width. */}
+          {ask ? (
+            <CardTitle>{ask}</CardTitle>
+          ) : (
+            <CardTitle className="home-rail__ask-none">Price not published</CardTitle>
+          )}
           {shareKind ? <span className="home-rail__kind">{shareKind}</span> : null}
           {meta.length > 0 ? <CardDescription>{meta.join(' · ')}</CardDescription> : null}
         </CardHeader>
@@ -173,11 +181,14 @@ export function HomeListingRail({
           <h2 id={`${row.id}-heading`} className="home-rail__title">
             {row.heading}
           </h2>
+          {row.countLabel ? <p className="home-rail__count">{row.countLabel}</p> : null}
         </div>
         <HomeRailPosition index={index} count={count} />
-        <V3Button href={row.seeAll.href} variant="ghost">
-          {row.seeAll.label}
-        </V3Button>
+        {row.seeAll ? (
+          <V3Button href={row.seeAll.href} variant="ghost">
+            {row.seeAll.label}
+          </V3Button>
+        ) : null}
       </div>
       <Carousel
         setApi={setApi}
@@ -191,7 +202,7 @@ export function HomeListingRail({
               key={card.listingKey}
               className="v3-carousel__slide v3-carousel__slide--rail pl-0"
             >
-              <HomeRailCardFace card={card} priority={index < 2} />
+              <HomeRailCardFace card={card} priority={index < (row.priorityCount ?? 2)} />
             </CarouselItem>
           ))}
         </CarouselContent>

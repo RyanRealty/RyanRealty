@@ -7,6 +7,7 @@ import { formatCount } from '@/lib/format/count'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import {
   PLACE_STOCK_SECTION_ORDER,
+  placeStockIsForSale,
   placeStockSectionKey,
   type PlaceStockSectionKey,
 } from '@/lib/place/place-inventory-stock'
@@ -23,6 +24,7 @@ function summaryNoun(section: PlaceStockSectionKey, count: number): string {
   if (section === 'sfr') return 'single-family'
   if (section === 'multifamily') return 'multifamily'
   if (section === 'land') return count === 1 ? 'lot' : 'land'
+  if (section === 'commercial') return 'commercial'
   return 'other'
 }
 
@@ -37,12 +39,14 @@ export function summarizeChildStock(rows: readonly ChildStockRow[]): string | nu
     multifamily: 0,
     attached: 0,
     land: 0,
+    commercial: 0,
     other: 0,
   }
   for (const row of rows) {
     const key = row.listing_key?.trim()
     if (!key || seen.has(key)) continue
     seen.add(key)
+    if (!placeStockIsForSale(row.property_type)) continue
     const section = placeStockSectionKey(row.property_type, row.property_sub_type) ?? 'other'
     counts[section] += 1
   }

@@ -31,6 +31,18 @@ describe('summarizeChildStock', () => {
   it('returns null when nothing is measured', () => {
     expect(summarizeChildStock([])).toBeNull()
   })
+
+  it('counts a commercial sale as commercial and never a commercial lease', () => {
+    expect(
+      summarizeChildStock([
+        { listing_key: 'f', geo_slug: 'x', property_type: 'F', property_sub_type: null },
+        { listing_key: 'g', geo_slug: 'x', property_type: 'G', property_sub_type: null },
+      ]),
+    ).toBe('1 commercial')
+    expect(
+      summarizeChildStock([{ listing_key: 'g', geo_slug: 'x', property_type: 'G', property_sub_type: null }]),
+    ).toBeNull()
+  })
 })
 
 describe('childStockDetails', () => {
