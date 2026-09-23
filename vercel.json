@@ -39,6 +39,10 @@
       "schedule": "50 */6 * * *"
     },
     {
+      "path": "/api/cron/crawl-probe",
+      "schedule": "55 11 * * *"
+    },
+    {
       "path": "/api/cron/crm-alert-drain",
       "schedule": "* * * * *"
     },
