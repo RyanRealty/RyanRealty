@@ -70,7 +70,10 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
     medianListPrice: row.median_list_price as number | null,
     newThisWeek: (row.new_count_7d as number) ?? 0,
     priceDropsThisWeek: Math.round(((row.price_reduction_share as number) ?? 0) * 100),
-    closedLast30Days: (row.sold_count_30d as number) ?? 0,
+    // Null-preserving: sold_count_30d is withheld (NULL) at neighborhood
+    // grain (migration 20260923014700, DATA-7) — coalescing to 0 would
+    // fabricate a zero. Unknown/withheld is never zero (CLAUDE.md §0).
+    closedLast30Days: row.sold_count_30d == null ? null : Number(row.sold_count_30d),
     monthsOfSupply: row.months_of_supply as number | null,
     medianDaysToPending: row.median_days_to_pending as number | null,
     refreshedAt: row.updated_at as IsoTimestamp,

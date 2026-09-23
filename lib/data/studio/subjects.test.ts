@@ -67,4 +67,12 @@ describe('figuresFromPulse (audit DATA-7)', () => {
     const { figures } = figuresFromPulse(pulse({ geoType: 'city', geoSlug: 'tumalo', closedLast30Days: 0 }))
     expect(figures['homes closed in the last 30 days']).toBeUndefined()
   })
+
+  it('never turns a withheld (null) close count into a caption figure (DATA-7)', () => {
+    const { figures, citations } = figuresFromPulse(
+      pulse({ geoType: 'city', geoSlug: 'bend', closedLast30Days: null }),
+    )
+    expect(figures['homes closed in the last 30 days']).toBeUndefined()
+    expect(citations.some((c) => c.column === 'sold_count_30d')).toBe(false)
+  })
 })

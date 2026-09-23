@@ -36,7 +36,14 @@ export type MarketPulse = {
   newThisWeek: number
   /** Approximation of price-drop activity as a percent (0-100). */
   priceDropsThisWeek: number
-  closedLast30Days: number
+  /**
+   * Sourced from market_pulse_live.sold_count_30d. Null when withheld
+   * (e.g. neighborhood grain has no same-population close attribution —
+   * migration 20260923014700, CLAUDE.md §0 DATA-7) or unknown. Never 0 to
+   * mean "we don't know" — a real zero-close row prints 0, a withheld row
+   * must be omitted by the consumer, not coalesced to 0.
+   */
+  closedLast30Days: number | null
   /** Sourced from market_pulse_live.months_of_supply. */
   monthsOfSupply: number | null
   /** Sourced from market_pulse_live.median_days_to_pending. */

@@ -142,7 +142,7 @@ export function figuresFromPulse(pulse: MarketPulse): {
   }
   // Closed-side figures publish only where closes are attributed like actives.
   const closed30 = publishSoldCount({
-    value: pulse.closedLast30Days > 0 ? pulse.closedLast30Days : null,
+    value: pulse.closedLast30Days != null && pulse.closedLast30Days > 0 ? pulse.closedLast30Days : null,
     grain,
   })
   if (closed30 != null) {
