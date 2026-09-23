@@ -231,16 +231,31 @@ async function auditOrReconcile(apply: boolean) {
   const { getGmailFor } = await import('@/lib/crm/gmail')
   let filed = 0
   let queuedN = 0
-  for (const d of decisions.values()) {
-    if (!['filed', 'ambiguous', 'unfiled_transaction'].includes(d.status)) continue
-    const gmail = getGmailFor(d.mailbox, ['https://www.googleapis.com/auth/gmail.readonly'])
-    if (!gmail) continue
-    const slug = d.mailbox.startsWith('matt') ? 'matt' : d.mailbox.startsWith('paul') ? 'paul' : 'rebecca'
-    const r = await indexGmailMessage({ gmail, mailbox: d.mailbox, brokerSlug: slug, gmailId: d.gmailId, universe, sb })
-    if (r.status === 'filed') filed++
-    else if (r.status === 'ambiguous' || r.status === 'unfiled_transaction') queuedN++
+  let failed = 0
+  const todo = [...decisions.values()].filter((d) => ['filed', 'ambiguous', 'unfiled_transaction'].includes(d.status))
+  console.log(`[reconcile] indexing ${todo.length} transaction messages`)
+  let done = 0
+  // Four at a time; one message that errors is logged and skipped, never the run.
+  async function worker() {
+    while (todo.length) {
+      const d = todo.shift()!
+      const gmail = getGmailFor(d.mailbox, ['https://www.googleapis.com/auth/gmail.readonly'])
+      if (!gmail) continue
+      const slug = d.mailbox.startsWith('matt') ? 'matt' : d.mailbox.startsWith('paul') ? 'paul' : 'rebecca'
+      try {
+        const r = await indexGmailMessage({ gmail, mailbox: d.mailbox, brokerSlug: slug, gmailId: d.gmailId, universe, sb })
+        if (r.status === 'filed') filed++
+        else if (r.status === 'ambiguous' || r.status === 'unfiled_transaction') queuedN++
+      } catch (e) {
+        failed++
+        console.warn(`[reconcile] index error ${d.gmailId}: ${(e as Error).message}`)
+      }
+      done++
+      if (done % 25 === 0) console.log(`[reconcile] indexed ${done}: ${filed} filed, ${queuedN} queued, ${failed} errors`)
+    }
   }
-  console.log(`[reconcile] indexed: ${filed} filed, ${queuedN} queued`)
+  await Promise.all(Array.from({ length: 4 }, worker))
+  console.log(`[reconcile] indexed: ${filed} filed, ${queuedN} queued, ${failed} errors`)
 }
 
 async function main() {

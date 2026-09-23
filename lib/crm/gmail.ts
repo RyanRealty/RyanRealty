@@ -55,8 +55,14 @@ export function getGmailFor(subject: string, scopes: string[]): gmail_v1.Gmail |
     scopes,
     subject,
   })
-  return google.gmail({ version: 'v1', auth: jwt })
+  // Every Gmail call gets a deadline and a retry. Without one, a single stalled
+  // request (seen 2026-09-23: a DNS failure mid-walk) hung the mail backfill
+  // for good; in a cron it would burn the whole run.
+  return google.gmail({ version: 'v1', auth: jwt, timeout: GMAIL_TIMEOUT_MS, retry: true })
 }
+
+/** Per-request deadline for Gmail API calls. An attachment of 20 MB arrives well inside it. */
+export const GMAIL_TIMEOUT_MS = 90_000
 
 const READONLY = ['https://www.googleapis.com/auth/gmail.readonly']
 const SEND = ['https://www.googleapis.com/auth/gmail.send']
