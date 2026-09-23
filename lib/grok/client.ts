@@ -29,6 +29,13 @@ export const GROK_MODELS = {
    * evaluatorModel == builderModel. grok-4.5 still takes image_url parts.
    */
   taste: 'grok-4.5',
+  /**
+   * Frame judge for authored story films (lib/studio/story). The newest
+   * vision-capable model on the account (grok-4.7, 2026-09, text+image, same
+   * token price as 4.6). Kept separate from `vision` so the Studio's 85-point
+   * bar, calibrated on 4.6, does not move under the listing formats.
+   */
+  judge: 'grok-4.7',
   /** Stills. $0.04/image. */
   image: 'grok-imagine-image-2.0',
   /** Cheap stills for candidate sweeps. $0.02/image. */

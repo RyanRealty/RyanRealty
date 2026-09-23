@@ -33,7 +33,9 @@ export {
   generateGrokImage,
   generateGrokImages,
   editGrokImage,
+  MAX_EDIT_SOURCES,
   type GrokAspect,
+  type GrokImageQuality,
   type GrokResolution,
   type GrokImageEditOptions,
   type GrokImageOptions,
@@ -42,6 +44,8 @@ export {
 export {
   generateGrokVideo,
   isTempGrokUrl,
+  MAX_REFERENCE_IMAGES,
+  resolutionFor,
   type GrokVideoAspect,
   type GrokVideoOptions,
   type GrokVideoResolution,
@@ -52,7 +56,9 @@ export {
   inspectFrame,
   normalizeVerdict,
   FRAME_DEFECTS,
+  STORY_FRAME_DEFECTS,
   type FrameDefect,
+  type StoryFrameDefect,
   type VisionQaInput,
   type VisionVerdict,
 } from './vision'

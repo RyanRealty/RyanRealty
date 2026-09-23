@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-09-07T23:04:07.994Z",
+  "updated_at": "2026-09-23T16:37:42.030Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -49436,6 +49436,118 @@
       ],
       "vision_grade": null,
       "file_path": "public/asset-library/photos/grok-imagine/16f2fe63-a003-47c9-b05f-b14dd3ad381d.png"
+    },
+    {
+      "id": "0c6777d4-f8b3-4b2c-a399-67810745cea3",
+      "type": "photo",
+      "source": "loc",
+      "source_id": "loc-2018698210",
+      "license": "public-domain (Library of Congress, Carol M. Highsmith Archive: no known restrictions on publication)",
+      "license_metadata": {},
+      "creator": "Carol M. Highsmith",
+      "creator_url": "https://www.loc.gov/item/2018698210/",
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/loc/0c6777d4-f8b3-4b2c-a399-67810745cea3.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/loc/0c6777d4-f8b3-4b2c-a399-67810745cea3.jpg",
+      "file_size_bytes": 812114,
+      "geo_tags": [
+        "bend",
+        "drake-park",
+        "old-bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "park",
+        "ponderosa",
+        "neighborhood",
+        "mirror-pond"
+      ],
+      "search_query": "drake park bend oregon",
+      "width": 1024,
+      "height": 683,
+      "duration_sec": null,
+      "registered_at": "2026-09-23T16:37:39.747+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "PD reference still for story films (Old Bend neighborhood character). Downloaded 2026-09-23.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/loc/0c6777d4-f8b3-4b2c-a399-67810745cea3.jpg"
+    },
+    {
+      "id": "9671ec09-6f90-4aea-9f11-8669d83feb4f",
+      "type": "photo",
+      "source": "usgs",
+      "source_id": "usgs-mount-bachelor-east-ski-slopes",
+      "license": "public-domain (U.S. Geological Survey)",
+      "license_metadata": {},
+      "creator": "U.S. Geological Survey",
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/usgs/9671ec09-6f90-4aea-9f11-8669d83feb4f.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/usgs/9671ec09-6f90-4aea-9f11-8669d83feb4f.jpg",
+      "file_size_bytes": 297742,
+      "geo_tags": [
+        "mt-bachelor",
+        "central-oregon",
+        "deschutes-county"
+      ],
+      "subject_tags": [
+        "mountain",
+        "ski-runs",
+        "snow",
+        "volcano"
+      ],
+      "search_query": "mount bachelor ski slopes",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-09-23T16:37:40.786+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "PD reference still for story films (ski beats). Capture date not stated by source; modern lift infrastructure may be visible, use for slope form only.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/usgs/9671ec09-6f90-4aea-9f11-8669d83feb4f.jpg"
+    },
+    {
+      "id": "3998dd63-9c9a-4e1a-a301-f0371a4b2860",
+      "type": "photo",
+      "source": "loc",
+      "source_id": "loc-margolies-bend-bus-depot-angle",
+      "license": "public-domain (Library of Congress, John Margolies Roadside America Archive: no known restrictions on publication)",
+      "license_metadata": {},
+      "creator": "John Margolies",
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/loc/3998dd63-9c9a-4e1a-a301-f0371a4b2860.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/loc/3998dd63-9c9a-4e1a-a301-f0371a4b2860.jpg",
+      "file_size_bytes": 415522,
+      "geo_tags": [
+        "bend",
+        "downtown-bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "downtown",
+        "storefront",
+        "street",
+        "1987"
+      ],
+      "search_query": "bend oregon bond street 1987",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-09-23T16:37:41.826+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "PD period reference (1987) for story films: downtown Bend streetscape.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/loc/3998dd63-9c9a-4e1a-a301-f0371a4b2860.jpg"
     }
   ]
 }

@@ -3,7 +3,7 @@
  *
  * Two endpoints:
  *   POST /v1/images/generations  text to image
- *   POST /v1/images/edits        image plus instruction, or up to 3 sources
+ *   POST /v1/images/edits        image plus instruction, or up to 5 sources
  *
  * Always returns bytes, never an xAI URL. Generated URLs expire, so a draft
  * row that points at one is a broken post waiting to happen. Callers store
@@ -20,7 +20,17 @@ export type GrokAspect =
   | '1:1' | '3:4' | '4:3' | '9:16' | '16:9' | '2:3' | '3:2'
   | '9:19.5' | '19.5:9' | '9:20' | '20:9' | '1:2' | '2:1' | '21:9' | '5:2' | 'auto'
 
-export type GrokResolution = '1k' | '2k'
+export type GrokResolution = '1k' | '1.5k' | '2k'
+
+/**
+ * Render effort for grok-imagine-image-2.0. The live price grid is
+ * quality x resolution ($0.04 low/1k to $0.08 medium/2k); omitted means the
+ * API's own default.
+ */
+export type GrokImageQuality = 'low' | 'medium'
+
+/** Live cap on edit sources, raised from 3 on 2026-08-28. */
+export const MAX_EDIT_SOURCES = 5
 
 export type GrokImageOptions = {
   prompt: string
@@ -30,6 +40,7 @@ export type GrokImageOptions = {
   model?: string
   /** Candidates per request, 1 to 10. We generate several and let vision pick. */
   n?: number
+  quality?: GrokImageQuality
 }
 
 export type GrokImageResult = {
@@ -81,6 +92,7 @@ export async function generateGrokImages(options: GrokImageOptions): Promise<Gro
         aspect_ratio: options.aspectRatio ?? '1:1',
         resolution: options.resolution ?? '2k',
         n: Math.min(10, Math.max(1, options.n ?? 1)),
+        ...(options.quality ? { quality: options.quality } : {}),
       }),
     },
     { timeoutMs: 240_000 },
@@ -96,16 +108,17 @@ export async function generateGrokImage(options: GrokImageOptions): Promise<Buff
 
 export type GrokImageEditOptions = {
   prompt: string
-  /** Source images: https URLs, data URIs, or Files API ids. Up to 3. */
+  /** Source images: https URLs, data URIs, or Files API ids. Up to 5. */
   sources: Array<{ url?: string; fileId?: string }>
   aspectRatio?: GrokAspect
   resolution?: GrokResolution
   model?: string
   n?: number
+  quality?: GrokImageQuality
 }
 
 /**
- * Edit or combine existing images.
+ * Edit or combine existing images (up to MAX_EDIT_SOURCES).
  *
  * Note for listing work: an MLS photo is the seller's and the MLS's asset.
  * Editing one changes the record of a real property, so this is for brand and
@@ -114,7 +127,7 @@ export type GrokImageEditOptions = {
 export async function editGrokImage(options: GrokImageEditOptions): Promise<GrokImageResult> {
   const prompt = options.prompt.trim()
   if (!prompt) throw new GrokError('editGrokImage needs a prompt', 0, '')
-  const sources = options.sources.filter((s) => s.url?.trim() || s.fileId?.trim()).slice(0, 3)
+  const sources = options.sources.filter((s) => s.url?.trim() || s.fileId?.trim()).slice(0, MAX_EDIT_SOURCES)
   if (sources.length === 0) throw new GrokError('editGrokImage needs at least one source', 0, '')
   const model = options.model ?? GROK_MODELS.image
 
@@ -130,6 +143,7 @@ export async function editGrokImage(options: GrokImageEditOptions): Promise<Grok
     // The schema makes `image` and `images` mutually exclusive.
     ...(shaped.length === 1 ? { image: shaped[0] } : { images: shaped }),
     ...(options.aspectRatio ? { aspect_ratio: options.aspectRatio } : {}),
+    ...(options.quality ? { quality: options.quality } : {}),
   }
 
   const res = await xaiFetch(
