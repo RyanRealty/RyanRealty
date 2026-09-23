@@ -8,6 +8,7 @@ decision list, edl.json, that a person owns: trims, zooms, which clip, where
 the music sits. `edl` writes a first EDL from the plan so there is always one
 to edit; `build` renders it.
 
+  python3 scripts/studio/story_reel.py panel --dir out/story/winter-1982   (the yard sign: stacked logo only)
   python3 scripts/studio/story_reel.py sign  --dir out/story/winter-1982 [--corners x1,y1,x2,y2,x3,y3,x4,y4]
   python3 scripts/studio/story_reel.py sign-clip --dir out/story/winter-1982 --role phone --corners ...  (tracked, for moving clips)
   python3 scripts/studio/story_reel.py edl   --dir out/story/winter-1982
@@ -111,6 +112,25 @@ def detect_panel(img):
     s_ = best.sum(1)
     d = np.diff(best, axis=1).ravel()
     return np.array([best[np.argmin(s_)], best[np.argmin(d)], best[np.argmax(s_)], best[np.argmax(d)]], np.float32)
+
+
+STACKED_LOGO = os.path.join(ROOT, "design_system/ryan-realty/assets/brand/ryan-realty-stacked-logo-blue.png")
+
+
+def render_panel(out_path, size=(2954, 3038)):
+    """The yard sign: the stacked logo and nothing else (Matt 2026-09-23), navy
+    on cream with a thin navy inset rule so it reads as a sign board. The
+    wordmark is the pre-rendered brand asset, never re-typeset."""
+    w, h = size
+    panel = Image.new("RGBA", (w, h), CREAM + (255,))
+    m = int(w * 0.035)
+    ImageDraw.Draw(panel).rectangle([m, m, w - 1 - m, h - 1 - m], outline=NAVY + (255,), width=int(w * 0.012))
+    logo = Image.open(STACKED_LOGO).convert("RGBA")
+    lw = int(w * 0.78)
+    logo = logo.resize((lw, int(logo.height * lw / logo.width)), Image.LANCZOS)
+    panel.alpha_composite(logo, ((w - lw) // 2, (h - logo.height) // 2))
+    panel.save(out_path)
+    return out_path
 
 
 def composite_sign(still_path, panel_path, out_path, corners=None, debug=None, upscale=2):
@@ -347,7 +367,11 @@ def grade_segment(d, seg, lab_all, draft):
     params = dict(lab_all["lab"][role])
     if seg.get("handheld"):
         params["weave"] = dict(params["weave"])
-    key = hashlib.sha1(json.dumps([seg, params], sort_keys=True).encode()).hexdigest()[:10]
+    # The source's mtime is in the key: re-plating a clip or still under the same
+    # name (a new sign panel) must regrade it, not reuse the old grade.
+    source = os.path.join(d, seg.get("still") or seg["clip"])
+    stamp = os.path.getmtime(source) if os.path.exists(source) else 0
+    key = hashlib.sha1(json.dumps([seg, params, stamp], sort_keys=True).encode()).hexdigest()[:10]
     out = os.path.join(d, "graded", f"{role}-{key}.mp4")
     if os.path.exists(out):
         return out
@@ -795,7 +819,7 @@ def finish_audio(d, name, bus, total, out_video, n_frames):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["sign", "sign-clip", "edl", "build"])
+    ap.add_argument("cmd", choices=["panel", "sign", "sign-clip", "edl", "build"])
     ap.add_argument("--role", default=None)
     ap.add_argument("--dir", required=True)
     ap.add_argument("--corners", default=None)
@@ -809,7 +833,9 @@ def main():
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", a.name):
         sys.exit("--name must be lower-case letters, digits, - or _")
     d = os.path.abspath(a.dir)
-    if a.cmd == "sign":
+    if a.cmd == "panel":
+        print(os.path.relpath(render_panel(os.path.join(d, "assets/yard-sign-panel.png")), ROOT))
+    elif a.cmd == "sign":
         manifest = load_json(os.path.join(d, "manifest.json"))
         still = os.path.join(ROOT, manifest["shots"]["sign"]["selectedStill"])
         corners = [float(v) for v in a.corners.split(",")] if a.corners else None

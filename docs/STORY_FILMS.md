@@ -49,6 +49,7 @@ npx tsx scripts/studio/story-film.ts select --piece winter-1982 --role hook --st
 npx tsx scripts/studio/story-film.ts motion --piece winter-1982 --roles hook
 npx tsx scripts/studio/story-film.ts payoff --piece winter-1982          # live figure, two reads, citations.json
 npx tsx scripts/studio/story-film.ts phone  --piece winter-1982          # renders the break screens
+python3 scripts/studio/story_reel.py panel --dir out/story/winter-1982   # the yard sign: the stacked logo only (Matt 2026-09-23)
 python3 scripts/studio/story_reel.py sign  --dir out/story/winter-1982   # our sign art onto the blank panel
 python3 scripts/studio/story_reel.py edl   --dir out/story/winter-1982   # first edit decision list
 python3 scripts/studio/story_reel.py build --dir out/story/winter-1982   # the reel
@@ -200,6 +201,14 @@ with friends by the fire is a new optional arc role (`apres`, kept only where a 
 summer piece skips it), and the same Lab sits deadpan between them in the last frame
 (`call-deadpan-lab`). One prompt line, "a young black Labrador retriever with a red collar",
 held the dog across generations. Billed $1.42.
+
+v4 (Matt): après is two couples, not three men and a woman; the generator turned "another
+couple" into two moustached men twice until the friends were described outright (a blonde
+woman in a red snowflake sweater and her bearded husband). The yard sign is the stacked logo
+and nothing else (`story_reel.py panel`); the busy v1 panel (tagline, phone, URL) is retired.
+Music: a 1982 hit cannot go in a brokerage ad without a sync license, and Instagram business
+accounts only get Meta's commercial Sound Collection; the score stays original until Matt
+licenses a track.
 
 Cost of the v2 reshoot: 8 stills and 5 motion clips, $2.73 as billed by xAI (the ledger now
 books xAI's own `cost_in_usd_ticks`, 1e10 ticks to the dollar). Reference-conditioned stills

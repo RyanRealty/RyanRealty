@@ -236,7 +236,7 @@ export const BEATS: BeatDef[] = [
   {
     id: 'apres-lodge',
     role: 'apres',
-    label: 'Après with friends by the fire',
+    label: 'Après with another couple by the fire',
     years: [1958, 2100],
     yearsWhy: 'Skiing opened on Bachelor Butte in 1958.',
     seasons: ['winter'],
@@ -248,15 +248,15 @@ export const BEATS: BeatDef[] = [
     cast: ['A', 'B'],
     wardrobe: 'ski',
     framing:
-      'a wide shot at table height from the end of a long wooden table, 28mm: four friends crowded along both sides, ' +
-      'the couple in the middle, the fire behind them',
+      'a wide shot at table height from the end of a wooden table, 28mm: the couple side by side on the left; across from them, ' +
+      'side by side on the right, their friends: a blonde woman and her bearded husband; the fire behind',
     light: 'warm firelight and amber pendant lamps, 2700K, faces glowing, the windows cool blue behind',
     exposure: 'interior_low',
     action:
-      'the whole table bursts out laughing at something {B} just said; {A} laughs into his shoulder; two friends clink mugs',
+      'both couples burst out laughing at something {B} just said; {A} laughs into his shoulder; the blonde woman and her husband clink mugs',
     props:
-      'the friends in early-1980s ski sweaters with snowflake yokes and turtlenecks; glass mugs of hot buttered rum and ' +
-      'Irish coffee, a pitcher of beer, ski gloves drying on the table',
+      'the friend is a woman of about thirty with feathered blonde hair in a red-and-white snowflake ski sweater; her husband has ' +
+      'a full brown beard and a grey turtleneck; glass mugs of hot buttered rum and Irish coffee, a pitcher of beer, ski gloves on the table',
     move: 'hold',
   },
   // ── eat ─────────────────────────────────────────────────────────────────
