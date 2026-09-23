@@ -148,10 +148,12 @@ async function readNewestComputedAt(sb: SupabaseClient, keys: string[]): Promise
   for (let i = 0; i < keys.length; i += PROBE_CHUNK) {
     const chunk = keys.slice(i, i + PROBE_CHUNK)
     for (let from = 0; ; from += PAGE) {
+      // The keys are listings."ListingKey" values read from the listings table
+      // itself in this module, and place_membership stores that key.
       const { data, error } = await sb
         .from('place_membership')
         .select('listing_key, computed_at')
-        .in('listing_key', chunk)
+        .in('listing_key', chunk) // @canonical-key
         .order('listing_key', { ascending: true })
         .order('geo_type', { ascending: true })
         .order('geo_slug', { ascending: true })

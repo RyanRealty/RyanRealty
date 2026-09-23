@@ -32,11 +32,11 @@ describe('resolveLegacyNextImage — images that exist resolve', () => {
     expect(d).toEqual({ kind: 'redirect', location: 'https://ryan-realty.com/api/og?title=Bend%20homes' })
   })
 
-  it('redirects on the host that was asked, so a preview host serves its own files', () => {
-    const u = new URL('https://preview-abc.vercel.app/_next/image?url=%2Fimages%2Fa.jpg&w=64&q=75')
+  it('redirects on the host that was asked, so a preview or local host serves its own files', () => {
+    const u = new URL('https://preview.ryan-realty.test/_next/image?url=%2Fimages%2Fa.jpg&w=64&q=75')
     expect(resolveLegacyNextImage(u)).toEqual({
       kind: 'redirect',
-      location: 'https://preview-abc.vercel.app/images/a.jpg',
+      location: 'https://preview.ryan-realty.test/images/a.jpg',
     })
   })
 

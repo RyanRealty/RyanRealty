@@ -58,33 +58,59 @@ export function foldAnswerEngineRows(rows: readonly SignalRow[]): Omit<AnswerEng
   }
 }
 
-/** The newest run's summary. Reads at most the last 62 days of battery rows. */
+/** PostgREST caps one response at 1,000 rows. */
+const PAGE = 1000
+
+/**
+ * The newest run's summary. Finds the newest run date inside the last 62 days,
+ * then reads every row of that run a page at a time (G48: no single-shot read
+ * over the 1,000-row cap).
+ */
 export async function readAnswerEngineCitations(
   sb: SupabaseClient,
   now: Date = new Date(),
 ): Promise<AnswerEngineCitations> {
   const since = new Date(now.getTime() - 62 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
   const source = `site_signal source=${ANSWER_ENGINE_SOURCE} date >= ${since} (newest run)`
-  const { data, error } = await sb
+  const unreadable: AnswerEngineCitations = {
+    status: 'unreadable',
+    runDate: null,
+    queriesRun: 0,
+    queriesAnswered: 0,
+    queriesCited: 0,
+    citedQueries: [],
+    topCompetitors: [],
+    source,
+  }
+
+  const head = await sb
     .from('site_signal')
-    .select('date,surface,metric,value,scope')
+    .select('date')
     .eq('source', ANSWER_ENGINE_SOURCE)
     .gte('date', since)
     .order('date', { ascending: false })
-    .limit(2000)
-  if (error) {
-    return {
-      status: 'unreadable',
-      runDate: null,
-      queriesRun: 0,
-      queriesAnswered: 0,
-      queriesCited: 0,
-      citedQueries: [],
-      topCompetitors: [],
-      source,
-    }
+    .limit(1)
+  if (head.error) return unreadable
+  const runDate = ((head.data ?? [])[0] as { date?: string | null } | undefined)?.date ?? null
+  if (!runDate) return { status: 'unread', ...foldAnswerEngineRows([]), source }
+
+  const rows: SignalRow[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await sb
+      .from('site_signal')
+      .select('date,surface,metric,value,scope')
+      .eq('source', ANSWER_ENGINE_SOURCE)
+      .eq('date', runDate)
+      .order('scope', { ascending: true })
+      .order('metric', { ascending: true })
+      .order('surface', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) return unreadable
+    const page = (data ?? []) as SignalRow[]
+    rows.push(...page)
+    if (page.length < PAGE) break
   }
-  const folded = foldAnswerEngineRows((data ?? []) as SignalRow[])
+  const folded = foldAnswerEngineRows(rows)
   return { status: folded.runDate ? 'ok' : 'unread', ...folded, source }
 }
 
