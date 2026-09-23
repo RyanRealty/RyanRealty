@@ -15,6 +15,11 @@ import { readSearchCompletenessAccept } from './search-completeness'
 import { readVideoDecisionDocket } from './video-docket'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
 import {
+  PLACE_MEMBERSHIP_STALE_HOURS,
+  readPlaceMembershipFreshness,
+  type PlaceMembershipFreshness,
+} from './place-membership-freshness'
+import {
   AUTH_TABLE_TO_HEARTBEAT,
   classifyTokenHealth,
   consecutiveHeartbeatFailures,
@@ -186,6 +191,14 @@ export type CompanyScoreboardSignals = {
     ttfbBendMs: number | null
     source: string
   }
+  /**
+   * Market Truth membership freshness (audit COMP-3, P9). Every market_metric
+   * cell joins place_membership; stale membership drops new listings from every
+   * published count and verdict.
+   */
+  placeMembership: PlaceMembershipFreshness
+  /** Why the scoreboard should not be trusted as-is. Empty = not degraded. */
+  degraded: string[]
 }
 
 const SOCIAL_TABLES = [
@@ -278,6 +291,7 @@ export async function collectCompanyScoreboardSignals(
     cmaRes,
     joinStats,
     heartbeatRes,
+    placeMembership,
     ...tokenResults
   ] = await Promise.all([
     countCrmStages(sb),
@@ -317,6 +331,7 @@ export async function collectCompanyScoreboardSignals(
       .gte('logged_at', since7d)
       .order('logged_at', { ascending: false })
       .limit(200),
+    readPlaceMembershipFreshness(sb, now),
     ...SOCIAL_TABLES.map((table) =>
       sb.from(table).select(NO_REFRESH_COLUMN.has(table) ? 'expires_at' : 'expires_at,refresh_token'),
     ),
@@ -585,6 +600,18 @@ export async function collectCompanyScoreboardSignals(
     source: searchAccept.source,
   }
 
+  // Degraded when Market Truth membership is older than 48 hours or cannot
+  // be read: every published active count and verdict would be missing new
+  // listings (audit COMP-3, P9).
+  const degraded: string[] = []
+  if (placeMembership.freshness === 'stale') {
+    degraded.push(
+      `place_membership last refreshed ${placeMembership.newestAt} (${placeMembership.ageHours}h ago, limit ${PLACE_MEMBERSHIP_STALE_HOURS}h): market_metric counts and verdicts miss new listings; check pg_cron job refresh_place_membership_15min`,
+    )
+  } else if (placeMembership.freshness === 'unknown') {
+    degraded.push(`place_membership freshness UNKNOWN (${placeMembership.source})`)
+  }
+
   return {
     fetchedAt,
     crm,
@@ -611,5 +638,7 @@ export async function collectCompanyScoreboardSignals(
     video,
     integrations,
     searchCompleteness,
+    placeMembership,
+    degraded,
   }
 }
