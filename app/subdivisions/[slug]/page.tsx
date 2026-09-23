@@ -1,4 +1,4 @@
-// @no-static-params — build-time fan-out budgeted to zero (ci:ssg-budget); ISR on demand
+// Build-time fan-out capped at the top plats by impressions (ci:ssg-budget); everything else ISR on demand
 /**
  * /subdivisions/[slug] — the plat grain, on the components/site/v3 barrel.
  *
@@ -43,7 +43,7 @@
  * exists instead of "Central Oregon, Oregon"), MetadataBlock JSON-LD
  * (BreadcrumbList + Place, same payloads, same hasMap condition), the section
  * tracker, force-dynamic rendering (see the route-config comment), dynamicParams
- * true, generateStaticParams returning [], and maxDuration 60. MetadataBlock stays on the legacy register: JSON-LD is not
+ * true, generateStaticParams capped by ci:ssg-budget, and maxDuration 60. MetadataBlock stays on the legacy register: JSON-LD is not
  * visual language and ci:ai-structured-data pins this route to it by name.
  *
  * FIVE POPULATIONS, FIVE TRACES (CLAUDE.md §0). Every sentence that describes
@@ -137,9 +137,11 @@ import {
 import { nearbySubdivisionPeers, otherCommunitySubdivs } from '@/lib/explore/nearby-place-peers'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
 import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
-import { getSubdivisionRing } from '@/lib/data/geo/subdivision-ring'
+import { getSubdivisionRingCached } from '@/lib/data/geo/subdivision-ring-cached'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
-import { getPlatClosedCount } from '@/lib/data/subdivisions/getPlatClosedCounts'
+import { getPlatClosedCount, getPlatClosedCounts } from '@/lib/data/subdivisions/getPlatClosedCounts'
+import { answeredRows, decidePlatRobots } from '@/lib/site/plat-robots'
+import { platPrerenderParams } from '@/lib/site/plat-prerender'
 import { getPlatUnsoldOutcome } from '@/lib/data/subdivisions/getPlatUnsoldOutcomes'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { publishPlatUnsold } from '@/lib/site/publish-plat-unsold'
@@ -173,7 +175,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { subdivisionPageTrail } from '@/lib/site/place-trail'
-import { runPublishedPageRender } from '@/lib/site/degraded-isr'
+import { refuseDegradedIsr, runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatCount } from '@/lib/format/count'
 import { formatDate } from '@/lib/format/date'
@@ -272,13 +274,16 @@ export const revalidate = 900
 // Vercel's 15s default function cap.
 export const maxDuration = 60
 
-// Build-time prerender is intentionally empty (ci:ssg-budget). The ~100 alias
-// pages each chain sequential timeout-capped Supabase stages; prerendering them
-// was the largest single cost of `next build` on Vercel and, when queries timed
-// out under build concurrency, baked empty rails into the deployed HTML. With
-// dynamicParams=true and force-dynamic rendering every URL still serves.
+// Build-time prerender is CAPPED, not zero (ci:ssg-budget; Matt 2026-09-23,
+// evidence in lib/site/plat-prerender.ts). Prerendering the ~100 alias pages was
+// the largest single cost of `next build` on Vercel and, when queries timed out
+// under build concurrency, baked empty rails into the deployed HTML (2026-08-21).
+// Now only the 25 sitemapped plats with the most Search Console impressions
+// prerender, from a committed list with no build-time database read; every
+// other URL renders on demand (dynamicParams=true) and the warm-geo-pages
+// cron's plat tier warms the sitemapped ones after each deploy.
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  return []
+  return platPrerenderParams()
 }
 
 type Props = {
@@ -326,8 +331,18 @@ function publishSubdivisionPageName(slug: string, registryMatch: { canonicalName
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
+  // EVERY READ HERE IS RACED (P3 — DATA-6, SEO-2, 2026-09-23). A bare await in
+  // the head that throws kills the render outside every error boundary: Next's
+  // built-in "500 Internal Server Error." document, status 500. A read that did
+  // not answer is UNKNOWN, never "no" — lib/site/plat-robots.ts owns that rule
+  // for the robots verdict, and the head never publishes a noindex it cannot
+  // prove. The body awaits the same cache()d core, so these budgets bound only
+  // the head.
+  const coreRead = await withTimeoutFallbackResult(loadSubdivisionCore(slug), null, 15_000, 'sub:meta-core')
+  const core = coreRead.ok ? coreRead.value : null
+  if (!coreRead.ok) await refuseDegradedIsr('subdivision:head', ['sub:meta-core'])
   // The refusal owns its metadata: noindex, honest title, no canonical.
-  if ((await loadSubdivisionCore(slug)).refused) return SUBDIVISION_UNAVAILABLE_METADATA
+  if (core?.refused) return SUBDIVISION_UNAVAILABLE_METADATA
   const registryMatch = resolveRegistryAlias(slug)
   const name = publishSubdivisionPageName(slug, registryMatch)
   // Indexability threshold (W2.1): a plat earns index,follow only with a GIS
@@ -350,12 +365,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // plat with no listing on record — courtyard-garages-at-broken-top, a garage
   // tract with zero sales inside it — has no listing-derived city at all, but
   // its polygon sits inside a neighborhood polygon inside the Bend city polygon.
-  const indexableEntry = (await getIndexableSubdivisions()).find((s) => s.slug === slug)
+  const setRead = await withTimeoutFallbackResult(getIndexableSubdivisions(), [], 5000, 'sub:meta-indexable')
+  const indexableSet = answeredRows(setRead)
+  // Only when the set did not answer: the plat's own closed-count row, the
+  // other half of the same rule.
+  const countsRead = indexableSet
+    ? null
+    : await withTimeoutFallbackResult(getPlatClosedCounts(), [], 5000, 'sub:meta-closed-counts')
+  const robots = decidePlatRobots({
+    slug,
+    indexableSet,
+    platClosedCounts: countsRead ? answeredRows(countsRead) : null,
+    hasPolygon: core && core.boundaryRead.ok ? core.hasBoundary : null,
+  })
+  // A verdict that is a default, not a reading, must not stand for the page's
+  // whole window: the copy is short-lived and the next render asks again.
+  if (!robots.known) await refuseDegradedIsr('subdivision:head', ['sub:meta-robots'])
+  const indexableEntry = robots.entry
   const cityName =
     registryMatch?.city ??
     titleCaseSlug(indexableEntry?.citySlug) ??
-    derivePlatCity((await loadSubdivisionCore(slug)).mapTiles)?.city ??
-    (await getPlatBoundaryCity(slug))?.city ??
+    derivePlatCity(core?.mapTiles ?? [])?.city ??
+    (await withTimeoutFallback(getPlatBoundaryCity(slug), null, 2500, 'sub:meta-boundaryCity'))?.city ??
     null
   return pageMetadata({
     title: platPageTitle(name, cityName),
@@ -363,7 +394,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `Active homes in ${name}, a subdivision in ${cityName}. Boundary map and live MLS listings.`
       : `Active homes in ${name}, a Central Oregon subdivision. Boundary map and live MLS listings.`,
     path: `/subdivisions/${slug}`,
-    noindex: indexableEntry == null,
+    noindex: robots.noindex,
   })
 }
 
@@ -500,6 +531,24 @@ async function renderSubdivisionPage({ params }: Props) {
   const { inventoryRead, mtCounts, boundary, footprint, inventory, hasBoundary, registryMatch, mapTiles, refused } =
     await loadSubdivisionCore(slug)
   if (refused) return <SubdivisionUnavailable />
+
+  // THE NEIGHBOUR RING STARTS HERE, AND IS CACHED (P3 — DATA-6, SEO-2, EXP-7).
+  // cma_subdivision_ring is the slowest read on the page: 3.7 to 16.1 s uncached
+  // for the ten plats that 500'd on every live fetch on 2026-09-23, against the
+  // 3.5 s it used to get, so elkai-woods, blakley-heights, saddleback and the
+  // rest degraded on every render (which was an HTTP 500 until
+  // lib/site/degraded-isr.ts stopped calling noStore()). It needs only the
+  // plat's listing centroid, so it runs from here alongside the stages below,
+  // is cached per point for a day, finishes into the cache after the response
+  // when the budget loses (lib/data/geo/subdivision-ring-cached.ts), and is
+  // awaited with the section reads.
+  const ringCentroid = mapCentroid(mapTiles)
+  const nearbyRingPromise = withTimeoutFallback(
+    getSubdivisionRingCached(ringCentroid?.lat ?? null, ringCentroid?.lng ?? null),
+    null,
+    7000,
+    'sub:nearbyRing',
+  )
 
   // ── NAME AND CITY ────────────────────────────────────────────────────────
   const displayName = publishSubdivisionPageName(slug, registryMatch)
@@ -761,12 +810,7 @@ async function renderSubdivisionPage({ params }: Props) {
         'sub:openingListings',
       ),
       amenityLayersPromise,
-      withTimeoutFallback(
-        getSubdivisionRing(platCentroid?.lat ?? null, platCentroid?.lng ?? null),
-        null,
-        3500,
-        'sub:nearbyRing',
-      ),
+      nearbyRingPromise,
       parentCommunitySlug
         ? withTimeoutFallback(
             getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: parentCommunitySlug }),

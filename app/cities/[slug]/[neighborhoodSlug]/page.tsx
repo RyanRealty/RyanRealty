@@ -73,7 +73,8 @@ import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { neighborhoodPageTrail } from '@/lib/site/place-trail'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { noteDegradedHead, placeNameFromSlug, PLACE_HEAD_READ_MS } from '@/lib/site/place-head-fallback'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail, skippableRailResult } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
@@ -169,16 +170,42 @@ const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug: citySlug, neighborhoodSlug } = await params
-  const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
+  // RACED (P3 — DATA-6, 2026-09-23; lib/site/place-head-fallback.ts). A read
+  // that did not answer is unknown, not absent: the head keeps this path, names
+  // the place from its own URL, publishes no count, and stands for one short
+  // ISR window. notFound() only when the read answered with no neighborhood.
+  const neighborhoodRead = await withTimeoutFallbackResult(
+    getNeighborhoodBySlug(citySlug, neighborhoodSlug),
+    null,
+    PLACE_HEAD_READ_MS,
+    'nbh:meta-neighborhood',
+  )
+  if (!neighborhoodRead.ok) {
+    await noteDegradedHead('neighborhood', 'nbh:meta-neighborhood')
+    const placeName = placeNameFromSlug(neighborhoodSlug)
+    const cityName = placeNameFromSlug(citySlug)
+    return pageMetadata({
+      title: publishPlaceHomesTitle(placeName, cityName),
+      description: `Active single-family homes in ${placeName}, ${cityName}, Oregon. List prices and days on market, pulled live.`,
+      path: `/cities/${citySlug}/${neighborhoodSlug}`,
+    })
+  }
+  const neighborhood = neighborhoodRead.value
   if (!neighborhood) notFound()
 
   const title =
     neighborhood.seoTitle?.trim() ||
     publishPlaceHomesTitle(neighborhood.name, neighborhood.cityName)
 
+  // A count in the SERP only from a read that answered (§0: unknown is not zero).
   const inventory =
     citySlug === 'bend'
-      ? await getNeighborhoodPublicInventory(`${citySlug}-${neighborhoodSlug}`)
+      ? await withTimeoutFallback(
+          getNeighborhoodPublicInventory(`${citySlug}-${neighborhoodSlug}`),
+          null,
+          4500,
+          'nbh:meta-inventory',
+        )
       : null
   const generatedDescription =
     inventory != null && inventory.activeCount > 0

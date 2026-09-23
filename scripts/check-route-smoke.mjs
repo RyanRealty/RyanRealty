@@ -140,10 +140,27 @@ function loadRoutesFromInventory() {
   return routes
 }
 
+// COLD ISR PLAT RENDERS (P3 — DATA-6, SEO-2, EXP-7, 2026-09-23). The route
+// inventory cannot enumerate /subdivisions/*, and that blind spot is how a
+// class-wide 500 shipped: runPublishedPageRender called unstable_noStore() on
+// any degraded read, which inside a runtime ISR render Next 16 answers with
+// "Dynamic server usage: ... couldn't be rendered statically because it used
+// unstable_noStore()" (digest DYNAMIC_SERVER_USAGE) and HTTP 500.
+// /subdivisions/elkai-woods degraded on EVERY render (its cma_subdivision_ring
+// read took 8.4 to 11.2 s against a 3.5 s budget) and 500'd on every fetch, so
+// it is the deterministic case; blakley-heights is a sitemapped plat that did
+// the same. Neither is prerendered, so against `start:ci` each is a cold
+// on-demand ISR render, the exact path that failed.
+const PLAT_ISR_ROUTES = [
+  { path: '/subdivisions/elkai-woods', name: 'plat cold ISR render (elkai-woods, P3)' },
+  { path: '/subdivisions/blakley-heights', name: 'plat cold ISR render (blakley-heights, P3)' },
+]
+
 const INVENTORY_ROUTES = loadRoutesFromInventory()
 const ROUTES = INVENTORY_ROUTES
   ? [
       ...INVENTORY_ROUTES,
+      ...PLAT_ISR_ROUTES,
       { path: '/blog/tetherow-resort-living-real-estate', name: 'tetherow blog hop' },
       ...(LISTING_KEY
         ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail (live)' }]
@@ -159,6 +176,7 @@ const ROUTES = INVENTORY_ROUTES
       { path: '/contact', name: 'contact' },
       { path: '/sell', name: 'sell' },
       { path: '/housing-market', name: 'housing market hub' },
+      ...PLAT_ISR_ROUTES,
       ...(LISTING_KEY
         ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail' }]
         : []),
