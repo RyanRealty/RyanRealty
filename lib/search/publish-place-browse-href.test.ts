@@ -97,7 +97,12 @@ describe('publishPlaceBrowseHref', () => {
       '/homes-for-sale/bend/northwest-crossing',
       '/homes-for-sale/bend/stevens-ranch',
       '/homes-for-sale/bend/tetherow',
+      // SITE-184: both Black Butte Ranch area twins, and the Crooked River
+      // Ranch twin of the same shape, 301 to their community page.
+      '/homes-for-sale/black-butte-ranch/black-butte-ranch',
+      '/homes-for-sale/sisters/black-butte-ranch',
       '/homes-for-sale/sunriver/sunriver',
+      '/homes-for-sale/terrebonne/crooked-river-ranch',
     ])
   })
 
@@ -122,6 +127,16 @@ describe('publishPlaceBrowseHref', () => {
       '/communities/sunriver',
     )
     expect(publishPlaceBrowseHref('/homes-for-sale/sunriver/sunriver')).toBeNull()
+    // SITE-184: Black Butte Ranch, its own MLS city under Sisters, the same way.
+    expect(publishPlaceBrowseHref('/communities/black-butte-ranch')).toBe('/communities/black-butte-ranch')
+    const bbr = getPlaceLinks({ type: 'community', slug: 'black-butte-ranch' })
+    expect(bbr.browseUrl).toBe('/homes-for-sale/black-butte-ranch')
+    expect(publishPlaceBrowseHref(bbr.browseUrl)).toBe('/homes-for-sale/black-butte-ranch')
+    expect((legacyRedirects as Record<string, string>)['/homes-for-sale/sisters/black-butte-ranch']).toBe(
+      '/communities/black-butte-ranch',
+    )
+    expect(publishPlaceBrowseHref('/homes-for-sale/sisters/black-butte-ranch')).toBeNull()
+    expect(publishPlaceBrowseHref('/homes-for-sale/black-butte-ranch/black-butte-ranch')).toBeNull()
   })
 })
 

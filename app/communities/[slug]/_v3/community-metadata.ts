@@ -16,6 +16,7 @@
 
 import type { pageMetadata } from '@/lib/site/page-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
+import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
 import { preferPlaceHero } from '@/lib/geo-images'
 import {
   listingItemListFromHomes,
@@ -42,7 +43,11 @@ const COMMUNITY_SERP_SETTING: Record<string, string> = {
   'brasada-ranch': 'High-desert resort around Brasada Canyons golf.',
   tetherow: 'West Bend golf community on a David McLay Kidd course.',
   'broken-top': 'Gated west Bend community around a Weiskopf and Morrish course.',
-  'black-butte-ranch': 'Forest resort with two golf courses under the Cascades.',
+  // SITE-184: the opener became "Black Butte Ranch, Oregon homes for sale."
+  // (the query the page wins), four characters longer than "in Sisters,
+  // Oregon.", so the clause lost "forest" to stay inside shareDescription's
+  // 155 without truncating "Live MLS inventory." Same two facts: golf, Cascades.
+  'black-butte-ranch': 'Golf resort with two courses under the Cascades.',
   'mountain-high': 'South Bend neighborhood around the public Old Back Nine.',
   'eagle-crest': 'Redmond golf resort along the Deschutes River canyon.',
   'caldera-springs': 'Sunriver resort around Caldera Links and a wildlife preserve.',
@@ -94,9 +99,11 @@ export function communitySerpDescription(input: {
   const setting = COMMUNITY_SERP_SETTING[slug]
   const counted =
     slug === 'mountain-high' && input.listedCount != null && input.listedCount > 0
-  // SITE-187: a self-city community would read "Sunriver in Sunriver, Oregon."
-  // The opener names the inventory query the page wins instead.
-  const selfCity = name.trim().toLowerCase() === city.trim().toLowerCase()
+  // SITE-187 / SITE-184: a self-city community would read "Sunriver in
+  // Sunriver, Oregon." or "Black Butte Ranch in Sisters, Oregon." The opener
+  // names the inventory query the page wins instead. The helper, not a
+  // name-equals-city test: Black Butte Ranch's registry city is Sisters.
+  const selfCity = name.trim().toLowerCase() === city.trim().toLowerCase() || isSelfCityCommunity(slug)
   const opener = counted
     ? `${formatCount(input.listedCount)} homes for sale in ${name}, ${city}.`
     : slug === 'tetherow'

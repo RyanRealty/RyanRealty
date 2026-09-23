@@ -10,7 +10,7 @@ import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { withTimeout } from './fetch-guards'
 import { resolveSlug, buildCanonicalPath } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
-import { selfCitySearchCanonicalPath } from '@/lib/communities/self-city-community'
+import { selfCitySearchCanonicalPath, selfCitySearchHeading } from '@/lib/communities/self-city-community'
 import { luxuryPresetDescription, luxuryPresetHeading } from '@/lib/site/bend-luxury-homes'
 import {
   BEND_NEW_CONSTRUCTION_CANONICAL_PATH,
@@ -59,18 +59,21 @@ export async function buildSearchSlugMetadata({
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const defaultOgImage = `${siteUrl}/api/og?type=default`
   const isBendNewConstructionTwin = isBendNewConstructionSearchTwinSlug(slug, sp)
-  // SITE-187: the plain city search for a self-city community (Sunriver) is
-  // the same inventory as /communities/<slug>, which PAGE_OUTLINE names as the
-  // one winner for "{place} homes for sale". The page still renders for the
-  // search app's city switcher; it just stops competing. Area and preset
-  // variants keep their own canonical.
-  const selfCityCanonical = city
-    ? selfCitySearchCanonicalPath({
+  // SITE-187 / SITE-184: the plain city search for a self-city community
+  // (Sunriver, Black Butte Ranch) is the same inventory as /communities/<slug>,
+  // which PAGE_OUTLINE names as the one winner for "{place} homes for sale".
+  // The page still renders for the search app's city switcher; it just stops
+  // competing, and its title stops repeating the winner's exact string. Area
+  // and preset variants keep their own canonical and title.
+  const selfCityShape = city
+    ? {
         citySlug: cityEntityKey(city),
         hasArea: Boolean(subdivisionDisplayName || subdivisionSlug),
         hasPreset: Boolean(presetSlug),
-      })
+      }
     : null
+  const selfCityCanonical = selfCityShape ? selfCitySearchCanonicalPath(selfCityShape) : null
+  const selfCityTitle = selfCityShape ? selfCitySearchHeading({ ...selfCityShape, placeName }) : null
   const canonicalPath = isBendNewConstructionTwin
     ? BEND_NEW_CONSTRUCTION_CANONICAL_PATH
     : (selfCityCanonical ?? buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug))
@@ -79,9 +82,11 @@ export async function buildSearchSlugMetadata({
     : defaultOgImage
   // SITE-185: the luxury preset's title is the win query in human form
   // ("Bend luxury homes for sale"); the layout template adds the brand.
+  // SITE-184: the plain city search of a self-city community reads "Search
+  // {place} homes" so no second page carries the community's title.
   const title =
     luxuryPresetHeading(preset, placeName) ??
-    (preset ? `${preset.label} in ${placeName}` : placeHomesForSaleHeading(placeName))
+    (preset ? `${preset.label} in ${placeName}` : (selfCityTitle ?? placeHomesForSaleHeading(placeName)))
   // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
   // VERIFIED zero active-inventory count stays renderable but is noindexed —
   // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with

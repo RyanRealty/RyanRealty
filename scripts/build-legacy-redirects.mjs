@@ -357,6 +357,13 @@ async function main() {
     // /homes-for-sale/sunriver/sunriver duplicated the community page's exact
     // <title> and <h1>. Same rule as Tetherow: the place page is the Field.
     '/homes-for-sale/sunriver/sunriver': '/communities/sunriver',
+    // SITE-184: Black Butte Ranch is its own MLS city under the registry city
+    // Sisters, so BOTH area twins carried the community page's exact <title>
+    // and <h1> (live 2026-09-23). Crooked River Ranch under Terrebonne has the
+    // identical shape. Membership is lib/communities/self-city-community.ts.
+    '/homes-for-sale/black-butte-ranch/black-butte-ranch': '/communities/black-butte-ranch',
+    '/homes-for-sale/sisters/black-butte-ranch': '/communities/black-butte-ranch',
+    '/homes-for-sale/terrebonne/crooked-river-ranch': '/communities/crooked-river-ranch',
     // SITE-180: the live Next article is /blog/<slug>, not the WP permalink.
     '/blog/tetherow-resort-living-real-estate': '/communities/tetherow',
   }

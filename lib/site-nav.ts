@@ -352,7 +352,13 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       [{ href: '/neighborhoods', label: 'Bend neighborhoods' }],
     ),
     cityFooterCluster('Redmond', ['Eagle Crest', 'Juniper Preserve']),
-    cityFooterCluster('Sisters', ['Black Butte Ranch']),
+    // SITE-184: the Black Butte Ranch community page is the one winner for
+    // "Black Butte Ranch homes for sale"; the one sitewide door carries that
+    // phrase (it replaces the bare "Black Butte Ranch" item: same href, and a
+    // cluster never lists one href twice).
+    cityFooterCluster('Sisters', [], [
+      { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch homes for sale' },
+    ]),
     // SITE-187: the Sunriver community page is the one winner for "Sunriver
     // homes for sale"; the cluster heading stays the city guide.
     cityFooterCluster(

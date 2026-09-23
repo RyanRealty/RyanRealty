@@ -98,6 +98,33 @@ describe('master-plan place follows', () => {
     expect(byLabel.get('Sunriver homes for sale')).toBeUndefined()
     expect(byLabel.get('Search Sunriver homes')).toBe('/homes-for-sale/sunriver')
     expect(byLabel.get('About Sunriver')).toBe('/cities/sunriver')
+    // SITE-184: Black Butte Ranch is its own MLS city under the registry city
+    // Sisters. Its search door is ITS city search, never Sisters' or the
+    // /homes-for-sale/sisters/black-butte-ranch twin (which now 301s home).
+    const bbr = getPlaceLinks({ type: 'community', slug: 'black-butte-ranch', citySlug: 'sisters' })
+    expect(bbr.placeUrl).toBe('/communities/black-butte-ranch')
+    expect(bbr.browseUrl).toBe('/homes-for-sale/black-butte-ranch')
+    expect(bbr.marketUrl).toBe('/housing-market/sisters/black-butte-ranch')
+    const bbrItems = buildExploreEdges({
+      communityName: 'Black Butte Ranch',
+      cityName: 'Sisters',
+      citySlug: 'sisters',
+      browseHref: bbr.browseUrl,
+      communityMarketHref: bbr.marketUrl,
+      cityReportHref: '/housing-market/sisters',
+      pagePath: '/communities/black-butte-ranch',
+      faqs: [],
+      documentItems: [],
+      golfCourses: [],
+      resortItems: resortQuietItems(),
+    })
+    const bbrByLabel = new Map(bbrItems.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
+    expect(bbrByLabel.get('Black Butte Ranch homes for sale')).toBeUndefined()
+    expect(bbrByLabel.get('Search Black Butte Ranch homes')).toBe('/homes-for-sale/black-butte-ranch')
+    // Sisters is not Black Butte Ranch: the city door and the city guide stay.
+    expect(bbrByLabel.get('Sisters homes for sale')).toBe('/homes-for-sale/sisters')
+    expect(bbrByLabel.get('About Sisters')).toBe('/cities/sisters')
+    expect(bbrByLabel.get('Black Butte Ranch market report')).toBe('/housing-market/sisters/black-butte-ranch')
     // Tetherow keeps its city door: Bend is not Tetherow.
     const tetherow = getPlaceLinks({ type: 'community', slug: 'tetherow', citySlug: 'bend' })
     const bendItems = buildExploreEdges({

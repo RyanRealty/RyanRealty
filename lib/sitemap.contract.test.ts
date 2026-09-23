@@ -21,6 +21,10 @@ describe('sitemap canonical contract', () => {
       expect(urls).toContain('https://example.com/homes-for-sale/bend')
       expect(urls).toContain('https://example.com/cities/sunriver')
       expect(urls).not.toContain('https://example.com/homes-for-sale/sunriver')
+      // SITE-184: same rule for Black Butte Ranch, its own MLS city under
+      // Sisters (the community URL itself is DB-fed and not asserted here).
+      expect(urls).not.toContain('https://example.com/homes-for-sale/black-butte-ranch')
+      expect(urls).toContain('https://example.com/homes-for-sale/sisters')
       expect(urls).toContain('https://example.com/team')
       // SITE-185: /luxury-homes-bend 301s onto /homes-for-sale/bend/luxury,
       // which the DB-backed city x preset loop emits (pinned by construction
