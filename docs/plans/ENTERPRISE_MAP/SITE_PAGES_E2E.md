@@ -66,6 +66,8 @@ Nodes: 58bd29ba-c0b0-4cbe-bee2-d46b292015df
 
 This table is the only site backlog. Sessions pull the oldest open node (`npx tsx scripts/loop-brief.ts` serves it first whenever `app/**` or `components/site/**` changed in the last 14 days); they do not re-audit. A commit touching the public site names its node in a `Node:` trailer (G72). Decisions behind the queue: Matt 2026-09-07, recorded in the conversion research artifact 525cdcda and memory `project_site_conversion_decisions_2026-09-07`. Seeded by `scripts/seed-site-queue.ts` (idempotent). Round reseeding is not automatic: `node scripts/taste-table.mjs --seed-draft` emits draft seeds for every class under 70; a person edits `scripts/seed-site-queue.ts` then runs `npx tsx scripts/seed-site-queue.ts` (SITE-62).
 
+**Since 2026-09-23 (Matt: be seen, then convert; no past rule is permanent):** the protocol is `docs/RUN_LOOP.md`. A node is done on its §4 accept test (visibility, information, voice, floors, measurement); the taste median is a floor that may not regress, and `demoMatch` is a recorded note. Accept text below or on older nodes that asks for "score ≥ 70" or "demoMatch: true" is superseded. Ranking nodes seed from Search Console (`scripts/seed-gsc-ranking-queue.ts`, titled "GSC gap").
+
 | version_gap | id | title |
 |---|---|---|
 | SITE-00 | `58bd29ba-c0b0-4cbe-bee2-d46b292015df` | Site queue mechanism |

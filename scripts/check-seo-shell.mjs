@@ -10,50 +10,25 @@
  *   if someone would type it into Google, it stays Layer A — never poetry-ized.
  *
  * Checks:
- *   1. Banned poetry / personality patterns in Layer A shells on money routes
- *   2. Required exact-match head terms per money family (cannot drift)
- *   3. KbHero component defaults are Layer A safe (no poetry footgun)
+ *   1. Required exact-match head terms per money family (cannot drift)
+ *   2. The homepage hero lock (KbHero defaults if it ever returns; else the v3
+ *      Stage literal in app/page.tsx)
+ *
+ * The banned-poetry phrase list (11 patterns: "we show the work", "where the
+ * desert meets", ...) was removed 2026-09-23 (visibility audit PROCESS-7,
+ * Matt 2026-09-23 directive): VOICE.md is the one voice document and names no
+ * word list. The head-term contract stays, because it is SEO, not voice: it
+ * pins the query a searcher types to the H1 and title of each money route.
  *
  * Usage:
  *   node scripts/check-seo-shell.mjs
  *   npm run ci:seo-shell
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { readFileSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
 
 const ROOT = process.cwd()
-
-// ── Banned poetry / personality in Layer A ──────────────────────────────────
-// Closed list of patterns that previously (or could) land in title/H1 shells.
-// Expand only with known regressions — do not invent fuzzy "sounds poetic" rules.
-const BANNED = [
-  { id: 'mls-list', re: /\bthe\s+mls\s+list\b/i, hint: 'Use place + "Homes for Sale"' },
-  { id: 'what-sold-for', re: /\bwhat\s+it\s+sold\s+for\b/i, hint: 'Sold facts belong in Layer B body, not H1' },
-  { id: 'on-the-market-now', re: /\bon\s+the\s+market\s+now\b/i, hint: 'Use "Homes for Sale" / inventory count' },
-  { id: 'payment-be', re: /\bwhat\s+will\s+the\s+payment\s+be\b/i, hint: 'Payment questions are body/FAQ, not H1' },
-  { id: 'the-list-comma', re: /\bthe\s+list\s*,/i, hint: 'Drop "the list," metaphor H1s' },
-  { id: 'we-show-the-work', re: /\bwe\s+show\s+the\s+work\b/i, hint: 'Personality → Layer B' },
-  { id: 'plain-facts-only', re: /\bplain\s+facts\s+only\b/i, hint: 'Personality → Layer B' },
-  { id: 'market-does-not-care', re: /\bthe\s+market\s+does\s+not\s+care\b/i, hint: 'Personality → Layer B' },
-  { id: 'still-have-a-story', re: /\bhomes\s+that\s+still\s+have\s+a\s+story\b/i, hint: 'Personality → Layer B' },
-  { id: 'desert-meets', re: /\bwhere\s+the\s+desert\s+meets\b/i, hint: 'Metaphor → Layer B' },
-  { id: 'broker-you-get', re: /\bthe\s+broker\s+you\s+call\b.*\bthe\s+broker\s+you\s+get\b/i, hint: 'Team personality H1 not money-shell' },
-]
-
-// ── Money routes (page.tsx trees) ───────────────────────────────────────────
-// Task C2 families: home, cities, search/homes-for-sale, housing-market, sell,
-// open-houses, price-drops. Buy hub included as money-path shell.
-const MONEY_PATHS = [
-  'app/page.tsx',
-  'app/buy/page.tsx',
-  'app/sell/page.tsx',
-  'app/cities',
-  'app/search',
-  'app/housing-market',
-  'app/open-houses',
-  'app/price-drops',
-]
 
 // Exact-match contracts: head terms that must remain on specific money shells.
 // Patterns match source as authored (literals + template literal static parts).
@@ -256,123 +231,10 @@ const REQUIRED = [
   },
 ]
 
-// ── File collection ─────────────────────────────────────────────────────────
-function walkPageTsx(dir, out = []) {
-  let entries
-  try {
-    entries = readdirSync(dir)
-  } catch {
-    return out
-  }
-  for (const e of entries) {
-    if (e === 'node_modules' || e === '.next' || e === '__tests__') continue
-    const p = join(dir, e)
-    let st
-    try {
-      st = statSync(p)
-    } catch {
-      continue
-    }
-    if (st.isDirectory()) walkPageTsx(p, out)
-    else if (e === 'page.tsx') out.push(p)
-  }
-  return out
-}
-
-function collectMoneyPages() {
-  const files = []
-  for (const g of MONEY_PATHS) {
-    const abs = join(ROOT, g)
-    if (!existsSync(abs)) continue
-    const st = statSync(abs)
-    if (st.isFile()) files.push(abs)
-    else if (st.isDirectory()) walkPageTsx(abs, files)
-  }
-  return [...new Set(files)].sort()
-}
-
-function rel(p) {
-  return relative(ROOT, p).replace(/\\/g, '/')
-}
-
-/**
- * Extract Layer A shell snippets from a page source.
- * We intentionally do NOT scan the whole file (body copy may be Layer B).
- */
-function extractLayerAShell(src) {
-  const chunks = []
-
-  /** Push last capture group (or full match) from every hit. */
-  const pushAll = (re, groupIndex = 1) => {
-    re.lastIndex = 0
-    let m
-    while ((m = re.exec(src)) !== null) {
-      chunks.push(m[groupIndex] ?? m[0])
-    }
-  }
-
-  // titleTop / titleBottom / lead — string or template literal (optionally wrapped in {})
-  // group 2 = content between matching quotes
-  pushAll(/\btitleTop\s*=\s*\{?\s*(["'`])([\s\S]*?)\1\s*\}?/g, 2)
-  pushAll(/\btitleBottom\s*=\s*\{?\s*(["'`])([\s\S]*?)\1\s*\}?/g, 2)
-  pushAll(/\blead\s*=\s*\{?\s*(["'`])([\s\S]*?)\1\s*\}?/g, 2)
-  // metadata title: '…' / title: `…`
-  pushAll(/\btitle\s*:\s*(["'`])([\s\S]*?)\1/g, 2)
-  // <h1>…</h1> and <H1>…</H1> (may span lines / nested spans)
-  pushAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi, 1)
-  pushAll(/<H1\b[^>]*>([\s\S]*?)<\/H1>/g, 1)
-  // v3 register (components/site/v3): headings render through <V3Heading> and the
-  // six patterns take their H1 copy as `headline`, so without these two the
-  // banned-poetry scan goes completely blind the moment a money route migrates.
-  // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
-  pushAll(/<V3Heading\b[^>]*>([\s\S]*?)<\/V3Heading>/g, 1)
-  pushAll(/\bheadline\s*=\s*\{?\s*(?:v3Text\(\s*)?(["'`])([\s\S]*?)\1/g, 2)
-  // Quiet empty-state H1s use `heading=` (V3QuietProps.heading). Without this
-  // the banned-poetry scan misses the branch that replaces Instrument.
-  pushAll(/\bheading\s*=\s*(["'`])([\s\S]*?)\1/g, 2)
-  // aria-label="…"
-  pushAll(/\baria-label\s*=\s*(["'`])([\s\S]*?)\1/g, 2)
-  // headerTitle assignment blob (search routes)
-  pushAll(/\bheaderTitle\s*=[\s\S]{0,500}?(?=\n\s*(?:const|return|\/\/|\/\*|<))/g, 0)
-  // buildSearchTitle / similar return literals
-  pushAll(/return\s+(["'`])([^"'`]*Homes for [Ss]ale[^"'`]*)\1/g, 2)
-  pushAll(/return\s+`([^`]*Homes for [Ss]ale[^`]*)`/g, 1)
-
-  // Normalize JSX text: strip tags, collapse whitespace
-  return chunks
-    .map((c) =>
-      String(c)
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\$\{[^}]+\}/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim(),
-    )
-    .filter(Boolean)
-    .join('\n')
-}
-
 // ── Run ─────────────────────────────────────────────────────────────────────
 const violations = []
-const files = collectMoneyPages()
 
-// (1) Banned poetry on money-route shells
-for (const file of files) {
-  const src = readFileSync(file, 'utf8')
-  const shell = extractLayerAShell(src)
-  if (!shell) continue
-  for (const ban of BANNED) {
-    if (ban.re.test(shell)) {
-      violations.push({
-        file: rel(file),
-        kind: 'banned',
-        id: ban.id,
-        msg: `Layer A shell matches banned poetry /${ban.re.source}/i — ${ban.hint}`,
-      })
-    }
-  }
-}
-
-// (2) Required exact-match contracts
+// (1) Required exact-match contracts
 for (const req of REQUIRED) {
   const abs = join(ROOT, req.file)
   if (!existsSync(abs)) {
@@ -397,15 +259,14 @@ for (const req of REQUIRED) {
   }
 }
 
-// (3) The hero's Layer A lock, wherever the hero lives.
+// (2) The hero's Layer A lock, wherever the hero lives.
 //
 // KB era: KbHero carried default titleTop/titleBottom props, so the defaults
 // themselves were the poetry footgun and this section pinned them. The 2026-08-27
 // v3 rebuild deleted KbHero with its last consumer (app/page.tsx); the hero is
 // now the V3Stage mounted IN app/page.tsx, whose headline is a literal this
-// gate's REQUIRED block pins (the D11 arm) and whose text the banned-poetry
-// scan above already reads (extractLayerAShell's `headline=` arm). V3Stage has
-// no default headline, so there is no defaults footgun to pin. This branch
+// gate's REQUIRED block pins (the D11 arm). V3Stage has no default headline,
+// so there is no defaults footgun to pin. This branch
 // keeps the lock from evaporating: if KbHero ever returns it is re-pinned, and
 // while it is gone the v3 hero literal MUST be present in app/page.tsx —
 // a homepage with neither spelling fails here as well as in REQUIRED.
@@ -417,17 +278,6 @@ if (existsSync(HERO)) {
   const botM = heroSrc.match(/\btitleBottom\s*=\s*(['"])([^'"]*)\1/)
   const top = topM?.[2] ?? ''
   const bot = botM?.[2] ?? ''
-  const defaultShell = `${top}\n${bot}`
-  for (const ban of BANNED) {
-    if (ban.re.test(defaultShell)) {
-      violations.push({
-        file: 'components/site/kb/KbHero.client.tsx',
-        kind: 'hero-default',
-        id: ban.id,
-        msg: `KbHero default H1 is poetry (${JSON.stringify(top)} / ${JSON.stringify(bot)}) — ${ban.hint}`,
-      })
-    }
-  }
   // Positive lock: defaults must be the homepage Layer A pattern
   if (top !== 'Central Oregon' || bot !== 'Homes for Sale') {
     violations.push({
@@ -476,12 +326,10 @@ if (existsSync(HERO)) {
 // ── Report ──────────────────────────────────────────────────────────────────
 console.log('seo-shell gate (ci:seo-shell) — Layer A forever')
 console.log('==============================================')
-console.log(`Scanned ${files.length} money-route page.tsx files + KbHero defaults`)
-console.log('Banned patterns:', BANNED.length)
 console.log('Required contracts:', REQUIRED.length)
 
 if (violations.length === 0) {
-  console.log('\n✓ OK — money shells are query language; poetry cannot return via H1/title/defaults.')
+  console.log('\n✓ OK — money shells carry their head terms in H1 and title.')
   process.exit(0)
 }
 

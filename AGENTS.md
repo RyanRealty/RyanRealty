@@ -4,15 +4,15 @@ This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to au
 
 ---
 
-## Active goal (locked 2026-05-22 via Claude Code `/goal`)
+## Active goal (Matt 2026-09-22)
 
-**Deliver Ryan Realty website to acceptance-criteria-passing state.** The site must be the best real estate website in Central Oregon, with listing detail pages that beat Zillow Showcase, sub-second LCP on every route, and a canonical Data Access Layer that prevents regression.
+**The site is seen, by search engines and by the AI models people search through, and then converts, as organically as possible.** The objective, how it is measured, and the floors that may not regress are `docs/RUN_LOOP.md` §1. (The 2026-05-22 `/goal`, "acceptance-criteria-passing state", is superseded.)
 
 Every session — Claude Code, Cursor, or Grok — starts here:
 
 0. **`docs/GROK_BOT_BRAIN.md`** if you are a Grok Bot / Grok Build teammate — map only, then open the one door for this job. Do not load the whole canon.
-1. **`docs/plans/CROSS_AGENT_HANDOFF.md` Current block** (≤18 lines) — what the other surface left. Do not read the Prior novel unless you need a named SHA.
-2. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`.
+1. **`docs/plans/CROSS_AGENT_HANDOFF.md` Current block** (the file holds exactly one; `ci:handoff-current`) — what the other surface left. Read the archive only for a named SHA.
+2. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`. When Matt says "run the loop", follow **`docs/RUN_LOOP.md`**.
 3. **`docs/DATA_ACCESS_LAYER.md`** when the task touches listings/stats — every page calls `@/lib/data/*`; raw `.from('listings')` outside `lib/data/` is banned.
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
@@ -78,7 +78,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 | What actually shipped | `git log origin/main` |
 | Backlog / next task | `npx tsx scripts/loop-brief.ts` (work graph). `task-registry.json` / `orchestrate.ts` are complete (49/49) — do not pick work from them. |
 | Optional handoff notes | `~/.claude/plans/HANDOFF-*.md` — add or update when switching tools with context the repo does not carry |
-| **Cross-agent continuity (required when switching)** | **`docs/plans/CROSS_AGENT_HANDOFF.md`** — update the **Current** table before you stop or when Matt moves to the other tool. The other agent must **read it after `git pull`** before deep work. |
+| **Cross-agent continuity (required when switching)** | **`docs/plans/CROSS_AGENT_HANDOFF.md`** — replace the one **Current** block before you stop or when Matt moves to the other tool. The other agent must **read it after `git pull`** before deep work. |
 | **Grok Bot / Grok Build fleet** | **`docs/GROK_BOT_BRAIN.md`** — index. Company dump is `docs/GROK_BOT_COMPANY.md`. Do not paste either into a mega system prompt. |
 | **Global skill index (Cursor + Claude)** | **`~/.claude/GLOBAL_SKILLS_REGISTRY.md`** — full path list of every `SKILL.md` on this machine (plugins, repo, TC, Cowork notes). **Git mirror:** `docs/plans/GLOBAL_SKILLS_REGISTRY.md`. **Cursor stub:** `~/.cursor/GLOBAL_SKILLS_REGISTRY.md`. |
 | **Database reference (required before ANY SQL or market-report work)** | **[`docs/DATABASE_FOR_AI_AGENTS.md`](docs/DATABASE_FOR_AI_AGENTS.md)** — every table grouped by purpose, the cache model (`market_pulse_live` 10-min freshness, `market_stats_cache` 6-hour freshness), 14 resort communities + 14 Bend neighborhoods + city/region levels, the `listings` 800-field reality with mixed-case quoting rules, methodology versioning, slug formats. Source-of-truth registry: **[`data/resort-communities.json`](data/resort-communities.json)**. Don't aggregate raw `listings` for market reports — use the cache. |
@@ -88,7 +88,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 ### Cross-agent handoff (mandatory when work spans tools)
 
 1. **Push `main` first** (nothing handoff-worthy should be unpushed).
-2. Open **`docs/plans/CROSS_AGENT_HANDOFF.md`** and replace the **Current** block: surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**.
+2. Open **`docs/plans/CROSS_AGENT_HANDOFF.md`** and replace the **Current** block (exactly one; never stack a second, `ci:handoff-current` fails it; carry any still-open Matt directive forward): surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**.
 3. Optionally also write narrative under **`~/.claude/plans/HANDOFF-*.md`** for Claude Desktop-only context (paths on disk, local-only experiments)—still assume the other agent only **pulls git** and reads **`CROSS_AGENT_HANDOFF.md`**.
 
 ### Skills (load before substantive work)
@@ -99,7 +99,7 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 
 - **Master index:** `~/.claude/GLOBAL_SKILLS_REGISTRY.md` or **`docs/plans/GLOBAL_SKILLS_REGISTRY.md`** (same content) — scan here first so you do not miss a plugin or TC-only skill.
 - **Any public page (build, restyle, new section, chart):** read **`design_system/public/TASTE.md`** first — the page to beat, banned tells, interaction on every data section, and the evaluator pass by a SEPARATE agent recorded as `tasteReview` in the route's parity.json. Enforced by `ci:taste-canon`. This binds every tool (Claude, Cursor, Grok, anything pointed at the repo).
-- **Any public site work (2026-09-07, any tool):** the backlog is the site queue in `loop_work_nodes` (domain `public-ux`, version_gap `SITE-*`; table in `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`). Read **`.claude/skills/site-queue/SKILL.md`** and run it as written: claim the node first (`state` open → in_progress, `owner_session` = your session id, the same supabase-js client `scripts/seed-site-queue.ts` uses), build the class in parallel lanes, a SEPARATE evaluator model whose `tasteReview` score must rise, one push and one deploy verify per round, evidence on the node. Site commits carry a `Node: <id>` trailer (G72, commit-msg hook). Do not write a new site audit; append findings to a node. An hourly Claude cloud routine ("Site queue grinder") also works this queue and yields to any claim updated in the last 3 hours, so claim before you build.
+- **Any public site work (any tool):** the backlog is the site queue in `loop_work_nodes` (domain `public-ux`, version_gap `SITE-*`). Follow **`docs/RUN_LOOP.md`**: it holds the claim path, the accept test, the land path and the stop rule for every tool, and nothing here restates them. Lane mechanics: `.claude/skills/site-queue/SKILL.md` (Cursor and Grok: `.cursor/skills/site-queue/SKILL.md`). Site commits carry a `Node: <id>` trailer (G72, commit-msg hook). Do not write a new site audit; append findings to a node.
 - **This repo:** `.cursor/skills/**/SKILL.md` (e.g. Oregon OREF, OREA PB, SkySlope, professional Word, etc.)
 - **Cursor-bundled / plugin skills:** paths under `~/.cursor/plugins/.../skills/**/SKILL.md` when the task matches their description (Next.js, Vercel, Supabase, TDD, debugging, etc.)
 - **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Caption modules only: `video_production_skills/captions/canonical/`.

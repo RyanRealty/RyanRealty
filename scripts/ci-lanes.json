@@ -112,7 +112,11 @@
     "ci:streamed-redirect",
     "ci:toast-discipline",
     "ci:untracked-imports",
-    "ci:vercel-config"
+    "ci:vercel-config",
+    "ci:handoff-current",
+    "ci:process-canon",
+    "ci:claude-canon",
+    "ci:loop-skills-canon"
   ],
   "path": {
     "ci:plat-families": [
@@ -395,16 +399,6 @@
       "middleware.ts",
       "next.config.*",
       "scripts/check-city-route-guard.mjs"
-    ],
-    "ci:claude-canon": [
-      "CLAUDE.md",
-      "AGENTS.md",
-      "docs/README.md",
-      "docs/FEATURES.md",
-      "docs/MASTER_SPEC.md",
-      "docs/SITE_SPEC.md",
-      "docs/DEVELOPMENT_PROCESS.md",
-      "scripts/claude-canon-baseline.json"
     ],
     "ci:cma-exemplar": [
       "lib/cma/**",
@@ -725,10 +719,6 @@
       "middleware.ts",
       "lib/redirects*"
     ],
-    "ci:loop-skills-canon": [
-      ".claude/skills/**",
-      ".cursor/rules/**"
-    ],
     "ci:lp-conversion": [
       "app/lp/**",
       "components/lp/**",
@@ -849,10 +839,6 @@
     "ci:mv-determinism": [
       "supabase/migrations/**",
       "supabase/**"
-    ],
-    "ci:naked-verb-headings": [
-      "app/**/page.tsx",
-      "components/**"
     ],
     "ci:nav-reachability": [
       "lib/site-nav.ts",
@@ -1011,6 +997,8 @@
       "app/zip/[zip]/page.tsx",
       "app/zip/[zip]/_v3/ZipHomesField.tsx",
       "app/zip/[zip]/_v3/ZipInsight.client.tsx",
+      "components/site/v3/V3DogFloater.client.tsx",
+      "lib/marketing-brain/deliverable-share.ts",
       "public/manifest.json"
     ],
     "ci:no-visits-reads": [
@@ -1056,14 +1044,6 @@
       "scripts/wait-for-server.mjs",
       ".github/workflows/**",
       "middleware.ts"
-    ],
-    "ci:process-canon": [
-      "docs/plans/**",
-      "docs/DEVELOPMENT_PROCESS.md",
-      "CLAUDE.md",
-      "AGENTS.md",
-      "marketing_brain_skills/producers/TEMPLATE.md",
-      "lib/marketing-brain/producer-output-class.ts"
     ],
     "ci:program-complete": [
       "docs/plans/PROGRAM_2026-07-21/**",

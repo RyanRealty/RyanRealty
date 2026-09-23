@@ -52,25 +52,25 @@ describe('parseCompetitiveBrief', () => {
   })
 })
 
-describe('competitiveBriefProblems — omit / false refuse', () => {
+// Matt 2026-09-23 (PROCESS-3 / UXLIVE-11): the verdict is recorded, never
+// invented, and a false no longer blocks a rise or done.
+describe('competitiveBriefProblems — the verdict is recorded, not required true', () => {
   it('refuses omitted competitiveBriefPass on a briefed route', () => {
     const p = competitiveBriefProblems(receipt(), ABOUT_BRIEF)
-    expect(p.join('\n')).toMatch(/competitiveBriefPass must be true or false/)
-    expect(p.join('\n')).toMatch(/not done/)
+    expect(p.join('\n')).toMatch(/competitiveBriefPass must be recorded true or false/)
   })
 
-  it('refuses a rise with competitiveBriefPass false', () => {
-    const p = competitiveBriefProblems(receipt({ competitiveBriefPass: false }), ABOUT_BRIEF)
-    expect(p.join('\n')).toMatch(/competitiveBriefPass is false/)
-    expect(p.join('\n')).toMatch(/Researchy checklist/)
+  it('accepts a rise with competitiveBriefPass false (a note)', () => {
+    expect(competitiveBriefProblems(receipt({ competitiveBriefPass: false }), ABOUT_BRIEF)).toEqual([])
   })
 
-  it('refuses a finish-line score without a true pass', () => {
-    const p = competitiveBriefProblems(
-      receipt({ comparedToPrior: 'rebaselined', score: 71, competitiveBriefPass: false }),
-      ABOUT_BRIEF,
-    )
-    expect(p.join('\n')).toMatch(/finish line is not done/)
+  it('accepts a score at or above the old 70 line with a false pass', () => {
+    expect(
+      competitiveBriefProblems(
+        receipt({ comparedToPrior: 'rebaselined', score: 71, competitiveBriefPass: false }),
+        ABOUT_BRIEF,
+      ),
+    ).toEqual([])
   })
 
   it('passes a rise when competitiveBriefPass is true', () => {
@@ -83,11 +83,11 @@ describe('competitiveBriefProblems — omit / false refuse', () => {
     expect(competitiveBriefProblems(receipt({ competitiveBriefChecklist: checklist }), ABOUT_BRIEF)).toEqual([])
   })
 
-  it('refuses a partial checklist (not all true)', () => {
+  it('reads a partial checklist as a recorded false', () => {
     const checklist = Object.fromEntries(ABOUT_BRIEF.beats.map((b) => [b.id, true]))
     checklist['1'] = false
-    const p = competitiveBriefProblems(receipt({ competitiveBriefChecklist: checklist }), ABOUT_BRIEF)
-    expect(p.join('\n')).toMatch(/not done/)
+    expect(competitiveBriefVerdict(receipt({ competitiveBriefChecklist: checklist }), ABOUT_BRIEF)).toBe(false)
+    expect(competitiveBriefProblems(receipt({ competitiveBriefChecklist: checklist }), ABOUT_BRIEF)).toEqual([])
   })
 
   it('lets an in-progress rebaseline record false below 70', () => {
@@ -146,22 +146,23 @@ describe('competitiveBriefPurposeProblems — ci:page-purpose', () => {
   })
 })
 
-describe('tasteDoneProblems — Tip Ready refuse', () => {
+describe('tasteDoneProblems — Tip Ready', () => {
   it('refuses omitted competitiveBriefPass when a brief exists', () => {
     expect(tasteDoneProblems({ demoMatch: true }, { competitiveBrief: ABOUT_BRIEF }).join('\n')).toMatch(
-      /competitiveBriefPass must be the boolean true/,
+      /competitiveBriefPass must be recorded/,
     )
   })
 
-  it('refuses competitiveBriefPass false', () => {
+  it('accepts a recorded competitiveBriefPass false (quotes are only owed to claim true)', () => {
     expect(
-      tasteDoneProblems({ demoMatch: true, competitiveBriefPass: false }, { competitiveBrief: ABOUT_BRIEF }).join(
-        '\n',
+      tasteDoneProblems(
+        { demoMatch: true, competitiveBriefPass: false, evaluatorModel: 'grok-4.6' },
+        { competitiveBrief: ABOUT_BRIEF },
       ),
-    ).toMatch(/competitiveBriefPass must be the boolean true/)
+    ).toEqual([])
   })
 
-  it('passes only when both demoMatch and competitiveBriefPass are true on grok-4.6', () => {
+  it('passes recorded verdicts on grok-4.6', () => {
     expect(
       tasteDoneProblems(
         { demoMatch: true, competitiveBriefPass: true, evaluatorModel: 'grok-4.6' },
@@ -176,25 +177,26 @@ describe('tasteDoneProblems — Tip Ready refuse', () => {
       { demoMatch: true, evaluatorModel: 'grok-4.6', competitiveBriefChecklist: checklist },
       { competitiveBrief: ABOUT_BRIEF },
     )
-    expect(p.join('\n')).toMatch(/competitiveBriefPass must be the boolean true/)
+    expect(p.join('\n')).toMatch(/competitiveBriefPass must be recorded/)
   })
 })
 
 describe('siteQueueDoneEvidenceProblems — About / SITE-90 brief', () => {
-  it('refuses SITE-90 evidence without competitiveBriefPass true', () => {
-    const p = siteQueueDoneEvidenceProblems('npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, median 71', {
-      versionGap: 'SITE-90',
-    })
-    expect(p.join('\n')).toMatch(/competitiveBriefPass: true/)
-    expect(p.join('\n')).toMatch(/Tip Ready/)
+  it('accepts SITE-90 evidence that does not claim the brief (a note, Matt 2026-09-23)', () => {
+    expect(
+      siteQueueDoneEvidenceProblems('npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, median 71', {
+        versionGap: 'SITE-90',
+      }),
+    ).toEqual([])
   })
 
-  it('refuses a recorded false brief verdict', () => {
-    const p = siteQueueDoneEvidenceProblems(
-      'grok-4.6 median 72, demoMatch: true, competitiveBriefPass: false',
-      { versionGap: 'SITE-90' },
-    )
-    expect(p.join('\n')).toMatch(/competitiveBriefPass false/)
+  it('accepts a recorded false brief verdict', () => {
+    expect(
+      siteQueueDoneEvidenceProblems('grok-4.6 median 72, competitiveBriefPass: false', {
+        versionGap: 'SITE-90',
+        loadParity: false,
+      }),
+    ).toEqual([])
   })
 
   it('refuses evidence competitiveBriefPass:true when parity pass is false', () => {
@@ -209,8 +211,7 @@ describe('siteQueueDoneEvidenceProblems — About / SITE-90 brief', () => {
         },
       },
     )
-    expect(p.join('\n')).toMatch(/competitiveBriefPass must be the boolean true/)
-    expect(p.join('\n')).toMatch(/Bare evidence prose/)
+    expect(p.join('\n')).toMatch(/evidence says (demoMatch|competitiveBriefPass): true but the route's receipt records false/)
   })
 
   it('accepts the live About receipt when demoMatch is true and evidence is in source', () => {

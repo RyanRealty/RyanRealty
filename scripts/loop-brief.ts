@@ -51,13 +51,39 @@ function gapOrder(gap: string | null): number {
   return n ? Number(n) : 9999
 }
 
+// The WHOLE Current block, never a line cap: on 2026-09-22 an 18-line slice of
+// a 52-block stack hid six of Matt's ten directives at boot (PROCESS-8). The
+// file holds one block (ci:handoff-current); it runs from `# Current` to the
+// next top-level `# ` heading outside a code fence (a `# comment` in a fenced
+// shell snippet is not a heading). Same rule as scripts/lib/handoff-current.mjs.
 function handoffCurrent(): string {
   try {
-    const src = readFileSync('docs/plans/CROSS_AGENT_HANDOFF.md', 'utf8')
-    const start = src.indexOf('# Current')
-    const end = src.indexOf('# Prior', start)
-    const block = src.slice(start, end > start ? end : start + 2000).trim()
-    return block.split('\n').slice(0, 18).join('\n')
+    const lines = readFileSync('docs/plans/CROSS_AGENT_HANDOFF.md', 'utf8').split('\n')
+    let fence: string | null = null
+    const fenced = lines.map((l) => {
+      const m = /^\s{0,3}(```|~~~)/.exec(l)
+      if (m) {
+        if (fence == null) fence = m[1]
+        else if (m[1] === fence) fence = null
+        return true
+      }
+      return fence != null
+    })
+    const isCurrent = (i: number) => !fenced[i] && /^# Current\b/.test(lines[i])
+    const start = lines.findIndex((_, i) => isCurrent(i))
+    if (start < 0) return 'UNREADABLE: no "# Current" block in docs/plans/CROSS_AGENT_HANDOFF.md'
+    let end = lines.length
+    for (let i = start + 1; i < lines.length; i += 1) {
+      if (!fenced[i] && /^# \S/.test(lines[i])) {
+        end = i
+        break
+      }
+    }
+    const stacked = lines.filter((_, i) => isCurrent(i)).length
+    const block = lines.slice(start, end).join('\n').trim()
+    return stacked > 1
+      ? `${block}\n\nWARNING: ${stacked} "# Current" blocks in the handoff; only the first is shown. ci:handoff-current fails this.`
+      : block
   } catch {
     return 'UNREADABLE: docs/plans/CROSS_AGENT_HANDOFF.md'
   }
