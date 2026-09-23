@@ -15,6 +15,7 @@ import { fetchAllRows } from '@/lib/supabase/paginate'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
+import { selfCitySearchUrlLeavesSitemap } from '@/lib/communities/self-city-community'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
@@ -251,7 +252,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   for (const citySlug of SITE_CITY_SLUGS) {
     staticPages.push(
       { url: `${baseUrl}/cities/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
-      { url: `${baseUrl}/homes-for-sale/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.85 },
+      // SITE-187: a self-city community's plain search page canonicals to
+      // /communities/<slug> (already listed below); a sitemap lists canonicals.
+      ...(selfCitySearchUrlLeavesSitemap(citySlug)
+        ? []
+        : [{ url: `${baseUrl}/homes-for-sale/${citySlug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.85 }]),
       { url: `${baseUrl}/open-houses/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
     )
   }
@@ -344,7 +349,9 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       const key = cityEntityKey(city)
       dynamicPages.push(
         { url: `${baseUrl}/cities/${key}`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
-        { url: `${baseUrl}/homes-for-sale/${key}`, lastModified: now, changeFrequency: 'daily', priority: 0.85 },
+        ...(selfCitySearchUrlLeavesSitemap(key)
+          ? []
+          : [{ url: `${baseUrl}/homes-for-sale/${key}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.85 }]),
         { url: `${baseUrl}/open-houses/${key}`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
       )
 

@@ -89,9 +89,14 @@ export function communitySerpDescription(input: {
   const setting = COMMUNITY_SERP_SETTING[slug]
   const counted =
     slug === 'mountain-high' && input.listedCount != null && input.listedCount > 0
+  // SITE-187: a self-city community would read "Sunriver in Sunriver, Oregon."
+  // The opener names the inventory query the page wins instead.
+  const selfCity = name.trim().toLowerCase() === city.trim().toLowerCase()
   const opener = counted
     ? `${formatCount(input.listedCount)} homes for sale in ${name}, ${city}.`
-    : `${name} in ${city}, Oregon.`
+    : selfCity
+      ? `${name}, Oregon homes for sale.`
+      : `${name} in ${city}, Oregon.`
   const skipMix = counted && types.length <= 1
   return [opener, setting, skipMix ? null : mix, 'Live MLS inventory.']
     .filter((part): part is string => Boolean(part && part.trim()))

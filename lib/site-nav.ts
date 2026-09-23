@@ -352,7 +352,13 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
     ),
     cityFooterCluster('Redmond', ['Eagle Crest', 'Juniper Preserve']),
     cityFooterCluster('Sisters', ['Black Butte Ranch']),
-    cityFooterCluster('Sunriver', ['Caldera Springs', 'Crosswater']),
+    // SITE-187: the Sunriver community page is the one winner for "Sunriver
+    // homes for sale"; the cluster heading stays the city guide.
+    cityFooterCluster(
+      'Sunriver',
+      ['Caldera Springs', 'Crosswater'],
+      [{ href: '/communities/sunriver', label: 'Sunriver homes for sale' }],
+    ),
     ...FOOTER_MORE_CITIES.map((label) => cityFooterCluster(label)),
   ]),
   footerFromGroups('Buy · Sell · Join', [

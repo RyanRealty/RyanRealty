@@ -16,6 +16,11 @@ describe('sitemap canonical contract', () => {
       const urls = entries.map((entry) => entry.url)
 
       expect(urls).toContain('https://example.com/homes-for-sale')
+      // SITE-187: a self-city community's plain search page canonicals to the
+      // community page, so the file lists the winner and not the twin.
+      expect(urls).toContain('https://example.com/homes-for-sale/bend')
+      expect(urls).toContain('https://example.com/cities/sunriver')
+      expect(urls).not.toContain('https://example.com/homes-for-sale/sunriver')
       expect(urls).toContain('https://example.com/team')
       expect(urls).toContain('https://example.com/sell/valuation')
 

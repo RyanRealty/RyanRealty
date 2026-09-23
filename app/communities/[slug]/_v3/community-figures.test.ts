@@ -76,6 +76,46 @@ describe('master-plan place follows', () => {
     expect(hrefs).toContain('/communities/caldera-springs')
     expect(hrefs).toContain('/communities/sunriver')
   })
+
+  it('SITE-187: a self-city community keeps its own query and still opens the city search', () => {
+    const sunriver = getPlaceLinks({ type: 'community', slug: 'sunriver', citySlug: 'sunriver' })
+    expect(sunriver.browseUrl).toBe('/homes-for-sale/sunriver')
+    const items = buildExploreEdges({
+      communityName: 'Sunriver',
+      cityName: 'Sunriver',
+      citySlug: 'sunriver',
+      browseHref: sunriver.browseUrl,
+      communityMarketHref: sunriver.marketUrl,
+      cityReportHref: '/housing-market/sunriver',
+      pagePath: '/communities/sunriver',
+      faqs: [],
+      documentItems: [],
+      golfCourses: [],
+      resortItems: resortQuietItems(),
+    })
+    const byLabel = new Map(items.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
+    // The winner never hands "Sunriver homes for sale" to the search slug.
+    expect(byLabel.get('Sunriver homes for sale')).toBeUndefined()
+    expect(byLabel.get('Search Sunriver homes')).toBe('/homes-for-sale/sunriver')
+    expect(byLabel.get('About Sunriver')).toBe('/cities/sunriver')
+    // Tetherow keeps its city door: Bend is not Tetherow.
+    const tetherow = getPlaceLinks({ type: 'community', slug: 'tetherow', citySlug: 'bend' })
+    const bendItems = buildExploreEdges({
+      communityName: 'Tetherow',
+      cityName: 'Bend',
+      citySlug: 'bend',
+      browseHref: tetherow.browseUrl,
+      communityMarketHref: tetherow.marketUrl,
+      cityReportHref: '/housing-market/bend',
+      pagePath: '/communities/tetherow',
+      faqs: [],
+      documentItems: [],
+      golfCourses: [],
+      resortItems: resortQuietItems(),
+    })
+    const bendByLabel = new Map(bendItems.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
+    expect(bendByLabel.get('Bend homes for sale')).toBe('/homes-for-sale/bend')
+  })
 })
 
 // D103 (2026-08-27): the Field's listed-set count and the Dataset/FAQ's

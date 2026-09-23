@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import legacyRedirects from '@/data/legacy-redirects.json'
 import { getPlaceLinks } from '@/lib/place-links'
 import {
+  isCommunityPlaceHref,
   isPlaceFilteredSearchHref,
   publishPlaceBrowseHref,
   publishPlaceHeroCta,
@@ -96,7 +97,31 @@ describe('publishPlaceBrowseHref', () => {
       '/homes-for-sale/bend/northwest-crossing',
       '/homes-for-sale/bend/stevens-ranch',
       '/homes-for-sale/bend/tetherow',
+      '/homes-for-sale/sunriver/sunriver',
     ])
+  })
+
+  it('SITE-187 keeps a self-city community page as the plain inventory door', () => {
+    // Sunriver is its own city; /communities/sunriver is the one winner for
+    // "Sunriver homes for sale", so the city page's plain door lands there.
+    expect(isCommunityPlaceHref('/communities/sunriver')).toBe(true)
+    expect(publishPlaceBrowseHref('/communities/sunriver')).toBe('/communities/sunriver')
+    expect(publishPlaceBrowseHref('/communities/sunriver/')).toBe('/communities/sunriver')
+    expect(publishPlaceHeroCta('/communities/sunriver', 'See Sunriver homes')).toEqual({
+      href: '/communities/sunriver',
+      label: 'See Sunriver homes',
+    })
+    // Not a browse door: the index, a typed page, a compound slug with a query.
+    expect(isCommunityPlaceHref('/communities')).toBe(false)
+    expect(publishPlaceBrowseHref('/communities')).toBeNull()
+    expect(publishPlaceBrowseHref('/communities/sunriver/types/single-family')).toBeNull()
+    // The Sunriver area twin now 301s home, so it is withheld like Tetherow's.
+    const sunriver = getPlaceLinks({ type: 'community', slug: 'sunriver' })
+    expect(sunriver.browseUrl).toBe('/homes-for-sale/sunriver')
+    expect((legacyRedirects as Record<string, string>)['/homes-for-sale/sunriver/sunriver']).toBe(
+      '/communities/sunriver',
+    )
+    expect(publishPlaceBrowseHref('/homes-for-sale/sunriver/sunriver')).toBeNull()
   })
 })
 

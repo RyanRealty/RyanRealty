@@ -10,6 +10,7 @@ import { resolveMatrixNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { withTimeout } from './fetch-guards'
 import { resolveSlug, buildCanonicalPath } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { selfCitySearchCanonicalPath } from '@/lib/communities/self-city-community'
 import {
   BEND_NEW_CONSTRUCTION_CANONICAL_PATH,
   isBendNewConstructionSearchTwinSlug,
@@ -53,9 +54,21 @@ export async function buildSearchSlugMetadata({
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const defaultOgImage = `${siteUrl}/api/og?type=default`
   const isBendNewConstructionTwin = isBendNewConstructionSearchTwinSlug(slug, sp)
+  // SITE-187: the plain city search for a self-city community (Sunriver) is
+  // the same inventory as /communities/<slug>, which PAGE_OUTLINE names as the
+  // one winner for "{place} homes for sale". The page still renders for the
+  // search app's city switcher; it just stops competing. Area and preset
+  // variants keep their own canonical.
+  const selfCityCanonical = city
+    ? selfCitySearchCanonicalPath({
+        citySlug: cityEntityKey(city),
+        hasArea: Boolean(subdivisionDisplayName || subdivisionSlug),
+        hasPreset: Boolean(presetSlug),
+      })
+    : null
   const canonicalPath = isBendNewConstructionTwin
     ? BEND_NEW_CONSTRUCTION_CANONICAL_PATH
-    : buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
+    : (selfCityCanonical ?? buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug))
   const dynamicOgImage = slug.length > 0
     ? `${siteUrl}/search/og/${slug.map((part) => encodeURIComponent(part)).join('/')}`
     : defaultOgImage

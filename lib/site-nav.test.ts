@@ -226,8 +226,17 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/communities/black-butte-ranch',
       '/communities/caldera-springs',
       '/communities/crosswater',
+      // SITE-187: the one sitewide exact-anchor door to the Sunriver winner.
+      '/communities/sunriver',
     ])
     for (const href of communityHrefs) expect(allowed.has(href), href).toBe(true)
+    const sunriverGroup = KB_FOOTER_COLUMNS[0]!.groups?.find((g) => g.heading === 'Sunriver')
+    expect(sunriverGroup?.href).toBe('/cities/sunriver')
+    expect(sunriverGroup?.links.map((l) => [l.label, l.href])).toEqual([
+      ['Sunriver homes for sale', '/communities/sunriver'],
+      ['Caldera Springs', '/communities/caldera-springs'],
+      ['Crosswater', '/communities/crosswater'],
+    ])
   })
 
   it('no group lists the same href twice', () => {

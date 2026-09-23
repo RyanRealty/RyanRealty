@@ -475,8 +475,12 @@ describe('place door (SITE-03, city grain only this round)', () => {
     // /cities/bend rendered the door at /homes-for-sale/bend AND, inside
     // .v3-instrument__action, a second v3-btn--primary at the identical href
     // ("Bend homes for sale"). One destination, one filled control.
+    // SITE-187: the door and this action share `inventoryHref` (the city
+    // search, or the community page for a self-city like Sunriver).
+    expect(cityPage).toMatch(/const inventoryHref = placeInventoryHref\(cityName\)/)
+    expect(cityPage).toMatch(/placeName: cityName,\n\s+href: inventoryHref,/)
     const instrumentAction = cityPage.match(
-      /action=\{\{\n\s+label: v3Text\(placeHomesForSaleHeading\(cityName\)\),\n\s+href: homesForSalePath\(cityName\),\n\s+variant: '(\w+)',/,
+      /action=\{\{\n\s+label: v3Text\(placeHomesForSaleHeading\(cityName\)\),\n\s+href: inventoryHref,\n\s+variant: '(\w+)',/,
     )
     expect(instrumentAction?.[1]).toBe('ghost')
     // And no other filled action is written anywhere in the page source.

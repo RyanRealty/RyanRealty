@@ -4,6 +4,7 @@
  */
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { RESORT_SLUG_TO_CITY } from '@/lib/community-slug'
+import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
 import { cityHref, cityNeighborhoodHref } from '@/lib/site/place-href'
 import {
   communityPublicPairForPlace,
@@ -80,9 +81,15 @@ export function getPlaceLinks(input: {
   // Browse / market stay on the durable MLS identity (Pronghorn listings,
   // bend:pronghorn cache). The visitor door is the public pair.
   const browseLabel = titleFromSlug(durable)
+  // SITE-187: a self-city community (Sunriver) IS its city. The area twin
+  // /homes-for-sale/sunriver/sunriver 301s onto the community page (the place
+  // page is the Field), so the search door is the city search itself.
+  const browseUrl = isSelfCityCommunity(durable)
+    ? homesForSalePath(cityName ?? titleFromSlug(citySlug))
+    : homesForSalePath(cityName ?? titleFromSlug(citySlug), browseLabel)
   return {
     placeUrl: pair?.href ?? `/communities/${publicSlug}`,
-    browseUrl: homesForSalePath(cityName ?? titleFromSlug(citySlug), browseLabel),
+    browseUrl,
     marketUrl: `/housing-market/${citySlug}/${durable}`,
     label: pair?.displayName ?? titleFromSlug(publicSlug),
   }

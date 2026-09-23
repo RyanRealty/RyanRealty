@@ -26,6 +26,7 @@ import {
 } from '@/lib/data/places/getPlaceDocuments'
 import { type V3QuietItem } from '@/components/site/v3'
 import { homesForSalePath } from '@/lib/slug'
+import { selfCityCommunitySlug } from '@/lib/communities/self-city-community'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
@@ -229,7 +230,13 @@ export function buildExploreEdges(input: {
           },
         ]),
     { label: 'Manage your listing alerts', href: '/login?returnUrl=%2Faccount%2Fsaved-searches', group: input.communityName },
-    ...(citySlug ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName), group: cityName }] : []),
+    // SITE-187: on a self-city community (Sunriver) this page IS "{city} homes
+    // for sale" (PAGE_OUTLINE one winner). A door from the winner to the search
+    // slug under that exact phrase told Google the phrase belonged elsewhere;
+    // the opening caption already carries the on-page #homes jump.
+    ...(citySlug && !selfCityCommunitySlug(citySlug)
+      ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName), group: cityName }]
+      : []),
     { label: `${cityName} market report`, href: input.cityReportHref, group: cityName },
     ...(citySlug ? [{ label: `About ${cityName}`, href: `/cities/${citySlug}`, group: cityName }] : []),
     ...(citySlug ? [{ label: `Open houses in ${cityName}`, href: `/open-houses/${citySlug}`, group: cityName }] : []),

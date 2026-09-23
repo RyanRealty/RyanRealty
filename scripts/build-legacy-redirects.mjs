@@ -349,6 +349,10 @@ async function main() {
     '/homes-for-sale/bend/awbrey-butte': '/cities/bend/awbrey-butte',
     '/homes-for-sale/bend/northwest-crossing': '/communities/northwest-crossing',
     '/homes-for-sale/bend/stevens-ranch': '/subdivisions/stevens-ranch',
+    // SITE-187: Sunriver is its own city, so its area twin
+    // /homes-for-sale/sunriver/sunriver duplicated the community page's exact
+    // <title> and <h1>. Same rule as Tetherow: the place page is the Field.
+    '/homes-for-sale/sunriver/sunriver': '/communities/sunriver',
     // SITE-180: the live Next article is /blog/<slug>, not the WP permalink.
     '/blog/tetherow-resort-living-real-estate': '/communities/tetherow',
   }

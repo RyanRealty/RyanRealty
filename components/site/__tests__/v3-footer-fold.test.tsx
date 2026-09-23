@@ -187,7 +187,9 @@ describe('the footer fold', () => {
       'Prineville',
       'Madras',
     ])
-    expect(markets?.links.length).toBe(18)
-    expect(markets?.groups?.flatMap((g) => g.links).length).toBe(10)
+    // SITE-187: the Sunriver cluster carries one extra door, "Sunriver homes
+    // for sale" -> /communities/sunriver (the one winner for that query).
+    expect(markets?.links.length).toBe(19)
+    expect(markets?.groups?.flatMap((g) => g.links).length).toBe(11)
   })
 })

@@ -159,6 +159,19 @@ describe('SITE-177 community SERP copy', () => {
     ).not.toMatch(/1,?0\d{2}/)
   })
 
+  it('SITE-187: a self-city community opens on its inventory query, not "Sunriver in Sunriver"', () => {
+    const input = communityMetadataInput({
+      slug: 'sunriver',
+      name: 'Sunriver',
+      city: 'Sunriver',
+      stock: { listedCount: 47, types: ['homes', 'attached', 'lots'] },
+    })
+    expect(input.title).toBe('Sunriver Homes for Sale | Sunriver, OR')
+    expect(input.description).toMatch(/^Sunriver, Oregon homes for sale\./)
+    expect(input.description).not.toMatch(/Sunriver in Sunriver/)
+    expect(input.path).toBe('/communities/sunriver')
+  })
+
   it('other communities keep the Homes for Sale title and never the SFR fill-in', () => {
     const input = communityMetadataInput({
       slug: 'tetherow',
