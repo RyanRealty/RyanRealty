@@ -159,7 +159,7 @@ describe('aboutTipReadyProblems + tasteDoneProblems', () => {
     expect(p.join('\n')).toMatch(/empty replaceWith/)
   })
 
-  it('refuses catalog adaptedFrom without demoMatch true', () => {
+  it('records demoMatch false on About without refusing (Matt 2026-09-23)', () => {
     const p = tasteDoneProblems(
       {
         ...PASSING_TR,
@@ -167,7 +167,7 @@ describe('aboutTipReadyProblems + tasteDoneProblems', () => {
       },
       { competitiveBrief: ABOUT_BRIEF, kit: 'about', sourceText: Object.values(ABOUT_LOCK_QUOTES).join('\n') },
     )
-    expect(p.join('\n')).toMatch(/demoMatch is false/)
+    expect(p.join('\n')).not.toMatch(/demoMatch/)
   })
 
   it('passes Tip Ready only with evidence, demoMatch, and the live source lock', () => {

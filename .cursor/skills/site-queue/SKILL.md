@@ -1,133 +1,38 @@
 ---
 name: site-queue
-description: Run the site queue from Cursor or a Grok agent. Same queue, same claim tool, same protocol as Claude Code; this file is the pointer plus the rules that differ when the builder is not Claude. Use when Matt says "run loop", "run the site queue", "go", or "continue as new nodes get entered" in Cursor or in a Grok session.
+description: Run the site queue from Cursor or a Grok session ("run loop", "run the site queue", "go", "continue as new nodes get entered"). Same protocol as Claude Code: docs/RUN_LOOP.md. This file only says what differs when the builder is not Claude.
 ---
 
-## HARD TIP READY (Matt 2026-09-14)
+# /site-queue for Cursor and Grok
 
-**Fleet cap (Matt 2026-09-15):** `MAX_SITE_WORKERS = 6`. Cos Cursor + Claude Code share the claim pool.
+**Read `docs/RUN_LOOP.md` and follow it.** It holds the objective, the boot commands, the one
+claim path, the accept test, the one land path, the ledger trailer and the stop rule, for
+every tool. Then `.claude/skills/site-queue/SKILL.md` for lane mechanics. Nothing below
+restates them.
 
-**Claude judge as needed (Matt 2026-09-15):** Claude lanes may judge with **claude-sonnet** when grok-4.6 is unavailable (`--evaluator claude`); builder stays Opus / ≠ judge. Prefer grok-4.6 on Mini when present so one ruler stays comparable.
+## What differs when the builder is not Claude
 
-Demos install BEFORE house paint. Tip Ready = `node scripts/lib/taste-receipt.mjs --ship <parity.json>` exit 0 only. House patch after `demoMatch: false` is FORBIDDEN — install the named `replaceWith` catalog source. Cos prose, score rise, and house chrome (V3Doors, cream pills, custom stacks) are not Tip Ready.
-
-**Place craft (SITE-128 explorer, Matt LOCK via Cos 2026-09-18):** `--ship lib/place/place-craft.parity.json` is refuse unless evidence includes (1) competitor first-look — named peer (Redfin or a Bend competitor place page) + side-by-side or sequential shots on disk proving we do not lose on first look, and (2) map-drives-hierarchy still locked (`ci:place-craft`). Omit is refuse. If Matt has to re-explain “beat competitors,” we failed. Gate only — do not invent place UI to clear the refuse.
-
-# /site-queue for Cursor and Grok — the same loop, a different builder
-
-The canonical protocol is `.claude/skills/site-queue/SKILL.md`. Read it in full; this
-file only says what differs. Then read `CLAUDE.md` §0–§3, the Current block of
-`docs/plans/CROSS_AGENT_HANDOFF.md`, and the "Site queue" section of
-`docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md` — the same four documents the cloud
-routine reads. Nothing in the queue depends on which model builds.
-
-## What does not change
-
-- **The queue** is `loop_work_nodes`, domain `public-ux`, `SITE-*`, in Supabase. Read it
-  with `npx tsx scripts/site-queue-status.ts`; add `--json` for the serve order (round
-  three's primitive nodes and SITE-31 first, then oldest; Matt 2026-09-09).
-- **The claim path is the only one** and it enforces the caps for every agent regardless
-  of vendor: `npx tsx scripts/site-queue-status.ts --claim SITE-XX,SITE-YY --owner <owner>`.
-  Heartbeat at least hourly with `--touch`. Three live workers, two claims each; a claim
-  whose heartbeat is older than three hours is released by the next claim or brief.
-- **The gates** (`npm run ci:gates`), the `Node: <id>` commit trailer (G72), `npm run push`
-  from the main checkout, the deploy verify, the live check, the evidence on the node.
-- **The accept test, in order (Matt 2026-09-12):** (1) catalog source installed and
-  imported by the route's v3 primitive (`ci:catalog-install`); (2) navy / cream /
-  Geist / Amboqia intact (`ci:one-design-system`); (3) no regression —
-  `ci:route-content-floor` holds the route's `contentFloor` (hero width and
-  resolution, images, video, sections, words, links, JSON-LD) on a running server,
-  `requiredComponents` did not shrink; (4) only then the score. The rule set is
-  frozen at rubric `v1-2026-09-12` until every class has a table row on it
-  (`ci:rubric-freeze`): no new rubric, receipt field, or taste gate this round.
-- **The taste ritual**: shots at 1440 and 375 through `scripts/take-route-shots.mjs`, a
-  SEPARATE evaluator that is a DIFFERENT model from the builder, three scorings in one
-  call, the receipt in the route's `parity.json` (`scripts/lib/taste-receipt.mjs`), and
-  the score must rise **by at least the rise floor, 3 on grok-4.6** (less is the judge's own
-  measured noise, `taste-rule-freeze.json` `riseFloorBasis`) **and** `demoMatch`
-  must be `true`. Score rise on a cream-box
-  Avatar/Button/Sheet import is not Tip Ready (Matt 2026-09-12, rubric
-  `v1-2026-09-12`). The finish line is 70 on the table instrument (Matt 2026-09-09).
-  **Before building:** `node scripts/lib/taste-catalog.mjs <class>` — fetch
-  modules from beautifului.dev, beui.dev, rareui.com, transitions.dev, and
-  ui.shadcn.com. Pull `competitiveBrief` from the card / the route's
-  `parity.json` (About first: Researchy beats 1–8). Fail Looking if the
-  page invents past that checklist. `ci:page-purpose` refuses a missing
-  or incomplete `competitiveBrief` on About. A rise or score without
-  `competitiveBriefPass: true` (or checklist all true) is refuse — same
-  seriousness as `demoMatch`. Omit is refuse. Do not invent true. Adapt
-  into v3. If the job has no house primitive, ADD one to
-  `components/site/v3`. Do not invent a layout. Do not shrink the listing hero
-  off full-bleed. Navy/cream/Geist/Amboqia stay. The evaluator injects this
-  catalog so a stacked-section page that ignored it is a defect.
-
-## Who builds — the builder chain (Matt 2026-09-12, no APIs)
-
-The headless grinder on Matt's Mac is `scripts/site-queue-routine.sh` (LaunchAgent
-`com.ryanrealty.site-queue`, 02/06/10/14/18/22 local). One fire tries, in order, each
-builder that runs on a **subscription CLI already logged in on that machine**, and moves
-on only when the CLI itself cannot run (missing, not logged in, 402 / quota):
-
-1. **Grok Build** — `grok -p`, builds as **grok-4.5**;
-2. **Cursor** — `cursor-agent -p` on the Cursor subscription. Skipped until Matt runs
-   `cursor-agent login` once (a browser step); an interactive Cursor session ("run loop")
-   is the same builder by hand;
-3. **Claude** — `claude -p --model opus`, builds as **claude-opus-5** so sonnet stays the
-   round judge.
-
-Every API key (`XAI_API_KEY`, `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`,
-`CURSOR_API_KEY`) is stripped before a CLI starts: a fire can never bill an API by falling
-back, and neither may you. `bash scripts/site-queue-routine.sh --builders claude` runs one
-link by hand; `SITE_QUEUE_BUILDERS=cursor,claude` reorders. The fire prints a
-`THIS FIRE'S BUILDER` line above the prompt; that is your owner name and your `--builder`.
-
-## What changes when the builder is Grok
-
-- **Owner name:** `grok-<model>-<YYYY-MM-DD>` (for example `grok-4.5-2026-09-09`) so `loop
-  status` says who holds what and the cap counts you.
-- **The evaluator — the judge chain (Matt 2026-09-09, chained 2026-09-12).** The chain
-  **starts at the judge that scored the current `taste-table.json`** (one ruler per round;
-  grok gets the chair back at the next full table run, never mid-round on a route). With a
-  grok table: link 1 is **grok-4.6**, through the `grok` CLI (Matt's Grok subscription,
-  `XAI_API_KEY` stripped) or through the **Cursor CLI** (`cursor-agent --model
-  cursor-grok-4.6-high`, Matt's Cursor plan by login or `CURSOR_API_KEY`) — the same model, the same ruler,
-  the table's own link first (`instrument.judgeLink`) and the other when it is missing or
-  out; the last link, when both grok-4.6 links are out, is the **claude
-  CLI** on the subscription (`claude-sonnet-5`, or `claude-opus-5` when the builder is a
-  Sonnet). With a claude table: the claude CLI on that alias, or the other alias when it is
-  your own family (then that route rebaselines). Run
-  `npx tsx scripts/taste-evaluate.ts <route-key> --builder <your model>` (shots already in
-  `ui_kits/<route>/shots/`, optional `--url` of your dev server, `--evaluator grok|cursor|claude`
-  to pin a link): three scorings in one call, the frozen rubric, JSON on stdout with the
-  judge that actually answered in `evaluatorModel` and its `transport`. Copy that
-  `evaluatorModel` into the receipt — never write `grok-4.6` by hand when claude answered.
-  Because `ci:taste-canon` refuses evaluatorModel == builderModel, **a Grok lane builds with
-  grok-4.5** and records `builderModel: "grok-4.5"`. Never point the evaluator at your own
-  model to make it convenient — one ruler is the whole point, and a class rebaselines once
-  when the link changes (`comparedToPrior: "rebaselined"`). When both links fail, the
-  item stays `in_progress` with the failure named; a 402 is not a finding and not a done.
-- **The machine.** On Matt's Mac `.env.local` is present; run `npm ci` and
-  `npm run setup:browsers` once; the git hooks are installed. The canonical skill's
-  "If you are a cloud session" section (no browser pane, the sandbox, the
-  `.git/index.lock` rule) does not apply here; CLAUDE.md §8 does.
-- **Worktrees** per AGENTS.md ("Claude Code ↔ Cursor"); merge or hand off in
-  `docs/plans/CROSS_AGENT_HANDOFF.md` before stopping; never strand a branch.
-- **The cloud routine** keeps firing every four hours on Claude's allowance unless Matt
-  pauses it at https://claude.ai/code/routines/trig_01JTHasiFzPRDnkTiPzodMPV. Its claims
-  and yours coexist by the claim; you never coordinate with it by hand.
+- **Owner name:** `grok-<model>-<YYYY-MM-DD>` or `cursor-<model>-<YYYY-MM-DD>`, so the claim
+  tool and `loop status` show who holds what. A Mac grinder fire prints a
+  `THIS FIRE'S BUILDER` line above its prompt; that line is your owner name and your
+  `--builder`.
+- **The judge (when the look changed):** `npx tsx scripts/taste-evaluate.ts <route-key>
+  --builder <your model>` walks the judge chain (grok-4.6 through the `grok` CLI or the
+  Cursor CLI, then the claude CLI) and refuses a judge from your own model family, so a Grok
+  lane builds as grok-4.5. Copy the `evaluatorModel` it prints into the receipt; never type
+  a judge by hand. Tip Ready is `node scripts/lib/taste-receipt.mjs --ship <parity.json>`
+  exit 0 (no regression on the same instrument). When every judge link fails, the look
+  floor is unmeasured: ship only work that did not change the look, and say so on the node.
+- **Subscriptions only (Matt 2026-09-12):** never set `XAI_API_KEY`, `ANTHROPIC_API_KEY` or
+  `ANTHROPIC_AUTH_TOKEN` to get past a 402. `CURSOR_API_KEY` is the Cursor plan itself.
+- **The machine:** on Matt's Mac `.env.local`, `node_modules` and the browsers are present;
+  CLAUDE.md §8 applies (clear a stale git lock yourself). In a Cursor cloud sandbox, the
+  skill's "If you are a cloud session" section applies instead.
+- **Worktrees:** per AGENTS.md ("Claude Code ↔ Cursor"). Never leave the only copy of work
+  on a branch: land it per RUN_LOOP.md §5 or name it in the handoff's one Current block.
 
 ## Kickoff — paste this as the first message
 
-> Run the site queue. Read `.cursor/skills/site-queue/SKILL.md`, then the four documents it
-> names. Run `npx tsx scripts/site-queue-status.ts --json`; if `liveWorkers` is at or above
-> `maxWorkers`, stop and say so. Otherwise claim the first two eligible items in the JSON's
-> order with `--claim SITE-XX,SITE-YY --owner grok-4.6-<date>`, heartbeat hourly with
-> `--touch`, build per the canonical skill in a worktree, hold the accept order (catalog
-> installed and imported → brand intact → `ci:runtime-gates` incl. `ci:route-content-floor`
-> → then score with `npx tsx scripts/taste-evaluate.ts <route-key> --builder grok-4.5`)
-> before the push, get the
-> gates green, `npm run push` from the main checkout, verify the deploy and the live page,
-> write the evidence on the node, then take the next two until nothing is eligible.
-> Empty of eligible is not a stop: keep the scheduled wake so a newly entered node
-> is claimed (Matt 2026-09-10). Never wait on me: if a question would block you, take
-> the safe path the skill allows and write what you chose on the node.
+> Run the loop. Read `docs/RUN_LOOP.md` and follow it, then `.cursor/skills/site-queue/SKILL.md`
+> for what differs when you are not Claude. Never wait on Matt: if a question would block
+> you, take the safe path RUN_LOOP.md allows and write what you chose on the node.

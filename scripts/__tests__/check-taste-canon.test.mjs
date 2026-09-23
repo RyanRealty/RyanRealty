@@ -228,6 +228,46 @@ describe('check-taste-canon — instrument receipt (2026-09-08)', () => {
     expect(r.out).toContain('did not rise above the prior mark 88')
   })
 
+  it('passes a held mark inside the judge noise (Matt 2026-09-23: taste is a floor)', () => {
+    scaffold()
+    writeReceipt(
+      baseReceipt({
+        evaluatedAt: '2026-09-23',
+        comparedToPrior: 'held',
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 84,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+        },
+      }),
+    )
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.code).toBe(0)
+  })
+
+  it('fails a held mark that fell by the rise floor on the same instrument', () => {
+    scaffold()
+    writeReceipt(
+      baseReceipt({
+        evaluatedAt: '2026-09-23',
+        comparedToPrior: 'held',
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 85,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+        },
+      }),
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('fell below the prior mark 85')
+  })
+
   it('passes a rise over the same instrument', () => {
     scaffold()
     writeReceipt(
@@ -385,7 +425,7 @@ describe('check-taste-canon — the committed receipt is a prior mark', () => {
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toContain('already scored 75')
-    expect(r.out).toContain('not an exit from the rise rule')
+    expect(r.out).toContain('not an exit from the no-regression rule')
   })
 
   it('refuses a taste rise that drops honestyFunction vs the prior mark', () => {
@@ -678,7 +718,7 @@ describe('check-taste-canon — catalog receipts (adaptedFrom + replaceWith)', (
     expect(r.code).toBe(0)
   })
 
-  it('fails a cream-box catalog receipt that claims rise without demoMatch (v1-2026-09-12)', () => {
+  it('fails a catalog receipt that omits its demoMatch verdict (v1-2026-09-12)', () => {
     scaffold()
     writeJson('design_system/public/taste-catalog.json', stubCatalog())
     writeReceipt(
@@ -706,10 +746,10 @@ describe('check-taste-canon — catalog receipts (adaptedFrom + replaceWith)', (
     )
     const r = run()
     expect(r.code).toBe(1)
-    expect(r.out).toMatch(/demoMatch must be true or false|not done while demoMatch/)
+    expect(r.out).toMatch(/demoMatch must be recorded true or false/)
   })
 
-  it('fails an About receipt that claims rise without competitiveBriefPass', () => {
+  it('fails an About receipt that omits its competitiveBriefPass verdict', () => {
     scaffold()
     write('app/about/page.tsx', 'export default function Page() { return null }\n')
     write('design_system/ryan-realty/ui_kits/about/shots/desktop.png', 'desktop-png-bytes')
@@ -747,7 +787,7 @@ describe('check-taste-canon — catalog receipts (adaptedFrom + replaceWith)', (
     writeReceipt(baseReceipt())
     const r = run()
     expect(r.code).toBe(1)
-    expect(r.out).toMatch(/competitiveBriefPass must be true or false|not done while competitiveBriefPass/)
+    expect(r.out).toMatch(/competitiveBriefPass must be recorded true or false/)
   })
 
   it('passes a catalog receipt that claims rise with demoMatch true', () => {

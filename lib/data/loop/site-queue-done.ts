@@ -1,15 +1,22 @@
 /**
- * SITE-* Tip Ready / node-complete gate (Matt 2026-09-12).
+ * SITE-* node-complete gate, the server twin of scripts/lib/taste-receipt.mjs
+ * `siteQueueDoneEvidenceProblems` (so the DAL does not import the receipt CLI).
  *
- * A cream-box receipt (Avatar import, score rise, files on disk) is not done.
- * Evidence must record `demoMatch: true` from the judge chain (grok-4.6, or
- * the claude CLI fallback when grok is missing / 402). When the route publishes
- * a competitiveBrief (About first, then any kit that carries the field),
- * `parity.json` tasteReview.competitiveBriefPass must be the boolean true.
- * A hand-typed `competitiveBriefPass: true` string is refuse.
+ * Matt 2026-09-23 (visibility audit PROCESS-3 / UXLIVE-11): the site queue is
+ * scored on being seen and converting (docs/RUN_LOOP.md §1); the taste median
+ * is a floor that may not regress, and `demoMatch` / `competitiveBriefPass`
+ * are recorded notes, not completion gates. "Don't assume any rules from the
+ * past that might keep us from hitting our goals are permanent." Evidence: no
+ * class ever reached the 70 finish line (best 67 of 27), so SITE nodes could
+ * not close on a better-ranking page.
  *
- * Mirrors scripts/lib/taste-receipt.mjs `siteQueueDoneEvidenceProblems` so
- * the server DAL does not import the receipt CLI module.
+ * What this still refuses:
+ *   - empty evidence (a node is done when the environment says so);
+ *   - a judge failure (402, CLI missing) offered with no signed receipt behind
+ *     it: a failed judge is not a score;
+ *   - a receipt whose median fell on the same instrument by the rise floor or
+ *     more (the look regressed), or whose honesty fell;
+ *   - "Tip Ready" prose without `node scripts/lib/taste-receipt.mjs --ship`.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -24,6 +31,14 @@ const HASH_RE = /^sha256:[0-9a-f]{64}$/
 const JUDGE_UNREACHABLE_RE =
   /\b402\b|payment required|balance exhausted|no grok CLI|grok CLI missing|GROK_CLI|claude CLI missing|both judges/i
 
+/**
+ * Mirrors RISE_FLOOR / RISE_FLOOR_FROM in scripts/lib/taste-receipt.mjs (pinned
+ * by ci:rubric-freeze to design_system/public/taste-rule-freeze.json). The
+ * site-queue-done test fails if these drift from that manifest.
+ */
+export const SITE_DONE_RISE_FLOOR = 3
+export const SITE_DONE_RISE_FLOOR_FROM = '2026-09-13'
+
 function isTipReadyEvaluator(model: unknown): boolean {
   const m = String(model ?? '').trim()
   if (!m) return false
@@ -31,10 +46,25 @@ function isTipReadyEvaluator(model: unknown): boolean {
   return /^claude-(sonnet|opus)-\d/.test(m)
 }
 
+type PriorMark = {
+  score?: unknown
+  evaluatorModel?: unknown
+  rubricVersion?: unknown
+  criteria?: unknown
+  perCriterion?: unknown
+}
+
 export type SiteQueueTasteReview = {
   competitiveBriefPass?: unknown
   demoMatch?: unknown
   evaluatorModel?: unknown
+  rubricVersion?: unknown
+  evaluatedAt?: unknown
+  score?: unknown
+  comparedToPrior?: unknown
+  priorMark?: PriorMark | null
+  criteria?: unknown
+  perCriterion?: unknown
   shotsHash?: unknown
   competitiveBrief?: unknown
   adaptedFrom?: unknown
@@ -44,6 +74,7 @@ export type SiteQueueTasteReview = {
 
 export type SiteQueueDoneOpts = {
   versionGap?: string | null
+  /** Accepted for older callers; a brief no longer changes what done requires. */
   competitiveBriefRequired?: boolean
   tasteReview?: SiteQueueTasteReview | null
   competitiveBrief?: unknown
@@ -101,59 +132,78 @@ function adaptedFromCatalogIds(adaptedFrom: unknown): string[] {
     .filter((id): id is string => typeof id === 'string' && id.trim().length > 0 && !isHouseAdaptedId(id))
 }
 
-function isOpenStateToken(s: unknown): boolean {
-  const t = String(s ?? '').trim()
-  if (!t) return false
-  if (/(?:^|[-_/.])search-open(?:[-_.]|\.[a-z0-9]+|$)/i.test(t)) return true
-  if (/(?:^|[-_/.])[a-z0-9]+-open(?:[-_.]|\.[a-z0-9]+|$)/i.test(t)) return true
-  if (/^open$/i.test(t)) return true
-  return false
-}
-
-function hasOpenStateEvidence(tr: SiteQueueTasteReview): boolean {
-  const shots = isPlainObject(tr.shots) ? tr.shots : {}
-  for (const [k, v] of Object.entries(shots)) {
-    if (isOpenStateToken(k) || isOpenStateToken(v)) return true
+function criterionScore(obj: unknown, names: string[]): number | null {
+  if (!isPlainObject(obj)) return null
+  const c = isPlainObject(obj.criteria) ? obj.criteria : isPlainObject(obj.perCriterion) ? obj.perCriterion : null
+  if (!c) return null
+  for (const n of names) {
+    const v = c[n]
+    if (typeof v === 'number' && Number.isInteger(v)) return v
   }
-  const spec = isPlainObject(tr.shotSpec) ? tr.shotSpec : null
-  const states = Array.isArray(spec?.states) ? spec.states : []
-  return states.some((s) => isOpenStateToken(s))
+  return null
 }
 
-function openStateEvidenceProblems(tr: SiteQueueTasteReview | null | undefined): string[] {
+/** One less than the rise floor: the judge cannot tell a smaller move from its own noise. */
+export function regressionTolerance(evaluatedAt: unknown): number {
+  return (String(evaluatedAt ?? '') >= SITE_DONE_RISE_FLOOR_FROM ? SITE_DONE_RISE_FLOOR : 1) - 1
+}
+
+/** The look floor: no median fall on the same instrument, no honesty fall. */
+export function tasteFloorProblems(tr: SiteQueueTasteReview | null | undefined): string[] {
   if (!isPlainObject(tr)) return []
-  const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
-  if (catalogIds.length === 0) return []
-  if (hasOpenStateEvidence(tr)) return []
-  return [
-    `catalog adaptedFrom / catalog-class (${catalogIds.join(', ')}) requires open-state evidence: a tasteReview.shots path matching *-open / search-open, or shotSpec.states including open. Empty open evidence is refuse.`,
-  ]
+  const p: string[] = []
+  const prior = isPlainObject(tr.priorMark) ? (tr.priorMark as PriorMark) : null
+  const cmp = String(tr.comparedToPrior ?? '')
+  const sameInstrument =
+    prior != null &&
+    String(prior.evaluatorModel ?? '') === String(tr.evaluatorModel ?? '') &&
+    String(prior.rubricVersion ?? '') === String(tr.rubricVersion ?? '')
+  if (
+    prior &&
+    sameInstrument &&
+    (cmp === 'rose' || cmp === 'held') &&
+    typeof prior.score === 'number' &&
+    Number.isInteger(prior.score) &&
+    typeof tr.score === 'number' &&
+    Number.isInteger(tr.score)
+  ) {
+    const tol = regressionTolerance(tr.evaluatedAt)
+    if (tr.score < prior.score - tol) {
+      p.push(
+        `taste floor regressed: median ${tr.score} is ${prior.score - tr.score} under the prior mark ${prior.score} on the same instrument (a drop of ${tol + 1} or more is outside the judge's noise). Fix the page; taste may not regress (Matt 2026-09-23).`,
+      )
+    }
+  }
+  if (prior) {
+    const next = criterionScore(tr, ['honestyFunction', 'honesty'])
+    const prev = criterionScore(prior, ['honestyFunction', 'honesty'])
+    if (prev != null && next == null) {
+      p.push(`honestyFunction omitted while the prior mark recorded ${prev}. Record it; UI/UX cannot hide a drop in honesty (CLAUDE.md §0).`)
+    } else if (prev != null && next != null && next < prev) {
+      p.push(`honestyFunction ${next} fell below the prior mark ${prev}. UI/UX cannot buy a drop in honesty (CLAUDE.md §0).`)
+    }
+  }
+  return p
 }
 
 function tipReadyReceiptProblems(
   tr: SiteQueueTasteReview | null | undefined,
-  { requireBrief = false, competitiveBrief = null }: { requireBrief?: boolean; competitiveBrief?: unknown } = {},
+  { competitiveBrief = null }: { competitiveBrief?: unknown } = {},
 ): string[] {
   if (!isPlainObject(tr)) {
-    return ['tasteReview is required to mark a SITE node done. Bare evidence prose is refuse.']
+    return ['tasteReview is required when evidence cites a score. Bare evidence prose is refuse.']
   }
   const p: string[] = []
   if (!isTipReadyEvaluator(tr.evaluatorModel)) {
     p.push(
-      `evaluatorModel must be one of the judge chain (${TIP_READY_EVALUATORS.join(', ')}) — the same instrument as demoMatch. Leave the node in_progress.`,
+      `evaluatorModel must be one of the judge chain (${TIP_READY_EVALUATORS.join(', ')}) — a mark from anywhere else is not a measurement. Leave the node in_progress.`,
     )
   }
-  if (typeof tr.demoMatch !== 'boolean') {
-    p.push('demoMatch must be true or false — do not invent it. Leave the node in_progress.')
-  } else if (tr.demoMatch !== true) {
-    p.push('demoMatch is false. Honest false stays in_progress. Do not invent demoMatch.')
+  if (adaptedFromCatalogIds(tr.adaptedFrom).length && typeof tr.demoMatch !== 'boolean') {
+    p.push('demoMatch must be recorded true or false when adaptedFrom names catalog modules (a note, not a gate). Do not invent it.')
   }
-  if (requireBrief || hasStructuredBrief(competitiveBrief) || hasStructuredBrief(tr.competitiveBrief)) {
-    if (tr.competitiveBriefPass !== true) {
-      p.push(
-        'parity tasteReview.competitiveBriefPass must be the boolean true. Bare evidence prose is refuse. Leave the node in_progress.',
-      )
-    }
+  if ((hasStructuredBrief(competitiveBrief) || hasStructuredBrief(tr.competitiveBrief)) && typeof tr.competitiveBriefPass !== 'boolean') {
+    p.push('parity tasteReview.competitiveBriefPass must be recorded as the boolean the judge returned. Leave the node in_progress.')
   }
   if (tr.shotsHash != null && !HASH_RE.test(String(tr.shotsHash).trim())) {
     p.push('tasteReview.shotsHash must be sha256:<64 hex> like a v2 receipt.')
@@ -163,80 +213,43 @@ function tipReadyReceiptProblems(
 
 export function siteQueueDoneEvidenceProblems(
   evidence: string,
-  {
-    versionGap,
-    competitiveBriefRequired,
-    tasteReview,
-    competitiveBrief,
-    parity,
-    loadParity,
-    root,
-  }: SiteQueueDoneOpts = {},
+  { versionGap, tasteReview, competitiveBrief, parity, loadParity, root }: SiteQueueDoneOpts = {},
 ): string[] {
   const gap = String(versionGap ?? '')
   if (gap && !/^SITE-\d+/.test(gap)) return []
   const text = String(evidence ?? '')
   if (!text.trim()) return ['evidence is required — a node is done when the environment says so']
   const judgeUnreachable = JUDGE_UNREACHABLE_RE.test(text)
-  const claimsDemoMatch = /\bdemoMatch\b\s*[:=]\s*true\b/i.test(text)
-  if (/\bdemoMatch\b\s*[:=]\s*false\b/i.test(text)) {
-    return ['evidence records demoMatch false — not done. Leave the node in_progress.']
-  }
-  if (!claimsDemoMatch) {
-    if (/\b402\b|payment required|balance exhausted/i.test(text)) {
-      return [
-        'grok CLI 402 and no fallback verdict — do not invent demoMatch. Run taste-evaluate again (the claude CLI is link 2). Leave the node in_progress.',
-      ]
-    }
-    if (judgeUnreachable) {
-      return ['judge CLI missing and no fallback verdict — do not invent demoMatch. Leave the node in_progress.']
-    }
-    return [
-      `SITE done evidence must include demoMatch: true from the judge chain (${TIP_READY_EVALUATORS.join(', ')}). Score rise without a demo match is not Tip Ready.`,
-    ]
-  }
-  if (/\bcompetitiveBriefPass\b\s*[:=]\s*false\b/i.test(text)) {
-    return [
-      'evidence records competitiveBriefPass false — Looking invented past the brief, or the checklist is not all true. Not done. Leave the node in_progress.',
-    ]
-  }
 
   const kit = resolveSiteQueueKit(text, gap)
   const loaded = loadParity === false ? null : isPlainObject(parity) ? parity : loadKitParity(kit, root)
   const tr = isPlainObject(tasteReview) ? tasteReview : (loaded?.tasteReview as SiteQueueTasteReview | undefined)
   const brief = competitiveBrief ?? loaded?.competitiveBrief
-  const needsBrief =
-    competitiveBriefRequired === true ||
-    hasStructuredBrief(brief) ||
-    /SITE-90/.test(gap) ||
-    /taste-evaluate(?:\.ts)?\s+about\b/i.test(text) ||
-    /ui_kits\/about/i.test(text)
-  const claimsBriefPass = /\bcompetitiveBriefPass\b\s*[:=]\s*true\b/i.test(text)
 
-  if (needsBrief && !claimsBriefPass) {
-    return [
-      'SITE done evidence must include competitiveBriefPass: true. Score rise without the Researchy brief is not Tip Ready.',
-    ]
+  // A verdict is a note now, but it is still never invented: evidence that
+  // claims true against a receipt that records false is refused.
+  for (const key of ['demoMatch', 'competitiveBriefPass'] as const) {
+    const claimsTrue = new RegExp(`\\b${key}\\b\\s*[:=]\\s*true\\b`, 'i').test(text)
+    if (claimsTrue && isPlainObject(tr) && tr[key] === false) {
+      return [`evidence says ${key}: true but the route's receipt records false. Do not invent a verdict.`]
+    }
   }
-  const receiptProblems =
-    needsBrief || claimsBriefPass
-      ? tipReadyReceiptProblems(tr, { competitiveBrief: brief, requireBrief: true })
-      : judgeUnreachable
-        ? tipReadyReceiptProblems(tr, { competitiveBrief: brief })
-        : []
-  if (judgeUnreachable && receiptProblems.length && !(needsBrief || claimsBriefPass)) {
-    return [
-      `evidence records a judge failure; the fallback verdict must be on the route's parity.json tasteReview. ${receiptProblems[0]}`,
-    ]
+
+  if (judgeUnreachable) {
+    const receiptProblems = tipReadyReceiptProblems(tr, { competitiveBrief: brief })
+    if (receiptProblems.length) {
+      return [
+        `evidence records a judge failure (402 / CLI missing); a failed judge is not a score. Either the look did not change (say so and cite no score) or the fallback verdict is on the route's parity.json tasteReview. ${receiptProblems[0]}`,
+      ]
+    }
   }
-  if (receiptProblems.length) return receiptProblems
   if (isPlainObject(tr)) {
-    const open = openStateEvidenceProblems(tr)
-    if (open.length) return open
+    const floor = tasteFloorProblems(tr)
+    if (floor.length) return floor
   }
   if (/\bTip Ready\b/i.test(text) && !/--ship\b/.test(text) && !/\bship OK\b/i.test(text)) {
     return [
-      'Tip Ready language without `node scripts/lib/taste-receipt.mjs --ship` exit 0 is refuse. Cos prose is not Tip Ready.',
+      'Tip Ready language without `node scripts/lib/taste-receipt.mjs --ship` exit 0 is refuse. Prose is not Tip Ready.',
     ]
   }
   return []

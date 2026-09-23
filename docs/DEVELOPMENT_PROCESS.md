@@ -21,7 +21,7 @@ ingest -> diagnose -> prioritize -> fix-the-class -> verify -> ship -> measure -
 3. **Prioritize.** `score = reach x gap-to-benchmark x confidence / effort`, where confidence is the learned win-rate for that change-class from `site_improvement_ledger` **by `domain`**. A class that cannot name a `COMPANY_IMPROVEMENT_DOMAINS` value is not company work. Top candidate wins the cycle.
 4. **Fix the class, never the instance.** The unit of work is the root-cause cluster resolved everywhere it occurs, **on every blast-radius plane it touches** (DAL, public site, admin/CRM, reporting, alerts/newsletters, ads audiences, identity). Honor the preflight contract (below).
 5. **Verify exhaustively before Matt sees it.** Accept against the goal named when the class opened (visual → screenshots at 390+1280, perf → LCP/CWV, SEO → CTR/position, data → §0 trace). tsc, tests, `npm run ci:gates` (always ∪ matching path — not the full chain), and a rendered-browser pass on every blast-radius plane the class named. A class that is deep in one place and untouched on the other named planes is not verified. **High-stakes classes (public numbers, money paths, process machinery, anything entering the register as VERIFIED) additionally get an ADVERSARIAL pass: a fresh subagent, starved of the builder's reasoning, given only the claims and told to break them (R-040; workflows `verify-figures` / `adversarial-audit`). The builder never grades its own homework — the 2026-08-15 audit of self-graded work found 17 defects, escape `self-graded-week`.** Matt confirms a class is resolved; he does not find the bugs. See `docs/plans/COMPANY_IMPROVEMENT.md` §Accept.
-6. **Ship** per the live-environment rules (below). Draft-first for content and consumer-visible changes; explicit approval, then commit + push to `main` and watch the deploy go READY.
+6. **Ship** per the live-environment rules (below) and the approval model (CLAUDE.md §1): reversible work, consumer-visible site changes included, is committed, pushed to `main`, and watched to READY; Matt reviews after the fact. The one land path for every builder is `docs/RUN_LOOP.md` §5.
 7. **Measure.** Stamp the baseline metric + window into `site_improvement_ledger` **before** shipping. That row is the hypothesis. A/B where the surface supports it, else before/after. No row, no ship.
 8. **Learn.** After the window closes, write `actual_delta` and a verdict. A domain with open windows whose dates have passed is not allowed to start a new class until those rows are closed. That is how ad-hoc work stops sitting half-done. Mispredictions sharpen confidence.
 9. **Lock.** Every fix that killed a class adds or tightens a mechanical gate so it cannot recur. A win that can silently regress is incomplete work. Catalog: `docs/MECHANICAL_GATES.md`.
@@ -86,8 +86,9 @@ never objectives.
 **The boot ritual is a command, not a convention:** `npx tsx scripts/loop-brief.ts`
 assembles the smallest high-signal context (handoff Current, scoreboard headline,
 stranded windows, work graph, the next node's full contract). Matt's prompt is one
-line — "Run the loop" — and a session that died mid-node is continued by the next
-session from the same node.
+line — "Run the loop" — and the protocol it runs is `docs/RUN_LOOP.md` (objective, claim,
+accept test, land path, stop rule; the same page for Claude, Cursor and Grok). A session that
+died mid-node is continued by the next session from the same node.
 
 **MEA mapping (Manage–Execute–Audit):** the Manager is `loop-brief` + the scored gap
 list (derives ONE bounded node from durable state + the version goal). The Executor is
@@ -101,7 +102,7 @@ evidence, and evidence means the environment said so (probe rows, screenshots at
 audited). Deterministic plumbing is code, never an agent. `done` and `killed` are
 terminal.
 
-**Site-queue reseeding (SITE-62, 2026-09-10).** The taste table (`scripts/taste-table.mjs`) and the seeder (`scripts/seed-site-queue.ts`) are two halves with no join: a finished table does not mint a node. Path: `node scripts/taste-table.mjs --seed-draft` → human edits `scripts/seed-site-queue.ts` → `npx tsx scripts/seed-site-queue.ts`. Drafts carry the catalog builder card (`node scripts/lib/taste-catalog.mjs <class> --preflight`) and an accept that requires `adaptedFrom` + `replaceWith`. A missing house primitive is ADD to the barrel, not a skip. This is a draft for review, not auto-seed. A node written by a machine from a score has no diagnosis; the queue's value is that each row states a cause and an accept test.
+**Site-queue reseeding (SITE-62, 2026-09-10).** The taste table (`scripts/taste-table.mjs`) and the seeder (`scripts/seed-site-queue.ts`) are two halves with no join: a finished table does not mint a node. Path: `node scripts/taste-table.mjs --seed-draft` → human edits `scripts/seed-site-queue.ts` → `npx tsx scripts/seed-site-queue.ts`. Drafts carry the catalog builder card (`node scripts/lib/taste-catalog.mjs <class> --preflight`) and an accept that requires `adaptedFrom` + `replaceWith`. A missing house primitive is ADD to the barrel, not a skip. This is a draft for review, not auto-seed. A node written by a machine from a score has no diagnosis; the queue's value is that each row states a cause and an accept test. Ranking nodes are different: `scripts/seed-gsc-ranking-queue.ts` seeds them from Search Console, each with a diagnose rule, a winner URL and a 28-day accept, and it is the measurer's first move when the queue is empty (`docs/RUN_LOOP.md` §7).
 
 **Additive updates (anti context-collapse):** ledgers, evidence logs, and the handoff
 grow by itemized increments. Never rewrite a durable store wholesale; EVIDENCE-LOG is
@@ -110,13 +111,13 @@ or park — deletion fails G56.
 
 ## Loop topology (locked 2026-06-10)
 
-THE LOOP is the meta-process. It runs as **five domain loops over one shared spine**, plus a deterministic cron substrate. One Claude Code session per loop — never two sessions in the same domain at once.
+THE LOOP is the meta-process. It runs as **five domain loops over one shared spine**, plus a deterministic cron substrate. Sessions in one domain coordinate through the claim tool, not by exclusion: the site queue runs several workers at once under the caps in `lib/data/loop/work-node.ts` (`docs/RUN_LOOP.md` §3).
 
 | # | Loop | Session / trigger | Cadence | Owns | State ledger |
 |---|---|---|---|---|---|
 | 1 | **Growth** (SEO, AI visibility, content depth, conversion) | Orchestrator session — runs THE LOOP cycle directly; weekly overwrites `COMPANY_SCOREBOARD.md` | Continuous | Page content/meta/JSON-LD/llms.txt, thin-vs-thick fixes, CWV, competitor benchmark; **arbitrates company-wide score** | `site_improvement_ledger` (now domain-scoped), `site_signal`, `docs/plans/COMPANY_SCOREBOARD.md` |
 | 2 | **Demand** (paid + organic acquisition) | `/facebook-seller-growth` | Weekly + producer crons | Meta ads, audiences, LP conversion, organic social, experiments | `LEARNINGS.md`, `.auto-memory/fb-ads-loop-state.json` |
-| 3 | **Nurture** (CRM, comms, follow-up intelligence) | `/loop /crm-e2e` | Self-paced guardian | FUB mirror, Gmail/Twilio ingest, sequences, auto-enroll, suppressions, smart follow-ups | `tmp/crm-e2e-latest.json`, `docs/CRM_REPLACEMENT_BLUEPRINT.md` |
+| 3 | **Nurture** (CRM, comms, follow-up intelligence) | `/loop /crm-e2e` | Self-paced guardian | the in-house CRM (`crm_people`, `sendEvent`), Gmail/Twilio ingest, sequences, auto-enroll, suppressions, smart follow-ups | `tmp/crm-e2e-latest.json`, `docs/CRM_REPLACEMENT_BLUEPRINT.md` |
 | 4 | **Transaction** (TC + Oregon law) | `/loop /tc-builder` | Self-paced ladder | Deals, documents, signing, compliance engine, the Oregon law/forms knowledge base | `docs/TC_SYSTEM.md`, `docs/TC_OREGON_COMPLIANCE.md` |
 | 5 | **Experience** (UX archetype migration) | RETIRED 2026-08-27 | — | Folded into the public product. There is one design system (`components/site/v3`) and one spec (`design_system/public/PUBLIC_UI.md`); there is no separate archetype language to migrate families onto, and the `experience-rollout` skill and `EXPERIENCE_SYSTEM.md` ledger are both deleted. | — |
 | — | **Substrate** (deterministic machinery) | Vercel crons (`vercel.json`) | 10 min – weekly | Spark→Supabase sync, market stats cache, CRM crons, producer dispatch/runtime/publish, measurement, digests | Supabase tables |
@@ -133,18 +134,18 @@ THE LOOP is the meta-process. It runs as **five domain loops over one shared spi
 | The change touches | Load first (mandatory) |
 |---|---|
 | Database / data / a stat | `docs/DATABASE_SCHEMA_SNAPSHOT.md` + `docs/DAL_INDEX.md` + the relevant DAL function. Deliverable carries a §0 verification trace per figure. Name the blast-radius planes in `COMPANY_IMPROVEMENT.md`. A new public number that is not reachable from one DAL function on every plane that will show it is incomplete. |
-| A page or surface | The surface's mockup (`design_system/ryan-realty/ui_kits/<surface>/`) + its `parity.json` + the canonical data source + the existing component. |
+| A page or surface | `docs/RUN_LOOP.md` §4 (the accept test) + the route's `parity.json` (`requiredComponents`, `contentFloor`) + `design_system/public/PUBLIC_UI.md` + the canonical data source + the existing component. The `ui_kits/*/index.html` mockups are retired KB-era history, never a target. |
 | Design / UI / layout | `design_system/ryan-realty/` specs + tokens. Headings via the display primitives. Components from `@/components/ui`. |
 | An audit finding | The actual file at the cited line, read directly — never acted on from a subagent's recall. |
 | Live runtime (DAL, crons, producers) | The affected path's current behavior; route-smoke green; risky changes verify on a preview deploy first. |
 
 ## Live-environment rules (the site is production, no fallback)
 
-- Nothing reaches production unverified. Path-aware `ci:gates` + `test:unit` green BEFORE push. Local `next generate` is skipped (Vercel SSGs; `PUSH_FULL_GENERATE=1` to force). GitHub `next build` + e2e are PR-only. The deploy is watched to READY; the post-deploy smokes (route-smoke + the money-page content gates in `smoke-test.yml`) are the regression tripwire.
+- Nothing reaches production unverified. Path-aware `ci:gates` + `test:unit` green BEFORE push (`npm run push` runs both; the unit tests are scoped to the files the push changes). Local `next generate` is skipped (Vercel SSGs; `PUSH_FULL_GENERATE=1` to force). GitHub `next build` + e2e are PR-only. The deploy is watched to READY; the post-deploy smokes (route-smoke + the money-page content gates in `smoke-test.yml`) are the regression tripwire.
 - **R-221 (Matt 2026-08-19): do not poll GitHub Actions.** Local `ci:gates` + `test:unit` is the verify. Push once. GitHub CI is async. Sitting on `gh run view`, waiting for `lint-and-build`, or re-running `ci:gates` after a green stamp in the same session is how cloud sessions burn hundreds of dollars. One `ci:gates` per ship. Rematch `origin/main` only when GitHub says CONFLICTING. Live-DB int failures are not a reason to idle — fix the class or leave it for nightly `test:int`.
 - **Path-aware `ci:gates` (local contract).** `scripts/ci-lanes.json` classifies every `ci:gates:chain` member into always | path | nightly | cert. `npm run ci:gates` runs always ∪ matching path globs. Nightly and cert never run on that command; nightly is `node scripts/run-ci-gates.mjs --lane=nightly` in `.github/workflows/quality.yml`. Missing lanes file → the full chain. The ≥150 unique-gate clamp is dropped (zero unique still fails). `ci:gates-wired` treats nightly/cert as wired; chain↔lanes drift fails when the lanes file exists. G46 (`ci:commit-compiles`) still starts at t=0 serial, overlapping the cheap pool. Path discovery on GitHub uses `GITHUB_EVENT_BEFORE...GITHUB_SHA` so a push checkout (HEAD == origin/main) still sees the commit's files.
 - Schema changes are expand-contract, applied to hosted Supabase in the same delivery as the code that depends on them. Then `npm run ci:data-access -- --refresh`.
-- Money paths first and hardest: lead-capture forms into FUB, ranking pages (redirect, never 404 a page holding a position), market-data accuracy (§0). A regression here is a P0.
+- Money paths first and hardest: lead-capture forms into `crm_people` (`sendEvent`), ranking pages (redirect, never 404 a page holding a position), market-data accuracy (§0). A regression here is a P0.
 - Every risky change names its rollback before it ships. Regressions are caught by the system (gates, smokes, Sentry, the deploy watcher), not by a user and not by Matt.
 
 ## When something escapes
@@ -153,9 +154,11 @@ A defect that reached Matt or production gets three things, always: (1) the whol
 
 ## Approval model
 
-- **Draft-first (CLAUDE.md §0.5)** governs content deliverables and consumer-visible changes: Matt sees the draft, says go, then it ships. Silence, passing gates, and finished builds are not approval.
-- Infra, gates, skills, docs, and bugfix-to-intended-behavior ship continuously once verified, per Matt's standing "go" — with the full verification of step 5 every time.
-- External/irreversible actions (publishing posts, sending messages, OAuth grants, ad spend) are always per-action approvals.
+CLAUDE.md §1 is the approval model (Matt 2026-07-21); this section only restates its shape.
+
+- **Reversible work ships without waiting:** code, site content and consumer-visible pages, infra, gates, skills, docs — verified per step 5 every time, pushed, reviewed by Matt after the fact.
+- **Rendered content deliverables** (video files in tracked `public/` paths) carry `Approved-by: matt` or `Draft-shown: <url>` in the commit message (`scripts/check-draft-first.mjs`, commit-msg hook). Other content drafts are shown to Matt before they enter a distribution path.
+- **Per-action approval, every time:** outbound messages to real people, publishing posts, ad spend, OAuth grants. Silence, passing gates, and finished builds are not approval.
 
 ## The ledgers (live in Supabase)
 
@@ -233,6 +236,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.6.0 run-the-loop boot (2026-09-23, visibility audit PROCESS-3/5/6/8/9)** — `docs/RUN_LOOP.md` is the one page "run the loop" boots on for every tool: objective (be seen, then convert; taste is a no-regression floor, Matt 2026-09-22/23), claim, accept test, land path, ledger trailer, stop rule. Pointer files link it without restating it; `ci:process-canon` holds the pointers, the 150-line cap and warns on a ranking-affecting commit with no `Ledger:` trailer. Contradictions fixed: §0.5 draft-first (no such section; CLAUDE.md §1 governs), one session per loop, FUB, the retired mockup preflight row. `npm run push` now runs path-scoped `test:unit`. The handoff holds one Current block (`ci:handoff-current`).
 - **1.6.0 site-queue reseeding (2026-09-10, SITE-62)** — The taste table and the seeder do not join. Path: `node scripts/taste-table.mjs --seed-draft` → human edits `scripts/seed-site-queue.ts` → `npx tsx scripts/seed-site-queue.ts`. Drafts include the catalog builder card and adaptedFrom accept. Not auto-seed.
 - **1.6.0 path-aware ci:gates (2026-08-19)** — Local contract: `npm run ci:gates` is always ∪ matching path, not the full chain. Nightly/cert stay off that path; nightly runs in `quality.yml` via `--lane=nightly`. GitHub path discovery uses `GITHUB_EVENT_BEFORE...GITHUB_SHA`. Missing `scripts/ci-lanes.json` → full chain. ≥150 unique-gate clamp dropped. `ci:gates-wired` accepts nightly/cert as wired; chain↔lanes drift fails when the lanes file exists. G46 still t=0 serial tsc overlapping the cheap pool. Local push already skips next generate; GitHub next build/e2e is PR-only.
 - **1.6.0 R-221 no CI wait (2026-08-19)** — Matt: cloud/agent sessions must not sit on GitHub Actions. One `ci:gates` per ship. do not poll GitHub Actions. PR CI runs `test:unit`; live-DB `test:int` is nightly. G44 asserts the ban. Escape: 648 compose PR #134 burn.
