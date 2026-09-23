@@ -111,6 +111,8 @@ function timeoutFor(path) {
 // CONCURRENCY caps parallel HTTP requests so the smoke covers the
 // full canonical set without overwhelming the dev/start:ci server.
 const CONCURRENCY = Number(process.env.SMOKE_CONCURRENCY ?? 6)
+// Pause before re-fetching pages that timed out in the concurrent pass.
+const RETRY_SETTLE_MS = Number(process.env.SMOKE_RETRY_SETTLE_MS ?? 10_000)
 
 // Read the canonical public-route set from docs/ROUTE_INVENTORY.md
 // (G16-style sources-of-truth pattern). The inventory is regenerated
@@ -486,11 +488,33 @@ async function checkRoute(route) {
   if (skipReason) return { ...route, url, ok: true, skipped: true, status: 0, reasons: [skipReason], title: null }
   const hop = HOP_ROUTES.get(route.path)
   if (hop) return checkHop(route, url, hop)
-  let result = await checkFullPage(route, url)
-  if (!result.ok && result.status === 0 && /aborted/i.test(result.reasons[0] ?? '')) {
-    result = await checkFullPage(route, url)
-  }
-  return result
+  return checkFullPage(route, url)
+}
+
+/**
+ * A full page that gave no answer inside its budget during the concurrent
+ * pass. It is fetched again AFTER the pass, one at a time (see main).
+ *
+ * The retry used to run immediately, inside the same six-wide pool, so it
+ * met the same contention: on a 2-core runner with every data cache cold,
+ * /housing-market/history and /housing-market/reports each aborted twice at
+ * 15s (run 35920741632, 2026-09-23) on a commit whose app code had passed an
+ * hour earlier, while production answered /housing-market/history in 0.39s
+ * and /housing-market/reports in 1.56s warm (15.0s cold). A route must still
+ * answer inside its budget with the server to itself, so a page that is
+ * slow on its own still fails.
+ */
+function timedOutFullPage(result) {
+  return (
+    !result.ok &&
+    result.status === 0 &&
+    /aborted/i.test(result.reasons[0] ?? '') &&
+    !result.predetermined &&
+    !result.resolvingRedirect &&
+    !result.listingSegment &&
+    !result.refusal &&
+    !HOP_ROUTES.has(result.path)
+  )
 }
 
 async function runWithConcurrency(items, worker, concurrency) {
@@ -563,6 +587,16 @@ async function main() {
     ? [...refusals, ...resolvingRoutes]
     : [...smokeRoutes, ...refusals, ...resolvingRoutes]
   const results = await runWithConcurrency(toCheck, checkRoute, CONCURRENCY)
+  // The server keeps rendering a page after the client gives up on it, so the
+  // renders the pool abandoned drain before the serial retries begin.
+  if (results.some(timedOutFullPage)) await new Promise((r) => setTimeout(r, RETRY_SETTLE_MS))
+  for (let i = 0; i < results.length; i += 1) {
+    if (!timedOutFullPage(results[i])) continue
+    const retry = await checkFullPage(toCheck[i], BASE + toCheck[i].path)
+    results[i] = retry.ok
+      ? { ...retry, title: `${retry.title ?? ''} (answered on a serial retry after timing out in the concurrent pass)` }
+      : retry
+  }
   const failed = results.filter((r) => !r.ok)
 
   if (JSON_OUT) {
