@@ -55,10 +55,18 @@ import {
   lineStringParts,
   outerRings,
   pointsToPath,
+  polygonInteriorPoint,
   ringsToPath,
+  type LonLat,
   type Ring,
 } from '@/lib/geo/project-svg'
 import { decodeBasemapFeature, type Basemap, type BasemapFeature } from '@/lib/geo/basemap'
+import { atlasBasemapHref } from '@/lib/atlas/atlas-basemap-href'
+import { atlasTaxlotsHref, type AtlasTaxlotsScope } from '@/lib/atlas/atlas-taxlots-href'
+// A client-safe import: getTaxlots.ts (the module this constant lives beside
+// for server callers) chains into lib/supabase/server.ts, which Next.js
+// refuses to bundle into a 'use client' file.
+import { TAXLOT_DISCLAIMER } from '@/lib/data/geo/taxlot-disclaimer'
 import {
   ATLAS_CAM_HOME,
   ATLAS_K_MAX,
@@ -451,6 +459,24 @@ export type V3AtlasProps = {
    */
   selectedSubdivisionId?: string | null
   onSubdivisionSelect?: (id: string | null) => void
+  /**
+   * Matt 2026-09-23: "also focus the maps homes on that neighborhood." The
+   * listing keys inside each child boundary — EXACTLY the map
+   * childListingKeys (lib/place/place-child-stock.ts) builds the rail's own
+   * "56 single-family..." counts from. When a district is selected, a dot
+   * whose key is not in that district's set is hidden: the map can never
+   * show a different population than the rail line beside it implies.
+   * Absent, selection only moves the camera (every caller before this date).
+   */
+  memberKeysBySlug?: Readonly<Record<string, readonly string[]>> | null
+  /**
+   * Matt 2026-09-23: "maybe... lots." Which recorded boundary row a rail
+   * id's tax-lot lines live under, keyed the same way memberKeysBySlug is.
+   * Absent, or the selected id missing from the map: no lot fetch, no lot
+   * layer — never invented from the id alone (a Bend neighborhood's own row
+   * in public.boundaries is "bend-<slug>", not the bare rail id).
+   */
+  taxlotBoundaries?: Readonly<Record<string, AtlasTaxlotsScope>>
 }
 
 /* -------------------------------------------------------------------------- */
@@ -503,6 +529,30 @@ function asFetchedBasemap(body: unknown): Basemap | null {
   if (!Array.isArray(rec.roads) || !Array.isArray(rec.waterways) || !Array.isArray(rec.bodies)) return null
   if (typeof rec.q !== 'number') return null
   return rec as Basemap
+}
+
+/**
+ * Matt 2026-09-23, requirement 6: the lot layer's fetched body, checked the
+ * same defensive way asFetchedBasemap is — a malformed or empty response
+ * draws no lots rather than throwing, since the lot layer is decoration on
+ * top of a map that must keep working without it.
+ */
+function asFetchedTaxlots(body: unknown): AtlasParcel[] | null {
+  if (!body || typeof body !== 'object') return null
+  const rec = body as { lots?: unknown }
+  if (!Array.isArray(rec.lots)) return null
+  const out: AtlasParcel[] = []
+  for (const item of rec.lots) {
+    if (!item || typeof item !== 'object') continue
+    const row = item as { taxlot?: unknown; geometry?: unknown }
+    if (typeof row.taxlot !== 'string' || !row.taxlot) continue
+    const geometry = row.geometry
+    if (!geometry || typeof geometry !== 'object') continue
+    const kind = (geometry as { type?: unknown }).type
+    if (kind !== 'Polygon' && kind !== 'MultiPolygon') continue
+    out.push({ id: row.taxlot, subject: false, geometry: geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon })
+  }
+  return out
 }
 
 /**
@@ -653,6 +703,8 @@ export function V3Atlas({
   hidePriceScrubber = false,
   selectedSubdivisionId = null,
   onSubdivisionSelect,
+  memberKeysBySlug = null,
+  taxlotBoundaries,
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
@@ -664,6 +716,16 @@ export function V3Atlas({
   const [fetchedDots, setFetchedDots] = useState<FetchedDots | null>(null)
   const [dotsFailed, setDotsFailed] = useState(false)
   const [fetchedBasemap, setFetchedBasemap] = useState<Basemap | null>(null)
+  /* Matt 2026-09-23, requirement 5: once a district is selected, its own
+     tight bbox is small enough that basemapForFrame includes the named
+     local-street tier (lib/geo/basemap-streets.ts) alongside the highway
+     skeleton — this OUTRANKS the page's own city-wide basemap while a
+     selection is live, and clears when it is not (effect further below). */
+  const [selectionBasemap, setSelectionBasemap] = useState<Basemap | null>(null)
+  /* Matt 2026-09-23, requirement 6: the fetched tax-lot lines for the
+     selected district (see the effect further below); null when nothing is
+     selected or the page named no boundary for that rail id. */
+  const [selectionTaxlots, setSelectionTaxlots] = useState<readonly AtlasParcel[] | null>(null)
   const deferDots = Boolean(dotsSrc) && dotsProp.length === 0
   const dots: readonly AtlasDot[] = fetchedDots?.dots ?? dotsProp
   const waiting = deferDots && fetchedDots == null
@@ -672,7 +734,7 @@ export function V3Atlas({
   // A deferred map with no summary has no honest count to print until the
   // dots land; a fetched read that came back short says so like any other.
   const incomplete = Boolean(incompleteProp) || fetchedDots?.complete === false || (waiting && !dotsSummary)
-  const basemap = basemapProp ?? fetchedBasemap
+  const basemap = selectionBasemap ?? basemapProp ?? fetchedBasemap
 
   /* Geometry: rings, label anchors, areas, projection — once per data set. */
   const shapes = useMemo<RegionShape[]>(() => {
@@ -687,6 +749,28 @@ export function V3Atlas({
     })
   }, [regions, childRegions])
   const childIdSet = useMemo(() => hierarchyChildIdSet(childRegions), [childRegions])
+  const pairedSelection = typeof onSubdivisionSelect === 'function'
+  /* The rail-selected child's own shape, independent of hover/pinned. The
+     camera fit, the shading, the interior label, the district-scoped
+     basemap/lots fetch and the homes-focus filter all key off this ONE
+     lookup so none of them can ever disagree about which polygon is
+     selected (Matt 2026-09-23). Computed early (before `isOn`, which reads
+     it) rather than beside the camera-fit effect that also uses it. */
+  const selectedChildShape = useMemo(() => {
+    if (!pairedSelection || !selectedSubdivisionId) return null
+    return (
+      shapes.find((item) => childIdSet.has(item.id) && childSelectionMatches(item.id, selectedSubdivisionId)) ?? null
+    )
+  }, [pairedSelection, selectedSubdivisionId, shapes, childIdSet])
+  /* Matt 2026-09-23, requirement 4: the SAME membership the rail's own
+     counts use (childListingKeys in lib/place/place-child-stock.ts), so the
+     map can never show a different population than the rail line beside it
+     implies. An id with no recorded keys is an empty Set, not "show
+     everything" — matching PlaceSubdivisionHomes's own filter exactly. */
+  const selectionKeys = useMemo(() => {
+    if (!selectedChildShape || !memberKeysBySlug) return null
+    return new Set(memberKeysBySlug[childSelectionId(selectedChildShape.id)] ?? [])
+  }, [selectedChildShape, memberKeysBySlug])
 
   const proj = useMemo(() => {
     // UXLIVE-3: a deferred population is framed by the server, from the full
@@ -708,12 +792,21 @@ export function V3Atlas({
 
   /* Lot lines, projected the same way as every other geometry on this map, so
      a parcel edge meets the plat outline it actually sits inside. */
+  /* The caller's own lot lines (a listing or plat page's `parcels` prop) win
+     when present; the lazily-fetched district lots (requirement 6) are the
+     ONLY lot source a paired-selection city page ever has, and the two
+     never coexist — no existing caller passes `parcels` alongside
+     `onSubdivisionSelect`. */
+  const effectiveParcels: readonly AtlasParcel[] = useMemo(
+    () => (selectionTaxlots && selectionTaxlots.length > 0 ? selectionTaxlots : parcels ?? []),
+    [parcels, selectionTaxlots],
+  )
   const parcelPaths = useMemo(() => {
-    if (!parcels || parcels.length === 0) return []
-    return parcels
+    if (effectiveParcels.length === 0) return []
+    return effectiveParcels
       .map((p) => ({ id: p.id, subject: p.subject, name: p.name, d: ringsToPath(outerRings(p.geometry), proj) }))
       .filter((p) => p.d.length > 0)
-  }, [parcels, proj])
+  }, [effectiveParcels, proj])
 
   /* The basemap, decoded once and projected with the same functions the
      recorded boundaries use — one projection, so a road meets the city limit
@@ -953,10 +1046,17 @@ export function V3Atlas({
   const cardRef = useRef<HTMLDivElement>(null)
   const [cardH, setCardH] = useState(240)
 
-  /* ONE filter for every layer, sold included. */
+  /* ONE filter for every layer, sold included. Folding the selected
+     district's membership in here (rather than a second filter downstream)
+     means every count, key, pulse and heat cell that already reads isOn
+     focuses on the district for free — the same rule the price and type
+     filters already get applied through. */
   const isOn = useCallback(
-    (d: AtlasDot) => !offTypes.has(d.t) && (atCeiling || d.p == null || d.p <= maxPrice),
-    [offTypes, atCeiling, maxPrice],
+    (d: AtlasDot) =>
+      !offTypes.has(d.t) &&
+      (atCeiling || d.p == null || d.p <= maxPrice) &&
+      (!selectionKeys || selectionKeys.has(d.k)),
+    [offTypes, atCeiling, maxPrice, selectionKeys],
   )
 
   /* The counts the marks are drawn from (atlasCounts). Before deferred dots
@@ -1267,12 +1367,34 @@ export function V3Atlas({
     [nearestDot, applyLayerHit, stageSize.w, stageSize.h],
   )
 
+  /* A camera move that should be SEEN moving (a fit, a return home) plays a
+     CSS transition on .v3-atlas__world for one beat; a drag or a wheel zoom
+     never does, or panning would feel like it is fighting a spring. The
+     transition itself reads the shared duration tokens, so
+     prefers-reduced-motion collapses it to instant through the existing
+     blanket rule (tokens.css) with no separate check needed here (Matt
+     2026-09-23: "animated unless prefers-reduced-motion, then instant"). */
+  const [fitting, setFitting] = useState(false)
+  const fitTimerRef = useRef<number | null>(null)
+  const animateCamTo = useCallback((next: AtlasCam) => {
+    setFitting(true)
+    setCam(next)
+    if (fitTimerRef.current != null) window.clearTimeout(fitTimerRef.current)
+    fitTimerRef.current = window.setTimeout(() => setFitting(false), 450)
+  }, [])
+  useEffect(
+    () => () => {
+      if (fitTimerRef.current != null) window.clearTimeout(fitTimerRef.current)
+    },
+    [],
+  )
+
   const fitCamToShape = useCallback(
-    (shape: RegionShape) => {
+    (shape: RegionShape, pad = 0.08) => {
       if (!shape.bbox || !view || view.w <= 0 || view.h <= 0) return
       const [x0, y0] = toPx(...proj.toXY(shape.bbox.minLon, shape.bbox.maxLat))
       const [x1, y1] = toPx(...proj.toXY(shape.bbox.maxLon, shape.bbox.minLat))
-      setCam(
+      animateCamTo(
         fitRect(
           {
             x0: Math.min(x0, x1),
@@ -1282,11 +1404,11 @@ export function V3Atlas({
           },
           view.w,
           view.h,
-          0.08,
+          pad,
         ),
       )
     },
-    [proj, toPx, view],
+    [proj, toPx, view, animateCamTo],
   )
 
   const openPlace = useCallback(
@@ -1302,17 +1424,16 @@ export function V3Atlas({
       // Subject town: return home. Homepage / city places stay pin-only.
       // Listing pins keep their own click path.
       if (shape.kind === 'town') {
-        setCam(ATLAS_CAM_HOME)
+        animateCamTo(ATLAS_CAM_HOME)
         onSubdivisionSelect?.(null)
       } else if (childIdSet.has(shape.id)) {
         fitCamToShape(shape)
         onSubdivisionSelect?.(childSelectionId(shape.id))
       }
     },
-    [childIdSet, fitCamToShape, onSubdivisionSelect, pointer, proj, toPx],
+    [childIdSet, fitCamToShape, onSubdivisionSelect, pointer, proj, toPx, animateCamTo],
   )
 
-  const pairedSelection = typeof onSubdivisionSelect === 'function'
   const zoomedSelection = useRef<string | null | undefined>(undefined)
   useEffect(() => {
     if (!pairedSelection || !view) return
@@ -1320,14 +1441,15 @@ export function V3Atlas({
     if (zoomedSelection.current === next) return
     zoomedSelection.current = next
     if (!next) {
-      setCam(ATLAS_CAM_HOME)
+      animateCamTo(ATLAS_CAM_HOME)
       return
     }
-    const shape = shapes.find(
-      (item) => childIdSet.has(item.id) && childSelectionMatches(item.id, next),
-    )
-    if (shape) fitCamToShape(shape)
-  }, [pairedSelection, selectedSubdivisionId, view, shapes, childIdSet, fitCamToShape])
+    // Extra padding over the plain map-click fit (0.08): a rail selection is
+    // the map's own focus gesture, not a tap on an already-visible shape, so
+    // the district label and any pill hugging the polygon's edge need the
+    // room (Matt 2026-09-23, requirement 4).
+    if (selectedChildShape) fitCamToShape(selectedChildShape, 0.16)
+  }, [pairedSelection, selectedSubdivisionId, view, selectedChildShape, fitCamToShape, animateCamTo])
 
   /* Every place as a door a thumb can hit: on a phone most silhouettes are
      under 20px, so the chips carry the reach the map cannot (pass five, R2).
@@ -1430,6 +1552,110 @@ export function V3Atlas({
     [toPx, proj, cam.k, cam.x, cam.y],
   )
 
+  /* Matt 2026-09-23, requirement 5: once a district is selected, fetch a
+     basemap scoped to its own (padded) bbox — small enough that
+     basemapForFrame folds in the named local-street tier alongside the
+     highway skeleton (lib/geo/basemap-source.ts, StreetLayer). Clears the
+     moment the selection changes or clears, so a deselected map is never
+     left showing a stale district's streets. */
+  useEffect(() => {
+    const bbox = selectedChildShape?.bbox
+    if (!bbox) {
+      setSelectionBasemap(null)
+      return
+    }
+    const href = atlasBasemapHref({ bbox, pad: 0.35 })
+    if (!href) {
+      setSelectionBasemap(null)
+      return
+    }
+    const controller = new AbortController()
+    void fetchJsonOnce(href, asFetchedBasemap, controller.signal).then((got) => {
+      if (!controller.signal.aborted && got) setSelectionBasemap(got)
+    })
+    return () => controller.abort()
+  }, [selectedChildShape])
+
+  /* Matt 2026-09-23, requirement 6: the recorded tax-lot lines inside the
+     selected district — fetched only once selected, and only when the page
+     named a boundary row for that rail id (taxlotBoundaries). No lot layer
+     is ever drawn from the rail id alone. */
+  useEffect(() => {
+    const scope = selectedChildShape ? taxlotBoundaries?.[childSelectionId(selectedChildShape.id)] : null
+    const href = scope ? atlasTaxlotsHref(scope) : null
+    if (!href) {
+      setSelectionTaxlots(null)
+      return
+    }
+    const controller = new AbortController()
+    void fetchJsonOnce(href, asFetchedTaxlots, controller.signal).then((got) => {
+      if (!controller.signal.aborted) setSelectionTaxlots(got ?? [])
+    })
+    return () => controller.abort()
+  }, [selectedChildShape, taxlotBoundaries])
+
+  /* Matt 2026-09-23, requirement 5: named local streets, from the SAME
+     source the roads layer already draws (lib/geo/basemap-streets.ts,
+     TIGER/Line MTFCC S1400) — nothing here invents a name the source lacks.
+     One label per named path, at the midpoint of its longest run, capped so
+     a dense grid cannot out-render the map it sits on. */
+  const namedRoadPoints = useMemo(() => {
+    if (!basemap) return []
+    const out: { name: string; lon: number; lat: number; length: number }[] = []
+    for (const f of basemap.roads) {
+      if (!f.n) continue
+      for (const points of decodeBasemapFeature(f, basemap.q)) {
+        if (points.length < 2) continue
+        let total = 0
+        const segs: { a: LonLat; b: LonLat; len: number }[] = []
+        for (let i = 1; i < points.length; i += 1) {
+          const a = points[i - 1]!
+          const b = points[i]!
+          const len = Math.hypot(b[0] - a[0], b[1] - a[1])
+          segs.push({ a, b, len })
+          total += len
+        }
+        if (total <= 0) continue
+        let remaining = total / 2
+        let mid: LonLat = points[0]!
+        for (const seg of segs) {
+          if (remaining <= seg.len) {
+            const t = seg.len > 0 ? remaining / seg.len : 0
+            mid = [seg.a[0] + (seg.b[0] - seg.a[0]) * t, seg.a[1] + (seg.b[1] - seg.a[1]) * t]
+            break
+          }
+          remaining -= seg.len
+        }
+        out.push({ name: f.n, lon: mid[0], lat: mid[1], length: total })
+      }
+    }
+    out.sort((a, b) => b.length - a.length)
+    return out.slice(0, 90)
+  }, [basemap])
+
+  /* Matt 2026-09-23, requirement 1: the selected district's own name, at its
+     interior label point — the pole of inaccessibility when the grid finds
+     one inside the polygon, else the shape's own anchor, else nothing
+     rather than a point that might sit outside the ring. */
+  const selectedInteriorLonLat = useMemo(() => {
+    if (!selectedChildShape) return null
+    return polygonInteriorPoint(selectedChildShape.rings) ?? selectedChildShape.anchor ?? null
+  }, [selectedChildShape])
+  const selectedLabelText = selectedChildShape ? doorLabel(selectedChildShape) : ''
+  const selectedLabelStyle = useMemo(() => {
+    if (!view || !selectedInteriorLonLat || !selectedLabelText) return null
+    const [sx, sy] = screenOf(selectedInteriorLonLat[0], selectedInteriorLonLat[1])
+    // A rough half-width from the string, generous rather than measured — the
+    // clamp only needs to keep the pill on stage, never clip it (the same
+    // bar atlasLabelBox holds for the packed place labels).
+    const halfW = Math.max(34, selectedLabelText.length * 3.9) + 14
+    const halfH = 17
+    return {
+      left: Math.min(Math.max(sx, halfW), Math.max(halfW, view.w - halfW)),
+      top: Math.min(Math.max(sy, halfH), Math.max(halfH, view.h - halfH)),
+    }
+  }, [view, selectedInteriorLonLat, selectedLabelText, screenOf])
+
   const packedLabels = useMemo(() => {
     if (!view) return []
     const candidates: AtlasLabelCandidate[] = []
@@ -1478,6 +1704,23 @@ export function V3Atlas({
         })
       }
     }
+    // Matt 2026-09-23, requirement 5: street names, at street-level zoom
+    // generally (not only inside a selection) — low rank, so a place or the
+    // district label always wins a collision over a street running past it.
+    if (cam.k > 1.8) {
+      for (const r of namedRoadPoints) {
+        const [x, y] = screenOf(r.lon, r.lat)
+        candidates.push({
+          id: `st-${r.name}-${Math.round(x)}-${Math.round(y)}`,
+          kind: 'street',
+          text: r.name,
+          x,
+          y,
+          rank: 10 + Math.min(r.length, 50),
+          ...atlasLabelBox(r.name, 'street'),
+        })
+      }
+    }
     if (activeShape?.anchor && !isFrame(activeShape)) {
       if (childIdSet.has(activeShape.id) && !childPaintLive(pinned?.id, activeShape.id)) {
         return packAtlasLabels(candidates, view)
@@ -1496,7 +1739,23 @@ export function V3Atlas({
       })
     }
     return packAtlasLabels(candidates, view)
-  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats, doorLabel, childIdSet, pinned])
+  }, [
+    view,
+    highlight,
+    dots,
+    towns,
+    places,
+    active,
+    activeShape,
+    cam.k,
+    screenOf,
+    isFrame,
+    regionStats,
+    doorLabel,
+    childIdSet,
+    pinned,
+    namedRoadPoints,
+  ])
 
   const activeHomes = useMemo(() => {
     if (!active || incomplete) return []
@@ -1999,6 +2258,9 @@ export function V3Atlas({
                 if (e.button !== 0) return
                 const at = pointerOnStage(e)
                 if (!at) return
+                // A user-initiated drag/pinch always wins over an in-flight
+                // fit transition, so direct manipulation never feels laggy.
+                setFitting(false)
                 ptsRef.current.set(e.pointerId, { x: at.px, y: at.py })
                 e.currentTarget.setPointerCapture(e.pointerId)
                 if (ptsRef.current.size >= 2) {
@@ -2052,7 +2314,7 @@ export function V3Atlas({
               }}
             >
               <div
-                className="v3-atlas__world"
+                className={cn('v3-atlas__world', fitting && 'is-fitting')}
                 style={{
                   transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.k})`,
                   transformOrigin: '0 0',
@@ -2239,6 +2501,7 @@ export function V3Atlas({
                         childIdSet.has(s.id) && 'v3-atlas__place--child',
                         (regionStats.get(s.id)?.n ?? 0) === 0 && 'is-empty',
                         active === s.id && 'is-active',
+                        selectedChildShape?.id === s.id && 'is-selected',
                       )}
                       data-map-hierarchy={
                         childIdSet.has(s.id)
@@ -2391,6 +2654,7 @@ export function V3Atlas({
                         l.kind === 'home' && 'v3-atlas__label--home',
                         l.kind === 'place' && 'v3-atlas__label--place',
                         l.kind === 'active' && 'v3-atlas__label--active',
+                        l.kind === 'street' && 'v3-atlas__label--street',
                       )}
                       style={{ left: l.x, top: l.y }}
                     >
@@ -2481,6 +2745,16 @@ export function V3Atlas({
 
               {clusterPreview}
               {homePreview}
+              {/* Matt 2026-09-23, requirement 1: the selected district's own
+                  name, at its interior label point, above every pill
+                  (z-index) and clamped in JS so the stage's overflow:hidden
+                  can never clip it. Deselecting removes the shape it names,
+                  which removes this. */}
+              {selectedChildShape && selectedLabelStyle && selectedLabelText ? (
+                <span className="v3-atlas__district-label" style={selectedLabelStyle} aria-hidden="true">
+                  {selectedLabelText}
+                </span>
+              ) : null}
             </div>
             {/* The card sits in the frame, not the stage: on a phone it drops
                 below the map in flow, because pinned over a 208px stage it
@@ -2490,6 +2764,15 @@ export function V3Atlas({
           </div>
 
         </div>
+
+        {/* Matt 2026-09-23, requirement 6: the assessor disclaimer beside the
+            map, exactly as lib/data/geo/getTaxlots.ts requires of anyone who
+            draws one of these lines (CLAUDE.md §0) — only for the lots THIS
+            component fetched; a caller passing its own `parcels` prop
+            already prints its own copy of this note elsewhere on its page. */}
+        {selectionTaxlots && selectionTaxlots.length > 0 ? (
+          <p className="v3-atlas__taxlot-note">{TAXLOT_DISCLAIMER}</p>
+        ) : null}
 
         {/* The legend: type toggles and the price scrubber. Under the map on a
             phone; under the head in the desktop column. */}

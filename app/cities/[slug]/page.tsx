@@ -145,7 +145,8 @@ import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { cityPlaceGrain } from '@/lib/place/city-place-grain'
 import { resolveCityCommunityRailPhoto } from '@/lib/place/city-community-rail-photo'
 import { subdivisionHref } from '@/lib/site/place-href'
-import { childAtlasRegions, subjectAtlasRegions } from '@/lib/place/map-hierarchy'
+import { childAtlasRegions, childSelectionId, subjectAtlasRegions } from '@/lib/place/map-hierarchy'
+import type { AtlasTaxlotsScope } from '@/lib/atlas/atlas-taxlots-href'
 import { cityChildStockSlug } from '@/lib/place/city-rail'
 import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
@@ -840,6 +841,17 @@ async function renderCityDetail({ params }: Props) {
     rows: rowsForRail,
   })
   const homesByChild = childListingKeys(rowsForRail)
+  // Matt 2026-09-23, requirement 6: which public.boundaries row a rail id's
+  // lots live under. Bend's own boundary row is "bend-<slug>" (the prefix
+  // rowsForRail strips above for the rail's counts); every other city's
+  // subdivisions already carry their own recorded slug with no prefix.
+  const taxlotBoundaries: Record<string, AtlasTaxlotsScope> = Object.fromEntries(
+    childRegions.map((region) => {
+      const bare = childSelectionId(region.id)
+      const geoType = region.kind === 'neighborhood' || region.kind === 'subdivision' ? region.kind : null
+      return [bare, { geoType, geoSlug: isBend ? `${slug}-${bare}` : bare }]
+    }),
+  )
   const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${cityName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
 
   // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
@@ -1133,6 +1145,7 @@ async function renderCityDetail({ params }: Props) {
                 regions={atlasProps.regions}
                 childRegions={atlasProps.childRegions}
                 basemapSrc={atlasProps.basemapSrc}
+                taxlotBoundaries={taxlotBoundaries}
                 fit="dots"
                 types={atlasView.types}
                 events={atlasView.events}
