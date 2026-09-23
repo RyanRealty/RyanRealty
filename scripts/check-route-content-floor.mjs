@@ -66,6 +66,11 @@ const SETTLE_MS = Number(process.env.CONTENT_FLOOR_SETTLE_MS ?? 2_000)
 const EAGER_SETTLE_MS = Number(process.env.CONTENT_FLOOR_EAGER_SETTLE_MS ?? 30_000)
 // Bound on waiting for a streamed page to finish arriving; see waitForStreamedPage().
 const STREAM_SETTLE_MS = Number(process.env.CONTENT_FLOOR_STREAM_SETTLE_MS ?? 30_000)
+// A class under its floor is read once more after this wait (0 disables it):
+// past lib/site/degraded-isr.ts's 60s lifetime for a degraded render, then
+// DEGRADED_REGEN_MS for the regeneration one request starts. See main().
+const DEGRADED_RETRY_MS = Number(process.env.CONTENT_FLOOR_DEGRADED_RETRY_MS ?? 62_000)
+const DEGRADED_REGEN_MS = Number(process.env.CONTENT_FLOOR_DEGRADED_REGEN_MS ?? 8_000)
 // Hydration settle: re-read the per-section map until two consecutive
 // readings agree (see measure()).
 const STABLE_PASSES = 5
@@ -361,7 +366,33 @@ async function main() {
       continue
     }
     checked += 1
-    const problems = floorProblems(measured, parity.contentFloor)
+    let problems = floorProblems(measured, parity.contentFloor)
+    if (problems.length && DEGRADED_RETRY_MS > 0) {
+      // ONE RETRY PAST A DEGRADED RENDER (2026-09-23). When a live read times
+      // out, the page renders its fallback and lib/site/degraded-isr.ts ships
+      // that copy with a DEGRADED_ISR_REVALIDATE_S (60s) lifetime. CI hit it
+      // twice in one afternoon on PR #352: /zip/97702 read words 761 and a
+      // 120px hero, /oregon/medford read words 319 and jsonLd 5, each with
+      // its listing section and ItemList missing, on code that read 1,136 /
+      // 1,112px and 518 / 6 on the runs either side and on a local server.
+      // That is database latency, not lost content. So a class under its
+      // floor waits out the degraded copy, sends one request to start the
+      // regeneration (ISR serves the stale copy once), and is read again. A
+      // real regression reads short twice and still fails; only the second
+      // reading is reported.
+      console.log(
+        `  retry ${cls.key}: under its floor on the first read; reading again after ${Math.round(DEGRADED_RETRY_MS / 1000)}s in case it was a degraded render`,
+      )
+      await page.waitForTimeout(DEGRADED_RETRY_MS)
+      await fetch(BASE + cls.url, { headers: { ...CI_PROBE_HEADERS }, signal: AbortSignal.timeout(60_000) }).catch(() => {})
+      await page.waitForTimeout(DEGRADED_REGEN_MS)
+      try {
+        measured = await measure(page, BASE + cls.url)
+        problems = floorProblems(measured, parity.contentFloor)
+      } catch {
+        // Keep the first reading's problems: it did render once, and short.
+      }
+    }
     if (problems.length) {
       failures.push(`${cls.key} (${cls.url}):\n      ${problems.join('\n      ')}`)
       console.log(`  FAIL ${cls.key}`)
