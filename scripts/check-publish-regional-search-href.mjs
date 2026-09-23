@@ -2,16 +2,20 @@
 /**
  * Regional inventory door lock.
  *
- * A control that names the Central Oregon set must open list view with no
- * city. Split/map `/homes-for-sale` injects Bend.
- * Founding case: homepage See homes next to 1,836 homes (fleet
- * ef6af6b44156e99f0f5ca42850819b19).
+ * A control that names the Central Oregon set must open the Central Oregon
+ * set, with no city. Founding case: homepage See homes next to 1,836 homes
+ * landed on a Bend-bounded split map (fleet ef6af6b44156e99f0f5ca42850819b19).
  *
- * UXLIVE-4 (visibility audit 2026-09-22): the rule is unchanged, the URL
- * moved. `?view=list` is `noindex, follow` with a canonical to the bare path,
- * so the regional door is now the bare, indexable `/homes-for-sale`, and this
- * gate pins what makes that honest: app/search/page.tsx DEFAULTS to the list
- * view, so the bare URL IS the Central Oregon set.
+ * UXLIVE-4 (visibility audit 2026-09-22): the regional door became the bare,
+ * indexable `/homes-for-sale` (a `?view=` carries a canonical to it).
+ *
+ * Matt 2026-09-23: the bare URL opens as the SPLIT view on desktop and the
+ * list on phones, framed on all of Central Oregon. This gate pins what keeps
+ * that door honest now that it is a map: the default view is split, the
+ * camera falls back to CENTRAL_OREGON_BOUNDS (never Bend), the regional
+ * frame's population is the region (getViewportSearch frame 'region', no
+ * bbox), and its first map settle writes no camera URL, so neither the count
+ * nor the indexable URL drifts to the pixel viewport.
  *
  *   node scripts/check-publish-regional-search-href.mjs
  */
@@ -63,18 +67,46 @@ checks.push({
 // homepage arm above pins the Stage See homes door the page still publishes.
 
 const search = src('app/search/page.tsx')
+const searchCode = search.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
 checks.push({
-  label: 'list view still skips the silent Bend city inject',
+  label: 'no view silently injects a city (the URL city is the only city)',
   ok:
-    search.includes("view !== 'list' ? defaultCity") &&
-    search.includes("const defaultCity = 'Bend'"),
+    !/defaultCity\s*=\s*['"]Bend['"]/.test(searchCode) &&
+    !/filters\.city\s*=\s*['"]/.test(searchCode) &&
+    /city: filters\.city,/.test(searchCode),
 })
-// UXLIVE-4: the bare URL is only a regional door while it renders the list.
+
+// Matt 2026-09-23: the bare URL is the split view, and it is only a regional
+// door while its camera and its population are Central Oregon.
+const opening = src('lib/search/search-opening.ts')
+const constants = src('lib/map-constants.ts')
 checks.push({
-  label: 'bare /homes-for-sale defaults to the regional list view',
+  label: 'bare /homes-for-sale defaults to the split view, phones to the list',
   ok:
-    /const DEFAULT_VIEW = 'list'/.test(search) &&
-    /: DEFAULT_VIEW\) as/.test(search),
+    /export const DEFAULT_SEARCH_VIEW: SearchView = 'split'/.test(opening) &&
+    /if \(!resolved\.explicit\) return 'list'/.test(opening) &&
+    /resolveSearchView\(sp\.view\)/.test(search) &&
+    /phonePane=\{phonePane\}/.test(search),
+})
+checks.push({
+  label: 'the camera falls back to all of Central Oregon, never to Bend',
+  ok:
+    /export const CENTRAL_OREGON_BOUNDS = \{/.test(constants) &&
+    /source: 'central-oregon'/.test(opening) &&
+    /CENTRAL_OREGON_BOUNDS/.test(opening) &&
+    /resolveSearchCamera\(/.test(searchCode) &&
+    !/BEND_DEFAULT_BOUNDS/.test(searchCode),
+})
+const action = src('app/actions/search.ts')
+const splitView = src('components/search/MapSearchView.tsx')
+checks.push({
+  label: 'the regional frame counts the region, not the pixel viewport, and keeps the URL bare',
+  ok:
+    /isRegionalSearchFrame\(/.test(search) &&
+    /frame: 'region'/.test(search) &&
+    /options\?\.frame === 'region'/.test(action) &&
+    /regionFrameLabel=\{regionalFrame \? REGIONAL_FRAME_LABEL : null\}/.test(search) &&
+    /if \(regionFrameRef\.current\) \{\s*if \(isInitialSettle\) return/.test(splitView),
 })
 
 const nav = src('lib/site-nav.ts')

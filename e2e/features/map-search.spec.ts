@@ -16,8 +16,9 @@ import { test, expect } from '@playwright/test'
  */
 
 const DATA_TIMEOUT = 90_000
-// The bare /homes-for-sale opens on the regional LIST since UXLIVE-4
-// (visibility audit 2026-09-22), so the map surface is the explicit split view.
+// The bare /homes-for-sale opens split on desktop but on the LIST on phones
+// (Matt 2026-09-23), so the mobile map checks load the explicit split view,
+// which still opens phones on the map.
 const MAP_URL = '/homes-for-sale?view=split'
 
 test.describe('Map search', () => {

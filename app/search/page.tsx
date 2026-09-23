@@ -18,8 +18,14 @@ import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import { getBoundaryGeoJSON } from '@/lib/data'
-import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
-import { bboxFromSearchParam } from '@/lib/search/publish-map-bbox'
+import {
+  REGIONAL_FRAME_LABEL,
+  SPLIT_CARD_PAGE,
+  isRegionalSearchFrame,
+  phoneOpeningPane,
+  resolveSearchCamera,
+  resolveSearchView,
+} from '@/lib/search/search-opening'
 import { buildShapeSetForSearch, decodeMapPolygon, decodeMapShapes, type DrawnShape } from '@/lib/map-polygon'
 import { resolveSearchPlaceBoundaryTarget } from '@/lib/search/resolve-search-place-boundary'
 import { stripGeoScope } from '@/components/search/geo-scope'
@@ -70,21 +76,34 @@ import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import { SplitViewBodyLock } from '@/components/search/SplitViewBodyLock'
 
 /**
- * The bare, indexable `/homes-for-sale` opens the REGIONAL LIST (UXLIVE-4,
- * visibility audit 2026-09-22; Matt 2026-09-23: "nothing is permanent").
+ * The bare, indexable `/homes-for-sale` opens the SPLIT view (map + list) on
+ * desktop and the LIST on phones, framed on ALL of Central Oregon, newest first
+ * (Matt 2026-09-23). Rules: lib/search/search-opening.ts.
  *
- * It used to open the split view, whose camera is Bend-bounded
- * (BEND_DEFAULT_BOUNDS): the live page read "471 homes in view" under a
- * "Central Oregon homes for sale" title, so every regional door on the site
- * (chrome Homes, homepage See homes, /cities) had to link `?view=list` to show
- * the Central Oregon set (fleet 2026-08-17, ci:publish-regional-search-href).
- * `?view=` is noindex with a canonical to this URL, so the site's strongest
- * repeated "homes for sale" link pointed at a URL Google is told not to index.
- * Now the indexable URL IS the regional list and every door links it clean.
- * Split and map stay one tap away (the view toggle writes `?view=split|map`,
- * still noindex) — the view is client state, not a crawlable URL.
+ * History. The split view's camera used to be Bend-bounded
+ * (BEND_DEFAULT_BOUNDS), so the page read "471 homes in view" under a "Central
+ * Oregon homes for sale" title and every regional door had to link `?view=list`
+ * (fleet 2026-08-17). UXLIVE-4 (2026-09-22) then made the bare URL the list so
+ * the doors could link it clean. Both causes are gone now:
+ *   - the camera is CENTRAL_OREGON_BOUNDS, derived from the served places'
+ *     recorded boundaries (lib/map-constants.ts), and
+ *   - the regional frame's population is the service-area set the list counts,
+ *     not the pixel viewport (isRegionalSearchFrame), so the count, the H1 and
+ *     the ItemList all describe Central Oregon.
+ * Every regional door still links the clean bare URL
+ * (ci:publish-regional-search-href). `?view=list|split|map` keeps working and
+ * carries a canonical to the bare URL.
+ *
+ * Phones. The server cannot see the viewport, so it serves one markup:
+ * MapSearchView opens its list pane at phone widths (`phonePane`), with the map
+ * one tap away and not mounted until then; CSS lays the same markup out side by
+ * side from lg up. No user-agent sniffing, no flash of the map.
+ *
+ * Payload. The regional frame seeds only its first card page (SPLIT_CARD_PAGE)
+ * into the served HTML: those cards are real links and the ItemList source.
+ * The frame's pins (up to the viewport cap) are read after hydration, so the
+ * served page never carries the whole pin set.
  */
-const DEFAULT_VIEW = 'list'
 
 /**
  * Resolve a data promise to a fallback if it rejects OR exceeds the budget.
@@ -260,16 +279,16 @@ export default async function SearchPage({
 }) {
   const sp = await searchParams
   const filters = parseFilters(sp)
-  const view = (sp.view === 'split' || sp.view === 'map' || sp.view === 'list' ? sp.view : DEFAULT_VIEW) as
-    | 'split'
-    | 'list'
-    | 'map'
+  // No ?view= (or an unknown one) resolves to DEFAULT_SEARCH_VIEW, split.
+  const resolvedView = resolveSearchView(sp.view)
+  const view = resolvedView.view
+  const phonePane = phoneOpeningPane(resolvedView)
+  // The bare URL (and one narrowed only by price, beds and the like): the
+  // Central Oregon frame, its population the regional set, not a bbox.
+  const regionalFrame = isRegionalSearchFrame({ view, params: sp })
 
-  // Camera default only — never a city filter. List already skipped the silent
-  // Bend inject (`view !== 'list' ? defaultCity`). Split/map now match that
-  // honesty: no `filters.city = 'Bend'` unless the URL asked. Regional
-  // inventory + Bend-centered camera is correct; a silent city filter is not.
-  const defaultCity = 'Bend'
+  // Camera only, never a city filter: no `filters.city = 'Bend'` unless the URL
+  // asked. With no place in the URL the camera is all of Central Oregon.
   const effectiveFilters = {
     ...filters,
     city: filters.city,
@@ -320,8 +339,11 @@ export default async function SearchPage({
         ])
       : [[], [] as string[]]
 
-  const initialBounds =
-    bboxFromSearchParam(sp.bbox) ?? bboxFromGeometry(placeBoundaryGeo) ?? BEND_DEFAULT_BOUNDS
+  // URL bbox, then the place's recorded boundary, then all of Central Oregon.
+  const initialBounds = resolveSearchCamera({
+    bboxParam: sp.bbox,
+    placeBoundaryBbox: bboxFromGeometry(placeBoundaryGeo),
+  }).bounds
   // ?shapes= — the user's drawn multi-shape set (polygons + radius circles,
   // include/exclude), with legacy ?poly= as the read-forever fallback. Either
   // spelling supersedes the URL's place pin exactly as a live draw does
@@ -337,14 +359,19 @@ export default async function SearchPage({
   const hasIncludeShape = initialShapes?.some((s) => !s.exclude) ?? false
   // Split viewport + list inventory: settled timeout so timeout/error is not
   // painted as "0 homes" (SEARCH_UX_WAVE3 P9). True empty → degraded false.
+  // The regional frame reads the region at the viewport cap, the SAME read
+  // (and cache entry) MapSearchView's pin read makes after hydration, so the
+  // served count and the pinned count cannot come from two cache ages. Only
+  // its first card page is handed to the client (below): the served cards and
+  // the ItemList. A map frame (place, bbox, drawn area) seeds all 500 as before.
   const viewportSettled =
     view === 'split'
       ? await withTimeoutSettled(
           getViewportSearch(
             hasIncludeShape ? stripGeoScope(effectiveFilters) : effectiveFilters,
             initialBounds,
-            buildShapeSetForSearch(initialShapes, initialBounds)
-            // SSR seed uses default limit 500; client pan may pass { limit: 250 }.
+            buildShapeSetForSearch(initialShapes, initialBounds),
+            regionalFrame ? { frame: 'region' } : undefined,
           ),
           {
             listings: [],
@@ -353,7 +380,13 @@ export default async function SearchPage({
           }
         )
       : null
-  const viewport = viewportSettled?.data ?? null
+  const viewportRead = viewportSettled?.data ?? null
+  // The regional frame's seed is its first card page; the count stays the
+  // frame's exact totalCount. Every other frame hands over the whole read.
+  const viewport =
+    viewportRead && regionalFrame
+      ? { ...viewportRead, listings: viewportRead.listings.slice(0, SPLIT_CARD_PAGE) }
+      : viewportRead
   const viewportDegraded = viewportSettled?.degraded ?? false
 
   // LIST: paginated infinite-scroll browse (unchanged fetch; honesty flag added).
@@ -411,8 +444,9 @@ export default async function SearchPage({
 
   // Multi Places: CSV in city/neighborhood/subdivision — primary (first) of the
   // finest grain drives placeQuery / boundary fit; listing query expands the
-  // full set in toSearchAllFilter.
-  const placeQuery = placeBoundaryTarget?.placeQuery ?? `${defaultCity} Oregon`
+  // full set in toSearchAllFilter. With no place the map keeps the Central
+  // Oregon camera (lockBounds), so this name only labels the frame.
+  const placeQuery = placeBoundaryTarget?.placeQuery ?? REGIONAL_FRAME_LABEL
 
   // Registry passthrough: every field-registry URL param present rides along
   // to the client filter bar / All-filters sheet as its raw string, so a new
@@ -438,7 +472,7 @@ export default async function SearchPage({
     status: sp.status ?? 'Active',
     sort: sp.sort ?? 'newest',
     // The RESOLVED view, so the toggle marks what the server actually rendered
-    // (an unknown ?view= falls back to DEFAULT_VIEW on both sides).
+    // (no ?view=, or an unknown one, resolves to split on both sides).
     view,
     minSqFt: sp.minSqFt ?? '',
     maxSqFt: sp.maxSqFt ?? '',
@@ -562,6 +596,9 @@ export default async function SearchPage({
                 nowMs={Date.now()}
                 initialDegraded={viewportDegraded}
                 openHouseLabels={openHouseLabels}
+                phonePane={phonePane}
+                regionFrameLabel={regionalFrame ? REGIONAL_FRAME_LABEL : null}
+                seedRowCap={regionalFrame ? SPLIT_CARD_PAGE : undefined}
               />
             ) : (
               <SearchResults

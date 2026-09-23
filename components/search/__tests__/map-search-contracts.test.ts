@@ -568,7 +568,10 @@ describe('the /search map-only pin layer subtracts hidden homes (W7.2, 2026-07-2
   })
 
   it('map mode restores the URL bbox and locks the camera instead of fitting Oregon', () => {
-    expect(page).toMatch(/bboxFromSearchParam\(sp\.bbox\)/)
+    // The camera resolver (lib/search/search-opening.ts) reads the URL bbox
+    // first, then the place boundary, then all of Central Oregon.
+    expect(page).toMatch(/resolveSearchCamera\(\{\s*bboxParam: sp\.bbox/)
+    expect(readSrc('lib/search/search-opening.ts')).toMatch(/bboxFromSearchParam\(input\.bboxParam\)/)
     expect(page).toMatch(/initialBounds=\{initialBounds\}/)
     expect(page).toMatch(/lockBounds/)
     expect(wrap).toMatch(/lockBounds=\{lockBounds\}/)
@@ -1238,5 +1241,66 @@ describe('the place Split section is as tall as its list (SITE-59)', () => {
   it('still draws no map pane at all when listOnly', () => {
     expect(map).toMatch(/const mapPanel = listOnly \? null :/)
     expect(readSrc('components/search/PlaceSplitView.tsx')).toMatch(/\n\s+listOnly\n/)
+  })
+})
+
+describe('bare /homes-for-sale opens split on desktop, list on phones, on Central Oregon (Matt 2026-09-23)', () => {
+  const page = readSrc('app/search/page.tsx')
+  const view = readSrc('components/search/MapSearchView.tsx')
+  const css = readSrc('components/search/search-ledger.css')
+
+  it('the page resolves the view, the phone pane, the camera and the regional frame from one module', () => {
+    expect(page).toMatch(/from '@\/lib\/search\/search-opening'/)
+    expect(page).toMatch(/resolveSearchView\(sp\.view\)/)
+    expect(page).toMatch(/phoneOpeningPane\(resolvedView\)/)
+    expect(page).toMatch(/isRegionalSearchFrame\(\{ view, params: sp \}\)/)
+    expect(page).toMatch(/phonePane=\{phonePane\}/)
+  })
+
+  it('the regional frame seeds one card page and reads the region, not a bbox', () => {
+    // Read at the viewport cap (the pin read's own cache entry), hand over the
+    // first card page: one count, one cache age, small HTML.
+    expect(page).toMatch(/regionalFrame \? \{ frame: 'region' \} : undefined/)
+    expect(page).toMatch(/listings: viewportRead\.listings\.slice\(0, SPLIT_CARD_PAGE\)/)
+    expect(readSrc('app/actions/search.ts')).toMatch(/options\?\.frame === 'region' && !legacyPoly && !shapeSet/)
+  })
+
+  it('a list-first phone opens on the list without mounting the map', () => {
+    expect(view).toMatch(/const listFirst = !listOnly && phonePane === 'list'/)
+    expect(view).toMatch(/: listFirst\s*\? 'list'/)
+    expect(view).toMatch(/const \[mapWanted, setMapWanted\] = useState\(!listFirst\)/)
+    expect(view).toMatch(/\{mapWanted \? \(\s*<SearchMapClustered/)
+    expect(view).toMatch(/<MapLoading \/>/)
+    // The deferred stand-in is the dynamic import's own loading state: same
+    // markup, so the page hydrates without a mismatch.
+    expect(view).toMatch(/loading: MapLoading/)
+    // Hydration does not snap a list-first phone back to the map.
+    expect(view).toMatch(/\(listFirst && filters\.view === 'split'\) \? 'list' : 'map'/)
+  })
+
+  it('the map is one tap away and the phone toggle never navigates', () => {
+    expect(view).toMatch(/if \(listFirst && next !== 'split' && !isSplitDesktop\(\)\) \{/)
+    expect(view).toMatch(/aria-label="Show the map"/)
+    expect(view).toMatch(/map-search-mapdoor/)
+    expect(view).toMatch(/map-search-sheet--list-first/)
+    expect(css).toMatch(/\.map-search-mapdoor \{\s*display: none;/)
+    expect(css).toMatch(/\.map-search-sheet--list-first\.is-expanded \{\s*height: 100%;/)
+    expect(view).not.toMatch(/map-search-list-fab/)
+  })
+
+  it('the regional frame reads its pins after hydration and writes no camera URL on its first settle', () => {
+    expect(page).toMatch(/seedRowCap=\{regionalFrame \? SPLIT_CARD_PAGE : undefined\}/)
+    // Partial is the cap the seed was READ with, never "fewer rows than asked":
+    // the DAL can return a few rows under its limit (497 of 500 on Bend).
+    expect(view).toMatch(/const seedIsPartial = seedCap < VIEWPORT_ROW_CAP && initialListings\.length < initialTotalCount/)
+    expect(view).toMatch(/const canReadMore = !resultsDegraded && rowsCap < VIEWPORT_ROW_CAP && listings\.length < totalCount/)
+    expect(view).toMatch(/frame: 'region'/)
+    expect(view).toMatch(/if \(regionFrameRef\.current\) \{\s*if \(isInitialSettle\) return\s*setRegion\(false\)/)
+  })
+
+  it('the claim prints the frame count, not the rows in hand', () => {
+    expect(view).toMatch(/publishSplitClaim\(\{/)
+    expect(view).toMatch(/totalCount,\s*sort: sortValue/)
+    expect(view).not.toMatch(/nearest matches/)
   })
 })
