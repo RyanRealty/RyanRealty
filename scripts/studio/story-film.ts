@@ -19,6 +19,7 @@
  *   npx tsx scripts/studio/story-film.ts payoff --piece winter-1982
  *   npx tsx scripts/studio/story-film.ts phone  --piece winter-1982
  *   npx tsx scripts/studio/story-film.ts status --piece winter-1982
+ *   npx tsx scripts/studio/story-film.ts look   --piece winter-1982 --era cine16_1978   (same footage, another stock)
  *
  * Then the film lab and the reel (docs/STORY_FILMS.md):
  *   python3 scripts/studio/story_reel.py --dir out/story/winter-1982
@@ -1175,18 +1176,39 @@ function stageStatus(piece: StoryPiece, plan: StoryPlan, manifest: Manifest): vo
   }
 }
 
+/** Each shot's lab parameters in one era's stock, keyed by role. */
+function labByRole(stock: EraPack, plan: StoryPlan) {
+  return Object.fromEntries(
+    plan.shots.filter((s) => s.beat).map((s) => [s.role, labParamsFor(stock, s.beat!.exposure)]),
+  )
+}
+
 /** The lab parameters per shot, for scripts/studio/story_reel.py. */
 function writeReelInputs(piece: StoryPiece, era: EraPack, plan: StoryPlan): void {
-  const lab = Object.fromEntries(
-    plan.shots.filter((s) => s.beat).map((s) => [s.role, labParamsFor(era, s.beat!.exposure)]),
-  )
+  const lab = labByRole(era, plan)
   writeFileSync(path.join(dirFor(piece), 'lab.json'), JSON.stringify({ era: era.id, sound: era.sound, lab }, null, 2))
+}
+
+/**
+ * The same selected footage in another era's film stock: a free regrade, no
+ * generation. Writes lab-<era>.json for `story_reel.py build --lab`. Each shot
+ * keeps its own exposure (day, night, interior); only the stock changes.
+ */
+function stageLook(piece: StoryPiece, era: EraPack, plan: StoryPlan, lookId: string | undefined): void {
+  const look = getEra(lookId ?? '')
+  if (!look) throw new Error('--era is required: the era whose film stock to regrade in (e.g. cine16_1978)')
+  const file = path.join(dirFor(piece), `lab-${look.id}.json`)
+  writeFileSync(file, JSON.stringify({ era: look.id, sound: era.sound, lab: labByRole(look, plan) }, null, 2))
+  console.log(`wrote ${path.relative(process.cwd(), file)}`)
+  console.log(
+    `next: python3 scripts/studio/story_reel.py build --dir ${path.relative(process.cwd(), dirFor(piece))} --lab lab-${look.id}.json --name reel-${look.id}`,
+  )
 }
 
 async function main(): Promise<void> {
   const { cmd, flags } = args()
   const { piece, era, plan } = pieceAndEra(flags)
-  const readOnly = cmd === 'plan' || cmd === 'status'
+  const readOnly = cmd === 'plan' || cmd === 'status' || cmd === 'look'
   const manifest = loadManifest(piece)
   ensureShots(manifest, plan)
   const roles = flags.roles ? flags.roles.split(',').map((r) => r.trim()) : null
@@ -1215,6 +1237,7 @@ async function main(): Promise<void> {
     else if (cmd === 'payoff') await stagePayoff(piece)
     else if (cmd === 'phone') await stagePhone(piece, era, manifest)
     else if (cmd === 'status') stageStatus(piece, plan, manifest)
+    else if (cmd === 'look') stageLook(piece, era, plan, flags.era)
     else throw new Error(`unknown command ${cmd}`)
   } finally {
     if (!readOnly) saveManifest(piece, manifest)

@@ -52,6 +52,8 @@ npx tsx scripts/studio/story-film.ts phone  --piece winter-1982          # rende
 python3 scripts/studio/story_reel.py sign  --dir out/story/winter-1982   # our sign art onto the blank panel
 python3 scripts/studio/story_reel.py edl   --dir out/story/winter-1982   # first edit decision list
 python3 scripts/studio/story_reel.py build --dir out/story/winter-1982   # the reel
+npx tsx scripts/studio/story-film.ts look --piece winter-1982 --era cine16_1978   # same footage, another stock (free)
+python3 scripts/studio/story_reel.py build --dir out/story/winter-1982 --lab lab-cine16_1978.json --name reel-cine16_1978
 ```
 
 Stages run in dependency order: a shot with `continuity` (the phone beat takes the sign
@@ -153,11 +155,14 @@ Everything downstream (select, the lab, the sign composite, the reel) is the sam
 
 Matt's reference for the vibe (2026-09-23): Studio Shibuya on Instagram. "Vintage Bend, not
 Tokyo." Their language: composed, centered, deadpan frames on a tripod; a character with a
-signature look; the brand worn in-world as merch (a knit "I \u2665" scarf); a muted pastel
+signature look; the brand worn in-world as merch (a knit "I ♥" scarf); a muted pastel
 stock. Measured on their frame: median saturation ~0.15, a faint green-olive cast through
 every tone, warm mid-tones, highlights rolled off near 0.93, blacks lifted to ~0.04. The
 `cine_pastel` stock in the lab encodes that; `HOME_MOVIE_MOVES.tripod` is the camera grammar.
 An A/B of the first piece's footage in both stocks is at `out/story/winter-1982/abtest/`.
+The `look` stage regrades any finished piece in another era's stock for free: same selected
+footage, same edit, each shot keeping its own exposure; `build --lab --name` writes it beside
+the original instead of over it.
 Borrow the register, never the character: our in-world merch is ours (a Ryan Realty knit cap
 or pennant, composited in post, never generated).
 

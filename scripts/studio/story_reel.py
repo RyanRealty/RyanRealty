@@ -12,6 +12,7 @@ to edit; `build` renders it.
   python3 scripts/studio/story_reel.py sign-clip --dir out/story/winter-1982 --role phone --corners ...  (tracked, for moving clips)
   python3 scripts/studio/story_reel.py edl   --dir out/story/winter-1982
   python3 scripts/studio/story_reel.py build --dir out/story/winter-1982 [--draft]
+  python3 scripts/studio/story_reel.py build --dir out/story/winter-1982 --lab lab-cine16_1978.json --name reel-cine16_1978
 
 What the reel is made of (docs/STORY_FILMS.md):
   film segments  each selected clip through scripts/studio/filmlab.py (one stock),
@@ -35,6 +36,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 
@@ -602,9 +604,9 @@ def mix_into(bus, clip, at):
 
 # ── build ──────────────────────────────────────────────────────────────────
 
-def build(d, draft):
+def build(d, draft, lab_file="lab.json", name="reel"):
     edl = load_json(os.path.join(d, "edl.json"))
-    lab_all = load_json(os.path.join(d, "lab.json"))
+    lab_all = load_json(os.path.join(d, lab_file))
     segs = edl["segments"]
     starts, t = [], 0.0
     for s in segs:
@@ -626,7 +628,7 @@ def build(d, draft):
     phone = {k: np.array(Image.open(f"{assets}/phone-{k}.png").convert("RGB").resize((W, H), Image.LANCZOS))
              for k in ("page", "pressed", "calling")}
 
-    out_video = os.path.join(d, "final", "reel-video.mp4")
+    out_video = os.path.join(d, "final", f"{name}-video.mp4")
     os.makedirs(os.path.dirname(out_video), exist_ok=True)
     enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
                             "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium" if draft else "slow",
@@ -686,10 +688,10 @@ def build(d, draft):
     mix_into(bus, ring, brk_t + brk["callAt"])
     mix_into(bus, click(0.3, 0.02, 900), brk_t + brk["callAt"] + 2.25)
     bus = bus[: int(total * SR)]
-    wav = os.path.join(d, "final", "reel-audio.f32")
+    wav = os.path.join(d, "final", f"{name}-audio.f32")
     bus.astype(np.float32).tofile(wav)
 
-    final = os.path.join(d, "final", "reel.mp4")
+    final = os.path.join(d, "final", f"{name}.mp4")
     run(["ffmpeg", "-v", "error", "-y", "-i", out_video, "-f", "f32le", "-ar", str(SR), "-ac", "2", "-i", wav,
          "-c:v", "copy", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
          "-movflags", "+faststart", "-shortest", final])
@@ -703,7 +705,12 @@ def main():
     ap.add_argument("--dir", required=True)
     ap.add_argument("--corners", default=None)
     ap.add_argument("--draft", action="store_true")
+    # A second look of the same edit: story-film.ts `look` writes lab-<era>.json.
+    ap.add_argument("--lab", default="lab.json")
+    ap.add_argument("--name", default="reel")
     a = ap.parse_args()
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", a.name):
+        sys.exit("--name must be lower-case letters, digits, - or _")
     d = os.path.abspath(a.dir)
     if a.cmd == "sign":
         manifest = load_json(os.path.join(d, "manifest.json"))
@@ -731,7 +738,7 @@ def main():
         json.dump(default_edl(d), open(path, "w"), indent=2)
         print(f"wrote {os.path.relpath(path, ROOT)}")
     else:
-        build(d, a.draft)
+        build(d, a.draft, a.lab, a.name)
 
 
 if __name__ == "__main__":
