@@ -39,20 +39,52 @@ export function formatAtlasClusterRange(minUsd: number, maxUsd: number): string 
 }
 
 /**
- * Cluster pill face — same $795k / $1.2M language as a lone pin.
- * A mixed pile prints the low ask with +. Never a bare count.
+ * The word a cluster pill prints above its figure, so the figure is never
+ * read as one home's ask. Plain English, lower case (UXLIVE-6, 2026-09-23).
  */
-export function formatAtlasClusterPin(minUsd: number, maxUsd: number): string {
-  const lo = formatAtlasPinPrice(minUsd)
-  if (!lo) return ''
-  const hi = formatAtlasPinPrice(maxUsd)
-  if (!hi || lo === hi) return lo
-  return `${lo}+`
+export const ATLAS_CLUSTER_PIN_LABEL = 'median'
+
+/**
+ * The median ask of the homes a cluster bubble holds — the figure the pill
+ * prints (UXLIVE-6, 2026-09-23).
+ *
+ * The face used to be the LOWEST ask in the pile with a "+": over Bend the
+ * bubbles read "$50k+", "$74k+", "$99k+" because one land lot sat in each
+ * pile, and a buyer read a wrong price for a neighborhood of $700k houses.
+ * The median is the ask a reader can take as "what homes here list for";
+ * the pill labels it (ATLAS_CLUSTER_PIN_LABEL) and the hover line still
+ * prints the full span. The members are the pins already on screen, so the
+ * visitor's type toggles and price scrubber narrow the median too.
+ *
+ * Token asks (under ATLAS_PIN_MIN_USD) are skipped: they are not prices.
+ * Even count: the mean of the two middle asks, to the dollar. Null when no
+ * member carries a real ask.
+ */
+export function atlasClusterMedianAsk(prices: readonly (number | null | undefined)[]): number | null {
+  const asks: number[] = []
+  for (const p of prices) {
+    if (p == null || !formatAtlasPinPrice(p)) continue
+    asks.push(p)
+  }
+  if (asks.length === 0) return null
+  asks.sort((a, b) => a - b)
+  const mid = Math.floor(asks.length / 2)
+  return asks.length % 2 === 1 ? asks[mid]! : Math.round((asks[mid - 1]! + asks[mid]!) / 2)
 }
 
 /**
- * Lowest and highest asks that can print a pin. Token MLS prices stay out
- * so a city-scale bubble reads $185k+ / $735k, never $0k+.
+ * Cluster pill face: the median ask in the same $795k / $1.2M language as a
+ * lone pin. Never a bare count, never a low ask with "+". Empty when the
+ * pile holds no real ask.
+ */
+export function formatAtlasClusterMedian(prices: readonly (number | null | undefined)[]): string {
+  return formatAtlasPinPrice(atlasClusterMedianAsk(prices))
+}
+
+/**
+ * Lowest and highest asks that can print a pin, for the cluster's hover
+ * line ("$185k to $5.3M"). Token MLS prices stay out, so a span never
+ * opens on $0k.
  */
 export function atlasClusterAskSpan(
   prices: readonly (number | null | undefined)[],

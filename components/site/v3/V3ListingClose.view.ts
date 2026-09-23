@@ -63,6 +63,14 @@ export type CloseView = {
   /** One line naming every source behind the drawing. */
   source: string
   /**
+   * The name the folded source line shows before anyone opens it, in the
+   * reader's words (VOICE-2, visibility audit 2026-09-22). `source` opens
+   * "public.market_metric · stat_id=…" and the fold used to cut it at the
+   * first stop, so the only visible source for three drawn figures on every
+   * listing page was the single word "public".
+   */
+  sourceName: string
+  /**
    * The trace a visitor sees WITHOUT opening anything: what was counted, where,
    * over what window, through what date. The evaluator's finding on the first
    * pass was that three figures sat next to a closed disclosure triangle and no
@@ -244,5 +252,8 @@ export function buildCloseView(facts: ListingCutFacts, subject: CloseSubject | n
     source: [...readings.map((r) => r.source), subject?.source]
       .filter(Boolean)
       .join('  |  '),
+    sourceName: subject
+      ? `${city} closed sales and this home’s own listing record, regional MLS`
+      : `${city} closed sales, regional MLS`,
   }
 }

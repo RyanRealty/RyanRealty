@@ -71,6 +71,12 @@ import {
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import {
+  familiesNestedInCommunity,
+  platFamilyDisplayName,
+  platMemberDisplayName,
+} from '@/lib/market/plat-family'
+import { getPlatFamilies } from '@/lib/data/subdivisions/getPlatFamilies'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
@@ -80,6 +86,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { communityPageTrail } from '@/lib/site/place-trail'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
+import { noteDegradedHead, placeNameFromSlug, PLACE_HEAD_READ_MS } from '@/lib/site/place-head-fallback'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -123,7 +130,7 @@ import { amenityItemListItems, buildCommunityAmenityBoard } from './_v3/communit
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
-import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
+import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -171,7 +178,8 @@ import {
   placeMedianChart,
   placeMedianChartCaption,
 } from '@/app/cities/[slug]/_v3/city-sections'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
+import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return getAllResortCommunities().map((c) => ({ slug: publicCommunitySlug(c) }))
@@ -238,10 +246,39 @@ function communityRegistryContext(community: { citySlug: string; subdivision: st
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const community = await getCommunityBySlug(slug)
+  // RACED (P3 — DATA-6, 2026-09-23; lib/site/place-head-fallback.ts). A read
+  // that did not answer is unknown, not absent: the head names the community
+  // from the registry (or its own URL), keeps this path, and stands for one
+  // short ISR window. notFound() only when the read answered with no community.
+  const communityRead = await withTimeoutFallbackResult(
+    getCommunityBySlug(slug),
+    null,
+    PLACE_HEAD_READ_MS,
+    'comm:meta-community',
+  )
+  if (!communityRead.ok) {
+    await noteDegradedHead('community', 'comm:meta-community')
+    const entry = getResortCommunityBySlug(slug)
+    return pageMetadata(
+      communityMetadataInput({
+        slug,
+        name: entry?.label ?? placeNameFromSlug(slug),
+        city: entry?.city ?? 'Central Oregon',
+      }),
+    )
+  }
+  const community = communityRead.value
   if (!community) notFound()
   const { rawName, registryEntry } = communityRegistryContext(community, slug)
-  const resolved = await resolvePublicName(slug, rawName, community)
+  const resolvedRead = await withTimeoutFallbackResult(
+    resolvePublicName(slug, rawName, community),
+    null,
+    PLACE_HEAD_READ_MS,
+    'comm:meta-name',
+  )
+  // Unknown is neither "publish" nor "refuse": the raw name for one short window.
+  if (!resolvedRead.ok) await noteDegradedHead('community', 'comm:meta-name')
+  const resolved = resolvedRead.value
   const childAliases = registryEntry
     ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
     : []
@@ -265,10 +302,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return pageMetadata(
     communityMetadataInput({
       slug,
-      name: resolved.kind === 'publish' ? resolved.name : rawName,
+      name: resolved?.kind === 'publish' ? resolved.name : rawName,
       city: community.city,
       heroImageUrl: community.heroImageUrl,
-      refused: resolved.kind === 'refuse',
+      refused: resolved?.kind === 'refuse',
       stock,
     }),
   )
@@ -720,10 +757,35 @@ async function renderCommunityDetail({ params }: Props) {
       return displayName ? [{ name: displayName, href: `/subdivisions/${slugify(alias)}` }] : []
     }),
   ])
+  /* THE COMMUNITY IS ITS FAMILY'S MAIN PAGE (Matt 2026-09-23: phases "go
+     into the same main neighborhood page, and then they can jump into the
+     different phases after that"). Every recorded phase of a plat family
+     this community owns (lib/market/plat-family.ts: Tetherow Phase 1-7,
+     Broken Top's 27, Crooked River Ranch No. 4 and No. 5) is a row in the
+     rail, and the rail row is a real anchor. Containment already draws most of
+     them; a phase it does not (a community with no polygon) joins here, and
+     subdivisionRailEntries drops the duplicates by slug. */
+  const platFamilies = await withTimeoutFallback(getPlatFamilies(), [], 3000, 'comm:families')
+  const ownFamilies = platFamilies.filter((family) => family.communitySlug === slug)
+  const familyPhaseDoors = ownFamilies.flatMap((family) =>
+    family.members
+      .filter((member) => member.slug !== slug)
+      .map((member) => ({ name: platMemberDisplayName(member.label), href: `/subdivisions/${member.slug}` })),
+  )
+  /* A FAMILY INSIDE THE COMMUNITY (Ridge At Eagle Crest in Eagle Crest, 60
+     recorded phases; Painted Ridge At Broken Top in Broken Top) keeps its own
+     main page, and the community links DOWN to it, so the walk is community,
+     then family, then phase, each a real anchor. */
+  const containedPlatSlugs = new Set(platRegions.map((region) => slugFromPlaceHref(region.href)))
+  const nestedFamilyDoors = familiesNestedInCommunity(platFamilies, slug, containedPlatSlugs).map((family) => ({
+    name: platFamilyDisplayName(family),
+    href: family.mainHref,
+  }))
   const railEntries = subdivisionRailEntries({
     regions: platRegions.map((region) => ({ name: region.name, href: region.href })),
-    extras: platRegions.length > 0 ? [] : namedChildren,
+    extras: [...(platRegions.length > 0 ? [] : namedChildren), ...nestedFamilyDoors, ...familyPhaseDoors],
     rows: childStockRows,
+    selfHref: `/communities/${slug}`,
   })
   const homesByChild = childListingKeys(childStockRows)
   const placeHomes = stockSections.flatMap((section) => section.rows)
@@ -897,6 +959,30 @@ async function renderCommunityDetail({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // UXLIVE-3 (visibility audit 2026-09-22): the Atlas's dots, the sales heat
+  // drawn from them and the basemap load after paint; counts, outlines and
+  // text stay in the server HTML, and the plats ship at the precision the
+  // frame can draw. The route rebuilds the population from the boundary this
+  // page read: the county plat union when there is one, else the recorded
+  // boundary row.
+  const atlasProps = deferredAtlasProps({
+    population: atlasView,
+    scope: {
+      cities: [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])],
+      boundaryRef: resortBoundary
+        ? { kind: 'resort', slug }
+        : mapPolygon
+          ? { kind: 'geo', geoType: 'neighborhood', geoSlug: slug }
+          : null,
+      boundary: mapPolygon,
+    },
+    regions: foldAtlasRegions,
+    childRegions: platRegions,
+    amenities: amenityLayers,
+    types: atlasView.types,
+    fit: 'dots',
+    basemapFrame: basemapFrameForRegions(foldAtlasRegions, { dots: atlasView.dots, fit: 'dots' }),
+  })
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -969,20 +1055,19 @@ async function renderCommunityDetail({ params }: Props) {
               headlineTone="eyebrow"
               keyPlacement="head"
               sourceName="Oregon Data Share"
-              dots={atlasView.dots}
-              regions={foldAtlasRegions}
-              childRegions={platRegions}
-              basemap={basemapForRegions(foldAtlasRegions, {
-                dots: atlasView.dots,
-                fit: 'dots',
-              })}
+              dots={atlasProps.dots}
+              dotsSrc={atlasProps.dotsSrc}
+              dotsSummary={atlasProps.dotsSummary}
+              regions={atlasProps.regions}
+              childRegions={atlasProps.childRegions}
+              basemapSrc={atlasProps.basemapSrc}
               fit="dots"
               types={atlasView.types}
               events={atlasView.events}
               source={atlasView.source}
               stamp={atlasView.stamp}
               incomplete={!atlasView.complete}
-              amenities={amenityLayers}
+              amenities={atlasProps.amenities}
               hidePriceScrubber
               clusterPins
               clusterCellPx={COMMUNITY_FOLD_CLUSTER_CELL_PX}

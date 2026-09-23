@@ -44,3 +44,13 @@ describe('ReviewsAvatarGroup honest faces', () => {
     expect(GROUP).not.toContain('Read this review')
   })
 })
+
+describe('V3Proof star rating (Lighthouse aria-prohibited-attr, 2026-09-23)', () => {
+  it('names the rating on an element whose role allows a name', () => {
+    // aria-label on a span with no role is prohibited ARIA: Lighthouse failed
+    // /about's accessibility category on it (0.93 < 0.95, PR #352). The five
+    // stars are one picture of a rating, so the span is role="img".
+    expect(SRC).toMatch(/className="v3-proof__marks" role="img" aria-label=\{`\$\{n\} of 5`\}/)
+    expect(SRC).not.toMatch(/className="v3-proof__marks" aria-label=/)
+  })
+})

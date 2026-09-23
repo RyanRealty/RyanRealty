@@ -11,6 +11,10 @@
       "schedule": "30 14 * * *"
     },
     {
+      "path": "/api/cron/answer-engine-citations",
+      "schedule": "0 16 2 * *"
+    },
+    {
       "path": "/api/cron/blog-monthly-city-report",
       "schedule": "0 15 3 * *"
     },
@@ -37,6 +41,10 @@
     {
       "path": "/api/cron/compute-subdivision-metrics",
       "schedule": "50 */6 * * *"
+    },
+    {
+      "path": "/api/cron/crawl-probe",
+      "schedule": "55 11 * * *"
     },
     {
       "path": "/api/cron/crm-alert-drain",
@@ -125,6 +133,10 @@
     {
       "path": "/api/cron/loop-sentinel",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/loop-weekly-measure",
+      "schedule": "0 13 * * 1"
     },
     {
       "path": "/api/cron/market-history-snapshot",

@@ -31,7 +31,9 @@ City                    Bend
  ├── Neighborhood       Riverwest, Old Bend, Westside, …
  │    └── Plat          a recorded subdivision inside that neighborhood
  ├── Master-plan        Tetherow, Caldera Springs, Broken Top, Widgi Creek, …
- │    └── Plat          a neighborhood/plat inside the resort
+ │    ├── Plat          a neighborhood/plat inside the resort
+ │    └── Family        Ridge at Eagle Crest: one name the county recorded in phases
+ │         └── Phase    Ridge at Eagle Crest 36 (see "Subdivision families")
  └── ZIP                97703 (a city-shaped Field, not a fifth Bend clone)
 ```
 
@@ -126,6 +128,8 @@ ZIP is this job without a still: houses first.
 
 Do not open with a number hero. Do not put subdivisions after a long “about” essay.
 
+**The homes under the map are dials (Matt 2026-09-23).** `PlaceSubdivisionHomes layout="dial"`: each buyer group in the current map selection is one `V3ListingDial`, the same primitive the plat pages use, so a reader looking at River West's multifamily homes sees one of them large and flips through the rest on the dial beside it, with "01 / 02" over it. Choosing a subdivision on the map still decides what is in the dials (each re-opens on the first home of the new selection). The neighborhood band is 90rem, so the dial lays its card on its side there: copy under the subdivision list's edge, photograph under the map's. City and community pages keep the carousel (`PlaceSubdivisionHomes` default).
+
 ---
 
 ## Master-plan / resort — `/communities/tetherow`, Caldera Springs, Broken Top, Widgi Creek
@@ -156,12 +160,14 @@ A master-plan page that opens like Bend has already lost to tetherow.com.
 
 **Search to beat:** the plat name plus the parent (neighborhood or resort).
 
-**Job.** The homes on this plat. Parent is obvious. Short plat is a list. Do not dress four listings in a city hero.
+**Job.** The homes on this plat. Parent is obvious. Do not dress four listings in a city hero.
+
+**One dial per property type (Matt 2026-09-23: "we need to see carousels of all available property types if there are any; we haven't been doing commercial and multi family"; then, the same day, "an alternative to a carousel ... a primary card ... a smaller dial with thumbnails of the other photos ... some kind of indicator of how many total cards are in the dial").** The inventory is `V3PlaceInventory layout="dial"`: for each type with active stock, in the order single-family, multi-family, townhomes and condos, land, commercial, one `V3ListingDial`. One listing shows large (its lead photograph, then the rail card's copy: ask, facts, address, a door to the listing), the rest of that type are thumbnails on a dial beside it with no scrollbar, and "03 / 12" with a filling rule sits over the dial. The dial turns by thumbnail, previous/next, arrow keys, Home/End, and a swipe on the photograph on a phone, where the dial becomes a strip under the card. A type with one listing is the card alone, with no dial and no count. An empty type is omitted. Every listing is still an `<a href>` in the served HTML (the cards not showing carry `hidden`), and every listing the ledger would list is in the dial (no photo or no price does not drop it; "Price not published" is the unpriced ask). A commercial lease (MLS PropertyType G) is not for sale, so it is never in a dial or its count. `layout="rails"` (one card carousel per type) and the default ledger rows stay available.
 
 | Order | Section | Why |
 |---|---|---|
 | 1 | Name + breadcrumb to neighborhood **or** resort, then city | Hierarchy. |
-| 2 | The homes (list if few; map if the pins earn it) | The whole page. Lot lines / taxlots when we have them. |
+| 2 | The homes: map if the pins earn it, then one dial per property type | The whole page. Lot lines / taxlots when we have them. |
 | 3 | Recorded CC&Rs for this plat | When published. Official resort homepages do not offer this. |
 | 4 | Peer plats in the same parent | Other children. |
 | 5 | Schools (doors) | Inherited assignment, not a second city schools index. |
@@ -169,6 +175,45 @@ A master-plan page that opens like Bend has already lost to tetherow.com.
 | 7 | Ask | Alerts for this plat. |
 
 Never steal the parent city’s still. Never teach zoom.
+
+---
+
+## Subdivision families — one main page, phases one tap below
+
+Matt 2026-09-23: *"When there are multiple phases in a subdivision, we want all those to go into the same main neighborhood page, and then they can jump into the different phases after that. We do that for Tetherow and Broken Top, but sometimes it's not as crystal clear, so we just want to make sure that that grouping is always happening."* Visibility audit 2026-09-22: SEO-7, SEO-4, EXP-3, EXP-7, VOICE-8, gsc-trend-4.
+
+The county records one place as many plats: Ridge at Eagle Crest is 60 (Ridge At Eagle Crest 5 through 59, three roman phases, three replats), Awbrey Butte Homesites 34, Broken Top 27. A person searches the one name. This is the contract that makes the one name one page.
+
+**The family.** Derived, never curated: `derivePlatFamilies` in [`lib/market/plat-family.ts`](../../../lib/market/plat-family.ts), fed live by `getPlatFamilies` ([`lib/data/subdivisions/getPlatFamilies.ts`](../../../lib/data/subdivisions/getPlatFamilies.ts), 6h cache) from `public.boundaries` (plats, labels, boundary-tree city), `subdivision_plat_closed_mv` (closed counts, filed-sales city), `subdivision_city_inventory_mv` (MLS names) and the registry.
+
+1. Strip each county label to its base: land-use file numbers (`711-21-000260-sub`, `Plld20200979`, `Pz-20-0569`), everything from the first recording marker on (Phase, Unit, Stage, Section, No., Replat, Lots/Blocks/Tract), ordinal "First Addition" wherever it sits, filing tokens (Inc., P.U.D., OLU, SFR), trailing numbers in digits, roman numerals or words.
+2. Group by base **and town**. The town is the boundary tree's city first (the plat polygon's parent chain), the town its sales were filed under second. Namesakes in two towns are two families. Plats no town holds group with each other only when no plat of that base has a town.
+3. Two or more recorded plats make a family.
+4. The family's name is a name somebody recorded: a county label (Tetherow Crossing is itself a plat), a registry community or alias, an MLS subdivision name in that town, or the stem every member label begins with. Never an invented heading.
+
+**The main page.** The registry community page when the community owns the name (`/communities/tetherow`, `/communities/broken-top`, `/communities/northwest-crossing`, `/communities/caldera-springs`, `/communities/eagle-crest`). Otherwise `/subdivisions/{family-slug}` (`/subdivisions/ridge-at-eagle-crest`). When that address already belongs to another recorded place, the family is addressed by name and town: Bend's Aspen Heights (4 phases) is `/subdivisions/aspen-heights-bend`, because `/subdivisions/aspen-heights` is the Aspen Heights plat in Prineville. The one exemption: a base that is a city's own name (the Bend, Redmond and La Pine townsite plats); their main page is the city page, already above them in every trail.
+
+**What the main page carries** (`/subdivisions/{family}`):
+
+| Order | Section | Rule |
+|---|---|---|
+| 1 | H1 = the recorded family name, breadcrumb to its resort (when the registry files it under one) or city | Owns the head term: indexable, self-canonical, title `{Family} homes for sale · {City}, Oregon`. |
+| 2 | The family's homes: map of the union of every phase, the Field | One counted set: single-family, Active and Active Under Contract, inside any phase, each listing once (`getPlatFamilyInventory`). |
+| 3 | The phases (`#phases`) | Every recorded phase, a real anchor each, its own lifetime closed count and a trace that says the counts are not added. |
+| 4 | One sold line | Every closed sale inside the union of the phases, each sale once (`getPlatFamilyClosedSales`). Never the sum of the phases' counts: a replat's sales also sit inside the phase it replats. |
+
+Indexable when the family's phases together clear the plat floor (10 lifetime closed sales, R-123).
+
+**What a phase page carries** (`/subdivisions/{phase}`): the breadcrumb names the family between the parent and the phase (`Redmond / Eagle Crest / Ridge at Eagle Crest / Ridge at Eagle Crest 36`), the same crumb in the JSON-LD, and a visible sentence under the opening, "One of the 60 recorded phases of Ridge at Eagle Crest", whose link is the family's main page. The title is subordinate, `{Phase} · part of {Family}, {City}`, so the family page is the one bidding for the family's name (gsc-trend-4). A phase keeps its own index slot on the SITE-24 rule (own polygon, 10 or more lifetime sales). County file numbers never reach a title; the legal label stays in the body.
+
+**Who links to whom.**
+- A community page lists every phase of the family it owns and links down to every family inside it (Ridge at Eagle Crest from Eagle Crest; Painted Ridge at Broken Top from Broken Top): community, then family, then phase.
+- `/subdivisions` is the A to Z directory: every indexable subdivision page and every family, town by town, each family's phases nested under its name, every anchor in the served HTML (`V3PlaceDirectory`). No sitemapped subdivision page is an orphan.
+- City pages' `#child-places` rows each carry a real `<a href>` door beside the map-select button. Still name-only, still nothing above the neighborhood bars (SITE-128).
+
+**Not indexable as a subdivision.** A plat whose slug is a city, neighborhood or registry community slug (`/subdivisions/bend`, `/subdivisions/sisters`, `/subdivisions/la-pine` render as noindex, follow; `eagle-crest`, `brasada-ranch`, `mountain-high`, `rivers-edge`, `first-on-the-hill-sites` already 308 in middleware and leave the sitemap).
+
+**Locks.** [`lib/market/plat-family.lock.test.ts`](../../../lib/market/plat-family.lock.test.ts) runs the rule over every recorded plat (the 2026-09-23 snapshot of all 3,427) and fails when any multi-plat group has no single main page, when a phase stops answering to its family's page, or when two places share one address. [`app/subdivisions/[slug]/_v3/plat-family-view.test.ts`](../../../app/subdivisions/[slug]/_v3/plat-family-view.test.ts) pins the link up and the phase list. `ci:plat-families` ([`scripts/check-plat-families.mjs`](../../../scripts/check-plat-families.mjs)) fails when a page stops rendering the link up, the family crumb, the phase index, the community doors or the directory.
 
 ---
 

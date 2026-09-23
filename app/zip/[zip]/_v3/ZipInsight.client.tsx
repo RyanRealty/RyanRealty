@@ -15,6 +15,7 @@ import InsightCards, {
   type InsightPage,
 } from '@/components/motion/insight-cards'
 import { AnimatedNumber } from '@/components/motion/number'
+import { yearAgoClause } from '@/lib/market/year-ago-clause'
 import { zipSearchHref } from './zip-constants'
 import {
   zipInsightCount,
@@ -195,19 +196,21 @@ function compareProse(
   const cell = compare.cells[index] ?? null
   const prior = compare.priorCells[index] ?? null
   if (!cell || !prior || cell.median == null || prior.median == null) return null
-  const delta = zipInsightDelta(cell.median, prior.median)
-  const direction =
-    cell.median > prior.median ? 'more' : cell.median < prior.median ? 'less' : 'the same'
+  // VOICE-6: one subject, one direction (lib/market/year-ago-clause.ts).
+  const versus = yearAgoClause({
+    now: cell.median,
+    then: prior.median,
+    thenMoney: zipInsightMoney(prior.median),
+    thenLabel: prior.label,
+    delta: zipInsightDelta(cell.median, prior.median),
+  })
   return {
     cell,
     prose: (
       <>
         In {cell.label} the middle house in {board.scope} sold for{' '}
-        <strong>{zipInsightMoney(cell.median)}</strong>. A year earlier, in {prior.label}, it was{' '}
-        {zipInsightMoney(prior.median)}
-        {delta ? `, ${delta}` : ''}
-        {direction === 'the same' ? ', level with a year ago' : `, ${direction} than the same month last year`}
-        . Drag across the lines to read any other month.
+        <strong>{zipInsightMoney(cell.median)}</strong>
+        {versus ? `, ${versus}` : ''}. Drag across the lines to read any other month.
       </>
     ),
   }

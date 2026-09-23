@@ -1,6 +1,9 @@
 /**
- * On-page place inventory. Four buyer buckets. A type with zero actives
- * is omitted — no empty stub. Listings stay on the place page.
+ * On-page place inventory. One section per buyer bucket: houses,
+ * multi-family, townhomes and condos, land, and commercial (Matt 2026-09-23:
+ * "carousels of all available property types ... we haven't been doing
+ * commercial and multi family"). A type with zero actives is omitted — no
+ * empty stub. Listings stay on the place page.
  *
  * Market figures stay on their own traces (SFR leftover / plat inventory).
  * This module only groups the live stock a visitor can open.
@@ -15,8 +18,9 @@ import { formatCount } from '@/lib/format/count'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { placeTypeKey } from '@/lib/place/place-type-style'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 
-export const PLACE_STOCK_SECTION_ORDER = ['sfr', 'multifamily', 'attached', 'land'] as const
+export const PLACE_STOCK_SECTION_ORDER = ['sfr', 'multifamily', 'attached', 'land', 'commercial'] as const
 
 export type PlaceStockSectionKey = (typeof PLACE_STOCK_SECTION_ORDER)[number] | 'other'
 
@@ -25,6 +29,7 @@ export const PLACE_STOCK_HEADINGS: Record<PlaceStockSectionKey, string> = {
   multifamily: 'Multifamily homes',
   attached: 'Townhomes and condos',
   land: 'Land',
+  commercial: 'Commercial property',
   other: 'Other property',
 }
 
@@ -44,6 +49,22 @@ const KEY_TO_SECTION: Record<string, PlaceStockSectionKey> = {
   townhome: 'attached',
   land: 'land',
   farm: 'land',
+  // MLS F (commercial sale) and H (business opportunity) used to fall to
+  // "Other property", which no buyer reads as commercial.
+  commercial_sale: 'commercial',
+  business: 'commercial',
+}
+
+/**
+ * False for a commercial lease (MLS PropertyType 'G', "Commercial Lease" in
+ * the feed's own label): its ListPrice is rent, and a lease is not for sale.
+ * placeTypeKey has no key for 'G' and falls to 'sfr', which printed three
+ * 671 Greenwood Avenue leases as "Single-family homes ... for sale" on
+ * /subdivisions/center-addition-to-bend (2026-09-23). Every for-sale count
+ * and carousel built here asks this first.
+ */
+export function placeStockIsForSale(propertyType?: string | null): boolean {
+  return !listingPriceIsLeaseRate(propertyType)
 }
 
 export function placeStockSectionKey(
@@ -65,6 +86,13 @@ export function unionListingTiles(...groups: ReadonlyArray<readonly ListingTile[
     }
   }
   return out
+}
+
+/** 'Pending' for an under-contract listing, the word the rails print; else null. */
+export function placeStockStatusLabel(status: ListingTile['status']): string | null {
+  const t = String(status ?? '').toLowerCase()
+  if (t.includes('pending') || t.includes('under contract')) return 'Pending'
+  return null
 }
 
 export function placeStockRowFromTile(tile: ListingTile): V3ListingRowData | null {
@@ -102,6 +130,7 @@ export function placeStockRowFromTile(tile: ListingTile): V3ListingRowData | nul
     listNumber: tile.listNumber,
     tourUrl: tile.tourUrl,
     hasTour: tile.hasVirtualTour === true || Boolean(tile.tourUrl),
+    statusLabel: placeStockStatusLabel(tile.status),
   }
 }
 
@@ -111,9 +140,11 @@ export function placeStockSectionsFromTiles(tiles: readonly ListingTile[]): Plac
     multifamily: [],
     attached: [],
     land: [],
+    commercial: [],
     other: [],
   }
   for (const tile of tiles) {
+    if (!placeStockIsForSale(tile.propertyType)) continue
     const section = placeStockSectionKey(tile.propertyType, tile.propertySubType) ?? 'other'
     const row = placeStockRowFromTile(tile)
     if (!row) continue

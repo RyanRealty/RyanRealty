@@ -6,19 +6,27 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { isExpiredUnlearned } from './ledger-draft'
+import { readGscTrend, type GscTrend } from './gsc-trend'
+import { isExpiredUnlearned, isLedgerRowOpen } from './ledger-draft'
 import { readJoinConversionStats } from './join-conversion'
 import { readLookWalkBaseline } from './look-walk'
 import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hold'
 import { readIntegrationHealth } from './integration-health'
 import { readSearchCompletenessAccept } from './search-completeness'
 import { readVideoDecisionDocket } from './video-docket'
+import { readAnswerEngineCitations, type AnswerEngineCitations } from './answer-engine-citations'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
+import {
+  PLACE_MEMBERSHIP_STALE_HOURS,
+  readPlaceMembershipFreshness,
+  type PlaceMembershipFreshness,
+} from './place-membership-freshness'
 import {
   AUTH_TABLE_TO_HEARTBEAT,
   classifyTokenHealth,
   consecutiveHeartbeatFailures,
 } from './token-health'
+import { readCrawlProbeStatus, type CrawlProbeStatus } from '@/lib/data/crawl-probe/rows'
 
 export type SignalStatus = 'ok' | 'unreadable'
 
@@ -65,6 +73,12 @@ export type CompanyScoreboardSignals = {
     lastFullSyncAt: string | null
     source: string
   }
+  /**
+   * Latest daily crawl-surface probe (/api/cron/crawl-probe; visibility audit
+   * 2026-09-22, gsc-trend-7): sitemaps, sampled pages as Googlebot, homepage
+   * scripts, Search Console. stale = no run in CRAWL_PROBE_STALE_HOURS.
+   */
+  crawlProbe: CrawlProbeStatus
   commissions: {
     status: SignalStatus
     rows: number
@@ -97,9 +111,17 @@ export type CompanyScoreboardSignals = {
     byMethodology: CountByKey
     source: string
   }
+  /**
+   * Search visibility by page class (visibility audit 2026-09-22, gsc-trend-1).
+   * 'degraded' = a Central Oregon money class lost >= 15% impressions or >= 3
+   * positions, 28d vs the prior 28d (./gsc-trend). It used to be 'ok' whenever
+   * a count of target_query_benchmark rows did not error.
+   */
   gsc: {
-    status: SignalStatus
+    status: SignalStatus | 'degraded'
+    /** target_query_benchmark rows in the last 28d (exact-match view since migration 20260923150000). */
     rows28d: number
+    trend: GscTrend
     source: string
   }
   sequences: {
@@ -186,6 +208,21 @@ export type CompanyScoreboardSignals = {
     ttfbBendMs: number | null
     source: string
   }
+  /**
+   * Market Truth membership freshness (audit COMP-3, P9). Every market_metric
+   * cell joins place_membership; stale membership drops new listings from every
+   * published count and verdict.
+   */
+  placeMembership: PlaceMembershipFreshness
+  /** Why the scoreboard should not be trusted as-is. Empty = not degraded. */
+  degraded: string[]
+  /**
+   * AEO-9: the newest monthly answer-engine citation battery (is
+   * ryan-realty.com cited per target query, and who is instead). The leading
+   * indicator beside the ai_assistant_sessions traffic series. 'unread' when
+   * no run has landed in the window.
+   */
+  answerEngine: AnswerEngineCitations
 }
 
 const SOCIAL_TABLES = [
@@ -243,6 +280,9 @@ export async function collectCompanyScoreboardSignals(
   now: Date = new Date(),
 ): Promise<CompanyScoreboardSignals> {
   const fetchedAt = now.toISOString()
+  // AEO-9, additive: started first, awaited at the end, so it runs beside the
+  // big read below instead of after it.
+  const answerEnginePromise = readAnswerEngineCitations(sb, now)
   const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const since28d = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
@@ -278,6 +318,8 @@ export async function collectCompanyScoreboardSignals(
     cmaRes,
     joinStats,
     heartbeatRes,
+    placeMembership,
+    gscTrend,
     ...tokenResults
   ] = await Promise.all([
     countCrmStages(sb),
@@ -285,7 +327,7 @@ export async function collectCompanyScoreboardSignals(
     sb.from('marketing_brain_actions').select('status'),
     sb.from('sync_state').select('last_delta_sync_at,last_full_sync_at').eq('id', 'default').maybeSingle(),
     sb.from('tc_commissions').select('status,gci'),
-    sb.from('site_improvement_ledger').select('domain,actual_delta,shipped_at,window_days'),
+    sb.from('site_improvement_ledger').select('domain,actual_delta,verdict,shipped_at,window_days'),
     sb.from('newsletter_subscribers').select('id', { count: 'exact', head: true }).not('email', 'ilike', '%fleet-test%'),
     sb.from('brokers').select('id', { count: 'exact', head: true }),
     sb.from('market_pulse_live').select('methodology_version'),
@@ -317,6 +359,8 @@ export async function collectCompanyScoreboardSignals(
       .gte('logged_at', since7d)
       .order('logged_at', { ascending: false })
       .limit(200),
+    readPlaceMembershipFreshness(sb, now),
+    readGscTrend(sb, now),
     ...SOCIAL_TABLES.map((table) =>
       sb.from(table).select(NO_REFRESH_COLUMN.has(table) ? 'expires_at' : 'expires_at,refresh_token'),
     ),
@@ -386,6 +430,10 @@ export async function collectCompanyScoreboardSignals(
     source: 'sync_state id=default',
   }
 
+  // One small row, read after the batch; a failure degrades to 'unreadable'
+  // on this signal alone.
+  const crawlProbe = await readCrawlProbeStatus(sb, now)
+
   const commissions: CompanyScoreboardSignals['commissions'] = {
     status: commissionsRes.error ? 'unreadable' : 'ok',
     rows: 0,
@@ -412,19 +460,22 @@ export async function collectCompanyScoreboardSignals(
     expiredUnlearned: 0,
     expiredByDomain: {},
     byDomain: {},
-    source: 'site_improvement_ledger.domain + actual_delta + shipped_at + window_days',
+    source: 'site_improvement_ledger.domain + actual_delta + verdict + shipped_at + window_days (open = no actual_delta and no verdict)',
   }
   if (!ledgerRes.error && ledgerRes.data) {
     ledger.rows = ledgerRes.data.length
     for (const row of ledgerRes.data) {
       const domain = (row.domain as string | null) || '(null)'
       bump(ledger.byDomain, domain)
-      if (row.actual_delta == null) ledger.openWindows += 1
+      const actualDelta = row.actual_delta == null ? null : Number(row.actual_delta)
+      const verdict = (row.verdict as string | null) ?? null
+      if (isLedgerRowOpen({ actualDelta, verdict })) ledger.openWindows += 1
       const stranded = isExpiredUnlearned(
         {
           shippedAt: String(row.shipped_at ?? fetchedAt),
           windowDays: Number(row.window_days ?? 14),
-          actualDelta: row.actual_delta == null ? null : Number(row.actual_delta),
+          actualDelta,
+          verdict,
         },
         now,
       )
@@ -460,10 +511,15 @@ export async function collectCompanyScoreboardSignals(
     }
   }
 
+  // The status is the page-class trend, never a row count (gsc-trend-1).
   const gsc: CompanyScoreboardSignals['gsc'] = {
-    status: gscRes.error ? 'unreadable' : 'ok',
-    rows28d: gscRes.count ?? 0,
-    source: 'target_query_benchmark date >= now-28d',
+    status: gscTrend.status,
+    rows28d: gscRes.error ? 0 : (gscRes.count ?? 0),
+    trend: gscTrend,
+    source:
+      gscTrend.status === 'unreadable'
+        ? `UNREADABLE: ${gscTrend.note}`
+        : `${gscTrend.source}; ${gscTrend.note}${gscTrend.degraded.length ? `; degraded: ${gscTrend.degraded.map((d) => `${d.pageClass}/${d.market}`).join(', ')}` : ''}`,
   }
 
   const sequences: CompanyScoreboardSignals['sequences'] = {
@@ -585,6 +641,18 @@ export async function collectCompanyScoreboardSignals(
     source: searchAccept.source,
   }
 
+  // Degraded when Market Truth membership is older than 48 hours or cannot
+  // be read: every published active count and verdict would be missing new
+  // listings (audit COMP-3, P9).
+  const degraded: string[] = []
+  if (placeMembership.freshness === 'stale') {
+    degraded.push(
+      `place_membership last refreshed ${placeMembership.newestAt} (${placeMembership.ageHours}h ago, limit ${PLACE_MEMBERSHIP_STALE_HOURS}h): market_metric counts and verdicts miss new listings; check pg_cron job refresh_place_membership_15min, or /api/cron/refresh-mvs until migration 20260923014500 is applied`,
+    )
+  } else if (placeMembership.freshness === 'unknown') {
+    degraded.push(`place_membership freshness UNKNOWN (${placeMembership.source})`)
+  }
+
   return {
     fetchedAt,
     crm,
@@ -595,6 +663,7 @@ export async function collectCompanyScoreboardSignals(
       source: SOCIAL_TABLES.join(', '),
     },
     sync,
+    crawlProbe,
     commissions,
     ledger,
     newsletter,
@@ -611,5 +680,8 @@ export async function collectCompanyScoreboardSignals(
     video,
     integrations,
     searchCompleteness,
+    placeMembership,
+    degraded,
+    answerEngine: await answerEnginePromise,
   }
 }

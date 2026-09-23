@@ -79,6 +79,26 @@ describe('priceDropDistribution', () => {
     expect(figure.source).toContain('1 row(s) in the pull carry no percent')
   })
 
+  it('opens the reading on the middle cut in a sentence, with one plain affordance (VOICE-6)', () => {
+    const figure = priceDropDistribution({
+      drops,
+      total: 6,
+      cap: 48,
+      placeLabel: 'Central Oregon',
+      windowDays: 7,
+      fetchedAt: 'Sep 9, 2026',
+    })!
+    // Median of 3,5,7,9,11,13 by the drawing's own index rule is the 7% mark.
+    expect(figure.askHint).toBe(
+      'The middle cut is 123 Aspen Ct in Bend, down 7.0%, a $50K cut. Tap, hover or tab to any other mark to see that home and its cut.',
+    )
+    expect(figure.askHint).not.toMatch(/home and dollars|·/)
+    // VOICE-2: the folded source line names the feed, not the population sentence.
+    expect(figure.sourceName).toBe('live MLS through Oregon Data Share')
+    // The name is the trace's own first clause, never a label the record lacks.
+    expect(figure.source.startsWith(`${figure.sourceName}, active single-family listings`)).toBe(true)
+  })
+
   it('returns nothing when no row can be placed', () => {
     expect(
       priceDropDistribution({

@@ -18,6 +18,7 @@ const MAP_FILE = join(ROOT, 'lib/seo/ai-query-map.json')
 const LLMS = join(ROOT, 'app/llms.txt/route.ts')
 const NEXT_CONFIG = join(ROOT, 'next.config.ts')
 const REGISTRY = join(ROOT, 'data/resort-communities.json')
+const LEGACY_REDIRECTS = join(ROOT, 'data/legacy-redirects.json')
 
 const errors = []
 const notes = []
@@ -35,6 +36,24 @@ function isPermanentHop(pathname, configSrc) {
   }
   if (idx < 0) return false
   return /permanent:\s*true/.test(configSrc.slice(idx, idx + 500))
+}
+
+/**
+ * AEO-2 (visibility audit 2026-09-22). next.config.ts is not the only redirect
+ * layer: middleware.ts applies data/legacy-redirects.json as a 301 before any
+ * route resolves. SITE-171 put /homes-for-sale/bend/northwest-crossing in that
+ * map, so two F1 pillars 301'd (dropping ?beds=3&baths=2) while this gate,
+ * reading only next.config.ts, passed. Same normalisation as middleware's
+ * resolveLegacyRedirect and lib/search/publish-place-browse-href.ts
+ * redirectsAwayFromSearch: lowercase, no trailing slash, a self-map is served.
+ */
+const legacyMap = existsSync(LEGACY_REDIRECTS) ? JSON.parse(readFileSync(LEGACY_REDIRECTS, 'utf8')) : {}
+function legacyRedirectTarget(pathname) {
+  let p = String(pathname)
+  if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1)
+  p = p.toLowerCase()
+  const dest = legacyMap[p]
+  return dest && dest !== p ? dest : null
 }
 
 if (!existsSync(MAP_FILE)) {
@@ -82,6 +101,25 @@ function llmsCovers(path) {
   return false
 }
 
+{
+  const seenPillars = new Map()
+  for (const p of map.pillars ?? []) {
+    const pn = pathnameOf(p.path)
+    const legacy = legacyRedirectTarget(pn)
+    if (legacy) {
+      errors.push(`pillar ${p.path} is a key in data/legacy-redirects.json (middleware 301s it to ${legacy}). List the survivor.`)
+    }
+    if (isPermanentHop(pn, configSrc)) {
+      errors.push(`pillar ${p.path} matches a permanent redirect source in next.config.ts. List the survivor.`)
+    }
+    if (seenPillars.has(p.path)) {
+      errors.push(`pillar ${p.path} is listed twice (${seenPillars.get(p.path)} and ${p.section}). Each pillar path appears once.`)
+    } else {
+      seenPillars.set(p.path, p.section)
+    }
+  }
+}
+
 for (const hop of map.hopForbiddenPathnames ?? []) {
   for (const q of map.queries ?? []) {
     for (const p of q.citablePaths ?? []) {
@@ -97,6 +135,10 @@ for (const q of map.queries ?? []) {
     const pn = pathnameOf(p)
     if (isPermanentHop(pn, configSrc)) {
       errors.push(`${q.id}: citable path ${p} matches a permanent redirect source in next.config.ts. Cite the survivor.`)
+    }
+    const legacy = legacyRedirectTarget(pn)
+    if (legacy) {
+      errors.push(`${q.id}: citable path ${p} is a key in data/legacy-redirects.json (middleware 301s it to ${legacy}). Cite the survivor.`)
     }
     if (pn === '/lp' || pn.startsWith('/lp/')) {
       errors.push(`${q.id}: citable path ${p} is a noindex LP. Cite an organic survivor.`)
@@ -148,6 +190,10 @@ if (errors.length === 0) {
 
 const liveUrl = 'https://ryan-realty.com/llms.txt'
 try {
+  // The break-tests (scripts/__tests__/check-ai-query-battery.test.mjs) run on a
+  // materialized tree and must not depend on the network: the live read is
+  // evidence only and never decides the exit code.
+  if (process.env.AI_QUERY_BATTERY_OFFLINE === '1') throw new Error('AI_QUERY_BATTERY_OFFLINE=1')
   const res = await fetch(liveUrl, { headers: { ...CI_PROBE_HEADERS }, redirect: 'manual' })
   const body = res.ok ? await res.text() : ''
   if (!res.ok) {

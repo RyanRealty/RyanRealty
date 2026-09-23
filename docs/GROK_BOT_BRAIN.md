@@ -2,7 +2,7 @@
 
 This is the index a Grok Bot or Grok Build teammate opens first. It is not the second brain. The repo is.
 
-Do not paste this file, `CLAUDE.md`, or `AGENTS.md` into one mega system prompt. Open the one door for this job. THE LOOP is **armed** on current main (Matt 2026-08-21). Work graph is `loop-brief` + ENTERPRISE_MAP. Do not invent a parallel backlog. Disarm word is "disarm the loop".
+Do not paste this file, `CLAUDE.md`, or `AGENTS.md` into one mega system prompt. Open the one door for this job. When Matt says "run the loop", follow [`docs/RUN_LOOP.md`](RUN_LOOP.md). Work graph is `loop-brief` + ENTERPRISE_MAP. Do not invent a parallel backlog. The Vercel loop-sentinel is armed in code (Matt 2026-08-21) but reads `LOOP_SENTINEL=off` in production: all 2,554 fires from 2026-09-05 to 2026-09-23 logged the kill switch in `sync_logs` and the last launch was 2026-08-18. The runners are the Mac grinder and the Claude cloud routine. Disarm word is "disarm the loop".
 
 Company dump (who we are, kit, hard no's): [`docs/GROK_BOT_COMPANY.md`](GROK_BOT_COMPANY.md).
 
@@ -11,9 +11,9 @@ Company dump (who we are, kit, hard no's): [`docs/GROK_BOT_COMPANY.md`](GROK_BOT
 | Job | Read only these |
 |-----|-----------------|
 | **Canon** | [`CLAUDE.md`](../CLAUDE.md) §0 (data accuracy) + [`CONTEXT.md`](../CONTEXT.md) (place words). Stop there unless the task names another § |
-| **Work graph** | `npx tsx scripts/loop-brief.ts`, then [`docs/plans/CROSS_AGENT_HANDOFF.md`](plans/CROSS_AGENT_HANDOFF.md) **Current** only (≤18 lines). Enterprise Map photograph: [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](plans/ENTERPRISE_MAP/SESSION_HANDOFF.md) |
+| **Work graph** | `npx tsx scripts/loop-brief.ts`, then [`docs/plans/CROSS_AGENT_HANDOFF.md`](plans/CROSS_AGENT_HANDOFF.md) **Current** block only (the file holds one). Enterprise Map photograph: [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](plans/ENTERPRISE_MAP/SESSION_HANDOFF.md) |
 | **Public restyle** | [`design_system/ryan-realty/locked/LOCKED.md`](../design_system/ryan-realty/locked/LOCKED.md) + the PNGs in that folder. Live data stays on Spark / place graph / Chart Room. Same URLs. No new routes |
-| **Public site / run loop** | [`.claude/skills/site-queue/SKILL.md`](../.claude/skills/site-queue/SKILL.md) then [`design_system/public/TASTE.md`](../design_system/public/TASTE.md). Catalogs in `taste-catalog.json` are the UX bar: install the source, restyle navy/cream, keep the interaction. SEO and information hold first. |
+| **Public site / run loop** | [`docs/RUN_LOOP.md`](RUN_LOOP.md), then [`.cursor/skills/site-queue/SKILL.md`](../.cursor/skills/site-queue/SKILL.md) for what differs when the builder is Grok. |
 | **CRM** | Live product is ryan-realty.com (`lib/crm`, `/admin/crm`). Compose and send from the site. Test as matt@ / marketing@ / admin@ only. Never the 648 household |
 | **Imagine place photos** | [`design_system/ryan-realty/imagine-place-heroes/`](../design_system/ryan-realty/imagine-place-heroes/) (same files at `/workspace/place-heroes/`). Live home when shipped: `asset_library` + `hero_image_url` on the place row. Do not write live URLs from this folder |
 

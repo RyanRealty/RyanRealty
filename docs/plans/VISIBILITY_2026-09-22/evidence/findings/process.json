@@ -1,0 +1,299 @@
+{
+  "area": "process",
+  "notes_path": "/tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/process/notes.md",
+  "summary": "I ran the boot ritual a fresh session runs and read the canon it is told to follow. Today `loop-brief` serves a FLEET-PUNCH slice of 8 bot-found search UI bugs (of 167 open lines) and prints 'GSC GAPS: 0 eligible SITE-* nodes. Ranking is not the served class.' The site queue (`site-queue-status --json`) has 170 items: 141 done, 29 blocked, 0 open, 0 eligible, liveWorkers 0. The queue's objective is mechanical only for taste: the Tip Ready receipt refuses on demoMatch, competitiveBrief and honesty; the frozen rubric weights designQuality 30, originality 30, interaction 15, craft 15, honestyFunction 10 with no SEO or voice criterion; 0 of 27 page classes reach the 70 finish line (best 67), so the queue never stops and it minted 172 nodes in September. The measure-to-learn edge is dead: site_improvement_ledger has 20 rows, 1 shipped in September (baseline and actual both null), 141 SITE nodes done in September carry 0 ledger rows, and 7 expired unlearned windows freeze 7 domains including seo-aeo, so the insert guard would refuse any SEO class that obeyed 'No row, no ship'. Nothing schedules the growth-loop measurer; COMPANY_SCOREBOARD.md is 'Week of 2026-08-15'. The only GSC-to-node path, scripts/seed-gsc-ranking-queue.ts, landed today in one commit, is referenced by nothing, and its dry run against live GSC drafts 12 real ranking gaps (brasada ranch pos 11.7 / 3,168 impressions / 0.00% CTR split across 4 URLs; tetherow pos 27.1; broken top 15.5; black butte 25.3) that are not in the graph. Two of three autonomous runners are dead: the Vercel loop-sentinel has logged 'kill switch (LOOP_SENTINEL=off)' every 10 minutes since 2026-09-05 (last launch 08-18) while GROK_BOT_BRAIN says the loop is armed, and the Claude 'Site queue grinder' routine failed after 28 seconds on its 16:05Z fire today with a prompt that contradicts the skill on worker cap (3 vs 6), land path (push vs PR) and reads a missing doc. The land path itself is the bottleneck: 'Cos Mini-lands, HOLD owner email' routes every cloud lane through one person on one Mac; 114 PRs are open; 11 nodes (9 of them Matt p0s) are blocked WAITING ON A PERSON; 4 are owned by an ended session with no blocked_until and will never reopen. Canon contradicts itself and cites dead paths (Draft-first §0.5 vs §1 full autonomy; one-session-per-loop vs six workers; mockup preflight vs 'deleted' while 11 index.html files still exist; EXPERIENCE_SYSTEM.md, FUB, SITE_PAGES_E2E.md cited in six places). Voice rules retired on 09-07 are still gated (ci:no-public-em-dash from a later Matt lock on 09-20, ci:naked-verb-headings, ci:market-question, ci:seo-shell's banned-poetry list and exact H1/lead literals). `npm run ci:gates` is path-aware, 174 of 294 gates, 174/174 green in 150 s (commit-compiles 149.8 s), but `npm run push` does not run test:unit as canon says, and HEAD has 6 failing tests with CI red on main. Node trailers are bypassed on 27 of 282 site commits since 09-08 (Grok Build 16, Cursor 11) and 35% of site commits are off-graph. Boot reading is 5,476 lines one pointer deep plus a 3,289-line catalog; the handoff has 52 stacked Current blocks and the brief shows 4 lines. Notes: /tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/process/notes.md",
+  "facts": [
+    {
+      "fact": "A fresh session is served the FLEET-PUNCH search slice (8 of 167 open punch lines), with 0 eligible SITE nodes and the line 'Ranking is not the served class'.",
+      "evidence": "npx tsx scripts/loop-brief.ts (scratchpad/process/loop-brief.out lines 32, 109-145): 'GSC GAPS: 0 eligible SITE-* nodes. Ranking is not the served class. Dry-run: npx tsx scripts/seed-gsc-ranking-queue.ts'; 'class: fleet:public-ux:search · punch-list slice 8 line(s) of 167 open'; NODE 1/1 FLEET-PUNCH 3a6198cd."
+    },
+    {
+      "fact": "The site queue has 170 items: 141 done, 29 blocked, 0 open, 0 eligible; liveWorkers 0, maxWorkers 6, staleClaims 0. The work graph overall: open 21, in_progress 0, blocked 30, done 186, killed 495.",
+      "evidence": "npx tsx scripts/site-queue-status.ts --json → readAt 2026-09-22T19:35:01Z, items 170 (state done 141 / blocked 29; eligible false on all 170). supabase-js counts via scratchpad/lib/sb.mjs (db-reads.json nodeCounts.*): open 21, in_progress 0, blocked 30, done 186, killed 495."
+    },
+    {
+      "fact": "The accept test is mechanically a taste score: the receipt refuses only demoMatch, competitiveBrief and honesty; the rubric has no SEO or voice criterion; 0 of 27 classes are at the 70 finish line.",
+      "evidence": ".claude/skills/site-queue/SKILL.md:41-70 (four steps, 'Only then, the score', rise floor 3, finish line 70); scripts/lib/taste-receipt.mjs:330-346, 376-394 (demoMatch / competitiveBrief / honesty refusals; 'seo' appears 6 times, all in comments at 331-334 deferring to ci:seo-shell); design_system/public/taste-evaluator.v1-2026-09-12.md:117-125 (designQuality 30, originality 30, interaction 15, craft 15, honestyFunction 10); design_system/public/taste-table.json parsed: 27 rows, 0 with median >= 70, top app/reviews 67, bottom app/cities 42."
+    },
+    {
+      "fact": "site_improvement_ledger has 20 rows; 1 shipped in September (baseline null, actual null); 8 rows lack actual_delta; 7 are expired-unlearned and freeze 7 domains including seo-aeo. 141 SITE nodes done in September carry 0 ledger_row_id.",
+      "evidence": "db-reads.json ledger rows (order shipped_at desc): 3ad9bbd8 public-ux/response-clock 2026-09-08 baseline null actual null; expired+unlearned: social-presence 08-17, recruit-retain 08-16, transactions 08-16, seo-aeo c058cfdf 08-16 (14d window → expired 08-30), nurture 08-16, leads 08-16, factory 08-15. loop-brief.out line 30: 'stranded ledger windows: 7 (...seo-aeo:1...) — these domains are FROZEN until Learn closes them'. db-reads.json nodesDoneSept: 141 rows, 0 with ledger_row_id; nodesWithLedger total 7 of 732. docs/DEVELOPMENT_PROCESS.md:25 'No row, no ship'; :50-52 insertImprovementLedgerRow refuses a frozen domain."
+    },
+    {
+      "fact": "Nothing schedules the growth-loop measurer; the weekly scoreboard is five weeks stale.",
+      "evidence": "vercel.json crons matching loop|measure|scoreboard|seed|gsc: only /api/cron/loop-health-check, /api/cron/loop-sentinel, /api/cron/marketing-measurement-loop (which writes content_performance for social posts, app/api/cron/marketing-measurement-loop/route.ts:1-10). grep growth-loop in vercel.json and .github/workflows: none. Claude routines (list_triggers): only 'Site queue grinder' and the disabled 'EXPIRED OUTREACH'. docs/plans/COMPANY_SCOREBOARD.md:6-8 'Overwrite this file each week' / 'Week of: 2026-08-15'."
+    },
+    {
+      "fact": "The only GSC-to-node path (scripts/seed-gsc-ranking-queue.ts) landed today in one commit, is referenced by nothing, and its dry run finds 12 real ranking gaps with thousands of impressions and 0.00% CTR that are not in the graph.",
+      "evidence": "git log -- scripts/seed-gsc-ranking-queue.ts: one commit 8a2c71e3a 2026-09-22 Matt 'feat: seed ranking work when the site queue is empty'; grep -rn seed-gsc-ranking-queue package.json vercel.json .claude/skills .cursor AGENTS.md CLAUDE.md docs/DEVELOPMENT_PROCESS.md → none. Dry run output: 'used SITE gaps 170 · next SITE-181 · GSC queries 1951 (live GSC) · drafts 12 · dry-run'; SITE-181 'brasada ranch homes for sale → /communities/brasada-ranch (pos 11.7, 3168 impr, CTR 0.00%)' split across /communities/brasada-ranch, /homes-for-sale/powell-butte/brasada-ranch-220224324, /homes-for-sale/powell-butte/brasada-ranch/brasada-ranch-220220863, /communities; SITE-182 tetherow pos 27.1 / 421 impr; SITE-183 broken top pos 15.5 / 416; SITE-184 black butte ranch pos 25.3 / 374. Exit 1: ENOENT scratchpad/gsc-ranking-seed-draft.ts. git status unchanged."
+    },
+    {
+      "fact": "The Vercel loop-sentinel launcher has been off since 2026-09-05 (last launch 2026-08-18) while the docs say the loop is armed.",
+      "evidence": "sync_logs rows via sb.mjs (db-reads-2.mjs): endpoint loop_sentinel:launch last logged_at 2026-08-18T15:03:41Z; oldest loop_sentinel:skip with 'kill switch (LOOP_SENTINEL=off)' 2026-09-05T15:20:02Z; the 30 newest rows today are all loop_sentinel:skip 204 'kill switch (LOOP_SENTINEL=off)' at 10-minute intervals. docs/GROK_BOT_BRAIN.md:5 'THE LOOP is armed on current main (Matt 2026-08-21)'; lib/data/loop/sentinel.ts:116 'Armed 2026-08-21 — default on'."
+    },
+    {
+      "fact": "The Claude cloud routine 'Site queue grinder' fails at every recent fire and its prompt contradicts the skill on worker cap, land path and a required read.",
+      "evidence": "list_triggers: trig_01JTHasiFzPRDnkTiPzodMPV cron '5 */4 * * *', enabled, last_run fired 2026-09-22T16:05:53Z finished 16:06:21Z status ROUTINE_RUN_STATUS_FAILED. Prompt text: 'liveWorkers is at or above its maxWorkers (3)'; 'the Site queue section of docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md' (file MISSING on disk); 'Push with npm run push from the main checkout ... rather than opening a pull request that waits on a person'. lib/data/loop/work-node.ts:126 MAX_SITE_WORKERS = 6. Sessions list: 'Run loop' 2026-09-20 FAILED, 2026-09-15 FAILED and COMPLETED, 2026-09-08 five sessions (1 FAILED, 1 BLOCKED, 1 REVIEW_READY, 2 COMPLETED)."
+    },
+    {
+      "fact": "11 blocked nodes wait on a human landing a branch or PR; 4 are owned by an ended session with no blocked_until and cannot reopen themselves.",
+      "evidence": "db-reads.json nodesNonDone: blocked_reason contains 'WAITING ON A PERSON' on SITE-93, 95, 112, 137, 138, 140, 142, 143, 146, 154, 158; owner claude-cloud-01DYvsoL-20260915 with blocked_until null on SITE-93/95/112/104 (heartbeat 2026-09-16). scripts/loop-brief.ts:176-179 nulls owner_session only on a measurement-window reopen; scripts/site-queue-status.ts:97-99 releases stale claims only where state='in_progress'. Land rule text: scripts/seed-site-queue.ts:1239-1290 'Public Patch owns craft. Cos Mini-lands. HOLD owner email.' Open PRs page 1 (created asc): #183 (2026-09-04) .. #317; SITE-128 PRs #291-#317; titles include 'do not merge', 'HOLD', 'squash for Cos' (#227, #229, #249, #257, #281, #282, #313). Orchestrator: 114 open PRs; PR #351 stranded with the listing_videos fix while Grok redid SITE-153/155 on main."
+    },
+    {
+      "fact": "Canon contradicts itself on approval, concurrency, worker cap, claim path, cadence and land path, and cites at least six dead paths.",
+      "evidence": "docs/DEVELOPMENT_PROCESS.md:24,156 'Draft-first (CLAUDE.md §0.5) ... Matt sees the draft, says go' vs CLAUDE.md:118 'Full autonomy with post-hoc review' (CLAUDE.md has §0-§9, no §0.5). DEVELOPMENT_PROCESS.md:113 'never two sessions in the same domain at once' vs site-queue SKILL.md:8 MAX_SITE_WORKERS=6 and :240 'Up to four lanes per round'. .cursor/skills/site-queue/SKILL.md:8 '6' vs :31 'Three live workers'; .cursor/rules/run-loop.mdc:26-27 'maxWorkers (3)'. AGENTS.md:102 claim by writing state with supabase-js vs SKILL.md:245-256 'the ONLY claim path' is the tool; AGENTS.md:102 'hourly Claude cloud routine' vs SKILL.md:22 'every four hours' vs cron 5 */4. Dead: DEVELOPMENT_PROCESS.md:136 mockup preflight vs CLAUDE.md:233-235 'deleted 2026-08-27' while ls shows 11 design_system/ryan-realty/ui_kits/*/index.html; growth-loop SKILL.md:30 docs/EXPERIENCE_SYSTEM.md MISSING; DEVELOPMENT_PROCESS.md:119 'FUB mirror', :147 'forms into FUB'; SITE_PAGES_E2E.md MISSING but cited by site-queue SKILL.md:89, cursor SKILL.md:21, AGENTS.md:102, TASTE.md, loop-brief.ts:228, grinder prompt; tmp/crm-e2e-latest.json MISSING (DEVELOPMENT_PROCESS.md:119). ci:process-canon, ci:claude-canon, ci:loop-skills-canon are path-lane only (scripts/ci-lanes.json) and were skipped in this run."
+    },
+    {
+      "fact": "Mechanical wording rules still gate public copy after VOICE.md retired them on 2026-09-07, and one of them is a later Matt lock.",
+      "evidence": "marketing_brain_skills/brand-voice/VOICE.md:4-6 'No word lists, no punctuation rules, no mechanical gate.' scripts/check-no-public-em-dash.mjs header 'Matt lock 2026-09-20: NEVER use em dashes ... Plain ` -- ` used as a dash is the same refuse' (created 83f795f 2026-09-20, always lane). scripts/check-naked-verb-headings.mjs (G62, closed list; cites VOICE.md 'Site pages', a section the 64-line file no longer has). scripts/check-market-question-heading.mjs (literal 'Is {place} a buyer's or seller's market?' on all five grains). scripts/check-heading-display.mjs (display font). scripts/check-seo-shell.mjs:30-42 BANNED 11 phrases, :60+ REQUIRED exact H1 'Homes for sale in Central Oregon' and lead 'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.' (VOICE.md:63 gives a different homepage lead). scripts/lib/taste-receipt.mjs:35 imports manneredPublicCopyProblems; check-deliverable-share-safety.mjs:117 em-dash/semicolon '(brand voice)'; check-dog-floater.mjs:26 'no em dash'."
+    },
+    {
+      "fact": "`npm run ci:gates` is path-aware: 174 of 294 gates, all green, 150 s wall; `npm run push` does not run test:unit; HEAD has 6 failing unit tests and CI is red on main.",
+      "evidence": "scratchpad/process/gates.out: 'ci:gates selected 174/294 · skipped 120', 'ci:gates OK · 174/174 passed · 149.8s', REAL=150.108s; slowest ci:commit-compiles 149.8s, ci:row-cap 48.7s, ci:toast-discipline 12.4s; 36 ci:publish-* gates ran. scripts/push-with-gates.sh:120-145 runs ci:gates, eslint, next build, ci:bundle-budget (no test:unit) vs docs/DEVELOPMENT_PROCESS.md:143 'ci:gates + test:unit green BEFORE push'. `npx vitest run app/cities/[slug]/_v3/city-fold.test.ts` at 83a459c: 'Test Files 2 failed (2) · Tests 6 failed | 26 passed', :144 'expected 52986 to be less than 49303' (source-order assertion id=\"neighborhoods\" before id=\"child-places\"). Newest two commits: 'fix: ... so HEAD compiles' with bare 'Node: none'. Orchestrator: CI red on main at 83a459c, build/smoke/a11y skipped."
+    },
+    {
+      "fact": "Since 2026-09-08, 27 of 282 site commits on main bypass the G72 commit-msg hook and 99 of 282 (35%) are off-graph; September volume on main is 1,086 first-parent commits, not 130.",
+      "evidence": "Loop over git log --since=2026-09-08 --first-parent --no-merges HEAD filtered to files under app/ or components/site/: 282 commits; Node:<uuid> 183; 'Node: none (reason)' 72; would-be-refused by scripts/check-site-node.mjs:40 regex: 2 bare 'Node: none', 12 'Node: SITE-xxx', 13 no Node line = 27 (authors Matt 16, Cursor Agent 11). git rev-list --count --since=2026-09-01T00:00:00 --first-parent HEAD = 1,086 (all commits 1,709; by day 9..102). HEAD 83a459c equals GitHub main (list_commits); sandbox origin/main is stale at 6ef8d5a (09-15), HEAD is 130 ahead, which is the orchestrator's '130'."
+    },
+    {
+      "fact": "A 'run loop' session must read about 5,476 lines one pointer deep plus a 3,289-line catalog; the site-queue skill is 601 lines of which 51 carry dated incident text; the handoff has 52 stacked Current blocks and the brief shows 4 lines.",
+      "evidence": "wc -l: decisions.md 1360, site-queue SKILL.md 601, TASTE.md 596, CLAUDE.md 576, AGENTS.md 445, PUBLIC_UI.md 343, REQUIREMENTS.md 316, taste-evaluator rubric 257, DEVELOPMENT_PROCESS.md 249, COMPANY_IMPROVEMENT.md 180, COMPANY_SCOREBOARD.md 136, design_system SKILL.md 122, frontend-design SKILL.md 117, SESSION_HANDOFF.md 114, VOICE.md 64 = 5,476; taste-catalog.json 3,289. grep -c '2026-0[0-9]-[0-9]{2}' site-queue SKILL.md = 51; lines mentioning 2026-09-08 = 16. grep -c '^# Current' docs/plans/CROSS_AGENT_HANDOFF.md = 52 (10 dated 09-22, 16 dated 09-18); scripts/loop-brief.ts:55-59 slices the first block to 18 lines; today's first block is 4 lines. lib/data/loop/domains.ts:59-61 requires decisions.md for public-ux while DEVELOPMENT_PROCESS.md:179 marks that package 'quarry'."
+    },
+    {
+      "fact": "Gate count keeps growing and encodes product decisions: 314 check-*.mjs, 139 added since 2026-08-01, 34 in September, 41 citing a dated Matt ruling, 28 citing a SITE node, 35 publish-* content locks; the runtime gates that caught the last escape are in no lane.",
+      "evidence": "ls scripts/check-*.mjs | wc -l = 314; git log --since=2026-08-01 --diff-filter=A on scripts/check-*.mjs = 139 (September 34); header scans: 41 with 'Matt' + 2026 date, 28 with SITE-*; scripts/check-publish-*.mjs = 35. scripts/ci-lanes.json: ci:route-content-floor and ci:tap-targets NOT IN LANES (ci:runtime-gates is a separate command). process_escape_ledger row 7196f7f8 2026-09-08: both lanes of a round shipped red to CI because ci:gates lacks the runtime gates. Escape ledger: 8 rows total, none after 2026-09-08."
+    }
+  ],
+  "findings": [
+    {
+      "id": "PROCESS-1",
+      "title": "No path exists from a ranking loss to a work node; the measurer half of the loop is unscheduled and the only GSC seeder is unwired",
+      "severity": "p0",
+      "category": "process",
+      "claim": "A ranking loss today cannot become work: the growth-loop 'measurer' has no cron, routine or script that runs it; the weekly scoreboard was last written 2026-08-15; the site queue is seeded from taste scores by hand; and the one GSC-to-node script (scripts/seed-gsc-ranking-queue.ts, landed today, one commit) is dry-run, referenced by nothing, and its 12 real drafts (brasada ranch pos 11.7 with 3,168 impressions and 0.00% CTR cannibalized across four URLs; tetherow pos 27.1; broken top 15.5; black butte 25.3) sit outside the graph while the brief serves 8 bot-found search UI bugs.",
+      "evidence": "loop-brief.out lines 32 and 109-145 ('GSC GAPS: 0 eligible SITE-* nodes. Ranking is not the served class'; served class fleet:public-ux:search). vercel.json crons: no growth/measure/seed cron; only loop-health-check, loop-sentinel, marketing-measurement-loop (social content_performance). docs/plans/COMPANY_SCOREBOARD.md:6-8 'Overwrite this file each week' / 'Week of: 2026-08-15'. scripts/seed-site-queue.ts:11-14 'A person pastes after review. Not auto-seed'; rounds three and five are 'Class X scored NN on the table instrument'. scripts/seed-gsc-ranking-queue.ts: git log shows one commit 8a2c71e3a 2026-09-22; grep for its name in package.json, vercel.json, all SKILL.md, .mdc, AGENTS.md, CLAUDE.md, DEVELOPMENT_PROCESS.md returns nothing. Dry run: 'GSC queries 1951 (live GSC) · drafts 12 · dry-run', SITE-181..184 as quoted; exit 1 on ENOENT scratchpad/.",
+      "why_it_matters": "Matt's number-one goal is to be seen. The loop has a working GSC feed (site_signal fresh to 09-19, target_query_benchmark 153 rows/28d) and a script that already diagnoses cannibalization and title/meta gaps, but the recursive edge from measurement to a node is a human remembering to run a script that only the brief hints at when the queue is empty. Meanwhile every session is pointed at taste scores and bot UI bugs. The rankings slip is not diagnosed by the process because the process never reads the rankings.",
+      "proposed_fix": "Make the measurer a scheduled job: a weekly Vercel cron (or one Claude routine) that runs `node scripts/_gsc-by-class.mjs`, `npx tsx scripts/seed-gsc-ranking-queue.ts --apply`, closes due ledger windows, and regenerates COMPANY_SCOREBOARD.md from the probe (stop hand-writing it). Fix the script's scratchpad ENOENT (mkdir -p). Change siteServeTier so GSC-diagnosed nodes (title 'GSC gap [...]') serve ahead of taste-sourced nodes and the FLEET-PUNCH inbox. Delete the 'Ranking is not the served class' hint once the seeder runs on schedule.",
+      "fix_size": "medium",
+      "files": [
+        "scripts/seed-gsc-ranking-queue.ts",
+        "scripts/loop-brief.ts",
+        "lib/data/loop/work-node.ts",
+        "scripts/seed-site-queue.ts",
+        "vercel.json",
+        "docs/plans/COMPANY_SCOREBOARD.md",
+        ".claude/skills/growth-loop/SKILL.md"
+      ]
+    },
+    {
+      "id": "PROCESS-2",
+      "title": "Measure-to-Learn is dead and its own guard now freezes the seo-aeo domain",
+      "severity": "p0",
+      "category": "process",
+      "claim": "The ledger that is supposed to make the loop learn has 20 rows total, one shipped in September with no baseline and no actual, and 141 SITE nodes were marked done in September without a ledger row. Seven windows expired unlearned (seo-aeo's since 2026-08-30) and, by canon and by the insert guard, those seven domains are frozen: a session that obeyed 'No row, no ship' could not ship any SEO class today, so sessions ignore the ledger instead.",
+      "evidence": "db-reads.json (site_improvement_ledger via supabase-js): 20 rows; shipped_at >= 2026-09-01: 1 (3ad9bbd8 public-ux/response-clock, baseline_value null, actual_delta null); rows without actual_delta 8; expired-unlearned 7: social-presence, recruit-retain, transactions, seo-aeo (c058cfdf shipped 2026-08-16, window 14), nurture, leads, factory. loop-brief.out:30 'stranded ledger windows: 7 (...) — these domains are FROZEN until Learn closes them'. loop_work_nodes: nodesDoneSept 141 with ledger_row_id null on all; nodesWithLedger 7 of 732. docs/DEVELOPMENT_PROCESS.md:25 'No row, no ship', :26 'A domain with open windows whose dates have passed is not allowed to start a new class', :50-52 insertImprovementLedgerRow refuses. Learn last ran 2026-08-15T18:51Z (6 rows) and 2026-09-08 (1 row).",
+      "why_it_matters": "Without Learn there is no confidence score, so prioritization is 'score = reach × gap × confidence ÷ effort' with a constant, i.e. no prioritization. Worse, the guard turns the missing Learn into a freeze on exactly the domain the mission needs. The loop's self-improving claim is prose; the machinery that would make it true is refusing work in the one domain that matters.",
+      "proposed_fix": "Close the 7 expired rows now with verdict 'inconclusive' and a note naming this audit (closeImprovementLedgerRow), unfreezing seo-aeo. Then pick one of two: (a) make completeWorkNode create the ledger row from the node's accept (metric, baseline, window) so every done node has a hypothesis, and make the weekly measurer close due rows; or (b) delete the ledger requirement from canon and the guard, and let the GSC page-class table be the only Learn. Do not keep a rule that every session bypasses.",
+      "fix_size": "medium",
+      "files": [
+        "lib/data/loop/ledger.ts",
+        "lib/data/loop/work-graph.ts",
+        "docs/DEVELOPMENT_PROCESS.md",
+        "docs/plans/COMPANY_IMPROVEMENT.md",
+        "scripts/loop-brief.ts",
+        "site_improvement_ledger",
+        "loop_work_nodes"
+      ]
+    },
+    {
+      "id": "PROCESS-3",
+      "title": "The site queue's objective function is a design score with a catalog-demo lock; visibility and voice are unscored prose",
+      "severity": "p0",
+      "category": "process",
+      "claim": "The only mechanical accept for a SITE node is the Tip Ready receipt (demoMatch true, competitiveBrief, honesty not falling, median +3 on grok-4.6, finish line 70). The rubric weights designQuality 30, originality 30, interaction 15, craft 15, honestyFunction 10 and has no SEO, ranking, conversion or voice criterion. 'SEO must improve' exists only as skill prose with no receipt field. 0 of 27 classes reach 70, so the queue never stops, and it minted 172 nodes in September whose evidence mentions GSC on 4 nodes and a score on 62.",
+      "evidence": ".claude/skills/site-queue/SKILL.md:41-70 (accept order; 'Only then, the score ... finish line 70'), :93-104 (SEO/information prose). scripts/lib/taste-receipt.mjs:330-346, 376-394 (refusals), 'seo' only in comments 331-334. design_system/public/taste-evaluator.v1-2026-09-12.md:117-125 (five criteria, weights). design_system/public/taste-table.json: 27 classes, 0 >= 70, best 67 (app/reviews), worst 42 (app/cities). design_system/public/taste-rule-freeze.json note: four rule changes 09-08..09-12 'reset every class's baseline, so no page could ever be measured as better'. db-reads.json: 172 nodes created since 09-01 (170 SITE-*); done-in-Sept evidence mentions score/median 62, demoMatch 28, GSC/impressions/clicks 4.",
+      "why_it_matters": "Matt: 'It builds pages, kind of, but it's not thoughtful' and 'Are there things conflicting?'. Yes: the loop is optimizing a screenshot-judged design score and installing catalog demos, which is orthogonal to being found and to sounding like a person. 'Fix the class' became 'raise the number', the number cannot be reached, and every lane's incentive is pixels, not rankings or copy.",
+      "proposed_fix": "Replace the finish line with a visibility/conversion objective: weekly GSC clicks and position by page class plus organic-attributed lead events; taste (no regression below the current mark), tap targets, content floor and §0 become floors, not the score. Add a text-only evaluator pass (voice per VOICE.md, title/H1 query alignment, quotable sourced sentences) to the receipt as a blocking field. Retire the 70 finish line and the 'seed the next round from the bottom of the table' rule; seed from GSC (PROCESS-1).",
+      "fix_size": "large",
+      "files": [
+        ".claude/skills/site-queue/SKILL.md",
+        "scripts/lib/taste-receipt.mjs",
+        "design_system/public/taste-evaluator.v1-2026-09-12.md",
+        "design_system/public/taste-rule-freeze.json",
+        "scripts/taste-table.mjs",
+        "scripts/taste-evaluate.ts",
+        "design_system/public/TASTE.md"
+      ]
+    },
+    {
+      "id": "PROCESS-4",
+      "title": "The 'Cos Mini lands' model makes one person on one Mac the merge path for every cloud lane; 114 PRs and 11 blocked nodes are the queue behind him",
+      "severity": "major",
+      "category": "process",
+      "claim": "Cloud lanes are told to open draft PRs that a human ('Cos Mini') cherry-picks onto main. That produced 114 open PRs (SITE-128 alone about 22), 11 nodes blocked 'WAITING ON A PERSON' (9 of them Matt's own p0s from 09-20/21), PR #351 stranded with the listing_videos fix while Grok redid SITE-153/155 on main, and 4 nodes owned by an ended session with no blocked_until that will never reopen. The bottleneck is created by the process, not by the work.",
+      "evidence": "scripts/seed-site-queue.ts:1239-1290 'Public Patch owns craft. Cos Mini-lands. HOLD owner email.' (five nodes). GitHub open PRs page 1 created asc: #183 (2026-09-04) .. #317; SITE-128 PRs #291-#317; titles 'do not merge' / 'HOLD' / 'squash for Cos' (#227, #229, #249, #257, #281, #282, #313). db-reads.json: blocked_reason 'WAITING ON A PERSON' on SITE-93/95/112/137/138/140/142/143/146/154/158; SITE-93/95/112/104 owner claude-cloud-01DYvsoL-20260915, blocked_until null (scripts/loop-brief.ts:176-179 and scripts/site-queue-status.ts:97-99 release only in_progress or window-due rows). Grinder prompt says push to main; docs/DEVELOPMENT_PROCESS.md:143 says GitHub build/e2e are PR-only and R-221 forbids waiting on CI. Orchestrator: 114 open PRs, PR #351.",
+      "why_it_matters": "Matt asked that nothing be lost across Grok/Cursor/Claude sessions. Right now finished, evaluator-scored work sits in draft PRs while another tool rebuilds the same page on main, and the graph reports the work as blocked on a human. The loop's throughput is one person's evenings.",
+      "proposed_fix": "One land path for every builder: a lane that is green on gates + test:unit pushes to main via `npm run push` (or auto-merge on green), with an auto-revert on a red deploy. Delete the 'Cos Mini-lands / HOLD owner email' rule from seed text, handoff and skills. Triage the 114 PRs once (merge the Tip Ready ones, close the superseded), then stop using PRs as cloud-lane output. Add blocked_until (or a release) whenever a node is blocked on a person so dead-session ownership expires.",
+      "fix_size": "medium",
+      "files": [
+        "scripts/seed-site-queue.ts",
+        ".claude/skills/site-queue/SKILL.md",
+        ".cursor/skills/site-queue/SKILL.md",
+        "docs/DEVELOPMENT_PROCESS.md",
+        "scripts/site-queue-status.ts",
+        "scripts/loop-brief.ts",
+        "loop_work_nodes"
+      ]
+    },
+    {
+      "id": "PROCESS-5",
+      "title": "Two of three autonomous runners are dead or off while the docs say the loop is armed; the live one fails in 28 seconds",
+      "severity": "major",
+      "category": "process",
+      "claim": "The Vercel loop-sentinel (the Cursor cloud-agent launcher) has logged 'kill switch (LOOP_SENTINEL=off)' every 10 minutes since 2026-09-05 and last launched on 2026-08-18, yet GROK_BOT_BRAIN.md and sentinel.ts say it is armed. The Claude 'Site queue grinder' routine (every 4 h) failed after 28 seconds on its 16:05Z fire today, and its prompt contradicts the skill on the worker cap (3 vs 6), the land path (push vs PR), and requires a document that does not exist. The Mac LaunchAgent is unverifiable from here.",
+      "evidence": "sync_logs via sb.mjs: loop_sentinel:launch last 2026-08-18T15:03:41Z; loop_sentinel:skip 'kill switch (LOOP_SENTINEL=off)' from 2026-09-05T15:20:02Z through 2026-09-22T19:50Z at 10-minute cadence. docs/GROK_BOT_BRAIN.md:5 'THE LOOP is armed on current main (Matt 2026-08-21)'; lib/data/loop/sentinel.ts:116. list_triggers: trig_01JTHasiFzPRDnkTiPzodMPV last_run 2026-09-22T16:05:53Z → 16:06:21Z FAILED; prompt 'maxWorkers (3)', 'docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md' (MISSING), 'Push with npm run push ... rather than opening a pull request'. lib/data/loop/work-node.ts:126 MAX_SITE_WORKERS = 6. Sessions: 'Run loop' 2026-09-20 FAILED, 2026-09-15 FAILED. Also the disabled routine 'EXPIRED OUTREACH' still instructs sends through the retired vendor CRM (retired vendor, per-action approval class).",
+      "why_it_matters": "Matt believes 'stuff is happening'. Two runners are not happening, and the one that fires cannot boot. The 10-minute cron and its prose cost attention and mislead every session that reads 'armed'.",
+      "proposed_fix": "Choose one runner (the Claude routine or the Mac LaunchAgent). Delete /api/cron/loop-sentinel, the Cursor launcher, the LOOP_SENTINEL prose in GROK_BOT_BRAIN.md and sentinel.ts, and the EXPIRED OUTREACH routine. Rewrite the grinder prompt to one line ('read RUN_LOOP.md and run it') so it cannot drift from the skill, and fix its STEP 1 failure (capture the first error line into a node or handoff so a failing fire is visible).",
+      "fix_size": "small",
+      "files": [
+        "app/api/cron/loop-sentinel/route.ts",
+        "lib/data/loop/sentinel.ts",
+        "vercel.json",
+        "docs/GROK_BOT_BRAIN.md",
+        "docs/DEVELOPMENT_PROCESS.md",
+        ".claude/skills/site-queue/SKILL.md"
+      ]
+    },
+    {
+      "id": "PROCESS-6",
+      "title": "Entry-point canon contradicts itself and cites dead paths; the canon gates run only on path and pass anyway",
+      "severity": "major",
+      "category": "process",
+      "claim": "A 'run the loop' session is told: draft-first for consumer-visible changes (citing a §0.5 that does not exist) and full autonomy; one session per domain and six workers with four lanes; cap 3 and cap 6; claim by hand and claim only with the tool; an hourly routine that runs every four hours; push to main and open a PR for a human. It is told to read a mockup that was 'deleted' (11 files still exist), EXPERIENCE_SYSTEM.md (deleted), SITE_PAGES_E2E.md (missing, cited six places), and to route leads into FUB (decommissioned). ci:process-canon, ci:claude-canon and ci:loop-skills-canon only run when those files change and did not catch any of it.",
+      "evidence": "docs/DEVELOPMENT_PROCESS.md:24,156 vs CLAUDE.md:118 (sections §0-§9 only); DEVELOPMENT_PROCESS.md:113 vs site-queue SKILL.md:8,240; .cursor/skills/site-queue/SKILL.md:8 vs :31; .cursor/rules/run-loop.mdc:26-27; AGENTS.md:102 vs SKILL.md:245-256 and :22 and cron 5 */4; DEVELOPMENT_PROCESS.md:136 vs CLAUDE.md:233-235 vs ls design_system/ryan-realty/ui_kits/*/index.html (11 files); growth-loop SKILL.md:30 (EXPERIENCE_SYSTEM.md MISSING); DEVELOPMENT_PROCESS.md:119,147 FUB; SITE_PAGES_E2E.md MISSING, cited by site-queue SKILL.md:89, cursor SKILL.md:21, AGENTS.md:102, TASTE.md, loop-brief.ts:228, grinder prompt; tmp/crm-e2e-latest.json MISSING. scripts/ci-lanes.json: ci:process-canon path docs/plans/**, ci:claude-canon path CLAUDE.md/AGENTS.md, ci:loop-skills-canon path .claude/skills/**; gates.out shows all three skipped; check-loop-skills-canon.mjs bans only the 'commit-last' signature.",
+      "why_it_matters": "Matt: 'Anytime I point a coding model at this and say Run the loop, it must have all the information it needs.' It gets contradictory information and dead pointers, and each tool resolves the contradiction differently, which is how three tools end up with three behaviors on one repo.",
+      "proposed_fix": "Collapse to one RUN_LOOP.md (≤150 lines) that every pointer file references without restating rules; delete the contradicted lines (draft-first §0.5, one-session-per-loop, cap 3, hand claim, hourly, FUB, EXPERIENCE_SYSTEM, SITE_PAGES_E2E) or fix them to the code's truth; move ci:process-canon/claude-canon/loop-skills-canon to the always lane and extend check-claude-canon to fail on any cited path that does not exist (including the 'deleted' mockups claim).",
+      "fix_size": "medium",
+      "files": [
+        "docs/DEVELOPMENT_PROCESS.md",
+        "CLAUDE.md",
+        "AGENTS.md",
+        ".claude/skills/site-queue/SKILL.md",
+        ".cursor/skills/site-queue/SKILL.md",
+        ".cursor/rules/run-loop.mdc",
+        ".claude/skills/growth-loop/SKILL.md",
+        "docs/GROK_BOT_BRAIN.md",
+        "scripts/check-claude-canon.mjs",
+        "scripts/check-process-canon.mjs",
+        "scripts/ci-lanes.json"
+      ]
+    },
+    {
+      "id": "PROCESS-7",
+      "title": "Mechanical wording gates still shape public copy after Matt retired mechanical voice rules, and one is a later Matt lock",
+      "severity": "major",
+      "category": "voice",
+      "claim": "VOICE.md (Matt 2026-09-07) says 'No word lists, no punctuation rules, no mechanical gate', yet ci:no-public-em-dash (a Matt lock dated 2026-09-20), ci:naked-verb-headings, ci:market-question (a fixed heading sentence on five page grains), ci:heading-display, ci:seo-shell's banned-phrase list and exact H1/lead literals, a mannered-copy check inside the Tip Ready receipt, and em-dash checks in two other gates all refuse or dictate wording. Two Matt rulings conflict and both are live; the seo-shell gate even locks a homepage lead sentence that differs from VOICE.md's own exemplar.",
+      "evidence": "marketing_brain_skills/brand-voice/VOICE.md:4-6, :63. scripts/check-no-public-em-dash.mjs header (83f795f, 2026-09-20). scripts/check-naked-verb-headings.mjs header (cites a VOICE.md 'Site pages' section that no longer exists). scripts/check-market-question-heading.mjs header. scripts/check-heading-display.mjs. scripts/check-seo-shell.mjs:30-42 BANNED, :60+ REQUIRED ('Homes for sale in Central Oregon'; 'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'). scripts/lib/taste-receipt.mjs:35 manneredPublicCopyProblems. scripts/check-deliverable-share-safety.mjs:117; scripts/check-dog-floater.mjs:26. Lanes: no-public-em-dash always; the others path.",
+      "why_it_matters": "Matt: 'It still uses this really awful voice ... Are there things conflicting?' A writer is told to sound like a person and is simultaneously refused for punctuation, forced to print a templated question heading on 3,000 pages, and kept to exact literals on money routes. The gates encode the old template voice.",
+      "proposed_fix": "Ask Matt which stands (VOICE.md or the 09-20 em-dash lock). If VOICE.md: delete ci:no-public-em-dash, ci:naked-verb-headings, the mannered-copy check, the em-dash checks in dog-floater and deliverable-share-safety; reduce ci:seo-shell to the head-term contract only (drop BANNED and the exact lead literal) since query-aligned titles are an SEO reason, not a voice rule; make ci:market-question require the question be answered on the page, not the literal heading. If the em-dash lock stands, record it in VOICE.md so one document is true.",
+      "fix_size": "small",
+      "files": [
+        "marketing_brain_skills/brand-voice/VOICE.md",
+        "scripts/check-no-public-em-dash.mjs",
+        "scripts/check-naked-verb-headings.mjs",
+        "scripts/check-market-question-heading.mjs",
+        "scripts/check-seo-shell.mjs",
+        "scripts/lib/mannered-public-copy.mjs",
+        "scripts/lib/taste-receipt.mjs",
+        "package.json"
+      ]
+    },
+    {
+      "id": "PROCESS-8",
+      "title": "Boot cost is about 5,500 lines plus a 3,300-line catalog, much of it incident history, and the handoff protocol is not followed",
+      "severity": "major",
+      "category": "process",
+      "claim": "Following the site-queue skill's required reads one level deep is 5,476 lines (decisions.md 1,360; the skill 601; TASTE.md 596; CLAUDE.md 576; AGENTS.md 445; PUBLIC_UI 343; REQUIREMENTS 316; rubric 257; DEVELOPMENT_PROCESS 249; ...) plus taste-catalog.json 3,289 lines. The skill itself is 601 lines with 51 dated-incident lines (16 about 2026-09-08 alone) and points at 25 more files. The handoff has 52 stacked '# Current' blocks against a one-block rule, and the brief shows only the first (4 lines today), so nine of today's ten Matt directives are invisible at boot.",
+      "evidence": "wc -l totals in notes.md §8 (5,476; taste-catalog.json 3,289). grep -c '2026-0[0-9]-[0-9]{2}' .claude/skills/site-queue/SKILL.md = 51; '2026-09-08' = 16; 25 distinct file references. grep -c '^# Current' docs/plans/CROSS_AGENT_HANDOFF.md = 52 (10 dated 09-22); AGENTS.md:14 '≤18 lines', :91 'replace the Current block'; scripts/loop-brief.ts:55-59 slice(0,18) of the first block; loop-brief.out lines 7-25. lib/data/loop/domains.ts:59-61 requires docs/plans/PUBLIC_PRODUCT/decisions.md (1,360 lines) for every public-ux node while docs/DEVELOPMENT_PROCESS.md:179 marks that package 'quarry'.",
+      "why_it_matters": "A model told 'run the loop' spends its context on history and contradictions before it builds, and the cheapest signal (what Matt said an hour ago) is hidden under 51 stale blocks. This is why sessions re-audit, rebuild stale findings, and 'do one-off stuff'.",
+      "proposed_fix": "Target under 400 lines before work: RUN_LOOP.md (≤150), CLAUDE.md §0-§2 (~120), VOICE.md (64), the brief. Move every dated incident out of the skill into docs/archive; make the handoff Current a single replaced block with a gate that fails on more than one '# Current'; have the brief print all Current blocks from the last 24 h until then; drop decisions.md from DOMAIN_REQUIRED_READS (the brief prints the locks that apply to the served node).",
+      "fix_size": "medium",
+      "files": [
+        ".claude/skills/site-queue/SKILL.md",
+        "CLAUDE.md",
+        "AGENTS.md",
+        "docs/plans/CROSS_AGENT_HANDOFF.md",
+        "scripts/loop-brief.ts",
+        "lib/data/loop/domains.ts",
+        "design_system/public/TASTE.md",
+        "docs/plans/PUBLIC_PRODUCT/decisions.md"
+      ]
+    },
+    {
+      "id": "PROCESS-9",
+      "title": "The pre-push verify does not run the unit tests canon requires; main has 6 failing tests and red CI while ci:gates is green",
+      "severity": "major",
+      "category": "process",
+      "claim": "docs/DEVELOPMENT_PROCESS.md says 'ci:gates + test:unit green BEFORE push', but scripts/push-with-gates.sh runs ci:gates, eslint, next build and bundle-budget only. At HEAD 83a459c app/cities/[slug]/_v3/city-fold.test.ts fails 6 of 32 assertions, CI on main is red so build/smoke/a11y are skipped, and `npm run ci:gates` reports 174/174 OK in 150 s. The last two commits on main are 'so HEAD compiles' fixes with a bare 'Node: none' that the commit hook would refuse.",
+      "evidence": "docs/DEVELOPMENT_PROCESS.md:143. scripts/push-with-gates.sh:120-145 (ci:gates, lint, build, ci:bundle-budget; no vitest/test:unit). `npx vitest run app/cities/[slug]/_v3/city-fold.test.ts`: 'Tests 6 failed | 26 passed', failures at :70 and :144 ('expected 52986 to be less than 49303', a source-order assertion). gates.out: 'ci:gates OK · 174/174 passed · 149.8s'. git log -2 HEAD: 83a459c 'fix: city look helpers and sameAs path type so HEAD compiles Node: none', 714c2a2 'fix: close SITE-173 fold-after test so HEAD compiles Node: none'; scripts/check-site-node.mjs:40 requires 'none (<reason>)'. Orchestrator: CI red on main at 83a459c.",
+      "why_it_matters": "Grok Build on the Mini pushes straight to production main; when its verify skips tests and its hooks are bypassed, a red main is normal and every other tool rebases onto broken tests. Deploy health then depends on Vercel's build, not on the process.",
+      "proposed_fix": "Add a path-scoped `vitest run` (unit + gates projects, files matching the diff) to push-with-gates.sh; make G72 and the pre-push hook enforced on the Mini (verify .husky is installed there, or move the Node-trailer and test checks into a GitHub required status with auto-revert on red main). Fix the two failing test files on main now.",
+      "fix_size": "small",
+      "files": [
+        "scripts/push-with-gates.sh",
+        "scripts/push-retry.sh",
+        ".husky/pre-push",
+        ".husky/commit-msg",
+        "scripts/check-site-node.mjs",
+        "app/cities/[slug]/_v3/city-fold.test.ts",
+        "docs/DEVELOPMENT_PROCESS.md"
+      ]
+    },
+    {
+      "id": "PROCESS-10",
+      "title": "A third of site commits land outside the work graph, and Matt's own directives enter as handoff prose with 'Node: none'",
+      "severity": "minor",
+      "category": "process",
+      "claim": "Of 282 site commits on main since 2026-09-08, 72 carry 'Node: none (reason)' (a sanctioned bypass used for 'Public Patch Matt P0 ... HOLD owner email' work) and 27 bypass the hook entirely (bare 'Node: none', 'Node: SITE-xxx', or no trailer; Grok Build 16, Cursor 11), so 99 of 282 (35%) are off-graph. Today's ten Matt directives sit in handoff blocks ending 'Node: none' instead of nodes, so the graph is not the source of record for the owner's own p0s.",
+      "evidence": "Loop over `git log --since=2026-09-08 --first-parent --no-merges HEAD` filtered to app/ or components/site/ files: 282; Node:<uuid> 183; 'Node: none (reason)' 72 with reasons such as 'Public Patch Matt P0 — Tip Ready, HOLD owner email, no origin push', 'not a loop_work_nodes ship class', 'Writing Bot; no site-queue node'; refused-shape 27 (2 bare none, 12 SITE-xxx, 13 no line). docs/plans/CROSS_AGENT_HANDOFF.md lines 1-25: four 09-22 blocks each ending 'Node: none'; grep -c 'Node: none' = 10. docs/plans/COMPANY_IMPROVEMENT.md:78-91 says an ADD becomes a node.",
+      "why_it_matters": "The brief serves from the graph; work that never enters it cannot be measured, learned from, or handed off, and a session booting from the brief cannot see what Matt asked for this morning.",
+      "proposed_fix": "Make Matt's ADD/CHANGE verbs mint a node at intake (a tiny CLI or the SMS/handoff parser), restrict 'Node: none (reason)' to non-public-ux paths, and enforce G72 server-side (required status) since the Mini bypasses the hook.",
+      "fix_size": "small",
+      "files": [
+        "scripts/check-site-node.mjs",
+        ".husky/commit-msg",
+        "docs/plans/CROSS_AGENT_HANDOFF.md",
+        "docs/plans/COMPANY_IMPROVEMENT.md",
+        "lib/data/loop/work-graph.ts"
+      ]
+    },
+    {
+      "id": "PROCESS-11",
+      "title": "Gate sprawl encodes product and taste decisions as build failures; the runtime gates that catch real escapes are not in the chain",
+      "severity": "minor",
+      "category": "process",
+      "claim": "314 check-*.mjs exist, 139 added since 2026-08-01 and 34 in September; 41 open with a dated Matt ruling and 28 lock a specific SITE node's design (ci:dog-floater locks a FAB's six doors and position, ci:place-craft refuses a ship without competitor screenshots, ci:market-question fixes a heading, 35 ci:publish-* locks fix figures and phrasing). Each rule change between 09-08 and 09-12 reset every class's baseline. Meanwhile ci:route-content-floor and ci:tap-targets, which caught the last recorded escape, are in no lane.",
+      "evidence": "ls scripts/check-*.mjs | wc -l = 314; git log --diff-filter=A since 2026-08-01 = 139 (Sept 34); header scans 41 (Matt + date), 28 (SITE-*); scripts/check-publish-*.mjs = 35. scripts/check-dog-floater.mjs, check-place-craft.mjs, check-market-question-heading.mjs, check-rubric-freeze.mjs headers. design_system/public/taste-rule-freeze.json note ('every move reset every class's baseline'). scripts/ci-lanes.json: ci:route-content-floor and ci:tap-targets NOT IN LANES; process_escape_ledger 7196f7f8 (2026-09-08). gates.out: 174/294 selected, 150 s, commit-compiles 149.8 s serial.",
+      "why_it_matters": "A gate that fails a commit for a design choice makes the next visibility or voice fix a fight with the build, while the gates that protect users run only when someone remembers `ci:runtime-gates`. The cost is also time: every push is 150 s of compile plus 173 gates.",
+      "proposed_fix": "Run a one-time gate retirement: keep correctness, §0 accuracy, security, DAL boundary, SEO plumbing (sitemap, canonical, crawler access, ISR); move taste/product locks into the evaluator or delete them; fold ci:runtime-gates into the always lane on a built server; require that any new gate name the escape row it closes.",
+      "fix_size": "medium",
+      "files": [
+        "scripts/ci-lanes.json",
+        "package.json",
+        "scripts/run-ci-gates.mjs",
+        "scripts/check-dog-floater.mjs",
+        "scripts/check-place-craft.mjs",
+        "scripts/check-rubric-freeze.mjs",
+        "docs/MECHANICAL_GATES.md"
+      ]
+    }
+  ],
+  "questions_for_matt": [
+    "Voice: VOICE.md (2026-09-07) says no mechanical rules, and your 2026-09-20 em-dash lock created a gate. Which stands? If VOICE.md, the em-dash, naked-verb, market-question-heading and seo-shell banned-phrase gates come out.",
+    "Objective: may the site queue's finish line (taste 70 on the grok-4.6 table) be replaced by a visibility objective (weekly GSC clicks and position by page class, plus organic-attributed leads) with taste, tap targets and content floor kept only as no-regression floors?",
+    "Landing: is 'Cos Mini lands' (you or the Mac merging draft PRs by hand) a deliberate control, or may a lane that is green on gates + tests push to main itself with auto-revert on a red deploy? The 114 open PRs and 11 person-blocked nodes hinge on this.",
+    "Runners: the Vercel sentinel has been off since 09-05 and the Claude grinder fails every fire. Keep one runner (your Mac LaunchAgent or the Claude routine) and delete the other two?",
+    "Ledger: may the 7 expired unlearned windows (including seo-aeo) be closed as 'inconclusive' now so the domains unfreeze, and do you want the ledger kept as a per-node requirement or dropped in favor of the GSC page-class table as the only Learn?"
+  ]
+}

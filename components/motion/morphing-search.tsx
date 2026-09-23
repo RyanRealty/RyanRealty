@@ -693,8 +693,12 @@ export function MorphingSearch({
 							className="flex size-full items-center rounded-xl bg-background text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-within:ring-2 focus-within:ring-ring"
 						>
 							{/* Real typeable field at rest — closed button was not accepting input. */}
+							{/* role="combobox": typing here opens the search dialog, and
+							    aria-expanded / aria-haspopup are only allowed on an input
+							    that says so (Lighthouse aria-allowed-attr, 2026-09-23). */}
 							<input
 								type="search"
+								role="combobox"
 								value={query}
 								aria-label={placeholder}
 								aria-haspopup="dialog"

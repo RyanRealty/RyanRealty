@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -97,6 +97,7 @@ beforeAll(() => {
           lint: 'node stub-ok.cjs',
           build: 'node stub-ok.cjs',
           'ci:bundle-budget': 'node stub-ok.cjs',
+          'test:unit': 'node stub-ok.cjs',
         },
       },
       null,
@@ -147,9 +148,34 @@ describe('push-with-gates.sh exit-code propagation', () => {
       expect(output).toMatch(/git push OK/)
       expect(output).toMatch(/skipping full next generate/)
       expect(output).not.toMatch(/production build \(Turbopack/)
+      // PROCESS-9: the push runs the unit tests for what it changes, scoped to
+      // the upstream merge-base, before the remote is contacted.
+      expect(output).toMatch(/test:unit for files changed since [0-9a-f]{40}/)
+      expect(output).toMatch(/test:unit OK/)
       expect(status).toBe(0)
       // The remote landed exactly the pushed HEAD.
       expect(git(originDir, 'rev-parse', 'main')).toBe(git(staleDir, 'rev-parse', 'HEAD'))
+    },
+    120_000,
+  )
+
+  it(
+    'aborts with nothing pushed when the unit tests fail (PROCESS-9)',
+    () => {
+      writeFileSync(join(staleDir, 'stub-fail.cjs'), "console.error('unit FAIL'); process.exit(1)\n")
+      const pkgPath = join(staleDir, 'package.json')
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+      pkg.scripts['test:unit'] = 'node stub-fail.cjs'
+      writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+      git(staleDir, 'add', '.')
+      git(staleDir, 'commit', '-m', 'D: a failing unit suite')
+      const before = git(originDir, 'rev-parse', 'main')
+      const { status, output } = runPushScript(staleDir)
+
+      expect(status).not.toBe(0)
+      expect(output).toMatch(/test:unit FAILED/)
+      expect(output).not.toMatch(/git push OK/)
+      expect(git(originDir, 'rev-parse', 'main')).toBe(before)
     },
     120_000,
   )

@@ -1,0 +1,322 @@
+{
+ "area": "gsc-trend",
+ "notes_path": "/tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/gsc-trend/notes.md",
+ "summary": "Verified from the GSC API (service account, siteOwner), site_signal, web_vitals, site_improvement_ledger, git log and live curls. Probe outputs are in /tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/gsc-trend/probe*.txt; long-form notes are in /tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/gsc-trend/notes.md. WHAT IS SLIPPING: overall organic clicks are not falling. The last 4 weeks (2026-08-24..09-20) had 523 clicks, the best 4-week block on record (June peak block was 480). Impressions are falling: 2,239/day on 09-07, 996/day on 09-20. Week 09-14..09-20 had 9,539 impressions vs 12,489 the week before (-24%) while clicks rose (138 vs 115). Average position 'improved' to 11.4 only because low-ranked impressions dropped out. The drop has three parts: (1) the intended de-indexing of S. Oregon and sentinel listing pages (SITE-27/SITE-33, 09-08/09); (2) Central Oregon listing-detail impressions falling (4,296 to 2,544) while listing URLs keep changing (1,234 of 7,329 listing keys, 16.8%, seen under more than one URL; variants return 200 plus a moving canonical, not a 301); (3) community, city and central-oregon classes falling, with /cities and /homes-for-sale/{city} dropping faster (-45% and -68%) than the site (-29%) in the 3 days after the 09-17 title/H1 collision. The real ranking slip is on the money pages. Community pages lost 3 to 14 positions on their own names since early July (/communities/brasada-ranch p21.6 to p35.8, /communities/tetherow p40.2 to p47.1, /communities/black-butte-ranch p33.9 to p38.5). City and 'homes for sale' target queries never ranked (p26 to p42), and all 23 target queries had 0 clicks. /homes-for-sale/bend had 0 impressions 09-06..09-21. The homepage ranks p45 for 'ryan realty'. The only sustained click drop (07-27..08-23: 337 vs 480, -30%, position 13.9 to 17.5) coincides with the late-July sitemap/deploy outage (124348def 'every deploy was ERROR', aa56d308d 'sitemap P0 fix never worked', 0dbf2f1cc '18% of paginated rows silently dropped') and with Wave D + zero-inventory noindex (07-22/23). WHY THE LOOP DOES NOT REACT: its GSC benchmark is 100% a rank tracker's quoted queries (153 of 153 rows, 0 clicks), yet the scoreboard says 'gsc: ok' and the brief says 'Ranking is not the served class'. Its GSC store keeps top-25 pages or queries per day, about 5% of impressions. Its Learn step writes actual_delta=0 because it matches '/blog/x' against stored full URLs (8 of 12 learned rows are false zeros, including a real CTR loss on the Sunriver title rewrite). Only 1 ledger row was written in September, while the site queue minted SITE-01 through SITE-180 and landed 474 commits in 14 days. GA4 has attributed at most 5 google/organic sessions per week since 07-13 (GSC: 71 to 151 clicks per week). The MP page_view mirror (416911b31, 08-10) floods '(not set)' sessions. Browser events were dead 08-19..08-31 as well as since 09-18. RUM has been swamped since 09-13 by 404 renders of dead /_next/image URLs (0 to 25,511 rows/day). Even mobile-only, place classes are 'poor' LCP (city 5,068 ms, neighborhood 9,924 ms, subdivision 4,624 ms p75). Correlations with commits are leads, not verdicts.",
+ "facts": [
+  {
+   "fact": "Site-wide GSC clicks are at a record 4-week high while impressions fall.",
+   "evidence": "probe8 (GSC API dims=[date]) weekly: 08-24 151c/12,785i, 08-31 119c/13,328i, 09-07 115c/12,489i, 09-14 (6d) 123c/8,543i. probe18 09-20 15c/996i gives week 09-14..09-20 = 138c/9,539i. 4w 08-24..09-20 = 523c/48,141i vs 06-29..07-26 = 480c/36,879i. probe18 daily web impressions 1,867/day (08-31..09-12) vs 1,386/day (09-13..09-20), clicks 17.1/day vs 18.75/day."
+  },
+  {
+   "fact": "The only sustained click drop was 2026-07-27..08-23, at the same time as the sitemap/deploy outage commits.",
+   "evidence": "probe2 (site_signal source=gsc_search_analytics_api scope=account) 4-week blocks: 07-27..08-17 337c/31,715i pos 17.5 vs 06-29..07-20 480c/36,879i pos 13.9. Commits: 96f76ca14 07-22 Wave D search+index layer; bff8c6077 07-23 noindex+sitemap-omit zero-inventory combos; 843687984 07-28 per-class child sitemaps; 124348def 07-30 'every deploy was ERROR'; aa56d308d 08-02 'the sitemap P0 fix never worked'; 0dbf2f1cc 08-03 '18% of paginated rows silently dropped'."
+  },
+  {
+   "fact": "Community pages lost position on their own names between early July and September.",
+   "evidence": "probe15 (GSC API dims=[page], query contains X), 06-29..07-19 vs 08-31..09-20: /communities/brasada-ranch 1,213i p21.6 -> 671i p35.8; /communities/tetherow 259i p40.2 -> 136i p47.1; /communities/black-butte-ranch 441i p33.9 -> 239i p38.5; /communities/broken-top 231i p21.0 -> 133i p23.7. probe4 tracker series: \"tetherow homes for sale\" p12.8 (06-29) -> p24.6 (09-07); \"black butte ranch real estate\" p18.2 -> p33.9 (07-27); \"broken top real estate\" p12.8 -> p23.2 (08-24), then out of the top 25."
+  },
+  {
+   "fact": "City and 'homes for sale' target queries never ranked, and /homes-for-sale/bend has no search presence.",
+   "evidence": "probe8 unquoted target queries 06-01..06-28 vs 08-23..09-19: bend oregon realtor p19.2 -> p37.1, sisters oregon homes for sale p27.9 -> p42.4, redmond oregon homes for sale p30.5 -> p35.5, sunriver homes for sale p39.5 -> p40.2; 0 clicks on all 23 target queries in both windows. probe15: page equals https://ryan-realty.com/homes-for-sale/bend has 0 queries/0 impressions in 09-06..09-16 and 09-17..09-21; /cities/bend p62.3 for 'bend oregon realtor'."
+  },
+  {
+   "fact": "The brand query does not rank the homepage.",
+   "evidence": "probe15 query contains 'ryan realty': homepage / p45.1 (06-29..07-19) and p45.3 (08-31..09-20); only the GBP-tagged URL /?utm_source=gbp... ranks p3. probe8 homepage all queries 17c/874i p24.3 (June) -> 4c/371i p31.2 (08-23..09-19); probe11 weekly exact-URL position p25 (07-06), p41 (08-24), p20 (09-14)."
+  },
+  {
+   "fact": "The loop's GSC benchmark is entirely a rank tracker's quoted queries.",
+   "evidence": "probe13: target_query_benchmark rows date>=2026-08-25 = 153; backed only by quoted/bracketed site_signal surfaces = 153; plain = 0; clicks = 0. probe10: query:\"tetherow homes for sale\" appears 111 days 2026-05-23..09-19 at ~3.6 impr/day (tracker cadence). View: supabase/migrations/20260610230500_target_query_benchmark.sql line 37 strips '\"' and '[' and matches with ilike '%query%'. Scoreboard: lib/data/loop/signals.ts 463-467 sets status 'ok' unless the count errors; scoreboard-probe.txt gsc {status: ok, rows28d: 153}; loop-brief.txt lines 31-32 'gsc: ok' and 'GSC GAPS: 0 eligible SITE-* nodes. Ranking is not the served class.'"
+  },
+  {
+   "fact": "site_signal holds only top-25 pages and top-25 queries per day, about 5% of impressions.",
+   "evidence": "app/api/cron/marketing-snapshot-gsc/route.ts line 62 'top 25 queries by impressions' and line 99 'top 25 pages by impressions'. probe3 page-scope TOTAL for 08-24..09-20 = 2,721 impressions vs probe8 API 55,187 for 08-23..09-19 (4.9%)."
+  },
+  {
+   "fact": "The Learn step never reads GSC page data because of a path vs full-URL mismatch, and records 0.",
+   "evidence": "probe19: site_signal scope=page metric in (clicks,impressions) surface='/blog/sunriver-year-round-living-vs-vacation' 2026-06-10..07-08 -> count 0; surface='https://ryan-realty.com/blog/sunriver-year-round-living-vs-vacation' -> count 28. scripts/loop-learn-close-windows.ts line 66 .in('surface', surfaces); line 186 actualDelta = 0 on failure. probe7: 8 of 12 rows with actual_delta hold 0/inconclusive. Real Sunriver CTR vs baseline 3.4%: 1.51% (20c/1,327i, probe11 weeks 07-13..08-03) and 0.75% (7c/937i, probe8 08-23..09-19)."
+  },
+  {
+   "fact": "Almost nothing shipped in September carries a ledger row.",
+   "evidence": "probe7: site_improvement_ledger returned 20 rows (limit 60); 1 with shipped_at in 2026-09 (SITE-09 response-clock, actual_delta null). loop-brief.txt line 92: '406 of 474 shipped commits in the last 14 days have NO node and NO ledger row'. scoreboard-probe: ledger openWindows 8, expiredUnlearned 7."
+  },
+  {
+   "fact": "GA4 has not attributed organic traffic since mid-July; the MP mirror floods (not set) sessions.",
+   "evidence": "probe5 (site_signal ga4_data_api scope=source) google/organic sessions: 32 (06-29), 23 (07-06), 3 (07-13), 4 (07-20), none 07-27..08-03, 3 (08-10), 5 (08-31), 1 (09-14), vs GSC 111/124/127/118/91/71/119/138 clicks. Sessions 33 (week 08-03) -> 4,237 (week 08-10), (not set) = 4,211 (probe10), after 416911b31 2026-08-10 07:34 -0700 'mirror first-party page views into GA4 via MP'. probe14: 699 of 699 sessions (not set) on 09-19; engagement_rate 0.000-0.009 per week since 08-10 (probe5)."
+  },
+  {
+   "fact": "The browser GA4 stream was also dead 2026-08-19..08-31, not only since 09-18.",
+   "evidence": "probe14 daily scope=event: session_start 25/16/12/12/24/14/2 on 08-12..08-18, then absent 08-19..08-31, back on 09-01 (15), 10 on 09-17, 1 on 09-18, absent 09-19..09-21. scroll_depth/section_view/LCP events never return after 08-18. Commits 1224b1f31 'stop dual GA4 tags' and a732b9948 'restore GTM consent gate' committed 2026-08-18 ~15:05 -0700; 340fb066d 09-01 15:57 'GA4 measures all traffic again'; f1e2a90f9 09-17."
+  },
+  {
+   "fact": "RUM has been dominated since 2026-09-13 by 404 renders of dead /_next/image URLs.",
+   "evidence": "probe17 web_vitals rows with path='/_next/image': 0 each day 09-06..09-12; 5,864 (09-13), 25,511 (09-14, 69.2% of rows), 23,736, 22,431, 9,565, 1,533, 1,378, 1,510, 9,797 (09-21, 61.6%). Sample rows are desktop FCP/TTFB. Same day as 9794e028d 'kill Vercel Image Optimization site-wide' (next.config.ts line 139 unoptimized: true). probe9 7d LCP: desktop 26,874 vs mobile 1,120 rows; flat across UTC hours."
+  },
+  {
+   "fact": "Mobile LCP p75 is 'poor' on the ranking page classes.",
+   "evidence": "probe12 web_vitals device=mobile 08-24..09-20, n=2,954, p75 3,492 ms: city 5,068 (n=258), neighborhood 9,924 (n=99), place-type 7,220 (n=22), housing-market 5,240 (n=140), subdivision 4,624 (n=73), community 4,176 (n=207), listing 3,200 (n=680), blog 1,854 (n=25). June baseline (probe9, mixed devices 06-08..06-14): city 2,532, home 1,533, listing 2,308."
+  },
+  {
+   "fact": "Listing URLs churn, and variants return 200 plus a canonical instead of a 301.",
+   "evidence": "probe16 (probe8 page pulls): 06-01..06-28 262 of 3,983 listing keys (6.6%) under >1 URL; 08-23..09-19 1,234 of 7,329 (16.8%), holding 11,694 of 31,942 detail impressions and 132 of 376 detail clicks; 690 with an /outside-boundaries/ variant. probe20 live: /homes-for-sale/outside-boundaries/brasada-ranch/brasada-ranch-220220863 -> 200, canonical /homes-for-sale/powell-butte/brasada-ranch/brasada-ranch-220220863; /homes-for-sale/bend/1522-locksley-220226356 (1,657i in GSC) -> 200, canonical /homes-for-sale/bend/mountain-view/providence/1522-locksley-220226356; lazy-river-west listing now canonicalizes to a third URL not seen in GSC. Two variants timed out at 40 s on first request (retry 0.82 s / 3.60 s)."
+  },
+  {
+   "fact": "Part of the late-August 'peak' was S. Oregon/sentinel listing pages and one non-transactional query.",
+   "evidence": "probe11 weekly detail impressions 08-24/08-31/09-07: S. Oregon slugs 1,336/1,789/2,393; outside-boundaries 3,631/2,763/1,250; S. Oregon clicks 21+23+33 = 77 of 385 site clicks. probe8: query 'apartments near northeast locksley drive bend or' 1,652 impressions p6.4, 0 clicks, one listing page. After SITE-27 (ec52e2026 09-08) and SITE-33 (11cfbe523 09-09), week 09-14 (6d): S. Oregon 1,405i, outside-boundaries 678i."
+  },
+  {
+   "fact": "After the 09-17 place/search H1 change, /cities and /homes-for-sale/{city} impressions fell faster than the site.",
+   "evidence": "probe15 daily GSC 09-14..09-16 vs 09-18..09-20: /cities/{slug} depth-1 58 -> 31.7 impr/day (-45%); /homes-for-sale/{city} depth-1 22.7 -> 7.3 (-68%); site 1,601 -> 1,138 (-29%). ffcc52e80 committed 2026-09-17 19:23 -0700. Only 3 days of data, and 09-20 may be provisional."
+  },
+  {
+   "fact": "Subdivision pages are the September gainer.",
+   "evidence": "probe8 class table week 09-07 vs 09-14: subdivision 293i -> 536i, clicks 4 -> 21, position 20.6 -> 11.1; blog position 10.1 -> 7.5 at flat impressions (1,035 -> 1,002)."
+  },
+  {
+   "fact": "site_signal GSC has permanent false zeros for 2026-05-12..05-21 and a transient zero for the latest day.",
+   "evidence": "probe2: zero-impression days 05-12..05-19 and 05-21, missing 05-20/05-22, 09-20 = 0. probe8 API week 05-11 = 24c/3,142i vs site_signal 4c/601i; probe18 09-20 = 996 impressions. Cron re-pull window is isoDaysAgo(9)..isoDaysAgo(2) (route.ts lines 166-167), so May stays wrong until backfilled."
+  },
+  {
+   "fact": "A better-ranking blog was 301'd into a weaker community page with no measurement attached.",
+   "evidence": "136088a 2026-09-22 'fix(seo): 301 tetherow blog onto /communities/tetherow' (data/legacy-redirects.json, next.config.ts). probe15 08-31..09-20 tetherow queries: /blog/tetherow-resort-living-real-estate 154i p15.7 vs /communities/tetherow 136i p47.1. probe8: blog 3c/807i p9.6 in 08-23..09-19. No ledger row (probe7)."
+  }
+ ],
+ "findings": [
+  {
+   "id": "gsc-trend-1",
+   "title": "The loop's ranking signal is a rank tracker plus a 5% sample, so it reports 'gsc: ok' while money pages slip",
+   "severity": "p0",
+   "category": "process",
+   "claim": "Every GSC number the loop reads is either synthetic or truncated. target_query_benchmark matches only a rank tracker's quoted queries (0 clicks). site_signal keeps top-25 pages/queries per day. The scoreboard marks gsc 'ok' from a row count. As a result the brief says 'Ranking is not the served class' and no ranking work is seeded, while community pages lose 3 to 14 positions and site impressions fall 24% week over week.",
+   "evidence": "probe13: 153/153 benchmark rows (last 28d) are quoted/bracketed-only, 0 plain, 0 clicks. probe10: quoted queries appear ~3 impr/day for 85-111 consecutive days. Migration 20260610230500 line 37 strips quotes and uses ilike '%q%'. lib/data/loop/signals.ts 463-467 status 'ok' unless error. loop-brief.txt 31-32. app/api/cron/marketing-snapshot-gsc/route.ts lines 62 and 99 (top 25). probe3 vs probe8: 2,721 of ~55,187 impressions visible (4.9%). scripts/seed-gsc-ranking-queue.ts (8a2c71e, 09-22) reads the full API but is dry-run, one window, no trend.",
+   "why_it_matters": "Matt's mission is being seen. The loop is the only thing that turns measurement into work, and it cannot see the slip it is supposed to fix. Every 'Run the loop' serves UX nodes because ranking reads healthy.",
+   "proposed_fix": "(1) Add a full-fidelity GSC store: nightly API pulls of page x date and query x page x date (rowLimit 25000, paginate) for a trailing 16 months into dedicated tables (e.g. gsc_page_daily, gsc_query_page_daily), with a page_class column from one shared route classifier. (2) Rebuild target_query_benchmark on that store, match the query exactly (lowercased), and EXCLUDE quoted, bracketed and operator queries (keep them in a separate tracker view if wanted). (3) Scoreboard gsc status = per-class 28d clicks/impressions/impression-weighted position vs the prior 28d and vs 90d, Central Oregon only, and 'degraded' when a money class (community, city, homes-for-sale city/type, subdivision, home) loses 15% or more of impressions or 3 or more positions. (4) loop-brief seeds a ranking node from any degraded class automatically; make seed-gsc-ranking-queue.ts consume the stored trend instead of a one-window pull.",
+   "fix_size": "large",
+   "files": [
+    "supabase/migrations/20260610230500_target_query_benchmark.sql",
+    "app/api/cron/marketing-snapshot-gsc/route.ts",
+    "lib/data/loop/signals.ts",
+    "scripts/loop-brief.ts",
+    "scripts/seed-gsc-ranking-queue.ts",
+    "site_signal",
+    "target_queries"
+   ]
+  },
+  {
+   "id": "gsc-trend-2",
+   "title": "Learn writes actual_delta=0 whenever a GSC window cannot be read (path vs full URL), closing SEO experiments as if measured",
+   "severity": "major",
+   "category": "process",
+   "claim": "scripts/loop-learn-close-windows.ts matches ledger surfaces like '/blog/x' against site_signal surfaces stored as 'https://ryan-realty.com/blog/x'. It gets 0 rows and then writes actual_delta = 0 with verdict 'inconclusive'. Openness is actual_delta IS NULL, so the window counts as learned. 8 of the 12 'measured' rows are false zeros. At least one hid a real loss (Sunriver title rewrite).",
+   "evidence": "probe19: 0 rows by path vs 28 rows by full URL, window 2026-06-10..07-08. loop-learn-close-windows.ts line 66 (.in('surface', surfaces)), line 186 (actualDelta = 0), pageSeries has no source filter. signals.ts line 422 counts open only when actual_delta == null. probe7: 5 seo_title_rewrite + jsonld + content_new_market_report + legacy_redirect rows = 0/inconclusive. Sunriver baseline CTR 3.4% -> 1.51% (20c/1,327i, 07-13..08-09, probe11) -> 0.75% (7c/937i, 08-23..09-19, probe8), at a steady ~p6.8.",
+   "why_it_matters": "THE LOOP's Learn step is how the shop learns which title/content/canonical changes move rankings. It has been learning 'nothing happened' from a join bug, so the same failed tactics can be repeated.",
+   "proposed_fix": "Normalize surfaces on both sides (strip origin and trailing slash, or store path for scope=page). Filter pageSeries by source='gsc_search_analytics_api'. On no data, leave actual_delta NULL and set verdict 'unmeasurable' with a gap note, so the window stays visible. Add a unit test with a full-URL fixture. Re-run Learn for the 8 June seo-aeo rows against the full store (or the API) and record the real deltas.",
+   "fix_size": "small",
+   "files": [
+    "scripts/loop-learn-close-windows.ts",
+    "lib/data/loop/signals.ts",
+    "lib/data/loop/ledger.ts",
+    "site_improvement_ledger"
+   ]
+  },
+  {
+   "id": "gsc-trend-3",
+   "title": "Ranking-affecting ships (titles, canonicals, redirects, index policy, sitemaps, ISR) land with no ledger row and no GSC readback",
+   "severity": "major",
+   "category": "process",
+   "claim": "In September the site queue minted SITE-01 through SITE-180 and landed 474 commits in 14 days, many of which change what Google sees. The ledger got 1 row. SITE nodes that are 'blocked on measurement' plan to read GA4 (dead) and page-level Search Console (not stored). So no SEO-affecting change is tied to its effect, and inflections cannot be attributed except by hand, as in this audit.",
+   "evidence": "probe7: 20 ledger rows, 1 with shipped_at in 2026-09. loop-brief.txt line 92: 406 of 474 commits in 14 days have no node and no ledger row; site commits with a Node trailer 275/293. SEO-affecting commits with no ledger row include 469a58106 (09-09 one canonical per listing), 11cfbe523 (09-09 out-of-area leave index/sitemap), ec52e2026 (09-08), 446d95677 (09-08 title budget/noindex follow), 9794e028d (09-13 images unoptimized), ffcc52e80 (09-17 H1s), 136088a (09-22 blog 301). loop-brief lines 42-56: SITE-01/04/05/08/23/32 re-open 2026-10-05..11-08 on GA4 or GSC clicks.",
+   "why_it_matters": "Matt asked why the loop is not reaching its goals. It cannot close the measure-learn half of THE LOOP for the one goal that matters (being seen), so it keeps building without knowing if the last build helped or hurt.",
+   "proposed_fix": "Make a ledger row mandatory (a gate in npm run push / ci:process-canon) for any commit touching metadata, canonical, robots, sitemap, redirects, middleware routing, ISR/revalidate, or URL builders (lib/slug.ts). The row names the page class, a GSC metric from the full store (gsc-trend-1), the predicted direction and a 28-day window. The measurer closes it from that store.",
+   "fix_size": "medium",
+   "files": [
+    "scripts/check-process-canon.mjs",
+    "lib/data/loop/ledger.ts",
+    "scripts/loop-brief.ts",
+    ".claude/skills/site-queue/SKILL.md",
+    "docs/DEVELOPMENT_PROCESS.md",
+    "site_improvement_ledger"
+   ]
+  },
+  {
+   "id": "gsc-trend-4",
+   "title": "Community money pages lost 3 to 14 positions on their own names since early July, with signals split across many URLs",
+   "severity": "major",
+   "category": "visibility",
+   "claim": "The slip Matt feels is concentrated on the resort-community pages, the targets of 11 of the 23 target queries. Each name's impressions are spread across the community page, subdivision plats, blog posts, housing-market pages, filtered /homes-for-sale URLs and dozens of listing variants. The decline started in the 07-13/07-20 weeks and deepened through the late-July sitemap outage.",
+   "evidence": "probe15: /communities/brasada-ranch p21.6 -> p35.8 (1,213i -> 671i), /communities/tetherow p40.2 -> p47.1, /communities/black-butte-ranch p33.9 -> p38.5, /communities/broken-top p21.0 -> p23.7. Query 'black butte ranch' hits 11 pages late (incl. /homes-for-sale/black-butte-ranch?propertySubTypes=Condominium p54.8, /housing-market/black-butte-ranch p86.5); 'brasada ranch' hits 65 pages. probe8 community class position 23.2 (07-06) -> 35.0 (08-24) -> 20.0 (09-14); impressions 1,864 (08-24) -> 383 (09-14, 6d). probe11 /communities/brasada-ranch weekly impressions 472 (07-06) -> 21 (07-27). Nearby commits: 96f76ca14 (07-22), bff8c6077 (07-23), 250044022 (07-28 geography redirects retarget to community pages).",
+   "why_it_matters": "These are the pages Matt built the site to win ('search by subdivisions ... so much information to expose'). Positions 20 to 48 get almost no clicks. All community target queries had 0 clicks in both windows.",
+   "proposed_fix": "Run a ranking node per community from the full GSC store: pull query x page for the community's name set and pick the one page that should rank. Consolidate or de-target cannibals: point filtered /homes-for-sale?propertySubTypes= and /housing-market/{community} titles away from the bare name, and make subdivision plats link up to the community with a subordinate title. Check the 07-22/07-23 changes (Wave D search matrix, zero-inventory noindex) for community-page link loss or noindex. Record a ledger row per change (gsc-trend-3).",
+   "fix_size": "large",
+   "files": [
+    "app/communities/[slug]",
+    "app/subdivisions/[slug]",
+    "app/search/[...slug]",
+    "app/housing-market",
+    "app/blog/[slug]",
+    "app/sitemap.ts",
+    "target_queries"
+   ]
+  },
+  {
+   "id": "gsc-trend-5",
+   "title": "City and 'homes for sale' target pages have never ranked; /homes-for-sale/bend has zero impressions",
+   "severity": "major",
+   "category": "visibility",
+   "claim": "The p1 city-buy and agent queries ('homes for sale bend oregon', 'bend or homes for sale', 'bend oregon realtor', 'redmond/sisters oregon homes for sale') rank p26 to p42 or not at all. The declared target URL /homes-for-sale/bend gets no impressions. /cities/bend ranks p62 for 'bend oregon realtor'. Since 09-17 the /cities and /homes-for-sale/{city} impressions are falling faster than the site.",
+   "evidence": "probe8 unquoted then/now: bend oregon realtor p19.2 -> p37.1; sisters oregon homes for sale p27.9 -> p42.4; redmond oregon homes for sale p30.5 -> p35.5; homes for sale bend oregon 5i p26.0 -> 3i p38.7. probe15: /homes-for-sale/bend 0 queries 0 impressions 09-06..09-21; /cities/bend 70i/0c 09-06..09-16; /cities/{slug} -45% and /homes-for-sale/{city} -68% vs site -29% (09-14..16 vs 09-18..20) after ffcc52e80. probe4 target_queries: the 6 p1 city-buy queries target /homes-for-sale/bend (x2), /homes-for-sale/bend/luxury, /homes-for-sale/redmond, /homes-for-sale/sisters and /cities/bend.",
+   "why_it_matters": "These are the highest-volume buyer queries in the market. Ranking p26 to p60 means no organic buyer leads from the city layer, however much inventory the pages expose.",
+   "proposed_fix": "Pick one indexable page per city for the 'homes for sale {city}' intent. Either make /homes-for-sale/{city} the canonical, indexable, server-rendered target (and verify why it has 0 impressions: canonical, noindex, rewrite or sitemap absence, per the seo-technical reader), or retarget target_queries to /cities/{city} and give /homes-for-sale/{city} a distinct title/H1 (the verified 09-17 collision). Add these queries to the full-store benchmark (gsc-trend-1) and track them weekly.",
+   "fix_size": "medium",
+   "files": [
+    "app/cities/[slug]/page.tsx",
+    "app/search/[...slug]/page.tsx",
+    "app/search/[...slug]/search-metadata.ts",
+    "next.config.ts",
+    "app/sitemap.ts",
+    "target_queries"
+   ]
+  },
+  {
+   "id": "gsc-trend-6",
+   "title": "Listing canonicals move with every geo reclassification; 16.8% of listing keys are indexed under more than one URL and variants 200 instead of 301",
+   "severity": "major",
+   "category": "visibility",
+   "claim": "The listing canonical embeds city/neighborhood/subdivision. When the boundary classifier or URL builder changes (SITE-22, SITE-23 Brasada sentinel, SITE-27/33), the canonical moves. Old URLs still return 200 with a rel=canonical, not a 301, so Google indexes several URLs per home and keeps re-learning them. Central Oregon listing-detail impressions fell 4,296 -> 2,544 in week 09-14 while clicks held.",
+   "evidence": "probe16: now (08-23..09-19) 1,234 of 7,329 listing keys under >1 URL (16.8%, 11,694 of 31,942 detail impressions, 132 of 376 detail clicks; 690 with an /outside-boundaries/ variant); June 262 of 3,983 (6.6%). probe20 live: outside-boundaries Brasada variant 200 -> canonical powell-butte path; Locksley URL Google shows (1,657i) now canonicalizes to /homes-for-sale/bend/mountain-view/providence/...; lazy-river-west now canonicalizes to a third path not in GSC. Builder: lib/slug.ts listingDetailPath (line 180), listingCanonicalHref (line 329); lib/data/listings/getListingCanonicalPathFields.ts; 469a58106 (09-09).",
+   "why_it_matters": "Listing detail is the largest click class (365 of 508 top-25 clicks in the last 4 weeks, probe3). Moving canonicals split signals and reset each listing's ranking history. Two variants also timed out at 40 s cold, which a crawler may count as a failed fetch.",
+   "proposed_fix": "Make the listing canonical stable per ListingKey (e.g. /homes-for-sale/{city}/{address-slug}-{key}, with city from the MLS City field only, never from polygon classification or subdivision). 308 every other path that ends in the same key to that canonical in middleware (resolve by key, no page render). Add a gate: the canonical for a fixed set of fixture listings must not change across a build unless an explicit migration list says so.",
+   "fix_size": "medium",
+   "files": [
+    "lib/slug.ts",
+    "lib/data/listings/getListingCanonicalPathFields.ts",
+    "app/listing/[listingKey]/page.tsx",
+    "app/listing/by-address/[...slug]/page.tsx",
+    "middleware.ts"
+   ]
+  },
+  {
+   "id": "gsc-trend-7",
+   "title": "No production monitor catches sitemap/deploy outages; the one sustained click loss came from one",
+   "severity": "major",
+   "category": "visibility",
+   "claim": "The only multi-week click drop (-30%, 07-27..08-23) overlaps a stretch where deploys errored and the sitemaps were expiring, partial or dropping 18% of rows. It was found by successive agent passes, not by a monitor. Sitemaps kept breaking afterwards (09-09 geo.xml over the 300 s ceiling; 09-16 keyset paging).",
+   "evidence": "probe2: 07-27..08-23 337c vs 480c, position 13.9 -> 17.5. probe8/probe11: listing detail clicks 58 -> 36/30/31/34; subdivision position 16.4 -> 28.3 (08-17). Commits 124348def (07-30 'every deploy was ERROR'), aa56d308d (08-02 'sitemap P0 fix never worked'), 996ece96a (08-02 'the cause three passes have missed'), 0dbf2f1cc (08-03 '18% of paginated rows silently dropped'), 016671684 (09-09 geo.xml 300 s), a80e52e84 (09-16 keyset-paged listings sitemap), 1ac0f4ca7 (08-24 'drop Upstash from middleware so production can deploy').",
+   "why_it_matters": "Google's crawl of 8,000+ listing and place URLs depends on sitemaps. A silent sitemap regression costs weeks of rankings before anyone looks at GSC, and today nobody does (gsc-trend-1).",
+   "proposed_fix": "Add a daily cron that fetches the sitemap index and every child with a Googlebot UA. Assert 200 within a time budget and a URL count within +/-5% of the DAL's expected count per class. Write the result to site_signal (source=sitemap_probe) and page the loop/Matt digest on failure. Also pull the GSC Sitemaps API (submitted vs indexed) into the same table.",
+   "fix_size": "small",
+   "files": [
+    "app/sitemap.ts",
+    "app/api/cron",
+    "vercel.json",
+    "site_signal"
+   ]
+  },
+  {
+   "id": "gsc-trend-8",
+   "title": "GA4 has been blind to organic since mid-July; MP mirror floods (not set); browser stream also dead 08-19..08-31",
+   "severity": "major",
+   "category": "tracking",
+   "claim": "GA4 attributes at most 5 organic sessions a week while GSC reports 71 to 151 clicks. The server-side MP page_view mirror (08-10) creates sessionless '(not set)' sessions that swamp the property. The browser gtag stream died on 08-19 after the 08-18 GTM/consent commits, came back partly on 09-01, and died again on 09-18. Every GA4-based accept test and ledger metric since mid-July is unusable.",
+   "evidence": "probe5/probe10: google/organic sessions 32, 23, 3, 4, -, -, 3, -, -, 5, -, 1 (weeks 06-29..09-14) vs GSC 111..138. Sessions 33 -> 4,237 (week 08-10), (not set) 4,211; probe14: (not set) 699/699 on 09-19. probe14: session_start/first_visit/user_engagement/scroll_depth/section_view/LCP absent 08-19..08-31, partial 09-01..09-17, absent from 09-19. Commits 416911b31 (08-10), 1224b1f31 + a732b9948 (08-18), 340fb066d (09-01), f1e2a90f9 (09-17). Mid-July cause UNVERIFIED (candidates 9a000a31b, 875049de3 on 07-10).",
+   "why_it_matters": "Conversion from organic cannot be measured, so 'seen then convert' has no funnel number. The site-queue nodes blocked on GA4 measurement (SITE-05/07/11/12) will read garbage on 2026-10-06.",
+   "proposed_fix": "Stop sending MP page_view to the main GA4 property, or send it with the visitor's _ga client_id and session_id so it stitches. Restore the browser tag (other reader's GTM fix). Add a daily guard in site_signal: GA4 google/organic sessions / GSC clicks must be >= 0.4, and browser session_start must be > 0, else alert and mark GA4-dependent ledger windows 'unmeasurable'. Re-baseline every GA4-based accept test after the fix.",
+   "fix_size": "medium",
+   "files": [
+    "lib/ga4-measurement-protocol.ts",
+    "app/api/visitors/track/route.ts",
+    "components/GTMHead.tsx",
+    "lib/analytics/gtm-bootstrap.ts",
+    "site_signal"
+   ]
+  },
+  {
+   "id": "gsc-trend-9",
+   "title": "RUM is swamped by 404 renders of dead /_next/image URLs since 09-13; real mobile LCP on place pages is poor",
+   "severity": "major",
+   "category": "ux",
+   "claim": "Since images.unoptimized (09-13), requests for old /_next/image URLs render the full HTML 404 page, which mounts the web-vitals reporter. That is 20,000+ rows a day, 50 to 70% of all RUM, all desktop, flat by hour. Every p75 the loop reads is now a bot/404 number. Filtered to mobile, the ranking classes (city, neighborhood, place-type, subdivision, community, housing-market) are above the 4 s 'poor' LCP line.",
+   "evidence": "probe17: /_next/image rows 0/day 09-06..09-12, then 5,864, 25,511 (69.2%), 23,736, 22,431, 9,565, 1,533, 1,378, 1,510, 9,797 (09-21, 61.6%). 9794e028d 09-13 (next.config.ts line 139). probe9: 7d LCP p75 on /_next/image 9,876 ms, n=14,517; desktop 26,874 vs mobile 1,120. probe12 mobile p75: city 5,068, neighborhood 9,924, place-type 7,220, housing-market 5,240, subdivision 4,624, community 4,176, overall 3,492 (n=2,954). probe18: image-search impressions 191/day -> 128/day after 09-13.",
+   "why_it_matters": "Page experience is a ranking input and LCP is the loop's perf metric (ledger perf_lcp rows). Poisoned RUM hides real regressions and fakes others. Whatever is re-fetching dead image URLs at this rate is also spending crawl/render budget on 404s.",
+   "proposed_fix": "Do not mount WebVitalsReporter on not-found/error routes, and drop beacons whose path starts with /_next/ in app/api/web-vitals/route.ts. Store UA class and navigator.webdriver, and exclude bots. 301 or serve legacy /_next/image?url= requests to the underlying image instead of a 404 page (keeps image search and cuts render cost). Pull CrUX (the field data Google uses) per origin and per top URL into site_signal as the loop's perf truth. Then work the mobile LCP of city/neighborhood/place-type pages.",
+   "fix_size": "medium",
+   "files": [
+    "components/WebVitalsReporter.tsx",
+    "app/api/web-vitals/route.ts",
+    "app/not-found.tsx",
+    "next.config.ts",
+    "web_vitals",
+    "site_signal"
+   ]
+  },
+  {
+   "id": "gsc-trend-10",
+   "title": "Headline impressions mix S. Oregon/sentinel inventory and a non-transactional query, so intended pruning reads as a slip",
+   "severity": "minor",
+   "category": "process",
+   "claim": "The 08-24..09-07 'peak' included 4,967/4,552/3,643 weekly impressions from S. Oregon city slugs plus outside-boundaries listing pages, and 1,652 impressions from 'apartments near northeast locksley drive bend or' (0 clicks). SITE-27/33 removed much of the out-of-area set on purpose. Site-wide totals therefore mix wanted and unwanted visibility.",
+   "evidence": "probe11 weekly detail impressions (S. Oregon + outside-boundaries): 1,336+3,631, 1,789+2,763, 2,393+1,250; week 09-14 (6d) 1,405+678. S. Oregon clicks 77 of 385 in 08-24..09-13. probe8/probe11 Locksley query 695/585/372 per week. Note: outside-boundaries also holds Central Oregon rural and Brasada Ranch homes (SITE-23), so it is not purely out-of-market.",
+   "why_it_matters": "Matt and the loop will chase the wrong number. The metric that tracks the mission is Central Oregon money-class visibility, not total impressions.",
+   "proposed_fix": "Report GSC by page class and by market (Central Oregon vs other) in the scoreboard and brief (part of gsc-trend-1). Exclude listings outside the service area from the headline. Fix the sentinel so Central Oregon rural homes do not share a bucket with out-of-area inventory.",
+   "fix_size": "small",
+   "files": [
+    "lib/data/loop/signals.ts",
+    "scripts/loop-brief.ts",
+    "docs/plans/COMPANY_SCOREBOARD.md"
+   ]
+  },
+  {
+   "id": "gsc-trend-11",
+   "title": "The homepage ranks ~p45 for the brand name 'ryan realty'",
+   "severity": "minor",
+   "category": "visibility",
+   "claim": "For 'ryan realty' the homepage sits at p45 in both July and September. Only the GBP-tagged URL ranks (p3). Homepage position across all queries swung p25 -> p41 -> p20 after the 08-10 and 09-07 title rewrites.",
+   "evidence": "probe15: / p45.1 (06-29..07-19, 8i) and p45.3 (08-31..09-20, 20i); /?utm_source=gbp p3.5 / p3.0. probe8: 'ryan realty' 3c/39i p40.0 (June) -> 0c/44i p40.7. probe11 homepage exact weekly p25 (07-06), p33 (07-27..08-10), p36 (08-17), p41 (08-24), p29 (09-07), p20 (09-14). Commits bd557d2ea (08-10 exact-match Layer A title), 63eac48c0 (09-07 keyword homepage title).",
+   "why_it_matters": "Referrals, past clients and ad viewers who search the name do not land on the site. Brand search is also an entity signal for AI engines. Volume is small (tens of impressions/month), so this is minor.",
+   "proposed_fix": "Put the brand plus market in the homepage title (e.g. 'Ryan Realty | Bend, Oregon Real Estate' shape, per VOICE.md), and make the Organization JSON-LD sameAs include the GBP, social profiles and license lookup. Check the brand SERP for other 'Ryan Realty' firms (UNVERIFIED cause). Record a ledger row with the brand query position as the metric.",
+   "fix_size": "small",
+   "files": [
+    "app/page.tsx",
+    "app/layout.tsx"
+   ]
+  },
+  {
+   "id": "gsc-trend-12",
+   "title": "site_signal GSC has permanent false zeros (2026-05-12..05-21) and an understated current week",
+   "severity": "minor",
+   "category": "data",
+   "claim": "The account series has zero-impression rows for 9 May days that GSC actually recorded, and the latest day is written as 0 until the 9-day rolling re-pull fixes it. Any 'this week vs peak' read from site_signal is understated (probe2 said -36%; the API says -28%).",
+   "evidence": "probe2 zero days 05-12..05-19, 05-21 (05-20/05-22 missing); API week 05-11 24c/3,142i vs site_signal 4c/601i (probe8). 09-20 site_signal 0 vs API 996 impressions (probe18). Cron window isoDaysAgo(9)..isoDaysAgo(2), route.ts lines 166-167.",
+   "why_it_matters": "Trend reads and ledger baselines over those dates are wrong. Under §0, a zero here would be published as a fact.",
+   "proposed_fix": "Backfill with GET /api/cron/marketing-snapshot-gsc?startDate=2026-05-10&endDate=2026-05-23. Have readers treat dates within 3 days of today as provisional, or skip writing a day until GSC marks it final (dataState).",
+   "fix_size": "small",
+   "files": [
+    "app/api/cron/marketing-snapshot-gsc/route.ts",
+    "site_signal"
+   ]
+  },
+  {
+   "id": "gsc-trend-13",
+   "title": "Tetherow blog (p15.7) was 301'd into the community page (p47.1) with no measurement",
+   "severity": "minor",
+   "category": "visibility",
+   "claim": "136088a (09-22) redirects the page that ranks best for Tetherow queries into the page that ranks worst. A 301 usually passes most signals, but nothing records the before/after, so if the community page drops out of the SERP entirely the loop will not see it.",
+   "evidence": "probe15 08-31..09-20 tetherow queries: /blog/tetherow-resort-living-real-estate 154i p15.7; /communities/tetherow 136i p47.1. probe8: blog 3c/807i p9.6 in 08-23..09-19. Commit 136088a touches data/legacy-redirects.json and next.config.ts; no ledger row (probe7).",
+   "why_it_matters": "Tetherow is a p1 target community. Consolidation is the right direction (gsc-trend-4) only if the destination carries the blog's content and intent.",
+   "proposed_fix": "Write a ledger row now: metric = impression-weighted position and impressions for queries containing 'tetherow' on /communities/tetherow, baseline from probe15, window 28 days. Confirm the community page carries the blog's decision content. If position is not at or under ~p20 by the window end, revisit.",
+   "fix_size": "small",
+   "files": [
+    "data/legacy-redirects.json",
+    "next.config.ts",
+    "app/communities/[slug]",
+    "site_improvement_ledger"
+   ]
+  }
+ ],
+ "questions_for_matt": [
+  "Do you or a vendor run a rank tracker that searches the quoted queries (\"tetherow homes for sale\", \"broken top real estate\", [brasada ranch real estate] ...)? Each shows about 3 impressions a day, every day, since May/June, with 0 clicks. Which tool is it? Its own export would be a cleaner position series than GSC.",
+  "When you say we keep slipping in the rankings, what do you look at: a specific query (e.g. 'homes for sale bend oregon', 'bend oregon realtor', a community name), a tool, or Search Console totals? That decides the benchmark the loop should defend.",
+  "S. Oregon listing pages brought 77 of 385 clicks (20%) in 08-24..09-13, and SITE-33 is removing them from the index. Confirm you want them out of search entirely, rather than indexed with a referral CTA.",
+  "Which page should own 'homes for sale {city}': /cities/{city} or /homes-for-sale/{city}? Today target_queries names /homes-for-sale/bend, which has zero impressions.",
+  "Is it acceptable to change every listing's public URL to one stable per-listing form (city + address + MLS number, with 308s from all older variants)? That is a one-time re-index of about 7,000 URLs in exchange for no more churn."
+ ]
+}

@@ -366,15 +366,23 @@ async function probeAdSense(): Promise<Probe> {
   const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim()
   const envPresent = client ? ['NEXT_PUBLIC_ADSENSE_CLIENT_ID'] : []
   const envMissing = client ? [] : ['NEXT_PUBLIC_ADSENSE_CLIENT_ID']
-  const pages = [
+  // INT-036 NARROWED 2026-09-23 (UXLIVE-5): adsbygoogle.js no longer loads
+  // sitewide from GoogleAnalytics.tsx. It loads only inside components/AdUnit.tsx,
+  // client-side and after marketing consent, on /tools/appreciation. So the
+  // healthy state is INVERTED from the 2026-08-16 probe: the brokerage pages
+  // below must NOT carry the script (an Auto-ads auction there is the defect),
+  // and the tools page that owns the one slot must answer 200. The slot itself
+  // is client-rendered after consent, so server HTML cannot show it.
+  const brokeragePages = [
     'https://ryan-realty.com/',
     'https://ryan-realty.com/homes-for-sale',
     'https://ryan-realty.com/housing-market/bend',
   ]
+  const slotPage = 'https://ryan-realty.com/tools/appreciation'
   const bits: string[] = [`client ${client ? maskId(client, 10) : 'missing'}`]
-  let anyHit = false
+  let brokerageClean = true
   let lastStatus: number | null = null
-  for (const page of pages) {
+  for (const page of brokeragePages) {
     const res = await fetch(page, {
       headers: { 'User-Agent': 'RyanRealty-G13-probe/1.0' },
       signal: AbortSignal.timeout(20_000),
@@ -383,18 +391,22 @@ async function probeAdSense(): Promise<Probe> {
     lastStatus = res.status
     const html = await res.text()
     const hasScript = html.includes('adsbygoogle') || html.includes('pagead2.googlesyndication.com')
-    const hasClient = client ? html.includes(client) : false
-    const hasSlot = html.includes('data-ad-client') || html.includes('adsbygoogle')
-    anyHit = anyHit || (res.status === 200 && (hasScript || hasClient || hasSlot))
-    bits.push(`${new URL(page).pathname || '/'} HTTP ${res.status} script=${hasScript} client=${hasClient}`)
+    brokerageClean = brokerageClean && res.status === 200 && !hasScript
+    bits.push(`${new URL(page).pathname || '/'} HTTP ${res.status} sitewide-script=${hasScript}`)
   }
+  const slotRes = await fetch(slotPage, {
+    headers: { 'User-Agent': 'RyanRealty-G13-probe/1.0' },
+    signal: AbortSignal.timeout(20_000),
+    redirect: 'follow',
+  })
+  bits.push(`/tools/appreciation HTTP ${slotRes.status} (AdUnit slot, consent-gated client render)`)
   return {
     id: 'INT-036',
     system: 'AdSense',
     envPresent,
     envMissing,
     httpStatus: lastStatus,
-    ok: Boolean(client) && anyHit,
+    ok: Boolean(client) && brokerageClean && slotRes.status === 200,
     evidence: bits.join('; '),
   }
 }

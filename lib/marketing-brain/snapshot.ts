@@ -30,6 +30,8 @@ export type Channel =
   | 'pinterest'
   | 'email'
   | 'google_ads'
+  /** Monthly answer-engine citation battery (AEO-9, lib/seo/answer-engine-battery.ts). */
+  | 'answer_engine'
 
 export type Scope =
   | 'account'
@@ -117,11 +119,27 @@ export async function upsertMetricRows(rows: MetricRow[]): Promise<number> {
 }
 
 /**
+ * A rolling default window, in whole UTC days before `now`. `{ fromDaysAgo: 3,
+ * toDaysAgo: 1 }` is today-3..today-1.
+ */
+export type DefaultWindow = { fromDaysAgo: number; toDaysAgo: number }
+
+/**
  * Parse a date range from a Request URL. Defaults to "yesterday" when no
  * params are provided so the daily cron is one line. Supports a 90-day
  * backfill via ?startDate=2026-02-12&endDate=2026-05-12.
+ *
+ * `defaultWindow` replaces the yesterday-only default for a platform whose
+ * numbers keep arriving after the day ends: re-pulling a settle window every
+ * run corrects a late or partial day in place (upsertMetricRows is keyed on
+ * the day). The GA4 ingestor uses today-3..today-1 (visibility audit
+ * 2026-09-22, TRACK-2); the GSC ingestor rolls its own today-9..today-2.
  */
-export function parseDateRange(request: Request): { startDate: string; endDate: string } {
+export function parseDateRange(
+  request: Request,
+  defaultWindow: DefaultWindow = { fromDaysAgo: 1, toDaysAgo: 1 },
+  now: Date = new Date(),
+): { startDate: string; endDate: string } {
   const url = new URL(request.url)
   const startDate = url.searchParams.get('startDate')?.trim()
   const endDate = url.searchParams.get('endDate')?.trim()
@@ -133,10 +151,41 @@ export function parseDateRange(request: Request): { startDate: string; endDate: 
     return { startDate, endDate }
   }
 
-  const yesterday = new Date()
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
-  const iso = yesterday.toISOString().slice(0, 10)
-  return { startDate: iso, endDate: iso }
+  const isoDaysAgo = (n: number) => {
+    const d = new Date(now)
+    d.setUTCDate(d.getUTCDate() - n)
+    return d.toISOString().slice(0, 10)
+  }
+  return { startDate: isoDaysAgo(defaultWindow.fromDaysAgo), endDate: isoDaysAgo(defaultWindow.toDaysAgo) }
+}
+
+/**
+ * Read one stored series back (a single channel/scope/scope_id/metric) over an
+ * inclusive date range, oldest first. Used by ingestors that judge a day
+ * against other stored days (the GA4 tracking-health guard reads GSC clicks).
+ */
+export async function readMetricSeries(key: {
+  channel: Channel
+  scope: Scope
+  scope_id: string
+  metric: string
+  from: string
+  to: string
+}): Promise<Array<{ date: string; value: number }>> {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('marketing_channel_daily')
+    .select('date,value')
+    .eq('channel', key.channel)
+    .eq('scope', key.scope)
+    .eq('scope_id', key.scope_id)
+    .eq('metric', key.metric)
+    .gte('date', key.from)
+    .lte('date', key.to)
+    .order('date', { ascending: true })
+    .limit(1000)
+  if (error) throw new Error(`readMetricSeries ${key.channel}/${key.metric}: ${error.message}`)
+  return (data ?? []).map((r) => ({ date: String(r.date), value: Number(r.value) || 0 }))
 }
 
 /**

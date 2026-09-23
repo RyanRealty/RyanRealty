@@ -8,7 +8,7 @@
  * shows every publicly active home inside it. The place name at the top of
  * the list shows every home in the place.
  */
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useId, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatCount } from '@/lib/format/count'
@@ -21,6 +21,7 @@ import { firstListedPhoto } from '@/lib/place/rail-photo'
 import { V3_ROOT_CLASS, V3Heading } from './atoms'
 import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
 import { V3Carousel } from './V3Carousel.client'
+import { V3ListingDial } from './V3ListingDial.client'
 import { listingPhotoAlt } from './listing-photo-alt'
 import type { V3ListingRowData } from './V3ListingRow'
 import { V3SourceLine } from './V3SourceLine'
@@ -89,6 +90,7 @@ export function PlaceSubdivisionRail({
   label?: string
 }) {
   const { placeName, rail, homes, keysBySlug, selectedId, setSelected } = usePlaceMap()
+  const detailBase = useId()
   return (
     <nav
       id={id}
@@ -111,11 +113,19 @@ export function PlaceSubdivisionRail({
         {rail.map((entry) => {
           const photo = firstListedPhoto(homes, keysBySlug[entry.id])
           return (
-            <li key={entry.id}>
+            <li key={entry.id} className={cn(entry.href && 'place-subdiv-rail__item--linked')}>
               <button
                 type="button"
                 className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
                 aria-pressed={selectedId === entry.id}
+                /* The button's name is the place's name, exactly as the map
+                   polygon's: that is how WCAG 2.5.8 Equivalent pairs a small
+                   polygon with this full-size control. With the detail line in
+                   the name, /cities/bend "Old Bend" (39x31 on the map) had no
+                   partner and failed ci:tap-targets (visibility audit
+                   2026-09-22, PR #352). The detail stays as a description. */
+                aria-label={entry.name}
+                aria-describedby={nameOnly && entry.detail ? `${detailBase}-${entry.id}` : undefined}
                 onClick={() => setSelected(entry.id)}
               >
                 {photo ? (
@@ -131,10 +141,22 @@ export function PlaceSubdivisionRail({
                 <span className="place-subdiv-rail__copy">
                   <span className="place-subdiv-rail__name">{entry.name}</span>
                   {nameOnly && entry.detail ? (
-                    <span className="place-subdiv-rail__detail">{entry.detail}</span>
+                    <span id={`${detailBase}-${entry.id}`} className="place-subdiv-rail__detail">
+                      {entry.detail}
+                    </span>
                   ) : null}
                 </span>
               </button>
+              {/* THE DOOR (visibility audit 2026-09-22, EXP-3). The row's button
+                  selects the place on the map; this anchor opens the place's
+                  own page, and it is a real <a href> in the served HTML, which
+                  the button can never be. The name is the anchor text. */}
+              {entry.href ? (
+                <Link className="place-subdiv-rail__open" href={entry.href}>
+                  <span className="place-subdiv-rail__open-label">{`${entry.name} page`}</span>
+                  <span aria-hidden="true">›</span>
+                </Link>
+              ) : null}
             </li>
           )
         })}
@@ -144,12 +166,17 @@ export function PlaceSubdivisionRail({
 }
 
 export function PlaceSubdivisionAtlas(props: V3AtlasProps) {
-  const { selectedId, setSelected } = usePlaceMap()
+  const { selectedId, setSelected, keysBySlug } = usePlaceMap()
   return (
     <V3Atlas
       {...props}
       selectedSubdivisionId={selectedId}
       onSubdivisionSelect={setSelected}
+      /* Matt 2026-09-23: the SAME membership PlaceSubdivisionHomes filters
+         its carousel by (childListingKeys), so the map's focused homes and
+         the carousel below it can never disagree about who belongs to the
+         selected district. */
+      memberKeysBySlug={keysBySlug}
     />
   )
 }
@@ -217,7 +244,19 @@ function homesByBuyerGroup(listings: readonly V3ListingRowData[]): Array<{
   })
 }
 
-export function PlaceSubdivisionHomes({ id }: { id: string }) {
+/**
+ * `layout="dial"` (Matt 2026-09-23, neighborhood pages): each buyer group is a
+ * V3ListingDial instead of a carousel. The map still decides what is in it:
+ * choosing a subdivision re-keys every dial, so it opens on the first home of
+ * the new selection with the readout counting that selection.
+ */
+export function PlaceSubdivisionHomes({
+  id,
+  layout = 'rails',
+}: {
+  id: string
+  layout?: 'rails' | 'dial'
+}) {
   const { placeName, rail, homes, keysBySlug, source, asOf, selectedId } = usePlaceMap()
   const selected = rail.find((entry) => entry.id === selectedId) ?? null
   const title = selected?.name ?? placeName
@@ -229,14 +268,42 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
   const typeSections = useMemo(() => homesByBuyerGroup(visible), [visible])
   const countLabel = visible.length > 0 ? `${formatCount(visible.length)} for sale` : null
   const typed = typeSections.length > 1
+  const dialKey = selectedId ?? 'all'
 
   return (
-    <section id={id} className={cn(V3_ROOT_CLASS, 'place-homes')} aria-labelledby={`${id}-heading`}>
+    <section
+      id={id}
+      className={cn(V3_ROOT_CLASS, 'place-homes', layout === 'dial' && 'place-homes--dial')}
+      aria-labelledby={`${id}-heading`}
+    >
       <V3Heading level={2} size="field" id={`${id}-heading`}>
         {title}
       </V3Heading>
       {countLabel ? <p className="place-homes__count">{countLabel}</p> : null}
-      {visible.length > 0 ? (
+      {visible.length > 0 && layout === 'dial' ? (
+        typed ? (
+          typeSections.map((section) => (
+            <V3ListingDial
+              key={`${dialKey}-${section.key}`}
+              id={`${id}-${section.key}`}
+              className="place-homes__dial"
+              heading={section.heading}
+              headingLevel={3}
+              countLabel={`${formatCount(section.rows.length)} for sale`}
+              label={`${section.heading} in ${title}`}
+              listings={section.rows}
+            />
+          ))
+        ) : (
+          <V3ListingDial
+            key={dialKey}
+            id={`${id}-all`}
+            className="place-homes__dial"
+            label={`Homes in ${title}`}
+            listings={visible}
+          />
+        )
+      ) : visible.length > 0 ? (
         typed ? (
           typeSections.map((section) => (
             <div key={section.key} id={`${id}-${section.key}`} className="place-homes__type">

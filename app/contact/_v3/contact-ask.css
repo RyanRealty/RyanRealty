@@ -45,6 +45,20 @@
   position: relative;
 }
 
+/* The honeypot (FUNNEL-1): off the screen, never off the page. Same rule as
+   V3Sheet's and the alerts strip's trap; display:none is skipped by fillers. */
+.contact-ask__trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Opacity 0 keeps the controls out of the frame; a tap-sized box keeps
    them clickable for take-route-shots (clip/1px fails Playwright visible). */
 .contact-ask__taste {

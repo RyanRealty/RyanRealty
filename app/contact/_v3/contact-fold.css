@@ -60,6 +60,24 @@
   padding-bottom: var(--v3-space-2xs);
 }
 
+/* UXLIVE-12 (visibility audit 2026-09-22): the display phone is one figure.
+   At 1440 the lead column is ~280px of text and display-1 set 541.703.3095
+   on two lines, breaking after "541.703." The number never wraps now; the
+   door measures its own width and the size steps down to fit it, capped at
+   the display size it had. The string measures about 6.2em in the display
+   face (417px at 67px in the 2026-09-22 capture), so 14cqi sets it at about
+   87% of the door's text width at every width the lead door takes (375
+   stacked through 1440 two-track). */
+.contact-fold .v3-doors__door--lead {
+  container-type: inline-size;
+}
+
+.contact-fold .v3-doors__door--lead .v3-doors__label {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  font-size: min(var(--v3-size-display-1), 14cqi);
+}
+
 .contact-fold .v3-doors__live .v3-source {
   display: none;
 }

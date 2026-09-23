@@ -8,11 +8,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
-import {
-  publishListingShareKind,
-  publishListingSharePricePerSqft,
-} from '@/lib/listing/publish-listing-share'
+import { publishListingCardFacts } from '@/lib/listing/publish-listing-card-facts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Carousel,
@@ -39,29 +35,9 @@ export function HomeRailCardFace({
   card: HomeRailCard
   priority?: boolean
 }) {
-  const ask = formatPublishedSaleAsk({ price: card.price, propertyType: card.propertyType })
-  const shareKind = publishListingShareKind({
-    propertySubType: card.propertySubType,
-    subdivisionName: card.subdivisionName,
-    city: card.city,
-    listNumber: card.listNumber,
-  })
-  const meta: string[] = []
-  if (card.beds != null) meta.push(`${Math.round(card.beds).toLocaleString('en-US')} bd`)
-  if (card.baths != null) meta.push(`${Math.round(card.baths).toLocaleString('en-US')} ba`)
-  if (card.sqft != null) meta.push(`${Math.round(card.sqft).toLocaleString('en-US')} sqft`)
-  if (card.statusLabel) meta.push(card.statusLabel)
-  const publishedPpsf = publishListingSharePricePerSqft({
-    propertyType: card.propertyType,
-    propertySubType: card.propertySubType,
-    subdivisionName: card.subdivisionName,
-    city: card.city,
-    listNumber: card.listNumber,
-    pricePerSqft: card.pricePerSqft,
-  })
-  if (publishedPpsf != null && publishedPpsf > 0) {
-    meta.push(`$${Math.round(publishedPpsf).toLocaleString('en-US')}/sqft`)
-  }
+  // The same copy the place-page dial's primary card prints (one definition,
+  // lib/listing/publish-listing-card-facts.ts).
+  const { ask, kind: shareKind, meta } = publishListingCardFacts(card)
 
   return (
     <Card size="sm" className={cn(V3_ROOT_CLASS, 'home-rail__card')}>
@@ -80,7 +56,15 @@ export function HomeRailCardFace({
       </div>
       <Link href={card.href} className="home-rail__copy-link">
         <CardHeader className="home-rail__copy">
-          <CardTitle>{ask ?? 'Price on request'}</CardTitle>
+          {/* A place rail keeps unpriced listings (railCardFromListingRow);
+              the homepage shelves never carry one. "Price on request" would
+              claim a seller's offer the MLS row does not make, and in the
+              display face it wrapped to "Price on" at rail width. */}
+          {ask ? (
+            <CardTitle>{ask}</CardTitle>
+          ) : (
+            <CardTitle className="home-rail__ask-none">Price not published</CardTitle>
+          )}
           {shareKind ? <span className="home-rail__kind">{shareKind}</span> : null}
           {meta.length > 0 ? <CardDescription>{meta.join(' · ')}</CardDescription> : null}
         </CardHeader>
@@ -173,11 +157,14 @@ export function HomeListingRail({
           <h2 id={`${row.id}-heading`} className="home-rail__title">
             {row.heading}
           </h2>
+          {row.countLabel ? <p className="home-rail__count">{row.countLabel}</p> : null}
         </div>
         <HomeRailPosition index={index} count={count} />
-        <V3Button href={row.seeAll.href} variant="ghost">
-          {row.seeAll.label}
-        </V3Button>
+        {row.seeAll ? (
+          <V3Button href={row.seeAll.href} variant="ghost">
+            {row.seeAll.label}
+          </V3Button>
+        ) : null}
       </div>
       <Carousel
         setApi={setApi}
@@ -191,7 +178,7 @@ export function HomeListingRail({
               key={card.listingKey}
               className="v3-carousel__slide v3-carousel__slide--rail pl-0"
             >
-              <HomeRailCardFace card={card} priority={index < 2} />
+              <HomeRailCardFace card={card} priority={index < (row.priorityCount ?? 2)} />
             </CarouselItem>
           ))}
         </CarouselContent>

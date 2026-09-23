@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { decideNativeLeadAction, nativeLeadName } from './ensureNativeLead'
+import { reuseSourcePatch } from '@/lib/crm/lead-source'
+import { isPlaceholderLeadName } from '@/lib/crm/merge'
 import { normalizeEmail, normalizePhone } from './resolvePersonIdentity'
 
 // Native CRM capture: ensureNativeLead find-or-creates a crm_* row so a lead
@@ -147,6 +149,37 @@ describe('ensureNativeLead decision helpers', () => {
 
     it('falls back to a generic label when nothing identifies the lead', () => {
       expect(nativeLeadName(null, null, null)).toBe('Website lead')
+    })
+
+    it('every placeholder it writes is one the merge refuses to greet (FUNNEL-8)', () => {
+      for (const placeholder of [
+        nativeLeadName('', 'jane@example.com', null),
+        nativeLeadName(null, null, '5415550100'),
+        nativeLeadName(null, null, null),
+      ]) {
+        expect(isPlaceholderLeadName(placeholder), placeholder).toBe(true)
+      }
+      expect(isPlaceholderLeadName(nativeLeadName('Jane Doe', 'jane@example.com', null))).toBe(false)
+    })
+  })
+
+  // FUNNEL-4 (2026-09-23): crm_people.source is first-touch. An inbound caller
+  // who later used the contact form used to lose 'inbound-call' to the form.
+  describe('reuseSourcePatch (first-touch source on the reuse path)', () => {
+    it('keeps the first door and tags the later one', () => {
+      expect(reuseSourcePatch('inbound-call', 'contact-form')).toEqual({ tag: 'source:contact-form' })
+      expect(reuseSourcePatch('expired-listing-cron', 'seller-lp')).toEqual({ tag: 'source:seller-lp' })
+    })
+
+    it('fills an empty source and leaves a repeat door alone', () => {
+      expect(reuseSourcePatch(null, 'contact-form')).toEqual({ source: 'contact-form' })
+      expect(reuseSourcePatch('  ', 'idx-registration')).toEqual({ source: 'idx-registration' })
+      expect(reuseSourcePatch('Contact-Form', 'contact-form')).toEqual({})
+    })
+
+    it('does nothing without an incoming door', () => {
+      expect(reuseSourcePatch('inbound-call', '')).toEqual({})
+      expect(reuseSourcePatch('inbound-call', undefined)).toEqual({})
     })
   })
 })

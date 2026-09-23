@@ -33,14 +33,24 @@ export function windowEndsAt(shippedAt: string, windowDays: number): Date {
 }
 
 /**
- * A stranded row: the window lapsed and nobody wrote actual_delta.
+ * A row is open until Learn writes a verdict. A measured row carries
+ * actual_delta; an unmeasurable one carries a verdict with actual_delta NULL
+ * (visibility audit 2026-09-22, gsc-trend-2: writing 0 for "no data" made
+ * eight windows read as measured). Either closes it.
+ */
+export function isLedgerRowOpen(row: { actualDelta: number | null; verdict?: string | null }): boolean {
+  return row.actualDelta == null && (row.verdict == null || row.verdict === '')
+}
+
+/**
+ * A stranded row: the window lapsed and nobody closed it.
  * THE LOOP v1.3.0: a domain with stranded rows may not open a new class —
  * Learn closes the old hypothesis before the next one starts.
  */
 export function isExpiredUnlearned(
-  row: { shippedAt: string; windowDays: number; actualDelta: number | null },
+  row: { shippedAt: string; windowDays: number; actualDelta: number | null; verdict?: string | null },
   now: Date = new Date(),
 ): boolean {
-  if (row.actualDelta != null) return false
+  if (!isLedgerRowOpen(row)) return false
   return now.getTime() > windowEndsAt(row.shippedAt, row.windowDays).getTime()
 }

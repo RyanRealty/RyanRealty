@@ -64,8 +64,8 @@ streaming boundary (`app/oregon/[city]/page.tsx:99-102`; index fetch and filters
   `audience:buyer` regardless (`app/actions/out-of-area-referral.ts:59` — see §10 defects).
   Device: GA4 split for `/oregon/*` was NOT pulled this session (gap, §11); program law is
   mobile-first, 390 is truth (decisions.md 2026-08-11).
-- **Automated actors:** `refresh-mvs` cron (vercel.json, `8 * * * *`) refreshes
-  `geo_snapshot_mv` hourly (`app/api/cron/refresh-mvs/route.ts:71-83`); `crm-alert-drain`
+- **Automated actors:** pg_cron job `refresh_dal_mvs_15min` (`5,20,35,50 * * * *`) refreshes
+  `geo_snapshot_mv` (`supabase/migrations/20260731140000_split_mv_refresh_jobs.sql`); `crm-alert-drain`
   cron (`* * * * *`) delivers the queued INTERNAL broker SMS; the `crm-auto-enroll`
   catch-all cron (`4,19,34,49 * * * *`) is an actor whose defining role here is to be
   BLOCKED — `geoReferralEnrollBlock` refuses referral candidates inside `autoEnrollPerson`
@@ -340,7 +340,7 @@ also the overlap with `capture-and-attribute`).
 - **Actions/DAL/crons:** `submitOutOfAreaReferral` (`app/actions/out-of-area-referral.ts`);
   DAL `lib/data/geo/getOutOfAreaCities.ts` + pure policy `lib/out-of-area-cities.ts` +
   pure classifier `lib/referral-geo.ts` (unit tests on main: `lib/referral-geo.test.ts`,
-  `lib/out-of-area-cities.test.ts`); crons `refresh-mvs` (`8 * * * *`), `crm-alert-drain`
+  `lib/out-of-area-cities.test.ts`); pg_cron `refresh_dal_mvs_15min` (`5,20,35,50 * * * *`), crons `crm-alert-drain`
   (`* * * * *`), `crm-auto-enroll` (`4,19,34,49 * * * *` — blocked by design here).
 - **Known defects (evidence, this run):**
   1. **Stale pointer:** `lib/referral-geo.ts:14` cites `app/oregon/[city]/actions.ts` as

@@ -40,9 +40,17 @@ describe('SITE-82 city fold composition', () => {
     )
     expect(PAGE).toMatch(/placeLookPhotoCards/)
     expect(PAGE).toMatch(/homes:\s*foldPhotoCards/)
-    expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
+    // UXLIVE-3: the recorded parks and trails ride deferredAtlasProps, which
+    // ships them at the precision the frame can draw.
+    expect(PAGE).toMatch(/deferredAtlasProps\(\{[\s\S]*?amenities: amenityLayers,/)
+    expect(PAGE).toMatch(/amenities=\{atlasProps\.amenities\}/)
     expect(PAGE).toMatch(/getPlaceAmenityLayers/)
-    expect(PAGE).toMatch(/dots=\{atlasView\.dots\}/)
+    // UXLIVE-3 (2026-09-23): the same population, now counted on the server
+    // and fetched after paint instead of serialized into the RSC payload.
+    expect(PAGE).toMatch(/deferredAtlasProps\(\{\s*population: atlasView,/)
+    expect(PAGE).toMatch(/dots=\{atlasProps\.dots\}/)
+    expect(PAGE).toMatch(/dotsSrc=\{atlasProps\.dotsSrc\}/)
+    expect(PAGE).toMatch(/dotsSummary=\{atlasProps\.dotsSummary\}/)
     expect(PAGE).toMatch(/<CityAlertsStrip[\s\S]*?id="alerts"/)
     expect(PAGE).toMatch(/headlineTone="eyebrow"/)
     expect(PAGE).toMatch(/keyPlacement="head"/)
@@ -65,7 +73,7 @@ describe('SITE-82 city fold composition', () => {
     expect(INSIGHT).toMatch(/<V3MosBars/)
     expect(PAGE).toMatch(/city-fold__figure/)
     expect(PAGE).toMatch(/foldAtlasDots = atlasView\.dots\.filter\(\(d\) => d\.t === 'house'\)/)
-    expect(PAGE).toMatch(/dots=\{atlasView\.dots\}/)
+    expect(PAGE).toMatch(/dots=\{atlasProps\.dots\}/)
     expect(PAGE).toMatch(/clusterPins/)
     expect(PAGE).toMatch(/clusterCellPx=\{ATLAS_PIN_CLUSTER_CELL_PX\}/)
     expect(PAGE).toMatch(/clusterStageHint=\{CITY_FOLD_CLUSTER_STAGE\}/)

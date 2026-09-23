@@ -13,16 +13,14 @@
  */
 
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { fetchOnMarketHomesInBox, type NearbyHomeStats } from '@/lib/data/geo/nearby-on-market-homes'
 import { getVenueBySlug, CO_VENUES, type CoVenue } from '@/data/co-venues'
 import { CO_EVENTS, type CoEvent } from '@/data/co-events'
 import { leftoverCityAreaMarket } from '@/lib/data/market-truth/leftover-area-market'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
-import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /** A silent, chrome-less MLS background loop that autoplays in a featured tile. */
 export type TileVideo = { url: string; embedType: 'iframe' | 'video-tag' } | null
@@ -66,50 +64,6 @@ export type VenueDetail = {
   cityMarket: AreaMarket | null
 }
 
-type RawRow = {
-  ListingKey: string | null
-  ListPrice: number | null
-  BedroomsTotal: number | null
-  BathroomsTotal: number | null
-  TotalLivingAreaSqFt: number | null
-  StreetNumber: string | null
-  StreetName: string | null
-  City: string | null
-  PostalCode: string | null
-  Latitude: number | null
-  Longitude: number | null
-  PhotoURL: string | null
-}
-
-const PROJECTION = [
-  'ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt',
-  'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
-].join(', ')
-
-
-function rowToHome(row: RawRow): VenueHomeTile {
-  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
-  const cityLine = [[row.City, 'OR'].filter(Boolean).join(', '), row.PostalCode]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-  return {
-    listingKey: row.ListingKey ?? '',
-    href: `/listing/${row.ListingKey ?? ''}`,
-    price: row.ListPrice,
-    beds: row.BedroomsTotal,
-    baths: row.BathroomsTotal,
-    sqft: row.TotalLivingAreaSqFt,
-    addressLine: street || 'Address available on request',
-    cityLine: cityLine || 'Central Oregon',
-    lat: row.Latitude,
-    lng: row.Longitude,
-    photoUrl: row.PhotoURL,
-    video: null,
-    hasTour: false,
-  }
-}
-
 /**
  * Attach each home's MLS background video to the top tiles and sort video-first,
  * so the featured grid autoplays on scroll-into-view exactly like every other
@@ -136,45 +90,33 @@ async function attachTileVideos(homes: VenueHomeTile[]): Promise<void> {
   homes.sort((a, b) => (a.video ? 0 : a.hasTour ? 1 : 2) - (b.video ? 0 : b.hasTour ? 1 : 2))
 }
 
-function medianListPrice(homes: VenueHomeTile[]): number | null {
-  const prices = homes
-    .map((h) => h.price)
-    .filter((p): p is number => typeof p === 'number' && p > 0)
-    .sort((a, b) => a - b)
-  if (prices.length === 0) return null
-  const mid = Math.floor(prices.length / 2)
-  const raw = prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid]
-  return Math.round(raw / 1000) * 1000
-}
-
-async function fetchVenueHomes(venue: CoVenue): Promise<VenueHomeTile[]> {
-  if (typeof venue.lat !== 'number' || typeof venue.lng !== 'number') return []
-  const supabase = supabaseAnon()
-  if (!supabase) return []
-
-  const { data, error } = await supabase
-    .from('listings')
-    .select(PROJECTION)
-    .in('StandardStatus', ACTIVE_STATUSES)
-    .eq('PropertyType', 'A')
-    .gte('Latitude', venue.lat - LAT_PAD)
-    .lte('Latitude', venue.lat + LAT_PAD)
-    .gte('Longitude', venue.lng - LNG_PAD)
-    .lte('Longitude', venue.lng + LNG_PAD)
-    .order('ListPrice', { ascending: false, nullsFirst: false })
-    .limit(MAX_HOMES)
-
-  if (error) {
-    throw new Error(`[getVenueDetail] supabase error: ${error.message}`)
+/**
+ * Every public on-market PropertyType 'A' home in the box, from listing_search_mv.
+ * `stats` covers the full set; `homes` is its price-desc top slice (DATA-3/8).
+ */
+async function fetchVenueHomes(venue: CoVenue): Promise<{ homes: VenueHomeTile[]; stats: NearbyHomeStats }> {
+  if (typeof venue.lat !== 'number' || typeof venue.lng !== 'number') {
+    return { homes: [], stats: { count: 0, medianListPrice: null } }
   }
-  return (data ?? []).map((r) => rowToHome(r as unknown as RawRow))
+  const { homes, stats } = await fetchOnMarketHomesInBox({
+    label: '[getVenueDetail] venue homes',
+    lat: venue.lat,
+    lng: venue.lng,
+    latPad: LAT_PAD,
+    lngPad: LNG_PAD,
+    maxTiles: MAX_HOMES,
+  })
+  return {
+    homes: homes.map((h) => ({ ...h, video: null, hasTour: false })),
+    stats,
+  }
 }
 
 async function fetchVenueDetail(slug: string): Promise<VenueDetail | null> {
   const venue = getVenueBySlug(slug)
   if (!venue) return null
 
-  const homes = await fetchVenueHomes(venue)
+  const { homes, stats } = await fetchVenueHomes(venue)
   await attachTileVideos(homes)
   const relatedVenues = CO_VENUES.filter((v) => v.slug !== venue.slug && v.city === venue.city)
 
@@ -197,7 +139,7 @@ async function fetchVenueDetail(slug: string): Promise<VenueDetail | null> {
   return {
     venue,
     homes,
-    stats: { count: homes.length, medianListPrice: medianListPrice(homes) },
+    stats,
     relatedVenues,
     eventsHere,
     cityMarket,
@@ -205,7 +147,7 @@ async function fetchVenueDetail(slug: string): Promise<VenueDetail | null> {
 }
 
 export function getVenueDetail(slug: string): Promise<VenueDetail | null> {
-  return unstable_cache(() => fetchVenueDetail(slug), ['venue-detail-v2-leftover', slug], {
+  return unstable_cache(() => fetchVenueDetail(slug), ['venue-detail-v3-full-set', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'venues'],
   })()

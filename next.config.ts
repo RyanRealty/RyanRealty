@@ -328,7 +328,17 @@ const nextConfig: NextConfig = {
       { source: '/builders', destination: '/new-construction', permanent: true },
       { source: '/builders/:slug', destination: '/new-construction', permanent: true },
       { source: '/resources', destination: '/housing-market', permanent: true },
-      { source: '/pulse', destination: '/activity', permanent: true },
+      // UXLIVE-8 (visibility audit 2026-09-22): SITE_PAGES.md folds /activity
+      // (and /pulse) into /housing-market and makes /buy "Homes, not a third
+      // chrome". Both were 200 + index,follow with zero internal links. R-122
+      // evidence, GSC 2025-05-28..2026-09-20: /buy 0 impressions (page equals
+      // AND page contains "/buy" — only /buy/relocation 20 and
+      // /buy/investment 1 carry any, and they keep their own route);
+      // /activity 3 impressions, 0 clicks. One hop each, straight to the
+      // successor (no /pulse -> /activity -> /housing-market chain).
+      { source: '/buy', destination: '/homes-for-sale', permanent: true },
+      { source: '/activity', destination: '/housing-market', permanent: true },
+      { source: '/pulse', destination: '/housing-market', permanent: true },
       // IA lock (P5): deal-signal survivor is /price-drops. Page-level
       // permanentRedirect() under Next 16 prerender/streaming returns HTTP 200
       // with no h1/main (fleet 57eefae9 / df8ca55f). The 308 must live here.
@@ -440,8 +450,9 @@ const nextConfig: NextConfig = {
       // /lp/listings/<key> was never a route; the listing itself lives at /listing/<key>.
       { source: '/lp/listings/:listingKey', destination: '/listing/:listingKey', permanent: true },
 
-      // Removed demo route still drawing traffic → the live Market Pulse page.
-      { source: '/pulse-video-demo', destination: '/activity', permanent: true },
+      // Removed demo route still drawing traffic → the live market page
+      // (/activity folded into /housing-market, UXLIVE-8).
+      { source: '/pulse-video-demo', destination: '/housing-market', permanent: true },
 
       // Admin route moved under the (protected) group.
       { source: '/admin/social', destination: '/admin/analytics/social', permanent: false },
@@ -503,6 +514,10 @@ const nextConfig: NextConfig = {
     'app/subdivisions/[slug]/page': ['./data/basemap/streets/*.json'],
     'app/listing/[listingKey]/page': ['./data/basemap/streets/*.json'],
     'app/team/[slug]/page': ['./data/basemap/streets/*.json'],
+    // UXLIVE-3 (visibility audit 2026-09-22): the place pages' Atlas now
+    // fetches its basemap after paint from this route, which runs the same
+    // basemapForFrame (and so the same street tiles) the pages used to inline.
+    'app/api/atlas/basemap/route': ['./data/basemap/streets/*.json'],
     'app/api/cma/[slug]/pdf/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
       './node_modules/puppeteer-core/**',

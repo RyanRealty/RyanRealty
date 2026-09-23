@@ -97,7 +97,7 @@ const MARK_R = 5.5
 function Marks({ rating }: { rating: number }) {
   const n = Math.max(0, Math.min(5, Math.round(rating)))
   return (
-    <span className="v3-proof__marks" aria-label={`${n} of 5`}>
+    <span className="v3-proof__marks" role="img" aria-label={`${n} of 5`}>
       {Array.from({ length: 5 }, (_, i) => (
         <svg
           key={i}
@@ -162,13 +162,21 @@ function QuoteFigure({
             className="v3-proof__avatar v3-proof__avatar--quote"
             data-initials={reviewerInitials(q.author)}
           >
-            <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+            {/* No delayMs: neither avatar here ever sets an AvatarImage, so
+                there's no image-load flash to guard against, and Radix's
+                delayMs gates the FIRST paint (SSR included) behind a
+                window.setTimeout — a real gap where the node either doesn't
+                exist yet or, once mounted, briefly carries only its
+                un-overridden shadcn defaults (bg-muted/text-muted-foreground)
+                for a contrast scanner (or a slow real client) to catch. Omit
+                it and Radix renders immediately, every time. bg-navy/
+                text-cream sit directly on the element so contrast never
+                depends on V3Proof.css's load timing either — see that file's
+                .v3-proof__avatar-fallback comment. */}
+            <AvatarFallback className="v3-proof__avatar-fallback bg-navy text-cream">
               {reviewerInitials(q.author)}
             </AvatarFallback>
           </Avatar>
-          <span className="v3-proof__avatar-ink" aria-hidden="true">
-            {reviewerInitials(q.author)}
-          </span>
         </span>
         <cite className="v3-proof__author">{q.author}</cite>
         <span className="v3-proof__meta">{q.attribution}</span>

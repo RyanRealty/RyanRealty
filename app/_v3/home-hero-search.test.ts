@@ -9,6 +9,7 @@ const RAILS = readFileSync(resolve('app/_v3/HomeHomesRails.tsx'), 'utf8')
 const RAIL_CLIENT = readFileSync(resolve('app/_v3/HomeListingRail.client.tsx'), 'utf8')
 const RAIL_CSS = readFileSync(resolve('app/_v3/home-homes-rails.css'), 'utf8')
 const RAIL_ITEMS = readFileSync(resolve('app/_v3/home-rail-items.ts'), 'utf8')
+const CARD_FACTS = readFileSync(resolve('lib/listing/publish-listing-card-facts.ts'), 'utf8')
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 const PLACES = readFileSync(resolve('app/_v3/HomeBrowsePlaces.tsx'), 'utf8')
 const FEATURED = readFileSync(resolve('app/_v3/HomeFeaturedCommunity.client.tsx'), 'utf8')
@@ -20,9 +21,11 @@ describe('homepage hero search uses the public search stack', () => {
     expect(PAGE).toContain('listedNow.toLocaleString')
     expect(PAGE).not.toContain('home-hero-search__job')
     expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
-    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Homes for Sale in Central Oregon \| Ryan Realty, Bend'\s*\}/)
-    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Homes for Sale in Central Oregon \| Ryan Realty, Bend'/)
-    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Homes for Sale in Central Oregon \| Ryan Realty, Bend'/)
+    // gsc-trend-11 (2026-09-23): the brand leads the title; the head term stays
+    // "Homes for Sale in Central Oregon" (Bend homes for sale is /homes-for-sale/bend's).
+    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty, Bend \| Homes for Sale in Central Oregon'\s*\}/)
+    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty, Bend \| Homes for Sale in Central Oregon'/)
+    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty, Bend \| Homes for Sale in Central Oregon'/)
     expect(PAGE).toMatch(/<HomeHeroSearch[^>]*valuationHref=/)
   })
 
@@ -58,6 +61,11 @@ describe('homepage hero search uses the public search stack', () => {
     const morph = readFileSync(resolve('components/motion/morphing-search.tsx'), 'utf8')
     const wrap = readFileSync(resolve('components/site/v3/V3MorphSearch.tsx'), 'utf8')
     expect(morph).toContain('aria-haspopup="dialog"')
+    // Lighthouse aria-allowed-attr failed the homepage on it (PR #352,
+    // 2026-09-23): aria-expanded is not allowed on a plain search input. The
+    // resting field opens the search dialog as you type, so it is a combobox,
+    // the same role the open field already carries.
+    expect(morph).toMatch(/type="search"\s+role="combobox"\s+value=\{query\}/)
     expect(morph).toContain('layoutId')
     expect(morph).toContain('<kbd')
     expect(morph).toContain('backdrop-blur-xl')
@@ -350,7 +358,12 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(RAIL_CLIENT).not.toContain('toggleSavedListing')
     expect(RAIL_CLIENT).not.toContain('home-rail__save')
     expect(RAIL_CSS).not.toContain('home-rail__save')
-    expect(RAIL_CLIENT).toContain('publishListingShareKind')
+    // The card's copy goes through the fractional-share guards. Since
+    // 2026-09-23 it does so in one definition the rail card and the place
+    // dial share (publishListingCardFacts), so follow the call one hop.
+    expect(RAIL_CLIENT).toContain('publishListingCardFacts(card)')
+    expect(CARD_FACTS).toContain('publishListingShareKind(')
+    expect(CARD_FACTS).toContain('publishListingSharePricePerSqft(')
     expect(RAIL_CLIENT).toContain('tags={card.badges}')
     expect(RAIL_ITEMS).toContain('publishListingCardBadges')
     expect(RAIL_ITEMS).toContain('openHouseLabel')

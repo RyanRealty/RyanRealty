@@ -26,6 +26,14 @@
 export type FeedWindow = {
   /** e.g. 'instagram', 'meta_page' */
   channel: string
+  /**
+   * e.g. 'account', 'event', 'page'. Part of the key since 2026-09-23 (TRACK-2):
+   * with scope collapsed, ga4 `event_count` summed every event, so page_view
+   * (the Measurement Protocol mirror) kept the pair non-zero while
+   * session_start sat at zero for five days. Optional for callers that do not
+   * split by scope; dormant/retired lookups stay channel:metric.
+   */
+  scope?: string
   /** e.g. 'impressions' */
   metric: string
   /** How many rows landed in the window. */
@@ -189,6 +197,10 @@ export function classifyFeed(w: FeedWindow, minRows = 14): SilentZeroVerdict {
   return { ...w, verdict: 'healthy', note: `${w.nonZeroRows} of ${w.rows} rows carry a real value` }
 }
 
+function feedLabel(v: { channel: string; scope?: string; metric: string }): string {
+  return v.scope ? `${v.channel}.${v.scope}.${v.metric}` : `${v.channel}.${v.metric}`
+}
+
 export function formatSilentZeroReport(verdicts: SilentZeroVerdict[]): string[] {
   const bad = verdicts.filter((v) => v.verdict === 'silent-zero')
   const absent = verdicts.filter((v) => v.verdict === 'absent')
@@ -199,18 +211,172 @@ export function formatSilentZeroReport(verdicts: SilentZeroVerdict[]): string[] 
   const out: string[] = []
   if (bad.length) {
     out.push(`${bad.length} feed(s) landing on schedule and reporting ONLY ZEROS:`)
-    for (const v of bad) out.push(`  ${v.channel}.${v.metric}: ${v.rows} rows, all 0, latest ${v.latest ?? '?'}`)
+    for (const v of bad) out.push(`  ${feedLabel(v)}: ${v.rows} rows, all 0, latest ${v.latest ?? '?'}`)
   }
   if (absent.length) {
     out.push(`${absent.length} feed(s) with no rows at all:`)
-    for (const v of absent) out.push(`  ${v.channel}.${v.metric}`)
+    for (const v of absent) out.push(`  ${feedLabel(v)}`)
   }
   if (retired.length) {
     out.push(
       `${retired.length} metric(s) RETIRED upstream — stored zeros are fabricated, not measured.`
     )
     out.push('  Nothing to chase; the pipeline stopped asking. Deleting the old rows is a decision, not a fix.')
-    for (const v of retired) out.push(`  ${v.channel}.${v.metric}: ${v.rows} stale rows, latest ${v.latest ?? '?'}`)
+    for (const v of retired) out.push(`  ${feedLabel(v)}: ${v.rows} stale rows, latest ${v.latest ?? '?'}`)
   }
+  return out
+}
+
+// ─── Watched series — a named series that must not go quiet (TRACK-2) ─────
+//
+// The window pass above only fires when EVERY row in 30 days is zero. That is
+// right for a feed that never worked and blind to one that just died: on
+// 2026-09-22 ga4 session_start had no row on the three latest landed days
+// (09-19..09-21) and 1 on 09-18, while earlier days in the window were
+// non-zero (87 on 09-16), so even a scope-split pair read "healthy". A watched series is judged on its MOST RECENT landed days instead,
+// keyed by channel x scope x scope_id x metric so one event cannot hide behind
+// another's volume. A missing row on a day its channel landed counts as zero:
+// GA4 omits zero rows, which is how session_start disappeared rather than
+// reading 0.
+
+export type WatchRule = 'went-silent' | 'health-flag'
+
+export type WatchedSeries = {
+  channel: string
+  scope: string
+  scopeId: string
+  metric: string
+  /**
+   * went-silent: flag when the latest `minRun` days the channel landed all read
+   * 0 or no row. health-flag: the series is itself a 1/0 verdict; flag when the
+   * latest value is 0.
+   */
+  rule: WatchRule
+  minRun?: number
+  why: string
+}
+
+export const WATCHED_SERIES: WatchedSeries[] = [
+  {
+    channel: 'ga4',
+    scope: 'event',
+    scopeId: 'session_start',
+    metric: 'event_count',
+    rule: 'went-silent',
+    minRun: 1,
+    why:
+      'browser-only (Measurement Protocol cannot send it), so the page-view mirror cannot mask an outage. ' +
+      'Live September days carried 5 to 87 (stored ga4 event rows 09-10..09-17); the 2026-09-18 outage went 5 days unseen (TRACK-2).',
+  },
+  {
+    channel: 'ga4',
+    scope: 'event',
+    scopeId: 'first_visit',
+    metric: 'event_count',
+    rule: 'went-silent',
+    // Healthy September days carried as few as 3 (09-13), so one zero day can
+    // be chance; two in a row is not.
+    minRun: 2,
+    why: 'browser-only, like session_start; a new visitor is not counted anywhere else in GA4.',
+  },
+  {
+    channel: 'ga4',
+    scope: 'account',
+    scopeId: '',
+    metric: 'tracking_health_ok',
+    rule: 'health-flag',
+    why:
+      'the daily GA4 guard (lib/analytics/ga4-tracking-health.ts): browser session_start > 0 and ' +
+      'google/organic sessions at or above the floor ratio to Search Console clicks.',
+  },
+]
+
+export function watchKey(s: { channel: string; scope: string; scopeId: string; metric: string }): string {
+  return `${s.channel}\u0000${s.scope}\u0000${s.scopeId}\u0000${s.metric}`
+}
+
+export type WatchPoint = { date: string; value: number }
+
+export type WatchVerdict = {
+  series: WatchedSeries
+  verdict: 'went-silent' | 'unhealthy' | 'healthy' | 'not-landing' | 'absent'
+  /** Consecutive most-recent landed days that failed (0 / missing, or health 0). */
+  run: number
+  latest: string | null
+  lastGood: string | null
+  note: string
+}
+
+/**
+ * Judge one watched series.
+ * @param points   the series' stored rows in the window (any order)
+ * @param landed   every date its CHANNEL landed any row in the window
+ */
+export function classifyWatchedSeries(series: WatchedSeries, points: WatchPoint[], landed: string[]): WatchVerdict {
+  const byDate = new Map(points.map((p) => [p.date, Number(p.value) || 0]))
+  const label = `${series.channel}.${series.scope}.${series.scopeId || '-'}.${series.metric}`
+
+  if (series.rule === 'health-flag') {
+    const dates = [...byDate.keys()].sort().reverse()
+    if (dates.length === 0) {
+      return { series, verdict: 'absent', run: 0, latest: null, lastGood: null, note: `${label}: no rows yet — the guard has not written a verdict` }
+    }
+    let run = 0
+    for (const d of dates) {
+      if ((byDate.get(d) ?? 0) > 0) break
+      run += 1
+    }
+    const lastGood = dates.find((d) => (byDate.get(d) ?? 0) > 0) ?? null
+    return run > 0
+      ? {
+          series,
+          verdict: 'unhealthy',
+          run,
+          latest: dates[0],
+          lastGood,
+          note: `${label}: FAILING for ${run} day(s) through ${dates[0]} (last pass ${lastGood ?? 'none in window'})`,
+        }
+      : { series, verdict: 'healthy', run: 0, latest: dates[0], lastGood, note: `${label}: passing, latest ${dates[0]}` }
+  }
+
+  const days = [...new Set(landed)].sort().reverse()
+  if (days.length === 0) {
+    return { series, verdict: 'not-landing', run: 0, latest: null, lastGood: null, note: `${label}: channel landed no rows in the window` }
+  }
+  let run = 0
+  for (const d of days) {
+    if ((byDate.get(d) ?? 0) > 0) break
+    run += 1
+  }
+  const lastGood = days.find((d) => (byDate.get(d) ?? 0) > 0) ?? null
+  const minRun = series.minRun ?? 1
+  if (run >= minRun) {
+    return {
+      series,
+      verdict: 'went-silent',
+      run,
+      latest: days[0],
+      lastGood,
+      note:
+        `${label}: 0 or missing on the last ${run} day(s) the channel landed (through ${days[0]}; ` +
+        `last non-zero ${lastGood ?? 'none in window'}). ${series.why}`,
+    }
+  }
+  return { series, verdict: 'healthy', run, latest: days[0], lastGood, note: `${label}: ${byDate.get(days[0]) ?? 0} on ${days[0]}` }
+}
+
+export function formatWatchReport(verdicts: WatchVerdict[], details: Map<string, string[]> = new Map()): string[] {
+  const alarms = verdicts.filter((v) => v.verdict === 'went-silent' || v.verdict === 'unhealthy')
+  const out: string[] = []
+  if (alarms.length === 0) {
+    out.push(`${verdicts.length} watched series checked — none went quiet`)
+  } else {
+    out.push(`${alarms.length} WATCHED series FAILING (channel.scope.scope_id.metric):`)
+    for (const v of alarms) {
+      out.push(`  ${v.note}`)
+      for (const d of details.get(watchKey(v.series)) ?? []) out.push(`    - ${d}`)
+    }
+  }
+  for (const v of verdicts.filter((x) => x.verdict === 'absent' || x.verdict === 'not-landing')) out.push(`  (info) ${v.note}`)
   return out
 }

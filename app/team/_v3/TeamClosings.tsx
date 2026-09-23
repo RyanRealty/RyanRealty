@@ -83,8 +83,10 @@ export function TeamClosings({
           </CarouselContent>
           {rows.length > 1 ? (
             <>
-              <CarouselPrevious />
-              <CarouselNext />
+              {/* size-11 = 44px: the carousel default (icon-sm) measured 28x28 and
+                  failed ci:tap-targets on /team at 390 and 1440. */}
+              <CarouselPrevious className="size-11" />
+              <CarouselNext className="size-11" />
             </>
           ) : null}
         </Carousel>

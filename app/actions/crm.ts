@@ -498,12 +498,17 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   // Merge tokens like the SMS path does — a template body with %first% must
   // never reach a client literally. The context resolves agent/sender/company
   // tokens from real data (brokers + crm_company_settings).
-  const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
+  const { renderCrmMerge } = await import('@/lib/crm/merge')
+  const { decorateOutboundText } = await import('@/lib/identity/outbound-links')
   const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const actingSlugForLinks = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
   const mergeCtx = await buildMergeContext({ person, senderSlug: actingSlugForLinks })
   const mergedSubject = renderCrmMerge(subject, person, mergeCtx)
-  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, mergeCtx), actingSlugForLinks, person.fub_legacy_id as number | null, personId)
+  const mergedBody = decorateOutboundText(renderCrmMerge(body, person, mergeCtx), {
+    brokerSlug: actingSlugForLinks,
+    personId,
+    channel: 'email',
+  })
 
   // Idempotency backstop (admin rebuild §A5): a per-attempt key from the
   // composer, enforced inside the governed chokepoint with the same

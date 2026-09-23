@@ -16,7 +16,9 @@ export type SitePageEntry = {
 }
 
 export const SITE_PAGES: SitePageEntry[] = [
-  { label: 'Homes for sale', href: '/homes-for-sale?view=list', keywords: ['search', 'buy', 'listings', 'browse'] },
+  // The clean, indexable path: it opens on the regional list (UXLIVE-4).
+  { label: 'Homes for sale', href: '/homes-for-sale', keywords: ['search', 'buy', 'listings', 'browse'] },
+  // An explicit map ask keeps its view: this is a typed suggestion, not a crawl link.
   { label: 'Map search', href: '/homes-for-sale?view=map', keywords: ['map'] },
   { label: 'Communities', href: '/communities', keywords: ['community', 'subdivision', 'resort'] },
   { label: 'Cities', href: '/cities', keywords: ['city', 'towns', 'area', 'guide', 'neighborhood'] },
@@ -33,7 +35,8 @@ export const SITE_PAGES: SitePageEntry[] = [
   { label: 'Schools', href: '/schools', keywords: ['school', 'district', 'education'] },
   { label: 'Parks', href: '/parks', keywords: ['park', 'outdoors'] },
   { label: 'Trails', href: '/central-oregon/trails', keywords: ['trail', 'hike', 'hiking'] },
-  { label: 'Golf', href: '/lp/central-oregon-golf', keywords: ['golf', 'course'] },
+  // The destination, not the /lp/central-oregon-golf 308 (UXLIVE-8).
+  { label: 'Golf', href: '/central-oregon/golf', keywords: ['golf', 'course'] },
   { label: 'Events', href: '/central-oregon/events', keywords: ['event', 'calendar', 'weekend'] },
   { label: 'Live music and shows', href: '/central-oregon/venues', keywords: ['music', 'venue', 'show', 'concert'] },
   { label: 'Mortgage calculator', href: '/tools/mortgage-calculator', keywords: ['mortgage', 'calculator', 'payment', 'loan'] },

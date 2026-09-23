@@ -218,7 +218,11 @@ const TOP_GROUPS: readonly V3ChromeTopGroup[] = NAV_GROUPS.filter(
 const ACCOUNT_GROUP = NAV_GROUPS.find((group) => group.key === ACCOUNT_KEY)
 
 
-/** Sign in from the account group. Mobile bar: logo | Sign in | hamburger. */
+/**
+ * Sign in from the account group. It sits in the bar from 56.25rem up; below
+ * that the bar's slot is the phone (UXLIVE-13) and Sign in is reached in the
+ * menu, where the account group ("Saved") already lists it.
+ */
 const SIGN_IN = ACCOUNT_GROUP?.links.find((link) => link.href === '/login') ?? null
 
 const ACCOUNT_HOME =
@@ -681,10 +685,16 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
-          {/* Mobile bar: logo | Search | Sign in | hamburger. Work with us
-              lives in the dog floater (SITE-153), not the header (Matt
-              2026-09-21). Phone + seller ask stay desktop (and in the menu
-              foot). */}
+          {/* Mobile bar: logo | Search | Call | hamburger (UXLIVE-13, visibility
+              audit 2026-09-22). The 2026-09-06 lock gave the phone slot to
+              Sign in; on all nine routes captured at 375 the first tappable
+              phone was below the first screen (/sell y=1,479 to /cities/bend
+              y=25,470), and a call is the highest-intent ask a brokerage gets.
+              Under Matt's 2026-09-23 directive ("nothing is permanent") the
+              phone takes the slot at every width and Sign in moves into the
+              menu below 56.25rem (V3Chrome.css). Work with us lives in the dog
+              floater (SITE-153), not the header (Matt 2026-09-21). The seller
+              ask stays desktop. */}
           <V3ChromeSearch />
           {viewerReady && viewer ? (
             // Avatar only, no printed name (Matt 2026-09-21). The name still

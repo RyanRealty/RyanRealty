@@ -6,38 +6,30 @@
  * the scoreboard can show the FIELD p75 — the number Google actually ranks on.
  *
  * Telemetry must NEVER break a page: every failure path returns 204 quietly.
- * Public endpoint by design (anonymous visitors report their own vitals); we
- * validate the metric name + numeric value and ignore anything else.
+ * Public endpoint by design (anonymous visitors report their own vitals); every
+ * sample passes parseWebVitalSample (lib/analytics/web-vitals-sample.ts) first:
+ * LCP/INP/CLS/FCP/TTFB only (FID dropped), no negative or > 120 s timings, and
+ * no framework/API paths (visibility audit 2026-09-22, TRACK-3).
  */
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { parseWebVitalSample } from '@/lib/analytics/web-vitals-sample'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-const ALLOWED = new Set(['LCP', 'INP', 'CLS', 'FCP', 'TTFB', 'FID'])
 
 export async function POST(request: Request) {
   try {
     // sendBeacon delivers a text body; parse defensively.
     const raw = await request.text()
     const data = JSON.parse(raw) as Record<string, unknown>
-
-    const metric = typeof data.name === 'string' ? data.name.toUpperCase() : ''
-    const value = typeof data.value === 'number' ? data.value : Number(data.value)
-    if (!ALLOWED.has(metric) || !Number.isFinite(value)) {
+    const verdict = parseWebVitalSample(data && typeof data === 'object' ? data : {})
+    if (!verdict.ok) {
       return new NextResponse(null, { status: 204 }) // ignore junk silently
     }
 
     const supabase = createServiceClient()
-    await supabase.from('web_vitals').insert({
-      metric,
-      value,
-      rating: typeof data.rating === 'string' ? data.rating : null,
-      path: typeof data.path === 'string' ? data.path.slice(0, 512) : null,
-      navigation_type: typeof data.navigationType === 'string' ? data.navigationType : null,
-      device: typeof data.device === 'string' ? data.device : null,
-    })
+    await supabase.from('web_vitals').insert(verdict.row)
   } catch {
     // Never surface telemetry failures to the visitor.
   }

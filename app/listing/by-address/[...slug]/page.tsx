@@ -78,8 +78,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!listingKey) return LISTING_UNAVAILABLE_METADATA
   // ONE canonical per listing (SITE-22). This function returns the base
   // metadata UNCHANGED, and the canonical inside it is the one
-  // app/listing/[listingKey]/page.tsx computes from the listing's OWN boundary
+  // app/listing/[listingKey]/page.tsx computes from the listing's OWN MLS
   // fields — so every path this route answers on points at the same URL.
+  // P14 (2026-09-23): a non-canonical path rarely reaches this route at all;
+  // middleware.ts 308s it to the canonical first (lib/routing/
+  // listing-canonical-hop.ts), and this canonical is the pass-through case.
   //
   // It used to end with a self-canonical to whatever path was requested, added
   // by b58edad4 on 2026-06-01. That same commit taught [listingKey]/page.tsx to

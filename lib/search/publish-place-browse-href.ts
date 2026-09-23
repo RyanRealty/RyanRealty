@@ -3,7 +3,7 @@
  *
  * A place page that names a city, neighborhood, community, plat, or ZIP must
  * keep that filter on the map Browse homes door. Regional
- * `publishRegionalSearchHref()` (`/homes-for-sale?view=list`) is the homepage
+ * `publishRegionalSearchHref()` (`/homes-for-sale`, list by default) is the homepage
  * inventory door, not a place-page exit.
  *
  * Founding case: /subdivisions/ridge-at-eagle-crest (12 homes, Redmond)

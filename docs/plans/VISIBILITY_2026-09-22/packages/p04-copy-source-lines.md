@@ -1,0 +1,14 @@
+# p04-copy-source-lines
+
+WIP branch: `claude/admiring-feynman-7lgwc3--wip-p04-copy-source-lines` (snapshot of the agent worktree). Original worktree: `.claude/worktrees/agent-a0bbb9a23e2477403`.
+
+## Package spec (as given to the fix agent)
+
+Read docs/plans/VISIBILITY_2026-09-22/FIX_BRIEF.md first and follow it exactly.
+
+PACKAGE P4: machine-voice copy and figure labels on public pages. Verdicts: docs/plans/VISIBILITY_2026-09-22/evidence/verdicts/voice.json (VOICE-2, VOICE-6, VOICE-7), docs/plans/VISIBILITY_2026-09-22/evidence/findings/ux-live.json (UXLIVE-7, UXLIVE-12 phone line only).
+1. VOICE-2: V3SourceLine folds traces to engineer identifiers or truncated numbers ('Median asking price $1', 'market_metric financing_mix', 'leftover membership', 'public'). Guard a comma between digits in balancedCut (parallel to the decimal guard), fix the double comma in lib/place/publish-place-affordability.ts, and pass reader-facing sourceName at the affordability, listing pill (lib/listing/publish-listing-pill-read.ts) and listing chart caption call sites. Add a unit test that no rendered source name matches /(^|\W)(public\.?|market_metric|_mv\b|stat_id=|leftover|[a-z]+_[a-z]+)(\W|$)/ or ends in a truncated currency.
+2. VOICE-6: rewrite the machine templates against VOICE.md: the /housing-market chart lede ('it was $795K, −5.7%, less than the same month last year' -> a subject and a direction), the 'You are on the Bend housing market report' row, 'Tumalo has no published active single-family count', the price-drops aria hint 'Hover, tap or tab another cut for its home and dollars.', the homepage source line 'Alias-aware active inventory and median list for each resort community.' Keep interaction affordances as control labels. Update any test that pins a changed string.
+3. VOICE-7 / UXLIVE-7: the same 'single-family homes for sale in Bend' carries 757 (MLS City = Bend, /cities/bend/types/single-family title/meta) and 581 (place-membership detached, /housing-market/bend FAQ + JSON-LD, /sell JSON-LD, menu). Name the population in the reader's words at each site (e.g. 'with a Bend mailing address' vs 'inside Bend city limits'), re-derive both counts with the sb.mjs helper and print them (§0 trace), and make the words and the number agree wherever they appear. Do not change which DAL computes either figure.
+4. /contact: keep the display phone on one line (no break inside 541.703.3095).
+Files: components/site/v3/V3SourceLine.tsx, lib/place/publish-place-affordability.ts, lib/listing/publish-listing-pill-read.ts, the listing chart caption source, app/housing-market/**/_v3/*, app/price-drops/_v3/drops-drawing.ts, app/_v3/home-featured-community-shared.ts, app/cities/[slug]/types/[type]/*, lib/site/market-faq.ts, app/contact phone styling, tests, gates (ci:no-public-em-dash, ci:seo-shell, ci:market-question). Other agents own app/search/**, app/subdivisions/**, lib/site-nav.ts and components/site/v3/V3Atlas*.

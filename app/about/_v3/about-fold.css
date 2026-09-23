@@ -207,8 +207,13 @@
 }
 
 @layer base {
+  /* Underlined, not colour alone: navy on the muted hint is 2.56:1 against
+     the surrounding text, under WCAG's 3:1 for a link told apart by colour
+     (Lighthouse link-in-text-block failed /about on it, 2026-09-23). */
   .about-inquiry__hint a {
     color: var(--v3-navy);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
     text-underline-offset: 0.12em;
   }
 }

@@ -168,6 +168,101 @@ function captureSource(): { campaign?: { source?: string; medium?: string; campa
   return result
 }
 
+/**
+ * The visit this event belongs to (TRACK-1). A visit is a run of activity with
+ * no gap longer than 30 minutes (GA4's default session timeout); its id is the
+ * Unix second it began, so the GA4 mirror can send a numeric, per-visit
+ * session_id instead of the browser-lifetime rr_session_id. Kept in
+ * localStorage so tabs share the visit; falls back to memory when storage is
+ * blocked.
+ */
+const VISIT_KEY = 'rr_visit_v1'
+const VISIT_IDLE_MS = 30 * 60 * 1000
+let memoryVisit: { id: number; n: number; last: number } | null = null
+function nextVisitContext(): { id: number; number: number; start: boolean } {
+  const now = Date.now() // hydration-safe: runs only inside fireFirstPartyEvent (an effect-driven POST), never during render
+  let stored: { id: number; n: number; last: number } | null = memoryVisit
+  try {
+    const raw = localStorage.getItem(VISIT_KEY)
+    if (raw) stored = JSON.parse(raw)
+  } catch {
+    /* storage blocked: memory fallback */
+  }
+  const fresh =
+    !stored ||
+    typeof stored.id !== 'number' ||
+    typeof stored.last !== 'number' ||
+    now - stored.last > VISIT_IDLE_MS
+  const next = fresh
+    ? { id: Math.floor(now / 1000), n: (stored && typeof stored.n === 'number' ? stored.n : 0) + 1, last: now }
+    : { id: stored!.id, n: stored!.n, last: now }
+  memoryVisit = next
+  try {
+    localStorage.setItem(VISIT_KEY, JSON.stringify(next))
+  } catch {
+    /* memory fallback already set */
+  }
+  return { id: next.id, number: next.n, start: fresh }
+}
+
+/**
+ * The signed person token a link we sent carried (?_pid=). Read off the URL, or
+ * from the stash PersonIdentityBridge leaves when it cleans the address bar
+ * first. Forwarded once; the server verifies it (an unsigned value identifies
+ * nobody) and identifies the visit (P7 identity loop).
+ */
+const PID_STASH_KEY = 'rr_pid_token'
+function takeArrivalToken(): string | undefined {
+  try {
+    const fromUrl = new URLSearchParams(window.location.search || '').get('_pid')
+    const stashed = sessionStorage.getItem(PID_STASH_KEY)
+    if (stashed) sessionStorage.removeItem(PID_STASH_KEY)
+    const token = (fromUrl || stashed || '').trim()
+    return token ? token.slice(0, 120) : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** Start a fresh browser session id (the server asked: the old one belongs to someone else). */
+function rotateSessionId(): string | null {
+  try {
+    localStorage.removeItem(RR_SESSION_ID_KEY)
+    sessionStorage.removeItem(RR_SESSION_ID_KEY)
+    sessionStorage.removeItem('rr_source_v1')
+  } catch {
+    /* fall through: getOrCreateSessionId still mints one */
+  }
+  return getOrCreateSessionId()
+}
+
+type TrackResponse = { rotateSession?: boolean; identity?: { identifiedNow?: boolean } }
+
+function postTrack(payload: Record<string, unknown>, allowRotate: boolean) {
+  try {
+    fetch('/api/visitors/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    })
+      .then((r) => (r.ok ? (r.json() as Promise<TrackResponse>) : null))
+      .then((json) => {
+        if (!json) return
+        if (json.rotateSession && allowRotate) {
+          const fresh = rotateSessionId()
+          if (fresh) postTrack({ ...payload, sessionId: fresh }, false)
+          return
+        }
+        if (json.identity?.identifiedNow) {
+          // The analytics bridge re-reads /api/identity/me (hashed ids only).
+          window.dispatchEvent(new CustomEvent('person-identified'))
+        }
+      })
+      .catch(() => {})
+  } catch {}
+}
+
 /** Event types client surfaces may fire into the first-party visitor store.
  *  Must stay a subset of ALLOWED_EVENT_TYPES in app/api/visitors/track. */
 export type FirstPartyEventType =
@@ -253,16 +348,17 @@ export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstP
     // uses the same assigned_broker / broker_slug names as generate_lead.
     // Only runs inside fireFirstPartyEvent (client POST / keepalive), never in JSX render.
     agent: resolveClientVisitBroker() ?? undefined, // hydration-safe
+    // P7 identity loop: the signed token from the link that brought them here.
+    identityToken: takeArrivalToken(),
+    // Automation signal (lib/analytics/automation.ts). Not personal data.
+    webdriver: typeof navigator !== 'undefined' && navigator.webdriver === true ? true : undefined,
+    // TRACK-1: the per-visit GA4 session.
+    visit: nextVisitContext(),
   }
-  // keepalive=true so the POST survives a fast navigation away.
-  try {
-    fetch('/api/visitors/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    }).catch(() => {})
-  } catch {}
+  // keepalive=true so the POST survives a fast navigation away. The response
+  // may ask for a fresh session (the old one belongs to another contact) or
+  // report that this visit was just identified.
+  postTrack(payload, true)
 }
 
 /** Page/listing view fire keyed to a pathname (the tracker's own effect path). */

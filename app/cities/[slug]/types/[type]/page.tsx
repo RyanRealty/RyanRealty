@@ -37,6 +37,8 @@ import { formatDateTime } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import {
+  cityTypeMetaWhere,
+  cityTypeScopeNote,
   placeTypeAtlasEyebrow,
   placeTypeClaim,
   placeTypeHeadline,
@@ -93,7 +95,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     3000,
     'city-type:count',
   )
-  const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count: activeCount })
+  const copy = placeTypeMetadataCopy({
+    spec,
+    placeName: cityName,
+    count: activeCount,
+    where: cityTypeMetaWhere(cityName),
+  })
   /* SEO increment vs HEAD: put the live count in the title when measured so
      the SERP states inventory, not only the type name. */
   const title =
@@ -206,21 +213,30 @@ async function renderCityPlaceTypePage({ params }: Props) {
       low: lowAsk,
       high: bandHigh,
       stamp,
-      scopeNote: `with a ${cityName} address`,
+      scopeNote: cityTypeScopeNote(cityName),
     },
   })
+  /* VOICE-7 (visibility audit 2026-09-22): the count names its population in
+     the reader's words beside the number. It is every listing with a Bend
+     address (MLS City), Active or Active Under Contract; /housing-market/bend
+     counts the same address but Active only, and says so. */
   const claim = claimBase
     ? {
         sentence:
           activeCount != null && lowAsk != null && bandHigh != null
-            ? `${activeCount.toLocaleString('en-US')} homes ask ${formatPriceExact(lowAsk)} to ${formatPriceExact(bandHigh)} for nine in ten.`
+            ? `${activeCount.toLocaleString('en-US')} homes for sale with a ${cityName} address. Nine in ten ask between ${formatPriceExact(lowAsk)} and ${formatPriceExact(bandHigh)}.`
             : claimBase.sentence,
         source: claimBase.source,
       }
     : null
 
   const headline = placeTypeHeadline(spec, cityName)
-  const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count: activeCount })
+  const copy = placeTypeMetadataCopy({
+    spec,
+    placeName: cityName,
+    count: activeCount,
+    where: cityTypeMetaWhere(cityName),
+  })
   const listOk = listRead.ok
   const rows = listOk ? placeTypeListingRows(listRead.value) : []
   /* H1 already named the type. Atlas eyebrow is a section marker, not a

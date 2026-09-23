@@ -25,8 +25,10 @@ export type RegionPulse = {
   medianDaysToPending: number | null
   monthsOfSupply: number | null
   marketHealthLabel: string | null
-  soldCount30d: number
-  soldCount90d: number
+  /** Null when withheld or unknown — never 0 for "unknown" (DATA-7, migration
+   *  20260923014700). */
+  soldCount30d: number | null
+  soldCount90d: number | null
   updatedAt: string
 }
 
@@ -69,8 +71,8 @@ export const getRegionPulse = makeResilientCached(
       medianDaysToPending: toNum(row.median_days_to_pending),
       monthsOfSupply: toNum(row.months_of_supply),
       marketHealthLabel: (row.market_health_label as string | null) ?? null,
-      soldCount30d: toNum(row.sold_count_30d) ?? 0,
-      soldCount90d: toNum(row.sold_count_90d) ?? 0,
+      soldCount30d: toNum(row.sold_count_30d),
+      soldCount90d: toNum(row.sold_count_90d),
       updatedAt: String(row.updated_at ?? ''),
     }
     try {

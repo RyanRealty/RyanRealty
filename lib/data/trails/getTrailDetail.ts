@@ -10,15 +10,13 @@
  */
 
 import { unstable_cache } from 'next/cache'
-import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
+import { fetchOnMarketHomesInBox, type NearbyHomeStats } from '@/lib/data/geo/nearby-on-market-homes'
 import { getTrailBySlug, CO_TRAILS, type CoTrail } from '@/data/co-trails'
 import { leftoverCityAreaMarket } from '@/lib/data/market-truth/leftover-area-market'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
-import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 const LAT_PAD = 0.022
 const LNG_PAD = 0.028
@@ -52,61 +50,6 @@ export type TrailDetail = {
   cityMarket: AreaMarket | null
 }
 
-type RawRow = {
-  ListingKey: string | null
-  ListPrice: number | null
-  BedroomsTotal: number | null
-  BathroomsTotal: number | null
-  TotalLivingAreaSqFt: number | null
-  StreetNumber: string | null
-  StreetName: string | null
-  City: string | null
-  PostalCode: string | null
-  Latitude: number | null
-  Longitude: number | null
-  PhotoURL: string | null
-}
-
-const PROJECTION = [
-  'ListingKey, ListPrice, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt',
-  'StreetNumber, StreetName, City, PostalCode, Latitude, Longitude, PhotoURL',
-].join(', ')
-
-
-function rowToHome(row: RawRow): TrailHomeTile {
-  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
-  const cityLine = [[row.City, 'OR'].filter(Boolean).join(', '), row.PostalCode]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-  return {
-    listingKey: row.ListingKey ?? '',
-    href: `/listing/${row.ListingKey ?? ''}`,
-    price: row.ListPrice,
-    beds: row.BedroomsTotal,
-    baths: row.BathroomsTotal,
-    sqft: row.TotalLivingAreaSqFt,
-    addressLine: street || 'Address available on request',
-    cityLine: cityLine || 'Central Oregon',
-    lat: row.Latitude,
-    lng: row.Longitude,
-    photoUrl: row.PhotoURL,
-    video: null,
-    hasTour: false,
-  }
-}
-
-function medianListPrice(homes: TrailHomeTile[]): number | null {
-  const prices = homes
-    .map((h) => h.price)
-    .filter((p): p is number => typeof p === 'number' && p > 0)
-    .sort((a, b) => a - b)
-  if (prices.length === 0) return null
-  const mid = Math.floor(prices.length / 2)
-  const raw = prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid]
-  return Math.round(raw / 1000) * 1000
-}
-
 async function attachTileVideos(homes: TrailHomeTile[]): Promise<void> {
   const candidates = homes.filter((h) => h.photoUrl && h.listingKey).slice(0, 12)
   await Promise.all(
@@ -128,30 +71,33 @@ async function attachTileVideos(homes: TrailHomeTile[]): Promise<void> {
   homes.sort((a, b) => (a.video ? 0 : a.hasTour ? 1 : 2) - (b.video ? 0 : b.hasTour ? 1 : 2))
 }
 
-async function fetchTrailHomes(trail: CoTrail): Promise<TrailHomeTile[]> {
-  if (typeof trail.lat !== 'number' || typeof trail.lng !== 'number') return []
-  const supabase = supabaseAnon()
-  if (!supabase) return []
-  const { data, error } = await supabase
-    .from('listings')
-    .select(PROJECTION)
-    .in('StandardStatus', ACTIVE_STATUSES)
-    .eq('PropertyType', 'A')
-    .gte('Latitude', trail.lat - LAT_PAD)
-    .lte('Latitude', trail.lat + LAT_PAD)
-    .gte('Longitude', trail.lng - LNG_PAD)
-    .lte('Longitude', trail.lng + LNG_PAD)
-    .order('ListPrice', { ascending: false, nullsFirst: false })
-    .limit(MAX_HOMES)
-  if (error) throw new Error(`[getTrailDetail] supabase error: ${error.message}`)
-  return (data ?? []).map((r) => rowToHome(r as unknown as RawRow))
+/**
+ * Every public on-market PropertyType 'A' home in the box, from listing_search_mv.
+ * `stats` covers the full set; `homes` is its price-desc top slice (DATA-3/8).
+ */
+async function fetchTrailHomes(trail: CoTrail): Promise<{ homes: TrailHomeTile[]; stats: NearbyHomeStats }> {
+  if (typeof trail.lat !== 'number' || typeof trail.lng !== 'number') {
+    return { homes: [], stats: { count: 0, medianListPrice: null } }
+  }
+  const { homes, stats } = await fetchOnMarketHomesInBox({
+    label: '[getTrailDetail] trail homes',
+    lat: trail.lat,
+    lng: trail.lng,
+    latPad: LAT_PAD,
+    lngPad: LNG_PAD,
+    maxTiles: MAX_HOMES,
+  })
+  return {
+    homes: homes.map((h) => ({ ...h, video: null, hasTour: false })),
+    stats,
+  }
 }
 
 async function fetchTrailDetail(slug: string): Promise<TrailDetail | null> {
   const trail = getTrailBySlug(slug)
   if (!trail) return null
 
-  const homes = await fetchTrailHomes(trail)
+  const { homes, stats } = await fetchTrailHomes(trail)
   await attachTileVideos(homes)
   const relatedTrails = CO_TRAILS.filter((t) => t.slug !== trail.slug && t.city === trail.city)
 
@@ -163,14 +109,14 @@ async function fetchTrailDetail(slug: string): Promise<TrailDetail | null> {
   return {
     trail,
     homes,
-    stats: { count: homes.length, medianListPrice: medianListPrice(homes) },
+    stats,
     relatedTrails,
     cityMarket,
   }
 }
 
 export function getTrailDetail(slug: string): Promise<TrailDetail | null> {
-  return unstable_cache(() => fetchTrailDetail(slug), ['trail-detail-v2-leftover', slug], {
+  return unstable_cache(() => fetchTrailDetail(slug), ['trail-detail-v3-full-set', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'trails'],
   })()

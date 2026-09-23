@@ -12,6 +12,7 @@ const h = vi.hoisted(() => ({
   fireLeadGenerated: vi.fn(),
   stitchFormSubmitIdentity: vi.fn(),
   getCookie: vi.fn(),
+  sendAlertConfirmation: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({
@@ -46,7 +47,7 @@ vi.mock('@/lib/lead-tracking', () => ({
 // SITE-09: the same-minute confirmation is a governed send; never reach the rail
 // (or Supabase, through the signing-broker resolver) from a unit test.
 vi.mock('@/lib/comms/site-confirmations', () => ({
-  sendAlertConfirmation: vi.fn().mockResolvedValue({ ok: false, via: 'skipped', error: 'unit test' }),
+  sendAlertConfirmation: (...args: unknown[]) => h.sendAlertConfirmation(...args),
 }))
 
 vi.mock('@/lib/visitor-backfill', () => ({
@@ -78,6 +79,8 @@ beforeEach(() => {
   h.fireLeadGenerated.mockReset()
   h.stitchFormSubmitIdentity.mockReset()
   h.getCookie.mockReset()
+  h.sendAlertConfirmation.mockReset()
+  h.sendAlertConfirmation.mockResolvedValue({ ok: false, via: 'skipped', error: 'unit test' })
 
   h.sendEvent.mockResolvedValue({ ok: true, status: 200, personId: PERSON_ID })
   h.canonicallyTagLead.mockResolvedValue(undefined)
@@ -143,6 +146,27 @@ describe('submitSearchAlertSignup identity stitch', () => {
 
     expect(result).toEqual({ ok: true })
     expect(h.upsertListingAlert).toHaveBeenCalled()
+  })
+
+  // FUNNEL-4 / FUNNEL-1 (2026-09-23): the door is the source, and a submit the
+  // intake screen flags keeps its alert row but none of the machinery.
+  it('writes the door label, not the host, as source', async () => {
+    await signup()
+    expect(h.sendEvent.mock.calls[0][0]).toMatchObject({ source: 'idx-registration' })
+  })
+
+  it('a suspect signup keeps its alert row and gets no task, tagging, stitch or GA4 lead', async () => {
+    h.sendEvent.mockResolvedValueOnce({ ok: true, status: 200, personId: PERSON_ID, suspect: true })
+
+    const result = await signup({ sessionId: SESSION_ID })
+
+    expect(result).toEqual({ ok: true })
+    expect(h.upsertListingAlert).toHaveBeenCalledWith(expect.objectContaining({ email: EMAIL, crmPersonId: PERSON_ID }))
+    expect(h.canonicallyTagLead).not.toHaveBeenCalled()
+    expect(h.createNativeTask).not.toHaveBeenCalled()
+    expect(h.stitchFormSubmitIdentity).not.toHaveBeenCalled()
+    expect(h.fireLeadGenerated).not.toHaveBeenCalled()
+    expect(h.sendAlertConfirmation).not.toHaveBeenCalled()
   })
 
   it('does not stitch when sendEvent returns no person', async () => {

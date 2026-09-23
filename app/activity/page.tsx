@@ -37,11 +37,18 @@ import { activityRows } from './_v3/activity-rows'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
+// UNREACHABLE SINCE 2026-09-23: next.config.ts redirects() 301s /activity to
+// /housing-market before this route resolves (UXLIVE-8; SITE_PAGES.md folds
+// activity into the market page; GSC 16 months: 3 impressions, 0 clicks). The
+// body stays until its gate arms (activity-event-labels, publish-listing-ask)
+// move to the /housing-market activity section. If the redirect is ever
+// removed, this page still points search at its successor and stays out.
 export const metadata: Metadata = {
   title: 'What just moved on the list',
   description:
     'New listings, price cuts, pending sales, and closed sales across Central Oregon, as they hit the MLS.',
-  alternates: { canonical: `${siteUrl}/activity` },
+  robots: { index: false, follow: true },
+  alternates: { canonical: `${siteUrl}/housing-market` },
   openGraph: {
     title: 'What just moved on the list | Ryan Realty',
     description:

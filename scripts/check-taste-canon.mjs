@@ -33,14 +33,16 @@
  *    Payload / tap targets / titles stay on their own gates.
  * 8. Catalog demoMatch (Matt 2026-09-12): a receipt dated on/after
  *    2026-09-12 (or rubric v1-2026-09-12) whose adaptedFrom names catalog
- *    modules cannot claim comparedToPrior "rose" or score ≥ 70 unless
- *    demoMatch is true. Omit is refuse. Honest false below 70 on a
- *    rebaseline stays valid so a lane can record an in-progress fail.
+ *    modules RECORDS demoMatch true or false. Omit is refuse. Since Matt
+ *    2026-09-23 (visibility audit PROCESS-3 / UXLIVE-11) a false is a note:
+ *    it no longer blocks "rose" or a score at or above the old 70 line.
  * 9. Per-route competitiveBrief (About first, Matt 2026-09-12): a kit that
- *    publishes a structured Researchy checklist cannot claim rise / ≥70
- *    without competitiveBriefPass true (or checklist all true). Omit is
- *    refuse. Do not invent true. About parity must carry beats 1–8 next
- *    to competitiveTarget.
+ *    publishes a structured Researchy checklist RECORDS competitiveBriefPass
+ *    true or false (or a complete checklist). Omit is refuse. Do not invent
+ *    true. About parity must carry beats 1–8 next to competitiveTarget.
+ * 10. The look floor (Matt 2026-09-23): comparedToPrior "held" records a pass
+ *    that left the look where it was; a median that falls under the prior
+ *    mark on the same instrument by the rise floor or more is refused.
  *
  * Seed unreviewed with `--write-baseline`, the v2 backlog with
  * `--write-v2-baseline`, catalog receipts with `--write-catalog-baseline`.

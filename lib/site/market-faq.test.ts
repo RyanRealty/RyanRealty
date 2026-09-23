@@ -62,6 +62,27 @@ describe('buildMarketFaq', () => {
     expect(r.datasetVariables.find((v) => v.name === 'Median Sale Price')?.value).toBe(750_000)
   })
 
+  // VOICE-7 (2026-09-22): the city report's count and the city type page's
+  // count carried the same words. At city grain on Market Truth the answer now
+  // names its population: MLS City = Bend, Active, not yet under contract.
+  it('names the population of the city count in the reader`s words', () => {
+    const r = buildMarketFaq('Bend', {
+      grain: 'city',
+      source: 'market-truth',
+      activeCount: 754,
+      refreshedAt: '2026-09-23',
+    })
+    expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toBe(
+      "There are 754 active single-family listings in Bend as of September 2026, counting every home with a Bend address in the regional MLS that isn't under contract yet.",
+    )
+    // Other grains and the pulse source keep the plain sentence: their
+    // membership rules differ (polygon, alias), so this clause would be false there.
+    const hood = buildMarketFaq('Awbrey Butte', { grain: 'neighborhood', source: 'market-truth', activeCount: 49 })
+    expect(hood.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toBe(
+      'There are 49 active single-family listings in Awbrey Butte.',
+    )
+  })
+
   it('needs the month label to publish a sale price', () => {
     const r = buildMarketFaq('Bend', { grain: 'city', medianListPrice: 950_000, medianSalePrice: 750_000 })
     const price = r.faqs.find((f) => f.question.includes('median home price'))
@@ -301,10 +322,18 @@ describe('buildMarketFaq at an untrusted grain', () => {
     )
   })
 
-  it('publishes both figures at city grain from the identical input', () => {
-    const { faqs, datasetVariables } = buildMarketFaq('Bend', { grain: 'city', ...centuryWest })
+  it('publishes both figures at city grain from the same ratio on a real sample', () => {
+    // 400 active at 48 months implies 50 six-month closes, above the Market
+    // Truth floor of 30; only the grain separates this from the neighborhood.
+    const scaled = { ...centuryWest, activeCount: 400, soldCount12mo: 75 }
+    const { faqs, datasetVariables } = buildMarketFaq('Bend', { grain: 'city', ...scaled })
     expect(faqs.map((f) => f.question).join(' ')).toMatch(/how many homes sold/i)
     expect(datasetVariables.find((v) => v.name === 'Months of Supply')?.value).toBe(48)
+  })
+
+  it('withholds months of supply at city grain on the live 16-active row (2 implied closes, DATA-7 floor)', () => {
+    const { datasetVariables } = buildMarketFaq('Bend', { grain: 'city', ...centuryWest })
+    expect(datasetVariables.find((v) => v.name === 'Months of Supply')).toBeUndefined()
   })
 
   it('publishes Market Truth neighborhood MOS when the source is declared and counts match', () => {

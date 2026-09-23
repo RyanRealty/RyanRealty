@@ -57,7 +57,8 @@ export async function trySendGroupMms(opts: {
   if (opts.recipientIds.length + opts.rawPhones.length < 2) return { status: 'continue' }
 
   const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
-  const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
+  const { renderCrmMerge } = await import('@/lib/crm/merge')
+  const { decorateOutboundText } = await import('@/lib/identity/outbound-links')
   const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const { brokerTwilioNumber } = await import('@/lib/crm/twilio')
 
@@ -96,12 +97,11 @@ export async function trySendGroupMms(opts: {
   }
 
   const groupCtx = await buildMergeContext({ person: primaryTarget.person, senderSlug: slug })
-  const mergedBody = attributeSiteLinks(
-    renderCrmMerge(opts.body, primaryTarget.person, groupCtx),
-    slug,
-    null,
-    opts.personId,
-  )
+  const mergedBody = decorateOutboundText(renderCrmMerge(opts.body, primaryTarget.person, groupCtx), {
+    brokerSlug: slug,
+    personId: opts.personId,
+    channel: 'sms',
+  })
   const { loadGroupMedia } = await import('@/lib/crm/attachments')
   const gm = await loadGroupMedia(opts.attachments)
   if (!gm.ok) return { status: 'failed', error: gm.error }

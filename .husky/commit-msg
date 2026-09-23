@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-# Draft-first gate for user-facing diffs per CLAUDE.md §0.5.
+# Draft-first gate for rendered content deliverables (video files in tracked
+# public/ paths) per CLAUDE.md §1: they carry Approved-by: matt or Draft-shown: <url>.
 # Bypass for the gate itself: DRAFT_FIRST_OK=1 git commit ...
 node scripts/check-draft-first.mjs "$1"
 # Site-node gate (G72): app/** and components/site/** commits name their queue node.

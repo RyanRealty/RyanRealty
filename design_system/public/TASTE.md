@@ -14,8 +14,19 @@ no page for that place that we won't beat in every single metric." Every rule
 below serves that verdict. A section that is correct, gated, on-token, and dull
 has failed.
 
-**Priority (Matt 2026-09-10).** The loop is comprehensive: all three rise on
-the same pass, they do not merely hold.
+**The objective moved (Matt 2026-09-22 / 2026-09-23).** The site queue is scored on
+being seen by search engines and AI answer engines, then converting
+(`docs/RUN_LOOP.md` §1). This file is the LOOK FLOOR under that objective: the
+taste median may not regress on the same instrument, and `demoMatch` /
+`competitiveBriefPass` are recorded notes, not completion gates. The 70 finish
+line no longer decides done or stops the loop. Matt 2026-09-23: "Don't assume any
+rules from the past that might keep us from hitting our goals are permanent."
+Evidence: on the frozen table 0 of 27 classes reached 70 (best 67), so no page
+could ever finish on it. The rubric is unchanged (`v1-2026-09-12`).
+
+**Priority (Matt 2026-09-10, reordered by the 2026-09-23 objective).** SEO
+and information must improve on every pass; the look improves when the node is
+about the look and otherwise may hold, never fall.
 
 1. **SEO improves** — titles, index, JSON-LD, crawlable internal links,
    payload/LCP. The page is easier to find than HEAD.
@@ -23,12 +34,14 @@ the same pass, they do not merely hold.
    listing facts, remarks as written. Listing cards show price, address,
    beds/baths/sqft, not a photo with a heart. Listing detail keeps and
    fills the 13-row house contract. Summary-only is a fail.
-3. **Look, sense, and ease of use improve** — catalog source installed,
-   demo match, navy/cream.
+3. **Look, sense, and ease of use** — catalog source installed, the
+   interaction kept, navy/cream; the median may not fall on the same
+   instrument.
 
 A catalog control that drops MLS remarks or the bleed hero is not done. A
-cream box named after a catalog demo is not done. A prettier fold with no
-SEO increment and no inventory increment is not done.
+prettier fold with no SEO increment and no inventory increment is not done. A
+cream box named after a catalog demo is recorded as `demoMatch: false`; it is
+not claimed as a match.
 
 ## Why our pages come out generic when the model can clearly do better
 
@@ -123,7 +136,7 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
   "defects": [
     { "section": "#rails", "severity": "taste", "finding": "named finding, 10+ characters", "replaceWith": "V3Carousel" }
   ],
-  "comparedToPrior": "first | rose | rebaselined",
+  "comparedToPrior": "first | rose | held | rebaselined",
   "priorMark": {
     "evaluatedAt": "YYYY-MM-DD",
     "score": 77,
@@ -140,9 +153,9 @@ the SITE-63 `replaceWith` rule, plus the Matt 2026-09-12 demo-match rule,
 plus the competitive-brief rule (About first): when the route's
 `parity.json` publishes a structured `competitiveBrief` next to
 `competitiveTarget`, evaluator JSON must include `competitiveBriefPass:
-true|false` (omit is refuse; checklist all true is the other pass). A
-rise or score ≥ 70 without a true pass is refuse — same seriousness as
-`demoMatch`. Do not invent true. Change a weight, a criterion, a passing
+true|false` (omit is refuse; checklist all true is the other pass). Since
+Matt 2026-09-23 both `competitiveBriefPass` and `demoMatch` are recorded
+verdicts, not gates on a rise or on done. Do not invent true. Change a weight, a criterion, a passing
 bar, the demo-match rule, the competitive-brief rule, or the
 form-prescription rule and the version changes with it. Versions:
 `v1-2026-09-08` (first versioned rubric); `v1-2026-09-10` (evaluator must
@@ -186,13 +199,13 @@ in `scripts/lib/taste-receipt.mjs`):
 - **`competitiveBriefPass` (Matt 2026-09-12, About first).** When
   `parity.json` publishes a structured `competitiveBrief` next to
   `competitiveTarget`, the receipt must score it `true` or `false`. Omit
-  is refuse. Rise / finish line / Tip Ready without `true` (or checklist
-  all true) is refuse. Do not invent true. Honest false below 70 on a
-  rebaseline stays valid. `ci:page-purpose` (`scripts/check-page-purpose.mjs`)
+  is refuse. Do not invent true. A false is an honest note and no longer
+  blocks a rise, Tip Ready or done (Matt 2026-09-23); claiming `true` on
+  About still needs its quotes from the live source (`about-lock.mjs`). `ci:page-purpose` (`scripts/check-page-purpose.mjs`)
   refuses a missing or incomplete `competitiveBrief` on About, and on any
-  kit that already carries the field. Tip Ready refuse stays on
-  `node scripts/lib/taste-receipt.mjs --ship` exit 0 + site-queue-done
-  (`demoMatch` twin). Cos may not label Tip Ready without that exit 0.
+  kit that already carries the field. Tip Ready is
+  `node scripts/lib/taste-receipt.mjs --ship` exit 0: no regression on the
+  same instrument, verdicts recorded. Nobody labels Tip Ready without it.
 - **`--ship` open-state + route import (Matt 2026-09-14).** Catalog
   `adaptedFrom` without a `*-open` / `search-open` shot (or `shotSpec.states`
   including open) is refuse. A catalog id whose route page/_v3 files do not
@@ -237,10 +250,11 @@ step means the evaluator is not asked:
    A page that lost its full-width hero, its office photo's resolution, or its
    video has failed before anyone looks at a screenshot. Lowering a floor is a
    hand edit in the same commit with the reason, never implicit.
-4. **Then the score.** Shots at 1440 and 375, the judge chain below, three scorings
-   in one call, median must rise by at least the rise floor (3 on grok-4.6) over the previous
-   mark from the same instrument, `demoMatch: true`, `competitiveBriefPass: true`
-   where a brief exists. Finish line 70.
+4. **Then the score, as a floor.** When the look changed: shots at 1440 and 375, the
+   judge chain below, three scorings in one call. The median may not fall on the same
+   instrument by the rise floor or more (`comparedToPrior` "rose", "held", "first" or
+   "rebaselined"); `demoMatch` and `competitiveBriefPass` are recorded, not required
+   true (Matt 2026-09-23). Done is the whole accept test in `docs/RUN_LOOP.md` §4.
 
 **THE JUDGE CHAIN (Matt 2026-09-09, chained 2026-09-12, one ruler per table).**
 The chain starts at the **round judge**: the model recorded in
@@ -273,7 +287,7 @@ subscription CLIs; `taste-table.mjs --api` is refused unless `RR_ALLOW_PAID_API=
 no lane sets an API key to get past a 402. Any other failure of a link (timeout,
 malformed JSON after one retry) is an honest fail, not a fallback. A class rebaselines
 ONCE when the judge changes (`comparedToPrior: "rebaselined"`, the differing key named);
-the 70 finish line applies to the new mark. Before the chain existed, every lane
+the new mark is the floor the next pass may not fall under. Before the chain existed, every lane
 dead-ended on one unreachable judge and wrote "402" into node evidence as if it were a
 finding.
 
@@ -294,7 +308,8 @@ defects with the section id and three scorings; the builder fixes and
 re-submits. Ship only when the evaluator passes every row.
 
 **Evaluator prompt file:** `design_system/public/taste-evaluator.v1-2026-09-12.md`
-(loaded by `scripts/taste-evaluate.ts`). `demoMatch` is required. A cream-box
+(loaded by `scripts/taste-evaluate.ts`). The judge must return `demoMatch`; the
+receipt records it as a note (Matt 2026-09-23). A cream-box
 import (Avatar ≠ AvatarGroup demo; Button ≠ flat navy rect; Sheet ≠ custom
 drawer) is `demoMatch: false` even when `ci:catalog-install` is green.
 When the route publishes `competitiveBrief`, `competitiveBriefPass` is
@@ -318,12 +333,15 @@ unit suite — 17 of the site queue's first 37 item commits were that rework
 The lane captures, scores, fixes, and re-scores on its own machine; landing is
 what happens to a page that has already risen.
 
-**The score must rise AND the live control must match the catalog demo
-(Matt 2026-09-07 + 2026-09-12).** A site queue item (`loop_work_nodes`,
-domain public-ux, version_gap SITE-*) is not done until the separate
-evaluator's score for its page class rises **by at least the rise floor**
-over the previous mark in that route's `tasteReview` **and** `demoMatch` is
-`true`. **The rise floor is 3** (`taste-rule-freeze.json` `riseFloor`, from
+**The look may not regress; a rise is recorded, not required (Matt 2026-09-23,
+replacing the 2026-09-07 + 2026-09-12 "must rise and match the demo" rule).** A
+site queue item (`loop_work_nodes`, domain public-ux, version_gap SITE-*) is done
+on the `docs/RUN_LOOP.md` §4 accept test. When the look changed, the separate
+evaluator's median for the page class may not fall under the previous mark in the
+route's `tasteReview` from the same instrument by the rise floor or more
+(`comparedToPrior: "held"`); a rise of the floor or more is recorded
+`comparedToPrior: "rose"`. The rise floor is the noise line both ways.
+**The rise floor is 3** (`taste-rule-freeze.json` `riseFloor`, from
 2026-09-13, Matt: "there can be no gaps"). It is not a taste: on the
 2026-09-13 table (grok-4.6 through the Cursor CLI) two medians-of-3 of the
 SAME page differ by 1 or more in 30% of no-change draws, by 2 or more in 12%,
@@ -341,17 +359,15 @@ sonnet-judged table of 2026-09-12 had residual sd 4.84 and needed 6; grok-4.6
 reads at sd 2.24 and needs 3 (`riseFloorBasis.priorBasis`). **Any time the
 table is re-scored, re-derive the floor from it in the same change**; when a
 full second pass of one table exists, use paired data
-(`node scripts/taste-rise-floor.mjs --pair <previous-table.json>`). Score rise /
-`adaptedFrom` non-empty / file-on-disk is not Tip Ready on a cream box.
-`ci:taste-canon` fails a post-`v1-2026-09-12` catalog receipt that claims
-`comparedToPrior: "rose"` or score ≥ 70 without `demoMatch: true`.
-`completeWorkNode` refuses SITE-* evidence that omits `demoMatch: true`,
-or that records a judge failure (CLI missing / 402) without a fallback
-verdict on the route's `tasteReview`. The shrink-only ratchet (`ci:taste-canon`)
-stops a fall; this rule demands a rise plus a real demo match.
-It is written into every open SITE node's accept test and into
-`docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`. A page that still looks bad is
-a failed item, not a done one. Weights are deliberate: craft and function are what the model already
+(`node scripts/taste-rise-floor.mjs --pair <previous-table.json>`).
+`ci:taste-canon` fails a receipt that falls on the same instrument, labels a
+sub-floor move "rose", or omits a verdict it owes (`demoMatch` for catalog
+modules, `competitiveBriefPass` where a brief exists). `completeWorkNode`
+refuses SITE-* evidence whose named receipt regressed, or that records a judge
+failure (CLI missing / 402) without a fallback verdict on the route's
+`tasteReview`. Open SITE nodes written before 2026-09-23 may still say
+"must rise" or "demoMatch true" in their accept text; RUN_LOOP.md §4 supersedes
+that wording. A page that looks worse than it did is a failed item. Weights are deliberate: craft and function are what the model already
 does well; the bland-output problem lives in design quality and originality.
 
 **Two marks are comparable only when they came from the same instrument.**
@@ -365,10 +381,10 @@ way made every real rise a "rebaseline" and left a re-score of unchanged pixels
 as the only passable "rose". The item re-baselines: record `comparedToPrior: "rebaselined"`,
 keep the old mark in `priorMark`, and name the differing key(s) in
 `rebaselineReason`. The new mark is the first mark on the new instrument, and
-the next pass must rise by the floor over it. Nobody is asked to decide this —
+the next pass may not fall under it by the floor or more. Nobody is asked to decide this —
 the gate computes the drift from the three keys. This is the SITE-M1 case, where an 88
 "from a different evaluator against shots that no longer exist" blocked a 77
-until Matt personally accepted it. Same instrument, no rise, no ship.
+until Matt personally accepted it. Same instrument, a fall of the floor or more, no ship.
 
 | Criterion | Weight | Passing looks like |
 |---|---|---|
@@ -459,8 +475,7 @@ Inter, purple, orbs, or agent-chat chrome. Do not keep the catalog name and
 throw away the interaction (homepage `V3MorphSearch` as a labeled cream
 field was that miss). `motion/react` on a house wrapper is not the install.
 `ci:catalog-install` fails a named `adaptedFrom` id whose file is missing
-or whose house primitive does not import it. Rebaseline is not done. A
-score below 70 is not done. The lists live in
+or whose house primitive does not import it. The lists live in
 `design_system/public/taste-catalog.json`. A lane starts with:
 
 ```bash
@@ -499,8 +514,8 @@ catalog is a named defect. A live control that does not match the chosen demo
 is a named defect even if the score rose. `replaceWith` is `null` only when
 the finding is craft, honesty, or SEO, not form. A catalog load error fails
 the evaluator out loud — it does not swallow and score "clean." Score still
-exists; it cannot override a failed demo match, a dropped required section,
-or a fallen `honestyFunction`.
+exists; it cannot override a dropped required section or a fallen
+`honestyFunction`, and a failed demo match is recorded, never hidden.
 
 **A table row owes what a receipt owes (2026-09-13).** Every row in a
 `taste-table.json` evaluated on or after `tableRowsBindFrom` (2026-09-14, the

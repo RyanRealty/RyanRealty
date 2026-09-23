@@ -64,8 +64,15 @@ for (const page of PLACE_PAGES) {
   if (!src.includes('getPlaceAmenityLayers')) {
     failures.push(`${page} must fetch getPlaceAmenityLayers`)
   }
-  if (!src.includes('amenities={amenityLayers}')) {
-    failures.push(`${page} must pass amenities={amenityLayers} to V3Atlas`)
+  // UXLIVE-3 (visibility audit 2026-09-22): a page may hand the layers
+  // through deferredAtlasProps, which ships the same recorded parks and
+  // trails at the precision the frame can draw; either wiring counts.
+  const direct = src.includes('amenities={amenityLayers}')
+  const deferred =
+    /deferredAtlasProps\(\{[\s\S]*?amenities:\s*amenityLayers[\s\S]*?\}\)/.test(src) &&
+    src.includes('amenities={atlasProps.amenities}')
+  if (!direct && !deferred) {
+    failures.push(`${page} must pass amenities={amenityLayers} (or deferredAtlasProps' amenities) to V3Atlas`)
   }
 }
 

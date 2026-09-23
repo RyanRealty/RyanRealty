@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { REGION_CITIES_SOURCE, REGION_FOLD_LABEL } from './region-constants'
-import { marketReportHereBody } from '@/lib/market/report-doors'
+import { cityFootnoteFact } from '@/lib/market/city-footnote-fact'
+import { buildExploreItems } from './region-sections'
 import {
   REGION_JARGON_RE,
   REGION_SOLD_ON_FOLD_CITATION,
@@ -62,8 +63,13 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(composeRegionLiveTrace(live.trace, false)).toBe(live.trace)
   })
 
-  it('the region here-copy does not say city pulse', () => {
-    expect(marketReportHereBody('region')).not.toMatch(REGION_JARGON_RE)
+  it('the region closing has no "Where you are" row to say city pulse in (VOICE-6)', () => {
+    const items = buildExploreItems([{ label: 'Tumalo', fact: cityFootnoteFact('Tumalo', { active_count: null }) }])
+    for (const item of items) {
+      const words = JSON.stringify(item)
+      expect(words).not.toMatch(REGION_JARGON_RE)
+      expect(words).not.toMatch(/Where you are|You are on/)
+    }
   })
 
   it('the fold label names what is behind it and never a count', () => {

@@ -11,6 +11,8 @@
  * `source ILIKE '%facebook%'` was guaranteed zero rows no matter how many
  * people actually converted from a Meta ad. Fixed 2026-07-09.
  */
+import { classifyLeadSource } from '@/lib/data/crm/leadSourceTaxonomy'
+import { SITE_SUBMIT_TAGS } from '@/lib/crm/response-clock'
 
 const SOURCE_LABELS: Record<string, string> = {
   facebook: 'Facebook',
@@ -61,4 +63,57 @@ export function resolvePaidAttributionTags(params: {
   if (params.utmCampaign) tags.push(`campaign:${slugifyTag(params.utmCampaign)}`)
   if (params.utmContent) tags.push(`ad-content:${slugifyTag(params.utmContent)}`)
   return tags
+}
+
+/**
+ * The site's own host written as a source ('ryan-realty.com', a preview host,
+ * localhost). Every site door wrote this until FUNNEL-4 (2026-09-23): 76 of 88
+ * site leads in the 30 days to 2026-09-22 carry it. It names no door, so the
+ * reuse path treats it as an empty source and lets the first real door fill it.
+ */
+export function isSiteHostSource(source: string | null | undefined): boolean {
+  const s = String(source ?? '').trim().toLowerCase()
+  if (!s) return false
+  return /^(?:[a-z0-9-]+\.)*ryan-?realty\.(?:com|vercel\.app)$/.test(s) || /^localhost(?::\d+)?$/.test(s)
+}
+
+/**
+ * First-touch source on the REUSE path (FUNNEL-4, 2026-09-23). The reuse path
+ * used to overwrite crm_people.source with whatever door the person came
+ * through last, so an inbound caller who later used the contact form lost
+ * 'inbound-call' and every report read the latest door as the origin. Now the
+ * column keeps the first door; a later, different door lands as a
+ * `source:<door>` tag (the same tag shape a create writes). An empty source,
+ * or the bare site host (isSiteHostSource), is not a door and gets filled by
+ * the first real one. Pure.
+ */
+export function reuseSourcePatch(
+  existingSource: string | null | undefined,
+  incomingSource: string | null | undefined,
+): { source?: string; tag?: string } {
+  const incoming = String(incomingSource ?? '').trim()
+  if (!incoming) return {}
+  const existing = String(existingSource ?? '').trim()
+  if (existing.toLowerCase() === incoming.toLowerCase()) return {}
+  if (!existing || (isSiteHostSource(existing) && !isSiteHostSource(incoming))) return { source: incoming }
+  return { tag: `source:${incoming}` }
+}
+
+/**
+ * Is this person ONLY an outreach-list row (skip-traced expired/FSBO owner,
+ * Farm, Import, Sphere), with no sign they came through one of our forms?
+ * Those rows never auto-enroll or alert; a person who filled in a site form
+ * does. Since FUNNEL-4 crm_people.source is first-touch, so a listed owner who
+ * later submits keeps source 'expired-listing-cron' and gains the form's
+ * `source:<door>` tag: the tag is the inbound signal. One predicate for the
+ * instant path (lib/crm/enroll.ts) and the 15-minute sweep
+ * (app/api/cron/crm-auto-enroll). Pure.
+ */
+export function isOutreachListOnly(
+  source: string | null | undefined,
+  tags: readonly string[] | null | undefined,
+): boolean {
+  if (!classifyLeadSource(source ?? null).outreachList) return false
+  const lowered = (tags ?? []).map((t) => String(t).trim().toLowerCase())
+  return !lowered.some((t) => (SITE_SUBMIT_TAGS as readonly string[]).includes(t))
 }

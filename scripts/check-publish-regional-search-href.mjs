@@ -7,6 +7,12 @@
  * Founding case: homepage See homes next to 1,836 homes (fleet
  * ef6af6b44156e99f0f5ca42850819b19).
  *
+ * UXLIVE-4 (visibility audit 2026-09-22): the rule is unchanged, the URL
+ * moved. `?view=list` is `noindex, follow` with a canonical to the bare path,
+ * so the regional door is now the bare, indexable `/homes-for-sale`, and this
+ * gate pins what makes that honest: app/search/page.tsx DEFAULTS to the list
+ * view, so the bare URL IS the Central Oregon set.
+ *
  *   node scripts/check-publish-regional-search-href.mjs
  */
 import { readFileSync } from 'node:fs'
@@ -19,10 +25,10 @@ function src(path) {
 
 const helper = src('lib/search/publish-regional-search-href.ts')
 checks.push({
-  label: 'SoR is list view with no city',
+  label: 'SoR is the clean /homes-for-sale path (no view, no city)',
   ok:
     /export function publishRegionalSearchHref/.test(helper) &&
-    helper.includes("/homes-for-sale?view=list") &&
+    /export const REGIONAL_SEARCH_HREF = '\/homes-for-sale' as const/.test(helper) &&
     /export function isRegionalSearchHref/.test(helper),
 })
 
@@ -42,7 +48,7 @@ const home = src('app/page.tsx')
 // Regional doors are HomeHeroSearch (empty submit) and the Field See all.
 // Both go through publishRegionalSearchHref. Market browse left home (Redfin lock).
 checks.push({
-  label: 'homepage does not hardcode the Bend-injecting /homes-for-sale door on regional CTAs',
+  label: 'homepage regional CTAs go through publishRegionalSearchHref, never a hand-typed door',
   ok:
     !/cta=\{\{\s*href:\s*['"]\/homes-for-sale['"]/.test(home) &&
     !/href:\s*['"]\/homes-for-sale['"]/.test(home) &&
@@ -63,12 +69,19 @@ checks.push({
     search.includes("view !== 'list' ? defaultCity") &&
     search.includes("const defaultCity = 'Bend'"),
 })
+// UXLIVE-4: the bare URL is only a regional door while it renders the list.
+checks.push({
+  label: 'bare /homes-for-sale defaults to the regional list view',
+  ok:
+    /const DEFAULT_VIEW = 'list'/.test(search) &&
+    /: DEFAULT_VIEW\) as/.test(search),
+})
 
 const nav = src('lib/site-nav.ts')
 checks.push({
-  label: 'Homes / Buy nav door is the regional list href, not the Bend inject',
+  label: 'Homes / Buy nav door is the clean regional href, not a ?view= variant',
   ok:
-    /export const REGIONAL_SEARCH: NavLink = \{[\s\S]*href: '\/homes-for-sale\?view=list'/.test(nav) &&
+    /export const REGIONAL_SEARCH: NavLink = \{\s*href: '\/homes-for-sale',/.test(nav) &&
     /href: REGIONAL_SEARCH\.href/.test(nav) &&
     /children: \[\s*REGIONAL_SEARCH,/.test(nav),
 })

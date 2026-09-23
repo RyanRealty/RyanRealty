@@ -240,3 +240,97 @@ describe('subdivisionDetailPath', () => {
     expect(subdivisionDetailPath('awbrey-glen')).toBe('/subdivisions/awbrey-glen')
   })
 })
+
+describe('buildIndexableSubdivisions: reserved place slugs and plat families (SEO-7, Matt 2026-09-23)', () => {
+  const boundary = new Set([
+    'bend',
+    'sisters',
+    'ridge-at-eagle-crest-5',
+    'ridge-at-eagle-crest-36',
+    'tetherow-crossing',
+    'tetherow-crossing-phase-ii',
+  ])
+  const counts = plats([
+    ['bend', 'Bend', 300, 'bend'],
+    ['sisters', 'Sisters', 40, 'sisters'],
+    ['ridge-at-eagle-crest-5', 'Ridge At Eagle Crest 5', 31, 'redmond'],
+    ['ridge-at-eagle-crest-36', 'Ridge At Eagle Crest 36', 207, 'redmond'],
+    ['tetherow-crossing', 'Tetherow Crossing', 440, 'redmond'],
+    ['tetherow-crossing-phase-ii', 'Tetherow Crossing Phase II', 104, 'redmond'],
+  ])
+  const families = [
+    {
+      slug: 'ridge-at-eagle-crest',
+      name: 'Ridge At Eagle Crest',
+      citySlug: 'redmond',
+      mainKind: 'subdivision' as const,
+      members: [{ slug: 'ridge-at-eagle-crest-5' }, { slug: 'ridge-at-eagle-crest-36' }],
+      closedCountSum: 238,
+    },
+    {
+      slug: 'tetherow-crossing',
+      name: 'Tetherow Crossing',
+      citySlug: 'redmond',
+      mainKind: 'subdivision' as const,
+      members: [{ slug: 'tetherow-crossing' }, { slug: 'tetherow-crossing-phase-ii' }],
+      closedCountSum: 544,
+    },
+    {
+      slug: 'thin-family',
+      name: 'Thin Family',
+      citySlug: 'bend',
+      mainKind: 'subdivision' as const,
+      members: [{ slug: 'thin-family-1' }, { slug: 'thin-family-2' }],
+      closedCountSum: 9,
+    },
+    {
+      slug: 'tetherow',
+      name: 'Tetherow',
+      citySlug: 'bend',
+      mainKind: 'community' as const,
+      members: [{ slug: 'tetherow-phase-1' }, { slug: 'tetherow-phase-2' }],
+      closedCountSum: 1113,
+    },
+  ]
+  const out = buildIndexableSubdivisions(boundary, counts, undefined, {
+    reservedSlugs: new Set(['bend', 'sisters', 'la-pine']),
+    families,
+  })
+  const slugs = out.map((r) => r.slug)
+
+  it('drops a plat recorded under a city name from the index set', () => {
+    expect(slugs).not.toContain('bend')
+    expect(slugs).not.toContain('sisters')
+  })
+
+  it('adds the family main page the county never recorded as a plat, flagged as a sum', () => {
+    const ridge = out.find((r) => r.slug === 'ridge-at-eagle-crest')
+    expect(ridge).toMatchObject({
+      name: 'Ridge At Eagle Crest',
+      citySlug: 'redmond',
+      family: { phases: 2, ownPlat: false },
+    })
+    // The phases keep their own index slots (SITE-24 unchanged).
+    expect(slugs).toContain('ridge-at-eagle-crest-5')
+    expect(slugs).toContain('ridge-at-eagle-crest-36')
+  })
+
+  it('marks a recorded plat that is also its family page, keeping its own count', () => {
+    const head = out.find((r) => r.slug === 'tetherow-crossing')
+    expect(head).toMatchObject({ closedCount: 440, family: { phases: 2, ownPlat: true } })
+    expect(out.filter((r) => r.slug === 'tetherow-crossing')).toHaveLength(1)
+  })
+
+  it('holds a family below the floor, and never adds a community-owned family to this route', () => {
+    expect(slugs).not.toContain('thin-family')
+    expect(slugs).not.toContain('tetherow')
+  })
+
+  it('submits a family page to the sitemap and llms.txt alike', () => {
+    const urls = subdivisionSitemapUrls(out, 'https://ryan-realty.com')
+    const lines = subdivisionLlmsLines(out, 'https://ryan-realty.com')
+    expect(urls).toContain('https://ryan-realty.com/subdivisions/ridge-at-eagle-crest')
+    expect(lines.some((l) => l.endsWith('/subdivisions/ridge-at-eagle-crest'))).toBe(true)
+    expect(urls.some((u) => u.endsWith('/subdivisions/bend'))).toBe(false)
+  })
+})

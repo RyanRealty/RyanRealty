@@ -39,7 +39,7 @@ Saved = account icon. Value my home fills only on `/sell/*` leaves, not on `/sel
 
 | # | Section | Notes |
 |---|---|---|
-| 0 | Chrome | Mobile bar: logo | Sign in | hamburger only. No Find mic. Primary: Homes · Places · Sell · About (Market folded into Places). Community marks in menus. |
+| 0 | Chrome | Mobile bar: logo \| Search \| Call \| hamburger. The phone (`tel:` brokerage line) holds the slot Sign in had; Sign in lives in the menu below 56.25rem and in the bar above it. Changed 2026-09-23 under Matt's "nothing is permanent" directive with UXLIVE-13 evidence: at 375 the first tappable phone sat below the first screen on all nine routes captured (/sell y=1,479 through /cities/bend y=25,470). No Find mic. Primary: Homes · Places · Market · Sell · About. Community marks in menus. |
 | 1 | Hero | Full-bleed Stage (not trimmed/letterboxed). Buyer H1 `Homes for sale in Central Oregon` (brand only in metadata title/OG). Buy \| Sell tabs on the hero search (Buy = home search, Sell = Value my home / valuation path). Plain buyer copy only. |
 | 2 | House carousels | Stacked “Homes for You”-type rails (not one lonely Field grid). At least recommended / local Bend-area actives. Add 1–2 more honest rows when data exists (price cuts, new). No fake personalization labels. Cards: photo, overlay badges we already encode (price cut, 3D/video, new, open, pending), save/heart, price, beds \| baths \| sqft \| status, street, listing attribution only if Field already has it. Use V3ListingRow / SplitCardMedia. Do not invent badge kinds. |
 | 3 | Doors | Exactly three: **Buy a home** · **Sell a home** · **Work with us**, each with **illustrations** (art, not photo landscapes). Sell door → valuation. Work with us → `/join`. No Invest door on home. Plain copy only. Never “see what your home is worth.” |
@@ -62,7 +62,7 @@ Saved = account icon. Value my home fills only on `/sell/*` leaves, not on `/sel
 
 | # | Section | Notes |
 |---|---|---|
-| 1 | Map + list | Bound both ways. Atlas language if we can; if tiles stay, restyle chrome to v3 (no Google Draw/Roboto). |
+| 1 | Map + list | Bound both ways. Atlas language if we can; if tiles stay, restyle chrome to v3 (no Google Draw/Roboto). The bare URL opens on the regional **list** (2026-09-23, UXLIVE-4): split and map are one tap away as `?view=split` / `?view=map`, client state that stays noindex. Every regional door (chrome, homepage, `/cities`) links the clean `/homes-for-sale`. |
 | 2 | Filters | One Sheet. Not email-first at 375. |
 | 3 | Rows | Photo, price, beds/baths/sqft, street. No blank gray thumb when photos exist. |
 | 4 | Alerts | Sheet under the list, not covering cards. |
@@ -183,7 +183,7 @@ Northwest Crossing is this job even if the URL is `/communities/northwest-crossi
 | 1 | One sentence + one interrogable chart. |
 | 2 | Cities as doors (not a 16-tile percent wall). |
 | 3 | Closed / history slice. |
-| 4 | Activity (folded here; `/activity` and `/pulse` 301 here). |
+| 4 | Activity (folded here; `/activity` and `/pulse` 301 here: live since 2026-09-23, UXLIVE-8. The section itself is still to build; the city, neighborhood and community pages already carry the activity slice). |
 | 5 | Months of supply as a door to `/months-of-supply` (definition page — keep the URL). |
 | 6 | How we get our numbers (door). |
 | 7 | Reports that exist. |
@@ -311,7 +311,7 @@ Calendar. Same chrome.
 
 Honest income-property. Calculator here. Not Value my home as the first filled button.
 
-**Fold:** `/tools/rental-property-calculator`, `/tools/appreciation` → here.
+**Fold:** `/tools/rental-property-calculator`, `/tools/appreciation` → here, as **doors in "Run the numbers"**, not a 301. Amended 2026-09-23 (UXLIVE-8, GSC evidence): `/tools/appreciation` earned 992 impressions in 16 months at average position 20.8 for "appreciation calculator" queries while `/invest` earned 50 at 64.4 and carries no appreciation calculator, so a 301 would send those queries to a page that does not answer them. The tool keeps its URL; `/invest` and `/site-index` link it. Revisit only if the calculator itself moves onto `/invest`.
 
 **Fold:** `/tools/mortgage-calculator` → payment block on the listing (one formula). Hub 301.
 

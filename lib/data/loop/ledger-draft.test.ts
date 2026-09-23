@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { assertLedgerDraft, isExpiredUnlearned, windowEndsAt } from './ledger-draft'
+import { assertLedgerDraft, isExpiredUnlearned, isLedgerRowOpen, windowEndsAt } from './ledger-draft'
 
 describe('assertLedgerDraft', () => {
   const ok = {
@@ -47,5 +47,12 @@ describe('measurement windows (the Learn deadline)', () => {
   it('actual_delta of zero counts as learned (flat is a verdict, not a gap)', () => {
     const row = { shippedAt: '2026-07-01T00:00:00Z', windowDays: 14, actualDelta: 0 }
     expect(isExpiredUnlearned(row, new Date('2026-09-01T00:00:00Z'))).toBe(false)
+  })
+
+  it('a verdict with a NULL delta is closed: no data is not zero (audit 2026-09-22, gsc-trend-2)', () => {
+    const row = { shippedAt: '2026-07-01T00:00:00Z', windowDays: 14, actualDelta: null, verdict: 'unmeasurable' }
+    expect(isLedgerRowOpen(row)).toBe(false)
+    expect(isExpiredUnlearned(row, new Date('2026-09-01T00:00:00Z'))).toBe(false)
+    expect(isLedgerRowOpen({ actualDelta: null, verdict: null })).toBe(true)
   })
 })

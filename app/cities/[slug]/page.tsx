@@ -99,6 +99,7 @@ import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
+import { noteDegradedHead, placeNameFromSlug, PLACE_HEAD_READ_MS } from '@/lib/site/place-head-fallback'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import {
@@ -125,7 +126,8 @@ import {
   PlaceSubdivisionMap,
   PlaceSubdivisionRail,
 } from '@/components/site/v3/PlaceSubdivisionMap.client'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
+import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import {
   ATLAS_PIN_CLUSTER_CELL_PX,
@@ -144,7 +146,8 @@ import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { cityPlaceGrain } from '@/lib/place/city-place-grain'
 import { resolveCityCommunityRailPhoto } from '@/lib/place/city-community-rail-photo'
 import { subdivisionHref } from '@/lib/site/place-href'
-import { childAtlasRegions, subjectAtlasRegions } from '@/lib/place/map-hierarchy'
+import { childAtlasRegions, childSelectionId, subjectAtlasRegions } from '@/lib/place/map-hierarchy'
+import type { AtlasTaxlotsScope } from '@/lib/atlas/atlas-taxlots-href'
 import { cityChildStockSlug } from '@/lib/place/city-rail'
 import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
@@ -239,9 +242,19 @@ function asPlaceBoundary(value: unknown): { type?: string; coordinates?: unknown
 // Metadata - unchanged from the KB page.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
-  if (!snapshot) notFound()
-  const cityName = snapshot.geoLabel
+  // RACED (P3 — DATA-6, 2026-09-23; lib/site/place-head-fallback.ts). A read
+  // that did not answer is unknown, not absent: the head keeps this city's
+  // path and names it from its own URL for one short ISR window. notFound()
+  // only when the read answered with no row.
+  const snapshotRead = await withTimeoutFallbackResult(
+    getGeoSnapshot({ geoType: 'city', geoKey: slug }),
+    null,
+    PLACE_HEAD_READ_MS,
+    'city:meta-snapshot',
+  )
+  if (snapshotRead.ok && !snapshotRead.value) notFound()
+  if (!snapshotRead.ok) await noteDegradedHead('city', 'city:meta-snapshot')
+  const cityName = snapshotRead.value?.geoLabel ?? placeNameFromSlug(slug)
   return pageMetadata({
     title: publishCityRealEstateTitle(cityName),
     description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, subdivisions, open houses, and MLS market data from Oregon Data Share.`,
@@ -439,6 +452,10 @@ async function renderCityDetail({ params }: Props) {
    * bars. Bend's crawlable children are the designated districts in
    * #neighborhoods. A–Z `/subdivisions` is the directory. Atlas-drawn plats
    * (non-Bend cities) stay as name-only cards after those bars.
+   * EXP-3 (visibility audit 2026-09-22): each #child-places card now carries a
+   * real <a href> to its own page beside the map-select button
+   * (PlaceSubdivisionRail). Still name-only, no bars, no dump above the
+   * neighborhood bars; the rail simply stopped being a dead end for crawlers.
    */
   const atlasPlatEntries = atlasRegions
     .filter((r) => typeof r.href === 'string' && r.href.startsWith('/subdivisions/'))
@@ -832,6 +849,17 @@ async function renderCityDetail({ params }: Props) {
     rows: rowsForRail,
   })
   const homesByChild = childListingKeys(rowsForRail)
+  // Matt 2026-09-23, requirement 6: which public.boundaries row a rail id's
+  // lots live under. Bend's own boundary row is "bend-<slug>" (the prefix
+  // rowsForRail strips above for the rail's counts); every other city's
+  // subdivisions already carry their own recorded slug with no prefix.
+  const taxlotBoundaries: Record<string, AtlasTaxlotsScope> = Object.fromEntries(
+    childRegions.map((region) => {
+      const bare = childSelectionId(region.id)
+      const geoType = region.kind === 'neighborhood' || region.kind === 'subdivision' ? region.kind : null
+      return [bare, { geoType, geoSlug: isBend ? `${slug}-${bare}` : bare }]
+    }),
+  )
   const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${cityName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
 
   // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
@@ -976,6 +1004,28 @@ async function renderCityDetail({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // UXLIVE-3 (visibility audit 2026-09-22): the Atlas's 1,664 dots on Bend
+  // (594 KB of RSC payload), the sales heat drawn from them (558 KB of SVG)
+  // and the basemap load after paint; the counts, outlines and text stay in
+  // the server HTML, and the parks, trails and plats ship at the precision
+  // the frame can draw. The route rebuilds the population from the boundary
+  // this page read, named by where it came from.
+  const atlasProps = deferredAtlasProps({
+    population: atlasView,
+    scope: {
+      cities: [cityName],
+      boundaryRef: asPlaceBoundary(cityBoundary)
+        ? { kind: 'geo', geoType: 'city', geoSlug: slug }
+        : { kind: 'city-row', cityName },
+      boundary: atlasBoundary,
+    },
+    regions: subjectRegions,
+    childRegions,
+    amenities: amenityLayers,
+    types: atlasView.types,
+    fit: 'dots',
+    basemapFrame: basemapFrameForRegions(subjectRegions, { dots: atlasView.dots, fit: 'dots' }),
+  })
   // SITE-82: fold Atlas defaults to Houses so the for-sale count agrees with
   // MOS / leftover HUD detached (same inventory question, one answer). Other
   // types stay available via the type toggles when their marks are present —
@@ -1097,20 +1147,20 @@ async function renderCityDetail({ params }: Props) {
                 clusterCellPx={ATLAS_PIN_CLUSTER_CELL_PX}
                 clusterStageHint={CITY_FOLD_CLUSTER_STAGE}
                 clusterStageHintPhone={CITY_FOLD_CLUSTER_STAGE_PHONE}
-                dots={atlasView.dots}
-                regions={subjectRegions}
-                childRegions={childRegions}
-                basemap={basemapForRegions(subjectRegions, {
-                  dots: atlasView.dots,
-                  fit: 'dots',
-                })}
+                dots={atlasProps.dots}
+                dotsSrc={atlasProps.dotsSrc}
+                dotsSummary={atlasProps.dotsSummary}
+                regions={atlasProps.regions}
+                childRegions={atlasProps.childRegions}
+                basemapSrc={atlasProps.basemapSrc}
+                taxlotBoundaries={taxlotBoundaries}
                 fit="dots"
                 types={atlasView.types}
                 events={atlasView.events}
                 source={atlasView.source}
                 stamp={atlasView.stamp}
                 incomplete={!atlasView.complete}
-                amenities={amenityLayers}
+                amenities={atlasProps.amenities}
                 hidePriceScrubber
               />
             </div>

@@ -69,7 +69,12 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
     sourceRequire: [
       /Faces open the page at display scale/,
       /\/team/,
-      /The brokers are on \/team/,
+      // Matt 2026-09-23 (AEO-5 / VOICE-5, visibility audit 2026-09-22): the FAQ
+      // names the brokers and their roles from the live roster instead of
+      // answering with the door "The brokers are on /team". Answer engines
+      // quote the FAQPage answer; a URL path is not an answer.
+      /aboutBrokersAnswer\(/,
+      /aboutFaqItems\(proof\.faces\)/,
       /from '@\/components\/ui\/avatar'/,
       /<AvatarGroup\b/,
       /<AvatarImage\b|<V3Avatar\b/,

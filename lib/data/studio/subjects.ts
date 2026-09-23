@@ -7,9 +7,16 @@
  * at all, so a caption can never carry a number whose origin nobody recorded
  * (CLAUDE.md §0).
  *
- * Market figures come from the cache (market_pulse_live via getMarketPulse),
- * never from aggregating raw `listings`. Listing figures come from the same
- * CMA subject lookups the valuation product already trusts.
+ * Market figures come from getMarketPulse, never from aggregating raw
+ * `listings`. At city, region, neighborhood and community grain that DAL
+ * overlays Market Truth (market_metric mt-v1, segment detached) on the active
+ * count, median list price and months of supply, so those traces name
+ * market_metric; everything else is the market_pulse_live row. Months of supply
+ * publishes only through publishMonthsOfSupply and closed-side figures only at a
+ * grain whose closes are attributed like its actives (lib/market/geo-grain-trust.ts):
+ * the neighborhood pulse row's closes come from a subdivision-name join and are
+ * never a caption figure (audit DATA-7, 2026-09-22). Listing figures come from
+ * the same CMA subject lookups the valuation product already trusts.
  */
 import 'server-only'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
@@ -19,6 +26,12 @@ import {
 } from '@/lib/data/market/getMarketStatsCacheRows'
 import { findCmaSubjectByAddress, findCmaSubjectByMls, type CmaListingRow } from '@/lib/data/cma/builderReads'
 import type { MarketPulse } from '@/lib/data/types/market'
+import type { GeoType } from '@/lib/data/types/shared'
+import {
+  isSoldAttributionTrusted,
+  publishMonthsOfSupply,
+  publishSoldCount,
+} from '@/lib/market/publish-months-of-supply'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type { StudioFormat } from '@/lib/studio/formats'
 import type { StudioSubject } from '@/lib/studio/produce'
@@ -47,6 +60,14 @@ function usd(value: number): string {
   return `$${Math.round(value).toLocaleString('en-US')}`
 }
 
+/**
+ * Grains where getMarketPulse replaces the pulse active count, median list price
+ * and months of supply with Market Truth cells (lib/data/market/getMarketPulse.ts).
+ */
+function overlaysMarketTruth(geoType: GeoType): boolean {
+  return geoType === 'city' || geoType === 'region' || geoType === 'neighborhood' || geoType === 'community'
+}
+
 function pulseCitation(pulse: MarketPulse, column: string, value: string): Record<string, unknown> {
   return {
     figure: value,
@@ -60,43 +81,99 @@ function pulseCitation(pulse: MarketPulse, column: string, value: string): Recor
   }
 }
 
+/** Trace for a figure getMarketPulse took from Market Truth rather than the pulse row. */
+function marketTruthCitation(
+  pulse: MarketPulse,
+  statId: string,
+  value: string,
+  note?: string,
+): Record<string, unknown> {
+  // A community reads the neighborhood cell (same membership), per getMarketPulse.
+  const geoType = pulse.geoType === 'community' ? 'neighborhood' : pulse.geoType
+  return {
+    figure: value,
+    source: 'Supabase',
+    table: 'market_metric (via getMarketPulse overlay)',
+    column: 'value',
+    filter: `stat_id='${statId}', geo_type='${geoType}', geo_slug='${pulse.geoSlug}', segment='detached', definition_id='mt-v1'`,
+    ...(note ? { note } : {}),
+    fetched_at: new Date().toISOString(),
+    computed_at: pulse.refreshedAt,
+  }
+}
+
 /**
  * Turn a pulse row into display figures plus their traces.
  * Null is not zero: a figure the cache withheld is omitted, never defaulted,
  * because a caption reading "0 active listings" would be a false statement
  * about the market rather than a missing one.
  */
-function figuresFromPulse(pulse: MarketPulse): {
+export function figuresFromPulse(pulse: MarketPulse): {
   figures: Record<string, string>
   citations: Array<Record<string, unknown>>
 } {
   const figures: Record<string, string> = {}
   const citations: Array<Record<string, unknown>> = []
+  const grain = pulse.geoType
+  const marketTruth = overlaysMarketTruth(grain)
 
   if (pulse.activeCount != null) {
     const value = String(pulse.activeCount)
     figures['active listings'] = value
-    citations.push(pulseCitation(pulse, 'active_count', value))
+    citations.push(
+      marketTruth
+        ? marketTruthCitation(pulse, 'active_count', value)
+        : pulseCitation(pulse, 'active_count', value),
+    )
   }
   if (pulse.medianListPrice != null && Number.isFinite(pulse.medianListPrice)) {
     const value = usd(pulse.medianListPrice)
     figures['median list price'] = value
-    citations.push(pulseCitation(pulse, 'median_list_price', value))
+    citations.push(
+      marketTruth
+        ? marketTruthCitation(
+            pulse,
+            'median_list_active',
+            value,
+            'getMarketPulse keeps the market_pulse_live median_list_price when the Market Truth inventory cell has no median',
+          )
+        : pulseCitation(pulse, 'median_list_price', value),
+    )
   }
-  if (pulse.closedLast30Days > 0) {
-    const value = String(pulse.closedLast30Days)
+  // Closed-side figures publish only where closes are attributed like actives.
+  const closed30 = publishSoldCount({
+    value: pulse.closedLast30Days != null && pulse.closedLast30Days > 0 ? pulse.closedLast30Days : null,
+    grain,
+  })
+  if (closed30 != null) {
+    const value = String(closed30)
     figures['homes closed in the last 30 days'] = value
-    citations.push(pulseCitation(pulse, 'closed_last_30_days', value))
+    citations.push(pulseCitation(pulse, 'sold_count_30d', value))
   }
-  if (pulse.monthsOfSupply != null && Number.isFinite(pulse.monthsOfSupply)) {
+  const mos = publishMonthsOfSupply({
+    grain,
+    pulseMos: pulse.monthsOfSupply,
+    pulseActiveCount: pulse.activeCount,
+    displayedActiveCount: pulse.activeCount,
+    source: marketTruth ? 'market-truth' : 'pulse',
+  })
+  if (mos != null) {
     // Never round MoS by hand: 4.04 printed as "4.0" reads as a seller's
     // market when the raw value is not one. formatMonthsOfSupply holds the
     // threshold away from the boundary (G: ci:market-formula).
-    const value = formatMonthsOfSupply(pulse.monthsOfSupply)
+    const value = formatMonthsOfSupply(mos)
     figures['months of supply'] = value
-    citations.push(pulseCitation(pulse, 'months_of_supply', value))
+    citations.push(
+      marketTruth
+        ? marketTruthCitation(pulse, 'months_of_supply', value)
+        : pulseCitation(pulse, 'months_of_supply', value),
+    )
   }
-  if (pulse.medianDaysToPending != null && Number.isFinite(pulse.medianDaysToPending)) {
+  if (
+    isSoldAttributionTrusted(grain) &&
+    pulse.medianDaysToPending != null &&
+    Number.isFinite(pulse.medianDaysToPending)
+  ) {
     const value = String(Math.round(pulse.medianDaysToPending))
     figures['median days to pending'] = value
     citations.push(pulseCitation(pulse, 'median_days_to_pending', value))

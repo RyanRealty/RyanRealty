@@ -125,10 +125,14 @@ async function marketStatsHandler(input: Record<string, unknown>, _ctx: AgentCon
         source: pulseCitation(geoType, geoSlug, 'median_days_to_pending', pulse.medianDaysToPending, refreshedAt),
       })
     }
-    citations.push({
-      figure: `${pulse.closedLast30Days} closed in 30d`,
-      source: pulseCitation(geoType, geoSlug, 'sold_count_30d', pulse.closedLast30Days, refreshedAt),
-    })
+    // Withheld/unknown (null) is never printed as "0 closed" or "null closed" —
+    // omit the figure entirely (CLAUDE.md §0, migration 20260923014700 DATA-7).
+    if (pulse.closedLast30Days != null) {
+      citations.push({
+        figure: `${pulse.closedLast30Days} closed in 30d`,
+        source: pulseCitation(geoType, geoSlug, 'sold_count_30d', pulse.closedLast30Days, refreshedAt),
+      })
+    }
   }
 
   if (detail || lastComplete) {

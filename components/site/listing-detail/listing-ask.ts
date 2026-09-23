@@ -19,6 +19,8 @@ import { v3Text, type V3InstrumentFigure, type V3InstrumentFigures } from '@/com
 
 const NO_DATE = /^[\s\u002D\u2010-\u2015\u2212]*$/
 const MARKET_SLUGS = new Set<string>(CORE_CITY_SLUGS)
+/** What a reader sees as this instrument's source before opening the trace. */
+export const LISTING_ASK_SOURCE_NAME = 'live MLS through Oregon Data Share'
 
 export type ListingAskGrain = {
   name: string
@@ -33,6 +35,8 @@ export type ListingAskClaim = {
   headline: string
   figures: V3InstrumentFigures
   source: string
+  /** The source's name for the folded line, in the reader's words. */
+  sourceName: string
   updated?: string
   action?: { label: string; href: string }
 }
@@ -135,8 +139,12 @@ export function buildListingAskClaim(input: {
   if (!first) return null
 
   const mosPrints = mos != null && mos > 0
+  // Opens with the feed's name in words (VOICE-2, visibility audit 2026-09-22):
+  // the folded source line shows only the leading clause, and it read
+  // "leftover membership" on every listing page. The membership handle stays in
+  // the full trace, in parentheses, for a section 0 audit.
   const source = [
-    `leftover membership, active single-family houses in ${name}. This price is the published list price.`,
+    `${LISTING_ASK_SOURCE_NAME}, active single-family houses in ${name}, the same count and median list the ${name} market figures on this site publish (market_metric, place membership). This price is the published list price.`,
     mosPrints ? MOS_METHODOLOGY_CLAUSE : '',
     mosPrints ? MOS_THRESHOLD_CLAUSE : '',
   ]
@@ -151,6 +159,7 @@ export function buildListingAskClaim(input: {
     headline,
     figures: [first, ...rest],
     source,
+    sourceName: LISTING_ASK_SOURCE_NAME,
     updated: stampFrom(input.updatedAt),
     ...(action ? { action } : {}),
   }

@@ -64,6 +64,7 @@ import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { valuationHref } from '@/lib/site/valuation-href'
+import { brokerPersonId, brokerSameAs } from '@/lib/site/broker-entity'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const OFFICE_NAME = 'Ryan Realty'
@@ -234,6 +235,13 @@ export default async function TeamMemberPage({ params }: Props) {
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'RealEstateAgent',
+              // AEO-6: the same @id the site-wide Organization gives this
+              // broker as founder/employee, so the two nodes merge into one
+              // entity, plus the profiles verified to be this person.
+              '@id': brokerPersonId(siteUrl, canonicalPathSlug),
+              ...(brokerSameAs(canonicalPathSlug).length > 0
+                ? { sameAs: brokerSameAs(canonicalPathSlug) }
+                : {}),
               name: broker.display_name,
               jobTitle: broker.title ?? 'Real Estate Broker',
               image: broker.photo_url ?? HEADSHOT[broker.slug] ?? undefined,
@@ -242,6 +250,7 @@ export default async function TeamMemberPage({ params }: Props) {
               url: canonicalUrl,
               areaServed: { '@type': 'Place', name: 'Central Oregon' },
               worksFor: {
+                '@id': `${siteUrl}#organization`,
                 '@type': ['LocalBusiness', 'RealEstateAgent'],
                 name: siteName,
                 url: siteUrl,

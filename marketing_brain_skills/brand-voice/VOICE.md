@@ -1,9 +1,9 @@
 # Ryan Realty voice
 
 One voice for everything we publish: the site, broker bios, emails, texts, social posts,
-market reports, CMAs, and client packets. Set by Matt, 2026-09-07. No word lists, no
-punctuation rules, no mechanical gate. If a line sounds like a person who knows Central
-Oregon and wants to help, it is right.
+market reports, CMAs, and client packets. Set by Matt, 2026-09-07. No word lists. If a
+line sounds like a person who knows Central Oregon and wants to help, it is right. The
+calls Matt made after that day are below; they are the only voice rules a gate holds.
 
 ## Who is talking
 
@@ -29,6 +29,18 @@ with a client from the first conversation through closing.
   did not say them. Reviews appear as written.
 - Fair housing: we describe homes and neighborhoods, never who should live there.
 - MLS remarks from other brokers are shown as written.
+
+## Matt's calls since 2026-09-07
+
+- **No em dashes in public copy** (2026-09-20), and no ` -- ` standing in for one. Use a
+  comma, a colon, a period, or rewrite the sentence. Held by `ci:no-public-em-dash`.
+- **Site copy does not explain the page** (2026-09-14 to 09-18). No lecture on how the
+  map, the filters or the feed work. No sentence counting the homes a rail already shows.
+  The brief a page was built from is never visitor copy. A Call or Text control says Call
+  or Text, not "CALL 541...". An alert ask sounds like a person ("Send me new listings"),
+  not a form. A place heading reads "{Place} homes for sale", never "Every home for sale
+  in {Place}". Buyers say subdivision, neighborhood and community, not plat. Held at Tip
+  Ready by `scripts/lib/mannered-public-copy.mjs`.
 
 ## Exemplars
 

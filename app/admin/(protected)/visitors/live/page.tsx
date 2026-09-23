@@ -45,6 +45,14 @@
 // source_domain ryan-realty.com and 4 carry ryanrealty.vercel.app, so the
 // two-domain sentence below is true. Only 18 sessions have ever identified,
 // which is why the Identified filter returns a short list.
+//
+// P7 IDENTITY LOOP (Matt 2026-09-23, "when I go and see who's been active, I
+// can see, 'Okay, this person's been active' ... exactly what they're
+// looking at"): `?filter=people` is the known-contact view, one row per
+// identified person active in the last 1 / 7 / 30 days (`?days=`), most recent
+// first, with the pages they viewed (KnownPeople.tsx). It is now the DEFAULT
+// view: the question this page answers first is who, not how many. The three
+// session filters are unchanged and still reachable from the same control.
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
@@ -59,7 +67,8 @@ import {
   type ReportGridRow,
 } from '@/components/admin/v2'
 import { fetchLiveVisitors, fetchLiveSummary, fetchProductScoreboard, type LiveSessionRow } from '../_lib/queries'
-import VisitorFilterSelect from '../VisitorFilterSelect'
+import VisitorFilterSelect, { type VisitorFilter } from '../VisitorFilterSelect'
+import { KnownPeople } from './KnownPeople'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -187,7 +196,7 @@ async function SummaryStrip() {
   )
 }
 
-async function VisitorTable({ filter }: { filter: 'all' | 'anonymous' | 'identified' }) {
+async function VisitorTable({ filter }: { filter: Exclude<VisitorFilter, 'people'> }) {
   const rows = await fetchLiveVisitors({ identifiedFilter: filter, limit: 50 })
 
   const gridRows: ReportGridRow[] = rows.map((s) => {
@@ -252,7 +261,9 @@ export default async function LiveVisitorsPage({
   // page in this family ran any auth of its own.
   await requireAdminPage('people.view')
   const sp = normalizeParams(await searchParams)
-  const filter = (sp.filter === 'anonymous' || sp.filter === 'identified') ? sp.filter : 'all'
+  const filter: VisitorFilter =
+    sp.filter === 'anonymous' || sp.filter === 'identified' || sp.filter === 'all' ? sp.filter : 'people'
+  const days = sp.days === '1' ? 1 : sp.days === '30' ? 30 : 7
 
   return (
     <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
@@ -260,20 +271,27 @@ export default async function LiveVisitorsPage({
         <SummaryStrip />
       </Suspense>
 
-      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
-        Up to 50 sessions, most recently active first, across ryan-realty.com and
-        ryanrealty.vercel.app. A database trigger rescores a session on every event it records.
-        Open a session id for its full event timeline.
-      </p>
-
-      <div style={{ maxWidth: 240, margin: '0 0 4px' }}>
-        <VisitorFilterSelect filter={filter} />
+      <div style={{ margin: '0 0 12px' }}>
+        <VisitorFilterSelect filter={filter} days={days} />
       </div>
 
-      <SectionHead>Sessions</SectionHead>
-      <Suspense fallback={<ReportSkeleton />}>
-        <VisitorTable filter={filter} />
-      </Suspense>
+      {filter === 'people' ? (
+        <Suspense fallback={<ReportSkeleton rows={5} />}>
+          <KnownPeople days={days} />
+        </Suspense>
+      ) : (
+        <>
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+            Up to 50 sessions, most recently active first, across ryan-realty.com and
+            ryanrealty.vercel.app. A database trigger rescores a session on every event it records.
+            Open a session id for its full event timeline.
+          </p>
+          <SectionHead>Sessions</SectionHead>
+          <Suspense fallback={<ReportSkeleton />}>
+            <VisitorTable filter={filter} />
+          </Suspense>
+        </>
+      )}
 
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
         The page revalidates on every navigation — reload to refresh. Score legend: cold under 20,

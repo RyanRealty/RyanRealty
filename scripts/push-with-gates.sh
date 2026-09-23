@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # push-with-gates.sh — the canonical push path (`npm run push`).
 #
-# Runs the local gate chain + eslint BEFORE `git push` opens the ssh
+# Runs the local gate chain + eslint + the changed-file unit tests BEFORE `git push` opens the ssh
 # connection to github.com, then stamps <git-dir>/rr-gates-marker so
 # .husky/pre-push can verify in milliseconds. Rationale: git advertises refs
 # and holds the connection open BEFORE running pre-push, so a long in-hook
@@ -29,6 +29,7 @@
 #   PUSH_GATES_IN_PLACE=1     run chain in the shared working tree
 #   PUSH_GATES_ISOLATE=1      force the verify worktree even when status is clean
 #   PUSH_FULL_GENERATE=1      local `next build` + bundle budget (old chair wait)
+#   PUSH_UNIT_FULL=1          run the whole unit suite instead of the changed-file slice
 #   PUSH_GATES_VERIFY_DIR     verify worktree location (default ~/.cache/ryanrealty-gates-verify)
 #   PUSH_GATES_REFRESH_DEPS=1 force re-clone of node_modules into the verify tree
 #   PUSH_GATES_CLEAN=1        nuke the verify worktree first (disk pressure / corrupt .next)
@@ -109,6 +110,16 @@ trap on_exit EXIT
 trap 'die 130 "✗ interrupted (SIGINT) — push aborted. NOTHING landed on the remote."' INT
 trap 'die 143 "✗ terminated (SIGTERM) — push aborted. NOTHING landed on the remote."' TERM
 
+# unit_base — the commit this push is measured against: the merge-base with the
+# upstream, else with origin/main, else empty (the caller runs the full suite).
+unit_base() {
+  ub=$(git merge-base HEAD "@{u}" 2>/dev/null) || ub=""
+  if [ -z "$ub" ]; then
+    ub=$(git merge-base HEAD origin/main 2>/dev/null) || ub=""
+  fi
+  echo "$ub"
+}
+
 # ---------------------------------------------------------------------------
 # run_chain_and_build <dir> — the heavy work, parameterized by tree location.
 # Build skip logic (doc-only pushes) is computed against the MAIN repo's
@@ -132,6 +143,28 @@ run_chain_and_build() {
     "✗ eslint FAILED — push aborted. This is the same lint CI runs, fix the errors." \
     "  NOTHING landed on the remote. Your commits are still local."
   echo "✓ eslint OK"
+
+  # Unit tests for what this push changes (visibility audit PROCESS-9,
+  # 2026-09-23). docs/DEVELOPMENT_PROCESS.md requires ci:gates + test:unit green
+  # BEFORE push, and .husky/pre-commit was the only place unit tests ran, so a
+  # commit made with hooks bypassed reached main with test:unit red (83a459c,
+  # city-fold.test.ts) while this script reported every gate green.
+  # `vitest --changed <base>` runs the test files that import anything changed
+  # since the upstream merge-base; a package.json or vitest config change reruns
+  # all of them. No base (no upstream, no origin/main) runs the full suite.
+  UNIT_BASE=$(unit_base)
+  if [ "$PUSH_UNIT_FULL" = "1" ] || [ -z "$UNIT_BASE" ]; then
+    echo "push: test:unit (full suite) in $workdir…"
+    ( cd "$workdir" && npm run test:unit ) || die 1 \
+      "✗ test:unit FAILED — push aborted. Fix the failing test first." \
+      "  NOTHING landed on the remote. Your commits are still local."
+  else
+    echo "push: test:unit for files changed since $UNIT_BASE in $workdir…"
+    ( cd "$workdir" && npm run test:unit -- --changed "$UNIT_BASE" --passWithNoTests ) || die 1 \
+      "✗ test:unit FAILED on the tests this push touches — push aborted. Fix the failing test first." \
+      "  NOTHING landed on the remote. Your commits are still local. (PUSH_UNIT_FULL=1 runs the whole suite.)"
+  fi
+  echo "✓ test:unit OK"
 
   # Local full generate is the chair wait. Default: skip. Vercel SSGs.
   # PUSH_FULL_GENERATE=1 restores the old Turbopack SSG + bundle budget.

@@ -72,6 +72,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getListingTiles, getMarketPulse } from '@/lib/data'
 import { classifyInventoryPropertyType } from '@/lib/inventory-filters'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingTileHref } from '@/lib/slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
@@ -332,6 +333,11 @@ export default async function OutOfAreaCityPage({
     // here after the strip's own filter was fixed; both reads of the same tiles
     // now share the floor.
     if (price == null || !Number.isFinite(price) || price < 500) continue
+    // §0: the statewide feed carries commercial leases (MLS PropertyType
+    // 'G') alongside commercial sales — its ListPrice is rent, not a sale
+    // price, and this Ledger's price and ItemList JSON-LD both print it as
+    // one. A lease is not a "newest listing" for sale.
+    if (listingPriceIsLeaseRate(tile.propertyType)) continue
     const bareAddress = [tile.streetNumber, tile.streetName, tile.streetSuffix]
       .filter(Boolean)
       .join(' ')

@@ -13,16 +13,22 @@ export interface AnimatedNumberProps {
   className?: string;
   startOnView?: boolean;
   /**
-   * Opt-in (SITE-103). Render the sourced value immediately — on the server and
-   * at first paint — and animate only when the value CHANGES afterwards.
+   * Default true (visibility audit 2026-09-22; was opt-in under SITE-103).
+   * Render the sourced value immediately, on the server and at first paint,
+   * and animate only when the value CHANGES afterwards.
    *
-   * Two reasons, both rules rather than taste. The default component's
+   * Two reasons, both rules rather than taste. With the beui default the
    * server-rendered face is `format(0)`, so a market page ships "$0 median list
-   * price" in its HTML and only becomes true after hydration: a figure that is
-   * wrong until JavaScript runs, in front of a crawler and a reader with a slow
-   * connection (CLAUDE.md section 0). And TASTE.md bans numbers counting up on
-   * load as decoration. What is left is the half of the beui demo that carries
-   * data — digits that move because the reader moved something.
+   * price" and "0 homes for sale" in its HTML and only becomes true after
+   * hydration: a figure that is wrong until JavaScript runs, in front of a
+   * crawler and a reader with a slow connection (CLAUDE.md section 0). On
+   * 2026-09-22 production HTML for /, city, neighborhood and subdivision pages
+   * carried "$0 median list price", "houses for sale 0" and "the 0 homes for
+   * sale in {plat}" because five direct call sites never passed the opt-in.
+   * And TASTE.md bans numbers counting up on load as decoration. What is left
+   * is the half of the beui demo that carries data: digits that move because
+   * the reader moved something. Pass `false` only for a decorative count-up
+   * that is not a published figure.
    */
   settleOnMount?: boolean;
 }
@@ -33,7 +39,7 @@ export function AnimatedNumber({
   format = (n) => Math.round(n).toLocaleString(),
   className,
   startOnView = true,
-  settleOnMount = false,
+  settleOnMount = true,
 }: AnimatedNumberProps) {
   const ref = useRef<HTMLSpanElement>(null);
   // amount 0.15: fold numerals (claim, MOS bars, alerts) are often <60% of a

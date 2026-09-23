@@ -43,6 +43,12 @@ export interface Ga4MpFireParams {
   eventParams?: Record<string, string | number | boolean | undefined | null>
   /** Force debug endpoint (echoes validation result; does NOT count). Defaults to false. */
   debug?: boolean
+  /**
+   * Events sent in the SAME request, before the main event (TRACK-1): the
+   * page-view mirror prepends `campaign_details` on the first event of a visit
+   * so GA4 attributes the session. Each carries the same session params.
+   */
+  precedingEvents?: Array<{ name: string; params?: Record<string, string | number | boolean | undefined | null> }>
 }
 
 export type Ga4MpFireResult =
@@ -187,9 +193,23 @@ export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireRe
   const eventParams = sanitizeParams(params.eventParams || {})
   const userProperties = params.userProperties ? sanitizeUserProperties(params.userProperties) : undefined
 
+  // Session params ride on every event in the request so a prepended
+  // campaign_details lands in the same GA4 session as the page view.
+  const sessionCarry: Record<string, string | number> = {}
+  for (const k of ['session_id', 'session_number'] as const) {
+    if (eventParams[k] !== undefined) sessionCarry[k] = eventParams[k]
+  }
+  const preceding = (params.precedingEvents ?? [])
+    .filter((e) => e && typeof e.name === 'string' && e.name.trim())
+    .slice(0, 5)
+    .map((e) => ({
+      name: e.name.trim().slice(0, 40),
+      params: { ...sanitizeParams(e.params || {}), ...sessionCarry },
+    }))
   const payload: Record<string, unknown> = {
     client_id: clientId,
     events: [
+      ...preceding,
       {
         name: params.eventName,
         params: {

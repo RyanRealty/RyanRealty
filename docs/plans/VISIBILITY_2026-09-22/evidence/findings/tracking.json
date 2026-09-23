@@ -1,0 +1,292 @@
+{
+  "area": "tracking",
+  "notes_path": "/tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/tracking/notes.md",
+  "summary": "I audited the visit → person → lead → follow-up signal and the social feeds, using the schema snapshot, the snapshot cron routes, the client tracking components, site_signal aggregates (SQL early, then the sb.mjs helper after the rule change), the scoreboard probe, a Chrome-UA curl of production, and git history. Long-form notes with every query and row are at /tmp/claude-0/-home-user-RyanRealty/9fe9d814-a247-5921-8288-dab9436e06db/scratchpad/tracking/notes.md. The crons are alive: snapshot-channels runs 8/8 daily at 12:20Z, GSC/GBP/meta_graph/x/tiktok/youtube account scopes are fresh to 09-19..09-21, email events are minutes old, token heartbeats pass. The stale sources are explained: fub_api_v1 is a decommissioned system whose 1,228 rows still sit in the view; meta_ads_insights_api has written nothing since 2026-06-19 although it is still in the fan-out (children do not log, so ran-but-wrote-zero is invisible); tiktok video and x post are 30-day lookback feeds on idle accounts; ga4 channel scope only writes on days with social sessions. The real defects are in what the numbers mean. (1) GA4 is dominated by a server-side Measurement Protocol page_view mirror added 2026-08-10 in app/api/visitors/track/route.ts:486-565: in 14 days GA4 shows 28,804 page_views but only 370 session_start and 262 first_visit; 8,593 of ~8,900 sessions are source '(not set)', google/organic = 1, bounce_rate 1.0 and engagement_rate 0 on most days. GA4 sessions, engagement, new users, source/medium and lead source are not human truth, and organic → lead attribution in GA4 is impossible. (2) The browser-side GA4 stream (gtag via GTM-WV6R4NZ5) shows the same zero-signature it had during the documented 08-19..08-31 suppression bug again from 2026-09-18 (session_start 1 then absent, new_users 0), right after commit f1e2a90f9 touched GTMHead/GoogleAnalytics/PageViewTracker; the GA4 ingestor pulls yesterday-only with no settle window, and the silent-zero guard keys by channel×metric so a dead event stream can never trip it. A live fire test was blocked by the sandbox proxy. (3) RUM is polluted: /_next/image is the single largest surface (20,306 of 45,354 LCP rows in 14 days) because a missing image URL returns the app's 142 KB not-found page which mounts the vitals reporter and VisitTracker; INP has only 1,394 rows so per-route INP p75 is unusable; no bot filter, no sampling, no path normalization. (4) First-party attribution works for the 1.7% of sessions that carry a referrer, but of 90 people identified in 7 days exactly 1 is attributed to organic search, crm_people stores no channel, the attribution crons only score paid tags, and 98% of sessions are 'direct' with no bot filter and UA stripped at essential tier. (5) GSC is top-25 queries + top-25 pages per day, no page×query, no URL inspection cron, no Bing — you cannot diagnose a per-page ranking loss from it. (6) Speed-to-lead is flagged (11 of the 15 most recent site submits had no human touch in 24 h) but never stored as a metric; SMS consent has no record. Nothing from site_signal, GA4, GSC, RUM or social flows into prioritization automatically; nodes are hand-pasted and COMPANY_SCOREBOARD.md is five weeks stale.",
+  "facts": [
+    {
+      "fact": "snapshot-channels cron runs daily at 12:20 UTC and reports 8/8 platforms ok every day 2026-09-08..09-22; 09-06 and 09-07 returned 207 with 'x' failed.",
+      "evidence": "vercel.json:262-264; app/api/cron/snapshot-channels/route.ts:30-39 PLATFORMS; sync_logs row read: endpoint='snapshot-channels' response_status 200 records_returned 8 for logged_at 2026-09-08..2026-09-22 12:20Z, 207/'x' on 09-06 12:00 and 09-07 12:00."
+    },
+    {
+      "fact": "site_signal freshness per source: fub_api_v1 last 2026-06-23 (1,228 rows, system decommissioned 06-24); meta_ads_insights_api last 2026-06-19 (344 rows, still in fan-out); tiktok video last 2026-05-12; x post last 2026-08-16; ga4 channel last 2026-09-07 (36 rows); gsc account 09-20, gsc page/campaign 09-19; gbp 09-19; ga4 account/event/page/source 09-21; meta_graph_v25 09-21; rum 09-22 (771,723 rows, 36,567 surfaces).",
+      "evidence": "SQL: select source, scope, max(date), min(date), count(*), count(distinct surface) from site_signal group by 1,2 (2026-09-22) — full table in notes.md §1."
+    },
+    {
+      "fact": "GA4 is fed server-side: /api/visitors/track mirrors page_view/listing_view/intent_declared/welcome_back/email_opt/sms_opt into GA4 via Measurement Protocol whenever consent is essential-only or no _ga cookie exists, with client_id derived from rr_session_id and engagement_time_msec 100.",
+      "evidence": "app/api/visitors/track/route.ts:486-565 (comment 'GA4 Measurement Protocol page_view mirror (2026-08-10)'); lib/ga4-measurement-protocol.ts:171-234; git log -S: 2026-08-10 416911b31 'feat(analytics): mirror first-party page views into GA4 via MP'."
+    },
+    {
+      "fact": "In the last 14 days GA4 reports 28,804 page_view events but only 370 session_start, 262 first_visit and 510 user_engagement; account sessions 8,743; source/medium sessions '(not set)' 8,593, '(direct)/(none)' 188, 'google / organic' 1; lead_source '(not set)' 156 of 161.",
+      "evidence": "site_signal aggregates (source='ga4_data_api'): scope='event' sum(value) by surface; scope='account' metric='sessions'; scope='source' metric='sessions' and metric='lead_events', date >= current_date-14 (db-reads.json §F and notes.md §2)."
+    },
+    {
+      "fact": "GA4 daily series shows bounce_rate 1.0 / engagement_rate 0 / new_users 0 and no session_start or first_visit rows for 2026-08-19..08-31 and again for 2026-09-18..09-21 (session_start=1 on 09-18).",
+      "evidence": "ga4-daily-series.txt (site_signal ga4_data_api event + account rows 2026-08-15..09-21 via helper); TRACKING_POLICY.md line 36 documents the 08-18..09-01 GTM suppression bug; commits f1e2a90f9 (2026-09-17: GTMHead.tsx, GoogleAnalytics.tsx, PageViewTracker.tsx, VisitTracker.tsx, track route), 5d8a0f874 (09-18 app/layout.tsx), 22b53b94a and 3da4313bc (09-19 app/layout.tsx) per git show --stat."
+    },
+    {
+      "fact": "Production HTML (Chrome UA) carries GTM-WV6R4NZ5 (3 occurrences) and the consent-default block; no gtag/js?id=G- script (GA4 config is inside the GTM container). Whether the GTM GA4 tag fires today is UNVERIFIED: headless Chromium failed with net::ERR_TOO_MANY_RETRIES through the sandbox proxy.",
+      "evidence": "curl -A 'Mozilla/5.0 ... Chrome/128' https://ryan-realty.com/ → status=200 size=535618; grep counts in scratch home.html; live-tags.txt shows both Playwright runs failing to load assets."
+    },
+    {
+      "fact": "The GA4 ingestor pulls yesterday only with no re-pull window; GSC and GBP ingestors have settle windows (today-9..today-2; 10 days).",
+      "evidence": "lib/marketing-brain/snapshot.ts:124-138 parseDateRange default; app/api/cron/marketing-snapshot-ga4/route.ts:203-236 uses parseDateRange; marketing-snapshot-gsc/route.ts:156-168; marketing-snapshot-gbp/route.ts GBP_REPORTING_LAG_DAYS=10."
+    },
+    {
+      "fact": "Three different 'conversion' lists exist: docs list 18 conversion events, scripts/ga4-admin.mjs declares 7, app/actions/ga4-report.ts counts 9 LEAD_EVENT_NAMES for total_lead_events; generate_lead (135 in 14d) is fired server-side by fireLeadGenerated while client form_submit is 6 and person_identified 49.",
+      "evidence": "docs/ANALYTICS_LEAD_TRACKING.md:117-119; scripts/ga4-admin.mjs:78-86; app/actions/ga4-report.ts:6-16; lib/lead-tracking.ts:77-115; site_signal event scope 14d sums (notes.md §2)."
+    },
+    {
+      "fact": "RUM: /_next/image is the largest surface — 20,306 of 45,354 LCP rows (45%) and 37,639 FCP rows in 14 days; 'other' class p75 LCP 9,100 ms is dominated by it. INP has 1,394 rows (3% of LCP); FID (deprecated) still stored; max FCP 912,536 ms unclamped.",
+      "evidence": "site_signal aggregates source='rum' date >= current_date-14 grouped by surface family and by metric (notes.md §4); components/WebVitalsReporter.tsx:18-56 (no sampling/filter); app/api/web-vitals/route.ts:19-43."
+    },
+    {
+      "fact": "A missing /_next/image URL returns the application's not-found page: HTTP 404, 142,610 bytes, text/html, which mounts the root layout (WebVitalsReporter, VisitTracker); resulting rows carry path '/_next/image', navigation_type 'navigate', and page_title 'Page not found'; GA4 recorded 34 page_views on /_next/image on 09-16.",
+      "evidence": "curl -A Chrome 'https://ryan-realty.com/_next/image?url=%2Fimages%2Fdoes-not-exist-zz.jpg&w=640&q=75' → status=404 size=142610 ct=text/html (scratch img.out); web_vitals row read (8 rows 2026-09-22 19:45:28-33Z); visitor_events row read (12 rows in 7d, e.g. /_next/image?q=75&url=https%3A%2F%2Fcdn.resize.sparkplatform.com%2F...&w=3840); site_signal ga4 page scope '/_next/image' 2026-09-16 page_views 34, page_users 11; middleware.ts:656 matcher excludes _next/image; app/layout.tsx:162."
+    },
+    {
+      "fact": "RUM p75 last 14 days by route class: neighborhood LCP 17,097 ms (n=1,168; TTFB p75 1,163), zip 10,306 (399), search 6,785 (13,016), subdivision 4,712 (1,232; TTFB p75 3,042), place-type 4,560 (223; TTFB 1,331), city 4,400 (839), content 3,885 (1,104), home 3,664 (909), community 3,176 (781), listing 1,353 (340).",
+      "evidence": "site_signal aggregate with regex route classes, percentile_cont(0.75), source='rum', date >= current_date-14 (notes.md §4)."
+    },
+    {
+      "fact": "First-party sessions last 7 days: 8,766 rows; user_agent stored on 218 (2.5% — UA is kept only above essential consent tier); utm_medium none 8,600 (98.1%), organic 146 (1.7%), email 7; utm_source google 136, chatgpt.com 8, gbp 4; fbclid/gclid 0; identified 90 (form_submit 74, rr_vid_carryover 10, email_click_pid 5, google 1); identified with organic medium 1.",
+      "evidence": "db-reads.json §B: visitor_sessions first_seen_at >= now-7d pulled with the helper (all(), paginated) and aggregated in JS; consent tiers per components/VisitTracker.tsx:79-109 and app/api/visitors/track/route.ts:117-127,331."
+    },
+    {
+      "fact": "No bot filtering exists on /api/visitors/track or /api/web-vitals; middleware allowlists JS-rendering crawlers (GOOD_BOT_RE) and excludes /_next/image from screening; crm_people has source and source_url but no channel/medium/utm columns; buyer/seller-lead-attribution crons only attribute channel:*-ads tags.",
+      "evidence": "grep -i bot in components/VisitTracker.tsx, app/api/visitors/track/route.ts, app/api/web-vitals/route.ts (no matches); middleware.ts:150-171,202-222,656; DATABASE_SCHEMA_SNAPSHOT.md crm_people section (source, source_url only); app/api/cron/buyer-lead-attribution/route.ts header."
+    },
+    {
+      "fact": "GSC ingest is top-25 queries and top-25 pages per day by impressions with no page×query, device, country or searchType; target_query_benchmark ILIKE-joins onto those rows; URL Inspection exists only in a manual script; no Bing Webmaster/IndexNow code.",
+      "evidence": "app/actions/search-console-report.ts:71-91 (rowLimit 1/25/25); supabase/migrations/20260610230500_target_query_benchmark.sql; scripts/_gsc-index-check.mjs; grep -rli indexnow → only docs/CONTENT_ENGINE_SPEC.md."
+    },
+    {
+      "fact": "Speed-to-lead is flagged but not measured: the response clock writes flag5mAt/flag24hAt onto crm_people.custom and crm_timeline rows; of the 15 most recently flagged site leads (created 09-20..09-22, all source ryan-realty.com, stage Nurture) 15 carry flag5mAt and 11 carry flag24hAt; no p50/p90 or unanswered count is stored anywhere.",
+      "evidence": "db-reads.json §C (crm_people custom->response_clock not null, latest 15); lib/crm/response-clock-run.ts:12-14,39-50; crm_timeline 14d: system/response-clock 146 rows (db-reads.json §D)."
+    },
+    {
+      "fact": "crm_timeline last 14 days (1,788 rows): email_out 289 (gmail 124, app 91, sequence 74), email_in 58, email_open 177, email_click 192, call 6, voicemail 2, sms_out 5, sms_in 1, lead_created 153, system 636 (broker-alert 337, response-clock 146, auto-enroll 77, sequence 76). email_events latest 2026-09-22 19:37Z; probe: opens 105 / clicks 16 / events 3,559 in 7d.",
+      "evidence": "db-reads.json §D (crm_timeline ts >= now-14d via helper, aggregated in JS); email_events row read ORDER BY occurred_at DESC LIMIT 20; scoreboard-probe.txt identity block."
+    },
+    {
+      "fact": "No per-lead SMS consent record exists: schema snapshot has no *consent* table, crm_people has only a phones jsonb; crm_phone_dnc_checks and weekly dnc-scrub exist.",
+      "evidence": "grep '^### `.*consent.*`' docs/DATABASE_SCHEMA_SNAPSHOT.md → none; crm_people section grep sms|consent|opt → only phones; vercel.json:102-104; docs/TRACKING_POLICY.md:108-113 backlog #3 open."
+    },
+    {
+      "fact": "Nothing from site_signal/GA4/GSC/RUM/social enters prioritization automatically: loop-brief reads marketing_channel_daily only for the silent-zero guard (keyed channel×metric, scopes collapsed); seed-site-queue.ts is hand-pasted; COMPANY_SCOREBOARD.md is 'Week of 2026-08-15'; ledger 20 rows, 8 open windows, 7 expired-unlearned.",
+      "evidence": "scripts/loop-brief.ts:330-372; scripts/seed-site-queue.ts:11-14 ('A person pastes after review. Not auto-seed'); docs/plans/COMPANY_SCOREBOARD.md:9; scoreboard-probe.txt ledger block."
+    },
+    {
+      "fact": "Social token health: tiktok valid, youtube/x/gbp auto-refresh, linkedin needs-reauth (expired 2026-07-09, no refresh token), threads/pinterest/nextdoor empty; heartbeat 2026-09-22 12:00Z: meta/youtube/x/gbp/tiktok 200, linkedin/threads/pinterest 204.",
+      "evidence": "scoreboard-probe.txt social block; db-reads.json §E sync_logs endpoint like 'token_heartbeat:%' last 3 days."
+    }
+  ],
+  "findings": [
+    {
+      "id": "TRACK-1",
+      "title": "GA4 is dominated by server-mirrored page_views, so sessions, engagement, new users and source/medium are not human truth and organic → lead attribution in GA4 is impossible",
+      "severity": "p0",
+      "category": "tracking",
+      "claim": "Since 2026-08-10 /api/visitors/track mirrors every essential-tier page view into GA4 via Measurement Protocol (client_id from rr_session_id, engagement_time_msec 100, no first_visit/session_start, no campaign attribution). In the last 14 days GA4 shows 28,804 page_views vs 370 session_start and 262 first_visit; 8,593 of ~8,900 sessions are source '(not set)', google/organic = 1, lead_source '(not set)' 156/161, bounce_rate 1.0 and engagement_rate 0 on most days. The GA4 numbers the loop, the scoreboard and the growth measurer read are fabricated by our own server, not measured behavior.",
+      "evidence": "app/api/visitors/track/route.ts:486-565; lib/ga4-measurement-protocol.ts:171-234; site_signal ga4_data_api 14d: event sums page_view 28,804 / session_start 370 / first_visit 262; account sessions 8,743; source scope '(not set)' 8,593, 'google / organic' 1; lead_source '(not set)' 156 of 161; daily bounce_rate 1.0 / engagement_rate 0 on 09-13 and 09-18..09-21 (ga4-daily-series.txt).",
+      "why_it_matters": "Every 'organic sessions', 'conversion rate' and 'lead source' figure read from GA4 for the be-seen → convert mission is wrong by construction; GA4 cannot tell Matt whether search or AI traffic converts, and any accept test written against GA4 sessions or lead_event_rate measures the mirror, not people.",
+      "proposed_fix": "Delete the page_view/listing_view mirror (keep MP only for post-success conversion events that carry a real _ga client id, and send session_id/engagement correctly for those). Declare visitor_sessions/visitor_events the traffic source of record for the scoreboard, and re-point the GA4 ingestor's account rows to gtag-only measures (session_start-based) or drop them from site_signal. Update docs/TRACKING_POLICY.md and the loop's ingest list to say GA4 is a ≤4% consented sample plus conversions, not traffic.",
+      "fix_size": "medium",
+      "files": [
+        "app/api/visitors/track/route.ts",
+        "lib/ga4-measurement-protocol.ts",
+        "app/actions/ga4-report.ts",
+        "app/api/cron/marketing-snapshot-ga4/route.ts",
+        "docs/TRACKING_POLICY.md",
+        "docs/plans/COMPANY_SCOREBOARD.md"
+      ]
+    },
+    {
+      "id": "TRACK-2",
+      "title": "Browser-side GA4 stream has been at zero since 2026-09-18 (same signature as the confirmed 08-19..08-31 tag bug) and no guard can see it",
+      "severity": "major",
+      "category": "tracking",
+      "claim": "gtag-only events (session_start, first_visit, user_engagement) fell to 1 on 09-18 and are absent 09-19..09-21 while MP page_views continue — the exact signature of the documented GTM load-suppression bug (08-19..08-31, fixed 09-01). It coincides with f1e2a90f9 (09-17) which changed GTMHead/GoogleAnalytics/PageViewTracker, and with layout commits on 09-18/09-19. The GA4 ingestor pulls yesterday only with no settle window, and the silent-zero guard keys channel×metric with scopes collapsed, so a dead event stream can never trip it. Live fire test was blocked by the sandbox proxy, so the cause is a lead, not a verdict.",
+      "evidence": "ga4-daily-series.txt: 09-17 session_start 10, 09-18 1, 09-19..09-21 none; new_users 0 from 09-18; 08-19..08-31 identical; git show --stat f1e2a90f9 (GTMHead.tsx, GoogleAnalytics.tsx, PageViewTracker.tsx, VisitTracker.tsx, track route), 5d8a0f874 and 22b53b94a/3da4313bc (app/layout.tsx); lib/marketing-brain/snapshot.ts:124-138; scripts/loop-brief.ts:330-372 key `${channel}\\u0000${metric}`; live-tags.txt (ERR_TOO_MANY_RETRIES).",
+      "why_it_matters": "The only consented, human GA4 signal (and Google Signals/audiences, offline-conversion matching) is dark again for the fourth week out of the last five, and nothing in the loop reports it; every GA4-based accept test on SITE nodes seeded in September is unmeasurable.",
+      "proposed_fix": "Verify in GA4 Realtime with a consented browser today; bisect f1e2a90f9 → 5d8a0f874 → 22b53b94a; then add (a) a settle window to the GA4 ingestor like GSC's, (b) a silent-zero watchlist keyed channel×scope×scope_id×metric with ga4:session_start and ga4:first_visit named explicitly, and (c) a Playwright gate in deploy:verify that loads / with a consent cookie and asserts one /g/collect page_view request.",
+      "fix_size": "small",
+      "files": [
+        "components/GTMHead.tsx",
+        "components/GoogleAnalytics.tsx",
+        "components/PageViewTracker.tsx",
+        "app/api/cron/marketing-snapshot-ga4/route.ts",
+        "lib/marketing-brain/snapshot.ts",
+        "scripts/loop-brief.ts",
+        "lib/data/loop/silent-zero.ts"
+      ]
+    },
+    {
+      "id": "TRACK-3",
+      "title": "RUM is polluted: /_next/image misses render the full app 404 page, which reports vitals and page_views under path /_next/image (45% of LCP rows)",
+      "severity": "major",
+      "category": "tracking",
+      "claim": "A missing image-optimizer URL returns HTTP 404 with the 142 KB application not-found page (root layout mounted), so WebVitalsReporter and VisitTracker fire with path /_next/image. In 14 days that one surface holds 20,306 of 45,354 LCP rows and 37,639 FCP rows, dilutes the 'other' class to p75 LCP 9.1 s, and leaks into visitor_events and GA4 page views. The reporter also has no sampling, no bot filter and no route normalization; INP has only 1,394 rows, and deprecated FID is still stored.",
+      "evidence": "curl -A Chrome '/_next/image?url=%2Fimages%2Fdoes-not-exist-zz.jpg&w=640&q=75' → 404, 142,610 bytes, text/html; web_vitals rows path='/_next/image' navigation_type='navigate' (8 rows in 5 s on 09-22 19:45Z); site_signal rum 14d surface families (_next lcp 20,306; page lcp 25,048); visitor_events 12 rows in 7d with page_title 'Page not found' on /_next/image URLs; GA4 page scope /_next/image 34 views on 09-16; components/WebVitalsReporter.tsx; app/api/web-vitals/route.ts; app/layout.tsx:162.",
+      "why_it_matters": "Core Web Vitals are a visibility input the loop claims to measure; the per-route p75 the scoreboard shows is built on a table where the biggest 'page' is not a page, and every broken image also costs a full layout render on the server.",
+      "proposed_fix": "Drop samples whose path starts with /_next or /api in WebVitalsReporter and in /api/web-vitals; make the not-found route for /_next/image return a lightweight 404 (Next image route config or a middleware rule that answers non-HTML 404 for image-optimizer misses); store a page-class column (pageTypeFromPath) beside the raw path; stop storing FID; clamp absurd values; add a bot/UA check server-side. Then find the source of the /_next/image navigations (Spark CDN photo URLs at w=3840 suggest crawlers or open-in-new-tab) and fix the broken image references it reveals (e.g. /images/communities/broken-top.jpg).",
+      "fix_size": "small",
+      "files": [
+        "components/WebVitalsReporter.tsx",
+        "app/api/web-vitals/route.ts",
+        "app/not-found.tsx",
+        "middleware.ts",
+        "supabase/migrations/20260610210000_site_signal_scope_disambiguation.sql",
+        "lib/analytics/page-type.ts"
+      ]
+    },
+    {
+      "id": "TRACK-4",
+      "title": "Organic search → identified person → lead attribution does not exist end to end; first-party 'direct' (98%) is unfiltered for bots and crm_people carries no channel",
+      "severity": "major",
+      "category": "tracking",
+      "claim": "First-party capture stores referrer/UTMs at essential tier, but only 1.7% of 7-day sessions carry any referrer, 98.1% are 'direct', UA is stripped at essential tier, and neither /api/visitors/track nor middleware filters JS-rendering crawlers, so the denominator is untrustworthy. Of 90 people identified in 7 days, 1 is attributed to organic. crm_people has no channel/medium/first-touch columns; the attribution crons score only paid tags; the identity stitch writes a note, not a queryable field. Nobody can answer 'how many leads did search or AI referrals create this week'.",
+      "evidence": "db-reads.json §B (8,766 sessions: utm_medium none 8,600 / organic 146; user_agent present 218; identified 90, identifiedOrganic 1; fbclid/gclid 0); components/VisitTracker.tsx:79-160; app/api/visitors/track/route.ts:117-127,331 (no bot check); middleware.ts:150-171 GOOD_BOT_RE bypass; schema crm_people (source, source_url only); lib/crm/send-event.ts:77-84 (campaign param accepted but not forwarded); app/api/cron/buyer-lead-attribution/route.ts header (channel:*-ads only).",
+      "why_it_matters": "The mission is organic visibility that converts; without channel on the person there is no way to score what the loop ships against leads, and a bot-inflated 'direct' bucket hides whether search traffic is falling or rising.",
+      "proposed_fix": "At ensureNativeLead/identify time copy first-touch (utm_source/medium, referrer host, landing page, gclid/fbclid, first_seen_at) from visitor_sessions by rr_session_id onto crm_people (new columns or tags channel:organic/gbp/ai/email/direct), add an organic/AI branch to the attribution crons, store a server-side is_bot flag on visitor_sessions from UA + no-JS heuristics (keep UA hash even at essential tier or classify at write time), and report leads-by-channel weekly.",
+      "fix_size": "medium",
+      "files": [
+        "lib/crm/send-event.ts",
+        "lib/data/crm/ensureNativeLead.ts",
+        "lib/visitor-backfill.ts",
+        "app/api/visitors/track/route.ts",
+        "components/VisitTracker.tsx",
+        "app/api/cron/buyer-lead-attribution/route.ts",
+        "app/api/cron/seller-lead-attribution/route.ts",
+        "supabase/migrations"
+      ]
+    },
+    {
+      "id": "TRACK-5",
+      "title": "GSC ingest cannot diagnose a per-page ranking loss: top-25 queries + top-25 pages per day, no page×query, no index coverage, no Bing",
+      "severity": "major",
+      "category": "visibility",
+      "claim": "The daily GSC pull stores 25 queries and 25 pages by impressions; long-tail subdivision/neighborhood URLs (7,500-URL sitemap) never appear, absence is unknowable, target_query_benchmark is an ILIKE join on those rows, URL Inspection runs only by hand, and there is no Bing Webmaster or IndexNow integration.",
+      "evidence": "app/actions/search-console-report.ts:71-91 (rowLimit 1/25/25, dimensions ['query'] and ['page'] only); supabase/migrations/20260610230500_target_query_benchmark.sql (comment: absence ≠ zero); scripts/_gsc-index-check.mjs manual; grep indexnow → docs only; site_signal gsc page scope 1,543 distinct surfaces over 7 months.",
+      "why_it_matters": "Matt's question is 'why do we slip'; the stored search data can show the site-wide slope but not which page class or query lost, nor whether pages are indexed at all.",
+      "proposed_fix": "Change the GSC ingestor to pull page×query (and page×device) with rowLimit 25,000 + startRow pagination for the last settled day into a dedicated table keyed by page class; add a weekly URL Inspection sample (2,000/day quota) writing indexed/not-indexed per class; add Bing Webmaster API pull; make target_query_benchmark exact-match on the full pull.",
+      "fix_size": "medium",
+      "files": [
+        "app/actions/search-console-report.ts",
+        "app/api/cron/marketing-snapshot-gsc/route.ts",
+        "supabase/migrations/20260610230500_target_query_benchmark.sql",
+        "scripts/_gsc-index-check.mjs"
+      ]
+    },
+    {
+      "id": "TRACK-6",
+      "title": "Three different 'conversion' definitions (18 in docs, 7 in ga4-admin, 9 in the report) and server-fired generate_lead with no session context",
+      "severity": "minor",
+      "category": "tracking",
+      "claim": "docs/ANALYTICS_LEAD_TRACKING.md lists 18 GA4 conversion events, scripts/ga4-admin.mjs declares 7, app/actions/ga4-report.ts counts 9 LEAD_EVENT_NAMES for total_lead_events/lead_event_rate; generate_lead (135 in 14d) is fired from the server without a session, so 156 of 161 lead events carry lead_source '(not set)'.",
+      "evidence": "docs/ANALYTICS_LEAD_TRACKING.md:117-119; scripts/ga4-admin.mjs:78-86; app/actions/ga4-report.ts:6-16; lib/lead-tracking.ts:77-115; site_signal ga4 event/lead_source 14d sums.",
+      "why_it_matters": "Any 'conversion rate' in a node's accept test depends on which list the author had in mind; three lists guarantee drift and un-auditable claims under §0.",
+      "proposed_fix": "One exported CONVERSION_EVENTS module consumed by ga4-admin apply/audit, the report, and the docs (generated), with the primary conversion named; have fireLeadGenerated pass the rr_session_id-derived client_id and the first-touch source captured in visitor_sessions.",
+      "fix_size": "small",
+      "files": [
+        "scripts/ga4-admin.mjs",
+        "app/actions/ga4-report.ts",
+        "lib/lead-tracking.ts",
+        "docs/ANALYTICS_LEAD_TRACKING.md"
+      ]
+    },
+    {
+      "id": "TRACK-7",
+      "title": "Dead and dormant feeds still count as healthy: fub_api_v1 rows remain in site_signal, meta-ads stays in the fan-out writing nothing, and children never log rows written",
+      "severity": "minor",
+      "category": "data",
+      "claim": "fub_api_v1 (1,228 rows, last 06-23; system decommissioned 06-24) is still unioned into site_signal; meta_ads_insights_api has written nothing since 06-19 yet snapshot-channels reports it ok daily because only the roll-up logs; tiktok video (05-12) and x post (08-16) are 30-day lookback feeds on idle accounts; ga4 channel scope writes only on days with social sessions. A reader sees 8/8 green and cannot tell measured-zero from not-measured.",
+      "evidence": "site_signal freshness table (notes.md §1); app/api/cron/snapshot-channels/route.ts:59-91 (children not logged); marketing-snapshot-tiktok/route.ts:226-231; marketing-snapshot-x/route.ts:158-163; marketing-snapshot-ga4/route.ts:151-168; sync_logs 200/8 daily.",
+      "why_it_matters": "It is the same failure shape GOAL.md documented: monitoring asks 'did it run' and never 'did it write anything possible'.",
+      "proposed_fix": "Have each child ingestor insert a sync_logs row with rows_upserted and the date range; exclude source='fub_api_v1' from the site_signal view (or delete the rows on Matt's call); remove meta-ads from PLATFORMS until spend resumes; write an explicit 0-row 'no social sessions' account row for the ga4 channel scope so absence is a measurement.",
+      "fix_size": "small",
+      "files": [
+        "app/api/cron/snapshot-channels/route.ts",
+        "app/api/cron/marketing-snapshot-meta-ads/route.ts",
+        "lib/marketing-brain/snapshot.ts",
+        "supabase/migrations/20260610210000_site_signal_scope_disambiguation.sql"
+      ]
+    },
+    {
+      "id": "TRACK-8",
+      "title": "Speed-to-lead is flagged per person but never stored as a metric; 11 of the 15 most recent site submits had no human touch in 24 hours",
+      "severity": "major",
+      "category": "conversion",
+      "claim": "The response clock correctly defines a human touch and flags leads at 5 minutes and 24 hours on crm_people.custom, but no median/percentile or unanswered count is written to marketing_channel_daily/site_signal, so neither the scoreboard, the silent-zero guard nor the loop brief can see that follow-up is failing. The most recent 15 flagged site leads (09-20..09-22) all hit the 5-minute flag and 11 hit the 24-hour flag; human outbound in 14 days is 6 calls, 5 SMS, 124 Gmail emails against 153 leads created.",
+      "evidence": "db-reads.json §C (15 rows custom->response_clock); §D crm_timeline 14d kinds (call 6, voicemail 2, sms_out 5, sms_in 1, email_out gmail 124/app 91/sequence 74, lead_created 153, system/response-clock 146); lib/crm/response-clock-run.ts:12-14,39-50; app/api/cron/crm-response-clock/route.ts.",
+      "why_it_matters": "Being seen only pays if the lead is answered; the one number that proves conversion is happening (or not) is invisible to the process that decides what to build next.",
+      "proposed_fix": "Compute daily speed_to_lead_p50/p90 and unanswered_5m/24h counts from crm_timeline + the flags and write them as channel='crm' rows in marketing_channel_daily; add them to the scoreboard packet and the silent-zero watchlist; surface the 24h-unanswered list on /admin/today.",
+      "fix_size": "small",
+      "files": [
+        "lib/crm/response-clock-run.ts",
+        "lib/crm/response-clock.ts",
+        "lib/data/loop/signals.ts",
+        "app/api/cron/crm-response-clock/route.ts",
+        "docs/plans/COMPANY_SCOREBOARD.md"
+      ]
+    },
+    {
+      "id": "TRACK-9",
+      "title": "No per-lead SMS consent record is persisted (TRACKING_POLICY backlog #3 still open) while sequences send SMS",
+      "severity": "minor",
+      "category": "tracking",
+      "claim": "The disclosure is shown (ci:sms-consent) but no table or column records consent text version, scope, timestamp or IP per lead; crm_people has only a phones jsonb; sms_out rows exist (5 in 14d, one from a sequence).",
+      "evidence": "docs/TRACKING_POLICY.md:108-113; DATABASE_SCHEMA_SNAPSHOT.md: no *consent* table, crm_people has only `phones`; db-reads.json §D sms_out 5 (app 4, sequence 1).",
+      "why_it_matters": "State mini-TCPA exposure for a licensed broker; and without a consent record the SMS channel cannot be safely scaled as a follow-up lever.",
+      "proposed_fix": "Add crm_consent_records (person_id, channel, scope, text_version, granted_at, ip, source_url) written by every form that collects a phone, and have the sequence engine refuse SMS without a matching row.",
+      "fix_size": "small",
+      "files": [
+        "supabase/migrations",
+        "lib/crm/enroll.ts",
+        "app/api/cron/crm-sequence-engine/route.ts",
+        "app/contact/actions.ts",
+        "app/lp/seller-home-value/actions.ts"
+      ]
+    },
+    {
+      "id": "TRACK-10",
+      "title": "GBP review velocity is not measured by any cron",
+      "severity": "minor",
+      "category": "visibility",
+      "claim": "The GBP snapshot stores 9 performance metrics with a correct 10-day lag window, but reviews (count, rating, velocity) — a map-pack ranking input — are only pulled by a manual script; the route carries a TODO.",
+      "evidence": "app/api/cron/marketing-snapshot-gbp/route.ts:22-27 (TODO: review ingestion not handled); scripts/ingest-gbp-reviews.mjs (manual); site_signal gbp_performance_api_v1 9 metrics.",
+      "why_it_matters": "Local visibility for 'Bend real estate agents' style queries depends on review count and recency; nobody sees when it stalls.",
+      "proposed_fix": "Add review count/average/new-reviews-7d to the GBP ingestor (same OAuth token, /reviews endpoint) as marketing_channel_daily rows and to the scoreboard.",
+      "fix_size": "small",
+      "files": [
+        "app/api/cron/marketing-snapshot-gbp/route.ts",
+        "lib/google-business-profile.ts",
+        "scripts/ingest-gbp-reviews.mjs"
+      ]
+    },
+    {
+      "id": "TRACK-11",
+      "title": "No measured signal enters prioritization: the loop brief reads marketing_channel_daily only for the silent-zero guard, nodes are hand-pasted, and the weekly scoreboard is five weeks stale",
+      "severity": "major",
+      "category": "process",
+      "claim": "site_signal, GSC, GA4, RUM and social feeds are ingested but none is consumed by loop-brief or seed-site-queue to rank work; COMPANY_SCOREBOARD.md says 'overwrite weekly' and reads 'Week of 2026-08-15'; the ledger has 8 open windows and 7 expired-unlearned. A ranking loss today has no automatic path to a node.",
+      "evidence": "scripts/loop-brief.ts:330-372 (only silent-zero); scripts/seed-site-queue.ts:11-14; docs/plans/COMPANY_SCOREBOARD.md:9; scoreboard-probe.txt ledger (rows 20, openWindows 8, expiredUnlearned 7).",
+      "why_it_matters": "The loop cannot be recursive if measurement never feeds selection; every 'measure → learn' promise in DEVELOPMENT_PROCESS.md is currently manual and unrun.",
+      "proposed_fix": "A weekly measurer job (cron or routine) that overwrites the scoreboard from the probe plus a per-page-class GSC/RUM/lead table and emits candidate nodes (class, delta, evidence) into loop_work_nodes in 'proposed' state; the brief prints the top three deltas before any node list.",
+      "fix_size": "medium",
+      "files": [
+        "scripts/loop-brief.ts",
+        "scripts/seed-site-queue.ts",
+        "scripts/company-scoreboard-probe.ts",
+        "lib/data/loop/signals.ts",
+        "docs/plans/COMPANY_SCOREBOARD.md"
+      ]
+    }
+  ],
+  "questions_for_matt": [
+    "Is Meta ad spend intentionally off since 2026-06-19? If yes, meta-ads should leave the snapshot fan-out and the paid-attribution crons can be parked; if no, the account/campaign feed is silently broken.",
+    "Keep or retire the GA4 Measurement Protocol page_view mirror (added 2026-08-10 so GA4 'tracks product truth')? Retiring it makes GA4 a ≤4% consented sample plus conversions and makes first-party visitor_sessions the traffic scoreboard; keeping it means GA4 sessions/engagement/source can never be trusted.",
+    "Consent policy: ~97.5% of sessions land at essential tier. Accept that Google-side analytics is a small sample and invest in first-party measurement, or change the banner/consent approach (a legal call for Oregon/CCPA)?",
+    "May the 1,228 fub_api_v1 rows and the retired-metric zero rows be deleted from marketing_channel_daily, or only hidden from the site_signal view?",
+    "Should a per-lead SMS consent record (text version, scope, timestamp, IP) be built now, and should the sequence engine refuse SMS without one?"
+  ]
+}

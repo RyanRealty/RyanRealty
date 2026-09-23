@@ -39,6 +39,10 @@ const CASES: Array<[string, LeadChannel, boolean]> = [
   ['exit_intent_popup', 'web', true],
   ['lp-form', 'web', true],
   ['tetherow_heath_cma', 'web', true],
+  // The site's door labels since FUNNEL-4 (2026-09-23): source is the door.
+  ['idx-registration', 'web', true],
+  ['place-page', 'web', true],
+  ['join', 'web', true],
   ['Google', 'web', true],
   ['Realtor.com', 'portal', true],
   ['realtor.com', 'portal', true],

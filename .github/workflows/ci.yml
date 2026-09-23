@@ -116,6 +116,13 @@ jobs:
           # 996 KB -> 1,019,774 bytes with nothing watching it.
           npm run ci:page-payload
 
+          # Atlas props budget, served-bytes layer (UXLIVE-3, visibility audit
+          # 2026-09-22). The static layer runs in ci:gates; this one weighs the
+          # Atlas props in the RSC payload of the built pages (/about,
+          # /cities/bend, Awbrey Butte, Tetherow, Redmond): 192 KiB each, and
+          # no inline dots. /about carried 3.15 MB of them on 2026-09-23.
+          ATLAS_PROPS_BASE_URL=http://127.0.0.1:3000 npm run ci:atlas-props-budget
+
           # 44x44 tap-target ratchet. Same reason as the payload gate above:
           # it measures computed getBoundingClientRect on a real rendered
           # page, which no static parse of CSS or TSX can do, and the WCAG

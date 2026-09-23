@@ -11,8 +11,7 @@ import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isJoinInquiry, recordJoinConversion, tagRecruitJoin } from '@/lib/data/loop/join-conversion'
-
-const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
+import { CONTACT_TRAP } from './_v3/contact-constants'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -41,6 +40,12 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   const isTour = formData.get('intent')?.toString()?.trim() === 'tour'
   // A2P/TCPA fail-closed: SMS only when the consent box was actively checked.
   const smsConsent = formData.get('smsConsent') === 'yes'
+  // Honeypot (FUNNEL-1). Filled = one signal to the intake screen, not a drop:
+  // the row is kept and tagged so a false positive can be read and undone.
+  const honeypot = (formData.get(CONTACT_TRAP.name)?.toString() ?? '').trim() !== ''
+  // The door, not the host (FUNNEL-4): crm_people.source says which form this
+  // was, so a lead-source report can tell a join inquiry from a buyer's note.
+  const door = isJoinInquiry(inquiryType) ? 'join' : 'contact-form'
 
   if (!email) return { error: 'Email is required' }
 
@@ -102,7 +107,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       emails: [{ value: email }],
       ...(phone && { phones: [{ value: phone }] }),
     },
-    source,
+    source: door,
     sourceUrl: typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/contact` : undefined,
     message: `[${messageTag}] ${message || '(no message)'}`,
     campaign: originUtmSource
@@ -113,25 +118,35 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
           ...(originUtmContent && { content: originUtmContent }),
         }
       : undefined,
+    screen: { honeypot },
   })
 
   // Native CRM person id resolved by sendEvent (ensureNativeLead) — gates all
   // downstream enrichment. Falls back to a direct ensureNativeLead when the
   // capture errored, so a blip never loses the lead.
   let capturedPersonId: number | null = res.ok ? res.personId : null
+  // The intake screen's verdict on THIS submit (FUNNEL-1). A likely script gets
+  // a person row, tagged quality:suspect, and nothing else: no tagging onto an
+  // existing person, no workflow, no confirmation mail to what is usually a
+  // harvested address, no conversion pixel teaching the ad platforms that a
+  // script is a lead. The office notification still goes, marked, so a person
+  // sees every submit and can undo a wrong flag.
+  let suspect = res.ok ? res.suspect : false
   if (!res.ok) {
     try {
       const native = await ensureNativeLead({
         name,
         email,
         phone,
-        source: 'contact-form',
-        tags: ['source:contact-form', 'fub-fallback'],
+        source: door,
+        tags: [`source:${door}`, 'fub-fallback'],
+        screen: { honeypot, note: message || null },
       })
       if (!native.created && native.personId === 0) {
         return { error: res.error ?? 'Failed to send' }
       }
       capturedPersonId = native.personId > 0 ? native.personId : null
+      suspect = native.quality?.suspect === true
       console.warn(
         `[contact] capture failed. Native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
       )
@@ -141,7 +156,21 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     }
   }
 
-  await sendContactNotification({ name, email, phone, inquiryType, message }).catch(() => {})
+  await sendContactNotification({
+    name,
+    email,
+    phone,
+    inquiryType: suspect ? `Likely script, tagged quality:suspect (${inquiryType})` : inquiryType,
+    message,
+  }).catch(() => {})
+
+  if (suspect) {
+    // No browser stitch either: when the script used a real person's address,
+    // stitching would hang the script's sessions on that person.
+    console.log(`[contact] intake screen: person ${capturedPersonId ?? 'none'} flagged quality:suspect, enrichment skipped`)
+    // The same answer a person gets, so the screen teaches a script nothing.
+    return { success: true }
+  }
 
   if (isJoinInquiry(inquiryType)) {
     await recordJoinConversion({

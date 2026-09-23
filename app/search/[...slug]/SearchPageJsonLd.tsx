@@ -26,6 +26,13 @@ type Props = {
   displayName: string
   city: string | undefined
   subdivision: string | undefined
+  /**
+   * The breadcrumb NAME for the subdivision crumb when it differs from the
+   * filter string: an MLS code the page does not print (publishPlatDisplayName)
+   * must not reappear in the BreadcrumbList Google reads (SEO-1 / EXP-2).
+   * `subdivision` still builds the crumb's URL.
+   */
+  subdivisionLabel?: string
   subdivisionBlurb: string | null
   cityMetaDescription: string | undefined
   bannerUrl: string | null
@@ -62,6 +69,7 @@ export default function SearchPageJsonLd({
   displayName,
   city,
   subdivision,
+  subdivisionLabel,
   subdivisionBlurb,
   cityMetaDescription,
   bannerUrl,
@@ -104,7 +112,7 @@ export default function SearchPageJsonLd({
   }
   if (subdivision && city) {
     breadcrumbItems.push({
-      name: getSubdivisionDisplayName(subdivision),
+      name: subdivisionLabel ?? getSubdivisionDisplayName(subdivision),
       item: siteUrl ? `${siteUrl}${homesForSalePath(city, subdivision)}` : undefined,
     })
   }

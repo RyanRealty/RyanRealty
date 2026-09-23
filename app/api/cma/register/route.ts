@@ -18,6 +18,7 @@ import { getCmaAccessIdentity } from '@/lib/data'
 import { decideCmaAccess } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import { createServiceClient } from '@/lib/supabase/service'
+import { PERSON_COOKIE, signedPersonIdFromCookie } from '@/lib/identity/person-cookie'
 
 export const revalidate = 0
 
@@ -49,7 +50,9 @@ export async function POST(request: Request) {
   let barPersonId: number | null = null
   if (!viewerEmail) {
     const pid = Number.parseInt(String(form.get('pid') ?? ''), 10)
-    const cookiePid = Number.parseInt((await cookies()).get('rr_pid')?.value ?? '', 10)
+    // Only a SIGNED rr_pid counts (P7, 2026-09-23): a bare id in a cookie is
+    // something any visitor can type into their own browser.
+    const cookiePid = signedPersonIdFromCookie((await cookies()).get(PERSON_COOKIE)?.value)
     if (Number.isFinite(pid) && pid > 0 && identity.personId === pid && cookiePid === pid) {
       barPersonId = pid
     } else {

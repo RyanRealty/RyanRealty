@@ -35,7 +35,11 @@ describe('V3WorkWithUs sheet · Matt / Critiquito CTA lock 2026-09-19', () => {
   })
 
   it('teases the doors without echoing the /sell headline', () => {
-    expect(SRC).toContain('See homes on the map.')
+    // UXLIVE-4/8: the Buy door lands on /homes-for-sale, which opens on the
+    // regional list (map one tap away), so the tease no longer promises a map.
+    expect(SRC).toContain('See every home for sale.')
+    expect(SRC).toContain('href="/homes-for-sale"')
+    expect(SRC).not.toContain('href="/buy"')
     expect(SRC).toContain('Get a pricing take on your home.')
     expect(SRC).not.toMatch(/Value my home: a written valuation from a principal broker/)
     expect(SRC).not.toMatch(/Sell your home in Central Oregon/)

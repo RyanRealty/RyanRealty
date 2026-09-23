@@ -7,9 +7,11 @@
  *   1. Posts a page_view to /api/visitors/track with the SAME localStorage
  *      session id ('rr_session_id') the site snippet uses, at 'essential'
  *      consent (no banner exists on a client document; minimal record only).
- *   2. If the URL carries ?_pid= (native crm_people.id) or ?_fuid= (legacy id)
- *      from a tracked email link, calls /api/track/e/identify so the session
- *      stitches to the contact server-side (rr_pid cookie + history backfill).
+ *   2. If the URL carries ?_pid= (the SIGNED person token, P7 identity loop)
+ *      from a tracked link, forwards it with the page_view (the track route
+ *      verifies it and identifies the visit) and calls /api/track/e/identify as
+ *      a second path (rr_pid cookie + history backfill). `?_fuid=` is retired
+ *      and identifies nobody.
  *   3. Strips the identity params from the address bar.
  *
  * Fails silent by design: a tracking error must never break the document.
@@ -18,17 +20,19 @@
   try {
     var KEY = 'rr_session_id'
     var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    var sid = null
-    try { sid = localStorage.getItem(KEY) } catch (e) { /* storage blocked */ }
-    if (!sid || !UUID.test(sid)) {
-      sid = (window.crypto && crypto.randomUUID)
+    var mintSid = function () {
+      var fresh = (window.crypto && crypto.randomUUID)
         ? crypto.randomUUID()
         : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             var r = (Math.random() * 16) | 0
             return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
           })
-      try { localStorage.setItem(KEY, sid) } catch (e) { /* storage blocked */ }
+      try { localStorage.setItem(KEY, fresh) } catch (e) { /* storage blocked */ }
+      return fresh
     }
+    var sid = null
+    try { sid = localStorage.getItem(KEY) } catch (e) { /* storage blocked */ }
+    if (!sid || !UUID.test(sid)) sid = mintSid()
 
     var params = new URLSearchParams(location.search)
     var pid = params.get('_pid')
@@ -37,23 +41,42 @@
     // personal identifiers in stored URLs).
     var cleanUrl = location.origin + location.pathname
 
-    var track = fetch('/api/visitors/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true,
-      credentials: 'same-origin',
-      body: JSON.stringify({
-        sessionId: sid,
-        sourceDomain: 'ryan-realty.com',
-        eventType: 'page_view',
-        pageUrl: cleanUrl,
-        pageTitle: document.title || undefined,
-        pageCategory: 'client-document',
-        referrer: document.referrer || undefined,
-        landingPage: cleanUrl,
-        consent: 'essential',
-      }),
-    }).catch(function () {})
+    var postView = function (sessionId) {
+      return fetch('/api/visitors/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          sessionId: sessionId,
+          sourceDomain: 'ryan-realty.com',
+          eventType: 'page_view',
+          pageUrl: cleanUrl,
+          pageTitle: document.title || undefined,
+          pageCategory: 'client-document',
+          referrer: document.referrer || undefined,
+          landingPage: cleanUrl,
+          consent: 'essential',
+          // The signed person token from the link we sent (P7 identity loop): the
+          // track route verifies it and identifies this visit server-side.
+          identityToken: pid || undefined,
+          webdriver: navigator.webdriver === true ? true : undefined,
+        }),
+      })
+    }
+    // The track route answers rotateSession when this browser session already
+    // belongs to a DIFFERENT contact (a shared device, a forwarded link): start
+    // a fresh session and re-send once so the view lands on the recipient
+    // (lib/identity/arrival.ts, same rule as components/VisitTracker.tsx).
+    var track = postView(sid)
+      .then(function (r) { return r && r.ok ? r.json() : null })
+      .then(function (j) {
+        if (j && j.rotateSession) {
+          sid = mintSid()
+          return postView(sid)
+        }
+      })
+      .catch(function () {})
 
     var finish = function () {
       if (pid || fuid) {

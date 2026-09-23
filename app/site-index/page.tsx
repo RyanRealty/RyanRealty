@@ -44,8 +44,13 @@ export const metadata: Metadata = pageMetadata({
   path: '/site-index',
 })
 
+// Every hub is the clean, indexable URL (UXLIVE-4: never a ?view= variant).
+// Invest and the appreciation calculator are here so neither is an orphan
+// (UXLIVE-8): /tools/appreciation earned 992 GSC impressions in 16 months
+// with no internal link at all. The three buyer plans were linked only from
+// /buy, which now 301s to /homes-for-sale, so they are listed here too.
 const HUBS = [
-  { href: '/homes-for-sale?view=list', label: 'Homes for sale' },
+  { href: '/homes-for-sale', label: 'Homes for sale' },
   { href: '/cities', label: 'Cities' },
   { href: '/communities', label: 'Communities' },
   { href: '/neighborhoods', label: 'Neighborhoods' },
@@ -53,6 +58,11 @@ const HUBS = [
   { href: '/housing-market', label: 'Housing market' },
   { href: '/open-houses', label: 'Open houses' },
   { href: '/price-drops', label: 'Price drops' },
+  { href: '/invest', label: 'Investment property' },
+  { href: '/tools/appreciation', label: 'Home appreciation calculator' },
+  { href: '/buy/first-time-home-buyer', label: 'First-time buyer plan' },
+  { href: '/buy/relocation', label: 'Relocating to Central Oregon' },
+  { href: '/buy/investment', label: 'Buying an investment property' },
   { href: '/sell/valuation', label: 'Home valuation' },
   { href: '/blog', label: 'Blog' },
 ] as const
