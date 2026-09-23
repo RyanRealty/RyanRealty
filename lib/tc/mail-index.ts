@@ -745,11 +745,15 @@ export type SweepResult = {
   query: string
   mailboxes: number
   seen: number
+  /** Already in the index for that mailbox: not fetched again (see `reindex`). */
+  skipped: number
   filed: number
   queued: number
   ignored: number
   errors: number
   offers: number
+  /** False when the deadline stopped the sweep: the caller must not record it as done. */
+  complete: boolean
   samples: Array<{ mailbox: string; subject: string | null; status: string; dealId: string | null }>
 }
 
@@ -757,52 +761,133 @@ function gmailDate(iso: string): string {
   return iso.slice(0, 10).replace(/-/g, '/')
 }
 
-async function sweepQuery(input: {
+/** Messages indexed at once within one mailbox. Gmail allows 250 quota units/s per user; one message is ~3 reads of 5. */
+const SWEEP_CONCURRENCY = 4
+
+/**
+ * The Gmail ids in this page that the index already holds for this mailbox.
+ * Narrowed by thread id (GIN-indexed; every writer stores a ref and its thread
+ * together), then matched exactly on mailbox + Gmail id.
+ */
+export async function indexedGmailIds(
+  sb: SB,
+  mailbox: string,
+  page: ReadonlyArray<{ id: string; threadId?: string | null }>,
+): Promise<Set<string>> {
+  const out = new Set<string>()
+  const threads = [...new Set(page.map((m) => m.threadId).filter((t): t is string => !!t && /^[A-Za-z0-9_-]+$/.test(t)))]
+  if (!threads.length) return out
+  const ids = new Set(page.map((m) => m.id))
+  const { data, error } = await sb.from('tc_mail_messages').select('gmail_refs').overlaps('gmail_thread_ids', threads)
+  if (error) throw new Error(`indexed gmail ids: ${error.message}`)
+  for (const row of data ?? []) {
+    for (const r of (row.gmail_refs as Array<{ mailbox?: string; gmail_id?: string }> | null) ?? []) {
+      if (r.mailbox === mailbox && r.gmail_id && ids.has(r.gmail_id)) out.add(r.gmail_id)
+    }
+  }
+  return out
+}
+
+/**
+ * Index every message a Gmail search finds, mailbox by mailbox. A message the
+ * index already holds for that mailbox is skipped unless `reindex` (a rules
+ * change): the live stream and earlier sweeps decided it, and a queued one is
+ * re-decided by rematchQueuedMail. Past `deadline` it stops between messages
+ * and reports complete: false, so a large first sweep resumes on the next run
+ * (everything it stored is skipped then) instead of timing out whole.
+ */
+export async function sweepQuery(input: {
   query: string
   universe: MailUniverse
   mailboxes?: readonly SweepMailbox[]
   maxPerMailbox?: number
   dryRun?: boolean
+  reindex?: boolean
+  /** Epoch ms. */
+  deadline?: number
   sb?: SB
+  /** Tests inject these. */
+  gmailFor?: (email: string) => gmail_v1.Gmail | null
+  index?: typeof indexGmailMessage
+  indexed?: typeof indexedGmailIds
 }): Promise<SweepResult> {
   const sb = input.sb ?? createServiceClient()
   const mailboxes = input.mailboxes ?? CRM_MAILBOXES
-  const res: SweepResult = { query: input.query, mailboxes: 0, seen: 0, filed: 0, queued: 0, ignored: 0, errors: 0, offers: 0, samples: [] }
+  const max = input.maxPerMailbox ?? 2000
+  const gmailFor = input.gmailFor ?? ((email: string) => getGmailFor(email, READONLY))
+  const index = input.index ?? indexGmailMessage
+  const indexed = input.indexed ?? indexedGmailIds
+  const res: SweepResult = {
+    query: input.query,
+    mailboxes: 0,
+    seen: 0,
+    skipped: 0,
+    filed: 0,
+    queued: 0,
+    ignored: 0,
+    errors: 0,
+    offers: 0,
+    complete: true,
+    samples: [],
+  }
   const seenKeys = new Set<string>()
+  const late = () => input.deadline != null && Date.now() > input.deadline
+  const tally = (mailbox: string, r: IndexResult) => {
+    if (seenKeys.has(r.messageKey)) return
+    seenKeys.add(r.messageKey)
+    res.seen++
+    if (r.status === 'error') res.errors++
+    else if (r.status === 'filed' || (r.decision?.status === 'filed' && input.dryRun)) res.filed++
+    else if (r.status === 'ambiguous' || r.status === 'unfiled_transaction') res.queued++
+    else res.ignored++
+    if (r.offerId) res.offers++
+    if (res.samples.length < 40 && r.status !== 'not_deal' && r.status !== 'bulk') {
+      res.samples.push({ mailbox, subject: r.subject, status: r.decision?.status ?? r.status, dealId: r.dealId ?? r.decision?.dealId ?? null })
+    }
+  }
   for (const mb of mailboxes) {
-    const gmail = getGmailFor(mb.email, READONLY)
+    const gmail = gmailFor(mb.email)
     if (!gmail) continue
     res.mailboxes++
     let pageToken: string | undefined
     let count = 0
     do {
+      if (late()) {
+        res.complete = false
+        return res
+      }
       const list = await gmail.users.messages.list({ userId: 'me', q: input.query, maxResults: 100, pageToken })
-      for (const m of list.data.messages ?? []) {
-        if (!m.id) continue
-        if (count++ >= (input.maxPerMailbox ?? 2000)) break
-        const r = await indexGmailMessage({
-          gmail,
-          mailbox: mb.email,
-          brokerSlug: mb.slug,
-          gmailId: m.id,
-          universe: input.universe,
-          dryRun: input.dryRun,
-          sb,
-        })
-        if (seenKeys.has(r.messageKey)) continue
-        seenKeys.add(r.messageKey)
-        res.seen++
-        if (r.status === 'error') res.errors++
-        else if (r.status === 'filed' || (r.decision?.status === 'filed' && input.dryRun)) res.filed++
-        else if (r.status === 'ambiguous' || r.status === 'unfiled_transaction') res.queued++
-        else res.ignored++
-        if (r.offerId) res.offers++
-        if (res.samples.length < 40 && (r.status !== 'not_deal' && r.status !== 'bulk')) {
-          res.samples.push({ mailbox: mb.email, subject: r.subject, status: r.decision?.status ?? r.status, dealId: r.dealId ?? r.decision?.dealId ?? null })
+      const page = (list.data.messages ?? [])
+        .filter((m): m is gmail_v1.Schema$Message & { id: string } => !!m.id)
+        .slice(0, Math.max(0, max - count))
+      count += page.length
+      const known = input.reindex ? new Set<string>() : await indexed(sb, mb.email, page)
+      const todo = page.filter((m) => !known.has(m.id))
+      res.skipped += page.length - todo.length
+      let next = 0
+      const worker = async () => {
+        while (next < todo.length) {
+          if (late()) {
+            res.complete = false
+            return
+          }
+          const m = todo[next++]
+          const r = await index({
+            gmail,
+            mailbox: mb.email,
+            brokerSlug: mb.slug,
+            gmailId: m.id,
+            universe: input.universe,
+            dryRun: input.dryRun,
+            sb,
+          })
+          tally(mb.email, r)
         }
       }
+      await Promise.all(Array.from({ length: Math.min(SWEEP_CONCURRENCY, todo.length) }, worker))
+      if (!res.complete) return res
       pageToken = list.data.nextPageToken ?? undefined
-    } while (pageToken && count < (input.maxPerMailbox ?? 2000))
+    } while (pageToken && count < max)
   }
   return res
 }
@@ -828,6 +913,9 @@ export async function sweepDealMail(input: {
   since?: string | null
   universe?: MailUniverse
   dryRun?: boolean
+  reindex?: boolean
+  /** Epoch ms: past it the sweep stops and the deal is not marked swept, so the next run resumes it. */
+  deadline?: number
   sb?: SB
 }): Promise<SweepResult | null> {
   const sb = input.sb ?? createServiceClient()
@@ -837,8 +925,15 @@ export async function sweepDealMail(input: {
   const terms = dealSearchTerms(deal)
   if (!terms.length) return null
   const since = input.since ? ` after:${gmailDate(input.since)}` : ''
-  const res = await sweepQuery({ query: `(${terms.join(' OR ')}) -in:spam -in:trash${since}`, universe, dryRun: input.dryRun, sb })
-  if (!input.dryRun) {
+  const res = await sweepQuery({
+    query: `(${terms.join(' OR ')}) -in:spam -in:trash${since}`,
+    universe,
+    dryRun: input.dryRun,
+    reindex: input.reindex,
+    deadline: input.deadline,
+    sb,
+  })
+  if (!input.dryRun && res.complete) {
     await sb.from('tc_deals').update({ mail_swept_at: new Date().toISOString() }).eq('id', input.dealId)
   }
   return res
@@ -857,23 +952,36 @@ export async function sweepTransactionMail(input: {
   universe?: MailUniverse
   dryRun?: boolean
   maxPerMailbox?: number
+  reindex?: boolean
+  deadline?: number
   sb?: SB
 }): Promise<SweepResult> {
   const sb = input.sb ?? createServiceClient()
   const universe = input.universe ?? (await loadMailUniverse(sb))
   const since = input.since ? ` after:${gmailDate(input.since)}` : ''
-  return sweepQuery({ query: `${TRANSACTION_SUBJECT_QUERY}${since}`, universe, dryRun: input.dryRun, maxPerMailbox: input.maxPerMailbox, sb })
+  return sweepQuery({
+    query: `${TRANSACTION_SUBJECT_QUERY}${since}`,
+    universe,
+    dryRun: input.dryRun,
+    maxPerMailbox: input.maxPerMailbox,
+    reindex: input.reindex,
+    deadline: input.deadline,
+    sb,
+  })
 }
 
 /**
  * Re-decide queued mail (ambiguous, unfiled) against today's deals: a file
- * opened this morning collects the offers that arrived last week.
+ * opened this morning collects the offers that arrived last week. Oldest
+ * decision first, so a run that stops at its deadline leaves the rest for the
+ * next one (re-deciding a row stamps decided_at).
  */
-export async function rematchQueuedMail(input: { universe?: MailUniverse; limit?: number; sb?: SB } = {}): Promise<{
+export async function rematchQueuedMail(input: { universe?: MailUniverse; limit?: number; deadline?: number; sb?: SB } = {}): Promise<{
   checked: number
   filed: number
   stillQueued: number
   errors: number
+  complete: boolean
 }> {
   const sb = input.sb ?? createServiceClient()
   const universe = input.universe ?? (await loadMailUniverse(sb))
@@ -882,20 +990,30 @@ export async function rematchQueuedMail(input: { universe?: MailUniverse; limit?
     .select('id, gmail_refs')
     .in('status', ['ambiguous', 'unfiled_transaction'])
     .eq('decided_by', 'system')
-    .order('sent_at', { ascending: false })
+    .order('decided_at', { ascending: true })
     .limit(input.limit ?? 500)
-  const out = { checked: 0, filed: 0, stillQueued: 0, errors: 0 }
-  for (const row of rows ?? []) {
-    const ref = ((row.gmail_refs as Array<{ mailbox?: string; broker?: string; gmail_id?: string }> | null) ?? [])[0]
-    if (!ref?.mailbox || !ref.gmail_id) continue
-    const gmail = getGmailFor(ref.mailbox, READONLY)
-    if (!gmail) continue
-    out.checked++
-    const r = await indexGmailMessage({ gmail, mailbox: ref.mailbox, brokerSlug: ref.broker ?? 'matt', gmailId: ref.gmail_id, universe, sb })
-    if (r.status === 'filed') out.filed++
-    else if (r.status === 'error') out.errors++
-    else out.stillQueued++
+  const out = { checked: 0, filed: 0, stillQueued: 0, errors: 0, complete: true }
+  const todo = (rows ?? [])
+    .map((row) => ((row.gmail_refs as Array<{ mailbox?: string; broker?: string; gmail_id?: string }> | null) ?? [])[0])
+    .filter((ref): ref is { mailbox: string; broker?: string; gmail_id: string } => !!ref?.mailbox && !!ref.gmail_id)
+  let next = 0
+  const worker = async () => {
+    while (next < todo.length) {
+      if (input.deadline != null && Date.now() > input.deadline) {
+        out.complete = false
+        return
+      }
+      const ref = todo[next++]
+      const gmail = getGmailFor(ref.mailbox, READONLY)
+      if (!gmail) continue
+      out.checked++
+      const r = await indexGmailMessage({ gmail, mailbox: ref.mailbox, brokerSlug: ref.broker ?? 'matt', gmailId: ref.gmail_id, universe, sb })
+      if (r.status === 'filed') out.filed++
+      else if (r.status === 'error') out.errors++
+      else out.stillQueued++
+    }
   }
+  await Promise.all(Array.from({ length: Math.min(SWEEP_CONCURRENCY, todo.length) }, worker))
   return out
 }
 

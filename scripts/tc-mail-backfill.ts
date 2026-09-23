@@ -13,11 +13,13 @@
  *       mail_misfile_corrected event per deal, and index every transaction
  *       message where the rules put it. Needs the tc_mail_index migration.
  *
- *   npx tsx scripts/tc-mail-backfill.ts sweep-deals [--dry-run] [--deal <uuid>]
+ *   npx tsx scripts/tc-mail-backfill.ts sweep-deals [--dry-run] [--deal <uuid>] [--reindex] [--concurrency 3]
  *       Every deal (all stages), every mailbox, all history: address, escrow
- *       and MLS number searches.
+ *       and MLS number searches. Mail the index already holds for a mailbox is
+ *       skipped unless --reindex (after a rules change). Deals run
+ *       --concurrency at a time; a deal is marked swept only when it finishes.
  *
- *   npx tsx scripts/tc-mail-backfill.ts sweep-transactions [--since YYYY-MM-DD] [--dry-run]
+ *   npx tsx scripts/tc-mail-backfill.ts sweep-transactions [--since YYYY-MM-DD] [--dry-run] [--reindex]
  *       Offer / counter / escrow / closing mail by subject with a PDF, every
  *       mailbox. Offers on properties with no file land in the mail queue.
  *
@@ -270,19 +272,28 @@ async function main() {
   if (mode === 'sweep-deals') {
     const only = arg('--deal')
     const deals = only ? universe.deals.filter((d) => d.dealId === only) : universe.deals
-    const out = []
-    for (const d of deals) {
-      const res = await sweepDealMail({ dealId: d.dealId, universe, dryRun, sb })
-      if (!res) continue
-      console.log(`[sweep-deals] ${d.address} (${d.stage}): seen ${res.seen}, filed ${res.filed}, queued ${res.queued}, offers ${res.offers}, errors ${res.errors}`)
-      out.push({ deal: d.address, stage: d.stage, ...res })
+    const out: Array<Record<string, unknown>> = []
+    const reindex = has('--reindex')
+    let next = 0
+    const worker = async () => {
+      while (next < deals.length) {
+        const d = deals[next++]
+        const t0 = Date.now()
+        const res = await sweepDealMail({ dealId: d.dealId, universe, dryRun, reindex, sb })
+        if (!res) continue
+        console.log(
+          `[sweep-deals ${out.length + 1}/${deals.length}] ${d.address} (${d.stage}): seen ${res.seen}, skipped ${res.skipped}, filed ${res.filed}, queued ${res.queued}, offers ${res.offers}, errors ${res.errors}, ${Math.round((Date.now() - t0) / 1000)}s`,
+        )
+        out.push({ deal: d.address, stage: d.stage, ...res })
+      }
     }
+    await Promise.all(Array.from({ length: Number(arg('--concurrency') ?? 3) }, worker))
     fs.mkdirSync('tmp', { recursive: true })
     fs.writeFileSync('tmp/tc-mail-sweep-deals.json', JSON.stringify(out, null, 2))
     return
   }
   if (mode === 'sweep-transactions') {
-    const res = await sweepTransactionMail({ since: arg('--since'), universe, dryRun, sb, maxPerMailbox: Number(arg('--max') ?? 5000) })
+    const res = await sweepTransactionMail({ since: arg('--since'), universe, dryRun, reindex: has('--reindex'), sb, maxPerMailbox: Number(arg('--max') ?? 5000) })
     fs.mkdirSync('tmp', { recursive: true })
     fs.writeFileSync('tmp/tc-mail-sweep-transactions.json', JSON.stringify(res, null, 2))
     console.log(JSON.stringify({ ...res, samples: res.samples.slice(0, 40) }, null, 2))

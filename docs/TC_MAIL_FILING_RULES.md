@@ -102,12 +102,21 @@ re-decide a row a person decided.
 
 ## Daily sweep (`/api/cron/tc-mail-sweep`, 13:35 UTC)
 
-1. Re-decide the queue against today's files, then open files where the queue
-   proves a deal is under way.
+1. Re-decide the queue against today's files (oldest decision first), then open
+   files where the queue proves a deal is under way.
 2. For each open file (oldest sweep first): search every mailbox for its address,
    escrow and MLS numbers since its last sweep, all history the first time.
 3. Search every mailbox for offer / counter / escrow / closing mail with a PDF
    from the last three days.
+
+Each search skips mail the index already holds for that mailbox; the live stream
+or an earlier sweep decided it, and queued mail is re-decided in step 1. Four
+messages are read at a time. The run stops at a 240 s budget. A file whose
+first, all-history search is larger than one run is not marked swept. The next
+run starts with it again and skips what earlier runs stored, until it finishes. The
+largest file on 2026-09-23 (2354 NW Drouillard Ave) matched 577 messages across
+the three mailboxes. `scripts/tc-mail-backfill.ts sweep-deals --reindex` re-decides
+held mail after a rules change.
 
 ## The 2026-08-23 misfile and its correction
 

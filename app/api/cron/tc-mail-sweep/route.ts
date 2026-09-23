@@ -40,11 +40,13 @@ export async function GET(request: Request) {
     const universe = await loadMailUniverse(sb)
 
     if (only) {
-      const res = await sweepDealMail({ dealId: only, universe, sb })
+      const res = await sweepDealMail({ dealId: only, universe, deadline: start + BUDGET_MS, sb })
       return NextResponse.json({ ok: !!res, deal: only, res, ms: Date.now() - start })
     }
 
-    const rematch = await rematchQueuedMail({ universe, sb, limit: 200 })
+    // Each step stops at the shared deadline; what it did not reach waits for the next run.
+    const deadline = start + BUDGET_MS
+    const rematch = await rematchQueuedMail({ universe, sb, limit: 200, deadline: start + BUDGET_MS / 3 })
     // Transaction mail proving a deal is under way for a property with no file opens the file.
     const opened = await autoOpenFilesFromMail({ sb })
 
@@ -55,22 +57,25 @@ export async function GET(request: Request) {
     const due = universe.deals
       .filter((d) => dealOpenAt(d, now))
       .sort((a, b) => (sweptAt.get(a.dealId) ?? '').localeCompare(sweptAt.get(b.dealId) ?? ''))
-    const deals: Array<{ dealId: string; seen: number; filed: number; queued: number }> = []
+    const deals: Array<{ dealId: string; seen: number; skipped: number; filed: number; queued: number; complete: boolean }> = []
     for (const d of due) {
-      if (Date.now() - start > BUDGET_MS) break
+      if (Date.now() > deadline) break
       const last = sweptAt.get(d.dealId)
       const since = last ? new Date(Date.parse(last) - OVERLAP_MS).toISOString() : null
-      const res = await sweepDealMail({ dealId: d.dealId, since, universe, sb })
-      if (res) deals.push({ dealId: d.dealId, seen: res.seen, filed: res.filed, queued: res.queued })
+      // A first sweep (all history) larger than one run stops at the deadline
+      // unmarked; the next run skips what this one stored and finishes it.
+      const res = await sweepDealMail({ dealId: d.dealId, since, universe, deadline, sb })
+      if (res) deals.push({ dealId: d.dealId, seen: res.seen, skipped: res.skipped, filed: res.filed, queued: res.queued, complete: res.complete })
     }
 
     let transactions = null
-    if (Date.now() - start < BUDGET_MS) {
+    if (Date.now() < deadline) {
       transactions = await sweepTransactionMail({
         since: new Date(Date.now() - 3 * 86_400_000).toISOString(),
         universe,
         sb,
         maxPerMailbox: 300,
+        deadline,
       })
     }
     return NextResponse.json({
