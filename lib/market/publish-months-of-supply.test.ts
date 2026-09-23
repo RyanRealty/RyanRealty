@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  MIN_MOS_SIX_MONTH_CLOSES,
   impliedSixMonthCloses,
   publishMonthsOfSupply,
 } from './publish-months-of-supply'
+import { STAT_BY_ID } from '@/lib/data/market-truth/registry'
 import {
   SOLD_ATTRIBUTION_TRUSTED_GRAINS,
   SOLD_ATTRIBUTION_UNTRUSTED_GRAINS,
@@ -39,12 +41,17 @@ describe('publishMonthsOfSupply', () => {
       publishMonthsOfSupply({
         grain: 'city',
         pulseMos: 4.56,
-        pulseActiveCount: 19,
-        displayedActiveCount: 19,
-        soldCount12mo: 36,
+        pulseActiveCount: 190,
+        displayedActiveCount: 190,
+        soldCount12mo: 360,
       }),
     ).toBe(4.56)
-    expect(impliedSixMonthCloses(19, 4.56)).toBeLessThanOrEqual(36)
+    expect(impliedSixMonthCloses(190, 4.56)).toBeLessThanOrEqual(360)
+    // The original 19-active fixture implies 25 six-month closes: under the
+    // Market Truth floor of 30 since DATA-7, so it no longer publishes.
+    expect(
+      publishMonthsOfSupply({ grain: 'city', pulseMos: 4.56, pulseActiveCount: 19, displayedActiveCount: 19, soldCount12mo: 36 }),
+    ).toBeNull()
   })
 
   it('publishes MOS alone when no count or sold figure is on screen to contradict it', () => {
@@ -71,8 +78,15 @@ describe('publishMonthsOfSupply', () => {
       displayedActiveCount: 16,
       soldCount12mo: 3,
     } as const
-    expect(publishMonthsOfSupply({ grain: 'city', ...centuryWest })).toBe(48)
+    // Since DATA-7 the sample floor also catches the live row at any grain
+    // (16 * 6 / 48 = 2 implied six-month closes).
+    expect(publishMonthsOfSupply({ grain: 'city', ...centuryWest })).toBeNull()
     expect(publishMonthsOfSupply({ grain: 'neighborhood', ...centuryWest })).toBeNull()
+    // Scaled past the floor (400 active, 50 implied closes, 75 in the year), the
+    // self-consistency checks still pass it, and only the grain withholds it.
+    const scaled = { pulseMos: 48, pulseActiveCount: 400, displayedActiveCount: 400, soldCount12mo: 75 } as const
+    expect(publishMonthsOfSupply({ grain: 'city', ...scaled })).toBe(48)
+    expect(publishMonthsOfSupply({ grain: 'neighborhood', ...scaled })).toBeNull()
   })
 
   it('withholds at every grain whose closed side is not attributed like its actives', () => {
@@ -115,5 +129,64 @@ describe('publishMonthsOfSupply', () => {
         displayedActiveCount: 79,
       }),
     ).toBeNull()
+  })
+})
+
+describe('publishMonthsOfSupply sample floor (DATA-7)', () => {
+  it('takes its floor from the Market Truth registry, not a second copy', () => {
+    expect(MIN_MOS_SIX_MONTH_CLOSES).toBe(STAT_BY_ID.get('months_of_supply')?.minN)
+    expect(MIN_MOS_SIX_MONTH_CLOSES).toBe(30)
+  })
+
+  it('withholds the terrebonne row: 30.0 months on 5 actives and 1 close', () => {
+    // market_pulse_live city/terrebonne, 2026-09-23: active 5, months_of_supply 30.
+    expect(publishMonthsOfSupply({ grain: 'city', pulseMos: 30, pulseActiveCount: 5, closedSixMonths: 1 })).toBeNull()
+  })
+
+  it('publishes at exactly the floor and above it', () => {
+    expect(publishMonthsOfSupply({ grain: 'city', pulseMos: 4.26, closedSixMonths: 30 })).toBe(4.26)
+    // Bend Market Truth cell after the 2026-09-23 membership refresh: 754 / (1063 / 6).
+    expect(
+      publishMonthsOfSupply({
+        grain: 'city',
+        source: 'market-truth',
+        pulseMos: 4.25587958607714,
+        pulseActiveCount: 754,
+        displayedActiveCount: 754,
+        closedSixMonths: 1063,
+      }),
+    ).toBe(4.25587958607714)
+  })
+
+  it('withholds one close under the floor even at a trusted grain from Market Truth', () => {
+    expect(
+      publishMonthsOfSupply({ grain: 'city', source: 'market-truth', pulseMos: 3.91, closedSixMonths: 29 }),
+    ).toBeNull()
+  })
+
+  it('leaves callers that pass neither the close count nor the active count on the existing checks', () => {
+    expect(publishMonthsOfSupply({ grain: 'city', pulseMos: 4.02, closedSixMonths: null })).toBe(4.02)
+    expect(publishMonthsOfSupply({ grain: 'city', pulseMos: 4.02 })).toBe(4.02)
+  })
+
+  it('recovers a pulse figure\'s close count from its own ratio when none is passed', () => {
+    // terrebonne pulse row: 5 active, 30.0 months -> 5 * 6 / 30 = 1 close.
+    expect(publishMonthsOfSupply({ grain: 'city', pulseMos: 30, pulseActiveCount: 5 })).toBeNull()
+    // 100 active, 20.00 months -> exactly 30 closes: publishes.
+    expect(publishMonthsOfSupply({ grain: 'city', pulseMos: 20, pulseActiveCount: 100 })).toBe(20)
+    // Rounded 2-place ratio one hair under 30 (100 / (30/6) stored as 20.01) still publishes.
+    expect(publishMonthsOfSupply({ grain: 'city', pulseMos: 20.01, pulseActiveCount: 100 })).toBe(20.01)
+    // 29 closes: withheld.
+    expect(publishMonthsOfSupply({ grain: 'city', pulseMos: 20.69, pulseActiveCount: 100 })).toBeNull()
+  })
+
+  it('does not second-guess a Market Truth cell, which its writer already gated at min_n', () => {
+    expect(
+      publishMonthsOfSupply({ grain: 'neighborhood', source: 'market-truth', pulseMos: 6.47, pulseActiveCount: 55 }),
+    ).toBe(6.47)
+  })
+
+  it('still refuses an untrusted grain before looking at the sample', () => {
+    expect(publishMonthsOfSupply({ grain: 'neighborhood', pulseMos: 4.02, closedSixMonths: 500 })).toBeNull()
   })
 })

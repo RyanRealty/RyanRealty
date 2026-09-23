@@ -79,7 +79,7 @@ export type CityListingRow = {
  * Reads pre-aggregated counts + medians from geo_snapshot_mv via the DAL
  * (`getAllCitySnapshots`) — replaces the prior fetchAllRows path that
  * scanned 60K active rows on every cold cache hit. The MV refreshes every
- * 15 min via /api/cron/refresh-mvs, so the data is at most 15 min stale.
+ * 15 min via pg_cron job refresh_dal_mvs_15min, so the data is at most 15 min stale.
  */
 async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   const sb = supabase()
