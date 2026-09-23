@@ -139,15 +139,33 @@ function unionByFile<T extends { file: string }>(disk: T[] = [], mem: T[] = []):
   return [...seen.values()]
 }
 
+/** Blocking sleep without burning a core: the save path is synchronous by design. */
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+/**
+ * A save holds the lock for milliseconds. One held past the deadline belongs to
+ * a process that died mid-save; clear it and try again. Removing it must never
+ * throw: a failed save here comes after the generation was paid for.
+ */
 function withWriteLock<T>(piece: StoryPiece, fn: () => T): T {
   const lock = path.join(dirFor(piece), '.write-lock')
-  const deadline = Date.now() + 10_000
+  let deadline = Date.now() + 10_000
   for (;;) {
     try {
       writeFileSync(lock, String(process.pid), { flag: 'wx' })
       break
     } catch {
-      if (Date.now() > deadline) unlinkSync(lock)
+      if (Date.now() > deadline) {
+        try {
+          unlinkSync(lock)
+        } catch {
+          /* another process cleared it first */
+        }
+        deadline = Date.now() + 10_000
+      }
+      sleepSync(25)
     }
   }
   try {
@@ -688,13 +706,19 @@ async function stageAdopt(
     if (existsSync(clipDir)) {
       const state = manifest.shots[shot.role]
       const knownClips = new Set(state.clips.map((c) => path.basename(c.file)))
-      for (const name of readdirSync(clipDir).filter((f) => f.endsWith('.mp4') && !knownClips.has(f)).sort()) {
+      for (const name of readdirSync(clipDir)
+        .filter((f) => f.endsWith('.mp4') && !knownClips.has(f))
+        .sort()) {
         const motion = storyShotPrompts({ beat: shot.beat, era, cast: piece.cast }).motion
         state.clips.push({
           file: rel(path.join(clipDir, name)),
           fromStill: state.selectedStill ?? '',
           prompt: `(adopted) ${motion}`,
-          requestId: name.replace(/\.mp4$/, '').split('-').pop() ?? '',
+          requestId:
+            name
+              .replace(/\.mp4$/, '')
+              .split('-')
+              .pop() ?? '',
           model: GROK_MODELS.video,
           seconds: 6,
           at: stamp(),
@@ -711,7 +735,9 @@ async function stageAdopt(
     if (!existsSync(dir)) continue
     const state = manifest.shots[shot.role]
     const known = new Set(state.stills.map((t) => path.basename(t.file)))
-    for (const name of readdirSync(dir).filter((f) => f.endsWith('.jpg') && !known.has(f)).sort()) {
+    for (const name of readdirSync(dir)
+      .filter((f) => f.endsWith('.jpg') && !known.has(f))
+      .sort()) {
       const file = path.join(dir, name)
       const sources = await sourcesFor(piece, shot, manifest)
       const prompts = storyShotPrompts({ beat: shot.beat, era, cast: piece.cast, sources: sources.labels })
