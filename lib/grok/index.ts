@@ -12,6 +12,7 @@ export {
   GROK_RATES,
   GrokError,
   ticksToUsd,
+  rawTicks,
   XAI_BASE_URL,
   grokApiKey,
   grokConfigured,

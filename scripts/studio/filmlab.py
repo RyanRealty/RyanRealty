@@ -152,11 +152,30 @@ def stock_vhs(img, sat, warm, fade):
     return np.clip(cv2.cvtColor(ycc, cv2.COLOR_YCrCb2RGB), 0.0, 1.0)
 
 
+def stock_cine_pastel(img, sat, warm, fade):
+    """16mm cinema, muted pastel (the Studio Shibuya reference, measured 2026-09-23):
+    low saturation (median ~0.15) with one accent colour allowed to stay, a faint
+    green-olive cast through every tone, warm mid-tones, highlights rolled off
+    near 0.93 rather than clipped white, blacks lifted to ~0.04."""
+    lum = luma(img)[..., None]
+    mx, mn = img.max(axis=2, keepdims=True), img.min(axis=2, keepdims=True)
+    chroma = mx - mn
+    # Mute everything, but let a strong accent (a red scarf, a sign) keep more of itself.
+    keep = 0.58 + 0.3 * smoothstep(0.35, 0.7, chroma)
+    img = lum + (img - lum) * keep * (sat / 1.14)
+    img = filmic(img, contrast=1.05, pivot=0.5, strength=0.6)
+    mids = (1.0 - np.abs(lum - 0.5) * 2.0).clip(0, 1)
+    img = img + np.array([0.0, 0.022, 0.0], np.float32) + mids * np.array([0.03 + warm, 0.012, -0.02], np.float32)
+    img = 0.04 + img * (0.93 - 0.04)
+    return np.clip(img, 0.0, 1.0)
+
+
 STOCKS = {
     "kodachrome40": stock_kodachrome,
     "kodachrome2": stock_kodachrome2,
     "plusx": stock_plusx,
     "vhs": stock_vhs,
+    "cine_pastel": stock_cine_pastel,
 }
 
 

@@ -10,10 +10,12 @@
  *
  *   npx tsx scripts/studio/story-film.ts plan   --piece winter-1982
  *   npx tsx scripts/studio/story-film.ts cast   --piece winter-1982 [--takes 3]
- *   npx tsx scripts/studio/story-film.ts stills --piece winter-1982 [--roles hook,arrive] [--takes 3]
- *   npx tsx scripts/studio/story-film.ts motion --piece winter-1982 [--roles hook] [--takes 1]
+ *   npx tsx scripts/studio/story-film.ts stills --piece winter-1982 [--roles hook,arrive] [--takes 2] [--judge on]
+ *   npx tsx scripts/studio/story-film.ts motion --piece winter-1982 [--roles hook] [--takes 1] [--seconds 4] [--res 480p]
  *   npx tsx scripts/studio/story-film.ts select --piece winter-1982 --role hook (--still N [--note why] | --clip N)
  *   npx tsx scripts/studio/story-film.ts adopt  --piece winter-1982 [--no-judge]   (record orphaned takes after a crash)
+ *   npx tsx scripts/studio/story-film.ts sheet  --piece winter-1982   (shot sheet for the Grok app: no API spend)
+ *   npx tsx scripts/studio/story-film.ts ingest --piece winter-1982 --from <folder>   (file takes from the app)
  *   npx tsx scripts/studio/story-film.ts payoff --piece winter-1982
  *   npx tsx scripts/studio/story-film.ts phone  --piece winter-1982
  *   npx tsx scripts/studio/story-film.ts status --piece winter-1982
@@ -43,9 +45,24 @@ import { getEra, judgeContextFor, labParamsFor, type EraPack } from '@/lib/studi
 import { getStoryPiece, type StoryPiece } from '@/lib/studio/story/pieces'
 import { storyShotPrompts } from '@/lib/studio/story/shots'
 
+// Story films bill to the creative xAI team when XAI_CREATIVE_API_KEY is set
+// (lib/grok/client.ts grokApiKey), so a batch can never drain production's credits.
+process.env.GROK_BILLING ??= 'creative'
+
 const ROOT = process.cwd()
-/** A whole piece, every take included. Raised only with a reason in the brief. */
-const PIECE_CAP_USD = 25
+/**
+ * A whole piece, every take included. Winter, 1982 cost about $30 at the first
+ * defaults (3 takes, a judge on every still, 6s clips at 1080p). The defaults
+ * below put a piece near $5; the cap leaves room for one round of retakes.
+ */
+const PIECE_CAP_USD = 12
+/**
+ * Motion defaults. The film lab resolves to ~68% of a 960px gate (about 650px),
+ * so a 480p source loses nothing on screen; no trim in a finished cut used more
+ * than 3s of a clip, so 4s leaves a second of handle.
+ */
+const MOTION_RESOLUTION = '480p' as const
+const MOTION_SECONDS = 4
 /** Stills are judged against this bar; below it the take is kept but not selected. */
 const STORY_MIN_SCORE = 80
 /** Parallel generations. xAI rate limits are per account; four is polite. */
@@ -417,7 +434,7 @@ async function judge(input: {
   addSpend(input.ledger, {
     step: input.step,
     usd: VISION_CALL_USD,
-    ticks: null,
+    ticks: verdict.costTicks ?? null,
   })
   return verdict
 }
@@ -437,7 +454,13 @@ async function stagePlan(piece: StoryPiece, era: EraPack, plan: StoryPlan): Prom
   for (const warning of plan.warnings) console.log(`  WARNING: ${warning}`)
 }
 
-async function stageCast(piece: StoryPiece, era: EraPack, manifest: Manifest, takes: number): Promise<void> {
+async function stageCast(
+  piece: StoryPiece,
+  era: EraPack,
+  manifest: Manifest,
+  takes: number,
+  judgeTakes: boolean,
+): Promise<void> {
   const dir = path.join(dirFor(piece), 'cast')
   mkdirSync(dir, { recursive: true })
   await pool(['A', 'B'] as CastSlot[], 2, async (slot) => {
@@ -462,22 +485,24 @@ async function stageCast(piece: StoryPiece, era: EraPack, manifest: Manifest, ta
     addSpend(manifest.ledger, {
       step: `cast ${slot} x${result.images.length}`,
       usd: imageCost(result.model, result.images.length),
-      ticks: null,
+      ticks: result.costTicks,
     })
     const at = stamp()
     for (const [i, image] of result.images.entries()) {
       const file = path.join(dir, `${slot}-${at}-${i}.jpg`)
       writeFileSync(file, image)
-      const verdict = await judge({
-        file,
-        intent: `a waist-up reference portrait of ${member.look}, in ${era.year} clothes and hair`,
-        era,
-        references: [],
-        ledger: manifest.ledger,
-        step: `judge cast ${slot}`,
-        // A reference sheet has nothing to be mismatched against.
-        vocabulary: STORY_FRAME_DEFECTS.filter((d) => d !== 'cast_mismatch'),
-      })
+      const verdict = judgeTakes
+        ? await judge({
+            file,
+            intent: `a waist-up reference portrait of ${member.look}, in ${era.year} clothes and hair`,
+            era,
+            references: [],
+            ledger: manifest.ledger,
+            step: `judge cast ${slot}`,
+            // A reference sheet has nothing to be mismatched against.
+            vocabulary: STORY_FRAME_DEFECTS.filter((d) => d !== 'cast_mismatch'),
+          })
+        : null
       manifest.cast[slot].takes.push({
         file: rel(file),
         prompt,
@@ -487,7 +512,9 @@ async function stageCast(piece: StoryPiece, era: EraPack, manifest: Manifest, ta
       })
       saveManifest(piece, manifest)
       console.log(
-        `cast ${slot} take ${i}: ${verdict.pass ? 'PASS' : 'fail'} ${verdict.score} [${verdict.defects.join(', ')}] ${verdict.describes}`,
+        verdict
+          ? `cast ${slot} take ${i}: ${verdict.pass ? 'PASS' : 'fail'} ${verdict.score} [${verdict.defects.join(', ')}] ${verdict.describes}`
+          : `cast ${slot} take ${i}: ${rel(file)} (unjudged)`,
       )
     }
     if (!manifest.cast[slot].selected) {
@@ -542,6 +569,7 @@ async function stageStills(
   manifest: Manifest,
   roles: string[] | null,
   takes: number,
+  judgeTakes: boolean,
 ): Promise<void> {
   const shots = plan.shots.filter((s) => s.kind === 'generated' && (!roles || roles.includes(s.role)))
   // Continuity sources must exist before their dependents run, so go in arc order by dependency depth.
@@ -583,7 +611,7 @@ async function stageStills(
         addSpend(manifest.ledger, {
           step: `stills ${shot.role} x${result.images.length}`,
           usd: imageCost(result.model, result.images.length),
-          ticks: null,
+          ticks: result.costTicks,
         })
         const dir = path.join(dirFor(piece), 'stills', shot.role)
         mkdirSync(dir, { recursive: true })
@@ -591,16 +619,18 @@ async function stageStills(
         for (const [i, image] of result.images.entries()) {
           const file = path.join(dir, `${at}-${i}.jpg`)
           writeFileSync(file, image)
-          const verdict = await judge({
-            file,
-            intent: `${prompts.spec.action}; ${beat.place}`,
-            era,
-            alsoReject: beat.alsoReject,
-            allowAnachronism: beat.allowAnachronism,
-            references: sources.castRefs,
-            ledger: manifest.ledger,
-            step: `judge ${shot.role}`,
-          })
+          const verdict = judgeTakes
+            ? await judge({
+                file,
+                intent: `${prompts.spec.action}; ${beat.place}`,
+                era,
+                alsoReject: beat.alsoReject,
+                allowAnachronism: beat.allowAnachronism,
+                references: sources.castRefs,
+                ledger: manifest.ledger,
+                step: `judge ${shot.role}`,
+              })
+            : null
           state.stills.push({
             file: rel(file),
             prompt: prompts.still,
@@ -610,17 +640,53 @@ async function stageStills(
           })
           saveManifest(piece, manifest)
           console.log(
-            `${shot.role} take ${i}: ${verdict.pass ? 'PASS' : 'fail'} ${verdict.score} [${verdict.defects.join(', ')}] ${verdict.describes}${verdict.fixHint ? ` | fix: ${verdict.fixHint}` : ''}`,
+            verdict
+              ? `${shot.role} take ${i}: ${verdict.pass ? 'PASS' : 'fail'} ${verdict.score} [${verdict.defects.join(', ')}] ${verdict.describes}${verdict.fixHint ? ` | fix: ${verdict.fixHint}` : ''}`
+              : `${shot.role} take ${i}: ${rel(file)} (unjudged; curate from sheets/${shot.role}.jpg)`,
           )
         }
-        if (!state.selectedStill) {
+        if (!state.selectedStill && judgeTakes) {
           state.selectedStill = bestPassing(state.stills)?.file
           markSelected(`still:${shot.role}`)
         }
         saveManifest(piece, manifest)
+        await writeContactSheet(piece, shot.role, state.stills)
       },
     )
   }
+}
+
+/**
+ * Every take of one shot on one sheet, numbered by its manifest index so
+ * `select --still N` reads straight off it. Curating by eye is free; a judge
+ * call on every take was the largest line after motion in the first piece.
+ */
+async function writeContactSheet(piece: StoryPiece, role: string, takes: StillTake[]): Promise<void> {
+  if (takes.length === 0) return
+  const cellW = 480
+  const cellH = 360
+  const cols = Math.min(4, takes.length)
+  const rows = Math.ceil(takes.length / cols)
+  const composites = await Promise.all(
+    takes.map(async (t, i) => {
+      const img = await sharp(path.join(ROOT, t.file)).resize(cellW, cellH, { fit: 'cover' }).jpeg().toBuffer()
+      const label = `${i}${t.verdict ? ` \u00b7 ${t.verdict.pass ? 'pass' : 'fail'} ${t.verdict.score}` : ''}`
+      const tag = Buffer.from(
+        `<svg width="${cellW}" height="${cellH}"><rect x="0" y="0" width="${24 + label.length * 13}" height="34" fill="#102742"/>` +
+          `<text x="10" y="24" font-family="sans-serif" font-size="22" fill="#faf8f4">${label}</text></svg>`,
+      )
+      const cell = await sharp(img)
+        .composite([{ input: tag, top: 0, left: 0 }])
+        .toBuffer()
+      return { input: cell, top: Math.floor(i / cols) * cellH, left: (i % cols) * cellW }
+    }),
+  )
+  const dir = path.join(dirFor(piece), 'sheets')
+  mkdirSync(dir, { recursive: true })
+  await sharp({ create: { width: cols * cellW, height: rows * cellH, channels: 3, background: '#faf8f4' } })
+    .composite(composites)
+    .jpeg({ quality: 82 })
+    .toFile(path.join(dir, `${role}.jpg`))
 }
 
 async function stageMotion(
@@ -630,17 +696,23 @@ async function stageMotion(
   manifest: Manifest,
   roles: string[] | null,
   takes: number,
+  seconds: number,
+  resolution: '480p' | '720p' | '1080p',
 ): Promise<void> {
   const jobs: Array<{ shot: PlannedStoryShot; take: number }> = []
   for (const shot of plan.shots) {
     if (shot.kind !== 'generated' || (roles && !roles.includes(shot.role))) continue
+    if (shot.beat?.composite === 'yard_sign') {
+      // The sign shot is a still moved in the lab (the brand never goes through a generator).
+      console.log(`${shot.role}: still + lab camera, no motion generated`)
+      continue
+    }
     if (!manifest.shots[shot.role].selectedStill) {
       console.log(`${shot.role}: no selected still, skipped`)
       continue
     }
     for (let t = 0; t < takes; t += 1) jobs.push({ shot, take: t })
   }
-  const seconds = 6
   await pool(jobs, CONCURRENCY, async ({ shot }) => {
     const state = manifest.shots[shot.role]
     const still = path.join(ROOT, state.selectedStill!)
@@ -655,13 +727,13 @@ async function stageMotion(
       image: { url: await dataUri(still) },
       duration: seconds,
       aspectRatio: '4:3',
-      resolution: '1080p',
+      resolution,
       generateAudio: false,
     })
     addSpend(manifest.ledger, {
-      step: `motion ${shot.role}`,
+      step: `motion ${shot.role} ${clip.durationSeconds}s ${resolution}`,
       usd: videoCost(clip.model, clip.durationSeconds),
-      ticks: null,
+      ticks: clip.costTicks,
     })
     const res = await fetch(clip.url)
     if (!res.ok) throw new Error(`clip download ${res.status}`)
@@ -760,6 +832,126 @@ async function stageAdopt(
       )
     }
   }
+}
+
+/**
+ * The Grok app route: generation on the SuperGrok subscription instead of the
+ * API. xAI does not expose the consumer subscription to code, and scripting
+ * grok.com would breach its terms, so the handoff is files. `sheet` writes a
+ * self-contained folder per shot (the reference images to upload, the exact
+ * prompts to paste, the aspect, how many takes); a person runs it in Grok
+ * Imagine; `ingest` files what comes back and records it. Zero API spend.
+ */
+async function stageSheet(
+  piece: StoryPiece,
+  era: EraPack,
+  plan: StoryPlan,
+  manifest: Manifest,
+  roles: string[] | null,
+): Promise<void> {
+  const root = path.join(dirFor(piece), 'grok-app')
+  mkdirSync(root, { recursive: true })
+  const out: string[] = [
+    `# ${piece.title}: shot sheet for the Grok app`,
+    '',
+    'For each folder, in Grok Imagine (SuperGrok):',
+    '1. Upload the `ref-*.jpg` images in order (image 1 first).',
+    '2. Paste `still-prompt.txt`. Aspect 4:3 if offered (anything else is center-cropped to 4:3 on ingest). Keep the 2 best takes.',
+    '3. For shots marked MOTION: upload your chosen still, paste `motion-prompt.txt`, sound off, the shortest length offered.',
+    '4. Save results named `<role>-anything.jpg` / `<role>-anything.mp4` (for example `hook-1.jpg`) into one folder and send it back.',
+    '   `npx tsx scripts/studio/story-film.ts ingest --piece ' +
+      piece.id +
+      ' --from <that folder>` files and records them.',
+    '',
+  ]
+  let n = 0
+  for (const shot of plan.shots) {
+    if (shot.kind !== 'generated' || !shot.beat || (roles && !roles.includes(shot.role))) continue
+    n += 1
+    const dir = path.join(root, `${String(n).padStart(2, '0')}-${shot.role}`)
+    mkdirSync(dir, { recursive: true })
+    const sources = await sourcesFor(piece, shot, manifest)
+    for (const [i, file] of sources.files.entries()) {
+      await sharp(file)
+        .rotate()
+        .resize(1536, 1536, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 90 })
+        .toFile(path.join(dir, `ref-${i + 1}.jpg`))
+    }
+    const prompts = storyShotPrompts({ beat: shot.beat, era, cast: piece.cast, sources: sources.labels })
+    writeFileSync(path.join(dir, 'still-prompt.txt'), prompts.still + '\n')
+    const motion = shot.beat.composite ? null : prompts.motion
+    if (motion) writeFileSync(path.join(dir, 'motion-prompt.txt'), motion + '\n')
+    out.push(
+      `## ${String(n).padStart(2, '0')} ${shot.role}: ${shot.beat.label}`,
+      `- references: ${sources.labels.map((l, i) => `ref-${i + 1} = ${l}`).join('; ') || 'none'}`,
+      `- ${motion ? 'MOTION: yes, after you pick a still' : 'STILL ONLY: the lab moves this one (the sign is composited in post)'}`,
+      `- on screen for ${shot.seconds.toFixed(1)}s`,
+      '',
+    )
+  }
+  writeFileSync(path.join(root, 'SHOTSHEET.md'), out.join('\n'))
+  console.log(`sheet: ${n} shots -> ${rel(root)}/SHOTSHEET.md`)
+}
+
+/** Take what came back from the Grok app, crop it to the 4:3 gate, and record it. */
+async function stageIngest(
+  piece: StoryPiece,
+  era: EraPack,
+  plan: StoryPlan,
+  manifest: Manifest,
+  from: string | undefined,
+): Promise<void> {
+  if (!from || !existsSync(from)) throw new Error('ingest: pass --from <folder of returned takes>')
+  const { readdirSync } = await import('node:fs')
+  const { execFileSync } = await import('node:child_process')
+  const roles = plan.shots.filter((s) => s.kind === 'generated').map((s) => s.role)
+  // Longest role first so `play_pair-1.jpg` never files under `play`.
+  const byLength = [...roles].sort((a, b) => b.length - a.length)
+  let count = 0
+  for (const name of readdirSync(from).sort()) {
+    const role = byLength.find((r) => name.toLowerCase().startsWith(`${r}-`) || name.toLowerCase().startsWith(`${r}_`))
+    if (!role) {
+      console.log(`ingest: ${name} names no shot, skipped`)
+      continue
+    }
+    const src = path.join(from, name)
+    const base = `grokapp-${stamp()}-${name.replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]/gi, '')}`
+    if (/\.(jpe?g|png|webp)$/i.test(name)) {
+      const dir = path.join(dirFor(piece), 'stills', role)
+      mkdirSync(dir, { recursive: true })
+      await sharp(src)
+        .rotate()
+        .resize(1152, 864, { fit: 'cover' })
+        .jpeg({ quality: 92 })
+        .toFile(path.join(dir, `${base}.jpg`))
+      count += 1
+    } else if (/\.(mp4|mov|webm)$/i.test(name)) {
+      const dir = path.join(dirFor(piece), 'clips', role)
+      mkdirSync(dir, { recursive: true })
+      execFileSync('ffmpeg', [
+        '-v',
+        'error',
+        '-y',
+        '-i',
+        src,
+        '-an',
+        '-vf',
+        'crop=min(iw\\,ih*4/3):min(ih\\,iw*3/4),scale=trunc(iw/2)*2:trunc(ih/2)*2',
+        '-c:v',
+        'libx264',
+        '-crf',
+        '14',
+        '-pix_fmt',
+        'yuv420p',
+        path.join(dir, `${base}.mp4`),
+      ])
+      count += 1
+    }
+  }
+  console.log(`ingest: filed ${count} take(s); recording them`)
+  await stageAdopt(piece, era, plan, manifest, false)
+  for (const role of roles) await writeContactSheet(piece, role, manifest.shots[role]?.stills ?? [])
 }
 
 function stageSelect(manifest: Manifest, flags: Record<string, string>): void {
@@ -998,13 +1190,26 @@ async function main(): Promise<void> {
   const manifest = loadManifest(piece)
   ensureShots(manifest, plan)
   const roles = flags.roles ? flags.roles.split(',').map((r) => r.trim()) : null
-  const takes = Math.max(1, Math.min(4, Number(flags.takes ?? 3)))
+  const takes = Math.max(1, Math.min(4, Number(flags.takes ?? 2)))
+  // The frame judge is opt-in: curating from sheets/<role>.jpg is free.
+  const judgeTakes = flags.judge === 'on'
   try {
     if (cmd === 'plan') await stagePlan(piece, era, plan)
-    else if (cmd === 'cast') await stageCast(piece, era, manifest, takes)
-    else if (cmd === 'stills') await stageStills(piece, era, plan, manifest, roles, takes)
+    else if (cmd === 'cast') await stageCast(piece, era, manifest, takes, judgeTakes)
+    else if (cmd === 'stills') await stageStills(piece, era, plan, manifest, roles, takes, judgeTakes)
     else if (cmd === 'motion')
-      await stageMotion(piece, era, plan, manifest, roles, Math.max(1, Number(flags.takes ?? 1)))
+      await stageMotion(
+        piece,
+        era,
+        plan,
+        manifest,
+        roles,
+        Math.max(1, Number(flags.takes ?? 1)),
+        Math.max(2, Math.min(15, Number(flags.seconds ?? MOTION_SECONDS))),
+        (['480p', '720p', '1080p'].includes(flags.res) ? flags.res : MOTION_RESOLUTION) as '480p' | '720p' | '1080p',
+      )
+    else if (cmd === 'sheet') await stageSheet(piece, era, plan, manifest, roles)
+    else if (cmd === 'ingest') await stageIngest(piece, era, plan, manifest, flags.from)
     else if (cmd === 'adopt') await stageAdopt(piece, era, plan, manifest, flags['no-judge'] !== 'true')
     else if (cmd === 'select') stageSelect(manifest, flags)
     else if (cmd === 'payoff') await stagePayoff(piece)

@@ -13,7 +13,7 @@
  * lock a hero frame at the delivery aspect first, inspect it, and only then
  * spend money on motion.
  */
-import { GROK_MODELS, GrokError, ticksToUsd, xaiFetch } from './client'
+import { GROK_MODELS, GrokError, rawTicks, ticksToUsd, xaiFetch } from './client'
 
 /** Exactly the values the REST schema accepts. Anything else is a 400. */
 export type GrokAspect =
@@ -49,6 +49,8 @@ export type GrokImageResult = {
   mimeType: string
   model: string
   costUsd: number | null
+  /** Raw `usage.cost_in_usd_ticks`, the figure that reconciles to the invoice. */
+  costTicks: number | null
 }
 
 type ImagesPayload = {
@@ -72,6 +74,7 @@ function readImages(data: ImagesPayload, model: string): GrokImageResult {
     mimeType: rows.find((r) => r.mime_type)?.mime_type ?? 'image/jpeg',
     model,
     costUsd: ticksToUsd(data.usage?.cost_in_usd_ticks),
+    costTicks: rawTicks(data.usage?.cost_in_usd_ticks),
   }
 }
 

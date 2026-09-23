@@ -20,6 +20,7 @@
 
 export type EraId =
   | 'super8_1982'
+  | 'cine16_1978'
   | 'regular8_1962'
   | 'bw16mm_1955'
   | 'silent16mm_1926'
@@ -42,7 +43,7 @@ export type LabParams = {
     sprockets: 'super8' | 'regular8' | '16mm' | 'none'
   }
   /** Tone and dye model. Each is a named curve set inside the lab. */
-  stock: 'kodachrome40' | 'kodachrome2' | 'plusx' | 'vhs'
+  stock: 'kodachrome40' | 'kodachrome2' | 'plusx' | 'vhs' | 'cine_pastel'
   /** Per-frame grain: std on 0..1 at mid-grey, grain clump size px, share carried in chroma. */
   grain: { strength: number; size: number; chroma: number }
   /** Optical softness, gaussian sigma px at gate resolution. */
@@ -168,6 +169,51 @@ export const ERAS: Record<EraId, EraPack> = {
       bed: 'projector',
       music: 'original early-1980s soft-rock instrumental: warm electric piano, chorused clean guitar, soft live drums, about 104 bpm, AM-radio warmth',
     },
+    status: 'draft',
+  },
+  cine16_1978: {
+    id: 'cine16_1978',
+    label: '16mm cinema, 1978',
+    year: 1978,
+    format: 'a 16mm cinema camera on a tripod, a late-1970s independent film',
+    why:
+      'The second register Matt pointed at (Studio Shibuya, 2026-09-23): not a family reel but a composed, ' +
+      'deadpan period film. Muted pastel stock, centered frames, long holds, a character with a signature look.',
+    gateAspect: '4:3',
+    period: {
+      hair: { she: 'feathered, layered hair with soft volume', he: 'hair over the ears, a full moustache allowed only if the cast look names it' },
+      wardrobe: 'down parkas, corduroy, turtlenecks, knit scarves and caps, aviator and glacier sunglasses',
+      vehicles: 'a boxy mid-1970s model (a Volvo 240, a Ford pickup, a VW bus)',
+      rooms: 'wood paneling, amber glass, formica, a rotary phone on the wall',
+      street: 'brick storefronts, painted wooden signs, sodium street lamps',
+    },
+    camera:
+      'shot like a late-1970s independent film on a tripod: composed like a photograph, the subject centered, ' +
+      'level horizon, deadpan, long still holds',
+    anachronisms: [
+      'any vehicle styled after 1979',
+      'LED or flat-panel lighting, screens, or signage',
+      'modern technical outerwear or logos of brands founded after 1978',
+      'phones of any kind, EXCEPT where the shot intent names the smartphone',
+    ],
+    lab: {
+      ...SUPER8_LAB,
+      fps: 24,
+      gate: { width: 960, height: 720, corner: 6, sprockets: 'none' },
+      stock: 'cine_pastel',
+      grain: { strength: 0.032, size: 1.2, chroma: 0.1 },
+      softness: 0.6,
+      resolve: 0.85,
+      bloom: 0.1,
+      weave: { px: 0.35, rotDeg: 0.02, period: 8 },
+      halation: { threshold: 0.84, radius: 10, strength: 0.1 },
+      vignette: 0.18,
+      flicker: 0.008,
+      fade: 0.05,
+      dust: 0.03,
+      startFlash: 0,
+    },
+    sound: { bed: 'none', music: 'original late-1970s instrumental: a deadpan synth or soft-rock groove, about 100 bpm, one repeated hook' },
     status: 'draft',
   },
   regular8_1962: {

@@ -176,6 +176,7 @@ export const HOME_MOVIE_MOVES = {
   pan: 'handheld pan of about fifteen degrees at an uneven amateur speed, then it settles, no zoom',
   dashboard: 'camera braced on the dashboard, only road vibration moves it, no pan, no zoom',
   armLength: 'camera held at arm’s length facing the two of them, a small wobble, no zoom',
+  tripod: 'locked off on a tripod and composed like a photograph: subject centered, level horizon, no camera movement, no zoom',
 } as const
 
 export type HomeMovieMove = keyof typeof HOME_MOVIE_MOVES

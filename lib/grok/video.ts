@@ -19,7 +19,7 @@
  *
  * The returned URL is temporary. Download and store before any row references it.
  */
-import { GROK_MODELS, GrokError, ticksToUsd, xaiFetch } from './client'
+import { GROK_MODELS, GrokError, rawTicks, ticksToUsd, xaiFetch } from './client'
 
 const POLL_INTERVAL_MS = 5_000
 const POLL_TIMEOUT_MS = 10 * 60 * 1000
@@ -67,6 +67,8 @@ export type GrokVideoResult = {
   durationSeconds: number
   hasAudio: boolean
   costUsd: number | null
+  /** Raw `usage.cost_in_usd_ticks`, the figure that reconciles to the invoice. */
+  costTicks: number | null
 }
 
 const TEMP_HOST = /(?:^|\.)x\.ai(?:\/|$)|fal\.ai|replicate\.com|kling|hailuo|synthesia/i
@@ -149,6 +151,7 @@ export async function generateGrokVideo(options: GrokVideoOptions): Promise<Grok
       durationSeconds: duration,
       hasAudio: generateAudio,
       costUsd: ticksToUsd(start.usage?.cost_in_usd_ticks),
+      costTicks: rawTicks(start.usage?.cost_in_usd_ticks),
     }
   }
 
@@ -174,6 +177,7 @@ export async function generateGrokVideo(options: GrokVideoOptions): Promise<Grok
         durationSeconds: status.video.duration ?? duration,
         hasAudio: generateAudio,
         costUsd: ticksToUsd(status.usage?.cost_in_usd_ticks),
+        costTicks: rawTicks(status.usage?.cost_in_usd_ticks),
       }
     }
     if (status.status === 'expired' || status.status === 'failed') {

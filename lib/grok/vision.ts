@@ -10,7 +10,7 @@
  * The defect vocabulary is a closed list on purpose. A free-text critique
  * cannot be counted, trended, or gated; an enum can.
  */
-import { GROK_MODELS, GrokError, ticksToUsd, xaiFetch } from './client'
+import { GROK_MODELS, GrokError, rawTicks, ticksToUsd, xaiFetch } from './client'
 import { parseJsonLoose } from './text'
 
 /**
@@ -82,6 +82,8 @@ export type VisionVerdict = {
   /** The single most useful prompt change if we regenerate. */
   fixHint: string
   costUsd: number | null
+  /** Raw `usage.cost_in_usd_ticks`, the figure that reconciles to the invoice. */
+  costTicks?: number | null
 }
 
 export type VisionQaInput = {
@@ -202,7 +204,10 @@ export async function inspectFrame(input: VisionQaInput): Promise<VisionVerdict>
   if (typeof raw !== 'string' || !raw.trim()) {
     throw new GrokError('vision QA returned no content', 0, JSON.stringify(data).slice(0, 600))
   }
-  return normalizeVerdict(parseJsonLoose<Partial<VisionVerdict>>(raw), minScore, ticksToUsd(data.usage?.cost_in_usd_ticks))
+  return {
+    ...normalizeVerdict(parseJsonLoose<Partial<VisionVerdict>>(raw), minScore, ticksToUsd(data.usage?.cost_in_usd_ticks)),
+    costTicks: rawTicks(data.usage?.cost_in_usd_ticks),
+  }
 }
 
 /**

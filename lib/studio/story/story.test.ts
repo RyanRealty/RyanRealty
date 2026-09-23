@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { grokApiKey, rawTicks } from '@/lib/grok/client'
 import { resolutionFor, MAX_REFERENCE_IMAGES } from '@/lib/grok/video'
 import { STORY_FRAME_DEFECTS, FRAME_DEFECTS } from '@/lib/grok/vision'
 import { findBannedTokens } from '../craft'
@@ -132,5 +133,40 @@ describe('grok surface for story films', () => {
     expect(resolutionFor('1080p', false)).toBe('1080p')
     expect(resolutionFor('480p', true)).toBe('480p')
     expect(MAX_REFERENCE_IMAGES).toBe(7)
+  })
+})
+
+describe('fiscal controls', () => {
+  it('bills a creative process to the creative key only when one exists', () => {
+    const saved = { a: process.env.XAI_API_KEY, c: process.env.XAI_CREATIVE_API_KEY, b: process.env.GROK_BILLING }
+    try {
+      process.env.XAI_API_KEY = 'prod-key'
+      process.env.XAI_CREATIVE_API_KEY = 'creative-key'
+      process.env.GROK_BILLING = 'creative'
+      expect(grokApiKey()).toBe('creative-key')
+      delete process.env.GROK_BILLING
+      expect(grokApiKey()).toBe('prod-key')
+      process.env.GROK_BILLING = 'creative'
+      delete process.env.XAI_CREATIVE_API_KEY
+      expect(grokApiKey()).toBe('prod-key')
+    } finally {
+      for (const [k, v] of [['XAI_API_KEY', saved.a], ['XAI_CREATIVE_API_KEY', saved.c], ['GROK_BILLING', saved.b]] as const) {
+        if (v === undefined) delete process.env[k]
+        else process.env[k] = v
+      }
+    }
+  })
+
+  it('keeps the raw tick count so the ledger reconciles to the invoice', () => {
+    expect(rawTicks(400_000_000)).toBe(400_000_000)
+    expect(rawTicks(undefined)).toBeNull()
+    expect(rawTicks(Number.NaN)).toBeNull()
+  })
+
+  it('the cinema register is a complete, sprocketless pack with the tripod grammar available', () => {
+    const cine = getEra('cine16_1978')!
+    expect(cine.lab.stock).toBe('cine_pastel')
+    expect(cine.lab.gate.sprockets).toBe('none')
+    expect(cine.lab.startFlash).toBe(0)
   })
 })

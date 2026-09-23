@@ -108,6 +108,59 @@ shops opened 2001; Deschutes Brewery opened 1988; Awbrey Butte was raw lots unti
 Pilot Butte Inn was demolished in 1973; the Drake Park neighborhood's 83 Craftsman-era
 houses date 1910-1954; Highway 97 ran through town (the Parkway is 2001).
 
+## Cost (Matt 2026-09-23: be fiscally responsible with Imagine)
+
+The first piece cost about $30 of xAI credit at the first defaults: 3 stills per shot, a
+grok-4.7 judge call on every still (with the cast sheets attached), and 6s clips at 1080p.
+The published rate card only explains about $8 of that (63 images at $0.04, 72s of video at
+$0.08); the rest is judge reasoning tokens and/or resolution-tiered video pricing the rate
+card does not show. The ledger now records the raw `cost_in_usd_ticks` of every call so the
+next piece reconciles to the invoice instead of guessing.
+
+The defaults now:
+
+| Lever | Default | Why it costs nothing on screen |
+|---|---|---|
+| Motion resolution | `480p` (`--res`) | the lab resolves to ~650px wide; a 4:3 480p source is 640px |
+| Motion length | `4s` (`--seconds`) | no trim in the first cut used more than 2.9s of a clip |
+| Stills per shot | `2` (`--takes`) | curation picked from the first two in most shots |
+| Frame judge | off (`--judge on` to enable) | `sheets/<role>.jpg` is written for every shot; curate by eye and `select` |
+| Sign shot | no motion | the sign is a still moved by the lab |
+| Piece cap | $12 | leaves room for one round of retakes |
+
+Rate-card estimate for a new piece at these defaults: about 24 stills ($0.96) + 10 clips x 4s
+($3.20) = ~$4.20, before retakes.
+
+**Separate creative billing.** Production (CRM reply intent, the broker SMS agent, the CMA
+pipeline) and the Studio share one xAI team today, so a creative batch that empties the
+prepaid balance blocks production too (it did, 2026-09-23). Create a second xAI team for
+creative work with its own prepaid credit, put its key in `XAI_CREATIVE_API_KEY`, and story
+films bill to it automatically (`GROK_BILLING=creative`, set by the CLI).
+
+**The Grok app route (SuperGrok, no API spend).** xAI's consumer subscription is not
+available to code, and scripting grok.com would breach its terms, so the handoff is files:
+
+```bash
+npx tsx scripts/studio/story-film.ts sheet  --piece <id>             # out/story/<id>/grok-app/SHOTSHEET.md
+# a person runs each folder in Grok Imagine: upload ref-*.jpg, paste still-prompt.txt, 4:3,
+# then animate the chosen still with motion-prompt.txt; save as <role>-anything.jpg|mp4
+npx tsx scripts/studio/story-film.ts ingest --piece <id> --from <folder>   # crops to 4:3, records, sheets
+```
+
+Everything downstream (select, the lab, the sign composite, the reel) is the same.
+
+## A second register: 16mm cinema, 1978 (`cine16_1978`, draft)
+
+Matt's reference for the vibe (2026-09-23): Studio Shibuya on Instagram. "Vintage Bend, not
+Tokyo." Their language: composed, centered, deadpan frames on a tripod; a character with a
+signature look; the brand worn in-world as merch (a knit "I \u2665" scarf); a muted pastel
+stock. Measured on their frame: median saturation ~0.15, a faint green-olive cast through
+every tone, warm mid-tones, highlights rolled off near 0.93, blacks lifted to ~0.04. The
+`cine_pastel` stock in the lab encodes that; `HOME_MOVIE_MOVES.tripod` is the camera grammar.
+An A/B of the first piece's footage in both stocks is at `out/story/winter-1982/abtest/`.
+Borrow the register, never the character: our in-world merch is ours (a Ryan Realty knit cap
+or pennant, composited in post, never generated).
+
 ## Distribution notes
 
 Label every piece as AI-generated on each platform (TikTok AIGC label, Meta "AI info"); the
