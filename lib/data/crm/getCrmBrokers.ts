@@ -30,9 +30,12 @@ export type CrmBroker = {
   name: string
   /** Sign-in / routing email. May be null on an incomplete broker row. */
   email: string | null
-  /** Profile phone (brokers.phone) — merge fields fall back to this when the
-   *  broker has no CRM Twilio line. */
+  /** Profile phone (brokers.phone). For Paul and Rebecca this is a personal
+   *  cell. Broker-facing merge fields may use it. A client-facing document
+   *  must use publishedPhone. */
   phone: string | null
+  /** Publishable business line (brokers.twilio_number). */
+  publishedPhone: string | null
   /** Profile title (brokers.title) — %agent_title% merge field. */
   title: string | null
   /** Is this broker active inside the CRM (pickers, assignment, lists). */
@@ -49,6 +52,7 @@ type RawBrokerRow = {
   display_name: string | null
   email: string | null
   phone?: string | null
+  twilio_number?: string | null
   title?: string | null
   crm_active: boolean | null
   routing_eligible: boolean | null
@@ -68,6 +72,7 @@ export function mapCrmBrokerRow(r: RawBrokerRow): CrmBroker | null {
     name: (r.display_name ?? '').trim(),
     email: r.email ?? null,
     phone: r.phone ?? null,
+    publishedPhone: r.twilio_number ?? null,
     title: (r.title ?? '').trim() || null,
     crmActive: r.crm_active ?? false,
     routingEligible: r.routing_eligible ?? false,
@@ -95,7 +100,7 @@ export const getCrmBrokers = unstable_cache(
     if (!sb) return []
     const { data, error } = await sb
       .from('brokers')
-      .select('id,crm_slug,display_name,email,phone,title,crm_active,routing_eligible,sms_agent_enabled')
+      .select('id,crm_slug,display_name,email,phone,twilio_number,title,crm_active,routing_eligible,sms_agent_enabled')
       .not('crm_slug', 'is', null)
       .order('sort_order', { ascending: true })
       .order('crm_slug', { ascending: true })

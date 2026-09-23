@@ -229,6 +229,7 @@ function nextScene(a: OpinionSceneArgs): string {
   // 812-to-1400px navy panel holding about 300px of content floated right of
   // centre — the last thing the seller sees and the only place the document
   // asks for anything (tasteReview item 3).
+  const actions = nextStepButtonsHtml(a)
   return `
   <section class="sc sc-navy pack" id="next-step">
     <div class="in next-in">
@@ -236,7 +237,7 @@ function nextScene(a: OpinionSceneArgs): string {
       <div class="next-b">
         <div class="kick r">Your next step</div>
         <h2 class="h r">${esc(nextStepHeading(a))}</h2>
-        <div class="cta r">${nextStepButtonsHtml(a)}</div>
+        ${actions ? `<div class="cta r">${actions}</div>` : ''}
         <div class="r">${nextStepNoteHtml(a)}</div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Oregon Real Estate License # ${esc(br.licenseNumber)}` : ''}</div>
         <div class="fine r">${esc(

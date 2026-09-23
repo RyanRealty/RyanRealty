@@ -53,6 +53,8 @@ import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
 import { SearchAreaUnavailable, refusalPlatDoor } from './sections/AreaUnavailable'
 import { AreaSoldHistory, areaSoldHistoryModel } from './sections/AreaSoldHistory'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { luxuryPresetDescription, luxuryPresetHeading } from '@/lib/site/bend-luxury-homes'
+import { selfCitySearchHeading } from '@/lib/communities/self-city-community'
 import { buildSearchSlugMetadata } from './search-metadata'
 import { resolvePlaceBannerUrl } from './place-banner'
 import {
@@ -183,6 +185,19 @@ export default async function SearchPage({
     slug.length === 2 && !preset
       ? areaSoldHistoryModel({ decision: resolved.area, facts: resolved.areaFacts, city, pagePath: searchPagePath })
       : null
+  // SITE-187 / SITE-184: the plain city search of a self-city community
+  // (Sunriver, Black Butte Ranch) canonicals to /communities/<slug>, the one
+  // winner for "{place} homes for sale". Its h1 stops repeating the winner's
+  // exact string (PAGE_OUTLINE: never two pages with the same H1). Same helper
+  // as the <title> in search-metadata.ts; null everywhere else.
+  const selfCityHeading = city
+    ? selfCitySearchHeading({
+        citySlug: cityEntityKey(city),
+        placeName,
+        hasArea: Boolean(decodedSubdivision || subdivision || neighborhood),
+        hasPreset: Boolean(resolved.presetSlug),
+      })
+    : null
 
   const searchBreadcrumbItems: { label: string; href?: string }[] = [
     { label: 'Home', href: '/' },
@@ -240,13 +255,14 @@ export default async function SearchPage({
       neighborhood,
       displayName,
       headline:
-        filterCity && !preset && !filterSubdivision && !neighborhood
+        selfCityHeading ??
+        (filterCity && !preset && !filterSubdivision && !neighborhood
           ? placeHomesForSaleHeading(filterCity)
           : subdivision && !areaPrint
             ? preset
               ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
               : `Homes for sale in ${placeName}`
-            : placeHomesForSaleHeading(displayName),
+            : placeHomesForSaleHeading(displayName)),
       searchPagePath,
       searchBreadcrumbItems,
       savedKeys,
@@ -345,15 +361,21 @@ export default async function SearchPage({
   // Oregon residential lots" (live 2026-07-31). Strip the label's trailing
   // "for Sale" (the H1 sits above a "for sale" count line) and read it as the
   // subject.
-  const headerTitle = preset
-    ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
-    : presetLabel
-      ? `${presetLabel} homes in Central Oregon`
-      : subdivision && !areaPrint
-        ? // No printable name (an MLS code, or an unconfirmed area): the phrase
-          // reads as the object of "in", never as a place name before "homes".
-          `Homes for sale in ${placeName}`
-        : placeHomesForSaleHeading(placeName)
+  // SITE-185: the luxury preset's h1 is the win query in human form ("Bend
+  // luxury homes for sale"), the same string as its <title>. SITE-184: the
+  // plain city search of a self-city community stops carrying the winner's h1.
+  const headerTitle =
+    luxuryPresetHeading(preset, placeName) ??
+    (preset
+      ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
+      : presetLabel
+        ? `${presetLabel} homes in Central Oregon`
+        : (selfCityHeading ??
+          (subdivision && !areaPrint
+            ? // No printable name (an MLS code, or an unconfirmed area): the phrase
+              // reads as the object of "in", never as a place name before "homes".
+              `Homes for sale in ${placeName}`
+            : placeHomesForSaleHeading(placeName))))
 
   // Related searches — SEO internal-linking for a city/preset page. Cross-link to
   // that city's other popular searches plus an "All [City] homes" link.
@@ -486,6 +508,10 @@ export default async function SearchPage({
             bannerUrl={bannerUrl ?? null}
             siteUrl={siteUrl}
             presetLabel={preset?.shortLabel ?? null}
+            // SITE-185: the luxury winner's WebPage node carries its h1 and
+            // its own meta description, the same strings the <head> ships.
+            name={luxuryPresetHeading(preset, placeName) ?? undefined}
+            description={luxuryPresetDescription(preset, placeName) ?? undefined}
             canonicalPath={searchPagePath}
             listings={listings}
             totalCount={totalCount}

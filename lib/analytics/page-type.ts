@@ -76,7 +76,6 @@ export const PUBLIC_PAGE_SEGMENTS = [
   'listing',
   'login',
   'lp',
-  'luxury-homes-bend',
   'marketing',
   'months-of-supply',
   'motivated-sellers',
@@ -138,7 +137,6 @@ export function visitorPageCategoryFromPath(pathname: string): string {
     p.startsWith('/open-houses') ||
     p.startsWith('/price-drops') ||
     p.startsWith('/compare') ||
-    p.startsWith('/luxury-homes-bend') ||
     p.startsWith('/activity') ||
     p.startsWith('/feed') ||
     p.startsWith('/pulse')
@@ -180,7 +178,6 @@ export function pageTypeFromPath(pathname: string): PageType {
     p.startsWith('/open-houses') ||
     p.startsWith('/price-drops') ||
     p.startsWith('/compare') ||
-    p.startsWith('/luxury-homes-bend') ||
     p.startsWith('/activity') ||
     p.startsWith('/feed') ||
     p.startsWith('/pulse')

@@ -57,7 +57,7 @@ import { GOLF_COURSES } from '@/data/golf/courses'
 import { cityResorts, resortActiveSfrCounts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { getDistrictForCity } from '@/data/co-schools'
-import { getPlaceLinks } from '@/lib/place-links'
+import { communityNewestListingsHref, getPlaceLinks } from '@/lib/place-links'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
@@ -611,6 +611,10 @@ async function renderCommunityDetail({ params }: Props) {
     citySlug: citySlug || undefined,
   })
   const browseHref = placeLinks.browseUrl
+  // SITE-183 / SITE-182: the area twin 301s onto this page, so the alerts
+  // strip's "See the newest {community} listings" door is the area x preset
+  // search (three segments, never redirected), not the city-wide browse door.
+  const newestListingsHref = communityNewestListingsHref(resortSlug) ?? browseHref
   const communityCenter = registryEntry?.center_lon_lat
   const nearbyRecreation = recreationNearPoint(
     Array.isArray(communityCenter) ? communityCenter[1] : null,
@@ -1106,7 +1110,7 @@ async function renderCommunityDetail({ params }: Props) {
                 geoSlug={neighborhoodSlug}
                 newCount30d={publicPace.newCount30d}
                 updatedAt={leftoverStamp}
-                browseHref={browseHref}
+                browseHref={newestListingsHref}
                 matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
                 types={alertTypes}
               />

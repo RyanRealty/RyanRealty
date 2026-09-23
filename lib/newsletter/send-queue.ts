@@ -1,6 +1,7 @@
 import 'server-only'
 import { getNewsletter } from '@/lib/data/newsletter'
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
+import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
@@ -39,7 +40,6 @@ import {
 /** Bulk newsletter sends from the ISOLATED news. subdomain (audit A4 — was mail.). */
 export const NEWSLETTER_FROM_ADDRESS = 'newsletter@news.ryan-realty.com'
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const KNOWN_BROKERS = new Set(['matt', 'rebecca', 'paul'])
 /** Above this recipient count a send is "large" → tranched over days (§6.5). */
 export const LARGE_SEND_THRESHOLD = 1000
 export const ONE_OFF_MAX = 5000 // hard cap on a single one-off blast (matches bulk-enroll)
@@ -54,8 +54,9 @@ const BREAKER_MIN_SENT = 50 // don't trip on a tiny sample
 const TOKEN_TTL_SECONDS = 180 * DAY_MS / 1000
 
 function normalizeBroker(slug: string | null | undefined): string {
-  const s = (slug ?? '').trim().toLowerCase()
-  return KNOWN_BROKERS.has(s) ? s : 'matt'
+  // Web slugs (paul-stevenson) and short slugs (paul) are the same broker.
+  // Anything else is unassigned, and Matt signs.
+  return normalizeAgentSlug(slug) ?? 'matt'
 }
 
 function unsubUrl(token: string): string {
@@ -95,7 +96,16 @@ function formatPhoneDotted(phone: string | null): string | null {
 async function loadBrokerMap(): Promise<Map<string, BrokerIdentity>> {
   const brokers = await getCrmBrokers()
   const map = new Map<string, BrokerIdentity>()
-  for (const b of brokers) map.set(b.slug, { slug: b.slug, name: b.name, email: b.email, phone: b.phone, title: b.title })
+  for (const b of brokers) {
+    map.set(b.slug, {
+      slug: b.slug,
+      name: b.name,
+      email: b.email,
+      // Never the personal cell. A missing published line prints no number.
+      phone: b.publishedPhone,
+      title: b.title,
+    })
+  }
   return map
 }
 

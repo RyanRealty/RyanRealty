@@ -33,15 +33,12 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { queueBrokerAlert, BROKER_ALERT_ORIGIN } from '@/lib/crm/broker-alerts'
 import { sendAppointmentInvites } from '@/lib/crm/appointment-invites'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
+import { normalizeAgentSlug, type BrokerSlug } from '@/lib/agent-attribution'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 
 
-const BROKER_SLUGS = ['matt', 'rebecca', 'paul'] as const
-type BrokerSlug = (typeof BROKER_SLUGS)[number]
-
 function normalizeBroker(raw: string | null | undefined): BrokerSlug {
-  const v = String(raw ?? '').trim().toLowerCase()
-  return (BROKER_SLUGS as readonly string[]).includes(v) ? (v as BrokerSlug) : 'matt'
+  return normalizeAgentSlug(raw) ?? 'matt'
 }
 
 const BookingInput = z.object({

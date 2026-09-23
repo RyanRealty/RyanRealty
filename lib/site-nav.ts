@@ -17,6 +17,7 @@
  */
 
 import { publishNewsletterSubscribeHref } from '@/lib/site/publish-newsletter-href'
+import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -148,17 +149,6 @@ export const REGIONAL_SEARCH: NavLink = {
   label: 'All homes for sale',
 }
 
-/**
- * Luxury is a filter of search (SITE_PAGES.md). Link the indexable preset
- * path, never `/luxury-homes-bend`: that URL 308s to a `?minPrice=` query the
- * search page noindexes (UXLIVE-8). The legacy URL keeps redirecting, now to
- * this same path, for the links other sites hold.
- */
-const LUXURY_BEND: NavLink = {
-  href: '/homes-for-sale/bend/luxury',
-  label: 'Luxury homes in Bend',
-}
-
 /** Income property. SITE_PAGES.md lists invest as a Homes child that stays. */
 const INVEST: NavLink = { href: '/invest', label: 'Invest' }
 
@@ -202,7 +192,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/homes-for-sale/sisters', label: 'Sisters homes for sale' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      LUXURY_BEND,
+      bendLuxuryHomesDoor(),
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
       INVEST,
@@ -292,7 +282,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: REGIONAL_SEARCH.href, label: 'Search homes' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      { href: LUXURY_BEND.href, label: 'Luxury homes' },
+      bendLuxuryHomesDoor(),
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
       INVEST,
@@ -376,8 +366,20 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       [{ href: '/neighborhoods', label: 'Bend neighborhoods' }],
     ),
     cityFooterCluster('Redmond', ['Eagle Crest', 'Juniper Preserve']),
-    cityFooterCluster('Sisters', ['Black Butte Ranch']),
-    cityFooterCluster('Sunriver', ['Caldera Springs', 'Crosswater']),
+    // SITE-184: the Black Butte Ranch community page is the one winner for
+    // "Black Butte Ranch homes for sale"; the one sitewide door carries that
+    // phrase (it replaces the bare "Black Butte Ranch" item: same href, and a
+    // cluster never lists one href twice).
+    cityFooterCluster('Sisters', [], [
+      { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch homes for sale' },
+    ]),
+    // SITE-187: the Sunriver community page is the one winner for "Sunriver
+    // homes for sale"; the cluster heading stays the city guide.
+    cityFooterCluster(
+      'Sunriver',
+      ['Caldera Springs', 'Crosswater'],
+      [{ href: '/communities/sunriver', label: 'Sunriver homes for sale' }],
+    ),
     ...FOOTER_MORE_CITIES.map((label) => cityFooterCluster(label)),
   ]),
   footerFromGroups('Buy · Sell · Join', [
@@ -387,7 +389,7 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
         { href: REGIONAL_SEARCH.href, label: 'Search homes' },
         { href: '/open-houses', label: 'Open houses' },
         { href: '/price-drops', label: 'Price drops' },
-        LUXURY_BEND,
+        bendLuxuryHomesDoor(),
         { href: '/new-construction', label: 'New construction in Bend' },
         { href: '/our-homes', label: 'Our listings' },
       ],

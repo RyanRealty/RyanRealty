@@ -31,6 +31,12 @@
 import { writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
+import {
+  loadCentralOregonCitySlugs,
+  loadResortRegistry,
+  publicCommunitySlug,
+  registryAreaTwinRedirects,
+} from './lib/registry-area-twins.mjs'
 
 const LEGACY_ORIGIN = 'https://ryan-realty.com'
 const OUT = join(process.cwd(), 'data', 'legacy-redirects.json')
@@ -68,9 +74,16 @@ const KNOWN_COMMUNITY = loadCommunitySlugs()
 
 // Resolve a bare neighborhood/community name to its real /communities/<slug>, or null.
 // Tries the bare slug (resort communities) then the `bend-<name>` form (Bend hoods).
+// A registry community's LIVE URL is its public slug (Pronghorn → Juniper
+// Preserve, lib/communities/community-public-pair.ts); /communities/pronghorn
+// 308s there, and a 301 that lands on a 308 is the two-hop the LAUNCH-04 gate
+// exists to stop. Durable → public, from the registry, same rule as lib/.
+const PUBLIC_COMMUNITY_SLUG = new Map(
+  loadResortRegistry().map((e) => [String(e.slug).toLowerCase(), publicCommunitySlug(e)]),
+)
 function communityTarget(name) {
   const n = String(name).toLowerCase().replace(/^\/+|\/+$/g, '')
-  if (KNOWN_COMMUNITY.has(n)) return `/communities/${n}`
+  if (KNOWN_COMMUNITY.has(n)) return `/communities/${PUBLIC_COMMUNITY_SLUG.get(n) ?? n}`
   if (KNOWN_COMMUNITY.has(`bend-${n}`)) return `/communities/bend-${n}`
   return null
 }
@@ -151,7 +164,7 @@ const CURATED = {
   '/office-listings-new': '/our-homes',
   '/past-sales': '/our-homes',
   '/coming-soon-listing': '/homes-for-sale',
-  '/luxury-homes-bend-oregon': '/homes-for-sale',
+  '/luxury-homes-bend-oregon': '/homes-for-sale/bend/luxury',
   '/golf-homes-for-sale': '/homes-for-sale',
   '/duplexes-for-sale': '/homes-for-sale',
   '/homes-with-adus': '/homes-for-sale',
@@ -332,30 +345,53 @@ async function main() {
     '/brasada-ranch-central-oregon': '/communities/brasada-ranch',
     // Google still serves bare /broken-top (GSC pos 24); it 404s without this.
     '/broken-top': '/communities/broken-top',
-    // /luxury-homes-bend exists and is indexed, but the legacy luxury URL was
-    // dumping its equity on generic /homes-for-sale while Google ranked our
-    // sitemap page for "luxury homes bend" (144 imp, 0 clicks).
-    // UXLIVE-8 (2026-09-23): both luxury URLs land on the indexable preset
-    // path. The old ?minPrice=1500000 target is a noindex search variant.
+    // SITE-185: "Bend luxury homes for sale" has ONE winner, the city x luxury
+    // preset search (lib/site/bend-luxury-homes.ts). Both retired luxury URLs
+    // land there in one hop. The old destination carried a ?minPrice query
+    // string; the middleware writes a legacy dest into url.pathname, so the
+    // query was folded into the path and /luxury-homes-bend-oregon chained
+    // to /oregon/bend%3Fminprice%3D1500000, "City not found".
     '/luxury-homes-bend': '/homes-for-sale/bend/luxury',
     '/luxury-homes-bend-oregon': '/homes-for-sale/bend/luxury',
-    // Tetherow: one URL. LP chrome, the Heath LP (not its own MLS plat),
-    // the city/community search surface, and the blog slug that cannibalized
-    // the community page all 301 to /communities/tetherow.
+    // Tetherow: one URL. LP chrome, the Heath LP (not its own MLS plat), and
+    // the blog slug that cannibalized the community page all 301 to
+    // /communities/tetherow. Its area twin /homes-for-sale/bend/tetherow is
+    // derived below with every other registry community's.
     '/lp/tetherow': '/communities/tetherow',
     '/lp/tetherow/heath': '/communities/tetherow',
-    '/homes-for-sale/bend/tetherow': '/communities/tetherow',
     '/tetherow-resort-living-real-estate': '/communities/tetherow',
     '/housing-market/bend/tetherow': '/communities/tetherow',
     // SITE-171: leftover area-search URLs 301 onto the place page that owns
-    // the query. Place page is the Field (PAGE_OUTLINE). Keep Tetherow above.
+    // the query. Place page is the Field (PAGE_OUTLINE). A neighborhood and a
+    // plat are hand-listed here; a registry COMMUNITY's twin
+    // (/homes-for-sale/bend/northwest-crossing) is derived below.
     '/homes-for-sale/bend/awbrey-butte': '/cities/bend/awbrey-butte',
-    '/homes-for-sale/bend/northwest-crossing': '/communities/northwest-crossing',
     '/homes-for-sale/bend/stevens-ranch': '/subdivisions/stevens-ranch',
     // SITE-180: the live Next article is /blog/<slug>, not the WP permalink.
     '/blog/tetherow-resort-living-real-estate': '/communities/tetherow',
   }
   Object.assign(map, OVERRIDES)
+
+  // SITE-183 / SITE-182 (2026-09-23): EVERY registry community's area-search
+  // twin 301s to the community page. /homes-for-sale/<city>/<slug> rendered the
+  // community page's exact <title> and <h1> with a self canonical, one twin per
+  // registry city, MLS city and public slug (26 URLs across 19 communities,
+  // live-probed 2026-09-23). Tetherow (SITE-171), Sunriver (SITE-187), Black
+  // Butte Ranch and Crooked River Ranch (SITE-184) were the hand-listed
+  // instances of this rule; the loop reproduces each of them exactly. Derived
+  // from data/resort-communities.json in scripts/lib/registry-area-twins.mjs,
+  // pinned to the lib/ helpers by its test. Applied after OVERRIDES: a
+  // community's twin has exactly one honest destination, its own page.
+  const areaTwins = registryAreaTwinRedirects({
+    registry: loadResortRegistry(),
+    citySlugs: loadCentralOregonCitySlugs(),
+  })
+  for (const [path, dest] of Object.entries(areaTwins)) {
+    if (map[path] && map[path] !== dest) {
+      console.warn(`warn: ${path} was ${map[path]}, now ${dest} (registry area twin)`)
+    }
+    map[path] = dest
+  }
 
   // Deterministic key order for a clean diff.
   const ordered = {}

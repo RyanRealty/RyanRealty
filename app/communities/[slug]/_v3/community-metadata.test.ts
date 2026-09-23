@@ -159,15 +159,62 @@ describe('SITE-177 community SERP copy', () => {
     ).not.toMatch(/1,?0\d{2}/)
   })
 
-  it('other communities keep the Homes for Sale title and never the SFR fill-in', () => {
+  it('SITE-187: a self-city community opens on its inventory query, not "Sunriver in Sunriver"', () => {
+    const input = communityMetadataInput({
+      slug: 'sunriver',
+      name: 'Sunriver',
+      city: 'Sunriver',
+      stock: { listedCount: 47, types: ['homes', 'attached', 'lots'] },
+    })
+    expect(input.title).toBe('Sunriver Homes for Sale | Sunriver, OR')
+    expect(input.description).toMatch(/^Sunriver, Oregon homes for sale\./)
+    expect(input.description).not.toMatch(/Sunriver in Sunriver/)
+    expect(input.path).toBe('/communities/sunriver')
+  })
+
+  it('SITE-184: Black Butte Ranch opens on its inventory query, though its registry city is Sisters', () => {
+    const input = communityMetadataInput({
+      slug: 'black-butte-ranch',
+      name: 'Black Butte Ranch',
+      city: 'Sisters',
+      stock: { listedCount: 31, types: ['homes', 'attached', 'lots'] },
+    })
+    expect(input.title).toBe('Black Butte Ranch Homes for Sale | Sisters, OR')
+    expect(input.description).toMatch(/^Black Butte Ranch, Oregon homes for sale\./)
+    expect(input.description).not.toMatch(/Black Butte Ranch in Sisters/)
+    expect(input.description).toMatch(/Golf resort with two courses under the Cascades\./)
+    // Whole description, no truncation: the opener grew by four characters
+    // and the setting clause gave them back (shareDescription caps at 155).
+    expect(input.description).toMatch(/Live MLS inventory\.$/)
+    expect(input.path).toBe('/communities/black-butte-ranch')
+    // A sibling under the same city still reads "{name} in {city}".
+    expect(
+      communitySerpDescription({ slug: 'caldera-springs', name: 'Caldera Springs', city: 'Sunriver' }),
+    ).toMatch(/^Caldera Springs in Sunriver, Oregon\./)
+  })
+
+  it('Tetherow title and description say Tetherow real estate', () => {
     const input = communityMetadataInput({
       slug: 'tetherow',
       name: 'Tetherow',
       city: 'Bend',
       stock: { listedCount: 24, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Tetherow Homes for Sale | Bend, OR')
+    expect(input.title).toBe('Tetherow real estate | Homes for Sale | Bend, OR')
+    expect(input.description).toMatch(/^Tetherow real estate in Bend, Oregon\./)
     expect(input.description).not.toMatch(/Active single-family homes/)
     expect(input.description).toMatch(/lots/i)
+    expect(input.description.length).toBeLessThanOrEqual(155)
+    expect(shareDescription(input.description)).toBe(input.description)
+  })
+
+  it('other communities keep the Homes for Sale title', () => {
+    const input = communityMetadataInput({
+      slug: 'broken-top',
+      name: 'Broken Top',
+      city: 'Bend',
+      stock: { listedCount: 12, types: ['homes'] },
+    })
+    expect(input.title).toBe('Broken Top Homes for Sale | Bend, OR')
   })
 })

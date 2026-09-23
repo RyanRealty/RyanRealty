@@ -406,7 +406,7 @@ describe('print CMA price-opinion spine', () => {
     const marketAt = html.indexOf(' right now</h2>')
     const netAt = html.indexOf('<h2 class="section">Net at list</h2>')
     const discAt = html.indexOf('<h2 class="section">Basis and limits</h2>')
-    const nextAt = html.indexOf('Talk with Matt')
+    const nextAt = html.indexOf('class="reach"')
     expect(priceAt).toBeGreaterThan(0)
     expect(marketAt).toBeGreaterThan(priceAt)
     expect(netAt).toBeGreaterThan(marketAt)

@@ -100,7 +100,9 @@ const HOP_ROUTES = new Map([
   ['/lp/expired-listing', { status: 308, pathname: '/sell/expired-listings' }],
   ['/lp/fsbo', { status: 308, pathname: '/sell/for-sale-by-owner' }],
   ['/lp/central-oregon-golf', { status: 308, pathname: '/central-oregon/golf' }],
-  ['/luxury-homes-bend', { status: 308, pathname: '/homes-for-sale/bend' }],
+  // SITE-185: one winner for "Bend luxury homes for sale", one hop each.
+  ['/luxury-homes-bend', { status: 308, pathname: '/homes-for-sale/bend/luxury' }],
+  ['/luxury-homes-bend-oregon', { status: 301, pathname: '/homes-for-sale/bend/luxury' }],
 ])
 
 function timeoutFor(path) {

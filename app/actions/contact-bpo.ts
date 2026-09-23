@@ -24,6 +24,7 @@ import { resolveWritableBpoSlot } from '@/lib/cma/versions'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
+import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 
 export type StartBpoResult =
   | { ok: true; slug: string; existing?: boolean }
@@ -155,12 +156,16 @@ export async function startBpoForContactAction(
     const slot = await resolveWritableBpoSlot(baseSlug)
     if (!slot.ok) return { ok: false, error: slot.error }
     const slug = slot.slug
+    // Same rule as a CMA: the contact's assigned broker signs. Matt only when
+    // the contact has no assignment.
+    const signer = await resolveSigningBrokerForPerson(personId)
     const built = await buildBpo({
       slug,
       ...subjectInput,
       purpose,
       requestedBy: access.email,
       requestSource,
+      brokerSlug: signer.slug,
       client: { personId, clientName: null, clientEmail: null },
     })
 

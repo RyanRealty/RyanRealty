@@ -26,11 +26,42 @@ describe('master-plan place follows', () => {
       resortItems: resortQuietItems(),
     })
     const byLabel = new Map(items.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
-    expect(byLabel.get('Search Tetherow homes')).toBe('/homes-for-sale/bend/tetherow')
+    // SITE-183 / SITE-182: the area twin 301s onto this page, so the browse
+    // door is the city search and carries the city's name; no door is labelled
+    // with the community and pointed at every home in Bend.
+    expect(tetherow.browseUrl).toBe('/homes-for-sale/bend')
+    expect(byLabel.get('Search Tetherow homes')).toBeUndefined()
+    expect(byLabel.get('Bend homes for sale')).toBe('/homes-for-sale/bend')
     expect(byLabel.get('Tetherow market report')).toBeUndefined()
     expect(byLabel.get('Bend market report')).toBe('/housing-market/bend')
-    expect(byLabel.get('Search Tetherow homes')).not.toBe('/homes-for-sale')
-    expect(byLabel.get('Search Tetherow homes')).not.toBe('/search')
+    const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
+    expect(hrefs).not.toContain('/homes-for-sale')
+    expect(hrefs).not.toContain('/search')
+    expect(hrefs).not.toContain('/homes-for-sale/bend/tetherow')
+  })
+
+  it('SITE-183 Broken Top has no door that 301s back onto its own page', () => {
+    const brokenTop = getPlaceLinks({ type: 'community', slug: 'broken-top', citySlug: 'bend' })
+    expect(brokenTop.browseUrl).toBe('/homes-for-sale/bend')
+    const items = buildExploreEdges({
+      communityName: 'Broken Top',
+      cityName: 'Bend',
+      citySlug: 'bend',
+      browseHref: brokenTop.browseUrl,
+      communityMarketHref: brokenTop.marketUrl,
+      cityReportHref: '/housing-market/bend',
+      pagePath: '/communities/broken-top',
+      faqs: [],
+      documentItems: [],
+      golfCourses: [],
+      resortItems: resortQuietItems(),
+    })
+    const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
+    expect(hrefs).not.toContain('/homes-for-sale/bend/broken-top')
+    expect(hrefs).toContain('/homes-for-sale/bend')
+    expect(hrefs).toContain('/housing-market/bend/broken-top')
+    // One door per href: the city search is not listed twice under two labels.
+    expect(hrefs.filter((h) => h === '/homes-for-sale/bend')).toHaveLength(1)
   })
 
   it('recorded documents render as legal doors with per-item provenance', () => {
@@ -75,6 +106,73 @@ describe('master-plan place follows', () => {
     expect(hrefs).toContain('/communities/tetherow')
     expect(hrefs).toContain('/communities/caldera-springs')
     expect(hrefs).toContain('/communities/sunriver')
+  })
+
+  it('SITE-187: a self-city community keeps its own query and still opens the city search', () => {
+    const sunriver = getPlaceLinks({ type: 'community', slug: 'sunriver', citySlug: 'sunriver' })
+    expect(sunriver.browseUrl).toBe('/homes-for-sale/sunriver')
+    const items = buildExploreEdges({
+      communityName: 'Sunriver',
+      cityName: 'Sunriver',
+      citySlug: 'sunriver',
+      browseHref: sunriver.browseUrl,
+      communityMarketHref: sunriver.marketUrl,
+      cityReportHref: '/housing-market/sunriver',
+      pagePath: '/communities/sunriver',
+      faqs: [],
+      documentItems: [],
+      golfCourses: [],
+      resortItems: resortQuietItems(),
+    })
+    const byLabel = new Map(items.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
+    // The winner never hands "Sunriver homes for sale" to the search slug.
+    expect(byLabel.get('Sunriver homes for sale')).toBeUndefined()
+    expect(byLabel.get('Search Sunriver homes')).toBe('/homes-for-sale/sunriver')
+    expect(byLabel.get('About Sunriver')).toBe('/cities/sunriver')
+    // SITE-184: Black Butte Ranch is its own MLS city under the registry city
+    // Sisters. Its search door is ITS city search, never Sisters' or the
+    // /homes-for-sale/sisters/black-butte-ranch twin (which now 301s home).
+    const bbr = getPlaceLinks({ type: 'community', slug: 'black-butte-ranch', citySlug: 'sisters' })
+    expect(bbr.placeUrl).toBe('/communities/black-butte-ranch')
+    expect(bbr.browseUrl).toBe('/homes-for-sale/black-butte-ranch')
+    expect(bbr.marketUrl).toBe('/housing-market/sisters/black-butte-ranch')
+    const bbrItems = buildExploreEdges({
+      communityName: 'Black Butte Ranch',
+      cityName: 'Sisters',
+      citySlug: 'sisters',
+      browseHref: bbr.browseUrl,
+      communityMarketHref: bbr.marketUrl,
+      cityReportHref: '/housing-market/sisters',
+      pagePath: '/communities/black-butte-ranch',
+      faqs: [],
+      documentItems: [],
+      golfCourses: [],
+      resortItems: resortQuietItems(),
+    })
+    const bbrByLabel = new Map(bbrItems.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
+    expect(bbrByLabel.get('Black Butte Ranch homes for sale')).toBeUndefined()
+    expect(bbrByLabel.get('Search Black Butte Ranch homes')).toBe('/homes-for-sale/black-butte-ranch')
+    // Sisters is not Black Butte Ranch: the city door and the city guide stay.
+    expect(bbrByLabel.get('Sisters homes for sale')).toBe('/homes-for-sale/sisters')
+    expect(bbrByLabel.get('About Sisters')).toBe('/cities/sisters')
+    expect(bbrByLabel.get('Black Butte Ranch market report')).toBe('/housing-market/sisters/black-butte-ranch')
+    // Tetherow keeps its city door: Bend is not Tetherow.
+    const tetherow = getPlaceLinks({ type: 'community', slug: 'tetherow', citySlug: 'bend' })
+    const bendItems = buildExploreEdges({
+      communityName: 'Tetherow',
+      cityName: 'Bend',
+      citySlug: 'bend',
+      browseHref: tetherow.browseUrl,
+      communityMarketHref: tetherow.marketUrl,
+      cityReportHref: '/housing-market/bend',
+      pagePath: '/communities/tetherow',
+      faqs: [],
+      documentItems: [],
+      golfCourses: [],
+      resortItems: resortQuietItems(),
+    })
+    const bendByLabel = new Map(bendItems.flatMap((item) => ('href' in item ? [[item.label, item.href]] : [])))
+    expect(bendByLabel.get('Bend homes for sale')).toBe('/homes-for-sale/bend')
   })
 })
 

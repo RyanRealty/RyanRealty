@@ -325,6 +325,8 @@ describe('D — the closing never solicits a listing it may not solicit', () => 
       expect(html).toContain(NON_SOLICITATION_SENTENCE)
       expect(html).not.toContain('Bring this report.')
       expect(html).not.toContain('Sorry this listing did not sell.')
+      expect(html).not.toContain('did not sell this go-around')
+      expect(html).not.toContain('class="reach"')
     }
   })
 

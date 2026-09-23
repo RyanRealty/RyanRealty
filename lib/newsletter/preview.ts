@@ -10,13 +10,12 @@ import 'server-only'
  * The preview NEVER sends and always uses a placeholder unsubscribe URL.
  */
 
+import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { getNewsletter } from '@/lib/data/newsletter'
 import { wrapNewsletterHtml, type SenderBroker } from '@/lib/email-templates/newsletter-shell'
 
 export const PREVIEW_UNSUBSCRIBE_URL = 'https://ryan-realty.com/newsletter/unsubscribe?token=preview'
-
-const KNOWN_BROKERS = new Set(['matt', 'rebecca', 'paul'])
 
 /** Absolute-HTTPS headshots — email can't load app-relative assets (mirrors send-queue). */
 const HEADSHOTS: Record<string, string> = {
@@ -26,8 +25,8 @@ const HEADSHOTS: Record<string, string> = {
 }
 
 export function normalizePreviewBroker(slug: string | null | undefined): string {
-  const s = (slug ?? '').trim().toLowerCase()
-  return KNOWN_BROKERS.has(s) ? s : 'matt'
+  // Web slugs (paul-stevenson) and short slugs (paul) are the same broker.
+  return normalizeAgentSlug(slug) ?? 'matt'
 }
 
 /** Brand-voice dotted phone (541.703.3095). Returns the input if it can't parse 10 digits. */
@@ -51,7 +50,7 @@ export async function senderIdentityFor(slug: string): Promise<{ sender: SenderB
     name: b.name || 'Ryan Realty',
     firstName: (b.name || 'Ryan').split(/\s+/)[0] || b.name,
     title: b.title,
-    phone: formatPhoneDotted(b.phone),
+    phone: formatPhoneDotted(b.publishedPhone),
     email: b.email,
     headshotUrl: HEADSHOTS[b.slug] ?? HEADSHOTS.matt,
     isOwner: b.slug === 'matt',

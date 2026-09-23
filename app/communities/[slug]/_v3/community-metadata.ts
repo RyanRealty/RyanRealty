@@ -16,6 +16,7 @@
 
 import type { pageMetadata } from '@/lib/site/page-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
+import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
 import { preferPlaceHero } from '@/lib/geo-images'
 import {
   listingItemListFromHomes,
@@ -42,7 +43,11 @@ const COMMUNITY_SERP_SETTING: Record<string, string> = {
   'brasada-ranch': 'High-desert resort around Brasada Canyons golf.',
   tetherow: 'West Bend golf community on a David McLay Kidd course.',
   'broken-top': 'Gated west Bend community around a Weiskopf and Morrish course.',
-  'black-butte-ranch': 'Forest resort with two golf courses under the Cascades.',
+  // SITE-184: the opener became "Black Butte Ranch, Oregon homes for sale."
+  // (the query the page wins), four characters longer than "in Sisters,
+  // Oregon.", so the clause lost "forest" to stay inside shareDescription's
+  // 155 without truncating "Live MLS inventory." Same two facts: golf, Cascades.
+  'black-butte-ranch': 'Golf resort with two courses under the Cascades.',
   'mountain-high': 'South Bend neighborhood around the public Old Back Nine.',
   'eagle-crest': 'Redmond golf resort along the Deschutes River canyon.',
   'caldera-springs': 'Sunriver resort around Caldera Links and a wildlife preserve.',
@@ -73,6 +78,11 @@ export function communitySerpTitle(input: {
   if (slug === 'mountain-high' && listedCount != null && listedCount > 0) {
     return `${name}: ${formatCount(listedCount)} homes for sale | ${city}, OR`
   }
+  // The heading stays "{name} homes for sale". This phrase is the other query
+  // for the same URL (Matt 2026-09-22).
+  if (slug === 'tetherow') {
+    return `${name} real estate | Homes for Sale | ${city}, OR`
+  }
   return `${name} Homes for Sale | ${city}, OR`
 }
 
@@ -89,9 +99,18 @@ export function communitySerpDescription(input: {
   const setting = COMMUNITY_SERP_SETTING[slug]
   const counted =
     slug === 'mountain-high' && input.listedCount != null && input.listedCount > 0
+  // SITE-187 / SITE-184: a self-city community would read "Sunriver in
+  // Sunriver, Oregon." or "Black Butte Ranch in Sisters, Oregon." The opener
+  // names the inventory query the page wins instead. The helper, not a
+  // name-equals-city test: Black Butte Ranch's registry city is Sisters.
+  const selfCity = name.trim().toLowerCase() === city.trim().toLowerCase() || isSelfCityCommunity(slug)
   const opener = counted
     ? `${formatCount(input.listedCount)} homes for sale in ${name}, ${city}.`
-    : `${name} in ${city}, Oregon.`
+    : slug === 'tetherow'
+      ? `${name} real estate in ${city}, Oregon.`
+      : selfCity
+        ? `${name}, Oregon homes for sale.`
+        : `${name} in ${city}, Oregon.`
   const skipMix = counted && types.length <= 1
   return [opener, setting, skipMix ? null : mix, 'Live MLS inventory.']
     .filter((part): part is string => Boolean(part && part.trim()))
@@ -251,8 +270,8 @@ export function communityMetadataInput(input: {
 
   return {
     // Title format: "[Community] Homes for Sale | [City], OR". Mountain High
-    // includes the on-page listed count when stock carries it. H1 stays
-    // "{Place} homes for sale".
+    // includes the on-page listed count when stock carries it. Tetherow leads
+    // with "Tetherow real estate". H1 stays "{Place} homes for sale".
     title: communitySerpTitle({
       slug,
       name,

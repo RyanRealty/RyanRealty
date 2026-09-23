@@ -56,7 +56,7 @@ comment on table public.gsc_query_page_daily is
 -- Per (page_class, market) totals over an inclusive window. The scoreboard's
 -- GSC status and the brief's week-over-week deltas read this.
 create or replace function public.gsc_page_class_rollup(p_start date, p_end date, p_search_type text default 'web')
-returns table (page_class text, market text, pages bigint, clicks bigint, impressions bigint, position numeric)
+returns table (page_class text, market text, pages bigint, clicks bigint, impressions bigint, "position" numeric)
 language sql
 stable
 set search_path = public

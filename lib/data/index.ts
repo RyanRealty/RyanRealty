@@ -368,6 +368,10 @@ export type {
   CommunitySubdivisionInput,
   CommunitySubdivision,
 } from '@/lib/data/geo/getCommunitySubdivisions'
+// Geo — the registry community a recorded plat sits in: the same spatial
+// membership, read from the plat's side (SITE-183 / SITE-182).
+export { getPlatParentCommunity } from '@/lib/data/geo/getPlatParentCommunity'
+export type { PlatParentCommunity } from '@/lib/data/geo/getPlatParentCommunity'
 
 // The indexable recorded-plat set — the same read the sitemap, llms.txt and the
 // /subdivisions/[slug] robots tag make. A city page renders it as its plat index

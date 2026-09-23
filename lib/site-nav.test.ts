@@ -239,8 +239,24 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/communities/black-butte-ranch',
       '/communities/caldera-springs',
       '/communities/crosswater',
+      // SITE-187: the one sitewide exact-anchor door to the Sunriver winner.
+      '/communities/sunriver',
     ])
     for (const href of communityHrefs) expect(allowed.has(href), href).toBe(true)
+    // SITE-184: the Sisters cluster's one community door carries the exact
+    // phrase to the Black Butte Ranch winner; the heading stays the city guide.
+    const sistersGroup = KB_FOOTER_COLUMNS[0]!.groups?.find((g) => g.heading === 'Sisters')
+    expect(sistersGroup?.href).toBe('/cities/sisters')
+    expect(sistersGroup?.links.map((l) => [l.label, l.href])).toEqual([
+      ['Black Butte Ranch homes for sale', '/communities/black-butte-ranch'],
+    ])
+    const sunriverGroup = KB_FOOTER_COLUMNS[0]!.groups?.find((g) => g.heading === 'Sunriver')
+    expect(sunriverGroup?.href).toBe('/cities/sunriver')
+    expect(sunriverGroup?.links.map((l) => [l.label, l.href])).toEqual([
+      ['Sunriver homes for sale', '/communities/sunriver'],
+      ['Caldera Springs', '/communities/caldera-springs'],
+      ['Crosswater', '/communities/crosswater'],
+    ])
   })
 
   it('no group lists the same href twice', () => {

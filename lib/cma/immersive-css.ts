@@ -300,9 +300,16 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .like-h,.cando-h{font-size:16px;font-weight:600;line-height:1.4}
 .like-d{font-size:13.5px;opacity:.65;margin-top:8px}
 .cando-t{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.55;margin-bottom:8px}
-.next-in{display:flex;gap:48px;align-items:flex-end}
-.br-img{width:min(320px,34vw);height:auto;flex:0 0 auto;align-self:flex-end;max-width:100%}
+.next-in{display:flex;gap:48px;align-items:flex-start}
+.br-img{width:min(320px,34vw);height:auto;flex:0 0 auto;align-self:flex-start;max-width:100%}
 .next-b{flex:1;min-width:0}
+.reach{margin:8px 0 18px;max-width:480px}
+.reach-row{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:baseline;padding:9px 0;border-top:1px solid rgba(250,248,244,.22)}
+.reach-row:last-child{border-bottom:1px solid rgba(250,248,244,.22)}
+.reach dt{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;opacity:.62}
+.reach dd{margin:0;font-size:15.5px;font-weight:600;line-height:1.35}
+.reach a{color:inherit;text-decoration:none}
+.reach a:hover{text-decoration:underline;text-underline-offset:3px}
 .next-note{font-size:16px;line-height:1.55;max-width:56ch;margin:0 0 12px;color:rgba(250,248,244,.88)}
 .sc-cream .next-note{color:var(--ink)}
 .print-out{margin-top:22px;font-size:13px}

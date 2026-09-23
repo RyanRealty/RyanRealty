@@ -37,7 +37,6 @@ for (const prefix of [
   "'/sell'",
   "'/contact'",
   "'/central-oregon'",
-  "'/luxury-homes-bend'",
 ]) {
   check(pageType.includes(prefix), `page-type.ts must classify ${prefix}`)
 }

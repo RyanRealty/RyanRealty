@@ -51,7 +51,6 @@ const src = readFileSync(SITEMAP, 'utf8')
 // must exist (a catch-all [...slug] serves every depth under its prefix).
 const FAMILIES = [
   { id: 'root', roots: [''], resolvers: ['app/page.tsx'] },
-  { id: 'luxury-homes-bend', roots: ['luxury-homes-bend'], resolvers: ['app/luxury-homes-bend/page.tsx'] },
   // /cities/{city}/types/{type} joined the sitemap 2026-09-23 (EXP-6, types leg
   // via lib/seo/place-type-twin.ts), so its resolver is declared here.
   { id: 'cities', roots: ['cities'], resolvers: ['app/cities/page.tsx', 'app/cities/[slug]/page.tsx', 'app/cities/[slug]/[neighborhoodSlug]/page.tsx', 'app/cities/[slug]/types/[type]/page.tsx'] },

@@ -40,7 +40,7 @@ import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import ts from 'typescript'
 
-const DOC_BUILDERS = ['lib/cma/build.ts', 'lib/bpo/build.ts']
+const DOC_BUILDERS = ['lib/cma/build.ts', 'lib/bpo/build.ts', 'lib/cma/send.ts', 'lib/bpo/send.ts']
 const DOC_BROKER_DAL = 'lib/data/cma/builderReads.ts'
 /** Paths that render or transmit content. forward_to_cell must not appear here. */
 const CONTENT_GLOBS = ['lib/cma', 'lib/bpo', 'lib/email', 'components', 'app']

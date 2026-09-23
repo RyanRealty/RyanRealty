@@ -87,6 +87,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { getPlaceLinks } from '@/lib/place-links'
 import { communityPublicPair, communityPublicPairForPlace } from '@/lib/communities/community-public-pair'
 import { homesForSalePath, slugify } from '@/lib/slug'
+import { placeInventoryHref } from '@/lib/communities/self-city-community'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishCityRealEstateTitle } from '@/lib/site/page-metadata'
 import { placeCityRealEstateHeading, placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
@@ -634,6 +635,13 @@ async function renderCityDetail({ params }: Props) {
     months: chartMonths.months,
   })
 
+  // SITE-187: the PLAIN "{city} homes for sale" door. For a self-city community
+  // (Sunriver) PAGE_OUTLINE's one winner for that query is /communities/<slug>,
+  // so the opening caption, the hero door, the ledger action, the market
+  // action and the closing Quiet all land there. Filtered doors (a type, a max
+  // price, newest first) are searches and keep homesForSalePath.
+  const inventoryHref = placeInventoryHref(cityName)
+
   // SITE-03: the door beside the H1. ONE live fact — the active count — as the
   // way into this city's own pre-filtered inventory. No median, no months, no
   // days-to-pending: that five-figure strip is the leftover HUD ci:taste-canon
@@ -652,7 +660,7 @@ async function renderCityDetail({ params }: Props) {
     face,
     grain: 'city',
     placeName: cityName,
-    href: homesForSalePath(cityName),
+    href: inventoryHref,
     // The stamp belongs to the same Market Truth read as the count.
     readDate: leftoverStamp ? formatDate(leftoverStamp) : null,
   })
@@ -919,7 +927,7 @@ async function renderCityDetail({ params }: Props) {
     slug,
     // valuationHref, never a bare path: the closing valuation edge carries
     // ?from=/cities/<slug>, which is the seller lead's stored source_url.
-    { browse: homesForSalePath(cityName), valuation: valuationHref(`/cities/${slug}`) },
+    { browse: inventoryHref, valuation: valuationHref(`/cities/${slug}`) },
     Boolean(quickFacts?.population),
   )
 
@@ -1071,7 +1079,7 @@ async function renderCityDetail({ params }: Props) {
             </V3Heading>
             {/* SITE-82 SEO: crawlable inventory + market doors in the opening. */}
             <p className="place-opening__caption place-opening__caption--doors">
-              <a href={homesForSalePath(cityName)}>{cityName} homes for sale</a>
+              <a href={inventoryHref}>{cityName} homes for sale</a>
               {' · '}
               <a href={`/housing-market/${slug}`}>{cityName} housing market</a>
               {slug === 'bend' ? (
@@ -1216,7 +1224,7 @@ async function renderCityDetail({ params }: Props) {
             source={v3Text(PLACE_COUNT_TRACE)}
             action={{
               label: v3Text(`All ${cityName} homes`),
-              href: homesForSalePath(cityName),
+              href: inventoryHref,
             }}
           />
         ) : null}
@@ -1278,7 +1286,7 @@ async function renderCityDetail({ params }: Props) {
             // the label and the destination are unchanged.
             action={{
               label: v3Text(placeHomesForSaleHeading(cityName)),
-              href: homesForSalePath(cityName),
+              href: inventoryHref,
               variant: 'ghost',
             }}
           />

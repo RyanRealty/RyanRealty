@@ -48,8 +48,24 @@ export function isPlaceFilteredSearchHref(href: string | null | undefined): bool
   return path.startsWith('/homes-for-sale/')
 }
 
+/**
+ * A community page used AS the inventory door (SITE-187). For a self-city
+ * community (Sunriver) PAGE_OUTLINE's one winner for "{place} homes for sale"
+ * is /communities/<slug>, and the place page is the Field, so a plain
+ * inventory door may land there. Only the bare canonical shape passes; a
+ * compound, typed or query-carrying community URL is not a browse door.
+ */
+export function isCommunityPlaceHref(href: string | null | undefined): boolean {
+  if (!href?.trim()) return false
+  const path = href.trim().split('?')[0] ?? ''
+  return /^\/communities\/[a-z0-9-]+\/?$/.test(path)
+}
+
 /** Visitor Browse homes href, or null when the candidate is regional / on-page / redirected. */
 export function publishPlaceBrowseHref(href: string | null | undefined): string | null {
+  if (isCommunityPlaceHref(href)) {
+    return (href!.trim().split('?')[0] ?? '').replace(/\/+$/, '')
+  }
   if (!isPlaceFilteredSearchHref(href)) return null
   const [path] = href!.trim().split('?')
   if (!path) return null

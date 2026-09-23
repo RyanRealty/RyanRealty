@@ -18,6 +18,7 @@
 
 import { cmaMarketSources } from '@/lib/cma/market'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
+import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import {
   getBpoListingCyclesByAddress,
   upsertBpoRowBySlug,
@@ -48,8 +49,15 @@ export const BPO_BUILDER_VERSION = 'bpo-deterministic-v1 (2026-07-09)'
 const DEFAULT_BROKER_SLUG = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'matthew-ryan').trim().toLowerCase()
 
 async function resolveBroker(input: BpoBuildInput): Promise<CmaBroker> {
+  let slug = input.brokerSlug?.trim() || null
+  const email = input.brokerEmail?.trim() || null
+  const personId = input.client?.personId ?? null
+  if (!slug && !email && personId) {
+    const signer = await resolveSigningBrokerForPerson(personId)
+    slug = signer.slug?.trim() || null
+  }
   const row =
-    (await getCmaBrokerBySlugOrEmail({ slug: input.brokerSlug, email: input.brokerEmail })) ??
+    (await getCmaBrokerBySlugOrEmail({ slug, email })) ??
     (await getCmaBrokerBySlugOrEmail({ slug: DEFAULT_BROKER_SLUG }))
   if (row) {
     return {

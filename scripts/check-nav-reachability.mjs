@@ -81,6 +81,15 @@ while ((m = HREF_RE.exec(src)) !== null) {
   found.add(m[1])
 }
 
+// SITE-185: the Bend luxury door is one helper (lib/site/bend-luxury-homes.ts)
+// so nothing hand-types the path. A bendLuxuryHomesDoor() call in the nav
+// counts as the helper's own BEND_LUXURY_HOMES_PATH.
+if (/bendLuxuryHomesDoor\(\)/.test(src)) {
+  const helper = readFileSync(join(__dirname, '..', 'lib', 'site', 'bend-luxury-homes.ts'), 'utf8')
+  const path = /BEND_LUXURY_HOMES_PATH\s*=\s*['"]([^'"]+)['"]/.exec(helper)?.[1]
+  if (path) found.add(path)
+}
+
 const failures = []
 
 for (const href of REQUIRED_HREFS.filter((r) => !found.has(r))) {

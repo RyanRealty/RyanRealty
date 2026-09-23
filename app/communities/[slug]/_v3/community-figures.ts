@@ -26,6 +26,7 @@ import {
 } from '@/lib/data/places/getPlaceDocuments'
 import { type V3QuietItem } from '@/components/site/v3'
 import { homesForSalePath } from '@/lib/slug'
+import { selfCityCommunitySlug } from '@/lib/communities/self-city-community'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
@@ -214,9 +215,21 @@ export function buildExploreEdges(input: {
   // The groups already existed in the reading order below; they were simply not
   // named. V3Answers renders them in first-appearance order, so naming them
   // moves no door.
+  // SITE-183 / SITE-182: every registry community's area twin 301s home, so
+  // getPlaceLinks hands a non-self-city community the plain CITY search as its
+  // browse door. "Search Broken Top homes" -> /homes-for-sale/bend is a
+  // mislabeled door and a duplicate of the city group's "Bend homes for sale"
+  // (same href; splitQuietItems keeps the first). The community's own
+  // inventory is this page's Field; its newest-listings door is the alerts
+  // strip. A self-city community's city search IS the community, so it keeps
+  // the door under its own name.
+  const browseCity = (input.browseHref.split('?')[0] ?? '').match(/^\/homes-for-sale\/([a-z0-9-]+)\/?$/)?.[1]
+  const browseIsCityWide = Boolean(browseCity) && !selfCityCommunitySlug(browseCity)
   return [
     ...input.documentItems.map((item) => withGroup(item, 'Recorded documents')),
-    { label: `Search ${input.communityName} homes`, href: input.browseHref, group: input.communityName },
+    ...(browseIsCityWide
+      ? []
+      : [{ label: `Search ${input.communityName} homes`, href: input.browseHref, group: input.communityName }]),
     // SITE-171: /housing-market/bend/tetherow 301s onto this community page.
     // A "market report" door that bounces back is not a door.
     ...(redirectsAwayFromSearch(input.communityMarketHref)
@@ -229,7 +242,13 @@ export function buildExploreEdges(input: {
           },
         ]),
     { label: 'Manage your listing alerts', href: '/login?returnUrl=%2Faccount%2Fsaved-searches', group: input.communityName },
-    ...(citySlug ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName), group: cityName }] : []),
+    // SITE-187: on a self-city community (Sunriver) this page IS "{city} homes
+    // for sale" (PAGE_OUTLINE one winner). A door from the winner to the search
+    // slug under that exact phrase told Google the phrase belonged elsewhere;
+    // the opening caption already carries the on-page #homes jump.
+    ...(citySlug && !selfCityCommunitySlug(citySlug)
+      ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName), group: cityName }]
+      : []),
     { label: `${cityName} market report`, href: input.cityReportHref, group: cityName },
     ...(citySlug ? [{ label: `About ${cityName}`, href: `/cities/${citySlug}`, group: cityName }] : []),
     ...(citySlug ? [{ label: `Open houses in ${cityName}`, href: `/open-houses/${citySlug}`, group: cityName }] : []),

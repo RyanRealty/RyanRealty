@@ -3,10 +3,11 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { computeSchedule, renderForRecipient, NEWSLETTER_FROM_ADDRESS } from './send-queue'
 import { verifyEmailToken } from '@/lib/email-tracking'
 
+// These are the published business lines (brokers.twilio_number), never a personal cell.
 const BROKERS = new Map([
-  ['matt', { slug: 'matt', name: 'Matt Ryan', email: 'matt@ryan-realty.com', phone: '(541) 213-6706', title: 'Owner & Principal Broker' }],
-  ['rebecca', { slug: 'rebecca', name: 'Rebecca Ryser Peterson', email: 'rebeccapeterson@ryan-realty.com', phone: '(415) 308-9087', title: 'Broker' }],
-  ['paul', { slug: 'paul', name: 'Paul Stevenson', email: 'paul@ryan-realty.com', phone: '541-977-6841', title: 'Broker' }],
+  ['matt', { slug: 'matt', name: 'Matt Ryan', email: 'matt@ryan-realty.com', phone: '541.703.3095', title: 'Owner & Principal Broker' }],
+  ['rebecca', { slug: 'rebecca', name: 'Rebecca Ryser Peterson', email: 'rebeccapeterson@ryan-realty.com', phone: '541.250.3380', title: 'Broker' }],
+  ['paul', { slug: 'paul', name: 'Paul Stevenson', email: 'paul@ryan-realty.com', phone: '541.502.3436', title: 'Broker' }],
 ])
 
 const LETTER = {
@@ -73,6 +74,16 @@ describe('renderForRecipient — per-broker sender identity + broker-stamped tok
     expect(r.from).toBe(`Matt Ryan · Ryan Realty <${NEWSLETTER_FROM_ADDRESS}>`)
   })
 
+  it('a web slug is that broker, not Matt', () => {
+    const r = renderForRecipient(LETTER, { email: 'x@y.com', broker: 'paul-stevenson', subscriber_id: 's1' }, BROKERS, 'tok', 555)
+    expect(r.from).toBe(`Paul Stevenson · Ryan Realty <${NEWSLETTER_FROM_ADDRESS}>`)
+    expect(r.replyTo).toBe('paul@ryan-realty.com')
+    expect(r.html).toContain('541.502.3436')
+    expect(r.html).toContain('agent=paul')
+    expect(r.html).not.toContain('977-6841')
+    expect(r.html).not.toContain('agent=matt')
+  })
+
   it('derives non-empty plain text from HTML when body_text is blank (G-NL-3)', () => {
     const r = renderForRecipient(LETTER, { email: 'x@y.com', broker: 'matt', subscriber_id: 's1' }, BROKERS, 'tok', 1)
     expect(r.text.trim().length).toBeGreaterThan(20)
@@ -90,7 +101,9 @@ describe('shell frame (email.html parity)', () => {
     expect(html).toContain('images/lp/hero-oldmill.jpg') // full-bleed hero
     // per-broker close: Rebecca's name, dotted phone, "TALK TO REBECCA"
     expect(html).toContain("I'm Rebecca Ryser Peterson.")
-    expect(html).toContain('415.308.9087') // dotted (formatPhoneDotted)
+    expect(html).toContain('541.250.3380')
+    expect(html).not.toContain('308-9087')
+    expect(html).not.toContain('977-6841')
     expect(html).toContain('TALK TO REBECCA')
     // footer compliance
     expect(html).toContain('115 NW Oregon Ave')

@@ -1,4 +1,5 @@
 import 'server-only'
+import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import { createServiceClient } from '@/lib/data/client'
 import type { NewsletterSegment, NewsletterSubscriber, SubscriberStatus } from '@/lib/data/newsletter'
 
@@ -17,7 +18,6 @@ import type { NewsletterSegment, NewsletterSubscriber, SubscriberStatus } from '
 
 const SUBS = 'newsletter_subscribers'
 const PEOPLE = 'crm_people'
-const KNOWN_BROKERS = new Set(['matt', 'rebecca', 'paul'])
 const WORKING_CAP = 5000
 
 const SUB_COLS =
@@ -26,8 +26,7 @@ const SUB_COLS =
 export type SubscriberWithBroker = NewsletterSubscriber & { broker: string }
 
 function normalizeBroker(slug: string | null | undefined): string {
-  const s = (slug ?? '').trim().toLowerCase()
-  return KNOWN_BROKERS.has(s) ? s : 'matt'
+  return normalizeAgentSlug(slug) ?? 'matt'
 }
 
 /** Batch crm_person_id → assigned_broker (soft-deleted people fall back to matt). */
@@ -85,7 +84,7 @@ export async function listSubscribersWithBroker(args: SubscriberAdminFilters): P
   }
   query = query.order('created_at', { ascending: false })
 
-  const brokerFilter = args.broker && KNOWN_BROKERS.has(args.broker) ? args.broker : null
+  const brokerFilter = normalizeAgentSlug(args.broker)
 
   if (!brokerFilter) {
     const from = (page - 1) * pageSize
@@ -145,8 +144,8 @@ export async function deleteSubscriber(id: string): Promise<{ ok: boolean }> {
  * person (nothing to reassign).
  */
 export async function reassignSubscriberBroker(subscriberId: string, broker: string): Promise<{ ok: boolean; error?: string }> {
-  const target = normalizeBroker(broker)
-  if (!KNOWN_BROKERS.has((broker ?? '').trim().toLowerCase())) return { ok: false, error: 'unknown_broker' }
+  const target = normalizeAgentSlug(broker)
+  if (!target) return { ok: false, error: 'unknown_broker' }
   const sub = await getSubscriberById(subscriberId)
   if (!sub) return { ok: false, error: 'not_found' }
   if (!sub.crm_person_id) return { ok: false, error: 'no_crm_person' }
@@ -185,6 +184,6 @@ export async function exportSubscribersWithBroker(args: Omit<SubscriberAdminFilt
     ...r,
     broker: normalizeBroker(r.crm_person_id ? brokerMap.get(r.crm_person_id) : null),
   }))
-  const brokerFilter = args.broker && KNOWN_BROKERS.has(args.broker) ? args.broker : null
+  const brokerFilter = normalizeAgentSlug(args.broker)
   return brokerFilter ? withBroker.filter((r) => r.broker === brokerFilter) : withBroker
 }

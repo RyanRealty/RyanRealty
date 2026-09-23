@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { classifySitemapUrl, SITEMAP_CLASSES } from './classify'
 
-const PRESETS = new Set(['newest', 'with-acreage', 'single-story', 'under-500k'])
+const PRESETS = new Set(['newest', 'with-acreage', 'single-story', 'under-500k', 'luxury'])
 const B = 'https://ryan-realty.com'
 
 describe('classifySitemapUrl', () => {
@@ -12,7 +12,10 @@ describe('classifySitemapUrl', () => {
     expect(classifySitemapUrl(`${B}/homes-for-sale`, PRESETS)).toBe('core')
     expect(classifySitemapUrl(`${B}/homes-for-sale/bend`, PRESETS)).toBe('core')
     expect(classifySitemapUrl(`${B}/sell`, PRESETS)).toBe('core')
-    expect(classifySitemapUrl(`${B}/luxury-homes-bend`, PRESETS)).toBe('core')
+  })
+
+  it('SITE-185: the Bend luxury winner is a city x preset matrix page', () => {
+    expect(classifySitemapUrl(`${B}/homes-for-sale/bend/luxury`, PRESETS)).toBe('matrix')
   })
 
   it('buckets evergreen geography as geo', () => {

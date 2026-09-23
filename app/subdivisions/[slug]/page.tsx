@@ -165,6 +165,7 @@ import { getPlatUnsoldOutcome } from '@/lib/data/subdivisions/getPlatUnsoldOutco
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { publishPlatUnsold } from '@/lib/site/publish-plat-unsold'
 import { getPlatBoundaryCity } from '@/lib/data/subdivisions/getPlatBoundaryCity'
+import { getPlatParentCommunity } from '@/lib/data/geo/getPlatParentCommunity'
 import { platCaption } from './_v3/plat-caption'
 import './_v3/plat-opening.css'
 import './_v3/plat-fold.css'
@@ -689,8 +690,20 @@ async function renderSubdivisionPage({ params }: Props) {
     'Central Oregon'
   const citySlug =
     registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? boundaryCity?.citySlug ?? familyCitySlug ?? null
-  const resortLabel = registryMatch?.resortLabel ?? null
-  const resortSlug = registryMatch?.resortSlug ?? null
+  // THE PARENT COMMUNITY (SITE-183 / SITE-182). The registry alias names it
+  // for two Tetherow plats and no Broken Top plat, and the county plat tree
+  // never parents a plat to a community, so tennis-tracts-at-broken-top and
+  // golf-homes-at-tetherow reached the community only through the sitewide
+  // resort list, by bare name, while /communities/broken-top listed them as
+  // members. The membership the community page publishes
+  // (community_subdivisions: plat centroid inside the community polygon) is
+  // read from this side, behind the alias so no alias-matched page moves.
+  // Null on a failed read: unknown is not a guess (§0).
+  const spatialParent = registryMatch
+    ? null
+    : await withTimeoutFallback(getPlatParentCommunity(slug), null, 4000, 'sub:parentCommunity')
+  const resortLabel = registryMatch?.resortLabel ?? spatialParent?.label ?? null
+  const resortSlug = registryMatch?.resortSlug ?? spatialParent?.slug ?? null
   const placeCity = cityName === 'Central Oregon' ? null : cityName
 
   /* THE FAMILY, UP AND DOWN (Matt 2026-09-23). A phase names its family in the
@@ -1812,10 +1825,18 @@ async function renderSubdivisionPage({ params }: Props) {
                   {citySlug ? <a href={`/cities/${citySlug}`}>{cityName} real estate</a> : null}
                   {canMapAtlas ? ' · ' : null}
                   {canMapAtlas ? <a href="#atlas">Map of {displayName}</a> : null}
+                  {/* SITE-183 / SITE-182: the parent community is the ONE
+                      winner for "{community} homes for sale" (PAGE_OUTLINE),
+                      and this plat page collected 14% of that query's
+                      impressions while linking its parent only by bare name.
+                      The opening door carries the parent's inventory phrase;
+                      the closing edges and answers keep their own labels for
+                      the same href, so the page still has one parent door
+                      with the phrase and no h1/h2 borrows it. */}
                   {resortSlug ? (
                     <>
                       {' · '}
-                      <a href={`/communities/${resortSlug}`}>{resortLabel ?? 'Resort'} overview</a>
+                      <a href={`/communities/${resortSlug}`}>{resortLabel ?? 'Resort'} homes for sale</a>
                     </>
                   ) : null}
                   {familyUp && familyUp.href !== `/communities/${resortSlug ?? ''}` ? (

@@ -12,6 +12,8 @@ import { withTimeout } from './fetch-guards'
 import { refusalPlatDoor, searchAreaUnavailableHeading } from './sections/AreaUnavailable'
 import { resolveSlug, buildCanonicalPath, printableAreaName, unnamedAreaPhrase } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { selfCitySearchCanonicalPath, selfCitySearchHeading } from '@/lib/communities/self-city-community'
+import { luxuryPresetDescription, luxuryPresetHeading } from '@/lib/site/bend-luxury-homes'
 import {
   BEND_NEW_CONSTRUCTION_CANONICAL_PATH,
   isBendNewConstructionSearchTwinSlug,
@@ -68,7 +70,11 @@ export async function buildSearchSlugMetadata({
     areaPrint && subdivisionDisplayName && city
       ? await withTimeout(getSubdivisionDescription(city, subdivisionDisplayName), null, 1200)
       : null
+  // SITE-185: the luxury preset page is the one winner for "{place} luxury
+  // homes for sale", so its description opens on that query instead of the
+  // city's generic meta description (which never says "luxury").
   const rawMetaDesc =
+    luxuryPresetDescription(preset, placeName) ??
     (areaPrint && subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
     content?.metaDescription ??
     (preset
@@ -94,26 +100,49 @@ export async function buildSearchSlugMetadata({
       ? await withTimeout(resolvePresetTypeTwinPath(slug, preset.slug), null, 2500)
       : null
 
+  // SITE-187 / SITE-184: the plain city search for a self-city community
+  // (Sunriver, Black Butte Ranch) is the same inventory as /communities/<slug>,
+  // which PAGE_OUTLINE names as the one winner for "{place} homes for sale".
+  // The page still renders for the search app's city switcher; it just stops
+  // competing, and its title stops repeating the winner's exact string. Area
+  // and preset variants keep their own canonical and title.
+  const selfCityShape = city
+    ? {
+        citySlug: cityEntityKey(city),
+        hasArea: Boolean(subdivisionDisplayName || subdivisionSlug),
+        hasPreset: Boolean(presetSlug),
+      }
+    : null
+  const selfCityCanonical = selfCityShape ? selfCitySearchCanonicalPath(selfCityShape) : null
+  const selfCityTitle = selfCityShape ? selfCitySearchHeading({ ...selfCityShape, placeName }) : null
+
   const canonicalPath = isBendNewConstructionTwin
     ? BEND_NEW_CONSTRUCTION_CANONICAL_PATH
     : typeTwinPath
       ? typeTwinPath
-      : area && slug.length === 2
-        ? // EXP-4 / SEO-6: a plat twin or a community twin consolidates onto its
-          // place page; every other pair is self-canonical.
-          (area.canonicalPath ?? buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug))
-        : buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
+      : selfCityCanonical
+        ? selfCityCanonical
+        : area && slug.length === 2
+          ? // EXP-4 / SEO-6: a plat twin or a community twin consolidates onto its
+            // place page; every other pair is self-canonical.
+            (area.canonicalPath ?? buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug))
+          : buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
   // The OG card route title-cases the URL segments, so an area with no
   // printable name (an MLS code, or a read that could not name it) takes the
   // default card rather than a picture of the code.
   const dynamicOgImage = slug.length > 0 && (!subdivisionSlug || areaPrint)
     ? `${siteUrl}/search/og/${slug.map((part) => encodeURIComponent(part)).join('/')}`
     : defaultOgImage
-  const title = preset
-    ? `${preset.label} in ${placeName}`
-    : areaPrint || !subdivisionSlug
-      ? placeHomesForSaleHeading(placeName)
-      : `Homes for sale in ${placeName}`
+  // SITE-185: the luxury preset's title is the win query in human form
+  // ("Bend luxury homes for sale"); the layout template adds the brand.
+  // SITE-184: the plain city search of a self-city community reads "Search
+  // {place} homes" so no second page carries the community's title.
+  const title =
+    luxuryPresetHeading(preset, placeName) ??
+    (preset
+      ? `${preset.label} in ${placeName}`
+      : (selfCityTitle ??
+        (areaPrint || !subdivisionSlug ? placeHomesForSaleHeading(placeName) : `Homes for sale in ${placeName}`)))
   // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
   // VERIFIED zero active-inventory count stays renderable but is noindexed —
   // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with

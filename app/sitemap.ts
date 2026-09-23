@@ -16,6 +16,8 @@ import { fetchAllRows } from '@/lib/supabase/paginate'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
+import { selfCitySearchUrlLeavesSitemap } from '@/lib/communities/self-city-community'
+import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
@@ -99,10 +101,8 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: `${baseUrl}${listingsBrowsePath()}`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    // /luxury-homes-bend is NOT emitted: next.config.ts 308s it to
-    // /homes-for-sale/bend?minPrice=1500000, a query URL the site itself
-    // noindexes (visibility audit 2026-09-22). The indexable luxury page is
-    // /homes-for-sale/bend/luxury, which the search-matrix leg emits.
+    // /luxury-homes-bend 301s onto /homes-for-sale/bend/luxury (SITE-185), which
+    // the city x preset loop below emits; a sitemap lists canonicals.
     { url: `${baseUrl}/communities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/cities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/neighborhoods`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
@@ -255,7 +255,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   for (const citySlug of SITE_CITY_SLUGS) {
     staticPages.push(
       { url: `${baseUrl}/cities/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
-      { url: `${baseUrl}/homes-for-sale/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.85 },
+      // SITE-187: a self-city community's plain search page canonicals to
+      // /communities/<slug> (already listed below); a sitemap lists canonicals.
+      ...(selfCitySearchUrlLeavesSitemap(citySlug)
+        ? []
+        : [{ url: `${baseUrl}/homes-for-sale/${citySlug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.85 }]),
       { url: `${baseUrl}/open-houses/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
     )
   }
@@ -353,7 +357,9 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       const key = cityEntityKey(city)
       dynamicPages.push(
         { url: `${baseUrl}/cities/${key}`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
-        { url: `${baseUrl}/homes-for-sale/${key}`, lastModified: now, changeFrequency: 'daily', priority: 0.85 },
+        ...(selfCitySearchUrlLeavesSitemap(key)
+          ? []
+          : [{ url: `${baseUrl}/homes-for-sale/${key}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.85 }]),
         { url: `${baseUrl}/open-houses/${key}`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
       )
 
@@ -460,6 +466,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       [] as string[],
     )
     for (const path of browsePairPaths) {
+      // SITE-183 / SITE-182: a registry community's area twin
+      // (/homes-for-sale/bend/broken-top) 301s onto the community page,
+      // which the resort loop above already lists. A sitemap lists
+      // canonicals, never a redirect source.
+      if (redirectsAwayFromSearch(path)) continue
       dynamicPages.push({ url: `${baseUrl}${path}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 })
     }
 
