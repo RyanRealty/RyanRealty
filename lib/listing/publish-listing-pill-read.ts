@@ -34,7 +34,19 @@ export type PublishedListingPillRead = {
   sentence: string
   /** The section-0 trace for the place figures the sentence leans on. */
   source: string
+  /** The trace's source, named in the reader's words. The trace opens with it. */
+  sourceName: string
 }
+
+/**
+ * VOICE-2 (visibility audit 2026-09-22): the trace opened "Market Truth
+ * (market_metric, detached):", two internal names in the first words a reader
+ * sees when they open the disclosure. It now opens with the feed in words
+ * (these are closed-sale and days-to-contract reads, so "regional MLS" rather
+ * than the ask instrument's "live MLS") and keeps the table name in
+ * parentheses for a section 0 audit.
+ */
+export const LISTING_PILL_READ_SOURCE_NAME = 'regional MLS through Oregon Data Share'
 
 const money = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
 
@@ -81,6 +93,6 @@ export function publishListingPillRead(input: ListingPillReadInput): PublishedLi
       ? `median closed price per square foot, detached homes in ${place}, trailing 12 months`
       : null,
   ].filter(Boolean)
-  const source = `Market Truth (market_metric, detached): ${parts.join('; ')}${input.asOfLabel ? `, computed ${input.asOfLabel}` : ''}. Days listed counts from this home's on-market date to today; $/sqft is this home's price over its living area.`
-  return { sentence, source }
+  const source = `${LISTING_PILL_READ_SOURCE_NAME}, ${parts.join('; ')}${input.asOfLabel ? `, computed ${input.asOfLabel}` : ''} (market_metric, detached). Days listed counts from this home's on-market date to today; $/sqft is this home's price over its living area.`
+  return { sentence, source, sourceName: LISTING_PILL_READ_SOURCE_NAME }
 }

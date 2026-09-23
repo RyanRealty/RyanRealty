@@ -41,24 +41,13 @@ export const MARKET_REPORT_DOORS: readonly MarketReportDoor[] = [
   { id: 'faq', href: '/faq', label: 'FAQ' },
 ] as const
 
-const HERE_COPY: Record<MarketReportDoorId, string> = {
-  hub: 'You are on the live Central Oregon market. City pulse rows open each city’s live report. Sales and weekly reports, months of supply, and the region deep dive are separate pages.',
-  region:
-    'You are on the Central Oregon region deep dive (charts and closed-sales detail). Live inventory by city lives on the housing market hub.',
-  mos: 'You are on the months of supply definition page. Live figures still live on the housing market hub and city pulse pages.',
-  method:
-    'You are on how we get our numbers. This page has no live figures — it explains the method behind the market pages.',
-  history:
-    'You are on the closed sales explorer. Live inventory and months of supply live on the housing market hub and city pulse pages.',
-  published:
-    'You are on sales reports and weekly snapshots. The live market hub is the current inventory and pace page.',
-  blog: 'You are in market stories and guides. Live figures live on the housing market hub and city pulse pages.',
-  faq: 'You are on FAQ. Live market figures live on the housing market hub and city pulse pages.',
-}
-
-export function marketReportHereBody(here: MarketReportDoorId): string {
-  return HERE_COPY[here]
-}
+/*
+ * The "Where you are" prose row ("You are on the live Central Oregon market…")
+ * and its HERE_COPY table were removed on 2026-09-23 (VOICE-6, visibility
+ * audit 2026-09-22): each row described the site's own structure rather than
+ * the market, read as machine output, and sat directly above the door links
+ * that already carry the navigation. The doors below are the one closing.
+ */
 
 export function marketReportDoorLinks(
   here: MarketReportDoorId,

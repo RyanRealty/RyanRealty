@@ -164,7 +164,6 @@ import {
   marketVerdict,
 } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { marketReportHereBody } from '@/lib/market/report-doors'
 import { formatDateTime } from '@/lib/format/date'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -399,9 +398,14 @@ export default async function MonthsOfSupplyPage() {
   // exactly this reason ("A zero-row query is a fact worth printing").
   const cityFootnotes = MOS_CITY_LABELS.filter((label) => !rowed.has(label)).map(
     (label) => {
-      if (label !== 'Bend') return `${label} returned no market row on this refresh`
-      if (bendHud.active == null) return `${label} has no published active count on this refresh`
-      return `${label} shows ${bendHud.active.toLocaleString('en-US')} active with no published months of supply`
+      // VOICE-6 (visibility audit 2026-09-22): the same three facts, said about
+      // the town rather than about our pipeline ("returned no market row", "shows
+      // 12 active with no published ..."). Still three different sentences for
+      // three different reads; the count is Bend's own detached Active count.
+      if (label !== 'Bend') return `We don't have current market numbers for ${label}`
+      if (bendHud.active == null) return `We don't publish a ${label} homes-for-sale count right now`
+      const homes = bendHud.active === 1 ? 'single-family home' : 'single-family homes'
+      return `${label} has ${bendHud.active.toLocaleString('en-US')} ${homes} for sale, and no months of supply we can publish`
     },
   )
   const cityFootnoteSentence =
@@ -457,11 +461,8 @@ export default async function MonthsOfSupplyPage() {
   // "See the full market report" section carried, then any city with no live figure.
   const closingItems: V3QuietItem[] = [
     ...faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer })),
-    {
-      kind: 'prose',
-      term: 'Where you are',
-      body: marketReportHereBody('mos'),
-    },
+    // VOICE-6 (2026-09-22): no "Where you are" row; the related pages below
+    // carry the navigation.
     { kind: 'prose', term: 'Related market pages', body: MOS_RELATED_INTRO },
     ...MOS_RELATED_LINKS.map((link) => ({ label: link.label, href: link.href })),
   ]

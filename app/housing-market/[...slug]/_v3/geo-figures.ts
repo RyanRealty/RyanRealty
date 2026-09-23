@@ -43,6 +43,7 @@ import { publishCompleteMonthMedian } from '@/lib/market/publish-complete-month-
 import { YEAR_OVERLAY_READING } from '../../_v3/market-charts'
 import { COMPARISON_CITY_LABELS, COMPARISON_CITY_SLUG } from './geo-constants'
 import { marketReportDoorLinks } from '@/lib/market/report-doors'
+import { CITY_FOOTNOTE_TERM, cityFootnoteFact } from '@/lib/market/city-footnote-fact'
 import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 
 const MONTH_TICK = [
@@ -371,18 +372,8 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
   const footnotes = COMPARISON_CITY_LABELS.filter(
     (label) => COMPARISON_CITY_SLUG[label] !== currentCitySlug && !rowed.has(label),
   ).map((label) => {
-    const snapshot = byLabel.get(label)
-    if (!snapshot) return { label, fact: `${label} returned no market row in the latest sync` }
-    if (snapshot.active_count == null) {
-      return { label, fact: `${label} has no published active single-family count` }
-    }
-    if (snapshot.active_count === 0) {
-      return { label, fact: `${label} shows no active single-family listings` }
-    }
-    return {
-      label,
-      fact: `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median`,
-    }
+    // VOICE-6: one wording for the four market tables (lib/market/city-footnote-fact).
+    return { label, fact: cityFootnoteFact(label, byLabel.get(label)) }
   })
 
   const stamp = snapshots
@@ -426,14 +417,10 @@ export function buildExploreItems(args: {
   footnotes: readonly CityFootnote[]
   posts: readonly BlogPostCard[]
 }): V3QuietItem[] {
+  // VOICE-6: no "Where you are / You are on the Bend housing market report"
+  // row. It described the site, not the market, and the door links below
+  // already take a reader to every other report.
   const items: V3QuietItem[] = [
-    {
-      kind: 'prose',
-      term: 'Where you are',
-      body: args.communityName
-        ? `You are on the ${args.communityName} market page under ${args.cityName}. The live hub, region report, and other city reports are separate.`
-        : `You are on the ${args.cityName} housing market report. The live hub and Central Oregon region report are separate pages.`,
-    },
     ...marketReportDoorLinks('hub').filter((door) => door.href !== `/housing-market/${args.citySlug}`),
     { label: 'All Central Oregon cities', href: '/cities' },
     { label: 'Browse homes for sale', href: listingsBrowsePath() },
@@ -471,7 +458,7 @@ export function buildExploreItems(args: {
   if (args.footnotes.length > 0) {
     items.push({
       kind: 'prose',
-      term: 'Cities not in the table above',
+      term: CITY_FOOTNOTE_TERM,
       body: `${args.footnotes.map((city) => city.fact).join('. ')}.`,
     })
     for (const city of args.footnotes) {

@@ -110,4 +110,13 @@ describe('contact fold (SITE-80 / SITE-96)', () => {
     expect(css).toMatch(/\.contact-fold__write \{\s*order: 3;/)
     expect(css).toContain('padding-bottom: 8.5rem')
   })
+
+  it('keeps the display phone on one line and sizes it to its door (UXLIVE-12)', () => {
+    const css = readFileSync(FOLD_CSS, 'utf8')
+    // The 2026-09-22 capture broke 541.703.3095 after "541.703." at 1440.
+    expect(css).toMatch(/\.contact-fold \.v3-doors__door--lead \{\s*container-type: inline-size;/)
+    const rule = /\.contact-fold \.v3-doors__door--lead \.v3-doors__label \{([^}]*)\}/.exec(css)?.[1] ?? ''
+    expect(rule).toContain('white-space: nowrap')
+    expect(rule).toMatch(/font-size: min\(var\(--v3-size-display-1\), \d+cqi\)/)
+  })
 })
