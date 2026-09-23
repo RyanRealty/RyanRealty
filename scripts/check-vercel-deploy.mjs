@@ -39,6 +39,7 @@ import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product
 // 403s an unknown UA, and ci:probe-ua fails any raw-HTTP probe without it.
 import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
 import { formatSitemapSmoke, probeSitemapClasses } from './lib/sitemap-smoke.mjs'
+import { checkInlineScripts, formatInlineScriptReport } from './lib/inline-script-health.mjs'
 import {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
@@ -417,6 +418,7 @@ async function main() {
         const url = deployment.url ? `https://${deployment.url}` : '(no url)'
         out(`READY in ${(Date.now() - startedAt) / 1000}s — ${url}`)
         out('check production URL: https://ryan-realty.com')
+        let homeHtml = ''
         try {
           const live = await fetch('https://ryan-realty.com/', {
             method: 'GET',
@@ -429,9 +431,58 @@ async function main() {
             err(`production host https://ryan-realty.com returned ${live.status}`)
             process.exit(1)
           }
+          homeHtml = await live.text()
         } catch (e) {
           err(`ryan-realty.com check failed: ${e instanceof Error ? e.message : String(e)}`)
           process.exit(2)
+        }
+
+        // ── inline-script parse + GTM loader (TRACK-2) ─────────────────────
+        // 2026-09-17..09-22: the homepage's inline GTM bootstrap was a
+        // SyntaxError, so gtm.js never loaded and browser GA4 read zero for
+        // five days while this deploy check (200, READY) and every gate passed.
+        // Parse every inline classic <script> production actually served and
+        // require the gtm.js loader text. INLINE_SCRIPT_CHECK_SKIP=1 is the
+        // acknowledged-outage escape.
+        if (process.env.INLINE_SCRIPT_CHECK_SKIP === '1') {
+          out('inline scripts: SKIPPED (INLINE_SCRIPT_CHECK_SKIP=1)')
+        } else {
+          const report = formatInlineScriptReport(checkInlineScripts(homeHtml))
+          for (const line of report.lines) out(`inline scripts: ${line}`)
+          if (!report.ok) {
+            err('✗ INLINE SCRIPT CHECK FAILED — the homepage ships a script that cannot run, or no GTM loader.')
+            err('  A classic <script> with a parse error executes nothing; browser analytics stops with it.')
+            process.exit(1)
+          }
+        }
+
+        // ── retired /_next/image answers at the edge (TRACK-3) ─────────────
+        // images.unoptimized (Matt lock 2026-09-13) removed the optimizer; every
+        // stale /_next/image?url=X then rendered the ~143 KB HTML 404 page.
+        // middleware.ts now 308s it to X (lib/routing/legacy-next-image.ts).
+        // The unit test proves the mapping; only production can prove Vercel
+        // routes /_next/image through middleware, so ask it.
+        if (process.env.LEGACY_IMAGE_SMOKE_SKIP === '1') {
+          out('legacy /_next/image: SKIPPED (LEGACY_IMAGE_SMOKE_SKIP=1)')
+        } else {
+          try {
+            const probe = await fetch('https://ryan-realty.com/_next/image?url=%2Ffavicon.ico&w=64&q=75', {
+              method: 'GET',
+              redirect: 'manual',
+              headers: { 'user-agent': CI_PROBE_USER_AGENT },
+              signal: AbortSignal.timeout(20_000),
+            })
+            const location = probe.headers.get('location') ?? ''
+            out(`legacy /_next/image: ${probe.status} -> ${location || '(no location)'}`)
+            if (probe.status !== 308 || !/^(https:\/\/ryan-realty\.com)?\/favicon\.ico$/.test(location)) {
+              err('✗ LEGACY IMAGE CHECK FAILED — /_next/image?url=/favicon.ico did not 308 to /favicon.ico.')
+              err('  Stale optimizer URLs are rendering the app instead of resolving to the image.')
+              process.exit(1)
+            }
+          } catch (e) {
+            err(`legacy /_next/image check failed: ${e instanceof Error ? e.message : String(e)}`)
+            process.exit(2)
+          }
         }
 
         // ── sitemap smoke (SITE-54) ────────────────────────────────────────

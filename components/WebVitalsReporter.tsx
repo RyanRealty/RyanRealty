@@ -1,6 +1,7 @@
 'use client'
 
 import { useReportWebVitals } from 'next/web-vitals'
+import { isNonPagePath } from '@/lib/analytics/web-vitals-sample'
 
 /**
  * Real-user Core Web Vitals reporter.
@@ -15,10 +16,8 @@ import { useReportWebVitals } from 'next/web-vitals'
  *
  * Mounted once in the root layout. Client component (the API is browser-only).
  */
-/** Paths that are never a page a person navigated to: framework and API routes. */
-export function isNonPagePath(pathname: string): boolean {
-  return pathname.startsWith('/_next') || pathname.startsWith('/api/') || pathname === '/api'
-}
+// isNonPagePath is shared with the server twin in app/api/web-vitals/route.ts
+// (lib/analytics/web-vitals-sample.ts), so the two filters cannot drift.
 
 export function WebVitalsReporter() {
   useReportWebVitals((metric) => {

@@ -23,7 +23,7 @@ import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-cl
 import { siteServeTier, isMeasurementWindowDue, isSiteClaim, isStaleInProgress, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
-import { classifyFeed, formatSilentZeroReport } from '../lib/data/loop/silent-zero'
+import { classifyFeed, classifyWatchedSeries, formatSilentZeroReport, formatWatchReport, WATCHED_SERIES, watchKey, type WatchPoint } from '../lib/data/loop/silent-zero'
 
 config({ path: '.env.local' })
 
@@ -335,14 +335,16 @@ async function main() {
     // catch. `.order()` is not optional: an unordered range() re-shuffles
     // between requests and silently drops rows.
     const PAGE = 1000
-    const feedRows: Array<{ channel: string; metric: string; value: number; date: string }> = []
+    const feedRows: Array<{ channel: string; scope: string; scope_id: string; metric: string; value: number; date: string }> = []
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await sb
         .from('marketing_channel_daily')
-        .select('channel,metric,value,date')
+        .select('channel,scope,scope_id,metric,value,date')
         .gte('date', since)
         .order('date', { ascending: true })
         .order('channel', { ascending: true })
+        .order('scope', { ascending: true })
+        .order('scope_id', { ascending: true })
         .order('metric', { ascending: true })
         .range(from, from + PAGE - 1)
       if (error) throw error
@@ -351,10 +353,15 @@ async function main() {
       if (page.length < PAGE) break
     }
 
+    // Keyed channel x scope x metric (TRACK-2, 2026-09-23): with scope
+    // collapsed, ga4 event_count summed page_view into session_start's pair.
     type Agg = { rows: number; total: number; nonZeroRows: number; latest: string | null }
     const byKey = new Map<string, Agg>()
+    const landedByChannel = new Map<string, Set<string>>()
+    const watchPoints = new Map<string, WatchPoint[]>()
+    const watched = new Set(WATCHED_SERIES.map(watchKey))
     for (const r of feedRows) {
-      const key = `${r.channel}\u0000${r.metric}`
+      const key = `${r.channel}\u0000${r.scope}\u0000${r.metric}`
       const a = byKey.get(key) ?? { rows: 0, total: 0, nonZeroRows: 0, latest: null }
       a.rows += 1
       const v = Number(r.value) || 0
@@ -362,12 +369,39 @@ async function main() {
       if (v !== 0) a.nonZeroRows += 1
       if (!a.latest || r.date > a.latest) a.latest = r.date
       byKey.set(key, a)
+      const landed = landedByChannel.get(r.channel) ?? new Set<string>()
+      landed.add(r.date)
+      landedByChannel.set(r.channel, landed)
+      const wk = watchKey({ channel: r.channel, scope: r.scope, scopeId: r.scope_id, metric: r.metric })
+      if (watched.has(wk)) watchPoints.set(wk, [...(watchPoints.get(wk) ?? []), { date: r.date, value: v }])
     }
     const verdicts = [...byKey.entries()].map(([key, a]) => {
-      const [channel, metric] = key.split('\u0000')
-      return classifyFeed({ channel: channel ?? '', metric: metric ?? '', ...a })
+      const [channel, scope, metric] = key.split('\u0000')
+      return classifyFeed({ channel: channel ?? '', scope: scope ?? '', metric: metric ?? '', ...a })
     })
     for (const line of formatSilentZeroReport(verdicts)) push(line)
+
+    // Watched series: judged on their latest landed days, not the whole window.
+    const watchVerdicts = WATCHED_SERIES.map((s) =>
+      classifyWatchedSeries(s, watchPoints.get(watchKey(s)) ?? [], [...(landedByChannel.get(s.channel) ?? [])]),
+    )
+    // The failing health verdict's reasons live in its row metadata.
+    const details = new Map<string, string[]>()
+    for (const v of watchVerdicts) {
+      if (v.verdict !== 'unhealthy' || !v.latest) continue
+      const { data } = await sb
+        .from('marketing_channel_daily')
+        .select('metadata')
+        .eq('channel', v.series.channel)
+        .eq('scope', v.series.scope)
+        .eq('scope_id', v.series.scopeId)
+        .eq('metric', v.series.metric)
+        .eq('date', v.latest)
+        .limit(1)
+      const failures = (data?.[0]?.metadata as { failures?: unknown } | undefined)?.failures
+      if (Array.isArray(failures)) details.set(watchKey(v.series), failures.map(String))
+    }
+    for (const line of formatWatchReport(watchVerdicts, details)) push(line)
   } catch (err) {
     // Never block the boot on a diagnostic.
     push(`silent-zero check unavailable: ${(err as Error).message.slice(0, 120)}`)

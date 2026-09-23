@@ -5,6 +5,7 @@
 import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
 import { getGA4Summary } from '@/app/actions/ga4-report'
+import { Ga4MirrorNotice } from '@/app/admin/(protected)/analytics/_components/Ga4MirrorNotice'
 
 // Live GA4 Data API call — cached so the admin dashboard doesn't pay the
 // round-trip per render (args are part of the cache key).
@@ -58,6 +59,8 @@ export default async function DashboardGA4Panel() {
     const d = result.data
     return (
       <div className="space-y-4">
+        {/* TRACK-1: sessions/users/engagement/bounce/sources below are mirror-shaped. */}
+        <Ga4MirrorNotice />
         <p style={bodySm}>
           Last 30 days with acquisition, social channel performance, and lead-event tracking so you can optimize for more seller leads.
           {' '}GA4 is consent-gated and undercounts vs first-party — use <code style={codeChip}>visitor_sessions</code> / live visitors as primary traffic (see docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md).
