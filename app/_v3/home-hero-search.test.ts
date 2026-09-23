@@ -58,6 +58,11 @@ describe('homepage hero search uses the public search stack', () => {
     const morph = readFileSync(resolve('components/motion/morphing-search.tsx'), 'utf8')
     const wrap = readFileSync(resolve('components/site/v3/V3MorphSearch.tsx'), 'utf8')
     expect(morph).toContain('aria-haspopup="dialog"')
+    // Lighthouse aria-allowed-attr failed the homepage on it (PR #352,
+    // 2026-09-23): aria-expanded is not allowed on a plain search input. The
+    // resting field opens the search dialog as you type, so it is a combobox,
+    // the same role the open field already carries.
+    expect(morph).toMatch(/type="search"\s+role="combobox"\s+value=\{query\}/)
     expect(morph).toContain('layoutId')
     expect(morph).toContain('<kbd')
     expect(morph).toContain('backdrop-blur-xl')
