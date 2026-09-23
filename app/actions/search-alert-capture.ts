@@ -35,6 +35,23 @@ import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/**
+ * crm_people.source for every capture in this file: the door, not the host
+ * (FUNNEL-4, 2026-09-23). It is also the source:<door> tag sendEvent writes and
+ * one of the response clock's SITE_SUBMIT_SOURCES.
+ */
+const ALERTS_DOOR = 'idx-registration'
+
+/*
+ * Intake screen (FUNNEL-1). sendEvent screens every capture here; `suspect`
+ * means THIS submit looks scripted (11 of 30 alerts-sheet rows in the 30 days to
+ * 2026-09-22 got past the honeypot with Faker-style Gmail addresses). A suspect
+ * submit still gets its durable listing_alerts row, the thing it asked for, so
+ * a wrong flag costs a person nothing they requested. It gets none of the
+ * machinery: no tagging onto an existing person, no call task, no workflow, no
+ * confirmation mail, no browser stitch, no GA4 lead.
+ */
+
 export type SearchAlertResult = { ok: true } | { ok: false; error: string }
 
 export async function submitSearchAlertSignup(input: {
@@ -107,6 +124,7 @@ export async function submitSearchAlertSignup(input: {
   //    persistence.
   let fubPersonId: number | null = null
   let crmPersonId: number | null = null
+  let suspect = false
   try {
     // Per-broker attribution (Matt 2026-09-01: one smart site, every broker's
     // links route their own leads): the rr_agent_attribution cookie a broker's
@@ -116,7 +134,7 @@ export async function submitSearchAlertSignup(input: {
     const result = await sendEvent({
       type: 'Saved Property Search',
       person: { emails: [{ value: email }] },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      source: ALERTS_DOOR,
       system: 'Ryan Realty Website',
       sourceUrl: searchUrl,
       message: `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
@@ -125,7 +143,8 @@ export async function submitSearchAlertSignup(input: {
     const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
     crmPersonId = nativeId
     fubPersonId = nativeId
-    if (nativeId) {
+    suspect = result.ok && result.suspect
+    if (nativeId && !suspect) {
       try {
         await canonicallyTagLead({
           fubPersonId: nativeId,
@@ -200,7 +219,7 @@ export async function submitSearchAlertSignup(input: {
   //     that sentence must not go out before the row that makes it true. The
   //     broker's own new-lead text was queued above by autoEnrollByPersonId.
   //     Non-blocking — a mail failure never fails a signup that persisted.
-  if (crmPersonId) {
+  if (crmPersonId && !suspect) {
     try {
       const { sendAlertConfirmation } = await import('@/lib/comms/site-confirmations')
       const ack = await sendAlertConfirmation({
@@ -218,15 +237,17 @@ export async function submitSearchAlertSignup(input: {
   }
 
   // 7. GA4 conversion mirror (best-effort, zero value: this is a free capture).
-  try {
-    await fireLeadGenerated({
-      lp_variant: 'search-alert',
-      lead_type: 'buyer',
-      value: 0,
-      fub_person_id: fubPersonId ?? undefined,
-    })
-  } catch {
-    // best-effort
+  if (!suspect) {
+    try {
+      await fireLeadGenerated({
+        lp_variant: 'search-alert',
+        lead_type: 'buyer',
+        value: 0,
+        fub_person_id: fubPersonId ?? undefined,
+      })
+    } catch {
+      // best-effort
+    }
   }
 
   return { ok: true }
@@ -289,20 +310,22 @@ export async function submitListingSaveCapture(input: {
   // Server-built canonical URL — the client never supplies a URL.
   const listingUrl = `${base}/homes-for-sale/listing/${encodeURIComponent(listingKey)}`
 
+  let suspect = false
   try {
     // Same per-broker attribution rule as the alert signup above.
     const attributed = await readAttributedAgentServer()
     const result = await sendEvent({
       type: 'Saved Property',
       person: { emails: [{ value: email }] },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      source: ALERTS_DOOR,
       system: 'Ryan Realty Website',
       sourceUrl: listingUrl,
       message: `Saved a home: ${homeLabel} (${listingKey})`,
       brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
     })
     const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
-    if (nativeId) {
+    suspect = result.ok && result.suspect
+    if (nativeId && !suspect) {
       try {
         await canonicallyTagLead({
           fubPersonId: nativeId,
@@ -364,14 +387,16 @@ export async function submitListingSaveCapture(input: {
     // Best-effort. Never block the visitor's confirmation on a capture blip.
   }
 
-  try {
-    await fireLeadGenerated({
-      lp_variant: 'listing-save',
-      lead_type: 'buyer',
-      value: 0,
-    })
-  } catch {
-    // best-effort
+  if (!suspect) {
+    try {
+      await fireLeadGenerated({
+        lp_variant: 'listing-save',
+        lead_type: 'buyer',
+        value: 0,
+      })
+    } catch {
+      // best-effort
+    }
   }
 
   return { ok: true }
@@ -465,19 +490,21 @@ export async function submitListingPriceDropWatch(input: {
   const listingUrl = `${base}${listingByKeyPath(listingKey)}`
 
   let crmPersonId: number | null = null
+  let suspect = false
   try {
     const attributed = await readAttributedAgentServer()
     const result = await sendEvent({
       type: 'Saved Property Search',
       person: { emails: [{ value: email }] },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      source: ALERTS_DOOR,
       system: 'Ryan Realty Website',
       sourceUrl: listingUrl,
       message: `Watching the price on ${homeLabel} (listingKey ${listingKey})`,
       brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
     })
     crmPersonId = result.ok ? nativeCrmPersonId(result.personId) : null
-    if (crmPersonId) {
+    suspect = result.ok && result.suspect
+    if (crmPersonId && !suspect) {
       try {
         await canonicallyTagLead({
           fubPersonId: crmPersonId,
@@ -545,7 +572,7 @@ export async function submitListingPriceDropWatch(input: {
   // The visitor's same-minute confirmation. A system send, not a broker send
   // (CLAUDE.md §1). AFTER the upsert, because the copy says the watch is on and
   // that sentence must not go out before the row that makes it true.
-  if (crmPersonId) {
+  if (crmPersonId && !suspect) {
     try {
       const { sendAlertConfirmation } = await import('@/lib/comms/site-confirmations')
       const ack = await sendAlertConfirmation({
@@ -563,15 +590,17 @@ export async function submitListingPriceDropWatch(input: {
     }
   }
 
-  try {
-    await fireLeadGenerated({
-      lp_variant: 'listing-price-watch',
-      lead_type: 'buyer',
-      value: 0,
-      fub_person_id: crmPersonId ?? undefined,
-    })
-  } catch {
-    // best-effort
+  if (!suspect) {
+    try {
+      await fireLeadGenerated({
+        lp_variant: 'listing-price-watch',
+        lead_type: 'buyer',
+        value: 0,
+        fub_person_id: crmPersonId ?? undefined,
+      })
+    } catch {
+      // best-effort
+    }
   }
 
   return { ok: true }

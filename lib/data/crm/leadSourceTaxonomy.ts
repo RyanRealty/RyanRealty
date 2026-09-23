@@ -73,10 +73,12 @@ const RULES: ReadonlyArray<{ channel: LeadChannel; test: (s: string) => boolean 
   // "expired-lp" / "fsbo-lp" FORM submission (a homeowner who filled out our
   // landing page — a real inbound lead) is not mistaken for the "Expired
   // Listing" / "FSBO" prospecting LISTS we build ourselves (matched below).
+  // The site's door labels (FUNNEL-4, 2026-09-23: crm_people.source is the door,
+  // not the host): 'idx-registration' (alerts sheet), 'place-page', 'join'.
   {
     channel: 'web',
     test: (s) =>
-      /\blp\b|lp form|landing|contact form|home valuation|valuation|\bcma\b|rental calculator|exit intent|signup|sign up|newsletter|listing alert|saved search/.test(
+      /\blp\b|lp form|landing|contact form|home valuation|valuation|\bcma\b|rental calculator|exit intent|signup|sign up|newsletter|listing alert|saved search|\bidx\b|place page|^join$/.test(
         s,
       ),
   },

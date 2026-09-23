@@ -55,18 +55,34 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   // approve-and-send by design (expired-listing-processor deliberately
   // dropped its autoEnrollPerson call for the same reason). Homeowners who
   // submitted OUR forms carry inbound -lp sources and pass this check.
-  const { classifyLeadSource } = await import('@/lib/data/crm/leadSourceTaxonomy')
-  if (classifyLeadSource((person.source as string | null) ?? null).outreachList) {
+  //
+  // crm_people.source is FIRST-touch since FUNNEL-4 (2026-09-23): a skip-traced
+  // owner who later fills in one of our forms keeps source 'expired-listing-cron'
+  // and gains the form's source:<door> tag. That tag is the inbound signal now,
+  // so a person carrying a site-submit door tag is not an outreach-list row.
+  // Same predicate as the 15-minute sweep (app/api/cron/crm-auto-enroll).
+  const tags = (person.tags as string[]) ?? []
+  const { isOutreachListOnly } = await import('@/lib/crm/lead-source')
+  if (isOutreachListOnly((person.source as string | null) ?? null, tags)) {
     return { enrolled: false, reason: 'outreach-list source (manual outreach only)' }
   }
-
-  const tags = (person.tags as string[]) ?? []
 
   // Verification-fleet test identity never enrolls in anything.
   {
     const { hasFleetTestTag } = await import('@/lib/crm/fleet-test-identity')
     if (hasFleetTestTag(tags)) {
       return { enrolled: false, reason: 'fleet:test identity (verification fleet — never enroll)' }
+    }
+  }
+
+  // Intake screen (FUNNEL-1): a submit flagged as a likely script never enters a
+  // drip. The row stays, tagged; a broker who removes the tag inside the first
+  // 7 days lets the 15-minute crm-auto-enroll sweep pick the person up (after
+  // that, enroll them from the lead page).
+  {
+    const { hasSuspectTag } = await import('@/lib/crm/lead-quality')
+    if (hasSuspectTag(tags)) {
+      return { enrolled: false, reason: 'quality:suspect (intake screen: likely script submit)' }
     }
   }
 

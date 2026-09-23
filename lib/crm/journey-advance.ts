@@ -40,7 +40,7 @@ export const JOURNEY_WRITERS: readonly JourneyWriter[] = [
     trigger: 'first-outbound',
     from: [JOURNEY_ENTRY_STAGE],
     to: JOURNEY_NURTURE_STAGE,
-    when: 'first successful governed email/SMS (stampFirstBrokerActionIfEmpty path)',
+    when: 'first successful governed email/SMS (stampFirstBrokerActionIfEmpty path) or drip send (recordSequenceOutbound)',
   },
   {
     trigger: 'broker-set-stage',

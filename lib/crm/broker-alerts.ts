@@ -28,6 +28,7 @@ import {
   DEFAULT_BROKER_NOTIFY_PREFS,
 } from '@/lib/crm/broker-notify-prefs'
 import { hourInTimeZone, DEFAULT_SMS_TIMEZONE } from '@/lib/crm/quiet-hours'
+import { hasSuspectTag, isSuspectSilencedAlertKind } from '@/lib/crm/lead-quality'
 import {
   BROKER_ALERT_MAILBOXES,
   addressFromListingUrl,
@@ -157,6 +158,21 @@ export async function queueBrokerAlert(params: {
     const broker = params.broker && ALERT_PHONE_BY_BROKER[params.broker] ? params.broker : 'matt'
     const toPhone = ALERT_PHONE_BY_BROKER[broker]
     if (!toPhone) return false
+
+    // Intake screen (FUNNEL-1): a person flagged quality:suspect never fires the
+    // lead-arrival, response-clock or return-visit pings. In the week to
+    // 2026-09-22, 131 of the 253 texts on Matt's phone were about scripted
+    // submits. A reply, a booking, a built CMA and the task digest still text.
+    // A failed tag read sends the alert: a preference may silence a text, a
+    // read error never loses a lead.
+    if (isSuspectSilencedAlertKind(params.kind)) {
+      const { data: person, error: personErr } = await sb
+        .from('crm_people')
+        .select('tags')
+        .eq('id', params.personId)
+        .maybeSingle()
+      if (!personErr && hasSuspectTag(person?.tags)) return false
+    }
 
     // Per-broker preferences decide BOTH whether this alert exists and which
     // channel carries it. Every gate below runs HERE, at queue time, because

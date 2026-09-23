@@ -23,6 +23,8 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { BROKER_ALERT_ORIGIN, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { hasFleetTestTag } from '@/lib/crm/fleet-test-identity'
+import { hasSuspectTag } from '@/lib/crm/lead-quality'
+import { sellerAddressOf } from '@/lib/crm/merge'
 import {
   HUMAN_TOUCH_KINDS,
   classify,
@@ -112,11 +114,8 @@ export function askOf(person: {
 }): string {
   const tags = (person.tags ?? []).map((t) => String(t).toLowerCase())
   const source = String(person.source ?? '').toLowerCase()
-  const custom = person.custom ?? {}
-  const address =
-    [custom.sellerPropertyAddress, custom.subjectAddress, custom.subjectPropertyAddress]
-      .map((v) => (typeof v === 'string' ? v.trim() : ''))
-      .find((v) => v && v.toLowerCase() !== 'unspecified') ?? ''
+  // One reader of the intake's address keys, shared with the merge (FUNNEL-6).
+  const address = sellerAddressOf(person.custom) ?? ''
 
   if (tags.includes('intent:expired-listing') || source === 'expired-lp') {
     return address ? `help with ${address}, an expired listing` : 'help with an expired listing'
@@ -167,8 +166,11 @@ export async function loadClockPopulation(
   for (const row of rows) {
     const tags = row.tags ?? []
     // The fleet's test identity submits the real forms on purpose; it must never
-    // wake a broker. Hard-stopped people are not contacted at all.
-    if (hasFleetTestTag(tags) || tags.includes('compliance:hard-stop')) continue
+    // wake a broker. Hard-stopped people are not contacted at all. A submit the
+    // intake screen flagged as a likely script (FUNNEL-1 / TRACK-8: 38 of the 57
+    // people this clock flagged in the week to 2026-09-22 were bot-shaped) is not
+    // a lead waiting on a person, so it is not on the clock or the panel.
+    if (hasFleetTestTag(tags) || tags.includes('compliance:hard-stop') || hasSuspectTag(tags)) continue
     const lead: LeadLike = {
       personId: row.id,
       source: row.source,
