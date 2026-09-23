@@ -47,12 +47,20 @@ const CASES = [
 ]
 
 function parseCount(html) {
+  // Rendered HTML only. The RSC flight payload (self.__next_f.push script
+  // blocks) and the JSON-LD scripts serialize every prop on the page, and a
+  // prop can carry an "N homes" phrase that is not the results header — the
+  // plain city page's below-map price ladder ("216 Bend homes at $400–600K",
+  // SITE-190) landed in the flight stream BEFORE the map's own rendered claim
+  // and became the number this gate read. Drop every <script> block first so
+  // the match is the count a visitor sees.
+  const rendered = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
   // The grid header renders "N homes" — possibly with modifier words between
   // the number and the noun ("190 single-level homes are on the market", the
   // 2026-07-17 false positive). Allow up to 3 adjective-ish words but not
   // connectives, so "$775,000 and homes take a median of 14 days" in body copy
   // can never be mistaken for the count header.
-  const m = html.match(
+  const m = rendered.match(
     /([0-9][0-9,]*)(?:\s+(?!and\b|of\b|or\b|to\b|in\b)[a-z][a-z-]*){0,3}\s+(?:homes|results|listings|properties)\b/i
   )
   return m ? parseInt(m[1].replace(/,/g, ''), 10) : null

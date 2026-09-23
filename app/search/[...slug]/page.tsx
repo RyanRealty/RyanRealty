@@ -65,7 +65,9 @@ import {
   type SearchParams,
 } from './page-filters'
 import { renderGolfLanding } from './sections/GolfBranch'
-import { renderMapSplitView } from './sections/MapSplitView'
+import { renderMapSplitView, type SplitCitySeo } from './sections/MapSplitView'
+import { loadCitySplitDepth } from './sections/city-split-depth'
+import { buildCityMarketDatasetSchema } from './city-market-dataset'
 import { ListingsResults } from './sections/ListingsResults'
 import { SearchSeoTail } from './sections/SeoTail'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
@@ -229,9 +231,31 @@ export default async function SearchPage({
       isPlainCityBrowse) &&
     Boolean(city || hasFilterOnly)
 
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
   // Map/split seeds from MapSplitView's own viewport fetch. Do not wait on the
-  // 12s grid listings RPC (or grid-only JSON-LD/banner reads) first.
+  // 12s grid listings RPC (or grid-only banner reads) first.
   if (isMapSplitView) {
+    // SITE-190 / SITE-192: the plain, indexable /homes-for-sale/[city] page is
+    // the one winner for "{City} homes for sale" (PAGE_OUTLINE) and this branch
+    // serves it, so it carries the JSON-LD and the below-map depth the grid
+    // branch always shipped. The depth read STARTS here, beside the map's own
+    // viewport fetch, and MapSplitView awaits it after that fetch settles with
+    // a short grace, so the map never waits on it. Off on filtered / view= /
+    // paged variants (noindex, canonical to the plain page) and on a self-city
+    // plain page (Sunriver, Black Butte Ranch), whose canonical is its
+    // community (SITE-184 / SITE-187) and which stays exactly as it shipped.
+    const splitCityRelatedSlug = city ? cityEntityKey(city) : null
+    const citySeo: SplitCitySeo | null =
+      isPlainCityBrowse && city && splitCityRelatedSlug && !selfCityHeading && !shouldNoIndexSearchVariant(sp)
+        ? {
+            siteUrl,
+            cityMetaDescription: getCityContent(city)?.metaDescription,
+            placeName,
+            relatedCitySlug: splitCityRelatedSlug,
+            cityDepth: loadCitySplitDepth({ city, relatedCitySlug: splitCityRelatedSlug, searchPagePath }),
+          }
+        : null
     const [priceChangeKeys, session] = await Promise.all([
       IS_PRODUCTION_BUILD
         ? Promise.resolve(new Set<string>())
@@ -274,6 +298,7 @@ export default async function SearchPage({
       initialPolygon,
       presetChips,
       perPageParam,
+      citySeo,
     })
   }
 
@@ -340,8 +365,6 @@ export default async function SearchPage({
       ? (subdivisionTabContent?.about ?? getSubdivisionBlurb(decodedSubdivision!))
       : null
   const bannerUrl = await resolvePlaceBannerUrl({ city, subdivision, decodedSubdivision })
-
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
   // Clean header copy — data-grounded. Active count = totalCount (the accurate
   // full_count of the filtered results). Grain is all-types unless the visitor
@@ -522,19 +545,9 @@ export default async function SearchPage({
               Boolean(city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys)) ||
               Boolean(subdivision && !areaPrint)
             }
-            datasetSchema={
-              cityMarketFaq && cityMarketFaq.datasetVariables.length > 0
-                ? {
-                    type: 'dataset',
-                    name: `${city}, Oregon real estate market statistics${cityMarketFaq.asOfLabel ? `, ${cityMarketFaq.asOfLabel}` : ''}`,
-                    description: `Live single-family home market data for ${city}, Oregon. Includes median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
-                    url: searchPagePath,
-                    dateModified: cityMarketFaq.asOfIso ?? undefined,
-                    spatialCoverageName: `${city}, OR`,
-                    variableMeasured: cityMarketFaq.datasetVariables,
-                  }
-                : undefined
-            }
+            // One builder for both branches (city-market-dataset.ts), so the
+            // Dataset node is the same whichever branch served the URL.
+            datasetSchema={buildCityMarketDatasetSchema({ city, searchPagePath, cityMarketFaq })}
           />
           {city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys) && (
             <ResortCommunityJsonLd

@@ -1,6 +1,6 @@
 # Stacked Current blocks, archived 2026-09-23 (verbatim)
 
-Six `# Current` blocks landed on `main` on 2026-09-22/23 before `ci:handoff-current` (package p10) reached it. They were consolidated into one Current block in the visibility-pass merge (PR #352); every still-open item is carried there. Kept here verbatim for a named SHA.
+Seven `# Current` blocks landed on `main` on 2026-09-22/23 before `ci:handoff-current` (package p10) reached it. They were consolidated into one Current block in the visibility-pass merge (PR #352); every still-open item is carried there. Kept here verbatim for a named SHA.
 
 # Current — 2026-09-23 (cloud grinder round 2: every registry community's area twin 301s home)
 
@@ -44,4 +44,16 @@ Surface: Claude cloud routine `cloud-grinder-2026-09-23-00`, `main` checkout, la
 # Current — 2026-09-22 (Matt: another brokerage's phone stays off the listing)
 
 Surface: Grok Build, primary checkout. A listing detail for a home that is not ours shows the listing brokerage name. The listing broker's phone, email, and personal name are not on that page. A Ryan Realty listing can still name our agent and our phone. Node: none.
+
+
+# Current — 2026-09-23 (cloud grinder round 3: the city search winner ships its depth; queue drained)
+
+Surface: Claude cloud routine `cloud-grinder-2026-09-23-08`, `main` checkout, one lane (SITE-190 + SITE-192) cherry-picked onto main as `95c77df` and pushed with `npm run push`. No PR. `deploy:verify` cannot run here (no `VERCEL_TOKEN`); production served it 12 minutes after the push (11:41Z): both city search pages ship WebPage / BreadcrumbList / Place / ItemList / Dataset / FAQPage, three h2s, the five-question FAQ and the footer, first byte to done under 1 s; the Black Butte Ranch, luxury and `?view=list` controls are unchanged. §0 on Bend: ItemList 781 = the visible "781+ homes for sale", "495 on this map" is the capped frame (the rail's own trace says so), Dataset 754 = the SFR-labelled FAQ sentence.
+
+- **SITE-190 Bend + SITE-192 Redmond (GSC "[city] homes for sale" → /homes-for-sale/[city]).** The city guide collected the inventory query (Bend 90d: /cities/bend 65%, homepage GBP-UTM 30%, search 0; Redmond 90d: /cities/redmond 97%). Root cause, verified on production and the local build: the plain city search takes the `isPlainCityBrowse` → `renderMapSplitView` early return, which skipped `SearchPageJsonLd`, the Dataset, the `buildMarketFaq` FAQ and the whole `SearchSeoTail` — the winner was a map shell with 4 layout-only ld+json scripts and no h2. The split branch now renders WebPage / BreadcrumbList / Place / ItemList (from the map's own viewport fetch; omitted when degraded) + Dataset (`app/search/[...slug]/city-market-dataset.ts`, one builder for both branches) and mounts the tail below the viewport-fit Field (market band, leftover instrument, price ladder, 5-question FAQ → FAQPage, related searches, footer); the depth read (`sections/city-split-depth.ts`) runs beside the viewport fetch with a 1.5 s grace so the map never waits. Self-city plain pages (canonical → community) skip the tail. `scripts/check-search-results.mjs` now strips `<script>` blocks before parsing the rendered count. Both nodes blocked to 2026-10-21.
+- **SITE-189 Tetherow zero-click** closed on round 2's registry rule with the shared window (blocked to 2026-10-21).
+- **Queue state at end of fire:** every SITE node is done or blocked; 10 GSC nodes (181–185, 188–192) sit on 28-day GSC windows re-opening 2026-10-21 (re-pull with `scratchpad/gsc-qp.mts` + `gsc-family.mts`, both re-creatable from the handoff blocks above: query×page via the service account, `dimensionFilterGroups` equals / contains). Empty of eligible is not a stop: the next fire runs the measurer / seeds per the skill.
+- **Sandbox facts.** Three builds in one fire were fine one at a time (~9 min each, `--max-old-space-size=11264`, no dev server); `ci:runtime-gates` fails the same six `heroImageNatural` floors + three tap targets every run (sandbox egress; CI on main green); a lane's `tsc` beside a dev server OOMed once — run `tsc` solo. Agent worktrees stay harness-locked after the lane ends (`git worktree remove` refuses); leave them.
+- **Not done / follow-ups (no node).** `/housing-market/black-butte-ranch` vs `/housing-market/sisters/black-butte-ranch` twin; plat pages build `/communities/${resortSlug}` from the durable slug (Pronghorn → 308) at five call sites; `WebPage.primaryImageOfPage` omitted on the split branch (banner read is grid-only).
+- Skills read: `.claude/skills/site-queue/SKILL.md`, CLAUDE.md §0/§1/§2/§3, PAGE_OUTLINE "One winner", SITE_PAGES_E2E "Site queue".
 
