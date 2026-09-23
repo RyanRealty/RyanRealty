@@ -39,6 +39,7 @@ import type { ReportCity } from '@/lib/data/geo/report-cities'
 import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
+import { cityFootnoteFact } from '@/lib/market/city-footnote-fact'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
@@ -268,13 +269,8 @@ export function buildInventoryLedger(
       missing.push({
         label: city.label,
         slug: city.slug,
-        fact: !snapshot
-          ? `${city.label} returned no live market row in the latest sync`
-          : snapshot.active_count == null
-            ? `${city.label} has no published active single-family count`
-            : snapshot.active_count === 0
-            ? `${city.label} shows no active single-family listings`
-            : `${city.label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median list price`,
+        // VOICE-6: one wording for the four market tables.
+        fact: cityFootnoteFact(city.label, snapshot),
       })
       continue
     }
@@ -287,10 +283,7 @@ export function buildInventoryLedger(
       missing.push({
         label: city.label,
         slug: city.slug,
-        fact:
-          snapshot.active_count == null
-            ? `${city.label} has no published active single-family count`
-            : `${city.label} shows no active single-family listings`,
+        fact: cityFootnoteFact(city.label, snapshot),
       })
       continue
     }

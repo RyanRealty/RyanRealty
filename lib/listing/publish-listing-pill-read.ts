@@ -41,8 +41,9 @@ export type PublishedListingPillRead = {
 /**
  * VOICE-2 (visibility audit 2026-09-22): the trace opened "Market Truth
  * (market_metric, detached):", two internal names in the first words a reader
- * sees when they open the disclosure. It now opens with the feed in words, the
- * same name the ask instrument below uses, and keeps the table name in
+ * sees when they open the disclosure. It now opens with the feed in words
+ * (these are closed-sale and days-to-contract reads, so "regional MLS" rather
+ * than the ask instrument's "live MLS") and keeps the table name in
  * parentheses for a section 0 audit.
  */
 export const LISTING_PILL_READ_SOURCE_NAME = 'regional MLS through Oregon Data Share'

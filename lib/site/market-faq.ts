@@ -204,9 +204,27 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
 
   const sfrPublished = publishSearchCount({ value: pulse.activeCount, grain: 'sfr' })
   if (sfrPublished && sfrPublished.value > 0) {
+    // VOICE-7 (visibility audit 2026-09-22). The same words, "single-family
+    // homes for sale in Bend", carried 581 here and 757 on
+    // /cities/bend/types/single-family on the same day. Both count MLS City =
+    // Bend (Market Truth city membership is MLS city text, D5, never the city
+    // polygon), so the place words stay the same on both pages: "with a Bend
+    // address". The 176 gap was place_membership frozen at 2026-08-23 (its
+    // refresh belongs to the data-pipeline package). What remains is status:
+    // this count is StandardStatus 'Active' only, the months-of-supply
+    // numerator (Active Under Contract is counted as pending), while the city
+    // type page lists Active plus Active Under Contract. Re-read 2026-09-23
+    // 02:47 UTC: market_metric city/bend/detached active_count 754; tiles
+    // city_lower=bend, Single Family Residence: Active 752, Active Under
+    // Contract 6, together 758. So at city grain on Market Truth the answer
+    // says which listings it counts, and the type page says the same of its own.
+    const scope =
+      pulse.source === 'market-truth' && pulse.grain === 'city'
+        ? `, counting every home with a ${geoName} address in the regional MLS that isn't under contract yet`
+        : ''
     faqs.push({
       question: `How many single-family homes are for sale in ${geoName}?`,
-      answer: `There are ${sfrPublished.value.toLocaleString('en-US')} active single-family listings in ${geoName}${asOf}.`,
+      answer: `There are ${sfrPublished.value.toLocaleString('en-US')} active single-family listings in ${geoName}${asOf}${scope}.`,
     })
     datasetVariables.push({ name: 'Active Listings', value: sfrPublished.value })
   }

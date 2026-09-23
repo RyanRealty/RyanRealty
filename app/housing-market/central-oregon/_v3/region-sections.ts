@@ -27,10 +27,8 @@ import { formatDate } from '@/lib/format/date'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { homesForSalePath, listingTileHref, listingsBrowsePath } from '@/lib/slug'
-import {
-  marketReportDoorLinks,
-  marketReportHereBody,
-} from '@/lib/market/report-doors'
+import { marketReportDoorLinks } from '@/lib/market/report-doors'
+import { CITY_FOOTNOTE_TERM, cityFootnoteFact } from '@/lib/market/city-footnote-fact'
 import {
   v3Text,
   type V3LedgerFigureRow,
@@ -141,22 +139,8 @@ export function buildCityLedger(
   const footnotes: CityFootnote[] = CITY_LABELS.filter(
     (label) => CITY_SLUG[label] !== undefined && !rowed.has(label),
   ).map((label) => {
-    const snapshot = byLabel.get(label)
-    const slug = CITY_SLUG[label]
-    if (!snapshot) {
-      return { label, slug, fact: `${label} returned no market row in the latest sync` }
-    }
-    if (snapshot.active_count == null) {
-      return { label, slug, fact: `${label} has no published active single-family count` }
-    }
-    if (snapshot.active_count === 0) {
-      return { label, slug, fact: `${label} shows no active single-family listings` }
-    }
-    return {
-      label,
-      slug,
-      fact: `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median`,
-    }
+    // VOICE-6: one wording for the four market tables (lib/market/city-footnote-fact).
+    return { label, slug: CITY_SLUG[label], fact: cityFootnoteFact(label, byLabel.get(label)) }
   })
   const remainder = namePulseCityRemainder({
     regionActive: options?.regionActive,
@@ -347,12 +331,8 @@ export function buildGuideRows(posts: BlogPostCard[]): V3LedgerPlainRow[] {
  * page to reach.
  */
 export function buildExploreItems(footnotes: readonly CityFootnote[]): V3QuietItem[] {
+  // VOICE-6: no "Where you are" row; the door links carry the navigation.
   const items: V3QuietItem[] = [
-    {
-      kind: 'prose',
-      term: 'Where you are',
-      body: marketReportHereBody('region'),
-    },
     ...marketReportDoorLinks('region'),
     { label: 'All Central Oregon cities', href: '/cities' },
     { label: 'Communities and neighborhoods', href: '/communities' },
@@ -364,7 +344,7 @@ export function buildExploreItems(footnotes: readonly CityFootnote[]): V3QuietIt
   if (footnotes.length > 0) {
     items.push({
       kind: 'prose',
-      term: 'Cities not in the table above',
+      term: CITY_FOOTNOTE_TERM,
       body: `${footnotes.map((city) => city.fact).join('. ')}.`,
     })
     for (const city of footnotes) {

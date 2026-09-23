@@ -166,6 +166,9 @@ describe('HOME_FEATURED_COMMUNITY_SLUGS', () => {
     expect(HOME_FEATURED_COMMUNITY_SLUGS.length).toBeGreaterThanOrEqual(4)
     expect(HOME_FEATURED_COMMUNITY_SLUGS).toContain('tetherow')
     expect(HOME_FEATURED_COMMUNITY_SOURCE).toMatch(/Oregon Data Share via MarketPulse/)
+    // VOICE-6: the population in the reader's words, not "Alias-aware".
+    expect(HOME_FEATURED_COMMUNITY_SOURCE).not.toMatch(/alias/i)
+    expect(HOME_FEATURED_COMMUNITY_SOURCE).toMatch(/subdivision names/)
   })
 })
 

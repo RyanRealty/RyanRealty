@@ -62,6 +62,27 @@ describe('buildMarketFaq', () => {
     expect(r.datasetVariables.find((v) => v.name === 'Median Sale Price')?.value).toBe(750_000)
   })
 
+  // VOICE-7 (2026-09-22): the city report's count and the city type page's
+  // count carried the same words. At city grain on Market Truth the answer now
+  // names its population: MLS City = Bend, Active, not yet under contract.
+  it('names the population of the city count in the reader`s words', () => {
+    const r = buildMarketFaq('Bend', {
+      grain: 'city',
+      source: 'market-truth',
+      activeCount: 754,
+      refreshedAt: '2026-09-23',
+    })
+    expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toBe(
+      "There are 754 active single-family listings in Bend as of September 2026, counting every home with a Bend address in the regional MLS that isn't under contract yet.",
+    )
+    // Other grains and the pulse source keep the plain sentence: their
+    // membership rules differ (polygon, alias), so this clause would be false there.
+    const hood = buildMarketFaq('Awbrey Butte', { grain: 'neighborhood', source: 'market-truth', activeCount: 49 })
+    expect(hood.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toBe(
+      'There are 49 active single-family listings in Awbrey Butte.',
+    )
+  })
+
   it('needs the month label to publish a sale price', () => {
     const r = buildMarketFaq('Bend', { grain: 'city', medianListPrice: 950_000, medianSalePrice: 750_000 })
     const price = r.faqs.find((f) => f.question.includes('median home price'))
