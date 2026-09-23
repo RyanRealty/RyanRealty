@@ -32,6 +32,16 @@ describe('readPdfPagesText', () => {
     expect(read.text).not.toContain('DigiSign Verified')
   })
 
+  it('reads a Node Buffer (Gmail attachments arrive as Buffers) and leaves the caller\'s bytes intact', async () => {
+    const buf = Buffer.from(await formWithSignaturesAtTheEnd(3))
+    const before = buf.byteLength
+    const read = await readPdfPagesText(buf)
+    expect(read.pageCount).toBe(3)
+    expect(read.text).toContain('DigiSign Verified')
+    // The same bytes are uploaded to storage after the read.
+    expect(buf.byteLength).toBe(before)
+  })
+
   it('a short document is complete without a cap fight', async () => {
     const read = await readPdfPagesText(await formWithSignaturesAtTheEnd(2))
     expect(read.pageCount).toBe(2)

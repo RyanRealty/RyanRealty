@@ -50,19 +50,22 @@ import { getTcDeal, type TcCycle } from '@/app/actions/tc'
 import { getAnticipatedDocuments, type AnticipatedDocsResult } from '@/app/actions/tc-required-docs'
 import { getDealContacts } from '@/app/actions/tc-contacts'
 import { getCommissionsForCycles, type TcCommission } from '@/app/actions/tc-commissions'
-import { ArchiveToggle, DownloadButton } from './DocumentRowActions'
+import { ArchiveToggle, DownloadButton, ShareToggle } from './DocumentRowActions'
 import { DocumentUpload } from './DocumentUpload'
 import { CommissionEdit } from './CommissionControls'
 import { ChecklistStatusControl } from './ChecklistControls'
 import { DealContacts } from './DealContacts'
 import { DealEnvelopes } from './DealEnvelopes'
 import { DealOffers } from './DealOffers'
+import { DealMail } from './DealMail'
+import { DealConversations } from './DealConversations'
 import { FillOrefPacket } from './FillOrefPacket'
 import { DocumentName } from './DocumentName'
 import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
 import { listDealOffers, listEnvelopeTemplates, listFormPackets } from '@/lib/data'
 import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
 import { getDealParties } from '@/lib/data/tc/deal-people'
+import { listDealMail, listDealConversations } from '@/lib/data/tc/mail-reads'
 import { CHECKLIST_GROUPS, checklistGroupForRule } from '@/lib/tc/required-documents'
 import { DealParties } from './DealParties'
 import { DealTasks } from './DealTasks'
@@ -295,6 +298,7 @@ function CycleSection({
       d10(doc.source_uploaded_at),
       <span key="s" style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
         {doc.is_broker_notes ? <StateWord state="accent">Broker notes</StateWord> : null}
+        {doc.client_visible ? <StateWord state="accent">Shared with client</StateWord> : null}
         {(() => {
           const exec = executionStateFromClassification(doc.classification)
           if (!exec || !EXECUTION_STATE_LABEL[exec]) return null
@@ -317,6 +321,7 @@ function CycleSection({
       <span key="a" style={{ display: 'inline-flex', gap: 8 }}>
         <DownloadButton documentId={doc.id} disabled={!doc.storage_path} />
         <ArchiveToggle documentId={doc.id} archived={doc.archived} docName={doc.name} />
+        <ShareToggle documentId={doc.id} clientVisible={doc.client_visible} docName={doc.name} />
       </span>,
     ],
   }))
@@ -539,15 +544,18 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   const deal = await getTcDeal(decodeURIComponent(key))
   if (!deal) notFound()
 
-  const [contacts, commissions, orefFormResult, parties, liveCycles, offers, fileTasks] = await Promise.all([
-    getDealContacts(deal.id),
-    getCommissionsForCycles(deal.cycles.map((c) => c.id)),
-    getPreferredOrefSaleAgreement(),
-    getDealParties(deal.id),
-    getLiveDealCycles(),
-    listDealOffers(deal.id),
-    listDealTasks(deal.id),
-  ])
+  const [contacts, commissions, orefFormResult, parties, liveCycles, offers, fileTasks, mail, conversations] =
+    await Promise.all([
+      getDealContacts(deal.id),
+      getCommissionsForCycles(deal.cycles.map((c) => c.id)),
+      getPreferredOrefSaleAgreement(),
+      getDealParties(deal.id),
+      getLiveDealCycles(),
+      listDealOffers(deal.id),
+      listDealTasks(deal.id),
+      listDealMail(deal.id),
+      listDealConversations(deal.id),
+    ])
   const mergeOthers = liveCycles.filter(
     (d) =>
       d.propertyKey !== deal.property_key &&
@@ -677,6 +685,10 @@ export default async function TcDealPage({ params, searchParams }: Props) {
       <DealTasks tasks={fileTasks} propertyKey={deal.property_key} />
 
       <DealOffers dealId={deal.id} stage={deal.stage} offers={offers} />
+
+      <DealMail dealId={deal.id} rows={mail} />
+
+      <DealConversations rows={conversations} />
 
       <DealParties dealId={deal.id} propertyKey={deal.property_key} parties={parties} />
 

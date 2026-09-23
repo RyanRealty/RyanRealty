@@ -30,7 +30,10 @@ export async function readPdfPagesText(
 ): Promise<PdfTextRead> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
   configurePdfjsWorker(pdfjs)
-  const data = buf instanceof Uint8Array ? buf : new Uint8Array(buf)
+  // Always a plain Uint8Array copy: pdfjs rejects a Node Buffer (a Uint8Array
+  // subclass, so an instanceof check lets it through) and may detach what it is
+  // given, while callers still upload these same bytes afterwards.
+  const data = new Uint8Array(buf instanceof Uint8Array ? buf : new Uint8Array(buf))
   const doc = await pdfjs.getDocument({ data, isEvalSupported: false, useSystemFonts: true }).promise
   const pageCount = doc.numPages
   const pagesRead = Math.min(pageCount, Math.max(1, maxPages))

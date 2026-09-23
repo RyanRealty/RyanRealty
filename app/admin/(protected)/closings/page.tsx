@@ -17,8 +17,9 @@ import {
   type ClosingDealRow,
 } from '@/lib/data/tc/closings'
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
+import { countMailQueue } from '@/lib/data/tc/mail-reads'
 import { formatDate } from '@/lib/format/date'
-import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
+import { BROKER_FILE_EMAIL, dealVisibleToBroker, fileNameFromBrokerSlug } from '@/lib/tc/deal-scope'
 import { Button, HiddenField, QueueRow, SectionHead, TextField, VerdictLine } from '@/components/admin/v2'
 import { NewFileForm } from './NewFileForm'
 
@@ -76,7 +77,14 @@ export default async function ClosingsPage({
   const ctx = await requireAdminPage('transactions.view')
   const { q, mine } = await searchParams
   const nowMs = Date.now()
-  const [board, mirror] = await Promise.all([getClosingsBoard(), getSkySlopeMirrorFreshness()])
+  // Same mailbox scoping as app/actions/tc-mail.ts ctxForEdit(): superuser
+  // reads every mailbox, a broker only their own, unmapped brokers see none.
+  const mailbox = ctx.role === 'superuser' ? null : BROKER_FILE_EMAIL[fileNameFromBrokerSlug(ctx.brokerSlug) ?? ''] ?? '__none__'
+  const [board, mirror, mailQueueCount] = await Promise.all([
+    getClosingsBoard(),
+    getSkySlopeMirrorFreshness(),
+    countMailQueue(mailbox),
+  ])
   const mineOnly = ctx.role === 'superuser' && mine === '1'
   const scoped = board.deals.filter((d) =>
     dealVisibleToBroker({
@@ -335,6 +343,10 @@ export default async function ClosingsPage({
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 24 }}>
         All tools:{' '}
+        <Link href="/admin/closings/mail" style={{ color: 'var(--a-accent)' }}>
+          Mail to file{mailQueueCount > 0 ? ` (${mailQueueCount})` : ''}
+        </Link>
+        {' · '}
         <Link href="/admin/sign-off" style={{ color: 'var(--a-accent)' }}>
           Sign-off queue
         </Link>

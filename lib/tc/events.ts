@@ -32,6 +32,12 @@ export const TC_EVENT_LABEL: Record<string, string> = {
   contact_added: 'Contact added',
   checklist_status_changed: 'Checklist updated',
   principal_broker_review: 'Principal review',
+  mail_assigned: 'Email filed by hand',
+  mail_misfile_corrected: 'Misfiled email corrected',
+  deal_opened_from_mail: 'File opened from email',
+  envelope_link_opened_from_portal: 'Client opened signing from portal',
+  document_shared_with_client: 'Shared with client',
+  document_unshared_with_client: 'Stopped sharing with client',
 }
 
 export function tcEventLabel(action: string | null | undefined): string {

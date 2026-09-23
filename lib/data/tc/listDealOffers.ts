@@ -8,7 +8,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import type { DealOffer, OfferStatus } from '@/lib/tc/offers'
 
 const OFFER_COLS =
-  'id, deal_id, buyer_name, buyer_agent, price, earnest_money, financing_type, close_date, contingencies, status, submitted_at'
+  'id, deal_id, buyer_name, buyer_agent, price, earnest_money, financing_type, close_date, contingencies, status, submitted_at, source, buyer_agent_email, document_id, replied_at, presented_to_seller_at, last_counter_at'
 
 function mapOffer(r: Record<string, unknown>): DealOffer {
   return {
@@ -23,6 +23,12 @@ function mapOffer(r: Record<string, unknown>): DealOffer {
     contingencies: (r.contingencies as string | null) ?? null,
     status: r.status as OfferStatus,
     submittedAt: r.submitted_at ? String(r.submitted_at).slice(0, 10) : null,
+    source: (r.source as string | null) ?? 'manual',
+    buyerAgentEmail: (r.buyer_agent_email as string | null) ?? null,
+    documentId: (r.document_id as string | null) ?? null,
+    repliedAt: (r.replied_at as string | null) ?? null,
+    presentedToSellerAt: (r.presented_to_seller_at as string | null) ?? null,
+    lastCounterAt: (r.last_counter_at as string | null) ?? null,
   }
 }
 
