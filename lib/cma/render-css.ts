@@ -765,6 +765,25 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--cream);
     border-color: rgba(250, 248, 244, 0.55);
   }
+  .page-closing .reach { margin: 6px 0 16px; max-width: 460px; }
+  .page-closing .reach-row {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 10px;
+    align-items: baseline;
+    padding: 6px 0;
+    border-top: 1px solid rgba(250, 248, 244, 0.22);
+  }
+  .page-closing .reach-row:last-child { border-bottom: 1px solid rgba(250, 248, 244, 0.22); }
+  .page-closing .reach dt {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: rgba(250, 248, 244, 0.62);
+  }
+  .page-closing .reach dd { margin: 0; font-size: 12px; font-weight: 600; line-height: 1.35; color: var(--cream); }
+  .page-closing .reach a { color: inherit; text-decoration: none; }
   .page-closing .signature-page { border-top-color: rgba(250, 248, 244, 0.28); }
   .page-closing .signature-page .sig-name {
     color: var(--cream);

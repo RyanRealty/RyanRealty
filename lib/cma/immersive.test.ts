@@ -58,8 +58,9 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toContain('$635,000')
     expect(html).toContain('$619,999')
     expect(html).toContain('Prepared for Eric Demello')
-    // Two tracked buttons (CMA_REIMAGINED_2026-09-07.md chapter 7).
-    expect(html).toContain('Talk with Matt')
+    expect(html).toContain('here for any questions you have')
+    expect(html).toContain('>Call<')
+    expect(html).toContain('>Text<')
     expect(html).toContain('See homes for sale near you')
     expect(html).toContain('https://ryan-realty.com/book?')
   })

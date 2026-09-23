@@ -17,6 +17,7 @@ import {
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
+import { BRAND } from '@/lib/brand/contact'
 import { UNADDRESSED_DOC_LINKS, cleanText, countWord, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
@@ -1230,25 +1231,30 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
     toc: 'Your next step',
     body: `
   <h2 class="section">${esc(nextStepHeading(a))}</h2>
-  <div class="cta-actions">${nextStepButtonsHtml(a)}</div>
+  ${nextStepActionsHtml(a)}
   ${nextStepNoteHtml(a)}
   ${nextStepSignatureHtml(a)}`,
   }
 }
 
 /**
- * Writing Bot / Matt close (2026-09-12 Tip Ready craft): keep the authentic
- * sorry heading, and earn the business in one plain line under the CTA.
+ * The close, in the owner's words (Matt 2026-09-22). Sorry about their home,
+ * this time, and an invitation if they list again. Not a form letter about
+ * "this listing."
  */
-export const CLOSE_EARN_YOUR_BUSINESS =
-  "If you want a second set of eyes on pricing or next steps, I'd like a chance to earn your business. Happy to walk through this anytime."
+export const CLOSE_SORRY_HEADING = "We're sorry that your home did not sell this go-around."
 
-/** "Sorry this listing did not sell." */
+export const CLOSE_EARN_YOUR_BUSINESS =
+  "If you're considering listing in the future, we'd love the opportunity to earn your business."
+
+export const CLOSE_HERE_FOR_QUESTIONS = "We're here for any questions you have."
+
+/** The failed-listing heading, or the neutral one when this document may not say the home failed. */
 export function nextStepHeading(a: OpinionPageArgs): string {
   // A home on the market with another brokerage did not fail at anything, and
   // saying sorry about it is the opening line of a solicitation (class D).
   if (readSubjectStatus(a)?.isActiveWithOtherBrokerage) return 'What this report is.'
-  return a.expiredAudit ? 'Sorry this listing did not sell.' : 'What happens next.'
+  return a.expiredAudit ? CLOSE_SORRY_HEADING : 'What happens next.'
 }
 
 /**
@@ -1291,26 +1297,63 @@ export function closingComplianceHtml(a: OpinionPageArgs): string {
 }
 
 /**
- * TWO buttons, both tracked and both carrying identity: talk with the broker,
- * and see what is for sale near them. The four-way call / text / email / book
- * row asked a homeowner on a phone to make a choice before they had made the
- * decision.
+ * The button row. Only the non-soliciting close still uses one. Everywhere
+ * else the contact list is the action, so this returns '' and the caller
+ * omits the empty box.
  */
 export function nextStepButtonsHtml(a: OpinionPageArgs): string {
-  const first = a.broker?.displayName.split(/\s+/)[0] ?? 'us'
-  const book = trackedDocLink('book', '', a.docLinks ?? UNADDRESSED_DOC_LINKS)
+  if (!closingIsNonSoliciting(a)) return ''
   const search = trackedDocLink('search', a.subject.city, a.docLinks ?? UNADDRESSED_DOC_LINKS)
-  // BUTTONS, not two 22px underlined text links (tasteReview item 3). Both
-  // carry `_pid`, `agent` and `utm_campaign` through trackedDocLink, so the
-  // one click that matters is attributable to the person and to this document.
-  // ONE neutral action when the home is listed with another brokerage. Two
-  // asks, one of them "talk with the broker who wrote this", is a solicitation
-  // whatever the button says (class D).
-  if (closingIsNonSoliciting(a)) {
-    return `<a class="btn sec ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+  return `<a class="btn sec ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+}
+
+export function nextStepActionsHtml(a: OpinionPageArgs): string {
+  const buttons = nextStepButtonsHtml(a)
+  return buttons ? `<div class="cta-actions">${buttons}</div>` : ''
+}
+
+function reachRow(label: string, valueHtml: string): string {
+  return `<div class="reach-row"><dt>${esc(label)}</dt><dd>${valueHtml}</dd></div>`
+}
+
+/**
+ * Every way to reach the broker who signed this, in one list. Call and text
+ * use the published line on the row, never a personal cell. Omitted entirely
+ * when the document may not ask for the listing.
+ */
+export function nextStepReachHtml(a: OpinionPageArgs): string {
+  if (closingIsNonSoliciting(a)) return ''
+  const b = a.broker
+  if (!b) return ''
+  const ctx = a.docLinks ?? UNADDRESSED_DOC_LINKS
+  const book = trackedDocLink('book', '', ctx)
+  const search = trackedDocLink('search', a.subject.city, ctx)
+  const site = trackedDocLink('site', BRAND.url, ctx)
+  const tel = phoneHref(b.phone)
+  const shown = dottedPhone(b.phone)
+  const rows: string[] = []
+  if (shown && tel) {
+    rows.push(reachRow('Call', `<a href="tel:${tel}">${esc(shown)}</a>`))
+    rows.push(reachRow('Text', `<a href="sms:${tel}">${esc(shown)}</a>`))
+  } else if (shown) {
+    rows.push(reachRow('Call', esc(shown)))
   }
-  return `<a class="btn pri" href="${esc(book)}" data-rr-track="cma-book">Talk with ${esc(first)}</a>
-    <a class="btn sec ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+  if (b.email) rows.push(reachRow('Email', `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a>`))
+  rows.push(reachRow('Calendar', `<a href="${esc(book)}" data-rr-track="cma-book">Pick a time</a>`))
+  rows.push(
+    reachRow(
+      'Office',
+      `<a href="${esc(BRAND.social.googleBusinessProfile)}">${esc(BRAND.mailingAddress)}</a>`,
+    ),
+  )
+  rows.push(reachRow('Website', `<a href="${esc(site)}">ryan-realty.com</a>`))
+  rows.push(
+    reachRow(
+      'Listings',
+      `<a href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`,
+    ),
+  )
+  return `<dl class="reach">${rows.join('')}</dl>`
 }
 
 /**
@@ -1330,13 +1373,12 @@ export function nextStepNoteHtml(a: OpinionPageArgs): string {
     )}</p>
   ${closingComplianceHtml(a)}`
   }
-  return `<p class="next-note">${esc(
-    'Bring this report. We will walk the house, price it against these same sales, and tell you what would have to change to sell it. There is nothing to sign for that.',
-  )}</p>
-  <p class="next-note">${esc(CLOSE_EARN_YOUR_BUSINESS)}</p>
-  <p class="next-note">${esc(
-    `If you would rather look first, the second link opens every home for sale in ${place} on our site.`,
-  )}</p>
+  const walk = a.expiredAudit
+    ? `Bring this report. We'll walk the house with you and talk through what it would take to sell it. There is nothing to sign for that.`
+    : `Bring this report. We'll walk the house with you and talk through the price. There is nothing to sign for that.`
+  return `<p class="next-note">${esc(`${CLOSE_EARN_YOUR_BUSINESS} ${CLOSE_HERE_FOR_QUESTIONS}`)}</p>
+  <p class="next-note">${esc(walk)}</p>
+  ${nextStepReachHtml(a)}
   ${closingComplianceHtml(a)}`
 }
 

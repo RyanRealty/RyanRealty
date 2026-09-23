@@ -222,12 +222,15 @@ describe('letter craft P0 — close voice', () => {
       generatedAtIso: '2026-09-12T00:00:00.000Z',
       expiredAudit: args().expiredAudit,
     }
-    expect(nextStepHeading(a as never)).toBe('Sorry this listing did not sell.')
+    expect(nextStepHeading(a as never)).toBe("We're sorry that your home did not sell this go-around.")
     const note = nextStepNoteHtml(a as never)
     expect(note).toContain('earn your business')
-    expect(note).toContain('second set of eyes on pricing')
+    expect(note).toContain('here for any questions you have')
+    expect(note).toContain('>Call<')
+    expect(note).toContain('>Text<')
+    expect(note).toContain('>Email<')
     const { html } = renderCmaHtml(args())
-    expect(html).toContain('Sorry this listing did not sell.')
+    expect(html).toContain('did not sell this go-around')
     expect(html).toContain('earn your business')
   })
 })

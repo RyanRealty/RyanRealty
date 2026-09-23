@@ -1315,12 +1315,16 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(immersiveStylesheet()).toContain('.pin-badge{')
   })
 
-  it('gives the closing two real buttons that carry identity', () => {
+  it('gives the closing a contact list whose links carry identity', () => {
     const html = immersive()
-    expect(html).toContain('class="btn pri"')
-    expect(html).toContain('class="btn sec ghost"')
     expect(html).toContain('class="sc sc-navy pack"')
     expect(html).toContain('next-note')
+    expect(html).toContain('class="reach"')
+    expect(html).toContain('data-rr-track="cma-book"')
+    expect(html).toContain('data-rr-track="cma-search"')
+    expect(html).toContain('href="tel:')
+    expect(html).toContain('href="sms:')
+    expect(html).toContain('href="mailto:')
   })
 })
 
