@@ -216,8 +216,8 @@
 }
 
 /* shadcn Avatar restyled to navy/cream. No invented portraits — fallback only.
-   data-initials paints when AvatarFallback has not hydrated (radix leaves the
-   root empty on the server). */
+   The root carries navy as a placeholder so the circle is never colorless
+   for the instant before Fallback paints. */
 .v3-proof__avatar {
   display: inline-flex !important;
   align-items: center;
@@ -232,12 +232,30 @@
   line-height: 1;
 }
 
-/* One initials layer only: .v3-proof__avatar-ink. Radix leaves Avatar empty
-   on SSR and may paint Fallback later — never stack ::before + ink + fallback. */
+/* ONE VISIBLE INITIALS LAYER (fixes G23/ci:a11y contrast fail on / and
+   /about, 2026-09-21). This used to be the HIDDEN layer (color: transparent,
+   font-size: 0) behind a separate always-on ".v3-proof__avatar-ink" span,
+   because AvatarFallback carries `delayMs`, which makes Radix gate its first
+   paint behind a `window.setTimeout(fn, delayMs)` (see
+   @radix-ui/react-avatar's AvatarFallback: `canRender` starts `false`
+   whenever `delayMs !== undefined`, SSR and the first client render both
+   omit the node, and a later re-render inserts it). Neither avatar here ever
+   sets an AvatarImage, so there was nothing for the delay to protect against,
+   only a gap for pa11y (and a slow real client) to catch the node mounted
+   with its un-overridden shadcn defaults (bg-muted/text-muted-foreground,
+   1.39:1) instead of this rule. The quote avatar in V3Proof.client.tsx now
+   omits `delayMs`, so Radix renders it immediately on SSR and on first
+   client paint — no gap, no second layer. Contrast itself comes from
+   `bg-navy text-cream` passed directly on the element, not from this
+   stylesheet, so it can never again depend on this file's load timing
+   relative to Radix's mount: this rule is left with only the typography
+   Fallback needs to read as initials, not a plugin badge. (/reviews'
+   broker faces are real photos behind AvatarImage; their `delayMs` guards
+   an image load and stays, 2026-09-23.) */
 .v3-proof__avatar-fallback {
-  background: var(--v3-navy) !important;
-  color: transparent !important;
-  font-size: 0;
+  font-family: var(--v3-font-body);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0.02em;
 }
 
 /* shadcn paints a full-bleed ::after border with mix-blend that buries the
@@ -315,26 +333,6 @@
   flex: none;
   align-items: center;
   justify-content: center;
-}
-
-/* Sole visible initials. Always on — Fallback text is transparent. */
-.v3-proof__avatar-ink {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--v3-cream);
-  font-family: var(--v3-font-body);
-  font-size: 0.8rem;
-  font-weight: var(--v3-weight-medium);
-  letter-spacing: 0.02em;
-  line-height: 1;
-  pointer-events: none;
-}
-
-.v3-proof__avatar-wrap:has(.v3-proof__avatar--quote) .v3-proof__avatar-ink {
-  font-size: 0.65rem;
 }
 
 .v3-proof__avatar--quote {

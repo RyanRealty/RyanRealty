@@ -196,10 +196,10 @@
       "internalLinks": 114,
       "images": 2,
       "heroImageWidth": 108,
-      "heroImageNatural": 2043,
+      "heroImageNatural": 720,
       "video": 0,
       "jsonLd": 3
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. heroImageNatural LOWERED 2043 -> 720 (2026-09-23, PR #352 blocker; same root cause PR #351 found on oregon-city/place-type-community): the 2026-09-12 seed read heroImageWidth 120 / heroImageNatural 2271, which is exactly public/images/brand/logo-horizontal-navy-transparent.png (2271x454), the header wordmark. /reviews has no photographic hero; the widest in-fold image is now a broker headshot (public/images/brokers/*.png|jpg, all 800px natural), rendered wider than the 120px logo. Measured 800 in PR #352 CI runs 35826352263 and 35860657259. 720 = floor(800 * 0.9), the gate's own tolerance on the real portrait."
   }
 }
