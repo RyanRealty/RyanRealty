@@ -168,8 +168,23 @@ for (const m of src.matchAll(/\$\{baseUrl\}\/cities\/\$\{[^}]+\}\/\$\{[^}]+\}/g)
 // sanctioned neighborhood, so it is immune to construction syntax. Assert the
 // sitemap actually returns through it (can't be silently removed), that the
 // neighborhood loop feeds the allow-set, and that the guard + its unit test exist.
-if (!/return filterRogueCityUrls\(/.test(src)) {
-  problems.push('drift-guard: app/sitemap.ts must `return filterRogueCityUrls([...], allowedNeighborhoodPaths)` — the output-based backstop that catches rogue /cities URLs built by concat/join/aliased-baseUrl (which the text checks above cannot see).')
+// 2026-09-22 (visibility audit): the sitemap returns through
+// finalizeSitemapEntries, which runs filterRogueCityUrls first and then drops
+// neighborhood browse twins, next.config redirect sources and duplicate locs.
+// Either return shape satisfies the backstop; the guard module itself must
+// still call filterRogueCityUrls from finalizeSitemapEntries.
+if (!/return (filterRogueCityUrls|finalizeSitemapEntries)\(/.test(src)) {
+  problems.push('drift-guard: app/sitemap.ts must `return finalizeSitemapEntries([...], allowedNeighborhoodPaths)` (or filterRogueCityUrls) — the output-based backstop that catches rogue /cities URLs built by concat/join/aliased-baseUrl (which the text checks above cannot see).')
+}
+if (existsSync('lib/sitemap-guard.ts')) {
+  const guardSrc = readFileSync('lib/sitemap-guard.ts', 'utf8')
+  const finalizeBody = guardSrc.slice(guardSrc.indexOf('export function finalizeSitemapEntries'))
+  if (finalizeBody.length > 0 && !/filterRogueCityUrls\(entries/.test(finalizeBody)) {
+    problems.push('drift-guard: lib/sitemap-guard.ts finalizeSitemapEntries must call filterRogueCityUrls(entries, allowedNeighborhoodPaths) before its own passes.')
+  }
+  if (!/REDIRECT_SOURCES/.test(guardSrc) || !/legacy-redirects\.json/.test(guardSrc)) {
+    problems.push('drift-guard: lib/sitemap-guard.ts must drop next.config redirect sources (data/legacy-redirects.json) — a sitemap never submits a URL that 301/308s (2026-09-22: /luxury-homes-bend and a 301d blog slug were live in the sitemap).')
+  }
 }
 if (!/allowedNeighborhoodPaths\.add\(/.test(src)) {
   problems.push('drift-guard: the neighborhood loop must `allowedNeighborhoodPaths.add(neighborhoodPath)` so filterRogueCityUrls allows exactly the sanctioned neighborhood URLs.')

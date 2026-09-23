@@ -15,9 +15,20 @@ import { useReportWebVitals } from 'next/web-vitals'
  *
  * Mounted once in the root layout. Client component (the API is browser-only).
  */
+/** Paths that are never a page a person navigated to: framework and API routes. */
+export function isNonPagePath(pathname: string): boolean {
+  return pathname.startsWith('/_next') || pathname.startsWith('/api/') || pathname === '/api'
+}
+
 export function WebVitalsReporter() {
   useReportWebVitals((metric) => {
     if (typeof window === 'undefined') return
+    // Not a page. A missing /_next/image URL renders the app's 404 page with
+    // the root layout mounted, so this reporter fired for image-optimizer
+    // misses and /api paths: 20,306 of 45,354 LCP rows in the 14 days to
+    // 2026-09-22 carried path /_next/image (visibility audit, TRACK-3), which
+    // made the "other" class p75 LCP 9.1 s and hid the real routes.
+    if (isNonPagePath(window.location.pathname)) return
     const device = window.innerWidth > 0 && window.innerWidth < 768 ? 'mobile' : 'desktop'
     const payload = {
       name: metric.name,

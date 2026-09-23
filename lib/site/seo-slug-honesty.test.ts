@@ -134,6 +134,9 @@ describe('SEO search honesty contracts', () => {
 describe('GTM and gtag do not both configure GA4', () => {
   const ga = read('components/GoogleAnalytics.tsx')
   const gtm = read('components/GTMHead.tsx')
+  // The inline script is built in lib/analytics/gtm-bootstrap.ts since the
+  // 2026-09-22 TRACK-2 fix (it is parse-tested there); GTMHead renders it.
+  const bootstrap = read('lib/analytics/gtm-bootstrap.ts')
 
   it('skips gtag GA4 config when the GTM container id is set', () => {
     expect(ga).toMatch(/const hasGTM = !!GTM_ID/)
@@ -147,11 +150,12 @@ describe('GTM and gtag do not both configure GA4', () => {
   // BEFORE gtm.js, consent updates on the banner event.
   it('loads GTM with Consent Mode v2, never load-suppression', () => {
     expect(gtm).toMatch(/hasAnalyticsConsent/)
-    expect(gtm).toMatch(/consent','default'|consent','default'/)
-    expect(gtm).toMatch(/wait_for_update/)
+    expect(gtm).toMatch(/__html: gtmBootstrapScript\(/)
+    expect(bootstrap).toMatch(/consent','default'/)
+    expect(bootstrap).toMatch(/wait_for_update/)
     expect(gtm).not.toMatch(/if \(!GTM_ID \|\| !consent\) return null/)
     // The defaults must be in the same inline script, ahead of the gtm.js bootstrap.
-    const inline = gtm.slice(gtm.indexOf('__html'))
+    const inline = bootstrap.slice(bootstrap.indexOf('return `'))
     expect(inline.indexOf("consent','default'")).toBeGreaterThan(-1)
     expect(inline.indexOf("consent','default'")).toBeLessThan(inline.indexOf('gtm.js'))
     // First-paint broker user property must queue before gtm.js page_view.

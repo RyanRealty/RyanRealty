@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { cityEntityKey, cityNeighborhoodPath, listingsBrowsePath, teamPath, valuationPath } from '../lib/slug'
-import { filterRogueCityUrls } from '../lib/sitemap-guard'
+import { finalizeSitemapEntries } from '../lib/sitemap-guard'
+import { LLMS_ZIPS } from '@/lib/site/llms-geo'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
 import { isBendNewConstructionSearchTwinPath } from '@/lib/routing/bend-new-construction-search-twin'
@@ -98,7 +99,10 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: `${baseUrl}${listingsBrowsePath()}`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${baseUrl}/luxury-homes-bend`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    // /luxury-homes-bend is NOT emitted: next.config.ts 308s it to
+    // /homes-for-sale/bend?minPrice=1500000, a query URL the site itself
+    // noindexes (visibility audit 2026-09-22). The indexable luxury page is
+    // /homes-for-sale/bend/luxury, which the search-matrix leg emits.
     { url: `${baseUrl}/communities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/cities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/neighborhoods`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
@@ -262,7 +266,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
   if (!supabaseUrl || !supabaseKey) {
-    return filterRogueCityUrls(staticPages, allowedNeighborhoodPaths)
+    return finalizeSitemapEntries(staticPages, allowedNeighborhoodPaths)
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey)
@@ -294,14 +298,19 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     withTimeoutFallback(work, fallback, remainingMs(), `sitemap:${label}`)
 
   try {
-    // Cities — paginate to get ALL cities (Supabase caps at 1,000 per request)
+    // Cities — paginate to get ALL cities (Supabase caps at 1,000 per request).
+    // Fallback is the ten seeded site cities, not []: this raw-listings scan hit
+    // the statement timeout 11 times in 24h on 2026-09-22, and an empty
+    // fallback silently dropped every /cities, /homes-for-sale/{city}/{preset}
+    // and /open-houses family from that hour's sitemap (visibility audit,
+    // DATA-4). cityEntityKey is slugify(), so a slug maps to itself.
     const cityRows = await leg(
       'cities',
       fetchAllRows<{ City?: string | null }>(
         supabase, 'listings', 'City',
         (q) => q.or(ACTIVE_STATUS_OR).not('City', 'is', null),
       ),
-      [] as Array<{ City?: string | null }>,
+      SITE_CITY_SLUGS.map((slug) => ({ City: slug })) as Array<{ City?: string | null }>,
     )
 
     const cities = Array.from(
@@ -512,23 +521,15 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       })
     }
 
-    // ZIP codes — paginate
-    const zipRows = await leg(
-      'zips',
-      fetchAllRows<{ PostalCode?: string | null }>(
-        supabase, 'listings', 'PostalCode',
-        (q) => q.or(ACTIVE_STATUS_OR).not('PostalCode', 'is', null),
-      ),
-      [] as Array<{ PostalCode?: string | null }>,
-    )
-
-    const zips = Array.from(
-      new Set(
-        zipRows
-          .map((r) => (r.PostalCode ?? '').replace(/\D/g, '').slice(0, 5))
-          .filter((z) => z.length === 5)
-      )
-    )
+    // ZIP codes — exactly the ZIPs the route serves. app/zip/[zip] is
+    // dynamicParams=false over CANONICAL_ZIPS (10 ZIPs), so anything else
+    // 404s. Until 2026-09-22 this leg enumerated every PostalCode with an
+    // active listing statewide by scanning raw `listings` (a query that hit
+    // the statement timeout 42 times in 24h and then silently dropped the
+    // whole family), which submitted 105 URLs that returned 404 (visibility
+    // audit 2026-09-22, EXP-5 / DATA-4). LLMS_ZIPS is pinned byte-identical
+    // to CANONICAL_ZIPS by lib/site/llms-geo.test.ts and is server-safe.
+    const zips = LLMS_ZIPS.map((z) => z.zip)
     for (const zip of zips) {
       dynamicPages.push({
         url: `${baseUrl}/zip/${zip}`,
@@ -582,6 +583,10 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   }
 
   // Output-based drift backstop: drop any non-sanctioned 2-seg /cities URL,
-  // however built (template/concat/join/aliased). Inspects final URL strings.
-  return filterRogueCityUrls([...staticPages, ...dynamicPages], allowedNeighborhoodPaths)
+  // however built (template/concat/join/aliased), drop the browse twin of
+  // every neighborhood (/homes-for-sale/{city}/{slug} 301s to the neighborhood
+  // page), and emit each URL once (the static seed and the city loop both
+  // pushed /cities/{c}, /homes-for-sale/{c}, /open-houses/{c}: 30 duplicates
+  // on 2026-09-22). Inspects final URL strings.
+  return finalizeSitemapEntries([...staticPages, ...dynamicPages], allowedNeighborhoodPaths)
 }

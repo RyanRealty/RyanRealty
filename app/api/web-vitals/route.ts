@@ -28,6 +28,14 @@ export async function POST(request: Request) {
     if (!ALLOWED.has(metric) || !Number.isFinite(value)) {
       return new NextResponse(null, { status: 204 }) // ignore junk silently
     }
+    // Server-side twin of the client filter: a sample whose path is a
+    // framework or API route (/_next/image misses render the 404 page with the
+    // root layout mounted) is not a page vital (visibility audit 2026-09-22,
+    // TRACK-3: 45% of LCP rows carried /_next/image).
+    const pathStr = typeof data.path === 'string' ? data.path : ''
+    if (pathStr.startsWith('/_next') || pathStr.startsWith('/api/') || pathStr === '/api') {
+      return new NextResponse(null, { status: 204 })
+    }
 
     const supabase = createServiceClient()
     await supabase.from('web_vitals').insert({

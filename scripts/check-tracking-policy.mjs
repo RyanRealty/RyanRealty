@@ -81,6 +81,11 @@ for (const rel of ['components/GTMHead.tsx']) {
   const src = read(rel)
   check(`${rel} gates on consent`, /hasAnalyticsConsent|hasMarketingConsent|hasTrackingConsent/.test(src),
     `${rel} must check a consent helper before loading its tag.`)
+  // TRACK-2 (2026-09-22): the inline bootstrap was a SyntaxError for five days
+  // while this gate passed on string matches. The script is built by
+  // lib/analytics/gtm-bootstrap.ts so gtm-bootstrap.test.ts parses what ships.
+  check(`${rel} builds the GTM bootstrap from the parsed module`, /gtmBootstrapScript\(/.test(src) && !/gtm\.start/.test(src),
+    `${rel} must render gtmBootstrapScript() from lib/analytics/gtm-bootstrap.ts, not an inline template (the module is parse-tested).`)
 }
 // The Meta pixel fires on all traffic by directive (2026-06-02), so CCPA/CPRA opt-out
 // is honored via Limited Data Use rather than suppression (research-verified pattern
