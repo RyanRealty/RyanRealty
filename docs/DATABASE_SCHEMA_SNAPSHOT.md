@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-23T19:39:49.165Z
+**Generated:** 2026-09-23T20:55:42.632Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -356,7 +356,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 18,833**
+### `market_stats_cache` · **rows ≈ 19,009**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -5095,6 +5095,29 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `updated_at` | timestamp with time zone | no | now() |
 | `mail_swept_at` | timestamp with time zone | yes |  |
 
+### `tc_document_readings`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `document_id` | uuid | no |  |
+| `sha256` | text | yes |  |
+| `reader_version` | text | no |  |
+| `model` | text | no |  |
+| `purpose` | text | no | 'read'::text |
+| `status` | text | no |  |
+| `page_count` | integer | yes |  |
+| `pages_read` | ARRAY | no | '{}'::integer[] |
+| `anatomy` | jsonb | no | '{}'::jsonb |
+| `reading` | jsonb | no | '{}'::jsonb |
+| `verdict` | jsonb | no | '{}'::jsonb |
+| `cost_usd` | numeric | yes |  |
+| `input_tokens` | integer | yes |  |
+| `output_tokens` | integer | yes |  |
+| `duration_ms` | integer | yes |  |
+| `error` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `tc_documents`
 
 | Column | Type | Nullable | Default |
@@ -5117,6 +5140,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `is_broker_notes` | boolean | no | false |
 | `classification` | jsonb | no | '{}'::jsonb |
 | `client_visible` | boolean | no | false |
+| `superseded_by` | uuid | yes |  |
 
 ### `tc_envelope_documents`
 

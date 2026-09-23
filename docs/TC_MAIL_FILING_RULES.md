@@ -63,10 +63,11 @@ label.
 2. Each PDF attachment (up to five, 20 MB each) becomes a `tc_documents` row on
    the cycle, deduped by content hash (the same signed PDF arriving three ways
    is one document).
-3. Checklist: each document goes on the rows its **own** name, form and page-1
-   title identify, never every row the email mentions. Offers and counters not
-   yet accepted touch no checklist row. Signatures are not read from the PDF
-   (stamped signatures are image overlays); principal sign-off checks them.
+3. Checklist: filing never puts a document on the checklist. The document
+   reader ([`TC_DOCUMENT_READER.md`](TC_DOCUMENT_READER.md)) reads each new PDF
+   within 15 minutes (the form, who must sign, who did, from page images) and
+   places only fully executed copies; duplicates and superseded copies go to
+   the archive with a reason.
 4. One `tc_events` row (`mail_filed`) with the rule, category and direction.
 5. The existing return logic runs: an executed PDF from the other side can close
    an envelope waiting on them.

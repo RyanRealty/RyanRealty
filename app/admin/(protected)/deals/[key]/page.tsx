@@ -51,6 +51,7 @@ import { getAnticipatedDocuments, type AnticipatedDocsResult } from '@/app/actio
 import { getDealContacts } from '@/app/actions/tc-contacts'
 import { getCommissionsForCycles, type TcCommission } from '@/app/actions/tc-commissions'
 import { ArchiveToggle, DownloadButton, ShareToggle } from './DocumentRowActions'
+import { readerView } from '@/lib/tc/doc-read/view'
 import { DocumentUpload } from './DocumentUpload'
 import { CommissionEdit } from './CommissionControls'
 import { ChecklistStatusControl } from './ChecklistControls'
@@ -292,6 +293,21 @@ function CycleSection({
             {doc.archived_reason}
           </span>
         ) : null}
+        {doc.archived && doc.superseded_by && docNameById.get(doc.superseded_by) ? (
+          <span style={{ ...tiny, display: 'block' }}>Replaced by {docNameById.get(doc.superseded_by)}</span>
+        ) : null}
+        {(() => {
+          const read = readerView(doc.classification)
+          if (!read) return null
+          return read.forms.map((f, i) => (
+            <span key={i} style={{ ...tiny, display: 'block' }}>
+              {f.title}
+              {f.signed.length ? ` · Signed: ${f.signed.join(', ')}` : ''}
+              {f.waiting.length ? ` · Waiting on: ${f.waiting.join(', ')}` : ''}
+              {f.note ? ` · ${f.note}` : ''}
+            </span>
+          ))
+        })()}
       </span>,
       doc.page_count ?? '—',
       kb(doc.bytes),
@@ -300,6 +316,9 @@ function CycleSection({
         {doc.is_broker_notes ? <StateWord state="accent">Broker notes</StateWord> : null}
         {doc.client_visible ? <StateWord state="accent">Shared with client</StateWord> : null}
         {(() => {
+          // The document reader's verdict, when it has read this file.
+          const read = readerView(doc.classification)
+          if (read) return <StateWord state={read.tone}>{read.label}</StateWord>
           const exec = executionStateFromClassification(doc.classification)
           if (!exec || !EXECUTION_STATE_LABEL[exec]) return null
           const state =

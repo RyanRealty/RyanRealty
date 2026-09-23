@@ -497,7 +497,6 @@ async function fileMessageDocuments(input: {
   const { sb, decision, facts } = input
   const dealId = decision.dealId!
   const cycleId = decision.cycleId!
-  const isOffer = decision.category === 'offer' || decision.category === 'counter'
   const attachments: FileCommsAttachment[] = input.read.map((r) => ({
     sourceDocId: `gmail:${facts.messageKey}:${r.ref.attachmentId}`.slice(0, 180),
     name: r.ref.filename,
@@ -516,8 +515,9 @@ async function fileMessageDocuments(input: {
     filenames: facts.attachments.map((a) => a.name),
     dedupeKey: `mail:${facts.messageKey}`,
     fromEmails: facts.from,
-    // An offer that is not ours to accept yet never lands on the sale-agreement row.
-    checklist: isOffer ? 'none' : 'identified',
+    // Filing never puts a document on the checklist: the document reader
+    // (lib/tc/doc-read) reads it first and places only a fully executed copy.
+    checklist: 'none',
     classificationExtra: { mail_message_id: input.rowId, mail_category: decision.category },
     eventExtra: {
       mail_message_id: input.rowId,

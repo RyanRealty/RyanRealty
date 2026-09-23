@@ -38,6 +38,11 @@ export const TC_EVENT_LABEL: Record<string, string> = {
   envelope_link_opened_from_portal: 'Client opened signing from portal',
   document_shared_with_client: 'Shared with client',
   document_unshared_with_client: 'Stopped sharing with client',
+  document_archived: 'Document archived',
+  document_unarchived: 'Document restored',
+  document_linked_by_reader: 'Executed copy put on the checklist',
+  document_unlinked_by_reader: 'Taken off the checklist (not fully executed)',
+  document_needs_review: 'Document needs review',
 }
 
 export function tcEventLabel(action: string | null | undefined): string {

@@ -44,6 +44,8 @@ export type TcDocument = {
   classification: Record<string, unknown>
   /** Shows on the client's own file page (app/actions/tc-client-share.ts). */
   client_visible: boolean
+  /** The copy that replaced this archived one (lib/tc/doc-read lineage). */
+  superseded_by: string | null
   /** Short-lived signed URLs for hover preview (first page / last page). */
   thumbFirstUrl: string | null
   thumbLastUrl: string | null
@@ -224,6 +226,7 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
           is_broker_notes: doc.is_broker_notes,
           classification: doc.classification ?? {},
           client_visible: doc.client_visible ?? false,
+          superseded_by: (doc.superseded_by as string | null) ?? null,
           thumbFirstUrl: thumbUrlByPath.get(`tc-thumbs/${doc.id}__p1.jpg`) ?? null,
           thumbLastUrl: thumbUrlByPath.get(`tc-thumbs/${doc.id}__plast.jpg`) ?? null,
         })),

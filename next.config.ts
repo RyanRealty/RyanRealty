@@ -560,6 +560,21 @@ const nextConfig: NextConfig = {
     'app/home-valuation/actions': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
     ],
+    // The Vault reads transaction PDFs in these routes (lib/tc/pdf-page-text,
+    // lib/tc/doc-read). The reader also renders pages, which needs pdfjs's
+    // standard font data: without it every typed value on a SkySlope or
+    // DocuSign form renders blank (lib/pdf/pdfjs-node.ts pdfjsFontOptions).
+    'app/api/cron/tc-document-read/route': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+      './node_modules/pdfjs-dist/standard_fonts/**',
+      './node_modules/pdfjs-dist/cmaps/**',
+    ],
+    'app/api/cron/tc-mail-sweep/route': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+    ],
+    'app/api/cron/crm-gmail-sync/route': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+    ],
   },
   // Keep media dumps + browser tooling out of every serverless function.
   // Found 2026-09-16: admin/analytics/action-required traced at 805.9mb

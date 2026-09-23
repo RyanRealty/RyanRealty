@@ -156,7 +156,9 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
     fromEmails: input.fromEmails,
     fromPhones: input.fromPhones,
     personIds,
-    checklist: 'message_keyword',
+    // The document reader places documents on the checklist once it has read
+    // them (only fully executed copies go on); filing a text never does.
+    checklist: 'none',
   })
 }
 
