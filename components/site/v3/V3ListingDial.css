@@ -3,9 +3,16 @@
    Tokens only (components/site/v3/tokens.css). Broadside: radius 0, no
    elevation, rule weight as the hierarchy, photography unframed.
 
-   Wide: [ card ][ dial ]      the dial is a column of thumbnails as tall as
-                                the card, previous at its head, next at its foot.
-   Phone (40rem and under): the card, then the dial as a strip under it.
+   Wide: [ dial ][ card ]      the dial is a column of thumbnails on the LEFT,
+                                as tall as the card: the readout at its head,
+                                previous under it, next at its foot. The left,
+                                because the site's Jax button (V3DogFloater,
+                                fixed at the right edge, top 50%) sat over a
+                                right-hand column wherever the dial runs to the
+                                viewport's edge (2026-09-23).
+   Wide band (76rem and up): [ dial ][ photograph ][ copy ].
+   Phone (40rem and under): the heading with the readout beside it, the card,
+   then the dial as a strip under it.
    One listing: the card alone, and from 48rem the card lies on its side
    (photograph left, copy right) instead of standing a lone card in a column
    built for a dial.
@@ -28,17 +35,63 @@
   background: transparent;
 }
 
-/* Head: the set's name on the left, the readout over the dial on the right. */
+/* Head: the set's name. On a phone the readout stands beside it. */
 .v3-dial__head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--v3-dial-rail-w);
+  grid-template-columns: minmax(0, 1fr);
   column-gap: var(--v3-dial-gap);
   align-items: end;
   margin-bottom: var(--v3-space-md);
 }
 
-.v3-dial--single .v3-dial__head {
-  grid-template-columns: minmax(0, 1fr);
+/* THE WIDE DIAL. One grid for the head and the body, so the readout can head
+   the dial's column while the name spans the top:
+
+     [ name              ]
+     [ 03 / 12 ][ card   ]
+     [ dial    ][        ]
+
+   The head and the body step out of the box tree (display: contents; plain
+   divs with no role, so nothing leaves the accessibility tree) and their
+   children take the areas. The card spans the last two rows and sets the
+   height; the dial's frame is lifted out of flow, so its thumbnails scroll
+   inside whatever the card leaves under the readout. The phone block at the
+   end of the file puts the head and the body back. */
+.v3-dial--multi {
+  display: grid;
+  grid-template-columns: var(--v3-dial-rail-w) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    'title title'
+    'pos stage'
+    'rail stage';
+  column-gap: var(--v3-dial-gap);
+}
+
+.v3-dial--multi .v3-dial__head,
+.v3-dial--multi .v3-dial__body {
+  display: contents;
+}
+
+.v3-dial--multi .v3-dial__title {
+  grid-area: title;
+}
+
+.v3-dial--multi .v3-dial__title:not(:empty) {
+  margin-bottom: var(--v3-space-md);
+}
+
+.v3-dial--multi .v3-dial__pos {
+  grid-area: pos;
+  padding-bottom: var(--v3-space-sm);
+}
+
+.v3-dial--multi .v3-dial__rail {
+  grid-area: rail;
+}
+
+.v3-dial--multi .v3-dial__stage {
+  grid-area: stage;
 }
 
 .v3-dial__title {
@@ -76,8 +129,9 @@
 
 /* THE READOUT. The position in Amboqia (the number is the spectacle), the
    total in the body face, and a rule that fills navy to the position. It is
-   the width of the dial and sits on top of it, so it reads as the dial's own
-   face rather than a counter floating in the heading. */
+   the width of the dial and heads its column, level with the top of the
+   photograph, so it reads as the dial's own face rather than a counter
+   floating in the heading. */
 .v3-dial__pos {
   display: grid;
   gap: var(--v3-space-xs);
@@ -124,15 +178,12 @@
   transition: width var(--v3-dur-enter) var(--v3-ease-out);
 }
 
-/* Body ------------------------------------------------------------------- */
+/* Body: one column (the lone card; the phone's card over its strip). The
+   wide dial lays it out on the root's grid above. ------------------------- */
 .v3-dial__body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--v3-dial-rail-w);
-  gap: var(--v3-dial-gap);
-}
-
-.v3-dial--single .v3-dial__body {
   grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-dial-gap);
 }
 
 /* Every card sits in the one cell; `hidden` takes the rest out. The card
@@ -297,9 +348,9 @@
 
 /* The dial ---------------------------------------------------------------- */
 
-/* The column takes the card's height and gives none back: the frame is lifted
-   out of flow, so however many thumbnails there are, the card sets the height
-   and the thumbnails scroll inside it. */
+/* The column takes the card's height (less the readout over it) and gives
+   none back: the frame is lifted out of flow, so however many thumbnails
+   there are, the card sets the height and the thumbnails scroll inside it. */
 .v3-dial__rail {
   position: relative;
   min-width: 0;
@@ -459,6 +510,15 @@
   gap: var(--v3-space-3xs);
   min-width: 0;
   line-height: var(--v3-leading-control);
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* A thumbnail the rail's edge cuts through (the dial's IntersectionObserver
+   sets data-clipped) keeps its photograph under the fade, the sign there is
+   more, and drops its caption until it is whole: a price cut off mid-string
+   ("$1.00/" at 375, 2026-09-23) is not a price. */
+.v3-dial__thumb[data-clipped] .v3-dial__thumb-cap {
+  opacity: 0;
 }
 
 /* Wraps at its spaces rather than running into the next caption: a lease
@@ -504,30 +564,33 @@
 }
 
 /* A WIDE DIAL (76rem and up, the neighborhood's 90rem band under its map):
-   the card lies across the band as the map above it does. The copy takes a
-   22rem column on the left, the width of the subdivision list over it, and
-   the photograph starts where the map starts, so the homes line up with the
-   map they belong to instead of standing a 72rem card in a 90rem band. The
+   the card lies across the band as the map above it does, instead of
+   standing a 72rem card in a 90rem band. The photograph sits against the
+   dial, the thumbnails beside the picture they turn, and the copy takes a
+   22rem column on the right, the product-gallery order: thumbnails, picture,
+   details. The copy link hugs its own lines at the foot of that column
+   rather than filling it, so the empty space above it is not a link. The
    `:not([hidden])` keeps a card that is not showing out of the grid. */
 @container v3-dial (min-width: 76rem) {
   .v3-dial--multi .v3-dial__card:not([hidden]) {
     display: grid;
-    grid-template-columns: var(--v3-dial-copy-w) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) var(--v3-dial-copy-w);
     column-gap: var(--v3-space-sm);
   }
 
   .v3-dial--multi .v3-dial__media {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 1;
   }
 
   .v3-dial--multi .v3-dial__copy {
-    grid-column: 1;
+    grid-column: 2;
     grid-row: 1;
+    align-self: end;
+    justify-self: start;
     grid-template-columns: minmax(0, 1fr);
-    align-content: end;
     row-gap: var(--v3-space-lg);
-    padding: 0 var(--v3-space-lg) 0 0;
+    padding: 0 0 0 var(--v3-space-lg);
   }
 
   .v3-dial--multi .v3-dial__where {
@@ -569,13 +632,42 @@
     --v3-dial-fade: var(--v3-space-lg);
   }
 
+  /* The wide dial's shared grid gives way to the head over the body. */
+  .v3-dial--multi {
+    display: block;
+  }
+
+  .v3-dial--multi .v3-dial__head,
+  .v3-dial--multi .v3-dial__body {
+    display: grid;
+  }
+
+  .v3-dial--multi .v3-dial__title:not(:empty) {
+    margin-bottom: 0;
+  }
+
+  /* Back to plain placement: the named areas exist only on the wide grid. */
+  .v3-dial--multi .v3-dial__title,
+  .v3-dial--multi .v3-dial__pos {
+    grid-area: auto;
+  }
+
+  .v3-dial--multi .v3-dial__pos {
+    padding-bottom: 0;
+  }
+
+  /* The dial comes first in the DOM; on a phone it lies under the card. */
+  .v3-dial--multi .v3-dial__stage {
+    grid-area: 1 / 1;
+  }
+
+  .v3-dial--multi .v3-dial__rail {
+    grid-area: 2 / 1;
+  }
+
   .v3-dial__head {
     grid-template-columns: minmax(0, 1fr) 4.5rem;
     column-gap: var(--v3-space-sm);
-  }
-
-  .v3-dial__body {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   /* The photograph is the MLS's own 4:3 on a phone: nothing cropped. */

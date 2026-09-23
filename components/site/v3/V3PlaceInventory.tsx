@@ -14,7 +14,7 @@
  * `layout="dial"` (Matt 2026-09-23, "an alternative to a carousel ... a
  * primary card ... a smaller dial with thumbnails"): each type is one
  * V3ListingDial, one listing large with the rest of that type as thumbnails
- * beside it and "03 / 12" over them. Same sections, same rows, same source
+ * on its left and "03 / 12" at their head. Same sections, same rows, same source
  * line, and every listing is still an <a href> in the served HTML.
  *
  * COMMERCIAL SPACE FOR LEASE (Matt 2026-09-23). `lease` is the place's active

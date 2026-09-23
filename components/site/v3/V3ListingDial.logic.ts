@@ -143,3 +143,18 @@ export function dialRevealOffset(
   if (start >= scroll && start + size <= scroll + viewport) return scroll
   return Math.max(0, Math.round(start - (viewport - size) / 2))
 }
+
+/**
+ * The share of a thumbnail that must sit inside the rail for it to count as
+ * whole. Under it the rail's edge cuts through the thumbnail, and the dial
+ * hides its caption (a price cut off mid-string, "$1.00/", is not a price),
+ * leaving the photograph under the fade as the sign there is more. Just under
+ * 1 so a sub-pixel sliver lost to rounding does not hide a caption.
+ */
+export const DIAL_THUMB_WHOLE = 0.99
+
+/** Whether the rail's edge cuts through a thumbnail showing `ratio` of itself (0..1). */
+export function dialThumbCut(ratio: number): boolean {
+  if (!Number.isFinite(ratio)) return false
+  return ratio < DIAL_THUMB_WHOLE
+}
