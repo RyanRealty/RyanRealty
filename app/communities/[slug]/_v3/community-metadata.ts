@@ -73,6 +73,11 @@ export function communitySerpTitle(input: {
   if (slug === 'mountain-high' && listedCount != null && listedCount > 0) {
     return `${name}: ${formatCount(listedCount)} homes for sale | ${city}, OR`
   }
+  // The heading stays "{name} homes for sale". This phrase is the other query
+  // for the same URL (Matt 2026-09-22).
+  if (slug === 'tetherow') {
+    return `${name} real estate | Homes for Sale | ${city}, OR`
+  }
   return `${name} Homes for Sale | ${city}, OR`
 }
 
@@ -94,9 +99,11 @@ export function communitySerpDescription(input: {
   const selfCity = name.trim().toLowerCase() === city.trim().toLowerCase()
   const opener = counted
     ? `${formatCount(input.listedCount)} homes for sale in ${name}, ${city}.`
-    : selfCity
-      ? `${name}, Oregon homes for sale.`
-      : `${name} in ${city}, Oregon.`
+    : slug === 'tetherow'
+      ? `${name} real estate in ${city}, Oregon.`
+      : selfCity
+        ? `${name}, Oregon homes for sale.`
+        : `${name} in ${city}, Oregon.`
   const skipMix = counted && types.length <= 1
   return [opener, setting, skipMix ? null : mix, 'Live MLS inventory.']
     .filter((part): part is string => Boolean(part && part.trim()))
@@ -256,8 +263,8 @@ export function communityMetadataInput(input: {
 
   return {
     // Title format: "[Community] Homes for Sale | [City], OR". Mountain High
-    // includes the on-page listed count when stock carries it. H1 stays
-    // "{Place} homes for sale".
+    // includes the on-page listed count when stock carries it. Tetherow leads
+    // with "Tetherow real estate". H1 stays "{Place} homes for sale".
     title: communitySerpTitle({
       slug,
       name,

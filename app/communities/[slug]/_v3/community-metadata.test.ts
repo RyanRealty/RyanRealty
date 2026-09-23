@@ -172,15 +172,28 @@ describe('SITE-177 community SERP copy', () => {
     expect(input.path).toBe('/communities/sunriver')
   })
 
-  it('other communities keep the Homes for Sale title and never the SFR fill-in', () => {
+  it('Tetherow title and description say Tetherow real estate', () => {
     const input = communityMetadataInput({
       slug: 'tetherow',
       name: 'Tetherow',
       city: 'Bend',
       stock: { listedCount: 24, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Tetherow Homes for Sale | Bend, OR')
+    expect(input.title).toBe('Tetherow real estate | Homes for Sale | Bend, OR')
+    expect(input.description).toMatch(/^Tetherow real estate in Bend, Oregon\./)
     expect(input.description).not.toMatch(/Active single-family homes/)
     expect(input.description).toMatch(/lots/i)
+    expect(input.description.length).toBeLessThanOrEqual(155)
+    expect(shareDescription(input.description)).toBe(input.description)
+  })
+
+  it('other communities keep the Homes for Sale title', () => {
+    const input = communityMetadataInput({
+      slug: 'broken-top',
+      name: 'Broken Top',
+      city: 'Bend',
+      stock: { listedCount: 12, types: ['homes'] },
+    })
+    expect(input.title).toBe('Broken Top Homes for Sale | Bend, OR')
   })
 })

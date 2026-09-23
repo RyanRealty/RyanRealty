@@ -1,3 +1,7 @@
+# Current — 2026-09-22 (Matt: Tetherow real estate in the title)
+
+Surface: Grok Build, primary checkout. `/communities/tetherow` title is “Tetherow real estate | Homes for Sale | Bend, OR”. The description opens “Tetherow real estate in Bend, Oregon.” The heading stays “Tetherow homes for sale.” Node: none.
+
 # Current — 2026-09-23 (cloud grinder: Sunriver one winner + SITE-158 closed)
 
 Surface: Claude cloud routine `cloud-grinder-2026-09-23-00`, `main` checkout, landed `fc3649b` on `origin/main` with `npm run push` (rebased once over `f81cbd5`). No PR. Vercel deploy: `deploy:verify` cannot run in this sandbox (no `VERCEL_TOKEN`); production served the new canonical 10 minutes after the push (01:41Z): `/homes-for-sale/sunriver` canonical → `/communities/sunriver`, `/homes-for-sale/sunriver/sunriver` 301, sitemap no longer lists the plain search URL.
