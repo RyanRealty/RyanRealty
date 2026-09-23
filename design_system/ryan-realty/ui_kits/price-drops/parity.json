@@ -209,10 +209,10 @@
       "internalLinks": 187,
       "images": 4,
       "heroImageWidth": 300,
-      "heroImageNatural": 648,
+      "heroImageNatural": 576,
       "video": 0,
       "jsonLd": 6
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. heroImageNatural LOWERED 648 -> 576 (2026-09-23, PR #352 blocker): the winner is a Spark MLS listing photo requested at the sanctioned 800x600 bucket; its delivered resolution is Spark's per-photo derivative, which PR #351 measured across 24 live assets at 640 to 853px, never under 640. The 2026-09-12 seed happened to read a 720px derivative; CI on 2026-09-23 read 640 on two runs. 576 = floor(640 * 0.9), the same floor PR #351 set for the same photo bucket on oregon-city and place-type-community. The banned 320x240 thumb would still read 320 and fail."
   }
 }
