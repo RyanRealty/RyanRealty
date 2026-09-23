@@ -43,6 +43,7 @@ export const TC_EVENT_LABEL: Record<string, string> = {
   document_linked_by_reader: 'Executed copy put on the checklist',
   document_unlinked_by_reader: 'Taken off the checklist (not fully executed)',
   document_needs_review: 'Document needs review',
+  document_review_resolved: 'Document review resolved',
 }
 
 export function tcEventLabel(action: string | null | undefined): string {

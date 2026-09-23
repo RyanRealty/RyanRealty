@@ -88,7 +88,8 @@ export const OTHER_PROFILES: readonly FormProfile[] = [
   { key: 'pre-approval-letter', name: 'Pre-Approval Letter', oref: [], title: /pre-?approv|pre-?qualif/i, obligation: { kind: 'reference' }, checklistTerms: ['pre-approval', 'preapproval', 'pre-qual'] },
   { key: 'proof-of-funds', name: 'Proof of Funds', oref: [], title: /proof\s+of\s+funds|bank\s+statement/i, obligation: { kind: 'reference' }, checklistTerms: ['proof of funds'] },
   { key: 'inspection-report', name: 'Inspection Report', oref: [], title: /inspection\s+report|home\s+inspection/i, obligation: { kind: 'reference' }, checklistTerms: ['inspection'] },
-  { key: 'hoa-documents', name: 'HOA Documents', oref: [], title: /homeowners?'?\s+association|\bhoa\b|cc&rs?|bylaws/i, obligation: { kind: 'reference' }, checklistTerms: ['hoa'] },
+  // "HOA Documents: not_applicable" in the library covers the association's own records.
+  { key: 'hoa-documents', name: 'HOA Documents', oref: [], title: /homeowners?'?\s+association|\bhoa\b|cc&rs?|covenants,?\s+conditions|declaration\s+of\s+(?:covenants|condominium)|bylaws|articles\s+of\s+incorporation|rules\s+and\s+regulations|meeting\s+minutes|board\s+of\s+directors|reserve\s+study/i, obligation: { kind: 'reference' }, checklistTerms: ['hoa', 'association'] },
 ]
 
 /**

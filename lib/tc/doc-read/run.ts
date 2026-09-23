@@ -326,34 +326,73 @@ export async function applyCyclePlan(
   const res: ApplyResult = { archived: 0, linked: 0, unlinked: 0, flagged: 0, confirmedDisagreed: 0, costUsd: 0 }
   const confirmModel = opts?.confirmModel ?? GROK_MODELS.documentsConfirm
   const confirmed = new Map<string, boolean>()
+  const disagreed = new Set<string>()
   const now = new Date().toISOString()
 
+  // The second reader must also find it unfinished (or blank): an executed,
+  // reference or unsure reading stops the removal.
+  const AGREES = ['partially_executed', 'unsigned', 'blank']
   async function secondOpinionAgrees(docId: string): Promise<boolean> {
     if (confirmed.has(docId)) return confirmed.get(docId)!
-    const r = await readStoredDocument(sb, docId, { model: confirmModel, purpose: 'confirm', force: true })
+    // One confirmation per document per reader version: a disagreement stays a
+    // disagreement (and a flag) instead of being paid for every run.
+    const { data: prior } = await sb
+      .from('tc_document_readings')
+      .select('verdict')
+      .eq('document_id', docId)
+      .eq('purpose', 'confirm')
+      .eq('reader_version', READER_VERSION)
+      .eq('status', 'read')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
     let agrees = false
-    if (r.ok) {
-      res.costUsd += r.costUsd
-      // The second reader must also find it unfinished (or blank): an executed,
-      // reference or unsure reading stops the removal.
-      agrees = ['partially_executed', 'unsigned', 'blank'].includes(r.verdict.verdict)
+    if (prior) {
+      agrees = AGREES.includes(String((prior.verdict as { verdict?: string } | null)?.verdict ?? ''))
+    } else {
+      const r = await readStoredDocument(sb, docId, { model: confirmModel, purpose: 'confirm', force: true })
+      if (r.ok) {
+        res.costUsd += r.costUsd
+        agrees = AGREES.includes(r.verdict.verdict)
+      }
     }
     confirmed.set(docId, agrees)
-    if (!agrees) res.confirmedDisagreed += 1
+    if (!agrees) {
+      res.confirmedDisagreed += 1
+      disagreed.add(docId)
+    }
     return agrees
   }
 
   const event = (docId: string, action: string, detail: Record<string, unknown>) =>
     sb.from('tc_events').insert({ deal_id: ctx.dealId, cycle_id: ctx.cycleId, document_id: docId, actor: READER_ACTOR, action, detail })
 
+  /**
+   * One flag per document and reason. Not raised again while it is open, nor
+   * after a person answered it; raised again only if the reader itself had
+   * closed it as stale and the condition came back.
+   */
+  async function flagOnce(docId: string, reason: string, extra: Record<string, unknown> = {}) {
+    const { data: history } = await sb
+      .from('tc_events')
+      .select('action, actor, detail, created_at')
+      .eq('document_id', docId)
+      .in('action', ['document_needs_review', 'document_review_resolved'])
+      .order('created_at', { ascending: true })
+    let raised = false
+    for (const e of history ?? []) {
+      const r = (e.detail as { reason?: string } | null)?.reason
+      if (e.action === 'document_needs_review' && r === reason) raised = true
+      else if (e.action === 'document_review_resolved' && e.actor === READER_ACTOR) raised = false
+    }
+    if (!raised) await event(docId, 'document_needs_review', { reason, ...extra })
+  }
+
   for (const a of plan.actions) {
     if (a.kind !== 'flag' && needsConfirmation(a) && !(await secondOpinionAgrees(a.docId))) {
       res.flagged += 1
       if (!opts?.dryRun) {
-        await event(a.docId, 'document_needs_review', {
-          reason: 'Two readers disagree on whether this document is fully executed. A person decides.',
-          proposed: a.kind,
-        })
+        await flagOnce(a.docId, 'Two readers disagree on whether this document is fully executed. A person decides.', { proposed: a.kind })
       }
       continue
     }
@@ -390,19 +429,52 @@ export async function applyCyclePlan(
       await event(a.docId, 'document_linked_by_reader', { item_id: a.itemId, reason: a.reason })
       res.linked += 1
     } else {
-      // One open flag per document and reason: a re-plan does not repeat it.
-      const { data: prior } = await sb
-        .from('tc_events')
-        .select('id')
-        .eq('document_id', a.docId)
-        .eq('action', 'document_needs_review')
-        .contains('detail', { reason: a.reason })
-        .limit(1)
-      if (!prior?.length) await event(a.docId, 'document_needs_review', { reason: a.reason })
+      await flagOnce(a.docId, a.reason)
       res.flagged += 1
     }
   }
+  if (!opts?.dryRun) await closeStaleFlags(sb, input, plan, disagreed)
   return res
+}
+
+/**
+ * Flags the reader raised earlier that its current rules no longer raise
+ * (a rule was fixed, or the file changed) are closed by the reader itself,
+ * so the review list only holds what is still true.
+ */
+async function closeStaleFlags(
+  sb: SupabaseClient,
+  input: { ctx: CycleContext; docs: readonly LineageDoc[] },
+  plan: LineagePlan,
+  disagreed: ReadonlySet<string>,
+) {
+  const ids = input.docs.map((d) => d.id)
+  if (!ids.length) return
+  const current = new Set([...plan.actions.filter((a) => a.kind === 'flag').map((a) => a.docId), ...disagreed])
+  const { data: events } = await sb
+    .from('tc_events')
+    .select('document_id, action, actor, created_at')
+    .in('document_id', ids)
+    .in('action', ['document_needs_review', 'document_review_resolved'])
+    .order('created_at', { ascending: true })
+  const open = new Set<string>()
+  for (const e of events ?? []) {
+    const id = String(e.document_id)
+    if (e.action === 'document_needs_review' && e.actor === READER_ACTOR) open.add(id)
+    else if (e.action === 'document_review_resolved') open.delete(id)
+  }
+  const stale = [...open].filter((id) => !current.has(id))
+  if (!stale.length) return
+  await sb.from('tc_events').insert(
+    stale.map((id) => ({
+      deal_id: input.ctx.dealId,
+      cycle_id: input.ctx.cycleId,
+      document_id: id,
+      actor: READER_ACTOR,
+      action: 'document_review_resolved',
+      detail: { note: 'No longer flagged by the current reader rules.', reader_version: READER_VERSION },
+    })),
+  )
 }
 
 /**

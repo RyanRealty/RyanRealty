@@ -216,6 +216,10 @@ export function planLineage(input: {
       // asking a person to pick between them is noise.
       const allUnfinished = members.every((m) => IN_PROGRESS.has(m.form.verdict) || m.form.verdict === 'blank')
       if (finished && allUnfinished) continue
+      // A form the library does not know never drives a change, and several
+      // of them on one deal (MLS change forms, invoices) are usually distinct
+      // documents: no flag either.
+      if (members.every((m) => m.form.basis === 'lines')) continue
       for (const m of ranked.slice(1)) {
         if (m.doc.id === top.doc.id) continue
         actions.push({

@@ -347,6 +347,10 @@ export default async function ClosingsPage({
           Mail to file{mailQueueCount > 0 ? ` (${mailQueueCount})` : ''}
         </Link>
         {' · '}
+        <Link href="/admin/closings/documents" style={{ color: 'var(--a-accent)' }}>
+          Documents to review
+        </Link>
+        {' · '}
         <Link href="/admin/sign-off" style={{ color: 'var(--a-accent)' }}>
           Sign-off queue
         </Link>
