@@ -42,7 +42,7 @@ Contradictions:
 Dead references still live:
 - DEVELOPMENT_PROCESS.md:136 preflight "The surface's mockup (design_system/ryan-realty/ui_kits/<surface>/)"; CLAUDE.md:233-235 says the eleven index.html were "deleted 2026-08-27"; on disk 11 `design_system/ryan-realty/ui_kits/*/index.html` still exist (buyer-alerts-lp, charts-tier-1, cities, expired-lp, homepage-calibration, homepage-v3, homepage-v6, newsletter, search, seller-lp, website). Both statements are wrong in different ways.
 - .claude/skills/growth-loop/SKILL.md:30 "Read docs/EXPERIENCE_SYSTEM.md" — MISSING (DEVELOPMENT_PROCESS.md:121 says deleted).
-- DEVELOPMENT_PROCESS.md:119 "FUB mirror", :147 "lead-capture forms into FUB" — FUB decommissioned (fub_api_v1 last 06-23 per orchestrator). Claude routine "EXPIRED OUTREACH" (disabled since 04-22) still instructs sends via Follow Up Boss.
+- DEVELOPMENT_PROCESS.md:119 "FUB mirror", :147 "lead-capture forms into FUB" — FUB decommissioned (fub_api_v1 last 06-23 per orchestrator). Claude routine "EXPIRED OUTREACH" (disabled since 04-22) still instructs sends via the retired vendor CRM.
 - docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md — MISSING, cited by site-queue SKILL:89, .cursor/skills/site-queue/SKILL.md:21, AGENTS.md:102, TASTE.md, scripts/loop-brief.ts:228 (comment), the grinder prompt.
 - tmp/crm-e2e-latest.json (DEVELOPMENT_PROCESS.md:119) — MISSING.
 - check-naked-verb-headings.mjs header cites VOICE.md "Site pages" — the 64-line VOICE.md has no such section.
