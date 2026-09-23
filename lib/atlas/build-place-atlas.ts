@@ -362,16 +362,89 @@ async function buildAtlasCoreUncached(scope: AtlasCoreScope, nowMs: number): Pro
     dots,
     types: atlasTypesPresent(dots),
     eventSeeds: eventSeedsFromTiles(tiles),
-    counts: {
-      forSale: dots.filter((d) => d.s === 'active').length,
-      pending: dots.filter((d) => d.s === 'pending').length,
-      sold: dots.filter((d) => isAtlasPulseSold(d)).length,
-      cities: new Set(tiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size,
-    },
+    counts: countsFromDots(dots, new Set(tiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size),
     readAt,
     complete,
   }
 }
+
+/** The dot-derived counts. `cities` comes from the tiles, which dots do not carry. */
+function countsFromDots(dots: readonly AtlasDot[], cities: number): AtlasPopulation['counts'] {
+  return {
+    forSale: dots.filter((d) => d.s === 'active').length,
+    pending: dots.filter((d) => d.s === 'pending').length,
+    sold: dots.filter((d) => isAtlasPulseSold(d)).length,
+    cities,
+  }
+}
+
+/**
+ * The most a core's dots may serialize to in ONE cache entry. Next's data
+ * cache refuses an entry over 2MB: it logs "items over 2MB can not be cached"
+ * and stores nothing, so every render reads again. The whole service area
+ * (cities: [], no boundary) crossed it: 2,180,086 bytes in the dev log, 5,619
+ * dots serializing to 1,965,126 bytes when measured 2026-09-23 (photo URLs
+ * 545KB, hrefs 388KB, streets 209KB). The root layout's chrome, the homepage
+ * pulse, /cities and /about all read that scope, so each miss walked every
+ * listing in the service area again. Half the ceiling leaves room for the
+ * head's event seeds and for a busier market.
+ */
+export const ATLAS_CORE_ENTRY_BUDGET_BYTES = 1_000_000
+
+/**
+ * The dots in contiguous chunks, each serializing under the budget, in their
+ * original order (concatenated, they are the input). A dot bigger than the
+ * budget on its own still gets a chunk; nothing is dropped.
+ */
+export function chunkAtlasDots(
+  dots: readonly AtlasDot[],
+  budgetBytes = ATLAS_CORE_ENTRY_BUDGET_BYTES,
+): AtlasDot[][] {
+  const chunks: AtlasDot[][] = []
+  let chunk: AtlasDot[] = []
+  let bytes = 2
+  for (const dot of dots) {
+    const size = JSON.stringify(dot).length + 1
+    if (chunk.length > 0 && bytes + size > budgetBytes) {
+      chunks.push(chunk)
+      chunk = []
+      bytes = 2
+    }
+    chunk.push(dot)
+    bytes += size
+  }
+  if (chunk.length > 0 || chunks.length === 0) chunks.push(chunk)
+  return chunks
+}
+
+/**
+ * One fresh read per scope per process, shared by the head and every chunk a
+ * render asks for, and by a stale entry's background refresh: a cold region
+ * render walks the service area once, not once per entry. Held for a minute
+ * so the head and its chunks come from the same walk. A short read is not
+ * held, so the next render tries again.
+ */
+const FRESH_CORE_MS = 60_000
+const freshCores = new Map<string, { at: number; core: Promise<AtlasCore> }>()
+
+function freshAtlasCore(scope: AtlasCoreScope, nowMs: number, key: string): Promise<AtlasCore> {
+  const now = Date.now()
+  for (const [k, v] of freshCores) if (now - v.at >= FRESH_CORE_MS) freshCores.delete(k)
+  const held = freshCores.get(key)
+  if (held) return held.core
+  const core = buildAtlasCoreUncached(scope, nowMs)
+  freshCores.set(key, { at: now, core })
+  core.then(
+    (c) => {
+      if (!c.complete) freshCores.delete(key)
+    },
+    () => freshCores.delete(key),
+  )
+  return core
+}
+
+/** A cached core: the dots inline, or `chunks` entries holding them. */
+type AtlasCoreHead = Omit<AtlasCore, 'dots'> & { dots: AtlasDot[] | null; chunks: number }
 
 /**
  * The cache key for a scope's population on a day. Every input that changes
@@ -396,19 +469,45 @@ export function atlasPopulationCacheKey(scope: AtlasCoreScope, nowMs: number): s
  * rows are over Next's per-entry cache ceiling, which is why the rows are not
  * what gets cached. A short read (`complete: false`) is never cached: the next
  * render tries again, and draws what the instance last read meanwhile.
+ *
+ * A core whose dots serialize over ATLAS_CORE_ENTRY_BUDGET_BYTES is cached as
+ * a head (counts, types, event seeds, read time) plus its dots in `chunks`
+ * entries; every other scope stays one entry. Head and chunks share one
+ * revalidate window and one fresh read, so a stale head comes back with the
+ * chunks of the same walk. The counts and types are recomputed from the dots
+ * the chunks returned, so they always describe the dots served, even if an
+ * evicted chunk had to be read again.
  */
 async function buildAtlasCore(scope: AtlasCoreScope, nowMs: number): Promise<AtlasCore> {
-  const cached = unstable_cache(
-    async () => {
-      const core = await buildAtlasCoreUncached(scope, nowMs)
-      if (!core.complete) throw new Error('[build-place-atlas] short read is not cached')
-      return core
+  const key = atlasPopulationCacheKey(scope, nowMs)
+  const options = { revalidate: CACHE_WINDOWS.listingsByGeo, tags: [cacheTag.listings] }
+  const read = async (): Promise<AtlasCore> => {
+    const core = await freshAtlasCore(scope, nowMs, key)
+    if (!core.complete) throw new Error('[build-place-atlas] short read is not cached')
+    return core
+  }
+  const head = unstable_cache(
+    async (): Promise<AtlasCoreHead> => {
+      const core = await read()
+      if (JSON.stringify(core.dots).length <= ATLAS_CORE_ENTRY_BUDGET_BYTES) return { ...core, chunks: 0 }
+      return { ...core, dots: null, chunks: chunkAtlasDots(core.dots).length }
     },
-    ['atlas-core-v1', atlasPopulationCacheKey(scope, nowMs)],
-    { revalidate: CACHE_WINDOWS.listingsByGeo, tags: [cacheTag.listings] },
+    ['atlas-core-v2', key],
+    options,
   )
+  const chunk = (index: number, of: number) =>
+    unstable_cache(
+      async (): Promise<AtlasDot[]> => chunkAtlasDots((await read()).dots)[index] ?? [],
+      ['atlas-core-chunk-v1', key, `${index}/${of}`],
+      options,
+    )()
   try {
-    return await cached()
+    const { chunks, dots: inline, ...rest } = await head()
+    if (inline) return { ...rest, dots: inline }
+    const parts = await Promise.all(Array.from({ length: chunks }, (_, i) => chunk(i, chunks)))
+    const seen = new Set<string>()
+    const dots = parts.flat().filter((d) => !seen.has(d.k) && seen.add(d.k))
+    return { ...rest, dots, types: atlasTypesPresent(dots), counts: countsFromDots(dots, rest.counts.cities) }
   } catch {
     // The short-read path: draw what the instance last read, say so, and
     // leave nothing in the cache.
