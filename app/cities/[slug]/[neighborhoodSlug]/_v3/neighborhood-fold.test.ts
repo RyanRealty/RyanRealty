@@ -15,7 +15,11 @@ describe('SITE-128 neighborhood fold Atlas', () => {
     expect(PAGE).not.toMatch(/<PlaceSplitView/)
     expect(FOLD_CSS).toMatch(/overflow:\s*visible/)
     expect(PAGE).toMatch(/hidePriceScrubber/)
-    expect(PAGE).toMatch(/amenities=\{amenityLayers\}/)
+    // UXLIVE-3: the recorded parks and trails ride deferredAtlasProps, which
+    // ships them at the precision the frame can draw; the dots load after paint.
+    expect(PAGE).toMatch(/deferredAtlasProps\(\{[\s\S]*?amenities: amenityLayers,/)
+    expect(PAGE).toMatch(/amenities=\{atlasProps\.amenities\}/)
+    expect(PAGE).toMatch(/dotsSrc=\{atlasProps\.dotsSrc\}/)
     expect(PAGE).toMatch(/getPlaceAmenityLayers/)
     expect(PAGE).not.toMatch(/clusterStageHint/)
     expect(PAGE).not.toMatch(/CITY_FOLD_CLUSTER_STAGE/)

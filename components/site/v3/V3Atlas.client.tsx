@@ -52,16 +52,12 @@ import { cn } from '@/lib/utils'
 import {
   bboxOfRings,
   labelAnchor,
-  makeProjection,
   lineStringParts,
   outerRings,
-  padBbox,
-  pointInRings,
   pointsToPath,
   ringsToPath,
   type Ring,
 } from '@/lib/geo/project-svg'
-import { recordFrame } from '@/lib/geo/record-frame'
 import { decodeBasemapFeature, type Basemap, type BasemapFeature } from '@/lib/geo/basemap'
 import {
   ATLAS_CAM_HOME,
@@ -78,7 +74,6 @@ import {
 } from '@/lib/geo/atlas-camera'
 import { placeDoorLabels, shortPlaceLabel } from '@/lib/place/short-place-label'
 import {
-  atlasFramePad,
   childPaintLive,
   childSelectionId,
   childSelectionMatches,
@@ -96,13 +91,28 @@ import {
 } from '@/lib/atlas/sales-heat'
 import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/atlas/pack-labels'
 import {
+  ATLAS_CLUSTER_PIN_LABEL,
   atlasClusterAskSpan,
+  atlasClusterMedianAsk,
   atlasPinShouldPaint,
-  formatAtlasClusterPin,
   formatAtlasClusterRange,
   formatAtlasPinPrice,
 } from '@/lib/atlas/pin-price'
 import {
+  atlasBeyond,
+  atlasCounts,
+  atlasFrameBox,
+  atlasIsClosingsMap,
+  atlasMedianScope,
+  atlasMembership,
+  atlasPriceScale,
+  atlasProjection,
+  atlasRegionStats,
+  type AtlasDotSummary,
+  type AtlasPlaceStat,
+} from '@/lib/atlas/atlas-derive'
+import {
+  ATLAS_CLUSTER_PILL,
   ATLAS_PIN_CLUSTER_RADIUS_PX,
   CITY_FOLD_CLUSTER_BREAKPOINT_PX,
   atlasClusterCanExpand,
@@ -272,7 +282,29 @@ export type V3AtlasProps = {
    * map, in every layout. The key is rendered once either way.
    */
   keyPlacement?: 'dock' | 'head'
+  /**
+   * The population, inline. A place page passes `[]` here and names the
+   * population by `dotsSrc` instead (UXLIVE-3, 2026-09-23): 5,650 inline dots
+   * were 2.0 MB of /about's RSC payload.
+   */
   dots: readonly AtlasDot[]
+  /**
+   * UXLIVE-3. Where the dots load from after paint (app/api/atlas/dots), when
+   * `dots` is empty. Built on the server by lib/atlas/atlas-deferred.ts from
+   * the scope the page read, so the fetched population is the one the page's
+   * counts were computed from.
+   */
+  dotsSrc?: string | null
+  /**
+   * UXLIVE-3. The figures the Atlas prints at rest, computed on the server
+   * from the full population with the same functions this component runs
+   * (lib/atlas/atlas-derive.ts): the frame box, the counts, each place's count
+   * and median, the scrubber range. Until the dots arrive these are what the
+   * key, the chips, the cards and the source line print, so the server HTML
+   * carries every count; the type toggles and the scrubber wait for the dots,
+   * because a filtered count needs them.
+   */
+  dotsSummary?: AtlasDotSummary | null
   regions: readonly AtlasRegion[]
   /**
    * SITE-128 #2: child plats for select → zoom. Not the default highlight.
@@ -334,6 +366,12 @@ export type V3AtlasProps = {
    * frame by the page (lib/geo/basemap-source.ts); absent, the map draws none.
    */
   basemap?: Basemap | null
+  /**
+   * UXLIVE-3. Where the same clipped basemap loads from after paint
+   * (app/api/atlas/basemap), when `basemap` is absent: static TIGER geometry,
+   * cached at the edge and in the browser instead of inlined twice per page.
+   */
+  basemapSrc?: string | null
   /**
    * Lot lines: the parcel the page is about, and the parcels around it. From
    * the county assessor's cadastral layer, so it is the recorded shape of a
@@ -419,7 +457,6 @@ export type V3AtlasProps = {
 /* Helpers                                                                     */
 /* -------------------------------------------------------------------------- */
 
-const RESIDENTIAL = new Set(['house', 'condo', 'townhouse', 'manufactured', 'multi'])
 /** Pulse slots per event kind, so a month of closes always has living marks. */
 const PULSE_SLOTS = { new: 16, pending: 6, sold: 18 } as const
 const KIND_LABEL: Record<AtlasRegionKind, string> = {
@@ -443,19 +480,91 @@ function fmtShort(usd: number): string {
   return `$${Math.round(usd / 1000)}K`
 }
 
-function median(values: number[]): number | null {
-  if (values.length === 0) return null
-  const s = [...values].sort((a, b) => a - b)
-  const mid = Math.floor(s.length / 2)
-  return s.length % 2 ? s[mid]! : Math.round((s[mid - 1]! + s[mid]!) / 2)
+/**
+ * UXLIVE-3: what the Atlas fetches after paint. Typed loosely at the edge and
+ * checked here, so a malformed body leaves the server's figures in place.
+ */
+type FetchedDots = { dots: AtlasDot[]; stamp: string | null; complete: boolean }
+
+function asFetchedDots(body: unknown): FetchedDots | null {
+  if (!body || typeof body !== 'object') return null
+  const rec = body as { dots?: unknown; stamp?: unknown; complete?: unknown }
+  if (!Array.isArray(rec.dots)) return null
+  return {
+    dots: rec.dots as AtlasDot[],
+    stamp: typeof rec.stamp === 'string' && rec.stamp ? rec.stamp : null,
+    complete: rec.complete !== false,
+  }
 }
 
-function quantile(sorted: number[], q: number): number {
-  if (sorted.length === 0) return 0
-  const pos = (sorted.length - 1) * q
-  const lo = Math.floor(pos)
-  const hi = Math.ceil(pos)
-  return sorted[lo]! + (sorted[hi]! - sorted[lo]!) * (pos - lo)
+function asFetchedBasemap(body: unknown): Basemap | null {
+  if (!body || typeof body !== 'object') return null
+  const rec = body as Partial<Basemap>
+  if (!Array.isArray(rec.roads) || !Array.isArray(rec.waterways) || !Array.isArray(rec.bodies)) return null
+  if (typeof rec.q !== 'number') return null
+  return rec as Basemap
+}
+
+/**
+ * Run `start` once the section is within a screen of the viewport AND the
+ * main thread has gone idle after hydration: the dots and the basemap never
+ * compete with the page's first paint or its hero image (UXLIVE-3).
+ */
+function whenNearAndIdle(el: Element | null, start: () => void): () => void {
+  let done = false
+  let idleId: number | null = null
+  let timer: number | null = null
+  const fire = () => {
+    if (done) return
+    done = true
+    start()
+  }
+  const schedule = () => {
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    if (typeof w.requestIdleCallback === 'function') idleId = w.requestIdleCallback(fire, { timeout: 1500 })
+    else timer = window.setTimeout(fire, 200)
+  }
+  let io: IntersectionObserver | null = null
+  if (el && typeof IntersectionObserver !== 'undefined') {
+    io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io?.disconnect()
+          io = null
+          schedule()
+        }
+      },
+      { rootMargin: '100% 0px' },
+    )
+    io.observe(el)
+  } else {
+    schedule()
+  }
+  return () => {
+    done = true
+    io?.disconnect()
+    const w = window as Window & { cancelIdleCallback?: (id: number) => void }
+    if (idleId != null && typeof w.cancelIdleCallback === 'function') w.cancelIdleCallback(idleId)
+    if (timer != null) window.clearTimeout(timer)
+  }
+}
+
+/** One GET with a single retry; resolves null when both fail or the body is malformed. */
+async function fetchJsonOnce<T>(url: string, parse: (body: unknown) => T | null, signal: AbortSignal): Promise<T | null> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const res = await fetch(url, { signal, credentials: 'same-origin' })
+      if (res.ok) return parse(await res.json())
+      if (res.status >= 400 && res.status < 500) return null
+    } catch {
+      if (signal.aborted) return null
+    }
+    if (attempt === 0) await new Promise((r) => window.setTimeout(r, 1500))
+  }
+  return null
 }
 
 /** The noun for a count, honest to the types on screen: lots are not homes. */
@@ -494,6 +603,8 @@ type PaintedPin =
       indices: number[]
       minP: number
       maxP: number
+      /** The median ask of the members: the pill's face (UXLIVE-6). */
+      median: number | null
     }
 
 /* -------------------------------------------------------------------------- */
@@ -508,23 +619,26 @@ export function V3Atlas({
   claimTone = 'none',
   claimText,
   keyPlacement = 'dock',
-  dots,
+  dots: dotsProp,
+  dotsSrc,
+  dotsSummary,
   regions,
   childRegions = [],
   subjectGrain = false,
   types,
   source,
   sourceName,
-  stamp,
+  stamp: stampProp,
   fit = 'regions',
   highlight,
   outlinedOf,
-  basemap,
+  basemap: basemapProp,
+  basemapSrc,
   parcels,
   frame,
   quiet,
   noun: nounProp,
-  incomplete,
+  incomplete: incompleteProp,
   events,
   children,
   className,
@@ -544,6 +658,22 @@ export function V3Atlas({
   const router = useRouter()
   const Heading = headingLevel === 1 ? 'h1' : 'h2'
 
+  /* UXLIVE-3: the population and the basemap may arrive after paint. Until
+     the dots do, the server's summary stands in for every figure, so the
+     server HTML and the hydrated page print the same counts. */
+  const [fetchedDots, setFetchedDots] = useState<FetchedDots | null>(null)
+  const [dotsFailed, setDotsFailed] = useState(false)
+  const [fetchedBasemap, setFetchedBasemap] = useState<Basemap | null>(null)
+  const deferDots = Boolean(dotsSrc) && dotsProp.length === 0
+  const dots: readonly AtlasDot[] = fetchedDots?.dots ?? dotsProp
+  const waiting = deferDots && fetchedDots == null
+  const pre: AtlasDotSummary | null = waiting && dotsSummary ? dotsSummary : null
+  const stamp = fetchedDots?.stamp ?? stampProp
+  // A deferred map with no summary has no honest count to print until the
+  // dots land; a fetched read that came back short says so like any other.
+  const incomplete = Boolean(incompleteProp) || fetchedDots?.complete === false || (waiting && !dotsSummary)
+  const basemap = basemapProp ?? fetchedBasemap
+
   /* Geometry: rings, label anchors, areas, projection — once per data set. */
   const shapes = useMemo<RegionShape[]>(() => {
     return [...regions, ...childRegions].map((r) => {
@@ -559,43 +689,16 @@ export function V3Atlas({
   const childIdSet = useMemo(() => hierarchyChildIdSet(childRegions), [childRegions])
 
   const proj = useMemo(() => {
-    // An explicit frame wins: the caller has told the map what it is about.
-    if (frame) {
-      const framed = bboxOfRings(outerRings(frame))
-      if (framed) return makeProjection(padBbox(framed, atlasFramePad(subjectGrain)), 1000)
-    }
-    // Frame the basin, not the outliers: the base silhouettes plus the dots'
-    // 1st–99th percentile in each axis. A lone listing an hour into the high
-    // desert stays counted (the source says so) without shrinking the map.
-    const baseRings = shapes.filter((s) => s.kind === 'town').flatMap((s) => s.rings)
-    // A record map (fit: dots) has no boundary of its own to sit inside, so
-    // the frame is computed from the dots and the towns that hold them:
-    // outliers stay out (Ashland is counted and named beyond the edge, pass
-    // two C1) and a tight cluster still frames wide enough for a town label
-    // to land in the stage (round five). See lib/geo/record-frame.ts.
-    if (fit === 'dots') {
-      const frame = recordFrame(
-        dots,
-        shapes.filter((s) => s.kind === 'town').map((s) => ({ id: s.id, rings: s.rings })),
-      )
-      const padded = padBbox(frame.bbox ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.1)
-      return makeProjection(padded, 1000)
-    }
-    // The regional map frames the basin, not the outliers: the base
-    // silhouettes plus the dots' 1st–99th percentile in each axis.
-    const lons = dots.map((d) => d.lng).sort((a, b) => a - b)
-    const lats = dots.map((d) => d.lat).sort((a, b) => a - b)
-    const core: Ring =
-      lons.length > 0
-        ? [
-            [quantile(lons, 0.01), quantile(lats, 0.01)],
-            [quantile(lons, 0.99), quantile(lats, 0.99)],
-          ]
-        : []
-    const b = bboxOfRings(core.length > 0 ? [...baseRings, core] : baseRings)
-    const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.04)
-    return makeProjection(padded, 1000)
-  }, [shapes, dots, fit, frame, subjectGrain])
+    // UXLIVE-3: a deferred population is framed by the server, from the full
+    // population, with the same function below; the frame holds when the
+    // dots land, so nothing jumps.
+    if (deferDots && dotsSummary) return atlasProjection(dotsSummary.box)
+    // An explicit frame wins; a record map (fit: dots) frames the dots and
+    // the towns holding them; otherwise the base silhouettes plus the dots'
+    // 1st to 99th percentile. See atlasFrameBox (lib/atlas/atlas-derive.ts)
+    // and lib/geo/record-frame.ts.
+    return atlasProjection(atlasFrameBox({ frame, subjectGrain, fit, dots, shapes }))
+  }, [deferDots, dotsSummary, shapes, dots, fit, frame, subjectGrain])
 
 
   const paths = useMemo<PlacedShape[]>(
@@ -718,15 +821,7 @@ export function V3Atlas({
 
   const xy = useMemo(() => dots.map((d) => proj.toXY(d.lng, d.lat)), [dots, proj])
 
-  const membership = useMemo(
-    () =>
-      dots.map((d) => {
-        const ids: string[] = []
-        for (const s of shapes) if (pointInRings(d.lng, d.lat, s.rings)) ids.push(s.id)
-        return ids
-      }),
-    [dots, shapes],
-  )
+  const membership = useMemo(() => atlasMembership(dots, shapes), [dots, shapes])
 
   /* The map is one tab stop: the roving index says which place holds it. */
   const placesRef = useRef<SVGGElement>(null)
@@ -812,16 +907,36 @@ export function V3Atlas({
     return () => io.disconnect()
   }, [])
 
+  /* UXLIVE-3: fetch the deferred dots and basemap once the map is within a
+     screen of the viewport and the page has gone idle. One retry each; a
+     failed dots read keeps the server's figures and says so in the source. */
+  const wantBasemap = !basemapProp && Boolean(basemapSrc)
+  useEffect(() => {
+    if (!deferDots && !wantBasemap) return
+    const controller = new AbortController()
+    const cancel = whenNearAndIdle(sectionRef.current, () => {
+      if (deferDots && dotsSrc) {
+        void fetchJsonOnce(dotsSrc, asFetchedDots, controller.signal).then((got) => {
+          if (controller.signal.aborted) return
+          if (got) setFetchedDots(got)
+          else setDotsFailed(true)
+        })
+      }
+      if (wantBasemap && basemapSrc) {
+        void fetchJsonOnce(basemapSrc, asFetchedBasemap, controller.signal).then((got) => {
+          if (got && !controller.signal.aborted) setFetchedBasemap(got)
+        })
+      }
+    })
+    return () => {
+      cancel()
+      controller.abort()
+    }
+  }, [deferDots, dotsSrc, wantBasemap, basemapSrc])
+
   /* Price scale: the scrubber runs from the 5th to the 95th percentile of the
      listed dots' own prices, rounded outward to a clean step. */
-  const priceScale = useMemo(() => {
-    const sorted = dots
-      .flatMap((d) => (d.s !== 'sold' && d.p != null && d.p > 0 ? [d.p] : []))
-      .sort((a, b) => a - b)
-    const lo = Math.floor(quantile(sorted, 0.05) / 50_000) * 50_000
-    const hi = Math.ceil(quantile(sorted, 0.95) / 100_000) * 100_000
-    return { min: Math.max(lo, 50_000), max: Math.max(hi, lo + 100_000), step: 25_000 }
-  }, [dots])
+  const priceScale = useMemo(() => (pre ? pre.priceScale : atlasPriceScale(dots)), [pre, dots])
 
   /* Visitor state. */
   const [maxPriceRaw, setMaxPriceRaw] = useState<number | null>(null)
@@ -844,49 +959,20 @@ export function V3Atlas({
     [offTypes, atCeiling, maxPrice],
   )
 
-  const counts = useMemo(() => {
-    let forSale = 0
-    let pending = 0
-    let sold = 0
-    const listed: number[] = []
-    let closed = 0
-    dots.forEach((d, i) => {
-      if (!isOn(d)) return
-      if (d.s === 'sold') {
-        if (isAtlasPulseSold(d)) sold += 1
-      } else {
-        listed.push(i)
-        if (d.s === 'pending') pending += 1
-        else if (d.s === 'closed') closed += 1
-        else forSale += 1
-      }
-    })
-    return { forSale, pending, sold, closed, listed }
-  }, [dots, isOn])
+  /* The counts the marks are drawn from (atlasCounts). Before deferred dots
+     land, the server's counts for the same population at rest. */
+  const counts = useMemo(
+    () => (pre ? { ...pre.counts, listed: [] as number[] } : atlasCounts(dots, isOn)),
+    [pre, dots, isOn],
+  )
   /* Dots the frame does not hold: counted in every figure, named in the
-     source line, never silently missing. */
-  const beyond = useMemo(() => {
-    let n = 0
-    let on = 0
-    for (const d of dots) {
-      if (!isOn(d)) continue
-      // Heat-only closes are the wash, not a figure, so they do not belong
-      // in "counted in every figure, not drawn."
-      if (d.s === 'sold' && !isAtlasPulseSold(d)) continue
-      on += 1
-      const [x, y] = proj.toXY(d.lng, d.lat)
-      if (x < 0 || y < 0 || x > proj.width || y > proj.height) n += 1
-    }
-    return { n, on }
-  }, [dots, proj, isOn])
+     source line, never silently missing (atlasBeyond). */
+  const beyond = useMemo(() => (pre ? pre.beyond : atlasBeyond(dots, proj, isOn)), [pre, dots, proj, isOn])
 
   /* A record map: every dot is a closing, none is for sale. Read from the
      whole population, never the filtered counts: an empty price filter must
      not turn a broker's record into a for-sale map (pass three, D1). */
-  const closingsMap = useMemo(
-    () => dots.some((d) => d.s === 'closed') && !dots.some((d) => d.s === 'active' || d.s === 'pending'),
-    [dots],
-  )
+  const closingsMap = useMemo(() => (pre ? pre.closingsMap : atlasIsClosingsMap(dots)), [pre, dots])
 
   const typesOn = useMemo(() => types.filter((t) => !offTypes.has(t.key)), [types, offTypes])
   const allTypesOn = typesOn.length === types.length
@@ -896,48 +982,37 @@ export function V3Atlas({
   )
   /* The median is of HOMES unless the reader chose lots or commercial alone:
      a lot's price beside a house's is not one median. */
-  const medianScope = useMemo(() => {
-    const onKeys = typesOn.map((t) => t.key)
-    const residentialOn = onKeys.some((k) => RESIDENTIAL.has(k))
-    if (closingsMap) return { keys: new Set(onKeys), label: 'median close' }
-    if (residentialOn) return { keys: RESIDENTIAL, label: 'median home price' }
-    const onlyLots = onKeys.length > 0 && onKeys.every((k) => k === 'land')
-    return { keys: new Set(onKeys), label: onlyLots ? 'median lot price' : 'median price' }
-  }, [typesOn, closingsMap])
-
-  /* The smallest shape among a set of ids: the place a reader would name. */
-  const areaById = useMemo(() => new Map(shapes.map((s) => [s.id, s.area])), [shapes])
-  const smallestOf = useCallback(
-    (ids: readonly string[]): string =>
-      ids.reduce((best, id) => ((areaById.get(id) ?? Infinity) < (areaById.get(best) ?? Infinity) ? id : best), ids[0]!),
-    [areaById],
+  const medianScope = useMemo(
+    () =>
+      atlasMedianScope(
+        typesOn.map((t) => t.key),
+        closingsMap,
+      ),
+    [typesOn, closingsMap],
   )
 
-  /* Per-place figures over the listed dots on screen — the card's numbers. */
+  /* Areas by id: on a record map a closing counts in ONE place, the smallest
+     that holds it (pass three, D4; evaluator round five, TEAM-REBECCA-3). */
+  const areaById = useMemo(() => new Map(shapes.map((s) => [s.id, s.area])), [shapes])
+
+  /* Per-place figures over the listed dots on screen — the card's numbers
+     (atlasRegionStats). Before deferred dots land, the server's per-place
+     figures for the same population at rest. */
   const regionStats = useMemo(() => {
-    const acc = new Map<string, { n: number; prices: number[] }>()
-    for (const i of counts.listed) {
-      const d = dots[i]!
-      // On a record map a closing counts in ONE place, the smallest that
-      // holds it (places are sorted largest first), so six chips reading 1
-      // never sum above a map claiming four (pass three, D4).
-      const ids = membership[i] ?? []
-      // `membership` walks the unsorted shapes, so the last id was whatever the
-      // page listed last — a city, often, which is why the map named Century
-      // West where the ledger and the listing's own URL said Broken Top
-      // (evaluator round five, TEAM-REBECCA-3). Pick the smallest by area.
-      const owners = closingsMap && ids.length > 1 ? [smallestOf(ids)] : ids
-      for (const rid of owners) {
-        const rec = acc.get(rid) ?? { n: 0, prices: [] }
-        rec.n += 1
-        if (d.p != null && d.p > 0 && medianScope.keys.has(d.t)) rec.prices.push(d.p)
-        acc.set(rid, rec)
-      }
+    if (pre) {
+      const out = new Map<string, AtlasPlaceStat>()
+      for (const [id, [n, med]] of Object.entries(pre.places)) out.set(id, { n, median: med })
+      return out
     }
-    const out = new Map<string, { n: number; median: number | null }>()
-    for (const [rid, rec] of acc) out.set(rid, { n: rec.n, median: median(rec.prices) })
-    return out
-  }, [counts.listed, membership, dots, medianScope, closingsMap, smallestOf])
+    return atlasRegionStats({
+      dots,
+      listed: counts.listed,
+      membership,
+      medianKeys: medianScope.keys,
+      closingsMap,
+      areaById,
+    })
+  }, [pre, counts.listed, membership, dots, medianScope, closingsMap, areaById])
 
 
 
@@ -1540,7 +1615,7 @@ export function V3Atlas({
         if (p != null && formatAtlasPinPrice(p)) asks.push(p)
       }
       const span = atlasClusterAskSpan(asks)
-      const at = clampAtlasPinToIsland(g.x, g.y, island)
+      const at = clampAtlasPinToIsland(g.x, g.y, island, ATLAS_CLUSTER_PILL)
       out.push({
         kind: 'cluster',
         id: g.id,
@@ -1550,6 +1625,7 @@ export function V3Atlas({
         indices: g.indices,
         minP: span?.min ?? 0,
         maxP: span?.max ?? 0,
+        median: atlasClusterMedianAsk(asks),
       })
     }
     return out
@@ -1804,6 +1880,10 @@ export function V3Atlas({
             type="button"
             className="v3-atlas__type"
             aria-pressed={!offTypes.has(t.key)}
+            /* UXLIVE-3: a filtered count needs the dots; until they land the
+               toggles hold, so no count on screen describes a set the reader
+               has already changed. */
+            disabled={waiting}
             onClick={() => toggleType(t.key)}
           >
             <span className={`v3-atlas__type-mark v3-atlas__type-mark--${t.key}`} aria-hidden="true" />
@@ -1823,6 +1903,7 @@ export function V3Atlas({
             max={priceScale.max}
             step={priceScale.step}
             value={maxPrice}
+            disabled={waiting}
             onChange={(e) => setMaxPrice(Number(e.target.value))}
             aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
           />
@@ -1846,6 +1927,9 @@ export function V3Atlas({
         className,
       )}
       data-map-hierarchy={subjectGrain ? 'subject-grain' : 'place'}
+      /* UXLIVE-3: whether the marks are on the map yet (deferred maps only). */
+      data-atlas-dots={deferDots ? (waiting ? (dotsFailed ? 'failed' : 'loading') : 'ready') : undefined}
+      aria-busy={waiting && !dotsFailed ? true : undefined}
       aria-labelledby={`${uid}-h`}
       /* The linked mark's state, on the section, so a sibling list and a test
          can both read what the map is pointing at without walking the SVG. */
@@ -2333,8 +2417,10 @@ export function V3Atlas({
                   {pinMarks.map((mark) => {
                     switch (mark.kind) {
                       case 'cluster': {
-                        const price =
-                          mark.minP > 0 ? formatAtlasClusterPin(mark.minP, mark.maxP) : ''
+                        /* UXLIVE-6: the MEDIAN ask of the homes in the
+                           bubble, labelled, never the cheapest with "+"
+                           ("$50k+" over Bend read as a wrong price). */
+                        const price = formatAtlasPinPrice(mark.median)
                         return (
                           <span
                             key={mark.id}
@@ -2350,7 +2436,12 @@ export function V3Atlas({
                             data-atlas-cluster-price={price || undefined}
                             data-atlas-cluster-size={atlasClusterSize(mark.count)}
                           >
-                            {price}
+                            {price ? (
+                              <>
+                                <span className="v3-atlas__pin-kind">{ATLAS_CLUSTER_PIN_LABEL}</span>
+                                <span className="v3-atlas__pin-ask">{price}</span>
+                              </>
+                            ) : null}
                           </span>
                         )
                       }
@@ -2506,6 +2597,9 @@ export function V3Atlas({
                   ? ` ${beyond.n} of the ${beyond.on.toLocaleString('en-US')} ${beyond.n === 1 ? 'sits' : 'sit'} beyond the frame's edges: counted in every figure, not drawn.`
                   : ''}
                 {incomplete ? ' A read failed on this render, so no count is printed.' : ''}
+                {waiting && dotsFailed && !incomplete
+                  ? ' The homes did not load onto the map in this browser. The counts come from the same listing read.'
+                  : ''}
                 {basemapPaths && basemap?.source
                   ? ` Roads, rivers and lakes: ${basemap.source}, drawn in this map's own projection.`
                   : ''}

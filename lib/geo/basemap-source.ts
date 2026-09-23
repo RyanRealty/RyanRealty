@@ -136,6 +136,21 @@ export function basemapForRegions(
   regions: readonly FrameRegion[],
   opts: { dots?: readonly FrameDot[]; fit?: 'regions' | 'dots'; tier?: BasemapTier; pad?: number } = {},
 ): Basemap {
+  const frame = basemapFrameForRegions(regions, opts)
+  if (!frame) return EMPTY_FRAME
+  return basemapForFrame(frame)
+}
+
+/**
+ * The frame basemapForRegions clips to, without clipping: what a page puts in
+ * the basemap URL (lib/atlas/atlas-basemap-href.ts) so the browser fetches the
+ * same subset after paint instead of the page inlining it (UXLIVE-3,
+ * 2026-09-23). Null when there is nothing to frame (no basemap is drawn).
+ */
+export function basemapFrameForRegions(
+  regions: readonly FrameRegion[],
+  opts: { dots?: readonly FrameDot[]; fit?: 'regions' | 'dots'; tier?: BasemapTier; pad?: number } = {},
+): (BasemapFrame & { bbox: Bbox }) | null {
   const { dots = [], fit = 'regions', tier, pad } = opts
   const bbox =
     fit === 'dots'
@@ -149,8 +164,8 @@ export function basemapForRegions(
             .map((r, i) => ({ id: String(i), rings: outerRings(r.geometry) })),
         ).bbox
       : bboxOfGeometries(regions)
-  if (!bbox) return EMPTY_FRAME
-  return basemapForFrame({ bbox, tier, pad })
+  if (!bbox) return null
+  return { bbox, ...(tier ? { tier } : {}), ...(pad != null ? { pad } : {}) }
 }
 
 const EMPTY_FRAME: Basemap = { ...TIERS.region, roads: [], waterways: [], bodies: [] }

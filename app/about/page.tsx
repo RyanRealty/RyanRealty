@@ -57,7 +57,8 @@ import { AboutOffice } from './_v3/AboutOffice'
 import { AboutReach } from './_v3/AboutReach'
 import { FirmClosings } from './_v3/FirmClosings'
 import { loadAboutProof } from './_v3/load-about-faces'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
+import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
 import './_v3/about-fold.css'
 
 const ROUTE_PATH = '/about'
@@ -98,6 +99,16 @@ async function renderAboutPage() {
   ])
   const atlas = atlasRead ?? EMPTY_PLACE_ATLAS
   const atlasRegions = regionAtlas?.regions ?? []
+  // UXLIVE-3 (visibility audit 2026-09-22): the 5,650 dots (2.0 MB of this
+  // page's RSC payload), the sales heat drawn from them and the basemap load
+  // after paint; the counts, the outlines and the text stay in the server HTML.
+  const atlasProps = deferredAtlasProps({
+    population: atlas,
+    scope: { cities: [], boundaryRef: null, boundary: null },
+    regions: atlasRegions,
+    types: atlas.types,
+    basemapFrame: basemapFrameForRegions(atlasRegions),
+  })
   const quotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
@@ -253,9 +264,11 @@ async function renderAboutPage() {
           id="service-area"
           headingLevel={2}
           headline={v3Text('Where we work')}
-          dots={atlas.dots}
-          regions={atlasRegions}
-          basemap={basemapForRegions(atlasRegions)}
+          dots={atlasProps.dots}
+          dotsSrc={atlasProps.dotsSrc}
+          dotsSummary={atlasProps.dotsSummary}
+          regions={atlasProps.regions}
+          basemapSrc={atlasProps.basemapSrc}
           types={atlas.types}
           events={atlas.events}
           source={atlas.source}

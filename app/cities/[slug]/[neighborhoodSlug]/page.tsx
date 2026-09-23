@@ -104,7 +104,8 @@ import {
   PlaceSubdivisionMap,
   PlaceSubdivisionRail,
 } from '@/components/site/v3/PlaceSubdivisionMap.client'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
+import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
@@ -858,6 +859,27 @@ async function renderNeighborhoodDetail({ params }: Props) {
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
   const subjectRegions = subjectAtlasRegions(atlasRegions)
+  // UXLIVE-3 (visibility audit 2026-09-22): neighborhood pages had the worst
+  // field LCP (mobile p75 9.9 s). The Atlas's dots, the sales heat drawn from
+  // them and the basemap load after paint; the plats (583 KB of raw county
+  // coordinates on Awbrey Butte) ship at the precision the frame can draw.
+  // Counts, outlines and text stay in the server HTML.
+  const atlasProps = deferredAtlasProps({
+    population: atlasView,
+    scope: {
+      cities: [cityName],
+      boundaryRef: boundaryMapData.polygon
+        ? { kind: 'geo', geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }
+        : null,
+      boundary: boundaryMapData.polygon,
+    },
+    regions: subjectRegions,
+    childRegions,
+    amenities: amenityLayers,
+    types: atlasView.types,
+    fit: 'dots',
+    basemapFrame: basemapFrameForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' }),
+  })
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -917,17 +939,19 @@ async function renderNeighborhoodDetail({ params }: Props) {
               headingLevel={2}
               headline={v3Text(neighborhood.name)}
               headlineTone="eyebrow"
-              dots={atlasView.dots}
-              regions={subjectRegions}
-              childRegions={childRegions}
-              basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
+              dots={atlasProps.dots}
+              dotsSrc={atlasProps.dotsSrc}
+              dotsSummary={atlasProps.dotsSummary}
+              regions={atlasProps.regions}
+              childRegions={atlasProps.childRegions}
+              basemapSrc={atlasProps.basemapSrc}
               fit="dots"
               types={atlasView.types}
               events={atlasView.events}
               source={atlasView.source}
               stamp={atlasView.stamp}
               incomplete={!atlasView.complete}
-              amenities={amenityLayers}
+              amenities={atlasProps.amenities}
               hidePriceScrubber
             />
           </div>

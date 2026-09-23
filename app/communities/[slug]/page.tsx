@@ -178,7 +178,8 @@ import {
   placeMedianChart,
   placeMedianChartCaption,
 } from '@/app/cities/[slug]/_v3/city-sections'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
+import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return getAllResortCommunities().map((c) => ({ slug: publicCommunitySlug(c) }))
@@ -954,6 +955,30 @@ async function renderCommunityDetail({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // UXLIVE-3 (visibility audit 2026-09-22): the Atlas's dots, the sales heat
+  // drawn from them and the basemap load after paint; counts, outlines and
+  // text stay in the server HTML, and the plats ship at the precision the
+  // frame can draw. The route rebuilds the population from the boundary this
+  // page read: the county plat union when there is one, else the recorded
+  // boundary row.
+  const atlasProps = deferredAtlasProps({
+    population: atlasView,
+    scope: {
+      cities: [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])],
+      boundaryRef: resortBoundary
+        ? { kind: 'resort', slug }
+        : mapPolygon
+          ? { kind: 'geo', geoType: 'neighborhood', geoSlug: slug }
+          : null,
+      boundary: mapPolygon,
+    },
+    regions: foldAtlasRegions,
+    childRegions: platRegions,
+    amenities: amenityLayers,
+    types: atlasView.types,
+    fit: 'dots',
+    basemapFrame: basemapFrameForRegions(foldAtlasRegions, { dots: atlasView.dots, fit: 'dots' }),
+  })
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -1026,20 +1051,19 @@ async function renderCommunityDetail({ params }: Props) {
               headlineTone="eyebrow"
               keyPlacement="head"
               sourceName="Oregon Data Share"
-              dots={atlasView.dots}
-              regions={foldAtlasRegions}
-              childRegions={platRegions}
-              basemap={basemapForRegions(foldAtlasRegions, {
-                dots: atlasView.dots,
-                fit: 'dots',
-              })}
+              dots={atlasProps.dots}
+              dotsSrc={atlasProps.dotsSrc}
+              dotsSummary={atlasProps.dotsSummary}
+              regions={atlasProps.regions}
+              childRegions={atlasProps.childRegions}
+              basemapSrc={atlasProps.basemapSrc}
               fit="dots"
               types={atlasView.types}
               events={atlasView.events}
               source={atlasView.source}
               stamp={atlasView.stamp}
               incomplete={!atlasView.complete}
-              amenities={amenityLayers}
+              amenities={atlasProps.amenities}
               hidePriceScrubber
               clusterPins
               clusterCellPx={COMMUNITY_FOLD_CLUSTER_CELL_PX}
