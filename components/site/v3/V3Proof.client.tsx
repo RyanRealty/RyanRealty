@@ -97,7 +97,7 @@ const MARK_R = 5.5
 function Marks({ rating }: { rating: number }) {
   const n = Math.max(0, Math.min(5, Math.round(rating)))
   return (
-    <span className="v3-proof__marks" aria-label={`${n} of 5`}>
+    <span className="v3-proof__marks" role="img" aria-label={`${n} of 5`}>
       {Array.from({ length: 5 }, (_, i) => (
         <svg
           key={i}
