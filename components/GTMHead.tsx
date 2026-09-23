@@ -71,7 +71,7 @@ export default function GTMHead() {
   return (
     <script
       dangerouslySetInnerHTML={{
-        __html: gtmBootstrapScript(pageType, GTM_ID),
+        __html: gtmBootstrapScript(pageType, GTM_ID), // hydration-safe: the Date call lives inside the inline script string and runs in the browser, not during render
       }}
     />
   )
