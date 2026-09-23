@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import type { ListingTile } from '@/lib/data'
 import { placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { railCardFromListingRow } from '@/app/_v3/home-rail-items'
-import { V3PlaceInventory } from './V3PlaceInventory'
+import { V3PlaceInventory } from '@/components/site/v3/V3PlaceInventory'
 
 function tile(over: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): ListingTile {
   return {
