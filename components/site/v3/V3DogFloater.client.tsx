@@ -16,11 +16,12 @@
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { CONTACT } from '@/lib/brand/contact'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
+import { pupilOffset, type PupilOffset } from '@/lib/geo/pupil-offset'
 import {
   Dialog,
   DialogContent,
@@ -42,11 +43,58 @@ export const DOG_FLOATER_MENUS = [
   { href: '/about', label: 'Learn more about us', kind: 'route' },
 ] as const
 
+/**
+ * Where the pupil sits at rest, as a percent of the head box — measured off
+ * the actual art (public/brand/jax-head-cream.png: a 1024x1024 canvas, the
+ * eye's own ink hole centered at [318.5, 240.0], both jax-head PNGs share
+ * the identical silhouette). object-fit: contain on a SQUARE image inside a
+ * SQUARE box scales 1:1 with no letterboxing, so the percent maps directly.
+ */
+const PUPIL_EYE_X_PCT = 31.1
+const PUPIL_EYE_Y_PCT = 23.4
+/** How far the pupil may drift from rest, in css px — "a small radius." */
+const PUPIL_MAX_RADIUS_PX = 3
+
 export function V3DogFloater() {
   const pathname = usePathname()
   const hidden = shouldHidePublicChrome(pathname)
   const [open, setOpen] = useState(false)
   const titleId = useId()
+  const headRef = useRef<HTMLSpanElement>(null)
+  /* Matt 2026-09-23: "have the dogs eyes rotate to follow it." One visible
+     eye — the art is a side profile — tracked from window pointermove,
+     throttled to one measurement per frame. Stays at {0,0} (centered, the
+     art's own rest position) with no pointer reading yet, on touch before
+     the first touch move, and permanently under prefers-reduced-motion,
+     which never starts the listener at all. */
+  const [pupil, setPupil] = useState<PupilOffset>({ dx: 0, dy: 0 })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let rafId = 0
+    let latest: { x: number; y: number } | null = null
+    const measure = () => {
+      rafId = 0
+      const el = headRef.current
+      if (!el || !latest) return
+      const rect = el.getBoundingClientRect()
+      const eye = {
+        x: rect.left + rect.width * (PUPIL_EYE_X_PCT / 100),
+        y: rect.top + rect.height * (PUPIL_EYE_Y_PCT / 100),
+      }
+      setPupil(pupilOffset(eye, latest, PUPIL_MAX_RADIUS_PX))
+    }
+    const onMove = (event: PointerEvent) => {
+      latest = { x: event.clientX, y: event.clientY }
+      if (!rafId) rafId = window.requestAnimationFrame(measure)
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      if (rafId) window.cancelAnimationFrame(rafId)
+    }
+  }, [])
 
   useEffect(() => {
     if (hidden) setOpen(false)
@@ -96,7 +144,7 @@ export function V3DogFloater() {
             aria-controls={open ? titleId : undefined}
           >
             <span className="sr-only">Open Ryan Realty menu</span>
-            <span className="v3-dog-floater__head" data-v3-dog-idle="notice" aria-hidden="true">
+            <span className="v3-dog-floater__head" data-v3-dog-idle="notice" aria-hidden="true" ref={headRef}>
               <img
                 src="/brand/jax-head-cream.png"
                 alt=""
@@ -110,6 +158,17 @@ export function V3DogFloater() {
                 width={68}
                 height={68}
                 className="v3-dog-floater__dog v3-dog-floater__dog--navy"
+              />
+              {/* The pupil: a small dot over the art's own eye, moved by JS,
+                  never a redraw of the mascot. One per dog layer so it stays
+                  the right color through the brief navy/cream inversion. */}
+              <span
+                className="v3-dog-floater__pupil v3-dog-floater__pupil--cream"
+                style={{ transform: `translate(-50%, -50%) translate(${pupil.dx}px, ${pupil.dy}px)` }}
+              />
+              <span
+                className="v3-dog-floater__pupil v3-dog-floater__pupil--navy"
+                style={{ transform: `translate(-50%, -50%) translate(${pupil.dx}px, ${pupil.dy}px)` }}
               />
             </span>
           </button>

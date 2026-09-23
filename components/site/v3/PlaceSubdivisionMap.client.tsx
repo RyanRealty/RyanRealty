@@ -165,12 +165,17 @@ export function PlaceSubdivisionRail({
 }
 
 export function PlaceSubdivisionAtlas(props: V3AtlasProps) {
-  const { selectedId, setSelected } = usePlaceMap()
+  const { selectedId, setSelected, keysBySlug } = usePlaceMap()
   return (
     <V3Atlas
       {...props}
       selectedSubdivisionId={selectedId}
       onSubdivisionSelect={setSelected}
+      /* Matt 2026-09-23: the SAME membership PlaceSubdivisionHomes filters
+         its carousel by (childListingKeys), so the map's focused homes and
+         the carousel below it can never disagree about who belongs to the
+         selected district. */
+      memberKeysBySlug={keysBySlug}
     />
   )
 }
