@@ -62,6 +62,15 @@ const CLASS_REGISTRY_PATH = 'design_system/public/taste-classes.json'
 const UI_KITS = 'design_system/ryan-realty/ui_kits'
 const NAV_TIMEOUT_MS = Number(process.env.CONTENT_FLOOR_TIMEOUT_MS ?? 60_000)
 const SETTLE_MS = Number(process.env.CONTENT_FLOOR_SETTLE_MS ?? 2_000)
+// Bound on waiting for every (now eager) image to finish; see loadEveryImage().
+const EAGER_SETTLE_MS = Number(process.env.CONTENT_FLOOR_EAGER_SETTLE_MS ?? 30_000)
+// Bound on waiting for a streamed page to finish arriving; see waitForStreamedPage().
+const STREAM_SETTLE_MS = Number(process.env.CONTENT_FLOOR_STREAM_SETTLE_MS ?? 30_000)
+// A class under its floor is read once more after this wait (0 disables it):
+// past lib/site/degraded-isr.ts's 60s lifetime for a degraded render, then
+// DEGRADED_REGEN_MS for the regeneration one request starts. See main().
+const DEGRADED_RETRY_MS = Number(process.env.CONTENT_FLOOR_DEGRADED_RETRY_MS ?? 62_000)
+const DEGRADED_REGEN_MS = Number(process.env.CONTENT_FLOOR_DEGRADED_REGEN_MS ?? 8_000)
 // Hydration settle: re-read the per-section map until two consecutive
 // readings agree (see measure()).
 const STABLE_PASSES = 5
@@ -105,12 +114,71 @@ async function reachable(url) {
   }
 }
 
+/**
+ * WAIT FOR THE STREAMED PAGE (2026-09-23). `load` fires on the streamed
+ * shell, not the page: on /cities/bend `document.images` held 4 elements at
+ * `load` and 776 when the page was read, because the listing ledgers and
+ * photo sections stream in behind Suspense after it. The flick below used to
+ * run over that short shell, the sections arrived after it, and their lazy
+ * images were never scrolled into view. How late they arrive depends on how
+ * fast the live database answers, which is why the same build read `images`
+ * 62 on one run and 16 on the next. So measurement starts once the network
+ * has gone idle AND the document height has held still, both bounded.
+ */
+async function waitForStreamedPage(page) {
+  await page.waitForLoadState('networkidle', { timeout: STREAM_SETTLE_MS }).catch(() => {})
+  const deadline = Date.now() + STREAM_SETTLE_MS
+  let last = -1
+  let still = 0
+  while (Date.now() < deadline && still < 3) {
+    const height = await page.evaluate(() => document.documentElement.scrollHeight)
+    still = height === last ? still + 1 : 0
+    last = height
+    await page.waitForTimeout(500)
+  }
+}
+
+/**
+ * LOAD EVERY IMAGE THE PAGE CARRIES, THEN COUNT (2026-09-23).
+ *
+ * `images` is meant to count the large pictures a page carries, not the ones
+ * that happened to finish while the gate scrolled past. Once the streamed page
+ * has arrived (waitForStreamedPage), every lazy <img> is switched to eager,
+ * which starts its fetch at once, and the gate waits for all of them to finish
+ * (loaded or errored). On /cities/bend that is 776 images, finished in 4 to 8
+ * seconds through remote-media-proxy.mjs, 135 to 144 of them 800px or wider,
+ * in both the full browser and the headless shell. A loop, because a section
+ * that mounts or re-renders later brings fresh lazy <img>s. Bounded by
+ * EAGER_SETTLE_MS so a hung CDN cannot hang the gate.
+ */
+async function loadEveryImage(page) {
+  const deadline = Date.now() + EAGER_SETTLE_MS
+  while (Date.now() < deadline) {
+    const pending = await page.evaluate(() => {
+      let n = 0
+      for (const img of document.images) {
+        if (img.loading === 'lazy') img.loading = 'eager'
+        if (!img.complete) n += 1
+      }
+      return n
+    })
+    if (pending === 0) return
+    await page.waitForTimeout(500)
+  }
+}
+
 async function measure(page, url) {
   let lastErr = null
   for (let attempt = 1; attempt <= NAV_ATTEMPTS; attempt += 1) {
     try {
       const res = await page.goto(url, { waitUntil: 'load', timeout: NAV_TIMEOUT_MS })
       if (!res || res.status() >= 400) throw new Error(`HTTP ${res ? res.status() : 'none'}`)
+      // Wait for the streamed page, then load every image it carries before
+      // anything is counted; see waitForStreamedPage() and loadEveryImage().
+      // The loader runs once now and once more after the scroll mounts any
+      // IntersectionObserver section.
+      await waitForStreamedPage(page)
+      await loadEveryImage(page)
       // Scroll the whole document so lazy <img loading="lazy"> and IntersectionObserver
       // media actually load; then return to the top so "hero" means the fold.
       await page.evaluate(async () => {
@@ -122,6 +190,7 @@ async function measure(page, url) {
         }
         window.scrollTo(0, 0)
       })
+      await loadEveryImage(page)
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
       // The hero measurement only counts images that have FINISHED loading, so
       // a frame still in flight when the page is read hands "widest in-fold
@@ -297,7 +366,33 @@ async function main() {
       continue
     }
     checked += 1
-    const problems = floorProblems(measured, parity.contentFloor)
+    let problems = floorProblems(measured, parity.contentFloor)
+    if (problems.length && DEGRADED_RETRY_MS > 0) {
+      // ONE RETRY PAST A DEGRADED RENDER (2026-09-23). When a live read times
+      // out, the page renders its fallback and lib/site/degraded-isr.ts ships
+      // that copy with a DEGRADED_ISR_REVALIDATE_S (60s) lifetime. CI hit it
+      // twice in one afternoon on PR #352: /zip/97702 read words 761 and a
+      // 120px hero, /oregon/medford read words 319 and jsonLd 5, each with
+      // its listing section and ItemList missing, on code that read 1,136 /
+      // 1,112px and 518 / 6 on the runs either side and on a local server.
+      // That is database latency, not lost content. So a class under its
+      // floor waits out the degraded copy, sends one request to start the
+      // regeneration (ISR serves the stale copy once), and is read again. A
+      // real regression reads short twice and still fails; only the second
+      // reading is reported.
+      console.log(
+        `  retry ${cls.key}: under its floor on the first read; reading again after ${Math.round(DEGRADED_RETRY_MS / 1000)}s in case it was a degraded render`,
+      )
+      await page.waitForTimeout(DEGRADED_RETRY_MS)
+      await fetch(BASE + cls.url, { headers: { ...CI_PROBE_HEADERS }, signal: AbortSignal.timeout(60_000) }).catch(() => {})
+      await page.waitForTimeout(DEGRADED_REGEN_MS)
+      try {
+        measured = await measure(page, BASE + cls.url)
+        problems = floorProblems(measured, parity.contentFloor)
+      } catch {
+        // Keep the first reading's problems: it did render once, and short.
+      }
+    }
     if (problems.length) {
       failures.push(`${cls.key} (${cls.url}):\n      ${problems.join('\n      ')}`)
       console.log(`  FAIL ${cls.key}`)
