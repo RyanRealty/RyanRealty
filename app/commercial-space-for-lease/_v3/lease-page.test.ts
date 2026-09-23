@@ -90,10 +90,18 @@ describe('leaseCityGroups', () => {
     expect(groups[2]!.cityHref).toBe('/cities/powell-butte')
   })
 
-  it('spans only the rents that publish per sq ft per month, never converting or keeping a contradiction', () => {
-    // 0.90 and 1.40 publish; 985 is a monthly amount; 3000 contradicts its unit.
-    expect(groups[0]!.perSqftMonthRange).toBe('$0.90 to $1.40 per sq ft per month')
-    expect(groups[1]!.perSqftMonthRange).toBe('$1.75 per sq ft per month')
+  it('gives each town a rate line that covers every lease it counts, never mixing or converting units', () => {
+    // 0.90 and 1.40 publish per sq ft per month; 985 is a monthly amount for
+    // the space; 3000 contradicts its own unit and is counted as not published.
+    expect(groups[0]!.rateSummary).toBe(
+      '2 from $0.90 to $1.40 per sq ft per month · 1 at $985 per month · 1 rate not published',
+    )
+    expect(groups[1]!.rateSummary).toBe('$1.75 per sq ft per month')
+  })
+
+  it('says a town\'s rates are not published rather than dropping the line', () => {
+    const [town] = leaseCityGroups([tile({ listingKey: 'x1', city: 'Sisters', listPrice: 1.25 })], {})
+    expect(town!.rateSummary).toBe('Lease rate not published')
   })
 
   it('carries each lease its unit so the card prints the rent with it', () => {
@@ -114,7 +122,7 @@ describe('leaseCityLedgerRows', () => {
       what: 'Bend',
       value: '4 for lease',
       weight: 1,
-      detail: '$0.90 to $1.40 per sq ft per month',
+      detail: '2 from $0.90 to $1.40 per sq ft per month · 1 at $985 per month · 1 rate not published',
     })
     expect(rows[1]!.weight).toBe(0.25)
   })

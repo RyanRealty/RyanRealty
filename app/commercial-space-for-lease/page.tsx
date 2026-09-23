@@ -61,7 +61,7 @@ function ldJson(input: SchemaInput): string {
 }
 
 const LEASE_TRACE =
-  'regional MLS through Oregon Data Share: every publicly active commercial lease (MLS property type G) in the Central Oregon service area, Active and Active Under Contract. Each rent is the listing’s own asking rent in its own unit; a town’s span covers its listings that state a monthly rate per square foot'
+  'regional MLS through Oregon Data Share: every publicly active commercial lease (MLS property type G) in the Central Oregon service area, Active and Active Under Contract. Each rent is the listing’s own asking rent in its own unit, never converted. A town’s rate line covers every listing it counts: a span for each unit with how many listings use it, and how many rates are not published (no unit on the listing, or a unit its own number contradicts)'
 
 export async function generateMetadata(): Promise<Metadata> {
   const { tiles, rateOptions } = await getCommercialLeaseListings()

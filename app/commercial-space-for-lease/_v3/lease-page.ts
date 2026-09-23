@@ -4,10 +4,11 @@
  * holds them without a server.
  *
  * Every figure on the page is a row's own: a count of the leases grouped here,
- * a lease's rent with its unit (publishLeaseRate), and a town's span of the
- * per-square-foot monthly rents its own cards print (publishLeaseRateRange).
- * Nothing is converted between units and nothing is estimated (CLAUDE.md
- * section 0). A lease is never an Offer: the ItemList names each listing and
+ * a lease's rent with its unit (publishLeaseRate), and a town's rate line
+ * (publishLeaseRateSummary), which covers every lease the town's count covers:
+ * a span per rent unit with how many leases use it, and how many rates are not
+ * published. Nothing is converted between units and nothing is estimated
+ * (CLAUDE.md section 0). A lease is never an Offer: the ItemList names each listing and
  * its rent in words, with no price property.
  */
 import type { LeaseRateOptionsByKey, ListingTile } from '@/lib/data'
@@ -17,7 +18,7 @@ import { formatCount } from '@/lib/format/count'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import {
   LEASE_RATE_NOT_PUBLISHED,
-  publishLeaseRateRange,
+  publishLeaseRateSummary,
   publishListingLeaseFigure,
 } from '@/lib/listing/publish-lease-rate'
 import { leaseRowsRatesFirst, placeLeaseRowFromTile } from '@/lib/place/place-lease-stock'
@@ -34,8 +35,13 @@ export type LeaseCityGroup = {
   rows: V3ListingRowData[]
   /** "13 for lease". */
   countLabel: string
-  /** "$0.90 to $2.50 per sq ft per month", from this town's own cards; null when none prints per sq ft per month. */
-  perSqftMonthRange: string | null
+  /**
+   * Every lease in the town, by the rent its own card prints: "$0.29 to $0.85
+   * per sq ft per month" when they share one unit, else each unit's span with
+   * its count and the count not published ("2 from $0.75 to $0.85 per sq ft
+   * per month · 1 at $750 per month · 1 rate not published").
+   */
+  rateSummary: string | null
   /** The town's own place page, when it has one. */
   cityHref: string | null
 }
@@ -80,9 +86,8 @@ export function leaseCityGroups(
       anchor: `lease-${slug}`,
       rows: leaseRowsRatesFirst(town.rows),
       countLabel: `${formatCount(town.rows.length)} for lease`,
-      perSqftMonthRange: publishLeaseRateRange(
+      rateSummary: publishLeaseRateSummary(
         town.rows.map((row) => ({ listPrice: row.price, rateOption: row.leaseRateOption ?? null })),
-        '$/SF/Mo',
       ),
       cityHref: CITY_PAGES.has(slug) ? `/cities/${slug}` : null,
     }))
@@ -97,7 +102,7 @@ export type LeaseLedgerRow = {
   detail?: string
 }
 
-/** One row per town: its count as a length, its per-square-foot span under the name. */
+/** One row per town: its count as a length, its rate line (every lease in it) under the name. */
 export function leaseCityLedgerRows(groups: readonly LeaseCityGroup[]): LeaseLedgerRow[] {
   const most = Math.max(0, ...groups.map((g) => g.rows.length))
   return groups.map((group) => ({
@@ -105,7 +110,7 @@ export function leaseCityLedgerRows(groups: readonly LeaseCityGroup[]): LeaseLed
     what: group.label,
     value: group.countLabel,
     weight: most > 0 ? group.rows.length / most : 0,
-    ...(group.perSqftMonthRange ? { detail: group.perSqftMonthRange } : {}),
+    ...(group.rateSummary ? { detail: group.rateSummary } : {}),
   }))
 }
 

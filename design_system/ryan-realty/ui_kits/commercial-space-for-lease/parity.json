@@ -26,7 +26,7 @@
     },
     {
       "name": "V3Ledger",
-      "section": "#towns: the opening and the H1. One row per town with a lease, its count drawn as a length (encode='bar'), its per sq ft monthly span under the name, each row a door to that town's dial.",
+      "section": "#towns: the opening and the H1. One row per town with a lease, its count drawn as a length (encode='bar'), its rate line under the name (publishLeaseRateSummary: one span per rent unit with how many leases use it, and how many rates are not published, so the line covers every lease the count does), each row a door to that town's dial.",
       "blocking": true
     },
     {

@@ -174,6 +174,70 @@ export function publishLeaseRateRange(
   return `${low.split(' ')[0]} to ${high}`
 }
 
+function countOf(n: number): string {
+  return n.toLocaleString('en-US')
+}
+
+/**
+ * One line that describes EVERY lease in a set, for a line that sits beside
+ * the set's count ("4 for lease"), or null for an empty set.
+ *
+ * A span over only some of the leases, beside a count of all of them, reads
+ * as a fact about all of them: Prineville's "$0.75 to $0.85 per sq ft per
+ * month" sat over four leases, one of them $750 a month for the whole space
+ * and one with no unit (2026-09-23). So each unit present gets its own span
+ * and its own count, the rates that cannot publish are counted as such, and
+ * the counts add up to the set:
+ *
+ *   one unit, every rate publishes   "$0.29 to $0.85 per sq ft per month"
+ *   anything else                    "2 from $0.75 to $0.85 per sq ft per month
+ *                                     · 1 at $750 per month · 1 rate not published"
+ *   nothing publishes                "Lease rate not published" (one) or
+ *                                    "Lease rates not published" (several)
+ *
+ * Units are never mixed in one span and never converted into each other: a
+ * yearly rate is not divided into a monthly one, and a whole-space amount is
+ * not spread over a floor area. The largest group leads; the withheld count
+ * is last. Every figure is a row's own rent (publishLeaseRate).
+ */
+export function publishLeaseRateSummary(rows: readonly LeaseRateInput[]): string | null {
+  if (rows.length === 0) return null
+  const byUnit = new Map<LeaseRateOption, LeaseRateInput[]>()
+  let withheld = 0
+  for (const row of rows) {
+    const option = leaseRateOption(row.rateOption)
+    if (!option || publishLeaseRate(row) == null) {
+      withheld += 1
+      continue
+    }
+    const group = byUnit.get(option) ?? []
+    group.push(row)
+    byUnit.set(option, group)
+  }
+  const units = [...byUnit.entries()].sort(
+    ([a, ra], [b, rb]) => rb.length - ra.length || LEASE_RATE_OPTIONS.indexOf(a) - LEASE_RATE_OPTIONS.indexOf(b),
+  )
+  if (units.length === 0) {
+    return withheld === 1 ? LEASE_RATE_NOT_PUBLISHED : 'Lease rates not published'
+  }
+  if (units.length === 1 && withheld === 0) {
+    const [unit, group] = units[0]!
+    return publishLeaseRateRange(group, unit)
+  }
+  const parts: string[] = []
+  for (const [unit, group] of units) {
+    const span = publishLeaseRateRange(group, unit)
+    if (!span) {
+      withheld += group.length
+      continue
+    }
+    const lead = / to /.test(span) ? 'from' : 'at'
+    parts.push(`${countOf(group.length)} ${lead} ${span}`)
+  }
+  if (withheld > 0) parts.push(`${countOf(withheld)} ${withheld === 1 ? 'rate' : 'rates'} not published`)
+  return parts.join(' · ')
+}
+
 export type ListingLeaseFigure = {
   /** The published rate, or null when it cannot publish. */
   rate: string | null
