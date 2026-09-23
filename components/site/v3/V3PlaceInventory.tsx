@@ -16,6 +16,14 @@
  * V3ListingDial, one listing large with the rest of that type as thumbnails
  * beside it and "03 / 12" over them. Same sections, same rows, same source
  * line, and every listing is still an <a href> in the served HTML.
+ *
+ * COMMERCIAL SPACE FOR LEASE (Matt 2026-09-23). `lease` is the place's active
+ * commercial leases (MLS 'G'), built by placeLeaseSectionFromTiles apart from
+ * every for-sale section, because a lease is not for sale. It renders LAST,
+ * after "Commercial property", in whichever layout the page chose, with the
+ * same card: the rent with its unit (or "Lease rate not published") where a
+ * sale prints its ask, labelled "For lease", counted "N for lease". Every lease
+ * is an <a href> in the served HTML like every other row.
  */
 import { cn } from '@/lib/utils'
 import { V3_LEDGER_CLASS, V3_ROOT_CLASS, V3Heading } from './atoms'
@@ -23,6 +31,7 @@ import { V3ListingRow, type V3ListingRowData } from './V3ListingRow'
 import { V3Quiet } from './V3Quiet'
 import { V3SourceLine } from './V3SourceLine'
 import type { PlaceStockSection } from '@/lib/place/place-inventory-stock'
+import type { PlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { HomeListingRail } from '@/app/_v3/HomeListingRail.client'
 import { railCardFromListingRow } from '@/app/_v3/home-rail-items'
 import { V3ListingDial } from './V3ListingDial.client'
@@ -40,6 +49,16 @@ export type V3PlaceInventoryProps = {
    * 'dial': one V3ListingDial per type.
    */
   layout?: 'rows' | 'rails' | 'dial'
+  /** Commercial space for lease: the final section, never counted for sale. */
+  lease?: PlaceLeaseSection | null
+}
+
+/** A for-sale type section or the lease section: the same template renders both. */
+type InventorySection = {
+  key: string
+  heading: string
+  countLabel: string
+  rows: readonly V3ListingRowData[]
 }
 
 export function V3PlaceInventory({
@@ -49,8 +68,12 @@ export function V3PlaceInventory({
   source,
   asOf,
   layout = 'rows',
+  lease = null,
 }: V3PlaceInventoryProps) {
-  const live = sections.filter((section) => section.rows.length > 0)
+  const forSale: InventorySection[] = sections.filter((section) => section.rows.length > 0)
+  // The lease section goes last, after "Commercial property".
+  const live: InventorySection[] =
+    lease && lease.rows.length > 0 ? [...forSale, lease] : forSale
   if (live.length === 0) {
     return (
       <V3Quiet

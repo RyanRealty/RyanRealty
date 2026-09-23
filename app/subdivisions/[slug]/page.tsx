@@ -229,6 +229,7 @@ import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
+import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { placeHomesForSaleHeading } from '@/lib/place/place-homes-heading'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
@@ -977,6 +978,11 @@ async function renderSubdivisionPage({ params }: Props) {
             ...boundary.pins.map((pin) => pin.listingKey),
             ...mapTiles.map((tile) => tile.listingKey),
             ...platAtlasListingKeys(atlas?.dots ?? []),
+            // The leases inside the recorded footprint are not dots (a lease
+            // is not for sale); the Atlas hands them over apart, for the
+            // "Commercial space for lease" section. 671 Greenwood Avenue files
+            // two of its three under no subdivision name at all.
+            ...(atlas?.leaseKeys ?? []),
           ],
           subdivisionNames: getSubdivisionMatchNames(displayName),
           city: placeCity,
@@ -1022,18 +1028,19 @@ async function renderSubdivisionPage({ params }: Props) {
     active: activeCount,
     medianList: platFigures.medianListPrice,
   })
-  const stockSections = placeStockSectionsFromTiles(unionListingTiles(stockTiles, mapTiles))
+  const placeTiles = unionListingTiles(stockTiles, mapTiles)
+  const stockSections = placeStockSectionsFromTiles(placeTiles)
+  // Commercial leases in the plat: their own last section, never for sale.
+  // Their rent units are read beside the hero still, not after it.
+  const [leaseSection, platLibraryHeroUrl] = await Promise.all([
+    loadPlaceLeaseSection(placeTiles),
+    withTimeoutFallback(placeLibraryHero('subdivision', slug), null, 3000, 'sub:libraryHero'),
+  ])
   const inventorySource =
-    stockSections.length > 0
+    stockSections.length > 0 || leaseSection
       ? `regional MLS through Oregon Data Share, every publicly active listing inside ${displayName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
       : homesLedgerTrace(platScope)
   const headline = placeHomesForSaleHeading(displayName)
-  const platLibraryHeroUrl = await withTimeoutFallback(
-    placeLibraryHero('subdivision', slug),
-    null,
-    3000,
-    'sub:libraryHero',
-  )
   /* THE PLAT OPENS ON A PHOTOGRAPH, AND SAYS WHOSE IT IS (SITE-08 pass 2).
      A plat's own still is a dedicated image or a geo-strict library hero, and
      for most of the 3,213 recorded plats there is neither: /subdivisions/
@@ -1954,6 +1961,7 @@ async function renderSubdivisionPage({ params }: Props) {
           layout="dial"
           placeName={displayName}
           sections={stockSections}
+          lease={leaseSection}
           source={inventorySource}
           asOf={inventory?.readAt ?? null}
         />

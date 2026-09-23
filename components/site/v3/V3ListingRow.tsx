@@ -35,6 +35,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingLeaseFigure } from '@/lib/listing/publish-lease-rate'
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import {
@@ -84,6 +85,14 @@ export type V3ListingRowData = {
   badges?: Array<{ kind: V3ListingRowBadge; label: string }>
   /** "Pending" for an under-contract listing. Printed by the rail card, not the row. */
   statusLabel?: string | null
+  /**
+   * A commercial lease's rent unit, the feed's own "Lease Rate Options" value
+   * ("$/SF/Mo", "$ Amt/Mo", ...), read by getLeaseRateOptions. Only lease rows
+   * carry it. Every card hands it to publishListingLeaseFigure with `price`, so
+   * a lease prints its rate with the unit, or "Lease rate not published", where
+   * a sale listing prints its ask.
+   */
+  leaseRateOption?: string | null
 }
 
 /** Badge kinds that print solid navy; the rest are hairline outline tags. */
@@ -155,6 +164,15 @@ export function V3ListingRow({
     price: listing.price,
     propertyType: listing.propertyType,
   })
+  // The lease half of the same guard: that rent prints with its unit, or
+  // "Lease rate not published", beside "For lease" (never a bare number).
+  const lease = publishListingLeaseFigure({
+    price: listing.price,
+    propertyType: listing.propertyType,
+    leaseRateOption: listing.leaseRateOption ?? null,
+  })
+  const figure = lease ? lease.text : (ask ?? '—')
+  const tagText = lease ? lease.label : shareKind
   const meta = metaParts(listing, showPricePerSqft)
   const splitThumb = typeof className === 'string' && className.includes('v3-lrow--split')
   const tags = listing.badges ?? (listing.badge ? [listing.badge] : [])
@@ -224,8 +242,8 @@ export function V3ListingRow({
           {tourControl}
         </div>
         <Link href={listing.href} className="v3-lrow__copy">
-          <span className="v3-lrow__price">{ask ?? '—'}</span>
-          {shareKind ? <span className="v3-lrow__tag">{shareKind}</span> : null}
+          <span className="v3-lrow__price">{figure}</span>
+          {tagText ? <span className="v3-lrow__tag">{tagText}</span> : null}
           {meta.length > 0 ? <span className="v3-lrow__meta">{meta.join(' · ')}</span> : null}
           {compare}
           <span className="v3-lrow__addr">{listing.addressLine}</span>
@@ -246,8 +264,8 @@ export function V3ListingRow({
         <span className="v3-lrow__city">{listing.cityLine}</span>
       </span>
       <span className="v3-lrow__figures">
-        <span className="v3-lrow__price">{ask ?? '—'}</span>
-        {shareKind ? <span className="v3-lrow__tag">{shareKind}</span> : null}
+        <span className="v3-lrow__price">{figure}</span>
+        {tagText ? <span className="v3-lrow__tag">{tagText}</span> : null}
         {meta.length > 0 ? <span className="v3-lrow__meta">{meta.join(' · ')}</span> : null}
         {compare}
       </span>

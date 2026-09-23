@@ -25,6 +25,7 @@ import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { listingTileHref } from '@/lib/slug'
 import { formatDateTime } from '@/lib/format/date'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
+import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
@@ -74,6 +75,14 @@ export type AtlasPopulation = {
   counts: { forSale: number; pending: number; sold: number; cities: number }
   /** The tiles the dots came from, for callers that need addresses or photos. */
   tiles: AtlasTile[]
+  /**
+   * The publicly active commercial leases (MLS 'G') inside the scope, by
+   * ListingKey. NEVER dots: a lease is not for sale (atlasDotsFromTiles drops
+   * it). A plat page whose recorded footprint holds leases filed under no
+   * subdivision name finds them only here, and lists them in its own
+   * "Commercial space for lease" section (lib/place/place-lease-stock.ts).
+   */
+  leaseKeys: string[]
   /**
    * False when any read rejected: the population is short and the Atlas
    * must say so. (A read that times out inside the DAL returns an empty page
@@ -153,6 +162,22 @@ export function tilesInside(tiles: readonly AtlasTile[], boundary: GeoJSON.Geome
   const rings: Ring[] = outerRings(boundary)
   if (rings.length === 0) return []
   return tiles.filter((t) => t.lat != null && t.lng != null && pointInRings(t.lng, t.lat, rings))
+}
+
+/**
+ * The publicly active commercial leases among a scope's tiles, each key once.
+ * The other half of atlasDotsFromTiles' lease rule: dropped from the map,
+ * kept for the page's lease section.
+ */
+export function atlasLeaseKeysFromTiles(tiles: readonly AtlasTile[]): string[] {
+  const active = new Set<string>(PUBLIC_ACTIVE_STATUSES)
+  const out = new Set<string>()
+  for (const tile of tiles) {
+    if (!listingPriceIsLeaseRate(tile.propertyType)) continue
+    if (!active.has(String(tile.status))) continue
+    if (tile.listingKey) out.add(String(tile.listingKey))
+  }
+  return [...out]
 }
 
 /**
@@ -329,6 +354,7 @@ export const EMPTY_PLACE_ATLAS: AtlasPopulation = {
   stamp: '',
   counts: { forSale: 0, pending: 0, sold: 0, cities: 0 },
   tiles: [],
+  leaseKeys: [],
   complete: false,
 }
 
@@ -345,6 +371,7 @@ type AtlasCore = {
   types: AtlasType[]
   eventSeeds: AtlasEventSeed[]
   counts: AtlasPopulation['counts']
+  leaseKeys: string[]
   readAt: number
   complete: boolean
 }
@@ -368,6 +395,7 @@ async function buildAtlasCoreUncached(scope: AtlasCoreScope, nowMs: number): Pro
       sold: dots.filter((d) => isAtlasPulseSold(d)).length,
       cities: new Set(tiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size,
     },
+    leaseKeys: atlasLeaseKeysFromTiles(tiles),
     readAt,
     complete,
   }
@@ -404,7 +432,8 @@ async function buildAtlasCore(scope: AtlasCoreScope, nowMs: number): Promise<Atl
       if (!core.complete) throw new Error('[build-place-atlas] short read is not cached')
       return core
     },
-    ['atlas-core-v1', atlasPopulationCacheKey(scope, nowMs)],
+    // v2 (2026-09-23): the core carries leaseKeys; a v1 entry has none.
+    ['atlas-core-v2', atlasPopulationCacheKey(scope, nowMs)],
     { revalidate: CACHE_WINDOWS.listingsByGeo, tags: [cacheTag.listings] },
   )
   try {
@@ -445,6 +474,7 @@ export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Pr
     stamp: formatDateTime(new Date(core.readAt)),
     counts: core.counts,
     tiles: [],
+    leaseKeys: core.leaseKeys ?? [],
     complete: core.complete,
   }
 }

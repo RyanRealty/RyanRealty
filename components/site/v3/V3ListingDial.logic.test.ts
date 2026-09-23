@@ -5,6 +5,7 @@ import {
   dialKeyTarget,
   dialPanelId,
   dialPosition,
+  dialPriceSlot,
   dialRevealOffset,
   dialStep,
   dialSwipeDelta,
@@ -144,5 +145,21 @@ describe('dialRevealOffset', () => {
   it('centres a thumbnail it has to bring into view', () => {
     expect(dialRevealOffset(0, 400, 900, 120)).toBe(760)
     expect(dialRevealOffset(800, 400, 0, 120)).toBe(0)
+  })
+})
+
+describe('dialPriceSlot: what the price slot prints', () => {
+  it('prints the ask for a sale listing, and the withheld line without one', () => {
+    expect(dialPriceSlot({ ask: '$649,000', lease: null })).toEqual({ text: '$649,000', withheld: false })
+    expect(dialPriceSlot({ ask: null, lease: null })).toEqual({ text: DIAL_NO_ASK, withheld: true })
+  })
+
+  it('prints a lease rate with its unit, never the sale withheld line', () => {
+    expect(
+      dialPriceSlot({ ask: null, lease: { rate: '$1.40/sq ft/mo', text: '$1.40/sq ft/mo' } }),
+    ).toEqual({ text: '$1.40/sq ft/mo', withheld: false })
+    expect(
+      dialPriceSlot({ ask: null, lease: { rate: null, text: 'Lease rate not published' } }),
+    ).toEqual({ text: 'Lease rate not published', withheld: true })
   })
 })

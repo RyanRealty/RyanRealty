@@ -70,6 +70,7 @@ import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
+import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
@@ -446,12 +447,17 @@ async function renderNeighborhoodDetail({ params }: Props) {
   ])
   const stockSections = placeStockSectionsFromTiles(boundaryStock)
   const placeHomes = stockSections.flatMap((section) => section.rows)
-  const typeCovers = await withTimeoutFallback(
-    loadPlaceTypeCoverPhotos({ city: cityName, neighborhood: neighborhood.name }),
-    {},
-    4500,
-    'nbh:typeThumbs',
-  )
+  // Commercial leases inside the boundary: shown last under the map, never
+  // counted for sale and never a pin.
+  const [typeCovers, leaseSection] = await Promise.all([
+    withTimeoutFallback(
+      loadPlaceTypeCoverPhotos({ city: cityName, neighborhood: neighborhood.name }),
+      {},
+      4500,
+      'nbh:typeThumbs',
+    ),
+    loadPlaceLeaseSection(boundaryStock),
+  ])
 
   const face = publishPlaceFace({
     grain: 'neighborhood',
@@ -935,6 +941,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
           placeName={neighborhood.name}
           rail={railEntries}
           homes={placeHomes}
+          leases={leaseSection?.rows ?? []}
           keysBySlug={homesByChild}
           source={`regional MLS through Oregon Data Share, every publicly active listing inside the recorded ${neighborhood.name} boundary: Active and Active Under Contract, every property type. Coming Soon is excluded. This is a wider set than the detached count on the fold.`}
           asOf={leftoverStamp}

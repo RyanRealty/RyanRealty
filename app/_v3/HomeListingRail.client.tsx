@@ -37,7 +37,7 @@ export function HomeRailCardFace({
 }) {
   // The same copy the place-page dial's primary card prints (one definition,
   // lib/listing/publish-listing-card-facts.ts).
-  const { ask, kind: shareKind, meta } = publishListingCardFacts(card)
+  const { ask, lease, kind: shareKind, meta } = publishListingCardFacts(card)
 
   return (
     <Card size="sm" className={cn(V3_ROOT_CLASS, 'home-rail__card')}>
@@ -60,12 +60,21 @@ export function HomeRailCardFace({
               the homepage shelves never carry one. "Price on request" would
               claim a seller's offer the MLS row does not make, and in the
               display face it wrapped to "Price on" at rail width. */}
-          {ask ? (
+          {/* A commercial lease has no ask: its rent prints in the ask's place,
+              with its unit, or "Lease rate not published", and "For lease"
+              where a sale listing would carry its kind. */}
+          {lease ? (
+            <CardTitle className={cn(!lease.rate && 'home-rail__ask-none')}>{lease.text}</CardTitle>
+          ) : ask ? (
             <CardTitle>{ask}</CardTitle>
           ) : (
             <CardTitle className="home-rail__ask-none">Price not published</CardTitle>
           )}
-          {shareKind ? <span className="home-rail__kind">{shareKind}</span> : null}
+          {lease ? (
+            <span className="home-rail__kind">{lease.label}</span>
+          ) : shareKind ? (
+            <span className="home-rail__kind">{shareKind}</span>
+          ) : null}
           {meta.length > 0 ? <CardDescription>{meta.join(' · ')}</CardDescription> : null}
         </CardHeader>
         <CardContent>
