@@ -35,6 +35,7 @@ import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.
 import { belongingLine, resortIndexRow } from '@/app/communities/_v3/community-index-rows'
 import { indexBarWeight } from '@/app/cities/_v3/cities-index-constants'
 import { resolvePublicCommunitySlug } from '@/lib/communities/community-public-pair'
+import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -230,7 +231,7 @@ export default async function CommunitiesPage() {
           heading="Find a home, or price the one you have"
           items={[
             { label: 'Search all listings', href: '/search' },
-            { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' },
+            bendLuxuryHomesDoor(),
             { label: 'Subdivisions', href: '/subdivisions' },
             { label: 'Value my home', href: valuationHref('/communities') },
             { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },

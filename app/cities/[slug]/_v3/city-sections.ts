@@ -43,6 +43,7 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { KbYearSeries } from '@/lib/kb/year-series'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
 
 /**
  * A place that has its own node: a neighborhood, a golf or master-planned
@@ -675,10 +676,11 @@ export function cityExploreItems(
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
   // The westside-luxury door (ci:westside-backlog): Bend keeps its edge to the
-  // luxury page. KbPopularSearches carried it on the KB register; the closing
-  // Quiet is where the graph's outbound edges live on the barrel.
+  // luxury winner, /homes-for-sale/bend/luxury (SITE-185, one winner for
+  // "Bend luxury homes for sale"). KbPopularSearches carried it on the KB
+  // register; the closing Quiet is where the graph's outbound edges live.
   if (slug === 'bend') {
-    items.splice(1, 0, { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' })
+    items.splice(1, 0, bendLuxuryHomesDoor())
   }
   if (hasPopulation) items.push({ label: 'U.S. Census Bureau', href: 'https://www.census.gov' })
   return items

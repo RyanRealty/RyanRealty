@@ -431,7 +431,10 @@ const nextConfig: NextConfig = {
       { source: '/lp/expired-listing', destination: '/sell/expired-listings', permanent: true },
       { source: '/lp/fsbo', destination: '/sell/for-sale-by-owner', permanent: true },
       { source: '/lp/central-oregon-golf', destination: '/central-oregon/golf', permanent: true },
-      { source: '/luxury-homes-bend', destination: '/homes-for-sale/bend?minPrice=1500000', permanent: true },
+      // SITE-185: "Bend luxury homes for sale" has one winner, the city x luxury
+      // preset search (lib/site/bend-luxury-homes.ts). One hop, no query string:
+      // the old ?minPrice destination was the search app's filter, not a page.
+      { source: '/luxury-homes-bend', destination: '/homes-for-sale/bend/luxury', permanent: true },
       { source: '/fsbo', destination: '/sell/for-sale-by-owner', permanent: true },
       { source: '/sell/inherited-home', destination: '/sell', permanent: true },
       // /lp/listings/<key> was never a route; the listing itself lives at /listing/<key>.

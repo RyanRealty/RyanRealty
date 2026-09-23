@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * G7 lock: every WESTSIDE_BACKLOG row has a disposition, luxury money
- * surfaces link /luxury-homes-bend, and deal-close stages a review-ask
+ * surfaces link the Bend luxury winner /homes-for-sale/bend/luxury (SITE-185:
+ * /luxury-homes-bend is a 301 onto it), and deal-close stages a review-ask
  * draft without sending.
  *
  *   node scripts/check-westside-backlog.mjs
@@ -37,47 +38,49 @@ checks.push({
   detail: undisposed.join(' | '),
 })
 
+// The door is one pure helper (lib/site/bend-luxury-homes.ts) so nothing
+// hand-types the path; each surface is checked for the helper call.
+const LUXURY_DOOR = /bendLuxuryHomesDoor\(\)/
+const luxuryHelper = src('lib/site/bend-luxury-homes.ts')
+checks.push({
+  label: 'bend-luxury-homes helper points at /homes-for-sale/bend/luxury',
+  ok: luxuryHelper.includes("BEND_LUXURY_HOMES_PATH = '/homes-for-sale/bend/luxury'"),
+})
+
 const nav = src('lib/site-nav.ts')
 checks.push({
-  label: 'site-nav buy rail links /luxury-homes-bend',
-  ok:
-    nav.includes("href: '/luxury-homes-bend'") &&
-    /KB_TOP_NAV[\s\S]*luxury-homes-bend/.test(nav),
+  label: 'site-nav buy rail links the Bend luxury winner',
+  ok: LUXURY_DOOR.test(nav) && /KB_TOP_NAV[\s\S]*bendLuxuryHomesDoor\(\)/.test(nav),
 })
 
 // The city page moved onto components/site/v3 (2026-08-26) and its
 // KbPopularSearches rail left with the register. The RULE — Bend's city page
-// links /luxury-homes-bend — moved into the closing Quiet's edge list, built
+// links the luxury winner — moved into the closing Quiet's edge list, built
 // by cityExploreItems, so the check follows it there.
 const cityEdges = src('app/cities/[slug]/_v3/city-sections.ts')
 checks.push({
-  label: 'city closing edges link /luxury-homes-bend for Bend',
-  ok:
-    /href:\s*'\/luxury-homes-bend'/.test(cityEdges) &&
-    cityEdges.includes("slug === 'bend'"),
+  label: 'city closing edges link the Bend luxury winner for Bend',
+  ok: LUXURY_DOOR.test(cityEdges) && cityEdges.includes("slug === 'bend'"),
 })
 
 // Both index pages moved onto components/site/v3 (2026-08-26), where an
 // outbound edge is a `{ label, href }` item rather than an anchor attribute.
-// What this gate locks is that the two indexes still LINK the luxury page
-// through the shared builder, so it accepts either spelling of the href. It
-// does not lock which register renders it.
-const LUXURY_HREF = /href\s*[:=]\s*["']\/luxury-homes-bend["']/
-
+// What this gate locks is that the two indexes still LINK the luxury winner
+// through the shared builder. It does not lock which register renders it.
 const cities = src('app/cities/page.tsx')
 const cityLinks = src('app/cities/CityFeaturedLinks.tsx')
 checks.push({
-  label: 'cities index Bend row links /luxury-homes-bend',
+  label: 'cities index Bend row links the Bend luxury winner',
   ok:
     /cityFeaturedLinks/i.test(cities) &&
-    LUXURY_HREF.test(cityLinks) &&
+    LUXURY_DOOR.test(cityLinks) &&
     cityLinks.includes("slug === 'bend'"),
 })
 
 const communities = src('app/communities/page.tsx')
 checks.push({
-  label: 'communities index links /luxury-homes-bend',
-  ok: LUXURY_HREF.test(communities),
+  label: 'communities index links the Bend luxury winner',
+  ok: LUXURY_DOOR.test(communities),
 })
 
 const template = src('lib/crm/review-ask.ts')

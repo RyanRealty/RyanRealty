@@ -44,6 +44,7 @@ import { YEAR_OVERLAY_READING } from '../../_v3/market-charts'
 import { COMPARISON_CITY_LABELS, COMPARISON_CITY_SLUG } from './geo-constants'
 import { marketReportDoorLinks } from '@/lib/market/report-doors'
 import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
+import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
 
 const MONTH_TICK = [
   'Jan',
@@ -453,6 +454,9 @@ export function buildExploreItems(args: {
     }),
   )
   if (args.citySlug === 'bend' && !args.communityName) {
+    // SITE-185: this page ranks for "bend luxury home appreciation"; the
+    // inventory query has one winner, /homes-for-sale/bend/luxury.
+    items.push(bendLuxuryHomesDoor())
     for (const guide of aeoHubQuietItems('housing-market/bend')) {
       if (!guide.href || seenBlog.has(guide.href)) continue
       seenBlog.add(guide.href)

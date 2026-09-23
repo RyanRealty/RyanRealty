@@ -285,7 +285,7 @@ frame); it is not a rule and does not thin to the hairline.
 | Surface family | Routes (v3 today) | Register |
 |---|---|---|
 | Search | `/homes-for-sale` (app/search/page.tsx), `/homes-for-sale/[...]` (app/search/[...slug]), the map split view | **Ledger** |
-| Homes browse | `/open-houses`, `/price-drops`, `/our-homes`, `/luxury-homes-bend`, `/compare` | Broadside |
+| Homes browse | `/open-houses`, `/price-drops`, `/our-homes`, `/compare` | Broadside |
 | Places | `/cities`, `/oregon/[city]`, `/zip/[zip]`, `/neighborhoods`, `/communities`, `/subdivisions`, `/subdivisions/[slug]` | Broadside |
 | Market | `/housing-market` and every leaf, `/months-of-supply`, `/reports/sales/[city]/[period]`, `/how-we-get-our-numbers` | Broadside |
 | Guides | `/central-oregon/*` (golf, trails, events, venues), `/parks`, `/schools` | Broadside |

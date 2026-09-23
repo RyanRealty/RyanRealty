@@ -51,7 +51,6 @@ const src = readFileSync(SITEMAP, 'utf8')
 // must exist (a catch-all [...slug] serves every depth under its prefix).
 const FAMILIES = [
   { id: 'root', roots: [''], resolvers: ['app/page.tsx'] },
-  { id: 'luxury-homes-bend', roots: ['luxury-homes-bend'], resolvers: ['app/luxury-homes-bend/page.tsx'] },
   { id: 'cities', roots: ['cities'], resolvers: ['app/cities/page.tsx', 'app/cities/[slug]/page.tsx', 'app/cities/[slug]/[neighborhoodSlug]/page.tsx'] },
   // /homes-for-sale/* rewrites (next.config): browse + preset paths -> /search/*;
   // /homes-for-sale/listing/:key -> /listing/by-key; and ADDRESS-shaped detail

@@ -11,6 +11,7 @@ import { withTimeout } from './fetch-guards'
 import { resolveSlug, buildCanonicalPath } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { selfCitySearchCanonicalPath } from '@/lib/communities/self-city-community'
+import { luxuryPresetDescription, luxuryPresetHeading } from '@/lib/site/bend-luxury-homes'
 import {
   BEND_NEW_CONSTRUCTION_CANONICAL_PATH,
   isBendNewConstructionSearchTwinSlug,
@@ -39,7 +40,11 @@ export async function buildSearchSlugMetadata({
     subdivisionDisplayName && city
       ? await withTimeout(getSubdivisionDescription(city, subdivisionDisplayName), null, 1200)
       : null
+  // SITE-185: the luxury preset page is the one winner for "{place} luxury
+  // homes for sale", so its description opens on that query instead of the
+  // city's generic meta description (which never says "luxury").
   const rawMetaDesc =
+    luxuryPresetDescription(preset, placeName) ??
     (subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
     content?.metaDescription ??
     (preset
@@ -72,7 +77,11 @@ export async function buildSearchSlugMetadata({
   const dynamicOgImage = slug.length > 0
     ? `${siteUrl}/search/og/${slug.map((part) => encodeURIComponent(part)).join('/')}`
     : defaultOgImage
-  const title = preset ? `${preset.label} in ${placeName}` : placeHomesForSaleHeading(placeName)
+  // SITE-185: the luxury preset's title is the win query in human form
+  // ("Bend luxury homes for sale"); the layout template adds the brand.
+  const title =
+    luxuryPresetHeading(preset, placeName) ??
+    (preset ? `${preset.label} in ${placeName}` : placeHomesForSaleHeading(placeName))
   // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
   // VERIFIED zero active-inventory count stays renderable but is noindexed —
   // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with

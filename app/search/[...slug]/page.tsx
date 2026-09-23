@@ -49,6 +49,7 @@ import { generateStaticParams as buildSearchStaticParams, IS_PRODUCTION_BUILD } 
 import { withTimeout, LISTINGS_FETCH_TIMEOUT_MS } from './fetch-guards'
 import { resolveSlug, buildCanonicalPath } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { luxuryPresetDescription, luxuryPresetHeading } from '@/lib/site/bend-luxury-homes'
 import { buildSearchSlugMetadata } from './search-metadata'
 import { resolvePlaceBannerUrl } from './place-banner'
 import {
@@ -310,11 +311,15 @@ export default async function SearchPage({
   // Oregon residential lots" (live 2026-07-31). Strip the label's trailing
   // "for Sale" (the H1 sits above a "for sale" count line) and read it as the
   // subject.
-  const headerTitle = preset
-    ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
-    : presetLabel
-      ? `${presetLabel} homes in Central Oregon`
-      : placeHomesForSaleHeading(placeName)
+  // SITE-185: the luxury preset's h1 is the win query in human form ("Bend
+  // luxury homes for sale"), the same string as its <title>.
+  const headerTitle =
+    luxuryPresetHeading(preset, placeName) ??
+    (preset
+      ? `${preset.label.replace(/\s+for sale$/i, '')} in ${placeName}`
+      : presetLabel
+        ? `${presetLabel} homes in Central Oregon`
+        : placeHomesForSaleHeading(placeName))
 
   // Related searches — SEO internal-linking for a city/preset page. Cross-link to
   // that city's other popular searches plus an "All [City] homes" link.
@@ -446,6 +451,10 @@ export default async function SearchPage({
             bannerUrl={bannerUrl ?? null}
             siteUrl={siteUrl}
             presetLabel={preset?.shortLabel ?? null}
+            // SITE-185: the luxury winner's WebPage node carries its h1 and
+            // its own meta description, the same strings the <head> ships.
+            name={luxuryPresetHeading(preset, placeName) ?? undefined}
+            description={luxuryPresetDescription(preset, placeName) ?? undefined}
             canonicalPath={searchPagePath}
             listings={listings}
             totalCount={totalCount}

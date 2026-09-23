@@ -60,7 +60,6 @@ const REDIRECT_ONLY = new Set([
   'app/motivated-sellers/page.tsx', // IA lock: 308 into /price-drops
   'app/motivated-sellers/[city]/page.tsx', // IA lock: 308 into /price-drops/[city]
   'app/neighborhoods/[slug]/page.tsx', // middleware 308 into /cities/bend/{slug}
-  'app/luxury-homes-bend/page.tsx', // Wave A: 308 into Bend Homes Field $1.5M+
   'app/sell/inherited-home/page.tsx', // Wave G: situation folds into /sell
   'app/sell/[intent]/page.tsx', // Wave G: leftover intent slugs fold into sell winners
 ])

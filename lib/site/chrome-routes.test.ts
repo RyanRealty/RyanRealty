@@ -61,20 +61,21 @@ describe("shouldHideDefaultChrome", () => {
     }
   })
 
-  it("HIDES chrome on central-oregon lifestyle, luxury, oregon, and market archive", () => {
+  it("HIDES chrome on central-oregon lifestyle, oregon, and market archive", () => {
     for (const path of [
       "/central-oregon/venues",
       "/central-oregon/venues/old-mill-district",
       "/central-oregon/trails",
       "/central-oregon/events",
       "/central-oregon/golf/tetherow",
-      "/luxury-homes-bend",
       "/oregon/medford",
       "/housing-market/reports/archive/bend",
     ]) {
       expect(shouldHideDefaultChrome(path), path).toBe(true)
     }
-    for (const path of ["/central-oregon", "/oregon", "/luxury-homes-bend/extra"]) {
+    // SITE-185: /luxury-homes-bend is a 301 onto /homes-for-sale/bend/luxury,
+    // not a route, so it no longer hides chrome.
+    for (const path of ["/central-oregon", "/oregon", "/luxury-homes-bend"]) {
       expect(shouldHideDefaultChrome(path), path).toBe(false)
     }
   })

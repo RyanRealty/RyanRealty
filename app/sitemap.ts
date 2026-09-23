@@ -99,7 +99,8 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: `${baseUrl}${listingsBrowsePath()}`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${baseUrl}/luxury-homes-bend`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    // /luxury-homes-bend 301s onto /homes-for-sale/bend/luxury (SITE-185), which
+    // the city x preset loop below emits; a sitemap lists canonicals.
     { url: `${baseUrl}/communities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/cities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/neighborhoods`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },

@@ -151,7 +151,7 @@ const CURATED = {
   '/office-listings-new': '/our-homes',
   '/past-sales': '/our-homes',
   '/coming-soon-listing': '/homes-for-sale',
-  '/luxury-homes-bend-oregon': '/homes-for-sale',
+  '/luxury-homes-bend-oregon': '/homes-for-sale/bend/luxury',
   '/golf-homes-for-sale': '/homes-for-sale',
   '/duplexes-for-sale': '/homes-for-sale',
   '/homes-with-adus': '/homes-for-sale',
@@ -332,10 +332,14 @@ async function main() {
     '/brasada-ranch-central-oregon': '/communities/brasada-ranch',
     // Google still serves bare /broken-top (GSC pos 24); it 404s without this.
     '/broken-top': '/communities/broken-top',
-    // /luxury-homes-bend exists and is indexed, but the legacy luxury URL was
-    // dumping its equity on generic /homes-for-sale while Google ranked our
-    // sitemap page for "luxury homes bend" (144 imp, 0 clicks).
-    '/luxury-homes-bend-oregon': '/homes-for-sale/bend?minPrice=1500000',
+    // SITE-185: "Bend luxury homes for sale" has ONE winner, the city x luxury
+    // preset search (lib/site/bend-luxury-homes.ts). Both retired luxury URLs
+    // land there in one hop. The old destination carried a ?minPrice query
+    // string; the middleware writes a legacy dest into url.pathname, so the
+    // query was folded into the path and /luxury-homes-bend-oregon chained
+    // to /oregon/bend%3Fminprice%3D1500000, "City not found".
+    '/luxury-homes-bend': '/homes-for-sale/bend/luxury',
+    '/luxury-homes-bend-oregon': '/homes-for-sale/bend/luxury',
     // Tetherow: one URL. LP chrome, the Heath LP (not its own MLS plat),
     // the city/community search surface, and the blog slug that cannibalized
     // the community page all 301 to /communities/tetherow.

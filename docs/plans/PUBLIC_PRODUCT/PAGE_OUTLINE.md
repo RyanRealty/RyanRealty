@@ -18,6 +18,7 @@ Not the primary target (do not write the H1 as if it were): generic `Bend homes 
 | Central Oregon homes for sale | `/homes-for-sale` | `/` |
 | **Bend homes for sale** | `/homes-for-sale/bend` | `/cities/bend`, luxury, compare |
 | Bend real estate · Bend neighborhoods | `/cities/bend` | Search |
+| **Bend luxury homes for sale** · luxury homes Bend Oregon | `/homes-for-sale/bend/luxury` (`lib/site/bend-luxury-homes.ts`) | `/luxury-homes-bend` and `/luxury-homes-bend-oregon` **301** here (SITE-185). `/housing-market/bend` keeps the appreciation queries; `/cities/*` never. |
 | 97703 homes for sale | `/zip/97703` | Search unless 301 |
 | [City] homes for sale | `/homes-for-sale/[city]` | `/cities/[city]` |
 | [City] housing market | `/housing-market/[city]` | City guide, blog “market report” |

@@ -52,6 +52,10 @@ type Props = {
    * script tag (ci:public-ui counts page-level register imports).
    */
   datasetSchema?: SchemaInput
+  /** WebPage.name override: the page's h1 when it is not "{place} homes for sale" (SITE-185 luxury). */
+  name?: string
+  /** WebPage.description override, the page's own meta description (SITE-185 luxury). */
+  description?: string
 }
 
 export default function SearchPageJsonLd({
@@ -68,15 +72,18 @@ export default function SearchPageJsonLd({
   suppressPlace = false,
   totalCount,
   datasetSchema,
+  name,
+  description: descriptionOverride,
 }: Props) {
   const pagePath = canonicalPath ?? (city ? homesForSalePath(city, subdivision ?? null) : '/homes-for-sale')
   const pageUrl = siteUrl ? `${siteUrl}${pagePath}` : undefined
-  const description = subdivisionBlurb ?? cityMetaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`
+  const description =
+    descriptionOverride ?? subdivisionBlurb ?? cityMetaDescription ?? `Browse homes for sale in ${displayName}, Central Oregon.`
 
   const webPage = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: placeHomesForSaleHeading(displayName),
+    name: name ?? placeHomesForSaleHeading(displayName),
     description,
     ...(bannerUrl && { primaryImageOfPage: { '@type': 'ImageObject', url: bannerUrl, width: 1200, height: 336 } }),
     ...(pageUrl && { url: pageUrl }),

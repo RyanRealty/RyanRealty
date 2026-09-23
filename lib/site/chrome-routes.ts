@@ -61,7 +61,6 @@ export const KB_ROUTES: RegExp[] = [
   /^\/videos$/,
   /^\/zip\/[^/]+$/,
   /^\/central-oregon\/(venues|trails|events|golf)(\/[^/]+)?$/,
-  /^\/luxury-homes-bend$/,
   /^\/oregon\/[^/]+$/,
 ]
 

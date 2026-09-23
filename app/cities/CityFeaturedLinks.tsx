@@ -1,8 +1,10 @@
 import type { V3QuietItem } from '@/components/site/v3'
+import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
 
 /**
  * The doors every featured city carries: its guide, its inventory, its open
- * houses, and for Bend the luxury page (G7, ci:westside-backlog).
+ * houses, and for Bend the luxury winner /homes-for-sale/bend/luxury (G7,
+ * ci:westside-backlog; SITE-185 one winner for "Bend luxury homes for sale").
  *
  * It returns Quiet items rather than markup. The cities index is a Ledger of
  * cities and a Ledger row is ONE door by definition (PUBLIC_UI.md section 3),
@@ -16,7 +18,7 @@ export function cityFeaturedLinks(slug: string, name: string): V3QuietItem[] {
     { label: `Open houses in ${name}`, href: `/open-houses/${slug}` },
   ]
   if (slug === 'bend') {
-    items.push({ label: 'Luxury homes in Bend', href: '/luxury-homes-bend' })
+    items.push(bendLuxuryHomesDoor())
   }
   return items
 }

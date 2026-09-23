@@ -193,7 +193,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/homes-for-sale?view=map',
       '/open-houses',
       '/price-drops',
-      '/luxury-homes-bend',
+      '/homes-for-sale/bend/luxury',
       '/new-construction',
       '/our-homes',
       '/sell',

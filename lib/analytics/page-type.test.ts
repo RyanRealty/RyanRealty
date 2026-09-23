@@ -16,7 +16,8 @@ describe('pageTypeFromPath', () => {
     expect(pageTypeFromPath('/months-of-supply')).toBe('market')
     expect(pageTypeFromPath('/contact')).toBe('contact')
     expect(pageTypeFromPath('/central-oregon/trails')).toBe('guides')
-    expect(pageTypeFromPath('/luxury-homes-bend')).toBe('search')
+    // SITE-185: the luxury winner is a city x preset search page.
+    expect(pageTypeFromPath('/homes-for-sale/bend/luxury')).toBe('search')
     expect(pageTypeFromPath('/new-construction')).toBe('buy')
     expect(pageTypeFromPath('/oregon/portland')).toBe('city')
     expect(pageTypeFromPath('/faq')).toBe('blog')

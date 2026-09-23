@@ -22,6 +22,10 @@ describe('sitemap canonical contract', () => {
       expect(urls).toContain('https://example.com/cities/sunriver')
       expect(urls).not.toContain('https://example.com/homes-for-sale/sunriver')
       expect(urls).toContain('https://example.com/team')
+      // SITE-185: /luxury-homes-bend 301s onto /homes-for-sale/bend/luxury,
+      // which the DB-backed city x preset loop emits (pinned by construction
+      // in lib/site/bend-luxury-homes.test.ts); the redirect source is out.
+      expect(urls.some((url) => url.includes('luxury-homes-bend'))).toBe(false)
       expect(urls).toContain('https://example.com/sell/valuation')
 
       expect(urls.some((url) => /\/listings(\/|$)/.test(url))).toBe(false)

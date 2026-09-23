@@ -17,6 +17,7 @@
  */
 
 import { publishNewsletterSubscribeHref } from '@/lib/site/publish-newsletter-href'
+import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
+      bendLuxuryHomesDoor(),
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
     ],
@@ -268,7 +269,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      { href: '/luxury-homes-bend', label: 'Luxury homes' },
+      bendLuxuryHomesDoor(),
       { href: '/new-construction', label: 'New construction in Bend' },
       { href: '/our-homes', label: 'Our listings' },
       { href: '/videos', label: 'Video tours' },
@@ -369,7 +370,7 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
         MAP_SEARCH,
         { href: '/open-houses', label: 'Open houses' },
         { href: '/price-drops', label: 'Price drops' },
-        { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
+        bendLuxuryHomesDoor(),
         { href: '/new-construction', label: 'New construction in Bend' },
         { href: '/our-homes', label: 'Our listings' },
       ],
