@@ -54,6 +54,7 @@ import {
 import { CommsSection } from './CommsSection'
 import { timelineArtifactDoor } from '@/lib/crm/timeline-artifacts'
 import { HomesSection } from './HomesSection'
+import { SiteActivitySection } from './SiteActivitySection'
 import { SendSection } from './SendSection'
 import { TasksSection } from './TasksSection'
 
@@ -408,6 +409,18 @@ export async function PersonWorkspace({
           }
         >
           <HomesSection personId={idNum} personEmails={personEmails} />
+        </Suspense>
+
+        {/* P7 identity loop: what they looked at, page by page, on every device. */}
+        <Suspense
+          fallback={
+            <section aria-label="On the site">
+              <SectionHead>On the site</SectionHead>
+              <div className="av2-sysnote" style={{ padding: 12 }}>Loading site activity…</div>
+            </section>
+          }
+        >
+          <SiteActivitySection personId={idNum} personEmails={personEmails} assignedBroker={card.assignedBroker} />
         </Suspense>
 
       </>

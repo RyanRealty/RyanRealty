@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { attributeOutbound, attributeUrl } from './attributed-links'
+import { signPersonLinkToken, verifyPersonLinkToken } from '@/lib/identity/link-token'
+
+// P7 identity loop (2026-09-23): the recipient rides as a SIGNED `_pid` token
+// minted by lib/identity/outbound-links.ts; the retired `_fuid` is no longer
+// stamped once a native person id is known (an unsigned id identifies nobody).
+const TOKEN = signPersonLinkToken(4242, 'newsletter')
 
 const OPTS = {
   brokerSlug: 'matt-ryan',
@@ -44,12 +50,16 @@ describe('attributeOutbound', () => {
     expect(out).toContain('width="1" height="1"')
   })
 
-  it('carries the recipient _fuid into the attributed link', () => {
+  it('carries the recipient as a signed token, not the retired _fuid', () => {
     const html = '<a href="https://ryan-realty.com/search">All</a>'
     const out = attributeOutbound(html, OPTS)
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
-    expect(payload.u).toContain('_fuid=9001')
+    expect(payload.u).not.toContain('_fuid=')
+    expect(verifyPersonLinkToken(new URL(payload.u).searchParams.get('_pid'))).toEqual({
+      personId: 4242,
+      channel: 'newsletter',
+    })
   })
 
   it('appends attribution params BEFORE a #fragment, never inside the hash', () => {
@@ -63,7 +73,7 @@ describe('attributeOutbound', () => {
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
     expect(payload.u).toBe(
-      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report&agent=matt-ryan&_fuid=9001&_pid=4242&utm_content=agent-matt-ryan#market-report',
+      `https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report&agent=matt-ryan&_pid=${TOKEN}&utm_content=agent-matt-ryan#market-report`,
     )
   })
 
@@ -84,8 +94,8 @@ describe('attributeOutbound', () => {
     const html = '<a href="https://ryan-realty.com/homes-for-sale">Browse</a>'
     const out = attributeOutbound(html, { ...OPTS, brokerSlug: '' })
     expect(() => out).not.toThrow()
-    // Link is still present and tracked. No agent param (no broker), but _fuid
-    // still attaches (recipient identity is independent of broker routing).
+    // Link is still present and tracked. No agent param (no broker); the
+    // signed recipient token still attaches (identity is independent of routing).
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
     expect(payload.u).not.toContain('agent=')
@@ -99,16 +109,16 @@ describe('attributeOutbound', () => {
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
     expect(payload.u).not.toContain('agent=')
     expect(payload.u).not.toContain('_fuid=')
-    expect(payload.u).toContain('_pid=4242')
+    expect(payload.u).toContain(`_pid=${TOKEN}`)
   })
 
-  it('stamps _pid=<crm person id> alongside _fuid so post-cutover contacts stitch sessions', () => {
+  it('stamps the signed _pid token and never a bare id, so the click identifies only the recipient', () => {
     const html = '<a href="https://ryan-realty.com/search">All</a>'
     const out = attributeOutbound(html, OPTS)
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
-    expect(payload.u).toContain('_fuid=9001')
-    expect(payload.u).toContain('_pid=4242')
+    expect(payload.u).toContain(`_pid=${TOKEN}`)
+    expect(payload.u).not.toMatch(/_pid=4242(&|$)/)
   })
 
   it('stamps _pid even for a contact with no fub_legacy_id (the post-cutover case)', () => {
@@ -117,7 +127,7 @@ describe('attributeOutbound', () => {
     const tok = decodeURIComponent(out.match(/\/api\/track\/e\/click\?t=([^"]+)/)![1])
     const payload = JSON.parse(Buffer.from(tok.split('.')[0], 'base64url').toString())
     expect(payload.u).not.toContain('_fuid=')
-    expect(payload.u).toContain('_pid=4242')
+    expect(payload.u).toContain(`_pid=${signPersonLinkToken(4242, 'newsletter')}`)
   })
 
   it('skips tracking when personId is missing but still attributes the broker', () => {
@@ -164,9 +174,10 @@ describe('attributeUrl', () => {
     expect(u.searchParams.get('agent')).toBe('matt-ryan')
   })
 
-  it('stamps _fuid when provided', () => {
+  it('never stamps the retired _fuid, even when a legacy id is passed', () => {
     const out = attributeUrl('https://ryan-realty.com/search', 'matt-ryan', 9001)
-    expect(out).toContain('_fuid=9001')
+    expect(out).not.toContain('_fuid')
+    expect(out).toContain('agent=matt-ryan')
   })
 
   it('is idempotent — second pass adds no second agent param', () => {

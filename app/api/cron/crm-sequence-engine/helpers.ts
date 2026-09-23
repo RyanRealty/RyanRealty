@@ -7,7 +7,6 @@ import 'server-only'
  */
 
 import {
-  attributeSiteLinks,
   isPlaceholderLeadName,
   primaryValue,
   renderCrmMerge,
@@ -15,6 +14,7 @@ import {
   type MergePersonLike,
 } from '@/lib/crm/merge'
 import { classifyLeadQuality, hasSuspectTag } from '@/lib/crm/lead-quality'
+import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import {
   hourInTimeZone,
   inSmsQuietHours as canonicalInSmsQuietHours,
@@ -156,10 +156,12 @@ export function renderMerge(
   // and every contact has one. Passing only _fuid left 4,890 people — everyone
   // created since the CRM cutover, and the only segment still growing —
   // permanently unidentifiable no matter how many links they clicked.
-  return attributeSiteLinks(
-    renderCrmMerge(text, person, ctx),
-    person.assigned_broker ?? 'matt',
-    person.fub_legacy_id ?? null,
-    person.id ?? null,
-  )
+  //
+  // Since 2026-09-23 (P7) the recipient id rides as a SIGNED token through the
+  // one decoration helper; an unsigned id identifies nobody.
+  return decorateOutboundText(renderCrmMerge(text, person, ctx), {
+    brokerSlug: person.assigned_broker ?? 'matt',
+    personId: person.id ?? null,
+    channel: 'sequence',
+  })
 }

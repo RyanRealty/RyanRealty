@@ -55,6 +55,9 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/TasksSection.tsx',
   'app/admin/(protected)/people/[id]/NotesSection.tsx',
   'app/admin/(protected)/people/[id]/HomesSection.tsx',
+  // P7 identity loop (2026-09-23): "On the site" + the personal-link copy control.
+  'app/admin/(protected)/people/[id]/SiteActivitySection.tsx',
+  'app/admin/(protected)/people/[id]/PersonalLinkCopy.tsx',
   'app/admin/(protected)/people/[id]/PersonDeals.tsx',
   'app/admin/(protected)/people/[id]/StartDealForm.tsx',
   'app/admin/(protected)/prospecting/page.tsx',
@@ -329,6 +332,10 @@ const SCAN_DIRS = [
   'app/admin/(protected)/users/page.tsx',
   'app/admin/(protected)/valuations/page.tsx',
   'app/admin/(protected)/visitors/VisitorFilterSelect.tsx',
+  // P7 identity loop (2026-09-23): the Known people view and the shared
+  // page-by-page visits list it and the person page render.
+  'app/admin/(protected)/visitors/live/KnownPeople.tsx',
+  'app/admin/(protected)/visitors/_components',
   'app/admin/(protected)/visitors/[sessionId]/page.tsx',
   'app/admin/(protected)/visitors/live/page.tsx',
   'app/admin/access-denied/page.tsx',

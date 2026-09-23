@@ -259,7 +259,9 @@ export async function sendProspectingIntro(
     // burns a claim.
     const templateKey = introTemplateKeyFor(kind)
     const sb = createServiceClient()
-    const docUrlForPerson = `${docUrl}?_pid=${lead.personId}&utm_source=crm&utm_medium=sms&utm_campaign=${kind}`
+    // Identity is stamped by the one decoration helper below (signed token, P7);
+    // the doc URL itself carries only the campaign.
+    const docUrlForPerson = `${docUrl}?utm_source=crm&utm_medium=sms&utm_campaign=${kind}`
     let merged: string
     if (args.bodyOverride && args.bodyOverride.trim()) {
       // Broker-edited body (already shown to them in the preview). Still gated by
@@ -303,8 +305,8 @@ export async function sendProspectingIntro(
     // the stored target carries ?_pid=/?agent= so a click stitches the site
     // session. Fail-open to the untracked body.
     const { instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
-    const { attributeSiteLinks } = await import('@/lib/crm/merge')
-    const attributed = attributeSiteLinks(merged, 'matt', null, lead.personId)
+    const { decorateOutboundText } = await import('@/lib/identity/outbound-links')
+    const attributed = decorateOutboundText(merged, { brokerSlug: 'matt', personId: lead.personId, channel: 'prospecting' })
     const body = await instrumentSmsLinks(attributed, { personId: lead.personId, broker: 'matt' }).catch(() => attributed)
 
     // 10. CLAIM — the at-most-once gate, right before the irreversible send.

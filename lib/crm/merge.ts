@@ -407,11 +407,17 @@ export function attributeSiteLinks(
   text: string,
   brokerSlug: string | null | undefined,
   fubPersonId?: number | null,
-  crmPersonId?: number | null,
+  // A signed person token (lib/identity/link-token.ts) from the ONE decoration
+  // helper, lib/identity/outbound-links.ts (P7, 2026-09-23). Send paths never
+  // call this directly any more; ci:identity-loop holds that.
+  crmPersonId?: number | string | null,
 ): string {
   const slug = (brokerSlug ?? '').trim()
   const fuid = typeof fubPersonId === 'number' && Number.isInteger(fubPersonId) && fubPersonId > 0 ? String(fubPersonId) : ''
-  const pid = typeof crmPersonId === 'number' && Number.isInteger(crmPersonId) && crmPersonId > 0 ? String(crmPersonId) : ''
+  const pid =
+    typeof crmPersonId === 'string'
+      ? /^[A-Za-z0-9._-]{1,80}$/.test(crmPersonId) ? crmPersonId : ''
+      : typeof crmPersonId === 'number' && Number.isInteger(crmPersonId) && crmPersonId > 0 ? String(crmPersonId) : ''
   if (!slug && !fuid && !pid) return text
   return text.replace(/https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g, (url) => {
     if (url.includes('/admin')) return url
