@@ -112,6 +112,23 @@ async function legacy(sb: import('@supabase/supabase-js').SupabaseClient, since:
     }
     if (!data || data.length < 1000) break
   }
+  // Re-runnable: filings an earlier reconcile already corrected are not corrected twice.
+  const corrected = new Set<number>()
+  for (let from = 0; ; from += 1000) {
+    const { data } = await sb
+      .from('tc_events')
+      .select('detail')
+      .eq('action', 'mail_misfile_corrected')
+      .order('id')
+      .range(from, from + 999)
+    for (const c of data ?? []) for (const id of ((c.detail as { legacy_event_ids?: number[] })?.legacy_event_ids ?? [])) corrected.add(Number(id))
+    if (!data || data.length < 1000) break
+  }
+  if (corrected.size) {
+    const before = events.length
+    events.splice(0, events.length, ...events.filter((e) => !corrected.has(e.id)))
+    console.log(`[legacy] ${before - events.length} filings already corrected by an earlier run`)
+  }
   const dealIds = [...new Set(events.map((e) => e.dealId))]
   const { data: cycles } = dealIds.length ? await sb.from('tc_cycles').select('id, deal_id').in('deal_id', dealIds) : { data: [] }
   const dealByCycle = new Map((cycles ?? []).map((c) => [String(c.id), String(c.deal_id)]))
