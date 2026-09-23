@@ -770,14 +770,28 @@ def build_audio(d, edl, segs, starts, total, name, music, out_video, n_frames):
     rng = np.random.default_rng(1982)
     bus = np.zeros((int(total * SR) + SR, 2), np.float32)
     seg_at = {s["role"]: (starts[j], s) for j, s in enumerate(segs)}
-    call_t, call = seg_at["call"]
     end_t, _ = seg_at["end"]
     if music:
         music = load_audio(os.path.join(d, edl["music"]["file"]))
     else:  # silence where the score was: every cue below still lands, unscored
         music = np.zeros((int((edl["music"]["endChordAt"] + total + 10) * SR), 2), np.float32)
     off = int(edl["music"].get("offset", 0.0) * SR)
+    if "break" not in seg_at and "call" not in seg_at:
+        # No phone at all (Matt 2026-09-23): the song runs to the last frame and
+        # its final chord lands on the card as the film runs out.
+        body = music[off: off + int(end_t * SR)].copy()
+        fade = int(0.08 * SR)
+        body[-fade:] *= np.linspace(1, 0, fade)[:, None]
+        mix_into(bus, body * 0.9, 0.0)
+        chord_at = edl["music"]["endChordAt"]
+        tail = music[int(chord_at * SR):].copy()
+        tail[: int(0.02 * SR)] *= np.linspace(0, 1, int(0.02 * SR))[:, None]
+        mix_into(bus, tail * 0.95, end_t + float(edl["music"].get("chordAt", 0.5)))
+        mix_into(bus, projector(end_t, rng), 0.0)
+        mix_into(bus, flap(1.3, rng), end_t)
+        return finish_audio(d, name, bus, total, out_video, n_frames, -14 if music.any() else -24)
     if "break" not in seg_at:
+        call_t, call = seg_at["call"]
         # The phone stays inside the film. The music stops dead on the call
         # shot; in the hush the line rings, someone picks up, and the card lands
         # on the song's last chord. The joke is the silence, not a sting.
@@ -797,6 +811,7 @@ def build_audio(d, edl, segs, starts, total, name, music, out_video, n_frames):
         mix_into(bus, click(0.3, 0.02, 900), call_t + float(call.get("pickupAt", call["seconds"] - 0.4)))
         return finish_audio(d, name, bus, total, out_video, n_frames, -14 if music is not None and music.any() else -24)
     brk_t, brk = seg_at["break"]
+    call_t, _ = seg_at["call"]
     body = music[off: off + int(brk_t * SR)].copy()
     fade = int(0.08 * SR)
     body[-fade:] *= np.linspace(1, 0, fade)[:, None]

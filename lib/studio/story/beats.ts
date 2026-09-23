@@ -37,6 +37,7 @@ export type BeatRole =
   | 'sign'
   | 'phone'
   | 'call'
+  | 'stay'
 
 export type BeatDef = {
   id: string
@@ -74,6 +75,11 @@ export type BeatDef = {
   composite?: 'yard_sign' | 'marquee' | 'phone_screen'
   /** A still moved by the lab camera instead of generated motion. */
   stillOnly?: boolean
+  /**
+   * The piece's companion (a dog) is in frame: its one reference photo goes
+   * to the generator with the cast sheets, so it is the same dog every shot.
+   */
+  companion?: boolean
   /**
    * Which era cues this frame needs. Default none. Era cues are scene
    * content: handing "brick storefronts" to every exterior put a downtown
@@ -328,6 +334,27 @@ export const BEATS: BeatDef[] = [
     move: 'pan',
   },
   {
+    id: 'drake-park-lab',
+    role: 'town',
+    label: 'Drake Park at dusk: he rides by, the Lab trotting alongside',
+    years: [1925, 2100],
+    yearsWhy: 'Drake Park and Mirror Pond date to the 1910s-1920s; the pond has looked this way since the 1910 dam.',
+    seasons: ['winter', 'fall'],
+    place:
+      'the path along Mirror Pond in Drake Park at dusk after a snowfall: the still pond with snowy banks, ' +
+      'tall ponderosa pines and bare shade trees, snow on the lawn, lit windows of houses across the water',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['B'],
+    wardrobe: 'evening',
+    companion: true,
+    framing: 'from the edge of the path at waist height, 35mm',
+    light: 'deep blue dusk skylight with warm window light across the pond, 3000K practicals, soft shadows on the snow',
+    exposure: 'night',
+    action:
+      '{B} rides a bicycle slowly along the path past the camera with their black Labrador with the red collar trotting beside him, and raises a hand to wave',
+    move: 'pan',
+  },
+  {
     id: 'drake-park-bike',
     role: 'town',
     label: 'Drake Park at dusk: a local on a bike, a dog alongside',
@@ -367,6 +394,30 @@ export const BEATS: BeatDef[] = [
     move: 'follow',
   },
   // ── discover ────────────────────────────────────────────────────────────
+  {
+    id: 'she-points-sign',
+    role: 'discover',
+    label: 'She stops and points: the sign is already in the yard',
+    years: [1925, 2100],
+    seasons: ['winter'],
+    place:
+      'the Old Bend sidewalk at dusk in front of a 1920s craftsman bungalow: porch light on, lit windows, snow on the lawn, ' +
+      'a white wooden yard-sign post standing in the snowy front lawn with a plain blank white square panel hanging from its arm',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A'],
+    wardrobe: 'evening',
+    companion: true,
+    framing:
+      'from the sidewalk just behind her shoulder, 35mm: she is on the left third, the bungalow and its lawn fill the right ' +
+      'two thirds, the sign post and its blank panel clear on the lawn, the dog at her side',
+    light: 'blue dusk skylight with the warm porch light and lit windows, 3000K practicals',
+    exposure: 'night',
+    action:
+      '{A} stops, points at the house and the sign on its lawn, and looks back at the camera while their black Labrador with the red collar sits beside her',
+    move: 'hold',
+    composite: 'yard_sign',
+    alsoReject: ['any letters, numbers, or marks on the sign panel'],
+  },
   {
     id: 'she-points',
     role: 'discover',
@@ -527,6 +578,36 @@ export const BEATS: BeatDef[] = [
     move: 'hold',
     alsoReject: ['a yard sign, sign post, or blank panel is in the frame (the sign belongs to the previous shot)'],
     allowAnachronism: 'the thin black modern smartphone at his ear (it is the joke)',
+  },
+  // ── stay ────────────────────────────────────────────────────────────────
+  {
+    id: 'stay-deadpan-lab',
+    role: 'stay',
+    label: 'The three of them in front of the house; nobody says anything',
+    years: [1925, 2100],
+    seasons: ['winter'],
+    place:
+      'the front yard of the same 1920s craftsman bungalow in Old Bend at dusk: porch light on, lit windows, snow on the lawn, ' +
+      'a white wooden yard-sign post in the snow with a plain blank white square panel hanging from its arm',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A', 'B'],
+    wardrobe: 'evening',
+    companion: true,
+    framing:
+      'a centered, frontal medium-wide shot from the sidewalk, 40mm, level horizon: the two of them standing side by side ' +
+      'on the snowy lawn facing the camera, the dog sitting in front of them, the lit porch centered behind, the sign post in the right third',
+    light: 'blue dusk skylight with the warm porch light and lit windows behind them, 3000K practicals',
+    exposure: 'night',
+    action:
+      '{A} and {B} stand side by side with their hands in their coat pockets and their black Labrador with the red collar sits still at their feet; ' +
+      'all three look straight into the lens with calm, straight faces',
+    move: 'tripod',
+    composite: 'yard_sign',
+    alsoReject: [
+      'any letters, numbers, or marks on the sign panel',
+      'anyone holding a phone',
+      'either of them grinning or gesturing at the camera',
+    ],
   },
 ]
 

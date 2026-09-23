@@ -206,6 +206,16 @@ v4 (Matt): après is two couples, not three men and a woman; the generator turne
 couple" into two moustached men twice until the friends were described outright (a blonde
 woman in a red snowflake sweater and her bearded husband). The yard sign is the stacked logo
 and nothing else (`story_reel.py panel`); the busy v1 panel (tagline, phone, URL) is retired.
+v6 (Matt): the dog was a different dog in each scene, the house showed up before its sign, and
+the phone goes entirely ("don't put the price in and actually don't even worry about a cell
+phone at all"). The piece now omits `phone`, `call` and `sign` (`StoryPiece.omit`; no phone
+means no break either) and ends on a new optional arc role `stay`: the three of them in front
+of the house, sign on the lawn. The sign stands in the yard the moment she points
+(`she-points-sign`, plated). One dog: `StoryPiece.companion` is a registered reference photo
+(the frontal Lab from a finished frame) handed to every beat with `companion: true`, so Drake
+Park, the pointing shot and the last frame all get the same black Lab with the red collar. With
+no call, the score runs to the card. 31.98s. `build --no-music --video-from` gives the
+Instagram cut, whose song is picked in the app.
 Music: a 1982 hit cannot go in a brokerage ad without a sync license, and Instagram business
 accounts only get Meta's commercial Sound Collection; the score stays original until Matt
 licenses a track.

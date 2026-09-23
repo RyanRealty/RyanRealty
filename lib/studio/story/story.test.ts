@@ -14,16 +14,29 @@ const era = getEra('super8_1982')!
 
 describe('visitor arc', () => {
   it('fills every role of the winter 1982 piece with a beat that fits the year and season', () => {
-    const plan = planStory({ era, season: piece.season, beats: piece.beats })
-    // The piece's phone lives inside the film, so the full-frame break drops out.
-    expect(plan.shots).toHaveLength(VISITOR_ARC.length - 1)
+    const plan = planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit })
+    // Matt 2026-09-23: no phone, no call, no price; the sign is in the yard when she points.
+    const roles = plan.shots.map((s) => s.role)
+    for (const gone of ['phone', 'call', 'break', 'sign']) expect(roles, gone).not.toContain(gone)
+    expect(roles.slice(-2)).toEqual(['stay', 'end'])
     for (const shot of plan.shots) {
       if (shot.kind !== 'generated') continue
       expect(shot.beat, shot.role).not.toBeNull()
       expect(beatFits(shot.beat!, 1982, 'winter'), shot.role).toBe(true)
     }
-    expect(plan.shots.some((s) => s.role === 'break')).toBe(false)
     expect(plan.shots.at(-1)?.kind).toBe('end_card')
+  })
+
+  it('keeps one dog: every beat with the companion gets its reference, and the piece has one', () => {
+    expect(piece.companion?.ref).toMatch(/^asset:/)
+    const plan = planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit })
+    const withDog = plan.shots.filter((s) => s.beat?.companion).map((s) => s.role)
+    expect(withDog).toEqual(expect.arrayContaining(['town', 'discover', 'stay']))
+    for (const shot of plan.shots) {
+      if (shot.beat && /labrador|dog/i.test(shot.beat.action) && shot.role !== 'hook') {
+        expect(shot.beat.companion, shot.beat.id).toBe(true)
+      }
+    }
   })
 
   it('keeps the full-frame break for a phone beat that is not composited in the film', () => {

@@ -370,7 +370,7 @@ function pieceAndEra(flags: Record<string, string>): {
   if (!piece) throw new Error(`--piece is required (known: winter-1982)`)
   const era = getEra(piece.eraId)
   if (!era) throw new Error(`piece ${piece.id} names unknown era ${piece.eraId}`)
-  const plan = planStory({ era, season: piece.season, beats: piece.beats })
+  const plan = planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit })
   return { piece, era, plan }
 }
 
@@ -558,6 +558,10 @@ async function sourcesFor(piece: StoryPiece, shot: PlannedStoryShot, manifest: M
     files.push(path.join(ROOT, selected))
     labels.push(label)
     castRefs.push({ file: path.join(ROOT, selected), label })
+  }
+  if (beat.companion && piece.companion) {
+    files.push(await resolveRef(piece.companion.ref))
+    labels.push(piece.companion.label)
   }
   const continuityRole = piece.continuity?.[beat.role as BeatRole]
   if (continuityRole) {

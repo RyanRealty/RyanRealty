@@ -18,13 +18,7 @@
  * `proven` only when a piece built on it has shipped past Matt.
  */
 
-export type EraId =
-  | 'super8_1982'
-  | 'cine16_1978'
-  | 'regular8_1962'
-  | 'bw16mm_1955'
-  | 'silent16mm_1926'
-  | 'vhs_1989'
+export type EraId = 'super8_1982' | 'cine16_1978' | 'regular8_1962' | 'bw16mm_1955' | 'silent16mm_1926' | 'vhs_1989'
 
 export type ExposureVariant = 'day' | 'interior_low' | 'night'
 
@@ -145,7 +139,10 @@ export const ERAS: Record<EraId, EraPack> = {
       'in 1983 (Betamovie) and cost over $1,000. On-screen date stamps are a late-80s VHS tell.',
     gateAspect: '4:3',
     period: {
-      hair: { she: 'feathered, layered hair with soft volume', he: 'hair over the tops of the ears, a side part, no modern fade or undercut' },
+      hair: {
+        she: 'feathered, layered hair with soft volume',
+        he: 'hair over the tops of the ears, a side part, no modern fade or undercut',
+      },
       wardrobe:
         'down vests, cable-knit turtlenecks, corduroy, sheepskin-collar jackets, knit caps; ' +
         'on the mountain matte nylon ski wear in solid colors with a single chest stripe, bib pants, straight skis, knit hats',
@@ -167,7 +164,8 @@ export const ERAS: Record<EraId, EraPack> = {
     lab: SUPER8_LAB,
     sound: {
       bed: 'projector',
-      music: 'original early-1980s soft-rock instrumental: warm electric piano, chorused clean guitar, soft live drums, about 104 bpm, AM-radio warmth',
+      music:
+        'original early-1980s soft-rock instrumental: warm electric piano, chorused clean guitar, soft live drums, about 104 bpm, AM-radio warmth',
     },
     status: 'draft',
   },
@@ -181,7 +179,10 @@ export const ERAS: Record<EraId, EraPack> = {
       'deadpan period film. Muted pastel stock, centered frames, long holds, a character with a signature look.',
     gateAspect: '4:3',
     period: {
-      hair: { she: 'feathered, layered hair with soft volume', he: 'hair over the ears, a full moustache allowed only if the cast look names it' },
+      hair: {
+        she: 'feathered, layered hair with soft volume',
+        he: 'hair over the ears, a full moustache allowed only if the cast look names it',
+      },
       wardrobe: 'down parkas, corduroy, turtlenecks, knit scarves and caps, aviator and glacier sunglasses',
       vehicles: 'a boxy mid-1970s model (a Volvo 240, a Ford pickup, a VW bus)',
       rooms: 'wood paneling, amber glass, formica, a rotary phone on the wall',
@@ -213,7 +214,10 @@ export const ERAS: Record<EraId, EraPack> = {
       dust: 0.03,
       startFlash: 0,
     },
-    sound: { bed: 'none', music: 'original late-1970s instrumental: a deadpan synth or soft-rock groove, about 100 bpm, one repeated hook' },
+    sound: {
+      bed: 'none',
+      music: 'original late-1970s instrumental: a deadpan synth or soft-rock groove, about 100 bpm, one repeated hook',
+    },
     status: 'draft',
   },
   regular8_1962: {
@@ -225,13 +229,19 @@ export const ERAS: Record<EraId, EraPack> = {
     gateAspect: '4:3',
     period: {
       hair: { she: 'short set curls or a bouffant', he: 'a pomaded side part or a crew cut' },
-      wardrobe: 'wool car coats, cardigans, skirts below the knee, fedoras giving way to bare heads, leather ski boots with lace-up fronts',
+      wardrobe:
+        'wool car coats, cardigans, skirts below the knee, fedoras giving way to bare heads, leather ski boots with lace-up fronts',
       vehicles: 'late-1950s and early-1960s American sedans and wagons with chrome, fins fading out',
       rooms: 'knotty pine, formica, chrome diner stools, pendant lamps',
       street: 'neon and painted signs, angled parking, wide sidewalks',
     },
     camera: 'spring-wound camera held at the chest, short bursts of a few seconds, stiff family framing',
-    anachronisms: ['any vehicle styled after 1963', 'synthetic ski suits', 'color television screens', 'phones except where named'],
+    anachronisms: [
+      'any vehicle styled after 1963',
+      'synthetic ski suits',
+      'color television screens',
+      'phones except where named',
+    ],
     lab: {
       ...SUPER8_LAB,
       fps: 16,
@@ -243,7 +253,10 @@ export const ERAS: Record<EraId, EraPack> = {
       fade: 0.25,
       dust: 0.35,
     },
-    sound: { bed: 'projector', music: 'original early-1960s lounge instrumental: vibraphone, upright bass, brushed snare, about 96 bpm' },
+    sound: {
+      bed: 'projector',
+      music: 'original early-1960s lounge instrumental: vibraphone, upright bass, brushed snare, about 96 bpm',
+    },
     status: 'draft',
   },
   bw16mm_1955: {
@@ -272,7 +285,10 @@ export const ERAS: Record<EraId, EraPack> = {
       halation: { threshold: 0.85, radius: 10, strength: 0.08 },
       monochrome: true,
     },
-    sound: { bed: 'projector', music: 'original 1950s small-combo swing: clarinet, piano, brushed drums, about 112 bpm' },
+    sound: {
+      bed: 'projector',
+      music: 'original 1950s small-combo swing: clarinet, piano, brushed drums, about 112 bpm',
+    },
     status: 'draft',
   },
   silent16mm_1926: {
@@ -335,7 +351,10 @@ export const ERAS: Record<EraId, EraPack> = {
       startFlash: 0,
       dust: 0,
     },
-    sound: { bed: 'tape', music: 'original late-1980s synth-pop instrumental: DX7 electric piano, gated snare, about 116 bpm' },
+    sound: {
+      bed: 'tape',
+      music: 'original late-1980s synth-pop instrumental: DX7 electric piano, gated snare, about 116 bpm',
+    },
     status: 'draft',
   },
 }

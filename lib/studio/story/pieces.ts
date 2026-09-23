@@ -37,6 +37,10 @@ export type StoryPiece = {
    */
   continuity?: Partial<Record<BeatRole, BeatRole>>
   payoff: PhonePayoff
+  /** Roles the piece leaves out (winter-1982 has no phone: Matt 2026-09-23). */
+  omit?: BeatRole[]
+  /** One companion (the dog): its reference photo keeps it the same animal in every shot that has it. */
+  companion?: { ref: string; label: string }
   /**
    * The shot whose still becomes the phone screen's hero, crisp and ungraded.
    * A neighbourhood frame, never the mock-up house (a house over a price reads
@@ -97,17 +101,21 @@ export const STORY_PIECES: StoryPiece[] = [
       play_pair: 'chairlift-selfie',
       apres: 'apres-lodge',
       eat: 'supper-tower-window',
-      town: 'drake-park-bike',
+      town: 'drake-park-lab',
       stroll: 'old-bend-walk',
-      discover: 'she-points',
+      discover: 'she-points-sign',
       sign: 'yard-sign-bungalow',
-      phone: 'phone-glow',
-      call: 'call-deadpan-lab',
+      stay: 'stay-deadpan-lab',
     },
-    continuity: { discover: 'stroll', sign: 'stroll', phone: 'sign', call: 'sign' },
-    payoff: { kind: 'neighborhood_inventory', geoSlug: 'bend-old-bend', placeLabel: 'Old Bend' },
-    // Drake Park at the edge of Old Bend, Carol M. Highsmith, Library of Congress (public domain).
-    phoneHeroRef: 'asset:0c6777d4-f8b3-4b2c-a399-67810745cea3',
+    // Matt 2026-09-23: no price, and no cell phone at all. The sign is in the yard the moment she sees the house
+    // (discover) and in the last frame, so the separate sign close-up is out too.
+    omit: ['phone', 'call', 'sign'],
+    companion: {
+      ref: 'asset:c9fce792-26ab-4837-81a0-cfaf943b8c43',
+      label: 'the reference photo of their dog (the same black Labrador: same face, coat, build, and red collar)',
+    },
+    continuity: { discover: 'stroll', stay: 'discover' },
+    payoff: { kind: 'none' },
     openCaption: 'Bend, Oregon. Winter, 1982.',
     // Matt 2026-09-23: nothing corny at the end. The last shot is the joke; the card only signs it.
   },

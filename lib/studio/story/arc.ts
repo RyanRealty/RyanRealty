@@ -61,6 +61,12 @@ export const VISITOR_ARC: ArcSlot[] = [
   { role: 'phone', seconds: 2.4, because: 'The violation: a modern phone comes out of a period coat.' },
   { role: 'break', seconds: 3.6, because: 'The present, full frame and sharp: the app, the price, the call button.' },
   { role: 'call', seconds: 2.8, because: 'Back in the reel, resolved: on the phone, thumbs up, a hug.' },
+  {
+    role: 'stay',
+    seconds: 3.4,
+    because: 'The last frame: they have decided, and nobody says so. The sign is in it.',
+    optional: true,
+  },
   { role: 'end', seconds: 3.7, because: 'The reel runs out into the end card: peak-end with the brand present.' },
 ]
 
@@ -89,6 +95,8 @@ export type PlanStoryInput = {
   season: Season
   /** Pin a beat id per role; unpinned roles take the first beat that fits. */
   beats?: Partial<Record<BeatRole, string>>
+  /** Roles this piece leaves out entirely (no phone: Matt 2026-09-23). */
+  omit?: BeatRole[]
   arc?: ArcSlot[]
 }
 
@@ -101,7 +109,10 @@ export function planStory(input: PlanStoryInput): StoryPlan {
   // present on its own; the full-frame break would say it twice.
   const pinnedPhone = input.beats?.phone ? getBeat(input.beats.phone) : null
   const phoneInFilm = pinnedPhone?.composite === 'phone_screen'
-  const arc = (input.arc ?? VISITOR_ARC).filter((slot) => !(phoneInFilm && slot.role === 'break'))
+  const omit = new Set<string>(input.omit ?? [])
+  // No phone at all means no break either: the present never enters the film.
+  const noBreak = phoneInFilm || omit.has('phone')
+  const arc = (input.arc ?? VISITOR_ARC).filter((slot) => !omit.has(slot.role) && !(noBreak && slot.role === 'break'))
   const year = input.era.year
   const warnings: string[] = []
   const shots: PlannedStoryShot[] = []
