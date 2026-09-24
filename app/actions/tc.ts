@@ -79,6 +79,7 @@ export type TcCycle = {
   escrow_closing_date: string | null
   actual_closing_date: string | null
   expiration_date: string | null
+  listing_date: string | null
   inspection_days: number | null
   financing_days: number | null
   dead_date: string | null
@@ -204,6 +205,7 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
       escrow_closing_date: c.escrow_closing_date,
       actual_closing_date: c.actual_closing_date,
       expiration_date: c.expiration_date,
+      listing_date: (c.listing_date as string | null) ?? null,
       inspection_days: c.inspection_days == null ? null : Number(c.inspection_days),
       financing_days: c.financing_days == null ? null : Number(c.financing_days),
       dead_date: c.dead_date,
@@ -365,8 +367,22 @@ export async function setDealBroker(input: {
  * pages it already had. An hour outlasts reading a 15-page sale agreement.
  */
 export async function getTcDocumentUrl(documentId: string): Promise<{ url: string | null; error?: string }> {
+  // A server action is a public endpoint: only an admin who can see the
+  // document's file gets a signed link (the file workspace's inline viewer
+  // and the download button are the callers).
+  const ctx = await getAdminCapabilityContext()
+  if (!ctx) return { url: null, error: 'Not authorized' }
   const supabase = getServiceSupabase()
-  const { data: doc } = await supabase.from('tc_documents').select('storage_path').eq('id', documentId).maybeSingle()
+  const { data: doc } = await supabase
+    .from('tc_documents')
+    .select('storage_path, tc_cycles(tc_deals(broker_name))')
+    .eq('id', documentId)
+    .maybeSingle()
+  const dealBrokerName =
+    ((doc as { tc_cycles?: { tc_deals?: { broker_name?: string | null } | null } | null } | null)?.tc_cycles?.tc_deals?.broker_name) ?? null
+  if (doc && !dealVisibleToBroker({ role: ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName })) {
+    return { url: null, error: 'Not authorized' }
+  }
   if (!doc?.storage_path) return { url: null, error: 'No stored binary for this document' }
   const { data, error } = await supabase.storage
     .from('tc-documents')

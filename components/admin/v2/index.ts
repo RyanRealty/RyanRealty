@@ -46,3 +46,16 @@ export {
   type ReportGridRow,
   type ReportNumberItem,
 } from './ReportGrid'
+// Transactions workspace (Matt 2026-09-24): numbers you can open, panels,
+// milestones, file tabs, broker avatar, checklist meter.
+export {
+  StatTiles,
+  Panel,
+  Milestones,
+  SubNav,
+  Avatar,
+  Meter,
+  type StatTileItem,
+  type MilestoneStep,
+  type SubNavItem,
+} from './Workspace'

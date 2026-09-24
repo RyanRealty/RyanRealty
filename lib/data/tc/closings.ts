@@ -29,6 +29,9 @@ export interface ClosingDealRow {
   salePrice: number | null
   listingPrice: number | null
   expirationDate: string | null
+  listingDate: string | null
+  inspectionDays: number | null
+  financingDays: number | null
   mlsNumber: string | null
   escrowNumber: string | null
   itemsTotal: number
@@ -97,7 +100,11 @@ function newestCycle(cycles: readonly Row[], dealId: string, stage: string): Row
   const prefer = stage === 'active_listing' ? 'listing' : stage === 'pending' || stage === 'pre_contract' ? 'sale' : null
   const mine = cycles.filter((c) => c.deal_id === dealId)
   const pool = prefer ? mine.filter((c) => c.kind === prefer) : mine
-  const use = pool.length ? pool : mine
+  const base = pool.length ? pool : mine
+  // A canceled or expired cycle never stands for the file while a live one exists
+  // (Beaumont read "closing date passed" off its canceled 04-29 cycle).
+  const dead = (c: Row) => /cancel|dead|terminat|withdrawn|expired/i.test(String(c.status ?? '')) || !!c.dead_date
+  const use = base.some((c) => !dead(c)) ? base.filter((c) => !dead(c)) : base
   let best: Row | undefined
   for (const c of use) {
     if (!best || String(c.created_at ?? '') > String(best.created_at ?? '')) best = c
@@ -132,7 +139,7 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
     sb
       .from('tc_cycles')
       .select(
-        'id, deal_id, kind, contract_acceptance_date, escrow_closing_date, actual_closing_date, sale_price, listing_price, expiration_date, created_at, mls_number, escrow_number, buyers, sellers',
+        'id, deal_id, kind, status, dead_date, contract_acceptance_date, escrow_closing_date, actual_closing_date, sale_price, listing_price, expiration_date, listing_date, inspection_days, financing_days, created_at, mls_number, escrow_number, buyers, sellers',
       )
       .in('deal_id', dealIds),
   ])
@@ -185,6 +192,9 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
       salePrice: (cy?.sale_price as number | null) ?? null,
       listingPrice: (cy?.listing_price as number | null) ?? null,
       expirationDate: (cy?.expiration_date as string | null) ?? null,
+      listingDate: (cy?.listing_date as string | null) ?? null,
+      inspectionDays: (cy?.inspection_days as number | null) ?? null,
+      financingDays: (cy?.financing_days as number | null) ?? null,
       mlsNumber: (cy?.mls_number as string | null) ?? null,
       escrowNumber: (cy?.escrow_number as string | null) ?? null,
       itemsTotal: ct.total,

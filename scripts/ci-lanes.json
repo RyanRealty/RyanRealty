@@ -1224,6 +1224,8 @@
       "lib/tc/**",
       "lib/data/tc/**",
       "app/api/cron/skyslope-mirror-refresh/**",
+      "app/api/cron/skyslope-vault-intake/**",
+      "scripts/tc-skyslope-intake.ts",
       "lib/data/loop/**"
     ],
     "ci:sms-link-tracking": [

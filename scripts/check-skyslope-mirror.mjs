@@ -84,6 +84,37 @@ checks.push({
   ok: /getSkySlopeMirrorFreshness/.test(closings) && /SkySlope recon mirror/.test(closings),
 })
 
+// SkySlope → Vault daily intake (Matt 2026-09-24): same read-only client, a
+// registered cron, the cutover switch honored, and never-overwrite decisions
+// kept in the pure module where the tests hold them.
+const intakeCron = src('app/api/cron/skyslope-vault-intake/route.ts')
+checks.push({
+  label: 'vault intake cron is auth-gated, leased, and honors TC_SKYSLOPE_INTAKE_ENABLED',
+  ok:
+    /requireCronAuth/.test(intakeCron) &&
+    /tryTakeSkySlopeIntakeLease/.test(intakeCron) &&
+    /releaseSkySlopeIntakeLease/.test(intakeCron) &&
+    /skySlopeIntakeEnabled\(\)/.test(intakeCron) &&
+    /deadline:/.test(intakeCron),
+})
+checks.push({
+  label: 'vercel.json registers /api/cron/skyslope-vault-intake',
+  ok: /\/api\/cron\/skyslope-vault-intake/.test(vercel),
+})
+const intakeDal = src('lib/data/tc/skyslope-intake.ts')
+checks.push({
+  label: 'vault intake uses the read-only inbound client (no second SkySlope client, no mutating verbs)',
+  ok:
+    /from '@\/lib\/tc\/skyslope-inbound'/.test(intakeDal) &&
+    !/api-latest\.skyslope\.com/.test(intakeDal) &&
+    !/method:\s*'PUT'|method:\s*'PATCH'|method:\s*'DELETE'|method:\s*'POST'/.test(intakeDal),
+})
+const intakePure = src('lib/tc/skyslope-intake.ts')
+checks.push({
+  label: 'vault intake switch defaults on and the never-overwrite rule lives in decideField',
+  ok: /export function skySlopeIntakeEnabled/.test(intakePure) && /export function decideField/.test(intakePure),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'PASS' : 'FAIL'}  ${c.label}`)

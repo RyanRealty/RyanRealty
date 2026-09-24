@@ -54,6 +54,11 @@ function client() {
 }
 
 export async function getDealParties(dealId: string): Promise<DealParty[]> {
+  // The read attaches parties the file itself names (fast, database only). The
+  // mailbox search for missing emails and deal facts runs in the daily mail
+  // sweep (harvest: true), never on a page view: inline it made every file
+  // page, envelope, packet and mail filing wait 30+ seconds on Gmail
+  // (measured 2026-09-24: 34 s for one listing).
   await ensureDealPartiesFromFile(dealId)
   const sb = client()
   const { data, error } = await sb
@@ -92,8 +97,15 @@ export async function inboundReferralFeePctForDeal(dealId: string): Promise<numb
   return found
 }
 
-/** Attach buyers/sellers who have an email or phone on the SkySlope file. Never the deal broker. */
-export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
+/**
+ * Attach buyers/sellers who have an email or phone on the SkySlope file. Never
+ * the deal broker. With `harvest`, also search the broker mailboxes for a
+ * party's missing email and for the deal's missing facts (other agent, escrow
+ * number, lender, offers and their PDFs): the daily mail sweep's job, since it
+ * reads Gmail and can take half a minute per file.
+ */
+export async function ensureDealPartiesFromFile(dealId: string, opts: { harvest?: boolean } = {}): Promise<void> {
+  const harvest = opts.harvest === true
   const sb = client()
   const { data: deal } = await sb.from('tc_deals').select('id, broker_name, address').eq('id', dealId).maybeSingle()
   if (!deal) return
@@ -146,7 +158,7 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
     }
     let email = p.email
     const phone = p.phone
-    if (!email && !phone) {
+    if (!email && !phone && harvest) {
       try {
         const { findPartyEmailInMailboxes } = await import('@/lib/tc/mailbox-harvest-run')
         email = await findPartyEmailInMailboxes({
@@ -177,6 +189,7 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
     if (!error) have.add(got.personId)
   }
 
+  if (!harvest) return
   const needsAgent = (existingContacts ?? []).every((c) => c.role !== 'other_agent' || !c.email)
   const needsLender = (existingContacts ?? []).every((c) => c.role !== 'lender' && c.role !== 'loan_officer')
   const needsEscrow = (cycles ?? []).some((c) => !c.escrow_number)

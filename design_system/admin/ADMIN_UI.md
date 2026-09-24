@@ -88,6 +88,20 @@ and will not be re-litigated):**
    in plain words (suppressed · quiet hours · relisted), never just a disabled button.
 5. **Entity page** — People/Closings: identity header (name, chips, one primary
    action), then stacked context sections. On phone the header collapses to two lines.
+   **Amended by Matt 2026-09-24 for transaction files** ("the ui for this system is
+   sooo bad, its just this long scrolling list"): a file is a *workspace*, not a
+   scroll. Identity header + milestone track (`Milestones`), then sticky underline
+   tabs (`SubNav`: Overview · Documents · Offers · Email · People · Signing · Money ·
+   Activity), one cycle on screen at a time, and the Documents tab puts the checklist
+   beside the document it points at (`.av2-split`, the PDF inline with the reader's
+   verdict and the sign-off above it). Each tab reads only what it shows.
+7. **Transactions dashboard** — Closings (Matt 2026-09-24: "we need to have a
+   beautiful dashboard that makes sense"; he picked the layout): one verdict sentence,
+   then numbers you can open (`StatTiles`, each a door to its list, never a dead KPI),
+   then Needs you beside Coming up (`Panel`), then the pipeline by stage as cards
+   (`.av2-board` / `.av2-fcard` with `Meter`). Closed and dead history lives on All
+   files (`/admin/closings/files`), so neither page grows with time. This overrides
+   the "no KPI-dashboard landing" non-inheritance in §8 for Closings only.
 6. **Config form** — Settings: single-column, 640px max, label-above, inline
    validation, destructive actions require typed confirmation (GOV.UK forms).
 

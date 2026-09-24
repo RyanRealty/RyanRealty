@@ -45,15 +45,16 @@ if (!top) {
 }
 
 const configured = git('config', '--get', 'core.hooksPath')
-// No hooksPath configured means git uses <git-dir>/hooks, which is per-worktree
-// and shared from the common dir — the failure mode this gate exists for does
-// not apply.
-if (!configured) {
-  console.log('ci:hooks-installed — skipped (no core.hooksPath configured)')
-  process.exit(0)
-}
-
-const hooksDir = path.isAbsolute(configured) ? configured : path.join(top, configured)
+// No hooksPath configured means git uses <git-dir>/hooks. Until husky runs,
+// that directory holds only git's *.sample files, so NO hook fires: a fresh
+// cloud clone that never ran `npm ci` committed without the commit-msg approval
+// gate and pushed without the marker check, while this gate skipped and read
+// green (found 2026-09-24). Check the directory git will actually use.
+const hooksDir = !configured
+  ? path.resolve(git('rev-parse', '--git-path', 'hooks'))
+  : path.isAbsolute(configured)
+    ? configured
+    : path.join(top, configured)
 const prePush = path.join(hooksDir, 'pre-push')
 const preCommit = path.join(hooksDir, 'pre-commit')
 
@@ -66,12 +67,16 @@ if (missing.length === 0) {
 
 console.error('ci:hooks-installed FAILED')
 console.error('')
-console.error(`  core.hooksPath = ${configured}`)
+console.error(`  core.hooksPath = ${configured || '(unset: git uses <git-dir>/hooks)'}`)
 console.error(`  resolves to    = ${hooksDir}`)
 for (const m of missing) console.error(`  MISSING        = ${m}`)
 console.error('')
 console.error('  This working tree has NO git hooks. A push from here runs no gates and no')
 console.error('  build, and succeeds looking exactly like a verified one.')
 console.error('')
-console.error('  Fix:  sh scripts/worktree-setup.sh')
+console.error(
+  configured
+    ? '  Fix:  sh scripts/worktree-setup.sh'
+    : '  Fix:  npx husky   (or npm ci, whose prepare step runs it)',
+)
 process.exit(1)

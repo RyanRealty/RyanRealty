@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bareStreetName,
   categorizeMail,
   dealOpenAt,
   decideMailFiling,
   isHouseAddress,
+  mentionsBareStreet,
   mentionsDealAddress,
   mentionsDealStreet,
   mentionsEscrowNumber,
@@ -294,12 +296,74 @@ describe('decideMailFiling: regressions from the live misfile audit (2026-09-23)
       cycles: [cycle({ id: 'ap-sale', status: 'Pending', mlsNumber: '220216758', acceptanceDate: '2026-08-24' })],
     }
     const d = decideMailFiling({
-      facts: mail({ from: ['admin@ryan-realty.com'], subject: 'Question about the walkthrough', body: 'What time works for the final walkthrough?' }),
+      facts: mail({ from: ['admin@ryan-realty.com'], subject: '[TC TEST ab12] Question about the walkthrough', body: 'What time works for the final walkthrough?' }),
       deals: [...DEALS, apollo],
       thread: null,
     })
     expect(d.status).toBe('ambiguous')
     expect(d.dealId).toBeNull()
+  })
+
+  it('a test-party mailbox is a client only on harness mail: Workspace notices to admin@ file nowhere (2026-09-24 queue)', () => {
+    const d = decide(
+      mail({ from: ['workspace-noreply@google.com'], to: ['admin@ryan-realty.com'], subject: '[Notice] Possible unresolved security risks in your Admin Console' }),
+    )
+    expect(d.status).toBe('not_deal')
+    expect(d.candidates).toEqual([])
+    const crm = decide(mail({ from: ['marketing@ryan-realty.com'], to: ['matt@ryan-realty.com'], subject: 'Re: Test: CRM email delivery + tracking check' }))
+    expect(crm.status).toBe('not_deal')
+  })
+
+  it('an address with its directional spelled out files to the deal (3480 Southwest 45th inspection mail)', () => {
+    const d = decide(
+      mail({
+        from: ['noreply@wininspections.com'],
+        sentAt: '2025-07-22T17:00:00Z',
+        subject: 'Inspection Scheduled on Your Listing at 3480 Southwest 45th Street, Redmond',
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('forty-fifth')
+    expect(d.propertyHint).toBe('3480 sw 45th')
+  })
+
+  it('an e-sign completion that names the street files there, even with a mistyped house number (School House)', () => {
+    const d = decide(
+      mail({ from: ['noreply@skyslope.com'], sentAt: '2026-04-14T17:00:00Z', subject: 'Envelope completed: Repair Addendum | 5611 School House Rd' }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('school-house')
+  })
+
+  it('step two: of the deals the sender is on, the one the subject calls by its street alone ("Work on Beaumont")', () => {
+    const d = decide(
+      mail({ from: ['transactions@bridgetownfiles.com'], sentAt: '2026-06-16T17:00:00Z', subject: 'Documentation for Completion of Work on Beaumont' }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+    expect(d.method).toBe('address')
+  })
+
+  it('our own transaction mail naming one file by its street alone files there ("[Simpson forward] … Repair Addendum")', () => {
+    const d = decide(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['matt@ryan-realty.com'],
+        sentAt: '2026-05-21T17:00:00Z',
+        subject: '[Simpson forward] OREF 022A Buyers Repair Addendum 2 - all 4 sigs',
+        attachments: [{ name: 'P2_Buyers_Repair_Addendum_-_2.pdf' }],
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('simpson')
+  })
+
+  it('an e-sign completion for a property with no file is kept as a transaction record (1450 Revere counter rejection)', () => {
+    const d = decide(
+      mail({ from: ['noreply@skyslope.com'], to: ['rebeccapeterson@ryan-realty.com'], subject: 'Envelope completed: Sellers Counteroffer Rejection - 1450 Revere Ave' }),
+    )
+    expect(d.status).toBe('unfiled_transaction')
+    expect(d.propertyHint).toBe('1450 revere')
   })
 
   it('auto-replies never file', () => {
@@ -365,7 +429,7 @@ describe('decideMailFiling: rule order', () => {
   })
 
   it('rule 4: our client on exactly one open deal files with no address', () => {
-    const d = decide(mail({ from: ['admin@ryan-realty.com'], subject: 'When is the walkthrough?' }))
+    const d = decide(mail({ from: ['admin@ryan-realty.com'], subject: '[TC TEST ab12] When is the walkthrough?' }))
     expect(d.status).toBe('filed')
     expect(d.dealId).toBe('sedalia')
     expect(d.method).toBe('party')
@@ -443,6 +507,26 @@ describe('address evidence', () => {
     expect(propertyInSubject('Buyer Counter Offer 1')).toBeNull()
     expect(propertyInSubject('2026 Market Outlook')).toBeNull()
     expect(propertyInSubject('Your receipt from Grok xAI #2272-2005')).toBeNull()
+  })
+
+  it('reads spelled-out and doubled directionals, and West as a street name', () => {
+    expect(parseDealAddress('3480 Southwest 45th Street, Redmond')).toMatchObject({ number: '3480', directional: 'sw', street: '45th' })
+    expect(parseDealAddress('2354 NW NW Drouillard Ave, Bend')).toMatchObject({ directional: 'nw', street: 'drouillard', next: 'ave' })
+    expect(parseDealAddress('123 West Ave, Bend')).toMatchObject({ directional: null, street: 'west', next: 'ave' })
+    const p = parseDealAddress('3480 SW 45th Street, Redmond')!
+    expect(mentionsDealAddress('at 3480 Southwest 45th Street', p)).toBe(true)
+    expect(mentionsDealStreet('Southwest 45th close', p)).toBe(true)
+    expect(propertyInSubject('Thank You – Inspection Completed at 3480 Southwest 45th Street, Redmond')).toBe('3480 sw 45th')
+  })
+
+  it('names a property by its bare street only when the name means one street', () => {
+    expect(bareStreetName(parseDealAddress('2680 NW Nordic Avenue, Bend')!)).toBe('nordic')
+    expect(bareStreetName(parseDealAddress('56111 School House Rd, Bend')!)).toBe('school house')
+    expect(bareStreetName(parseDealAddress('3480 SW 45th Street, Redmond')!)).toBeNull()
+    expect(bareStreetName(parseDealAddress('100 Main St, Bend')!)).toBeNull()
+    expect(mentionsBareStreet('Re: Home Warranty - Nordic', parseDealAddress('2680 NW Nordic Avenue, Bend')!)).toBe(true)
+    expect(mentionsBareStreet('Nordic skiing this weekend?', parseDealAddress('2680 NW Nordic Avenue, Bend')!)).toBe(true)
+    expect(mentionsBareStreet('Nordicware sale', parseDealAddress('2680 NW Nordic Avenue, Bend')!)).toBe(false)
   })
 
   it('counts distinct suffixed street addresses', () => {
