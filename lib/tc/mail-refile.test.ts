@@ -281,6 +281,36 @@ describe('unfileMailFromDeal', () => {
     expect(event?.args[0]).toMatchObject({ deal_id: 'deal-a', action: 'mail_message_unfiled' })
 
     const review = calls.find((c) => c.table === 'tc_mail_reviews' && c.method === 'upsert')
-    expect(review?.args[0]).toMatchObject({ mailbox: 'matt@ryan-realty.com', gmail_id: 'g1', status: 'dismissed', stage: 'person', message_key: 'rfc:abc' })
+    expect(review?.args[0]).toEqual([
+      expect.objectContaining({ mailbox: 'matt@ryan-realty.com', gmail_id: 'g1', status: 'dismissed', stage: 'person', message_key: 'rfc:abc' }),
+    ])
+  })
+
+  it('records the person decision on every mailbox copy of the message, not only the first', async () => {
+    const { sb, calls } = makeSb({
+      tc_mail_messages: {
+        data: {
+          ...baseMessage,
+          gmail_refs: [
+            { mailbox: 'matt@ryan-realty.com', gmail_id: 'g1' },
+            { mailbox: 'rebeccapeterson@ryan-realty.com', gmail_id: 'g9' },
+          ],
+        },
+        error: null,
+      },
+      tc_checklist_assignments: EMPTY,
+      tc_envelope_documents: EMPTY,
+      tc_principal_reviews: EMPTY,
+      tc_documents: { data: { client_visible: false, is_broker_notes: false }, error: null },
+      tc_events: { data: null, error: null },
+      tc_mail_reviews: { data: null, error: null },
+    })
+    const res = await unfileMailFromDeal({ messageId: 'msg-2', fromDealId: 'deal-a', fromAddress: '1 Main St', actor: 'matt@ryan-realty.com', sb })
+    expect(res.ok).toBe(true)
+    const review = calls.find((c) => c.table === 'tc_mail_reviews' && c.method === 'upsert')
+    expect(review?.args[0]).toEqual([
+      expect.objectContaining({ mailbox: 'matt@ryan-realty.com', gmail_id: 'g1', stage: 'person', status: 'dismissed' }),
+      expect.objectContaining({ mailbox: 'rebeccapeterson@ryan-realty.com', gmail_id: 'g9', stage: 'person', status: 'dismissed' }),
+    ])
   })
 })

@@ -132,10 +132,16 @@ export async function writePersonReview(input: {
   dealId: string | null
   reason: string
 }): Promise<void> {
-  const ref = ((input.gmailRefs as Array<{ mailbox?: string; gmail_id?: string }> | null) ?? [])[0]
-  if (!ref?.mailbox || !ref.gmail_id) return
+  // One review row per mailbox copy: the same message can sit in several
+  // brokers' mailboxes (gmail_refs carries each), and every copy's ledger row
+  // must record the person's decision, not only the first.
+  const refs = ((input.gmailRefs as Array<{ mailbox?: string; gmail_id?: string }> | null) ?? []).filter(
+    (r): r is { mailbox: string; gmail_id: string } => !!r?.mailbox && !!r.gmail_id,
+  )
+  if (!refs.length) return
   const threadId = ((input.gmailThreadIds as string[] | null) ?? [])[0] ?? null
-  const row = {
+  const reviewedAt = new Date().toISOString()
+  const rows = refs.map((ref) => ({
     mailbox: ref.mailbox,
     gmail_id: ref.gmail_id,
     thread_id: threadId,
@@ -146,9 +152,9 @@ export async function writePersonReview(input: {
     reason: input.reason.slice(0, 400),
     stage: 'person' as const,
     rules_version: MAIL_RULES_VERSION,
-    reviewed_at: new Date().toISOString(),
-  }
-  const { error } = await input.sb.from('tc_mail_reviews').upsert(row, { onConflict: 'mailbox,gmail_id' })
+    reviewed_at: reviewedAt,
+  }))
+  const { error } = await input.sb.from('tc_mail_reviews').upsert(rows, { onConflict: 'mailbox,gmail_id' })
   if (error && !/does not exist|schema cache/i.test(error.message)) {
     console.warn('[mail-refile] review write failed (fail-open)', error.message)
   }
