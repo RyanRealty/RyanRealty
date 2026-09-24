@@ -191,6 +191,9 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     label: 'Days on market',
     category: 'listing_meta',
     kind: 'range',
+    // Filtered as "listed in the last N days" on on_market_date, NOT on this
+    // column: `dom` is listings."DaysOnMarket", frozen at the row's last sync
+    // (listedWithinDaysCutoff in lib/data/listings/searchPredicates.ts).
     mv: 'dom',
     unit: 'days',
     legacyParams: { max: 'daysOnMarket' },

@@ -28,7 +28,7 @@ import {
   SEARCH_STATUS_FILTER_CHIPS,
 } from '@/lib/search/publish-search-status'
 import { listingsBrowsePath } from '@/lib/slug'
-import { SEARCH_SORT_LABELS } from '@/lib/search/search-sort-order'
+import { isSoldSearchScope, searchSortLabel } from '@/lib/search/search-sort-order'
 import { cn } from '@/lib/utils'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, Location01Icon } from '@hugeicons/core-free-icons'
@@ -178,6 +178,9 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
   }, [searchParams])
   const homeTypeLabel =
     homeTypeChipLabel(props.propertyType, selectedSubTypes) ?? 'Home Type'
+  // The Sold chip (statusFilter=closed) orders the date sorts by the close
+  // date (search_listings_advanced), so the Sort select names them that way.
+  const soldScope = isSoldSearchScope(props.statusFilter)
 
   // Parsed-search confirmation chips (voice transcripts)
   const { chips: parsedChips, show: showParsedChips } = useParsedSearchConfirm()
@@ -586,14 +589,15 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           }}
         >
           <SelectTrigger className="srch-square h-8 w-[min(11rem,46vw)]" aria-label="Sort results">
-            <SelectValue placeholder={SEARCH_SORT_LABELS.newest} />
+            <SelectValue placeholder={searchSortLabel('newest', { sold: soldScope })} />
           </SelectTrigger>
           <SelectContent>
             {/* Labels from the one sort table: `newest` orders by the
-                on-market date, so it reads "Newest listed" (Matt 2026-09-23). */}
+                on-market date, so it reads "Newest listed", and on the Sold
+                scope by the close date, "Recently sold" (Matt 2026-09-23). */}
             {(['newest', 'oldest', 'price_asc', 'price_desc'] as const).map((value) => (
               <SelectItem key={value} value={value}>
-                {SEARCH_SORT_LABELS[value]}
+                {searchSortLabel(value, { sold: soldScope })}
               </SelectItem>
             ))}
           </SelectContent>

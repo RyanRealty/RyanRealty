@@ -84,7 +84,9 @@ function domFromPreset(daysOnMarket: string | undefined): number | undefined {
   // Any positive day count is a valid ceiling, not just the three UI preset
   // stops — a hand-edited or externally shared ?daysOnMarket=14 used to
   // silently no-op while the chip showed the filter as applied (W-URL audit
-  // 2026-07-30). Cap at 365: dom beyond a year is no longer "new on market".
+  // 2026-07-30). Cap at 365: listed over a year ago is no longer "new on
+  // market". Every path reads it as the on-market date within N days (newly
+  // LISTED, Matt 2026-09-23), never the stale `dom` column.
   if (!daysOnMarket) return undefined
   const n = Number(daysOnMarket)
   if (!Number.isFinite(n) || n <= 0) return undefined
@@ -305,6 +307,8 @@ export async function getViewportSearch(
       bounds: shapeSet ? getShapeSetBounds(shapeSet) ?? bounds : bounds,
       polygon: legacyPoly,
       statusFilter: 'closed',
+      // On this scope `newest` is most recently SOLD (close date) and `oldest`
+      // its mirror: getViewportListings reads searchTileSort with sold = true.
       sort:
         filters.sort === 'price_asc' || filters.sort === 'priceAsc' ? 'price_asc'
         : filters.sort === 'price_desc' || filters.sort === 'priceDesc' ? 'price_desc'

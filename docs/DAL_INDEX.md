@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-23T21:20:32.417Z
+**Generated:** 2026-09-24T02:29:10.170Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -3168,7 +3168,7 @@ Companion files:
 
 ### `lib/data/listings/searchPredicates.ts`
 
-**Exports:** `arrayLiteral`, `ilikeExact`, `orLiteral`, `tokenScalarOrExpr`, `BOOLEAN_PREDICATES`, `BOOLEAN_FILTER_KEYS`, `MULTI_FIELD_DEFS`, `LEGACY_PROPERTY_SUB_TYPE_MAP`, `resolveLegacyPropertySubType`, `TEXT_FIELD_COLUMNS`, `RANGE_FIELD_COLUMNS`
+**Exports:** `arrayLiteral`, `ilikeExact`, `orLiteral`, `tokenScalarOrExpr`, `BOOLEAN_PREDICATES`, `BOOLEAN_FILTER_KEYS`, `MULTI_FIELD_DEFS`, `LEGACY_PROPERTY_SUB_TYPE_MAP`, `resolveLegacyPropertySubType`, `TEXT_FIELD_COLUMNS`, `RANGE_FIELD_COLUMNS`, `listedWithinDaysCutoff`
 
 ---
 

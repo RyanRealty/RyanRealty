@@ -16,6 +16,7 @@
  * ask range across it.
  */
 import { formatCount } from '@/lib/format/count'
+import { resolveSearchSortKey } from '@/lib/search/search-sort-order'
 
 /**
  * Sort value (SearchFilters SORT_OPTIONS) -> the order the held rows follow.
@@ -34,8 +35,20 @@ export const SORT_ORDER_PHRASES: Readonly<Record<string, string>> = {
   year_oldest: 'oldest built first',
 }
 
-export function sortOrderPhrase(sort: string | null | undefined): string {
-  const key = sort?.trim() || 'newest'
+/**
+ * The Sold scope's date sorts order by the close date (search-sort-order.ts
+ * searchSortLabel: "Recently sold" / "Oldest sold"), so the line says so.
+ */
+export const SOLD_SORT_ORDER_PHRASES: Readonly<Record<'newest' | 'oldest', string>> = {
+  newest: 'most recently sold first',
+  oldest: 'oldest sold first',
+}
+
+export function sortOrderPhrase(sort: string | null | undefined, scope: { sold?: boolean } = {}): string {
+  // Resolved the way the sort control names it (legacy spellings, unknown ->
+  // newest), so the claim and the control never name two orders.
+  const key = resolveSearchSortKey(sort)
+  if (scope.sold && (key === 'newest' || key === 'oldest')) return SOLD_SORT_ORDER_PHRASES[key]
   return SORT_ORDER_PHRASES[key] ?? SORT_ORDER_PHRASES.newest
 }
 
@@ -66,6 +79,8 @@ export function publishSplitClaim(input: {
   /** The DAL's exact count for the frame and filters. */
   totalCount: number
   sort: string | null | undefined
+  /** True on the Sold scope, where the date sorts follow the close date. */
+  sold?: boolean
   /** 'Central Oregon' for the regional frame; null for a map frame. */
   frameLabel: string | null
   /** False while the map has not mounted (phones open on the list). */
@@ -86,7 +101,7 @@ export function publishSplitClaim(input: {
   const where = input.frameLabel ? ` in ${input.frameLabel}` : ' on this map'
   const range =
     !truncated && input.low != null && input.high != null ? { low: input.low, high: input.high } : null
-  const order = truncated ? sortOrderPhrase(input.sort) : null
+  const order = truncated ? sortOrderPhrase(input.sort, { sold: input.sold }) : null
   const note = truncated
     ? `first ${formatCount(visible)} ${input.mapMounted ? 'on the map' : 'listed'}`
     : null

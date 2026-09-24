@@ -15,8 +15,19 @@
  * listing_key ascending, so two homes listed in the same second (a builder
  * listing a run of lots) keep one order from page to page.
  *
+ * THE SOLD SCOPE ORDERS BY THE CLOSE DATE (Matt 2026-09-23). On a sold view
+ * the useful default is the most recently SOLD home, not the most recently
+ * listed one, so on that scope `newest` orders by the close date, newest
+ * first ("Recently sold"), and `oldest` is its mirror ("Oldest sold"). Price
+ * sorts are the same on every scope. The Sold scope is served by the tile MV
+ * (split view and map pins: searchTileSort below) and by the
+ * search_listings_advanced RPC (the list view, whose base CTE picks
+ * listings."CloseDate" when p_status_filter = 'closed'); listing_search_mv
+ * and the drawn-shape reads carry on-market rows only and never see it.
+ *
  * Pure: imported by the DAL (lib/data/listings/searchListingsAll.ts,
- * searchShapes.ts) and by client components (the sort labels).
+ * searchShapes.ts), the server actions (app/actions/listings.ts) and by
+ * client components (the sort labels).
  */
 
 export const SEARCH_SORT_KEYS = [
@@ -63,8 +74,75 @@ export const SEARCH_SORT_LABELS: Readonly<Record<SearchSortKey, string>> = {
   year_oldest: 'Oldest built',
 }
 
+/**
+ * The names the Sold scope gives the two date sorts: they order by the close
+ * date there. Every other key keeps its SEARCH_SORT_LABELS name.
+ */
+export const SOLD_SEARCH_SORT_LABELS: Readonly<Record<'newest' | 'oldest', string>> = {
+  newest: 'Recently sold',
+  oldest: 'Oldest sold',
+}
+
 export function isSearchSortKey(value: unknown): value is SearchSortKey {
   return typeof value === 'string' && (SEARCH_SORT_KEYS as readonly string[]).includes(value)
+}
+
+/**
+ * True when a search's status names the Sold scope. Each surface spells it the
+ * way its data path decides it: `status=Sold` on /homes-for-sale (split, list,
+ * map views; app/actions/search.ts), `statusFilter=closed` on the browse bar
+ * and the RPC (search_listings_advanced p_status_filter).
+ */
+export function isSoldSearchScope(status: string | null | undefined): boolean {
+  const value = status?.trim()
+  return value === 'Sold' || value === 'closed'
+}
+
+/**
+ * A raw sort param as the key the data paths read: the two legacy spellings
+ * map the way app/actions/search.ts toDalSort maps them, and anything unknown
+ * is `newest`, because every path falls back to it.
+ */
+export function resolveSearchSortKey(raw: string | null | undefined): SearchSortKey {
+  const value = raw?.trim()
+  if (value === 'priceAsc') return 'price_asc'
+  if (value === 'priceDesc') return 'price_desc'
+  return isSearchSortKey(value) ? value : 'newest'
+}
+
+/**
+ * The name of a sort on a scope: "Recently sold" / "Oldest sold" for the date
+ * sorts on the Sold scope, the SEARCH_SORT_LABELS name everywhere else. Every
+ * place a search names its order reads this, so the words match the order.
+ */
+export function searchSortLabel(sort: string | null | undefined, scope: { sold?: boolean } = {}): string {
+  const key = resolveSearchSortKey(sort)
+  if (scope.sold && (key === 'newest' || key === 'oldest')) return SOLD_SEARCH_SORT_LABELS[key]
+  return SEARCH_SORT_LABELS[key]
+}
+
+/** The getListingTiles (listing_tile_mv) sort keys a search asks for. */
+export type SearchTileSort =
+  | 'listed-newest'
+  | 'listed-oldest'
+  | 'close-newest'
+  | 'close-oldest'
+  | 'price-asc'
+  | 'price-desc'
+
+/**
+ * The listing_tile_mv sort for a search sort on a scope. `newest` / `oldest`
+ * order by the on-market date ('listed-*'), or by the close date on the Sold
+ * scope ('close-*'); both sink nulls and break ties on listing_key. The tile
+ * read cannot order by price per sq ft or year built, so those fall back to
+ * the scope's `newest`, as the tile paths always have.
+ */
+export function searchTileSort(sort: string | null | undefined, scope: { sold?: boolean } = {}): SearchTileSort {
+  const key = resolveSearchSortKey(sort)
+  if (key === 'price_asc') return 'price-asc'
+  if (key === 'price_desc') return 'price-desc'
+  if (key === 'oldest') return scope.sold ? 'close-oldest' : 'listed-oldest'
+  return scope.sold ? 'close-newest' : 'listed-newest'
 }
 
 type OrderableQuery = {
