@@ -287,7 +287,7 @@ async function main() {
     `people ${signals.crm.people} (Lead ${signals.crm.byStage['Lead'] ?? 0}, +${signals.crm.createdLast7d} in 7d) · GCI verified $${(signals.commissions.gciByStatus['settlement_verified'] ?? 0).toLocaleString()} · brain measured ${signals.brain.measured}/ready ${signals.brain.byStatus['ready'] ?? 0}`,
   )
   push(
-    `delta ${deltaAgeMin == null ? 'UNKNOWN' : `${deltaAgeMin} min ago`} · pulse ${signals.pulse.rows} rows ${Object.keys(signals.pulse.byMethodology).join(',')} · alerts ${signals.search.listingAlertsActive} active · identity ${signals.identity.identityMappedToCrm}/${signals.identity.identityMap} stitched`,
+    `delta ${deltaAgeMin == null ? 'UNKNOWN' : `${deltaAgeMin} min ago`} · pulse ${signals.pulse.rows} rows ${Object.keys(signals.pulse.byMethodology).join(',')} · saved-search alerts ${signals.search.listingAlertsActive} active · identity ${signals.identity.identityMappedToCrm}/${signals.identity.identityMap} stitched`,
   )
   push(
     `stranded ledger windows: ${signals.ledger.expiredUnlearned}${strandedDomains.length ? ` (${strandedDomains.map((d) => `${d}:${signals.ledger.expiredByDomain[d]}`).join(', ')}) — these domains are FROZEN until Learn closes them` : ''}`,

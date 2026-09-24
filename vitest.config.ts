@@ -63,6 +63,9 @@ export default defineConfig({
         test: {
           name: 'unit',
           include: UNIT_INCLUDE,
+          // Blank production credentials so no unit test can write to the live
+          // database or message a person (test/unit-no-live-services.ts).
+          setupFiles: ['./test/unit-no-live-services.ts'],
           // lib/**/*.test.ts also matches lib/**/*.int.test.ts.
           exclude: ['**/node_modules/**', '**/dist/**', ...INT_INCLUDE, ...GATE_INCLUDE],
           sequence: { groupOrder: 0 },
