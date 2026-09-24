@@ -483,13 +483,12 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
   verified by reading the relevant code. Every fix must be tested before it's reported done.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
-- **Ship on `main`.** Default checkout is `main`. Worktrees OK for parallel/experiment work —
-  merge or hand off in `CROSS_AGENT_HANDOFF.md` before stop (anti-strand). See
-  [`AGENTS.md`](AGENTS.md) Worktrees + Cost-aware push. **R-221:** do not poll GitHub Actions.
-- **Never ask Matt to run anything manually.** All git operations, terminal commands, and
-  deployments are yours. Matt never touches the terminal.
-- **Proactively clear git locks.** Check for and remove a stale `.git/index.lock` before any git
-  operation. Never report a lock file as a blocker — fix it.
+- **Every ask ends live on production (Matt 2026-09-24).** Merge your own PR once CI is green,
+  confirm the deploy, apply its held migrations, leave no branch, worktree or loose end. Worktrees
+  only for parallel work; merge or hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
+  [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
+- **Never ask Matt to run anything.** Git, terminal and deploys are yours.
+- **Clear a stale `.git/index.lock` yourself;** never report a lock as a blocker.
 - **No blocked builds or commits.** If something is in the way, fix it. Exhaust every option
   before reporting an issue.
 - **No half measures. Research how pros do it first, nail it the first time.** Before
