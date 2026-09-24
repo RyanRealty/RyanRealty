@@ -252,8 +252,23 @@ describe('about playbook: copy rules', () => {
     )
   })
 
+  // "multi-family" and "single-family" name a PROPERTY type (the investment
+  // service sells multi-family buildings), not a household, so the familial
+  // status arm skips those two compounds. Every other "family" still fails.
+  const PROTECTED_CLASS =
+    /(?<!\b(?:multi|single)-)\bfamil(y|ies)\b|retire(e|es|d)\b|young professionals|empty nesters|singles|couples|seniors|christian|church/i
+
   it('names clients by need, never by a protected class', () => {
-    expect(copy).not.toMatch(/\bfamil(y|ies)\b|retire(e|es|d)\b|young professionals|empty nesters|singles|couples|seniors|christian|church/i)
+    expect(copy).not.toMatch(PROTECTED_CLASS)
+  })
+
+  it('the protected-class check tells a property type from a household', () => {
+    for (const household of ['Great for families.', 'a family moving to Bend', 'Family-friendly streets', 'for retirees']) {
+      expect(household, household).toMatch(PROTECTED_CLASS)
+    }
+    for (const property of ['multi-family, rental, and land property', 'detached single-family homes']) {
+      expect(property, property).not.toMatch(PROTECTED_CLASS)
+    }
   })
 
   it('carries no em dash and no " -- " stand-in', () => {

@@ -73,6 +73,29 @@
     "V3Quiet #edges -- keep looking",
     "V3Footer"
   ],
+  "openDefects": {
+    "_": "Opened 2026-09-24 when the class was registered (taste-classes.json, taste-catalog.json, a taste-table row) and its content floor seeded. Measured, not suspected.",
+    "items": [
+      {
+        "route": "/commercial-space-for-lease",
+        "section": "tasteReview",
+        "severity": "process",
+        "finding": "tasteReview below is still the 2026-09-23 mark (66: 60 · 66 · 72) on shots taken before 49cd5082e (each town's rate line covers every lease it counts) and 5d7ee4d83 (the dial's thumbnail rail moved to the left). Re-scored 2026-09-24 on the same instrument (claude-sonnet-5 through the claude CLI via scripts/taste-evaluate.ts --evaluator claude --builder claude-opus-5-5, rubric v1-2026-09-12, fresh 1440 and 375 shots from agent/lease-floor's dev server): 54 (50 · 54 · 59) with the turned state framed on the Redmond dial, then 59 (59 · 63 · 55) on the prior mark's own capture spec. Both fall 3 or more under 66 on the same evaluatorModel, rubricVersion and committed shotsHash, which ci:taste-canon refuses as a regression (and refuses as 'rebaselined', the instrument being the same), so the receipt and its shots were left as committed. The judges named the Jax floater over the Bend count at 375 and the ledger's lack of a hover or tap reveal; the first is already in the 2026-09-23 mobile375 shot. The class's taste-table row (a separate first-viewport capture) is 51 (46 · 51 · 53), demoMatch false."
+      },
+      {
+        "route": "/commercial-space-for-lease",
+        "section": "#towns at 375 (V3DogFloater)",
+        "severity": "craft",
+        "finding": "The fixed Jax button (top 50%, right 1rem) covers the Bend row's '13 for lease' in the first 375px viewport, so the figure reads '13 f'. Present in the 2026-09-23 and 2026-09-24 mobile375 shots; named by both 2026-09-24 route judges and by the table row. It is the site chrome, not this page's markup."
+      },
+      {
+        "route": "/commercial-space-for-lease",
+        "section": "#lease-redmond, 423 6th Street lead photograph",
+        "severity": "craft",
+        "finding": "The listing's first MLS photograph is a Google Street View frame with a red outline drawn on the storefront and a '2025 Google' mark at its foot. It shows when the Redmond dial turns to 02 / 12; the 2026-09-24 judge that saw it framed scored the page 54 and named it first."
+      }
+    ]
+  },
   "tasteReview": {
     "evaluatedAt": "2026-09-23",
     "rubricVersion": "v1-2026-09-12",
@@ -168,5 +191,59 @@
     "dullest": "The top-of-page town ledger — six rows of a rent range plus a flat gray bar and a count — is a bar chart wearing a hairline-list skin; it's correct and legible but it's the least distinctive thing on the page next to the photographic dial below it.",
     "verdict": "This is a real working instance of both named primitives — the ledger's bars encode actual per-town lease counts and price bands, and the turned-state capture proves the dial's photo, price, address, and thumbnail selection all advance together on one press, so demoMatch is true, not a cream box. What holds it back from breathtaking is repetition: the six town sections share one identical dial shape regardless of inventory depth (the stacked-section tell), and the Sisters hero photo undercuts the page's otherwise clean data presentation with a raw marketing-flyer image. It's correct, on-brand, and functional, but the originality a 'stop scrolling here' page needs isn't there yet.",
     "comparedToPrior": "first"
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-24",
+    "seededFrom": "http://127.0.0.1:3465",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 523,
+      "headings": 7,
+      "sections": 8,
+      "internalLinks": 245,
+      "images": 12,
+      "heroImageWidth": 928,
+      "heroImageNatural": 640,
+      "video": 0,
+      "jsonLd": 5,
+      "sectionDepth": {
+        "towns": {
+          "items": 6,
+          "words": 143
+        },
+        "lease": {
+          "items": 0,
+          "words": 337
+        },
+        "edges": {
+          "items": 1,
+          "words": 39
+        }
+      }
+    },
+    "floors": {
+      "h1": 1,
+      "words": 366,
+      "headings": 4,
+      "sections": 6,
+      "internalLinks": 171,
+      "images": 8,
+      "heroImageWidth": 108,
+      "heroImageNatural": 324,
+      "video": 0,
+      "jsonLd": 5,
+      "sectionDepth": {
+        "towns": {
+          "items": 5,
+          "words": 128
+        },
+        "lease": {
+          "items": 0,
+          "words": 303
+        }
+      }
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. Section depth (contentFloor.floors.sectionDepth) follows the same rule. Seeded 2026-09-24 by `node scripts/check-route-content-floor.mjs --seed http://127.0.0.1:3465 --classes commercial-space-for-lease` against agent/lease-floor's dev server reading the live project (36 leases: Bend 13, Redmond 12, Prineville 4, Madras 3, Sisters 3, Powell Butte 1). Every number is the tool's except the two hero floors, set by hand at seed (the tool wrote 835 and 576). This page has NO photographic hero by design: it opens on the #towns ledger as the H1. The widest image in the gate's first-1200px window is the Bend dial's lead photograph, whose top measured 1167px, 33px inside the window, so one more town row or one more two-line rate line moves it out and the header wordmark (logo-horizontal-navy-transparent.png, 120px rendered, 2271 natural) wins, the root cause of the six re-seeds in 3a151e4e5. And that lead's resolution is Spark's per-photo derivative of the sanctioned 800x600 bucket, which on this page's own 36 lead photographs measured 360 to 1140 natural (360 on three leases; the Bend lead read 640). heroImageWidth 108 = floor(120 * 0.9), the wordmark, as on oregon-city, place-type-community, cities, search and reviews. heroImageNatural 324 = floor(360 * 0.9), the smallest lead derivative this page carries today: every lead and the wordmark clear it, and the banned 320x240 ledger thumb (320 natural) still fails. The page's photographs are also held by images (12 loaded at 800px natural or wider, floor 8) and the dials by sectionDepth.lease words."
   }
 }
