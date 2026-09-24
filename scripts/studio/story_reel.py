@@ -567,6 +567,123 @@ def track_card(frames, art_path, search=None, seed=None):
     return np.stack(out)
 
 
+def track_card_keys(frames, art_path, keys, hand_zone=None, zones=None, front=None):
+    """A card the generator painted its own picture on, moving in a hand: the
+    corners are set by eye on a few key frames, a planar homography carries
+    them between keys from the texture inside the card (LK flow, RANSAC), and
+    each stretch is tracked from both of its keys and blended so it lands on
+    both. The whole picture window is covered, so the drawing never shows
+    through; on the border only card-white is covered, so the fingers holding
+    it stay in front; inside `hand_zone` (a rect in card fractions) skin stays
+    in front too (`zones`: the same per frame range, as the hand arrives).
+    `front`: polygons in frame pixels that stay in front for a frame range
+    (the strap across a card tucked in a sun visor). Light comes from the
+    white border alone. A fast frame gets motion blur along its travel.
+    Frames outside the first and last key pass through untouched."""
+    art = np.array(Image.open(art_path).convert("RGB")).astype(np.float32) / 255.0
+    ah, aw = art.shape[:2]
+    art_corners = np.array([[0, 0], [aw - 1, 0], [aw - 1, ah - 1], [0, ah - 1]], np.float32)
+    n, h, w = frames.shape[:3]
+    gray = [cv2.cvtColor(f, cv2.COLOR_RGB2GRAY) for f in frames]
+    ks = sorted(int(k) for k in keys)
+    quads = {k: np.array(keys[k] if k in keys else keys[str(k)], np.float32).reshape(4, 2) for k in ks}
+
+    def step(q, a, b):
+        mask = np.zeros((h, w), np.uint8)
+        cv2.fillConvexPoly(mask, q.astype(np.int32), 255)
+        mask = cv2.erode(mask, np.ones((5, 5), np.uint8))
+        pts = cv2.goodFeaturesToTrack(gray[a], 80, 0.01, 4, mask=mask)
+        if pts is None or len(pts) < 8:
+            return None
+        nxt, st, _ = cv2.calcOpticalFlowPyrLK(gray[a], gray[b], pts, None, winSize=(21, 21), maxLevel=3)
+        good = st.reshape(-1) == 1
+        if good.sum() < 8:
+            return None
+        H, _ = cv2.findHomography(pts[good], nxt[good], cv2.RANSAC, 3.0)
+        return None if H is None else cv2.perspectiveTransform(q.reshape(-1, 1, 2), H).reshape(4, 2)
+
+    track, path = {}, {}
+    for a, b in zip(ks, ks[1:]):
+        fwd, bwd = {a: quads[a]}, {b: quads[b]}
+        for k in range(a + 1, b + 1):
+            fwd[k] = step(fwd[k - 1], k - 1, k)
+            if fwd[k] is None:
+                fwd[k] = fwd[k - 1] + (quads[b] - fwd[k - 1]) / (b - k + 1)
+        for k in range(b - 1, a - 1, -1):
+            bwd[k] = step(bwd[k + 1], k + 1, k)
+            if bwd[k] is None:
+                bwd[k] = bwd[k + 1] + (quads[a] - bwd[k + 1]) / (k - a + 1)
+        still = np.abs(quads[a] - quads[b]).max() < 3
+        for k in range(a, b + 1):
+            t = (k - a) / (b - a)
+            lin = quads[a] * (1 - t) + quads[b] * t
+            path[k] = lin
+            q = fwd[k] * (1 - t) + bwd[k] * t
+            # A card that does not move between its keys stays put (the generator repainting it fools the flow);
+            # a tracker that wandered far from the line between keys lost the card (blur): take the line.
+            track[k] = lin if still or np.abs(q - lin).max() > 0.25 * np.ptp(lin[:, 0]) else q
+
+    inner = np.zeros((ah, aw), np.float32)
+    bx, by = int(0.03 * aw), int(0.03 * ah)
+    inner[by:ah - by, bx:aw - bx] = 1.0
+
+    def rect_mask(r):
+        m = np.zeros((ah, aw), np.float32)
+        m[int(r[1] * ah):int(r[3] * ah), int(r[0] * aw):int(r[2] * aw)] = 1.0
+        return m
+
+    zones = [(z["from"], z["to"], rect_mask(z["rect"])) for z in (zones or [])]
+    if hand_zone and not zones:
+        zones = [(0, n, rect_mask(hand_zone))]
+    out = []
+    for k in range(n):
+        f = frames[k]
+        if k not in track:
+            out.append(f)
+            continue
+        q = track[k]
+        M = cv2.getPerspectiveTransform(art_corners, q.astype(np.float32))
+        warped = cv2.warpPerspective(art, M, (w, h), flags=cv2.INTER_AREA)
+        shape = cv2.warpPerspective(np.ones((ah, aw), np.float32), M, (w, h), flags=cv2.INTER_LINEAR)
+        win = cv2.warpPerspective(inner, M, (w, h), flags=cv2.INTER_LINEAR)
+        zone = next((m for a, b, m in zones if a <= k < b), None)
+        hz = cv2.warpPerspective(zone, M, (w, h), flags=cv2.INTER_LINEAR) if zone is not None else np.zeros((h, w), np.float32)
+        hsv = cv2.cvtColor(f, cv2.COLOR_RGB2HSV).astype(np.float32)
+        white = smoothstep_np(150.0, 195.0, hsv[..., 2]) * (1.0 - smoothstep_np(35.0, 60.0, hsv[..., 1]))
+        hue = hsv[..., 0]
+        skin = (((hue < 22) | (hue > 168)) & (hsv[..., 1] > 45) & (hsv[..., 1] < 185) & (hsv[..., 2] > 70)).astype(np.float32)
+        skin = cv2.dilate(skin, np.ones((5, 5), np.uint8))
+        # The border ring is covered too, skin aside (fingers on the edge): keying it on white let the painted card's edge show as a seam.
+        cover = win * (1.0 - skin * hz) + (1.0 - win) * (1.0 - skin)
+        alpha = np.clip(shape * cover, 0, 1)
+        for fr in front or []:
+            if fr["from"] <= k < fr["to"]:
+                keep = np.zeros((h, w), np.uint8)
+                cv2.fillPoly(keep, [np.array(fr["poly"], np.int32).reshape(-1, 2)], 1)
+                alpha = alpha * (1 - keep.astype(np.float32))
+        plate = f.astype(np.float32) / 255.0
+        ring = (shape > 0.9) & (win < 0.1) & (white > 0.8)
+        ref = np.percentile(plate[ring], 90, axis=0) if ring.sum() > 30 else np.percentile(plate[shape > 0.9], 95, axis=0)
+        lit = warped * ref
+        prev = path.get(k - 1)
+        if prev is not None:
+            # Blur along the keyed path, not the tracked quad: flow jitter on a still card must not smear it.
+            d = path[k].mean(0) - prev.mean(0)
+            length = int(np.hypot(*d))
+            if length >= 4:
+                ker = np.zeros((length * 2 + 1, length * 2 + 1), np.float32)
+                c0 = np.array([length, length], np.float32)
+                u = d / np.hypot(*d)
+                cv2.line(ker, tuple((c0 - u * length / 2).astype(int)), tuple((c0 + u * length / 2).astype(int)), 1.0, 1)
+                ker /= ker.sum()
+                lit = cv2.filter2D(lit, -1, ker)
+                alpha = cv2.filter2D(alpha, -1, ker)
+        alpha = cv2.GaussianBlur(alpha, (0, 0), 0.8)[..., None]
+        o = plate * (1 - alpha) + lit * alpha
+        out.append((np.clip(o, 0, 1) * 255 + 0.5).astype(np.uint8))
+    return np.stack(out)
+
+
 def smoothstep_np(e0, e1, x):
     t = np.clip((x - e0) / (e1 - e0), 0.0, 1.0)
     return t * t * (3 - 2 * t)
@@ -1420,7 +1537,7 @@ def finish_audio(d, name, bus, total, out_video, n_frames, lufs=-14):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["panel", "sign", "sign-clip", "card", "print", "polaroid", "deal", "edl", "build"])
+    ap.add_argument("cmd", choices=["panel", "sign", "sign-clip", "card", "card-keys", "print", "polaroid", "deal", "edl", "build"])
     ap.add_argument("--role", default=None)
     ap.add_argument("--dir", required=True)
     ap.add_argument("--corners", default=None)
@@ -1445,6 +1562,9 @@ def main():
     ap.add_argument("--clean-at", default=None)
     # card: a bright card found per frame (a photograph held in a moving hand)
     ap.add_argument("--search", default=None)
+    # card-keys: the key-frame corners file, and the corner of the card his hand covers.
+    ap.add_argument("--keys", default=None)
+    ap.add_argument("--hand-zone", default=None)
     ap.add_argument("--out", default=None)
     # print: a frame from the trip as a colour snapshot.
     ap.add_argument("--src", default=None)
@@ -1493,6 +1613,24 @@ def main():
         frames, fps = read_video(clip)
         search = [int(v) for v in a.search.split(",")] if a.search else None
         out = track_card(frames, os.path.join(d, a.panel), search)
+        h, w = out.shape[1:3]
+        path = os.path.join(d, "assets", f"{a.out or a.role + '-card'}.mp4")
+        enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(fps),
+                                "-i", "-", "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p", path], stdin=subprocess.PIPE)
+        enc.stdin.write(out.tobytes())
+        enc.stdin.close()
+        enc.wait()
+        print(os.path.relpath(path, ROOT))
+    elif a.cmd == "card-keys":
+        # A card the model drew on, moving in a hand: corners by eye on key frames (--keys a JSON file,
+        # {"frame": [x,y, x,y, x,y, x,y]} top-left clockwise), tracked between them, the picture window covered.
+        manifest = load_json(os.path.join(d, "manifest.json"))
+        clip = os.path.join(d, a.clip) if a.clip else os.path.join(ROOT, manifest["shots"][a.role]["selectedClip"])
+        frames, fps = read_video(clip)
+        spec = load_json(os.path.join(d, a.keys))
+        keys = {int(k): v for k, v in spec.items() if k.isdigit()}
+        zone = [float(v) for v in a.hand_zone.split(",")] if a.hand_zone else None
+        out = track_card_keys(frames, os.path.join(d, a.panel), keys, zone, spec.get("zones"), spec.get("front"))
         h, w = out.shape[1:3]
         path = os.path.join(d, "assets", f"{a.out or a.role + '-card'}.mp4")
         enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(fps),

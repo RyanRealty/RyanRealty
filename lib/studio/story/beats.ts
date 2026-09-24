@@ -51,6 +51,10 @@ export type BeatRole =
   | 'prints'
   | 'number'
   | 'radio'
+  | 'depart'
+  | 'rearview'
+  | 'return'
+  | 'look'
 
 export type BeatDef = {
   id: string
@@ -899,6 +903,66 @@ export const BEATS: BeatDef[] = [
   // bottom, the house on a walk the next day, drinks outside the Tower with
   // the Polaroids, and the week back home. Framed for a tall 9:16 frame.
   {
+    // Matt 2026-09-24: "show them packing the car and then the city in the rearview when driving to Bend"; "make sure dog is in the packing car scene".
+    id: 'pack-wagon-city-dawn',
+    role: 'depart',
+    label: 'Home, before sunup: the wagon loaded for Bend, the Lab jumps in',
+    years: [1965, 1995],
+    yearsWhy:
+      'A wood-panelled full-size station wagon with skis on the roof rack: the family ski car from the late 1960s until minivans replaced it in the 1990s.',
+    seasons: ['spring', 'winter'],
+    elsewhere: true,
+    place:
+      'the curb in front of their stucco bungalow on a big Southern California city street just before sunrise: a small lawn, ' +
+      'tall palm trees against a pale dawn sky, the streetlights still on',
+    refs: [],
+    cast: ['A', 'B'],
+    wardrobe: 'travel',
+    companion: true,
+    framing:
+      'from across the street, 35mm, a tall frame: the station wagon at the curb with its tailgate open in the lower half, two pairs of skis ' +
+      'on the roof rack, the two of them at the tailgate in three-quarter view, the palm trees and the dawn sky above, the license plate out of frame',
+    light: 'blue dawn light, the streetlights and the dome light in the open cargo area warm',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action:
+      '{B} lifts the last suitcase into the back of the station wagon and their black Labrador with the red collar jumps in after it while {A} watches and laughs',
+    props:
+      'a brown full-size American station wagon from the late 1970s with wood-grain side panels and a roof rack, no badges or lettering on the car; ' +
+      'suitcases and a cooler in the cargo area',
+    move: 'tripod',
+    alsoReject: ['any badge, license plate, or lettering on the car', 'snow', 'pine trees'],
+  },
+  {
+    id: 'rearview-city-receding',
+    role: 'rearview',
+    label: 'Driving north: the city in the rearview mirror',
+    years: [1965, 1995],
+    seasons: ['spring', 'winter'],
+    elsewhere: true,
+    place:
+      'the freeway leaving a big Southern California city at sunrise: the downtown towers small and hazy behind them, ' +
+      'palm trees along the embankment, the open road and dry brown hills ahead',
+    refs: [],
+    cast: ['A', 'B'],
+    wardrobe: 'travel',
+    framing:
+      // Someone drives: the first takes with nobody in the seats read as a driverless car.
+      'from the middle of the back seat, 50mm, a tall frame: the two of them in the front seats seen from behind, he drives on the left side ' +
+      'of the car with the steering wheel in front of him, she sits on the right; the rearview mirror at the top of the windshield between them ' +
+      'with the city skyline small and hazy in it; through the windshield, the open freeway running ahead toward brown hills',
+    light: 'low warm sunrise light from the side, the car interior in soft shade',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action:
+      '{A} and {B} talk as he drives and the city in the rearview mirror slowly gets smaller behind them, the empty road running on ahead; ' +
+      'neither of them looks back at the camera',
+    props:
+      'the same boxy brown vinyl dashboard and wood-grain trim of the station wagon; a plain rectangular rearview mirror on a short stem',
+    move: 'dashboard',
+    alsoReject: ['a face in the mirror', 'lettering on signs or the road', 'snow', 'pine trees'],
+  },
+  {
     id: 'radio-on-insert',
     role: 'radio',
     label: 'On the way up, she turns on the car radio (the song starts here)',
@@ -910,16 +974,17 @@ export const BEATS: BeatDef[] = [
     cast: ['A'],
     wardrobe: 'travel',
     framing:
-      'from the front passenger seat, 50mm, a tall frame: her hands in grey wool mittens pulled half off reach in from the right side of the frame ' +
-      'to the round volume knob of the radio in the middle of the dashboard; the steering wheel at the far left edge of the frame; ' +
-      'the radio face and its dial soft and out of focus, the windshield and the pines blurred beyond',
+      // One hand (Matt 2026-09-24: "there should not be 2 hands on the radio").
+      'from the front passenger seat, 50mm, a tall frame: one hand only, her right hand in a grey wool mitten pulled half off, reaches in ' +
+      'from the right side of the frame to the round volume knob of the radio in the middle of the dashboard; her other hand stays out of frame; ' +
+      'the steering wheel at the far left edge of the frame; the radio face and its dial soft and out of focus, the windshield and the pines blurred beyond',
     light: 'bright morning daylight through the windshield, the dashboard in soft shade',
     exposure: 'day',
     periodCues: ['vehicles'],
-    action: '{A} turns the radio knob and the dial lights up warm, and she taps the dashboard twice to the beat',
+    action: '{A} turns the radio knob with one hand and the dial lights up warm',
     props: 'a late-1970s in-dash car radio with a round chrome volume knob and five chrome push-buttons in a brown vinyl dashboard',
     move: 'hold',
-    alsoReject: ['readable numbers or letters on the radio dial', 'a cassette or CD player'],
+    alsoReject: ['readable numbers or letters on the radio dial', 'a cassette or CD player', 'two hands at the radio'],
   },
   {
     id: 'chairlift-ride-up',
@@ -1060,11 +1125,14 @@ export const BEATS: BeatDef[] = [
     light: 'soft April afternoon sun, 5200K, the porch in gentle shade',
     exposure: 'day',
     action:
-      '{A} raises a boxy folding instant camera to her eye and takes a picture of the house while {B} stands beside her holding the leash of their black Labrador with the red collar',
-    props: 'a folding instant camera with a leather front',
+      // The lens named outright: "raises it to her eye" came back with the camera turned round at the viewer (Matt 2026-09-24).
+      '{A} holds a boxy folding instant camera up to her eye with both hands, its lens pointed at the house and the back of the camera toward us, ' +
+      'and takes a picture of the house while {B} stands beside her holding the leash of their black Labrador with the red collar; ' +
+      'the camera stays pointed at the house the whole time',
+    props: 'a folding instant camera with a leather front, seen from behind: its back and her hands toward us',
     move: 'hold',
     composite: 'yard_sign',
-    alsoReject: ['any letters, numbers, or marks on the sign panel'],
+    alsoReject: ['any letters, numbers, or marks on the sign panel', 'the camera lens pointing toward the viewer'],
   },
   {
     id: 'house-snapshot',
@@ -1191,6 +1259,95 @@ export const BEATS: BeatDef[] = [
     alsoReject: ['any picture, letters, or marks on the photograph', 'snow', 'a dog in the car', 'anyone else in the car'],
   },
   {
+    // Matt 2026-09-24: the photo rides on his sun visor; stuck in traffic he flips it down, pulls the photo from the strap, and looks at it.
+    id: 'commute-visor-polaroid',
+    role: 'commute',
+    label: 'Back home: stopped in traffic, he pulls the ski Polaroid from the sun visor',
+    years: [1972, 2100],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'a big-city freeway at a standstill under a hazy warm sky: lanes of stopped cars, an overpass ahead, palm trees along the embankment',
+    refs: [],
+    cast: ['B'],
+    wardrobe: 'work',
+    framing:
+      'from the back seat on the passenger side, 35mm, a tall frame: he sits in the driver seat on the left side of the car with the ' +
+      'steering wheel directly in front of him, seen from behind and in profile; the driver sun visor flipped down above the windshield in front of him, ' +
+      'a single instant photograph tucked behind the elastic strap on the visor, its picture facing back toward him and the camera; ' +
+      'the stopped traffic ahead through the windshield',
+    light: 'warm hazy morning sun through the windshield, 4800K',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action:
+      '{B}, stopped in traffic, reaches up to the lowered sun visor, slides the photograph out from behind its strap and holds it low over the ' +
+      'steering wheel to look at it with a small smile; he never looks toward the back seat or the camera',
+    props:
+      'the same boxy brown vinyl dashboard and wood-grain trim of the station wagon; a padded brown sun visor with an elastic strap; ' +
+      'the instant photograph has a white border and a plain blank white picture',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: ['any picture, letters, or marks on the photograph', 'snow', 'a dog in the car', 'anyone else in the car'],
+  },
+  {
+    // Matt 2026-09-24: busy at work answering calls, then she stops what she is doing to look at the photo on her desk.
+    id: 'office-busy-polaroid',
+    role: 'work_a',
+    label: 'Her office, phones going; she stops for the ski Polaroid by her lamp',
+    years: [1960, 1990],
+    yearsWhy: 'An office of the era: electric typewriters and multi-line desk telephones with lit line buttons, no computer screens.',
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'a bright, busy city office in the afternoon: phones ringing, colleagues hurrying past with folders, tall windows, potted plants',
+    refs: [],
+    cast: ['A'],
+    wardrobe: 'work',
+    framing:
+      'at desk height from her right side, 50mm, a tall frame: she is seen in profile on the left, the desk telephone receiver at her ear; ' +
+      'in the foreground on the right a single instant photograph is propped against the base of her desk lamp at an angle, ' +
+      'turned halfway between her and the camera so both she and the camera see its picture; the busy office soft beyond',
+    light: 'warm afternoon window light, 5000K, soft',
+    exposure: 'day',
+    action:
+      '{A}, busy, finishes a call and hangs up the desk telephone, then stops, and turns to the photograph propped by her lamp and looks at it ' +
+      'with a slow smile, remembering, while the office keeps moving behind her',
+    props:
+      'an electric typewriter, a multi-line desk telephone with lit buttons, a stack of pink message slips, a coffee mug, a brass desk lamp; ' +
+      'the instant photograph has a white border and a plain blank white picture',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: ['any picture, letters, or marks on the photograph', 'a computer screen', 'readable text on papers'],
+  },
+  {
+    // Matt 2026-09-24: they both get home to a busy urban neighborhood; the dog barks happily at the window.
+    id: 'arrive-home-dog-window',
+    role: 'return',
+    label: 'Home from work on a busy street, the Lab barking at the window',
+    years: [1965, 1995],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'their stucco bungalow on a busy city street at dusk: cars passing with their headlights on, neighbors on the sidewalk, ' +
+      'palm trees and telephone wires against a pink sky',
+    refs: [],
+    cast: ['A', 'B'],
+    wardrobe: 'work',
+    companion: true,
+    framing:
+      'from the sidewalk across the street, 35mm, a tall frame: the front of the bungalow with its big front window in the upper half, ' +
+      'their black Labrador up at the lit window behind the glass; the two of them coming up the front walk from the street, seen from behind ' +
+      'in three-quarter view; a passing car soft in the foreground',
+    light: 'dusk, the sky pink and fading, the front window lit warm from inside',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action:
+      'their black Labrador with the red collar barks happily and wags at the lit front window as {A} and {B} come up the front walk from the busy street',
+    props: 'the same stucco bungalow with its small lawn; the front window with the curtains open',
+    move: 'tripod',
+    alsoReject: ['lettering on cars, signs, or the house', 'snow', 'pine trees', 'a second dog'],
+  },
+  {
     id: 'office-desk-polaroid',
     role: 'work_a',
     label: 'Her office: her copy of the ski Polaroid propped by her lamp',
@@ -1242,6 +1399,59 @@ export const BEATS: BeatDef[] = [
     move: 'tripod',
     composite: 'photo_print',
     alsoReject: ['any picture, letters, or marks on the photograph'],
+  },
+  {
+    // Matt 2026-09-24: they see the house photo with the number, "look at each other like they are thinking the same thing".
+    id: 'look-same-thought',
+    role: 'look',
+    label: 'Across the kitchen table: the same thought, no words',
+    years: [1960, 1995],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place: 'the same small kitchen at night after dinner, the plates cleared, the window dark',
+    refs: [],
+    cast: ['A', 'B'],
+    wardrobe: 'work',
+    framing:
+      'from the side of the small kitchen table at table height, 50mm, a tall frame: the two of them facing each other across the corner ' +
+      'of the table, both in profile, the instant photograph lying flat on the table between them seen edge-on, two wine glasses',
+    light: 'a single warm pendant lamp over the table, 2800K, the rest of the kitchen falling off into shadow',
+    exposure: 'interior_low',
+    action:
+      '{A} and {B} lift their eyes from the photograph on the table at the same moment and look at each other; neither says a word, ' +
+      'and the same slow smile comes to both of them; neither looks at the camera',
+    props: 'a Formica kitchen table with two glasses of wine; the instant photograph lies flat with its white back and border toward the camera',
+    move: 'tripod',
+    alsoReject: ['any picture, letters, or marks on the photograph', 'either of them looking at the camera'],
+  },
+  {
+    // Matt 2026-09-24: "man on phone holding photo with his wife excitedly looking on".
+    id: 'kitchen-call-polaroid',
+    role: 'call',
+    label: 'He calls from the kitchen phone, the house in his hand; she can hardly stand still',
+    years: [1960, 1995],
+    yearsWhy: 'A wall-mounted rotary telephone with a long coiled cord: every American kitchen until push-button phones took over in the late 1980s.',
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'the same small kitchen at night: yellow linoleum floor, avocado-green appliances, a harvest-gold rotary telephone on the wall with a long coiled cord',
+    refs: [],
+    cast: ['A', 'B'],
+    wardrobe: 'work',
+    framing:
+      'from just behind his left shoulder, 35mm, a tall frame: he stands at the harvest-gold wall telephone with the receiver at his ear, ' +
+      'holding the single instant photograph in his other hand at chest height, its picture facing him and the camera; she stands close ' +
+      'at his side in three-quarter view, looking at the photograph and then at him',
+    light: 'warm kitchen light from the pendant lamp, 2800K, soft shadows',
+    exposure: 'interior_low',
+    action:
+      '{B} waits with the telephone receiver at his ear, holding the photograph, while {A} beside him bounces on her toes and grips his arm, ' +
+      'excited, looking from the photograph to him; neither looks at the camera',
+    props:
+      'a harvest-gold wall-mounted rotary telephone with a coiled cord; the instant photograph has a white border and a plain blank white picture',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: ['any picture, letters, or marks on the photograph', 'a mobile phone', 'either of them looking at the camera'],
   },
   {
     id: 'house-polaroid-closeup',

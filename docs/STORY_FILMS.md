@@ -53,6 +53,7 @@ npx tsx scripts/studio/story-film.ts phone  --piece winter-1982          # rende
 python3 scripts/studio/story_reel.py panel --dir out/story/winter-1982   # the yard sign: the stacked logo only (Matt 2026-09-23)
 python3 scripts/studio/story_reel.py sign  --dir out/story/winter-1982   # our sign art onto the blank panel
 python3 scripts/studio/story_reel.py edl   --dir out/story/winter-1982   # first edit decision list
+python3 scripts/studio/story_reel.py card-keys --dir out/story/april-1982 --role commute --keys commute-keys.json --panel assets/polaroid-ski.png   # a card the model drew on, in a moving hand: corners by eye on key frames {"frame": [x,y ×4], "zones": [...], "front": [...]}
 python3 scripts/studio/story_reel.py build --dir out/story/winter-1982   # the reel
 npx tsx scripts/studio/story-film.ts look --piece winter-1982 --era cine16_1978   # same footage, another stock (free)
 python3 scripts/studio/story_reel.py build --dir out/story/winter-1982 --lab lab-cine16_1978.json --name reel-cine16_1978

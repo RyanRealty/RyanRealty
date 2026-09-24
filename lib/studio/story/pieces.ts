@@ -174,6 +174,8 @@ export const STORY_PIECES: StoryPiece[] = [
     aspect: '9:16',
     cast: COUPLE_1982,
     beats: {
+      depart: 'pack-wagon-city-dawn',
+      rearview: 'rearview-city-receding',
       radio: 'radio-on-insert',
       hook: 'car-wave-lab',
       lift: 'chairlift-ride-up',
@@ -187,10 +189,13 @@ export const STORY_PIECES: StoryPiece[] = [
       prints: 'polaroids-on-table',
       pack: 'pack-wagon-lab-spring',
       leave: 'rear-window-lab',
-      commute: 'commute-dash-polaroid',
-      work_a: 'office-desk-polaroid',
+      commute: 'commute-visor-polaroid',
+      work_a: 'office-busy-polaroid',
+      return: 'arrive-home-dog-window',
       home: 'kitchen-table-polaroid',
       number: 'house-polaroid-closeup',
+      look: 'look-same-thought',
+      call: 'kitchen-call-polaroid',
     },
     companion: {
       ref: 'asset:c9fce792-26ab-4837-81a0-cfaf943b8c43',
@@ -199,11 +204,15 @@ export const STORY_PIECES: StoryPiece[] = [
     // A one-person shot gets only that person: the whole photograph put her in his passenger seat (2026-09-24).
     identity: {
       from: 'photo',
-      roles: ['hook', 'eat', 'pack', 'commute', 'work_a', 'home'],
+      roles: ['depart', 'rearview', 'hook', 'eat', 'pack', 'commute', 'work_a', 'return', 'home', 'look', 'call'],
       crops: { A: [0.0, 0.08, 0.56, 0.62], B: [0.44, 0.08, 1.0, 0.62] },
     },
     continuity: {
+      depart: { from: 'pack', keeps: 'the same station wagon (keep its brown paint, wood-grain side panels, and roof rack exactly; the street, light, and people are this shot\'s own)' },
+      return: { from: 'depart', keeps: 'the same stucco bungalow (keep its walls, roof, windows, and front lawn; the dusk, the traffic, and the people are this shot\'s own)' },
       snapshot: 'discover',
+      look: { from: 'home', keeps: 'the same kitchen and table (keep the table, the lamp, the glasses, and the window; the camera and the moment are this shot\'s own)' },
+      call: { from: 'home', keeps: 'the same kitchen (keep the harvest-gold wall telephone, the appliances, the floor, and the lamp light; the camera and the moment are this shot\'s own)' },
       number: { from: 'home', keeps: 'the same kitchen table a moment earlier (keep the tabletop, the lamp light, and the glass the same)' },
     },
     payoff: { kind: 'none' },

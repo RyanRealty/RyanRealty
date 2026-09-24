@@ -114,10 +114,13 @@ export const HOMECOMING_ARC: ArcSlot[] = [
  * place settles; `snapshot` is a prop (the photograph she took), never cut in.
  */
 export const POLAROID_ARC: ArcSlot[] = [
+  // Matt 2026-09-24: open on packing the car at home (the dog in it), then the city in the rearview on the way to Bend.
+  { role: 'depart', seconds: 3.4, because: 'Home, before sunup: the wagon loaded, the dog jumps in. The same car brings them back.' },
+  { role: 'rearview', seconds: 3.2, because: 'The city they live in, getting smaller in the rearview mirror.' },
   {
     role: 'radio',
     seconds: 2.0,
-    because: 'She turns on the radio: the song starts on the click (Matt 2026-09-24), so the click sits at the top of the film.',
+    because: 'She turns on the radio: the song starts on the click (Matt 2026-09-24), once the city is behind them.',
   },
   { role: 'hook', seconds: 3.2, because: 'A face and a dog, the song already playing, on the way up.' },
   { role: 'lift', seconds: 3.2, because: 'Riding up: the mountain before the view.' },
@@ -131,10 +134,15 @@ export const POLAROID_ARC: ArcSlot[] = [
   { role: 'prints', seconds: 4.4, because: 'The Polaroids land on the table one by one; the house comes last.' },
   { role: 'pack', seconds: 3.2, because: 'The next morning, the dog jumps in last.' },
   { role: 'leave', seconds: 3.2, because: 'The mountain in the rear window.' },
-  { role: 'commute', seconds: 3.8, because: 'Home: in traffic, the photograph on the dash.' },
-  { role: 'work_a', seconds: 3.8, because: 'Her desk, her copy of the photograph by the lamp.' },
+  // Matt 2026-09-24: the photo on his sun visor in standstill traffic; her busy office; home together to the dog at the window.
+  { role: 'commute', seconds: 4.2, because: 'Home: stopped in traffic, he pulls the Polaroid from the sun visor and looks at it.' },
+  { role: 'work_a', seconds: 4.0, because: 'Her office, phones going; she stops for her copy of the photograph by the lamp.' },
+  { role: 'return', seconds: 3.6, because: 'Home together off a busy street, the dog barking at the window.' },
   { role: 'home', seconds: 3.8, because: 'The kitchen table: the house between them.' },
-  { role: 'number', seconds: 4.0, because: 'The Polaroid up close: the sign, and the number on it. He is already dialing.' },
+  { role: 'number', seconds: 4.0, because: 'The Polaroid up close: the sign, and the number on it.' },
+  // Matt 2026-09-24: they look at each other thinking the same thing; then he is on the phone, the photo in his hand, her excited.
+  { role: 'look', seconds: 3.2, because: 'They look at each other: the same thought, no words.' },
+  { role: 'call', seconds: 4.2, because: 'He makes the call with the house in his hand; she cannot stand still. The ring carries under the fade.' },
   { role: 'end', seconds: 4.0, because: 'We are here when you are ready to make the call.' },
 ]
 

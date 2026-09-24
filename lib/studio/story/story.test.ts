@@ -162,20 +162,71 @@ describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
     expect(labParamsForAspect(getEra(april.eraId)!, 'day').gate.width / labParamsForAspect(getEra(april.eraId)!, 'day').gate.height).toBeCloseTo(4 / 3, 2)
   })
 
-  it('lets each place settle: every scene holds at least 3.2s (the radio click is an insert), and the whole stays under 65s', () => {
-    // Matt 2026-09-24 asked for slower; that outranks the 60s narrative guidance by a few seconds.
+  it('lets each place settle: every scene holds at least 3.2s (the radio click is an insert), and the whole stays under 82s', () => {
+    // Matt 2026-09-24 asked for slower; that outranks the 60s narrative guidance by a few seconds. The cap went
+    // from 65s to 70s when he added the opening (packing at home, the city in the rearview): 68.4s planned. Then to 82s
+    // when he told the back half (the visor, her busy desk, the dog at the window, the look, the call): 80.0s planned.
     const p = plan()
     for (const shot of p.shots) {
       if (shot.kind !== 'prop' && shot.role !== 'radio') expect(shot.seconds, shot.role).toBeGreaterThanOrEqual(3.2)
     }
     expect(p.totalSeconds).toBeGreaterThanOrEqual(30)
-    expect(p.totalSeconds).toBeLessThanOrEqual(65)
+    expect(p.totalSeconds).toBeLessThanOrEqual(82)
   })
 
-  it('opens on the radio, so a song added in the app starts on the click', () => {
+  it('opens on leaving the city: packing the car with the dog, the city in the rearview, then the radio', () => {
+    // Matt 2026-09-24: "show them packing the car and then the city in the rearview when driving to Bend";
+    // "make sure dog is in the packing car scene".
     const p = plan()
-    expect(p.shots[0].role).toBe('radio')
-    expect(p.shots[0].seconds).toBeLessThanOrEqual(2.5)
+    expect(p.shots.slice(0, 4).map((s) => s.role)).toEqual(['depart', 'rearview', 'radio', 'hook'])
+    const depart = p.shots[0].beat!
+    expect(depart.companion).toBe(true)
+    expect(depart.action).toMatch(/Labrador/)
+    expect(depart.elsewhere).toBe(true)
+    expect(april.identity?.roles).toContain('depart')
+    expect(continuityFor(april, 'depart')?.from).toBe('pack')
+    expect(p.shots[1].beat!.framing).toMatch(/rearview mirror/)
+    expect(p.shots[2].seconds).toBeLessThanOrEqual(2.5)
+  })
+
+  it('brings them home the way Matt told it: the visor in traffic, her busy desk, the dog at the window, then the table', () => {
+    // Matt 2026-09-24: the photo tucked in his sun visor, pulled out in standstill traffic; her busy office, she stops
+    // for the photo; both home to a busy street, the dog barking happily at the window.
+    const roles = plan().shots.map((s) => s.role)
+    expect(roles.slice(roles.indexOf('commute'))).toEqual(['commute', 'work_a', 'return', 'home', 'number', 'look', 'call', 'end'])
+    // After dinner at the table (Matt: "they have already eaten dinner and are just talking"), the number, the look, the call.
+    const look = getBeat(april.beats!.look!)!
+    expect(look.action).toMatch(/look at each other/)
+    const call = getBeat(april.beats!.call!)!
+    expect(call.action).toMatch(/receiver at his ear, holding the photograph/)
+    expect(call.action).toMatch(/excited/)
+    const visor = getBeat(april.beats!.commute!)!
+    expect(visor.framing).toMatch(/sun visor/)
+    expect(visor.action).toMatch(/visor/)
+    expect(visor.action).toMatch(/never looks toward the back seat or the camera/)
+    const office = getBeat(april.beats!.work_a!)!
+    expect(office.action).toMatch(/busy/)
+    expect(office.action).toMatch(/stops/)
+    const back = getBeat(april.beats!.return!)!
+    expect(back.companion).toBe(true)
+    expect(back.action).toMatch(/barks happily/)
+    expect(back.place).toMatch(/busy city street/)
+    expect(continuityFor(april, 'return')?.from).toBe('depart')
+  })
+
+  it('points every camera someone holds at what they are photographing (Matt 2026-09-24: the camera faced the viewer)', () => {
+    for (const beat of BEATS.filter((b) => /instant camera/.test(b.action) && /behind/.test(b.framing))) {
+      expect(beat.action, beat.id).toMatch(/lens pointed at/)
+      expect(beat.alsoReject, beat.id).toContain('the camera lens pointing toward the viewer')
+    }
+    expect(getBeat(april.beats!.discover!)!.action).toMatch(/lens pointed at the house/)
+  })
+
+  it('puts one hand on the radio (Matt 2026-09-24: "there should not be 2 hands on the radio")', () => {
+    const radio = getBeat('radio-on-insert')!
+    expect(radio.framing).toMatch(/one hand only/)
+    expect(radio.action).not.toMatch(/taps|hands/)
+    expect(radio.alsoReject).toContain('two hands at the radio')
   })
 
   it('keeps one dog in every shot it is in, the drive up included, and the same couple where faces show', () => {
@@ -197,7 +248,7 @@ describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
 
   it('shows the photographs the way the person sees them, never faced out at the lens alone', () => {
     // Matt 2026-09-24: "the photos are facing outwards, so the people aren't even looking at them."
-    for (const id of ['commute-dash-polaroid', 'office-desk-polaroid', 'kitchen-table-polaroid']) {
+    for (const id of ['commute-dash-polaroid', 'commute-visor-polaroid', 'office-desk-polaroid', 'office-busy-polaroid', 'kitchen-table-polaroid']) {
       const beat = getBeat(id)!
       expect(beat.composite, id).toBe('photo_print')
       expect(beat.framing, id).toMatch(/behind|profile|back seat/)
