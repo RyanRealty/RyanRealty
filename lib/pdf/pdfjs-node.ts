@@ -107,3 +107,48 @@ export function configurePdfjsWorker(pdfjs: {
   const src = resolvePdfjsWorkerSrc()
   if (src) pdfjs.GlobalWorkerOptions.workerSrc = src
 }
+
+const FONTS_REL = join('node_modules', 'pdfjs-dist', 'standard_fonts')
+const CMAPS_REL = join('node_modules', 'pdfjs-dist', 'cmaps')
+
+function firstExistingDir(rel: string): string | null {
+  const roots = [process.cwd(), process.env.LAMBDA_TASK_ROOT].filter((r): r is string => !!r)
+  for (const root of roots) {
+    const dir = join(root, rel)
+    if (existsSync(dir)) return dir
+  }
+  try {
+    let dir = dirname(fileURLToPath(import.meta.url))
+    for (let i = 0; i < 10; i++) {
+      const candidate = join(dir, rel)
+      if (existsSync(candidate)) return candidate
+      const parent = dirname(dir)
+      if (parent === dir) break
+      dir = parent
+    }
+  } catch {
+    // import.meta.url can be a webpack virtual URL on Vercel
+  }
+  return null
+}
+
+/**
+ * Font data for RENDERING a PDF to an image in Node.
+ *
+ * Forms filled by SkySlope, DocuSign and dotloop draw the typed values (names,
+ * dates, prices, the Sale Agreement #) in the non-embedded standard fonts
+ * (Courier, Helvetica). Without `standardFontDataUrl` pdfjs cannot draw those
+ * glyphs on a Node canvas and silently leaves every typed value blank, while
+ * the text layer still carries them. Found 2026-09-23: page renders of a
+ * signed OREF 001 showed empty Print / Date / agent fields. Callers that only
+ * extract text do not need this; renderers do. On Vercel the two directories
+ * must be traced into the route (next.config outputFileTracingIncludes).
+ */
+export function pdfjsFontOptions(): { standardFontDataUrl?: string; cMapUrl?: string; cMapPacked?: boolean } {
+  const fonts = firstExistingDir(FONTS_REL)
+  const cmaps = firstExistingDir(CMAPS_REL)
+  return {
+    ...(fonts ? { standardFontDataUrl: `${fonts}/` } : {}),
+    ...(cmaps ? { cMapUrl: `${cmaps}/`, cMapPacked: true } : {}),
+  }
+}

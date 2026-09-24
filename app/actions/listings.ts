@@ -23,6 +23,7 @@ import { resolveViewContainsValues, viewContainsAsViewTypes } from '@/lib/search
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
 import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ACTIVE_OR_PREDICATE_EXACT, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { searchTileSort } from '@/lib/search/search-sort-order'
 
 function getAnonSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -556,9 +557,12 @@ export type AdvancedListingsFilters = Omit<ListingsFilters, 'sort'> & SearchFeat
   offMarketWithinDays?: number
   /** Off-market rows only: drop addresses that later recorded a Closed sale. */
   excludeSoldSince?: boolean
-  /** Listed in last N days */
+  /** Listed in the last N days: on-market date within N days (newly LISTED, Matt 2026-09-23). */
   newListingsDays?: number
-  /** Days-on-market ceiling (dom <= X) — the registry dom range's legacy URL param. */
+  /**
+   * The registry dom range's legacy URL param, "listed within X days". Read as
+   * the on-market date within X days, not the stale `dom` column (DAL domMax).
+   */
   daysOnMarket?: number
   sort?: AdvancedSort
 }
@@ -1016,8 +1020,9 @@ function advancedToSearchAllFilter(
       options.lotAcresMax != null && options.lotAcresMax > 0 ? options.lotAcresMax : undefined,
     garageMin: options.garageMin != null && options.garageMin > 0 ? options.garageMin : undefined,
     domMax: (() => {
-      // Both mean a dom ceiling: newListingsDays ("listed in last N days")
-      // and the registry dom range's daysOnMarket. Tightest wins.
+      // Both mean "listed in the last N days": newListingsDays and the
+      // registry dom range's daysOnMarket. Tightest wins. The DAL reads domMax
+      // as on_market_date within N days (newly LISTED, Matt 2026-09-23).
       const ceilings = [options.newListingsDays, options.daysOnMarket].filter(
         (v): v is number => v != null && v > 0
       )
@@ -1383,7 +1388,7 @@ export type GetListingsForMapOptions = {
   lotAcresMin?: number
   lotAcresMax?: number
   garageMin?: number
-  /** Days-on-market ceiling (dom <= X) — "listed within X days". */
+  /** "Listed within X days": the on-market date within X days (DAL domMax). */
   daysOnMarket?: number
   hasPool?: boolean
   /** Free-text query matched against address + locality (street/city/subdivision/zip). */
@@ -1448,9 +1453,10 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
     subdivision: canonicalSubdivision || undefined,
     status: dalStatus,
     ...advancedTileFilters(options),
-    // Newest listed first, the search default (Matt 2026-09-23): which homes
-    // make the pin cap is decided by list date, not by the last MLS edit.
-    sort: 'listed-newest',
+    // The search default decides which homes make the pin cap, never the last
+    // MLS edit (Matt 2026-09-23): newest listed first, or most recently sold
+    // first on the Sold scope.
+    sort: searchTileSort('newest', { sold: dalStatus === 'closed' }),
     limit: Math.min(mapLimit, 5000),
   })
   return tiles.map((t) => ({
@@ -1510,15 +1516,10 @@ export async function getViewportListings(
             ? 'closed'
             : 'active'
   // Search's `newest` is newest LISTED (Matt 2026-09-23): the tile DAL's
-  // 'listed-newest' (on_market_date), not its modified_at 'newest'.
-  const dalSort: 'listed-newest' | 'listed-oldest' | 'price-asc' | 'price-desc' =
-    options.sort === 'price_asc'
-      ? 'price-asc'
-      : options.sort === 'price_desc'
-        ? 'price-desc'
-        : options.sort === 'oldest'
-          ? 'listed-oldest'
-          : 'listed-newest'
+  // 'listed-newest' (on_market_date), not its modified_at 'newest'. On the
+  // Sold scope (the split view's Sold read) it is most recently SOLD:
+  // 'close-newest' (close_date), and `oldest` is 'close-oldest'.
+  const dalSort = searchTileSort(options.sort, { sold: dalStatus === 'closed' })
   const canonicalSubdivision = options.subdivision?.trim()
     ? getSubdivisionMatchNames(options.subdivision.trim())[0] ?? null
     : null

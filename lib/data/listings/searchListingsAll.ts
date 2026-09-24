@@ -35,6 +35,7 @@ import {
   MULTI_FIELD_DEFS,
   TEXT_FIELD_COLUMNS,
   RANGE_FIELD_COLUMNS,
+  listedWithinDaysCutoff,
 } from '@/lib/data/listings/searchPredicates'
 import {
   ShapesSchema,
@@ -459,6 +460,13 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
   for (const [key, col] of Object.entries(RANGE_FIELD_COLUMNS)) {
     const min = record[`${key}Min`]
     const max = record[`${key}Max`]
+    if (key === 'dom') {
+      // "New in the last N days" = newly LISTED: on_market_date within N days.
+      // The `dom` column is a stale MLS snapshot (listedWithinDaysCutoff). The
+      // field is one-sided (domMax only; no domMin key in the schema).
+      if (typeof max === 'number' && max > 0) query = query.gte('on_market_date', listedWithinDaysCutoff(max))
+      continue
+    }
     if (typeof min === 'number' && min > 0) query = query.gte(col, min)
     if (typeof max === 'number' && max > 0) query = query.lte(col, max)
   }

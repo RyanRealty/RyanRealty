@@ -251,6 +251,7 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
           price: o.price,
           earnest_money: o.earnestMoney,
           status: 'received',
+          source: 'mailbox_harvest',
         })
       }
     }

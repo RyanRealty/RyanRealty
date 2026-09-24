@@ -23,6 +23,7 @@ import { composeOutboundHtml, prepareOutboundEmailBody, type EmailBodyFormat } f
 import { classifyInboundReply } from '@/lib/crm/reply-intent'
 import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildEmailIntentNote, emailIntentDedupeKey } from '@/lib/crm/email-intent-note'
+import { INDEX_METADATA_HEADERS } from '@/lib/tc/gmail-message'
 
 // System/notification senders that must never create timeline entries — leftover
 // vendor mail is platform noise, not a communication from a contact.
@@ -54,8 +55,14 @@ export function getGmailFor(subject: string, scopes: string[]): gmail_v1.Gmail |
     scopes,
     subject,
   })
-  return google.gmail({ version: 'v1', auth: jwt })
+  // Every Gmail call gets a deadline and a retry. Without one, a single stalled
+  // request (seen 2026-09-23: a DNS failure mid-walk) hung the mail backfill
+  // for good; in a cron it would burn the whole run.
+  return google.gmail({ version: 'v1', auth: jwt, timeout: GMAIL_TIMEOUT_MS, retry: true })
 }
+
+/** Per-request deadline for Gmail API calls. An attachment of 20 MB arrives well inside it. */
+export const GMAIL_TIMEOUT_MS = 90_000
 
 const READONLY = ['https://www.googleapis.com/auth/gmail.readonly']
 const SEND = ['https://www.googleapis.com/auth/gmail.send']
@@ -95,51 +102,6 @@ function headerOf(msg: gmail_v1.Schema$Message, name: string): string | undefine
   return msg.payload?.headers?.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? undefined
 }
 
-function listGmailPdfParts(payload: gmail_v1.Schema$MessagePart | undefined): Array<{ filename: string; attachmentId: string }> {
-  const out: Array<{ filename: string; attachmentId: string }> = []
-  const walk = (p?: gmail_v1.Schema$MessagePart) => {
-    if (!p) return
-    const name = p.filename || ''
-    const mime = (p.mimeType || '').toLowerCase()
-    const id = p.body?.attachmentId
-    if (id && (mime.includes('pdf') || name.toLowerCase().endsWith('.pdf'))) {
-      out.push({ filename: name || 'attachment.pdf', attachmentId: id })
-    }
-    for (const child of p.parts ?? []) walk(child)
-  }
-  walk(payload)
-  return out.slice(0, 3)
-}
-
-async function fetchGmailPdfAttachments(
-  gmail: gmail_v1.Gmail,
-  messageId: string,
-  messageKey: string,
-  payload: gmail_v1.Schema$MessagePart | undefined,
-): Promise<{
-  filenames: string[]
-  attachments: Array<{ sourceDocId: string; name: string; bytes: Buffer; contentType: string }>
-}> {
-  const refs = listGmailPdfParts(payload)
-  const attachments: Array<{ sourceDocId: string; name: string; bytes: Buffer; contentType: string }> = []
-  for (const ref of refs) {
-    const att = await gmail.users.messages.attachments.get({
-      userId: 'me',
-      messageId,
-      id: ref.attachmentId,
-    })
-    const data = att.data.data
-    if (!data) continue
-    attachments.push({
-      sourceDocId: `gmail:${messageKey}:${ref.attachmentId}`.slice(0, 180),
-      name: ref.filename,
-      bytes: Buffer.from(data, 'base64url'),
-      contentType: 'application/pdf',
-    })
-  }
-  return { filenames: refs.map((r) => r.filename), attachments }
-}
-
 function extractBody(payload: gmail_v1.Schema$MessagePart | undefined): string {
   if (!payload) return ''
   const parts: string[] = []
@@ -166,6 +128,8 @@ export type MailboxSyncResult = {
   pagesUsed: number
   done: boolean
   cursorAdvancedTo: string | null
+  /** Vault mail index outcomes for this window (lib/tc/mail-index.ts). */
+  vault?: { filed: number; queued: number; errors: number }
   error?: string
 }
 
@@ -256,6 +220,8 @@ export async function syncMailboxWindow(params: {
   brokerSlug: CrmBrokerSlug
   pageBudget?: number
   emailMap?: Map<string, number>
+  /** Deals the Vault mail index decides against; loaded once per run when omitted. */
+  mailUniverse?: import('@/lib/tc/mail-index').MailUniverse
 }): Promise<MailboxSyncResult> {
   const { mailboxEmail, brokerSlug } = params
   const pageBudget = params.pageBudget ?? 5
@@ -280,6 +246,35 @@ export async function syncMailboxWindow(params: {
   let processed = 0
   let matched = 0
   let pagesUsed = 0
+  const vault = { filed: 0, queued: 0, errors: 0 }
+  let mailUniverse = params.mailUniverse ?? null
+  // Every message goes to the Vault mail index: it decides the deal from the
+  // email's content (escrow / MLS number, street address, thread) and files it,
+  // or queues it when it cannot tell. Fail-open: the CRM timeline never waits on it.
+  const indexForVault = async (meta: gmail_v1.Schema$Message) => {
+    try {
+      const { indexGmailMessage, loadMailUniverse } = await import('@/lib/tc/mail-index')
+      mailUniverse ??= await loadMailUniverse(sb)
+      const r = await indexGmailMessage({
+        gmail,
+        mailbox: mailboxEmail,
+        brokerSlug,
+        gmailId: meta.id!,
+        meta,
+        universe: mailUniverse,
+        sb,
+      })
+      if (r.status === 'filed') vault.filed++
+      else if (r.status === 'ambiguous' || r.status === 'unfiled_transaction') vault.queued++
+      else if (r.status === 'error') {
+        vault.errors++
+        console.warn('[gmail-sync] vault index', r.error)
+      }
+    } catch (err) {
+      vault.errors++
+      console.warn('[gmail-sync] vault index failed', err)
+    }
+  }
   // W5.3 — inbound emails from prospecting pipelines get a reply-intent pass
   // after the sync (same enrichment the Twilio inbound-SMS webhook does). We
   // collect (personId, messageKey, body, subject) here and classify once at the
@@ -318,7 +313,7 @@ export async function syncMailboxWindow(params: {
       for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = await Promise.all(
           ids.slice(i, i + CHUNK).map((m) =>
-            gmail.users.messages.get({ userId: 'me', id: m.id!, format: 'metadata', metadataHeaders: ['From', 'To', 'Cc', 'Subject', 'Date', 'Message-ID'] }).then((r) => r.data),
+            gmail.users.messages.get({ userId: 'me', id: m.id!, format: 'metadata', metadataHeaders: [...INDEX_METADATA_HEADERS] }).then((r) => r.data),
           ),
         )
         metas.push(...chunk)
@@ -334,34 +329,7 @@ export async function syncMailboxWindow(params: {
         for (const a of from) { const pid = emailMap.get(a); if (pid) candidates.set(pid, 'in') }
         for (const a of toCc) { const pid = emailMap.get(a); if (pid && !candidates.has(pid)) candidates.set(pid, 'out') }
         if (!candidates.size) {
-          try {
-            const fullMsg = await gmail.users.messages.get({ userId: 'me', id: meta.id!, format: 'full' })
-            const rfcId = headerOf(fullMsg.data, 'Message-ID')
-            const messageKey = rfcId
-              ? `rfc:${createHash('sha1').update(rfcId.trim()).digest('hex').slice(0, 24)}`
-              : fullMsg.data.id
-            const { filenames, attachments } = await fetchGmailPdfAttachments(
-              gmail,
-              fullMsg.data.id!,
-              String(messageKey),
-              fullMsg.data.payload,
-            )
-            const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
-            await fileCommsToVault({
-              personIds: [],
-              emails: [...from, ...toCc],
-              fromEmails: from,
-              channel: 'mail',
-              actor: `gmail:${brokerSlug}`,
-              title: headerOf(fullMsg.data, 'Subject') ?? headerOf(meta, 'Subject'),
-              body: extractBody(fullMsg.data.payload) || (fullMsg.data.snippet ?? meta.snippet ?? null),
-              filenames,
-              attachments,
-              dedupeKey: `mail:${messageKey}`,
-            })
-          } catch (err) {
-            console.warn('[gmail-sync] vault auto-file (contact/address) failed', err)
-          }
+          await indexForVault(meta)
           continue
         }
 
@@ -403,29 +371,7 @@ export async function syncMailboxWindow(params: {
             })
           }
         }
-        try {
-          const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
-          const { filenames, attachments } = await fetchGmailPdfAttachments(
-            gmail,
-            fullMsg.data.id!,
-            String(messageKey),
-            fullMsg.data.payload,
-          )
-          await fileCommsToVault({
-            personIds: [...candidates.keys()],
-            emails: [...from, ...toCc],
-            fromEmails: from,
-            channel: 'mail',
-            actor: `gmail:${brokerSlug}`,
-            title: subject,
-            body,
-            filenames,
-            attachments,
-            dedupeKey: `mail:${messageKey}`,
-          })
-        } catch (err) {
-          console.warn('[gmail-sync] vault auto-file failed', err)
-        }
+        await indexForVault(meta)
       }
       if (rows.length) {
         // Sends from the app (sequence engine, manual 1:1) already logged the
@@ -458,7 +404,7 @@ export async function syncMailboxWindow(params: {
       if (!pageToken) { done = true; break }
     }
   } catch (e) {
-    return { mailbox: mailboxEmail, processed, matched, pagesUsed, done: false, cursorAdvancedTo: null, error: e instanceof Error ? e.message : String(e) }
+    return { mailbox: mailboxEmail, processed, matched, pagesUsed, done: false, cursorAdvancedTo: null, vault, error: e instanceof Error ? e.message : String(e) }
   }
 
   // W5.3 — reply-intent pass over the inbound emails just synced. Fail-open and
@@ -530,7 +476,7 @@ export async function syncMailboxWindow(params: {
       cursor: { after_ms: afterSec * 1000, page_token: pageToken, max_internal_ms: maxInternal },
     })
   }
-  return { mailbox: mailboxEmail, processed, matched, pagesUsed, done, cursorAdvancedTo }
+  return { mailbox: mailboxEmail, processed, matched, pagesUsed, done, cursorAdvancedTo, vault }
 }
 
 // ── send ───────────────────────────────────────────────────────────────────

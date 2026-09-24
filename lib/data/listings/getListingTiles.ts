@@ -22,6 +22,7 @@ import { propertyTypeFilterToCodes } from '@/lib/property-type'
 import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
 import { TILE_MV_SELECT_COLUMNS } from '@/lib/listing-tile-projections'
 import { PUBLIC_ACTIVE_STATUSES, PUBLIC_PENDING_STATUSES, COMING_SOON_STATUS } from '@/lib/listing-status-public'
+import { listedWithinDaysCutoff } from '@/lib/data/listings/searchPredicates'
 
 // Coming Soon is excluded by policy — see lib/listing-status-public.ts.
 const ACTIVE_STATUSES: ListingStatus[] = PUBLIC_ACTIVE_STATUSES
@@ -66,7 +67,11 @@ const FilterSchema = z.object({
   lotAcresMax: z.number().nonnegative().optional(),
   /** garage_spaces >= X — minimum garage stalls. */
   garageMin: z.number().int().nonnegative().optional(),
-  /** dom <= X — listed within the last X days on market. */
+  /**
+   * Listed within the last X days: on_market_date >= now - X days (newly
+   * LISTED, Matt 2026-09-23). Not `dom <= X`: dom is listings."DaysOnMarket",
+   * frozen at the row's last sync (listedWithinDaysCutoff in searchPredicates).
+   */
   domMax: z.number().int().positive().optional(),
   /** pool_yn = true — restrict to listings with a pool. */
   hasPool: z.boolean().optional(),
@@ -135,15 +140,27 @@ const FilterSchema = z.object({
    */
   scope: z.enum(['service-area', 'all']).optional(),
   status: z.enum(['active', 'active-and-pending', 'pending-only', 'closed', 'all']).default('active'),
-  // 'close-newest' sorts by close_date DESC NULLS LAST — for recently-sold rows.
+  // 'close-newest' sorts by close_date DESC NULLS LAST, then listing_key, for
+  // recently-sold rows; 'close-oldest' is its mirror (ASC NULLS LAST). A
+  // search's Sold scope reads them: there `newest` is most recently SOLD
+  // (Matt 2026-09-23).
   // 'newest' / 'oldest' here order by modified_at (the MLS modification
   // timestamp): the feed-order surfaces and the modifiedAfter/modifiedBefore
   // adjacency reads depend on it. SEARCH does not use them: a search's
   // `newest` is newest LISTED (Matt 2026-09-23), which is 'listed-newest'
   // (on_market_date DESC NULLS LAST, then listing_key) and its mirror
-  // 'listed-oldest'. See lib/search/search-sort-order.ts.
+  // 'listed-oldest'. See lib/search/search-sort-order.ts (searchTileSort).
   sort: z
-    .enum(['newest', 'oldest', 'listed-newest', 'listed-oldest', 'price-asc', 'price-desc', 'close-newest'])
+    .enum([
+      'newest',
+      'oldest',
+      'listed-newest',
+      'listed-oldest',
+      'price-asc',
+      'price-desc',
+      'close-newest',
+      'close-oldest',
+    ])
     .default('newest'),
   limit: z.number().int().min(1).max(5000).default(60),
   offset: z.number().int().nonnegative().default(0),
@@ -334,7 +351,9 @@ function applyTileFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>):
     query = query.lte('lot_size_acres', parsed.lotAcresMax)
   }
   if (parsed.garageMin) query = query.gte('garage_spaces', parsed.garageMin)
-  if (parsed.domMax) query = query.lte('dom', parsed.domMax)
+  // "New in the last N days" = newly LISTED: on_market_date within N days, not
+  // `dom <= N` (dom is a stale MLS snapshot; see listedWithinDaysCutoff).
+  if (parsed.domMax) query = query.gte('on_market_date', listedWithinDaysCutoff(parsed.domMax))
   if (parsed.hasPool === true) query = query.eq('pool_yn', true)
   if (parsed.hasVirtualTour === true) query = query.eq('has_virtual_tour', true)
   if (parsed.missingPhoto === true) query = query.is('photo_url', null)
@@ -417,11 +436,14 @@ function compareTiles(sort: z.infer<typeof FilterSchema>['sort']) {
     'listed-oldest': { pick: (t) => onMarketMs(t), asc: true, nullsFirst: false },
     'price-asc': { pick: (t) => t.listPrice ?? null, asc: true, nullsFirst: true },
     'price-desc': { pick: (t) => t.listPrice ?? null, asc: false, nullsFirst: false },
-    'close-newest': { pick: (t) => t.closeDate ?? null, asc: false, nullsFirst: false },
+    'close-newest': { pick: (t) => closeMs(t), asc: false, nullsFirst: false },
+    'close-oldest': { pick: (t) => closeMs(t), asc: true, nullsFirst: false },
   }
   const { pick, asc, nullsFirst } = bySortKey[sort]
-  // The listed-date sorts carry the listing_key tie-break their SQL order has.
-  const tieBreak = sort === 'listed-newest' || sort === 'listed-oldest'
+  // The listed-date and close-date sorts carry the listing_key tie-break their
+  // SQL order has.
+  const tieBreak =
+    sort === 'listed-newest' || sort === 'listed-oldest' || sort === 'close-newest' || sort === 'close-oldest'
   return (a: ListingTile, b: ListingTile): number => {
     const av = pick(a)
     const bv = pick(b)
@@ -436,6 +458,12 @@ function compareTiles(sort: z.infer<typeof FilterSchema>['sort']) {
 function onMarketMs(t: ListingTile): number | null {
   if (!t.onMarketDate) return null
   const ms = Date.parse(t.onMarketDate)
+  return Number.isFinite(ms) ? ms : null
+}
+
+function closeMs(t: ListingTile): number | null {
+  if (!t.closeDate) return null
+  const ms = Date.parse(t.closeDate)
   return Number.isFinite(ms) ? ms : null
 }
 
@@ -469,8 +497,11 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
       query = query.order('list_price', { ascending: true, nullsFirst: true })
     } else if (parsed.sort === 'price-desc') {
       query = query.order('list_price', { ascending: false, nullsFirst: false })
-    } else if (parsed.sort === 'close-newest') {
-      query = query.order('close_date', { ascending: false, nullsFirst: false })
+    } else if (parsed.sort === 'close-newest' || parsed.sort === 'close-oldest') {
+      // Most recently sold (a search's Sold-scope `newest`) and its mirror.
+      query = query
+        .order('close_date', { ascending: parsed.sort === 'close-oldest', nullsFirst: false })
+        .order('listing_key', { ascending: true, nullsFirst: false })
     }
 
     if (range) query = query.range(range.from, range.to)

@@ -291,6 +291,14 @@
       "schedule": "20 16 * * *"
     },
     {
+      "path": "/api/cron/tc-mail-sweep",
+      "schedule": "35 13 * * *"
+    },
+    {
+      "path": "/api/cron/tc-document-read",
+      "schedule": "7,22,37,52 * * * *"
+    },
+    {
       "path": "/api/cron/tc-envelope-reminders",
       "schedule": "0 * * * *"
     },

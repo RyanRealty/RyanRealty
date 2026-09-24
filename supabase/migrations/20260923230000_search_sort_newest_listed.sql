@@ -1,4 +1,5 @@
--- Search sort `newest` means NEWEST LISTED (Matt 2026-09-23).
+-- Search sort `newest` means NEWEST LISTED (Matt 2026-09-23), and on the Sold
+-- scope most recently SOLD.
 --
 -- WHAT THIS FIXES. Both search RPCs ordered `newest` (the default of every
 -- search) by listings."ModificationTimestamp", the MLS edit time, so a July
@@ -14,16 +15,32 @@
 --     neighborhoodSlug browse pages, and any legacy-routed on-market search.
 --   * search_keyword_listings: the keyword-only branch of getListingsAdvanced.
 --
+-- THE SOLD SCOPE ORDERS BY THE CLOSE DATE (Matt 2026-09-23, same day). On a
+-- sold view the useful default is the most recently SOLD home, so when
+-- p_status_filter = 'closed' (/homes-for-sale?status=Sold&view=list, the
+-- browse bar's Sold chip, a Sold saved-search alert) `newest` orders by
+-- listings."CloseDate", newest first ("Recently sold"), and `oldest` is its
+-- mirror ("Oldest sold"). Every other scope, 'all' included, orders by
+-- "OnMarketDate". The app's tile paths (split view and map pins on the Sold
+-- scope) read 'close-newest' / 'close-oldest', see searchTileSort in
+-- lib/search/search-sort-order.ts. Both columns are timestamptz, so the CASE
+-- below has one type.
+--
 -- WHAT CHANGES, AND NOTHING ELSE.
 --   search_listings_advanced is byte-identical to its live definition,
 --   20260801030000_search_advanced_view_text.sql (the last migration to define
 --   it; the applied history has nothing later), except:
---     * the base CTE projects l."OnMarketDate" AS s_omd in place of
---       l."ModificationTimestamp" AS s_mts (s_mts was read only by the sort),
---     * `oldest` / `newest` order by s_omd (page CTE) and l2."OnMarketDate"
---       (final select), ASC / DESC NULLS LAST, where they read the
+--     * the base CTE projects the sort date AS s_sort_date,
+--       CASE WHEN p_status_filter = 'closed' THEN l."CloseDate"
+--       ELSE l."OnMarketDate" END, in place of l."ModificationTimestamp"
+--       AS s_mts (s_mts was read only by the sort),
+--     * `oldest` / `newest` order by s_sort_date (page CTE) and the same CASE
+--       over l2 (final select), ASC / DESC NULLS LAST, where they read the
 --       modification timestamp,
---     * the COMMENT names the sort.
+--     * p_new_listings_days ("new in the last N days") filters on
+--       l."OnMarketDate" IS NOT NULL AND >= now() - N days, where it read
+--       l."ModificationTimestamp" (same shape, same interval arithmetic),
+--     * the COMMENT names the sort and the new-listings rule.
 --   The existing final key, "ListNumber" ASC, stays the deterministic
 --   tie-break for every sort. SECURITY DEFINER, the pinned search_path, the
 --   12s statement_timeout, the three unconditional Coming Soon exclusions and
@@ -34,9 +51,16 @@
 --   l."OnMarketDate" AS s_omd in its base CTE and orders by it, DESC NULLS
 --   LAST, then "ListNumber" ASC as before.
 --
--- NOT CHANGED HERE: p_new_listings_days ("listed in the last N days") still
--- filters on "ModificationTimestamp". The on-market app path already reads it
--- as dom <= N; aligning the RPC filter is a separate change.
+-- NEW MEANS NEWLY LISTED (Matt 2026-09-23). p_new_listings_days ("listed in
+-- the last N days": the new-listings presets, ?daysOnMarket on the Sold / all
+-- / legacy-routed list, a saved alert's newListingsDays) filtered on
+-- "ModificationTimestamp", so any listing the MLS edited in the window read as
+-- new. It filters on "OnMarketDate" now. The app's MV paths changed in the
+-- same commit: they read the same filter as `dom <= N`, and `dom` is
+-- listings."DaysOnMarket" frozen at the row's last sync (2026-09-24: an Active
+-- listing on market since 2026-08-23 carried dom = 1), so they now read
+-- on_market_date >= now() - N days too (listedWithinDaysCutoff in
+-- lib/data/listings/searchPredicates.ts).
 --
 -- PLAN COST. The base CTE of search_listings_advanced materializes every
 -- matching row for count(*) OVER () and sorts it whatever the key, so swapping
@@ -44,8 +68,10 @@
 -- its GIN-matched on-market rows the same way.
 --
 -- APPLY AFTER DEPLOY. Until this runs, the two RPC paths keep the
--- modification-time order; the MV paths the site serves by default already
--- order by on_market_date.
+-- modification-time order (the Sold list view included, under a "Recently
+-- sold" label that only the applied function makes exact); the MV paths the
+-- site serves by default already order by on_market_date, and the Sold tile
+-- paths by close_date.
 
 CREATE OR REPLACE FUNCTION public.search_listings_advanced(
   p_city text DEFAULT NULL::text,
@@ -162,7 +188,9 @@ BEGIN
   WITH base AS (
     SELECT
       l."ListNumber" AS k,
-      l."OnMarketDate" AS s_omd,
+      -- The date `newest` / `oldest` order by: the close date on the Sold
+      -- scope (most recently sold first), the on-market date on every other.
+      CASE WHEN p_status_filter = 'closed' THEN l."CloseDate" ELSE l."OnMarketDate" END AS s_sort_date,
       l."ListPrice" AS s_price,
       l."TotalLivingAreaSqFt" AS s_sqft,
       l.year_built AS yb,
@@ -231,7 +259,9 @@ BEGIN
             WHERE rs.list_number = l."ListNumber"
               AND rs.public_remarks IS NOT NULL
               AND rs.public_remarks ILIKE '%' || p_keywords || '%'))
-      AND (p_new_listings_days IS NULL OR (l."ModificationTimestamp" IS NOT NULL AND l."ModificationTimestamp" >= (now() - (p_new_listings_days || ' days')::interval)))
+      -- "New in the last N days" = newly LISTED (Matt 2026-09-23): the on-market
+      -- date, not the MLS edit time, which put any edited listing in "new".
+      AND (p_new_listings_days IS NULL OR (l."OnMarketDate" IS NOT NULL AND l."OnMarketDate" >= (now() - (p_new_listings_days || ' days')::interval)))
       AND (p_year_built_min IS NULL OR (l.year_built IS NOT NULL AND l.year_built >= p_year_built_min))
       AND (p_year_built_max IS NULL OR (l.year_built IS NOT NULL AND l.year_built <= p_year_built_max))
       AND (p_lot_acres_min IS NULL OR (l.lot_size_acres IS NOT NULL AND l.lot_size_acres >= p_lot_acres_min))
@@ -264,8 +294,8 @@ BEGIN
     SELECT base.k, base.fc
     FROM base
     ORDER BY
-      CASE WHEN p_sort = 'oldest' THEN base.s_omd END ASC NULLS LAST,
-      CASE WHEN p_sort = 'newest' OR p_sort IS NULL THEN base.s_omd END DESC NULLS LAST,
+      CASE WHEN p_sort = 'oldest' THEN base.s_sort_date END ASC NULLS LAST,
+      CASE WHEN p_sort = 'newest' OR p_sort IS NULL THEN base.s_sort_date END DESC NULLS LAST,
       CASE WHEN p_sort = 'price_asc' THEN base.s_price END ASC NULLS LAST,
       CASE WHEN p_sort = 'price_desc' THEN base.s_price END DESC NULLS LAST,
       CASE WHEN p_sort = 'price_per_sqft_asc' THEN (CASE WHEN base.s_sqft IS NOT NULL AND base.s_sqft > 0 THEN base.s_price / base.s_sqft END) END ASC NULLS LAST,
@@ -292,8 +322,9 @@ BEGIN
   -- candidate row, so it cannot affect the plan the fix is about.
   WHERE lower(COALESCE(l2."StandardStatus", '')) NOT LIKE 'coming%soon%'
   ORDER BY
-    CASE WHEN p_sort = 'oldest' THEN l2."OnMarketDate" END ASC NULLS LAST,
-    CASE WHEN p_sort = 'newest' OR p_sort IS NULL THEN l2."OnMarketDate" END DESC NULLS LAST,
+    -- Same sort date as base.s_sort_date, read off the projection row.
+    CASE WHEN p_sort = 'oldest' THEN (CASE WHEN p_status_filter = 'closed' THEN l2."CloseDate" ELSE l2."OnMarketDate" END) END ASC NULLS LAST,
+    CASE WHEN p_sort = 'newest' OR p_sort IS NULL THEN (CASE WHEN p_status_filter = 'closed' THEN l2."CloseDate" ELSE l2."OnMarketDate" END) END DESC NULLS LAST,
     CASE WHEN p_sort = 'price_asc' THEN l2."ListPrice" END ASC NULLS LAST,
     CASE WHEN p_sort = 'price_desc' THEN l2."ListPrice" END DESC NULLS LAST,
     CASE WHEN p_sort = 'price_per_sqft_asc' THEN (CASE WHEN l2."TotalLivingAreaSqFt" IS NOT NULL AND l2."TotalLivingAreaSqFt" > 0 THEN l2."ListPrice" / l2."TotalLivingAreaSqFt" END) END ASC NULLS LAST,
@@ -305,7 +336,7 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.search_listings_advanced IS
-  'Advanced listing search: flat + details jsonb + amenities. Single authoritative overload. SECURITY DEFINER since 2026-08-01 so the anon role is not barred from index use by RLS + non-leakproof ILIKE; the Coming Soon exclusion that public.listings'' RLS policy provides is applied explicitly and unconditionally inside the body instead. No predicate reads listings.details any more — the six feature flags, p_keywords and p_view_contains all read trigger-maintained projections. Sort newest = newest listed ("OnMarketDate" DESC, Matt 2026-09-23), oldest its mirror, ties on "ListNumber". Used by /listings and /search via getListingsAdvanced().';
+  'Advanced listing search: flat + details jsonb + amenities. Single authoritative overload. SECURITY DEFINER since 2026-08-01 so the anon role is not barred from index use by RLS + non-leakproof ILIKE; the Coming Soon exclusion that public.listings'' RLS policy provides is applied explicitly and unconditionally inside the body instead. No predicate reads listings.details any more — the six feature flags, p_keywords and p_view_contains all read trigger-maintained projections. Sort newest = newest listed ("OnMarketDate" DESC, Matt 2026-09-23), oldest its mirror; on the Sold scope (p_status_filter = ''closed'') newest = most recently sold ("CloseDate" DESC) and oldest its mirror; nulls last, ties on "ListNumber". p_new_listings_days = newly listed ("OnMarketDate" within N days). Used by /listings and /search via getListingsAdvanced().';
 
 REVOKE ALL ON FUNCTION public.search_listings_advanced(
   text,text,text,numeric,numeric,integer,integer,numeric,numeric,numeric,numeric,

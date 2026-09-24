@@ -62,6 +62,23 @@ describe('publishSplitClaim', () => {
     expect(sortOrderPhrase('')).toBe('newest listed first')
     expect(sortOrderPhrase(undefined)).toBe('newest listed first')
     expect(sortOrderPhrase('bogus')).toBe('newest listed first')
+    // Legacy spellings name the order the data path serves.
+    expect(sortOrderPhrase('priceAsc')).toBe('lowest price first')
+  })
+
+  it('on the Sold scope the date sorts follow the close date, and the line says so', () => {
+    expect(sortOrderPhrase('newest', { sold: true })).toBe('most recently sold first')
+    expect(sortOrderPhrase(undefined, { sold: true })).toBe('most recently sold first')
+    expect(sortOrderPhrase('oldest', { sold: true })).toBe('oldest sold first')
+    expect(sortOrderPhrase('price_desc', { sold: true })).toBe('highest price first')
+    const c = publishSplitClaim({ ...base, sold: true, visibleCount: 500, rowsInHand: 500, totalCount: 91_204 })!
+    expect(`${c.figure} ${c.noun}${c.where}, ${c.order}`).toBe('91204 homes on this map, most recently sold first')
+    expect(c.source).toContain('The first 500, most recently sold first, are listed and pinned')
+    for (const text of [c.source, c.order ?? '']) expect(text).not.toMatch(/—/)
+    // For sale is unchanged.
+    expect(publishSplitClaim({ ...base, sold: false, visibleCount: 500, rowsInHand: 500, totalCount: 900 })!.order).toBe(
+      'newest listed first',
+    )
   })
 
   it('singular agrees with the figure', () => {

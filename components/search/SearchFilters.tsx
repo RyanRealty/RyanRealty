@@ -61,7 +61,7 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getSchoolDistrictOptions } from '@/lib/data/schools/getSchools'
 import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
-import { SEARCH_SORT_LABELS, isSearchSortKey } from '@/lib/search/search-sort-order'
+import { isSoldSearchScope, searchSortLabel } from '@/lib/search/search-sort-order'
 import {
   applyCommunityToggle,
   applySubdivisionToggle,
@@ -601,13 +601,14 @@ export default function SearchFilters({
             ? initialFilters.city
             : 'City, community, zip, address...'
 
-  // The order the results are in, named the way the sort table names it. The
-  // two legacy spellings map the way app/actions/search.ts toDalSort maps
-  // them; anything unknown reads as newest because the DAL falls back to it.
-  const rawSortKey = initialFilters.sort?.trim() || 'newest'
-  const sortKey =
-    rawSortKey === 'priceAsc' ? 'price_asc' : rawSortKey === 'priceDesc' ? 'price_desc' : rawSortKey
-  const activeSortLabel = isSearchSortKey(sortKey) ? SEARCH_SORT_LABELS[sortKey] : SEARCH_SORT_LABELS.newest
+  // The order the results are in, named the way the sort table names it for
+  // the scope in view (searchSortLabel: the two legacy spellings map the way
+  // app/actions/search.ts toDalSort maps them, anything unknown reads as
+  // newest because the DAL falls back to it, and the Sold scope's date sorts
+  // read "Recently sold" / "Oldest sold", Matt 2026-09-23).
+  const activeSortLabel = searchSortLabel(initialFilters.sort, {
+    sold: isSoldSearchScope(initialFilters.status),
+  })
 
   // ---------------------------------------------------------------------------
   // Render
@@ -1323,7 +1324,8 @@ export default function SearchFilters({
           >
             Sort
             {/* The list view names its order nowhere else: say it here
-                ("Newest listed" = the on-market date, Matt 2026-09-23). */}
+                ("Newest listed" = the on-market date, "Recently sold" = the
+                close date on the Sold scope, Matt 2026-09-23). */}
             <span className="map-search-mapsort__now">{activeSortLabel}</span>
           </button>
         </div>

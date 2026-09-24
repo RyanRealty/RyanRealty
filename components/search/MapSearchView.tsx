@@ -52,7 +52,7 @@ import { SearchEmpty } from '@/app/search/_v3/SearchEmpty'
 import { SearchPagerMore } from '@/app/search/_v3/SearchPager'
 import { SPLIT_CARD_PAGE } from '@/lib/search/search-opening'
 import { publishSplitClaim } from '@/lib/search/publish-split-claim'
-import { SEARCH_SORT_LABELS } from '@/lib/search/search-sort-order'
+import { isSoldSearchScope, searchSortLabel } from '@/lib/search/search-sort-order'
 import './search-ledger.css'
 
 /**
@@ -116,21 +116,25 @@ function cardPricePerSqft(l: ListingTileRow): number | null {
 
 /**
  * Sort options for the list-pane count row (G2), labeled from the one sort
- * table (lib/search/search-sort-order.ts): `newest` reads "Newest listed"
- * because it orders by the on-market date (Matt 2026-09-23).
+ * table (lib/search/search-sort-order.ts) for the scope in view: `newest`
+ * reads "Newest listed" because it orders by the on-market date, and
+ * "Recently sold" on the Sold scope, where it orders by the close date
+ * (Matt 2026-09-23).
  */
-const SORT_OPTIONS = (
-  [
-    'newest',
-    'price_asc',
-    'price_desc',
-    'oldest',
-    'price_per_sqft_asc',
-    'price_per_sqft_desc',
-    'year_newest',
-    'year_oldest',
-  ] as const
-).map((value) => ({ value, label: SEARCH_SORT_LABELS[value] }))
+const SORT_KEYS = [
+  'newest',
+  'price_asc',
+  'price_desc',
+  'oldest',
+  'price_per_sqft_asc',
+  'price_per_sqft_desc',
+  'year_newest',
+  'year_oldest',
+] as const
+
+function sortOptionsFor(sold: boolean) {
+  return SORT_KEYS.map((value) => ({ value, label: searchSortLabel(value, { sold }) }))
+}
 
 /** Compact filter crumbs for the mockup count row ("N homes · Bend · $500K+"). */
 function buildFiltersSummary(f: SearchFiltersInitial): string {
@@ -511,7 +515,10 @@ export default function MapSearchView({
   // it renders truly empty in SSR HTML, which a crawler sees as a blank
   // control. Pass the label as SelectValue's children so the served markup
   // always carries the current sort's text, SSR and post-hydration alike.
-  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortValue)?.label ?? SEARCH_SORT_LABELS.newest
+  // The Sold scope names its date sorts by the close date they order by.
+  const soldScope = isSoldSearchScope(filters.status)
+  const sortOptions = useMemo(() => sortOptionsFor(soldScope), [soldScope])
+  const sortLabel = searchSortLabel(sortValue, { sold: soldScope })
 
   // ── Geo scope (W4.2) ──────────────────────────────────────────────────────
   // The URL can pin the search to a place (city / subdivision / zip). That pin
@@ -1134,6 +1141,7 @@ export default function MapSearchView({
         rowsInHand: listings.length,
         totalCount,
         sort: sortValue,
+        sold: soldScope,
         frameLabel: rowsAreRegion ? regionFrameLabel : null,
         mapMounted: mapWanted && !listOnly,
         low: viewClaim.low,
@@ -1141,7 +1149,7 @@ export default function MapSearchView({
         askCount: viewClaim.askCount,
         bandCount: viewClaim.band?.n ?? null,
       }),
-    [viewClaim, listings.length, totalCount, sortValue, rowsAreRegion, regionFrameLabel, mapWanted, listOnly],
+    [viewClaim, listings.length, totalCount, sortValue, soldScope, rowsAreRegion, regionFrameLabel, mapWanted, listOnly],
   )
   /**
    * The crumb row under the claim, minus whatever the claim sentence already
@@ -1423,7 +1431,7 @@ export default function MapSearchView({
           role="listbox"
           aria-label="Sort results"
         >
-          {SORT_OPTIONS.map((o) => (
+          {sortOptions.map((o) => (
             <li key={o.value}>
               <button
                 type="button"

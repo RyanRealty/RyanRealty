@@ -1328,7 +1328,24 @@ describe('search polish (Matt 2026-09-23): no sideways scroll, the order named, 
   it("the dock's Sort says which order the results are in", () => {
     expect(filters).toMatch(/aria-label=\{`Sort results, now \$\{activeSortLabel\}`\}/)
     expect(filters).toMatch(/<span className="map-search-mapsort__now">\{activeSortLabel\}<\/span>/)
-    expect(view).toMatch(/label: SEARCH_SORT_LABELS\[value\]/)
+    expect(view).toMatch(/label: searchSortLabel\(value, \{ sold \}\)/)
+  })
+
+  it('every place the sort is named reads the scope: "Recently sold" on Sold, "Newest listed" for sale', () => {
+    // The dock's Sort (list view), the split view's sort menu + button + claim
+    // line, and the browse bar's select all name the order through
+    // searchSortLabel with the Sold scope of their own status spelling.
+    expect(filters).toMatch(/searchSortLabel\(initialFilters\.sort, \{\s*sold: isSoldSearchScope\(initialFilters\.status\),\s*\}\)/)
+    expect(view).toMatch(/const soldScope = isSoldSearchScope\(filters\.status\)/)
+    expect(view).toMatch(/const sortOptions = useMemo\(\(\) => sortOptionsFor\(soldScope\), \[soldScope\]\)/)
+    expect(view).toMatch(/const sortLabel = searchSortLabel\(sortValue, \{ sold: soldScope \}\)/)
+    expect(view).toMatch(/\{sortOptions\.map\(\(o\) =>/)
+    expect(view).toMatch(/sort: sortValue,\s*\n\s*sold: soldScope,/)
+    const bar = readSrc('components/SearchFilterBar.tsx')
+    expect(bar).toMatch(/const soldScope = isSoldSearchScope\(props\.statusFilter\)/)
+    expect(bar).toMatch(/\{searchSortLabel\(value, \{ sold: soldScope \}\)\}/)
+    // Nothing names a sort from the bare label table any more.
+    for (const src of [filters, view, bar]) expect(src).not.toMatch(/SEARCH_SORT_LABELS/)
   })
 
   it('the regional frame fits its box at fractional zoom; a place camera does not', () => {
