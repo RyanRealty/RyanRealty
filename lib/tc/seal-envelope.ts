@@ -370,7 +370,7 @@ export async function sealAndCompleteEnvelope(
     const email = (r.email ?? '').trim().toLowerCase()
     if (!email || seen.has(email)) continue
     seen.add(email)
-    await sendCompletionCopy({
+    const sent = await sendCompletionCopy({
       to: email,
       recipientName: r.name || 'there',
       envelopeName: env.name,
@@ -378,6 +378,17 @@ export async function sealAndCompleteEnvelope(
       pdf: pdfBuf,
       pdfName,
     })
+    // A party who never got their copy is on the deal's activity, not lost.
+    if (sent.error) {
+      await supabase.from('tc_events').insert({
+        deal_id: (cycle as DbRow)?.deal_id ?? null,
+        cycle_id: env.cycle_id,
+        document_id: execDocId,
+        actor: 'system',
+        action: 'envelope_copy_failed',
+        detail: { envelope: env.name, recipient: r.name || email, error: sent.error.slice(0, 300) },
+      })
+    }
   }
   const brokerEmail = env.created_by && env.created_by.includes('@') ? env.created_by : null
   if (brokerEmail && !seen.has(brokerEmail.toLowerCase())) {

@@ -61,6 +61,7 @@ import {
 } from '@/lib/tc/skyslope-field-map'
 import { fieldMapFromAcroFormPdf } from '@/lib/tc/acroform-field-map'
 import { fallbackSigningStack, withFallbackSignatures } from '@/lib/tc/fallback-signing-stack'
+import { hasUnnamedSignatureLines, labelSignatureRowsFromPage } from '@/lib/tc/lined-signature-fields'
 import { isOref001OverlayApplicable, oref001OverlayFieldMap } from '@/lib/tc/oref-001-field-map'
 import {
   missingRequiredSignerRoles,
@@ -81,7 +82,7 @@ import {
   listUnassignedEnvelopeFields,
 } from '@/lib/data/tc/envelope-composer-reads'
 import { outdatedLibraryFormsMessage } from '@/lib/tc/form-packets'
-import { extractPdfPagesText } from '@/lib/tc/pdf-page-text'
+import { extractPdfPagesText, readPdfTextRuns } from '@/lib/tc/pdf-page-text'
 import { entriesFromDocumentText, formNumberFromClassification, identifyFormFromName } from '@/lib/tc/form-identity'
 import {
   incompleteFactsMessage,
@@ -640,8 +641,11 @@ export async function createEnvelopeFromTemplate(
     otherSideAgentRole: otherSideAgentEnvelopeRole(ourRole),
   })
   if (vendors.length) await supabase.from('tc_envelope_recipients').insert(vendors)
-  const recipientByRole = (role: SignerRole): string | null => {
-    const match = savedRecipients.find((r) => recipientMatchesSigner(String(r.role), role))
+  const recipientByRole = (role: SignerRole, index?: number): string | null => {
+    const matches = savedRecipients.filter((r) => recipientMatchesSigner(String(r.role), role))
+    // A printed row for the second buyer is the second buyer's; a row past the
+    // last signer of the role is left for the broker.
+    const match = index != null ? matches[index] : matches[0]
     return match ? (match.id as string) : null
   }
 
@@ -731,6 +735,12 @@ export async function createEnvelopeFromTemplate(
         documentName: form.name,
       })
     }
+    if (hasUnnamedSignatureLines(map)) {
+      // "Text8" says nothing about who signs; the word printed beside the
+      // line does, when the page text can be read.
+      const runs = await readPdfTextRuns(new Uint8Array(bytes)).catch(() => [])
+      map = labelSignatureRowsFromPage(map, runs)
+    }
     map = withFallbackSignatures(map, {
       pageCount: Number(form.page_count) || 1,
       formNumber: form.form_number,
@@ -749,7 +759,7 @@ export async function createEnvelopeFromTemplate(
           : resolveFactKey(f.dataRef ?? ''))
       const filledText = factKey ? textByFact.get(factKey) : undefined
       const recipientId = signerOwnsMappedField(type)
-        ? recipientByRole(f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined))
+        ? recipientByRole(f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined), f.signerIndex)
         : null
       // Nobody cannot be required to sign. A mapped blank naming a role this
       // envelope has no recipient for still gets its box — a broker can assign
@@ -767,13 +777,15 @@ export async function createEnvelopeFromTemplate(
         h: clamp01(f.h),
         required:
           !ownedButUnassigned &&
-          mapFieldIsRequired({
-            type,
-            optional: f.optional,
-            signerRole: f.signerRole,
-            dataRef: f.dataRef,
-            formNumber: form.form_number,
-          }),
+          // A row given to a particular signer is theirs to sign, whichever line it is.
+          ((f.signerIndex != null && recipientId != null && type !== 'full_name') ||
+            mapFieldIsRequired({
+              type,
+              optional: f.optional,
+              signerRole: f.signerRole,
+              dataRef: f.dataRef,
+              formNumber: form.form_number,
+            })),
         value:
           type === 'text' && filledText
             ? { kind: 'text', text: filledText }
@@ -1071,7 +1083,15 @@ export async function sendEnvelope(
     fieldsByRecip.set(f.recipient_id, arr)
   }
   for (const r of signable) {
-    if (!(fieldsByRecip.get(r.id)?.length)) return { ok: false, error: `${r.name || r.role} has no fields to sign` }
+    const own = fieldsByRecip.get(r.id) ?? []
+    if (!own.length) return { ok: false, error: `${r.name || r.role} has no fields to sign` }
+    // A signer with only a date or a checkbox has not signed anything.
+    if (!own.some((f) => f.type === 'signature' || f.type === 'initials')) {
+      return {
+        ok: false,
+        error: `${r.name || r.role} has no signature box. Click their signature line on the form and choose them under "Completed by", or place a Signature for them.`,
+      }
+    }
   }
   const hasSignature = fieldsForSend.some((f) => f.type === 'signature')
   if (!hasSignature) return { ok: false, error: 'Place at least one signature field' }

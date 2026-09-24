@@ -52,12 +52,16 @@ export function scrubDeep<T>(value: T): T {
 }
 
 /**
- * A link to one of our own private pages: sent as written, never wrapped by
- * the email click tracker (which stored the whole link, token and all, in
- * crm_timeline and email_events) and never stamped with identity or UTM
- * parameters.
+ * A link to a private page: sent as written, never wrapped by the email click
+ * tracker (which stored the whole link, token and all, in crm_timeline and
+ * email_events) and never stamped with identity or UTM parameters.
+ *
+ * On any host. A signing invite is built from the configured site address,
+ * which is not always ryan-realty.com (a preview, the vercel.app name), and a
+ * host check let those through the tracker. Leaving a stranger's /sign/ link
+ * untracked costs nothing.
  */
 export function isPrivateLink(url: string): boolean {
-  const m = /^https?:\/\/(?:www\.)?ryan-realty\.com(\/[^?#\s"'<]*)?/i.exec(url.trim())
+  const m = /^https?:\/\/[^/?#\s"'<]+(\/[^?#\s"'<]*)?/i.exec(url.trim())
   return !!m && isPrivatePath(m[1] ?? '/')
 }

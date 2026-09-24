@@ -47,6 +47,7 @@ import {
   valueText,
   type ChecklistItem,
 } from '@/lib/tc/field-rules'
+import { fitTextToBox, textSizeForBox } from '@/lib/tc/text-areas'
 import { ESIGN_CONSENT_SUMMARY, esignDisclosure } from '@/lib/tc/esign-consent'
 import { cn } from '@/lib/utils'
 
@@ -72,16 +73,24 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   const [error, setError] = useState<string | null>(null)
   const [stamp, setStamp] = useState<{ date: string; time: string } | null>(null)
   const viewed = useRef(false)
+  // Page sizes in points, from the viewer: a typed value is fit to its box in points.
+  const pagePts = useRef(new Map<string, { w: number; h: number }>())
+  const [editorPts, setEditorPts] = useState({ w: 612, h: 792 })
+  function openEditorFor(f: EnvelopeField) {
+    setEditorPts(pagePts.current.get(`${f.documentId}:${f.page}`) ?? { w: 612, h: 792 })
+    setEditing(f)
+  }
 
   // The browser's clock, read after hydration so the server's render never disagrees with it.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setStamp(pacificStamp(new Date())), [])
-  // The first real look, recorded from the browser (a mail scanner never runs this).
+  // The first real open, recorded from the browser (a mail scanner that only
+  // fetches the link never runs this). Before consent too: opening is the view.
   useEffect(() => {
-    if (!consented || viewed.current) return
+    if (viewed.current) return
     viewed.current = true
     void recordSigningView(token)
-  }, [consented, token])
+  }, [token])
 
   const mine = useMemo(() => payload.fields.filter((f) => fieldOwner(f, payload.recipientId) === 'mine'), [payload.fields, payload.recipientId])
   const docOrder = useMemo(() => payload.documents.map((d) => d.documentId), [payload.documents])
@@ -104,7 +113,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
     setActiveId(item.id)
     requestAnimationFrame(() => document.getElementById(`sign-field-${item.firstFieldId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
     const f = mine.find((m) => m.id === item.firstFieldId)
-    if (openEditor && f && (f.type === 'text' || f.type === 'date' || f.type === 'time')) setEditing(f)
+    if (openEditor && f && (f.type === 'text' || f.type === 'date' || f.type === 'time')) openEditorFor(f)
   }
 
   function next(openEditor = true) {
@@ -231,7 +240,8 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
     )
   }
 
-  const started = activeId != null || checklist.some((i) => i.done)
+  // A starting value the broker filled is not the signer starting.
+  const started = activeId != null
   return (
     <div className="mx-auto max-w-3xl px-2 pb-36 pt-4 sm:px-3">
       <div className="mb-4 px-1">
@@ -249,7 +259,9 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
           <p className="mb-2 px-1 text-sm font-medium text-foreground">{doc.name}</p>
           <PdfPages
             url={doc.url}
-            overlay={(pageNumber, size) => (
+            overlay={(pageNumber, size) => {
+              pagePts.current.set(`${doc.documentId}:${pageNumber}`, { w: size.ptsW, h: size.ptsH })
+              return (
               <>
                 {payload.fields
                   .filter((f) => f.documentId === doc.documentId && f.page === pageNumber)
@@ -267,7 +279,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
                       onSign={() => applyMark(f)}
                       onEdit={() => {
                         setActiveId(checklist.find((i) => i.fieldIds.includes(f.id))?.id ?? null)
-                        setEditing(f)
+                        openEditorFor(f)
                       }}
                       onCheck={(checked) => {
                         setActiveId(checklist.find((i) => i.fieldIds.includes(f.id))?.id ?? null)
@@ -276,7 +288,8 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
                     />
                   ))}
               </>
-            )}
+            )
+            }}
           />
         </div>
       ))}
@@ -313,6 +326,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
       <FieldEditor
         key={editing?.id ?? 'none'}
         field={editing}
+        pts={editorPts}
         value={editing ? values.get(editing.id) ?? null : null}
         onClose={() => setEditing(null)}
         onSave={(v, andNext) => {
@@ -362,11 +376,14 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
 /** Text, date and time fields open here: a real keyboard, the phone's own calendar and clock. */
 function FieldEditor({
   field,
+  pts,
   value,
   onClose,
   onSave,
 }: {
   field: EnvelopeField | null
+  /** The field's page in points: typed text is fit to the box as it will print. */
+  pts: { w: number; h: number }
   value: SignFieldValue | null
   onClose: () => void
   onSave: (v: SignFieldValue | null, andNext: boolean) => void
@@ -380,6 +397,9 @@ function FieldEditor({
   const parsed: SignFieldValue | null =
     field.type === 'date' ? dateValue(draft) : field.type === 'time' ? timeValue(draft) : draft.trim() ? { kind: 'text', text: draft } : null
   const tall = field.h > 0.03
+  const isText = field.type === 'text'
+  const fit = isText && draft.trim() ? fitTextToBox(draft, field.w * pts.w, field.h * pts.h) : null
+  const tooLong = !!fit && !fit.fits
   return (
     <Sheet open onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="bottom" className="mx-auto max-w-lg rounded-t-xl">
@@ -391,6 +411,7 @@ function FieldEditor({
           className="space-y-4 px-4 pb-2"
           onSubmit={(e) => {
             e.preventDefault()
+            if (tooLong) return
             onSave(parsed, true)
           }}
         >
@@ -403,11 +424,20 @@ function FieldEditor({
           ) : (
             <Input value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={500} autoFocus aria-label={title} />
           )}
+          {fit ? (
+            <p className={cn('text-xs', tooLong ? 'text-destructive' : 'text-muted-foreground')} aria-live="polite">
+              {tooLong
+                ? 'Too long for this box on the form. Shorten it so every word prints.'
+                : fit.size < textSizeForBox(field.h * pts.h)
+                  ? 'Fits the box in smaller type.'
+                  : 'Fits the box.'}
+            </p>
+          ) : null}
           <SheetFooter className="flex-row justify-end gap-2 p-0">
             <Button type="button" variant="ghost" onClick={() => onSave(null, false)}>
               Clear
             </Button>
-            <Button type="submit" disabled={field.required && !parsed}>
+            <Button type="submit" disabled={(field.required && !parsed) || tooLong}>
               Done
             </Button>
           </SheetFooter>
@@ -431,7 +461,7 @@ function FieldBox({
   onCheck,
 }: {
   field: EnvelopeField
-  size: { w: number; h: number }
+  size: { w: number; h: number; ptsW?: number; ptsH?: number }
   owner: 'mine' | 'locked' | 'theirs'
   color: string
   value: SignFieldValue | null
@@ -444,6 +474,16 @@ function FieldBox({
 }) {
   const style: React.CSSProperties = { position: 'absolute', left: field.x * size.w, top: field.y * size.h, width: field.w * size.w, height: field.h * size.h }
   const fontSize = Math.max(8, Math.min(12, field.h * size.h * 0.7))
+  // Small enough that the value fits its box on a phone: a date or a time on
+  // one line (about 0.6 em per character), longer text wrapped into the box.
+  const oneLine = field.type === 'date' || field.type === 'time' || field.h <= 0.03
+  const fit = (text: string) => {
+    const wide = field.w * size.w - 6
+    const tall = field.h * size.h - 2
+    const chars = Math.max(1, text.length)
+    const bySize = oneLine ? wide / (chars * 0.6) : Math.sqrt((wide * tall) / (chars * 0.6 * 1.25))
+    return Math.max(6, Math.min(fontSize, bySize))
+  }
   const id = `sign-field-${field.id}`
   const ring = active ? { boxShadow: `0 0 0 2px ${color}` } : {}
 
@@ -459,18 +499,42 @@ function FieldBox({
   const shownText = valueText(value)
   const isMark = field.type === 'signature' || field.type === 'initials'
   const png = value && (value.kind === 'signature' || value.kind === 'initials') ? value.png : null
+  // Typed text as the sealer prints it: the same lines at the same size
+  // (lib/tc/text-areas.ts fitTextToBox), scaled to the screen.
+  const ptsW = size.ptsW || 612
+  const ptsH = size.ptsH || 792
+  const printed =
+    field.type === 'text' && shownText.trim() && !(value?.kind === 'text' && value.size)
+      ? (() => {
+          const fitBox = fitTextToBox(shownText, field.w * ptsW, field.h * ptsH)
+          return { lines: fitBox.lines, px: fitBox.size * (size.w / ptsW), lineHeight: (fitBox.size + 1.2) * (size.w / ptsW) }
+        })()
+      : null
+  const printedText = printed ? (
+    <span className="block min-w-0 whitespace-nowrap" style={{ fontSize: printed.px, lineHeight: `${printed.lineHeight}px` }}>
+      {printed.lines.map((l, i) => (
+        <span key={i} className="block">
+          {l}
+        </span>
+      ))}
+    </span>
+  ) : null
 
   // The broker's locked fields and other signers' finished ones: as they will print.
   if (owner !== 'mine') {
     return (
-      <div style={{ ...style, fontSize }} className="pointer-events-none flex items-center overflow-hidden px-0.5 leading-none text-foreground" aria-hidden>
+      <div
+        style={{ ...style, fontSize: fit(shownText) }}
+        className={cn('pointer-events-none flex overflow-hidden px-0.5 leading-none text-foreground', printed && printed.lines.length > 1 ? 'items-start' : 'items-center')}
+        aria-hidden
+      >
         {png ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={png} alt="" className="max-h-full max-w-full object-contain object-left" />
         ) : field.type === 'checkbox' ? (
           value?.kind === 'checkbox' && value.checked ? <span className="w-full text-center font-bold">X</span> : null
         ) : (
-          <span className="truncate">{shownText}</span>
+          printedText ?? <span className="truncate">{shownText}</span>
         )}
       </div>
     )
@@ -526,21 +590,25 @@ function FieldBox({
     )
   }
 
-  // Text, date and time: the box shows the value; a tap opens the editor.
-  const placeholder = field.label?.trim() || (field.type === 'date' ? 'Date' : field.type === 'time' ? 'Time' : 'Type here')
+  // Text, date and time: the box shows the value; a tap opens the editor. The
+  // box is too small for the prompt on a phone: it says what kind of answer,
+  // and the prompt is its name and the bar's line.
+  const kind = field.type === 'date' ? 'Date' : field.type === 'time' ? 'Time' : 'Type here'
+  const shown = shownText || kind
   return (
     <button
       type="button"
       id={id}
-      style={{ ...style, fontSize, ...ring }}
+      style={{ ...style, fontSize: fit(shown), ...ring }}
       className={cn(
-        'flex items-center overflow-hidden rounded-sm px-1 text-left leading-tight',
+        'flex justify-start overflow-hidden rounded-sm px-1 text-left leading-tight',
+        oneLine ? 'items-center' : 'items-start',
         shownText ? 'bg-primary/5 text-foreground ring-1 ring-primary/30' : 'bg-primary/10 text-primary/80 ring-1 ring-primary/70',
       )}
       onClick={onEdit}
-      aria-label={placeholder}
+      aria-label={field.label?.trim() || kind}
     >
-      <span className={cn(field.h > 0.03 ? 'line-clamp-3 whitespace-pre-wrap break-words' : 'truncate')}>{shownText || placeholder}</span>
+      {printedText ?? <span className={cn('min-w-0', oneLine ? 'truncate whitespace-nowrap' : 'whitespace-pre-wrap break-words')}>{shown}</span>}
     </button>
   )
 }

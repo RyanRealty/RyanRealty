@@ -13,6 +13,7 @@ import {
   nextChecklistItem,
   pacificStamp,
   preparedField,
+  signatureRowSiblings,
   signerChecklist,
   timeValue,
   valueIsFilled,
@@ -188,5 +189,20 @@ describe('preparedField (what the composer saves)', () => {
   it('trims the label and drops an empty one', () => {
     expect(preparedField({ type: 'text', recipientId: 'r', label: '  Possession date ' }).label).toBe('Possession date')
     expect(preparedField({ type: 'text', recipientId: 'r', label: '   ' }).label).toBeNull()
+  })
+})
+
+describe('signatureRowSiblings (a signature line takes its row)', () => {
+  const f = (key: string, type: EnvelopeField['type'], y: number, x: number, extra: Partial<EnvelopeField> = {}) => ({ key, documentId: 'd', page: 1, type, x, y, w: type === 'date_signed' ? 0.18 : 0.508, recipientId: null, value: null, ...extra })
+  it('takes the date beside the line and turns the empty print line beneath into the Full Name', () => {
+    const fields = [f('date', 'date_signed', 0.555, 0.72), f('print', 'text', 0.570, 0.126), f('next', 'text', 0.608, 0.126), f('other-date', 'date_signed', 0.593, 0.72)]
+    expect(signatureRowSiblings(fields, { documentId: 'd', page: 1, x: 0.126, y: 0.549 })).toEqual([
+      { key: 'date', type: 'date_signed' },
+      { key: 'print', type: 'full_name' },
+    ])
+  })
+  it('leaves boxes that already belong to someone, or a print line with text in it', () => {
+    const fields = [f('date', 'date_signed', 0.555, 0.72, { recipientId: 'r2' }), f('print', 'text', 0.570, 0.126, { value: { kind: 'text', text: 'Jane' } })]
+    expect(signatureRowSiblings(fields, { documentId: 'd', page: 1, x: 0.126, y: 0.549 })).toEqual([])
   })
 })

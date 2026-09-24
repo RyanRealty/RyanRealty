@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
-import { areaSpace, findTextAreas, helveticaWidth, layoutAreaText, pdfSafeText, textSizeForBox, type AreaCandidate } from './text-areas'
+import { areaSpace, findTextAreas, fitTextToBox, helveticaWidth, layoutAreaText, pdfSafeText, textSizeForBox, type AreaCandidate } from './text-areas'
 
 const line = (y: number, x: number, w: number, label: string | null = null, h = 0.015, page = 1): AreaCandidate => ({ page, x, y, w, h, type: 'text', label })
 
@@ -132,5 +132,28 @@ describe('laying text onto the lines', () => {
 
   it('never hands the sealer a character its font cannot draw', () => {
     expect(pdfSafeText('Café “quoted” — ✓ 家')).toBe('Café “quoted” — ? ?')
+  })
+})
+
+describe('fitTextToBox', () => {
+  const box = { w: 0.2 * 612, h: 0.035 * 792 } // the composer's default text box
+  it('keeps the box size for a short value', () => {
+    const r = fitTextToBox('Stays', box.w, box.h)
+    expect(r).toMatchObject({ fits: true, lines: ['Stays'] })
+    expect(r.size).toBeCloseTo(textSizeForBox(box.h), 6)
+  })
+  it('shrinks a longer value until every line fits the height', () => {
+    const r = fitTextToBox('Refrigerator and chest freezer stay with the home', box.w, box.h)
+    expect(r.fits).toBe(true)
+    expect(r.size).toBeLessThan(textSizeForBox(box.h))
+    expect(r.lines.join(' ')).toBe('Refrigerator and chest freezer stay with the home')
+    expect(r.lines.length * (r.size + 1.2)).toBeLessThanOrEqual(box.h - 1 + 1e-6)
+  })
+  it('says when even 6 pt cannot hold it, and still returns every word', () => {
+    const long = 'word '.repeat(200).trim()
+    const r = fitTextToBox(long, box.w, box.h)
+    expect(r.fits).toBe(false)
+    expect(r.size).toBe(6)
+    expect(r.lines.join(' ').split(' ')).toHaveLength(200)
   })
 })

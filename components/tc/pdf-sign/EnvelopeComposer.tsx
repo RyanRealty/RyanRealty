@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { applyPacketSectionText } from '@/app/actions/tc-envelope-text'
-import { areaSpace, layoutAreaText, type AreaLayout } from '@/lib/tc/text-areas'
+import { areaSpace, fitTextToBox, layoutAreaText, textSizeForBox, type AreaLayout } from '@/lib/tc/text-areas'
 import { continuationFormFor, continuedMarker, layoutWithMarker } from '@/lib/tc/continuation'
 import {
   saveEnvelopeRecipients,
@@ -57,6 +57,7 @@ import {
   SIGNER_ONLY_TYPES,
   dateValue,
   groupFromRule,
+  signatureRowSiblings,
   groupRule,
   groupRuleText,
   timeValue,
@@ -264,6 +265,20 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   }
   function patchField(localId: string, patch: Partial<LocalField>) {
     setFields((fs) => fs.map((f) => (f.localId === localId ? { ...f, ...patch } : f)))
+  }
+  /** A signature line goes to a signer with its row: the date beside it and the print line beneath. */
+  function assignSignatureLine(localId: string, recipientId: string) {
+    setFields((fs) => {
+      const line = fs.find((f) => f.localId === localId)
+      if (!line) return fs
+      const row = line.type === 'signature' ? signatureRowSiblings(fs.map((f) => ({ ...f, value: f.value ?? null, key: f.localId })), line) : []
+      const byKey = new Map(row.map((r) => [r.key, r.type]))
+      return fs.map((f) => {
+        if (f.localId === localId) return { ...f, recipientId, required: true }
+        const type = byKey.get(f.localId)
+        return type ? { ...f, recipientId, type, required: true, value: null } : f
+      })
+    })
   }
   /** One rule for every box in a group. */
   function setGroupRule(key: string, rule: GroupRule) {
@@ -582,7 +597,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               <div>
                 <Label className="text-[11px] text-muted-foreground">Assign to</Label>
                 <Select value={activeRecipientId ?? ''} onValueChange={pickAssignee}>
-                  <SelectTrigger className="mt-1 h-8 text-xs">
+                  <SelectTrigger className="mt-1 h-8 text-xs" aria-label="Assign to">
                     <SelectValue placeholder={savedSignable.length ? 'Pick a signer' : 'Save recipients first'} />
                   </SelectTrigger>
                   <SelectContent>
@@ -651,7 +666,9 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             field={selected}
             signers={savedSignable.map((r) => ({ id: r.id!, name: r.name || recipientRoleLabel(r.role) }))}
             groups={groups}
+            ptsOf={ptsOf}
             onChange={(patch) => patchField(selected.localId, patch)}
+            onAssignSigner={(recipientId) => assignSignatureLine(selected.localId, recipientId)}
             onGroupRule={setGroupRule}
             onDelete={() => deleteField(selected.localId)}
             onClose={() => setSelectedId(null)}
@@ -872,7 +889,9 @@ function FieldPanel({
   field,
   signers,
   groups,
+  ptsOf,
   onChange,
+  onAssignSigner,
   onGroupRule,
   onDelete,
   onClose,
@@ -880,7 +899,9 @@ function FieldPanel({
   field: LocalField
   signers: Array<{ id: string; name: string }>
   groups: FieldGroup[]
+  ptsOf: (documentId: string, page: number) => { w: number; h: number }
   onChange: (patch: Partial<LocalField>) => void
+  onAssignSigner: (recipientId: string) => void
   onGroupRule: (key: string, rule: GroupRule) => void
   onDelete: () => void
   onClose: () => void
@@ -919,8 +940,8 @@ function FieldPanel({
             <Label className="text-[11px] text-muted-foreground">
               {AUTO_STAMPED_TYPES.has(field.type) ? 'Stamped for' : 'Completed by'}
             </Label>
-            <Select value={field.recipientId ?? ''} onValueChange={(v) => onChange({ recipientId: v })}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick a signer" /></SelectTrigger>
+            <Select value={field.recipientId ?? ''} onValueChange={onAssignSigner}>
+              <SelectTrigger className="h-8 text-xs" aria-label="Completed by"><SelectValue placeholder="Pick a signer" /></SelectTrigger>
               <SelectContent>
                 {signers.map((r) => (
                   <SelectItem key={r.id} value={r.id} className="text-xs">{r.name}</SelectItem>
@@ -930,7 +951,9 @@ function FieldPanel({
             <p className="text-[11px] text-muted-foreground">
               {AUTO_STAMPED_TYPES.has(field.type)
                 ? 'Filled automatically when they sign, from our clock and their name.'
-                : 'Only the signer can complete this.'}
+                : field.type === 'signature'
+                  ? 'Only the signer can complete this. The date beside the line and the print line beneath go with it.'
+                  : 'Only the signer can complete this.'}
             </p>
           </div>
         ) : null}
@@ -941,7 +964,7 @@ function FieldPanel({
               <Label htmlFor="field-value" className="text-[11px] text-muted-foreground">
                 {assigned ? 'Starting value (the signer can change it)' : 'Your value (prints locked)'}
               </Label>
-              <FieldValueEditor field={field} onChange={(value) => onChange({ value })} />
+              <FieldValueEditor field={field} pts={ptsOf(field.documentId, field.page)} onChange={(value) => onChange({ value })} />
             </div>
 
             <div className="flex items-start justify-between gap-3">
@@ -1011,7 +1034,7 @@ function FieldPanel({
                 }
               }}
             >
-              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 text-xs" aria-label="Linked boxes"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none" className="text-xs">Not linked</SelectItem>
                 {groupKeys.map((k) => (
@@ -1061,7 +1084,7 @@ function FieldPanel({
 }
 
 /** The broker's value for a fillable field, with the same pickers a signer gets. */
-function FieldValueEditor({ field, onChange }: { field: LocalField; onChange: (value: SignFieldValue | null) => void }) {
+function FieldValueEditor({ field, pts, onChange }: { field: LocalField; pts: { w: number; h: number }; onChange: (value: SignFieldValue | null) => void }) {
   const v = field.value ?? null
   if (field.type === 'checkbox') {
     return (
@@ -1097,15 +1120,29 @@ function FieldValueEditor({ field, onChange }: { field: LocalField; onChange: (v
       />
     )
   }
+  const text = v?.kind === 'text' ? v.text : ''
+  // As the sealer prints it: the same fit (lib/tc/text-areas.ts fitTextToBox).
+  const fit = text.trim() ? fitTextToBox(text, field.w * pts.w, field.h * pts.h) : null
   return (
-    <Textarea
-      id="field-value"
-      rows={2}
-      className="text-xs"
-      maxLength={5000}
-      value={v?.kind === 'text' ? v.text : ''}
-      onChange={(e) => onChange(e.target.value ? { kind: 'text', text: e.target.value } : null)}
-    />
+    <>
+      <Textarea
+        id="field-value"
+        rows={2}
+        className="text-xs"
+        maxLength={5000}
+        value={text}
+        onChange={(e) => onChange(e.target.value ? { kind: 'text', text: e.target.value } : null)}
+      />
+      {fit ? (
+        <p className={cn('text-[11px]', fit.fits ? 'text-muted-foreground' : 'text-destructive')}>
+          {!fit.fits
+            ? 'Too long for this box: it would run past it on the signed page. Shorten it or make the box bigger.'
+            : fit.size < textSizeForBox(field.h * pts.h)
+              ? `Fits in ${fit.size} pt type.`
+              : 'Fits the box.'}
+        </p>
+      ) : null}
+    </>
   )
 }
 

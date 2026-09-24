@@ -371,3 +371,28 @@ function preparedGroup(type: SignFieldType, group: FieldGroup | null): FieldGrou
   if (min != null && max != null && min > max) return null
   return { key, min, max }
 }
+
+// ── a signature line's row ──────────────────────────────────────────────────
+
+/**
+ * The boxes that belong to a signature line's row: its date (and time) to the
+ * right, and the print-name line just beneath it. Assigning the line to a
+ * signer in the composer takes these with it, still unassigned ones only; an
+ * empty text line beneath becomes the signer's Full Name, stamped at signing.
+ * Same geometry as the form promotion (lined-signature-fields.ts).
+ */
+export function signatureRowSiblings(
+  fields: ReadonlyArray<Pick<EnvelopeField, 'documentId' | 'page' | 'type' | 'x' | 'y' | 'w' | 'recipientId' | 'value'> & { key: string }>,
+  sig: Pick<EnvelopeField, 'documentId' | 'page' | 'x' | 'y'>,
+): Array<{ key: string; type: SignFieldType }> {
+  const out: Array<{ key: string; type: SignFieldType }> = []
+  const row = fields.filter((f) => f.documentId === sig.documentId && f.page === sig.page && !f.recipientId)
+  for (const f of row) {
+    if ((f.type === 'date_signed' || f.type === 'time_signed') && Math.abs(f.y - sig.y) < 0.02 && f.x > sig.x) out.push({ key: f.key, type: f.type })
+  }
+  const print = row
+    .filter((f) => (f.type === 'full_name' || (f.type === 'text' && !valueText(f.value).trim() && f.w >= 0.3)) && f.y > sig.y && f.y - sig.y < 0.035 && Math.abs(f.x - sig.x) < 0.05)
+    .sort((a, b) => a.y - b.y)[0]
+  if (print) out.push({ key: print.key, type: 'full_name' })
+  return out
+}

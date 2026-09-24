@@ -169,3 +169,15 @@ describe('withNoUnsignableRequirement', () => {
     expect(out[2]).toMatchObject({ type: 'text', optional: false })
   })
 })
+
+describe('withFallbackSignatures on unnamed signature lines', () => {
+  it('adds no fixed-position stack on top of printed lines the broker can assign', () => {
+    // OREF 002 01/2026: eight signature lines named Text8..Text22, text unreadable.
+    const lines = [0.549, 0.587, 0.625, 0.663, 0.716, 0.753, 0.791, 0.829].map((y, i) => ({
+      type: 'text' as const, page: 1, x: 0.126, y, w: 0.508, h: 0.021, dataRef: `Text${8 + i * 2}`, signerRole: null, optional: false, label: `Text${8 + i * 2}`,
+    }))
+    const map = withFallbackSignatures(lines, { pageCount: 1, formNumber: '002' })
+    expect(map.filter((f) => f.type === 'signature')).toHaveLength(8)
+    expect(map.some((f) => f.label === 'Buyer signature' || f.label === 'Seller signature')).toBe(false)
+  })
+})

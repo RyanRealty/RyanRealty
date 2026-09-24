@@ -31,11 +31,16 @@ describe('scrubbing an address before it leaves', () => {
 })
 
 describe('a link to a private page', () => {
-  it('is recognised on our own site only', async () => {
+  it('is recognised by its path on any host', async () => {
     const { isPrivateLink } = await import('./private-paths')
     expect(isPrivateLink('https://ryan-realty.com/sign/Yi4wyKxKtxZNhijQFu1lKJu9WWofkfJNdzW0bFkwtpc')).toBe(true)
     expect(isPrivateLink('https://www.ryan-realty.com/cma-drafts/42?token=abc')).toBe(true)
+    // The invite is built from the configured site address, which is not
+    // always ryan-realty.com (a preview host): found by a real invite on 2026-09-24.
+    expect(isPrivateLink('https://preview.example.test/sign/3psJsYbzQX3s_M-n6OYpQny3196FFVGwSi8tE_7RnkA')).toBe(true)
+    expect(isPrivateLink('https://example.com/sign/abcdefgh12345678')).toBe(true)
     expect(isPrivateLink('https://ryan-realty.com/homes-for-sale/bend')).toBe(false)
-    expect(isPrivateLink('https://example.com/sign/abcdefgh12345678')).toBe(false)
+    expect(isPrivateLink('https://preview.example.test/homes-for-sale/bend')).toBe(false)
+    expect(isPrivateLink('mailto:matt@ryan-realty.com')).toBe(false)
   })
 })

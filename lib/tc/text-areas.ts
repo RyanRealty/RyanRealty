@@ -14,6 +14,7 @@
  * a continuation addendum).
  */
 import { Encodings, Font, FontNames } from '@pdf-lib/standard-fonts'
+import { wrapTextToWidth } from './lined-signature-fields'
 
 /** A field on a page, as fractions of the page, top-left origin (lib/tc/signing.ts). */
 export type LineBox = { page: number; x: number; y: number; w: number; h: number }
@@ -59,6 +60,25 @@ export function textSizeForBox(heightPts: number): number {
 
 /** The sealer's usable width for a box this wide (points): 2 pt padding each side. */
 export const usableWidth = (widthPts: number) => Math.max(8, widthPts - 4)
+
+/** The smallest type a typed value is printed in (points). */
+export const MIN_BOX_TEXT_PT = 6
+
+/**
+ * A typed value in its box, as the sealer prints it: wrapped at the box's
+ * width, at the largest size (from the box's own size down to 6 pt) at which
+ * every line fits its height. `fits` false means even 6 pt runs past the box:
+ * the editors refuse that, and the sealer still prints every word.
+ */
+export function fitTextToBox(text: string, widthPts: number, heightPts: number): { size: number; lines: string[]; fits: boolean } {
+  const width = usableWidth(widthPts)
+  const room = Math.max(1, heightPts - 1)
+  for (let size = textSizeForBox(heightPts); ; size = Math.round((size - 0.5) * 10) / 10) {
+    const lines = wrapTextToWidth(text, width, (s) => helveticaWidth(s, size))
+    const fits = lines.length <= 1 || lines.length * (size + 1.2) <= room + 1e-6
+    if (fits || size - 0.5 < MIN_BOX_TEXT_PT) return { size, lines, fits }
+  }
+}
 
 // ── finding a lined section ────────────────────────────────────────────────
 
