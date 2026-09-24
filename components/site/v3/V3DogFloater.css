@@ -87,37 +87,21 @@
   opacity: 0;
 }
 
-/* Matt 2026-09-23: "have the dogs eyes rotate to follow it." A small dot
-   at the art's own eye, moved by JS (V3DogFloater.client.tsx) toward the
-   pointer, clamped to a few px. Positioned absolutely against
-   .v3-dog-floater__head (position:relative), so it tracks the head's own
-   flip/spin exactly like a feature drawn on it. --cream sits over the
-   always-visible cream dog and is navy so it reads as a pupil on a light
-   face; --navy sits over the brief navy inversion and mirrors that dog
-   layer's own opacity keyframe so it is never visible on the wrong color. */
-.v3-dog-floater__pupil {
-  position: absolute;
-  left: 31.1%;
-  top: 23.4%;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.v3-dog-floater__pupil--cream {
-  background: var(--v3-navy);
-}
-
-.v3-dog-floater__pupil--navy {
-  background: var(--v3-cream);
-  opacity: 0;
-  animation: v3-dog-notice-ink 1.35s ease-in-out 1;
-}
-
-.v3-dog-floater--open .v3-dog-floater__pupil--navy {
-  animation: none;
-  opacity: 0;
+/* Matt 2026-09-24: "whole dog rotates so that its eyes are following ball,
+   not eyes moving, eyes are fixed." Both dog layers sit in one aim box that
+   JS turns about its center toward the pointer (V3DogFloater.client.tsx,
+   lib/geo/aim-at-pointer.ts). The turn eases at the state duration so a
+   quick flick reads as the dog looking, not snapping. Reduced motion never
+   starts the tracking, and the transition goes with it below. */
+.v3-dog-floater__aim {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+  will-change: transform;
 }
 
 /* Flip (rotateY), spin (rotate 360), invert (navy/cream swap). One play. */
@@ -166,9 +150,12 @@
 @media (prefers-reduced-motion: reduce) {
   .v3-dog-floater,
   .v3-dog-floater__head,
-  .v3-dog-floater__dog--navy,
-  .v3-dog-floater__pupil--navy {
+  .v3-dog-floater__dog--navy {
     animation: none;
+  }
+
+  .v3-dog-floater__aim {
+    transition: none;
   }
 
   .v3-dog-floater:active {
