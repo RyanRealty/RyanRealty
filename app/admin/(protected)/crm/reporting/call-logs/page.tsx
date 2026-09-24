@@ -24,7 +24,7 @@ import {
   type CallLogEntry,
   type CallLogOutcome,
 } from '@/lib/data/crm/getCallLogsReport'
-import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { formatDate } from '@/lib/format/date'
 import { SectionHead, StateWord, VerdictLine, type AdminState } from '@/components/admin/v2'
 import BrokerDateFilters from '../_components/BrokerDateFilters'
@@ -301,9 +301,9 @@ export default async function CallLogsPage({
           <BrokerDateFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
-            brokers={CRM_BROKERS.map((slug) => ({
+            brokers={activeBrokerSlugs().map((slug) => ({
               slug,
-              label: CRM_BROKER_DISPLAY[slug],
+              label: brokerDisplayName(slug),
             }))}
           />
         ) : null}

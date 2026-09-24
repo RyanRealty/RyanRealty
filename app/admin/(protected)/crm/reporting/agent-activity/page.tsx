@@ -23,7 +23,7 @@ import {
   getAgentActivityReport,
   type AgentActivityRow,
 } from '@/lib/data/crm/getAgentActivityReport'
-import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { parseColsParam, ALL_COL_KEYS, COL_LABELS, type ColKey } from '@/lib/crm/reporting-constants'
 import { formatDate } from '@/lib/format/date'
 import {
@@ -332,10 +332,10 @@ export default async function AgentActivityPage({
           currentView={view}
           currentCols={currentCols}
           isSuperuser={isSuperuser}
-          lockedBrokerLabel={scope ? (CRM_BROKER_DISPLAY[scope] ?? scope) : undefined}
-          brokers={CRM_BROKERS.map((slug) => ({
+          lockedBrokerLabel={scope ? brokerDisplayName(scope) : undefined}
+          brokers={activeBrokerSlugs().map((slug) => ({
             slug,
-            label: CRM_BROKER_DISPLAY[slug],
+            label: brokerDisplayName(slug),
           }))}
         />
       </div>

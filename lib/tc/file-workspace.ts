@@ -9,6 +9,8 @@
  */
 import { dealCalendarItems } from './deal-calendar'
 import { shortDate } from './dashboard'
+import { readerView } from './doc-read/view'
+import { EXECUTION_STATE_LABEL, executionStateFromClassification } from './execution-state'
 
 export const FILE_TABS = ['overview', 'documents', 'offers', 'email', 'people', 'signing', 'money', 'activity'] as const
 export type FileTab = (typeof FILE_TABS)[number]
@@ -202,6 +204,20 @@ export const CHECKLIST_WORD: Record<ChecklistStatus, { word: string; state: 'dow
   optional: { word: 'If needed', state: 'accent' },
 }
 
+/**
+ * A finished file carries no warnings (Matt 2026-09-24: "On transactions that
+ * are already closed in SkySlope, let's just remove any warnings ... we don't
+ * need to have a bunch of stuff hanging around"). Finished is a closed or dead
+ * deal, or a cycle on screen that closed or fell through. A document SkySlope
+ * holds that the Vault lacks is not a warning here: the daily SkySlope pull
+ * brings it in.
+ */
+export function isFinishedFile(stage: string, cycle: WorkspaceCycle | null): boolean {
+  if (stage === 'closed' || stage === 'dead') return true
+  if (!cycle) return false
+  return !!cycle.actual_closing_date || /^closed/i.test(cycle.status ?? '') || cancelled(cycle)
+}
+
 export type AttentionItem = { key: string; kind: string; tone: 'down' | 'slow' | 'waiting' | 'accent'; title: string; context: string; href: string; action: string }
 
 /** What on this file needs a person, most urgent first. */
@@ -218,8 +234,9 @@ export function fileAttention(input: {
   const q = (tab: string, extra?: string) => `${base}?tab=${tab}${input.cycle ? `&cycle=${input.cycle.id}` : ''}${extra ? `&${extra}` : ''}`
   const out: AttentionItem[] = []
   const t = dayNum(input.today) ?? 0
-  const review = input.checklist.filter((i) => i.status === 'in_review')
-  const missing = input.checklist.filter((i) => i.status === 'required')
+  const finished = isFinishedFile(input.stage, input.cycle)
+  const review = finished ? [] : input.checklist.filter((i) => i.status === 'in_review')
+  const missing = finished ? [] : input.checklist.filter((i) => i.status === 'required')
   if (/^Opened from email/i.test(input.stageDetail ?? '')) {
     out.push({ key: 'confirm', kind: 'New file', tone: 'slow', title: 'Confirm which side we represent and where the file stands', context: 'Opened from email; set the stage above', href: base, action: 'Set stage' })
   }
@@ -232,7 +249,7 @@ export function fileAttention(input: {
   } else if (review.length) {
     out.push({ key: 'review', kind: 'Review', tone: 'accent', title: `${review.length} document${review.length === 1 ? '' : 's'} with the principal broker`, context: review.slice(0, 3).map((i) => i.name).join(' · '), href: q('documents', 'filter=review'), action: 'Open' })
   }
-  if (missing.length && input.stage !== 'dead') {
+  if (missing.length) {
     out.push({ key: 'missing', kind: 'Missing', tone: 'waiting', title: `${missing.length} required document${missing.length === 1 ? '' : 's'} not on file`, context: missing.slice(0, 3).map((i) => i.name).join(' · ') + (missing.length > 3 ? ` · ${missing.length - 3} more` : ''), href: q('documents', 'filter=missing'), action: 'Open checklist' })
   }
   if (input.cycle && input.stage === 'active_listing' && input.cycle.expiration_date) {
@@ -240,4 +257,19 @@ export function fileAttention(input: {
     if (n >= 0 && n <= 14) out.push({ key: 'expires', kind: 'Listing', tone: n <= 3 ? 'slow' : 'waiting', title: `Listing expires ${relative(n)}`, context: `${shortDate(input.cycle.expiration_date)} · extend it or let it expire`, href: base, action: 'Open' })
   }
   return out
+}
+
+export type DocumentStateTone = 'ok' | 'slow' | 'accent' | 'waiting' | 'down'
+
+/**
+ * One status word for a document: the reader's verdict when the current
+ * reader has read it, else the older execution label, else nothing.
+ */
+export function documentStateWord(classification: unknown): { word: string; state: DocumentStateTone } | null {
+  const read = readerView(classification)
+  if (read) return { word: read.label, state: read.tone }
+  const exec = executionStateFromClassification(classification)
+  if (!exec || !EXECUTION_STATE_LABEL[exec]) return null
+  const state = exec === 'fully_executed' ? 'ok' : exec === 'needs_our_signatures' ? 'slow' : exec === 'our_side_signed' ? 'accent' : 'waiting'
+  return { word: EXECUTION_STATE_LABEL[exec], state }
 }

@@ -21,7 +21,7 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getLeadSourcesReport } from '@/lib/data/crm/getLeadSourcesReport'
-import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { ALL_COL_KEYS, type ColKey, LS_COL_KEYS } from '@/lib/crm/reporting-constants'
 import {
   SectionHead,
@@ -227,9 +227,9 @@ export default async function LeadSourcesPage({
             currentBroker={currentBroker}
             currentDate={currentDate}
             currentCols={currentCols}
-            brokers={CRM_BROKERS.map((slug) => ({
+            brokers={activeBrokerSlugs().map((slug) => ({
               slug,
-              label: CRM_BROKER_DISPLAY[slug],
+              label: brokerDisplayName(slug),
             }))}
           />
         </div>

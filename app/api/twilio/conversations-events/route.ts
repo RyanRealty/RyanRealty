@@ -47,7 +47,8 @@ import { findOrCreatePersonByPhone } from '@/lib/data/crm/findOrCreatePersonByPh
 import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
-import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
+import { sendCrmEmail } from '@/lib/crm/gmail'
+import { mailboxForSlug } from '@/lib/data/brokers/directory'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 export const runtime = 'nodejs'
@@ -248,7 +249,7 @@ export async function POST(request: Request) {
     },
     { onConflict: 'dedupe_key', ignoreDuplicates: true },
   )
-  const mailbox = CRM_MAILBOXES.find((m) => m.slug === alertBroker) ?? CRM_MAILBOXES[0]
+  const mailbox = await mailboxForSlug(alertBroker)
   // AWAITED: a bare void here is dropped when Vercel freezes the invocation on
   // response, so the broker never gets the group-text alert. try/catch keeps a
   // mail failure from 500-ing the webhook (which would make Twilio retry).

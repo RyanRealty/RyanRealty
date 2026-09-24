@@ -38,7 +38,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { getBrokerAgentDigest, type BrokerAgentDigestData, type BrokerAgentDigestGroup } from '@/lib/data/agent/digest'
 import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
-import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { brokerDisplayName } from '@/lib/brokers/directory'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 import { escapeHtml } from '@/lib/westside-digest-email'
 
 export const maxDuration = 60
@@ -47,7 +48,7 @@ export const dynamic = 'force-dynamic'
 const SUBJECT = 'Broker SMS agent daily digest'
 
 function brokerLabel(slug: string): string {
-  return CRM_BROKER_DISPLAY[slug as CrmBrokerSlug] ?? slug
+  return brokerDisplayName(slug)
 }
 
 /** LLM/producer spend is cents-and-fractions-of-a-cent per turn — 4 decimals
@@ -146,6 +147,9 @@ function renderDigestText(data: BrokerAgentDigestData): string {
 export async function GET(request: NextRequest) {
   const denied = requireCronAuth(request)
   if (denied) return denied
+
+  // Cron — no admin session to have already warmed the broker directory.
+  await ensureBrokerDirectory()
 
   const url = new URL(request.url)
   const dryRun = url.searchParams.get('dryRun') === 'true'

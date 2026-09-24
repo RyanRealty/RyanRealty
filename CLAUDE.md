@@ -240,10 +240,6 @@ pattern set in `design_system/public/PUBLIC_UI.md`, built from `components/site/
 `parity.json` still binds: its `requiredComponents` list stops a page silently losing a
 section, and `ci:mockup-parity` reads it.
 
-**The table below is for ADMIN and PRODUCT surfaces.** On the public site the equivalent
-rule is: build from the v3 barrel, and a section that fits no existing pattern gets a NEW
-barrel primitive rather than hand-rolled markup.
-
 **The primitive-per-need table lives in the canonical source**, not here:
 [`design_system/ryan-realty/SKILL.md`](design_system/ryan-realty/SKILL.md). The rule it
 encodes is one line: on admin and product surfaces build from `@/components/ui/*` and use
@@ -487,6 +483,9 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
   only for parallel work; merge or hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
   [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything.** Git, terminal and deploys are yours.
+- **Always ask Matt questions to get what you need (Matt 2026-09-24).** A call that is his
+  goes to him as a question (AskUserQuestion, recommended option first), not a guess or a
+  closing "say X if you want".
 - **Clear a stale `.git/index.lock` yourself;** never report a lock as a blocker.
 - **No blocked builds or commits.** If something is in the way, fix it. Exhaust every option
   before reporting an issue.

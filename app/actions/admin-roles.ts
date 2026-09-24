@@ -1,5 +1,6 @@
 'use server'
 
+import { recordTeamPageDecision } from '@/lib/data/brokers/workspace-sync'
 import { cache } from 'react'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient as createServerClient } from '@/lib/supabase/server'
@@ -86,6 +87,8 @@ export async function upsertAdminRole(
   )
   if (error) return { ok: false, error: error.message }
   await logAdminAction({ adminEmail: actorEmail ?? '', role: actorRole, actionType: 'upsert', resourceType: 'admin_role', resourceId: trimmed, details: { role, broker_id: brokerId ?? null } })
+  // Given a login by hand: the Workspace sync treats the address as active again.
+  await recordTeamPageDecision(trimmed, 'active', actorEmail ?? 'team page')
   revalidatePath('/admin')
   revalidatePath('/admin/users')
   revalidatePath('/admin/crm/settings/team')
@@ -105,6 +108,8 @@ export async function removeAdminRole(email: string): Promise<{ ok: true } | { o
   const { error } = await supabase.from('admin_roles').delete().eq('email', email.trim().toLowerCase())
   if (error) return { ok: false, error: error.message }
   await logAdminAction({ adminEmail: actorEmail ?? '', role: actorRole, actionType: 'delete', resourceType: 'admin_role', resourceId: email.trim().toLowerCase() })
+  // Removed by hand: the hourly Workspace sync never adds this address back.
+  await recordTeamPageDecision(email, 'removed', actorEmail ?? 'team page')
   revalidatePath('/admin')
   revalidatePath('/admin/users')
   revalidatePath('/admin/crm/settings/team')

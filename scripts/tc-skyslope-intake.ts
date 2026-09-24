@@ -106,6 +106,7 @@ async function main() {
     let drift = 0
     let adds = 0
     let deals = 0
+    let statuses = 0
     let raws = 0
     let stages = 0
     for (const p of res.properties) {
@@ -116,18 +117,19 @@ async function main() {
         if (c.plan.rawChanged) raws++
         docs += c.plan.documentsToAdd.length
         items += c.plan.itemsToAdd.length
+        statuses += c.plan.itemStatusUpdates.length
         asg += c.plan.assignmentsToAdd.length
         contacts += c.plan.contactsToAdd.length
         fields += c.plan.fieldUpdates.length
-        drift += c.plan.drift.length
+        drift += c.plan.drift.length + c.plan.itemStatusDrift.length
       }
     }
     console.log(
-      `\nPLAN TOTALS: ${deals} new deal(s) · ${adds} new cycle(s) · ${fields} field update(s) · ${stages} stage update(s) · ${drift} drift kept · ${docs} document(s) · ${items} checklist item(s) · ${asg} assignment(s) · ${contacts} contact(s) · ${raws} raw payload(s) refreshed. Nothing was written.`,
+      `\nPLAN TOTALS: ${deals} new deal(s) · ${adds} new cycle(s) · ${fields} field update(s) · ${stages} stage update(s) · ${drift} drift kept · ${docs} document(s) · ${items} checklist item(s) · ${statuses} checklist status(es) · ${asg} assignment(s) · ${contacts} contact(s) · ${raws} raw payload(s) refreshed. Nothing was written.`,
     )
   } else {
     console.log(
-      `\nAPPLIED: ${t.dealsAdded} deal(s) · ${t.cyclesAdded} cycle(s) added · ${t.cyclesUpdated} cycle(s) updated (${t.fieldsUpdated} fields) · ${t.driftKept} drift kept · ${t.rawRefreshed} raw refreshed · ${t.documentsAdded} document(s) (${t.documentFailures} failed) · ${t.itemsAdded} item(s) · ${t.assignmentsAdded} assignment(s) · ${t.contactsAdded} contact(s) · ${t.stagesUpdated} stage(s) · ${t.events} tc_events row(s) · ${(res.ms / 1000).toFixed(1)}s`,
+      `\nAPPLIED: ${t.dealsAdded} deal(s) · ${t.cyclesAdded} cycle(s) added · ${t.cyclesUpdated} cycle(s) updated (${t.fieldsUpdated} fields) · ${t.driftKept} drift kept · ${t.rawRefreshed} raw refreshed · ${t.documentsAdded} document(s) (${t.documentFailures} failed) · ${t.itemsAdded} item(s) · ${t.itemStatusesUpdated} checklist status(es) · ${t.assignmentsAdded} assignment(s) · ${t.contactsAdded} contact(s) · ${t.stagesUpdated} stage(s) · ${t.events} tc_events row(s) · ${(res.ms / 1000).toFixed(1)}s`,
     )
   }
 }

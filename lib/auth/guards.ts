@@ -2,6 +2,7 @@ import 'server-only'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail, type AdminRoleType } from '@/app/actions/admin-roles'
 import { isValidCronAuth } from '@/lib/auth/cron-auth'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 
 /**
  * Shared admin authorization guards (audit Step 1.3).
@@ -27,7 +28,9 @@ export async function getAdminContext(): Promise<AdminContext | null> {
   const session = await getSession()
   const email = session?.user?.email
   if (!email) return null
-  const role = await getAdminRoleForEmail(email)
+  // The broker directory answers "which files, which mailbox, which slug" for
+  // every scope check after this; a broker added from Google is in it.
+  const [role] = await Promise.all([getAdminRoleForEmail(email), ensureBrokerDirectory()])
   if (!role) return null
   return { email, role: role.role, brokerId: role.brokerId }
 }

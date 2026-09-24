@@ -14,9 +14,9 @@ import { revalidatePath, unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   CRM_STAGES,
-  CRM_BROKERS,
   type CrmBrokerSlug,
 } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { isQualifyingStage, fireQualifiedLeadEvent } from '@/lib/meta/qualifiedEvent'
 import { buildCrmPeopleQuery, CRM_PEOPLE_SELECT } from '@/lib/data/crm/buildCrmPeopleQuery'
@@ -918,7 +918,7 @@ export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActi
   }
   const personId = Number(formData.get('personId'))
   const brokerSlug = String(formData.get('broker') ?? '').trim() as CrmBrokerSlug
-  if (!personId || !(CRM_BROKERS as readonly string[]).includes(brokerSlug)) {
+  if (!personId || !isActiveBrokerSlug(brokerSlug)) {
     return { ok: false, error: 'Broker required' }
   }
   const sb = createServiceClient()

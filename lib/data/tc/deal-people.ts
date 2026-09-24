@@ -6,6 +6,8 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
+import { stampedTermsPatch } from '@/lib/data/tc/cycle-term-writes'
+import { stampProvenance } from '@/lib/tc/terms/provenance'
 import { existingDocumentIdByHash } from '@/lib/tc/document-dedupe'
 import {
   dedupeParties,
@@ -243,7 +245,9 @@ export async function ensureDealPartiesFromFile(dealId: string, opts: { harvest?
     if (facts.escrowNumber) {
       const cycle = (cycles ?? []).find((c) => !c.escrow_number) ?? (cycles ?? [])[0]
       if (cycle?.id && !cycle.escrow_number) {
-        await sb.from('tc_cycles').update({ escrow_number: facts.escrowNumber }).eq('id', cycle.id)
+        // Read from an email: the executed contract replaces it if they differ.
+        const patch = await stampedTermsPatch(sb, cycle.id, { escrow_number: facts.escrowNumber }, 'mail')
+        await sb.from('tc_cycles').update(patch).eq('id', cycle.id)
       }
     }
     if (facts.lender && needsLender) {
@@ -563,6 +567,8 @@ export async function createDealWithPeople(
     buyers,
     sellers,
     listing_price: listingPrice,
+    // The broker typed the parties: the contract reader never renames them.
+    term_provenance: stampProvenance({}, { buyers, sellers }, 'person', { actor: input.actor }),
   })
   if (cycleErr) {
     console.error('[createDealWithPeople] cycle', cycleErr)

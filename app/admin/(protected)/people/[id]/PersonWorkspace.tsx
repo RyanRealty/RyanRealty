@@ -17,7 +17,7 @@ import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSumm
 import { getDealsForPerson } from '@/lib/data/tc/deal-people'
 import { extractAddressCandidate } from '@/lib/crm/seller-intent'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
-import { CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { mailboxForSlug } from '@/lib/data/brokers/directory'
 import { renderCrmMerge, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
@@ -135,7 +135,7 @@ export async function PersonWorkspace({
   if (person) {
     const personLike = person as unknown as MergePersonLike & { assigned_broker?: string | null }
     const actingSlug = access?.brokerSlug ?? personLike.assigned_broker ?? 'matt'
-    const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
+    const mailbox = await mailboxForSlug(actingSlug)
     const tpl = sp.tpl ?? null
     const smsTpl = sp.smsTpl ?? null
     const activeTpl = tpl ? emailTemplates.find((t) => t.key === tpl) ?? null : null

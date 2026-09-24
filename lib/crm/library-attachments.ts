@@ -6,7 +6,7 @@ import { putAttachmentBytes } from '@/lib/crm/attachments'
 import { buildBrokerVcard } from '@/lib/crm/broker-vcard'
 import type { CrmAttachmentChannel, CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 import { AGENCY_PAMPHLET_URL } from '@/lib/crm/email-signature'
-import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { brokerDisplayName } from '@/lib/brokers/directory'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 
 export type LibraryAttachmentKind = 'disclosure' | 'cma' | 'vcard'
@@ -68,7 +68,7 @@ export async function stageLibraryAttachment(params: {
     brokers.find((b) => (b.email ?? '').toLowerCase() === email) ??
     brokers.find((b) => b.slug === params.brokerSlug) ??
     brokers[0]
-  const name = row?.fullName || CRM_BROKER_DISPLAY[params.brokerSlug ?? ''] || 'Ryan Realty'
+  const name = row?.fullName || brokerDisplayName(params.brokerSlug) || 'Ryan Realty'
   const vcf = buildBrokerVcard({
     name,
     email: row?.email ?? (email || null),

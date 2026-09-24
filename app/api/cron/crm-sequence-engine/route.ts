@@ -20,7 +20,8 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { sendCrmEmail } from '@/lib/crm/gmail'
+import { mailboxForSlug } from '@/lib/data/brokers/directory'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { decorateOutboundText } from '@/lib/identity/outbound-links'
@@ -315,7 +316,7 @@ export async function GET(request: Request) {
           continue
         }
 
-        const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
+        const mailbox = await mailboxForSlug(person.assigned_broker)
         // Claim the step before the send so a crash between send and step-advance
         // can't re-email the client on the next run (at-most-once).
         const emailClaim = await claimSend('email')
@@ -334,7 +335,7 @@ export async function GET(request: Request) {
         }
         // emailClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
       } else if (step.channel === 'sms') {
-        const mailbox = CRM_MAILBOXES.find((m) => m.slug === person.assigned_broker) ?? CRM_MAILBOXES[0]
+        const mailbox = await mailboxForSlug(person.assigned_broker)
         // The step's email stand-in for a text. ONE send site, two callers: A2P
         // not live (below), and the FUNNEL-3 suppressed-SMS switch when it is on.
         // 'hold' = no deliverable address; 'retry'/'blocked' = already handled.

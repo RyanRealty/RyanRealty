@@ -21,7 +21,8 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
 import { isUnknownCaller } from '@/lib/crm/display-name'
 import {
   getContactActivityFeed,
@@ -54,7 +55,7 @@ export function isValidConversationStatus(status: string): status is Conversatio
  */
 export function isAssignableBroker(broker: string | null): broker is CrmBrokerSlug | null {
   if (broker === null || broker === '') return true
-  return (CRM_BROKERS as readonly string[]).includes(broker)
+  return isActiveBrokerSlug(broker)
 }
 
 /**

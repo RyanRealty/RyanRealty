@@ -30,10 +30,10 @@ export async function sendAppointmentInvites(params: {
     .in('id', ids)
   if (!people || people.length === 0) return 0
 
-  const { CRM_MAILBOXES } = await import('@/lib/crm/gmail')
+  const { mailboxForSlug } = await import('@/lib/data/brokers/directory')
   const { sendGovernedEmail } = await import('@/lib/comms/sendGovernedEmail')
   const { taskGroupLabel, time12, wallDateKey, wallMinutes } = await import('@/lib/crm/calendar')
-  const mailbox = CRM_MAILBOXES.find((m) => m.slug === params.brokerSlug) ?? CRM_MAILBOXES[0]
+  const mailbox = await mailboxForSlug(params.brokerSlug)
 
   const dayLabel = taskGroupLabel(wallDateKey(params.startAt))
   const tzLabel =

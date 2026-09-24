@@ -15,7 +15,8 @@ import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { countMailQueue } from '@/lib/data/tc/mail-reads'
 import { getMailCoverage, type MailCoverageRow } from '@/lib/data/tc/mail-coverage'
 import { countDocumentReview } from '@/lib/data/tc/document-review'
-import { getPrincipalSignOffQueue } from '@/lib/data'
+import { getPrincipalSignOffQueue, getTermsReviewQueue } from '@/lib/data'
+import { termsPerFile } from '@/lib/tc/terms/review'
 import { listOutstandingEnvelopes } from '@/lib/data/tc/envelope-overview'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { BROKER_FILE_EMAIL, dealVisibleToBroker, fileNameFromBrokerSlug } from '@/lib/tc/deal-scope'
@@ -116,7 +117,7 @@ export default async function ClosingsPage({
   const canSee = (brokerName: string | null) =>
     dealVisibleToBroker({ role: mineOnly ? 'broker' : ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName: brokerName })
 
-  const [board, mirror, mailQueueCount, mailCoverage, reviewQueue, envelopes, docReview] = await Promise.all([
+  const [board, mirror, mailQueueCount, mailCoverage, reviewQueue, envelopes, docReview, termsQueue] = await Promise.all([
     getClosingsBoard(),
     getSkySlopeMirrorFreshness(),
     countMailQueue(mailbox),
@@ -124,6 +125,7 @@ export default async function ClosingsPage({
     superuser ? getPrincipalSignOffQueue() : Promise.resolve(null),
     listOutstandingEnvelopes(),
     countDocumentReview(canSee),
+    superuser ? getTermsReviewQueue().catch(() => null) : Promise.resolve(null),
   ])
   const scoped = board.deals.filter((d) => canSee(d.brokerName) && !isTestFile(d))
   const query = q?.trim() ?? ''
@@ -143,6 +145,7 @@ export default async function ClosingsPage({
     envelopes: envelopes.filter((e) => canSee(e.brokerName) && (!e.dealKey || scoped.some((s) => s.propertyKey === e.dealKey))),
     mailQueue: mailQueueCount,
     documentReview: docReview,
+    contractTerms: termsQueue?.authorized ? termsPerFile(termsQueue.items).filter((t) => scoped.some((s) => s.propertyKey === t.propertyKey)) : null,
     today,
   })
   const scopeHref = (m: boolean) => {

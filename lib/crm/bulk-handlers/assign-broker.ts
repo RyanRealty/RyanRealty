@@ -24,7 +24,9 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
 
 export const assignBrokerHandler: BulkHandler = async (ids, params, ctx): Promise<Partial<BulkResult>> => {
@@ -41,8 +43,10 @@ export const assignBrokerHandler: BulkHandler = async (ids, params, ctx): Promis
     return result
   }
 
+  // Runs off the crm-bulk-worker cron — no admin session to have loaded this.
+  await ensureBrokerDirectory()
   const brokerSlug = String(params.brokerSlug ?? '').trim() as CrmBrokerSlug
-  if (!(CRM_BROKERS as readonly string[]).includes(brokerSlug)) {
+  if (!isActiveBrokerSlug(brokerSlug)) {
     // Invalid params: skip the whole chunk (every id accounted for) so the job
     // drains visibly instead of looping.
     result.skipped = ids.length

@@ -24,7 +24,8 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { withSendIdempotency } from '@/lib/crm/idempotency'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
+import { sendCrmEmail } from '@/lib/crm/gmail'
+import { mailboxForSlug } from '@/lib/data/brokers/directory'
 import { recordConversationMessage } from '@/lib/crm/record-message'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { sendEmail } from '@/lib/resend'
@@ -121,7 +122,7 @@ async function sendViaGmail(
   payload: GovernedGmailPayload,
 ): Promise<GovernedEmailResult> {
   const actingSlug = req.initiator.broker ?? 'matt'
-  const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
+  const mailbox = await mailboxForSlug(actingSlug)
   // Always instrument. A caller that forgot `track` still gets open/click +
   // ?_pid= — brokers never opt into tracking. Already-instrumented HTML
   // (bulk cohort) is a no-op inside attributeOutbound.

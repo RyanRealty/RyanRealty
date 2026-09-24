@@ -136,7 +136,11 @@ function simulateApply(
   const fields = { ...(plan.insertFields ?? snapshot.fields) }
   for (const u of plan.fieldUpdates) fields[u.field] = u.to
   const documents = [...snapshot.documents, ...plan.documentsToAdd.map((d) => ({ id: `doc-${d.key}`, sourceDocId: d.docId, archived: d.archived }))]
-  const items = [...snapshot.items, ...plan.itemsToAdd.map((a) => ({ id: `item-${a.activityId}`, sourceActivityId: a.activityId }))]
+  const statusTo = new Map(plan.itemStatusUpdates.map((u) => [u.itemId, u.to]))
+  const items = [
+    ...snapshot.items.map((i) => (statusTo.has(i.id) ? { ...i, status: statusTo.get(i.id)! } : i)),
+    ...plan.itemsToAdd.map((a) => ({ id: `item-${a.activityId}`, sourceActivityId: a.activityId, status: a.status })),
+  ]
   const itemId = new Map(items.map((i) => [i.sourceActivityId, i.id]))
   const docId = new Map(documents.map((d) => [(d.sourceDocId ?? '').toLowerCase(), d.id]))
   const assignments = [
@@ -362,6 +366,63 @@ describe('planCycleIntake: archived documents stay exactly as the Vault has them
     expect(p.itemsToAdd.map((a) => a.activityId)).toEqual([1070791299])
     expect(p.assignmentsToAdd).toEqual([{ activityId: 1070791299, docKey: DOC_HUD }])
     expect(p.contactsToAdd.map((c) => c.role)).toEqual(['lender'])
+  })
+})
+
+// ── checklist status (Matt reviews in SkySlope until the cutover) ───────────
+
+/** saleDetail with one activity's SkySlope status word replaced. */
+function withActivityStatus(activityId: number, status: string, seed = 1): Obj {
+  const base = saleDetail({}, seed)
+  const acts = ((base.checklist as Obj).activities as Obj[]).map((a) => (a.activityId === activityId ? { ...a, status } : a))
+  return { ...base, checklist: { ...(base.checklist as Obj), activities: acts } }
+}
+
+describe('checklist status: the field rule on one column', () => {
+  it('carries an approval made in SkySlope onto an item the Vault left alone', () => {
+    const { snapshot, contacts } = migratedSnapshot(withActivityStatus(1070791270, 'In Review'), saleDocs(), 'intake')
+    const p = plan(withActivityStatus(1070791270, 'Completed', 2), saleDocs(2), snapshot, contacts)
+    expect(p.itemStatusUpdates).toEqual([
+      { itemId: 'item-1070791270', activityId: 1070791270, name: 'Counter Offers', from: 'in_review', to: 'completed' },
+    ])
+    expect(p.itemStatusDrift).toEqual([])
+    expect(cyclePlanIsEmpty(p)).toBe(false)
+  })
+
+  it('keeps a decision made in the Vault when SkySlope moved the other way, and records it', () => {
+    const { snapshot, contacts } = migratedSnapshot(withActivityStatus(1070791270, 'In Review'), saleDocs(), 'intake')
+    // Matt sent it back in the Vault (required); SkySlope later shows it completed.
+    const vault = { ...snapshot, items: snapshot.items.map((i) => (i.sourceActivityId === 1070791270 ? { ...i, status: 'required' } : i)) }
+    const p = plan(withActivityStatus(1070791270, 'Completed', 2), saleDocs(2), vault, contacts)
+    expect(p.itemStatusUpdates).toEqual([])
+    expect(p.itemStatusDrift).toEqual([
+      { itemId: 'item-1070791270', activityId: 1070791270, name: 'Counter Offers', vault: 'required', skyslopeBefore: 'in_review', skyslopeNow: 'completed' },
+    ])
+  })
+
+  it('does nothing when the Vault already agrees with SkySlope', () => {
+    const { snapshot, contacts } = migratedSnapshot(withActivityStatus(1070791270, 'In Review'), saleDocs(), 'intake')
+    const vault = { ...snapshot, items: snapshot.items.map((i) => (i.sourceActivityId === 1070791270 ? { ...i, status: 'completed' } : i)) }
+    const p = plan(withActivityStatus(1070791270, 'Completed', 2), saleDocs(2), vault, contacts)
+    expect(p.itemStatusUpdates).toEqual([])
+    expect(p.itemStatusDrift).toEqual([])
+  })
+
+  it('never moves an item on a status word it does not know, or without the Vault status', () => {
+    const { snapshot, contacts } = migratedSnapshot(withActivityStatus(1070791270, 'In Review'), saleDocs(), 'intake')
+    expect(plan(withActivityStatus(1070791270, 'Waived By Broker', 2), saleDocs(2), snapshot, contacts).itemStatusUpdates).toEqual([])
+    const blind = { ...snapshot, items: snapshot.items.map((i) => ({ id: i.id, sourceActivityId: i.sourceActivityId })) }
+    expect(plan(withActivityStatus(1070791270, 'Completed', 2), saleDocs(2), blind, contacts).itemStatusUpdates).toEqual([])
+  })
+
+  it('is idempotent: once carried over, the next run changes nothing', () => {
+    const { snapshot, contacts } = migratedSnapshot(withActivityStatus(1070791270, 'In Review'), saleDocs(), 'intake')
+    const detail = withActivityStatus(1070791270, 'Completed', 2)
+    const first = plan(detail, saleDocs(2), snapshot, contacts)
+    const after = simulateApply(snapshot, contacts, first, detail)
+    const second = plan(withActivityStatus(1070791270, 'Completed', 3), saleDocs(3), after.snapshot, after.contacts)
+    expect(second.itemStatusUpdates).toEqual([])
+    expect(cyclePlanIsEmpty(second)).toBe(true)
   })
 })
 
