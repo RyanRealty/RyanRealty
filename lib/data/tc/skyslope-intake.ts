@@ -25,6 +25,7 @@ import 'server-only'
 
 import { createHash } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { stampProvenance } from '@/lib/tc/terms/provenance'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   fetchSkySlopeDocumentBinary,
@@ -200,9 +201,11 @@ type VaultCycleRow = {
   source_guid: string
   raw: Obj
   fields: Partial<Record<CycleField, unknown>>
+  /** Who wrote each term column (lib/tc/terms/provenance.ts); the intake stamps its writes as imports. */
+  termProvenance: unknown
 }
 
-const CYCLE_COLUMNS = ['id', 'deal_id', 'kind', 'source_guid', 'raw', ...CYCLE_FIELD_SPECS.map((s) => s.column)].join(', ')
+const CYCLE_COLUMNS = ['id', 'deal_id', 'kind', 'source_guid', 'raw', 'term_provenance', ...CYCLE_FIELD_SPECS.map((s) => s.column)].join(', ')
 
 async function pageAll<T>(fetchPage: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>): Promise<T[]> {
   const out: T[] = []
@@ -239,6 +242,7 @@ async function loadSkySlopeCycles(sb: SB): Promise<VaultCycleRow[]> {
       source_guid: String(r.source_guid),
       raw: (r.raw && typeof r.raw === 'object' ? r.raw : {}) as Obj,
       fields,
+      termProvenance: r.term_provenance ?? {},
     }
   })
 }
@@ -702,6 +706,8 @@ async function intakeProperty(
           source: 'skyslope',
           source_guid: plan.guid,
           ...plan.insertFields,
+          // Written by the import: the executed contract replaces a value it disagrees with.
+          term_provenance: stampProvenance({}, plan.insertFields ?? {}, 'import', { actor: 'skyslope-intake' }),
           raw: {},
         })
         .select('id')
@@ -732,6 +738,10 @@ async function intakeProperty(
       if (!plan.fieldUpdates.length) continue
       const patch: Obj = { updated_at: new Date().toISOString() }
       for (const u of plan.fieldUpdates) patch[u.field] = u.to
+      // Written by the import: the executed contract replaces a value it disagrees with.
+      const prior = ctx.cycles.find((c) => c.id === cycleId)?.termProvenance ?? {}
+      const stamped = stampProvenance(prior, patch, 'import', { actor: 'skyslope-intake' })
+      if (Object.keys(stamped).length || Object.keys(prior as object).length) patch.term_provenance = stamped
       // Guarded: each field changes only if it still holds the value we read.
       let q = sb.from('tc_cycles').update(patch).eq('id', cycleId)
       for (const u of plan.fieldUpdates) {

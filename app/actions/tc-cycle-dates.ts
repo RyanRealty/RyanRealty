@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createServiceClient } from '@/lib/supabase/service'
+import { writeCycleTermsByPerson } from '@/lib/data/tc/cycle-term-writes'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { syncDealCalendar } from '@/lib/tc/deal-calendar'
@@ -25,11 +25,15 @@ export async function saveCycleContingencyDays(input: {
   if (fin != null && (!Number.isFinite(fin) || fin < 0 || fin > 365)) {
     return { ok: false, error: 'Financing days must be 0–365.' }
   }
-  const { error } = await createServiceClient()
-    .from('tc_cycles')
-    .update({ inspection_days: inspect, financing_days: fin })
-    .eq('id', input.cycleId)
-  if (error) return { ok: false, error: error.message }
+  // Typed by a person: the contract reader flags a different contract value
+  // for Matt instead of writing over it (lib/tc/terms/provenance.ts).
+  const w = await writeCycleTermsByPerson({
+    cycleId: input.cycleId,
+    actor: email,
+    action: 'contingency_days_saved',
+    patch: { inspection_days: inspect, financing_days: fin },
+  })
+  if (!w.ok) return { ok: false, error: w.error }
   await syncDealCalendar(input.dealId)
   revalidatePath(`/admin/deals/${encodeURIComponent(input.propertyKey)}`)
   return { ok: true }

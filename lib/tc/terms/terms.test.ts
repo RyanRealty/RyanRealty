@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { agreeReadings } from './agree'
 import { planTermsWrite, type CycleTermColumns } from './plan'
+import { parseProvenance, stampProvenance } from './provenance'
+import { disputesToSettle, needsTiebreak, settleWithThird } from './tiebreak'
+import { afterTermsDecisionHref, formIsThisCycles, formatTermValue, groupReadings, orderTermsQueue } from './review'
 import { resolveCycleTerms, surnames, type Instrument } from './resolve'
 import { instrumentKindForTitle, normalizeTermsReading, type InstrumentKind, type Term, type TermsReading } from './schema'
 
@@ -244,18 +247,60 @@ describe('planTermsWrite', () => {
     expect(p.conflicts).toEqual([])
   })
 
-  it('leaves equal values alone and never overwrites a different one', () => {
-    const p = planTermsWrite(terms, { ...empty, sale_price: 519000, escrow_number: 'wt-0286975', contract_acceptance_date: '2026-05-14', buyers: ['Tyler Nicoll'] })
+  const onFile = { ...empty, sale_price: 519000, escrow_number: 'wt-0286975', contract_acceptance_date: '2026-05-14', buyers: ['Tyler Nicoll'] }
+
+  it('leaves equal values alone and replaces a different value a machine wrote', () => {
+    const p = planTermsWrite(terms, onFile)
     expect(p.same).toEqual(expect.arrayContaining(['sale_price', 'escrow_number', 'buyers']))
-    expect(p.conflicts).toEqual([
-      expect.objectContaining({ column: 'contract_acceptance_date', current: '2026-05-14', contract: '2026-05-13' }),
+    expect(p.replaces).toEqual([
+      expect.objectContaining({ column: 'contract_acceptance_date', current: '2026-05-14', contract: '2026-05-13', value: '2026-05-13' }),
     ])
+    expect(p.conflicts).toEqual([])
     expect(p.fills.map((f) => f.column)).not.toContain('contract_acceptance_date')
+  })
+
+  it('never overwrites a value a person typed: it is flagged for Matt', () => {
+    const typed = stampProvenance({}, { contract_acceptance_date: '2026-05-14' }, 'person', { actor: 'paul@ryan-realty.com' })
+    const p = planTermsWrite(terms, onFile, typed)
+    expect(p.replaces).toEqual([])
+    expect(p.conflicts).toEqual([expect.objectContaining({ column: 'contract_acceptance_date', current: '2026-05-14', contract: '2026-05-13' })])
+  })
+
+  it('does not flag a typed value again once Matt kept it against the same contract value, but does when the contract changes', () => {
+    const kept = { contract_acceptance_date: { by: 'person' as const, at: '2026-09-24T00:00:00Z', keptAgainst: '2026-05-13' } }
+    const p = planTermsWrite(terms, onFile, kept)
+    expect(p.conflicts).toEqual([])
+    expect(p.kept).toEqual(['contract_acceptance_date'])
+    const moved = { contract_acceptance_date: { ...kept.contract_acceptance_date, keptAgainst: '2026-05-12' } }
+    expect(planTermsWrite(terms, onFile, moved).conflicts.map((c) => c.column)).toEqual(['contract_acceptance_date'])
+  })
+
+  it('replaces an imported or emailed value, and a value an earlier contract read wrote', () => {
+    for (const by of ['import', 'mail', 'contract'] as const) {
+      const prov = stampProvenance({}, { contract_acceptance_date: '2026-05-14' }, by)
+      expect(planTermsWrite(terms, onFile, prov).replaces.map((r) => r.column)).toEqual(['contract_acceptance_date'])
+    }
   })
 
   it('writes nothing from an offer nobody accepted', () => {
     const offerOnly = resolveCycleTerms([inst('countered', reading('sale_agreement', { buyers: NICOLL, purchasePrice: t(510000) }))], { buyers: NICOLL, contractAcceptanceDate: null })
-    expect(planTermsWrite(offerOnly, empty)).toEqual({ fills: [], conflicts: [], same: [] })
+    expect(planTermsWrite(offerOnly, empty)).toEqual({ fills: [], replaces: [], conflicts: [], kept: [], same: [] })
+  })
+})
+
+describe('term provenance', () => {
+  it('stamps only term columns, drops the stamp of a column written empty, and clears a kept decision on a new write', () => {
+    const a = stampProvenance({}, { sale_price: 519000, status: 'Pending', buyers: [] }, 'import', { at: '2026-09-24T01:00:00Z' })
+    expect(a).toEqual({ sale_price: { by: 'import', at: '2026-09-24T01:00:00Z', actor: null, document: null, page: null, keptAgainst: null } })
+    const kept = { ...a, sale_price: { ...a.sale_price!, by: 'person' as const, keptAgainst: '$520,000' } }
+    const b = stampProvenance(kept, { sale_price: 525000, escrow_number: null }, 'person', { actor: 'matt@ryan-realty.com' })
+    expect(b.sale_price).toMatchObject({ by: 'person', actor: 'matt@ryan-realty.com', keptAgainst: null })
+    expect(stampProvenance(b, { sale_price: null }, 'person')).toEqual({})
+  })
+
+  it('ignores anything in the stored column it does not recognize', () => {
+    expect(parseProvenance({ sale_price: { by: 'robot', at: 'x' }, listing_price: { by: 'person', at: 'x' }, buyers: { by: 'person', at: 'x' } })).toEqual({ buyers: { by: 'person', at: 'x' } })
+    expect(parseProvenance(null)).toEqual({})
   })
 })
 
@@ -266,5 +311,108 @@ describe('looseSame (company names, possession wording)', () => {
     expect(looseSame('by 5:00 p.m. on the date of Closing', 'By 5:00 PM on the date of closing')).toBe(true)
     expect(looseSame('Western Title', 'Bend Premier Real Estate, Ryan Realty LLC and Western Title')).toBe(false)
     expect(looseSame('Amerititle - Jeff Schopfer', 'Western Title and Escrow - Tonya Moore')).toBe(false)
+  })
+})
+
+describe('the third read (two of three decide)', () => {
+  const doc = (price: number | null, days: number | null, signed: string | null = '2026-05-13') => ({
+    unreadablePages: [],
+    instruments: [
+      reading('counteroffer', {
+        buyers: NICOLL,
+        purchasePrice: price == null ? null : t(price, 1, `Price $${price}`),
+        inspectionDays: days == null ? null : t(days, 2),
+        lastSignatureDate: signed,
+      }),
+    ],
+  })
+  const forms = [{ kind: 'counteroffer' as const, title: "Seller's Counteroffer No. 2", pages: [1, 2, 3] }]
+
+  it('asks the third read only about what the two readers disputed, on those pages', () => {
+    const a = agreeReadings(doc(519000, 10), doc(591000, 10))
+    expect(disputesToSettle(a.disagreements, forms)).toEqual([{ instrument: 0, title: "Seller's Counteroffer No. 2", kind: 'counteroffer', fields: ['purchasePrice'], pages: [1] }])
+    // a signature-date dispute reads the whole form: the signatures are not on the term's page
+    const b = agreeReadings(doc(519000, 10, '2026-05-13'), doc(519000, 10, '2026-05-12'))
+    expect(disputesToSettle(b.disagreements, forms)[0].pages).toEqual([1, 2, 3])
+  })
+
+  it('settles a term the third read agrees on, keeping that reading page and quote', () => {
+    const first = doc(519000, 10)
+    const second = doc(591000, 10)
+    const a = agreeReadings(first, second)
+    const stored = { agreed: a.reading.instruments, form_indexes: a.formIndexes, disagreements: a.disagreements }
+    const r = settleWithThird(stored, first, second, new Map([[0, doc(519000, 10).instruments[0]]]))
+    expect(r.disagreements).toEqual([])
+    expect(r.agreed[0].purchasePrice).toEqual({ value: 519000, page: 1, quote: 'Price $519000' })
+    expect(r.settled).toEqual([{ instrument: 0, field: 'purchasePrice', agreedWith: 'first', value: 519000, third: 519000 }])
+  })
+
+  it('sides with the second reader when the third agrees with it', () => {
+    const first = doc(591000, 10)
+    const second = doc(519000, 10)
+    const a = agreeReadings(first, second)
+    const r = settleWithThird({ agreed: a.reading.instruments, form_indexes: a.formIndexes, disagreements: a.disagreements }, first, second, new Map([[0, doc(519000, 10).instruments[0]]]))
+    expect(r.agreed[0].purchasePrice?.value).toBe(519000)
+    expect(r.settled[0].agreedWith).toBe('second')
+  })
+
+  it('reads a term only one reader found, and the third does not find, as not on the form', () => {
+    const first = doc(519000, 10)
+    const second = doc(519000, null)
+    const a = agreeReadings(first, second)
+    const r = settleWithThird({ agreed: a.reading.instruments, form_indexes: a.formIndexes, disagreements: a.disagreements }, first, second, new Map([[0, doc(519000, null).instruments[0]]]))
+    expect(r.agreed[0].inspectionDays).toBeNull()
+    expect(r.settled).toEqual([{ instrument: 0, field: 'inspectionDays', agreedWith: 'absent', value: null, third: null }])
+  })
+
+  it('leaves a three-way split, and a failed third read, for Matt', () => {
+    const first = doc(519000, 10)
+    const second = doc(591000, 10)
+    const a = agreeReadings(first, second)
+    const stored = { agreed: a.reading.instruments, form_indexes: a.formIndexes, disagreements: a.disagreements }
+    const split = settleWithThird(stored, first, second, new Map([[0, doc(515000, 10).instruments[0]]]))
+    expect(split.settled).toEqual([])
+    expect(split.disagreements).toEqual([expect.objectContaining({ field: 'purchasePrice', first: 519000, second: 591000, third: 515000 })])
+    expect(split.agreed[0].purchasePrice).toBeNull()
+    const failed = settleWithThird(stored, first, second, new Map([[0, null]]))
+    expect(failed.disagreements).toEqual(a.disagreements)
+  })
+
+  it('never votes on the form kind or the buyers', () => {
+    expect(needsTiebreak([{ instrument: 0, title: 'x', field: 'buyers', first: [], second: [], page: null }])).toBe(false)
+    expect(needsTiebreak([{ instrument: 0, title: 'x', field: 'kind', first: 'a', second: 'b', page: null }])).toBe(false)
+    expect(needsTiebreak([{ instrument: 0, title: 'x', field: 'earnestMoney', first: 5000, second: 5250, page: 1 }])).toBe(true)
+  })
+})
+
+describe("Matt's contract-terms queue", () => {
+  it('shows readings as Matt reads them and groups readers who agree', () => {
+    expect(formatTermValue('purchasePrice', 519000)).toBe('$519,000')
+    expect(formatTermValue('inspectionDays', 1)).toBe('1 day')
+    expect(formatTermValue('financingType', 'va')).toBe('VA')
+    expect(formatTermValue('closingDate', null)).toBe('Not on the form')
+    expect(groupReadings('purchasePrice', 519000, 591000, 519000)).toEqual([
+      { value: 519000, display: '$519,000', readers: ['first', 'third'] },
+      { value: 591000, display: '$591,000', readers: ['second'] },
+    ])
+    expect(groupReadings('escrowNumber', 'WT-0286975', 'wt0286975', undefined)).toEqual([{ value: 'WT-0286975', display: 'WT-0286975', readers: ['first', 'second'] }])
+  })
+
+  it("keeps another buyer's offer out of this cycle's queue", () => {
+    expect(formIsThisCycles(TREADWAY, NICOLL)).toBe(false)
+    expect(formIsThisCycles(['Tyler J. Nicoll'], NICOLL)).toBe(true)
+    expect(formIsThisCycles([], NICOLL)).toBe(true)
+  })
+
+  it('orders soonest closing first and moves to the next item after a decision', () => {
+    const base = { cycleId: 'c', propertyKey: 'k', broker: null, documentId: 'd', documentName: 'x.pdf', instrument: 0, title: 't', field: 'purchasePrice', page: 1, readings: [] }
+    const a = { ...base, kind: 'unsettled' as const, key: 'a', label: 'Price', address: '1 A St', closing: null }
+    const b = { ...base, kind: 'unsettled' as const, key: 'b', label: 'Price', address: '2 B St', closing: '2026-10-02' }
+    const c = { ...base, kind: 'unsettled' as const, key: 'c', label: 'Price', address: '3 C St', closing: '2026-09-30' }
+    const q = orderTermsQueue([a, b, c])
+    expect(q.map((x) => x.key)).toEqual(['c', 'b', 'a'])
+    expect(afterTermsDecisionHref(q, 'b', null)).toBe('/admin/sign-off/terms?item=a')
+    expect(afterTermsDecisionHref(q, 'a', 'k')).toBe('/admin/sign-off/terms?item=b&deal=k')
+    expect(afterTermsDecisionHref([a], 'a', null)).toBe('/admin/sign-off/terms')
   })
 })

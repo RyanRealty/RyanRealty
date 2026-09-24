@@ -146,6 +146,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
         tasks={tasks}
         terms={terms}
         canEditTerms={hasCapability(ctx, 'transactions.edit')}
+        isPrincipal={superuser}
         tabHref={tabHref}
       />
     )

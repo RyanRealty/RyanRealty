@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-24T17:35:01.712Z
+**Generated:** 2026-09-24T18:45:44.568Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 596,948**
+### `listing_tile_mv` · **rows ≈ 597,040**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed every 30 minutes by pg_cron job `refresh_listing_tile_mv_30min` (:02/:32). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -356,7 +356,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 18,977**
+### `market_stats_cache` · **rows ≈ 18,959**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -5276,6 +5276,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `updated_at` | timestamp with time zone | no | now() |
 | `inspection_days` | integer | yes |  |
 | `financing_days` | integer | yes |  |
+| `term_provenance` | jsonb | no | '{}'::jsonb |
 
 ### `tc_deal_contacts`
 

@@ -81,7 +81,7 @@ export async function GET(request: Request) {
     const applied = []
     for (const cycleId of cycles) {
       if (Date.now() - start > BUDGET_MS + 40_000) break
-      applied.push(await applyCycleTerms(cycleId, sb).catch((e) => ({ cycleId, filled: [], conflicts: 0, skipped: e instanceof Error ? e.message : String(e) })))
+      applied.push(await applyCycleTerms(cycleId, sb).catch((e) => ({ cycleId, filled: [], replaced: [], conflicts: 0, skipped: e instanceof Error ? e.message : String(e) })))
     }
     return NextResponse.json({ ok: true, reads, applied, health, ms: Date.now() - start })
   } finally {

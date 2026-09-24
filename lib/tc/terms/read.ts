@@ -11,6 +11,7 @@
  * digit does not become the file's number: ./agree.ts keeps a term only when
  * both read it the same, and lists the rest for a person.
  */
+import type Anthropic from '@anthropic-ai/sdk'
 import { PDFDocument } from 'pdf-lib'
 import { createAnthropic, modelCostUsd } from '@/lib/ai/anthropic'
 import { GROK_MODELS } from '@/lib/grok/client'
@@ -24,7 +25,9 @@ import {
   termsInstruction,
   type InstrumentKind,
   type TermsDocumentReading,
+  type TermsReading,
 } from './schema'
+import type { Dispute } from './tiebreak'
 
 /** The forms on one PDF to read, with their pages in the file (1-based). */
 export type TermsForm = { kind: InstrumentKind; title: string; pages: number[] }
@@ -32,8 +35,13 @@ export type TermsForm = { kind: InstrumentKind; title: string; pages: number[] }
 /** A sale agreement runs 12 to 15 pages; a packet with several forms stays under this. */
 export const MAX_TERMS_PAGES = 30
 
+/**
+ * Every Claude read here forces the record_terms tool call. Claude Opus 5
+ * accepts a forced tool_choice; Claude Opus 5.5 and Fable 5.1 reject it with
+ * a 400, so a model override must be one that accepts it.
+ */
 export function claudeTermsModel(): string {
-  return process.env.TC_TERMS_CLAUDE_MODEL?.trim() || 'claude-opus-5-5'
+  return process.env.TC_TERMS_CLAUDE_MODEL?.trim() || 'claude-opus-5'
 }
 
 export function grokTermsModel(): string {
@@ -161,4 +169,81 @@ export async function readTermsTwice(bytes: Uint8Array, forms: TermsForm[]): Pro
     agreed: c.reading && g.reading ? agreeReadings(c.reading, g.reading) : null,
     runs: { claude: c.run, grok: g.run },
   }
+}
+
+// ── the third read ──────────────────────────────────────────────────────────
+
+const FOCUS: Record<string, string> = {
+  purchasePrice: 'the purchase price',
+  earnestMoney: 'the earnest money amount',
+  closingDate: 'the closing date',
+  closingText: 'the words that set the closing date',
+  inspectionDays: 'the inspection / due diligence period in days',
+  financingDays: 'the loan / financing contingency period in days',
+  financingType: 'the financing type (the box that is checked)',
+  sellerConcessions: 'the seller-paid concessions',
+  possession: 'when the buyer takes possession',
+  escrowCompany: 'the escrow or title company',
+  escrowNumber: 'the escrow / file number',
+  settlementDate: 'the settlement or disbursement date',
+  receivedDate: 'the date the deposit was received',
+  lastSignatureDate: 'the latest date written beside a buyer or seller signature',
+}
+
+export type ThirdRead = { readings: Map<number, TermsReading | null>; runs: ReaderRun[] }
+
+/**
+ * The tie-breaking read (./tiebreak.ts): Claude, one form at a time, on our
+ * renders of only the pages in question, asked for that form's terms with the
+ * disputed ones named, and never shown what the first two readers said.
+ */
+export async function readThird(bytes: Uint8Array, disputes: Dispute[]): Promise<ThirdRead> {
+  const model = claudeTermsModel()
+  const readings = new Map<number, TermsReading | null>()
+  const runs: ReaderRun[] = []
+  if (!disputes.length) return { readings, runs }
+  const pdf = await openPdf(bytes)
+  try {
+    for (const d of disputes) {
+      const t0 = Date.now()
+      try {
+        const content: Anthropic.ContentBlockParam[] = []
+        for (const p of d.pages) {
+          content.push({ type: 'text', text: `Page ${p}:` })
+          content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: (await pdf.render(p)).toString('base64') } })
+        }
+        const focus = d.fields.map((f) => FOCUS[f] ?? f).join('; ')
+        content.push({
+          type: 'text',
+          text: [
+            termsInstruction({ kinds: [{ kind: d.kind, title: d.title, pages: d.pages }] }),
+            '',
+            `Read these with particular care, exactly as written on the page: ${focus}. If the page does not state one of them, return null for it.`,
+          ].join('\n'),
+        })
+        const res = await createAnthropic().messages.create({
+          model,
+          max_tokens: 8000,
+          system: TERMS_SYSTEM,
+          tools: [{ name: 'record_terms', description: 'Record the terms transcribed from the form.', input_schema: TERMS_SCHEMA as { type: 'object' } }],
+          tool_choice: { type: 'tool', name: 'record_terms' },
+          messages: [{ role: 'user', content }],
+        })
+        const use = res.content.find((b) => b.type === 'tool_use')
+        const reading = use && use.type === 'tool_use' ? normalizeTermsReading(use.input, new Set(d.pages)) : null
+        const inst = reading?.instruments[0] ?? null
+        // The form must come back as the same kind, or nothing from it counts.
+        readings.set(d.instrument, inst && inst.kind === d.kind ? inst : null)
+        const inputTokens = res.usage?.input_tokens ?? null
+        const outputTokens = res.usage?.output_tokens ?? null
+        runs.push({ model, costUsd: costOrNull(model, inputTokens ?? 0, outputTokens ?? 0), inputTokens, outputTokens, ms: Date.now() - t0, error: inst ? null : 'no reading of the form in the reply' })
+      } catch (e) {
+        readings.set(d.instrument, null)
+        runs.push({ model, costUsd: null, inputTokens: null, outputTokens: null, ms: Date.now() - t0, error: (e instanceof Error ? e.message : String(e)).slice(0, 500) })
+      }
+    }
+  } finally {
+    await pdf.close()
+  }
+  return { readings, runs }
 }

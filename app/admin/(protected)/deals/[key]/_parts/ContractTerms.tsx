@@ -3,13 +3,18 @@
 // What the executed agreement says, where it says it, and how that compares
 // with the file (Matt 2026-09-24: "When they read the actual deal file, any
 // counteroffers, addendums, and all that stuff will be automatically placed
-// into the deal file"). Empty fields were already filled by the terms reader
-// (lib/data/tc/deal-terms.ts); a field that differs waits here for one click.
+// into the deal file"). The terms reader (lib/data/tc/deal-terms.ts) fills empty
+// fields and replaces values a machine wrote; a value a person typed that the
+// contract disagrees with, and a term the readers still split on after the
+// third read, wait for Matt (Matt 2026-09-24: "Contract wins, unless a person
+// typed it"; "Third read breaks the tie"), in his queue at /admin/sign-off/terms.
 import { Panel, StateWord } from '@/components/admin/v2'
 import type { CycleTerms } from '@/lib/data/tc/deal-terms'
 import type { ResolvedField } from '@/lib/tc/terms/resolve'
 import type { TermColumn } from '@/lib/tc/terms/plan'
 import { AcceptTermButton } from './AcceptTermButton'
+import Link from 'next/link'
+import { formatTermValue, termsReviewHref } from '@/lib/tc/terms/review'
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
 
@@ -58,11 +63,14 @@ function sourceLine(f: ResolvedField<unknown>): string {
   return [s.instrument, s.page ? `page ${s.page}` : null, s.documentName].filter(Boolean).join(' · ')
 }
 
-export function ContractTerms({ state, canEdit }: { state: CycleTerms | null; canEdit: boolean }) {
+export function ContractTerms({ state, canEdit, propertyKey, isPrincipal }: { state: CycleTerms | null; canEdit: boolean; propertyKey?: string; isPrincipal?: boolean }) {
   if (!state) return null
   const { terms, plan, disagreements, unread, failed } = state
   const conflictBy = new Map(plan.conflicts.map((c) => [c.column, c]))
+  const replaceBy = new Map(plan.replaces.map((c) => [c.column, c]))
+  const keptBy = new Set(plan.kept)
   const filledBy = new Set(plan.same)
+  const waiting = plan.conflicts.length + disagreements.length
   const list = rows(terms)
   const aside =
     terms.status === 'executed' ? (
@@ -89,7 +97,11 @@ export function ContractTerms({ state, canEdit }: { state: CycleTerms | null; ca
                 <span className="av2-feed__when">{r.label}</span>
                 <span className="av2-feed__what">{r.value}</span>
                 {conflict ? (
-                  <StateWord state="slow">File says {conflict.current}</StateWord>
+                  <StateWord state="slow">Typed on the file: {conflict.current} · waiting on Matt</StateWord>
+                ) : r.column && replaceBy.has(r.column) ? (
+                  <StateWord state="waiting">Replacing {replaceBy.get(r.column)!.current}</StateWord>
+                ) : r.column && keptBy.has(r.column) ? (
+                  <StateWord state="waiting">Matt kept the file&apos;s value</StateWord>
                 ) : r.column && filledBy.has(r.column) ? (
                   <StateWord state="ok">On file</StateWord>
                 ) : null}
@@ -112,13 +124,13 @@ export function ContractTerms({ state, canEdit }: { state: CycleTerms | null; ca
       ) : null}
       {disagreements.length ? (
         <div style={{ marginTop: 'var(--a-s3)' }}>
-          <p style={{ margin: '0 0 var(--a-s1)', fontSize: 'var(--a-text-sm)', fontWeight: 600 }}>Read differently by the two readers, so not used</p>
+          <p style={{ margin: '0 0 var(--a-s1)', fontSize: 'var(--a-text-sm)', fontWeight: 600 }}>Read differently by the readers, even after a third read, so not used yet</p>
           <ul className="av2-feed">
             {disagreements.slice(0, 8).map((d, i) => (
               <li key={`${d.documentId}-${d.field}-${i}`} className="av2-feed__row">
                 <span className="av2-feed__when">{FIELD_LABEL[d.field] ?? d.field}</span>
                 <span className="av2-feed__what">
-                  {String(d.first ?? 'nothing')} / {String(d.second ?? 'nothing')}
+                  {[d.first, d.second, ...('third' in d ? [d.third] : [])].map((v) => formatTermValue(d.field, v)).join(' / ')}
                 </span>
                 <span className="av2-feed__more" style={{ fontSize: 'var(--a-text-xs)' }}>
                   {[d.title, d.page ? `page ${d.page}` : null, d.documentName].filter(Boolean).join(' · ')}
@@ -127,6 +139,16 @@ export function ContractTerms({ state, canEdit }: { state: CycleTerms | null; ca
             ))}
           </ul>
         </div>
+            ) : null}
+      {waiting ? (
+        <p style={{ margin: 'var(--a-s3) 0 0', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {waiting} term{waiting === 1 ? '' : 's'} on this file {waiting === 1 ? 'waits' : 'wait'} on the principal broker&apos;s review.{' '}
+          {isPrincipal && propertyKey ? (
+            <Link href={termsReviewHref({ deal: propertyKey })} style={{ color: 'var(--a-accent)' }}>
+              Check {waiting === 1 ? 'it' : 'them'} beside the page
+            </Link>
+          ) : null}
+        </p>
       ) : null}
     </Panel>
   )

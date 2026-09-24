@@ -2,12 +2,20 @@
  * What the standing terms change on the cycle. Pure.
  *
  * An empty field is filled. A field that already holds the same value is left
- * alone. A field that holds a DIFFERENT value is never overwritten: it is a
- * conflict, shown on the file beside the contract's value and its page, and a
- * person settles it with one click (app/actions/tc-deal-terms.ts). Only an
- * executed agreement writes anything; an offer nobody accepted fills nothing.
+ * alone. A field that holds a DIFFERENT value (Matt 2026-09-24: "Contract
+ * wins, unless a person typed it"):
+ *   - written by a machine (the SkySlope import, an email, an earlier read):
+ *     replaced by the contract's value, the old value kept in tc_events;
+ *   - typed by a person (./provenance.ts): never overwritten. It is a
+ *     conflict, flagged for Matt beside the contract's value and its page,
+ *     and settled with one click (app/actions/tc-deal-terms.ts): use the
+ *     contract's value, or keep the file's. A kept value is not flagged again
+ *     until the contract's value changes.
+ * Only an executed agreement writes anything; an offer nobody accepted fills
+ * nothing.
  */
 import type { ResolvedField, ResolvedTerms, TermSource } from './resolve'
+import { keptAgainst, typedByPerson, type TermProvenance } from './provenance'
 
 export type CycleTermColumns = {
   sale_price: number | null
@@ -40,7 +48,17 @@ export const TERM_COLUMN_LABEL: Record<TermColumn, string> = {
 export type TermWrite = { column: TermColumn; value: unknown; display: string; source: TermSource | null }
 export type TermConflict = { column: TermColumn; current: string; contract: string; value: unknown; source: TermSource | null }
 
-export type TermsPlan = { fills: TermWrite[]; conflicts: TermConflict[]; same: TermColumn[] }
+export type TermsPlan = {
+  /** Empty fields the contract fills. */
+  fills: TermWrite[]
+  /** Fields a machine wrote that the contract replaces (`current` is the old value). */
+  replaces: TermConflict[]
+  /** Fields a person typed that differ from the contract: for Matt. */
+  conflicts: TermConflict[]
+  /** Fields a person typed that Matt kept against this same contract value. */
+  kept: TermColumn[]
+  same: TermColumn[]
+}
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
 
@@ -61,15 +79,21 @@ function surnameKey(people: readonly string[]): string {
     .join('|')
 }
 
-export function planTermsWrite(terms: ResolvedTerms, cycle: CycleTermColumns): TermsPlan {
-  const plan: TermsPlan = { fills: [], conflicts: [], same: [] }
+export function planTermsWrite(terms: ResolvedTerms, cycle: CycleTermColumns, provenance: TermProvenance = {}): TermsPlan {
+  const plan: TermsPlan = { fills: [], replaces: [], conflicts: [], kept: [], same: [] }
   if (terms.status !== 'executed') return plan
+
+  const differs = (c: TermConflict) => {
+    if (!typedByPerson(provenance, c.column)) plan.replaces.push(c)
+    else if (keptAgainst(provenance, c.column, c.contract)) plan.kept.push(c.column)
+    else plan.conflicts.push(c)
+  }
 
   const consider = <T>(column: TermColumn, field: ResolvedField<T> | undefined, current: unknown, opts: { write: (v: T) => unknown; show: (v: T) => string; showCurrent: (v: unknown) => string; equal: (a: unknown, b: T) => boolean; empty: (v: unknown) => boolean }) => {
     if (!field) return
     if (opts.empty(current)) plan.fills.push({ column, value: opts.write(field.value), display: opts.show(field.value), source: field.source })
     else if (opts.equal(current, field.value)) plan.same.push(column)
-    else plan.conflicts.push({ column, current: opts.showCurrent(current), contract: opts.show(field.value), value: opts.write(field.value), source: field.source })
+    else differs({ column, current: opts.showCurrent(current), contract: opts.show(field.value), value: opts.write(field.value), source: field.source })
   }
   const isEmpty = (v: unknown) => v == null || v === ''
   const num = { write: (v: number) => v, show: money, showCurrent: (v: unknown) => money(Number(v)), equal: (a: unknown, b: number) => Math.abs(Number(a) - b) < 0.005, empty: isEmpty }
@@ -91,7 +115,7 @@ export function planTermsWrite(terms: ResolvedTerms, cycle: CycleTermColumns): T
     const show = names.join(', ')
     if (!current?.length) plan.fills.push({ column, value: names, display: show, source: null })
     else if (surnameKey(current) === surnameKey(names)) plan.same.push(column)
-    else plan.conflicts.push({ column, current: current.join(', '), contract: show, value: names, source: null })
+    else differs({ column, current: current.join(', '), contract: show, value: names, source: null })
   }
   people('buyers', terms.buyers, cycle.buyers)
   people('sellers', terms.sellers, cycle.sellers)

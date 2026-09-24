@@ -284,6 +284,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/deals/[key]/_parts',
   'app/admin/(protected)/closings/files',
   'app/admin/(protected)/sign-off/review',
+  'app/admin/(protected)/sign-off/terms',
   'app/admin/(protected)/email/campaigns/page.tsx',
   'app/admin/(protected)/financials/page.tsx',
   'app/admin/(protected)/forms/page.tsx',

@@ -26,6 +26,8 @@ import {
 } from '@/components/admin/v2'
 import { getPrincipalSignOffQueue, type SignOffDeal } from '@/app/actions/tc-signoff'
 import { requireAdminPage } from '@/lib/admin/require-admin'
+import { getTermsReviewQueue } from '@/lib/data'
+import { TERMS_REVIEW_PATH } from '@/lib/tc/terms/review'
 import type { ReviewDeadline } from '@/lib/tc/banking-days'
 import { REVIEW_PATH, reviewHref, urgencyWords } from '@/lib/tc/review-queue'
 import { SignOffControls } from './SignOffControls'
@@ -82,7 +84,7 @@ const LANE: React.CSSProperties = {
 
 export default async function SignOffPage() {
   await requireAdminPage('transactions.signoff')
-  const queue = await getPrincipalSignOffQueue().catch(() => null)
+  const [queue, terms] = await Promise.all([getPrincipalSignOffQueue().catch(() => null), getTermsReviewQueue().catch(() => null)])
 
   if (queue === null) {
     return (
@@ -142,6 +144,17 @@ export default async function SignOffPage() {
           </Link>
           <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             One document at a time, most overdue first, with the PDF beside your decision.
+          </span>
+        </p>
+      ) : null}
+
+      {terms?.authorized && terms.items.length > 0 ? (
+        <p style={{ margin: '0 0 14px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+          <Link href={TERMS_REVIEW_PATH} className="av2-btn av2-btn--touch av2-btn--quiet" style={{ textDecoration: 'none' }}>
+            Check {terms.items.length} contract term{terms.items.length === 1 ? '' : 's'}
+          </Link>
+          <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+            Typed values the executed contract disagrees with, and terms the readers read differently. The page sits beside each one.
           </span>
         </p>
       ) : null}

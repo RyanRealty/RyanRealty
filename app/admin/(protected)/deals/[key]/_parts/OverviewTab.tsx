@@ -41,6 +41,7 @@ export function OverviewTab({
   tasks,
   terms = null,
   canEditTerms = false,
+  isPrincipal = false,
   tabHref,
 }: {
   deal: TcDeal
@@ -53,6 +54,8 @@ export function OverviewTab({
   /** The terms read from this cycle's contract (sale cycles). */
   terms?: CycleTerms | null
   canEditTerms?: boolean
+  /** The principal broker: links to the contract-terms review queue. */
+  isPrincipal?: boolean
   tabHref: (tab: string) => string
 }) {
   const em = (cycle as { earnest_money?: unknown } | null)?.earnest_money
@@ -122,7 +125,7 @@ export function OverviewTab({
           )}
         </Panel>
 
-        <ContractTerms state={terms} canEdit={canEditTerms} />
+        <ContractTerms state={terms} canEdit={canEditTerms} propertyKey={deal.property_key} isPrincipal={isPrincipal} />
 
         {openTasks.length ? (
           <Panel title="Tasks" aside={`${openTasks.length} open`}>
