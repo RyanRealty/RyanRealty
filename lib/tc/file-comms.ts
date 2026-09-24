@@ -36,11 +36,13 @@ export type DealCommsCandidate = {
 
 export function addressTokens(address: string): string[] {
   const num = address.match(/\d{3,}/)?.[0]
+  // Street words only: the house number is its own token (counted once) and a
+  // bare zip or number never counts as a street, or "3480" alone would score 2.
   const words = address
     .toLowerCase()
     .replace(/[^a-z0-9 ]/g, ' ')
     .split(/\s+/)
-    .filter((w) => w.length > 2 && !STREET_STOP.has(w))
+    .filter((w) => w.length > 2 && !STREET_STOP.has(w) && !/^\d+$/.test(w))
   return [...(num ? [num] : []), ...words.slice(0, 3)]
 }
 
@@ -59,13 +61,20 @@ export function pickDealForComms(
   const use = pool.length ? pool : deals
   let best = use[0]
   let bestScore = scoreDealHaystack(best.address, haystack)
+  let tied = false
   for (const d of use.slice(1)) {
     const s = scoreDealHaystack(d.address, haystack)
     if (s > bestScore) {
       best = d
       bestScore = s
+      tied = false
+    } else if (s === bestScore) {
+      tied = true
     }
   }
+  // Several deals and nothing in the message tells them apart: file nowhere
+  // rather than onto whichever deal came first (the 2026-08-23 misfile class).
+  if (tied) return null
   return best
 }
 

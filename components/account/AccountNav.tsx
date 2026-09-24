@@ -13,8 +13,16 @@ import { cn } from '@/lib/utils'
  * (/account/saved-homes, /account/hidden, /account/saved-searches,
  * /account/areas, /account/history, /account/collections) still exist and still
  * render, because alert emails and older links point at them.
+ *
+ * `hasTransactions` (client-transactions, 2026-09-23): the Transactions tab
+ * only shows for a signed-in buyer/seller with at least one linked deal.
+ * app/account/layout.tsx computes that flag server-side (getClientIdentity +
+ * listClientDeals) and passes it down, fail-safe to false on any error — a
+ * broken read just hides the tab rather than breaking the account shell.
  */
-const ACCOUNT_NAV_LINKS = [
+type NavLink = { href: string; label: string; exact?: boolean }
+
+const ACCOUNT_NAV_LINKS: NavLink[] = [
   { href: '/account', label: 'Overview', exact: true },
   { href: '/account/saved-cities', label: 'Saved cities' },
   { href: '/account/saved-communities', label: 'Saved communities' },
@@ -26,9 +34,11 @@ const ACCOUNT_NAV_LINKS = [
   // /sell on their own (Matt 2026-08-26). External to /account on purpose: the
   // valuation flow is its own funnel, not an account settings page.
   { href: '/sell', label: 'Value my home' },
-] as const
+]
 
-export default function AccountNav() {
+const TRANSACTIONS_LINK: NavLink = { href: '/account/transactions', label: 'Transactions' }
+
+export default function AccountNav({ hasTransactions = false }: { hasTransactions?: boolean }) {
   const pathname = usePathname()
 
   const isActive = (href: string, exact?: boolean) => {
@@ -36,13 +46,16 @@ export default function AccountNav() {
     return pathname.startsWith(href)
   }
 
+  const links: NavLink[] = hasTransactions
+    ? [ACCOUNT_NAV_LINKS[0]!, TRANSACTIONS_LINK, ...ACCOUNT_NAV_LINKS.slice(1)]
+    : ACCOUNT_NAV_LINKS
+
   return (
     <nav
       className="mb-8 flex gap-1 overflow-x-auto no-scrollbar border-b border-border pb-4"
       aria-label="Account"
     >
-      {ACCOUNT_NAV_LINKS.map(({ href, label, ...rest }) => {
-        const exact = 'exact' in rest ? rest.exact : false
+      {links.map(({ href, label, exact }) => {
         const active = isActive(href, exact)
         return (
           <Link

@@ -14,6 +14,7 @@
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/admin/v2'
 import { getTcDocumentUrl, setTcDocumentArchived } from '@/app/actions/tc'
+import { setDocumentClientVisible } from '@/app/actions/tc-client-share'
 
 export function DownloadButton({ documentId, disabled }: { documentId: string; disabled?: boolean }) {
   const [busy, setBusy] = useState(false)
@@ -65,6 +66,36 @@ export function ArchiveToggle({
       }}
     >
       {pending ? '…' : archived ? 'Unarchive' : 'Archive'}
+    </Button>
+  )
+}
+
+/** Whether this document shows on the client's own file page — a broker call,
+ *  one document at a time. Signed envelopes the client signed show on their own. */
+export function ShareToggle({
+  documentId,
+  clientVisible,
+  docName,
+}: {
+  documentId: string
+  clientVisible: boolean
+  docName: string
+}) {
+  const [pending, startTransition] = useTransition()
+  return (
+    <Button
+      variant="quiet"
+      disabled={pending}
+      onClick={() => {
+        if (!clientVisible && !window.confirm(`Share "${docName}" on the client's file page?`)) return
+        startTransition(async () => {
+          const res = await setDocumentClientVisible(documentId, !clientVisible)
+          if (!res.ok) window.alert(res.error || 'Failed')
+          else window.location.reload()
+        })
+      }}
+    >
+      {pending ? '…' : clientVisible ? 'Stop sharing' : 'Share with client'}
     </Button>
   )
 }

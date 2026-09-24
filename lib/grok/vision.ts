@@ -236,3 +236,101 @@ export function normalizeVerdict(
     costUsd,
   }
 }
+
+export type VisionPart =
+  | { type: 'text'; text: string }
+  | { type: 'image'; jpeg: Buffer; detail?: 'high' | 'low' }
+
+export type StructuredVisionResult<T> = {
+  data: T
+  model: string
+  inputTokens: number | null
+  outputTokens: number | null
+  reasoningTokens: number | null
+  costUsd: number | null
+  ms: number
+}
+
+/**
+ * Several images plus text in, one JSON object out, held to a strict schema.
+ * The general form of inspectFrame: the document reader (lib/tc/doc-read)
+ * shows it the pages of a contract and gets back what is printed and signed.
+ * Transport and schema failures throw; the caller decides what a failed read
+ * means for its record.
+ */
+export async function readImagesStructured<T>(input: {
+  system: string
+  parts: readonly VisionPart[]
+  schema: Record<string, unknown>
+  schemaName: string
+  model?: string
+  maxTokens?: number
+  timeoutMs?: number
+}): Promise<StructuredVisionResult<T>> {
+  const model = input.model ?? GROK_MODELS.vision
+  const content = input.parts.map((p) =>
+    p.type === 'text'
+      ? { type: 'text', text: p.text }
+      : { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${p.jpeg.toString('base64')}`, detail: p.detail ?? 'high' } },
+  )
+  const t0 = Date.now()
+  // One retry when the reply is not the JSON the schema promised (seen once in
+  // 1,587 document reads, 2026-09-23: trailing text after the object).
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await structuredAttempt<T>(model, content, input, t0)
+    } catch (e) {
+      lastError = e
+      if (!(e instanceof SyntaxError)) throw e
+    }
+  }
+  throw lastError
+}
+
+async function structuredAttempt<T>(
+  model: string,
+  content: unknown[],
+  input: { system: string; schema: Record<string, unknown>; schemaName: string; maxTokens?: number; timeoutMs?: number },
+  t0: number,
+): Promise<StructuredVisionResult<T>> {
+  const res = await xaiFetch(
+    '/chat/completions',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        model,
+        max_tokens: input.maxTokens ?? 4000,
+        temperature: 0,
+        messages: [
+          { role: 'system', content: input.system },
+          { role: 'user', content },
+        ],
+        response_format: { type: 'json_schema', json_schema: { name: input.schemaName, schema: input.schema, strict: true } },
+      }),
+    },
+    { timeoutMs: input.timeoutMs ?? 240_000 },
+  )
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string }; finish_reason?: string }>
+    usage?: {
+      prompt_tokens?: number
+      completion_tokens?: number
+      completion_tokens_details?: { reasoning_tokens?: number }
+      cost_in_usd_ticks?: number
+    }
+  }
+  const raw = data?.choices?.[0]?.message?.content
+  if (typeof raw !== 'string' || !raw.trim()) {
+    throw new GrokError('structured vision returned no content', 0, JSON.stringify(data).slice(0, 600))
+  }
+  return {
+    data: parseJsonLoose<T>(raw),
+    model,
+    inputTokens: data.usage?.prompt_tokens ?? null,
+    outputTokens: data.usage?.completion_tokens ?? null,
+    reasoningTokens: data.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+    costUsd: ticksToUsd(data.usage?.cost_in_usd_ticks),
+    ms: Date.now() - t0,
+  }
+}

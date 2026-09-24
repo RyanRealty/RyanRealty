@@ -52,5 +52,5 @@ export const DOC_COLUMNS: ReportColumn[] = [
 ]
 
 export const DOC_TEMPLATE =
-  'minmax(240px, 2.6fr) minmax(56px, 0.4fr) minmax(72px, 0.5fr) minmax(96px, 0.7fr) minmax(120px, 0.9fr) minmax(150px, 1fr)'
-export const DOC_MIN_WIDTH = 900
+  'minmax(240px, 2.6fr) minmax(56px, 0.4fr) minmax(72px, 0.5fr) minmax(96px, 0.7fr) minmax(140px, 0.9fr) minmax(210px, 1fr)'
+export const DOC_MIN_WIDTH = 960

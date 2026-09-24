@@ -16,6 +16,7 @@ import { getRecentListingViews } from '@/app/actions/dashboard-history'
 import { getListingsByKeys } from '@/app/actions/listings'
 import { listAreasForUser, getMyCmas } from '@/lib/data'
 import { getUserActivityEvents, getUserActivitySummary } from '@/lib/data/activity/getUserEvents'
+import { getClientIdentity, listClientDeals, type ClientDealSummary } from '@/lib/data/tc/client-transactions'
 import { getPortalHomeLists, getSavedSearchInsights, totalNewSince } from '@/app/account/portal-data'
 import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 import ListingTile from '@/components/ListingTile'
@@ -27,6 +28,7 @@ import MarkAllSeenButton from '@/components/account/portal/MarkAllSeenButton'
 import AreaControls, { type AreaListRow } from '@/components/account/areas/AreaControls'
 import SavedSearchControls from '@/app/account/saved-searches/SavedSearchControls'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   estimatedMonthlyPayment,
@@ -54,6 +56,21 @@ function keyOf(listing: { ListNumber?: unknown; ListingKey?: unknown }): string 
 function humanize(slug: string): string {
   const base = slug.includes(':') ? slug.split(':').pop()! : slug
   return base.split(/[-_]/).filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+/**
+ * The signed-in visitor's own transaction file(s), for the "Your
+ * transaction" card. Fail-safe: any error (including "no identity")
+ * returns an empty list rather than breaking the whole account home.
+ */
+async function getMyTransactionDeals(): Promise<ClientDealSummary[]> {
+  try {
+    const identity = await getClientIdentity()
+    if (!identity) return []
+    return await listClientDeals(identity)
+  } catch {
+    return []
+  }
 }
 
 function addressOf(listing: {
@@ -127,6 +144,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
     activityRows,
     activitySummary,
     myCmas,
+    clientDeals,
   ] = await Promise.all([
     getProfile(),
     getDashboardLikesData(),
@@ -142,6 +160,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
     getUserActivityEvents(userId, 40),
     getUserActivitySummary(userId, 30),
     getMyCmas(session.user.email),
+    getMyTransactionDeals(),
   ])
   const { hiddenKeys, collections } = homeLists
 
@@ -238,9 +257,39 @@ export default async function AccountPage({ searchParams }: PageProps) {
     { label: 'Places you follow', value: String(placesCount), href: '/account/saved-cities' },
   ]
 
+  const totalWaitingOnYou = clientDeals.reduce((sum, d) => sum + d.waitingOnYou, 0)
+
   // ── Overview ───────────────────────────────────────────────────────────────
   const overview = (
     <>
+      {clientDeals.length > 0 ? (
+        <section>
+          <Link
+            href={clientDeals.length === 1 ? `/account/transactions/${clientDeals[0].dealId}` : '/account/transactions'}
+          >
+            <Card className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/40">
+              <div className="min-w-0">
+                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  Your transaction{clientDeals.length > 1 ? 's' : ''}
+                </p>
+                {clientDeals.length === 1 ? (
+                  <>
+                    <p className="mt-0.5 truncate text-sm font-semibold text-foreground">{clientDeals[0].address}</p>
+                    <p className="text-xs text-muted-foreground">{clientDeals[0].stageLabel}</p>
+                  </>
+                ) : (
+                  <p className="mt-0.5 text-sm font-semibold text-foreground">{clientDeals.length} files in progress</p>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {totalWaitingOnYou > 0 ? <Badge variant="warning">Waiting on you: {totalWaitingOnYou}</Badge> : null}
+                <span className="text-sm font-medium text-primary">View →</span>
+              </div>
+            </Card>
+          </Link>
+        </section>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
         {stats.map((s) => (
           <Link key={s.label} href={s.href}>

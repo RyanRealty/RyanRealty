@@ -36,6 +36,19 @@ export const GROK_MODELS = {
    * bar, calibrated on 4.6, does not move under the listing formats.
    */
   judge: 'grok-4.7',
+  /**
+   * Transaction document reader (lib/tc/doc-read): transcribes forms and
+   * signature lines from page renders. Chosen on the labelled set in
+   * scripts/tc-doc-read-eval.ts for accuracy first, then cost.
+   */
+  documents: 'grok-4.20-0309-non-reasoning',
+  /**
+   * A second, different model the reader asks before it removes a document
+   * from a checklist because it is "not fully executed". Agreed with the
+   * primary on every signature line of the three documents compared
+   * 2026-09-23 (it missed one addendum number the primary read).
+   */
+  documentsConfirm: 'grok-4.3',
   /** Stills. $0.04/image. */
   image: 'grok-imagine-image-2.0',
   /** Cheap stills for candidate sweeps. $0.02/image. */

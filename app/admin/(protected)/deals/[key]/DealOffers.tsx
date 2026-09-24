@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Button, ReportGrid, SelectField, TextField } from '@/components/admin/v2'
+import { Button, ReportGrid, SelectField, StateWord, TextField } from '@/components/admin/v2'
 import { acceptDealOffer, saveDealOffer } from '@/app/actions/tc-offers'
+import { offerFollowUpLabel } from '@/lib/tc/mail-view'
 import {
   FINANCING_LABEL,
   FINANCING_TYPES,
@@ -70,6 +71,27 @@ export function DealOffers({
             rows={rows}
             empty="No offers on this file yet."
           />
+          {/* Offers the mail index filed on their own carry a compliance flag:
+              OAR 863-015-0135(2) requires every written offer be promptly
+              delivered to the seller, and an emailed offer can sit unread. */}
+          {offers.some((o) => offerFollowUpLabel(o) != null) ? (
+            <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'grid', gap: 4 }}>
+              {offers.map((o) => {
+                if (!offerFollowUpLabel(o)) return null
+                return (
+                  <li key={o.id} style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                    <StateWord state="accent">From email</StateWord>{' '}
+                    {offers.length > 1 ? <>{o.buyerName}: </> : null}
+                    {o.repliedAt ? 'Replied' : 'No reply sent'}
+                    {' · '}
+                    <StateWord state={o.presentedToSellerAt ? 'ok' : 'down'}>
+                      {o.presentedToSellerAt ? 'Sent to seller' : 'Not yet sent to seller'}
+                    </StateWord>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : null}
           {stage === 'active_listing' || stage === 'pending' ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
               {offers.map((o) =>
