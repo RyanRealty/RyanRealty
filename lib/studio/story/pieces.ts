@@ -33,6 +33,12 @@ export type StoryPiece = {
   cast: Cast
   /** Which arc the piece fills. Default the visitor arc. */
   arc?: ArcId
+  /**
+   * Frame shape, for stills, motion, and the film gate. '9:16' is a full-frame
+   * vertical reel with no film strip around it (Matt 2026-09-24: "it needs to
+   * be vertical"). Default '4:3', shown as a strip.
+   */
+  aspect?: '4:3' | '9:16'
   beats: Partial<Record<BeatRole, string>>
   /**
    * Continuity: a role whose selected still is handed to another role as a
@@ -66,6 +72,39 @@ export type StoryPiece = {
   endLine?: string
 }
 
+/** The 1982 couple: one pair of reference sheets, one wardrobe, every piece they appear in. */
+const COUPLE_1982: Cast = {
+  A: {
+    slot: 'A',
+    pronoun: 'she',
+    look: 'a woman of about thirty-two with feathered, shoulder-length chestnut hair, a light dusting of freckles, hazel eyes, and a wide easy laugh',
+    wardrobe: {
+      travel: 'a cream cable-knit turtleneck under a burgundy down vest, grey wool mittens',
+      ski: 'a fitted powder-blue one-piece ski suit in matte nylon with one thin red and white stripe across the chest, a white knit hat with a pom-pom',
+      apres:
+        'a navy Nordic ski sweater with a white snowflake yoke over a turtleneck, the white knit hat pushed back on her head',
+      dinner: 'a dark green wrap dress and small gold hoop earrings, her hair down',
+      evening: 'a long camel wool coat, a cream knit scarf, and a cream knit cap',
+      work: 'a cream blouse with a soft bow at the collar under a camel wool blazer, small gold hoop earrings',
+      spring: 'a faded denim jacket over a cream cable-knit sweater, high-waisted jeans, her hair loose',
+    },
+  },
+  B: {
+    slot: 'B',
+    pronoun: 'he',
+    look: 'a man of about thirty-four with a full brown moustache, side-parted brown hair over the tops of his ears, and deep laugh lines',
+    wardrobe: {
+      travel: 'a tan corduroy jacket with a sheepskin collar over a navy turtleneck',
+      ski: 'a boxy, dull navy nylon ski parka with no emblem over red bib ski pants, a red knit cap',
+      apres: 'a cream fisherman cable-knit sweater, the red knit cap still on',
+      dinner: 'a pale blue oxford shirt under a brown tweed blazer',
+      evening: 'the tan corduroy jacket with the sheepskin collar turned up, a navy knit cap',
+      work: 'a white dress shirt with the sleeves rolled to the forearm and a burgundy tie pulled loose at the collar, grey suit trousers',
+      spring: 'a navy crewneck sweater over a light blue oxford shirt, tan corduroy trousers',
+    },
+  },
+}
+
 export const STORY_PIECES: StoryPiece[] = [
   {
     id: 'winter-1982',
@@ -77,35 +116,7 @@ export const STORY_PIECES: StoryPiece[] = [
     // Matt 2026-09-24: the quintessential Bend story. They come, they live it,
     // they go home, and home no longer compares.
     arc: 'homecoming',
-    cast: {
-      A: {
-        slot: 'A',
-        pronoun: 'she',
-        look: 'a woman of about thirty-two with feathered, shoulder-length chestnut hair, a light dusting of freckles, hazel eyes, and a wide easy laugh',
-        wardrobe: {
-          travel: 'a cream cable-knit turtleneck under a burgundy down vest, grey wool mittens',
-          ski: 'a fitted powder-blue one-piece ski suit in matte nylon with one thin red and white stripe across the chest, a white knit hat with a pom-pom',
-          apres:
-            'a navy Nordic ski sweater with a white snowflake yoke over a turtleneck, the white knit hat pushed back on her head',
-          dinner: 'a dark green wrap dress and small gold hoop earrings, her hair down',
-          evening: 'a long camel wool coat, a cream knit scarf, and a cream knit cap',
-          work: 'a cream blouse with a soft bow at the collar under a camel wool blazer, small gold hoop earrings',
-        },
-      },
-      B: {
-        slot: 'B',
-        pronoun: 'he',
-        look: 'a man of about thirty-four with a full brown moustache, side-parted brown hair over the tops of his ears, and deep laugh lines',
-        wardrobe: {
-          travel: 'a tan corduroy jacket with a sheepskin collar over a navy turtleneck',
-          ski: 'a boxy, dull navy nylon ski parka with no emblem over red bib ski pants, a red knit cap',
-          apres: 'a cream fisherman cable-knit sweater, the red knit cap still on',
-          dinner: 'a pale blue oxford shirt under a brown tweed blazer',
-          evening: 'the tan corduroy jacket with the sheepskin collar turned up, a navy knit cap',
-          work: 'a white dress shirt with the sleeves rolled to the forearm and a burgundy tie pulled loose at the collar, grey suit trousers',
-        },
-      },
-    },
+    cast: COUPLE_1982,
     beats: {
       hook: 'car-wave-lab',
       arrive: 'road-to-bachelor',
@@ -138,6 +149,48 @@ export const STORY_PIECES: StoryPiece[] = [
     openCaption: 'Bend, Oregon. Winter, 1982.',
     roleCaptions: { commute: 'One week later.' },
     // Matt 2026-09-24, his words. The film fades out on the ring; the card answers it.
+    endLine: 'We’re here when you’re ready to make the call.',
+  },
+  {
+    id: 'april-1982',
+    title: 'April, 1982',
+    oneSentence:
+      'A couple’s April ski trip to Bend in 1982 comes home with them as three Polaroids, and the last one, of a house with our sign in the yard, is where the call starts.',
+    eraId: 'super8_1982',
+    season: 'spring',
+    // Matt 2026-09-24: slower, full-frame vertical, Polaroids, no captions, the sign only there until the kitchen table.
+    arc: 'polaroid',
+    aspect: '9:16',
+    cast: COUPLE_1982,
+    beats: {
+      hook: 'car-wave-lab',
+      lift: 'chairlift-ride-up',
+      summit: 'summit-three-sisters',
+      play: 'ski-down-spring',
+      photo: 'base-polaroid-pose',
+      town: 'drake-park-walk-both-lab',
+      discover: 'house-polaroid-take',
+      snapshot: 'house-snapshot',
+      eat: 'tower-drinks-outside',
+      prints: 'polaroids-on-table',
+      pack: 'pack-wagon-lab-spring',
+      leave: 'rear-window-lab',
+      commute: 'commute-dash-polaroid',
+      work_a: 'office-desk-polaroid',
+      home: 'kitchen-table-polaroid',
+      number: 'house-polaroid-closeup',
+    },
+    companion: {
+      ref: 'asset:c9fce792-26ab-4837-81a0-cfaf943b8c43',
+      label: 'the reference photo of their dog (the same black Labrador: same face, coat, build, and red collar)',
+    },
+    continuity: {
+      snapshot: 'discover',
+      number: { from: 'home', keeps: 'the same kitchen table a moment earlier (keep the tabletop, the lamp light, and the glass the same)' },
+    },
+    payoff: { kind: 'none' },
+    openCaption: '',
+    // Matt 2026-09-24: no "Bend, Oregon 1982", no "one week later"; the film implies it.
     endLine: 'We’re here when you’re ready to make the call.',
   },
 ]

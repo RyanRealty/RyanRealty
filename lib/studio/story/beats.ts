@@ -44,6 +44,12 @@ export type BeatRole =
   | 'work_b'
   | 'work_a'
   | 'home'
+  | 'lift'
+  | 'summit'
+  | 'photo'
+  | 'snapshot'
+  | 'prints'
+  | 'number'
 
 export type BeatDef = {
   id: string
@@ -94,6 +100,12 @@ export type BeatDef = {
    * construction instead of by prompt.
    */
   plateFrom?: BeatRole
+  /**
+   * A photograph they took, generated as a still and only ever seen inside
+   * other frames (a Polaroid on a table, on a dashboard). Never cut in on its
+   * own, never moved.
+   */
+  prop?: boolean
   /**
    * The piece's companion (a dog) is in frame: its one reference photo goes
    * to the generator with the cast sheets, so it is the same dog every shot.
@@ -713,7 +725,7 @@ export const BEATS: BeatDef[] = [
     label: 'The Lab in the way-back watches the mountain go',
     years: [1965, 1995],
     yearsWhy: 'The cargo area of a full-size station wagon, where the dog rode before the minivan.',
-    seasons: ['winter'],
+    seasons: ['winter', 'spring'],
     place:
       'the straight highway out of Bend through tall ponderosa pines, the snow-covered volcanic cone of Mount Bachelor behind them at the far end of the road',
     refs: ['asset:d7f06007-475f-4a93-ad09-f2aa31633aad'],
@@ -878,6 +890,350 @@ export const BEATS: BeatDef[] = [
       'their black Labrador with the red collar sitting on the floor',
     move: 'tripod',
     alsoReject: ['a mobile phone or cordless phone', 'push buttons on the telephone'],
+  },
+  // ── April, 1982: the Polaroid story (Matt 2026-09-24) ──────────────────
+  // Spring skiing on Bachelor Butte, the view from the top, a photo at the
+  // bottom, the house on a walk the next day, drinks outside the Tower with
+  // the Polaroids, and the week back home. Framed for a tall 9:16 frame.
+  {
+    id: 'chairlift-ride-up',
+    role: 'lift',
+    label: 'Riding the chair up, seen from the chair behind',
+    years: [1958, 2100],
+    yearsWhy: 'Skiing opened on Bachelor Butte in 1958; the mountain was renamed Mt. Bachelor in 1983.',
+    seasons: ['winter', 'spring'],
+    place:
+      'a two-person chairlift climbing the upper slopes of Mount Bachelor on a clear April morning: spring snow, ' +
+      'the lift towers marching up toward the snowy summit cone, a few snow-plastered trees below',
+    refs: ['asset:9671ec09-6f90-4aea-9f11-8669d83feb4f'],
+    cast: ['A', 'B'],
+    wardrobe: 'ski',
+    framing:
+      'from the next chair up the cable behind them, 35mm, a tall frame: we see only the backs of their heads, their hats, and their shoulders ' +
+      'side by side on the chair in the lower third, both facing away from the camera toward the summit; ' +
+      'the cable and the next towers rising ahead of them up the middle, the summit cone at the top under a deep blue sky',
+    light: 'hard high-altitude April sun, 5600K, deep blue sky, bright spring snow',
+    exposure: 'day',
+    action: '{A} and {B} ride up side by side facing the summit, and {A} points ahead up the mountain toward the top',
+    props: 'a simple double chair with a single steel safety bar; their skis dangling below the chair; ' + 'long, narrow, nearly straight early-1980s skis with no sidecut, thin aluminum poles with leather baskets',
+    move: 'pan',
+    alsoReject: ['lettering on the lift or towers'],
+  },
+  {
+    id: 'summit-three-sisters',
+    role: 'summit',
+    label: 'At the top: the Three Sisters and Broken Top',
+    years: [1958, 2100],
+    yearsWhy: 'Skiing opened on Bachelor Butte in 1958; the mountain was renamed Mt. Bachelor in 1983.',
+    seasons: ['winter', 'spring'],
+    place:
+      'the snowy summit of Mount Bachelor on a clear April day, looking north: the broad snow-covered cone of South Sister on the left, ' +
+      'the jagged snowy crown of Broken Top in the middle, forested ridges and snowfields falling away below, nothing man-made in view',
+    refs: ['asset:21d81297-0e90-4b58-817c-19cc154ed1e0'],
+    cast: ['A', 'B'],
+    wardrobe: 'ski',
+    framing:
+      'from a few steps behind them, 28mm, a tall frame: the two of them standing side by side in the lower third with their skis on, ' +
+      'seen from behind, small against the view; South Sister and Broken Top fill the middle; clear sky at the top',
+    light: 'clear high-altitude April sun from the side, 5600K, crisp deep blue sky, the far peaks bright',
+    exposure: 'day',
+    action: '{A} slips her arm through his and they stand still, looking out at the mountains',
+    props: 'long, narrow, nearly straight early-1980s skis with no sidecut, thin aluminum poles with leather baskets',
+    move: 'hold',
+    alsoReject: ['buildings, towers, or signs at the summit', 'anyone else on the summit'],
+  },
+  {
+    id: 'ski-down-spring',
+    role: 'play',
+    label: 'Skiing down on spring snow, one after the other',
+    years: [1958, 2100],
+    yearsWhy: 'Skiing opened on Bachelor Butte in 1958; the mountain was renamed Mt. Bachelor in 1983.',
+    seasons: ['winter', 'spring'],
+    place:
+      'a wide open run on the upper mountain of Mount Bachelor in April: soft corn snow, the Cascade peaks on the horizon behind, ' +
+      'nothing but mountain in the background',
+    refs: ['asset:9671ec09-6f90-4aea-9f11-8669d83feb4f', 'asset:21d81297-0e90-4b58-817c-19cc154ed1e0'],
+    cast: ['A', 'B'],
+    wardrobe: 'ski',
+    framing:
+      'from low on the run looking up the slope, 85mm, a tall frame: the two of them skiing single file toward the camera, ' +
+      'she in front, he a few turns behind and smaller, the peaks behind them at the top of the frame',
+    light: 'bright April afternoon sun, 5600K, soft warm light on the snow, blue sky',
+    exposure: 'day',
+    action:
+      '{A} carves toward the camera in smooth linked turns and {B} keeps his place a few meters behind her, following her line',
+    props: 'long, narrow, nearly straight early-1980s skis with no sidecut, thin aluminum poles with leather baskets',
+    move: 'follow',
+  },
+  {
+    id: 'base-polaroid-pose',
+    role: 'photo',
+    label: 'A stranger takes their picture at the bottom',
+    years: [1972, 2100],
+    yearsWhy: 'Polaroid instant cameras of this kind date from 1972 (the SX-70).',
+    seasons: ['winter', 'spring'],
+    place:
+      'the base area of the ski mountain on an April afternoon: packed spring snow, a timber lodge behind, the mountain rising above it',
+    refs: ['asset:9671ec09-6f90-4aea-9f11-8669d83feb4f'],
+    cast: ['A', 'B'],
+    wardrobe: 'ski',
+    framing:
+      'straight on at eye level from a stranger holding the camera, 40mm, a tall frame: the two of them centered, full length, ' +
+      'their skis planted upright in the snow beside them, the lodge and the mountain behind',
+    light: 'warm late-afternoon April sun on their faces, 5000K, blue sky',
+    exposure: 'day',
+    action:
+      '{A} and {B} stand with their arms around each other beside their upright skis and grin at the camera, posing for a photograph ' +
+      '(the stranger takes two, one for each of them)',
+    props: 'long, narrow, nearly straight early-1980s skis with no sidecut, thin aluminum poles with leather baskets',
+    move: 'hold',
+    alsoReject: ['lettering on the lodge'],
+  },
+  {
+    id: 'drake-park-walk-both-lab',
+    role: 'town',
+    label: 'The next day: walking the Lab along Mirror Pond',
+    years: [1925, 2100],
+    yearsWhy: 'Drake Park and Mirror Pond date to the 1910s-1920s; the pond has looked this way since the 1910 dam.',
+    seasons: ['spring'],
+    place:
+      'the path along Mirror Pond in Drake Park on an April afternoon: the still pond, green lawn coming back, tall ponderosa pines ' +
+      'and bare shade trees with the first buds, old houses across the water',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A', 'B'],
+    wardrobe: 'spring',
+    companion: true,
+    framing:
+      'following a few steps behind them on the path, 35mm, a tall frame: the two of them walking away side by side in the lower half, ' +
+      'the dog on its leash beside her, the pond and the trees rising above them',
+    light: 'soft April afternoon sun through thin cloud, 5200K, cool air, gentle shadows',
+    exposure: 'day',
+    action:
+      '{A} and {B} stroll along the path with their black Labrador with the red collar on a leash, and {B} puts his arm around her',
+    props: 'a red leather leash',
+    move: 'follow',
+  },
+  {
+    id: 'house-polaroid-take',
+    role: 'discover',
+    label: 'They stop at the house; she takes its picture',
+    years: [1972, 2100],
+    yearsWhy: 'Polaroid instant cameras of this kind date from 1972 (the SX-70).',
+    seasons: ['spring'],
+    place:
+      'a quiet street in the old neighborhood by Drake Park on an April afternoon: a 1920s craftsman bungalow with a deep porch, ' +
+      'a green lawn coming back, a tall ponderosa pine, and a white wooden yard-sign post in the lawn with a plain blank white square panel hanging from its arm',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A', 'B'],
+    wardrobe: 'spring',
+    companion: true,
+    framing:
+      'from the sidewalk just behind them, 35mm, a tall frame: their backs and shoulders in the lower third, the dog at his feet, ' +
+      'the bungalow filling the middle of the frame, the sign post small on the lawn to the right',
+    light: 'soft April afternoon sun, 5200K, the porch in gentle shade',
+    exposure: 'day',
+    action:
+      '{A} raises a boxy folding instant camera to her eye and takes a picture of the house while {B} stands beside her holding the leash of their black Labrador with the red collar',
+    props: 'a folding instant camera with a leather front',
+    move: 'hold',
+    composite: 'yard_sign',
+    alsoReject: ['any letters, numbers, or marks on the sign panel'],
+  },
+  {
+    id: 'house-snapshot',
+    role: 'snapshot',
+    label: 'The photograph she took of the house',
+    years: [1925, 2100],
+    seasons: ['spring'],
+    place:
+      'the front yard of the same 1920s craftsman bungalow on an April afternoon: a deep porch, a green lawn, a tall ponderosa pine, ' +
+      'and a white wooden yard-sign post in the lawn with a plain blank white square panel hanging from its arm',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: [],
+    framing:
+      'a square amateur snapshot taken from the sidewalk where they stood, one step closer: the sign post and its blank panel large ' +
+      'in the right foreground, the bungalow behind it; the sidewalk and the lawn empty',
+    light: 'soft April afternoon sun, 5200K',
+    exposure: 'day',
+    action: 'the empty front yard in the afternoon light: the house and the sign post, nobody on the lawn or the sidewalk',
+    move: 'hold',
+    composite: 'yard_sign',
+    stillOnly: true,
+    prop: true,
+    alsoReject: ['any letters, numbers, or marks on the sign panel', 'people in frame'],
+  },
+  {
+    id: 'tower-drinks-outside',
+    role: 'eat',
+    label: 'That night: drinks outside across from the Tower, the Polaroids out',
+    years: [1940, 2100],
+    yearsWhy: 'The Tower Theatre opened on Wall Street in 1940.',
+    seasons: ['spring', 'summer'],
+    place:
+      'a small table on the sidewalk on Wall Street in downtown Bend on an April evening, across the street from the Tower Theatre, ' +
+      'its tall neon tower and marquee lit, the marquee letter boards plain and blank',
+    refs: [TOWER_REF],
+    cast: ['A', 'B'],
+    wardrobe: 'evening',
+    framing:
+      'across the little table at their level, 50mm, a tall frame: the two of them side by side at the table in the lower half, ' +
+      'the lit Tower Theatre tower and marquee across the street rising behind them in the upper half, soft',
+    light: 'blue dusk with the warm neon of the Tower and a candle on the table, 3000K practicals',
+    exposure: 'night',
+    periodCues: ['street'],
+    action:
+      '{A} and {B} laugh together over a few instant photographs in their hands, the white backs of the photographs toward the camera, two drinks on the table',
+    props: 'two short cocktails and a candle in a red glass on the table',
+    move: 'hold',
+    composite: 'marquee',
+    alsoReject: ['readable lettering on the marquee or storefronts'],
+  },
+  {
+    id: 'polaroids-on-table',
+    role: 'prints',
+    label: 'The Polaroids come down on the table, the house last',
+    years: [1972, 2100],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    place: 'the top of the same small outdoor table at night: a candle in a red glass, two short cocktails, a paper napkin',
+    refs: [],
+    cast: [],
+    framing: 'straight down from above the table, 40mm, a tall frame, the tabletop filling the frame with open space in the middle',
+    light: 'warm candlelight and the neon glow of the street, 2800K, soft shadows',
+    exposure: 'night',
+    action: 'the tabletop waits, still, with open space in the middle for the photographs',
+    move: 'tripod',
+    stillOnly: true,
+    composite: 'photo_print',
+    elsewhere: true,
+    alsoReject: ['photographs, cards, or paper in the open middle of the table'],
+  },
+  {
+    id: 'pack-wagon-lab-spring',
+    role: 'pack',
+    label: 'The wagon loaded, the Lab jumps in last',
+    years: [1965, 1995],
+    yearsWhy:
+      'A wood-panelled full-size station wagon with skis on the roof rack: the family ski car from the late 1960s until minivans replaced it in the 1990s.',
+    seasons: ['spring'],
+    place:
+      'the curb of a quiet Old Bend street on a bright cool April morning: 1920s bungalows, tall ponderosa pines, green lawns, bare trees budding',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A', 'B'],
+    wardrobe: 'travel',
+    companion: true,
+    framing:
+      'from the sidewalk at the back of the car, 35mm, a tall frame: the open tailgate of the station wagon in the lower half, ' +
+      'two pairs of skis on the roof rack, the two of them beside it, the license plate out of frame',
+    light: 'low bright morning sun from the side, 5200K, long soft shadows',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action:
+      'their black Labrador with the red collar jumps up into the back of the loaded station wagon while {A} and {B} stand at the open tailgate and watch',
+    props:
+      'a brown full-size American station wagon from the late 1970s with wood-grain side panels and a roof rack, no badges or lettering on the car; ' +
+      'suitcases and a cooler in the cargo area',
+    move: 'follow',
+    alsoReject: ['any badge, license plate, or lettering on the car', 'snow on the ground in town'],
+  },
+  {
+    id: 'commute-dash-polaroid',
+    role: 'commute',
+    label: 'Back home: stopped in traffic, the ski Polaroid on the dash',
+    years: [1972, 2100],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'a big-city freeway in slow afternoon traffic under a hazy warm sky: lanes of cars, an overpass ahead, palm trees along the embankment',
+    refs: [],
+    cast: ['B'],
+    wardrobe: 'work',
+    framing:
+      'from the back seat directly behind him, looking past his right ear, 35mm, a tall frame: the back of his head and his right shoulder ' +
+      'fill the lower left, his face is turned away from the camera; a single instant photograph is tucked upright into the corner of the ' +
+      'dashboard in the middle of the frame, its picture facing him and the camera; the stopped traffic ahead through the windshield',
+    light: 'warm hazy afternoon sun through the windshield, 4800K',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action: '{B} sits in the slow traffic with both hands on the wheel and tilts his head toward the photograph on the dashboard',
+    props:
+      'the same boxy brown vinyl dashboard and wood-grain trim of the station wagon; the instant photograph has a white border and a plain blank white picture',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: ['any picture, letters, or marks on the photograph', 'snow', 'a dog in the car', 'anyone else in the car'],
+  },
+  {
+    id: 'office-desk-polaroid',
+    role: 'work_a',
+    label: 'Her office: her copy of the ski Polaroid propped by her lamp',
+    years: [1960, 1990],
+    yearsWhy: 'An office of the era: electric typewriters and desk telephones, no computer screens.',
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'a bright, busy city office in the afternoon: tall windows, potted plants, colleagues at nearby desks, a warm and friendly room',
+    refs: [],
+    cast: ['A'],
+    wardrobe: 'work',
+    framing:
+      'at desk height from her right side, 50mm, a tall frame: she is seen in profile on the left, looking to the right at the desk; ' +
+      'in the foreground on the right a single instant photograph is propped against the base of her desk lamp at an angle, ' +
+      'turned halfway between her and the camera so both she and the camera see its picture; the bright office soft beyond',
+    light: 'warm afternoon window light, 5000K, soft',
+    exposure: 'day',
+    action: '{A}, in profile, sets down her desk telephone and looks at the photograph propped by her lamp, and a small smile comes',
+    props:
+      'an electric typewriter, a desk telephone, a coffee mug, a brass desk lamp; the instant photograph has a white border and a plain blank white picture',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: ['any picture, letters, or marks on the photograph', 'a computer screen', 'readable text on papers'],
+  },
+  {
+    id: 'kitchen-table-polaroid',
+    role: 'home',
+    label: 'That night at the kitchen table, the house between them',
+    years: [1960, 1995],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'the small kitchen of a city apartment at night: yellow linoleum floor, avocado-green appliances, ' +
+      'a harvest-gold rotary telephone on the wall, a window onto dark city lights',
+    refs: [],
+    cast: ['A', 'B'],
+    wardrobe: 'work',
+    companion: true,
+    framing:
+      'from just behind his shoulder at the small kitchen table, 35mm, a tall frame: the back of his shoulder in the lower right, ' +
+      'a single instant photograph lying face up on the table in the middle, facing them, she across the table looking at it, the dog on the floor',
+    light: 'a single warm pendant lamp over the table, 2800K, the rest of the kitchen falling off into shadow',
+    exposure: 'interior_low',
+    action: '{A} rests a fingertip on the edge of the photograph on the table and looks up at {B}, smiling',
+    props:
+      'a Formica kitchen table with two glasses of wine; the instant photograph has a white border and a plain blank white picture; ' +
+      'their black Labrador with the red collar lying on the floor',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: ['any picture, letters, or marks on the photograph'],
+  },
+  {
+    id: 'house-polaroid-closeup',
+    role: 'number',
+    label: 'The house on the table; the sign, and the number on it',
+    years: [1972, 2100],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place: 'the Formica top of the same kitchen table at night, the edge of a wine glass',
+    refs: [],
+    cast: [],
+    framing:
+      'a close shot straight down onto the tabletop, 100mm, a tall frame: a plain blank white card the size of an instant photograph ' +
+      'fills the middle of the frame, about two thirds of the frame width, the rim of a wine glass at one edge and the table pattern around it',
+    light: 'the single warm pendant lamp from above, 2800K, soft falloff to the edges',
+    exposure: 'interior_low',
+    action: 'the card lies still on the table under the lamp',
+    move: 'tripod',
+    stillOnly: true,
+    composite: 'photo_print',
+    alsoReject: ['any picture, letters, or marks on the card'],
   },
 ]
 

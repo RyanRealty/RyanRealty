@@ -26,7 +26,7 @@ import type { EraPack } from './eras'
 
 export type ArcRole = BeatRole | 'break' | 'end'
 
-export type ArcId = 'visitor' | 'homecoming'
+export type ArcId = 'visitor' | 'homecoming' | 'polaroid'
 
 export type ArcSlot = {
   role: ArcRole
@@ -103,7 +103,37 @@ export const HOMECOMING_ARC: ArcSlot[] = [
   { role: 'end', seconds: 3.7, because: 'The line lands in the dark: we are here when they are ready.' },
 ]
 
-export const ARCS: Record<ArcId, ArcSlot[]> = { visitor: VISITOR_ARC, homecoming: HOMECOMING_ARC }
+/**
+ * The Polaroid arc (Matt 2026-09-24, April): the same homecoming, told slower
+ * and carried by the photographs they take. The mountain from the top, a
+ * stranger's picture of them at the bottom, the house on a walk the next day
+ * (the sign is only there, never pushed), the Polaroids over drinks with the
+ * house last, the drive home, one of them in traffic and one at a desk with
+ * the photograph, and the kitchen table, where the house Polaroid carries the
+ * sign and the number: the call is the card. Shots hold 3.2-4.4s so each
+ * place settles; `snapshot` is a prop (the photograph she took), never cut in.
+ */
+export const POLAROID_ARC: ArcSlot[] = [
+  { role: 'hook', seconds: 3.2, because: 'A face and a dog inside the first second, on the way up.' },
+  { role: 'lift', seconds: 3.2, because: 'Riding up: the mountain before the view.' },
+  { role: 'summit', seconds: 4.4, because: 'The top: the Three Sisters and Broken Top. The longest hold in the film.' },
+  { role: 'play', seconds: 3.4, because: 'Down on spring snow, one after the other.' },
+  { role: 'photo', seconds: 3.6, because: 'A stranger takes their picture: the photograph the rest of the film carries.' },
+  { role: 'town', seconds: 3.8, because: 'The next day, the park and the dog: the pace drops.' },
+  { role: 'discover', seconds: 4.2, because: 'The house. She takes its picture. Our sign is in the yard and nobody points at it.' },
+  { role: 'snapshot', seconds: 0, because: 'The photograph she took: only ever seen inside other frames.' },
+  { role: 'eat', seconds: 3.8, because: 'That night, drinks outside the Tower, laughing over the Polaroids.' },
+  { role: 'prints', seconds: 4.4, because: 'The Polaroids land on the table one by one; the house comes last.' },
+  { role: 'pack', seconds: 3.2, because: 'The next morning, the dog jumps in last.' },
+  { role: 'leave', seconds: 3.2, because: 'The mountain in the rear window.' },
+  { role: 'commute', seconds: 3.8, because: 'Home: in traffic, the photograph on the dash.' },
+  { role: 'work_a', seconds: 3.8, because: 'Her desk, her copy of the photograph by the lamp.' },
+  { role: 'home', seconds: 3.8, because: 'The kitchen table: the house between them.' },
+  { role: 'number', seconds: 4.0, because: 'The Polaroid up close: the sign, and the number on it. He is already dialing.' },
+  { role: 'end', seconds: 4.0, because: 'We are here when you are ready to make the call.' },
+]
+
+export const ARCS: Record<ArcId, ArcSlot[]> = { visitor: VISITOR_ARC, homecoming: HOMECOMING_ARC, polaroid: POLAROID_ARC }
 
 export type PlannedStoryShot = {
   index: number
@@ -112,9 +142,10 @@ export type PlannedStoryShot = {
   because: string
   /**
    * 'generated' goes through Grok; 'plate' reuses an earlier role's selected
-   * still (beat.plateFrom); 'phone_ui' and 'end_card' are built in code.
+   * still (beat.plateFrom); 'prop' is a generated still seen only inside other
+   * frames (beat.prop); 'phone_ui' and 'end_card' are built in code.
    */
-  kind: 'generated' | 'plate' | 'phone_ui' | 'end_card'
+  kind: 'generated' | 'plate' | 'prop' | 'phone_ui' | 'end_card'
   beat: BeatDef | null
 }
 
@@ -193,16 +224,22 @@ export function planStory(input: PlanStoryInput): StoryPlan {
       shots.push({ index, ...slot, kind: 'plate', beat })
       return
     }
+    if (beat.prop) {
+      shots.push({ index, ...slot, seconds: 0, kind: 'prop', beat })
+      return
+    }
     shots.push({ index, ...slot, kind: 'generated', beat })
   })
 
   // Three identical camera moves in a row reads as a template, even handheld.
-  for (let i = 2; i < shots.length; i += 1) {
-    const [a, b, c] = [shots[i - 2].beat, shots[i - 1].beat, shots[i].beat]
+  // Props and plates are not generated shots on screen; only generated motion counts.
+  const onScreen = shots.filter((s) => s.kind === 'generated')
+  for (let i = 2; i < onScreen.length; i += 1) {
+    const [a, b, c] = [onScreen[i - 2].beat, onScreen[i - 1].beat, onScreen[i].beat]
     // The city after the trip is locked off on purpose: the register change is the point.
     const lockedOffCity = [a, b, c].every((x) => x?.elsewhere && x.move === 'tripod')
     if (a && b && c && a.move === b.move && b.move === c.move && !lockedOffCity) {
-      warnings.push(`three "${c.move}" moves in a row ending at shot ${i} (${c.id})`)
+      warnings.push(`three "${c.move}" moves in a row ending at shot ${onScreen[i].index} (${c.id})`)
     }
   }
   // The reference test: a place frame with no real still behind it is prompt-only scenic.

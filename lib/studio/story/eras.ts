@@ -369,6 +369,22 @@ export function labParamsFor(era: EraPack, exposure: ExposureVariant): LabParams
 }
 
 /**
+ * A full-frame vertical piece (Matt 2026-09-24: "it needs to be vertical")
+ * runs the same stock through a tall gate: no strip, no sprockets, square
+ * corners, 720 x 1280 (the 720p source's own size, shown at 1080 x 1920).
+ */
+export const VERTICAL_GATE: LabParams['gate'] = { width: 720, height: 1280, corner: 0, sprockets: 'none' }
+
+export function labParamsForAspect(
+  era: EraPack,
+  exposure: ExposureVariant,
+  aspect: '4:3' | '9:16' = '4:3',
+): LabParams & { exposure: ExposureVariant } {
+  const lab = labParamsFor(era, exposure)
+  return aspect === '9:16' ? { ...lab, gate: VERTICAL_GATE } : lab
+}
+
+/**
  * The context handed to the frame judge. It describes the world the frame
  * claims to be from; it is never a source for any figure.
  */

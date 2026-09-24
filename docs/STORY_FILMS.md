@@ -270,6 +270,45 @@ Captions: "Bend, Oregon. Winter, 1982." over the first shot; "One week later." o
 commute. 48.8s (Reels guidance: 30-60s for a narrative). Round cost: 48 stills and 9 clips,
 $6.14 as billed by xAI (piece total $22.57); the piece cap was raised to $35.
 
+## "April, 1982": the Polaroid cut, vertical and full frame (Matt 2026-09-24)
+
+Matt's notes on v7: the scenes flowed too fast and the transitions were odd; the desk photos
+faced out at the lens, so nobody was looking at them; the jobs looked alike and read as a grind;
+too much skiing; no captions ("the movie will imply all of that"); the sign is product placement,
+not a zoom; and "it needs to be vertical". A new piece row, `april-1982`, on a new arc,
+`POLAROID_ARC`, with the same couple (`COUPLE_1982`) and the same dog:
+
+drive up (the Lab licks her cheek) → the chairlift from the chair behind → the top of the
+mountain, the Three Sisters and Broken Top (a real summit photo: U.S. Forest Service,
+public domain, `asset:21d81297`) → skiing down one after the other → a stranger takes their
+picture at the bottom, skis up, arms around each other (two Polaroids, one each) → the next
+day, walking the Lab by Mirror Pond → the house; she takes its Polaroid, our sign on the lawn
+and nobody points at it → that night, drinks outside across from the Tower, laughing over the
+Polaroids → the Polaroids land on the table, the house last → the dog jumps into the wagon →
+the mountain in the rear window → back home: him in traffic with his Polaroid on the dash, her
+at a bright office with hers → the kitchen table, the house Polaroid between them → the
+Polaroid up close, the sign and 541.703.3095 on it, the dial under it → fade → "We're here
+when you're ready to make the call."
+
+- **Vertical and full frame.** `StoryPiece.aspect: '9:16'` generates stills and motion at 9:16
+  (motion at 720p, $0.71 a 5s clip as billed) and grades through `VERTICAL_GATE` (720 x 1280,
+  no strip, no sprockets); `story_reel.py` `"layout": "full"` puts the gate on the whole screen.
+- **Slower.** Every shot holds 3.2-4.4s (the summit longest); time jumps dissolve (0.6-1.0s,
+  the outgoing clip's trim carries the handle); cuts within a scene stay straight.
+- **Photographs face the person.** Over-the-shoulder or profile framings, written so the model
+  cannot turn the person back to the lens ("only the backs of their heads", "seen in profile",
+  "turned halfway between her and the camera"). Composites: `sign-clip --static --clean-at`
+  (a locked-off shot where a head passes in front of the card: whatever matches none of the
+  clean frames stays in front), `--no-key` (a card the generator drew a picture on), and
+  `card` (a card in a moving hand, followed blob to blob).
+- **Polaroids are ours.** `story_reel.py polaroid` renders an SX-70 print (79mm picture in an
+  88 x 107mm card) from a frame; `deal` lays them on a tabletop plate one by one, lit by the
+  plate; `snapshot` is a `prop` beat (a generated still seen only inside other frames).
+- **The number reads once, at the end.** The sign on the lawn is small and unremarked; the
+  house Polaroid carries the sign large enough that a slow push-in on the kitchen table shows
+  541.703.3095. The dial starts under that shot; one ring; the picture fades; the card lands on
+  the pickup.
+
 ## Distribution notes
 
 Label every piece as AI-generated on each platform (TikTok AIGC label, Meta "AI info"); the

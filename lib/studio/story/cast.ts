@@ -14,7 +14,7 @@ import type { EraPack } from './eras'
 
 export type CastSlot = 'A' | 'B'
 
-export type WardrobeKey = 'travel' | 'ski' | 'apres' | 'dinner' | 'evening' | 'summer' | 'work'
+export type WardrobeKey = 'travel' | 'ski' | 'apres' | 'dinner' | 'evening' | 'summer' | 'work' | 'spring'
 
 export type CastMember = {
   slot: CastSlot

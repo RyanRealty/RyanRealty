@@ -42,7 +42,7 @@ import { addSpend, assertBudget, imageCost, videoCost, VISION_CALL_USD, type Spe
 import { planStory, type PlannedStoryShot, type StoryPlan } from '@/lib/studio/story/arc'
 import type { BeatRole } from '@/lib/studio/story/beats'
 import { castSheetSpec, type CastSlot } from '@/lib/studio/story/cast'
-import { getEra, judgeContextFor, labParamsFor, type EraPack } from '@/lib/studio/story/eras'
+import { getEra, judgeContextFor, labParamsForAspect, type EraPack } from '@/lib/studio/story/eras'
 import { continuityFor, getStoryPiece, type StoryPiece } from '@/lib/studio/story/pieces'
 import { storyShotPrompts } from '@/lib/studio/story/shots'
 
@@ -367,7 +367,7 @@ function pieceAndEra(flags: Record<string, string>): {
   plan: StoryPlan
 } {
   const piece = getStoryPiece(flags.piece ?? '')
-  if (!piece) throw new Error(`--piece is required (known: winter-1982)`)
+  if (!piece) throw new Error(`--piece is required (known: winter-1982, april-1982)`)
   const era = getEra(piece.eraId)
   if (!era) throw new Error(`piece ${piece.id} names unknown era ${piece.eraId}`)
   const plan = planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit, arc: piece.arc })
@@ -590,7 +590,10 @@ async function stageStills(
   takes: number,
   judgeTakes: boolean,
 ): Promise<void> {
-  const shots = plan.shots.filter((s) => s.kind === 'generated' && (!roles || roles.includes(s.role)))
+  // Props (a photograph they took) are stills too; they are only never moved or cut in.
+  const shots = plan.shots.filter(
+    (s) => (s.kind === 'generated' || s.kind === 'prop') && (!roles || roles.includes(s.role)),
+  )
   // Continuity sources must exist before their dependents run, so go in arc order by dependency depth.
   const depth = (s: PlannedStoryShot): number => {
     const from = continuityFor(piece, s.role as BeatRole)?.from
@@ -617,13 +620,13 @@ async function stageStills(
           ? await editGrokImage({
               prompt: prompts.still,
               sources: await Promise.all(sources.files.map(async (f) => ({ url: await dataUri(f) }))),
-              aspectRatio: '4:3',
+              aspectRatio: piece.aspect ?? '4:3',
               resolution: '1k',
               n: takes,
             })
           : await generateGrokImages({
               prompt: prompts.still,
-              aspectRatio: '4:3',
+              aspectRatio: piece.aspect ?? '4:3',
               resolution: '1k',
               n: takes,
             })
@@ -745,7 +748,7 @@ async function stageMotion(
       prompt: prompts.motion,
       image: { url: await dataUri(still) },
       duration: seconds,
-      aspectRatio: '4:3',
+      aspectRatio: piece.aspect ?? '4:3',
       resolution,
       generateAudio: false,
     })
@@ -1203,16 +1206,16 @@ function stageStatus(piece: StoryPiece, plan: StoryPlan, manifest: Manifest): vo
   }
 }
 
-/** Each shot's lab parameters in one era's stock, keyed by role. */
-function labByRole(stock: EraPack, plan: StoryPlan) {
+/** Each shot's lab parameters in one era's stock, keyed by role, through the piece's gate. */
+function labByRole(stock: EraPack, plan: StoryPlan, piece: StoryPiece) {
   return Object.fromEntries(
-    plan.shots.filter((s) => s.beat).map((s) => [s.role, labParamsFor(stock, s.beat!.exposure)]),
+    plan.shots.filter((s) => s.beat).map((s) => [s.role, labParamsForAspect(stock, s.beat!.exposure, piece.aspect)]),
   )
 }
 
 /** The lab parameters per shot, for scripts/studio/story_reel.py. */
 function writeReelInputs(piece: StoryPiece, era: EraPack, plan: StoryPlan): void {
-  const lab = labByRole(era, plan)
+  const lab = labByRole(era, plan, piece)
   writeFileSync(path.join(dirFor(piece), 'lab.json'), JSON.stringify({ era: era.id, sound: era.sound, lab }, null, 2))
 }
 
@@ -1225,7 +1228,7 @@ function stageLook(piece: StoryPiece, era: EraPack, plan: StoryPlan, lookId: str
   const look = getEra(lookId ?? '')
   if (!look) throw new Error('--era is required: the era whose film stock to regrade in (e.g. cine16_1978)')
   const file = path.join(dirFor(piece), `lab-${look.id}.json`)
-  writeFileSync(file, JSON.stringify({ era: look.id, sound: era.sound, lab: labByRole(look, plan) }, null, 2))
+  writeFileSync(file, JSON.stringify({ era: look.id, sound: era.sound, lab: labByRole(look, plan, piece) }, null, 2))
   console.log(`wrote ${path.relative(process.cwd(), file)}`)
   console.log(
     `next: python3 scripts/studio/story_reel.py build --dir ${path.relative(process.cwd(), dirFor(piece))} --lab lab-${look.id}.json --name reel-${look.id}`,

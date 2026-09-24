@@ -178,6 +178,96 @@ def render_print(src_path, out_path, crop=None, border=0.045, width=1400):
     return out_path
 
 
+def render_polaroid(src_path, out_path, crop=None, width=900):
+    """An SX-70 print: a square picture in a cream frame, 79mm of picture in an
+    88 x 107mm card (4.5mm sides, 6mm top, 22mm chin). The picture gets the
+    integral film's own look (warm, lifted blacks, a little cyan in the
+    shadows, soft) before the film lab ages the whole frame around it."""
+    img = Image.open(src_path).convert("RGB")
+    if crop:
+        x0, y0, x1, y1 = crop
+        img = img.crop((int(x0 * img.width), int(y0 * img.height), int(x1 * img.width), int(y1 * img.height)))
+    side = min(img.width, img.height)
+    img = img.crop(((img.width - side) // 2, (img.height - side) // 2, (img.width + side) // 2, (img.height + side) // 2))
+    mm = width / 88.0
+    pic = int(79 * mm)
+    img = img.resize((pic, pic), Image.LANCZOS)
+    a = np.array(img).astype(np.float32) / 255.0
+    lum = a.mean(axis=2, keepdims=True)
+    a = lum + (a - lum) * 0.86
+    a = 0.07 + a * 0.88
+    a = a + np.array([0.025, 0.012, -0.02], np.float32)
+    a = a + (1 - lum) ** 2 * np.array([-0.02, 0.01, 0.03], np.float32)
+    a = cv2.GaussianBlur(np.clip(a, 0, 1), (0, 0), 0.6)
+    card = Image.new("RGB", (width, int(107 * mm)), (241, 237, 226))
+    card.paste(Image.fromarray((a * 255 + 0.5).astype(np.uint8)), (int(4.5 * mm), int(6 * mm)))
+    card.save(out_path, quality=95)
+    return out_path
+
+
+def ease_out(u):
+    u = min(1.0, max(0.0, u))
+    return 1 - (1 - u) ** 3
+
+
+def deal_polaroids(plate_path, spec, out_path, fps=24):
+    """Polaroids dealt onto a tabletop plate one at a time, as if from a hand
+    below the frame: each slides up into place with a turn, lifted (a larger,
+    softer shadow) until it settles flat. Lit by the plate's own light so a
+    card at the candle is warm and a card at the edge falls off. The last card
+    lands on top: the house."""
+    plate = np.array(Image.open(plate_path).convert("RGB")).astype(np.float32) / 255.0
+    h, w = plate.shape[:2]
+    glow = cv2.GaussianBlur(plate, (0, 0), 60)
+    glow = np.clip(glow / max(1e-3, float(np.percentile(glow, 97))), 0.45, 1.1)
+    cards = []
+    for c in spec["cards"]:
+        art = Image.open(c["image"]).convert("RGBA")
+        cw = int(c["w"] * w)
+        art = art.resize((cw, int(art.height * cw / art.width)), Image.LANCZOS)
+        cards.append((c, art))
+    n = int(round(spec["seconds"] * fps))
+    enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(fps),
+                            "-i", "-", "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p", out_path], stdin=subprocess.PIPE)
+    for k in range(n):
+        t = k / fps
+        frame = plate.copy()
+        for c, art in cards:
+            if t < c["at"]:
+                continue
+            u = ease_out((t - c["at"]) / c.get("dur", 0.55))
+            lift = 1.0 - u
+            cx = c["x"] * w
+            cy = (c["y"] + 0.55 * lift) * h
+            rot = c["rot"] + 14.0 * lift
+            scale = 1.0 + 0.06 * lift
+            im = art.rotate(rot, resample=Image.BICUBIC, expand=True)
+            im = im.resize((int(im.width * scale), int(im.height * scale)), Image.LANCZOS)
+            rgba = np.array(im).astype(np.float32) / 255.0
+            ih, iw = rgba.shape[:2]
+            x0, y0 = int(cx - iw / 2), int(cy - ih / 2)
+            # shadow: the card's own alpha, offset and softened more while it is lifted
+            sh = np.zeros((h, w), np.float32)
+            off = int(6 + 26 * lift)
+            ax0, ay0 = max(0, x0 + off), max(0, y0 + off)
+            ax1, ay1 = min(w, x0 + off + iw), min(h, y0 + off + ih)
+            if ax1 > ax0 and ay1 > ay0:
+                sh[ay0:ay1, ax0:ax1] = rgba[ay0 - (y0 + off):ay1 - (y0 + off), ax0 - (x0 + off):ax1 - (x0 + off), 3]
+            sh = cv2.GaussianBlur(sh, (0, 0), 5 + 14 * lift)[..., None]
+            frame = frame * (1 - sh * (0.45 - 0.15 * lift))
+            bx0, by0, bx1, by1 = max(0, x0), max(0, y0), min(w, x0 + iw), min(h, y0 + ih)
+            if bx1 <= bx0 or by1 <= by0:
+                continue
+            region = rgba[by0 - y0:by1 - y0, bx0 - x0:bx1 - x0]
+            a = region[..., 3:4]
+            lit = region[..., :3] * glow[by0:by1, bx0:bx1] * (1.0 + 0.06 * lift)
+            frame[by0:by1, bx0:bx1] = frame[by0:by1, bx0:bx1] * (1 - a) + lit * a
+        enc.stdin.write((np.clip(frame, 0, 1) * 255 + 0.5).astype(np.uint8).tobytes())
+    enc.stdin.close()
+    enc.wait()
+    return out_path
+
+
 def composite_sign(still_path, panel_path, out_path, corners=None, debug=None, upscale=2):
     """Composite at `upscale`x the plate: the amateur zoom lands on the sign, so the
     sign needs pixels the 1k plate does not have. Our art has them (2954px)."""
@@ -218,7 +308,7 @@ def composite_sign(still_path, panel_path, out_path, corners=None, debug=None, u
 
 
 def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=None, static=False, plate_sat=1.0,
-               key_ref=False):
+               key_ref=False, no_key=False, clean_at=None):
     """Our sign art on the blank panel of a MOVING clip.
 
     Tracking: ECC homography of the sign's own neighbourhood (panel, post, arm,
@@ -235,6 +325,12 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
                 the snapshot from the trip keeps its colour)
     key_ref     occlusion keyed on distance from the blank card's own colour, not
                 on neutrality: a white card under a 2800K lamp is not neutral
+    no_key      the art covers the whole quad: for a card the generator drew a
+                picture on during motion, when nothing passes in front of it
+    clean_at    frame times (seconds) where nothing covers the card: on a
+                locked-off shot, whatever in the quad matches none of them is
+                passing in front (a head leaning across a dashboard) and stays
+                in front, whatever the generator drew on the card meanwhile
     """
     w, h, fps, _ = probe_video(clip_path)
     sx, sy = w / still_size[0], h / still_size[1]
@@ -246,6 +342,11 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
     ah, aw = board.shape[:2]
     art_corners = np.array([[0, 0], [aw - 1, 0], [aw - 1, ah - 1], [0, ah - 1]], np.float32)
 
+    cleans = []
+    for ct in clean_at or []:
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(ct), "-i", clip_path, "-frames:v", "1", "-f", "rawvideo",
+                              "-pix_fmt", "rgb24", "-"], capture_output=True, check=True).stdout
+        cleans.append(cv2.GaussianBlur(np.frombuffer(raw, np.uint8).reshape(h, w, 3).astype(np.float32) / 255.0, (0, 0), 2))
     pad = int(0.45 * max(np.ptp(q0[:, 0]), np.ptp(q0[:, 1])))
     x0, y0 = max(0, int(q0[:, 0].min()) - pad), max(0, int(q0[:, 1].min()) - pad)
     x1, y1 = min(w, int(q0[:, 0].max()) + pad), min(h, int(q0[:, 1].max()) + pad)
@@ -289,7 +390,14 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
         quad_mask = cv2.warpPerspective(np.ones((ah, aw), np.float32), M, (w, h), flags=cv2.INTER_LINEAR)
         plate = frame.astype(np.float32) / 255.0
         lab = cv2.cvtColor(frame, cv2.COLOR_RGB2LAB).astype(np.float32)
-        if key_ref:
+        if cleans:
+            cur = cv2.GaussianBlur(frame.astype(np.float32) / 255.0, (0, 0), 2)
+            diff = np.min(np.stack([np.abs(cur - c).mean(axis=2) for c in cleans]), axis=0)
+            key = 1.0 - smoothstep_np(0.05, 0.12, diff)
+            key = cv2.erode(key, np.ones((5, 5), np.uint8))
+        elif no_key:
+            key = np.ones(lab.shape[:2], np.float32)
+        elif key_ref:
             dist = np.sqrt((lab[..., 1] - ref_lab[1]) ** 2 + (lab[..., 2] - ref_lab[2]) ** 2)
             key = (1.0 - smoothstep_np(7.0, 13.0, dist)) * smoothstep_np(ref_lab[0] * 0.62, ref_lab[0] * 0.8, lab[..., 0])
         else:
@@ -322,7 +430,7 @@ def order_quad(pts):
     return np.array([pts[s.argmin()], pts[d.argmin()], pts[s.argmax()], pts[d.argmax()]], np.float32)
 
 
-def composite_screen(frames, screen_path, search=None):
+def composite_screen(frames, screen_path, search=None, corner=0.07):
     """A crisp, ungraded phone screen on the lit screen of a GRADED clip.
 
     The frame carries the phone with its screen an evenly lit blank rectangle
@@ -336,7 +444,7 @@ def composite_screen(frames, screen_path, search=None):
     art = np.array(Image.open(screen_path).convert("RGB")).astype(np.float32) / 255.0
     ah, aw = art.shape[:2]
     art_corners = np.array([[0, 0], [aw - 1, 0], [aw - 1, ah - 1], [0, ah - 1]], np.float32)
-    rr = rounded_rect_mask(aw, ah, int(aw * 0.07))
+    rr = rounded_rect_mask(aw, ah, max(1, int(aw * corner)))
     n, h, w = frames.shape[:3]
     x0, y0, x1, y1 = (0, 0, w, h) if search is None else search
     out, prev, found = [], None, 0
@@ -379,6 +487,73 @@ def composite_screen(frames, screen_path, search=None):
         out.append((np.clip(o, 0, 1) * 255 + 0.5).astype(np.uint8))
     if found < n * 0.6:
         sys.exit(f"screen found on only {found}/{n} frames; give the segment a screen.search box [x0,y0,x1,y1]")
+    return np.stack(out)
+
+
+def track_card(frames, art_path, search=None, seed=None):
+    """A white card in a moving hand: frame by frame, the white blob nearest
+    where the card was (not the brightest thing in the room: a blouse, a
+    phone), its four corners smoothed over time. When fingers eat into it,
+    the last good shape moves with the blob's centre instead of shrinking.
+    The art lands only where the frame is still card-white, so the fingers
+    holding it stay in front."""
+    art = np.array(Image.open(art_path).convert("RGB")).astype(np.float32) / 255.0
+    ah, aw = art.shape[:2]
+    art_corners = np.array([[0, 0], [aw - 1, 0], [aw - 1, ah - 1], [0, ah - 1]], np.float32)
+    n, h, w = frames.shape[:3]
+    x0, y0, x1, y1 = (0, 0, w, h) if search is None else search
+    out, prev, prev_c, prev_area = [], None, None, None
+    if seed is not None:
+        prev = np.array(seed, np.float32).reshape(4, 2)
+        prev_c, prev_area = prev.mean(0), cv2.contourArea(prev.reshape(-1, 1, 2))
+    for k in range(n):
+        f = frames[k]
+        hsv = cv2.cvtColor(f, cv2.COLOR_RGB2HSV)
+        white = ((hsv[..., 2] > 200) & (hsv[..., 1] < 38)).astype(np.uint8)
+        white[:y0] = 0
+        white[y1:] = 0
+        white[:, :x0] = 0
+        white[:, x1:] = 0
+        white = cv2.morphologyEx(white, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+        cnts, _ = cv2.findContours(white, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = [c for c in cnts if cv2.contourArea(c) > 0.0015 * w * h]
+        quad = None
+        if cnts:
+            if prev_c is None:
+                c = max(cnts, key=cv2.contourArea)
+            else:
+                c = min(cnts, key=lambda c: np.linalg.norm(c.reshape(-1, 2).mean(0) - prev_c))
+            area = cv2.contourArea(c)
+            centre = c.reshape(-1, 2).mean(0)
+            if prev is not None and prev_area and (area < 0.7 * prev_area or area > 1.4 * prev_area):
+                quad = prev + (centre - prev_c)  # partly covered: keep the shape, follow the blob
+            else:
+                approx = cv2.approxPolyDP(cv2.convexHull(c), 0.04 * cv2.arcLength(c, True), True)
+                pts = approx.reshape(-1, 2) if len(approx) == 4 else cv2.boxPoints(cv2.minAreaRect(c))
+                quad = order_quad(pts)
+                prev_area = cv2.contourArea(quad.reshape(-1, 1, 2))
+            if prev is not None:
+                quad = prev * 0.5 + quad * 0.5
+            prev_c = centre
+        if quad is None:
+            quad = prev
+        if quad is None:
+            out.append(f)
+            continue
+        prev = quad
+        M = cv2.getPerspectiveTransform(art_corners, quad.astype(np.float32))
+        warped = cv2.warpPerspective(art, M, (w, h), flags=cv2.INTER_AREA)
+        shape = cv2.warpPerspective(np.ones((ah, aw), np.float32), M, (w, h), flags=cv2.INTER_LINEAR)
+        key = smoothstep_np(170.0, 205.0, hsv[..., 2].astype(np.float32)) * (1.0 - smoothstep_np(30.0, 55.0, hsv[..., 1].astype(np.float32)))
+        key = cv2.dilate(key, np.ones((3, 3), np.uint8))
+        alpha = cv2.GaussianBlur(shape * key, (0, 0), 0.8)[..., None]
+        plate = f.astype(np.float32) / 255.0
+        shade = cv2.GaussianBlur(plate, (0, 0), 6)
+        inside = (shape > 0.9) & (key > 0.9)
+        ref = np.percentile(shade[inside], 92, axis=0) if inside.sum() > 50 else np.ones(3, np.float32)
+        lit = warped * np.clip(shade / np.maximum(ref, 1e-3), 0.0, 1.15) * ref
+        o = plate * (1 - alpha) + lit * alpha
+        out.append((np.clip(o, 0, 1) * 255 + 0.5).astype(np.uint8))
     return np.stack(out)
 
 
@@ -454,9 +629,11 @@ def grade_segment(d, seg, lab_all, draft):
     if seg.get("still"):
         src = os.path.join(d, "graded", f"{role}-{key}-src.mp4")
         # Keep the still's own resolution (even dimensions): a zoomed still needs every pixel.
-        run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", os.path.join(d, seg["still"]), "-t", str(seg["seconds"] + 0.2),
+        # A still carries its own handle past the cut when the next shot dissolves out of it.
+        span = seg["seconds"] + float(seg.get("handle", 0.0))
+        run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", os.path.join(d, seg["still"]), "-t", str(span + 0.2),
              "-r", "24", "-vf", "crop=trunc(iw/2)*2:trunc(ih/2)*2", "-crf", "12", "-pix_fmt", "yuv420p", src])
-        trim = f"0,{seg['seconds']}"
+        trim = f"0,{span}"
     else:
         src = os.path.join(d, seg["clip"])
         trim = f"{seg['trim'][0]},{seg['trim'][1]}"
@@ -909,7 +1086,27 @@ def rotary(digits, rng):
     return _stereo(np.concatenate(parts) * 0.6)
 
 
-SOUNDS = {"traffic": traffic, "office": office, "newsroom": newsroom, "kitchen": kitchen}
+def polaroid_camera(rng):
+    """An SX-70 taking a picture: the shutter's clack, then the motor pushing
+    the print out through the rollers for most of a second."""
+    click_ = lfilter(*butter_bandpass(800, 6000), rng.normal(0, 1, int(0.03 * SR)) * np.exp(-np.arange(int(0.03 * SR)) / 90.0))
+    gap = np.zeros(int(0.12 * SR))
+    m = int(0.85 * SR)
+    t = np.arange(m) / SR
+    motor = np.sin(2 * np.pi * 115 * t) * 0.5 + np.sin(2 * np.pi * 230 * t) * 0.25
+    motor = motor * (0.7 + 0.3 * np.sin(2 * np.pi * 31 * t)) + lfilter(*butter_bandpass(400, 3000), rng.normal(0, 1, m)) * 0.4
+    env = np.minimum(1, np.minimum(t / 0.03, (0.85 - t) / 0.06))
+    sig = np.concatenate([click_ * 0.5, gap, lfilter(*butter_bandpass(90, 4000), motor * env) * 0.12])
+    return _stereo(sig)
+
+
+def street(seconds, rng):
+    """A downtown sidewalk on a spring night: a car now and then, people at the next tables."""
+    return traffic(seconds, rng, honks=0) * 0.6 + murmur(seconds, rng, 0.012)
+
+
+SOUNDS = {"traffic": traffic, "office": office, "newsroom": newsroom, "kitchen": kitchen, "street": street}
+SFX = {"polaroid": polaroid_camera}
 
 
 def mix_into(bus, clip, at):
@@ -967,6 +1164,7 @@ def build(d, draft, lab_file="lab.json", name="reel", music=True, video_from=Non
                             "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium" if draft else "slow",
                             "-crf", "18", "-pix_fmt", "yuv420p", out_video], stdin=subprocess.PIPE)
     captions = list(edl.get("captions") or ([edl["caption"]] if edl.get("caption") else []))
+    full = edl.get("layout") == "full"
     last_film = None
     for k in range(n_frames):
         gt = k / FPS
@@ -979,9 +1177,22 @@ def build(d, draft, lab_file="lab.json", name="reel", music=True, video_from=Non
         else:
             frames, gfps = graded[s["role"]]
             fi = min(len(frames) - 1, int(lt * gfps))
-            prev = frames[fi - 1] if fi > 0 else None
-            nxt = frames[fi + 1] if fi + 1 < len(frames) else None
-            canvas = film_canvas(frames[fi], prev, nxt)
+            if full:
+                # Full-frame vertical: the gate is the screen. No strip, no neighbours.
+                cur = frames[fi].astype(np.float32) / 255.0
+                d = float(s.get("dissolve", 0.0))
+                if d > 0 and lt < d and i > 0 and segs[i - 1]["role"] in graded:
+                    # The outgoing shot keeps running under the dissolve (its trim carries a handle).
+                    pf, pfps = graded[segs[i - 1]["role"]]
+                    pj = min(len(pf) - 1, int((segs[i - 1]["seconds"] + lt) * pfps))
+                    a = lt / d
+                    a = a * a * (3 - 2 * a)
+                    cur = pf[pj].astype(np.float32) / 255.0 * (1 - a) + cur * a
+                canvas = cv2.resize(cur, (W, H), interpolation=cv2.INTER_CUBIC)
+            else:
+                prev = frames[fi - 1] if fi > 0 else None
+                nxt = frames[fi + 1] if fi + 1 < len(frames) else None
+                canvas = film_canvas(frames[fi], prev, nxt)
             if s.get("fadeOut"):
                 # The picture goes to black on the ring (Matt 2026-09-24: "that's when we fade out").
                 canvas = canvas * float(np.clip((s["seconds"] - lt) / s["fadeOut"], 0.0, 1.0)) ** 1.3
@@ -1086,7 +1297,7 @@ def homecoming_audio(d, edl, segs, starts, seg_at, end_t, total, name, music, of
         tail[: int(0.02 * SR)] *= np.linspace(0, 1, int(0.02 * SR))[:, None]
         mix_into(bus, tail * 0.95, end_t + float(edl["music"].get("chordAt", 0.5)))
     # The projector carries the trip; in the city it drops back so the room is heard.
-    proj = projector(end_t, rng) * 0.7
+    proj = projector(end_t, rng) * float(edl.get("projector", 0.7))
     duck = np.ones(len(proj), np.float32)
     ci = int(city_t * SR)
     duck[ci:] = 0.4
@@ -1094,6 +1305,8 @@ def homecoming_audio(d, edl, segs, starts, seg_at, end_t, total, name, music, of
     mix_into(bus, proj * duck[:, None], 0.0)
     mix_into(bus, flap(1.3, rng), end_t)
     for j, s in enumerate(segs):
+        for fx in s.get("sfx") or []:
+            mix_into(bus, SFX[fx["kind"]](rng) * float(fx.get("gain", 1.0)), starts[j] + float(fx["at"]))
         kind = s.get("sound")
         if kind in SOUNDS:
             at = starts[j]
@@ -1130,7 +1343,7 @@ def finish_audio(d, name, bus, total, out_video, n_frames, lufs=-14):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["panel", "sign", "sign-clip", "print", "edl", "build"])
+    ap.add_argument("cmd", choices=["panel", "sign", "sign-clip", "card", "print", "polaroid", "deal", "edl", "build"])
     ap.add_argument("--role", default=None)
     ap.add_argument("--dir", required=True)
     ap.add_argument("--corners", default=None)
@@ -1151,6 +1364,10 @@ def main():
     ap.add_argument("--static", action="store_true")
     ap.add_argument("--plate-sat", type=float, default=1.0)
     ap.add_argument("--key-ref", action="store_true")
+    ap.add_argument("--no-key", action="store_true")
+    ap.add_argument("--clean-at", default=None)
+    # card: a bright card found per frame (a photograph held in a moving hand)
+    ap.add_argument("--search", default=None)
     ap.add_argument("--out", default=None)
     # print: a frame from the trip as a colour snapshot.
     ap.add_argument("--src", default=None)
@@ -1188,13 +1405,40 @@ def main():
         out = os.path.join(d, "assets", f"{name}.mp4")
         info = track_sign(clip, os.path.join(d, a.panel), out, corners, still.size,
                           debug=os.path.join(d, "assets", name), static=a.static, plate_sat=a.plate_sat,
-                          key_ref=a.key_ref)
+                          key_ref=a.key_ref, no_key=a.no_key,
+                          clean_at=[float(v) for v in a.clean_at.split(",")] if a.clean_at else None)
         print(json.dumps(info))
+    elif a.cmd == "card":
+        # A photograph in a moving hand: the brightest card in the search box, found
+        # frame by frame (the screen finder), with the art landing only where it is bright.
+        manifest = load_json(os.path.join(d, "manifest.json"))
+        clip = os.path.join(d, a.clip) if a.clip else os.path.join(ROOT, manifest["shots"][a.role]["selectedClip"])
+        frames, fps = read_video(clip)
+        search = [int(v) for v in a.search.split(",")] if a.search else None
+        out = track_card(frames, os.path.join(d, a.panel), search)
+        h, w = out.shape[1:3]
+        path = os.path.join(d, "assets", f"{a.out or a.role + '-card'}.mp4")
+        enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(fps),
+                                "-i", "-", "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p", path], stdin=subprocess.PIPE)
+        enc.stdin.write(out.tobytes())
+        enc.stdin.close()
+        enc.wait()
+        print(os.path.relpath(path, ROOT))
     elif a.cmd == "print":
         if not a.src or not a.out:
             sys.exit("print: pass --src <image> --out <assets/print-name.png> [--crop x0,y0,x1,y1 as fractions]")
         crop = [float(v) for v in a.crop.split(",")] if a.crop else None
         print(os.path.relpath(render_print(os.path.join(d, a.src), os.path.join(d, a.out), crop), ROOT))
+    elif a.cmd == "polaroid":
+        if not a.src or not a.out:
+            sys.exit("polaroid: pass --src <image> --out <assets/polaroid-name.png> [--crop x0,y0,x1,y1 as fractions]")
+        crop = [float(v) for v in a.crop.split(",")] if a.crop else None
+        print(os.path.relpath(render_polaroid(os.path.join(d, a.src), os.path.join(d, a.out), crop), ROOT))
+    elif a.cmd == "deal":
+        # --src is a JSON spec: {"plate": ..., "seconds": ..., "cards": [{"image", "at", "x", "y", "rot", "w"}]}
+        spec = load_json(os.path.join(d, a.src))
+        spec["cards"] = [{**c, "image": os.path.join(d, c["image"])} for c in spec["cards"]]
+        print(os.path.relpath(deal_polaroids(os.path.join(d, spec["plate"]), spec, os.path.join(d, a.out)), ROOT))
     elif a.cmd == "edl":
         path = os.path.join(d, "edl.json")
         if os.path.exists(path):

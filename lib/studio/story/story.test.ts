@@ -3,9 +3,9 @@ import { grokApiKey, rawTicks } from '@/lib/grok/client'
 import { resolutionFor, MAX_REFERENCE_IMAGES } from '@/lib/grok/video'
 import { STORY_FRAME_DEFECTS, FRAME_DEFECTS } from '@/lib/grok/vision'
 import { findBannedTokens } from '../craft'
-import { HOMECOMING_ARC, planStory, VISITOR_ARC } from './arc'
+import { HOMECOMING_ARC, planStory, POLAROID_ARC, VISITOR_ARC } from './arc'
 import { BEATS, beatFits, getBeat } from './beats'
-import { ERAS, getEra, judgeContextFor, labParamsFor } from './eras'
+import { ERAS, getEra, judgeContextFor, labParamsFor, labParamsForAspect } from './eras'
 import { continuityFor, getStoryPiece, STORY_PIECES } from './pieces'
 import { storyShotPrompts } from './shots'
 
@@ -107,9 +107,9 @@ describe('visitor arc', () => {
     expect(tower.refs.every((r) => r.startsWith('asset:') && !r.includes('PENDING'))).toBe(true)
   })
 
-  it('moves only the sign stills in the lab; every other composite shot still gets motion', () => {
+  it('moves only stills that are pictures of a still thing in the lab; every other composite shot gets motion', () => {
     for (const beat of BEATS.filter((b) => b.composite)) {
-      expect(beat.stillOnly === true, beat.id).toBe(beat.role === 'sign')
+      expect(beat.stillOnly === true, beat.id).toBe(['sign', 'prints', 'number', 'snapshot'].includes(beat.role))
     }
   })
 
@@ -136,6 +136,55 @@ describe('visitor arc', () => {
 
   it('every place beat in the winter piece carries a real reference still, and the plan has no warnings', () => {
     expect(piecePlan().warnings).toEqual([])
+  })
+})
+
+describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
+  const april = getStoryPiece('april-1982')!
+  const plan = () =>
+    planStory({ era: getEra(april.eraId)!, season: april.season, beats: april.beats, omit: april.omit, arc: april.arc })
+
+  it('tells it in order: the lift, the top, the photo, the house, the Tower, home, the number', () => {
+    expect(plan().shots.map((s) => s.role)).toEqual(POLAROID_ARC.map((s) => s.role))
+    expect(plan().warnings).toEqual([])
+    for (const shot of plan().shots) {
+      if (shot.beat) expect(beatFits(shot.beat, 1982, 'spring'), shot.beat.id).toBe(true)
+    }
+  })
+
+  it('is vertical, full frame, with no captions and the end line', () => {
+    expect(april.aspect).toBe('9:16')
+    expect(april.openCaption).toBe('')
+    expect(april.roleCaptions).toBeUndefined()
+    expect(april.endLine).toMatch(/make the call/)
+    const lab = labParamsForAspect(getEra(april.eraId)!, 'day', april.aspect)
+    expect(lab.gate).toEqual({ width: 720, height: 1280, corner: 0, sprockets: 'none' })
+    expect(labParamsForAspect(getEra(april.eraId)!, 'day').gate.width / labParamsForAspect(getEra(april.eraId)!, 'day').gate.height).toBeCloseTo(4 / 3, 2)
+  })
+
+  it('lets each place settle: every shot on screen holds at least 3.2s, and the whole runs 30-60s', () => {
+    const p = plan()
+    for (const shot of p.shots) if (shot.kind !== 'prop') expect(shot.seconds, shot.role).toBeGreaterThanOrEqual(3.2)
+    expect(p.totalSeconds).toBeGreaterThanOrEqual(30)
+    expect(p.totalSeconds).toBeLessThanOrEqual(60)
+  })
+
+  it('keeps the photograph she took off the screen as its own shot', () => {
+    const snap = plan().shots.find((s) => s.role === 'snapshot')!
+    expect(snap.kind).toBe('prop')
+    expect(snap.seconds).toBe(0)
+    expect(snap.beat?.composite).toBe('yard_sign')
+  })
+
+  it('shows the photographs the way the person sees them, never faced out at the lens alone', () => {
+    // Matt 2026-09-24: "the photos are facing outwards, so the people aren't even looking at them."
+    for (const id of ['commute-dash-polaroid', 'office-desk-polaroid', 'kitchen-table-polaroid']) {
+      const beat = getBeat(id)!
+      expect(beat.composite, id).toBe('photo_print')
+      expect(beat.framing, id).toMatch(/behind|profile/)
+      expect(beat.props, id).toMatch(/plain blank white picture/)
+    }
+    expect(getBeat('summit-three-sisters')!.refs).toContain('asset:21d81297-0e90-4b58-817c-19cc154ed1e0')
   })
 })
 

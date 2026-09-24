@@ -78,3 +78,12 @@ Append-only. Every creative session that learns something adds it here with a da
 51. **Locked off means static; a warm card is not neutral.** ECC tracking a desk frame or a table card drifted 282px and 1379px as people moved near it. Hold the quad still on a tripod shot, and key the occlusion on the card's own colour, because a white card under a 2800K lamp is yellow.
 52. **"My phone number" has two true answers.** `brokers.twilio_number` (the business line, rings through to Matt's cell) and `forward_to_cell` (the cell on his printed signs). A public video carries the business line; say which and why, and keep the swap to one re-render.
 
+## 2026-09-24 — "April, 1982": the Polaroid cut
+
+53. **"Facing outwards" is the default the model draws.** Asked for a photo on a desk, it turns the photo and the person to the lens. Write the camera behind them ("only the backs of their heads", "his face turned away from the camera") or in profile with the photo angled between them; "over her shoulder" alone came back with her smiling back at us.
+54. **A generator will draw on a blank card during motion.** Blank in the still, a man in a suit by 0.8s. Key the composite on clean frames of the card (anything matching none of them is in front of it), or cover the whole quad when nothing crosses it.
+55. **A card in a hand needs a tracker that follows, not one that looks for the brightest thing.** The screen finder found the card in 43 of 121 frames (a cream blouse and a beige phone competed); following the nearest white blob and holding the shape while fingers cover it found every frame.
+56. **Slow is a number.** v7 averaged 2.8s a shot and Matt called it too fast; the Polaroid cut holds 3.2-4.4s, and dissolves only at the time jumps.
+57. **A continuity source carries the people again (27, 50).** The house snapshot generated from the discover still came back with the couple and the dog in it; "the sidewalk and the lawn empty, nobody on the lawn or the sidewalk" gave an empty yard.
+58. **A real summit photo exists if you look past the first page.** Commons had summit shots without the Sisters; Openverse found the Forest Service's public-domain photo from the top of Bachelor with South Sister and Broken Top. Register it before generating.
+

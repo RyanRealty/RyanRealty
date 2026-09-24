@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-09-23T23:14:53.919Z",
+  "updated_at": "2026-09-24T02:35:29.904Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -49660,6 +49660,46 @@
       "surface_tags": [],
       "vision_grade": null,
       "file_path": "public/asset-library/photos/grok-imagine/c9fce792-26ab-4837-81a0-cfaf943b8c43.jpg"
+    },
+    {
+      "id": "21d81297-0e90-4b58-817c-19cc154ed1e0",
+      "type": "photo",
+      "source": "usfs",
+      "source_id": "flickr:36202037061",
+      "license": "Public Domain (U.S. Forest Service, Pacific Northwest Region; Flickr public domain mark)",
+      "license_metadata": {},
+      "creator": "U.S. Forest Service, Pacific Northwest Region",
+      "creator_url": "https://www.flickr.com/photos/forestservicenw/36202037061",
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/usfs/21d81297-0e90-4b58-817c-19cc154ed1e0.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/usfs/21d81297-0e90-4b58-817c-19cc154ed1e0.jpg",
+      "file_size_bytes": 293675,
+      "geo_tags": [
+        "mt-bachelor",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "mt-bachelor",
+        "summit",
+        "three-sisters",
+        "south-sister",
+        "broken-top",
+        "snow",
+        "ski-area",
+        "view"
+      ],
+      "search_query": "top of mt bachelor",
+      "width": 1023,
+      "height": 633,
+      "duration_sec": null,
+      "registered_at": "2026-09-24T02:35:29.611+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Reference still for story films: the view north from the snowy summit of Mt. Bachelor, South Sister on the left and Broken Top in the center. Early-1990s film photo; the snowboarders in it are not what it conditions (people and gear come from the cast and the era). Downloaded 2026-09-24.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/usfs/21d81297-0e90-4b58-817c-19cc154ed1e0.jpg"
     }
   ]
 }
