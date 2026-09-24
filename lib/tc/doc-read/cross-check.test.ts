@@ -63,3 +63,32 @@ describe('cross-check', () => {
     expect(crossCheckForm(verdict('partially_executed'), reading(), [check()]).verdict).toBe('partially_executed')
   })
 })
+
+describe('reconcile with the printed form', () => {
+  it('drops an unsigned buyer line the printed page does not have, and keeps everything else', async () => {
+    const { reconcileWithForm } = await import('./cross-check')
+    const r = reading({ formNumber: 'OREF 020', signatureLines: [line(1, 'seller'), line(1, 'buyer', false), line(2, 'buyer', false), line(2, 'buyer_agent', false)] })
+    const c = check({
+      formNumber: '020',
+      pageCount: 2,
+      pages: [{ templatePage: 1, docPage: 1, coverage: 1 }, { templatePage: 2, docPage: 2, coverage: 1 }],
+      lines: [
+        { page: 1, party: 'seller', label: 'Seller', section: 'V', required: true, signed: true, dated: true, printed: true, ink: 300 },
+        { page: 2, party: 'seller', label: 'Seller', section: 'V', required: true, signed: false, dated: false, printed: false, ink: 0 },
+      ],
+    })
+    const out = reconcileWithForm(r, [c])
+    // Page 1's buyer line is dropped (the printed page has only seller lines); page 2 buyer line likewise;
+    // the agent line stays (only buyer and seller lines are reconciled).
+    expect(out.reading.signatureLines.map((l) => `${l.page}:${l.party}`)).toEqual(['1:seller', '2:buyer_agent'])
+    expect(out.dropped).toHaveLength(2)
+  })
+
+  it('never drops a line the reader saw signed, or lines on a page without the ← marker', async () => {
+    const { reconcileWithForm } = await import('./cross-check')
+    const c = check({ lines: [{ page: 1, party: 'seller', label: 'Seller', section: 'S', required: null, signed: true, dated: true, printed: true, ink: 300 }] })
+    expect(reconcileWithForm(reading({ signatureLines: [line(1, 'buyer', false)] }), [c]).dropped).toEqual([])
+    const marked = check({ lines: [{ page: 1, party: 'seller', label: 'Seller', section: 'S', required: true, signed: true, dated: true, printed: true, ink: 300 }] })
+    expect(reconcileWithForm(reading({ signatureLines: [line(1, 'buyer', true)] }), [marked]).dropped).toEqual([])
+  })
+})

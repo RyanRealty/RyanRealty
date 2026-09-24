@@ -21,7 +21,7 @@
  */
 import { describeCheck, type FormCheck } from '@/lib/tc/form-match/check'
 import type { FormVerdict } from './verdict'
-import type { FormReading } from './vision-reading'
+import type { FormReading, SignatureLine } from './vision-reading'
 
 /** "OREF 003" / "Form 2.1" / "003" → "003"; "2.1" stays. */
 export function normalizeFormNumber(n: string | null | undefined): string | null {
@@ -84,4 +84,40 @@ export function crossCheckForm(verdict: FormVerdict, reading: FormReading, check
 
 export function crossCheckForms(verdicts: readonly FormVerdict[], readings: readonly FormReading[], checks: readonly FormCheck[] | null): CrossChecked[] {
   return verdicts.map((v, i) => (checks?.length && readings[i] ? crossCheckForm(v, readings[i], checks) : { ...v, checkedAgainst: null, checkIssues: [] }))
+}
+
+/**
+ * The printed form says which signature lines a page has. On a page matched
+ * to its exact release, an UNSIGNED buyer or seller line the reader reports
+ * that the printed page does not have is a misread (OREF 020 01/2026 page 7
+ * has a "II. BUYER'S ACKNOWLEDGMENT" heading and buyer initials but no buyer
+ * signature line; the reader reported one and held a fully signed disclosure
+ * as partial). Such lines are dropped before the verdict. Conservative on
+ * purpose: only on pages whose form marks required lines (the ← legend, so
+ * its lines were all found), only buyer and seller lines, never a line the
+ * reader saw signed.
+ */
+export function reconcileWithForm(reading: FormReading, checks: readonly FormCheck[] | null): { reading: FormReading; dropped: string[] } {
+  if (!checks?.length) return { reading, dropped: [] }
+  const check = pairCheck(reading, checks)
+  if (!check) return { reading, dropped: [] }
+  const tplPageOf = new Map<number, number>()
+  for (const p of check.pages) if (p.docPage != null) tplPageOf.set(p.docPage, p.templatePage)
+  // Pages whose printed lines carry the required marker: every line on them was found.
+  const marked = new Set(check.lines.filter((l) => l.required != null).map((l) => l.page))
+  const dropped: string[] = []
+  const kept: SignatureLine[] = []
+  for (const l of reading.signatureLines ?? []) {
+    const tp = tplPageOf.get(l.page)
+    const principal = l.party === 'buyer' || l.party === 'seller'
+    if (tp != null && marked.has(tp) && principal && !l.signed) {
+      const printed = check.lines.some((t) => t.page === tp && t.party === l.party)
+      if (!printed) {
+        dropped.push(`page ${l.page}: a ${l.party} line ("${l.section || l.label}") the printed form does not have`)
+        continue
+      }
+    }
+    kept.push(l)
+  }
+  return dropped.length ? { reading: { ...reading, signatureLines: kept }, dropped } : { reading, dropped }
 }

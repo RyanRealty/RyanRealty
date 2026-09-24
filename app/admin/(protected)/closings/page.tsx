@@ -417,6 +417,10 @@ export default async function ClosingsPage({
           Forms
         </Link>
         {' · '}
+        <Link href="/admin/closings/audit" style={{ color: 'var(--a-accent)' }}>
+          Records audit
+        </Link>
+        {' · '}
         <Link href="/admin/sign-off" style={{ color: 'var(--a-accent)' }}>
           Sign-off queue
         </Link>

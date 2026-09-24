@@ -23,7 +23,7 @@ import { READER_VERSION, type DocumentReading } from './vision-reading'
 import { documentVerdict, verdictFor, VERDICT_LABEL, type DocumentVerdict, type FormVerdict } from './verdict'
 import { planLineage, type LineageAction, type LineageDoc, type LineageItem, type LineagePlan } from './lineage'
 import { learnForms, loadFormRegistry, releasesFromAnatomy, type FormRegistry } from './registry'
-import { crossCheckForms } from './cross-check'
+import { crossCheckForms, reconcileWithForm } from './cross-check'
 import { CHECKER_VERSION, type FormCheck } from '@/lib/tc/form-match/check'
 
 export const READER_ACTOR = 'vault-reader'
@@ -90,8 +90,18 @@ async function formChecksFor(sb: SupabaseClient, documentId: string): Promise<Fo
 
 /** The reader's verdict, held to the check against the printed form. */
 export function verdictWithChecks(reading: DocumentReading, registry: FormRegistry, checks: FormCheck[] | null): DocumentVerdict {
-  const forms = reading.forms.map((f) => verdictFor(f, registry))
-  return documentVerdict(crossCheckForms(forms, reading.forms, checks))
+  const reconciled = reading.forms.map((f) => reconcileWithForm(f, checks))
+  const forms = reconciled.map(({ reading: f, dropped }) => {
+    const v = verdictFor(f, registry)
+    return dropped.length ? { ...v, reasons: [...v.reasons, `Not counted, per the printed form: ${dropped.join('; ')}.`] } : v
+  })
+  return documentVerdict(
+    crossCheckForms(
+      forms,
+      reconciled.map((r) => r.reading),
+      checks,
+    ),
+  )
 }
 
 export function readerSummary(v: DocumentVerdict, readingId: string, model: string) {
