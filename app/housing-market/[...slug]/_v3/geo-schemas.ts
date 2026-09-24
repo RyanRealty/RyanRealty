@@ -10,6 +10,7 @@ import {
   type SchemaInput,
   type StatValue,
 } from '@/lib/site/json-ld'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export function buildGeoMarketSchemas(input: {
   geoName: string
@@ -48,7 +49,7 @@ export function buildGeoMarketSchemas(input: {
         { name: 'Housing market', url: '/housing-market' },
         ...(communityName
           ? [
-              { name: cityName, url: `/housing-market/${citySlug}` },
+              { name: cityName, url: cityMarketPath(citySlug) },
               { name: communityName, url: canonicalPath },
             ]
           : [{ name: geoName, url: canonicalPath }]),

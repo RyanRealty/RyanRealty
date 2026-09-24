@@ -15,6 +15,7 @@ import {
   TabularNumber,
   TextLink,
 } from '@/components/site/primitives'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 /**
  * Site v2 market snapshot — 4 stat cards on the homepage.
@@ -146,7 +147,7 @@ export default async function MarketSnapshot({
 
   const verdict = marketVerdict(monthsOfSupply)
   const geoLabel = cityName ?? 'Central Oregon'
-  const marketHubHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
+  const marketHubHref = citySlug ? cityMarketPath(citySlug) : '/housing-market'
 
   return (
     <Section padding="default" divider>

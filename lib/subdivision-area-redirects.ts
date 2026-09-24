@@ -45,6 +45,7 @@
 
 import resortRegistry from '@/data/resort-communities.json'
 import bendPolygons from '@/data/bend/bend-neighborhood-polygons.json'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 type RegistryEntry = { slug: string; city_slug: string }
 type PolygonEntry = { tier: string; slug: string; route_slug: string }
@@ -64,7 +65,7 @@ function buildRedirectMap(): Map<string, string> {
 
   // Resort / area communities → /communities/<slug>.
   for (const c of resortRegistry.communities as RegistryEntry[]) {
-    const dest = `/communities/${c.slug}`
+    const dest = communityPath(c.slug)
     map.set(c.slug, dest) // bare:                'tetherow'
     if (c.city_slug) map.set(`${c.city_slug}-${c.slug}`, dest) // 'bend-tetherow'
   }

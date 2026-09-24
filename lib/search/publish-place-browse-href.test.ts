@@ -115,7 +115,15 @@ describe('publishPlaceBrowseHref', () => {
       '/communities/broken-top',
     )
     // Exactly two segments: a listing URL and a preset variant keep rendering.
-    for (const key of keys) expect(key.split('/').length).toBe(4)
+    // The one bare key is a city-slug-only community's empty city search
+    // (registry self_city: false, Crooked River Ranch, 2026-09-24).
+    expect((legacyRedirects as Record<string, string>)['/homes-for-sale/crooked-river-ranch']).toBe(
+      '/communities/crooked-river-ranch',
+    )
+    for (const key of keys) {
+      if (key === '/homes-for-sale/crooked-river-ranch') continue
+      expect(key.split('/').length).toBe(4)
+    }
     expect(redirectsAwayFromSearch('/homes-for-sale/bend/broken-top/luxury')).toBe(false)
     expect(redirectsAwayFromSearch('/homes-for-sale/bend/broken-top/new-listings-30')).toBe(false)
     expect(

@@ -44,6 +44,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { ArchiveYearTable } from './_v3/ArchiveYearTable'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 /**
  * ONE read for the metadata and the body. getCityArchive composes an
@@ -160,7 +161,7 @@ export default async function CityArchivePage({ params }: PageProps) {
   const span = archiveSpan(archive)
 
   const canonical = `${getCanonicalSiteUrl()}${archivePath(archive.slug)}`
-  const liveHref = `/housing-market/${archive.slug}`
+  const liveHref = cityMarketPath(archive.slug)
 
   const figures: V3InstrumentFigure[] = [
     {

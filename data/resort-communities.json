@@ -976,6 +976,8 @@
    "subdivision_aliases": [
     "Crooked River Ranch"
    ],
+   "self_city": false,
+   "self_city_evidence": "MLS files Crooked River Ranch homes under City 'Terrebonne' or 'Crooked River', never 'Crooked River Ranch' (listings row read 2026-09-24), so /homes-for-sale/crooked-river-ranch is not this community's own city search. The slug matching a site city slug does not make it one.",
    "verification": {
     "method": "Exact MLS SubdivisionName match; centroid from listing coords (live MLS 2026-06-27). Large rural planned community (Terrebonne), not a resort (is_resort=false)."
    }

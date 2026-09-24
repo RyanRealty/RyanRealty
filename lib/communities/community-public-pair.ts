@@ -120,6 +120,18 @@ export function resolvePublicCommunitySlug(raw: string): string {
 }
 
 /**
+ * The live `/communities/<public slug>` path for any registry key (durable
+ * slug, public slug, label, alias). Build every community href through this,
+ * never `/communities/${durableSlug}`: the durable key of a rebrand is a 308
+ * (`/communities/pronghorn` -> `/communities/juniper-preserve`), and an
+ * internal link to a redirect costs a hop and splits link equity. Unknown
+ * input keeps its trimmed, lower-cased slug.
+ */
+export function communityPath(raw: string): string {
+  return `/communities/${resolvePublicCommunitySlug(raw)}`
+}
+
+/**
  * Name + href for a rail / nav / place-link input. Null when the string is
  * not a registered community (ordinary plats stay on their own doors).
  */

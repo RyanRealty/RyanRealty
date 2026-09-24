@@ -212,6 +212,23 @@ const CHECKS = [
       '  data fails CI.',
   },
   {
+    file: 'app/search/[...slug]/sections/MapSplitView.tsx',
+    label: 'search city split: WebPage.primaryImageOfPage = the lead card photo',
+    all: ['SearchPageJsonLd', 'primaryImageUrl={splitLeadImageUrl('],
+    why:
+      'The plain /homes-for-sale/[city] page is served by the split branch, which shows\n' +
+      '  no place banner. Its WebPage MUST still name its lead image (the first card photo,\n' +
+      '  via splitLeadImageUrl) so primaryImageOfPage equals what the page shows.',
+  },
+  {
+    file: 'app/search/page.tsx',
+    label: 'search root split: WebPage.primaryImageOfPage = the lead card photo',
+    all: ['primaryImageUrl=', 'splitLeadImageUrl('],
+    why:
+      'The root /homes-for-sale opens split. Its WebPage MUST name the first card photo\n' +
+      '  as primaryImageOfPage (splitLeadImageUrl), the image the page leads with.',
+  },
+  {
     file: 'app/search/page.tsx',
     label: 'search root: SearchRootJsonLd (WebPage + ItemList)',
     all: ['SearchRootJsonLd'],

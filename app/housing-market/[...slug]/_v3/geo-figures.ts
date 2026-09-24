@@ -46,6 +46,7 @@ import { marketReportDoorLinks } from '@/lib/market/report-doors'
 import { CITY_FOOTNOTE_TERM, cityFootnoteFact } from '@/lib/market/city-footnote-fact'
 import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
 import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 const MONTH_TICK = [
   'Jan',
@@ -350,7 +351,7 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
     if (!snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
     rowed.add(label)
     rows.push({
-      href: `/housing-market/${slug}`,
+      href: cityMarketPath(slug),
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
       // Plain language (SITE-81): not a "months of supply" KPI tile under a price bar.
@@ -422,7 +423,7 @@ export function buildExploreItems(args: {
   // row. It described the site, not the market, and the door links below
   // already take a reader to every other report.
   const items: V3QuietItem[] = [
-    ...marketReportDoorLinks('hub').filter((door) => door.href !== `/housing-market/${args.citySlug}`),
+    ...marketReportDoorLinks('hub').filter((door) => door.href !== cityMarketPath(args.citySlug)),
     { label: 'All Central Oregon cities', href: '/cities' },
     { label: 'Browse homes for sale', href: listingsBrowsePath() },
     { label: 'Value my home', href: args.valuationHrefValue },
@@ -431,7 +432,7 @@ export function buildExploreItems(args: {
   if (args.communityName) {
     items.unshift({
       label: `${args.cityName} housing market`,
-      href: `/housing-market/${args.citySlug}`,
+      href: cityMarketPath(args.citySlug),
     })
   }
   const seenBlog = new Set(
@@ -468,7 +469,7 @@ export function buildExploreItems(args: {
     for (const city of args.footnotes) {
       const slug = COMPARISON_CITY_SLUG[city.label]
       if (!slug) continue
-      items.push({ label: `${city.label} housing market`, href: `/housing-market/${slug}` })
+      items.push({ label: `${city.label} housing market`, href: cityMarketPath(slug) })
     }
   }
   return items

@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import registry from '@/data/resort-communities.json'
+import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 const chrome = readFileSync('components/site/v3/V3Chrome.tsx', 'utf8')
 const search = readFileSync('components/site/v3/V3ChromeSearch.client.tsx', 'utf8')
@@ -61,5 +64,32 @@ describe('V3Chrome catalog Search', () => {
     )
     expect(morph).toContain('px-3 py-2.5')
     expect(morph).toContain('className="overscroll-contain overflow-y-auto p-2"')
+  })
+})
+
+describe('chrome search seeds follow the place registry', () => {
+  const seeds = [...search.matchAll(/\{ id: '([^']+)', title: '([^']+)', description: '([^']+)' \}/g)].map((m) => ({
+    href: m[1],
+    title: m[2],
+  }))
+  const entries = (registry as unknown as { communities: Array<{ slug: string; label: string }> }).communities
+
+  it('parses the seed list', () => {
+    expect(seeds.length).toBeGreaterThanOrEqual(6)
+  })
+
+  it('never seeds a self-city community as a city search (Sunriver is a resort community)', () => {
+    for (const seed of seeds) {
+      const city = seed.href.match(/^\/homes-for-sale\/([a-z0-9-]+)$/)?.[1]
+      if (city) expect(isSelfCityCommunity(city), seed.href).toBe(false)
+    }
+    expect(seeds.find((s) => s.title === 'Sunriver')?.href).toBe('/communities/sunriver')
+  })
+
+  it('a registry community seed opens its live community door', () => {
+    for (const seed of seeds) {
+      const entry = entries.find((e) => e.label === seed.title)
+      if (entry) expect(seed.href, seed.title).toBe(communityPath(entry.slug))
+    }
   })
 })
