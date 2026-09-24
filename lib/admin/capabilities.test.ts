@@ -94,7 +94,7 @@ describe('nav generator projects the capability map', () => {
     const closings = nav.find((s) => s.key === 'closings')!
     expect(closings.children.map((c) => c.label)).not.toContain('Financials')
     expect(closings.children.map((c) => c.label)).not.toContain('Sign-off')
-    expect(closings.children.map((c) => c.label)).toContain('Board')
+    expect(closings.children.map((c) => c.label)).toContain('Dashboard')
     expect(closings.children.map((c) => c.label)).toContain('Signing')
     // Every rendered child is one the broker actually holds (no dead-ends).
     for (const s of nav) for (const c of s.children) expect(hasCapability(ctx('broker'), c.capability)).toBe(true)

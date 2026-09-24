@@ -57,6 +57,15 @@ describe('records audit', () => {
     expect(row(rows, 'listing')!.status).toBe('review')
   })
 
+  it('a file from SkySlope is reviewed in SkySlope until the cutover; a Vault file is reviewed on Sign-off', () => {
+    const docs = [doc('la', [['oref-015-listing-agreement', 'Listing Agreement', 'fully_executed']])]
+    const sky = row(auditDeal(base({ stage: 'active_listing', docs, reviewSystem: 'skyslope', checklist: { completed: 3, inReview: 2 } })), 'principal_review')!
+    expect(sky.status).toBe('elsewhere')
+    expect(sky.detail).toMatch(/Reviewed in SkySlope.*3 items completed, 2 still in review/)
+    expect(auditScore([sky]).applicable).toBe(0)
+    expect(row(auditDeal(base({ stage: 'active_listing', docs, reviewSystem: 'vault' })), 'principal_review')!.status).toBe('missing')
+  })
+
   it('lead-based paint applies to homes built before 1978; unknown year asks a person', () => {
     expect(row(auditDeal(base({ yearBuilt: 1967 })), 'lbp')!.status).toBe('missing')
     expect(row(auditDeal(base({ yearBuilt: 1995 })), 'lbp')).toBeUndefined()

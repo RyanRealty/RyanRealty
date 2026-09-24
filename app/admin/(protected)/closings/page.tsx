@@ -1,28 +1,42 @@
 // @no-parity — internal admin surface, no public mockup contract
-// Closings (P9 roll:remaining-families, IA lock 2026-08-05): get accepted
-// offers to closed, compliantly — the ONE deal list rooted in TC truth
-// (tc_deals), per the one-deal-entity lock (deal-track MERGE→tc-close).
-// Named for the outcome, not "deals" — a word two dead systems fought over.
-// Lenses by stage; each row opens the full TC deal page (docs, signing,
-// commissions, checklist) which stays at /admin/deals/[key]. The legacy
-// skyslope-mirror LIST at /admin/deals and the CRM kanban at /admin/crm/deals*
-// are redirect bridges here (P3: one deal entity). SkySlope stays the live
-// file until cutover.
+// Closings — the transactions dashboard (Matt 2026-09-24: "the ui for this
+// system is sooo bad, its just this long scrolling list" / "we need to have a
+// beautiful dashboard that makes sense"). The layout is the one he picked:
+// numbers you can open across the top, then Needs you beside Coming up, then
+// the pipeline by stage. Closed and dead files moved to /admin/closings/files
+// (All files) so this page never grows with history. Every figure comes from
+// lib/tc/dashboard.ts buildTransactionsDashboard over rows read here (§0).
+// Rooted in tc_deals (the one deal entity); SkySlope stays the live file for
+// brokers until the cutover, and its daily intake keeps the Vault current.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import {
-  closingMatchesQuery,
-  getClosingsBoard,
-  incompleteInFlight,
-  type ClosingDealRow,
-} from '@/lib/data/tc/closings'
+import { closingMatchesQuery, getClosingsBoard, type ClosingDealRow } from '@/lib/data/tc/closings'
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { countMailQueue } from '@/lib/data/tc/mail-reads'
 import { getMailCoverage, type MailCoverageRow } from '@/lib/data/tc/mail-coverage'
-import { formatDate } from '@/lib/format/date'
+import { countDocumentReview } from '@/lib/data/tc/document-review'
+import { getPrincipalSignOffQueue } from '@/lib/data'
+import { listOutstandingEnvelopes } from '@/lib/data/tc/envelope-overview'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { BROKER_FILE_EMAIL, dealVisibleToBroker, fileNameFromBrokerSlug } from '@/lib/tc/deal-scope'
-import { Button, HiddenField, QueueRow, ReportGrid, SectionHead, TextField, VerdictLine, type ReportColumn } from '@/components/admin/v2'
+import { buildTransactionsDashboard, isTestFile, shortDate, type ComingUpItem } from '@/lib/tc/dashboard'
+import {
+  Avatar,
+  Button,
+  HiddenField,
+  Meter,
+  Panel,
+  QueueRow,
+  ReportGrid,
+  StateWord,
+  SearchField,
+  StatTiles,
+  VerdictLine,
+  type ReportColumn,
+} from '@/components/admin/v2'
 import { NewFileForm } from './NewFileForm'
+
+export const dynamic = 'force-dynamic'
 
 const COVERAGE_COLUMNS: ReportColumn[] = [
   { key: 'mailbox', label: 'Mailbox' },
@@ -60,50 +74,31 @@ function coverageRow(r: MailCoverageRow) {
   }
 }
 
-export const dynamic = 'force-dynamic'
-
-function price(n: number | null): string | null {
-  return n == null ? null : `$${Math.round(n).toLocaleString('en-US')}`
+const STAGE_WORD: Record<string, string> = {
+  pending: 'Under contract',
+  pre_contract: 'Before contract',
+  active_listing: 'Active listing',
+  closed: 'Closed',
+  dead: 'Dead',
 }
 
-function daysUntil(iso: string | null, nowMs: number): number | null {
-  if (!iso) return null
-  const d = Math.ceil((new Date(iso + 'T00:00:00').getTime() - nowMs) / 86_400_000)
-  return Number.isFinite(d) ? d : null
+function weekdayLabel(iso: string, today: string): string {
+  if (iso === today) return 'Today'
+  const t = Date.parse(`${today}T12:00:00Z`)
+  if (iso === new Date(t + 86_400_000).toISOString().slice(0, 10)) return 'Tomorrow'
+  const d = new Date(`${iso}T12:00:00Z`)
+  const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()]
+  return `${wd} ${shortDate(iso)}`
 }
 
-function dealHref(d: ClosingDealRow): string {
-  return `/admin/deals/${encodeURIComponent(d.propertyKey)}`
-}
-
-function rowContext(d: ClosingDealRow, nowMs: number): string {
-  const bits: string[] = []
-  if (d.partyNames.length) bits.push(d.partyNames.join(', '))
-  if (d.brokerName) bits.push(d.brokerName)
-  if (d.mlsNumber) bits.push(`MLS ${d.mlsNumber}`)
-  if (d.escrowNumber) bits.push(`escrow ${d.escrowNumber}`)
-  const p = price(d.salePrice ?? d.listingPrice)
-  if (p) bits.push(p)
-  if (d.itemsRequired > 0) bits.push(`${d.itemsRequired} required`)
-  if (d.stage === 'pending') {
-    const days = daysUntil(d.escrowClosingDate, nowMs)
-    if (days != null)
-      bits.push(days >= 0 ? `closes ${formatDate(d.escrowClosingDate)} (${days}d)` : `close date ${formatDate(d.escrowClosingDate)} passed`)
-    if (d.itemsInReview > 0) bits.push(`${d.itemsInReview} item${d.itemsInReview === 1 ? '' : 's'} in review`)
-  } else if (d.stage === 'active_listing') {
-    const days = daysUntil(d.expirationDate, nowMs)
-    if (days != null) {
-      bits.push(
-        days >= 0
-          ? `expires ${formatDate(d.expirationDate)} (${days}d)`
-          : `expired ${formatDate(d.expirationDate)}`,
-      )
-    } else {
-      bits.push('active listing')
-    }
-    if (d.itemsInReview > 0) bits.push(`${d.itemsInReview} item${d.itemsInReview === 1 ? '' : 's'} in review`)
+function groupByDay(items: ComingUpItem[]): Array<{ day: string; items: ComingUpItem[] }> {
+  const out: Array<{ day: string; items: ComingUpItem[] }> = []
+  for (const it of items) {
+    const last = out[out.length - 1]
+    if (last && last.day === it.date) last.items.push(it)
+    else out.push({ day: it.date, items: [it] })
   }
-  return bits.join(' · ')
+  return out
 }
 
 export default async function ClosingsPage({
@@ -113,298 +108,250 @@ export default async function ClosingsPage({
 }) {
   const ctx = await requireAdminPage('transactions.view')
   const { q, mine } = await searchParams
-  const nowMs = Date.now()
+  const superuser = ctx.role === 'superuser'
   // Same mailbox scoping as app/actions/tc-mail.ts ctxForEdit(): superuser
   // reads every mailbox, a broker only their own, unmapped brokers see none.
-  const mailbox = ctx.role === 'superuser' ? null : BROKER_FILE_EMAIL[fileNameFromBrokerSlug(ctx.brokerSlug) ?? ''] ?? '__none__'
-  const [board, mirror, mailQueueCount, mailCoverage] = await Promise.all([
+  const mailbox = superuser ? null : BROKER_FILE_EMAIL[fileNameFromBrokerSlug(ctx.brokerSlug) ?? ''] ?? '__none__'
+  const mineOnly = superuser && mine === '1'
+  const canSee = (brokerName: string | null) =>
+    dealVisibleToBroker({ role: mineOnly ? 'broker' : ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName: brokerName })
+
+  const [board, mirror, mailQueueCount, mailCoverage, reviewQueue, envelopes, docReview] = await Promise.all([
     getClosingsBoard(),
     getSkySlopeMirrorFreshness(),
     countMailQueue(mailbox),
-    // Every message reviewed (docs/TC_MAIL_FILING_RULES.md): the principal's
-    // audit view, so only fetched for the superuser role.
-    ctx.role === 'superuser' ? getMailCoverage() : Promise.resolve<MailCoverageRow[]>([]),
+    superuser ? getMailCoverage() : Promise.resolve<MailCoverageRow[]>([]),
+    superuser ? getPrincipalSignOffQueue() : Promise.resolve(null),
+    listOutstandingEnvelopes(),
+    countDocumentReview(canSee),
   ])
-  const mineOnly = ctx.role === 'superuser' && mine === '1'
-  const scoped = board.deals.filter((d) =>
-    dealVisibleToBroker({
-      role: mineOnly ? 'broker' : ctx.role,
-      brokerSlug: ctx.brokerSlug,
-      dealBrokerName: d.brokerName,
-    }),
-  )
-  const visible = q?.trim() ? scoped.filter((d) => closingMatchesQuery(d, q)) : scoped
+  const scoped = board.deals.filter((d) => canSee(d.brokerName) && !isTestFile(d))
+  const query = q?.trim() ?? ''
+  const matches = query ? scoped.filter((d) => closingMatchesQuery(d, query)) : []
+  const today = zonedDateKey(new Date())
 
-  const incomplete = incompleteInFlight(visible)
-  const inEscrow = visible.filter((d) => d.stage === 'pending' || d.stage === 'pre_contract')
-  const activeListings = visible
-    .filter((d) => d.stage === 'active_listing')
-    .sort((a, b) => String(a.expirationDate ?? '9999').localeCompare(String(b.expirationDate ?? '9999')))
-  const closed = visible
-    .filter((d) => d.stage === 'closed')
-    .sort((a, b) => String(b.actualClosingDate ?? '').localeCompare(String(a.actualClosingDate ?? '')))
-  const dead = visible.filter((d) => d.stage === 'dead')
-  // LIVE deals only — closed/dead deals carry stale in_review rows (first
-  // render counted 248 vs the true 17; a verdict must equal its lanes' sum).
-  const signoffWaits = [...inEscrow, ...activeListings].reduce((n, d) => n + d.itemsInReview, 0)
-  const inFlight = inEscrow.length + activeListings.length
+  const dash = buildTransactionsDashboard({
+    deals: scoped,
+    review:
+      reviewQueue && reviewQueue.authorized
+        ? {
+            deals: reviewQueue.deals.filter((d) => scoped.some((s) => s.propertyKey === d.propertyKey)),
+            totalItems: reviewQueue.totalItems,
+            overdueItems: reviewQueue.overdueItems,
+          }
+        : null,
+    envelopes: envelopes.filter((e) => canSee(e.brokerName) && (!e.dealKey || scoped.some((s) => s.propertyKey === e.dealKey))),
+    mailQueue: mailQueueCount,
+    documentReview: docReview,
+    today,
+  })
+  const scopeHref = (m: boolean) => {
+    const params = new URLSearchParams()
+    if (m) params.set('mine', '1')
+    if (query) params.set('q', query)
+    const s = params.toString()
+    return s ? `/admin/closings?${s}` : '/admin/closings'
+  }
+  const boardCols = Math.max(3, Math.min(4, dash.pipeline.length))
 
   return (
-    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <div style={{ margin: '0 0 14px' }}>
-        {board.unreadable ? (
-          <VerdictLine tone="attention">
-            <b>The deal store is unreadable right now.</b> Do not assume anything below is complete.
-          </VerdictLine>
-        ) : (
-          <VerdictLine tone={inFlight > 0 || signoffWaits > 0 ? 'attention' : 'ok'}>
-            {inFlight > 0 ? (
-              <>
-                <b>
-                  {inFlight} deal{inFlight === 1 ? '' : 's'} in flight.
-                </b>{' '}
-                {signoffWaits > 0
-                  ? `${signoffWaits} checklist item${signoffWaits === 1 ? '' : 's'} await${signoffWaits === 1 ? 's' : ''} sign-off.`
-                  : 'No checklist items wait on you.'}
-              </>
-            ) : (
-              <>
-                <b>Nothing in flight.</b> {closed.length} closed on record.
-              </>
-            )}
-          </VerdictLine>
-        )}
-        {mirror.status === 'unreadable' ? (
-          <VerdictLine tone="attention">
-            SkySlope recon mirror is unreadable. Closings still read Vault.
-          </VerdictLine>
-        ) : (
-          <VerdictLine tone={mirror.current ? 'ok' : 'attention'}>
-            {mirror.current ? (
-              <>
-                SkySlope recon mirror is current ({mirror.rowCount} properties). Vault is the deal
-                list.
-              </>
-            ) : (
-              <>
-                SkySlope recon mirror is stale
-                {mirror.latestSyncedAt
-                  ? ` (synced ${mirror.latestSyncedAt.slice(0, 10)}, ${mirror.ageHours != null ? `${Math.round(mirror.ageHours / 24)}d` : 'age unknown'})`
-                  : ''}
-                . Closings still read Vault. Inbound refresh is /api/cron/skyslope-mirror-refresh.
-              </>
-            )}
-          </VerdictLine>
-        )}
-      </div>
-
-      {ctx.role === 'superuser' ? (
-        <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 14px' }}>
-          {mineOnly ? (
-            <>
-              Showing your files.{' '}
-              <Link href={q?.trim() ? `/admin/closings?q=${encodeURIComponent(q.trim())}` : '/admin/closings'} style={{ color: 'var(--a-accent)' }}>
-                All brokers
-              </Link>
-            </>
+    <div className="av2-scope av2-wide">
+      <div className="av2-filehead__row" style={{ alignItems: 'center', margin: '0 0 var(--a-s4)' }}>
+        <div style={{ minWidth: 0 }}>
+          {board.unreadable ? (
+            <VerdictLine tone="attention">
+              <b>The deal store is unreadable right now.</b> Do not assume anything below is complete.
+            </VerdictLine>
           ) : (
-            <>
-              Showing every file.{' '}
-              <Link
-                href={q?.trim() ? `/admin/closings?mine=1&q=${encodeURIComponent(q.trim())}` : '/admin/closings?mine=1'}
-                style={{ color: 'var(--a-accent)' }}
-              >
-                Mine only
-              </Link>
-            </>
+            <VerdictLine tone={dash.needsYou.length ? 'attention' : 'ok'}>
+              <b>{dash.verdict}</b>
+            </VerdictLine>
           )}
-        </p>
-      ) : null}
-
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, margin: '0 0 14px' }}>
-        <form method="GET" className="av2-rfilters" style={{ flex: 1, margin: 0 }}>
-          {mineOnly ? <HiddenField name="mine" value="1" /> : null}
-          <TextField
-            label="Search deals"
-            name="q"
-            defaultValue={q ?? ''}
-            placeholder="Address, MLS, escrow, agent, or party…"
-          />
-          <Button type="submit" touch style={{ alignSelf: 'flex-end' }}>
-            Search
-          </Button>
-        </form>
-        <NewFileForm />
+          {superuser ? (
+            <p style={{ fontSize: 'var(--a-text-sm)', margin: '4px 0 0', color: 'var(--a-text-2)' }}>
+              {mineOnly ? 'Showing your files. ' : 'Showing every broker. '}
+              <Link href={scopeHref(!mineOnly)} style={{ color: 'var(--a-accent)' }}>
+                {mineOnly ? 'All brokers' : 'Mine only'}
+              </Link>
+              {' · '}
+              <Link href="/admin/closings/files" style={{ color: 'var(--a-accent)' }}>
+                All files
+              </Link>
+            </p>
+          ) : (
+            <p style={{ fontSize: 'var(--a-text-sm)', margin: '4px 0 0' }}>
+              <Link href="/admin/closings/files" style={{ color: 'var(--a-accent)' }}>
+                All files
+              </Link>
+            </p>
+          )}
+        </div>
+        <div className="av2-filehead__actions">
+          <form method="GET" role="search" style={{ display: 'flex', gap: 8, alignItems: 'center', margin: 0 }}>
+            {mineOnly ? <HiddenField name="mine" value="1" /> : null}
+            <SearchField aria-label="Find a file" name="q" defaultValue={query} placeholder="Find a file: address, MLS, client…" style={{ width: 280, maxWidth: '100%' }} />
+            <Button type="submit" variant="quiet">
+              Find
+            </Button>
+          </form>
+          <NewFileForm />
+        </div>
       </div>
-      {q?.trim() ? (
-        <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 14px' }}>
-          {visible.length} match{visible.length === 1 ? '' : 'es'} for “{q.trim()}”.{' '}
-          <Link href="/admin/closings" style={{ color: 'var(--a-accent)' }}>
-            Clear
-          </Link>
-        </p>
+
+      {query ? (
+        <div style={{ margin: '0 0 var(--a-s6)' }}>
+          <Panel
+            title={`${matches.length} file${matches.length === 1 ? '' : 's'} match “${query}”`}
+            aside={<Link href={mineOnly ? '/admin/closings?mine=1' : '/admin/closings'}>Clear</Link>}
+          >
+            {matches.length ? (
+              <ul className="av2-queue">
+                {matches.map((d: ClosingDealRow) => (
+                    <QueueRow
+                      key={d.id}
+                      kind={STAGE_WORD[d.stage] ?? d.stage}
+                      kindTone={d.stage === 'dead' ? 'down' : d.stage === 'closed' ? 'ok' : 'accent'}
+                      title={
+                        <Link href={`/admin/deals/${encodeURIComponent(d.propertyKey)}`} style={{ color: 'inherit' }}>
+                          {d.address}
+                        </Link>
+                      }
+                      context={[d.brokerName, d.partyNames.join(', '), d.mlsNumber ? `MLS ${d.mlsNumber}` : null]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    />
+                ))}
+              </ul>
+            ) : (
+              <p className="av2-panel__empty">No file matches. Try part of the street, a client name, or the MLS number.</p>
+            )}
+          </Panel>
+        </div>
       ) : null}
 
-      {incomplete.length > 0 && (
-        <section aria-label="Incomplete checklists">
-          <SectionHead>Incomplete checklists</SectionHead>
-          <ul className="av2-queue">
-            {incomplete.map((d) => (
-              <QueueRow
-                key={`inc-${d.id}`}
-                kind="Incomplete"
-                kindTone="slow"
-                title={d.address}
-                context={rowContext(d, nowMs)}
-                action={
-                  <Link href={dealHref(d)} className="av2-btn" style={{ textDecoration: 'none' }}>
-                    Open deal
-                  </Link>
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      )}
+      <StatTiles items={dash.stats} />
 
-      {inEscrow.length > 0 && (
-        <section aria-label="In escrow">
-          <SectionHead>In escrow</SectionHead>
-          <ul className="av2-queue">
-            {inEscrow.map((d) => (
-              <QueueRow
-                key={d.id}
-                kind={d.itemsInReview > 0 ? 'Sign-off' : d.stage === 'pre_contract' ? 'Pre-contract' : 'Escrow'}
-                kindTone={d.itemsInReview > 0 ? 'slow' : 'accent'}
-                title={d.address}
-                context={rowContext(d, nowMs)}
-                action={
-                  <Link href={dealHref(d)} className="av2-btn" style={{ textDecoration: 'none' }}>
-                    Open deal
-                  </Link>
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {activeListings.length > 0 && (
-        <section aria-label="Active listings">
-          <SectionHead>Active listings</SectionHead>
-          <ul className="av2-queue">
-            {activeListings.map((d) => (
-              <QueueRow
-                key={d.id}
-                kind="Listing"
-                kindTone="waiting"
-                title={d.address}
-                context={rowContext(d, nowMs)}
-                action={
-                  <Link href={dealHref(d)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                    Open deal
-                  </Link>
-                }
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {closed.filter((d) => d.itemsRequired > 0).length > 0 && (
-        <section aria-label="Closed with incomplete checklist">
-          <SectionHead>Closed — incomplete</SectionHead>
-          <ul className="av2-queue">
-            {closed
-              .filter((d) => d.itemsRequired > 0)
-              .map((d) => (
-                <QueueRow
-                  key={`inc-closed-${d.id}`}
-                  kind="Archive"
-                  kindTone="slow"
-                  title={d.address}
-                  context={rowContext(d, nowMs)}
-                  action={
-                    <Link href={dealHref(d)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                      Open deal
-                    </Link>
-                  }
-                />
+      <div className="av2-cols">
+        <Panel title="Needs you" aside={dash.needsYou.length ? `${dash.needsYou.length}` : null} id="needs-you">
+          {dash.needsYou.length ? (
+            <ul className="av2-queue">
+              {dash.needsYou.map((n) => (
+                  <QueueRow
+                    key={n.key}
+                    kind={n.kind}
+                    kindTone={n.tone}
+                    hot={n.tone === 'down'}
+                    title={
+                      <Link href={n.href} style={{ color: 'inherit' }}>
+                        {n.title}
+                      </Link>
+                    }
+                    context={n.context}
+                    action={
+                      <Link href={n.href} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                        {n.action}
+                      </Link>
+                    }
+                  />
               ))}
-          </ul>
-        </section>
-      )}
+            </ul>
+          ) : (
+            <p className="av2-panel__empty">Nothing is waiting on you. Every live file has its documents in and reviewed.</p>
+          )}
+        </Panel>
 
-      <section aria-label="Closed">
-        <SectionHead>Closed</SectionHead>
-        {closed.length === 0 ? (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>None on record.</p>
-        ) : (
-          <ul className="av2-quietlist">
-            {closed.map((d) => (
-              <li key={d.id} className="av2-quiet">
-                <Link href={dealHref(d)} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)' }}>
-                  {d.address}
-                </Link>
-                <span className="av2-quiet__ok">closed</span>
-                <span className="av2-quiet__fig">
-                  {[d.partyNames.join(', ') || null, price(d.salePrice), formatDate(d.actualClosingDate)]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <Panel title="Coming up" aside="next 3 weeks" id="coming-up">
+          {dash.comingUp.length ? (
+            <div className="av2-agenda">
+              {groupByDay(dash.comingUp).map((g) => (
+                <div key={g.day}>
+                  <p className="av2-agenda__day">{weekdayLabel(g.day, today)}</p>
+                  <ul className="av2-agenda" aria-label={weekdayLabel(g.day, today)}>
+                    {g.items.map((it) => (
+                      <li key={it.key} className="av2-agenda__row">
+                        <span className="av2-agenda__what">{it.label}</span>
+                        <Link href={it.href} className="av2-agenda__where">
+                          {it.address.split(',')[0]}
+                        </Link>
+                        {it.soon ? <span className="av2-agenda__soon">soon</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="av2-panel__empty">No contract dates, closings or listing expirations in the next three weeks.</p>
+          )}
+        </Panel>
+      </div>
+
+      <section aria-label="Pipeline" id="pipeline" style={{ margin: '0 0 var(--a-s8)' }}>
+        <div className="av2-board" style={{ ['--av2-board-cols' as string]: boardCols } as React.CSSProperties}>
+          {dash.pipeline.map((col) => (
+            <div key={col.key} className="av2-board__col" id={`pipeline-${col.key}`}>
+              <p className="av2-board__h">
+                <span>{col.label}</span>
+                <span className="av2-board__n">{col.total}</span>
+              </p>
+              {col.cards.length ? (
+                <ul className="av2-board__cards">
+                  {col.cards.map((c) => (
+                    <li key={c.id}>
+                      <Link href={c.href} className="av2-fcard">
+                        <span className="av2-fcard__top">
+                          <span style={{ minWidth: 0 }}>
+                            <span className="av2-fcard__addr">{c.address}</span>
+                            {c.city ? <span className="av2-fcard__city">{c.city}</span> : null}
+                          </span>
+                          <Avatar initials={c.brokerInitials} title={c.broker} />
+                        </span>
+                        {c.priceLabel ? <span className="av2-fcard__price" style={{ display: 'block' }}>{c.priceLabel}</span> : null}
+                        {c.line ? <span className="av2-fcard__line" style={{ display: 'block' }}>{c.line}</span> : null}
+                        <span className="av2-fcard__foot">
+                          {c.progress ? <Meter done={c.progress.done} total={c.progress.total} /> : null}
+                          {c.flag ? <StateWord state="down">{c.flag}</StateWord> : null}
+                          {c.review ? <StateWord state="slow">{c.review} to review</StateWord> : null}
+                          {c.missing ? <StateWord state="waiting">{c.missing} missing</StateWord> : null}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="av2-board__empty">None right now.</p>
+              )}
+            </div>
+          ))}
+        </div>
       </section>
 
-      <section aria-label="Dead deals">
-        <SectionHead>Dead deals</SectionHead>
-        {dead.length === 0 ? (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>None on record.</p>
-        ) : (
-          <ul className="av2-quietlist">
-            {dead.map((d) => (
-              <li key={d.id} className="av2-quiet">
-                <Link href={dealHref(d)} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)' }}>
-                  {d.address}
-                </Link>
-                <span className="av2-quiet__ok">dead</span>
-                <span className="av2-quiet__fig">
-                  {[d.partyNames.join(', ') || d.brokerName, d.mlsNumber ? `MLS ${d.mlsNumber}` : null]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {superuser && mailCoverage.length > 0 ? (
+        <details className="av2-fold" style={{ margin: '0 0 var(--a-s4)' }}>
+          <summary>Every message reviewed</summary>
+          <div className="av2-fold__body">
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 10px' }}>
+              Every message in every broker mailbox gets a decision recorded (filed, queued, or why it is not a deal)
+              for the Real Estate Agency audit trail. The daily sweep keeps it current.
+            </p>
+            <ReportGrid
+              label="Mail review coverage by mailbox"
+              columns={COVERAGE_COLUMNS}
+              template="minmax(160px, 1.4fr) repeat(9, minmax(64px, 1fr)) minmax(90px, 1fr)"
+              minWidth={920}
+              rows={mailCoverage.map(coverageRow)}
+              empty="No mail has been reviewed yet."
+            />
+          </div>
+        </details>
+      ) : null}
 
-      {ctx.role === 'superuser' && mailCoverage.length > 0 && (
-        <section aria-label="Mail coverage">
-          <SectionHead>Every message reviewed</SectionHead>
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 10px' }}>
-            Every message in every broker mailbox gets a decision recorded — filed, queued, or why not
-            a deal — for the ORE Agency audit trail. “Walk” is the full-history reviewer (
-            <code style={{ fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-xs)' }}>
-              npx tsx scripts/tc-mail-backfill.ts review-all
-            </code>
-            ); the daily sweep continues it automatically until it finishes.
-          </p>
-          <ReportGrid
-            label="Mail review coverage by mailbox"
-            columns={COVERAGE_COLUMNS}
-            template="minmax(160px, 1.4fr) repeat(9, minmax(64px, 1fr)) minmax(90px, 1fr)"
-            minWidth={920}
-            rows={mailCoverage.map(coverageRow)}
-            empty="No mail has been reviewed yet."
-          />
-        </section>
-      )}
-
-      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 24 }}>
-        All tools:{' '}
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 'var(--a-s4) 0 0' }}>
+        More:{' '}
+        <Link href="/admin/closings/files" style={{ color: 'var(--a-accent)' }}>
+          All files
+        </Link>
+        {' · '}
         <Link href="/admin/closings/mail" style={{ color: 'var(--a-accent)' }}>
           Mail to file{mailQueueCount > 0 ? ` (${mailQueueCount})` : ''}
         </Link>
@@ -413,29 +360,27 @@ export default async function ClosingsPage({
           Documents to review
         </Link>
         {' · '}
-        <Link href="/admin/closings/forms" style={{ color: 'var(--a-accent)' }}>
-          Forms
-        </Link>
-        {' · '}
         <Link href="/admin/closings/audit" style={{ color: 'var(--a-accent)' }}>
           Records audit
         </Link>
         {' · '}
-        <Link href="/admin/sign-off" style={{ color: 'var(--a-accent)' }}>
-          Sign-off queue
+        <Link href="/admin/closings/forms" style={{ color: 'var(--a-accent)' }}>
+          Form registry
         </Link>
+        {superuser ? (
+          <>
+            {' · '}
+            <Link href="/admin/sign-off" style={{ color: 'var(--a-accent)' }}>
+              Sign-off queue
+            </Link>
+          </>
+        ) : null}
         {' · '}
-        <Link href="/admin/commissions" style={{ color: 'var(--a-accent)' }}>
-          Commissions
-        </Link>
-        {' · '}
-        <Link href="/admin/financials" style={{ color: 'var(--a-accent)' }}>
-          Financials
-        </Link>
-        {' · '}
-        <Link href="/admin/forms" style={{ color: 'var(--a-accent)' }}>
-          Forms
-        </Link>
+        {mirror.status === 'unreadable'
+          ? 'SkySlope recon mirror unreadable'
+          : mirror.current
+            ? `SkySlope recon mirror current (${mirror.rowCount} properties)`
+            : `SkySlope recon mirror stale${mirror.latestSyncedAt ? ` since ${mirror.latestSyncedAt.slice(0, 10)}` : ''}`}
       </p>
     </div>
   )

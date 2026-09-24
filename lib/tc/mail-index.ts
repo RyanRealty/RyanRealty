@@ -414,15 +414,32 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
     // word below 0.9 confidence — it only ever files or queues, never dismisses.
     let modelStage: IndexResult['modelStage'] = null
     let decidedBy: 'system' | 'model' = 'system'
+    const choosing = decision.status === 'ambiguous'
     if (
       input.modelStage &&
-      worthModelStage({ status: decision.status, category: decision.category, attachments: f3.attachments, propertyHint: decision.propertyHint })
+      worthModelStage({
+        status: decision.status,
+        category: decision.category,
+        attachments: f3.attachments,
+        propertyHint: decision.propertyHint,
+        candidateCount: decision.candidates.length,
+      })
     ) {
       try {
-        const candidates = candidateDealsForModel(universe.deals, f3.sentAt, dealOpenAt)
-        const modelDecision = await askModelStage({ facts: f3, candidates })
-        const applied = applyModelStageDecision(modelDecision)
+        // Ambiguous: the rules narrowed it to the deals the sender is on; the
+        // model reads the message and picks one of those, or none.
+        const tied = new Set(decision.candidates.map((c) => c.dealId))
+        const candidates = choosing
+          ? candidateDealsForModel(universe.deals.filter((d) => tied.has(d.dealId)), f3.sentAt, () => true)
+          : candidateDealsForModel(universe.deals, f3.sentAt, dealOpenAt)
+        const modelDecision = await askModelStage({ facts: f3, candidates, mode: choosing ? 'choose' : 'open' })
+        let applied = applyModelStageDecision(modelDecision)
+        // Choosing never opens a new transaction and never leaves the tied set.
+        if (choosing && (applied.action !== 'file' || !tied.has(applied.dealId))) applied = { action: 'leave' }
         modelStage = { confidence: modelDecision.confidence, reason: modelDecision.reason, filed: false }
+        if (choosing && applied.action === 'leave') {
+          decision = { ...decision, reasons: [...decision.reasons, `model: ${modelDecision.reason}`] }
+        }
         if (applied.action === 'file') {
           const deal = universe.deals.find((d) => d.dealId === applied.dealId)
           const cycleId = deal ? pickCycleForMail(deal.cycles, f3.sentAt, decision.category) : null
@@ -1326,7 +1343,9 @@ export async function sweepTransactionMail(input: {
  * decision first, so a run that stops at its deadline leaves the rest for the
  * next one (re-deciding a row stamps decided_at).
  */
-export async function rematchQueuedMail(input: { universe?: MailUniverse; limit?: number; deadline?: number; sb?: SB } = {}): Promise<{
+export async function rematchQueuedMail(
+  input: { universe?: MailUniverse; limit?: number; deadline?: number; sb?: SB; modelStage?: boolean } = {},
+): Promise<{
   checked: number
   filed: number
   stillQueued: number
@@ -1346,6 +1365,18 @@ export async function rematchQueuedMail(input: { universe?: MailUniverse; limit?
   const todo = (rows ?? [])
     .map((row) => ((row.gmail_refs as Array<{ mailbox?: string; broker?: string; gmail_id?: string }> | null) ?? [])[0])
     .filter((ref): ref is { mailbox: string; broker?: string; gmail_id: string } => !!ref?.mailbox && !!ref.gmail_id)
+  // The model reads a queued message once; after that only the rules re-decide
+  // it (a new deal or contact), so a daily rematch does not re-ask the same question.
+  const asked = new Set<string>()
+  if (input.modelStage) {
+    for (const mailbox of new Set(todo.map((r) => r.mailbox))) {
+      const ids = todo.filter((r) => r.mailbox === mailbox).map((r) => r.gmail_id)
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data } = await sb.from('tc_mail_reviews').select('gmail_id').eq('mailbox', mailbox).eq('stage', 'model').in('gmail_id', ids.slice(i, i + 200))
+        for (const r of data ?? []) asked.add(`${mailbox}:${r.gmail_id}`)
+      }
+    }
+  }
   let next = 0
   const worker = async () => {
     while (next < todo.length) {
@@ -1357,13 +1388,74 @@ export async function rematchQueuedMail(input: { universe?: MailUniverse; limit?
       const gmail = getGmailFor(ref.mailbox, READONLY)
       if (!gmail) continue
       out.checked++
-      const r = await indexGmailMessage({ gmail, mailbox: ref.mailbox, brokerSlug: ref.broker ?? 'matt', gmailId: ref.gmail_id, universe, sb })
+      const modelStage = !!input.modelStage && !asked.has(`${ref.mailbox}:${ref.gmail_id}`)
+      const r = await indexGmailMessage({ gmail, mailbox: ref.mailbox, brokerSlug: ref.broker ?? 'matt', gmailId: ref.gmail_id, universe, sb, modelStage })
       if (r.status === 'filed') out.filed++
       else if (r.status === 'error') out.errors++
       else out.stillQueued++
     }
   }
   await Promise.all(Array.from({ length: Math.min(SWEEP_CONCURRENCY, todo.length) }, worker))
+  return out
+}
+
+/**
+ * Mail decided before its thread was filed. The history walk and the live
+ * stream decide each message once, so a reply with no address from someone
+ * on several files, decided before the first message of its thread filed, was
+ * left as ordinary mail ("Re: Jacklight Bill of Sale"). Once any message in a
+ * thread files, its siblings decided earlier are decided again, and rule 2
+ * (same thread) files them unless they name another file's property. A row
+ * decided again carries a newer reviewed_at, so it is not picked twice unless
+ * more of its thread files later.
+ */
+export async function refileThreadSiblings(input: { universe?: MailUniverse; deadline?: number; sb?: SB; limit?: number } = {}): Promise<{
+  candidates: number
+  checked: number
+  filed: number
+  complete: boolean
+}> {
+  const sb = input.sb ?? createServiceClient()
+  const universe = input.universe ?? (await loadMailUniverse(sb))
+  const filed = await allRows<{ gmail_thread_ids: string[] | null; decided_at: string }>((a, b) =>
+    sb.from('tc_mail_messages').select('gmail_thread_ids, decided_at').eq('status', 'filed').order('id').range(a, b),
+  )
+  const latest = new Map<string, string>()
+  for (const f of filed) {
+    for (const t of f.gmail_thread_ids ?? []) if ((latest.get(t) ?? '') < f.decided_at) latest.set(t, f.decided_at)
+  }
+  const threadIds = [...latest.keys()]
+  const todo: Array<{ mailbox: string; gmail_id: string }> = []
+  for (let i = 0; i < threadIds.length; i += 150) {
+    const { data } = await sb
+      .from('tc_mail_reviews')
+      .select('mailbox, gmail_id, thread_id, reviewed_at')
+      .in('thread_id', threadIds.slice(i, i + 150))
+      .in('status', ['not_deal', 'ambiguous', 'unfiled_transaction'])
+    for (const r of data ?? []) {
+      if (r.thread_id && String(r.reviewed_at) < (latest.get(String(r.thread_id)) ?? '')) todo.push({ mailbox: String(r.mailbox), gmail_id: String(r.gmail_id) })
+    }
+  }
+  const out = { candidates: todo.length, checked: 0, filed: 0, complete: true }
+  const work = todo.slice(0, input.limit ?? todo.length)
+  if (work.length < todo.length) out.complete = false
+  let next = 0
+  const worker = async () => {
+    while (next < work.length) {
+      if (input.deadline != null && Date.now() > input.deadline) {
+        out.complete = false
+        return
+      }
+      const ref = work[next++]
+      const gmail = getGmailFor(ref.mailbox, READONLY)
+      if (!gmail) continue
+      const brokerSlug = CRM_MAILBOXES.find((m) => m.email === ref.mailbox)?.slug ?? 'matt'
+      out.checked++
+      const r = await indexGmailMessage({ gmail, mailbox: ref.mailbox, brokerSlug, gmailId: ref.gmail_id, universe, sb })
+      if (r.status === 'filed') out.filed++
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(SWEEP_CONCURRENCY, work.length) }, worker))
   return out
 }
 

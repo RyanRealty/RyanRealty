@@ -7,9 +7,14 @@
  *   GET  /api/files/listings
  *   GET  /api/files/sales/:guid
  *   GET  /api/files/listings/:guid
+ *   GET  /api/files/(sales|listings)/:guid/documents
+ *   GET  /api/files/(sales|listings)/:guid/documents/:docId/binary
+ *   GET  the pre-signed document URL SkySlope hands out (skyslope-documents S3)
  *
  * Never PUT / PATCH / DELETE. Never POST except /auth/login.
- * Vault (`tc_*`) is the transaction SoR. This client feeds the recon mirror only.
+ * Vault (`tc_*`) is the transaction SoR. This client feeds the recon mirror and
+ * the daily SkySlope → Vault intake (lib/data/tc/skyslope-intake.ts), both
+ * read-only against SkySlope.
  */
 import { createHmac } from 'node:crypto'
 import {
@@ -34,16 +39,36 @@ export function hasSkySlopeInboundCreds(env: NodeJS.ProcessEnv = process.env): b
   )
 }
 
+/** Hosts SkySlope serves document binaries from (pre-signed, read-only GET). */
+const SKYSLOPE_DOCUMENT_HOSTS: ReadonlySet<string> = new Set(['skyslope-documents.s3.amazonaws.com'])
+
 export function assertInboundRequest(method: string, url: string): void {
   const u = new URL(url)
+  const m = method.toUpperCase()
+  if (u.protocol === 'https:' && SKYSLOPE_DOCUMENT_HOSTS.has(u.host)) {
+    if (m === 'GET') return
+    throw new Error(`SkySlope inbound refused ${m} ${u.host}`)
+  }
   if (u.origin !== SKYSLOPE_FILES_BASE) {
     throw new Error(`SkySlope inbound refused host ${u.origin}`)
   }
   const path = u.pathname
-  const m = method.toUpperCase()
   if (m === 'POST' && path === '/auth/login') return
   if (m === 'GET' && /^\/api\/files\/(sales|listings)(\/[A-Za-z0-9-]+)?$/.test(path)) return
+  if (m === 'GET' && /^\/api\/files\/(sales|listings)\/[A-Za-z0-9-]+\/documents(\/[A-Za-z0-9-]+\/binary)?$/.test(path)) return
   throw new Error(`SkySlope inbound refused ${m} ${path}`)
+}
+
+/**
+ * The folder list answers HTTP 422 ("Please check your query parameters") for
+ * a page past the end instead of an empty page, so a folder count that lands
+ * on an exact multiple of the page size used to fail the whole refresh
+ * (production 2026-09-23 and 09-24: "sales page 5: HTTP 422" at 40 sale
+ * folders). A 422 after a full page is the end of the list; a 422 on page 1,
+ * or after a short page, is still an error.
+ */
+export function folderPageIsPastEnd(status: number, pageNumber: number, previousPageRows: number): boolean {
+  return status === 422 && pageNumber > 1 && previousPageRows >= PAGE_SIZE
 }
 
 async function sleep(ms: number) {
@@ -114,6 +139,7 @@ export async function listSkySlopeFolders(
   const all: Record<string, unknown>[] = []
   const seen = new Set<string>()
   const { earliestDate, latestDate } = dateRangeUnixSec()
+  let previousPageRows = 0
   for (let pageNumber = 1; pageNumber <= MAX_PAGES; pageNumber++) {
     const params = new URLSearchParams({
       earliestDate: String(earliestDate),
@@ -122,9 +148,11 @@ export async function listSkySlopeFolders(
     })
     const url = `${SKYSLOPE_FILES_BASE}/api/files/${kind}?${params}`
     const r = await inboundFetch(url, { method: 'GET', headers: sessionHeaders(session) })
+    if (folderPageIsPastEnd(r.status, pageNumber, previousPageRows)) break
     if (!r.ok) throw new Error(`${kind} page ${pageNumber}: HTTP ${r.status}`)
     const j = (await r.json()) as { value?: Record<string, Array<Record<string, unknown>>> }
     const rows = j?.value?.[valueKey] ?? []
+    previousPageRows = rows.length
     for (const row of rows) {
       const id = String((kind === 'listings' ? row.listingGuid : row.saleGuid) ?? '')
       if (id) {
@@ -150,6 +178,51 @@ export async function fetchSkySlopeFolderDetail(
   const j = (await r.json()) as { value?: Record<string, Record<string, unknown>> }
   const detailKey = kind === 'listings' ? 'listing' : 'sale'
   return j?.value?.[detailKey] ?? { __error: 'empty' }
+}
+
+/**
+ * A folder's document list (the same call the 2026-06-10 migration made). Each
+ * row carries a pre-signed `url` good for about five minutes, so download soon
+ * after listing. Throws on a non-2xx so a caller never mistakes an outage for
+ * an empty folder.
+ */
+export async function fetchSkySlopeFolderDocuments(
+  session: string,
+  kind: SkySlopeFolderKind,
+  guid: string,
+): Promise<Record<string, unknown>[]> {
+  const url = `${SKYSLOPE_FILES_BASE}/api/files/${kind}/${guid}/documents`
+  const r = await inboundFetch(url, { method: 'GET', headers: sessionHeaders(session) })
+  if (!r.ok) throw new Error(`${kind}/${guid.slice(0, 8)} documents: HTTP ${r.status}`)
+  const j = (await r.json()) as { value?: { documents?: Record<string, unknown>[] } }
+  return j?.value?.documents ?? []
+}
+
+/**
+ * Download one document binary: the pre-signed `doc.url` when SkySlope gave
+ * one, else the folder's binary endpoint. Same headers the migration used
+ * (scripts/skyslope-files-api.mjs fetchSkyslopeDocumentBinary): without the
+ * Session header some responses come back as HTML or empty bodies.
+ */
+export async function fetchSkySlopeDocumentBinary(
+  session: string,
+  kind: SkySlopeFolderKind,
+  guid: string,
+  docId: string,
+  presignedUrl: string | null,
+): Promise<{ ok: boolean; status: number; contentType: string; buf: Buffer }> {
+  const url = presignedUrl || `${SKYSLOPE_FILES_BASE}/api/files/${kind}/${guid}/documents/${docId}/binary`
+  const r = await inboundFetch(url, {
+    method: 'GET',
+    redirect: 'follow',
+    headers: {
+      Session: session,
+      timestamp: new Date().toISOString(),
+      Accept: 'application/pdf, application/octet-stream, */*',
+    },
+  })
+  const buf = Buffer.from(await r.arrayBuffer())
+  return { ok: r.ok, status: r.status, contentType: (r.headers.get('content-type') || '').toLowerCase(), buf }
 }
 
 function summarizeChecklist(detail: Record<string, unknown>): { requiredOpen: string[]; activityCount: number; filledCount: number } {

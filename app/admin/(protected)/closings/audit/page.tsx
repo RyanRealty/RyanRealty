@@ -17,6 +17,7 @@ const STATUS: Record<AuditStatus, { word: string; tone: AdminState }> = {
   missing: { word: 'Missing', tone: 'down' },
   review: { word: 'Check', tone: 'slow' },
   na: { word: 'N/A', tone: 'waiting' },
+  elsewhere: { word: 'SkySlope', tone: 'accent' },
 }
 
 const STAGE: Record<string, string> = { active_listing: 'Active listing', pending: 'Pending', closed: 'Closed', dead: 'Did not close' }
@@ -68,7 +69,8 @@ export default async function RecordsAuditPage() {
         disclosures, every offer and counteroffer (answered or not) with its delivery and response, the executed sale
         agreement and addenda, the earnest money receipt, the settlement statement, the correspondence, and the principal
         broker&apos;s review of every document of agreement within seven banking days (OAR 863-015-0140(4), 0135, 0250;
-        ORS 696.280: kept six years). A form counts as executed only when the document reader and the check against the
+        ORS 696.280: kept six years). Until the cutover, files that came from SkySlope are reviewed in SkySlope, which
+        keeps the reviewer and date; files opened in the Vault are reviewed on Sign-off. A form counts as executed only when the document reader and the check against the
         printed form agree. Review documents on{' '}
         <Link href="/admin/sign-off" style={{ color: 'var(--a-accent)' }}>
           Sign-off

@@ -55,7 +55,11 @@ export function worthModelStage(input: {
   category: MailCategory
   attachments: readonly MailAttachmentFacts[]
   propertyHint: string | null
+  /** Deals the rules could not choose between (ambiguous mail). */
+  candidateCount?: number
 }): boolean {
+  // Ambiguous mail the rules narrowed to a few deals: the model reads it and picks one.
+  if (input.status === 'ambiguous') return (input.candidateCount ?? 0) >= 2
   if (input.status !== 'not_deal' && input.status !== 'unfiled_transaction') return false
   if (isTransactionCategory(input.category)) return true
   if (input.attachments.some(isTransactionFormAttachment)) return true
@@ -98,8 +102,14 @@ export const MODEL_STAGE_SCHEMA: Record<string, unknown> = {
 
 type PromptFacts = Pick<MailFacts, 'subject' | 'from' | 'to' | 'cc' | 'body' | 'attachments'>
 
-function dealLine(d: ModelStageCandidateDeal): string {
-  const bits = [d.address, d.city ? `${d.city}, OR` : null, d.mlsNumber ? `MLS ${d.mlsNumber}` : null, d.escrowNumber ? `escrow ${d.escrowNumber}` : null]
+function dealLine(d: ModelStageCandidateDeal, withParties = false): string {
+  const bits = [
+    d.address,
+    d.city ? `${d.city}, OR` : null,
+    d.mlsNumber ? `MLS ${d.mlsNumber}` : null,
+    d.escrowNumber ? `escrow ${d.escrowNumber}` : null,
+    withParties && d.parties.length ? `clients ${d.parties.join(' ')}` : null,
+  ]
   return `- ${d.dealId}: ${bits.filter(Boolean).join(', ')}`
 }
 
@@ -107,15 +117,21 @@ function dealLine(d: ModelStageCandidateDeal): string {
  * The prompt, pure and testable without a network call. Never invents a deal
  * or an address the message and the candidate list don't support.
  */
-export function buildModelStagePrompt(input: { facts: PromptFacts; candidates: readonly ModelStageCandidateDeal[] }): {
+export function buildModelStagePrompt(input: {
+  facts: PromptFacts
+  candidates: readonly ModelStageCandidateDeal[]
+  /** 'choose': the rules narrowed it to these deals (the sender is on each); pick one or none. */
+  mode?: 'open' | 'choose'
+}): {
   system: string
   user: string
 } {
-  const system =
-    'You decide which open Ryan Realty transaction file, if any, a broker email belongs to. Below is the complete list of open (or recently closed) deals: address, city, MLS number, escrow number. Answer only from the message and that list. Never invent an address or pick a deal not on the list. If the message names a property with no deal on the list, put its full street address in newTransactionAddress and leave dealId null. If the message is not about a real-estate transaction at all (marketing, personal, unrelated business), set notDeal true. A wrong dealId is worse than an unanswered message, so only name one you are actually confident about — confidence is read literally: 0.9+ means "file this without a person looking at it first."'
-  const candidateBlock = input.candidates.length ? input.candidates.map(dealLine).join('\n') : '(no open deals)'
+  const system = input.mode === 'choose' ? CHOOSE_SYSTEM : OPEN_SYSTEM
+  const candidateBlock = input.candidates.length
+    ? input.candidates.map((d) => dealLine(d, input.mode === 'choose')).join('\n')
+    : '(no open deals)'
   const user = [
-    `Open deals:\n${candidateBlock}`,
+    `${input.mode === 'choose' ? 'Deals the sender or recipients are on' : 'Open deals'}:\n${candidateBlock}`,
     `Subject: ${input.facts.subject || '(none)'}`,
     `From: ${input.facts.from.join(', ') || '(none)'}`,
     `To: ${input.facts.to.join(', ') || '(none)'}`,
@@ -125,6 +141,12 @@ export function buildModelStagePrompt(input: { facts: PromptFacts; candidates: r
   ].join('\n\n')
   return { system, user }
 }
+
+const CHOOSE_SYSTEM =
+  'A Ryan Realty broker email could not be filed by rule: its sender or recipients are on every deal listed below (address, city, MLS number, escrow number, client emails), and the email does not name a property. Decide from the message itself (subject, body, attachment names, the people on it) which ONE listed deal it is about. Name a deal only when the message points to it and not to the others: a street or neighborhood, a client, a step only one of the deals was at, a document only one of them had. If it could be about more than one, or about none of them, set dealId null. Never pick a deal not on the list. A wrong dealId is worse than an unanswered message: confidence is read literally, and 0.9+ means "file this without a person looking at it first."'
+
+const OPEN_SYSTEM =
+  'You decide which open Ryan Realty transaction file, if any, a broker email belongs to. Below is the complete list of open (or recently closed) deals: address, city, MLS number, escrow number. Answer only from the message and that list. Never invent an address or pick a deal not on the list. If the message names a property with no deal on the list, put its full street address in newTransactionAddress and leave dealId null. If the message is not about a real-estate transaction at all (marketing, personal, unrelated business), set notDeal true. A wrong dealId is worse than an unanswered message, so only name one you are actually confident about — confidence is read literally: 0.9+ means "file this without a person looking at it first."'
 
 export type ModelStageAction =
   | { action: 'file'; dealId: string }
@@ -151,7 +173,11 @@ export function applyModelStageDecision(decision: ModelStageDecision, confidence
  * The one network call. Never invoked directly by a sweep or a test — callers
  * gate it behind `indexGmailMessage({ modelStage: true })`.
  */
-export async function askModelStage(input: { facts: PromptFacts; candidates: readonly ModelStageCandidateDeal[] }): Promise<ModelStageDecision> {
+export async function askModelStage(input: {
+  facts: PromptFacts
+  candidates: readonly ModelStageCandidateDeal[]
+  mode?: 'open' | 'choose'
+}): Promise<ModelStageDecision> {
   const { system, user } = buildModelStagePrompt(input)
   const { value } = await generateGrokStructured<ModelStageDecision>({
     system,

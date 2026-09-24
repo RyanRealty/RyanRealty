@@ -35,9 +35,16 @@ amendments (HB 3137 / REA 4-2025).
 **Retention.** Files are kept at least six years from the later of closing or failure, in a
 form the Commissioner can inspect (ORS 696.280; OAR 863-015-0260).
 
-**Principal broker review.** Reviews are recorded in `tc_principal_reviews` from the Sign-off
-queue (`/admin/sign-off`). A review done only in SkySlope is not a Vault record. The Vault is
-the system of record (CLAUDE.md §8).
+**Principal broker review.** Matt 2026-09-24: "currently im reviewing there [SkySlope] but will
+review here when we cut over."
+
+- **Files that came from SkySlope** are reviewed in SkySlope. SkySlope keeps the reviewer and
+  the date. The audit marks the row "SkySlope" and shows the file's SkySlope checklist counts
+  (completed, still in review). It does not score the row.
+- **Files opened in the Vault** are reviewed on Sign-off (`/admin/sign-off`), which records
+  `tc_principal_reviews`.
+- **At the cutover,** the rule in `lib/data/tc/deal-audit.ts` (`reviewSystem`) moves every new
+  file to the Vault.
 
 ## Not covered here
 
