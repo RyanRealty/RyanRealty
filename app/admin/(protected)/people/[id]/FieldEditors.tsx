@@ -9,17 +9,23 @@
  * email editing stays behind the All-tools door for now.
  */
 import { Button, SelectField, TextField } from '@/components/admin/v2'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY, CRM_STAGES } from '@/lib/crm/constants'
+import { CRM_STAGES } from '@/lib/crm/constants'
 
 type FormAction = (formData: FormData) => Promise<void>
 
 export function FieldEditors(props: {
   stage: string
   assignedBroker: string | null
+  /** Resolved server-side (brokerDisplayName) so an unassigned/unknown slug never
+   *  leaks past the fallback the way a raw constants lookup would. */
+  assignedBrokerName: string | null
   canReassign: boolean
   source: string | null
   sources: string[]
   tags: string[]
+  /** Active brokers, server-resolved (activeBrokerSlugs/brokerDisplayName) — the
+   *  Google-Workspace broker directory, not the 3-broker constants. */
+  brokerOptions: Array<{ slug: string; name: string }>
   updateStage: FormAction
   assignBroker: FormAction
   updateSource: FormAction
@@ -67,9 +73,9 @@ export function FieldEditors(props: {
               onChange={submitOnChange}
             >
               {!props.assignedBroker ? <option value="">Unassigned</option> : null}
-              {CRM_BROKERS.map((b) => (
-                <option key={b} value={b}>
-                  {CRM_BROKER_DISPLAY[b]}
+              {props.brokerOptions.map((b) => (
+                <option key={b.slug} value={b.slug}>
+                  {b.name}
                 </option>
               ))}
             </SelectField>
@@ -78,10 +84,7 @@ export function FieldEditors(props: {
           <div className="av2-field">
             <span className="av2-field__label">Assigned broker</span>
             <span style={{ padding: '10px 0', color: 'var(--a-text-2)' }}>
-              {props.assignedBroker
-                ? (CRM_BROKER_DISPLAY[props.assignedBroker as keyof typeof CRM_BROKER_DISPLAY] ??
-                  props.assignedBroker)
-                : 'Unassigned'}
+              {props.assignedBroker ? props.assignedBrokerName ?? props.assignedBroker : 'Unassigned'}
             </span>
           </div>
         )}

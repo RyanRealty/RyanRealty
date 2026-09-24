@@ -16,7 +16,7 @@ import {
   type SpeedToLeadRow,
   type SpeedToLeadTotals,
 } from '@/lib/data/crm/getSpeedToLeadReport'
-import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import {
   VerdictLine,
   SectionHead,
@@ -211,9 +211,9 @@ export default async function SpeedToLeadPage({
           <SpeedToLeadFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
-            brokers={CRM_BROKERS.map((slug) => ({
+            brokers={activeBrokerSlugs().map((slug) => ({
               slug,
-              label: CRM_BROKER_DISPLAY[slug],
+              label: brokerDisplayName(slug),
             }))}
           />
         </div>

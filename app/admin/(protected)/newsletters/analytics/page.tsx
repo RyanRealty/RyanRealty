@@ -23,7 +23,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName, isActiveBrokerSlug } from '@/lib/brokers/directory'
 import { getBrokerNewsletterAnalytics, getBrokerWarmList } from '@/lib/data'
 import {
   ReportGrid,
@@ -77,12 +77,12 @@ export default async function NewsletterAnalyticsPage({
   // consulted for a restricted broker.
   const isSuperuser = restrictedSlug === null
   const selectedBroker: string | 'all' = isSuperuser
-    ? (CRM_BROKERS as readonly string[]).includes(requestedBroker ?? '')
+    ? isActiveBrokerSlug(requestedBroker ?? '')
       ? (requestedBroker as string)
       : 'all'
     : restrictedSlug
 
-  const slugsToShow: string[] = selectedBroker === 'all' ? [...CRM_BROKERS] : [selectedBroker]
+  const slugsToShow: string[] = selectedBroker === 'all' ? activeBrokerSlugs() : [selectedBroker]
 
   const perBroker = await Promise.all(
     slugsToShow.map(async (slug) => {
@@ -136,8 +136,8 @@ export default async function NewsletterAnalyticsPage({
   const heading = isSuperuser
     ? selectedBroker === 'all'
       ? 'All brokers'
-      : (CRM_BROKER_DISPLAY[selectedBroker] ?? selectedBroker)
-    : (CRM_BROKER_DISPLAY[restrictedSlug] ?? restrictedSlug)
+      : brokerDisplayName(selectedBroker)
+    : brokerDisplayName(restrictedSlug)
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
@@ -157,7 +157,7 @@ export default async function NewsletterAnalyticsPage({
       {isSuperuser ? (
         <div className="av2-rfilters">
           <BrokerFilterSelect
-            brokers={CRM_BROKERS.map((slug) => ({ slug, name: CRM_BROKER_DISPLAY[slug] }))}
+            brokers={activeBrokerSlugs().map((slug) => ({ slug, name: brokerDisplayName(slug) }))}
             value={selectedBroker}
           />
         </div>

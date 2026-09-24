@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react'
 import { getTcDocumentUrl } from '@/app/actions/tc'
 
-export function DocViewer({ documentId, name }: { documentId: string; name: string }) {
+export function DocViewer({ documentId, name, page }: { documentId: string; name: string; page?: number | null }) {
   const [state, setState] = useState<{ id: string; url: string | null; error: string | null }>({
     id: '',
     url: null,
@@ -36,7 +36,7 @@ export function DocViewer({ documentId, name }: { documentId: string; name: stri
   if (!ready || !state.url) return <div className="av2-viewer__empty">Opening the document…</div>
   return (
     <>
-      <iframe className="av2-viewer__frame" src={`${state.url}#view=FitH`} title={name} />
+      <iframe className="av2-viewer__frame" src={`${state.url}#${page ? `page=${page}&` : ''}view=FitH`} title={name} />
       <p className="av2-viewer__meta" style={{ margin: 0, padding: '8px 16px' }}>
         <a href={state.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--a-accent)' }}>
           Open in a new tab

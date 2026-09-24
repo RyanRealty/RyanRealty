@@ -16,7 +16,7 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getOverviewReport } from '@/lib/data/crm/getOverviewReport'
-import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import {
   HUB_AGENT_REPORTS,
   HUB_LEAD_SOURCE_REPORTS,
@@ -141,9 +141,9 @@ export default async function CrmOverviewReportPage({
           <OverviewFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
-            brokers={CRM_BROKERS.map((slug) => ({
+            brokers={activeBrokerSlugs().map((slug) => ({
               slug,
-              label: CRM_BROKER_DISPLAY[slug],
+              label: brokerDisplayName(slug),
             }))}
           />
         </div>

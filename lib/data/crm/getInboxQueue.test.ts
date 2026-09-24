@@ -169,10 +169,12 @@ describe('getInboxQueue pure helpers (Wave 7 inbox triage)', () => {
       expect(isAssignableBroker('matt')).toBe(true)
       expect(isAssignableBroker('rebecca')).toBe(true)
       expect(isAssignableBroker('paul')).toBe(true)
+      // The broker directory (lib/brokers/directory.ts) normalizes slugs to
+      // lowercase before matching, so a differently-cased known slug resolves too.
+      expect(isAssignableBroker('Matt')).toBe(true)
     })
     it('rejects an unknown broker slug', () => {
       expect(isAssignableBroker('steve')).toBe(false)
-      expect(isAssignableBroker('Matt')).toBe(false)
     })
   })
 })

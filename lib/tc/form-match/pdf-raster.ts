@@ -17,6 +17,9 @@ export type RasterPdf = {
   close: () => Promise<void>
 }
 
+/** A letter page at scale 1 is 0.48 MP; tabloid is 1 MP. */
+const MAX_MASK_PIXELS = 4_000_000
+
 export async function openRaster(bytes: Uint8Array | ArrayBuffer): Promise<RasterPdf> {
   const pdfjs: PdfjsModule = await import('pdfjs-dist/legacy/build/pdf.mjs')
   configurePdfjsWorker(pdfjs)
@@ -32,7 +35,10 @@ export async function openRaster(bytes: Uint8Array | ArrayBuffer): Promise<Raste
 
   async function mask(n: number): Promise<Mask> {
     const page = await doc.getPage(n)
-    const vp = page.getViewport({ scale: 1 })
+    // A poster-size page (a plat, a site plan) is never a printed form page;
+    // rasterize it small so it cannot exhaust the function's memory.
+    const full = page.getViewport({ scale: 1 })
+    const vp = full.width * full.height > MAX_MASK_PIXELS ? page.getViewport({ scale: Math.sqrt(MAX_MASK_PIXELS / (full.width * full.height)) }) : full
     const w = Math.ceil(vp.width)
     const h = Math.ceil(vp.height)
     const canvas = createCanvas(w, h)

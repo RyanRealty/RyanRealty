@@ -488,6 +488,9 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
   only for parallel work; merge or hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
   [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything.** Git, terminal and deploys are yours.
+- **Always ask Matt questions to get what you need (Matt 2026-09-24).** A call that is his
+  goes to him as a question (AskUserQuestion, recommended option first), not a guess or a
+  closing "say X if you want".
 - **Clear a stale `.git/index.lock` yourself;** never report a lock as a blocker.
 - **No blocked builds or commits.** If something is in the way, fix it. Exhaust every option
   before reporting an issue.

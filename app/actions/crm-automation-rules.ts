@@ -27,7 +27,7 @@ import {
   type CrmActionType,
   type CrmTriggerType,
 } from '@/lib/data/crm/getCrmAutomationRules'
-import { CRM_BROKERS } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
 
 const REVALIDATE_PATHS = ['/admin/crm/automations', '/admin/crm/settings']
 
@@ -80,7 +80,7 @@ async function validateActionTarget(actionType: CrmActionType, actionValue: stri
     return { ok: true }
   }
   // assign_broker
-  if (!(CRM_BROKERS as readonly string[]).includes(value)) {
+  if (!isActiveBrokerSlug(value)) {
     return { ok: false, error: `Broker "${value}" is not a valid broker` }
   }
   return { ok: true }

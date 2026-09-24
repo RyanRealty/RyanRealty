@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     await writeSkySlopeIntakeRunLog({
       ok: res.ok,
       durationMs: Date.now() - start,
-      records: t.cyclesAdded + t.cyclesUpdated + t.documentsAdded + t.itemsAdded + t.assignmentsAdded + t.contactsAdded + t.stagesUpdated,
+      records: t.cyclesAdded + t.cyclesUpdated + t.documentsAdded + t.itemsAdded + t.itemStatusesUpdated + t.assignmentsAdded + t.contactsAdded + t.stagesUpdated,
       error: res.error ?? res.blocker,
       cycleId: randomUUID(),
     })

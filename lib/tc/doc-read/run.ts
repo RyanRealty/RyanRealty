@@ -192,8 +192,23 @@ export async function readStoredDocument(
     const { data: blob, error } = await sb.storage.from('tc-documents').download(doc.storage_path)
     if (error || !blob) return { ok: false, documentId, error: `download failed: ${error?.message ?? 'empty'}` }
     const bytes = new Uint8Array(await blob.arrayBuffer())
-    if (Buffer.from(bytes.subarray(0, 1024)).indexOf('%PDF') < 0) return { ok: false, documentId, error: 'not a PDF' }
     if (!sha) sha = createHash('sha256').update(bytes).digest('hex')
+    if (Buffer.from(bytes.subarray(0, 1024)).indexOf('%PDF') < 0) {
+      // Recorded, so the queue stops handing this file back (MAX_READ_ATTEMPTS).
+      await sb.from('tc_document_readings').insert({ document_id: documentId, sha256: sha, reader_version: READER_VERSION, model, purpose, status: 'failed', error: 'not a PDF' })
+      return { ok: false, documentId, error: 'not a PDF' }
+    }
+    // A marker written BEFORE the read: if the read takes the process down
+    // (a poster-size page ran the cron out of memory on 2026-09-24), nothing
+    // after this line runs, and the marker is what counts the attempt.
+    const { data: marker } = await sb
+      .from('tc_document_readings')
+      .insert({ document_id: documentId, sha256: sha, reader_version: READER_VERSION, model, purpose, status: 'failed', error: INTERRUPTED })
+      .select('id')
+      .single()
+    const clearMarker = async () => {
+      if (marker?.id) await sb.from('tc_document_readings').delete().eq('id', marker.id)
+    }
     try {
       const read = await readDocumentBytes(bytes, { model })
       reading = read.reading
@@ -215,8 +230,10 @@ export async function readStoredDocument(
         status: 'failed',
         error: message.slice(0, 2000),
       })
+      await clearMarker()
       return { ok: false, documentId, error: message }
     }
+    await clearMarker()
   }
 
   // Every copy read teaches the registry who signs its forms (a new release
@@ -545,8 +562,37 @@ export async function refreshVerdict(sb: SupabaseClient, documentId: string): Pr
   return verdict
 }
 
-/** Documents with no read by the current reader version, oldest first. */
+/** What a read that never finished leaves behind (see readStoredDocument). */
+export const INTERRUPTED = 'interrupted: the run stopped while reading this copy'
+
+/**
+ * A copy that failed this many times at the current reader version is left
+ * for a person. Without the cap one bad file at the head of the queue (oldest
+ * first) is handed back to every run, and a file that kills the process kills
+ * every run: the cron read nothing from 09:35 to 16:00 UTC on 2026-09-24.
+ */
+export const MAX_READ_ATTEMPTS = 3
+
+async function failedReadCounts(sb: SupabaseClient): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  for (let from = 0; ; from += 1000) {
+    const { data } = await sb
+      .from('tc_document_readings')
+      .select('document_id')
+      .eq('reader_version', READER_VERSION)
+      .eq('purpose', 'read')
+      .eq('status', 'failed')
+      .order('id')
+      .range(from, from + 999)
+    for (const r of data ?? []) counts.set(String(r.document_id), (counts.get(String(r.document_id)) ?? 0) + 1)
+    if (!data || data.length < 1000) break
+  }
+  return counts
+}
+
+/** Documents with no read by the current reader version, oldest first, skipping copies that keep failing. */
 export async function unreadDocumentIds(sb: SupabaseClient, limit: number): Promise<string[]> {
+  const failures = await failedReadCounts(sb)
   const out: string[] = []
   let from = 0
   while (out.length < limit) {
@@ -563,7 +609,7 @@ export async function unreadDocumentIds(sb: SupabaseClient, limit: number): Prom
     if (!data?.length) break
     for (const d of data) {
       const reader = (d.classification as { reader?: { version?: string } } | null)?.reader
-      if (reader?.version !== READER_VERSION) out.push(String(d.id))
+      if (reader?.version !== READER_VERSION && (failures.get(String(d.id)) ?? 0) < MAX_READ_ATTEMPTS) out.push(String(d.id))
       if (out.length >= limit) break
     }
     if (data.length < 1000) break

@@ -18,7 +18,8 @@ import 'server-only'
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_MAILBOXES, getGmailFor } from '@/lib/crm/gmail'
+import { getGmailFor } from '@/lib/crm/gmail'
+import { getCrmMailboxes } from '@/lib/data/brokers/directory'
 
 const READONLY_SCOPE = ['https://www.googleapis.com/auth/gmail.readonly']
 
@@ -66,7 +67,7 @@ export type GmailSignatureSyncResult = {
 export async function syncGmailSignatures(onlyMailbox?: string): Promise<GmailSignatureSyncResult[]> {
   const sb = createServiceClient()
   const results: GmailSignatureSyncResult[] = []
-  const targets = CRM_MAILBOXES.filter(
+  const targets = (await getCrmMailboxes()).filter(
     (m) => !onlyMailbox || m.email.toLowerCase() === onlyMailbox.toLowerCase(),
   )
   for (const mb of targets) {

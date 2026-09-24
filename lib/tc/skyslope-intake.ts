@@ -20,7 +20,9 @@
  *   3. Documents, checklist items, assignments and contacts are only ever
  *      added. "New" means new in SkySlope since the previous payload, so a row
  *      the Vault removed on purpose (the document reader drops assignments,
- *      brokers delete contacts) is never put back.
+ *      brokers delete contacts) is never put back. A checklist item's STATUS
+ *      follows rule 2 (Matt approves in SkySlope until the cutover, and that
+ *      approval must clear the Vault's review queue).
  *   4. Deal stage follows the newest cycle the way the migration derived it,
  *      and only while the Vault stage still equals the previous derivation.
  */
@@ -570,6 +572,25 @@ export function checklistActivitiesFromDetail(detail: Obj | null | undefined): S
   return out
 }
 
+/**
+ * Each activity's checklist status, only where SkySlope's word is one we know.
+ * An unknown word maps to nothing, so a status SkySlope adds later never
+ * moves a Vault item (checklistActivitiesFromDetail files it as optional for
+ * a NEW item, which is safe; for an existing item it would not be).
+ */
+export function knownActivityStatuses(detail: Obj | null | undefined): Map<number, string> {
+  const checklist = asObj(detail?.checklist)
+  const acts = Array.isArray(checklist?.activities) ? (checklist!.activities as unknown[]) : []
+  const out = new Map<number, string>()
+  for (const raw of acts) {
+    const a = asObj(raw)
+    const id = numberOrNull(a?.activityId)
+    const mapped = CHECKLIST_STATUS_MAP[String(a?.status ?? '')]
+    if (id != null && mapped) out.set(id, mapped)
+  }
+  return out
+}
+
 function pairKey(activityId: number, docKey: string): string {
   return `${activityId}|${docKey}`
 }
@@ -660,7 +681,8 @@ export type VaultCycleSnapshot = {
   fields: Partial<Record<CycleField, unknown>>
   raw: Obj
   documents: ReadonlyArray<{ id: string; sourceDocId: string | null; archived: boolean }>
-  items: ReadonlyArray<{ id: string; sourceActivityId: number | null }>
+  /** status is the Vault's checklist status; absent in a snapshot that did not read it. */
+  items: ReadonlyArray<{ id: string; sourceActivityId: number | null; status?: string | null }>
   assignments: ReadonlyArray<{ itemId: string; documentId: string }>
 }
 
@@ -674,6 +696,8 @@ export type VaultContactSnapshot = {
 export type FieldChange = { field: CycleField; from: unknown; to: unknown }
 export type FieldDrift = { field: string; vault: unknown; skyslopeBefore: unknown; skyslopeNow: unknown }
 export type AssignmentRef = { activityId: number; docKey: string }
+export type ItemStatusChange = { itemId: string; activityId: number; name: string; from: string; to: string }
+export type ItemStatusDrift = { itemId: string; activityId: number; name: string; vault: string; skyslopeBefore: string; skyslopeNow: string }
 
 export type CyclePlan = {
   guid: string
@@ -695,6 +719,14 @@ export type CyclePlan = {
   itemsToAdd: SkySlopeActivity[]
   /** Activities the previous import brought in that the Vault no longer has: not put back. */
   itemsRemovedInVault: number
+  /**
+   * Checklist status SkySlope changed on an item the Vault has not touched
+   * since the previous import: carried over (Matt reviews in SkySlope until the
+   * cutover, so an approval there must clear the Vault's review queue).
+   */
+  itemStatusUpdates: ItemStatusChange[]
+  /** SkySlope changed the status AND the Vault changed it differently: the Vault's is kept. */
+  itemStatusDrift: ItemStatusDrift[]
   assignmentsToAdd: AssignmentRef[]
   /** Assignments the previous import brought in that the Vault removed: not put back. */
   assignmentsRemovedInVault: number
@@ -743,6 +775,8 @@ export function planCycleIntake(input: {
     archivedInSkySlopeOnly: [],
     itemsToAdd: [],
     itemsRemovedInVault: 0,
+    itemStatusUpdates: [],
+    itemStatusDrift: [],
     assignmentsToAdd: [],
     assignmentsRemovedInVault: 0,
     assignmentsOnVaultArchived: [],
@@ -791,6 +825,24 @@ export function planCycleIntake(input: {
     plan.itemsToAdd.push(a)
   }
   const newActivityIds = new Set(plan.itemsToAdd.map((a) => a.activityId))
+
+  // checklist status on items both sides already have: the field rule
+  // (decideField) applied to one column. Only a snapshot that read the Vault's
+  // status takes part; an unknown SkySlope word never moves an item.
+  if (vault) {
+    const nowStatus = knownActivityStatuses(detail)
+    const beforeStatus = knownActivityStatuses(vault.raw)
+    const names = new Map(activities.map((a) => [a.activityId, a.name]))
+    for (const it of vault.items) {
+      if (it.sourceActivityId == null || it.status == null) continue
+      const now = nowStatus.get(it.sourceActivityId)
+      const before = beforeStatus.get(it.sourceActivityId)
+      if (!now || !before || now === before || it.status === now) continue
+      const name = names.get(it.sourceActivityId) ?? ''
+      if (it.status === before) plan.itemStatusUpdates.push({ itemId: it.id, activityId: it.sourceActivityId, name, from: before, to: now })
+      else plan.itemStatusDrift.push({ itemId: it.id, activityId: it.sourceActivityId, name, vault: it.status, skyslopeBefore: before, skyslopeNow: now })
+    }
+  }
 
   // assignments: new in SkySlope since the previous payload, both ends linkable
   const previousPairs = new Set(previousActivities.flatMap((a) => a.docKeys.map((k) => pairKey(a.activityId, k))))
@@ -857,6 +909,8 @@ export function cyclePlanIsEmpty(p: CyclePlan): boolean {
     !p.rawChanged &&
     !p.documentsToAdd.length &&
     !p.itemsToAdd.length &&
+    !p.itemStatusUpdates.length &&
+    !p.itemStatusDrift.length &&
     !p.assignmentsToAdd.length &&
     !p.assignmentsOnVaultArchived.length &&
     !p.contactsToAdd.length
@@ -872,6 +926,8 @@ export function describeCyclePlan(p: CyclePlan): string {
   if (p.mode === 'existing' && p.rawChanged && !p.fieldUpdates.length && !p.drift.length) bits.push(`raw refresh (${p.rawChangedKeys.slice(0, 6).join(', ')}${p.rawChangedKeys.length > 6 ? ', …' : ''})`)
   if (p.documentsToAdd.length) bits.push(`+${p.documentsToAdd.length} docs`)
   if (p.itemsToAdd.length) bits.push(`+${p.itemsToAdd.length} checklist items`)
+  if (p.itemStatusUpdates.length) bits.push(`checklist ${p.itemStatusUpdates.map((u) => `${u.name || u.activityId} ${u.from}→${u.to}`).join(', ')}`)
+  if (p.itemStatusDrift.length) bits.push(`checklist drift kept ${p.itemStatusDrift.map((d) => `${d.name || d.activityId} (vault ${d.vault}, skyslope ${d.skyslopeBefore}→${d.skyslopeNow})`).join(', ')}`)
   if (p.assignmentsToAdd.length) bits.push(`+${p.assignmentsToAdd.length} assignments`)
   if (p.contactsToAdd.length) bits.push(`+${p.contactsToAdd.length} contacts`)
   if (p.assignmentsOnVaultArchived.length) bits.push(`${p.assignmentsOnVaultArchived.length} assignment(s) on Vault-archived docs kept off`)

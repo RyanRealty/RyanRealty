@@ -2,7 +2,9 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { normalizeEmail, normalizePhone } from './resolvePersonIdentity'
 import { buildNativePersonRow } from './nativeCreate'
-import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 import { pickRoutedBroker } from '@/lib/crm/lead-routing'
 import { canonicalTagsToAdd } from '@/lib/crm/tag-canonical'
 import { reuseSourcePatch } from '@/lib/crm/lead-source'
@@ -48,7 +50,7 @@ const DEFAULT_BROKER: CrmBrokerSlug = 'matt'
 
 /** Coerce a routed slug to a known CRM broker, failing safe to the default (Matt). */
 function coerceBroker(slug: string): CrmBrokerSlug {
-  return (CRM_BROKERS as readonly string[]).includes(slug) ? (slug as CrmBrokerSlug) : DEFAULT_BROKER
+  return isActiveBrokerSlug(slug) ? (slug as CrmBrokerSlug) : DEFAULT_BROKER
 }
 
 export type EnsureNativeLeadInput = {
@@ -185,6 +187,9 @@ async function lookupPersonIdByContactPoint(
  * still return success to the visitor.
  */
 export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<EnsureNativeLeadResult> {
+  // Public lead intake — no admin session to have loaded the broker directory,
+  // and coerceBroker below must not silently reassign a new broker's lead to matt.
+  await ensureBrokerDirectory()
   const normalizedEmail = normalizeEmail(input.email)
   const normalizedPhone = normalizePhone(input.phone)
 

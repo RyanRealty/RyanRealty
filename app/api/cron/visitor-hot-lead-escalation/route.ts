@@ -37,7 +37,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { captureHotAnonymous } from '@/lib/data/crm/captureHotAnonymous'
-import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { visitorEscalateEmailEnabled } from '@/lib/crm/visitor-escalate'
 import { hasSuspectTag } from '@/lib/crm/lead-quality'
@@ -150,8 +152,10 @@ async function resolveNativePersons(sessions: HotSession[]): Promise<Map<string,
   const supabase = getServiceSupabase()
   if (!supabase) return map
 
+  // Cron — no admin session to have already warmed the broker directory.
+  await ensureBrokerDirectory()
   const coerceBroker = (slug: unknown): CrmBrokerSlug | null =>
-    typeof slug === 'string' && (CRM_BROKERS as readonly string[]).includes(slug) ? (slug as CrmBrokerSlug) : null
+    typeof slug === 'string' && isActiveBrokerSlug(slug) ? (slug as CrmBrokerSlug) : null
 
   const crmIds = [...new Set(sessions.map((s) => s.crm_person_id).filter((n): n is number => Number.isFinite(n as number)))]
   const fubIds = [

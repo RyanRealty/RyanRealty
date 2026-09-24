@@ -9,7 +9,8 @@
 
 import { NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
-import { CRM_MAILBOXES, loadEmailPersonMap, syncMailboxWindow } from '@/lib/crm/gmail'
+import { loadEmailPersonMap, syncMailboxWindow } from '@/lib/crm/gmail'
+import { getCrmMailboxes } from '@/lib/data/brokers/directory'
 import { syncGmailSignaturesIfStale } from '@/lib/crm/gmail-signature-sync'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
 
   const emailMap = await loadEmailPersonMap()
   const results = []
-  for (const mb of CRM_MAILBOXES) {
+  for (const mb of await getCrmMailboxes()) {
     if (only && mb.slug !== only) continue
     results.push(await syncMailboxWindow({ mailboxEmail: mb.email, brokerSlug: mb.slug, pageBudget, emailMap }))
   }

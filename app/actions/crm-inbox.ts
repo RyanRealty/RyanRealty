@@ -530,8 +530,8 @@ export async function getCcSelfAddressAction(): Promise<
 > {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
-  const { CRM_MAILBOXES } = await import('@/lib/crm/gmail')
-  const mailbox = CRM_MAILBOXES.find((m) => m.slug === access.brokerSlug) ?? CRM_MAILBOXES[0]
+  const { mailboxForSlug } = await import('@/lib/data/brokers/directory')
+  const mailbox = await mailboxForSlug(access.brokerSlug)
   return { ok: true, email: mailbox.email }
 }
 

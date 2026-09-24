@@ -11,6 +11,7 @@ import { acceptListingContract } from '@/app/actions/tc-listings'
 import { syncDealCalendar } from '@/lib/tc/deal-calendar'
 import { getDealById } from '@/lib/data/tc/listing-action-reads'
 import { getDealOffer, getLatestSaleCycle } from '@/lib/data/tc/listDealOffers'
+import { writeCycleTermsByPerson } from '@/lib/data/tc/cycle-term-writes'
 
 function getServiceSupabase() {
   return createServiceClient()
@@ -107,25 +108,27 @@ export async function acceptDealOffer(
   await supabase.from('tc_offers').update({ status: 'accepted', updated_at: new Date().toISOString() }).eq('id', offerId)
 
   const sale = await getLatestSaleCycle(dealId)
+  const detail = { offerId, buyer: offer.buyerName, price: offer.price }
   if (sale) {
     const buyers = Array.isArray(sale.buyers) && sale.buyers.length ? sale.buyers : [offer.buyerName]
-    await supabase
-      .from('tc_cycles')
-      .update({
+    // Typed by a person: the contract reader flags a different contract value
+    // for Matt instead of writing over it (lib/tc/terms/provenance.ts).
+    const w = await writeCycleTermsByPerson({
+      cycleId: sale.id,
+      actor: email,
+      action: 'offer_accepted',
+      detail,
+      patch: {
         sale_price: offer.price,
         escrow_closing_date: offer.closeDate,
         earnest_money: offer.earnestMoney != null ? { amount: offer.earnestMoney } : null,
         buyers,
-      })
-      .eq('id', sale.id)
+      },
+    })
+    if (!w.ok) return { ok: false, error: w.error }
+  } else {
+    await supabase.from('tc_events').insert({ deal_id: dealId, actor: email, action: 'offer_accepted', detail })
   }
-
-  await supabase.from('tc_events').insert({
-    deal_id: dealId,
-    actor: email,
-    action: 'offer_accepted',
-    detail: { offerId, buyer: offer.buyerName, price: offer.price },
-  })
   await syncDealCalendar(dealId)
   revalidatePath('/admin/closings')
   revalidatePath(`/admin/deals/${deal.property_key}`)

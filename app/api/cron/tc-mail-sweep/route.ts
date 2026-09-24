@@ -23,7 +23,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
-import { CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { getCrmMailboxes } from '@/lib/data/brokers/directory'
 import {
   autoOpenFilesFromMail,
   loadMailUniverse,
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
     // time so a slow one does not starve the next; a mailbox already finished
     // returns instantly (no Gmail calls) and costs nothing.
     const reviewAll: Array<{ mailbox: string; listed: number; reviewed: number; errors: number; finished: boolean; complete: boolean }> = []
-    for (const mb of CRM_MAILBOXES) {
+    for (const mb of await getCrmMailboxes()) {
       if (Date.now() > deadline) break
       const res = await reviewMailbox({ mailbox: mb.email, universe, deadline, sb })
       reviewAll.push({ mailbox: mb.email, listed: res.listed, reviewed: res.reviewed, errors: res.errors, finished: res.finished, complete: res.complete })

@@ -81,9 +81,10 @@ export async function sendTemplateSelfTestAction(
     const renderedSubject = renderCrmMerge(rawSubject, samplePerson, mergeCtx)
       .replace(/%([A-Za-z][A-Za-z0-9_]*)%/g, '[$1]')
 
-    const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
+    const { sendCrmEmail } = await import('@/lib/crm/gmail')
+    const { mailboxForSlug } = await import('@/lib/data/brokers/directory')
     const slug = access.brokerSlug ?? 'matt'
-    const mailbox = CRM_MAILBOXES.find((m) => m.slug === slug) ?? CRM_MAILBOXES[0]
+    const mailbox = await mailboxForSlug(slug)
 
     const result = await sendCrmEmail({
       fromMailbox: mailbox.email,

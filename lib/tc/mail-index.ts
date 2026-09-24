@@ -19,7 +19,9 @@ import 'server-only'
 import { createHash } from 'node:crypto'
 import type { gmail_v1 } from 'googleapis'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_MAILBOXES, getGmailFor } from '@/lib/crm/gmail'
+import { getGmailFor } from '@/lib/crm/gmail'
+import { brokerByEmail } from '@/lib/brokers/directory'
+import { ensureBrokerDirectory, getCrmMailboxes } from '@/lib/data/brokers/directory'
 import { getSubdivisionNamesByMlsNumbers } from '@/lib/data/tc/deal-subdivisions'
 import {
   MAIL_RULES_VERSION,
@@ -1090,7 +1092,7 @@ export async function sweepQuery(input: {
   indexed?: typeof indexedGmailIds
 }): Promise<SweepResult> {
   const sb = input.sb ?? createServiceClient()
-  const mailboxes = input.mailboxes ?? CRM_MAILBOXES
+  const mailboxes = input.mailboxes ?? (await getCrmMailboxes())
   const max = input.maxPerMailbox ?? 2000
   const gmailFor = input.gmailFor ?? ((email: string) => getGmailFor(email, READONLY))
   const index = input.index ?? indexGmailMessage
@@ -1256,7 +1258,8 @@ export async function reviewMailbox(input: {
   }
 
   const universe = input.universe ?? (await loadMailUniverse(sb))
-  const brokerSlug = CRM_MAILBOXES.find((m) => m.email === input.mailbox)?.slug ?? 'matt'
+  await ensureBrokerDirectory()
+  const brokerSlug = brokerByEmail(input.mailbox)?.slug ?? 'matt'
   const late = () => (input.deadline != null && Date.now() > input.deadline) || (input.limit != null && processedThisRun >= input.limit)
   let listed = Number(cursorRow?.listed ?? 0)
   let reviewed = Number(cursorRow?.reviewed ?? 0)
@@ -1538,6 +1541,7 @@ export async function refileThreadSiblings(input: { universe?: MailUniverse; dea
       if (r.thread_id && String(r.reviewed_at) < (latest.get(String(r.thread_id)) ?? '')) todo.push({ mailbox: String(r.mailbox), gmail_id: String(r.gmail_id) })
     }
   }
+  await ensureBrokerDirectory()
   const out = { candidates: todo.length, checked: 0, filed: 0, complete: true }
   const work = todo.slice(0, input.limit ?? todo.length)
   if (work.length < todo.length) out.complete = false
@@ -1551,7 +1555,7 @@ export async function refileThreadSiblings(input: { universe?: MailUniverse; dea
       const ref = work[next++]
       const gmail = getGmailFor(ref.mailbox, READONLY)
       if (!gmail) continue
-      const brokerSlug = CRM_MAILBOXES.find((m) => m.email === ref.mailbox)?.slug ?? 'matt'
+      const brokerSlug = brokerByEmail(ref.mailbox)?.slug ?? 'matt'
       out.checked++
       const r = await indexGmailMessage({ gmail, mailbox: ref.mailbox, brokerSlug, gmailId: ref.gmail_id, universe, sb })
       if (r.status === 'filed') out.filed++
@@ -1782,12 +1786,13 @@ export async function retryReviewErrors(input: { deadline?: number; sb?: SB; mod
   const sb = input.sb ?? createServiceClient()
   const universe = await loadMailUniverse(sb)
   const { data } = await sb.from('tc_mail_reviews').select('mailbox, gmail_id').eq('status', 'error').order('reviewed_at', { ascending: true }).limit(500)
+  await ensureBrokerDirectory()
   const res = { retried: 0, fixed: 0, stillErrors: 0 }
   for (const r of data ?? []) {
     if (input.deadline && Date.now() > input.deadline) break
     const gmail = getGmailFor(String(r.mailbox), READONLY)
     if (!gmail) continue
-    const brokerSlug = CRM_MAILBOXES.find((m) => m.email === r.mailbox)?.slug ?? 'matt'
+    const brokerSlug = brokerByEmail(r.mailbox)?.slug ?? 'matt'
     const out = await indexGmailMessage({ gmail, mailbox: String(r.mailbox), brokerSlug, gmailId: String(r.gmail_id), universe, sb, modelStage: input.modelStage })
     res.retried++
     if (out.status === 'error') res.stillErrors++

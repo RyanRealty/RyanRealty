@@ -13,7 +13,8 @@
 import { formatDate } from '@/lib/format/date'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { mergeTagOptions } from '@/lib/data/crm/getPersonDetailExtras'
-import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { CRM_STAGES } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import type { SidebarData } from '@/components/admin/crm/person-detail/PersonSidebar'
 import type { TimelineItem } from '@/components/admin/crm/person-detail/PersonCenterColumn'
 
@@ -234,7 +235,7 @@ export function buildSidebarData(input: {
     stage: (p.stage ?? null) as SidebarData['stage'],
     stageOptions: [...CRM_STAGES],
     assignedBroker: (p.assigned_broker ?? null) as SidebarData['assignedBroker'],
-    brokerOptions: CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] })),
+    brokerOptions: activeBrokerSlugs().map((b) => ({ value: b, label: brokerDisplayName(b) })),
     pondOptions: input.pondOptions,
     pondId: (p.pond_id ?? null) as number | null,
     actingBroker: input.actingBroker,

@@ -13,6 +13,8 @@ export type SignOffItem = {
   name: string
   docs: Array<{ id: string; name: string; thumbUrl: string | null }>
   deadline: ReviewDeadline | null
+  /** tc_cycles.source: 'skyslope' files are reviewed in SkySlope until the cutover. */
+  cycleSource: string | null
 }
 
 export type SignOffDeal = {
@@ -49,7 +51,7 @@ export async function getPrincipalSignOffQueue(): Promise<SignOffQueue> {
   const dealById = new Map((deals as DbRow[]).map((d) => [d.id, d]))
   const { data: cycles } = await supabase
     .from('tc_cycles')
-    .select('id, deal_id, kind, contract_acceptance_date')
+    .select('id, deal_id, kind, source, contract_acceptance_date')
     .in('deal_id', Array.from(dealById.keys()))
   const cycleById = new Map((cycles ?? []).map((c: DbRow) => [c.id, c]))
   const cycleIds = (cycles ?? []).map((c: DbRow) => c.id)
@@ -124,6 +126,7 @@ export async function getPrincipalSignOffQueue(): Promise<SignOffQueue> {
         cyc.contract_acceptance_date == null ? null : String(cyc.contract_acceptance_date),
         now,
       ),
+      cycleSource: cyc.source == null ? null : String(cyc.source),
     })
   }
 

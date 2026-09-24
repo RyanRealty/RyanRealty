@@ -22,7 +22,7 @@
  *
  * Carried over verbatim: requireAdminPage('tasks.use'), the getCrmAccess guard
  * + redirect, parseView and its future→upcoming alias, the §1.4.3 agent rule
- * (superuser-only, allowlisted against CRM_BROKERS) and the brokerScope it
+ * (superuser-only, allowlisted against the active broker directory) and the brokerScope it
  * derives, the §1.1 default landing (Overdue when overdue > 0, else Today, with
  * the second getTaskQueue read that switch requires), the completed-view
  * substitution, needCompleted, zonedDateKey(now) for todayKey, the crmActive
@@ -72,7 +72,7 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { getTaskQueue, getCrmTaskTypes, type TaskQueueView } from '@/lib/data/crm/getTaskQueue'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { zonedDateKey } from '@/lib/format/date'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { isActiveBrokerSlug, brokerDisplayName } from '@/lib/brokers/directory'
 import { VerdictLine } from '@/components/admin/v2'
 import TasksView, { type TaskActions, type TasksDesktopView } from '@/app/admin/(protected)/crm/tasks/_components/TasksView'
 import MobileTasksScreen from '@/app/admin/(protected)/crm/tasks/_components/mobile/MobileTasksScreen'
@@ -103,7 +103,7 @@ export default async function CrmTasksPage({
   const showCompleted = sp.completed === '1'
 
   // §1.4.3 — agent scope. Default "Me"; superuser may widen to All / a broker.
-  const agent = isSuperuser && sp.agent && (sp.agent === 'all' || (CRM_BROKERS as readonly string[]).includes(sp.agent))
+  const agent = isSuperuser && sp.agent && (sp.agent === 'all' || isActiveBrokerSlug(sp.agent))
     ? sp.agent
     : 'me'
   const brokerScope = isSuperuser
@@ -199,7 +199,7 @@ export default async function CrmTasksPage({
   // passed to every read above, so this cannot name a filter the rows do not
   // carry. null = a superuser who widened to All.
   const scopeLabel = brokerScope
-    ? CRM_BROKER_DISPLAY[brokerScope as keyof typeof CRM_BROKER_DISPLAY] ?? brokerScope
+    ? brokerDisplayName(brokerScope)
     : null
 
   return (

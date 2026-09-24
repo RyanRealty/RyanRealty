@@ -168,6 +168,12 @@ function scanSource(rel, src) {
 
 // ─── CHECK 0 · prove the detector on fixtures before scanning ───────────────
 
+// The "not a stat table" fixtures name a table that can never be DAL-covered.
+// They used to name admin_roles, and went red the day a DAL module started
+// reading admin_roles (lib/data/brokers/workspace-sync.ts): the detector was
+// right, the fixture's premise had expired.
+const NOT_A_DAL_TABLE = 'zz_fixture_not_a_dal_table'
+
 const FIXTURES = [
   {
     name: 'supabase count on a stat table',
@@ -178,7 +184,7 @@ const FIXTURES = [
   {
     name: 'supabase count on a table the DAL does not cover',
     file: 'f.mjs',
-    src: "const { count } = await sb.from('admin_roles').select('*', { count: 'exact', head: true })",
+    src: `const { count } = await sb.from('${NOT_A_DAL_TABLE}').select('*', { count: 'exact', head: true })`,
     expect: false,
   },
   {
@@ -222,7 +228,7 @@ const FIXTURES = [
     file: 'f.mjs',
     src:
       "await sb.from('listings').select('ListingKey')\n" +
-      "const { count } = await sb.from('admin_roles').select('*', { count: 'exact', head: true })",
+      `const { count } = await sb.from('${NOT_A_DAL_TABLE}').select('*', { count: 'exact', head: true })`,
     expect: false,
   },
 ]

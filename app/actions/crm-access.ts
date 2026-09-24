@@ -15,6 +15,7 @@ import { cache } from 'react'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { resolveCrmSlugForAccess } from '@/lib/data/brokers/resolveCrmSlug'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 
 export type CrmAccess = {
   email: string
@@ -27,7 +28,9 @@ export type CrmAccess = {
 const resolveCrmAccess = cache(async (): Promise<CrmAccess | null> => {
   const session = await getSession()
   const email = session?.user?.email?.trim().toLowerCase() ?? null
-  const role = await getAdminRoleForEmail(email)
+  // Load the broker directory with the access check, so every CRM page and
+  // action knows a broker added from Google Workspace (lib/brokers/directory.ts).
+  const [role] = await Promise.all([getAdminRoleForEmail(email), ensureBrokerDirectory()])
   if (!role || !email) return null
   return {
     email,

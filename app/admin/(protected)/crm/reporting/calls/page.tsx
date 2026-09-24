@@ -11,7 +11,7 @@ import type { CSSProperties } from 'react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getCallsReport, type CallsRow, type CallsTotals } from '@/lib/data/crm/getCallsReport'
-import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import BrokerDateFilters from '../_components/BrokerDateFilters'
 import { ReportingSubNav } from '../_components/ReportingSubNav'
@@ -218,9 +218,9 @@ export default async function CallsReportPage({
           <BrokerDateFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
-            brokers={CRM_BROKERS.map((slug) => ({
+            brokers={activeBrokerSlugs().map((slug) => ({
               slug,
-              label: CRM_BROKER_DISPLAY[slug],
+              label: brokerDisplayName(slug),
             }))}
           />
         ) : null}

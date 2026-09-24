@@ -27,7 +27,8 @@ import {
   type CrmActionResult,
   type CrmAccess,
 } from '@/app/actions/crm'
-import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
 import { scopeBroker } from '@/lib/crm/scope'
 import { canActOnTask, addDaysToDue } from '@/lib/crm/task-lifecycle'
 
@@ -123,7 +124,7 @@ export async function reassignCrmTaskAction(id: number, broker: string): Promise
     return { ok: false, error: 'Not authorized. Only an owner can reassign a task.' }
   }
   const slug = String(broker ?? '').trim() as CrmBrokerSlug
-  if (!(CRM_BROKERS as readonly string[]).includes(slug)) {
+  if (!isActiveBrokerSlug(slug)) {
     return { ok: false, error: 'Broker required' }
   }
   const sb = createServiceClient()
