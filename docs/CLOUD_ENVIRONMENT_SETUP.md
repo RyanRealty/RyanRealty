@@ -187,7 +187,9 @@ hook rather than trimming what it installs.
 
 **Observed 2026-09-24: the snapshot had none of it.** A cloud session booted
 with no `node_modules`, no brand fonts, no ffmpeg, no git hooks and no pinned
-Chromium, which is everything this script installs. Anthropic's docs
+Chromium, which is everything this script installs. `apt-get update`, the
+script's first step, had never run either: the package lists in
+`/var/lib/apt/lists` date from the image build (2026-03-31). Anthropic's docs
 (code.claude.com/docs/en/cloud-environments) say the setup script runs "before
 Claude Code launches" but document neither its working directory nor whether
 the repository is cloned yet, so the relative `bash scripts/cloud-setup.sh ||
@@ -208,9 +210,12 @@ can install `node_modules`.
 runs at the start of every cloud session, before the first prompt:
 `npm ci` when `node_modules` does not match `package-lock.json` (it also
 installs the git hooks through husky's `prepare`), `npx husky` when the git
-hooks are missing, and the brand-font copy when Amboqia is not registered. When
-all three are current it prints nothing and takes about 25 ms; a bare box takes
-about 65 s (measured 2026-09-24). `cloud-setup.sh` writes the same
+hooks are missing, and the brand-font copy when Amboqia is not registered. It
+also says, in one line, when Playwright's pinned browser is missing and how to
+launch anyway. When all of it is current it prints nothing and takes a fraction
+of a second; a bare box takes about 65 s (measured 2026-09-24). With the
+dependencies in place the CLAUDE.md session boot (`npx tsx
+scripts/loop-brief.ts`) ran in 39 s; without them it cannot run. `cloud-setup.sh` writes the same
 `node_modules/.package-lock.sha256` marker, so the hook does not repeat an
 install the setup script already made for the same lockfile. It needs its
 `SessionStart` entry in `.claude/settings.json` (section 6).
@@ -284,6 +289,15 @@ GitHub operations. Add `apt install -y gh` to the setup script if a session need
 `gh release` / `gh workflow run`; the built-in GitHub tools cover issues and PRs
 without it.
 
+**Commits run only the tests they touch (2026-09-24).** The full unit suite
+took 320 s per commit on a cloud session (4 vCPU). `.husky/pre-commit` now runs
+`test:unit -- --changed`: the test files that import what the commit changes,
+or everything when `package.json` or a vitest/vite config changes. For a
+two-file `lib/` change that was 176 test files in 116 s; for a docs change,
+none. The full suite still runs on every PR and every push to main in GitHub CI,
+and `npm run push` runs the path-scoped set before any ref moves.
+`PRECOMMIT_UNIT_FULL=1 git commit ...` runs the whole suite locally.
+
 **Fetching production from the VM (checked 2026-09-24).** ryan-realty.com
 answers 403 to curl's default user agent, and an HTTP/2 tunnel through the agent
 proxy can drop mid-exchange. `curl --http1.1 -A '<a browser user agent>'` gets
@@ -330,14 +344,22 @@ reopen it.
 `mcp__Vibe_Prospecting__*`, `mcp__Claude_Docs__*`,
 `mcp__Cloudflare_Developer_Platform__*` and `mcp__Sentry__*` (ready for when
 it is connected); `ask` holds the tools in the table; `deny` keeps
-`mcp__Supabase__execute_sql`; and `hooks.SessionStart` runs
-`.claude/hooks/session-start.sh` (section 3). **An agent cannot write this
-file's permissions:** the auto-mode classifier refuses an edit that widens the
-agent's own permissions or registers its own hooks. Matt approves the change
-and the agent applies it only on his explicit go-ahead. Cloud sessions name
-connector tools `mcp__<Server>__<tool>`; a local CLI that fetches claude.ai
-connectors itself names them `mcp__claude_ai_<Server>__<tool>`, which these
-rules do not cover.
+`execute_sql`; and `hooks.SessionStart` runs `.claude/hooks/session-start.sh`
+(section 3). **An agent cannot write this file's permissions:** the auto-mode
+classifier refuses an edit that widens the agent's own permissions or registers
+its own hooks. Matt approves the change and the agent applies it only on his
+explicit go-ahead.
+
+**`ask` and `deny` use globs of the form `mcp__*<Server>__<tool>`.** Cloud
+sessions name connector tools `mcp__<Server>__<tool>`; a session where Claude
+Code fetches claude.ai connectors itself names them
+`mcp__claude_ai_<Server>__<tool>` (code.claude.com/docs/en/permissions), and
+the desktop app's local sessions do not enforce the claude.ai per-tool settings
+(layer 1) at all (code.claude.com/docs/en/mcp). An exact cloud name such as
+`mcp__Supabase__execute_sql` therefore left the SQL deny open outside the
+cloud; `mcp__*Supabase__execute_sql` matches both. Allow rules cannot take a glob in
+the server segment, so `allow` covers cloud names only, and local connector
+calls fall back to the permission mode.
 
 **Adding a connector:** in the same change, add `mcp__<Server>__*` to `allow`
 and put its send, publish and spend tools in `ask`.

@@ -16,6 +16,9 @@ connectors used in cloud sessions).
   so Matt's one tap is the approval.
 - `mcp__Supabase__execute_sql` stays DENIED (`feedback_sql_access_2026-09-24.md`). Always-allow
   does not reopen it.
+- Write `ask` and `deny` rules as `mcp__*<Server>__<tool>` globs. Sessions that fetch claude.ai
+  connectors themselves name tools `mcp__claude_ai_<Server>__<tool>`, so an exact cloud name
+  leaves the rule open there.
 - An agent cannot write its own permission rules: the auto-mode classifier refuses an edit to
   `.claude/settings.json` that widens permissions or registers hooks ("Self-Modification", seen
   2026-09-24). Put the exact diff in front of Matt and apply it only on his explicit go-ahead.

@@ -12,9 +12,10 @@
 # on the setup script having run.
 #
 # Remote sessions only. Idempotent: when node_modules matches package-lock.json,
-# the hooks are wired and the fonts are registered, it prints nothing and costs
-# about a second. Claude Code adds this hook's stdout to the session context,
-# so it prints one line at most and sends npm's output to a log file.
+# the hooks are wired, the fonts are registered and Playwright's pinned browser
+# is present, it prints nothing and costs well under a second. Claude Code adds
+# this hook's stdout to the session context, so it prints one line at most and
+# sends npm's output to a log file.
 set -uo pipefail
 
 [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] || exit 0
@@ -24,7 +25,7 @@ LOG="${TMPDIR:-/tmp}/rr-session-start.log"
 # Written after a successful `npm ci` here and in scripts/cloud-setup.sh, so a
 # snapshot the setup script already installed is recognised as current.
 MARKER=node_modules/.package-lock.sha256
-did=()
+notes=()
 
 # 1. Node dependencies. `npm ci` also runs `prepare` (husky), which installs
 #    the git hooks. PUPPETEER_SKIP_DOWNLOAD mirrors scripts/cloud-setup.sh.
@@ -34,7 +35,7 @@ if [ "$want" != "$have" ]; then
   t0=$SECONDS
   if PUPPETEER_SKIP_DOWNLOAD=1 npm ci --no-audit --no-fund >"$LOG" 2>&1; then
     echo "$want" >"$MARKER"
-    did+=("installed node dependencies ($((SECONDS - t0))s)")
+    notes+=("installed node dependencies ($((SECONDS - t0))s)")
   else
     echo "session-start: npm ci FAILED, see $LOG. Run npm ci before tsx, tests or gates."
     exit 0
@@ -45,9 +46,9 @@ fi
 #    so a restored snapshot can carry node_modules without either.
 if [ "$(git config --get core.hooksPath)" != ".husky/_" ] || [ ! -f .husky/_/pre-push ]; then
   if npx --no-install husky >>"$LOG" 2>&1; then
-    did+=("installed git hooks")
+    notes+=("installed git hooks")
   else
-    did+=("git hook install FAILED, see $LOG")
+    notes+=("git hook install FAILED, see $LOG")
   fi
 fi
 
@@ -61,12 +62,30 @@ if [ -d "$FONT_SRC" ] && [ "$(fc-list 2>/dev/null | grep -ci amboqia)" = "0" ]; 
   mkdir -p "$FONT_DST"
   cp -f "$FONT_SRC"/*.otf "$FONT_SRC"/*.ttf "$FONT_DST"/ 2>/dev/null
   fc-cache -f "$FONT_DST" >/dev/null 2>&1
-  did+=("registered brand fonts")
+  notes+=("registered brand fonts")
 fi
 
-if [ ${#did[@]} -gt 0 ]; then
-  msg="${did[0]}"
-  for d in "${did[@]:1}"; do msg="$msg; $d"; done
+# 4. Playwright's pinned browser. The image's browser cache can lag the repo's
+#    @playwright/test pin (2026-09-24: the pin wants build 1208, the image has
+#    1194), and then a bare chromium.launch() fails. Say so here instead of
+#    letting the first screenshot script find out; do not download mid-session.
+PW_JSON=node_modules/playwright-core/browsers.json
+PW_DIR="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+if [ -f "$PW_JSON" ]; then
+  rev="$(node -p "require('./$PW_JSON').browsers.find((b) => b.name === 'chromium-headless-shell').revision" 2>/dev/null)"
+  if [ -n "$rev" ] && [ ! -d "$PW_DIR/chromium_headless_shell-$rev" ]; then
+    if [ -e "$PW_DIR/chromium" ]; then
+      fix="launch with executablePath: '$PW_DIR/chromium'"
+    else
+      fix="run npm run setup:browsers"
+    fi
+    notes+=("Playwright's pinned Chromium $rev is not installed, so a bare chromium.launch() fails: $fix (docs/CLOUD_ENVIRONMENT_SETUP.md section 3)")
+  fi
+fi
+
+if [ ${#notes[@]} -gt 0 ]; then
+  msg="${notes[0]}"
+  for n in "${notes[@]:1}"; do msg="$msg; $n"; done
   echo "session-start: $msg."
 fi
 exit 0
