@@ -43,7 +43,7 @@ Chrome: **Homes · Places · Market · Sell · About**. Saved is an account icon
 
 | Menu | Goes to | Children that stay | Children that fold |
 |---|---|---|---|
-| Homes | `/homes-for-sale` (one map+list; opens on the regional list, map one tap away) | Open houses, price drops, our listings, sold as a **filter**, invest | Luxury as a filter of search: the chrome links the indexable preset `/homes-for-sale/bend/luxury`, and `/luxury-homes-bend` 301s there. Compare as a mode of search. Video tours stay as `/videos` until they live on the listing. Listing alerts: on-page Sheet, not `/lp/…` |
+| Homes | `/homes-for-sale` (one map+list; opens split on desktop and on the list on phones with the map one tap away, framed on all of Central Oregon, newest first: Matt 2026-09-23, `lib/search/search-opening.ts`) | Open houses, price drops, our listings, sold as a **filter**, invest | Luxury as a filter of search: the chrome links the indexable preset `/homes-for-sale/bend/luxury`, and `/luxury-homes-bend` 301s there. Compare as a mode of search. Video tours stay as `/videos` until they live on the listing. Listing alerts: on-page Sheet, not `/lp/…` |
 | Places | `/cities` | Cities, neighborhoods, communities, subdivisions, Tetherow and the other resorts, schools, parks, trails, events, golf | `/area-guides` → indexes. Venues can live under events. |
 | Market | `/housing-market` | How we get our numbers, months of supply (the definition URL stays, see Fold), blog, FAQ | Activity **folds into** the market page as a section. Reports index stays if it is real published reports. Calculators: payment lives on the listing; rental/appreciation are linked from `/invest`. |
 | Sell | `/sell` | Value my home (the field), written valuation, our listings | `/home-valuation`, `/lp/seller-home-value`, `/lp/sell-your-home` → `/sell`. FSBO / expired → `/sell/…` |
@@ -71,6 +71,7 @@ Content is the point. **URLs** are what we cut.
 | Place pages | `/cities/[city]`, `/cities/[city]/[hood]`, `/communities/[slug]`, `/subdivisions/[slug]`, `/zip/[zip]` | The landing pages. Spec in PLACE_PAGES.md. |
 | Open houses / price drops | `/open-houses`, `/price-drops` | Modes of Homes. Same house row as search. |
 | Our listings | `/our-homes` | Broker inventory. |
+| Commercial space for lease | `/commercial-space-for-lease` | Every active commercial lease (MLS G) in Central Oregon, grouped by town, each rent with its unit or "Lease rate not published" (Matt 2026-09-23). A lease is not for sale, so it is never in Homes or a for-sale count. No menu slot: every place page's "Commercial space for lease" section links here, and the sitemap lists it. Unit rule: [`PLACE_PAGES.md`](PLACE_PAGES.md). |
 | Invest | `/invest` | Income property. Honest that Bend often does not cash-flow on LTR. |
 | Market | `/housing-market`, `/housing-market/central-oregon`, `/housing-market/[city]`, `/how-we-get-our-numbers` | One knowledge engine. |
 | Reports | `/housing-market/reports` + published slugs | Only real reports. |

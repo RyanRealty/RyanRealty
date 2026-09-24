@@ -86,3 +86,40 @@ describe('atlasDotsFromTiles', () => {
     expect(dots).toHaveLength(0)
   })
 })
+
+describe('atlasLeaseKeysFromTiles', () => {
+  const base = {
+    listNumber: '220999001',
+    listPrice: 1.3,
+    closePrice: null,
+    closeDate: null,
+    onMarketDate: '2026-09-01T00:00:00Z',
+    modifiedAt: null,
+    lat: 44.06,
+    lng: -121.3,
+    city: 'Bend',
+    subdivisionName: null,
+    propertySubType: null,
+    streetNumber: '671',
+    streetName: 'Greenwood',
+    boundaryCity: 'Bend',
+    boundaryNeighborhood: null,
+  }
+
+  it('hands over the active leases in scope, each once, and nothing else', async () => {
+    // 671 Greenwood Avenue, Bend: two of its three leases carry no subdivision
+    // name, so a plat page finds them only inside its recorded footprint.
+    const { atlasLeaseKeysFromTiles, atlasDotsFromTiles } = await import('./build-place-atlas')
+    const tiles = [
+      { ...base, listingKey: 'lease-1', status: 'Active', propertyType: 'G' },
+      { ...base, listingKey: 'lease-2', status: 'Active Under Contract', propertyType: 'G' },
+      { ...base, listingKey: 'lease-1', status: 'Active', propertyType: 'G' },
+      { ...base, listingKey: 'lease-closed', status: 'Closed', propertyType: 'G', closeDate: '2026-09-10' },
+      { ...base, listingKey: 'lease-pending', status: 'Pending', propertyType: 'G' },
+      { ...base, listingKey: 'house-1', status: 'Active', propertyType: 'A', listPrice: 650_000 },
+    ] as Parameters<typeof atlasLeaseKeysFromTiles>[0]
+    expect(atlasLeaseKeysFromTiles(tiles)).toEqual(['lease-1', 'lease-2'])
+    // ...and the map still draws none of them.
+    expect(atlasDotsFromTiles(tiles, NOW).map((d) => d.k)).toEqual(['house-1'])
+  })
+})

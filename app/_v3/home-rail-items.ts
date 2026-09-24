@@ -43,6 +43,12 @@ export type HomeRailCard = {
   tourUrl: string | null
   tourLabel: string
   statusLabel: string | null
+  /**
+   * A commercial lease's "Lease Rate Options" unit, carried from the place
+   * row. Only a place page's lease section sets it; the homepage shelves never
+   * hold a lease (isPhotographedPriced drops them).
+   */
+  leaseRateOption?: string | null
 }
 
 const BEND_AREA = new Set(
@@ -215,6 +221,7 @@ export function railCardFromListingRow(row: V3ListingRowData): HomeRailCard {
     tourUrl: row.tourUrl?.trim() || null,
     tourLabel: '3D Walkthrough',
     statusLabel: row.statusLabel ?? null,
+    ...(row.leaseRateOption !== undefined ? { leaseRateOption: row.leaseRateOption } : {}),
   }
 }
 

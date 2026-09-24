@@ -56,6 +56,8 @@ const ROOTS = [
   // the share captions a broker posts publicly.
   'components/site/v3/V3DogFloater.client.tsx',
   'lib/marketing-brain/deliverable-share.ts',
+  // Commercial space for lease (Matt 2026-09-23): the page and its copy.
+  'app/commercial-space-for-lease',
 ]
 
 /** JSON the visitor can read; not walked as TypeScript. */

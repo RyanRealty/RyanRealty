@@ -46,6 +46,50 @@ export const BEND_DEFAULT_BOUNDS = {
   north: 44.25,
 } as const
 
+/**
+ * The opening camera of the bare /homes-for-sale split view: all of Central
+ * Oregon (Matt 2026-09-23). A camera, not a filter. The regional list and pins
+ * are the service-area population (lib/search/search-opening.ts), so a home just
+ * outside this box still counts and still pins; the box only decides where the
+ * map opens.
+ *
+ * DERIVED, not typed from memory. It is the union of the recorded `boundaries`
+ * polygons of every place the site serves, read 2026-09-23 through the
+ * boundary_geojson RPC that getBoundaryGeoJSON (lib/data) wraps, and cross-read
+ * with one audit query on the same rows (the same 11 city rows came back):
+ *
+ *   city (TIGER/Line): bend, redmond, sisters, sunriver, la-pine, madras,
+ *     prineville, culver, terrebonne, powell-butte (SITE_CITY_SLUGS) + tumalo
+ *   neighborhood (resort registry, data/resort-communities.json): tetherow,
+ *     broken-top, eagle-crest, pronghorn, caldera-springs, sunriver, awbrey-glen,
+ *     northwest-crossing, crosswater, black-butte-ranch, brasada-ranch,
+ *     widgi-creek, vandevert-ranch, three-rivers
+ *
+ * 25 polygons. Union: west -121.6758 (Black Butte Ranch), south 43.6597
+ * (La Pine), east -120.8019 (Prineville), north 44.6828 (Madras). The registry
+ * places with no polygon row (Crooked River Ranch, Mt Bachelor Village, Inn of
+ * the 7th Mountain, River's Edge, Mountain High; Camp Sherman) sit inside it by
+ * their registry centers.
+ *
+ * PADDING 0.10 degrees on every side. The recorded polygons are city limits,
+ * and the MLS files rural homes under the nearest city (rural Prineville,
+ * La Pine, Madras). Measured the same day through searchListingsAllCount
+ * against the 3,282 active service-area homes: the bare union frames 3,036
+ * (92.5%), +0.05 frames 3,160 (96.3%), +0.10 frames 3,220 (98.1%, 2
+ * out-of-area homes inside), +0.15 frames 3,251 (99.1%, 5), +0.20 frames 3,254
+ * (99.1%, 23). The padding only decides the framing, because the population is
+ * not cut to the box, so the modest 0.10 opens tight on the towns and still
+ * holds 98% of the homes; the far rural edges (Mitchell, Paulina, Post, east
+ * Prineville) stay in the count and the list, the camera just opens a little
+ * inside them.
+ */
+export const CENTRAL_OREGON_BOUNDS = {
+  west: -121.7758,
+  south: 43.5597,
+  east: -120.7019,
+  north: 44.7828,
+} as const
+
 /** Icon spec for listing marker (small circle, teal, white stroke). Same on every map. Call when google.maps is loaded. */
 export function getListingMarkerIcon(opts?: { scale?: number; hover?: boolean }): {
   path: number

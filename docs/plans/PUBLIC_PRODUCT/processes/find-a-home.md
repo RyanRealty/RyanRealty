@@ -154,10 +154,12 @@ mount on every search/geo surface (`components/tracking/TrackSearchView.tsx:12-2
 
 ## 6. Decision points
 
-- **View branch** (`?view=` split | list | map): the bare URL opens on the regional list since
-  2026-09-23 (UXLIVE-4; `DEFAULT_VIEW` in `app/search/page.tsx`), and split / map are the
-  app-frame views one tap away; list keeps document flow so the MLS-reciprocity footer stays
-  reachable.
+- **View branch** (`?view=` split | list | map): the bare URL opens the split app frame on
+  desktop and its list pane on phones (map one tap away), framed on all of Central Oregon,
+  since Matt's call of 2026-09-23 (`lib/search/search-opening.ts`: `DEFAULT_SEARCH_VIEW`,
+  `phoneOpeningPane`, `isRegionalSearchFrame`; it replaced UXLIVE-4's list default). The
+  regional frame counts the service-area set, not the map viewport. `?view=list` keeps document
+  flow so the MLS-reciprocity footer stays reachable; `?view=split` opens phones on the map.
 - **Signed-in vs guest capture**: guests get the alert-capture strip; signed-in users get
   save-search instead (`app/search/page.tsx:392-401`; `components/search/SearchAlertCapture.tsx:24-27`).
 - **Drawn shape supersedes place pin**: a draw (or `?shapes=`/`?poly=` on load) strips the geo
