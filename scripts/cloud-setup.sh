@@ -89,6 +89,12 @@ else
   export PUPPETEER_SKIP_DOWNLOAD=1
   if [ -f package-lock.json ]; then
     npm ci --no-audit --no-fund 2>&1 | tail -3
+    # The marker tells .claude/hooks/session-start.sh this tree is current, so
+    # the first session on a fresh snapshot does not run `npm ci` a second time.
+    # PIPESTATUS, not the pipeline status: only a clean `npm ci` may write it.
+    if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+      sha256sum package-lock.json | cut -d' ' -f1 > node_modules/.package-lock.sha256
+    fi
   else
     npm install --no-audit --no-fund 2>&1 | tail -3
   fi

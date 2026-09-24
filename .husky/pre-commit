@@ -25,4 +25,16 @@ npm run --silent ci:shot-weight
 # assertion failures). Integration tests still run: `npm run push` builds and
 # gates before any ref moves, and CI runs the full suite on GitHub runners.
 # Commit fast, verify hard at the boundary that actually ships.
-npm run test:unit
+#
+# Scoped to what this commit touches (2026-09-24). The full unit suite took
+# 320 s per commit on a 4-vCPU cloud session, and it runs anyway on every PR
+# and every push to main (.github/workflows/ci.yml); `npm run push` runs the
+# same path-scoped set before any ref moves (docs/DEVELOPMENT_PROCESS.md).
+# `--changed` with no base means staged plus unstaged changes, and vitest
+# reruns everything when package.json or a vitest/vite config changes.
+# PRECOMMIT_UNIT_FULL=1 runs the whole suite.
+if [ "${PRECOMMIT_UNIT_FULL:-0}" = "1" ]; then
+  npm run test:unit
+else
+  npm run test:unit -- --changed --passWithNoTests
+fi

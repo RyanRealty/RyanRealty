@@ -65,6 +65,10 @@ were retired 2026-07-25. Dead references remain in the tree (~212 FUB, ~54
 Zillow) but nothing should be calling them — if a session hits a network block
 on either, that is a bug to fix, not a domain to add.
 
+**Observed 2026-09-24:** hosts outside this list (`example.com`,
+`api.spotify.com`) were reachable, so the environment's current access level
+is broader than this list. Nothing the app calls was blocked.
+
 ## 2. Environment variables
 
 The **Environment variables** field takes `.env` format, one `KEY=value` per
@@ -97,6 +101,32 @@ variables and the setup script are stored in the environment configuration and
 are **visible to anyone who can edit that environment**. This blob is the whole
 credential surface — MLS, Supabase service role, Twilio, Meta, Google. Treat
 edit access to the environment as equivalent to handing over `.env.local`.
+
+**One line per variable, no exceptions (found 2026-09-24).** The field reads
+each line as its own variable. `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` had been
+pasted as a multi-line PEM, so the key body became 26 stray variables named
+after the key's own lines, plus one named `-----END PRIVATE KEY-----`, and the
+variable itself holds no usable key.
+Every service-account caller in a cloud session (GA4, Search Console, Calendar,
+Drive ingest, Postmaster, the Gmail readers and drafts; `grep -rl
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY lib`) therefore cannot authenticate. The fix:
+
+1. Delete the stray lines from the field (they start `MIIE`, `-----END`, and
+   base64 text; none is a real variable name).
+2. Re-paste the key on ONE line with a literal `\n` where each line break was:
+   `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n`.
+   Every consumer in `lib/` already turns `\n` back into newlines.
+3. Rotate the key in Google Cloud IAM (new key, delete the old). Its lines sat
+   in variable names, which any `env` listing prints, so treat it as exposed.
+
+**Also on 2026-09-24, the field held variables it should not:**
+`ANTHROPIC_API_KEY` (excluded on purpose, see above; the platform strips it
+from the session, but it still sits in the configuration) and the retired
+CRM's credentials (the three variables starting `FOLLOWUP`, plus
+`FUB_LOGIN_EMAIL`, `FUB_LOGIN_PASSWORD`, `NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM`
+and `NEXT_PUBLIC_FUB_PIXEL_ID`). Delete them.
+It lacked one it needs: `VERCEL_TOKEN`, without which `deploy:verify` cannot
+run in a cloud session.
 
 ## 3. Setup script
 
@@ -155,6 +185,55 @@ true once the environment's own setup script (below) has run at least once.
 If the setup script times out, move `npm ci` into a background `SessionStart`
 hook rather than trimming what it installs.
 
+**Observed 2026-09-24: the snapshot had none of it.** A cloud session booted
+with no `node_modules`, no brand fonts, no ffmpeg, no git hooks and no pinned
+Chromium, which is everything this script installs. `apt-get update`, the
+script's first step, had never run either: the package lists in
+`/var/lib/apt/lists` date from the image build (2026-03-31). Anthropic's docs
+(code.claude.com/docs/en/cloud-environments) say the setup script runs "before
+Claude Code launches" but document neither its working directory nor whether
+the repository is cloned yet, so the relative `bash scripts/cloud-setup.sh ||
+true` above can fail with nothing to show for it. A body that does not depend
+on the working directory:
+
+```bash
+#!/bin/bash
+SETUP="$(ls /home/user/*/scripts/cloud-setup.sh 2>/dev/null | head -1)"
+[ -n "$SETUP" ] && CLOUD_SETUP_BROWSERS=1 bash "$SETUP" || true
+```
+
+If a session still boots bare after that, the repository is not on disk when
+the setup script runs, and the SessionStart hook below is the only layer that
+can install `node_modules`.
+
+**The SessionStart hook is the backstop.** `.claude/hooks/session-start.sh`
+runs at the start of every cloud session, before the first prompt:
+`npm ci` when `node_modules` does not match `package-lock.json` (it also
+installs the git hooks through husky's `prepare`), `npx husky` when the git
+hooks are missing, and the brand-font copy when Amboqia is not registered. It
+also says, in one line, when Playwright's pinned browser is missing and how to
+launch anyway. When all of it is current it prints nothing and takes a fraction
+of a second; a bare box takes about 65 s (measured 2026-09-24). With the
+dependencies in place the CLAUDE.md session boot (`npx tsx
+scripts/loop-brief.ts`) ran in 39 s; without them it cannot run. `cloud-setup.sh` writes the same
+`node_modules/.package-lock.sha256` marker, so the hook does not repeat an
+install the setup script already made for the same lockfile. It is registered
+as the `SessionStart` hook in `.claude/settings.json` (section 6).
+
+**A hookless clone now fails the gate chain.** With `core.hooksPath` unset,
+git uses `.git/hooks`, which holds only `*.sample` files until husky runs, so
+no hook fires: no commit-msg approval gate (CLAUDE.md §1), no pre-commit tests,
+no pre-push marker check. `ci:hooks-installed` used to skip in that state; since
+2026-09-24 it checks the directory git actually uses and fails, with the fix
+(`npx husky`, or `npm ci`).
+
+**Playwright's pinned browser is not in the image.** `@playwright/test` 1.58.2
+wants `chromium_headless_shell-1208`; the image ships build 1194 in
+`/opt/pw-browsers`, so a bare `chromium.launch()` fails until
+`CLOUD_SETUP_BROWSERS=1` has run. Mid-session, launch with
+`executablePath: '/opt/pw-browsers/chromium'` (the preinstalled 1194 build,
+verified to work with 1.58.2) instead of downloading.
+
 ## 4. Verify a session
 
 ```bash
@@ -210,9 +289,111 @@ GitHub operations. Add `apt install -y gh` to the setup script if a session need
 `gh release` / `gh workflow run`; the built-in GitHub tools cover issues and PRs
 without it.
 
+**Commits run only the tests they touch (2026-09-24).** The full unit suite
+took 320 s per commit on a cloud session (4 vCPU). `.husky/pre-commit` now runs
+`test:unit -- --changed`: the test files that import what the commit changes,
+or everything when `package.json` or a vitest/vite config changes. For a
+two-file `lib/` change that was 176 test files in 116 s; for a docs change,
+none. The full suite still runs on every PR and every push to main in GitHub CI,
+and `npm run push` runs the path-scoped set before any ref moves.
+`PRECOMMIT_UNIT_FULL=1 git commit ...` runs the whole suite locally.
+
+**Fetching production from the VM (checked 2026-09-24).** ryan-realty.com
+answers 403 to curl's default user agent, and an HTTP/2 tunnel through the agent
+proxy can drop mid-exchange. `curl --http1.1 -A '<a browser user agent>'` gets
+200. Chromium needs the flags in the handoff's sandbox notes.
+
+## 6. Connectors and tool permissions (Matt 2026-09-24: always allow)
+
+Matt's rule: connectors run without interrupting him. Two layers decide whether
+a connector call stops to ask, and both have to agree:
+
+1. **The connector's own tool permissions** at
+   [claude.ai/customize/connectors](https://claude.ai/customize/connectors),
+   on Matt's account. An agent cannot change them. A tool set to "Needs
+   approval" there prompts on every call, even in auto mode, whatever this repo
+   allows; that is what put Supabase SQL and migration approvals on Matt's
+   phone.
+   Connector changes reach a session only when it starts.
+2. **`.claude/settings.json` in this repo.** `mcp__<Server>__*` in
+   `permissions.allow` lets a call skip the auto-mode classifier. A tool in
+   `permissions.ask` prompts even when its server is allowed (rules resolve
+   deny, then ask, then allow).
+
+**Default: Always allow, in both layers, for every connected connector.** The
+exceptions are the tools that send a message to a real person (CLAUDE.md §1),
+spend money, or take production offline. They stay "Needs approval" in layer 1
+and `ask` in layer 2, so Matt's one tap is the approval:
+
+| Tool | Why it asks |
+|---|---|
+| Gmail `send_message`, `reply`, `forward` | Outbound message to a real person |
+| Google Calendar `respond_to_event` | Sends a reply to the organizer |
+| Google Drive `share_file` | Gives someone access to a file and emails them |
+| Vercel `buy_*`, `create_or_transfer_domain`; Supabase `create_project` | Spends money |
+| Vercel `pause_project`, Supabase `pause_project` | Takes the site or the database offline |
+| Supabase `restore_project`, `delete_branch` | Changes the production project's state, or deletes a branch |
+
+**SQL runs through the connector.** Matt set the Supabase connector to Always
+allow and asked agents to use it (2026-09-24,
+`.auto-memory/feedback_sql_access_2026-09-24.md`), and confirmed it when this
+PR merged main: `execute_sql` and `apply_migration` are allowed. The repo's
+`pre-tool-use` hook still checks every `execute_sql` call (CLAUDE.md §0).
+
+**Layer 2, in `.claude/settings.json` (applied 2026-09-24 on Matt's approval):** `allow` holds
+`mcp__Supabase__*`, `mcp__Vercel__*`, `mcp__github__*`,
+`mcp__Claude_Code_Remote__*`, `mcp__Gmail__*`, `mcp__Google_Calendar__*`,
+`mcp__Google_Drive__*`, `mcp__Canva__*`, `mcp__Figma__*`, `mcp__Airtable__*`,
+`mcp__Vibe_Prospecting__*`, `mcp__Claude_Docs__*`,
+`mcp__Cloudflare_Developer_Platform__*` and `mcp__Sentry__*` (ready for when
+it is connected); `ask` holds the tools in the table; `deny` is empty; and
+`hooks.SessionStart` runs `.claude/hooks/session-start.sh`
+(section 3). **An agent cannot change this file's permissions on its own:** the
+auto-mode classifier refuses an edit that widens the agent's own permissions or
+registers its own hooks. Put the exact change in front of Matt and apply it only
+on his explicit go-ahead, as this one was.
+
+**`ask` and `deny` use globs of the form `mcp__*<Server>__<tool>`.** Cloud
+sessions name connector tools `mcp__<Server>__<tool>`; a session where Claude
+Code fetches claude.ai connectors itself names them
+`mcp__claude_ai_<Server>__<tool>` (code.claude.com/docs/en/permissions), and
+the desktop app's local sessions do not enforce the claude.ai per-tool settings
+(layer 1) at all (code.claude.com/docs/en/mcp). An exact cloud name such as
+`mcp__Gmail__send_message` would leave that prompt off outside the cloud;
+`mcp__*Gmail__send_message` matches both. Allow rules cannot take a glob in
+the server segment, so `allow` covers cloud names only, and local connector
+calls fall back to the permission mode.
+
+**Adding a connector:** in the same change, add `mcp__<Server>__*` to `allow`
+and put its send, publish and spend tools in `ask`.
+
+**Connectors on 2026-09-24:**
+
+| Connector | State | Action |
+|---|---|---|
+| Supabase, Vercel | Connected; the core stack | Always allow |
+| Gmail, Google Calendar, Google Drive | Connected | Always allow, except the table above |
+| Canva, Figma | Connected; neither is called from the code (hand design work) | Always allow |
+| Vibe Prospecting | Connected; prospect and company enrichment | Always allow |
+| Airtable | Connected; referenced nowhere in the code | Keep only if used outside the repo |
+| Cloudflare Developer Platform | Needs reconnect; no code uses a Cloudflare account (only Stream embed URLs and edge headers) | Remove unless Workers or R2 come into use |
+| Era Context | Needs reconnect; personal finance | Remove from this workspace, or reconnect |
+| **Sentry** (not connected) | The app reports errors to Sentry (`@sentry/` or `SENTRY_DSN` in 13 files) | Connect it: sessions can then read production errors directly |
+| **Resend** (not connected) | The app sends email through Resend (package, key or API host in 14 files) | Optional: delivery and bounce lookups. Set its send and broadcast tools to Needs approval |
+
+Counts are `grep -rl` over `app/`, `lib/`, `scripts/`, `components/`,
+`middleware.ts`, `vercel.json` and `package.json` on 2026-09-24.
+
+**Plugins.** CLAUDE.md §9 makes `engineering:code-review` mandatory before ship
+and names `engineering:deploy-checklist`, `design:design-system` and `data:*`.
+None of them loads in a cloud session: the `engineering`, `design` and `data`
+plugins are in the org's plugin catalog but not enabled (checked 2026-09-24).
+Enable all three on claude.ai; the next session loads them.
+
 ## Related
 
 - [`scripts/cloud-setup.sh`](../scripts/cloud-setup.sh) — the setup script
+- [`.claude/hooks/session-start.sh`](../.claude/hooks/session-start.sh) — the SessionStart backstop (deps, git hooks, fonts)
 - [`scripts/start-prod-server.sh`](../scripts/start-prod-server.sh) — `npm run start:prod`; starts a built server with the stale-build and held-port guards `run-runtime-gates.sh` uses
 - [`scripts/_auth-capture.mjs`](../scripts/_auth-capture.mjs) — third-party sessions
 - [`scripts/check-vm-parity.mjs`](../scripts/check-vm-parity.mjs) — the gate that keeps this working
