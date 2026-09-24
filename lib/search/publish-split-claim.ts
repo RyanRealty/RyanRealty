@@ -9,7 +9,7 @@
  * from the rows in hand read "491 homes on this map" over a frame that held
  * more. When the rows in hand fall short of the count:
  *   - the figure is the exact totalCount from the DAL,
- *   - the tail names the order the held rows came in ("newest first"), not an
+ *   - the tail names the order the held rows came in ("newest listed first"), not an
  *     ask range, because a range over the first 500 is not the frame's range,
  *   - a note says how many are on the map (or listed, before the map mounts).
  * When every row is in hand the line is what it was: the drawn count and the
@@ -17,10 +17,15 @@
  */
 import { formatCount } from '@/lib/format/count'
 
-/** Sort value (SearchFilters SORT_OPTIONS) -> the order the held rows follow. */
+/**
+ * Sort value (SearchFilters SORT_OPTIONS) -> the order the held rows follow.
+ * `newest` orders by the on-market date (lib/search/search-sort-order.ts,
+ * Matt 2026-09-23), so the line says "newest listed first", not "newest
+ * first", which could read as the latest MLS edit.
+ */
 export const SORT_ORDER_PHRASES: Readonly<Record<string, string>> = {
-  newest: 'newest first',
-  oldest: 'oldest first',
+  newest: 'newest listed first',
+  oldest: 'oldest listed first',
   price_asc: 'lowest price first',
   price_desc: 'highest price first',
   price_per_sqft_asc: 'lowest price per sq ft first',
@@ -45,7 +50,7 @@ export type SplitClaim = {
   truncated: boolean
   /** Ask range across the held rows; only when nothing is held back. */
   range: { low: number; high: number } | null
-  /** The held rows' order, only when truncated: 'newest first'. */
+  /** The held rows' order, only when truncated: 'newest listed first'. */
   order: string | null
   /** 'first 500 on the map' / 'first 48 listed', only when truncated. */
   note: string | null

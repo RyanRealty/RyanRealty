@@ -29,7 +29,7 @@ describe('publishSplitClaim', () => {
     expect(c.truncated).toBe(true)
     // A range over the first 500 is not the frame's range.
     expect(c.range).toBeNull()
-    expect(c.order).toBe('newest first')
+    expect(c.order).toBe('newest listed first')
     expect(c.note).toBe('first 491 on the map')
     expect(c.source).toContain('1,298 listings match')
     expect(c.source).toContain('display cap, not the whole set')
@@ -44,7 +44,7 @@ describe('publishSplitClaim', () => {
       totalCount: 3_282,
       mapMounted: false,
     })!
-    expect(`${c.figure} ${c.noun}${c.where}, ${c.order}`).toBe('3282 homes in Central Oregon, newest first')
+    expect(`${c.figure} ${c.noun}${c.where}, ${c.order}`).toBe('3282 homes in Central Oregon, newest listed first')
     // Before the map mounts (a phone on the list) the held rows are listed, not pinned.
     expect(c.note).toBe('first 48 listed')
     expect(c.source).toContain('for Central Oregon, the service area this site covers')
@@ -56,9 +56,12 @@ describe('publishSplitClaim', () => {
     expect(sortOrderPhrase('price_desc')).toBe('highest price first')
     expect(sortOrderPhrase('price_per_sqft_asc')).toBe('lowest price per sq ft first')
     expect(sortOrderPhrase('year_oldest')).toBe('oldest built first')
-    expect(sortOrderPhrase('')).toBe('newest first')
-    expect(sortOrderPhrase(undefined)).toBe('newest first')
-    expect(sortOrderPhrase('bogus')).toBe('newest first')
+    // newest / oldest order by the on-market date (Matt 2026-09-23), and say so.
+    expect(sortOrderPhrase('newest')).toBe('newest listed first')
+    expect(sortOrderPhrase('oldest')).toBe('oldest listed first')
+    expect(sortOrderPhrase('')).toBe('newest listed first')
+    expect(sortOrderPhrase(undefined)).toBe('newest listed first')
+    expect(sortOrderPhrase('bogus')).toBe('newest listed first')
   })
 
   it('singular agrees with the figure', () => {

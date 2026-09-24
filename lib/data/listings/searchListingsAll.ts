@@ -47,6 +47,7 @@ import {
   type ShapeSearchDeps,
 } from '@/lib/data/listings/searchShapes'
 import { dedupeListingTilesByStreet } from '@/lib/data/listings/dedupeListingTilesByStreet'
+import { SEARCH_SORT_KEYS, applySearchSortOrder } from '@/lib/search/search-sort-order'
 
 // Shape schemas/types + the shapes execution paths live in searchShapes.ts —
 // re-exported here so existing importers (lib/data/index.ts) keep working.
@@ -317,18 +318,8 @@ const FilterSchema = z.object({
   keywords: z.string().min(2).max(120).optional().catch(undefined),
 
   // ── Sort / pagination ─────────────────────────────────────────────────────
-  sort: z
-    .enum([
-      'newest',
-      'oldest',
-      'price_asc',
-      'price_desc',
-      'price_per_sqft_asc',
-      'price_per_sqft_desc',
-      'year_newest',
-      'year_oldest',
-    ])
-    .default('newest'),
+  // What each key orders by: lib/search/search-sort-order.ts.
+  sort: z.enum(SEARCH_SORT_KEYS).default('newest'),
   limit: z.number().int().min(1).max(1000).default(60).catch(60),
   offset: z.number().int().nonnegative().default(0).catch(0),
 
@@ -559,32 +550,13 @@ function applySearchFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>
   return query as unknown as T
 }
 
-type SortableQuery = {
-  order: (column: string, opts: { ascending: boolean; nullsFirst: boolean }) => SortableQuery
-  range: (from: number, to: number) => SortableQuery
-}
-
 function applySort<T>(builder: T, sort: z.output<typeof FilterSchema>['sort']): T {
-  const query = builder as unknown as SortableQuery
-  // Nulls sink on every sort so rows missing the sort value (no sqft -> no
-  // price/sqft, unknown year) never front-load the results.
-  const sorted =
-    sort === 'oldest'
-      ? query.order('modified_at', { ascending: true, nullsFirst: false })
-      : sort === 'price_asc'
-        ? query.order('list_price', { ascending: true, nullsFirst: false })
-        : sort === 'price_desc'
-          ? query.order('list_price', { ascending: false, nullsFirst: false })
-          : sort === 'price_per_sqft_asc'
-            ? query.order('price_per_sqft', { ascending: true, nullsFirst: false })
-            : sort === 'price_per_sqft_desc'
-              ? query.order('price_per_sqft', { ascending: false, nullsFirst: false })
-              : sort === 'year_newest'
-                ? query.order('year_built', { ascending: false, nullsFirst: false })
-                : sort === 'year_oldest'
-                  ? query.order('year_built', { ascending: true, nullsFirst: false })
-                  : query.order('modified_at', { ascending: false, nullsFirst: false })
-  return sorted as unknown as T
+  // lib/search/search-sort-order.ts owns what each sort orders by: `newest`
+  // is newest LISTED (on_market_date DESC, Matt 2026-09-23), not the MLS
+  // modification timestamp. Nulls sink on every sort so rows missing the sort
+  // value (no sqft -> no price/sqft, unknown year) never front-load the
+  // results, and listing_key breaks ties so paging is stable.
+  return applySearchSortOrder(builder, sort)
 }
 
 /** Query-core callbacks handed to the searchShapes execution paths. */

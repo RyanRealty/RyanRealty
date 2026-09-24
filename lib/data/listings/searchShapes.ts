@@ -22,6 +22,7 @@ import type {
   SearchListingsAllResult,
 } from '@/lib/data/listings/searchListingsAll'
 import { dedupeListingTilesByStreet } from '@/lib/data/listings/dedupeListingTilesByStreet'
+import { compareTilesForSearchSort } from '@/lib/search/search-sort-order'
 
 // ── Map shapes (Phase 2 map search — SEARCH_OPTIMIZATION_PLAN_2026-07-29) ──
 // Mirrors the SQL contract of public.search_listing_keys_in_shapes
@@ -206,37 +207,13 @@ async function resolveShapeKeysViaRpc(
   return null
 }
 
-/** Node-side sort matching applySort exactly (nulls sink on every sort). */
-function tileComparator(sort: ParsedSearchListingsAllFilter['sort']) {
-  const cmp = (av: number | null, bv: number | null, ascending: boolean): number => {
-    if (av == null && bv == null) return 0
-    if (av == null) return 1
-    if (bv == null) return -1
-    return ascending ? av - bv : bv - av
-  }
-  const ts = (t: ListingTile): number | null => {
-    if (!t.modifiedAt) return null
-    const v = Date.parse(t.modifiedAt)
-    return Number.isFinite(v) ? v : null
-  }
-  switch (sort) {
-    case 'oldest':
-      return (a: ListingTile, b: ListingTile) => cmp(ts(a), ts(b), true)
-    case 'price_asc':
-      return (a: ListingTile, b: ListingTile) => cmp(a.listPrice, b.listPrice, true)
-    case 'price_desc':
-      return (a: ListingTile, b: ListingTile) => cmp(a.listPrice, b.listPrice, false)
-    case 'price_per_sqft_asc':
-      return (a: ListingTile, b: ListingTile) => cmp(a.pricePerSqft, b.pricePerSqft, true)
-    case 'price_per_sqft_desc':
-      return (a: ListingTile, b: ListingTile) => cmp(a.pricePerSqft, b.pricePerSqft, false)
-    case 'year_newest':
-      return (a: ListingTile, b: ListingTile) => cmp(a.yearBuilt, b.yearBuilt, false)
-    case 'year_oldest':
-      return (a: ListingTile, b: ListingTile) => cmp(a.yearBuilt, b.yearBuilt, true)
-    default:
-      return (a: ListingTile, b: ListingTile) => cmp(ts(a), ts(b), false)
-  }
+/**
+ * Node-side sort matching applySort exactly: the same spec table
+ * (lib/search/search-sort-order.ts; `newest` = on_market_date DESC), nulls
+ * sink, listing_key breaks ties.
+ */
+function tileComparator(sort: ParsedSearchListingsAllFilter['sort']): (a: ListingTile, b: ListingTile) => number {
+  return compareTilesForSearchSort(sort)
 }
 
 function chunkKeys(keys: string[], size: number): string[][] {
