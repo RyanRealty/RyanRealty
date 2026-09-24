@@ -4,8 +4,9 @@ Matt: "You always have access. Don't stop to ask for SQL access." / "You are sti
 permissions you always have permission."
 
 - The prompts Matt saw came from the claude.ai **Supabase connector** (`mcp__Supabase__execute_sql`),
-  whose per-call approval is set at claude.ai/customize/connectors, not in this repo. The repo's
-  `.claude/settings.json` already allows it.
+  whose per-call approval lands on Matt's phone. After a subagent raised one anyway, Matt: "Please
+  stop asking." So `.claude/settings.json` now **denies** `mcp__Supabase__execute_sql` for every
+  session and subagent in this repo. Do not re-allow it, and do not tell a subagent to use it.
 - **Do database work through the repo's service-role client from the terminal instead**: a tsx
   script (`scripts/…` or a scratch `scripts/zz-*.ts`, excluded from git) using
   `createServiceClient()` from `@/lib/supabase/service`, run with `npx tsx`. It needs no approval
