@@ -1,11 +1,11 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
+import { reportClientError } from "@/lib/observability/client-errors";
 import { useEffect } from "react";
 
 export default function GlobalError({ error }: { error: Error }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    reportClientError(error);
   }, [error]);
 
   return (
