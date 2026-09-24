@@ -73,17 +73,23 @@ export function communitySerpTitle(input: {
   listedCount?: number | null
 }): string {
   const { name, city, slug, listedCount } = input
+  // A self-city community's /cities/<slug> page is titled "{place} real
+  // estate" (publishCityRealEstateTitle), so this page keeps the inventory
+  // title and the two never share a title again (SITE-187 / SITE-184). A
+  // compound slug is noindex and not a registered community: unchanged.
+  if (isSelfCityCommunity(slug) || !isCanonicalCommunitySlug(slug)) {
+    return `${name} Homes for Sale | ${city}, OR`
+  }
   // Mountain High GSC: title at pos 5–15 with 0 CTR. Name the on-page listed
   // count, or omit a count. Never a parent-city leak (SEO-58).
-  if (slug === 'mountain-high' && listedCount != null && listedCount > 0) {
-    return `${name}: ${formatCount(listedCount)} homes for sale | ${city}, OR`
-  }
-  // The heading stays "{name} homes for sale". This phrase is the other query
-  // for the same URL (Matt 2026-09-22).
-  if (slug === 'tetherow') {
-    return `${name} real estate | Homes for Sale | ${city}, OR`
-  }
-  return `${name} Homes for Sale | ${city}, OR`
+  const homes =
+    slug === 'mountain-high' && listedCount != null && listedCount > 0
+      ? `${formatCount(listedCount)} ${listedCount === 1 ? 'Home' : 'Homes'} for Sale`
+      : 'Homes for Sale'
+  // "{name} real estate" is the other query for the same URL: Tetherow first
+  // (Matt 2026-09-22), every registered community since (Matt 2026-09-24).
+  // The heading stays "{name} homes for sale".
+  return `${name} real estate | ${homes} | ${city}, OR`
 }
 
 export function communitySerpDescription(input: {
@@ -105,7 +111,7 @@ export function communitySerpDescription(input: {
   // name-equals-city test: Black Butte Ranch's registry city is Sisters.
   const selfCity = name.trim().toLowerCase() === city.trim().toLowerCase() || isSelfCityCommunity(slug)
   const opener = counted
-    ? `${formatCount(input.listedCount)} homes for sale in ${name}, ${city}.`
+    ? `${formatCount(input.listedCount)} ${input.listedCount === 1 ? 'home' : 'homes'} for sale in ${name}, ${city}.`
     : slug === 'tetherow'
       ? `${name} real estate in ${city}, Oregon.`
       : selfCity
@@ -269,9 +275,10 @@ export function communityMetadataInput(input: {
   }
 
   return {
-    // Title format: "[Community] Homes for Sale | [City], OR". Mountain High
-    // includes the on-page listed count when stock carries it. Tetherow leads
-    // with "Tetherow real estate". H1 stays "{Place} homes for sale".
+    // Title format: "[Community] real estate | Homes for Sale | [City], OR";
+    // a self-city community (Sunriver, Black Butte Ranch) and a compound slug
+    // keep "[Community] Homes for Sale | [City], OR". Mountain High names the
+    // on-page listed count when stock carries it. H1 stays "{Place} homes for sale".
     title: communitySerpTitle({
       slug,
       name,
