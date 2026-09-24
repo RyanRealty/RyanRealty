@@ -388,15 +388,29 @@ as a class, each with a test shaped like the message (`lib/tc/mail-rules.test.ts
   no-reply keeps its recipients as evidence; "NW Newport Ave" is not "NW Newport
   Hills"; a broker's "[Deal: …]" for a property with no file waits in the queue.
 
-| Golden eval, 1,522 rows | v3 | v4 first draft | v4 as shipped |
-|---|---|---|---|
-| Precision | 97.0% | 98.1% | 98.9% |
-| Recall | 89.6% | 92.6% | 94.8% |
-| Wrong file | 3 | 6 | 1 |
-| Filed that should not be | 28 | 14 | 11 |
-| Better / worse than v3 | | 92 / 41 | 100 / 22 |
+| Golden eval, 1,522 rows | v3 | v4 first draft | v4 before relabel | v4 as shipped |
+|---|---|---|---|---|
+| Precision | 97.0% | 98.1% | 98.9% | **99.3%** |
+| Recall | 89.6% | 92.6% | 94.8% | **96.6%** |
+| Wrong file | 3 | 6 | 1 | **0** |
+| Filed that should not be | 28 | 14 | 11 | **7** |
+| Better / worse than v3 | | 92 / 41 | 100 / 22 | **103 / 0** |
 
-The 22 rows worse than v3, each read:
+**As shipped (2026-09-24, 21:10Z).** Every row below that the review found
+mislabeled was relabeled in `data/tc-mail-golden.json` after reading the message
+(25 rows, `confidence: "verified"` with a `note` naming the reason): the 9 Studio
+drafts and 7 ad-sales/marketing rows are `not_filed`; the two "Updates" emails,
+the lender's large-file notice and "Mutual Clients" are `queue`; the sign
+company's replies and the net sheet replies file on 5663 SW Impala; "RE:
+Schoolhouse Closing" files on 56111 School House Rd. Then the full set was run
+again: 74 of Matt's rows came back `error` in one window (Gmail refused a
+burst; the same rows passed in the rules pass minutes earlier), so those 74
+were run again at concurrency 2 and decided with 0 errors. Final outcomes:
+TP 1,054, TP_QUEUE 55, TN 366, SAFE_QUEUE 34, MISS 6, FALSE_FILE 7, WRONG 0,
+ERROR 0. The v3 column's outcomes were scored against the labels as they were
+before the relabel. `scripts/tc-mail-eval-baseline.json` is now this v4 run.
+
+The 22 rows the pre-relabel run scored worse than v3, each read:
 
 - 9 are the Studio's own drafts from `onboarding@resend.dev` ("Schoolhouse Rd v1 —
   listing video that beats the AI field"), our own machine (change 10 above); the
@@ -426,9 +440,6 @@ Still open after v4:
 - A message about two of our files (a status note with "Nordic" and
   "Drouillard" sections, a Supra notice naming two showings) queues:
   `tc_mail_messages` carries one `deal_id`.
-- A PDF whose name does not look transactional is read only when the message is
-  already kept or is an e-sign completion ("ORE Residential Input - ODS_….pdf"
-  naming 1974 NW Newport Hills Dr was never opened).
 - Rows filed by v2 or v3 that v4 would not file (182 copies of one Drouillard
   mail-merge) stay filed until the backfill's reconcile step is run: indexing
   never unfiles a filed row. They also anchor their threads: a virtual-staging
@@ -560,7 +571,8 @@ recall instead of eyeballed. Their judgments live as a **permanent regression se
   `dryRun: true` is passed on every call and asserted in code — nothing is written to Gmail or
   Supabase.
 - **[`scripts/tc-mail-eval-baseline.json`](../scripts/tc-mail-eval-baseline.json)** — the
-  committed baseline (outcomes only, no content) from the run against `mail-rules-v3-2026-09-24`.
+  committed baseline (outcomes only, no content) from the run against `mail-rules-v4-2026-09-24`
+  as shipped (the v3 run it replaced is summarized in the v4 table above).
   A rule change must not lower precision, raise the wrong-deal count, or raise the false-file
   count against this baseline; regenerate it deliberately (`--save-baseline`) once a change
   ships, never to paper over a regression.

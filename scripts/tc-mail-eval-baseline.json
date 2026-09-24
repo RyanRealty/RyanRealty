@@ -166,36 +166,36 @@
     "gmail_id": "18ebeb7ff5aef55f",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "89f3e1f3-f649-497f-9171-2fdfbf8bf6e1"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "18ebeb988e67a2c3",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "89f3e1f3-f649-497f-9171-2fdfbf8bf6e1"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "18ebed0830158954",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "89f3e1f3-f649-497f-9171-2fdfbf8bf6e1"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "18ebedd45a429817",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "89f3e1f3-f649-497f-9171-2fdfbf8bf6e1"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -257,7 +257,7 @@
     "slice": "deal-recall",
     "expect": "file",
     "outcome": "MISS",
-    "actual_status": "bulk",
+    "actual_status": "not_deal",
     "actual_deal_id": null
   },
   {
@@ -293,7 +293,7 @@
     "slice": "queue",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "unfiled_transaction",
     "actual_deal_id": null
   },
   {
@@ -1111,9 +1111,9 @@
     "gmail_id": "1963b421aa2a2083",
     "slice": "filed-matt",
     "expect": "file",
-    "outcome": "WRONG",
+    "outcome": "TP",
     "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -1534,18 +1534,18 @@
     "gmail_id": "196d112560940c5d",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "023c20b6-a0bb-4dad-bd2c-22067751b9e6"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "196d63218a29b738",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "unfiled_transaction",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "7120a6be-9f60-4bef-9844-3a5615e65586"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -2056,9 +2056,9 @@
     "gmail_id": "197d643c766cf9c7",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "350a70b7-a6eb-45c1-a3fe-0a1ae833d951"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -2434,9 +2434,9 @@
     "gmail_id": "1988619f74312500",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "350a70b7-a6eb-45c1-a3fe-0a1ae833d951"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -2650,9 +2650,9 @@
     "gmail_id": "198f2c3db3bb85f0",
     "slice": "missed-bulk",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3046,9 +3046,9 @@
     "gmail_id": "19950c64cefa703b",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "350a70b7-a6eb-45c1-a3fe-0a1ae833d951"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3064,9 +3064,9 @@
     "gmail_id": "1995912002a4ecb5",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "3e1e54a4-79b9-4f25-a988-30d272a31f6b"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3208,18 +3208,18 @@
     "gmail_id": "19973a1a61be0fc4",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19973b7575fa6961",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3316,27 +3316,27 @@
     "gmail_id": "199810ebc225ece0",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "199811fe58d62e45",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1998129e002c01ea",
     "slice": "missed-bulk",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3568,9 +3568,9 @@
     "gmail_id": "199bfb5d974b8d0d",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "3e1e54a4-79b9-4f25-a988-30d272a31f6b"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3838,9 +3838,9 @@
     "gmail_id": "199f452f7bd1dadd",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "3616bd0a-d653-4819-b8f9-1c9925fee99e"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -4477,9 +4477,9 @@
     "gmail_id": "19bdd978e97c5ba0",
     "slice": "verify",
     "expect": "file",
-    "outcome": "WRONG",
+    "outcome": "TP",
     "actual_status": "filed",
-    "actual_deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4"
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -4603,9 +4603,9 @@
     "gmail_id": "19d06b40588a5be2",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "unfiled_transaction",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -4945,9 +4945,9 @@
     "gmail_id": "19d405a4cd8649ac",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5017,9 +5017,9 @@
     "gmail_id": "19d45299f6d26fcd",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5125,9 +5125,9 @@
     "gmail_id": "19d4b0157679658d",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "unfiled_transaction",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5152,9 +5152,9 @@
     "gmail_id": "19d4b1af80556500",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5179,9 +5179,9 @@
     "gmail_id": "19d4f09e25cfb52e",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "unfiled_transaction",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5197,27 +5197,27 @@
     "gmail_id": "19d4f2a0188572bc",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d4f2c58818fb55",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d4f30a9658753d",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5350,27 +5350,27 @@
     "gmail_id": "19d56a6d3587f504",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d58f36f1890e7c",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d58f6a5b949649",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5431,18 +5431,18 @@
     "gmail_id": "19d6346272373835",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d63519684709fc",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5548,9 +5548,9 @@
     "gmail_id": "19d6e5f856f6ba24",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5638,9 +5638,9 @@
     "gmail_id": "19d797321b206205",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5971,18 +5971,18 @@
     "gmail_id": "19dbb779afb62e1a",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dbb7f3818beecf",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6025,90 +6025,90 @@
     "gmail_id": "19dc17ebe9fbb2e0",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc1835a3a29c7f",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc1abd6cd37963",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc1fdf5dfe339f",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc21fa1bcd4b1f",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc276f8cbfef4a",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc2947850e67b3",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc2a83ccf9e05b",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc2c863664da43",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc504d5cdc8407",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6169,18 +6169,18 @@
     "gmail_id": "19dd1879c6b73ef2",
     "slice": "filed-matt",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dd225be25649a9",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6206,7 +6206,7 @@
     "slice": "missed-notdeal",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "ambiguous",
     "actual_deal_id": null
   },
   {
@@ -6223,27 +6223,27 @@
     "gmail_id": "19ddb382f927a37a",
     "slice": "filed-matt",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19ddefd3ad9a0efc",
     "slice": "filed-matt",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19ddfa893480cd5c",
     "slice": "filed-matt",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
+    "outcome": "TN",
+    "actual_status": "bulk",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6402,10 +6402,10 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19e0967cf42137cb",
     "slice": "missed-bulk",
-    "expect": "not_filed",
-    "outcome": "TN",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "expect": "file",
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6423,7 +6423,7 @@
     "expect": "file",
     "outcome": "TP",
     "actual_status": "filed",
-    "actual_deal_id": "880b5387-ddc0-4cde-8919-615e184506ca"
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6556,18 +6556,18 @@
     "gmail_id": "19e2c90861abbdee",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19e2c917c80a1d66",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "a7c45930-0544-4546-9543-52230f005c84"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6853,9 +6853,9 @@
     "gmail_id": "19eba5a9827d0f36",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6906,10 +6906,10 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19ecc4a21808697b",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6924,10 +6924,10 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19ed6bcf2778c75c",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6988,9 +6988,9 @@
     "gmail_id": "19ede678a74e25c6",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7168,9 +7168,9 @@
     "gmail_id": "19f027393e9db0fa",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7339,9 +7339,9 @@
     "gmail_id": "19f2680abf394d5b",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7482,10 +7482,10 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19f3cde28660e603",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7610,7 +7610,7 @@
     "slice": "filed-matt",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "bulk",
     "actual_deal_id": null
   },
   {
@@ -7645,9 +7645,9 @@
     "gmail_id": "19f4a8e1244ab059",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7762,9 +7762,9 @@
     "gmail_id": "19f6e99467f12870",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7807,18 +7807,18 @@
     "gmail_id": "19f92a5b1fee92e0",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19fa4a7a7c0ca670",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7833,10 +7833,10 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19faec5dad16ef92",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7844,7 +7844,7 @@
     "slice": "deal-recall",
     "expect": "file",
     "outcome": "MISS",
-    "actual_status": "bulk",
+    "actual_status": "not_deal",
     "actual_deal_id": null
   },
   {
@@ -7852,36 +7852,36 @@
     "gmail_id": "19fb6b2b3456fb74",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19fb96487ab544a0",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19fb9766ef6ea44c",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19fb97862d8980a0",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7924,9 +7924,9 @@
     "gmail_id": "19fdabfa3c021afa",
     "slice": "missed-bulk",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7943,7 +7943,7 @@
     "slice": "queue",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "bulk",
     "actual_deal_id": null
   },
   {
@@ -8023,9 +8023,9 @@
     "gmail_id": "19ffecbb74fa33b7",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8033,7 +8033,7 @@
     "slice": "missed-notdeal",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "bulk",
     "actual_deal_id": null
   },
   {
@@ -8042,7 +8042,7 @@
     "slice": "missed-notdeal",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "bulk",
     "actual_deal_id": null
   },
   {
@@ -8131,9 +8131,9 @@
     "gmail_id": "1a022d8f7f6b4f63",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8186,7 +8186,7 @@
     "slice": "missed-notdeal",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "bulk",
     "actual_deal_id": null
   },
   {
@@ -8195,7 +8195,7 @@
     "slice": "missed-notdeal",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "bulk",
     "actual_deal_id": null
   },
   {
@@ -8248,9 +8248,9 @@
     "gmail_id": "1a046e51d5cfeb00",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8275,9 +8275,9 @@
     "gmail_id": "1a04b28f5d47fa29",
     "slice": "filed-matt",
     "expect": "queue",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "aad5d46a-88d5-4da2-819c-56a147a98d8a"
+    "outcome": "TP_QUEUE",
+    "actual_status": "unfiled_transaction",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8464,9 +8464,9 @@
     "gmail_id": "1a06af10c4900b9c",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8508,10 +8508,10 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0825b5f52029ce",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8519,7 +8519,7 @@
     "slice": "queue",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "bulk",
     "actual_deal_id": null
   },
   {
@@ -8535,10 +8535,10 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a08c639bedbd55f",
     "slice": "deal-recall",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
+    "expect": "not_filed",
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8563,9 +8563,9 @@
     "gmail_id": "1a08efdc770c80c4",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8869,9 +8869,9 @@
     "gmail_id": "1a0b30a18a20ffba",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8968,27 +8968,27 @@
     "gmail_id": "1a0bb44a988cab13",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0bb54c756a0b1a",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0bb90f6f097fe2",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "58bc2719-d052-4f5e-919b-482471875e9f"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -10146,10 +10146,10 @@
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19db5eedbf71e860",
     "slice": "missed-bulk",
-    "expect": "queue",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "expect": "file",
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10200,10 +10200,10 @@
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19e094bddc7736c7",
     "slice": "missed-bulk",
-    "expect": "not_filed",
-    "outcome": "TN",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "expect": "file",
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10211,7 +10211,7 @@
     "slice": "missed-bulk",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "bulk",
+    "actual_status": "not_deal",
     "actual_deal_id": null
   },
   {
@@ -10237,9 +10237,9 @@
     "gmail_id": "19e1c509c2d63dae",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10282,18 +10282,18 @@
     "gmail_id": "19e415306656bce9",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19e4b559e9c1969c",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10309,18 +10309,18 @@
     "gmail_id": "19ecc52253457400",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19ed6c41eb45897e",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10362,10 +10362,10 @@
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19fa610af4350706",
     "slice": "missed-bulk",
-    "expect": "queue",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "expect": "file",
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10381,9 +10381,9 @@
     "gmail_id": "19faecc9b7fa6c29",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10480,18 +10480,18 @@
     "gmail_id": "1a08264072c88626",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "1a08c6c7da6dfe3e",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -10535,7 +10535,7 @@
     "slice": "queue",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "unfiled_transaction",
+    "actual_status": "not_deal",
     "actual_deal_id": null
   },
   {
@@ -10544,7 +10544,7 @@
     "slice": "queue",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "unfiled_transaction",
+    "actual_status": "not_deal",
     "actual_deal_id": null
   },
   {
@@ -10687,9 +10687,9 @@
     "gmail_id": "1947f8f79839a85e",
     "slice": "missed-notdeal",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "aad5d46a-88d5-4da2-819c-56a147a98d8a"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -10759,18 +10759,18 @@
     "gmail_id": "1963b421633626de",
     "slice": "filed-rp",
     "expect": "file",
-    "outcome": "WRONG",
+    "outcome": "TP",
     "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "196645cc31da3c7c",
     "slice": "verify",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -10867,72 +10867,72 @@
     "gmail_id": "1968e46cd6fb539b",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "1968e4738a699005",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "1968e4771407bf3a",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "1968e481d257bc31",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "1968e482d157e7ee",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "1968e4a4edcdbed4",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "196924815fcb1476",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "1969248258dd4b9c",
     "slice": "filed-rp",
     "expect": "not_filed",
-    "outcome": "FALSE_FILE",
-    "actual_status": "filed",
-    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
+    "outcome": "TN",
+    "actual_status": "not_deal",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -10992,10 +10992,10 @@
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "196bb426dadfd392",
     "slice": "filed-rp",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
+    "expect": "queue",
+    "outcome": "TP_QUEUE",
+    "actual_status": "ambiguous",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -11019,10 +11019,10 @@
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "196cb2aa999811ca",
     "slice": "filed-rp",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
+    "expect": "queue",
+    "outcome": "TP_QUEUE",
+    "actual_status": "ambiguous",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -11039,7 +11039,7 @@
     "slice": "queue",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "unfiled_transaction",
+    "actual_status": "not_deal",
     "actual_deal_id": null
   },
   {
@@ -11082,10 +11082,10 @@
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "197f67b0eb519288",
     "slice": "filed-rp",
-    "expect": "file",
-    "outcome": "TP",
-    "actual_status": "filed",
-    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
+    "expect": "queue",
+    "outcome": "TP_QUEUE",
+    "actual_status": "ambiguous",
+    "actual_deal_id": null
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -11164,9 +11164,9 @@
     "gmail_id": "198f47190c55c97c",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -11209,18 +11209,18 @@
     "gmail_id": "198fb78d54c898dc",
     "slice": "verify",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "198fb7c01424bc40",
     "slice": "verify",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -11947,9 +11947,9 @@
     "gmail_id": "199ab84fa5943f93",
     "slice": "missed-bulk",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "2f376f00-2132-46a6-b621-db86351d4472"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -12144,9 +12144,9 @@
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "199ced8da06e36cb",
     "slice": "missed-bulk",
-    "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
+    "expect": "queue",
+    "outcome": "TP_QUEUE",
+    "actual_status": "ambiguous",
     "actual_deal_id": null
   },
   {
@@ -12262,18 +12262,18 @@
     "gmail_id": "199edf1c53dafb64",
     "slice": "queue",
     "expect": "file",
-    "outcome": "SAFE_QUEUE",
-    "actual_status": "ambiguous",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "199ef19da0b20b22",
     "slice": "missed-bulk",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "3616bd0a-d653-4819-b8f9-1c9925fee99e"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -12451,27 +12451,27 @@
     "gmail_id": "19c2b8ebcc6e0585",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "ca47d027-58b8-41f2-8ac3-7a10bd94e709"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "19c2bd56ee1fe85d",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "ca47d027-58b8-41f2-8ac3-7a10bd94e709"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "19c2bd5ebe0059a4",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "ca47d027-58b8-41f2-8ac3-7a10bd94e709"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -12487,9 +12487,9 @@
     "gmail_id": "19c2e8962334656e",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "ca47d027-58b8-41f2-8ac3-7a10bd94e709"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -12649,8 +12649,8 @@
     "gmail_id": "19c33ed1e68b3f1b",
     "slice": "missed-notdeal",
     "expect": "queue",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
+    "outcome": "TP_QUEUE",
+    "actual_status": "unfiled_transaction",
     "actual_deal_id": null
   },
   {
@@ -12703,8 +12703,8 @@
     "gmail_id": "19c3498f7ca7af54",
     "slice": "missed-notdeal",
     "expect": "queue",
-    "outcome": "MISS",
-    "actual_status": "not_deal",
+    "outcome": "TP_QUEUE",
+    "actual_status": "unfiled_transaction",
     "actual_deal_id": null
   },
   {
@@ -12793,9 +12793,9 @@
     "gmail_id": "19c43703b1217550",
     "slice": "deal-recall",
     "expect": "file",
-    "outcome": "MISS",
-    "actual_status": "bulk",
-    "actual_deal_id": null
+    "outcome": "TP",
+    "actual_status": "filed",
+    "actual_deal_id": "ca47d027-58b8-41f2-8ac3-7a10bd94e709"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -13640,7 +13640,7 @@
     "slice": "missed-notdeal",
     "expect": "not_filed",
     "outcome": "TN",
-    "actual_status": "not_deal",
+    "actual_status": "bulk",
     "actual_deal_id": null
   },
   {

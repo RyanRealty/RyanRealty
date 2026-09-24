@@ -6041,74 +6041,82 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc1abd6cd37963",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc1fdf5dfe339f",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc21fa1bcd4b1f",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc276f8cbfef4a",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc2947850e67b3",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc2a83ccf9e05b",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc2c863664da43",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dc504d5cdc8407",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6176,11 +6184,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dd225be25649a9",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: our own Studio production email (onboarding@resend.dev), not transaction mail; matches the hand labels on 19dd1879c6b73ef2 and 19ddb382f927a37a"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6401,11 +6410,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19e0967cf42137cb",
-    "expect": "not_filed",
-    "deal_id": null,
+    "expect": "file",
+    "deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713",
     "deal_not_in_vault": false,
     "slice": "missed-bulk",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: sign company proof \"Ryan Realty_Paul Stevenson_5663 SW Impala Ave\" in the thread Paul opened for Impala; consistent with the hand label on 19c2f26db0a023d1"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6420,10 +6430,11 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19e17a4288ec1322",
     "expect": "file",
-    "deal_id": "880b5387-ddc0-4cde-8919-615e184506ca",
+    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: estimated statements \"for closing on 5/15\": School House closed 5/15; Beaumont was accepted 5/14"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6905,11 +6916,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19ecc4a21808697b",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: HAVEN Homes ad sales (jack@havenlifestyles.com); Paul's identical copies are hand-labeled not_filed"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6923,11 +6935,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19ed6bcf2778c75c",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: HAVEN Homes ad sales (jack@havenlifestyles.com); Paul's identical copies are hand-labeled not_filed"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7481,11 +7494,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19f3cde28660e603",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: Follow Up Boss forward of our own home-value marketing email"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7814,11 +7828,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19fa4a7a7c0ca670",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: HAVEN Homes ad sales (jack@havenlifestyles.com); Paul's identical copies are hand-labeled not_filed"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7832,11 +7847,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19faec5dad16ef92",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: HAVEN Homes ad sales (jack@havenlifestyles.com); Paul's identical copies are hand-labeled not_filed"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8507,11 +8523,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0825b5f52029ce",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: HAVEN Homes ad sales (jack@havenlifestyles.com); Paul's identical copies are hand-labeled not_filed"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8534,11 +8551,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a08c639bedbd55f",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: HAVEN Homes ad sales (jack@havenlifestyles.com); Paul's identical copies are hand-labeled not_filed"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -10145,11 +10163,12 @@
   {
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19db5eedbf71e860",
-    "expect": "queue",
-    "deal_id": null,
+    "expect": "file",
+    "deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713",
     "deal_not_in_vault": false,
     "slice": "missed-bulk",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: net sheet thread: \"Sellers are ... 5663 SW Impala Ln\", \"My seller is considering a new price\""
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10199,11 +10218,12 @@
   {
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19e094bddc7736c7",
-    "expect": "not_filed",
-    "deal_id": null,
+    "expect": "file",
+    "deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713",
     "deal_not_in_vault": false,
     "slice": "missed-bulk",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: sign company proof \"Ryan Realty_Paul Stevenson_5663 SW Impala Ave\" in the thread Paul opened for Impala; consistent with the hand label on 19c2f26db0a023d1"
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10361,11 +10381,12 @@
   {
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19fa610af4350706",
-    "expect": "queue",
-    "deal_id": null,
+    "expect": "file",
+    "deal_id": "0eb95fef-6e2e-4249-8abc-a5ee93b58713",
     "deal_not_in_vault": false,
     "slice": "missed-bulk",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: net sheet thread: \"Sellers are ... 5663 SW Impala Ln\", \"My seller is considering a new price\""
   },
   {
     "mailbox": "paul@ryan-realty.com",
@@ -10991,11 +11012,12 @@
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "196bb426dadfd392",
-    "expect": "file",
-    "deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba",
+    "expect": "queue",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-rp",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: status update with a Drouillard section and a Nordic section: names both files"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -11018,11 +11040,12 @@
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "196cb2aa999811ca",
-    "expect": "file",
-    "deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba",
+    "expect": "queue",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-rp",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: status update with a Drouillard section and a Nordic section: names both files"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -11081,11 +11104,12 @@
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "197f67b0eb519288",
-    "expect": "file",
-    "deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba",
+    "expect": "queue",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-rp",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: lender large-file notice naming no property to clients who are on two files"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
@@ -12143,11 +12167,12 @@
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",
     "gmail_id": "199ced8da06e36cb",
-    "expect": "file",
-    "deal_id": "c2a820d2-2e72-423e-8e75-374aa8dc7aba",
+    "expect": "queue",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "missed-bulk",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-09-24 after reading the message: Western Title \"Mutual Clients\" for clients on two files; the thread mixes Drouillard escrow with the Nordic purchase"
   },
   {
     "mailbox": "rebeccapeterson@ryan-realty.com",

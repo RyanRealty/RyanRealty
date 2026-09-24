@@ -37,5 +37,7 @@ comment on function public.tc_mail_review_coverage() is
 
 -- service_role only — getMailCoverage() always reads via createServiceClient(),
 -- the same grant tc_mail_reviews itself carries (20260924030000_tc_mail_reviews.sql).
-revoke all on function public.tc_mail_review_coverage() from public;
+-- Supabase's default privileges also grant EXECUTE on new public functions to
+-- anon and authenticated directly, which a revoke from PUBLIC does not undo.
+revoke all on function public.tc_mail_review_coverage() from public, anon, authenticated;
 grant execute on function public.tc_mail_review_coverage() to service_role;
