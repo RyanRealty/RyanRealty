@@ -22,6 +22,7 @@ import {
   filesToOpenFromQueue,
   isComparablesReport,
   listedAddresses,
+  isTestFixtureDeal,
   isTransactionFormAttachment,
   personNameMatches,
   personNamedIn,
@@ -1924,5 +1925,358 @@ describe('golden eval: a two-word street keeps both words after a directional', 
     const d = decide4(mail({ from: ['matt.lists.homes@gmail.com'], to: ['matt@ryan-realty.com'], subject: '[Deal: 1405 NW Newport Ave] Fwd: 1405 NW Newport Ave', body: 'Forwarded.' }))
     expect(d.status).toBe('unfiled_transaction')
     expect(d.propertyHint).toBe('1405 nw newport')
+  })
+})
+
+describe('re-decide dry run: a test fixture never attracts real mail', () => {
+  // The "1234 test street" placeholder: dead, a client named "Test test", no one on it by email.
+  const placeholder: DealFacts = {
+    dealId: 'placeholder',
+    address: '1234 test street, test, CA, 55555',
+    city: 'test',
+    stage: 'dead',
+    cycles: [cycle({ id: 'ph-listing', kind: 'listing', status: 'Canceled/App', deadDate: '2025-07-08', sellers: ['Test test'] })],
+    partyEmails: [],
+    contactEmails: [],
+    partyNames: ['Test test'],
+  }
+  const sellersFile: DealFacts = {
+    dealId: 'sellers-file',
+    address: '17130 Mayfield Drive, Bend, OR, 97707',
+    city: 'Bend',
+    stage: 'closed',
+    cycles: [cycle({ id: 'ma-sale', status: 'Closed', acceptanceDate: '2025-09-21', closeDate: '2025-10-29', sellers: ['Pat Seller'] })],
+    partyEmails: ['pat.seller@gmail.com'],
+    contactEmails: [],
+    partyNames: ['Pat Seller'],
+  }
+  const harness: DealFacts = { ...sedalia, dealId: 'harness', address: '99001 Alias Test Loop, Bend, OR 97701', partyEmails: [], test: true }
+  const checklist = mail({
+    from: ['pat.seller@gmail.com'],
+    to: ['matt@ryan-realty.com'],
+    sentAt: '2025-09-25T22:37:00Z',
+    subject: 'Sale questions and logistics',
+    body: 'Inspections:\n- Water flow test 9/30 at 9a (sellers pay for flow test)\n- Septic and pump out 10/1',
+  })
+
+  it('a seller\'s checklist saying "flow test … flow test" stays on her file, not "1234 test street" (199830627e6f64c6)', () => {
+    const d = decideMailFiling({ facts: checklist, deals: [...DEALS, placeholder, sellersFile], thread: null })
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('sellers-file')
+    expect(d.candidates.map((c) => c.dealId)).not.toContain('placeholder')
+  })
+
+  it('a thread anchored on a fixture does not carry real mail there', () => {
+    const d = decideMailFiling({ facts: checklist, deals: [...DEALS, placeholder, sellersFile], thread: { dealId: 'placeholder', method: 'thread' } })
+    expect(d.dealId).toBe('sellers-file')
+  })
+
+  it('the fixtures: the placeholder, the harness files, files whose only clients are the test mailboxes; never a real file', () => {
+    expect(isTestFixtureDeal(placeholder)).toBe(true)
+    expect(isTestFixtureDeal(harness)).toBe(true)
+    expect(isTestFixtureDeal(sedalia)).toBe(true)
+    expect(isTestFixtureDeal(sellersFile)).toBe(false)
+    expect(isTestFixtureDeal(beaumont)).toBe(false)
+  })
+
+  it('the harness\'s own "[TC TEST <run>]" mail still reaches its file', () => {
+    const d = decideMailFiling({
+      facts: mail({ from: ['admin@ryan-realty.com'], to: ['matt@ryan-realty.com'], subject: '[TC TEST r1] Offer on 99001 Alias Test Loop', body: 'Offer attached.' }),
+      deals: [...DEALS, harness],
+      thread: null,
+    })
+    expect(d.dealId).toBe('harness')
+  })
+
+  it('a first and last name that are the same word names nobody', () => {
+    expect(personNamedIn('Water flow test 9/30 (sellers pay for flow test)', 'Test test')).toBe(false)
+  })
+})
+
+describe('re-decide dry run: the classes it got wrong', () => {
+  it("a question about terminating the live contract stays on the live contract, not one that died weeks before (19916ad41ab1dc02)", () => {
+    const cycles = [
+      cycle({ id: 'first', status: 'Canceled/App', acceptanceDate: '2025-04-12', closeDate: '2025-07-14', deadDate: '2025-07-18' }),
+      cycle({ id: 'second', status: 'Closed', acceptanceDate: '2025-08-26', closeDate: '2025-10-10' }),
+    ]
+    expect(pickCycleForMail(cycles, '2025-09-04T21:41:00Z', 'general', { termination: true })).toBe('second')
+    // The termination paperwork of the first contract, the week it died, still goes to it.
+    expect(pickCycleForMail(cycles, '2025-07-16T17:00:00Z', 'addendum', { termination: true })).toBe('first')
+  })
+
+  it('"the listing agent" is how a buyer\'s broker names the other side; "show 3480" names the purchase among the clients\' files (197cae1fd487fbd6)', () => {
+    const d = decideTwo(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: CLIENTS,
+        sentAt: '2025-09-02T11:24:00Z',
+        subject: 'Thursday Showing',
+        body: 'I wanted to clarify if an appointment had already been scheduled with the listing agent to show 2680. If so I can let him know.',
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('client-purchase')
+  })
+
+  it("proceeds from the clients' sale for their purchase names both sides: a person picks (199735563a7665c8)", () => {
+    const d = decideTwo(
+      mail({
+        from: ['escrow.one@firstam.com'],
+        to: ['tonya.moore@westerntitle.com'],
+        cc: ['rebeccapeterson@ryan-realty.com'],
+        sentAt: '2025-09-22T21:29:00Z',
+        subject: 'Mutual Clients | Pat Client / Lee Client',
+        body: "Sounds like you'll be sending me some proceeds from the Client's sale. We have their purchase closing 10/10.",
+      }),
+    )
+    expect(d.status).toBe('ambiguous')
+  })
+
+  it('an e-sign notice does not follow its Gmail thread: the platform threads unrelated envelopes by subject (1980a4945d30b20a)', () => {
+    const d = decide4(
+      mail({
+        from: ['noreply@skyslope.com'],
+        subject: 'Envelope completed: You have documents to sign',
+        body: 'Your document has been completed.',
+        attachments: [{ name: 'ORE_Residential_Input_-_ODS.pdf' }],
+      }),
+      { dealId: 'beaumont', method: 'address' },
+    )
+    expect(d.dealId).toBeNull()
+    // The executed PDF with nothing naming its file waits for a person.
+    expect(d.status).toBe('unfiled_transaction')
+  })
+
+  it('our note about a new listing to the title company printing its home book is deal mail, not marketing (1907bc58e24f01cc)', () => {
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['team.officer@firstam.com'],
+        sentAt: '2026-05-20T17:00:00Z',
+        subject: '20702 Beaumont Drive Listing Docs',
+        body: 'I am excited to work with your team on our new listing. Could I get a home book printed?',
+      }),
+    )
+    expect(d.dealId).toBe('beaumont')
+  })
+
+  it("a lender's status email, the title's deposit notice, a platform acting for a client, a remote notary (191bb98a86cafee8, 196c9aaf71d361af, 19968455a67fce67, 1963555cd921b8bc)", () => {
+    const at = '2026-05-20T17:00:00Z'
+    const lender = decide4(mail({ from: ['processor@smalllender.example'], sentAt: at, subject: 'Status update', body: 'Status updateBorrower(s):HuntSubject Property: 20702 Beaumont Drive' }))
+    expect(lender.category).toBe('lender')
+    expect(lender.dealId).toBe('beaumont')
+    const deposit = decide4(
+      mail({ from: ['buyer.one@hotmail.com'], sentAt: at, subject: 'Fwd: 20702 Beaumont Drive - Online deposit submitted.', body: 'FYI' }),
+    )
+    expect(deposit.category).toBe('escrow_title')
+    expect(deposit.dealId).toBe('beaumont')
+    const sellers: DealFacts = { ...beaumont, partyNames: ['Pat Seller'] }
+    const drive = decideMailFiling({
+      facts: mail({
+        from: ['drive-shares-dm-noreply@google.com'],
+        people: [{ email: 'drive-shares-dm-noreply@google.com', name: 'Pat Seller (via Google Drive)', role: 'from' }],
+        sentAt: at,
+        subject: 'Folder shared with you: "Our house"',
+        body: "I've shared an item with you: Our house. Matt - sharing root folder as requested",
+      }),
+      deals: [schoolHouse, tumalo, sellers, impala],
+      thread: null,
+    })
+    expect(drive.dealId).toBe('beaumont')
+    const notary = decide4(mail({ from: ['noreply@proof.com'], sentAt: at, subject: 'Pat Buyer has completed their document(s)', body: 'Closing documents for 20702 Beaumont Drive are complete.' }))
+    expect(notary.dealId).toBe('beaumont')
+  })
+
+  it("the house's own business from a stranger files: Bend's Home Energy Score, a plumber's booking, a restoration estimate, the sign re-installed", () => {
+    const at = '2026-05-20T17:00:00Z'
+    for (const m of [
+      { from: ['scores@energyassessor.example'], subject: 'A Home Energy Score at 20702 Beaumont Drive has been Scheduled', body: 'See you then.' },
+      { from: ['app@serviceline.example'], subject: '[Plumbing Co] Booking Confirmation', body: 'Your appointment scheduled on May 29 at 20702 Beaumont Dr, Bend OR 97701 is confirmed.' },
+      { from: ['pm@restoration.example'], subject: '20702 Beaumont Drive', body: 'Good afternoon, attached you will find the requested estimate.' },
+      { from: ['neighbor@gmail.com'], subject: '20702 Beaumont Dr Bend', body: 'Sign has been re-installed' },
+    ]) {
+      expect(decide4(mail({ ...m, sentAt: at })).dealId).toBe('beaumont')
+    }
+  })
+
+  it('our own list mail sent to ourselves is a blast, never lifted onto the listing ("Great New Price on …")', () => {
+    const d = decide4(
+      mail({ from: ['matt@ryan-realty.com'], to: ['matt@ryan-realty.com'], bulkHeaders: true, subject: 'Great New Price on 20702 Beaumont Drive', body: 'Hello Jill, our property is now offered at a new price.' }),
+    )
+    expect(d.status).toBe('bulk')
+  })
+
+  it("a file's SkySlope mailbox names one file while the subject calls another by name: a person picks (1995e9595d3bd6b3)", () => {
+    const drouillard: DealFacts = { ...clientSale }
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['rebeccapeterson@ryan-realty.com'],
+        to: ['NWNordicAvenue26801@skyslope.com'],
+        sentAt: '2025-09-18T20:48:00Z',
+        subject: 'Fwd: Drouillard Plumbing Service Report',
+        body: 'Received, thank you.',
+      }),
+      deals: [...DEALS, drouillard, clientPurchase],
+      thread: null,
+    })
+    expect(d.status).toBe('ambiguous')
+  })
+})
+
+describe('re-decide dry run: our clients on two files, the conversation and the day decide', () => {
+  // The clients' first purchase fell through before the second; both are purchase files.
+  const failedPurchase: DealFacts = {
+    dealId: 'failed-purchase',
+    address: '3480 SW 45th Street, Redmond, OR, 97756',
+    city: 'Redmond',
+    stage: 'dead',
+    cycles: [cycle({ id: 'fp-sale', status: 'Canceled/App', acceptanceDate: '2025-06-01', deadDate: '2025-08-01', buyers: CLIENT_NAMES })],
+    partyEmails: CLIENTS,
+    contactEmails: [],
+    partyNames: CLIENT_NAMES,
+  }
+  const deals = [...DEALS, clientSale, clientPurchase, failedPurchase]
+
+  it('a reply saying nothing itself is placed by the message it quotes ("… included it with the listing documents in the mls")', () => {
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['pat.client@gmail.com'],
+        sentAt: '2025-08-28T17:26:00Z',
+        subject: 'Re: Well Log',
+        body: 'Thanks Matt, this is super cool.\n\nOn Thu, Aug 28, 2025 at 9:37 AM Matthew Ryan <matt@ryan-realty.com> wrote:\n> I have included it with the listing documents in the mls.',
+      }),
+      deals,
+      thread: null,
+    })
+    expect(d.dealId).toBe('client-sale')
+  })
+
+  it('the down payment is the purchase, but two purchase files are still two: a person picks (1983a1a8a41c4150)', () => {
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['pat.client@gmail.com'],
+        sentAt: '2025-08-28T01:44:00Z',
+        subject: 'Fwd: Income Review & Next Steps',
+        body: 'FYI it looks like we are close. I have thought of an equity credit line to get that down payment higher.',
+      }),
+      deals,
+      thread: null,
+    })
+    expect(d.status).toBe('ambiguous')
+    // With the failed purchase gone, the purchase is the one file on that side.
+    const two = decideMailFiling({
+      facts: mail({ from: ['pat.client@gmail.com'], sentAt: '2025-08-28T01:44:00Z', subject: 'Timing', body: 'We want to get that down payment higher.' }),
+      deals: [...DEALS, clientSale, clientPurchase],
+      thread: null,
+    })
+    expect(two.dealId).toBe('client-purchase')
+  })
+
+  it('what the sender wrote naming both sides stops there, whatever the quote says', () => {
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['pat.client@gmail.com'],
+        sentAt: '2025-08-28T01:44:00Z',
+        subject: 'Timing',
+        body: 'Can the sale proceeds cover our down payment?\n\nOn Wed, Aug 27, 2025 Matthew Ryan wrote:\n> The listing is doing well.',
+      }),
+      deals,
+      thread: null,
+    })
+    expect(d.status).toBe('ambiguous')
+  })
+})
+
+describe('re-decide dry run: a property changes sides', () => {
+  it('the clients bought a home in 2025 and list it in 2026: 2025 mail about their purchase still finds it (1988619f74312500)', () => {
+    const boughtThenSold: DealFacts = {
+      ...clientPurchase,
+      cycles: [
+        cycle({ id: 'bought', status: 'Closed', acceptanceDate: '2025-07-06', closeDate: '2025-08-14', buyers: ['Pat Client', 'Lee Client'] }),
+        cycle({ id: 'relisted', kind: 'listing', status: 'Transaction', listingDate: '2026-07-19', sellers: ['Pat Client', 'Lee Client'] }),
+        cycle({ id: 'resold', status: 'Closed', acceptanceDate: '2026-07-21', closeDate: '2026-09-01', buyers: ['Robin Next'], sellers: ['Patricia Client', 'Lee Client'] }),
+      ],
+    }
+    const selling: DealFacts = {
+      ...clientSale,
+      cycles: [
+        cycle({ id: 'listed', kind: 'listing', status: 'Transaction', listingDate: '2025-07-07', sellers: CLIENT_NAMES }),
+        cycle({ id: 'sold', status: 'Closed', acceptanceDate: '2025-08-27', closeDate: '2025-09-25', sellers: CLIENT_NAMES }),
+      ],
+    }
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['tonya.moore@westerntitle.com', 'pat.client@gmail.com'],
+        sentAt: '2025-08-07T19:55:00Z',
+        subject: 'Balance of Down Payment',
+        body: 'Part of the agreement to extend our closing date on the Client purchase was to submit the balance of the down payment.',
+      }),
+      deals: [...DEALS, selling, boughtThenSold],
+      thread: null,
+    })
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('client-purchase')
+  })
+})
+
+describe('golden eval after the re-decide fixes', () => {
+  it('"20702 Beaumount Dr" is 20702 Beaumont Drive: the house number exact, the street one letter off (19db6ebfe5c5dc86)', () => {
+    const d = decide4(
+      mail({ from: ['noreply@skyslope.com'], sentAt: '2026-04-22T17:00:00Z', subject: 'Envelope completed: Termination Agreement | 20702 Beaumount Dr', body: 'All parties have signed.' }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+    // A different house number on a look-alike street is another property.
+    expect(decide4(mail({ from: ['noreply@skyslope.com'], subject: 'Envelope completed: Offer | 20712 Beaumount Dr', body: 'Signed.' })).dealId).toBeNull()
+  })
+
+  it('"available to purchase with your registration" in a forwarded race ad is no side of a deal (198684884f79d5a4)', () => {
+    const d = decideTwo(
+      mail({
+        from: ['pat.client@gmail.com'],
+        sentAt: '2025-09-15T21:26:00Z',
+        subject: 'Fwd: Registration Open',
+        body: "Who's in?\n---------- Forwarded message ---------\nEvent T-shirts are available to purchase with your registration.",
+      }),
+    )
+    expect(d.status).toBe('ambiguous')
+  })
+
+  it("an investor's files are all purchases: a purchase word picks none of them (198866cfc8353eec)", () => {
+    const investor = ['investor@gmail.com']
+    const one: DealFacts = {
+      dealId: 'inv-one',
+      address: '703 7th Street, Redmond, OR, 97756',
+      city: 'Redmond',
+      stage: 'pending',
+      cycles: [cycle({ id: 'i1', status: 'Pending', acceptanceDate: '2025-07-20', buyers: ['Terry Investor'] })],
+      partyEmails: investor,
+      contactEmails: [],
+      partyNames: ['Terry Investor'],
+    }
+    const two: DealFacts = { ...one, dealId: 'inv-two', address: '218 SW 4th St, Redmond, OR, 97756', cycles: [cycle({ id: 'i2', status: 'Pending', acceptanceDate: '2025-04-22', buyers: ['Terry Investor'] })] }
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['matt@ryan-realty.com'],
+        to: investor,
+        sentAt: '2025-08-07T21:25:00Z',
+        subject: 'Re: downtown overlay',
+        body: 'Ok Great!\n\nOn Thu, Aug 7, 2025 Terry wrote:\n> Any chance we can check that one out tomorrow and get a pre-approval lined up?',
+      }),
+      deals: [...DEALS, one, two],
+      thread: null,
+    })
+    expect(d.status).toBe('ambiguous')
+  })
+
+  it("a photographer's shoot appointment is not the house's business; a plumber's is (195e3492837540e5, 19e70695d1260be9)", () => {
+    const at = '2026-05-20T17:00:00Z'
+    expect(
+      decide4(mail({ from: ['orders@photoco.example'], sentAt: at, subject: 'Order #1090 Appointment Scheduled', body: 'Your appointment at 20702 Beaumont Dr, Bend, OR 97701 is scheduled.' })).status,
+    ).toBe('not_deal')
+    expect(
+      decide4(mail({ from: ['app@serviceline.example'], sentAt: at, subject: 'Booking Confirmation', body: 'Your appointment with Valley Plumbing at 20702 Beaumont Dr, Bend OR 97701 is confirmed.' })).dealId,
+    ).toBe('beaumont')
   })
 })

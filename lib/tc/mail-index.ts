@@ -31,6 +31,7 @@ import {
   filesToOpenFromQueue,
   mentionsDealAddress,
   isHouseAddress,
+  isTestFixtureDeal,
   isTransactionFormAttachment,
   normalizeEmail,
   offerFromMail,
@@ -100,7 +101,7 @@ async function allRows<T>(q: (from: number, to: number) => PromiseLike<{ data: T
 
 /** Every deal, all stages: closed files still take their post-close mail. */
 export async function loadMailUniverse(sb: SB = createServiceClient()): Promise<MailUniverse> {
-  type DealRow = { id: string; address: string; city: string | null; stage: string }
+  type DealRow = { id: string; address: string; city: string | null; stage: string; stage_detail: string | null }
   type CycleRow = {
     id: string
     deal_id: string
@@ -118,7 +119,7 @@ export async function loadMailUniverse(sb: SB = createServiceClient()): Promise<
     sellers: unknown
   }
   const [deals, cycles, contacts, people] = await Promise.all([
-    allRows<DealRow>((a, b) => sb.from('tc_deals').select('id, address, city, stage').order('id').range(a, b)),
+    allRows<DealRow>((a, b) => sb.from('tc_deals').select('id, address, city, stage, stage_detail').order('id').range(a, b)),
     allRows<CycleRow>((a, b) =>
       sb
         .from('tc_cycles')
@@ -234,6 +235,8 @@ export async function loadMailUniverse(sb: SB = createServiceClient()): Promise<
       partyNames: [...partyNames],
       contactNames: [...contactNames],
       subdivisions: [...subdivisions],
+      // The alias harness's files ("TC TEST (alias harness): …").
+      test: String(d.stage_detail ?? '').startsWith('TC TEST'),
     }
   })
   return { deals: out, listingSide, sellerEmails }
@@ -502,7 +505,7 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
         const tied = new Set(decision.candidates.map((c) => c.dealId))
         const candidates = choosing
           ? candidateDealsForModel(universe.deals.filter((d) => tied.has(d.dealId)), f3.sentAt, () => true)
-          : candidateDealsForModel(universe.deals, f3.sentAt, dealOpenAt)
+          : candidateDealsForModel(universe.deals.filter((d) => !isTestFixtureDeal(d)), f3.sentAt, dealOpenAt)
         const modelDecision = await askModelStage({ facts: f3, candidates, mode: choosing ? 'choose' : 'open' })
         let applied = applyModelStageDecision(modelDecision)
         // Choosing never opens a new transaction and never leaves the tied set.

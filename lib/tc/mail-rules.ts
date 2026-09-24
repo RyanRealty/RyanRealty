@@ -95,6 +95,10 @@ const TRANSACTION_SENDER_DOMAINS: readonly string[] = [
   ...ESIGN_DOMAINS,
   'westerntitle.com',
   'deschutestitle.com',
+  // Remote online notarization: title's closing signings ("First American
+  // <noreply@proof.com>: … has completed their document(s)").
+  'proof.com',
+  'notarize.com',
   'firstam.com',
   'amerititle.com',
   'fnf.com',
@@ -195,6 +199,24 @@ export type DealFacts = {
   contactNames?: string[]
   /** The MLS subdivision of the property ("Valhalla Heights"), from listings by the cycles' MLS numbers. */
   subdivisions?: string[]
+  /** A test fixture (the alias harness's "TC TEST" files): see isTestFixtureDeal. */
+  test?: boolean
+}
+
+/**
+ * A file that exists to test the Vault, not to hold a transaction: the alias
+ * harness's files (stage detail "TC TEST …", marked `test` when loaded), the
+ * "1234 test street" placeholder, and any file whose only clients are the
+ * test-party mailboxes (60935 Apollo Place, 2840 NE Sedalia Loop). They take
+ * the harness's own "[TC TEST <run>]" mail and nothing else: "1234 test
+ * street, test, CA" (a client named "Test test") drew a seller's "Water flow
+ * test … flow test" checklist off 17130 Mayfield in the 2026-09-24 re-decide
+ * dry run.
+ */
+export function isTestFixtureDeal(d: Pick<DealFacts, 'address' | 'partyEmails' | 'test'>): boolean {
+  if (d.test) return true
+  if (/^\s*\d+\s+test\s+(?:street|st)\b/i.test(String(d.address ?? ''))) return true
+  return d.partyEmails.length > 0 && d.partyEmails.every((e) => TEST_PARTY_ALIASES.has(normalizeEmail(e)))
 }
 
 export type ThreadAnchor = { dealId: string; method: string }
@@ -555,6 +577,8 @@ export function personNameMatches(display: string | null | undefined, known: str
 export function personNamedIn(text: string, known: string | null | undefined): boolean {
   const toks = nameTokens(known)
   if (toks.length < 2 || !text) return false
+  // "Test test" is a placeholder, not a person: first and last must differ.
+  if (toks[0] === toks[toks.length - 1]) return false
   const first = escapeRe(toks[0])
   const last = escapeRe(toks[toks.length - 1])
   if (first.length < 2 || last.length < 3) return false
@@ -651,10 +675,36 @@ const DIRECTIONAL_WORD = new RegExp(`^${DIRECTIONAL}$`, 'i')
  * Pine Street") and a property with no file ("909 NW Delaware") still name
  * another property.
  */
+/** Letters to change, add, drop or swap to turn one word into the other (Damerau). */
+function editDistance(a: string, b: string): number {
+  const d: number[][] = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)))
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1)
+    }
+  }
+  return d[a.length][b.length]
+}
+
+/**
+ * The subject's property is this file's house number on this file's street
+ * spelled one letter off ("20702 Beaumount Dr" is 20702 Beaumont Drive). The
+ * house number must be exact and the street six letters or more.
+ */
+function subjectMisspellsDeal(subjectProperty: string, parsed: ParsedDealAddress): boolean {
+  const [num, ...rest] = subjectProperty.split(' ')
+  const word = rest.filter((w) => !DIRECTIONAL_WORD.test(w))[0]
+  if (num !== parsed.number || !word || word === parsed.street || /^\d/.test(parsed.street) || parsed.street.length < 6) return false
+  return editDistance(word, parsed.street) <= 1
+}
+
 function subjectMisnamesDeal(subject: string, subjectProperty: string, parsed: ParsedDealAddress): boolean {
   const [num, ...rest] = subjectProperty.split(' ')
   const words = rest.filter((w) => !DIRECTIONAL_WORD.test(w))
   if (words[0] === parsed.street && nearHouseNumber(num, parsed.number)) return true
+  if (subjectMisspellsDeal(subjectProperty, parsed)) return true
   return num === parsed.number && !streetAddressesIn(subject).some((a) => a.startsWith(`${num} `))
 }
 
@@ -850,7 +900,7 @@ const DEAL_PEOPLE_TALK =
  * talking about the listing, not selling us something.
  */
 const SIGN_TALK =
-  /\bsign (?:is|was) (?:down|up|installed|removed|missing|damaged|gone)\b|\bsign (?:install(?:ation|ed)?|removal|pick ?up)\b|\b(?:install|remove|pick up|put up|take down)(?: the| a| our| your)? (?:yard |hanging |for sale |listing )?sign\b/i
+  /\bsign (?:is|was|has been|got|needs to be) (?:re-?)?(?:down|up|installed|removed|missing|damaged|gone|knocked over)\b|\bsign (?:install(?:ation|ed)?|removal|pick ?up)\b|\b(?:install|remove|pick up|put up|take down)(?: the| a| our| your)? (?:yard |hanging |for sale |listing )?sign\b/i
 
 /**
  * The property's own records: service invoices and history, permits, a home
@@ -861,7 +911,7 @@ const SIGN_TALK =
  * is on a file.
  */
 const PROPERTY_RECORDS =
-  /\bservice (?:records?|invoices?|history|reports?)\b|\binvoices?\b|\bpermits?\b|\bhome warranty\b|\bsurvey\b|\bsepti[c] (?:inspection|report|pump(?:ing)?|certification)\b|\bwell (?:test|report|log|inspection|flow)\b|\bcash ?flow\b|\brent roll\b/i
+  /\bservice (?:records?|invoices?|history|reports?)\b|\binvoices?\b|\bpermits?\b|\bhome warranty\b|\bsurvey\b|\bsepti[c] (?:inspection|report|pump(?:ing)?|certification)\b|\bwell (?:test|report|log|inspection|flow)\b|\bcash ?flow\b|\brent roll\b|\bhome energy score(?:card)?\b|\bsquare[- ]?footage\b|\bmeasurements?\b|\b(?:appointment|booking|service call)\b[^.\n]{0,40}\b(?:plumb(?:ing|er)|electric(?:al|ian)|hvac|heating|roofing|septic|pest)\b|\b(?:plumb(?:ing|er)|electric(?:al|ian)|hvac|heating|roofing|septic|pest)\b[^.\n]{0,40}\b(?:appointment|booking|service call)\b|\b(?:requested|repair|restoration) estimate\b|\bestimate (?:is )?attached\b/i
 
 /**
  * A stranger's mail about one of our addresses, written as deal talk or
@@ -932,7 +982,7 @@ function bodyCategory(subject: string, body: string, bulkHeaders: boolean): Mail
     return 'escrow_title'
   }
   if (
-    /\bappraisal (?:report|inspection|appointment|came in|value|contingency|is scheduled|was scheduled)\b|\bappraiser\b|\bloan (?:estimate|approval|commitment|docs)\b|\bpre-?approv|\bunderwrit|\bclear to close\b/i.test(
+    /\bappraisal (?:report|inspection|appointment|came in|value|contingency|is scheduled|was scheduled)\b|\bappraiser\b|\bloan (?:estimate|approval|commitment|docs|status)\b|\bpre-?approv|\bunderwrit|\bclear to close\b|borrower\(?s?\)?\s*:|subject property\s*:/i.test(
       own,
     )
   ) {
@@ -992,7 +1042,7 @@ export function categorizeMail(input: {
   // Inspections by their kind too: a septic evaluation (Oregon's ESER), radon, sewer scope, pest/WDO, mold.
   if (/\binspection|\brepair|\beser\b|\bseptic\b|\bradon\b|\bsewer scope\b|\bwdo\b|\bpest inspection\b|\bmold\b/i.test(hay)) return 'inspection'
   // Title's own file numbers: Western Title "WT0278291", Deschutes Title "| DE22058".
-  if (/\bescrow\b|\btitle\b|\bprelim|wire|\bwt\d{5,}|\bde\d{5,}\b|open order|earnest|\bem (?:receipt|deposit)\b/i.test(hay)) return 'escrow_title'
+  if (/\bescrow\b|\btitle\b|\bprelim|wire|\bwt\d{5,}|\bde\d{5,}\b|open order|earnest|\bem (?:receipt|deposit)\b|\bonline deposit\b|\bdeposit (?:submitted|received)\b/i.test(hay)) return 'escrow_title'
   if (/\bloan\b|\blender\b|pre-?approval|\bappraisal|underwrit|clear to close|\bctc\b|mortgage/i.test(hay)) return 'lender'
   return bodyCategory(subject, input.body ?? '', !!input.bulkHeaders) ?? 'general'
 }
@@ -1011,6 +1061,8 @@ export function mailDirection(facts: Pick<MailFacts, 'from' | 'to' | 'cc'>): 'in
 const LIVE_STAGES = new Set(['pending', 'pre_contract', 'active_listing'])
 const POST_CLOSE_DAYS = 120
 const PRE_OPEN_DAYS = 45
+/** How long after a contract died its termination paperwork (release, refund) still arrives. */
+const TERMINATION_TAIL_DAYS = 30
 const DAY = 86_400_000
 
 function t(d: string | null | undefined): number | null {
@@ -1061,8 +1113,35 @@ export function dealMaybeOpenAt(deal: DealFacts, sentAt: string): boolean {
   return at >= first - 365 * DAY && at <= first
 }
 
-/** Our side of a file: we list it (it has a listing cycle) or we represent its buyer. */
-function fileSide(deal: DealFacts): 'sale' | 'purchase' {
+/** "Pat Client" and "Patricia Client": the same last name, one first name the start of the other. */
+function looseSameName(a: string, b: string): boolean {
+  const x = nameTokens(a)
+  const y = nameTokens(b)
+  if (x.length < 2 || y.length < 2 || x[x.length - 1] !== y[y.length - 1]) return false
+  const [f, g] = [x[0], y[0]]
+  return f === g || (Math.min(f.length, g.length) >= 3 && (f.startsWith(g) || g.startsWith(f)))
+}
+
+/**
+ * Our clients' side of a file on a date: sellers or buyers on the contract
+ * whose window holds the date (any contract when none does), by name. A
+ * property changes sides: the clients bought 3480 SW 45th in 2025 and sold it
+ * in 2026, so a listing cycle alone says nothing about 2025 mail. With no
+ * names to go by: a listing open on the date is the sale; else a file with no
+ * listing is the purchase.
+ */
+function fileSideAt(deal: DealFacts, at: number, clients: readonly string[]): 'sale' | 'purchase' {
+  const holds = (c: DealCycleFacts) => {
+    const w = cycleWindow(c)
+    return (w.start == null || at >= w.start) && (w.end == null || at <= w.end)
+  }
+  const sales = deal.cycles.filter((c) => c.kind === 'sale')
+  const pool = sales.some(holds) ? sales.filter(holds) : sales
+  const isClient = (n: string) => clients.some((k) => looseSameName(n, k))
+  const asSeller = pool.some((c) => (c.sellers ?? []).some(isClient))
+  const asBuyer = pool.some((c) => (c.buyers ?? []).some(isClient))
+  if (asSeller !== asBuyer) return asSeller ? 'sale' : 'purchase'
+  if (deal.cycles.some((c) => c.kind === 'listing' && holds(c) && (t(c.listingDate) != null || !sales.length))) return 'sale'
   return deal.cycles.some((c) => c.kind === 'listing') ? 'sale' : 'purchase'
 }
 
@@ -1070,17 +1149,24 @@ function fileSide(deal: DealFacts): 'sale' | 'purchase' {
 // "purchase agreement" or "purchase price", which every sale agreement says.
 // The clients' own loan is the purchase too ("sold our loan", "a jumbo loan
 // amount"); "the buyers' loan" on the home they sell is not theirs.
+// Only "purchase" said of theirs: "the/their/your/our purchase", "the Millard
+// purchase", "purchasing the home"; never "available to purchase with your
+// registration" in a forwarded race ad.
 const PURCHASE_WORDS =
-  /\bpurchas(?:e|es|ing|ed)\b(?!\s+(?:and\s+sale\s+)?(?:agreement|price|contract))|\bbuying\b|\bdown payment\b|\b(?:our|your|my) (?:loan|mortgage|lender)\b|\bloan amount\b|\bjumbo\b|\bpre-?approv/i
+  /\b(?:the|their|your|our|this|[a-z]+'s)\s+(?:home\s+|house\s+)?purchase\b(?!\s+(?:and\s+sale\s+)?(?:agreement|price|contract))|\bpurchase (?:closing|of (?:the|their|your|our) (?:home|house))\b|\bpurchasing (?:the|their|your|our|a) (?:home|house|property)\b|\bbuying\b|\bdown payment\b|\b(?:our|your|my) (?:loan|mortgage|lender)\b|\bloan amount\b|\bjumbo\b|\bpre-?approv/i
+const NAMED_PURCHASE = /\b[A-Z][a-z]+ purchase\b/
 // "The sale", "selling", "showings", "open house", "listing": the seller's
 // side. Not "sold": "CC Mortgage sold our loan" is the buyer's loan.
-const SALE_WORDS = /\bsale of\b|\bthe sale\b|\bselling\b|\bshowings?\b|\bopen house\b|\blistings?\b/i
+// Not "the listing agent": a buyer's broker calls the other side that. The
+// clients' sale by name ("the Client's sale") and its proceeds are sale words.
+const SALE_WORDS =
+  /\bsale of\b|\b(?:the|their|your|our|\w+'s)\s+sale\b|\bsale proceeds\b|\bproceeds from\b|\bselling\b|\bshowings?\b|\bopen house\b|\blistings?\b(?!\s+(?:agent|broker|office|side)s?\b)/i
 
-/** The side of a deal a message's own words are on, when they are on one only. */
-function sideOfText(text: string): 'sale' | 'purchase' | null {
-  const p = PURCHASE_WORDS.test(text)
+/** The side of a deal a text is on: one, both (it names the sale and the purchase), or none. */
+function sideOfText(text: string): 'sale' | 'purchase' | 'both' | null {
+  const p = PURCHASE_WORDS.test(text) || NAMED_PURCHASE.test(text)
   const s = SALE_WORDS.test(text)
-  return p && !s ? 'purchase' : s && !p ? 'sale' : null
+  return p && s ? 'both' : p ? 'purchase' : s ? 'sale' : null
 }
 
 /** What the message itself says about which cycle it belongs to. */
@@ -1165,7 +1251,8 @@ export function pickCycleForMail(
     if (c.kind === 'sale' && accepted != null && accepted <= at + PRE_OPEN_DAYS * DAY) score += 5
     // Under contract on the send date: accepted (the day before counts, dates are days) through close or cancellation.
     const ended = t(c.closeDate) ?? t(c.deadDate)
-    if (c.kind === 'sale' && accepted != null && accepted - DAY <= at && (ended == null || at <= ended + DAY)) score += 6
+    const live = c.kind === 'sale' && accepted != null && accepted - DAY <= at && (ended == null || at <= ended + DAY)
+    if (live) score += 6
     if (!cancelled(c)) score += 3
     if (escrowNamed.has(c.id) && escrowNamed.size < cycles.length) score += 20
     if (mlsNamed.has(c.id) && mlsNamed.size < cycles.length) score += 12
@@ -1173,8 +1260,14 @@ export function pickCycleForMail(
     if (shape && !escrowNamed.has(c.id) && [...text.matchAll(shape)].length) score -= 8
     score += cycleNameScore(c, cycles, text)
     if (hints.termination) {
-      if (cancelled(c) && holds) score += 25
-      if (closed(c)) score -= 30
+      // The contract a termination ends died within a month of it. "Options
+      // to terminate" asked while a later contract was live is about that
+      // one: the 2026-09-24 re-decide dry run sent the Oregon REALTORS legal
+      // hotline thread about 2680 NW Nordic's live contract to the contract
+      // that had died seven weeks earlier.
+      const diedAt = t(c.deadDate) ?? ended
+      if (cancelled(c) && holds && (diedAt == null || at <= diedAt + TERMINATION_TAIL_DAYS * DAY)) score += 25
+      if (closed(c) && !live) score -= 30
     }
     const recency = accepted ?? t(c.listingDate) ?? t(c.createdAt) ?? 0
     if (!best || score > best.score || (score === best.score && recency > best.recency)) {
@@ -1236,7 +1329,9 @@ export function decideMailFiling(input: {
   deals: readonly DealFacts[]
   thread: ThreadAnchor | null
 }): MailDecision {
-  const { facts, deals, thread } = input
+  const { facts, thread } = input
+  // Test fixtures take the alias harness's tagged mail only.
+  const deals = /\[TC TEST\b/i.test(facts.subject) ? input.deals : input.deals.filter((d) => !isTestFixtureDeal(d))
   const direction = mailDirection(facts)
   const fromHouseSystem = facts.from.some(isHouseSystemSender)
   const categoryBase = categorizeMail({
@@ -1272,8 +1367,14 @@ export function decideMailFiling(input: {
   const fromSet = new Set(facts.from.map(normalizeEmail))
   // Display names beside outside addresses, for people on a file by name only.
   // Never a machine's (SkySlope sends "as" the broker) and never our own brokers.
+  // A platform sending for a person says so ("Pat Seller (via Google Drive)"):
+  // that name is the person who acted.
   const named = (facts.people ?? []).filter(
-    (p) => !!p.name && participants.has(normalizeEmail(p.email)) && !isAutomatedSender(p.email) && !isHousePerson(p.name),
+    (p) =>
+      !!p.name &&
+      participants.has(normalizeEmail(p.email)) &&
+      (!isAutomatedSender(p.email) || /\(?\bvia\s+\S/i.test(p.name)) &&
+      !isHousePerson(p.name),
   )
   const subjectProperty = propertyInSubject(facts.subject)
   const parsedById = new Map(deals.map((d) => [d.dealId, parseDealAddress(d.address, d.city)]))
@@ -1329,7 +1430,7 @@ export function decideMailFiling(input: {
       parsed &&
       (mentionsDealStreet(namesText, parsed) ||
         platformAliasNamesDeal([...facts.to, ...facts.cc], parsed) ||
-        (!!subjectProperty && subjectMistypesDeal(facts.subject, subjectProperty, parsed)))
+        (!!subjectProperty && (subjectMistypesDeal(facts.subject, subjectProperty, parsed) || subjectMisspellsDeal(subjectProperty, parsed))))
     ) {
       // A street without its house number only counts where the email names
       // its own subject: a vendor pitch quoting "Beaumont Drive" in the body
@@ -1455,7 +1556,9 @@ export function decideMailFiling(input: {
     categoryBase === 'auto_reply' ||
     digest
   if (noise) {
-    const quiet = categoryBase === 'auto_reply' || categoryBase === 'system_alert'
+    // Our own list mail to ourselves is a BCC blast ("Great New Price on 54474
+    // Huntington Road", with its List-Unsubscribe): marketing, never lifted.
+    const quiet = categoryBase === 'auto_reply' || categoryBase === 'system_alert' || (facts.bulkHeaders && direction === 'internal')
     const escrowOnly = scored.filter((c) => hasEvidence(c, 'escrow'))
     if (!quiet && escrowOnly.length === 1) {
       reasons.push('bulk mail carrying one deal escrow number')
@@ -1529,6 +1632,14 @@ export function decideMailFiling(input: {
     if (!p || !/^\d/.test(p.street) || !p.next || !STREET_SUFFIX_WORD.test(p.next)) return false
     return new RegExp(`\\b${escapeRe(p.street)}\\s+(?:${SUFFIX_VARIANTS[p.next] ?? escapeRe(p.next)})\\b`, 'i').test(text)
   }
+  // A house number alone ("wanted to clarify if an appointment had already
+  // been scheduled … to show 3480"): nothing among all our files, enough
+  // among the few one client is on. Never a price, a phone number or a year.
+  const callsByHouseNumber = (d: DealFacts, text: string) => {
+    const p = parsedById.get(d.dealId) ?? null
+    if (!p || p.number.length < 3 || /^(?:19|20)\d{2}$/.test(p.number)) return false
+    return new RegExp(`(?<![\\d$,.#/-])\\b${p.number}\\b(?![,./-]?\\d)`).test(text)
+  }
   // The subject names a property that is not this file ("Re: 909 NW Delaware"
   // from someone on the Beaumont file): the email is about that property.
   const subjectNamesAnother = (d: DealFacts) => {
@@ -1552,47 +1663,84 @@ export function decideMailFiling(input: {
   const clientFiles = deals.filter((d) => clientOn.has(d.dealId) && dealMaybeOpenAt(d, facts.sentAt) && !subjectNamesAnother(d))
   if (!located.length && clientFiles.length > 1 && (!thread || clientFiles.some((d) => d.dealId === thread.dealId))) {
     const scoreOf = (d: DealFacts) => scored.find((c) => c.dealId === d.dealId)?.score ?? W.party
-    const called = clientFiles.filter(
-      (d) => callsByName(d) || callsByName(d, false, ownText, false) || callsByNumberedStreet(d, `${namesText}\n${ownText}`),
-    )
-    if (called.length === 1) {
-      reasons.push(`our clients are on ${clientFiles.length} open files; the email calls one by its street or subdivision`)
-      return finish('filed', called[0].dealId, 'address', scoreOf(called[0]))
-    }
-    // Someone the email talks about, not someone on it, who is on only one of
-    // the files: the lender named in the body is on the purchase only.
+    const at = t(facts.sentAt) ?? 0
     const onEmail = (facts.people ?? []).map((p) => p.name).filter((n): n is string => !!n)
-    const talkedAbout = (d: DealFacts) =>
-      [...(d.partyNames ?? []), ...(d.contactNames ?? [])].filter(
-        (n) => personNamedIn(ownText, n) && !onEmail.some((p) => personNameMatches(p, n) || personNameMatches(n, p)),
+    const peopleOf = (d: DealFacts) => [...(d.partyNames ?? []), ...(d.contactNames ?? [])]
+    // The clients: the party names on more than one of these files.
+    const clientNames = [
+      ...new Set(
+        clientFiles.flatMap((d) =>
+          (d.partyNames ?? []).filter((n) => clientFiles.some((o) => o !== d && (o.partyNames ?? []).some((m) => looseSameName(m, n)))),
+        ),
+      ),
+    ]
+    const sameName = (a: string, b: string) => personNameMatches(a, b) || personNameMatches(b, a)
+    // What the sender wrote first; then the whole conversation, the replies it
+    // quotes ("… included it with the listing documents in the mls").
+    const tiers: Array<{ text: string; label: string }> = [
+      { text: ownText, label: 'the email' },
+      { text: `${facts.subject}\n${facts.body.slice(0, 8000)}`, label: 'the conversation it quotes' },
+    ]
+    let calledSeveral = false
+    for (const { text, label } of tiers) {
+      const called = clientFiles.filter(
+        // In the body a bare street needs six letters or two words: "test" and "bluff" are ordinary words there.
+        (d) =>
+          callsByName(d) ||
+          callsByName(d, true, text, false) ||
+          callsByNumberedStreet(d, `${namesText}\n${text}`) ||
+          callsByHouseNumber(d, text),
       )
-    const byPerson = called.length
-      ? []
-      : clientFiles.filter((d) =>
-          talkedAbout(d).some((n) =>
-            clientFiles.every((o) => o === d || ![...(o.partyNames ?? []), ...(o.contactNames ?? [])].some((m) => personNameMatches(m, n) || personNameMatches(n, m))),
-          ),
-        )
-    if (byPerson.length === 1) {
-      reasons.push(`our clients are on ${clientFiles.length} open files; the email talks about someone on only one of them`)
-      return finish('filed', byPerson[0].dealId, 'party', scoreOf(byPerson[0]))
-    }
-    const side = called.length || byPerson.length ? null : sideOfText(ownText)
-    const onSide = side ? clientFiles.filter((d) => fileSide(d) === side) : []
-    if (onSide.length === 1) {
-      reasons.push(`our clients are on ${clientFiles.length} open files; the email is about their ${side}`)
-      return finish('filed', onSide[0].dealId, 'party', scoreOf(onSide[0]))
+      if (called.length === 1) {
+        reasons.push(`our clients are on ${clientFiles.length} open files; ${label} calls one by its street or subdivision`)
+        return finish('filed', called[0].dealId, 'address', scoreOf(called[0]))
+      }
+      if (called.length > 1) {
+        calledSeveral = true
+        break
+      }
+      // Someone the email talks about, not someone on it, who is on only one
+      // of the files: the lender named in the body is on the purchase only.
+      const byPerson = clientFiles.filter((d) =>
+        peopleOf(d).some(
+          (n) =>
+            personNamedIn(text, n) &&
+            !onEmail.some((p) => sameName(p, n)) &&
+            clientFiles.every((o) => o === d || !peopleOf(o).some((m) => sameName(m, n))),
+        ),
+      )
+      if (byPerson.length === 1) {
+        reasons.push(`our clients are on ${clientFiles.length} open files; ${label} talks about someone on only one of them`)
+        return finish('filed', byPerson[0].dealId, 'party', scoreOf(byPerson[0]))
+      }
+      const side = byPerson.length ? null : sideOfText(text)
+      if (side === 'both') {
+        calledSeveral = true
+        break
+      }
+      // A side word picks only the one file on that side: an investor's four
+      // purchases, or a purchase that fell through and the next, stay for a person.
+      const onSide = side ? clientFiles.filter((d) => fileSideAt(d, at, clientNames) === side) : []
+      if (side && onSide.length === 1) {
+        reasons.push(`our clients are on ${clientFiles.length} open files; ${label} is about their ${side}`)
+        return finish('filed', onSide[0].dealId, 'party', scoreOf(onSide[0]))
+      }
+      if (side || byPerson.length) break
     }
     reasons.push(
-      called.length > 1
-        ? `our clients are on ${clientFiles.length} open files and the email calls more than one by name`
+      calledSeveral
+        ? `our clients are on ${clientFiles.length} open files and the email names more than one`
         : `our clients are on ${clientFiles.length} open files and the email names none of them`,
     )
     return finish('ambiguous', null, null, Math.max(...clientFiles.map(scoreOf)))
   }
 
   // Rule 2 — the thread already lives on a deal, and this email names no other property.
-  if (thread && byId.has(thread.dealId)) {
+  // A platform's notice is one envelope; Gmail threads its identical subjects
+  // ("Envelope completed: You have documents to sign") across unrelated
+  // envelopes, so the thread says nothing about which file this one is.
+  const platformNotice = facts.from.length > 0 && facts.from.every((e) => isAutomatedSender(e) && domainIn(e, ESIGN_DOMAINS))
+  if (thread && byId.has(thread.dealId) && !platformNotice) {
     const other = scored.find((c) => c.dealId !== thread.dealId && hasEvidence(c, 'address', 'street'))
     const anchored = scored.find((c) => c.dealId === thread.dealId)
     if (!other) {
@@ -1610,6 +1758,7 @@ export function decideMailFiling(input: {
   const knownCorrespondent = direction !== 'inbound' || facts.from.some((e) => knownPeople.has(normalizeEmail(e)))
   const transactionMail =
     isTransactionCategory(categoryBase) || categoryBase === 'signing_notice' || facts.attachments.some(isTransactionFormAttachment)
+  const outsideRecipients = [...facts.to, ...facts.cc].map(normalizeEmail).filter((e) => e.includes('@') && !isHouseAddress(e))
   const bySubject = located.length > 1 ? located.filter((c) => hasEvidence(c, 'subject')) : []
   const addressHits = scored.filter((c) => hasEvidence(c, 'address'))
   const pick: { kind: 'address' | 'street'; hits: MailCandidate[] } | null =
@@ -1647,9 +1796,20 @@ export function decideMailFiling(input: {
         reasons.push('names an address of one of our files, but a stranger wrote it and it is not transaction mail')
         return finish('not_deal', null, null, 0)
       }
-      if (direction === 'outbound' && isProspecting(facts.subject, facts.body, facts.bulkHeaders)) {
+      // "our new listing" to the title company that will print its home book is not marketing.
+      if (direction === 'outbound' && !outsideRecipients.some(isKnownSender) && isProspecting(facts.subject, facts.body, facts.bulkHeaders)) {
         reasons.push('our own marketing mail naming an address of one of our files')
         return finish('not_deal', null, null, 0)
+      }
+    }
+    // A street or a file's SkySlope address names one file while the subject
+    // calls another by name ("Fwd: Drouillard Plumbing Service Report" sent to
+    // 2680 NW Nordic's SkySlope mailbox): two files, a person picks.
+    if (!tied && kind === 'street' && bySubject.length !== 1) {
+      const calledElse = deals.filter((d) => d.dealId !== top.dealId && callsByName(d, true))
+      if (calledElse.length) {
+        reasons.push('names one file by its street or SkySlope address and the subject calls another by name')
+        return finish('ambiguous', null, null, top.score)
       }
     }
     if (!tied) {
@@ -1760,7 +1920,14 @@ export function decideMailFiling(input: {
   // for a property that has no file yet: it waits in the queue with that property.
   const transactionForm = facts.attachments.some(isTransactionFormAttachment)
   const filedByHand = /^\s*\[deal:/i.test(facts.subject) && !!subjectProperty
-  if (((isTransactionCategory(categoryBase) || categoryBase === 'signing_notice') && (transactionForm || subjectProperty)) || filedByHand) {
+  // An e-sign completion carrying its executed PDF is a signed document,
+  // whatever it is named ("ORE_Residential_Input_-_ODS.pdf" with a garbled
+  // text layer): when nothing says which file, a person places it.
+  const signedDocument =
+    categoryBase === 'signing_notice' &&
+    /envelope completed|^\s*completed:|your signed documents|has been signed|has completed their document/i.test(facts.subject) &&
+    facts.attachments.some((a) => /\.pdf$/i.test(String(a.name ?? '')))
+  if (((isTransactionCategory(categoryBase) || categoryBase === 'signing_notice') && (transactionForm || subjectProperty || signedDocument)) || filedByHand) {
     reasons.push(subjectProperty ? `transaction mail for ${subjectProperty}, no deal on file` : 'transaction documents, no deal on file')
     return finish('unfiled_transaction', null, null, 0)
   }
