@@ -48,7 +48,14 @@ import {
   type ShapeSearchDeps,
 } from '@/lib/data/listings/searchShapes'
 import { dedupeListingTilesByStreet } from '@/lib/data/listings/dedupeListingTilesByStreet'
-import { SEARCH_SORT_KEYS, applySearchSortOrder } from '@/lib/search/search-sort-order'
+import {
+  PLAUSIBLE_YEAR_BUILT,
+  SEARCH_SORT_KEYS,
+  YEAR_BUILT_UNKNOWN_OR,
+  applySearchSortOrder,
+  isYearBuiltSort,
+  yearSortRestWindow,
+} from '@/lib/search/search-sort-order'
 
 // Shape schemas/types + the shapes execution paths live in searchShapes.ts —
 // re-exported here so existing importers (lib/data/index.ts) keep working.
@@ -582,6 +589,8 @@ async function fetchSearchListingsAll(
   // Shapes get their own execution path (RPC key resolution + chunked .in()).
   if (parsed.shapes) return fetchSearchListingsAllInShapes(supabase, parsed, shapeSearchDeps)
 
+  if (isYearBuiltSort(parsed.sort)) return fetchYearSorted(supabase, parsed)
+
   // Rows + exact total in ONE query (count: 'exact' rides the row fetch).
   let query = applySearchFilters(
     // Explicit tile columns: select('*') hauled the 36 feature arrays +
@@ -604,6 +613,70 @@ async function fetchSearchListingsAll(
   const rawCount = (data ?? []).length
   const removed = Math.max(0, rawCount - rows.length)
   const totalCount = Math.max(0, (count ?? rawCount) - removed)
+  return {
+    rows,
+    totalCount,
+    capped: totalCount > parsed.offset + rows.length,
+    countIsExact: true,
+  }
+}
+
+/**
+ * "Newest built" / "Oldest built". The MV carries placeholder years (9999 and
+ * 0 on on-market rows, 2026-09-24), and ORDER BY year_built alone put a 9999
+ * home first under "Newest built". A year outside PLAUSIBLE_YEAR_BUILT sorts
+ * with the unknown years, last (the search_listings_advanced rule), so the page
+ * is two ordered reads glued end to end: plausible years in year order, then
+ * the rest in listing_key order. Each read carries its exact count; the total
+ * is both.
+ */
+async function fetchYearSorted(
+  supabase: NonNullable<ReturnType<typeof supabaseAnon>>,
+  parsed: z.output<typeof FilterSchema>
+): Promise<SearchListingsAllResult> {
+  const plausibleQuery = applySort(
+    applySearchFilters(
+      supabase.from('listing_search_mv').select(TILE_MV_SELECT_COLUMNS, { count: 'exact' }),
+      parsed
+    )
+      .gte('year_built', PLAUSIBLE_YEAR_BUILT.min)
+      .lte('year_built', PLAUSIBLE_YEAR_BUILT.max),
+    parsed.sort
+  ).range(parsed.offset, parsed.offset + parsed.limit - 1)
+  const plausible = await plausibleQuery
+  if (plausible.error) {
+    throw new Error(`[searchListingsAll] supabase error: ${plausible.error.message}`)
+  }
+  const plausibleRows = plausible.data ?? []
+  const plausibleTotal = plausible.count ?? parsed.offset + plausibleRows.length
+  const rest = yearSortRestWindow({
+    offset: parsed.offset,
+    limit: parsed.limit,
+    plausibleRowsRead: plausibleRows.length,
+    plausibleTotal,
+  })
+  // The unknown-year half: its rows when this page reaches it, its count always.
+  const unknown = rest
+    ? await applySearchFilters(
+        supabase.from('listing_search_mv').select(TILE_MV_SELECT_COLUMNS, { count: 'exact' }),
+        parsed
+      )
+        .or(YEAR_BUILT_UNKNOWN_OR)
+        .order('listing_key', { ascending: true, nullsFirst: false })
+        .range(rest.from, rest.to)
+    : await applySearchFilters(
+        supabase.from('listing_search_mv').select('listing_key', { count: 'exact', head: true }),
+        parsed
+      ).or(YEAR_BUILT_UNKNOWN_OR)
+  if (unknown.error) {
+    throw new Error(`[searchListingsAll] supabase error: ${unknown.error.message}`)
+  }
+  const raw = [...plausibleRows, ...(rest ? (unknown.data ?? []) : [])]
+  const rows = dedupeListingTilesByStreet(
+    raw.map((row) => mvRowToTile(row as unknown as ListingSearchMvRow)),
+  )
+  const removed = Math.max(0, raw.length - rows.length)
+  const totalCount = Math.max(0, plausibleTotal + (unknown.count ?? 0) - removed)
   return {
     rows,
     totalCount,

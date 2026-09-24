@@ -268,6 +268,8 @@ function sanitizeShapeSet(set: MapShapeSet | null): MapShapeSet | null {
  * polygon), applying the active filters. ONE result set feeds BOTH the list and
  * the map markers so they stay in lockstep — the list is exactly the pins on the
  * map. `capped` lets the UI show "500+" honestly when the area overflows the cap.
+ * `countIsExact` is false when `totalCount` is only a floor (the rows fetched),
+ * which the claim line then prints as "N+", never as a count.
  *
  * On-market scopes serve from listing_search_mv (searchListingsAll), so every
  * registry filter — amenities, outbuildings, schools, keywords — now applies in
@@ -290,7 +292,7 @@ export async function getViewportSearch(
   bounds: MapBounds,
   polygon: MapPolygonPoint[] | MapShapeSet | null,
   options?: { limit?: number; frame?: 'region' }
-): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean }> {
+): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean; countIsExact: boolean }> {
   // The 3rd arg keeps its legacy shape (a single polygon ring) AND accepts the
   // Phase 2 multi-shape include/exclude set — both spellings of "the user drew
   // on the map". Arrays are the legacy ring; objects are the shape set.
@@ -309,11 +311,9 @@ export async function getViewportSearch(
       statusFilter: 'closed',
       // On this scope `newest` is most recently SOLD (close date) and `oldest`
       // its mirror: getViewportListings reads searchTileSort with sold = true.
-      sort:
-        filters.sort === 'price_asc' || filters.sort === 'priceAsc' ? 'price_asc'
-        : filters.sort === 'price_desc' || filters.sort === 'priceDesc' ? 'price_desc'
-        : filters.sort === 'oldest' ? 'oldest'
-        : 'newest',
+      // Every other sort the menu offers ($/sq ft, year built, price) reaches
+      // the tile read as itself, so the list is in the order the menu names.
+      sort: toDalSort(filters.sort),
       city: filters.city,
       subdivision: filters.subdivision,
       minPrice: filters.minPrice,
@@ -344,7 +344,13 @@ export async function getViewportSearch(
         l.Longitude != null &&
         isPointInShapeSet({ lat: Number(l.Latitude), lng: Number(l.Longitude) }, shapeSet)
     )
-    return { listings: rows, totalCount: rows.length, capped: res.capped }
+    // The in-shape count is exact only when the bbox read held every bbox row.
+    // `res.capped` alone does not say so: it turns false once the bbox's exact
+    // count comes back, while the rows stay cut at the display cap. Fewer rows
+    // than the bbox count (or a bbox count that is itself a floor) leaves
+    // in-shape homes unread, so the filtered count is a floor ("N+").
+    const sawEveryRow = res.countIsExact && res.listings.length >= res.totalCount
+    return { listings: rows, totalCount: rows.length, capped: !sawEveryRow, countIsExact: sawEveryRow }
   }
 
   const status: SearchListingsAllFilter['status'] =
@@ -364,6 +370,7 @@ export async function getViewportSearch(
       listings: regional.rows.map(tileToViewportRow),
       totalCount: regional.totalCount,
       capped: regional.capped,
+      countIsExact: regional.countIsExact,
     }
   }
 
@@ -406,6 +413,7 @@ export async function getViewportSearch(
     listings: result.rows.map(tileToViewportRow),
     totalCount: result.totalCount,
     capped: result.capped,
+    countIsExact: result.countIsExact,
   }
 }
 
@@ -522,6 +530,9 @@ export async function getSearchMapListings(filters: SearchFilters): Promise<MapL
     city: filters.city,
     subdivision: filters.subdivision,
     statusFilter,
+    // The map view's Sort control names this order; it decides which homes
+    // make the pin cap.
+    sort: toDalSort(filters.sort),
     minPrice: filters.minPrice,
     maxPrice: filters.maxPrice,
     minBeds: filters.beds,

@@ -257,6 +257,10 @@ async function fetchShapesFallbackInMemory(
       t.lng != null &&
       isPointInShapeSet({ lat: t.lat, lng: t.lng }, shapes)
   )
+  // The SQL order, re-applied by the comparator the exact path uses, so a
+  // year-built sort sinks placeholder years here too (a raw ORDER BY
+  // year_built ranks 9999 first); every other sort is already in this order.
+  inShape.sort(tileComparator(parsed.sort))
   const rows = inShape.slice(parsed.offset, parsed.offset + parsed.limit)
   return {
     rows,
