@@ -10,6 +10,11 @@
  *    first sweep). Post-close title and settlement mail lands here.
  * 3. Search every mailbox for offer / counter / escrow mail by subject from the
  *    last three days, so an offer we never answered is still a record.
+ * 4. "Every message reviewed": with whatever budget is left, continue the
+ *    full-history reviewer (reviewMailbox) for any mailbox that has not yet
+ *    walked its whole history — deal-term searches above only ever look for
+ *    mail that matches a deal; this is the pass that puts a record on EVERY
+ *    message, including the ones that are not a deal at all.
  *
  * The 15-minute CRM Gmail sync indexes new mail as it arrives; this pass
  * catches what the stream cannot see. ?deal=<uuid> sweeps one deal, all history.
@@ -17,7 +22,8 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
-import { autoOpenFilesFromMail, loadMailUniverse, rematchQueuedMail, sweepDealMail, sweepTransactionMail } from '@/lib/tc/mail-index'
+import { CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { autoOpenFilesFromMail, loadMailUniverse, rematchQueuedMail, reviewMailbox, sweepDealMail, sweepTransactionMail } from '@/lib/tc/mail-index'
 import { dealOpenAt } from '@/lib/tc/mail-rules'
 
 export const runtime = 'nodejs'
@@ -78,6 +84,19 @@ export async function GET(request: Request) {
         deadline,
       })
     }
+
+    // "Every message reviewed": whatever is left of the budget continues the
+    // full-history reviewer for any mailbox not yet finished. One mailbox at a
+    // time so a slow one does not starve the next; a mailbox already finished
+    // returns instantly (no Gmail calls) and costs nothing.
+    const reviewAll: Array<{ mailbox: string; listed: number; reviewed: number; errors: number; finished: boolean; complete: boolean }> = []
+    for (const mb of CRM_MAILBOXES) {
+      if (Date.now() > deadline) break
+      const res = await reviewMailbox({ mailbox: mb.email, universe, deadline, sb })
+      reviewAll.push({ mailbox: mb.email, listed: res.listed, reviewed: res.reviewed, errors: res.errors, finished: res.finished, complete: res.complete })
+      if (!res.complete) break
+    }
+
     return NextResponse.json({
       ok: true,
       rematch,
@@ -85,6 +104,7 @@ export async function GET(request: Request) {
       deals,
       dealsDue: due.length,
       transactions: transactions && { seen: transactions.seen, filed: transactions.filed, queued: transactions.queued, offers: transactions.offers, errors: transactions.errors },
+      reviewAll,
       ms: Date.now() - start,
     })
   } finally {
