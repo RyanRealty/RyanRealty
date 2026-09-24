@@ -12,6 +12,9 @@ describe('worthModelStage', () => {
   it('never runs on filed or ambiguous mail — the rules already placed it', () => {
     expect(worthModelStage({ status: 'filed', category: 'offer', attachments: [], propertyHint: null })).toBe(false)
     expect(worthModelStage({ status: 'ambiguous', category: 'offer', attachments: [], propertyHint: null })).toBe(false)
+    // Ambiguous mail the rules narrowed to two or more deals: the model picks among them.
+    expect(worthModelStage({ status: 'ambiguous', category: 'general', attachments: [], propertyHint: null, candidateCount: 2 })).toBe(true)
+    expect(worthModelStage({ status: 'ambiguous', category: 'general', attachments: [], propertyHint: null, candidateCount: 1 })).toBe(false)
   })
 
   it('skips ordinary general mail with nothing transactional about it', () => {
@@ -121,6 +124,21 @@ describe('buildModelStagePrompt', () => {
     expect(user).toContain('d1')
     expect(user).toContain('909 NW Delaware Ave')
     expect(user).toContain('Re: inspection report')
+  })
+
+  it('choose mode: only the tied deals, with their clients, and the instruction to pick one or none', () => {
+    const { system, user } = buildModelStagePrompt({
+      facts: { subject: 'Tuesday Updates', from: ['rebeccapeterson@ryan-realty.com'], to: ['client@live.com'], cc: [], body: 'painters start Friday', attachments: [] },
+      candidates: [
+        { dealId: 'nordic', address: '2680 NW Nordic Avenue', city: 'Bend', mlsNumber: null, escrowNumber: null, parties: ['client@live.com'] },
+        { dealId: 'drouillard', address: '2354 NW Drouillard Ave', city: 'Bend', mlsNumber: null, escrowNumber: null, parties: ['client@live.com'] },
+      ],
+      mode: 'choose',
+    })
+    expect(system).toMatch(/sender or recipients are on every deal listed/)
+    expect(user).toContain('Deals the sender or recipients are on')
+    expect(user).toContain('clients client@live.com')
+    expect(user).not.toContain('Open deals')
   })
 
   it('says "(none)" rather than fabricating an empty deal when there are no candidates', () => {
