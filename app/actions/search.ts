@@ -84,7 +84,9 @@ function domFromPreset(daysOnMarket: string | undefined): number | undefined {
   // Any positive day count is a valid ceiling, not just the three UI preset
   // stops — a hand-edited or externally shared ?daysOnMarket=14 used to
   // silently no-op while the chip showed the filter as applied (W-URL audit
-  // 2026-07-30). Cap at 365: dom beyond a year is no longer "new on market".
+  // 2026-07-30). Cap at 365: listed over a year ago is no longer "new on
+  // market". Every path reads it as the on-market date within N days (newly
+  // LISTED, Matt 2026-09-23), never the stale `dom` column.
   if (!daysOnMarket) return undefined
   const n = Number(daysOnMarket)
   if (!Number.isFinite(n) || n <= 0) return undefined
@@ -276,12 +278,18 @@ function sanitizeShapeSet(set: MapShapeSet | null): MapShapeSet | null {
  *   pan/zoom refetches should pass **250** for a lighter payload; SSR seed and
  *   first paint keep the default so the initial map is denser. Hard floor 1,
  *   hard ceiling 1000 (matches getViewportListings).
+ * @param options.frame `'region'` reads the regional frame of the bare
+ *   /homes-for-sale (lib/search/search-opening.ts isRegionalSearchFrame): the
+ *   service-area population the list view counts, with NO bbox, so the count
+ *   under "Central Oregon homes for sale" is the region's, not whatever the
+ *   pixel viewport reaches. `bounds` is then only the camera and is not
+ *   applied. Ignored with a drawn shape or the Sold scope, which stay spatial.
  */
 export async function getViewportSearch(
   filters: SearchFilters,
   bounds: MapBounds,
   polygon: MapPolygonPoint[] | MapShapeSet | null,
-  options?: { limit?: number }
+  options?: { limit?: number; frame?: 'region' }
 ): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean }> {
   // The 3rd arg keeps its legacy shape (a single polygon ring) AND accepts the
   // Phase 2 multi-shape include/exclude set — both spellings of "the user drew
@@ -299,6 +307,8 @@ export async function getViewportSearch(
       bounds: shapeSet ? getShapeSetBounds(shapeSet) ?? bounds : bounds,
       polygon: legacyPoly,
       statusFilter: 'closed',
+      // On this scope `newest` is most recently SOLD (close date) and `oldest`
+      // its mirror: getViewportListings reads searchTileSort with sold = true.
       sort:
         filters.sort === 'price_asc' || filters.sort === 'priceAsc' ? 'price_asc'
         : filters.sort === 'price_desc' || filters.sort === 'priceDesc' ? 'price_desc'
@@ -341,6 +351,21 @@ export async function getViewportSearch(
     filters.status === 'Pending' ? 'pending-only'
     : filters.status === 'Active' ? 'active'
     : 'active-and-pending'
+
+  // Regional frame: the list view's population (service-area guard, no bbox),
+  // same filters, same sort, same exact count. See options.frame above.
+  if (options?.frame === 'region' && !legacyPoly && !shapeSet) {
+    const regional = await searchListingsAll({
+      ...toSearchAllFilter(filters),
+      status,
+      limit: displayCap,
+    })
+    return {
+      listings: regional.rows.map(tileToViewportRow),
+      totalCount: regional.totalCount,
+      capped: regional.capped,
+    }
+  }
 
   const poly = legacyPoly
   const polygonBounds = poly ? getPolygonBounds(poly) : shapeSet ? getShapeSetBounds(shapeSet) : null

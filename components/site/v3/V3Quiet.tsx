@@ -901,9 +901,28 @@ export function V3Quiet({
                             {run.doors.map((door, doorIndex) => (
                               <li key={door.id ?? `${door.href}-${doorIndex}`} id={door.id}>
                                 <Link href={door.href} className="v3-quiet__inlinelink">
-                                  <span aria-hidden="true" className="v3-quiet__doormark">
-                                    <DoorMark mark={door.mark} />
-                                  </span>
+                                  {door.media ? (
+                                    /* A person on an inline line reads as that person, not
+                                       as a generic glyph (About, 2026-09-23 evaluator: the
+                                       outline icons beside the three broker names read as
+                                       placeholders on a page that opens on their faces).
+                                       Owned file, sized by CSS; the label names them, so
+                                       the image is decorative here. */
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      className="v3-quiet__inlinemedia"
+                                      src={door.media.src}
+                                      alt=""
+                                      width={32}
+                                      height={32}
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
+                                  ) : (
+                                    <span aria-hidden="true" className="v3-quiet__doormark">
+                                      <DoorMark mark={door.mark} />
+                                    </span>
+                                  )}
                                   <span className="v3-quiet__label">{door.label}</span>
                                   {door.detail ? (
                                     <span className="v3-quiet__inlinedetail">{door.detail}</span>

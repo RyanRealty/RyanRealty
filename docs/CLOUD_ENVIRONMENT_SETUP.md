@@ -332,10 +332,13 @@ and `ask` in layer 2, so Matt's one tap is the approval:
 | Google Drive `share_file` | Gives someone access to a file and emails them |
 | Vercel `buy_*`, `create_or_transfer_domain`; Supabase `create_project` | Spends money |
 | Vercel `pause_project`, Supabase `pause_project` | Takes the site or the database offline |
+| Supabase `restore_project`, `delete_branch` | Changes the production project's state, or deletes a branch |
 
-`mcp__Supabase__execute_sql` stays **denied** in layer 2
-(`.auto-memory/feedback_sql_access_2026-09-24.md`). Always-allow does not
-reopen it.
+**SQL runs through the connector.** Matt set the Supabase connector to Always
+allow and asked agents to use it (2026-09-24,
+`.auto-memory/feedback_sql_access_2026-09-24.md`), and confirmed it when this
+PR merged main: `execute_sql` and `apply_migration` are allowed. The repo's
+`pre-tool-use` hook still checks every `execute_sql` call (CLAUDE.md §0).
 
 **Layer 2, in `.claude/settings.json` (applied 2026-09-24 on Matt's approval):** `allow` holds
 `mcp__Supabase__*`, `mcp__Vercel__*`, `mcp__github__*`,
@@ -343,8 +346,8 @@ reopen it.
 `mcp__Google_Drive__*`, `mcp__Canva__*`, `mcp__Figma__*`, `mcp__Airtable__*`,
 `mcp__Vibe_Prospecting__*`, `mcp__Claude_Docs__*`,
 `mcp__Cloudflare_Developer_Platform__*` and `mcp__Sentry__*` (ready for when
-it is connected); `ask` holds the tools in the table; `deny` keeps
-`execute_sql`; and `hooks.SessionStart` runs `.claude/hooks/session-start.sh`
+it is connected); `ask` holds the tools in the table; `deny` is empty; and
+`hooks.SessionStart` runs `.claude/hooks/session-start.sh`
 (section 3). **An agent cannot change this file's permissions on its own:** the
 auto-mode classifier refuses an edit that widens the agent's own permissions or
 registers its own hooks. Put the exact change in front of Matt and apply it only
@@ -356,8 +359,8 @@ Code fetches claude.ai connectors itself names them
 `mcp__claude_ai_<Server>__<tool>` (code.claude.com/docs/en/permissions), and
 the desktop app's local sessions do not enforce the claude.ai per-tool settings
 (layer 1) at all (code.claude.com/docs/en/mcp). An exact cloud name such as
-`mcp__Supabase__execute_sql` therefore left the SQL deny open outside the
-cloud; `mcp__*Supabase__execute_sql` matches both. Allow rules cannot take a glob in
+`mcp__Gmail__send_message` would leave that prompt off outside the cloud;
+`mcp__*Gmail__send_message` matches both. Allow rules cannot take a glob in
 the server segment, so `allow` covers cloud names only, and local connector
 calls fall back to the permission mode.
 

@@ -17,7 +17,12 @@ import {
 import type { BrokerSaleTile } from '@/lib/data'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { brokerRosterRecord } from '@/app/team/_v3/broker-roster-record'
-import { publishFirmClosingRows, uniqueListingTiles } from '@/app/team/[slug]/_v3/sale-rows'
+import {
+  firmClosingRecord,
+  publishFirmClosingRows,
+  uniqueListingTiles,
+  type FirmClosingRecord,
+} from '@/app/team/[slug]/_v3/sale-rows'
 import { aboutFaceFromBroker, type AboutFace } from './about-faces'
 import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 import type { V3LedgerFigureRow } from '@/components/site/v3'
@@ -29,6 +34,13 @@ const FIRM_CLOSING_LIMIT = 48
 export type AboutProof = {
   faces: AboutFace[]
   closings: V3LedgerFigureRow[]
+  /**
+   * The count and close-date span of every closing the rail could publish,
+   * from the SAME tiles (not a second read). Key facts prints it as Clients
+   * served; with the rail capped at FIRM_CLOSING_LIMIT the rail may show
+   * fewer, never a different set.
+   */
+  record: FirmClosingRecord
 }
 
 async function activeCitiesFor(
@@ -95,6 +107,7 @@ export async function loadAboutProof(): Promise<AboutProof> {
   return {
     faces,
     closings: publishFirmClosingRows(saleTiles, FIRM_CLOSING_LIMIT),
+    record: firmClosingRecord(saleTiles),
   }
 }
 

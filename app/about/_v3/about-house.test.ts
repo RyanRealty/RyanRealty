@@ -35,7 +35,9 @@ describe('SITE-163 /about faces fold', () => {
     expect(parity.competitiveTarget).toMatch(/FAIL if the first viewport is a downtown storefront/)
     expect(parity.note).toMatch(/Faces open About at display scale/)
     expect(parity.competitiveBrief.id).toBe('about-matt-2026-09-21')
-    expect(parity.competitiveBrief.beats.map((b) => b.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
+    expect(parity.competitiveBrief.beats.map((b) => b.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    // Beat 9 (Matt 2026-09-23): the About-page AEO playbook below the proof.
+    expect(parity.competitiveBrief.beats[8]?.text).toMatch(/What Ryan Realty does[\s\S]*Key facts[\s\S]*no competitor|no competitor[\s\S]*Key facts/)
     expect(parity.competitiveBrief.beats[0]?.text).toMatch(/boutique/)
     expect(parity.competitiveBrief.beats[1]?.text).toMatch(/\/team/)
     expect(parity.tasteReview.competitiveBriefPass).toBe(true)

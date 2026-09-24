@@ -125,6 +125,36 @@ describe('V3PlaceInventory layout="dial"', () => {
     }
   })
 
+  it('puts the dial before its cards in the DOM (tabs pattern order), the readout in the head', () => {
+    // On a wide screen the dial stands on the LEFT of the card, so reading and
+    // focus order run dial, then card, the order the eye does; a phone lays
+    // the strip under the card with CSS and keeps the same order.
+    const start = html.indexOf('id="homes-sfr"')
+    const end = html.indexOf('id="homes-multifamily"')
+    const one = html.slice(start, end)
+    const pos = one.indexOf('class="v3-dial__pos"')
+    const rail = one.indexOf('class="v3-dial__rail"')
+    const tablist = one.indexOf('role="tablist"')
+    const firstPanel = one.indexOf('role="tabpanel"')
+    const stage = one.indexOf('class="v3-dial__stage"')
+    expect(pos).toBeGreaterThan(one.indexOf('class="v3-dial__head"'))
+    expect(pos).toBeLessThan(one.indexOf('class="v3-dial__body"'))
+    expect(rail).toBeGreaterThan(-1)
+    expect(rail).toBeLessThan(stage)
+    expect(tablist).toBeLessThan(firstPanel)
+    // Previous, the thumbnails, next: in that order inside the dial.
+    const prev = one.indexOf('aria-label="Previous listing"')
+    const next = one.indexOf('aria-label="Next listing"')
+    expect(prev).toBeGreaterThan(rail)
+    expect(prev).toBeLessThan(tablist)
+    expect(next).toBeGreaterThan(tablist)
+    expect(next).toBeLessThan(stage)
+  })
+
+  it('leaves the cut-caption mark to the browser: no thumbnail is served marked', () => {
+    expect(html).not.toContain('data-clipped')
+  })
+
   it('opens on the first listing: it alone is selected, tabbable and shown', () => {
     const tabs = html.match(/<button[^>]*role="tab"[^>]*>/g) ?? []
     expect(tabs).toHaveLength(SFR.rows.length)

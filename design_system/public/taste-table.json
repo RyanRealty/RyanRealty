@@ -461,6 +461,70 @@
    "rubricVersion": "v1-2026-09-12"
   },
   {
+   "key": "commercial-space-for-lease",
+   "url": "/commercial-space-for-lease",
+   "route": "app/commercial-space-for-lease/page.tsx",
+   "median": 51,
+   "scores": [
+    46,
+    51,
+    53
+   ],
+   "criteria": {
+    "designQuality": 20,
+    "originality": 12,
+    "interaction": 3,
+    "craft": 8,
+    "honestyFunction": 8
+   },
+   "tells": [],
+   "defects": [
+    {
+     "section": "Mobile Bend row, Jax badge overlay",
+     "severity": "defect",
+     "finding": "On mobile the circular Jax mascot badge sits directly on top of the Bend row's count label, clipping \"13 for lease\" down to \"13 f\" — the figure is unreadable at 375px.",
+     "primitive": "app/commercial-space-for-lease/page.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "Town ledger bars (Bend/Redmond/Sisters/Madras/Prineville/Powell Butte)",
+     "severity": "taste",
+     "finding": "The bars are flat single-tone fills with no hover/tap affordance visible anywhere in either shot — no cursor state, no tooltip trigger, no expand control. As drawn this is a static ranked-bar illustration, not an interactive data section; nothing here promises a hover reveals more (e.g. the underlying lease list, a rate distribution, or a map pin) the way the criterion requires.",
+     "primitive": "app/commercial-space-for-lease/page.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "Town ledger, overall visual treatment",
+     "severity": "taste",
+     "finding": "Every row repeats the identical shape (label, sourced rate sentence, gray bar, bold count) with no differentiation by rate tier, no color coding, no map context, and no photographic anchor — correct per the house-ledger layout lock, but undifferentiated enough that reading the first row tells you the whole page.",
+     "primitive": "app/commercial-space-for-lease/page.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The town ledger bars themselves — flat navy/gray fills sorted by count, each row identical in structure to the last, with no color tiering, sparkline, map, or photo. Once you've read the Bend row you've read the whole page.",
+   "beats": "LoopNet's Bend commercial-lease search results — this page wins on immediate town-level rate transparency (a sourced per-sq-ft range and count for every Central Oregon town visible without filtering), but loses on live inventory depth, photos, and per-listing detail, which are the metrics that actually matter to a tenant.",
+   "verdict": "This is a correctly-branded, correctly-sourced town ledger that satisfies the layout lock's letter (H1 ledger, length-encoded counts, sourced rate lines under each name) but not its ambition — demoMatch is false because no catalog interaction (Avatar, Button, Sheet, Carousel, morphing search) appears anywhere in the shots; this is a house form only. No named TASTE.md tell fires outright since the bar is a real visual mark, but the page is still a flat, static ranked list with a mobile clipping defect (the Jax badge eating the Bend count) and zero visible interaction affordance across six identical rows.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "Claude Opus 5.5",
+   "runDir": ".taste-table/2026-09-24T02-41-06-656Z",
+   "shots": {
+    "desktop": "commercial-space-for-lease/desktop.png",
+    "mobile375": "commercial-space-for-lease/mobile375.png"
+   },
+   "shotsHash": "sha256:4534152e142c1b959418b5ba46f1853d38a1f309b75b2beac30b63be6110af2f",
+   "evaluatorModel": "claude-sonnet-5",
+   "rubricVersion": "v1-2026-09-12",
+   "evaluatedAt": "2026-09-24",
+   "transport": "claude-cli",
+   "baseUrl": "http://127.0.0.1:3465",
+   "note": "Added mid-round 2026-09-24 when the class was registered (taste-classes.json). Scored by `node scripts/taste-table.mjs http://127.0.0.1:3465 --classes commercial-space-for-lease --claude` against agent/lease-floor's dev server on the live project: claude-sonnet-5 through the claude CLI, because neither grok-4.6 link (grok CLI, cursor-agent) is installed in that sandbox. The row carries its own evaluatorModel, so ci:rubric-freeze reads it on the chain, and taste-rise-floor.mjs leaves it out of the grok-4.6 noise basis. The table-level evaluatedAt, baseUrl and instrument stay the round's (2026-09-13, grok-4.6 through the Cursor CLI). A full table re-run replaces this row."
+  },
+  {
    "key": "place-type-community",
    "url": "/communities/tetherow/types/single-family",
    "route": "app/communities/[slug]/types/[type]/page.tsx",

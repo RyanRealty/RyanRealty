@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils'
 import { CONTACT } from '@/lib/brand/contact'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
-import { pupilOffset, type PupilOffset } from '@/lib/geo/pupil-offset'
+import { aimAtPointer, headAimTransform, HEAD_AT_REST, type HeadAim } from '@/lib/geo/aim-at-pointer'
 import {
   Dialog,
   DialogContent,
@@ -43,31 +43,20 @@ export const DOG_FLOATER_MENUS = [
   { href: '/about', label: 'Learn more about us', kind: 'route' },
 ] as const
 
-/**
- * Where the pupil sits at rest, as a percent of the head box — measured off
- * the actual art (public/brand/jax-head-cream.png: a 1024x1024 canvas, the
- * eye's own ink hole centered at [318.5, 240.0], both jax-head PNGs share
- * the identical silhouette). object-fit: contain on a SQUARE image inside a
- * SQUARE box scales 1:1 with no letterboxing, so the percent maps directly.
- */
-const PUPIL_EYE_X_PCT = 31.1
-const PUPIL_EYE_Y_PCT = 23.4
-/** How far the pupil may drift from rest, in css px — "a small radius." */
-const PUPIL_MAX_RADIUS_PX = 3
-
 export function V3DogFloater() {
   const pathname = usePathname()
   const hidden = shouldHidePublicChrome(pathname)
   const [open, setOpen] = useState(false)
   const titleId = useId()
   const headRef = useRef<HTMLSpanElement>(null)
-  /* Matt 2026-09-23: "have the dogs eyes rotate to follow it." One visible
-     eye — the art is a side profile — tracked from window pointermove,
-     throttled to one measurement per frame. Stays at {0,0} (centered, the
-     art's own rest position) with no pointer reading yet, on touch before
+  /* Matt 2026-09-24: "whole dog rotates so that its eyes are following ball,
+     not eyes moving, eyes are fixed." The art's own eye never moves; the
+     whole head turns about its center toward the pointer (the tennis ball
+     on the map), read from window pointermove at most once per frame. At
+     rest (the art's own pose) with no pointer reading yet, on touch before
      the first touch move, and permanently under prefers-reduced-motion,
      which never starts the listener at all. */
-  const [pupil, setPupil] = useState<PupilOffset>({ dx: 0, dy: 0 })
+  const [aim, setAim] = useState<HeadAim>(HEAD_AT_REST)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -79,11 +68,8 @@ export function V3DogFloater() {
       const el = headRef.current
       if (!el || !latest) return
       const rect = el.getBoundingClientRect()
-      const eye = {
-        x: rect.left + rect.width * (PUPIL_EYE_X_PCT / 100),
-        y: rect.top + rect.height * (PUPIL_EYE_Y_PCT / 100),
-      }
-      setPupil(pupilOffset(eye, latest, PUPIL_MAX_RADIUS_PX))
+      const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      setAim(aimAtPointer(center, latest))
     }
     const onMove = (event: PointerEvent) => {
       latest = { x: event.clientX, y: event.clientY }
@@ -145,31 +131,24 @@ export function V3DogFloater() {
           >
             <span className="sr-only">Open Ryan Realty menu</span>
             <span className="v3-dog-floater__head" data-v3-dog-idle="notice" aria-hidden="true" ref={headRef}>
-              <img
-                src="/brand/jax-head-cream.png"
-                alt=""
-                width={68}
-                height={68}
-                className="v3-dog-floater__dog v3-dog-floater__dog--cream"
-              />
-              <img
-                src="/brand/jax-head-navy.png"
-                alt=""
-                width={68}
-                height={68}
-                className="v3-dog-floater__dog v3-dog-floater__dog--navy"
-              />
-              {/* The pupil: a small dot over the art's own eye, moved by JS,
-                  never a redraw of the mascot. One per dog layer so it stays
-                  the right color through the brief navy/cream inversion. */}
-              <span
-                className="v3-dog-floater__pupil v3-dog-floater__pupil--cream"
-                style={{ transform: `translate(-50%, -50%) translate(${pupil.dx}px, ${pupil.dy}px)` }}
-              />
-              <span
-                className="v3-dog-floater__pupil v3-dog-floater__pupil--navy"
-                style={{ transform: `translate(-50%, -50%) translate(${pupil.dx}px, ${pupil.dy}px)` }}
-              />
+              {/* The aim turns BOTH dog layers as one piece, inside the head's
+                  own flip/spin, so the notice animation and the look compose. */}
+              <span className="v3-dog-floater__aim" style={{ transform: headAimTransform(aim) }}>
+                <img
+                  src="/brand/jax-head-cream.png"
+                  alt=""
+                  width={68}
+                  height={68}
+                  className="v3-dog-floater__dog v3-dog-floater__dog--cream"
+                />
+                <img
+                  src="/brand/jax-head-navy.png"
+                  alt=""
+                  width={68}
+                  height={68}
+                  className="v3-dog-floater__dog v3-dog-floater__dog--navy"
+                />
+              </span>
             </span>
           </button>
         </DialogTrigger>

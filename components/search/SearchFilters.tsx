@@ -61,6 +61,7 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getSchoolDistrictOptions } from '@/lib/data/schools/getSchools'
 import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
+import { isSoldSearchScope, searchSortLabel } from '@/lib/search/search-sort-order'
 import {
   applyCommunityToggle,
   applySubdivisionToggle,
@@ -600,6 +601,15 @@ export default function SearchFilters({
             ? initialFilters.city
             : 'City, community, zip, address...'
 
+  // The order the results are in, named the way the sort table names it for
+  // the scope in view (searchSortLabel: the two legacy spellings map the way
+  // app/actions/search.ts toDalSort maps them, anything unknown reads as
+  // newest because the DAL falls back to it, and the Sold scope's date sorts
+  // read "Recently sold" / "Oldest sold", Matt 2026-09-23).
+  const activeSortLabel = searchSortLabel(initialFilters.sort, {
+    sold: isSoldSearchScope(initialFilters.status),
+  })
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -704,8 +714,12 @@ export default function SearchFilters({
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
         </div>
         )}
-        {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search. */}
-        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
+        {/* Row 2 @375: Places chip + Filters + Save, then Map | List | Sort on
+            its own full-width line. The row wraps below lg: as one nowrap line
+            it pushed the page 111px sideways at 390 and 187px at 768 (?view=list),
+            and clipped Sort off the frame on ?view=map. Desktop: one line,
+            beside the search field. */}
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-nowrap">
         <div className="flex shrink-0 items-center gap-2">
         {/* Places — City / Neighborhood / Community / Subdivision / School district. */}
         <FilterDropdown
@@ -1275,7 +1289,7 @@ export default function SearchFilters({
           <SaveSearchButton user={viewerState.signedIn} />
         </span>
         {hideViewToggle ? null : (
-        <div className="map-search-mapsort__pill ml-auto shrink-0" role="group" aria-label="Map and sort">
+        <div className="map-search-mapsort__pill map-search-mapsort__pill--dock ml-auto shrink-0" role="group" aria-label="Map and sort">
           <div className="map-search-views map-search-mapsort__views" role="radiogroup" aria-label="View">
             {(['map', 'split', 'list'] as const).map((v) => (
               <button
@@ -1298,7 +1312,7 @@ export default function SearchFilters({
           <button
             type="button"
             className="map-search-mapsort__sort"
-            aria-label="Sort results"
+            aria-label={`Sort results, now ${activeSortLabel}`}
             onClick={() => {
               // Open All-filters is wrong; cycle common sorts via URL like MapSearchView.
               const order = ['newest', 'price_asc', 'price_desc', 'oldest'] as const
@@ -1309,6 +1323,10 @@ export default function SearchFilters({
             }}
           >
             Sort
+            {/* The list view names its order nowhere else: say it here
+                ("Newest listed" = the on-market date, "Recently sold" = the
+                close date on the Sold scope, Matt 2026-09-23). */}
+            <span className="map-search-mapsort__now">{activeSortLabel}</span>
           </button>
         </div>
         )}

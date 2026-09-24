@@ -56,6 +56,7 @@ export const PUBLIC_PAGE_SEGMENTS = [
   'central-oregon',
   'cities',
   'cma-drafts',
+  'commercial-space-for-lease',
   'communities',
   'compare',
   'contact',
@@ -136,6 +137,7 @@ export function visitorPageCategoryFromPath(pathname: string): string {
     p.startsWith('/homes-for-sale') ||
     p.startsWith('/open-houses') ||
     p.startsWith('/price-drops') ||
+    p.startsWith('/commercial-space-for-lease') ||
     p.startsWith('/compare') ||
     p.startsWith('/activity') ||
     p.startsWith('/feed') ||
@@ -177,6 +179,7 @@ export function pageTypeFromPath(pathname: string): PageType {
     p.startsWith('/homes-for-sale') ||
     p.startsWith('/open-houses') ||
     p.startsWith('/price-drops') ||
+    p.startsWith('/commercial-space-for-lease') ||
     p.startsWith('/compare') ||
     p.startsWith('/activity') ||
     p.startsWith('/feed') ||

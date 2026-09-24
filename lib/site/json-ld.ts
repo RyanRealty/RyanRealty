@@ -114,6 +114,25 @@ export type WebPageInput = {
   pageType?: 'AboutPage' | 'CollectionPage' | 'ContactPage'
   /** Set true to point mainEntity at the sitewide Organization (#organization) — the brand-entity anchor AI engines attribute citations to. */
   aboutOrganization?: boolean
+  /**
+   * Facts about the Organization that THIS page states in its visible copy,
+   * added to the mainEntity reference (same @id, so a parser merges them into
+   * the sitewide node rather than reading a second organization). Only with
+   * aboutOrganization. Every value must be on the page the visitor reads
+   * (/about key facts, 2026-09-23); never a fact the page does not show.
+   */
+  organizationFacts?: OrganizationFactsInput
+}
+
+export type OrganizationFactsInput = {
+  /** Topics the firm works in, as the page names them. */
+  knowsAbout?: ReadonlyArray<string>
+  /** Place names, as the page lists them. Emitted as schema.org Place nodes. */
+  areaServed?: ReadonlyArray<string>
+  /** Licensed brokers on the live roster, when the page prints the count. */
+  numberOfEmployees?: number
+  /** Services, each with the description the page prints. Emitted as an OfferCatalog. */
+  services?: ReadonlyArray<{ name: string; description: string; url?: string }>
 }
 
 export type FaqPageInput = {
@@ -354,6 +373,41 @@ export type ServiceInput = {
 
 // ─── Builder ──────────────────────────────────────────────────────────
 
+/** The sitewide Organization by @id, plus only the facts this page shows. */
+function organizationReference(
+  site: string,
+  facts: OrganizationFactsInput | undefined,
+  absoluteUrl: (u?: string) => string | undefined,
+): Record<string, unknown> {
+  const ref: Record<string, unknown> = { '@id': `${site}#organization` }
+  if (!facts) return ref
+  const topics = (facts.knowsAbout ?? []).map((t) => t.trim()).filter(Boolean)
+  if (topics.length > 0) ref.knowsAbout = topics
+  const places = (facts.areaServed ?? []).map((p) => p.trim()).filter(Boolean)
+  if (places.length > 0) ref.areaServed = places.map((name) => ({ '@type': 'Place', name }))
+  if (typeof facts.numberOfEmployees === 'number' && facts.numberOfEmployees > 0) {
+    ref.numberOfEmployees = { '@type': 'QuantitativeValue', value: facts.numberOfEmployees }
+  }
+  const services = (facts.services ?? []).filter((s) => s.name.trim() && s.description.trim())
+  if (services.length > 0) {
+    ref.hasOfferCatalog = {
+      '@type': 'OfferCatalog',
+      name: 'Real estate services',
+      itemListElement: services.map((service) => ({
+        '@type': 'Offer',
+        itemOffered: prune({
+          '@type': 'Service',
+          name: service.name.trim(),
+          description: service.description.trim(),
+          url: absoluteUrl(service.url),
+          provider: { '@id': `${site}#organization` },
+        }),
+      })),
+    }
+  }
+  return ref
+}
+
 export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
   const site = getCanonicalSiteUrl()
   const absoluteUrl = (u?: string): string | undefined => {
@@ -434,7 +488,9 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         name: input.name,
         description: input.description,
         url: absoluteUrl(input.url),
-        mainEntity: input.aboutOrganization ? { '@id': `${site}#organization` } : undefined,
+        mainEntity: input.aboutOrganization
+          ? organizationReference(site, input.organizationFacts, absoluteUrl)
+          : undefined,
       })
 
     case 'faqPage':

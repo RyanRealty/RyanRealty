@@ -1525,6 +1525,14 @@ h1.listing-ask {
   color: var(--v3-navy);
 }
 
+/* A commercial lease's rent, where a sale's ask sits: same face, the unit in
+   words beside the number. Withheld, it reads quieter as a line, not a figure. */
+.listing-ask__lease--none {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+}
+
 .listing-ask__est {
   font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-medium);

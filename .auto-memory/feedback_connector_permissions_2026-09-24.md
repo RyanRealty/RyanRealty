@@ -12,10 +12,11 @@ connectors used in cloud sessions).
 - The only exceptions: tools that message a real person (CLAUDE.md §1), spend money, or take
   production offline. Gmail `send_message` / `reply` / `forward`, Calendar `respond_to_event`,
   Drive `share_file`, Vercel `buy_*` / `create_or_transfer_domain` / `pause_project`, Supabase
-  `create_project` / `pause_project`. They stay "Needs approval" (layer 1) and `ask` (layer 2),
-  so Matt's one tap is the approval.
-- `mcp__Supabase__execute_sql` stays DENIED (`feedback_sql_access_2026-09-24.md`). Always-allow
-  does not reopen it.
+  `create_project` / `pause_project` / `restore_project` / `delete_branch`. They stay "Needs
+  approval" (layer 1) and `ask` (layer 2), so Matt's one tap is the approval.
+- Supabase `execute_sql` and `apply_migration` are ALLOWED: the connector is on Always allow and
+  Matt said to use it (`feedback_sql_access_2026-09-24.md`). He confirmed that again when PR
+  #360 merged main, overriding an earlier `execute_sql` deny in that PR.
 - Write `ask` and `deny` rules as `mcp__*<Server>__<tool>` globs. Sessions that fetch claude.ai
   connectors themselves name tools `mcp__claude_ai_<Server>__<tool>`, so an exact cloud name
   leaves the rule open there.

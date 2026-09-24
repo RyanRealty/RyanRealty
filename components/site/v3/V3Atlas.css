@@ -245,12 +245,14 @@
      map surface only — the zoom buttons, the dock's type toggles and price
      scrubber, and every other control sit outside .v3-atlas__stage and keep
      their normal cursor. The url() color itself is off-palette on purpose
-     (see the asset file's own comment) and lives nowhere in this stylesheet. */
-  cursor: url('/images/cursors/tennis-ball.svg') 16 16, grab;
+     (see the asset file's own comment) and lives nowhere in this stylesheet.
+     20px since 2026-09-24 ("tennis ball needs to be smaller"), hotspot at its
+     center. */
+  cursor: url('/images/cursors/tennis-ball.svg') 10 10, grab;
 }
 
 .v3-atlas__stage:active {
-  cursor: url('/images/cursors/tennis-ball.svg') 16 16, grabbing;
+  cursor: url('/images/cursors/tennis-ball.svg') 10 10, grabbing;
 }
 
 .v3-atlas__world {

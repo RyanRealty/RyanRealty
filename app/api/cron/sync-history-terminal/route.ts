@@ -6,8 +6,7 @@ import { requireCronAuth } from '@/lib/auth/cron-auth'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 // Processes up to 200-listing terminal-history chunks per run — multi-minute
-// work. Matches the cron-fleet convention (crm-sequence-engine, refresh-mvs):
-// without it the project-default duration kills the run mid-chunk and loses
+// work. Matches the cron-fleet convention (crm-sequence-engine): without it the project-default duration kills the run mid-chunk and loses
 // chunk accounting.
 export const maxDuration = 300
 

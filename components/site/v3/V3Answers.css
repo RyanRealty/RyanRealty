@@ -166,6 +166,16 @@
   grid-area: q;
 }
 
+/* The question as an H3 (questionHeadings) reads exactly like the span it
+   replaces: the heading is structure, not a second type size. */
+.v3-answers__q-heading {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-wrap: pretty;
+}
+
 .v3-answers__mark {
   grid-area: mark;
 }

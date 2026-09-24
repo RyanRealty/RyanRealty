@@ -214,8 +214,9 @@
 
 /* The dial layout (neighborhood pages): each buyer group is one
    V3ListingDial across the whole band the map above it spans (the dial
-   lays its card on its side at that width, copy under the subdivision list
-   and photograph under the map), ruled apart by a hairline. */
+   lays its card on its side at that width: the dial on the left, the
+   photograph against it, the copy in a column on the right), ruled apart by
+   a hairline. */
 .place-homes--dial .place-homes__count {
   margin-bottom: var(--v3-space-lg);
 }
@@ -277,4 +278,26 @@
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);
   overflow-wrap: break-word;
+}
+
+/* A lease with no publishable rate reads "Lease rate not published": a
+   withheld line, set quieter than a figure. */
+.place-home-card__price--none {
+  color: var(--v3-ink-muted);
+  font-weight: var(--v3-weight-body);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* Commercial space for lease follows every for-sale group, ruled apart from
+   them, because it is not one of them. (0,2,0) and later in the file than
+   `.place-homes__type + .place-homes__type`, so it wins the margin. */
+.place-homes .place-homes__type--lease {
+  margin-top: var(--v3-space-xl);
+  padding-top: var(--v3-space-xl);
+  border-top: var(--v3-rule-hairline);
+}
+
+/* The same door under the map's lease block. */
+.place-homes__more {
+  margin: var(--v3-space-sm) 0 0;
 }

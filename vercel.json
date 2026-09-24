@@ -231,10 +231,6 @@
       "schedule": "0 4 * * 0"
     },
     {
-      "path": "/api/cron/refresh-mvs",
-      "schedule": "8 * * * *"
-    },
-    {
       "path": "/api/cron/refresh-place-content",
       "schedule": "0 3 * * *"
     },

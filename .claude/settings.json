@@ -27,11 +27,11 @@
       "mcp__*Vercel__create_or_transfer_domain",
       "mcp__*Vercel__pause_project",
       "mcp__*Supabase__create_project",
-      "mcp__*Supabase__pause_project"
+      "mcp__*Supabase__pause_project",
+      "mcp__*Supabase__restore_project",
+      "mcp__*Supabase__delete_branch"
     ],
-    "deny": [
-      "mcp__*Supabase__execute_sql"
-    ]
+    "deny": []
   },
   "hooks": {
     "SessionStart": [

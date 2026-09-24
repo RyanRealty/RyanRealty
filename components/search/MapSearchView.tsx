@@ -50,16 +50,42 @@ import type { VideoEmbed } from '@/lib/data/types/video'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import { SearchEmpty } from '@/app/search/_v3/SearchEmpty'
 import { SearchPagerMore } from '@/app/search/_v3/SearchPager'
+import { SPLIT_CARD_PAGE } from '@/lib/search/search-opening'
+import { publishSplitClaim } from '@/lib/search/publish-split-claim'
+import { isSoldSearchScope, searchSortLabel } from '@/lib/search/search-sort-order'
 import './search-ledger.css'
 
-const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
-  ssr: false,
-  loading: () => (
+/**
+ * The map's stand-in, until the Maps script loads or (phones opening on the
+ * list) until the reader asks for the map. One element for both, so a deferred
+ * map serves the exact markup the dynamic import's loading state does and the
+ * page hydrates without a mismatch.
+ */
+function MapLoading() {
+  return (
     <div className="srch-map-field flex h-full w-full items-center justify-center text-muted-foreground" style={{ minHeight: 320 }}>
       Loading map…
     </div>
-  ),
+  )
+}
+
+const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
+  ssr: false,
+  loading: MapLoading,
 })
+
+/** The lg breakpoint (64rem): both panes side by side at and above it. */
+const SPLIT_DESKTOP_QUERY = '(min-width: 64rem)'
+
+/** Event-time read only (never during render), so SSR and hydration agree. */
+function isSplitDesktop(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia(SPLIT_DESKTOP_QUERY).matches
+    : false
+}
+
+/** getViewportSearch's display cap (app/actions/search.ts `cap`). */
+const VIEWPORT_ROW_CAP = 500
 
 /** Street line only (e.g. "2732 NW Ordway Ave") — matches ListingCard addressLine. */
 function cardStreet(l: ListingTileRow): string {
@@ -88,17 +114,27 @@ function cardPricePerSqft(l: ListingTileRow): number | null {
   return Math.round(l.ListPrice / sqft)
 }
 
-/** Sort options for the list-pane count row (G2). Values match SearchFilters.SORT_OPTIONS. */
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'price_asc', label: 'Price: low to high' },
-  { value: 'price_desc', label: 'Price: high to low' },
-  { value: 'oldest', label: 'Oldest' },
-  { value: 'price_per_sqft_asc', label: 'Price per sq ft: low to high' },
-  { value: 'price_per_sqft_desc', label: 'Price per sq ft: high to low' },
-  { value: 'year_newest', label: 'Newest built' },
-  { value: 'year_oldest', label: 'Oldest built' },
+/**
+ * Sort options for the list-pane count row (G2), labeled from the one sort
+ * table (lib/search/search-sort-order.ts) for the scope in view: `newest`
+ * reads "Newest listed" because it orders by the on-market date, and
+ * "Recently sold" on the Sold scope, where it orders by the close date
+ * (Matt 2026-09-23).
+ */
+const SORT_KEYS = [
+  'newest',
+  'price_asc',
+  'price_desc',
+  'oldest',
+  'price_per_sqft_asc',
+  'price_per_sqft_desc',
+  'year_newest',
+  'year_oldest',
 ] as const
+
+function sortOptionsFor(sold: boolean) {
+  return SORT_KEYS.map((value) => ({ value, label: searchSortLabel(value, { sold }) }))
+}
 
 /** Compact filter crumbs for the mockup count row ("N homes · Bend · $500K+"). */
 function buildFiltersSummary(f: SearchFiltersInitial): string {
@@ -317,6 +353,30 @@ export type MapSearchViewProps = {
    * tag), and the count row would print the wrong number or none.
    */
   scopePolygon?: Parameters<typeof getViewportSearch>[2]
+  /**
+   * The pane a phone opens on (below lg; lib/search/search-opening.ts
+   * phoneOpeningPane). 'list' fills the frame with the list, puts the map one
+   * tap away behind a floating Map | Sort pill, and does not mount the map
+   * until that tap. The markup is the same at every width; CSS lays it out.
+   * Unset keeps the map-first sheet.
+   */
+  phonePane?: 'list' | 'map'
+  /**
+   * The regional frame (bare /homes-for-sale): the place the frame names,
+   * 'Central Oregon'. Its population is the service-area set, not the pixel
+   * viewport (getViewportSearch frame 'region'), its first settle writes no
+   * camera URL, and the server seeded only the first card page, so the pins
+   * are read here once the map mounts. Null for every map frame.
+   */
+  regionFrameLabel?: string | null
+  /**
+   * The row limit the server seeded with, when it was below the viewport cap
+   * (the regional frame seeds SPLIT_CARD_PAGE). Unset means the seed was read
+   * at the full cap. A read's row count alone cannot say this: the DAL can
+   * return a few rows under its limit, so "fewer rows than asked" is not "more
+   * rows exist".
+   */
+  seedRowCap?: number
 }
 
 export default function MapSearchView({
@@ -339,7 +399,12 @@ export default function MapSearchView({
   listOnly = false,
   staticShell = false,
   scopePolygon = null,
+  phonePane,
+  regionFrameLabel = null,
+  seedRowCap,
 }: MapSearchViewProps) {
+  const listFirst = !listOnly && phonePane === 'list'
+  const seedCap = Math.min(seedRowCap ?? VIEWPORT_ROW_CAP, VIEWPORT_ROW_CAP)
   // Static-safe query read (lib/search/url-search-params.client): '' at
   // hydration, the live URL after. On a static shell the URL wins over the
   // prerendered defaults; a place page keeps its geo pin (lockPlace).
@@ -367,7 +432,9 @@ export default function MapSearchView({
   const [resultsDegraded, setResultsDegraded] = useState(initialDegraded)
   // Local sort so the Select stays in sync while URL replace + viewport refetch run.
   const [sortValue, setSortValue] = useState(filters.sort?.trim() || 'newest')
-  const [sortOpen, setSortOpen] = useState(false)
+  // Which floating pill's sort menu is open: the map's, or the list-first
+  // phone's Map | Sort door. One at a time.
+  const [sortOpen, setSortOpen] = useState<'map' | 'door' | null>(null)
   const [loading, setLoading] = useState(false)
   // Per-user hidden homes ("Hide homes I don't want to see"). Same edge-of-
   // render model as SearchResults: viewport results are SHARED caches, so the
@@ -388,20 +455,50 @@ export default function MapSearchView({
         ? filters.view
         : 'split',
   )
+  // Phones opening on the list (phonePane 'list') start on the list pane even
+  // though the server rendered split; everything else keeps the map first.
   const [mobileView, setMobileView] = useState<'list' | 'map'>(
-    listOnly ? 'list' : filters.view === 'map' || filters.view === 'split' ? 'map' : 'list',
+    listOnly
+      ? 'list'
+      : listFirst
+        ? 'list'
+        : filters.view === 'map' || filters.view === 'split' ? 'map' : 'list',
   )
+  // The Google map mounts only when it can be seen. A phone opening on the
+  // list gets the placeholder (the same markup the server rendered) until the
+  // reader taps Map; from lg up it mounts right after hydration.
+  const [mapWanted, setMapWanted] = useState(!listFirst)
   // Window the CARD list so the SSR payload + hydration cost stays small even
   // when the viewport returns hundreds of homes. The MAP still gets every pin
   // (mapListings below) — only the heavy cards are paged in. "Show more" reveals
-  // the rest from already-loaded data (no extra fetch).
-  const CARD_PAGE = 48
+  // the rest from already-loaded data, and reads the rest of the frame when the
+  // server seeded only its first page (the regional frame).
+  const CARD_PAGE = SPLIT_CARD_PAGE
   const [visibleCount, setVisibleCount] = useState(CARD_PAGE)
+  // The regional frame (regionFrameLabel): its population is the region, not
+  // the viewport, until the reader moves the map or draws an area. The ref
+  // steers the next read; `rowsAreRegion` says what the rows IN HAND describe,
+  // so the claim names the frame they were read for, not one still loading.
+  const regionFrameRef = useRef(Boolean(regionFrameLabel))
+  const [rowsAreRegion, setRowsAreRegion] = useState(Boolean(regionFrameLabel))
+  const setRegion = useCallback((on: boolean) => {
+    regionFrameRef.current = on
+  }, [])
+  // One number per server seed: the pin read below runs once per seed.
+  const [seedGen, setSeedGen] = useState(0)
+  const pinReadGenRef = useRef(-1)
+  // The row limit the rows in hand were read with: the seed's cap, then the
+  // limit of each client read (a pan's Search this area reads 250).
+  const [rowsCap, setRowsCap] = useState(seedCap)
 
   const listContainerRef = useRef<HTMLDivElement>(null)
   const sheetDragRef = useRef<{ startY: number; expanded: boolean } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastBoundsRef = useRef<MapBounds>(initialBounds)
+  // The frame the list in hand was read for (lastBoundsRef is the camera, which
+  // can move ahead of it until Search this area). "Show more" reads the rest
+  // of THIS frame, never a camera the reader has not searched.
+  const queryBoundsRef = useRef<MapBounds>(initialBounds)
   const reqIdRef = useRef(0)
 
   const viewerState = useViewerListingState({
@@ -418,7 +515,10 @@ export default function MapSearchView({
   // it renders truly empty in SSR HTML, which a crawler sees as a blank
   // control. Pass the label as SelectValue's children so the served markup
   // always carries the current sort's text, SSR and post-hydration alike.
-  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortValue)?.label ?? 'Newest'
+  // The Sold scope names its date sorts by the close date they order by.
+  const soldScope = isSoldSearchScope(filters.status)
+  const sortOptions = useMemo(() => sortOptionsFor(soldScope), [soldScope])
+  const sortLabel = searchSortLabel(sortValue, { sold: soldScope })
 
   // ── Geo scope (W4.2) ──────────────────────────────────────────────────────
   // The URL can pin the search to a place (city / subdivision / zip). That pin
@@ -465,13 +565,41 @@ export default function MapSearchView({
   const INITIAL_SETTLE_GRACE_MS = 2500
   const initialSettleUntilRef = useRef(0)
   useEffect(() => {
+    // Stamps the settle window when the map mounts: at component mount, or
+    // later when a phone that opened on the list taps Map (the map's first fit
+    // and its relayout are its settle, not a pan).
+    if (!mapWanted) return
+    firstBoundsReportRef.current = true
     initialSettleUntilRef.current = Date.now() + INITIAL_SETTLE_GRACE_MS
-    // Mount-only: stamps the settle window once per MapSearchView instance.
-  }, [])
+  }, [mapWanted])
+  // From lg up both panes show, so the map mounts right after hydration. Below
+  // lg a list-first phone mounts it on the Map tap (applyView), or here if the
+  // window grows past lg.
+  useEffect(() => {
+    if (mapWanted || typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    const mql = window.matchMedia(SPLIT_DESKTOP_QUERY)
+    if (mql.matches) {
+      setMapWanted(true)
+      return
+    }
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setMapWanted(true)
+    }
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [mapWanted])
   const router = useRouter()
   const pathname = usePathname()
   const applyView = useCallback(
     (next: 'list' | 'map' | 'split') => {
+      // A list-first phone flips panes in place: the list and the map are one
+      // tap apart, the URL stays the indexable one, nothing re-renders on the
+      // server. From lg up the toggle navigates, as it always has.
+      if (listFirst && next !== 'split' && !isSplitDesktop()) {
+        setMobileView(next)
+        if (next === 'map') setMapWanted(true)
+        return
+      }
       setLayoutView(next)
       setMobileView(next === 'list' ? 'list' : 'map')
       // Event-time read — a closed-over searchParams can lag a filter pushState
@@ -480,14 +608,16 @@ export default function MapSearchView({
       params.set('view', next)
       navigateQuery(router, `${pathname ?? '/homes-for-sale'}?${params.toString()}`, { staticShell })
     },
-    [pathname, router, staticShell],
+    [listFirst, pathname, router, staticShell],
   )
   useEffect(() => {
     if (filters.view === 'list' || filters.view === 'map' || filters.view === 'split') {
       setLayoutView(filters.view)
-      setMobileView(filters.view === 'list' ? 'list' : 'map')
+      // A list-first page renders split for lg and up; its phone pane stays
+      // the list rather than snapping to the map after hydration.
+      setMobileView(filters.view === 'list' || (listFirst && filters.view === 'split') ? 'list' : 'map')
     }
-  }, [filters.view])
+  }, [filters.view, listFirst])
   // Once-per-distinct-query guard for search_zero_results — a pan across the
   // same empty search must not re-fire; a CHANGED query that dead-ends must.
   const zeroResultsFiredKeyRef = useRef<string | null>(null)
@@ -575,7 +705,13 @@ export default function MapSearchView({
   const reseededRef = useRef(false)
   useEffect(() => {
     if (staticShell && reseededRef.current) return
+    const firstSeed = !reseededRef.current
     reseededRef.current = true
+    // A new server seed supersedes any read still in flight for the old one
+    // (a stale pin read must not paint over a newer seed), so bump the request
+    // id and clear the spinner that read owned.
+    reqIdRef.current += 1
+    setLoading(false)
     setListings(initialListings)
     setTotalCount(initialTotalCount)
     setCapped(initialCapped)
@@ -585,7 +721,13 @@ export default function MapSearchView({
     scopeDroppedRef.current = initialPolygon != null
     setScopeDropped(initialPolygon != null)
     setAreaDirty(false)
-  }, [initialListings, initialTotalCount, initialCapped, initialDegraded, initialDrawn, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
+    setRegion(Boolean(regionFrameLabel))
+    setRowsAreRegion(Boolean(regionFrameLabel))
+    setRowsCap(seedCap)
+    queryBoundsRef.current = initialBounds
+    // The mount seed is generation 0; each later server seed is a new one.
+    if (!firstSeed) setSeedGen((g) => g + 1)
+  }, [initialListings, initialTotalCount, initialCapped, initialDegraded, initialDrawn, filtersSnapshot, regionFrameLabel, seedCap]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clean up any pending debounce on unmount.
   useEffect(() => {
@@ -613,12 +755,20 @@ export default function MapSearchView({
           shapes.length === 0 && scopePolygonRef.current != null
             ? scopePolygonRef.current
             : buildShapeSetForSearch(shapes, bounds)
+        queryBoundsRef.current = bounds
+        // The regional frame reads the region (no bbox) until the reader moves
+        // the map or draws; `bounds` is only its camera then.
+        const regionFrame = regionFrameRef.current && shapes.length === 0 && poly == null
         // Pan passes { limit: 250 } for a lighter payload (P3). Non-pan paths
         // (draw, toggle, retry) keep the three-arg call so SSR-style fidelity
         // remains the default; the 4th arg is TypeScript-optional until the
         // server action accepts it.
-        const res =
-          opts?.limit != null
+        const res = regionFrame
+          ? await getViewportSearch(effectiveFilters, bounds, null, {
+              frame: 'region',
+              ...(opts?.limit != null ? { limit: opts.limit } : {}),
+            })
+          : opts?.limit != null
             ? await (getViewportSearch as ViewportSearchFn)(effectiveFilters, bounds, poly, {
                 limit: opts.limit,
               })
@@ -629,6 +779,8 @@ export default function MapSearchView({
         setTotalCount(res.totalCount)
         setCapped(res.capped)
         setResultsDegraded(false)
+        setRowsAreRegion(regionFrame)
+        setRowsCap(Math.min(opts?.limit ?? VIEWPORT_ROW_CAP, VIEWPORT_ROW_CAP))
         // Instrumentation (Phase 0.5): a search round-trip that dead-ends at 0
         // homes, keyed by the live query string so repeated pans over the same
         // empty search fire once. Fire-and-forget — never touches the fetch.
@@ -683,16 +835,41 @@ export default function MapSearchView({
       const query = params.toString()
       const base = pathname ?? '/homes-for-sale'
       navigateQuery(router, query ? `${base}?${query}` : base, { replace: true, staticShell })
-      // Immediate viewport refetch with the new sort (don't wait on full SSR).
+      // Immediate viewport refetch with the new sort (don't wait on full SSR),
+      // over the frame the list was read for.
       searchFiltersRef.current = { ...searchFiltersRef.current, sort: next }
-      void runViewportSearch(lastBoundsRef.current, drawnShapes)
+      void runViewportSearch(queryBoundsRef.current, drawnShapes)
     },
     [router, pathname, drawnShapes, runViewportSearch, staticShell]
   )
 
   const retryViewportSearch = useCallback(() => {
-    void runViewportSearch(lastBoundsRef.current, drawnShapes)
+    void runViewportSearch(queryBoundsRef.current, drawnShapes)
   }, [drawnShapes, runViewportSearch])
+
+  // The pins of a frame the server seeded only partly (the regional frame's
+  // first card page): read the frame up to the viewport cap once the map is
+  // there to draw them. Once per seed, and not when a "Show more" read already
+  // brought the full set; a failed read keeps the seeded cards, which are
+  // still true.
+  const seedIsPartial = seedCap < VIEWPORT_ROW_CAP && initialListings.length < initialTotalCount
+  useEffect(() => {
+    if (!mapWanted || !seedIsPartial || initialDegraded) return
+    if (pinReadGenRef.current === seedGen) return
+    pinReadGenRef.current = seedGen
+    if (rowsCap >= VIEWPORT_ROW_CAP) return
+    void runViewportSearch(queryBoundsRef.current, drawnShapes)
+    // drawnShapes and rowsCap are read for the call, not triggers (a shape
+    // change runs its own search); one read per seed generation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapWanted, seedGen, seedIsPartial, initialDegraded, runViewportSearch])
+
+  // "Show more homes" past the rows in hand: read the rest of the same frame
+  // (up to the viewport cap), then reveal the next page of cards.
+  const readMoreRows = useCallback(async () => {
+    await runViewportSearch(queryBoundsRef.current, drawnShapes)
+    setVisibleCount((c) => c + CARD_PAGE)
+  }, [CARD_PAGE, drawnShapes, runViewportSearch])
 
   // Place SELECT changed (URL city/neighborhood/subdivision) — restore the
   // geo pin and let SearchMapClustered fit the new boundary. Without this,
@@ -732,6 +909,14 @@ export default function MapSearchView({
         // during render, so SSR/client HTML cannot diverge.
         firstBoundsReportRef.current || Date.now() < initialSettleUntilRef.current // hydration-safe
       firstBoundsReportRef.current = false
+      // The regional frame's settle is its camera, not a search: no ?bbox=
+      // (the indexable URL stays bare) and no refetch, because the population
+      // is the region, not whatever the fitted viewport reaches. A real pan
+      // ends the regional frame and falls through to the map-frame path.
+      if (regionFrameRef.current) {
+        if (isInitialSettle) return
+        setRegion(false)
+      }
       // Event-time URL — closed-over urlSearchParams races the filter dock's
       // pushState and was wiping minPrice after a V3Range commit (SITE-72).
       const cameraUrl = nextSearchUrlWithBbox(
@@ -745,7 +930,7 @@ export default function MapSearchView({
       // Camera only. List + pins stay until Search this area.
       setAreaDirty(true)
     },
-    [dropGeoScope, pathname, router, lockPlace, staticShell]
+    [dropGeoScope, pathname, router, lockPlace, staticShell, setRegion]
   )
 
   /** Reflect the drawn shape set into the URL so reload/share reproduce it.
@@ -782,6 +967,8 @@ export default function MapSearchView({
       // supersedes the URL's place pin the same way a pan does.
       const poly = shapes.some((s) => !s.exclude) ? shapes : null
       if (poly) dropGeoScope()
+      // A drawn area is the reader's geography: the regional frame ends.
+      setRegion(false)
       setDrawnShapes(shapes)
       syncShapesToUrl(shapes)
       if (shapes.length > prevShapeCountRef.current) {
@@ -795,7 +982,7 @@ export default function MapSearchView({
       prevShapeCountRef.current = shapes.length
       runViewportSearch(lastBoundsRef.current, shapes)
     },
-    [runViewportSearch, dropGeoScope, syncShapesToUrl]
+    [runViewportSearch, dropGeoScope, syncShapesToUrl, setRegion]
   )
 
   /**
@@ -811,12 +998,13 @@ export default function MapSearchView({
   const handleAreaShapes = useCallback(
     (shapes: DrawnShape[]) => {
       if (shapes.some((s) => !s.exclude)) dropGeoScope()
+      setRegion(false)
       setDrawnShapes(shapes)
       syncShapesToUrl(shapes)
       prevShapeCountRef.current = shapes.length
       runViewportSearch(lastBoundsRef.current, shapes)
     },
-    [runViewportSearch, dropGeoScope, syncShapesToUrl]
+    [runViewportSearch, dropGeoScope, syncShapesToUrl, setRegion]
   )
 
   const searchThisArea = useCallback(() => {
@@ -941,14 +1129,41 @@ export default function MapSearchView({
   })
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
   /**
+   * The claim line (lib/search/publish-split-claim.ts): the frame's exact count
+   * when the rows in hand fall short of it (the display cap, or the regional
+   * frame's first card page before its pins are read), with the order those
+   * rows follow; otherwise the drawn count and its ask range, as before.
+   */
+  const claim = useMemo(
+    () =>
+      publishSplitClaim({
+        visibleCount: viewClaim.count,
+        rowsInHand: listings.length,
+        totalCount,
+        sort: sortValue,
+        sold: soldScope,
+        frameLabel: rowsAreRegion ? regionFrameLabel : null,
+        mapMounted: mapWanted && !listOnly,
+        low: viewClaim.low,
+        high: viewClaim.high,
+        askCount: viewClaim.askCount,
+        bandCount: viewClaim.band?.n ?? null,
+      }),
+    [viewClaim, listings.length, totalCount, sortValue, soldScope, rowsAreRegion, regionFrameLabel, mapWanted, listOnly],
+  )
+  /**
    * The crumb row under the claim, minus whatever the claim sentence already
    * said. A lone "BEND" in caps under "…in Bend." is the sentence twice, and
-   * the second one is the shouty one.
+   * the second one is the shouty one. The claim's cap note rides here.
    */
   const crumbs = useMemo(() => {
     const parts = filtersSummary.split(' · ').filter((p) => p && p !== claimPlace)
+    if (claim?.note) parts.push(claim.note)
     return parts.join(' · ')
-  }, [filtersSummary, claimPlace])
+  }, [filtersSummary, claimPlace, claim])
+  // More of this frame exists than is in hand, and the rows in hand were read
+  // below the viewport cap (the seed's first page, or a pan's lighter read).
+  const canReadMore = !resultsDegraded && rowsCap < VIEWPORT_ROW_CAP && listings.length < totalCount
   // Cos/Matt 2026-09-06 residual: kill UNSCOPED total-inventory chrome
   // (sheet peek "3,231+ homes for sale"; list "3,341 homes found"). Place-
   // scoped sheet counts stay ("26 homes for sale"). Map-viewport phrases
@@ -982,7 +1197,7 @@ export default function MapSearchView({
   // totalCount is sticky across pan refetches — loading never clears it, so
   // the row / sheet show previous N + "Updating…" (SEARCH_UX_WAVE3 pan sticky count).
   const listPanel = (
-    <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
+    <div ref={listContainerRef} className="map-search-list__scroll flex-1 min-h-0 overflow-y-auto bg-muted">
       {/* The claim (SITE-44). This rail used to open with a bare count and a
           crumb string — the taste table's "no claim tying list and map into one
           object". It now states, in a sentence, what the frame is showing: how
@@ -998,28 +1213,28 @@ export default function MapSearchView({
         ) : (
           <>
             <p className="srch-claim__line">
-              {viewClaim.count > 0 ? (
+              {claim ? (
                 <>
-                  <span className="srch-figure">{formatCount(viewClaim.count)}</span>
+                  <span className="srch-figure">{formatCount(claim.figure)}</span>
                   <span className="srch-claim__rest">
-                    {viewClaim.count === 1 ? ' home on this map' : ' homes on this map'}
-                    {viewClaim.low != null && viewClaim.high != null ? (
-                      viewClaim.low === viewClaim.high ? (
+                    {` ${claim.noun}${claim.where}`}
+                    {claim.range ? (
+                      claim.range.low === claim.range.high ? (
                         <>
                           {', asking '}
-                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(viewClaim.low)}</span>
+                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(claim.range.low)}</span>
                         </>
                       ) : (
                         <>
                           {', '}
-                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(viewClaim.low)}</span>
+                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(claim.range.low)}</span>
                           {'–'}
-                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(viewClaim.high)}</span>
+                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(claim.range.high)}</span>
                         </>
                       )
                     ) : null}
+                    {claim.order ? `, ${claim.order}` : ''}
                     {claimPlace ? ` · ${claimPlace}` : ''}
-                    {capped ? ' · nearest matches' : ''}
                   </span>
                 </>
               ) : (
@@ -1033,15 +1248,12 @@ export default function MapSearchView({
                 {loading ? 'Updating…' : ''}
               </p>
             ) : null}
-            {viewClaim.count > 0 ? (
+            {claim ? (
               // The trace is present on the claim, but collapsed: four lines
               // of methodology under a one-line sentence is the wall of text
               // TASTE.md bans, and this header sits above every scroll of the
               // rail. One word, "Source", and the whole trace on a click.
-              <V3SourceDisclosure
-                className="srch-claim__source"
-                source={`Oregon Data Share, read live for this map frame — the ${formatCount(viewClaim.count)} active listing${viewClaim.count === 1 ? '' : 's'} this view returned${capped ? ', which is the display cap rather than the whole area' : ''}. The range is the lowest and highest ask among the ${formatCount(viewClaim.askCount)} of them that publish a whole-property price — a fractional share and a commercial lease rate are withheld${viewClaim.band ? `; the band is the middle half of the ${formatCount(viewClaim.band.n)} that also publish a price per square foot` : ''}.`}
-              />
+              <V3SourceDisclosure className="srch-claim__source" source={claim.source} />
             ) : null}
           </>
         )}
@@ -1176,10 +1388,14 @@ export default function MapSearchView({
             )
           })}
         </div>
-        {visibleListings.length > visibleCount && (
+        {(visibleListings.length > visibleCount || canReadMore) && (
           <SearchPagerMore
-            label="Show more homes"
-            onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
+            label={loading ? 'Loading more homes…' : 'Show more homes'}
+            onClick={() => {
+              if (loading) return
+              if (visibleListings.length > visibleCount) setVisibleCount((c) => c + CARD_PAGE)
+              else void readMoreRows()
+            }}
           />
         )}
         {/* ODS Aug 2024 IDX display rules (G54): every rendered price/$-per-sqft
@@ -1196,8 +1412,52 @@ export default function MapSearchView({
     </div>
   )
 
+  /** Sort button + its menu. Each floating pill owns its own open menu. */
+  const renderSortControl = (where: 'map' | 'door') => (
+    <div className="relative">
+      <button
+        type="button"
+        className="map-search-mapsort__sort"
+        aria-expanded={sortOpen === where}
+        aria-haspopup="listbox"
+        aria-label={`Sort: ${sortLabel}`}
+        onClick={() => setSortOpen((o) => (o === where ? null : where))}
+      >
+        Sort
+      </button>
+      {sortOpen === where ? (
+        <ul
+          className="srch-pop map-search-mapsort__menu absolute bottom-full left-1/2 z-[120] mb-2 min-w-[14rem] -translate-x-1/2 py-1"
+          role="listbox"
+          aria-label="Sort results"
+        >
+          {sortOptions.map((o) => (
+            <li key={o.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={sortValue === o.value}
+                className={cn(
+                  'flex w-full items-center px-3 py-2 text-left text-sm',
+                  sortValue === o.value ? 'bg-muted font-medium text-foreground' : 'text-foreground',
+                )}
+                onClick={() => {
+                  handleSortChange(o.value)
+                  setSortOpen(null)
+                }}
+              >
+                {o.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+
   const mapPanel = listOnly ? null : (
     <div className="relative h-full min-h-0 min-w-0 flex-1">
+      {mapWanted ? (
       <SearchMapClustered
         listings={mapListings}
         savedListingKeys={viewerState.savedListingKeys}
@@ -1208,6 +1468,9 @@ export default function MapSearchView({
         hideBoundaryToggle={lockPlace}
         initialBounds={initialBounds}
         lockBounds
+        // The regional frame's box fills the pane (fractional fit) instead of
+        // opening at integer z8; a place's own boundary camera is unchanged.
+        fractionalZoom={Boolean(regionFrameLabel)}
         relayoutKey={mobileView}
         onBoundsChanged={handleBoundsChanged}
         shapes={drawnShapes}
@@ -1217,6 +1480,9 @@ export default function MapSearchView({
         onMarkerClick={onMarkerClick}
         className="srch-map-field h-full w-full"
       />
+      ) : (
+        <MapLoading />
+      )}
       {/* Saved named areas (Flexmls My-Map-Overlays parity). Applying one
           replaces the drawn shape set, so it rides the identical ?shapes=
           contract and is shareable + alert-savable like any drawn area. */}
@@ -1255,45 +1521,7 @@ export default function MapSearchView({
             </button>
           </div>
           <span className="map-search-mapsort__rule" aria-hidden />
-          <div className="relative">
-            <button
-              type="button"
-              className="map-search-mapsort__sort"
-              aria-expanded={sortOpen}
-              aria-haspopup="listbox"
-              aria-label={`Sort: ${sortLabel}`}
-              onClick={() => setSortOpen((o) => !o)}
-            >
-              Sort
-            </button>
-            {sortOpen ? (
-              <ul
-                className="srch-pop map-search-mapsort__menu absolute bottom-full left-1/2 z-[120] mb-2 min-w-[14rem] -translate-x-1/2 py-1"
-                role="listbox"
-                aria-label="Sort results"
-              >
-                {SORT_OPTIONS.map((o) => (
-                  <li key={o.value}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={sortValue === o.value}
-                      className={cn(
-                        'flex w-full items-center px-3 py-2 text-left text-sm',
-                        sortValue === o.value ? 'bg-muted font-medium text-foreground' : 'text-foreground',
-                      )}
-                      onClick={() => {
-                        handleSortChange(o.value)
-                        setSortOpen(false)
-                      }}
-                    >
-                      {o.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+          {renderSortControl('map')}
         </div>
       </div>
       {areaDirty ? (
@@ -1392,6 +1620,9 @@ export default function MapSearchView({
               : cn(
                   'map-search-list map-search-sheet',
                   sheetExpanded ? 'is-expanded' : 'is-peek',
+                  // Phones opening on the list: the expanded sheet IS the page
+                  // below the filter dock (search-ledger.css).
+                  listFirst && 'map-search-sheet--list-first',
                   'lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto',
                   layoutView === 'map' ? 'lg:hidden' : 'lg:flex',
                   layoutView === 'list' ? 'lg:w-full lg:flex-1' : null,
@@ -1438,10 +1669,13 @@ export default function MapSearchView({
                 {viewClaim.count > 0 && !resultsDegraded ? (
                   <span className="map-search-sheet__range">
                     {`· ${formatCount(viewClaim.count)} on this map`}
-                    {viewClaim.low != null && viewClaim.high != null
-                      ? viewClaim.low === viewClaim.high
-                        ? ` · ${formatPriceCompact(viewClaim.low)}`
-                        : ` · ${formatPriceCompact(viewClaim.low)}–${formatPriceCompact(viewClaim.high)}`
+                    {/* A range over the first rows of a larger frame is not the
+                        frame's range, so the peek prints one only when every
+                        row is in hand (publishSplitClaim). */}
+                    {claim?.range
+                      ? claim.range.low === claim.range.high
+                        ? ` · ${formatPriceCompact(claim.range.low)}`
+                        : ` · ${formatPriceCompact(claim.range.low)}–${formatPriceCompact(claim.range.high)}`
                       : ''}
                   </span>
                 ) : null}
@@ -1455,6 +1689,26 @@ export default function MapSearchView({
           >
             {listPanel}
           </div>
+          {/* Phones opening on the list: the map is one tap away on the same
+              floating Map | Sort pill the map carries (Matt 2026-09-07). Shown
+              below lg only (search-ledger.css); from lg up the map is beside
+              the list and carries its own pill. */}
+          {listFirst && mobileView === 'list' ? (
+            <div className="map-search-mapdoor pointer-events-none">
+              <div className="map-search-mapsort__pill pointer-events-auto" role="group" aria-label="Map and sort">
+                <button
+                  type="button"
+                  className="map-search-mapdoor__map"
+                  aria-label="Show the map"
+                  onClick={() => applyView('map')}
+                >
+                  Map
+                </button>
+                <span className="map-search-mapsort__rule" aria-hidden />
+                {renderSortControl('door')}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 

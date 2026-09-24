@@ -121,6 +121,7 @@ describe('atlasViewForType', () => {
     stamp: 'Sep 4, 2026',
     counts: { forSale: 2, pending: 0, sold: 0, cities: 1 },
     tiles: [],
+    leaseKeys: [],
     complete: true,
   }
 

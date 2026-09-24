@@ -1,6 +1,6 @@
 # Visibility mission, 2026-09-22/23: state and resume
 
-Nodes: none (whole-system visibility pass; fix classes land on PR #352, and anything not finished here is listed below with its branch)
+Nodes: none (whole-system visibility pass; every fix class landed with PR #352)
 
 Matt's objective (2026-09-22): be seen by search engines and AI answer engines, then convert, as organically as
 possible. Matt 2026-09-23: nothing from the past is permanent; a rule that keeps us from the goal gets evaluated and
@@ -8,31 +8,15 @@ changed (the four §1 approval classes, §0, fair housing and MLS rules still bi
 day: every known contact is identified on every visit (identity loop, package p07), and multi-phase subdivisions
 always group under one main page (subdivision families, package p02).
 
-## Resume here (read this first)
+## Status: complete (2026-09-24)
 
-1. **Landed so far** on `claude/admiring-feynman-7lgwc3` (draft PR #352): the GTM bootstrap syntax fix (browser GA4
-   dead since 2026-09-17), AnimatedNumber settles on mount (no $0/0 in server HTML), sitemap hygiene (105 dead /zip
-   URLs, redirect sources, dedupe), web-vitals path filter, MLS name truncations withheld, permission allow-list in
-   `.claude/settings.json`, 44px footer city link and /team carousel arrows. PR #352's CI still needs the
-   "Old Bend" atlas chip pairing fix (ci:tap-targets, see p13 follow-ups).
-2. **Fifteen fix packages** were in flight as parallel agents in worktrees. Each one's full spec is in
-   `packages/<pkg>.md`, the binding brief is `FIX_BRIEF.md`, the verified evidence is `evidence/`. Each worktree's
-   state (committed and uncommitted) is snapshotted to `origin/claude/admiring-feynman-7lgwc3--wip-<pkg>`.
-   The snapshots are NOT verified; a resuming agent checks out its branch, reads its spec, finishes, verifies
-   (path-scoped vitest, eslint, the gates that read its files) and commits.
-3. **Same session, same container:** the agents' worktrees are still at `.claude/worktrees/agent-<id>`; message each
-   agent to continue (their transcripts persist), or run `resume-workflow.txt`.
-   **New session or lost container:** run the Workflow tool with `scriptPath:
-   docs/plans/VISIBILITY_2026-09-22/resume-workflow.txt`. It gives each package to a fresh agent in its own worktree,
-   starting from the package's WIP branch, then a verifier per package, and returns branch names to merge.
-4. **Merge order** into `claude/admiring-feynman-7lgwc3`: p04, p09, p08, p15, p03, p14, p01, p02, p13, p05, p12,
-   p06, p07, p11, p10 (canon last, it touches the handoff and process docs everyone reads). After merging: `npx tsc
-   --noEmit`, `npm run ci:gates`, `npm run test:unit`, `npm run gates:stamp`, push, update PR #352's body.
-5. **DB writes still owed** (only through a non-MCP path; see p09's report for the method it found): refresh
-   `place_membership` and the market-metric computes, then schedule it daily (p09); apply the migrations p07, p09,
-   p11 write. Do not re-run the four stopped seller enrollments (that would email real people now).
-6. **Helper for DB reads without MCP prompts:** `sb-read.mjs.txt` in this folder (copy it to a scratch dir as sb.mjs; supabase-js with the service-role env,
-   `createRequire` on the repo's package.json). Copy it to a scratch dir and import `{ sb, count, rows, all }`.
+All fifteen packages are merged: each landed on `claude/admiring-feynman-7lgwc3` as a `merge: pNN ...` commit and
+reached `main` with PR #352 (merge `d8741c25f`, deployed). Every migration they wrote is applied, including the one
+#352 held (`20260923014700_pulse_withhold_unverified_closed_side`, applied after deploy). The p09 transitional route
+`/api/cron/refresh-mvs` was deleted on 2026-09-24 once pg_cron held both refresh stamps. The per-package WIP
+snapshots (`claude/admiring-feynman-7lgwc3--wip-<pkg>`) are superseded by those merges; nothing resumes from them,
+and `resume-workflow.txt` is history. The table below is the state at the 2026-09-23 02:40Z snapshot, kept as the
+record of what each package covered.
 
 ## Packages
 

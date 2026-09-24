@@ -94,6 +94,21 @@ export function dialSwipeDelta(dx: number, dy: number, minPx = DIAL_SWIPE_MIN_PX
 export const DIAL_NO_ASK = 'Price not published'
 
 /**
+ * What the dial prints in the price slot, and whether it is a withheld line
+ * rather than a figure (the card sets it quieter). A commercial lease prints
+ * its rate with the unit, or its own withheld line; a sale listing its ask, or
+ * DIAL_NO_ASK. `lease` is publishListingCardFacts' own, never built here.
+ */
+export function dialPriceSlot(facts: {
+  ask: string | null
+  lease: { rate: string | null; text: string } | null
+}): { text: string; withheld: boolean } {
+  if (facts.lease) return { text: facts.lease.text, withheld: facts.lease.rate == null }
+  if (facts.ask) return { text: facts.ask, withheld: false }
+  return { text: DIAL_NO_ASK, withheld: true }
+}
+
+/**
  * A thumbnail's accessible name: the ask, then the street, in the order the
  * thumbnail prints them, so the visible caption is inside the name
  * (WCAG 2.5.3). "$649,000, 1234 NW Portland Ave".
@@ -127,4 +142,19 @@ export function dialRevealOffset(
 ): number {
   if (start >= scroll && start + size <= scroll + viewport) return scroll
   return Math.max(0, Math.round(start - (viewport - size) / 2))
+}
+
+/**
+ * The share of a thumbnail that must sit inside the rail for it to count as
+ * whole. Under it the rail's edge cuts through the thumbnail, and the dial
+ * hides its caption (a price cut off mid-string, "$1.00/", is not a price),
+ * leaving the photograph under the fade as the sign there is more. Just under
+ * 1 so a sub-pixel sliver lost to rounding does not hide a caption.
+ */
+export const DIAL_THUMB_WHOLE = 0.99
+
+/** Whether the rail's edge cuts through a thumbnail showing `ratio` of itself (0..1). */
+export function dialThumbCut(ratio: number): boolean {
+  if (!Number.isFinite(ratio)) return false
+  return ratio < DIAL_THUMB_WHOLE
 }
