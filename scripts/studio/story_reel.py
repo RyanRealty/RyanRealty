@@ -856,23 +856,25 @@ def typing(seconds, rng, rate=9.0, pull_at=None):
         out[i:min(n, i + 300)] += key[: min(n, i + 300) - i] * rng.uniform(0.6, 1.0)
         out[i:e] += thunk[: e - i] * 0.8
         t += rng.exponential(1 / rate) + 0.03
-    out = lfilter(*butter_bandpass(120, 6000), out) * 0.05
+    out = lfilter(*butter_bandpass(120, 6000), out) * 0.4
     if pull_at is not None:
         i = int(pull_at * SR)
         m = int(0.45 * SR)
-        swish = lfilter(*butter_bandpass(1800, 7000), rng.normal(0, 1, m)) * np.sin(np.linspace(0, np.pi, m)) * 0.05
+        swish = lfilter(*butter_bandpass(1800, 7000), rng.normal(0, 1, m)) * np.sin(np.linspace(0, np.pi, m)) * 0.3
         # the ratchet of the platen letting go
         rat = np.zeros(m)
         for k in range(0, m, int(SR / 38)):
             rat[k:k + 60] += np.exp(-np.arange(min(60, m - k)) / 10.0)
-        swish += lfilter(*butter_bandpass(1500, 5000), rat) * 0.06
+        swish += lfilter(*butter_bandpass(1500, 5000), rat) * 0.35
         e = min(n, i + m)
         out[i:e] += swish[: e - i]
     return _stereo(out, 0.9)
 
 
 def newsroom(seconds, rng, pull_at=None):
-    bus = typing(seconds, rng, pull_at=pull_at) + murmur(seconds, rng, 0.015)
+    # Hers stops when the page comes out; the desks around her keep going.
+    around = lfilter(*butter_bandpass(300, 4000), typing(seconds, rng, rate=11.0)[:, 0]) * 1.4
+    bus = typing(seconds, rng, pull_at=pull_at) + _stereo(around, 0.85) + murmur(seconds, rng, 0.015)
     bus += bell(seconds, rng, 0.012, 1.1, 0.97)
     return bus
 
@@ -1083,7 +1085,13 @@ def homecoming_audio(d, edl, segs, starts, seg_at, end_t, total, name, music, of
         tail = music[int(edl["music"]["endChordAt"] * SR):].copy()
         tail[: int(0.02 * SR)] *= np.linspace(0, 1, int(0.02 * SR))[:, None]
         mix_into(bus, tail * 0.95, end_t + float(edl["music"].get("chordAt", 0.5)))
-    mix_into(bus, projector(end_t, rng) * 0.7, 0.0)
+    # The projector carries the trip; in the city it drops back so the room is heard.
+    proj = projector(end_t, rng) * 0.7
+    duck = np.ones(len(proj), np.float32)
+    ci = int(city_t * SR)
+    duck[ci:] = 0.4
+    duck[ci:ci + int(0.15 * SR)] = np.linspace(1.0, 0.4, len(duck[ci:ci + int(0.15 * SR)]))
+    mix_into(bus, proj * duck[:, None], 0.0)
     mix_into(bus, flap(1.3, rng), end_t)
     for j, s in enumerate(segs):
         kind = s.get("sound")
@@ -1096,9 +1104,10 @@ def homecoming_audio(d, edl, segs, starts, seg_at, end_t, total, name, music, of
             mix_into(bus, clip, at)
         elif kind == "rotary":
             at = starts[j]
-            dial = rotary(s.get("digits", [9, 5]), rng)
+            dial = rotary(s.get("digits", [9, 5]), rng) * 2.5
             mix_into(bus, dial, at + float(s.get("dialAt", -1.3)))
-            mix_into(bus, kitchen(s["seconds"] + 0.3, rng), at)
+            # The kitchen stays under the card: the call is still going, and dead air reads as a fault.
+            mix_into(bus, kitchen(total - at, rng) * 1.6, at)
             ring_at = at + float(s.get("ringAt", 0.5))
             mix_into(bus, ringback(2.0) * 0.8, ring_at)
             # Someone picks up as the card lands: we are here.
