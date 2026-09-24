@@ -1025,6 +1025,22 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(map).toMatch(/SEARCH_MARK_EDGE_MARGIN_PX/)
   })
 
+  it('hides a mark whose point is off the frame instead of clamping it onto the edge', () => {
+    const map = readSrc('components/SearchMapClustered.tsx')
+    // SuperClusterAlgorithm clusters the whole world, so marks for homes off
+    // the camera still draw. clampMarkNudge pulled every one onto the edge.
+    const start = map.indexOf('    draw() {')
+    expect(start).toBeGreaterThan(-1)
+    const draw = map.slice(start, map.indexOf('    onRemove() {', start))
+    expect(draw).toMatch(/const inFrame = markAnchorInIsland\(cp, \{ width: frame\.clientWidth, height: frame\.clientHeight \}\)/)
+    expect(draw).toMatch(/div\.style\.visibility = inFrame \? '' : 'hidden'/)
+    expect(draw).toMatch(/if \(!inFrame\) return/)
+    // Only an anchor inside the frame is nudged in, never one outside it.
+    expect(draw.indexOf('markAnchorInIsland(')).toBeLessThan(draw.indexOf('clampMarkNudge('))
+    // A hidden mark paints nothing and takes no tap, so it is nobody's neighbour.
+    expect(map).toMatch(/\.filter\(\(el\) => el\.parentElement\?\.style\.visibility !== 'hidden'\)/)
+  })
+
   it('the search basemap is the one V3 navy-on-cream style array, never a Map ID', () => {
     const markers = readSrc('lib/maps/markers.ts')
     const basemap = readSrc('lib/maps/v3-basemap.ts')
