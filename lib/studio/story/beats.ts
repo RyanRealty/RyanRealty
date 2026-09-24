@@ -38,6 +38,12 @@ export type BeatRole =
   | 'phone'
   | 'call'
   | 'stay'
+  | 'pack'
+  | 'leave'
+  | 'commute'
+  | 'work_b'
+  | 'work_a'
+  | 'home'
 
 export type BeatDef = {
   id: string
@@ -69,12 +75,25 @@ export type BeatDef = {
   allowAnachronism?: string
   /**
    * A post composite this beat needs. The brand and any lettering never go
-   * through a generator: the frame carries a blank panel, marquee board, or
-   * lit screen, and story_reel.py lays ours on it.
+   * through a generator: the frame carries a blank panel, marquee board, lit
+   * screen, or blank snapshot card, and story_reel.py lays ours on it.
    */
-  composite?: 'yard_sign' | 'marquee' | 'phone_screen'
+  composite?: 'yard_sign' | 'marquee' | 'phone_screen' | 'photo_print'
+  /**
+   * Set in the city they came from, not in Central Oregon. The reference test
+   * guards local place chrome; a freeway or an office far from here has no
+   * local still to condition on, and it must not read as Bend.
+   */
+  elsewhere?: boolean
   /** A still moved by the lab camera instead of generated motion. */
   stillOnly?: boolean
+  /**
+   * No generation at all: the plate is the selected still of this earlier
+   * role, and the lab camera does the rest (an amateur zooming into a frame we
+   * already have). Keeps the house, the light, and the dog the same by
+   * construction instead of by prompt.
+   */
+  plateFrom?: BeatRole
   /**
    * The piece's companion (a dog) is in frame: its one reference photo goes
    * to the generator with the cast sheets, so it is the same dog every shot.
@@ -355,6 +374,30 @@ export const BEATS: BeatDef[] = [
     move: 'pan',
   },
   {
+    id: 'drake-park-walk-lab',
+    role: 'town',
+    label: 'Drake Park at dusk: she walks the Lab along Mirror Pond',
+    years: [1925, 2100],
+    yearsWhy: 'Drake Park and Mirror Pond date to the 1910s-1920s; the pond has looked this way since the 1910 dam.',
+    seasons: ['winter', 'fall'],
+    place:
+      'the path along Mirror Pond in Drake Park at dusk after a snowfall: the still pond with snowy banks, ' +
+      'tall ponderosa pines and bare shade trees, snow on the lawn, lit windows of houses across the water',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A'],
+    wardrobe: 'evening',
+    companion: true,
+    framing:
+      'filmed by him a few steps behind her on the path, 35mm: she and the dog on the left half of the frame walking away ' +
+      'along the path, the still pond and the lit houses across the water on the right',
+    light: 'deep blue dusk skylight with warm window light across the pond, 3000K practicals, soft shadows on the snow',
+    exposure: 'night',
+    action:
+      '{A} walks along the snowy path with their black Labrador with the red collar on a leash beside her, and turns her head back to the camera with a smile',
+    props: 'a red leather leash',
+    move: 'follow',
+  },
+  {
     id: 'drake-park-bike',
     role: 'town',
     label: 'Drake Park at dusk: a local on a bike, a dog alongside',
@@ -458,6 +501,26 @@ export const BEATS: BeatDef[] = [
       'any letters, numbers, or marks on the sign panel',
       'the sign panel is not a clean flat rectangle facing the camera',
     ],
+  },
+  {
+    id: 'sign-zoom-discover',
+    role: 'sign',
+    label: 'He zooms in on the sign she pointed at',
+    years: [1925, 2100],
+    seasons: ['winter'],
+    place:
+      'the front yard of the same 1920s craftsman bungalow in Old Bend at dusk: porch light on, lit windows, snow on the lawn, ' +
+      'a white wooden yard-sign post in the snow',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: [],
+    framing: 'the discover frame, power-zoomed by an amateur from her pointing arm into the sign on the lawn',
+    light: 'blue dusk skylight with the warm porch light and lit windows, 3000K practicals',
+    exposure: 'night',
+    action: 'the camera zooms into the yard sign until its phone number fills the frame',
+    move: 'hold',
+    composite: 'yard_sign',
+    stillOnly: true,
+    plateFrom: 'discover',
   },
   // ── phone ───────────────────────────────────────────────────────────────
   {
@@ -608,6 +671,213 @@ export const BEATS: BeatDef[] = [
       'anyone holding a phone',
       'either of them grinning or gesturing at the camera',
     ],
+  },
+  // ── the homecoming (Matt 2026-09-24) ───────────────────────────────────
+  // They go home. The week back at work reminds them what they left, and the
+  // call comes from their own kitchen on the phone they own. Everything after
+  // the drive out is set in the city they came from: locked off, grey, and
+  // square to the lens (Tati's Playtime, Roy Andersson's offices), against the
+  // warm handheld home movie of the trip. The only warm thing in those frames
+  // is the snapshot from Bend.
+  {
+    id: 'pack-wagon-lab',
+    role: 'pack',
+    label: 'The wagon loaded, the Lab jumps in last',
+    years: [1965, 1995],
+    yearsWhy:
+      'A wood-panelled full-size station wagon with skis on the roof rack: the family ski car from the late 1960s until minivans replaced it in the 1990s.',
+    seasons: ['winter'],
+    place:
+      'the curb of a quiet Old Bend street on a bright cold morning after a snowfall: 1920s bungalows, tall ponderosa pines, snow banked along the curb',
+    refs: ['asset:0c6777d4-f8b3-4b2c-a399-67810745cea3'],
+    cast: ['A', 'B'],
+    wardrobe: 'travel',
+    companion: true,
+    framing:
+      'from the sidewalk at the back corner of the car, 35mm: the open tailgate of the station wagon on the left half of the frame, ' +
+      'two pairs of skis strapped on the roof rack, the two of them beside the tailgate, the license plate out of frame',
+    light: 'low bright morning sun from the side, 5000K, long blue shadows on the snow',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action:
+      'their black Labrador with the red collar jumps up into the back of the loaded station wagon while {A} and {B} stand at the open tailgate and watch',
+    props:
+      'a brown full-size American station wagon from the late 1970s with wood-grain side panels and a roof rack, no badges or lettering on the car; ' +
+      'suitcases and a cooler in the cargo area',
+    move: 'follow',
+    alsoReject: ['any badge, license plate, or lettering on the car'],
+  },
+  {
+    id: 'rear-window-lab',
+    role: 'leave',
+    label: 'The Lab in the way-back watches the mountain go',
+    years: [1965, 1995],
+    yearsWhy: 'The cargo area of a full-size station wagon, where the dog rode before the minivan.',
+    seasons: ['winter'],
+    place:
+      'the straight highway out of Bend through tall ponderosa pines, the snow-covered volcanic cone of Mount Bachelor behind them at the far end of the road',
+    refs: ['asset:d7f06007-475f-4a93-ad09-f2aa31633aad'],
+    cast: [],
+    companion: true,
+    framing:
+      'from the back seat looking back over the cargo area and out through the rear window, 28mm: the dog in the cargo area on the left, ' +
+      'the road running back to the mountain framed in the rear window',
+    light: 'flat bright winter daylight outside, the car interior a stop darker',
+    exposure: 'day',
+    action:
+      'their black Labrador with the red collar sits in the cargo area and looks out the rear window at the mountain getting smaller as the empty road runs away behind the car',
+    props:
+      'brown vinyl upholstery and wood-grain trim inside the station wagon; suitcases and a cooler beside the dog; ' +
+      'the tips of the skis on the roof rack just visible at the top of the rear window',
+    move: 'hold',
+    alsoReject: [
+      'a person in the cargo area',
+      'people standing on the road or behind the car',
+      'an open tailgate',
+      'lettering on the window or the road',
+    ],
+  },
+  {
+    id: 'commute-gridlock',
+    role: 'commute',
+    label: 'A week later: the same car, going nowhere',
+    years: [1960, 2100],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'an eight-lane big-city freeway at a standstill on a hazy brown morning: brake lights to the horizon, concrete overpasses, no trees and no mountains',
+    refs: [],
+    cast: ['B'],
+    wardrobe: 'work',
+    framing:
+      'from a camera braced on the dashboard facing him across the front seat, 28mm: he is behind the wheel on the left, ' +
+      'the driver window and the stopped traffic beyond it',
+    light: 'flat hazy smog-filtered daylight, 4800K, grey and low contrast',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action: '{B} sits behind the wheel in stopped traffic, rests his forehead in his hand, and lets out a long breath',
+    props: 'the same boxy brown vinyl dashboard and wood-grain trim of the station wagon',
+    move: 'dashboard',
+    alsoReject: ['snow', 'pine trees', 'mountains', 'a dog in the car', 'anyone else in the car'],
+  },
+  {
+    id: 'desk-his',
+    role: 'work_b',
+    label: 'His desk: the phones, and the snapshot from the trip',
+    years: [1955, 1990],
+    yearsWhy: 'A bullpen of steel desks and multi-line telephones with no computer screens: a brokerage office before the PC.',
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'a crowded stockbroker’s office in a downtown high-rise: rows of grey steel desks under flat fluorescent ceiling panels, ' +
+      'men in shirtsleeves on telephones, paper everywhere, grey concrete towers through the windows',
+    refs: [],
+    cast: ['B'],
+    wardrobe: 'work',
+    framing:
+      'locked off square to his desk, 50mm: a small brass picture frame standing on the front right corner of the desk angled toward the camera, ' +
+      'large and sharp in the foreground; he sits behind the desk at center, the office soft behind him',
+    light: 'flat cool fluorescent overhead light, 4000K, greenish and shadowless',
+    exposure: 'day',
+    action:
+      '{B}, tired and frowning, holds the telephone to his ear, then lowers it and looks down at the picture frame on his desk',
+    props:
+      'a grey steel desk, a beige multi-line push-button telephone with lit line buttons, stacks of paper, a coffee mug; ' +
+      'the small brass picture frame holds a plain blank white card',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: [
+      'any picture, letters, or marks inside the picture frame',
+      'a computer screen',
+      'readable text on papers',
+      'snow or mountains',
+    ],
+  },
+  {
+    id: 'desk-hers',
+    role: 'work_a',
+    label: 'Her desk in the newsroom: deadline, and the same snapshot',
+    years: [1930, 1985],
+    yearsWhy: 'A city newsroom of typewriters and wire baskets; terminals replaced the typewriters through the late 1970s and 1980s.',
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'a big-city newspaper newsroom on deadline: rows of cluttered desks with typewriters, wire baskets of copy paper, ' +
+      'hanging fluorescent lights, cigarette haze, reporters on the phone, tall windows onto a grey city',
+    refs: [],
+    cast: ['A'],
+    wardrobe: 'work',
+    framing:
+      'locked off square to her desk, 50mm: a small brass picture frame standing on the front left corner of the desk angled toward the camera, ' +
+      'large and sharp in the foreground; she sits behind a typewriter at center, the newsroom soft behind her',
+    light: 'flat cool fluorescent overhead light mixed with grey window light, 4200K',
+    exposure: 'day',
+    action:
+      '{A}, harried and frowning, pulls a sheet of paper out of the typewriter, then stops and looks at the picture frame on her desk',
+    props:
+      'a manual typewriter, stacks of copy paper, a black desk telephone, a coffee cup; the small brass picture frame holds a plain blank white card',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: [
+      'any picture, letters, or marks inside the picture frame',
+      'a computer screen',
+      'readable text on papers',
+      'snow or mountains',
+    ],
+  },
+  {
+    id: 'kitchen-snapshot',
+    role: 'home',
+    label: 'That night: the snapshot of the house on the table between them',
+    years: [1960, 1995],
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'the small kitchen of a city apartment at night: yellow linoleum floor, avocado-green appliances, ' +
+      'a harvest-gold rotary telephone on the wall, a window onto dark city lights',
+    refs: [],
+    cast: ['A', 'B'],
+    wardrobe: 'work',
+    companion: true,
+    framing:
+      'locked off at the end of the small kitchen table, 35mm: the two of them sitting across from each other, ' +
+      'a single snapshot lying face up on the table between them in the foreground, the dog lying on the floor beside the table',
+    light: 'a single warm pendant lamp over the table, 2800K, the rest of the kitchen falling off into shadow',
+    exposure: 'interior_low',
+    action: '{A} looks up from the snapshot on the table at {B}, and he looks back at her and slowly nods',
+    props:
+      'a Formica kitchen table with two plates and two glasses of wine; the snapshot is a plain blank white card with nothing on it; ' +
+      'their black Labrador with the red collar lying on the floor',
+    move: 'tripod',
+    composite: 'photo_print',
+    alsoReject: ['any picture, letters, or marks on the snapshot card', 'snow or mountains through the window'],
+  },
+  {
+    id: 'call-kitchen-rotary',
+    role: 'call',
+    label: 'He makes the call from the kitchen wall phone; it rings',
+    years: [1955, 1995],
+    yearsWhy:
+      'A rotary wall telephone with a long coiled cord, standard in American kitchens until push-button and cordless phones replaced it.',
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    elsewhere: true,
+    place:
+      'the same small city apartment kitchen at night: yellow linoleum floor, avocado-green appliances, a window onto dark city lights',
+    refs: [],
+    cast: ['A', 'B'],
+    wardrobe: 'work',
+    companion: true,
+    framing:
+      'locked off from the kitchen doorway, 35mm: he stands on the right against the wall directly under the harvest-gold rotary wall telephone, ' +
+      'its handset at his ear and its long coiled cord running up to the phone base beside his head; she sits at the table on the left watching him, the dog between them',
+    light: 'the single warm pendant lamp over the table, 2800K, the rest of the kitchen falling off into shadow',
+    exposure: 'interior_low',
+    action: '{B} stands with the telephone handset at his ear, waiting while it rings, and looks over at {A}, who smiles',
+    props:
+      'one harvest-gold rotary wall telephone with a harvest-gold handset and a long coiled cord, the only telephone in the room; ' +
+      'their black Labrador with the red collar sitting on the floor',
+    move: 'tripod',
+    alsoReject: ['a mobile phone or cordless phone', 'push buttons on the telephone'],
   },
 ]
 

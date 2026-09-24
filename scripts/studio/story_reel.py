@@ -57,6 +57,12 @@ BASE = (18, 15, 13)  # film base on a light table: near black, warm
 AMBOQIA = os.path.join(ROOT, "public/fonts/Amboqia_Boriango.otf")
 GEIST = os.path.join(ROOT, "node_modules/geist/dist/fonts/geist-sans/Geist-Regular.ttf")
 GEIST_MED = os.path.join(ROOT, "node_modules/geist/dist/fonts/geist-sans/Geist-Medium.ttf")
+GEIST_SEMI = os.path.join(ROOT, "node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.ttf")
+# The number on the sign and the card: Matt's business line, public.brokers
+# (slug matthew-ryan) twilio_number +15417033095, verified 2026-09-24. It
+# rings through to his cell. His printed yard signs carry the cell itself
+# (541.213.6706); a public video carries the business line.
+BUSINESS_LINE = "541.703.3095"
 
 # Strip layout. The frame sits in the upper-middle so the caption band above
 # and the platform UI below both stay clear (safe zone: y 220..1500).
@@ -115,21 +121,60 @@ def detect_panel(img):
 
 
 STACKED_LOGO = os.path.join(ROOT, "design_system/ryan-realty/assets/brand/ryan-realty-stacked-logo-blue.png")
+STACKED_LOGO_REVERSED = os.path.join(ROOT, "design_system/ryan-realty/assets/brand/ryan-realty-stacked-logo-white.png")
 
 
-def render_panel(out_path, size=(2954, 3038)):
-    """The yard sign: the stacked logo and nothing else (Matt 2026-09-23), navy
-    on cream with a thin navy inset rule so it reads as a sign board. The
-    wordmark is the pre-rendered brand asset, never re-typeset."""
+def render_panel(out_path, size=(2954, 3038), phone=BUSINESS_LINE):
+    """The yard sign: the stacked logo over Matt's number (Matt 2026-09-24), navy
+    on cream with a thin navy inset rule so it reads as a sign board, the number
+    reversed out of a navy band the way the printed Ryan Realty sign carries it.
+    The wordmark is the pre-rendered brand asset, never re-typeset; the number
+    is Geist SemiBold, which stays legible at the size the film shows it."""
     w, h = size
     panel = Image.new("RGBA", (w, h), CREAM + (255,))
-    m = int(w * 0.035)
-    ImageDraw.Draw(panel).rectangle([m, m, w - 1 - m, h - 1 - m], outline=NAVY + (255,), width=int(w * 0.012))
+    dr = ImageDraw.Draw(panel)
+    m, rule = int(w * 0.035), int(w * 0.012)
+    dr.rectangle([m, m, w - 1 - m, h - 1 - m], outline=NAVY + (255,), width=rule)
+    band_h = int(h * 0.24) if phone else 0
+    band_top = h - m - rule - band_h
+    top, bottom = m + rule, band_top if phone else h - m - rule
     logo = Image.open(STACKED_LOGO).convert("RGBA")
-    lw = int(w * 0.78)
+    lw = int(w * (0.70 if phone else 0.78))
     logo = logo.resize((lw, int(logo.height * lw / logo.width)), Image.LANCZOS)
-    panel.alpha_composite(logo, ((w - lw) // 2, (h - logo.height) // 2))
+    if logo.height > (bottom - top) * 0.86:
+        lh = int((bottom - top) * 0.86)
+        logo = logo.resize((int(logo.width * lh / logo.height), lh), Image.LANCZOS)
+    panel.alpha_composite(logo, ((w - logo.width) // 2, top + (bottom - top - logo.height) // 2))
+    if phone:
+        dr.rectangle([m, band_top, w - 1 - m, h - 1 - m], fill=NAVY + (255,))
+        size_px = 40
+        while True:
+            bb = dr.textbbox((0, 0), phone, font=font(GEIST_SEMI, size_px + 10))
+            if bb[2] - bb[0] > w * 0.80 or bb[3] - bb[1] > band_h * 0.55:
+                break
+            size_px += 10
+        f = font(GEIST_SEMI, size_px)
+        bb = dr.textbbox((0, 0), phone, font=f)
+        dr.text(((w - (bb[2] - bb[0])) // 2 - bb[0], band_top + (band_h - (bb[3] - bb[1])) // 2 - bb[1]), phone, font=f,
+                fill=CREAM + (255,))
     panel.save(out_path)
+    return out_path
+
+
+def render_print(src_path, out_path, crop=None, border=0.045, width=1400):
+    """A 1982 colour print of a frame from the trip, for a desk frame or a
+    kitchen table: the frame cropped, a warm white border, nothing else. It is
+    laid on a blank card in the plate and graded with it, so it ages with the
+    film instead of sitting on top of it."""
+    img = Image.open(src_path).convert("RGB")
+    if crop:
+        x0, y0, x1, y1 = crop
+        img = img.crop((int(x0 * img.width), int(y0 * img.height), int(x1 * img.width), int(y1 * img.height)))
+    img = img.resize((width, int(img.height * width / img.width)), Image.LANCZOS)
+    b = int(width * border)
+    out = Image.new("RGB", (img.width + 2 * b, img.height + 2 * b), (240, 236, 226))
+    out.paste(img, (b, b))
+    out.save(out_path, quality=95)
     return out_path
 
 
@@ -172,7 +217,8 @@ def composite_sign(still_path, panel_path, out_path, corners=None, debug=None, u
     return info
 
 
-def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=None):
+def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=None, static=False, plate_sat=1.0,
+               key_ref=False):
     """Our sign art on the blank panel of a MOVING clip.
 
     Tracking: ECC homography of the sign's own neighbourhood (panel, post, arm,
@@ -182,6 +228,13 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
     Occlusion: the art lands only where frame k still shows the blank panel's
     neutral colour, so a hand passing in front stays in front.
     Lighting: the blank panel's own per-frame shading is multiplied into the art.
+
+    static      a locked-off shot: no tracking, the quad stays where it is (a hand
+                reaching past a desk frame would only drag an ECC track)
+    plate_sat   saturation kept in the plate around the art (the city is grey;
+                the snapshot from the trip keeps its colour)
+    key_ref     occlusion keyed on distance from the blank card's own colour, not
+                on neutrality: a white card under a 2800K lamp is not neutral
     """
     w, h, fps, _ = probe_video(clip_path)
     sx, sy = w / still_size[0], h / still_size[1]
@@ -217,7 +270,13 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
             template = roi.copy()
             sat = cv2.cvtColor(frame[y0:y1, x0:x1], cv2.COLOR_RGB2HSV)[..., 1]
             mask = (sat < 70).astype(np.uint8)
-        else:
+            if key_ref:
+                lab0 = cv2.cvtColor(frame, cv2.COLOR_RGB2LAB).astype(np.float32)
+                card = cv2.warpPerspective(np.ones((ah, aw), np.float32), cv2.getPerspectiveTransform(art_corners, q0),
+                                           (w, h)) > 0.95
+                card = cv2.erode(card.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+                ref_lab = np.median(lab0[card], axis=0)
+        elif not static:
             try:
                 _, warp = cv2.findTransformECC(template, roi, warp, cv2.MOTION_HOMOGRAPHY, criteria, mask, 5)
             except cv2.error:
@@ -230,13 +289,20 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
         quad_mask = cv2.warpPerspective(np.ones((ah, aw), np.float32), M, (w, h), flags=cv2.INTER_LINEAR)
         plate = frame.astype(np.float32) / 255.0
         lab = cv2.cvtColor(frame, cv2.COLOR_RGB2LAB).astype(np.float32)
-        chroma = np.sqrt((lab[..., 1] - 128) ** 2 + (lab[..., 2] - 128) ** 2)
-        key = 1.0 - smoothstep_np(9.0, 16.0, chroma)
+        if key_ref:
+            dist = np.sqrt((lab[..., 1] - ref_lab[1]) ** 2 + (lab[..., 2] - ref_lab[2]) ** 2)
+            key = (1.0 - smoothstep_np(7.0, 13.0, dist)) * smoothstep_np(ref_lab[0] * 0.62, ref_lab[0] * 0.8, lab[..., 0])
+        else:
+            chroma = np.sqrt((lab[..., 1] - 128) ** 2 + (lab[..., 2] - 128) ** 2)
+            key = 1.0 - smoothstep_np(9.0, 16.0, chroma)
         alpha = cv2.GaussianBlur(quad_mask * key, (0, 0), 0.9)[..., None]
         shade = cv2.GaussianBlur(plate, (0, 0), 8)
         inside = (quad_mask > 0.9) & (key > 0.9)
         ref = np.percentile(shade[inside], 92, axis=0) if inside.sum() > 50 else np.ones(3, np.float32)
         lit = warped * np.clip(shade / np.maximum(ref, 1e-3), 0.0, 1.2) * ref
+        if plate_sat < 1.0:
+            grey = plate.mean(axis=2, keepdims=True)
+            plate = grey + (plate - grey) * plate_sat
         out = plate * (1 - alpha) + lit * alpha
         enc.stdin.write((np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8).tobytes())
         if debug and k in (0, 70, 140):
@@ -336,11 +402,14 @@ def default_edl(d):
     plan = load_json(os.path.join(d, "plan.json"))["plan"]
     manifest = load_json(os.path.join(d, "manifest.json"))
     piece = load_json(os.path.join(d, "plan.json"))["piece"]
-    segments = []
+    segments, captions, t = [], [{"text": piece["openCaption"], "from": 0.25, "to": 3.3}], 0.0
     for shot in plan["shots"]:
         role = shot["role"]
         seg = {"role": role, "seconds": shot["seconds"]}
-        if shot["kind"] == "generated":
+        if (piece.get("roleCaptions") or {}).get(role):
+            captions.append({"text": piece["roleCaptions"][role], "from": t + 0.2, "to": t + 2.2})
+        t += shot["seconds"]
+        if shot["kind"] in ("generated", "plate"):
             state = manifest["shots"].get(role, {})
             if role == "sign":
                 seg.update({"still": "assets/sign-composite.jpg", "handheld": 5.0,
@@ -354,8 +423,9 @@ def default_edl(d):
         segments.append(seg)
     return {
         "music": {"file": "audio/music-take3.mp3", "offset": 0.0, "endChordAt": 36.9},
-        "caption": {"text": piece["openCaption"], "from": 0.25, "to": 3.3},
-        "end": {"lines": [piece["endLine"]] if piece.get("endLine") else [], "sub": "ryan-realty.com  ·  541.703.3095", "disclosure": "Made with AI"},
+        "captions": captions,
+        "end": {"lines": [piece["endLine"]] if piece.get("endLine") else [], "sub": f"ryan-realty.com  ·  {BUSINESS_LINE}",
+                "disclosure": "Made with AI"},
         "segments": segments,
     }
 
@@ -365,6 +435,9 @@ def default_edl(d):
 def grade_segment(d, seg, lab_all, draft):
     role = seg["role"]
     params = dict(lab_all["lab"][role])
+    # A segment may override the stock for itself (the city after the trip is greyer).
+    for k, v in (seg.get("lab") or {}).items():
+        params[k] = {**params[k], **v} if isinstance(v, dict) and isinstance(params.get(k), dict) else v
     if seg.get("handheld"):
         params["weave"] = dict(params["weave"])
     # The source's mtime is in the key: re-plating a clip or still under the same
@@ -511,8 +584,42 @@ def phone_frame(assets, t, seg):
     return img
 
 
+def end_card_dark(t, cfg):
+    """After a fade to black: the card comes up out of the dark on navy, the
+    reversed stacked logo, the line in cream. No burn; the film already ended."""
+    u = float(np.clip((t - 0.15) / 0.7, 0.0, 1.0)) ** 1.4
+    bg = tuple(int(NAVY[i] * u) for i in range(3))
+    card = Image.new("RGB", (W, H), bg)
+    logo = Image.open(STACKED_LOGO_REVERSED).convert("RGBA")
+    lw = 560
+    logo = logo.resize((lw, int(logo.height * lw / logo.width)), Image.LANCZOS)
+    la = float(np.clip((t - 0.45) / 0.6, 0.0, 1.0))
+    a = np.array(logo)
+    a[..., 3] = (a[..., 3] * la).astype(np.uint8)
+    card.paste(Image.fromarray(a), ((W - lw) // 2, 560), Image.fromarray(a))
+    dr = ImageDraw.Draw(card)
+    v = float(np.clip((t - 0.9) / 0.6, 0.0, 1.0))
+    def mix(k):
+        return tuple(int(bg[i] + (CREAM[i] - bg[i]) * v * k) for i in range(3))
+    y = 560 + logo.height + 110
+    for n, line in enumerate(cfg.get("lines") or []):
+        f = font(AMBOQIA, 56) if n == 0 else font(GEIST_MED, 40)
+        for chunk in balanced_wrap(dr, line, f, 880):
+            bb = dr.textbbox((0, 0), chunk, font=f)
+            dr.text(((W - (bb[2] - bb[0])) // 2, y), chunk, font=f, fill=mix(1.0))
+            y += 72 if n == 0 else 54
+    bb = dr.textbbox((0, 0), cfg["sub"], font=font(GEIST, 32))
+    dr.text(((W - (bb[2] - bb[0])) // 2, y + 40), cfg["sub"], font=font(GEIST, 32), fill=mix(0.75))
+    if cfg.get("disclosure"):
+        bb = dr.textbbox((0, 0), cfg["disclosure"], font=font(GEIST, 22))
+        dr.text(((W - (bb[2] - bb[0])) // 2, 1480), cfg["disclosure"], font=font(GEIST, 22), fill=mix(0.45))
+    return np.array(card)
+
+
 def end_card(t, seconds, cfg, last_film):
     """Run-out: the frame burns, clear leader floods cream, the card lands."""
+    if cfg.get("style") == "fade":
+        return end_card_dark(t, cfg)
     burn = 0.5
     if t < burn and last_film is not None:
         # The film stops in the gate and melts: a white-hot hole grows from one
@@ -685,6 +792,124 @@ def room_tone(seconds, rng):
     return np.stack([sig, sig * 0.9], 1).astype(np.float32)
 
 
+# ── the week back home: built here, like everything else in the mix ──────────
+
+def _stereo(sig, spread=0.94):
+    return np.stack([sig, sig * spread], 1).astype(np.float32)
+
+
+def traffic(seconds, rng, honks=5):
+    """A freeway at a standstill: idling engines, and horns that go nowhere."""
+    n = int(seconds * SR)
+    out = lfilter(*butter_bandpass(35, 180), rng.normal(0, 1, n)) * 0.05
+    for _ in range(honks):
+        at, dur = rng.uniform(0.0, max(0.1, seconds - 0.6)), rng.uniform(0.18, 0.75)
+        f1 = rng.uniform(330, 420)
+        m = int(dur * SR)
+        tt = np.arange(m) / SR
+        tone = 0.5 * (np.sign(np.sin(2 * np.pi * f1 * tt)) + np.sign(np.sin(2 * np.pi * f1 * 1.26 * tt)))
+        env = np.minimum(1.0, np.minimum(tt / 0.012, (dur - tt) / 0.04))
+        tone = lfilter(*butter_bandpass(260, 2400), tone * env) * rng.uniform(0.02, 0.07)
+        i = int(at * SR)
+        e = min(n, i + m)
+        out[i:e] += tone[: e - i]
+    return _stereo(out)
+
+
+def bell(seconds, rng, level=0.05, offset=0.0, pitch=1.0):
+    """An office telephone of the era: two gongs hammered twenty times a second, two seconds on, four off."""
+    n = int(seconds * SR)
+    t = np.arange(n) / SR
+    on = ((t + offset) % 6.0) < 2.0
+    tone = sum(a * np.sin(2 * np.pi * f * pitch * t) for f, a in ((1150, 1.0), (1720, 0.55), (2890, 0.3)))
+    strike = 0.55 + 0.45 * np.abs(np.sin(2 * np.pi * 10 * t))
+    edge = np.clip(np.minimum((t + offset) % 6.0, 2.0 - ((t + offset) % 6.0)) / 0.01, 0, 1)
+    return _stereo(tone * strike * on * edge * level)
+
+
+def murmur(seconds, rng, level=0.02):
+    """A room of people on the phone: band-limited noise with a syllable rhythm."""
+    n = int(seconds * SR)
+    voice = lfilter(*butter_bandpass(250, 2600), rng.normal(0, 1, n))
+    syll = lfilter(*butter_bandpass(2.5, 7.0), rng.normal(0, 1, n))
+    return _stereo(voice * (0.5 + np.clip(syll * 3, -0.5, 0.5)) * level, 0.9)
+
+
+def office(seconds, rng):
+    bus = murmur(seconds, rng)
+    for off, lvl, p in ((0.3, 0.03, 1.0), (2.9, 0.018, 1.07), (4.4, 0.012, 0.94)):
+        bus += bell(seconds, rng, lvl, off, p)
+    return bus
+
+
+def typing(seconds, rng, rate=9.0, pull_at=None):
+    """A manual typewriter on deadline, then the page coming out of the roller."""
+    n = int(seconds * SR)
+    out = np.zeros(n)
+    t = rng.exponential(1 / rate)
+    stop = pull_at if pull_at is not None else seconds
+    key = rng.normal(0, 1, 300) * np.exp(-np.arange(300) / 40.0)
+    thunk = np.sin(2 * np.pi * 180 * np.arange(500) / SR) * np.exp(-np.arange(500) / 90.0)
+    while t < stop - 0.05:
+        i = int(t * SR)
+        e = min(n, i + 500)
+        out[i:min(n, i + 300)] += key[: min(n, i + 300) - i] * rng.uniform(0.6, 1.0)
+        out[i:e] += thunk[: e - i] * 0.8
+        t += rng.exponential(1 / rate) + 0.03
+    out = lfilter(*butter_bandpass(120, 6000), out) * 0.05
+    if pull_at is not None:
+        i = int(pull_at * SR)
+        m = int(0.45 * SR)
+        swish = lfilter(*butter_bandpass(1800, 7000), rng.normal(0, 1, m)) * np.sin(np.linspace(0, np.pi, m)) * 0.05
+        # the ratchet of the platen letting go
+        rat = np.zeros(m)
+        for k in range(0, m, int(SR / 38)):
+            rat[k:k + 60] += np.exp(-np.arange(min(60, m - k)) / 10.0)
+        swish += lfilter(*butter_bandpass(1500, 5000), rat) * 0.06
+        e = min(n, i + m)
+        out[i:e] += swish[: e - i]
+    return _stereo(out, 0.9)
+
+
+def newsroom(seconds, rng, pull_at=None):
+    bus = typing(seconds, rng, pull_at=pull_at) + murmur(seconds, rng, 0.015)
+    bus += bell(seconds, rng, 0.012, 1.1, 0.97)
+    return bus
+
+
+def kitchen(seconds, rng):
+    """Night in a city apartment: the refrigerator, the city through the glass."""
+    n = int(seconds * SR)
+    t = np.arange(n) / SR
+    hum = (0.5 * np.sin(2 * np.pi * 60 * t) + 0.3 * np.sin(2 * np.pi * 120 * t)) * 0.004
+    city = lfilter(*butter_bandpass(60, 400), rng.normal(0, 1, n)) * 0.01
+    return _stereo(hum + city)
+
+
+def rotary(digits, rng):
+    """A rotary dial: the finger winds it round, then it spins back, one click per pulse (10 a second)."""
+    parts = []
+    for dgt in digits:
+        pulses = 10 if dgt == 0 else dgt
+        wind = int((0.12 + 0.055 * pulses) * SR)
+        ratchet = np.zeros(wind)
+        for k in range(0, wind, int(SR / 55)):
+            ratchet[k:k + 40] += np.exp(-np.arange(min(40, wind - k)) / 8.0) * 0.5
+        back = int(pulses * 0.1 * SR + 0.08 * SR)
+        ret = np.zeros(back)
+        for p in range(pulses):
+            k = int((0.04 + p * 0.1) * SR)
+            ret[k:k + 90] += np.exp(-np.arange(min(90, back - k)) / 14.0)
+        whir = lfilter(*butter_bandpass(300, 1200), rng.normal(0, 1, back)) * 0.15
+        gap = np.zeros(int(0.22 * SR))
+        parts += [lfilter(*butter_bandpass(900, 5000), ratchet) * 0.12,
+                  lfilter(*butter_bandpass(700, 4500), ret) * 0.25 + whir * 0.3, gap]
+    return _stereo(np.concatenate(parts) * 0.6)
+
+
+SOUNDS = {"traffic": traffic, "office": office, "newsroom": newsroom, "kitchen": kitchen}
+
+
 def mix_into(bus, clip, at):
     i = int(at * SR)
     if i >= len(bus):
@@ -739,7 +964,7 @@ def build(d, draft, lab_file="lab.json", name="reel", music=True, video_from=Non
     enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
                             "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium" if draft else "slow",
                             "-crf", "18", "-pix_fmt", "yuv420p", out_video], stdin=subprocess.PIPE)
-    cap = edl.get("caption")
+    captions = list(edl.get("captions") or ([edl["caption"]] if edl.get("caption") else []))
     last_film = None
     for k in range(n_frames):
         gt = k / FPS
@@ -755,10 +980,14 @@ def build(d, draft, lab_file="lab.json", name="reel", music=True, video_from=Non
             prev = frames[fi - 1] if fi > 0 else None
             nxt = frames[fi + 1] if fi + 1 < len(frames) else None
             canvas = film_canvas(frames[fi], prev, nxt)
+            if s.get("fadeOut"):
+                # The picture goes to black on the ring (Matt 2026-09-24: "that's when we fade out").
+                canvas = canvas * float(np.clip((s["seconds"] - lt) / s["fadeOut"], 0.0, 1.0)) ** 1.3
             frame = (np.clip(canvas, 0, 1) * 255 + 0.5).astype(np.uint8)
-            if cap and cap["from"] <= gt <= cap["to"]:
-                a = min(1.0, (gt - cap["from"]) / 0.3, (cap["to"] - gt) / 0.3)
-                frame = draw_caption(frame, cap["text"], a)
+            for cap in captions:
+                if cap["from"] <= gt <= cap["to"]:
+                    a = min(1.0, (gt - cap["from"]) / 0.3, (cap["to"] - gt) / 0.3)
+                    frame = draw_caption(frame, cap["text"], a)
             last_film = frame
         enc.stdin.write(frame.tobytes())
     enc.stdin.close()
@@ -776,6 +1005,8 @@ def build_audio(d, edl, segs, starts, total, name, music, out_video, n_frames):
     else:  # silence where the score was: every cue below still lands, unscored
         music = np.zeros((int((edl["music"]["endChordAt"] + total + 10) * SR), 2), np.float32)
     off = int(edl["music"].get("offset", 0.0) * SR)
+    if any(s.get("sound") for s in segs):
+        return homecoming_audio(d, edl, segs, starts, seg_at, end_t, total, name, music, off, rng, out_video, n_frames)
     if "break" not in seg_at and "call" not in seg_at:
         # No phone at all (Matt 2026-09-23): the song runs to the last frame and
         # its final chord lands on the card as the film runs out.
@@ -834,6 +1065,47 @@ def build_audio(d, edl, segs, starts, total, name, music, out_video, n_frames):
     return finish_audio(d, name, bus, total, out_video, n_frames, -14 if music.any() else -24)
 
 
+def homecoming_audio(d, edl, segs, starts, seg_at, end_t, total, name, music, off, rng, out_video, n_frames):
+    """The trip has a score; the city does not. The music (when there is one)
+    stops dead on the first city shot and the room takes over: the freeway,
+    the phones, the typewriters, the refrigerator. He dials over the end of the
+    kitchen shot (the sound leads the picture), it rings once in the handset,
+    the picture fades on the silence after, and the card lands on the pickup
+    click and the song's last chord. The projector runs the whole reel."""
+    bus = np.zeros((int(total * SR) + SR, 2), np.float32)
+    scored = bool(music.any())
+    city_t = next((starts[j] for j, s in enumerate(segs) if s.get("sound")), end_t)
+    if scored:
+        body = music[off: off + int(city_t * SR)].copy()
+        fade = int(0.05 * SR)
+        body[-fade:] *= np.linspace(1, 0, fade)[:, None]
+        mix_into(bus, body * 0.9, 0.0)
+        tail = music[int(edl["music"]["endChordAt"] * SR):].copy()
+        tail[: int(0.02 * SR)] *= np.linspace(0, 1, int(0.02 * SR))[:, None]
+        mix_into(bus, tail * 0.95, end_t + float(edl["music"].get("chordAt", 0.5)))
+    mix_into(bus, projector(end_t, rng) * 0.7, 0.0)
+    mix_into(bus, flap(1.3, rng), end_t)
+    for j, s in enumerate(segs):
+        kind = s.get("sound")
+        if kind in SOUNDS:
+            at = starts[j]
+            clip = SOUNDS[kind](s["seconds"], rng, **({"pull_at": s["pullAt"]} if kind == "newsroom" and "pullAt" in s else {}))
+            edge = int(0.03 * SR)
+            clip[:edge] *= np.linspace(0, 1, edge)[:, None]
+            clip[-edge:] *= np.linspace(1, 0, edge)[:, None]
+            mix_into(bus, clip, at)
+        elif kind == "rotary":
+            at = starts[j]
+            dial = rotary(s.get("digits", [9, 5]), rng)
+            mix_into(bus, dial, at + float(s.get("dialAt", -1.3)))
+            mix_into(bus, kitchen(s["seconds"] + 0.3, rng), at)
+            ring_at = at + float(s.get("ringAt", 0.5))
+            mix_into(bus, ringback(2.0) * 0.8, ring_at)
+            # Someone picks up as the card lands: we are here.
+            mix_into(bus, click(0.3, 0.02, 900), end_t + float(s.get("pickupAfterCard", 0.35)))
+    return finish_audio(d, name, bus, total, out_video, n_frames, -14 if scored else -24)
+
+
 def finish_audio(d, name, bus, total, out_video, n_frames, lufs=-14):
     """Loudness: -14 LUFS with the score; -24 without, so the song added in the
     app sits on top of the projector and the ring instead of fighting them."""
@@ -849,7 +1121,7 @@ def finish_audio(d, name, bus, total, out_video, n_frames, lufs=-14):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["panel", "sign", "sign-clip", "edl", "build"])
+    ap.add_argument("cmd", choices=["panel", "sign", "sign-clip", "print", "edl", "build"])
     ap.add_argument("--role", default=None)
     ap.add_argument("--dir", required=True)
     ap.add_argument("--corners", default=None)
@@ -862,6 +1134,18 @@ def main():
     # For a post whose song is picked in the app: the film's own sound only.
     ap.add_argument("--no-music", action="store_true")
     ap.add_argument("--video-from", default=None)
+    # sign: the plate is another role's selected still (a zoom into a frame we have).
+    ap.add_argument("--from-role", default=None)
+    ap.add_argument("--upscale", type=int, default=2)
+    # sign-clip on a locked-off shot, a greyed plate, a card keyed on its own colour.
+    ap.add_argument("--clip", default=None)
+    ap.add_argument("--static", action="store_true")
+    ap.add_argument("--plate-sat", type=float, default=1.0)
+    ap.add_argument("--key-ref", action="store_true")
+    ap.add_argument("--out", default=None)
+    # print: a frame from the trip as a colour snapshot.
+    ap.add_argument("--src", default=None)
+    ap.add_argument("--crop", default=None)
     a = ap.parse_args()
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", a.name):
         sys.exit("--name must be lower-case letters, digits, - or _")
@@ -870,23 +1154,38 @@ def main():
         print(os.path.relpath(render_panel(os.path.join(d, "assets/yard-sign-panel.png")), ROOT))
     elif a.cmd == "sign":
         manifest = load_json(os.path.join(d, "manifest.json"))
-        still = os.path.join(ROOT, manifest["shots"]["sign"]["selectedStill"])
+        still = os.path.join(ROOT, manifest["shots"][a.from_role or "sign"]["selectedStill"])
         corners = [float(v) for v in a.corners.split(",")] if a.corners else None
         info = composite_sign(still, os.path.join(d, "assets/yard-sign-panel.png"),
                               os.path.join(d, "assets/sign-composite.jpg"), corners,
-                              debug=os.path.join(d, "assets/sign-detect.jpg"))
+                              debug=os.path.join(d, "assets/sign-detect.jpg"), upscale=a.upscale)
+        info["plate"] = os.path.relpath(still, ROOT)
         json.dump(info, open(os.path.join(d, "assets/sign.json"), "w"), indent=2)
         print(json.dumps(info))
     elif a.cmd == "sign-clip":
         manifest = load_json(os.path.join(d, "manifest.json"))
         state = manifest["shots"][a.role]
-        clip = os.path.join(ROOT, state["selectedClip"])
+        clip = os.path.join(d, a.clip) if a.clip else os.path.join(ROOT, state["selectedClip"])
         still = Image.open(os.path.join(ROOT, state["selectedStill"]))
         corners = [float(v) for v in a.corners.split(",")]
-        out = os.path.join(d, "assets", f"{a.role}-signed.mp4")
+        name = a.out or f"{a.role}-signed"
+        if a.upscale > 1:
+            # More pixels for the art than a 480p plate has; the lab resolves the gate at 960.
+            cw, ch, _, _ = probe_video(clip)
+            big = os.path.join(d, "assets", f"{name}-{a.upscale}x.mp4")
+            run(["ffmpeg", "-v", "error", "-y", "-i", clip, "-vf", f"scale={cw * a.upscale}:{ch * a.upscale}:flags=lanczos",
+                 "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p", big])
+            clip = big
+        out = os.path.join(d, "assets", f"{name}.mp4")
         info = track_sign(clip, os.path.join(d, a.panel), out, corners, still.size,
-                          debug=os.path.join(d, "assets", f"{a.role}-signed"))
+                          debug=os.path.join(d, "assets", name), static=a.static, plate_sat=a.plate_sat,
+                          key_ref=a.key_ref)
         print(json.dumps(info))
+    elif a.cmd == "print":
+        if not a.src or not a.out:
+            sys.exit("print: pass --src <image> --out <assets/print-name.png> [--crop x0,y0,x1,y1 as fractions]")
+        crop = [float(v) for v in a.crop.split(",")] if a.crop else None
+        print(os.path.relpath(render_print(os.path.join(d, a.src), os.path.join(d, a.out), crop), ROOT))
     elif a.cmd == "edl":
         path = os.path.join(d, "edl.json")
         if os.path.exists(path):

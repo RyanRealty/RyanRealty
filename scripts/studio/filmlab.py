@@ -279,7 +279,8 @@ def grade(args):
     low = p["lowLight"]
     exp_mul = low["exposure"] if exposure != "day" else 1.0
     grain_mul = low["grainMul"] if exposure != "day" else 1.0
-    sat = 1.14 * (low["satMul"] if exposure != "day" else 1.0)
+    # satMul: a shot-level saturation trim on top of the stock (the city after the trip is greyer).
+    sat = 1.14 * (low["satMul"] if exposure != "day" else 1.0) * float(p.get("satMul", 1.0))
     warm = low["warm"] if exposure != "day" else 0.0
     stock = STOCKS[p["stock"]]
 

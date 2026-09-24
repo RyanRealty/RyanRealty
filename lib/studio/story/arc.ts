@@ -14,12 +14,19 @@
  * present-day phone screen. It is the only sharp frame in the film. The brand
  * is on that screen, so the joke and the name land in the same beat.
  *
+ * The homecoming arc (Matt 2026-09-24, "the quintessential Bend story") keeps
+ * the trip and takes them home before the call: they leave, the week back at
+ * work shows them what they left, and he calls from their own kitchen on the
+ * phone they own. No break, no present-day object; the film never leaves 1982.
+ *
  * Pure: no I/O, no generator calls. The CLI and the tests both run it.
  */
 import { BEATS, beatFits, getBeat, type BeatDef, type BeatRole, type Season } from './beats'
 import type { EraPack } from './eras'
 
 export type ArcRole = BeatRole | 'break' | 'end'
+
+export type ArcId = 'visitor' | 'homecoming'
 
 export type ArcSlot = {
   role: ArcRole
@@ -70,13 +77,44 @@ export const VISITOR_ARC: ArcSlot[] = [
   { role: 'end', seconds: 3.7, because: 'The reel runs out into the end card: peak-end with the brand present.' },
 ]
 
+/** The trip half of the visitor arc: everything up to the sign on the lawn. */
+const TRIP_ROLES = new Set<ArcRole>([
+  'hook',
+  'arrive',
+  'play',
+  'play_pair',
+  'apres',
+  'eat',
+  'town',
+  'stroll',
+  'discover',
+  'sign',
+])
+
+export const HOMECOMING_ARC: ArcSlot[] = [
+  ...VISITOR_ARC.filter((slot) => TRIP_ROLES.has(slot.role)),
+  { role: 'pack', seconds: 2.6, because: 'The trip ends at the curb: the car loaded, the dog jumps in last.' },
+  { role: 'leave', seconds: 2.8, because: 'The mountain in the rear window, getting smaller. The dog watches it go.' },
+  { role: 'commute', seconds: 2.4, because: 'A week later, the other life: the same car, going nowhere.' },
+  { role: 'work_b', seconds: 2.8, because: 'His desk. The snapshot from the trip is the only warm thing in the room.' },
+  { role: 'work_a', seconds: 2.8, because: 'Her desk across town. The same snapshot: they had doubles printed.' },
+  { role: 'home', seconds: 3.0, because: 'Their kitchen that night: the house from the trip on the table between them.' },
+  { role: 'call', seconds: 3.4, because: 'He calls the number from the sign on the kitchen phone. It rings. Fade out.' },
+  { role: 'end', seconds: 3.7, because: 'The line lands in the dark: we are here when they are ready.' },
+]
+
+export const ARCS: Record<ArcId, ArcSlot[]> = { visitor: VISITOR_ARC, homecoming: HOMECOMING_ARC }
+
 export type PlannedStoryShot = {
   index: number
   role: ArcRole
   seconds: number
   because: string
-  /** 'generated' goes through Grok; 'phone_ui' and 'end_card' are built in code. */
-  kind: 'generated' | 'phone_ui' | 'end_card'
+  /**
+   * 'generated' goes through Grok; 'plate' reuses an earlier role's selected
+   * still (beat.plateFrom); 'phone_ui' and 'end_card' are built in code.
+   */
+  kind: 'generated' | 'plate' | 'phone_ui' | 'end_card'
   beat: BeatDef | null
 }
 
@@ -97,7 +135,8 @@ export type PlanStoryInput = {
   beats?: Partial<Record<BeatRole, string>>
   /** Roles this piece leaves out entirely (no phone: Matt 2026-09-23). */
   omit?: BeatRole[]
-  arc?: ArcSlot[]
+  /** Which arc to fill. Default the visitor arc. */
+  arc?: ArcId | ArcSlot[]
 }
 
 /**
@@ -112,7 +151,8 @@ export function planStory(input: PlanStoryInput): StoryPlan {
   const omit = new Set<string>(input.omit ?? [])
   // No phone at all means no break either: the present never enters the film.
   const noBreak = phoneInFilm || omit.has('phone')
-  const arc = (input.arc ?? VISITOR_ARC).filter((slot) => !omit.has(slot.role) && !(noBreak && slot.role === 'break'))
+  const slots = typeof input.arc === 'string' ? ARCS[input.arc] : (input.arc ?? VISITOR_ARC)
+  const arc = slots.filter((slot) => !omit.has(slot.role) && !(noBreak && slot.role === 'break'))
   const year = input.era.year
   const warnings: string[] = []
   const shots: PlannedStoryShot[] = []
@@ -145,20 +185,30 @@ export function planStory(input: PlanStoryInput): StoryPlan {
       if (!beat && slot.optional) return
       if (!beat) throw new Error(`planStory: no ${slot.role} beat fits ${input.season} ${year}`)
     }
+    if (beat.plateFrom) {
+      // The plate is a frame we already have; its source must be earlier in this film.
+      if (!shots.some((s) => s.role === beat!.plateFrom && s.kind === 'generated')) {
+        throw new Error(`planStory: beat "${beat.id}" takes its plate from ${beat.plateFrom}, which is not earlier in the film`)
+      }
+      shots.push({ index, ...slot, kind: 'plate', beat })
+      return
+    }
     shots.push({ index, ...slot, kind: 'generated', beat })
   })
 
   // Three identical camera moves in a row reads as a template, even handheld.
   for (let i = 2; i < shots.length; i += 1) {
     const [a, b, c] = [shots[i - 2].beat, shots[i - 1].beat, shots[i].beat]
-    if (a && b && c && a.move === b.move && b.move === c.move) {
+    // The city after the trip is locked off on purpose: the register change is the point.
+    const lockedOffCity = [a, b, c].every((x) => x?.elsewhere && x.move === 'tripod')
+    if (a && b && c && a.move === b.move && b.move === c.move && !lockedOffCity) {
       warnings.push(`three "${c.move}" moves in a row ending at shot ${i} (${c.id})`)
     }
   }
   // The reference test: a place frame with no real still behind it is prompt-only scenic.
   for (const shot of shots) {
     const beat = shot.beat
-    if (!beat || beat.refs.length > 0) continue
+    if (!beat || beat.refs.length > 0 || beat.elsewhere) continue
     const interior = beat.exposure === 'interior_low' || beat.id.startsWith('car-wave') // the cabin is the place
     if (!interior) warnings.push(`${beat.id} has no reference still: it fails the reference test until one is added`)
   }

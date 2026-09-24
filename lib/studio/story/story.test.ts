@@ -3,22 +3,23 @@ import { grokApiKey, rawTicks } from '@/lib/grok/client'
 import { resolutionFor, MAX_REFERENCE_IMAGES } from '@/lib/grok/video'
 import { STORY_FRAME_DEFECTS, FRAME_DEFECTS } from '@/lib/grok/vision'
 import { findBannedTokens } from '../craft'
-import { planStory, VISITOR_ARC } from './arc'
+import { HOMECOMING_ARC, planStory, VISITOR_ARC } from './arc'
 import { BEATS, beatFits, getBeat } from './beats'
 import { ERAS, getEra, judgeContextFor, labParamsFor } from './eras'
-import { getStoryPiece, STORY_PIECES } from './pieces'
+import { continuityFor, getStoryPiece, STORY_PIECES } from './pieces'
 import { storyShotPrompts } from './shots'
 
 const piece = getStoryPiece('winter-1982')!
 const era = getEra('super8_1982')!
+const piecePlan = () => planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit, arc: piece.arc })
 
 describe('visitor arc', () => {
   it('fills every role of the winter 1982 piece with a beat that fits the year and season', () => {
-    const plan = planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit })
-    // Matt 2026-09-23: no phone, no call, no price; the sign is in the yard when she points.
+    const plan = piecePlan()
+    // Matt 2026-09-24: the trip, then home; he makes the call from their kitchen on a 1982 phone.
     const roles = plan.shots.map((s) => s.role)
-    for (const gone of ['phone', 'call', 'break', 'sign']) expect(roles, gone).not.toContain(gone)
-    expect(roles.slice(-2)).toEqual(['stay', 'end'])
+    for (const gone of ['phone', 'break', 'stay', 'stroll']) expect(roles, gone).not.toContain(gone)
+    expect(roles.slice(-9)).toEqual(['sign', 'pack', 'leave', 'commute', 'work_b', 'work_a', 'home', 'call', 'end'])
     for (const shot of plan.shots) {
       if (shot.kind !== 'generated') continue
       expect(shot.beat, shot.role).not.toBeNull()
@@ -27,16 +28,58 @@ describe('visitor arc', () => {
     expect(plan.shots.at(-1)?.kind).toBe('end_card')
   })
 
+  it('makes the call on the phone they own: nothing in the film is out of 1982', () => {
+    const plan = piecePlan()
+    const call = plan.shots.find((s) => s.role === 'call')!.beat!
+    expect(call.id).toBe('call-kitchen-rotary')
+    expect(call.props).toMatch(/rotary/)
+    for (const shot of plan.shots) expect(shot.beat?.allowAnachronism, shot.role).toBeUndefined()
+  })
+
+  it('zooms into the sign from the frame she points in, instead of generating a second yard', () => {
+    const sign = piecePlan().shots.find((s) => s.role === 'sign')!
+    expect(sign.kind).toBe('plate')
+    expect(sign.beat?.plateFrom).toBe('discover')
+    expect(sign.beat?.composite).toBe('yard_sign')
+    // A plate needs its source earlier in the film.
+    expect(() =>
+      planStory({ era, season: 'winter', beats: { sign: 'sign-zoom-discover' }, omit: ['discover'], arc: 'homecoming' }),
+    ).toThrow(/not earlier in the film/)
+  })
+
   it('keeps one dog: every beat with the companion gets its reference, and the piece has one', () => {
     expect(piece.companion?.ref).toMatch(/^asset:/)
-    const plan = planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit })
-    const withDog = plan.shots.filter((s) => s.beat?.companion).map((s) => s.role)
-    expect(withDog).toEqual(expect.arrayContaining(['town', 'discover', 'stay']))
-    for (const shot of plan.shots) {
+    const withDog = piecePlan()
+      .shots.filter((s) => s.beat?.companion)
+      .map((s) => s.role)
+    expect(withDog).toEqual(expect.arrayContaining(['town', 'discover', 'pack', 'leave', 'home', 'call']))
+    for (const shot of piecePlan().shots) {
       if (shot.beat && /labrador|dog/i.test(shot.beat.action) && shot.role !== 'hook') {
         expect(shot.beat.companion, shot.beat.id).toBe(true)
       }
     }
+  })
+
+  it('sets the week back home somewhere that is not Bend, locked off, with the snapshot added in post', () => {
+    const plan = piecePlan()
+    const city = plan.shots.filter((s) => s.beat?.elsewhere)
+    expect(city.map((s) => s.role)).toEqual(['commute', 'work_b', 'work_a', 'home', 'call'])
+    for (const { beat } of city) {
+      expect(beat!.refs, beat!.id).toEqual([])
+      expect(['tripod', 'dashboard'], beat!.id).toContain(beat!.move)
+    }
+    for (const id of ['desk-his', 'desk-hers', 'kitchen-snapshot']) {
+      const beat = getBeat(id)!
+      expect(beat.composite, id).toBe('photo_print')
+      expect(beat.props, id).toMatch(/plain blank white card/)
+      expect(beat.alsoReject?.join(' '), id).toMatch(/letters, or marks/)
+    }
+  })
+
+  it('hands each continuity shot the earlier frame with a label that says what it is for', () => {
+    expect(continuityFor(piece, 'commute')).toEqual({ from: 'hook', label: expect.stringMatching(/inside of the same car/) })
+    expect(continuityFor(piece, 'call')?.from).toBe('home')
+    expect(continuityFor(piece, 'town')).toBeNull()
   })
 
   it('keeps the full-frame break for a phone beat that is not composited in the film', () => {
@@ -64,9 +107,9 @@ describe('visitor arc', () => {
     expect(tower.refs.every((r) => r.startsWith('asset:') && !r.includes('PENDING'))).toBe(true)
   })
 
-  it('moves only the sign still in the lab; every other composite shot still gets motion', () => {
+  it('moves only the sign stills in the lab; every other composite shot still gets motion', () => {
     for (const beat of BEATS.filter((b) => b.composite)) {
-      expect(beat.stillOnly === true, beat.id).toBe(beat.id === 'yard-sign-bungalow')
+      expect(beat.stillOnly === true, beat.id).toBe(beat.role === 'sign')
     }
   })
 
@@ -81,15 +124,18 @@ describe('visitor arc', () => {
     expect(() => planStory({ era, season: 'winter', beats: { play: 'car-wave' } })).toThrow(/hook beat/)
   })
 
-  it('lands on a runtime in the platform sweet spot', () => {
-    const plan = planStory({ era, season: piece.season, beats: piece.beats })
-    expect(plan.totalSeconds).toBeGreaterThanOrEqual(30)
-    expect(plan.totalSeconds).toBeLessThanOrEqual(45)
+  it('lands on a runtime in the platform sweet spot (Reels: 30-60s for a narrative)', () => {
+    const visitor = planStory({ era, season: piece.season, beats: piece.beats, arc: 'visitor' })
+    expect(visitor.totalSeconds).toBeGreaterThanOrEqual(30)
+    expect(visitor.totalSeconds).toBeLessThanOrEqual(45)
+    const home = piecePlan()
+    expect(home.totalSeconds).toBeGreaterThanOrEqual(30)
+    expect(home.totalSeconds).toBeLessThanOrEqual(60)
+    expect(HOMECOMING_ARC.at(-2)?.role).toBe('call')
   })
 
-  it('every place beat in the winter piece carries a real reference still', () => {
-    const plan = planStory({ era, season: piece.season, beats: piece.beats })
-    expect(plan.warnings.filter((w) => w.includes('reference test'))).toEqual([])
+  it('every place beat in the winter piece carries a real reference still, and the plan has no warnings', () => {
+    expect(piecePlan().warnings).toEqual([])
   })
 })
 

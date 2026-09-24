@@ -224,6 +224,52 @@ Cost of the v2 reshoot: 8 stills and 5 motion clips, $2.73 as billed by xAI (the
 books xAI's own `cost_in_usd_ticks`, 1e10 ticks to the dollar). Reference-conditioned stills
 bill about $0.075 each, not the $0.04 rate card, so the piece cap trips on real spend.
 
+## "Winter, 1982" v7: the homecoming (Matt 2026-09-24)
+
+Matt's brief, in his words: "this truly is the quintessential Bend story. People come here,
+vacation here, have a wonderful time, experience the lifestyle, and then realize that what
+they're doing wherever they are does not compare." The call no longer happens in Bend. It
+happens a week later, at home.
+
+The piece now fills `HOMECOMING_ARC` (`StoryPiece.arc: 'homecoming'`): the trip half of the
+visitor arc up to the sign, then `pack` (the Lab jumps into the loaded wagon), `leave` (the Lab
+in the way-back, the road running back to Bachelor), `commute` (a week later, the same car in
+freeway gridlock), `work_b` and `work_a` (his brokerage bullpen, her newsroom: the snapshot from
+the chairlift on each desk, doubles), `home` (their kitchen that night, the snapshot of the house
+on the table), `call` (he calls from the harvest-gold rotary wall phone; it rings; fade out), and
+the card: "We're here when you're ready to make the call."
+
+- **Two registers in one film.** The trip is the handheld home movie. The city is set
+  `elsewhere` (no local reference, and it must not read as Bend), locked off and square to the
+  lens (Tati's *Playtime*, Roy Andersson's offices), greyed in the plate around the snapshot.
+  The snapshot from Bend is the only warm thing in those frames.
+- **Snapshots are composites, like the sign.** The generator draws a brass frame or a card
+  holding a blank white card (`composite: 'photo_print'`); `story_reel.py print` makes the
+  print from a frame of the trip, and `sign-clip --static --key-ref --plate-sat` lays it in.
+  Locked-off shots are held static (ECC dragged by people moving near the card drifted 282px
+  and 1379px); a white card under a 2800K lamp is keyed on its own colour, not on neutrality.
+- **The phone number reads because the camera zooms, not because the sign is big.** In the
+  pointing shot the sign is 12% of the frame and the number is a smear. The `sign` role is now a
+  plate beat (`sign-zoom-discover`, `plateFrom: 'discover'`): no generation, the discover still
+  with the sign composited at 4x, power-zoomed by the lab from 1.7x to 3.6x so the number sits at
+  44% of the frame width.
+- **The number** is Matt's business line, 541.703.3095 (`public.brokers` slug `matthew-ryan`,
+  `twilio_number`, verified 2026-09-24; it rings through to his cell). His printed signs carry
+  his cell, 541.213.6706 (`forward_to_cell`); a public video carries the business line. The panel
+  is the stacked logo over a navy band with the number in Geist SemiBold.
+- **Sound, built in code.** The score (when there is one) stops dead on the first city shot:
+  idling engines and horns, office bells and murmur, typewriters and the page coming out of the
+  roller, a refrigerator. He dials over the end of the kitchen shot (the sound leads the
+  picture), it rings once in the handset, the picture fades on the silence, and the card lands on
+  the pickup click. The projector runs under the whole reel. `build --no-music` is the Instagram
+  cut; Matt picks the song in the app.
+- **End card** `style: "fade"`: out of black onto navy, the reversed stacked logo, the line in
+  Amboqia, the site and number in Geist, "Made with AI".
+
+Captions: "Bend, Oregon. Winter, 1982." over the first shot; "One week later." over the
+commute. 48.8s (Reels guidance: 30-60s for a narrative). Round cost: 48 stills and 9 clips,
+$6.14 as billed by xAI (piece total $22.57); the piece cap was raised to $35.
+
 ## Distribution notes
 
 Label every piece as AI-generated on each platform (TikTok AIGC label, Meta "AI info"); the

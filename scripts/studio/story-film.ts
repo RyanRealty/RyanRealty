@@ -43,7 +43,7 @@ import { planStory, type PlannedStoryShot, type StoryPlan } from '@/lib/studio/s
 import type { BeatRole } from '@/lib/studio/story/beats'
 import { castSheetSpec, type CastSlot } from '@/lib/studio/story/cast'
 import { getEra, judgeContextFor, labParamsFor, type EraPack } from '@/lib/studio/story/eras'
-import { getStoryPiece, type StoryPiece } from '@/lib/studio/story/pieces'
+import { continuityFor, getStoryPiece, type StoryPiece } from '@/lib/studio/story/pieces'
 import { storyShotPrompts } from '@/lib/studio/story/shots'
 
 // Story films bill to the creative xAI team when XAI_CREATIVE_API_KEY is set
@@ -370,7 +370,7 @@ function pieceAndEra(flags: Record<string, string>): {
   if (!piece) throw new Error(`--piece is required (known: winter-1982)`)
   const era = getEra(piece.eraId)
   if (!era) throw new Error(`piece ${piece.id} names unknown era ${piece.eraId}`)
-  const plan = planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit })
+  const plan = planStory({ era, season: piece.season, beats: piece.beats, omit: piece.omit, arc: piece.arc })
   return { piece, era, plan }
 }
 
@@ -563,12 +563,12 @@ async function sourcesFor(piece: StoryPiece, shot: PlannedStoryShot, manifest: M
     files.push(await resolveRef(piece.companion.ref))
     labels.push(piece.companion.label)
   }
-  const continuityRole = piece.continuity?.[beat.role as BeatRole]
-  if (continuityRole) {
-    const selected = manifest.shots[continuityRole]?.selectedStill
+  const continuity = continuityFor(piece, beat.role as BeatRole)
+  if (continuity) {
+    const selected = manifest.shots[continuity.from]?.selectedStill
     if (selected) {
       files.push(path.join(ROOT, selected))
-      labels.push('the same street and house a moment earlier in this film (keep the house, trees, and light the same)')
+      labels.push(continuity.label)
     }
   }
   for (const ref of beat.refs) {
@@ -593,7 +593,7 @@ async function stageStills(
   const shots = plan.shots.filter((s) => s.kind === 'generated' && (!roles || roles.includes(s.role)))
   // Continuity sources must exist before their dependents run, so go in arc order by dependency depth.
   const depth = (s: PlannedStoryShot): number => {
-    const from = piece.continuity?.[s.role as BeatRole]
+    const from = continuityFor(piece, s.role as BeatRole)?.from
     const parent = from ? plan.shots.find((p) => p.role === from) : undefined
     return parent ? 1 + depth(parent) : 0
   }
