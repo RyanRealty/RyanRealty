@@ -20,7 +20,6 @@ import {
   ABOUT_SERVICE_AREA,
   aboutBrokerDoors,
   aboutClosingSpan,
-  aboutClosingStrip,
   aboutDifferentiators,
   aboutHoursSentence,
   aboutKeyFacts,
@@ -106,25 +105,13 @@ describe('about playbook: live facts', () => {
   })
 })
 
-describe('about playbook: the closings record drawn', () => {
-  it('places one mark per dated closing between the first and last close, labelled from the rows', () => {
-    const strip = aboutClosingStrip(RECORD)
-    expect(strip?.from).toBe('Apr 2015')
-    expect(strip?.to).toBe('Sep 2026')
-    expect(strip?.marks.map((m) => m.at)).toEqual([0, expect.any(Number), 1])
-    expect(strip?.marks[1]?.at).toBeGreaterThan(0.7)
-    expect(strip?.marks[2]?.label).toBe('3 Third St, Sisters, $600,000, Sep 2026')
-    expect(strip?.notes?.[0]?.label).toBe(`Bend office, Jun 2023`)
-    expect(strip?.label).toContain('3 recorded closings from Apr 2015 to Sep 2026')
+describe('about playbook: the closings and the brokers', () => {
+  it('shows the closings as a count, with no drawn record of them (Matt 2026-09-24)', () => {
     const claim = aboutDifferentiators({ reviews: REVIEWS, record: RECORD, valuationHref: '/v' }).find(
       (c) => c.id === 'different-closings',
     )
-    expect(claim?.strip).toEqual(strip)
-  })
-
-  it('draws nothing from fewer than two dated closings', () => {
-    expect(aboutClosingStrip({ ...RECORD, dated: RECORD.dated.slice(0, 1) })).toBeNull()
-    expect(aboutClosingStrip(null)).toBeNull()
+    expect(claim?.figure).toEqual({ value: '3', label: 'Closings since 2015' })
+    expect(claim).not.toHaveProperty('strip')
   })
 
   it('puts each broker face on their own inline door, never a card', () => {

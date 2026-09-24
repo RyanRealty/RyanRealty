@@ -40,7 +40,6 @@ import type {
   V3Claim,
   V3Entry,
   V3Fact,
-  V3MarkStripProps,
   V3QuietItem,
   V3RollItem,
   V3Step,
@@ -209,15 +208,14 @@ export function aboutDifferentiators(input: {
     door: { label: 'Value my home', href: input.valuationHref },
   })
   const firstYear = record?.firstClose?.slice(0, 4)
+  // The count alone, no drawn record of the closings (Matt 2026-09-24).
   if (record && record.count > 0 && firstYear) {
-    const strip = aboutClosingStrip(record)
     claims.push({
       id: 'different-closings',
       figure: { value: String(record.count), label: `Closings since ${firstYear}` },
       title: 'Our closings are public',
       body: 'Every closing above is a recorded MLS sale, shown with its address, the price it closed at, and the date. Each one links to the home.',
       door: { label: 'See the closings', href: '#firm-sales' },
-      ...(strip ? { strip } : {}),
     })
   }
   claims.push({
@@ -476,46 +474,6 @@ export function aboutKeyFacts(input: {
   }
   facts.push({ id: 'fact-social', term: 'Social', links: ABOUT_SOCIAL_LINKS })
   return facts
-}
-
-const MONTH_YEAR = { month: 'short', day: undefined, year: 'numeric' } as const
-
-/**
- * The closings record drawn: one mark per dated closing, placed by its close
- * day between the first and the last, labelled with the address and the
- * recorded price the rail prints. Null when fewer than two dated closings or
- * no span (a line needs two ends).
- */
-export function aboutClosingStrip(
-  record: FirmClosingRecord | null | undefined,
-): Omit<V3MarkStripProps, 'className'> | null {
-  const dated = record?.dated ?? []
-  if (!record?.firstClose || !record.lastClose || dated.length < 2) return null
-  const start = Date.parse(`${record.firstClose}T12:00:00Z`)
-  const end = Date.parse(`${record.lastClose}T12:00:00Z`)
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null
-  const from = formatCalendarDay(record.firstClose, MONTH_YEAR)
-  const to = formatCalendarDay(record.lastClose, MONTH_YEAR)
-  const notes = officeNote(start, end)
-  return {
-    label: `${record.count} recorded closings from ${from} to ${to}, one mark per closing${
-      notes.length > 0 ? `, with the Bend office opening in ${BRAND.foundedLabel} marked` : ''
-    }`,
-    from,
-    to,
-    marks: dated.map((mark) => ({
-      at: (Date.parse(`${mark.day}T12:00:00Z`) - start) / (end - start),
-      label: `${mark.what}, ${mark.value}, ${formatCalendarDay(mark.day, MONTH_YEAR)}`,
-    })),
-    notes,
-  }
-}
-
-/** The Bend office opening (BRAND.founded) on the closings line, when it falls inside it. */
-function officeNote(start: number, end: number): Array<{ at: number; label: string }> {
-  const opened = Date.parse(`${BRAND.founded}T12:00:00Z`)
-  if (!Number.isFinite(opened) || opened <= start || opened >= end) return []
-  return [{ at: (opened - start) / (end - start), label: `Bend office, ${formatCalendarDay(BRAND.founded, MONTH_YEAR)}` }]
 }
 
 /** "Owner & Principal Broker" -> "Owner and Principal Broker". */
