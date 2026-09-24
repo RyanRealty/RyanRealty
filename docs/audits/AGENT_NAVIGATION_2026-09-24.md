@@ -21,8 +21,9 @@ agent transcripts made in this session. Nothing is estimated unless it says so.
   - A pointer helps only where it names the file.
 - Finding the file costs a median 7 calls, and 8% of all tokens in these runs. Most tokens
   go to what agents do after they arrive. Pointers can only shrink that 8%.
-- CLAUDE.md is now at its 37,526-byte budget. The next pointer has to be paid for by
-  trimming something.
+- A same-day follow-up named the CMA market chapter and the snapshot crons, paid for by
+  removing a duplicate link. CLAUDE.md is 37,477 bytes and its budget was lowered to match,
+  so the next pointer still has to be paid for by trimming something.
 
 ## How this was measured
 
@@ -251,10 +252,37 @@ Control calls are listed as baseline run 1, baseline run 2, then placebo.
 - These pointers help where they name the file in the task's own words. They do not make
   agents faster in general.
 
+**Follow-up, same day: two more pointers.**
+
+- The CMA row now also names the market chapter: `listing-window-*.ts` + `market-charts.ts`.
+- §5 now names the snapshot cron routes, `app/api/cron/marketing-snapshot-*`, instead of the
+  snapshot `SKILL.md`.
+- Paid for by removing §5's second link to `VOICE.md` (§2 keeps it). CLAUDE.md is 37,477
+  bytes, and the budget in `scripts/claude-canon-baseline.json` was lowered to match.
+
+Measured the same way: the table (H2) or §5 (T12) pasted into both arms, run against the tree
+from before the edit.
+
+| Task | Without: calls | With: calls | Without: context added | With: context added | Without: tokens | With: tokens |
+|---|---|---|---|---|---|---|
+| H2 CMA market chapter | 8, 9 | 5, 7 | 14.1K, 21.2K | 10.9K, 10.2K | 0.38M, 0.58M | 0.39M, 0.38M |
+| T12 Meta ads snapshot | 6 | 6, 6 | 14.0K | 8.9K, 12.2K | 0.46M | 0.30M, 0.45M |
+
+- H2 "without" is the two final-table runs from the A/B above. They had the three rows but no
+  market chapter. With it, runs reached the file in fewer calls and added about 40% less
+  context. Tokens fell 20% on average, on two runs per arm.
+- T12 did not change. Every run took 6 calls, with or without the pointer, and it was never a
+  costly path. One of the two runs with the pointer still read the snapshot `SKILL.md`.
+- T12 "without" is one placebo run. The second grepped this report, which sat in the replay
+  tree, one call before its target, so it is dropped. Four other runs found the report after
+  reaching their target, which leaves their counts standing.
+- Token totals do not line up with the A/B table above. The T12 runs here made 1 to 1.5 tool
+  calls per turn, against 2 in the earlier T12 runs, and every turn re-reads the whole
+  context, so T12's token counts rose in both arms.
+
 ## What these edits do not fix
 
-- **The CMA market chapter** (`lib/cma/listing-window-*.ts`, `market-charts.ts`) still has no
-  pointer. With CLAUDE.md at budget, adding one means trimming another line first.
+- **The CMA market chapter** had no pointer when the A/B ran. The follow-up above added one.
 - **Work after the target.** Finding the file took 13.6M of the 168.5M tokens processed in
   the baseline runs, 8% at the median. The other 92% went to what agents did after they
   arrived: tests, gates, history and callers. These replays pushed that on purpose ("find
