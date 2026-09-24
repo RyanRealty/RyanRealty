@@ -178,6 +178,9 @@ async function main() {
         instances: planned.plan.instances,
       })
       if (mode === 'apply') {
+        // --skip id,id: documents a person held back after reviewing the plan.
+        const skip = new Set((arg('--skip') ?? '').split(',').filter(Boolean))
+        if (skip.size) planned.plan.actions = planned.plan.actions.filter((a) => !skip.has(a.docId))
         const res = await run.applyCyclePlan(sb, planned)
         totals.confirmCost += res.costUsd
         totals.disagreed += res.confirmedDisagreed
@@ -190,7 +193,7 @@ async function main() {
     return
   }
 
-  console.log('usage: read | reverdict | plan | apply  [--deal <uuid>]')
+  console.log('usage: read | reverdict | plan | apply  [--deal <uuid>] [--skip <doc id,doc id>]')
 }
 
 main().catch((e) => {
