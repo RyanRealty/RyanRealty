@@ -42,4 +42,16 @@ describe('readerView', () => {
     expect(v?.stale).toBe(true)
     expect(v?.forms[0].note).toMatch(/Not in the form library/)
   })
+
+  it('says who signs a registry form and why', () => {
+    const v = readerView({
+      reader: {
+        version: 'x',
+        verdict: 'partially_executed',
+        label: 'Partially signed',
+        forms: [{ form: 'SEPTIC/ONSITE SEWAGE SYSTEM ADDENDUM', basis: 'registry', rule: 'The form prints signature lines for the buyer and seller on 17 copies; each named buyer and seller signs.', verdict: 'partially_executed', signers: [] }],
+      },
+    })
+    expect(v?.forms[0].note).toBe('Who signs: The form prints signature lines for the buyer and seller on 17 copies; each named buyer and seller signs.')
+  })
 })

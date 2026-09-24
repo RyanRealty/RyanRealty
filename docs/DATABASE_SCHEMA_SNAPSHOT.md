@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-23T23:37:57.071Z
+**Generated:** 2026-09-24T02:06:02.986Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -5306,6 +5306,43 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `form_version_ids` | ARRAY | no | '{}'::uuid[] |
 | `created_by` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `tc_form_registry`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `identity` | text | no |  |
+| `title` | text | no |  |
+| `numbers` | jsonb | no | '{}'::jsonb |
+| `releases` | jsonb | no | '{}'::jsonb |
+| `category` | text | no |  |
+| `obligation` | jsonb | no |  |
+| `outcome` | text | yes |  |
+| `numbered` | boolean | no | false |
+| `offer` | boolean | no | false |
+| `basis` | text | no |  |
+| `rule` | text | no |  |
+| `confidence` | text | no |  |
+| `copies` | integer | no | 0 |
+| `party_copies` | jsonb | no | '{}'::jsonb |
+| `library_key` | text | yes |  |
+| `library_disagrees` | boolean | no | false |
+| `decided_by` | text | no | 'vault-reader'::text |
+| `first_seen_at` | timestamp with time zone | no | now() |
+| `last_seen_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `tc_form_registry_copies`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `identity` | text | no |  |
+| `document_id` | uuid | no |  |
+| `form_index` | integer | no |  |
+| `parties` | ARRAY | no | '{}'::text[] |
+| `form_number` | text | yes |  |
+| `release` | text | yes |  |
+| `seen_at` | timestamp with time zone | no | now() |
 
 ### `tc_form_versions`
 

@@ -37,7 +37,8 @@ const resolveFilename = (Module as unknown as { _resolveFilename: (r: string, ..
 const ADDRESS = '99001 Alias Test Loop, Bend, OR 97701'
 const STREET = '99001 Alias Test Loop'
 const NOFILE = '99002 Nofile Test Court'
-const ESCROW = 'TT990011'
+/** Each run's own escrow number, so a re-run on the test file does not find the last run's (rule 1 would file by it). */
+let ESCROW = 'TT990011'
 const BROKER = 'matt@ryan-realty.com'
 const SELLER = { email: 'marketing@ryan-realty.com', personId: 57840, name: 'Marketing Test Lead' }
 const BUYER = { email: 'admin@ryan-realty.com', personId: 63415, name: 'Vault Test Buyer' }
@@ -242,6 +243,7 @@ async function main() {
   const { header } = await import('@/lib/tc/gmail-message')
   const sb = createServiceClient()
   const run = randomBytes(3).toString('hex').replace(/\d/g, (d) => 'abcdefghij'[Number(d)])
+  ESCROW = `TT99${randomBytes(2).readUInt16BE(0).toString().padStart(5, '0')}`
   const { dealId } = await ensureTestDeal(sb)
   const saleCycleId = crypto.randomUUID()
   const brokerRead = getGmailFor(BROKER, READ)!

@@ -81,7 +81,7 @@ describe('profileFor', () => {
 
   it('a printed OREF number points at its own form even when the page header reads like another (000A guide)', () => {
     const m = profileFor({ title: 'OREF Residential Real Estate Sale Agreement', formNumber: '000A' })
-    expect(m?.numberConflict).toBe(true)
+    expect(m).toMatchObject({ basis: 'number', numberConflict: false, profile: { key: 'oref-000-guide' } })
   })
 
   it('an unknown title is unknown', () => {
