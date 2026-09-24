@@ -15,6 +15,8 @@
       "mcp__Vibe_Prospecting__*",
       "mcp__Claude_Docs__*",
       "mcp__Cloudflare_Developer_Platform__*",
+      "mcp__Notion__*",
+      "mcp__Era_Context__*",
       "mcp__Sentry__*"
     ],
     "ask": [
@@ -29,7 +31,12 @@
       "mcp__*Supabase__create_project",
       "mcp__*Supabase__pause_project",
       "mcp__*Supabase__restore_project",
-      "mcp__*Supabase__delete_branch"
+      "mcp__*Supabase__delete_branch",
+      "mcp__*Era_Context__billing__upgrade",
+      "mcp__*Era_Context__billing__confirm_*",
+      "mcp__*Era_Context__billing__uncancel_subscription",
+      "mcp__*Era_Context__connections__disconnect_institution",
+      "mcp__*Era_Context__knowledge__remember"
     ],
     "deny": []
   },
