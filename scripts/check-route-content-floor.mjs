@@ -221,6 +221,11 @@ async function measure(page, url) {
       // swatch <li>s (9); after the counter skip it is the real rows (5).
       // Read until two consecutive readings agree on the per-section map
       // (bounded), and keep the last.
+      // Just before reading: a prompt that opens on its own a second after
+      // mount (the sign-in dialog on a session's second page, and every class
+      // after the first is one) is not the page's content. Escape closes a
+      // Radix overlay and changes nothing else.
+      await page.keyboard.press('Escape').catch(() => {})
       let reading = await page.evaluate(`(${measurePage.toString()})()`)
       for (let pass = 0; pass < STABLE_PASSES; pass += 1) {
         await page.waitForTimeout(STABLE_INTERVAL_MS)
@@ -402,6 +407,7 @@ async function main() {
       if (failedIds.length) {
         console.log(`    measured sections: ${JSON.stringify(measured?.sectionDepth ?? {})}`)
         for (const id of failedIds) console.log(`    #${id}: ${JSON.stringify(measured?.sectionDiag?.[id] ?? 'absent from the page')}`)
+        console.log(`    open dialogs: ${JSON.stringify(measured?.openDialogs ?? [])}`)
       }
     } else {
       const sectionFloors = parity.contentFloor?.floors?.sectionDepth

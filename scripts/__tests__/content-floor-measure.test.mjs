@@ -124,8 +124,29 @@ describe('content-floor measurePage — SITE-119 aria-hidden decoration', () => 
       candidates: 2,
       hiddenItems: 2,
       hiddenBy: 'div.v3-overlay-host',
+      overlayHidden: false,
     })
-    expect(measured.sectionDiag.edges).toEqual({ tag: 'section', candidates: 1, hiddenItems: 0, hiddenBy: null })
+    expect(measured.sectionDiag.edges).toEqual({ tag: 'section', candidates: 1, hiddenItems: 0, hiddenBy: null, overlayHidden: false })
+  })
+
+  it('counts rows a modal manager hid (data-aria-hidden), never the page\'s own aria-hidden', () => {
+    document.body.innerHTML = `
+      <main>
+        <section id="towns" aria-hidden="true" data-aria-hidden="true">
+          <ul><li>Bend 13 for lease</li><li>Redmond 12 for lease</li></ul>
+        </section>
+        <section id="atlas">
+          <ol aria-hidden="true"><li></li><li></li></ol>
+          <ul><li>Bend 627 closes</li></ul>
+        </section>
+        <div role="dialog" data-state="open" class="signin-dialog"></div>
+      </main>
+    `
+    const measured = measurePage()
+    expect(measured.sectionDepth.towns.items).toBe(2)
+    expect(measured.sectionDiag.towns.overlayHidden).toBe(true)
+    expect(measured.sectionDepth.atlas.items).toBe(1)
+    expect(measured.openDialogs).toEqual(['div.signin-dialog'])
   })
 
   it('does not skip a row under aria-hidden="false"', () => {

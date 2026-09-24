@@ -454,11 +454,17 @@ export function measurePage() {
   // the Atlas key `<li>` (label + hidden swatch span) counts and the four
   // empty sales-legend swatch `<li>`s inside `<ol aria-hidden="true">` do
   // not. Must stay inline: this function is serialised into the page.
+  // A modal manager's hiding is page STATE, not decoration. Radix dialogs,
+  // menus and selects hide everything outside themselves through the
+  // aria-hidden library, which marks each node it hides with
+  // data-aria-hidden. CI on 2026-09-24 read #towns (six real ledger rows,
+  // words intact) and #edges at 0 items because both carried that hiding;
+  // the page's own aria-hidden (a swatch list, a glyph) never has the marker.
   function isAriaHidden(node) {
     let n = node
     while (n && n.nodeType === 1) {
       const raw = n.getAttribute('aria-hidden')
-      if (raw === 'true' || raw === '') return true
+      if ((raw === 'true' || raw === '') && !n.hasAttribute('data-aria-hidden')) return true
       n = n.parentElement
     }
     return false
@@ -520,7 +526,13 @@ export function measurePage() {
     }
     const sectionWords = (el.innerText || '').split(/\s+/).filter(Boolean).length
     sectionDepth[id] = { items, words: sectionWords }
-    sectionDiag[id] = { tag: el.tagName.toLowerCase(), candidates, hiddenItems, hiddenBy }
+    sectionDiag[id] = {
+      tag: el.tagName.toLowerCase(),
+      candidates,
+      hiddenItems,
+      hiddenBy,
+      overlayHidden: Boolean(el.closest('[data-aria-hidden]')),
+    }
   }
 
   return {
@@ -536,5 +548,9 @@ export function measurePage() {
     jsonLd: document.querySelectorAll('script[type="application/ld+json"]').length,
     sectionDepth,
     sectionDiag,
+    // Open overlays at read time (printed only when a section floor fails).
+    openDialogs: Array.from(document.querySelectorAll('[role="dialog"],[role="alertdialog"],[aria-modal="true"]'))
+      .filter((d) => d.getAttribute('data-state') === 'open' || d.getAttribute('aria-modal') === 'true')
+      .map((d) => `${d.tagName.toLowerCase()}.${String(d.className || '').trim().split(/\s+/).slice(0, 3).join('.')}`),
   }
 }
