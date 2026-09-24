@@ -133,10 +133,10 @@ export const POLAROID_ARC: ArcSlot[] = [
   { role: 'eat', seconds: 3.8, because: 'That night, drinks outside the Tower, laughing over the Polaroids.' },
   { role: 'prints', seconds: 4.4, because: 'The Polaroids land on the table one by one; the house comes last.' },
   { role: 'pack', seconds: 3.2, because: 'The next morning, the dog jumps in last.' },
-  { role: 'leave', seconds: 3.2, because: 'The mountain in the rear window.' },
+  { role: 'leave', seconds: 3.4, because: 'The dog and the mountain in the rearview mirror; he smiles a little.' },
   // Matt 2026-09-24: the photo on his sun visor in standstill traffic; her busy office; home together to the dog at the window.
-  { role: 'commute', seconds: 4.2, because: 'Home: stopped in traffic, he pulls the Polaroid from the sun visor and looks at it.' },
-  { role: 'work_a', seconds: 4.0, because: 'Her office, phones going; she stops for her copy of the photograph by the lamp.' },
+  { role: 'commute', seconds: 6.0, because: 'Home: dead-stopped traffic, the sun in his eyes, down comes the visor and the Polaroid with it; he looks at it a while.' },
+  { role: 'work_a', seconds: 5.2, because: 'Her busy desk; she stops, picks up her copy of the photograph, and looks at it.' },
   { role: 'return', seconds: 3.6, because: 'Home together off a busy street, the dog barking at the window.' },
   { role: 'home', seconds: 3.8, because: 'The kitchen table: the house between them.' },
   { role: 'number', seconds: 4.0, because: 'The Polaroid up close: the sign, and the number on it.' },

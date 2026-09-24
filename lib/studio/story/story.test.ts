@@ -162,16 +162,17 @@ describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
     expect(labParamsForAspect(getEra(april.eraId)!, 'day').gate.width / labParamsForAspect(getEra(april.eraId)!, 'day').gate.height).toBeCloseTo(4 / 3, 2)
   })
 
-  it('lets each place settle: every scene holds at least 3.2s (the radio click is an insert), and the whole stays under 82s', () => {
+  it('lets each place settle: every scene holds at least 3.2s (the radio click is an insert), and the whole stays under 86s', () => {
     // Matt 2026-09-24 asked for slower; that outranks the 60s narrative guidance by a few seconds. The cap went
     // from 65s to 70s when he added the opening (packing at home, the city in the rearview): 68.4s planned. Then to 82s
-    // when he told the back half (the visor, her busy desk, the dog at the window, the look, the call): 80.0s planned.
+    // when he told the back half (the visor, her busy desk, the dog at the window, the look, the call): 80.0s planned. To 86s
+    // for round 3: the commute (sun, visor, photo, a fond look) and her desk (busy, stops, picks it up) got room: 83.2s.
     const p = plan()
     for (const shot of p.shots) {
       if (shot.kind !== 'prop' && shot.role !== 'radio') expect(shot.seconds, shot.role).toBeGreaterThanOrEqual(3.2)
     }
     expect(p.totalSeconds).toBeGreaterThanOrEqual(30)
-    expect(p.totalSeconds).toBeLessThanOrEqual(82)
+    expect(p.totalSeconds).toBeLessThanOrEqual(86)
   })
 
   it('opens on leaving the city: packing the car with the dog, the city in the rearview, then the radio', () => {
@@ -210,7 +211,10 @@ describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
     const back = getBeat(april.beats!.return!)!
     expect(back.companion).toBe(true)
     expect(back.action).toMatch(/barks happily/)
-    expect(back.place).toMatch(/busy city street/)
+    expect(back.place).toMatch(/busy big-city street/)
+    expect(back.framing).toMatch(/ordinary-sized adult Lab/)
+    expect(getBeat(april.beats!.depart!)!.place).toMatch(/fourplex/)
+    expect(getBeat(april.beats!.call!)!.action).toMatch(/lips closed/)
     expect(continuityFor(april, 'return')?.from).toBe('depart')
   })
 
@@ -220,6 +224,34 @@ describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
       expect(beat.alsoReject, beat.id).toContain('the camera lens pointing toward the viewer')
     }
     expect(getBeat(april.beats!.discover!)!.action).toMatch(/lens pointed at the house/)
+  })
+
+  it('takes Matt\'s round-3 notes: no wave, the dog in the back seat, Bachelor ahead and behind, calm, photos facing them', () => {
+    const hook = getBeat(april.beats!.hook!)!
+    expect(hook.framing).toMatch(/back seat/)
+    expect(hook.place).toMatch(/Mount Bachelor on the horizon/)
+    expect(hook.action).toMatch(/nobody waves/)
+    for (const role of ['depart', 'pack'] as const) {
+      const b = getBeat(april.beats![role]!)!
+      expect(b.action, b.id).toMatch(/back seat/)
+      expect(b.action, b.id).toMatch(/calm/)
+    }
+    expect(getBeat(april.beats!.pack!)!.alsoReject).toContain('the dog jumping back out')
+    const tower = getBeat(april.beats!.eat!)!
+    expect(tower.action).toMatch(/black backs of the photographs face the camera/)
+    expect(tower.composite).toBe('marquee')
+    const leave = getBeat(april.beats!.leave!)!
+    expect(leave.framing).toMatch(/rearview mirror/)
+    expect(leave.framing).toMatch(/Mount Bachelor/)
+    expect(leave.action).toMatch(/smiles slightly/)
+    const commute = getBeat(april.beats!.commute!)!
+    expect(commute.place).toMatch(/standstill/)
+    expect(commute.action).toMatch(/squints into the sun/)
+    expect(commute.action).toMatch(/fondly/)
+    expect(continuityFor(april, 'commute')?.from).toBe('call')
+    const office = getBeat(april.beats!.work_a!)!
+    expect(office.framing).toMatch(/behind her right shoulder/)
+    expect(office.action).toMatch(/picks it up/)
   })
 
   it('puts one hand on the radio (Matt 2026-09-24: "there should not be 2 hands on the radio")', () => {
@@ -248,7 +280,7 @@ describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
 
   it('shows the photographs the way the person sees them, never faced out at the lens alone', () => {
     // Matt 2026-09-24: "the photos are facing outwards, so the people aren't even looking at them."
-    for (const id of ['commute-dash-polaroid', 'commute-visor-polaroid', 'office-desk-polaroid', 'office-busy-polaroid', 'kitchen-table-polaroid']) {
+    for (const id of ['commute-dash-polaroid', 'commute-visor-polaroid', 'commute-visor-sun', 'office-desk-polaroid', 'office-busy-polaroid', 'office-back-polaroid', 'kitchen-table-polaroid']) {
       const beat = getBeat(id)!
       expect(beat.composite, id).toBe('photo_print')
       expect(beat.framing, id).toMatch(/behind|profile|back seat/)
