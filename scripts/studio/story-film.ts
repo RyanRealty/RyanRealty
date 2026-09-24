@@ -13,6 +13,7 @@
  *   npx tsx scripts/studio/story-film.ts stills --piece winter-1982 [--roles hook,arrive] [--takes 2] [--judge on]
  *   npx tsx scripts/studio/story-film.ts motion --piece winter-1982 [--roles hook] [--takes 1] [--seconds 4] [--res 480p]
  *   npx tsx scripts/studio/story-film.ts select --piece winter-1982 --role hook (--still N [--note why] | --clip N)
+ *   npx tsx scripts/studio/story-film.ts retouch --piece winter-1982 --role hook --still N --direction "<one fix>" [--takes 2]
  *   npx tsx scripts/studio/story-film.ts adopt  --piece winter-1982 [--no-judge]   (record orphaned takes after a crash)
  *   npx tsx scripts/studio/story-film.ts sheet  --piece winter-1982   (shot sheet for the Grok app: no API spend)
  *   npx tsx scripts/studio/story-film.ts ingest --piece winter-1982 --from <folder>   (file takes from the app)
@@ -712,6 +713,51 @@ async function stageStills(
 }
 
 /**
+ * One targeted fix on one take: the take is the only source, the direction
+ * names the single thing to change, and everything else is held. A near-miss
+ * (right car, right layout, the driver grinning back at the lens) costs one
+ * edit here instead of a fresh roll that can lose what was right. The result
+ * lands as new takes on the same shot, so `select --still N` picks it.
+ */
+async function stageRetouch(piece: StoryPiece, manifest: Manifest, flags: Record<string, string>, takes: number): Promise<void> {
+  const state = manifest.shots[flags.role ?? '']
+  if (!state) throw new Error(`--role must be one of ${Object.keys(manifest.shots).join(', ')}`)
+  const base = state.stills[Number(flags.still)]
+  if (!base) throw new Error('--still N must name an existing take')
+  const direction = flags.direction?.trim()
+  if (!direction) throw new Error('--direction "<the one thing to change>" is required')
+  const prompt = [
+    `Edit this photograph. ${direction}.`,
+    'Keep everything else exactly as it is: the same people, faces, hair, clothes, the same car or room, the same camera position, lens, framing, light, color, and film grain.',
+    'No text, lettering, or logos anywhere in the frame.',
+  ].join(' ')
+  assertBudget(manifest.ledger, imageCost(GROK_MODELS.image, takes), `retouch ${state.role}`)
+  const result = await editGrokImage({
+    prompt,
+    sources: [{ url: await dataUri(path.join(ROOT, base.file)) }],
+    aspectRatio: piece.aspect ?? '4:3',
+    resolution: '1k',
+    n: takes,
+  })
+  addSpend(manifest.ledger, {
+    step: `retouch ${state.role} x${result.images.length}`,
+    usd: billedUsd(imageCost(result.model, result.images.length), result.costTicks),
+    ticks: result.costTicks,
+  })
+  const dir = path.join(dirFor(piece), 'stills', state.role)
+  mkdirSync(dir, { recursive: true })
+  const at = stamp()
+  for (const [i, image] of result.images.entries()) {
+    const file = path.join(dir, `${at}-r${i}.jpg`)
+    writeFileSync(file, image)
+    state.stills.push({ file: rel(file), prompt, sources: [base.file], verdict: null, at })
+    console.log(`${state.role} take ${state.stills.length - 1}: ${rel(file)} (retouch of take ${flags.still})`)
+  }
+  saveManifest(piece, manifest)
+  await writeContactSheet(piece, state.role, state.stills)
+}
+
+/**
  * Every take of one shot on one sheet, numbered by its manifest index so
  * `select --still N` reads straight off it. Curating by eye is free; a judge
  * call on every take was the largest line after motion in the first piece.
@@ -805,12 +851,15 @@ async function stageMotion(
       seconds: clip.durationSeconds,
       at: stamp(),
     })
-    if (!state.selectedClip) {
+    // A selected clip moved from a still that is no longer selected is stale: the
+    // new clip takes over, or a composite lands on the superseded footage.
+    const current = state.clips.find((c) => c.file === state.selectedClip)
+    if (!state.selectedClip || current?.fromStill !== state.selectedStill) {
       state.selectedClip = rel(file)
       markSelected(`clip:${shot.role}`)
     }
     saveManifest(piece, manifest)
-    console.log(`${shot.role}: clip ${rel(file)}`)
+    console.log(`${shot.role}: clip ${rel(file)}${state.selectedClip === rel(file) ? ' (selected)' : ''}`)
   })
 }
 
@@ -1297,6 +1346,7 @@ async function main(): Promise<void> {
     else if (cmd === 'ingest') await stageIngest(piece, era, plan, manifest, flags.from)
     else if (cmd === 'adopt') await stageAdopt(piece, era, plan, manifest, flags['no-judge'] !== 'true')
     else if (cmd === 'select') stageSelect(manifest, flags)
+    else if (cmd === 'retouch') await stageRetouch(piece, manifest, flags, takes)
     else if (cmd === 'payoff') await stagePayoff(piece)
     else if (cmd === 'phone') await stagePhone(piece, era, manifest)
     else if (cmd === 'status') stageStatus(piece, plan, manifest)

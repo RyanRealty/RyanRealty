@@ -35,7 +35,10 @@ function periodFor(beat: BeatDef, era: EraPack, cast: Cast): string {
   if (wanted.includes('rooms')) cues.push(p.rooms)
   if (wanted.includes('street')) cues.push(p.street)
   // Conditional on purpose: stated as scene content, cars appear in every frame.
-  if (wanted.includes('vehicles')) cues.push(`any car in frame is ${p.vehicles}`)
+  // Left-hand drive said outright: a generated dashboard put the wheel on the right (Matt 2026-09-24).
+  if (wanted.includes('vehicles')) {
+    cues.push(`any car in frame is ${p.vehicles}, left-hand drive as sold in the United States, the steering wheel on the left`)
+  }
   // The cast's clothes are named per scene; the era wardrobe dresses anyone else.
   if (!beat.cast.length) cues.push(`anyone else in frame wears ${p.wardrobe}`)
   return cues.filter(Boolean).join('; ')

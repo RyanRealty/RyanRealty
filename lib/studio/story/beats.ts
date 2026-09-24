@@ -910,7 +910,8 @@ export const BEATS: BeatDef[] = [
     cast: ['A'],
     wardrobe: 'travel',
     framing:
-      'a close shot of the dashboard radio, 50mm, a tall frame: her hand in a grey wool mitten pulled half off, fingertips on the round volume knob; ' +
+      'from the front passenger seat, 50mm, a tall frame: her hands in grey wool mittens pulled half off reach in from the right side of the frame ' +
+      'to the round volume knob of the radio in the middle of the dashboard; the steering wheel at the far left edge of the frame; ' +
       'the radio face and its dial soft and out of focus, the windshield and the pines blurred beyond',
     light: 'bright morning daylight through the windshield, the dashboard in soft shade',
     exposure: 'day',
@@ -1174,13 +1175,14 @@ export const BEATS: BeatDef[] = [
     cast: ['B'],
     wardrobe: 'work',
     framing:
-      'from the back seat directly behind him, looking past his right ear, 35mm, a tall frame: the back of his head and his right shoulder ' +
-      'fill the lower left, his face is turned away from the camera; a single instant photograph is tucked upright into the corner of the ' +
-      'dashboard in the middle of the frame, its picture facing him and the camera; the stopped traffic ahead through the windshield',
+      'from the back seat on the passenger side, 35mm, a tall frame: he sits in the driver seat on the left side of the car with the ' +
+      'steering wheel directly in front of him, his back and shoulders in the left half of the frame; the empty front passenger seat on the right; ' +
+      'a single instant photograph tucked upright on the dashboard in front of the empty passenger seat, its picture facing back toward him ' +
+      'and the camera; the stopped traffic ahead through the windshield',
     light: 'warm hazy afternoon sun through the windshield, 4800K',
     exposure: 'day',
     periodCues: ['vehicles'],
-    action: '{B} sits in the slow traffic with both hands on the wheel and tilts his head toward the photograph on the dashboard',
+    action: '{B} sits in the slow traffic with both hands on the wheel and glances across at the photograph on the dashboard',
     props:
       'the same boxy brown vinyl dashboard and wood-grain trim of the station wagon; the instant photograph has a white border and a plain blank white picture',
     move: 'tripod',

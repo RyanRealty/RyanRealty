@@ -200,7 +200,8 @@ describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
     for (const id of ['commute-dash-polaroid', 'office-desk-polaroid', 'kitchen-table-polaroid']) {
       const beat = getBeat(id)!
       expect(beat.composite, id).toBe('photo_print')
-      expect(beat.framing, id).toMatch(/behind|profile/)
+      expect(beat.framing, id).toMatch(/behind|profile|back seat/)
+      expect(beat.framing, id).toMatch(/facing (her|him|them|back toward him)|see its picture/)
       expect(beat.props, id).toMatch(/plain blank white picture/)
     }
     expect(getBeat('summit-three-sisters')!.refs).toContain('asset:21d81297-0e90-4b58-817c-19cc154ed1e0')
@@ -243,6 +244,14 @@ describe('story prompts', () => {
 
   it('phrases vehicles conditionally so cars do not appear in every frame', () => {
     expect(prompts('car-wave').still).toMatch(/any car in frame is/)
+  })
+
+  it('puts the steering wheel on the left in every car (Matt 2026-09-24: "steering wheel is wrong side")', () => {
+    for (const beat of BEATS.filter((b) => b.periodCues?.includes('vehicles'))) {
+      expect(prompts(beat.id).still, beat.id).toMatch(/left-hand drive/)
+    }
+    expect(getBeat('commute-dash-polaroid')!.framing).toMatch(/driver seat on the left side/)
+    expect(getBeat('radio-on-insert')!.framing).toMatch(/from the right side of the frame/)
   })
 
   it('states positives only: no "no text" style negatives that induce what they name', () => {

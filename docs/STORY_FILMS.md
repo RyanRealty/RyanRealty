@@ -46,6 +46,7 @@ npx tsx scripts/studio/story-film.ts cast   --piece winter-1982 --takes 3
 npx tsx scripts/studio/story-film.ts select --piece winter-1982 --cast A --take 2
 npx tsx scripts/studio/story-film.ts stills --piece winter-1982 --roles hook,arrive --takes 3
 npx tsx scripts/studio/story-film.ts select --piece winter-1982 --role hook --still 4 [--note "why"]
+npx tsx scripts/studio/story-film.ts retouch --piece winter-1982 --role hook --still 4 --direction "turn his face to the road"   # one fix on a near-miss take
 npx tsx scripts/studio/story-film.ts motion --piece winter-1982 --roles hook
 npx tsx scripts/studio/story-film.ts payoff --piece winter-1982          # live figure, two reads, citations.json
 npx tsx scripts/studio/story-film.ts phone  --piece winter-1982          # renders the break screens
