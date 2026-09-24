@@ -245,11 +245,15 @@ category: agency_disclosure
 headerRegex: /OREF[-\s]*042|Initial\s+Agency\s+Disclosure|Disclosure\s+Pamphlet/i
 titleRegex: /initial\s+agency\s+disclosure|agency\s+disclosure\s+pamphlet/i
 pages: 2-4
-signers: [acknowledger]  # one party only
+signers: [not_applicable]  # delivered, not signed (OAR 863-015-0215)
 signatureBlocks:
   - page: last page
-    roles: [acknowledger]
+    roles: [acknowledger]  # optional acknowledgment of receipt
 notes:
+  - OAR 863-015-0215 requires the licensee to give the pamphlet at first
+    contact; neither the rule nor ORS 696.820 requires the consumer to sign
+    it (researched 2026-09-24). A signed acknowledgment is good evidence of
+    delivery and is kept; an unsigned copy is not a compliance gap.
   - The 042 is acknowledged at first contact. ONE side per copy.
   - In a listing folder, the acknowledger is the seller.
   - In a sale folder, the acknowledger is the buyer.
@@ -338,18 +342,20 @@ notes:
 ```yaml
 formId: oref-098-compensation-notice
 name: Notice of Real Estate Compensation
-oref: 098
+oref: 098  # printed as OREF 091 in the 01/2025 and 01/2026 releases
 category: compensation_notice
-headerRegex: /OREF[-\s]*098|Notice\s+of\s+Real\s+Estate\s+Compensation|Compensation\s+Demand/i
+headerRegex: /OREF[-\s]*09[18]|Notice\s+of\s+Real\s+Estate\s+Compensation|Compensation\s+Demand/i
 titleRegex: /notice\s+of\s+real\s+estate\s+compensation/i
 pages: 1-2
-signers: [seller_broker]  # broker outgoing to title
+signers: [single_party]  # the principal broker of the firm it pays, listing or buyer side
 signatureBlocks:
   - page: last
-    roles: [seller_broker]
+    roles: [seller_broker or buyer_broker]
 notes:
-  - Issued by the LISTING broker (Matt) to title with payee
-    instructions. Single broker signature.
+  - The brokerage's instruction to escrow with payee details. Signed by the
+    principal broker of the firm being paid ("PRINCIPAL BROKER(S)
+    INFORMATION"), whichever side that firm represents. On a buyer-side deal
+    it is our principal broker as the buyer's firm.
 ```
 
 ## OREF 103 / 108 — Real Estate Forms Advisory
@@ -539,15 +545,41 @@ These are reference documents.
 
 ---
 
-## Library extension
+## Library extension (Matt 2026-09-24)
 
-When a doc surfaces that doesn't match any entry here:
+Forms change every year: OREF and Oregon REALTORS® revise, renumber and add
+forms with each release. Matt: "You review the forms, the laws, and figure out
+who needs to sign. You don't need me for that." and "The system needs to be
+flexible as forms change annually ... constantly updating."
 
-1. The pipeline writes its OCR text and source filename to
-   `tmp/skyslope-form-library-needs-review.jsonl`
-2. The doc is RENAMED to source filename verbatim (no v4 applied)
-3. The doc gets `checklist activity = no_activity_match`
-4. This file gets a new entry once Matt confirms the form identity
+So this file is the **verified baseline**, not a gate a form has to pass
+before the Vault can act on it. The Vault document reader keeps a **form
+registry** (`public.tc_form_registry`, `lib/tc/doc-read/registry.ts`) that
+learns every form it reads and decides who signs the same way for every
+release, strongest source first (`lib/tc/doc-read/form-rules.ts`):
 
-NEVER bolt new forms into the matcher without adding them here.
-NEVER guess a form's signer profile.
+1. **Law.** Signers fixed by statute or rule, cited on the registry row:
+   agency pamphlet (OAR 863-015-0215, delivered, not signed), final agency
+   acknowledgment (ORS 696.845), seller's property disclosure (ORS 105.464),
+   lead-based paint (40 CFR 745.113), FHA/VA amendatory clause (HUD 4000.1),
+   FIRPTA qualified substitute (26 U.S.C. 1445(b)(9)).
+2. **The kind of instrument.** An agreement binds the parties who sign it; a
+   notice is signed by the party giving it; an advisory by the client; a
+   receipt by whoever took the money; an agency or listing agreement by the
+   client and the brokerage; a report, statement or letter is kept, not
+   executed.
+3. **The blocks the form prints**, tallied across every copy the Vault holds.
+   A party printed on at least half the copies signs. Agent lines on a party
+   instrument are optional.
+
+A form seen on fewer than three copies and not decided by law or its kind is
+reported but not acted on alone. When a new release of a form listed here
+prints principal signature blocks this entry does not expect, the registry
+marks the row (`library_disagrees`) for the next person updating this file.
+
+To add or correct an entry here: read the form (the text layer or the page
+images), quote its signature section, check the law that governs it, and
+record both in the entry's notes. The drift test (`profiles.test.ts`) then
+holds the reader to it. Never bolt a form into the matcher without an entry
+or a registry row, and never guess: every signer traces to the form's own
+text or a cited rule.

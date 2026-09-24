@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-23T23:37:57.160Z
+**Generated:** 2026-09-24T02:06:03.074Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -4794,6 +4794,16 @@ Companion files:
 
 ---
 
+### `lib/data/tc/form-registry.ts`
+
+**Exports:** `listFormRegistry`
+
+**Tables:** `tc_form_registry`
+
+**Selected columns:** `identity`, `title`, `numbers`, `releases`, `category`, `obligation`, `basis`, `rule`, `confidence`, `copies`, `library_key`, `library_disagrees`, `first_seen_at`, `last_seen_at`
+
+---
+
 ### `lib/data/tc/getPreferredOrefSaleAgreement.ts`
 
 **Exports:** `getPreferredOrefSaleAgreement`
@@ -5194,6 +5204,7 @@ Companion files:
 | `tc_form_catalog_items` | `collectCompanyScoreboardSignals()`, `getTcFormLibraryBoard()`, `applyFormCatalogSnapshots()` <br /> `lib/data/loop/signals.ts` · `lib/data/tc/form-catalog.ts` |
 | `tc_form_libraries` | `getTcFormLibraryBoard()`, `applyFormCatalogSnapshots()`, `ingestLicensedBlankPdf()`, `listEnvelopeTemplates()`, `loadPreferredOrefForm()`, `getOrefCycleForFill()`, `getOrefDealForFill()`, `getOrefFormVersionRow()`, `getOrefDocumentRow()`, `getMattMailboxPersonId()`, `getCycleDealId()`, `getOrefCycleForSeal()`, `getEnvelopeIdForDocument()` <br /> `lib/data/tc/form-catalog.ts` · `lib/data/tc/ingest-licensed-blank.ts` · `lib/data/tc/listEnvelopeTemplates.ts` · `lib/data/tc/oref-packet-reads.ts` |
 | `tc_form_packets` | `listFormPackets()`, `findFormVersionIdByNumber()`, `findFormVersionIdByNeedle()`, `getFormVersionBlankRow()`, `listLiveFormVersionsForMapping()`, `listClauses()` <br /> `lib/data/tc/form-library-reads.ts` |
+| `tc_form_registry` | `listFormRegistry()` <br /> `lib/data/tc/form-registry.ts` |
 | `tc_form_versions` | `getEnvelopeCycleKindAndDeal()`, `listUnassignedEnvelopeFields()`, `listEnvelopeDocumentFormVersions()`, `getFormVersionFieldMaps()`, `getListPriceByMlsNumber()`, `getFormSourcesForEnvelope()`, `listEnvelopeFormFreshness()`, `getTcFormLibraryBoard()`, `applyFormCatalogSnapshots()`, `listFormPackets()`, `findFormVersionIdByNumber()`, `findFormVersionIdByNeedle()`, `getFormVersionBlankRow()`, `listLiveFormVersionsForMapping()`, `listClauses()`, `ingestLicensedBlankPdf()`, `listEnvelopeTemplates()`, `getDealByPropertyKey()`, `getDealById()`, `listDealPropertyKeys()`, `getCycleForCda()`, `listCycleIdsForDeal()`, `getLatestListingCycle()`, `listCycleDocumentCopies()`, `listChecklistItemCopies()`, `listDealContactCopies()`, `listDealContactKeys()`, `listInFlightEnvelopes()`, `loadPreferredOrefForm()`, `getOrefCycleForFill()`, `getOrefDealForFill()`, `getOrefFormVersionRow()`, `getOrefDocumentRow()`, `getMattMailboxPersonId()`, `getCycleDealId()`, `getOrefCycleForSeal()`, `getEnvelopeIdForDocument()` <br /> `lib/data/tc/envelope-composer-reads.ts` · `lib/data/tc/envelope-form-sources.ts` · `lib/data/tc/form-catalog.ts` · `lib/data/tc/form-library-reads.ts` · `lib/data/tc/ingest-licensed-blank.ts` · `lib/data/tc/listEnvelopeTemplates.ts` · `lib/data/tc/listing-action-reads.ts` · `lib/data/tc/oref-packet-reads.ts` |
 | `tc_mail_messages` | `listDealMail()`, `listMailQueue()`, `countMailQueue()`, `listDealConversations()`, `getMailMessagesForAction()`, `getDealScopeRow()`, `getDocumentDealScope()` <br /> `lib/data/tc/mail-reads.ts` |
 | `tc_offers` | `getDealParties()`, `inboundReferralFeePctForDeal()`, `ensureDealPartiesFromFile()`, `peopleEmailsByNames()`, `getDealsForPerson()`, `getPartyNamesByDealIds()`, `linkUniqueCycleParties()`, `addPersonToDeal()`, `removePersonFromDeal()`, `createDealWithPeople()`, `listDealOffers()`, `getDealOffer()`, `getLatestSaleCycle()` <br /> `lib/data/tc/deal-people.ts` · `lib/data/tc/listDealOffers.ts` |
