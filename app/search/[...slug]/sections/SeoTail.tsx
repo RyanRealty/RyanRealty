@@ -191,10 +191,10 @@ export function SearchSeoTail({
               id="search-leftover"
               level={2}
               eyebrow={v3Text('Market Truth')}
-              headline={v3Text(`${city} leftover and other types`)}
+              headline={v3Text(`Other ${city} property types`)}
               figures={[firstLeftover, ...restLeftover]}
               source={v3Text(
-                'Extra product-type inventory and 12-month leftover pace are leftover membership, sample-gated. The band above is the same leftover pile. A miss omits.',
+                'Active listings by property type and closings over the last 12 months, from the regional MLS. A type with too few sales is left out.',
               )}
               action={{
                 label: v3Text(`Open ${city} market report`),

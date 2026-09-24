@@ -154,10 +154,10 @@ export default async function MarketSnapshot({
       <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
           <Stack gap="tight">
-            <Eyebrow>Leftover membership</Eyebrow>
+            <Eyebrow>Housing market</Eyebrow>
             <H2>{geoLabel} housing market</H2>
             <Body size="small" tone="muted">
-              Single-family leftover houses. A miss omits. Not the live MLS snapshot.
+              Single-family homes, from the regional MLS.
               {updatedAt ? ` Updated ${fmtFreshness(updatedAt)}.` : ''}
             </Body>
           </Stack>
