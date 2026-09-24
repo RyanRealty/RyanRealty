@@ -3,7 +3,9 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { withIdempotency } from '@/lib/crm/idempotency'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { queueBrokerAlert } from '@/lib/crm/broker-alerts'
-import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 
 /**
  * A human replied. Do the four things that were never happening.
@@ -58,10 +60,12 @@ export type InboundReplyOutcome = {
 
 function brokerSlug(broker: string | null | undefined): CrmBrokerSlug {
   const b = String(broker ?? '').trim().toLowerCase()
-  return (CRM_BROKERS as readonly string[]).includes(b) ? (b as CrmBrokerSlug) : 'matt'
+  return isActiveBrokerSlug(b) ? (b as CrmBrokerSlug) : 'matt'
 }
 
 export async function handleInboundReply(input: InboundReplyInput): Promise<InboundReplyOutcome> {
+  // Runs inside webhook handlers (Twilio/Gmail) — no admin session precedes it.
+  await ensureBrokerDirectory()
   const out: InboundReplyOutcome = {
     advanced: false,
     fromStage: null,

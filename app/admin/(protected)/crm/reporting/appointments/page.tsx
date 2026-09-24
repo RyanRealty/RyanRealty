@@ -22,7 +22,7 @@ import {
   type AppointmentsTotals,
   type OutcomeBucket,
 } from '@/lib/data/crm/getAppointmentsReport'
-import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { formatDate, formatDateTime as fmtDateTimeFn } from '@/lib/format/date'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import BrokerDateFilters from '../_components/BrokerDateFilters'
@@ -220,9 +220,9 @@ export default async function AppointmentsReportPage({
           <BrokerDateFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
-            brokers={CRM_BROKERS.map((slug) => ({
+            brokers={activeBrokerSlugs().map((slug) => ({
               slug,
-              label: CRM_BROKER_DISPLAY[slug],
+              label: brokerDisplayName(slug),
             }))}
           />
         ) : null}

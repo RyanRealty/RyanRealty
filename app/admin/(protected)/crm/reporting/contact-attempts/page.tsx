@@ -17,7 +17,7 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getContactAttemptsReport } from '@/lib/data/crm/getContactAttemptsReport'
 import type { ContactAttemptsRow, ContactAttemptsTotals } from '@/lib/data/crm/getContactAttemptsReport'
-import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import {
   VerdictLine,
   SectionHead,
@@ -175,9 +175,9 @@ export default async function ContactAttemptsPage({
           <ContactAttemptsFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
-            brokers={CRM_BROKERS.map((slug) => ({
+            brokers={activeBrokerSlugs().map((slug) => ({
               slug,
-              label: CRM_BROKER_DISPLAY[slug],
+              label: brokerDisplayName(slug),
             }))}
           />
         </div>

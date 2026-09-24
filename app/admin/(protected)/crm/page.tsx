@@ -58,7 +58,8 @@ import { getCrmSavedViews } from '@/lib/data/crm/getCrmSavedViews'
 import { getPeopleListSignals } from '@/lib/data/crm/getPeopleListSignals'
 import { getCrmPonds } from '@/lib/data/crm/getCrmPonds'
 import { scopeBroker } from '@/lib/crm/scope'
-import { CRM_STAGES, CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { CRM_STAGES } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { getCrmStages } from '@/lib/data/crm/getCrmStages'
 import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
@@ -204,7 +205,7 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
       phone: primaryContact(p.phones),
       tags: p.tags,
       assigned_broker: p.assigned_broker,
-      agentLabel: p.assigned_broker ? (CRM_BROKER_DISPLAY[p.assigned_broker as keyof typeof CRM_BROKER_DISPLAY] ?? p.assigned_broker) : null,
+      agentLabel: p.assigned_broker ? brokerDisplayName(p.assigned_broker) : null,
       agentHeadshot: p.assigned_broker ? (BROKER_HEADSHOT[p.assigned_broker] ?? null) : null,
       lastVisitLabel: sig?.lastVisit ? fmtFubDate(sig.lastVisit) : '',
       lastActivity,
@@ -259,9 +260,9 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
   const sequenceOptions = sequenceRows
     .filter((s) => s.status === 'active')
     .map((s) => ({ id: s.id, name: s.name }))
-  const brokerPicker = CRM_BROKERS.map((b) => ({ key: b, label: CRM_BROKER_DISPLAY[b] }))
-  const scopeBrokers = CRM_BROKERS.map((slug) => ({
-    slug, label: CRM_BROKER_DISPLAY[slug], headshot: BROKER_HEADSHOT[slug] ?? null,
+  const brokerPicker = activeBrokerSlugs().map((b) => ({ key: b, label: brokerDisplayName(b) }))
+  const scopeBrokers = activeBrokerSlugs().map((slug) => ({
+    slug, label: brokerDisplayName(slug), headshot: BROKER_HEADSHOT[slug] ?? null,
   }))
   const pondOptions = ponds.map((p) => ({ id: p.id, name: p.name }))
   const sourceOptions = LEAD_SOURCE_OPTIONS.map((s) => ({ key: s, label: s }))
@@ -297,7 +298,7 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
   // listCrmPeople self-scopes with `scope ?? filters.broker`, which is exactly
   // effectiveBroker, so this cannot describe a different filter than the rows.
   const scopeLabel = effectiveBroker
-    ? CRM_BROKER_DISPLAY[effectiveBroker as keyof typeof CRM_BROKER_DISPLAY] ?? effectiveBroker
+    ? brokerDisplayName(effectiveBroker)
     : null
 
   return (

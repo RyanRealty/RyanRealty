@@ -33,7 +33,7 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { resolveActivityScope } from '@/lib/crm/activity-scope'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import {
   getGlobalActivityFeed,
   ACTIVITY_TYPES,
@@ -74,7 +74,7 @@ export default async function CrmActivityPage({
   const typeChips = ACTIVITY_TYPES.map((t) => ({ key: t.key, label: t.label }))
   // Broker filter options — only the owner can switch scope.
   const brokerOptions = isOwner
-    ? [{ value: 'all', label: 'Everyone' }, ...CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] }))]
+    ? [{ value: 'all', label: 'Everyone' }, ...activeBrokerSlugs().map((b) => ({ value: b, label: brokerDisplayName(b) }))]
     : []
 
   return (

@@ -8,7 +8,8 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { TWILIO_PUBLIC_ORIGIN, verifiedTwilioParams } from '@/lib/crm/twilio'
-import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
+import { sendCrmEmail } from '@/lib/crm/gmail'
+import { mailboxForSlug } from '@/lib/data/brokers/directory'
 
 /** Twilio CallSid / RecordingSid shape — validate before using inside a PostgREST
  *  .or() filter so a crafted value can never inject filter syntax. */
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
   // Vercel kills when it freezes the invocation on response — silently dropping
   // the broker's voicemail notification). try/catch so a mail failure can't
   // 500 the webhook and trigger a Twilio retry storm.
-  const mailbox = CRM_MAILBOXES.find((m) => m.slug === row.broker) ?? CRM_MAILBOXES[0]
+  const mailbox = await mailboxForSlug(row.broker)
   const label = row.kind === 'voicemail' ? 'Voicemail' : 'Call recording'
   try {
     await sendCrmEmail({

@@ -303,6 +303,14 @@
       "schedule": "7,22,37,52 * * * *"
     },
     {
+      "path": "/api/cron/tc-deal-terms",
+      "schedule": "12,32,52 * * * *"
+    },
+    {
+      "path": "/api/cron/workspace-brokers-sync",
+      "schedule": "17 * * * *"
+    },
+    {
       "path": "/api/cron/tc-form-templates",
       "schedule": "50 12 * * *"
     },

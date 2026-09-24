@@ -106,11 +106,16 @@ export default async function AllFilesPage({
         price != null ? exactMoney(price) : '—',
         keyDate(d).label || '—',
         d.itemsTotal ? <Meter key="m" done={done} total={d.itemsTotal} /> : '—',
-        <span key="o" style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
-          {d.itemsInReview ? <StateWord state="slow">{d.itemsInReview} in review</StateWord> : null}
-          {d.itemsRequired ? <StateWord state="waiting">{d.itemsRequired} missing</StateWord> : null}
-          {!d.itemsInReview && !d.itemsRequired ? <span style={{ color: 'var(--a-text-2)' }}>none</span> : null}
-        </span>,
+        // A closed or dead file carries no warnings (Matt 2026-09-24).
+        d.stage === 'closed' || d.stage === 'dead' ? (
+          <span key="o" style={{ color: 'var(--a-text-2)' }}>none</span>
+        ) : (
+          <span key="o" style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+            {d.itemsInReview ? <StateWord state="slow">{d.itemsInReview} in review</StateWord> : null}
+            {d.itemsRequired ? <StateWord state="waiting">{d.itemsRequired} missing</StateWord> : null}
+            {!d.itemsInReview && !d.itemsRequired ? <span style={{ color: 'var(--a-text-2)' }}>none</span> : null}
+          </span>
+        ),
       ],
     }
   })

@@ -956,6 +956,10 @@ export { listFormPackets, listClauses } from './tc/form-library-reads'
 export type { FormPacket, ClauseRow } from './tc/form-library-reads'
 export { getPrincipalSignOffQueue } from './tc/getPrincipalSignOffQueue'
 export type { SignOffQueue, SignOffDeal, SignOffItem } from './tc/getPrincipalSignOffQueue'
+export { getReviewDocuments } from './tc/review-documents'
+export { writeCycleTermsByPerson } from './tc/cycle-term-writes'
+export { getTermsReviewQueue } from './tc/deal-terms'
+export type { ReviewDocument } from './tc/review-documents'
 export type {
   TcFormLibraryBoard,
   TcFormBoardRow,

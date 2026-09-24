@@ -102,6 +102,14 @@ and will not be re-litigated):**
    (`.av2-board` / `.av2-fcard` with `Meter`). Closed and dead history lives on All
    files (`/admin/closings/files`), so neither page grows with time. This overrides
    the "no KPI-dashboard landing" non-inheritance in §8 for Closings only.
+8. **Review mode** — the principal broker's sign-off (`/admin/sign-off/review`,
+   2026-09-24, SkySlope's Quick Audit improved): one document at a time in the
+   `.av2-split` workspace. The queue rail orders every item by its 7-banking-day
+   clock (OAR 863-015-0140(4)), most overdue first, across all brokers; the main pane
+   carries the decision (Sign off, Send back with a typed reason), the reader's
+   verdict and printed-form check, then the PDF inline. A decision steps to the next
+   item; J and K move without deciding; no key ever signs off. On phone the document
+   and decision come first and the queue follows. `?deal=` scopes it to one file.
 6. **Config form** — Settings: single-column, 640px max, label-above, inline
    validation, destructive actions require typed confirmation (GOV.UK forms).
 

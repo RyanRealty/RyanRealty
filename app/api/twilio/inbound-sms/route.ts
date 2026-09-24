@@ -18,7 +18,8 @@ import { markConversationUnreadOnInbound } from '@/app/actions/crm-inbox'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { newLeadAlertBody, queueBrokerAlert } from '@/lib/crm/broker-alerts'
 import { hasSellerIntent } from '@/lib/crm/seller-intent'
-import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
+import { sendCrmEmail } from '@/lib/crm/gmail'
+import { mailboxForSlug } from '@/lib/data/brokers/directory'
 import { classifyInboundReply, REPLY_INTENT_LABELS, type ReplyClassification } from '@/lib/crm/reply-intent'
 import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildSuggestedReplyLink } from '@/components/admin/crm/composer-preload'
@@ -377,7 +378,7 @@ export async function POST(request: Request) {
       },
       { onConflict: 'dedupe_key', ignoreDuplicates: true },
     )
-    const mailbox = CRM_MAILBOXES.find((m) => m.slug === alertBroker) ?? CRM_MAILBOXES[0]
+    const mailbox = await mailboxForSlug(alertBroker)
     // AWAITED: a bare void is dropped when Vercel freezes the invocation on
     // response, so the broker's new-text email alert silently never sends.
     // try/catch keeps a mail failure from 500-ing the webhook (Twilio retry).

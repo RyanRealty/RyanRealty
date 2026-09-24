@@ -2,7 +2,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGcalBusyIntervals } from '@/lib/google-calendar'
 import { zonedInstant } from '@/lib/booking/slots'
-import { CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { ownMailboxForSlug } from '@/lib/data/brokers/directory'
 import type { BusyInterval } from '@/lib/booking/slots'
 
 /**
@@ -93,7 +93,7 @@ export async function getBrokerBusyIntervals(args: {
 
   // Google Calendar for the same broker. A throw here propagates on purpose:
   // the caller renders a closed calendar rather than an unverified open one.
-  const brokerEmail = CRM_MAILBOXES.find((m) => m.slug === args.brokerSlug)?.email
+  const brokerEmail = (await ownMailboxForSlug(args.brokerSlug))?.email
   if (brokerEmail) {
     const gcal = await getGcalBusyIntervals(brokerEmail, args.fromIso, args.toIso)
     if (gcal.configured) out.push(...gcal.intervals)

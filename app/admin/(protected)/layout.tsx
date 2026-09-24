@@ -5,7 +5,8 @@ import { getSession } from '@/app/actions/auth'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCrmAccess } from '@/app/actions/crm-access'
-import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { brokerDisplayName } from '@/lib/brokers/directory'
 import { buildAdminNav, buildAdminMobileTabs } from '@/app/components/admin/admin-nav'
 import type { AdminCapabilityContext } from '@/lib/admin/capabilities'
 import ConsoleShell from '@/components/console/ConsoleShell'
@@ -56,7 +57,7 @@ export default async function AdminProtectedLayout({
   const access = await getCrmAccess()
   const slug = access?.brokerSlug as CrmBrokerSlug | null
   const brokerLabel = slug
-    ? `${CRM_BROKER_DISPLAY[slug]} · ${adminRole.role}`
+    ? `${brokerDisplayName(slug)} · ${adminRole.role}`
     : adminRole.role === 'superuser'
       ? 'All brokers · superuser'
       : adminRole.role

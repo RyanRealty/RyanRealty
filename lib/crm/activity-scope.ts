@@ -1,4 +1,4 @@
-import { CRM_BROKERS } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
 
 /**
  * Resolve the broker scope for the Activity feed.
@@ -15,5 +15,5 @@ export function resolveActivityScope(
 ): string | null {
   if (callerScope !== null) return callerScope
   if (!requested || requested === 'all') return null
-  return (CRM_BROKERS as readonly string[]).includes(requested) ? requested : null
+  return isActiveBrokerSlug(requested) ? requested : null
 }

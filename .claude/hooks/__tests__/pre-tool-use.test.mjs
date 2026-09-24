@@ -323,7 +323,9 @@ run(
   'execute_sql: aggregate on a table the DAL does NOT cover passes',
   {
     tool_name: 'mcp__5adfee1a-x__execute_sql',
-    tool_input: { query: '-- audit: role rows\nSELECT role, count(*) FROM admin_roles GROUP BY 1' },
+    // A name that can never be DAL-covered: admin_roles was used here until a
+    // DAL module (lib/data/brokers/workspace-sync.ts) began reading it.
+    tool_input: { query: '-- audit: role rows\nSELECT role, count(*) FROM zz_fixture_not_a_dal_table GROUP BY 1' },
   },
   { deny: false },
 )

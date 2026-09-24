@@ -28,6 +28,8 @@ import { getDealParties } from '@/lib/data/tc/deal-people'
 import { listDealMail, listDealConversations } from '@/lib/data/tc/mail-reads'
 import { listDealTasks } from '@/lib/data/tc/task-reads'
 import { listDealEvents } from '@/lib/data/tc/deal-events'
+import { getCycleTerms } from '@/lib/data/tc/deal-terms'
+import { hasCapability } from '@/lib/admin/capabilities'
 import { getLiveDealCycles } from '@/lib/data/tc/closings'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { executionStateFromClassification } from '@/lib/tc/execution-state'
@@ -41,6 +43,7 @@ import {
   cycleLabel,
   fileAttention,
   fileTab,
+  isFinishedFile,
   milestonesFor,
   type FileTab,
 } from '@/lib/tc/file-workspace'
@@ -106,8 +109,10 @@ export default async function TcDealPage({ params, searchParams }: Props) {
     superuser,
     today,
   })
-  const inReview = checklist.filter((i) => i.status === 'in_review').length
-  const missing = checklist.filter((i) => i.status === 'required').length
+  // A closed or fallen-through file carries no warnings (Matt 2026-09-24).
+  const finished = isFinishedFile(deal.stage, cycle)
+  const inReview = finished ? 0 : checklist.filter((i) => i.status === 'in_review').length
+  const missing = finished ? 0 : checklist.filter((i) => i.status === 'required').length
 
   // Reads for the header (listing actions need the other live listings).
   const mergeOthers =
@@ -123,13 +128,28 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   // Reads for the tab on screen, and nothing else.
   let body: React.ReactNode = null
   if (tab === 'overview') {
-    const [contacts, parties, mail, tasks] = await Promise.all([
+    const [contacts, parties, mail, tasks, terms] = await Promise.all([
       getDealContacts(deal.id),
       getDealParties(deal.id),
       listDealMail(deal.id, 5),
       listDealTasks(deal.id),
+      cycle?.kind === 'sale' ? getCycleTerms(cycle.id).catch(() => null) : Promise.resolve(null),
     ])
-    body = <OverviewTab deal={deal} cycle={cycle} attention={attention} contacts={contacts} parties={parties} mail={mail} tasks={tasks} tabHref={tabHref} />
+    body = (
+      <OverviewTab
+        deal={deal}
+        cycle={cycle}
+        attention={attention}
+        contacts={contacts}
+        parties={parties}
+        mail={mail}
+        tasks={tasks}
+        terms={terms}
+        canEditTerms={hasCapability(ctx, 'transactions.edit')}
+        isPrincipal={superuser}
+        tabHref={tabHref}
+      />
+    )
   } else if (tab === 'documents') {
     body = cycle ? (
       <DocumentsTab
@@ -139,6 +159,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
         selectedDocId={sp.doc ?? null}
         showArchived={showArchived}
         superuser={superuser}
+        finished={finished}
         anticipated={await getAnticipatedDocuments(cycle.id)}
       />
     ) : (

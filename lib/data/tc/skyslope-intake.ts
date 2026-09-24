@@ -25,6 +25,7 @@ import 'server-only'
 
 import { createHash } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { stampProvenance } from '@/lib/tc/terms/provenance'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   fetchSkySlopeDocumentBinary,
@@ -109,6 +110,8 @@ export type IntakeTotals = {
   documentsAdded: number
   documentFailures: number
   itemsAdded: number
+  /** Checklist statuses carried from SkySlope onto items the Vault had not touched. */
+  itemStatusesUpdated: number
   assignmentsAdded: number
   contactsAdded: number
   stagesUpdated: number
@@ -142,6 +145,7 @@ function emptyTotals(): IntakeTotals {
     documentsAdded: 0,
     documentFailures: 0,
     itemsAdded: 0,
+    itemStatusesUpdated: 0,
     assignmentsAdded: 0,
     contactsAdded: 0,
     stagesUpdated: 0,
@@ -197,9 +201,11 @@ type VaultCycleRow = {
   source_guid: string
   raw: Obj
   fields: Partial<Record<CycleField, unknown>>
+  /** Who wrote each term column (lib/tc/terms/provenance.ts); the intake stamps its writes as imports. */
+  termProvenance: unknown
 }
 
-const CYCLE_COLUMNS = ['id', 'deal_id', 'kind', 'source_guid', 'raw', ...CYCLE_FIELD_SPECS.map((s) => s.column)].join(', ')
+const CYCLE_COLUMNS = ['id', 'deal_id', 'kind', 'source_guid', 'raw', 'term_provenance', ...CYCLE_FIELD_SPECS.map((s) => s.column)].join(', ')
 
 async function pageAll<T>(fetchPage: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>): Promise<T[]> {
   const out: T[] = []
@@ -236,6 +242,7 @@ async function loadSkySlopeCycles(sb: SB): Promise<VaultCycleRow[]> {
       source_guid: String(r.source_guid),
       raw: (r.raw && typeof r.raw === 'object' ? r.raw : {}) as Obj,
       fields,
+      termProvenance: r.term_provenance ?? {},
     }
   })
 }
@@ -245,7 +252,7 @@ async function loadCycleSnapshot(sb: SB, cycle: VaultCycleRow): Promise<VaultCyc
     sb.from('tc_documents').select('id, source_doc_id, archived').eq('cycle_id', cycle.id).order('id').range(a, b),
   )
   const items = await pageAll<Obj>((a, b) =>
-    sb.from('tc_checklist_items').select('id, source_activity_id').eq('cycle_id', cycle.id).order('id').range(a, b),
+    sb.from('tc_checklist_items').select('id, source_activity_id, status').eq('cycle_id', cycle.id).order('id').range(a, b),
   )
   const itemIds = items.map((i) => String(i.id))
   const assignments: Array<{ itemId: string; documentId: string }> = []
@@ -261,7 +268,11 @@ async function loadCycleSnapshot(sb: SB, cycle: VaultCycleRow): Promise<VaultCyc
     fields: cycle.fields,
     raw: cycle.raw,
     documents: documents.map((d) => ({ id: String(d.id), sourceDocId: (d.source_doc_id as string | null) ?? null, archived: d.archived === true })),
-    items: items.map((i) => ({ id: String(i.id), sourceActivityId: i.source_activity_id == null ? null : Number(i.source_activity_id) })),
+    items: items.map((i) => ({
+      id: String(i.id),
+      sourceActivityId: i.source_activity_id == null ? null : Number(i.source_activity_id),
+      status: i.status == null ? null : String(i.status),
+    })),
     assignments,
   }
 }
@@ -695,6 +706,8 @@ async function intakeProperty(
           source: 'skyslope',
           source_guid: plan.guid,
           ...plan.insertFields,
+          // Written by the import: the executed contract replaces a value it disagrees with.
+          term_provenance: stampProvenance({}, plan.insertFields ?? {}, 'import', { actor: 'skyslope-intake' }),
           raw: {},
         })
         .select('id')
@@ -725,6 +738,10 @@ async function intakeProperty(
       if (!plan.fieldUpdates.length) continue
       const patch: Obj = { updated_at: new Date().toISOString() }
       for (const u of plan.fieldUpdates) patch[u.field] = u.to
+      // Written by the import: the executed contract replaces a value it disagrees with.
+      const prior = ctx.cycles.find((c) => c.id === cycleId)?.termProvenance ?? {}
+      const stamped = stampProvenance(prior, patch, 'import', { actor: 'skyslope-intake' })
+      if (Object.keys(stamped).length || Object.keys(prior as object).length) patch.term_provenance = stamped
       // Guarded: each field changes only if it still holds the value we read.
       let q = sb.from('tc_cycles').update(patch).eq('id', cycleId)
       for (const u of plan.fieldUpdates) {
@@ -884,6 +901,39 @@ async function intakeProperty(
       }
     }
 
+    // checklist status SkySlope changed on items the Vault left alone. The
+    // update is conditional on the status the plan saw, so a Vault change made
+    // since the plan was read is never overwritten.
+    if (plan.itemStatusUpdates.length) {
+      const applied: typeof plan.itemStatusUpdates = []
+      for (const u of plan.itemStatusUpdates) {
+        const { data: rows, error } = await sb
+          .from('tc_checklist_items')
+          .update({ status: u.to })
+          .eq('id', u.itemId)
+          .eq('status', u.from)
+          .select('id')
+        if (error) {
+          report.errors.push(`${plan.guid.slice(0, 8)} checklist status: ${error.message}`)
+          holdRaw.add(plan.guid)
+        } else if (rows?.length) applied.push(u)
+        else holdRaw.add(plan.guid) // the Vault moved in between: decide again next run
+      }
+      totals.itemStatusesUpdated += applied.length
+      if (applied.length) {
+        await recordEvent(sb, totals, {
+          deal_id: dealId,
+          cycle_id: cycleId,
+          action: 'skyslope_checklist_status_updated',
+          detail: {
+            source_guid: plan.guid,
+            items: applied.map((u) => ({ activity_id: u.activityId, name: u.name, from: u.from, to: u.to })),
+            note: 'Changed in SkySlope, untouched in the Vault since the previous import.',
+          },
+        })
+      }
+    }
+
     // assignments (only where both the item and the document exist now)
     const pairs: Array<{ item_id: string; document_id: string }> = []
     const pairLabels: Array<{ activity_id: number; source_doc_id: string }> = []
@@ -933,8 +983,8 @@ async function intakeProperty(
     if (report.stoppedAtDeadline || holdRaw.has(plan.guid) || holdDeal.has(dealId)) continue
 
     // e. drift record, then the previous payload moves forward (last)
-    if (plan.drift.length || plan.assignmentsOnVaultArchived.length) {
-      totals.driftKept += plan.drift.length + plan.assignmentsOnVaultArchived.length
+    if (plan.drift.length || plan.assignmentsOnVaultArchived.length || plan.itemStatusDrift.length) {
+      totals.driftKept += plan.drift.length + plan.assignmentsOnVaultArchived.length + plan.itemStatusDrift.length
       await recordEvent(sb, totals, {
         deal_id: dealId,
         cycle_id: cycleId,
@@ -943,6 +993,7 @@ async function intakeProperty(
           table: 'tc_cycles',
           source_guid: plan.guid,
           fields: plan.drift,
+          checklist_status: plan.itemStatusDrift,
           assignments_on_vault_archived_documents: plan.assignmentsOnVaultArchived,
           note: 'Edited in the Vault and changed in SkySlope: the Vault value is kept.',
         },

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
 import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
@@ -159,6 +160,8 @@ export default async function PersonPage({
         <FieldEditors
           stage={card.stage}
           assignedBroker={card.assignedBroker}
+          assignedBrokerName={card.assignedBroker ? brokerDisplayName(card.assignedBroker) : null}
+          brokerOptions={activeBrokerSlugs().map((slug) => ({ slug, name: brokerDisplayName(slug) }))}
           canReassign={ctx.role === 'superuser'}
           source={card.source}
           sources={[...LEAD_SOURCE_OPTIONS]}

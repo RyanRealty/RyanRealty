@@ -15,6 +15,9 @@ import { tcEventDetailPreview, tcEventLabel } from '@/lib/tc/events'
 import type { AttentionItem } from '@/lib/tc/file-workspace'
 import { exactMoney, shortDate } from '@/lib/tc/dashboard'
 import { DealTasks } from '../DealTasks'
+import type { CycleTerms } from '@/lib/data/tc/deal-terms'
+import { earnestAmount } from '@/lib/tc/terms/plan'
+import { ContractTerms } from './ContractTerms'
 
 function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   if (value == null || value === '') return null
@@ -36,6 +39,9 @@ export function OverviewTab({
   parties,
   mail,
   tasks,
+  terms = null,
+  canEditTerms = false,
+  isPrincipal = false,
   tabHref,
 }: {
   deal: TcDeal
@@ -45,6 +51,11 @@ export function OverviewTab({
   parties: DealParty[]
   mail: DealMailRow[]
   tasks: TcTaskRow[]
+  /** The terms read from this cycle's contract (sale cycles). */
+  terms?: CycleTerms | null
+  canEditTerms?: boolean
+  /** The principal broker: links to the contract-terms review queue. */
+  isPrincipal?: boolean
   tabHref: (tab: string) => string
 }) {
   const em = (cycle as { earnest_money?: unknown } | null)?.earnest_money
@@ -104,7 +115,7 @@ export function OverviewTab({
               <Fact label="Financing" value={cycle.financing_days ? `${cycle.financing_days} banking days` : null} />
               <Fact label="MLS" value={cycle.mls_number ? <span style={{ fontFamily: 'var(--a-font-mono)' }}>{cycle.mls_number}</span> : null} />
               <Fact label="Escrow" value={[cycle.escrow_number, cycle.escrow_company].filter(Boolean).join(' · ') || null} />
-              <Fact label="Earnest money" value={typeof em === 'number' ? exactMoney(em) : null} />
+              <Fact label="Earnest money" value={earnestAmount(em) != null ? exactMoney(earnestAmount(em)) : null} />
               <Fact label="Office gross" value={exactMoney(cycle.office_gross)} />
               <Fact label="Commission" value={cycle.commission_percent != null ? `${Number(cycle.commission_percent.toFixed(2))}%` : null} />
               <Fact label="Checklist" value={cycle.checklist_type} />
@@ -113,6 +124,8 @@ export function OverviewTab({
             <p className="av2-panel__empty">This file has no cycle yet, so there are no dates or prices to show.</p>
           )}
         </Panel>
+
+        <ContractTerms state={terms} canEdit={canEditTerms} propertyKey={deal.property_key} isPrincipal={isPrincipal} />
 
         {openTasks.length ? (
           <Panel title="Tasks" aside={`${openTasks.length} open`}>

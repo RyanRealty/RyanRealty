@@ -9,7 +9,7 @@
 import {
   Calendar, Check, ClipboardList, DoorOpen, Flag, Heart, Home, Mail, MessageSquare, Phone,
 } from 'lucide-react'
-import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { brokerDisplayName } from '@/lib/brokers/directory'
 
 export type MobileTasksView = 'today' | 'overdue' | 'upcoming'
 
@@ -34,9 +34,12 @@ export function tabHref(view: MobileTasksView, agent: string, showCompleted: boo
   return `/admin/crm/tasks?${p.toString()}`
 }
 
-/** Inlined from task-type-icons.tsx's brokerDisplayName (admin v2 amnesia). */
+/** Inlined from task-type-icons.tsx's brokerDisplayName (admin v2 amnesia).
+ *  lib/brokers/directory.ts is client-safe by design; on the client it only
+ *  knows the 3 seeded founders (a newly added broker resolves once this
+ *  component's data flows through a server render that loaded the table). */
 export function brokerName(slug: string | null | undefined): string | null {
-  return slug ? (CRM_BROKER_DISPLAY as Record<string, string>)[slug] ?? slug : null
+  return slug ? brokerDisplayName(slug) : null
 }
 
 /** §29 A.6 — type-coded glyph, inlined from task-type-icons.tsx on admin v2 tokens. */

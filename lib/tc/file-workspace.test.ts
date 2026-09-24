@@ -5,6 +5,7 @@ import {
   cycleLabel,
   fileAttention,
   fileTab,
+  isFinishedFile,
   matchesChecklistFilter,
   milestonesFor,
   type WorkspaceCycle,
@@ -121,6 +122,28 @@ describe('what needs a person on this file', () => {
     expect(out.map((o) => o.key)).toEqual(['pastclose', 'review', 'missing'])
     expect(out[1]).toMatchObject({ title: '1 document waiting for your review', href: '/admin/deals/k?tab=documents&cycle=c1&filter=review' })
     expect(out[2].context).toBe('FIRPTA Advisory')
+  })
+  it('shows no warnings on a closed file or a cycle that fell through (Matt 2026-09-24)', () => {
+    const checklist = [
+      { name: 'Sellers Property Disclosure', status: 'in_review' as const },
+      { name: 'FIRPTA Advisory', status: 'required' as const },
+    ]
+    const closedDeal = fileAttention({ propertyKey: 'k', stage: 'closed', stageDetail: null, cycle: cycle({ id: 'c1', kind: 'sale' }), checklist, superuser: true, today: '2026-09-24' })
+    expect(closedDeal).toEqual([])
+    // a live deal looking at its older, canceled cycle
+    const canceled = fileAttention({
+      propertyKey: 'k',
+      stage: 'pending',
+      stageDetail: null,
+      cycle: cycle({ id: 'c0', kind: 'sale', status: 'Canceled/Pend', dead_date: '2026-04-24' }),
+      checklist,
+      superuser: true,
+      today: '2026-09-24',
+    })
+    expect(canceled).toEqual([])
+    expect(isFinishedFile('pending', cycle({ id: 'c2', kind: 'sale', actual_closing_date: '2026-07-09' }))).toBe(true)
+    expect(isFinishedFile('pending', cycle({ id: 'c3', kind: 'sale', status: 'Pending' }))).toBe(false)
+    expect(isFinishedFile('active_listing', cycle({ id: 'c4', kind: 'listing', status: 'Transaction' }))).toBe(false)
   })
   it('asks to confirm a file the mail sweep opened', () => {
     const out = fileAttention({ propertyKey: 'k', stage: 'pre_contract', stageDetail: 'Opened from email: confirm side and stage', cycle: null, checklist: [], superuser: false, today: '2026-09-24' })

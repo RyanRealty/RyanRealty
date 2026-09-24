@@ -1,5 +1,6 @@
 import 'server-only'
-import { getGmailFor, CRM_MAILBOXES } from '@/lib/crm/gmail'
+import { getGmailFor } from '@/lib/crm/gmail'
+import { activeDirectoryBrokers } from '@/lib/brokers/directory'
 import { brokerEmailFromFileName } from './deal-scope'
 import { addressTokens } from './file-comms'
 import { gmailQueryForParty, harvestPartyEmail, parseMailboxHeader, type MailHeader } from './mailbox-harvest'
@@ -32,7 +33,7 @@ async function headersForQuery(mailbox: string, query: string): Promise<MailHead
 
 function mailboxesForDeal(brokerName: string | null): string[] {
   const dealBox = brokerEmailFromFileName(brokerName)
-  const set = new Set(CRM_MAILBOXES.map((m) => m.email))
+  const set = new Set(activeDirectoryBrokers().map((b) => b.email).filter((e): e is string => !!e))
   const out: string[] = []
   if (dealBox && set.has(dealBox)) out.push(dealBox)
   if (!out.includes('matt@ryan-realty.com')) out.push('matt@ryan-realty.com')
