@@ -1131,7 +1131,8 @@
     ],
     "ci:script-stat-source": [
       "scripts/**",
-      "scripts/script-stat-source-baseline.json"
+      "scripts/script-stat-source-baseline.json",
+      "docs/DAL_INDEX.md"
     ],
     "ci:search-completeness-accept": [
       "docs/plans/ENTERPRISE_MAP/search-completeness-accept.json",
