@@ -12,6 +12,7 @@ import {
   isVisitorPlaceNoiseLabel,
   isVisitorPlaceNoiseSlug,
 } from '@/lib/site/visitor-place-noise'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 function isNoiseSlug(slug: string | null | undefined): boolean {
   return isVisitorPlaceNoiseSlug(slug) || isPermitGluedPlatSlug(slug)
@@ -148,7 +149,7 @@ export function leftoverListingGrains(
       geoType: 'neighborhood',
       geoSlug: marketGeo.geoSlug,
       name: marketGeo.name,
-      hubHref: `/communities/${marketGeo.geoSlug}`,
+      hubHref: communityPath(marketGeo.geoSlug),
     })
   }
 

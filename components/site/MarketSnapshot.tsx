@@ -15,6 +15,7 @@ import {
   TabularNumber,
   TextLink,
 } from '@/components/site/primitives'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 /**
  * Site v2 market snapshot — 4 stat cards on the homepage.
@@ -146,17 +147,17 @@ export default async function MarketSnapshot({
 
   const verdict = marketVerdict(monthsOfSupply)
   const geoLabel = cityName ?? 'Central Oregon'
-  const marketHubHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
+  const marketHubHref = citySlug ? cityMarketPath(citySlug) : '/housing-market'
 
   return (
     <Section padding="default" divider>
       <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
           <Stack gap="tight">
-            <Eyebrow>Leftover membership</Eyebrow>
+            <Eyebrow>Housing market</Eyebrow>
             <H2>{geoLabel} housing market</H2>
             <Body size="small" tone="muted">
-              Single-family leftover houses. A miss omits. Not the live MLS snapshot.
+              Single-family homes, from the regional MLS.
               {updatedAt ? ` Updated ${fmtFreshness(updatedAt)}.` : ''}
             </Body>
           </Stack>

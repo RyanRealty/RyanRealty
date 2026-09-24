@@ -10,7 +10,8 @@
  *
  *   If the Gmail DWD send fails (auth/scope/outage), the send automatically
  *   falls back to Resend so the lead still gets the CMA — the timeline row
- *   records which transport carried it.
+ *   records which transport carried it. A send Gmail never confirmed does not
+ *   fall back: it may already be delivered, so the broker checks Sent first.
  *
  * Requires the cmas row to be finalized (Matt approved the draft).
  * The Gmail-DRAFT path was retired 2026-07-07 per Matt's directive: sends go
@@ -455,6 +456,12 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     impersonateAs: brokerMailbox,
     attachments: [{ filename: `${slug}.pdf`, content: pdf, mimeType: 'application/pdf' }],
   })
+  if (gmailRes.unconfirmed) {
+    // The send left and Gmail never answered: the lead may already have the CMA.
+    // Resend now could deliver it twice, so stop and let the broker check Sent.
+    console.error(`[sendCmaToLead] ${slug}: ${gmailRes.error} Not falling back to Resend.`)
+    return { ok: false, error: gmailRes.error }
+  }
   const transport: 'gmail' | 'resend' = gmailRes.ok ? 'gmail' : 'resend'
   const gmailMessageId = gmailRes.ok ? gmailRes.messageId : undefined
   if (!gmailRes.ok) {

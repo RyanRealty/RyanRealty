@@ -20,9 +20,24 @@ function registryList() {
 }
 
 describe('self-city community (SITE-187, SITE-184)', () => {
+  it('an explicit registry self_city carries evidence, and false excludes (Crooked River Ranch)', () => {
+    const overrides = registryList().filter(
+      (e) => typeof (e as { self_city?: boolean }).self_city === 'boolean',
+    ) as unknown as Array<{ slug: string; self_city: boolean; self_city_evidence?: string }>
+    expect(overrides.map((e) => e.slug)).toContain('crooked-river-ranch')
+    for (const e of overrides) {
+      expect(e.self_city_evidence?.trim().length ?? 0, e.slug).toBeGreaterThan(40)
+      expect(isSelfCityCommunity(e.slug), e.slug).toBe(e.self_city)
+    }
+  })
+
   it('derives the set from the registry and the city constants, not a hand list', () => {
     const expected = registryList()
-      .filter((e) => e.slug === e.city_slug || CENTRAL_OREGON_CITY_SLUGS.has(e.slug))
+      .filter((e) =>
+        typeof (e as { self_city?: boolean }).self_city === 'boolean'
+          ? (e as { self_city?: boolean }).self_city
+          : e.slug === e.city_slug || CENTRAL_OREGON_CITY_SLUGS.has(e.slug),
+      )
       .map((e) => e.slug)
     expect(expected).toContain('sunriver')
     expect(expected).toContain('black-butte-ranch')
@@ -42,8 +57,11 @@ describe('self-city community (SITE-187, SITE-184)', () => {
     expect(selfCityCommunitySlug('black-butte-ranch')).toBe('black-butte-ranch')
     expect(selfCityCommunityPath('black-butte-ranch')).toBe('/communities/black-butte-ranch')
     expect(isSelfCityCommunity('black-butte-ranch')).toBe(true)
-    // Crooked River Ranch has the identical shape under Terrebonne.
-    expect(selfCityCommunitySlug('crooked-river-ranch')).toBe('crooked-river-ranch')
+    // Crooked River Ranch matches by slug, but MLS files its homes under
+    // Terrebonne / Crooked River, so the registry's self_city: false keeps it out.
+    expect(selfCityCommunitySlug('crooked-river-ranch')).toBeNull()
+    expect(isSelfCityCommunity('crooked-river-ranch')).toBe(false)
+    expect(selfCitySearchPath('crooked-river-ranch')).toBeNull()
   })
 
   it('the registry parent city is never a key: Sisters and Terrebonne stay their own', () => {

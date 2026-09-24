@@ -4,6 +4,7 @@ import {
   isClusterPocket,
   isGeographyWidenTier,
   isPocketExclusiveTier,
+  keepTightestByClosePrice,
   pocketHoldsGeographyExclusive,
   pocketStarvedForYearQuality,
   POCKET_STARVE_BELOW,
@@ -161,5 +162,33 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
       expect(!!t.likeCommunity).toBe(t.name.startsWith('like-community-'))
       expect(!!t.samePocket).toBe(t.name.startsWith('pocket-'))
     }
+  })
+})
+
+describe('keepTightestByClosePrice — as-of date (WP5 item d, back-dated CMA)', () => {
+  // Six candidates, five kept. E is the price outlier (10%+ off the $503,500
+  // median) but closed the same day as everyone else. F sits closest of all
+  // to the median but closed 24 months earlier. Same set, only the as-of
+  // date changes which one is "worst."
+  const comps = [
+    { key: 'A', closePrice: 500_000, closeDate: '2026-06-01' },
+    { key: 'B', closePrice: 505_000, closeDate: '2026-06-01' },
+    { key: 'C', closePrice: 495_000, closeDate: '2026-06-01' },
+    { key: 'D', closePrice: 510_000, closeDate: '2026-06-01' },
+    { key: 'E', closePrice: 560_000, closeDate: '2026-06-01' },
+    { key: 'F', closePrice: 502_000, closeDate: '2024-06-01' },
+  ]
+
+  it('drops the price outlier when no as-of date is given (no staleness penalty)', () => {
+    const kept = keepTightestByClosePrice(comps, 5)
+    expect(kept.map((c) => c.key).sort()).toEqual(['A', 'B', 'C', 'D', 'F'])
+  })
+
+  it('drops the stale close instead once an as-of date makes it 24 months old', () => {
+    // Same six comps, a CMA as-of date close to the fresh five. F is now
+    // measured against THAT date, not real-world today, so it reads as
+    // ~24 months stale and loses its slot to E instead.
+    const kept = keepTightestByClosePrice(comps, 5, '2026-06-15')
+    expect(kept.map((c) => c.key).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
   })
 })

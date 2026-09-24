@@ -193,8 +193,27 @@ type MatrixDecisions = {
   cityPresetKeys: Set<string>
 }
 
+/**
+ * In-flight dedupe for the data-cache read. React `cache()` does not dedupe
+ * inside unstable_cache's revalidation context (see
+ * getMatrixCityPresetDecisionSet), and app/sitemap.ts now starts its
+ * matrix-decision and search-matrix legs together, so two concurrent misses
+ * would each assemble the matrix (~8-18s of listing_search_mv paging apiece).
+ * One promise per process while it is pending; cleared when it settles so
+ * the data cache's own TTL still decides freshness.
+ */
+let inflightSerializedMatrix: Promise<SerializedMatrix | null> | null = null
+function readSerializedMatrixOnce(): Promise<SerializedMatrix | null> {
+  if (!inflightSerializedMatrix) {
+    inflightSerializedMatrix = cachedSerializedMatrix().finally(() => {
+      inflightSerializedMatrix = null
+    })
+  }
+  return inflightSerializedMatrix
+}
+
 const getSearchMatrix = cache(async (): Promise<MatrixDecisions | null> => {
-  const s = await cachedSerializedMatrix()
+  const s = await readSerializedMatrixOnce()
   if (!s) return null
   return {
     entries: s.entries,

@@ -76,6 +76,16 @@
   outline-offset: 2px;
 }
 
+/* The chart's metric switch ("Median sale price" / "Homes sold") is a control
+   too. The catalog draws it 2.25rem (36px) tall; the market-report, ZIP,
+   region and subdivision insights already raise it to the 44px tap floor
+   (ci:tap-targets failed /cities/bend on it, 2026-09-24). */
+.city-insight .insight-cards__chip,
+.city-insight .insight-cards__metric {
+  min-height: var(--v3-tap);
+  padding-inline: 0.8rem;
+}
+
 .city-insight .insight-cards__prose {
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-sm);

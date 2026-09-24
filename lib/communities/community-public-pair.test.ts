@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  communityPath,
   allowedCommunityUrlSlugs,
   communityPairAgrees,
   communityPublicPair,
@@ -10,6 +11,7 @@ import {
   slugifyCommunityName,
 } from './community-public-pair'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { isCanonicalCommunitySlug, resolveCanonicalCommunitySlug } from './canonical-community-slug'
 
 describe('community public pair — name and URL agree', () => {
   it('keeps matching label/slug communities on one live URL', () => {
@@ -65,5 +67,25 @@ describe('community public pair — name and URL agree', () => {
     expect(slugs).toContain('pronghorn')
     expect(slugs).toContain('juniper-preserve')
     expect(slugs).toContain('tetherow')
+  })
+})
+
+describe('communityPath — every registry key links the live door, never a redirect', () => {
+  it('sends the durable rebrand key to the public door', () => {
+    expect(communityPath('pronghorn')).toBe('/communities/juniper-preserve')
+    expect(communityPath('Juniper Preserve')).toBe('/communities/juniper-preserve')
+    expect(communityPath('tetherow')).toBe('/communities/tetherow')
+  })
+
+  it('no registry slug, label or alias resolves to a path the edge redirects', () => {
+    for (const entry of getAllResortCommunities()) {
+      const keys = [entry.slug, entry.label, ...(entry.subdivision_aliases ?? [])]
+      for (const key of keys) {
+        const path = communityPath(key)
+        const seg = path.replace(/^\/communities\//, '')
+        expect(resolveCanonicalCommunitySlug(seg), `${key} -> ${path}`).toBeNull()
+        expect(isCanonicalCommunitySlug(seg), `${key} -> ${path}`).toBe(true)
+      }
+    }
   })
 })

@@ -164,6 +164,7 @@ import {
   zipSearchHref,
   ZIP_PACE_KEYS_ON_THE_HUD,
 } from './_v3/zip-constants'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 type Params = { zip: string }
 
@@ -786,7 +787,7 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
             updated={hudAsOf ? v3Text(formatDate(hudAsOf)) : undefined}
             action={{
               label: v3Text('See the full market report'),
-              href: `/housing-market/${cacheCitySlug}`,
+              href: cityMarketPath(cacheCitySlug),
             }}
           />
         ) : (

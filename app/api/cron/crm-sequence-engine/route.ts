@@ -513,6 +513,14 @@ export async function GET(request: Request) {
               // ?_pid=/?agent= so the click stitches the site session.
               body = decorateOutboundText(body, { brokerSlug: mailbox.slug, personId: person.id, channel: 'sequence' })
               body = await instrumentSmsLinks(body, { personId: person.id, broker: mailbox.slug })
+              // Quiet hours again at the POST: the check above sits several awaits
+              // back, so the :58 run can pass it at 7:59pm and send after 8pm. Give
+              // the claim back, then reschedule exactly as the check above does.
+              if (inSmsQuietHours()) {
+                await releaseSend()
+                await finish({ next_run_at: nextSendWindow().toISOString() })
+                continue
+              }
               const sent = seqFrom
                 ? await sendSms({ from: seqFrom, to: toPhone, body })
                 : await sendSmsViaMessagingService({ to: toPhone, body })

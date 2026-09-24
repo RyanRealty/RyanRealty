@@ -4,6 +4,7 @@ import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects
 import { PRIMARY_CITIES } from '@/lib/data/geo/report-cities'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getIndexableOutOfAreaCities } from '@/lib/data/geo/getOutOfAreaCities'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 type ResortEntry = { slug: string; subdivision_aliases: string[] }
 
@@ -39,7 +40,7 @@ export async function buildWarmPaths(): Promise<string[]> {
 
   return [
     ...[...subdivisionSlugs].map((s) => `/subdivisions/${s}`),
-    ...communities.map((c) => `/communities/${c.slug}`),
+    ...communities.map((c) => communityPath(c.slug)),
     ...PRIMARY_CITIES.map((c) => `/cities/${slugify(c)}`),
     ...BEND_NEIGHBORHOOD_DISTRICTS.map((d) => `/cities/bend/${d.slug}`),
     ...oregonSlugs.map((s) => `/oregon/${s}`),

@@ -39,6 +39,17 @@ export const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
 export const DEFAULT_DRAFT_USER =
   process.env.GOOGLE_SERVICE_ACCOUNT_SUBJECT?.trim() || 'matt@ryan-realty.com'
 
+/** Deadline for the service-account token exchange, which normally takes well under a second. */
+export const GMAIL_AUTH_TIMEOUT_MS = 10_000
+
+/**
+ * Per-request deadline for drafts.create and messages.send. Generous, because a
+ * send cut short comes back unconfirmed; bounded, because auth plus one request
+ * (40 s at most) must leave the tightest caller, /api/cma/[slug]/gmail-draft
+ * (maxDuration 60), room for its PDF render and the Resend fallback.
+ */
+export const GMAIL_REQUEST_TIMEOUT_MS = 30_000
+
 export interface GmailDraftAttachment {
   filename: string
   content: Buffer
@@ -84,7 +95,28 @@ function buildJwt(subject: string, scopes: string[] = [GMAIL_DRAFT_SCOPE]) {
     key: privateKey.replace(/\\n/g, '\n'),
     scopes,
     subject,
+    // google-auth-library gives the token request no timeout of its own, so a
+    // stalled token endpoint would hold it open forever. Gmail calls set their own.
+    transporterOptions: { timeout: GMAIL_AUTH_TIMEOUT_MS },
   })
+}
+
+/**
+ * Reject when `work` has not settled within `ms`. The timer is always cleared,
+ * so a fast call leaves nothing ticking.
+ */
+function withDeadline<T>(work: Promise<T>, ms: number, what: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} timed out after ${ms / 1000}s`)), ms)
+  })
+  return Promise.race([work, deadline]).finally(() => clearTimeout(timer))
+}
+
+/** The HTTP status Gmail answered with, or null when no answer came back (timeout, dropped connection). */
+function answeredStatus(e: unknown): number | null {
+  const status = (e as { response?: { status?: unknown } } | null)?.response?.status
+  return typeof status === 'number' ? status : null
 }
 
 /** RFC 2047 encode a header value only if it contains non-ASCII. */
@@ -192,7 +224,7 @@ export async function createGmailDraft(
   }
 
   try {
-    await jwt.authorize()
+    await withDeadline(jwt.authorize(), GMAIL_AUTH_TIMEOUT_MS, 'Gmail auth')
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     const scopeIssue = /unauthorized_client|invalid_grant|insufficient|access_denied/i.test(msg)
@@ -206,7 +238,7 @@ export async function createGmailDraft(
   }
 
   try {
-    const gmail = google.gmail({ version: 'v1', auth: jwt })
+    const gmail = google.gmail({ version: 'v1', auth: jwt, timeout: GMAIL_REQUEST_TIMEOUT_MS })
     const raw = toBase64Url(buildMimeMessage(params, from))
     const res = await gmail.users.drafts.create({
       userId: 'me',
@@ -236,6 +268,13 @@ export interface GmailSendResult {
   threadId?: string
   error?: string
   hint?: string
+  /**
+   * messages.send went out and Gmail never answered (timeout, dropped
+   * connection), so the message may have been delivered. The caller must NOT
+   * fall back to another rail, which could deliver it twice; `error` tells the
+   * broker to check Sent first.
+   */
+  unconfirmed?: boolean
 }
 
 /**
@@ -250,6 +289,8 @@ export interface GmailSendResult {
  * Auth: same service account as createGmailDraft, but requests gmail.send (also in
  * the DWD allowlist, verified 2026-05-14). Returns { ok:false, error, hint } on
  * auth/scope failure so callers can fall back to another delivery path (e.g. Resend).
+ * A send Gmail never answered comes back { ok:false, unconfirmed:true } instead:
+ * it may have gone out, so the caller must not fall back.
  */
 export async function sendGmailMessage(
   params: CreateGmailDraftParams,
@@ -263,7 +304,7 @@ export async function sendGmailMessage(
   }
 
   try {
-    await jwt.authorize()
+    await withDeadline(jwt.authorize(), GMAIL_AUTH_TIMEOUT_MS, 'Gmail auth')
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     const scopeIssue = /unauthorized_client|invalid_grant|insufficient|access_denied/i.test(msg)
@@ -276,8 +317,10 @@ export async function sendGmailMessage(
     }
   }
 
+  // Nothing has gone to Gmail yet, so a failure building the message is safe
+  // for the caller to fall back from.
+  let raw: string
   try {
-    const gmail = google.gmail({ version: 'v1', auth: jwt })
     let sendParams = params
     if (params.bodyHtml) {
       const { instrumentLeadHtml } = await import('@/lib/email/auto-track')
@@ -292,7 +335,15 @@ export async function sendGmailMessage(
         }),
       }
     }
-    const raw = toBase64Url(buildMimeMessage(sendParams, from))
+    raw = toBase64Url(buildMimeMessage(sendParams, from))
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+
+  try {
+    // gaxios never re-sends a POST (its retry covers GET/HEAD/PUT/OPTIONS/DELETE),
+    // so this is exactly one send attempt.
+    const gmail = google.gmail({ version: 'v1', auth: jwt, timeout: GMAIL_REQUEST_TIMEOUT_MS })
     const res = await gmail.users.messages.send({
       userId: 'me',
       requestBody: { raw },
@@ -304,6 +355,15 @@ export async function sendGmailMessage(
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
+    if (answeredStatus(e) == null) {
+      // The request left and no answer came back: Gmail may have sent it.
+      return {
+        ok: false,
+        unconfirmed: true,
+        error: `Gmail did not confirm the send from ${from} (${msg.replace(/\.$/, '')}). It may have gone out, so check Sent in that mailbox before sending again.`,
+      }
+    }
+    // Gmail answered with an error status: it refused the message, nothing went out.
     const scopeIssue = /insufficient|scope|forbidden|403/i.test(msg)
     return {
       ok: false,

@@ -65,6 +65,14 @@ export async function sendGovernedGroupMms(
     personId: req.primaryPersonId,
     broker: slug,
   })
+  // Quiet hours again at the POST: the guards above can pass at 7:59pm and the
+  // send land after 8pm. Suppression was read per member; only the clock moves.
+  const late = await checkSendGuards(req.primaryPersonId, 'sms', {
+    overrideQuietHours: req.overrideQuietHours,
+    source: req.purpose,
+    skipSuppression: true,
+  })
+  if (late) return late
   const group = await sendGroupMms({
     projectedAddress: req.projectedAddress,
     participants: req.members.map((m) => m.phone),

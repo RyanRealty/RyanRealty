@@ -43,14 +43,16 @@
  *
  * Pure and edge-safe: registry JSON + a constants module + string ops, no
  * Supabase, no server-only, so search metadata, the sitemap and place pages
- * can all read it. Membership is derived, nothing is hand-listed.
+ * can all read it. Membership is derived, nothing is hand-listed; the one
+ * override is the registry's own `self_city` field, which carries evidence.
  */
 
 import resortRegistry from '@/data/resort-communities.json'
 import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
 import { homesForSalePath } from '@/lib/slug'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
-type RegistryEntry = { slug: string; city_slug: string }
+type RegistryEntry = { slug: string; city_slug: string; self_city?: boolean }
 
 function registryEntries(): RegistryEntry[] {
   const raw = resortRegistry as unknown
@@ -66,8 +68,15 @@ function norm(slug: string | null | undefined): string {
   return (slug ?? '').trim().toLowerCase()
 }
 
-/** True when a registry entry is its own city: the registry says so, or its slug is a site city slug. */
+/**
+ * True when a registry entry is its own city: the registry says so, or its
+ * slug is a site city slug. An explicit `self_city` on the registry entry
+ * overrides the derivation either way (2026-09-24: Crooked River Ranch
+ * matched by slug, but MLS files its homes under Terrebonne / Crooked River,
+ * so it carries `self_city: false` with its evidence).
+ */
 function isOwnCity(e: RegistryEntry): boolean {
+  if (typeof e.self_city === 'boolean') return e.self_city
   const slug = norm(e.slug)
   return slug === norm(e.city_slug) || CENTRAL_OREGON_CITY_SLUGS.has(slug)
 }
@@ -96,7 +105,7 @@ export function isSelfCityCommunity(communitySlug: string | null | undefined): b
 /** `/communities/<slug>` for a self-city city slug, else null. */
 export function selfCityCommunityPath(citySlug: string | null | undefined): string | null {
   const slug = selfCityCommunitySlug(citySlug)
-  return slug ? `/communities/${slug}` : null
+  return slug ? communityPath(slug) : null
 }
 
 /**

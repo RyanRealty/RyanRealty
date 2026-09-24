@@ -342,7 +342,14 @@ function saleKey(comp: { address: string; city?: string | null; closePrice: numb
 
 export async function selectComps(
   subject: CmaSubject,
-  opts: { subjectIrrigation?: IrrigationClass | null; subjectZoning?: string | null } = {},
+  opts: {
+    subjectIrrigation?: IrrigationClass | null
+    subjectZoning?: string | null
+    /** The CMA's own as-of date (lib/pricing/select.ts threads this through
+     *  from selectCompsPreferringFacts). Undefined keeps keepTightestByClosePrice's
+     *  no-asOf behavior (no staleness penalty) rather than assuming today. */
+    asOf?: string
+  } = {},
 ): Promise<CompSelection> {
   const sqft = subject.sqft ?? 0
   // Land is priced per ACRE, not per square foot, so a land subject legitimately
@@ -1125,7 +1132,7 @@ export async function selectComps(
   // does not get to set the range.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
-  comps = keepTightestByClosePrice(comps, MAX_COMPS)
+  comps = keepTightestByClosePrice(comps, MAX_COMPS, opts.asOf)
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
 
