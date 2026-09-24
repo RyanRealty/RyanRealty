@@ -23,6 +23,11 @@
       "url": "/cities/bend"
     },
     {
+      "key": "commercial-space-for-lease",
+      "route": "app/commercial-space-for-lease/page.tsx",
+      "url": "/commercial-space-for-lease"
+    },
+    {
       "key": "community",
       "route": "app/communities/[slug]/page.tsx",
       "url": "/communities/tetherow"

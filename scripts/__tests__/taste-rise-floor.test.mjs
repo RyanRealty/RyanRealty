@@ -23,6 +23,20 @@ describe('taste-rise-floor — the floor is measured, not typed', () => {
     expect(riseFloorBasis(loud, { n: 5000 }).q95).toBeGreaterThan(6)
   })
 
+  it("pools only the rows the table's own judge scored", () => {
+    const rows = Array.from({ length: 9 }, (_, i) => ({ key: `g${i}`, median: 50, scores: [49, 50, 51] }))
+    const table = {
+      instrument: { evaluatorModel: 'grok-4.6' },
+      rows: [...rows, { key: 'late', median: 54, scores: [40, 54, 70], evaluatorModel: 'claude-sonnet-5' }],
+    }
+    const basis = riseFloorBasis(table, { n: 5000 })
+    expect(basis.classes).toBe(9)
+    expect(basis.residuals).toBe(27)
+    // No single judge on record: every row is pooled.
+    expect(riseFloorBasis({ rows: table.rows }, { n: 5000 }).classes).toBe(10)
+    expect(riseFloorBasis({ ...table, instrument: { evaluatorModel: 'mixed' } }, { n: 5000 }).classes).toBe(10)
+  })
+
   it('refuses a table too thin to measure', () => {
     expect(() => riseFloorBasis({ rows: [{ key: 'a', median: 1, scores: [1, 1, 1] }] })).toThrow(/residuals/)
   })
