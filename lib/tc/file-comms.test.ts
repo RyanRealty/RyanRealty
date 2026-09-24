@@ -37,6 +37,14 @@ describe('pickDealForComms', () => {
     expect(pickDealForComms([], 'x')).toBeNull()
   })
 
+  it('files nowhere when several live deals tie on a message that names none', () => {
+    expect(pickDealForComms([impala, beaumont], 'Checking in')).toBeNull()
+  })
+
+  it('a bare house number is not a street match', () => {
+    expect(scoreDealHaystack('3480 SW 45th Street, Redmond, OR, 97756', 'invoice 3480 due')).toBe(1)
+  })
+
   it('needs house number plus street before an address-only fallback should fire (score >= 2)', () => {
     expect(scoreDealHaystack(beaumont.address, '20702 Beaumont title report')).toBeGreaterThanOrEqual(2)
     expect(scoreDealHaystack(beaumont.address, 'hello there')).toBe(0)

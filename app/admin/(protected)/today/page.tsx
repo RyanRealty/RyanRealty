@@ -19,7 +19,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { todayInboundYesEnabled } from '@/lib/crm/today-inbound-draft'
 import { Button, QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import { getClosingsBoard, incompleteInFlight } from '@/lib/data/tc/closings'
-import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
+import { countMailQueue } from '@/lib/data/tc/mail-reads'
+import { BROKER_FILE_EMAIL, dealVisibleToBroker, fileNameFromBrokerSlug } from '@/lib/tc/deal-scope'
 import { getPrincipalSignOffQueue } from '@/lib/data'
 import {
   confirmParkedStepToday,
@@ -93,19 +94,24 @@ export default async function TodayPage() {
   const ctx = await requireAdminPage('today.view')
   const brokerScope = scopeBroker(ctx)
   const nowMs = Date.now()
+  // Same mailbox scoping as app/actions/tc-mail.ts ctxForEdit(): superuser
+  // reads every mailbox, a broker only their own, unmapped brokers see none.
+  const mailbox = ctx.role === 'superuser' ? null : BROKER_FILE_EMAIL[fileNameFromBrokerSlug(ctx.brokerSlug) ?? ''] ?? '__none__'
 
-  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne, join, closings, signOff] = await Promise.all([
-    getInboundTriage(brokerScope),
-    getLookingAtNow(brokerScope),
-    getBrokerActionQueue({ brokerSlug: brokerScope }),
-    getTaskQueue({ brokerScope, view: 'today' }),
-    listCmasForAdmin({ limit: 50, offset: 0, brokerSlug: brokerScope }),
-    readyApprovals(),
-    getDayOneChecklist(ctx),
-    getJoinConversionStats(),
-    getClosingsBoard(),
-    getPrincipalSignOffQueue(),
-  ])
+  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne, join, closings, signOff, mailQueueCount] =
+    await Promise.all([
+      getInboundTriage(brokerScope),
+      getLookingAtNow(brokerScope),
+      getBrokerActionQueue({ brokerSlug: brokerScope }),
+      getTaskQueue({ brokerScope, view: 'today' }),
+      listCmasForAdmin({ limit: 50, offset: 0, brokerSlug: brokerScope }),
+      readyApprovals(),
+      getDayOneChecklist(ctx),
+      getJoinConversionStats(),
+      getClosingsBoard(),
+      getPrincipalSignOffQueue(),
+      countMailQueue(mailbox),
+    ])
   const tcIncomplete = incompleteInFlight(
     closings.deals.filter((d) =>
       dealVisibleToBroker({ role: ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName: d.brokerName }),
@@ -132,7 +138,8 @@ export default async function TodayPage() {
     approvals.length +
     dueTasks.length +
     tcIncomplete.length +
-    (signOff.authorized ? signOff.totalItems : 0)
+    (signOff.authorized ? signOff.totalItems : 0) +
+    mailQueueCount
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -211,6 +218,25 @@ export default async function TodayPage() {
                 }
               />
             ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {mailQueueCount > 0 ? (
+        <section aria-label="Mail to file">
+          <SectionHead>Mail to file</SectionHead>
+          <ul className="av2-queue">
+            <QueueRow
+              kind="Mail"
+              kindTone="waiting"
+              title="Mail to file"
+              context={`${mailQueueCount} email${mailQueueCount === 1 ? '' : 's'} the auto-filer could not place.`}
+              action={
+                <Link href="/admin/closings/mail">
+                  <Button variant="quiet">Review</Button>
+                </Link>
+              }
+            />
           </ul>
         </section>
       ) : null}

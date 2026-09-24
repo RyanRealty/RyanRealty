@@ -13,6 +13,12 @@ const offer = (over: Partial<DealOffer> = {}): DealOffer => ({
   contingencies: 'Inspection',
   status: 'received',
   submittedAt: '2026-08-20',
+  source: 'manual',
+  buyerAgentEmail: null,
+  documentId: null,
+  repliedAt: null,
+  presentedToSellerAt: null,
+  lastCounterAt: null,
   ...over,
 })
 

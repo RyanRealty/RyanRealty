@@ -42,6 +42,10 @@ export type TcDocument = {
   archived_at: string | null
   is_broker_notes: boolean
   classification: Record<string, unknown>
+  /** Shows on the client's own file page (app/actions/tc-client-share.ts). */
+  client_visible: boolean
+  /** The copy that replaced this archived one (lib/tc/doc-read lineage). */
+  superseded_by: string | null
   /** Short-lived signed URLs for hover preview (first page / last page). */
   thumbFirstUrl: string | null
   thumbLastUrl: string | null
@@ -131,18 +135,29 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
     .order('created_at', { ascending: true })
 
   const cycleIds = (cycles ?? []).map((c) => c.id)
-  const [{ data: docs }, { data: items }, { data: assignments }, { data: events }] = await Promise.all([
+  const [{ data: docs }, { data: items }, { data: events }] = await Promise.all([
     cycleIds.length
       ? supabase.from('tc_documents').select('*').in('cycle_id', cycleIds).order('source_uploaded_at', { ascending: false })
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
     cycleIds.length
       ? supabase.from('tc_checklist_items').select('*').in('cycle_id', cycleIds).order('sort_order', { ascending: true })
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
-    cycleIds.length
-      ? supabase.from('tc_checklist_assignments').select('item_id, document_id')
-      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
-    supabase.from('tc_events').select('id, actor, action, detail, created_at').eq('deal_id', deal.id).order('id', { ascending: false }).limit(15),
+    // Filed mail and texts have their own section (the mail index); the
+    // activity feed keeps the file's own actions readable.
+    supabase
+      .from('tc_events')
+      .select('id, actor, action, detail, created_at')
+      .eq('deal_id', deal.id)
+      .not('action', 'in', '(mail_filed,sms_filed)')
+      .order('id', { ascending: false })
+      .limit(15),
   ])
+  // Only this deal's rows: an unfiltered read capped at 1,000 silently dropped
+  // assignments once the table grew.
+  const itemIds = ((items ?? []) as Array<{ id: string }>).map((i) => i.id)
+  const { data: assignments } = itemIds.length
+    ? await supabase.from('tc_checklist_assignments').select('item_id, document_id').in('item_id', itemIds)
+    : { data: [] as Record<string, unknown>[] }
 
   const assignmentsByItem = new Map<string, string[]>()
   for (const a of (assignments ?? []) as Array<{ item_id: string; document_id: string }>) {
@@ -210,6 +225,8 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
           archived_at: doc.archived_at,
           is_broker_notes: doc.is_broker_notes,
           classification: doc.classification ?? {},
+          client_visible: doc.client_visible ?? false,
+          superseded_by: (doc.superseded_by as string | null) ?? null,
           thumbFirstUrl: thumbUrlByPath.get(`tc-thumbs/${doc.id}__p1.jpg`) ?? null,
           thumbLastUrl: thumbUrlByPath.get(`tc-thumbs/${doc.id}__plast.jpg`) ?? null,
         })),

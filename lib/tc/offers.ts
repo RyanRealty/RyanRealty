@@ -34,6 +34,15 @@ export type DealOffer = {
   contingencies: string | null
   status: OfferStatus
   submittedAt: string | null
+  /** 'manual' (typed in by a broker) or 'mail' / 'mailbox_harvest' (auto-filed
+   *  from the mail index — offerFollowUpLabel in lib/tc/mail-view.ts reads this). */
+  source: string
+  buyerAgentEmail: string | null
+  /** Filed source document for this offer/counter, when the mail index linked one. */
+  documentId: string | null
+  repliedAt: string | null
+  presentedToSellerAt: string | null
+  lastCounterAt: string | null
 }
 
 export const OFFER_COMPARE_ROWS = [
