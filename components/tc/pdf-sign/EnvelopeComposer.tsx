@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { applyPacketSectionText } from '@/app/actions/tc-envelope-text'
 import { areaSpace, layoutAreaText, type AreaLayout } from '@/lib/tc/text-areas'
@@ -21,6 +24,7 @@ import {
   voidEnvelope,
   setEnvelopeReminders,
   setEnvelopeInviteMessage,
+  setEnvelopeTextCode,
   resendRecipientInvite,
   type EnvelopeDetail,
   type RecipientInput,
@@ -39,12 +43,30 @@ import {
   coerceActionRequired,
   recipientRoleLabel,
   signingGroupLabel,
+  normalizeSignerPhone,
   type ActionRequired,
+  type FieldGroup,
   type SignFieldType,
+  type SignFieldValue,
 } from '@/lib/tc/signing'
 import { SIGNER_COMPLETED_TYPES } from '@/lib/tc/required-fields'
+import {
+  ANNOTATION_TYPES,
+  AUTO_STAMPED_TYPES,
+  FILLABLE_TYPES,
+  SIGNER_ONLY_TYPES,
+  dateValue,
+  groupFromRule,
+  groupRule,
+  groupRuleText,
+  timeValue,
+  valueText,
+  type GroupRule,
+} from '@/lib/tc/field-rules'
 
 type LocalField = FieldInput & { localId: string; fieldId?: string }
+/** "Assign to" value for a field the broker fills: it prints locked, as set. */
+const ME = '__me__'
 type Section = EnvelopeDetail['sections'][number]
 const sectionId = (s: { documentId: string; key: string }) => `${s.documentId}|${s.key}`
 
@@ -73,6 +95,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       name: r.name,
       email: r.email,
       signingOrder: r.signingOrder,
+      phone: r.phone ?? '',
     }))
   )
   const [fields, setFields] = useState<LocalField[]>(
@@ -89,12 +112,18 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       h: f.h,
       required: f.required,
       value: f.value,
+      label: f.label ?? null,
+      group: f.group ?? null,
     }))
   )
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(
     detail.recipients.find((r) => isSignableRole(r.role, r.actionRequired))?.id ?? null
   )
   const [activeType, setActiveType] = useState<SignFieldType>('signature')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [requireTextCode, setRequireTextCode] = useState(detail.requireTextCode)
+  const assigningToMe = activeRecipientId === ME
+  const selected = fields.find((f) => f.localId === selectedId) ?? null
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [remindersEnabled, setRemindersEnabled] = useState(detail.remindersEnabled !== false)
@@ -195,6 +224,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         name: r.name,
         email: r.email,
         signingOrder: r.signingOrder,
+        phone: r.phone ?? '',
       }))
     )
     if (!activeRecipientId) {
@@ -206,13 +236,17 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   // --- field placement ---
   function placeField(documentId: string, page: number, xFrac: number, yFrac: number) {
     if (readonly || !activeRecipientId) return
+    if (assigningToMe && SIGNER_ONLY_TYPES.has(activeType)) return
     const size = DEFAULT_FIELD_SIZE[activeType]
+    const localId = crypto.randomUUID()
+    // The new field opens its panel, so a value or a rule is set right away.
+    setSelectedId(localId)
     setFields((fs) => [
       ...fs,
       {
-        localId: crypto.randomUUID(),
+        localId,
         documentId,
-        recipientId: activeRecipientId,
+        recipientId: assigningToMe ? null : activeRecipientId,
         type: activeType,
         page,
         x: Math.max(0, Math.min(1 - size.w, xFrac - size.w / 2)),
@@ -226,6 +260,22 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   }
   function deleteField(localId: string) {
     setFields((fs) => fs.filter((f) => f.localId !== localId))
+    if (selectedId === localId) setSelectedId(null)
+  }
+  function patchField(localId: string, patch: Partial<LocalField>) {
+    setFields((fs) => fs.map((f) => (f.localId === localId ? { ...f, ...patch } : f)))
+  }
+  /** One rule for every box in a group. */
+  function setGroupRule(key: string, rule: GroupRule) {
+    const group = groupFromRule(key, rule)
+    setFields((fs) => fs.map((f) => (f.group?.key === key ? { ...f, group } : f)))
+  }
+  const groups: FieldGroup[] = [...new Map(fields.filter((f) => f.group?.key).map((f) => [f.group!.key, f.group!])).values()].sort((a, b) =>
+    a.key.localeCompare(b.key)
+  )
+  function pickAssignee(value: string) {
+    setActiveRecipientId(value)
+    if (value === ME && SIGNER_ONLY_TYPES.has(activeType)) setActiveType('text')
   }
 
   async function saveDraft(): Promise<boolean> {
@@ -233,6 +283,13 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     if (!opt.ok) {
       setStatus(opt.error ?? 'Could not save reminders')
       return false
+    }
+    if (requireTextCode !== detail.requireTextCode) {
+      const code = await setEnvelopeTextCode(detail.id, requireTextCode)
+      if (!code.ok) {
+        setStatus(code.error ?? 'Could not save the text code setting')
+        return false
+      }
     }
     const msg = await setEnvelopeInviteMessage(detail.id, { subject: inviteSubject, body: inviteBody })
     if (!msg.ok) {
@@ -252,6 +309,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         name: r.name,
         email: r.email,
         signingOrder: r.signingOrder,
+        phone: r.phone ?? '',
       }))
     )
     const fieldPayload: FieldInput[] = fields.map((f) => ({
@@ -265,6 +323,8 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       h: f.h,
       required: f.required,
       value: f.value ?? null,
+      label: f.label ?? null,
+      group: f.group ?? null,
     }))
     const fRes = await saveEnvelopeFields(detail.id, fieldPayload)
     if (!fRes.ok) {
@@ -356,6 +416,8 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                         size={size}
                         color={colorOf(f.recipientId)}
                         readonly={readonly}
+                        selected={selectedId === f.localId}
+                        onSelect={() => setSelectedId(f.localId)}
                         clickThrough={
                           (activeType === 'signature' || activeType === 'initials') &&
                           f.type !== 'signature' &&
@@ -466,6 +528,24 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                   onChange={(e) => updateRecipient(i, { name: e.target.value })} />
                 <Input className="mt-1.5 h-8 text-xs" placeholder="email@example.com" value={r.email} disabled={readonly}
                   onChange={(e) => updateRecipient(i, { email: e.target.value })} />
+                {requireTextCode && isSignableRole(r.role, r.actionRequired) ? (
+                  <>
+                    <Input
+                      className="mt-1.5 h-8 text-xs"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="off"
+                      placeholder="Mobile, for the text code"
+                      aria-label={`Mobile for ${r.name || recipientRoleLabel(r.role)}`}
+                      value={r.phone ?? ''}
+                      disabled={readonly}
+                      onChange={(e) => updateRecipient(i, { phone: e.target.value })}
+                    />
+                    {r.phone && !normalizeSignerPhone(r.phone) ? (
+                      <p className="mt-1 text-[11px] text-foreground">Enter a 10-digit US mobile.</p>
+                    ) : null}
+                  </>
+                ) : null}
                 {isSignableRole(r.role, r.actionRequired) ? (
                   <div className="mt-1.5 flex items-center gap-2">
                     <Label className="text-[11px] text-muted-foreground">{signingGroupLabel(r.signingOrder)}</Label>
@@ -501,11 +581,14 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             <CardContent className="space-y-3">
               <div>
                 <Label className="text-[11px] text-muted-foreground">Assign to</Label>
-                <Select value={activeRecipientId ?? ''} onValueChange={setActiveRecipientId}>
+                <Select value={activeRecipientId ?? ''} onValueChange={pickAssignee}>
                   <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder={savedSignable.length ? 'Pick a signer' : 'Save recipients first'} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={ME} className="text-xs">
+                      Me (I fill it, it prints locked)
+                    </SelectItem>
                     {savedSignable.map((r) => (
                       <SelectItem key={r.id} value={r.id!} className="text-xs">
                         {r.name || recipientRoleLabel(r.role)}
@@ -517,19 +600,33 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               <div>
                 <Label className="text-[11px] text-muted-foreground">Field type</Label>
                 <div className="mt-1 grid grid-cols-2 gap-1.5">
-                  {SIGN_FIELD_TYPES.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setActiveType(t)}
-                      className={`rounded-md border px-2 py-1.5 text-xs ${activeType === t ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
-                    >
-                      {SIGN_FIELD_LABEL[t]}
-                    </button>
-                  ))}
+                  {SIGN_FIELD_TYPES.map((t) => {
+                    const off = assigningToMe && SIGNER_ONLY_TYPES.has(t)
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        disabled={off}
+                        title={off ? 'Only a signer can complete this' : undefined}
+                        onClick={() => setActiveType(t)}
+                        className={cn(
+                          'rounded-md border px-2 py-1.5 text-xs',
+                          activeType === t ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground',
+                          off && 'cursor-not-allowed opacity-40'
+                        )}
+                      >
+                        {SIGN_FIELD_LABEL[t]}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                {activeRecipientId ? 'Click on the document to drop a field. Drag to move, hover to delete.' : 'Save recipients, then pick who signs to start placing fields.'}
+                {activeRecipientId
+                  ? assigningToMe
+                    ? 'Click on the document to drop a field you fill. It prints as you set it and no signer can change it, unless you let one.'
+                    : 'Click on the document to drop a field. Click a field to set it up, drag to move.'
+                  : 'Save recipients, then pick who fills it to start placing fields.'}
               </p>
               {detail.formRead && detail.requiredSignersLabel ? (
                 <p className="text-[11px] text-foreground">
@@ -546,6 +643,19 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               )}
             </CardContent>
           </Card>
+        ) : null}
+
+        {!readonly && selected ? (
+          <FieldPanel
+            key={selected.localId}
+            field={selected}
+            signers={savedSignable.map((r) => ({ id: r.id!, name: r.name || recipientRoleLabel(r.role) }))}
+            groups={groups}
+            onChange={(patch) => patchField(selected.localId, patch)}
+            onGroupRule={setGroupRule}
+            onDelete={() => deleteField(selected.localId)}
+            onClose={() => setSelectedId(null)}
+          />
         ) : null}
 
         <Card>
@@ -575,6 +685,18 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               />
               <span>Enable automatic reminders on this envelope.</span>
             </label>
+            <div className="flex items-start justify-between gap-3">
+              <Label htmlFor="require-text-code" className="text-xs font-normal leading-snug text-muted-foreground">
+                Text each signer a code before the documents open.
+                {!detail.textCodesAvailable && !requireTextCode ? ' Not set up on this site yet.' : ''}
+              </Label>
+              <Switch
+                id="require-text-code"
+                checked={requireTextCode}
+                disabled={readonly || (!detail.textCodesAvailable && !requireTextCode)}
+                onCheckedChange={setRequireTextCode}
+              />
+            </div>
             {!readonly ? (
               <div className="space-y-2">
                 <Label className="text-[11px] text-muted-foreground">Outgoing email subject</Label>
@@ -645,6 +767,8 @@ function FieldChip({
   size,
   color,
   readonly,
+  selected = false,
+  onSelect,
   clickThrough = false,
   onDelete,
   onMove,
@@ -654,6 +778,8 @@ function FieldChip({
   size: { w: number; h: number }
   color: string
   readonly: boolean
+  selected?: boolean
+  onSelect?: () => void
   clickThrough?: boolean
   onDelete: () => void
   onMove: (xFrac: number, yFrac: number) => void
@@ -672,23 +798,28 @@ function FieldChip({
     boxSizing: 'border-box',
   }
   const shownText =
-    field.value && 'text' in field.value && field.value.text ? field.value.text : ''
+    field.type === 'checkbox'
+      ? field.value?.kind === 'checkbox' && field.value.checked
+        ? '✓'
+        : ''
+      : valueText(field.value)
   const emptyText = field.type === 'text' && !shownText
   const tall = field.h > 0.03
+  const mine = !field.recipientId && FILLABLE_TYPES.has(field.type)
   return (
     <div
       data-field-chip
       style={style}
-      className={`group flex rounded-sm border-2 text-[10px] font-semibold ${
-        emptyText
-          ? 'items-center border-dashed bg-white/15'
-          : tall
-            ? 'items-start bg-white/70'
-            : 'items-center justify-center bg-white/70'
-      }`}
+      className={cn(
+        'group flex rounded-sm border-2 text-[10px] font-semibold',
+        emptyText ? 'items-center border-dashed bg-white/15' : tall ? 'items-start bg-white/70' : 'items-center justify-center bg-white/70',
+        selected && 'ring-2 ring-ring ring-offset-1'
+      )}
+      title={field.label ?? undefined}
       onPointerDown={(e) => {
         if (readonly) return
         e.stopPropagation()
+        onSelect?.()
         const parent = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect()
         const box = e.currentTarget.getBoundingClientRect()
         dragRef.current = { localId: field.localId, offsetX: e.clientX - box.left, offsetY: e.clientY - box.top }
@@ -714,8 +845,9 @@ function FieldChip({
       <span
         className={`pointer-events-none px-0.5 ${tall ? 'whitespace-pre-wrap break-words' : 'truncate whitespace-nowrap'}`}
       >
-        {emptyText ? '' : shownText || SIGN_FIELD_LABEL[field.type]}
+        {emptyText ? '' : shownText || (field.type === 'checkbox' ? '' : SIGN_FIELD_LABEL[field.type])}
       </span>
+      {mine ? <Lock aria-label="Prints as you set it" className="pointer-events-none absolute bottom-0 right-0 h-2.5 w-2.5 opacity-70" /> : null}
       {!readonly ? (
         <button
           onClick={(e) => {
@@ -728,6 +860,252 @@ function FieldChip({
         </button>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * The selected field: who fills it, its value, and the rules a signer meets.
+ * Matt 2026-09-24: a field you fill is locked, with a per-field switch that
+ * lets a signer change it (your value is then where they start).
+ */
+function FieldPanel({
+  field,
+  signers,
+  groups,
+  onChange,
+  onGroupRule,
+  onDelete,
+  onClose,
+}: {
+  field: LocalField
+  signers: Array<{ id: string; name: string }>
+  groups: FieldGroup[]
+  onChange: (patch: Partial<LocalField>) => void
+  onGroupRule: (key: string, rule: GroupRule) => void
+  onDelete: () => void
+  onClose: () => void
+}) {
+  const fillable = FILLABLE_TYPES.has(field.type)
+  const signerOnly = SIGNER_ONLY_TYPES.has(field.type)
+  const annotation = ANNOTATION_TYPES.has(field.type)
+  const assigned = Boolean(field.recipientId)
+  const rule = field.group ? groupRule(field.group) : null
+  const groupKeys = groups.map((g) => g.key)
+  const nextGroupKey = (() => {
+    for (let i = 0; i < 26 * 4; i++) {
+      const key = `Group ${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) + 1 : ''}`
+      if (!groupKeys.includes(key)) return key
+    }
+    return `Group ${groupKeys.length + 1}`
+  })()
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between text-sm">
+          {SIGN_FIELD_LABEL[field.type]} · page {field.page}
+          <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onClose}>
+            Done
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {annotation ? (
+          <p className="text-[11px] text-muted-foreground">A mark on the page. It prints as placed and asks nothing of a signer.</p>
+        ) : null}
+
+        {signerOnly ? (
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">
+              {AUTO_STAMPED_TYPES.has(field.type) ? 'Stamped for' : 'Completed by'}
+            </Label>
+            <Select value={field.recipientId ?? ''} onValueChange={(v) => onChange({ recipientId: v })}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick a signer" /></SelectTrigger>
+              <SelectContent>
+                {signers.map((r) => (
+                  <SelectItem key={r.id} value={r.id} className="text-xs">{r.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              {AUTO_STAMPED_TYPES.has(field.type)
+                ? 'Filled automatically when they sign, from our clock and their name.'
+                : 'Only the signer can complete this.'}
+            </p>
+          </div>
+        ) : null}
+
+        {fillable ? (
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="field-value" className="text-[11px] text-muted-foreground">
+                {assigned ? 'Starting value (the signer can change it)' : 'Your value (prints locked)'}
+              </Label>
+              <FieldValueEditor field={field} onChange={(value) => onChange({ value })} />
+            </div>
+
+            <div className="flex items-start justify-between gap-3">
+              <Label htmlFor="field-signer-edits" className="text-xs font-normal leading-snug">
+                Let a signer change it
+              </Label>
+              <Switch
+                id="field-signer-edits"
+                checked={assigned}
+                disabled={!signers.length}
+                onCheckedChange={(on) =>
+                  onChange(on ? { recipientId: field.recipientId ?? signers[0]?.id ?? null } : { recipientId: null, group: null })
+                }
+              />
+            </div>
+            {assigned ? (
+              <Select value={field.recipientId ?? ''} onValueChange={(v) => onChange({ recipientId: v })}>
+                <SelectTrigger className="h-8 text-xs" aria-label="Signer who fills it"><SelectValue placeholder="Pick a signer" /></SelectTrigger>
+                <SelectContent>
+                  {signers.map((r) => (
+                    <SelectItem key={r.id} value={r.id} className="text-xs">{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+          </>
+        ) : null}
+
+        {!annotation && !AUTO_STAMPED_TYPES.has(field.type) ? (
+          <div className="flex items-start justify-between gap-3">
+            <Label htmlFor="field-required" className="text-xs font-normal leading-snug">
+              Required
+              <span className="block text-[11px] text-muted-foreground">
+                {assigned ? 'The signer cannot finish without it.' : 'You fill it before sending.'}
+              </span>
+            </Label>
+            <Switch id="field-required" checked={field.required === true} onCheckedChange={(on) => onChange({ required: on })} />
+          </div>
+        ) : null}
+
+        {assigned && !AUTO_STAMPED_TYPES.has(field.type) ? (
+          <div className="space-y-1">
+            <Label htmlFor="field-label" className="text-[11px] text-muted-foreground">What the signer sees</Label>
+            <Input
+              id="field-label"
+              className="h-8 text-xs"
+              maxLength={120}
+              placeholder={field.type === 'date' ? 'Possession date' : field.type === 'checkbox' ? 'Buyer waives inspection' : 'Describe what to enter'}
+              value={field.label ?? ''}
+              onChange={(e) => onChange({ label: e.target.value })}
+            />
+          </div>
+        ) : null}
+
+        {field.type === 'checkbox' && assigned ? (
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-muted-foreground">Linked boxes</Label>
+            <Select
+              value={field.group?.key ?? 'none'}
+              onValueChange={(v) => {
+                if (v === 'none') onChange({ group: null })
+                else if (v === 'new') onChange({ group: groupFromRule(nextGroupKey, { kind: 'exactly', n: 1 }) })
+                else {
+                  // Joining a group takes that group's rule.
+                  const other = groups.find((g) => g.key === v)
+                  if (other) onChange({ group: other })
+                }
+              }}
+            >
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none" className="text-xs">Not linked</SelectItem>
+                {groupKeys.map((k) => (
+                  <SelectItem key={k} value={k} className="text-xs">{k}</SelectItem>
+                ))}
+                <SelectItem value="new" className="text-xs">New group ({nextGroupKey})</SelectItem>
+              </SelectContent>
+            </Select>
+            {field.group && rule ? (
+              <div className="flex items-center gap-2">
+                <Select
+                  value={rule.kind}
+                  onValueChange={(k) => onGroupRule(field.group!.key, { kind: k as GroupRule['kind'], n: rule.n })}
+                >
+                  <SelectTrigger className="h-8 flex-1 text-xs" aria-label="Group rule"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="exactly" className="text-xs">Select exactly</SelectItem>
+                    <SelectItem value="at_least" className="text-xs">Select at least</SelectItem>
+                    <SelectItem value="at_most" className="text-xs">Select up to</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  min={rule.kind === 'at_least' ? 0 : 1}
+                  max={20}
+                  className="h-8 w-16 text-xs"
+                  aria-label="How many boxes"
+                  value={rule.n}
+                  onChange={(e) => onGroupRule(field.group!.key, { kind: rule.kind, n: parseInt(e.target.value || '1', 10) })}
+                />
+              </div>
+            ) : null}
+            {field.group ? (
+              <p className="text-[11px] text-muted-foreground">
+                The signer sees &ldquo;{groupRuleText(field.group)}&rdquo;. Link every box that answers this question.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <Button type="button" variant="outline" size="sm" className="w-full" onClick={onDelete}>
+          Remove field
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** The broker's value for a fillable field, with the same pickers a signer gets. */
+function FieldValueEditor({ field, onChange }: { field: LocalField; onChange: (value: SignFieldValue | null) => void }) {
+  const v = field.value ?? null
+  if (field.type === 'checkbox') {
+    return (
+      <label className="flex items-center gap-2 text-xs">
+        <Checkbox
+          id="field-value"
+          checked={v?.kind === 'checkbox' && v.checked}
+          onCheckedChange={(on) => onChange(on === true ? { kind: 'checkbox', checked: true } : null)}
+        />
+        Checked
+      </label>
+    )
+  }
+  if (field.type === 'date') {
+    return (
+      <Input
+        id="field-value"
+        type="date"
+        className="h-8 text-xs"
+        value={v?.kind === 'date' ? v.iso : ''}
+        onChange={(e) => onChange(e.target.value ? dateValue(e.target.value) : null)}
+      />
+    )
+  }
+  if (field.type === 'time') {
+    return (
+      <Input
+        id="field-value"
+        type="time"
+        className="h-8 text-xs"
+        value={v?.kind === 'time' ? v.hhmm : ''}
+        onChange={(e) => onChange(e.target.value ? timeValue(e.target.value) : null)}
+      />
+    )
+  }
+  return (
+    <Textarea
+      id="field-value"
+      rows={2}
+      className="text-xs"
+      maxLength={5000}
+      value={v?.kind === 'text' ? v.text : ''}
+      onChange={(e) => onChange(e.target.value ? { kind: 'text', text: e.target.value } : null)}
+    />
   )
 }
 

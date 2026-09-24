@@ -118,7 +118,8 @@ async function drawFieldValue(
     page.drawText(text, { x: fx + 2, y: fy + (fh - value.size) / 2 + 1, size: value.size, font, color: INK })
     return
   }
-  if (value.kind === 'date_signed' || value.kind === 'text') {
+  if (value.kind === 'date_signed' || value.kind === 'text' || value.kind === 'date' || value.kind === 'time') {
+    // A picked date or time prints as its text (11/30/2026, 5:30 PM).
     // A character Helvetica cannot encode would fail the whole seal.
     const text = pdfSafeText(value.text ?? '')
     if (!text) return

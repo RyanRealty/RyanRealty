@@ -9,13 +9,13 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-  generateSigningToken,
   isSignableRole,
   isValidEmail,
   coerceActionRequired,
   recipientRoleLabel,
   type EnvelopeField,
 } from './signing'
+import { mintOrReuseSigningLink } from '@/lib/data/tc/signing-token-vault'
 import { incompleteFormMessage } from './required-fields'
 import { sealEnvelope, type SealDocumentInput, type SealRecipientSummary } from './seal-pdf'
 import { sendSigningInvite, sendCompletionCopy, sendBrokerSignedNotice } from './signing-emails'
@@ -134,8 +134,11 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
       .maybeSingle()
     const address = (cycle as DbRow)?.tc_deals?.address ?? 'your transaction'
     for (const r of toNotify) {
-      const { token, hash } = generateSigningToken()
-      await supabase.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', r.id)
+      const { token } = await mintOrReuseSigningLink(supabase, {
+        id: r.id,
+        auth_token_hash: r.auth_token_hash ?? null,
+        auth_token_enc: r.auth_token_enc ?? null,
+      })
       const sent = await sendSigningInvite({
         to: r.email,
         recipientName: r.name || 'there',

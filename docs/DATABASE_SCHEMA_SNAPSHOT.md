@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-24T19:35:47.521Z
+**Generated:** 2026-09-24T22:51:38.995Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 597,113**
+### `listing_tile_mv` · **rows ≈ 597,278**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -5414,6 +5414,10 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `value` | jsonb | yes |  |
 | `signed_at` | timestamp with time zone | yes |  |
 | `signed_ip` | text | yes |  |
+| `label` | text | yes |  |
+| `group_key` | text | yes |  |
+| `group_min` | integer | yes |  |
+| `group_max` | integer | yes |  |
 
 ### `tc_envelope_recipients`
 
@@ -5437,6 +5441,9 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `action_required` | text | no | 'NeedsToSign'::text |
 | `last_reminded_at` | timestamp with time zone | yes |  |
+| `auth_token_enc` | text | yes |  |
+| `phone` | text | yes |  |
+| `consent_version` | text | yes |  |
 
 ### `tc_envelopes`
 
@@ -5459,6 +5466,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `reminders_enabled` | boolean | no | true |
 | `invite_subject` | text | yes |  |
 | `invite_body` | text | yes |  |
+| `require_text_code` | boolean | no | false |
 
 ### `tc_events`
 

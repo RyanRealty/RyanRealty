@@ -84,3 +84,26 @@ describe('sealEnvelope text (lined sections)', () => {
     expect(res.pageCount).toBe(2) // the page and the certificate
   })
 })
+
+describe('picked dates and times on the sealed page', () => {
+  it('prints a date and a time field as their text', async () => {
+    const { PDFDocument } = await import('pdf-lib')
+    const { sealEnvelope } = await import('./seal-pdf')
+    const field = (id: string, type: 'date' | 'time', value: { kind: 'date'; iso: string; text: string } | { kind: 'time'; hhmm: string; text: string }) => ({
+      id, documentId: 'd', recipientId: 'r', type, page: 1, x: 0.1, y: 0.1 + (type === 'time' ? 0.1 : 0), w: 0.2, h: 0.03, required: true, value, signedAt: null,
+    })
+    const src = await PDFDocument.create()
+    src.addPage([612, 792])
+    const bytes = await src.save()
+    const res = await sealEnvelope({
+      envelopeId: 'e',
+      envelopeName: 'Test',
+      sealedAtIso: '2026-09-24T19:00:00Z',
+      recipients: [],
+      documents: [{ bytes, name: 'Addendum.pdf', fields: [field('d', 'date', { kind: 'date', iso: '2026-11-30', text: '11/30/2026' }), field('t', 'time', { kind: 'time', hhmm: '17:30', text: '5:30 PM' })] }],
+    })
+    const text = (await import('./pdf-page-text')).readPdfPagesText(res.bytes, 1)
+    expect((await text).text).toContain('11/30/2026')
+    expect((await text).text).toContain('5:30 PM')
+  })
+})

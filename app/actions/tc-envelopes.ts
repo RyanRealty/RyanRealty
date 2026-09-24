@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { checkAdminAction, getAdminCapabilityContext } from '@/lib/admin/require-admin'
+import { hasCapability, type AdminCapabilityContext } from '@/lib/admin/capabilities'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
 import { partyNamesForEnvelopeSeed } from '@/lib/tc/deal-people'
@@ -33,15 +34,22 @@ import {
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
   rowsForRecipientSave,
+  normalizeSignerPhone,
+  SIGN_FIELD_LABEL,
   recipientIdForMappedField,
   earlierSigningGroupPending,
   type ActionRequired,
   type EnvelopeField,
   type EnvelopeStatus,
+  type FieldGroup,
   type RecipientRole,
   type SignFieldType,
   type SignFieldValue,
 } from '@/lib/tc/signing'
+import { sealSigningToken } from '@/lib/tc/signing-token-vault'
+import { FILLABLE_TYPES, preparedField, valueIsFilled } from '@/lib/tc/field-rules'
+import { textCodesConfigured } from '@/lib/tc/sign-verify'
+import { mintOrReuseSigningLink } from '@/lib/data/tc/signing-token-vault'
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
 import { createHash } from 'node:crypto'
 import {
@@ -114,6 +122,23 @@ async function requireBroker(): Promise<{ email: string } | { error: string }> {
   return { email }
 }
 
+/**
+ * Read auth for getEnvelopeDetail / getEnvelopesForCycle / getEnvelopesOverview.
+ * Each is an exported 'use server' action — an independently-invocable POST
+ * that the (protected) layout's redirect never runs on (lib/admin/require-admin.ts
+ * header comment) — and getEnvelopeDetail mints 900-second signed URLs for
+ * legally binding PDFs, so an unauthenticated or under-capability caller must
+ * never reach the query. Same capability the pages that call these already
+ * guard on ('transactions.view' — /admin/signing, /admin/signing/[envelopeId],
+ * /admin/deals/[key]). Returns null instead of throwing so every caller keeps
+ * its existing null/[] "nothing here" shape.
+ */
+async function requireEnvelopeReadContext(): Promise<AdminCapabilityContext | null> {
+  const ctx = await getAdminCapabilityContext()
+  if (!ctx || !hasCapability(ctx, 'transactions.view')) return null
+  return ctx
+}
+
 function siteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 }
@@ -134,6 +159,8 @@ export type EnvelopeRecipient = {
   completedAt: string | null
   declinedAt: string | null
   declineReason: string | null
+  /** Mobile for the text-message code, +1XXXXXXXXXX. */
+  phone: string | null
 }
 
 export type EnvelopeDocumentRef = {
@@ -164,6 +191,10 @@ export type EnvelopeDetail = EnvelopeSummary & {
   documents: EnvelopeDocumentRef[]
   fields: EnvelopeField[]
   remindersEnabled: boolean
+  /** Signers confirm a texted code before the documents open. */
+  requireTextCode: boolean
+  /** Whether this deployment can send the code at all (Twilio Verify configured). */
+  textCodesAvailable: boolean
   inviteSubject: string
   inviteBody: string
   requiredSignerRoles: RecipientRole[]
@@ -193,12 +224,32 @@ function mapRecipient(r: DbRow): EnvelopeRecipient {
     completedAt: r.completed_at,
     declinedAt: r.declined_at,
     declineReason: r.decline_reason,
+    phone: typeof r.phone === 'string' && r.phone ? r.phone : null,
   }
 }
 
 /** All envelopes on a cycle, with recipient status (for the deal page). */
 export async function getEnvelopesForCycle(cycleId: string): Promise<EnvelopeSummary[]> {
+  const ctx = await requireEnvelopeReadContext()
+  if (!ctx) return []
+
   const supabase = getServiceSupabase()
+  const { data: cycleDeal } = await supabase
+    .from('tc_cycles')
+    .select('deal_id, tc_deals(broker_name)')
+    .eq('id', cycleId)
+    .maybeSingle()
+  if (
+    !cycleDeal ||
+    !dealVisibleToBroker({
+      role: ctx.role,
+      brokerSlug: ctx.brokerSlug,
+      dealBrokerName: (cycleDeal as DbRow).tc_deals?.broker_name ?? null,
+    })
+  ) {
+    return []
+  }
+
   const { data: envs } = await supabase
     .from('tc_envelopes')
     .select('*')
@@ -242,9 +293,25 @@ export async function getEnvelopesForCycle(cycleId: string): Promise<EnvelopeSum
 
 /** Full envelope for the composer: documents (with signed URLs) + fields. */
 export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDetail | null> {
+  const ctx = await requireEnvelopeReadContext()
+  if (!ctx) return null
+
   const supabase = getServiceSupabase()
-  const { data: env } = await supabase.from('tc_envelopes').select('*').eq('id', envelopeId).maybeSingle()
+  const { data: env } = await supabase
+    .from('tc_envelopes')
+    .select('*, tc_cycles(deal_id, tc_deals(broker_name))')
+    .eq('id', envelopeId)
+    .maybeSingle()
   if (!env) return null
+  if (
+    !dealVisibleToBroker({
+      role: ctx.role,
+      brokerSlug: ctx.brokerSlug,
+      dealBrokerName: (env as DbRow).tc_cycles?.tc_deals?.broker_name ?? null,
+    })
+  ) {
+    return null
+  }
 
   const [{ data: recips }, { data: envDocs }, { data: fields }] = await Promise.all([
     supabase.from('tc_envelope_recipients').select('*').eq('envelope_id', envelopeId).order('signing_order'),
@@ -297,6 +364,8 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     required: f.required,
     value: f.value ?? null,
     signedAt: f.signed_at,
+    label: typeof f.label === 'string' && f.label ? f.label : null,
+    group: f.group_key ? { key: String(f.group_key), min: f.group_min ?? null, max: f.group_max ?? null } : null,
   }))
 
   const [signerSources, formFreshness, cycleRow, packet] = await Promise.all([
@@ -349,6 +418,8 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     documents,
     fields: mappedFields,
     remindersEnabled: env.reminders_enabled !== false,
+    requireTextCode: env.require_text_code === true,
+    textCodesAvailable: textCodesConfigured(),
     inviteSubject: typeof env.invite_subject === 'string' ? env.invite_subject : '',
     inviteBody: typeof env.invite_body === 'string' ? env.invite_body : '',
     requiredSignerRoles,
@@ -734,6 +805,7 @@ export type RecipientInput = {
   name: string
   email: string
   signingOrder: number
+  phone?: string | null
 }
 
 /** Replace the envelope's recipients (draft only). Returns id remap for fields. */
@@ -819,6 +891,10 @@ export type FieldInput = {
   h: number
   required?: boolean
   value?: SignFieldValue | null
+  /** What the field asks for, shown to the signer. */
+  label?: string | null
+  /** Checkboxes that answer one question (select at least / exactly / at most N). */
+  group?: FieldGroup | null
 }
 
 /** Replace all placed fields on a draft envelope. */
@@ -835,19 +911,26 @@ export async function saveEnvelopeFields(
 
   await supabase.from('tc_envelope_fields').delete().eq('envelope_id', envelopeId)
   if (fields.length) {
-    const rows = fields.map((f) => ({
-      envelope_id: envelopeId,
-      document_id: f.documentId,
-      recipient_id: f.recipientId,
-      type: f.type,
-      page: Math.max(1, Math.round(f.page)),
-      x: clamp01(f.x),
-      y: clamp01(f.y),
-      w: clamp01(f.w),
-      h: clamp01(f.h),
-      required: f.required === true,
-      value: f.value ?? null,
-    }))
+    const rows = fields.map((f) => {
+      const prepared = preparedField(f)
+      return {
+        envelope_id: envelopeId,
+        document_id: f.documentId,
+        recipient_id: f.recipientId,
+        type: f.type,
+        page: Math.max(1, Math.round(f.page)),
+        x: clamp01(f.x),
+        y: clamp01(f.y),
+        w: clamp01(f.w),
+        h: clamp01(f.h),
+        required: f.required === true,
+        value: prepared.value,
+        label: prepared.label,
+        group_key: prepared.group?.key ?? null,
+        group_min: prepared.group?.min ?? null,
+        group_max: prepared.group?.max ?? null,
+      }
+    })
     const { error } = await supabase.from('tc_envelope_fields').insert(rows)
     if (error) return { ok: false, error: error.message }
   }
@@ -892,6 +975,27 @@ export async function setEnvelopeReminders(
   return { ok: true }
 }
 
+/**
+ * The per-envelope switch for a texted code before the documents open (Matt
+ * 2026-09-24: "Email link, text code optional"). Turning it on needs a mobile
+ * on every signer, and a deployment that can send the code.
+ */
+export async function setEnvelopeTextCode(
+  envelopeId: string,
+  enabled: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const auth = await requireBroker()
+  if ('error' in auth) return { ok: false, error: auth.error }
+  if (enabled && !textCodesConfigured()) return { ok: false, error: 'Text codes are not set up on this site yet.' }
+  const supabase = getServiceSupabase()
+  const env = await loadDraftEnvelope(supabase, envelopeId)
+  if ('error' in env) return { ok: false, error: env.error }
+  const { error } = await supabase.from('tc_envelopes').update({ require_text_code: enabled }).eq('id', envelopeId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/admin/signing/${envelopeId}`)
+  return { ok: true }
+}
+
 /** Persist DigiSign Edit Message subject/body. Empty = brokerage default. */
 export async function setEnvelopeInviteMessage(
   envelopeId: string,
@@ -928,7 +1032,7 @@ export async function sendEnvelope(
 
   const [{ data: recips }, { data: fields }, { data: envDocs }, { data: cycle }] = await Promise.all([
     supabase.from('tc_envelope_recipients').select('*').eq('envelope_id', envelopeId),
-    supabase.from('tc_envelope_fields').select('id, recipient_id, type, required, value').eq('envelope_id', envelopeId),
+    supabase.from('tc_envelope_fields').select('id, recipient_id, type, required, value, label, page').eq('envelope_id', envelopeId),
     supabase.from('tc_envelope_documents').select('id').eq('envelope_id', envelopeId),
     supabase
       .from('tc_cycles')
@@ -1005,6 +1109,21 @@ export async function sendEnvelope(
   const factMsg = incompleteFactsMessage(missingRequiredFacts(formSources.map((s) => s.formNumber), facts))
   if (factMsg) return { ok: false, error: factMsg }
 
+  // A required field the broker fills prints locked, so it goes out filled.
+  const emptyMine = fieldsForSend.find(
+    (f) => !f.recipient_id && f.required === true && FILLABLE_TYPES.has(f.type) && !valueIsFilled(f.type, f.value ?? null),
+  )
+  if (emptyMine) {
+    const what = typeof emptyMine.label === 'string' && emptyMine.label.trim() ? emptyMine.label.trim() : `${SIGN_FIELD_LABEL[emptyMine.type as SignFieldType] ?? 'field'} on page ${emptyMine.page}`
+    return { ok: false, error: `Fill in ${what} before sending. It is yours to fill, and it prints as you set it.` }
+  }
+
+  if (env.require_text_code === true) {
+    if (!textCodesConfigured()) return { ok: false, error: 'This envelope asks for a text code, and text codes are not set up on this site yet.' }
+    const noPhone = signable.find((r) => !normalizeSignerPhone(r.phone))
+    if (noPhone) return { ok: false, error: `Add a mobile number for ${noPhone.name || noPhone.role}: this envelope texts each signer a code.` }
+  }
+
   const signerRead = unionRequiredSignerReads(formSources)
   const blocked = sendBlockedBySignerKnowledge(
     signerRead,
@@ -1019,11 +1138,18 @@ export async function sendEnvelope(
   const firstOrder = Math.min(...signable.map((r) => r.signing_order ?? 1))
   const address = (cycle as DbRow)?.tc_deals?.address ?? 'your transaction'
   const toNotify = signable.filter((r) => (r.signing_order ?? 1) === firstOrder)
+  // Brand-new envelope: every recipient here mints fresh (there is no prior
+  // link to reuse), but the encrypted copy is stored alongside the hash from
+  // the first send too, so the FIRST reminder can reuse it instead of retiring
+  // the link we are about to email.
   const tokenByRecip = new Map<string, string>()
   for (const r of toNotify) {
     const { token, hash } = generateSigningToken()
     tokenByRecip.set(r.id, token)
-    await supabase.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', r.id)
+    await supabase
+      .from('tc_envelope_recipients')
+      .update({ auth_token_hash: hash, auth_token_enc: sealSigningToken(token) })
+      .eq('id', r.id)
   }
   const failed: string[] = []
   for (const r of toNotify) {
@@ -1105,7 +1231,7 @@ export async function sendEnvelope(
   return { ok: true }
 }
 
-/** Re-mint a recipient token and re-send their invite (manual reminder). */
+/** Re-send a recipient's invite (manual reminder), reusing their live signing link. */
 export async function resendRecipientInvite(recipientId: string): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
@@ -1129,8 +1255,11 @@ export async function resendRecipientInvite(recipientId: string): Promise<{ ok: 
     return { ok: false, error: 'It is not this signer\'s turn yet. The earlier group still needs to finish.' }
   }
 
-  const { token, hash } = generateSigningToken()
-  await supabase.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', recipientId)
+  const { token } = await mintOrReuseSigningLink(supabase, {
+    id: recipientId,
+    auth_token_hash: (r as DbRow).auth_token_hash ?? null,
+    auth_token_enc: (r as DbRow).auth_token_enc ?? null,
+  })
 
   const { data: cycle } = await supabase
     .from('tc_cycles')
@@ -1178,8 +1307,14 @@ export async function voidEnvelope(envelopeId: string, reason: string): Promise<
     .from('tc_envelopes')
     .update({ status: 'voided', voided_at: new Date().toISOString(), void_reason: reason || 'voided' })
     .eq('id', envelopeId)
-  // kill all live tokens
-  await supabase.from('tc_envelope_recipients').update({ auth_token_hash: null }).eq('envelope_id', envelopeId)
+  // Drop the encrypted copy a reminder would reuse, so no send can bring the
+  // link back. The hash stays: the old link then opens to "This signing
+  // request was canceled" (tc-sign refuses every action on a voided envelope)
+  // instead of a dead link.
+  await supabase
+    .from('tc_envelope_recipients')
+    .update({ auth_token_enc: null })
+    .eq('envelope_id', envelopeId)
 
   await supabase.from('tc_events').insert({
     cycle_id: env.cycle_id,
@@ -1216,6 +1351,9 @@ export type EnvelopeOverviewRow = EnvelopeSummary & {
 
 /** Every envelope across all deals, newest first, for /admin/signing. */
 export async function getEnvelopesOverview(): Promise<EnvelopeOverviewRow[]> {
+  const ctx = await requireEnvelopeReadContext()
+  if (!ctx) return []
+
   const supabase = getServiceSupabase()
   const { data: envs } = await supabase
     .from('tc_envelopes')
@@ -1237,12 +1375,11 @@ export async function getEnvelopesOverview(): Promise<EnvelopeOverviewRow[]> {
     recipsByEnv.set(r.envelope_id, arr)
   }
 
-  const ctx = await getAdminCapabilityContext()
   return (envs as DbRow[])
     .filter((e) =>
       dealVisibleToBroker({
-        role: ctx?.role ?? 'broker',
-        brokerSlug: ctx?.brokerSlug ?? null,
+        role: ctx.role,
+        brokerSlug: ctx.brokerSlug,
         dealBrokerName: e.tc_cycles?.tc_deals?.broker_name ?? null,
       }),
     )

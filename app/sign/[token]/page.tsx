@@ -4,6 +4,7 @@
 import { getSigningSession } from '@/app/actions/tc-sign'
 import { CONTACT } from '@/lib/brand/contact'
 import { SignFlow } from '@/components/tc/pdf-sign/SignFlow'
+import { SignCodeGate } from '@/components/tc/pdf-sign/SignCodeGate'
 
 // Reads request headers (IP/UA capture) so it always renders per request.
 export const revalidate = 0
@@ -31,6 +32,13 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
       </main>
     )
   }
+  if (session.status === 'verify') {
+    return (
+      <main className="min-h-screen bg-background">
+        <SignCodeGate token={token} recipientName={session.recipientName} propertyAddress={session.propertyAddress} maskedPhone={session.maskedPhone} canText={session.canText} />
+      </main>
+    )
+  }
   if (session.status === 'waiting') {
     return (
       <main className="min-h-screen bg-background">
@@ -45,15 +53,16 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
     return (
       <main className="min-h-screen bg-background">
         <Centered
-          title="Already signed"
-          body={`Your signature on ${session.propertyAddress} is recorded. A completed copy was emailed to you.`}
+          title="You have signed"
+          body={`Your signature on ${session.propertyAddress} is recorded. When everyone has signed, a completed copy is emailed to you.`}
         />
       </main>
     )
   }
+  const title = session.status === 'declined' ? 'You declined' : session.status === 'voided' ? 'This request was canceled' : 'This link is not active'
   return (
     <main className="min-h-screen bg-background">
-      <Centered title="This link is not active" body={session.message} />
+      <Centered title={title} body={session.message} />
     </main>
   )
 }

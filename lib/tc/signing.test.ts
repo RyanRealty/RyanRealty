@@ -21,6 +21,7 @@ import {
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
   rowsForRecipientSave,
+  normalizeSignerPhone,
   recipientIdForMappedField,
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
@@ -40,9 +41,22 @@ describe('SIGN_FIELD_TYPES', () => {
     expect([...SIGN_FIELD_TYPES]).toContain('full_name')
     expect([...SIGN_FIELD_TYPES]).toContain('time_signed')
     expect(SIGN_FIELD_LABEL.full_name).toBe('Full Name')
-    expect(SIGN_FIELD_LABEL.time_signed).toBe('Time')
+    expect(SIGN_FIELD_LABEL.time_signed).toBe('Time signed')
     expect(isSenderAnnotation('strike')).toBe(true)
     expect(isSenderAnnotation('full_name')).toBe(false)
+  })
+  it('adds a date picker and a time picker beside the automatic stamps', () => {
+    expect([...SIGN_FIELD_TYPES]).toContain('date')
+    expect([...SIGN_FIELD_TYPES]).toContain('time')
+    expect(SIGN_FIELD_LABEL.date).toBe('Date')
+    expect(SIGN_FIELD_LABEL.time).toBe('Time')
+    const sql = readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260924231000_tc_envelope_field_interactivity.sql'),
+      'utf8',
+    )
+    expect(sql).toContain("'date',")
+    expect(sql).toContain("'time',")
+    expect(sql).toContain('require_text_code')
   })
   it('CHECK constraint and invite columns match the palette', () => {
     const sql = readFileSync(
@@ -382,6 +396,28 @@ describe('recipientMatchesSigner', () => {
     expect(recipientMatchesSigner('SellerAgent', 'buyer')).toBe(false)
     expect(recipientMatchesSigner('Broker', 'listing_agent')).toBe(false)
     expect(recipientMatchesSigner('cc', 'buyer')).toBe(false)
+  })
+})
+
+describe('normalizeSignerPhone', () => {
+  it('stores a US mobile as +1 and ten digits, whatever the typing', () => {
+    expect(normalizeSignerPhone('(541) 213-6706')).toBe('+15412136706')
+    expect(normalizeSignerPhone('1-541-213-6706')).toBe('+15412136706')
+    expect(normalizeSignerPhone('+1 541 213 6706')).toBe('+15412136706')
+  })
+  it('keeps nothing it cannot text', () => {
+    expect(normalizeSignerPhone('213-6706')).toBeNull()
+    expect(normalizeSignerPhone('')).toBeNull()
+    expect(normalizeSignerPhone(null)).toBeNull()
+    expect(normalizeSignerPhone('2-541-213-6706')).toBeNull()
+  })
+  it('a save writes the phone only when the caller sent one', () => {
+    const [withPhone, without] = rowsForRecipientSave('e1', [
+      { id: 'a', role: 'Buyer', name: 'A', email: 'a@x.com', signingOrder: 1, phone: '541.213.6706' },
+      { id: 'b', role: 'Buyer', name: 'B', email: 'b@x.com', signingOrder: 1 },
+    ])
+    expect(withPhone!.phone).toBe('+15412136706')
+    expect('phone' in without!).toBe(false)
   })
 })
 

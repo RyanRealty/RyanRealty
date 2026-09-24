@@ -21,6 +21,8 @@ export const SIGN_FIELD_TYPES = [
   'full_name',
   'date_signed',
   'time_signed',
+  'date',
+  'time',
   'text',
   'checkbox',
   'strike',
@@ -41,7 +43,9 @@ export const SIGN_FIELD_LABEL: Record<SignFieldType, string> = {
   initials: 'Initials',
   full_name: 'Full Name',
   date_signed: 'Date signed',
-  time_signed: 'Time',
+  time_signed: 'Time signed',
+  date: 'Date',
+  time: 'Time',
   text: 'Text',
   checkbox: 'Checkbox',
   strike: 'Strike',
@@ -414,7 +418,14 @@ export type EnvelopeField = {
   required: boolean
   value: SignFieldValue | null
   signedAt: string | null
+  /** What the field asks for ("Possession date"): the signer's prompt. */
+  label?: string | null
+  /** Checkboxes that answer one question, and the rule (lib/tc/field-rules.ts). */
+  group?: FieldGroup | null
 }
+
+/** A checkbox group's key and rule: min only = at least, min = max = exactly, max only = at most. */
+export type FieldGroup = { key: string; min: number | null; max: number | null }
 
 /** Stored value of a completed field (jsonb). */
 export type SignFieldValue =
@@ -433,6 +444,10 @@ export type SignFieldValue =
       area?: { key: string; text: string }
     }
   | { kind: 'checkbox'; checked: boolean }
+  /** A picked calendar date: ISO for the record, text as it prints (MM/DD/YYYY). */
+  | { kind: 'date'; iso: string; text: string }
+  /** A picked time of day: 24-hour for the record, text as it prints (h:mm AM). */
+  | { kind: 'time'; hhmm: string; text: string }
 
 /**
  * Generate a per-recipient signing token. The raw token goes in the emailed
@@ -455,6 +470,8 @@ export const DEFAULT_FIELD_SIZE: Record<SignFieldType, { w: number; h: number }>
   full_name: { w: 0.22, h: 0.035 },
   date_signed: { w: 0.14, h: 0.035 },
   time_signed: { w: 0.12, h: 0.035 },
+  date: { w: 0.14, h: 0.035 },
+  time: { w: 0.12, h: 0.035 },
   text: { w: 0.2, h: 0.035 },
   checkbox: { w: 0.03, h: 0.022 },
   strike: { w: 0.22, h: 0.018 },
@@ -515,6 +532,16 @@ export type RecipientSaveInput = {
   name: string
   email: string
   signingOrder: number
+  /** Mobile for a text-message code (lib/tc/sign-verify.ts). */
+  phone?: string | null
+}
+
+/** A US mobile as +1XXXXXXXXXX, or null when it is not ten digits (with or without the 1). */
+export function normalizeSignerPhone(raw: string | null | undefined): string | null {
+  const digits = String(raw ?? '').replace(/\D/g, '')
+  if (digits.length === 10) return `+1${digits}`
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
+  return null
 }
 
 /** Every upsert row needs an id — PostgREST nulls omitted keys when mixed with existing ids. */
@@ -530,6 +557,7 @@ export function rowsForRecipientSave(
   name: string
   email: string
   signing_order: number
+  phone?: string | null
 }> {
   return recipients.map((r) => ({
     id: r.id?.trim() || newId(),
@@ -539,6 +567,9 @@ export function rowsForRecipientSave(
     name: r.name?.trim() ?? '',
     email: r.email?.trim().toLowerCase() ?? '',
     signing_order: Math.max(1, Math.round(r.signingOrder || 1)),
+    // Only written when the caller sends it, so a save that never showed the
+    // phone box leaves a stored number alone.
+    ...(r.phone !== undefined ? { phone: normalizeSignerPhone(r.phone) } : {}),
   }))
 }
 

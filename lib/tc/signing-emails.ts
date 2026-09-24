@@ -112,6 +112,15 @@ export async function sendCompletionCopy(params: {
   })
 }
 
+/** A notice to our own sending broker (never a client), one rail for all of them. */
+function sendBrokerNotice(params: { to: string; subject: string; heading: string; bodyHtml: string; dealUrl: string }): Promise<{ id?: string; error?: string }> {
+  return sendEmail({
+    to: params.to,
+    subject: params.subject,
+    html: shell({ heading: params.heading, bodyHtml: params.bodyHtml, cta: { label: 'Open the deal', url: params.dealUrl } }),
+  })
+}
+
 export async function sendBrokerSignedNotice(params: {
   to: string
   envelopeName: string
@@ -128,14 +137,7 @@ export async function sendBrokerSignedNotice(params: {
     params.remaining > 0
       ? `<p style="margin:0;">${escapeHtml(params.signerName)} just signed "${escapeHtml(params.envelopeName)}". ${params.remaining} signer${params.remaining === 1 ? '' : 's'} still pending.</p>`
       : `<p style="margin:0;">Everyone has signed "${escapeHtml(params.envelopeName)}". The sealed document is filed to the deal.</p>`
-  return sendEmail({
-    to: params.to,
-    subject:
-      params.remaining > 0
-        ? `${params.signerName} signed for ${params.propertyAddress}`
-        : `All signatures complete for ${params.propertyAddress}`,
-    html: shell({ heading, bodyHtml: body, cta: { label: 'Open the deal', url: params.dealUrl } }),
-  })
+  return sendBrokerNotice({ to: params.to, subject: heading, heading, bodyHtml: body, dealUrl: params.dealUrl })
 }
 
 function escapeHtml(s: string): string {
@@ -144,4 +146,26 @@ function escapeHtml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+/** The broker hears the moment a signer declines (the envelope is voided). */
+export async function sendBrokerDeclinedNotice(params: {
+  to: string
+  envelopeName: string
+  propertyAddress: string
+  signerName: string
+  reason: string
+  dealUrl: string
+}): Promise<{ id?: string; error?: string }> {
+  const reason = params.reason.trim()
+  const body = `<p style="margin:0 0 12px;">${escapeHtml(params.signerName)} declined to sign "${escapeHtml(params.envelopeName)}", so the envelope is voided. Nobody else can sign it.</p>${
+    reason ? `<p style="margin:0 0 12px;">Their reason: "${escapeHtml(reason)}"</p>` : ''
+  }<p style="margin:0;">Send a corrected envelope from the deal when you are ready.</p>`
+  return sendBrokerNotice({
+    to: params.to,
+    subject: `${params.signerName} declined to sign for ${params.propertyAddress}`,
+    heading: `${escapeHtml(params.signerName)} declined to sign`,
+    bodyHtml: body,
+    dealUrl: params.dealUrl,
+  })
 }
