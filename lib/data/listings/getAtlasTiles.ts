@@ -282,6 +282,7 @@ async function fetchAtlasTiles(input: AtlasTilesInput): Promise<AtlasTile[]> {
 export function getAtlasTiles(input: AtlasTilesInput): Promise<AtlasTile[]> {
   // Not cached here: the raw rows for the service area are ~2.2MB, over
   // Next's per-entry ceiling. lib/atlas/build-place-atlas.ts caches the
-  // compact population it derives from them.
+  // compact population it derives from them, in chunks when even that is
+  // over (the whole service area was, 2026-09-23).
   return fetchAtlasTiles(input)
 }

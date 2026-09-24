@@ -86,3 +86,9 @@
 .v3-place-stock .v3-lrow:first-child {
   border-top: 0;
 }
+
+/* The lease section's door to every commercial lease in Central Oregon
+   (/commercial-space-for-lease): one ghost button under the last section. */
+.v3-place-stock__more {
+  margin: 0;
+}

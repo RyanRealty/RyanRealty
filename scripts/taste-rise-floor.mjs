@@ -66,7 +66,17 @@ function floorAt(sorted, q) {
 }
 
 export function riseFloorBasis(table, { n = N, seed = SEED } = {}) {
-  const rows = (table?.rows ?? []).filter((r) => Number.isInteger(r.median) && Array.isArray(r.scores) && r.scores.length === 3)
+  // The floor belongs to the judge (taste-rule-freeze.json riseFloorBasis):
+  // only rows the table's own judge scored are its noise. A class added
+  // mid-round on another link of the chain (a claude-sonnet-5 row on a
+  // grok-4.6 table, first 2026-09-24) carries its evaluatorModel on the row
+  // and is left out, so it cannot move the frozen basis. A table with no
+  // single judge (none recorded, or "mixed") pools every row, as before.
+  const judge = typeof table?.instrument?.evaluatorModel === 'string' ? table.instrument.evaluatorModel.trim() : ''
+  const onJudge = (r) => !judge || judge === 'mixed' || String(r.evaluatorModel ?? judge).trim() === judge
+  const rows = (table?.rows ?? []).filter(
+    (r) => Number.isInteger(r.median) && Array.isArray(r.scores) && r.scores.length === 3 && onJudge(r),
+  )
   const resid = rows.flatMap((r) => r.scores.map((x) => x - r.median))
   if (resid.length < 9) throw new Error(`taste-rise-floor: only ${resid.length} residuals — need a scored table`)
   let s = seed

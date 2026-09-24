@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest'
 import {
   DIAL_NO_ASK,
   DIAL_SWIPE_MIN_PX,
+  DIAL_THUMB_WHOLE,
   dialKeyTarget,
   dialPanelId,
   dialPosition,
+  dialPriceSlot,
   dialRevealOffset,
   dialStep,
   dialSwipeDelta,
   dialTabId,
+  dialThumbCut,
   dialThumbLabel,
   dialWrap,
 } from './V3ListingDial.logic'
@@ -144,5 +147,41 @@ describe('dialRevealOffset', () => {
   it('centres a thumbnail it has to bring into view', () => {
     expect(dialRevealOffset(0, 400, 900, 120)).toBe(760)
     expect(dialRevealOffset(800, 400, 0, 120)).toBe(0)
+  })
+})
+
+describe('dialThumbCut: a caption the rail edge would cut is hidden', () => {
+  it('counts a thumbnail whole only when (all but a rounding sliver of) it is inside the rail', () => {
+    expect(dialThumbCut(1)).toBe(false)
+    expect(dialThumbCut(DIAL_THUMB_WHOLE)).toBe(false)
+    expect(dialThumbCut(0.995)).toBe(false)
+  })
+
+  it('cuts a thumbnail the edge runs through, and one scrolled out of view', () => {
+    // 375px strip, 2026-09-23: the third thumbnail showed 51 of its 92px and
+    // its caption read "$1.00/".
+    expect(dialThumbCut(51 / 92)).toBe(true)
+    expect(dialThumbCut(0.98)).toBe(true)
+    expect(dialThumbCut(0)).toBe(true)
+  })
+
+  it('never hides a caption on a reading it cannot trust', () => {
+    expect(dialThumbCut(Number.NaN)).toBe(false)
+  })
+})
+
+describe('dialPriceSlot: what the price slot prints', () => {
+  it('prints the ask for a sale listing, and the withheld line without one', () => {
+    expect(dialPriceSlot({ ask: '$649,000', lease: null })).toEqual({ text: '$649,000', withheld: false })
+    expect(dialPriceSlot({ ask: null, lease: null })).toEqual({ text: DIAL_NO_ASK, withheld: true })
+  })
+
+  it('prints a lease rate with its unit, never the sale withheld line', () => {
+    expect(
+      dialPriceSlot({ ask: null, lease: { rate: '$1.40/sq ft/mo', text: '$1.40/sq ft/mo' } }),
+    ).toEqual({ text: '$1.40/sq ft/mo', withheld: false })
+    expect(
+      dialPriceSlot({ ask: null, lease: { rate: null, text: 'Lease rate not published' } }),
+    ).toEqual({ text: 'Lease rate not published', withheld: true })
   })
 })

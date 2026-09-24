@@ -121,8 +121,20 @@ export async function GET(request: Request) {
 
   for (const en of due ?? []) {
     const seq = en.crm_sequences as unknown as { name: string; stop_on_reply: boolean; steps: Step[] }
-    const finish = async (patch: Record<string, unknown>) =>
-      sb.from('crm_sequence_enrollments').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', en.id)
+    // A refused write is an error, never a silent no-op. From 2026-06-13 to
+    // 2026-09-24 the table's status CHECK rejected 'awaiting_broker_next'
+    // (23514), this helper ignored the error, and every enrollment whose next
+    // step was confirm:true re-ran its current step every 15 minutes without
+    // ever parking (migration 20260924052000). Throwing lands in the catch
+    // below: counted, rescheduled 30 minutes out, and logged once, with the
+    // step's own "done" log line never written.
+    const finish = async (patch: Record<string, unknown>) => {
+      const { error } = await sb
+        .from('crm_sequence_enrollments')
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq('id', en.id)
+      if (error) throw new Error(`enrollment ${en.id} update refused (${error.code ?? 'no code'}): ${error.message}`)
+    }
     const log = async (title: string, body?: string) =>
       sb.from('crm_timeline').insert({ person_id: en.person_id, kind: 'system', title, body: body ?? null, source: 'sequence' })
 
@@ -677,8 +689,15 @@ export async function GET(request: Request) {
       executed++
     } catch (e) {
       errored++
-      await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
-      await log('Sequence step error — retrying in 30m', e instanceof Error ? e.message : String(e))
+      const message = e instanceof Error ? e.message : String(e)
+      console.error(`[crm-sequence-engine] enrollment ${en.id}: ${message}`)
+      try {
+        await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })
+      } catch (rescheduleError) {
+        // One enrollment's failed reschedule must not end the run for the rest.
+        console.error(`[crm-sequence-engine] enrollment ${en.id}: reschedule failed:`, rescheduleError)
+      }
+      await log('Sequence step error — retrying in 30m', message)
     }
   }
 

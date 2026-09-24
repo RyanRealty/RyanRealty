@@ -74,7 +74,8 @@ export default async function JsonLd() {
     url: baseUrl,
     telephone: CONTACT.phoneDirectTel,
     email: CONTACT.email.primary,
-    foundingDate: BRAND.founded,
+    // Ryan Realty LLC, 2014 (Matt 2026-09-24); June 2023 is the Bend office.
+    foundingDate: BRAND.llcSince,
     areaServed: {
       '@type': 'GeoCircle',
       geoMidpoint: { '@type': 'GeoCoordinates', latitude: 44.0582, longitude: -121.3153 },

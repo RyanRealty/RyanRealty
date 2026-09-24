@@ -5,6 +5,15 @@
  * sentence. 5.0 from 25 and 115 NW Oregon Ave #2 stay. Deep bios stay on
  * /team. No Meet-the-Team dump, no three equal broker Cards, no KPI grid.
  *
+ * Beat 9 (Matt 2026-09-23, the About-page AEO playbook): below the proof the
+ * page carries What Ryan Realty does, What makes Ryan Realty different, Who
+ * Ryan Realty works with, How Ryan Realty works (the same business day
+ * promise), The team behind Ryan Realty, Key facts about Ryan Realty (one
+ * <dl>) and Frequently asked questions (H3 questions, FAQPage from the same
+ * array). No competitor is named anywhere in the About copy (NAR Code Article
+ * 15, Oregon advertising rules), and the key facts carry no Notable clients,
+ * Competitors or Contract terms row.
+ *
  * Tip Ready cannot be a checkbox. A lone `competitiveBriefPass: true` is
  * refuse. Each Researchy beat needs a quote that actually appears in the
  * About source.
@@ -38,7 +47,23 @@ export const ABOUT_LOCK_FILES = Object.freeze([
   'app/about/_v3/about-fold.css',
   'components/site/v3/V3Avatar.tsx',
   'lib/brand/contact.ts',
+  'app/about/_v3/about-playbook.ts',
 ])
+
+/**
+ * The files that hold About VISITOR COPY. `copyForbid` runs against these
+ * only, because the design comments in the stylesheet and the provenance notes
+ * in lib/brand name third-party sites for reasons that are not public copy.
+ */
+export const ABOUT_COPY_FILES = Object.freeze([
+  'app/about/page.tsx',
+  'app/about/_v3/about-constants.ts',
+  'app/about/_v3/about-playbook.ts',
+])
+
+/** Brokerages and portals the About copy may not name (Matt 2026-09-23). */
+export const ABOUT_COMPETITOR_RE =
+  /\b(Compass|Redfin|Zillow|Coldwell Banker|Keller Williams|RE\/MAX|Sotheby'?s|Berkshire Hathaway|Windermere|eXp Realty|Cascade Hasson|Duke Warner|Fred Real Estate|Century 21|Opendoor|Realty ONE)\b/
 
 /**
  * Locked beats. `tokens` must appear in the evidence quote. `sourceRequire`
@@ -74,7 +99,9 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
       // answering with the door "The brokers are on /team". Answer engines
       // quote the FAQPage answer; a URL path is not an answer.
       /aboutBrokersAnswer\(/,
-      /aboutFaqItems\(proof\.faces\)/,
+      // 2026-09-23: the call also passes the live office hours for the
+      // playbook FAQ (beat 9); the roster is still its first argument.
+      /aboutFaqItems\(proof\.faces[,)]/,
       /from '@\/components\/ui\/avatar'/,
       /<AvatarGroup\b/,
       /<AvatarImage\b|<V3Avatar\b/,
@@ -155,6 +182,34 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
       /AvatarBadge/,
     ],
   },
+  {
+    id: '9',
+    text: 'Below the proof, the AEO playbook: What Ryan Realty does, What makes Ryan Realty different (no competitor named), Who Ryan Realty works with, How Ryan Realty works (same business day), The team behind Ryan Realty, Key facts about Ryan Realty as one dl, and Frequently asked questions as H3s equal to FAQPage.',
+    tokens: [/What Ryan Realty does/, /Key facts/, /same business day/],
+    sourceRequire: [
+      /<V3Entries\b/,
+      /heading="What Ryan Realty does"/,
+      /<V3Claims\b/,
+      /heading="What makes Ryan Realty different"/,
+      /<V3Roll\b/,
+      /heading="Who Ryan Realty works with"/,
+      /<V3Steps\b/,
+      /heading="How Ryan Realty works"/,
+      /heading="The team behind Ryan Realty"/,
+      /<V3Facts\b/,
+      /heading="Key facts about Ryan Realty"/,
+      /heading="Frequently asked questions"/,
+      /questionHeadings/,
+      /ABOUT_REPLY_PROMISE = 'same business day'/,
+      /aboutFaqItems\(proof\.faces, \{ hours: hoursLine \}\)/,
+      /organizationFacts: aboutOrganizationFacts\(/,
+    ],
+    sourceForbid: [/term: 'Notable clients'/, /term: 'Competitors'/, /term: 'Contract terms'/],
+    copyForbid: [
+      ABOUT_COMPETITOR_RE,
+      /\b(families|retirees|young professionals|empty nesters)\b/i,
+    ],
+  },
 ])
 
 export function isAboutLockBrief(brief, kit) {
@@ -187,12 +242,19 @@ function sourceHits(source, re) {
  */
 export function aboutLockSourceProblems({ root = process.cwd(), sourceText, files } = {}) {
   const read = sourceText != null ? { source: String(sourceText), missing: [] } : readAboutLockSource(root, files)
+  const copy = sourceText != null ? String(sourceText) : readAboutLockSource(root, ABOUT_COPY_FILES).source
   const p = []
   for (const rel of read.missing) {
     p.push(`About lock missing ${rel}. The page cannot pass a beat it deleted.`)
   }
   const src = read.source
   for (const beat of ABOUT_LOCK_BEATS) {
+    for (const re of beat.copyForbid ?? []) {
+      const hit = copy.match(re)
+      if (hit) {
+        p.push(`About lock beat ${beat.id} copy names /${re.source}/ ("${hit[0]}") — ${beat.text.slice(0, 80)}`)
+      }
+    }
     for (const re of beat.sourceRequire ?? []) {
       if (!sourceHits(src, re)) {
         p.push(`About lock beat ${beat.id} missing /${re.source}/ — ${beat.text.slice(0, 80)}`)

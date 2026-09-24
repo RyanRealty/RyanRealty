@@ -151,6 +151,7 @@ import type { AtlasTaxlotsScope } from '@/lib/atlas/atlas-taxlots-href'
 import { cityChildStockSlug } from '@/lib/place/city-rail'
 import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
+import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import {
   capLookListings,
   listingsFromAtlasDots,
@@ -837,6 +838,9 @@ async function renderCityDetail({ params }: Props) {
   ])
   const stockSections = placeStockSectionsFromTiles(cityStock)
   const placeHomes = stockSections.flatMap((section) => section.rows)
+  // Commercial leases in the city: shown last under the map, never counted
+  // for sale and never a pin.
+  const leaseSection = await loadPlaceLeaseSection(cityStock)
   const rowsForRail = isBend
     ? childStockRows.map((row) => ({
         ...row,
@@ -1125,6 +1129,7 @@ async function renderCityDetail({ params }: Props) {
           placeName={cityName}
           rail={railEntries}
           homes={placeHomes}
+          leases={leaseSection?.rows ?? []}
           keysBySlug={homesByChild}
           source={inventorySource}
           asOf={leftoverStamp}

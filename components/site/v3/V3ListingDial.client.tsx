@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * V3ListingDial — one listing large, the rest of the set on a dial beside it.
+ * V3ListingDial — one listing large, the rest of the set on a dial to its left.
  *
  * Matt 2026-09-23, asked for as an alternative to a carousel: "it would have a
  * primary image and a description, like a primary card. On either the right or
@@ -15,11 +15,24 @@
  *     the same media every public listing card uses: badges, in-card tour,
  *     the photo as a door) and the rail card's own copy, printed by
  *     publishListingCardFacts, the one definition HomeRailCardFace prints;
- *   - the DIAL (role=tablist): a thumbnail per listing, stacked beside the card
- *     on a wide screen and laid in a strip under it on a phone, with no visible
- *     scrollbar, a navy frame on the one showing, previous/next controls, and
- *     arrow keys, Home and End on a roving tabindex;
- *   - the READOUT: "03 / 12" and a hairline that fills with it, over the dial.
+ *   - the DIAL (role=tablist): a thumbnail per listing, stacked in a column on
+ *     the LEFT of the card on a wide screen and laid in a strip under it on a
+ *     phone, with no visible scrollbar, a navy frame on the one showing,
+ *     previous/next controls, and arrow keys, Home and End on a roving
+ *     tabindex;
+ *   - the READOUT: "03 / 12" and a hairline that fills with it, at the head of
+ *     the dial's column on a wide screen and beside the heading on a phone.
+ *
+ * WHY THE LEFT (Matt 2026-09-23, either side allowed). The site's Jax button
+ * (V3DogFloater: fixed, top 50%, right 1rem) sat over a right-hand rail
+ * wherever the dial runs to the viewport's edge (the neighborhood band at
+ * 1440, the plat inventory at laptop widths), so at almost every scroll
+ * position through the dial a thumbnail or a control was under it. A column
+ * of thumbnails on the left of the lead photograph is also the familiar
+ * product-gallery arrangement. The tablist comes before its panels in the
+ * DOM, as in the WAI-ARIA tabs pattern, so reading and focus order run
+ * dial first, then the card, the order a wide screen shows them; on a phone
+ * the strip is laid under the card by CSS and keeps that same order.
  *
  * EVERY LISTING IS IN THE SERVED HTML. Every card renders on the server and
  * the ones not showing carry `hidden`, so each listing's <a href> is in the
@@ -37,7 +50,9 @@
  *
  * Every figure is the row's own (CLAUDE.md section 0): the ask and the facts
  * come through the lib publishers, and a row with no ask reads "Price not
- * published", never a seller offer the row does not make.
+ * published", never a seller offer the row does not make. A commercial lease
+ * reads its rent with the unit, or "Lease rate not published", under "For
+ * lease" (publishListingCardFacts `lease`, dialPriceSlot).
  */
 import {
   memo,
@@ -66,14 +81,16 @@ import { V3Icon } from './V3Icon'
 import { SplitCardMedia } from './SplitCardMedia'
 import type { V3ListingRowData } from './V3ListingRow'
 import {
-  DIAL_NO_ASK,
   dialKeyTarget,
   dialPanelId,
   dialPosition,
+  dialPriceSlot,
   dialRevealOffset,
   dialStep,
   dialSwipeDelta,
   dialTabId,
+  DIAL_THUMB_WHOLE,
+  dialThumbCut,
   dialThumbLabel,
   dialWrap,
 } from './V3ListingDial.logic'
@@ -155,6 +172,7 @@ function factsOf(listing: V3ListingRowData) {
     sqft: listing.sqft,
     pricePerSqft: listing.pricePerSqft ?? null,
     statusLabel: listing.statusLabel ?? null,
+    leaseRateOption: listing.leaseRateOption ?? null,
   })
 }
 
@@ -169,8 +187,13 @@ type CardProps = {
 /** The primary card: the lead photograph and the rail card's copy. */
 const DialCard = memo(function DialCard({ listing, panelId, tabId, shown, leaving }: CardProps) {
   const facts = factsOf(listing)
+  const price = dialPriceSlot(facts)
   const photo = listing.photoUrl?.trim() || null
-  const kind = [subTypeLabel(listing.propertySubType), facts.kind].filter(Boolean).join(' · ')
+  // A lease leads its kind line with "For lease", where a sale listing has no
+  // status word: the label is the lease's, from publishListingCardFacts.
+  const kind = [facts.lease?.label, subTypeLabel(listing.propertySubType), facts.kind]
+    .filter(Boolean)
+    .join(' · ')
   const tags = listing.badges ?? (listing.badge ? [listing.badge] : [])
   const visible = shown || leaving
   return (
@@ -202,11 +225,7 @@ const DialCard = memo(function DialCard({ listing, panelId, tabId, shown, leavin
       <Link href={listing.href} className="v3-dial__copy">
         <span className="v3-dial__figures">
           {kind ? <span className="v3-dial__kind">{kind}</span> : null}
-          {facts.ask ? (
-            <span className="v3-dial__ask">{facts.ask}</span>
-          ) : (
-            <span className="v3-dial__ask v3-dial__ask--none">{DIAL_NO_ASK}</span>
-          )}
+          <span className={cn('v3-dial__ask', price.withheld && 'v3-dial__ask--none')}>{price.text}</span>
           {facts.meta.length > 0 ? <span className="v3-dial__meta">{facts.meta.join(' · ')}</span> : null}
         </span>
         <span className="v3-dial__where">
@@ -241,7 +260,7 @@ const DialThumb = memo(function DialThumb({
   onWarm,
   setRef,
 }: ThumbProps) {
-  const { ask } = factsOf(listing)
+  const price = dialPriceSlot(factsOf(listing))
   const src = thumbSrc(listing)
   return (
     <button
@@ -251,7 +270,7 @@ const DialThumb = memo(function DialThumb({
       id={dialTabId(dialId, index)}
       aria-selected={selected}
       aria-controls={dialPanelId(dialId, index)}
-      aria-label={dialThumbLabel(listing.addressLine, ask)}
+      aria-label={dialThumbLabel(listing.addressLine, price.text)}
       tabIndex={selected ? 0 : -1}
       className="v3-dial__thumb"
       onClick={() => onSelect(index)}
@@ -266,7 +285,7 @@ const DialThumb = memo(function DialThumb({
         )}
       </span>
       <span className="v3-dial__thumb-cap">
-        <span className="v3-dial__thumb-ask">{ask ?? DIAL_NO_ASK}</span>
+        <span className="v3-dial__thumb-ask">{price.text}</span>
         <span className="v3-dial__thumb-addr">{listing.addressLine}</span>
       </span>
     </button>
@@ -336,7 +355,9 @@ export function V3ListingDial({
         const pos = dialPosition(target, count)
         const listing = listings[target]
         if (pos && listing) {
-          setLive(`${pos.shown} of ${pos.count}. ${dialThumbLabel(listing.addressLine, factsOf(listing).ask)}`)
+          setLive(
+            `${pos.shown} of ${pos.count}. ${dialThumbLabel(listing.addressLine, dialPriceSlot(factsOf(listing)).text)}`,
+          )
         }
       }
     },
@@ -388,6 +409,25 @@ export function V3ListingDial({
     ro.observe(el)
     return () => ro.disconnect()
   }, [multi, readEdges])
+
+  // A thumbnail the rail's edge cuts through keeps its photograph under the
+  // fade (the sign there is more) and drops its caption: a price cut off
+  // mid-string ("$1.00/" at 375, taste evaluator 2026-09-23) is not a price.
+  // The attribute is the observer's alone; React never renders it.
+  useEffect(() => {
+    const root = scrollerRef.current
+    if (!multi || !root || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          entry.target.toggleAttribute('data-clipped', dialThumbCut(entry.intersectionRatio))
+        }
+      },
+      { root, threshold: [0, DIAL_THUMB_WHOLE, 1] },
+    )
+    for (const tab of tabs.current.slice(0, count)) if (tab) io.observe(tab)
+    return () => io.disconnect()
+  }, [multi, count, listings])
 
   // Keep the selected thumbnail whole inside the rail. The rail scrolls on its
   // own; the page never moves because a thumbnail was chosen.
@@ -475,19 +515,9 @@ export function V3ListingDial({
       ) : null}
 
       <div className="v3-dial__body">
-        <div className="v3-dial__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-          {listings.map((listing, i) => (
-            <DialCard
-              key={listing.listingKey}
-              listing={listing}
-              panelId={dialPanelId(id, i)}
-              tabId={multi ? dialTabId(id, i) : null}
-              shown={i === index}
-              leaving={multi && leaving === i && i !== index}
-            />
-          ))}
-        </div>
-
+        {/* The dial first, its panels after (the WAI-ARIA tabs order): on a wide
+            screen it stands on the left of the card, on a phone CSS lays it
+            under the card as a strip. */}
         {multi ? (
           <div className="v3-dial__rail">
             <div className="v3-dial__rail-frame">
@@ -537,6 +567,18 @@ export function V3ListingDial({
             </div>
           </div>
         ) : null}
+        <div className="v3-dial__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          {listings.map((listing, i) => (
+            <DialCard
+              key={listing.listingKey}
+              listing={listing}
+              panelId={dialPanelId(id, i)}
+              tabId={multi ? dialTabId(id, i) : null}
+              shown={i === index}
+              leaving={multi && leaving === i && i !== index}
+            />
+          ))}
+        </div>
       </div>
 
       {multi ? (

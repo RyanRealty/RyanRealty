@@ -251,7 +251,28 @@ export const TEXT_FIELD_COLUMNS: Readonly<Record<string, string>> = Object.fromE
  * as gte on the DAL-canonical `${key}Min` and lte on `${key}Max`. Legacy
  * one-sided fields (garageMin, domMax, hoaMonthlyMax, ...) resolve naturally —
  * the missing side is simply absent from the FilterSchema and skipped.
+ * Exception: `dom` (domMax, "new in the last N days") is NOT `dom <= N`; it is
+ * `on_market_date >= listedWithinDaysCutoff(N)`, see below.
  */
 export const RANGE_FIELD_COLUMNS: Readonly<Record<string, string>> = Object.fromEntries(
   SEARCH_FIELDS.filter((def) => def.kind === 'range').map((def) => [def.key, def.mv])
 )
+
+/**
+ * "New in the last N days" means newly LISTED (Matt 2026-09-23): the home came
+ * on the market within N days of now, on_market_date >= the returned instant.
+ *
+ * Why not `dom <= N`: the MVs' `dom` column is listings."DaysOnMarket", an MLS
+ * figure frozen at the row's last sync, not a live count. Measured 2026-09-24
+ * on listing_search_mv (Active / Active Under Contract): a home on the market
+ * since 2026-08-23 (31.2 days) carried dom = 1, and five listed 2026-09-02
+ * (21 days) carried dom = 7, so `dom <= 7` served three-week-old listings as
+ * new this week. The on-market date does not age.
+ *
+ * Every DAL "new in N days" predicate reads this (searchListingsAll's `dom`
+ * range, getListingTiles domMax); search_listings_advanced's p_new_listings_days
+ * applies the same rule in SQL ("OnMarketDate" >= now() - N days).
+ */
+export function listedWithinDaysCutoff(days: number, nowMs: number = Date.now()): string {
+  return new Date(nowMs - days * 86_400_000).toISOString()
+}

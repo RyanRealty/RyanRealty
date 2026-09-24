@@ -5,8 +5,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 // Up to MAX_CHUNKS_PER_REQUEST (default 12) full-sync chunks per invocation —
-// multi-minute work. Matches the cron-fleet convention (crm-sequence-engine,
-// refresh-mvs): without it the project-default duration kills the run silently.
+// multi-minute work. Matches the cron-fleet convention (crm-sequence-engine):
+// without it the project-default duration kills the run silently.
 export const maxDuration = 300
 
 const MAX_CHUNKS_PER_REQUEST = Math.max(1, Math.min(24, Number(process.env.SYNC_MAX_CHUNKS_PER_REQUEST ?? 12)))

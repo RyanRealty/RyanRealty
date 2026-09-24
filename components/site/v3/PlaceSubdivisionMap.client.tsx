@@ -7,6 +7,11 @@
  * Choosing one zooms the map to that recorded shape and the carousel below
  * shows every publicly active home inside it. The place name at the top of
  * the list shows every home in the place.
+ *
+ * Commercial leases (MLS 'G') are never in `homes`: a lease is not for sale,
+ * so it is not counted "for sale" and it is not a pin. They arrive as their
+ * own `leases` list and PlaceSubdivisionHomes shows them last, under
+ * "Commercial space for lease", filtered by the same map selection.
  */
 import { createContext, useContext, useId, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
@@ -14,11 +19,17 @@ import { cn } from '@/lib/utils'
 import { formatCount } from '@/lib/format/count'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
+import { publishListingLeaseFigure } from '@/lib/listing/publish-lease-rate'
+import {
+  COMMERCIAL_LEASE_ALL_LABEL,
+  COMMERCIAL_LEASE_PATH,
+  PLACE_LEASE_HEADING,
+} from '@/lib/place/place-lease-heading'
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { SubdivisionRailEntry } from '@/lib/place/place-child-stock'
 import { firstListedPhoto } from '@/lib/place/rail-photo'
-import { V3_ROOT_CLASS, V3Heading } from './atoms'
+import { V3_ROOT_CLASS, V3Button, V3Heading } from './atoms'
 import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
 import { V3Carousel } from './V3Carousel.client'
 import { V3ListingDial } from './V3ListingDial.client'
@@ -38,6 +49,8 @@ type PlaceMapState = {
   placeName: string
   rail: readonly SubdivisionRailEntry[]
   homes: readonly V3ListingRowData[]
+  /** Commercial leases in the place, apart from `homes` (never for sale). */
+  leases: readonly V3ListingRowData[]
   keysBySlug: Readonly<Record<string, readonly string[]>>
   source: string
   asOf: string | null
@@ -53,10 +66,13 @@ function usePlaceMap(): PlaceMapState {
   return value
 }
 
+const NO_LEASES: readonly V3ListingRowData[] = []
+
 export function PlaceSubdivisionMap({
   placeName,
   rail,
   homes,
+  leases = NO_LEASES,
   keysBySlug,
   source,
   asOf = null,
@@ -65,6 +81,8 @@ export function PlaceSubdivisionMap({
   placeName: string
   rail: readonly SubdivisionRailEntry[]
   homes: readonly V3ListingRowData[]
+  /** Commercial leases (placeLeaseSectionFromTiles rows). Shown last, never counted for sale. */
+  leases?: readonly V3ListingRowData[]
   keysBySlug: Readonly<Record<string, readonly string[]>>
   source: string
   asOf?: string | null
@@ -72,8 +90,8 @@ export function PlaceSubdivisionMap({
 }) {
   const [selectedId, setSelected] = useState<string | null>(null)
   const value = useMemo(
-    () => ({ placeName, rail, homes, keysBySlug, source, asOf, selectedId, setSelected }),
-    [placeName, rail, homes, keysBySlug, source, asOf, selectedId],
+    () => ({ placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId, setSelected }),
+    [placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId],
   )
   return <PlaceMapContext.Provider value={value}>{children}</PlaceMapContext.Provider>
 }
@@ -200,6 +218,13 @@ function PlaceHomeCard({ listing }: { listing: V3ListingRowData }) {
     city: listing.city,
     listNumber: listing.listNumber,
   })
+  // A commercial lease prints its rent with the unit (or "Lease rate not
+  // published") where a sale prints its ask, and "For lease" as its kind.
+  const lease = publishListingLeaseFigure({
+    price: listing.price,
+    propertyType: listing.propertyType,
+    leaseRateOption: listing.leaseRateOption ?? null,
+  })
   const meta = homeMeta(listing)
   return (
     <Link href={listing.href} className="place-home-card">
@@ -213,8 +238,18 @@ function PlaceHomeCard({ listing }: { listing: V3ListingRowData }) {
           />
         ) : null}
       </span>
-      {ask ? <span className="place-home-card__price">{ask}</span> : null}
-      {share ? <span className="place-home-card__share">{share}</span> : null}
+      {lease ? (
+        <span className={cn('place-home-card__price', !lease.rate && 'place-home-card__price--none')}>
+          {lease.text}
+        </span>
+      ) : ask ? (
+        <span className="place-home-card__price">{ask}</span>
+      ) : null}
+      {lease ? (
+        <span className="place-home-card__share">{lease.label}</span>
+      ) : share ? (
+        <span className="place-home-card__share">{share}</span>
+      ) : null}
       <span className="place-home-card__addr">{listing.addressLine}</span>
       {meta ? <span className="place-home-card__meta">{meta}</span> : null}
     </Link>
@@ -257,7 +292,7 @@ export function PlaceSubdivisionHomes({
   id: string
   layout?: 'rails' | 'dial'
 }) {
-  const { placeName, rail, homes, keysBySlug, source, asOf, selectedId } = usePlaceMap()
+  const { placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId } = usePlaceMap()
   const selected = rail.find((entry) => entry.id === selectedId) ?? null
   const title = selected?.name ?? placeName
   const visible = useMemo(() => {
@@ -265,6 +300,15 @@ export function PlaceSubdivisionHomes({
     const keys = new Set(keysBySlug[selectedId] ?? [])
     return homes.filter((home) => keys.has(home.listingKey))
   }, [homes, keysBySlug, selectedId])
+  // The same selection filter, the same membership (childListingKeys), so the
+  // leases below a chosen subdivision are the leases inside it.
+  const visibleLeases = useMemo(() => {
+    if (!selectedId) return leases
+    const keys = new Set(keysBySlug[selectedId] ?? [])
+    return leases.filter((lease) => keys.has(lease.listingKey))
+  }, [leases, keysBySlug, selectedId])
+  const leaseCount =
+    visibleLeases.length > 0 ? `${formatCount(visibleLeases.length)} for lease` : null
   const typeSections = useMemo(() => homesByBuyerGroup(visible), [visible])
   const countLabel = visible.length > 0 ? `${formatCount(visible.length)} for sale` : null
   const typed = typeSections.length > 1
@@ -325,9 +369,44 @@ export function PlaceSubdivisionHomes({
             ))}
           </V3Carousel>
         )
+      ) : visibleLeases.length > 0 ? (
+        <p className="place-homes__empty">Nothing for sale in {title} right now.</p>
       ) : (
         <p className="place-homes__empty">Nothing listed in {title} right now.</p>
       )}
+      {/* COMMERCIAL SPACE FOR LEASE, last, apart from every for-sale count
+          above. Same selection, same card, the rent with its unit. */}
+      {leaseCount && layout === 'dial' ? (
+        <V3ListingDial
+          key={`${dialKey}-lease`}
+          id={`${id}-lease`}
+          className="place-homes__dial"
+          heading={PLACE_LEASE_HEADING}
+          headingLevel={3}
+          countLabel={leaseCount}
+          label={`${PLACE_LEASE_HEADING} in ${title}`}
+          listings={visibleLeases}
+        />
+      ) : leaseCount ? (
+        <div id={`${id}-lease`} className="place-homes__type place-homes__type--lease">
+          <p className="place-homes__type-heading" id={`${id}-lease-heading`}>
+            {PLACE_LEASE_HEADING}
+          </p>
+          <p className="place-homes__type-count">{leaseCount}</p>
+          <V3Carousel mode="rail" label={`${PLACE_LEASE_HEADING} in ${title}`}>
+            {visibleLeases.map((listing) => (
+              <PlaceHomeCard key={listing.listingKey} listing={listing} />
+            ))}
+          </V3Carousel>
+        </div>
+      ) : null}
+      {leaseCount ? (
+        <p className="place-homes__more">
+          <V3Button href={COMMERCIAL_LEASE_PATH} variant="ghost">
+            {COMMERCIAL_LEASE_ALL_LABEL}
+          </V3Button>
+        </p>
+      ) : null}
       <V3SourceLine source={source} asOf={asOf} sourceName="Oregon Data Share" />
     </section>
   )

@@ -181,6 +181,14 @@ export type V3AnswersProps = {
    * still enter the first 1440 viewport.
    */
   layout?: 'section' | 'strip'
+  /**
+   * Render each question as an H3 inside its summary (HTML allows one heading
+   * in a <summary>). Off by default, so every existing caller's outline is
+   * unchanged. /about turns it on (Matt 2026-09-23, the About-page AEO
+   * playbook: questions as H3s, so the outline an answer engine reads names
+   * every question the FAQPage JSON-LD carries).
+   */
+  questionHeadings?: boolean
   className?: string
 }
 
@@ -401,6 +409,7 @@ export function V3Answers({
   sourceKey,
   doorsLabel,
   layout = 'section',
+  questionHeadings = false,
   className,
 }: V3AnswersProps) {
   const rows = toRenderable(questions)
@@ -529,7 +538,11 @@ export function V3Answers({
                     because they opened something else. */}
                 <details className="v3-answers__row" open={row.open}>
                   <summary className="v3-answers__q">
-                    <span className="v3-answers__q-text">{row.question}</span>
+                    {questionHeadings ? (
+                      <h3 className="v3-answers__q-text v3-answers__q-heading">{row.question}</h3>
+                    ) : (
+                      <span className="v3-answers__q-text">{row.question}</span>
+                    )}
                     {/* THE ANSWER, SHUT. A figure on the closed row is what
                         turns this from a list of things to open into a sheet
                         the reader has already read. */}

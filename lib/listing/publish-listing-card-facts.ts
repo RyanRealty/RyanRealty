@@ -13,8 +13,15 @@
  * publishListingSharePricePerSqft refuses a share price divided by the whole
  * dwelling (CLAUDE.md section 0). Nothing is estimated or filled in: a missing
  * figure is left out of the line, never printed as a dash or a zero.
+ *
+ * A COMMERCIAL LEASE (MLS 'G') has no ask: its ListPrice is rent. `lease` then
+ * carries what the card prints in the ask's place, the rate with its unit from
+ * publishListingLeaseFigure ("$1.40/sq ft/mo") or "Lease rate not published",
+ * and the label "For lease". It is null on every sale listing, so a card that
+ * checks it first cannot print a lease under a sale's words.
  */
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingLeaseFigure, type ListingLeaseFigure } from '@/lib/listing/publish-lease-rate'
 import {
   publishListingShareKind,
   publishListingSharePricePerSqft,
@@ -33,11 +40,15 @@ export type ListingCardFactsInput = {
   pricePerSqft: number | null
   /** 'Pending' for an under-contract listing; null otherwise. */
   statusLabel: string | null
+  /** A commercial lease's "Lease Rate Options" unit. Only lease rows carry it. */
+  leaseRateOption?: string | null
 }
 
 export type ListingCardFacts = {
   /** The published ask ("$649,000"), or null when there is none to publish. */
   ask: string | null
+  /** A commercial lease's rate (or the withheld line) and "For lease"; null on a sale listing. */
+  lease: ListingLeaseFigure | null
   /** A fractional share's kind ("1/4 share"), or null for a whole property. */
   kind: string | null
   /** beds · baths · sqft · status · $/sqft, only the parts the row has. */
@@ -50,6 +61,11 @@ function whole(n: number): string {
 
 export function publishListingCardFacts(card: ListingCardFactsInput): ListingCardFacts {
   const ask = formatPublishedSaleAsk({ price: card.price, propertyType: card.propertyType })
+  const lease = publishListingLeaseFigure({
+    price: card.price,
+    propertyType: card.propertyType,
+    leaseRateOption: card.leaseRateOption ?? null,
+  })
   const kind = publishListingShareKind({
     propertySubType: card.propertySubType,
     subdivisionName: card.subdivisionName,
@@ -70,5 +86,5 @@ export function publishListingCardFacts(card: ListingCardFactsInput): ListingCar
     pricePerSqft: card.pricePerSqft,
   })
   if (ppsf != null && ppsf > 0) meta.push(`$${whole(ppsf)}/sqft`)
-  return { ask, kind, meta }
+  return { ask, lease, kind, meta }
 }

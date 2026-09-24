@@ -130,6 +130,7 @@ import { amenityItemListItems, buildCommunityAmenityBoard } from './_v3/communit
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
+import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -694,9 +695,14 @@ async function renderCommunityDetail({ params }: Props) {
       'comm:child-stock',
     ),
   ])
-  const stockSections = placeStockSectionsFromTiles(unionListingTiles(stockTiles, fieldTiles))
+  const liveStockTiles = unionListingTiles(stockTiles, fieldTiles)
+  const stockSections = placeStockSectionsFromTiles(liveStockTiles)
+  // Commercial leases in the community: shown last under the map, never
+  // counted for sale and never a pin.
+  const leaseSection = await loadPlaceLeaseSection(liveStockTiles)
   const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${publicName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
-  const hasMap = seedRing || fieldTiles.length > 0 || stockSections.length > 0
+  const hasMap =
+    seedRing || fieldTiles.length > 0 || stockSections.length > 0 || leaseSection != null
   // The living map, scoped to this community (Matt 2026-09-01: heat maps on
   // every page). Population = every active, pending, and 30-day-closed
   // listing INSIDE the recorded boundary, read through the same builder the
@@ -1041,6 +1047,7 @@ async function renderCommunityDetail({ params }: Props) {
           placeName={publicName}
           rail={railEntries}
           homes={placeHomes}
+          leases={leaseSection?.rows ?? []}
           keysBySlug={homesByChild}
           source={inventorySource}
           asOf={leftoverStamp}

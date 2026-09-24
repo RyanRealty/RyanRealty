@@ -238,6 +238,15 @@ type Props = {
    * the count bubble. Search keeps the pin∪ring frame.
    */
   fitSubjectRing?: boolean
+  /**
+   * Fractional zoom for this map. The bare /homes-for-sale regional frame sets
+   * it: its box (CENTRAL_OREGON_BOUNDS) opened at integer z8 at 1440, spanning
+   * the coast to John Day with Central Oregon small in the middle, because an
+   * integer fitBounds rounds down to the zoom that fits. Fractional zoom lets
+   * the same fitBounds (same padding) fill the pane with the region. A place
+   * camera (city, community, drawn area) leaves it off and opens as before.
+   */
+  fractionalZoom?: boolean
 }
 
 /**
@@ -1181,6 +1190,7 @@ export default function SearchMapClustered({
   relayoutKey,
   disableClustering = false,
   fitSubjectRing = false,
+  fractionalZoom = false,
 }: Props) {
   // BEM `v3-place-look__map-canvas` — `\b` after look fails because `_` is a
   // word char, which left a 360px minHeight under the 10.5rem phone island
@@ -1366,10 +1376,15 @@ export default function SearchMapClustered({
       // Integer fitBounds on a 13rem island stops at z10 (~101×126 knot).
       // Fractional zoom lets the settle loop hit fill ≥ 0.7.
       ...(fitSubjectRing ? { isFractionalZoomEnabled: true } : {}),
+      // The regional search frame fits its box at fractional zoom (prop doc).
+      // Stated as false when it turns off, so a place picked from the filter
+      // bar on the same mounted map fits at integer zoom exactly as before
+      // (false is the raster default this map is created with).
+      ...(!fitSubjectRing ? { isFractionalZoomEnabled: fractionalZoom } : {}),
     }
     // isLoaded stays a dep so options recompute after the Maps script
     // arrives. Google UI chrome is off; MapChrome owns zoom and Map/Satellite.
-  }, [drawingMode, multiDrawActive, isLoaded, fitSubjectRing])
+  }, [drawingMode, multiDrawActive, isLoaded, fitSubjectRing, fractionalZoom])
 
   // ─── Imperative map creation ───────────────────────────────────────────────
   // We create the google.maps.Map instance ourselves rather than relying on

@@ -649,6 +649,38 @@
   overflow-y: auto;
 }
 
+/* The dock's Sort names the order the results are in ("Newest listed"),
+   quieter than the SORT label it follows. */
+.map-search-mapsort__now {
+  margin-left: 0.45em;
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
+  font-weight: var(--v3-weight-body, 400);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+/* The filter dock's Map | List | Sort (?view=list, ?view=map). It sat at the
+   end of one nowrap row after Places, Filters and Save, and pushed the page
+   111px sideways at 390 (187px at 768). The row now wraps below lg
+   (SearchFilters), and below sm this pill takes its own full-width line: the
+   views share the width, Sort keeps its size, every target keeps the 44px
+   floor. */
+@media (max-width: 639px) {
+  .map-search-mapsort__pill--dock {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .map-search-mapsort__pill--dock .map-search-mapsort__views {
+    flex: 1 1 auto;
+  }
+
+  .map-search-mapsort__pill--dock .map-search-mapsort__views button {
+    flex: 1 1 0;
+  }
+}
+
 /* Mic inside the location search bar — square tap, no outline chip. */
 .srch-mic-inbar {
   border-radius: 6px !important;
@@ -1102,6 +1134,12 @@ button.srch-chip--key {
   text-transform: uppercase;
   color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
   line-height: 1.25;
+  /* The readout is a sentence ("$839/sqft · above middle half of 23 on this
+     map"). The desktop list's figure column is nowrap, so it ran ~120px past
+     its 13rem mark and past the right edge of the page at 1440. It wraps
+     inside the mark instead. */
+  white-space: normal;
+  text-wrap: pretty;
 }
 
 .srch-ppsf__track {
@@ -1117,4 +1155,59 @@ button.srch-chip--key {
 
 .srch-ppsf--empty .srch-ppsf__none {
   position: static;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   /homes-for-sale opens on the LIST on phones (Matt 2026-09-23).
+
+   The server cannot see the viewport, so the split view serves one markup and
+   this decides by width. From lg up the list rail and the map sit side by side.
+   Below lg a list-first page (MapSearchView phonePane="list") fills the frame
+   with the expanded sheet, drops the drag handle (the list is the page, not a
+   sheet over a map) and floats the same Map | Sort pill the map carries, so the
+   map is one tap away. Tapping Map collapses the sheet to its peek over the
+   map, exactly the map-first layout above. No flash: the served markup already
+   carries `is-expanded`, and the map is not mounted until that tap. */
+.map-search-mapdoor {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .map-search-sheet--list-first.is-expanded {
+    height: 100%;
+    max-height: 100%;
+    border-top: 0;
+  }
+  .map-search-sheet--list-first.is-expanded .map-search-sheet__chrome {
+    display: none;
+  }
+  /* Room under the last card so the floating pill never covers it. */
+  .map-search-sheet--list-first.is-expanded .map-search-list__scroll {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+  .map-search-mapdoor {
+    position: absolute;
+    left: 50%;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    z-index: 120;
+    display: flex;
+    transform: translateX(-50%);
+  }
+}
+.map-search-mapdoor__map {
+  min-height: var(--v3-tap, 44px);
+  min-width: var(--v3-tap, 44px);
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: 5px 0 0 5px;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-family: inherit;
+  font-size: var(--v3-size-label, 0.65625rem);
+  font-weight: var(--v3-weight-medium, 500);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.map-search-mapdoor__map:hover {
+  background: color-mix(in srgb, var(--v3-navy) 85%, transparent);
 }

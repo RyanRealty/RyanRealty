@@ -65,6 +65,17 @@
   margin-inline-start: calc(var(--v3-space-md) * -1);
 }
 
+/* The catalog AvatarGroup overlaps its faces (-space-x on a ring). At display
+   scale a 1rem overlap on a 14.5rem circle read as three separate circles to
+   the 2026-09-23 evaluator (demoMatch false: "spaced circles, not the
+   AvatarGroup interaction"). A quarter of a face overlaps, ring kept, so the
+   desktop object is the same object the phone already shows. */
+@media (min-width: 48rem) {
+  .about-firm__avatar-btn + .about-firm__avatar-btn {
+    margin-inline-start: calc(var(--v3-card-photo-w) * -0.36);
+  }
+}
+
 .about-firm__rating {
   margin: 0;
   color: var(--v3-ink);
@@ -382,4 +393,22 @@
   .about-closings {
     padding-inline: var(--v3-gutter);
   }
+}
+
+/* 44px tap floor on the fold's catalog controls (WCAG 2.5.5, Apple HIG,
+   PUBLIC_UI.md section 2). The installed shadcn Button and Input default to
+   h-8 (32px) and the carousel arrows to 28px; the 2026-09-23 About pass
+   measured every one of them under the floor at 1440 and 375. The objects
+   stay the catalog objects; only the hit box grows. */
+.about-reach [data-slot='button'],
+.about-office [data-slot='button'],
+.about-inquiry [data-slot='button'],
+.about-inquiry [data-slot='input'] {
+  min-height: var(--v3-tap);
+}
+
+.about-closings [data-slot='carousel-previous'],
+.about-closings [data-slot='carousel-next'] {
+  width: var(--v3-tap);
+  height: var(--v3-tap);
 }

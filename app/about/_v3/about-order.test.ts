@@ -72,11 +72,47 @@ describe('/about section order', () => {
     expect(css).not.toMatch(/70vh|64vh/)
   })
 
+  /**
+   * Matt 2026-09-23 (About-page AEO playbook): the playbook sections sit BELOW
+   * the proof. Photos, reviews and closings stay on top; then what we do, what
+   * makes us different, who we work with, where, how, the team, the key facts,
+   * and the questions. "How it started" is now the first item of "The team
+   * behind Ryan Realty", which keeps the origin and the licenses.
+   */
+  it('puts the playbook sections below the proof, in the playbook order', () => {
+    const order = [
+      '<AboutFirm',
+      'id="proof"',
+      '<FirmClosings',
+      'id="reach"',
+      '<AboutOffice',
+      '<AboutInquiry',
+      'id="services"',
+      'id="different"',
+      'id="clients"',
+      'id="service-area"',
+      'id="how-we-work"',
+      'id="about"',
+      'id="key-facts"',
+      'id="faq"',
+    ]
+    for (let i = 1; i < order.length; i += 1) {
+      expect(at(order[i - 1]!), `${order[i - 1]} before ${order[i]}`).toBeLessThan(at(order[i]!))
+    }
+    expect(BODY).toContain('heading="What Ryan Realty does"')
+    expect(BODY).toContain('heading="What makes Ryan Realty different"')
+    expect(BODY).toContain('heading="Who Ryan Realty works with"')
+    expect(BODY).toContain('heading="How Ryan Realty works"')
+    expect(BODY).toContain('heading="Key facts about Ryan Realty"')
+    expect(BODY).toContain('heading="Frequently asked questions"')
+  })
+
   it('keeps origin and licenses below the fold, not as a KPI hero', () => {
     expect(at('id="proof"')).toBeLessThan(at('id="service-area"'))
     expect(at('id="service-area"')).toBeLessThan(at('id="about"'))
     expect(at('id="about"')).toBeLessThan(at('id="faq"'))
-    expect(BODY).toContain('heading="How it started"')
+    expect(BODY).toContain('heading="The team behind Ryan Realty"')
+    expect(PAGE).toContain("term: 'How it started'")
     expect(PAGE).not.toContain('V3Instrument')
     expect(PAGE).toContain('licenseFigures')
     expect(PAGE).toContain('FIRM_LICENSE')
