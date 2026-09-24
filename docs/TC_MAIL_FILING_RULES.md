@@ -418,10 +418,22 @@ passes; it just never wrote down the decisions it discarded.
   on one of them, and can never open a new transaction or name another file;
   otherwise it stays queued with the model's reason. The daily sweep's
   re-decide step runs the model once per queued message (a review row with
-  stage `model` is not asked again). Off by default elsewhere (`indexGmailMessage({ modelStage:
-  true })` / `review-all --model-stage` / `reviewMailbox({ modelStage: true
-  })`): real Grok spend, so a caller — a person or a script run — opts in
-  deliberately. Tests and dry runs never call it.
+  stage `model` is not asked again). **The live sync opts in (2026-09-24):**
+  `lib/crm/gmail.ts` indexes every new message with `modelStage: true`, so a
+  leftover that still looks transactional is read by the model the same
+  quarter-hour it arrives rather than waiting for the daily sweep. Measured
+  before turning it on: of Matt's 250 most recent messages 3 were
+  model-worthy leftovers and 3 ambiguous (about 4 Grok calls a day at his
+  30-day rate of 164.7 messages a day); Rebecca's and Paul's latest 60 each
+  had none. Other callers stay opt-in (`indexGmailMessage({ modelStage: true })`
+  / `review-all --model-stage` / `reviewMailbox({ modelStage: true })`).
+  Tests and dry runs never call it.
+- **PDFs from people on a file are always read (2026-09-24).** Pass 2 used to
+  open a message's PDFs only when their names looked transactional or the
+  rules already meant to keep the message. A PDF sent by, or to, a party,
+  contact or named person on one of our files is now read whatever it is
+  named ("ORE Residential Input - ODS_....pdf" named 1974 NW Newport Hills
+  only in its text). About 5 such messages a day, at most 5 PDFs each.
 - **Coverage**: `lib/data/tc/mail-coverage.ts` `getMailCoverage()` reads
   Gmail's own `messagesTotal` per mailbox (live `users.getProfile`) against
   `tc_mail_reviews` counts and `tc_mail_review_cursors.finished_at`, shown on

@@ -454,11 +454,18 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
     // platform named them ("Change_Form_for_Status__Date__Price…ODS.pdf"):
     // their text names the property the notice's subject left out.
     const esign = d2.category === 'signing_notice' && names.length > 0
-    if (!STORED.has(d2.status) && !transactionNames && !esign) return empty(d2, d2.status)
+    // A PDF from, or sent to, someone on one of our files is read whatever it
+    // is named: "ORE Residential Input - ODS_....pdf" from a seller's TC named
+    // 1974 NW Newport Hills Drive only in its text (audit 2026-09-24,
+    // 1947f8f79839a85e). About 5 such messages a day across the three
+    // mailboxes, at most 5 PDFs each.
+    const fromDealPerson =
+      names.length > 0 && d2.candidates.some((c) => c.evidence.some((e) => e === 'party' || e === 'contact' || e === 'name'))
+    if (!STORED.has(d2.status) && !transactionNames && !esign && !fromDealPerson) return empty(d2, d2.status)
 
     // Pass 3: read the PDFs. Their text can carry the address or escrow number
     // the subject left out, and it says whether a form is fully executed.
-    const read = names.length ? await readAttachments(gmail, full, STORED.has(d2.status) || esign) : []
+    const read = names.length ? await readAttachments(gmail, full, STORED.has(d2.status) || esign || fromDealPerson) : []
     const f3: MailFacts = { ...f2, attachments: names.map((n) => read.find((r) => r.ref.filename === n.name)?.facts ?? n) }
     internalAt = f3.sentAt
     let decision = decideMailFiling({ facts: f3, deals: universe.deals, thread: anchor })
