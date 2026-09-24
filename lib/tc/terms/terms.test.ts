@@ -3,7 +3,7 @@ import { agreeReadings } from './agree'
 import { planTermsWrite, type CycleTermColumns } from './plan'
 import { parseProvenance, stampProvenance } from './provenance'
 import { disputesToSettle, needsTiebreak, settleWithThird } from './tiebreak'
-import { afterTermsDecisionHref, formIsThisCycles, formatTermValue, groupReadings, orderTermsQueue } from './review'
+import { QUEUE_FIELDS, afterTermsDecisionHref, formIsThisCycles, formatTermValue, groupReadings, orderTermsQueue } from './review'
 import { resolveCycleTerms, surnames, type Instrument } from './resolve'
 import { instrumentKindForTitle, normalizeTermsReading, type InstrumentKind, type Term, type TermsReading } from './schema'
 
@@ -396,6 +396,11 @@ describe("Matt's contract-terms queue", () => {
       { value: 591000, display: '$591,000', readers: ['second'] },
     ])
     expect(groupReadings('escrowNumber', 'WT-0286975', 'wt0286975', undefined)).toEqual([{ value: 'WT-0286975', display: 'WT-0286975', readers: ['first', 'second'] }])
+  })
+
+  it('brings Matt only the splits on terms that go on the file', () => {
+    for (const f of ['purchasePrice', 'earnestMoney', 'closingDate', 'inspectionDays', 'financingDays', 'escrowCompany', 'escrowNumber', 'lastSignatureDate']) expect(QUEUE_FIELDS.has(f)).toBe(true)
+    for (const f of ['possession', 'sellerConcessions', 'financingType', 'closingText', 'settlementDate', 'receivedDate']) expect(QUEUE_FIELDS.has(f)).toBe(false)
   })
 
   it("keeps another buyer's offer out of this cycle's queue", () => {

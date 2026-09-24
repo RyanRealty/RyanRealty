@@ -26,7 +26,7 @@ import { isFinishedFile } from '@/lib/tc/file-workspace'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { READER_VERSION } from '@/lib/tc/doc-read/vision-reading'
 import { TERM_COLUMN_LABEL, planTermsWrite, type CycleTermColumns, type TermColumn, type TermConflict, type TermsPlan, type TermWrite } from '@/lib/tc/terms/plan'
-import { TERM_FIELD_LABEL, conflictKey, formIsThisCycles, groupReadings, orderTermsQueue, unsettledKey, type TermsReviewItem } from '@/lib/tc/terms/review'
+import { QUEUE_FIELDS, TERM_FIELD_LABEL, conflictKey, formIsThisCycles, groupReadings, orderTermsQueue, unsettledKey, type TermsReviewItem } from '@/lib/tc/terms/review'
 import { parseProvenance, stampProvenance, type TermProvenance } from '@/lib/tc/terms/provenance'
 import { readTermsTwice, readThird, type ReaderRun, type TermsForm, type TermsRead } from '@/lib/tc/terms/read'
 import { TIEBREAK_FIELDS, TIEBREAK_VERSION, disputesToSettle, needsTiebreak, settleWithThird, type Settlement, type UnsettledDisagreement } from '@/lib/tc/terms/tiebreak'
@@ -545,7 +545,7 @@ export async function getTermsReviewQueue(sb: SupabaseClient = createServiceClie
       const first = t.raw?.claude as TermsDocumentReading | null | undefined
       const second = t.raw?.grok as TermsDocumentReading | null | undefined
       for (const x of t.disagreements) {
-        if (!TIEBREAK_FIELDS.has(x.field)) continue
+        if (!QUEUE_FIELDS.has(x.field)) continue
         const formBuyers = [...(first?.instruments[x.instrument]?.buyers ?? []), ...(second?.instruments[x.instrument]?.buyers ?? [])]
         if (!formIsThisCycles(formBuyers, cycleBuyers)) continue
         items.push({

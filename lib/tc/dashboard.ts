@@ -9,6 +9,7 @@
  */
 import { dealCalendarItems } from './deal-calendar'
 import { REVIEW_PATH, reviewHref } from './review-queue'
+import { termsReviewHref } from './terms/review'
 
 export type DashboardDeal = {
   id: string
@@ -58,6 +59,12 @@ export type DashboardInput = {
   envelopes: readonly DashboardEnvelope[]
   mailQueue: number
   documentReview: number
+  /**
+   * Contract terms waiting on the principal broker, per file (the typed values
+   * the contract disagrees with, and the splits the third read did not settle;
+   * lib/tc/terms/review.ts). Null when the viewer is not the principal broker.
+   */
+  contractTerms?: ReadonlyArray<{ propertyKey: string; address: string; count: number }> | null
   /** YYYY-MM-DD, America/Los_Angeles. */
   today: string
 }
@@ -278,6 +285,20 @@ export function buildTransactionsDashboard(input: DashboardInput): TransactionsD
       href: reviewHref({ deal: r.propertyKey }),
       action: 'Review',
       rank: overdue ? 0 : 10 + (soonest?.bankingDaysRemaining ?? 7),
+    })
+  }
+  // Contract terms (Matt 2026-09-24: queue and dashboard, no texts).
+  for (const t of input.contractTerms ?? []) {
+    if (!t.count) continue
+    needs.push({
+      key: `terms:${t.propertyKey}`,
+      kind: 'Terms',
+      tone: 'slow',
+      title: `${t.count} contract term${t.count === 1 ? '' : 's'} to check · ${street(t.address)}`,
+      context: 'A typed value the executed contract disagrees with, or a term the readers split on',
+      href: termsReviewHref({ deal: t.propertyKey }),
+      action: 'Check',
+      rank: 8,
     })
   }
   for (const d of deals) {

@@ -203,4 +203,9 @@ describe('formatters', () => {
     // A calendar day never shifts a day back through a time zone.
     expect(shortDate('2026-10-01')).toBe('Oct 1')
   })
+  it('lists contract terms waiting on the principal broker per file, linked to the queue scoped to that file', () => {
+    const d = buildTransactionsDashboard(input({ contractTerms: [{ propertyKey: '20702-beaumont', address: '20702 Beaumont Drive, Bend, OR, 97701', count: 2 }, { propertyKey: 'none', address: '1 Nowhere', count: 0 }] }))
+    const t = d.needsYou.filter((n) => n.kind === 'Terms')
+    expect(t).toEqual([expect.objectContaining({ title: '2 contract terms to check · 20702 Beaumont Drive', href: '/admin/sign-off/terms?deal=20702-beaumont', action: 'Check' })])
+  })
 })

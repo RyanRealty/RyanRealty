@@ -33,6 +33,14 @@ export const TERM_FIELD_LABEL: Record<string, string> = {
   lastSignatureDate: 'Last signature',
 }
 
+/**
+ * The split readings that reach Matt's queue (Matt 2026-09-24: "Only terms
+ * that go on the file"): the terms written to the cycle, and the signature
+ * date that sets acceptance and orders the chain. A split on possession
+ * wording, concessions or financing type shows on the file only.
+ */
+export const QUEUE_FIELDS = new Set(['purchasePrice', 'earnestMoney', 'closingDate', 'inspectionDays', 'financingDays', 'escrowCompany', 'escrowNumber', 'lastSignatureDate'])
+
 const MONEY = new Set(['purchasePrice', 'earnestMoney', 'sellerConcessions'])
 const DAYS = new Set(['inspectionDays', 'financingDays'])
 
@@ -127,4 +135,15 @@ export function afterTermsDecisionHref(items: readonly TermsReviewItem[], key: s
   const i = items.findIndex((x) => x.key === key)
   const next = i >= 0 ? items[i + 1] ?? items[i - 1] : null
   return termsReviewHref({ item: next?.key ?? null, deal })
+}
+
+/** The queue counted per file, for the dashboard. */
+export function termsPerFile(items: readonly TermsReviewItem[]): Array<{ propertyKey: string; address: string; count: number }> {
+  const by = new Map<string, { propertyKey: string; address: string; count: number }>()
+  for (const i of items) {
+    const row = by.get(i.propertyKey) ?? { propertyKey: i.propertyKey, address: i.address, count: 0 }
+    row.count++
+    by.set(i.propertyKey, row)
+  }
+  return [...by.values()]
 }
