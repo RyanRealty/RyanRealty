@@ -19,7 +19,7 @@ import { getAuthLimiter, getStrictLimiter } from '@/lib/rate-limit'
 import { getCommunityBySlug } from '@/app/actions/communities'
 import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
 import { getPlaceValueAnswer } from '@/lib/data/places/getPlaceValueAnswer'
-import { countCompsForAddress } from '@/lib/cma/place-comps'
+import { compsReaderSource, countCompsForAddress } from '@/lib/cma/place-comps'
 import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { sendEvent } from '@/lib/crm/send-event'
@@ -111,10 +111,10 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
   // it is not context, so this place gets the rule with its one mark.
   const citySlug = slugify(place.city) === place.geoSlug ? null : slugify(place.city)
   const [answer, comps, cityAnswer] = await Promise.all([
-    getPlaceValueAnswer({ geoType: 'neighborhood', geoSlug: place.geoSlug }).catch(() => null),
+    getPlaceValueAnswer({ geoType: 'neighborhood', geoSlug: place.geoSlug, placeLabel: place.name }).catch(() => null),
     countCompsForAddress({ rawAddress: address, city: place.city }).catch(() => null),
     citySlug
-      ? getPlaceValueAnswer({ geoType: 'city', geoSlug: citySlug }).catch(() => null)
+      ? getPlaceValueAnswer({ geoType: 'city', geoSlug: citySlug, placeLabel: place.city }).catch(() => null)
       : Promise.resolve(null),
   ])
 
@@ -144,9 +144,9 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
 
   // THE DRAWINGS. One shaping for both address asks (lib/site/answer-figures),
   // so the community page and /sell draw the same three figures in the same
-  // words. Each figure's source is the trace line getPlaceValueAnswer and the
-  // comp ladder already wrote for that figure (§0) — this action never invents
-  // one, and a figure whose source is missing is not drawn.
+  // words. Each figure's source is the reader's trace line getPlaceValueAnswer
+  // wrote for it, and the comps' is compsReaderSource (§0): this action never
+  // invents one, and a figure whose source is missing is not drawn.
   const asOfLabel = answer?.asOf ? formatDate(answer.asOf) : null
   const supplyTrace = answer?.trace.find((line) => line.startsWith('months of supply')) ?? null
   const paceTrace = answer?.trace.find((line) => line.startsWith('days to pending')) ?? null
@@ -168,7 +168,9 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
     sources: {
       supply: supplyTrace,
       pace: paceTrace,
-      comps: comps?.trace ?? null,
+      // The reader's source, not the resolver's audit line (which carries
+      // the query that matched the address). SITE-193.
+      comps: comps ? compsReaderSource(comps.subjectFound) : null,
     },
     unmatchedSentence: `Nothing in the sales record matches ${streetOf(address)} on the first pass.`,
   })
@@ -214,7 +216,7 @@ export async function requestPlaceValuation(input: PlaceValueRequestInput): Prom
   // Recompute what the page showed, server side, so the confirmation carries traced
   // figures and not whatever the client sent.
   const [answer, comps] = await Promise.all([
-    getPlaceValueAnswer({ geoType: 'neighborhood', geoSlug: place.geoSlug }).catch(() => null),
+    getPlaceValueAnswer({ geoType: 'neighborhood', geoSlug: place.geoSlug, placeLabel: place.name }).catch(() => null),
     countCompsForAddress({ rawAddress: address, city: place.city }).catch(() => null),
   ])
   const compCount = comps?.subjectFound ? comps.count : null

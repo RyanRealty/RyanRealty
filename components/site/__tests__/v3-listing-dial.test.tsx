@@ -207,9 +207,9 @@ describe('V3PlaceInventory layout="dial"', () => {
     for (const img of imgs) expect(img).toContain('loading="lazy"')
   })
 
-  it('prints the row’s facts and "Pending" for an under-contract listing', () => {
+  it('prints the row’s facts and "Under contract" for an Active Under Contract listing', () => {
     expect(html).toContain('3 bd · 2 ba · 1,800 sqft · $322/sqft')
-    expect(html).toContain('Pending')
+    expect(html).toContain('Under contract')
     expect(html).toContain('No photo published')
   })
 

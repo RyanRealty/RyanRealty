@@ -17,6 +17,7 @@ import { createContext, useContext, useId, useMemo, useState, type ReactNode } f
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatCount } from '@/lib/format/count'
+import { placeHomesCountLabel } from '@/lib/place/place-count-label'
 import {
   COMMERCIAL_LEASE_ALL_LABEL,
   COMMERCIAL_LEASE_PATH,
@@ -254,7 +255,9 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
   const leaseCount =
     visibleLeases.length > 0 ? `${formatCount(visibleLeases.length)} for lease` : null
   const typeSections = useMemo(() => homesByBuyerGroup(visible), [visible])
-  const countLabel = visible.length > 0 ? `${formatCount(visible.length)} for sale` : null
+  // For sale is Active, under contract is Active Under Contract: the buckets
+  // the map above draws its marks in (placeHomesCountLabel, SITE-193).
+  const countLabel = placeHomesCountLabel(visible)
   const typed = typeSections.length > 1
   const dialKey = selectedId ?? 'all'
   // The lease dial comes after every for-sale dial drawn above it.
@@ -277,7 +280,7 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
               railPosition={dialRailPositionAt(order)}
               heading={section.heading}
               headingLevel={3}
-              countLabel={`${formatCount(section.rows.length)} for sale`}
+              countLabel={placeHomesCountLabel(section.rows)}
               label={`${section.heading} in ${title}`}
               listings={section.rows}
             />

@@ -24,6 +24,13 @@ describe('SITE-129 community fold inventory', () => {
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
   })
 
+  it('never clamps the belonging facts mid-sentence at 375 (SITE-193)', () => {
+    // "$2,052 HOA a year from homes here. 3…" was a one-line clamp inside an
+    // 8rem photograph: the facts print whole and the photograph grows instead.
+    expect(FOLD_CSS).not.toMatch(/caption--belonging[\s\S]{0,200}line-clamp/)
+    expect(FOLD_CSS).toMatch(/place-opening--community\.place-opening--media \{\s*min-height: 6\.5rem;\s*max-height: none;/)
+  })
+
   it('clusters the Caldera island on first paint and hides unpinned plat cards', () => {
     expect(PAGE).toMatch(/clusterCellPx=\{COMMUNITY_FOLD_CLUSTER_CELL_PX\}/)
     expect(PAGE).toMatch(/clusterStageHint=\{COMMUNITY_FOLD_CLUSTER_STAGE\}/)

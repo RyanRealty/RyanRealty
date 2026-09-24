@@ -93,6 +93,7 @@ import { placeInventoryHref } from '@/lib/communities/self-city-community'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishCityRealEstateTitle } from '@/lib/site/page-metadata'
 import { placeCityRealEstateHeading, placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { appendPlaceFaqExtras, buildPlaceFaqExtras } from '@/lib/site/place-faq-extras'
@@ -866,7 +867,8 @@ async function renderCityDetail({ params }: Props) {
       return [bare, { geoType, geoSlug: isBend ? `${slug}-${bare}` : bare }]
     }),
   )
-  const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${cityName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
+  // The reader's words for the same set (SITE-193): no MLS status names.
+  const inventorySource = placeInventorySource(placeBoundaryClause(cityName))
 
   // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
   // city-prefixed index slugs while the ledger's are plain registry slugs for

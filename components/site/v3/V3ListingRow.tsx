@@ -86,6 +86,13 @@ export type V3ListingRowData = {
   /** "Pending" for an under-contract listing. Printed by the rail card, not the row. */
   statusLabel?: string | null
   /**
+   * The MLS StandardStatus the row was read with. A place page's counts read it
+   * through publicCountState (lib/listing-status-public), the same classifier
+   * the place map draws its marks with, so "for sale" means one thing on the
+   * map and under it (SITE-193).
+   */
+  standardStatus?: string | null
+  /**
    * A commercial lease's rent unit, the feed's own "Lease Rate Options" value
    * ("$/SF/Mo", "$ Amt/Mo", ...), read by getLeaseRateOptions. Only lease rows
    * carry it. Every card hands it to publishListingLeaseFigure with `price`, so

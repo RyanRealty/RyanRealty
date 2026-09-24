@@ -1,0 +1,142 @@
+/**
+ * ONE "FOR SALE" ON A PLACE PAGE (SITE-193, 2026-09-24).
+ *
+ * /cities/bend printed "700 for sale" on the map and "705 for sale" on the
+ * homes under it: the same 700 Active listings, plus 5 Active Under Contract
+ * that the map drew as pending and the homes block counted for sale. Both now
+ * read publicCountState. These tests hold the map's for-sale count and the
+ * homes block's for-sale count equal over one population, whatever mix of
+ * statuses it carries.
+ */
+import { describe, expect, it, vi } from 'vitest'
+import { renderToStaticMarkup } from 'react-dom/server'
+import type { ListingTile } from '@/lib/data'
+import { PUBLIC_ACTIVE_STATUSES, publicCountState } from '@/lib/listing-status-public'
+import { placeHomesCount, placeHomesCountLabel } from './place-count-label'
+
+vi.mock('server-only', () => ({}))
+vi.mock('next/cache', () => ({ unstable_cache: (fn: unknown) => fn }))
+vi.mock('@/lib/data', () => ({ getAtlasTiles: vi.fn(), getListingTiles: vi.fn() }))
+
+const NOW = Date.parse('2026-09-24T12:00:00Z')
+
+function tile(i: number, status: string, over: Partial<ListingTile> = {}): ListingTile {
+  return {
+    listingKey: `k-${i}`,
+    listNumber: `2202${String(i).padStart(5, '0')}`,
+    status,
+    listPrice: 500_000 + i * 1000,
+    closePrice: status === 'Closed' ? 490_000 : null,
+    closeDate: status === 'Closed' ? '2026-09-20' : null,
+    beds: 3,
+    baths: 2,
+    sqft: 1800,
+    streetNumber: String(100 + i),
+    streetName: 'Greenwood',
+    streetSuffix: 'Ave',
+    city: 'Bend',
+    citySlug: 'bend',
+    postalCode: '97701',
+    subdivisionName: 'Center Addition to Bend',
+    subdivisionSlug: 'center-addition-to-bend',
+    lat: 44.06,
+    lng: -121.3,
+    photoUrl: null,
+    propertyType: 'A',
+    propertySubType: 'Single Family Residence',
+    onMarketDate: '2026-09-01T00:00:00Z',
+    modifiedAt: null,
+    pricePerSqft: 300,
+    lotSizeAcres: null,
+    yearBuilt: 2000,
+    garageSpaces: null,
+    poolYn: null,
+    hasVirtualTour: null,
+    tourUrl: null,
+    dom: 4,
+    priceDropCount: null,
+    addressSlug: `${100 + i}-greenwood-ave`,
+    ...over,
+  } as ListingTile
+}
+
+/** A place's population: what the map reads (every status) inside one boundary. */
+const POPULATION: ListingTile[] = [
+  tile(1, 'Active'),
+  tile(2, 'Active'),
+  tile(3, 'Active'),
+  tile(4, 'Active Under Contract'),
+  tile(5, 'Active Under Contract', { propertySubType: 'Condominium' }),
+  tile(6, 'Pending'),
+  tile(7, 'Closed'),
+  // Commercial leases: drawn on no map and counted for sale nowhere.
+  tile(8, 'Active', { propertyType: 'G', propertySubType: null, listPrice: 1.4 }),
+  tile(9, 'Active Under Contract', { propertyType: 'G', propertySubType: null, listPrice: 2500 }),
+]
+
+/** What the homes block holds: the publicly active slice of the same population (listing_boundary_xref_mv). */
+const HOMES_POPULATION = POPULATION.filter((t) => (PUBLIC_ACTIVE_STATUSES as string[]).includes(t.status))
+
+describe('the map and the homes under it count "for sale" the same way', () => {
+  it('holds the map key and the homes block count equal over one population', async () => {
+    const { atlasDotsFromTiles } = await import('@/lib/atlas/build-place-atlas')
+    const { placeStockSectionsFromTiles } = await import('./place-inventory-stock')
+    // The map reads the same listings as AtlasTiles (every fixture has a
+    // coordinate, which is all AtlasTile narrows).
+    const dots = atlasDotsFromTiles(POPULATION as unknown as Parameters<typeof atlasDotsFromTiles>[0], NOW)
+    const mapForSale = dots.filter((d) => d.s === 'active').length
+    const mapPending = dots.filter((d) => d.s === 'pending').length
+    const rows = placeStockSectionsFromTiles(HOMES_POPULATION).flatMap((s) => s.rows)
+    const homes = placeHomesCount(rows)
+    expect(mapForSale).toBe(3)
+    expect(homes.forSale).toBe(mapForSale)
+    // Under contract in the homes block is the still-showing part of the map's pending.
+    expect(homes.underContract).toBe(2)
+    expect(mapPending).toBe(3)
+    expect(homes.underContract).toBeLessThanOrEqual(mapPending)
+    expect(placeHomesCountLabel(rows)).toBe('3 for sale · 2 under contract')
+  })
+
+  it('classifies every status the same way on a dot and on a count', async () => {
+    const { dotStatus } = await import('@/lib/atlas/build-place-atlas')
+    for (const status of ['Active', 'Active Under Contract', 'Pending', 'Closed', 'Coming Soon', 'Expired', '', null]) {
+      const state = publicCountState(status)
+      const dot = dotStatus(status)
+      expect(dot === 'active').toBe(state === 'for-sale')
+      expect(dot === 'pending').toBe(state === 'under-contract')
+      expect(dot === 'sold').toBe(state === 'sold')
+    }
+  })
+
+  it('heads each buyer group with the same words, and a card says "Under contract", not "Pending"', async () => {
+    const { placeStockSectionsFromTiles } = await import('./place-inventory-stock')
+    const sections = placeStockSectionsFromTiles(HOMES_POPULATION)
+    const sfr = sections.find((s) => s.key === 'sfr')!
+    expect(sfr.countLabel).toBe('3 for sale · 1 under contract')
+    expect(sfr.rows.find((r) => r.listingKey === 'k-4')?.statusLabel).toBe('Under contract')
+    expect(sections.find((s) => s.key === 'attached')?.countLabel).toBe('1 under contract')
+  })
+
+  it('prints the same counts in the homes block a city or community page draws', async () => {
+    const { placeStockSectionsFromTiles } = await import('./place-inventory-stock')
+    const { PlaceSubdivisionHomes, PlaceSubdivisionMap } = await import(
+      '@/components/site/v3/PlaceSubdivisionMap.client'
+    )
+    const rows = placeStockSectionsFromTiles(HOMES_POPULATION).flatMap((s) => s.rows)
+    const html = renderToStaticMarkup(
+      <PlaceSubdivisionMap placeName="Bend" rail={[]} homes={rows} keysBySlug={{}} source="regional MLS">
+        <PlaceSubdivisionHomes id="homes" />
+      </PlaceSubdivisionMap>,
+    )
+    expect(html).toContain('>3 for sale · 2 under contract<')
+    expect(html).not.toContain('5 for sale')
+  })
+})
+
+describe('placeHomesCountLabel', () => {
+  it('never prints "0 for sale" and says nothing for no rows', () => {
+    expect(placeHomesCountLabel([])).toBeNull()
+    expect(placeHomesCountLabel([{ standardStatus: 'Active Under Contract' }])).toBe('1 under contract')
+    expect(placeHomesCountLabel([{ standardStatus: 'Active' }, { standardStatus: null }])).toBe('2 for sale')
+  })
+})

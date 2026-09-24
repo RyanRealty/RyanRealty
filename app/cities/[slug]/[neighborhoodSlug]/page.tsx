@@ -71,6 +71,7 @@ import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
+import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
@@ -943,7 +944,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
           homes={placeHomes}
           leases={leaseSection?.rows ?? []}
           keysBySlug={homesByChild}
-          source={`regional MLS through Oregon Data Share, every publicly active listing inside the recorded ${neighborhood.name} boundary: Active and Active Under Contract, every property type. Coming Soon is excluded. This is a wider set than the detached count on the fold.`}
+          source={`${placeInventorySource(placeBoundaryClause(neighborhood.name))} This is a wider set than the detached count on the fold.`}
           asOf={leftoverStamp}
         >
           <div className="place-one-map">

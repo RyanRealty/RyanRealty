@@ -70,7 +70,7 @@ describe('railCardFromListingRow', () => {
     const office = sections.find((s) => s.key === 'commercial')!.rows[0]!
     const card = railCardFromListingRow(office)
     expect(card.photoUrls).toEqual([])
-    expect(card.statusLabel).toBe('Pending')
+    expect(card.statusLabel).toBe('Under contract')
     expect(card.href).toBe(office.href)
     expect(card.addressLine).toBe(office.addressLine)
   })
