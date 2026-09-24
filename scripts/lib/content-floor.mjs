@@ -463,7 +463,25 @@ export function measurePage() {
     }
     return false
   }
+  // Why an item count reads low (printed only when a section floor fails):
+  // how many candidates the section held, how many were skipped as
+  // aria-hidden, and the first element that hid them. A CI read on
+  // 2026-09-24 measured #towns at 0 items with its words intact, on a build
+  // that renders six rows; this says which of those it was next time.
+  function hiddenAncestor(node) {
+    let n = node
+    while (n && n.nodeType === 1) {
+      const raw = n.getAttribute('aria-hidden')
+      if (raw === 'true' || raw === '') {
+        const cls = typeof n.className === 'string' ? n.className.trim().split(/\s+/).slice(0, 3).join('.') : ''
+        return `${n.tagName.toLowerCase()}${n.id ? `#${n.id}` : ''}${cls ? `.${cls}` : ''}`
+      }
+      n = n.parentElement
+    }
+    return null
+  }
   const sectionDepth = {}
+  const sectionDiag = {}
   for (const el of Array.from(root.querySelectorAll('[id]'))) {
     const id = el.id
     if (!id || Object.prototype.hasOwnProperty.call(sectionDepth, id)) continue
@@ -479,8 +497,16 @@ export function measurePage() {
     if (nested) continue
     const itemSelector = 'li, article, tr, [data-floor-item]'
     let items = 0
+    let candidates = 0
+    let hiddenItems = 0
+    let hiddenBy = null
     for (const c of Array.from(el.querySelectorAll(itemSelector))) {
-      if (isAriaHidden(c)) continue
+      candidates += 1
+      if (isAriaHidden(c)) {
+        hiddenItems += 1
+        if (!hiddenBy) hiddenBy = hiddenAncestor(c)
+        continue
+      }
       let p = c.parentElement
       let topmost = true
       while (p && p !== el) {
@@ -494,6 +520,7 @@ export function measurePage() {
     }
     const sectionWords = (el.innerText || '').split(/\s+/).filter(Boolean).length
     sectionDepth[id] = { items, words: sectionWords }
+    sectionDiag[id] = { tag: el.tagName.toLowerCase(), candidates, hiddenItems, hiddenBy }
   }
 
   return {
@@ -508,5 +535,6 @@ export function measurePage() {
     video,
     jsonLd: document.querySelectorAll('script[type="application/ld+json"]').length,
     sectionDepth,
+    sectionDiag,
   }
 }

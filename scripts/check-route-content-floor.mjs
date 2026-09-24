@@ -396,6 +396,13 @@ async function main() {
     if (problems.length) {
       failures.push(`${cls.key} (${cls.url}):\n      ${problems.join('\n      ')}`)
       console.log(`  FAIL ${cls.key}`)
+      // What the failing read actually held, so a CI-only failure can be
+      // diagnosed from the log instead of reproduced (2026-09-24).
+      const failedIds = [...new Set(problems.map((p) => /^sections\.([^.]+)\./.exec(p)?.[1] ?? /^section #(\S+) gone/.exec(p)?.[1]).filter(Boolean))]
+      if (failedIds.length) {
+        console.log(`    measured sections: ${JSON.stringify(measured?.sectionDepth ?? {})}`)
+        for (const id of failedIds) console.log(`    #${id}: ${JSON.stringify(measured?.sectionDiag?.[id] ?? 'absent from the page')}`)
+      }
     } else {
       const sectionFloors = parity.contentFloor?.floors?.sectionDepth
       const sectionsNote = isPlainObject(sectionFloors) ? `, sections ${Object.keys(sectionFloors).length}/${Object.keys(sectionFloors).length}` : ''

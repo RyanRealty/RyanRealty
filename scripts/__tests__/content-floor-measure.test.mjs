@@ -108,6 +108,26 @@ describe('content-floor measurePage — SITE-119 aria-hidden decoration', () => 
     expect(measurePage().sectionDepth.atlas.items).toBe(1)
   })
 
+  it('reports why a section read low: candidates, hidden rows, and what hid them', () => {
+    document.body.innerHTML = `
+      <main>
+        <div class="v3-overlay-host" aria-hidden="true">
+          <section id="towns"><ul class="v3-ledger__list"><li>Bend 13 for lease</li><li>Redmond 12 for lease</li></ul></section>
+        </div>
+        <section id="edges"><ul><li>Talk to a broker</li></ul></section>
+      </main>
+    `
+    const measured = measurePage()
+    expect(measured.sectionDepth.towns.items).toBe(0)
+    expect(measured.sectionDiag.towns).toEqual({
+      tag: 'section',
+      candidates: 2,
+      hiddenItems: 2,
+      hiddenBy: 'div.v3-overlay-host',
+    })
+    expect(measured.sectionDiag.edges).toEqual({ tag: 'section', candidates: 1, hiddenItems: 0, hiddenBy: null })
+  })
+
   it('does not skip a row under aria-hidden="false"', () => {
     document.body.innerHTML = `
       <main>
