@@ -42,18 +42,15 @@ Surface: Claude Code cloud session. Standing rule from Matt 2026-09-24 (CLAUDE.m
 - **Applied on Matt's explicit approval (2026-09-24):** `.claude/settings.json` allows all 14 connector servers (Supabase `execute_sql` and `apply_migration` included, which Matt confirmed again when merging main), asks on 12 send/spend/pause/restore/delete-branch tools as `mcp__*<Server>__<tool>` globs, has an empty `deny`, and registers the SessionStart hook. The auto-mode classifier refuses an agent editing its own permissions unprompted; a future change needs the same explicit go-ahead. Still Matt-side: connector tool permissions, re-paste and rotate the Google key, delete `ANTHROPIC_API_KEY` and the retired CRM's variables, add `VERCEL_TOKEN`, check the setup script field, enable the `engineering`, `design` and `data` plugins, connect Sentry.
 - Skills read: `session-start-hook`; CLAUDE.md §0, §1, §6, §7, §8.
 
-**Agent navigation (branch `claude/agent-navigation-efficiency-dp5zj5`).**
+**Agent navigation (branch `claude/agent-navigation-efficiency-dp5zj5`, PR #364).**
 
-Surface: Claude Code cloud session. Matt asked where agents go, what it costs them to get there, and for pointer-only CLAUDE.md edits. Report: `docs/audits/AGENT_NAVIGATION_2026-09-24.md` (git history plus replays of 23 real tasks with cold agents, every call and token parsed).
+Surface: Claude Code cloud session. Matt asked where agents go, what it costs them to get there, and for pointer-only CLAUDE.md edits; then "fix everything that you found." Report: `docs/audits/AGENT_NAVIGATION_2026-09-24.md` (git history plus replays of 23 real tasks with cold agents, every call and token parsed).
 
-- **Landed:** three rows in the CLAUDE.md §9 routing table.
-  - The CMA row now names `lib/pricing/` (comp search and count, cover price) and the `lib/cma/` evidence tables (`status-*.ts`).
-  - New "Place page code" and "Listings, search box, map" rows.
-  - A/B result: tokens spent before reaching the right file fell 58% on the tasks the rows came from, and 30% on held-out tasks inside a named area.
-  - No help outside a named area: the CMA market chapter, `lib/cma/listing-window-*.ts`, has no row.
-- **CLAUDE.md is at its byte budget (37,526 of 37,526).** The next pointer has to be paid for by trimming another line.
-- **Next, optional:** a CMA market-chapter pointer, once bytes are freed. The report ends with defect leads the replay agents raised on `main`. They are not verified.
-- Read: CLAUDE.md §0/§1/§6/§8/§9, `scripts/check-claude-canon.mjs`, `scripts/check-process-canon.mjs`, `scripts/check-handoff-current.mjs`.
+- **CLAUDE.md §9:** the CMA row names `lib/pricing/` (comp search, count, cover price), the evidence tables (`status-*.ts`) and the market chapter (`listing-window-*.ts`, `market-charts.ts`); new "Place page code" and "Listings, search box, map" rows. §5 names the snapshot crons. A/B: -58% tokens before the right file on the tasks the rows came from; the market chapter row cut calls from 8-9 to 5-7. CLAUDE.md is 37,477 bytes; the `ci:claude-canon` budget was lowered to match.
+- **Fixed on the branch** (details and commits in the report): texts deferred after 8pm came back two mornings later; 9pm copy; texts could go out after 8pm (engine, composer, prospecting); evening bulk emails held a day; `/price-drops` listed condos as single-family, capped its read at 1,000 events, cached a failed read as an empty week, printed capped city counts, and 500'd on an empty week (`noStore()` in ISR); map-only view zoom and off-map price badges piling on the edge; Gmail sign-in and sends had no deadline, and a timed-out send could double-send through Resend; typeahead city counts from a 250-row sample; CMA fallback comps ignored the as-of date; TC rules doc, snapshot skill, docs README, listing parity, mobile edit sheet, loop brief place-membership line.
+- **Behavior changes:** cap-held texts wait for the next morning; city price-drop pages list up to 48; city price-drop alerts are single-family; a timed-out Gmail send is not retried through Resend.
+- **Next:** ten product calls for Matt are listed at the end of the report (Pending in the search box, "real estate" community titles, broker-picked comp cap, evidence table layout, FAQ depth, new price on the cut line, region fill, brief seeding, hidden overlays, Meta ads on a no-spend day). Not fixed, out of scope: other Google API clients with no timeouts, `/site-index` still requires `noStore()`.
+- Read: CLAUDE.md §0/§1/§6/§8/§9, `scripts/check-claude-canon.mjs`, `scripts/check-process-canon.mjs`, `scripts/check-handoff-current.mjs`, `lib/site/degraded-isr.ts`, `lib/crm/quiet-hours.ts`.
 
 **Rule for this file.** ONE `# Current` block. At session end, replace it (surface, SHA, what landed, what is next, skills read) and carry forward every still-open Matt directive; never stack a new one on top. `ci:handoff-current` fails a second `# Current`. Older blocks move verbatim to `docs/archive/`. Boot doc for "run the loop": `docs/RUN_LOOP.md`.
 

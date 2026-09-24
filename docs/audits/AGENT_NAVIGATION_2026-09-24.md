@@ -24,6 +24,9 @@ agent transcripts made in this session. Nothing is estimated unless it says so.
 - A same-day follow-up named the CMA market chapter and the snapshot crons, paid for by
   removing a duplicate link. CLAUDE.md is 37,477 bytes and its budget was lowered to match,
   so the next pointer still has to be paid for by trimming something.
+- The replay agents also flagged defects on `main`. The five leads were checked and fixed on
+  this branch, with the related defects found alongside. Ten product calls are left for Matt.
+  See the last two sections.
 
 ## How this was measured
 
@@ -296,23 +299,122 @@ from before the edit.
   - It is still the canonical rulings file. Keeping the rulings at the top would make the
     grep land faster.
 
-## Leads the replay agents raised (not verified)
+## Leads the replay agents raised, now fixed
 
-Replay agents read deeply and several flagged defects on `main`. None of these was checked
-beyond the agents' own reading. Each needs a real check before anyone acts on it.
+The first version of this report listed five leads from the replay agents without checking
+them. Each was then checked against `main` and fixed on this branch, with the related defects
+found while checking. The commits below are on PR #364.
 
-- `lib/crm/quiet-hours.ts` `nextSmsWindow`: a text deferred after 8pm Pacific comes back two
-  mornings later, not the next morning. Two T10 runs reported it, and both checked the date
-  math.
-- `app/price-drops/[city]/page.tsx:187-188` still prints the capped card count (at most 40),
-  not the real total. `getPriceDrops` can also cache a failed tile read as an empty week for
-  30 minutes. Reported by 3 H3 runs.
-- `/homes-for-sale?view=map` (`HideAwareSearchMap`) never passes `fractionalZoom`, so the
-  desktop map-only view still opens the region at zoom 8. Reported by 3 H4 runs.
-- `lib/gmail-draft.ts` builds its own Gmail client with no timeout. It sits behind "Send
-  CMA", so a hang there skips the Resend fallback. Reported by one T09 run.
-- `docs/TC_MAIL_FILING_RULES.md:33` still describes the pre-2026-09-24 rule for a client on
-  several files. Reported by both T13 runs.
+- **Texts deferred after 8pm came back two mornings later** (`eee548b0a`).
+  - `nextSmsWindow` added a day after 8pm Pacific, but by then the UTC date has already
+    rolled over. 21:00 PDT on 2026-09-24 returned 2026-09-26 16:05Z.
+  - The same bug held evening market-report bulk sends a day (`nextEmailSendWindow`,
+    `54d6a9086`).
+  - The sequence editor and two help pages said texts go until 9pm. The rule is 8pm, and
+    the editor now reads it from the rule (`4b49aa5a1`).
+  - A text could still go out after 8pm. The quiet-hours check ran several awaits before
+    the Twilio call, and the engine's :58 run could pass it at 7:59. It is now asked again
+    right before the send in the sequence engine and the composer (`76f3a5d09`), and in
+    cold prospecting (`4ce7e9785`).
+- **Price drops** (`96d676ec5`, wording `7d56bbda7`).
+  - Pages that say single-family listed condos, townhomes and manufactured homes, because
+    the filter was property type `A`. It is now the `Single Family Residence` sub type, and
+    alert sign-ups save the same filter.
+  - The price-cut read stopped at 1,000 rows. It now pages.
+  - A failed listing read was cached as an empty week for 30 minutes. It now throws, and a
+    read that fails shows "Couldn't load right now" with no count.
+  - City pages printed the number of cards shown instead of the total, and a hidden cap of
+    40 per city cut under their own limit of 48. The weekly digest counted the capped list.
+    The count is now the whole window and the page's limit is the only cap.
+  - Both pages called `noStore()` on an empty week, which is an HTTP 500 inside a Next 16
+    ISR render. A failed read now shortens the page's cache life with `refuseDegradedIsr`;
+    a real empty week caches normally.
+- **The desktop map-only view opened the region at a whole-number zoom** (`632addf81`).
+  - Related: price badges for homes off the map were pulled onto the map's edge and piled
+    up there. They now hide until their home is in view (`3407d4229`).
+- **Gmail calls had no deadline** (`1d13861ff`).
+  - Gmail sign-in now gets 10 seconds, and each CMA draft or send request 30.
+  - A send that times out after it left may have gone out, so it no longer falls back to
+    Resend, which could deliver the CMA twice. The broker is told to check Sent.
+  - The same guard covers the BPO send and the CMA request confirmation.
+- **The TC mail rules doc** missed the client-on-several-files exception (`35624f1db`).
+
+Also fixed while checking:
+
+- Search-box city counts came from a 250-row sample of text matches. They are now the exact
+  count of homes the results page shows for that city (`4bcbbed1a`).
+- The CMA's fallback comp search dropped the CMA's as-of date, which turns off the age
+  penalty when it keeps the tightest comps. The main search already passed it (`948c864af`).
+- Smaller: the mobile edit sheet's Add phone and Add email buttons (`b5d884fe6`), the
+  listing page's parity file (`d9cab7216`), two dead pointers in `docs/README.md`
+  (`6fbb232b3`), the loop brief now prints place-membership freshness (`66a336bb5`), and the
+  snapshot `SKILL.md` described crons that no longer exist (`a2f205324`).
+
+**Behavior changes to know about.**
+
+- Texts held by the engine's daily carrier cap (500 by default) now wait for the next
+  morning, as the hold's log line says. Before, the date bug made them re-check every 15 minutes.
+- City price-drop pages list up to 48 homes. They asked for 48 and the hidden cap gave 40.
+- City price-drop alerts now follow the single-family filter. Before, they covered every
+  property type in the city.
+- A CMA built from the fallback comp search now weighs comp age, like the main search.
+- A Gmail send that times out is not sent again through Resend and is not marked delivered.
+
+**Found while fixing, not fixed.**
+
+- Other Google API clients with no timeouts: `lib/marketing-brain/inbox-reply.ts` and
+  `inbox-poll.ts`, `lib/google-calendar.ts`, `lib/data/loop/gsc-api.ts`,
+  `lib/newsletter/postmaster.ts`, `app/actions/search-console-report.ts`.
+- `scripts/check-site-index-freshness.mjs` requires `/site-index` to call `noStore()` when
+  empty, the same ISR 500 pattern.
+- `ci:reachable-exports` (13 orphan modules) and `ci:shadcn-burndown` fail on `main`. None of
+  the files they name are in this branch, and neither gate is in the CI chain.
+- Twilio can still deliver a text posted at 7:59:59pm after 8pm.
+
+## Decisions left for Matt (not fixed)
+
+Replay agents also raised these. Each one changes what the product does or reverses an earlier
+call, so none was built.
+
+- **Pending homes in the search box (T08).** Suggestions include Pending listings on purpose:
+  the site's on-market statuses (`PUBLIC_ON_MARKET_STATUSES`) are Active, Active Under
+  Contract and Pending. Dropping Pending means changing that rule. The city counts above
+  follow the results page, which shows Active and Active Under Contract.
+- **"Real estate" in every community title (T01).** Only Tetherow's title says it
+  (`cf8f4c418`). Rolling it out gives Sunriver and Black Butte Ranch the same title as their
+  city pages, the duplicate removed on 2026-09-22. Mountain High's title carries a live
+  listing count. `scripts/_seo-contact-sheet.mjs:42` copies the title format by hand and
+  would drift.
+- **Broker-picked comps have no five-sale cap (T04).** Automatic CMA searches stop at the
+  five tightest sales (`7842575df`). A hand-picked set still prices from every pick, on
+  purpose ("the broker owns the selection"), and the same code prices BPOs.
+- **Evidence price table layout (T05).** List and sold prices share one set of Low, Avg,
+  Median and High columns, and $/sf sits in a second table. The 2026-09-22 commit with nearly
+  the same title (`ee0753914`) only fixed column widths. A contract test pins the four column
+  words.
+- **Deeper place FAQ questions (T03).** About half the questions added on 2026-09-22
+  (`af236fac9`) are market figures again; the rest list names already on the page.
+  Neighborhood pages already load schools, HOA dues, CC&Rs and build years that never reach
+  the FAQ. A city-page test forbids HOA and school-district data in the city FAQ.
+- **The new price on a listing's price-cut line (T06).** The line shows the old price struck
+  through and "Cut $X". The new price is the large price above it and is in the screen-reader
+  text. The ask said "the two prices, old and new"; the build chose not to repeat the H1
+  price.
+- **The region filling the desktop map (H4).** With fractional zoom the whole-region fit
+  still keeps up to 128px of padding per side (`v3FitPadding`), so the tall region fills the
+  height and only part of the width. Filling the width crops the top and bottom of the frame,
+  where Madras and La Pine sit.
+- **The loop brief seeding ranking work itself (T14).** The brief prints a hint to run the
+  seeder by hand; the Monday cron (`loop-weekly-measure`) seeds. Seeding from the brief
+  changes what every session's boot writes to the work graph, and `docs/RUN_LOOP.md` §7 would
+  change with it.
+- **Content inside the page's own hidden overlays (T11).** `0ea697108` counts rows that a
+  modal manager hid (`data-aria-hidden`). Rows under the page's own `aria-hidden`, such as a
+  closed overlay host, still count as zero. One replay argued those should count.
+- **The Meta ads snapshot on a day with no ad delivery (T12).** It returns 200 with
+  `empty: true`. Failing it instead would mark the snapshot failed every day while ads are
+  off. The 2026-09-22 visibility audit found no Meta ads rows after 2026-06-19. `6303fd2ca`
+  chose 200 on purpose.
 
 ## Appendix: the replay tasks
 
