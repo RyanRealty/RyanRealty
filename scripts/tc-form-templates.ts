@@ -41,7 +41,8 @@ async function main() {
     return
   }
   if (mode === 'learn') {
-    const { learnTemplates } = await import('@/lib/tc/form-match/learn')
+    const { learnTemplates, assignLibraryReleases } = await import('@/lib/tc/form-match/learn')
+    await assignLibraryReleases(sb, { checkerVersion: arg('--from') ?? undefined, log: (s) => console.log(s) })
     const res = await learnTemplates(sb, { dryRun: process.argv.includes('--dry-run'), checkerVersion: arg('--from') ?? undefined, log: (s) => console.log(s) })
     console.log(`learned ${res.learned.length}, skipped ${res.skipped.length}`)
     for (const s of res.skipped) console.log('  skipped', s.key, '|', s.reason)

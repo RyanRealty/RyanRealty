@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addedInk, align, consensus, descriptor, descriptorGap, dilate, inkPoints, isFilled, packMask, shifted, unpackMask, type Mask } from './raster'
-import { footerOf, layoutOf, linesOf, partyOfLabel, textUsable, type TextItem } from './layout'
-import { checkInstance, describeCheck, instancesOf, loadPage, matchPage, releaseConflict, resolveTies, type FormCheck, type PageMatch, type TemplateInfo } from './check'
+import { footerOf, layoutOf, linesOf, onRules, partyOfLabel, textUsable, type SignatureSlot, type TextItem } from './layout'
+import { checkInstance, describeCheck, explainMissing, instancesOf, loadPage, matchPage, releaseConflict, resolveTies, type FormCheck, type PageMatch, type TemplateInfo } from './check'
 import { learnPage } from './learn'
 
 function blank(w = 120, h = 80): Mask {
@@ -233,6 +233,42 @@ describe('check', () => {
     }
     expect(describeCheck(c, { seller: 1 }).complete).toBe(true)
     expect(describeCheck(c, { seller: 2 }).issues).toEqual(['2 sellers named, 1 signed'])
+  })
+})
+
+describe('drawn rules', () => {
+  const slot = (baseline: number): SignatureSlot => ({
+    party: 'buyer', label: "Buyer's", section: null, required: null,
+    sig: { x0: 36, y0: baseline - 26, x1: 359, y1: baseline - 7 }, date: null, print: null,
+    labels: { baseline, sigLabel: { x0: 36, x1: 107 }, dateLabel: null, right: 360 },
+  })
+  it('signs beside the label: the box sits on the label baseline, right of the label (2.1 Version 2025-1)', () => {
+    const m = { w: 400, h: 200, bits: new Uint8Array(400 * 200) }
+    for (let x = 110; x < 360; x++) m.bits[102 * 400 + x] = 1 // rule on the baseline, starting after the label
+    for (let x = 110; x < 360; x++) m.bits[89 * 400 + x] = 1 // the line above's rule
+    const [s] = onRules(m, [slot(100)])
+    expect(s.sig.y1).toBe(103)
+    expect(s.sig.x0).toBeGreaterThan(107)
+  })
+  it('signs above the label: the box sits over the rule the label hangs under (2026 releases)', () => {
+    const m = { w: 400, h: 200, bits: new Uint8Array(400 * 200) }
+    for (let x = 36; x < 360; x++) m.bits[90 * 400 + x] = 1 // rule above the label, across it
+    for (let x = 36; x < 360; x++) m.bits[103 * 400 + x] = 1 // the next line's rule, also across its label
+    const [s] = onRules(m, [slot(100)])
+    expect(s.sig.y1).toBe(91)
+  })
+})
+
+describe('other printings', () => {
+  it('pages a copy does not match are another printing when the document has unmatched pages where they would be', () => {
+    const f = { templateId: 't1', family: 'ODS', formNumber: 'L', release: null, title: '', source: 'library' as const, pageCount: 4, pages: [{ templatePage: 4, docPage: 4, coverage: 1 }, { templatePage: 1, docPage: null, coverage: null }, { templatePage: 2, docPage: null, coverage: null }, { templatePage: 3, docPage: null, coverage: null }], missingPages: [1, 2, 3], lines: [], initials: [] }
+    const pages: PageMatch[] = [pm(1, null, null), pm(2, null, null), pm(3, null, null), pm(4, 4)]
+    const [out] = explainMissing([f], pages)
+    expect(out.missingPages).toEqual([])
+    expect(out.otherPrinting).toEqual([1, 2, 3])
+    expect(describeCheck(out).complete).toBe(true)
+    const [still] = explainMissing([f], [pm(4, 4)])
+    expect(still.missingPages).toEqual([1, 2, 3])
   })
 })
 

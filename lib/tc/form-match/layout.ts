@@ -38,6 +38,12 @@ export type SignatureSlot = {
   sig: Rect
   date: Rect | null
   print: Rect | null
+  /**
+   * Oregon REALTORS® lines only: where the printed label sits ("Buyer's
+   * Signature" ... "Date & Time"), so the boxes can be moved onto the rule
+   * the form actually draws (onRules), wherever a release draws it.
+   */
+  labels?: { baseline: number; sigLabel: { x0: number; x1: number }; dateLabel: { x0: number; x1: number } | null; right: number }
 }
 
 export type InitialsSlot = { party: Party; rects: Rect[] }
@@ -357,8 +363,12 @@ export function layoutOf(items: TextItem[], opts: { width: number; height: numbe
       const party = partyOfLabel(m[1])
       if (!party) return
       const start = line.glyphs[line.text.indexOf(m[1])]?.x0 ?? line.glyphs[0].x0
+      const sigEnd = line.text.search(/Signature/i)
+      const sigLabelEnd = sigEnd >= 0 ? line.glyphs[sigEnd + 'Signature'.length - 1]?.x1 ?? start + 70 : start + 70
       const dateIdx = line.text.search(/\bDate\b/)
       const dateX = dateIdx >= 0 ? line.glyphs[dateIdx].x0 : opts.width - 40
+      const timeIdx = line.text.search(/\bTime\b/)
+      const dateLabelEnd = timeIdx >= 0 ? line.glyphs[timeIdx + 3]?.x1 ?? dateX + 50 : dateIdx >= 0 ? line.glyphs[dateIdx + 3]?.x1 ?? dateX + 20 : null
       const prevLine = lines[li - 1]
       const top = Math.max(prevLine ? prevLine.y + 3 : line.y - 26, line.y - 26)
       signatures.push({
@@ -369,8 +379,66 @@ export function layoutOf(items: TextItem[], opts: { width: number; height: numbe
         sig: snap({ x0: start, y0: top, x1: dateX - 4, y1: line.y - 7 }),
         date: dateIdx >= 0 ? snap({ x0: dateX, y0: top, x1: opts.width - 36, y1: line.y - 7 }) : null,
         print: null,
+        labels: {
+          baseline: line.y,
+          sigLabel: { x0: start, x1: sigLabelEnd },
+          dateLabel: dateIdx >= 0 && dateLabelEnd != null ? { x0: dateX, x1: dateLabelEnd } : null,
+          right: opts.width - 36,
+        },
       })
     }
   })
   return { footer, signatures, initials }
+}
+
+/**
+ * Move Oregon REALTORS® boxes onto the rule the form draws. One release sets
+ * the label under the rule (sign above the label), another beside it (sign on
+ * the label's baseline, right of the label: 2.1 Version 2025-1). The drawn
+ * rule is found in the template's own ink: a row that is ink across most of
+ * the span between the labels. A rule beside the label leaves the label's own
+ * span clear; a rule the label sits under runs over it.
+ */
+export function onRules(mask: { w: number; h: number; bits: Uint8Array }, slots: SignatureSlot[]): SignatureSlot[] {
+  const rowShare = (y: number, x0: number, x1: number) => {
+    const a = Math.max(0, Math.round(x0))
+    const b = Math.min(mask.w, Math.round(x1))
+    if (y < 0 || y >= mask.h || b <= a) return 0
+    let n = 0
+    for (let x = a; x < b; x++) n += mask.bits[y * mask.w + x]
+    return n / (b - a)
+  }
+  const ruleFor = (baseline: number, label: { x0: number; x1: number }, x1: number): number | null => {
+    const from = label.x1 + 3
+    const to = x1 - 3
+    if (to - from < 20) return null
+    const rows: number[] = []
+    for (let y = Math.round(baseline - 24); y <= Math.round(baseline + 5); y++) if (rowShare(y, from, to) >= 0.7) rows.push(y)
+    if (!rows.length) return null
+    // Beside: a rule at the baseline that does not run under the label.
+    const beside = rows.filter((y) => y >= baseline - 2 && rowShare(y, label.x0 + 1, label.x1 - 1) < 0.3)
+    if (beside.length) return Math.min(...beside)
+    // Under: the nearest rule above the label.
+    const above = rows.filter((y) => y < baseline - 2)
+    return above.length ? Math.max(...above) : null
+  }
+  return slots.map((s) => {
+    if (!s.labels) return s
+    const { baseline, sigLabel, dateLabel, right } = s.labels
+    const dateX = dateLabel?.x0 ?? right
+    const sigRule = ruleFor(baseline, sigLabel, dateX - 2)
+    const out: SignatureSlot = { ...s }
+    if (sigRule != null) {
+      const beside = sigRule >= baseline - 2
+      out.sig = { x0: beside ? sigLabel.x1 + 2 : sigLabel.x0, y0: sigRule - 15, x1: dateX - 3, y1: sigRule + 1 }
+    }
+    if (dateLabel) {
+      const dateRule = ruleFor(baseline, dateLabel, right)
+      if (dateRule != null) {
+        const beside = dateRule >= baseline - 2
+        out.date = { x0: beside ? dateLabel.x1 + 2 : dateLabel.x0, y0: dateRule - 13, x1: right, y1: dateRule + 1 }
+      }
+    }
+    return out
+  })
 }

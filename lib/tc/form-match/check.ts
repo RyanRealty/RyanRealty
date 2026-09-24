@@ -11,7 +11,7 @@
 import { addedInk, align, descriptor, descriptorGap, dilate, inkPoints, isFilled, type Mask, type Rect } from './raster'
 import type { FooterId, InitialsSlot, Party, SignatureSlot } from './layout'
 
-export const CHECKER_VERSION = 'form-check-v3-2026-09-24'
+export const CHECKER_VERSION = 'form-check-v4-2026-09-24'
 
 /**
  * A copy lines up with its own release at ≥ 0.98: of 2,637 such pages
@@ -21,6 +21,12 @@ export const CHECKER_VERSION = 'form-check-v3-2026-09-24'
  * the same printing.
  */
 export const MATCH_MIN = 0.98
+/**
+ * A template whose release is unknown (a licensed blank with no readable
+ * footer) cannot be held to a footer: the 1.2 blank matched a 2025 copy page at
+ * 0.985. It must match at 0.99.
+ */
+export const MATCH_MIN_UNKNOWN_RELEASE = 0.99
 /** Below this the page is not from any template we hold; between the two it is reported as the nearest, not matched. */
 export const NEAR_MIN = 0.6
 
@@ -89,6 +95,12 @@ export type FormCheck = {
   /** Document page for each template page, null when missing. */
   pages: Array<{ templatePage: number; docPage: number | null; coverage: number | null }>
   missingPages: number[]
+  /**
+   * Template pages not matched while the document has unmatched pages right
+   * where they would be: the copy is another printing of those pages, not
+   * missing them (set by explainMissing).
+   */
+  otherPrinting?: number[]
   lines: LineFinding[]
   initials: InitialsFinding[]
 }
@@ -123,9 +135,11 @@ export function matchPage(copy: Mask, copyDilated: Mask, loaded: LoadedPage[], p
     .filter((lp) => !releaseConflict(footer, lp.page))
     .map((lp) => ({ lp, ...align(lp.points, lp.mask.w, copyDilated) }))
     .sort((a, b) => b.coverage - a.coverage)
-  const best = scored[0]
+  const need = (lp: LoadedPage) => (lp.template.release == null ? MATCH_MIN_UNKNOWN_RELEASE : MATCH_MIN)
+  const passing = scored.filter((s) => s.coverage >= need(s.lp))
+  const best = passing[0] ?? scored[0]
   if (!best || best.coverage < NEAR_MIN) return { page: pageNo, templateId: null, templatePage: null, coverage: best?.coverage ?? 0, dx: 0, dy: 0, nearest: null }
-  if (best.coverage < MATCH_MIN) {
+  if (!passing.length) {
     return {
       page: pageNo,
       templateId: null,
@@ -136,9 +150,9 @@ export function matchPage(copy: Mask, copyDilated: Mask, loaded: LoadedPage[], p
       nearest: { templateId: best.lp.template.id, templatePage: best.lp.page.page, coverage: best.coverage },
     }
   }
-  const alternatives = scored
+  const alternatives = passing
     .slice(1)
-    .filter((s) => s.coverage >= MATCH_MIN && best.coverage - s.coverage <= TIE)
+    .filter((s) => best.coverage - s.coverage <= TIE)
     .map((s) => ({ templateId: s.lp.template.id, templatePage: s.lp.page.page, coverage: s.coverage, dx: s.dx, dy: s.dy }))
   return {
     page: pageNo,
@@ -283,6 +297,7 @@ export function describeCheck(c: FormCheck, named: Partial<Record<Party, number>
   const issues: string[] = []
   const notes: string[] = []
   if (c.missingPages.length) issues.push(`missing page${c.missingPages.length > 1 ? 's' : ''} ${c.missingPages.join(', ')} of ${c.pageCount}`)
+  if (c.otherPrinting?.length) notes.push(`page${c.otherPrinting.length > 1 ? 's' : ''} ${c.otherPrinting.join(', ')} of ${c.pageCount} differ from the printed form we hold (another printing); read by the reader`)
   const parties = new Set(c.lines.filter((l) => l.required !== false).map((l) => l.party))
   for (const party of parties) {
     const req = c.lines.filter((l) => l.party === party && l.required !== false)
@@ -299,4 +314,24 @@ export function describeCheck(c: FormCheck, named: Partial<Record<Party, number>
     if (undated) notes.push(`${undated} ${who} signature${undated > 1 ? 's' : ''} with an empty date box`)
   }
   return { complete: issues.length === 0, issues, notes }
+}
+
+/**
+ * A template page the copy did not match is missing only if nothing in the
+ * document can account for it. When the document has at least as many
+ * unmatched pages within reach of the form's pages as the form is missing,
+ * those are the same pages in another printing (a zipForm edition, a release
+ * we have not learned): noted, not reported missing.
+ */
+export function explainMissing(forms: FormCheck[], pages: readonly PageMatch[]): FormCheck[] {
+  const unmatched = new Set(pages.filter((p) => !p.templateId).map((p) => p.page))
+  return forms.map((f) => {
+    if (!f.missingPages.length) return f
+    const docPages = f.pages.filter((p) => p.docPage != null).map((p) => p.docPage as number)
+    if (!docPages.length) return f
+    const lo = Math.min(...docPages) - f.missingPages.length
+    const hi = Math.max(...docPages) + f.missingPages.length
+    const near = [...unmatched].filter((p) => p >= lo && p <= hi).length
+    return near >= f.missingPages.length ? { ...f, otherPrinting: f.missingPages, missingPages: [] } : f
+  })
 }

@@ -16,7 +16,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { align, consensus, descriptor, dilate, inkCount, inkPoints, shifted, type Mask } from './raster'
-import { layoutOf, type FooterId } from './layout'
+import { layoutOf, onRules, type FooterId } from './layout'
 import { CHECKER_VERSION, type TemplatePage } from './check'
 import { saveTemplate } from './templates'
 import { openRaster, type RasterPdf } from './pdf-raster'
@@ -195,7 +195,7 @@ export async function learnTemplates(
           h: learned.template.h,
           footer: ref.footer,
           descriptor: descriptor(learned.template),
-          signatures: layout.signatures,
+          signatures: onRules(learned.template, layout.signatures),
           initials: layout.initials,
         })
         masks.push(learned.template)
@@ -219,4 +219,43 @@ export async function learnTemplates(
     for (const p of open.values()) (await p)?.close().catch(() => {})
   }
   return result
+}
+
+/**
+ * A licensed blank with no readable footer has no release. Our own copies that
+ * match it page for page at 0.99 and print a readable footer say which release
+ * it is: when at least two copies agree and no other release is named, the
+ * template takes that release (and a learned template of it is retired).
+ */
+export async function assignLibraryReleases(sb: SupabaseClient, opts: { checkerVersion?: string; log?: (s: string) => void } = {}): Promise<Array<{ templateId: string; release: string }>> {
+  const { data: blind } = await sb.from('tc_form_templates').select('id, family, form_number').eq('source', 'library').eq('status', 'active').is('release', null)
+  if (!blind?.length) return []
+  const want = new Map(blind.map((t) => [String(t.id), t]))
+  const votes = new Map<string, Map<string, number>>()
+  for (let from = 0; ; from += 500) {
+    const { data } = await sb.from('tc_document_checks').select('pages').eq('checker_version', opts.checkerVersion ?? CHECKER_VERSION).is('error', null).range(from, from + 499)
+    for (const c of data ?? []) {
+      for (const p of (c.pages ?? []) as Array<{ templateId: string | null; coverage: number; footer: FooterId | null }>) {
+        const t = p.templateId ? want.get(p.templateId) : null
+        if (!t || p.coverage < 0.99 || !p.footer?.release || !p.footer.number) continue
+        if (p.footer.number.replace(/^0+/, '') !== String(t.form_number).replace(/^0+/, '')) continue
+        const m = votes.get(p.templateId!) ?? new Map<string, number>()
+        m.set(p.footer.release, (m.get(p.footer.release) ?? 0) + 1)
+        votes.set(p.templateId!, m)
+      }
+    }
+    if (!data || data.length < 500) break
+  }
+  const out: Array<{ templateId: string; release: string }> = []
+  for (const [id, m] of votes) {
+    const entries = [...m.entries()].sort((a, b) => b[1] - a[1])
+    if (entries.length !== 1 || entries[0][1] < 2) continue
+    const release = entries[0][0]
+    const t = want.get(id)!
+    await sb.from('tc_form_templates').update({ status: 'retired', updated_at: new Date().toISOString() }).eq('source', 'learned').eq('status', 'active').eq('family', t.family).eq('form_number', t.form_number).eq('release', release)
+    await sb.from('tc_form_templates').update({ release, updated_at: new Date().toISOString() }).eq('id', id)
+    out.push({ templateId: id, release })
+    opts.log?.(`library ${t.family} ${t.form_number}: release ${release} from ${entries[0][1]} matching copies`)
+  }
+  return out
 }

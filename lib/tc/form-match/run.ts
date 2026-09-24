@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { dilate, type Mask } from './raster'
 import { footerOf, linesOf, textUsable, type FooterId, type Party } from './layout'
-import { CHECKER_VERSION, candidatesFor, checkInstance, describeCheck, instancesOf, matchPage, resolveTies, type Candidate, type FormCheck, type LoadedPage, type PageMatch } from './check'
+import { CHECKER_VERSION, candidatesFor, checkInstance, describeCheck, explainMissing, instancesOf, matchPage, resolveTies, type Candidate, type FormCheck, type LoadedPage, type PageMatch } from './check'
 import { loadTemplatePages, loadTemplates } from './templates'
 import { openRaster } from './pdf-raster'
 
@@ -61,7 +61,7 @@ export async function checkPdfBytes(sb: SupabaseClient, bytes: Uint8Array | Arra
       ),
     )
   }
-  return { pages, forms }
+  return { pages, forms: explainMissing(forms, pages) }
 }
 
 export type StoredFormCheck = {

@@ -7,7 +7,7 @@
 import { gunzipSync, gzipSync } from 'node:zlib'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { align, consensus, descriptor, dilate, inkPoints, packMask, unpackMask, type Mask } from './raster'
-import { layoutOf, type FieldBox, type FooterId } from './layout'
+import { layoutOf, onRules, type FieldBox, type FooterId } from './layout'
 import { loadPage, type LoadedPage, type TemplateInfo, type TemplatePage } from './check'
 import { openRaster } from './pdf-raster'
 
@@ -150,7 +150,7 @@ export async function buildPagesFromPdf(bytes: Uint8Array | ArrayBuffer, fields:
       const layout = layoutOf(await pdf.items(n), { width: mask.w, height: mask.h, fields: fields.filter((f) => f.page === n) })
       out.push({
         mask,
-        page: { page: n, w: mask.w, h: mask.h, footer: layout.footer, descriptor: descriptor(mask), signatures: layout.signatures, initials: layout.initials },
+        page: { page: n, w: mask.w, h: mask.h, footer: layout.footer, descriptor: descriptor(mask), signatures: onRules(mask, layout.signatures), initials: layout.initials },
       })
     }
     return out

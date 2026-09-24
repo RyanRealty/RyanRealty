@@ -17,7 +17,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
-import { learnTemplates } from '@/lib/tc/form-match/learn'
+import { assignLibraryReleases, learnTemplates } from '@/lib/tc/form-match/learn'
 import { recheckDocuments } from '@/lib/tc/form-match/run'
 
 export const runtime = 'nodejs'
@@ -32,11 +32,13 @@ export async function GET(request: Request) {
   const start = Date.now()
   const sb = createServiceClient()
   const dryRun = new URL(request.url).searchParams.get('dry') === '1'
+  const released = dryRun ? [] : await assignLibraryReleases(sb)
   const res = await learnTemplates(sb, { onlyNew: true, deadline: start + BUDGET_MS, dryRun })
   if (!dryRun && res.recheck.length) await recheckDocuments(sb, [...new Set(res.recheck)])
   return NextResponse.json({
     ok: true,
     dryRun,
+    libraryReleases: released,
     learned: res.learned,
     recheck: new Set(res.recheck).size,
     complete: res.complete,
