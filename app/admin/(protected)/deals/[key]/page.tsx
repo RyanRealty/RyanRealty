@@ -41,6 +41,7 @@ import {
   cycleLabel,
   fileAttention,
   fileTab,
+  isFinishedFile,
   milestonesFor,
   type FileTab,
 } from '@/lib/tc/file-workspace'
@@ -106,8 +107,10 @@ export default async function TcDealPage({ params, searchParams }: Props) {
     superuser,
     today,
   })
-  const inReview = checklist.filter((i) => i.status === 'in_review').length
-  const missing = checklist.filter((i) => i.status === 'required').length
+  // A closed or fallen-through file carries no warnings (Matt 2026-09-24).
+  const finished = isFinishedFile(deal.stage, cycle)
+  const inReview = finished ? 0 : checklist.filter((i) => i.status === 'in_review').length
+  const missing = finished ? 0 : checklist.filter((i) => i.status === 'required').length
 
   // Reads for the header (listing actions need the other live listings).
   const mergeOthers =
@@ -139,6 +142,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
         selectedDocId={sp.doc ?? null}
         showArchived={showArchived}
         superuser={superuser}
+        finished={finished}
         anticipated={await getAnticipatedDocuments(cycle.id)}
       />
     ) : (

@@ -448,8 +448,9 @@ export function buildTransactionsDashboard(input: DashboardInput): TransactionsD
       priceLabel: price != null ? exactMoney(price) : '',
       line,
       progress: d.itemsTotal ? { done, total: d.itemsTotal } : null,
-      review: d.itemsInReview,
-      missing: d.itemsRequired,
+      // A closed file carries no warnings (Matt 2026-09-24).
+      review: isClosed(d) ? 0 : d.itemsInReview,
+      missing: isClosed(d) ? 0 : d.itemsRequired,
       flag,
     }
   }

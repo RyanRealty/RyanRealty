@@ -171,7 +171,7 @@ describe('pipeline', () => {
           deal({ id: 'l1', stage: 'active_listing', expirationDate: '2026-12-31', listingDate: '2026-08-01', listingPrice: 650_000 }),
           deal({ id: 'l2', stage: 'active_listing', expirationDate: '2026-10-03' }),
           deal({ id: 'c1', stage: 'pending', escrowClosingDate: '2026-10-12', salePrice: 539_000, itemsTotal: 16, itemsRequired: 2, itemsInReview: 3 }),
-          deal({ id: 'x1', stage: 'closed', actualClosingDate: '2026-09-01' }),
+          deal({ id: 'x1', stage: 'closed', actualClosingDate: '2026-09-01', itemsTotal: 12, itemsInReview: 2, itemsRequired: 3 }),
           deal({ id: 'x2', stage: 'closed', actualClosingDate: '2026-03-16' }),
         ],
       }),
@@ -189,6 +189,8 @@ describe('pipeline', () => {
       brokerInitials: 'MR',
     })
     expect(col.closed.cards.map((c) => c.id)).toEqual(['x1'])
+    // a closed file carries no warnings (Matt 2026-09-24)
+    expect(col.closed.cards[0]).toMatchObject({ review: 0, missing: 0 })
   })
 })
 

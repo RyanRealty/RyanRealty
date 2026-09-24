@@ -38,6 +38,7 @@ export function DocumentsTab({
   selectedDocId,
   showArchived,
   superuser,
+  finished = false,
   anticipated,
 }: {
   deal: TcDeal
@@ -46,6 +47,8 @@ export function DocumentsTab({
   selectedDocId: string | null
   showArchived: boolean
   superuser: boolean
+  /** Closed or fallen through: the checklist is shown as it stands, with no warnings (Matt 2026-09-24). */
+  finished?: boolean
   anticipated: AnticipatedDocsResult | null
 }) {
   const base = `/admin/deals/${encodeURIComponent(deal.property_key)}`
@@ -109,12 +112,18 @@ export function DocumentsTab({
               >
                 {f.label}
                 {counts[f.key] ? (
-                  <span className={`av2-subnav__badge${f.key === 'review' && counts.review ? ' av2-subnav__badge--hot' : ''}`}>{counts[f.key]}</span>
+                  <span className={`av2-subnav__badge${f.key === 'review' && counts.review && !finished ? ' av2-subnav__badge--hot' : ''}`}>{counts[f.key]}</span>
                 ) : null}
               </Link>
             ))}
           </div>
         </nav>
+        {finished && (counts.review || counts.missing) ? (
+          <p className="av2-cl__none" style={{ margin: '0 0 var(--a-s3)' }}>
+            This file has closed or fallen through, so open checklist items need no action. A document SkySlope holds that is not here yet
+            arrives with the daily SkySlope pull.
+          </p>
+        ) : null}
         <div style={{ margin: '0 0 var(--a-s3)' }}>
           <DocumentUpload cycleId={cycle.id} checklistItems={cycle.checklist.map((it) => ({ id: it.id, name: it.name }))} />
         </div>
