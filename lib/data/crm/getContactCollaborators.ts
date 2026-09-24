@@ -6,7 +6,7 @@
  * DAL boundary (G1): raw .from() lives here, inside lib/data/.
  */
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { brokerDisplayName } from '@/lib/brokers/directory'
 
 export type ContactCollaborator = {
   brokerSlug: string
@@ -25,9 +25,7 @@ export async function getContactCollaborators(personId: number): Promise<Contact
 
   return (data ?? []).map((row) => ({
     brokerSlug: String(row.broker_slug),
-    displayName:
-      CRM_BROKER_DISPLAY[row.broker_slug as keyof typeof CRM_BROKER_DISPLAY] ??
-      String(row.broker_slug),
+    displayName: brokerDisplayName(String(row.broker_slug)),
     addedAt: typeof row.created_at === 'string' ? row.created_at : null,
   }))
 }

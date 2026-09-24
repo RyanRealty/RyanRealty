@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-24T12:27:13.626Z
+**Generated:** 2026-09-24T17:35:01.712Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 595,425**
+### `listings` · **rows ≈ 596,980**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 596,428**
+### `listing_tile_mv` · **rows ≈ 596,948**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed every 30 minutes by pg_cron job `refresh_listing_tile_mv_30min` (:02/:32). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -287,7 +287,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 73,884**
+### `similar_listings_mv` · **rows ≈ 73,807**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -539,7 +539,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 532**
+### `cmas` · **rows ≈ 533**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -629,7 +629,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 517**
+### `expired_listings` · **rows ≈ 519**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2971,6 +2971,39 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `mls_number` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 
+### `listing_mv_errors`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `at` | timestamp with time zone | no | now() |
+| `list_number` | text | yes |  |
+| `error` | text | yes |  |
+
+### `listing_mv_queue`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `list_number` | text | no |  |
+| `enqueued_at` | timestamp with time zone | no | now() |
+
+### `listing_mv_reconcile_log`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `ran_at` | timestamp with time zone | no | now() |
+| `table_name` | text | no |  |
+| `def_rows` | bigint | yes |  |
+| `table_rows` | bigint | yes |  |
+| `missing` | bigint | yes |  |
+| `extra` | bigint | yes |  |
+| `changed` | bigint | yes |  |
+| `queued_skip` | bigint | yes |  |
+| `enqueued` | bigint | yes |  |
+| `seconds` | numeric | yes |  |
+
 ### `listing_photo_classifications`
 
 | Column | Type | Nullable | Default |
@@ -3202,8 +3235,8 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `property_sub_type` | text | yes |  |
 | `on_market_date` | timestamp with time zone | yes |  |
 | `modified_at` | timestamp with time zone | yes |  |
-| `price_per_sqft` | numeric(10,2) | yes |  |
-| `lot_size_acres` | numeric(12,4) | yes |  |
+| `price_per_sqft` | numeric | yes |  |
+| `lot_size_acres` | numeric | yes |  |
 | `year_built` | smallint | yes |  |
 | `garage_spaces` | smallint | yes |  |
 | `pool_yn` | boolean | yes |  |
@@ -3222,9 +3255,9 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `senior_community_yn` | boolean | yes |  |
 | `new_construction_yn` | boolean | yes |  |
 | `association_yn` | boolean | yes |  |
-| `hoa_monthly` | numeric(10,2) | yes |  |
-| `tax_annual_amount` | numeric(12,2) | yes |  |
-| `estimated_monthly_piti` | numeric(10,2) | yes |  |
+| `hoa_monthly` | numeric | yes |  |
+| `tax_annual_amount` | numeric | yes |  |
+| `estimated_monthly_piti` | numeric | yes |  |
 | `irrigation_water_rights_yn` | boolean | yes |  |
 | `county` | text | yes |  |
 | `elementary_school` | text | yes |  |
@@ -3238,42 +3271,42 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `private_remarks` | text | yes |  |
 | `has_open_house` | boolean | yes |  |
 | `price_reduced` | boolean | yes |  |
-| `appliances` | text[] | yes |  |
-| `flooring` | text[] | yes |  |
-| `heating_types` | text[] | yes |  |
-| `cooling_types` | text[] | yes |  |
-| `interior_features` | text[] | yes |  |
-| `exterior_features` | text[] | yes |  |
-| `window_features` | text[] | yes |  |
-| `laundry_features` | text[] | yes |  |
-| `security_features` | text[] | yes |  |
-| `parking_features` | text[] | yes |  |
-| `patio_porch_features` | text[] | yes |  |
-| `lot_features_arr` | text[] | yes |  |
-| `view_types` | text[] | yes |  |
-| `fireplace_types` | text[] | yes |  |
-| `basement_types` | text[] | yes |  |
-| `other_structures` | text[] | yes |  |
-| `structure_types` | text[] | yes |  |
-| `hoa_amenities` | text[] | yes |  |
-| `community_features` | text[] | yes |  |
-| `accessibility_features` | text[] | yes |  |
-| `waterfront_types` | text[] | yes |  |
-| `utilities` | text[] | yes |  |
-| `sewer_types` | text[] | yes |  |
-| `water_source` | text[] | yes |  |
-| `road_surface` | text[] | yes |  |
-| `roof_types` | text[] | yes |  |
-| `construction_materials_arr` | text[] | yes |  |
-| `foundation_types` | text[] | yes |  |
-| `architectural_styles` | text[] | yes |  |
-| `listing_terms` | text[] | yes |  |
-| `special_conditions` | text[] | yes |  |
-| `current_use` | text[] | yes |  |
-| `irrigation_source` | text[] | yes |  |
-| `common_walls` | text[] | yes |  |
-| `road_frontage` | text[] | yes |  |
-| `pool_features` | text[] | yes |  |
+| `appliances` | ARRAY | yes |  |
+| `flooring` | ARRAY | yes |  |
+| `heating_types` | ARRAY | yes |  |
+| `cooling_types` | ARRAY | yes |  |
+| `interior_features` | ARRAY | yes |  |
+| `exterior_features` | ARRAY | yes |  |
+| `window_features` | ARRAY | yes |  |
+| `laundry_features` | ARRAY | yes |  |
+| `security_features` | ARRAY | yes |  |
+| `parking_features` | ARRAY | yes |  |
+| `patio_porch_features` | ARRAY | yes |  |
+| `lot_features_arr` | ARRAY | yes |  |
+| `view_types` | ARRAY | yes |  |
+| `fireplace_types` | ARRAY | yes |  |
+| `basement_types` | ARRAY | yes |  |
+| `other_structures` | ARRAY | yes |  |
+| `structure_types` | ARRAY | yes |  |
+| `hoa_amenities` | ARRAY | yes |  |
+| `community_features` | ARRAY | yes |  |
+| `accessibility_features` | ARRAY | yes |  |
+| `waterfront_types` | ARRAY | yes |  |
+| `utilities` | ARRAY | yes |  |
+| `sewer_types` | ARRAY | yes |  |
+| `water_source` | ARRAY | yes |  |
+| `road_surface` | ARRAY | yes |  |
+| `roof_types` | ARRAY | yes |  |
+| `construction_materials_arr` | ARRAY | yes |  |
+| `foundation_types` | ARRAY | yes |  |
+| `architectural_styles` | ARRAY | yes |  |
+| `listing_terms` | ARRAY | yes |  |
+| `special_conditions` | ARRAY | yes |  |
+| `current_use` | ARRAY | yes |  |
+| `irrigation_source` | ARRAY | yes |  |
+| `common_walls` | ARRAY | yes |  |
+| `road_frontage` | ARRAY | yes |  |
+| `pool_features` | ARRAY | yes |  |
 | `direction_faces` | text | yes |  |
 | `adu_yn` | boolean | yes |  |
 | `adu_type` | text | yes |  |
@@ -3284,11 +3317,11 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `zoning` | text | yes |  |
 | `irrigation_district` | text | yes |  |
 | `irrigation_acres` | numeric | yes |  |
-| `flood_zone` | text[] | yes |  |
-| `government_overlay` | text[] | yes |  |
-| `easements` | text[] | yes |  |
-| `rooms_arr` | text[] | yes |  |
-| `body_types` | text[] | yes |  |
+| `flood_zone` | ARRAY | yes |  |
+| `government_overlay` | ARRAY | yes |  |
+| `easements` | ARRAY | yes |  |
+| `rooms_arr` | ARRAY | yes |  |
+| `body_types` | ARRAY | yes |  |
 | `prev_list_price` | numeric | yes |  |
 | `floor_plans_count` | integer | yes |  |
 | `videos_count` | integer | yes |  |
@@ -3296,7 +3329,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `has_floor_plan` | boolean | yes |  |
 | `has_video` | boolean | yes |  |
 | `spa_yn` | boolean | yes |  |
-| `fencing_arr` | text[] | yes |  |
+| `fencing_arr` | ARRAY | yes |  |
 | `carport_yn` | boolean | yes |  |
 | `carport_spaces` | smallint | yes |  |
 | `stories_total` | smallint | yes |  |
@@ -3317,17 +3350,172 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `units_total` | integer | yes |  |
 | `current_rent` | numeric | yes |  |
 | `est_completion_year` | integer | yes |  |
-| `utilities_location` | text[] | yes |  |
-| `home_site_approval` | text[] | yes |  |
-| `power_production` | text[] | yes |  |
-| `green_certification` | text[] | yes |  |
-| `land_restrictions` | text[] | yes |  |
-| `multi_unit_features` | text[] | yes |  |
-| `railroad_access` | text[] | yes |  |
-| `soil_type` | text[] | yes |  |
-| `acreage_features` | text[] | yes |  |
-| `irrigation_distribution` | text[] | yes |  |
-| `water_rights_type` | text[] | yes |  |
+| `utilities_location` | ARRAY | yes |  |
+| `home_site_approval` | ARRAY | yes |  |
+| `power_production` | ARRAY | yes |  |
+| `green_certification` | ARRAY | yes |  |
+| `land_restrictions` | ARRAY | yes |  |
+| `multi_unit_features` | ARRAY | yes |  |
+| `railroad_access` | ARRAY | yes |  |
+| `soil_type` | ARRAY | yes |  |
+| `acreage_features` | ARRAY | yes |  |
+| `irrigation_distribution` | ARRAY | yes |  |
+| `water_rights_type` | ARRAY | yes |  |
+
+### `listing_search_row_def`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `list_number` | text | yes |  |
+| `standard_status` | text | yes |  |
+| `list_price` | numeric | yes |  |
+| `close_price` | numeric | yes |  |
+| `close_date` | timestamp with time zone | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `sqft` | numeric | yes |  |
+| `street_number` | text | yes |  |
+| `street_name` | text | yes |  |
+| `street_suffix` | text | yes |  |
+| `city` | text | yes |  |
+| `city_lower` | text | yes |  |
+| `postal_code` | text | yes |  |
+| `subdivision_name` | text | yes |  |
+| `subdivision_lower` | text | yes |  |
+| `lat` | numeric | yes |  |
+| `lng` | numeric | yes |  |
+| `photo_url` | text | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `on_market_date` | timestamp with time zone | yes |  |
+| `modified_at` | timestamp with time zone | yes |  |
+| `price_per_sqft` | numeric | yes |  |
+| `lot_size_acres` | numeric | yes |  |
+| `year_built` | smallint | yes |  |
+| `garage_spaces` | smallint | yes |  |
+| `pool_yn` | boolean | yes |  |
+| `has_virtual_tour` | boolean | yes |  |
+| `dom` | integer | yes |  |
+| `price_drop_count` | smallint | yes |  |
+| `address_slug` | text | yes |  |
+| `boundary_city` | text | yes |  |
+| `boundary_neighborhood` | text | yes |  |
+| `boundary_subdivision` | text | yes |  |
+| `search_vector` | tsvector | yes |  |
+| `fireplace_yn` | boolean | yes |  |
+| `waterfront_yn` | boolean | yes |  |
+| `basement_yn` | boolean | yes |  |
+| `horse_yn` | boolean | yes |  |
+| `senior_community_yn` | boolean | yes |  |
+| `new_construction_yn` | boolean | yes |  |
+| `association_yn` | boolean | yes |  |
+| `hoa_monthly` | numeric | yes |  |
+| `tax_annual_amount` | numeric | yes |  |
+| `estimated_monthly_piti` | numeric | yes |  |
+| `irrigation_water_rights_yn` | boolean | yes |  |
+| `county` | text | yes |  |
+| `elementary_school` | text | yes |  |
+| `middle_school` | text | yes |  |
+| `high_school` | text | yes |  |
+| `school_district` | text | yes |  |
+| `levels` | text | yes |  |
+| `baths_full` | smallint | yes |  |
+| `baths_half` | smallint | yes |  |
+| `public_remarks` | text | yes |  |
+| `private_remarks` | text | yes |  |
+| `has_open_house` | boolean | yes |  |
+| `price_reduced` | boolean | yes |  |
+| `appliances` | ARRAY | yes |  |
+| `flooring` | ARRAY | yes |  |
+| `heating_types` | ARRAY | yes |  |
+| `cooling_types` | ARRAY | yes |  |
+| `interior_features` | ARRAY | yes |  |
+| `exterior_features` | ARRAY | yes |  |
+| `window_features` | ARRAY | yes |  |
+| `laundry_features` | ARRAY | yes |  |
+| `security_features` | ARRAY | yes |  |
+| `parking_features` | ARRAY | yes |  |
+| `patio_porch_features` | ARRAY | yes |  |
+| `lot_features_arr` | ARRAY | yes |  |
+| `view_types` | ARRAY | yes |  |
+| `fireplace_types` | ARRAY | yes |  |
+| `basement_types` | ARRAY | yes |  |
+| `other_structures` | ARRAY | yes |  |
+| `structure_types` | ARRAY | yes |  |
+| `hoa_amenities` | ARRAY | yes |  |
+| `community_features` | ARRAY | yes |  |
+| `accessibility_features` | ARRAY | yes |  |
+| `waterfront_types` | ARRAY | yes |  |
+| `utilities` | ARRAY | yes |  |
+| `sewer_types` | ARRAY | yes |  |
+| `water_source` | ARRAY | yes |  |
+| `road_surface` | ARRAY | yes |  |
+| `roof_types` | ARRAY | yes |  |
+| `construction_materials_arr` | ARRAY | yes |  |
+| `foundation_types` | ARRAY | yes |  |
+| `architectural_styles` | ARRAY | yes |  |
+| `listing_terms` | ARRAY | yes |  |
+| `special_conditions` | ARRAY | yes |  |
+| `current_use` | ARRAY | yes |  |
+| `irrigation_source` | ARRAY | yes |  |
+| `common_walls` | ARRAY | yes |  |
+| `road_frontage` | ARRAY | yes |  |
+| `pool_features` | ARRAY | yes |  |
+| `direction_faces` | text | yes |  |
+| `adu_yn` | boolean | yes |  |
+| `adu_type` | text | yes |  |
+| `adu_sqft` | numeric | yes |  |
+| `adu_permitted_yn` | boolean | yes |  |
+| `str_permit_yn` | boolean | yes |  |
+| `ccrs_yn` | boolean | yes |  |
+| `zoning` | text | yes |  |
+| `irrigation_district` | text | yes |  |
+| `irrigation_acres` | numeric | yes |  |
+| `flood_zone` | ARRAY | yes |  |
+| `government_overlay` | ARRAY | yes |  |
+| `easements` | ARRAY | yes |  |
+| `rooms_arr` | ARRAY | yes |  |
+| `body_types` | ARRAY | yes |  |
+| `prev_list_price` | numeric | yes |  |
+| `floor_plans_count` | integer | yes |  |
+| `videos_count` | integer | yes |  |
+| `virtual_tours_count` | integer | yes |  |
+| `has_floor_plan` | boolean | yes |  |
+| `has_video` | boolean | yes |  |
+| `spa_yn` | boolean | yes |  |
+| `fencing_arr` | ARRAY | yes |  |
+| `carport_yn` | boolean | yes |  |
+| `carport_spaces` | smallint | yes |  |
+| `stories_total` | smallint | yes |  |
+| `fireplaces_total` | smallint | yes |  |
+| `home_warranty_yn` | boolean | yes |  |
+| `walk_score` | smallint | yes |  |
+| `parking_total` | smallint | yes |  |
+| `photos_count` | smallint | yes |  |
+| `attached_garage_yn` | boolean | yes |  |
+| `rented_yn` | boolean | yes |  |
+| `potential_tax_liability_yn` | boolean | yes |  |
+| `special_assessment_yn` | boolean | yes |  |
+| `manufactured_allowed_yn` | boolean | yes |  |
+| `building_permit_issued_yn` | boolean | yes |  |
+| `high_speed_internet_yn` | boolean | yes |  |
+| `second_residence_yn` | boolean | yes |  |
+| `price_per_acre` | numeric | yes |  |
+| `units_total` | integer | yes |  |
+| `current_rent` | numeric | yes |  |
+| `est_completion_year` | integer | yes |  |
+| `utilities_location` | ARRAY | yes |  |
+| `home_site_approval` | ARRAY | yes |  |
+| `power_production` | ARRAY | yes |  |
+| `green_certification` | ARRAY | yes |  |
+| `land_restrictions` | ARRAY | yes |  |
+| `multi_unit_features` | ARRAY | yes |  |
+| `railroad_access` | ARRAY | yes |  |
+| `soil_type` | ARRAY | yes |  |
+| `acreage_features` | ARRAY | yes |  |
+| `irrigation_distribution` | ARRAY | yes |  |
+| `water_rights_type` | ARRAY | yes |  |
 
 ### `listing_shares`
 
@@ -3393,8 +3581,50 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `property_sub_type` | text | yes |  |
 | `on_market_date` | timestamp with time zone | yes |  |
 | `modified_at` | timestamp with time zone | yes |  |
-| `price_per_sqft` | numeric(10,2) | yes |  |
-| `lot_size_acres` | numeric(12,4) | yes |  |
+| `price_per_sqft` | numeric | yes |  |
+| `lot_size_acres` | numeric | yes |  |
+| `year_built` | smallint | yes |  |
+| `garage_spaces` | smallint | yes |  |
+| `pool_yn` | boolean | yes |  |
+| `has_virtual_tour` | boolean | yes |  |
+| `dom` | integer | yes |  |
+| `price_drop_count` | smallint | yes |  |
+| `address_slug` | text | yes |  |
+| `boundary_city` | text | yes |  |
+| `boundary_neighborhood` | text | yes |  |
+| `boundary_subdivision` | text | yes |  |
+| `search_vector` | tsvector | yes |  |
+
+### `listing_tile_row_def`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `list_number` | text | yes |  |
+| `standard_status` | text | yes |  |
+| `list_price` | numeric | yes |  |
+| `close_price` | numeric | yes |  |
+| `close_date` | timestamp with time zone | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `sqft` | numeric | yes |  |
+| `street_number` | text | yes |  |
+| `street_name` | text | yes |  |
+| `street_suffix` | text | yes |  |
+| `city` | text | yes |  |
+| `city_lower` | text | yes |  |
+| `postal_code` | text | yes |  |
+| `subdivision_name` | text | yes |  |
+| `subdivision_lower` | text | yes |  |
+| `lat` | numeric | yes |  |
+| `lng` | numeric | yes |  |
+| `photo_url` | text | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `on_market_date` | timestamp with time zone | yes |  |
+| `modified_at` | timestamp with time zone | yes |  |
+| `price_per_sqft` | numeric | yes |  |
+| `lot_size_acres` | numeric | yes |  |
 | `year_built` | smallint | yes |  |
 | `garage_spaces` | smallint | yes |  |
 | `pool_yn` | boolean | yes |  |
@@ -4559,7 +4789,6 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `similar_key` | text | yes |  |
 | `rank` | smallint | yes |  |
 | `similarity_score` | smallint | yes |  |
-| `refreshed_at` | timestamp with time zone | yes |  |
 
 ### `site_improvement_ledger`
 
@@ -5897,6 +6126,22 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `match_method` | text | yes |  |
 | `source_file` | text | yes |  |
 | `loaded_at` | timestamp with time zone | no | now() |
+
+### `workspace_directory`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `email` | text | no |  |
+| `google_user_id` | text | yes |  |
+| `full_name` | text | yes |  |
+| `status` | text | no |  |
+| `broker_id` | uuid | yes |  |
+| `first_seen_at` | timestamp with time zone | no | now() |
+| `last_seen_at` | timestamp with time zone | no | now() |
+| `provisioned_at` | timestamp with time zone | yes |  |
+| `removed_at` | timestamp with time zone | yes |  |
+| `removed_by` | text | yes |  |
+| `note` | text | yes |  |
 
 ### `x_auth`
 

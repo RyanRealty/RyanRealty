@@ -23,7 +23,7 @@ import { redirect } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
-import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { brokerDisplayName } from '@/lib/brokers/directory'
 import { mergePeopleCore } from '@/lib/crm/merge-people'
 
 export type CrmPersonGapResult = { ok: true } | { ok: false; error: string }
@@ -59,7 +59,7 @@ export async function addCrmCollaboratorAction(
     .single()
 
   if ((person as { assigned_broker?: string | null } | null)?.assigned_broker === brokerSlug) {
-    const display = CRM_BROKER_DISPLAY[brokerSlug as CrmBrokerSlug] ?? brokerSlug
+    const display = brokerDisplayName(brokerSlug)
     return { ok: false, error: `${display} is already the assigned broker.` }
   }
 
@@ -73,7 +73,7 @@ export async function addCrmCollaboratorAction(
   await sb.from('crm_timeline').insert({
     person_id: personId,
     kind: 'system',
-    title: `${CRM_BROKER_DISPLAY[brokerSlug as CrmBrokerSlug] ?? brokerSlug} added as collaborator by ${access.email}`,
+    title: `${brokerDisplayName(brokerSlug)} added as collaborator by ${access.email}`,
     source: 'app',
     broker: access.brokerSlug ?? null,
   })
@@ -105,7 +105,7 @@ export async function removeCrmCollaboratorAction(
   await sb.from('crm_timeline').insert({
     person_id: personId,
     kind: 'system',
-    title: `${CRM_BROKER_DISPLAY[brokerSlug as CrmBrokerSlug] ?? brokerSlug} removed as collaborator by ${access.email}`,
+    title: `${brokerDisplayName(brokerSlug)} removed as collaborator by ${access.email}`,
     source: 'app',
     broker: access.brokerSlug ?? null,
   })

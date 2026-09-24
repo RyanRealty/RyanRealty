@@ -13,11 +13,12 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
-import { CRM_BROKERS } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 
 function normalizeBroker(raw: unknown): string | null {
   const v = String(raw ?? '').trim().toLowerCase()
-  return (CRM_BROKERS as readonly string[]).includes(v) ? v : null
+  return isActiveBrokerSlug(v) ? v : null
 }
 
 export const addCollaboratorHandler: BulkHandler = async (ids, params, ctx): Promise<Partial<BulkResult>> => {
@@ -25,6 +26,8 @@ export const addCollaboratorHandler: BulkHandler = async (ids, params, ctx): Pro
   const bump = (k: string, n = 1) => { result.breakdown[k] = (result.breakdown[k] ?? 0) + n }
   if (ids.length === 0) return result
 
+  // Runs off the crm-bulk-worker cron — no admin session to have loaded this.
+  await ensureBrokerDirectory()
   const broker = normalizeBroker(params.brokerSlug)
   if (!broker) {
     result.skipped = ids.length
@@ -74,6 +77,8 @@ export const removeCollaboratorHandler: BulkHandler = async (ids, params): Promi
   const bump = (k: string, n = 1) => { result.breakdown[k] = (result.breakdown[k] ?? 0) + n }
   if (ids.length === 0) return result
 
+  // Runs off the crm-bulk-worker cron — no admin session to have loaded this.
+  await ensureBrokerDirectory()
   const broker = normalizeBroker(params.brokerSlug)
   if (!broker) {
     result.skipped = ids.length

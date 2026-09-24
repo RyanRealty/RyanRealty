@@ -19,7 +19,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess } from '@/app/actions/crm'
 import { sendAppointmentInvites } from '@/lib/crm/appointment-invites'
 import { scopeBroker } from '@/lib/crm/scope'
-import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
 import {
   CRM_APPOINTMENT_TYPES_TAG,
   CRM_APPOINTMENT_OUTCOMES_TAG,
@@ -30,7 +31,7 @@ type ActionResult = { ok: true; id?: number } | { ok: false; error: string }
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function isBrokerSlug(v: string): v is CrmBrokerSlug {
-  return (CRM_BROKERS as readonly string[]).includes(v)
+  return isActiveBrokerSlug(v)
 }
 
 /**

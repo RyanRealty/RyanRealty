@@ -7,7 +7,8 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_MAILBOXES, getGmailFor } from '@/lib/crm/gmail'
+import { getGmailFor } from '@/lib/crm/gmail'
+import { getCrmMailboxes } from '@/lib/data/brokers/directory'
 
 export type MailCoverageRow = {
   mailbox: string
@@ -51,10 +52,11 @@ async function gmailTotalFor(mailbox: string): Promise<number | null> {
  */
 export async function getMailCoverage(): Promise<MailCoverageRow[]> {
   const sb = createServiceClient()
+  const mailboxes = await getCrmMailboxes()
   const [reviewsRes, cursorsRes, totals] = await Promise.all([
     sb.from('tc_mail_reviews').select('mailbox, status, reviewed_at'),
     sb.from('tc_mail_review_cursors').select('mailbox, listed, started_at, finished_at'),
-    Promise.all(CRM_MAILBOXES.map((mb) => gmailTotalFor(mb.email))),
+    Promise.all(mailboxes.map((mb) => gmailTotalFor(mb.email))),
   ])
   const { data: reviews, error: reviewsErr } = reviewsRes
   if (reviewsErr && !missingTable(reviewsErr.message)) console.error('[getMailCoverage] reviews', reviewsErr.message)
@@ -74,7 +76,7 @@ export async function getMailCoverage(): Promise<MailCoverageRow[]> {
   }
   const cursorByMailbox = new Map((cursors ?? []).map((c) => [String(c.mailbox), c]))
 
-  return CRM_MAILBOXES.map((mb, i) => {
+  return mailboxes.map((mb, i) => {
     const entry = byMailbox.get(mb.email) ?? { count: 0, byStatus: {}, last: null }
     const cursor = cursorByMailbox.get(mb.email)
     return {

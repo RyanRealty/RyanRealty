@@ -92,7 +92,7 @@ import { getCrmTaskTypes } from '@/lib/data/crm/getTaskQueue'
 import { VerdictLine } from '@/components/admin/v2'
 import CalendarView, { type CalendarViewMode } from '@/components/admin/crm/calendar/CalendarView'
 import MobileCalendarScreen from '@/components/admin/crm/calendar/mobile/MobileCalendarScreen'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { isActiveBrokerSlug, activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 
 export const metadata = { title: 'Calendar | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -243,7 +243,7 @@ export default async function CrmCalendarPage({
 
   // Agent filter (§2.15): superuser may scope to one broker; everyone else is
   // pinned to their own slug at the data layer.
-  const agent = isSuperuser && sp.agent && (CRM_BROKERS as readonly string[]).includes(sp.agent)
+  const agent = isSuperuser && sp.agent && isActiveBrokerSlug(sp.agent)
     ? sp.agent
     : 'all'
   const brokerScope = isSuperuser ? (agent === 'all' ? null : agent) : ownScope
@@ -390,9 +390,9 @@ export default async function CrmCalendarPage({
           types={types}
           outcomes={outcomes}
           contacts={contacts}
-          brokerSlugs={[...CRM_BROKERS]}
+          brokerSlugs={activeBrokerSlugs()}
           currentBrokerSlug={currentSlug}
-          brokerName={CRM_BROKER_DISPLAY[currentSlug as keyof typeof CRM_BROKER_DISPLAY] ?? currentSlug}
+          brokerName={brokerDisplayName(currentSlug)}
           isSuperuser={isSuperuser}
           taskTypes={taskTypes}
           createAction={create}

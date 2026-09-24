@@ -59,7 +59,7 @@ import { getCrmAutomationRules } from '@/lib/data/crm/getCrmAutomationRules'
 import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmStages } from '@/lib/data/crm/getCrmStages'
 import { scopeBroker } from '@/lib/crm/scope'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { activeBrokerSlugs, brokerDisplayName } from '@/lib/brokers/directory'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
   AutomationsListView,
@@ -196,8 +196,8 @@ export default async function CrmAutomationsPage() {
 
   const rows: AutomationListRow[] = sequences.map((s) => {
     const a = analyticsById.get(s.id)
-    const createdBy = s.createdBy && CRM_BROKER_DISPLAY[s.createdBy as CrmBrokerSlug]
-      ? { name: CRM_BROKER_DISPLAY[s.createdBy as CrmBrokerSlug], avatar: BROKER_HEADSHOT[s.createdBy] ?? null }
+    const createdBy = s.createdBy
+      ? { name: brokerDisplayName(s.createdBy), avatar: BROKER_HEADSHOT[s.createdBy] ?? null }
       : { name: 'Ryan Realty', avatar: null }
     return {
       id: s.id,
@@ -234,9 +234,9 @@ export default async function CrmAutomationsPage() {
     .filter((t) => t.isActive && !t.isProtected)
     .map((t) => ({ key: t.key, label: t.label }))
   const stageOptions = stages.filter((s) => s.isActive).map((s) => ({ key: s.key, label: s.label }))
-  const brokerOptions = CRM_BROKERS.map((slug) => ({
+  const brokerOptions = activeBrokerSlugs().map((slug) => ({
     slug,
-    label: CRM_BROKER_DISPLAY[slug as CrmBrokerSlug],
+    label: brokerDisplayName(slug),
   }))
 
   // The verdict reads the same two collections the islands below render.

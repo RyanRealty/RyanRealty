@@ -57,9 +57,10 @@ import {
 import { scopeBroker } from '@/lib/crm/scope'
 import {
   CRM_STAGES,
-  CRM_BROKERS,
   type CrmBrokerSlug,
 } from '@/lib/crm/constants'
+import { isActiveBrokerSlug } from '@/lib/brokers/directory'
+import { ensureBrokerDirectory } from '@/lib/data/brokers/directory'
 import {
   validateSegment,
   upgradeLegacyFilters,
@@ -251,8 +252,11 @@ export async function bulkAssignBrokerAction(
   selection: BulkActionSelection,
   broker: string,
 ): Promise<BulkEnqueueResult> {
+  // The validity check below runs before enqueue()'s own getCrmAccess call, so
+  // load the directory here rather than assume it is already warm.
+  await ensureBrokerDirectory()
   const slug = String(broker ?? '').trim() as CrmBrokerSlug
-  if (!(CRM_BROKERS as readonly string[]).includes(slug)) {
+  if (!isActiveBrokerSlug(slug)) {
     return { ok: false, error: 'Broker required' }
   }
   return enqueue('crm:assign-broker', selection, { brokerSlug: slug }, {
@@ -563,8 +567,10 @@ export async function bulkAddCollaboratorAction(
   selection: BulkActionSelection,
   broker: string,
 ): Promise<BulkEnqueueResult> {
+  // Same reasoning as bulkAssignBrokerAction: this check precedes enqueue()'s access call.
+  await ensureBrokerDirectory()
   const slug = String(broker ?? '').trim().toLowerCase()
-  if (!(CRM_BROKERS as readonly string[]).includes(slug)) return { ok: false, error: 'Broker required' }
+  if (!isActiveBrokerSlug(slug)) return { ok: false, error: 'Broker required' }
   return enqueue('crm:add-collaborator', selection, { brokerSlug: slug })
 }
 
@@ -573,8 +579,9 @@ export async function bulkRemoveCollaboratorAction(
   selection: BulkActionSelection,
   broker: string,
 ): Promise<BulkEnqueueResult> {
+  await ensureBrokerDirectory()
   const slug = String(broker ?? '').trim().toLowerCase()
-  if (!(CRM_BROKERS as readonly string[]).includes(slug)) return { ok: false, error: 'Broker required' }
+  if (!isActiveBrokerSlug(slug)) return { ok: false, error: 'Broker required' }
   return enqueue('crm:remove-collaborator', selection, { brokerSlug: slug })
 }
 
