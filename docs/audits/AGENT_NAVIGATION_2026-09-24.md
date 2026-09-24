@@ -22,8 +22,9 @@ agent transcripts made in this session. Nothing is estimated unless it says so.
 - Finding the file costs a median 7 calls, and 8% of all tokens in these runs. Most tokens
   go to what agents do after they arrive. Pointers can only shrink that 8%.
 - A same-day follow-up named the CMA market chapter and the snapshot crons, paid for by
-  removing a duplicate link. CLAUDE.md is 37,477 bytes and its budget was lowered to match,
-  so the next pointer still has to be paid for by trimming something.
+  removing a duplicate link. Merging main's new "ask Matt" rule later cost a stale §3
+  paragraph. CLAUDE.md is 37,460 bytes and its budget was lowered to match, so the next
+  pointer still has to be paid for by trimming something.
 - The replay agents also flagged defects on `main`. The five leads were checked and fixed on
   this branch, with the related defects found alongside. Ten product calls are left for Matt.
   See the last two sections.
@@ -260,8 +261,9 @@ Control calls are listed as baseline run 1, baseline run 2, then placebo.
 - The CMA row now also names the market chapter: `listing-window-*.ts` + `market-charts.ts`.
 - §5 now names the snapshot cron routes, `app/api/cron/marketing-snapshot-*`, instead of the
   snapshot `SKILL.md`.
-- Paid for by removing §5's second link to `VOICE.md` (§2 keeps it). CLAUDE.md is 37,477
-  bytes, and the budget in `scripts/claude-canon-baseline.json` was lowered to match.
+- Paid for by removing §5's second link to `VOICE.md` (§2 keeps it). CLAUDE.md was 37,477
+  bytes after this, and the budget in `scripts/claude-canon-baseline.json` was lowered to
+  match.
 
 Measured the same way: the table (H2) or §5 (T12) pasted into both arms, run against the tree
 from before the edit.
