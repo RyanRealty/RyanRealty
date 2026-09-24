@@ -417,7 +417,7 @@ The 22 rows the pre-relabel run scored worse than v3, each read:
   hand-judged Studio drafts in the same set are labeled not deal mail.
 - 7 are not about the listing: six HAVEN Homes + Lifestyles ad-sales emails ("19496
   Tumalo Reservoir Rd stood out as a fit for our Central Oregon Living section", "I
-  can bring the full-page rate down to $295") and a Follow Up Boss forward of our own
+  can bring the full-page rate down to $295") and a lead-alert forward of our own
   home-value email ("it is most likely a marketing or system generated email"). The
   hand-judged copies of the same pitches in Paul's mailbox are labeled not deal mail.
 - 3 queue because the email names both of the clients' files ("Saturday (5/10)
