@@ -30,9 +30,16 @@ export type AuditInput = {
   yearBuilt: number | null
   /** SkySlope checklist items imported with the file: completed (approved) and still in review. */
   checklist?: { completed: number; inReview: number }
+  /**
+   * Where the principal broker's review of this file is recorded. Matt
+   * 2026-09-24: "currently im reviewing there [SkySlope] but will review here
+   * when we cut over." A file that came from SkySlope is reviewed in SkySlope;
+   * a file opened in the Vault is reviewed on Sign-off (tc_principal_reviews).
+   */
+  reviewSystem?: 'skyslope' | 'vault'
 }
 
-export type AuditStatus = 'ok' | 'missing' | 'review' | 'na'
+export type AuditStatus = 'ok' | 'missing' | 'review' | 'na' | 'elsewhere'
 export type AuditRow = { key: string; requirement: string; citation: string; status: AuditStatus; detail: string; documents: string[] }
 
 type Kind = 'listing' | 'buyerRep' | 'pamphlet' | 'faa' | 'spds' | 'saleAgreement' | 'counter' | 'addendum' | 'earnestMoney' | 'settlement' | 'lbp' | 'termination'
@@ -214,6 +221,18 @@ export function auditDeal(input: AuditInput): AuditRow[] {
     const reviewed = new Set(input.reviews.filter((r) => r.decision === 'approved').flatMap((r) => r.documentIds))
     const pending = agreements.filter((d) => !reviewed.has(d.id))
     const ck = input.checklist
+    if (input.reviewSystem === 'skyslope') {
+      const counts = ck ? ` SkySlope checklist: ${ck.completed} item${ck.completed === 1 ? '' : 's'} completed, ${ck.inReview} still in review.` : ''
+      rows.push({
+        key: 'principal_review',
+        requirement: 'Principal broker review of each document of agreement (within 7 banking days)',
+        citation: 'OAR 863-015-0140(4)',
+        status: 'elsewhere',
+        detail: `Reviewed in SkySlope until the Vault cutover; SkySlope holds the reviewer and date.${counts}`,
+        documents: [],
+      })
+      return rows
+    }
     const skyslope = ck && (ck.completed || ck.inReview) ? ` SkySlope checklist: ${ck.completed} item${ck.completed === 1 ? '' : 's'} marked completed, ${ck.inReview} still in review; the Vault has no reviewer and date for those.` : ''
     rows.push({
       key: 'principal_review',
@@ -228,7 +247,8 @@ export function auditDeal(input: AuditInput): AuditRow[] {
 }
 
 export function auditScore(rows: readonly AuditRow[]): { ok: number; missing: number; review: number; applicable: number } {
-  const applicable = rows.filter((r) => r.status !== 'na')
+  // A record kept in another system (principal review in SkySlope before the cutover) is not scored here.
+  const applicable = rows.filter((r) => r.status !== 'na' && r.status !== 'elsewhere')
   return {
     ok: applicable.filter((r) => r.status === 'ok').length,
     missing: applicable.filter((r) => r.status === 'missing').length,
