@@ -15,8 +15,11 @@
  *
  * Thresholds (FLAGGED — chosen to match the 9.5 board + plan section 9.6):
  *  - mirror disabled .................. immediate (a kill switch is never ok)
- *  - inbound webhook stale ............ no sms_in/call for >= 6h DURING business
- *                                       hours only (overnight silence is normal)
+ *  - inbound webhook broken ........... a line's SMS/voice webhook points away
+ *                                       from /api/twilio (critical), or Twilio
+ *                                       logged >= 2 failed webhook deliveries
+ *                                       in 24h (warning). Silence is not a
+ *                                       signal: real gaps run 91 to 167 hours.
  *  - A2P not VERIFIED with sends ....... any send attempt while A2P != VERIFIED
  *  - delta sync stale ................. last clean delta finished > 90 min ago
  *                                       (the delta cron runs at :07/:37, so two
@@ -39,10 +42,11 @@ export interface HealthAlarm {
  * evaluator stays trivially testable.
  */
 export interface HealthSignals {
-  /** True when "now" (Pacific) is inside business hours; the route computes this. */
-  businessHours: boolean
-  /** Hours since the most recent inbound sms_in/call timeline row; null = none ever seen in window. */
-  hoursSinceLastInbound: number | null
+  /** Inbound webhook health as Twilio reports it (getInboundWebhookHealth):
+   *  lines whose SMS/voice webhook no longer points at /api/twilio, and failed
+   *  webhook deliveries (Monitor 11200 / 12100 families) in the trailing 24h.
+   *  null = Twilio not configured or unreachable (skip; twilio-unreachable covers it). */
+  inboundWebhook: { misrouted: string[]; webhookErrors: number; lastErrorCode: number | null } | null
   /** Twilio A2P campaign status. 'VERIFIED' is the only sending-allowed state. */
   a2pStatus: 'VERIFIED' | 'IN_PROGRESS' | 'FAILED' | 'PENDING' | 'NONE' | null
   /** Outbound SMS send attempts in the trailing window (sms_out timeline rows). */
@@ -79,8 +83,9 @@ export interface HealthSignals {
 export const LIST_UNDERCOUNT_SIGNAL_MIN = 25
 export const LIST_UNDERCOUNT_FACTOR = 10
 
-/** Inbound webhook is "stale" after this many hours of business-hours silence. */
-export const INBOUND_STALE_HOURS = 6
+/** Failed inbound webhook deliveries in 24h that page. One is a transient
+ *  (a cold start past Twilio's 15 s); two in a day is a pattern. */
+export const INBOUND_WEBHOOK_ERROR_MIN = 2
 
 /** listing_tile_mv is "stale" when mv_refresh_state is this many hours old.
  *  Matches pipeline-heartbeat syncDeltaHours. Since 20260924173000 the stamp is
@@ -100,23 +105,25 @@ export const MV_STALE_REFRESH_HOURS = 2
 export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAlarm[] } {
   const alarms: HealthAlarm[] = []
 
-  // Rule 2: inbound webhook stale (business hours only).
-  // No inbound sms_in or call for a long stretch during business hours means the
-  // Twilio inbound webhook (or the relay) probably stopped delivering. Overnight
-  // silence is normal, so the rule only fires inside business hours. A null
-  // "hours since" (nothing inbound at all in the lookback) counts as stale.
-  if (signals.businessHours) {
-    const stale =
-      signals.hoursSinceLastInbound === null || signals.hoursSinceLastInbound >= INBOUND_STALE_HOURS
-    if (stale) {
-      const detail =
-        signals.hoursSinceLastInbound === null
-          ? 'no inbound text or call on record in the lookback window'
-          : `last inbound text or call was ${formatHours(signals.hoursSinceLastInbound)} ago`
+  // Rule 2: inbound webhook broken, from what Twilio reports (2026-09-24).
+  // The old rule paged on silence (no inbound text or call for 6 business
+  // hours) and fired twice a day for a week while the webhook delivered every
+  // message: inbound contact here arrives every 1 to 7 days. Twilio knows when
+  // a webhook to us fails (Monitor alerts) and where each line points, so page
+  // on those instead.
+  if (signals.inboundWebhook) {
+    const { misrouted, webhookErrors, lastErrorCode } = signals.inboundWebhook
+    if (misrouted.length > 0) {
       alarms.push({
-        key: 'inbound-webhook-stale',
+        key: 'inbound-webhook-misrouted',
+        severity: 'critical',
+        message: `Twilio line${misrouted.length === 1 ? '' : 's'} ${misrouted.join(', ')} no longer send${misrouted.length === 1 ? 's' : ''} inbound texts or calls to ryan-realty.com/api/twilio. Inbound from ${misrouted.length === 1 ? 'that line' : 'those lines'} is not reaching the CRM. Fix the number's webhook in the Twilio console.`,
+      })
+    } else if (webhookErrors >= INBOUND_WEBHOOK_ERROR_MIN) {
+      alarms.push({
+        key: 'inbound-webhook-failing',
         severity: 'warning',
-        message: `No inbound contact during business hours (${detail}). Check the Twilio inbound webhook and the relay heartbeat.`,
+        message: `Twilio logged ${webhookErrors} failed webhook deliveries to ryan-realty.com in the last 24 hours (latest error ${lastErrorCode ?? 'unknown'}). Some inbound texts or calls may not have reached the CRM.`,
       })
     }
   }

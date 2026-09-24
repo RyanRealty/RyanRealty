@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   evaluateHealthRules,
-  INBOUND_STALE_HOURS,
+  INBOUND_WEBHOOK_ERROR_MIN,
   LIST_UNDERCOUNT_FACTOR,
   LIST_UNDERCOUNT_SIGNAL_MIN,
   MV_STALE_REFRESH_HOURS,
@@ -13,8 +13,7 @@ import {
 // (mirror + delta-stale rules retired at the CRM cutover 2026-06-24.)
 function healthy(): HealthSignals {
   return {
-    businessHours: true,
-    hoursSinceLastInbound: 0.5,
+    inboundWebhook: { misrouted: [], webhookErrors: 0, lastErrorCode: null },
     a2pStatus: 'VERIFIED',
     smsSendAttempts24h: 12,
     newLeads48h: 4,
@@ -35,33 +34,29 @@ describe('evaluateHealthRules', () => {
     expect(alarms).toEqual([])
   })
 
-  describe('rule: inbound webhook stale', () => {
-    it('fires when inbound silence reaches the threshold during business hours', () => {
-      const alarm = evaluateHealthRules({
-        ...healthy(),
-        businessHours: true,
-        hoursSinceLastInbound: INBOUND_STALE_HOURS,
-      }).alarms.find((a) => a.key === 'inbound-webhook-stale')
-      expect(alarm).toBeDefined()
+  describe('rule: inbound webhook broken (what Twilio reports)', () => {
+    const wh = (over: Partial<NonNullable<HealthSignals['inboundWebhook']>>): HealthSignals => ({
+      ...healthy(),
+      inboundWebhook: { misrouted: [], webhookErrors: 0, lastErrorCode: null, ...over },
+    })
+    it('fires critical when a line no longer routes to our webhook', () => {
+      const alarm = evaluateHealthRules(wh({ misrouted: ['+15412245025'] })).alarms.find(
+        (a) => a.key === 'inbound-webhook-misrouted',
+      )
+      expect(alarm?.severity).toBe('critical')
+      expect(alarm?.message).toContain('+15412245025')
+    })
+    it('fires a warning at the failed-delivery threshold, quiet one under it', () => {
+      const alarm = evaluateHealthRules(wh({ webhookErrors: INBOUND_WEBHOOK_ERROR_MIN, lastErrorCode: 11200 })).alarms.find(
+        (a) => a.key === 'inbound-webhook-failing',
+      )
       expect(alarm?.severity).toBe('warning')
+      expect(alarm?.message).toContain('11200')
+      expect(keys(wh({ webhookErrors: INBOUND_WEBHOOK_ERROR_MIN - 1 }))).not.toContain('inbound-webhook-failing')
     })
-    it('fires when there is no inbound contact at all (null) during business hours', () => {
-      expect(
-        keys({ ...healthy(), businessHours: true, hoursSinceLastInbound: null }),
-      ).toContain('inbound-webhook-stale')
-    })
-    it('clears just under the threshold', () => {
-      expect(
-        keys({ ...healthy(), businessHours: true, hoursSinceLastInbound: INBOUND_STALE_HOURS - 0.1 }),
-      ).not.toContain('inbound-webhook-stale')
-    })
-    it('NEVER fires outside business hours, even with long silence', () => {
-      expect(
-        keys({ ...healthy(), businessHours: false, hoursSinceLastInbound: 99 }),
-      ).not.toContain('inbound-webhook-stale')
-      expect(
-        keys({ ...healthy(), businessHours: false, hoursSinceLastInbound: null }),
-      ).not.toContain('inbound-webhook-stale')
+    it('never pages on silence, and skips when Twilio is unreadable', () => {
+      expect(keys(healthy())).toEqual([])
+      expect(keys({ ...healthy(), inboundWebhook: null })).toEqual([])
     })
   })
 
@@ -195,8 +190,7 @@ describe('evaluateHealthRules', () => {
   describe('composition', () => {
     it('fires multiple independent alarms at once and only those', () => {
       const result = evaluateHealthRules({
-        businessHours: true,
-        hoursSinceLastInbound: null,
+        inboundWebhook: { misrouted: ['+15412245025'], webhookErrors: 0, lastErrorCode: null },
         a2pStatus: 'FAILED',
         smsSendAttempts24h: 3,
         newLeads48h: 0,
@@ -207,7 +201,7 @@ describe('evaluateHealthRules', () => {
       })
       expect(new Set(result.alarms.map((a) => a.key))).toEqual(
         new Set([
-          'inbound-webhook-stale',
+          'inbound-webhook-misrouted',
           'a2p-not-verified',
           'lead-volume-cratered',
           'twilio-unreachable',
@@ -216,8 +210,7 @@ describe('evaluateHealthRules', () => {
     })
     it('every alarm carries a stable key, a known severity, and a non-empty message', () => {
       const { alarms } = evaluateHealthRules({
-        businessHours: true,
-        hoursSinceLastInbound: null,
+        inboundWebhook: { misrouted: ['+15412245025'], webhookErrors: 0, lastErrorCode: null },
         a2pStatus: 'FAILED',
         smsSendAttempts24h: 3,
         newLeads48h: 0,
@@ -237,8 +230,7 @@ describe('evaluateHealthRules', () => {
 
 describe('rule 8: listing_tile_mv staleness', () => {
   const healthySignals = (): Parameters<typeof evaluateHealthRules>[0] => ({
-    businessHours: true,
-    hoursSinceLastInbound: 0.5,
+    inboundWebhook: { misrouted: [], webhookErrors: 0, lastErrorCode: null },
     a2pStatus: 'VERIFIED',
     smsSendAttempts24h: 12,
     newLeads48h: 4,

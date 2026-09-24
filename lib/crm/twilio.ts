@@ -15,6 +15,12 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { resilientFetch } from '@/lib/http/fetchJson'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
+import {
+  isWebhookErrorCode,
+  misroutedNumbers,
+  optOutStateFromInbound,
+  type OptOutState,
+} from '@/lib/crm/twilio-line-health'
 
 export type A2pCampaignStatus = 'VERIFIED' | 'IN_PROGRESS' | 'FAILED' | 'PENDING' | 'NONE' | null
 
@@ -432,4 +438,78 @@ export async function fetchTwilioMessageStatus(
   if (!res.ok) return { ok: false, error: `Twilio lookup failed (${res.status})` }
   const data = (await res.json()) as { status?: string; error_code?: number | null }
   return { ok: true, status: String(data.status ?? ''), errorCode: data.error_code ?? null }
+}
+
+/**
+ * Opt-out state of `recipient` toward `sender` (lib/crm/twilio-line-health):
+ * the latest STOP- or START-family keyword the recipient texted that sender.
+ * null = unknown (not configured, or Twilio unreachable); the caller decides
+ * how to treat unknown.
+ */
+export async function getRecipientOptOut(recipient: string, sender: string): Promise<OptOutState | null> {
+  const c = creds()
+  const from = toE164(recipient)
+  const to = toE164(sender)
+  if (!c || !from || !to) return null
+  const qs = new URLSearchParams({ From: from, To: to, PageSize: '100' })
+  let res: Response
+  try {
+    res = await resilientFetch(`${API}/Accounts/${c.sid}/Messages.json?${qs}`, {
+      headers: { Authorization: authHeader(c) },
+      cache: 'no-store',
+    })
+  } catch {
+    return null
+  }
+  if (!res.ok) return null
+  const data = (await res.json()) as { messages?: Array<{ body?: string | null; date_created?: string }> }
+  return optOutStateFromInbound(
+    (data.messages ?? []).filter((m) => m.date_created).map((m) => ({ body: m.body, dateCreated: m.date_created as string })),
+  )
+}
+
+/**
+ * Inbound webhook health, as Twilio reports it: numbers whose SMS or voice
+ * webhook no longer points at our /api/twilio routes, and failed webhook
+ * deliveries (Monitor alerts, 11200 / 12100 families) in the trailing window.
+ * null = Twilio not configured or unreachable (the twilio-unreachable rule
+ * covers a dead account).
+ */
+export async function getInboundWebhookHealth(
+  sinceHours: number,
+  now: Date = new Date(),
+): Promise<{ misrouted: string[]; webhookErrors: number; lastErrorCode: number | null } | null> {
+  const c = creds()
+  if (!c) return null
+  const headers = { Authorization: authHeader(c) }
+  const start = new Date(now.getTime() - sinceHours * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+  try {
+    const [numRes, alertRes] = await Promise.all([
+      resilientFetch(`${API}/Accounts/${c.sid}/IncomingPhoneNumbers.json?PageSize=100`, { headers, cache: 'no-store' }),
+      resilientFetch(`https://monitor.twilio.com/v1/Alerts?${new URLSearchParams({ StartDate: start, PageSize: '1000' })}`, {
+        headers,
+        cache: 'no-store',
+      }),
+    ])
+    if (!numRes.ok || !alertRes.ok) return null
+    const nums = (await numRes.json()) as {
+      incoming_phone_numbers?: Array<{ phone_number: string; sms_url?: string | null; voice_url?: string | null }>
+    }
+    const alerts = (await alertRes.json()) as { alerts?: Array<{ error_code?: string | number | null; date_created?: string }> }
+    const webhookAlerts = (alerts.alerts ?? []).filter((a) => isWebhookErrorCode(a.error_code))
+    return {
+      misrouted: misroutedNumbers(
+        (nums.incoming_phone_numbers ?? []).map((n) => ({
+          phoneNumber: n.phone_number,
+          smsUrl: n.sms_url ?? null,
+          voiceUrl: n.voice_url ?? null,
+        })),
+        TWILIO_PUBLIC_ORIGIN,
+      ),
+      webhookErrors: webhookAlerts.length,
+      lastErrorCode: webhookAlerts.length ? Number(webhookAlerts[0].error_code) : null,
+    }
+  } catch {
+    return null
+  }
 }

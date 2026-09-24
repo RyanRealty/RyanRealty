@@ -10,6 +10,12 @@ const recordEmailEvent = vi.fn()
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: (...a: unknown[]) => isSuppressed(...a) }))
 vi.mock('@/lib/resend', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...a) }))
 vi.mock('@/lib/crm/email-events', () => ({ recordEmailEvent: (...a: unknown[]) => recordEmailEvent(...a) }))
+// The fetch-failure path pages Matt through queueBrokerHealthAlert. Unmocked, it
+// wrote a real crm_broker_alerts row on every run with production keys and
+// texted him "(db down)" (2026-09-20..24); test/unit-no-live-services.ts now
+// blanks those keys for every unit file, and this mock asserts the page.
+const queueBrokerHealthAlert = vi.fn(async (..._a: unknown[]) => true)
+vi.mock('@/lib/crm/broker-alerts', () => ({ queueBrokerHealthAlert: (...a: unknown[]) => queueBrokerHealthAlert(...a) }))
 // Keep prepare / attribution real but cheap — they are pure string transforms.
 
 import { runMarketReportSend, sendOneSubscriber, type SendDeps } from './market-report-send'
@@ -157,6 +163,9 @@ describe('runMarketReportSend — cadence + skip taxonomy', () => {
     expect(s.sent).toBe(0)
     expect(s.skippedByReason['send-error']).toBe(1)
     expect(s.outcomes[0]).toMatchObject({ reason: 'send-error' })
+    expect(queueBrokerHealthAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'market-report-send:fetch-subscribers-failed' }),
+    )
   })
 })
 
