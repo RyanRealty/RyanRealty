@@ -190,7 +190,7 @@ export function SearchSeoTail({
             <V3Instrument
               id="search-leftover"
               level={2}
-              eyebrow={v3Text('Market Truth')}
+              eyebrow={v3Text('By property type')}
               headline={v3Text(`Other ${city} property types`)}
               figures={[firstLeftover, ...restLeftover]}
               source={v3Text(
