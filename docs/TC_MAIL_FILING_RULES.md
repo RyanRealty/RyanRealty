@@ -580,3 +580,109 @@ recall instead of eyeballed. Their judgments live as a **permanent regression se
   (`SUPABASE_*`) in the process env, so it is a local/nightly check, not part of the
   secret-less `ci:gates` chain.** Run it by hand before and after any change to
   `lib/tc/mail-rules.ts` or the filing path in `lib/tc/mail-index.ts`.
+
+## Re-deciding history after a rules change
+
+Every `tc_mail_reviews` row carries the `rules_version` that decided it. When
+`MAIL_RULES_VERSION` changes, the history is decided again under the new rules
+and corrected: [`lib/tc/mail-redecide.ts`](../lib/tc/mail-redecide.ts), run by
+
+```
+npx tsx scripts/tc-mail-backfill.ts redecide [--dry-run | --apply]
+    [--mailbox x@ryan-realty.com] [--status bulk,not_deal,filed]
+    [--since YYYY-MM-DD] [--limit N] [--concurrency 4] [--batch 200] [--max-minutes N]
+```
+
+**Dry run is the default** and is read-only: every database handle it holds
+refuses writes, it takes no lock, and it prints the count of each transition
+per mailbox, ten samples of each (subject and reasons), and writes every row
+that is not unchanged to `tmp/tc-mail-redecide/<run>/changes.{jsonl,csv}`
+plus `summary.json` (counts, documents, timings, Gmail calls).
+
+What it selects: every review row whose `rules_version` is not the current
+one (`--mailbox`, `--status` and `--since` narrow it), **oldest message
+first**. A row done carries the new version, so a run that stops (a
+`--limit`, `--max-minutes`, Ctrl-C) resumes by running again, and a second
+run over finished history selects only the rows a person owns and changes
+nothing.
+
+How each message is decided: `indexGmailMessage` itself, dry first. A message
+delivered to two mailboxes is decided once per copy and the best copy wins (a
+copy that files beats one that is ordinary mail in another inbox; a copy that
+failed to decide holds the message back for the next run; a copy deleted from
+its mailbox does not vote). **Thread anchors**: rule 2 follows a sibling only
+once that sibling has been decided again under the new rules (or a person, the
+model or the auto-open sweep decided it), so a thread the old rules misfiled
+as a whole cannot hold itself on the old file. Replies run after their opener
+(one thread's rows run in order). Rule 2 has no time order (a reply can follow
+a later email that names the property), so a message about to leave its file
+while a sibling in its thread still waits to be decided again is held back and
+decided at the end of the run, once the thread has settled; when that sibling
+is outside the run (past `--limit` or the deadline) the message is left for
+the next run instead of being decided early.
+
+| Transition | Was → now | `--apply` does |
+|---|---|---|
+| unchanged | same | re-stamps the review row; a filed row gets the new version and reasons |
+| relabel | not_deal ↔ bulk, ambiguous ↔ unfiled_transaction | re-stamps; a queued row is refreshed by the live path |
+| file | bulk / not_deal / queued → filed | the live path files it: documents, offers, `mail_filed` |
+| queue | bulk / not_deal → queued | the live path queues it for a person |
+| move | filed on A → filed on B (or another cycle of A) | the live path files it on B; A is corrected (below); `mail_moved` on both files |
+| unfile | filed → not_deal / bulk | A is corrected; the index row becomes `dismissed` with `decided_by 'system'`; `mail_unfiled` on A |
+| requeue | filed → queued | A is corrected; the live path queues it; `mail_unfiled` on A |
+| dequeue | queued → not_deal / bulk | the index row becomes `dismissed`, `decided_by 'system'` |
+| kept_model | queued by the model stage; the rules alone do not file it | stays in the queue for a person; the review row says so |
+| protected | a person decided it | nothing, ever (below) |
+| gone | the message is in no mailbox any more | nothing |
+| error | Gmail or the decision failed after retries | nothing; the next run retries it |
+
+**A person's decision is never touched.** Protected: an index row whose
+`decided_by` is not `system` (a broker's email, `model`, the auto-open sweep
+`system:mail-index`, the test harness), a review row with stage `person`, or
+status `kept_manual` / `dismissed`. Such a message is not even read from Gmail.
+Apply re-reads the index row right before every write; a broker who answers the
+queue during the run wins, and the live path itself returns `kept_manual`.
+A row the rules dismissed keeps `decided_by 'system'`, which is how it differs
+from a broker's "not a deal" (that row carries the broker's email).
+
+**Correcting the file a message leaves** (`lib/tc/mail-reconcile.ts`
+`planDocumentsOffDeal`): a document is archived (the Vault's delete, with a
+reason starting `Mail re-decision:`) only when this message's filing created
+it (`source_doc_id` `gmail:<message key>:…`), no other filing uses it (another
+email filed on that deal, a text, an uncorrected earlier filing) and no person
+relies on it: a person's event on it, a principal review, shared with the
+client, in a signing envelope, linked to an offer, or on the checklist by any
+hand but the document reader's. Only reader-made checklist rows are removed,
+and each archived document gets its own `document_archived` event.
+Everything kept is named in the event with its reason. Documents an index row
+filed (`classification.mail_message_id`) on a deal the row no longer names
+(left there when the live index re-filed it elsewhere, or by a run that
+stopped between filing and correcting) are corrected the same way whenever the
+row is decided again (`correctLeftovers`), so an interrupted run heals on the
+next one. **Offers are never
+deleted**: an offer the message recorded on the old file is named in the event
+(`offers_left_for_review`) for a broker. A later rules version that files the
+message back restores exactly the documents this archived
+(`planDocumentsOnDeal`); a move between cycles of one file moves the documents.
+
+**Running it**: one run at a time (a lock row `lock:tc-mail-redecide` in
+`tc_mail_review_cursors`, taken over only after 20 minutes without a
+heartbeat); batches of `--batch` rows, `--concurrency` threads at a time; Gmail
+429 / 5xx / rate-limit 403 retried with backoff (1 s doubling to 32 s, six
+tries) on top of the client's own retry; read-only Gmail scope; the model stage
+never runs. Events are written by `system:tc-mail-redecide`. After an apply,
+the daily sweep's `refileThreadSiblings` (or `refile-threads`) lets a reply
+decided before a later sibling filed follow that thread, as it does for live
+mail.
+
+**Sizing** (`redecide --dry-run`, 2026-09-24 20:56 UTC, all three mailboxes,
+rules `mail-rules-v3-2026-09-24` over the history decided under v2): 72,056
+rows selected (matt@ 61,056, paul@ 8,664, rebeccapeterson@ 2,336), 55 minutes
+at `--concurrency 10`, 85,191 Gmail reads (72,341 metadata, 9,119 full, 3,731
+attachments; 81 retries, no 429s). Rows: unchanged 71,793, file 107, queue
+92, protected 26 (model 20, kept_manual 5, test harness 1), unfile 16,
+kept_model 13, relabel 4, requeue 2, move 1, error 2 (Gmail "Precondition
+check failed", left for the next run). 179 messages were held back until their
+thread settled, none left over. No document would be archived (2 kept: not the
+email's own), no offer touched; 221 messages would go through the live path on
+apply. The v4 run will differ: these are v3's changes only.
