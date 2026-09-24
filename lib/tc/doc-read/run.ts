@@ -22,7 +22,9 @@ import { readDocumentBytes, readerModel } from './read-document'
 import { READER_VERSION, type DocumentReading } from './vision-reading'
 import { documentVerdict, verdictFor, VERDICT_LABEL, type DocumentVerdict, type FormVerdict } from './verdict'
 import { planLineage, type LineageAction, type LineageDoc, type LineageItem, type LineagePlan } from './lineage'
-import { learnForms, loadFormRegistry, releasesFromAnatomy } from './registry'
+import { learnForms, loadFormRegistry, releasesFromAnatomy, type FormRegistry } from './registry'
+import { crossCheckForms, reconcileWithForm } from './cross-check'
+import { CHECKER_VERSION, type FormCheck } from '@/lib/tc/form-match/check'
 
 export const READER_ACTOR = 'vault-reader'
 
@@ -76,6 +78,32 @@ export function legacyExecutionState(v: DocumentVerdict, cycleKind: string): Exe
 }
 
 /** What the deal page and the portal show, stored on tc_documents.classification.reader. */
+/**
+ * The form check for a document (lib/tc/form-match), when the current
+ * checker has run on it: the second, independent read cross-check.ts holds
+ * the reader to.
+ */
+async function formChecksFor(sb: SupabaseClient, documentId: string): Promise<FormCheck[] | null> {
+  const { data } = await sb.from('tc_document_checks').select('forms').eq('document_id', documentId).eq('checker_version', CHECKER_VERSION).is('error', null).maybeSingle()
+  return (data?.forms as FormCheck[] | undefined) ?? null
+}
+
+/** The reader's verdict, held to the check against the printed form. */
+export function verdictWithChecks(reading: DocumentReading, registry: FormRegistry, checks: FormCheck[] | null): DocumentVerdict {
+  const reconciled = reading.forms.map((f) => reconcileWithForm(f, checks))
+  const forms = reconciled.map(({ reading: f, dropped }) => {
+    const v = verdictFor(f, registry)
+    return dropped.length ? { ...v, reasons: [...v.reasons, `Not counted, per the printed form: ${dropped.join('; ')}.`] } : v
+  })
+  return documentVerdict(
+    crossCheckForms(
+      forms,
+      reconciled.map((r) => r.reading),
+      checks,
+    ),
+  )
+}
+
 export function readerSummary(v: DocumentVerdict, readingId: string, model: string) {
   return {
     version: READER_VERSION,
@@ -98,6 +126,8 @@ export function readerSummary(v: DocumentVerdict, readingId: string, model: stri
       outcome: f.outcome,
       signers: f.signers.map((s) => ({ party: s.party, name: s.name, signed: s.signed, signed_as: s.signedAs, date: s.date, method: s.method })),
       reasons: f.reasons,
+      checked_against: (f as { checkedAgainst?: string | null }).checkedAgainst ?? null,
+      check_issues: (f as { checkIssues?: string[] }).checkIssues ?? [],
     })),
   }
 }
@@ -199,7 +229,7 @@ export async function readStoredDocument(
     }
   }
   const registry = await loadFormRegistry(sb)
-  const verdict = documentVerdict(reading.forms.map((f) => verdictFor(f, registry)))
+  const verdict = verdictWithChecks(reading, registry, await formChecksFor(sb, documentId))
   const { data: row, error: insErr } = await sb
     .from('tc_document_readings')
     .insert({
@@ -284,7 +314,7 @@ export async function planCycleDocuments(sb: SupabaseClient, cycleId: string): P
     if (reader?.reading_id && reader.version === READER_VERSION) {
       const { data: r } = await sb.from('tc_document_readings').select('reading').eq('id', reader.reading_id).maybeSingle()
       const reading = r?.reading as DocumentReading | undefined
-      if (reading?.forms) verdict = documentVerdict(reading.forms.map((f) => verdictFor(f, registry)))
+      if (reading?.forms) verdict = verdictWithChecks(reading, registry, await formChecksFor(sb, String(d.id)))
     }
     lineageDocs.push({
       id: String(d.id),
@@ -505,7 +535,7 @@ export async function refreshVerdict(sb: SupabaseClient, documentId: string): Pr
   const ctx = await cycleContext(sb, String(doc.cycle_id))
   if (!ctx) return null
   const registry = await loadFormRegistry(sb)
-  const verdict = documentVerdict(reading.forms.map((f) => verdictFor(f, registry)))
+  const verdict = verdictWithChecks(reading, registry, await formChecksFor(sb, documentId))
   const classification = {
     ...(doc.classification as Record<string, unknown>),
     execution_state: legacyExecutionState(verdict, ctx.kind),

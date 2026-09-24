@@ -299,14 +299,21 @@ function CycleSection({
         {(() => {
           const read = readerView(doc.classification)
           if (!read) return null
-          return read.forms.map((f, i) => (
-            <span key={i} style={{ ...tiny, display: 'block' }}>
-              {f.title}
-              {f.signed.length ? ` · Signed: ${f.signed.join(', ')}` : ''}
-              {f.waiting.length ? ` · Waiting on: ${f.waiting.join(', ')}` : ''}
-              {f.note ? ` · ${f.note}` : ''}
-            </span>
-          ))
+          return [
+            ...read.forms.map((f, i) => (
+              <span key={`f${i}`} style={{ ...tiny, display: 'block' }}>
+                {f.title}
+                {f.signed.length ? ` · Signed: ${f.signed.join(', ')}` : ''}
+                {f.waiting.length ? ` · Waiting on: ${f.waiting.join(', ')}` : ''}
+                {f.note ? ` · ${f.note}` : ''}
+              </span>
+            )),
+            ...read.checks.map((c, i) => (
+              <span key={`c${i}`} style={{ ...tiny, display: 'block' }}>
+                {c}
+              </span>
+            )),
+          ]
         })()}
       </span>,
       doc.page_count ?? '—',

@@ -25,6 +25,20 @@
  *
  *   npx tsx scripts/tc-mail-backfill.ts rematch
  *       Re-decide queued mail against today's deals.
+ *
+ *   npx tsx scripts/tc-mail-backfill.ts review-all [--mailbox x@ryan-realty.com] [--concurrency 4] [--limit N] [--model-stage] [--dry-run]
+ *       "Every message reviewed" (docs/TC_MAIL_FILING_RULES.md): walk EVERY
+ *       message in the given mailbox(es) — no date window, no deal-term query
+ *       — and record a tc_mail_reviews row for each one, whatever it decided.
+ *       Resumes from tc_mail_review_cursors; a mailbox already finished is a
+ *       no-op. --mailbox restricts to one mailbox (repeat for more than one),
+ *       default is every CRM_MAILBOXES entry. --limit caps how many messages
+ *       this run actually indexes (a smoke-test knob). --model-stage turns on
+ *       the leftover Grok pass for not_deal/unfiled_transaction mail that
+ *       still looks transactional (lib/tc/mail-model-stage.ts) — real spend,
+ *       off by default. --dry-run is READ-ONLY: decides every message but
+ *       writes nothing (no tc_mail_messages row, no tc_mail_reviews row, no
+ *       cursor), and prints the status distribution instead.
  */
 import 'dotenv/config'
 import fs from 'node:fs'
@@ -269,6 +283,11 @@ async function main() {
   const sb = createServiceClient()
   const universe = await loadMailUniverse(sb)
   const dryRun = has('--dry-run')
+  if (mode === 'review-retry') {
+    const { retryReviewErrors } = await import('@/lib/tc/mail-index')
+    console.log(JSON.stringify(await retryReviewErrors({ sb, modelStage: has('--model-stage') })))
+    return
+  }
   if (mode === 'sweep-deals') {
     const only = arg('--deal')
     const deals = only ? universe.deals.filter((d) => d.dealId === only) : universe.deals
@@ -303,7 +322,44 @@ async function main() {
     console.log(await rematchQueuedMail({ universe, sb }))
     return
   }
-  console.error('usage: tc-mail-backfill.ts audit|reconcile|sweep-deals|sweep-transactions|rematch [--since YYYY-MM-DD] [--dry-run]')
+  if (mode === 'review-all') {
+    const { reviewMailbox } = await import('@/lib/tc/mail-index')
+    const { CRM_MAILBOXES } = await import('@/lib/crm/gmail')
+    const only = arg('--mailbox')
+    const mailboxes = only ? CRM_MAILBOXES.filter((m) => m.email === only) : CRM_MAILBOXES
+    if (!mailboxes.length) {
+      console.error(`[review-all] no mailbox matches ${only}`)
+      process.exit(2)
+    }
+    const concurrency = Number(arg('--concurrency') ?? 4)
+    const limitArg = arg('--limit')
+    const limit = limitArg ? Number(limitArg) : undefined
+    const modelStage = has('--model-stage')
+    const totals: Record<string, number> = {}
+    for (const mb of mailboxes) {
+      console.log(`[review-all] ${mb.email}: starting${dryRun ? ' (dry run, read-only)' : ''}${modelStage ? ' with model stage' : ''}${limit ? ` (limit ${limit})` : ''}`)
+      const res = await reviewMailbox({
+        mailbox: mb.email,
+        universe,
+        concurrency,
+        limit,
+        dryRun,
+        modelStage,
+        sb,
+        onPage: (p) => console.log(`[review-all] ${p.mailbox}: page done — listed ${p.listed}, reviewed ${p.reviewed}, skipped ${p.skipped}, errors ${p.errors}`),
+      })
+      console.log(
+        `[review-all] ${mb.email}: listed ${res.listed}, reviewed ${res.reviewed}, skipped ${res.skipped}, errors ${res.errors}, ${
+          res.finished ? 'FINISHED (full history reviewed)' : res.complete ? 'stopped (limit reached)' : 'stopped (deadline/limit mid-page — resumes next run)'
+        }`,
+      )
+      console.log(`[review-all] ${mb.email} by status:`, res.byStatus)
+      for (const [k, v] of Object.entries(res.byStatus)) totals[k] = (totals[k] ?? 0) + v
+    }
+    console.log('[review-all] status distribution across mailboxes walked this run:', totals)
+    return
+  }
+  console.error('usage: tc-mail-backfill.ts audit|reconcile|sweep-deals|sweep-transactions|rematch|review-all|review-retry [--since YYYY-MM-DD] [--dry-run]')
   process.exit(2)
 }
 

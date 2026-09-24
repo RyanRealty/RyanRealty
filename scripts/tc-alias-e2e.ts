@@ -191,7 +191,10 @@ async function brokerStep(sb: import('@supabase/supabase-js').SupabaseClient, ki
 async function cleanupRun(sb: import('@supabase/supabase-js').SupabaseClient, dealId: string, run: string): Promise<{ archived: number; dismissed: number }> {
   const now = new Date().toISOString()
   const actor = 'system:tc-alias-e2e'
-  const reason = `Alias test harness (TC TEST ${run}): synthetic test document, archived after the run was checked.`
+  const reason =
+    run === '*'
+      ? 'Alias test harness: synthetic test document (re-filed by a mail sweep after its run), archived.'
+      : `Alias test harness (TC TEST ${run}): synthetic test document, archived after the run was checked.`
   const { data: cycles } = await sb.from('tc_cycles').select('id').eq('deal_id', dealId)
   const cycleIds = (cycles ?? []).map((c) => String(c.id))
   const { data: docs } = cycleIds.length
@@ -208,7 +211,7 @@ async function cleanupRun(sb: import('@supabase/supabase-js').SupabaseClient, de
   const { data: queued } = await sb
     .from('tc_mail_messages')
     .select('id')
-    .like('subject', `%[TC TEST ${run}]%`)
+    .like('subject', run === '*' ? '%[TC TEST %' : `%[TC TEST ${run}]%`)
     .in('status', ['ambiguous', 'unfiled_transaction'])
   const ids = (queued ?? []).map((q) => String(q.id))
   if (ids.length) {
@@ -233,8 +236,18 @@ async function waitFor(gmail: import('googleapis').gmail_v1.Gmail, q: string, se
 
 async function main() {
   const mode = process.argv[2]
+  if (mode === 'cleanup') {
+    // A mail sweep can file an old run's test mail onto the test file again:
+    // archive every live document on it and dismiss any queued test mail.
+    const { createServiceClient } = await import('@/lib/supabase/service')
+    const sb = createServiceClient()
+    const { data: deal } = await sb.from('tc_deals').select('id').eq('address', ADDRESS).maybeSingle()
+    if (!deal?.id) return console.log('no test deal')
+    console.log(JSON.stringify(await cleanupRun(sb, String(deal.id), '*')))
+    return
+  }
   if (mode !== 'run') {
-    console.error('usage: tc-alias-e2e.ts run')
+    console.error('usage: tc-alias-e2e.ts run|cleanup')
     process.exit(2)
   }
   const { getGmailFor } = await import('@/lib/crm/gmail')
