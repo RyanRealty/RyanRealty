@@ -25,7 +25,7 @@ import { getCommissionsForCycles } from '@/app/actions/tc-commissions'
 import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
 import { listDealOffers, listEnvelopeTemplates, listFormPackets, getPreferredOrefSaleAgreement } from '@/lib/data'
 import { getDealParties } from '@/lib/data/tc/deal-people'
-import { listDealMail, listDealConversations } from '@/lib/data/tc/mail-reads'
+import { listDealMail, listDealConversations, listDealOptions } from '@/lib/data/tc/mail-reads'
 import { listDealTasks } from '@/lib/data/tc/task-reads'
 import { listDealEvents } from '@/lib/data/tc/deal-events'
 import { getLiveDealCycles } from '@/lib/data/tc/closings'
@@ -147,10 +147,19 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   } else if (tab === 'offers') {
     body = <DealOffers dealId={deal.id} stage={deal.stage} offers={await listDealOffers(deal.id)} />
   } else if (tab === 'email') {
-    const [mail, conversations] = await Promise.all([listDealMail(deal.id), listDealConversations(deal.id)])
+    const [mail, conversations, dealOptionRows] = await Promise.all([
+      listDealMail(deal.id),
+      listDealConversations(deal.id),
+      // Correction picker's "another file" search — scoped like every other
+      // deal read here, so a broker never sees a file they cannot open.
+      listDealOptions(),
+    ])
+    const dealOptions = dealOptionRows
+      .filter((d) => dealVisibleToBroker({ role: ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName: d.brokerName }))
+      .map((d) => ({ dealId: d.dealId, address: d.address, brokerName: d.brokerName, stage: d.stage }))
     body = (
       <div className="av2-stack">
-        <DealMail dealId={deal.id} rows={mail} />
+        <DealMail dealId={deal.id} rows={mail} dealOptions={dealOptions} />
         <DealConversations rows={conversations} />
       </div>
     )

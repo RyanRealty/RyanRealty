@@ -104,6 +104,35 @@ to an existing deal, or "not a deal") and by candidate files (email that fits
 several files: one button per file). A person's answer is final: the rules never
 re-decide a row a person decided.
 
+## Correcting a misfile (`lib/tc/mail-refile.ts`)
+
+The 2026-09-24 audit found the filer right ~97% of the time with no way to fix
+the rest: moving or unfiling a filed message existed only as a one-off script.
+On a deal's Email tab, every filed row carries **"Move to another file"** and
+**"Not a deal"** (`app/actions/tc-mail.ts` `moveFiledMailToDeal` /
+`unfileDealMail`), same auth/scope as the queue. The move picker defaults to
+the rules' own runner-up candidates from `match_detail.candidates` (`docs/TC_MAIL_FILING_RULES.md`'s
+own scoring), then a search over every file the broker can see
+(`lib/data/tc/mail-reads.ts` `listDealOptions`).
+
+- **A move re-files through `fileIndexedMessageToDeal`** — the exact path any
+  other filing uses — so a corrected message is indistinguishable from one the
+  rules got right the first time.
+- **Documents move with it.** A document nobody has acted on yet is archived
+  on the old file (archive is the Vault's delete — nothing is hard-deleted);
+  the re-file's own per-cycle-hash dedupe (`existingDocumentIdByHash`) reunites
+  it with the message on the new file. A document a person already put to
+  work — on a checklist (`tc_checklist_assignments`), in a signing envelope
+  (`tc_envelope_documents`), in an actual principal sign-off
+  (`tc_principal_reviews`, OAR 863-015-0140), or shared with the client
+  (`tc_documents.client_visible`) — is left exactly where it is and flagged
+  (`tc_documents.classification.refile_flag`), never moved, never deleted.
+- **Unfiling** sets the message `status = 'dismissed'` (same state
+  `dismissQueuedMail` uses) and releases its documents the same way.
+- **Both write one `tc_events` row** naming who, when, and from/to, and upsert
+  the `tc_mail_reviews` row with `stage = 'person'` — the rules never re-decide
+  a row `decided_by` names a real person (see "Every message reviewed" below).
+
 ## Daily sweep (`/api/cron/tc-mail-sweep`, 13:35 UTC)
 
 1. Re-decide the queue against today's files (oldest decision first), then open

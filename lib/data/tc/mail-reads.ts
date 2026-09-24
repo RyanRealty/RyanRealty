@@ -6,7 +6,14 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { MAIL_CATEGORY_LABEL, type MailQueueGroup, type DealMailRow, type MailQueueRow, groupMailQueue } from '@/lib/tc/mail-view'
+import {
+  MAIL_CATEGORY_LABEL,
+  type MailFileCandidate,
+  type MailQueueGroup,
+  type DealMailRow,
+  type MailQueueRow,
+  groupMailQueue,
+} from '@/lib/tc/mail-view'
 
 const MAIL_COLS =
   'id, sent_at, direction, from_email, from_name, to_emails, cc_emails, subject, snippet, category, status, match_method, match_detail, attachments, offer_id, property_hint, gmail_refs, deal_id, decided_by'
@@ -33,7 +40,29 @@ type MailRowDb = {
   decided_by: string
 }
 
-function mapRow(r: MailRowDb): DealMailRow {
+type CandidateDeal = { id: string; address: string; property_key: string; stage: string }
+
+/** Every deal named in these rows' `match_detail.candidates`, for resolving an address to show. */
+async function loadCandidateDeals(sb: ReturnType<typeof createServiceClient>, rows: readonly MailRowDb[]): Promise<Map<string, CandidateDeal>> {
+  const ids = new Set<string>()
+  for (const r of rows) for (const c of r.match_detail?.candidates ?? []) ids.add(c.dealId)
+  if (!ids.size) return new Map()
+  const { data } = await sb.from('tc_deals').select('id, address, property_key, stage').in('id', [...ids])
+  return new Map((data ?? []).map((d) => [String(d.id), d as CandidateDeal]))
+}
+
+/** The rules' OTHER candidates for this message (never the deal it is actually on) — a correction picker's defaults. */
+function candidatesFor(r: MailRowDb, dealById: ReadonlyMap<string, CandidateDeal>): MailFileCandidate[] {
+  return (r.match_detail?.candidates ?? [])
+    .filter((c) => c.dealId !== r.deal_id)
+    .map((c) => {
+      const d = dealById.get(c.dealId)
+      return d ? { dealId: c.dealId, address: String(d.address), propertyKey: String(d.property_key), stage: String(d.stage), evidence: c.evidence } : null
+    })
+    .filter((c): c is MailFileCandidate => !!c)
+}
+
+function mapRow(r: MailRowDb, dealById: ReadonlyMap<string, CandidateDeal> = new Map()): DealMailRow {
   return {
     id: r.id,
     sentAt: r.sent_at,
@@ -58,12 +87,14 @@ function mapRow(r: MailRowDb): DealMailRow {
     offerId: r.offer_id,
     mailboxes: [...new Set((r.gmail_refs ?? []).map((g) => g.mailbox).filter((m): m is string => !!m))],
     decidedBy: r.decided_by,
+    candidates: candidatesFor(r, dealById),
   }
 }
 
-/** Filed mail on one deal, newest first. */
+/** Filed mail on one deal, newest first. Each row's `candidates` are the OTHER files the rules weighed for it — a correction's default picks. */
 export async function listDealMail(dealId: string, limit = 200): Promise<DealMailRow[]> {
-  const { data, error } = await createServiceClient()
+  const sb = createServiceClient()
+  const { data, error } = await sb
     .from('tc_mail_messages')
     .select(MAIL_COLS)
     .eq('deal_id', dealId)
@@ -75,7 +106,9 @@ export async function listDealMail(dealId: string, limit = 200): Promise<DealMai
     if (!/does not exist|schema cache/i.test(error.message)) console.error('[listDealMail]', error.message)
     return []
   }
-  return (data ?? []).map((r) => mapRow(r as MailRowDb))
+  const rows = (data ?? []) as MailRowDb[]
+  const dealById = await loadCandidateDeals(sb, rows)
+  return rows.map((r) => mapRow(r, dealById))
 }
 
 /**
@@ -99,21 +132,11 @@ export async function listMailQueue(opts: { mailbox: string | null; limit?: numb
     if (!/does not exist|schema cache/i.test(error.message)) console.error('[listMailQueue]', error.message)
     return { rows: [], groups: [] }
   }
-  const candidateIds = new Set<string>()
-  for (const r of (data ?? []) as MailRowDb[]) for (const c of r.match_detail?.candidates ?? []) candidateIds.add(c.dealId)
-  const { data: deals } = candidateIds.size
-    ? await sb.from('tc_deals').select('id, address, property_key, stage').in('id', [...candidateIds])
-    : { data: [] as Array<{ id: string; address: string; property_key: string; stage: string }> }
-  const dealById = new Map((deals ?? []).map((d) => [String(d.id), d]))
-  const rows: MailQueueRow[] = ((data ?? []) as MailRowDb[]).map((r) => ({
-    ...mapRow(r),
+  const queueRows = (data ?? []) as MailRowDb[]
+  const dealById = await loadCandidateDeals(sb, queueRows)
+  const rows: MailQueueRow[] = queueRows.map((r) => ({
+    ...mapRow(r, dealById),
     propertyHint: r.property_hint,
-    candidates: (r.match_detail?.candidates ?? [])
-      .map((c) => {
-        const d = dealById.get(c.dealId)
-        return d ? { dealId: c.dealId, address: String(d.address), propertyKey: String(d.property_key), stage: String(d.stage), evidence: c.evidence } : null
-      })
-      .filter((c): c is NonNullable<typeof c> => !!c),
   }))
   return { rows, groups: groupMailQueue(rows) }
 }
@@ -203,11 +226,51 @@ export async function listDealConversations(dealId: string, limit = 100): Promis
   })
 }
 
-/** Queue rows an action is about to answer: status, mailboxes, subject. */
-export async function getMailMessagesForAction(ids: string[]): Promise<Array<{ id: string; status: string; gmail_refs: unknown; subject: string | null }>> {
+export type MailMessageForAction = {
+  id: string
+  status: string
+  gmail_refs: unknown
+  subject: string | null
+  deal_id: string | null
+  message_key: string | null
+  gmail_thread_ids: unknown
+  sent_at: string | null
+}
+
+/** Queue rows (or a filed row a correction is about to answer): status, mailboxes, subject, and enough to write the "every message reviewed" ledger row for it. */
+export async function getMailMessagesForAction(ids: string[]): Promise<MailMessageForAction[]> {
   if (!ids.length) return []
-  const { data } = await createServiceClient().from('tc_mail_messages').select('id, status, gmail_refs, subject').in('id', ids)
-  return (data ?? []) as Array<{ id: string; status: string; gmail_refs: unknown; subject: string | null }>
+  const { data } = await createServiceClient()
+    .from('tc_mail_messages')
+    .select('id, status, gmail_refs, subject, deal_id, message_key, gmail_thread_ids, sent_at')
+    .in('id', ids)
+  return (data ?? []) as MailMessageForAction[]
+}
+
+export type DealOptionRow = { dealId: string; address: string; propertyKey: string; brokerName: string | null; stage: string; open: boolean }
+
+/** Every deal a broker could pick as a correction's destination — the "open" ones (live stages) come first, nothing else joined. */
+export async function listDealOptions(): Promise<DealOptionRow[]> {
+  const { data, error } = await createServiceClient()
+    .from('tc_deals')
+    .select('id, address, property_key, broker_name, stage, updated_at')
+    .order('updated_at', { ascending: false })
+    .limit(5000)
+  if (error) {
+    console.error('[listDealOptions]', error.message)
+    return []
+  }
+  const LIVE = new Set(['pending', 'pre_contract', 'active_listing'])
+  return (data ?? [])
+    .map((d) => ({
+      dealId: String(d.id),
+      address: String(d.address),
+      propertyKey: String(d.property_key),
+      brokerName: (d.broker_name as string | null) ?? null,
+      stage: String(d.stage),
+      open: LIVE.has(String(d.stage)),
+    }))
+    .sort((a, b) => (a.open === b.open ? 0 : a.open ? -1 : 1))
 }
 
 /** The fields an action needs to scope and link a deal. */
