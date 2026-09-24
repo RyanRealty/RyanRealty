@@ -5,8 +5,10 @@
  * fold where Atlas is the drawing and CityAlertsStrip (V3Number) is the figure.
  * H1 is "{city} homes for sale". One map: the city's children sit beside it
  * (Bend neighborhoods, recorded plats elsewhere), no taller than the map.
- * Choosing one zooms to that shape and the carousel below lists its publicly
- * active homes. The city name shows every publicly active home in the city.
+ * Choosing one zooms to that shape and the listing dials below hold its
+ * publicly active homes, one dial per buyer group (Matt 2026-09-24: every
+ * place page shows listings the same way). The city name shows every publicly
+ * active home in the city.
  * Do not write ?shapes= onto this URL. Type chips live on the map key and
  * PlaceTypeSlider, not as first-screen property-type H2s. One
  * typical-price slope sits after the child doors. MOS is two bars, never a
@@ -1170,6 +1172,9 @@ async function renderCityDetail({ params }: Props) {
               />
             </div>
           </div>
+          {/* Matt 2026-09-24: the homes below the map are listing dials, one
+              per buyer group, the same as every other place page, still
+              filtered by the child place chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
 

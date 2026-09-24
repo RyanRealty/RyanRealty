@@ -218,17 +218,12 @@ describe('V3PlaceInventory layout="dial"', () => {
     expect(html).not.toContain('—')
   })
 
-  it('leaves rows and rails as they were', () => {
+  it('leaves the default rows as they were', () => {
     const rows = renderToStaticMarkup(
       <V3PlaceInventory placeName="Porter James" sections={SECTIONS} source="regional MLS" />,
     )
     expect(rows).toContain('v3-place-stock__rows')
     expect(rows).not.toContain('v3-dial')
-    const rails = renderToStaticMarkup(
-      <V3PlaceInventory layout="rails" placeName="Porter James" sections={SECTIONS} source="regional MLS" />,
-    )
-    expect(rails).toContain('home-rail')
-    expect(rails).not.toContain('v3-dial')
   })
 })
 
@@ -259,9 +254,9 @@ describe('V3ListingDial on its own', () => {
   })
 })
 
-describe('PlaceSubdivisionHomes layout="dial" (neighborhood pages)', () => {
+describe('PlaceSubdivisionHomes (city, community and neighborhood pages)', () => {
   const homes = SECTIONS.flatMap((s) => s.rows)
-  const render = (layout?: 'rails' | 'dial') =>
+  const render = () =>
     renderToStaticMarkup(
       <PlaceSubdivisionMap
         placeName="River West"
@@ -270,22 +265,21 @@ describe('PlaceSubdivisionHomes layout="dial" (neighborhood pages)', () => {
         keysBySlug={{}}
         source="regional MLS through Oregon Data Share"
       >
-        <PlaceSubdivisionHomes id="homes" layout={layout} />
+        <PlaceSubdivisionHomes id="homes" />
       </PlaceSubdivisionMap>,
     )
 
   it('turns each buyer group into a dial with its own h3 and count', () => {
-    const html = render('dial')
-    expect(html).toContain('place-homes--dial')
-    expect(html).not.toContain('v3-carousel')
+    const html = render()
+    expect(html).toContain('place-homes__dial')
     expect(count(html, /<h3 /g)).toBeGreaterThan(1)
     expect(html).toContain('River West')
     for (const row of homes) expect(html).toContain(`href="${row.href}"`)
   })
 
-  it('keeps the carousel as the default for city and community pages', () => {
+  it('draws no carousel: the dial is the only layout (Matt 2026-09-24)', () => {
     const html = render()
-    expect(html).toContain('v3-carousel')
-    expect(html).not.toContain('v3-dial')
+    expect(html).toContain('v3-dial')
+    expect(html).not.toContain('v3-carousel')
   })
 })

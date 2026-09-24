@@ -33,7 +33,7 @@ describe('SITE-129 community fold inventory', () => {
 })
 
 describe('community map', () => {
-  it('opens on one atlas with the subdivision list and the homes carousel', () => {
+  it('opens on one atlas with the subdivision list and the listing dials under it', () => {
     expect(PAGE).toMatch(/<PlaceSubdivisionAtlas[\s\S]*?id="atlas"/)
     expect(PAGE).toMatch(/<PlaceSubdivisionRail[\s\S]*?id="child-places"/)
     expect(PAGE).toMatch(/<PlaceSubdivisionHomes[\s\S]*?id="homes"/)

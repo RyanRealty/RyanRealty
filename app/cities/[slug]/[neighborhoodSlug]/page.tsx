@@ -971,8 +971,8 @@ async function renderNeighborhoodDetail({ params }: Props) {
           </div>
           {/* Matt 2026-09-23: the homes below the map are the dial, one per
               buyer group, still filtered by the subdivision chosen on the map.
-              City and community pages keep the carousel. */}
-          <PlaceSubdivisionHomes id="homes" layout="dial" />
+              City and community pages draw the same dials (2026-09-24). */}
+          <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
 
         <div className="nbh-fold">

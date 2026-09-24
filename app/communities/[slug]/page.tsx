@@ -8,7 +8,8 @@
  * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
  * Matt 2026-09-07): an input-to-answer ask, not a number hero.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
- * regions. Homes stay on this page in the carousel.
+ * regions. Homes stay on this page as listing dials, one per buyer group
+ * (Matt 2026-09-24: every place page shows listings the same way).
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * leftoverHudKpis grain stays 'neighborhood', keyed by the bare community
@@ -1097,6 +1098,10 @@ async function renderCommunityDetail({ params }: Props) {
               </ul>
             </nav>
           ) : null}
+          {/* Matt 2026-09-24: the homes below the map are listing dials, one
+              per buyer group (each type link above lands on its dial), the
+              same as every other place page, still filtered by the
+              subdivision chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
 
