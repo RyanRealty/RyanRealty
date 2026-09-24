@@ -66,20 +66,24 @@ describe('V3DogFloater · SITE-153', () => {
     expect(CSS).toMatch(/z-index:\s*95/)
   })
 
-  it('the eyes follow the pointer without redrawing the mascot (Matt 2026-09-23)', () => {
-    expect(SRC).toContain("from '@/lib/geo/pupil-offset'")
+  it('the whole head turns toward the pointer; the eye itself never moves (Matt 2026-09-24)', () => {
+    expect(SRC).toContain("from '@/lib/geo/aim-at-pointer'")
     expect(SRC).toContain("addEventListener('pointermove'")
     expect(SRC).toContain('{ passive: true }')
     expect(SRC).toContain('requestAnimationFrame')
     expect(SRC).toContain('cancelAnimationFrame')
     expect(SRC).toContain('removeEventListener')
     expect(SRC).toContain("matchMedia('(prefers-reduced-motion: reduce)')")
-    expect(SRC).toContain('v3-dog-floater__pupil--cream')
-    expect(SRC).toContain('v3-dog-floater__pupil--navy')
+    // One aim box turns both dog layers; no drawn pupil moves over the art.
+    expect(SRC).toContain('v3-dog-floater__aim')
+    expect(SRC).toContain('headAimTransform(aim)')
+    expect(SRC).not.toMatch(/pupil/i)
+    expect(CSS).not.toMatch(/pupil/i)
+    expect(CSS).toContain('.v3-dog-floater__aim {')
+    expect(CSS).toContain('transform-origin: 50% 50%')
     // Still the two head PNGs, not a hand-redrawn dog.
     expect(SRC).toContain('/brand/jax-head-cream.png')
     expect(SRC).toContain('/brand/jax-head-navy.png')
-    expect(CSS).toContain('.v3-dog-floater__pupil {')
     expect(CSS).not.toMatch(/box-shadow\s*:\s*(?!none)[^;]*\d+px\s+\d+px/)
   })
 })

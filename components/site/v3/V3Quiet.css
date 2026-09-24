@@ -321,11 +321,25 @@
   list-style: none;
 }
 
+/* A face in an inline door's mark slot: a small round crop of an owned
+   cutout, head and shoulders, on the wash so the transparent edge reads. */
+.v3-quiet__inlinemedia {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-wash);
+  object-fit: cover;
+  object-position: center 18%;
+}
+
 .v3-quiet__inlinelink {
   display: inline-flex;
   align-items: center;
   gap: var(--v3-space-xs);
   min-height: var(--v3-tap);
+  /* A one-letter label ("X") still gets the 44px box both ways. */
+  min-width: var(--v3-tap);
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
   text-decoration: none;

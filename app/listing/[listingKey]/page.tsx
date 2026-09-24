@@ -11,7 +11,9 @@ import {
   getCalculatorDefaults,
   getBoundaryGeoJSON,
   getListingCutFacts,
+  getLeaseRateOptions,
 } from '@/lib/data'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
@@ -284,6 +286,14 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     closePrice: listing.closePrice,
     propertyType: listing.propertyType,
   })
+  // A commercial lease (MLS 'G'): its ListPrice and every history amount are
+  // RENT. The strip prints the rent with its unit (PriceCtaStrip); every figure
+  // below that reads those amounts as a sale price (the price-cut mark, the
+  // cut instrument, the history's dollar changes, the home-pace sentence) is
+  // withheld, never printed in a sale's words. 671 NE Greenwood Avenue, Bend
+  // (MLS 220221425) printed "$2 Cut $1 -50.0%" and "has taken 50% off its first
+  // ask" for a rent that went from $2.00 to $1.40 a square foot (2026-09-23).
+  const isLease = listingPriceIsLeaseRate(listing.propertyType)
 
   const wholePropertyPrice = publishListingPublishedWholePropertyPrice({
     status: listing.status,
@@ -339,12 +349,25 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   const featuredGeoName = keepExploring.name
   const featuredViewAllHref = keepExploring.href
 
-  const platDocuments = await withTimeoutFallback(
-    getPlaceDocumentsForListing(listing.boundarySubdivision),
-    null,
-    4500,
-    'listing:plat-documents',
-  )
+  const [platDocuments, leaseRateOption] = await Promise.all([
+    withTimeoutFallback(
+      getPlaceDocumentsForListing(listing.boundarySubdivision),
+      null,
+      4500,
+      'listing:plat-documents',
+    ),
+    // A commercial lease (MLS 'G') prints its rent where a sale prints its
+    // ask, and the rent's unit lives only in the raw payload. No other
+    // listing reads it. A miss prints "Lease rate not published".
+    listingPriceIsLeaseRate(listing.propertyType)
+      ? withTimeoutFallback(
+          getLeaseRateOptions([listing.listingKey]),
+          {} as Record<string, string | null>,
+          3000,
+          'listing:lease-rate',
+        ).then((units) => units[listing.listingKey] ?? null)
+      : Promise.resolve(null),
+  ])
 
   const nearbyScope =
     marketGeo?.geoType === 'community'
@@ -355,7 +378,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
 
   const leftoverGrains = leftoverListingGrains(listing, marketGeo)
 
-  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, calcDefaults, cutFacts] =
+  const [relatedHomes, historyRead, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, calcDefaults, cutFacts] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -418,6 +441,12 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         'listing:cutFacts',
       ),
     ])
+  // A lease's history amounts are rent with no unit on the row, so the page
+  // keeps the events (listed, price change, pending) and prints no amount:
+  // one masked history feeds the rail, the strip and the cut instrument alike.
+  const history = isLease
+    ? historyRead.map((row) => ({ ...row, price: null, price_change: null }))
+    : historyRead
 
   let leftoverHud: ReturnType<typeof leftoverHudKpis> | null = null
   let leftoverLayers: ReturnType<typeof leftoverOverlays.get> = undefined
@@ -606,8 +635,8 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   // row publishListingLastDrop labels); the pills' plain read from the reads
   // the ask instrument already makes (days to contract from the HUD, the
   // closed median $/sqft from the pace row), at the grain that published.
-  const dropMark = offMarket ? null : publishListingDropMark(history)
-  const pillRead = offMarket
+  const dropMark = offMarket || isLease ? null : publishListingDropMark(history)
+  const pillRead = offMarket || isLease
     ? null
     : publishListingPillRead({
         daysLive: daysLiveOnMarket(listing.onMarketDate ?? null),
@@ -747,11 +776,13 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   // `DaysOnMarket`, which is list-to-close and is banned as DOM (CLAUDE.md §7).
   const closeSubject = buildCloseSubject({
     addressLine: street,
-    drop: publishListingDrop({
-      listPrice: listing.listPrice,
-      originalListPrice: listing.originalListPrice,
-      historyPrices: history.map((row) => row.price ?? null),
-    }),
+    drop: isLease
+      ? null
+      : publishListingDrop({
+          listPrice: listing.listPrice,
+          originalListPrice: listing.originalListPrice,
+          historyPrices: history.map((row) => row.price ?? null),
+        }),
     onMarketDate: listing.onMarketDate,
   })
 
@@ -759,6 +790,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     <>
       <PriceCtaStrip
         listing={listingWithPhotos}
+        leaseRateOption={leaseRateOption}
         history={history}
         onSave={saveListingFromStrip}
         initialSaved={initialSaved}
@@ -898,7 +930,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
           addressLine={street}
           bookHref={`/book?agent=${encodeURIComponent(ctaBrokerSlug)}&listing=${encodeURIComponent(listing.listingKey)}`}
           paymentHref="#payment"
-          view={cutFacts ? buildCloseView(cutFacts, closeSubject) : null}
+          view={cutFacts && !isLease ? buildCloseView(cutFacts, closeSubject) : null}
         />
       ) : null}
       {ctaBroker ? (

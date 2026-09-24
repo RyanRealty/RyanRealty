@@ -3086,6 +3086,39 @@
         }
       ]
     },
+    "commercial-space-for-lease": {
+      "layoutLock": "The page opens on the town ledger as the H1: every town with a lease, its count drawn as a length, and a rate line that covers every lease the count does. Then the leases by town, each one an <a href> in the served HTML with its rent in its own unit or 'Lease rate not published'. Never a bare number, never an Offer, never a claim that no space exists.",
+      "demoStates": [
+        "lease=#lease-bend",
+        "turned=#lease-redmond .v3-dial__step--next!click"
+      ],
+      "modules": [
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "The towns as doors: each town's lease count drawn as a length, its rate line under the name, sourced."
+        },
+        {
+          "id": "house-listing",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3PlaceInventory.tsx",
+          "job": "The leases by town on V3ListingDial (layout dial): the same primitive and lease card as a place page's lease section."
+        },
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "Keep looking: the towns' own pages, homes for sale, a broker. Not a README about the page."
+        },
+        {
+          "id": "shadcn-empty",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/empty",
+          "job": "The empty pull: nothing listed on this refresh and a broker ask, never that no space exists. Official Empty Header/Title/Description/Content."
+        }
+      ]
+    },
     "blog": {
       "layoutLock": "The article is an island with a measure. Related homes are a ledger when the post names a buyable place. Do not flatten CMS markup into a Quiet string.",
       "modules": [
@@ -3276,6 +3309,7 @@
     "buy": "buy",
     "reviews": "reviews",
     "price-drops": "price-drops",
+    "commercial-space-for-lease": "commercial-space-for-lease",
     "blog": "blog",
     "market-report": "market-report",
     "market-report-annual": "market-report",

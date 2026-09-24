@@ -26,9 +26,10 @@ export const BRAND = {
   legalName: 'Ryan Realty LLC',
   domain: 'ryan-realty.com',
   url: 'https://ryan-realty.com',
-  /** ISO date used by JSON-LD foundingDate. */
+  /** The day the Bend office opened. Not the company's founding: see llcSince. */
   founded: '2023-06-21',
-  /** Ryan Realty LLC itself dates from 2014; the Bend office opened June 2023 (Matt 2026-09-07). */
+  /** Ryan Realty LLC itself dates from 2014; the Bend office opened June 2023 (Matt 2026-09-07).
+   *  The company was founded in 2014, and that is the JSON-LD foundingDate (Matt 2026-09-24). */
   llcSince: '2014',
   /** Prose form for body copy ("opened in June 2023"). */
   foundedLabel: 'June 2023',

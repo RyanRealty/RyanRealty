@@ -647,7 +647,7 @@ export async function collectCompanyScoreboardSignals(
   const degraded: string[] = []
   if (placeMembership.freshness === 'stale') {
     degraded.push(
-      `place_membership last refreshed ${placeMembership.newestAt} (${placeMembership.ageHours}h ago, limit ${PLACE_MEMBERSHIP_STALE_HOURS}h): market_metric counts and verdicts miss new listings; check pg_cron job refresh_place_membership_15min, or /api/cron/refresh-mvs until migration 20260923014500 is applied`,
+      `place_membership last refreshed ${placeMembership.newestAt} (${placeMembership.ageHours}h ago, limit ${PLACE_MEMBERSHIP_STALE_HOURS}h): market_metric counts and verdicts miss new listings; check pg_cron job refresh_place_membership_15min (migration 20260923014500)`,
     )
   } else if (placeMembership.freshness === 'unknown') {
     degraded.push(`place_membership freshness UNKNOWN (${placeMembership.source})`)

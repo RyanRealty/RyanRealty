@@ -106,9 +106,9 @@
       "id": "sync-ops",
       "name": "Listing/CRM sync health",
       "seed": true,
-      "inception": "Cron cadence (sync-delta 4x/hr, sync-full weekly, refresh-mvs hourly, crm-gmail-sync 4x/hr) or health-check alarm",
+      "inception": "Cron cadence (sync-delta 4x/hr, sync-full weekly, pg_cron MV + place_membership refresh 4x/hr, crm-gmail-sync 4x/hr) or health-check alarm",
       "completion": "Health known; backlog actioned or accepted; broker paged on alarm",
-      "evidence": "app/api/cron/sync-delta (lib/sync/deltaSync.ts:532); refresh-mvs:59-106; crm-health-check:130-208; /admin/sync + /admin/crm/health; deploy-health; loop-health-check:368-402",
+      "evidence": "app/api/cron/sync-delta (lib/sync/deltaSync.ts:532); crm-health-check:130-208; /admin/sync + /admin/crm/health; deploy-health; loop-health-check:368-402",
       "cadence": "continuous",
       "status": "locked",
       "verdict": "KEEP"

@@ -1,0 +1,194 @@
+/* ===========================================================================
+   PATTERN: STEPS
+   Styles for V3Steps.tsx and nothing else. Every value resolves from
+   ./tokens.css. The promise is display type; the steps sit on one drawn line
+   (horizontal past 64rem, a left spine below it) with a numbered node each.
+   =========================================================================== */
+
+.v3.v3-steps {
+  --v3-steps-node: 2.75rem;
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+* + .v3.v3-steps {
+  border-top: var(--v3-rule-section);
+}
+
+/* Top: the promise and the standing facts ---------------------------------- */
+.v3-steps__top {
+  display: grid;
+  gap: var(--v3-space-xl);
+  margin-bottom: var(--v3-space-2xl);
+}
+
+@media (min-width: 64rem) {
+  .v3-steps__top--aside {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    column-gap: var(--v3-space-3xl);
+    align-items: end;
+  }
+}
+
+.v3-steps__lead {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+}
+
+.v3-steps__heading {
+  margin: 0;
+}
+
+/* The commitment is the largest type in the section: Amboqia at the H1
+   display size, because it is the one sentence a reader should leave with. */
+.v3-steps__promise {
+  margin: var(--v3-space-sm) 0 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-1);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-display);
+  text-wrap: balance;
+}
+
+.v3-steps__aside {
+  display: grid;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+}
+
+.v3-steps__facts {
+  display: grid;
+  margin: 0;
+}
+
+.v3-steps__fact {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  padding-block: var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-steps__term {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-note);
+  text-transform: uppercase;
+}
+
+.v3-steps__value {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+}
+
+/* The line ------------------------------------------------------------------
+   Below 64rem: a spine down the left, the node on it, the words beside it.
+   Past 64rem: the spine turns horizontal through the node centres and the
+   steps sit side by side under it. The line is a hairline in navy at a
+   fifth; the nodes are the marks. */
+.v3-steps__list {
+  position: relative;
+  display: grid;
+  gap: var(--v3-space-xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-steps__list::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--v3-steps-node) / 2);
+  bottom: calc(var(--v3-steps-node) / 2);
+  left: calc(var(--v3-steps-node) / 2);
+  width: 1px;
+  background: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+}
+
+.v3-steps__step {
+  position: relative;
+  display: grid;
+  align-content: start;
+  grid-template-columns: var(--v3-steps-node) minmax(0, 1fr);
+  column-gap: var(--v3-space-md);
+  row-gap: var(--v3-space-xs);
+  align-items: start;
+  min-width: 0;
+}
+
+.v3-steps__node {
+  grid-row: 1 / span 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--v3-steps-node);
+  height: var(--v3-steps-node);
+  border: 1px solid var(--v3-navy);
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body-lg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.v3-steps__name {
+  margin: 0;
+  padding-top: calc((var(--v3-steps-node) - 1.4em) / 2);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-strong);
+  line-height: var(--v3-leading-heading);
+  text-wrap: balance;
+}
+
+.v3-steps__body {
+  grid-column: 2;
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+@media (min-width: 64rem) {
+  .v3-steps__list {
+    grid-template-columns: repeat(var(--v3-steps-count, 3), minmax(0, 1fr));
+    column-gap: var(--v3-space-xl);
+  }
+
+  .v3-steps__list::before {
+    top: calc(var(--v3-steps-node) / 2);
+    bottom: auto;
+    left: calc(var(--v3-steps-node) / 2);
+    right: 0;
+    width: auto;
+    height: 1px;
+  }
+
+  .v3-steps__step {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--v3-space-sm);
+  }
+
+  .v3-steps__node {
+    grid-row: auto;
+  }
+
+  .v3-steps__name {
+    padding-top: var(--v3-space-xs);
+  }
+
+  .v3-steps__body {
+    grid-column: 1;
+  }
+}

@@ -21,6 +21,7 @@ import {
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingEstPayment } from '@/lib/listing/publish-listing-ask'
+import { publishListingLeaseFigure } from '@/lib/listing/publish-lease-rate'
 import {
   listingPublishesClosePrice,
   publishListingPublishedPrice,
@@ -97,6 +98,13 @@ type Props = {
     | 'lat'
     | 'lng'
   >
+  /**
+   * A commercial lease's "Lease Rate Options" unit (getLeaseRateOptions). On
+   * an on-market MLS 'G' listing the strip prints the rent with this unit, or
+   * "Lease rate not published", where a sale prints its ask, and a "For lease"
+   * pill. Ignored on every other listing.
+   */
+  leaseRateOption?: string | null
   /** Published listing-history rail — last drop on the face comes from here. */
   history?: ReadonlyArray<{
     event?: string | null
@@ -170,6 +178,7 @@ const PILL_TONE: Record<string, { filled: boolean }> = {
 
 export function PriceCtaStrip({
   listing,
+  leaseRateOption = null,
   history,
   onSave,
   initialSaved = false,
@@ -231,6 +240,16 @@ export function PriceCtaStrip({
     listNumber: listing.listNumber,
   }
   const shareKind = publishListingShareKind(shareSubject)
+  // A commercial lease on the market: its ListPrice is rent, so the price slot
+  // prints the rent with its unit (never a bare number) and the pills say
+  // "For lease". Off market it prints nothing new: the rent a lease asked is
+  // not a current offer, and the status pill already says what happened.
+  const lease = offMarket
+    ? null
+    : publishListingLeaseFigure(
+        { price: listing.listPrice, propertyType: listing.propertyType, leaseRateOption },
+        'long',
+      )
   // The alert this strip points at bands on the whole-home price, so the copy
   // may promise a price band only when one exists. 735 Purcell (a commercial
   // sublease publishing no price) and MLS 220190868 (a $1 fractional interest)
@@ -278,8 +297,9 @@ export function PriceCtaStrip({
         mortgageRate: ratePct,
       })?.label ?? null
     : null
-  const lastDrop = offMarket || !history ? null : publishListingLastDrop(history)
-  const datedDrop = dropMark !== undefined ? dropMark : publishListingDropMark(history)
+  // A lease's history amounts are rent: no sale-price cut is drawn from them.
+  const lastDrop = offMarket || lease || !history ? null : publishListingLastDrop(history)
+  const datedDrop = lease ? null : dropMark !== undefined ? dropMark : publishListingDropMark(history)
   const listedBy = publishListingListedBy({
     listAgentName: listing.listAgentName,
     listOfficeName: listing.listOfficeName,
@@ -359,7 +379,13 @@ export function PriceCtaStrip({
         {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
       </h1>
       <p className="listing-ask__price">
-        <Price value={headlinePrice} exact />
+        {lease ? (
+          <span className={cn('listing-ask__lease', !lease.rate && 'listing-ask__lease--none')}>
+            {lease.text}
+          </span>
+        ) : (
+          <Price value={headlinePrice} exact />
+        )}
         {estPayment ? <span className="listing-ask__est">{estPayment}</span> : null}
       </p>
       {datedDrop && !offMarket ? (
@@ -443,6 +469,7 @@ export function PriceCtaStrip({
             <TabularNumber value={daysLive} /> days on market
           </Pill>
         ) : null}
+        {lease ? <Pill kind="dom">{lease.label}</Pill> : null}
         {shareKind ? <Pill kind="dom">{shareKind}</Pill> : null}
         {publishedPpsf != null ? (
           <Pill kind="psqft">

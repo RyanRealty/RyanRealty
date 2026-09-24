@@ -242,6 +242,7 @@ describe('siteQueueDoneEvidenceProblems — About / SITE-90 brief', () => {
               '6': '5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.',
               '7': '/about first viewport — faces at display scale. Navy and cream only.',
               '8': 'shadcn Avatar image, fallback, and badge at display scale.',
+              '9': 'Below the proof: What Ryan Realty does, the differentiators, Key facts in one <dl>, and the same business day reply.',
             },
           },
         },

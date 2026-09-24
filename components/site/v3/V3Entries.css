@@ -1,0 +1,224 @@
+/* ===========================================================================
+   PATTERN: ENTRIES
+   Styles for V3Entries.tsx and V3EntriesIndex.client.tsx and nothing else.
+   Every value resolves from ./tokens.css. No raw color, no fill, no box, no
+   shadow: a sticky rail (head + numbered index) beside a column of rows, each
+   row a hairline, a number, a name, a paragraph and a door.
+   =========================================================================== */
+
+.v3.v3-entries {
+  display: grid;
+  gap: var(--v3-space-xl);
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+* + .v3.v3-entries {
+  border-top: var(--v3-rule-section);
+}
+
+@media (min-width: 64rem) {
+  .v3.v3-entries {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    column-gap: var(--v3-space-3xl);
+    align-items: start;
+  }
+}
+
+/* The rail ------------------------------------------------------------------
+   Sticky under the chrome on a wide window, so the index travels with the
+   reader down the rows. */
+.v3-entries__rail {
+  display: grid;
+  gap: var(--v3-space-xl);
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .v3-entries__rail {
+    position: sticky;
+    top: calc(var(--v3-chrome-h, 4.5rem) + var(--v3-space-lg));
+  }
+}
+
+.v3-entries__head {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+}
+
+.v3-entries__heading {
+  margin: 0;
+}
+
+.v3-entries__lede {
+  margin: var(--v3-space-xs) 0 0;
+  max-width: 30rem;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+/* The index: hidden below 64rem, where the rows are the whole section and a
+   second list of the same six names would only lengthen the scroll. */
+.v3-entries__index {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .v3-entries__index {
+    display: block;
+  }
+}
+
+.v3-entries__index-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-entries__index-link {
+  display: flex;
+  align-items: baseline;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding-block: var(--v3-space-xs);
+  padding-inline-start: var(--v3-space-xs);
+  border-bottom: var(--v3-rule-hairline);
+  border-inline-start: 2px solid transparent;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  text-decoration: none;
+  transition:
+    color var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-entries__index-num {
+  flex: none;
+  min-width: 1.75rem;
+  font-family: var(--v3-font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The line being read: full ink and a navy tick. The tick is the one motion
+   here; it encodes the reader's own position. */
+.v3-entries__index-link:hover,
+.v3-entries__index-link:focus-visible,
+.v3-entries__index-link--active {
+  color: var(--v3-ink);
+}
+
+.v3-entries__index-link--active {
+  border-inline-start-color: var(--v3-navy);
+  font-weight: var(--v3-weight-medium);
+}
+
+/* The rows ------------------------------------------------------------------ */
+.v3-entries__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-entries__item {
+  display: grid;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+  padding-block: var(--v3-space-lg);
+  border-top: var(--v3-rule-hairline);
+  scroll-margin-top: calc(var(--v3-chrome-h, 4.5rem) + var(--v3-space-lg));
+}
+
+.v3-entries__item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.v3-entries__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+/* The number is a numeral, in the numeral face, so the rows read as one
+   ordered set and line up with the index beside them. */
+.v3-entries__number {
+  flex: none;
+  min-width: 2rem;
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.v3-entries__name {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  text-wrap: balance;
+}
+
+.v3-entries__text {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+  padding-inline-start: calc(2rem + var(--v3-space-md));
+}
+
+@media (max-width: 39.999rem) {
+  .v3-entries__text {
+    padding-inline-start: 0;
+  }
+}
+
+.v3-entries__body {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+/* One door per row, a text link with the 44px hit box. */
+.v3-entries__door {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  justify-self: start;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--v3-navy) 30%, transparent);
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-entries__door:hover,
+.v3-entries__door:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.v3-entries__arrow {
+  flex: none;
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-entries__door:hover .v3-entries__arrow,
+.v3-entries__door:focus-visible .v3-entries__arrow {
+  transform: translateX(var(--v3-travel));
+}

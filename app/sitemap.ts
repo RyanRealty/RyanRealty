@@ -150,6 +150,8 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     { url: `${baseUrl}/buy/relocation`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
     { url: `${baseUrl}/buy/investment`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
     { url: `${baseUrl}/our-homes`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+    // Every active Central Oregon commercial lease (Matt 2026-09-23).
+    { url: `${baseUrl}/commercial-space-for-lease`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
     // NOTE: /compare, every /lp page, and /feed are not sitemapped.
     // /lp/* declare robots:{index:false} (IA lock: paid-arrival, off the organic
     // graph). /feed 301s to /videos?view=feed. Listing them wasted crawl budget

@@ -200,6 +200,7 @@ _Regenerated 2026-09-13 by `scripts/taste-table.mjs` — grok-4.6, rubric v1-202
 | contact | **50** | 50 · 46 · 52 | **NO** | 17 | 12 | 5 | 9 | 7 | 2 | `app/contact/_v3/ContactFold.tsx` | Desktop is a navy/cream telephone broadside beside one ask, which is the right job, but demoMatch is false: the fields are cream-box capsules, not be… |
 | market-report | **51** | 51 · 50 · 52 | **NO** | 15 | 10 | 6 | 12 | 8 | 1 | `components/site/v3/V3Instrument.tsx` | This is a correct, on-brand Instrument stub, not a finished market hub. demoMatch is false: house-mos two bars are on screen, but no catalog demo is… |
 | oregon-city | **51** | 47 · 58 · 51 | **NO** | 15 | 14 | 4 | 8 | 10 | 2 | `components/site/v3/V3Instrument.tsx` | A correct, on-brand, honesty-first Medford fold: navy/cream, Amboqia H1, no fake Central Oregon hero, one introduction ask. It is still a stacked doc… |
+| commercial-space-for-lease | **51** | 46 · 51 · 53 | **NO** | 20 | 12 | 3 | 8 | 8 | 0 | `app/commercial-space-for-lease/page.tsx` | This is a correctly-branded, correctly-sourced town ledger that satisfies the layout lock's letter (H1 ledger, length-encoded counts, sourced rate li… |
 | place-type-community | **52** | 53 · 52 · 52 | **NO** | 16 | 12 | 7 | 9 | 8 | 2 | `app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection.tsx` | This is an on-brand H1, one honest count-and-band sentence, and an Atlas — then a cream-box listing ledger. demoMatch is false: the catalog job was s… |
 | zip | **52** | 52 · 52 · 55 | **NO** | 16 | 13 | 7 | 8 | 8 | 2 | `app/zip/[zip]/_v3/ZipHomesField.tsx` | A navy/cream ZIP directory that keeps the house lock on 1440 (Atlas dots, MOS bars, alerts beside them, 203 agreeing with 203) and then throws the dr… |
 | buy | **53** | 55 · 52 · 53 | **NO** | 17 | 13 | 5 | 10 | 8 | 2 | `components/site/v3/V3Stage.tsx` | demoMatch is false: no *-open shot, Search homes is a cream-box house rect, and the Field is a photo crop rather than house-field or the shadcn carou… |
@@ -230,6 +231,7 @@ _Regenerated 2026-09-13 by `scripts/taste-table.mjs` — grok-4.6, rubric v1-202
 - `contact` — **50**
 - `market-report` — **51**
 - `oregon-city` — **51**
+- `commercial-space-for-lease` — **51**
 - `place-type-community` — **52**
 - `zip` — **52**
 - `buy` — **53**
@@ -252,6 +254,8 @@ _Regenerated 2026-09-13 by `scripts/taste-table.mjs` — grok-4.6, rubric v1-202
 - `market-report-region` — **63**
 - `reviews` — **67**
 <!-- taste-table:end -->
+
+**Mid-round row (2026-09-24).** `commercial-space-for-lease` was registered after the 2026-09-13 run and scored alone by claude-sonnet-5 through the claude CLI (neither grok-4.6 link is installed in that sandbox). Its row in `taste-table.json` names its own judge and date; it is not on the grok-4.6 ruler of the rows beside it, and the next full table run replaces it.
 
 **Lane re-scores on the instrument (route receipts, not table rows; the table is replaced only by a full `npm run taste:table` pass).** 2026-09-09 SITE-52: cities **30 → 75** (75 · 71 · 80; three rounds: 71 cold, 72 after the navy monogram and the supply hover record, 75 after the reveal cue), no tell named; subdivisions **first mark 53** (53 · 55 · 53; 36 cold, 44 after the monogram, 53 after the row dropped its `when` and the caption said what a bar is). Receipts in `ui_kits/cities/parity.json` and `ui_kits/subdivisions/parity.json`; evaluator claude-sonnet-5, rubric v1-2026-09-08, the same first-viewport pair plus hover records. 2026-09-09 SITE-45: listing-detail **77 → 79** (80 · 78 · 79; table row 55) on the rebuilt opening — one frame and a filmstrip, the price cut as a hover mark, a read under the pills, Tour in the fold; the tell named is the breadcrumb's `EASTON COMMERCIAL` plat alias and the Medford sidebar CTA and calculator are carried as Matt's calls. Receipt in `ui_kits/listing-detail/parity.json`, ten shots (instrument pair, close, out-of-area, strip and drop hover records). 2026-09-09 SITE-40 (V3Quiet, the six classes that open on it): invest **25 → 60** (63·54·60), compare **29 → 42**, about **31 → 49** (three rounds), market-report **41 → 54**, reviews **48 → 50**, contact **49 → 62** (four rounds); all rebaselined, evaluator claude-sonnet-5, rubric v1-2026-09-08, first-viewport pair. Only market-report still carries tells, both the chooser's repeated card shape, which belongs to its composition node.
 
