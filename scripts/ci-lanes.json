@@ -666,7 +666,8 @@
       "public/images/**"
     ],
     "ci:hook-tests": [
-      ".claude/hooks/**"
+      ".claude/hooks/**",
+      "docs/DAL_INDEX.md"
     ],
     "ci:tests-wired": [
       "**/*.test.*",
