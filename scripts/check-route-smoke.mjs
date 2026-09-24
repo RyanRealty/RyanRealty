@@ -587,10 +587,26 @@ async function main() {
     ? [...refusals, ...resolvingRoutes]
     : [...smokeRoutes, ...refusals, ...resolvingRoutes]
   const results = await runWithConcurrency(toCheck, checkRoute, CONCURRENCY)
+  // The listing canonical hop FAILS OPEN by design: its edge lookup has a
+  // 1.5s budget (getListingCanonicalPathFieldsEdge DEFAULT_TIMEOUT_MS), and a
+  // miss passes the request through to a 200. Inside the concurrent pass the
+  // server is rendering ~150 routes at once, so the cold lookup can miss its
+  // budget: PR #368's run 36058265684 got 200 here while the same build 308s
+  // in 0.4s cold on its own. It gets the same one serial retry a timed-out
+  // full page gets. A broken hop still fails: it passes through both times.
+  const hopPassedThrough = (r, route) => Boolean(route.listingSegment) && !r.ok && r.status === 200
+  const needsSerial = (i) => timedOutFullPage(results[i]) || hopPassedThrough(results[i], toCheck[i])
   // The server keeps rendering a page after the client gives up on it, so the
   // renders the pool abandoned drain before the serial retries begin.
-  if (results.some(timedOutFullPage)) await new Promise((r) => setTimeout(r, RETRY_SETTLE_MS))
+  if (results.some((_, i) => needsSerial(i))) await new Promise((r) => setTimeout(r, RETRY_SETTLE_MS))
   for (let i = 0; i < results.length; i += 1) {
+    if (hopPassedThrough(results[i], toCheck[i])) {
+      const retry = await checkRoute(toCheck[i])
+      results[i] = retry.ok
+        ? { ...retry, title: `${retry.title ?? ''} (hopped on a serial retry; the concurrent pass missed the edge lookup budget)` }
+        : retry
+      continue
+    }
     if (!timedOutFullPage(results[i])) continue
     const retry = await checkFullPage(toCheck[i], BASE + toCheck[i].path)
     results[i] = retry.ok
