@@ -249,7 +249,7 @@ describe('rule 8: listing_tile_mv staleness', () => {
   })
   it('stays quiet on the Friday-to-Monday CloseDate gap while the refresh stamp is fresh', () => {
     // 2026-08-17 18:11Z: first Monday close on listings, tile still Friday,
-    // refresh_listing_tile_mv_30min still running. Alert 1013.
+    // the tile refresh still running (then refresh_listing_tile_mv_30min). Alert 1013.
     const { alarms } = evaluateHealthRules({
       ...healthySignals(),
       mvLagDays: 3,
@@ -267,7 +267,7 @@ describe('rule 8: listing_tile_mv staleness', () => {
     expect(alarm).toBeDefined()
     expect(alarm!.severity).toBe('critical')
     expect(alarm!.message).toContain('192 hours')
-    expect(alarm!.message).toContain('refresh_listing_tile_mv_30min')
+    expect(alarm!.message).toContain('listing-mv-drain')
   })
   it('fires when the stamp is stale even if CloseDate has not jumped', () => {
     expect(

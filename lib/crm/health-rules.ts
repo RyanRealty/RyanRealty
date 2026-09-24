@@ -66,8 +66,8 @@ export interface HealthSignals {
    *  live refresh. null = probe unavailable. */
   mvLagDays: number | null
   /** Hours since mv_refresh_state.listing_tile_mv_src.refreshed_at. This is the
-   *  Rule 8 signal: the tile job stamps only after a completed CONCURRENTLY
-   *  refresh. null = stamp unreadable (skip the rule). */
+   *  Rule 8 signal: listing_mv_drain() stamps it after every completed drain
+   *  (every minute). null = stamp unreadable (skip the rule). */
   mvRefreshAgeHours: number | null
 }
 
@@ -83,8 +83,9 @@ export const LIST_UNDERCOUNT_FACTOR = 10
 export const INBOUND_STALE_HOURS = 6
 
 /** listing_tile_mv is "stale" when mv_refresh_state is this many hours old.
- *  Matches pipeline-heartbeat syncDeltaHours. The tile job runs at :02/:32;
- *  2h is four missed cycles plus slack for a "server restarted" kill.
+ *  Matches pipeline-heartbeat syncDeltaHours. Since 20260924173000 the stamp is
+ *  written every minute by pg_cron listing-mv-drain (it used to be the :02/:32
+ *  whole refresh), so 2h is 120 missed drains: the drain is dead, not slow.
  *  CloseDate calendar lag is NOT the signal — Friday-to-Monday is 3 days
  *  with a live refresh (alerts 832 / 961 / 1013). */
 export const MV_STALE_REFRESH_HOURS = 2
@@ -196,8 +197,8 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
   // its refresh dies (2026-07: REFRESH CONCURRENTLY outgrew its statement
   // timeout and was killed every 15 minutes for 8 days), the whole site quietly
   // serves last week's market. Page on the refresh stamp, not max(CloseDate):
-  // a Friday-to-Monday CloseDate jump is 3 calendar days while the :02/:32
-  // job is still running (2026-08-17 18:11Z, alert 1013).
+  // a Friday-to-Monday CloseDate jump is 3 calendar days while the drain is
+  // still running (2026-08-17 18:11Z, alert 1013).
   if (
     signals.mvRefreshAgeHours !== null &&
     signals.mvRefreshAgeHours >= MV_STALE_REFRESH_HOURS
@@ -205,7 +206,7 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
     alarms.push({
       key: 'listing-tile-mv-stale',
       severity: 'critical',
-      message: `listing_tile_mv refresh stamp is ${formatHours(signals.mvRefreshAgeHours)} old. The tile job is not completing — check pg_cron job refresh_listing_tile_mv_30min (:02/:32) in cron.job_run_details.`,
+      message: `listing_tile_mv refresh stamp is ${formatHours(signals.mvRefreshAgeHours)} old. The minute drain is not completing: check pg_cron job listing-mv-drain in cron.job_run_details and public.listing_mv_errors.`,
     })
   }
 

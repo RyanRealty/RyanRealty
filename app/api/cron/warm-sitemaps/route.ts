@@ -40,6 +40,11 @@
  * geo class never filled, every cold /sitemaps/geo.xml request rebuilt the
  * universe and returned 504 'Task timed out after 300 seconds'.
  *
+ * Since 20260924173000 (2026-09-24) that job is gone: listing_tile_mv_src is a
+ * table kept current every minute by listing-mv-drain and never held under a
+ * whole refresh, so every minute is clear. The :26 schedule below stays; it is
+ * simply no longer load-bearing.
+ *
  * At worst the refresh holds :02-:24 and :32-:54, so the clear windows are
  * :25-:31 and :55-:01. The schedule is now `26 * * * *`, and the run also asks
  * the database whether a refresh is in progress before it builds, so an
