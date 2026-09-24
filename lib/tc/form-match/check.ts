@@ -11,10 +11,16 @@
 import { addedInk, align, descriptor, descriptorGap, dilate, inkPoints, isFilled, type Mask, type Rect } from './raster'
 import type { FooterId, InitialsSlot, Party, SignatureSlot } from './layout'
 
-export const CHECKER_VERSION = 'form-check-v2-2026-09-24'
+export const CHECKER_VERSION = 'form-check-v3-2026-09-24'
 
-/** A copy lines up with its own release at ≥ 0.97 (measured 1.000); other releases and forms stay under 0.70. */
-export const MATCH_MIN = 0.9
+/**
+ * A copy lines up with its own release at ≥ 0.98: of 2,637 such pages
+ * measured 2026-09-24, 2,470 were ≥ 0.99. A different release of the same
+ * form can reach 0.92-0.97 (OREF 015 05/2025 against 01/2026: 0.926; Oregon
+ * REALTORS® 4.4 2026-1 against 2026-2: 0.96), so anything under 0.98 is not
+ * the same printing.
+ */
+export const MATCH_MIN = 0.98
 /** Below this the page is not from any template we hold; between the two it is reported as the nearest, not matched. */
 export const NEAR_MIN = 0.6
 
@@ -105,8 +111,16 @@ export function candidatesFor(copy: Mask, all: Candidate[], limit = 8, footer?: 
   return scored.slice(0, limit).map((s) => s.c)
 }
 
-export function matchPage(copy: Mask, copyDilated: Mask, loaded: LoadedPage[], pageNo: number): PageMatch {
+/** The page's own footer names another release of the same form: never that template. */
+export function releaseConflict(footer: FooterId | null | undefined, page: TemplatePage): boolean {
+  const t = page.footer
+  if (!footer?.number || !footer.release || !t?.number || !t.release) return false
+  return footer.family === t.family && footer.number === t.number && footer.release !== t.release
+}
+
+export function matchPage(copy: Mask, copyDilated: Mask, loaded: LoadedPage[], pageNo: number, footer?: FooterId | null): PageMatch {
   const scored = loaded
+    .filter((lp) => !releaseConflict(footer, lp.page))
     .map((lp) => ({ lp, ...align(lp.points, lp.mask.w, copyDilated) }))
     .sort((a, b) => b.coverage - a.coverage)
   const best = scored[0]

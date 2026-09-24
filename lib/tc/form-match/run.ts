@@ -38,7 +38,7 @@ export async function checkPdfBytes(sb: SupabaseClient, bytes: Uint8Array | Arra
         const lp = tp?.find((x) => x.page.page === c.page.page)
         if (lp) loaded.push(lp)
       }
-      const m = matchPage(mask, dilate(mask, 1), loaded, p)
+      const m = matchPage(mask, dilate(mask, 1), loaded, p, footer)
       pages.push({ ...m, footer, textUsable: usable })
     }
   } finally {

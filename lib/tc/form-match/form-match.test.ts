@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addedInk, align, consensus, descriptor, descriptorGap, dilate, inkPoints, isFilled, packMask, shifted, unpackMask, type Mask } from './raster'
 import { footerOf, layoutOf, linesOf, partyOfLabel, textUsable, type TextItem } from './layout'
-import { checkInstance, describeCheck, instancesOf, loadPage, matchPage, resolveTies, type FormCheck, type PageMatch, type TemplateInfo } from './check'
+import { checkInstance, describeCheck, instancesOf, loadPage, matchPage, releaseConflict, resolveTies, type FormCheck, type PageMatch, type TemplateInfo } from './check'
 import { learnPage } from './learn'
 
 function blank(w = 120, h = 80): Mask {
@@ -143,6 +143,19 @@ describe('layout', () => {
     expect(lay.signatures[0].sig.y1).toBeLessThan(600)
   })
 
+  it('never reads a form named in body text near the bottom as the footer', () => {
+    const lines = linesOf([
+      item('45 11a. If yes, Seller to issue termination notice to Tenant: Yes (Form 7.1) No (Form 4.2)', 36, 690, 500),
+      item('Form 1.1 · Oregon Residential Real Estate Purchase and Sale Agreement · Version 2025-1 Page 1 of 10', 100, 732, 460),
+    ])
+    expect(footerOf(lines)).toMatchObject({ family: 'OR', number: '1.1', release: '2025-1', page: 1, of: 10 })
+  })
+
+  it('reads a titled Oregon REALTORS® page without a form number', () => {
+    const lines = linesOf([item('Final Agency Acknowledgement - Version 2025-1 Page 1 of 1', 219, 744, 350)])
+    expect(footerOf(lines)).toMatchObject({ family: 'OR', number: 'FINAL AGENCY ACKNOWLEDGEMENT', release: '2025-1' })
+  })
+
   it('names parties from printed labels', () => {
     expect(partyOfLabel('Seller’s Agent')).toBe('seller_agent')
     expect(partyOfLabel('211 Seller')).toBe('seller')
@@ -224,6 +237,14 @@ describe('check', () => {
 })
 
 describe('releases', () => {
+  it("a page whose footer prints another release of the same form never matches that template", () => {
+    const page = tpl([1]).pages[0]
+    const tp = { ...page, footer: { family: 'OREF' as const, number: '015', release: '01/2026', page: 1, of: 6, raw: '' } }
+    expect(releaseConflict({ family: 'OREF', number: '015', release: '05/2025', page: 1, of: 5, raw: '' }, tp)).toBe(true)
+    expect(releaseConflict({ family: 'OREF', number: '015', release: '01/2026', page: 1, of: 6, raw: '' }, tp)).toBe(false)
+    expect(releaseConflict(null, tp)).toBe(false)
+  })
+
   it('a page printed the same in two releases goes to the release the rest of the copy matches', () => {
     const shared: PageMatch = {
       ...pm(2, 2, 'r2026'),

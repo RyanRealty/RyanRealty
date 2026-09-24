@@ -147,8 +147,6 @@ export function mergeNear(lines: Line[], tol: number): Line[] {
 }
 
 const OREF_FOOTER = /OREF\s*(\d{3}[A-Z]?)\s*\|\s*Released\s*(\d{1,2}\/\d{4})\s*\|\s*Page\s*(\d+)\s*of\s*(\d+)/i
-const OR_VERSION = /Version\s*(\d{4}(?:\s*-\s*\d+)?)/i
-const OR_FORM = /\bForm\s*(\d+(?:\.\d+)*[A-Z]?)\b/
 const PAGE_OF = /Page\s*(\d+)\s*of\s*(\d+)/i
 
 /** The form, release and page the footer prints. */
@@ -160,23 +158,23 @@ export function footerOf(lines: Line[], pageHeight = 792): FooterId | null {
     const m = l.text.match(OREF_FOOTER)
     if (m) return { family: 'OREF', number: m[1].toUpperCase(), release: m[2], page: Number(m[3]), of: Number(m[4]), raw: m[0] }
   }
-  const joined = bottom.map((l) => l.text).join(' ')
-  if (/Oregon REALTORS/i.test(joined)) {
-    const v = joined.match(OR_VERSION)
-    const f = joined.match(OR_FORM)
-    const p = joined.match(PAGE_OF)
+  // Oregon REALTORS®: "Form 1.1 · Oregon Residential ... · Version 2025-1  Page 2 of 10",
+  // or a titled page without a number ("Final Agency Acknowledgement - Version 2025-1").
+  // Only that line: body text near the bottom often names other forms ("(Form 7.1)").
+  for (const l of bottom) {
+    const t = l.text.replace(/\u0000/g, ' ')
+    const numbered = t.match(/Form\s*(\d+(?:\.\d+)*[A-Z]?)\s*·[^·]*·\s*Version\s*(\d{4}(?:\s*-\s*\d+)?)/)
+    const titled = numbered ? null : t.match(/^\s*([A-Z][A-Za-z'’ ]{5,60}?)\s*[-·]\s*Version\s*(\d{4}(?:\s*-\s*\d+)?)/)
+    const m = numbered ?? titled
+    if (!m) continue
+    const p = t.match(PAGE_OF)
     return {
       family: 'OR',
-      number: f?.[1] ?? null,
-      release: v ? v[1].replace(/\s+/g, '') : null,
+      number: numbered ? m[1] : m[1].trim().toUpperCase().replace(/\s+/g, ' '),
+      release: m[2].replace(/\s+/g, ''),
       page: p ? Number(p[1]) : null,
       of: p ? Number(p[2]) : null,
-      raw: bottom
-        .map((l) => l.text.replace(/\u0000/g, '').trim())
-        .filter((t) => /Version|Page\s*\d|Form\s*\d/i.test(t))
-        .slice(0, 2)
-        .join(' | ')
-        .slice(0, 200),
+      raw: t.trim().slice(0, 200),
     }
   }
   return null
