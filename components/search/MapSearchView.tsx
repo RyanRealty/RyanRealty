@@ -306,6 +306,12 @@ export type MapSearchViewProps = {
   initialListings: ListingTileRow[]
   initialTotalCount: number
   initialCapped: boolean
+  /**
+   * False when initialTotalCount is only a floor (the rows fetched), because
+   * the uncapped count did not come back in time: the claim prints "N+".
+   * Unset means the count is the real one.
+   */
+  initialCountIsExact?: boolean
   initialBounds: MapBounds
   filters: SearchFiltersInitial
   /** SSR seed only — the hydrated value comes from useViewerListingState so a cacheable (visitor-independent) shell still shows the right saves after mount. */
@@ -383,6 +389,7 @@ export default function MapSearchView({
   initialListings,
   initialTotalCount,
   initialCapped,
+  initialCountIsExact = true,
   initialBounds,
   filters: filtersProp,
   savedListingKeys: savedListingKeysSeed,
@@ -428,6 +435,7 @@ export default function MapSearchView({
   const [listings, setListings] = useState(initialListings)
   const [totalCount, setTotalCount] = useState(initialTotalCount)
   const [capped, setCapped] = useState(initialCapped)
+  const [countIsExact, setCountIsExact] = useState(initialCountIsExact)
   // Timeout honesty (P9): seed from SSR; clear on a successful viewport fetch.
   const [resultsDegraded, setResultsDegraded] = useState(initialDegraded)
   // Local sort so the Select stays in sync while URL replace + viewport refetch run.
@@ -715,6 +723,7 @@ export default function MapSearchView({
     setListings(initialListings)
     setTotalCount(initialTotalCount)
     setCapped(initialCapped)
+    setCountIsExact(initialCountIsExact)
     setResultsDegraded(initialDegraded)
     setDrawnShapes(initialDrawn)
     setVisibleCount(CARD_PAGE)
@@ -727,7 +736,7 @@ export default function MapSearchView({
     queryBoundsRef.current = initialBounds
     // The mount seed is generation 0; each later server seed is a new one.
     if (!firstSeed) setSeedGen((g) => g + 1)
-  }, [initialListings, initialTotalCount, initialCapped, initialDegraded, initialDrawn, filtersSnapshot, regionFrameLabel, seedCap]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialListings, initialTotalCount, initialCapped, initialCountIsExact, initialDegraded, initialDrawn, filtersSnapshot, regionFrameLabel, seedCap]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clean up any pending debounce on unmount.
   useEffect(() => {
@@ -778,6 +787,7 @@ export default function MapSearchView({
         setListings(res.listings)
         setTotalCount(res.totalCount)
         setCapped(res.capped)
+        setCountIsExact(res.countIsExact !== false)
         setResultsDegraded(false)
         setRowsAreRegion(regionFrame)
         setRowsCap(Math.min(opts?.limit ?? VIEWPORT_ROW_CAP, VIEWPORT_ROW_CAP))
@@ -1142,6 +1152,8 @@ export default function MapSearchView({
         totalCount,
         sort: sortValue,
         sold: soldScope,
+        // The count did not come back in time: a floor, printed "N+".
+        countIsFloor: !countIsExact,
         frameLabel: rowsAreRegion ? regionFrameLabel : null,
         mapMounted: mapWanted && !listOnly,
         low: viewClaim.low,
@@ -1149,7 +1161,7 @@ export default function MapSearchView({
         askCount: viewClaim.askCount,
         bandCount: viewClaim.band?.n ?? null,
       }),
-    [viewClaim, listings.length, totalCount, sortValue, soldScope, rowsAreRegion, regionFrameLabel, mapWanted, listOnly],
+    [viewClaim, listings.length, totalCount, countIsExact, sortValue, soldScope, rowsAreRegion, regionFrameLabel, mapWanted, listOnly],
   )
   /**
    * The crumb row under the claim, minus whatever the claim sentence already
@@ -1215,7 +1227,10 @@ export default function MapSearchView({
             <p className="srch-claim__line">
               {claim ? (
                 <>
-                  <span className="srch-figure">{formatCount(claim.figure)}</span>
+                  <span className="srch-figure">
+                    {formatCount(claim.figure)}
+                    {claim.figureIsFloor ? '+' : ''}
+                  </span>
                   <span className="srch-claim__rest">
                     {` ${claim.noun}${claim.where}`}
                     {claim.range ? (

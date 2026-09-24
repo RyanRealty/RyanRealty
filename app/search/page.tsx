@@ -381,6 +381,7 @@ export default async function SearchPage({
             listings: [],
             totalCount: 0,
             capped: false,
+            countIsExact: true,
           }
         )
       : null
@@ -593,6 +594,7 @@ export default async function SearchPage({
                 initialListings={viewport?.listings ?? []}
                 initialTotalCount={viewport?.totalCount ?? 0}
                 initialCapped={viewport?.capped ?? false}
+                initialCountIsExact={viewport?.countIsExact ?? true}
                 initialBounds={initialBounds}
                 filters={initialFiltersFromUrl}
                 savedListingKeys={savedKeys}

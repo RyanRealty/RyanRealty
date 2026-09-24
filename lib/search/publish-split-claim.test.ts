@@ -35,6 +35,53 @@ describe('publishSplitClaim', () => {
     expect(c.source).toContain('display cap, not the whole set')
   })
 
+  it('a count that did not come back in time is a floor: "501+", "at least", never a count', () => {
+    // The Sold split view read 501 rows (the cap plus one) and stopped waiting
+    // for its uncapped count at the answer deadline (getViewportListings).
+    const c = publishSplitClaim({
+      ...base,
+      sold: true,
+      visibleCount: 500,
+      rowsInHand: 500,
+      totalCount: 501,
+      countIsFloor: true,
+    })!
+    expect(c.figure).toBe(501)
+    expect(c.figureIsFloor).toBe(true)
+    expect(c.noun).toBe('homes')
+    expect(c.order).toBe('most recently sold first')
+    expect(c.source).toContain('at least 501 listings match; the full count was not read.')
+    expect(c.source).not.toMatch(/: 501 listings match/)
+    // The exact count, when it came back, is printed as a count.
+    const exact = publishSplitClaim({ ...base, visibleCount: 500, rowsInHand: 500, totalCount: 177_269 })!
+    expect(exact.figureIsFloor).toBe(false)
+    expect(exact.source).toContain('177,269 listings match.')
+  })
+
+  it('a floor as large as the rows in hand is still a floor, never a count or a range', () => {
+    // A shape drawn over a capped Sold read: 120 of the 500 rows read fall in
+    // the shape, and more of the shape lies past the rows the read returned.
+    const c = publishSplitClaim({
+      ...base,
+      sold: true,
+      visibleCount: 120,
+      rowsInHand: 120,
+      totalCount: 120,
+      countIsFloor: true,
+    })!
+    expect(c.figure).toBe(120)
+    expect(c.figureIsFloor).toBe(true)
+    expect(c.truncated).toBe(true)
+    // An ask range over part of the set is not the set's range.
+    expect(c.range).toBeNull()
+    expect(c.order).toBe('most recently sold first')
+    expect(c.source).toContain('at least 120 listings match')
+    // One home in hand of a floor is still "1+ homes", not "1 home".
+    const one = publishSplitClaim({ ...base, visibleCount: 1, rowsInHand: 1, totalCount: 1, countIsFloor: true })!
+    expect(one.figureIsFloor).toBe(true)
+    expect(one.noun).toBe('homes')
+  })
+
   it('the regional frame names Central Oregon and its exact count', () => {
     const c = publishSplitClaim({
       ...base,

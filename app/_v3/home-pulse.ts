@@ -141,7 +141,7 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
       label: 'listings for sale',
       share: forSale / readTotal,
       definition:
-        'Active listings of every property type the regional MLS carries: houses, condos, land, everything, across the Central Oregon cities and communities we cover.',
+        'Houses, condos, land, and more you can still buy in Bend, Redmond, Sisters, Sunriver, and nearby.',
       path: pathOf('active'),
       href: publishRegionalSearchHref(),
       hrefLabel: 'Browse them',
@@ -152,7 +152,7 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
       label: 'under contract',
       share: pending / readTotal,
       definition:
-        'Listings with an accepted offer that have not closed yet: pending and active under contract, read from the same feed at the same moment.',
+        'These already have a buyer. An offer is accepted, and they have not closed yet.',
       path: pathOf('pending'),
       href: '/homes-for-sale?view=list&status=Pending',
       hrefLabel: 'See what is spoken for',
@@ -163,10 +163,10 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
       label: `sold in the last ${ATLAS_PULSE_WINDOW_DAYS} days`,
       share: sold / readTotal,
       definition:
-        'Sales that recorded a closing in the last 30 days, in the same cities. These are finished deals at the price they actually brought, not asking prices.',
+        'What closed in the last 30 days, at the price it sold for, not the asking price.',
       path: pathOf('sold'),
       href: '/homes-for-sale?view=list&status=Sold',
-      hrefLabel: 'See the closes',
+      hrefLabel: 'See what sold',
     },
   ]
 

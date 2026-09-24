@@ -84,6 +84,7 @@ export type {
 // Listings — read from listing_tile_mv (Migration 20260522144509, applied 2026-05-22)
 export {
   getListingTiles,
+  getListingTilesOrThrow,
   getCityListings,
   getCommunityListings,
   getZipListings,

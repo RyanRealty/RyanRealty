@@ -3,6 +3,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { unstable_cache } from 'next/cache'
+import { after } from 'next/server'
 import { listingTileHref, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getSubdivisionMatchNames } from '../../lib/subdivision-aliases'
@@ -18,7 +19,7 @@ import {
   type SearchShapes,
   pickSearchFeatureFilters,
 } from '@/lib/data'
-import { resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicates'
+import { listedWithinDaysCeiling, resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicates'
 import { resolveViewContainsValues, viewContainsAsViewTypes } from '@/lib/search-presets'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
 import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ACTIVE_OR_PREDICATE_EXACT, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
@@ -686,7 +687,9 @@ export async function getListings(options: {
     lotAcresMax: options.lotAcresMax ?? undefined,
     garageMin: options.garageMin ?? undefined,
     hasPool: options.hasPool === true ? true : undefined,
-    domMax: options.newListingsDays ?? undefined,
+    // Both spellings of "listed in the last N days" (newListingsDays, the
+    // registry's daysOnMarket), tightest wins; the DAL reads the on-market date.
+    domMax: listedWithinDaysCeiling(options),
     propertyType,
   }
 
@@ -879,7 +882,7 @@ export async function getListingsAdvanced(options: {
     !options.postalCode?.trim() && subTypeSet.size === 0 && !options.viewContains?.trim() &&
     options.hasOpenHouse !== true && options.hasPool !== true && options.hasView !== true &&
     options.hasWaterfront !== true && options.hasFireplace !== true && options.hasGolfCourse !== true &&
-    options.garageMin == null && options.newListingsDays == null &&
+    options.garageMin == null && listedWithinDaysCeiling(options) == null &&
     (options.propertyType == null || (propertyTypeFilterToCodes(options.propertyType)?.length ?? 0) === 0)
 
   if (keywordOnly) {
@@ -944,7 +947,9 @@ export async function getListingsAdvanced(options: {
     p_view_contains_any: Array.isArray(options.viewContainsAny) && options.viewContainsAny.length > 0 ? options.viewContainsAny : null,
     p_off_market_within_days: options.offMarketWithinDays != null && options.offMarketWithinDays > 0 ? options.offMarketWithinDays : null,
     p_exclude_sold_since: options.excludeSoldSince === true ? true : null,
-    p_new_listings_days: options.newListingsDays != null && options.newListingsDays > 0 ? options.newListingsDays : null,
+    // "Listed in the last N days" from either spelling: newListingsDays or the
+    // browse bar's daysOnMarket (which this call used to drop on the Sold scope).
+    p_new_listings_days: listedWithinDaysCeiling(options) ?? null,
     p_neighborhood_slug: options.neighborhoodSlug?.trim() || null,
     p_sort: options.sort ?? 'newest',
     p_limit: limit,
@@ -1072,15 +1077,10 @@ function advancedToSearchAllFilter(
     lotAcresMax:
       options.lotAcresMax != null && options.lotAcresMax > 0 ? options.lotAcresMax : undefined,
     garageMin: options.garageMin != null && options.garageMin > 0 ? options.garageMin : undefined,
-    domMax: (() => {
-      // Both mean "listed in the last N days": newListingsDays and the
-      // registry dom range's daysOnMarket. Tightest wins. The DAL reads domMax
-      // as on_market_date within N days (newly LISTED, Matt 2026-09-23).
-      const ceilings = [options.newListingsDays, options.daysOnMarket].filter(
-        (v): v is number => v != null && v > 0
-      )
-      return ceilings.length > 0 ? Math.min(...ceilings) : undefined
-    })(),
+    // Both mean "listed in the last N days": newListingsDays and the registry
+    // dom range's daysOnMarket. Tightest wins. The DAL reads domMax as
+    // on_market_date within N days (newly LISTED, Matt 2026-09-23).
+    domMax: listedWithinDaysCeiling(options),
     propertyType: pt && pt !== '' && pt !== 'all' ? pt : undefined,
     propertySubType: options.propertySubType?.trim() || undefined,
     keywords:
@@ -1197,7 +1197,7 @@ export async function getListingsWithAdvanced(options: {
         options.minSqFt != null || options.maxSqFt != null ||
         options.yearBuiltMin != null || options.yearBuiltMax != null ||
         options.lotAcresMin != null || options.lotAcresMax != null ||
-        options.garageMin != null || options.newListingsDays != null ||
+        options.garageMin != null || listedWithinDaysCeiling(options) != null ||
         options.keywords?.trim() ||
         options.propertySubType?.trim() ||
         // viewContains narrows too (a viewTypes overlap on the MV path).
@@ -1306,7 +1306,7 @@ export async function getListingsWithAdvanced(options: {
       lotAcresMax: options.lotAcresMax ?? undefined,
       garageMin: options.garageMin ?? undefined,
       hasPool: options.hasPool === true ? true : undefined,
-      domMax: options.newListingsDays ?? undefined,
+      domMax: listedWithinDaysCeiling(options),
       propertyType: pt && pt !== '' && pt !== 'all' ? pt : undefined,
     })
   })()
@@ -1326,6 +1326,8 @@ export async function getListingsWithAdvanced(options: {
     !options.subdivision?.trim() &&
     options.minPrice == null && options.maxPrice == null &&
     options.minBeds == null && options.minBaths == null && options.minSqFt == null &&
+    // "Listed in the last N days" narrows to a window that can hold no homes.
+    listedWithinDaysCeiling(options) == null &&
     (!options.propertyType || options.propertyType.trim() === '' || options.propertyType.trim() === 'all')
   if (isUnfilteredCityScope && totalCount === 0) {
     console.error('[getListingsWithAdvanced] unfiltered city scope returned 0 — degraded (MV empty/stale or read failed)', {
@@ -1428,6 +1430,11 @@ export type GetListingsForMapOptions = {
   includeClosed?: boolean
   statusFilter?: string
   mapLimit?: number
+  /**
+   * A search sort key, read through searchTileSort (which honors every key):
+   * the order of the list, and which homes make a capped pin set.
+   */
+  sort?: AdvancedSort
   minPrice?: number
   maxPrice?: number
   minBeds?: number
@@ -1506,10 +1513,10 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
     subdivision: canonicalSubdivision || undefined,
     status: dalStatus,
     ...advancedTileFilters(options),
-    // The search default decides which homes make the pin cap, never the last
-    // MLS edit (Matt 2026-09-23): newest listed first, or most recently sold
-    // first on the Sold scope.
-    sort: searchTileSort('newest', { sold: dalStatus === 'closed' }),
+    // The search's sort decides which homes make the pin cap, never the last
+    // MLS edit (Matt 2026-09-23): by default newest listed first, or most
+    // recently sold first on the Sold scope; the sort the control names else.
+    sort: searchTileSort(options.sort ?? 'newest', { sold: dalStatus === 'closed' }),
     limit: Math.min(mapLimit, 5000),
   })
   return tiles.map((t) => ({
@@ -1539,7 +1546,47 @@ export type GetListingsInBoundsOptions = GetListingsForMapOptions & {
   polygon?: MapPolygonPoint[] | null
   limit?: number
   offset?: number
-  sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc'
+}
+
+/**
+ * How long, from the start of a viewport read, the split view waits for its
+ * exact uncapped count before it answers "500+" instead. The page gives the
+ * whole read 4 s (app/search/page.tsx withTimeoutSettled) and then paints
+ * "Search delayed"; the count query itself is killed at the anon role's 3 s
+ * statement_timeout. Measured cold, 2026-09-24: the Sold split view's
+ * Central Oregon count reads the same ~21K heap blocks as its row read did
+ * (9.6 s), so waiting for it cost the whole view. 3 s leaves the page its
+ * margin; a count that lands later still fills the cache for the next load.
+ */
+const VIEWPORT_ANSWER_BY_MS = 3000
+/** The least the count gets, however long the rows took. */
+const VIEWPORT_COUNT_MIN_WAIT_MS = 250
+
+/** The promise's value, or null if it has not settled within `ms`. */
+async function settleWithin<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), ms)
+  })
+  try {
+    return await Promise.race([promise, timeout])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+/**
+ * Let a read the response stopped waiting for finish after the response is
+ * sent, so its result lands in the data cache (next/server `after`). Outside a
+ * request (tests, scripts) there is nothing to extend and the promise simply
+ * runs on.
+ */
+function keepAliveAfterResponse(promise: Promise<unknown>): void {
+  try {
+    after(() => promise.then(() => undefined, () => undefined))
+  } catch {
+    // Not in a request scope.
+  }
 }
 
 /**
@@ -1548,11 +1595,16 @@ export type GetListingsInBoundsOptions = GetListingsForMapOptions & {
  * pins are on the map. Returns the full in-view set (capped) plus an honest count.
  *
  * `capped` is true when the result hit the cap, so the UI can show "500+ in this
- * area" instead of a wrong exact number (CLAUDE.md §0 data accuracy).
+ * area" instead of a wrong exact number (CLAUDE.md §0 data accuracy);
+ * `countIsExact` is false while `totalCount` is only that floor.
+ *
+ * A row read that fails (twice: cached, then uncached) REJECTS: the page and
+ * the client turn it into "Search delayed", never "0 homes".
  */
 export async function getViewportListings(
   options: GetListingsInBoundsOptions & { cap?: number }
-): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean }> {
+): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean; countIsExact: boolean }> {
+  const startedAt = Date.now()
   const { bounds, polygon } = options
   const cap = Math.min(Math.max(options.cap ?? 500, 1), 1000)
   const polygonBounds = polygon && polygon.length >= 3 ? getPolygonBounds(polygon) : null
@@ -1577,11 +1629,13 @@ export async function getViewportListings(
     ? getSubdivisionMatchNames(options.subdivision.trim())[0] ?? null
     : null
 
-  const { getListingTiles } = await import('@/lib/data')
+  // getListingTilesOrThrow, not getListingTiles: its [] fallback would print a
+  // failed read as "0 homes" (section 0: unknown is not zero).
+  const { getListingTilesOrThrow } = await import('@/lib/data')
   // For polygon-restricted view we fetch a wide bbox first, then filter in
   // memory by point-in-polygon, so we overfetch to keep the post-filter set full.
   const fetchLimit = polygon && polygon.length >= 3 ? Math.min(cap * 4, 3000) : cap + 1
-  const tiles = await getListingTiles({
+  const tiles = await getListingTilesOrThrow({
     bbox: {
       west: effectiveBounds.west,
       south: effectiveBounds.south,
@@ -1610,65 +1664,85 @@ export async function getViewportListings(
 
   let totalCount = rows.length
   let capped = rows.length > cap
-  if (capped && !(polygon && polygon.length >= 3)) {
-    // Exact header count (design-audit P2): "501+ homes in this area" read as
-    // the site not knowing its own inventory. The tile render stays capped;
-    // only the count query runs uncapped (same filters, cached).
-    const { getListingTilesCount } = await import('@/lib/data')
-    const exact = await getListingTilesCount({
-      bbox: {
-        west: effectiveBounds.west,
-        south: effectiveBounds.south,
-        east: effectiveBounds.east,
-        north: effectiveBounds.north,
-      },
-      city: options.city?.trim() || undefined,
-      subdivision: canonicalSubdivision || undefined,
-      status: dalStatus,
-      ...advancedTileFilters(options),
-    }).catch(() => null)
-    if (exact != null && exact >= rows.length) {
-      totalCount = exact
-      capped = false
+  const sliced = rows.slice(0, cap)
+  const { getListingTilesCount, attachListingCardExtras } = await import('@/lib/data')
+
+  // Exact header count (design-audit P2): "501+ homes in this area" read as
+  // the site not knowing its own inventory. The tile render stays capped; only
+  // the count runs uncapped (same filters, cached). It runs beside the card
+  // extras, not after them, and the answer waits for it only until
+  // VIEWPORT_ANSWER_BY_MS: on a cold cache the uncapped count over a
+  // large Sold area can outlast the page's 4 s budget (see the constant), and
+  // then the claim says "500+" (capped, honest) while the count finishes into
+  // the cache for the next load.
+  const countPromise: Promise<number | null> | null =
+    capped && !(polygon && polygon.length >= 3)
+      ? getListingTilesCount({
+          bbox: {
+            west: effectiveBounds.west,
+            south: effectiveBounds.south,
+            east: effectiveBounds.east,
+            north: effectiveBounds.north,
+          },
+          city: options.city?.trim() || undefined,
+          subdivision: canonicalSubdivision || undefined,
+          status: dalStatus,
+          ...advancedTileFilters(options),
+        }).catch(() => null)
+      : null
+  if (countPromise) keepAliveAfterResponse(countPromise)
+
+  const extrasWork = (async () => {
+    try {
+      const extras = await attachListingCardExtras(
+        sliced.map((row) => String(row.ListingKey ?? '')).filter(Boolean),
+      )
+      for (const row of sliced) {
+        const extra = extras.get(String(row.ListingKey ?? ''))
+        if (!extra) continue
+        row.tourUrl = extra.tourUrl ?? row.tourUrl
+        row.ListOfficeName = extra.listOfficeName
+        row.photoUrls = extra.photoUrls.length > 0 ? extra.photoUrls : undefined
+        row.originalListPrice = extra.originalListPrice
+        const drop =
+          extra.priceDrop &&
+          row.ListPrice != null &&
+          Number.isFinite(row.ListPrice) &&
+          extra.priceDrop.previousPrice > row.ListPrice
+            ? extra.priceDrop
+            : null
+        if (drop) {
+          row.price_drop_amount = drop.previousPrice - row.ListPrice!
+          row.price_drop_count = 1
+          row.last_price_change_timestamp = drop.at
+          row.originalListPrice = drop.previousPrice
+        } else {
+          row.price_drop_amount = null
+          row.last_price_change_timestamp = null
+        }
+      }
+    } catch {
+      // Card extras miss omits — hero photo + leftover tile fields still print.
     }
+  })()
+
+  const countWaitMs = Math.max(VIEWPORT_COUNT_MIN_WAIT_MS, VIEWPORT_ANSWER_BY_MS - (Date.now() - startedAt))
+  const [exact] = await Promise.all([
+    countPromise ? settleWithin(countPromise, countWaitMs) : Promise.resolve(null),
+    extrasWork,
+  ])
+  if (exact != null && exact >= rows.length) {
+    totalCount = exact
+    capped = false
   } else if (polygon && polygon.length >= 3 && tiles.length < fetchLimit) {
     // Polygon path: the overfetch did not cap, so the in-polygon row count IS
     // the exact total even when it exceeds the render cap.
     capped = false
   }
-  const sliced = rows.slice(0, cap)
-  try {
-    const { attachListingCardExtras } = await import('@/lib/data')
-    const extras = await attachListingCardExtras(
-      sliced.map((row) => String(row.ListingKey ?? '')).filter(Boolean),
-    )
-    for (const row of sliced) {
-      const extra = extras.get(String(row.ListingKey ?? ''))
-      if (!extra) continue
-      row.tourUrl = extra.tourUrl ?? row.tourUrl
-      row.ListOfficeName = extra.listOfficeName
-      row.photoUrls = extra.photoUrls.length > 0 ? extra.photoUrls : undefined
-      row.originalListPrice = extra.originalListPrice
-      const drop =
-        extra.priceDrop &&
-        row.ListPrice != null &&
-        Number.isFinite(row.ListPrice) &&
-        extra.priceDrop.previousPrice > row.ListPrice
-          ? extra.priceDrop
-          : null
-      if (drop) {
-        row.price_drop_amount = drop.previousPrice - row.ListPrice!
-        row.price_drop_count = 1
-        row.last_price_change_timestamp = drop.at
-        row.originalListPrice = drop.previousPrice
-      } else {
-        row.price_drop_amount = null
-        row.last_price_change_timestamp = null
-      }
-    }
-  } catch {
-    // Card extras miss omits — hero photo + leftover tile fields still print.
-  }
+  // Whether totalCount is the real count or only a floor (the rows fetched):
+  // a floor when the uncapped count did not come back, or when a polygon's
+  // overfetch hit its own ceiling. A floor is never published as a count.
+  const countIsExact = polygon && polygon.length >= 3 ? tiles.length < fetchLimit : !capped
   return {
     listings: sliced.map((row) => ({
       ...row,
@@ -1676,6 +1750,7 @@ export async function getViewportListings(
     })),
     totalCount,
     capped,
+    countIsExact,
   }
 }
 

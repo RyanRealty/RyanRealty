@@ -15,7 +15,10 @@
       "mcp__Vibe_Prospecting__*",
       "mcp__Claude_Docs__*",
       "mcp__Cloudflare_Developer_Platform__*",
-      "mcp__Sentry__*"
+      "mcp__Sentry__*",
+      "WebFetch",
+      "WebSearch",
+      "Artifact"
     ],
     "ask": [
       "mcp__*Gmail__send_message",
