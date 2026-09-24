@@ -29,6 +29,8 @@ const SNAPSHOT = 'docs/DATABASE_SCHEMA_SNAPSHOT.md'
 const DROPPED = new Set([
   'sync_jobs', // replication-era (20250308120000); zero code consumers, superseded by sync_state
   'sync_state_by_resource', // replication-era (20250308120000); zero code consumers, superseded by sync_state
+  'listing_tile_mv_inc', // shadow table (20260924163000); renamed to listing_tile_mv_src by 20260924173000
+  'listing_search_mv_inc', // shadow table (20260924163000); renamed to listing_search_mv_src by 20260924173000
 ])
 
 const snapshot = readFileSync(SNAPSHOT, 'utf8')
