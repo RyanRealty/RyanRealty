@@ -147,6 +147,22 @@ Matt 2026-09-24: "Until you cut over, the Vault pulls new files and cycles from 
 
 **The cutover switch:** `TC_SKYSLOPE_INTAKE_ENABLED` (Vercel production env), on by default. Set it to `false` (or `0` / `off` / `no`) the day brokers stop working files in SkySlope: the cron answers "skipped" and `apply` refuses; `plan` still reads. Then retire the route with the rest of SkySlope (roadmap phase 6).
 
+## Deal terms from the contract (2026-09-24)
+
+Matt 2026-09-24: "When they read the actual deal file, any counteroffers, addendums, and all that stuff will be automatically placed into the deal file in the CRM ... not just 'Okay, now you manually fill it in.'" and "It must be bulletproof."
+
+The document reader (`lib/tc/doc-read`) identifies each form, its pages and whether it is executed; it never looks at the pages that carry terms. The terms reader does:
+
+1. **Pick the contract forms** on a read document: sale agreements (accepted or countered), counteroffers in the chain, fully executed addenda and amendments, earnest money receipts, settlement statements (`instrumentKindForTitle`, `termsFormsForDocument`).
+2. **Read every page of those forms twice, independently** (`lib/tc/terms/read.ts`): Claude on a PDF of just those pages (the Messages API reads each page's text and image), Grok on our own page renders. `lib/tc/terms/agree.ts` keeps a term only when both read the same value; one they read differently, or only one found, is dropped and listed on the file for a person. Either reader missing: nothing is read (the route answers 503).
+3. **Hold each term to sense** (`normalizeTermsReading`): a plausible amount, day count or calendar date, a page that was shown, and for inspection and financing periods a quote that names the provision (the 2-day pre-approval deadline on form 1.1 was read as the financing period on Beaumont).
+4. **Resolve the chain** (`lib/tc/terms/resolve.ts`): the offer whose buyers are the cycle's, its sale agreement, each counter up to the one both sides signed, then each fully executed addendum in date order; the earnest money receipt fills a missing deposit; the settlement statement's price wins over the agreement's and says so. An offer nobody accepted writes nothing.
+5. **Fill only what is empty** (`lib/tc/terms/plan.ts`, `applyCycleTerms`): price, earnest money, acceptance and closing dates, inspection and financing periods, escrow company and number, buyers, sellers. One `tc_events` row `deal_terms_filled` per write, with the document, form, page and quote. A field that holds a different value is never overwritten: the file's Overview shows the contract's value and its page beside it, and **Use …** (`acceptContractTerm`, `transactions.edit`) replaces it (`deal_terms_accepted`).
+
+Stored on `tc_documents.classification.terms` (version `deal-terms-v1-2026-09-24`): both raw readings, the agreed reading, the disagreements, the models and cost. A copy with the same bytes is not read twice. Three failed attempts leave a copy for a person.
+
+**Cron:** `/api/cron/tc-deal-terms` every 20 minutes, live files first. `?doc=<id>&dry=1` reads one document and returns both readings without writing; `?cycle=<id>` resolves and fills one cycle. The same route watches the document reader: readable documents waiting and nothing read for two hours texts Matt once per 12 hours (`lib/data/tc/reader-health.ts`). The reader itself was down 09:35 to about 16:00 UTC on 2026-09-24 (a poster-size page ran it out of memory on every run); renders are now capped and a copy that keeps failing leaves the queue.
+
 ## Invariants (carry from CLAUDE.md + the compliance skill)
 
 - Draft-first: UI/code deliverables reviewed before commit; SkySlope mutations still require explicit approval per action while it remains live.
