@@ -40,6 +40,20 @@
  *       off by default. --dry-run is READ-ONLY: decides every message but
  *       writes nothing (no tc_mail_messages row, no tc_mail_reviews row, no
  *       cursor), and prints the status distribution instead.
+ *
+ *   npx tsx scripts/tc-mail-backfill.ts redecide [--dry-run | --apply] [--mailbox x@ryan-realty.com] [--status bulk,not_deal,filed]
+ *                                                [--since YYYY-MM-DD] [--limit N] [--concurrency 4] [--batch 200] [--max-minutes N]
+ *       After a rules change (MAIL_RULES_VERSION in lib/tc/mail-rules.ts): decide
+ *       again every tc_mail_reviews row decided under another version, oldest
+ *       message first, and correct the history (lib/tc/mail-redecide.ts,
+ *       docs/TC_MAIL_FILING_RULES.md "Re-deciding history after a rules change").
+ *       DRY RUN BY DEFAULT: read-only, prints the count of each transition per
+ *       mailbox, 10 samples of each, and writes every changed row to
+ *       tmp/tc-mail-redecide/<run>/changes.{jsonl,csv} + summary.json.
+ *       --apply files, moves and unfiles through the live path; a person's
+ *       decision is never touched; one run at a time (lock); resumable (a row
+ *       done carries the new version). Ctrl-C stops cleanly between messages.
+ *       --mailbox / --status take a comma list or repeat.
  */
 import 'dotenv/config'
 import fs from 'node:fs'
@@ -275,10 +289,152 @@ async function auditOrReconcile(apply: boolean) {
   console.log(`[reconcile] indexed: ${filed} filed, ${queuedN} queued, ${failed} errors`)
 }
 
+/** Every value of a repeatable, comma-separated flag. */
+function argList(name: string): string[] {
+  const out: string[] = []
+  process.argv.forEach((a, i) => {
+    if (a === name && process.argv[i + 1]) out.push(...process.argv[i + 1].split(',').map((s) => s.trim()).filter(Boolean))
+  })
+  return out
+}
+
+function csvCell(v: unknown): string {
+  const s = v == null ? '' : Array.isArray(v) ? v.join(' | ') : String(v)
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+async function redecide() {
+  const apply = has('--apply')
+  if (apply && has('--dry-run')) {
+    console.error('[redecide] pass --dry-run or --apply, not both')
+    process.exit(2)
+  }
+  const { runRedecide, createProductionRedecideDeps, TRANSITIONS } = await import('@/lib/tc/mail-redecide')
+  type Change = import('@/lib/tc/mail-redecide').ChangeRow
+  const mailboxes = argList('--mailbox')
+  const statuses = argList('--status')
+  const since = arg('--since')
+  const limit = arg('--limit') ? Number(arg('--limit')) : null
+  const concurrency = Number(arg('--concurrency') ?? 4)
+  const batchSize = Number(arg('--batch') ?? 200)
+  const maxMinutes = arg('--max-minutes') ? Number(arg('--max-minutes')) : null
+  const deadline = maxMinutes ? Date.now() + maxMinutes * 60_000 : null
+
+  let stop = false
+  process.on('SIGINT', () => {
+    if (stop) process.exit(130)
+    stop = true
+    console.log('\n[redecide] stopping after the messages in flight (Ctrl-C again to quit now)')
+  })
+
+  const t0 = Date.now()
+  const deps = await createProductionRedecideDeps({ apply })
+  const runId = new Date().toISOString().replace(/[:.]/g, '-')
+  const dir = path.join(arg('--out') ?? 'tmp/tc-mail-redecide', `${apply ? 'apply' : 'dry-run'}-${runId}`)
+  fs.mkdirSync(dir, { recursive: true })
+  const jsonl = fs.createWriteStream(path.join(dir, 'changes.jsonl'))
+  const changes: Change[] = []
+  console.log(
+    `[redecide] ${apply ? 'APPLY: writes to the Vault' : 'dry run (read-only, nothing is written)'} · rules ${deps.currentVersion} · ` +
+      `mailboxes ${mailboxes.length ? mailboxes.join(',') : 'all'} · status ${statuses.length ? statuses.join(',') : 'all'}` +
+      `${since ? ` · since ${since}` : ''}${limit != null ? ` · limit ${limit}` : ''} · concurrency ${concurrency} · universe ${deps.universe.deals.length} deals (${Math.round((Date.now() - t0) / 1000)}s) · out ${dir}`,
+  )
+
+  const report = await runRedecide(
+    {
+      apply,
+      mailboxes,
+      statuses,
+      since,
+      limit,
+      concurrency,
+      batchSize,
+      deadline,
+      shouldStop: () => stop,
+      onBatch: (p) => {
+        const rate = p.elapsedMs ? (p.processedRows / (p.elapsedMs / 1000)).toFixed(1) : '0'
+        const changed = Object.entries(p.byTransition)
+          .filter(([k]) => k !== 'unchanged')
+          .map(([k, v]) => `${k} ${v}`)
+          .join(', ')
+        console.log(`[redecide] ${p.processedRows}/${p.selectedRows} rows · ${Math.round(p.elapsedMs / 1000)}s · ${rate}/s · unchanged ${p.byTransition.unchanged ?? 0}${changed ? ` · ${changed}` : ''}`)
+      },
+      onChange: (row) => {
+        changes.push(row)
+        jsonl.write(`${JSON.stringify(row)}\n`)
+      },
+    },
+    deps,
+  )
+  await new Promise<void>((resolve) => jsonl.end(resolve))
+
+  const cols = [
+    'mailbox', 'gmail_id', 'message_key', 'transition', 'move_kind', 'old_status', 'new_status', 'old_deal', 'new_deal',
+    'old_deal_id', 'new_deal_id', 'old_cycle_id', 'new_cycle_id', 'protection', 'internal_at', 'subject', 'reasons',
+    'documents_to_archive', 'documents_kept', 'offers_left', 'note',
+  ]
+  const lines = [cols.join(',')]
+  for (const c of changes) {
+    lines.push(
+      [
+        c.mailbox, c.gmailId, c.messageKey, c.transition, c.moveKind, c.oldStatus, c.newStatus, c.oldDeal, c.newDeal,
+        c.oldDealId, c.newDealId, c.oldCycleId, c.newCycleId, c.protection, c.internalAt, c.subject, c.reasons,
+        c.documents?.archive.length ?? '', c.documents?.keep.length ?? '', c.documents?.offersLeft ?? '', c.note,
+      ]
+        .map(csvCell)
+        .join(','),
+    )
+  }
+  fs.writeFileSync(path.join(dir, 'changes.csv'), `${lines.join('\n')}\n`)
+  fs.writeFileSync(path.join(dir, 'summary.json'), JSON.stringify(report, null, 2))
+
+  // ── the human part ──
+  const order = TRANSITIONS as readonly string[]
+  const seen = new Set<string>()
+  for (const mb of Object.values(report.rowsByMailbox)) for (const k of Object.keys(mb)) seen.add(k)
+  const present = order.filter((t) => seen.has(t))
+  console.log(`\n[redecide] rows per transition per mailbox (${report.processedRows} of ${report.selectedRows} selected rows; ${report.staleRows} rows under another rules version):`)
+  console.log(['mailbox'.padEnd(34), ...present.map((t) => t.padStart(11))].join(''))
+  const totals: Record<string, number> = {}
+  for (const [mb, row] of Object.entries(report.rowsByMailbox).sort()) {
+    console.log([mb.padEnd(34), ...present.map((t) => String(row[t] ?? 0).padStart(11))].join(''))
+    for (const t of present) totals[t] = (totals[t] ?? 0) + (row[t] ?? 0)
+  }
+  console.log(['TOTAL'.padEnd(34), ...present.map((t) => String(totals[t] ?? 0).padStart(11))].join(''))
+  console.log('\n[redecide] messages (one per RFC Message-ID, mailbox copies decided together):', report.messagesByTransition)
+  console.log('[redecide] moves:', report.moveKinds, '· protected by:', report.protectedBy)
+  console.log('[redecide] documents:', report.documents)
+  if (report.divergences.length) console.log(`[redecide] live path disagreed with the dry decision ${report.divergences.length} times:`, report.divergences.slice(0, 20))
+  if (report.errors.length) console.log(`[redecide] errors (${report.errors.length}, first 10):`, report.errors.slice(0, 10))
+  console.log(`[redecide] load ${Math.round(report.loadMs / 1000)}s · decide timing (ms):`, report.decide, '· Gmail:', report.gmail)
+  console.log(`[redecide] messages an --apply sends through the live path (a second Gmail read each): ${report.livePathMessages}`)
+  console.log(`[redecide] held back until their thread settled: ${report.deferred} · left for the next run: ${report.leftForNextRun}`)
+  if (apply) console.log('[redecide] review rows stamped:', report.stamped)
+
+  for (const t of order) {
+    const s = report.samples[t]
+    if (!s?.length || t === 'unchanged') continue
+    console.log(`\n── ${t} (${totals[t] ?? 0} rows; ${s.length} samples) ──`)
+    for (const c of s) {
+      const from = c.oldDeal ? `${c.oldStatus} on ${c.oldDeal}` : c.oldStatus
+      const to = c.newDeal ? `${c.newStatus} on ${c.newDeal}` : (c.newStatus ?? '-')
+      console.log(`  ${c.internalAt?.slice(0, 10) ?? '?'} ${c.mailbox.split('@')[0]} · "${(c.subject ?? '').slice(0, 90)}"`)
+      console.log(`      ${from}  →  ${to}${c.moveKind ? ` (${c.moveKind})` : ''}${c.protection ? ` [${c.protection}]` : ''}`)
+      if (c.reasons.length) console.log(`      reasons: ${c.reasons.slice(-3).join(' | ').slice(0, 300)}`)
+      if (c.documents) console.log(`      documents: archive ${c.documents.archive.length}, keep ${c.documents.keep.length}${c.documents.keep.length ? ` (${c.documents.keep.map((k) => k.reason).join('; ').slice(0, 200)})` : ''}, offers left ${c.documents.offersLeft}`)
+      if (c.note) console.log(`      note: ${c.note}`)
+    }
+  }
+  console.log(
+    `\n[redecide] ${report.complete ? 'COMPLETE' : 'PARTIAL (limit/deadline/stop): run again to continue'} · ${Math.round(report.elapsedMs / 1000)}s · ${apply ? 'applied' : 'nothing written'} · ${dir}`,
+  )
+}
+
 async function main() {
   const mode = process.argv[2]
   if (mode === 'audit') return auditOrReconcile(false)
   if (mode === 'reconcile') return auditOrReconcile(true)
+  if (mode === 'redecide') return redecide()
   const { loadMailUniverse, sweepDealMail, sweepTransactionMail, rematchQueuedMail } = await import('@/lib/tc/mail-index')
   const { createServiceClient } = await import('@/lib/supabase/service')
   const sb = createServiceClient()
@@ -365,7 +521,7 @@ async function main() {
     console.log('[review-all] status distribution across mailboxes walked this run:', totals)
     return
   }
-  console.error('usage: tc-mail-backfill.ts audit|reconcile|sweep-deals|sweep-transactions|rematch|refile-threads|review-all|review-retry [--since YYYY-MM-DD] [--dry-run]')
+  console.error('usage: tc-mail-backfill.ts audit|reconcile|sweep-deals|sweep-transactions|rematch|refile-threads|review-all|review-retry|redecide [--since YYYY-MM-DD] [--dry-run]')
   process.exit(2)
 }
 
