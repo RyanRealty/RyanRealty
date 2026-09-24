@@ -892,7 +892,8 @@
 
 /* THE PRICE CUT AS TWO PRICES (Matt 2026-09-10). SITE-45's 22px slope hid
    the reading behind hover. Two values are not a chart: strikethrough the
-   ask before the cut, exception ink on the dollars cut, date at rest. */
+   ask before the cut, the new ask beside it (Matt 2026-09-24), exception ink
+   on the dollars cut, date at rest. */
 .listing-drop {
   display: flex;
   flex-wrap: wrap;
@@ -910,6 +911,10 @@
   text-decoration: line-through;
   text-decoration-thickness: 1px;
   color: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+}
+
+.listing-drop__to {
+  font-weight: var(--v3-weight-strong);
 }
 
 .listing-drop__cut {

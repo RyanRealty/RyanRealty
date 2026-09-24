@@ -5,6 +5,10 @@
  * hover. That is a fake chart: two values, one current price already in the
  * H1. Dataviz: do not chart two numbers; print them. Exception ink on the cut
  * because a drop is a decline. Same publisher as the history rail.
+ *
+ * Both prices print on the line, old struck through and new beside it, even
+ * though the new one is also the H1 price (Matt 2026-09-24: "the two prices,
+ * old and new").
  */
 import { formatDate } from '@/lib/format/date'
 import type { PublishedListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
@@ -22,6 +26,7 @@ export function PriceDropMark({ mark, label }: { mark: PublishedListingDropMark;
   return (
     <p className="listing-drop" aria-label={`${label}: ${reading}`}>
       <s className="listing-drop__from">{from}</s>
+      <span className="listing-drop__to">{to}</span>
       <span className="listing-drop__cut">Cut {cut}</span>
       <span className="listing-drop__meta">
         −{mark.pct.toFixed(1)}% · {when}

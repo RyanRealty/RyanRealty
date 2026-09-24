@@ -69,12 +69,14 @@ function strip(over: Record<string, unknown> = {}) {
 describe('the price cut as two prices at rest', () => {
   const mark = { from: 1_075_000, to: 999_000, drop: 76_000, pct: 7.1, date: '2026-08-15' }
 
-  it('prints from, cut, percent and date without a hover', () => {
+  it('prints from, to, cut, percent and date without a hover', () => {
     const html = strip({ dropMark: mark })
     expect(html).toContain('class="listing-drop"')
     expect(html).not.toContain('<line')
     expect(html).not.toContain('<circle')
     expect(html).toContain('$1,075,000')
+    // Matt 2026-09-24: the line prints the new price too, not only the H1.
+    expect(html).toContain('<span class="listing-drop__to">$999,000</span>')
     expect(html).toContain('Cut $76,000')
     expect(html).toContain('−7.1%')
     expect(html).toContain('Aug 15, 2026')
@@ -97,6 +99,8 @@ describe('the price cut as two prices at rest', () => {
     const html = renderToStaticMarkup(createElement(PriceDropMark, { mark, label: 'Price drop $76K' }))
     expect(html).toContain('listing-drop__from')
     expect(html).toContain('listing-drop__cut')
+    // Old price struck through, then the new price, then the cut.
+    expect(html).toMatch(/<s class="listing-drop__from">\$1,075,000<\/s><span class="listing-drop__to">\$999,000<\/span><span class="listing-drop__cut">Cut \$76,000<\/span>/)
     expect(html).not.toContain('<svg')
     expect(html).not.toContain('<line')
   })
