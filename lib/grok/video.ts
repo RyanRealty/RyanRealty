@@ -19,7 +19,7 @@
  *
  * The returned URL is temporary. Download and store before any row references it.
  */
-import { GROK_MODELS, GrokError, ticksToUsd, xaiFetch } from './client'
+import { GROK_MODELS, GrokError, rawTicks, ticksToUsd, xaiFetch } from './client'
 
 const POLL_INTERVAL_MS = 5_000
 const POLL_TIMEOUT_MS = 10 * 60 * 1000
@@ -34,10 +34,17 @@ export type GrokVideoOptions = {
   /** Source still to animate. Locks frame one. Omit for text-to-video. */
   image?: GrokVideoSource
   /**
-   * Up to 3 subject references, tagged <IMAGE_1>..<IMAGE_3> in the prompt.
-   * Carries a subject across shots without locking the opening frame.
+   * Up to 7 subject references (raised from 3 on 2026-07-31), tagged
+   * <IMAGE_1>..<IMAGE_7> in the prompt. Carries a subject across shots without
+   * locking the opening frame. The reference path is capped at 720p.
    */
   referenceImages?: GrokVideoSource[]
+  /**
+   * Pins the final frame (grok-imagine-video-1.5 only; the classic model
+   * rejects it). With `image` it bounds a move at both ends, which is how an
+   * action that must finish (a hand leaving a pocket) is kept from drifting.
+   */
+  lastFrame?: GrokVideoSource
   /**
    * Up to 3 preset voices, tagged <AUDIO_0>..<AUDIO_2> in the prompt.
    * Implies audio, so passing these turns generate_audio on.
@@ -60,6 +67,8 @@ export type GrokVideoResult = {
   durationSeconds: number
   hasAudio: boolean
   costUsd: number | null
+  /** Raw `usage.cost_in_usd_ticks`, the figure that reconciles to the invoice. */
+  costTicks: number | null
 }
 
 const TEMP_HOST = /(?:^|\.)x\.ai(?:\/|$)|fal\.ai|replicate\.com|kling|hailuo|synthesia/i
@@ -71,6 +80,22 @@ export function isTempGrokUrl(url: string): boolean {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
+}
+
+/** Live cap on reference_images, verified against the 2026-07-31 xAI release. */
+export const MAX_REFERENCE_IMAGES = 7
+
+/**
+ * Reference-to-video is served at 720p at most. Asking for 1080p on that path
+ * is not an upgrade, it is a request the API downgrades or refuses, so the
+ * cap is applied here rather than discovered on a paid call.
+ */
+export function resolutionFor(
+  requested: GrokVideoResolution | undefined,
+  hasReferences: boolean,
+): GrokVideoResolution {
+  const wanted = requested ?? '1080p'
+  return hasReferences && wanted === '1080p' ? '720p' : wanted
 }
 
 function shapeSource(source: GrokVideoSource): Record<string, string> {
@@ -91,18 +116,18 @@ export async function generateGrokVideo(options: GrokVideoOptions): Promise<Grok
   const voices = (options.referenceVoiceIds ?? []).slice(0, 3)
   const generateAudio = options.generateAudio ?? voices.length > 0
 
+  const references = (options.referenceImages ?? []).slice(0, MAX_REFERENCE_IMAGES)
   const body: Record<string, unknown> = {
     model,
     prompt,
     duration,
     aspect_ratio: options.aspectRatio ?? '9:16',
-    resolution: options.resolution ?? '1080p',
+    resolution: resolutionFor(options.resolution, references.length > 0),
     generate_audio: generateAudio,
   }
   if (options.image) body.image = shapeSource(options.image)
-  if (options.referenceImages?.length) {
-    body.reference_images = options.referenceImages.slice(0, 3).map(shapeSource)
-  }
+  if (references.length) body.reference_images = references.map(shapeSource)
+  if (options.lastFrame) body.last_frame = shapeSource(options.lastFrame)
   if (voices.length) body.reference_audios = voices.map((voice_id) => ({ voice_id }))
 
   const startRes = await xaiFetch(
@@ -126,6 +151,7 @@ export async function generateGrokVideo(options: GrokVideoOptions): Promise<Grok
       durationSeconds: duration,
       hasAudio: generateAudio,
       costUsd: ticksToUsd(start.usage?.cost_in_usd_ticks),
+      costTicks: rawTicks(start.usage?.cost_in_usd_ticks),
     }
   }
 
@@ -151,6 +177,7 @@ export async function generateGrokVideo(options: GrokVideoOptions): Promise<Grok
         durationSeconds: status.video.duration ?? duration,
         hasAudio: generateAudio,
         costUsd: ticksToUsd(status.usage?.cost_in_usd_ticks),
+        costTicks: rawTicks(status.usage?.cost_in_usd_ticks),
       }
     }
     if (status.status === 'expired' || status.status === 'failed') {

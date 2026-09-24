@@ -10,7 +10,7 @@
  * The defect vocabulary is a closed list on purpose. A free-text critique
  * cannot be counted, trended, or gated; an enum can.
  */
-import { GROK_MODELS, GrokError, ticksToUsd, xaiFetch } from './client'
+import { GROK_MODELS, GrokError, rawTicks, ticksToUsd, xaiFetch } from './client'
 import { parseJsonLoose } from './text'
 
 /**
@@ -38,6 +38,34 @@ export const FRAME_DEFECTS = [
 
 export type FrameDefect = (typeof FRAME_DEFECTS)[number]
 
+/**
+ * The vocabulary for authored story films, where people ARE the subject.
+ * `person_present` is gone; what replaces it is what actually breaks a period
+ * piece: an object, car, garment, or finish that did not exist in the year the
+ * frame claims (`anachronism`), and a cast member who no longer matches their
+ * reference sheet (`cast_mismatch`). Faces and hands matter more here, not less.
+ */
+export const STORY_FRAME_DEFECTS = [
+  'rendered_text',
+  'logo_or_watermark',
+  'warped_architecture',
+  'impossible_geometry',
+  'melted_or_merged_hands',
+  'extra_or_missing_limbs',
+  'malformed_face',
+  'cast_mismatch',
+  'anachronism',
+  'wrong_region',
+  'inconsistent_lighting',
+  'detached_contact_shadow',
+  'oversaturated_ai_look',
+  'plastic_hdr_skin',
+  'duplicated_object',
+  'nonsense_detail',
+] as const
+
+export type StoryFrameDefect = (typeof STORY_FRAME_DEFECTS)[number]
+
 export type VisionVerdict = {
   /** False when any defect is present or the score is under the bar. */
   pass: boolean
@@ -54,6 +82,8 @@ export type VisionVerdict = {
   /** The single most useful prompt change if we regenerate. */
   fixHint: string
   costUsd: number | null
+  /** Raw `usage.cost_in_usd_ticks`, the figure that reconciles to the invoice. */
+  costTicks?: number | null
 }
 
 export type VisionQaInput = {
@@ -66,6 +96,22 @@ export type VisionQaInput = {
   /** Minimum passing score. Default 85. */
   minScore?: number
   model?: string
+  /**
+   * The closed defect list the judge may report. Default FRAME_DEFECTS (the
+   * people-free listing and place formats). Story films pass
+   * STORY_FRAME_DEFECTS.
+   */
+  vocabulary?: readonly string[]
+  /**
+   * Extra context appended to the art director's brief, e.g. the year the
+   * frame must pass for. Describes the world; never a figure source.
+   */
+  context?: string
+  /**
+   * Reference images shown BEFORE the frame (cast sheets). The judge compares
+   * the people in the frame against them for `cast_mismatch`.
+   */
+  references?: Array<{ image: Buffer; label: string }>
 }
 
 const SYSTEM = [
@@ -77,17 +123,19 @@ const SYSTEM = [
   'Judge only what is in this frame. Do not speculate about motion.',
 ].join(' ')
 
-const SCHEMA: Record<string, unknown> = {
-  type: 'object',
-  properties: {
-    pass: { type: 'boolean' },
-    score: { type: 'integer', minimum: 0, maximum: 100 },
-    defects: { type: 'array', items: { type: 'string', enum: [...FRAME_DEFECTS] } },
-    describes: { type: 'string' },
-    fixHint: { type: 'string' },
-  },
-  required: ['pass', 'score', 'defects', 'describes', 'fixHint'],
-  additionalProperties: false,
+function verdictSchema(vocabulary: readonly string[]): Record<string, unknown> {
+  return {
+    type: 'object',
+    properties: {
+      pass: { type: 'boolean' },
+      score: { type: 'integer', minimum: 0, maximum: 100 },
+      defects: { type: 'array', items: { type: 'string', enum: [...vocabulary] } },
+      describes: { type: 'string' },
+      fixHint: { type: 'string' },
+    },
+    required: ['pass', 'score', 'defects', 'describes', 'fixHint'],
+    additionalProperties: false,
+  }
 }
 
 /**
@@ -99,12 +147,17 @@ export async function inspectFrame(input: VisionQaInput): Promise<VisionVerdict>
   if (!input.image?.length) throw new GrokError('inspectFrame needs image bytes', 0, '')
   const model = input.model ?? GROK_MODELS.vision
   const minScore = input.minScore ?? 85
+  const vocabulary = input.vocabulary?.length ? input.vocabulary : FRAME_DEFECTS
   const dataUrl = `data:image/jpeg;base64,${input.image.toString('base64')}`
+  const references = input.references ?? []
 
   const question = [
+    references.length
+      ? `The first ${references.length} image(s) are reference sheets (${references.map((r) => r.label).join('; ')}). The LAST image is the frame under review. Judge only the last image; use the references to check that the people in it are the same people.`
+      : '',
     `Intent: ${input.intent}`,
     input.alsoReject?.length ? `Also reject if: ${input.alsoReject.join('; ')}.` : '',
-    `Report any of these defects you can see: ${FRAME_DEFECTS.join(', ')}.`,
+    `Report any of these defects you can see: ${vocabulary.join(', ')}.`,
     'score is your honest read of whether this passes as a real photograph.',
     `pass is true only if defects is empty and score is at least ${minScore}.`,
     'describes is one sentence on what the frame literally shows.',
@@ -121,10 +174,14 @@ export async function inspectFrame(input: VisionQaInput): Promise<VisionVerdict>
         model,
         max_tokens: 800,
         messages: [
-          { role: 'system', content: SYSTEM },
+          { role: 'system', content: input.context ? `${SYSTEM} ${input.context}` : SYSTEM },
           {
             role: 'user',
             content: [
+              ...references.map((r) => ({
+                type: 'image_url',
+                image_url: { url: `data:image/jpeg;base64,${r.image.toString('base64')}`, detail: 'low' },
+              })),
               { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
               { type: 'text', text: question },
             ],
@@ -132,7 +189,7 @@ export async function inspectFrame(input: VisionQaInput): Promise<VisionVerdict>
         ],
         response_format: {
           type: 'json_schema',
-          json_schema: { name: 'frame_verdict', schema: SCHEMA, strict: true },
+          json_schema: { name: 'frame_verdict', schema: verdictSchema(vocabulary), strict: true },
         },
       }),
     },
@@ -147,7 +204,10 @@ export async function inspectFrame(input: VisionQaInput): Promise<VisionVerdict>
   if (typeof raw !== 'string' || !raw.trim()) {
     throw new GrokError('vision QA returned no content', 0, JSON.stringify(data).slice(0, 600))
   }
-  return normalizeVerdict(parseJsonLoose<Partial<VisionVerdict>>(raw), minScore, ticksToUsd(data.usage?.cost_in_usd_ticks))
+  return {
+    ...normalizeVerdict(parseJsonLoose<Partial<VisionVerdict>>(raw), minScore, ticksToUsd(data.usage?.cost_in_usd_ticks)),
+    costTicks: rawTicks(data.usage?.cost_in_usd_ticks),
+  }
 }
 
 /**

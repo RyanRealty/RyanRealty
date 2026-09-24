@@ -47,7 +47,7 @@ export function studioAdapters(): StudioAdapters {
         resolution: '2k',
         n,
       })
-      return { images: result.images, model: result.model, costTicks: null }
+      return { images: result.images, model: result.model, costTicks: result.costTicks }
     },
     inspectFrame: ({ image, intent, alsoReject }) => inspectFrame({ image, intent, alsoReject }),
     animate: async ({ prompt, imageUrl, aspectRatio, seconds }) => {
@@ -65,7 +65,7 @@ export function studioAdapters(): StudioAdapters {
         url: clip.url,
         model: clip.model,
         durationSeconds: clip.durationSeconds,
-        costTicks: null,
+        costTicks: clip.costTicks,
       }
     },
     writeCaption,

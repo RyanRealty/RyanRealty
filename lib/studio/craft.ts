@@ -161,3 +161,85 @@ export const VIDEO_ASPECT: Record<'story' | 'feedSquare' | 'wide', GrokVideoAspe
   feedSquare: '1:1',
   wide: '16:9',
 }
+
+// ── Period story films (lib/studio/story) ─────────────────────────────────
+
+/**
+ * Home-movie camera grammar. The listing moves above are a dolly grip's; these
+ * are an amateur's, because a 1982 family did not own a slider. Zooms are NOT
+ * here on purpose: a zoom asked of the generator drifts and breathes, so every
+ * zoom in a story film is a crop keyframe in the film lab, exact to the frame.
+ */
+export const HOME_MOVIE_MOVES = {
+  hold: 'handheld by an amateur and held on the subject, a gentle breathing sway of a centimetre or two, no pan, no zoom',
+  follow: 'handheld by an amateur who follows the subject with small late corrections, no zoom',
+  pan: 'handheld pan of about fifteen degrees at an uneven amateur speed, then it settles, no zoom',
+  dashboard: 'camera braced on the dashboard, only road vibration moves it, no pan, no zoom',
+  armLength: 'camera held at arm’s length facing the two of them, a small wobble, no zoom',
+  tripod: 'locked off on a tripod and composed like a photograph: subject centered, level horizon, no camera movement, no zoom',
+} as const
+
+export type HomeMovieMove = keyof typeof HOME_MOVIE_MOVES
+
+export type PeriodShotSpec = {
+  /** The year every detail must pass for. */
+  year: number
+  /** Where the camera is and what glass, e.g. 'from the driver seat, 28mm'. */
+  framing: string
+  /** Gaffer-named light: direction, quality, colour temperature. */
+  light: string
+  move: HomeMovieMove
+  /** Who is in frame and the ONE thing they do. */
+  action: string
+  /** Wardrobe, props, and materials, concrete nouns only. */
+  materials: string
+  /** The real place, in a local's words. */
+  place: string
+  /** Period content cues from the era pack (hair, cars, rooms). */
+  period: string
+  /** How an amateur of the era behaved with the camera. */
+  camera: string
+  /**
+   * What each source image is, in order, when the still is an edit
+   * conditioned on references (place still, cast sheets).
+   */
+  sources?: string[]
+}
+
+/**
+ * The hero still for a period shot. Positive phrasing only: Grok Imagine
+ * ignores negatives, and naming a thing in a negative induces it (LESSONS #2).
+ * The film look is NOT requested here; the lab applies one stock to every shot.
+ */
+export function buildPeriodStillPrompt(spec: PeriodShotSpec): string {
+  const sources = spec.sources?.length
+    ? spec.sources.map((s, i) => `Image ${i + 1} is ${s}.`).join(' ') +
+      ' Keep the people exactly as they appear in their reference images and keep the real place recognisable.'
+    : ''
+  return [
+    sources,
+    `Candid color photograph, ${spec.year}, ${spec.framing}, ${spec.camera}.`,
+    `${spec.light}.`,
+    `${spec.place}.`,
+    `${spec.action}.`,
+    `${spec.materials}.`,
+    `Everything in frame belongs to ${spec.year}: ${spec.period}.`,
+    'Real skin with pores and fine lines, natural unretouched faces, natural restrained color, soft optics, deep focus.',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+/**
+ * Motion for image-to-video off an approved period still. One action, the
+ * camera grammar, and an explicit hold on everything else. Identity is named
+ * because face drift is the failure that kills a cast film.
+ */
+export function buildPeriodMotionPrompt(spec: Pick<PeriodShotSpec, 'move' | 'action' | 'year'>): string {
+  return [
+    `Home movie from ${spec.year}.`,
+    `Camera: ${HOME_MOVIE_MOVES[spec.move]}.`,
+    `Action: ${spec.action}, at natural real-time speed.`,
+    'Everyone keeps the same face, hair, and clothes from the first frame to the last. The background stays put.',
+  ].join(' ')
+}

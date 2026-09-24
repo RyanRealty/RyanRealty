@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  The present-day phone screen a story film cuts to at its break
+  (lib/studio/story/arc.ts, role "break"). Rendered by
+  `story-film.ts phone` at 1080x1920 with Playwright; every figure on it
+  comes from payoff.json, resolved through the DAL and traced in
+  citations.json (CLAUDE.md §0). Tokens mirror components/site/v3/tokens.css.
+
+  States (query string ?state=): page | pressed | calling | glance
+  glance is the screen as it sits INSIDE the film (a phone in a gloved hand,
+  composited by story_reel.py over the lit blank screen): a full-height phone
+  screen with the place and its median set large enough to read at a glance.
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: 'Amboqia'; src: url('{{ROOT}}/public/fonts/Amboqia_Boriango.otf'); }
+  @font-face { font-family: 'Geist'; src: url('{{ROOT}}/node_modules/geist/dist/fonts/geist-sans/Geist-Regular.ttf'); font-weight: 400; }
+  @font-face { font-family: 'Geist'; src: url('{{ROOT}}/node_modules/geist/dist/fonts/geist-sans/Geist-Medium.ttf'); font-weight: 500; }
+  @font-face { font-family: 'Geist'; src: url('{{ROOT}}/node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.ttf'); font-weight: 600; }
+  :root {
+    --v3-navy: #102742;
+    --v3-cream: #faf8f4;
+    --v3-edge: color-mix(in srgb, var(--v3-navy) 12%, transparent);
+    --v3-wash: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+    --v3-muted: color-mix(in srgb, var(--v3-navy) 62%, transparent);
+    --v3-pressed: color-mix(in srgb, var(--v3-navy) 85%, transparent);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 390px; height: 100%; overflow: hidden; background: var(--v3-cream); }
+  body { font-family: 'Geist', system-ui, sans-serif; color: var(--v3-navy); -webkit-font-smoothing: antialiased; }
+  .status { height: 40px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 15px; }
+  .status svg { display: block; }
+  .glyphs { display: flex; gap: 6px; align-items: center; }
+  header { height: 52px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--v3-edge); }
+  header img { height: 26px; }
+  .menu { width: 22px; height: 14px; display: flex; flex-direction: column; justify-content: space-between; }
+  .menu i { display: block; height: 2px; border-radius: 2px; background: var(--v3-navy); }
+  .hero { height: 250px; background: #ccc center/cover no-repeat; }
+  .body { padding: 20px 20px 0; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--v3-muted); font-weight: 500; }
+  h1 { font-family: 'Amboqia', serif; font-weight: 400; font-size: 44px; line-height: 1; margin-top: 6px; letter-spacing: -0.01em; }
+  .stats { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; margin-top: 18px; }
+  .stat { border: 1px solid var(--v3-edge); border-radius: 14px; padding: 12px 14px; background: #fff; }
+  .stat b { display: block; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stat span { display: block; font-size: 12.5px; color: var(--v3-muted); margin-top: 2px; }
+  .source { font-size: 11px; color: var(--v3-muted); margin-top: 10px; }
+  .cta { margin-top: 18px; height: 54px; border-radius: 10px; background: var(--v3-navy); color: var(--v3-cream); display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 17px; font-weight: 600; position: relative; overflow: hidden; }
+  body.is-pressed .cta { background: var(--v3-pressed); transform: scale(0.985); }
+  .calling { display: none; position: absolute; inset: 0; background: var(--v3-navy); color: var(--v3-cream); text-align: center; }
+  body.is-calling .calling { display: block; }
+  .calling .avatar { width: 128px; height: 128px; border-radius: 50%; margin: 150px auto 0; background: color-mix(in srgb, var(--v3-cream) 10%, transparent) center/78% no-repeat; }
+  .calling h2 { font-family: 'Amboqia', serif; font-weight: 400; font-size: 40px; margin-top: 26px; }
+  .calling p { font-size: 17px; margin-top: 8px; opacity: 0.75; }
+  .calling .number { font-size: 15px; margin-top: 4px; opacity: 0.6; font-variant-numeric: tabular-nums; }
+  .calling .dots { margin-top: 170px; display: flex; justify-content: center; gap: 34px; }
+  .calling .dots i { width: 64px; height: 64px; border-radius: 50%; background: color-mix(in srgb, var(--v3-cream) 14%, transparent); display: block; }
+  .calling .status { color: var(--v3-cream); }
+  body.is-glance .hero { height: 230px; }
+  body.is-glance .body { padding-top: 26px; }
+  body.is-glance h1 { font-size: 60px; }
+  body.is-glance .stats { grid-template-columns: 1fr; gap: 12px; margin-top: 22px; }
+  body.is-glance .stat:last-child { order: -1; }
+  body.is-glance .stat b { font-size: 46px; }
+  body.is-glance .stat span { font-size: 15px; }
+  body.is-glance .source { font-size: 12px; margin-top: 14px; }
+  body.is-glance .cta { margin-top: 26px; height: 60px; font-size: 18px; }
+</style>
+</head>
+<body class="is-{{STATE}}">
+  <div class="status">
+    <span>{{CLOCK}}</span>
+    <span class="glyphs">
+      <svg width="18" height="11" viewBox="0 0 18 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="2.5" width="3" height="8.5" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 11 5.5 8.3a3.5 3.5 0 0 1 5 0Z"/><path d="M3.3 6.1a6.6 6.6 0 0 1 9.4 0l-1.4 1.5a4.6 4.6 0 0 0-6.6 0Z"/><path d="M1 3.8a9.9 9.9 0 0 1 14 0l-1.4 1.5a7.9 7.9 0 0 0-11.2 0Z"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.45"/><rect x="2" y="2" width="16" height="8" rx="1.8" fill="currentColor"/><rect x="23.5" y="4" width="1.8" height="4" rx="0.9" fill="currentColor" opacity="0.45"/></svg>
+    </span>
+  </div>
+  <header>
+    <img src="{{ROOT}}/public/brand/logo-horizontal-navy.png" alt="Ryan Realty" />
+    <span class="menu"><i></i><i></i><i></i></span>
+  </header>
+  <div class="hero" style="background-image:url('{{HERO}}')"></div>
+  <div class="body">
+    <div class="eyebrow">Bend, Oregon</div>
+    <h1>{{PLACE}}</h1>
+    <div class="stats">
+      <div class="stat"><b>{{COUNT}}</b><span>homes for sale</span></div>
+      <div class="stat"><b>{{MEDIAN}}</b><span>median list price</span></div>
+    </div>
+    <div class="source">{{SOURCE}}</div>
+    <div class="cta">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+      Call Ryan Realty
+    </div>
+  </div>
+  <div class="calling">
+    <div class="status"><span>{{CLOCK}}</span><span></span></div>
+    <div class="avatar" style="background-image:url('{{ROOT}}/public/brand/jax-head-cream.png')"></div>
+    <h2>Ryan Realty</h2>
+    <p>calling&hellip;</p>
+    <div class="number">{{PHONE}}</div>
+    <div class="dots"><i></i><i></i><i></i></div>
+  </div>
+</body>
+</html>

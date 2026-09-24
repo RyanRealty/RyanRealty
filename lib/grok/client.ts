@@ -30,6 +30,13 @@ export const GROK_MODELS = {
    */
   taste: 'grok-4.5',
   /**
+   * Frame judge for authored story films (lib/studio/story). The newest
+   * vision-capable model on the account (grok-4.7, 2026-09, text+image, same
+   * token price as 4.6). Kept separate from `vision` so the Studio's 85-point
+   * bar, calibrated on 4.6, does not move under the listing formats.
+   */
+  judge: 'grok-4.7',
+  /**
    * Transaction document reader (lib/tc/doc-read): transcribes forms and
    * signature lines from page renders. Chosen on the labelled set in
    * scripts/tc-doc-read-eval.ts for accuracy first, then cost.
@@ -69,6 +76,16 @@ export function ticksToUsd(ticks: number | undefined | null): number | null {
   return Math.round(ticks) / 1_000_000_000
 }
 
+/**
+ * The raw tick count xAI returned, untouched. The USD unit is not settled
+ * (lib/studio/spend.ts: text calibrates near 5e-12/tick; image-2.0 matched the
+ * live price grid at 1e-10/tick on 2026-09-23), so ledgers store ticks beside
+ * the rate-card estimate and reconcile against the invoice later.
+ */
+export function rawTicks(ticks: number | undefined | null): number | null {
+  return typeof ticks === 'number' && Number.isFinite(ticks) ? Math.round(ticks) : null
+}
+
 export type GrokModel = (typeof GROK_MODELS)[keyof typeof GROK_MODELS]
 
 export class GrokError extends Error {
@@ -82,8 +99,18 @@ export class GrokError extends Error {
   }
 }
 
+/**
+ * Which xAI team pays. Creative generation (the Studio's story films) can run on
+ * its own team and key, XAI_CREATIVE_API_KEY, with its own prepaid budget, so a
+ * creative batch can never drain the credits production depends on (CRM reply
+ * intent, the broker SMS agent, the CMA pipeline). A creative process sets
+ * GROK_BILLING=creative; without a creative key it falls back to XAI_API_KEY.
+ * On 2026-09-23 one story-film session emptied the shared prepaid balance and
+ * blocked the whole team.
+ */
 export function grokApiKey(): string {
-  const key = process.env.XAI_API_KEY
+  const creative = process.env.GROK_BILLING === 'creative' ? process.env.XAI_CREATIVE_API_KEY?.trim() : ''
+  const key = creative || process.env.XAI_API_KEY
   if (!key?.trim()) {
     throw new GrokError('XAI_API_KEY is not set. Add it to .env.local and Vercel env.', 0, '')
   }
