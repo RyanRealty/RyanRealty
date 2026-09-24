@@ -345,8 +345,12 @@ export function categorizeMail(input: {
     return 'signing_notice'
   }
   const attachments = input.attachments ?? []
+  // Fully executed by its read, or by its file name ("… Fully Executed.pdf",
+  // SkySlope's "_X_" executed marker).
   const executedSale = attachments.find(
-    (a) => SALE_AGREEMENT_NAME.test(attachmentBlob(a)) && a.executionState === 'fully_executed',
+    (a) =>
+      SALE_AGREEMENT_NAME.test(attachmentBlob(a)) &&
+      (a.executionState === 'fully_executed' || /fully[\s_-]*(?:executed|signed)/i.test(a.name ?? '') || /(?:^|[\s_-])X_(?=[A-Z0-9])/.test(a.name ?? '')),
   )
   if (executedSale) return 'executed_agreement'
   if (attachments.some((a) => COUNTER_NAME.test(attachmentBlob(a))) || /counter[\s-]?offer|\bcounter\b/i.test(subject)) {
@@ -662,7 +666,12 @@ export function decideMailFiling(input: {
       reasons.push('our client on one open deal, a contact on others')
       return finish('filed', a.dealId, 'party', a.score)
     }
-    if (!isTransactionCategory(categoryBase) && !facts.attachments.length) {
+    // An agent or title officer on many files sends plenty of mail about none
+    // of them: dropped. A client on several files (selling one home, buying
+    // the next) writing about "the walkthrough" means one of them: a person
+    // picks, so it is queued.
+    const clientOnSeveral = eligible.filter((c) => hasEvidence(c, 'party')).length > 1
+    if (!isTransactionCategory(categoryBase) && !facts.attachments.length && !clientOnSeveral) {
       reasons.push(`general mail from someone on ${eligible.length} open deals, naming none`)
       return finish('not_deal', null, null, 0)
     }
