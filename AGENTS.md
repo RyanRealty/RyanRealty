@@ -19,6 +19,10 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 
 **Done = the served ship class is locally accepted, then one `npm run push` + `deploy:verify` when the app changed.**
 
+**Fresh environment** (no `node_modules`, no git hooks): run `bash scripts/cloud-setup.sh` first. It installs the dependencies, the git hooks and the brand fonts. Claude Code cloud sessions get the same from `.claude/hooks/session-start.sh`.
+
+**After a deploy, check Sentry** for new errors since it went live: org `ryan-realty-llc`, project `ryan-realty-platform` (Claude sessions have the Sentry connector). Server errors report through `sentry.server.config.ts`; browser errors through `lib/observability/client-errors.ts`, which loads the SDK only when an error happens, so the SDK never ships with the page.
+
 Out of scope: `marketing_brain_skills/`, `video_production_skills/`, social posting automation, transaction coordination. Only the public LP website and the CI guardrails that protect it.
 
 ---

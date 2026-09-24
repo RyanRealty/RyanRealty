@@ -364,7 +364,7 @@ PR merged main: `execute_sql` and `apply_migration` are allowed. The repo's
 `mcp__Vibe_Prospecting__*`, `mcp__Claude_Docs__*`,
 `mcp__Cloudflare_Developer_Platform__*`, `mcp__Notion__*`,
 `mcp__Era_Context__*` (these two added on Matt's approval later that day) and
-`mcp__Sentry__*` (ready for when it is connected); `ask` holds the tools in the table; `deny` is empty; and
+`mcp__Sentry__*`; `ask` holds the tools in the table; `deny` is empty; and
 `hooks.SessionStart` runs `.claude/hooks/session-start.sh`
 (section 3). **An agent cannot change this file's permissions on its own:** the
 auto-mode classifier refuses an edit that widens the agent's own permissions or
@@ -397,7 +397,7 @@ and put its send, publish and spend tools in `ask`.
 | Cloudflare Developer Platform | Connected and on. The account has no Workers and R2 is switched off, and no code uses a Cloudflare account (only Stream embed URLs and edge headers), so nothing there can take production down | Always allow |
 | Era Context | Connected and on; Matt's finance app. Basic plan: 100 MCP calls per period, no bank connected yet. Its server instructions ask agents to save facts about the user | Always allow, except the Era rows above. The day it ships a tool that moves money, put that tool in `ask` |
 | Notion | Connected and on; the workspace has no teamspaces yet | Always allow |
-| **Sentry** (not connected) | The SDK is wired (`@sentry/nextjs` 10.42, server and edge, no browser init), but nothing reaches Sentry: `SENTRY_DSN` in the cloud environment points at project 0, a placeholder, and the enterprise map records ingest as dark (INT-026) | Matt connects it (an OAuth grant). Then an agent creates the project and a real DSN, sets it on Vercel, adds the browser init and confirms an event arrives |
+| Sentry | Connected and on. Org `ryan-realty-llc`, project `ryan-realty-platform`. It had received nothing (0 errors in 30 days, 0 spans in 90) because Vercel had no `SENTRY_DSN`; `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` are now set on production. Browser errors load the SDK only when one happens (`lib/observability/client-errors.ts`) | Always allow |
 | **Resend** (not connected) | The app sends email through Resend (package, key or API host in 14 files) | Optional: delivery and bounce lookups. Set its send and broadcast tools to Needs approval |
 
 Counts are `grep -rl` over `app/`, `lib/`, `scripts/`, `components/`,
