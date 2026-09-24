@@ -94,6 +94,7 @@ const ESIGN_DOMAINS: readonly string[] = ['skyslope.com', 'docusign.net', 'docus
 const TRANSACTION_SENDER_DOMAINS: readonly string[] = [
   ...ESIGN_DOMAINS,
   'westerntitle.com',
+  'deschutestitle.com',
   'firstam.com',
   'amerititle.com',
   'fnf.com',
@@ -107,6 +108,23 @@ const TRANSACTION_SENDER_DOMAINS: readonly string[] = [
 
 /** Platforms that give every file its own inbound address ("BeaumontDrive2070260b4@skyslope.com"). */
 const FILE_ALIAS_DOMAINS: readonly string[] = ['skyslope.com']
+
+/**
+ * Mailbox providers anyone can sign up to. An address there is one person; an
+ * address at a company domain is one of that company's staff, and a title
+ * officer's assistant on one file speaks for the office on ten (rule 4).
+ */
+const FREE_MAIL_DOMAINS: readonly string[] = [
+  'gmail.com', 'googlemail.com', 'yahoo.com', 'ymail.com', 'hotmail.com', 'outlook.com', 'live.com', 'msn.com', 'aol.com',
+  'icloud.com', 'me.com', 'mac.com', 'comcast.net', 'att.net', 'sbcglobal.net', 'bendbroadband.com', 'q.com', 'protonmail.com',
+  'proton.me', 'earthlink.net', 'charter.net', 'frontier.com', 'centurylink.net',
+]
+
+/** The one party an address stands for when counting who is on which file: the person, or their company. */
+function companyKey(email: string): string {
+  const dom = domainOf(email)
+  return !dom || domainIn(email, FREE_MAIL_DOMAINS) ? email : `@${dom}`
+}
 
 /** Our own brokers. Their names on an outside address (a platform sending "as" Matt) never identify a file. */
 const HOUSE_PERSON_NAMES: readonly string[] = [
@@ -319,7 +337,9 @@ const SUFFIX_VARIANTS: Record<string, string> = {
 export function mentionsDealStreet(text: string, parsed: ParsedDealAddress): boolean {
   const street = escapeRe(parsed.street)
   if (parsed.directional) {
-    if (new RegExp(`\\b${directionalRe(parsed.directional)}\\.?\\s+${street}\\b`, 'i').test(text)) return true
+    // A two-word name keeps its second word: "NW Newport Ave" is not 1974 NW Newport Hills Dr.
+    const second = parsed.next && !STREET_SUFFIX_WORD.test(parsed.next) ? `\\s*${escapeRe(parsed.next)}` : ''
+    if (new RegExp(`\\b${directionalRe(parsed.directional)}\\.?\\s+${street}${second}\\b`, 'i').test(text)) return true
   }
   if (/^\d/.test(parsed.street) || !parsed.next || parsed.street.length < 4) return false
   // A two-word name ("School House") is also written as one ("Schoolhouse Rd.").
@@ -501,7 +521,7 @@ function nameTokens(raw: string | null | undefined): string[] {
     .replace(/[<(].*$/, '')
     .trim()
   if (!s || s.includes('@')) return []
-  // "Moore, Tonya" is Tonya Moore; "Millard, Trustee" is not a reversed name.
+  // "Officer, Pat" is Pat Officer; "Client, Trustee" is not a reversed name.
   const comma = s.match(/^([^,]+),\s*([^,]+)$/)
   if (comma && !/\b(?:trust|trustees?|llc|inc|jr|sr)\b/i.test(s)) s = `${comma[2]} ${comma[1]}`
   return s
@@ -525,6 +545,20 @@ export function personNameMatches(display: string | null | undefined, known: str
   const i = b.indexOf(a[0])
   const j = b.lastIndexOf(a[a.length - 1])
   return i >= 0 && j > i
+}
+
+/**
+ * The text names this person: first and last name close together ("Pat
+ * Client", "Pat and Lee Client"), or "Last, First". A first or last
+ * name alone never counts.
+ */
+export function personNamedIn(text: string, known: string | null | undefined): boolean {
+  const toks = nameTokens(known)
+  if (toks.length < 2 || !text) return false
+  const first = escapeRe(toks[0])
+  const last = escapeRe(toks[toks.length - 1])
+  if (first.length < 2 || last.length < 3) return false
+  return new RegExp(`\\b${first}\\b[^\\n]{0,40}?\\b${last}\\b|\\b${last},\\s*${first}\\b`, 'i').test(text)
 }
 
 function isHousePerson(display: string | null | undefined): boolean {
@@ -721,7 +755,22 @@ function attachmentBlob(a: MailAttachmentFacts): string {
   return `${a.formName ?? ''} ${a.name ?? ''}`.replace(/[_.-]+/g, ' ')
 }
 
+/**
+ * Oregon's Initial Agency Disclosure Pamphlet: every broker hands it to every
+ * buyer or seller at first contact (OAR 863-015-0215), before there is any
+ * property. It names no transaction; a buyer tour list carrying it is not
+ * disclosure mail (2026-09-24 eval, "Follow-Up: Bluff Dr. Units").
+ */
+const AGENCY_PAMPHLET = /\bagency disclosure\b|\bagency (?:pamphlet|brochure)\b|\binitial agency\b/i
+
+/** By its file name: a packet that also carries an agreement ("Buyer Representation Agreement") is still a form. */
+function isAgencyPamphlet(a: MailAttachmentFacts): boolean {
+  const name = String(a.name ?? '').replace(/[_.-]+/g, ' ')
+  return AGENCY_PAMPHLET.test(name) && !/agreement/i.test(name)
+}
+
 export function isTransactionFormAttachment(a: MailAttachmentFacts): boolean {
+  if (isAgencyPamphlet(a)) return false
   if (a.formNumber || a.formName) return true
   return /agreement|addendum|counter|disclosure|\bpsa\b|\b[bs]co\d*\b|oref|earnest|escrow|closing|settlement|inspection|repair|termination|amendment/i.test(
     attachmentBlob(a),
@@ -733,6 +782,9 @@ export function isTransactionFormAttachment(a: MailAttachmentFacts): boolean {
  * Workspace's "[Notice] …"): they name properties, they are not deal mail.
  */
 const SYSTEM_ALERT_SUBJECT = /^\[(?:expired|deploy|data|preview|alert|cron|loop|seo|ci|health|digest|notice)\b[^\]]*\]/i
+
+/** A CRM's scheduled list of birthdays, anniversaries and home anniversaries. */
+const REMINDER_DIGEST_SUBJECT = /\b(?:birthday|anniversary|home ?(?:i|a)versary)\s+reminders?\b|\b(?:today'?s|upcoming)\s+(?:birthdays|anniversaries)\b/i
 
 const LISTING_ALERT_SUBJECT =
   /\bnew listings?\b|\bupdates? for\b|home search is set|^copy:\s*subscription|\bprice (?:drop|change|reduced)\b|\bopen house(?:s)? (?:this|near)\b|\bhot ?sheet\b|\bmarket (?:update|report)\b/i
@@ -793,19 +845,58 @@ const DEAL_PEOPLE_TALK =
   /\b(?:my|our) (?:buyers?|clients?)\b|\bthe sellers?(?:'s?)?\b|\bshowing (?:on|at|request|requests|time|times|feedback|instructions|appointment|today|tomorrow)\b|\b(?:schedule|book|request|confirm) (?:a )?showing\b|\bsecond showing\b|\bwalk[- ]?through\b/i
 
 /**
+ * The listing's yard sign: installed, down, moved, picked up. Whoever writes
+ * it ("Sign is down", to the sign company, copying the listing broker) is
+ * talking about the listing, not selling us something.
+ */
+const SIGN_TALK =
+  /\bsign (?:is|was) (?:down|up|installed|removed|missing|damaged|gone)\b|\bsign (?:install(?:ation|ed)?|removal|pick ?up)\b|\b(?:install|remove|pick up|put up|take down)(?: the| a| our| your)? (?:yard |hanging |for sale |listing )?sign\b/i
+
+/**
  * The property's own records: service invoices and history, permits, a home
- * warranty, a survey, septic and well reports. A heating company sending "all
- * of the service invoices I have for this address" is deal mail, though the
- * company is on no file.
+ * warranty, a survey, septic and well reports, and an income property's
+ * books. A heating company sending "all of the service invoices I have for
+ * this address", a pump company's "Invoice attached." about the house, and
+ * its property manager's cash-flow sheet are deal mail, though none of them
+ * is on a file.
  */
 const PROPERTY_RECORDS =
-  /\bservice (?:records?|invoices?|history|reports?)\b|\binvoices? for (?:this|the) (?:address|property|home)\b|\bpermits?\b|\bhome warranty\b|\bsurvey\b|\bsepti[c] (?:inspection|report|pump(?:ing)?|certification)\b|\bwell (?:test|report|log|inspection|flow)\b/i
+  /\bservice (?:records?|invoices?|history|reports?)\b|\binvoices?\b|\bpermits?\b|\bhome warranty\b|\bsurvey\b|\bsepti[c] (?:inspection|report|pump(?:ing)?|certification)\b|\bwell (?:test|report|log|inspection|flow)\b|\bcash ?flow\b|\brent roll\b/i
 
-/** A stranger's mail about one of our addresses, written as deal talk or carrying the property's records (subject, and the body the sender wrote). */
-function dealPeopleTalk(subject: string, body: string): boolean {
+/**
+ * A stranger's mail about one of our addresses, written as deal talk or
+ * carrying the property's records: the subject, the body the sender wrote,
+ * and the names of the files attached.
+ */
+function dealPeopleTalk(subject: string, body: string, attachmentNames = ''): boolean {
   if (MARKETING_BODY.test(body)) return false
-  const text = `${subject}\n${stripQuotedHistory(body).slice(0, 2000)}`
-  return DEAL_PEOPLE_TALK.test(text) || PROPERTY_RECORDS.test(text)
+  const text = `${subject}\n${stripQuotedHistory(body).slice(0, 2000)}\n${attachmentNames}`
+  return DEAL_PEOPLE_TALK.test(text) || SIGN_TALK.test(text) || PROPERTY_RECORDS.test(text)
+}
+
+/**
+ * Our own mail written to find business, not to run a deal: a "just listed"
+ * letter to the neighbours, a "considering selling?" note, anything sent
+ * through a CRM's tracked-link mailer. Rebecca's 2354 NW Drouillard
+ * announcements went to 201 neighbours this way (2026-09-24 audit). Our mail
+ * about a file to someone on none (a title officer at a mistyped address, the
+ * owner getting his CMA, the media company) is not this.
+ */
+const PROSPECTING =
+  /\bjust (?:listed|sold)\b|\bnew listing\b|\bexclusive listing\b|\bcoming soon\b|\bneighbou?rs?\b|\b(?:considering|thinking (?:of|about)) selling\b|\bcall (?:me )?today\b|\bprice (?:reduced|reduction|improvement)\b|\bback on (?:the )?market\b/i
+
+/**
+ * Only the words our broker wrote: not the reply quoted under them ("We are
+ * locating the neighbor's only"), and not a vendor's email forwarded with its
+ * unsubscribe footer. Matt's signature runs every link through a CRM tracker,
+ * so a tracked link says nothing.
+ */
+function isProspecting(subject: string, body: string, bulkHeaders: boolean): boolean {
+  if (bulkHeaders) return true
+  const own = stripQuotedHistory(body)
+  const cut = own.search(/^\s*(?:-{3,}\s*forwarded message\s*-{3,}|begin forwarded message:)/im)
+  const written = `${subject}\n${(cut >= 0 ? own.slice(0, cut) : own).slice(0, 4000)}`
+  return MARKETING_BODY.test(written) || PROSPECTING.test(written)
 }
 
 /** Newsletters, promotions and cold outreach say so at the bottom. */
@@ -862,8 +953,10 @@ export function categorizeMail(input: {
   if (input.autoReply || /^(?:automatic reply|auto(?:matic)?[- ]?reply|out of (?:the )?office)\b/i.test(subject.trim())) {
     return 'auto_reply'
   }
-  // Our own machines (the site's Resend domain, the Studio's sandbox) and system notices.
-  if (input.fromHouseSystem || SYSTEM_ALERT_SUBJECT.test(subject.trim())) return 'system_alert'
+  // Our own machines (the site's Resend domain, the Studio's sandbox), system
+  // notices, and a CRM's daily reminder list (a lender's "Daily Birthday
+  // Reminder" names a client and her address; it is no mail about her file).
+  if (input.fromHouseSystem || SYSTEM_ALERT_SUBJECT.test(subject.trim()) || REMINDER_DIGEST_SUBJECT.test(subject)) return 'system_alert'
   const attachments = input.attachments ?? []
   // Fully executed by its read, or by its file name ("… Fully Executed.pdf",
   // SkySlope's "_X_" executed marker).
@@ -888,7 +981,7 @@ export function categorizeMail(input: {
   ) {
     return 'addendum'
   }
-  const hay = `${subject}\n${attachments.map(attachmentBlob).join(' ')}`
+  const hay = `${subject}\n${attachments.filter((a) => !isAgencyPamphlet(a)).map(attachmentBlob).join(' ')}`
   if (/closing (?:statement|disclosure)|settlement statement|\balta\b|\bfunded\b|\brecord(?:ed|ing)\b|final (?:statement|hud)|\bclosing\b|\bclose of escrow\b|\bkeys\b/i.test(hay)) {
     return 'closing'
   }
@@ -898,7 +991,8 @@ export function categorizeMail(input: {
   }
   // Inspections by their kind too: a septic evaluation (Oregon's ESER), radon, sewer scope, pest/WDO, mold.
   if (/\binspection|\brepair|\beser\b|\bseptic\b|\bradon\b|\bsewer scope\b|\bwdo\b|\bpest inspection\b|\bmold\b/i.test(hay)) return 'inspection'
-  if (/\bescrow\b|\btitle\b|\bprelim|wire|\bwt\d{5,}|open order|earnest/i.test(hay)) return 'escrow_title'
+  // Title's own file numbers: Western Title "WT0278291", Deschutes Title "| DE22058".
+  if (/\bescrow\b|\btitle\b|\bprelim|wire|\bwt\d{5,}|\bde\d{5,}\b|open order|earnest|\bem (?:receipt|deposit)\b/i.test(hay)) return 'escrow_title'
   if (/\bloan\b|\blender\b|pre-?approval|\bappraisal|underwrit|clear to close|\bctc\b|mortgage/i.test(hay)) return 'lender'
   return bodyCategory(subject, input.body ?? '', !!input.bulkHeaders) ?? 'general'
 }
@@ -948,6 +1042,45 @@ export function dealOpenAt(deal: DealFacts, sentAt: string): boolean {
     if ((w.start == null || at >= w.start) && (w.end == null || at <= w.end)) return true
   }
   return false
+}
+
+/**
+ * Could the deal have been open at this moment? Open by its dates, or it
+ * carries a cycle with no dates at all (SkySlope's listing record for 2354 NW
+ * Drouillard has none) and the moment falls in the year before its first
+ * dated contract, when that listing was on the market. Only ever used to
+ * notice that our clients have two files going; never to file by itself.
+ */
+export function dealMaybeOpenAt(deal: DealFacts, sentAt: string): boolean {
+  if (dealOpenAt(deal, sentAt)) return true
+  if (!deal.cycles.some((c) => !c.listingDate && !c.acceptanceDate && !c.closeDate && !c.deadDate)) return false
+  const at = t(sentAt)
+  const starts = deal.cycles.map((c) => t(c.acceptanceDate) ?? t(c.listingDate)).filter((n): n is number => n != null)
+  if (at == null || !starts.length) return false
+  const first = Math.min(...starts)
+  return at >= first - 365 * DAY && at <= first
+}
+
+/** Our side of a file: we list it (it has a listing cycle) or we represent its buyer. */
+function fileSide(deal: DealFacts): 'sale' | 'purchase' {
+  return deal.cycles.some((c) => c.kind === 'listing') ? 'sale' : 'purchase'
+}
+
+// "The <client> purchase", "buying", "the down payment": the buyer's side. Not
+// "purchase agreement" or "purchase price", which every sale agreement says.
+// The clients' own loan is the purchase too ("sold our loan", "a jumbo loan
+// amount"); "the buyers' loan" on the home they sell is not theirs.
+const PURCHASE_WORDS =
+  /\bpurchas(?:e|es|ing|ed)\b(?!\s+(?:and\s+sale\s+)?(?:agreement|price|contract))|\bbuying\b|\bdown payment\b|\b(?:our|your|my) (?:loan|mortgage|lender)\b|\bloan amount\b|\bjumbo\b|\bpre-?approv/i
+// "The sale", "selling", "showings", "open house", "listing": the seller's
+// side. Not "sold": "CC Mortgage sold our loan" is the buyer's loan.
+const SALE_WORDS = /\bsale of\b|\bthe sale\b|\bselling\b|\bshowings?\b|\bopen house\b|\blistings?\b/i
+
+/** The side of a deal a message's own words are on, when they are on one only. */
+function sideOfText(text: string): 'sale' | 'purchase' | null {
+  const p = PURCHASE_WORDS.test(text)
+  const s = SALE_WORDS.test(text)
+  return p && !s ? 'purchase' : s && !p ? 'sale' : null
 }
 
 /** What the message itself says about which cycle it belongs to. */
@@ -1064,11 +1197,21 @@ const W = { escrow: 100, mls: 90, thread: 80, address: 60, street: 30, subject: 
  * and rule 1 filed the email there).
  */
 function dealText(facts: MailFacts): string {
-  const names = facts.attachments.map((a) => a.name).join(' ')
+  const names = attachmentNamesText(facts.attachments, ' ')
   const attText = facts.attachments
     .map((a) => (isComparablesReport(a) ? comparablesSubject(a) ?? '' : (a.text ?? '').slice(0, 6000)))
     .join('\n')
   return `${facts.subject}\n${facts.body}\n${names}\n${attText}`.slice(0, 60_000)
+}
+
+/**
+ * Attachment file names as words: "Ryan Realty_20702 Beaumont Dr, Bend.pdf"
+ * reads "Ryan Realty 20702 Beaumont Dr, Bend.pdf". An underscore is a word
+ * character, so "_20702" never started an address and the sign company's two
+ * proofs named one property, not two.
+ */
+function attachmentNamesText(attachments: readonly MailAttachmentFacts[], sep: string): string {
+  return attachments.map((a) => String(a.name ?? '').replace(/_+/g, ' ')).join(sep)
 }
 
 /** What a message says about its cycle, for pickCycleForMail. */
@@ -1105,7 +1248,8 @@ export function decideMailFiling(input: {
     bulkHeaders: facts.bulkHeaders,
   })
   const full = dealText(facts)
-  const namesText = `${facts.subject}\n${facts.attachments.map((a) => a.name).join('\n')}`
+  const attachmentNames = attachmentNamesText(facts.attachments, '\n')
+  const namesText = `${facts.subject}\n${attachmentNames}`
   const participants = addressesOf([...facts.from, ...facts.to, ...facts.cc])
   // The test-party mailboxes (admin@, marketing@) also get Google Workspace
   // notices and CRM test sends. They stand for a test file's client only on
@@ -1113,8 +1257,12 @@ export function decideMailFiling(input: {
   if (!/\[TC TEST\b/i.test(facts.subject)) for (const alias of TEST_PARTY_ALIASES) participants.delete(alias)
   // A machine writing to a client is not the client writing (a security
   // notice, a receipt, an alert): its recipients are not evidence. Nor are an
-  // alert's, an auto-reply's or a system notice's.
-  const fromMachine = facts.from.length > 0 && facts.from.every((e) => isAutomatedSender(e) || isHouseSystemSender(e))
+  // alert's, an auto-reply's or a system notice's. An e-sign platform's
+  // no-reply is the exception: it sends our broker's documents to our client
+  // ("Paul Stevenson shared some documents with you." from SkySlope, to the
+  // seller, copying Paul), so who it went to is who the deal is.
+  const fromMachine =
+    facts.from.length > 0 && facts.from.every((e) => (isAutomatedSender(e) && !domainIn(e, ESIGN_DOMAINS)) || isHouseSystemSender(e))
   const recipientsSilent =
     categoryBase === 'system_alert' ||
     categoryBase === 'auto_reply' ||
@@ -1129,23 +1277,34 @@ export function decideMailFiling(input: {
   )
   const subjectProperty = propertyInSubject(facts.subject)
   const parsedById = new Map(deals.map((d) => [d.dealId, parseDealAddress(d.address, d.city)]))
-  // The files the subject names. Exactly one: the email is about that file,
-  // whatever else its body lists (a title officer's two offices, a Flexmls
-  // report's "also viewed" homes), so it is no digest.
+  // The files the subject names. Exactly one by its full address, MLS or
+  // escrow number: the email is about that file, whatever else its body lists
+  // (a title officer's two offices, a Flexmls report's "also viewed" homes),
+  // so it is no digest. A street alone does not exempt a list: "Follow-Up:
+  // Bluff Dr. Units + New Options" was a buyer's tour of five properties.
   const subjectDeals = deals.filter((d) => {
     const p = parsedById.get(d.dealId) ?? null
     return subjectIdentifiesDeal(facts.subject, d, p) || (!!p && mentionsDealStreet(facts.subject, p))
   })
-  const digest = subjectDeals.length !== 1 && listedAddresses(facts.subject, facts.body).length >= 3
+  const subjectIdentified = deals.filter((d) => subjectIdentifiesDeal(facts.subject, d, parsedById.get(d.dealId) ?? null))
+  const digest = subjectIdentified.length !== 1 && listedAddresses(facts.subject, facts.body).length >= 3
   const knownPeople = new Set(deals.flatMap((d) => [...d.partyEmails, ...d.contactEmails]).map(normalizeEmail))
   const isKnownSender = (e: string) => knownPeople.has(normalizeEmail(e)) || domainIn(e, TRANSACTION_SENDER_DOMAINS)
   const reasons: string[] = []
+
+  // The words the sender wrote: the subject and the body above any quoted
+  // reply (a forward keeps what it forwards).
+  const ownText = `${facts.subject}\n${(FORWARD_SUBJECT.test(facts.subject) ? facts.body : stripQuotedHistory(facts.body)).slice(0, 4000)}`
 
   const scored: MailCandidate[] = []
   // Per deal: the people (emails, and names) who put it on the list; and whether the sender is one of them.
   const peopleOn = new Map<string, Set<string>>()
   const senderOn = new Set<string>()
   const senderNamedOn = new Set<string>()
+  // Files our clients on this email are parties to: by address, by the name
+  // beside an address, or named in what the sender wrote ("Mutual Clients |
+  // <both buyers' names>").
+  const clientOn = new Set<string>()
   for (const d of deals) {
     const evidence: string[] = []
     let score = 0
@@ -1225,6 +1384,14 @@ export function decideMailFiling(input: {
       evidence.push('name')
     }
     peopleOn.set(d.dealId, people)
+    const partyNames = d.partyNames ?? []
+    if (
+      partyHit.length ||
+      named.some((p) => partyNames.some((n) => personNameMatches(p.name, n))) ||
+      partyNames.some((n) => personNamedIn(ownText, n))
+    ) {
+      clientOn.add(d.dealId)
+    }
     if (score > 0) scored.push({ dealId: d.dealId, score, evidence })
   }
   const hasEvidence = (c: MailCandidate, ...kinds: string[]) => kinds.some((k) => c.evidence.includes(k))
@@ -1294,8 +1461,7 @@ export function decideMailFiling(input: {
       reasons.push('bulk mail carrying one deal escrow number')
       return finish('filed', escrowOnly[0].dealId, 'escrow', escrowOnly[0].score)
     }
-    const identified = deals.filter((d) => subjectIdentifiesDeal(facts.subject, d, parsedById.get(d.dealId) ?? null))
-    if (quiet || categoryBase === 'listing_alert' || digest || identified.length !== 1) {
+    if (quiet || categoryBase === 'listing_alert' || digest || subjectIdentified.length !== 1) {
       reasons.push(
         categoryBase === 'auto_reply'
           ? 'auto-reply'
@@ -1325,56 +1491,6 @@ export function decideMailFiling(input: {
     return finish('ambiguous', null, null, top.score)
   }
 
-  // Rule 2 — the thread already lives on a deal, and this email names no other property.
-  if (thread && byId.has(thread.dealId)) {
-    const other = scored.find((c) => c.dealId !== thread.dealId && hasEvidence(c, 'address', 'street'))
-    const anchored = scored.find((c) => c.dealId === thread.dealId)
-    if (!other) {
-      reasons.push(`same thread as mail already filed (${thread.method})`)
-      return finish('filed', thread.dealId, 'thread', anchored?.score ?? W.thread)
-    }
-    reasons.push('thread is filed elsewhere but this email names another deal address')
-  }
-
-  // Rule 3 — the street address of exactly one deal (house number + street
-  // name), then the street name alone ("SW 45th", "Beaumont Drive").
-  const knownCorrespondent = direction !== 'inbound' || facts.from.some((e) => knownPeople.has(normalizeEmail(e)))
-  const transactionMail =
-    isTransactionCategory(categoryBase) || categoryBase === 'signing_notice' || facts.attachments.some(isTransactionFormAttachment)
-  const outsideRecipients = [...facts.to, ...facts.cc].map(normalizeEmail).filter((e) => e.includes('@') && !isHouseAddress(e))
-  for (const kind of ['address', 'street'] as const) {
-    const hits = scored.filter((c) => hasEvidence(c, kind))
-    if (!hits.length) continue
-    if (kind === 'street' && !isTransactionCategory(categoryBase) && categoryBase !== 'signing_notice' && !knownCorrespondent) {
-      reasons.push('names a street of one of our files, but a stranger wrote it and it is not transaction mail')
-      return finish('not_deal', null, null, 0)
-    }
-    // A full address alone does not make ordinary mail deal mail: a vendor's
-    // pitch, a magazine's ad sales, our own "just listed" letters to the
-    // neighbours (2026-09-24 audit). It files when someone on the file is on
-    // it, when a title company, e-sign platform or showing system sent it,
-    // when it reads as a transaction (a new appraiser or lender) or as the
-    // deal's people talking (another agent arranging a showing), or when a
-    // broker filed it by hand ("[Deal: …]").
-    if (kind === 'address' && !transactionMail && !hits.some((h) => hasEvidence(h, 'party', 'contact', 'name')) && !/^\s*\[deal:/i.test(facts.subject)) {
-      if (direction === 'inbound' && !facts.from.some(isKnownSender) && !dealPeopleTalk(facts.subject, facts.body)) {
-        reasons.push('names an address of one of our files, but a stranger wrote it and it is not transaction mail')
-        return finish('not_deal', null, null, 0)
-      }
-      if (direction === 'outbound' && !outsideRecipients.some(isKnownSender)) {
-        reasons.push('our own mail naming an address of one of our files, to no one on any file')
-        return finish('not_deal', null, null, 0)
-      }
-    }
-    const top = hits[0]
-    if (hits.length === 1 || top.score > hits[1].score) {
-      reasons.push(kind === 'address' ? 'street address of one deal' : 'street name of one deal, no house number')
-      return finish('filed', top.dealId, 'address', top.score)
-    }
-    reasons.push(`${kind === 'address' ? 'street address' : 'street name'} of more than one deal`)
-    return finish('ambiguous', null, null, top.score)
-  }
-
   // The name people call a file by: its bare street ("Nordic", "School
   // House"), or its MLS subdivision ("Valhalla Heights") when exactly one
   // file open on the send date carries it.
@@ -1391,16 +1507,163 @@ export function decideMailFiling(input: {
   }
   // distinctive: a bare name of six letters or two words ("Nordic", "School
   // House"), never a short common word ("Test", "Bluff") when nothing else says
-  // the mail is about a transaction.
-  const callsByName = (d: DealFacts, distinctive = false) => {
+  // the mail is about a transaction. A body is read for the bare street only:
+  // a broker's signature names her neighbourhood ("Northwest Crossing
+  // Specialist") on every email she writes.
+  const callsByName = (d: DealFacts, distinctive = false, text = namesText, subdivisions = true) => {
     const p = parsedById.get(d.dealId) ?? null
     const bare = p ? bareStreetName(p) : null
-    if (p && bare && (!distinctive || bare.length >= 6 || bare.includes(' ')) && mentionsBareStreet(namesText, p)) return true
+    if (p && bare && (!distinctive || bare.length >= 6 || bare.includes(' ')) && mentionsBareStreet(text, p)) return true
+    if (!subdivisions) return false
     return (d.subdivisions ?? []).some((raw) => {
       const s = usableSubdivision(raw)
       const owners = s ? subdivisionOwners.get(s.toLowerCase()) : undefined
-      return !!s && owners?.length === 1 && owners[0] === d && mentionsSubdivision(namesText, s)
+      return !!s && owners?.length === 1 && owners[0] === d && mentionsSubdivision(text, s)
     })
+  }
+  // A numbered street with its suffix ("7th Street Inspection" among a
+  // client's four files): too common to name a file among all of ours, enough
+  // among the few one client is on.
+  const callsByNumberedStreet = (d: DealFacts, text: string) => {
+    const p = parsedById.get(d.dealId) ?? null
+    if (!p || !/^\d/.test(p.street) || !p.next || !STREET_SUFFIX_WORD.test(p.next)) return false
+    return new RegExp(`\\b${escapeRe(p.street)}\\s+(?:${SUFFIX_VARIANTS[p.next] ?? escapeRe(p.next)})\\b`, 'i').test(text)
+  }
+  // The subject names a property that is not this file ("Re: 909 NW Delaware"
+  // from someone on the Beaumont file): the email is about that property.
+  const subjectNamesAnother = (d: DealFacts) => {
+    if (!subjectProperty) return false
+    const p = parsedById.get(d.dealId) ?? null
+    if (!p) return true
+    return !subjectNamesDeal(subjectProperty, p) && !subjectMisnamesDeal(facts.subject, subjectProperty, p)
+  }
+  const located = scored.filter((c) => hasEvidence(c, 'address', 'street'))
+
+  // Rule 1b — our clients on two files. A client selling one home and buying
+  // the next is on both, and so is everyone working either deal with them:
+  // who is on the email cannot say which it is about, and neither can the
+  // thread it sits in. Only what the email says can: the street it calls the
+  // property by ("are you back in your Drouillard home"), or the side it is
+  // on ("the <client> purchase" is the file where we represent the buyers).
+  // An email that says neither, or both, goes to a person. The 2026-09-24
+  // eval filed Western Title's "released for recording" on the thread's file,
+  // a check-in about the listing on the purchase, and "the <client> purchase"
+  // on a third file one title assistant was on.
+  const clientFiles = deals.filter((d) => clientOn.has(d.dealId) && dealMaybeOpenAt(d, facts.sentAt) && !subjectNamesAnother(d))
+  if (!located.length && clientFiles.length > 1 && (!thread || clientFiles.some((d) => d.dealId === thread.dealId))) {
+    const scoreOf = (d: DealFacts) => scored.find((c) => c.dealId === d.dealId)?.score ?? W.party
+    const called = clientFiles.filter(
+      (d) => callsByName(d) || callsByName(d, false, ownText, false) || callsByNumberedStreet(d, `${namesText}\n${ownText}`),
+    )
+    if (called.length === 1) {
+      reasons.push(`our clients are on ${clientFiles.length} open files; the email calls one by its street or subdivision`)
+      return finish('filed', called[0].dealId, 'address', scoreOf(called[0]))
+    }
+    // Someone the email talks about, not someone on it, who is on only one of
+    // the files: the lender named in the body is on the purchase only.
+    const onEmail = (facts.people ?? []).map((p) => p.name).filter((n): n is string => !!n)
+    const talkedAbout = (d: DealFacts) =>
+      [...(d.partyNames ?? []), ...(d.contactNames ?? [])].filter(
+        (n) => personNamedIn(ownText, n) && !onEmail.some((p) => personNameMatches(p, n) || personNameMatches(n, p)),
+      )
+    const byPerson = called.length
+      ? []
+      : clientFiles.filter((d) =>
+          talkedAbout(d).some((n) =>
+            clientFiles.every((o) => o === d || ![...(o.partyNames ?? []), ...(o.contactNames ?? [])].some((m) => personNameMatches(m, n) || personNameMatches(n, m))),
+          ),
+        )
+    if (byPerson.length === 1) {
+      reasons.push(`our clients are on ${clientFiles.length} open files; the email talks about someone on only one of them`)
+      return finish('filed', byPerson[0].dealId, 'party', scoreOf(byPerson[0]))
+    }
+    const side = called.length || byPerson.length ? null : sideOfText(ownText)
+    const onSide = side ? clientFiles.filter((d) => fileSide(d) === side) : []
+    if (onSide.length === 1) {
+      reasons.push(`our clients are on ${clientFiles.length} open files; the email is about their ${side}`)
+      return finish('filed', onSide[0].dealId, 'party', scoreOf(onSide[0]))
+    }
+    reasons.push(
+      called.length > 1
+        ? `our clients are on ${clientFiles.length} open files and the email calls more than one by name`
+        : `our clients are on ${clientFiles.length} open files and the email names none of them`,
+    )
+    return finish('ambiguous', null, null, Math.max(...clientFiles.map(scoreOf)))
+  }
+
+  // Rule 2 — the thread already lives on a deal, and this email names no other property.
+  if (thread && byId.has(thread.dealId)) {
+    const other = scored.find((c) => c.dealId !== thread.dealId && hasEvidence(c, 'address', 'street'))
+    const anchored = scored.find((c) => c.dealId === thread.dealId)
+    if (!other) {
+      reasons.push(`same thread as mail already filed (${thread.method})`)
+      return finish('filed', thread.dealId, 'thread', anchored?.score ?? W.thread)
+    }
+    reasons.push('thread is filed elsewhere but this email names another deal address')
+  }
+
+  // Rule 3 — the street address of exactly one deal (house number + street
+  // name), then the street name alone ("SW 45th", "Beaumont Drive"). When the
+  // email names several of our files, the one its subject names is the one it
+  // is about: "Envelope completed: Nordic Ave Offer Letter" carries a sale
+  // agreement that also names the buyers' own home, 2354 NW Drouillard.
+  const knownCorrespondent = direction !== 'inbound' || facts.from.some((e) => knownPeople.has(normalizeEmail(e)))
+  const transactionMail =
+    isTransactionCategory(categoryBase) || categoryBase === 'signing_notice' || facts.attachments.some(isTransactionFormAttachment)
+  const bySubject = located.length > 1 ? located.filter((c) => hasEvidence(c, 'subject')) : []
+  const addressHits = scored.filter((c) => hasEvidence(c, 'address'))
+  const pick: { kind: 'address' | 'street'; hits: MailCandidate[] } | null =
+    bySubject.length === 1
+      ? { kind: hasEvidence(bySubject[0], 'address') ? 'address' : 'street', hits: bySubject }
+      : addressHits.length
+        ? { kind: 'address', hits: addressHits }
+        : located.length
+          ? { kind: 'street', hits: located }
+          : null
+  if (pick) {
+    const { kind, hits } = pick
+    const top = hits[0]
+    const tied = hits.length > 1 && !(top.score > hits[1].score)
+    // Two of our files named alike ("proofs attached for the two installs"): a person picks, whoever wrote it.
+    if (kind === 'address' && tied) {
+      reasons.push('street address of more than one deal')
+      return finish('ambiguous', null, null, top.score)
+    }
+    if (kind === 'street' && !isTransactionCategory(categoryBase) && categoryBase !== 'signing_notice' && !knownCorrespondent) {
+      reasons.push('names a street of one of our files, but a stranger wrote it and it is not transaction mail')
+      return finish('not_deal', null, null, 0)
+    }
+    // A full address alone does not make ordinary mail deal mail: a vendor's
+    // pitch, a magazine's ad sales, our own "just listed" letters to the
+    // neighbours (2026-09-24 audit). It files when someone on the file is on
+    // it, when a title company, e-sign platform or showing system sent it,
+    // when it reads as a transaction (a new appraiser or lender), as the
+    // deal's people talking (another agent arranging a showing, the sign
+    // being down) or as the property's records (a pump company's invoice),
+    // or when a broker filed it by hand ("[Deal: …]"). Our own mail naming
+    // the address files unless it was written to find business.
+    if (kind === 'address' && !transactionMail && !hits.some((h) => hasEvidence(h, 'party', 'contact', 'name')) && !/^\s*\[deal:/i.test(facts.subject)) {
+      if (direction === 'inbound' && !facts.from.some(isKnownSender) && !dealPeopleTalk(facts.subject, facts.body, attachmentNames)) {
+        reasons.push('names an address of one of our files, but a stranger wrote it and it is not transaction mail')
+        return finish('not_deal', null, null, 0)
+      }
+      if (direction === 'outbound' && isProspecting(facts.subject, facts.body, facts.bulkHeaders)) {
+        reasons.push('our own marketing mail naming an address of one of our files')
+        return finish('not_deal', null, null, 0)
+      }
+    }
+    if (!tied) {
+      reasons.push(
+        bySubject.length === 1
+          ? 'names several of our files; the subject names this one'
+          : kind === 'address'
+            ? 'street address of one deal'
+            : 'street name of one deal, no house number',
+      )
+      return finish('filed', top.dealId, 'address', top.score)
+    }
+    reasons.push('street name of more than one deal')
+    return finish('ambiguous', null, null, top.score)
   }
 
   // Rule 3b — our own transaction mail calling one file by its street alone:
@@ -1428,13 +1691,10 @@ export function decideMailFiling(input: {
     if (hasEvidence(c, 'party', 'contact')) return true
     return hasEvidence(c, 'name') && (senderNamedOn.has(c.dealId) || transactionMail)
   })
-  const namesOther = (c: MailCandidate) => {
-    if (!subjectProperty) return false
-    const p = parsedById.get(c.dealId) ?? null
-    if (!p) return true
-    return !subjectNamesDeal(subjectProperty, p) && !subjectMisnamesDeal(facts.subject, subjectProperty, p)
-  }
-  const eligible = open.filter((c) => !namesOther(c))
+  const eligible = open.filter((c) => {
+    const d = byId.get(c.dealId)
+    return !!d && !subjectNamesAnother(d)
+  })
   const methodFor = (c: MailCandidate): MailMethod => {
     if (hasEvidence(c, 'party')) return 'party'
     if (hasEvidence(c, 'contact')) return 'contact'
@@ -1464,9 +1724,13 @@ export function decideMailFiling(input: {
     // other agent, by name, among a TC firm's several): that file. Only for
     // transaction mail, or when that person wrote it: a title officer's
     // holiday invitation reaching one client is not mail about that client's file.
+    // A company counts as one: Western Title's escrow assistant on one file
+    // writes for the escrow officer on sixteen ("Balance of Down Payment" went
+    // to the assistant's one file in the 2026-09-24 eval).
+    const keysOf = (c: MailCandidate) => new Set([...(peopleOn.get(c.dealId) ?? [])].map(companyKey))
     const count = new Map<string, number>()
-    for (const c of eligible) for (const k of peopleOn.get(c.dealId) ?? []) count.set(k, (count.get(k) ?? 0) + 1)
-    const unique = eligible.filter((c) => [...(peopleOn.get(c.dealId) ?? [])].some((k) => count.get(k) === 1))
+    for (const c of eligible) for (const k of keysOf(c)) count.set(k, (count.get(k) ?? 0) + 1)
+    const unique = eligible.filter((c) => [...keysOf(c)].some((k) => count.get(k) === 1))
     if (unique.length === 1 && (transactionMail || senderOn.has(unique[0].dealId))) {
       reasons.push(`on ${eligible.length} open deals; someone on the email is on only one of them`)
       return finish('filed', unique[0].dealId, methodFor(unique[0]), unique[0].score)
@@ -1492,8 +1756,11 @@ export function decideMailFiling(input: {
   // Rule 5 — transaction mail with no deal: keep it, grouped by the property it names.
   // An e-sign completion for a property ("Envelope completed: Sellers
   // Counteroffer Rejection - 1450 Revere Ave") is a transaction record too.
+  // A broker's own "[Deal: 1405 NW Newport Ave] Fwd: …" says it is deal mail
+  // for a property that has no file yet: it waits in the queue with that property.
   const transactionForm = facts.attachments.some(isTransactionFormAttachment)
-  if ((isTransactionCategory(categoryBase) || categoryBase === 'signing_notice') && (transactionForm || subjectProperty)) {
+  const filedByHand = /^\s*\[deal:/i.test(facts.subject) && !!subjectProperty
+  if (((isTransactionCategory(categoryBase) || categoryBase === 'signing_notice') && (transactionForm || subjectProperty)) || filedByHand) {
     reasons.push(subjectProperty ? `transaction mail for ${subjectProperty}, no deal on file` : 'transaction documents, no deal on file')
     return finish('unfiled_transaction', null, null, 0)
   }

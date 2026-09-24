@@ -55,6 +55,7 @@ import {
   messageKeyFor,
   parseAddressList,
   pdfParts,
+  otherAttachmentNames,
   sentAtOf,
   threadKeyFor,
 } from '@/lib/tc/gmail-message'
@@ -447,7 +448,10 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
     threadId = full.threadId ?? threadId
     const body = extractBody(full.payload)
     const names = pdfParts(full.payload).map((p) => ({ name: p.filename }))
-    const f2 = factsFromHeaders(full, body, names)
+    // The other files' names reach the rules too (never stored, never read):
+    // "Cash Flow 52678 Golden Astor.xlsx" says what the email is about.
+    const others = otherAttachmentNames(full.payload).map((name) => ({ name }))
+    const f2 = factsFromHeaders(full, body, [...names, ...others])
     const d2 = decideMailFiling({ facts: f2, deals: universe.deals, thread: anchor })
     const transactionNames = names.some((n) => isTransactionFormAttachment(n))
     // An e-sign completion's PDFs are the executed documents, whatever the
@@ -466,7 +470,7 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
     // Pass 3: read the PDFs. Their text can carry the address or escrow number
     // the subject left out, and it says whether a form is fully executed.
     const read = names.length ? await readAttachments(gmail, full, STORED.has(d2.status) || esign || fromDealPerson) : []
-    const f3: MailFacts = { ...f2, attachments: names.map((n) => read.find((r) => r.ref.filename === n.name)?.facts ?? n) }
+    const f3: MailFacts = { ...f2, attachments: [...names.map((n) => read.find((r) => r.ref.filename === n.name)?.facts ?? n), ...others] }
     internalAt = f3.sentAt
     let decision = decideMailFiling({ facts: f3, deals: universe.deals, thread: anchor })
     if (input.dryRun) {

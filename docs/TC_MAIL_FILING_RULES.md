@@ -27,13 +27,14 @@ content is silent and exactly one open file fits.
 
 | # | Rule | Files to | Notes |
 |---|---|---|---|
-| 0 | **Noise never files.** List mail (List-Unsubscribe, Precedence: bulk), auto-replies, listing alerts ("16 new listings for…", "Copy: Subscription…"), system notices ("[Expired]…", "[Deploy]…", Google's "[Notice]…"), **our own machines** (anything from `mail.ryan-realty.com`: lead notices, CMAs, alerts, newsletters, the Vault's own signing emails; anything from `resend.dev`: the Studio's drafts), and **digests**: three or more street addresses listed as content. | nothing | A subject naming exactly one of our files (address, street, MLS or escrow number) is never a digest, and letterhead addresses (a suite after them, or on their own line beside a phone or email) never count toward the three. Bulk mail carrying exactly one file's escrow number files by rule 1; bulk mail whose subject names exactly one file by full address or MLS number goes on to rules 1 to 5, which still refuse a stranger's pitch. Our own machines and system notices are never lifted. |
+| 0 | **Noise never files.** List mail (List-Unsubscribe, Precedence: bulk), auto-replies, listing alerts ("16 new listings for…", "Copy: Subscription…"), system notices ("[Expired]…", "[Deploy]…", Google's "[Notice]…"), a CRM's reminder list ("Daily Birthday Reminder" names a client and her address), **our own machines** (anything from `mail.ryan-realty.com`: lead notices, CMAs, alerts, newsletters, the Vault's own signing emails; anything from `resend.dev`: the Studio's drafts), and **digests**: three or more street addresses listed as content. | nothing | A subject naming exactly one of our files by full address, MLS or escrow number is never a digest (a street alone is not enough: "Follow-Up: Bluff Dr. Units + New Options" was a buyer's tour of five properties), and letterhead addresses (a suite after them, or on their own line beside a phone or email) never count toward the three. Bulk mail carrying exactly one file's escrow number files by rule 1; bulk mail whose subject names exactly one file by full address or MLS number goes on to rules 1 to 5, which still refuse a stranger's pitch. Our own machines and system notices are never lifted. |
 | 1 | **Escrow or MLS number** of exactly one file, anywhere in the subject, body, attachment names or attachment text. | that file, any stage | Escrow numbers need 6+ characters with 4+ digits; MLS numbers never match inside a longer number. A number in the subject outweighs one in the body. **A comparables report** (CMA, BPO, appraisal: by file name or its first page) contributes only the property it is about, never its comps' numbers or addresses. Two files → queue. |
+| 1b | **Our clients on two open files** (selling one home, buying the next), and the email names no property: the people on it, and the thread it sits in, cannot pick. Only what the email says can: the street it calls one of those files by, in the subject, a file name or the words its sender wrote ("are you back in your Drouillard home"), or the subdivision in the subject or a file name, or a numbered street with its suffix ("7th Street Inspection" among one investor's four files); else someone the email talks about, not someone on it, who is on only one of those files (the purchase's lender, named in the body); else the side it is on ("the <client> purchase", "buying", "the down payment", "our loan", "a jumbo loan amount" → the file where we represent the buyers; "selling", "showings", "open house", "listing" → the file we list; "sold" is neither, "CC Mortgage sold our loan"). | that file | Clients = parties on the file by email, by the name beside their address, or named first-and-last in what the sender wrote ("Mutual Clients \| Pat Client / Lee Client"). A file counts while it could be open: open by its dates, or it has a cycle with no dates (SkySlope's listing record often has none) and the email falls in the year before its first contract. Names both, or neither, and no side (or both sides) → queue. Runs only when the thread, if any, sits on one of those files. |
 | 2 | **Same thread** as email already filed (RFC References root, or the Gmail thread). | the thread's file | Unless this email names a different file (address, street, escrow or MLS number): the property wins. If it does not name the thread's own file too, that file is not even a candidate on the thread's word (Supra reuses one thread per sender); if it names both, the thread breaks the tie. |
-| 3 | **Street address**: house number + street name ("909 NW Delaware" or "909 Delaware"). Then the street alone ("SW 45th", "Beaumont Drive"), a SkySlope file address ("BeaumontDrive2070260b4@skyslope.com"), or the subject's street with a house number one keystroke off ("2731 Ordway" for 2732 Ordway Ave), but only in the subject, attachment names or recipients, and only for transaction mail, an e-sign notice, or mail from someone on one of our files. | that file, any stage | Directionals match spelled out or short ("3480 Southwest 45th" is 3480 SW 45th); two-word names match with or without the space ("Schoolhouse" is School House). The city breaks a tie between same-numbered streets; the property in the subject beats one quoted in a forwarded chain. Still tied → queue. **A full address alone does not make ordinary mail deal mail**: it files when someone on that file is on it (by email or by name), when a title company, e-sign platform, showing, MLS or listing-report system (Supra, ShowingTime, Flexmls, ListTrac) sent it, when it reads as a transaction, when it is the deal's people talking ("my clients", "the sellers", a showing) or the property's records (service invoices, permits, septic and well reports), or when a broker filed it by hand ("[Deal: …]"). Otherwise (a vendor's pitch, our own "just listed" letters to people on no file) it is not deal mail. |
+| 3 | **Street address**: house number + street name ("909 NW Delaware" or "909 Delaware"). Then the street alone ("SW 45th", "Beaumont Drive"), a SkySlope file address ("BeaumontDrive2070260b4@skyslope.com"), or the subject's street with a house number one keystroke off ("2731 Ordway" for 2732 Ordway Ave), but only in the subject, attachment names or recipients, and only for transaction mail, an e-sign notice, or mail from someone on one of our files. | that file, any stage | Directionals match spelled out or short ("3480 Southwest 45th" is 3480 SW 45th); two-word names match with or without the space ("Schoolhouse" is School House), and keep both words after a directional ("NW Newport Ave" is not 1974 NW Newport Hills Dr). A file name reads with its underscores as spaces ("Ryan Realty_20702 Beaumont Dr, Bend.pdf" names 20702 Beaumont Dr). The city breaks a tie between same-numbered streets; the property in the subject beats one quoted in a forwarded chain, and when the email names several of our files the one its subject names is the one it is about ("Envelope completed: Nordic Ave Offer Letter" carries an offer letter naming the buyers' own home on another of our files). Two files named alike → queue, whoever wrote it ("proofs attached for the two installs"). Still tied → queue. **A full address alone does not make ordinary mail deal mail**: it files when someone on that file is on it (by email or by name), when a title company, e-sign platform, showing, MLS or listing-report system (Supra, ShowingTime, Flexmls, ListTrac) sent it, when it reads as a transaction, when it is the deal's people talking ("my clients", "the sellers", a showing, the yard sign being down or installed) or the property's records (invoices, service history, permits, septic and well reports, an income property's cash flow or rent roll, read from the subject, the words the sender wrote and the attached files' names, spreadsheets included), or when a broker filed it by hand ("[Deal: …]"). A stranger's other mail (a vendor's pitch, a magazine's ad sales) is not deal mail. **Our own mail** naming the address files, to whomever it went (the title officer at a mistyped address, the owner's CMA, the media company), unless what the broker wrote reads as marketing: "just listed", "new listing", "coming soon", "neighbors", "considering selling", "call today", "price reduced", "back on market", an unsubscribe line. Quoted replies and forwarded mail never count toward that, and a tracked link says nothing (Matt's signature tracks every link). |
 | 3b | **Our own mail naming one file by its street alone or its subdivision** ("[Ordway forward] OREF 022A Buyers Repair Addendum 2", "Re: More Clarification on Nordic PA"): a broker wrote it (or an e-sign platform sent it as the broker), and either it carries a transaction form or reads as one, or it went only between our own brokers; and its subject or a file name calls exactly one file by its bare street name or its MLS subdivision. | that file, any stage | The bare name is the street without number or suffix ("Nordic", "School House"). Numbered streets ("45th") and common words (Main, Park, Old, School, Test…) never count alone; between brokers with no transaction words the name needs six letters or two words ("Bluff" does not). A subdivision counts only when exactly one file open on the send date carries it, and never a placeholder ("N/A"), a city, or one ordinary word ("Railroad"). |
-| 4 | **Who it touched**, only when the content names no property: our client (buyer/seller on the file) or a file contact (title, escrow, lender, other agent, TC firm) on exactly **one open** file, by email, or by the display name beside their address when the file knows them only by name (SkySlope imports other agents with no email). When they are on several: step two, the file the subject or a file name calls by its bare street or subdivision ("Home Warranty - Nordic", "Valhalla Heights - HOA docs"); step three, on transaction mail or when that person wrote it, the one file a person on the email is on and the others are not. | that file | Open = live, or closed/dead within 120 days of close. A name needs first and last name, never a first name alone, never our own brokers' names, never a no-reply sender's display name; one person is one person however each file knows them. A subject naming a property that is not on the candidate file never files by sender, except the file's own house number followed by a word that is no street ("19496 Septic Invoice") or its street with a mistyped number ("2372 NW Ordway"). A no-reply sender's recipients are never evidence on ordinary mail. Still several: transaction mail or mail with attachments → the model picks among those files (below), else queue; anything else → not deal mail. |
-| 5 | **Transaction mail for a property with no file** (offer, counter, escrow, title, inspection, disclosure, closing, or an e-sign completion, with a transaction form attached or a property in the subject). | the mail queue, grouped by property | The daily sweep opens a file when the group proves a deal is under way (escrow opened, settlement statement, closing notice, fully executed agreement). Offers alone never open a file. |
+| 4 | **Who it touched**, only when the content names no property: our client (buyer/seller on the file) or a file contact (title, escrow, lender, other agent, TC firm) on exactly **one open** file, by email, or by the display name beside their address when the file knows them only by name (SkySlope imports other agents with no email). When they are on several: step two, the file the subject or a file name calls by its bare street or subdivision ("Home Warranty - Nordic", "Valhalla Heights - HOA docs"); step three, on transaction mail or when that person wrote it, the one file a person on the email is on and the others are not; a company counts as one person here (Western Title's escrow assistant on one file writes for the escrow officer on sixteen), a free mailbox (Gmail, Yahoo, Outlook, iCloud…) as its owner. | that file | Open = live, or closed/dead within 120 days of close. A name needs first and last name, never a first name alone, never our own brokers' names, never a no-reply sender's display name; one person is one person however each file knows them. A subject naming a property that is not on the candidate file never files by sender, except the file's own house number followed by a word that is no street ("19496 Septic Invoice") or its street with a mistyped number ("2372 NW Ordway"). A no-reply sender's recipients are never evidence on ordinary mail, except an e-sign platform's: SkySlope's "Paul Stevenson shared some documents with you." goes from its no-reply to our client, and that client is the file. Still several: transaction mail or mail with attachments → the model picks among those files (below), else queue; anything else → not deal mail. |
+| 5 | **Transaction mail for a property with no file** (offer, counter, escrow, title, inspection, disclosure, closing, or an e-sign completion, with a transaction form attached or a property in the subject), and a broker's own "[Deal: 1405 NW Newport Ave] …" for a property with no file. | the mail queue, grouped by property | The daily sweep opens a file when the group proves a deal is under way (escrow opened, settlement statement, closing notice, fully executed agreement). Offers alone never open a file. |
 
 ### What the email is about (category)
 
@@ -45,8 +46,11 @@ OREF form name can read like an alert ("Envelope completed: Appraisal Price
 Change"); a listing alert, never when a transaction form is attached; counter;
 offer (a sale agreement itself, never an "Addendum to Sale Agreement"); addendum,
 amendment or termination; closing; disclosure (including HOA documents, CC&Rs, a
-reserve study); inspection (including its kinds: a septic evaluation or ESER,
-radon, sewer scope, WDO/pest, mold); escrow and title; lender.
+reserve study, but never Oregon's Initial Agency Disclosure Pamphlet, which every
+broker hands every buyer before there is a property); inspection (including its
+kinds: a septic evaluation or ESER, radon, sewer scope, WDO/pest, mold); escrow and
+title (including title's own file numbers, Western Title's "WT0278291" and
+Deschutes Title's "\| DE22058", and an "EM receipt"); lender.
 
 When those are silent, the body decides, from the part its sender wrote: quoted
 lines ("> …") and everything after "On <date> … wrote:", "-----Original
@@ -348,20 +352,96 @@ title and lender replies the v3 digest rule had dropped. Accepted cost: a sign
 installer, a photographer or an order confirmation about one of our listings,
 from someone on no file and in ordinary words, no longer files.
 
+**Then the golden eval (2026-09-24).** The first v4 draft, replayed over all 1,522
+labeled messages (`npm run tc:mail-eval`, dry run), filed six messages on the wrong
+file (v3: three) and newly missed 35 it used to file. Every one was read and fixed
+as a class, each with a test shaped like the message (`lib/tc/mail-rules.test.ts`,
+"golden eval" blocks), before v4 shipped:
+
+- **Our clients on two files (rule 1b).** One couple was selling 2354 NW
+  Drouillard and buying 2680 NW Nordic; another selling 64350 Old Bend Redmond
+  Hwy and buying 3480 SW 45th. Who was on the email picked a file: a check-in about
+  the listing ("are you back in your Drouillard home … future showings") went to the
+  purchase, and "the <client> purchase" went to a third file because Western Title's
+  escrow assistant was on only that one. Now only the email's content picks between
+  the clients' files; it names neither or both, it queues. Western Title's "We
+  received the lenders wire and have released for recording!" in the "Mutual Clients"
+  thread names neither, so it queues rather than following its thread.
+- **The subject names the one it is about (rule 3).** "Envelope completed: Nordic Ave
+  Offer Letter" carries the buyers' letter naming their own home, 2354 NW Drouillard,
+  and filed there (v3 did too).
+- **A company is one person** when rule 4 looks for the one file someone is on.
+- **The full-address gate was too wide.** Our own mail to people on no file is deal
+  mail unless it reads as marketing (the title officer at a mistyped address, the
+  owner's CMA, the media company, the Golden Astor commission thread): 15 messages on
+  52678 Golden Astor Road and the Huntington media forward came back. Deschutes Title
+  is a title company, "| DE22058" and "EM receipt" are escrow words, and invoices,
+  cash-flow sheets and a yard sign being down are the property's own business. The
+  rules now read the names of every attached file, not only PDFs (names only, never
+  stored).
+- **Two of our files named alike queue** whoever wrote it (the sign company's proofs
+  for two installs); "Ryan Realty_20702 Beaumont Dr, Bend.pdf" names 20702 Beaumont
+  (an underscore hid the number).
+- **Smaller:** a street-only subject no longer exempts a list from being a digest (a
+  buyer's tour of five properties); Oregon's Initial Agency Disclosure Pamphlet is no
+  disclosure; a CRM's "Daily Birthday Reminder" is noise; an e-sign platform's
+  no-reply keeps its recipients as evidence; "NW Newport Ave" is not "NW Newport
+  Hills"; a broker's "[Deal: …]" for a property with no file waits in the queue.
+
+| Golden eval, 1,522 rows | v3 | v4 first draft | v4 as shipped |
+|---|---|---|---|
+| Precision | 97.0% | 98.1% | 98.9% |
+| Recall | 89.6% | 92.6% | 94.8% |
+| Wrong file | 3 | 6 | 1 |
+| Filed that should not be | 28 | 14 | 11 |
+| Better / worse than v3 | | 92 / 41 | 100 / 22 |
+
+The 22 rows worse than v3, each read:
+
+- 9 are the Studio's own drafts from `onboarding@resend.dev` ("Schoolhouse Rd v1 —
+  listing video that beats the AI field"), our own machine (change 10 above); the
+  hand-judged Studio drafts in the same set are labeled not deal mail.
+- 7 are not about the listing: six HAVEN Homes + Lifestyles ad-sales emails ("19496
+  Tumalo Reservoir Rd stood out as a fit for our Central Oregon Living section", "I
+  can bring the full-page rate down to $295") and a Follow Up Boss forward of our own
+  home-value email ("it is most likely a marketing or system generated email"). The
+  hand-judged copies of the same pitches in Paul's mailbox are labeled not deal mail.
+- 3 queue because the email names both of the clients' files ("Saturday (5/10)
+  Updates" and "Tuesday Updates", with a *Drouillard* section and a *Nordic* section)
+  or neither (a lender's "Appraisal report.pdf" large-file notice).
+- 2 are the sign company's replies in Paul's "new sign needed" thread for 5663 SW
+  Impala (a proof named "Ryan Realty_Paul Stevenson_5663 SW Impala Ave,
+  Redmond.pdf"); they file with Paul's own order on that listing. Their label (not
+  deal mail) disagrees with the label on the same company's proofs for 19496 Tumalo
+  (19c2f26db0a023d1, "file"), which now queues because it names two listings.
+- 1 is "RE: Schoolhouse Closing" (19e17a4288ec1322), labeled 20702 Beaumont Dr and
+  filed on 56111 School House Rd: "I sent out estimated statements for closing on
+  5/15", School House's close date. The label is the error.
+
 Still open after v4:
 
 - "Envelope completed: Price Change Form": the PDF's text layer is
   font-garbled, so no rule can read the address; the document reader (page
   images) can.
 - A message about two of our files (a status note with "Nordic" and
-  "Drouillard" sections, a Supra notice naming two showings) queues or drops:
+  "Drouillard" sections, a Supra notice naming two showings) queues:
   `tc_mail_messages` carries one `deal_id`.
 - A PDF whose name does not look transactional is read only when the message is
   already kept or is an e-sign completion ("ORE Residential Input - ODS_….pdf"
   naming 1974 NW Newport Hills Dr was never opened).
 - Rows filed by v2 or v3 that v4 would not file (182 copies of one Drouillard
   mail-merge) stay filed until the backfill's reconcile step is run: indexing
-  never unfiles a filed row.
+  never unfiles a filed row. They also anchor their threads: a virtual-staging
+  vendor's replies on 5663 SW Impala still file by thread (3 golden rows) until
+  that thread's first message is decided again.
+- Two labels in the golden set disagree with the message (see the list above
+  for 19e17a4288ec1322 and the sign company): the net sheet replies on 5663 SW
+  Impala (19db5eedbf71e860, 19fa610af4350706, labeled "queue") are Paul's net
+  sheet for his Impala sellers, whose first message in the thread names "5663
+  SW Impala" and "My seller is considering a new price", and they file there.
+  The "Mutual Clients" reply (199ced8da06e36cb, labeled 2680 NW Nordic) is from
+  Western Title, the escrow on 2354 NW Drouillard, releasing "for recording";
+  it queues.
 
 ## Every message reviewed
 

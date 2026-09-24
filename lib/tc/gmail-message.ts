@@ -154,6 +154,30 @@ export function pdfParts(payload: gmail_v1.Schema$MessagePart | undefined): Atta
   return out
 }
 
+// A mail client's embedded signature and logo images ("image001.png", "Outlook-abc.png").
+const INLINE_IMAGE_NAME = /^(?:image\d*|outlook-[\w-]+|att\d+|logo|signature[\w-]*)\.(?:png|jpe?g|gif|bmp)$/i
+
+/**
+ * The names of the files attached that are not PDFs: a property manager's
+ * "Cash Flow 52678 Golden Astor.xlsx", a Word addendum. Names only (the rules
+ * read what a file is called, never its bytes); embedded signature images are
+ * left out.
+ */
+export function otherAttachmentNames(payload: gmail_v1.Schema$MessagePart | undefined): string[] {
+  const out: string[] = []
+  const walk = (p?: gmail_v1.Schema$MessagePart) => {
+    if (!p) return
+    const name = (p.filename || '').trim()
+    const mime = (p.mimeType || '').toLowerCase()
+    if (name && p.body?.attachmentId && !mime.includes('pdf') && !name.toLowerCase().endsWith('.pdf') && !INLINE_IMAGE_NAME.test(name)) {
+      out.push(name)
+    }
+    for (const child of p.parts ?? []) walk(child)
+  }
+  walk(payload)
+  return out
+}
+
 export function sentAtOf(msg: gmail_v1.Schema$Message): string {
   const internal = Number(msg.internalDate ?? 0)
   if (internal > 0) return new Date(internal).toISOString()
