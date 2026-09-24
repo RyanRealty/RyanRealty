@@ -22,6 +22,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_MAILBOXES, getGmailFor } from '@/lib/crm/gmail'
 import {
   MAIL_RULES_VERSION,
+  dealOpenAt,
   decideMailFiling,
   filesToOpenFromQueue,
   mentionsDealAddress,
@@ -30,12 +31,19 @@ import {
   normalizeEmail,
   offerFromMail,
   parseDealAddress,
+  pickCycleForMail,
   type DealFacts,
   type MailAttachmentFacts,
   type MailDecision,
   type MailFacts,
   type ThreadAnchor,
 } from '@/lib/tc/mail-rules'
+import {
+  applyModelStageDecision,
+  askModelStage,
+  candidateDealsForModel,
+  worthModelStage,
+} from '@/lib/tc/mail-model-stage'
 import {
   INDEX_METADATA_HEADERS,
   bulkSignals,
@@ -229,6 +237,12 @@ export type IndexResult = {
   decision: MailDecision | null
   subject: string | null
   error?: string
+  /** Gmail thread id (not the RFC thread_key) — recorded on the review row. */
+  threadId?: string | null
+  /** ISO. The message's own internalDate, recorded on the review row. */
+  internalAt?: string | null
+  /** Set when lib/tc/mail-model-stage.ts ran on this message; drives the review row's stage/reason. */
+  modelStage?: { confidence: number; reason: string; filed: boolean } | null
 }
 
 type ReadAttachment = {
@@ -305,12 +319,7 @@ async function readAttachments(
   return out
 }
 
-/**
- * Index one broker-mailbox message. Cheap first: headers and the snippet
- * decide whether the full message is worth reading. Mail the rules call
- * ordinary is counted, not stored.
- */
-export async function indexGmailMessage(input: {
+export type IndexInput = {
   gmail: gmail_v1.Gmail
   mailbox: string
   brokerSlug: string
@@ -318,11 +327,27 @@ export async function indexGmailMessage(input: {
   universe: MailUniverse
   meta?: gmail_v1.Schema$Message | null
   dryRun?: boolean
+  /**
+   * Ask lib/tc/mail-model-stage.ts about a leftover `not_deal` /
+   * `unfiled_transaction` message before giving up on it. Off by default: it
+   * is one paid Grok call per leftover message, so a caller opts in
+   * deliberately (never on a dry run — the model stage does not run then).
+   */
+  modelStage?: boolean
   sb?: SB
-}): Promise<IndexResult> {
+}
+
+/**
+ * Index one broker-mailbox message. Cheap first: headers and the snippet
+ * decide whether the full message is worth reading. Mail the rules call
+ * ordinary is counted, not stored.
+ */
+async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
   const sb = input.sb ?? createServiceClient()
   const { gmail, universe } = input
   let messageKey = `gmail:${input.gmailId}`
+  let threadId: string | null = null
+  let internalAt: string | null = null
   try {
     const meta =
       input.meta?.payload?.headers?.length
@@ -335,12 +360,14 @@ export async function indexGmailMessage(input: {
               metadataHeaders: [...INDEX_METADATA_HEADERS],
             })
           ).data
+    threadId = meta.threadId ?? null
     const headers = meta.payload?.headers
     const base = factsFromHeaders(meta, meta.snippet ?? '', [])
     messageKey = base.messageKey
+    internalAt = base.sentAt
     const threadKey = threadKeyFor(headers, meta.threadId)
     const anchor = await threadAnchor(sb, threadKey, meta.threadId ?? null, messageKey)
-    const empty = (decision: MailDecision | null, status: IndexResult['status']): IndexResult => ({
+    const empty = (decision: MailDecision | null, status: IndexResult['status'], modelStage: IndexResult['modelStage'] = null): IndexResult => ({
       messageKey,
       status,
       stored: false,
@@ -349,6 +376,9 @@ export async function indexGmailMessage(input: {
       offerId: null,
       decision,
       subject: base.subject,
+      threadId,
+      internalAt,
+      modelStage,
     })
 
     // Pass 1: headers + snippet. Bulk mail stops here.
@@ -360,6 +390,7 @@ export async function indexGmailMessage(input: {
 
     // Pass 2: full body + attachment names.
     const full = (await gmail.users.messages.get({ userId: 'me', id: input.gmailId, format: 'full' })).data
+    threadId = full.threadId ?? threadId
     const body = extractBody(full.payload)
     const names = pdfParts(full.payload).map((p) => ({ name: p.filename }))
     const f2 = factsFromHeaders(full, body, names)
@@ -371,11 +402,48 @@ export async function indexGmailMessage(input: {
     // the subject left out, and it says whether a form is fully executed.
     const read = names.length ? await readAttachments(gmail, full, STORED.has(d2.status)) : []
     const f3: MailFacts = { ...f2, attachments: names.map((n) => read.find((r) => r.ref.filename === n.name)?.facts ?? n) }
-    const decision = decideMailFiling({ facts: f3, deals: universe.deals, thread: anchor })
+    internalAt = f3.sentAt
+    let decision = decideMailFiling({ facts: f3, deals: universe.deals, thread: anchor })
     if (input.dryRun) {
       return { ...empty(decision, decision.status), dealId: decision.dealId }
     }
-    if (!STORED.has(decision.status)) return empty(decision, decision.status)
+
+    // Model stage: a leftover not_deal/unfiled_transaction that still looks
+    // transactional gets one structured call before it is finally left or
+    // queued. Never runs on a dry run (above) and never files on its own
+    // word below 0.9 confidence — it only ever files or queues, never dismisses.
+    let modelStage: IndexResult['modelStage'] = null
+    let decidedBy: 'system' | 'model' = 'system'
+    if (
+      input.modelStage &&
+      worthModelStage({ status: decision.status, category: decision.category, attachments: f3.attachments, propertyHint: decision.propertyHint })
+    ) {
+      try {
+        const candidates = candidateDealsForModel(universe.deals, f3.sentAt, dealOpenAt)
+        const modelDecision = await askModelStage({ facts: f3, candidates })
+        const applied = applyModelStageDecision(modelDecision)
+        modelStage = { confidence: modelDecision.confidence, reason: modelDecision.reason, filed: false }
+        if (applied.action === 'file') {
+          const deal = universe.deals.find((d) => d.dealId === applied.dealId)
+          const cycleId = deal ? pickCycleForMail(deal.cycles, f3.sentAt, decision.category) : null
+          if (deal && cycleId) {
+            decision = { ...decision, status: 'filed', dealId: applied.dealId, cycleId, method: null, reasons: [...decision.reasons, `model: ${modelDecision.reason}`] }
+            decidedBy = 'model'
+            modelStage = { ...modelStage, filed: true }
+          }
+        } else if (applied.action === 'queue') {
+          decision = {
+            ...decision,
+            status: applied.status,
+            dealId: applied.dealId ?? decision.dealId,
+            reasons: [...decision.reasons, `model: ${modelDecision.reason}`],
+          }
+        }
+      } catch (err) {
+        console.warn('[mail-index] model stage failed (fail-open)', err instanceof Error ? err.message : err)
+      }
+    }
+    if (!STORED.has(decision.status)) return empty(decision, decision.status, modelStage)
 
     // ── keep the row ──
     const ref = { mailbox: input.mailbox, broker: input.brokerSlug, gmail_id: input.gmailId, thread_id: full.threadId ?? null }
@@ -389,7 +457,7 @@ export async function indexGmailMessage(input: {
     const threadIds = [...new Set([...((existing?.gmail_thread_ids as string[] | null) ?? []), ...(full.threadId ? [full.threadId] : [])])]
     if (existing && existing.decided_by !== 'system') {
       await sb.from('tc_mail_messages').update({ gmail_refs: refs, gmail_thread_ids: threadIds, updated_at: new Date().toISOString() }).eq('id', existing.id)
-      return { ...empty(decision, 'kept_manual'), stored: true, dealId: existing.deal_id ?? null }
+      return { ...empty(decision, 'kept_manual', modelStage), stored: true, dealId: existing.deal_id ?? null }
     }
     const attachmentsJson = read.map((r) => ({
       name: r.facts.name,
@@ -428,7 +496,7 @@ export async function indexGmailMessage(input: {
       match_detail: { reasons: decision.reasons, candidates: decision.candidates, anchor },
       property_hint: decision.propertyHint,
       rules_version: MAIL_RULES_VERSION,
-      decided_by: 'system',
+      decided_by: decidedBy,
       decided_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -441,7 +509,7 @@ export async function indexGmailMessage(input: {
     const rowId = String(saved.id)
 
     if (decision.status !== 'filed' || !decision.dealId || !decision.cycleId) {
-      return { ...empty(decision, decision.status), stored: true }
+      return { ...empty(decision, decision.status, modelStage), stored: true }
     }
 
     // ── file it ──
@@ -467,6 +535,9 @@ export async function indexGmailMessage(input: {
       offerId: filed.offerId,
       decision,
       subject: f3.subject,
+      threadId,
+      internalAt,
+      modelStage,
     }
   } catch (err) {
     return {
@@ -479,8 +550,95 @@ export async function indexGmailMessage(input: {
       decision: null,
       subject: null,
       error: err instanceof Error ? err.message : String(err),
+      threadId,
+      internalAt,
+      modelStage: null,
     }
   }
+}
+
+/**
+ * A short, sanitized reason for tc_mail_reviews. A not_deal/bulk row never
+ * quotes the subject or body: `decideMailFiling` always pushes a generic,
+ * count-only reason as the LAST entry before a not_deal/bulk return (see
+ * lib/tc/mail-rules.ts), so taking the tail of `reasons` is safe by
+ * construction — never join the whole array, which can carry an earlier,
+ * subject-derived entry for a message that turned out transactional instead.
+ */
+export function reviewReasonFor(input: { status: IndexResult['status']; decision: MailDecision | null; error?: string; deals: readonly DealFacts[] }): string {
+  const { status, decision, error, deals } = input
+  if (status === 'error') return `error: ${(error ?? 'unknown error').slice(0, 280)}`
+  const base = decision?.reasons.at(-1) ?? 'no reason recorded'
+  if (status === 'filed' || status === 'kept_manual') {
+    const deal = decision?.dealId ? deals.find((d) => d.dealId === decision.dealId) : undefined
+    return `${status}: ${base}${deal ? ` on ${deal.address}` : ''}`.slice(0, 400)
+  }
+  return `${status}: ${base}`.slice(0, 400)
+}
+
+/** Which part of the pipeline decided this outcome. */
+export function reviewStageFor(decision: MailDecision | null, modelStage: IndexResult['modelStage'] | undefined): 'rules' | 'thread' | 'model' {
+  if (modelStage) return 'model'
+  if (decision?.method === 'thread') return 'thread'
+  return 'rules'
+}
+
+export type ReviewStage = 'rules' | 'thread' | 'model' | 'person'
+
+/**
+ * Record a review row for every outcome `indexGmailMessage` returns — the
+ * "someone reviewed this" ledger an OREA audit needs. Fail-open and cheap:
+ * one upsert, never blocks the caller. `stage` overrides the automatic
+ * rules/thread/model inference — callers that file a message a PERSON chose
+ * (fileIndexedMessageToDeal) always pass `'person'`, since that message's
+ * `decision.method` may itself read 'thread' from the rules pass underneath.
+ */
+async function writeMailReview(input: {
+  sb: SB
+  mailbox: string
+  gmailId: string
+  universe: MailUniverse
+  result: IndexResult
+  stage?: ReviewStage
+  reason?: string
+}): Promise<void> {
+  const { sb, result } = input
+  const row = {
+    mailbox: input.mailbox,
+    gmail_id: input.gmailId,
+    thread_id: result.threadId ?? null,
+    internal_at: result.internalAt ?? null,
+    status: result.status,
+    deal_id: result.dealId,
+    message_key: result.stored ? result.messageKey : null,
+    reason: input.reason ?? reviewReasonFor({ status: result.status, decision: result.decision, error: result.error, deals: input.universe.deals }),
+    stage: input.stage ?? reviewStageFor(result.decision, result.modelStage),
+    rules_version: MAIL_RULES_VERSION,
+    reviewed_at: new Date().toISOString(),
+  }
+  const { error } = await sb.from('tc_mail_reviews').upsert(row, { onConflict: 'mailbox,gmail_id' })
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * Index one broker-mailbox message and record a review row for the outcome
+ * (docs/TC_MAIL_FILING_RULES.md "Every message reviewed"): whatever the
+ * result — filed, queued, kept_manual, not_deal, bulk, or an error — the
+ * (mailbox, gmail_id) gets a tc_mail_reviews row, so an audit can see the
+ * message was looked at even when it left no other trace. Dry runs never
+ * write a review (nothing was decided for real).
+ */
+export async function indexGmailMessage(input: IndexInput): Promise<IndexResult> {
+  const sb = input.sb ?? createServiceClient()
+  const result = await computeIndexResult({ ...input, sb })
+  if (!input.dryRun) {
+    try {
+      await writeMailReview({ sb, mailbox: input.mailbox, gmailId: input.gmailId, universe: input.universe, result })
+    } catch (err) {
+      console.warn('[mail-index] review write failed (fail-open)', err instanceof Error ? err.message : err)
+    }
+  }
+  return result
 }
 
 async function fileMessageDocuments(input: {
@@ -912,6 +1070,164 @@ export async function sweepQuery(input: {
   return res
 }
 
+// ── every message reviewed ───────────────────────────────────────────────
+
+/** The Gmail ids in this page the review ledger already has for this mailbox. */
+export async function indexedReviewIds(sb: SB, mailbox: string, ids: readonly string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  for (let i = 0; i < ids.length; i += 500) {
+    const chunk = ids.slice(i, i + 500)
+    if (!chunk.length) continue
+    const { data, error } = await sb.from('tc_mail_reviews').select('gmail_id').eq('mailbox', mailbox).in('gmail_id', chunk)
+    if (error) {
+      // Before the migration lands (or is refreshed into PostgREST's schema
+      // cache), the table reads as "does not exist" — nothing is known yet,
+      // which is the same as an empty set, not a reason to stop the walk.
+      if (/does not exist|schema cache/i.test(error.message)) continue
+      throw new Error(`indexed review ids: ${error.message}`)
+    }
+    for (const r of data ?? []) out.add(String(r.gmail_id))
+  }
+  return out
+}
+
+export type ReviewMailboxResult = {
+  mailbox: string
+  /** Messages `users.messages.list` has returned for this mailbox's walk so far, cumulative across resumed runs. */
+  listed: number
+  /** Messages actually indexed for this mailbox's walk so far, cumulative across resumed runs (already-reviewed ids are skipped, not re-counted). */
+  reviewed: number
+  /** Already-reviewed ids skipped THIS run. */
+  skipped: number
+  byStatus: Record<string, number>
+  errors: number
+  /** False when the deadline stopped the walk mid-page: the caller must not treat it as finished. */
+  complete: boolean
+  /** True once `users.messages.list` is exhausted for this mailbox — the whole history has a review row. */
+  finished: boolean
+}
+
+/**
+ * Walk EVERY message in one mailbox — no query except `-in:chats`, no spam or
+ * trash excluded beyond Gmail's own defaults — and record a
+ * `tc_mail_reviews` row for each one via `indexGmailMessage`. Resumes from
+ * `tc_mail_review_cursors`; a message already in the ledger for this mailbox
+ * is skipped (batch-checked 500 ids at a time, the same page size
+ * `users.messages.list` returns). Stops at `deadline` and saves the cursor;
+ * `finished_at` is set only once the listing itself runs out of pages.
+ */
+export async function reviewMailbox(input: {
+  mailbox: string
+  deadline?: number
+  concurrency?: number
+  modelStage?: boolean
+  /** Stop after indexing this many messages this run (a smoke-test cap; a dry run never persists a cursor). */
+  limit?: number
+  /** READ-ONLY: decide every message but write nothing — no tc_mail_messages row, no tc_mail_reviews row, no cursor progress. */
+  dryRun?: boolean
+  /** Called after each page of up to 500 messages, cumulative counts so far — a caller's progress log. */
+  onPage?: (progress: { mailbox: string; listed: number; reviewed: number; skipped: number; errors: number }) => void
+  sb?: SB
+  gmailFor?: (email: string) => gmail_v1.Gmail | null
+  index?: typeof indexGmailMessage
+  indexed?: typeof indexedReviewIds
+  universe?: MailUniverse
+}): Promise<ReviewMailboxResult> {
+  const sb = input.sb ?? createServiceClient()
+  const gmailFor = input.gmailFor ?? ((email: string) => getGmailFor(email, READONLY))
+  const index = input.index ?? indexGmailMessage
+  const indexed = input.indexed ?? indexedReviewIds
+  const concurrency = input.concurrency ?? SWEEP_CONCURRENCY
+  const res: ReviewMailboxResult = { mailbox: input.mailbox, listed: 0, reviewed: 0, skipped: 0, byStatus: {}, errors: 0, complete: true, finished: false }
+  const gmail = gmailFor(input.mailbox)
+  if (!gmail) return res
+  let processedThisRun = 0
+
+  const { data: cursorRow } = await sb
+    .from('tc_mail_review_cursors')
+    .select('page_token, listed, reviewed, started_at, finished_at')
+    .eq('mailbox', input.mailbox)
+    .maybeSingle()
+  if (cursorRow?.finished_at) {
+    res.finished = true
+    res.listed = Number(cursorRow.listed ?? 0)
+    res.reviewed = Number(cursorRow.reviewed ?? 0)
+    return res
+  }
+
+  const universe = input.universe ?? (await loadMailUniverse(sb))
+  const brokerSlug = CRM_MAILBOXES.find((m) => m.email === input.mailbox)?.slug ?? 'matt'
+  const late = () => (input.deadline != null && Date.now() > input.deadline) || (input.limit != null && processedThisRun >= input.limit)
+  let listed = Number(cursorRow?.listed ?? 0)
+  let reviewed = Number(cursorRow?.reviewed ?? 0)
+  const startedAt = cursorRow?.started_at ?? new Date().toISOString()
+  let pageToken: string | undefined = cursorRow?.page_token ?? undefined
+  let exhausted = false
+
+  const saveCursor = async (finished: boolean) =>
+    sb.from('tc_mail_review_cursors').upsert(
+      {
+        mailbox: input.mailbox,
+        page_token: finished ? null : (pageToken ?? null),
+        listed,
+        reviewed,
+        started_at: startedAt,
+        finished_at: finished ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'mailbox' },
+    )
+
+  do {
+    if (late()) {
+      res.complete = false
+      break
+    }
+    const list = await gmail.users.messages.list({ userId: 'me', q: '-in:chats', includeSpamTrash: false, maxResults: 500, pageToken })
+    const page = (list.data.messages ?? []).filter((m): m is gmail_v1.Schema$Message & { id: string } => !!m.id)
+    listed += page.length
+    const known = await indexed(sb, input.mailbox, page.map((m) => m.id))
+    const todo = page.filter((m) => !known.has(m.id))
+    res.skipped += page.length - todo.length
+
+    let next = 0
+    const worker = async () => {
+      while (next < todo.length) {
+        if (late()) {
+          res.complete = false
+          return
+        }
+        const m = todo[next++]
+        processedThisRun++
+        try {
+          const r = await index({ gmail, mailbox: input.mailbox, brokerSlug, gmailId: m.id, universe, modelStage: input.modelStage, dryRun: input.dryRun, sb })
+          reviewed++
+          res.byStatus[r.status] = (res.byStatus[r.status] ?? 0) + 1
+        } catch (err) {
+          res.errors++
+          console.warn('[reviewMailbox] index error', m.id, err instanceof Error ? err.message : err)
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(concurrency, todo.length) }, worker))
+    if (!res.complete) {
+      res.listed = listed
+      res.reviewed = reviewed
+      if (!input.dryRun) await saveCursor(false)
+      return res
+    }
+    pageToken = list.data.nextPageToken ?? undefined
+    if (!pageToken) exhausted = true
+    if (!input.dryRun) await saveCursor(exhausted)
+    input.onPage?.({ mailbox: input.mailbox, listed, reviewed, skipped: res.skipped, errors: res.errors })
+  } while (pageToken)
+
+  res.listed = listed
+  res.reviewed = reviewed
+  res.finished = exhausted
+  return res
+}
+
 /** Gmail search terms for one deal: address variants, escrow and MLS numbers. */
 export function dealSearchTerms(deal: DealFacts): string[] {
   const terms = new Set<string>()
@@ -1109,6 +1425,34 @@ export async function fileIndexedMessageToDeal(input: {
     fromName: parseAddressList(header(full.payload?.headers, 'From'))[0]?.name || null,
     attachmentsJson,
   })
+  // A person answering the queue (or the auto-open-from-mail sweep, whose
+  // actor is system:mail-index) is its own review stage: this message was
+  // already reviewed by the rules once, and this row records the final call.
+  try {
+    await writeMailReview({
+      sb,
+      mailbox: ref.mailbox!,
+      gmailId: ref.gmail_id,
+      universe,
+      stage: input.actor.startsWith('system:') ? 'rules' : 'person',
+      reason: `filed: ${decision.reasons.at(-1) ?? `by ${input.actor}`} on ${deal.address}`.slice(0, 400),
+      result: {
+        messageKey: String(row.message_key),
+        status: 'filed',
+        stored: true,
+        dealId: deal.dealId,
+        documents: filed.documents,
+        offerId: null,
+        decision,
+        subject: facts.subject,
+        threadId: full.threadId ?? null,
+        internalAt: facts.sentAt,
+        modelStage: null,
+      },
+    })
+  } catch (err) {
+    console.warn('[mail-index] review write failed (fail-open)', err instanceof Error ? err.message : err)
+  }
   return { ok: true, documents: filed.documents }
 }
 

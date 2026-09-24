@@ -8,7 +8,7 @@
  *       readable pages of our own copies that matched no template.
  *   npx tsx scripts/tc-form-templates.ts check --doc <uuid>
  *       Check one document and print what it found.
- *   npx tsx scripts/tc-form-templates.ts check-all [--concurrency 3] [--limit N]
+ *   npx tsx scripts/tc-form-templates.ts check-all [--concurrency 3] [--limit N] [--shard i/n]
  *       Check every live PDF not yet checked by the current checker version.
  */
 import 'dotenv/config'
@@ -91,7 +91,9 @@ async function main() {
       for (const d of data ?? []) done.add(String(d.document_id))
       if (!data || data.length < 1000) break
     }
-    const queue = docs.filter((d) => !done.has(d)).slice(0, Number(arg('--limit') ?? 1e9))
+    // --shard i/n: this process takes every n-th document (run n processes to use n cores).
+    const [shard, shards] = (arg('--shard') ?? '0/1').split('/').map(Number)
+    const queue = docs.filter((d, i) => !done.has(d) && i % shards === shard).slice(0, Number(arg('--limit') ?? 1e9))
     console.log(`documents ${docs.length}, checked ${done.size}, to check ${queue.length}`)
     let n = 0
     let failed = 0

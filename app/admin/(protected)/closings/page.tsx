@@ -18,10 +18,47 @@ import {
 } from '@/lib/data/tc/closings'
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { countMailQueue } from '@/lib/data/tc/mail-reads'
+import { getMailCoverage, type MailCoverageRow } from '@/lib/data/tc/mail-coverage'
 import { formatDate } from '@/lib/format/date'
 import { BROKER_FILE_EMAIL, dealVisibleToBroker, fileNameFromBrokerSlug } from '@/lib/tc/deal-scope'
-import { Button, HiddenField, QueueRow, SectionHead, TextField, VerdictLine } from '@/components/admin/v2'
+import { Button, HiddenField, QueueRow, ReportGrid, SectionHead, TextField, VerdictLine, type ReportColumn } from '@/components/admin/v2'
 import { NewFileForm } from './NewFileForm'
+
+const COVERAGE_COLUMNS: ReportColumn[] = [
+  { key: 'mailbox', label: 'Mailbox' },
+  { key: 'total', label: 'Gmail total', numeric: true },
+  { key: 'reviewed', label: 'Reviewed', numeric: true },
+  { key: 'coverage', label: 'Coverage', numeric: true },
+  { key: 'filed', label: 'Filed', numeric: true },
+  { key: 'queued', label: 'Queued', numeric: true },
+  { key: 'notDeal', label: 'Not deal', numeric: true },
+  { key: 'bulk', label: 'Bulk', numeric: true },
+  { key: 'errors', label: 'Errors', numeric: true },
+  { key: 'last', label: 'Last reviewed' },
+  { key: 'walk', label: 'Walk' },
+]
+
+function coverageRow(r: MailCoverageRow) {
+  const queued = (r.byStatus.ambiguous ?? 0) + (r.byStatus.unfiled_transaction ?? 0)
+  const filed = (r.byStatus.filed ?? 0) + (r.byStatus.kept_manual ?? 0)
+  const coveragePct = r.gmailTotal ? Math.min(100, Math.round((r.reviewed / r.gmailTotal) * 100)) : null
+  return {
+    key: r.mailbox,
+    cells: [
+      r.mailbox,
+      r.gmailTotal != null ? r.gmailTotal.toLocaleString('en-US') : '—',
+      r.reviewed.toLocaleString('en-US'),
+      coveragePct != null ? `${coveragePct}%` : '—',
+      filed.toLocaleString('en-US'),
+      queued.toLocaleString('en-US'),
+      (r.byStatus.not_deal ?? 0).toLocaleString('en-US'),
+      (r.byStatus.bulk ?? 0).toLocaleString('en-US'),
+      (r.byStatus.error ?? 0).toLocaleString('en-US'),
+      r.lastReviewedAt ? formatDate(r.lastReviewedAt.slice(0, 10)) : 'never',
+      r.walkFinished ? 'finished' : r.walkStartedAt ? 'in progress' : 'not started',
+    ],
+  }
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -80,10 +117,13 @@ export default async function ClosingsPage({
   // Same mailbox scoping as app/actions/tc-mail.ts ctxForEdit(): superuser
   // reads every mailbox, a broker only their own, unmapped brokers see none.
   const mailbox = ctx.role === 'superuser' ? null : BROKER_FILE_EMAIL[fileNameFromBrokerSlug(ctx.brokerSlug) ?? ''] ?? '__none__'
-  const [board, mirror, mailQueueCount] = await Promise.all([
+  const [board, mirror, mailQueueCount, mailCoverage] = await Promise.all([
     getClosingsBoard(),
     getSkySlopeMirrorFreshness(),
     countMailQueue(mailbox),
+    // Every message reviewed (docs/TC_MAIL_FILING_RULES.md): the principal's
+    // audit view, so only fetched for the superuser role.
+    ctx.role === 'superuser' ? getMailCoverage() : Promise.resolve<MailCoverageRow[]>([]),
   ])
   const mineOnly = ctx.role === 'superuser' && mine === '1'
   const scoped = board.deals.filter((d) =>
@@ -340,6 +380,28 @@ export default async function ClosingsPage({
           </ul>
         )}
       </section>
+
+      {ctx.role === 'superuser' && mailCoverage.length > 0 && (
+        <section aria-label="Mail coverage">
+          <SectionHead>Every message reviewed</SectionHead>
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 10px' }}>
+            Every message in every broker mailbox gets a decision recorded — filed, queued, or why not
+            a deal — for the ORE Agency audit trail. “Walk” is the full-history reviewer (
+            <code style={{ fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-xs)' }}>
+              npx tsx scripts/tc-mail-backfill.ts review-all
+            </code>
+            ); the daily sweep continues it automatically until it finishes.
+          </p>
+          <ReportGrid
+            label="Mail review coverage by mailbox"
+            columns={COVERAGE_COLUMNS}
+            template="minmax(160px, 1.4fr) repeat(9, minmax(64px, 1fr)) minmax(90px, 1fr)"
+            minWidth={920}
+            rows={mailCoverage.map(coverageRow)}
+            empty="No mail has been reviewed yet."
+          />
+        </section>
+      )}
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 24 }}>
         All tools:{' '}
