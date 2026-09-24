@@ -26,8 +26,8 @@ agent transcripts made in this session. Nothing is estimated unless it says so.
   paragraph. CLAUDE.md is 37,460 bytes and its budget was lowered to match, so the next
   pointer still has to be paid for by trimming something.
 - The replay agents also flagged defects on `main`. The five leads were checked and fixed on
-  this branch, with the related defects found alongside. Ten product calls are left for Matt.
-  See the last two sections.
+  this branch, with the related defects found alongside. Ten product calls went to Matt:
+  four are decided and built (2026-09-24), six are still open. See the last two sections.
 
 ## How this was measured
 
@@ -373,35 +373,47 @@ Also fixed while checking:
   the files they name are in this branch, and neither gate is in the CI chain.
 - Twilio can still deliver a text posted at 7:59:59pm after 8pm.
 
-## Decisions left for Matt (not fixed)
+## Decisions for Matt
 
 Replay agents also raised these. Each one changes what the product does or reverses an earlier
-call, so none was built.
+call, so none was built before Matt answered.
+
+### Decided 2026-09-24 and built
+
+Matt picked the recommended option on all four. Commits are on
+`claude/agent-navigation-efficiency-dp5zj5`, the follow-up PR after #364.
+
+- **The new price on a listing's price-cut line (T06): "Add the new price."** The line
+  now reads old price struck through, new price, "Cut $X", then percent and date
+  (`PriceDropMark.tsx`, commit "the price-cut line prints the new price").
+- **"Real estate" in community titles (T01): "Roll out, skip 2."** Every registered community
+  is titled "{name} real estate | Homes for Sale | {city}, OR". Sunriver and Black Butte Ranch
+  keep "{name} Homes for Sale" because their city pages already say "{place} real estate".
+  Compound noindex slugs are unchanged. Mountain High keeps its count
+  ("Mountain High real estate | 8 Homes for Sale | Bend, OR"), and one listing now reads
+  "1 Home", not "1 homes". A registry sweep test holds the rule. The hand-copied
+  `scripts/_seo-contact-sheet.mjs` is deleted.
+- **Broker-picked comps (T04): "Keep uncapped."** No code change. The ruling is recorded in
+  the CMA skill (§0.1) so it is not reopened.
+- **Evidence price table (T05): "FlexMLS style."** One table: List, Sold and $/sqft across,
+  Low, Avg, Median and High down each status (Closed, Pending, Active, Expired). The separate
+  "Dollars a square foot" board is folded in. The ruling is recorded in the CMA skill (§0.2),
+  and the letter-flow contract pins the layout.
+
+Found while checking T05, not caused by it: the nightly int test
+`lib/cma/page-safety.int.test.ts` fails on `main`. With 12 comparable sales, comp
+addresses sit 2.3 to 2.4pt into the PDF's left margin. It is filed as its own task.
+
+### Still open
 
 - **Pending homes in the search box (T08).** Suggestions include Pending listings on purpose:
   the site's on-market statuses (`PUBLIC_ON_MARKET_STATUSES`) are Active, Active Under
   Contract and Pending. Dropping Pending means changing that rule. The city counts above
   follow the results page, which shows Active and Active Under Contract.
-- **"Real estate" in every community title (T01).** Only Tetherow's title says it
-  (`cf8f4c418`). Rolling it out gives Sunriver and Black Butte Ranch the same title as their
-  city pages, the duplicate removed on 2026-09-22. Mountain High's title carries a live
-  listing count. `scripts/_seo-contact-sheet.mjs:42` copies the title format by hand and
-  would drift.
-- **Broker-picked comps have no five-sale cap (T04).** Automatic CMA searches stop at the
-  five tightest sales (`7842575df`). A hand-picked set still prices from every pick, on
-  purpose ("the broker owns the selection"), and the same code prices BPOs.
-- **Evidence price table layout (T05).** List and sold prices share one set of Low, Avg,
-  Median and High columns, and $/sf sits in a second table. The 2026-09-22 commit with nearly
-  the same title (`ee0753914`) only fixed column widths. A contract test pins the four column
-  words.
 - **Deeper place FAQ questions (T03).** About half the questions added on 2026-09-22
   (`af236fac9`) are market figures again; the rest list names already on the page.
   Neighborhood pages already load schools, HOA dues, CC&Rs and build years that never reach
   the FAQ. A city-page test forbids HOA and school-district data in the city FAQ.
-- **The new price on a listing's price-cut line (T06).** The line shows the old price struck
-  through and "Cut $X". The new price is the large price above it and is in the screen-reader
-  text. The ask said "the two prices, old and new"; the build chose not to repeat the H1
-  price.
 - **The region filling the desktop map (H4).** With fractional zoom the whole-region fit
   still keeps up to 128px of padding per side (`v3FitPadding`), so the tall region fills the
   height and only part of the width. Filling the width crops the top and bottom of the frame,
