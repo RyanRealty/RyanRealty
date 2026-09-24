@@ -8,6 +8,7 @@
  * each number is testable and traces to one source row set (§0).
  */
 import { dealCalendarItems } from './deal-calendar'
+import { REVIEW_PATH, reviewHref } from './review-queue'
 
 export type DashboardDeal = {
   id: string
@@ -248,7 +249,7 @@ export function buildTransactionsDashboard(input: DashboardInput): TransactionsD
       label: 'Awaiting your review',
       value: input.review.totalItems,
       sub: input.review.overdueItems ? `${input.review.overdueItems} past 7 banking days` : input.review.totalItems ? 'all within 7 banking days' : null,
-      href: '/admin/sign-off',
+      href: REVIEW_PATH,
       tone: input.review.overdueItems ? 'danger' : input.review.totalItems ? 'attention' : 'neutral',
     })
   }
@@ -273,7 +274,8 @@ export function buildTransactionsDashboard(input: DashboardInput): TransactionsD
         : soonest
           ? `due ${shortDate(soonest.dueIso)} · ${soonest.bankingDaysRemaining} banking day${soonest.bankingDaysRemaining === 1 ? '' : 's'} left`
           : 'no acceptance date on file to start the clock',
-      href: dealHref(r.propertyKey, 'documents', 'filter=review'),
+      // Review mode scoped to this file: the same queue these counts come from.
+      href: reviewHref({ deal: r.propertyKey }),
       action: 'Review',
       rank: overdue ? 0 : 10 + (soonest?.bankingDaysRemaining ?? 7),
     })

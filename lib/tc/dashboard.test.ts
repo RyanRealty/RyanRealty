@@ -75,6 +75,7 @@ describe('stat tiles', () => {
     expect(review.value).toBe(17)
     expect(review.sub).toBe('3 past 7 banking days')
     expect(review.tone).toBe('danger')
+    expect(review.href).toBe('/admin/sign-off/review')
   })
 })
 
@@ -106,7 +107,7 @@ describe('needs you', () => {
     expect(d.needsYou.map((n) => n.key)).toEqual(['review:key-r', 'pastclose:a', 'expires:b', 'missing:a', 'mail'])
     expect(d.needsYou[0].title).toBe('2 documents to review · 20702 Beaumont Drive')
     expect(d.needsYou[0].context).toMatch(/1 past the 7-banking-day deadline/)
-    expect(d.needsYou[0].href).toBe('/admin/deals/key-r?tab=documents&filter=review')
+    expect(d.needsYou[0].href).toBe('/admin/sign-off/review?deal=key-r')
     expect(d.needsYou[2].title).toBe('Listing expires in 9 days · b Test Ave')
     expect(d.needsYou[3].context).toBe('Matt Ryan · 8 of 10 checklist items done')
   })

@@ -27,6 +27,7 @@ import {
 import { getPrincipalSignOffQueue, type SignOffDeal } from '@/app/actions/tc-signoff'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import type { ReviewDeadline } from '@/lib/tc/banking-days'
+import { REVIEW_PATH, reviewHref, urgencyWords } from '@/lib/tc/review-queue'
 import { SignOffControls } from './SignOffControls'
 
 export const dynamic = 'force-dynamic'
@@ -51,25 +52,15 @@ function soonestRank(deal: SignOffDeal): number {
   return Math.min(...deal.items.map((i) => deadlineRank(i.deadline)))
 }
 
-/** The deadline as the row's kind word + age text (ADMIN_UI pattern 1). */
+/** The deadline as the row's kind word + age text (ADMIN_UI pattern 1), in banking days. */
 function deadlineWords(deadline: ReviewDeadline | null): {
   kind: string
   tone: 'down' | 'slow' | 'waiting'
   age: string
   hot: boolean
 } {
-  if (!deadline) return { kind: 'No date', tone: 'waiting', age: 'no acceptance date', hot: false }
-  const n = deadline.bankingDaysRemaining
-  if (deadline.overdue) {
-    const d = Math.abs(n)
-    return { kind: 'Overdue', tone: 'down', age: `${d} day${d === 1 ? '' : 's'} overdue`, hot: true }
-  }
-  return {
-    kind: n <= 2 ? 'Due soon' : 'Waiting',
-    tone: n <= 2 ? 'slow' : 'waiting',
-    age: `due in ${n} day${n === 1 ? '' : 's'}`,
-    hot: false,
-  }
+  const u = urgencyWords(deadline)
+  return { kind: u.word, tone: u.tone, age: u.age, hot: u.hot }
 }
 
 const MAX_DEALS = 6
@@ -144,6 +135,17 @@ export default async function SignOffPage() {
         </VerdictLine>
       </div>
 
+      {queue.totalItems > 0 ? (
+        <p style={{ margin: '0 0 14px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+          <Link href={REVIEW_PATH} className="av2-btn av2-btn--touch" style={{ textDecoration: 'none' }}>
+            Start reviewing
+          </Link>
+          <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+            One document at a time, most overdue first, with the PDF beside your decision.
+          </span>
+        </p>
+      ) : null}
+
       <ReportNumbers
         items={[
           { key: 'pending', label: 'Items pending', value: String(queue.totalItems) },
@@ -178,6 +180,9 @@ export default async function SignOffPage() {
                   <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
                     {deal.broker ?? '—'} · {STAGE_LABEL[deal.stage] ?? deal.stage}
                   </span>
+                  <Link href={reviewHref({ deal: deal.propertyKey })} style={{ color: 'var(--a-accent)', fontSize: 'var(--a-text-sm)' }}>
+                    Review this file
+                  </Link>
                 </p>
                 <ul className="av2-queue">
                   {items.map((item) => {

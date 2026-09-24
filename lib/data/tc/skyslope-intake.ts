@@ -109,6 +109,8 @@ export type IntakeTotals = {
   documentsAdded: number
   documentFailures: number
   itemsAdded: number
+  /** Checklist statuses carried from SkySlope onto items the Vault had not touched. */
+  itemStatusesUpdated: number
   assignmentsAdded: number
   contactsAdded: number
   stagesUpdated: number
@@ -142,6 +144,7 @@ function emptyTotals(): IntakeTotals {
     documentsAdded: 0,
     documentFailures: 0,
     itemsAdded: 0,
+    itemStatusesUpdated: 0,
     assignmentsAdded: 0,
     contactsAdded: 0,
     stagesUpdated: 0,
@@ -245,7 +248,7 @@ async function loadCycleSnapshot(sb: SB, cycle: VaultCycleRow): Promise<VaultCyc
     sb.from('tc_documents').select('id, source_doc_id, archived').eq('cycle_id', cycle.id).order('id').range(a, b),
   )
   const items = await pageAll<Obj>((a, b) =>
-    sb.from('tc_checklist_items').select('id, source_activity_id').eq('cycle_id', cycle.id).order('id').range(a, b),
+    sb.from('tc_checklist_items').select('id, source_activity_id, status').eq('cycle_id', cycle.id).order('id').range(a, b),
   )
   const itemIds = items.map((i) => String(i.id))
   const assignments: Array<{ itemId: string; documentId: string }> = []
@@ -261,7 +264,11 @@ async function loadCycleSnapshot(sb: SB, cycle: VaultCycleRow): Promise<VaultCyc
     fields: cycle.fields,
     raw: cycle.raw,
     documents: documents.map((d) => ({ id: String(d.id), sourceDocId: (d.source_doc_id as string | null) ?? null, archived: d.archived === true })),
-    items: items.map((i) => ({ id: String(i.id), sourceActivityId: i.source_activity_id == null ? null : Number(i.source_activity_id) })),
+    items: items.map((i) => ({
+      id: String(i.id),
+      sourceActivityId: i.source_activity_id == null ? null : Number(i.source_activity_id),
+      status: i.status == null ? null : String(i.status),
+    })),
     assignments,
   }
 }
@@ -884,6 +891,39 @@ async function intakeProperty(
       }
     }
 
+    // checklist status SkySlope changed on items the Vault left alone. The
+    // update is conditional on the status the plan saw, so a Vault change made
+    // since the plan was read is never overwritten.
+    if (plan.itemStatusUpdates.length) {
+      const applied: typeof plan.itemStatusUpdates = []
+      for (const u of plan.itemStatusUpdates) {
+        const { data: rows, error } = await sb
+          .from('tc_checklist_items')
+          .update({ status: u.to })
+          .eq('id', u.itemId)
+          .eq('status', u.from)
+          .select('id')
+        if (error) {
+          report.errors.push(`${plan.guid.slice(0, 8)} checklist status: ${error.message}`)
+          holdRaw.add(plan.guid)
+        } else if (rows?.length) applied.push(u)
+        else holdRaw.add(plan.guid) // the Vault moved in between: decide again next run
+      }
+      totals.itemStatusesUpdated += applied.length
+      if (applied.length) {
+        await recordEvent(sb, totals, {
+          deal_id: dealId,
+          cycle_id: cycleId,
+          action: 'skyslope_checklist_status_updated',
+          detail: {
+            source_guid: plan.guid,
+            items: applied.map((u) => ({ activity_id: u.activityId, name: u.name, from: u.from, to: u.to })),
+            note: 'Changed in SkySlope, untouched in the Vault since the previous import.',
+          },
+        })
+      }
+    }
+
     // assignments (only where both the item and the document exist now)
     const pairs: Array<{ item_id: string; document_id: string }> = []
     const pairLabels: Array<{ activity_id: number; source_doc_id: string }> = []
@@ -933,8 +973,8 @@ async function intakeProperty(
     if (report.stoppedAtDeadline || holdRaw.has(plan.guid) || holdDeal.has(dealId)) continue
 
     // e. drift record, then the previous payload moves forward (last)
-    if (plan.drift.length || plan.assignmentsOnVaultArchived.length) {
-      totals.driftKept += plan.drift.length + plan.assignmentsOnVaultArchived.length
+    if (plan.drift.length || plan.assignmentsOnVaultArchived.length || plan.itemStatusDrift.length) {
+      totals.driftKept += plan.drift.length + plan.assignmentsOnVaultArchived.length + plan.itemStatusDrift.length
       await recordEvent(sb, totals, {
         deal_id: dealId,
         cycle_id: cycleId,
@@ -943,6 +983,7 @@ async function intakeProperty(
           table: 'tc_cycles',
           source_guid: plan.guid,
           fields: plan.drift,
+          checklist_status: plan.itemStatusDrift,
           assignments_on_vault_archived_documents: plan.assignmentsOnVaultArchived,
           note: 'Edited in the Vault and changed in SkySlope: the Vault value is kept.',
         },

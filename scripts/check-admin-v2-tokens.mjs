@@ -283,6 +283,7 @@ const SCAN_DIRS = [
   // The file workspace tabs (Matt 2026-09-24): v2-only from birth.
   'app/admin/(protected)/deals/[key]/_parts',
   'app/admin/(protected)/closings/files',
+  'app/admin/(protected)/sign-off/review',
   'app/admin/(protected)/email/campaigns/page.tsx',
   'app/admin/(protected)/financials/page.tsx',
   'app/admin/(protected)/forms/page.tsx',

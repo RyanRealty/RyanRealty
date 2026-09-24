@@ -9,9 +9,8 @@ import { StateWord } from '@/components/admin/v2'
 import type { TcCycle, TcDeal, TcDocument } from '@/app/actions/tc'
 import type { AnticipatedDocsResult } from '@/app/actions/tc-required-docs'
 import { readerView } from '@/lib/tc/doc-read/view'
-import { EXECUTION_STATE_LABEL, executionStateFromClassification } from '@/lib/tc/execution-state'
 import { CHECKLIST_GROUPS, checklistGroupForRule } from '@/lib/tc/required-documents'
-import { CHECKLIST_WORD, matchesChecklistFilter, type ChecklistFilter } from '@/lib/tc/file-workspace'
+import { CHECKLIST_WORD, documentStateWord, matchesChecklistFilter, type ChecklistFilter } from '@/lib/tc/file-workspace'
 import { ChecklistStatusControl } from '../ChecklistControls'
 import { DocumentUpload } from '../DocumentUpload'
 import { ArchiveToggle, DownloadButton, ShareToggle } from '../DocumentRowActions'
@@ -30,14 +29,7 @@ const FILTERS: Array<{ key: ChecklistFilter; label: string }> = [
   { key: 'done', label: 'Done' },
 ]
 
-function docState(doc: TcDocument): { word: string; state: 'ok' | 'slow' | 'accent' | 'waiting' | 'down' } | null {
-  const read = readerView(doc.classification)
-  if (read) return { word: read.label, state: read.tone }
-  const exec = executionStateFromClassification(doc.classification)
-  if (!exec || !EXECUTION_STATE_LABEL[exec]) return null
-  const state = exec === 'fully_executed' ? 'ok' : exec === 'needs_our_signatures' ? 'slow' : exec === 'our_side_signed' ? 'accent' : 'waiting'
-  return { word: EXECUTION_STATE_LABEL[exec], state }
-}
+const docState = (doc: TcDocument) => documentStateWord(doc.classification)
 
 export function DocumentsTab({
   deal,

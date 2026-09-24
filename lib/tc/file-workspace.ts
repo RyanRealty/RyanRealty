@@ -9,6 +9,8 @@
  */
 import { dealCalendarItems } from './deal-calendar'
 import { shortDate } from './dashboard'
+import { readerView } from './doc-read/view'
+import { EXECUTION_STATE_LABEL, executionStateFromClassification } from './execution-state'
 
 export const FILE_TABS = ['overview', 'documents', 'offers', 'email', 'people', 'signing', 'money', 'activity'] as const
 export type FileTab = (typeof FILE_TABS)[number]
@@ -240,4 +242,19 @@ export function fileAttention(input: {
     if (n >= 0 && n <= 14) out.push({ key: 'expires', kind: 'Listing', tone: n <= 3 ? 'slow' : 'waiting', title: `Listing expires ${relative(n)}`, context: `${shortDate(input.cycle.expiration_date)} · extend it or let it expire`, href: base, action: 'Open' })
   }
   return out
+}
+
+export type DocumentStateTone = 'ok' | 'slow' | 'accent' | 'waiting' | 'down'
+
+/**
+ * One status word for a document: the reader's verdict when the current
+ * reader has read it, else the older execution label, else nothing.
+ */
+export function documentStateWord(classification: unknown): { word: string; state: DocumentStateTone } | null {
+  const read = readerView(classification)
+  if (read) return { word: read.label, state: read.tone }
+  const exec = executionStateFromClassification(classification)
+  if (!exec || !EXECUTION_STATE_LABEL[exec]) return null
+  const state = exec === 'fully_executed' ? 'ok' : exec === 'needs_our_signatures' ? 'slow' : exec === 'our_side_signed' ? 'accent' : 'waiting'
+  return { word: EXECUTION_STATE_LABEL[exec], state }
 }
