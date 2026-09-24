@@ -1,11 +1,11 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { listingsBrowsePath } from '@/lib/slug'
 import { H1 } from '@/components/site/primitives'
+import { reportClientError } from '@/lib/observability/client-errors'
 
 export default function CompareError({
   error,
@@ -16,7 +16,7 @@ export default function CompareError({
 }) {
   useEffect(() => {
     console.error(error)
-    Sentry.captureException(error)
+    reportClientError(error)
   }, [error])
 
   return (
