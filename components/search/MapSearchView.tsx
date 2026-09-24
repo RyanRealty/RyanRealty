@@ -1460,6 +1460,9 @@ export default function MapSearchView({
         hideBoundaryToggle={lockPlace}
         initialBounds={initialBounds}
         lockBounds
+        // The regional frame's box fills the pane (fractional fit) instead of
+        // opening at integer z8; a place's own boundary camera is unchanged.
+        fractionalZoom={Boolean(regionFrameLabel)}
         relayoutKey={mobileView}
         onBoundsChanged={handleBoundsChanged}
         shapes={drawnShapes}
