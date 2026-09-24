@@ -1353,4 +1353,20 @@ describe('search polish (Matt 2026-09-23): no sideways scroll, the order named, 
     expect(map).toMatch(/\.\.\.\(!fitSubjectRing \? \{ isFractionalZoomEnabled: fractionalZoom \} : \{\}\)/)
     expect(map).toMatch(/fractionalZoom = false,/)
   })
+
+  it('the map-only view fits the Central Oregon camera at fractional zoom too; a place or URL camera does not', () => {
+    // ?view=map opened the same CENTRAL_OREGON_BOUNDS box at integer z8: the
+    // page kept only the camera's bounds, and HideAwareSearchMap had no prop.
+    const page = readSrc('app/search/page.tsx')
+    const wrap = readSrc('components/search/HideAwareSearchMap.tsx')
+    expect(page).toMatch(/const camera = resolveSearchCamera\(\{/)
+    expect(page).toMatch(/const initialBounds = camera\.bounds/)
+    const start = page.indexOf('<HideAwareSearchMap')
+    expect(start).toBeGreaterThan(-1)
+    const mapOnly = page.slice(start, page.indexOf('/>', start))
+    expect(mapOnly).toMatch(/fractionalZoom=\{camera\.source === 'central-oregon'\}/)
+    expect(wrap).toMatch(/fractionalZoom\?: boolean/)
+    expect(wrap).toMatch(/fractionalZoom = false,/)
+    expect(wrap).toMatch(/fractionalZoom=\{fractionalZoom\}/)
+  })
 })
