@@ -307,8 +307,10 @@ when you're ready to make the call."
 - **The song starts on the radio (Matt 2026-09-24).** The film opens on her mitten turning the
   car radio on; the click and a breath of static sit at 0.3s, so a song added in Instagram
   (which starts at 0:00) comes out of the radio. No projector bed and nothing looped; the
-  film's own sounds (Polaroid cameras, the street, the office, the kitchen, the dial, the ring,
-  the pickup) sit at -24 LUFS under the song.
+  film's own sounds sit at -24 LUFS under the song, one continuous bed with no dead air and nothing
+  looped: road rumble in the car, wind and ski swish on the mountain, birds in the park, the
+  street, traffic, the office, the kitchen, the Polaroid cameras, the dial, the ring, the pickup.
+  `"musicUntil": "end"` keeps a score, when there is one, running to the card.
 - **Same dog, same couple.** Every shot with the Lab carries its reference photo (the drive up
   included); `StoryPiece.identity` hands the ski-photo pose to the shots where faces show, cropped
   to one person in a one-person shot.

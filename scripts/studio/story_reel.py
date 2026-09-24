@@ -1105,7 +1105,57 @@ def street(seconds, rng):
     return traffic(seconds, rng, honks=0) * 0.6 + murmur(seconds, rng, 0.012)
 
 
-SOUNDS = {"traffic": traffic, "office": office, "newsroom": newsroom, "kitchen": kitchen, "street": street}
+def car_inside(seconds, rng):
+    """Inside the wagon at highway speed: tyre roar and a little wind at the glass."""
+    n = int(seconds * SR)
+    t = np.arange(n) / SR
+    roar = lfilter(*butter_bandpass(40, 260), rng.normal(0, 1, n)) * 0.045
+    hiss = lfilter(*butter_bandpass(900, 3500), rng.normal(0, 1, n)) * 0.006 * (0.8 + 0.2 * np.sin(2 * np.pi * 0.3 * t))
+    return _stereo(roar + hiss, 0.96)
+
+
+def wind(seconds, rng, skis=False):
+    """High on the mountain: a steady breeze with slow gusts; with skis, the swish of each turn."""
+    n = int(seconds * SR)
+    t = np.arange(n) / SR
+    g = lfilter(*butter_bandpass(0.1, 0.6), rng.normal(0, 1, n))
+    gust = 0.6 + 0.4 * np.clip(g / (np.abs(g).max() + 1e-9), -1, 1)
+    air = lfilter(*butter_bandpass(180, 1400), rng.normal(0, 1, n)) * 0.02 * gust
+    if skis:
+        for at in np.arange(0.25, seconds, 0.9) + rng.uniform(-0.1, 0.1, len(np.arange(0.25, seconds, 0.9))):
+            i, m = int(at * SR), int(0.45 * SR)
+            e = min(n, i + m)
+            if i >= n:
+                break
+            sw = lfilter(*butter_bandpass(1500, 7000), rng.normal(0, 1, m)) * np.sin(np.linspace(0, np.pi, m)) * 0.03
+            air[i:e] += sw[: e - i]
+    return _stereo(air, 0.92)
+
+
+def birds(seconds, rng):
+    """A park in April: a light breeze and a few birds, far apart."""
+    n = int(seconds * SR)
+    out = lfilter(*butter_bandpass(150, 900), rng.normal(0, 1, n)) * 0.006
+    at = rng.uniform(0.2, 0.9)
+    while at < seconds - 0.3:
+        f0 = rng.uniform(2800, 4200)
+        for k in range(int(rng.integers(2, 5))):
+            m = int(rng.uniform(0.05, 0.09) * SR)
+            tt = np.arange(m) / SR
+            chirp = np.sin(2 * np.pi * (f0 + rng.uniform(-400, 900) * tt / tt[-1]) * tt) * np.sin(np.linspace(0, np.pi, m))
+            i = int((at + k * 0.11) * SR)
+            e = min(n, i + m)
+            out[i:e] += chirp[: e - i] * rng.uniform(0.006, 0.014)
+        at += rng.uniform(0.8, 1.8)
+    return _stereo(out, 0.88)
+
+
+def skiing(seconds, rng):
+    return wind(seconds, rng, skis=True)
+
+
+SOUNDS = {"traffic": traffic, "office": office, "newsroom": newsroom, "kitchen": kitchen, "street": street,
+          "car": car_inside, "wind": wind, "skiing": skiing, "birds": birds}
 def radio_on(rng):
     """A car radio switched on: the knob's detent, then a breath of tuning static
     that is gone in a third of a second. The song added in the app comes out
@@ -1192,12 +1242,12 @@ def build(d, draft, lab_file="lab.json", name="reel", music=True, video_from=Non
             if full:
                 # Full-frame vertical: the gate is the screen. No strip, no neighbours.
                 cur = frames[fi].astype(np.float32) / 255.0
-                d = float(s.get("dissolve", 0.0))
-                if d > 0 and lt < d and i > 0 and segs[i - 1]["role"] in graded:
+                dz = float(s.get("dissolve", 0.0))
+                if dz > 0 and lt < dz and i > 0 and segs[i - 1]["role"] in graded:
                     # The outgoing shot keeps running under the dissolve (its trim carries a handle).
                     pf, pfps = graded[segs[i - 1]["role"]]
                     pj = min(len(pf) - 1, int((segs[i - 1]["seconds"] + lt) * pfps))
-                    a = lt / d
+                    a = lt / dz
                     a = a * a * (3 - 2 * a)
                     cur = pf[pj].astype(np.float32) / 255.0 * (1 - a) + cur * a
                 canvas = cv2.resize(cur, (W, H), interpolation=cv2.INTER_CUBIC)
@@ -1299,7 +1349,12 @@ def homecoming_audio(d, edl, segs, starts, seg_at, end_t, total, name, music, of
     click and the song's last chord. The projector runs the whole reel."""
     bus = np.zeros((int(total * SR) + SR, 2), np.float32)
     scored = bool(music.any())
-    city_t = next((starts[j] for j, s in enumerate(segs) if s.get("sound")), end_t)
+    # Where the score stops: an EDL's musicUntil role, or the first shot with its own room sound.
+    until = edl.get("musicUntil")
+    if until:
+        city_t = end_t if until == "end" else next(starts[j] for j, s in enumerate(segs) if s["role"] == until)
+    else:
+        city_t = next((starts[j] for j, s in enumerate(segs) if s.get("sound")), end_t)
     if scored:
         body = music[off: off + int(city_t * SR)].copy()
         fade = int(0.05 * SR)
