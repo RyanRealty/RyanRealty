@@ -896,7 +896,8 @@ export function categorizeMail(input: {
   if (/disclosure|\bspds?\b|\bspd\b|seller'?s? property|\bhoa (?:docs|documents|resale|certificate|statement)\b|\bcc ?& ?rs\b|\bccrs\b|\breserve study\b|\bresale certificate\b/i.test(hay)) {
     return 'disclosure'
   }
-  if (/\binspection|\brepair/i.test(hay)) return 'inspection'
+  // Inspections by their kind too: a septic evaluation (Oregon's ESER), radon, sewer scope, pest/WDO, mold.
+  if (/\binspection|\brepair|\beser\b|\bseptic\b|\bradon\b|\bsewer scope\b|\bwdo\b|\bpest inspection\b|\bmold\b/i.test(hay)) return 'inspection'
   if (/\bescrow\b|\btitle\b|\bprelim|wire|\bwt\d{5,}|open order|earnest/i.test(hay)) return 'escrow_title'
   if (/\bloan\b|\blender\b|pre-?approval|\bappraisal|underwrit|clear to close|\bctc\b|mortgage/i.test(hay)) return 'lender'
   return bodyCategory(subject, input.body ?? '', !!input.bulkHeaders) ?? 'general'
@@ -1228,11 +1229,12 @@ export function decideMailFiling(input: {
   }
   const hasEvidence = (c: MailCandidate, ...kinds: string[]) => kinds.some((k) => c.evidence.includes(k))
   // A thread never outvotes the message: when the email itself names another
-  // of our files, the file its thread sits on is no candidate on the thread's
-  // word (Supra reuses one thread per sender across every listing).
+  // of our files and not the thread's own, the file its thread sits on is no
+  // candidate on the thread's word (Supra reuses one thread per sender across
+  // every listing). When it names both, the thread still breaks the tie.
   if (thread && scored.some((c) => c.dealId !== thread.dealId && hasEvidence(c, 'escrow', 'mls', 'address', 'street'))) {
     const anchored = scored.find((c) => c.dealId === thread.dealId)
-    if (anchored && hasEvidence(anchored, 'thread')) {
+    if (anchored && hasEvidence(anchored, 'thread') && !hasEvidence(anchored, 'escrow', 'mls', 'address', 'street')) {
       anchored.score -= W.thread
       anchored.evidence = anchored.evidence.filter((e) => e !== 'thread')
       if (anchored.score <= 0) scored.splice(scored.indexOf(anchored), 1)

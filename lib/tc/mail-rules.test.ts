@@ -920,6 +920,25 @@ describe('v4 defect 3: a full address from a stranger, in ordinary mail, is not 
     expect(legal.dealId).toBe('beaumont')
   })
 
+  it('inspections by their kind are inspection mail: a septic evaluation report, a radon test (from people on no file)', () => {
+    const septic = decide4(
+      mail({
+        from: ['office@septicservice.example'],
+        sentAt: '2026-05-20T17:00:00Z',
+        subject: 'Report for 20702 Beaumont Drive',
+        body: 'Payment received, here is the report.',
+        attachments: [{ name: 'ESER for 20702 Beaumont Drive.pdf' }],
+      }),
+    )
+    expect(septic.category).toBe('inspection')
+    expect(septic.dealId).toBe('beaumont')
+    const radon = decide4(
+      mail({ from: ['inspector@inspections.example'], sentAt: '2026-05-18T17:00:00Z', subject: 'Invitation: Radon equipment pick up', body: 'Location: 20702 Beaumont Drive, Bend, OR 97701' }),
+    )
+    expect(radon.category).toBe('inspection')
+    expect(radon.dealId).toBe('beaumont')
+  })
+
   it("our own prospecting blast to people on no file is not deal mail (Rebecca's NEW LISTING letters)", () => {
     const d = decide4(
       mail({
@@ -1444,6 +1463,22 @@ describe('v4 defect 15: a thread never outvotes the message that names another o
     )
     expect(d.status).toBe('ambiguous')
     expect(d.candidates.map((c) => c.dealId).sort()).toEqual(['drouillard', 'mayfield'])
+  })
+
+  it("when the message names its thread's file and another, the thread still breaks the tie (\"Re: Question Regarding Contract Termination\")", () => {
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['legal@realtorsassociation.example'],
+        sentAt: '2025-11-13T18:46:00Z',
+        subject: 'Re: Question Regarding Contract Termination',
+        body: 'The buyers of 17130 Mayfield Drive may terminate; the sale of 2354 NW Drouillard Ave is their contingency.',
+      }),
+      { dealId: 'mayfield', method: 'address' },
+      deals,
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('mayfield')
   })
 
   it('a Supra notice naming none of ours still follows its thread (136 correct thread filings)', () => {
