@@ -355,7 +355,7 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
     enc = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}",
                             "-r", str(fps), "-i", "-", "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p", out_path],
                            stdin=subprocess.PIPE)
-    template = mask = None
+    template = mask = shade0 = None
     warp = np.eye(3, dtype=np.float32)
     criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 80, 1e-5)
     quads = []
@@ -404,7 +404,17 @@ def track_sign(clip_path, panel_path, out_path, still_quad, still_size, debug=No
             chroma = np.sqrt((lab[..., 1] - 128) ** 2 + (lab[..., 2] - 128) ** 2)
             key = 1.0 - smoothstep_np(9.0, 16.0, chroma)
         alpha = cv2.GaussianBlur(quad_mask * key, (0, 0), 0.9)[..., None]
-        shade = cv2.GaussianBlur(plate, (0, 0), 8)
+        if no_key:
+            # A covered card takes its light from frame 0, where it is still blank, carried
+            # by the same warp as the quad. Lit by its own frame, the picture the generator
+            # painted on the card later printed through as a dark cast on ours.
+            if shade0 is None:
+                shade0 = cv2.GaussianBlur(plate, (0, 0), 8)
+            T = np.array([[1, 0, x0], [0, 1, y0], [0, 0, 1]], np.float32)
+            shade = cv2.warpPerspective(shade0, T @ warp @ np.linalg.inv(T), (w, h), flags=cv2.INTER_LINEAR,
+                                        borderMode=cv2.BORDER_REPLICATE)
+        else:
+            shade = cv2.GaussianBlur(plate, (0, 0), 8)
         inside = (quad_mask > 0.9) & (key > 0.9)
         ref = np.percentile(shade[inside], 92, axis=0) if inside.sum() > 50 else np.ones(3, np.float32)
         lit = warped * np.clip(shade / np.maximum(ref, 1e-3), 0.0, 1.2) * ref

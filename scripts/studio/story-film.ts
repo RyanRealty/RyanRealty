@@ -13,7 +13,7 @@
  *   npx tsx scripts/studio/story-film.ts stills --piece winter-1982 [--roles hook,arrive] [--takes 2] [--judge on]
  *   npx tsx scripts/studio/story-film.ts motion --piece winter-1982 [--roles hook] [--takes 1] [--seconds 4] [--res 480p]
  *   npx tsx scripts/studio/story-film.ts select --piece winter-1982 --role hook (--still N [--note why] | --clip N)
- *   npx tsx scripts/studio/story-film.ts retouch --piece winter-1982 --role hook --still N --direction "<one fix>" [--takes 2]
+ *   npx tsx scripts/studio/story-film.ts retouch --piece winter-1982 --role hook --still N --direction "<one fix>" [--ref <face.jpg>] [--takes 2]
  *   npx tsx scripts/studio/story-film.ts adopt  --piece winter-1982 [--no-judge]   (record orphaned takes after a crash)
  *   npx tsx scripts/studio/story-film.ts sheet  --piece winter-1982   (shot sheet for the Grok app: no API spend)
  *   npx tsx scripts/studio/story-film.ts ingest --piece winter-1982 --from <folder>   (file takes from the app)
@@ -726,15 +726,25 @@ async function stageRetouch(piece: StoryPiece, manifest: Manifest, flags: Record
   if (!base) throw new Error('--still N must name an existing take')
   const direction = flags.direction?.trim()
   if (!direction) throw new Error('--direction "<the one thing to change>" is required')
+  // --ref: a person's reference (out/story/<piece>/refs/identity-B.jpg) when the fix
+  // turns a face to camera. A face the take never showed is one the motion model
+  // invents, and it came back without the mustache he wears in every other shot.
+  const refs = (flags.ref ?? '').split(',').map((r) => r.trim()).filter(Boolean)
+  if (refs.length > 4) throw new Error('--ref takes at most 4 files: an edit carries 5 images with the take')
   const prompt = [
-    `Edit this photograph. ${direction}.`,
-    'Keep everything else exactly as it is: the same people, faces, hair, clothes, the same car or room, the same camera position, lens, framing, light, color, and film grain.',
+    `Edit the first image. ${direction}.`,
+    ...refs.map(
+      (_, i) =>
+        `Image ${i + 2} shows the same person: give them exactly that face, facial hair, and hair, and nothing else from that image.`,
+    ),
+    `Keep everything else exactly as it is: the same people${refs.length ? '' : ', faces, hair'}, clothes, the same car or room, the same camera position, lens, framing, light, color, and film grain.`,
     'No text, lettering, or logos anywhere in the frame.',
   ].join(' ')
   assertBudget(manifest.ledger, imageCost(GROK_MODELS.image, takes), `retouch ${state.role}`)
+  const sources = [base.file, ...refs].map((f) => path.join(ROOT, f))
   const result = await editGrokImage({
     prompt,
-    sources: [{ url: await dataUri(path.join(ROOT, base.file)) }],
+    sources: await Promise.all(sources.map(async (f) => ({ url: await dataUri(f) }))),
     aspectRatio: piece.aspect ?? '4:3',
     resolution: '1k',
     n: takes,
@@ -750,7 +760,7 @@ async function stageRetouch(piece: StoryPiece, manifest: Manifest, flags: Record
   for (const [i, image] of result.images.entries()) {
     const file = path.join(dir, `${at}-r${i}.jpg`)
     writeFileSync(file, image)
-    state.stills.push({ file: rel(file), prompt, sources: [base.file], verdict: null, at })
+    state.stills.push({ file: rel(file), prompt, sources: sources.map(rel), verdict: null, at })
     console.log(`${state.role} take ${state.stills.length - 1}: ${rel(file)} (retouch of take ${flags.still})`)
   }
   saveManifest(piece, manifest)
