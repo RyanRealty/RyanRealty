@@ -217,8 +217,8 @@ of a second; a bare box takes about 65 s (measured 2026-09-24). With the
 dependencies in place the CLAUDE.md session boot (`npx tsx
 scripts/loop-brief.ts`) ran in 39 s; without them it cannot run. `cloud-setup.sh` writes the same
 `node_modules/.package-lock.sha256` marker, so the hook does not repeat an
-install the setup script already made for the same lockfile. It needs its
-`SessionStart` entry in `.claude/settings.json` (section 6).
+install the setup script already made for the same lockfile. It is registered
+as the `SessionStart` hook in `.claude/settings.json` (section 6).
 
 **A hookless clone now fails the gate chain.** With `core.hooksPath` unset,
 git uses `.git/hooks`, which holds only `*.sample` files until husky runs, so
@@ -337,7 +337,7 @@ and `ask` in layer 2, so Matt's one tap is the approval:
 (`.auto-memory/feedback_sql_access_2026-09-24.md`). Always-allow does not
 reopen it.
 
-**Layer 2, as it goes in `.claude/settings.json`:** `allow` holds
+**Layer 2, in `.claude/settings.json` (applied 2026-09-24 on Matt's approval):** `allow` holds
 `mcp__Supabase__*`, `mcp__Vercel__*`, `mcp__github__*`,
 `mcp__Claude_Code_Remote__*`, `mcp__Gmail__*`, `mcp__Google_Calendar__*`,
 `mcp__Google_Drive__*`, `mcp__Canva__*`, `mcp__Figma__*`, `mcp__Airtable__*`,
@@ -345,10 +345,10 @@ reopen it.
 `mcp__Cloudflare_Developer_Platform__*` and `mcp__Sentry__*` (ready for when
 it is connected); `ask` holds the tools in the table; `deny` keeps
 `execute_sql`; and `hooks.SessionStart` runs `.claude/hooks/session-start.sh`
-(section 3). **An agent cannot write this file's permissions:** the auto-mode
-classifier refuses an edit that widens the agent's own permissions or registers
-its own hooks. Matt approves the change and the agent applies it only on his
-explicit go-ahead.
+(section 3). **An agent cannot change this file's permissions on its own:** the
+auto-mode classifier refuses an edit that widens the agent's own permissions or
+registers its own hooks. Put the exact change in front of Matt and apply it only
+on his explicit go-ahead, as this one was.
 
 **`ask` and `deny` use globs of the form `mcp__*<Server>__<tool>`.** Cloud
 sessions name connector tools `mcp__<Server>__<tool>`; a session where Claude
