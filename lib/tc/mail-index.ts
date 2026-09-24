@@ -16,6 +16,7 @@
  * tc_offers. Fail-open per message: one bad message never stops a sweep.
  */
 import 'server-only'
+import { createHash } from 'node:crypto'
 import type { gmail_v1 } from 'googleapis'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_MAILBOXES, getGmailFor } from '@/lib/crm/gmail'
@@ -51,6 +52,7 @@ import { readPdfPagesText, type PdfTextRead } from '@/lib/tc/pdf-page-text'
 import { identifyFormFromName, identifyFormFromText } from '@/lib/tc/form-identity'
 import { classifyFromFormAndText } from '@/lib/tc/execution-state'
 import { fileOntoDeal, type FileCommsAttachment } from '@/lib/tc/file-comms-write'
+import { existingDocumentIdByHash } from '@/lib/tc/document-dedupe'
 import { fileNameFromBrokerSlug } from '@/lib/tc/deal-scope'
 import { parseCityFromAddress, propertyKeyForInhouseDeal } from '@/lib/tc/deal-people'
 import { fileShapeForRepresentation } from '@/lib/tc/listing-actions'
@@ -527,8 +529,17 @@ async function fileMessageDocuments(input: {
       rules_version: MAIL_RULES_VERSION,
     },
   })
-  // Remember which document each attachment became.
-  const bySource = result.documentBySource ?? {}
+  // Remember which document each attachment became. A message filed before
+  // (fileOntoDeal is idempotent per message) maps by its bytes instead.
+  const bySource: Record<string, string> = { ...(result.documentBySource ?? {}) }
+  if (result.skipped === 'duplicate') {
+    for (const r of input.read) {
+      const src = `gmail:${facts.messageKey}:${r.ref.attachmentId}`.slice(0, 180)
+      if (bySource[src]) continue
+      const id = await existingDocumentIdByHash(sb, cycleId, createHash('sha256').update(r.bytes).digest('hex'))
+      if (id) bySource[src] = id
+    }
+  }
   const withIds = input.attachmentsJson.map((a) => {
     const r = input.read.find((x) => x.ref.filename === a.name)
     const src = r ? `gmail:${facts.messageKey}:${r.ref.attachmentId}`.slice(0, 180) : null
@@ -764,6 +775,12 @@ function gmailDate(iso: string): string {
 /** Messages indexed at once within one mailbox. Gmail allows 250 quota units/s per user; one message is ~3 reads of 5. */
 const SWEEP_CONCURRENCY = 4
 
+function hasUnfiledPdf(attachments: unknown): boolean {
+  return ((attachments as Array<{ bytes?: number; document_id?: string | null }> | null) ?? []).some(
+    (a) => (a.bytes ?? 0) > 0 && !a.document_id,
+  )
+}
+
 /**
  * The Gmail ids in this page that the index already holds for this mailbox.
  * Narrowed by thread id (GIN-indexed; every writer stores a ref and its thread
@@ -778,9 +795,12 @@ export async function indexedGmailIds(
   const threads = [...new Set(page.map((m) => m.threadId).filter((t): t is string => !!t && /^[A-Za-z0-9_-]+$/.test(t)))]
   if (!threads.length) return out
   const ids = new Set(page.map((m) => m.id))
-  const { data, error } = await sb.from('tc_mail_messages').select('gmail_refs').overlaps('gmail_thread_ids', threads)
+  const { data, error } = await sb.from('tc_mail_messages').select('gmail_refs, status, attachments').overlaps('gmail_thread_ids', threads)
   if (error) throw new Error(`indexed gmail ids: ${error.message}`)
   for (const row of data ?? []) {
+    // A filed message with a PDF that never became a document (a filing that
+    // stopped part way) is indexed again; filing is idempotent per message.
+    if (row.status === 'filed' && hasUnfiledPdf(row.attachments)) continue
     for (const r of (row.gmail_refs as Array<{ mailbox?: string; gmail_id?: string }> | null) ?? []) {
       if (r.mailbox === mailbox && r.gmail_id && ids.has(r.gmail_id)) out.add(r.gmail_id)
     }

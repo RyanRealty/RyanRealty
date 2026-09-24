@@ -112,7 +112,7 @@ describe('sweepQuery', () => {
 })
 
 describe('indexedGmailIds', () => {
-  function fakeSb(rows: Array<{ gmail_refs: unknown }>) {
+  function fakeSb(rows: Array<{ gmail_refs: unknown; status?: string; attachments?: unknown }>) {
     const overlaps = vi.fn(async () => ({ data: rows, error: null }))
     return { sb: { from: () => ({ select: () => ({ overlaps }) }) } as never, overlaps }
   }
@@ -125,6 +125,17 @@ describe('indexedGmailIds', () => {
     const got = await indexedGmailIds(sb, 'matt@ryan-realty.com', page(['a', 'b', 'c']))
     expect([...got]).toEqual(['a'])
     expect(overlaps).toHaveBeenCalledWith('gmail_thread_ids', ['t-a', 't-b', 't-c'])
+  })
+
+  it('re-indexes a filed message whose PDF never became a document', async () => {
+    const m = 'matt@ryan-realty.com'
+    const { sb } = fakeSb([
+      { gmail_refs: [{ mailbox: m, gmail_id: 'a' }], status: 'filed', attachments: [{ name: 'SA.pdf', bytes: 900, document_id: null }] },
+      { gmail_refs: [{ mailbox: m, gmail_id: 'b' }], status: 'filed', attachments: [{ name: 'SA.pdf', bytes: 900, document_id: 'd1' }, { name: 'logo.pdf', bytes: 0, document_id: null }] },
+      { gmail_refs: [{ mailbox: m, gmail_id: 'c' }], status: 'ambiguous', attachments: [{ name: 'Offer.pdf', bytes: 900, document_id: null }] },
+    ])
+    const got = await indexedGmailIds(sb, m, page(['a', 'b', 'c']))
+    expect([...got].sort()).toEqual(['b', 'c'])
   })
 
   it('asks nothing for a page with no thread ids', async () => {

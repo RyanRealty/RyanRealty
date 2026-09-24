@@ -12,7 +12,8 @@
  * "99001 Alias Test Loop, Bend, OR 97701" (not a real address).
  *
  * WRITES PRODUCTION: sends email between our mailboxes, creates/updates the test
- * deal, files documents, writes tc_events/tc_offers/tc_mail_messages. Run only
+ * deal, files documents, writes tc_events/tc_offers/tc_mail_messages, then
+ * archives the run's documents and dismisses its queued mail. Run only
  * with Matt's go-ahead, after the mail index is deployed (the old 15-minute
  * filer would otherwise also file these emails).
  *
@@ -179,6 +180,42 @@ async function brokerStep(sb: import('@supabase/supabase-js').SupabaseClient, ki
   }
 }
 
+/**
+ * Once a run is checked, its synthetic PDFs and queued test mail leave the
+ * document reader's review list and the mail queue: documents are archived
+ * with a reason (the Vault's delete, reversible) and their flags resolved,
+ * and the run's queued mail is dismissed. The test file itself stays for the
+ * next run.
+ */
+async function cleanupRun(sb: import('@supabase/supabase-js').SupabaseClient, dealId: string, run: string): Promise<{ archived: number; dismissed: number }> {
+  const now = new Date().toISOString()
+  const actor = 'system:tc-alias-e2e'
+  const reason = `Alias test harness (TC TEST ${run}): synthetic test document, archived after the run was checked.`
+  const { data: cycles } = await sb.from('tc_cycles').select('id').eq('deal_id', dealId)
+  const cycleIds = (cycles ?? []).map((c) => String(c.id))
+  const { data: docs } = cycleIds.length
+    ? await sb.from('tc_documents').select('id, cycle_id').in('cycle_id', cycleIds).eq('archived', false)
+    : { data: [] as Array<{ id: string; cycle_id: string }> }
+  for (const d of docs ?? []) {
+    await sb.from('tc_checklist_assignments').delete().eq('document_id', d.id)
+    await sb.from('tc_documents').update({ archived: true, archived_reason: reason, archived_at: now }).eq('id', d.id).eq('archived', false)
+    await sb.from('tc_events').insert([
+      { deal_id: dealId, cycle_id: d.cycle_id, document_id: d.id, actor, action: 'document_archived', detail: { reason, test: true } },
+      { deal_id: dealId, cycle_id: d.cycle_id, document_id: d.id, actor, action: 'document_review_resolved', detail: { reason: 'Alias test harness document', test: true } },
+    ])
+  }
+  const { data: queued } = await sb
+    .from('tc_mail_messages')
+    .select('id')
+    .like('subject', `%[TC TEST ${run}]%`)
+    .in('status', ['ambiguous', 'unfiled_transaction'])
+  const ids = (queued ?? []).map((q) => String(q.id))
+  if (ids.length) {
+    await sb.from('tc_mail_messages').update({ status: 'dismissed', decided_by: actor, decided_at: now, updated_at: now }).in('id', ids)
+  }
+  return { archived: (docs ?? []).length, dismissed: ids.length }
+}
+
 /** The newest message matching q that this run has not already used. */
 async function waitFor(gmail: import('googleapis').gmail_v1.Gmail, q: string, seen: Set<string>, tries = 30): Promise<string | null> {
   for (let i = 0; i < tries; i++) {
@@ -277,10 +314,11 @@ async function main() {
       activity: view.activity.map((a) => a.label),
     }
   }
-  const out = { run, dealId, results, offers, portal, passed: results.filter((r) => r.ok).length, total: results.length }
+  const cleanup = await cleanupRun(sb, dealId, run)
+  const out = { run, dealId, results, offers, portal, cleanup, passed: results.filter((r) => r.ok).length, total: results.length }
   fs.mkdirSync('tmp', { recursive: true })
   fs.writeFileSync(`tmp/tc-alias-e2e-${run}.json`, JSON.stringify(out, null, 2))
-  console.log(JSON.stringify({ offers, portal, passed: out.passed, total: out.total }, null, 2))
+  console.log(JSON.stringify({ offers, portal, cleanup, passed: out.passed, total: out.total }, null, 2))
 }
 
 main().catch((err) => {
