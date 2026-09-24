@@ -276,3 +276,22 @@ export const RANGE_FIELD_COLUMNS: Readonly<Record<string, string>> = Object.from
 export function listedWithinDaysCutoff(days: number, nowMs: number = Date.now()): string {
   return new Date(nowMs - days * 86_400_000).toISOString()
 }
+
+/**
+ * The "listed in the last N days" ceiling a search asks for, from both of its
+ * spellings: `newListingsDays` (the new-listings presets, a saved alert) and
+ * `daysOnMarket` (the registry dom range's URL param, which the browse bar
+ * writes). Both mean the on-market date within N days; when both are set the
+ * tighter one wins. Whole days, because the RPC's p_new_listings_days and the
+ * DAL's domMax are integers. Undefined when neither is a positive number.
+ */
+export function listedWithinDaysCeiling(options: {
+  newListingsDays?: number | null
+  daysOnMarket?: number | null
+}): number | undefined {
+  const ceilings = [options.newListingsDays, options.daysOnMarket].filter(
+    (v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0,
+  )
+  if (ceilings.length === 0) return undefined
+  return Math.max(1, Math.round(Math.min(...ceilings)))
+}

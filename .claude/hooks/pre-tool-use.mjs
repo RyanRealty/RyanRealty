@@ -17,7 +17,8 @@
 //      or pg_catalog (the snapshot has that data already).
 //   4. mcp__*__execute_sql — refuse SELECTs against tables a DAL
 //      function covers, unless the SQL carries an explicit `-- audit:`
-//      comment justifying the raw read.
+//      comment justifying the raw read. apply_migration is exempt: a FROM
+//      inside a function or view body is DDL, not a read.
 //   4b. mcp__*__execute_sql — refuse AGGREGATES (count/sum/avg/min/max/
 //      median/percentile/GROUP BY) over a stat-bearing table even WITH an
 //      `-- audit:` comment. An aggregate over a filtered window is a
@@ -192,7 +193,11 @@ if (/__execute_sql$/.test(tool_name) || /__apply_migration$/.test(tool_name)) {
   }
 
   // Refusal 4: SELECT against a DAL-covered table without -- audit:.
-  if (!hasAuditComment) {
+  // A migration is exempt, as it is from refusals 3 and 4b: the FROM in a
+  // CREATE FUNCTION / VIEW body is the definition the DAL itself calls
+  // (search_listings_advanced reads listings), not an ad-hoc read, and a
+  // migration file must go in verbatim.
+  if (!hasAuditComment && !/__apply_migration$/.test(tool_name)) {
     const dalTables = getStats()?.getDalCoveredTables(projectRoot) ?? new Set()
     if (dalTables.size > 0) {
       const fromMatches = [...sqlLower.matchAll(/\bfrom\s+([a-z_][a-z_0-9]*)/g)].map((m) => m[1])
