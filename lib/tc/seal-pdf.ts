@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto'
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import type { EnvelopeField, SignFieldValue } from './signing'
 import { wrapTextToWidth } from './lined-signature-fields'
+import { pdfSafeText, textSizeForBox } from './text-areas'
 
 export type SealRecipientSummary = {
   name: string
@@ -109,10 +110,19 @@ async function drawFieldValue(
     return
   }
 
-  if (value.kind === 'date_signed' || value.kind === 'text') {
-    const text = value.text ?? ''
+  if (value.kind === 'text' && typeof value.size === 'number' && value.size > 0) {
+    // One line of a lined section, already fit to this line by the same
+    // metrics (lib/tc/text-areas.ts): draw it as laid out, never wrap or drop.
+    const text = pdfSafeText(value.text ?? '')
     if (!text) return
-    const size = Math.max(7, Math.min(11, fh * 0.72))
+    page.drawText(text, { x: fx + 2, y: fy + (fh - value.size) / 2 + 1, size: value.size, font, color: INK })
+    return
+  }
+  if (value.kind === 'date_signed' || value.kind === 'text') {
+    // A character Helvetica cannot encode would fail the whole seal.
+    const text = pdfSafeText(value.text ?? '')
+    if (!text) return
+    const size = textSizeForBox(fh)
     const maxWidth = Math.max(8, fw - 4)
     const lines = wrapTextToWidth(text, maxWidth, (s) => font.widthOfTextAtSize(s, size))
     const lineH = size + 1.2

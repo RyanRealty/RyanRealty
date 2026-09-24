@@ -421,7 +421,17 @@ export type SignFieldValue =
   | { kind: 'signature'; png: string } // data URL of drawn/typed signature
   | { kind: 'initials'; png: string }
   | { kind: 'date_signed'; text: string }
-  | { kind: 'text'; text: string }
+  | {
+      kind: 'text'
+      text: string
+      /**
+       * One line of a lined section (lib/tc/text-areas.ts): drawn at exactly
+       * this size, unwrapped, because the layout already fit it to the line.
+       */
+      size?: number
+      /** On the first line of a section: the section and the whole text the broker typed. */
+      area?: { key: string; text: string }
+    }
   | { kind: 'checkbox'; checked: boolean }
 
 /**

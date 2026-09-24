@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PdfPages } from './pdf-pages'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,11 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+import { applyPacketSectionText } from '@/app/actions/tc-envelope-text'
+import { areaSpace, layoutAreaText, type AreaLayout } from '@/lib/tc/text-areas'
+import { continuationFormFor, continuedMarker, layoutWithMarker } from '@/lib/tc/continuation'
 import {
   saveEnvelopeRecipients,
   saveEnvelopeFields,
@@ -39,7 +44,22 @@ import {
 } from '@/lib/tc/signing'
 import { SIGNER_COMPLETED_TYPES } from '@/lib/tc/required-fields'
 
-type LocalField = FieldInput & { localId: string }
+type LocalField = FieldInput & { localId: string; fieldId?: string }
+type Section = EnvelopeDetail['sections'][number]
+const sectionId = (s: { documentId: string; key: string }) => `${s.documentId}|${s.key}`
+
+/**
+ * Lay a section's text the way the server will (lib/data/tc/continuation.ts):
+ * on its own printed lines, and when it does not fit, ending with the marker
+ * that names where it continues. The addendum number is settled on save.
+ */
+function layoutSection(sec: Section, text: string, pts: { w: number; h: number }, addendumNumber: number): AreaLayout {
+  const { space, size } = areaSpace(sec.lines, pts.w, pts.h)
+  const plain = layoutAreaText(text, space, size)
+  if (!plain.overflow) return plain
+  return layoutWithMarker(text, space, size, continuedMarker(continuationFormFor(sec.library), addendumNumber, '1'))
+}
+
 
 export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const router = useRouter()
@@ -58,6 +78,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const [fields, setFields] = useState<LocalField[]>(
     detail.fields.map((f, i) => ({
       localId: `${f.id}-${i}`,
+      fieldId: f.id,
       documentId: f.documentId,
       recipientId: f.recipientId,
       type: f.type,
@@ -80,6 +101,41 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const [inviteSubject, setInviteSubject] = useState(detail.inviteSubject ?? '')
   const [inviteBody, setInviteBody] = useState(detail.inviteBody ?? '')
   const dragRef = useRef<{ localId: string; offsetX: number; offsetY: number } | null>(null)
+
+  // --- lined sections: one text box each (Matt 2026-09-24) ---
+  const [sectionTexts, setSectionTexts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(detail.sections.map((sec) => [sectionId(sec), sec.text]))
+  )
+  const [dirtySections, setDirtySections] = useState<Set<string>>(() => new Set())
+  const [editingSection, setEditingSection] = useState<string | null>(null)
+  // Page sizes in PDF points, reported by the viewer: text is measured in points.
+  const pagePts = useRef<Map<string, { w: number; h: number }>>(new Map())
+  const ptsOf = (documentId: string, page: number) => pagePts.current.get(`${documentId}:${page}`) ?? { w: 612, h: 792 }
+  const sectionLineIds = useMemo(() => new Set(detail.sections.flatMap((sec) => sec.fieldIds)), [detail.sections])
+  const continuationFor = (documentId: string) => detail.continuations.filter((c) => c.sourceDocumentId === documentId)
+  const nextAddendumGuess = (documentId: string) => continuationFor(documentId)[0]?.addendumNumber ?? 1
+
+  function setSectionText(sec: Section, text: string) {
+    const id = sectionId(sec)
+    setSectionTexts((t) => ({ ...t, [id]: text }))
+    setDirtySections((d) => new Set(d).add(id))
+    const laid = layoutSection(sec, text, ptsOf(sec.documentId, sec.page), nextAddendumGuess(sec.documentId))
+    const order = new Map(sec.fieldIds.map((fid, i) => [fid, i]))
+    setFields((fs) =>
+      fs.map((f) => {
+        const i = f.fieldId ? order.get(f.fieldId) : undefined
+        if (i === undefined) return f
+        const line = laid.lines[i] ?? ''
+        return {
+          ...f,
+          value:
+            line || i === 0
+              ? { kind: 'text' as const, text: line, size: laid.size, ...(i === 0 ? { area: { key: sec.key, text } } : {}) }
+              : null,
+        }
+      })
+    )
+  }
 
   const colorOf = (recipientId: string | null) => {
     if (!recipientId) return '#64748b'
@@ -215,6 +271,18 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       setStatus(fRes.error ?? 'Could not save fields')
       return false
     }
+    if (dirtySections.size) {
+      // The server lays every section out again and builds the continuation
+      // addenda, numbered next on the file, right after their forms.
+      const texts = detail.sections.map((sec) => ({ documentId: sec.documentId, areaKey: sec.key, text: sectionTexts[sectionId(sec)] ?? '' }))
+      const aRes = await applyPacketSectionText(detail.id, texts)
+      if (!aRes.ok) {
+        setStatus(aRes.error ?? 'Could not save the text boxes')
+        return false
+      }
+      setDirtySections(new Set())
+      router.refresh()
+    }
     return true
   }
 
@@ -270,7 +338,9 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             <p className="mb-2 text-sm font-medium text-foreground">{doc.name}</p>
             <PdfPages
               url={doc.url}
-              overlay={(pageNumber, size) => (
+              overlay={(pageNumber, size) => {
+                pagePts.current.set(`${doc.documentId}:${pageNumber}`, { w: size.ptsW, h: size.ptsH })
+                return (
                 <PageLayer
                   readonly={readonly}
                   toolActive={!!activeRecipientId}
@@ -278,6 +348,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                 >
                   {fields
                     .filter((f) => f.documentId === doc.documentId && f.page === pageNumber)
+                    .filter((f) => !f.fieldId || !sectionLineIds.has(f.fieldId))
                     .map((f) => (
                       <FieldChip
                         key={f.localId}
@@ -297,15 +368,54 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                         dragRef={dragRef}
                       />
                     ))}
+                  {detail.sections
+                    .filter((sec) => sec.documentId === doc.documentId && sec.page === pageNumber)
+                    .map((sec) => (
+                      <SectionBox
+                        key={sectionId(sec)}
+                        section={sec}
+                        size={size}
+                        lines={sec.fieldIds.map((fid) => {
+                          const v = fields.find((f) => f.fieldId === fid)?.value
+                          return v && v.kind === 'text' ? v.text : ''
+                        })}
+                        typeSize={(() => {
+                          const v = fields.find((f) => f.fieldId === sec.fieldIds[0])?.value
+                          return v && v.kind === 'text' && v.size ? v.size : 9
+                        })()}
+                        active={editingSection === sectionId(sec)}
+                        readonly={readonly}
+                        onOpen={() => setEditingSection(sectionId(sec))}
+                      />
+                    ))}
                 </PageLayer>
-              )}
+                )
+              }}
             />
+            {continuationFor(doc.documentId).length ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Continues on {continuationFor(doc.documentId).map((c) => `Addendum No. ${c.addendumNumber}`).join(', ')}, right after this form.
+              </p>
+            ) : null}
           </div>
         ))}
       </div>
 
       {/* control panel */}
       <div className="space-y-4">
+        {detail.sections.length ? (
+          <SectionEditor
+            sections={detail.sections}
+            documents={detail.documents}
+            texts={sectionTexts}
+            editing={editingSection}
+            readonly={readonly}
+            dirty={dirtySections.size > 0}
+            layoutOf={(sec, text) => layoutSection(sec, text, ptsOf(sec.documentId, sec.page), nextAddendumGuess(sec.documentId))}
+            onEdit={setEditingSection}
+            onChange={setSectionText}
+          />
+        ) : null}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-sm">
@@ -620,3 +730,185 @@ function FieldChip({
     </div>
   )
 }
+
+/**
+ * One lined section on the page: its laid-out text sits on the printed lines,
+ * exactly as the signed PDF will draw it; a click opens it for typing.
+ */
+function SectionBox({
+  section,
+  size,
+  lines,
+  typeSize,
+  active,
+  readonly,
+  onOpen,
+}: {
+  section: Section
+  size: { w: number; h: number; ptsW: number; ptsH: number }
+  lines: string[]
+  typeSize: number
+  active: boolean
+  readonly: boolean
+  onOpen: () => void
+}) {
+  const top = Math.min(...section.lines.map((l) => l.y))
+  const bottom = Math.max(...section.lines.map((l) => l.y + l.h))
+  const left = Math.min(...section.lines.map((l) => l.x))
+  const right = Math.max(...section.lines.map((l) => l.x + l.w))
+  const px = size.w / (size.ptsW || 612)
+  return (
+    <div
+      data-field-chip
+      role="button"
+      tabIndex={readonly ? -1 : 0}
+      aria-label={`Text box: ${sectionTitle(section)}, page ${section.page}`}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (!readonly) onOpen()
+      }}
+      onKeyDown={(e) => {
+        if (!readonly && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+      className={cn(
+        'absolute rounded-sm border border-dashed',
+        active ? 'border-primary bg-primary/5' : 'border-primary/40 hover:border-primary hover:bg-primary/5',
+        readonly ? 'cursor-default' : 'cursor-text'
+      )}
+      style={{ left: left * size.w - 2, top: top * size.h - 2, width: (right - left) * size.w + 4, height: (bottom - top) * size.h + 4 }}
+    >
+      {section.lines.map((l, i) =>
+        lines[i] ? (
+          <span
+            key={i}
+            className="pointer-events-none absolute whitespace-nowrap text-foreground"
+            style={{
+              left: (l.x - left) * size.w + 2 + 2 * px,
+              top: (l.y - top) * size.h + 2,
+              height: l.h * size.h,
+              lineHeight: `${l.h * size.h}px`,
+              fontSize: typeSize * px,
+              fontFamily: 'Helvetica, Arial, sans-serif',
+            }}
+          >
+            {lines[i]}
+          </span>
+        ) : null
+      )}
+      {!lines.some(Boolean) && !readonly ? (
+        // On the first line, where typing starts, never over the printed label beside it.
+        <span
+          className="pointer-events-none absolute text-[10px] font-medium text-primary"
+          style={{ left: (section.lines[0].x - left) * size.w + 4, top: (section.lines[0].y - top) * size.h + 2, lineHeight: `${section.lines[0].h * size.h}px` }}
+        >
+          Type here
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+/** A section as the form prints it: "29. Additional Provisions". */
+function sectionTitle(sec: Section): string {
+  return sec.title ? (sec.number ? `${sec.number}. ${sec.title}` : sec.title) : 'Text box'
+}
+
+/** The text of the section being edited, and how it fits. */
+function SectionEditor({
+  sections,
+  documents,
+  texts,
+  editing,
+  readonly,
+  dirty,
+  layoutOf,
+  onEdit,
+  onChange,
+}: {
+  sections: Section[]
+  documents: EnvelopeDetail['documents']
+  texts: Record<string, string>
+  editing: string | null
+  readonly: boolean
+  dirty: boolean
+  layoutOf: (sec: Section, text: string) => AreaLayout
+  onEdit: (id: string | null) => void
+  onChange: (sec: Section, text: string) => void
+}) {
+  const current = sections.find((sec) => sectionId(sec) === editing) ?? null
+  const docName = (id: string) => documents.find((d) => d.documentId === id)?.name.replace(/\.pdf$/i, '') ?? 'Form'
+  const labelOf = (sec: Section) => {
+    const lines = sec.printedLines ? (sec.printedLines.includes('-') ? `lines ${sec.printedLines}` : `line ${sec.printedLines}`) : null
+    return `${sectionTitle(sec)} · ${[docName(sec.documentId), `page ${sec.page}`, lines].filter(Boolean).join(', ')}`
+  }
+  const text = current ? texts[sectionId(current)] ?? '' : ''
+  const laid = current ? layoutOf(current, text) : null
+  const used = laid ? laid.lines.filter(Boolean).length : 0
+  const form = current ? continuationFormFor(current.library) : null
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between text-sm">
+          Text boxes
+          <Badge variant="outline">{sections.length}</Badge>
+        </CardTitle>
+        <p className="text-[11px] font-normal text-muted-foreground">
+          Each lined section is one box. Text fills the printed lines; what does not fit continues on an addendum placed right after the form.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {current ? (
+          <div className="space-y-2">
+            <Label htmlFor="section-text" className="text-xs">
+              {labelOf(current)}
+            </Label>
+            <Textarea
+              id="section-text"
+              value={text}
+              rows={8}
+              disabled={readonly}
+              onChange={(e) => onChange(current, e.target.value)}
+              placeholder="Type or paste the text for this section."
+            />
+            <p className={cn('text-xs', laid?.overflow ? 'text-foreground' : 'text-muted-foreground')}>
+              {!text.trim()
+                ? `${current.lines.length} printed lines.`
+                : laid?.overflow
+                  ? `Fills all ${current.lines.length} lines. The rest continues on ${form?.title === 'General Addendum' ? 'a 2.2 General Addendum' : 'an OREF 002 Addendum'} right after this form, numbered next on the file when you save.`
+                  : `Fits on the form: ${used} of ${current.lines.length} lines.`}
+            </p>
+            <div className="flex items-center justify-between gap-2">
+              <Button size="sm" variant="outline" onClick={() => onEdit(null)}>
+                Done
+              </Button>
+              {dirty ? <span className="text-[11px] text-muted-foreground">Saved with the draft.</span> : null}
+            </div>
+          </div>
+        ) : (
+          <ul className="space-y-1">
+            {sections.map((sec) => {
+              const t = texts[sectionId(sec)] ?? ''
+              return (
+                <li key={sectionId(sec)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-auto w-full flex-col items-start gap-0 whitespace-normal px-2 py-1.5 text-left text-xs font-normal"
+                    onClick={() => onEdit(sectionId(sec))}
+                  >
+                    <span className="block font-medium text-foreground">{labelOf(sec)}</span>
+                    <span className="block w-full truncate text-muted-foreground">{t.trim() ? t : 'Empty'}</span>
+                  </Button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+

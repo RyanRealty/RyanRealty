@@ -1,5 +1,6 @@
 'use server'
 
+import { getPacketSections, type PacketContinuation, type PacketSection } from '@/lib/data/tc/continuation'
 import { createClient } from '@supabase/supabase-js'
 import { TC_DOCUMENT_URL_TTL_SECONDS } from '@/lib/tc/document-urls'
 import { formBindingFactKey, formBlankIsReserved } from '@/lib/tc/oref-form-bindings'
@@ -173,6 +174,10 @@ export type EnvelopeDetail = EnvelopeSummary & {
   incompletePrepareMessage: string | null
   outdatedForms: Array<{ name: string; pendingVersionLabel: string | null }>
   outdatedFormsMessage: string | null
+  /** Lined sections a broker types into as one box (lib/data/tc/continuation.ts). */
+  sections: PacketSection[]
+  /** Continuation addenda in the packet, each placed after the form it continues. */
+  continuations: PacketContinuation[]
 }
 
 function mapRecipient(r: DbRow): EnvelopeRecipient {
@@ -294,10 +299,11 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     signedAt: f.signed_at,
   }))
 
-  const [signerSources, formFreshness, cycleRow] = await Promise.all([
+  const [signerSources, formFreshness, cycleRow, packet] = await Promise.all([
     getFormSourcesForEnvelope(envelopeId),
     listEnvelopeFormFreshness(envelopeId),
     getEnvelopeCycleKindAndDeal(String(env.cycle_id)),
+    getPacketSections(envelopeId).catch(() => ({ sections: [], continuations: [] })),
   ])
   const signerRead = unionRequiredSignerReads(signerSources)
   const outdatedForms = formFreshness
@@ -353,6 +359,8 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     incompletePrepareMessage: prepareMessage,
     outdatedForms,
     outdatedFormsMessage,
+    sections: packet.sections,
+    continuations: packet.continuations,
   }
 }
 

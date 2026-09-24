@@ -22,7 +22,8 @@ function ensureWorker() {
   workerReady = true
 }
 
-export type RenderedPage = { pageNumber: number; width: number; height: number }
+/** width/height: rendered CSS pixels. ptsW/ptsH: the page's own size in PDF points (what text is measured in). */
+export type RenderedPage = { pageNumber: number; width: number; height: number; ptsW: number; ptsH: number }
 
 export function PdfPages({
   url,
@@ -33,7 +34,7 @@ export function PdfPages({
   url: string | null
   maxWidth?: number
   /** Returns overlay content for one page, sized to its rendered CSS pixels. */
-  overlay?: (pageNumber: number, size: { w: number; h: number }) => ReactNode
+  overlay?: (pageNumber: number, size: { w: number; h: number; ptsW: number; ptsH: number }) => ReactNode
   onReady?: (pages: RenderedPage[]) => void
 }) {
   const [pages, setPages] = useState<RenderedPage[]>([])
@@ -64,7 +65,7 @@ export function PdfPages({
           const base = page.getViewport({ scale: 1 })
           const cssWidth = Math.min(maxWidth, base.width)
           const scale = cssWidth / base.width
-          measured.push({ pageNumber: n, width: cssWidth, height: base.height * scale })
+          measured.push({ pageNumber: n, width: cssWidth, height: base.height * scale, ptsW: base.width, ptsH: base.height })
         }
         if (!cancelled) {
           setPages(measured)
@@ -133,7 +134,7 @@ export function PdfPages({
           />
           {overlay ? (
             <div className="absolute inset-0" style={{ width: p.width, height: p.height }}>
-              {overlay(p.pageNumber, { w: p.width, h: p.height })}
+              {overlay(p.pageNumber, { w: p.width, h: p.height, ptsW: p.ptsW, ptsH: p.ptsH })}
             </div>
           ) : null}
         </div>

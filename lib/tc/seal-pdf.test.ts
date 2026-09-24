@@ -63,3 +63,24 @@ describe('sha256Hex', () => {
     expect(sha256Hex(new Uint8Array([1, 2, 3, 5]))).not.toBe(a)
   })
 })
+
+describe('sealEnvelope text (lined sections)', () => {
+  it('draws a laid-out line as is and never fails on a character the font cannot encode', async () => {
+    const { PDFDocument } = await import('pdf-lib')
+    const { sealEnvelope } = await import('./seal-pdf')
+    const src = await PDFDocument.create()
+    src.addPage([612, 792])
+    const bytes = await src.save()
+    const field = (id: string, value: { kind: 'text'; text: string; size?: number } | { kind: 'date_signed'; text: string }) => ({
+      id, documentId: 'd', recipientId: null, type: 'text' as const, page: 1, x: 0.095, y: 0.229, w: 0.84, h: 0.015, required: false, value, signedAt: null,
+    })
+    const res = await sealEnvelope({
+      envelopeId: 'e',
+      envelopeName: 'Test',
+      sealedAtIso: '2026-09-24T19:00:00Z',
+      recipients: [],
+      documents: [{ bytes, name: 'Addendum.pdf', fields: [field('a', { kind: 'text', text: 'Seller to repair the roof ✓ before closing.', size: 8.5 }), field('b', { kind: 'text', text: 'Café 家' }), field('c', { kind: 'date_signed', text: '09/24/2026 ✓' })] }],
+    })
+    expect(res.pageCount).toBe(2) // the page and the certificate
+  })
+})
