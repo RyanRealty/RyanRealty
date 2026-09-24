@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-24T18:58:55.543Z
+**Generated:** 2026-09-24T19:10:05.140Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 597,058**
+### `listing_tile_mv` · **rows ≈ 597,076**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. Refreshed every 30 minutes by pg_cron job `refresh_listing_tile_mv_30min` (:02/:32). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 

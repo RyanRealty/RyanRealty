@@ -55,6 +55,12 @@ export function sortOrderPhrase(sort: string | null | undefined, scope: { sold?:
 export type SplitClaim = {
   /** The number the line leads with. */
   figure: number
+  /**
+   * True when `figure` is a floor, not a count (the uncapped count did not
+   * come back in time, or a drawn shape filtered a capped read): the line
+   * prints it as "501+".
+   */
+  figureIsFloor: boolean
   /** 'home' | 'homes', agreeing with `figure`. */
   noun: 'home' | 'homes'
   /** ' in Central Oregon' for the regional frame, else ' on this map'. */
@@ -78,6 +84,13 @@ export function publishSplitClaim(input: {
   rowsInHand: number
   /** The DAL's exact count for the frame and filters. */
   totalCount: number
+  /**
+   * True when totalCount is only a floor (the rows fetched): the exact count
+   * did not come back in time, or a drawn shape filtered a read that capped.
+   * The line then says "N+" and the trace says "at least"; a floor is never
+   * published as a count (section 0).
+   */
+  countIsFloor?: boolean
   sort: string | null | undefined
   /** True on the Sold scope, where the date sorts follow the close date. */
   sold?: boolean
@@ -94,7 +107,11 @@ export function publishSplitClaim(input: {
 }): SplitClaim | null {
   const total = Math.max(0, Math.floor(input.totalCount))
   const visible = Math.max(0, Math.floor(input.visibleCount))
-  const truncated = input.rowsInHand < total
+  const floor = input.countIsFloor === true
+  // A floor says more homes match than were read, so the rows in hand are a
+  // part of the set even when they number the floor itself (a drawn shape
+  // filtered out of a capped read): no range, the order, "N+".
+  const truncated = input.rowsInHand < total || floor
   const figure = truncated ? total : visible
   if (figure <= 0) return null
 
@@ -111,7 +128,9 @@ export function publishSplitClaim(input: {
     ? `for ${input.frameLabel}, the service area this site covers`
     : 'for this map frame'
   const parts: string[] = [
-    `Oregon Data Share, read live ${scope}: ${formatCount(total)} ${plural(total, 'listing matches', 'listings match')}.`,
+    floor
+      ? `Oregon Data Share, read live ${scope}: at least ${formatCount(total)} listings match; the full count was not read.`
+      : `Oregon Data Share, read live ${scope}: ${formatCount(total)} ${plural(total, 'listing matches', 'listings match')}.`,
   ]
   if (truncated) {
     parts.push(
@@ -130,7 +149,8 @@ export function publishSplitClaim(input: {
 
   return {
     figure,
-    noun: figure === 1 ? 'home' : 'homes',
+    figureIsFloor: floor,
+    noun: figure === 1 && !floor ? 'home' : 'homes',
     where,
     truncated,
     range,

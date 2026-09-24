@@ -2,17 +2,22 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  PLAUSIBLE_YEAR_BUILT,
   SEARCH_SORT_KEYS,
   SEARCH_SORT_LABELS,
   SEARCH_SORT_SPECS,
   SOLD_SEARCH_SORT_LABELS,
+  YEAR_BUILT_UNKNOWN_OR,
   applySearchSortOrder,
   compareTilesForSearchSort,
   isSearchSortKey,
   isSoldSearchScope,
+  isYearBuiltSort,
+  plausibleYearBuilt,
   resolveSearchSortKey,
   searchSortLabel,
   searchTileSort,
+  yearSortRestWindow,
   type SearchSortableTile,
 } from './search-sort-order'
 
@@ -151,13 +156,77 @@ describe('the Sold scope: newest means most recently SOLD (Matt 2026-09-23)', ()
     expect(searchTileSort('oldest', { sold: true })).toBe('close-oldest')
     expect(searchTileSort('price_asc', { sold: true })).toBe('price-asc')
     expect(searchTileSort('priceDesc', { sold: true })).toBe('price-desc')
-    // The tile MV cannot order by $/sq ft or year built: the scope's newest.
-    expect(searchTileSort('price_per_sqft_asc', { sold: true })).toBe('close-newest')
     expect(searchTileSort('newest')).toBe('listed-newest')
     expect(searchTileSort('oldest')).toBe('listed-oldest')
     expect(searchTileSort('price_asc')).toBe('price-asc')
     expect(searchTileSort('price_desc', { sold: false })).toBe('price-desc')
-    expect(searchTileSort('year_newest')).toBe('listed-newest')
+  })
+
+  it('every sort the menu offers reaches the tile read as itself, on every scope (2026-09-24)', () => {
+    // These used to fall back to the scope's newest while the menu still
+    // named $/sq ft or year built: a label naming an order the list was not in.
+    for (const sold of [true, false]) {
+      expect(searchTileSort('price_per_sqft_asc', { sold })).toBe('ppsf-asc')
+      expect(searchTileSort('price_per_sqft_desc', { sold })).toBe('ppsf-desc')
+      expect(searchTileSort('year_newest', { sold })).toBe('year-newest')
+      expect(searchTileSort('year_oldest', { sold })).toBe('year-oldest')
+    }
+    // No two search sorts share a tile sort on one scope.
+    for (const sold of [true, false]) {
+      const tileSorts = SEARCH_SORT_KEYS.map((key) => searchTileSort(key, { sold }))
+      expect(new Set(tileSorts).size).toBe(SEARCH_SORT_KEYS.length)
+    }
+  })
+})
+
+describe('year built: placeholder years sort with the unknown ones, last (2026-09-24)', () => {
+  it('only 1700..2100 is a year a sort orders by (the RPC rule and the filter bounds)', () => {
+    expect(PLAUSIBLE_YEAR_BUILT).toEqual({ min: 1700, max: 2100 })
+    expect(plausibleYearBuilt(1998)).toBe(1998)
+    expect(plausibleYearBuilt(1700)).toBe(1700)
+    expect(plausibleYearBuilt(2100)).toBe(2100)
+    expect(plausibleYearBuilt(9999)).toBeNull()
+    expect(plausibleYearBuilt(0)).toBeNull()
+    expect(plausibleYearBuilt(null)).toBeNull()
+    expect(isYearBuiltSort('year_newest')).toBe(true)
+    expect(isYearBuiltSort('year-oldest')).toBe(true)
+    expect(isYearBuiltSort('price_asc')).toBe(false)
+    expect(YEAR_BUILT_UNKNOWN_OR).toBe('year_built.is.null,year_built.lt.1700,year_built.gt.2100')
+  })
+
+  it('the Node comparator puts 9999 and 0 after every real year, like a missing year', () => {
+    const rows = [
+      tile('K-9999', null, { yearBuilt: 9999 }),
+      tile('K-2004', null, { yearBuilt: 2004 }),
+      tile('K-NULL', null),
+      tile('K-0', null, { yearBuilt: 0 }),
+      tile('K-1911', null, { yearBuilt: 1911 }),
+    ]
+    expect([...rows].sort(compareTilesForSearchSort('year_newest')).map((r) => r.listingKey)).toEqual([
+      'K-2004',
+      'K-1911',
+      'K-0',
+      'K-9999',
+      'K-NULL',
+    ])
+    expect([...rows].sort(compareTilesForSearchSort('year_oldest')).map((r) => r.listingKey)).toEqual([
+      'K-1911',
+      'K-2004',
+      'K-0',
+      'K-9999',
+      'K-NULL',
+    ])
+  })
+
+  it('the second read starts where the plausible years end', () => {
+    // A full first page: no second read.
+    expect(yearSortRestWindow({ offset: 0, limit: 24, plausibleRowsRead: 24, plausibleTotal: 900 })).toBeNull()
+    // Page 1 with 5 plausible homes in all: unknown homes 0..18.
+    expect(yearSortRestWindow({ offset: 0, limit: 24, plausibleRowsRead: 5, plausibleTotal: 5 })).toEqual({ from: 0, to: 18 })
+    // Page 2 (offset 24) of a set with 30 plausible homes: 6 plausible in hand, unknown 0..17.
+    expect(yearSortRestWindow({ offset: 24, limit: 24, plausibleRowsRead: 6, plausibleTotal: 30 })).toEqual({ from: 0, to: 17 })
+    // Page 3 (offset 48) of that set: all unknown, starting at 18.
+    expect(yearSortRestWindow({ offset: 48, limit: 24, plausibleRowsRead: 0, plausibleTotal: 30 })).toEqual({ from: 18, to: 41 })
   })
 })
 
@@ -174,15 +243,21 @@ describe('every search path reads the one sort table', () => {
     const actions = read('app/actions/listings.ts')
     // getListings (list fast path, never the Sold scope): newest -> listed-newest, oldest -> listed-oldest.
     expect(actions).toMatch(/newest: 'listed-newest',\s*\n\s*oldest: 'listed-oldest',/)
-    // getListingsForMap (?view=map pins): newest listed, or most recently sold on the Sold scope.
+    // getListingsForMap (?view=map pins): the search's sort, by default newest
+    // listed, or most recently sold on the Sold scope.
     expect(actions).toMatch(
-      /sort: searchTileSort\('newest', \{ sold: dalStatus === 'closed' \}\),\s*\n\s*limit: Math\.min\(mapLimit, 5000\)/,
+      /sort: searchTileSort\(options\.sort \?\? 'newest', \{ sold: dalStatus === 'closed' \}\),\s*\n\s*limit: Math\.min\(mapLimit, 5000\)/,
     )
     // getViewportListings (the Sold scope of the split view).
     expect(actions).toMatch(/const dalSort = searchTileSort\(options\.sort, \{ sold: dalStatus === 'closed' \}\)/)
+    // The Sold split view hands the tile read the search's own sort, every key.
+    const search = read('app/actions/search.ts')
+    expect(search).toMatch(/statusFilter: 'closed',[\s\S]{0,600}sort: toDalSort\(filters\.sort\),/)
     const tiles = read('lib/data/listings/getListingTiles.ts')
     expect(tiles).toMatch(/\.order\('on_market_date', \{ ascending: parsed\.sort === 'listed-oldest', nullsFirst: false \}\)/)
     expect(tiles).toMatch(/\.order\('close_date', \{ ascending: parsed\.sort === 'close-oldest', nullsFirst: false \}\)/)
+    expect(tiles).toMatch(/\.order\('price_per_sqft', \{ ascending: parsed\.sort === 'ppsf-asc', nullsFirst: false \}\)/)
+    expect(tiles).toMatch(/\.order\('year_built', \{ ascending: parsed\.sort === 'year-oldest', nullsFirst: false \}\)/)
   })
 
   it('the live definition of each search RPC orders newest by "OnMarketDate" ("CloseDate" on the Sold scope) and reads new listings by "OnMarketDate"', () => {

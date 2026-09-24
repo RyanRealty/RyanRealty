@@ -165,6 +165,18 @@ run(
   { deny: false },
 )
 
+run(
+  'apply_migration: a function body reading a DAL-covered table passes with no audit comment',
+  {
+    tool_name: 'mcp__5adfee1a-x__apply_migration',
+    tool_input: {
+      query:
+        'CREATE OR REPLACE FUNCTION f() RETURNS SETOF text AS $$ SELECT listing_key FROM listing_boundary_xref_mv $$ LANGUAGE sql;',
+    },
+  },
+  { deny: false },
+)
+
 // ── execute_sql DAL bypass ────────────────────────────────────────────
 run(
   'execute_sql: raw SELECT on listing_tile_mv is denied (DAL covers it)',
