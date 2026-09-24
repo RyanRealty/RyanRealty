@@ -192,6 +192,12 @@ export async function sendLeadConfirmation(params: {
     brokerSlug: 'matt',
   })
   if (!gmailRes.ok) {
+    if (gmailRes.unconfirmed) {
+      // The send left and Gmail never answered: the lead may already have it,
+      // and a Resend copy now could arrive twice.
+      console.warn(`[cma-request] ${gmailRes.error} Not falling back to Resend.`)
+      return
+    }
     // Suppression chokepoint (fails closed) — re-checked in this scope so the
     // Resend fallback to the lead is gated independently of the early return.
     if ((await isSuppressedByEmail(params.leadEmail, 'email')).suppressed) return
