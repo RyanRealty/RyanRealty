@@ -17,6 +17,16 @@
  *  - a done node no longer blocks the same gap forever: it can be re-seeded
  *    once it has been done for RESEED_AFTER_DAYS, the length of the accept
  *    window, when the gap is still there. A killed node blocks for good.
+ *  - dedupe (`alreadySeeded`) is winner-first, not kind+winner-first: a LIVE
+ *    node (open/in_progress/blocked) on a winner blocks every kind on that
+ *    winner, not just its own — a second diagnose kind minted onto a winner
+ *    already mid-fix or mid-measurement-window duplicates the work and
+ *    confounds the accept test. Only a CLOSED node (killed, or done inside
+ *    RESEED_AFTER_DAYS) still keys on kind+winner, since a kill or a recent
+ *    done is a decision about that one diagnose kind, not a reservation of
+ *    the whole winner. (2026-09-24 — SITE-197/SITE-200 duplicated
+ *    SITE-183/SITE-185 one day after their fixes shipped, same winners,
+ *    different kind, blocked windows still open.)
  * reachability: entry-point scripts/seed-gsc-ranking-queue.ts + app/api/cron/loop-weekly-measure
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -166,16 +176,45 @@ function isClosedLongEnough(row: SiteRow, now: Date): boolean {
   return now.getTime() - at >= RESEED_AFTER_DAYS * 24 * 60 * 60 * 1000
 }
 
+/** A node in one of these states is still open work — it occupies the winner. */
+const LIVE_STATES = new Set(['open', 'in_progress', 'blocked'])
+
 /**
- * True when the graph already carries this gap: a node with the same kind and
- * winner that is still live, killed, or done less than RESEED_AFTER_DAYS ago.
- * A row read without state (older callers) always counts as seeded.
+ * True when `title`'s `→ ${winner} (` / `→ ${winner}` suffix names exactly
+ * `winner`, not a winner that merely starts with it (`/cities/bend` must not
+ * match a title suffixed `→ /cities/bend/foo (`).
+ */
+function titleNamesWinner(title: string, winner: string): boolean {
+  return title.includes(`→ ${winner} (`) || title.endsWith(`→ ${winner}`)
+}
+
+/**
+ * True when the graph already carries this gap.
+ *
+ * Two separate rules, because a live node and a closed one mean different
+ * things:
+ *  - LIVE (open / in_progress / blocked): any `GSC gap` node already on this
+ *    winner — whatever its diagnose kind — occupies it. A second kind on a
+ *    winner mid-fix or mid-measurement-window duplicates the work and
+ *    confounds the accept test (the trap that minted SITE-197/SITE-200 as
+ *    [zero-click] onto winners SITE-183/SITE-185 already held as [cannibal],
+ *    2026-09-24 — the fix landed a day before, the 28-day window was still
+ *    open). Kind is irrelevant here: the winner is spoken for.
+ *  - CLOSED (killed, or done and not yet RESEED_AFTER_DAYS old): only the
+ *    SAME kind + winner blocks, as before. A kill or a recent done is a
+ *    recorded decision about that specific diagnose kind; it does not reserve
+ *    the winner against a different kind of gap.
+ * A row read without state (older callers) always counts as seeded, for
+ * either rule — unknown state is treated as live.
  */
 export function alreadySeeded(siteRows: SiteRow[], kind: DiagnoseKind, winner: string, now: Date = new Date()): boolean {
-  const needle = `GSC gap [${kind}]`
+  const kindNeedle = `GSC gap [${kind}]`
   return siteRows.some((r) => {
     const t = String(r.title ?? '')
-    if (!(t.startsWith('GSC gap') && t.includes(needle) && (t.includes(`→ ${winner} (`) || t.endsWith(`→ ${winner}`)))) return false
+    if (!(t.startsWith('GSC gap') && titleNamesWinner(t, winner))) return false
+    const state = r.state ?? null
+    if (state === null || LIVE_STATES.has(state)) return true
+    if (!t.includes(kindNeedle)) return false
     return !isClosedLongEnough(r, now)
   })
 }

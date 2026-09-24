@@ -69,6 +69,37 @@ describe('alreadySeeded: dedupe against the graph', () => {
     expect(alreadySeeded([{ version_gap: 'SITE-182', title }], 'cannibal', '/communities/tetherow', now)).toBe(true)
     expect(alreadySeeded([{ version_gap: 'SITE-182', title }], 'cannibal', '/communities/tether', now)).toBe(false)
   })
+
+  describe('the 2026-09-24 trap: a live node on a winner blocks every kind on that winner', () => {
+    it('a live cannibal node blocks a zero-click seed on the same winner', () => {
+      const live: SiteRow = { version_gap: 'SITE-183', title, state: 'blocked', updated_at: daysAgo(1) }
+      expect(alreadySeeded([live], 'zero-click', '/communities/tetherow', now)).toBe(true)
+    })
+
+    it('a blocked node blocks (blocked is live, not closed)', () => {
+      const blocked: SiteRow = { version_gap: 'SITE-183', title, state: 'blocked', updated_at: daysAgo(1) }
+      expect(alreadySeeded([blocked], 'depth', '/communities/tetherow', now)).toBe(true)
+    })
+
+    it('a killed node of another kind does NOT block — a kill is a decision about that one kind', () => {
+      const killed: SiteRow = { version_gap: 'SITE-182', title, state: 'killed', updated_at: daysAgo(RESEED_AFTER_DAYS * 4) }
+      expect(alreadySeeded([killed], 'zero-click', '/communities/tetherow', now)).toBe(false)
+      // same kind still blocks for good (unchanged behavior)
+      expect(alreadySeeded([killed], 'cannibal', '/communities/tetherow', now)).toBe(true)
+    })
+
+    it('a done node older than RESEED_AFTER_DAYS does not block, even for another kind', () => {
+      const old: SiteRow = { version_gap: 'SITE-182', title, state: 'done', updated_at: daysAgo(RESEED_AFTER_DAYS + 1) }
+      expect(alreadySeeded([old], 'zero-click', '/communities/tetherow', now)).toBe(false)
+      expect(alreadySeeded([old], 'cannibal', '/communities/tetherow', now)).toBe(false)
+    })
+
+    it('a different winner with the same prefix does not block', () => {
+      const live: SiteRow = { version_gap: 'SITE-183', title, state: 'open', updated_at: daysAgo(1) }
+      expect(alreadySeeded([live], 'zero-click', '/communities/tetherow-annex', now)).toBe(false)
+      expect(alreadySeeded([live], 'zero-click', '/communities/tether', now)).toBe(false)
+    })
+  })
 })
 
 describe('buildClassSlipDrafts: a degraded money class becomes one node', () => {
