@@ -24,6 +24,8 @@ type StoredForm = {
   counter_by?: string | null
   verdict?: string
   basis?: string
+  rule?: string | null
+  confidence?: string | null
   signers?: StoredSigner[]
   reasons?: string[]
 }
@@ -64,7 +66,12 @@ export function readerView(classification: unknown): ReaderView | null {
   const forms = (reader.forms ?? []).map((f) => {
     const n = f.instance ? ` #${f.instance}` : ''
     const signers = f.signers ?? []
-    const libraryNote = f.basis === 'lines' ? 'Not in the form library: signers read from the form itself.' : null
+    const libraryNote =
+      f.basis === 'lines'
+        ? 'Not in the form library: signers read from the form itself.'
+        : f.basis === 'registry' && f.rule
+          ? `Who signs: ${f.rule}`
+          : null
     const reviewNote = f.verdict === 'needs_review' ? f.reasons?.find((r) => r) ?? null : null
     return {
       title: `${f.form ?? 'Form'}${n}`,

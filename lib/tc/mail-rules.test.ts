@@ -286,6 +286,22 @@ describe('decideMailFiling: regressions from the live misfile audit (2026-09-23)
     expect(decide(mail({ from: ['transactions@bridgetownfiles.com'], subject: 'Vacation Coverage' })).status).toBe('not_deal')
   })
 
+  it('a client on several open files asking about none of them is queued for a person, not dropped', () => {
+    const apollo: DealFacts = {
+      ...sedalia,
+      dealId: 'apollo',
+      address: '60935 Apollo Place, Bend, OR 97702',
+      cycles: [cycle({ id: 'ap-sale', status: 'Pending', mlsNumber: '220216758', acceptanceDate: '2026-08-24' })],
+    }
+    const d = decideMailFiling({
+      facts: mail({ from: ['admin@ryan-realty.com'], subject: 'Question about the walkthrough', body: 'What time works for the final walkthrough?' }),
+      deals: [...DEALS, apollo],
+      thread: null,
+    })
+    expect(d.status).toBe('ambiguous')
+    expect(d.dealId).toBeNull()
+  })
+
   it('auto-replies never file', () => {
     expect(decide(mail({ from: ['sjnorton@firstam.com'], subject: 'Automatic reply: 909 Delaware', autoReply: true })).status).toBe('bulk')
   })
@@ -441,6 +457,10 @@ describe('categorizeMail', () => {
     expect(cat('Offer on 19496 Tumalo Reservoir')).toBe('offer')
     expect(cat('see attached', [{ name: '2.1_Counteroffer_to_Real_Estate_Purchase_and_Sale_Agreement.pdf' }])).toBe('counter')
     expect(cat('fully signed', [{ name: 'PSA.pdf', executionState: 'fully_executed' }])).toBe('executed_agreement')
+    // The file name says so: "… Fully Executed.pdf", SkySlope's "_X_" executed marker.
+    expect(cat('Re: Full price offer', [{ name: 'Sale_Agreement_Fully_Executed.pdf' }])).toBe('executed_agreement')
+    expect(cat('see attached', [{ name: 'RP08242025_X_001_Residential_Real_Estate_Sale_Agreement.pdf' }])).toBe('executed_agreement')
+    expect(cat('Re: Full price offer', [{ name: 'Sale_Agreement.pdf' }])).toBe('offer')
     expect(cat('Property Disclosures | 19496 Tumalo Reservoir Rd')).toBe('disclosure')
     expect(cat('Open Escrow # WT0291454')).toBe('escrow_title')
     expect(cat('Pre-approval for Todd Lorenz')).toBe('lender')

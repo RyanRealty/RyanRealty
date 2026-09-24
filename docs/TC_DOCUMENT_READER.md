@@ -29,7 +29,7 @@ The reader renders pages and has a vision model look at them.
 
 ## How it decides (`verdict.ts`, `profiles.ts`)
 
-Who must sign comes from the canonical library, [`oref-form-library.md`](../.claude/skills/skyslope-form-compliance/references/oref-form-library.md). `profiles.test.ts` parses that file and fails if the reader drifts from it.
+Who must sign comes from the curated library, [`oref-form-library.md`](../.claude/skills/skyslope-form-compliance/references/oref-form-library.md), for the forms it lists (`profiles.test.ts` parses that file and fails if the reader drifts from it), and from the **form registry** for every other form and every new release (see "The form registry" below).
 
 - **Every named person signs.** Every named buyer and every named seller signs their own line in every section their party signs. Two buyers named means two buyer signatures.
 - **Sale agreement (OREF 001).**
@@ -42,7 +42,9 @@ Who must sign comes from the canonical library, [`oref-form-library.md`](../.cla
 - **Conditional lines** ("sellers claiming exclusion", "if applicable") are not missing when unsigned.
 - **Reports and informational documents** (title reports, inspections, the OREF 000 guides, audit summaries with no signature lines) are **Reference**.
 - **Receipts** can repeat on a deal (initial and additional earnest money), so two receipts are never treated as copies of each other without a telling detail.
-- **Forms not in the library** take their signers from the lines printed on them. They are marked as such and never drive an automatic change.
+- **Forms not in the library** take their signers from the form registry: the law that names them, the kind of instrument, or the lines the form prints across every copy. A registry form seen on fewer than three copies (and not decided by law or its kind) is shown but never drives an automatic change.
+- **The initial agency disclosure pamphlet (OREF 042) is delivered, not signed** (OAR 863-015-0215). An unsigned copy is not a gap.
+- **The Notice of Real Estate Compensation** (OREF 098, printed 091 since the 01/2025 release) is signed by the principal broker of the firm it pays, listing or buyer side.
 
 Names come from the form only. A 2026-09-23 dry run showed the deal's people records can hold a sale's sellers as its buyers.
 
@@ -105,14 +107,34 @@ npx tsx scripts/tc-doc-read-eval.ts --models a,b --dump <docId>...              
 
 `/api/cron/tc-document-read?doc=<uuid>` reads one document and plans its cycle. Add `&dry=1` to plan without changing anything.
 
-## Forms outside the library
+## The form registry (Matt 2026-09-24)
 
-The reader meets forms the canonical library does not list:
-- OREF 011 (Residential Condominium Real Estate Sale Agreement)
-- OREF 024 (on files named "Earnest Money Receipt")
-- OREF 028 (Seller's Property Disclosure Statement Addendum)
-- OREF 053 (Agreement to Occupy Before Closing)
-- OREF 083A (Contingent Right to Purchase notice)
-- the Oregon REALTORS® 2.x series (2.1 Counteroffer, 2.2 General Addendum, 2.5 Repair Addendum)
+OREF and Oregon REALTORS® revise, renumber and add forms every year. Matt: "You review the forms, the laws, and figure out who needs to sign. You don't need me for that." and "The system needs to be flexible as forms change annually ... constantly updating."
 
-Per the library's own rule, their signer profiles are added there once Matt confirms them, never guessed in code. Until then they get signers from the lines printed on them and are flagged rather than acted on. Counteroffers and addenda from other publishers get the mutual buyer + seller profile by title and are marked "generic".
+So the reader keeps a registry (`public.tc_form_registry`, migration `20260924020000_tc_form_registry.sql`; code [`registry.ts`](../lib/tc/doc-read/registry.ts) and [`form-rules.ts`](../lib/tc/doc-read/form-rules.ts)). Every copy it reads adds a row to `tc_form_registry_copies`: the form's identity (its title without numbers or punctuation), the parties it prints signature lines for, and the number and release printed on it. The registry row is recomputed from all its copies, and decides who signs, strongest source first:
+
+1. **The curated library**, when it lists the form (title and number agree). The registry still counts its copies, and marks `library_disagrees` when a new release prints principal signature blocks the library entry does not expect.
+2. **Law**, when a statute or rule names the signers (table below).
+3. **The kind of instrument**, read from the title: an agreement binds the parties who sign it; a notice is signed by the party giving it, the other side's receipt is optional; an advisory by the client (one side); a receipt by the escrow or title company; an agency or listing agreement by the client and the brokerage; a compensation notice by the principal broker of the firm it pays; a report, statement, letter, invoice, deed or MLS record is kept, not executed.
+4. **The blocks the form prints**, across every copy: a party printed on at least half the copies signs. Agent lines on a party instrument are optional.
+
+`confidence new` = fewer than three copies and not decided by law or kind: the verdict is shown, but lineage does not archive or place on its strength alone. A row a person sets (`basis person`) is never overwritten.
+
+**Where to see it:** `/admin/closings/forms` (linked from the closings board): every form, its numbers and releases, who signs and what decided it, new forms and forms a new release changed.
+
+**Rebuild** after a rule change: `npx tsx scripts/tc-doc-read-backfill.ts registry`, then `reverdict`, `plan`, `apply`.
+
+### Who signs, by law (researched 2026-09-24 from the primary sources)
+
+| Instrument | Who signs | Source |
+|---|---|---|
+| Initial agency disclosure pamphlet | Nobody: delivered at first contact; delivery, not a signature, is required | OAR 863-015-0215; ORS 696.820 |
+| Final agency acknowledgment | Buyer (with the offer) and seller (on acceptance or rejection), signed separately from the sale agreement | ORS 696.845; OAR 863-015-0200(12) |
+| Seller's property disclosure statement | Seller; the statutory form carries the buyer's acknowledgment of receipt, which starts the buyer's 5-business-day revocation right | ORS 105.464; ORS 105.475 |
+| Lead-based paint disclosure | Sellers, agents and purchasers each sign and date; seller and agents keep it 3 years | 40 CFR 745.113; 24 CFR 35.92 |
+| FHA amendatory clause and real estate certification | Borrowers and sellers; the selling agent or broker signs the certification when the purchase agreement does not carry their signature | HUD Handbook 4000.1 |
+| VA escape clause | The purchaser (per the regulation text) | 38 CFR 36.4303(k) |
+| FIRPTA qualified-substitute statement | The qualified substitute (escrow or title company) alone | 26 U.S.C. 1445(b)(9) |
+| Offers and counteroffers | Every written offer is kept, including rejected and unanswered ones; delivery and the response are recorded | OAR 863-015-0250; OAR 863-015-0135 |
+
+The OREF fair-housing advisory (104) is not required by any rule found; it is treated like the other advisories (the client acknowledges it).

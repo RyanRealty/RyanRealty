@@ -1,10 +1,11 @@
 /**
- * Who must sign each form, for the document reader.
+ * Who must sign each form in the curated library, for the document reader.
  *
  * Source: `.claude/skills/skyslope-form-compliance/references/oref-form-library.md`
- * (the canonical library: "NEVER guess a form's signer profile"). The test
- * beside this file parses that markdown and fails when a row here drifts from
- * it. Two places in the old code disagreed with it and are NOT used by the
+ * (the verified baseline). The test beside this file parses that markdown and
+ * fails when a row here drifts from it. Every other form, and every new
+ * release, is learned by the form registry (registry.ts, form-rules.ts) from
+ * the law, the kind of instrument and the blocks the form prints. Two places in the old code disagreed with it and are NOT used by the
  * reader: FORM_LIBRARY put both brokers on OREF 001 (the 2025 form has no
  * agent signature lines) and put the seller on 059 / 060 (buyer-driven).
  *
@@ -42,16 +43,18 @@ export type FormProfile = {
   numbered?: boolean
   /** Checklist wording that identifies this form's row (see required-documents DOC_RULES). */
   checklistTerms: string[]
+  /** A sale agreement or counteroffer: an unaccepted copy is negotiation history. */
+  offer?: boolean
 }
 
 const BOTH: Party[] = ['buyer', 'seller']
 
 export const FORM_PROFILES: readonly FormProfile[] = [
-  { key: 'oref-001-rsa', name: 'Residential Real Estate Sale Agreement', oref: ['001'], title: /residential\s+real\s+estate\s+sale\s+agreement/i, obligation: { kind: 'all', parties: BOTH }, outcome: 'seller_response', checklistTerms: ['sale agreement', 'purchase agreement', 'purchase and sale'] },
+  { key: 'oref-001-rsa', name: 'Residential Real Estate Sale Agreement', oref: ['001'], title: /residential\s+real\s+estate\s+sale\s+agreement/i, obligation: { kind: 'all', parties: BOTH }, outcome: 'seller_response', offer: true, checklistTerms: ['sale agreement', 'purchase agreement', 'purchase and sale'] },
   { key: 'oref-002-addendum', name: 'Addendum to Sale Agreement', oref: ['002'], title: /addendum\s+to\s+(?:real\s+estate\s+)?sale\s+agreement|sale\s+agreement\s+addendum/i, obligation: { kind: 'all', parties: BOTH }, numbered: true, checklistTerms: ['addendum', 'addenda'] },
   // OREF 2026 prints the Seller's Counteroffer as 003 and the Buyer's as 004
   // (read off the 01/2025 sale agreement and a 01/2026 counteroffer, 2026-09-23).
-  { key: 'oref-003-counter', name: 'Counteroffer', oref: ['003', '004'], title: /counter\s*-?\s*offer/i, obligation: { kind: 'all', parties: BOTH }, outcome: 'counter', numbered: true, checklistTerms: ['counter'] },
+  { key: 'oref-003-counter', name: 'Counteroffer', oref: ['003', '004'], title: /counter\s*-?\s*offer/i, obligation: { kind: 'all', parties: BOTH }, outcome: 'counter', numbered: true, offer: true, checklistTerms: ['counter'] },
   { key: 'oref-015-listing-agreement', name: 'Listing Agreement', oref: ['015'], title: /exclusive\s+right\s+to\s+sell|listing\s+agreement(?!\s+addendum)/i, obligation: { kind: 'all', parties: ['seller', 'seller_agent'] }, checklistTerms: ['listing agreement', 'listing contract'] },
   { key: 'oref-020-spd', name: "Seller's Property Disclosure Statement", oref: ['020', '022'], title: /seller'?s?\s+property\s+disclosure/i, obligation: { kind: 'all', parties: ['seller', 'buyer'] }, checklistTerms: ['property disclosure', 'spds', 'disclosure statement'] },
   { key: 'oref-021-lbp', name: 'Lead-Based Paint Disclosure Addendum', oref: ['021'], title: /lead[-\s]*based\s+paint/i, obligation: { kind: 'all', parties: ['buyer', 'seller', 'seller_agent', 'buyer_agent'] }, checklistTerms: ['lead', 'lbp'] },
@@ -60,12 +63,14 @@ export const FORM_PROFILES: readonly FormProfile[] = [
   { key: 'oref-040-dla-sellers', name: 'Disclosed Limited Agency Agreement for Sellers', oref: ['040'], title: /disclosed\s+limited\s+agency.*sellers?/i, obligation: { kind: 'all', parties: ['seller', 'seller_agent'] }, checklistTerms: ['limited agency'] },
   { key: 'oref-041-dla-buyers', name: 'Disclosed Limited Agency Agreement for Buyers', oref: ['041'], title: /disclosed\s+limited\s+agency.*buyers?/i, obligation: { kind: 'all', parties: ['buyer', 'buyer_agent'] }, checklistTerms: ['limited agency'] },
   { key: 'oref-050-buyer-rep', name: 'Buyer Representation Agreement', oref: ['050'], title: /buyer\s+representation\s+agreement|exclusive\s+right\s+to\s+represent|buyer\s+service\s+agreement/i, obligation: { kind: 'all', parties: ['buyer', 'buyer_agent'] }, checklistTerms: ['buyer representation', 'buyer agency', 'buyer service'] },
-  { key: 'oref-042-pamphlet', name: 'Initial Agency Disclosure Pamphlet', oref: ['042'], title: /initial\s+agency\s+disclosure|agency\s+disclosure\s+pamphlet/i, obligation: { kind: 'one_side', parties: BOTH }, checklistTerms: ['agency disclosure', 'pamphlet'] },
+  // OAR 863-015-0215: delivered at first contact; the rule asks for delivery, not a signature.
+  { key: 'oref-042-pamphlet', name: 'Initial Agency Disclosure Pamphlet', oref: ['042'], title: /initial\s+agency\s+disclosure|agency\s+disclosure\s+pamphlet/i, obligation: { kind: 'reference' }, checklistTerms: ['agency disclosure', 'pamphlet'] },
   { key: 'oref-043-efa', name: 'Advisory Regarding Electronic Funds', oref: ['043', '044'], title: /electronic\s+funds|wire\s+fraud/i, obligation: { kind: 'one_side', parties: BOTH }, checklistTerms: ['electronic funds', 'wire fraud'] },
   { key: 'oref-047-compensation-advisory', name: 'Real Estate Compensation Advisory', oref: ['047', '048'], title: /compensation\s+advisory/i, obligation: { kind: 'one_side', parties: BOTH }, checklistTerms: ['compensation advisory'] },
   { key: 'oref-080-smoke-alarms', name: 'Smoke and Carbon Monoxide Alarm Advisory', oref: ['080'], title: /smoke|carbon\s+monoxide/i, obligation: { kind: 'all', parties: ['seller'] }, checklistTerms: ['smoke', 'carbon monoxide'] },
   { key: 'oref-092-firpta', name: 'FIRPTA Advisory', oref: ['092'], title: /firpta|foreign\s+investment/i, obligation: { kind: 'one_side', parties: BOTH }, checklistTerms: ['firpta'] },
-  { key: 'oref-098-compensation-notice', name: 'Notice of Real Estate Compensation', oref: ['098'], title: /notice\s+of\s+real\s+estate\s+compensation/i, obligation: { kind: 'all', parties: ['seller_agent'] }, checklistTerms: ['compensation', 'commission'] },
+  // The 2025/2026 releases print it as OREF 091. Signed by the principal broker of the firm it pays, either side.
+  { key: 'oref-098-compensation-notice', name: 'Notice of Real Estate Compensation', oref: ['098', '091'], title: /notice\s+of\s+real\s+estate\s+compensation/i, obligation: { kind: 'one_side', parties: ['seller_agent', 'buyer_agent'] }, checklistTerms: ['compensation', 'commission'] },
   { key: 'oref-103-forms-advisory', name: 'Real Estate Forms Advisory', oref: ['103', '108'], title: /forms\s+advisory/i, obligation: { kind: 'one_side', parties: BOTH }, checklistTerms: ['forms advisory'] },
   { key: 'oref-057-termination', name: 'Termination of Contract', oref: ['057'], title: /termination/i, obligation: { kind: 'all', parties: BOTH }, checklistTerms: ['termination'] },
   { key: 'oref-059-contingency-removal-addendum', name: 'Receipt of Reports / Removal of Contingencies Addendum', oref: ['059'], title: /receipt\s+of\s+reports|removal\s+of\s+contingenc/i, obligation: { kind: 'all', parties: ['buyer'], optional: ['seller'] }, numbered: true, checklistTerms: ['contingency removal', 'removal of contingenc'] },
@@ -100,9 +105,9 @@ export const OTHER_PROFILES: readonly FormProfile[] = [
  * for a library match.
  */
 const GENERIC: readonly FormProfile[] = [
-  { key: 'generic-counter', name: 'Counteroffer', oref: [], title: /counter\s*-?\s*offer/i, obligation: { kind: 'all', parties: BOTH }, outcome: 'counter', numbered: true, checklistTerms: ['counter'] },
+  { key: 'generic-counter', name: 'Counteroffer', oref: [], title: /counter\s*-?\s*offer/i, obligation: { kind: 'all', parties: BOTH }, outcome: 'counter', numbered: true, offer: true, checklistTerms: ['counter'] },
   { key: 'generic-addendum', name: 'Addendum', oref: [], title: /addendum|amendment/i, obligation: { kind: 'all', parties: BOTH }, numbered: true, checklistTerms: ['addendum', 'addenda'] },
-  { key: 'generic-purchase-agreement', name: 'Purchase and Sale Agreement', oref: [], title: /purchase\s+and\s+sale\s+agreement|sale\s+agreement|purchase\s+agreement/i, obligation: { kind: 'all', parties: BOTH }, checklistTerms: ['sale agreement', 'purchase agreement', 'purchase and sale'] },
+  { key: 'generic-purchase-agreement', name: 'Purchase and Sale Agreement', oref: [], title: /purchase\s+and\s+sale\s+agreement|sale\s+agreement|purchase\s+agreement/i, obligation: { kind: 'all', parties: BOTH }, offer: true, checklistTerms: ['sale agreement', 'purchase agreement', 'purchase and sale'] },
 ]
 
 export type ProfileMatch = {
@@ -135,6 +140,12 @@ export function profileFor(input: { title: string | null; formNumber: string | n
   const byTitle = ranked[0]?.p ?? null
 
   if (byTitle && byNumber && byTitle.key === byNumber.key) return { profile: byTitle, basis: 'library', numberConflict: false }
+  // A guide's page header reads like the form it explains ("Things to Know
+  // Before Signing" under "Residential Real Estate Sale Agreement"): the
+  // printed number of a reference form outranks the header.
+  if (byNumber && byNumber.obligation.kind === 'reference' && byTitle && byTitle.key !== byNumber.key) {
+    return { profile: byNumber, basis: 'number', numberConflict: false }
+  }
   // A printed OREF number the title's profile does not carry (083A under an
   // 083 title match) is a different form until the library says otherwise.
   const orefShaped = /^\s*(?:OREF\s*[-#]?\s*)?\d{3}[A-Z]?\s*$/i.test(input.formNumber ?? '')
