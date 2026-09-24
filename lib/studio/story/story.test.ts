@@ -252,6 +252,8 @@ describe('story prompts', () => {
     }
     expect(getBeat('commute-dash-polaroid')!.framing).toMatch(/driver seat on the left side/)
     expect(getBeat('radio-on-insert')!.framing).toMatch(/from the right side of the frame/)
+    // His glance at the photo swung on into the lens; the eye line is written out.
+    expect(getBeat('commute-dash-polaroid')!.action).toMatch(/never looks toward the back seat or the camera/)
   })
 
   it('states positives only: no "no text" style negatives that induce what they name', () => {

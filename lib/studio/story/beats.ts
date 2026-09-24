@@ -1182,7 +1182,8 @@ export const BEATS: BeatDef[] = [
     light: 'warm hazy afternoon sun through the windshield, 4800K',
     exposure: 'day',
     periodCues: ['vehicles'],
-    action: '{B} sits in the slow traffic with both hands on the wheel and glances across at the photograph on the dashboard',
+    // Eyes named outright: "glances across" turned him on past the photo into the lens (Matt 2026-09-24 LHD pass).
+    action: '{B} sits in the slow traffic with both hands on the wheel, eyes on the road; his eyes drop to the photograph on the dashboard for a moment with a small smile, then go back to the road; he never looks toward the back seat or the camera',
     props:
       'the same boxy brown vinyl dashboard and wood-grain trim of the station wagon; the instant photograph has a white border and a plain blank white picture',
     move: 'tripod',
