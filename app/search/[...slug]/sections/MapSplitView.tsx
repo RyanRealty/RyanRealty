@@ -255,7 +255,7 @@ export async function renderMapSplitView(props: {
     sort: sp.sort || 'newest',
   }
 
-  const emptyViewport = { listings: [] as Awaited<ReturnType<typeof getViewportSearch>>['listings'], totalCount: 0, capped: false }
+  const emptyViewport = { listings: [] as Awaited<ReturnType<typeof getViewportSearch>>['listings'], totalCount: 0, capped: false, countIsExact: true }
   const viewportSettled = neighborhoodName && !hasIncludeShape
     ? await withTimeoutSettled(
         getListingsWithAdvanced({
@@ -296,6 +296,8 @@ export async function renderMapSplitView(props: {
           listings: r.listings,
           totalCount: r.totalCount,
           capped: r.totalCount > r.listings.length,
+          // The RPC / MV total is the real count, never a floor.
+          countIsExact: true,
           fetchDegraded: Boolean(r.degraded),
         })),
         { ...emptyViewport, fetchDegraded: true },
@@ -436,6 +438,7 @@ export async function renderMapSplitView(props: {
           initialListings={viewport.listings}
           initialTotalCount={viewport.totalCount}
           initialCapped={viewport.capped}
+          initialCountIsExact={viewport.countIsExact}
           initialBounds={initialBounds}
           filters={filters}
           savedListingKeys={savedKeys}
