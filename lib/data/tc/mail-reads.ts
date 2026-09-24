@@ -6,6 +6,7 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import {
   MAIL_CATEGORY_LABEL,
   type MailFileCandidate,
@@ -251,11 +252,21 @@ export type DealOptionRow = { dealId: string; address: string; propertyKey: stri
 
 /** Every deal a broker could pick as a correction's destination — the "open" ones (live stages) come first, nothing else joined. */
 export async function listDealOptions(): Promise<DealOptionRow[]> {
-  const { data, error } = await createServiceClient()
-    .from('tc_deals')
-    .select('id, address, property_key, broker_name, stage, updated_at')
-    .order('updated_at', { ascending: false })
-    .limit(5000)
+  const sb = createServiceClient()
+  const { rows: data, error } = await fetchPagedRows<{
+    id: string
+    address: string
+    property_key: string
+    broker_name: string | null
+    stage: string
+  }>((from, to) =>
+    sb
+      .from('tc_deals')
+      .select('id, address, property_key, broker_name, stage, updated_at')
+      .order('updated_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to),
+  )
   if (error) {
     console.error('[listDealOptions]', error.message)
     return []
