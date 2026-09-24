@@ -22,6 +22,7 @@ import { readDocumentBytes, readerModel } from './read-document'
 import { READER_VERSION, type DocumentReading } from './vision-reading'
 import { documentVerdict, verdictFor, VERDICT_LABEL, type DocumentVerdict, type FormVerdict } from './verdict'
 import { planLineage, type LineageAction, type LineageDoc, type LineageItem, type LineagePlan } from './lineage'
+import { learnForms, loadFormRegistry, releasesFromAnatomy } from './registry'
 
 export const READER_ACTOR = 'vault-reader'
 
@@ -88,6 +89,8 @@ export function readerSummary(v: DocumentVerdict, readingId: string, model: stri
       form: f.formName,
       profile: f.profileKey,
       basis: f.basis,
+      rule: f.rule,
+      confidence: f.confidence,
       instance: f.instanceNumber,
       counter_by: f.counterBy,
       sale_agreement_number: f.saleAgreementNumber,
@@ -186,7 +189,17 @@ export async function readStoredDocument(
     }
   }
 
-  const verdict = documentVerdict(reading.forms.map((f) => verdictFor(f)))
+  // Every copy read teaches the registry who signs its forms (a new release
+  // is learned the first time it arrives). The registry never blocks a read.
+  if (purpose === 'read') {
+    try {
+      await learnForms(sb, { documentId, reading, releases: releasesFromAnatomy(anatomy) })
+    } catch (e) {
+      console.warn('[doc-read] registry', e instanceof Error ? e.message : e)
+    }
+  }
+  const registry = await loadFormRegistry(sb)
+  const verdict = documentVerdict(reading.forms.map((f) => verdictFor(f, registry)))
   const { data: row, error: insErr } = await sb
     .from('tc_document_readings')
     .insert({
@@ -261,6 +274,7 @@ export async function planCycleDocuments(sb: SupabaseClient, cycleId: string): P
       .map((e) => String(e.document_id)),
   )
 
+  const registry = await loadFormRegistry(sb)
   const lineageDocs: LineageDoc[] = []
   for (const d of docs ?? []) {
     const reader = (d.classification as { reader?: { reading_id?: string; version?: string } } | null)?.reader
@@ -270,7 +284,7 @@ export async function planCycleDocuments(sb: SupabaseClient, cycleId: string): P
     if (reader?.reading_id && reader.version === READER_VERSION) {
       const { data: r } = await sb.from('tc_document_readings').select('reading').eq('id', reader.reading_id).maybeSingle()
       const reading = r?.reading as DocumentReading | undefined
-      if (reading?.forms) verdict = documentVerdict(reading.forms.map((f) => verdictFor(f)))
+      if (reading?.forms) verdict = documentVerdict(reading.forms.map((f) => verdictFor(f, registry)))
     }
     lineageDocs.push({
       id: String(d.id),
@@ -490,7 +504,8 @@ export async function refreshVerdict(sb: SupabaseClient, documentId: string): Pr
   if (!reading?.forms) return null
   const ctx = await cycleContext(sb, String(doc.cycle_id))
   if (!ctx) return null
-  const verdict = documentVerdict(reading.forms.map((f) => verdictFor(f)))
+  const registry = await loadFormRegistry(sb)
+  const verdict = documentVerdict(reading.forms.map((f) => verdictFor(f, registry)))
   const classification = {
     ...(doc.classification as Record<string, unknown>),
     execution_state: legacyExecutionState(verdict, ctx.kind),

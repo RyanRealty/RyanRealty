@@ -94,8 +94,6 @@ export function cycleIsFinished(stage: string | null | undefined): boolean {
 
 const DONE: ReadonlySet<ExecutionVerdict> = new Set(['fully_executed', 'countered', 'rejected'])
 const IN_PROGRESS: ReadonlySet<ExecutionVerdict> = new Set(['partially_executed', 'unsigned'])
-/** Offers and counteroffers: an unaccepted copy is negotiation history, not a gap. */
-const OFFER_PROFILES: ReadonlySet<string> = new Set(['oref-001-rsa', 'generic-purchase-agreement', 'oref-003-counter', 'generic-counter'])
 
 function signedNames(f: FormVerdict): Set<string> {
   return new Set(f.signers.filter((s) => s.signed).map((s) => `${s.party}:${(s.name ?? s.signedAs ?? '').toLowerCase()}`))
@@ -113,8 +111,9 @@ function isSubset(a: Set<string>, b: Set<string>): boolean {
 type Member = { doc: LineageDoc; form: FormVerdict }
 
 /** Identified by the printed lines alone, or its printed number contradicts its title. */
+/** Not acted on alone: no profile at all, a contradicting number, or a registry form seen too few times. */
 function unsure(f: FormVerdict): boolean {
-  return f.basis === 'lines' || f.numberConflict
+  return f.basis === 'lines' || f.numberConflict || f.confidence === 'new'
 }
 
 function describe(f: FormVerdict): string {
@@ -216,10 +215,10 @@ export function planLineage(input: {
       // asking a person to pick between them is noise.
       const allUnfinished = members.every((m) => IN_PROGRESS.has(m.form.verdict) || m.form.verdict === 'blank')
       if (finished && allUnfinished) continue
-      // A form the library does not know never drives a change, and several
-      // of them on one deal (MLS change forms, invoices) are usually distinct
-      // documents: no flag either.
-      if (members.every((m) => m.form.basis === 'lines')) continue
+      // A form neither the library nor the registry has settled never drives a
+      // change, and several of them on one deal (MLS change forms, invoices)
+      // are usually distinct documents: no flag either.
+      if (members.every((m) => m.form.basis === 'lines' || m.form.confidence === 'new')) continue
       for (const m of ranked.slice(1)) {
         if (m.doc.id === top.doc.id) continue
         actions.push({
@@ -258,7 +257,7 @@ export function planLineage(input: {
   // signed-and-countered, or some counteroffer was accepted.
   const contractOnFile = live.some((d) =>
     d.verdict!.forms.some(
-      (f) => OFFER_PROFILES.has(f.profileKey ?? '') && (f.verdict === 'fully_executed' || f.verdict === 'countered'),
+      (f) => f.offer && (f.verdict === 'fully_executed' || f.verdict === 'countered'),
     ),
   )
 
@@ -305,7 +304,8 @@ export function planLineage(input: {
       const never = missing.length ? `, never signed by ${missing.join(', ')}` : ''
       // Only when the deal's executed contract is on file: otherwise this copy
       // may be the only record of the contract, and that is a gap to report.
-      if (contractOnFile && forms.every((x) => OFFER_PROFILES.has(x.profileKey ?? '') && !unsure(x))) {
+      // Offers and counteroffers: an unaccepted copy is negotiation history, not a gap.
+      if (contractOnFile && forms.every((x) => x.offer && !unsure(x))) {
         archive(d, `Offer copy not accepted: ${describe(f)} ${VERDICT_LABEL[f.verdict].toLowerCase()}${never}. Kept per OAR 863-015-0250.`, null)
       } else {
         actions.push({ kind: 'flag', docId: d.id, reason: `No fully executed copy of ${describe(f)} on this closed file${never}.` })

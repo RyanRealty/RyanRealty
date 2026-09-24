@@ -13,10 +13,14 @@
  *  - A sale agreement is accepted only by the Seller's Response box; a seller
  *    signing the Final Agency Acknowledgment is not acceptance. A counteroffer
  *    is accepted when the party it went to signed it.
- *  - Anything the library does not know gets its signers from the lines
- *    printed on the form and is marked so; it never drives an archive alone.
+ *  - Anything the library does not list gets its signers from the form
+ *    registry (law, the kind of instrument, the blocks printed across every
+ *    copy). Without a registry row it falls back to the lines on this copy and
+ *    is marked so; neither a fallback nor a registry form seen on fewer than
+ *    three copies drives an archive alone.
  */
 import { profileFor, type FormProfile, type Party } from './profiles'
+import type { FormRegistry } from './registry'
 import type { FormReading, SignatureLine, SignMethod } from './vision-reading'
 
 export type ExecutionVerdict =
@@ -45,8 +49,14 @@ export type FormVerdict = {
   segment: number
   profileKey: string | null
   formName: string
-  basis: 'library' | 'title' | 'number' | 'generic' | 'lines'
+  basis: 'library' | 'title' | 'number' | 'generic' | 'lines' | 'registry'
   numberConflict: boolean
+  /** Registry forms: which rule decided who signs (with its citation when it is law). */
+  rule: string | null
+  /** library = curated; rule = law or the kind of instrument; consensus = blocks agree on 3+ copies; new = not acted on alone. */
+  confidence: 'library' | 'rule' | 'consensus' | 'new' | null
+  /** A sale agreement or counteroffer: an unaccepted copy is negotiation history. */
+  offer: boolean
   instanceNumber: string | null
   counterBy: 'buyer' | 'seller' | null
   saleAgreementNumber: string | null
@@ -276,13 +286,30 @@ function termsKey(excerpt: string | null): string {
     .join(' ')
 }
 
-export function verdictFor(form: FormReading): FormVerdict {
+/**
+ * `registry` supplies who signs for forms the curated library does not list
+ * (or lists under a different number): learned from every copy the Vault has
+ * read, by law, the kind of instrument and the printed blocks (registry.ts).
+ */
+export function verdictFor(form: FormReading, registry?: FormRegistry | null): FormVerdict {
   const match = profileFor({ title: form.title, formNumber: form.formNumber })
-  const profile = match?.profile ?? null
-  const basis: FormVerdict['basis'] = match?.basis ?? 'lines'
+  let profile = match?.profile ?? null
+  let basis: FormVerdict['basis'] = match?.basis ?? 'lines'
+  let numberConflict = !!match?.numberConflict
+  let rule: string | null = null
+  let confidence: FormVerdict['confidence'] = match && match.basis !== 'generic' && !match.numberConflict ? 'library' : null
+  const learned = registry && (!match || match.basis === 'generic' || match.numberConflict) ? registry.lookup(form.title) : null
+  if (learned && learned.basis !== 'library') {
+    profile = learned.profile
+    basis = 'registry'
+    numberConflict = false
+    rule = learned.rule
+    confidence = learned.confidence
+  }
   const reasons: string[] = []
-  if (match?.numberConflict) reasons.push(`The printed form number ${form.formNumber} belongs to a different form than the title "${form.title}"; identified by title.`)
+  if (numberConflict) reasons.push(`The printed form number ${form.formNumber} belongs to a different form than the title "${form.title}"; identified by title.`)
   if (!profile) reasons.push(`"${form.title || 'Untitled'}" is not in the form library; who must sign is read from the lines printed on it.`)
+  if (basis === 'registry' && rule) reasons.push(`Who signs: ${rule}`)
 
   const lines = effectiveLines(profile, form.signatureLines)
   const { all, oneSide, optional } = obligatedParties(profile, lines)
@@ -295,7 +322,10 @@ export function verdictFor(form: FormReading): FormVerdict {
   if (profile?.obligation.kind === 'reference') {
     verdict = 'reference'
     reasons.push(`${profile.name} is a report or reference; the parties do not execute it.`)
-  } else if (!profile && !lines.length) {
+  } else if ((!profile || basis === 'registry') && !lines.length) {
+    // A registry profile says what the form usually carries; a copy with no
+    // signature line at all (a guide filed under the same title) is still
+    // informational, as it was before the registry.
     verdict = 'reference'
     reasons.push('No signature lines on the pages read: an informational document.')
   } else if (form.blankTemplate && !lines.length) {
@@ -398,7 +428,7 @@ export function verdictFor(form: FormReading): FormVerdict {
     reasons.push(`Marked "${form.watermark}".`)
     if (verdict === 'fully_executed') verdict = 'needs_review'
   }
-  if (!profile && (verdict === 'fully_executed' || verdict === 'partially_executed')) {
+  if ((!profile || confidence === 'new') && (verdict === 'fully_executed' || verdict === 'partially_executed')) {
     // Library-less verdicts are shown, never acted on alone.
     reasons.push('Confirm against the form before relying on this.')
   }
@@ -412,7 +442,7 @@ export function verdictFor(form: FormReading): FormVerdict {
   const saleKey = normKeyPart(form.saleAgreementNumber)
   const instanceKey = [
     profile?.key ?? `title:${normKeyPart(form.title)}`,
-    numberConflictKey(match?.numberConflict ? form.formNumber : null),
+    numberConflictKey(numberConflict ? form.formNumber : null),
     saleKey ? `sa:${saleKey}` : '',
     numberPart ? `n${normKeyPart(numberPart)}` : '',
     form.counterBy ?? '',
@@ -427,9 +457,12 @@ export function verdictFor(form: FormReading): FormVerdict {
     segment: form.segment,
     profileKey: profile?.key ?? null,
     // A conflicting printed number means the library name may be the wrong form's.
-    formName: (match?.numberConflict ? form.title : profile?.name) || form.title || 'Unidentified form',
+    formName: (numberConflict ? form.title : profile?.name) || form.title || 'Unidentified form',
     basis,
-    numberConflict: !!match?.numberConflict,
+    numberConflict,
+    rule,
+    confidence,
+    offer: !!profile?.offer,
     instanceNumber: form.instanceNumber,
     counterBy: form.counterBy,
     saleAgreementNumber: form.saleAgreementNumber,

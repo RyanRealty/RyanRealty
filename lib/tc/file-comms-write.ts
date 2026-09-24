@@ -207,8 +207,32 @@ function checklistHitsForDocument(
   return matchChecklistItems(items, hay)
 }
 
+const cycleLocks = new Map<string, Promise<unknown>>()
+
+/**
+ * One filing at a time per cycle in this process. Two messages carrying the
+ * same PDF (a thread's replies, or one email two deals' searches both find)
+ * filed in parallel would otherwise both pass the dedupe and hash checks and
+ * store the file twice (40 identical copies from the 2026-09-24 mail sweep).
+ */
+export async function withCycleLock<T>(cycleId: string, fn: () => Promise<T>): Promise<T> {
+  const prev = cycleLocks.get(cycleId) ?? Promise.resolve()
+  const run = prev.catch(() => undefined).then(fn)
+  const tail = run.catch(() => undefined)
+  cycleLocks.set(cycleId, tail)
+  try {
+    return await run
+  } finally {
+    if (cycleLocks.get(cycleId) === tail) cycleLocks.delete(cycleId)
+  }
+}
+
 /** File a message onto a deal someone already chose. Idempotent per (deal, dedupeKey). */
 export async function fileOntoDeal(input: FileOntoDealInput): Promise<FileCommsResult> {
+  return withCycleLock(input.cycleId, () => fileOntoDealNow(input))
+}
+
+async function fileOntoDealNow(input: FileOntoDealInput): Promise<FileCommsResult> {
   const sb = createServiceClient()
   const action = input.channel === 'mail' ? 'mail_filed' : 'sms_filed'
   const { data: existing } = await sb

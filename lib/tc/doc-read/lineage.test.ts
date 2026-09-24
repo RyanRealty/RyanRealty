@@ -18,6 +18,9 @@ const fv = (over: Partial<FormVerdict> & { verdict: ExecutionVerdict }): FormVer
   formName: 'Addendum to Sale Agreement',
   basis: 'library',
   numberConflict: false,
+  rule: null,
+  confidence: 'library',
+  offer: false,
   instanceNumber: '1',
   counterBy: null,
   saleAgreementNumber: null,
@@ -88,6 +91,7 @@ describe('planLineage', () => {
   it('on a closed deal an offer that was never accepted goes to the archive, kept per OAR', () => {
     const offer = fv({
       profileKey: 'oref-001-rsa',
+      offer: true,
       formName: 'Residential Real Estate Sale Agreement',
       instanceNumber: null,
       instanceKey: 'oref-001-rsa|b:other',
@@ -96,6 +100,7 @@ describe('planLineage', () => {
     })
     const contract = fv({
       profileKey: 'oref-001-rsa',
+      offer: true,
       formName: 'Residential Real Estate Sale Agreement',
       instanceNumber: null,
       instanceKey: 'oref-001-rsa|b:nicoll',
@@ -162,7 +167,7 @@ describe('planLineage', () => {
   })
 
   it('a packet whose addendum is superseded elsewhere stays: it still holds the executed sale agreement', () => {
-    const rsa = fv({ profileKey: 'oref-001-rsa', formName: 'Residential Real Estate Sale Agreement', instanceNumber: null, instanceKey: 'oref-001-rsa|b:nicoll', verdict: 'fully_executed', signers: executed.signers })
+    const rsa = fv({ profileKey: 'oref-001-rsa', offer: true, formName: 'Residential Real Estate Sale Agreement', instanceNumber: null, instanceKey: 'oref-001-rsa|b:nicoll', verdict: 'fully_executed', signers: executed.signers })
     const plan = planLineage({
       stage: 'pending',
       docs: [doc('packet', [rsa, sellerOnly]), doc('final-add', [executed])],

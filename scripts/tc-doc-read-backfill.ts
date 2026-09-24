@@ -9,6 +9,12 @@
  *       READ-ONLY. For every cycle (or one deal's), what the file would look
  *       like: archives, checklist moves, flags. Writes out/doc-read-plan.json.
  *
+ *   npx tsx scripts/tc-doc-read-backfill.ts registry [--concurrency 8] [--recompute-only]
+ *       Rebuild the form registry (tc_form_registry) from every stored read
+ *       (no model call): which parties each form prints lines for, its
+ *       numbers and releases, and who must sign. Run before reverdict after
+ *       a registry rule change.
+ *
  *   npx tsx scripts/tc-doc-read-backfill.ts reverdict [--deal <uuid>]
  *       Re-derive every read document's verdict with the current rules (no
  *       model call) and write it to the document. Run after a rule change.
@@ -85,6 +91,62 @@ async function main() {
     console.log(`[read] finished: ${done} documents, $${cost.toFixed(4)} spent, ${reused} reused identical reads, ${failed.length} failed`)
     console.log('[read] verdicts', Object.fromEntries(verdicts))
     if (failed.length) console.log('[read] failures', failed.slice(0, 20))
+    return
+  }
+
+  if (mode === 'registry' && process.argv.includes('--recompute-only')) {
+    // Rules changed, copies did not: recompute every row from its copies.
+    const reg = await import('../lib/tc/doc-read/registry')
+    const { data } = await sb.from('tc_form_registry').select('identity, title')
+    for (const r of data ?? []) await reg.recomputeRegistryRow(sb, String(r.identity), String(r.title))
+    console.log(`[registry] ${(data ?? []).length} rows recomputed`)
+    return
+  }
+
+  if (mode === 'registry') {
+    const reg = await import('../lib/tc/doc-read/registry')
+    const { READER_VERSION } = await import('../lib/tc/doc-read/vision-reading')
+    // The newest read of each document by the current reader.
+    const latest = new Map<string, { id: string; created_at: string }>()
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await sb
+        .from('tc_document_readings')
+        .select('id, document_id, created_at')
+        .eq('purpose', 'read')
+        .eq('status', 'read')
+        .eq('reader_version', READER_VERSION)
+        .range(from, from + 999)
+      if (error) throw new Error(error.message)
+      for (const r of data ?? []) {
+        const cur = latest.get(String(r.document_id))
+        if (!cur || String(r.created_at) > cur.created_at) latest.set(String(r.document_id), { id: String(r.id), created_at: String(r.created_at) })
+      }
+      if (!data || data.length < 1000) break
+    }
+    const identities = new Map<string, string>()
+    let forms = 0
+    let done = 0
+    const queue = [...latest]
+    const worker = async () => {
+      for (let next = queue.shift(); next; next = queue.shift()) {
+        const [documentId, { id }] = next
+        const { data: r } = await sb.from('tc_document_readings').select('reading, anatomy').eq('id', id).maybeSingle()
+        const reading = r?.reading as import('../lib/tc/doc-read/vision-reading').DocumentReading | undefined
+        if (reading?.forms) {
+          const res = await reg.learnForms(sb, { documentId, reading, releases: reg.releasesFromAnatomy(r?.anatomy), defer: true })
+          forms += res.forms
+          for (const [identity, title] of res.identities) if (!identities.has(identity)) identities.set(identity, title)
+        }
+        if (++done % 200 === 0) console.log(`[registry] ${done}/${latest.size} documents`)
+      }
+    }
+    await Promise.all(Array.from({ length: Number(arg('--concurrency') ?? 8) }, worker))
+    const ids = [...identities]
+    const recompute = async () => {
+      for (let next = ids.shift(); next; next = ids.shift()) await reg.recomputeRegistryRow(sb, next[0], next[1])
+    }
+    await Promise.all(Array.from({ length: 6 }, recompute))
+    console.log(`[registry] ${latest.size} documents, ${forms} form copies, ${identities.size} forms`)
     return
   }
 
