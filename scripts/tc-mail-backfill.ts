@@ -23,7 +23,8 @@
  *       Offer / counter / escrow / closing mail by subject with a PDF, every
  *       mailbox. Offers on properties with no file land in the mail queue.
  *
- *   npx tsx scripts/tc-mail-backfill.ts rematch
+ *   npx tsx scripts/tc-mail-backfill.ts rematch [--limit N] [--model-stage]
+ *   npx tsx scripts/tc-mail-backfill.ts refile-threads [--limit N]
  *       Re-decide queued mail against today's deals.
  *
  *   npx tsx scripts/tc-mail-backfill.ts review-all [--mailbox x@ryan-realty.com] [--concurrency 4] [--limit N] [--model-stage] [--dry-run]
@@ -318,8 +319,13 @@ async function main() {
     console.log(JSON.stringify({ ...res, samples: res.samples.slice(0, 40) }, null, 2))
     return
   }
+  if (mode === 'refile-threads') {
+    const { refileThreadSiblings } = await import('@/lib/tc/mail-index')
+    console.log(await refileThreadSiblings({ universe, sb, limit: arg('--limit') ? Number(arg('--limit')) : undefined }))
+    return
+  }
   if (mode === 'rematch') {
-    console.log(await rematchQueuedMail({ universe, sb }))
+    console.log(await rematchQueuedMail({ universe, sb, limit: Number(arg('--limit') ?? 500), modelStage: has('--model-stage') }))
     return
   }
   if (mode === 'review-all') {
@@ -359,7 +365,7 @@ async function main() {
     console.log('[review-all] status distribution across mailboxes walked this run:', totals)
     return
   }
-  console.error('usage: tc-mail-backfill.ts audit|reconcile|sweep-deals|sweep-transactions|rematch|review-all|review-retry [--since YYYY-MM-DD] [--dry-run]')
+  console.error('usage: tc-mail-backfill.ts audit|reconcile|sweep-deals|sweep-transactions|rematch|refile-threads|review-all|review-retry [--since YYYY-MM-DD] [--dry-run]')
   process.exit(2)
 }
 

@@ -53,8 +53,8 @@ export async function listDealAudits(opts: { dealId?: string } = {}): Promise<De
   const dealIds = (deals ?? []).map((d) => String(d.id))
   if (!dealIds.length) return []
 
-  const cycles = await all<{ id: string; deal_id: string; kind: string; deal_type: string | null; year_built: string | null }>((a, b) =>
-    sb.from('tc_cycles').select('id, deal_id, kind, deal_type:raw->>dealType, year_built:raw->property->>yearBuilt').in('deal_id', dealIds).range(a, b),
+  const cycles = await all<{ id: string; deal_id: string; kind: string; source: string; deal_type: string | null; year_built: string | null }>((a, b) =>
+    sb.from('tc_cycles').select('id, deal_id, kind, source, deal_type:raw->>dealType, year_built:raw->property->>yearBuilt').in('deal_id', dealIds).range(a, b),
   )
   const cycleDeal = new Map(cycles.map((c) => [String(c.id), String(c.deal_id)]))
   const docs: Array<{ id: string; cycle_id: string; name: string; archived: boolean; ingested_at: string; reader: { forms?: ReaderForm[] } | null }> = []
@@ -106,6 +106,7 @@ export async function listDealAudits(opts: { dealId?: string } = {}): Promise<De
         .filter((r) => String(r.deal_id) === id)
         .map((r) => ({ documentIds: Array.isArray(r.document_ids) ? (r.document_ids as unknown[]).map(String) : [], reviewedAt: r.reviewed_at, decision: r.decision })),
       mailFiled: mailCount.get(id) ?? 0,
+      reviewSystem: dc.some((c) => c.source === 'skyslope') ? 'skyslope' : 'vault',
       checklist: (() => {
         const mine = items.filter((it) => cycleDeal.get(String(it.cycle_id)) === id)
         return { completed: mine.filter((it) => it.status === 'completed').length, inReview: mine.filter((it) => it.status === 'in_review').length }

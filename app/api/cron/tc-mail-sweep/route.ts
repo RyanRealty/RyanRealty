@@ -4,7 +4,8 @@
  * 1. Re-decide queued mail against today's deals (a file opened this morning
  *    collects the offer that arrived last week), then open a file for any
  *    property whose queued mail proves a deal is under way (escrow opened, a
- *    settlement statement, a fully executed agreement).
+ *    settlement statement, a fully executed agreement). Replies decided before
+ *    their thread filed are decided again and follow the thread.
  * 2. Search every broker mailbox for each open or recently closed deal's
  *    address, escrow and MLS numbers since its last sweep (all history on the
  *    first sweep). Post-close title and settlement mail lands here.
@@ -23,8 +24,17 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
-import { autoOpenFilesFromMail, loadMailUniverse, rematchQueuedMail, reviewMailbox, sweepDealMail, sweepTransactionMail } from '@/lib/tc/mail-index'
+import {
+  autoOpenFilesFromMail,
+  loadMailUniverse,
+  refileThreadSiblings,
+  rematchQueuedMail,
+  reviewMailbox,
+  sweepDealMail,
+  sweepTransactionMail,
+} from '@/lib/tc/mail-index'
 import { dealOpenAt } from '@/lib/tc/mail-rules'
+import { ensureDealPartiesFromFile } from '@/lib/data/tc/deal-people'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -52,9 +62,11 @@ export async function GET(request: Request) {
 
     // Each step stops at the shared deadline; what it did not reach waits for the next run.
     const deadline = start + BUDGET_MS
-    const rematch = await rematchQueuedMail({ universe, sb, limit: 200, deadline: start + BUDGET_MS / 3 })
+    const rematch = await rematchQueuedMail({ universe, sb, limit: 200, deadline: start + BUDGET_MS / 3, modelStage: true })
     // Transaction mail proving a deal is under way for a property with no file opens the file.
     const opened = await autoOpenFilesFromMail({ sb })
+    // Replies decided before their thread filed follow the thread now.
+    const threads = await refileThreadSiblings({ universe, sb, deadline: start + BUDGET_MS / 2 })
 
     const { data: swept } = await sb.from('tc_deals').select('id, mail_swept_at')
     const sweptAt = new Map((swept ?? []).map((d) => [String(d.id), (d.mail_swept_at as string | null) ?? null]))
@@ -72,6 +84,21 @@ export async function GET(request: Request) {
       // unmarked; the next run skips what this one stored and finishes it.
       const res = await sweepDealMail({ dealId: d.dealId, since, universe, deadline, sb })
       if (res) deals.push({ dealId: d.dealId, seen: res.seen, skipped: res.skipped, filed: res.filed, queued: res.queued, complete: res.complete })
+    }
+
+    // Live files: search the mailboxes for a party's missing email and the
+    // deal's missing facts (other agent, escrow number, lender, offers). This
+    // used to run on every file page view and made it wait 30+ seconds.
+    const harvested: string[] = []
+    for (const d of due) {
+      if (Date.now() > start + (BUDGET_MS * 2) / 3) break
+      if (d.stage !== 'pending' && d.stage !== 'active_listing' && d.stage !== 'pre_contract') continue
+      try {
+        await ensureDealPartiesFromFile(d.dealId, { harvest: true })
+        harvested.push(d.dealId)
+      } catch (err) {
+        console.warn('[tc-mail-sweep] harvest', d.dealId, err instanceof Error ? err.message : err)
+      }
     }
 
     let transactions = null
@@ -101,6 +128,8 @@ export async function GET(request: Request) {
       ok: true,
       rematch,
       opened,
+      threads,
+      harvested: harvested.length,
       deals,
       dealsDue: due.length,
       transactions: transactions && { seen: transactions.seen, filed: transactions.filed, queued: transactions.queued, offers: transactions.offers, errors: transactions.errors },

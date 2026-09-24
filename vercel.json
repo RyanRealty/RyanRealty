@@ -263,6 +263,10 @@
       "schedule": "20 6 * * *"
     },
     {
+      "path": "/api/cron/skyslope-vault-intake",
+      "schedule": "50 6 * * *"
+    },
+    {
       "path": "/api/cron/snapshot-active-inventory",
       "schedule": "30 8 * * *"
     },

@@ -5,7 +5,7 @@ file email by hand. The system reads every broker mailbox through the Google
 Workspace service account, decides each email with the rules below, files it and
 its documents, records offers, and only asks a person when it truly cannot tell.
 
-- Rules (code): [`lib/tc/mail-rules.ts`](../lib/tc/mail-rules.ts), version `mail-rules-v2-2026-09-23`
+- Rules (code): [`lib/tc/mail-rules.ts`](../lib/tc/mail-rules.ts), version `mail-rules-v3-2026-09-24`
 - Enforcement: [`lib/tc/mail-rules.test.ts`](../lib/tc/mail-rules.test.ts). Every rule below has a
   test, and every misfile found in the 2026-09-23 audit is a regression case.
 - Index: `tc_mail_messages` (migration `20260923180000_tc_mail_index.sql`)
@@ -29,9 +29,10 @@ content is silent and exactly one open file fits.
 | 0 | **Noise never files.** List mail (List-Unsubscribe, Precedence: bulk), auto-replies, listing alerts ("16 new listings for…", "Copy: Subscription…"), our own pipeline alerts ("[Expired]…", "[Deploy]…"), and digests naming three or more street addresses. | nothing | One exception: bulk mail carrying exactly one deal's escrow number (title's automated notices) files by rule 1. |
 | 1 | **Escrow or MLS number** of exactly one file, anywhere in the subject, body, attachment names or attachment text. | that file, any stage | Escrow numbers need 6+ characters with 4+ digits; MLS numbers never match inside a longer number. Two files → queue. |
 | 2 | **Same thread** as email already filed (RFC References root, or the Gmail thread). | the thread's file | Unless this email names a different file's address: the property wins. |
-| 3 | **Street address**: house number + street name ("909 NW Delaware" or "909 Delaware"). Then the street alone ("SW 45th", "Beaumont Drive"), but only in the subject or attachment names, and only for transaction mail or mail from someone on one of our files. | that file, any stage | The city breaks a tie between same-numbered streets; the property in the subject beats one quoted in a forwarded chain. Still tied → queue. |
-| 4 | **Who it touched**, only when the content names no property: our client (buyer/seller on the file) or a file contact (title, escrow, lender, other agent, TC firm) on exactly **one open** file. | that file | Open = live, or closed/dead within 120 days of close. A subject naming a property that is not on the candidate file never files by sender. Several open files: transaction mail or mail with attachments → queue; anything else → not deal mail. |
-| 5 | **Transaction mail for a property with no file** (offer, counter, escrow, title, inspection, disclosure, closing, with a transaction form attached or a property in the subject). | the mail queue, grouped by property | The daily sweep opens a file when the group proves a deal is under way (escrow opened, settlement statement, closing notice, fully executed agreement). Offers alone never open a file. |
+| 3 | **Street address**: house number + street name ("909 NW Delaware" or "909 Delaware"). Then the street alone ("SW 45th", "Beaumont Drive"), but only in the subject or attachment names, and only for transaction mail, an e-sign notice, or mail from someone on one of our files. | that file, any stage | Directionals match spelled out or short ("3480 Southwest 45th" is 3480 SW 45th). The city breaks a tie between same-numbered streets; the property in the subject beats one quoted in a forwarded chain. Still tied → queue. |
+| 3b | **Our own transaction mail naming one file by its street alone** ("[Ordway forward] OREF 022A Buyers Repair Addendum 2"): a broker wrote it, it carries a transaction form or reads as one, and its subject or a file name calls exactly one file by its bare street name. | that file, any stage | The bare name is the street without number or suffix ("Nordic", "School House"). Numbered streets ("45th") and common words (Main, Park, Old, School…) never count alone. |
+| 4 | **Who it touched**, only when the content names no property: our client (buyer/seller on the file) or a file contact (title, escrow, lender, other agent, TC firm) on exactly **one open** file. When they are on several, step two: the file the subject or a file name calls by its bare street ("Home Warranty - Nordic", "Work on Beaumont"). | that file | Open = live, or closed/dead within 120 days of close. A subject naming a property that is not on the candidate file never files by sender. Still several: transaction mail or mail with attachments → the model picks among those files (below), else queue; anything else → not deal mail. |
+| 5 | **Transaction mail for a property with no file** (offer, counter, escrow, title, inspection, disclosure, closing, or an e-sign completion, with a transaction form attached or a property in the subject). | the mail queue, grouped by property | The daily sweep opens a file when the group proves a deal is under way (escrow opened, settlement statement, closing notice, fully executed agreement). Offers alone never open a file. |
 
 Everything else is ordinary email: counted by the sync, not stored in the Vault.
 Email with a client still lands on their CRM timeline as before.
@@ -44,8 +45,11 @@ Email with a client still lands on their CRM timeline as before.
   2026-08-23 → 2026-09-23 misfile (below).
 - **Test aliases** `admin@ryan-realty.com` (Vault Test Buyer) and
   `marketing@ryan-realty.com` (Marketing Test Lead) are outside parties, not the
-  house, so the test files behave like real ones. Plus-addressing folds to the
-  base mailbox (`admin+x@` is `admin@`).
+  house, so the test files behave like real ones, but only on mail the alias
+  harness wrote (subject tagged `[TC TEST <run>]`). The same mailboxes get
+  Google Workspace notices, sign-in codes and CRM test sends; untagged, they are
+  never evidence. Plus-addressing folds to the base mailbox (`admin+x@` is
+  `admin@`).
 
 ### Which cycle on the file
 
@@ -106,6 +110,10 @@ re-decide a row a person decided.
    files where the queue proves a deal is under way.
 2. For each open file (oldest sweep first): search every mailbox for its address,
    escrow and MLS numbers since its last sweep, all history the first time.
+   Then decide again every message in a thread that has since filed, if it
+   was decided before its thread filed (`refileThreadSiblings`): a reply with
+   no address, from someone on several files, decided before the first
+   message of its thread filed, follows the thread now.
 3. Search every mailbox for offer / counter / escrow / closing mail with a PDF
    from the last three days.
 
@@ -197,7 +205,13 @@ passes; it just never wrote down the decisions it discarded.
   (`decided_by 'model'`, same path as a rules-filed message); anything else
   queues for a person with the model's reason. **The model never dismisses a
   message on its own word** — a `notDeal: true` answer just leaves the
-  rules' status standing. Off by default (`indexGmailMessage({ modelStage:
+  rules' status standing. **Choosing among files:** a message the rules left
+  ambiguous between two or more files the sender is on goes to the model with
+  only those files (and their clients' emails). It files at `confidence ≥ 0.9`
+  on one of them, and can never open a new transaction or name another file;
+  otherwise it stays queued with the model's reason. The daily sweep's
+  re-decide step runs the model once per queued message (a review row with
+  stage `model` is not asked again). Off by default elsewhere (`indexGmailMessage({ modelStage:
   true })` / `review-all --model-stage` / `reviewMailbox({ modelStage: true
   })`): real Grok spend, so a caller — a person or a script run — opts in
   deliberately. Tests and dry runs never call it.

@@ -12,7 +12,7 @@
  * only decides when the content is silent and exactly one open deal fits.
  */
 
-export const MAIL_RULES_VERSION = 'mail-rules-v2-2026-09-23'
+export const MAIL_RULES_VERSION = 'mail-rules-v3-2026-09-24'
 
 const HOUSE_DOMAINS = new Set(['ryan-realty.com', 'mail.ryan-realty.com'])
 
@@ -138,9 +138,44 @@ export type MailDecision = {
 
 // ── address evidence ───────────────────────────────────────────────────────
 
-const DIRECTIONAL = '(?:n|s|e|w|ne|nw|se|sw)\\.?'
+// Long forms first: "Southwest 45th" is the same street as "SW 45th" (the
+// 3480 SW 45th inspection mail that queued because it spelled it out).
+const DIRECTIONAL = '(?:northeast|northwest|southeast|southwest|north|south|east|west|ne|nw|se|sw|n|s|e|w)\\.?'
 const STREET_SUFFIX =
   '(?:street|st|avenue|ave|drive|dr|road|rd|lane|ln|loop|court|ct|way|place|pl|boulevard|blvd|circle|cir|terrace|ter|trail|trl|highway|hwy|parkway|pkwy|crater)'
+const STREET_SUFFIX_WORD = new RegExp(`^${STREET_SUFFIX}$`, 'i')
+
+const SHORT_DIRECTIONAL: Record<string, string> = {
+  north: 'n',
+  south: 's',
+  east: 'e',
+  west: 'w',
+  northeast: 'ne',
+  northwest: 'nw',
+  southeast: 'se',
+  southwest: 'sw',
+}
+
+/** "southwest" → "sw"; a short form stays as written. */
+function shortDirectional(dir: string): string {
+  const d = dir.replace('.', '').toLowerCase()
+  return SHORT_DIRECTIONAL[d] ?? d
+}
+
+/** Both spellings of a directional, for matching text: "sw" → (?:sw|southwest). */
+function directionalRe(dir: string): string {
+  const short = shortDirectional(dir)
+  const long = Object.keys(SHORT_DIRECTIONAL).find((k) => SHORT_DIRECTIONAL[k] === short)
+  return long ? `(?:${short}|${long})` : short
+}
+
+/** "3480 southwest 45th" → "3480 sw 45th"; "123 west" (West is the street) stays. */
+function canonicalDirectional(address: string): string {
+  return address.replace(
+    /^(\d+\s+)(northeast|northwest|southeast|southwest|north|south|east|west)\b(?=\s+\S)/i,
+    (_, num: string, dir: string) => `${num}${shortDirectional(dir)}`,
+  )
+}
 
 export type ParsedDealAddress = {
   number: string
@@ -155,14 +190,19 @@ export type ParsedDealAddress = {
 /** "3480 SW 45th Street, Redmond, OR" → { number: 3480, directional: sw, street: 45th, next: street, city: redmond }. */
 export function parseDealAddress(address: string, city?: string | null): ParsedDealAddress | null {
   const first = String(address ?? '').split(',')[0]?.trim() ?? ''
+  // A doubled directional ("2354 NW NW Drouillard", as SkySlope exports some) reads once.
   const m = first.match(
-    new RegExp(`^(\\d{2,6})\\s+(?:(${DIRECTIONAL})\\s+)?([a-z0-9][a-z0-9'-]*)(?:\\s+([a-z][a-z'-]*))?`, 'i'),
+    new RegExp(`^(\\d{2,6})\\s+(?:(${DIRECTIONAL})\\s+(?:\\2\\s+)?)?([a-z0-9][a-z0-9'-]*)(?:\\s+([a-z][a-z'-]*))?`, 'i'),
   )
   if (!m) return null
   const cityPart = (city ?? String(address).split(',')[1] ?? '').trim().toLowerCase() || null
+  // "123 West Ave": West is the street, not a directional.
+  if (m[2] && m[2].length > 2 && STREET_SUFFIX_WORD.test(m[3])) {
+    return { number: m[1], directional: null, street: m[2].toLowerCase(), next: m[3].toLowerCase(), city: cityPart }
+  }
   return {
     number: m[1],
-    directional: m[2] ? m[2].replace('.', '').toLowerCase() : null,
+    directional: m[2] ? shortDirectional(m[2]) : null,
     street: m[3].toLowerCase(),
     next: m[4] ? m[4].toLowerCase() : null,
     city: cityPart,
@@ -198,7 +238,7 @@ const SUFFIX_VARIANTS: Record<string, string> = {
 export function mentionsDealStreet(text: string, parsed: ParsedDealAddress): boolean {
   const street = escapeRe(parsed.street)
   if (parsed.directional) {
-    if (new RegExp(`\\b${parsed.directional}\\.?\\s+${street}\\b`, 'i').test(text)) return true
+    if (new RegExp(`\\b${directionalRe(parsed.directional)}\\.?\\s+${street}\\b`, 'i').test(text)) return true
   }
   if (/^\d/.test(parsed.street) || !parsed.next || parsed.street.length < 4) return false
   const next = SUFFIX_VARIANTS[parsed.next] ?? escapeRe(parsed.next)
@@ -207,6 +247,30 @@ export function mentionsDealStreet(text: string, parsed: ParsedDealAddress): boo
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Words that name plenty besides a street: never enough alone.
+const GENERIC_STREET_WORDS: ReadonlySet<string> = new Set([
+  'old', 'new', 'main', 'park', 'view', 'school', 'market', 'high', 'north', 'south', 'east', 'west', 'home', 'house', 'land',
+])
+
+/**
+ * The name people call the property by, with no number and no suffix:
+ * "Drouillard", "Nordic", "School House". Null for a numbered street ("45th"
+ * alone names half of Redmond) and for a word too common to mean one street.
+ */
+export function bareStreetName(parsed: ParsedDealAddress): string | null {
+  if (/^\d/.test(parsed.street)) return null
+  if (parsed.next && !STREET_SUFFIX_WORD.test(parsed.next)) return `${parsed.street} ${parsed.next}`
+  if (parsed.street.length < 4 || GENERIC_STREET_WORDS.has(parsed.street)) return null
+  return parsed.street
+}
+
+/** The subject or a file name calls the property by its street alone: "Home Warranty - Nordic". */
+export function mentionsBareStreet(text: string, parsed: ParsedDealAddress): boolean {
+  const name = bareStreetName(parsed)
+  if (!name) return false
+  return new RegExp(`\\b${name.split(' ').map(escapeRe).join('\\s+')}\\b`, 'i').test(text)
 }
 
 /** House number followed by the street's first word, directional optional: "909 NW Delaware" or "909 Delaware". */
@@ -224,13 +288,13 @@ const GENERIC_ADDRESS = new RegExp(
 export function streetAddressesIn(text: string): string[] {
   const out = new Set<string>()
   for (const m of text.matchAll(GENERIC_ADDRESS)) {
-    out.add(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim().toLowerCase())
+    out.add(canonicalDirectional(`${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim().toLowerCase()))
   }
   return [...out]
 }
 
 // Case-sensitive on the street (a name is capitalized), so the directional spells both cases.
-const DIRECTIONAL_ANY_CASE = '(?:[NnSs][EeWw]?|[EeWw])\\.?'
+const DIRECTIONAL_ANY_CASE = '(?:(?:[Nn]orth|[Ss]outh)(?:[Ee]ast|[Ww]est)?|[Ee]ast|[Ww]est|[NnSs][EeWw]?|[EeWw])\\.?'
 const SUBJECT_ADDRESS = new RegExp(
   `(?<![\\d$,.])\\b(\\d{3,6})\\s+((?:${DIRECTIONAL_ANY_CASE}\\s+)?)([A-Za-z0-9][A-Za-z0-9'-]*)(?:\\s+([A-Z][a-z'-]+))?`,
   'g',
@@ -254,7 +318,7 @@ export function propertyInSubject(subject: string): string | null {
     const named = /^[A-Z][a-z'-]{2,}$/.test(street)
     if (!(named || (ordinal && hasDir))) continue
     if (/^(?:19|20)\d{2}$/.test(num) && !hasDir) continue
-    return [num, dir.trim(), street, next ?? ''].filter(Boolean).join(' ').toLowerCase()
+    return canonicalDirectional([num, dir.trim(), street, next ?? ''].filter(Boolean).join(' ').toLowerCase())
   }
   return null
 }
@@ -483,6 +547,10 @@ export function decideMailFiling(input: {
   const full = dealText(facts)
   const namesText = `${facts.subject}\n${facts.attachments.map((a) => a.name).join('\n')}`
   const participants = addressesOf([...facts.from, ...facts.to, ...facts.cc])
+  // The test-party mailboxes (admin@, marketing@) also get Google Workspace
+  // notices and CRM test sends. They stand for a test file's client only on
+  // mail the alias harness wrote, which always carries its "[TC TEST <run>]" tag.
+  if (!/\[TC TEST\b/i.test(facts.subject)) for (const alias of TEST_PARTY_ALIASES) participants.delete(alias)
   const subjectProperty = propertyInSubject(facts.subject)
   const digest = streetAddressesIn(`${facts.subject}\n${facts.body}`).length >= 3
   const reasons: string[] = []
@@ -628,7 +696,7 @@ export function decideMailFiling(input: {
   for (const kind of ['address', 'street'] as const) {
     const hits = scored.filter((c) => hasEvidence(c, kind))
     if (!hits.length) continue
-    if (kind === 'street' && !isTransactionCategory(categoryBase) && !knownCorrespondent) {
+    if (kind === 'street' && !isTransactionCategory(categoryBase) && categoryBase !== 'signing_notice' && !knownCorrespondent) {
       reasons.push('names a street of one of our files, but a stranger wrote it and it is not transaction mail')
       return finish('not_deal', null, null, 0)
     }
@@ -639,6 +707,21 @@ export function decideMailFiling(input: {
     }
     reasons.push(`${kind === 'address' ? 'street address' : 'street name'} of more than one deal`)
     return finish('ambiguous', null, null, top.score)
+  }
+
+  // Rule 3b — our own transaction mail calling one file by its street alone:
+  // "[Ordway forward] OREF 022A Buyers Repair Addendum 2". A broker wrote it
+  // and it carries a transaction form or reads as one, so the name is the file.
+  const transactionMail = isTransactionCategory(categoryBase) || facts.attachments.some(isTransactionFormAttachment)
+  if (direction !== 'inbound' && transactionMail && !subjectProperty) {
+    const named = deals.filter((d) => {
+      const p = parseDealAddress(d.address, d.city)
+      return !!p && mentionsBareStreet(namesText, p)
+    })
+    if (named.length === 1) {
+      reasons.push('our transaction mail naming one deal by its street')
+      return finish('filed', named[0].dealId, 'address', W.street)
+    }
   }
 
   // Rule 4 — who it touched, only when the content is silent. A subject that
@@ -661,6 +744,17 @@ export function decideMailFiling(input: {
     reasons.push(`${method === 'party' ? 'our client' : 'a contact'} on exactly one open deal`)
     return finish('filed', only.dealId, method, only.score)
   } else if (eligible.length > 1) {
+    // Step two: of the deals the sender is on, the subject or a file name
+    // calls exactly one by its street ("Home Warranty - Nordic").
+    const named = eligible.filter((c) => {
+      const d = byId.get(c.dealId)
+      const p = d ? parseDealAddress(d.address, d.city) : null
+      return !!p && mentionsBareStreet(namesText, p)
+    })
+    if (named.length === 1) {
+      reasons.push(`on ${eligible.length} open deals; the subject names one by its street`)
+      return finish('filed', named[0].dealId, 'address', named[0].score)
+    }
     const [a, b] = eligible
     if (a.score > b.score && hasEvidence(a, 'party') && !hasEvidence(b, 'party')) {
       reasons.push('our client on one open deal, a contact on others')
@@ -680,8 +774,10 @@ export function decideMailFiling(input: {
   }
 
   // Rule 5 — transaction mail with no deal: keep it, grouped by the property it names.
+  // An e-sign completion for a property ("Envelope completed: Sellers
+  // Counteroffer Rejection - 1450 Revere Ave") is a transaction record too.
   const transactionForm = facts.attachments.some(isTransactionFormAttachment)
-  if (isTransactionCategory(categoryBase) && (transactionForm || subjectProperty)) {
+  if ((isTransactionCategory(categoryBase) || categoryBase === 'signing_notice') && (transactionForm || subjectProperty)) {
     reasons.push(subjectProperty ? `transaction mail for ${subjectProperty}, no deal on file` : 'transaction documents, no deal on file')
     return finish('unfiled_transaction', null, null, 0)
   }
