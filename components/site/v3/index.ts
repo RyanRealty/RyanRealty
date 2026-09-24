@@ -619,6 +619,36 @@ export { V3Amenities } from './V3Amenities'
 export type { V3AmenitiesProps } from './V3Amenities'
 
 /* -------------------------------------------------------------------------- */
+/* About-page AEO patterns (Matt 2026-09-23)                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Five shapes the About-page playbook needed and no pattern had: ENTRIES (a
+ * numbered set of offerings, each an H3 with its body and one door), CLAIMS
+ * (checkable claims led by their figure, on the inverse ground), ROLL (a set
+ * of short labels as one run of display type, each a door), STEPS (a promise,
+ * its standing facts, and an ordered line of H3 steps) and FACTS (one <dl>
+ * fact sheet). Built for /about; general enough for /team, /sell and /join.
+ */
+export { V3Entries } from './V3Entries'
+export type { V3EntriesProps, V3Entry, V3EntryDoor } from './V3Entries'
+// V3EntriesIndex is V3Entries' own island (the scroll-marked index rail); it
+// ships through V3Entries, so only its item type leaves the barrel.
+export type { V3EntriesIndexItem } from './V3EntriesIndex.client'
+export { V3Claims } from './V3Claims'
+export type { V3ClaimsProps, V3Claim, V3ClaimFigure } from './V3Claims'
+export { V3Roll } from './V3Roll'
+export type { V3RollProps, V3RollItem } from './V3Roll'
+export { V3Steps } from './V3Steps'
+export type { V3StepsProps, V3Step, V3StepsFact } from './V3Steps'
+// V3MarkStrip ships inside V3Claims and V3Facts (the `strip` slot on a claim
+// or a fact); a page passes the data, never mounts the strip alone.
+export { markStripDrawable } from './V3MarkStrip'
+export type { V3MarkStripProps, V3MarkStripMark } from './V3MarkStrip'
+export { V3Facts } from './V3Facts'
+export type { V3FactsProps, V3Fact, V3FactLink, V3FactStrip } from './V3Facts'
+
+/* -------------------------------------------------------------------------- */
 /* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */
 /* -------------------------------------------------------------------------- */
 
@@ -782,5 +812,5 @@ export type { V3SectionTrackerProps } from './V3SectionTracker.client'
  */
 export { V3OnDuty } from './V3OnDuty.client'
 export type { V3OnDutyProps } from './V3OnDuty.client'
-export { onDutyLabel, onDutyState } from './V3OnDuty.view'
+export { onDutyLabel, onDutyState, hmLabel } from './V3OnDuty.view'
 export type { V3OnDutyState } from './V3OnDuty.view'

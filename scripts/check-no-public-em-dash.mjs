@@ -58,6 +58,17 @@ const ROOTS = [
   'lib/marketing-brain/deliverable-share.ts',
   // Commercial space for lease (Matt 2026-09-23): the page and its copy.
   'app/commercial-space-for-lease',
+  // /about AEO playbook (Matt 2026-09-23): the page, the playbook copy, and the
+  // five primitives it added. about-constants.ts is not listed: its
+  // ABOUT_LOCK_QUOTES are lock evidence copied verbatim from source comments,
+  // never rendered, and its FAQ answers are held by about-playbook.test.tsx.
+  'app/about/page.tsx',
+  'app/about/_v3/about-playbook.ts',
+  'components/site/v3/V3Entries.tsx',
+  'components/site/v3/V3Claims.tsx',
+  'components/site/v3/V3Roll.tsx',
+  'components/site/v3/V3Steps.tsx',
+  'components/site/v3/V3Facts.tsx',
 ]
 
 /** JSON the visitor can read; not walked as TypeScript. */

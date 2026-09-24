@@ -104,7 +104,10 @@ describe('check-page-purpose — competitiveBrief contract', () => {
     const parsed = JSON.parse(readFileSync(ABOUT_PARITY, 'utf8'))
     expect(competitiveBriefPurposeProblems('about', parsed)).toEqual([])
     expect(parsed.competitiveBrief.id).toBe('about-matt-2026-09-21')
-    expect(parsed.competitiveBrief.beats).toHaveLength(8)
+    // Eight SITE-163 beats plus beat 9, the About-page AEO playbook below the
+    // proof (Matt 2026-09-23).
+    expect(parsed.competitiveBrief.beats).toHaveLength(9)
+    expect(parsed.competitiveBrief.beats.map((b) => b.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
   })
 
   it('refuses About with no competitiveBrief', () => {

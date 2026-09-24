@@ -52,6 +52,7 @@ import { SearchEmpty } from '@/app/search/_v3/SearchEmpty'
 import { SearchPagerMore } from '@/app/search/_v3/SearchPager'
 import { SPLIT_CARD_PAGE } from '@/lib/search/search-opening'
 import { publishSplitClaim } from '@/lib/search/publish-split-claim'
+import { SEARCH_SORT_LABELS } from '@/lib/search/search-sort-order'
 import './search-ledger.css'
 
 /**
@@ -113,17 +114,23 @@ function cardPricePerSqft(l: ListingTileRow): number | null {
   return Math.round(l.ListPrice / sqft)
 }
 
-/** Sort options for the list-pane count row (G2). Values match SearchFilters.SORT_OPTIONS. */
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'price_asc', label: 'Price: low to high' },
-  { value: 'price_desc', label: 'Price: high to low' },
-  { value: 'oldest', label: 'Oldest' },
-  { value: 'price_per_sqft_asc', label: 'Price per sq ft: low to high' },
-  { value: 'price_per_sqft_desc', label: 'Price per sq ft: high to low' },
-  { value: 'year_newest', label: 'Newest built' },
-  { value: 'year_oldest', label: 'Oldest built' },
-] as const
+/**
+ * Sort options for the list-pane count row (G2), labeled from the one sort
+ * table (lib/search/search-sort-order.ts): `newest` reads "Newest listed"
+ * because it orders by the on-market date (Matt 2026-09-23).
+ */
+const SORT_OPTIONS = (
+  [
+    'newest',
+    'price_asc',
+    'price_desc',
+    'oldest',
+    'price_per_sqft_asc',
+    'price_per_sqft_desc',
+    'year_newest',
+    'year_oldest',
+  ] as const
+).map((value) => ({ value, label: SEARCH_SORT_LABELS[value] }))
 
 /** Compact filter crumbs for the mockup count row ("N homes · Bend · $500K+"). */
 function buildFiltersSummary(f: SearchFiltersInitial): string {
@@ -504,7 +511,7 @@ export default function MapSearchView({
   // it renders truly empty in SSR HTML, which a crawler sees as a blank
   // control. Pass the label as SelectValue's children so the served markup
   // always carries the current sort's text, SSR and post-hydration alike.
-  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortValue)?.label ?? 'Newest'
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortValue)?.label ?? SEARCH_SORT_LABELS.newest
 
   // ── Geo scope (W4.2) ──────────────────────────────────────────────────────
   // The URL can pin the search to a place (city / subdivision / zip). That pin
@@ -1453,6 +1460,9 @@ export default function MapSearchView({
         hideBoundaryToggle={lockPlace}
         initialBounds={initialBounds}
         lockBounds
+        // The regional frame's box fills the pane (fractional fit) instead of
+        // opening at integer z8; a place's own boundary camera is unchanged.
+        fractionalZoom={Boolean(regionFrameLabel)}
         relayoutKey={mobileView}
         onBoundsChanged={handleBoundsChanged}
         shapes={drawnShapes}

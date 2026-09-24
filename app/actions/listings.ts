@@ -597,13 +597,15 @@ export async function getListings(options: {
     : options.includePending
       ? ('active-and-pending' as const)
       : ('active' as const)
-  const sortMap: Record<string, 'newest' | 'oldest' | 'price-asc' | 'price-desc'> = {
-    newest: 'newest',
-    oldest: 'oldest',
+  // Search's `newest` is newest LISTED (on_market_date, Matt 2026-09-23), the
+  // tile DAL's 'listed-newest'; the tile DAL's own 'newest' is modified_at.
+  const sortMap: Record<string, 'listed-newest' | 'listed-oldest' | 'price-asc' | 'price-desc'> = {
+    newest: 'listed-newest',
+    oldest: 'listed-oldest',
     price_asc: 'price-asc',
     price_desc: 'price-desc',
   }
-  const sortKey = sortMap[options.sort ?? 'newest'] ?? 'newest'
+  const sortKey = sortMap[options.sort ?? 'newest'] ?? 'listed-newest'
 
   const pt = options.propertyType?.trim()
   const propertyType = pt && pt !== '' && pt !== 'all' ? pt : undefined
@@ -1446,7 +1448,9 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
     subdivision: canonicalSubdivision || undefined,
     status: dalStatus,
     ...advancedTileFilters(options),
-    sort: 'newest',
+    // Newest listed first, the search default (Matt 2026-09-23): which homes
+    // make the pin cap is decided by list date, not by the last MLS edit.
+    sort: 'listed-newest',
     limit: Math.min(mapLimit, 5000),
   })
   return tiles.map((t) => ({
@@ -1505,14 +1509,16 @@ export async function getViewportListings(
           : statusFilter === 'closed'
             ? 'closed'
             : 'active'
-  const dalSort: 'newest' | 'oldest' | 'price-asc' | 'price-desc' =
+  // Search's `newest` is newest LISTED (Matt 2026-09-23): the tile DAL's
+  // 'listed-newest' (on_market_date), not its modified_at 'newest'.
+  const dalSort: 'listed-newest' | 'listed-oldest' | 'price-asc' | 'price-desc' =
     options.sort === 'price_asc'
       ? 'price-asc'
       : options.sort === 'price_desc'
         ? 'price-desc'
         : options.sort === 'oldest'
-          ? 'oldest'
-          : 'newest'
+          ? 'listed-oldest'
+          : 'listed-newest'
   const canonicalSubdivision = options.subdivision?.trim()
     ? getSubdivisionMatchNames(options.subdivision.trim())[0] ?? null
     : null

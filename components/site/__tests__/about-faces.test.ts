@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { BROKERS } from '@/lib/brand/contact'
 import { aboutDisplayName, aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces'
 import { ABOUT_BROKERS_QUESTION, aboutBrokersAnswer, aboutFaqItems } from '@/app/about/_v3/about-constants'
+import { aboutOriginBody, aboutTeamBody } from '@/app/about/_v3/about-playbook'
 
 describe('about faces fold', () => {
   it('names the photo door so pa11y does not see an empty link', () => {
@@ -52,6 +53,13 @@ describe('about page copy', () => {
     const origin = src.slice(src.indexOf('originItems'), src.indexOf('licenseFigures'))
     expect(origin).not.toContain('ABOUT_MISSION')
     expect(origin).not.toMatch(/boutique|authentic|exceptional/)
+    // The origin and team sentences moved into about-playbook.ts (2026-09-23);
+    // the rule follows the words, not the file.
+    expect(origin).toContain('aboutOriginBody()')
+    expect(aboutOriginBody()).not.toMatch(/boutique|authentic|exceptional/)
+    expect(aboutTeamBody([{ name: 'A', title: 'Broker', href: '/team/a' }]) ?? '').not.toMatch(
+      /boutique|authentic|exceptional/,
+    )
   })
 })
 
@@ -107,7 +115,8 @@ describe('one name per broker on /about', () => {
   it('hand-types no broker name in page.tsx or the constants', () => {
     const page = readFileSync('app/about/page.tsx', 'utf8')
     const constants = readFileSync('app/about/_v3/about-constants.ts', 'utf8')
-    for (const src of [page, constants]) {
+    const playbook = readFileSync('app/about/_v3/about-playbook.ts', 'utf8')
+    for (const src of [page, constants, playbook]) {
       expect(src).not.toContain(rebecca.name)
       expect(src).not.toContain(rebecca.nameShort)
       expect(src).not.toContain(BROKERS.paul.nameShort)

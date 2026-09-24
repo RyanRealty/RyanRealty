@@ -649,6 +649,38 @@
   overflow-y: auto;
 }
 
+/* The dock's Sort names the order the results are in ("Newest listed"),
+   quieter than the SORT label it follows. */
+.map-search-mapsort__now {
+  margin-left: 0.45em;
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
+  font-weight: var(--v3-weight-body, 400);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+/* The filter dock's Map | List | Sort (?view=list, ?view=map). It sat at the
+   end of one nowrap row after Places, Filters and Save, and pushed the page
+   111px sideways at 390 (187px at 768). The row now wraps below lg
+   (SearchFilters), and below sm this pill takes its own full-width line: the
+   views share the width, Sort keeps its size, every target keeps the 44px
+   floor. */
+@media (max-width: 639px) {
+  .map-search-mapsort__pill--dock {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .map-search-mapsort__pill--dock .map-search-mapsort__views {
+    flex: 1 1 auto;
+  }
+
+  .map-search-mapsort__pill--dock .map-search-mapsort__views button {
+    flex: 1 1 0;
+  }
+}
+
 /* Mic inside the location search bar — square tap, no outline chip. */
 .srch-mic-inbar {
   border-radius: 6px !important;
@@ -1102,6 +1134,12 @@ button.srch-chip--key {
   text-transform: uppercase;
   color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
   line-height: 1.25;
+  /* The readout is a sentence ("$839/sqft · above middle half of 23 on this
+     map"). The desktop list's figure column is nowrap, so it ran ~120px past
+     its 13rem mark and past the right edge of the page at 1440. It wraps
+     inside the mark instead. */
+  white-space: normal;
+  text-wrap: pretty;
 }
 
 .srch-ppsf__track {

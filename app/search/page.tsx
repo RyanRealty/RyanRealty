@@ -77,8 +77,9 @@ import { SplitViewBodyLock } from '@/components/search/SplitViewBodyLock'
 
 /**
  * The bare, indexable `/homes-for-sale` opens the SPLIT view (map + list) on
- * desktop and the LIST on phones, framed on ALL of Central Oregon, newest first
- * (Matt 2026-09-23). Rules: lib/search/search-opening.ts.
+ * desktop and the LIST on phones, framed on ALL of Central Oregon, newest
+ * listed first (Matt 2026-09-23). Rules: lib/search/search-opening.ts; the
+ * order: lib/search/search-sort-order.ts.
  *
  * History. The split view's camera used to be Bend-bounded
  * (BEND_DEFAULT_BOUNDS), so the page read "471 homes in view" under a "Central

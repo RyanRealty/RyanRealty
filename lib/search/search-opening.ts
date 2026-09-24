@@ -2,7 +2,8 @@
  * How /homes-for-sale opens (Matt 2026-09-23).
  *
  * The bare, indexable /homes-for-sale opens as the SPLIT view (map + list)
- * framed on all of Central Oregon, newest first. Phones open on the LIST with
+ * framed on all of Central Oregon, newest listed first (the on-market date;
+ * the order lives in lib/search/search-sort-order.ts). Phones open on the LIST with
  * the map one tap away. It replaces UXLIVE-4 (2026-09-22), which made the bare
  * URL the regional list because the split camera was Bend-bounded and the page
  * read "471 homes in view" under a "Central Oregon homes for sale" title. The

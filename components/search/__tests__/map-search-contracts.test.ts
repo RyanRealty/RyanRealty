@@ -1304,3 +1304,36 @@ describe('bare /homes-for-sale opens split on desktop, list on phones, on Centra
     expect(view).not.toMatch(/nearest matches/)
   })
 })
+
+describe('search polish (Matt 2026-09-23): no sideways scroll, the order named, the region framed', () => {
+  const filters = readSrc('components/search/SearchFilters.tsx')
+  const css = readSrc('components/search/search-ledger.css')
+  const view = readSrc('components/search/MapSearchView.tsx')
+  const map = readSrc('components/SearchMapClustered.tsx')
+
+  it("the dock's row wraps below lg, so Map | List | Sort never runs past the frame", () => {
+    // One nowrap row scrolled ?view=list 111px sideways at 390 (187px at 768)
+    // and clipped Sort off ?view=map.
+    expect(filters).toMatch(/className="flex min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex-nowrap"/)
+    expect(filters).toMatch(/map-search-mapsort__pill map-search-mapsort__pill--dock/)
+    expect(css).toMatch(/@media \(max-width: 639px\) \{\s*\.map-search-mapsort__pill--dock \{\s*width: 100%;/)
+    // Tap floor kept: the dock pill's buttons still carry the 44px minimums.
+    expect(css).toMatch(/\.map-search-views button \{\s*min-width: var\(--v3-tap, 44px\);\s*min-height: var\(--v3-tap, 44px\);/)
+  })
+
+  it('the price-per-sqft readout wraps inside its mark instead of pushing the list past 1440', () => {
+    expect(css).toMatch(/\.srch-ppsf__label \{[^}]*white-space: normal;/)
+  })
+
+  it("the dock's Sort says which order the results are in", () => {
+    expect(filters).toMatch(/aria-label=\{`Sort results, now \$\{activeSortLabel\}`\}/)
+    expect(filters).toMatch(/<span className="map-search-mapsort__now">\{activeSortLabel\}<\/span>/)
+    expect(view).toMatch(/label: SEARCH_SORT_LABELS\[value\]/)
+  })
+
+  it('the regional frame fits its box at fractional zoom; a place camera does not', () => {
+    expect(view).toMatch(/fractionalZoom=\{Boolean\(regionFrameLabel\)\}/)
+    expect(map).toMatch(/\.\.\.\(!fitSubjectRing \? \{ isFractionalZoomEnabled: fractionalZoom \} : \{\}\)/)
+    expect(map).toMatch(/fractionalZoom = false,/)
+  })
+})

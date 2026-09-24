@@ -116,17 +116,62 @@ export function uniqueListingTiles<T extends { ListingKey?: string | null }>(
   return out
 }
 
+/** Every tile that publishes as a firm closing, newest first, with its row. */
+function publishableFirmClosings(
+  tiles: readonly PriceDropTile[],
+): Array<{ tile: PriceDropTile; row: V3LedgerFigureRow }> {
+  return uniqueListingTiles(tiles)
+    .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
+    .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
+    .map((tile) => ({ tile, row: brokerageTileToRow(tile) }))
+    .filter((entry): entry is { tile: PriceDropTile; row: V3LedgerFigureRow } => entry.row !== null)
+}
+
 /** Newest firm closings for the shared house-row ledger on /about and /team/[slug]. */
 export function publishFirmClosingRows(
   tiles: readonly PriceDropTile[],
   limit = 8,
 ): V3LedgerFigureRow[] {
-  return uniqueListingTiles(tiles)
-    .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
-    .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
-    .map((t) => brokerageTileToRow(t))
-    .filter((row): row is V3LedgerFigureRow => row !== null)
+  return publishableFirmClosings(tiles)
     .slice(0, limit)
+    .map((entry) => entry.row)
+}
+
+/**
+ * The firm record behind the closings rail, before its display cap: how many
+ * closings publish and the calendar span of their close dates (YYYY-MM-DD).
+ * Same tiles and same filter as publishFirmClosingRows, so a count printed
+ * beside the rail can never disagree with the rail (CLAUDE.md §0). A closing
+ * whose feed row has no CloseDate still counts; it just cannot move the span.
+ */
+export type FirmClosingRecord = {
+  count: number
+  firstClose: string | null
+  lastClose: string | null
+  /**
+   * Every dated closing in the record, oldest first: the calendar day and the
+   * row's own address and recorded price (the same strings the rail prints),
+   * so a drawing of the record can label each mark without a second read.
+   */
+  dated?: Array<{ day: string; what: string; value: string }>
+}
+
+export function firmClosingRecord(tiles: readonly PriceDropTile[]): FirmClosingRecord {
+  const entries = publishableFirmClosings(tiles)
+  const dated = entries
+    .map((entry) => ({
+      day: (entry.tile.CloseDate ?? '').slice(0, 10),
+      what: String(entry.row.what),
+      value: String(entry.row.value),
+    }))
+    .filter((mark) => /^\d{4}-\d{2}-\d{2}$/.test(mark.day))
+    .sort((a, b) => a.day.localeCompare(b.day))
+  return {
+    count: entries.length,
+    firstClose: dated[0]?.day ?? null,
+    lastClose: dated[dated.length - 1]?.day ?? null,
+    dated,
+  }
 }
 
 function houseRowSpecs(tile: PriceDropTile): string | null {

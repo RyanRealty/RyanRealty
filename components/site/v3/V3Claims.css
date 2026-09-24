@@ -1,0 +1,201 @@
+/* ===========================================================================
+   PATTERN: CLAIMS
+   Styles for V3Claims.tsx and nothing else. Every value resolves from
+   ./tokens.css. The band is the inverse ground (navy) with cream ink; the
+   muted cream stays at body size and up (PUBLIC_UI.md section 4). No shadow,
+   no radius, no fill inside the band: hairlines in cream at a fifth.
+   =========================================================================== */
+
+.v3.v3-claims {
+  --v3-claims-rule: color-mix(in srgb, var(--v3-cream) 22%, transparent);
+  /* Small muted text (labels, the trace) sits under 16px, where the 60% cream
+     is not cleared (PUBLIC_UI.md section 4), so it reads at 80%. */
+  --v3-claims-ink-small: color-mix(in srgb, var(--v3-cream) 80%, transparent);
+  background: var(--v3-surface-inverse);
+  color: var(--v3-ink-on-navy);
+}
+
+/* A navy band is its own seam: the section rule the next pattern opens on
+   reads as the band's edge, and this band needs no rule of its own. */
+* + .v3.v3-claims {
+  border-top: 0;
+}
+
+/* The pattern after the band opens on the band's edge, not on a second rule
+   stopped at the measure (which read as a stub under the navy). */
+.v3.v3-claims + .v3 {
+  border-top: 0;
+}
+
+.v3-claims__inner {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+.v3-claims__head {
+  display: grid;
+  gap: var(--v3-space-xs);
+  max-width: 40rem;
+  margin-bottom: var(--v3-space-xl);
+}
+
+.v3.v3-claims .v3-claims__eyebrow {
+  color: var(--v3-ink-on-navy-muted);
+}
+
+.v3-claims__heading {
+  margin: 0;
+  color: var(--v3-ink-on-navy);
+}
+
+/* The claims --------------------------------------------------------------
+   One column at 390, two past 40rem, all five across past 64rem with a
+   cream hairline between columns: a row of evidence, read left to right. */
+.v3-claims__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-claims__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+  padding-block: var(--v3-space-lg);
+  border-top: 1px solid var(--v3-claims-rule);
+}
+
+@media (min-width: 40rem) {
+  .v3-claims__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--v3-space-xl);
+  }
+}
+
+@media (min-width: 64rem) {
+  .v3-claims__list {
+    grid-template-columns: repeat(var(--v3-claims-cols, 5), minmax(0, 1fr));
+    column-gap: 0;
+  }
+
+  .v3-claims__item {
+    padding: var(--v3-space-md) var(--v3-space-lg) var(--v3-space-sm);
+    border-top: 0;
+    border-left: 1px solid var(--v3-claims-rule);
+  }
+
+  .v3-claims__item:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .v3-claims__item:last-child {
+    padding-right: 0;
+  }
+
+  /* Five labels of one or two lines: reserve two, so the five claim titles
+     start on one line across the band. */
+  .v3-claims__label {
+    min-height: 2lh;
+  }
+}
+
+/* The figure leads: Amboqia, tabular, at the lead numeral size, its label
+   under it in the muted cream. The number is the evidence, so it is the
+   largest thing in the claim. */
+.v3-claims__figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  margin: 0 0 var(--v3-space-xs);
+}
+
+.v3-claims__value {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num-lead);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.v3-claims__label {
+  color: var(--v3-claims-ink-small);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-note);
+  text-transform: uppercase;
+}
+
+.v3-claims__name {
+  margin: 0;
+  color: var(--v3-ink-on-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-strong);
+  line-height: var(--v3-leading-heading);
+  text-wrap: balance;
+}
+
+.v3-claims__body {
+  margin: 0;
+  color: var(--v3-ink-on-navy-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+/* The evidence drawn, on the navy ground: cream ink, and the pointer label
+   inverted to cream so it reads against the band. */
+.v3.v3-claims .v3-claims__strip {
+  --v3-strip-tip-bg: var(--v3-cream);
+  --v3-strip-tip-ink: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3-claims__door {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  align-self: flex-start;
+  min-height: var(--v3-tap);
+  margin-top: auto;
+  padding-top: var(--v3-space-xs);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  text-decoration: underline;
+  text-decoration-color: var(--v3-claims-rule);
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-claims__door:hover,
+.v3-claims__door:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.v3-claims__arrow {
+  flex: none;
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-claims__door:hover .v3-claims__arrow,
+.v3-claims__door:focus-visible .v3-claims__arrow {
+  transform: translateX(var(--v3-travel));
+}
+
+.v3-claims__source {
+  margin: var(--v3-space-lg) 0 0;
+  padding-top: var(--v3-space-sm);
+  border-top: 1px solid var(--v3-claims-rule);
+  color: var(--v3-claims-ink-small);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}

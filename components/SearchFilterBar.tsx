@@ -28,6 +28,7 @@ import {
   SEARCH_STATUS_FILTER_CHIPS,
 } from '@/lib/search/publish-search-status'
 import { listingsBrowsePath } from '@/lib/slug'
+import { SEARCH_SORT_LABELS } from '@/lib/search/search-sort-order'
 import { cn } from '@/lib/utils'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon, Location01Icon } from '@hugeicons/core-free-icons'
@@ -585,13 +586,16 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           }}
         >
           <SelectTrigger className="srch-square h-8 w-[min(11rem,46vw)]" aria-label="Sort results">
-            <SelectValue placeholder="Newest first" />
+            <SelectValue placeholder={SEARCH_SORT_LABELS.newest} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="oldest">Oldest first</SelectItem>
-            <SelectItem value="price_asc">Price: low to high</SelectItem>
-            <SelectItem value="price_desc">Price: high to low</SelectItem>
+            {/* Labels from the one sort table: `newest` orders by the
+                on-market date, so it reads "Newest listed" (Matt 2026-09-23). */}
+            {(['newest', 'oldest', 'price_asc', 'price_desc'] as const).map((value) => (
+              <SelectItem key={value} value={value}>
+                {SEARCH_SORT_LABELS[value]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

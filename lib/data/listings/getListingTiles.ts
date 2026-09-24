@@ -136,7 +136,15 @@ const FilterSchema = z.object({
   scope: z.enum(['service-area', 'all']).optional(),
   status: z.enum(['active', 'active-and-pending', 'pending-only', 'closed', 'all']).default('active'),
   // 'close-newest' sorts by close_date DESC NULLS LAST — for recently-sold rows.
-  sort: z.enum(['newest', 'oldest', 'price-asc', 'price-desc', 'close-newest']).default('newest'),
+  // 'newest' / 'oldest' here order by modified_at (the MLS modification
+  // timestamp): the feed-order surfaces and the modifiedAfter/modifiedBefore
+  // adjacency reads depend on it. SEARCH does not use them: a search's
+  // `newest` is newest LISTED (Matt 2026-09-23), which is 'listed-newest'
+  // (on_market_date DESC NULLS LAST, then listing_key) and its mirror
+  // 'listed-oldest'. See lib/search/search-sort-order.ts.
+  sort: z
+    .enum(['newest', 'oldest', 'listed-newest', 'listed-oldest', 'price-asc', 'price-desc', 'close-newest'])
+    .default('newest'),
   limit: z.number().int().min(1).max(5000).default(60),
   offset: z.number().int().nonnegative().default(0),
 })
@@ -405,20 +413,34 @@ function compareTiles(sort: z.infer<typeof FilterSchema>['sort']) {
   > = {
     newest: { pick: (t) => t.modifiedAt ?? null, asc: false, nullsFirst: false },
     oldest: { pick: (t) => t.modifiedAt ?? null, asc: true, nullsFirst: true },
+    'listed-newest': { pick: (t) => onMarketMs(t), asc: false, nullsFirst: false },
+    'listed-oldest': { pick: (t) => onMarketMs(t), asc: true, nullsFirst: false },
     'price-asc': { pick: (t) => t.listPrice ?? null, asc: true, nullsFirst: true },
     'price-desc': { pick: (t) => t.listPrice ?? null, asc: false, nullsFirst: false },
     'close-newest': { pick: (t) => t.closeDate ?? null, asc: false, nullsFirst: false },
   }
   const { pick, asc, nullsFirst } = bySortKey[sort]
+  // The listed-date sorts carry the listing_key tie-break their SQL order has.
+  const tieBreak = sort === 'listed-newest' || sort === 'listed-oldest'
   return (a: ListingTile, b: ListingTile): number => {
     const av = pick(a)
     const bv = pick(b)
-    if (av == null && bv == null) return 0
+    if (av == null && bv == null) return tieBreak ? compareKeys(a, b) : 0
     if (av == null) return nullsFirst ? -1 : 1
     if (bv == null) return nullsFirst ? 1 : -1
-    if (av === bv) return 0
+    if (av === bv) return tieBreak ? compareKeys(a, b) : 0
     return (av < bv ? -1 : 1) * (asc ? 1 : -1)
   }
+}
+
+function onMarketMs(t: ListingTile): number | null {
+  if (!t.onMarketDate) return null
+  const ms = Date.parse(t.onMarketDate)
+  return Number.isFinite(ms) ? ms : null
+}
+
+function compareKeys(a: ListingTile, b: ListingTile): number {
+  return a.listingKey < b.listingKey ? -1 : a.listingKey > b.listingKey ? 1 : 0
 }
 
 async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]> {
@@ -438,6 +460,11 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
       query = query.order('modified_at', { ascending: false, nullsFirst: false })
     } else if (parsed.sort === 'oldest') {
       query = query.order('modified_at', { ascending: true, nullsFirst: true })
+    } else if (parsed.sort === 'listed-newest' || parsed.sort === 'listed-oldest') {
+      // Newest listed (search's `newest`, Matt 2026-09-23) and its mirror.
+      query = query
+        .order('on_market_date', { ascending: parsed.sort === 'listed-oldest', nullsFirst: false })
+        .order('listing_key', { ascending: true, nullsFirst: false })
     } else if (parsed.sort === 'price-asc') {
       query = query.order('list_price', { ascending: true, nullsFirst: true })
     } else if (parsed.sort === 'price-desc') {

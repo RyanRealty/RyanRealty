@@ -1,11 +1,11 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat Compass/Redfin/SIR About on STRUCTURE, not scale. OPEN on faces at display scale (shadcn Avatar) plus the branded H1 and one boutique Central Oregon buy-and-sell sentence. 5.0 from 25 stays in the first viewport. Then client reviews as the primary proof (Google score + featured quote \u2014 never press). Then dated local closings. Then Contact four-up Call|Text|Email|Schedule. Then office 115 NW Oregon Ave #2 + firm OREA. Then a compact inquiry that GET-submits to Contact. FAIL if the first viewport is a downtown storefront with no broker face. FAIL if a KPI grid, three equal broker Cards, or a Meet-the-Team dump opens the page. Deep bios stay on /team. Skip coast-to-coast, Redfin fee, and Rocket copy. Never invent MOS, prices, or licenses.",
+  "competitiveTarget": "Beat Compass/Redfin/SIR About on STRUCTURE, not scale. OPEN on faces at display scale (shadcn Avatar) plus the branded H1 and one boutique Central Oregon buy-and-sell sentence. 5.0 from 25 stays in the first viewport. Then client reviews as the primary proof (Google score + featured quote \u2014 never press). Then dated local closings. Then Contact four-up Call|Text|Email|Schedule. Then office 115 NW Oregon Ave #2 + firm OREA. Then a compact inquiry that GET-submits to Contact. FAIL if the first viewport is a downtown storefront with no broker face. FAIL if a KPI grid, three equal broker Cards, or a Meet-the-Team dump opens the page. Deep bios stay on /team. Skip coast-to-coast, Redfin fee, and Rocket copy. Never invent MOS, prices, or licenses. BELOW THE PROOF (Matt 2026-09-23, the About-page AEO playbook): What Ryan Realty does (each service an H3), What makes Ryan Realty different (our own checkable facts with their figures; never a named competitor), Who Ryan Realty works with (clients by need), How Ryan Realty works (same business day), The team behind Ryan Realty, Key facts about Ryan Realty as one crawlable dl, and Frequently asked questions as H3s equal to the FAQPage JSON-LD. We win the answer-engine read on structure: every fact a buyer or an engine asks about a brokerage is on this page, sourced, in the served HTML.",
   "competitiveBrief": {
     "id": "about-matt-2026-09-21",
-    "source": "Matt 2026-09-21 SITE-163 lock. Faces open About at display scale. Deep bios stay on /team. Evidence quotes required \u2014 a lone competitiveBriefPass boolean is refuse.",
-    "productLock": "faces at display scale + 5.0 from 25 + firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry\u2192/contact. No Meet-the-Team dump. No KPI grid.",
+    "source": "Matt 2026-09-21 SITE-163 lock. Faces open About at display scale. Deep bios stay on /team. Evidence quotes required \u2014 a lone competitiveBriefPass boolean is refuse. Beat 9 added by Matt 2026-09-23 (About-page AEO playbook).",
+    "productLock": "faces at display scale + 5.0 from 25 + firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry\u2192/contact. No Meet-the-Team dump. No KPI grid. + below the proof: services, differentiators (no competitor named), clients by need, how we work (same business day), the team, key facts dl, FAQ H3s = FAQPage.",
     "refuse": "AboutFaces roster, AboutTeamTeaser, Meet-the-Team dump, three equal broker Cards, KPI grid, storefront-as-opener. Looking that invents past this checklist. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
     "beats": [
       {
@@ -39,10 +39,14 @@
       {
         "id": "8",
         "text": "Catalog interactions are real: shadcn Avatar at display scale, closings carousel, and inquiry input."
+      },
+      {
+        "id": "9",
+        "text": "Below the proof, the AEO playbook: What Ryan Realty does, What makes Ryan Realty different (no competitor named), Who Ryan Realty works with, How Ryan Realty works (same business day), The team behind Ryan Realty, Key facts about Ryan Realty as one dl, and Frequently asked questions as H3s equal to FAQPage."
       }
     ]
   },
-  "note": "SITE-163 2026-09-21 Matt lock. Faces open About at display scale. Deep bios stay on /team. requiredComponents opener is AboutFirm, not AboutFaces, not AboutTeamTeaser. Order: AboutFirm faces + firm story, V3Proof reviews PRIMARY, FirmClosings catalog carousel+Card, AboutReach Button Group Call/Text/Email/Schedule, AboutOffice Card, AboutInquiry Input+Button GET /contact, Atlas, Quiet #about, V3Answers, Footer. Tip Ready needs competitiveBriefEvidence quotes in source \u2014 a lone boolean is refuse.",
+  "note": "SITE-163 2026-09-21 Matt lock. Faces open About at display scale. Deep bios stay on /team. requiredComponents opener is AboutFirm, not AboutFaces, not AboutTeamTeaser. Order: AboutFirm faces + firm story, V3Proof reviews PRIMARY, FirmClosings catalog carousel+Card, AboutReach Button Group Call/Text/Email/Schedule, AboutOffice Card, AboutInquiry Input+Button GET /contact, Atlas, Quiet #about, V3Answers, Footer. Tip Ready needs competitiveBriefEvidence quotes in source \u2014 a lone boolean is refuse. MATT 2026-09-23 (About-page AEO playbook, binding): KEEP the 2026-09-21 lock above the proof (faces + boutique sentence, V3Proof, FirmClosings, AboutReach + V3OnDuty, AboutOffice, AboutInquiry). ADD below the proof, in this order: V3Entries #services What Ryan Realty does; V3Claims #different What makes Ryan Realty different (our own facts only, NO competitor named: NAR Code Article 15 and Oregon advertising rules); V3Roll #clients Who Ryan Realty works with (clients by need, never a protected class); V3Atlas #service-area; V3Steps #how-we-work How Ryan Realty works with the reply-time promise 'same business day' (Matt's commitment, stated plainly); V3Quiet #about The team behind Ryan Realty (origin, the live roster count, a door to each broker's /team page, licenses, the firm's profiles; NO roster cards); V3Facts #key-facts Key facts about Ryan Realty (one dl; no Notable clients, no Competitors, no Contract terms row); V3Answers #faq Frequently asked questions (questions as H3s, FAQPage from the same array). Organization facts in the AboutPage mainEntity (knowsAbout, areaServed, numberOfEmployees, hasOfferCatalog) are only what the page prints.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -85,13 +89,38 @@
       "blocking": true
     },
     {
+      "name": "V3Entries",
+      "section": "#services 'What Ryan Realty does' (Matt 2026-09-23). Six services, each an H3 with two or three sentences on what it is and the outcome and one door to the page that delivers it: selling (3% listing fee from LISTING_TERMS), buying, the free written valuation within 24 hours, relocation, rural/land/resort property, investment property. Never commercial or property management.",
+      "blocking": true
+    },
+    {
+      "name": "V3Claims",
+      "section": "#different 'What makes Ryan Realty different' (Matt 2026-09-23). Five of our own checkable facts, each led by its figure on the navy band: Google rating and count (live), 3% listing fee, written valuation in 24 hours, recorded closings count since the first close (live), one broker first call to closing. NO competitor named, no comparison. A claim whose live figure did not load is dropped.",
+      "blocking": true
+    },
+    {
+      "name": "V3Roll",
+      "section": "#clients 'Who Ryan Realty works with' (Matt 2026-09-23). A bulleted list of client segments by need (first-time buyers, sellers, people relocating, second-home and resort-community buyers, land and rural buyers, investors, brokers referring a client), each a door. Never a protected class.",
+      "blocking": true
+    },
+    {
+      "name": "V3Steps",
+      "section": "#how-we-work 'How Ryan Realty works' (Matt 2026-09-23). The promise 'We reply the same business day.' (Matt's commitment) in the display face, the live office hours from crm_company_settings.booking_hours and the office beside it, and three H3 steps: channels, the first conversation, one broker through closing.",
+      "blocking": true
+    },
+    {
+      "name": "V3Facts",
+      "section": "#key-facts 'Key facts about Ryan Realty' (Matt 2026-09-23). ONE dl in the served HTML: Company name, Type, Founded, Founder, Brokers, Headquarters, Website, Core offering, Pricing, Services, Communication, Office hours, Service area, Brokerage license, Clients served (live closings count with its date span), Reviews (live Google count and average), Social. No Notable clients, no Competitors, no Contract terms.",
+      "blocking": true
+    },
+    {
       "name": "V3Quiet",
-      "section": "Once: #about, late \u2014 a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the AboutReach Button Group.",
+      "section": "Once: #about, 'The team behind Ryan Realty' (Matt 2026-09-23), late: 'How it started' (the origin, Matt Ryan owner and principal broker, Ryan Realty LLC since 2014, Bend office June 2023, the Red Erickson line), 'The brokers' (the licensed-broker count from the live roster, a door to each broker's /team page as one inline line, never roster cards), the firm and principal-broker licences as sourced facts, and the firm's social profiles. Never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48.",
       "blocking": true
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them \u2014 VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
+      "section": "Pattern 8, closing. 'Frequently asked questions' (Matt 2026-09-23): eight questions as H3s (questionHeadings), answers two or three sentences, from the one aboutFaqItems array the FAQPage JSON-LD emits (roster names, the fee from LISTING_TERMS, the same business day reply, the office and its live hours, the firm license, Tumalo). Native disclosures, closed rows still in the served HTML, with the outbound doors in the left rail. Before 2026-09-23: the same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them \u2014 VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
       "blocking": true
     },
     {
@@ -106,7 +135,7 @@
     },
     {
       "name": "V3OnDuty",
-      "section": "The live state on the reach control: our published booking hours against the Pacific clock, from the same crm_company_settings.booking_hours rows /book offers time from. NEVER a reply-time figure \u2014 see components/site/v3/V3OnDuty.view.ts and SITE-09.",
+      "section": "The live state on the reach control: our published booking hours against the Pacific clock, from the same crm_company_settings.booking_hours rows /book offers time from. NEVER a reply-time figure \u2014 see components/site/v3/V3OnDuty.view.ts and SITE-09. The reply-time PROMISE (same business day, Matt 2026-09-23) is a commitment and lives in V3Steps #how-we-work, not on this clock.",
       "blocking": true
     }
   ],
@@ -160,9 +189,14 @@
     "AboutReach #reach \u2014 Button Group Call | Text | Email | Schedule, live hours",
     "AboutOffice #office \u2014 catalog Card, 115 NW Oregon Ave #2 + firm OREA. Door to /team. No roster.",
     "AboutInquiry #write \u2014 catalog Input + Button GET /contact",
+    "V3Entries #services -- What Ryan Realty does (each service an H3, one door each)",
+    "V3Claims #different -- What makes Ryan Realty different (our own facts with figures, no competitor named)",
+    "V3Roll #clients -- Who Ryan Realty works with (clients by need)",
     "V3Atlas #service-area -- where we work",
-    "V3Quiet #about -- how it started plus licenses as one sourced line",
-    "V3Answers #faq -- working with Ryan Realty",
+    "V3Steps #how-we-work -- How Ryan Realty works (same business day, hours, three steps)",
+    "V3Quiet #about -- The team behind Ryan Realty: How it started, the brokers from the live roster as doors, licenses, profiles",
+    "V3Facts #key-facts -- Key facts about Ryan Realty (one dl)",
+    "V3Answers #faq -- Frequently asked questions (H3 questions = FAQPage)",
     "V3Footer"
   ],
   "openDefects": {
@@ -170,11 +204,12 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-21",
+    "evaluatedAt": "2026-09-24",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "grok-4.6 through grok CLI (cursor-agent link missing). SITE-163 faces-at-display-scale pass. Separate from builder grok-4.5.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "evaluator": "claude-sonnet-5 through the claude CLI (scripts/taste-evaluate.ts --evaluator claude --builder claude-opus-5-5, three scorings in one call), a separate agent from the builder. The grok CLI and cursor-agent are not installed in this sandbox, so the judge chain fell to its claude link. Matt 2026-09-23 About-page AEO playbook pass; third evaluation of this pass (round 1 median 58 and round 2 median 54 named the stacked services grid, the spaced desktop AvatarGroup, the unencoded key facts and a state shot named about-* that the judge read as the hero; each was fixed and re-shot before this mark).",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5-5",
+    "transport": "claude-cli",
     "demoMatch": true,
     "competitiveBriefPass": true,
     "competitiveBriefEvidence": {
@@ -185,7 +220,8 @@
       "5": "street: '115 NW Oregon Ave #2'",
       "6": "5. AboutOffice \u2014 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.",
       "7": "/about first viewport \u2014 faces at display scale. Navy and cream only.",
-      "8": "shadcn Avatar image, fallback, and badge at display scale."
+      "8": "shadcn Avatar image, fallback, and badge at display scale.",
+      "9": "Below the proof: What Ryan Realty does, the differentiators, Key facts in one <dl>, and the same business day reply."
     },
     "shotSpec": {
       "routes": [
@@ -202,22 +238,55 @@
         "office",
         "firm-sales",
         "firm-sales-open",
-        "write-open"
+        "write-open",
+        "services",
+        "different",
+        "clients",
+        "how-we-work",
+        "team",
+        "key-facts",
+        "faq"
       ],
-      "capture": "first viewport + proof=#proof + reach=#reach + office=#office + firm-sales=#firm-sales + firm-sales-open=next click + write-open=input click, scripts/take-route-shots.mjs, scale 1, palette-quantized. SITE-163: AboutFirm faces at display scale (shadcn AvatarGroup), 5.0 from 25, boutique sentence. V3Proof words, carousel+Card closings, Button Group Call/Text/Email/Schedule, AboutOffice Card, AboutInquiry Input+Button GET /contact. Not three broker Cards. Not a Meet-the-Team dump."
+      "capture": "node scripts/take-route-shots.mjs about http://127.0.0.1:3461 --states \"proof,reach,office,firm-sales,firm-sales-open=#firm-sales [data-slot=carousel-next]!click,write-open=#about-inquiry!click,services,different,clients,how-we-work,team=#about,key-facts,faq\" (first viewport per state, scale 1, palette-quantized). Dev server on agent/about-aeo against live Supabase. The #about section is shot as team-* so no state file is named after the route."
     },
     "shots": {
+      "clients-desktop": "design_system/ryan-realty/ui_kits/about/shots/clients-desktop.png",
+      "clients-mobile375": "design_system/ryan-realty/ui_kits/about/shots/clients-mobile375.png",
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
+      "different-desktop": "design_system/ryan-realty/ui_kits/about/shots/different-desktop.png",
+      "different-mobile375": "design_system/ryan-realty/ui_kits/about/shots/different-mobile375.png",
+      "faq-desktop": "design_system/ryan-realty/ui_kits/about/shots/faq-desktop.png",
+      "faq-mobile375": "design_system/ryan-realty/ui_kits/about/shots/faq-mobile375.png",
+      "firm-sales-desktop": "design_system/ryan-realty/ui_kits/about/shots/firm-sales-desktop.png",
+      "firm-sales-mobile375": "design_system/ryan-realty/ui_kits/about/shots/firm-sales-mobile375.png",
+      "firm-sales-open-desktop": "design_system/ryan-realty/ui_kits/about/shots/firm-sales-open-desktop.png",
+      "firm-sales-open-mobile375": "design_system/ryan-realty/ui_kits/about/shots/firm-sales-open-mobile375.png",
+      "how-we-work-desktop": "design_system/ryan-realty/ui_kits/about/shots/how-we-work-desktop.png",
+      "how-we-work-mobile375": "design_system/ryan-realty/ui_kits/about/shots/how-we-work-mobile375.png",
+      "key-facts-desktop": "design_system/ryan-realty/ui_kits/about/shots/key-facts-desktop.png",
+      "key-facts-mobile375": "design_system/ryan-realty/ui_kits/about/shots/key-facts-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png",
+      "office-desktop": "design_system/ryan-realty/ui_kits/about/shots/office-desktop.png",
+      "office-mobile375": "design_system/ryan-realty/ui_kits/about/shots/office-mobile375.png",
+      "proof-desktop": "design_system/ryan-realty/ui_kits/about/shots/proof-desktop.png",
+      "proof-mobile375": "design_system/ryan-realty/ui_kits/about/shots/proof-mobile375.png",
+      "reach-desktop": "design_system/ryan-realty/ui_kits/about/shots/reach-desktop.png",
+      "reach-mobile375": "design_system/ryan-realty/ui_kits/about/shots/reach-mobile375.png",
+      "services-desktop": "design_system/ryan-realty/ui_kits/about/shots/services-desktop.png",
+      "services-mobile375": "design_system/ryan-realty/ui_kits/about/shots/services-mobile375.png",
+      "team-desktop": "design_system/ryan-realty/ui_kits/about/shots/team-desktop.png",
+      "team-mobile375": "design_system/ryan-realty/ui_kits/about/shots/team-mobile375.png",
+      "write-open-desktop": "design_system/ryan-realty/ui_kits/about/shots/write-open-desktop.png",
+      "write-open-mobile375": "design_system/ryan-realty/ui_kits/about/shots/write-open-mobile375.png"
     },
-    "shotsHash": "sha256:d522b5d053f22f2dcfd7d959f43b92a4e03433d3a6b6ac7a20dc757d108f441e",
+    "shotsHash": "sha256:bea82c6977ee7939bf26959aa17214917207318a4080dc1df9eaf2d3d5f40e99",
     "scores": [
-      51,
-      55,
-      61
+      58,
+      63,
+      68
     ],
-    "score": 55,
-    "beats": "Compass About (https://www.compass.com/about/) on local dated closings with recorded ClosePrice, beds/baths/sqft, sold date, and Google reviews as words in the first viewport.",
+    "score": 63,
+    "beats": "Compass's generic agent-team 'About' bio wall \u2014 this page wins on sourced proof (a closings carousel with real address/ClosePrice/beds-baths-sqft and a dated Google-review footnote), but its flat clients list and generic three-step block still read thinner than Compass's photography-led team copy.",
     "adaptedFrom": [
       {
         "id": "house-firm"
@@ -243,101 +312,167 @@
     ],
     "defects": [
       {
-        "section": "#reach",
+        "section": "clients (\"Who Ryan Realty works with\")",
         "severity": "taste",
-        "finding": "The four-up photographs as two objects on the same 1440 page: a compact outline Button Group in reach-desktop / firm-sales-open, and a full-width cream segmented bar in firm-sales-desktop. Equal Call|Text|Email|Schedule has to be one catalog Button Group.",
-        "replaceWith": "shadcn-button-group"
-      },
-      {
-        "section": "#firm-sales",
-        "severity": "defect",
-        "finding": "firm-sales-open clips the outgoing slide to leftover letters and a fragment of landscaping. Carousel peek has to leave a readable Card (photo, address, ClosePrice), not scrap type.",
-        "replaceWith": "shadcn-carousel"
-      },
-      {
-        "section": "#write",
-        "severity": "defect",
-        "finding": "At 375 the inquiry placeholder clips so the labeled field is unreadable beside Send a message.",
-        "replaceWith": null
-      },
-      {
-        "section": "#office",
-        "severity": "taste",
-        "finding": "The office Card photo is a 16:9 street crop dominated by the neighboring barber shop and a tree; 115 NW Oregon Ave #2 is not the subject of its own Card.",
+        "finding": "Six client segments render as a plain stack of underlined text lines with zero visual encoding \u2014 no icon, image, or card despite the brief calling for a display-type roll; it's a headline dressed as a link list, the dullest block on the page.",
         "replaceWith": "shadcn-card"
       },
       {
-        "section": "#proof",
+        "section": "different (\"What makes Ryan Realty different\")",
         "severity": "taste",
-        "finding": "The band claims the newest four of 25 reviews in full, then desktop shows ellipsized star-rows and 375 hides the picks so only one quote is on screen.",
-        "replaceWith": "house-proof"
+        "finding": "Five navy stat tiles read as a KPI grid; only the closings tile (Bend office dot-strip) rewards a hover, the other four (5.0, 3%, 24hr, 1 broker) are static numbers with a caption and never invite interaction.",
+        "replaceWith": null
       },
       {
-        "section": "#service-area",
-        "severity": "defect",
-        "finding": "At 375 the atlas cell labels collide, so the encoded map is unreadable in the first phone view of Where we work.",
-        "replaceWith": "house-atlas"
+        "section": "team (\"The team behind Ryan Realty\")",
+        "severity": "taste",
+        "finding": "Two prose paragraphs (How it started / The brokers) carry the section, with broker faces shrunk to ~32px thumbnails \u2014 a text-dominant block on an otherwise photo-led page, inconsistent with the display-scale AvatarGroup used in the hero.",
+        "replaceWith": "shadcn-avatar"
+      },
+      {
+        "section": "how-we-work (\"How Ryan Realty works\")",
+        "severity": "taste",
+        "finding": "Three numbered circles joined by a hairline is the generic SaaS onboarding-strip shape; nothing moves, nothing reveals on hover, and the form is indistinguishable from a thousand other sites' 'how it works' rail.",
+        "replaceWith": null
       }
     ],
-    "comparedToPrior": "rose",
+    "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-12",
-      "score": 52,
+      "evaluatedAt": "2026-09-21",
+      "score": 55,
       "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:4653719af77eabce94993ecca059128c906471588319ec759ea0cf9e8f4d5309"
+      "shotsHash": "sha256:d522b5d053f22f2dcfd7d959f43b92a4e03433d3a6b6ac7a20dc757d108f441e"
     },
-    "verdict": "This About finally opens on overlapping broker faces at display scale with 5.0 from 25 and the boutique Central Oregon sentence, then runs reviews, dated closings, four-up, office plus OREA, and inquiry. demoMatch is true on AvatarGroup, compact Button Group, carousel next plus Card peek, and Input focus plus Button. competitiveBriefPass is true. Median 55 is a 3-point rise over 52 on the same grok-4.6 / v1-2026-09-12 instrument. Finish line 70 is not met.",
+    "rebaselineReason": "evaluatorModel differs: the prior mark (55, 2026-09-21) was grok-4.6 through the grok CLI; this mark is claude-sonnet-5 through the claude CLI because neither grok-4.6 link (grok CLI, cursor-agent) is installed in this sandbox. Same rubric v1-2026-09-12. The new median (63) sits above the prior 55, but a different judge is not a baseline, so this is the first mark on the claude-sonnet-5 instrument.",
+    "verdict": "demoMatch is true \u2014 the hero AvatarGroup now genuinely overlaps at display scale, and the closings Carousel, Button Group, and Input are real catalog interactions in house navy/cream, not cream boxes. But originality still lags: the differentiators band is a KPI grid softened by one hover-able dot strip, the clients section is a bare underlined text list standing in for the promised 'display-type roll of doors,' and the team teaser and three-step rail are conventional, uninteractive filler \u2014 correct and on-brief, but a page that is right isn't yet a page that stops the scroll.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "Overlapping broker faces at display scale, branded H1, boutique Central Oregon buy-and-sell sentence, 5.0 from 25 Google reviews, then reviews as words, dated closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 plus firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump.",
-    "transport": "grok-cli",
-    "honestyFunction": 7,
+    "honestyFunction": 8,
     "perCriterion": {
-      "design": 17,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 8,
-      "honesty": 7
-    },
-    "competitiveBriefChecklist": {
-      "1": true,
-      "2": true,
-      "3": true,
-      "4": true,
-      "5": true,
-      "6": true,
-      "7": true,
-      "8": true
+      "design": 19,
+      "originality": 16,
+      "interaction": 7,
+      "craft": 13,
+      "honesty": 8
     }
   },
   "contentFloor": {
-    "seededAt": "2026-09-12",
-    "seededFrom": "https://ryan-realty.com",
+    "seededAt": "2026-09-23",
+    "seededFrom": "http://127.0.0.1:3461 (agent/about-aeo dev server, live Supabase)",
     "viewport": 1440,
     "observed": {
       "h1": 1,
-      "words": 1101,
-      "headings": 6,
-      "sections": 8,
-      "internalLinks": 196,
-      "images": 29,
-      "heroImageWidth": 1440,
-      "heroImageNatural": 640,
+      "words": 2228,
+      "headings": 11,
+      "sections": 14,
+      "internalLinks": 229,
+      "images": 32,
+      "heroImageWidth": 416,
+      "heroImageNatural": 1536,
       "video": 0,
-      "jsonLd": 8
+      "jsonLd": 8,
+      "sectionDepth": {
+        "firm": {
+          "items": 0,
+          "words": 33
+        },
+        "proof": {
+          "items": 3,
+          "words": 145
+        },
+        "firm-sales": {
+          "items": 0,
+          "words": 538
+        },
+        "reach": {
+          "items": 0,
+          "words": 4
+        },
+        "office": {
+          "items": 0,
+          "words": 21
+        },
+        "write": {
+          "items": 0,
+          "words": 12
+        },
+        "services": {
+          "items": 6,
+          "words": 325
+        },
+        "different": {
+          "items": 5,
+          "words": 245
+        },
+        "clients": {
+          "items": 7,
+          "words": 41
+        },
+        "service-area": {
+          "items": 5,
+          "words": 213
+        },
+        "how-we-work": {
+          "items": 3,
+          "words": 131
+        },
+        "about": {
+          "items": 7,
+          "words": 135
+        },
+        "key-facts": {
+          "items": 0,
+          "words": 261
+        },
+        "faq": {
+          "items": 14,
+          "words": 118
+        }
+      }
     },
     "floors": {
       "h1": 1,
-      "words": 770,
-      "headings": 4,
-      "sections": 6,
-      "internalLinks": 137,
-      "images": 20,
+      "words": 1559,
+      "headings": 7,
+      "sections": 11,
+      "internalLinks": 160,
+      "images": 22,
       "heroImageWidth": 400,
-      "heroImageNatural": 576,
+      "heroImageNatural": 1382,
       "video": 0,
-      "jsonLd": 8
+      "jsonLd": 8,
+      "sectionDepth": {
+        "services": {
+          "items": 5,
+          "words": 292
+        },
+        "different": {
+          "items": 4,
+          "words": 220
+        },
+        "clients": {
+          "items": 6,
+          "words": 36
+        },
+        "how-we-work": {
+          "items": 2,
+          "words": 117
+        },
+        "about": {
+          "items": 6,
+          "words": 121
+        },
+        "key-facts": {
+          "items": 0,
+          "words": 234
+        },
+        "faq": {
+          "items": 12,
+          "words": 106
+        }
+      }
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. SITE-163: opener is display-scale broker faces, not a 1440-wide storefront. Office photo remains on AboutOffice. Lowered heroImageWidth/Natural with that reason."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. SITE-163: opener is display-scale broker faces, not a 1440-wide storefront. Office photo remains on AboutOffice. Lowered heroImageWidth/Natural with that reason. 2026-09-23 re-seed (Matt's About-page AEO playbook): every page-level floor only RAISED, never lowered (each number is the max of the 2026-09-12 floor and the new seed; heroImageWidth keeps 400). sectionDepth floors added for the seven playbook-and-closing sections whose words do not move with live review text or the atlas feed (services, different, clients, how-we-work, about, key-facts, faq)."
   }
 }

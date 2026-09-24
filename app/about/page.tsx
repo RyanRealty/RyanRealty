@@ -9,11 +9,22 @@
  * 4. AboutReach — catalog Button Group Call | Text | Email | Schedule
  * 5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only.
  * 6. AboutInquiry GET to /contact. Full form stays on Contact.
- * Then Atlas, How it started + OREA, V3Answers.
- * Never the sofa interior. No coast-to-coast / fee copy.
+ * Then, below the proof (Matt 2026-09-23, the About-page AEO playbook):
+ * 7. V3Entries #services "What Ryan Realty does" (each service an H3)
+ * 8. V3Claims #different "What makes Ryan Realty different" (our own facts,
+ *    each with its figure; no competitor named)
+ * 9. V3Roll #clients "Who Ryan Realty works with" (clients by need)
+ * 10. V3Atlas #service-area "Where we work"
+ * 11. V3Steps #how-we-work "How Ryan Realty works" (same business day)
+ * 12. V3Quiet #about "The team behind Ryan Realty" (origin, brokers as doors,
+ *     licenses, profiles; no roster cards)
+ * 13. V3Facts #key-facts "Key facts about Ryan Realty" (one <dl>)
+ * 14. V3Answers #faq "Frequently asked questions" (H3 questions = FAQPage)
+ * Never the sofa interior. No coast-to-coast copy. No competitor named.
  *
  * THE PAGE CONTRACT: generateMetadata through pageMetadata, MetadataBlock
- * JSON-LD (AboutPage + aboutOrganization + BreadcrumbList + FAQPage),
+ * JSON-LD (AboutPage + aboutOrganization carrying the key facts this page
+ * prints + BreadcrumbList + FAQPage equal to the visible questions),
  * V3SectionTracker pageType="about", revalidate 3600.
  *
  * No invented quote. MLS remarks N/A. Parity:
@@ -47,10 +58,34 @@ import {
   V3Atlas,
   V3Proof,
   V3OnDuty,
+  V3Entries,
+  V3Claims,
+  V3Roll,
+  V3Steps,
+  V3Facts,
 } from '@/components/site/v3'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { aboutFaqItems, FIRM_LICENSE } from './_v3/about-constants'
+import {
+  ABOUT_CLIENTS,
+  ABOUT_CLIENTS_LEDE,
+  ABOUT_HOW_STEPS,
+  ABOUT_PROMISE_LINE,
+  ABOUT_SERVICES_LEDE,
+  aboutBrokerDoors,
+  aboutDifferentiators,
+  aboutDifferentiatorsSource,
+  aboutHoursSentence,
+  aboutHowFacts,
+  aboutKeyFacts,
+  aboutOrganizationFacts,
+  aboutOriginBody,
+  aboutServices,
+  aboutSocialDoors,
+  aboutTeamBody,
+  type AboutPerson,
+} from './_v3/about-playbook'
 import { AboutFirm } from './_v3/AboutFirm'
 import { AboutInquiry } from './_v3/AboutInquiry'
 import { AboutOffice } from './_v3/AboutOffice'
@@ -122,11 +157,41 @@ async function renderAboutPage() {
       <V3OnDuty blocks={hoursBlocks} timeZone={hoursTimeZone} nowIso={new Date().toISOString()} />
     ) : null
 
+  // The roster this render already loaded (public.brokers through
+  // loadAboutProof), as the playbook sections name it: display name, title,
+  // and the broker's own /team page. The principal is the founder.
+  const people: AboutPerson[] = proof.faces.map((face) => ({
+    name: face.name,
+    title: face.title,
+    href: face.href,
+    src: face.src,
+  }))
+  const founder = people.find((person) => /principal/i.test(person.title)) ?? null
+  const hoursLine = aboutHoursSentence(hoursBlocks, hoursTimeZone)
+  const reviewsFigure =
+    reviewSummary && reviewSummary.count > 0
+      ? { average: reviewSummary.averageRating, count: reviewSummary.count }
+      : null
+  const closingRecord = firmRows.length > 0 ? proof.record : null
+  const valuation = valuationHref(ROUTE_PATH)
+  const services = aboutServices(valuation)
+  const differentiators = aboutDifferentiators({ reviews: reviewsFigure, record: closingRecord, valuationHref: valuation })
+  const keyFacts = aboutKeyFacts({
+    founder,
+    people,
+    services,
+    hours: hoursLine,
+    record: closingRecord,
+    reviews: reviewsFigure,
+  })
+
+  // The team behind Ryan Realty: the origin, the team from the live roster
+  // with a door to each broker's page, the licenses, the firm's profiles.
+  const teamBody = aboutTeamBody(people)
   const originItems: V3QuietItem[] = [
-    {
-      kind: 'prose',
-      body: `Matt Ryan started Ryan Realty LLC in ${BRAND.llcSince} and opened the Bend office in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from his mentor, Hjalmar "Red" Erickson, and runs the brokerage the way Red taught him: every client gets the same care and the same effort.`,
-    },
+    { kind: 'prose', term: 'How it started', body: aboutOriginBody() },
+    ...(teamBody ? [{ kind: 'prose' as const, term: 'The brokers', body: teamBody }] : []),
+    ...aboutBrokerDoors(people),
   ]
 
   const licenseFigures: V3QuietItem[] = [
@@ -135,12 +200,14 @@ async function renderAboutPage() {
       label: `Principal broker OR #${BROKERS.matt.license}`,
       href: '/team',
     },
+    ...aboutSocialDoors(),
   ]
 
   // AEO-5 / VOICE-5: the brokers' names and roles come from the roster this
   // render already loaded, so the FAQ and its FAQPage name the same people
-  // the fold shows.
-  const faqItems = aboutFaqItems(proof.faces)
+  // the fold shows. The office hours come from the same booking_hours rows
+  // V3OnDuty reads. One array feeds the visible questions (H3s) and FAQPage.
+  const faqItems = aboutFaqItems(proof.faces, { hours: hoursLine })
   const faqAnswers: V3Answer[] = faqItems.map((item, index) => ({
     question: item.question,
     body: item.answer,
@@ -165,6 +232,9 @@ async function renderAboutPage() {
       description:
         'Ryan Realty is a small boutique brokerage in Bend, Oregon. We cover all of Central Oregon and help clients buy and sell their properties.',
       url: '/about',
+      // Only facts this page prints: the services (What Ryan Realty does),
+      // the service area and the licensed-broker count (Key facts).
+      organizationFacts: aboutOrganizationFacts({ services, brokerCount: people.length }),
     },
     {
       type: 'breadcrumb',
@@ -264,6 +334,29 @@ async function renderAboutPage() {
           </div>
         </div>
 
+        <V3Entries
+          id="services"
+          eyebrow="Ryan Realty · Services"
+          heading="What Ryan Realty does"
+          lede={ABOUT_SERVICES_LEDE}
+          entries={services}
+        />
+
+        <V3Claims
+          id="different"
+          eyebrow="Ryan Realty · On the record"
+          heading="What makes Ryan Realty different"
+          claims={differentiators}
+          source={aboutDifferentiatorsSource({ reviews: reviewsFigure, record: closingRecord })}
+        />
+
+        <V3Roll
+          id="clients"
+          heading="Who Ryan Realty works with"
+          lede={ABOUT_CLIENTS_LEDE}
+          items={ABOUT_CLIENTS}
+        />
+
         <V3Atlas
           id="service-area"
           headingLevel={2}
@@ -280,19 +373,35 @@ async function renderAboutPage() {
           incomplete={!atlas.complete}
         />
 
+        <V3Steps
+          id="how-we-work"
+          heading="How Ryan Realty works"
+          promise={ABOUT_PROMISE_LINE}
+          facts={aboutHowFacts(hoursLine)}
+          steps={ABOUT_HOW_STEPS}
+        />
+
         <V3Quiet
           id="about"
-          heading="How it started"
+          heading="The team behind Ryan Realty"
           headingLevel={2}
           items={[...originItems, ...licenseFigures]}
           note="Oregon Real Estate Agency. Ryan Realty LLC firm license and the principal broker license on file."
         />
 
+        <V3Facts
+          id="key-facts"
+          heading="Key facts about Ryan Realty"
+          facts={keyFacts}
+          note="Clients served counts the recorded MLS closings of Ryan Realty brokers in Central Oregon. Reviews are our Google Business Profile reviews, read live."
+        />
+
         <V3Answers
           id="faq"
           eyebrow="Common questions"
-          heading="Working with Ryan Realty"
+          heading="Frequently asked questions"
           headingLevel={2}
+          questionHeadings
           questions={faqAnswers}
           doors={faqDoors}
         />
