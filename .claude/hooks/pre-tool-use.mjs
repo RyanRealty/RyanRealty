@@ -150,7 +150,7 @@ if (tool_name === 'Bash') {
       deny(
         'BASH-DB-CLI',
         `Direct Postgres CLI is refused. Output: ${cmd.slice(0, 120)}`,
-        'Read docs/DATABASE_SCHEMA_SNAPSHOT.md for schema questions. For real queries, use a DAL function or `mcp__*__execute_sql` with a `-- audit:` comment.',
+        'Read docs/DATABASE_SCHEMA_SNAPSHOT.md for schema questions. For real queries, use a DAL function or a service-role tsx script (createServiceClient from @/lib/supabase/service, run with npx tsx). The Supabase connector\'s SQL tools are denied: they prompt Matt (2026-09-24).',
       )
     }
     // git commit --no-verify / git push --no-verify
