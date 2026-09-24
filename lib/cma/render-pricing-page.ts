@@ -482,13 +482,10 @@ export type PricingPageInput = {
   /** The seller's own failed listing, for their column's price path. */
   finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null
   /**
-   * List $/sf and sold $/sf by status, from the homes on this letter.
-   * Built in salesThatSetItArgs so letter and immersive cannot drift.
-   */
-  statusPpsfBoard?: string
-  /**
-   * Closed / Pending / Active Low·Avg·Median·High (FlexMLS flow summaries).
-   * Same selected homes as the matrices; no MoS.
+   * Closed / Pending / Active / Expired: List, Sold and $/sqft, Low·Avg·
+   * Median·High under each status (FlexMLS style, Matt 2026-09-24). Same
+   * selected homes as the matrices; no MoS. Built in salesThatSetItArgs so
+   * letter and immersive cannot drift.
    */
   statusPriceBoard?: string
   /** When the letter was built. The new-home comparison reads the year from this. */
@@ -617,7 +614,6 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
     body: `
   <h2 class="section">${esc(SALES_THAT_SET_IT_HEADING)}</h2>
   ${input.statusPriceBoard ?? ''}
-  ${input.statusPpsfBoard ?? ''}
   ${matrix}
   ${renderSetAsideHtml(p, input.comps)}
   ${renderRejectedSalesHtml(p, input.comps)}
