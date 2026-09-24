@@ -221,3 +221,51 @@ passes; it just never wrote down the decisions it discarded.
   `/admin/closings` (superuser) as "Every message reviewed": per mailbox,
   Gmail total, reviewed, coverage %, the status breakdown, last reviewed,
   and whether the full-history walk has finished.
+
+## Golden evaluation set
+
+Six auditors hand-judged real mail against the filer on 2026-09-24 (each on a slice —
+`filed-matt`, `filed-rp`, `missed-notdeal`, `missed-bulk`, `deal-recall`, `queue` — of the
+three mailboxes' `tc_mail_reviews` rows), so a rule change can be measured for precision and
+recall instead of eyeballed. Their judgments live as a **permanent regression set**:
+
+- **[`data/tc-mail-golden.json`](../data/tc-mail-golden.json)** — one row per unique
+  `(mailbox, gmail_id)`: `{ mailbox, gmail_id, expect: 'file'|'not_filed'|'queue', deal_id,
+  deal_not_in_vault, slice, confidence: 'hand'|'classifier'|'verified' }`. **No content** — no
+  subject, sender, body or evidence text, ever (real client mail; ids and expectations only).
+  Built by [`scripts/tc-mail-golden-build.ts`](../scripts/tc-mail-golden-build.ts), which maps
+  each auditor's own verdict word (`correct`, `wrong_deal`, `pertains_to_deal`, `file_to`, …) to
+  the golden expectation — see that file's header for the worked table — and resolves a message
+  judged more than once by confidence: `verified` (a targeted adversarial re-check that read the
+  disputed message directly and cross-checked tc_deals/tc_cycles/tc_deal_people/
+  tc_deal_contacts — `mail-audit/verify/findings.json`) outranks `hand` (an auditor who read the
+  message), which outranks `deal-recall`'s lower-confidence regex classifier sweep. Re-run it
+  after a new audit slice lands, or a new `verify` finding: `npx tsx
+  scripts/tc-mail-golden-build.ts [--audit-dir <path>] [--out <path>]`. It refuses to overwrite
+  the committed file with one less than half its size (the default `--audit-dir` is a Claude
+  session's own scratchpad, gone in a later session) unless `--force` says so deliberately.
+- **[`scripts/tc-mail-eval.ts`](../scripts/tc-mail-eval.ts)** (`npm run tc:mail-eval`) replays
+  every golden row through the PRODUCTION path — `indexGmailMessage(..., dryRun: true)`, the
+  same call the 15-minute sync and the daily sweep make, against a universe loaded ONCE via
+  `loadMailUniverse` — and scores it: filing the right deal is `TP`; filing the *wrong* one is
+  `WRONG` (the worst outcome); landing in the queue instead of filing is `SAFE_QUEUE`; getting
+  dropped as `not_deal`/`bulk` when a deal or the queue was expected is `MISS`; filing something
+  that should have stayed out (or been queued) is `FALSE_FILE`; correctly staying out, whether
+  dropped or queued, is `TN`; correctly landing in the queue when the queue was the right call is
+  `TP_QUEUE`. It prints precision (`TP / every
+  row the system filed`) and recall (`TP / every row the golden set expected filed`) overall,
+  per slice and per mailbox, plus the wrong-deal count, false-file count and queue rate.
+  `--slice`, `--limit` and `--only-errors` narrow a run; `--save-baseline <file>` and
+  `--baseline <file>` snapshot and diff outcomes (ids + outcome only) across runs, and the
+  script exits non-zero if any row got worse. Read-only: Gmail is opened readonly-scoped, and
+  `dryRun: true` is passed on every call and asserted in code — nothing is written to Gmail or
+  Supabase.
+- **[`scripts/tc-mail-eval-baseline.json`](../scripts/tc-mail-eval-baseline.json)** — the
+  committed baseline (outcomes only, no content) from the run against `mail-rules-v3-2026-09-24`.
+  A rule change must not lower precision, raise the wrong-deal count, or raise the false-file
+  count against this baseline; regenerate it deliberately (`--save-baseline`) once a change
+  ships, never to paper over a regression.
+- **This needs the Google service account (`GOOGLE_SERVICE_ACCOUNT_*`) and Supabase
+  (`SUPABASE_*`) in the process env, so it is a local/nightly check, not part of the
+  secret-less `ci:gates` chain.** Run it by hand before and after any change to
+  `lib/tc/mail-rules.ts` or the filing path in `lib/tc/mail-index.ts`.
