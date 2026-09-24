@@ -107,6 +107,90 @@ npx tsx scripts/tc-doc-read-eval.ts --models a,b --dump <docId>...              
 
 `/api/cron/tc-document-read?doc=<uuid>` reads one document and plans its cycle. Add `&dry=1` to plan without changing anything.
 
+## Checked against the printed form (Matt 2026-09-24)
+
+Matt: "We cannot get the documents incorrect ... identify the document and confirm that
+everything is filled out correctly and fully executed", and "Some of the older forms ... might
+be different from the newer forms. We just can't be confused by that."
+
+**What the emailed PDFs are.** They are flattened prints. The form and everything typed or
+signed on it are one picture. The text layer is re-mapped glyphs (the Nordic buyer
+counteroffer's text reads `!" # $ $ %`), and there are no form fields. Anything that reads text
+or fields finds nothing, so a copy is checked against the form itself (`lib/tc/form-match`).
+
+**Templates** (`tc_form_templates`, masks in the `tc-forms` bucket under `templates/`):
+
+- **Library templates** come from the licensed blanks in `tc_form_versions` (OREF, Oregon
+  REALTORS®, Oregon Data Share).
+  - One template per form and release.
+  - Sample placeholders are skipped.
+  - A blank whose footer is unreadable is folded into the release it prints identically.
+- **Learned templates** cover releases the library does not hold. These are older releases,
+  or a new release that arrives before the library has it.
+  - Each page is the ink that copies from two or more different deals share. Typed values and
+    signatures differ from deal to deal, so they drop out.
+  - A copy is never learned from two copies of one deal.
+  - Oregon REALTORS® packets are kept apart by packet length, because their footers number
+    pages across the packet.
+  - The daily `/api/cron/tc-form-templates` learns new releases and queues affected documents
+    to be checked again.
+  - `scripts/tc-form-templates.ts library` rebuilds library templates after a catalog ingest.
+
+**Matching** (`raster.ts`, `check.ts`):
+
+- Each page is rendered at 1 px per point and turned into an ink mask.
+- The nearest template pages are chosen by a 16 × 20 ink grid. Missing template ink counts
+  fully; added ink counts 1/20. The true template ranked first on 110 of 110 test pages.
+- The page is then lined up pixel by pixel with those candidates.
+- **A copy matches its own release at 0.98 or better.** Of 2,637 same-release pages, 2,470
+  scored 0.99+. A different release of the same form scores 0.92-0.97, so it is not a match.
+- A page whose own footer prints another release is never matched to that release.
+- When a page is printed identically in two releases, it goes to the release the rest of the
+  copy matches.
+
+**What each page asks for** (`layout.ts`) is read from the printed form:
+
+- **Footer:** form, release, and "page X of Y".
+- **Each signature line:** its party, date and print boxes, its section, and whether the form
+  marks it required. The OREF ← glyph is found through the legend's font.
+- **Initials boxes.**
+- Oregon REALTORS® labels sit under drawn rules. When a blank has form fields, the field boxes
+  give the exact positions.
+
+**The check** (`tc_document_checks`, summarized on `tc_documents.classification.form_check`,
+shown on the deal page):
+
+- Pages present and missing.
+- For every line: signed (ink the copy adds inside the box), dated, and printed name.
+- Every initials box.
+- An empty date box beside a signature is a note, not an issue. DigiSign stamps the date next
+  to the signature.
+
+**Two reads must agree** (`cross-check.ts`). The reader and the form check fail differently:
+the reader can misjudge a mark, and the form check cannot tell a signature from a typed name.
+So an empty box is strong evidence and ink is weak.
+
+- **A disagreement goes to a person.** If the reader says fully executed but a page is missing,
+  or a named party has no mark on any of their lines, the form is marked needs review. It never
+  drives an archive or a checklist link on the reader's word alone.
+- **The printed form corrects the reader's lines.** On a page matched to its exact release, an
+  unsigned buyer or seller line that the printed page does not have is not counted. OREF 020
+  01/2026 page 7 has no buyer signature line; the reader reported one.
+  - This only applies on pages with the ← legend, only to buyer and seller lines, and never to
+    a line the reader saw signed.
+- Ink never upgrades a verdict.
+
+**Operating it:**
+
+```
+npx tsx scripts/tc-form-templates.ts library            # rebuild library templates
+npx tsx scripts/tc-form-templates.ts learn              # learn releases the library lacks
+npx tsx scripts/tc-form-templates.ts check --doc <id>   # one document, printed
+npx tsx scripts/tc-form-templates.ts check-all [--all] [--shard i/n]
+```
+
+The document reader cron checks new documents against the printed form before reading them.
+
 ## The form registry (Matt 2026-09-24)
 
 OREF and Oregon REALTORS® revise, renumber and add forms every year. Matt: "You review the forms, the laws, and figure out who needs to sign. You don't need me for that." and "The system needs to be flexible as forms change annually ... constantly updating."

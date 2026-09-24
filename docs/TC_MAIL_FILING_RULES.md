@@ -147,3 +147,63 @@ none ambiguous.
 (archive is the Vault's delete), removes their checklist rows, writes one
 `mail_misfile_corrected` event per file, and files every message where the
 current rules put it. Nothing is deleted; `tc_events` stays append-only.
+
+## Every message reviewed
+
+Matt expects an ORE Agency auditor to be able to see that EVERY email in
+EVERY broker mailbox was looked at, not just the ones the Vault kept. Before
+2026-09-24, `tc_mail_messages` held a row only for mail that was filed,
+queued or dismissed (4,295 rows across the three mailboxes, against 72,450
+messages Gmail actually holds) — a "not a deal" or "bulk" outcome left no
+trace anywhere. `indexGmailMessage` already decided every message in three
+passes; it just never wrote down the decisions it discarded.
+
+- **`public.tc_mail_reviews`** (migration `20260924030000_tc_mail_reviews.sql`):
+  one row per `(mailbox, gmail_id)`, whatever `indexGmailMessage` decided —
+  `filed`, `ambiguous`, `unfiled_transaction`, `kept_manual`, `not_deal`,
+  `bulk`, or `error` — with a short `reason`, the `stage` that decided
+  (`rules`, `thread`, `model`, or `person`), and `rules_version`. A
+  `filed`/`ambiguous`/`unfiled_transaction`/`kept_manual` row's `message_key`
+  points at its full `tc_mail_messages` row. A `not_deal`/`bulk`/`error` row
+  carries **no subject, sender or body text** — nothing personal about a
+  message that never touched a deal is kept, and the `reason` names a rule
+  or a count, never quotes the message
+  (`lib/tc/mail-index.ts` `reviewReasonFor`).
+- **Every call to `indexGmailMessage` writes one** (upsert on `(mailbox,
+  gmail_id)`), including the 15-minute CRM Gmail sync, every sweep, and
+  `fileIndexedMessageToDeal` (stage `person`, or `rules` when the actor is
+  the auto-open-from-mail sweep). Fail-open and cheap: one upsert, never
+  blocks filing; skipped entirely on a `dryRun` call.
+- **`reviewMailbox`** (`lib/tc/mail-index.ts`) walks a mailbox's ENTIRE
+  history — `-in:chats`, no other query, no date window — resuming from
+  `public.tc_mail_review_cursors` (page token, running listed/reviewed
+  counts, `finished_at` once `users.messages.list` is exhausted). A message
+  already in `tc_mail_reviews` for that mailbox is skipped, so a mailbox
+  that already went through the deal-term sweeps above only pays to review
+  what those never touched.
+- **`npx tsx scripts/tc-mail-backfill.ts review-all [--mailbox x] [--concurrency 4] [--limit N] [--model-stage] [--dry-run]`**
+  runs it from the command line, with per-page progress. `--dry-run` is
+  READ-ONLY: decides every message but writes nothing.
+- **The daily sweep** (`/api/cron/tc-mail-sweep`) spends whatever is left of
+  its 240 s budget continuing `reviewMailbox` for any mailbox not yet
+  finished, after its existing steps (a mailbox already finished costs
+  nothing — no Gmail call).
+- **The model stage** (`lib/tc/mail-model-stage.ts`, stage `model`): a
+  leftover `not_deal`/`unfiled_transaction` message that still looks
+  transactional — a non-general category, a transaction-form attachment, or
+  a subject naming a property — gets one structured Grok call with the
+  open/recent deals list and the message's headers, snippet, body excerpt
+  and attachment names. `confidence ≥ 0.9` with a named deal files it
+  (`decided_by 'model'`, same path as a rules-filed message); anything else
+  queues for a person with the model's reason. **The model never dismisses a
+  message on its own word** — a `notDeal: true` answer just leaves the
+  rules' status standing. Off by default (`indexGmailMessage({ modelStage:
+  true })` / `review-all --model-stage` / `reviewMailbox({ modelStage: true
+  })`): real Grok spend, so a caller — a person or a script run — opts in
+  deliberately. Tests and dry runs never call it.
+- **Coverage**: `lib/data/tc/mail-coverage.ts` `getMailCoverage()` reads
+  Gmail's own `messagesTotal` per mailbox (live `users.getProfile`) against
+  `tc_mail_reviews` counts and `tc_mail_review_cursors.finished_at`, shown on
+  `/admin/closings` (superuser) as "Every message reviewed": per mailbox,
+  Gmail total, reviewed, coverage %, the status breakdown, last reviewed,
+  and whether the full-history walk has finished.

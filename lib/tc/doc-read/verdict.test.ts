@@ -332,3 +332,18 @@ describe('other forms', () => {
     expect(v.verdict).toBe('reference')
   })
 })
+
+describe('SPDS exclusion claim', () => {
+  it("the buyer's acknowledgment of a seller's exclusion claim is needed only when the seller claims one", async () => {
+    const { effectiveLines } = await import('./verdict')
+    const base = { signedName: null, printedName: null, date: null, method: 'none' as const }
+    const lines = [
+      { ...base, page: 1, label: 'Seller', section: 'Signature(s) of Seller(s) claiming exclusion:', party: 'seller' as const, signed: false, conditional: true },
+      { ...base, page: 1, label: 'Buyer', section: "Signature(s) of Buyer(s) to acknowledge Seller's claim:", party: 'buyer' as const, signed: false, conditional: false },
+      { ...base, page: 8, label: 'Buyer', section: 'BUYER HEREBY ACKNOWLEDGES RECEIPT', party: 'buyer' as const, signed: true, conditional: false, method: 'handwritten' as const },
+    ]
+    expect(effectiveLines(null, lines).map((l) => l.page)).toEqual([8])
+    const claimed = lines.map((l, i) => (i === 0 ? { ...l, signed: true } : l))
+    expect(effectiveLines(null, claimed).map((l) => l.page)).toEqual([1, 1, 8])
+  })
+})

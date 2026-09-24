@@ -29,7 +29,23 @@ describe('readerView', () => {
       tone: 'slow',
       stale: false,
       forms: [{ title: 'Addendum to Sale Agreement #2', signed: ['Mary Bowman (seller)'], waiting: ['Tyler Nicoll (buyer)'], note: null }],
+      checks: [],
     })
+  })
+
+  it('shows the check against the printed form: pages, signers, what is missing', () => {
+    const v = readerView({
+      form_check: {
+        forms: [
+          { form: 'OREF 020', release: '01/2026', source: 'library', pages: '8 of 8', complete: true, issues: [], signed: ['seller', 'buyer'], initials: 'initialed on every page it asks' },
+          { form: 'OREF 003', release: '01/2025', source: 'learned', pages: '1 of 1', complete: false, issues: ['buyer has not signed'], signed: ['seller'], initials: null },
+        ],
+      },
+    })
+    expect(v?.checks).toEqual([
+      'Checked against OREF 020 (Released 01/2026): 8 of 8 pages · every required line signed (seller, buyer) · initialed on every page it asks',
+      'Checked against OREF 003 (Released 01/2025) (learned from our own copies of that release): 1 of 1 pages · buyer has not signed',
+    ])
   })
 
   it('returns null for a document the reader has not read', () => {
