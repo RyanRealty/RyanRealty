@@ -86,4 +86,8 @@ Append-only. Every creative session that learns something adds it here with a da
 56. **Slow is a number.** v7 averaged 2.8s a shot and Matt called it too fast; the Polaroid cut holds 3.2-4.4s, and dissolves only at the time jumps.
 57. **A continuity source carries the people again (27, 50).** The house snapshot generated from the discover still came back with the couple and the dog in it; "the sidewalk and the lawn empty, nobody on the lawn or the sidewalk" gave an empty yard.
 58. **A real summit photo exists if you look past the first page.** Commons had summit shots without the Sisters; Openverse found the Forest Service's public-domain photo from the top of Bachelor with South Sister and Broken Top. Register it before generating.
+59. **One word ages a dog.** The drive-up shot had no companion reference and its props said "a young black Labrador"; Matt saw a puppy. Every shot with the dog carries the reference photo, and nothing in a prompt gives it an age.
+60. **An identity reference of two people puts both people in the shot.** Handing the couple's photo to his commute put her in the passenger seat. A one-person shot gets a crop of that person only.
+61. **"Epic" references can turn the Cascades Alpine.** A winter Broken Top photo made every peak a jagged spire. Name each volcano's real shape (South Sister a broad smooth cone, Broken Top a broken crater rim) and use a long lens to stack them big behind the people.
+62. **When the song is picked in the app, put the radio click at the top.** Instagram starts the song at 0:00; a radio switched on at 0.3s means it lines up with no timeline editing. Drop looped beds (the projector) under a song so nothing repeats against it.
 

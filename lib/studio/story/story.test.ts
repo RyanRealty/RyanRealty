@@ -162,11 +162,30 @@ describe('April, 1982: the Polaroid piece (Matt 2026-09-24)', () => {
     expect(labParamsForAspect(getEra(april.eraId)!, 'day').gate.width / labParamsForAspect(getEra(april.eraId)!, 'day').gate.height).toBeCloseTo(4 / 3, 2)
   })
 
-  it('lets each place settle: every shot on screen holds at least 3.2s, and the whole runs 30-60s', () => {
+  it('lets each place settle: every scene holds at least 3.2s (the radio click is an insert), and the whole stays under 65s', () => {
+    // Matt 2026-09-24 asked for slower; that outranks the 60s narrative guidance by a few seconds.
     const p = plan()
-    for (const shot of p.shots) if (shot.kind !== 'prop') expect(shot.seconds, shot.role).toBeGreaterThanOrEqual(3.2)
+    for (const shot of p.shots) {
+      if (shot.kind !== 'prop' && shot.role !== 'radio') expect(shot.seconds, shot.role).toBeGreaterThanOrEqual(3.2)
+    }
     expect(p.totalSeconds).toBeGreaterThanOrEqual(30)
-    expect(p.totalSeconds).toBeLessThanOrEqual(60)
+    expect(p.totalSeconds).toBeLessThanOrEqual(65)
+  })
+
+  it('opens on the radio, so a song added in the app starts on the click', () => {
+    const p = plan()
+    expect(p.shots[0].role).toBe('radio')
+    expect(p.shots[0].seconds).toBeLessThanOrEqual(2.5)
+  })
+
+  it('keeps one dog in every shot it is in, the drive up included, and the same couple where faces show', () => {
+    const p = plan()
+    for (const shot of p.shots) {
+      if (shot.beat && /labrador|dog/i.test(shot.beat.action)) expect(shot.beat.companion, shot.beat.id).toBe(true)
+      if (shot.beat) expect(`${shot.beat.action} ${shot.beat.props ?? ''}`, shot.beat.id).not.toMatch(/\byoung\b|puppy/i)
+    }
+    expect(april.identity?.from).toBe('photo')
+    for (const role of ['hook', 'eat', 'commute'] as const) expect(april.identity?.roles).toContain(role)
   })
 
   it('keeps the photograph she took off the screen as its own shot', () => {

@@ -559,6 +559,39 @@ async function sourcesFor(piece: StoryPiece, shot: PlannedStoryShot, manifest: M
     labels.push(label)
     castRefs.push({ file: path.join(ROOT, selected), label })
   }
+  // A frame of this piece where both faces are clear: the same couple, not a new one each shot.
+  const identity = piece.identity
+  if (identity && identity.roles.includes(beat.role as BeatRole)) {
+    const selected = manifest.shots[identity.from]?.selectedStill
+    const solo = beat.cast.length === 1 ? beat.cast[0] : null
+    const crop = solo ? identity.crops?.[solo] : undefined
+    if (selected && crop) {
+      // One person in the shot: hand over only that person, or the model adds the other one.
+      const src = path.join(ROOT, selected)
+      const meta = await sharp(src).metadata()
+      const [x0, y0, x1, y1] = crop
+      const out = path.join(dirFor(piece), 'refs', `identity-${solo}.jpg`)
+      mkdirSync(path.dirname(out), { recursive: true })
+      await sharp(src)
+        .extract({
+          left: Math.round(x0 * meta.width!),
+          top: Math.round(y0 * meta.height!),
+          width: Math.round((x1 - x0) * meta.width!),
+          height: Math.round((y1 - y0) * meta.height!),
+        })
+        .jpeg({ quality: 92 })
+        .toFile(out)
+      files.push(out)
+      labels.push(
+        `a photograph of ${solo === 'A' ? 'the woman' : 'the man'} earlier in this film (keep ${solo === 'A' ? 'her' : 'his'} face, hair, and age exactly${solo === 'B' ? ', and his moustache' : ''}; different clothes, place, and light; only ${solo === 'A' ? 'she' : 'he'} is in this shot)`,
+      )
+    } else if (selected) {
+      files.push(path.join(ROOT, selected))
+      labels.push(
+        'a photograph of these same two people earlier in this film (keep their faces, hair, ages, and his moustache exactly; different clothes, place, and light)',
+      )
+    }
+  }
   if (beat.companion && piece.companion) {
     files.push(await resolveRef(piece.companion.ref))
     labels.push(piece.companion.label)

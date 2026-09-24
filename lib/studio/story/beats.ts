@@ -50,6 +50,7 @@ export type BeatRole =
   | 'snapshot'
   | 'prints'
   | 'number'
+  | 'radio'
 
 export type BeatDef = {
   id: string
@@ -156,6 +157,8 @@ export const BEATS: BeatDef[] = [
     refs: [],
     cast: ['A'],
     wardrobe: 'travel',
+    // Matt 2026-09-24: the dog read as a puppy here. The companion photo makes it their dog.
+    companion: true,
     framing:
       'filmed by the driver: the camera looks across the front seat at her in the PASSENGER seat, the passenger window and ' +
       'the pines behind her, the dog pushing forward between the two front seats, 28mm',
@@ -163,9 +166,9 @@ export const BEATS: BeatDef[] = [
     periodCues: ['vehicles'],
     exposure: 'day',
     action:
-      '{A} turns from the window to the camera, laughing and waving, while their black Labrador pushes its head between the front seats and licks her cheek',
+      '{A} turns from the window to the camera, laughing and waving, while their grown black Labrador with the red collar pushes its head between the front seats and licks her cheek',
     props:
-      'a boxy period dashboard in brown vinyl; a young black Labrador retriever with a red collar in the back seat',
+      'a boxy period dashboard in brown vinyl; their full-grown black Labrador retriever with the red collar in the back seat',
     move: 'hold',
   },
   // ── arrive ──────────────────────────────────────────────────────────────
@@ -896,6 +899,28 @@ export const BEATS: BeatDef[] = [
   // bottom, the house on a walk the next day, drinks outside the Tower with
   // the Polaroids, and the week back home. Framed for a tall 9:16 frame.
   {
+    id: 'radio-on-insert',
+    role: 'radio',
+    label: 'On the way up, she turns on the car radio (the song starts here)',
+    years: [1965, 1995],
+    yearsWhy: 'An in-dash car radio with a round volume knob and chrome push-buttons, standard until tape decks and CDs took over.',
+    seasons: ['winter', 'fall', 'spring', 'summer'],
+    place: 'inside the car on the highway toward the mountain, ponderosa pines passing the windshield',
+    refs: [],
+    cast: ['A'],
+    wardrobe: 'travel',
+    framing:
+      'a close shot of the dashboard radio, 50mm, a tall frame: her hand in a grey wool mitten pulled half off, fingertips on the round volume knob; ' +
+      'the radio face and its dial soft and out of focus, the windshield and the pines blurred beyond',
+    light: 'bright morning daylight through the windshield, the dashboard in soft shade',
+    exposure: 'day',
+    periodCues: ['vehicles'],
+    action: '{A} turns the radio knob and the dial lights up warm, and she taps the dashboard twice to the beat',
+    props: 'a late-1970s in-dash car radio with a round chrome volume knob and five chrome push-buttons in a brown vinyl dashboard',
+    move: 'hold',
+    alsoReject: ['readable numbers or letters on the radio dial', 'a cassette or CD player'],
+  },
+  {
     id: 'chairlift-ride-up',
     role: 'lift',
     label: 'Riding the chair up, seen from the chair behind',
@@ -927,14 +952,15 @@ export const BEATS: BeatDef[] = [
     yearsWhy: 'Skiing opened on Bachelor Butte in 1958; the mountain was renamed Mt. Bachelor in 1983.',
     seasons: ['winter', 'spring'],
     place:
-      'the snowy summit of Mount Bachelor on a clear April day, looking north: the broad snow-covered cone of South Sister on the left, ' +
-      'the jagged snowy crown of Broken Top in the middle, forested ridges and snowfields falling away below, nothing man-made in view',
-    refs: ['asset:21d81297-0e90-4b58-817c-19cc154ed1e0'],
+      'the snowy summit of Mount Bachelor on a clear April day, looking north across the Cascades at three separate volcanoes rising ' +
+      'from a forested plateau: South Sister, a huge broad smooth snow-covered cone; Middle and North Sister behind it; and Broken Top, ' +
+      'a jagged broken crater rim buried in deep snow; forested valleys and snowfields far below, nothing man-made in view',
+    refs: ['asset:21d81297-0e90-4b58-817c-19cc154ed1e0', 'asset:9506b768-5f1a-409e-9157-762cc71d3abb', 'asset:eb61a753-46a9-4b94-90ff-8e7ad8c954ee'],
     cast: ['A', 'B'],
     wardrobe: 'ski',
     framing:
-      'from a few steps behind them, 28mm, a tall frame: the two of them standing side by side in the lower third with their skis on, ' +
-      'seen from behind, small against the view; South Sister and Broken Top fill the middle; clear sky at the top',
+      'from a few steps behind them with a long lens, 85mm, a tall frame: the two of them at the bottom seen from behind, ' +
+      'and the snow-capped volcanoes stacked huge and close behind them, filling the middle of the frame; deep blue sky above',
     light: 'clear high-altitude April sun from the side, 5600K, crisp deep blue sky, the far peaks bright',
     exposure: 'day',
     action: '{A} slips her arm through his and they stand still, looking out at the mountains',
@@ -950,9 +976,9 @@ export const BEATS: BeatDef[] = [
     yearsWhy: 'Skiing opened on Bachelor Butte in 1958; the mountain was renamed Mt. Bachelor in 1983.',
     seasons: ['winter', 'spring'],
     place:
-      'a wide open run on the upper mountain of Mount Bachelor in April: soft corn snow, the Cascade peaks on the horizon behind, ' +
-      'nothing but mountain in the background',
-    refs: ['asset:9671ec09-6f90-4aea-9f11-8669d83feb4f', 'asset:21d81297-0e90-4b58-817c-19cc154ed1e0'],
+      'a wide open run high on Mount Bachelor in April: soft corn snow, and behind the skiers the snow-capped Cascade peaks, ' +
+      'Broken Top and the Three Sisters, bright white against a deep blue sky',
+    refs: ['asset:b041c668-0c24-4292-b894-697151f8aa8b', 'asset:eb61a753-46a9-4b94-90ff-8e7ad8c954ee', 'asset:9506b768-5f1a-409e-9157-762cc71d3abb'],
     cast: ['A', 'B'],
     wardrobe: 'ski',
     framing:

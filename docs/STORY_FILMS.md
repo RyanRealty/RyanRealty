@@ -304,6 +304,17 @@ when you're ready to make the call."
 - **Polaroids are ours.** `story_reel.py polaroid` renders an SX-70 print (79mm picture in an
   88 x 107mm card) from a frame; `deal` lays them on a tabletop plate one by one, lit by the
   plate; `snapshot` is a `prop` beat (a generated still seen only inside other frames).
+- **The song starts on the radio (Matt 2026-09-24).** The film opens on her mitten turning the
+  car radio on; the click and a breath of static sit at 0.3s, so a song added in Instagram
+  (which starts at 0:00) comes out of the radio. No projector bed and nothing looped; the
+  film's own sounds (Polaroid cameras, the street, the office, the kitchen, the dial, the ring,
+  the pickup) sit at -24 LUFS under the song.
+- **Same dog, same couple.** Every shot with the Lab carries its reference photo (the drive up
+  included); `StoryPiece.identity` hands the ski-photo pose to the shots where faces show, cropped
+  to one person in a one-person shot.
+- **The peaks.** Summit and ski-down are conditioned on three real photos (the USFS summit view,
+  the USFS Three Sisters from Broken Top, USFS Broken Top in winter; public domain) with each
+  volcano's shape named and a long lens.
 - **The number reads once, at the end.** The sign on the lawn is small and unremarked; the
   house Polaroid carries the sign large enough that a slow push-in on the kitchen table shows
   541.703.3095. The dial starts under that shot; one ring; the picture fades; the card lands on

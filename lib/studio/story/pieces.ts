@@ -50,6 +50,17 @@ export type StoryPiece = {
   payoff: PhonePayoff
   /** Roles the piece leaves out (winter-1982 has no phone: Matt 2026-09-23). */
   omit?: BeatRole[]
+  /**
+   * A frame of this piece where both faces are clear, handed to the listed
+   * roles as a second identity reference beside the cast sheets (Matt
+   * 2026-09-24: "so it doesn't look like we're looking at a different couple").
+   */
+  identity?: {
+    from: BeatRole
+    roles: BeatRole[]
+    /** Where each person stands in that frame, as fractions [x0, y0, x1, y1]: a one-person shot gets only that person. */
+    crops?: Partial<Record<'A' | 'B', [number, number, number, number]>>
+  }
   /** One companion (the dog): its reference photo keeps it the same animal in every shot that has it. */
   companion?: { ref: string; label: string }
   /**
@@ -163,6 +174,7 @@ export const STORY_PIECES: StoryPiece[] = [
     aspect: '9:16',
     cast: COUPLE_1982,
     beats: {
+      radio: 'radio-on-insert',
       hook: 'car-wave-lab',
       lift: 'chairlift-ride-up',
       summit: 'summit-three-sisters',
@@ -183,6 +195,12 @@ export const STORY_PIECES: StoryPiece[] = [
     companion: {
       ref: 'asset:c9fce792-26ab-4837-81a0-cfaf943b8c43',
       label: 'the reference photo of their dog (the same black Labrador: same face, coat, build, and red collar)',
+    },
+    // A one-person shot gets only that person: the whole photograph put her in his passenger seat (2026-09-24).
+    identity: {
+      from: 'photo',
+      roles: ['hook', 'eat', 'pack', 'commute', 'work_a', 'home'],
+      crops: { A: [0.0, 0.08, 0.56, 0.62], B: [0.44, 0.08, 1.0, 0.62] },
     },
     continuity: {
       snapshot: 'discover',

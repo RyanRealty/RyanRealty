@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-09-24T02:35:29.904Z",
+  "updated_at": "2026-09-24T03:15:10.474Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -49700,6 +49700,119 @@
       "surface_tags": [],
       "vision_grade": null,
       "file_path": "public/asset-library/photos/usfs/21d81297-0e90-4b58-817c-19cc154ed1e0.jpg"
+    },
+    {
+      "id": "9506b768-5f1a-409e-9157-762cc71d3abb",
+      "type": "photo",
+      "source": "usfs",
+      "source_id": "flickr:23635488310",
+      "license": "Public Domain (U.S. Forest Service, Pacific Northwest Region; Flickr public domain mark)",
+      "license_metadata": {},
+      "creator": "U.S. Forest Service, Pacific Northwest Region",
+      "creator_url": "https://www.flickr.com/photos/forestservicenw/23635488310",
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/usfs/9506b768-5f1a-409e-9157-762cc71d3abb.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/usfs/9506b768-5f1a-409e-9157-762cc71d3abb.jpg",
+      "file_size_bytes": 217134,
+      "geo_tags": [
+        "three-sisters",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "three-sisters",
+        "south-sister",
+        "middle-sister",
+        "north-sister",
+        "cascades",
+        "alpine",
+        "view"
+      ],
+      "search_query": "three sisters from broken top",
+      "width": 1024,
+      "height": 683,
+      "duration_sec": null,
+      "registered_at": "2026-09-24T03:15:08.187+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Reference still for story films: the Three Sisters from high on Broken Top, next to Mt. Bachelor (the peaks' true shapes for the view from the top). Downloaded 2026-09-24.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/usfs/9506b768-5f1a-409e-9157-762cc71d3abb.jpg"
+    },
+    {
+      "id": "eb61a753-46a9-4b94-90ff-8e7ad8c954ee",
+      "type": "photo",
+      "source": "usfs",
+      "source_id": "flickr:23307163953",
+      "license": "Public Domain (U.S. Forest Service, Pacific Northwest Region; Flickr public domain mark)",
+      "license_metadata": {},
+      "creator": "U.S. Forest Service, Pacific Northwest Region",
+      "creator_url": "https://www.flickr.com/photos/forestservicenw/23307163953",
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/usfs/eb61a753-46a9-4b94-90ff-8e7ad8c954ee.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/usfs/eb61a753-46a9-4b94-90ff-8e7ad8c954ee.jpg",
+      "file_size_bytes": 307089,
+      "geo_tags": [
+        "broken-top",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "broken-top",
+        "snow",
+        "winter",
+        "cascades",
+        "peak"
+      ],
+      "search_query": "broken top in winter",
+      "width": 1024,
+      "height": 683,
+      "duration_sec": null,
+      "registered_at": "2026-09-24T03:15:09.193+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Reference still for story films: Broken Top under deep winter snow (the snow-capped look of the peaks from the ski area). Downloaded 2026-09-24.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/usfs/eb61a753-46a9-4b94-90ff-8e7ad8c954ee.jpg"
+    },
+    {
+      "id": "b041c668-0c24-4292-b894-697151f8aa8b",
+      "type": "photo",
+      "source": "flickr",
+      "source_id": "flickr:12859027483",
+      "license": "CC BY 2.0 (Flickr; attribution: donnierayjones)",
+      "license_metadata": {},
+      "creator": "donnierayjones",
+      "creator_url": "https://www.flickr.com/photos/donnierayjones/12859027483",
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/flickr/b041c668-0c24-4292-b894-697151f8aa8b.jpg",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/flickr/b041c668-0c24-4292-b894-697151f8aa8b.jpg",
+      "file_size_bytes": 206101,
+      "geo_tags": [
+        "mt-bachelor",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "mt-bachelor",
+        "ski-run",
+        "broken-top",
+        "snow",
+        "view"
+      ],
+      "search_query": "view from mount bachelor",
+      "width": 1024,
+      "height": 684,
+      "duration_sec": null,
+      "registered_at": "2026-09-24T03:15:10.295+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Reference still for story films: a groomed run on Mt. Bachelor with Broken Top in the distance (the ski-down background). Downloaded 2026-09-24.",
+      "surface_tags": [],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/flickr/b041c668-0c24-4292-b894-697151f8aa8b.jpg"
     }
   ]
 }

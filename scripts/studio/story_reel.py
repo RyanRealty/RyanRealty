@@ -1106,7 +1106,19 @@ def street(seconds, rng):
 
 
 SOUNDS = {"traffic": traffic, "office": office, "newsroom": newsroom, "kitchen": kitchen, "street": street}
-SFX = {"polaroid": polaroid_camera}
+def radio_on(rng):
+    """A car radio switched on: the knob's detent, then a breath of tuning static
+    that is gone in a third of a second. The song added in the app comes out
+    of it (Matt 2026-09-24: "we'll start the music when they turn on the radio")."""
+    det = lfilter(*butter_bandpass(900, 5000), rng.normal(0, 1, int(0.015 * SR)) * np.exp(-np.arange(int(0.015 * SR)) / 40.0))
+    m = int(0.35 * SR)
+    t = np.arange(m) / SR
+    static = lfilter(*butter_bandpass(600, 4500), rng.normal(0, 1, m)) * np.exp(-t / 0.12) * 0.18
+    whistle = np.sin(2 * np.pi * (1800 - 2400 * t) * t) * np.exp(-t / 0.06) * 0.05
+    return _stereo(np.concatenate([det * 0.6, static + whistle]))
+
+
+SFX = {"polaroid": polaroid_camera, "radio": radio_on}
 
 
 def mix_into(bus, clip, at):

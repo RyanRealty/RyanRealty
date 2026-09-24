@@ -114,7 +114,12 @@ export const HOMECOMING_ARC: ArcSlot[] = [
  * place settles; `snapshot` is a prop (the photograph she took), never cut in.
  */
 export const POLAROID_ARC: ArcSlot[] = [
-  { role: 'hook', seconds: 3.2, because: 'A face and a dog inside the first second, on the way up.' },
+  {
+    role: 'radio',
+    seconds: 2.0,
+    because: 'She turns on the radio: the song starts on the click (Matt 2026-09-24), so the click sits at the top of the film.',
+  },
+  { role: 'hook', seconds: 3.2, because: 'A face and a dog, the song already playing, on the way up.' },
   { role: 'lift', seconds: 3.2, because: 'Riding up: the mountain before the view.' },
   { role: 'summit', seconds: 4.4, because: 'The top: the Three Sisters and Broken Top. The longest hold in the film.' },
   { role: 'play', seconds: 3.4, because: 'Down on spring snow, one after the other.' },
@@ -246,7 +251,8 @@ export function planStory(input: PlanStoryInput): StoryPlan {
   for (const shot of shots) {
     const beat = shot.beat
     if (!beat || beat.refs.length > 0 || beat.elsewhere) continue
-    const interior = beat.exposure === 'interior_low' || beat.id.startsWith('car-wave') // the cabin is the place
+    // The cabin is the place: a shot set inside their car claims nothing about Bend.
+    const interior = beat.exposure === 'interior_low' || beat.place.startsWith('inside the car')
     if (!interior) warnings.push(`${beat.id} has no reference still: it fails the reference test until one is added`)
   }
 
