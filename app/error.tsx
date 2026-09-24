@@ -1,10 +1,10 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { H1 } from '@/components/site/primitives'
+import { reportClientError } from '@/lib/observability/client-errors'
 
 export default function RootError({
   error,
@@ -15,7 +15,7 @@ export default function RootError({
 }) {
   useEffect(() => {
     console.error(error)
-    Sentry.captureException(error)
+    reportClientError(error)
   }, [error])
 
   return (
