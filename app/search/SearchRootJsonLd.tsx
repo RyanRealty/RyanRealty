@@ -35,6 +35,8 @@ type Props = {
   listings: ListingRow[]
   /** Total result count across all pages, not just the rendered slice. */
   totalCount?: number
+  /** The image the page leads with (split: the first card's photo), or null. */
+  primaryImageUrl?: string | null
 }
 
 export default function SearchRootJsonLd({
@@ -44,6 +46,7 @@ export default function SearchRootJsonLd({
   siteUrl,
   listings,
   totalCount,
+  primaryImageUrl,
 }: Props) {
   const webPage = {
     '@context': 'https://schema.org',
@@ -51,6 +54,7 @@ export default function SearchRootJsonLd({
     name: title,
     description,
     url: canonicalUrl,
+    ...(primaryImageUrl && { primaryImageOfPage: { '@type': 'ImageObject', url: primaryImageUrl } }),
   }
 
   const listingUrls = listings

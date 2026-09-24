@@ -84,10 +84,23 @@ export function loadResortRegistry(root = process.cwd()) {
   return list.filter((e) => e && typeof e.slug === 'string' && typeof e.city_slug === 'string')
 }
 
-/** Same rule as lib/communities/self-city-community.ts isOwnCity. */
+/** Same rule as lib/communities/self-city-community.ts isOwnCity (registry `self_city` overrides). */
 export function isSelfCityEntry(entry, citySlugs) {
+  if (typeof entry.self_city === 'boolean') return entry.self_city
   const slug = String(entry.slug).trim().toLowerCase()
   return slug === String(entry.city_slug).trim().toLowerCase() || citySlugs.has(slug)
+}
+
+/**
+ * A registry community whose slug is a site city slug but which is NOT its own
+ * city (registry `self_city: false`: Crooked River Ranch, whose homes file
+ * under Terrebonne / Crooked River). The search app still answers
+ * /homes-for-sale/<slug> as a city search, and it finds nothing (0 homes live
+ * 2026-09-24), so that bare URL is a twin of the community page too.
+ */
+export function isCitySlugOnlyEntry(entry, citySlugs) {
+  const slug = String(entry.slug).trim().toLowerCase()
+  return citySlugs.has(slug) && !isSelfCityEntry(entry, citySlugs)
 }
 
 /** Every `/homes-for-sale/<city>/<area>` twin of one registry entry, sorted. */
@@ -95,7 +108,7 @@ export function areaTwinPathsFor(entry, citySlugs) {
   const durable = String(entry.slug).trim().toLowerCase()
   const cities = new Set([String(entry.city_slug).trim().toLowerCase()])
   for (const c of entry.mls_cities ?? []) cities.add(slugifyCommunityName(c))
-  if (isSelfCityEntry(entry, citySlugs)) cities.add(durable)
+  if (isSelfCityEntry(entry, citySlugs) || isCitySlugOnlyEntry(entry, citySlugs)) cities.add(durable)
   const areas = new Set([durable, publicCommunitySlug(entry)])
   const paths = []
   for (const city of cities) for (const area of areas) paths.push(`/homes-for-sale/${city}/${area}`)
@@ -108,6 +121,7 @@ export function registryAreaTwinRedirects({ registry, citySlugs }) {
   for (const entry of registry) {
     const dest = `/communities/${publicCommunitySlug(entry)}`
     for (const path of areaTwinPathsFor(entry, citySlugs)) map[path] = dest
+    if (isCitySlugOnlyEntry(entry, citySlugs)) map[`/homes-for-sale/${String(entry.slug).trim().toLowerCase()}`] = dest
   }
   return map
 }

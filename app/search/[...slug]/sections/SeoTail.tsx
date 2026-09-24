@@ -24,6 +24,7 @@ import { type buildPresetFaq } from '@/lib/site/preset-faq'
 import { type getAllCityHomesLink } from '../../../../lib/popular-searches'
 import { type SearchPreset } from '../resolve-slug'
 import { relatedSearchWhenLabel } from '@/lib/search/related-search-when-label'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 /** Below-fold SEO depth: market snapshot band, the asking-price ladder, city +
  *  preset FAQs, preset cross-links, and the related-searches link cloud (see
@@ -172,7 +173,7 @@ export function SearchSeoTail({
               )}
               action={{
                 label: v3Text(`Open ${city} market report`),
-                href: `/housing-market/${relatedCitySlug}`,
+                href: cityMarketPath(relatedCitySlug),
                 variant: 'ghost',
               }}
             />

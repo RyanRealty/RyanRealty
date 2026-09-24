@@ -59,6 +59,7 @@
 
 import { slugify } from '@/lib/slug'
 import { publishPlatDisplayName, titleCasePlaceName } from '@/lib/market/publish-plat-display-name'
+import { communityPath, resolveDurableCommunitySlug } from '@/lib/communities/community-public-pair'
 
 // ---------------------------------------------------------------------------
 // County document tokens — the recorder's file numbers, never part of a name.
@@ -497,10 +498,13 @@ export function derivePlatFamilies(input: DerivePlatFamiliesInput): PlatFamily[]
     const redirect = input.areaRedirect?.(slug) ?? null
     if (communityInCity) {
       communitySlug = communityInCity.slug
-      mainHref = `/communities/${communityInCity.slug}`
+      mainHref = communityPath(communityInCity.slug)
       mainKind = 'community'
     } else if (redirect && redirect.startsWith('/communities/')) {
-      communitySlug = redirect.split('/').filter(Boolean).at(-1) ?? null
+      // The redirect names the PUBLIC door (juniper-preserve); the family keys
+      // on the durable registry slug (pronghorn), like the branch above.
+      const redirectSlug = redirect.split('/').filter(Boolean).at(-1) ?? null
+      communitySlug = redirectSlug ? resolveDurableCommunitySlug(redirectSlug) : null
       mainHref = redirect
       mainKind = 'community'
     } else if (redirect) {

@@ -37,6 +37,7 @@ import {
   V3_FOOTER_COLUMNS,
 } from '@/components/site/v3'
 import SearchRootJsonLd from './SearchRootJsonLd'
+import { splitLeadImageUrl } from '@/lib/search/split-lead-image'
 import './_v3/search-catalog'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
@@ -517,6 +518,7 @@ export default async function SearchPage({
       siteUrl={siteUrl}
       listings={jsonLdListings}
       totalCount={resultsCount}
+      primaryImageUrl={view === 'split' ? splitLeadImageUrl(viewport?.listings ?? []) : null}
     />
     {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
         (THE LOOK, PUBLIC_UI.md section 6). */}

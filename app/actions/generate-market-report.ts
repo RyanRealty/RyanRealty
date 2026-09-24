@@ -17,6 +17,7 @@ import {
 } from '@/lib/crm/market-report-email'
 import { sendMarketStatAlertEmail } from '@/lib/market-stat-alert'
 import { REPORT_CITY_SLUGS } from '@/lib/data/geo/report-cities'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 const BUCKET = 'banners'
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -114,7 +115,7 @@ function buildReportHtml(
     const citySlug = cityEntityKey(city)
     // Report-framed destination: the city's market page when it exists,
     // the search surface otherwise (conversion-audit #13).
-    const cityHref = HOUSING_MARKET_PAGES.has(citySlug) ? `/housing-market/${citySlug}` : `/search/${citySlug}`
+    const cityHref = HOUSING_MARKET_PAGES.has(citySlug) ? cityMarketPath(citySlug) : `/search/${citySlug}`
     const block = blocksBySlug.get(citySlug)
     html += `
       <section class="mt-8">

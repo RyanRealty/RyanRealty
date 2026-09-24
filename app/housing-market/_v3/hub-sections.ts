@@ -37,6 +37,7 @@ import {
   volumeSentence,
 } from './closed-kpis'
 import { buildCompositionChart } from './market-charts'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export type CityFootnote = { label: string; fact: string; slug?: string }
 
@@ -68,7 +69,7 @@ export function buildCityLedger(
     if (!slug || !snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
     rowed.add(label)
     rows.push({
-      href: `/housing-market/${slug}`,
+      href: cityMarketPath(slug),
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
       detail:

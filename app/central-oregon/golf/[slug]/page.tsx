@@ -53,6 +53,7 @@ import {
   medianListLabel,
   faqQuietItems,
 } from '@/app/central-oregon/_v3/nearby-field-items'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 export const dynamicParams = false
 export const revalidate = 3600
@@ -176,7 +177,7 @@ export default async function GolfDetailPage({ params }: Props) {
   }
   quietItems.push({ label: 'Central Oregon golf guide', href: '/lp/central-oregon-golf' })
   if (course.communitySlug?.trim()) {
-    quietItems.push({ label: 'Community around this course', href: `/communities/${course.communitySlug.trim()}` })
+    quietItems.push({ label: 'Community around this course', href: communityPath(course.communitySlug) })
   }
   quietItems.push({ label: `${city} market`, href: `/cities/${geoSlug}` })
   for (const c of relatedCourses) {

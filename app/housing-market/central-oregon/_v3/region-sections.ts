@@ -38,6 +38,7 @@ import {
 import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
 import { monthlyPaceFromMos } from './region-figures'
 import { CITY_LABELS, CITY_SLUG, HISTORY_PATH, volumeLabel } from './region-constants'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 /** A covered city that earned no row, with the reason read off its own data. */
 export type CityFootnote = { label: string; fact: string; slug?: string }
@@ -102,7 +103,7 @@ export function buildCityLedger(
     const snapshot = byLabel.get(label)
     if (!slug || !snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
     rowed.add(label)
-    const href = `/housing-market/${slug}`
+    const href = cityMarketPath(slug)
     // SITE-88: for-sale count stays on every viewport (encode=bar hid it on
     // desktop). Median is the value. MOS is the two-bar drawing, not a 3.7 mo tile.
     rows.push({
@@ -352,7 +353,7 @@ export function buildExploreItems(footnotes: readonly CityFootnote[]): V3QuietIt
       if (!slug) continue
       items.push({
         label: `${city.label} housing market`,
-        href: `/housing-market/${slug}`,
+        href: cityMarketPath(slug),
       })
     }
   }
