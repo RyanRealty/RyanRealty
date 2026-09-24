@@ -1,19 +1,6 @@
 {
-  "note": "Ratchets for ci:claude-canon. `files` (check 3): tracked files still citing a FUB-era doc path. `claudeBytes` (check 6): the size of CLAUDE.md. BOTH may only SHRINK — remove citations / remove duplication, then refresh with node scripts/check-claude-canon.mjs --write-baseline. Never regenerate to admit a new citation or a bigger CLAUDE.md.",
-  "generatedAt": "2026-08-19T04:24:39.425Z",
-  "claudeBytes": 37526,
-  "files": [
-    ".tmp_env/fub-setup/03-bulk-tag-migration.mjs",
-    ".tmp_env/fub-setup/04-build-master-workflow.mjs",
-    ".tmp_env/fub-setup/18-delete-test-records-round2.mjs",
-    ".tmp_env/fub-setup/22-build-buyer-workflow.mjs",
-    "docs/plans/PROGRAM_2026-07-21/05-RECONCILED-RULES.md",
-    "docs/plans/PROGRAM_2026-07-21/audits/CONSOLIDATION-LANES.json",
-    "docs/plans/PROGRAM_2026-07-21/audits/REMAINING-2026-07-22-post-wave-d.json",
-    "docs/plans/PROGRAM_2026-07-21/audits/REMAINING-2026-07-22-post-wave-d.md",
-    "supabase/migrations/20260517190000_marketing_assignments.sql",
-    "supabase/migrations/20260517200000_fub_person_geo_and_lookup_rpc.sql",
-    "supabase/migrations/20260625160500_crm_field_definitions.sql",
-    "supabase/migrations/20260625171500_crm_tags_taxonomy.sql"
-  ]
+  "note": "Ratchets for ci:claude-canon. `files` is unused (vendor-CRM citations must be zero). `claudeBytes`: CLAUDE.md size. May only shrink. Refresh with node scripts/check-claude-canon.mjs --write-baseline after a shrink.",
+  "generatedAt": "2026-09-24T18:13:04.490Z",
+  "claudeBytes": 37477,
+  "files": []
 }
