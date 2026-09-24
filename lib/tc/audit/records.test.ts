@@ -49,7 +49,7 @@ describe('records audit', () => {
     )
     expect(row(rows, 'offers')).toMatchObject({ status: 'review' })
     expect(row(rows, 'offers')!.detail).toMatch(/Jane Offer/)
-    expect(row(rows, 'principal_review')).toMatchObject({ status: 'missing', detail: '0 of 1 reviewed.' })
+    expect(row(rows, 'principal_review')).toMatchObject({ status: 'missing', detail: '0 of 1 reviewed in the Vault.' })
   })
 
   it('a partially signed listing agreement is not on file as executed; an archived copy never counts as the live one', () => {

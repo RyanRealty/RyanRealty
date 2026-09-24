@@ -28,6 +28,8 @@ export type AuditInput = {
   reviews: AuditReview[]
   mailFiled: number
   yearBuilt: number | null
+  /** SkySlope checklist items imported with the file: completed (approved) and still in review. */
+  checklist?: { completed: number; inReview: number }
 }
 
 export type AuditStatus = 'ok' | 'missing' | 'review' | 'na'
@@ -211,12 +213,14 @@ export function auditDeal(input: AuditInput): AuditRow[] {
   if (agreements.length) {
     const reviewed = new Set(input.reviews.filter((r) => r.decision === 'approved').flatMap((r) => r.documentIds))
     const pending = agreements.filter((d) => !reviewed.has(d.id))
+    const ck = input.checklist
+    const skyslope = ck && (ck.completed || ck.inReview) ? ` SkySlope checklist: ${ck.completed} item${ck.completed === 1 ? '' : 's'} marked completed, ${ck.inReview} still in review; the Vault has no reviewer and date for those.` : ''
     rows.push({
       key: 'principal_review',
       requirement: 'Principal broker review of each document of agreement (within 7 banking days)',
       citation: 'OAR 863-015-0140(4)',
       status: pending.length ? 'missing' : 'ok',
-      detail: pending.length ? `${agreements.length - pending.length} of ${agreements.length} reviewed.` : `All ${agreements.length} reviewed.`,
+      detail: (pending.length ? `${agreements.length - pending.length} of ${agreements.length} reviewed in the Vault.` : `All ${agreements.length} reviewed.`) + (pending.length ? skyslope : ''),
       documents: pending.map((d) => d.name),
     })
   }

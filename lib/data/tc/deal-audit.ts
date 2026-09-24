@@ -44,10 +44,12 @@ function sideOf(cycles: ReadonlyArray<{ kind: string; deal_type: string | null }
 
 export async function listDealAudits(opts: { dealId?: string } = {}): Promise<DealAudit[]> {
   const sb = createServiceClient()
-  let dq = sb.from('tc_deals').select('id, property_key, address, stage, broker_name')
+  let dq = sb.from('tc_deals').select('id, property_key, address, stage, stage_detail, broker_name')
   if (opts.dealId) dq = dq.eq('id', opts.dealId)
-  const { data: deals, error } = await dq
+  const { data: allDeals, error } = await dq
   if (error) throw new Error(error.message)
+  // Test files are not transactions: the alias harness's file and the placeholder test deal.
+  const deals = (allDeals ?? []).filter((d) => !String(d.stage_detail ?? '').startsWith('TC TEST') && !/^\d+\s+test\s+street\b/i.test(String(d.address)))
   const dealIds = (deals ?? []).map((d) => String(d.id))
   if (!dealIds.length) return []
 
@@ -75,6 +77,7 @@ export async function listDealAudits(opts: { dealId?: string } = {}): Promise<De
   const reviews = await all<{ deal_id: string | null; document_ids: unknown; reviewed_at: string; decision: string }>((a, b) =>
     sb.from('tc_principal_reviews').select('deal_id, document_ids, reviewed_at, decision').in('deal_id', dealIds).range(a, b),
   )
+  const items = await all<{ cycle_id: string; status: string }>((a, b) => sb.from('tc_checklist_items').select('cycle_id, status').in('cycle_id', cycleIds).range(a, b))
   const filed = await all<{ deal_id: string | null }>((a, b) => sb.from('tc_mail_messages').select('deal_id').eq('status', 'filed').in('deal_id', dealIds).range(a, b))
   const mailCount = new Map<string, number>()
   for (const m of filed) if (m.deal_id) mailCount.set(String(m.deal_id), (mailCount.get(String(m.deal_id)) ?? 0) + 1)
@@ -103,6 +106,10 @@ export async function listDealAudits(opts: { dealId?: string } = {}): Promise<De
         .filter((r) => String(r.deal_id) === id)
         .map((r) => ({ documentIds: Array.isArray(r.document_ids) ? (r.document_ids as unknown[]).map(String) : [], reviewedAt: r.reviewed_at, decision: r.decision })),
       mailFiled: mailCount.get(id) ?? 0,
+      checklist: (() => {
+        const mine = items.filter((it) => cycleDeal.get(String(it.cycle_id)) === id)
+        return { completed: mine.filter((it) => it.status === 'completed').length, inReview: mine.filter((it) => it.status === 'in_review').length }
+      })(),
       yearBuilt: years.length ? Math.min(...years) : null,
     }
     const rows = auditDeal(input)
