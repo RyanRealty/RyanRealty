@@ -44,6 +44,16 @@ vi.mock('@/lib/data', () => ({
     blog: [{ title: 'Bend market update', slug: 'bend-market-update' }],
     guides: [{ title: 'Buying in Bend', slug: 'buying-in-bend' }],
   })),
+  // Exact on-market count for the city/subdivision sublabels (§0 fix — was the
+  // capped 250-row sample). Sentinels deliberately differ from what the sample
+  // itself would produce (Bend: 200 of 250 rows; Awbrey Butte: 50 or 13 of 250
+  // rows) so a regression back to the sample count fails the tests below.
+  searchListingsAllCount: vi.fn(async (filter: { city?: string; subdivisions?: string[] }) => {
+    if (Array.isArray(filter?.subdivisions) && filter.subdivisions.length > 0) return 47
+    if (filter?.city === 'Bend') return 1834
+    if (filter?.city === 'Redmond') return 512
+    return 0
+  }),
   // app/actions/listings.ts top-level imports (unused by this code path):
   getCommunityListings: vi.fn(),
   getCityListings: vi.fn(),
@@ -118,6 +128,26 @@ describe('GET /api/search/suggestions', () => {
     expect(placeHit.subdivisions.every((s: { subdivisionName: string }) =>
       s.subdivisionName.toLowerCase().includes('awbrey'),
     )).toBe(true)
+  })
+
+  it('city/subdivision sublabel counts are the exact DAL count, not the 250-row sample (§0)', async () => {
+    // The fixture's own text-matched sample would say Bend=200 (rows whose
+    // city is Bend, out of the capped 250) — the exact count from the DAL
+    // mock (1834) must win instead.
+    const cityHit = await (await GET(req('bend'))).json()
+    const bend = cityHit.cities.find((c: { city: string }) => c.city === 'Bend')
+    expect(bend).toBeTruthy()
+    expect(bend.count).toBe(1834)
+    expect(bend.count).not.toBe(200)
+
+    // Same contract for subdivisions: the sample would say ~50 (Bend) / ~13
+    // (Redmond) Awbrey Butte rows out of 250 — the exact DAL count (47) wins.
+    const subHit = await (await GET(req('awbrey'))).json()
+    const awbrey = subHit.subdivisions.find(
+      (s: { subdivisionName: string }) => s.subdivisionName === 'Awbrey Butte',
+    )
+    expect(awbrey).toBeTruthy()
+    expect(awbrey.count).toBe(47)
   })
 
   it('short queries return the empty shape without hitting the DAL', async () => {

@@ -373,10 +373,13 @@ export default async function SearchPage({
       : [[], [] as string[]]
 
   // URL bbox, then the place's recorded boundary, then all of Central Oregon.
-  const initialBounds = resolveSearchCamera({
+  // The source rides along: the map-only view fits the regional box at
+  // fractional zoom, the way the split view's regional frame does.
+  const camera = resolveSearchCamera({
     bboxParam: sp.bbox,
     placeBoundaryBbox: bboxFromGeometry(placeBoundaryGeo),
-  }).bounds
+  })
+  const initialBounds = camera.bounds
   // ?shapes= — the user's drawn multi-shape set (polygons + radius circles,
   // include/exclude), with legacy ?poly= as the read-forever fallback. Either
   // spelling supersedes the URL's place pin exactly as a live draw does
@@ -627,6 +630,9 @@ export default async function SearchPage({
               degraded={mapDegraded}
               initialBounds={initialBounds}
               lockBounds
+              // The Central Oregon box fills the pane instead of opening at
+              // integer z8. A place boundary or URL bbox keeps its integer fit.
+              fractionalZoom={camera.source === 'central-oregon'}
             />
             </div>
           </div>
