@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-24T06:19:08.832Z
+**Generated:** 2026-09-24T12:27:13.705Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -4720,7 +4720,7 @@ Companion files:
 
 **Tables:** `tc_deals`, `tc_cycles`, `tc_documents`, `tc_offers`, `tc_principal_reviews`, `tc_checklist_items`, `tc_mail_messages`
 
-**Selected columns:** `id`, `property_key`, `address`, `stage`, `stage_detail`, `broker_name`, `deal_id`, `kind`, `deal_type:raw->>dealType`, `year_built:raw->property->>yearBuilt`, `cycle_id`, `name`, `archived`, `ingested_at`, `reader:classification->reader`, `buyer_name`, `status`, `submitted_at`, `presented_to_seller_at`, `replied_at`, `document_id`, `document_ids`, `reviewed_at`, `decision`
+**Selected columns:** `id`, `property_key`, `address`, `stage`, `stage_detail`, `broker_name`, `deal_id`, `kind`, `source`, `deal_type:raw->>dealType`, `year_built:raw->property->>yearBuilt`, `cycle_id`, `name`, `archived`, `ingested_at`, `reader:classification->reader`, `buyer_name`, `status`, `submitted_at`, `presented_to_seller_at`, `replied_at`, `document_id`, `document_ids`, `reviewed_at`, `decision`
 
 ---
 
