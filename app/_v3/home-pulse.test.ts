@@ -128,6 +128,24 @@ describe('composeHomePulse', () => {
     }
   })
 
+  it('rewrites the selected-rule blurbs in plain voice (SITE-147)', () => {
+    const pulse = composeHomePulse(LIVE)!
+    expect(pulse.readings.map((r) => r.definition)).toEqual([
+      'Houses, condos, land, and more you can still buy in Bend, Redmond, Sisters, Sunriver, and nearby.',
+      'These already have a buyer. An offer is accepted, and they have not closed yet.',
+      'What closed in the last 30 days, at the price it sold for, not the asking price.',
+    ])
+    expect(pulse.readings[2]!.hrefLabel).toBe('See what sold')
+    const joined = pulse.readings.map((r) => r.definition).join('\n')
+    expect(joined).not.toMatch(/regional MLS carries/i)
+    expect(joined).not.toMatch(/\beverything\b/i)
+    expect(joined).not.toMatch(/same feed at the same moment/i)
+    expect(joined).not.toMatch(/Active listings of every property type/i)
+    expect(joined).not.toMatch(/finished deals/i)
+    expect(joined).not.toMatch(/recorded a closing/i)
+    expect(joined).not.toMatch(/pending and active under contract/i)
+  })
+
   it('does not render a band for a read that produced nothing', () => {
     expect(composeHomePulse({ ...LIVE, counts: { forSale: 0, pending: 0, sold: 0 } })).toBeNull()
     expect(composeHomePulse({ ...LIVE, stamp: '  ' })).toBeNull()

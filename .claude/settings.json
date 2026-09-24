@@ -17,7 +17,10 @@
       "mcp__Cloudflare_Developer_Platform__*",
       "mcp__Notion__*",
       "mcp__Era_Context__*",
-      "mcp__Sentry__*"
+      "mcp__Sentry__*",
+      "WebFetch",
+      "WebSearch",
+      "Artifact"
     ],
     "ask": [
       "mcp__*Gmail__send_message",

@@ -23,6 +23,13 @@ import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
 import { TILE_MV_SELECT_COLUMNS } from '@/lib/listing-tile-projections'
 import { PUBLIC_ACTIVE_STATUSES, PUBLIC_PENDING_STATUSES, COMING_SOON_STATUS } from '@/lib/listing-status-public'
 import { listedWithinDaysCutoff } from '@/lib/data/listings/searchPredicates'
+import {
+  PLAUSIBLE_YEAR_BUILT,
+  YEAR_BUILT_UNKNOWN_OR,
+  isYearBuiltSort,
+  plausibleYearBuilt,
+  yearSortRestWindow,
+} from '@/lib/search/search-sort-order'
 
 // Coming Soon is excluded by policy — see lib/listing-status-public.ts.
 const ACTIVE_STATUSES: ListingStatus[] = PUBLIC_ACTIVE_STATUSES
@@ -150,6 +157,10 @@ const FilterSchema = z.object({
   // `newest` is newest LISTED (Matt 2026-09-23), which is 'listed-newest'
   // (on_market_date DESC NULLS LAST, then listing_key) and its mirror
   // 'listed-oldest'. See lib/search/search-sort-order.ts (searchTileSort).
+  // 'ppsf-*' order by price_per_sqft and 'year-*' by year_built, nulls last and
+  // listing_key ties, so a search's $/sq ft and year-built sorts are honored on
+  // the tile paths too; 'year-*' sort placeholder years (outside
+  // PLAUSIBLE_YEAR_BUILT) with the unknown ones, last.
   sort: z
     .enum([
       'newest',
@@ -160,6 +171,10 @@ const FilterSchema = z.object({
       'price-desc',
       'close-newest',
       'close-oldest',
+      'ppsf-asc',
+      'ppsf-desc',
+      'year-newest',
+      'year-oldest',
     ])
     .default('newest'),
   limit: z.number().int().min(1).max(5000).default(60),
@@ -438,12 +453,17 @@ function compareTiles(sort: z.infer<typeof FilterSchema>['sort']) {
     'price-desc': { pick: (t) => t.listPrice ?? null, asc: false, nullsFirst: false },
     'close-newest': { pick: (t) => closeMs(t), asc: false, nullsFirst: false },
     'close-oldest': { pick: (t) => closeMs(t), asc: true, nullsFirst: false },
+    'ppsf-asc': { pick: (t) => t.pricePerSqft ?? null, asc: true, nullsFirst: false },
+    'ppsf-desc': { pick: (t) => t.pricePerSqft ?? null, asc: false, nullsFirst: false },
+    'year-newest': { pick: (t) => plausibleYearBuilt(t.yearBuilt), asc: false, nullsFirst: false },
+    'year-oldest': { pick: (t) => plausibleYearBuilt(t.yearBuilt), asc: true, nullsFirst: false },
   }
   const { pick, asc, nullsFirst } = bySortKey[sort]
-  // The listed-date and close-date sorts carry the listing_key tie-break their
-  // SQL order has.
+  // The search sorts (listed date, close date, $/sq ft, year built) carry the
+  // listing_key tie-break their SQL order has; the feed-order and price sorts
+  // never had one.
   const tieBreak =
-    sort === 'listed-newest' || sort === 'listed-oldest' || sort === 'close-newest' || sort === 'close-oldest'
+    sort !== 'newest' && sort !== 'oldest' && sort !== 'price-asc' && sort !== 'price-desc'
   return (a: ListingTile, b: ListingTile): number => {
     const av = pick(a)
     const bv = pick(b)
@@ -476,12 +496,24 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   const supabase = supabaseAnon()
   if (!supabase) return []
 
-  const read = async (keys?: string[], range?: { from: number; to: number }) => {
+  // `yearWindow` narrows a year-built sort's read to one of its two halves
+  // (see yearSortRestWindow): the plausible years in year order, or the
+  // unknown / placeholder years in listing_key order.
+  const read = async (
+    keys?: string[],
+    range?: { from: number; to: number },
+    yearWindow?: 'plausible' | 'unknown',
+  ) => {
     const scoped = keys ? { ...parsed, listingKeys: keys } : parsed
     let query = applyTileFilters(
       supabase.from('listing_tile_mv').select(TILE_MV_SELECT_COLUMNS),
       scoped,
     )
+    if (yearWindow === 'plausible') {
+      query = query.gte('year_built', PLAUSIBLE_YEAR_BUILT.min).lte('year_built', PLAUSIBLE_YEAR_BUILT.max)
+    } else if (yearWindow === 'unknown') {
+      query = query.or(YEAR_BUILT_UNKNOWN_OR)
+    }
 
     // Sort
     if (parsed.sort === 'newest') {
@@ -502,6 +534,17 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
       query = query
         .order('close_date', { ascending: parsed.sort === 'close-oldest', nullsFirst: false })
         .order('listing_key', { ascending: true, nullsFirst: false })
+    } else if (parsed.sort === 'ppsf-asc' || parsed.sort === 'ppsf-desc') {
+      query = query
+        .order('price_per_sqft', { ascending: parsed.sort === 'ppsf-asc', nullsFirst: false })
+        .order('listing_key', { ascending: true, nullsFirst: false })
+    } else if (yearWindow === 'unknown') {
+      // The year-built sort's second half: no year to order by.
+      query = query.order('listing_key', { ascending: true, nullsFirst: false })
+    } else if (parsed.sort === 'year-newest' || parsed.sort === 'year-oldest') {
+      query = query
+        .order('year_built', { ascending: parsed.sort === 'year-oldest', nullsFirst: false })
+        .order('listing_key', { ascending: true, nullsFirst: false })
     }
 
     if (range) query = query.range(range.from, range.to)
@@ -518,6 +561,34 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
   }
 
   const keys = parsed.listingKeys
+  if ((!keys || keys.length <= KEY_CHUNK) && isYearBuiltSort(parsed.sort)) {
+    // Year built: plausible years in year order, then every home with an
+    // unknown or placeholder year (the RPC's rule), as two ranged reads.
+    const plausible = await read(
+      undefined,
+      { from: parsed.offset, to: parsed.offset + parsed.limit - 1 },
+      'plausible',
+    )
+    // A year-built filter does not confine the set to plausible years: 9999
+    // passes "built 1990 or later" (and the count counts it), so the unknown
+    // half is read with the filter too.
+    if (plausible.length >= parsed.limit) return plausible
+    const plausibleTotal =
+      plausible.length > 0 || parsed.offset === 0
+        ? parsed.offset + plausible.length
+        : await fetchTileCount({
+            ...parsed,
+            yearBuiltMin: PLAUSIBLE_YEAR_BUILT.min,
+            yearBuiltMax: PLAUSIBLE_YEAR_BUILT.max,
+          })
+    const rest = yearSortRestWindow({
+      offset: parsed.offset,
+      limit: parsed.limit,
+      plausibleRowsRead: plausible.length,
+      plausibleTotal,
+    })
+    return rest ? [...plausible, ...(await read(undefined, rest, 'unknown'))] : plausible
+  }
   if (!keys || keys.length <= KEY_CHUNK) {
     return read(undefined, { from: parsed.offset, to: parsed.offset + parsed.limit - 1 })
   }
@@ -540,28 +611,58 @@ async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]>
  */
 export const getListingTiles = (filter: GetListingTilesFilter): Promise<ListingTile[]> => {
   const parsed = FilterSchema.parse(filter)
-  const cacheKey = JSON.stringify(parsed)
-  // v2 key bump 2026-05-31 — evict poison-empty entries cached before the
-  // throw-on-error fix (a swallowed anon-read once cached [] -> "0 homes").
   return makeResilientCached(
     () => fetchTiles(parsed),
-    // v3: the propertyType filter now matches MLS codes (A-H) not labels, so
-    // entries cached under propertyType=Residential held a poisoned empty result.
-    // v4 (2026-06-10, audit P0-3): default service-area guard — evict entries
-    // cached before the guard that held region-wide (Southern Oregon) tiles.
-    // v5 (2026-07-08, design-audit P1): tiles now carry streetSuffix from the
-    // rebuilt listing_tile_mv — evict entries cached without it.
-    // v6 (2026-09-15, SITE-108): a keyed read over ~535 listing_keys blew the
-    // PostgREST URL and failed in the fetch layer, so every caller above that
-    // count cached the fallback [] as a real empty result. KEY_CHUNK splits
-    // the read; this bump evicts the empties it cached.
-    ['listing-tiles-v6', cacheKey],
-    {
-      revalidate: CACHE_WINDOWS.listingTile,
-      tags: [cacheTag.listings],
-    },
+    listingTilesCacheKey(parsed),
+    LISTING_TILES_CACHE_OPTS,
     [],
   )()
+}
+
+/**
+ * getListingTiles for a caller that publishes a count from the rows it gets
+ * back (the Sold split view): the same read and the same cache entry, one
+ * retry after a failed read, but a read that fails twice REJECTS instead of
+ * resolving to []. getListingTiles' [] fallback is right for a rail that can
+ * simply render nothing; a search that printed it would say "0 homes" when it
+ * never found out (section 0: unknown is not zero). The caller turns the
+ * rejection into its degraded state ("Search delayed").
+ *
+ * The retry goes through the cache too, so a read that succeeds on its second
+ * try is stored: measured on the dev server 2026-09-24, the cold Sold split
+ * view's first try hit the anon statement_timeout (3.1 s) and an uncached
+ * retry's 501 rows were read again from the database on the next load.
+ */
+export const getListingTilesOrThrow = async (filter: GetListingTilesFilter): Promise<ListingTile[]> => {
+  const parsed = FilterSchema.parse(filter)
+  const cached = unstable_cache(() => fetchTiles(parsed), listingTilesCacheKey(parsed), LISTING_TILES_CACHE_OPTS)
+  try {
+    return await cached()
+  } catch {
+    // unstable_cache never stores a rejection, so this is a second real read.
+    return await cached()
+  }
+}
+
+function listingTilesCacheKey(parsed: z.output<typeof FilterSchema>): string[] {
+  // v2 key bump 2026-05-31 — evict poison-empty entries cached before the
+  // throw-on-error fix (a swallowed anon-read once cached [] -> "0 homes").
+  // v3: the propertyType filter now matches MLS codes (A-H) not labels, so
+  // entries cached under propertyType=Residential held a poisoned empty result.
+  // v4 (2026-06-10, audit P0-3): default service-area guard — evict entries
+  // cached before the guard that held region-wide (Southern Oregon) tiles.
+  // v5 (2026-07-08, design-audit P1): tiles now carry streetSuffix from the
+  // rebuilt listing_tile_mv — evict entries cached without it.
+  // v6 (2026-09-15, SITE-108): a keyed read over ~535 listing_keys blew the
+  // PostgREST URL and failed in the fetch layer, so every caller above that
+  // count cached the fallback [] as a real empty result. KEY_CHUNK splits
+  // the read; this bump evicts the empties it cached.
+  return ['listing-tiles-v6', JSON.stringify(parsed)]
+}
+
+const LISTING_TILES_CACHE_OPTS = {
+  revalidate: CACHE_WINDOWS.listingTile,
+  tags: [cacheTag.listings],
 }
 
 /**
