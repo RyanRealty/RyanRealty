@@ -353,8 +353,8 @@ function v3ChartSampleReading(n: number, baseN?: number | null): string {
 /** A range row's full reading: value, sample, note — the title and the list. */
 function rangeReading(r: RangePlotRowLike): string {
   const core = r.baseLabel != null ? `${r.label} (${r.baseLabel})` : r.label
-  const sample = r.sampleN != null ? ` — ${v3ChartSampleReading(r.sampleN, r.sampleBaseN)}` : ''
-  return core + sample + (r.note ? ` — ${r.note}` : '')
+  const sample = r.sampleN != null ? `, ${v3ChartSampleReading(r.sampleN, r.sampleBaseN)}` : ''
+  return core + sample + (r.note ? `, ${r.note}` : '')
 }
 
 type RangePlotRowLike = {
@@ -531,7 +531,7 @@ export function V3Chart({
               // Unnamed on purpose: the tick above the tip already names the
               // row, and a second copy reads as a stutter.
               name: '',
-              label: r.clamped ? `${rangeReading(r)} — beyond the scale shown` : rangeReading(r),
+              label: r.clamped ? `${rangeReading(r)}, beyond the scale shown` : rangeReading(r),
               frac: (i + 0.5) / plot.rows.length,
               emphasis: false,
             },
@@ -763,7 +763,7 @@ export function V3Chart({
                           className={cn('v3-chart__mark', markClass(i), seriesClass(i))}
                           d={`M${p.x.toFixed(2)},${p.y.toFixed(2)} l0.01,0`}
                         >
-                          <title>{`${line.name} — ${p.tick}: ${p.label}`}</title>
+                          <title>{`${line.name}, ${p.tick}: ${p.label}`}</title>
                         </path>
                       )),
                   )
@@ -1020,7 +1020,7 @@ export function V3Chart({
               <div
                 key={`${r.index}-${r.tick}`}
                 className="v3-chart__rangerow"
-                title={r.clamped ? `${reading} — beyond the scale shown` : reading}
+                title={r.clamped ? `${reading}, beyond the scale shown` : reading}
               >
                 <span className="v3-chart__rangetick">{r.tick}</span>
                 <span className="v3-chart__rangetrack">

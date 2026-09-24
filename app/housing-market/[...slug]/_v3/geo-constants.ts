@@ -7,7 +7,7 @@
  *
  * NOT A GEO REGISTRY. lib/data/geo/report-cities.ts owns the canonical
  * report-city sets and ci:report-geo-registry bans re-typing one of them. The
- * 11-slug generateStaticParams list and the 8-city Ledger set are presentation
+ * generateStaticParams lists and the 8-city Ledger set are presentation
  * decisions for this catch-all. Their member sets are not the report core.
  */
 
@@ -15,8 +15,9 @@ import { RESORT_SLUG_TO_CITY } from '@/lib/community-slug'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 
 /**
- * Pre-heat these city reports at build time. Resorts in this list are still
- * 1-segment URLs (/housing-market/sunriver), not 2-segment community URLs.
+ * Pre-heat these city reports at build time: the one-segment city grain.
+ * Sunriver is its own registry city, so its community market page IS the
+ * one-segment URL (lib/market/canonical-market-path.ts).
  */
 export const CORE_CITY_SLUGS = [
   'bend',
@@ -27,10 +28,31 @@ export const CORE_CITY_SLUGS = [
   'tumalo',
   'prineville',
   'terrebonne',
-  'black-butte-ranch',
-  'eagle-crest',
-  'crooked-river-ranch',
 ] as const
+
+/**
+ * Registry communities with a published community-grain market page. Their
+ * one market URL is /housing-market/<registry city>/<slug> (2026-09-24: the
+ * one-segment /housing-market/black-butte-ranch twin 301s there). Crooked
+ * River Ranch is not listed: neither of its market URLs publishes (both
+ * served the noindex not-found shell on production 2026-09-24), and a
+ * sitemap never submits a page that is not one.
+ */
+export const CORE_COMMUNITY_MARKET_PATHS: Readonly<Record<string, string>> = {
+  'black-butte-ranch': '/housing-market/sisters/black-butte-ranch',
+  'eagle-crest': '/housing-market/redmond/eagle-crest',
+}
+
+/**
+ * Every pre-heated market page path, cities then communities, each its
+ * canonical URL. Literal on purpose: this module reaches client bundles
+ * (listing-ask), and the resolver's registry + redirect JSON must not. The
+ * test pins every entry to lib/market/canonical-market-path.
+ */
+export const CORE_MARKET_PATHS: readonly string[] = [
+  ...CORE_CITY_SLUGS.map((s) => `/housing-market/${s}`),
+  ...Object.values(CORE_COMMUNITY_MARKET_PATHS),
+]
 
 /** Sibling / comparison Ledger row order for both branches. */
 export const COMPARISON_CITY_LABELS = [

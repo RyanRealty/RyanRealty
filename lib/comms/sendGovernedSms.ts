@@ -61,6 +61,13 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
     // keeps the readable mergedBody so the broker's thread stays legible.
     const trackedBody = await instrumentSmsLinks(mergedBody, { personId: req.personId, broker: slug })
     const mediaUrls = req.payload.mediaUrls
+    // Quiet hours again at the POST: the reads above can carry a 7:59pm guard
+    // pass past 8pm. Suppression was read at stage 2; only the clock moves.
+    const late = await checkSendGuards(req.personId, 'sms', {
+      overrideQuietHours: req.overrideQuietHours,
+      skipSuppression: true,
+    })
+    if (late) return late
     const sent = fromNumber
       ? await sendSms({ from: fromNumber, to, body: trackedBody, mediaUrls })
       : await sendSmsViaMessagingService({ to, body: trackedBody, mediaUrls })

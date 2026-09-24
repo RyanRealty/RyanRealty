@@ -1,4 +1,5 @@
 import resortCommunities from '@/data/resort-communities.json'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 /**
  * Canonical neighborhood-area helpers — shared by the saved-search filter
@@ -68,5 +69,5 @@ export function labelForNeighborhoodSlug(slug: string): string {
 export function hrefForNeighborhoodSlug(slug: string): string {
   const trimmed = slug.trim()
   if (trimmed.startsWith('bend-')) return `/cities/bend/${trimmed.slice('bend-'.length)}`
-  return `/communities/${trimmed}`
+  return communityPath(trimmed)
 }

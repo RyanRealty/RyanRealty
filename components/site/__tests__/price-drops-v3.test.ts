@@ -1,8 +1,15 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import type { PriceDrop } from '@/lib/data'
 import { priceDropFieldItems } from '@/app/price-drops/_v3/drops-field-items'
 import { priceDropDatasetSchemas } from '@/app/price-drops/_v3/drops-jsonld'
-import { medianPositive } from '@/app/price-drops/_v3/drops-constants'
+import {
+  DROPS_ALERT_FILTERS,
+  dropsUnavailable,
+  medianPositive,
+} from '@/app/price-drops/_v3/drops-constants'
+import { hasNarrowingFilter, normalizeSavedSearchFilters } from '@/lib/search-filters'
 
 function drop(over: Partial<PriceDrop> = {}): PriceDrop {
   return {
@@ -139,4 +146,66 @@ describe('medianPositive', () => {
   it('ignores null and non-positive values', () => {
     expect(medianPositive([null, 0, 4, 2, 6])).toBe(4)
   })
+})
+
+// WP2 (2026-09-24, §0): a read that did not answer is unknown, not an empty
+// week, and the alerts follow the single-family population the pages list.
+describe('dropsUnavailable', () => {
+  it('says the page could not load, never that nothing dropped', () => {
+    const copy = dropsUnavailable('Bend')
+    expect(copy.term).toMatch(/load/i)
+    expect(`${copy.term} ${copy.body}`).not.toMatch(/\bnothing\b|\bno (active )?(single-family )?home/i)
+    expect(copy.body).toContain('Bend')
+    expect(JSON.stringify(copy)).not.toMatch(/[\u2013\u2014]| -- /)
+  })
+})
+
+describe('DROPS_ALERT_FILTERS', () => {
+  it('saves the single-family sub type, not the whole Residential bucket', () => {
+    expect(normalizeSavedSearchFilters({ ...DROPS_ALERT_FILTERS })).toEqual({
+      propertyType: 'A',
+      propertySubTypes: ['Single Family Residence'],
+    })
+    // Region-wide it is the only narrowing filter the alert carries.
+    expect(hasNarrowingFilter({ ...DROPS_ALERT_FILTERS })).toBe(true)
+  })
+})
+
+describe('price-drops pages: a failed read is not an empty week', () => {
+  // Comments stripped (JSX comments included): the headers explain the old
+  // noStore bug by name.
+  const code = (file: string) =>
+    readFileSync(resolve(process.cwd(), file), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+
+  for (const file of ['app/price-drops/page.tsx', 'app/price-drops/[city]/page.tsx']) {
+    const src = code(file)
+
+    it(`${file} never calls noStore, which is an HTTP 500 inside a Next 16 ISR render`, () => {
+      expect(src).not.toMatch(/\bunstable_noStore\b|\bnoStore\s*\(/)
+    })
+
+    it(`${file} limits a degraded render's ISR copy instead of caching it for the window`, () => {
+      expect(src).toMatch(/if \(degraded\) await refuseDegradedIsr\(/)
+      expect(src).toMatch(/dropsUnavailable\(/)
+    })
+
+    it(`${file} never swallows the read into an empty week`, () => {
+      expect(src).not.toMatch(/getPriceDrops\([\s\S]*?\)\s*\.catch\(/)
+    })
+
+    it(`${file} hands the drawing the cap the read reports, not a literal`, () => {
+      expect(src).not.toMatch(/\bcap:\s*[\dA-Z_]/)
+    })
+
+    it(`${file} alerts on the single-family population it lists`, () => {
+      expect(src).toMatch(/extraFilters=\{DROPS_ALERT_FILTERS\}/)
+    })
+
+    it(`${file} headlines the window's population, not the rendered cards`, () => {
+      expect(src).toMatch(/captionValue=\{total\.toLocaleString\('en-US'\)\}/)
+      expect(src).toMatch(/shown below/)
+    })
+  }
 })

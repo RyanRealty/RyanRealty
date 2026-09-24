@@ -138,6 +138,7 @@ import {
 import { nearbySubdivisionPeers, otherCommunitySubdivs } from '@/lib/explore/nearby-place-peers'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
 import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
+import { communityPath } from '@/lib/communities/community-public-pair'
 import { getSubdivisionRingCached } from '@/lib/data/geo/subdivision-ring-cached'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getPlatClosedCount, getPlatClosedCounts } from '@/lib/data/subdivisions/getPlatClosedCounts'
@@ -1340,7 +1341,7 @@ async function renderSubdivisionPage({ params }: Props) {
   // because that is the market a resort buyer compares against.
   const widerPlace: { label: string; href: string; geoType: 'city' | 'neighborhood' } | null =
     resortSlug && resortLabel
-      ? { label: resortLabel, href: `/communities/${resortSlug}`, geoType: 'neighborhood' }
+      ? { label: resortLabel, href: communityPath(resortSlug), geoType: 'neighborhood' }
       : boundaryCity?.neighborhood?.label && boundaryCity.neighborhood.slug && citySlug
         ? {
             label: boundaryCity.neighborhood.label,
@@ -1406,13 +1407,13 @@ async function renderSubdivisionPage({ params }: Props) {
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
         ...(trailResortSlug
-          ? [{ name: trailResortLabel ?? displayName, url: `/communities/${trailResortSlug}` }]
+          ? [{ name: trailResortLabel ?? displayName, url: communityPath(trailResortSlug) }]
           : citySlug
             ? [{ name: cityName, url: `/cities/${citySlug}` }]
             : []),
         // The family this phase belongs to, the same crumb the visible trail
         // carries (Matt 2026-09-23), unless the resort crumb already is it.
-        ...(familyUp && familyUp.href !== `/communities/${trailResortSlug ?? ''}`
+        ...(familyUp && (!trailResortSlug || familyUp.href !== communityPath(trailResortSlug))
           ? [{ name: familyUp.label, url: familyUp.href }]
           : []),
         { name: displayName, url: `/subdivisions/${slug}` },
@@ -1843,10 +1844,10 @@ async function renderSubdivisionPage({ params }: Props) {
                   {resortSlug ? (
                     <>
                       {' · '}
-                      <a href={`/communities/${resortSlug}`}>{resortLabel ?? 'Resort'} homes for sale</a>
+                      <a href={communityPath(resortSlug)}>{resortLabel ?? 'Resort'} homes for sale</a>
                     </>
                   ) : null}
-                  {familyUp && familyUp.href !== `/communities/${resortSlug ?? ''}` ? (
+                  {familyUp && (!resortSlug || familyUp.href !== communityPath(resortSlug)) ? (
                     <>
                       {' · '}
                       <a href={familyUp.href}>All of {familyUp.label}</a>
@@ -2149,11 +2150,11 @@ async function renderSubdivisionPage({ params }: Props) {
           sourceKey={platSourceKey}
           doors={[
             { label: 'Homes for sale here', href: '#homes' },
-            ...(familyUp && familyUp.href !== `/communities/${resortSlug ?? ''}`
+            ...(familyUp && (!resortSlug || familyUp.href !== communityPath(resortSlug))
               ? [{ label: `All of ${familyUp.label}`, href: familyUp.href }]
               : []),
             ...(resortSlug
-              ? [{ label: `${resortLabel ?? displayName} overview`, href: `/communities/${resortSlug}` }]
+              ? [{ label: `${resortLabel ?? displayName} overview`, href: communityPath(resortSlug) }]
               : citySlug
                 ? [{ label: `${cityName} overview`, href: `/cities/${citySlug}` }]
                 : []),

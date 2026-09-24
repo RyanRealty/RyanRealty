@@ -23,6 +23,7 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 export const metadata = { title: 'Place popularity | Reports' }
 export const dynamic = 'force-dynamic'
@@ -44,7 +45,7 @@ function placeHref(r: PlacePopularityRow): string {
     case 'neighborhood':
       return `/cities/${r.citySlug}/${r.slug}`
     case 'community':
-      return `/communities/${r.slug}`
+      return communityPath(r.slug)
     case 'subdivision':
       return r.citySlug ? `/homes-for-sale/${r.citySlug}/${r.slug}` : `/subdivisions/${r.slug}`
   }

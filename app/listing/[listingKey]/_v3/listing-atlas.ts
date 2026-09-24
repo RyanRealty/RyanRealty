@@ -29,6 +29,7 @@ import {
   cityNeighborhoodHref,
   subdivisionHref,
 } from '@/lib/site/place-href'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 export type ListingAtlasScope = {
   /** The MLS City the home files under; scopes the population read. */
@@ -128,7 +129,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     grain === 'neighborhood'
       ? cityNeighborhoodHref(scope.citySlug, frameSlug)
       : grain === 'community' && frameSlug
-        ? `/communities/${frameSlug}`
+        ? communityPath(frameSlug)
         : cityHref(scope.citySlug)
 
   // No recorded boundary (a city outside the mapped set): the frame is the

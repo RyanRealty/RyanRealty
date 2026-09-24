@@ -32,6 +32,22 @@ vi.mock('@/lib/pricing/divides', async (importOriginal) => {
   }
 })
 
+// Wraps (not stubs) the real keepTightestByClosePrice so selectComps still
+// culls for real; this just records what asOf it was called with, to prove
+// the CMA's own as-of date (WP5 item d) reaches the final cull instead of
+// being dropped on the floor.
+const keepTightestSpy = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/pricing/ladder', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/pricing/ladder')>()
+  return {
+    ...actual,
+    keepTightestByClosePrice: (...args: Parameters<typeof actual.keepTightestByClosePrice>) => {
+      keepTightestSpy(...args)
+      return actual.keepTightestByClosePrice(...args)
+    },
+  }
+})
+
 import { selectComps, selectCompsByKeys } from '@/lib/cma/comps'
 
 const subject = (over: Partial<CmaSubject> = {}): CmaSubject =>
@@ -116,6 +132,30 @@ describe('selectComps — SQL filter follows the subject product type', () => {
     expect(result.comps.every((c) => c.propertySubType === 'Single Family Residence')).toBe(true)
     expect(result.comps.some((c) => c.listingKey === 'th')).toBe(false)
     expect(result.diagnostics.excluded_totals.product_type).toBeGreaterThan(0)
+  })
+})
+
+describe('selectComps — CMA as-of date reaches the final cull (WP5 item d)', () => {
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    selectCmaCompsPool.mockResolvedValue([closedRow()])
+    selectCmaCompsByKeys.mockReset()
+    selectCmaCompsByKeys.mockResolvedValue([])
+    keepTightestSpy.mockClear()
+  })
+
+  it('passes opts.asOf through to keepTightestByClosePrice — a back-dated CMA ranks by its own date, not today', async () => {
+    await selectComps(subject(), { asOf: '2024-01-15' })
+    expect(keepTightestSpy).toHaveBeenCalled()
+    const lastArgs = keepTightestSpy.mock.calls.at(-1)!
+    expect(lastArgs[2]).toBe('2024-01-15')
+  })
+
+  it('leaves asOf undefined (today-shaped, current behavior) when the caller supplies none', async () => {
+    await selectComps(subject())
+    expect(keepTightestSpy).toHaveBeenCalled()
+    const lastArgs = keepTightestSpy.mock.calls.at(-1)!
+    expect(lastArgs[2]).toBeUndefined()
   })
 })
 

@@ -11,6 +11,7 @@ import {
   resolveDurableCommunitySlug,
   resolvePublicCommunitySlug,
 } from '@/lib/communities/community-public-pair'
+import { cityMarketPath, communityMarketPath } from '@/lib/market/canonical-market-path'
 
 export type PlaceType = 'city' | 'neighborhood' | 'community'
 
@@ -73,7 +74,7 @@ export function getPlaceLinks(input: {
       // An out-of-area city's page is /oregon/<slug>; /cities/<slug> 308s there.
       placeUrl: cityHref(slug) ?? `/cities/${slug}`,
       browseUrl: homesForSalePath(titleFromSlug(slug)),
-      marketUrl: `/housing-market/${slug}`,
+      marketUrl: cityMarketPath(slug),
       label: titleFromSlug(slug),
     }
   }
@@ -120,7 +121,9 @@ export function getPlaceLinks(input: {
   return {
     placeUrl: pair?.href ?? `/communities/${publicSlug}`,
     browseUrl,
-    marketUrl: `/housing-market/${citySlug}/${durable}`,
+    // One market URL per place (lib/market/canonical-market-path): Sunriver
+    // is its own registry city, so /housing-market/sunriver, not sunriver/sunriver.
+    marketUrl: communityMarketPath(durable, { followLegacy: false }) ?? `/housing-market/${citySlug}/${durable}`,
     label: pair?.displayName ?? titleFromSlug(publicSlug),
   }
 }

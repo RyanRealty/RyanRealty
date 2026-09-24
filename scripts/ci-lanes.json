@@ -715,6 +715,13 @@
       "lib/data/loop/signals.ts",
       "docs/plans/COMPANY_SCOREBOARD.md"
     ],
+    "ci:community-href-canonical": [
+      "app/**",
+      "components/**",
+      "lib/**",
+      "data/resort-communities.json",
+      "scripts/check-community-href-canonical.mjs"
+    ],
     "ci:internal-links": [
       "app/**",
       "components/**",
