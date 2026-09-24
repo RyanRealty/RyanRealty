@@ -102,22 +102,33 @@ are **visible to anyone who can edit that environment**. This blob is the whole
 credential surface — MLS, Supabase service role, Twilio, Meta, Google. Treat
 edit access to the environment as equivalent to handing over `.env.local`.
 
-**One line per variable, no exceptions (found 2026-09-24).** The field reads
-each line as its own variable. `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` had been
-pasted as a multi-line PEM, so the key body became 26 stray variables named
-after the key's own lines, plus one named `-----END PRIVATE KEY-----`, and the
-variable itself holds no usable key.
-Every service-account caller in a cloud session (GA4, Search Console, Calendar,
-Drive ingest, Postmaster, the Gmail readers and drafts; `grep -rl
-GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY lib`) therefore cannot authenticate. The fix:
+**One line per variable, no exceptions (found 2026-09-24).**
+`GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` had been pasted as a multi-line PEM. The
+variable still holds the whole key: a cloud session on 2026-09-24 loaded it as a
+2048-bit RSA key and Google's token exchange succeeded. (An earlier version of
+this section said the callers could not authenticate. That was wrong.) The
+fault is that the same paste also made 27 stray variables named after the key's
+26 base64 lines and `-----END PRIVATE KEY-----`, so any `env` listing prints
+the key. Matt's call (2026-09-24): keep the key, do not rotate it, and put it on
+one line. The fix:
 
-1. Delete the stray lines from the field (they start `MIIE`, `-----END`, and
-   base64 text; none is a real variable name).
-2. Re-paste the key on ONE line with a literal `\n` where each line break was:
-   `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n`.
-   Every consumer in `lib/` already turns `\n` back into newlines.
-3. Rotate the key in Google Cloud IAM (new key, delete the old). Its lines sat
-   in variable names, which any `env` listing prints, so treat it as exposed.
+1. In the environment's variables field, select from
+   `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=` through the `-----END PRIVATE KEY-----`
+   line (and a lone `"` line after it, if there is one), and copy it.
+2. On a Mac, turn the clipboard into one line with a literal `\n` at each line
+   break. This was tested on a throwaway key; it drops quotes and blank lines:
+
+   ```bash
+   pbpaste | awk '{gsub(/"/,""); sub(/^GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=/,"")} NF{printf "%s\\n", $0}' | sed 's/^/GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=/' | pbcopy
+   ```
+
+3. Paste over the selection and save. Every caller in `lib/` and `app/` turns
+   `\n` back into newlines, and this key's one-line form authenticated in the
+   same test. Vercel keeps its own copy (production target), which this does
+   not touch.
+4. Check from a new session, printing only counts and pass/fail: no variable
+   name looks like a key line, the key loads with `crypto.createPrivateKey`,
+   and a JWT token exchange succeeds.
 
 **Also on 2026-09-24, the field held variables it should not:**
 `ANTHROPIC_API_KEY` (excluded on purpose, see above; the platform strips it
@@ -314,7 +325,9 @@ a connector call stops to ask, and both have to agree:
    approval" there prompts on every call, even in auto mode, whatever this repo
    allows; that is what put Supabase SQL and migration approvals on Matt's
    phone.
-   Connector changes reach a session only when it starts.
+   Permission changes reach a session only when it starts. A connector switched
+   on mid-session can load at once: Cloudflare, Notion and Era Context did on
+   2026-09-24.
 2. **`.claude/settings.json` in this repo.** `mcp__<Server>__*` in
    `permissions.allow` lets a call skip the auto-mode classifier. A tool in
    `permissions.ask` prompts even when its server is allowed (rules resolve
@@ -322,7 +335,8 @@ a connector call stops to ask, and both have to agree:
 
 **Default: Always allow, in both layers, for every connected connector.** The
 exceptions are the tools that send a message to a real person (CLAUDE.md §1),
-spend money, or take production offline. They stay "Needs approval" in layer 1
+spend money, take production offline or can't be undone, plus Era Context's
+`remember`. They stay "Needs approval" in layer 1
 and `ask` in layer 2, so Matt's one tap is the approval:
 
 | Tool | Why it asks |
@@ -333,6 +347,9 @@ and `ask` in layer 2, so Matt's one tap is the approval:
 | Vercel `buy_*`, `create_or_transfer_domain`; Supabase `create_project` | Spends money |
 | Vercel `pause_project`, Supabase `pause_project` | Takes the site or the database offline |
 | Supabase `restore_project`, `delete_branch` | Changes the production project's state, or deletes a branch |
+| Era Context `billing__upgrade`, `billing__confirm_*`, `billing__uncancel_subscription` | Charges Matt's card |
+| Era Context `connections__disconnect_institution` | Can't be undone: removes that bank's accounts from Era |
+| Era Context `knowledge__remember` | Saves a fact in a third-party app, so client and deal details never leave a business session without Matt's tap |
 
 **SQL runs through the connector.** Matt set the Supabase connector to Always
 allow and asked agents to use it (2026-09-24,
@@ -345,8 +362,9 @@ PR merged main: `execute_sql` and `apply_migration` are allowed. The repo's
 `mcp__Claude_Code_Remote__*`, `mcp__Gmail__*`, `mcp__Google_Calendar__*`,
 `mcp__Google_Drive__*`, `mcp__Canva__*`, `mcp__Figma__*`, `mcp__Airtable__*`,
 `mcp__Vibe_Prospecting__*`, `mcp__Claude_Docs__*`,
-`mcp__Cloudflare_Developer_Platform__*` and `mcp__Sentry__*` (ready for when
-it is connected); `ask` holds the tools in the table; `deny` is empty; and
+`mcp__Cloudflare_Developer_Platform__*`, `mcp__Notion__*`,
+`mcp__Era_Context__*` (these two added on Matt's approval later that day) and
+`mcp__Sentry__*`; `ask` holds the tools in the table; `deny` is empty; and
 `hooks.SessionStart` runs `.claude/hooks/session-start.sh`
 (section 3). **An agent cannot change this file's permissions on its own:** the
 auto-mode classifier refuses an edit that widens the agent's own permissions or
@@ -376,9 +394,10 @@ and put its send, publish and spend tools in `ask`.
 | Canva, Figma | Connected; neither is called from the code (hand design work) | Always allow |
 | Vibe Prospecting | Connected; prospect and company enrichment | Always allow |
 | Airtable | Connected; referenced nowhere in the code | Keep only if used outside the repo |
-| Cloudflare Developer Platform | Needs reconnect; no code uses a Cloudflare account (only Stream embed URLs and edge headers) | Remove unless Workers or R2 come into use |
-| Era Context | Needs reconnect; personal finance | Remove from this workspace, or reconnect |
-| **Sentry** (not connected) | The app reports errors to Sentry (`@sentry/` or `SENTRY_DSN` in 13 files) | Connect it: sessions can then read production errors directly |
+| Cloudflare Developer Platform | Connected and on. The account has no Workers and R2 is switched off, and no code uses a Cloudflare account (only Stream embed URLs and edge headers), so nothing there can take production down | Always allow |
+| Era Context | Connected and on; Matt's finance app. Basic plan: 100 MCP calls per period, no bank connected yet. Its server instructions ask agents to save facts about the user | Always allow, except the Era rows above. The day it ships a tool that moves money, put that tool in `ask` |
+| Notion | Connected and on; the workspace has no teamspaces yet | Always allow |
+| Sentry | Connected and on. Org `ryan-realty-llc`, project `ryan-realty-platform`. It had received nothing (0 errors in 30 days, 0 spans in 90) because Vercel had no `SENTRY_DSN`; `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` are now set on production. Browser errors load the SDK only when one happens (`lib/observability/client-errors.ts`) | Always allow |
 | **Resend** (not connected) | The app sends email through Resend (package, key or API host in 14 files) | Optional: delivery and bounce lookups. Set its send and broadcast tools to Needs approval |
 
 Counts are `grep -rl` over `app/`, `lib/`, `scripts/`, `components/`,

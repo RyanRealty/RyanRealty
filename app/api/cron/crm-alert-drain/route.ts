@@ -16,6 +16,7 @@ import {
   reclaimStaleSending,
 } from '@/lib/data/crm/brokerAlertDrain'
 import { drainWebPush } from '@/app/api/push/_lib/deliver'
+import { getRecipientOptOut, MARKETING_NUMBER } from '@/lib/crm/twilio'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -46,6 +47,15 @@ export const maxDuration = 60
  * (crm_broker_alerts.pushed_at) rather than the SMS `status` machine so the two
  * channels can never consume each other's rows. Both properties are pinned by
  * scripts/check-web-push-durable.mjs.
+ *
+ * OPTED-OUT BROKER (2026-09-24): a broker cell that texted STOP to the line the
+ * Messaging Service sends from is refused by Twilio with 21610 AFTER the create
+ * call succeeds, so the drain used to mark every such row "sent". Matt's cell
+ * texted "Stop" to the marketing line on 2026-09-13 and the next 411 alerts
+ * failed while the table said "sent". Each run now reads that broker's opt-out
+ * state from Twilio once (latest STOP/START keyword) and fails the row with the
+ * reason instead of sending; a START from the cell resumes delivery on the next
+ * run. Unknown state (Twilio unreachable) sends as before.
  *
  * Schedule: every minute (vercel.json). Auth: Bearer $CRON_SECRET.
  */
@@ -99,8 +109,18 @@ export async function GET(request: Request) {
     })
   }
 
+  // One opt-out read per distinct broker phone in this batch.
+  const optOut = new Map<string, Awaited<ReturnType<typeof getRecipientOptOut>>>()
+  for (const alert of pending) {
+    const to = toE164(alert.to_phone)
+    if (!optOut.has(to) && isBrokerPhone(alert.to_phone, whitelist)) {
+      optOut.set(to, await getRecipientOptOut(to, MARKETING_NUMBER))
+    }
+  }
+
   let sent = 0
   let refused = 0
+  let optedOut = 0
   let retried = 0
   let failed = 0
   for (const alert of pending) {
@@ -113,6 +133,15 @@ export async function GET(request: Request) {
     // CAS claim — loses cleanly to the mac-mini relay or a concurrent run.
     const claimed = await claimAlert(alert.id)
     if (!claimed) continue
+    const state = optOut.get(toE164(alert.to_phone))
+    if (state?.optedOut) {
+      await refuseAlert(
+        alert.id,
+        `not sent: this cell texted STOP to ${MARKETING_NUMBER} on ${state.since.slice(0, 10)} (Twilio 21610 refuses every text); text START from the cell to resume`,
+      )
+      optedOut += 1
+      continue
+    }
     try {
       const form = new URLSearchParams({
         To: toE164(alert.to_phone),
@@ -138,5 +167,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, mode: 'drain', sent, refused, retried, failed, reclaimed, push })
+  return NextResponse.json({ ok: true, mode: 'drain', sent, refused, optedOut, retried, failed, reclaimed, push })
 }
