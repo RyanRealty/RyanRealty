@@ -899,7 +899,11 @@ describe('search index filter dock (E-SEARCH-REFINE)', () => {
   const page = readSrc('app/search/page.tsx')
 
   it('keeps a visually-hidden h1 without the noisy title above filters', () => {
-    expect(page).toMatch(/<h1 className="sr-only">Central Oregon homes for sale<\/h1>/)
+    // SITE-201: the h1 names what the URL lists (buildSearchTitle), so only
+    // the bare hub reads "Central Oregon homes for sale"; a ?city= search
+    // no longer claims the region's query.
+    expect(page).toMatch(/const searchHeading = buildSearchTitle\(filters\)/)
+    expect(page).toMatch(/<h1 className="sr-only">\{searchHeading\}<\/h1>/)
     expect(page).not.toMatch(/const h1Place =/)
     expect(page).not.toMatch(/const h1Text =/)
     expect(page.match(/<h1\b/g)?.length).toBe(1)
@@ -915,6 +919,9 @@ describe('search index filter dock (E-SEARCH-REFINE)', () => {
   it('canonical strips view/bbox and the variant policy helper runs', () => {
     expect(page).toMatch(/appendIndexableSearchParams\(canonical, sp\)/)
     expect(page).toMatch(/shouldNoIndexSearchVariant\(sp\)/)
+    // SITE-201: the hub indexes only as the bare URL; tagging never reaches the canonical.
+    expect(page).toMatch(/shouldNoIndexSearchVariant\(sp\) \|\| isFilteredHubVariant\(sp\)/)
+    expect(page).toMatch(/buildSearchCanonical\(withoutTaggingParams\(sp\)\)/)
     expect(page).not.toMatch(/canonical\.searchParams\.set\(k, String\(v\)\)/)
   })
 

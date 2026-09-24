@@ -25,6 +25,7 @@ import { type getAllCityHomesLink } from '../../../../lib/popular-searches'
 import { type SearchPreset } from '../resolve-slug'
 import { relatedSearchWhenLabel } from '@/lib/search/related-search-when-label'
 import { cityMarketPath } from '@/lib/market/canonical-market-path'
+import type { RegionMarketBand } from '../../region-split-depth'
 
 /** Below-fold SEO depth: market snapshot band, the asking-price ladder, city +
  *  preset FAQs, preset cross-links, and the related-searches link cloud (see
@@ -56,6 +57,10 @@ export function SearchSeoTail({
   placeName,
   subdivision,
   preset,
+  regionBand = null,
+  cityLinksWhen,
+  relatedEyebrow = 'From this search',
+  relatedHeading = 'Related searches',
 }: {
   isPlainCityPage: boolean
   relatedCitySlug: string | null
@@ -74,6 +79,16 @@ export function SearchSeoTail({
   placeName: string
   subdivision: string | undefined
   preset: SearchPreset
+  /**
+   * The bare /homes-for-sale (SITE-201): the region's market band, built from
+   * the same Dataset variables as the region FAQ (region-split-depth.ts).
+   * Mutually exclusive with the plain city band above.
+   */
+  regionBand?: RegionMarketBand | null
+  /** The ledger's "when" cell for presetCityLinks, when the caller names it. */
+  cityLinksWhen?: string
+  relatedEyebrow?: string
+  relatedHeading?: string
 }) {
   const faqSource = presetDepth?.faqs?.length
     ? { title: presetDepth.faqTitle, faqs: presetDepth.faqs }
@@ -117,7 +132,9 @@ export function SearchSeoTail({
       id: `band-${link.href}`,
     })
   }
-  const otherWhen = subdivision ? 'Wider search' : preset ? `${preset.shortLabel} in other cities` : 'Other cities'
+  const otherWhen =
+    cityLinksWhen ??
+    (subdivision ? 'Wider search' : preset ? `${preset.shortLabel} in other cities` : 'Other cities')
   for (const link of presetCityLinks) {
     if (!link.href || !link.label.trim()) continue
     relatedRows.push({
@@ -150,6 +167,14 @@ export function SearchSeoTail({
     }
   }
   const [firstLeftover, ...restLeftover] = leftoverFigures
+
+  const regionFigures: V3InstrumentFigure[] = (regionBand?.figures ?? []).map((f) => ({
+    value: v3Text(f.value),
+    label: v3Text(f.label),
+    sentence: v3Text(f.sentence),
+    href: f.href,
+  }))
+  const [firstRegion, ...restRegion] = regionFigures
 
   return (
     <>
@@ -203,6 +228,25 @@ export function SearchSeoTail({
         </section>
       ) : null}
 
+      {regionBand && firstRegion ? (
+        <section id="search-seo" className="mt-12">
+          <V3Instrument
+            id="search-region-market"
+            level={2}
+            eyebrow={v3Text('Central Oregon market')}
+            headline={v3Text(regionBand.headline)}
+            figures={[firstRegion, ...restRegion]}
+            source={v3Text(regionBand.source)}
+            asOf={regionBand.asOfIso}
+            action={{
+              label: v3Text('Central Oregon market report'),
+              href: '/housing-market/central-oregon',
+              variant: 'ghost',
+            }}
+          />
+        </section>
+      ) : null}
+
       {faqSource && faqItems.length > 0 ? (
         <>
           <MetadataBlock
@@ -226,8 +270,8 @@ export function SearchSeoTail({
       {firstRelated ? (
         <V3Ledger
           id="related-searches"
-          eyebrow={v3Text('From this search')}
-          heading={v3Text('Related searches')}
+          eyebrow={v3Text(relatedEyebrow)}
+          heading={v3Text(relatedHeading)}
           rows={[firstRelated, ...restRelated]}
         />
       ) : null}

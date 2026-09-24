@@ -38,6 +38,15 @@ import {
 } from '@/components/site/v3'
 import SearchRootJsonLd from './SearchRootJsonLd'
 import { splitLeadImageUrl } from '@/lib/search/split-lead-image'
+import { isFilteredHubVariant, withoutTaggingParams } from './hub-indexing'
+import {
+  REGION_DEPTH_GRACE_MS,
+  buildRegionMarketBand,
+  loadRegionSplitDepth,
+  type RegionSplitDepth,
+} from './region-split-depth'
+import { buildRegionMarketDatasetSchema } from './[...slug]/city-market-dataset'
+import { SearchSeoTail } from './[...slug]/sections/SeoTail'
 import './_v3/search-catalog'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
@@ -105,6 +114,16 @@ import { SplitViewBodyLock } from '@/components/search/SplitViewBodyLock'
  * into the served HTML: those cards are real links and the ItemList source.
  * The frame's pins (up to the viewport cap) are read after hydration, so the
  * served page never carries the whole pin set.
+ *
+ * One winner (SITE-201). The bare URL is the page for "Central Oregon homes
+ * for sale". Below the viewport-fit frame it carries the region's depth, the
+ * way the plain city split pages do (SITE-190 / SITE-192): the market band,
+ * the Central Oregon FAQ (+ FAQPage), the Dataset, and a door to each city's
+ * own homes-for-sale page. The depth read starts beside the viewport read and
+ * gets REGION_DEPTH_GRACE_MS after it, so the map never waits on it; a miss
+ * omits the tail. Every other query-string shape is a filtered search:
+ * noindex, follow, and an h1 that names what it filtered to (hub-indexing.ts),
+ * so no variant of this template claims the region's query.
  */
 
 /**
@@ -252,9 +271,13 @@ export async function generateMetadata({
   const filters = parseFilters(sp)
   const title = buildSearchTitle(filters)
   const description = buildSearchDescription(filters)
-  const { siteUrl, canonical } = buildSearchCanonical(sp)
+  // Visit tagging never reaches the canonical: /homes-for-sale?utm_source=x
+  // is the hub itself.
+  const { siteUrl, canonical } = buildSearchCanonical(withoutTaggingParams(sp))
   const ogImage = `${siteUrl}/api/og?type=default`
-  const noindex = shouldNoIndexSearchVariant(sp)
+  // The shared variant policy, plus this template's own rule: the hub is
+  // indexable only as the bare URL (hub-indexing.ts).
+  const noindex = shouldNoIndexSearchVariant(sp) || isFilteredHubVariant(sp)
   return {
     title,
     description,
@@ -288,6 +311,14 @@ export default async function SearchPage({
   // The bare URL (and one narrowed only by price, beds and the like): the
   // Central Oregon frame, its population the regional set, not a bbox.
   const regionalFrame = isRegionalSearchFrame({ view, params: sp })
+  // The bare, indexable hub in its default split view carries the region's
+  // depth below the map. Started here, beside everything the map reads, and
+  // awaited only after the viewport read settles (with a grace), so the map
+  // never waits on it. Never rejects.
+  const hubDepthOn = regionalFrame && !isFilteredHubVariant(sp)
+  const regionDepthRead: Promise<RegionSplitDepth | null> = hubDepthOn
+    ? loadRegionSplitDepth()
+    : Promise.resolve(null)
 
   // Camera only, never a city filter: no `filters.city = 'Bend'` unless the URL
   // asked. With no place in the URL the camera is all of Central Oregon.
@@ -391,6 +422,11 @@ export default async function SearchPage({
       ? { ...viewportRead, listings: viewportRead.listings.slice(0, SPLIT_CARD_PAGE) }
       : viewportRead
   const viewportDegraded = viewportSettled?.degraded ?? false
+  const regionDepth = hubDepthOn
+    ? await withTimeout(regionDepthRead, null, REGION_DEPTH_GRACE_MS)
+    : null
+  const regionMarketFaq = regionDepth?.regionMarketFaq ?? null
+  const regionBand = buildRegionMarketBand(regionMarketFaq)
 
   // LIST: paginated infinite-scroll browse (unchanged fetch; honesty flag added).
   const listSettled =
@@ -507,7 +543,10 @@ export default async function SearchPage({
   // fold on page load).
   const isAppFrame = view === 'map' || view === 'split'
 
-  const { siteUrl, canonical } = buildSearchCanonical(sp)
+  const { siteUrl, canonical } = buildSearchCanonical(withoutTaggingParams(sp))
+  // The h1 says what this URL lists. Only the bare hub (no place, no filter)
+  // reads "Central Oregon homes for sale"; a filtered search names its place.
+  const searchHeading = buildSearchTitle(filters)
 
   return (
     <>
@@ -519,6 +558,15 @@ export default async function SearchPage({
       listings={jsonLdListings}
       totalCount={resultsCount}
       primaryImageUrl={view === 'split' ? splitLeadImageUrl(viewport?.listings ?? []) : null}
+      datasetSchema={
+        hubDepthOn
+          ? buildRegionMarketDatasetSchema({
+              regionName: REGIONAL_FRAME_LABEL,
+              pagePath: '/homes-for-sale',
+              regionMarketFaq,
+            })
+          : undefined
+      }
     />
     {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
         (THE LOOK, PUBLIC_UI.md section 6). */}
@@ -540,7 +588,7 @@ export default async function SearchPage({
       <div className={cn('search-filter-dock w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         {/* Visually hidden H1 keeps a document outline without the noisy
             "{City} homes for sale" title above the filter chips. */}
-        <h1 className="sr-only">Central Oregon homes for sale</h1>
+        <h1 className="sr-only">{searchHeading}</h1>
         <div className={isAppFrame ? 'hidden' : undefined}>
           <SentenceSearch />
         </div>
@@ -632,6 +680,40 @@ export default async function SearchPage({
       </div>
     </UrlSearchParamsProvider>
     </main>
+    {/* SITE-201: the region's depth, below the viewport-fit frame (the
+        document scrolls past it; SplitViewBodyLock is a no-op). Only on the
+        bare, indexable split view, and only when the depth read landed inside
+        its grace. Every figure is a Dataset variable of buildMarketFaq; a null
+        figure is omitted. The city doors go to each city's one winner
+        (placeInventoryHref). */}
+    {hubDepthOn && regionDepth ? (
+      <section
+        id="region-search-depth"
+        aria-label="Central Oregon market and homes for sale by city"
+        className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-background')}
+      >
+        <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6">
+          <SearchSeoTail
+            isPlainCityPage={false}
+            relatedCitySlug={null}
+            city={REGIONAL_FRAME_LABEL}
+            regionBand={regionBand}
+            cityMarketFaq={regionMarketFaq}
+            presetDepth={null}
+            presetBandLinks={[]}
+            presetCityLinks={regionDepth.cityDoors}
+            cityLinksWhen="City"
+            relatedAllHomes={null}
+            relatedSearches={[]}
+            placeName={REGIONAL_FRAME_LABEL}
+            subdivision={undefined}
+            preset={null}
+            relatedEyebrow="Cities"
+            relatedHeading="Central Oregon homes for sale by city"
+          />
+        </div>
+      </section>
+    ) : null}
     {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
         when it is NOT nested in sectioning content. Map/split is viewport-fit
         so Map/split can scroll to it. The V3Footer token stays in source for
