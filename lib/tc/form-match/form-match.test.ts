@@ -236,6 +236,19 @@ describe('check', () => {
   })
 })
 
+describe('packets', () => {
+  it("a packet page that belongs to another form is not reported missing", () => {
+    const t = tpl([1, 2])
+    t.formNumber = '1.1'
+    t.pages[0] = { ...t.pages[0], footer: { family: 'OR', number: 'FINAL AGENCY ACKNOWLEDGEMENT', release: '2026-2', page: 1, of: 1, raw: '' } }
+    t.pages[1] = { ...t.pages[1], footer: { family: 'OR', number: '1.1', release: '2026-2', page: 1, of: 10, raw: '' } }
+    const masks = new Map([[1, copyOf(form())]])
+    const lp = loadPage(t, t.pages[1], form())
+    const check = checkInstance(t, [pm(1, 2)], (n) => (n === 2 ? lp : null), (d) => masks.get(d)!)
+    expect(check.missingPages).toEqual([])
+  })
+})
+
 describe('releases', () => {
   it("a page whose footer prints another release of the same form never matches that template", () => {
     const page = tpl([1]).pages[0]

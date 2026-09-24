@@ -251,7 +251,15 @@ export function checkInstance(
     source: template.source,
     pageCount: template.pageCount,
     pages: pageList,
-    missingPages: pageList.filter((p) => p.docPage == null).map((p) => p.templatePage),
+    // A page whose footer names another form (the acknowledgment page a packet opens with)
+    // is that form's page: a copy filed without it is not missing a page of this one.
+    missingPages: pageList
+      .filter((p) => p.docPage == null)
+      .filter((p) => {
+        const n = template.pages.find((tp) => tp.page === p.templatePage)?.footer?.number
+        return !n || n.replace(/^0+/, '') === template.formNumber.replace(/^0+/, '')
+      })
+      .map((p) => p.templatePage),
     lines,
     initials,
   }

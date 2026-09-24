@@ -240,7 +240,12 @@ export async function buildLibraryTemplates(sb: SupabaseClient, opts: { log?: (s
     }
     if (!built.length) continue
     const code = codeOf.get(v.library_id) ?? 'other'
-    const identity = identityOf(code, v, built.find((b) => b.page.footer)?.page.footer ?? null)
+    // A packet can open with another form's page (the Oregon REALTORS® 1.1 packet opens with the
+    // Final Agency Acknowledgement): the footer that prints the blank's own number names it.
+    const own = (v.form_number ?? '').replace(/^0+/, '')
+    const footers = built.map((b) => b.page.footer).filter((f): f is FooterId => !!f)
+    const named = footers.find((f) => own && (f.number ?? '').replace(/^0+/, '') === own) ?? footers[0] ?? null
+    const identity = identityOf(code, v, named)
     const key = `${identity.family}|${identity.formNumber}|${identity.release ?? ''}|${built.length}`
     const g = groups.get(key)
     if (g) g.builds.push(built)
@@ -265,6 +270,13 @@ export async function buildLibraryTemplates(sb: SupabaseClient, opts: { log?: (s
 
   let templates = 0
   const saved: string[] = []
+  // Two blanks of one name and release with different page counts (a one-page form and a
+  // packet that opens with it) are kept apart by page count.
+  const sameName = new Map<string, number>()
+  for (const g of groups.values()) {
+    const k = `${g.identity.family}|${g.identity.formNumber}|${g.identity.release ?? ''}`
+    sameName.set(k, (sameName.get(k) ?? 0) + 1)
+  }
   for (const g of groups.values()) {
     // Signature lines come from a blank whose text is readable.
     g.builds.sort((a, b) => Number(b.some((p) => p.page.footer)) - Number(a.some((p) => p.page.footer)))
@@ -275,7 +287,7 @@ export async function buildLibraryTemplates(sb: SupabaseClient, opts: { log?: (s
       family: g.identity.family,
       formNumber: g.identity.formNumber,
       release: g.identity.release,
-      edition: 'a',
+      edition: (sameName.get(`${g.identity.family}|${g.identity.formNumber}|${g.identity.release ?? ''}`) ?? 1) > 1 ? `p${first.length}` : 'a',
       title: g.title,
       source: 'library',
       formVersionId: g.versionId,
@@ -285,6 +297,12 @@ export async function buildLibraryTemplates(sb: SupabaseClient, opts: { log?: (s
     })
     saved.push(id)
     templates++
+  }
+  // A licensed blank now covers these releases: templates learned for them are retired.
+  for (const g of groups.values()) {
+    let q = sb.from('tc_form_templates').update({ status: 'retired', updated_at: new Date().toISOString() }).eq('source', 'learned').eq('status', 'active').eq('family', g.identity.family).eq('form_number', g.identity.formNumber)
+    q = g.identity.release == null ? q.is('release', null) : q.eq('release', g.identity.release)
+    await q
   }
   // Library templates this build no longer produces (a blank replaced, a release merged) are retired.
   let stale = sb.from('tc_form_templates').update({ status: 'retired', updated_at: new Date().toISOString() }).eq('source', 'library').eq('status', 'active')
