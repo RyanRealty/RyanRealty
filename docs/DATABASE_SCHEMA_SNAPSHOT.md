@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-24T02:06:02.986Z
+**Generated:** 2026-09-24T06:19:08.712Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -287,7 +287,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 73,977**
+### `similar_listings_mv` · **rows ≈ 73,884**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -356,7 +356,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 19,009**
+### `market_stats_cache` · **rows ≈ 18,878**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -539,7 +539,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 530**
+### `cmas` · **rows ≈ 531**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -629,7 +629,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 515**
+### `expired_listings` · **rows ≈ 516**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -689,7 +689,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_idempotency_key` | text | yes |  |
 | `outreach_email_queued_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 996**
+### `marketing_brain_actions` · **rows ≈ 1,000**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -5095,6 +5095,20 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `updated_at` | timestamp with time zone | no | now() |
 | `mail_swept_at` | timestamp with time zone | yes |  |
 
+### `tc_document_checks`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `document_id` | uuid | no |  |
+| `checker_version` | text | no |  |
+| `sha256` | text | yes |  |
+| `page_count` | integer | yes |  |
+| `pages` | jsonb | no | '[]'::jsonb |
+| `forms` | jsonb | no | '[]'::jsonb |
+| `duration_ms` | integer | yes |  |
+| `error` | text | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `tc_document_readings`
 
 | Column | Type | Nullable | Default |
@@ -5344,6 +5358,27 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `release` | text | yes |  |
 | `seen_at` | timestamp with time zone | no | now() |
 
+### `tc_form_templates`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `family` | text | no |  |
+| `form_number` | text | no |  |
+| `release` | text | yes |  |
+| `edition` | text | no | 'a'::text |
+| `title` | text | no |  |
+| `page_count` | integer | no |  |
+| `source` | text | no |  |
+| `form_version_id` | uuid | yes |  |
+| `copies` | integer | no | 0 |
+| `pages` | jsonb | no | '[]'::jsonb |
+| `masks_path` | text | no |  |
+| `status` | text | no | 'active'::text |
+| `builder_version` | text | no |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
 ### `tc_form_versions`
 
 | Column | Type | Nullable | Default |
@@ -5407,6 +5442,34 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `decided_at` | timestamp with time zone | no | now() |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `tc_mail_review_cursors`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `mailbox` | text | no |  |
+| `page_token` | text | yes |  |
+| `listed` | integer | no | 0 |
+| `reviewed` | integer | no | 0 |
+| `started_at` | timestamp with time zone | no | now() |
+| `finished_at` | timestamp with time zone | yes |  |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `tc_mail_reviews`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `mailbox` | text | no |  |
+| `gmail_id` | text | no |  |
+| `thread_id` | text | yes |  |
+| `internal_at` | timestamp with time zone | yes |  |
+| `status` | text | no |  |
+| `deal_id` | uuid | yes |  |
+| `message_key` | text | yes |  |
+| `reason` | text | no |  |
+| `stage` | text | no |  |
+| `rules_version` | text | no |  |
+| `reviewed_at` | timestamp with time zone | no | now() |
 
 ### `tc_offers`
 

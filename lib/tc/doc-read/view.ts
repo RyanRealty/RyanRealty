@@ -14,7 +14,27 @@ export type ReaderView = {
   label: string
   tone: ReaderTone
   forms: Array<{ title: string; signed: string[]; waiting: string[]; note: string | null }>
+  /** Checked against the printed form (lib/tc/form-match): one line per form. */
+  checks: string[]
   stale: boolean
+}
+
+type StoredCheck = { form?: string; release?: string | null; source?: string; pages?: string; complete?: boolean; issues?: string[]; signed?: string[]; initials?: string | null }
+
+const RELEASE = (r: string | null | undefined) => (r ? (/^\d{4}/.test(r) ? ` (Version ${r})` : ` (Released ${r})`) : '')
+
+/** "OREF 003 (Released 01/2025), learned from our copies: 2 of 2 pages · signed: seller, buyer · initialed on every page it asks". */
+export function formCheckLines(classification: unknown): string[] {
+  const fc = (classification as { form_check?: { forms?: StoredCheck[] } } | null)?.form_check
+  return (fc?.forms ?? []).map((f) => {
+    const src = f.source === 'learned' ? ' (learned from our own copies of that release)' : ''
+    const head = `Checked against ${f.form ?? 'the form'}${RELEASE(f.release)}${src}: ${f.pages ?? '?'} pages`
+    if (f.complete) {
+      const who = (f.signed ?? []).map((p) => PARTY[p] ?? p).join(', ')
+      return `${head} · every required line signed${who ? ` (${who})` : ''}${f.initials ? ` · ${f.initials}` : ''}`
+    }
+    return `${head} · ${(f.issues ?? []).join('; ')}${f.initials ? ` · ${f.initials}` : ''}`
+  })
 }
 
 type StoredSigner = { party?: string; name?: string | null; signed?: boolean; signed_as?: string | null }
@@ -62,7 +82,8 @@ function who(s: StoredSigner): string {
 export function readerView(classification: unknown): ReaderView | null {
   if (!classification || typeof classification !== 'object') return null
   const reader = (classification as { reader?: StoredReader }).reader
-  if (!reader?.verdict) return null
+  const checks = formCheckLines(classification)
+  if (!reader?.verdict) return checks.length ? { label: 'Checked', tone: 'accent', forms: [], checks, stale: true } : null
   const forms = (reader.forms ?? []).map((f) => {
     const n = f.instance ? ` #${f.instance}` : ''
     const signers = f.signers ?? []
@@ -84,6 +105,7 @@ export function readerView(classification: unknown): ReaderView | null {
     label: reader.label ?? reader.verdict,
     tone: TONE[reader.verdict] ?? 'waiting',
     forms,
+    checks,
     stale: reader.version !== READER_VERSION,
   }
 }

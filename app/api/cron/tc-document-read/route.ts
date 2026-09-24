@@ -2,6 +2,8 @@
  * /api/cron/tc-document-read — the Vault document reader (docs/TC_DOCUMENT_READER.md).
  *
  * Every 15 minutes:
+ *  0. Check new documents against the printed form (lib/tc/form-match): no
+ *     model, a few seconds each. The reader's "fully executed" is held to it.
  *  1. Read documents the current reader version has not read (new mail
  *     attachments, uploads, sealed envelopes), oldest first, three at a time:
  *     which form, which instance, who must sign, who did.
@@ -18,6 +20,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { grokConfigured } from '@/lib/grok/client'
 import { applyCyclePlan, planCycleDocuments, readStoredDocument, unreadDocumentIds } from '@/lib/tc/doc-read/run'
+import { checkStoredDocument, uncheckedDocumentIds } from '@/lib/tc/form-match/run'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -26,6 +29,8 @@ export const maxDuration = 300
 const BUDGET_MS = 230_000
 const CONCURRENCY = 3
 const BATCH = 24
+const CHECK_BATCH = 20
+const CHECK_BUDGET_MS = 70_000
 
 export async function GET(request: Request) {
   const denied = requireCronAuth(request)
@@ -44,6 +49,19 @@ export async function GET(request: Request) {
   const reads: Array<{ id: string; ok: boolean; verdict?: string; error?: string; costUsd?: number }> = []
   const cycles = new Set<string>()
   if (onlyCycle) cycles.add(onlyCycle)
+
+  // 0. The check against the printed form first, so the read below is held to it.
+  const checked: Array<{ id: string; ok: boolean; forms?: number; error?: string }> = []
+  const toCheck = onlyDoc ? [onlyDoc] : onlyCycle ? [] : await uncheckedDocumentIds(sb, CHECK_BATCH)
+  for (const id of toCheck) {
+    if (Date.now() - start > CHECK_BUDGET_MS) break
+    const r = await checkStoredDocument(sb, id)
+    checked.push(r.ok ? { id, ok: true, forms: r.check.forms.length } : { id, ok: false, error: r.error.slice(0, 200) })
+    if (r.ok) {
+      const { data } = await sb.from('tc_documents').select('cycle_id').eq('id', id).maybeSingle()
+      if (data?.cycle_id) cycles.add(String(data.cycle_id))
+    }
+  }
 
   const queue = onlyDoc ? [onlyDoc] : onlyCycle ? [] : await unreadDocumentIds(sb, BATCH)
   async function worker() {
@@ -74,6 +92,8 @@ export async function GET(request: Request) {
   return NextResponse.json({
     ok: true,
     dryRun,
+    checked: checked.filter((c) => c.ok).length,
+    checkFailed: checked.filter((c) => !c.ok),
     read: reads.filter((r) => r.ok).length,
     failed: reads.filter((r) => !r.ok),
     cycles: applied,

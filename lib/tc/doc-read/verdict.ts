@@ -188,8 +188,22 @@ const INSTITUTIONAL: ReadonlySet<Party> = new Set(['escrow', 'title', 'lender', 
  * advisory handed to our client), and a title company's "By:" line is the
  * escrow signature on a receipt.
  */
+/**
+ * A section that acknowledges another party's claim ("Signature(s) of
+ * Buyer(s) to acknowledge Seller's claim" under the SPDS exclusion on OREF
+ * 020 page 1) is signed only when the claim was made: when no conditional
+ * line of the claiming party is signed, its lines are conditional too.
+ */
+const ACKNOWLEDGES_CLAIM = /acknowledge\s+(?:the\s+)?(?:seller|buyer)'?s?\s+claim/i
+
+function claimAcknowledgmentsConditional(lines: readonly SignatureLine[]): SignatureLine[] {
+  const claimMade = lines.some((l) => l.conditional && l.signed)
+  if (claimMade) return [...lines]
+  return lines.map((l) => (!l.conditional && ACKNOWLEDGES_CLAIM.test(`${l.section} ${l.label}`) ? { ...l, conditional: true } : l))
+}
+
 export function effectiveLines(profile: FormProfile | null, lines: readonly SignatureLine[]): SignatureLine[] {
-  const kept = lines.filter((l) => l.signed || !l.conditional)
+  const kept = claimAcknowledgmentsConditional(lines).filter((l) => l.signed || !l.conditional)
   if (!profile || profile.obligation.kind === 'reference') return kept
   const parties = profile.obligation.parties
   const single = parties.length === 1 ? parties[0] : null
