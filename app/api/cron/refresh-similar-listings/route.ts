@@ -18,8 +18,10 @@ export const maxDuration = 300
  *
  * Schedule: nightly at 04:30 UTC via vercel.json. Active-listing churn
  * is bounded — daily refresh is plenty for the "Similar homes" rail.
- * Separate from the pg_cron MV jobs (refresh_listing_tile_mv_30min,
- * refresh_dal_mvs_15min) because the similar matrix doesn't need that cadence.
+ * Separate from the pg_cron jobs (listing-mv-drain, refresh_dal_mvs_15min)
+ * because the similar matrix doesn't need that cadence. It stamps
+ * mv_refresh_state 'similar_listings_mv_src', which similar_listings_mv reads
+ * as refreshed_at (20260924173000).
  *
  * Refresh runs CONCURRENTLY so user reads keep working during the swap.
  * Advisory lock 7105 prevents overlapping runs.
