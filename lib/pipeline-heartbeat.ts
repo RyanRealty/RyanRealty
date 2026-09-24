@@ -23,10 +23,9 @@ export interface PipelineCheck {
 
 /**
  * Staleness thresholds, calibrated to each pipeline's real cadence:
- * - sync-delta ingest: continuous; listing_tile_mv refreshes every 30 minutes
- *   (pg_cron refresh_listing_tile_mv_30min at :02/:32) so max(modified_at)
- *   should never trail 2h.
- * - listing_search_mv: pg_cron refresh_dal_mvs_15min at :05/:20/:35/:50.
+ * - sync-delta ingest: continuous; listing_tile_mv and listing_search_mv are
+ *   kept current every minute by pg_cron listing-mv-drain (20260924173000), so
+ *   max(modified_at) should never trail 2h.
  * - FSBO: /api/cron/detect-fsbo-listings daily 09:35 UTC → 3 days = cadence + slack.
  * - Expired: low natural volume; 7 days with no detections is only a WARN.
  * - Saved-search: /api/cron/saved-search-alerts hourly; 26h = a full day + slack.
