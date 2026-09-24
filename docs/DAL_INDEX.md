@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-24T14:58:47.337Z
+**Generated:** 2026-09-24T15:14:51.071Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -4712,7 +4712,7 @@ Companion files:
 
 **Tables:** `tc_deals`, `tc_cycles`, `tc_checklist_items`
 
-**Selected columns:** `id`, `property_key`, `address`, `city`, `broker_name`, `stage`, `stage_detail`, `deal_id`, `kind`, `contract_acceptance_date`, `escrow_closing_date`, `actual_closing_date`, `sale_price`, `listing_price`, `expiration_date`, `created_at`, `mls_number`, `escrow_number`, `buyers`, `sellers`, `cycle_id`, `status`
+**Selected columns:** `id`, `property_key`, `address`, `city`, `broker_name`, `stage`, `stage_detail`, `deal_id`, `kind`, `status`, `dead_date`, `contract_acceptance_date`, `escrow_closing_date`, `actual_closing_date`, `sale_price`, `listing_price`, `expiration_date`, `listing_date`, `inspection_days`, `financing_days`, `created_at`, `mls_number`, `escrow_number`, `buyers`, `sellers`, `cycle_id`
 
 ---
 
@@ -4741,6 +4741,16 @@ Companion files:
 **Tables:** `tc_deal_contacts`, `tc_cycles`
 
 **Selected columns:** `id`, `raw`
+
+---
+
+### `lib/data/tc/deal-events.ts`
+
+**Exports:** `listDealEvents`
+
+**Tables:** `tc_events`
+
+**Selected columns:** `id`, `actor`, `action`, `detail`, `created_at`
 
 ---
 
@@ -4781,6 +4791,16 @@ Companion files:
 **Tables:** `tc_envelopes`, `tc_cycles`, `tc_envelope_documents`, `tc_form_versions`, `tc_documents`
 
 **Selected columns:** `cycle_id`, `kind`, `form_version_id`, `document_id`, `id`, `form_number`, `signer_profile`, `field_map`, `name`, `classification`, `storage_path`, `version_label`, `update_available`, `pending_version_label`
+
+---
+
+### `lib/data/tc/envelope-overview.ts`
+
+**Exports:** `listOutstandingEnvelopes`
+
+**Tables:** `tc_envelopes`, `tc_envelope_recipients`
+
+**Selected columns:** `id`, `name`, `status`, `sent_at`, `tc_cycles(tc_deals(address`, `property_key`, `broker_name))`, `envelope_id`, `role`, `action_required`, `completed_at`
 
 ---
 
@@ -5237,9 +5257,9 @@ Companion files:
 | `tc_documents` | `getClientIdentity()`, `hasClientDeals()`, `listClientDeals()`, `getClientDeal()`, `clientDocumentUrl()`, `getPortalSigningRecipient()`, `listDealAudits()`, `getDealParties()`, `inboundReferralFeePctForDeal()`, `ensureDealPartiesFromFile()`, `peopleEmailsByNames()`, `getDealsForPerson()`, `getPartyNamesByDealIds()`, `linkUniqueCycleParties()`, `addPersonToDeal()`, `removePersonFromDeal()`, `createDealWithPeople()`, `listDocumentReview()`, `countDocumentReview()`, `getFormSourcesForEnvelope()`, `listEnvelopeFormFreshness()`, `getPrincipalSignOffQueue()`, `getTcDealContactRoles()`, `getTcCycleReferralFeeTotal()`, `getTcChecklistItemNames()`, `getTcAnticipatePresence()`, `getDealByPropertyKey()`, `getDealById()`, `listDealPropertyKeys()`, `getCycleForCda()`, `listCycleIdsForDeal()`, `getLatestListingCycle()`, `listCycleDocumentCopies()`, `listChecklistItemCopies()`, `listDealContactCopies()`, `listDealContactKeys()`, `listInFlightEnvelopes()`, `listDealMail()`, `listMailQueue()`, `countMailQueue()`, `listDealConversations()`, `getMailMessagesForAction()`, `getDealScopeRow()`, `getDocumentDealScope()`, `loadPreferredOrefForm()`, `getOrefCycleForFill()`, `getOrefDealForFill()`, `getOrefFormVersionRow()`, `getOrefDocumentRow()`, `getMattMailboxPersonId()`, `getCycleDealId()`, `getOrefCycleForSeal()`, `getEnvelopeIdForDocument()`, `tryTakeSkySlopeIntakeLease()`, `releaseSkySlopeIntakeLease()`, `writeSkySlopeIntakeRunLog()`, `runSkySlopeVaultIntake()` <br /> `lib/data/tc/client-transactions.ts` · `lib/data/tc/deal-audit.ts` · `lib/data/tc/deal-people.ts` · `lib/data/tc/document-review.ts` · `lib/data/tc/envelope-form-sources.ts` · `lib/data/tc/getPrincipalSignOffQueue.ts` · `lib/data/tc/getTcAnticipatedReads.ts` · `lib/data/tc/listing-action-reads.ts` · `lib/data/tc/mail-reads.ts` · `lib/data/tc/oref-packet-reads.ts` · `lib/data/tc/skyslope-intake.ts` |
 | `tc_envelope_documents` | `getEnvelopeCycleKindAndDeal()`, `listUnassignedEnvelopeFields()`, `listEnvelopeDocumentFormVersions()`, `getFormVersionFieldMaps()`, `getListPriceByMlsNumber()`, `getFormSourcesForEnvelope()`, `listEnvelopeFormFreshness()`, `getDealByPropertyKey()`, `getDealById()`, `listDealPropertyKeys()`, `getCycleForCda()`, `listCycleIdsForDeal()`, `getLatestListingCycle()`, `listCycleDocumentCopies()`, `listChecklistItemCopies()`, `listDealContactCopies()`, `listDealContactKeys()`, `listInFlightEnvelopes()`, `loadPreferredOrefForm()`, `getOrefCycleForFill()`, `getOrefDealForFill()`, `getOrefFormVersionRow()`, `getOrefDocumentRow()`, `getMattMailboxPersonId()`, `getCycleDealId()`, `getOrefCycleForSeal()`, `getEnvelopeIdForDocument()` <br /> `lib/data/tc/envelope-composer-reads.ts` · `lib/data/tc/envelope-form-sources.ts` · `lib/data/tc/listing-action-reads.ts` · `lib/data/tc/oref-packet-reads.ts` |
 | `tc_envelope_fields` | `getEnvelopeCycleKindAndDeal()`, `listUnassignedEnvelopeFields()`, `listEnvelopeDocumentFormVersions()`, `getFormVersionFieldMaps()`, `getListPriceByMlsNumber()` <br /> `lib/data/tc/envelope-composer-reads.ts` |
-| `tc_envelope_recipients` | `getClientIdentity()`, `hasClientDeals()`, `listClientDeals()`, `getClientDeal()`, `clientDocumentUrl()`, `getPortalSigningRecipient()`, `listEnvelopeSigningRoster()` <br /> `lib/data/tc/client-transactions.ts` · `lib/data/tc/envelope-recipient-reads.ts` |
-| `tc_envelopes` | `getClientIdentity()`, `hasClientDeals()`, `listClientDeals()`, `getClientDeal()`, `clientDocumentUrl()`, `getPortalSigningRecipient()`, `getFormSourcesForEnvelope()`, `listEnvelopeFormFreshness()`, `getDealByPropertyKey()`, `getDealById()`, `listDealPropertyKeys()`, `getCycleForCda()`, `listCycleIdsForDeal()`, `getLatestListingCycle()`, `listCycleDocumentCopies()`, `listChecklistItemCopies()`, `listDealContactCopies()`, `listDealContactKeys()`, `listInFlightEnvelopes()` <br /> `lib/data/tc/client-transactions.ts` · `lib/data/tc/envelope-form-sources.ts` · `lib/data/tc/listing-action-reads.ts` |
-| `tc_events` | `getClientIdentity()`, `hasClientDeals()`, `listClientDeals()`, `getClientDeal()`, `clientDocumentUrl()`, `getPortalSigningRecipient()`, `getDealParties()`, `inboundReferralFeePctForDeal()`, `ensureDealPartiesFromFile()`, `peopleEmailsByNames()`, `getDealsForPerson()`, `getPartyNamesByDealIds()`, `linkUniqueCycleParties()`, `addPersonToDeal()`, `removePersonFromDeal()`, `createDealWithPeople()`, `listDocumentReview()`, `countDocumentReview()`, `tryTakeSkySlopeIntakeLease()`, `releaseSkySlopeIntakeLease()`, `writeSkySlopeIntakeRunLog()`, `runSkySlopeVaultIntake()` <br /> `lib/data/tc/client-transactions.ts` · `lib/data/tc/deal-people.ts` · `lib/data/tc/document-review.ts` · `lib/data/tc/skyslope-intake.ts` |
+| `tc_envelope_recipients` | `getClientIdentity()`, `hasClientDeals()`, `listClientDeals()`, `getClientDeal()`, `clientDocumentUrl()`, `getPortalSigningRecipient()`, `listOutstandingEnvelopes()`, `listEnvelopeSigningRoster()` <br /> `lib/data/tc/client-transactions.ts` · `lib/data/tc/envelope-overview.ts` · `lib/data/tc/envelope-recipient-reads.ts` |
+| `tc_envelopes` | `getClientIdentity()`, `hasClientDeals()`, `listClientDeals()`, `getClientDeal()`, `clientDocumentUrl()`, `getPortalSigningRecipient()`, `getFormSourcesForEnvelope()`, `listEnvelopeFormFreshness()`, `listOutstandingEnvelopes()`, `getDealByPropertyKey()`, `getDealById()`, `listDealPropertyKeys()`, `getCycleForCda()`, `listCycleIdsForDeal()`, `getLatestListingCycle()`, `listCycleDocumentCopies()`, `listChecklistItemCopies()`, `listDealContactCopies()`, `listDealContactKeys()`, `listInFlightEnvelopes()` <br /> `lib/data/tc/client-transactions.ts` · `lib/data/tc/envelope-form-sources.ts` · `lib/data/tc/envelope-overview.ts` · `lib/data/tc/listing-action-reads.ts` |
+| `tc_events` | `getClientIdentity()`, `hasClientDeals()`, `listClientDeals()`, `getClientDeal()`, `clientDocumentUrl()`, `getPortalSigningRecipient()`, `listDealEvents()`, `getDealParties()`, `inboundReferralFeePctForDeal()`, `ensureDealPartiesFromFile()`, `peopleEmailsByNames()`, `getDealsForPerson()`, `getPartyNamesByDealIds()`, `linkUniqueCycleParties()`, `addPersonToDeal()`, `removePersonFromDeal()`, `createDealWithPeople()`, `listDocumentReview()`, `countDocumentReview()`, `tryTakeSkySlopeIntakeLease()`, `releaseSkySlopeIntakeLease()`, `writeSkySlopeIntakeRunLog()`, `runSkySlopeVaultIntake()` <br /> `lib/data/tc/client-transactions.ts` · `lib/data/tc/deal-events.ts` · `lib/data/tc/deal-people.ts` · `lib/data/tc/document-review.ts` · `lib/data/tc/skyslope-intake.ts` |
 | `tc_form_catalog_checks` | `getTcFormLibraryBoard()`, `applyFormCatalogSnapshots()` <br /> `lib/data/tc/form-catalog.ts` |
 | `tc_form_catalog_items` | `collectCompanyScoreboardSignals()`, `getTcFormLibraryBoard()`, `applyFormCatalogSnapshots()` <br /> `lib/data/loop/signals.ts` · `lib/data/tc/form-catalog.ts` |
 | `tc_form_libraries` | `getTcFormLibraryBoard()`, `applyFormCatalogSnapshots()`, `ingestLicensedBlankPdf()`, `listEnvelopeTemplates()`, `loadPreferredOrefForm()`, `getOrefCycleForFill()`, `getOrefDealForFill()`, `getOrefFormVersionRow()`, `getOrefDocumentRow()`, `getMattMailboxPersonId()`, `getCycleDealId()`, `getOrefCycleForSeal()`, `getEnvelopeIdForDocument()` <br /> `lib/data/tc/form-catalog.ts` · `lib/data/tc/ingest-licensed-blank.ts` · `lib/data/tc/listEnvelopeTemplates.ts` · `lib/data/tc/oref-packet-reads.ts` |

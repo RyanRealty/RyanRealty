@@ -179,7 +179,10 @@ export const DESTINATIONS: NavDestination[] = [
     // Signing + Sign-off unparked 2026-08-23. `esign.send` unparked the same
     // day — compose Send is the live send path (capability matches the action).
     children: [
-      { label: 'Board', href: '/admin/closings', icon: 'handshake', capability: 'transactions.view' },
+      // Matt 2026-09-24: the board became the transactions dashboard; closed and
+      // dead history moved to All files (/admin/closings/files, linked from the
+      // dashboard) so neither page is a long list.
+      { label: 'Dashboard', href: '/admin/closings', icon: 'handshake', capability: 'transactions.view' },
       { label: 'Production', href: '/admin/closings/production', icon: 'bar-chart', capability: 'transactions.view' },
       { label: 'Signing', href: '/admin/signing', icon: 'pen-line', capability: 'transactions.view' },
       { label: 'Sign-off', href: '/admin/sign-off', icon: 'clipboard-check', capability: 'transactions.signoff' },

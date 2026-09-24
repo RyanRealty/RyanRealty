@@ -34,6 +34,7 @@ import {
   sweepTransactionMail,
 } from '@/lib/tc/mail-index'
 import { dealOpenAt } from '@/lib/tc/mail-rules'
+import { ensureDealPartiesFromFile } from '@/lib/data/tc/deal-people'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -85,6 +86,21 @@ export async function GET(request: Request) {
       if (res) deals.push({ dealId: d.dealId, seen: res.seen, skipped: res.skipped, filed: res.filed, queued: res.queued, complete: res.complete })
     }
 
+    // Live files: search the mailboxes for a party's missing email and the
+    // deal's missing facts (other agent, escrow number, lender, offers). This
+    // used to run on every file page view and made it wait 30+ seconds.
+    const harvested: string[] = []
+    for (const d of due) {
+      if (Date.now() > start + (BUDGET_MS * 2) / 3) break
+      if (d.stage !== 'pending' && d.stage !== 'active_listing' && d.stage !== 'pre_contract') continue
+      try {
+        await ensureDealPartiesFromFile(d.dealId, { harvest: true })
+        harvested.push(d.dealId)
+      } catch (err) {
+        console.warn('[tc-mail-sweep] harvest', d.dealId, err instanceof Error ? err.message : err)
+      }
+    }
+
     let transactions = null
     if (Date.now() < deadline) {
       transactions = await sweepTransactionMail({
@@ -113,6 +129,7 @@ export async function GET(request: Request) {
       rematch,
       opened,
       threads,
+      harvested: harvested.length,
       deals,
       dealsDue: due.length,
       transactions: transactions && { seen: transactions.seen, filed: transactions.filed, queued: transactions.queued, offers: transactions.offers, errors: transactions.errors },
