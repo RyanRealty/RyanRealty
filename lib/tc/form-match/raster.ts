@@ -93,8 +93,11 @@ export function descriptor(m: Mask): Uint8Array {
 
 /**
  * How far a copy's grid is from a template's: the template's ink the copy is
- * missing counts fully (a copy carries all of its blank), ink the copy adds
- * counts a quarter (typed values, signatures). Lower is closer.
+ * missing counts fully (a copy carries all of its blank); ink the copy adds
+ * (typed values, signatures) counts a twentieth, so a heavily filled copy
+ * still ranks its own form first. Measured 2026-09-24 on 110 matched pages:
+ * the true template ranked first on all 110 (a quarter weight ranked one
+ * filled OREF 004 page 79th). Lower is closer.
  */
 export function descriptorGap(template: Uint8Array, copy: Uint8Array): number {
   let missing = 0
@@ -106,7 +109,7 @@ export function descriptorGap(template: Uint8Array, copy: Uint8Array): number {
     if (t > c) missing += t - c
     else extra += c - t
   }
-  return (missing + extra / 4) / Math.max(1, total)
+  return (missing + extra / 20) / Math.max(1, total)
 }
 
 /** Every stride-th ink pixel of a template, as flat indices. */

@@ -26,6 +26,10 @@ export type LearnCopy = { documentId: string; cycleId: string; docPage: number; 
 export type LearnResult = {
   learned: Array<{ key: string; pages: number[]; copies: number; deals: number }>
   skipped: Array<{ key: string; reason: string }>
+  /** Documents whose unmatched pages a newly learned template now covers: check them again. */
+  recheck: string[]
+  /** False when the deadline stopped the pass; the next run continues. */
+  complete: boolean
 }
 
 const MIN_DEALS = 2
@@ -82,11 +86,14 @@ function keyOf(f: FooterId): string {
  * at least two deals and no library template, from the pages the current
  * checker could not match.
  */
-export async function learnTemplates(sb: SupabaseClient, opts: { log?: (s: string) => void; dryRun?: boolean } = {}): Promise<LearnResult> {
+export async function learnTemplates(
+  sb: SupabaseClient,
+  opts: { log?: (s: string) => void; dryRun?: boolean; checkerVersion?: string; deadline?: number; onlyNew?: boolean } = {},
+): Promise<LearnResult> {
   const log = opts.log ?? (() => {})
   const checks: Array<{ document_id: string; pages: Array<{ page: number; templateId: string | null; footer: FooterId | null; textUsable: boolean }> }> = []
   for (let from = 0; ; from += 500) {
-    const { data, error } = await sb.from('tc_document_checks').select('document_id, pages').eq('checker_version', CHECKER_VERSION).is('error', null).range(from, from + 499)
+    const { data, error } = await sb.from('tc_document_checks').select('document_id, pages').eq('checker_version', opts.checkerVersion ?? CHECKER_VERSION).is('error', null).range(from, from + 499)
     if (error) throw new Error(`tc_document_checks: ${error.message}`)
     checks.push(...((data ?? []) as typeof checks))
     if (!data || data.length < 500) break
@@ -113,10 +120,13 @@ export async function learnTemplates(sb: SupabaseClient, opts: { log?: (s: strin
       groups.set(key, byPage)
     }
   }
-  const result: LearnResult = { learned: [], skipped: [] }
+  const result: LearnResult = { learned: [], skipped: [], recheck: [], complete: true }
   // The licensed blank of a release always wins over a learned one.
   const { data: lib } = await sb.from('tc_form_templates').select('family, form_number, release').eq('source', 'library').eq('status', 'active')
   const licensed = new Set((lib ?? []).map((t) => `${t.family}|${t.form_number}|${t.release}`))
+  // What is already learned, and from how many copies: an unchanged group is not relearned.
+  const { data: had } = await sb.from('tc_form_templates').select('family, form_number, release, edition, copies').eq('source', 'learned').eq('status', 'active')
+  const learnedCopies = new Map((had ?? []).map((t) => [`${t.family}|${t.form_number}|${t.release}|${String(t.edition).replace(/^of/, '')}`, Number(t.copies)]))
   const open = new Map<string, Promise<RasterPdf | null>>()
   const pdfOf = (id: string) => {
     let p = open.get(id)
@@ -133,12 +143,22 @@ export async function learnTemplates(sb: SupabaseClient, opts: { log?: (s: strin
   }
   try {
     for (const [key, byPage] of groups) {
+      if (opts.deadline && Date.now() > opts.deadline) {
+        result.complete = false
+        break
+      }
       const [fam0, num0, rel0] = key.split('|')
       if (licensed.has(`${fam0}|${num0}|${rel0}`)) {
         result.skipped.push({ key, reason: 'licensed blank held; unmatched pages are scans or other printings' })
         continue
       }
       const deals = new Set([...byPage.values()].flat().map((c) => c.cycleId))
+      const docsInGroup = new Set([...byPage.values()].flat().map((c) => c.documentId))
+      const known = learnedCopies.get(key)
+      if (opts.onlyNew && known != null && docsInGroup.size <= known + 1) {
+        result.skipped.push({ key, reason: 'already learned; no new copies' })
+        continue
+      }
       if (deals.size < MIN_DEALS) {
         result.skipped.push({ key, reason: `copies from ${deals.size} deal` })
         continue
@@ -187,9 +207,12 @@ export async function learnTemplates(sb: SupabaseClient, opts: { log?: (s: strin
       }
       const title = `${family} ${number} (Released ${release})`
       if (!opts.dryRun) {
-        await saveTemplate(sb, { family, formNumber: number, release, edition: 'a', title, source: 'learned', formVersionId: null, copies, pages, masks })
+        // Oregon REALTORS® footers can number pages across a packet ("Page 3 of 10"):
+        // one form + release seen in packets of different lengths is kept apart.
+        await saveTemplate(sb, { family, formNumber: number, release, edition: `of${pageCount}`, title, source: 'learned', formVersionId: null, copies, pages, masks })
       }
       result.learned.push({ key, pages: pages.map((p) => p.page), copies, deals: deals.size })
+      result.recheck.push(...docsInGroup)
       log(`learned ${key}: pages ${pages.map((p) => p.page).join(',')} of ${pageCount}, ${copies} copies`)
     }
   } finally {

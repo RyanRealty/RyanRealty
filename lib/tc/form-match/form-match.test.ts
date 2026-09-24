@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addedInk, align, consensus, descriptor, descriptorGap, dilate, inkPoints, isFilled, packMask, shifted, unpackMask, type Mask } from './raster'
 import { footerOf, layoutOf, linesOf, partyOfLabel, textUsable, type TextItem } from './layout'
-import { checkInstance, describeCheck, instancesOf, loadPage, matchPage, type FormCheck, type PageMatch, type TemplateInfo } from './check'
+import { checkInstance, describeCheck, instancesOf, loadPage, matchPage, resolveTies, type FormCheck, type PageMatch, type TemplateInfo } from './check'
 import { learnPage } from './learn'
 
 function blank(w = 120, h = 80): Mask {
@@ -220,6 +220,28 @@ describe('check', () => {
     }
     expect(describeCheck(c, { seller: 1 }).complete).toBe(true)
     expect(describeCheck(c, { seller: 2 }).issues).toEqual(['2 sellers named, 1 signed'])
+  })
+})
+
+describe('releases', () => {
+  it('a page printed the same in two releases goes to the release the rest of the copy matches', () => {
+    const shared: PageMatch = {
+      ...pm(2, 2, 'r2026'),
+      alternatives: [{ templateId: 'r2025', templatePage: 2, coverage: 1, dx: 0, dy: 0 }],
+    }
+    const out = resolveTies([pm(1, 1, 'r2025'), shared, pm(3, 3, 'r2025')])
+    expect(out.map((m) => m.templateId)).toEqual(['r2025', 'r2025', 'r2025'])
+    expect(instancesOf(out)).toHaveLength(1)
+  })
+
+  it('an empty date box is a note, not a missing signature', () => {
+    const c: FormCheck = {
+      templateId: 't1', family: 'OREF', formNumber: '057', release: '01/2026', title: '', source: 'library', pageCount: 1,
+      pages: [{ templatePage: 1, docPage: 1, coverage: 1 }], missingPages: [],
+      lines: [{ page: 1, party: 'seller', label: 'Seller', section: 'S', required: true, signed: true, dated: false, printed: true, ink: 300 }],
+      initials: [],
+    }
+    expect(describeCheck(c)).toEqual({ complete: true, issues: [], notes: ['1 seller signature with an empty date box'] })
   })
 })
 

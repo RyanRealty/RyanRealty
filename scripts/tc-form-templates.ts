@@ -3,12 +3,12 @@
  *
  *   npx tsx scripts/tc-form-templates.ts library [--only 001,003]
  *       Build one template per form + release from the licensed blanks.
- *   npx tsx scripts/tc-form-templates.ts learn [--dry-run]
+ *   npx tsx scripts/tc-form-templates.ts learn [--dry-run] [--from <checker version>]
  *       Learn templates for releases the library does not hold, from the
  *       readable pages of our own copies that matched no template.
  *   npx tsx scripts/tc-form-templates.ts check --doc <uuid>
  *       Check one document and print what it found.
- *   npx tsx scripts/tc-form-templates.ts check-all [--concurrency 3] [--limit N] [--shard i/n]
+ *   npx tsx scripts/tc-form-templates.ts check-all [--concurrency 3] [--limit N] [--shard i/n] [--all]
  *       Check every live PDF not yet checked by the current checker version.
  */
 import 'dotenv/config'
@@ -42,7 +42,7 @@ async function main() {
   }
   if (mode === 'learn') {
     const { learnTemplates } = await import('@/lib/tc/form-match/learn')
-    const res = await learnTemplates(sb, { dryRun: process.argv.includes('--dry-run'), log: (s) => console.log(s) })
+    const res = await learnTemplates(sb, { dryRun: process.argv.includes('--dry-run'), checkerVersion: arg('--from') ?? undefined, log: (s) => console.log(s) })
     console.log(`learned ${res.learned.length}, skipped ${res.skipped.length}`)
     for (const s of res.skipped) console.log('  skipped', s.key, '|', s.reason)
     return
@@ -93,7 +93,9 @@ async function main() {
     }
     // --shard i/n: this process takes every n-th document (run n processes to use n cores).
     const [shard, shards] = (arg('--shard') ?? '0/1').split('/').map(Number)
-    const queue = docs.filter((d, i) => !done.has(d) && i % shards === shard).slice(0, Number(arg('--limit') ?? 1e9))
+    // --all: check again even when the current version already did (new templates learned).
+    const again = process.argv.includes('--all')
+    const queue = docs.filter((d, i) => (again || !done.has(d)) && i % shards === shard).slice(0, Number(arg('--limit') ?? 1e9))
     console.log(`documents ${docs.length}, checked ${done.size}, to check ${queue.length}`)
     let n = 0
     let failed = 0

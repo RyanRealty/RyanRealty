@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { dilate, type Mask } from './raster'
 import { footerOf, linesOf, textUsable, type FooterId, type Party } from './layout'
-import { CHECKER_VERSION, candidatesFor, checkInstance, describeCheck, instancesOf, matchPage, type Candidate, type FormCheck, type LoadedPage, type PageMatch } from './check'
+import { CHECKER_VERSION, candidatesFor, checkInstance, describeCheck, instancesOf, matchPage, resolveTies, type Candidate, type FormCheck, type LoadedPage, type PageMatch } from './check'
 import { loadTemplatePages, loadTemplates } from './templates'
 import { openRaster } from './pdf-raster'
 
@@ -31,7 +31,7 @@ export async function checkPdfBytes(sb: SupabaseClient, bytes: Uint8Array | Arra
       const lines = linesOf(await pdf.items(p))
       const usable = textUsable(lines.map((l) => l.text).join(' '))
       const footer = usable ? footerOf(lines, mask.h) : null
-      const cands = candidatesFor(mask, all, 6, footer)
+      const cands = candidatesFor(mask, all, 8, footer)
       const loaded: LoadedPage[] = []
       for (const c of cands) {
         const tp = await loadTemplatePages(sb, c.template)
@@ -44,6 +44,8 @@ export async function checkPdfBytes(sb: SupabaseClient, bytes: Uint8Array | Arra
   } finally {
     await pdf.close()
   }
+  const resolved = resolveTies(pages) as PageRecord[]
+  pages.splice(0, pages.length, ...resolved)
   const forms: FormCheck[] = []
   for (const inst of instancesOf(pages)) {
     const t = byId.get(inst.templateId)
@@ -70,6 +72,7 @@ export type StoredFormCheck = {
   missing: number[]
   complete: boolean
   issues: string[]
+  notes: string[]
   signed: string[]
   initials: string | null
 }
@@ -94,6 +97,7 @@ export function summarizeChecks(check: DocumentCheck, named: Partial<Record<Part
       missing: f.missingPages,
       complete: d.complete,
       issues: d.issues,
+      notes: d.notes,
       signed: signedParties,
       initials: initialsNote,
     }
@@ -137,5 +141,38 @@ export async function checkStoredDocument(sb: SupabaseClient, documentId: string
       { onConflict: 'document_id,checker_version' },
     )
     return { ok: false, error: msg }
+  }
+}
+
+/** Live PDFs the current checker has not checked, oldest first. */
+export async function uncheckedDocumentIds(sb: SupabaseClient, limit: number): Promise<string[]> {
+  const done = new Set<string>()
+  for (let from = 0; ; from += 1000) {
+    const { data } = await sb.from('tc_document_checks').select('document_id').eq('checker_version', CHECKER_VERSION).range(from, from + 999)
+    for (const d of data ?? []) done.add(String(d.document_id))
+    if (!data || data.length < 1000) break
+  }
+  const out: string[] = []
+  for (let from = 0; out.length < limit; from += 1000) {
+    const { data } = await sb
+      .from('tc_documents')
+      .select('id')
+      .eq('archived', false)
+      .eq('is_broker_notes', false)
+      .or('content_type.eq.application/pdf,content_type.is.null')
+      .not('storage_path', 'is', null)
+      .order('ingested_at', { ascending: true })
+      .range(from, from + 999)
+    if (!data?.length) break
+    for (const d of data) if (!done.has(String(d.id)) && out.length < limit) out.push(String(d.id))
+    if (data.length < 1000) break
+  }
+  return out
+}
+
+/** Documents to check again because a template for their pages now exists. */
+export async function recheckDocuments(sb: SupabaseClient, documentIds: readonly string[]): Promise<void> {
+  for (let i = 0; i < documentIds.length; i += 200) {
+    await sb.from('tc_document_checks').delete().eq('checker_version', CHECKER_VERSION).in('document_id', documentIds.slice(i, i + 200))
   }
 }

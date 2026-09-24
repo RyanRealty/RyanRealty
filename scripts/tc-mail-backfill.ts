@@ -283,6 +283,11 @@ async function main() {
   const sb = createServiceClient()
   const universe = await loadMailUniverse(sb)
   const dryRun = has('--dry-run')
+  if (mode === 'review-retry') {
+    const { retryReviewErrors } = await import('@/lib/tc/mail-index')
+    console.log(JSON.stringify(await retryReviewErrors({ sb, modelStage: has('--model-stage') })))
+    return
+  }
   if (mode === 'sweep-deals') {
     const only = arg('--deal')
     const deals = only ? universe.deals.filter((d) => d.dealId === only) : universe.deals
@@ -354,7 +359,7 @@ async function main() {
     console.log('[review-all] status distribution across mailboxes walked this run:', totals)
     return
   }
-  console.error('usage: tc-mail-backfill.ts audit|reconcile|sweep-deals|sweep-transactions|rematch|review-all [--since YYYY-MM-DD] [--dry-run]')
+  console.error('usage: tc-mail-backfill.ts audit|reconcile|sweep-deals|sweep-transactions|rematch|review-all|review-retry [--since YYYY-MM-DD] [--dry-run]')
   process.exit(2)
 }
 

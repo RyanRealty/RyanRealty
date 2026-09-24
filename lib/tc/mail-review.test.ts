@@ -318,3 +318,10 @@ describe('reviewMailbox', () => {
     expect(index.mock.calls.map((c) => c[0].gmailId)).toEqual(['page1-a'])
   })
 })
+
+describe('withoutNul', () => {
+  it('strips U+0000 from every string in a row, which Postgres rejects', async () => {
+    const { withoutNul } = await import('./mail-index')
+    expect(withoutNul({ a: 'x\u0000y', b: ['\u0000z'], c: { d: 'ok' }, e: 3, f: null })).toEqual({ a: 'xy', b: ['z'], c: { d: 'ok' }, e: 3, f: null })
+  })
+})

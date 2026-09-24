@@ -11,7 +11,7 @@
 import { addedInk, align, descriptor, descriptorGap, dilate, inkPoints, isFilled, type Mask, type Rect } from './raster'
 import type { FooterId, InitialsSlot, Party, SignatureSlot } from './layout'
 
-export const CHECKER_VERSION = 'form-check-v1-2026-09-24'
+export const CHECKER_VERSION = 'form-check-v2-2026-09-24'
 
 /** A copy lines up with its own release at ≥ 0.97 (measured 1.000); other releases and forms stay under 0.70. */
 export const MATCH_MIN = 0.9
@@ -51,6 +51,11 @@ export type PageMatch = {
   dy: number
   /** The closest template when none matched: "OREF 003 01/2026 p1 at 48%". */
   nearest: { templateId: string; templatePage: number; coverage: number } | null
+  /**
+   * Other templates this page matches as well (a page printed identically in
+   * two releases). resolveTies picks the one the rest of the document agrees with.
+   */
+  alternatives?: Array<{ templateId: string; templatePage: number; coverage: number; dx: number; dy: number }>
 }
 
 export type LineFinding = {
@@ -85,7 +90,7 @@ export type FormCheck = {
 export type Candidate = { template: TemplateInfo; page: TemplatePage }
 
 /** The template pages worth lining up with a copy page, nearest first. */
-export function candidatesFor(copy: Mask, all: Candidate[], limit = 6, footer?: FooterId | null): Candidate[] {
+export function candidatesFor(copy: Mask, all: Candidate[], limit = 8, footer?: FooterId | null): Candidate[] {
   const d = descriptor(copy)
   const sized = all.filter((c) => Math.abs(c.page.w - copy.w) <= 4 && Math.abs(c.page.h - copy.h) <= 4)
   const scored = sized.map((c) => {
@@ -101,12 +106,10 @@ export function candidatesFor(copy: Mask, all: Candidate[], limit = 6, footer?: 
 }
 
 export function matchPage(copy: Mask, copyDilated: Mask, loaded: LoadedPage[], pageNo: number): PageMatch {
-  let best: { lp: LoadedPage; coverage: number; dx: number; dy: number } | null = null
-  for (const lp of loaded) {
-    const a = align(lp.points, lp.mask.w, copyDilated)
-    if (!best || a.coverage > best.coverage) best = { lp, ...a }
-    if (a.coverage >= 0.995) break
-  }
+  const scored = loaded
+    .map((lp) => ({ lp, ...align(lp.points, lp.mask.w, copyDilated) }))
+    .sort((a, b) => b.coverage - a.coverage)
+  const best = scored[0]
   if (!best || best.coverage < NEAR_MIN) return { page: pageNo, templateId: null, templatePage: null, coverage: best?.coverage ?? 0, dx: 0, dy: 0, nearest: null }
   if (best.coverage < MATCH_MIN) {
     return {
@@ -119,7 +122,43 @@ export function matchPage(copy: Mask, copyDilated: Mask, loaded: LoadedPage[], p
       nearest: { templateId: best.lp.template.id, templatePage: best.lp.page.page, coverage: best.coverage },
     }
   }
-  return { page: pageNo, templateId: best.lp.template.id, templatePage: best.lp.page.page, coverage: best.coverage, dx: best.dx, dy: best.dy, nearest: null }
+  const alternatives = scored
+    .slice(1)
+    .filter((s) => s.coverage >= MATCH_MIN && best.coverage - s.coverage <= TIE)
+    .map((s) => ({ templateId: s.lp.template.id, templatePage: s.lp.page.page, coverage: s.coverage, dx: s.dx, dy: s.dy }))
+  return {
+    page: pageNo,
+    templateId: best.lp.template.id,
+    templatePage: best.lp.page.page,
+    coverage: best.coverage,
+    dx: best.dx,
+    dy: best.dy,
+    nearest: null,
+    ...(alternatives.length ? { alternatives } : {}),
+  }
+}
+
+/** Two templates within this coverage of each other both fit the page. */
+export const TIE = 0.01
+
+/**
+ * A page printed identically in two releases fits both templates. Give it to
+ * the template the most pages of this document match, so a 2025 copy whose
+ * signature page did not change is not read as a 2026 copy missing pages.
+ */
+export function resolveTies(matches: PageMatch[]): PageMatch[] {
+  const votes = new Map<string, number>()
+  for (const m of matches) {
+    if (!m.templateId) continue
+    for (const id of new Set([m.templateId, ...(m.alternatives ?? []).map((a) => a.templateId)])) votes.set(id, (votes.get(id) ?? 0) + 1)
+  }
+  return matches.map((m) => {
+    if (!m.templateId || !m.alternatives?.length) return m
+    const options = [{ templateId: m.templateId, templatePage: m.templatePage!, coverage: m.coverage, dx: m.dx, dy: m.dy }, ...m.alternatives]
+    options.sort((a, b) => (votes.get(b.templateId) ?? 0) - (votes.get(a.templateId) ?? 0) || b.coverage - a.coverage)
+    const pick = options[0]
+    return { ...m, templateId: pick.templateId, templatePage: pick.templatePage, coverage: pick.coverage, dx: pick.dx, dy: pick.dy, alternatives: options.slice(1) }
+  })
 }
 
 /**
@@ -210,9 +249,17 @@ export function loadPage(template: TemplateInfo, page: TemplatePage, mask: Mask)
   return { template, page, mask, points: inkPoints(mask, 3), dilated: () => (grown ??= dilate(mask, 1)) }
 }
 
-/** Plain-words summary of one form check, for the review list and the file view. */
-export function describeCheck(c: FormCheck, named: Partial<Record<Party, number>> = {}): { complete: boolean; issues: string[] } {
+/**
+ * Plain-words summary of one form check, for the review list and the file
+ * view. Issues decide completeness: missing pages, a party that has not
+ * signed, fewer signers than the form names. A signature whose date box is
+ * empty is a note, not an issue: e-sign platforms (DigiSign) often stamp the
+ * date beside the signature instead, which the page image cannot tell apart
+ * from the signature itself; the reader's transcription settles it.
+ */
+export function describeCheck(c: FormCheck, named: Partial<Record<Party, number>> = {}): { complete: boolean; issues: string[]; notes: string[] } {
   const issues: string[] = []
+  const notes: string[] = []
   if (c.missingPages.length) issues.push(`missing page${c.missingPages.length > 1 ? 's' : ''} ${c.missingPages.join(', ')} of ${c.pageCount}`)
   const parties = new Set(c.lines.filter((l) => l.required !== false).map((l) => l.party))
   for (const party of parties) {
@@ -223,10 +270,11 @@ export function describeCheck(c: FormCheck, named: Partial<Record<Party, number>
     const bySection = new Map<string, number>()
     for (const l of req) if (l.signed) bySection.set(l.section ?? '', (bySection.get(l.section ?? '') ?? 0) + 1)
     const most = Math.max(0, ...bySection.values())
-    if (signed === 0) issues.push(`${party.replace('_', ' ')} has not signed`)
-    else if (most < need) issues.push(`${need} ${party.replace('_', ' ')}${need > 1 ? 's' : ''} named, ${most} signed`)
+    const who = party.replace('_', ' ')
+    if (signed === 0) issues.push(`${who} has not signed`)
+    else if (most < need) issues.push(`${need} ${who}s named, ${most} signed`)
     const undated = req.filter((l) => l.signed && l.dated === false).length
-    if (undated) issues.push(`${undated} ${party.replace('_', ' ')} signature${undated > 1 ? 's' : ''} not dated`)
+    if (undated) notes.push(`${undated} ${who} signature${undated > 1 ? 's' : ''} with an empty date box`)
   }
-  return { complete: issues.length === 0, issues }
+  return { complete: issues.length === 0, issues, notes }
 }

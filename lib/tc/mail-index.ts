@@ -502,7 +502,7 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
     }
     const { data: saved, error: saveErr } = await sb
       .from('tc_mail_messages')
-      .upsert(row, { onConflict: 'message_key' })
+      .upsert(withoutNul(row), { onConflict: 'message_key' })
       .select('id')
       .single()
     if (saveErr || !saved) throw new Error(`index row: ${saveErr?.message ?? 'no row'}`)
@@ -555,6 +555,20 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
       modelStage: null,
     }
   }
+}
+
+/**
+ * Postgres text and jsonb reject U+0000, which PDF text layers and some mail
+ * bodies carry ("unsupported Unicode escape sequence"). Strip it from every
+ * string in a row before it is written.
+ */
+export function withoutNul<T>(value: T): T {
+  if (typeof value === 'string') return value.replace(/\u0000/g, '') as T
+  if (Array.isArray(value)) return value.map((v) => withoutNul(v)) as T
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, withoutNul(v)])) as T
+  }
+  return value
 }
 
 /**
@@ -616,7 +630,7 @@ async function writeMailReview(input: {
     rules_version: MAIL_RULES_VERSION,
     reviewed_at: new Date().toISOString(),
   }
-  const { error } = await sb.from('tc_mail_reviews').upsert(row, { onConflict: 'mailbox,gmail_id' })
+  const { error } = await sb.from('tc_mail_reviews').upsert(withoutNul(row), { onConflict: 'mailbox,gmail_id' })
   if (error) throw new Error(error.message)
 }
 
@@ -1563,4 +1577,27 @@ export async function autoOpenFilesFromMail(input: { sb?: SB } = {}): Promise<Ar
     out.push({ address: f.address, dealId: opened.dealId, filed, reason: f.reason })
   }
   return out
+}
+
+/**
+ * Index again every message whose review ended in an error (a transient
+ * Gmail or storage failure, or a since-fixed bug). The full-history walk moves
+ * forward and never revisits a reviewed id, so errors are retried here.
+ */
+export async function retryReviewErrors(input: { deadline?: number; sb?: SB; modelStage?: boolean } = {}): Promise<{ retried: number; fixed: number; stillErrors: number }> {
+  const sb = input.sb ?? createServiceClient()
+  const universe = await loadMailUniverse(sb)
+  const { data } = await sb.from('tc_mail_reviews').select('mailbox, gmail_id').eq('status', 'error').order('reviewed_at', { ascending: true }).limit(500)
+  const res = { retried: 0, fixed: 0, stillErrors: 0 }
+  for (const r of data ?? []) {
+    if (input.deadline && Date.now() > input.deadline) break
+    const gmail = getGmailFor(String(r.mailbox), READONLY)
+    if (!gmail) continue
+    const brokerSlug = CRM_MAILBOXES.find((m) => m.email === r.mailbox)?.slug ?? 'matt'
+    const out = await indexGmailMessage({ gmail, mailbox: String(r.mailbox), brokerSlug, gmailId: String(r.gmail_id), universe, sb, modelStage: input.modelStage })
+    res.retried++
+    if (out.status === 'error') res.stillErrors++
+    else res.fixed++
+  }
+  return res
 }
