@@ -250,7 +250,7 @@ export function StepChannelBody({
                   { value: 'office_hours', label: 'Send during company office hours', available: false },
                   { value: 'custom', label: 'Send at custom time', available: false },
                 ]}
-                footnote="Steps due outside the window queue for the next 7:00 am PT send window. Suppressed and unsubscribed contacts are never sent."
+                footnote="Steps due outside the window wait for the next morning's send. Suppressed and unsubscribed contacts are never sent."
               />
             </>
           ) : (

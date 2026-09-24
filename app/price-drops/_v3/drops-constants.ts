@@ -39,7 +39,7 @@ export const DROPS_ALERT_FILTERS: Readonly<Record<string, string>> = {
 export function dropsUnavailable(place: string): { term: string; body: string } {
   return {
     term: "Couldn't load right now",
-    body: `This week's price cuts in ${place} didn't load, so this page isn't showing a count. That's a missed read, not a quiet week.`,
+    body: `This week's price cuts in ${place} didn't load, so there's no count here. Refresh to try again.`,
   }
 }
 
