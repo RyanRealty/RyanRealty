@@ -567,9 +567,9 @@ task. Everything else fires on trigger match.
 | Any PDF a person receives | [`docs/PAGE_CONTRACT.md`](docs/PAGE_CONTRACT.md) |
 | Supabase market-data tables | §7 and the three docs it names |
 | Asset library | manifest at `data/asset-library/manifest.json`, CLI at [`lib/asset-library.mjs`](lib/asset-library.mjs). Photos carry vision grades — search the `vision_*` fields. |
-| CMA / valuation | Comps + price: [`lib/pricing/`](lib/pricing/) (`ladder.ts`, `match.ts`, `estimate.ts`). Letter + tables: [`lib/cma/`](lib/cma/) (`build.ts`, `status-*.ts`, `render-*.ts`). Rules: [`SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md). Recorded in `public.cmas` + `cma_comps`. |
+| CMA / valuation | Comp search + count: [`lib/pricing/`](lib/pricing/) `ladder.ts`, `match.ts`; cover price `estimate.ts`. Letter: [`lib/cma/`](lib/cma/) chapters `opinion-*.ts`, evidence tables `status-*.ts`. Rulings: [`SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md) (long: grep it). Recorded in `public.cmas` + `cma_comps`. |
 | Public site pages (menu, keep/cut, sections, LPs) | [`docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`](docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md) then [`PLACE_PAGES.md`](docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md). Those override leftover-HUD tests and `/lp` skills. Page-grade is **KILLED**. Do not scaffold `/lp/*`. |
-| Place page code | Sections: [`lib/site/`](lib/site/) `place-*.ts`, [`lib/place/`](lib/place/). Route helpers: `app/<route>/[slug]/_v3/`. `page.tsx` is wiring: grep it, don't read it whole. |
+| Place page code | Sections: [`lib/site/`](lib/site/) `place-*.ts`, [`lib/place/`](lib/place/). Route-only: `app/<route>/[slug]/_v3/`. `page.tsx` is wiring: grep it. |
 | Listings, search box, map | Reads: [`lib/data/listings/`](lib/data/listings/). Map + price badges: [`components/SearchMapClustered.tsx`](components/SearchMapClustered.tsx). |
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.

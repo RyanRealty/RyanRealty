@@ -35,6 +35,19 @@ Surface: Claude Code cloud session. Standing rule from Matt 2026-09-24 (CLAUDE.m
 - **Sandbox facts for cloud fires.** `deploy:verify` needs `VERCEL_TOKEN` (absent in the cloud sandbox); the Vercel connector reads deployments instead. `ci:runtime-gates` in the sandbox fails six `heroImageNatural` floors on remote-media egress; GitHub CI is the judge. At most two `next dev` servers on the box: `/tmp/claude-0/devslot.sh <port> <dir>` (sets `RR_TURBOPACK_ROOT` for worktrees). Heavy commands under `flock /tmp/claude-0/heavy.lock`, `CI_GATES_CONCURRENCY=1`. Chromium reaches production through the agent proxy only with `--disable-http2 --disable-quic --ignore-certificate-errors` and `proxy: { server: HTTPS_PROXY }`. A stale `.next/dev/types/validator.ts` fails `tsc` after a route is deleted; it is generated, delete it. The commit-msg hook wants `Node: <id>` or `Node: none (<reason>)` on app/** changes, merge commits included. GitHub re-runs are 403 from the session. The Supabase connector's `execute_sql` is DENIED in `.claude/settings.json` (Matt 2026-09-24, "Please stop asking"): read the database through service-role tsx scripts; `apply_migration` stays allowed.
 - Skills read: `docs/RUN_LOOP.md`, CLAUDE.md §0/§1/§2/§3/§6/§7/§8, `design_system/public/TASTE.md`, `design_system/public/PUBLIC_UI.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
 
+**Agent navigation (branch `claude/agent-navigation-efficiency-dp5zj5`).**
+
+Surface: Claude Code cloud session. Matt asked where agents go, what it costs them to get there, and for pointer-only CLAUDE.md edits. Report: `docs/audits/AGENT_NAVIGATION_2026-09-24.md` (git history plus replays of 23 real tasks with cold agents, every call and token parsed).
+
+- **Landed:** three rows in the CLAUDE.md §9 routing table.
+  - The CMA row now names `lib/pricing/` (comp search and count, cover price) and the `lib/cma/` evidence tables (`status-*.ts`).
+  - New "Place page code" and "Listings, search box, map" rows.
+  - A/B result: tokens spent before reaching the right file fell 58% on the tasks the rows came from, and 30% on held-out tasks inside a named area.
+  - No help outside a named area: the CMA market chapter, `lib/cma/listing-window-*.ts`, has no row.
+- **CLAUDE.md is at its byte budget (37,526 of 37,526).** The next pointer has to be paid for by trimming another line.
+- **Next, optional:** a CMA market-chapter pointer, once bytes are freed. The report ends with defect leads the replay agents raised on `main`. They are not verified.
+- Read: CLAUDE.md §0/§1/§6/§8/§9, `scripts/check-claude-canon.mjs`, `scripts/check-process-canon.mjs`, `scripts/check-handoff-current.mjs`.
+
 **Rule for this file.** ONE `# Current` block. At session end, replace it (surface, SHA, what landed, what is next, skills read) and carry forward every still-open Matt directive; never stack a new one on top. `ci:handoff-current` fails a second `# Current`. Older blocks move verbatim to `docs/archive/`. Boot doc for "run the loop": `docs/RUN_LOOP.md`.
 
 **Still open from the 51 blocks archived 2026-09-23** (each checked against the tree and `loop_work_nodes` on 2026-09-23 08:50Z; every other directive in those blocks is on the tree or its node is done, including SITE-153 and SITE-155, the 2026-09-22 header and dog directives):
