@@ -668,6 +668,18 @@
     "ci:hook-tests": [
       ".claude/hooks/**"
     ],
+    "ci:tests-wired": [
+      "**/*.test.*",
+      "**/*.spec.*",
+      "vitest.config.ts",
+      "playwright.config.ts",
+      "package.json",
+      "scripts/ci-lanes.json",
+      "scripts/check-tests-wired.mjs",
+      "scripts/check-gates-wired.mjs",
+      ".husky/**",
+      ".github/workflows/**"
+    ],
     "ci:hydration-safety": [
       "app/**",
       "components/**"
