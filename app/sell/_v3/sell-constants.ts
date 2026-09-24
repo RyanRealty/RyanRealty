@@ -18,6 +18,19 @@ export const VALUATION_STAGE_EYEBROW = 'Written CMA in 24 hours'
 export const FSBO_HEADLINE = 'Selling for sale by owner in Central Oregon'
 export const EXPIRED_HEADLINE = 'Expired listings in Central Oregon'
 
+/**
+ * The listing terms, spelled once. /sell's FAQ and /about (What Ryan Realty
+ * does, the key facts, the FAQ) both read these, so the fee and what it covers
+ * cannot drift between the two pages.
+ */
+export const LISTING_FEE_PERCENT = '3%'
+export const LISTING_TERMS = {
+  fee: `The listing fee is ${LISTING_FEE_PERCENT} of the sale price, with no add-on fees.`,
+  covers:
+    'That covers the MLS listing, professional photography, video, a 3D tour, the full marketing plan, every showing, and transaction management all the way through closing.',
+  buyerAgent: 'Buyer-agent compensation is a separate number, negotiated with each offer',
+} as const
+
 export const FAQ_ITEMS = [
   {
     question: 'Do I need to sign a listing agreement to get the CMA?',
@@ -26,8 +39,7 @@ export const FAQ_ITEMS = [
   },
   {
     question: 'What does it cost to list with you?',
-    answer:
-      'The listing fee is 3% of the sale price, with no add-on fees. That covers the MLS listing, professional photography, video, a 3D tour, the full marketing plan, every showing, and transaction management all the way through closing. Buyer-agent compensation is a separate number, negotiated with each offer, and we walk you through it before you sign anything.',
+    answer: `${LISTING_TERMS.fee} ${LISTING_TERMS.covers} ${LISTING_TERMS.buyerAgent}, and we walk you through it before you sign anything.`,
   },
   {
     question: 'How do you decide on a list price?',

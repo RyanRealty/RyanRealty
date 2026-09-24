@@ -38,6 +38,9 @@
  * comment either.
  */
 
+import { BRAND, CONTACT } from '@/lib/brand/contact'
+import { LISTING_TERMS } from '@/app/sell/_v3/sell-constants'
+
 /** Firm license as published on the pre-v3 about page (OREA 201253677). */
 export const FIRM_LICENSE = 'OREA 201253677'
 
@@ -59,6 +62,7 @@ export const ABOUT_LOCK_QUOTES = {
   '6': '5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.',
   '7': '/about first viewport — faces at display scale. Navy and cream only.',
   '8': 'shadcn Avatar image, fallback, and badge at display scale.',
+  '9': 'Below the proof: What Ryan Realty does, the differentiators, Key facts in one <dl>, and the same business day reply.',
 } as const
 
 /**
@@ -96,8 +100,13 @@ export const ABOUT_BROKERS_QUESTION = 'Who are the brokers?'
 
 const COUNT_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
 
+/** 3 -> "three"; past nine, the numeral. */
+export function countWord(n: number): string {
+  return COUNT_WORDS[n] ?? String(n)
+}
+
 /** "Owner & Principal Broker" -> "owner and principal broker". */
-function roleWords(title: string): string {
+export function roleWords(title: string): string {
   return title.trim().replace(/\s*&\s*/g, ' and ').toLowerCase()
 }
 
@@ -118,16 +127,53 @@ export function aboutBrokersAnswer(people: ReadonlyArray<{ name: string; title: 
       : parts.length === 2
         ? `${parts[0]}; and ${parts[1]}`
         : `${parts.slice(0, -1).join('; ')}; and ${parts[parts.length - 1]}`
-  const count = COUNT_WORDS[named.length] ?? String(named.length)
+  const count = countWord(named.length)
   const noun = named.length === 1 ? 'broker' : 'brokers'
   return `Ryan Realty has ${count} licensed ${noun}: ${list}. Each one's license, recorded closings, and direct line are on the team page.`
 }
 
-/** The FAQ as the page renders it and as FAQPage emits it: one array, two sinks. */
+/**
+ * The FAQ as the page renders it and as FAQPage emits it: one array, two
+ * sinks, so the JSON-LD can never say something the visible questions do not.
+ *
+ * Matt 2026-09-23 (About-page AEO playbook): the four questions of 2026-09-02
+ * grew to eight, each answered in two or three sentences, because the
+ * questions people ask an answer engine about a brokerage are what it costs,
+ * how fast it answers, where it is, and whether it is licensed. The live
+ * inputs are the roster (brokers) and the published booking hours (office);
+ * a live value that did not load drops its sentence, never guesses it.
+ */
 export function aboutFaqItems(
   people: ReadonlyArray<{ name: string; title: string }>,
+  live: { hours?: string | null } = {},
 ): Array<{ question: string; answer: string }> {
-  return [{ question: ABOUT_BROKERS_QUESTION, answer: aboutBrokersAnswer(people) }, ...ABOUT_FAQ_ITEMS]
+  const [sameBroker, tumalo, valuation] = ABOUT_FAQ_ITEMS
+  const hours = live.hours?.trim()
+  return [
+    { question: ABOUT_BROKERS_QUESTION, answer: aboutBrokersAnswer(people) },
+    {
+      question: 'How much does Ryan Realty charge to sell a home?',
+      answer: `${LISTING_TERMS.fee} ${LISTING_TERMS.covers} ${LISTING_TERMS.buyerAgent}.`,
+    },
+    { question: valuation.question, answer: valuation.answer },
+    { question: sameBroker.question, answer: sameBroker.answer },
+    {
+      // Matt 2026-09-23: "same business day" is his commitment, stated as his.
+      question: 'How quickly will Ryan Realty get back to me?',
+      answer: `The same business day. Call or text ${CONTACT.phoneDirect}, email ${CONTACT.email.primary}, or book a time online, and you will hear from a licensed broker, not a call center.`,
+    },
+    {
+      question: 'Where is the Ryan Realty office?',
+      answer: `The office is at ${BRAND.address.street} in downtown ${BRAND.address.city}, ${BRAND.address.regionFull} ${BRAND.address.postalCode}.${
+        hours ? ` Office hours are ${hours}.` : ''
+      }`,
+    },
+    {
+      question: 'Is Ryan Realty licensed in Oregon?',
+      answer: `Yes. ${BRAND.legalName} holds Oregon Real Estate Agency firm license ${FIRM_LICENSE.replace(/^OREA\s+/, '')}, and every broker is licensed in Oregon. Each broker's license number is on their team page.`,
+    },
+    { question: tumalo.question, answer: tumalo.answer },
+  ]
 }
 
 export const ABOUT_FAQ_ITEMS = [

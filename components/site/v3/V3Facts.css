@@ -1,0 +1,167 @@
+/* ===========================================================================
+   PATTERN: FACTS
+   Styles for V3Facts.tsx and nothing else. Every value resolves from
+   ./tokens.css. A spec sheet: label and value pairs on hairlines, the label
+   in small tracked caps, two columns past 64rem flowing down then across.
+   =========================================================================== */
+
+.v3.v3-facts {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+* + .v3.v3-facts {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-facts__head {
+  display: grid;
+  gap: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-xl);
+}
+
+.v3-facts__heading {
+  margin: 0;
+}
+
+.v3-facts__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  border-bottom: var(--v3-rule-hairline);
+}
+
+/* Two newspaper columns past 64rem: the pairs flow down the first column and
+   on into the second, each pair keeping its own height (a grid would give a
+   one-line pair the height of the three-line pair beside it). */
+@media (min-width: 64rem) {
+  .v3-facts__list {
+    display: block;
+    columns: 2;
+    column-gap: var(--v3-space-2xl);
+    border-bottom: 0;
+  }
+
+  .v3-facts__row {
+    break-inside: avoid;
+  }
+}
+
+.v3-facts__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+  padding-block: var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+}
+
+@media (min-width: 40rem) {
+  .v3-facts__row {
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    column-gap: var(--v3-space-md);
+    align-items: baseline;
+  }
+}
+
+.v3-facts__term {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-body);
+  text-transform: uppercase;
+}
+
+.v3-facts__value {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  overflow-wrap: anywhere;
+}
+
+.v3-facts__text {
+  text-wrap: pretty;
+}
+
+.v3-facts__detail {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+/* Doors on a value: a wrapped run of text links, each with the 44px box. */
+.v3-facts__links {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--v3-space-md);
+  row-gap: 0;
+}
+
+/* A value that is only doors sits on the row's own line rather than
+   pushing the pair 22px taller than its neighbours. */
+.v3-facts__value > .v3-facts__links:first-child:last-child {
+  margin-block: calc((var(--v3-tap) - 1lh) / -2);
+}
+
+.v3-facts__link {
+  display: inline-flex;
+  align-items: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--v3-navy) 30%, transparent);
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* An address breaks at its hyphen ("matt@ryan- realty.com"); an email label
+   holds together and wraps as one piece. */
+.v3-facts__link[href^='mailto:'] {
+  white-space: nowrap;
+}
+
+.v3-facts__link:hover,
+.v3-facts__link:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+/* The one number a value is about, in the numeral face, before its words. */
+.v3-facts__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+}
+
+.v3-facts__line > .v3-facts__text {
+  min-width: 0;
+}
+
+.v3-facts__figure {
+  color: var(--v3-ink);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+}
+
+.v3-facts__strip {
+  color: var(--v3-ink);
+}
+
+.v3-facts__note {
+  margin: var(--v3-space-md) 0 0;
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}
