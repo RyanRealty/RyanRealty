@@ -326,16 +326,11 @@ export type DaysRow = {
  * 2026-09-25). The fixed 24-character cap before this could not hold: at
  * 12px, 24 characters is about 150 units against a 136-unit gutter.
  *
- * The gutter is now sized to its longest label. A label's width is estimated
- * per character with a factor that covers both faces the chart renders in,
- * measured 2026-09-25 at 12px: real comp labels run 0.44 to 0.53em a
- * character in Geist and up to 0.61em in the offline fallback on an all-caps
- * MLS address. A label longer than the widest gutter is cut at its end, so the
+ * The gutter is now sized to its longest label, measured glyph by glyph (see
+ * labelWidth). A label longer than the widest gutter is cut at its end, so the
  * number that ties a bar to the comp table always prints.
  */
 const DAYS_FS = 12
-const LABEL_EM = 0.62
-const LABEL_EM_BOLD = 0.66
 const DAYS_GUTTER_MIN = 150
 const DAYS_GUTTER_MAX = 270
 /** From a gutter label's end to the zero rule. */
@@ -344,20 +339,72 @@ const LABEL_GAP = 14
 const LABEL_INSET = 4
 
 /**
- * A chart label's estimated width in chart units, at its font size. Shared by
- * every chart that right-anchors labels in a gutter, so a gutter is sized to
- * what it has to hold rather than to a fixed width.
+ * Advance widths in em, [regular, semibold]: for each glyph class the wider of
+ * the two faces a chart renders in, Geist and the offline fallback (DejaVu
+ * Sans), measured in Chromium 2026-09-25. A flat per-character factor could
+ * not hold both: DejaVu runs 0.99em on W and 0.97em on m where Geist lowercase
+ * averages 0.5em, Geist's digits, J and slash are wider than DejaVu's, and
+ * DejaVu Bold widens narrow letters by a fifth. A PDF can render before Geist
+ * applies, so a label sized for Geist alone can still lose its start.
  */
-export function labelWidth(text: string, fontSize: number, bold = false): number {
-  return text.length * fontSize * (bold ? LABEL_EM_BOLD : LABEL_EM)
+const GLYPH_EM: Readonly<Record<string, readonly [number, number]>> = {
+  ' ': [0.32, 0.35],
+  '.': [0.32, 0.38],
+  ',': [0.32, 0.38],
+  '·': [0.32, 0.38],
+  ':': [0.34, 0.4],
+  ';': [0.34, 0.4],
+  "'": [0.28, 0.31],
+  '-': [0.42, 0.42],
+  '/': [0.48, 0.51],
+  '(': [0.39, 0.46],
+  ')': [0.39, 0.46],
+  '#': [0.84, 0.84],
+  '$': [0.64, 0.7],
+  '%': [0.95, 1.01],
+  '&': [0.78, 0.88],
+  '…': [1, 1],
+  W: [0.99, 1.11],
+  M: [0.99, 1.11],
+  I: [0.6, 0.62],
+  J: [0.6, 0.62],
+  m: [0.98, 1.05],
+  w: [0.98, 1.05],
 }
 
-function fitDaysLabel(text: string, bold: boolean): string {
+function glyphEm(ch: string, bold: boolean): number {
+  const pick = (w: readonly [number, number]) => (bold ? w[1] : w[0])
+  const own = GLYPH_EM[ch]
+  if (own) return pick(own)
+  if (ch >= '0' && ch <= '9') return pick([0.67, 0.7])
+  if (ch >= 'A' && ch <= 'Z') return pick([0.79, 0.85])
+  if ('fijlrt'.includes(ch)) return pick([0.42, 0.5])
+  if (ch >= 'a' && ch <= 'z') return pick([0.64, 0.72])
+  return pick([0.8, 0.9])
+}
+
+/**
+ * A chart label's width in chart units at its font size, an upper bound in
+ * either face. Shared by every chart that fits labels to a gutter or a margin,
+ * so each is sized to what it has to hold rather than to a fixed width.
+ */
+export function labelWidth(text: string, fontSize: number, bold = false): number {
+  let em = 0
+  for (const ch of text) em += glyphEm(ch, bold)
+  return em * fontSize
+}
+
+/** The label as it fits in `room` units, cut at its end with an ellipsis. */
+function fitLabelToWidth(text: string, room: number, fontSize: number, bold: boolean): string {
   const t = text.trim()
-  const room = DAYS_GUTTER_MAX - LABEL_GAP - LABEL_INSET
-  const maxChars = Math.floor(room / labelWidth('x', DAYS_FS, bold))
-  if (t.length <= maxChars) return t
-  return `${t.slice(0, maxChars - 1).trimEnd()}…`
+  if (labelWidth(t, fontSize, bold) <= room) return t
+  const tail = labelWidth('…', fontSize, bold)
+  let cut = ''
+  for (const ch of t) {
+    if (labelWidth(cut + ch, fontSize, bold) + tail > room) break
+    cut += ch
+  }
+  return `${cut.trimEnd()}…`
 }
 
 /**
@@ -396,7 +443,9 @@ export function daysToOfferSvg(
   // The tick's label lives above the plot; without one the bars start higher.
   const top = tick ? 34 : 16
   const H = top + kept.length * rowH + 14
-  const labels = kept.map((r) => fitDaysLabel(r.label, r.subject))
+  const labels = kept.map((r) =>
+    fitLabelToWidth(r.label, DAYS_GUTTER_MAX - LABEL_GAP - LABEL_INSET, DAYS_FS, r.subject),
+  )
   const widest = Math.max(...kept.map((r, i) => labelWidth(labels[i] ?? '', DAYS_FS, r.subject)))
   const gutter = Math.min(
     DAYS_GUTTER_MAX,
@@ -405,8 +454,8 @@ export function daysToOfferSvg(
   const plotL = gutter
   // Reserve the right margin for the longest value label. The subject's reads
   // "192 days, no offer" and used to run off the frame.
-  const longest = Math.max(...kept.map((r) => r.valueLabel.length))
-  const plotR = W - Math.min(Math.max(longest * 6.7 + 16, 70), 190)
+  const longest = Math.max(...kept.map((r) => labelWidth(r.valueLabel, DAYS_FS, r.subject)))
+  const plotR = W - Math.min(Math.max(longest + 16, 70), 190)
   const x = (v: number) => plotL + ((plotR - plotL) * v) / max
 
   const bars = kept
@@ -1146,26 +1195,28 @@ export function askOutcomeBarsSvg(
   const top = 8
   const H = top + groups.length * rowH + 10
   // The gutter holds the widest line the rows carry, measured with labelWidth,
-  // the estimate the days strip sizes its gutter with. A fixed gutter, 190 and then 250,
-  // pushed the realized-share line and the seller's marker past the left edge.
-  const widestLine = Math.max(
-    ...groups.flatMap((g) => {
-      const t = askOutcomeRowText(g)
-      const mine = g.key === subjectGroup
-      return [
-        labelWidth(t.name, fs, mine),
-        mine ? labelWidth(ASK_OUTCOME_MARKER, fs, true) : 0,
-        labelWidth(t.count, subFs),
-        labelWidth(t.share, subFs),
-      ]
-    }),
-  )
+  // as the days strip sizes its own. A fixed gutter, 190 and then 250, pushed
+  // the realized-share line and the seller's marker past the left edge.
+  const texts = new Map(groups.map((g) => [g.key, askOutcomeRowText(g)]))
+  const lineWidths = (g: AskOutcomeGroup): number[] => {
+    const t = texts.get(g.key) ?? askOutcomeRowText(g)
+    const mine = g.key === subjectGroup
+    return [
+      labelWidth(t.name, fs, mine),
+      mine ? labelWidth(ASK_OUTCOME_MARKER, fs, true) : 0,
+      labelWidth(t.count, subFs),
+      labelWidth(t.share, subFs),
+    ]
+  }
+  const widestLine = phone ? 0 : Math.max(...groups.flatMap(lineWidths))
   const gutter = phone
     ? 8
     : Math.min(ASK_GUTTER_MAX, Math.max(ASK_GUTTER_MIN, Math.ceil(widestLine + LABEL_GAP + LABEL_INSET)))
   const plotL = phone ? 8 : gutter
-  const longest = Math.max(...groups.map((g) => `${int(g.medianDays)} days`.length))
-  const plotR = W - Math.min(Math.max(longest * fs * 0.62 + 14, 60), 150)
+  const longest = Math.max(
+    ...groups.map((g) => labelWidth(`${int(g.medianDays)} days`, fs, g.key === subjectGroup)),
+  )
+  const plotR = W - Math.min(Math.max(longest + 14, 60), 150)
   const max = Math.max(...groups.map((g) => g.medianDays))
   const x = (v: number) => plotL + ((plotR - plotL) * v) / Math.max(max, 1)
 
@@ -1184,7 +1235,7 @@ export function askOutcomeBarsSvg(
       // "· your home" beside a 117-day median, on a document that says "yours
       // went 290 days", reads as a claim about their listing. It is a claim
       // about which GROUP their listing is in.
-      const text = askOutcomeRowText(g)
+      const text = texts.get(g.key) ?? askOutcomeRowText(g)
       const name = `${text.name}${mine ? ` · ${ASK_OUTCOME_MARKER}` : ''}`
       const { count, share } = text
       // Delta 2: "tap a bar to see its n, median days, median cut, median share
@@ -1218,7 +1269,7 @@ export function askOutcomeBarsSvg(
         // different x positions for one series (tasteReview item 2).
         const end = Math.max(x(g.medianDays), plotL + 1)
         const value = `${int(g.medianDays)} days`
-        const valueW = value.length * fs * 0.62
+        const valueW = labelWidth(value, fs, mine)
         const past = end + 8 + valueW > W - 2
         return `${open}<text x="${plotL}" y="${nameY}"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
     <text x="${plotL}" y="${countY}" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
