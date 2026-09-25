@@ -115,7 +115,9 @@ describe('V3PlaceInventory layout="dial"', () => {
     expect(count(html, /role="tablist"/g)).toBe(1) // only the three-listing type has a dial
     expect(count(html, /role="tab"/g)).toBe(SFR.rows.length)
     expect(count(html, /role="tabpanel"/g)).toBe(SFR.rows.length)
-    expect(html).toContain('aria-orientation="vertical"')
+    // The default rail is the strip under the card (Matt 2026-09-24): it runs across.
+    expect(html).toContain('aria-orientation="horizontal"')
+    expect(html).toContain('v3-dial--rail-bottom')
     expect(html).toContain('aria-label="Single-family homes in Porter James"')
     for (let i = 0; i < SFR.rows.length; i += 1) {
       expect(html).toContain(`id="homes-sfr-tab-${i}"`)
@@ -256,6 +258,36 @@ describe('V3ListingDial on its own', () => {
     const html = renderToStaticMarkup(<V3ListingDial id="d" label="x" listings={SFR.rows} />)
     expect(html).toContain('aria-label="Previous listing"')
     expect(html).toContain('aria-label="Next listing"')
+  })
+
+  it('stands the dial where railPosition says, and orients the tablist with it (Matt 2026-09-24)', () => {
+    const at = (railPosition?: 'bottom' | 'left' | 'right') =>
+      renderToStaticMarkup(<V3ListingDial id="d" label="x" listings={SFR.rows} railPosition={railPosition} />)
+    expect(at()).toContain('v3-dial--rail-bottom')
+    expect(at()).toContain('aria-orientation="horizontal"')
+    expect(at('left')).toContain('v3-dial--rail-left')
+    expect(at('left')).toContain('aria-orientation="vertical"')
+    expect(at('right')).toContain('v3-dial--rail-right')
+    expect(at('right')).toContain('aria-orientation="vertical"')
+    // One listing has no dial to place.
+    const one = renderToStaticMarkup(
+      <V3ListingDial id="d" label="x" listings={SFR.rows.slice(0, 1)} railPosition="right" />,
+    )
+    expect(one).not.toContain('v3-dial--rail-')
+  })
+
+  it('serves no reel and no reel control: the photograph is the first paint, the reel is the browser’s', () => {
+    const html = renderToStaticMarkup(
+      <V3ListingDial
+        id="d"
+        label="x"
+        listings={SFR.rows.map((row, i) => ({ ...row, hasVideo: i === 0 ? true : null }))}
+      />,
+    )
+    expect(html).not.toContain('v3-dial__reel')
+    expect(html).not.toContain('<video')
+    expect(html).not.toContain('<iframe')
+    expect(html).not.toContain('Play video')
   })
 })
 

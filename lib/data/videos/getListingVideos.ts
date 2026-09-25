@@ -139,6 +139,17 @@ function deriveRawUrl(vid: Record<string, unknown>): string | null {
   return null
 }
 
+/**
+ * The uncached read behind getListingVideos, for a caller that wraps it in its
+ * own cache (getListingCardVideo caches only the one reel a card plays). It
+ * THROWS on a transient error, so a wrapper can tell a genuine "no video" from
+ * a failed read instead of caching the empty. One listing per call: every
+ * listings read below is narrowed by ListNumber or ListingKey (TOAST discipline).
+ */
+export async function fetchListingVideosUncached(listingKey: string): Promise<VideoEmbed[]> {
+  return fetchVideos(listingKey)
+}
+
 async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   InputSchema.parse({ listingKey })
   const supabase = supabaseAnon()

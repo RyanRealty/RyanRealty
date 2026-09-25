@@ -719,16 +719,20 @@ export type { V3PlaceInventoryProps } from './V3PlaceInventory'
  */
 export { V3ListingDial } from './V3ListingDial.client'
 
-export type { V3ListingDialProps } from './V3ListingDial.client'
+export type { V3ListingDialItem, V3ListingDialProps } from './V3ListingDial.client'
 
 export {
+  DIAL_RAIL_DEFAULT,
+  DIAL_VIDEO_DWELL_MS,
   dialKeyTarget,
   dialPosition,
+  dialRailPositionAt,
   dialStep,
   dialSwipeDelta,
   dialThumbLabel,
   dialWrap,
 } from './V3ListingDial.logic'
+export type { DialRailPosition } from './V3ListingDial.logic'
 
 /* -------------------------------------------------------------------------- */
 /* CHROME: the persistent frame the six patterns sit inside                    */
