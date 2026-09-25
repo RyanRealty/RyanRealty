@@ -137,14 +137,26 @@ export function evaluateAccuracyContract(args: {
   })
   const failedAsk = args.failedAsk ?? pricing.failedAsk ?? null
   if (failedAsk != null && failedAsk > 0) {
-    const over = pricing.recommended > failedAsk || pricing.highEnd > failedAsk
+    const bandLow = Math.min(pricing.valueLow, pricing.valueHigh)
+    const belowRange = pricing.failedAskBelowRange === true && bandLow > 0
+    const over = belowRange
+      ? pricing.recommended > bandLow
+      : pricing.recommended > failedAsk || pricing.highEnd > failedAsk
+    const rec = pricing.recommended.toLocaleString()
+    const high = pricing.highEnd.toLocaleString()
+    const ask = failedAsk.toLocaleString()
+    const low = bandLow.toLocaleString()
     checks.push({
       id: 'expired-list-cap',
       severity: 'hard',
       pass: !over,
-      detail: over
-        ? `Expired last list was $${failedAsk.toLocaleString()}. Recommended $${pricing.recommended.toLocaleString()} / high end $${pricing.highEnd.toLocaleString()} sits above the price that already failed to sell.`
-        : `Expired last list $${failedAsk.toLocaleString()} caps the printed list. Recommended $${pricing.recommended.toLocaleString()} and high end $${pricing.highEnd.toLocaleString()} sit at or below it.`,
+      detail: belowRange
+        ? over
+          ? `Last ask $${ask} sat below the sales band. Recommended $${rec} must sit at or below the band low $${low} (failedAskBelowRange).`
+          : `Last ask $${ask} sat below the sales band. Recommended $${rec} is pinned at the band low $${low} (failedAskBelowRange), not at the failed ask.`
+        : over
+          ? `Expired last list was $${ask}. Recommended $${rec} / high end $${high} sits above the price that already failed to sell.`
+          : `Expired last list $${ask} caps the printed list. Recommended $${rec} and high end $${high} sit at or below it.`,
     })
   }
   if (pricing.currentAsk != null && pricing.currentAsk > 0) {

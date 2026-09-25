@@ -883,7 +883,7 @@ export interface FailedAskCapResult {
   uncappedRecommended: number | null
   /**
    * True when the failed ask sat below the hero band, so the haircut
-   * was skipped and the recommendation stayed on the comps.
+   * was skipped and the recommendation was pinned to the band low.
    */
   belowRange?: boolean
 }
@@ -1050,9 +1050,15 @@ export function applyFailedAskCap(
   const band = heroBandFromPricing(pricing)
   // Haircut only when the failed ask was inside or above the hero band.
   // An ask already below the sales is not a ceiling: cutting further from it
-  // is the Nugget defect (range $734k–$878k, ask $725k, rec $712k).
+  // is the Nugget defect (range $734k–$878k, ask $725k, rec $712k). Pin the
+  // recommendation to the band LOW so the printed list sits on the sales
+  // and the expired-list-cap contract can pass (rec <= valueLow, not rec <= ask).
   if (band && ask < band.low) {
     pricing.failedAskBelowRange = true
+    const pinned = band.low
+    pricing.recommended = pinned
+    pricing.conservative = Math.min(pricing.conservative, pinned)
+    if (pricing.highEnd < pinned) pricing.highEnd = pinned
     const note = failedAskBelowRangeNote(ask)
     if (!pricing.notes.includes(note)) pricing.notes.push(note)
     reanchorSellerNet(pricing)

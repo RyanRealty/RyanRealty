@@ -456,8 +456,8 @@ export interface CmaPricing {
   /**
    * True when the last failed ask sat below the hero band (`valueLow` /
    * `valueHigh`). The failed-ask haircut is skipped and the recommendation
-   * stays on the comps, inside the range. The letter explains that price
-   * was not what held the listing back.
+   * is pinned to the band low. The letter explains that price was not what
+   * held the listing back.
    */
   failedAskBelowRange?: boolean
   /**
