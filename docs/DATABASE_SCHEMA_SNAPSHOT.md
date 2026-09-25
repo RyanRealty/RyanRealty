@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-25T12:02:59.076Z
+**Generated:** 2026-09-25T12:35:58.256Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 608,364**
+### `listings` · **rows ≈ 631,906**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 599,575**
+### `listing_tile_mv` · **rows ≈ 601,523**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -3699,6 +3699,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `hold_reason` | text | yes |  |
 | `generated_at` | timestamp with time zone | no | now() |
 | `published_at` | timestamp with time zone | yes |  |
+| `figures` | jsonb | yes |  |
 
 ### `market_report_geo`
 
