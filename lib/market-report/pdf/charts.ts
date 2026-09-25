@@ -22,6 +22,7 @@ import {
   type RangeBandIn,
   type RangeRowIn,
 } from '@/lib/charts/plot'
+import { mosText } from '../format'
 import type { Pt } from '../types'
 
 export type ChartUnit = 'money' | 'count' | 'days' | 'percent' | 'months' | 'ppsf'
@@ -49,6 +50,16 @@ export function fmtUnit(v: number, unit: ChartUnit, compact = true, decimals = 0
     case 'months':
       return v.toFixed(1)
   }
+}
+
+/**
+ * A plotted value's own label. Months of supply prints the way its verdict
+ * reads (mosText), so a line ending at 4.024 is labeled 4.1, not the 4.0 that
+ * reads as a seller's market. Axis ticks stay on fmtUnit: they are round
+ * gridline values.
+ */
+export function pointLabel(v: number, unit: ChartUnit): string {
+  return unit === 'months' ? mosText(v) : fmtUnit(v, unit)
 }
 
 /**
@@ -163,7 +174,7 @@ export function lineChart(spec: LineChartSpec): string {
     name: s.name,
     points: s.points.map((p, i) => ({
       value: p.v == null ? Number.NaN : p.v,
-      label: p.v == null ? '' : fmtUnit(p.v, spec.unit),
+      label: p.v == null ? '' : pointLabel(p.v, spec.unit),
       tick: p.k,
       at: i,
     })),
@@ -300,7 +311,7 @@ export function barChart(spec: BarChartSpec): string {
   const lastKey = [...pts].reverse().find((p) => p.v != null)?.k
   const highlight = new Set(spec.highlight ?? (lastKey ? [lastKey] : []))
   const plot = buildBarPlot(
-    [{ name: 'bars', points: pts.map((p) => ({ value: p.v ?? 0, label: p.v == null ? '' : fmtUnit(p.v, spec.unit), tick: p.k })) }],
+    [{ name: 'bars', points: pts.map((p) => ({ value: p.v ?? 0, label: p.v == null ? '' : pointLabel(p.v, spec.unit), tick: p.k })) }],
     { keepZeros: true, highlightTicks: [...highlight] },
   )
   if (!plot) return empty(spec.heightIn, spec.emptyNote ?? 'No sales to chart.')

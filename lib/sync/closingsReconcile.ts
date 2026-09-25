@@ -25,12 +25,22 @@
  */
 import { fetchSparkListingsPage } from '@/lib/spark'
 import { DELTA_SYNC, resolveRunMortgageRate, resultToMappedRow, type SparkDeltaResult } from '@/lib/sync/deltaSync'
-import { driftReasons, factsFromListingRow, factsFromSparkFields, type DriftReason } from '@/lib/sync/listingDrift'
+import { driftReasons, factsFromListingRow, factsFromSparkFields, type DriftFacts, type DriftReason } from '@/lib/sync/listingDrift'
 import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
-import { getClosedListingKeysInWindow, getListingsForReconcile } from '@/lib/data/sync/closingsReconcile'
-import { getHeldMediaByListNumbers, upsertListingRows } from '@/lib/data/sync/syncWrites'
+import {
+  getClosedListingKeysInWindow,
+  getListingsForReconcile,
+  rebuildPlaceMembershipForKeys,
+} from '@/lib/data/sync/closingsReconcile'
+import {
+  getAdminOverrideFlags,
+  getHeldMediaByListNumbers,
+  setListingFreezeFlags,
+  upsertListingRows,
+} from '@/lib/data/sync/syncWrites'
+import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
 
 /**
  * History fetches run two at a time. The delta sync shares this Spark key every
@@ -39,16 +49,30 @@ import { getHeldMediaByListNumbers, upsertListingRows } from '@/lib/data/sync/sy
 const REPAIR_HISTORY_CONCURRENCY = 2
 
 const LITE_SELECT =
-  'ListingKey,ListingId,StandardStatus,MlsStatus,CloseDate,ClosePrice,City,PropertyType,PropertySubType,BuildingAreaTotal,LivingArea,ModificationTimestamp'
+  'ListingKey,ListingId,StandardStatus,MlsStatus,CloseDate,ClosePrice,City,PropertyType,PropertySubType,TotalLivingAreaSqFt,BuildingAreaTotal,LivingArea,ModificationTimestamp'
+
+/** Pages of 1,000 a window may take before the pull refuses to guess (200,000 closings). */
+const MAX_WINDOW_PAGES = 200
+
+/** The facts a drift compares, as recorded for the audit trail (what a repair overwrote). */
+export type DriftSnapshot = {
+  status: string | null
+  city: string | null
+  closeDate: string | null
+  closePrice: number | null
+  listPrice: number | null
+  subType: string | null
+  sqft: number | null
+}
 
 export type ClosingDrift = {
   key: string
   listNumber: string | null
   reasons: DriftReason[]
   /** What Spark says now. */
-  mls: { status: string | null; city: string | null; closeDate: string | null; propertyType: string | null }
-  /** What we held before any repair. */
-  ours: { status: string | null; city: string | null; closeDate: string | null } | null
+  mls: DriftSnapshot & { propertyType: string | null }
+  /** What we held before any repair: the values a repair replaces, kept so it can be audited or undone. */
+  ours: DriftSnapshot | null
 }
 
 export type ClosingsReconcileResult = {
@@ -59,9 +83,12 @@ export type ClosingsReconcileResult = {
   /** Keys we hold as closed in the window that Spark returns nothing for. Reported, never deleted. */
   notInSpark: string[]
   repaired: number
+  /** Keys actually rewritten (their membership and episodes are rebuilt too). */
+  repairedKeys: string[]
   repairFailed: string[]
   historyRefreshed: number
   refinalized: number
+  membershipRows: number
 }
 
 type SparkLite = { key: string; listNumber: string | null; fields: Record<string, unknown> }
@@ -84,7 +111,7 @@ function liteFrom(result: { StandardFields?: unknown }): SparkLite | null {
 export async function fetchSparkClosingsInWindow(from: string, to: string): Promise<Map<string, SparkLite>> {
   const out = new Map<string, SparkLite>()
   const filter = `StandardStatus Eq 'Closed' And CloseDate Ge ${from} And CloseDate Le ${to}`
-  for (let page = 1; page <= 200; page++) {
+  for (let page = 1; ; page++) {
     const res = await fetchSparkListingsPage(token(), { page, limit: 1000, filter, select: LITE_SELECT, orderby: '+ListingKey' })
     for (const r of res.D?.Results ?? []) {
       const lite = liteFrom(r)
@@ -92,6 +119,9 @@ export async function fetchSparkClosingsInWindow(from: string, to: string): Prom
     }
     const pages = res.D?.Pagination?.TotalPages ?? 1
     if (page >= pages) break
+    if (page >= MAX_WINDOW_PAGES) {
+      throw new Error(`[closingsReconcile] ${from}..${to} runs past ${MAX_WINDOW_PAGES} pages of closings; narrow the window`)
+    }
   }
   return out
 }
@@ -115,7 +145,10 @@ export async function fetchSparkLiteByKeys(keys: string[]): Promise<Map<string, 
 }
 
 /** Find every closing in the window where our copy disagrees with Spark. */
-export async function findClosingsDrift(from: string, to: string): Promise<Omit<ClosingsReconcileResult, 'repaired' | 'repairFailed' | 'historyRefreshed' | 'refinalized'>> {
+export async function findClosingsDrift(
+  from: string,
+  to: string,
+): Promise<Omit<ClosingsReconcileResult, 'repaired' | 'repairedKeys' | 'repairFailed' | 'historyRefreshed' | 'refinalized' | 'membershipRows'>> {
   const [spark, ourClosed] = await Promise.all([fetchSparkClosingsInWindow(from, to), getClosedListingKeysInWindow(from, to)])
   const reverseKeys = ourClosed.filter((k) => !spark.has(k))
   const reverse = reverseKeys.length > 0 ? await fetchSparkLiteByKeys(reverseKeys) : new Map<string, SparkLite>()
@@ -127,23 +160,41 @@ export async function findClosingsDrift(from: string, to: string): Promise<Omit<
   for (const [key, lite] of candidates) {
     const row = ours.get(key)
     const mls = factsFromSparkFields(lite.fields)
-    const reasons = driftReasons(row ? factsFromListingRow(row as unknown as Record<string, unknown>) : null, mls)
+    const held = row ? factsFromListingRow(row as unknown as Record<string, unknown>) : null
+    const reasons = driftReasons(held, mls)
     if (reasons.length === 0) continue
     drift.push({
       key,
       listNumber: row?.ListNumber ?? lite.listNumber,
       reasons,
       mls: {
-        status: mls.status,
-        city: mls.city,
-        closeDate: mls.closeDate,
+        ...snapshot(mls),
         propertyType: typeof lite.fields.PropertyType === 'string' ? lite.fields.PropertyType : null,
       },
-      ours: row ? { status: row.StandardStatus, city: row.City, closeDate: factsFromListingRow(row as unknown as Record<string, unknown>).closeDate } : null,
+      ours: held ? snapshot(held) : null,
     })
   }
-  drift.sort((a, b) => a.key.localeCompare(b.key))
-  return { window: { from, to }, sparkClosings: spark.size, ourClosedInWindow: ourClosed.length, drift, notInSpark }
+  // A broker override of status is our copy on purpose, not drift: drop that
+  // reason where the listing carries one (read only for the few candidates).
+  const statusDrift = drift.filter((d) => d.reasons.includes('status') && d.listNumber)
+  const overrides = statusDrift.length > 0 ? await getAdminOverrideFlags(statusDrift.map((d) => d.listNumber!)) : new Map()
+  const kept = drift
+    .map((d) => (d.listNumber && overrides.get(d.listNumber)?.status ? { ...d, reasons: d.reasons.filter((r) => r !== 'status') } : d))
+    .filter((d) => d.reasons.length > 0)
+  kept.sort((a, b) => a.key.localeCompare(b.key))
+  return { window: { from, to }, sparkClosings: spark.size, ourClosedInWindow: ourClosed.length, drift: kept, notInSpark }
+}
+
+function snapshot(f: DriftFacts): DriftSnapshot {
+  return {
+    status: f.status,
+    city: f.city,
+    closeDate: f.closeDate,
+    closePrice: f.closePrice,
+    listPrice: f.listPrice,
+    subType: f.subType,
+    sqft: f.sqft,
+  }
 }
 
 async function pool<T>(items: T[], size: number, fn: (item: T) => Promise<void>): Promise<void> {
@@ -161,12 +212,16 @@ async function pool<T>(items: T[], size: number, fn: (item: T) => Promise<void>)
  */
 export async function repairListingsFromSpark(keys: string[]): Promise<{
   repaired: number
+  repairedKeys: string[]
   failed: string[]
   historyRefreshed: number
   refinalized: number
+  membershipRows: number
 }> {
   const unique = [...new Set(keys)]
-  if (unique.length === 0) return { repaired: 0, failed: [], historyRefreshed: 0, refinalized: 0 }
+  if (unique.length === 0) {
+    return { repaired: 0, repairedKeys: [], failed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
+  }
   const mortgageRate = await resolveRunMortgageRate()
   const existing = await getListingsForReconcile(unique)
   const failed: string[] = []
@@ -236,21 +291,29 @@ export async function repairListingsFromSpark(keys: string[]): Promise<{
   await pool(written, REPAIR_HISTORY_CONCURRENCY, async (w) => {
     const h = await fetchAndInsertHistoryCore(token(), w.key)
     if (h.inserted > 0) historyRefreshed += 1
-    if (h.ok && w.status && isTerminalStatus(w.status)) refreeze.push(w.listNumber)
+    // Re-freeze only a terminal row whose history actually landed (or had none to land).
+    const historySaved = h.ok && (h.inserted > 0 || h.items.length === 0)
+    if (historySaved && w.status && isTerminalStatus(w.status)) refreeze.push(w.listNumber)
   })
   let refinalized = 0
-  for (let i = 0; i < refreeze.length; i += DELTA_SYNC.UPSERT_CHUNK) {
-    const chunk = refreeze.slice(i, i + DELTA_SYNC.UPSERT_CHUNK).map((ln) => ({
-      ListNumber: ln,
-      history_finalized: true,
-      history_verified_full: true,
-      is_finalized: true,
-    }))
-    const w = await upsertListingRows(chunk)
-    if (w.ok) refinalized += chunk.length
-    else console.error('[closingsReconcile] re-freeze failed', w.error)
+  if (refreeze.length > 0) {
+    const r = await setListingFreezeFlags(refreeze, { is_finalized: true, history_finalized: true, history_verified_full: true })
+    refinalized = r.updated
+    if (!r.ok) console.error('[closingsReconcile] re-freeze failed', r.error)
   }
-  return { repaired, failed, historyRefreshed, refinalized }
+
+  // Everything downstream of a listing row that a repair can move: its place
+  // membership (the city can change, and the pg_cron refresh skips a row whose
+  // MLS timestamp is old) and its on-market episodes (rebuilt from the history
+  // just replaced). Done here, per repair, so a later step that times out never
+  // leaves a repaired listing half-applied.
+  const repairedKeys = written.map((w) => w.key)
+  const membershipRows = repairedKeys.length > 0 ? await rebuildPlaceMembershipForKeys(repairedKeys) : 0
+  if (repairedKeys.length > 0) {
+    const spans = await refreshMarketFactSpansForKeys(repairedKeys)
+    if (spans.missed.length > 0) console.warn(`[closingsReconcile] episodes not rebuilt for ${spans.missed.join(', ')}`)
+  }
+  return { repaired, repairedKeys, failed, historyRefreshed, refinalized, membershipRows }
 }
 
 /** Find drift in the window and, when asked, repair it (capped). */
@@ -262,9 +325,17 @@ export async function reconcileClosings(opts: {
 }): Promise<ClosingsReconcileResult> {
   const found = await findClosingsDrift(opts.from, opts.to)
   if (!opts.repair || found.drift.length === 0) {
-    return { ...found, repaired: 0, repairFailed: [], historyRefreshed: 0, refinalized: 0 }
+    return { ...found, repaired: 0, repairedKeys: [], repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
   }
   const keys = found.drift.map((d) => d.key).slice(0, opts.maxRepairs ?? 2000)
   const r = await repairListingsFromSpark(keys)
-  return { ...found, repaired: r.repaired, repairFailed: r.failed, historyRefreshed: r.historyRefreshed, refinalized: r.refinalized }
+  return {
+    ...found,
+    repaired: r.repaired,
+    repairedKeys: r.repairedKeys,
+    repairFailed: r.failed,
+    historyRefreshed: r.historyRefreshed,
+    refinalized: r.refinalized,
+    membershipRows: r.membershipRows,
+  }
 }

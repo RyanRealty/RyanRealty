@@ -31,12 +31,16 @@ async function main() {
   if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
     throw new Error('usage: --from YYYY-MM-DD --to YYYY-MM-DD [--repair] [--max n] [--json file]')
   }
+  const max = flag('max')
+  if (max !== undefined && !(Number.isInteger(Number(max)) && Number(max) > 0)) {
+    throw new Error('--max takes a positive whole number')
+  }
   const t0 = Date.now()
   const r = await reconcileClosings({
     from,
     to,
     repair: argv.includes('--repair'),
-    maxRepairs: flag('max') ? Number(flag('max')) : undefined,
+    maxRepairs: max !== undefined ? Number(max) : undefined,
   })
   const byReason = new Map<string, number>()
   for (const d of r.drift) for (const reason of d.reasons) byReason.set(reason, (byReason.get(reason) ?? 0) + 1)
@@ -44,7 +48,9 @@ async function main() {
   console.log(`drifted ${r.drift.length}: ${[...byReason].map(([k, v]) => `${k} ${v}`).join(', ') || 'none'}`)
   console.log(`not in Spark (reported only): ${r.notInSpark.length}`)
   if (argv.includes('--repair')) {
-    console.log(`repaired ${r.repaired}, history replaced ${r.historyRefreshed}, re-frozen ${r.refinalized}, failed ${r.repairFailed.length}`)
+    console.log(
+      `repaired ${r.repaired}, history replaced ${r.historyRefreshed}, re-frozen ${r.refinalized}, membership rows rebuilt ${r.membershipRows}, failed ${r.repairFailed.length}`,
+    )
     if (r.repairFailed.length > 0) console.log(`  failed: ${r.repairFailed.join(', ')}`)
   }
   const out = flag('json')

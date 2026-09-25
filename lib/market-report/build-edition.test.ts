@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ReportBandRow, ReportSeriesRow } from '@/lib/data/market-report/series'
 import { buildBands, buildEdition, buildKpis, BandIndex, quarterEnds, SeriesIndex } from './build-edition'
 import { addMonths, lastDayOf } from './format'
+import { marketSummary, NOUN_SFR } from './narrative'
 
 function row(over: Partial<ReportSeriesRow> & Pick<ReportSeriesRow, 'period_kind' | 'period_end' | 'geo_type' | 'geo_slug'>): ReportSeriesRow {
   return {
@@ -72,6 +73,27 @@ describe('buildKpis', () => {
     expect(k.closed6).toBe(900)
     expect(k.mos).toBe(4)
     expect(k.verdict).toBe('seller')
+  })
+
+  it('reads the verdict from the unrounded value, and prints it so the number agrees', () => {
+    // Central Oregon, August 2026: 1,261 for sale / (1,880 sales in six months / 6) = 4.024,
+    // a balanced market. Rounded to one decimal first, it read "4.0, a seller's market";
+    // the site's formatter prints 4.1 so the digits cannot cross the threshold.
+    const months = Array.from({ length: 6 }, (_, i) => addMonths('2026-08', -i))
+    const idx4 = new SeriesIndex(
+      months.map((k, i) =>
+        row({
+          period_kind: 'month', period_end: lastDayOf(k), geo_type: 'region', geo_slug: 'central-oregon',
+          closed_n: i === 0 ? 305 : 315, median_close: 640_000, active_end_n: 1261,
+        }),
+      ),
+    )
+    const k = buildKpis(idx4, 'month', '2026-08', 'region:central-oregon', 'sfr')!
+    expect(k.closed6).toBe(1880)
+    expect(k.mos).toBeCloseTo(4.0245, 4)
+    expect(k.verdict).toBe('balanced')
+    const text = marketSummary('Central Oregon', NOUN_SFR, k).join(' ')
+    expect(text).toContain('4.1 months of supply, a balanced market')
   })
 
   it('reports year-over-year change only when both sides clear the floor', () => {

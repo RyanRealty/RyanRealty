@@ -14,7 +14,7 @@ import { STAT_BY_ID, marketVerdict as registryVerdict } from '@/lib/data/market-
 import type { ReportBandRow, ReportSeriesRow } from '@/lib/data/market-report/series'
 import { monthsOfSupply } from '@/lib/market/classify'
 import { PRICE_BANDS, SUPPLY_TIERS } from './bands'
-import { addMonths, lastDayOf, monthLabel, money, count, days, months1, pct, pctChange } from './format'
+import { addMonths, lastDayOf, monthLabel, money, count, days, mosText, pct, pctChange } from './format'
 import {
   BEND_DISTRICTS,
   BEND_QUADRANTS,
@@ -153,10 +153,16 @@ function closedSix(idx: SeriesIndex, endKey: string, geo: string, segment: strin
   return total
 }
 
+/**
+ * Months of supply, unrounded. The verdict is read from this value; printing
+ * goes through mosText (the site's formatMonthsOfSupply), which never rounds
+ * across a threshold. Rounding here first called 4.024 months "4.0, a
+ * seller's market" in the August 2026 edition, and six more readings from
+ * 2009 on.
+ */
 function mosFor(active: number, closed6: number | null): number | null {
   if (closed6 == null || closed6 < FLOORS.mos) return null
-  const m = monthsOfSupply(active, closed6)
-  return m == null ? null : Math.round(m * 10) / 10
+  return monthsOfSupply(active, closed6)
 }
 
 export function buildKpis(
@@ -379,7 +385,7 @@ function citeKpis(
   cite(out, `${tag}: homes for sale at period end`, count(k.active), row, 'active_end_n', definitionId)
   if (k.medianYoY != null) cite(out, `${tag}: median change from a year earlier`, pctChange(k.medianYoY), row, 'median_close (vs same window prior year)', definitionId)
   if (k.mos != null) {
-    cite(out, `${tag}: months of supply`, months1(k.mos), row, `active_end_n / (six-month sales ${k.closed6} / 6)`, definitionId)
+    cite(out, `${tag}: months of supply`, mosText(k.mos), row, `active_end_n / (six-month sales ${k.closed6} / 6)`, definitionId)
   }
   if (k.stl.v != null) cite(out, `${tag}: median sale-to-list`, pct(k.stl.v, 1), row, 'median_stl', definitionId)
 }

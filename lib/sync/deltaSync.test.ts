@@ -229,6 +229,49 @@ describe('computeDeltaPlan', () => {
     expect(plan.reopenedRows).toHaveLength(0)
   })
 
+  it('a reopened row that sold months ago reopens quietly: no sold event, no status history', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Closed', CloseDate: '2026-03-02', ClosePrice: 610000 })],
+      mapOf(existing({ is_finalized: true, StandardStatus: 'Pending' })),
+      { nowIso: NOW },
+    )
+    expect(plan.reopenedRows).toHaveLength(1)
+    expect(plan.activityEvents).toHaveLength(0)
+    expect(plan.statusHistoryRows).toHaveLength(0)
+    expect(plan.finalizeTargets).toHaveLength(1)
+  })
+
+  it('a reopened row never announces a price change', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Closed', CloseDate: '2026-07-10', ClosePrice: 480000, ListPrice: 495000 })],
+      mapOf(existing({ is_finalized: true, StandardStatus: 'Pending', ListPrice: 500000 })),
+      { nowIso: NOW },
+    )
+    expect(eventTypes(plan)).toEqual(['status_closed'])
+    expect(plan.priceHistoryRows).toHaveLength(0)
+  })
+
+  it('a withdrawn listing back on the market is still news when it reopens', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Active', ListPrice: 749999 })],
+      mapOf(existing({ is_finalized: true, StandardStatus: 'Withdrawn', ListPrice: 799000 })),
+      { nowIso: NOW },
+    )
+    expect(eventTypes(plan)).toEqual(['status_active'])
+    expect(plan.statusHistoryRows).toHaveLength(1)
+    expect(plan.finalizeTargets).toHaveLength(0)
+  })
+
+  it('a listing sent twice in one window is written once, as last sent', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ ListPrice: 510000 }), mkResult({ ListPrice: 505000 })],
+      mapOf(existing()),
+      { nowIso: NOW },
+    )
+    expect(plan.rowsToUpsert).toHaveLength(1)
+    expect(plan.rowsToUpsert[0].ListPrice).toBe(505000)
+  })
+
   it('reopened rows never share a batch with ordinary rows', () => {
     const plan = computeDeltaPlan(
       [

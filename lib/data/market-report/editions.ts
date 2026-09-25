@@ -149,8 +149,19 @@ async function ensureBucket(): Promise<void> {
 
 let bucketReady: Promise<void> | null = null
 
+/**
+ * Store an edition's PDF. A republished edition overwrites the same path, so
+ * the CDN copy is kept for an hour, not a day: a corrected report must not be
+ * served stale for long (the /pdf route's redirect carries the same hour).
+ */
 export async function uploadEditionPdf(editionMonth: string, pdf: Buffer): Promise<string> {
-  if (!bucketReady) bucketReady = ensureBucket()
+  // A failed bucket check is not remembered: the next upload in a warm function tries again.
+  if (!bucketReady) {
+    bucketReady = ensureBucket().catch((err) => {
+      bucketReady = null
+      throw err
+    })
+  }
   await bucketReady
   const path = editionPdfPath(editionMonth)
   const sb = createServiceClient()
@@ -158,7 +169,7 @@ export async function uploadEditionPdf(editionMonth: string, pdf: Buffer): Promi
     const { error } = await sb.storage.from(REPORT_BUCKET).upload(path, pdf, {
       contentType: 'application/pdf',
       upsert: true,
-      cacheControl: '86400',
+      cacheControl: '3600',
     })
     if (error) throw new Error(`[uploadEditionPdf ${editionMonth}] ${error.message}`)
   })
@@ -182,12 +193,28 @@ export type UpsertEditionInput = {
   generatedAt: string
 }
 
+/**
+ * Write an edition. A republished edition keeps the date it was first
+ * published; generated_at says when this version was built.
+ */
 export async function upsertEdition(input: UpsertEditionInput): Promise<void> {
   const sb = createServiceClient()
-  await withWriteRetry('upsertEdition', () => upsertEditionOnce(sb, input))
+  const { data: prior, error: readErr } = await sb
+    .from('market_report_editions')
+    .select('published_at')
+    .eq('edition_month', `${input.editionMonth.slice(0, 7)}-01`)
+    .maybeSingle()
+  if (readErr) throw new Error(`[upsertEdition ${input.editionMonth}] ${readErr.message}`)
+  const firstPublished = (prior as { published_at: string | null } | null)?.published_at ?? null
+  const publishedAt = input.status === 'published' ? (firstPublished ?? new Date().toISOString()) : null
+  await withWriteRetry('upsertEdition', () => upsertEditionOnce(sb, input, publishedAt))
 }
 
-async function upsertEditionOnce(sb: ReturnType<typeof createServiceClient>, input: UpsertEditionInput): Promise<void> {
+async function upsertEditionOnce(
+  sb: ReturnType<typeof createServiceClient>,
+  input: UpsertEditionInput,
+  publishedAt: string | null,
+): Promise<void> {
   const { error } = await sb.from('market_report_editions').upsert(
     {
       edition_month: `${input.editionMonth.slice(0, 7)}-01`,
@@ -204,7 +231,7 @@ async function upsertEditionOnce(sb: ReturnType<typeof createServiceClient>, inp
       definition_id: input.definitionId,
       hold_reason: input.holdReason,
       generated_at: input.generatedAt,
-      published_at: input.status === 'published' ? new Date().toISOString() : null,
+      published_at: publishedAt,
     },
     { onConflict: 'edition_month' },
   )

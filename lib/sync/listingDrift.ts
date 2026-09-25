@@ -77,7 +77,8 @@ export function factsFromListingRow(row: Record<string, unknown>): DriftFacts {
  * select and a full mapped row read the same number.
  */
 export function factsFromSparkFields(fields: Record<string, unknown>): DriftFacts {
-  const masked = (v: unknown) => (v === '********' ? null : v)
+  // Spark masks an unlicensed field as a run of asterisks; the mapper strips any run.
+  const masked = (v: unknown) => (typeof v === 'string' && /^\*+$/.test(v.trim()) ? null : v)
   return {
     status: text(masked(fields.StandardStatus)) ?? text(masked(fields.MlsStatus)),
     closeDate: dateOnly(masked(fields.CloseDate)),

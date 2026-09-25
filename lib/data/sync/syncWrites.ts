@@ -89,13 +89,66 @@ export async function getExistingListingsByListNumbers(
 ): Promise<ExistingListingRow[]> {
   const sb = client()
   if (!sb || listNumbers.length === 0) return []
-  const { data } = await sb
+  const { data, error } = await sb
     .from('listings')
     .select(
       'ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized, City, CloseDate, ClosePrice, property_sub_type, TotalLivingAreaSqFt, media_finalized',
     )
     .in('ListNumber', listNumbers.slice(0, 5000))
+  // A failed read must stop the tick (the cursor holds and the window retries),
+  // never read as "no existing rows": that would treat every listing as new,
+  // skip the finalized guard and emit a new_listing event for each.
+  if (error) throw new Error(`[getExistingListingsByListNumbers] ${error.message}`)
   return (data ?? []) as ExistingListingRow[]
+}
+
+/**
+ * Set the freeze flags on listings by ListNumber with a plain UPDATE.
+ *
+ * Never through upsertListingRows: that merges broker admin_overrides, which
+ * adds details, ListPrice and StandardStatus to an overridden row, and a
+ * batched upsert writes NULL for every column a sibling row lacks. A flag-only
+ * batch with one overridden listing in it would blank those three columns on
+ * every other listing in the batch.
+ */
+export async function setListingFreezeFlags(
+  listNumbers: string[],
+  flags: { is_finalized: boolean; history_finalized: boolean; history_verified_full?: boolean },
+): Promise<{ ok: boolean; updated: number; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, updated: 0, error: 'Supabase not configured' }
+  const unique = [...new Set(listNumbers.filter(Boolean))]
+  let updated = 0
+  for (let i = 0; i < unique.length; i += 200) {
+    const chunk = unique.slice(i, i + 200)
+    const { error } = await sb.from('listings').update(flags).in('ListNumber', chunk)
+    if (error) return { ok: false, updated, error: error.message }
+    updated += chunk.length
+  }
+  return { ok: true, updated }
+}
+
+/** Which facts a broker has overridden on these listings (read only for the handful a sync reopens). */
+export async function getAdminOverrideFlags(
+  listNumbers: string[],
+): Promise<Map<string, { status: boolean; listPrice: boolean }>> {
+  const out = new Map<string, { status: boolean; listPrice: boolean }>()
+  const sb = client()
+  const unique = [...new Set(listNumbers.filter(Boolean))]
+  if (!sb || unique.length === 0) return out
+  for (let i = 0; i < unique.length; i += 50) {
+    const { data, error } = await sb
+      .from('listings')
+      .select('ListNumber, overrides:details->admin_overrides')
+      .in('ListNumber', unique.slice(i, i + 50))
+    if (error) throw new Error(`[getAdminOverrideFlags] ${error.message}`)
+    for (const r of (data ?? []) as { ListNumber: string; overrides: Record<string, unknown> | null }[]) {
+      const o = r.overrides
+      if (!o || typeof o !== 'object') continue
+      out.set(String(r.ListNumber), { status: o.standard_status_set === true, listPrice: o.list_price_set === true })
+    }
+  }
+  return out
 }
 
 /**

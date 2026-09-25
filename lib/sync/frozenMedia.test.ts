@@ -8,7 +8,7 @@ function held(n: number): HeldMedia {
     PhotoURL: 'https://img/held.jpg',
     has_virtual_tour: true,
     OpenHouses: [{ Date: '2026-03-01' }],
-    details: { Photos: photos(n), VirtualTours: [{ Uri: 'https://tour' }], OpenHouses: [{ Date: '2026-03-01' }] },
+    details: { Photos: photos(n), Videos: [{ Uri: 'https://tour' }], OpenHouses: [{ Date: '2026-03-01' }] },
   }
 }
 
@@ -19,7 +19,7 @@ function mapped(n: number): Record<string, unknown> {
     has_virtual_tour: false,
     OpenHouses: null,
     media_finalized: true,
-    details: { PropertySubType: 'Single Family Residence', Photos: photos(n), VirtualTours: [], OpenHouses: [] },
+    details: { PropertySubType: 'Single Family Residence', Photos: photos(n), Videos: [], OpenHouses: [] },
   }
 }
 

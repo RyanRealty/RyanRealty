@@ -7,7 +7,7 @@
  * at. Voice: marketing_brain_skills/brand-voice/VOICE.md. No em dashes.
  */
 import { MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { count, days, money, monthName, months1 } from './format'
+import { count, days, money, monthName, mosText } from './format'
 import type { Kpis, TierRowOut, Verdict } from './types'
 
 export const VERDICT_LABEL: Record<Verdict, string> = {
@@ -25,7 +25,12 @@ export const VERDICT_THRESHOLD: Record<Verdict, string> = {
 
 export type HomesNoun = { one: string; many: string }
 
-export const NOUN_SFR: HomesNoun = { one: 'single-family home', many: 'single-family homes' }
+/**
+ * The main series is single-family homes on less than an acre; the noun says
+ * so, because a reader holding another report's all-lots median would
+ * otherwise compare two different populations.
+ */
+export const NOUN_SFR: HomesNoun = { one: 'single-family home on less than an acre', many: 'single-family homes on less than an acre' }
 export const NOUN_DETACHED: HomesNoun = { one: 'single-family home', many: 'single-family homes' }
 export const NOUN_CONDO: HomesNoun = { one: 'condo or townhome', many: 'condos and townhomes' }
 export const NOUN_ACREAGE: HomesNoun = { one: 'home on an acre or more', many: 'homes on an acre or more' }
@@ -60,7 +65,13 @@ export function marketSummary(place: string, noun: HomesNoun, k: Kpis): string[]
   }
 
   if (k.sales > 0) {
-    const sold = k.sales === 1 ? `1 ${noun.one} sold` : `${count(k.sales)} ${noun.many} sold`
+    // After the median sentence has named the homes, the count does not repeat the noun.
+    const named = out.length > 0
+    const sold = named
+      ? `${count(k.sales)} sold`
+      : k.sales === 1
+        ? `1 ${noun.one} sold`
+        : `${count(k.sales)} ${noun.many} sold`
     if (k.salesYoY != null) {
       const diff = k.sales - k.salesPrior
       const cmp = diff === 0 ? 'the same number as' : `${count(Math.abs(diff))} ${diff > 0 ? 'more' : 'fewer'} than`
@@ -80,7 +91,7 @@ export function marketSummary(place: string, noun: HomesNoun, k: Kpis): string[]
     const endMonth = monthName(k.period.end.slice(0, 7))
     const homes = k.active === 1 ? '1 was' : `${count(k.active)} were`
     out.push(
-      `At the end of ${endMonth}, ${homes} for sale against ${count(k.closed6)} sales over the past six months: ${months1(k.mos)} months of supply, ${VERDICT_LABEL[k.verdict]} by our measure (${VERDICT_THRESHOLD[k.verdict]}).`,
+      `At the end of ${endMonth}, ${homes} for sale against ${count(k.closed6)} sales over the past six months: ${mosText(k.mos)} months of supply, ${VERDICT_LABEL[k.verdict]} by our measure (${VERDICT_THRESHOLD[k.verdict]}).`,
     )
   }
   return out

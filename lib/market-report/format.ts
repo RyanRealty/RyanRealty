@@ -5,6 +5,7 @@
  * Rounding never changes the story (CLAUDE.md §0): prices round to the nearest
  * thousand in running text ($474,500 → $475K) and print in full in tables.
  */
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -103,4 +104,19 @@ export function days(n: number | null | undefined): string {
 export function months1(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '–'
   return n.toFixed(1)
+}
+
+/**
+ * Months of supply as printed beside its verdict: the site's own formatter
+ * (lib/format/months-of-supply.ts, held by ci:market-formula), which keeps one
+ * decimal and never lets the digits cross a threshold the value did not.
+ * 1,261 for sale against 1,880 sales in six months is 4.024 months, a
+ * balanced market; plain rounding printed "4.0", which reads as a seller's
+ * one (4 or less), so it prints "4.1". The verdict always comes from the
+ * unrounded value (CLAUDE.md §0: never round in a way that changes the
+ * narrative).
+ */
+export function mosText(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '–'
+  return formatMonthsOfSupply(n)
 }

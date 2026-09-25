@@ -44,7 +44,8 @@ export function mergeFrozenMedia(row: Record<string, unknown>, held: HeldMedia):
     if (count(ours) > count(details[key])) {
       details[key] = ours
       if (key === 'Photos') keptPhotos = true
-      if (key === 'VirtualTours') row.has_virtual_tour = held.has_virtual_tour
+      // The mapper derives has_virtual_tour from Videos (lib/listing-mapper.ts).
+      if (key === 'Videos') row.has_virtual_tour = held.has_virtual_tour
       if (key === 'OpenHouses') row.OpenHouses = held.OpenHouses
     }
   }

@@ -78,3 +78,21 @@ export async function getClosedListingKeysInWindow(from: string, to: string): Pr
   }
   return out
 }
+
+/**
+ * Rebuild place membership (region, city, county, polygons) for these listings.
+ * The pg_cron refresh only picks up a listing whose MLS timestamp is newer than
+ * its membership rows; a drift repair writes the MLS's own, older timestamp, so
+ * a repaired listing whose city changed would keep its old membership.
+ */
+export async function rebuildPlaceMembershipForKeys(keys: string[]): Promise<number> {
+  const sb = createServiceClient()
+  const unique = [...new Set(keys.filter(Boolean))]
+  let rows = 0
+  for (let i = 0; i < unique.length; i += 200) {
+    const { data, error } = await sb.rpc('place_membership_rebuild_keys', { p_keys: unique.slice(i, i + 200) })
+    if (error) throw new Error(`[rebuildPlaceMembershipForKeys] ${error.message}`)
+    rows += Number(data ?? 0)
+  }
+  return rows
+}

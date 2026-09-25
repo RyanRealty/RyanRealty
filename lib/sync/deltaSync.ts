@@ -36,7 +36,9 @@ import { SCHEDULED_EXPIRED_CAPTURE } from '@/lib/expired-listing-select'
 import {
   getSyncState,
   getExistingListingsByListNumbers,
+  getAdminOverrideFlags,
   getHeldMediaByListNumbers,
+  setListingFreezeFlags,
   upsertListingRows,
   insertPriceHistoryRows,
   insertStatusHistoryRows,
@@ -275,6 +277,12 @@ export function computeDeltaPlan(
     const priv = extractPrivateDetails(fields, result.CustomFields)
     if (priv) plan.privateRows.push({ listing_key: listingKey, private_data: priv })
 
+    // Where this row's events and history entries start, so a reopened row's
+    // can be trimmed below.
+    const eventsFrom = plan.activityEvents.length
+    const statusFrom = plan.statusHistoryRows.length
+    const priceFrom = plan.priceHistoryRows.length
+
     const nowTerminal = status ? isTerminalStatus(status) : false
 
     if (!existing) {
@@ -369,11 +377,64 @@ export function computeDeltaPlan(
       }
     }
 
-    if (reopened) plan.reopenedRows.push(row)
-    else plan.rowsToUpsert.push(row)
+    if (reopened) {
+      trimReopenedNews(plan, { eventsFrom, statusFrom, priceFrom }, row, nowIso)
+      plan.reopenedRows.push(row)
+    } else plan.rowsToUpsert.push(row)
   }
 
+  plan.rowsToUpsert = lastPerListNumber(plan.rowsToUpsert)
+  plan.reopenedRows = lastPerListNumber(plan.reopenedRows)
   return plan
+}
+
+/** How recent a sale must be for a reopened row to announce it. */
+export const REOPEN_NEWS_DAYS = 30
+
+/**
+ * A reopened row is a correction to a frozen record, and the change behind it
+ * can be months old: a withdrawn listing that sold in March reopens today
+ * because Spark touched it. Announcing that as today's news would put an old
+ * sale on the activity feed as "just sold". Keep what is live market news (a
+ * listing back on the market or under contract, a sale that closed in the last
+ * REOPEN_NEWS_DAYS) and drop the rest: price events on a reopened row, and the
+ * status event and history row of an old sale.
+ */
+function trimReopenedNews(
+  plan: DeltaPlan,
+  from: { eventsFrom: number; statusFrom: number; priceFrom: number },
+  row: Record<string, unknown>,
+  nowIso: string,
+): void {
+  const closeDay = typeof row.CloseDate === 'string' ? row.CloseDate.slice(0, 10) : null
+  const cutoff = new Date(Date.parse(nowIso) - REOPEN_NEWS_DAYS * 86_400_000).toISOString().slice(0, 10)
+  const recentSale = closeDay != null && closeDay >= cutoff
+  const keepEvent = (e: ActivityEventRow) =>
+    e.event_type === 'status_active' || e.event_type === 'status_pending' || (e.event_type === 'status_closed' && recentSale)
+  const kept = plan.activityEvents.slice(from.eventsFrom).filter(keepEvent)
+  const announced = kept.length > 0
+  plan.activityEvents.length = from.eventsFrom
+  plan.activityEvents.push(...kept)
+  if (!announced) plan.statusHistoryRows.length = from.statusFrom
+  plan.priceHistoryRows.length = from.priceFrom
+}
+
+/** Remove every trace of these listings from a plan (rows, events, history, finalize). */
+function dropFromPlan(plan: DeltaPlan, listingKeys: Set<string>): void {
+  const keyOf = (row: Record<string, unknown>) => String(row.ListingKey ?? row.ListNumber ?? '')
+  plan.reopenedRows = plan.reopenedRows.filter((r) => !listingKeys.has(keyOf(r)))
+  plan.reopened = plan.reopened.filter((r) => !listingKeys.has(r.listingKey))
+  plan.activityEvents = plan.activityEvents.filter((e) => !listingKeys.has(e.listing_key))
+  plan.statusHistoryRows = plan.statusHistoryRows.filter((h) => !listingKeys.has(h.listing_key))
+  plan.priceHistoryRows = plan.priceHistoryRows.filter((h) => !listingKeys.has(h.listing_key))
+  plan.finalizeTargets = plan.finalizeTargets.filter((t) => !listingKeys.has(t.listingKey))
+}
+
+/** One row per ListNumber, the last one Spark sent: a batched upsert refuses to touch a row twice. */
+function lastPerListNumber(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  const byNum = new Map<string, Record<string, unknown>>()
+  for (const r of rows) byNum.set(String(r.ListNumber ?? ''), r)
+  return rows.length === byNum.size ? rows : [...byNum.values()]
 }
 
 // ── Orchestrator ──────────────────────────────────────────────────────────────
@@ -572,25 +633,50 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     else { upsertFailed = true; console.error('[deltaSync] upsert error.', r.error) }
   }
 
-  // 1a. Reopened finalized rows: keep the frozen gallery where we hold more
-  // than the MLS now serves, then upsert them as their own batch.
+  // 1a. Reopened finalized rows: drop any whose only drift is a broker
+  // override (our copy on purpose), keep the frozen gallery where we hold more
+  // than the MLS now serves, then upsert them as their own batch. Guarded: a
+  // failure here holds the cursor (the window retries next tick) and the rest
+  // of this tick still writes its history, events and finalizations.
   if (plan.reopenedRows.length > 0) {
-    const preserve = plan.reopened.filter((r) => r.preserveMedia).map((r) => r.listNumber)
-    const held = preserve.length > 0 ? await getHeldMediaByListNumbers(preserve) : new Map()
-    const rows = plan.reopenedRows.map((row) => {
-      const h = held.get(String(row.ListNumber ?? ''))
-      return h ? mergeFrozenMedia(row, h) : row
-    })
-    for (let i = 0; i < rows.length; i += DELTA_SYNC.UPSERT_CHUNK) {
-      const chunk = rows.slice(i, i + DELTA_SYNC.UPSERT_CHUNK)
-      const r = await upsertListingRows(chunk)
-      if (r.ok) totalUpserted += chunk.length
-      else { upsertFailed = true; console.error('[deltaSync] reopened upsert error.', r.error) }
+    try {
+      const overridable = plan.reopened.filter((r) => r.reasons.includes('status') || r.reasons.includes('list_price'))
+      const overrides = overridable.length > 0 ? await getAdminOverrideFlags(overridable.map((r) => r.listNumber)) : new Map()
+      const explained = new Set(
+        plan.reopened
+          .filter((r) => {
+            const o = overrides.get(r.listNumber)
+            if (!o) return false
+            const left = r.reasons.filter((x) => !(x === 'status' && o.status) && !(x === 'list_price' && o.listPrice))
+            return left.length === 0
+          })
+          .map((r) => r.listingKey),
+      )
+      if (explained.size > 0) dropFromPlan(plan, explained)
+
+      const preserve = plan.reopened.filter((r) => r.preserveMedia).map((r) => r.listNumber)
+      const held = preserve.length > 0 ? await getHeldMediaByListNumbers(preserve) : new Map()
+      const rows = plan.reopenedRows.map((row) => {
+        const h = held.get(String(row.ListNumber ?? ''))
+        return h ? mergeFrozenMedia(row, h) : row
+      })
+      for (let i = 0; i < rows.length; i += DELTA_SYNC.UPSERT_CHUNK) {
+        const chunk = rows.slice(i, i + DELTA_SYNC.UPSERT_CHUNK)
+        const r = await upsertListingRows(chunk)
+        if (r.ok) totalUpserted += chunk.length
+        else { upsertFailed = true; console.error('[deltaSync] reopened upsert error.', r.error) }
+      }
+      if (rows.length > 0) {
+        console.log(
+          `[deltaSync] reopened ${rows.length} finalized row(s): ` +
+            plan.reopened.map((r) => `${r.listNumber} (${r.reasons.join('+')})`).join(', '),
+        )
+      }
+    } catch (err) {
+      upsertFailed = true
+      console.error('[deltaSync] reopened rows skipped this tick.', err instanceof Error ? err.message : err)
+      dropFromPlan(plan, new Set(plan.reopened.map((r) => r.listingKey)))
     }
-    console.log(
-      `[deltaSync] reopened ${rows.length} finalized row(s): ` +
-        plan.reopened.map((r) => `${r.listNumber} (${r.reasons.join('+')})`).join(', '),
-    )
   }
 
   // 1b. Divert confidential keys to listing_private (best-effort).
@@ -641,9 +727,12 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
       { accessToken },
     )
     if (hadSuccessfulFetch && auxSync.ok) {
-      const r = await upsertListingRows([
-        { ListNumber: t.listNumber, history_finalized: true, history_verified_full: true, is_finalized: true },
-      ])
+      // A plain UPDATE, never the override-merging upsert (see setListingFreezeFlags).
+      const r = await setListingFreezeFlags([t.listNumber], {
+        history_finalized: true,
+        history_verified_full: true,
+        is_finalized: true,
+      })
       if (r.ok) listingsFinalized++
       else console.error(`[deltaSync] finalization error for ${t.listNumber}.`, r.error)
     }

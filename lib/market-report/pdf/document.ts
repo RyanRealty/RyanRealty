@@ -4,7 +4,7 @@
  * bands reserved by @page, running marks in the margin strips, sections that
  * start on fresh paper and flow, nothing clipped.
  *
- * Print register (CLAUDE.md §3): navy on cream, Amboqia on section titles only,
+ * Print register (CLAUDE.md §3): navy on a cream sheet, Amboqia on section titles only,
  * Geist for every figure, table and sentence. The brokerage speaks, so Jax
  * signs the back page and no broker headshot appears.
  */
@@ -18,7 +18,7 @@ import {
   money,
   monthLabel,
   monthName,
-  months1,
+  mosText,
   pct,
   pctChange,
   quarterLabel,
@@ -94,8 +94,8 @@ function kpiTiles(k: Kpis, opts: { twelve?: Kpis } = {}): string {
     tile(`Median sale price · ${when}`, esc(money(k.median.v)), priorSub(k.medianYoY)),
     tile(`Homes sold · ${when}`, esc(count(k.sales)), salesSub),
     tile('Median days to pending', esc(k.dtc.v == null ? '–' : String(Math.round(k.dtc.v))), k.dtcPrior.v != null ? `${Math.round(k.dtcPrior.v)} a year ago` : '&nbsp;'),
-    tile('For sale at month end', esc(count(k.active)), k.medianActiveList.v != null ? `median ask ${esc(money(k.medianActiveList.v))}` : '&nbsp;'),
-    tile('Months of supply', esc(months1(k.mos)), k.verdict ? esc(VERDICT_LABEL[k.verdict]) : '&nbsp;'),
+    tile('For sale at month end', esc(count(k.active)), k.medianActiveList.v != null ? `median first asking price ${esc(money(k.medianActiveList.v))}` : '&nbsp;'),
+    tile('Months of supply', esc(mosText(k.mos)), k.verdict ? esc(VERDICT_LABEL[k.verdict]) : '&nbsp;'),
     tile('Sale to list price', esc(ratioPct(k.stl.v)), k.priceCutShare.v != null ? `${esc(pct(k.priceCutShare.v))} had a price cut` : '&nbsp;'),
   ]
   const t = opts.twelve
@@ -157,16 +157,16 @@ function monthlyPages(sec: MarketSection): string {
   const mosChart = figure(
     'Months of supply',
     k.mos != null && k.verdict
-      ? `${months1(k.mos)} months of supply at the end of ${monthName(k.period.end.slice(0, 7))}: ${VERDICT_LABEL[k.verdict]} by our measure.`
+      ? `${mosText(k.mos)} months of supply at the end of ${monthName(k.period.end.slice(0, 7))}: ${VERDICT_LABEL[k.verdict]} by our measure.`
       : '',
     lineChart({ series: [{ name: 'Months of supply', points: s.mos, style: 'subject' }], unit: 'months', xTick: monthXTick, heightIn: 1.75, bands: MOS_BANDS }),
-    src('homes for sale at month end ÷ average monthly sales of the prior six months'),
+    src(`homes for sale at month end ÷ average monthly sales over the six months through that month`),
   )
   const ppsfChart = figure(
-    'Median price per square foot',
+    'Median price per square foot of living area',
     rangeClaim(s.ppsf, (v) => `$${Math.round(v)}`, 'Homes sold for a median of'),
     lineChart({ series: [{ name: 'Median price per square foot', points: s.ppsf, style: 'subject' }], unit: 'ppsf', xTick: monthXTick, heightIn: 1.6, labelExtremes: true }),
-    src('median of each sale’s price per above-grade square foot'),
+    src('median of each sale’s price per square foot of living area, as the MLS records it'),
   )
   const flowChart = figure(
     'New listings, pendings and sales',
@@ -186,7 +186,7 @@ function monthlyPages(sec: MarketSection): string {
   )
   const finChart = figure(
     'How buyers paid',
-    k.cashShare.v != null ? `${pct(k.cashShare.v)} of ${monthName(k.period.end.slice(0, 7))} sales were paid in cash.` : '',
+    k.cashShare.v != null ? `Of the ${monthName(k.period.end.slice(0, 7))} sales that recorded how the buyer paid, ${pct(k.cashShare.v)} were cash.` : '',
     lineChart({
       series: [
         { name: 'Conventional loan', points: s.conventional, style: 'subject', nameLabel: true },
@@ -265,7 +265,7 @@ function bandPage(sec: MarketSection): string {
   <td class="n">${count(r.sales12)}</td>
   <td class="n">${count(r.active)}</td>
   <td class="barcell"><span class="b1" style="width:${w1}%"></span><span class="b2" style="width:${w2}%"></span></td>
-  <td class="n">${r.mos == null ? '<span class="na">–</span>' : months1(r.mos)}</td>
+  <td class="n">${r.mos == null ? '<span class="na">–</span>' : mosText(r.mos)}</td>
   <td>${r.verdict ? `<span class="pill">${VERDICT_SHORT[r.verdict]}</span>` : ''}</td>
 </tr>`
     })
@@ -274,7 +274,7 @@ function bandPage(sec: MarketSection): string {
   const tierRows: DotRow[] = tiers.map((t) => ({
     tick: t.label,
     value: t.mos!,
-    label: `${months1(t.mos)} mo`,
+    label: `${mosText(t.mos)} mo`,
     note: ` · ${count(t.active)} for sale`,
   }))
   const tierChart =
@@ -283,14 +283,14 @@ function bandPage(sec: MarketSection): string {
           'Months of supply by price',
           sec.summary.find((s) => s.startsWith('By price')) ?? '',
           dotRows(tierRows, { bands: MOS_BANDS.map((b) => ({ ...b, to: Math.min(b.to, 12) })), clampMax: 12, minLabel: '0 months', maxLabel: '12+ months' }),
-          `${sec.geo.label}, ${SEGMENT_TITLE[sec.segment].toLowerCase()} · for sale at the end of ${monthLabel(endKey)} ÷ average monthly sales, prior six months · tiers need 30 six-month sales · ${SOURCE}`,
+          `${sec.geo.label}, ${SEGMENT_TITLE[sec.segment].toLowerCase()} · for sale at the end of ${monthLabel(endKey)} ÷ average monthly sales over the six months through ${monthLabel(endKey)} · tiers need 30 six-month sales · ${SOURCE}`,
         )
       : ''
   return `
 <section class="sheet-break market">
   <p class="kicker">${esc(sec.geo.label)} · by price</p>
   <h3 class="h3big">Sales and homes for sale by price band</h3>
-  <p class="claim">Dark bar: homes for sale at the end of ${esc(monthName(endKey))}. Light bar: homes sold in an average month over the last six.</p>
+  <p class="claim">Dark bar: homes for sale at the end of ${esc(monthName(endKey))}. Light bar: homes sold in an average month over the six months through ${esc(monthName(endKey))}.</p>
   <table class="t bands">
     <thead><tr><th>Price band</th><th class="n">Sold in ${esc(monthName(endKey).slice(0, 3))}</th><th class="n">Sold, 12 months</th><th class="n">For sale</th><th>For sale vs a month of sales</th><th class="n">Months</th><th>Market</th></tr></thead>
     <tbody>${body}</tbody>
@@ -312,7 +312,7 @@ function marketTable(rows: readonly TableRow[], opts: { period?: boolean } = {})
   <td class="n">${esc(count(k.sales))}</td>
   <td class="n">${k.dtc.v == null ? '<span class="na">–</span>' : Math.round(k.dtc.v)}</td>
   <td class="n">${esc(count(k.active))}</td>
-  <td class="n">${k.mos == null ? '<span class="na">–</span>' : months1(k.mos)}</td>
+  <td class="n">${k.mos == null ? '<span class="na">–</span>' : mosText(k.mos)}</td>
   <td>${verdictCell(k)}</td>
 </tr>`
     })
@@ -426,7 +426,7 @@ function townsPage(p: EditionPayload): string {
     .map((t) => {
       const k = t.kpis
       const y = t.kpis12
-      return `<tr><th>${esc(t.geo.label)}</th><td class="n">${esc(money(k.median.v))}</td><td class="n">${esc(count(k.sales))}</td><td class="n">${k.dtc.v == null ? '<span class="na">–</span>' : Math.round(k.dtc.v)}</td><td class="n">${esc(money(y.median.v))}</td><td class="n">${yoyCell(y.medianYoY)}</td><td class="n">${esc(count(y.sales))}</td><td class="n">${esc(count(k.active))}</td><td class="n">${k.mos == null ? '<span class="na">–</span>' : months1(k.mos)}</td><td>${verdictCell(k)}</td></tr>`
+      return `<tr><th>${esc(t.geo.label)}</th><td class="n">${esc(money(k.median.v))}</td><td class="n">${esc(count(k.sales))}</td><td class="n">${k.dtc.v == null ? '<span class="na">–</span>' : Math.round(k.dtc.v)}</td><td class="n">${esc(money(y.median.v))}</td><td class="n">${yoyCell(y.medianYoY)}</td><td class="n">${esc(count(y.sales))}</td><td class="n">${esc(count(k.active))}</td><td class="n">${k.mos == null ? '<span class="na">–</span>' : mosText(k.mos)}</td><td>${verdictCell(k)}</td></tr>`
     })
     .join('')
   const first = p.towns[0]?.kpis
@@ -513,7 +513,7 @@ function communitiesPage(p: EditionPayload): string {
   const rows = p.communities
     .map((c) => {
       const k = c.kpis
-      return `<tr><th>${esc(c.geo.label)}</th><td>${esc(c.near)}</td><td class="n">${esc(money(k.median.v))}</td><td class="n">${yoyCell(k.medianYoY)}</td><td class="n">${esc(count(k.sales))}</td><td class="n">${k.dtc.v == null ? '<span class="na">–</span>' : Math.round(k.dtc.v)}</td><td class="n">${esc(count(k.active))}</td><td class="n">${k.mos == null ? '<span class="na">–</span>' : months1(k.mos)}</td></tr>`
+      return `<tr><th>${esc(c.geo.label)}</th><td>${esc(c.near)}</td><td class="n">${esc(money(k.median.v))}</td><td class="n">${yoyCell(k.medianYoY)}</td><td class="n">${esc(count(k.sales))}</td><td class="n">${k.dtc.v == null ? '<span class="na">–</span>' : Math.round(k.dtc.v)}</td><td class="n">${esc(count(k.active))}</td><td class="n">${k.mos == null ? '<span class="na">–</span>' : mosText(k.mos)}</td></tr>`
     })
     .join('')
   const dots: DotRow[] = p.communities
@@ -548,7 +548,7 @@ function methodsPage(p: EditionPayload, a: ReportAssets): string {
     </div>
     <div>
       <h4>The measures</h4>
-      <p><strong>Median sale price:</strong> the middle sale, half above and half below. <strong>Days to pending:</strong> the median days from listing to accepted offer for homes that sold (recorded from 2006). <strong>Months of supply:</strong> homes for sale at month end divided by the average monthly sales of the prior six months. ${esc(VERDICT_RULE)} <strong>Sale to list:</strong> the median ratio of sale price to final asking price.</p>
+      <p><strong>Median sale price:</strong> the middle sale, half above and half below. <strong>Days to pending:</strong> the median days from listing to accepted offer for homes that sold (recorded from 2006). <strong>Months of supply:</strong> homes for sale at month end divided by the average monthly sales over the six months through that month end. ${esc(VERDICT_RULE)} <strong>Sale to list:</strong> the median ratio of sale price to final asking price.</p>
       <h4>When a number is withheld</h4>
       <p>A median prints only on 10 or more sales. A change from a year ago, a share, a market call and months of supply print only on 30 or more. Below that you will see a dash, not an estimate.</p>
       <h4>Homes for sale in past months</h4>
@@ -574,7 +574,7 @@ ${pageContractCss(MARGIN_IN)}
 ${fontCss}
 :root { --navy:#102742; --cream:#faf8f4; --muted:rgba(16,39,66,0.62); --line:rgba(16,39,66,0.16); --tint:rgba(16,39,66,0.06); --exception:#A8452B; }
 * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-html, body { background:#ffffff; color:var(--navy); font-family:'Geist', system-ui, sans-serif; font-size:9.3pt; line-height:1.42; }
+html, body { background:var(--cream); color:var(--navy); font-family:'Geist', system-ui, sans-serif; font-size:9.3pt; line-height:1.42; }
 h1, h2 { font-family:'Amboqia Boriango', Georgia, serif; font-weight:400; letter-spacing:-0.01em; margin:0; color:var(--navy); }
 h1 { font-size:40pt; line-height:1.05; margin:0.04in 0 0.08in; }
 h2 { font-size:25pt; line-height:1.1; margin:0.02in 0 0.08in; }
@@ -639,7 +639,7 @@ svg .bar { fill:rgba(16,39,66,0.24); }
 svg .bar.hi { fill:#102742; }
 .zone-name { position:absolute; transform:translateY(-50%); font-size:6.2pt; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
 .dot { position:absolute; width:5pt; height:5pt; margin:-2.5pt 0 0 -2.5pt; border-radius:50%; background:var(--navy); }
-.pt-label { position:absolute; transform:translate(4pt, -50%); font-size:7.4pt; font-weight:600; white-space:nowrap; background:rgba(255,255,255,0.85); padding:0 1.5pt; }
+.pt-label { position:absolute; transform:translate(4pt, -50%); font-size:7.4pt; font-weight:600; white-space:nowrap; background:rgba(250,248,244,0.88); padding:0 1.5pt; }
 .pt-label.r { transform:translate(calc(-100% - 5pt), -50%); }
 .pt-label.hi { transform:translate(-50%, calc(-100% - 3pt)); font-weight:500; }
 .pt-label.lo { transform:translate(-50%, 3pt); font-weight:500; }
@@ -660,7 +660,7 @@ svg .bar.hi { fill:#102742; }
 .drow + .drow .dz em { display:none; }
 .dstem { position:absolute; top:50%; height:0.9pt; background:rgba(16,39,66,0.45); }
 .dd { position:absolute; top:50%; width:6pt; height:6pt; margin:-3pt 0 0 -3pt; border-radius:50%; background:var(--navy); }
-.dd.base { background:#fff; border:1pt solid var(--navy); }
+.dd.base { background:var(--cream); border:1pt solid var(--navy); }
 .dval { font-size:8pt; font-weight:600; white-space:nowrap; }
 .dnote { font-weight:400; color:var(--muted); }
 .axisrow { height:10pt; }

@@ -328,8 +328,12 @@ page-grade program.
 
 | Gate | npm | What it fails on |
 |---|---|---|
-| `check-no-vendor-name.mjs` | `ci:no-vendor-name` | the outside monthly-report appraiser's name appearing anywhere in tracked text — source, SQL, migrations, generated types, scripts, comments, docs, CHANGELOG (Matt 2026-09-25: replacing that vendor's report with our own; the name may not appear anywhere in the repo or the production database). Exceptions: the `sendBeacon` browser API, and third-party data we do not author (`data/search-metadata/spark-metadata.snapshot.json`, `docs/research/*.json`). Prints file:line per violation. |
+| `check-no-vendor-name.mjs` | `ci:no-vendor-name` | the outside monthly-report appraiser's name appearing anywhere in tracked text — source, SQL, migrations, generated types, scripts, comments, docs, CHANGELOG (Matt 2026-09-25: replacing that vendor's report with our own; the name may not appear anywhere in the repo or in a live object of the production database). Exceptions: the `sendBeacon` browser API, and third-party data we do not author (`data/search-metadata/spark-metadata.snapshot.json`, `docs/research/*.json`). Prints file:line per violation. |
 
 The legacy report-RPC engine this vendor's name used to be baked into was renamed to
 `report_period_metrics_core` / `report_price_bands_core` the same day (same signatures,
 wrappers unchanged); see `supabase/migrations/20260925030000_report_core_defect_fixes.sql`.
+The seven production migration-history labels that carried the name were renamed too
+(`supabase_migrations.schema_migrations.name`, versions unchanged). The SQL text each of
+those migrations ran (`statements`) still names the old functions: it is the record of
+what ran, not a live object, and is not rewritten. The gate reads the repo only.

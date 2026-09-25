@@ -67,7 +67,7 @@ describe('fact readers', () => {
       PropertySubType: 'Single Family Residence',
       BuildingAreaTotal: 2838,
       LivingArea: 2700,
-      ListPrice: '********',
+      ListPrice: '****',
     })
     expect(f).toEqual({ ...base, listPrice: null })
   })

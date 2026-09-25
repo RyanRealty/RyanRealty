@@ -14,8 +14,9 @@
  *   --series-cache <file>           reuse loaded series and bands from a JSON file (write it when absent); local review only
  *
  * --publish and --draft run the Spark × Supabase reconciliation gate on every
- * month (CLAUDE.md §0): a month that fails is stored as a held draft with the
- * reason and is not published. Without --publish or --draft nothing is written
+ * month (CLAUDE.md §0, lib/market-report/reconcile.ts): a month where any
+ * figure Spark can reproduce is more than 1% off is stored as a held draft with
+ * the reason and is not published. Without --publish or --draft nothing is written
  * to Supabase. The series must already be computed (scripts/market-report-compute.ts).
  */
 import { config as loadEnv } from 'dotenv'
@@ -30,6 +31,7 @@ import type { ReportBandRow, ReportSeriesRow } from '@/lib/data/market-report/se
 import { buildEdition } from '@/lib/market-report/build-edition'
 import { addMonths } from '@/lib/market-report/format'
 import { loadEditionInputs, publishEdition } from '@/lib/market-report/pipeline'
+import { liveReconcileSources } from '@/lib/market-report/reconcile'
 import { renderEditionHtmlDocument, renderEditionPdf } from '@/lib/market-report/pdf/render'
 
 const argv = process.argv.slice(2)
@@ -74,6 +76,8 @@ async function main() {
   console.log(`loaded ${inputs.series.length} series rows and ${inputs.bands.length} band rows in ${((Date.now() - t0) / 1000).toFixed(0)}s`)
 
   const counts = { published: 0, draft: 0, held: 0, skipped: 0, built: 0 }
+  // One set of sources for the run: each month is pulled from Spark once, not once per edition.
+  const sources = liveReconcileSources()
   for (const month of months(from, to)) {
     if (status) {
       if (has('skip-published')) {
@@ -84,7 +88,7 @@ async function main() {
         }
       }
       const t1 = Date.now()
-      const outcome = await publishEdition({ month, inputs, status })
+      const outcome = await publishEdition({ month, inputs, status, sources })
       counts[outcome.status] += 1
       console.log(
         outcome.status === 'held'

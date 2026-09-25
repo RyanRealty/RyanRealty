@@ -36,8 +36,13 @@ export const maxDuration = 800
 
 /** Trailing months reconciled and recomputed each run. */
 const WINDOW_MONTHS = 13
-/** Repairs capped per run so one bad day cannot spend the whole Spark rate window. */
-const MAX_REPAIRS = 400
+/**
+ * Repairs capped per run so one bad day cannot spend the whole Spark rate window
+ * or the function's 800 s: a repair is one expanded Spark read, a history fetch,
+ * a membership rebuild and an episode rebuild. Rows past the cap are still drift
+ * tomorrow and are repaired then.
+ */
+const MAX_REPAIRS = 150
 /** A healthy delta sync leaves a handful; more than this is a sync incident. */
 const REPAIR_ALERT_AT = 25
 
@@ -75,13 +80,14 @@ export async function GET(request: Request) {
       })
     }
 
-    const repairedKeys = recon.drift.map((d) => d.key).filter((k) => !recon.repairFailed.includes(k))
+    // A repair already rebuilt each repaired listing's membership and episodes;
+    // the window refresh brings its report attributes and the compact copies along.
     const refreshed = await refreshReportWindow({
       fromMonth,
       toMonth: lastMonth,
       spanSince: isoDay(new Date(Date.now() - 7 * 86_400_000)),
       attributesSince: new Date(Date.now() - 2 * 86_400_000).toISOString(),
-      repairedKeys: repair ? repairedKeys.slice(0, MAX_REPAIRS) : [],
+      repairedKeys: recon.repairedKeys,
       log: say,
     })
 
@@ -93,6 +99,7 @@ export async function GET(request: Request) {
         ours: recon.ourClosedInWindow,
         drifted: recon.drift.length,
         repaired: recon.repaired,
+        membershipRows: recon.membershipRows,
         repairFailed: recon.repairFailed,
         notInSpark: recon.notInSpark,
       },
