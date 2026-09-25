@@ -70,7 +70,7 @@ export async function GET(request: Request) {
   try {
     const recon = await reconcileClosings({ from: windowStart, to: isoDay(new Date()), repair, maxRepairs: MAX_REPAIRS })
     say(
-      `closings ${windowStart}..today: Spark ${recon.sparkClosings}, ours ${recon.ourClosedInWindow}, drifted ${recon.drift.length}, repaired ${recon.repaired}, failed ${recon.repairFailed.length}, not in Spark ${recon.notInSpark.length}`,
+      `closings ${windowStart}..today: Spark ${recon.sparkClosings}, ours ${recon.ourClosedInWindow}, drifted ${recon.drift.length}, repaired ${recon.repaired}, failed ${recon.repairFailed.length}, not in Spark ${recon.notInSpark.length} (absent from the MLS: ${recon.absentFromMls.recorded} recorded, ${recon.absentFromMls.cleared} released)`,
     )
     if (recon.drift.length > REPAIR_ALERT_AT) {
       await queueBrokerHealthAlert({

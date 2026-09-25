@@ -30,9 +30,12 @@ import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import {
+  clearAbsentFromMls,
+  getAbsentFromMlsKeys,
   getClosedListingKeysInWindow,
   getListingsForReconcile,
   rebuildPlaceMembershipForKeys,
+  recordAbsentFromMls,
 } from '@/lib/data/sync/closingsReconcile'
 import {
   getAdminOverrideFlags,
@@ -80,8 +83,15 @@ export type ClosingsReconcileResult = {
   sparkClosings: number
   ourClosedInWindow: number
   drift: ClosingDrift[]
-  /** Keys we hold as closed in the window that Spark returns nothing for. Reported, never deleted. */
+  /**
+   * Keys we hold as closed in the window that Spark returns nothing for, even
+   * looked up by key. Never deleted; in repair mode they are recorded in
+   * market_listing_absent_from_mls, which leaves them out of every Market
+   * Truth statistic (Matt 2026-09-25).
+   */
   notInSpark: string[]
+  /** Repair mode only: absences recorded this run, and earlier ones the MLS serves again (removed). */
+  absentFromMls: { recorded: number; cleared: number }
   repaired: number
   /** Keys actually rewritten (their membership and episodes are rebuilt too). */
   repairedKeys: string[]
@@ -148,7 +158,12 @@ export async function fetchSparkLiteByKeys(keys: string[]): Promise<Map<string, 
 export async function findClosingsDrift(
   from: string,
   to: string,
-): Promise<Omit<ClosingsReconcileResult, 'repaired' | 'repairedKeys' | 'repairFailed' | 'historyRefreshed' | 'refinalized' | 'membershipRows'>> {
+): Promise<
+  Omit<
+    ClosingsReconcileResult,
+    'repaired' | 'repairedKeys' | 'repairFailed' | 'historyRefreshed' | 'refinalized' | 'membershipRows' | 'absentFromMls'
+  >
+> {
   const [spark, ourClosed] = await Promise.all([fetchSparkClosingsInWindow(from, to), getClosedListingKeysInWindow(from, to)])
   const reverseKeys = ourClosed.filter((k) => !spark.has(k))
   const reverse = reverseKeys.length > 0 ? await fetchSparkLiteByKeys(reverseKeys) : new Map<string, SparkLite>()
@@ -317,6 +332,29 @@ export async function repairListingsFromSpark(keys: string[]): Promise<{
 }
 
 /** Find drift in the window and, when asked, repair it (capped). */
+/**
+ * Record the window's closings Spark no longer serves, and release any key
+ * recorded earlier that Spark serves again. The recorded list is short, so
+ * every run re-checks all of it by key.
+ */
+async function syncAbsentFromMls(notInSpark: string[]): Promise<{ recorded: number; cleared: number }> {
+  const rows = notInSpark.length > 0 ? await getListingsForReconcile(notInSpark) : new Map()
+  const recorded = await recordAbsentFromMls(
+    notInSpark.map((key) => {
+      const row = rows.get(key)
+      return {
+        listingKey: key,
+        listNumber: row?.ListNumber ?? null,
+        closeDate: row ? factsFromListingRow(row as unknown as Record<string, unknown>).closeDate : null,
+      }
+    }),
+  )
+  const held = (await getAbsentFromMlsKeys()).filter((k) => !notInSpark.includes(k))
+  const back = held.length > 0 ? [...(await fetchSparkLiteByKeys(held)).keys()] : []
+  const cleared = await clearAbsentFromMls(back)
+  return { recorded, cleared }
+}
+
 export async function reconcileClosings(opts: {
   from: string
   to: string
@@ -324,13 +362,15 @@ export async function reconcileClosings(opts: {
   maxRepairs?: number
 }): Promise<ClosingsReconcileResult> {
   const found = await findClosingsDrift(opts.from, opts.to)
+  const absentFromMls = opts.repair ? await syncAbsentFromMls(found.notInSpark) : { recorded: 0, cleared: 0 }
   if (!opts.repair || found.drift.length === 0) {
-    return { ...found, repaired: 0, repairedKeys: [], repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
+    return { ...found, absentFromMls, repaired: 0, repairedKeys: [], repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
   }
   const keys = found.drift.map((d) => d.key).slice(0, opts.maxRepairs ?? 2000)
   const r = await repairListingsFromSpark(keys)
   return {
     ...found,
+    absentFromMls,
     repaired: r.repaired,
     repairedKeys: r.repairedKeys,
     repairFailed: r.failed,

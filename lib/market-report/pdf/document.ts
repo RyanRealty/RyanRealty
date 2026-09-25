@@ -540,7 +540,7 @@ function methodsPage(p: EditionPayload, a: ReportAssets): string {
   <div class="cols">
     <div>
       <h4>The data</h4>
-      <p>Every figure comes from Multiple Listing Service records of closed sales and listings in Central Oregon, received through Oregon Data Share and checked by Ryan Realty's market data system. Figures are computed fresh for each edition and frozen when it publishes. This edition reflects MLS records as of ${esc(formatCalendarDay(p.dataCompleteThrough) || p.dataCompleteThrough)}.</p>
+      <p>Every figure comes from Multiple Listing Service records of closed sales and listings in Central Oregon, received through Oregon Data Share and checked by Ryan Realty's market data system. Figures are computed fresh for each edition and frozen when it publishes. Before it publishes, every sale count and median it prints for Central Oregon and each city and town is recomputed from the MLS feed itself and must agree within 1%; a sale the MLS no longer shows is left out. This edition reflects MLS records as of ${esc(formatCalendarDay(p.dataCompleteThrough) || p.dataCompleteThrough)}.</p>
       <h4>The homes</h4>
       <p>The main series is single-family homes on less than one acre, which keeps rural and acreage properties from pulling on in-town prices. Condos and townhomes, and homes on an acre or more, have their own tables. Manufactured homes, land, farms, multi-family buildings and fractional interests are left out.</p>
       <h4>The places</h4>

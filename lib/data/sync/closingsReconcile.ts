@@ -99,3 +99,44 @@ export async function rebuildPlaceMembershipForKeys(keys: string[]): Promise<num
   }
   return rows
 }
+
+/**
+ * Closed sales we hold that the MLS no longer serves at all (Matt 2026-09-25:
+ * left out of every statistic). Market Truth reads this table when it builds
+ * sale facts (refresh_market_fact_sale marks them absent_from_mls).
+ */
+export async function recordAbsentFromMls(
+  rows: { listingKey: string; listNumber: string | null; closeDate: string | null }[],
+): Promise<number> {
+  if (rows.length === 0) return 0
+  const sb = createServiceClient()
+  const now = new Date().toISOString()
+  const { error } = await sb.from('market_listing_absent_from_mls').upsert(
+    rows.map((r) => ({
+      listing_key: r.listingKey,
+      list_number: r.listNumber,
+      close_date: r.closeDate,
+      last_confirmed_at: now,
+    })),
+    { onConflict: 'listing_key' },
+  )
+  if (error) throw new Error(`[recordAbsentFromMls] ${error.message}`)
+  return rows.length
+}
+
+/** Every listing key currently recorded as absent from the MLS (a short list). */
+export async function getAbsentFromMlsKeys(): Promise<string[]> {
+  const sb = createServiceClient()
+  const { data, error } = await sb.from('market_listing_absent_from_mls').select('listing_key').limit(5000)
+  if (error) throw new Error(`[getAbsentFromMlsKeys] ${error.message}`)
+  return ((data ?? []) as { listing_key: string }[]).map((r) => r.listing_key)
+}
+
+/** Remove keys the MLS serves again. */
+export async function clearAbsentFromMls(keys: string[]): Promise<number> {
+  if (keys.length === 0) return 0
+  const sb = createServiceClient()
+  const { error } = await sb.from('market_listing_absent_from_mls').delete().in('listing_key', keys) // @canonical-key — Spark ListingKey values
+  if (error) throw new Error(`[clearAbsentFromMls] ${error.message}`)
+  return keys.length
+}

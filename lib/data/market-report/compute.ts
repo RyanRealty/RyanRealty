@@ -145,10 +145,18 @@ export async function pruneMarketFactSale(since: string): Promise<number> {
   return Number(data ?? 0)
 }
 
-/** Upsert sale facts for closings on or after `since` (and listings modified since). */
-export async function refreshMarketFactSale(since: string): Promise<unknown> {
+/**
+ * Upsert sale facts for closings on or after `since` (and listings modified
+ * since). With `until` the window closes before that date and the
+ * modified-since clause is off: a year at a time for a historical rebuild,
+ * inside the function's 120 s statement limit.
+ */
+export async function refreshMarketFactSale(since: string, until?: string): Promise<unknown> {
   const sb = createServiceClient()
-  const { data, error } = await sb.rpc('refresh_market_fact_sale', { p_since: since })
+  const { data, error } = await sb.rpc(
+    'refresh_market_fact_sale',
+    until ? { p_since: since, p_until: until } : { p_since: since },
+  )
   if (error) throw new Error(`[refreshMarketFactSale] ${error.message}`)
   return data
 }

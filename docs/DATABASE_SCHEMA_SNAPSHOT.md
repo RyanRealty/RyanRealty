@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-25T10:57:29.524Z
+**Generated:** 2026-09-25T12:02:59.076Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 599,446**
+### `listing_tile_mv` · **rows ≈ 599,575**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -3611,6 +3611,17 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `source` | text | no |  |
 | `captured_at` | timestamp with time zone | no | now() |
 | `observation_date` | date | yes |  |
+
+### `market_listing_absent_from_mls`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `list_number` | text | yes |  |
+| `close_date` | date | yes |  |
+| `first_detected_at` | timestamp with time zone | no | now() |
+| `last_confirmed_at` | timestamp with time zone | no | now() |
+| `note` | text | yes |  |
 
 ### `market_metric`
 

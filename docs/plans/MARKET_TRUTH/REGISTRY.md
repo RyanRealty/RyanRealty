@@ -285,8 +285,14 @@ holds; these are the report's additional predicates. Definition id on every row:
 - **Flow.** New listings = episodes whose on-market date falls in the period, relists within 90 days
   excluded. Pendings = episodes that went under contract in the period.
 - **The gate (CLAUDE.md §0).** Every edition runs the Spark × Supabase reconciliation before it
-  renders: each monthly market's closed single-family sales, by listing key, against Spark. More
-  than 1% missing holds the edition as a draft with the reason and texts the owner.
+  renders (`lib/market-report/reconcile.ts`): every figure it prints that Spark can reproduce
+  (closed-sale counts and median close prices for the region, the cities and the towns, by
+  segment, for the headline window, the same window a year earlier, the six months behind months
+  of supply, the chart points the daily refresh can still move, and the price-band counts) is
+  recomputed from Spark with the method's own exclusions, and each must agree within 1%, by count,
+  by median, and by listing key (missing, extra, close price). Any miss holds the edition as a draft
+  with the reason and texts the owner. On-market counts on a past day and the polygon geographies
+  have no Spark equivalent; they rest on the same sales and episodes the gate checks.
 - **Freshness.** `/api/cron/market-report-refresh` (daily) runs the closings reconciliation repair
   (`lib/sync/closingsReconcile.ts`) over the trailing 13 months, then refreshes the store and
   recomputes those months. `/api/cron/market-report-publish` (the 8th) publishes the month that
@@ -300,3 +306,22 @@ that relisted and sold, or a close date corrected later, never landed (fixed: a 
 reopens when the MLS changes a fact a statistic reads, `lib/sync/listingDrift.ts`); and a batch of
 spring 2026 rows was written without those fields and never modified again (caught by the daily
 reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is no longer Closed.
+
+**Matt's two rulings, 2026-09-25 (they bind every statistic, not only the report).**
+
+1. **The MLS record wins over our stored copy.** Where Spark's current record of a closed sale
+   differs from ours on a fact a statistic reads, ours is repaired from Spark
+   (`scripts/closings-reconcile.ts --repair`; the daily cron does the same for the trailing 13
+   months). The first full pass over 1995 to 2023 found 2,530 closings, 2,520 of them close
+   prices: 2,318 were in 2000 and 2001, where 1,541 of our stored close prices equaled the list
+   price (the April 2026 fill-in from listing history, `apply_close_price_from_history_batch`,
+   wrote an asking price where the sold price was blank); in 2007 to 2012 several were tenfold
+   typos the MLS had since corrected. Every year's closed count matched Spark exactly. The values replaced
+   are kept in each run's JSON (`ours` beside `mls`) so a repair can be audited or undone.
+2. **A closed sale the MLS no longer serves is left out.** When a closing we hold returns nothing
+   from Spark even looked up by listing key, the reconciliation records it in
+   `market_listing_absent_from_mls`, and `refresh_market_fact_sale` marks it `absent_from_mls`
+   (unpublishable, migration `20260925060000`); a key Spark serves again is released. Seeded with
+   the three found on 2026-09-25 (15714 Tumble Weed Turn, Sisters; 18581 Couch Market, Bend; 717
+   Larch, Redmond). Engines that read `listings` directly rather than `market_fact_sale` (the
+   older `market_stats_cache`, the CMA's `sale_pricing_facts`) do not read the table yet.

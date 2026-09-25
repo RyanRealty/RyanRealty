@@ -10,7 +10,9 @@
  *   --max <n>                  repair at most n listings (default 2000)
  *   --json <file>              write the full result (every drifted key and why) to a file
  *
- * Without --repair nothing is written. See lib/sync/closingsReconcile.ts.
+ * Without --repair nothing is written. With it, closings Spark no longer serves
+ * at all are recorded in market_listing_absent_from_mls (left out of every
+ * Market Truth statistic, Matt 2026-09-25). See lib/sync/closingsReconcile.ts.
  */
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
@@ -46,7 +48,12 @@ async function main() {
   for (const d of r.drift) for (const reason of d.reasons) byReason.set(reason, (byReason.get(reason) ?? 0) + 1)
   console.log(`window ${from}..${to}: Spark ${r.sparkClosings} closings; we hold ${r.ourClosedInWindow} closed`)
   console.log(`drifted ${r.drift.length}: ${[...byReason].map(([k, v]) => `${k} ${v}`).join(', ') || 'none'}`)
-  console.log(`not in Spark (reported only): ${r.notInSpark.length}`)
+  console.log(
+    `not in Spark: ${r.notInSpark.length}` +
+      (argv.includes('--repair')
+        ? ` (recorded as absent from the MLS: ${r.absentFromMls.recorded}; back in the MLS and released: ${r.absentFromMls.cleared})`
+        : ' (reported only)'),
+  )
   if (argv.includes('--repair')) {
     console.log(
       `repaired ${r.repaired}, history replaced ${r.historyRefreshed}, re-frozen ${r.refinalized}, membership rows rebuilt ${r.membershipRows}, failed ${r.repairFailed.length}`,
