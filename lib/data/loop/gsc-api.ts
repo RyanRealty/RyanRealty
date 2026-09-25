@@ -14,6 +14,8 @@
  * the trend reader) does not pay for it.
  */
 
+import { GOOGLE_AUTH_TIMEOUT_MS } from '../../google-deadline'
+
 export type GscApiRow = {
   keys: string[]
   clicks: number
@@ -42,6 +44,14 @@ export type GscQueryFn = (req: GscRequest) => Promise<GscApiRow[]>
 export const GSC_PAGE_SIZE = 25_000
 
 /**
+ * Per-request deadline for one Search Analytics page. The only live route
+ * caller, api/cron/loop-weekly-measure (maxDuration 300), pages through several
+ * dimension combinations via pullAllGscRows, so this bounds one page, not the
+ * run: generous for a 25,000-row page, well inside the 300 s route.
+ */
+export const GSC_REQUEST_TIMEOUT_MS = 20_000
+
+/**
  * GSC keeps processing a day for two to three days; a day inside that lag reads
  * low (gsc-trend-12: 2026-09-20 was 0 in site_signal and 996 impressions in the
  * API). Every reader here treats the last three days as provisional and never
@@ -63,8 +73,11 @@ export async function createGscQuery(): Promise<GscQueryFn | null> {
     email,
     key: key.replace(/\\n/g, '\n'),
     scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+    // google-auth-library gives the token POST no timeout of its own: a
+    // stalled token endpoint would hang the first query. Queries set their own.
+    transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
   })
-  const sc = google.searchconsole({ version: 'v1', auth })
+  const sc = google.searchconsole({ version: 'v1', auth, timeout: GSC_REQUEST_TIMEOUT_MS })
   const siteUrl = gscSiteUrl()
   return async (req) => {
     const { data } = await sc.searchanalytics.query({ siteUrl, requestBody: req })

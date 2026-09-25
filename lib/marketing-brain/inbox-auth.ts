@@ -22,6 +22,7 @@
  * Locked 2026-05-14.
  */
 
+import { GOOGLE_AUTH_TIMEOUT_MS, withDeadline } from '@/lib/google-deadline'
 import { google } from 'googleapis'
 import type { OAuth2Client, JWT } from 'google-auth-library'
 
@@ -50,12 +51,16 @@ function buildJwt(scopes: string[]): JWT {
     key: privateKey.replace(/\\n/g, '\n'),
     scopes,
     subject: MARKETING_INBOX_USER,
+    // google-auth-library gives the token POST no timeout of its own, so a
+    // stalled token endpoint hung the marketing-inbox cron until the platform
+    // killed it (the gap lib/gmail-draft.ts had). tryAuthorize races it too.
+    transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
   })
 }
 
 async function tryAuthorize(client: JWT): Promise<AuthStatus> {
   try {
-    await client.authorize()
+    await withDeadline(client.authorize(), GOOGLE_AUTH_TIMEOUT_MS, 'Gmail auth')
     return { ok: true, client, error: null }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

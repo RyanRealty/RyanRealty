@@ -37,7 +37,7 @@ import {
 import { isSenderAllowed } from './inbox-allowlist'
 import { parseInboxEmail } from './inbox-parser'
 import { dispatchParsedEmail, type InboxEvent } from './inbox-dispatcher'
-import { sendInboxReply, type ReplyContext } from './inbox-reply'
+import { sendInboxReply, MARKETING_INBOX_REQUEST_TIMEOUT_MS, type ReplyContext } from './inbox-reply'
 
 let _supabase: SupabaseClient | null = null
 
@@ -201,6 +201,7 @@ export async function pollMarketingInbox(opts: PollOptions = {}): Promise<PollRe
   // is required for the reply layer. We try a combined client first; if
   // gmail.modify is not yet in the DWD allowlist, fall back to send-only
   // so the reply layer still works (it does not need read).
+  // inbox-auth.ts bounds the token exchange itself (GOOGLE_AUTH_TIMEOUT_MS).
   const readAuth = await getReadAuth()
   if (!readAuth.ok || !readAuth.client) {
     return {
@@ -219,7 +220,9 @@ export async function pollMarketingInbox(opts: PollOptions = {}): Promise<PollRe
     errors.push(`Send auth failed (replies will be skipped): ${sendAuth.error ?? 'unknown'}`)
   }
 
-  const gmail = google.gmail({ version: 'v1', auth: readAuth.client as JWT })
+  // The loop below handles up to `maxMessages` inside a 60 s route, so a stalled
+  // list/get/modify call fails its own message (each has a try/catch), not the tick.
+  const gmail = google.gmail({ version: 'v1', auth: readAuth.client as JWT, timeout: MARKETING_INBOX_REQUEST_TIMEOUT_MS })
   const supabase = getSupabase()
 
   let unreadList: { id: string; threadId: string }[] = []

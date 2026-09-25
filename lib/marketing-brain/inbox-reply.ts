@@ -25,6 +25,7 @@ import { siteOrigin } from '@/lib/site-origin'
 import type { JWT } from 'google-auth-library'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { MARKETING_INBOX_USER } from './inbox-auth'
+import { answeredStatus } from '@/lib/google-deadline'
 
 let _supabase: SupabaseClient | null = null
 
@@ -58,6 +59,14 @@ export interface ReplyOutcome {
   voice_violations?: string[]
   error?: string
 }
+
+/**
+ * Per-request deadline for the confirmation send. app/api/cron/marketing-inbox-poll
+ * (maxDuration 60) loops over up to 50 messages a tick, each able to reach this
+ * send, so one stalled reply must fail fast and let the loop move on, not eat
+ * the whole run the way a stalled call with no deadline did before.
+ */
+export const MARKETING_INBOX_REQUEST_TIMEOUT_MS = 15_000
 
 // The override still folds a production host (the Vercel alias included) to
 // https://ryan-realty.com: this link goes out in an email (lib/site-origin.ts).
@@ -187,7 +196,7 @@ export async function sendInboxReply(
     return { status: 'failed', voice_violations: voice.violations, error: 'voice_validation_failed' }
   }
 
-  const gmail = google.gmail({ version: 'v1', auth: authClient })
+  const gmail = google.gmail({ version: 'v1', auth: authClient, timeout: MARKETING_INBOX_REQUEST_TIMEOUT_MS })
   const raw = buildRawMime({
     to: ctx.to_email,
     toName: ctx.to_name,
@@ -219,14 +228,21 @@ export async function sendInboxReply(
     return { status: 'sent', gmail_message_id: res.data.id ?? undefined }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
+    // No HTTP status back means the send left and Gmail never answered
+    // (timeout, dropped connection): it may already be in the thread, so the
+    // row must not read as a confirmed failure.
+    const reply_error =
+      answeredStatus(e) == null
+        ? `Gmail did not confirm this reply (${msg.replace(/\.$/, '')}). It may have gone out: check Sent in ${MARKETING_INBOX_USER} before treating it as unsent.`
+        : msg
     await supabase
       .from('marketing_inbox_events')
       .update({
         replied_at: new Date().toISOString(),
         reply_status: 'failed',
-        reply_error: msg,
+        reply_error,
       })
       .eq('id', ctx.inbox_event_id)
-    return { status: 'failed', error: msg }
+    return { status: 'failed', error: reply_error }
   }
 }

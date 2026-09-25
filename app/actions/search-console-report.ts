@@ -1,6 +1,16 @@
 'use server'
 
 import { google } from 'googleapis'
+import { GOOGLE_AUTH_TIMEOUT_MS } from '@/lib/google-deadline'
+
+/**
+ * Per-request deadline for the 3 parallel Search Analytics queries below. The
+ * tightest live caller (DashboardSitePerformancePanel, an admin page render
+ * with no maxDuration override of its own) carries no generous budget, so this
+ * stays a fraction of even a short platform default; the other caller,
+ * api/cron/marketing-snapshot-gsc (maxDuration 300), has room to spare.
+ */
+const SEARCH_CONSOLE_REQUEST_TIMEOUT_MS = 10_000
 
 export type SearchConsoleSummary = {
   clicks: number
@@ -59,8 +69,12 @@ export async function getSearchConsoleSummary(startDate: string, endDate: string
       email: clientEmail,
       key: privateKeyRaw.replace(/\\n/g, '\n'),
       scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+      // google-auth-library gives the token POST no timeout of its own: a
+      // stalled token endpoint would hang all three queries below. Each query
+      // sets its own deadline.
+      transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
     })
-    const webmasters = google.webmasters({ version: 'v3', auth })
+    const webmasters = google.webmasters({ version: 'v3', auth, timeout: SEARCH_CONSOLE_REQUEST_TIMEOUT_MS })
 
     const [summaryRes, queryRes, pageRes] = await Promise.all([
       webmasters.searchanalytics.query({

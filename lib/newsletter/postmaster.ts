@@ -27,6 +27,7 @@ import 'server-only'
 import { google } from 'googleapis'
 import type { JWT } from 'google-auth-library'
 import type { gmailpostmastertools_v1 } from 'googleapis'
+import { GOOGLE_AUTH_TIMEOUT_MS, withDeadline } from '@/lib/google-deadline'
 
 export const POSTMASTER_DOMAINS = [
   'ryan-realty.com',
@@ -49,6 +50,15 @@ export const POSTMASTER_SETUP_HINT =
 
 /** SPF/DKIM/DMARC pass ratio at or above this maps to spf_ok/dkim_ok/dmarc_ok = true. */
 const AUTH_OK_THRESHOLD = 0.95
+
+/**
+ * Per-request deadline for trafficStats.list. The one live caller,
+ * api/cron/postmaster-sync (maxDuration 60), loops over POSTMASTER_DOMAINS
+ * (3 domains, each isolated by its own try/catch) and pages this per domain, so
+ * one stalled domain must fail fast and let the loop reach the other two, not
+ * eat the whole run.
+ */
+export const POSTMASTER_REQUEST_TIMEOUT_MS = 15_000
 
 export type PostmasterAuthStatus = {
   ok: boolean
@@ -79,9 +89,13 @@ export async function getPostmasterAuth(): Promise<PostmasterAuthStatus> {
     key: privateKey.replace(/\\n/g, '\n'),
     scopes: [POSTMASTER_SCOPE],
     subject: POSTMASTER_IMPERSONATE_USER,
+    // google-auth-library gives the token POST no timeout of its own (same gap
+    // lib/gmail-draft.ts had): a stalled token endpoint would hang this call
+    // forever. The explicit authorize() below races the same deadline.
+    transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
   })
   try {
-    await jwt.authorize()
+    await withDeadline(jwt.authorize(), GOOGLE_AUTH_TIMEOUT_MS, 'Postmaster auth')
     return { ok: true, client: jwt, error: null }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -154,7 +168,7 @@ export async function getPostmasterStats(
   domain: string,
   days = 7,
 ): Promise<DeliverabilityUpsertRow[]> {
-  const api = google.gmailpostmastertools({ version: 'v1', auth })
+  const api = google.gmailpostmastertools({ version: 'v1', auth, timeout: POSTMASTER_REQUEST_TIMEOUT_MS })
   const end = new Date()
   const start = new Date(end.getTime() - days * 86_400_000)
   const s = toDateParts(start)
