@@ -64,15 +64,14 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).toMatch(/<V3Heading/)
     expect(SRC).not.toMatch(/headingLevel=\{1\}/)
     expect(SRC).toMatch(/id="homes"/)
-    expect(SRC).toMatch(/loadPlaceStockTiles/)
+    expect(SRC).toMatch(/const liveStockTiles = population\.tiles/)
     expect(SRC).toMatch(/placeStockSectionsFromTiles/)
     expect(SRC).toMatch(/community-field-types/)
     expect(SRC).toMatch(/loadCommunitySerpStock/)
     expect(SRC).toMatch(/belongingHeadline\(/)
     expect(SRC).toMatch(/\{headline\}/)
-    // seedRing keys on having a TRUSTED polygon (county plat-union first,
-    // reliable stored boundary second) — not on hull reliability alone, which
-    // left Black Butte Ranch's verified union undrawn (2026-09-01).
+    // seedRing keys on having a TRUSTED outline: the stored row, keyed by the
+    // registry and passed by the one trust rule (2026-09-25).
     expect(SRC).toMatch(/const seedRing = mapPolygon != null/)
     expect(SRC).not.toMatch(/<V3Stage/)
     expect(SRC).not.toMatch(/<V3Field/)
@@ -81,10 +80,14 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/every home for sale in/i)
   })
 
-  it('never seeds an unreliable hull — only the plat union or a reliable boundary — and keeps stock on-page', () => {
-    expect(SRC).toMatch(/UNRELIABLE_BOUNDARY_SLUGS/)
-    expect(SRC).toMatch(/isBoundaryReliable\(slug\)/)
-    expect(SRC).toMatch(/resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\)/)
+  it('never seeds an untrusted outline, and keeps stock on-page', () => {
+    // ONE outline (the stored row keyed by the registry entry, never the URL)
+    // and ONE trust decision, which the homes list obeys too.
+    expect(SRC).toMatch(/communityOutlineRef\(registryEntry\.slug\)/)
+    expect(SRC).toMatch(/const mapPolygon = population\.outline/)
+    expect(SRC).not.toMatch(/getResortBoundaryGeoJSON/)
+    expect(SRC).not.toMatch(/boundarySanityBaseline/)
+    expect(SRC).not.toMatch(/geoSlug: slug \}/)
     expect(SRC).toMatch(/href: '#homes'/)
     expect(SRC).toMatch(/belongingCaption\(/)
     expect(SRC).toMatch(/belongingFigures\(richContent, placeCharacter\)/)
@@ -120,5 +123,34 @@ describe('community first screen leftover face + split', () => {
   it('does not put an em dash in the atlas claim (Matt lock 2026-09-20)', () => {
     expect(SRC).not.toMatch(/claimText=/)
     expect(SRC).not.toMatch(/every active and pending/)
+  })
+})
+
+describe('community map and homes: one for-sale population (2026-09-25)', () => {
+  it('reads the population once and hands the SAME population to the homes list and the map', () => {
+    expect(SRC).toMatch(/getCommunityPopulation\(slug\)/)
+    expect(SRC.match(/getCommunityPopulation\(/g) ?? []).toHaveLength(1)
+    // Homes: the population's tiles, nothing else.
+    expect(SRC).toMatch(/const liveStockTiles = population\.tiles/)
+    expect(SRC).not.toMatch(/loadPlaceStockTiles\(/)
+    // Map: the population's outline, and its on-market dots are the population.
+    expect(SRC).toMatch(/const mapPolygon = population\.outline/)
+    expect(SRC).toMatch(/onMarket: population\.atlasTiles/)
+    // The dots route rebuilds the SAME population from the page's own reference.
+    expect(SRC).toMatch(/boundaryRef: mapPolygon \? \{ kind: 'community', slug \} : null/)
+  })
+
+  it('draws a community with no outline from exactly its listed keys (recorded plats only, Matt 2026-09-25)', () => {
+    expect(SRC).toMatch(/const atlasKeys = mapPolygon \? null : population\.atlasTiles\.map/)
+    expect(SRC).toMatch(/listingKeys: atlasKeys \?\? \[\], label: publicName, onMarket: population\.atlasTiles/)
+    expect(SRC).toMatch(/const listedCount = placeHomes\.length/)
+    expect(SRC).toMatch(/countIsAliasAware: aliasAwareCount != null && population\.countsMlsNames/)
+    expect(SRC).not.toMatch(/fieldTiles/)
+  })
+
+  it('keys every outline read by the registry entry, gated by the one trust rule', () => {
+    expect(SRC).toMatch(/getCommunitySubdivisions\(\{ geoType: 'neighborhood', geoSlug: trustedOutlineSlug \}\)/)
+    expect(SRC).toMatch(/getPlaceSchools\('neighborhood', trustedOutlineSlug\)/)
+    expect(SRC).not.toMatch(/getGeoBoundaryMapData\(/)
   })
 })

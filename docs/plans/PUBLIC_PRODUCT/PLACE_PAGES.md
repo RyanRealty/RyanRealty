@@ -154,6 +154,8 @@ Do not open with a number hero. Do not put subdivisions after a long “about”
 
 A master-plan page that opens like Bend has already lost to tetherow.com.
 
+**Community for-sale population: recorded plats only (Matt 2026-09-25).** On a community page the map and the homes list count exactly the listings inside the community's trusted recorded outline: its stored `boundaries` neighborhood row, keyed by the registry entry's durable slug (never the URL: `/communities/juniper-preserve` reads `pronghorn`), read only when the one trust rule allows it ([`lib/communities/community-outline.ts`](../../../lib/communities/community-outline.ts), fed by `data/boundary-sanity-baseline.json` `allowed`). No MLS name match counts where a trusted outline exists, and no county-plat label pattern stands in for the outline (`'%broken top%'` drew Tetherow into Broken Top). A condo tract that genuinely belongs is added to the OUTLINE, never matched by name (Black Butte Ranch's Country House condominium, 2026-09-25). Only a community with no outline row is counted by its MLS names, and its map is drawn from exactly those keys. The one population function is `getCommunityPopulation` ([`lib/place/community-population.ts`](../../../lib/place/community-population.ts)); the homes list, the Atlas's on-market dots, the page head's count and the Atlas dots route all read it, and its one switch is `COMMUNITY_FOR_SALE_SCOPE` (`'outline'`). `lib/place/community-population.test.ts` fails when the map and the homes count come from different populations.
+
 ---
 
 ## Plat — `/subdivisions/…`

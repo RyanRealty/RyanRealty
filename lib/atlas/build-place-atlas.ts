@@ -64,6 +64,15 @@ export type AtlasScope = {
    * had failed (evaluator round five, SUBDIVISION-CHART-7).
    */
   listingKeys?: readonly string[]
+  /**
+   * The on-market population a page LISTS, when the page decides it rather
+   * than the boundary (a registry community: lib/place/community-population.ts,
+   * the same set its homes list shows). Replaces the scope's own publicly
+   * active tiles (Active and Active Under Contract), so the map's "for sale"
+   * and the homes under it are one population by construction. Pending and
+   * the closes that draw the heat stay the boundary's.
+   */
+  onMarket?: readonly AtlasTile[]
 }
 
 export type AtlasPopulation = {
@@ -154,6 +163,28 @@ export async function readAtlasTiles(
     const prior = lastGood.get(key)
     return prior ? { tiles: prior.tiles, complete: false, readAt: prior.readAt } : { tiles: [], complete: false, readAt: nowMs }
   }
+}
+
+/**
+ * The tiles a scope draws. The scope's boundary (or its keys) picks them from
+ * the read; `onMarket`, when the page supplies it, IS the publicly active
+ * population and replaces the boundary's own. A key the read also holds under
+ * another status keeps the page's copy, so no listing is drawn twice.
+ */
+export function atlasScopeTiles(
+  all: readonly AtlasTile[],
+  scope: Pick<AtlasScope, 'boundary' | 'listingKeys' | 'onMarket'>,
+): { tiles: AtlasTile[]; outside: number } {
+  const keys = scope.listingKeys && scope.listingKeys.length > 0 ? new Set(scope.listingKeys) : null
+  const base = keys ? all.filter((t) => keys.has(String(t.listingKey))) : tilesInside(all, scope.boundary)
+  if (!scope.onMarket) return { tiles: base, outside: 0 }
+  const publicActive = new Set<string>(PUBLIC_ACTIVE_STATUSES)
+  const onMarket = scope.onMarket.filter((t) => publicActive.has(String(t.status)))
+  const listed = new Set(onMarket.map((t) => String(t.listingKey)))
+  const rest = base.filter((t) => !publicActive.has(String(t.status)) && !listed.has(String(t.listingKey)))
+  const inside = new Set(tilesInside(onMarket, scope.boundary).map((t) => String(t.listingKey)))
+  const outside = scope.boundary ? onMarket.filter((t) => !inside.has(String(t.listingKey))).length : 0
+  return { tiles: [...onMarket, ...rest], outside }
 }
 
 /** Keep the tiles inside a recorded boundary. No boundary keeps everything. */
@@ -372,18 +403,17 @@ type AtlasCore = {
   eventSeeds: AtlasEventSeed[]
   counts: AtlasPopulation['counts']
   leaseKeys: string[]
+  /** On-market listings the page supplied that sit outside the boundary (0 without `onMarket`). */
+  outside?: number
   readAt: number
   complete: boolean
 }
 
-type AtlasCoreScope = Pick<AtlasScope, 'cities' | 'boundary' | 'listingKeys'>
+type AtlasCoreScope = Pick<AtlasScope, 'cities' | 'boundary' | 'listingKeys' | 'onMarket'>
 
 async function buildAtlasCoreUncached(scope: AtlasCoreScope, nowMs: number): Promise<AtlasCore> {
   const { tiles: all, complete, readAt } = await readAtlasTiles(scope.cities, nowMs)
-  const keys = scope.listingKeys && scope.listingKeys.length > 0 ? new Set(scope.listingKeys) : null
-  const tiles = keys
-    ? all.filter((t) => keys.has(String(t.listingKey)))
-    : tilesInside(all, scope.boundary)
+  const { tiles, outside } = atlasScopeTiles(all, scope)
   const dots = atlasDotsFromTiles(tiles, nowMs)
   return {
     dots,
@@ -391,6 +421,7 @@ async function buildAtlasCoreUncached(scope: AtlasCoreScope, nowMs: number): Pro
     eventSeeds: eventSeedsFromTiles(tiles),
     counts: countsFromDots(dots, new Set(tiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size),
     leaseKeys: atlasLeaseKeysFromTiles(tiles),
+    outside,
     readAt,
     complete,
   }
@@ -489,7 +520,17 @@ export function atlasPopulationCacheKey(scope: AtlasCoreScope, nowMs: number): s
     scope.listingKeys && scope.listingKeys.length > 0
       ? hashJson([...new Set(scope.listingKeys.map(String))].sort())
       : 'all'
-  return `${cities}::${hashAtlasBoundary(scope.boundary)}::${keys}::${day}`
+  // The page's on-market population is part of WHICH listings are drawn, so
+  // it is part of the key: a community page and the dots route that rebuilds
+  // it from the same population share one entry, and nothing else does.
+  const onMarket = scope.onMarket
+    ? hashJson(
+        scope.onMarket
+          .map((t) => [String(t.listingKey), String(t.status), t.listPrice ?? null] as const)
+          .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
+      )
+    : 'boundary'
+  return `${cities}::${hashAtlasBoundary(scope.boundary)}::${keys}::${onMarket}::${day}`
 }
 
 /**
@@ -552,7 +593,9 @@ export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Pr
   const where = keyed
     ? `the MLS files under ${scope.label}`
     : scope.boundary
-    ? `inside the recorded boundary of ${scope.label}`
+    ? (core.outside ?? 0) > 0
+      ? `inside the recorded boundary of ${scope.label}, plus the listings on the market that the MLS files under ${scope.label} just outside it`
+      : `inside the recorded boundary of ${scope.label}`
     : core.counts.cities > 1
       ? `across ${core.counts.cities} Central Oregon cities`
       : `in ${scope.label}`
@@ -587,9 +630,14 @@ export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Pr
  * text but the read stamp.
  */
 export async function buildAtlasDots(
-  scope: Pick<AtlasScope, 'cities' | 'boundary'>,
+  scope: Pick<AtlasScope, 'cities' | 'boundary' | 'onMarket'>,
   nowMs = Date.now(),
 ): Promise<{ dots: AtlasDot[]; stamp: string; complete: boolean }> {
-  const core = await buildAtlasCore({ cities: scope.cities, boundary: scope.boundary }, nowMs)
+  const core = await buildAtlasCore(
+    scope.onMarket
+      ? { cities: scope.cities, boundary: scope.boundary, onMarket: scope.onMarket }
+      : { cities: scope.cities, boundary: scope.boundary },
+    nowMs,
+  )
   return { dots: core.dots, stamp: formatDateTime(new Date(core.readAt)), complete: core.complete }
 }

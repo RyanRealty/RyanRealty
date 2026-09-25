@@ -14,8 +14,8 @@ import { buildPlaceAtlas, EMPTY_PLACE_ATLAS, type AtlasPopulation } from '@/lib/
 import { atlasRegionNames } from '@/lib/atlas/place-names'
 import {
   getBoundaryGeoJSON,
+  getCommunityOutlineGeoJSON,
   getCommunitySubdivisions,
-  getResortBoundaryGeoJSON,
   getTaxlotsNear,
   type Taxlot,
 } from '@/lib/data'
@@ -76,13 +76,15 @@ async function readPlaceBoundary(
   preferResort: boolean,
 ): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
   if (preferResort) {
-    const resort = await withTimeoutFallback(
-      getResortBoundaryGeoJSON(slug).catch(() => null),
+    // A registry community's stored outline, keyed by its durable slug and
+    // gated by the one trust rule (lib/communities/community-outline.ts).
+    const community = await withTimeoutFallback(
+      getCommunityOutlineGeoJSON(slug).catch(() => null),
       null,
       READ_MS,
-      'listing:atlasResort',
+      'listing:atlasCommunity',
     )
-    if (resort) return resort
+    if (community) return community
   }
   const slugs = citySlug && citySlug !== slug ? [slug, `${citySlug}-${slug}`] : [slug]
   for (const geoSlug of slugs) {

@@ -23,13 +23,10 @@ import { buildActivityItems } from '@/lib/kb/place-sections'
 import { activityRows, areaGuideRow, articleRows } from '@/app/cities/[slug]/_v3/city-sections'
 import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 import type { Metadata } from 'next'
-import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
+import { getCommunityBySlug } from '@/app/actions/communities'
 import {
-  getListingTiles,
   getGeoSnapshot,
-  getGeoBoundaryMapData,
   getCommunitySubdivisions,
-  getResortBoundaryGeoJSON,
   getResortCommunityBySlug,
 
   getAllPublishedBlogRefs,
@@ -52,10 +49,10 @@ import {
 } from '@/app/cities/[slug]/_v3/place-graphics'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
-import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
 import { GOLF_COURSES } from '@/data/golf/courses'
-import { cityResorts, resortActiveSfrCounts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
-import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
+import { communityOutlineRef } from '@/lib/communities/community-outline'
+import { communityRegistryContext } from '@/lib/communities/community-registry-context'
+import { emptyCommunityPopulation, getCommunityPopulation } from '@/lib/place/community-population'
 import { getDistrictForCity } from '@/data/co-schools'
 import { communityNewestListingsHref, getPlaceLinks } from '@/lib/place-links'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
@@ -129,7 +126,7 @@ import { CommunityAmenities } from './_v3/CommunityAmenities.client'
 import { amenityItemListItems, buildCommunityAmenityBoard } from './_v3/community-amenities'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
-import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
+import { placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
@@ -192,13 +189,6 @@ type Props = {
   params: Promise<{ slug: string }>
 }
 
-const BOUNDARY_ROW_CAP = 200
-
-const UNRELIABLE_BOUNDARY_SLUGS = new Set(boundarySanityBaseline.allowed as string[])
-function isBoundaryReliable(slug: string): boolean {
-  return !UNRELIABLE_BOUNDARY_SLUGS.has(slug)
-}
-
 /**
  * SITE-28. The one place this route decides what to CALL its place — and
  * whether it is allowed to call it anything. generateMetadata and the page body
@@ -223,26 +213,6 @@ async function resolvePublicName(
     isCanonicalSlug: isCanonicalCommunitySlug(slug),
     readRecordedPlatLabel: (platSlug) => getRecordedPlatLabel(platSlug),
   })
-}
-
-/**
- * The raw name BEFORE SITE-28 resolution, derived exactly once so the <title>
- * and the <h1> cannot disagree. generateMetadata used to read
- * getResortCommunityBySlug(slug) while the body read the alias-aware
- * resortMatch, which is a real divergence on alias slugs (sisters-bbr: the head
- * said "Bbr", the body said "Black Butte Ranch"). Both now call this.
- */
-function communityRegistryContext(community: { citySlug: string; subdivision: string; name: string }, slug: string) {
-  const subdivisionLc = community.subdivision.toLowerCase().trim()
-  const resortMatch = cityResorts(community.citySlug).find(
-    (r) =>
-      r.slug === slug ||
-      r.label.toLowerCase().trim() === subdivisionLc ||
-      (r.subdivision_aliases ?? []).some((a) => a.toLowerCase().trim() === subdivisionLc),
-  )
-  const resortSlug = resortMatch?.slug ?? slug
-  const registryEntry = getResortCommunityBySlug(resortSlug)
-  return { resortMatch, resortSlug, registryEntry, rawName: registryEntry?.label ?? community.name }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -270,7 +240,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   const community = communityRead.value
   if (!community) notFound()
-  const { rawName, registryEntry } = communityRegistryContext(community, slug)
+  const { rawName } = communityRegistryContext(community, slug)
   const resolvedRead = await withTimeoutFallbackResult(
     resolvePublicName(slug, rawName, community),
     null,
@@ -280,16 +250,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Unknown is neither "publish" nor "refuse": the raw name for one short window.
   if (!resolvedRead.ok) await noteDegradedHead('community', 'comm:meta-name')
   const resolved = resolvedRead.value
-  const childAliases = registryEntry
-    ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
-    : []
+  // The head counts the SAME population the homes list and the map show
+  // (lib/place/community-population.ts), so the title cannot disagree with them.
   const stockRead = await withTimeoutFallbackResult(
-    loadCommunitySerpStock({
-      slug,
-      city: community.city,
-      subdivision: community.subdivision,
-      childAliases,
-    }),
+    loadCommunitySerpStock({ slug }),
     { listedCount: 0, types: [] },
     4500,
     'comm:meta-stock',
@@ -341,9 +305,8 @@ async function renderCommunityDetail({ params }: Props) {
   ])
   const citySlug = community.citySlug
 
-  const { resortMatch, resortSlug, registryEntry } = registryContext
+  const { resortSlug, registryEntry } = registryContext
   const isResort = registryEntry?.is_resort === true || community.isResort
-  const isResortInCity = Boolean(resortMatch)
 
   const childAliases = registryEntry
     ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
@@ -371,15 +334,21 @@ async function renderCommunityDetail({ params }: Props) {
 
   const communityGeoKey = `${cityName.toLowerCase().trim()}:${community.subdivision.toLowerCase().trim()}`
   const neighborhoodSlug = slug
+  // THE OUTLINE (lib/communities/community-outline.ts): the stored
+  // neighborhood row keyed by the REGISTRY entry's durable slug, never the URL
+  // (/communities/juniper-preserve reads 'pronghorn'), and ONE trust decision
+  // for every outline read below: the map, the homes list (through the
+  // population), the child plats and the schools. Null when there is none or
+  // the trust rule stands it down.
+  const outlineRef = registryEntry ? communityOutlineRef(registryEntry.slug) : null
+  const trustedOutlineSlug = outlineRef?.trusted ? outlineRef.outlineSlug : null
 
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
     snapshot,
     priceHist,
-    boundaryRead,
-    resortBoundary,
+    populationRead,
     platCells,
-    citySfrRead,
     richContent,
     cityPriceHist,
     publicPace,
@@ -394,17 +363,18 @@ async function renderCommunityDetail({ params }: Props) {
   ] = await Promise.all([
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
-    withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
-    withTimeoutFallback(getResortBoundaryGeoJSON(slug), null, 4500, 'comm:resortBoundary'),
-    withTimeoutFallback(getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: slug }), [], 4500, 'comm:platCells'),
-    isResortInCity
-      ? withTimeoutFallbackResult(
-          Promise.all(
-            [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])].map((c) => fetchAllCityActiveSfr(c)),
-          ).then((sets) => sets.flat()),
-          [], 9000, 'comm:citySfr',
+    // THE FOR-SALE POPULATION: one set for the homes list, the map's for-sale
+    // dots, the head's count and the Atlas dots route. Its switch (outline
+    // only, or outline plus MLS names) is COMMUNITY_FOR_SALE_SCOPE there.
+    withTimeoutFallbackResult(getCommunityPopulation(slug), null, 20000, 'comm:population'),
+    trustedOutlineSlug
+      ? withTimeoutFallback(
+          getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: trustedOutlineSlug }),
+          [],
+          4500,
+          'comm:platCells',
         )
-      : Promise.resolve({ value: [] as Awaited<ReturnType<typeof getListingTiles>>, ok: true }),
+      : Promise.resolve([] as Awaited<ReturnType<typeof getCommunitySubdivisions>>),
     withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500, 'comm:content'),
     withTimeoutFallback(getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
     withTimeoutFallback(
@@ -461,7 +431,9 @@ async function renderCommunityDetail({ params }: Props) {
       3000,
       'comm:openingListings',
     ),
-    withTimeoutFallback(getPlaceSchools('neighborhood', slug), [], 4500, 'comm:schools'),
+    trustedOutlineSlug
+      ? withTimeoutFallback(getPlaceSchools('neighborhood', trustedOutlineSlug), [], 4500, 'comm:schools')
+      : Promise.resolve([] as Awaited<ReturnType<typeof getPlaceSchools>>),
   ])
   const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -500,45 +472,10 @@ async function renderCommunityDetail({ params }: Props) {
     subEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate),
   })
 
-  const boundaryReliable = isBoundaryReliable(slug)
-  const boundaryMapData = boundaryRead.value
-  const citySfrTiles = citySfrRead.ok ? citySfrRead.value : []
-  const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
-
-  const resortTiles = isResortInCity ? resortTilesForSlug(citySlug, resortSlug, citySfrTiles) : []
-  const useResortTiles = resortTiles.length > 0
-
-  let communityTiles: Awaited<ReturnType<typeof getListingTiles>> = useResortTiles
-    ? resortTiles
-    : boundaryReliable && boundaryListingKeys.length > 0
-      ? await withTimeoutFallbackResult(
-          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: BOUNDARY_ROW_CAP }),
-          [],
-          4500,
-          'comm:tiles',
-        ).then((r) => (r.ok ? r.value : []))
-      : await withTimeoutFallbackResult(
-          getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: 1500 }),
-          [],
-          4500,
-          'comm:tiles-fallback',
-        ).then((r) => (r.ok ? r.value : []))
-  const usedSubdivisionNarrowing = !useResortTiles && (!boundaryReliable || boundaryListingKeys.length === 0)
-  if (usedSubdivisionNarrowing) {
-    const subListingsRead = await withTimeoutFallbackResult(
-      getCommunityListings(cityName, community.subdivision, BOUNDARY_ROW_CAP),
-      [],
-      4500,
-      'comm:sub-listings',
-    )
-    const subListings = subListingsRead.ok ? subListingsRead.value : []
-    const subKeys = new Set(subListings.map((r) => r.ListingKey).filter(Boolean) as string[])
-    communityTiles = communityTiles.filter((t) => subKeys.has(t.listingKey))
-  }
-
-  const haveCityTiles = citySfrRead.ok && isResortInCity && citySfrTiles.length > 0
-  const resortSfrCounts = haveCityTiles ? resortActiveSfrCounts(citySlug, citySfrTiles) : new Map<string, number>()
-  const aliasAwareCount = haveCityTiles ? resortSfrCounts.get(resortSlug) ?? null : null
+  // A population that did not read is unknown, not empty: nothing listed, and
+  // the Atlas says its read did not complete (§0).
+  const population = populationRead.value ?? emptyCommunityPopulation(slug)
+  const aliasAwareCount = population.aliasAwareCount
 
   const activeCount: number | null = hud.active
 
@@ -660,78 +597,65 @@ async function renderCommunityDetail({ params }: Props) {
   const closedN = leftoverClosedCount(hud, chartIsCityLevel ? [] : chartMonths.months)
   const costChart = chartIsCityLevel ? undefined : placeCostChart(closedN, medianChart)
 
-  const fieldTiles = aliasAwareCount != null ? resortTiles : communityTiles
-  const listedCount = fieldTiles.length
-  const mapPolygon = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null)
-  // Seed and draw whenever a TRUSTED polygon exists: the county plat-union
-  // outranks the stored hull's reliability verdict (it exists precisely
-  // because the hull was bad — see getResortBoundaryGeoJSON). Before this,
-  // seedRing keyed on hull reliability alone, so Black Butte Ranch had a
-  // verified-good union polygon and drew nothing (Matt, 2026-09-01). An
-  // unreliable hull with no union still draws nothing — mapPolygon is null.
+  // The trusted stored outline, or nothing. The one trust rule already
+  // decided it for the homes list too, so an outline the map refuses can no
+  // longer put its listings in the homes list (Widgi Creek, 2026-09-25).
+  const mapPolygon = population.outline
   const seedRing = mapPolygon != null
-  const [stockTiles, childStockRows] = await Promise.all([
-    withTimeoutFallback(
-      loadPlaceStockTiles({
-        listingKeys: [
-          ...boundaryListingKeys,
-          ...fieldTiles.map((tile) => tile.listingKey),
-        ],
-        subdivisionNames: [
-          ...getSubdivisionMatchNames(community.subdivision || publicName),
-          ...childAliases,
-        ],
-        city: cityName,
-        boundary: { geoType: 'neighborhood', geoSlug: slug },
-      }),
-      [],
-      12000,
-      'comm:stock',
-    ),
-    withTimeoutFallback(
-      getSubdivisionOnMarketRows(platCells.map((cell) => cell.slug)),
-      [],
-      12000,
-      'comm:child-stock',
-    ),
-  ])
-  const liveStockTiles = unionListingTiles(stockTiles, fieldTiles)
+  // RECORDED PLATS ONLY (Matt 2026-09-25): with an outline the map counts the
+  // listings inside it, the same set the homes list shows. A community with
+  // no outline row is counted by its MLS names, and its map is drawn from
+  // exactly those keys, so the two still count one set.
+  const atlasKeys = mapPolygon ? null : population.atlasTiles.map((tile) => tile.listingKey)
+  const drawAtlas = mapPolygon != null || (atlasKeys != null && atlasKeys.length > 0)
+  const childStockRows = await withTimeoutFallback(
+    getSubdivisionOnMarketRows(platCells.map((cell) => cell.slug)),
+    [],
+    12000,
+    'comm:child-stock',
+  )
+  const liveStockTiles = population.tiles
   const stockSections = placeStockSectionsFromTiles(liveStockTiles)
   // Commercial leases in the community: shown last under the map, never
   // counted for sale and never a pin.
   const leaseSection = await loadPlaceLeaseSection(liveStockTiles)
   const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${publicName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
   const hasMap =
-    seedRing || fieldTiles.length > 0 || stockSections.length > 0 || leaseSection != null
+    seedRing || drawAtlas || stockSections.length > 0 || leaseSection != null
   // The living map, scoped to this community (Matt 2026-09-01: heat maps on
   // every page). Population = every active, pending, and 30-day-closed
   // listing INSIDE the recorded boundary, read through the same builder the
-  // homepage uses; the plats are the touchable places. No boundary, no map.
-  const [atlas, amenityLayers] = mapPolygon
+  // homepage uses; the plats are the touchable places. Its on-market dots ARE
+  // the homes list's population. No outline: the map is the community's
+  // name-matched listings, keyed, and nothing else.
+  const atlasCities = [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])]
+  const [atlas, amenityLayers] = drawAtlas
     ? await Promise.all([
         withTimeoutFallback(
-          buildPlaceAtlas({
-            cities: [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])],
-            boundary: mapPolygon,
-            label: publicName,
-          }),
+          buildPlaceAtlas(
+            mapPolygon
+              ? { cities: atlasCities, boundary: mapPolygon, label: publicName, onMarket: population.atlasTiles }
+              : { cities: atlasCities, listingKeys: atlasKeys ?? [], label: publicName, onMarket: population.atlasTiles },
+          ),
           null,
           6000,
           'comm:atlas',
         ),
-        withTimeoutFallback(
-          getPlaceAmenityLayers({
-            grain: 'community',
-            placeSlug: slug,
-            cityName,
-            citySlug: citySlug || undefined,
-            communitySlug: slug,
-            placeGeometry: mapPolygon,
-          }),
-          EMPTY_PLACE_AMENITY_LAYERS,
-          4500,
-          'comm:amenityLayers',
-        ),
+        mapPolygon
+          ? withTimeoutFallback(
+              getPlaceAmenityLayers({
+                grain: 'community',
+                placeSlug: slug,
+                cityName,
+                citySlug: citySlug || undefined,
+                communitySlug: slug,
+                placeGeometry: mapPolygon,
+              }),
+              EMPTY_PLACE_AMENITY_LAYERS,
+              4500,
+              'comm:amenityLayers',
+            )
+          : Promise.resolve(EMPTY_PLACE_AMENITY_LAYERS),
       ])
     : [null, EMPTY_PLACE_AMENITY_LAYERS]
 
@@ -795,6 +719,10 @@ async function renderCommunityDetail({ params }: Props) {
   })
   const homesByChild = childListingKeys(childStockRows)
   const placeHomes = stockSections.flatMap((section) => section.rows)
+  // Every home the list above shows, every type: the count a reconciling
+  // answer may set beside the single-family figure. Never the MLS alias
+  // Field, which a trusted outline no longer counts (Matt 2026-09-25).
+  const listedCount = placeHomes.length
 
   /**
    * THE GUIDES THIS COMMUNITY IS THE SUBJECT OF (SITE-30).
@@ -896,7 +824,9 @@ async function renderCommunityDetail({ params }: Props) {
     registry: registryEntry ?? null,
     schools: placeSchools,
     isResort,
-    countIsAliasAware: aliasAwareCount != null,
+    // The MLS names count toward the figures only when the population is
+    // built from them (no trusted outline).
+    countIsAliasAware: aliasAwareCount != null && population.countsMlsNames,
     contactHref: `/contact?inquiryType=Buying&message=${encodeURIComponent(
       `I have questions about short-term rental rules in ${publicName}.`,
     )}`,
@@ -964,22 +894,19 @@ async function renderCommunityDetail({ params }: Props) {
 
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
-  const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // A short population is a short map: the Atlas withholds its counts.
+  const atlasView = atlas ? (population.complete ? atlas : { ...atlas, complete: false }) : EMPTY_PLACE_ATLAS
   // UXLIVE-3 (visibility audit 2026-09-22): the Atlas's dots, the sales heat
   // drawn from them and the basemap load after paint; counts, outlines and
   // text stay in the server HTML, and the plats ship at the precision the
-  // frame can draw. The route rebuilds the population from the boundary this
-  // page read: the county plat union when there is one, else the recorded
-  // boundary row.
+  // frame can draw. The route rebuilds the population from this page's own
+  // reference: the community's trusted outline and the same for-sale
+  // population the homes list shows (lib/place/community-population.ts).
   const atlasProps = deferredAtlasProps({
     population: atlasView,
     scope: {
-      cities: [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])],
-      boundaryRef: resortBoundary
-        ? { kind: 'resort', slug }
-        : mapPolygon
-          ? { kind: 'geo', geoType: 'neighborhood', geoSlug: slug }
-          : null,
+      cities: atlasCities,
+      boundaryRef: mapPolygon ? { kind: 'community', slug } : null,
       boundary: mapPolygon,
     },
     regions: foldAtlasRegions,

@@ -9,7 +9,11 @@
  *   c  the MLS City values read (repeatable; none = the whole service area)
  *   b  where the boundary came from, as a DAL reference, never as geometry:
  *        geo:<city|neighborhood>:<slug>   getBoundaryGeoJSON
- *        resort:<slug>                    getResortBoundaryGeoJSON
+ *        community:<slug>                 getCommunityPopulation: the community's
+ *                                         trusted outline AND the on-market
+ *                                         population its homes list shows
+ *        resort:<slug>                    getCommunityOutlineGeoJSON (pages cached
+ *                                         before 2026-09-25 still ask for it)
  *        city-row:<City Name>             getCityBoundaryGeoJSON (the cities row)
  *   h  the boundary's hash as the page saw it (cache-busts when it changes)
  *   d  the read day (the CDN cache turns over daily with the page)
@@ -24,6 +28,7 @@ export const ATLAS_DOTS_ROUTE = '/api/atlas/dots'
 
 export type AtlasBoundaryRef =
   | { kind: 'geo'; geoType: 'city' | 'neighborhood'; geoSlug: string }
+  | { kind: 'community'; slug: string }
   | { kind: 'resort'; slug: string }
   | { kind: 'city-row'; cityName: string }
 
@@ -47,6 +52,8 @@ export function formatAtlasBoundaryRef(ref: AtlasBoundaryRef): string {
   switch (ref.kind) {
     case 'geo':
       return `geo:${ref.geoType}:${ref.geoSlug}`
+    case 'community':
+      return `community:${ref.slug}`
     case 'resort':
       return `resort:${ref.slug}`
     case 'city-row':
@@ -67,6 +74,10 @@ export function parseAtlasBoundaryRef(raw: string | null | undefined): AtlasBoun
       return { kind: 'geo', geoType, geoSlug }
     }
     return null
+  }
+  if (kind === 'community' && rest.length === 1) {
+    const slug = rest[0]!
+    return SLUG_RE.test(slug) ? { kind: 'community', slug } : null
   }
   if (kind === 'resort' && rest.length === 1) {
     const slug = rest[0]!
