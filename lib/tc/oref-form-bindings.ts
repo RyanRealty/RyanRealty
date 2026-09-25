@@ -127,6 +127,17 @@ export const OREF_FORM_BINDINGS: Record<string, readonly FormFieldBinding[]> = {
     { fact: 'address', match: /^Text62$/ },
   ],
   /**
+   * OREF 002 Addendum to Sale Agreement (01/2026), header lines 1-3, read off
+   * a render of the blank with its widgets outlined (2026-09-24): Buyer(s),
+   * Seller(s), Property Address. Its body (Text7.0 ... Text7.18.1) is one
+   * text box (lib/tc/text-areas.ts), never a fact.
+   */
+  '002': [
+    { fact: 'buyers', match: /^Text3$/ },
+    { fact: 'sellers', match: /^Text4$/ },
+    { fact: 'address', match: /^Text5$/ },
+  ],
+  /**
    * OREF 020 is deliberately absent. Its header is one line — Property Address
    * or Tax ID — and, like the 015, that line carries no AcroForm widget on this
    * blank. Everything else on the form is the seller's own answers about the

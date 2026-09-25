@@ -10,6 +10,7 @@
  * execution state (see classifyFromFormAndText).
  */
 import { configurePdfjsWorker } from '@/lib/pdf/pdfjs-node'
+import type { TextRun } from './area-reference'
 
 /** Far past any real Oregon form or packet. Only a runaway file reaches it. */
 export const PDF_TEXT_PAGE_CEILING = 200
@@ -60,4 +61,39 @@ export async function extractPdfPagesText(
   maxPages: number = PDF_TEXT_PAGE_CEILING,
 ): Promise<string> {
   return (await readPdfPagesText(buf, maxPages)).text
+}
+
+/**
+ * Every page's text runs with their positions, as fractions of the page, y at
+ * the baseline from the top (lib/tc/area-reference.ts reads a form's printed
+ * headings and line numbers from these).
+ */
+export async function readPdfTextRuns(
+  buf: ArrayBuffer | Uint8Array,
+  maxPages: number = PDF_TEXT_PAGE_CEILING,
+): Promise<TextRun[][]> {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  configurePdfjsWorker(pdfjs)
+  const data = new Uint8Array(buf instanceof Uint8Array ? buf : new Uint8Array(buf))
+  const doc = await pdfjs.getDocument({ data, isEvalSupported: false, useSystemFonts: true }).promise
+  const pages: TextRun[][] = []
+  try {
+    for (let p = 1; p <= Math.min(doc.numPages, Math.max(1, maxPages)); p++) {
+      const page = await doc.getPage(p)
+      const vp = page.getViewport({ scale: 1 })
+      const tc = await page.getTextContent()
+      const runs: TextRun[] = []
+      for (const item of tc.items) {
+        if (!('str' in item) || !item.str) continue
+        const [, , , , e, f] = item.transform as number[]
+        const [x, y] = vp.convertToViewportPoint(e, f) as [number, number]
+        runs.push({ str: item.str, x: x / vp.width, y: y / vp.height, w: item.width / vp.width })
+      }
+      pages.push(runs)
+      page.cleanup()
+    }
+  } finally {
+    await doc.destroy()
+  }
+  return pages
 }

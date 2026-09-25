@@ -300,6 +300,9 @@ async function main() {
   push(`place_membership: ${formatPlaceMembershipLine(signals.placeMembership)}`)
   {
     const siteEligibleCount = eligible.filter((n) => (n.version_gap ?? '').startsWith('SITE-')).length
+    // A hint, never a write (Matt 2026-09-24, "Keep the Monday job"): the
+    // Monday loop-weekly-measure cron seeds ranking work, and boot stays
+    // read-only on the work graph.
     if (siteEligibleCount === 0) {
       push(
         'GSC GAPS: 0 eligible SITE-* nodes. Ranking is not the served class. Dry-run: npx tsx scripts/seed-gsc-ranking-queue.ts  Apply: npx tsx scripts/seed-gsc-ranking-queue.ts --apply',

@@ -381,6 +381,8 @@ export type PortalSigningRecipient = {
   completedAt: string | null
   declinedAt: string | null
   actionRequired: string
+  authTokenHash: string | null
+  authTokenEnc: string | null
   envelope: { id: string; name: string; status: string; cycleId: string; dealId: string | null } | null
 }
 
@@ -389,7 +391,9 @@ export async function getPortalSigningRecipient(recipientId: string): Promise<Po
   const sb = createServiceClient()
   const { data: r } = await sb
     .from('tc_envelope_recipients')
-    .select('id, email, signing_order, completed_at, declined_at, action_required, tc_envelopes(id, name, status, cycle_id)')
+    .select(
+      'id, email, signing_order, completed_at, declined_at, action_required, auth_token_hash, auth_token_enc, tc_envelopes(id, name, status, cycle_id)',
+    )
     .eq('id', recipientId)
     .maybeSingle()
   if (!r) return null
@@ -408,6 +412,8 @@ export async function getPortalSigningRecipient(recipientId: string): Promise<Po
     completedAt: (r.completed_at as string | null) ?? null,
     declinedAt: (r.declined_at as string | null) ?? null,
     actionRequired: String(r.action_required),
+    authTokenHash: (r.auth_token_hash as string | null) ?? null,
+    authTokenEnc: (r.auth_token_enc as string | null) ?? null,
     envelope: env ? { id: env.id, name: env.name, status: env.status, cycleId: env.cycle_id, dealId } : null,
   }
 }

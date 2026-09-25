@@ -13,6 +13,7 @@ import {
   type SignFieldValue,
 } from './signing'
 import type { SignerRole } from './skyslope-field-map'
+import { FILLABLE_TYPES, valueIsFilled } from './field-rules'
 
 export const SIGNER_COMPLETED_TYPES = new Set<string>([
   'signature',
@@ -87,14 +88,7 @@ export function isRequiredContentField(field: RequiredFieldSnapshot): boolean {
 }
 
 export function fieldValueIsComplete(type: string, value: SignFieldValue | null | undefined): boolean {
-  if (!value) return false
-  if (type === 'signature' || type === 'initials') {
-    return (value.kind === 'signature' || value.kind === 'initials') && !!value.png
-  }
-  if (type === 'checkbox') return value.kind === 'checkbox' && value.checked === true
-  if (value.kind === 'date_signed' || value.kind === 'text') return !!value.text?.trim()
-  if (value.kind === 'checkbox') return value.checked === true
-  return false
+  return valueIsFilled(type as SignFieldType, value)
 }
 
 export function fieldLabel(field: RequiredFieldSnapshot): string {
@@ -115,12 +109,17 @@ export function missingPrepareFields(fields: readonly RequiredFieldSnapshot[]): 
   return unassignedRequiredSignFields(fields)
 }
 
-/** At complete: only required signer fields. Optional text/checkboxes may stay empty. */
+/**
+ * At complete: every required field a signer owed, whether a signature or a
+ * text, date, time or checkbox field assigned to them. A checkbox group's own
+ * rule is held when each signer submits (lib/tc/field-rules.ts); optional
+ * fields may stay empty.
+ */
 export function missingCompleteFields(fields: readonly RequiredFieldSnapshot[]): RequiredFieldSnapshot[] {
   return fields.filter(
     (f) =>
       isRequiredContentField(f) &&
-      SIGNER_COMPLETED_TYPES.has(f.type) &&
+      (SIGNER_COMPLETED_TYPES.has(f.type) || (!!f.recipientId && FILLABLE_TYPES.has(f.type as SignFieldType))) &&
       !fieldValueIsComplete(f.type, f.value),
   )
 }

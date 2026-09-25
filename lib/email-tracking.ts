@@ -17,6 +17,7 @@
  */
 import 'server-only'
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto'
+import { isPrivateLink } from '@/lib/analytics/private-paths'
 
 const SECRET =
   process.env.EMAIL_TRACKING_SECRET ||
@@ -164,6 +165,9 @@ export function instrumentEmailHtml(html: string, ctx: EmailTrackContext): strin
     const url = decodeHtmlHref(rawHref)
     if (url.includes('/api/track/e/')) return m // already wrapped
     if (isComplianceLink(url)) return m // unsubscribe/compliance links stay plain
+    // A signing link is its own key: the click token would carry it, and the
+    // click route stores the destination (private-paths.ts).
+    if (isPrivateLink(url)) return m
     const tok = signEmailToken({ personId: ctx.personId, emailKey: ctx.emailKey, label: ctx.label, url, broker: ctx.broker, ttlSeconds: ctx.ttlSeconds })
     return `href="${base}/click?t=${encodeURIComponent(tok)}"`
   })

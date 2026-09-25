@@ -20,6 +20,7 @@ import 'server-only'
  * the file's (app/actions/tc-deal-terms.ts).
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isReaderOutage } from '@/lib/tc/terms/outage'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getAdminContext } from '@/lib/auth/guards'
 import { isFinishedFile } from '@/lib/tc/file-workspace'
@@ -89,6 +90,8 @@ async function withThirdRead(stored: StoredTerms, bytes: Uint8Array): Promise<St
   const disputes = disputesToSettle(stored.disagreements, stored.forms)
   if (!disputes.length) return stored
   const third = await readThird(bytes, disputes)
+  // A third read the provider refused settles nothing and costs no attempt.
+  if (third.runs.some((run) => isReaderOutage(run.error))) return stored
   const r = settleWithThird(stored, first, second, third.readings)
   const priorAttempts = stored.tiebreak?.version === TIEBREAK_VERSION ? stored.tiebreak.attempts : 0
   return {
@@ -127,7 +130,8 @@ export async function termsFormsForDocument(sb: SupabaseClient, classification: 
 
 // ── 2. read one document ────────────────────────────────────────────────────
 
-export type TermsReadResult = { documentId: string; status: StoredTerms['status'] | 'skipped'; forms: number; agreedTerms: number; disagreements: number; error?: string; stored?: StoredTerms }
+/** 'unavailable': a reader's account or service was down (lib/tc/terms/outage.ts); nothing was stored. */
+export type TermsReadResult = { documentId: string; status: StoredTerms['status'] | 'skipped' | 'unavailable'; forms: number; agreedTerms: number; disagreements: number; error?: string; stored?: StoredTerms }
 
 function countTerms(r: TermsReading[]): number {
   let n = 0
@@ -189,7 +193,12 @@ export async function readDocumentTerms(documentId: string, opts: { dry?: boolea
   }
 
   const read = await readTermsTwice(bytes, forms)
-  const attempts = (prior?.version === TERMS_VERSION ? prior.attempts ?? 0 : 0) + 1
+  // The account or service was down, not the document: store nothing, count nothing.
+  const outage = [read.runs.claude.error, read.runs.grok.error].find((e) => isReaderOutage(e))
+  if (!read.agreed && outage) return { documentId, status: 'unavailable', forms: forms.length, agreedTerms: 0, disagreements: 0, error: outage }
+  // An outage stored before this rule existed never counted against the document.
+  const priorCounts = prior?.version === TERMS_VERSION && !(prior.status === 'failed' && isReaderOutage(prior.error))
+  const attempts = (priorCounts ? prior.attempts ?? 0 : 0) + 1
   if (!read.agreed) {
     const errorText = [read.runs.claude.error && `claude: ${read.runs.claude.error}`, read.runs.grok.error && `grok: ${read.runs.grok.error}`].filter(Boolean).join(' · ') || 'a reader returned nothing'
     const stored: StoredTerms = { version: TERMS_VERSION, status: 'failed', read_at: now, attempts, forms, ...empty, readers: read.runs, error: errorText }
@@ -230,13 +239,14 @@ export async function pendingTermsDocuments(limit: number, sb: SupabaseClient = 
     terms_version: string | null
     terms_status: string | null
     terms_attempts: string | null
+    terms_error: string | null
     terms_disagreements: StoredTerms['disagreements'] | null
     terms_tiebreak: StoredTerms['tiebreak'] | null
   }> = []
   for (let from = 0; ; from += 1000) {
     const { data, error } = await sb
       .from('tc_documents')
-      .select('id, cycle_id, ingested_at, reader_version:classification->reader->>version, forms:classification->reader->forms, terms_version:classification->terms->>version, terms_status:classification->terms->>status, terms_attempts:classification->terms->>attempts, terms_disagreements:classification->terms->disagreements, terms_tiebreak:classification->terms->tiebreak')
+      .select('id, cycle_id, ingested_at, reader_version:classification->reader->>version, forms:classification->reader->forms, terms_version:classification->terms->>version, terms_status:classification->terms->>status, terms_attempts:classification->terms->>attempts, terms_error:classification->terms->>error, terms_disagreements:classification->terms->disagreements, terms_tiebreak:classification->terms->tiebreak')
       .eq('archived', false)
       .not('storage_path', 'is', null)
       .order('id')
@@ -250,7 +260,7 @@ export async function pendingTermsDocuments(limit: number, sb: SupabaseClient = 
     if (!(r.forms ?? []).some((f) => instrumentKindForTitle(f.form) && READ_WHEN[instrumentKindForTitle(f.form)!].has(String(f.verdict)))) return false
     if (r.terms_version !== TERMS_VERSION) return true
     if (r.terms_status === 'read') return wantsTiebreak({ status: 'read', disagreements: r.terms_disagreements ?? [], tiebreak: r.terms_tiebreak ?? undefined })
-    return r.terms_status === 'failed' && Number(r.terms_attempts ?? 0) < MAX_TERMS_ATTEMPTS
+    return r.terms_status === 'failed' && (isReaderOutage(r.terms_error) || Number(r.terms_attempts ?? 0) < MAX_TERMS_ATTEMPTS)
   })
   if (!candidates.length) return []
   const cycleIds = Array.from(new Set(candidates.map((c) => c.cycle_id)))

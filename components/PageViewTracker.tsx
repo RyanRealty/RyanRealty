@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 import { applyVisitBrokerToGtag, trackPageView } from '@/lib/tracking'
 import { pageTypeFromPath } from '@/lib/analytics/page-type'
+import { isPrivatePath } from '@/lib/analytics/private-paths'
 
 /**
  * Layout-owned page analytics. First paint page_view comes from the GTM
@@ -54,7 +55,11 @@ export default function PageViewTracker() {
     }
   }
 
+  // A page whose address carries a secret is never tracked (private-paths.ts).
+  const privatePage = isPrivatePath(pathname)
+
   useEffect(() => {
+    if (privatePage) return
     const first = firstLoadRef.current
     if (first) firstLoadRef.current = false
     // First paint: GTM Google tag sends page_view. We only stamp page_type
@@ -64,15 +69,16 @@ export default function PageViewTracker() {
       else trackGa(pagePath)
     }
     if (hasMarketingConsent() && !first) trackMeta()
-  }, [pagePath, pageType])
+  }, [pagePath, pageType, privatePage])
 
   useEffect(() => {
+    if (privatePage) return
     const onConsent = () => {
       if (hasAnalyticsConsent()) stampPageType()
     }
     window.addEventListener('cookie-consent', onConsent)
     return () => window.removeEventListener('cookie-consent', onConsent)
-  }, [pagePath, pageType])
+  }, [pagePath, pageType, privatePage])
 
   return null
 }

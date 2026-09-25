@@ -15,11 +15,22 @@
  *  - omit answers under MIN_PLACE_FAQ_EXTRA_CHARS (thin Dataset restatements)
  *  - never invent HOA dollars or school numbers
  *
+ * NEIGHBORHOOD FACTS (Matt 2026-09-24, "Add to neighborhoods"). A neighborhood
+ * page also answers how old its homes are, whether homes report an HOA, what
+ * the dues run and whether CC&Rs are on file. Each answer is the sentence the
+ * page's own section prints (V3PlaceCharacter's builders, V3PlaceDocuments'
+ * counts and caveats), so the FAQ cannot say more than the section does. The
+ * city FAQ does not get these: its test keeps HOA and school data out.
+ * Schools come through lib/site/market-faq.ts, from the attendance areas.
+ *
  * Dataset variableMeasured stays pulse-only. Extras feed the visible FAQ and
  * FAQPage JSON-LD only.
  */
+import { duesSentence, hoaPresenceSentence, PLACE_HOA_CAVEAT, yearBuiltSentence } from '@/components/site/v3'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatPaceShare } from '@/lib/data/market-truth/public-pace'
+import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
+import { summarizePlaceDocuments, type PlaceDocument } from '@/lib/data/places/place-document-view'
 import { publishableNewCount } from '@/lib/site/place-alerts'
 import type { MarketFaqItem, MarketFaqResult } from '@/lib/site/market-faq'
 
@@ -89,6 +100,12 @@ export type PlaceFaqExtrasInput = {
   rate?: PlaceFaqRate | null
   yearClosed?: PlaceFaqYearClosed | null
   yearClosedSource?: string | null
+  /** Neighborhood grain only: build years, HOA presence and dues (getPlaceCharacter). */
+  character?: PlaceCharacter | null
+  /** The population those figures were measured on, in the page's words. */
+  characterSource?: string | null
+  /** Neighborhood grain only: the governing documents the page links (getPlaceDocuments). */
+  documents?: readonly PlaceDocument[] | null
 }
 
 function uniqueNames(items: readonly { name: string }[] | null | undefined): string[] {
@@ -321,7 +338,96 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
     })
   }
 
+  if (input.grain === 'neighborhood') {
+    pushCharacterExtras(extras, place, input.character ?? null, input.characterSource ?? null)
+    pushDocumentsExtra(extras, place, input.documents ?? null)
+  }
+
   return extras
+}
+
+function pushCharacterExtras(
+  out: PlaceFaqExtraItem[],
+  place: string,
+  character: PlaceCharacter | null,
+  source: string | null,
+): void {
+  if (!character || !source?.trim()) return
+  const { yearBuilt, hoaPresence, dues, subType, noun } = character
+  if (yearBuilt) {
+    pushExtra(out, {
+      question: `How old are the homes in ${place}?`,
+      answer: yearBuiltSentence(place, noun, yearBuilt),
+      source,
+    })
+  }
+  if (hoaPresence) {
+    pushExtra(out, {
+      question: `Do homes in ${place} have an HOA?`,
+      answer: `${hoaPresenceSentence(subType, hoaPresence)} ${PLACE_HOA_CAVEAT}`,
+      source,
+    })
+  }
+  if (dues) {
+    pushExtra(out, {
+      question: `How much are HOA dues in ${place}?`,
+      answer: `${duesSentence(subType, dues)} One home's dues can sit well above or below that. Confirm them through the association before relying on them.`,
+      source,
+    })
+  }
+}
+
+/**
+ * What is on file, never a yes or no. A declaration covers the lots its own
+ * text describes, and a Bend district holds many subdivisions, so one linked
+ * declaration is not "yes, this place has CC&Rs" for every home in it. The
+ * counts, county and attribution come from summarizePlaceDocuments, the same
+ * helper V3PlaceDocuments' note and footnote read.
+ */
+function pushDocumentsExtra(
+  out: PlaceFaqExtraItem[],
+  place: string,
+  documents: readonly PlaceDocument[] | null,
+): void {
+  const summary = summarizePlaceDocuments(documents ?? [])
+  if (!summary) return
+  const { count, declarations, amendments, county, hasRecorded, hasAssociation, publisher, attribution } = summary
+  const which =
+    declarations > 0 && amendments > 0
+      ? `: ${declarations === 1 ? 'the declaration' : `${declarations} declarations`} and ${amendments} recorded ${amendments === 1 ? 'amendment' : 'amendments'}`
+      : ''
+  const sentences = [
+    `This page links ${count} ${hasRecorded ? 'recorded ' : ''}${count === 1 ? 'document' : 'documents'} for ${place}${which}.`,
+  ]
+  if (hasRecorded) {
+    sentences.push(
+      hasAssociation
+        ? `The ones with a book, page or instrument number are copies of instruments recorded in ${county} County, Oregon.`
+        : `They are copies of instruments recorded in ${county} County, Oregon.`,
+    )
+  }
+  if (hasAssociation) {
+    sentences.push(
+      `${hasRecorded ? 'The rest are' : 'They are'} ${publisher ?? 'the association'}'s own published copies, which carry no county instrument number.`,
+    )
+  }
+  if (declarations > 0) {
+    sentences.push(`A declaration covers the lots it describes, which may not be every home in ${place}.`)
+  }
+  sentences.push(
+    'Later amendments may exist that are not shown here, so confirm the governing documents for a specific home through title before relying on them.',
+  )
+
+  const sources = [
+    hasRecorded ? `instruments recorded in ${county} County, Oregon${attribution ? `, copies via ${attribution.label}` : ''}` : null,
+    hasAssociation ? `${publisher ?? 'the association'}'s published copies` : null,
+  ].filter((part): part is string => Boolean(part))
+
+  pushExtra(out, {
+    question: declarations > 0 ? `What CC&Rs are on file for ${place}?` : `What governing documents are on file for ${place}?`,
+    answer: sentences.join(' '),
+    source: sources.join('; '),
+  })
 }
 
 /**

@@ -166,3 +166,37 @@ describe('promoteInitialsBoxes on a form with one principal', () => {
     expect(out.filter((f) => f.signerRole === 'seller')).toHaveLength(4)
   })
 })
+
+describe('labelSignatureRowsFromPage (who signs an unnamed line, from the printed page)', () => {
+  const line = (y: number, dataRef: string) => ({ type: 'text' as const, page: 1, x: 0.126, y, w: 0.508, h: 0.021, dataRef, signerRole: null, optional: false, label: dataRef })
+  const date = (y: number, dataRef: string) => ({ type: 'text' as const, page: 1, x: 0.72, y: y + 0.004, w: 0.18, h: 0.016, dataRef, signerRole: null, optional: false, label: dataRef })
+  const word = (str: string, y: number) => ({ str, x: 0.088, y, w: 0.034 })
+
+  it('reads Buyer and Seller beside the lines, and gives the nth line to the nth signer', async () => {
+    const { labelSignatureRowsFromPage, promoteLinedFormFields } = await import('./lined-signature-fields')
+    const map = [line(0.549, 'Text8'), date(0.549, 'Text30'), line(0.587, 'Text10'), line(0.716, 'Text16'), date(0.716, 'Text34')]
+    const page = [word('26', 0.569), word('Buyer', 0.569), word('Buyer', 0.607), word('Seller', 0.736)]
+    const out = promoteLinedFormFields(labelSignatureRowsFromPage(map, [page]))
+    const sig = (ref: string) => out.find((f) => f.dataRef === ref)!
+    expect(sig('Text8')).toMatchObject({ type: 'signature', signerRole: 'buyer', signerIndex: 0 })
+    expect(sig('Text10')).toMatchObject({ type: 'signature', signerRole: 'buyer', signerIndex: 1 })
+    expect(sig('Text16')).toMatchObject({ type: 'signature', signerRole: 'seller', signerIndex: 0 })
+    // The row's date goes with its line.
+    expect(sig('Text30')).toMatchObject({ type: 'date_signed', signerRole: 'buyer', signerIndex: 0 })
+    expect(sig('Text34')).toMatchObject({ type: 'date_signed', signerRole: 'seller', signerIndex: 0 })
+  })
+
+  it('names nobody when the page text cannot be read (a font with no Unicode map)', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    // What pdfjs returns for "Buyer" and "Seller" on the OREF 002 01/2026 blank.
+    const page = [word('R A = ? 4', 0.569), word('\u0000 ? G G ? 4', 0.736)]
+    const out = labelSignatureRowsFromPage([line(0.549, 'Text8'), line(0.716, 'Text16')], [page])
+    expect(out.every((f) => f.signerRole === null && f.signerIndex === undefined)).toBe(true)
+  })
+
+  it('leaves a line its widget already names alone', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    const out = labelSignatureRowsFromPage([line(0.549, 'Seller_5')], [[word('Buyer', 0.569)]])
+    expect(out[0]).toMatchObject({ label: 'Seller_5', signerRole: null, signerIndex: 0 })
+  })
+})

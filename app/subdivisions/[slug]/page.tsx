@@ -638,7 +638,9 @@ async function renderSubdivisionPage({ params }: Props) {
   if (refused) return <SubdivisionUnavailable />
 
   // THE NEIGHBOUR RING STARTS HERE, AND IS CACHED (P3 — DATA-6, SEO-2, EXP-7).
-  // cma_subdivision_ring is the slowest read on the page: 3.7 to 16.1 s uncached
+  // cma_subdivision_ring was the slowest read on the page until migration
+  // 20260925010237 put it on the GiST index (24 plat points: p50 206 ms, max
+  // 6.1 s through PostgREST): 3.7 to 16.1 s uncached
   // for the ten plats that 500'd on every live fetch on 2026-09-23, against the
   // 3.5 s it used to get, so elkai-woods, blakley-heights, saddleback and the
   // rest degraded on every render (which was an HTTP 500 until

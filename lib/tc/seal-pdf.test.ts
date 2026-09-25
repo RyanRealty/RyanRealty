@@ -63,3 +63,68 @@ describe('sha256Hex', () => {
     expect(sha256Hex(new Uint8Array([1, 2, 3, 5]))).not.toBe(a)
   })
 })
+
+describe('sealEnvelope text (lined sections)', () => {
+  it('draws a laid-out line as is and never fails on a character the font cannot encode', async () => {
+    const { PDFDocument } = await import('pdf-lib')
+    const { sealEnvelope } = await import('./seal-pdf')
+    const src = await PDFDocument.create()
+    src.addPage([612, 792])
+    const bytes = await src.save()
+    const field = (id: string, value: { kind: 'text'; text: string; size?: number } | { kind: 'date_signed'; text: string }) => ({
+      id, documentId: 'd', recipientId: null, type: 'text' as const, page: 1, x: 0.095, y: 0.229, w: 0.84, h: 0.015, required: false, value, signedAt: null,
+    })
+    const res = await sealEnvelope({
+      envelopeId: 'e',
+      envelopeName: 'Test',
+      sealedAtIso: '2026-09-24T19:00:00Z',
+      recipients: [],
+      documents: [{ bytes, name: 'Addendum.pdf', fields: [field('a', { kind: 'text', text: 'Seller to repair the roof ✓ before closing.', size: 8.5 }), field('b', { kind: 'text', text: 'Café 家' }), field('c', { kind: 'date_signed', text: '09/24/2026 ✓' })] }],
+    })
+    expect(res.pageCount).toBe(2) // the page and the certificate
+  })
+})
+
+describe('picked dates and times on the sealed page', () => {
+  it('prints a date and a time field as their text', async () => {
+    const { PDFDocument } = await import('pdf-lib')
+    const { sealEnvelope } = await import('./seal-pdf')
+    const field = (id: string, type: 'date' | 'time', value: { kind: 'date'; iso: string; text: string } | { kind: 'time'; hhmm: string; text: string }) => ({
+      id, documentId: 'd', recipientId: 'r', type, page: 1, x: 0.1, y: 0.1 + (type === 'time' ? 0.1 : 0), w: 0.2, h: 0.03, required: true, value, signedAt: null,
+    })
+    const src = await PDFDocument.create()
+    src.addPage([612, 792])
+    const bytes = await src.save()
+    const res = await sealEnvelope({
+      envelopeId: 'e',
+      envelopeName: 'Test',
+      sealedAtIso: '2026-09-24T19:00:00Z',
+      recipients: [],
+      documents: [{ bytes, name: 'Addendum.pdf', fields: [field('d', 'date', { kind: 'date', iso: '2026-11-30', text: '11/30/2026' }), field('t', 'time', { kind: 'time', hhmm: '17:30', text: '5:30 PM' })] }],
+    })
+    const text = (await import('./pdf-page-text')).readPdfPagesText(res.bytes, 1)
+    expect((await text).text).toContain('11/30/2026')
+    expect((await text).text).toContain('5:30 PM')
+  })
+})
+
+describe('a typed value in a small box', () => {
+  it('shrinks to fit and never drops a word from the signed page', async () => {
+    const { PDFDocument } = await import('pdf-lib')
+    const { sealEnvelope } = await import('./seal-pdf')
+    const src = await PDFDocument.create()
+    src.addPage([612, 792])
+    const bytes = await src.save()
+    // The 2026-09-24 test: a 0.2 x 0.035 box printed "...stay with the" and lost "home".
+    const note = 'Refrigerator and chest freezer stay with the home'
+    const res = await sealEnvelope({
+      envelopeId: 'e',
+      envelopeName: 'Test',
+      sealedAtIso: '2026-09-24T19:00:00Z',
+      recipients: [],
+      documents: [{ bytes, name: 'Addendum.pdf', fields: [{ id: 't', documentId: 'd', recipientId: 'r', type: 'text' as const, page: 1, x: 0.5, y: 0.6, w: 0.2, h: 0.035, required: false, value: { kind: 'text' as const, text: note }, signedAt: null }] }],
+    })
+    const text = (await (await import('./pdf-page-text')).readPdfPagesText(res.bytes, 1)).text.replace(/\s+/g, ' ')
+    for (const word of note.split(' ')) expect(text).toContain(word)
+  })
+})

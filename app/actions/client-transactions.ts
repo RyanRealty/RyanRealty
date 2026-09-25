@@ -8,15 +8,18 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { clientDocumentUrl, getClientIdentity, getPortalSigningRecipient } from '@/lib/data/tc/client-transactions'
 import { listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
-import { earlierSigningGroupPending, generateSigningToken } from '@/lib/tc/signing'
+import { mintOrReuseSigningLink } from '@/lib/data/tc/signing-token-vault'
+import { earlierSigningGroupPending } from '@/lib/tc/signing'
 import { normalizeEmail } from '@/lib/tc/mail-rules'
 
 type LinkResult = { ok: true; url: string } | { ok: false; error: string }
 
 /**
  * Sign from the portal. The signed-in, confirmed email IS the recipient, which
- * is the same proof the emailed link relies on, so a fresh link is minted here
- * (the emailed one retires, exactly as a resend does).
+ * is the same proof the emailed link relies on. Re-uses the recipient's
+ * currently-live token when one exists (mintOrReuseSigningLink) so opening
+ * from the portal does not retire a link already sitting in the recipient's
+ * inbox; mints one when there is none to reuse.
  */
 export async function openMySigningLink(recipientId: string): Promise<LinkResult> {
   const identity = await getClientIdentity()
@@ -31,9 +34,16 @@ export async function openMySigningLink(recipientId: string): Promise<LinkResult
   if (earlierSigningGroupPending(r.signingOrder, roster)) return { ok: false, error: 'It is not your turn yet. We will email you when it is.' }
 
   const sb = createServiceClient()
-  const { token, hash } = generateSigningToken()
-  const { error } = await sb.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', recipientId)
-  if (error) return { ok: false, error: 'Could not open the signing page. Try the link in your email.' }
+  let token: string
+  try {
+    ;({ token } = await mintOrReuseSigningLink(sb, {
+      id: recipientId,
+      auth_token_hash: r.authTokenHash,
+      auth_token_enc: r.authTokenEnc,
+    }))
+  } catch {
+    return { ok: false, error: 'Could not open the signing page. Try the link in your email.' }
+  }
   await sb.from('tc_events').insert({
     deal_id: env.dealId,
     cycle_id: env.cycleId,

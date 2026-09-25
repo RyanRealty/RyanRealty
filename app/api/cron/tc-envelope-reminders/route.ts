@@ -13,8 +13,9 @@ import { NextResponse } from 'next/server'
 import { fetchAllRows } from '@/lib/supabase/paginate'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
-import { generateSigningToken } from '@/lib/tc/signing'
+import { mintOrReuseSigningLink } from '@/lib/data/tc/signing-token-vault'
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
+import { sharedAddressCosigners } from '@/lib/tc/signing'
 import { pickEnvelopeReminders, type EnvelopeReminderCandidate } from '@/lib/tc/envelope-reminders'
 
 export const runtime = 'nodejs'
@@ -49,7 +50,9 @@ export async function GET(request: Request) {
   const envIds = (envs as DbRow[]).map((e) => e.id)
   const { data: recips, error: recErr } = await sb
     .from('tc_envelope_recipients')
-    .select('id, envelope_id, role, action_required, name, email, completed_at, declined_at, last_reminded_at, auth_token_hash, viewed_at')
+    .select(
+      'id, envelope_id, role, action_required, name, email, completed_at, declined_at, last_reminded_at, auth_token_hash, auth_token_enc, viewed_at',
+    )
     .in('envelope_id', envIds)
   if (recErr) {
     console.error('[tc-envelope-reminders]', recErr.message)
@@ -57,6 +60,7 @@ export async function GET(request: Request) {
   }
 
   const envById = new Map((envs as DbRow[]).map((e) => [e.id as string, e]))
+  const recipById = new Map((recips as DbRow[] | null ?? []).map((r) => [String(r.id), r]))
 
   // How many signing links each recipient has already been emailed. The cap
   // stops a recipient whose address is simply wrong from being mailed forever.
@@ -105,8 +109,12 @@ export async function GET(request: Request) {
   let reminded = 0
   for (const c of due) {
     try {
-      const { token, hash } = generateSigningToken()
-      await sb.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', c.recipientId)
+      const recipRow = recipById.get(c.recipientId)
+      const { token } = await mintOrReuseSigningLink(sb, {
+        id: c.recipientId,
+        auth_token_hash: (recipRow?.auth_token_hash as string | null) ?? null,
+        auth_token_enc: (recipRow?.auth_token_enc as string | null) ?? null,
+      })
       const envRow = envById.get(c.envelopeId)
       const sent = await sendSigningInvite({
         to: c.email,
@@ -118,6 +126,12 @@ export async function GET(request: Request) {
         reminder: true,
         customSubject: (envRow?.invite_subject as string | null) ?? null,
         customBody: (envRow?.invite_body as string | null) ?? null,
+        sharedWith: sharedAddressCosigners(
+          ((recips ?? []) as DbRow[])
+            .filter((x) => x.envelope_id === c.envelopeId)
+            .map((x) => ({ ...x, id: String(x.id), name: (x.name as string | null) ?? null })),
+          { id: c.recipientId, email: c.email },
+        ).map((o) => String(o.name || 'another signer')),
       })
       if (sent.error) {
         console.warn('[tc-envelope-reminders] send', sent.error)
