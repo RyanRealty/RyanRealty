@@ -34,7 +34,7 @@
  * a DAL read, and the DAL index gate AST-walks lib/data/**\/*.ts.
  */
 import type { MetadataRoute } from 'next'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { buildAllUrls } from '@/app/sitemap'
 import { classifySitemapUrl, type SitemapClass } from '@/lib/data/sitemap/classify'
 import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'

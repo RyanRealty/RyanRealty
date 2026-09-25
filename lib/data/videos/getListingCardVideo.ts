@@ -24,7 +24,7 @@
  * retry, then `degraded: true`, which the route answers no-store.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { z } from 'zod'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { fetchListingVideosUncached } from '@/lib/data/videos/getListingVideos'

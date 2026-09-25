@@ -22,7 +22,7 @@
  * Reads route through existing DAL functions. This adds no new query.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { getGeoBoundaryMapData } from '@/lib/data/geo/getGeoBoundaryMapData'
 import type { BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'

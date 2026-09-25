@@ -202,10 +202,25 @@ describe('SITE-177 community SERP copy', () => {
     // and the setting clause gave them back (shareDescription caps at 155).
     expect(input.description).toMatch(/Live MLS inventory\.$/)
     expect(input.path).toBe('/communities/black-butte-ranch')
-    // A sibling under the same city still reads "{name} in {city}".
+    // A sibling under the same city opens on its own query (SITE-203).
     expect(
       communitySerpDescription({ slug: 'caldera-springs', name: 'Caldera Springs', city: 'Sunriver' }),
-    ).toMatch(/^Caldera Springs in Sunriver, Oregon\./)
+    ).toMatch(/^Caldera Springs homes for sale in Sunriver, Oregon\./)
+  })
+
+  it('every registered community description fits the 155 cap whole, with the mix or without it', () => {
+    const registry = resortRegistry as { communities: Array<{ slug: string; label: string; city: string }> }
+    for (const c of registry.communities) {
+      const description = communitySerpDescription({
+        slug: c.slug,
+        name: c.label,
+        city: c.city,
+        types: ['homes', 'attached', 'lots'],
+      })
+      expect(shareDescription(description), c.slug).toBe(description)
+      expect(description, c.slug).toMatch(/Live MLS inventory\.$/)
+      expect(description, c.slug).toMatch(/^\S.* (homes for sale|real estate)( in [^.]+)?\./)
+    }
   })
 
   it('Tetherow title and description say Tetherow real estate', () => {

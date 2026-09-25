@@ -15,6 +15,7 @@
  */
 
 import type { pageMetadata } from '@/lib/site/page-metadata'
+import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
 import { preferPlaceHero } from '@/lib/geo-images'
@@ -110,17 +111,28 @@ export function communitySerpDescription(input: {
   // names the inventory query the page wins instead. The helper, not a
   // name-equals-city test: Black Butte Ranch's registry city is Sisters.
   const selfCity = name.trim().toLowerCase() === city.trim().toLowerCase() || isSelfCityCommunity(slug)
+  // SITE-203: "{name} homes for sale" is the query the page owns (its H1),
+  // and the buyers guide and the market report both outranked this page for
+  // it while the description opened "{name} in {city}, Oregon." The opener
+  // now says the query; the setting clause and the mix follow as before.
   const opener = counted
     ? `${formatCount(input.listedCount)} ${input.listedCount === 1 ? 'home' : 'homes'} for sale in ${name}, ${city}.`
     : slug === 'tetherow'
       ? `${name} real estate in ${city}, Oregon.`
       : selfCity
         ? `${name}, Oregon homes for sale.`
-        : `${name} in ${city}, Oregon.`
+        : `${name} homes for sale in ${city}, Oregon.`
   const skipMix = counted && types.length <= 1
-  return [opener, setting, skipMix ? null : mix, 'Live MLS inventory.']
-    .filter((part): part is string => Boolean(part && part.trim()))
-    .join(' ')
+  const compose = (withMix: boolean) =>
+    [opener, setting, withMix ? mix : null, 'Live MLS inventory.']
+      .filter((part): part is string => Boolean(part && part.trim()))
+      .join(' ')
+  const full = compose(!skipMix)
+  // The whole sentence set or the set without the mix: shareDescription
+  // truncates past 155 characters, and a description that ends mid-word
+  // ("Live…") is worse than one that leaves the mix to the page body.
+  if (shareDescription(full) === full) return full
+  return compose(false)
 }
 
 /**

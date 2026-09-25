@@ -29,7 +29,7 @@
  * site-nav.ts directly and this DAL has nothing data-grounded to add.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { marketVerdict } from '@/lib/market/classify'
 
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'

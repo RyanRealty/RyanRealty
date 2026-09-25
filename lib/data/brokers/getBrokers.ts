@@ -12,7 +12,7 @@
  * facts are locked per docs/SITE_SPEC.md and brand-voice rules.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon, supabaseServer } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { Broker } from '@/lib/data/types/broker'

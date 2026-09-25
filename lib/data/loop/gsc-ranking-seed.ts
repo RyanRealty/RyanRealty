@@ -134,6 +134,61 @@ export const LANDING_BUCKETS: Record<string, { url: string; query: string }> = {
   newConstruction: { url: '/new-construction', query: 'new construction bend oregon' },
 }
 
+/**
+ * A query that carries one of these words is asking for another page class
+ * (the housing-market report, a broker page, the buyers guide), so the URL it
+ * lands on is not competing with the winner for the winner's query. Before
+ * this filter, "bend oregon real estate market" (the report) and "bend oregon
+ * real estate agent" (a broker page) were counted against /cities/bend and
+ * minted a [cannibal] node (SITE-196, 2026-09-24) for a query that /cities/bend
+ * already held 100% of.
+ */
+export const OTHER_CLASS_MODIFIERS = [
+  'market',
+  'markets',
+  'statistics',
+  'stats',
+  'trend',
+  'trends',
+  'forecast',
+  'report',
+  'agent',
+  'agents',
+  'agency',
+  'broker',
+  'brokers',
+  'brokerage',
+  'company',
+  'companies',
+  'realtor',
+  'realtors',
+  'hoa',
+  'dues',
+  'fees',
+  'price',
+  'prices',
+  'map',
+  'photos',
+  'rental',
+  'rentals',
+  'rent',
+  'history',
+  'appreciation',
+  'taxes',
+  'school',
+  'schools',
+  'weather',
+  'news',
+  'jobs',
+] as const
+
+const OTHER_CLASS_RE = new RegExp(`\\b(${OTHER_CLASS_MODIFIERS.join('|')})\\b`)
+
+/** True when the query asks for the winner's own page class, not another one. */
+export function queryStaysInWinnerClass(q: string): boolean {
+  return !OTHER_CLASS_RE.test(normalizeQuery(q))
+}
+
 export function winnerFor(q: string): { url: string; query: string } | null {
   const s = normalizeQuery(q)
   for (const w of WINNERS) {
@@ -317,6 +372,7 @@ export function cannibalsFromQueryPages(rows: GscQueryPageRow[], seenWinner: Set
   for (const r of rows) {
     const win = winnerFor(r.q)
     if (!win) continue
+    if (!queryStaysInWinnerClass(r.q)) continue
     const cur = byWinner.get(win.url) ?? { win, rows: [] }
     cur.rows.push(r)
     byWinner.set(win.url, cur)

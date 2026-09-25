@@ -5,7 +5,7 @@
  * (cities.ts server actions, city detail pages) consume via @/lib/data.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugify } from '@/lib/slug'

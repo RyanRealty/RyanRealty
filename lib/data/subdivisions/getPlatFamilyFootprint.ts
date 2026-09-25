@@ -30,7 +30,7 @@
  * filter below keeps Coming Soon out exactly as the view would). Cached 6h.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient, supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'

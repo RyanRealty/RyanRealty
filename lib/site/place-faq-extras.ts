@@ -30,7 +30,11 @@ import { duesSentence, hoaPresenceSentence, PLACE_HOA_CAVEAT, yearBuiltSentence 
 import { formatPriceExact } from '@/lib/format/money'
 import { formatPaceShare } from '@/lib/data/market-truth/public-pace'
 import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
-import { summarizePlaceDocuments, type PlaceDocument } from '@/lib/data/places/place-document-view'
+import {
+  placeDocumentsLead,
+  summarizePlaceDocuments,
+  type PlaceDocument,
+} from '@/lib/data/places/place-document-view'
 import { publishableNewCount } from '@/lib/site/place-alerts'
 import type { MarketFaqItem, MarketFaqResult } from '@/lib/site/market-faq'
 
@@ -381,8 +385,9 @@ function pushCharacterExtras(
  * What is on file, never a yes or no. A declaration covers the lots its own
  * text describes, and a Bend district holds many subdivisions, so one linked
  * declaration is not "yes, this place has CC&Rs" for every home in it. The
- * counts, county and attribution come from summarizePlaceDocuments, the same
- * helper V3PlaceDocuments' note and footnote read.
+ * counts, county and attribution come from summarizePlaceDocuments, and the
+ * opening count from placeDocumentsLead, the same helpers V3PlaceDocuments'
+ * note and footnote read.
  */
 function pushDocumentsExtra(
   out: PlaceFaqExtraItem[],
@@ -391,14 +396,8 @@ function pushDocumentsExtra(
 ): void {
   const summary = summarizePlaceDocuments(documents ?? [])
   if (!summary) return
-  const { count, declarations, amendments, county, hasRecorded, hasAssociation, publisher, attribution } = summary
-  const which =
-    declarations > 0 && amendments > 0
-      ? `: ${declarations === 1 ? 'the declaration' : `${declarations} declarations`} and ${amendments} recorded ${amendments === 1 ? 'amendment' : 'amendments'}`
-      : ''
-  const sentences = [
-    `This page links ${count} ${hasRecorded ? 'recorded ' : ''}${count === 1 ? 'document' : 'documents'} for ${place}${which}.`,
-  ]
+  const { declarations, county, hasRecorded, hasAssociation, publisher, attribution } = summary
+  const sentences = [`This page links ${placeDocumentsLead(summary, place)}.`]
   if (hasRecorded) {
     sentences.push(
       hasAssociation

@@ -30,7 +30,7 @@
  * @/lib/data only.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { fetchOnMarketHomesForSchool, type NearbyHomeStats } from '@/lib/data/geo/nearby-on-market-homes'
 import {

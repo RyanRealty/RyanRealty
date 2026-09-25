@@ -118,6 +118,7 @@ lib/data/
 │   ├── createSellerLead.ts           (input) → LeadResult
 │   └── createExpiredLead.ts          (input) → LeadResult
 └── cache/
+    ├── next-cache.ts                 The one door to unstable_cache (G79)
     ├── unstable-cache.ts             Wrapper with sane defaults
     └── redis.ts                      Upstash Redis wrapper
 ```
@@ -127,7 +128,8 @@ lib/data/
 ## Function signature pattern (every function follows)
 
 ```ts
-import { unstable_cache } from 'next/cache'
+// Never from 'next/cache' directly (G79, ci:unstable-cache-door).
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { z } from 'zod'
 import { supabaseServer } from '@/lib/data/client'
 import type { ListingDetail } from '@/lib/data/types/listing'

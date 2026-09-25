@@ -20,7 +20,7 @@
  * unstable_cache-wrapped, and caching a failure would blank the parcel layer
  * for everyone for the full TTL. Empty is reserved for a genuine no-parcel.
  */
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS } from '@/lib/data/cache/unstable-cache'
 

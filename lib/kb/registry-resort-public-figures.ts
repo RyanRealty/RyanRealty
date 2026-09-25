@@ -9,7 +9,7 @@
  * Empty tile fetch → empty map. Do not overlay zeros from a timed-out read.
  */
 import { cache } from 'react'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import resortRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import {
