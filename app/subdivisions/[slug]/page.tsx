@@ -493,6 +493,7 @@ const loadSubdivisionCore = cache(async (slug: string) => {
           city: headFamily.citySlug,
           citySlug: headFamily.citySlug,
           activeCount: familyInventory.activeCount,
+          underContractCount: familyInventory.underContractCount,
           medianListPrice: familyInventory.medianListPrice,
           listingKeys: familyInventory.listingKeys,
           href: `/subdivisions/${slug}`,

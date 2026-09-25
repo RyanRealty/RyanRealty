@@ -104,7 +104,7 @@ export async function getPlaceValueAnswer(input: {
   // opens with the figure's name ("months of supply", "days to pending"),
   // which is how the callers find it.
   const where = placeLabelOf(input.placeLabel, geoSlug)
-  const feed = `regional MLS through Oregon Data Share, read through the Market Truth metrics for detached homes in ${where}`
+  const feed = `regional MLS through Oregon Data Share, detached homes in ${where}`
   const updated = updatedClause(asOf)
   const trace: string[] = []
   if (monthsOfSupply != null) {

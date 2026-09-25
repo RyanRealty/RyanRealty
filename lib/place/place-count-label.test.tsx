@@ -117,6 +117,71 @@ describe('the map and the homes under it count "for sale" the same way', () => {
     expect(sections.find((s) => s.key === 'attached')?.countLabel).toBe('1 under contract')
   })
 
+  it('holds the door over a neighborhood or plat equal to the single-family homes under it and to the map', async () => {
+    // The door reads getNeighborhoodPublicInventory / getPlatPublicInventory:
+    // single-family, publicly showing. Its "homes for sale" is Active only by
+    // the same classifier, so over a population of single-family houses it
+    // equals the house dial's for-sale count under the map and the map's
+    // for-sale house marks (SITE-193). (On a live page the house dial also
+    // takes manufactured homes, a wider set the neighborhood source names.)
+    const { atlasDotsFromTiles } = await import('@/lib/atlas/build-place-atlas')
+    const { placeStockSectionsFromTiles } = await import('./place-inventory-stock')
+    const { rollupNeighborhoodPublicInventory } = await import('@/lib/data/geo/neighborhood-public-inventory')
+    const { rollupPlatPublicInventory } = await import('@/lib/data/geo/plat-public-inventory')
+    const { rollupPlatFamilyInventory } = await import('@/lib/data/subdivisions/getPlatFamilyInventory')
+    const sfrRows = HOMES_POPULATION.filter(
+      (t) => t.propertyType === 'A' && t.propertySubType === 'Single Family Residence',
+    )
+    const door = rollupNeighborhoodPublicInventory(
+      sfrRows.map((t) => ({
+        geo_slug: 'bend-awbrey-butte',
+        listing_key: t.listingKey,
+        list_price: t.listPrice,
+        standard_status: t.status,
+      })),
+    ).find((r) => r.slug === 'awbrey-butte')!
+    const plat = rollupPlatPublicInventory(
+      sfrRows.map((t) => ({
+        listing_key: t.listingKey,
+        list_price: t.listPrice,
+        subdivision_lower: 'ridge at eagle crest',
+        city_lower: 'redmond',
+        standard_status: t.status,
+      })),
+      [
+        {
+          slug: 'ridge-at-eagle-crest',
+          name: 'Ridge At Eagle Crest',
+          parent: 'Eagle Crest',
+          parentSlug: 'eagle-crest',
+          city: 'Redmond',
+          citySlug: 'redmond',
+        },
+      ],
+    )[0]!
+    const family = rollupPlatFamilyInventory(
+      sfrRows.map((t) => ({
+        listing_key: t.listingKey,
+        geo_slug: 'x-1',
+        property_type: t.propertyType,
+        property_sub_type: t.propertySubType,
+        list_price: t.listPrice,
+        standard_status: t.status,
+      })),
+      '2026-09-24T00:00:00.000Z',
+    )
+    const sfr = placeHomesCount(placeStockSectionsFromTiles(HOMES_POPULATION).find((s) => s.key === 'sfr')!.rows)
+    const mapHouses = atlasDotsFromTiles(POPULATION as unknown as Parameters<typeof atlasDotsFromTiles>[0], NOW).filter(
+      (d) => d.t === 'house' && d.s === 'active',
+    ).length
+    expect(sfr).toEqual({ forSale: 3, underContract: 1 })
+    for (const counted of [door, plat, family]) {
+      expect(counted.activeCount).toBe(sfr.forSale)
+      expect(counted.underContractCount).toBe(sfr.underContract)
+    }
+    expect(mapHouses).toBe(sfr.forSale)
+  })
+
   it('prints the same counts in the homes block a city or community page draws', async () => {
     const { placeStockSectionsFromTiles } = await import('./place-inventory-stock')
     const { PlaceSubdivisionHomes, PlaceSubdivisionMap } = await import(

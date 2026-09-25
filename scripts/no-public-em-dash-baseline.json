@@ -9,8 +9,6 @@
     "components/site/v3/V3Chart.tsx": 5,
     "components/site/v3/V3ListingClose.client.tsx": 2,
     "components/site/v3/V3ListingRow.tsx": 1,
-    "components/site/v3/V3PlaceAffordability.client.tsx": 1,
-    "components/site/v3/V3PlaceAffordability.view.ts": 1,
     "components/site/v3/V3PlaceDocuments.tsx": 1,
     "components/site/v3/V3ProofBlock.view.ts": 3,
     "components/site/v3/V3StickyAsk.client.tsx": 1,

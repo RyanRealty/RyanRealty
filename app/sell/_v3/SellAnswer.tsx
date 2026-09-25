@@ -97,7 +97,7 @@ export function SellAnswer({ answer }: { answer: SellAnswerData }) {
         source={
           answer.trace.length > 0
             ? answer.trace.join(' · ')
-            : `Regional MLS through Oregon Data Share, read through the Market Truth metric layer: detached single-family homes in ${answer.placeLabel}.`
+            : `Regional MLS through Oregon Data Share: detached single-family homes in ${answer.placeLabel}.`
         }
       />
     </section>

@@ -261,7 +261,7 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
     return String(line)
       .replace(
         /market_metric\s+[a-z_]+:[a-z0-9-]+/gi,
-        `Market Truth metric layer, ${picked.label} detached homes`,
+        `detached homes in ${picked.label}`,
       )
       .replace(
         /median_days_to_contract_90d/gi,

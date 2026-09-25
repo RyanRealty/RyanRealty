@@ -1145,9 +1145,9 @@ async function renderCommunityDetail({ params }: Props) {
             chartFirst
             foldAfter={0}
             source={v3Text(
-              `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-                `detached single-family houses assigned to ${publicName} by boundary membership. ` +
-                `Sold history is leftover, not a city monthly chart. Months of supply and a buyer's or seller's verdict stay off this grain.`,
+              `regional MLS through Oregon Data Share: ` +
+                `detached single-family houses inside the recorded ${publicName} boundary. ` +
+                `The sold history is ${publicName}'s own closed sales, not a city chart. Months of supply and a buyer's or seller's verdict are not part of this section.`,
             )}
             chart={costChart}
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}

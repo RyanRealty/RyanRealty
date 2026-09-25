@@ -596,7 +596,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
       monthsOfSupply: hud.monthsSupply,
       monthsOfSupplyActiveCount: hud.active,
       activeCount: nbhAnswerActive,
-      activeCountTrace: `the recorded ${neighborhood.name} boundary, single-family homes in a publicly active MLS status at the last sync`,
+      activeCountTrace: `the recorded ${neighborhood.name} boundary, single-family homes for sale at the last sync (homes under contract are counted separately)`,
       // SAY WHY THE TWO COUNTS DIFFER, IN THE ANSWER (§0 rule 5), in plain
       // words: both numbers, both populations, no pipeline talk (AEO-5).
       activeCountNotes: (() => {
@@ -625,7 +625,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
       // The list median comes off the SAME boundary read as the active count,
       // not off the metric layer, so it carries that read's clause and not the
       // page's default one (§0: one trace per query).
-      medianListPriceTrace: `the recorded ${neighborhood.name} boundary, the list prices of the single-family homes in a publicly active MLS status at the last sync`,
+      medianListPriceTrace: `the recorded ${neighborhood.name} boundary, the list prices of the single-family homes for sale at the last sync`,
     },
     // READER'S WORDS IN THE SENTENCE, MACHINE HANDLE IN THE ATTRIBUTE. This
     // clause used to open "market_metric ${metricKey} through the Market Truth

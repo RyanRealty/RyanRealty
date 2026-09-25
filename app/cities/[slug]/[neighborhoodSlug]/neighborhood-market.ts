@@ -5,9 +5,10 @@
  * WHY THIS FILE EXISTS. The page reads two populations for "homes for sale":
  * the market-truth overlay (detached houses whose primary place membership is
  * this neighborhood — what the months-of-supply ratio divides) and the
- * boundary inventory (every single-family home in a publicly active MLS
- * status inside the recorded polygon — what the face, the Q&A and the
- * affordability calculator print). Both are honest. The defect was that the
+ * boundary inventory (every single-family home for sale, status Active,
+ * inside the recorded polygon — what the face, the Q&A and the
+ * affordability calculator print; under contract is counted apart since
+ * SITE-193). Both are honest. The defect was that the
  * Dataset and Place JSON-LD took "Median List Price" and "Active Listings"
  * from the overlay while the FAQPage and the visible page printed the
  * boundary figures under the same labels: Awbrey Butte 1,350,000 / 45 in the

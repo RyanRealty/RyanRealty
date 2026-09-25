@@ -177,7 +177,7 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
 
   const stamp = answer?.asOf ? `; updated ${formatDate(answer.asOf)}` : ''
   const source =
-    `regional MLS through Oregon Data Share, read through the Market Truth metric layer: detached single-family homes assigned to ${place.name} by boundary membership; ` +
+    `regional MLS through Oregon Data Share: detached single-family homes inside the recorded ${place.name} boundary; ` +
     `comparable sales from the Ryan Realty CMA engine${stamp}`
 
   return {

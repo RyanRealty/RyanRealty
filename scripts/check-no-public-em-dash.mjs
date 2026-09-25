@@ -82,7 +82,9 @@ const ROOTS = [
   // the two address answers are written in, not files one at a time, and the
   // dashes those trees already held sit on a shrink-only baseline
   // (scripts/no-public-em-dash-baseline.json) instead of keeping them out of
-  // scope. A NEW dash anywhere in these trees fails.
+  // scope. A NEW dash anywhere in these trees fails. lib/market came in with
+  // the neighborhood door's trace ("listings — Active and Active Under
+  // Contract, Coming Soon excluded — inside ..."), the same miss one tree over.
   'app/cities',
   'app/communities',
   'app/subdivisions',
@@ -92,6 +94,7 @@ const ROOTS = [
   'lib/place',
   'lib/data/places',
   'lib/cma/place-comps.ts',
+  'lib/market',
 ]
 
 /**

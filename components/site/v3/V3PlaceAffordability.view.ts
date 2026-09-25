@@ -148,7 +148,7 @@ export function affordabilityFigures(input: AffordabilityViewInput): V3DrawingFi
       draw: 'pair',
       claim: `At ${formatPriceExact(solved.ceiling)}, here is what you bring and what you borrow.`,
       caption: 'cash in and loan',
-      source: `${AFFORDABILITY_ARITHMETIC_SOURCE_NAME}, not a figure we measured: ${termsSource} The two add up to ${formatPriceExact(solved.ceiling)} exactly — closing costs are not in either bar.`,
+      source: `${AFFORDABILITY_ARITHMETIC_SOURCE_NAME}, not a figure we measured: ${termsSource} The two add up to ${formatPriceExact(solved.ceiling)} exactly; closing costs are not in either bar.`,
       sourceName: AFFORDABILITY_ARITHMETIC_SOURCE_NAME,
       bars: [
         {
