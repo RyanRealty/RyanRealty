@@ -20,8 +20,17 @@ export async function fetchAllCityActiveSfr(cityName: string): Promise<ListingTi
   // set can repeat a row if inventory shifts between page fetches.
   const byKey = new Map<string, ListingTile>()
   for (let offset = 0; offset < 6000; offset += PAGE) {
-    const page = await getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: PAGE, offset })
-    for (const t of page) byKey.set(t.listingKey, t)
+    const page: unknown = await getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: PAGE, offset })
+    // A page that is not rows is a failed read, never an empty city. Say so,
+    // so the caller's withTimeoutFallbackResult reports ok:false with this
+    // message instead of "e is not iterable" (production build
+    // dpl_57NPHyuPyFiSkL23TpQzyNQ1rV4L, city:resortTiles, 2026-09-25).
+    if (!Array.isArray(page)) {
+      throw new Error(
+        `[fetchAllCityActiveSfr] ${cityName}: active SFR page at offset ${offset} came back ${page === null ? 'null' : typeof page}, not rows`,
+      )
+    }
+    for (const t of page as ListingTile[]) byKey.set(t.listingKey, t)
     if (page.length < PAGE) break
   }
   return [...byKey.values()]

@@ -7,7 +7,7 @@
  * omitted. Official GIS only (CLAUDE.md / feedback_gis_authoritative_only).
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import {
   assembleAmenityLayers,
   parksNeedingGeom,

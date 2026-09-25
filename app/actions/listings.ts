@@ -2,7 +2,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { after } from 'next/server'
 import { listingTileHref, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'

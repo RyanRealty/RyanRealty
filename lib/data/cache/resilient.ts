@@ -20,8 +20,13 @@
  *     return rows
  *   }
  *   export const getX = makeResilientCached(fetchX, ['x-v2'], {revalidate, tags}, [])
+ *
+ * unstable_cache comes through ./next-cache, which re-reads uncached when Next
+ * hands back `undefined` in place of a value (the build-retry phantom that
+ * crashed /cities/redmond on 2026-09-25; see that file). Without it this
+ * wrapper passed the undefined on as a success and the fallback never applied.
  */
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 
 export function makeResilientCached<A extends unknown[], T>(
   fetchFn: (...args: A) => Promise<T>,

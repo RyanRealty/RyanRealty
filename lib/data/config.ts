@@ -63,7 +63,7 @@
  */
 
 import 'server-only'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/data/client'
 import { getMarketHistoryWeekly } from '@/lib/data/market/getMarketHistoryWeekly'
 import { PROPERTY_TAX_RATE_PCT } from '@/lib/property-tax-rate'

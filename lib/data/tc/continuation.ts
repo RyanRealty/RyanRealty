@@ -20,7 +20,7 @@ import 'server-only'
  * can change.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createHash, randomUUID } from 'node:crypto'
 import { PDFArray, PDFDict, PDFDocument, PDFName, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import { createServiceClient } from '@/lib/supabase/service'
