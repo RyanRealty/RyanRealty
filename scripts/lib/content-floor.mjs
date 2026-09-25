@@ -460,6 +460,9 @@ export function measurePage() {
   // data-aria-hidden. CI on 2026-09-24 read #towns (six real ledger rows,
   // words intact) and #edges at 0 items because both carried that hiding;
   // the page's own aria-hidden (a swatch list, a glyph) never has the marker.
+  // Rows under the page's OWN aria-hidden, such as a closed overlay host,
+  // still count as zero (Matt 2026-09-24, "Keep counting as zero"): content
+  // nobody sees without opening an overlay does not hold the section's floor.
   function isAriaHidden(node) {
     let n = node
     while (n && n.nodeType === 1) {
