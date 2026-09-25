@@ -511,7 +511,7 @@ export function overviewSource(payload: EditionPayload, completeThrough: string)
   const homes = anyLot.length
     ? `Single-family homes on less than one acre, except ${listJoin(anyLot)} (any lot size)`
     : 'Single-family homes on less than one acre'
-  return `${REPORT_SOURCE_NAME}, ${homes.charAt(0).toLowerCase()}${homes.slice(1)} · ${monthLabel(payload.editionMonth)} edition, data complete through ${completeThrough}`
+  return `${REPORT_SOURCE_NAME}, ${homes.charAt(0).toLowerCase()}${homes.slice(1)} · ${monthLabel(payload.editionMonth)} edition, MLS records as of ${completeThrough}`
 }
 
 /* -------------------------------------------------------------------------- */
@@ -520,7 +520,7 @@ export function overviewSource(payload: EditionPayload, completeThrough: string)
 
 /** The trace for one market's figures and chart. */
 export function sectionSource(place: string, key: string, completeThrough: string): string {
-  return `${REPORT_SOURCE_NAME}, ${place} single-family homes on less than one acre, ${monthLabel(key)} · the charts are the 36 months to ${monthLabel(key)} as this edition stored them · data complete through ${completeThrough}`
+  return `${REPORT_SOURCE_NAME}, ${place} single-family homes on less than one acre, ${monthLabel(key)} · the charts are the 36 months to ${monthLabel(key)} as this edition stored them · MLS records as of ${completeThrough}`
 }
 
 /**

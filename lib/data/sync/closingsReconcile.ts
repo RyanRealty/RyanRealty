@@ -50,8 +50,10 @@ function nextDay(d: string): string {
 
 /**
  * Listing keys we hold as Closed with a close date inside [from, to] (inclusive
- * dates). Read one calendar month at a time so the close-date filter, not the
- * key order, drives each page.
+ * dates). Read one calendar month at a time, ordered by close date first so the
+ * close-date index drives each page: ordered by key alone, the planner walked
+ * the primary key and filtered, and a month from 2023 timed out (every older
+ * key sorts ahead of it).
  */
 export async function getClosedListingKeysInWindow(from: string, to: string): Promise<string[]> {
   const sb = createServiceClient()
@@ -67,6 +69,7 @@ export async function getClosedListingKeysInWindow(from: string, to: string): Pr
         .eq('StandardStatus', 'Closed')
         .gte('CloseDate', `${start}T00:00:00Z`)
         .lt('CloseDate', `${nextDay(end)}T00:00:00Z`)
+        .order('CloseDate')
         .order('ListingKey')
         .range(offset, offset + 999)
       if (error) throw new Error(`[getClosedListingKeysInWindow] ${error.message}`)

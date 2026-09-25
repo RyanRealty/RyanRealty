@@ -61,7 +61,7 @@ export async function getFactSaleStatus(keys: string[]): Promise<Map<string, Fac
     const { data, error } = await sb
       .from('market_fact_sale')
       .select('listing_key, is_publishable, exclusion_reasons')
-      .in('listing_key', unique.slice(i, i + 150))
+      .in('listing_key', unique.slice(i, i + 150)) // @canonical-key — Spark ListingKey values, the key market_fact_sale is keyed by
     if (error) throw new Error(`[getFactSaleStatus] ${error.message}`)
     for (const r of (data ?? []) as Record<string, unknown>[]) {
       out.set(String(r.listing_key), {

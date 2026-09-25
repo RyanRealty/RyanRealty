@@ -9,7 +9,7 @@
  * signs the back page and no broker headshot appears.
  */
 import { BRAND, CONTACT } from '@/lib/brand/contact'
-import { formatDate } from '@/lib/format/date'
+import { formatCalendarDay, formatDate } from '@/lib/format/date'
 import { pageContractCss, MARGIN_IN } from '@/lib/pdf/page-contract'
 import { MOS_BALANCED_MAX, MOS_SELLER_MAX } from '@/lib/market/classify'
 import {
@@ -335,7 +335,7 @@ function cover(p: EditionPayload, a: ReportAssets): string {
   <img class="hero" src="${a.hero}" alt="The Old Mill District on the Deschutes River in Bend"/>
   <div class="brief">${p.headline.map((t) => `<p>${esc(t)}</p>`).join('')}</div>
   ${kpiTiles(k)}
-  <p class="src">Central Oregon, single-family homes on less than one acre, ${esc(monthLabel(p.editionMonth))} · data complete through ${esc(p.dataCompleteThrough)} · ${esc(SOURCE)}</p>
+  <p class="src">Central Oregon, single-family homes on less than one acre, ${esc(monthLabel(p.editionMonth))} · MLS records as of ${esc(formatCalendarDay(p.dataCompleteThrough) || p.dataCompleteThrough)} · ${esc(SOURCE)}</p>
 </section>`
 }
 
@@ -540,7 +540,7 @@ function methodsPage(p: EditionPayload, a: ReportAssets): string {
   <div class="cols">
     <div>
       <h4>The data</h4>
-      <p>Every figure comes from Multiple Listing Service records of closed sales and listings in Central Oregon, received through Oregon Data Share and checked by Ryan Realty's market data system. Figures are computed fresh for each edition and frozen when it publishes. Data complete through ${esc(p.dataCompleteThrough)}.</p>
+      <p>Every figure comes from Multiple Listing Service records of closed sales and listings in Central Oregon, received through Oregon Data Share and checked by Ryan Realty's market data system. Figures are computed fresh for each edition and frozen when it publishes. This edition reflects MLS records as of ${esc(formatCalendarDay(p.dataCompleteThrough) || p.dataCompleteThrough)}.</p>
       <h4>The homes</h4>
       <p>The main series is single-family homes on less than one acre, which keeps rural and acreage properties from pulling on in-town prices. Condos and townhomes, and homes on an acre or more, have their own tables. Manufactured homes, land, farms, multi-family buildings and fractional interests are left out.</p>
       <h4>The places</h4>
