@@ -316,8 +316,12 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    prices: 2,318 were in 2000 and 2001, where 1,541 of our stored close prices equaled the list
    price (the April 2026 fill-in from listing history, `apply_close_price_from_history_batch`,
    wrote an asking price where the sold price was blank); in 2007 to 2012 several were tenfold
-   typos the MLS had since corrected. Every year's closed count matched Spark exactly. The values replaced
-   are kept in each run's JSON (`ours` beside `mls`) so a repair can be audited or undone.
+   typos the MLS had since corrected. Every year's closed count matched Spark exactly, and 2024 and
+   2025 (12,145 and 12,219 closings) matched with no drift at all. The values replaced are kept in
+   `listing_mls_repair_log` (`ours` beside `mls`, migration `20260925100000`), written before each
+   repair; a repair does not run when that write fails. It holds the 2026-09-25 runs: the 2,530
+   historical closings with the full before-image, and the 1,093 closings of 2024 to 2026 from the
+   first pass, whose before-image kept status, city and close date only.
 2. **A closed sale the MLS no longer serves is left out.** When a closing we hold returns nothing
    from Spark even looked up by listing key, the reconciliation records it in
    `market_listing_absent_from_mls`, and `refresh_market_fact_sale` marks it `absent_from_mls`

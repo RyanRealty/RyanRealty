@@ -11,6 +11,7 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 export type ReconcileListingRow = {
   ListNumber: string
@@ -129,9 +130,11 @@ export async function recordAbsentFromMls(
 /** Every listing key currently recorded as absent from the MLS (a short list). */
 export async function getAbsentFromMlsKeys(): Promise<string[]> {
   const sb = createServiceClient()
-  const { data, error } = await sb.from('market_listing_absent_from_mls').select('listing_key').limit(5000)
+  const { rows, error } = await fetchPagedRows<{ listing_key: string }>((from, to) =>
+    sb.from('market_listing_absent_from_mls').select('listing_key').order('listing_key').range(from, to),
+  )
   if (error) throw new Error(`[getAbsentFromMlsKeys] ${error.message}`)
-  return ((data ?? []) as { listing_key: string }[]).map((r) => r.listing_key)
+  return rows.map((r) => r.listing_key)
 }
 
 /** Remove keys the MLS serves again. */
