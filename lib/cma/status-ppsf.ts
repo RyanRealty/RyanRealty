@@ -43,16 +43,20 @@ export function ppsfOf(price: number | null | undefined, sqft: number | null | u
   return price / sqft
 }
 
+/**
+ * Median, low and high of the exact rates, each rounded once at the end, the
+ * same math as the status table's $/sqft column (priceBand), so a matrix
+ * caption and the table never differ by a dollar on the same homes.
+ */
 export function ppsfBand(values: readonly number[]): PpsfBand | null {
   if (values.length === 0) return null
-  const rounded = values.map((v) => Math.round(v))
-  const mid = median(rounded)
+  const mid = median([...values])
   if (mid == null) return null
   return {
-    n: rounded.length,
+    n: values.length,
     median: Math.round(mid),
-    low: Math.min(...rounded),
-    high: Math.max(...rounded),
+    low: Math.round(Math.min(...values)),
+    high: Math.round(Math.max(...values)),
   }
 }
 
