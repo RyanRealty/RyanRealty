@@ -617,7 +617,7 @@ export function cmaSectionStyles(): string {
   table.comp-matrix .matrix-addr { display: block; }
   .addr-row { display: flex; align-items: center; justify-content: flex-end; flex-wrap: nowrap; gap: 4px; }
   .addr-row .pin-badge { margin-right: 0; }
-  .addr-row .matrix-addr { min-width: 0; overflow-wrap: normal; text-align: right; }
+  .addr-row .matrix-addr { min-width: 0; overflow-wrap: break-word; text-align: right; }
   .addr-row.is-card { justify-content: flex-start; gap: 5px; margin: 0 0 6px; }
   .addr-row.is-card .pin-badge { margin-right: 0; }
   .addr-row.is-card .comp-stack-addr { margin: 0; flex: 1 1 auto; min-width: 0; }
@@ -649,11 +649,20 @@ export function cmaSectionStyles(): string {
      Northwest" in a five-column table) was clipped mid-word on the sheet, and
      the clipped glyphs still sat in the PDF past the right margin
      (page-safety: "+2.3pt SIDE right" on every matrix sheet). The head wraps
-     at a space, right-aligned with the figures under it. It does not break
-     inside a word. */
+     at a space, right-aligned with the figures under it. It breaks inside a
+     word only when that one word is wider than its column: at five sales to a
+     table the head is about 57pt, the pin badge takes 14 of it, and the
+     uppercase letter-spaced "COMPARABLE" ran 2.4pt past the right margin at
+     13, 20 and 30 comps. break-word leaves every word that fits whole. */
   table.comp-matrix thead th.v { white-space: normal; overflow-wrap: normal; text-align: right; }
   table.comp-matrix thead th.v .matrix-sub { white-space: nowrap; text-align: right; }
-  table.comp-matrix .arc-asks, table.comp-matrix .arc-tail { display: block; white-space: nowrap; text-align: right; }
+  /* Both lines of the ask story may wrap, and only where the markup allows.
+     They were nowrap, sized by character count (ARC_LINE in comp-matrix.ts),
+     which is a guess at the font: "$830K → $710K" ran 3pt past the right
+     margin in a six-column table (cma-20506-murphy), and under a wide fallback
+     "offer in 12 days" did the same. The path breaks only after an arrow and a
+     day count never leaves its unit; both are held by no-break spaces. */
+  table.comp-matrix .arc-asks, table.comp-matrix .arc-tail { display: block; white-space: normal; text-align: right; }
   table.comp-matrix td.is-note { text-align: left; font-size: 9.5px; line-height: 1.35; }
   table.comp-matrix th[hidden], table.comp-matrix td[hidden] { display: none; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }

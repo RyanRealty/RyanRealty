@@ -107,7 +107,10 @@ describe('renderCompMatrixHtml', () => {
     // the whole outcome sentence stays in the cell.
     expect(html).toContain('title="sold $495K · offer in 8 days"')
     expect(html).toContain('>sold $495K</span>')
-    expect(html).toContain('>offer in 8 days</span>')
+    // The day count is glued to its unit: a tail line may wrap under a wide
+    // font, and it must never leave "8" at the end of one line and "days"
+    // on the next.
+    expect(html).toContain('>offer in 8&nbsp;days</span>')
     expect(html).toContain('class="arc-asks">$499K</span>')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
