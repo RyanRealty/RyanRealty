@@ -80,6 +80,12 @@ export type V3ListingRowData = {
   listNumber: string | null
   tourUrl?: string | null
   hasTour?: boolean
+  /**
+   * The card's tour control, in the listing page's words ("Video Tour" for a
+   * walkthrough reel, "3D" for a 3D tour). Omit it and the card reads it off
+   * `tourUrl` (publishListingTourLabel), so a walkthrough is never called a 3D tour.
+   */
+  tourLabel?: string | null
   badge?: { kind: V3ListingRowBadge; label: string }
   /** Overlay pills. When set, this is the whole set; `badge` is ignored. */
   badges?: Array<{ kind: V3ListingRowBadge; label: string }>

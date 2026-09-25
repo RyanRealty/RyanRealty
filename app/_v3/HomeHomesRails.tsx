@@ -24,8 +24,7 @@
  * cycle runs on across the whole page (/buy's lead shelf is its first dial).
  */
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Button } from '@/components/site/v3'
-import { V3ListingDialRail, dialRailPositionAt } from '@/components/site/v3/dial-rail-position.shim'
+import { V3_ROOT_CLASS, V3Button, V3ListingDial, dialRailPositionAt } from '@/components/site/v3'
 import { listingRowFromRailCard, type HomeRailRow } from './home-rail-items'
 import './home-homes-rails.css'
 import './home-shelves.css'
@@ -33,7 +32,7 @@ import './home-shelves.css'
 function HomeShelf({ row, order }: { row: HomeRailRow; order: number }) {
   return (
     <div className="home-shelf">
-      <V3ListingDialRail
+      <V3ListingDial
         id={row.id}
         heading={row.heading}
         headingLevel={2}

@@ -34,12 +34,15 @@ export function PriceDropsFold({
         items={bands.map((band) => ({ key: band.key, label: v3Text(band.label) }))}
         className="pd-bands"
       >
-        {bands.map((band) => (
+        {bands.map((band, i) => (
           <PriceDropPhotos
             key={band.key}
             id={`pd-cuts-${band.key}`}
             items={band.items}
             label={`${railLabel} · ${band.label}`}
+            // The switch opens on the first band; only its first photograph is
+            // the fold's largest paint (the others are hidden panels).
+            priority={i === 0}
           />
         ))}
       </V3ChartSwitch>

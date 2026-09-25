@@ -25,9 +25,8 @@
  * Layout lock keeps this AFTER Atlas: H1, claim, Atlas, then the film.
  */
 
-import { useEffect, useRef, type FocusEvent } from 'react'
+import { useEffect, useRef, useState, type FocusEvent } from 'react'
 import { V3ListingDial } from '@/components/site/v3'
-import { useListingDialIndex } from '@/components/site/v3/useListingDialIndex'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { usePlaceTypeLink } from './PlaceTypeField.client'
 import './place-type-page.css'
@@ -93,7 +92,9 @@ export function PlaceTypeFilm({
 }) {
   const { setLinkedKey } = usePlaceTypeLink()
   const filmed = filmRows(rows, bandLow, bandHigh)
-  const index = useListingDialIndex(FILM_ID, filmed.length)
+  // The dial opens on its first home and reports every turn (onIndexChange).
+  const [turned, setTurned] = useState(0)
+  const index = filmed.length < 2 ? 0 : Math.min(turned, filmed.length - 1)
   const shownKey = filmed[index]?.listingKey ?? null
   const engaged = useRef(false)
 
@@ -125,7 +126,13 @@ export function PlaceTypeFilm({
       }}
     >
       <p className="place-type-film__eyebrow">On the market</p>
-      <V3ListingDial id={FILM_ID} label={label} listings={filmed} className="place-type-film__dial" />
+      <V3ListingDial
+        id={FILM_ID}
+        label={label}
+        listings={filmed}
+        onIndexChange={setTurned}
+        className="place-type-film__dial"
+      />
     </div>
   )
 }

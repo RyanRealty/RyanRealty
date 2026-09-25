@@ -30,8 +30,7 @@ import { firstListedPhoto } from '@/lib/place/rail-photo'
 import { V3_ROOT_CLASS, V3Button, V3Heading } from './atoms'
 import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
 import { V3ListingDial } from './V3ListingDial.client'
-// SHIM (SITE-193): at merge import dialRailPositionAt from './V3ListingDial.logic'.
-import { dialRailPositionAt } from './place-dial-rail.shim'
+import { dialRailPositionAt } from './V3ListingDial.logic'
 import type { V3ListingRowData } from './V3ListingRow'
 import { V3SourceLine } from './V3SourceLine'
 import {
@@ -276,7 +275,6 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
               key={`${dialKey}-${section.key}`}
               id={`${id}-${section.key}`}
               className="place-homes__dial"
-              // @ts-expect-error SHIM (SITE-193): railPosition lands with the dial owner's branch; remove at merge
               railPosition={dialRailPositionAt(order)}
               heading={section.heading}
               headingLevel={3}
@@ -290,7 +288,6 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
             key={dialKey}
             id={`${id}-all`}
             className="place-homes__dial"
-            // @ts-expect-error SHIM (SITE-193): railPosition lands with the dial owner's branch; remove at merge
             railPosition={dialRailPositionAt(0)}
             label={`Homes in ${title}`}
             listings={visible}
@@ -308,7 +305,6 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
           key={`${dialKey}-lease`}
           id={`${id}-lease`}
           className="place-homes__dial"
-          // @ts-expect-error SHIM (SITE-193): railPosition lands with the dial owner's branch; remove at merge
           railPosition={dialRailPositionAt(leaseDialOrder)}
           heading={PLACE_LEASE_HEADING}
           headingLevel={3}

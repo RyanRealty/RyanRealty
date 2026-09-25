@@ -88,7 +88,8 @@ describe('place-type pages', () => {
     // draws the 800x600 lead plate and the card copy (ask, beds/baths/sqft,
     // address); the Atlas rings the home the dial shows.
     expect(film).toMatch(/<V3ListingDial\b/)
-    expect(film).toMatch(/useListingDialIndex\(FILM_ID, filmed\.length\)/)
+    expect(film).toMatch(/onIndexChange=\{setTurned\}/)
+    expect(film).not.toMatch(/useListingDialIndex/)
     expect(film).toMatch(/setLinkedKey\(shownKey\)/)
     expect(film).not.toContain("from '@/components/ui/carousel'")
     expect(film).not.toMatch(/place-type-film__on-photo/)

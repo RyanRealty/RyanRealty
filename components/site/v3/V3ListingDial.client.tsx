@@ -44,9 +44,10 @@
  * EVERY LISTING IS IN THE SERVED HTML. Every card renders on the server and
  * the ones not showing carry `hidden`, so each listing's <a href> is in the
  * markup a crawler reads, exactly as the ledger rows and the rails left it.
- * A hidden card's photograph is lazy, so the browser fetches none of them
- * until that card is shown; the two either side of the one showing are warmed
- * in the background so a turn of the dial lands on a loaded photograph.
+ * A hidden card is served as that door alone (no photograph, no badges, no
+ * tour), so the browser fetches no photograph until its card is shown; the
+ * two either side of the one showing are warmed in the background so a turn
+ * of the dial lands on a loaded photograph.
  *
  * THE CARD'S REEL (Matt 2026-09-24: "have the primary photo come in first;
  * after a second or two, play the video associated with it if there is
@@ -65,6 +66,17 @@
  * card's link and copy unchanged. Nothing about it renders on the server.
  *
  * ONE LISTING is the card alone: no dial, no readout, nothing to count.
+ *
+ * WHAT SITS BESIDE THE DIAL (`onIndexChange`). A figure that belongs to one
+ * listing but lives outside its card (a builder's concession, the mark a map
+ * rings, the filled rung of a price ladder) follows the dial through the
+ * callback, which every turn fires with the new index. Nothing reads the
+ * dial's DOM to find out.
+ *
+ * THE FIRST PAINT (`priority`). A dial that is the page's first large image
+ * above the fold (the /price-drops and /open-houses folds) loads its first
+ * card's photograph eagerly at high priority; every other dial leaves it lazy,
+ * so no dial under a hero competes with the hero's photograph.
  *
  * MOTION. A turn dissolves the outgoing card over the incoming one on the
  * register's entrance duration (--v3-dur-enter, 300ms). Under
@@ -172,6 +184,21 @@ export type V3ListingDialProps = {
    * dials passes dialRailPositionAt(i). A phone always lays a strip under the card.
    */
   railPosition?: DialRailPosition
+  /**
+   * Called with the new index after every turn (thumbnail, previous/next, an
+   * arrow key, Home/End, a swipe), never on mount: the dial always opens on 0.
+   * For a figure that belongs to one listing but sits beside the dial rather
+   * than in its card (a builder concession, a mark on a map, a price ladder).
+   */
+  onIndexChange?: (index: number) => void
+  /**
+   * The first card's photograph loads eagerly at high fetch priority (and is
+   * preloaded). Pass it only where this dial is the page's first large image
+   * above the fold: the dial is then the page's largest paint, and a lazy
+   * photograph there delays it. Anywhere under a hero it would steal the
+   * bandwidth the hero's own photograph needs.
+   */
+  priority?: boolean
   className?: string
 }
 
@@ -565,6 +592,8 @@ type CardProps = {
   tabId: string | null
   shown: boolean
   leaving: boolean
+  /** The first card of a dial that is the page's first large image: its photograph is not lazy. */
+  priority?: boolean
   /** The shown card's reel and its controls; every other card has none. */
   reel?: ReactNode
   /** The shown card hands its media clicks to the dial (the in-card 3D tour takes the media from the reel). */
@@ -578,6 +607,7 @@ const DialCard = memo(function DialCard({
   tabId,
   shown,
   leaving,
+  priority,
   reel,
   onMediaClickCapture,
 }: CardProps) {
@@ -627,8 +657,14 @@ const DialCard = memo(function DialCard({
           tags={tags}
           hasTour={listing.hasTour ?? Boolean(listing.tourUrl)}
           tourUrl={listing.tourUrl ?? null}
+          // The listing's own tour type, in the listing page's words: a
+          // walkthrough reel is "Video Tour", a 3D tour is "3D". SplitCardMedia
+          // reads it off the tour URL (publishListingTourLabel) unless the row
+          // already carries it.
+          tourLabel={listing.tourLabel ?? undefined}
           addressLine={listing.addressLine}
           sizes={LEAD_SIZES}
+          priority={priority}
           href={listing.href}
         />
         {photo ? null : (
@@ -722,12 +758,20 @@ export function V3ListingDial({
   label,
   listings,
   railPosition,
+  onIndexChange,
+  priority = false,
   className,
 }: V3ListingDialProps) {
   const count = listings.length
   const multi = count > 1
   const rail = dialRailPosition(railPosition)
   const [index, setIndex] = useState(0)
+  // The latest callback, read at turn time, so `select` stays stable while a
+  // caller passes a fresh function on every render.
+  const onIndexChangeRef = useRef(onIndexChange)
+  useEffect(() => {
+    onIndexChangeRef.current = onIndexChange
+  }, [onIndexChange])
   const [leaving, setLeaving] = useState<number | null>(null)
   const [live, setLive] = useState('')
   const [edges, setEdges] = useState({ before: false, after: false })
@@ -778,6 +822,7 @@ export function V3ListingDial({
         leaveTimer.current = window.setTimeout(() => setLeaving(null), LEAVE_MS)
       }
       setIndex(target)
+      onIndexChangeRef.current?.(target)
       warm(target + 1)
       warm(target - 1)
       if (announce) {
@@ -1137,6 +1182,7 @@ export function V3ListingDial({
                 tabId={multi ? dialTabId(id, i) : null}
                 shown={shown}
                 leaving={multi && leaving === i && i !== index}
+                priority={priority && i === 0}
                 reel={
                   own && reel.stage !== 'photo' ? (
                     <DialReel

@@ -5,7 +5,12 @@
  */
 
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { publishListingHeroVideo, publishListingVirtualTour } from './publish-listing-hero-video'
+import {
+  LISTING_3D_TOUR_LABEL,
+  LISTING_VIDEO_TOUR_LABEL,
+  publishListingHeroVideo,
+  publishListingVirtualTour,
+} from './publish-listing-hero-video'
 
 export type ListingMosaicPillId = 'photos' | 'video' | 'tour' | 'floor' | 'street'
 
@@ -96,9 +101,9 @@ export function publishListingGalleryMobilePills(input: {
 }): ListingGalleryMobilePill[] {
   const pills: ListingGalleryMobilePill[] = []
   if (input.photoCount > 0) pills.push({ id: 'all', label: 'All' })
-  if (publishListingHeroVideo(input.videos)) pills.push({ id: 'video', label: 'Video Tour' })
+  if (publishListingHeroVideo(input.videos)) pills.push({ id: 'video', label: LISTING_VIDEO_TOUR_LABEL })
   if ((input.floorPlanCount ?? 0) > 0) pills.push({ id: 'floor', label: 'Floor plans' })
-  if (publishListingVirtualTour(input.videos)) pills.push({ id: 'tour', label: '3D' })
+  if (publishListingVirtualTour(input.videos)) pills.push({ id: 'tour', label: LISTING_3D_TOUR_LABEL })
   if (input.hasStreetView) pills.push({ id: 'street', label: 'Street view' })
   return pills
 }

@@ -13,6 +13,11 @@ import {
   publishListingDropBadge,
 } from '@/lib/listing/publish-listing-card-badges'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
+import {
+  LISTING_3D_TOUR_LABEL,
+  publishListingTourLabel,
+} from '@/lib/listing/publish-listing-hero-video'
+import { publicCardStatusLabel } from '@/lib/listing-status-public'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
@@ -74,11 +79,13 @@ function isPhotographedPriced(tile: ListingTile): boolean {
   return Boolean(street)
 }
 
-function statusLabel(status: ListingTile['status']): string | null {
-  const t = String(status ?? '').toLowerCase()
-  if (t.includes('pending') || t.includes('under contract')) return 'Pending'
-  if (t.includes('closed') || t.includes('sold')) return 'Sold'
-  return null
+/**
+ * The card's tour control in the listing page's words: "Video Tour" for a
+ * walkthrough reel, "3D" for a 3D tour (publishListingTourLabel). A card with
+ * no tour URL never shows the control; "3D" is only the type's placeholder.
+ */
+function railCardTourLabel(tourUrl: string | null | undefined): string {
+  return publishListingTourLabel(tourUrl) ?? LISTING_3D_TOUR_LABEL
 }
 
 function currentDrop(
@@ -147,8 +154,10 @@ function toCard(
     badges,
     hasTour: tile.hasVirtualTour === true || Boolean(tile.tourUrl),
     tourUrl: tile.tourUrl?.trim() || null,
-    tourLabel: '3D Walkthrough',
-    statusLabel: statusLabel(tile.status),
+    tourLabel: railCardTourLabel(tile.tourUrl),
+    // The site's one card vocabulary: Active Under Contract is "Under
+    // contract", as on the place cards and the counts, never "Pending".
+    statusLabel: publicCardStatusLabel(tile.status),
   }
 }
 
@@ -219,7 +228,7 @@ export function railCardFromListingRow(row: V3ListingRowData): HomeRailCard {
     badges: row.badges ?? (row.badge ? [row.badge] : []),
     hasTour: row.hasTour ?? Boolean(row.tourUrl),
     tourUrl: row.tourUrl?.trim() || null,
-    tourLabel: '3D Walkthrough',
+    tourLabel: row.tourLabel ?? railCardTourLabel(row.tourUrl),
     statusLabel: row.statusLabel ?? null,
     ...(row.leaseRateOption !== undefined ? { leaseRateOption: row.leaseRateOption } : {}),
   }
@@ -251,6 +260,7 @@ export function listingRowFromRailCard(card: HomeRailCard): V3ListingRowData {
     listNumber: card.listNumber,
     tourUrl: card.tourUrl,
     hasTour: card.hasTour,
+    tourLabel: card.tourLabel,
     badges: card.badges,
     statusLabel: card.statusLabel,
     ...(card.leaseRateOption !== undefined ? { leaseRateOption: card.leaseRateOption } : {}),
@@ -379,14 +389,7 @@ export function enrichHomeRailRows(
       const photoUrls = extra.photoUrls.length > 0 ? extra.photoUrls : card.photoUrls
       const tourUrl = (extra.tourUrl?.trim() || card.tourUrl) ?? null
       const hasTour = card.hasTour || Boolean(tourUrl)
-      let tourLabel = card.tourLabel
-      if (tourUrl) {
-        const lower = tourUrl.toLowerCase()
-        const mp4 = /\.mp4(\?|$)/.test(lower)
-        if (mp4 && !lower.includes('matterport') && !lower.includes('view-imx')) {
-          tourLabel = 'Video tour'
-        }
-      }
+      const tourLabel = tourUrl ? railCardTourLabel(tourUrl) : card.tourLabel
       const drop =
         extra.priceDrop &&
         card.price != null &&

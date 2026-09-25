@@ -21,10 +21,10 @@ import {
 import { HomeHomesRails } from '@/app/_v3/HomeHomesRails'
 import { priceDropFieldItems } from '@/app/price-drops/_v3/drops-field-items'
 import { PriceDropPhotos } from '@/app/price-drops/_v3/PriceDropPhotos.client'
+import { PriceDropsFold } from '@/app/price-drops/_v3/PriceDropsFold.client'
 import { openHouseFieldItems } from '@/app/open-houses/_v3/oh-field-items'
 import type { OpenHouseListing } from '@/app/open-houses/_v3/oh-listings'
-import { dialRailPositionAt } from '@/components/site/v3/dial-rail-position.shim'
-import { readListingDialIndex } from '@/components/site/v3/useListingDialIndex'
+import { dialRailPositionAt } from '@/components/site/v3'
 
 function card(over: Partial<HomeRailCard> & Pick<HomeRailCard, 'listingKey'>): HomeRailCard {
   return {
@@ -129,29 +129,29 @@ describe('HomeHomesRails on the dial', () => {
   })
 })
 
-describe('dialRailPositionAt (shim until the primitive ships it)', () => {
+describe('dialRailPositionAt (the primitive\'s own, from the barrel)', () => {
   it('cycles bottom, left, right by page order so adjacent dials differ', () => {
     expect([0, 1, 2, 3, 4].map(dialRailPositionAt)).toEqual(['bottom', 'left', 'right', 'bottom', 'left'])
     expect(dialRailPositionAt(-1)).toBe('bottom')
     expect(dialRailPositionAt(Number.NaN)).toBe('bottom')
   })
-})
 
-describe('readListingDialIndex', () => {
-  function root(ids: string[]) {
-    return {
-      querySelectorAll: () => ids.map((id) => ({ id })),
-    } as unknown as ParentNode
-  }
-
-  it('reads the index off the selected tab of THIS dial', () => {
-    expect(readListingDialIndex(root(['film-tab-3']), 'film', 12)).toBe(3)
-  })
-
-  it('ignores another dial, an out-of-range index and a malformed id', () => {
-    expect(readListingDialIndex(root(['other-tab-2']), 'film', 12)).toBeNull()
-    expect(readListingDialIndex(root(['film-tab-12']), 'film', 12)).toBeNull()
-    expect(readListingDialIndex(root(['film-tab-x']), 'film', 12)).toBeNull()
+  it('stands the homepage shelves bottom, left, right, and /buy\'s after its lead dial', () => {
+    const rails = (markup: string) => [...markup.matchAll(/data-rail="([a-z]+)"/g)].map((m) => m[1])
+    const three: HomeRailRow[] = ['homes-local', 'homes-price-cuts', 'homes-new'].map((id) => ({
+      id,
+      heading: id,
+      cards: [card({ listingKey: `${id}-1` }), card({ listingKey: `${id}-2` })],
+    }))
+    expect(rails(renderToStaticMarkup(<HomeHomesRails rows={three} emptyMessage="none" />))).toEqual([
+      'bottom',
+      'left',
+      'right',
+    ])
+    // /buy mounts its lead dial first (bottom), so its shelves run on from 1.
+    expect(
+      rails(renderToStaticMarkup(<HomeHomesRails rows={three.slice(0, 2)} railOffset={1} emptyMessage="none" />)),
+    ).toEqual(['left', 'right'])
   })
 })
 
@@ -218,6 +218,20 @@ describe('price drops on the dial', () => {
     // per listing); its cut mounts from the same item when it turns up.
     expect(html).toContain('was $796,000, -12.1%')
     expect(html).not.toContain('v3-carousel')
+  })
+  it('makes the open band the fold\'s first paint: its first photograph alone is not lazy', () => {
+    // /price-drops opens on text, so the open band's first photograph is the
+    // page's first large image (V3ListingDial `priority`). The hidden bands'
+    // dials and every thumbnail stay lazy.
+    const html = renderToStaticMarkup(<PriceDropsFold items={items} railLabel="Cuts" showCityDoors={false} />)
+    const eager = (html.match(/<img\b[^>]*>/g) ?? []).filter((tag) => !tag.includes('loading="lazy"'))
+    expect(eager).toHaveLength(1)
+    const firstBand = html.indexOf('id="pd-cuts-all"')
+    const secondBand = html.search(/id="pd-cuts-(under-5|5-10|10-plus)"/)
+    const at = html.indexOf(eager[0]!)
+    expect(firstBand).toBeGreaterThanOrEqual(0)
+    expect(at).toBeGreaterThan(firstBand)
+    if (secondBand > 0) expect(at).toBeLessThan(secondBand)
   })
 })
 

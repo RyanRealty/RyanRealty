@@ -85,6 +85,24 @@ export function publicCountState(status: string | null | undefined): PublicCount
 }
 
 /**
+ * THE WORD A PUBLIC CARD PRINTS for a listing's status, or null for a home for
+ * sale (which prints none). One vocabulary for every listing card and dial on
+ * the site (2026-09-25): the homepage shelves called Active Under Contract
+ * "Pending" while the place cards and the counts over them called it "under
+ * contract". The bucket is publicCountState's, so a card never names a status
+ * the count beside it does not hold: Active Under Contract is "Under contract",
+ * Pending (the other under-contract status) keeps its MLS word, as the status
+ * badge on the photograph prints them (publishListingStatusBadge), and Closed
+ * is "Sold". Coming Soon and anything off market print nothing.
+ */
+export function publicCardStatusLabel(status: string | null | undefined): string | null {
+  const state = publicCountState(status)
+  if (state === 'under-contract') return String(status ?? '').trim() === 'Pending' ? 'Pending' : 'Under contract'
+  if (state === 'sold') return 'Sold'
+  return null
+}
+
+/**
  * OFF MARKET, for a PUBLIC surface (SITE-21).
  *
  * The list itself is SITE-20's, one file over

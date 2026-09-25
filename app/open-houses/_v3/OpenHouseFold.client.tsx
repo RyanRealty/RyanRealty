@@ -31,11 +31,17 @@ function OpenHousePhotos({
   id,
   items,
   label,
+  priority = false,
 }: {
   /** The dial's root id, unique on the page (one per band). */
   id: string
   items: readonly OpenHouseFieldItem[]
   label: string
+  /**
+   * The band open on arrival: the calendar opens the page under the
+   * breadcrumb, so its first photograph is the page's first large image.
+   */
+  priority?: boolean
 }) {
   const photographed = items.filter((item) => Boolean(item.photoSrc?.trim()))
   const rail = photographed.length > 0 ? photographed : items
@@ -47,6 +53,7 @@ function OpenHousePhotos({
         id={id}
         label={label}
         listings={rail.map((item) => item.listing)}
+        priority={priority}
         className="oh-dial"
       />
     </div>
@@ -86,19 +93,21 @@ export function OpenHouseFold({
           defaultKey={bands[0]?.key}
           className="oh-bands"
         >
-          {bands.map((band) => (
+          {bands.map((band, i) => (
             <OpenHousePhotos
               key={band.key}
               id={`oh-when-${band.key}`}
               items={band.items}
               label={`${railLabel} · ${band.label}`}
+              // defaultKey opens the first band; the rest are hidden panels.
+              priority={i === 0}
             />
           ))}
         </V3ChartSwitch>
       ) : bands.length === 1 && bands[0] ? (
-        <OpenHousePhotos id={`oh-when-${bands[0].key}`} items={bands[0].items} label={railLabel} />
+        <OpenHousePhotos id={`oh-when-${bands[0].key}`} items={bands[0].items} label={railLabel} priority />
       ) : (
-        <OpenHousePhotos id="oh-when" items={items} label={railLabel} />
+        <OpenHousePhotos id="oh-when" items={items} label={railLabel} priority />
       )}
     </div>
   )

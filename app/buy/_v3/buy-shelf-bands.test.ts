@@ -110,10 +110,13 @@ describe('the lead shelf is the listing dial (Matt 2026-09-24)', () => {
   const RAIL_CSS = readFileSync('app/_v3/home-homes-rails.css', 'utf8')
 
   it('each band is a V3ListingDial drawn from the rail cards, under the ladder', () => {
-    expect(SHELF).toContain('<V3ListingDialRail')
+    expect(SHELF).toContain('<V3ListingDial\n')
     expect(SHELF).toContain('cards.map(listingRowFromRailCard)')
     expect(SHELF).toContain('<BuyShelfLadderStrip cards={cards} shown={shown} />')
-    expect(SHELF).toContain('useListingDialIndex(id, cards.length)')
+    // The ladder follows the dial through its callback, not its DOM.
+    expect(SHELF).toContain('onIndexChange={setTurned}')
+    expect(SHELF).not.toContain('useListingDialIndex')
+    expect(SHELF).not.toContain('.shim')
     expect(SHELF).not.toMatch(/from\s*'@\/components\/ui\/carousel'/)
   })
 

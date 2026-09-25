@@ -194,6 +194,18 @@ thumbnail, previous/next, arrow keys, Home/End, or a swipe on the photograph.
   "Play video" instead. The reel is decoration for the panel (aria-hidden, inert); the
   card's link and copy do not change. Pages never read a card's video on the server; a
   caller that knows a listing has none passes `hasVideo: false` and the dial never asks.
+- **Beside the dial** (`onIndexChange`). A figure for one listing that sits outside its
+  card (a builder's concession, the Atlas ring on a type page, the /buy ladder's mark)
+  follows the dial through the callback, which fires with the new index on every turn.
+  Nothing reads the dial's DOM to find out.
+- **First paint** (`priority`). Only a dial that is the page's first large image above
+  the fold (/price-drops, /open-houses: the open band) loads its first photograph
+  eagerly; a dial under a hero never does.
+- **The card's words.** The tour control names the listing's own tour in the listing
+  page's words ("Video Tour" for a walkthrough reel, "3D" for a 3D tour,
+  `publishListingTourLabel`), never "3D Walkthrough" for a video. The status word is
+  `publicCardStatusLabel`: Active Under Contract is "Under contract" on every dial, the
+  word the counts over it use.
 
 **One shop, five place rhythms** (Matt 2026-08-14). Chrome, type, tokens, Field/Ledger
 row language, and the motion ladder are the same site. The first pattern names the grain.

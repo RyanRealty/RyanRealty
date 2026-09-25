@@ -36,8 +36,7 @@ import type { PlaceStockSection } from '@/lib/place/place-inventory-stock'
 import type { PlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { COMMERCIAL_LEASE_ALL_LABEL, COMMERCIAL_LEASE_PATH } from '@/lib/place/place-lease-heading'
 import { V3ListingDial } from './V3ListingDial.client'
-// SHIM (SITE-193): at merge import dialRailPositionAt from './V3ListingDial.logic'.
-import { dialRailPositionAt } from './place-dial-rail.shim'
+import { dialRailPositionAt } from './V3ListingDial.logic'
 import './tokens.css'
 import './V3PlaceInventory.css'
 
@@ -110,7 +109,6 @@ export function V3PlaceInventory({
           <Fragment key={section.key}>
             <V3ListingDial
               id={`${id}-${section.key}`}
-              // @ts-expect-error SHIM (SITE-193): railPosition lands with the dial owner's branch; remove at merge
               railPosition={dialRailPositionAt(order)}
               heading={section.heading}
               headingLevel={2}

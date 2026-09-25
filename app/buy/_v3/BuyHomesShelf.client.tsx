@@ -17,16 +17,22 @@
  * in the DOM so every listing href on the page is crawlable whichever band is
  * open, the same see-all door. The ladder stays the shelf's one drawing and
  * now fills the mark of the home the dial is showing, so it moves when the
- * dial turns (useListingDialIndex reads which home that is).
+ * dial turns (the dial's onIndexChange says which home that is).
  *
  * NOTE: /buy 301s to /homes-for-sale (next.config.ts, since 2026-09-23), so no
  * visitor reaches this shelf; it is converted so the route's code matches the
  * rest of the site if the redirect is ever lifted.
  */
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Button, V3ChartSwitch, v3Text } from '@/components/site/v3'
-import { useListingDialIndex } from '@/components/site/v3/useListingDialIndex'
-import { V3ListingDialRail, dialRailPositionAt } from '@/components/site/v3/dial-rail-position.shim'
+import {
+  V3_ROOT_CLASS,
+  V3Button,
+  V3ChartSwitch,
+  V3ListingDial,
+  dialRailPositionAt,
+  v3Text,
+} from '@/components/site/v3'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { listingRowFromRailCard, type HomeRailCard, type HomeRailRow } from '@/app/_v3/home-rail-items'
@@ -92,16 +98,19 @@ function BuyShelfTrack({
   cards: readonly HomeRailCard[]
   label: string
 }) {
-  const shown = useListingDialIndex(id, cards.length)
+  // The dial opens on its first home and reports every turn.
+  const [turned, setTurned] = useState(0)
+  const shown = cards.length < 2 ? 0 : Math.min(turned, cards.length - 1)
   return (
     <div className="buy-shelf__track">
       <BuyShelfLadderStrip cards={cards} shown={shown} />
       {/* The page's first dial (the shelves under it carry the order on). */}
-      <V3ListingDialRail
+      <V3ListingDial
         id={id}
         label={label}
         listings={cards.map(listingRowFromRailCard)}
         railPosition={dialRailPositionAt(0)}
+        onIndexChange={setTurned}
         className="buy-shelf__dial"
       />
     </div>

@@ -17,12 +17,12 @@
  * when public remarks or that builder's published page name one; otherwise
  * the builder's name does. The dial's card has no slot for it, so it sits
  * directly under the dial and turns with it: one note per home, all in the
- * served HTML, only the one for the home the dial shows visible
- * (useListingDialIndex reads which one that is).
+ * served HTML, only the one for the home the dial shows visible (the dial's
+ * onIndexChange says which one that is).
  */
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3ListingDial } from '@/components/site/v3'
-import { useListingDialIndex } from '@/components/site/v3/useListingDialIndex'
 import { listingRowFromRailCard } from '@/app/_v3/home-rail-items'
 import type { NewConHomeCard } from './load-lead-shelf'
 import './new-con-lead-shelf.css'
@@ -70,7 +70,9 @@ export function NewConLeadShelf({
   cards: readonly NewConHomeCard[]
   seeAllHref: string
 }) {
-  const index = useListingDialIndex(DIAL_ID, cards.length)
+  // The dial opens on its first home and reports every turn.
+  const [turned, setTurned] = useState(0)
+  const index = cards.length < 2 ? 0 : Math.min(turned, cards.length - 1)
   const headingId = 'newcon-lead-heading'
 
   if (cards.length === 0) return null
@@ -91,6 +93,7 @@ export function NewConLeadShelf({
         id={DIAL_ID}
         label={heading}
         listings={cards.map(listingRowFromRailCard)}
+        onIndexChange={setTurned}
         className="newcon-lead__dial"
       />
       <div className="newcon-lead__offers">

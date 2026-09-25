@@ -29,11 +29,17 @@ export function PriceDropPhotos({
   id,
   items,
   label,
+  priority = false,
 }: {
   /** The dial's root id, unique on the page (one per band). */
   id: string
   items: readonly PriceDropFieldItem[]
   label: string
+  /**
+   * The band open on arrival: under the page's text opening, its first
+   * photograph is the page's first large image, so it is not lazy.
+   */
+  priority?: boolean
 }) {
   const photographed = items.filter((item) => Boolean(item.photoSrc?.trim()))
   const rail = photographed.length > 0 ? photographed : items
@@ -45,6 +51,7 @@ export function PriceDropPhotos({
         id={id}
         label={label}
         listings={rail.map((item) => item.listing)}
+        priority={priority}
         className="pd-cuts-dial"
       />
     </div>
