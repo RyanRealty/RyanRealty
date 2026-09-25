@@ -1,6 +1,6 @@
 'use server'
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import {
   getEngagementCountsBatch as _getEngagementCountsBatch,
   incrementListingShareCount as _incrementListingShareCount,

@@ -93,6 +93,13 @@ export type V3ListingRowData = {
    * a sale listing prints its ask.
    */
   leaseRateOption?: string | null
+  /**
+   * SITE-194: whether the listing has a walkthrough reel a card can play.
+   * An optional hint from data the page already holds; only an explicit
+   * false stops the dial asking /api/listings/[key]/card-video after the
+   * dwell. Undefined means "ask".
+   */
+  hasVideo?: boolean | null
 }
 
 /** Badge kinds that print solid navy; the rest are hairline outline tags. */

@@ -19,7 +19,7 @@
  * SITE-12, app/_v3/home-pulse.ts + components/site/v3/V3Pulse.tsx), because a
  * figure published in two places drifts in one of them.
  */
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { KB_TOP_NAV } from '@/lib/site-nav'
 import { getAllCitySnapshots, getMarketPulse } from '@/lib/data'
 import { slugify } from '@/lib/slug'

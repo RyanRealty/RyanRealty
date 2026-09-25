@@ -10,7 +10,8 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
  * deleted. Every mutation writes the native tables directly.
  */
 
-import { revalidatePath, unstable_cache } from 'next/cache'
+import { revalidatePath } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   CRM_STAGES,

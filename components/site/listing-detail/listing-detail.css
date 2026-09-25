@@ -1748,6 +1748,9 @@ h1.listing-ask {
   h1.listing-ask {
     font-size: var(--v3-size-display-2);
     line-height: var(--v3-leading-display);
+    /* The address sits right under the strip, level with Jax's floating
+       button: it keeps out of his lane so he never covers its last word. */
+    padding-inline-end: var(--v3-dog-clear);
   }
 
   .listing-ask__price {

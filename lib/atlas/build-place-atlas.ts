@@ -19,7 +19,7 @@
  * SAME cached core through buildAtlasDots.
  */
 import 'server-only'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { getAtlasTiles, type AtlasTile } from '@/lib/data'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { listingTileHref } from '@/lib/slug'
