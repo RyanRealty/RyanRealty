@@ -1,6 +1,6 @@
 'use server'
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { getListingTiles } from '@/lib/data'
 // Imported from its module rather than the '@/lib/data' barrel on purpose: that
 // barrel is frozen by the ci:file-size-budget ratchet (audit p2.2), which may

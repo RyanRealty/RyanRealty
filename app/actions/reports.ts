@@ -1,6 +1,6 @@
 'use server'
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugify, subdivisionEntityKey } from '@/lib/slug'

@@ -5,6 +5,7 @@
     "ci:commit-compiles",
     "ci:count-degraded-read",
     "ci:degraded-isr",
+    "ci:unstable-cache-door",
     "ci:crm-fail-closed",
     "ci:crm-scope",
     "ci:crm-secrets",

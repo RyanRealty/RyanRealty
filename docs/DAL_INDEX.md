@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-24T23:36:46.347Z
+**Generated:** 2026-09-25T01:54:50.085Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -635,6 +635,12 @@ Companion files:
 **Tables:** `brokers`, `admin_roles`, `workspace_directory`
 
 **Selected columns:** `id`, `slug`, `crm_slug`, `email`, `display_name`, `sort_order`, `role`, `broker_id`, `status`
+
+---
+
+### `lib/data/cache/next-cache.ts`
+
+**Exports:** `unstable_cache`
 
 ---
 

@@ -44,7 +44,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { getSetupComplete } from '@/app/actions/admin-setup'
 import { isGa4PageViewMirrorOn } from '@/lib/analytics/ga4-mirror'
 import {

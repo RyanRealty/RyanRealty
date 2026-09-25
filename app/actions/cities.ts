@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { slugify } from '@/lib/slug'
 import type { CityForIndex } from '@/lib/cities'
 import { getBannersBatch } from '@/app/actions/banners'

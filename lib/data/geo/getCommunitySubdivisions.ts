@@ -17,7 +17,7 @@
  * table. This never approximates.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import type { BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
