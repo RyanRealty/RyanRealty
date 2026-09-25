@@ -36,7 +36,7 @@ Disposition: **KEEP** · **FIX** · **RECONNECT** · **PARK** · **LEGACY_RESIDU
 | INT-023 | xAI | `XAI_API_KEY` | `lib/grok-*.ts` | GET `/v1/models` **200** models **12** (2026-08-16) | **Runtime** AI | **green** | **KEEP** | Grok creative loop — models list live; no generate this probe |
 | INT-024 | Google Maps | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `REMOTION_GOOGLE_MAPS_KEY` | maps UI, CMA maps, Remotion | keys present; site maps critical path | **Runtime** maps | **green** | **KEEP** | Product maps loop |
 | INT-025 | Upstash Redis | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | `lib/x.ts`, `lib/pinterest.ts` OAuth state, rate limits | keys present; used as ephemeral OAuth state store | **Runtime** cache | **green** | **KEEP** | Platform loop — OAuth CSRF/state depends on Redis where used |
-| INT-026 | Sentry | `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Next/Sentry SDK wiring | token `org:ci` only; DSN project **0** stub; no ingest host in prod JS | **Optional** monitoring | **dark** | **PARK** | Observability — SDK may stay; ingest is not live. Do not treat as a production monitor |
+| INT-026 | Sentry | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` (Vercel production, set 2026-09-24), `SENTRY_AUTH_TOKEN` | Server and edge SDK; browser errors load the SDK on the first error (`lib/observability/client-errors.ts`) | Project `ryan-realty-llc/ryan-realty-platform`. Server spans from 18:55Z 2026-09-24 (PR #361's build); production browser probe accepted 19:59Z (HTTP 200, issue RYAN-REALTY-PLATFORM-2, resolved); `/` and `/about` load with no SDK code | Error monitoring; tracing is opt-in via `SENTRY_TRACES_SAMPLE_RATE` | **green** | **KEEP** | Live 2026-09-24. Check it after every deploy (AGENTS.md); Claude sessions have the Sentry connector |
 | INT-027 | RentCast | `RENTCAST_API_KEY` | changelog notes HUD FMR preferred; calc accepts optional estimate | key in env; little/no live `.ts` call sites found this pass | **Optional** data | **dark** | **PARK** | DSCR/tools loop — prefer `lib/hud-fmr`; key may be residue until AVM product re-enabled |
 | INT-028 | SchoolDigger | `SCHOOLDIGGER_API_KEY`, `SCHOOLDIGGER_APP_ID` | research JSON / school URLs; tool inventory “configured” | keys present; static research more than live API traffic | **Optional** data | **dark** | **PARK** | Content/SEO schools — park live API until school pages re-wire to API; static data remains |
 | INT-029 | NeverBounce | `NEVERBOUNCE_API_KEY` | `scripts/_neverbounce-validate.mjs` | key **missing** this env; ops CSV only | **Optional**/Tooling | **dark** | **PARK** | Email hygiene — no product path. Park until a funded hygiene job |
@@ -79,7 +79,6 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 | **INT-016** | Pinterest | No client keys in env; `pinterest_auth` n=0; library only |
 | **INT-027** | RentCast | Key present; product prefers HUD FMR; no active call-site census |
 | **INT-028** | SchoolDigger | Keys present; static research dominates; live API not product-critical |
-| **INT-026** | Sentry | Stub DSN project 0; CI token `org:ci` only; ingest not live |
 | **INT-029** | NeverBounce | Key missing; ops CSV script only; no product path |
 | **INT-033** | VAPID | Keys missing; 0 active push subscriptions; `/sw.js` present |
 | **INT-034** | Inngest | Optional event emit only; not job orchestrator |
@@ -109,7 +108,7 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 | INT-019…025 | keys present / probed | n/a | yes where used | n/a | per row |
 | INT-021 | models 118 at 2026-08-16 | n/a | yes | n/a | AI |
 | INT-023 | models 12 at 2026-08-16 | n/a | yes | n/a | Grok |
-| INT-026 | stub DSN; org:ci token | n/a | no ingest | n/a | PARK |
+| INT-026 | live 2026-09-24: server spans + production browser probe | n/a | yes | n/a | Observability |
 | INT-029 | key missing | n/a | n/a PARK | n/a | PARK |
 | INT-031 | Unsplash 200 (2026-08-16) | n/a | yes | n/a | Creative |
 | INT-032 | Replicate+Synthesia 200 | n/a | yes | n/a | Creative |
@@ -123,10 +122,10 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 
 | Health | n | IDs |
 |--------|--:|-----|
-| **green** | **19** | 001 Supabase · 003 Vercel · 005 Resend · 009 GBP · 011 TikTok · 012 YouTube · 013 X · 018 In-house CRM · 019 ElevenLabs · 020 Apify · 021 OpenAI · 022 Anthropic · 023 xAI · 024 Maps · 025 Upstash · 030 BatchData · 031 Stock · 032 Gen media · 036 AdSense |
+| **green** | **20** | 001 Supabase · 003 Vercel · 005 Resend · 009 GBP · 011 TikTok · 012 YouTube · 013 X · 018 In-house CRM · 019 ElevenLabs · 020 Apify · 021 OpenAI · 022 Anthropic · 023 xAI · 024 Maps · 025 Upstash · 026 Sentry · 030 BatchData · 031 Stock · 032 Gen media · 036 AdSense |
 | **amber** | **9** | 002 Spark · 004 Twilio · 006 Google SA · 007 Meta · 008 GA4/GTM · 017 SkySlope · 034 Inngest · 035 Google OAuth/CrUX · 037 OTHER/tooling |
 | **red** | **0** | — (2026-08-08 called 009/010/012/013 red from `expires_at` alone; that read ignored refresh tokens + the heartbeat — see EVIDENCE-LOG 2026-08-15 and `process_escape_ledger`) |
-| **dark** | **9** | 010 LinkedIn (parked, no provider refresh token) · 014 Threads · 015 Nextdoor · 016 Pinterest · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID |
+| **dark** | **8** | 010 LinkedIn (parked, no provider refresh token) · 014 Threads · 015 Nextdoor · 016 Pinterest · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID |
 | **unknown** | **0** | — |
 | **sum** | **37** | |
 
@@ -134,10 +133,10 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 
 | Disposition | n | IDs / notes |
 |-------------|--:|-------------|
-| **KEEP** | 24 | runtime retain (greens + most amber keepers, incl. 009/012/013 auto-refresh + 018 in-house CRM + 035 shared OAuth clients) |
+| **KEEP** | 25 | runtime retain (greens + most amber keepers, incl. 009/012/013 auto-refresh + 018 in-house CRM + 035 shared OAuth clients) |
 | **FIX** | 2 | 007 Meta audience heartbeat (first green 2026-08-15, hold 7d) · 017 SkySlope mirror freshness |
 | **RECONNECT** | 0 | none — auto-refresh verified; there is no standing "Matt reconnect" task (Matt 2026-08-15) |
-| **PARK** | 10 | 010 LinkedIn · 014 Threads · 015 Nextdoor · 016 Pinterest · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID · 034 Inngest |
+| **PARK** | 9 | 010 LinkedIn · 014 Threads · 015 Nextdoor · 016 Pinterest · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID · 034 Inngest |
 | **LEGACY_RESIDUE** | 0 | — |
 | **TOOLING** | 1 | 037 OTHER bucket |
 
