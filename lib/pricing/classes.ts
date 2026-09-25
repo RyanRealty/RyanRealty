@@ -416,7 +416,7 @@ const REMARK_RULES: Array<{ key: RemarkBoolKey; phrase: keyof RemarkFlags; re: R
     phrase: 'newConstructionPhrase',
     // Live Rim View (Canceled): remarks say "to-be-built masterpiece" / mid-century
     // copy without the literal phrase "new construction" or "custom built".
-    re: /\bnew construction\b|\bto[\s-]+be[\s-]+built\b|\bbrand[\s-]+new\b|\bnever[\s-]+lived[\s-]+in\b|\bspec(?:ulative)?[\s-]+home\b/i,
+    re: /\bnew construction\b|\bto[\s-]+be[\s-]+built\b|\bbrand[\s-]+new[\s-]+(?:home|house|construction|build)\b|\bnever[\s-]+lived[\s-]+in\b|\bspec(?:ulative)?[\s-]+home\b/i,
   },
   {
     key: 'distressed',
@@ -590,10 +590,14 @@ export function isCustomOrNewSubject(input: YearQualityInput, asOfYear?: number)
   if (isNewBuild(input.yearBuilt, asOf, input.newConstructionYn) === true) return true
   const year = input.yearBuilt
   if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year <= 5) return true
-  // Live canceled Rim View: remarks carry "mid-century modern" / "to-be-built" without
-  // the words "custom built". Without this, a subject that somehow lost year/YN
-  // falls to listings and re-applies unmappedCrossesKnownBank + exact baths/lot.
-  return remarksMarkCustomOrNew(input.remarks)
+  const flags = extractRemarkFlags(input.remarks)
+  // Custom-built / to-be-built / mid-century still classify on an older house.
+  // New-construction keywords do not: Nugget (1976, NewConstructionYN false,
+  // "brand new including ... paint") is a remodeled resale, not a new home.
+  if (flags.customQuality) return true
+  if (input.newConstructionYn === false) return false
+  if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year > 5) return false
+  return flags.newConstruction
 }
 
 /**

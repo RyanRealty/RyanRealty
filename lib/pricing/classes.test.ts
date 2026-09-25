@@ -324,6 +324,7 @@ describe('customBathCompatible', () => {
         2026,
       ),
     ).toBe(true)
+    // Custom / to-be-built remarks still classify when the year is missing.
     expect(
       isCustomOrNewSubject(
         { yearBuilt: null, newConstructionYn: false, remarks: 'To be built on a view lot.' },
@@ -332,6 +333,61 @@ describe('customBathCompatible', () => {
     ).toBe(true)
     expect(subtypeMarksCustomOrNew('New Construction')).toBe(true)
     expect(subtypeMarksCustomOrNew('Single Family Residence')).toBe(false)
+  })
+
+  it('does not mark a remodeled 1976 house custom/new from Nugget remarks', () => {
+    const nuggetRemarks =
+      'almost everything in this home is brand new including interior and exterior paint, new furnace, and a new roof'
+    expect(
+      isCustomOrNewSubject(
+        {
+          yearBuilt: 1976,
+          newConstructionYn: false,
+          remarks: nuggetRemarks,
+          propertySubType: 'Single Family Residence',
+        },
+        2026,
+      ),
+    ).toBe(false)
+    expect(
+      isCustomOrNewSubject({ yearBuilt: 1976, newConstructionYn: null, remarks: nuggetRemarks }, 2026),
+    ).toBe(false)
+    expect(
+      isCustomOrNewSubject({ yearBuilt: null, newConstructionYn: null, remarks: nuggetRemarks }, 2026),
+    ).toBe(false)
+  })
+
+  it('still classifies real new-construction and custom subjects', () => {
+    expect(
+      isCustomOrNewSubject({ yearBuilt: 1990, newConstructionYn: true, remarks: null }, 2026),
+    ).toBe(true)
+    expect(
+      isCustomOrNewSubject({ yearBuilt: 2025, newConstructionYn: false, remarks: null }, 2026),
+    ).toBe(true)
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: null, newConstructionYn: null, remarks: 'Spec home on a view lot.' },
+        2026,
+      ),
+    ).toBe(true)
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: null, newConstructionYn: null, remarks: 'Brand new home, never lived in.' },
+        2026,
+      ),
+    ).toBe(true)
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: null, newConstructionYn: null, remarks: 'Brand new construction just completed.' },
+        2026,
+      ),
+    ).toBe(true)
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: 2018, newConstructionYn: false, remarks: 'Custom built modern home.' },
+        2026,
+      ),
+    ).toBe(true)
   })
 
   it('allows a one-whole-bath gap (Perspective 3 vs Rim View 4)', () => {
