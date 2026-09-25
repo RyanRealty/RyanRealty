@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * reachability: entry-point cascading orphan — its only importer, ListingBrokerBar.client.tsx
+ * (dead since the 22b53b94a 2026-09-19 CTA lock), was deleted this session, which un-masked
+ * this file as unreachable too. Deleting it as well was outside this cleanup's named scope
+ * and was blocked by policy as an unscoped destructive action. Flagged for Matt / next
+ * session: delete alongside ListingBrokerBar, or confirm a live mount first.
+ */
+
 import { ActionSwapText } from '@/components/motion/action-swap'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'

@@ -1,4 +1,5 @@
 /**
+ * reachability: entry-point status list lib/crm/enrollment-status.test.ts holds equal to the enrollments CHECK constraint and the inline status literals in app/actions/crm.ts, app/actions/crm-membership.ts, lib/crm/merge-people.ts and lib/data/prospecting/drip.ts.
  * Every status a crm_sequence_enrollments row may hold: the table's status
  * CHECK, as the code must know it. enrollment-status.test.ts holds this list
  * equal to the newest migration that defines crm_sequence_enrollments_status_check,
