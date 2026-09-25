@@ -19,6 +19,17 @@ describe('one price per letter — Oakside', () => {
     expect(letterRecommendDollarsCheck(good, band).pass).toBe(true)
   })
 
+  it('per-foot list-at ranges from the status captions are not a second list price', () => {
+    const rec = 448_000
+    const band = { recommended: rec, valueLow: 448_000, valueHigh: 505_000 }
+    const html = `
+      <p>We recommend listing at $448,000.</p>
+      <p>These four sales list at $372 to $511 a foot and sold at $319 to $480 a foot.</p>
+      <p>These three listings list at $263 to $333 a foot.</p>
+    `
+    expect(letterRecommendDollarsCheck(html, band).pass).toBe(true)
+  })
+
   it('net-sheet cites must come from the letter comps, not an unmatched Petrosa sale', () => {
     const letterComps = ['3808 Oakside', '3812 Oakside']
     const netCite = 'A 2022 Petrosa sale credited the buyer $8,000.'

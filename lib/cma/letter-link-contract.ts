@@ -27,12 +27,29 @@ export function personIdFromLetterIdentity(id: LetterLinkIdentity | null | undef
   return typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : null
 }
 
+/**
+ * Attribute-value entity decode. Letter markup writes hrefs through escapeHtml
+ * (`&` → `&amp;`), so a raw read turns `utm_medium` / `_pid` into `amp;utm_medium`
+ * / `amp;_pid`. This is the only letter-consistency check that parses hrefs.
+ */
+export function decodeHtmlHref(href: string): string {
+  return href
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    // & last: decoding it first would let "&amp;lt;" become "<"
+    .replace(/&amp;/gi, '&')
+}
+
 function hrefsFromHtml(html: string): string[] {
   const out: string[] = []
   const re = /href\s*=\s*(["'])(.*?)\1/gi
   let m: RegExpExecArray | null
   while ((m = re.exec(html))) {
-    const href = (m[2] ?? '').trim()
+    const href = decodeHtmlHref((m[2] ?? '').trim())
     if (href && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
       out.push(href)
     }

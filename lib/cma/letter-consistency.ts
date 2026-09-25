@@ -28,6 +28,13 @@ function usdForms(n: number): string[] {
 const LIST_REC_FRAME =
   /(?:recommend(?:ed|ing)?(?: listing)?(?: at)?|list(?:ing)? at|would support listing at|do not recommend going above)\s+\$[\d,]+/gi
 
+/** Whole-home list prices in this market are five figures and up. $/sf is not. */
+const WHOLE_HOME_MIN_USD = 10_000
+
+/** Suffix after the first dollar: a per-foot unit, or a range that ends in one. */
+const PER_FOOT_AFTER =
+  /^(?:\s+to\s+\$[\d,]+)?\s*(?:a foot|\/sf|per sq\.?\s*ft|per square foot)\b/i
+
 export function highEndAtOrBelowBandCheck(pricing: {
   highEnd?: number | null
   valueLow?: number | null
@@ -67,14 +74,18 @@ export function letterRecommendDollarsCheck(
       detail: 'No recommended list to grade.',
     }
   }
-  const frames = html.match(LIST_REC_FRAME) ?? []
   const recForms = new Set(usdForms(rec).map((s) => s.toLowerCase()))
   const bad: string[] = []
-  for (const frame of frames) {
+  const frameRe = new RegExp(LIST_REC_FRAME.source, 'gi')
+  let m: RegExpExecArray | null
+  while ((m = frameRe.exec(html))) {
+    const frame = m[0]
+    const after = html.slice(m.index + frame.length)
+    if (PER_FOOT_AFTER.test(after)) continue
     const dollar = frame.match(/\$[\d,]+/)?.[0]
     if (!dollar) continue
     const n = Number(dollar.replace(/[$,]/g, ''))
-    if (!Number.isFinite(n) || n <= 0) continue
+    if (!Number.isFinite(n) || n <= 0 || n < WHOLE_HOME_MIN_USD) continue
     const framedAsRec = /recommend|listing at|list at/i.test(frame)
     const framedAsRangeCap = /going above/i.test(frame)
     if (!framedAsRec && !framedAsRangeCap) continue
