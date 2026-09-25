@@ -1,6 +1,6 @@
 {
   "note": "Ratchets for ci:claude-canon. `files` is unused (vendor-CRM citations must be zero). `claudeBytes`: CLAUDE.md size. May only shrink. Refresh with node scripts/check-claude-canon.mjs --write-baseline after a shrink.",
-  "generatedAt": "2026-09-24T21:46:43.746Z",
-  "claudeBytes": 37460,
+  "generatedAt": "2026-09-25T11:05:59.218Z",
+  "claudeBytes": 37368,
   "files": []
 }

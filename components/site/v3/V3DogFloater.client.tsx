@@ -43,6 +43,14 @@ export const DOG_FLOATER_MENUS = [
   { href: '/about', label: 'Learn more about us', kind: 'route' },
 ] as const
 
+/** A finger resting on the glass is nobody scrolling: this long without a
+ *  movement and he looks back to rest even though it has not lifted. */
+export const TOUCH_LOOK_HOLD_MS = 1000
+
+/** A finger has to travel this far from where it landed before he watches
+ *  it; less is a tap, and a tap never turns his head. */
+export const TOUCH_DRAG_SLOP_PX = 10
+
 export function V3DogFloater() {
   const pathname = usePathname()
   const hidden = shouldHidePublicChrome(pathname)
@@ -52,32 +60,131 @@ export function V3DogFloater() {
   /* Matt 2026-09-24: "whole dog rotates so that its eyes are following ball,
      not eyes moving, eyes are fixed." The art's own eye never moves; the
      whole head turns about its center toward the pointer (the tennis ball
-     on the map), read from window pointermove at most once per frame. At
-     rest (the art's own pose) with no pointer reading yet, on touch before
-     the first touch move, and permanently under prefers-reduced-motion,
-     which never starts the listener at all. */
+     on the map), read at most once per frame. At rest (the art's own pose)
+     with nothing to look at, while the pointer is on the dog himself, and
+     permanently under prefers-reduced-motion, which never starts the
+     listeners at all.
+
+     Matt 2026-09-25, on a phone: "I want the dog to always go back to the
+     normal position on phone and not stay looking somewhere when no one is
+     scrolling." A look lasts only as long as the thing he looks at. A mouse
+     on a hover device stays on the page, so he keeps its look until the
+     cursor leaves the window. A finger does not: he watches the finger that
+     landed only while it drags, and looks back to rest the moment it lifts
+     or after TOUCH_LOOK_HOLD_MS without a movement. The finger is read from
+     the touch stream, which keeps arriving through a native scroll; the
+     browser cancels a finger's pointer events the moment it takes the
+     scroll, and that last pointer reading is what used to leave him stuck.
+     Pointer events are read for a mouse only, so a pen tap is a tap too.
+     Listeners capture on window, so a component that stops a touch from
+     bubbling cannot hide the finger from him. */
   const [aim, setAim] = useState<HeadAim>(HEAD_AT_REST)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    type Point = { x: number; y: number }
+    const listen = { capture: true, passive: true } as const
+    // The same query as useHoverCapable, read here rather than through the
+    // hook (ci:hydration-safety refuses a window-reading helper called in
+    // render), and followed, so a mouse arriving or leaving later counts.
+    const hover = window.matchMedia('(hover: hover) and (pointer: fine)')
+    let mouseKeepsLook = hover.matches
+    const onHoverChange = () => {
+      mouseKeepsLook = hover.matches
+    }
     let rafId = 0
-    let latest: { x: number; y: number } | null = null
+    let holdTimer = 0
+    let lastMoveAt = 0
+    let latest: Point | null = null
+    let finger: { id: number; from: Point; dragging: boolean } | null = null
     const measure = () => {
       rafId = 0
       const el = headRef.current
       if (!el || !latest) return
       const rect = el.getBoundingClientRect()
       const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-      setAim(aimAtPointer(center, latest))
+      const next = aimAtPointer(center, latest, el.offsetWidth / 2)
+      setAim((prev) => (prev.deg === next.deg && prev.mirror === next.mirror ? prev : next))
     }
-    const onMove = (event: PointerEvent) => {
-      latest = { x: event.clientX, y: event.clientY }
+    const rest = () => {
+      window.clearTimeout(holdTimer)
+      holdTimer = 0
+      latest = null
+      if (rafId) window.cancelAnimationFrame(rafId)
+      rafId = 0
+      setAim(HEAD_AT_REST)
+    }
+    // One timer per look, not one per move: it re-arms for whatever is left.
+    const holdCheck = () => {
+      const idle = performance.now() - lastMoveAt
+      if (idle < TOUCH_LOOK_HOLD_MS) {
+        holdTimer = window.setTimeout(holdCheck, TOUCH_LOOK_HOLD_MS - idle)
+        return
+      }
+      holdTimer = 0
+      // A finger that went still has to travel the slop again, from here.
+      if (finger?.dragging && latest) finger = { ...finger, from: latest, dragging: false }
+      rest()
+    }
+    const lookAt = (point: Point, keep: boolean) => {
+      latest = point
       if (!rafId) rafId = window.requestAnimationFrame(measure)
+      if (keep) {
+        window.clearTimeout(holdTimer)
+        holdTimer = 0
+        return
+      }
+      lastMoveAt = performance.now()
+      if (!holdTimer) holdTimer = window.setTimeout(holdCheck, TOUCH_LOOK_HOLD_MS)
     }
-    window.addEventListener('pointermove', onMove, { passive: true })
+    const watched = (list: TouchList) => {
+      for (let i = 0; i < list.length; i++) if (list[i].identifier === finger?.id) return list[i]
+      return null
+    }
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse') return
+      lookAt({ x: event.clientX, y: event.clientY }, mouseKeepsLook)
+    }
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) return
+      const t = event.touches[0]
+      finger = { id: t.identifier, from: { x: t.clientX, y: t.clientY }, dragging: false }
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      const t = finger && watched(event.touches)
+      if (!finger || !t) return
+      const point = { x: t.clientX, y: t.clientY }
+      if (!finger.dragging) {
+        if (Math.hypot(point.x - finger.from.x, point.y - finger.from.y) < TOUCH_DRAG_SLOP_PX) return
+        finger.dragging = true
+      }
+      lookAt(point, false)
+    }
+    const onTouchEnd = (event: TouchEvent) => {
+      if (!finger || watched(event.touches)) return
+      finger = null
+      rest()
+    }
+    const onMouseOut = (event: MouseEvent) => {
+      if (!event.relatedTarget) rest()
+    }
+    hover.addEventListener?.('change', onHoverChange)
+    window.addEventListener('pointermove', onPointerMove, listen)
+    window.addEventListener('touchstart', onTouchStart, listen)
+    window.addEventListener('touchmove', onTouchMove, listen)
+    window.addEventListener('touchend', onTouchEnd, listen)
+    window.addEventListener('touchcancel', onTouchEnd, listen)
+    window.addEventListener('mouseout', onMouseOut, listen)
     return () => {
-      window.removeEventListener('pointermove', onMove)
+      hover.removeEventListener?.('change', onHoverChange)
+      window.removeEventListener('pointermove', onPointerMove, listen)
+      window.removeEventListener('touchstart', onTouchStart, listen)
+      window.removeEventListener('touchmove', onTouchMove, listen)
+      window.removeEventListener('touchend', onTouchEnd, listen)
+      window.removeEventListener('touchcancel', onTouchEnd, listen)
+      window.removeEventListener('mouseout', onMouseOut, listen)
+      window.clearTimeout(holdTimer)
       if (rafId) window.cancelAnimationFrame(rafId)
     }
   }, [])

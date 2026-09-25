@@ -386,7 +386,7 @@ table.comp-matrix .matrix-addr{display:block}
 .pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
 .addr-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:6px}
 .addr-row .pin-badge{margin-right:0}
-.addr-row .matrix-addr{min-width:0;overflow-wrap:normal;text-align:right}
+.addr-row .matrix-addr{min-width:0;overflow-wrap:break-word;text-align:right}
 .addr-row.is-card{justify-content:flex-start;gap:8px;margin:0 0 6px}
 .addr-row.is-card .pin-badge{margin-right:0}
 .addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
@@ -412,7 +412,7 @@ table.comp-matrix .matrix-addr{display:block}
 .worth-lead+.worth-lead-note{margin-top:-18px}
 .worth-lead-note{font-size:clamp(15px,1.8vw,17px);max-width:640px;margin:0 0 26px;border-left:2px solid var(--navy);padding-left:12px}
 table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65;white-space:nowrap;text-align:right}
-table.comp-matrix .arc-asks,table.comp-matrix .arc-tail{display:block;white-space:nowrap;text-align:right;line-height:1.35}
+table.comp-matrix .arc-asks,table.comp-matrix .arc-tail{display:block;white-space:normal;text-align:right;line-height:1.35}
 table.comp-matrix .arc-tail + .arc-tail{margin-top:1px}
 table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
 /* The price-path primitive (blueprint, Delta 1). Two layouts, one visible. */

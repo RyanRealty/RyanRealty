@@ -378,11 +378,18 @@ export function askArcCell(entry: MatrixEntry): string {
   const path = asks.join(' → ')
   const full = entry.outcome.trim() || entry.endLabel.trim()
   if (!path && !full) return '-'
-  const asksHtml = path ? `<span class="arc-asks">${escCell(path)}</span>` : ''
+  // The path may wrap, and only after an arrow: "$830K →" over "$710K". A
+  // nowrap path ran 3pt past the right margin on a six-column sheet
+  // (cma-20506-murphy) under the stylesheet's own face.
+  const asksHtml = path
+    ? `<span class="arc-asks">${escCell(path).replace(/ → /g, '&nbsp;→ ')}</span>`
+    : ''
   const lines = full ? arcLines(full) : []
   const tailHtml = lines
     .map((line, i) =>
-      `<span class="arc-tail"${i === 0 ? ` title="${escCell(full)}"` : ''}>${escCell(line)}</span>`,
+      // The tail may wrap when a font runs wider than ARC_LINE assumes; the
+      // day count never parts from its unit when it does.
+      `<span class="arc-tail"${i === 0 ? ` title="${escCell(full)}"` : ''}>${escCell(line).replace(/(\d) (days?)\b/g, '$1&nbsp;$2')}</span>`,
     )
     .join('')
   return `${asksHtml}${tailHtml}`

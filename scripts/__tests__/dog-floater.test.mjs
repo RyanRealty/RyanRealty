@@ -17,6 +17,7 @@ const live = {
   dock: readFileSync(join(REPO, 'components/site/v3/V3PhoneDock.client.tsx'), 'utf8'),
   stickyCss: readFileSync(join(REPO, 'components/site/v3/V3StickyAsk.css'), 'utf8'),
   listingPage: readFileSync(join(REPO, 'app/listing/[listingKey]/page.tsx'), 'utf8'),
+  gazeTest: readFileSync(join(REPO, 'components/site/v3/V3DogFloater.gaze.test.tsx'), 'utf8'),
 }
 
 describe('ci:dog-floater lock', () => {
@@ -88,6 +89,18 @@ describe('ci:dog-floater lock', () => {
       files: { ...live, floater },
     })
     expect(p.join('\n')).toMatch(/Give us a call|CONTACT/)
+  })
+
+  it('refuses dropping, trimming or skipping the phone gaze proof (SITE-210)', () => {
+    const trimmed = live.gazeTest.replace('looks back the moment it lifts', 'looks around')
+    const skipped = live.gazeTest.replace("it('never turns for a tap", "it.skip('never turns for a tap")
+    for (const gazeTest of [trimmed, skipped]) {
+      expect(gazeTest).not.toBe(live.gazeTest)
+      const p = dogFloaterProblems({ root: REPO, files: { ...live, gazeTest } })
+      expect(p.join('\n')).toMatch(/SITE-210/)
+    }
+    const gone = dogFloaterProblems({ root: mkdtempSync(join(tmpdir(), 'dog-floater-gaze-')), files: { ...live, gazeTest: undefined } })
+    expect(gone.join('\n')).toMatch(/V3DogFloater\.gaze\.test\.tsx: missing/)
   })
 
   it('refuses an elevation shadow on the FAB', () => {

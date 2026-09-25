@@ -9,6 +9,14 @@ describe('aimAtPointer (V3DogFloater: the whole head turns, the eye stays fixed)
     expect(aimAtPointer(C, { x: 1000, y: 400 })).toEqual(HEAD_AT_REST)
   })
 
+  it('rests while the pointer is on the dog himself, so hovering or tapping him never spins the head', () => {
+    // A 34px radius is the floater's own circle; 30px below the center is on him.
+    expect(aimAtPointer(C, { x: 1000, y: 430 }, 34)).toEqual(HEAD_AT_REST)
+    expect(aimAtPointer(C, { x: 1020, y: 380 }, 34)).toEqual(HEAD_AT_REST)
+    // Just off the circle he looks again.
+    expect(aimAtPointer(C, { x: 1000, y: 440 }, 34)).toEqual({ deg: -90, mirror: false })
+  })
+
   it('does not turn when the ball is straight ahead (the art already faces left)', () => {
     expect(aimAtPointer(C, { x: 200, y: 400 })).toEqual({ deg: 0, mirror: false })
   })

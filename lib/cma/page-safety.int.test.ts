@@ -16,6 +16,9 @@ import { existsSync } from 'node:fs'
 import puppeteer, { type Browser } from 'puppeteer-core'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
+import type { CmaBandRival, CmaBandRivalSet } from './band-rivals'
+import type { CmaExpiredPeer, CmaExpiredPeerSet } from './market-status'
+import type { CompArea } from '@/lib/pricing/comp-area'
 import { inspectPdfPageSafety, formatViolations } from '@/lib/pdf/assert-page-safety'
 import { pdfRenderOptions, CMA_MARGIN_IN } from '@/lib/pdf/page-contract'
 
@@ -175,8 +178,9 @@ async function renderPdf(html: string): Promise<Buffer> {
   }
 }
 
-async function expectClean(a: RenderCmaArgs, label: string) {
-  const { html } = renderCmaHtml(a)
+async function expectClean(a: RenderCmaArgs, label: string, extraCss?: string) {
+  let { html } = renderCmaHtml(a)
+  if (extraCss) html = html.replace('</head>', `<style>${extraCss}</style></head>`)
   const pdf = await renderPdf(html)
   const report = await inspectPdfPageSafety(pdf, { margins: CMA_MARGIN_IN })
   if (!report.ok) {
@@ -247,4 +251,140 @@ describe.skipIf(!hasChrome)('CMA page safety', () => {
     // section, so it printed mid-document with the tail running under it.
     expect(html).not.toContain('class="pg-footer"')
   })
+})
+
+// ── The comp-count sweep ────────────────────────────────────────────────────
+// Every comp count a broker can pick, with every status the letter prints:
+// closed sales, homes for sale and under contract (matrix 3 and the FlexMLS
+// status table's Active and Pending groups), and listings that came off
+// unsold (matrix 2 and the Expired group). The 12-comp overstuffed case above
+// is one point on this line. The nightly failed at 12 on the days chart's
+// labels (fixed in #379, held by chart-labels.int.test.ts), and the sweep
+// found three more overflows no single fixture reached: the matrix address
+// head at five sales to a table, and nowrap ask/outcome cells.
+const AREA: CompArea = {
+  kind: 'radius',
+  names: [],
+  radiusMiles: 2,
+  centre: { lat: 44.06, lng: -121.31 },
+  source: 'fixture',
+  sentence: 'within two miles of your home',
+}
+
+function rival(i: number, status: 'Active' | 'Pending'): CmaBandRival {
+  return {
+    listingKey: `R${i}`,
+    address: `${60 + i} Competing Listing Boulevard Southwest`,
+    listPrice: 729000 + i * 4000,
+    status,
+    daysOnMarket: 20 + i * 7,
+    photoUrl: null,
+    latitude: 44.061,
+    longitude: -121.305,
+    beds: 3,
+    baths: 2.5,
+    sqft: 1820 + i * 10,
+    yearBuilt: 2008,
+    lotAcres: 0.21,
+    propertySubType: 'Single Family Residence',
+    originalListPrice: 749000 + i * 4000,
+    onMarketDate: '2026-06-01',
+    listingHistoryLine: null,
+  }
+}
+
+function peer(i: number): CmaExpiredPeer {
+  return {
+    listingKey: `E${i}`,
+    address: `${900 + i} Withdrawn Unsold Terrace Northeast`,
+    listPrice: 765000 + i * 5000,
+    originalListPrice: 799000 + i * 5000,
+    status: 'Expired',
+    daysOnMarket: 140 + i * 11,
+    onMarketDate: '2026-01-10',
+    photoUrl: null,
+    listingHistoryLine: null,
+    whyItSat: 'Sat 140 days and cut its ask twice; its last ask per square foot ran above every sale behind your price.',
+    beds: 3,
+    baths: 2,
+    sqft: 1790 + i * 10,
+    yearBuilt: 2004,
+    lotAcres: 0.19,
+    propertySubType: 'Single Family Residence',
+    latitude: 44.059,
+    longitude: -121.312,
+  } as CmaExpiredPeer
+}
+
+function sweepArgs(n: number): RenderCmaArgs {
+  const rivals = [rival(1, 'Active'), rival(2, 'Active'), rival(3, 'Active'), rival(4, 'Pending'), rival(5, 'Pending')]
+  const peers = [peer(1), peer(2), peer(3)]
+  const bandRivals = {
+    area: AREA,
+    lo: 690000,
+    hi: 740000,
+    activeCount: 3,
+    pendingCount: 2,
+    rivals,
+    sentence: 'Three homes are for sale and two are under contract in your price band.',
+    source: 'fixture',
+    widenedFrom: null,
+    ringsTried: [2],
+  } as CmaBandRivalSet
+  const expiredPeers = {
+    area: AREA,
+    windowMonths: 12,
+    windowsTried: [12],
+    widenedTo: null,
+    count: peers.length,
+    areaTotal: peers.length,
+    found: peers.length,
+    likeYours: false,
+    shortfall: false,
+    sentence: 'Three listings like yours came off unsold in the last year.',
+    peers,
+  } as CmaExpiredPeerSet
+  return args({
+    // Every third sale carries a seven-figure ask path: "$1.25M"-wide figures
+    // are what a nowrap cell could not hold (cma-20506-murphy, +3pt right).
+    comps: Array.from({ length: n }, (_, i) => {
+      const c = comp(i + 1)
+      return i % 3 === 2
+        ? ({ ...c, listPrice: 1_895_000, closePrice: 1_812_500, timeAdjustedPrice: 1_812_500, adjustedPrice: 1_810_000 } as CmaAdjustedComp)
+        : c
+    }),
+    bandRivals,
+    expiredPeers,
+  } as Partial<RenderCmaArgs>)
+}
+
+/**
+ * The fallback faces run wider than the brand face, and the fixture never
+ * loads the brand face (network is aborted). Geometry that holds only under
+ * one platform's fallback is how this test passed on a Mac and failed on the
+ * Linux nightly. Verdana (macOS) and DejaVu Sans (Linux) are the wide ends of
+ * what a sans fallback resolves to; the sweep runs under both the stylesheet's
+ * own stack and this one.
+ */
+const WIDE_FALLBACK_CSS = '*{font-family:Verdana,"DejaVu Sans",sans-serif !important}'
+
+const SWEEP_COUNTS = [1, 2, 3, 5, 6, 7, 12, 13, 20, 40]
+
+describe.skipIf(!hasChrome)('CMA page safety across every comp count', () => {
+  it.each(SWEEP_COUNTS)('%i comps, every status, stay inside the margins', async (n) => {
+    const html = renderCmaHtml(sweepArgs(n)).html
+    // The sweep is only worth something if the tables it claims to cover are
+    // on the sheet. From three sales up that is the FlexMLS status table with
+    // all four statuses and the days chart; under three the letter prints no
+    // pricing page, so neither exists and the matrices are what is measured.
+    if (n >= 3) {
+      for (const status of ['closed', 'active', 'pending', 'expired']) {
+        expect(html).toContain(`<tbody data-status="${status}"`)
+      }
+      expect(html).toContain('aria-label="How fast homes like yours went"')
+    }
+    expect(html).toContain('comp-matrix is-active')
+    await expectClean(sweepArgs(n), `sweep ${n} comps`)
+    await expectClean(sweepArgs(n), `sweep ${n} comps, wide fallback face`, WIDE_FALLBACK_CSS)
+  }, 120_000)
 })

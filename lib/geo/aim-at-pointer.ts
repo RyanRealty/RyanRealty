@@ -14,6 +14,11 @@
  * Pure and DOM-free: `center` and `pointer` are in the same space (viewport
  * px in the caller). CSS rotate() turns clockwise for a positive angle
  * because screen y points down, which is also atan2's sense here.
+ *
+ * `restRadius` (the floater's own circle) is a dead zone: a pointer on the
+ * dog himself, a cursor about to click him or a finger tapping him, reads as
+ * rest. Near the center a pixel of travel swings the angle a quarter turn,
+ * so without it the head spins under the very pointer that opens the menu.
  */
 
 export type HeadAim = { deg: number; mirror: boolean }
@@ -26,11 +31,12 @@ const MIRROR_COS = 0.2
 export function aimAtPointer(
   center: { x: number; y: number },
   pointer: { x: number; y: number } | null,
+  restRadius = 0,
 ): HeadAim {
   if (!pointer) return HEAD_AT_REST
   const dx = pointer.x - center.x
   const dy = pointer.y - center.y
-  if (dx === 0 && dy === 0) return HEAD_AT_REST
+  if ((dx === 0 && dy === 0) || Math.hypot(dx, dy) < restRadius) return HEAD_AT_REST
   const angle = (Math.atan2(dy, dx) * 180) / Math.PI
   if (Math.cos((angle * Math.PI) / 180) > MIRROR_COS) {
     return { deg: round1(angle), mirror: true }

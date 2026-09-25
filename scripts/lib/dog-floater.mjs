@@ -5,6 +5,8 @@
  * flip/spin/invert (not a continuous idle), six doors, click the dog to
  * toggle, no Close link. Inner head crop stays the SITE-146 lock.
  * Header Work with us is SITE-155 — this gate does not police V3Chrome.
+ * Matt 2026-09-25 (SITE-210): a finger's look is released, so on a phone
+ * the head always goes back to its normal pose.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -25,6 +27,7 @@ export const DOG_HEAD_CIRCULAR_CV_MAX = 0.18
 
 const PATHS = Object.freeze({
   floater: 'components/site/v3/V3DogFloater.client.tsx',
+  gazeTest: 'components/site/v3/V3DogFloater.gaze.test.tsx',
   css: 'components/site/v3/V3DogFloater.css',
   barrel: 'components/site/v3/index.ts',
   layout: 'app/layout.tsx',
@@ -71,6 +74,7 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   const stickyCss = readRel(root, PATHS.stickyCss, files.stickyCss)
   const listingPage = readRel(root, PATHS.listingPage, files.listingPage)
   const builder = readRel(root, PATHS.builder, files.builder)
+  const gazeTest = readRel(root, PATHS.gazeTest, files.gazeTest)
 
   if (floater == null) {
     p.push(`${PATHS.floater}: missing — SITE-134 dog floater is gone.`)
@@ -134,6 +138,7 @@ export function dogFloaterProblems({ root = process.cwd(), files = {} } = {}) {
   if (!floater.includes('data-v3-dog-idle="notice"')) {
     p.push(`${PATHS.floater}: head must mark the brief notice motion (data-v3-dog-idle=notice).`)
   }
+  p.push(...touchLookReleaseProblems(gazeTest, PATHS.gazeTest))
   if (/woof|How can we help|get a take/i.test(floater)) {
     p.push(`${PATHS.floater}: six plain items only — no pun / woof copy.`)
   }
@@ -292,6 +297,38 @@ function sealSourceProblems(builder, label = PATHS.builder) {
   }
   if (!builder.includes('DOG_HEAD_PAD')) {
     p.push(`${label}: must use DOG_HEAD_PAD (4–8% thin safety), not a fat ~16% ring.`)
+  }
+  return p
+}
+
+/**
+ * SITE-210 (Matt 2026-09-25, on a phone): "I want the dog to always go back
+ * to the normal position on phone and not stay looking somewhere when no one
+ * is scrolling." Where the head looks is behavior, so it is proven by
+ * driving the real component with real window events in the gaze test
+ * (run by test:unit in CI). This arm keeps that proof on the tree: the file
+ * exists, still carries the phone cases, and none of them is skipped. It
+ * reads test titles, never the floater's wording, so a refactor that keeps
+ * the behavior passes and one that breaks it fails the test itself.
+ */
+export const DOG_GAZE_PHONE_CASES = Object.freeze([
+  'never stays looking where a scroll began',
+  'looks back the moment it lifts',
+  'looks back after the hold',
+  'never turns for a tap',
+])
+
+export function touchLookReleaseProblems(gazeTest, label = PATHS.gazeTest) {
+  if (gazeTest == null) {
+    return [`${label}: missing. It is the proof that the dog's head goes back to rest on a phone (SITE-210).`]
+  }
+  const p = []
+  const missing = DOG_GAZE_PHONE_CASES.filter((title) => !gazeTest.includes(title))
+  if (missing.length) {
+    p.push(`${label}: the phone cases must stay (SITE-210). Missing: ${missing.join('; ')}.`)
+  }
+  if (/\b(?:it|test|describe)\.(?:skip|todo|only)\b/.test(gazeTest) || /\bx(?:it|describe)\(/.test(gazeTest)) {
+    p.push(`${label}: no skipped, todo or only cases; every SITE-210 case runs.`)
   }
   return p
 }
