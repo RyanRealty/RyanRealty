@@ -8,7 +8,7 @@ import 'server-only'
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
-import type { EnvelopeField, SignFieldType, SignFieldValue } from '@/lib/tc/signing'
+import { sharedAddressCosigners, type EnvelopeField, type SignFieldType, type SignFieldValue } from '@/lib/tc/signing'
 
 type Obj = Record<string, unknown>
 
@@ -148,4 +148,28 @@ export async function voidEnvelopeOnDecline(envelopeId: string, reason: string, 
 
 export async function logSigningEvent(cycleId: string, actor: string, action: string, detail: Obj, sb: SupabaseClient = createServiceClient()): Promise<void> {
   await sb.from('tc_events').insert({ cycle_id: cycleId, actor, action, detail })
+}
+
+/**
+ * The next signer who reads this signer's mail: another signer on the envelope
+ * at the same address, not finished, and already sent their link (their turn
+ * is open). The signing page offers to continue as them.
+ */
+export async function findSharedAddressNextSigner(
+  envelopeId: string,
+  recipientId: string,
+  email: string,
+  sb: SupabaseClient = createServiceClient(),
+): Promise<{ id: string; name: string; auth_token_hash: string | null; auth_token_enc: string | null } | null> {
+  const mine = email.trim().toLowerCase()
+  if (!mine.includes('@')) return null
+  const { data } = await sb
+    .from('tc_envelope_recipients')
+    .select('id, name, email, role, action_required, signing_order, completed_at, declined_at, auth_token_hash, auth_token_enc')
+    .eq('envelope_id', envelopeId)
+    .neq('id', recipientId)
+  const next = sharedAddressCosigners((data ?? []).map((r) => ({ ...r, id: String(r.id) })), { id: recipientId, email: mine })
+    .filter((r) => r.auth_token_hash)
+    .sort((a, b) => Number(a.signing_order ?? 1) - Number(b.signing_order ?? 1))[0]
+  return next ? { id: next.id, name: String(next.name ?? ''), auth_token_hash: next.auth_token_hash ?? null, auth_token_enc: next.auth_token_enc ?? null } : null
 }

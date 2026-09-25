@@ -34,7 +34,7 @@ import {
 import { recordSigningConsent, recordSigningView, submitSigning, declineSigning } from '@/app/actions/tc-sign'
 import type { SigningPayload, SubmitFieldValue } from '@/app/actions/tc-sign'
 import type { EnvelopeField, SignFieldValue } from '@/lib/tc/signing'
-import { signerBlockColor } from '@/lib/tc/signing'
+import { namesInSentence, signerBlockColor } from '@/lib/tc/signing'
 import {
   AUTO_STAMPED_TYPES,
   dateValue,
@@ -47,6 +47,7 @@ import {
   valueText,
   type ChecklistItem,
 } from '@/lib/tc/field-rules'
+import { ContinueAsSigner } from './ContinueAsSigner'
 import { fitTextToBox, textSizeForBox } from '@/lib/tc/text-areas'
 import { ESIGN_CONSENT_SUMMARY, esignDisclosure } from '@/lib/tc/esign-consent'
 import { cn } from '@/lib/utils'
@@ -70,6 +71,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   const [declineReason, setDeclineReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<null | 'completed' | 'partial' | 'declined'>(null)
+  const [nextSigner, setNextSigner] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [stamp, setStamp] = useState<{ date: string; time: string } | null>(null)
   const viewed = useRef(false)
@@ -169,6 +171,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
       if (res.fieldId) focusItem(checklist.find((i) => i.fieldIds.includes(res.fieldId!)) ?? null, false)
       return
     }
+    setNextSigner(res.nextSigner ?? null)
     setDone(res.completed ? 'completed' : 'partial')
   }
 
@@ -192,6 +195,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
       <div className="mx-auto max-w-md px-4 py-16 text-center">
         <h1 className="font-display text-2xl font-bold text-foreground">{copy.title}</h1>
         <p className="mt-3 text-sm text-muted-foreground">{copy.body}</p>
+        {done === 'partial' && nextSigner ? <ContinueAsSigner token={token} name={nextSigner} /> : null}
       </div>
     )
   }
@@ -203,6 +207,12 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
         <p className="mt-3 text-sm text-muted-foreground">
           Hi {payload.recipientName}, you have documents ready to sign. Before you start, please agree to sign electronically.
         </p>
+        {payload.sharedWith.length ? (
+          <p className="mt-2 text-sm text-foreground">
+            This link is for {payload.recipientName}. {namesInSentence(payload.sharedWith)} {payload.sharedWith.length === 1 ? 'signs' : 'sign'} with
+            their own link, sent to this same email address.
+          </p>
+        ) : null}
         <Card className="mt-6 space-y-4 p-4">
           <label className="flex items-start gap-3 text-sm">
             <Checkbox checked={agree} onCheckedChange={(v) => setAgree(!!v)} className="mt-0.5" aria-label="I agree to sign electronically" />

@@ -23,7 +23,7 @@ import {
 } from '@/lib/tc/oref-fill'
 import { otherSideAgentEnvelopeRole, ourRoleForEnvelope } from '@/lib/tc/representation'
 import { getDealParties } from '@/lib/data/tc/deal-people'
-import { listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
+import { listEnvelopeAddressBook, listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
 import {
   generateSigningToken,
   isSignableRole,
@@ -35,6 +35,7 @@ import {
   applyUniquePartyEmails,
   rowsForRecipientSave,
   normalizeSignerPhone,
+  sharedAddressCosigners,
   SIGN_FIELD_LABEL,
   recipientIdForMappedField,
   earlierSigningGroupPending,
@@ -1182,6 +1183,7 @@ export async function sendEnvelope(
       replyTo: auth.email,
       customSubject: env.invite_subject ?? null,
       customBody: env.invite_body ?? null,
+      sharedWith: sharedAddressCosigners(recipients as Array<DbRow & { id: string }>, r as DbRow & { id: string }).map((o) => o.name || 'another signer'),
     })
     if (sent.error) {
       failed.push(r.name || r.email || r.role)
@@ -1287,6 +1289,7 @@ export async function resendRecipientInvite(recipientId: string): Promise<{ ok: 
     .eq('id', env.cycle_id)
     .maybeSingle()
 
+  const addressBook = await listEnvelopeAddressBook(env.id)
   await sendSigningInvite({
     to: r.email,
     recipientName: r.name || 'there',
@@ -1297,6 +1300,7 @@ export async function resendRecipientInvite(recipientId: string): Promise<{ ok: 
     reminder: true,
     customSubject: env.invite_subject ?? null,
     customBody: env.invite_body ?? null,
+    sharedWith: sharedAddressCosigners(addressBook, { id: recipientId, email: r.email }).map((o) => o.name || 'another signer'),
   })
 
   await supabase

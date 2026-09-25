@@ -15,6 +15,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { mintOrReuseSigningLink } from '@/lib/data/tc/signing-token-vault'
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
+import { sharedAddressCosigners } from '@/lib/tc/signing'
 import { pickEnvelopeReminders, type EnvelopeReminderCandidate } from '@/lib/tc/envelope-reminders'
 
 export const runtime = 'nodejs'
@@ -125,6 +126,12 @@ export async function GET(request: Request) {
         reminder: true,
         customSubject: (envRow?.invite_subject as string | null) ?? null,
         customBody: (envRow?.invite_body as string | null) ?? null,
+        sharedWith: sharedAddressCosigners(
+          ((recips ?? []) as DbRow[])
+            .filter((x) => x.envelope_id === c.envelopeId)
+            .map((x) => ({ ...x, id: String(x.id), name: (x.name as string | null) ?? null })),
+          { id: c.recipientId, email: c.email },
+        ).map((o) => String(o.name || 'another signer')),
       })
       if (sent.error) {
         console.warn('[tc-envelope-reminders] send', sent.error)

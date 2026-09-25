@@ -6,7 +6,7 @@
 import { sendEmail } from '@/lib/resend'
 import { EMAIL_FONT_STACK, EMAIL_NAVY, EMAIL_CREAM } from '@/lib/email/brand'
 import { CONTACT } from '@/lib/brand/contact'
-import { resolveSigningInviteCopy } from '@/lib/tc/signing'
+import { namesInSentence, resolveSigningInviteCopy } from '@/lib/tc/signing'
 
 const NAVY = EMAIL_NAVY
 const CREAM = EMAIL_CREAM
@@ -45,24 +45,37 @@ export async function sendSigningInvite(params: {
   reminder?: boolean
   customSubject?: string | null
   customBody?: string | null
+  /** Other signers who get their mail at this same address (a couple sharing one inbox). */
+  sharedWith?: readonly string[]
 }): Promise<{ id?: string; error?: string }> {
+  const shared = (params.sharedWith ?? []).filter((n) => n.trim())
   const copy = resolveSigningInviteCopy({
     reminder: !!params.reminder,
     propertyAddress: params.propertyAddress,
     customSubject: params.customSubject,
     customBody: params.customBody,
   })
+  // Two signers at one address get two emails that look alike: each names
+  // whose link it carries, so the right person signs in the right place.
+  const sharedNote = shared.length
+    ? `<p style="margin:0 0 12px;">This link is for ${escapeHtml(params.recipientName)} only. ${escapeHtml(namesInSentence(shared))} ${shared.length === 1 ? 'gets' : 'get'} a separate email at this same address with their own link.</p>`
+    : ''
   const body = `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(params.recipientName)},</p>
     <p style="margin:0 0 12px;">${escapeHtml(copy.body)}</p>
+    ${sharedNote}
     <p style="margin:0;">Tap the button below to review and sign. You do not need an account or a password. The link is unique to you.</p>
   `
   const { resolveTrackablePersonId } = await import('@/lib/email/auto-track')
   const personId = await resolveTrackablePersonId(params.to)
   return sendEmail({
     to: params.to,
-    subject: copy.subject,
-    html: shell({ heading: copy.heading, bodyHtml: body, cta: { label: 'Review and sign', url: params.signUrl } }),
+    subject: shared.length ? `${params.recipientName}: ${copy.subject}` : copy.subject,
+    html: shell({
+      heading: copy.heading,
+      bodyHtml: body,
+      cta: { label: shared.length ? `Review and sign as ${params.recipientName}` : 'Review and sign', url: params.signUrl },
+    }),
     replyTo: params.replyTo,
     personId: personId ?? undefined,
     emailKey: personId != null ? `tc-sign:${personId}` : undefined,

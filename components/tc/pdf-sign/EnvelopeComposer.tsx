@@ -44,6 +44,8 @@ import {
   recipientRoleLabel,
   signingGroupLabel,
   normalizeSignerPhone,
+  namesInSentence,
+  sharedAddressCosigners,
   type ActionRequired,
   type FieldGroup,
   type SignFieldType,
@@ -543,6 +545,18 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                   onChange={(e) => updateRecipient(i, { name: e.target.value })} />
                 <Input className="mt-1.5 h-8 text-xs" placeholder="email@example.com" value={r.email} disabled={readonly}
                   onChange={(e) => updateRecipient(i, { email: e.target.value })} />
+                {(() => {
+                  // A couple sharing one inbox: allowed, and each still gets their own email and link.
+                  const same = sharedAddressCosigners(
+                    recipients.map((x, j) => ({ ...x, id: x.id ?? `new-${j}` })),
+                    { id: r.id ?? `new-${i}`, email: r.email },
+                  )
+                  return same.length && isSignableRole(r.role, r.actionRequired) ? (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Shares this address with {namesInSentence(same.map((x) => x.name || recipientRoleLabel(x.role)))}. Each gets their own email and link.
+                    </p>
+                  ) : null
+                })()}
                 {requireTextCode && isSignableRole(r.role, r.actionRequired) ? (
                   <>
                     <Input

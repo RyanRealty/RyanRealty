@@ -13,6 +13,8 @@ import {
   isValidEmail,
   coerceActionRequired,
   recipientRoleLabel,
+  namesInSentence,
+  sharedAddressCosigners,
   type EnvelopeField,
 } from './signing'
 import { mintOrReuseSigningLink } from '@/lib/data/tc/signing-token-vault'
@@ -147,6 +149,7 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
         signUrl: `${siteUrl()}/sign/${token}`,
         customSubject: (env as DbRow)?.invite_subject ?? null,
         customBody: (env as DbRow)?.invite_body ?? null,
+        sharedWith: sharedAddressCosigners(signable as Array<DbRow & { id: string }>, r as DbRow & { id: string }).map((o) => o.name || 'another signer'),
       })
       await supabase
         .from('tc_envelope_recipients')
@@ -364,6 +367,14 @@ export async function sealAndCompleteEnvelope(
 
   const pdfBuf = Buffer.from(bytes)
   const pdfName = `${sealName}.pdf`.replace(/[^\w.\- ]+/g, '')
+  // One copy per address, greeting everyone who reads it (a couple sharing one inbox).
+  const namesByEmail = new Map<string, string[]>()
+  for (const r of (recips ?? []) as DbRow[]) {
+    if (coerceActionRequired(r.action_required, r.role) === 'NoAction') continue
+    const email = (r.email ?? '').trim().toLowerCase()
+    if (!email) continue
+    namesByEmail.set(email, [...(namesByEmail.get(email) ?? []), ...(r.name ? [String(r.name)] : [])])
+  }
   const seen = new Set<string>()
   for (const r of (recips ?? []) as DbRow[]) {
     if (coerceActionRequired(r.action_required, r.role) === 'NoAction') continue
@@ -372,7 +383,7 @@ export async function sealAndCompleteEnvelope(
     seen.add(email)
     const sent = await sendCompletionCopy({
       to: email,
-      recipientName: r.name || 'there',
+      recipientName: namesInSentence(namesByEmail.get(email) ?? []) || r.name || 'there',
       envelopeName: env.name,
       propertyAddress: address,
       pdf: pdfBuf,

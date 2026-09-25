@@ -366,6 +366,45 @@ export function seedVendorEnvelopeRecipients(input: {
   return rows
 }
 
+/** A list of names as a sentence: "Jane", "Jane and John", "Ann, Jane and John". */
+export function namesInSentence(names: readonly string[]): string {
+  const list = names.map((n) => n.trim()).filter(Boolean)
+  if (list.length <= 1) return list[0] ?? ''
+  return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`
+}
+
+type AddressRecipient = {
+  id: string
+  email?: string | null
+  name?: string | null
+  role?: string | null
+  actionRequired?: string | null
+  action_required?: string | null
+  completedAt?: string | null
+  completed_at?: string | null
+  declinedAt?: string | null
+  declined_at?: string | null
+}
+
+/**
+ * The other signers on an envelope whose mail comes to this signer's address
+ * and who still have to sign: a couple sharing one inbox. Each still gets
+ * their own email and their own link; this is what the emails and the
+ * signing page say about it.
+ */
+export function sharedAddressCosigners<T extends AddressRecipient>(recipients: readonly T[], me: { id: string; email?: string | null }): T[] {
+  const mine = (me.email ?? '').trim().toLowerCase()
+  if (!mine.includes('@')) return []
+  return recipients.filter(
+    (r) =>
+      r.id !== me.id &&
+      (r.email ?? '').trim().toLowerCase() === mine &&
+      isSignableRole(r.role, r.actionRequired ?? r.action_required) &&
+      !(r.completedAt ?? r.completed_at) &&
+      !(r.declinedAt ?? r.declined_at),
+  )
+}
+
 /** Fill blank recipient emails only when the CRM name is unique. */
 export function applyUniquePartyEmails<T extends { name: string; email: string }>(
   rows: T[],

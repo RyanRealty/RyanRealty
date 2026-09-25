@@ -1,14 +1,16 @@
 'use server'
 
 import { cookies, headers } from 'next/headers'
-import { earlierSigningGroupPending, hashSigningToken, type EnvelopeField, type SignFieldValue } from '@/lib/tc/signing'
+import { earlierSigningGroupPending, hashSigningToken, sharedAddressCosigners, type EnvelopeField, type SignFieldValue } from '@/lib/tc/signing'
 import { advanceOrSeal } from '@/lib/tc/seal-envelope'
 import { ANNOTATION_TYPES, checkSubmission, fieldOwner, valueIsFilled } from '@/lib/tc/field-rules'
 import { ESIGN_CONSENT_VERSION } from '@/lib/tc/esign-consent'
 import { checkTextCode, maskPhone, signVerifyCookie, startTextCode, textCodesConfigured, verifyCookieIsValid, verifyCookieName } from '@/lib/tc/sign-verify'
 import { sendBrokerDeclinedNotice } from '@/lib/tc/signing-emails'
-import { listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
+import { listEnvelopeAddressBook, listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
+import { mintOrReuseSigningLink } from '@/lib/data/tc/signing-token-vault'
 import {
+  findSharedAddressNextSigner,
   findSigningRecipient,
   getEnvelopeFieldsForSigning,
   getSigningDeal,
@@ -43,7 +45,7 @@ export type SigningSessionState =
   | { status: 'ready'; data: SigningPayload }
   | { status: 'verify'; recipientName: string; propertyAddress: string; maskedPhone: string | null; canText: boolean }
   | { status: 'waiting'; envelopeName: string; propertyAddress: string }
-  | { status: 'completed'; envelopeName: string; propertyAddress: string; signedAt: string | null }
+  | { status: 'completed'; envelopeName: string; propertyAddress: string; signedAt: string | null; nextSigner: string | null }
   | { status: 'voided' | 'declined' | 'invalid'; message: string }
 
 export type SigningPayload = {
@@ -56,6 +58,23 @@ export type SigningPayload = {
   consentVersion: string
   documents: SigningDocument[]
   fields: EnvelopeField[]
+  /** Other signers who get their mail at this address (a couple sharing one inbox). */
+  sharedWith: string[]
+}
+
+/** How long after finishing a signer may hand the device to the next signer at their address. */
+const HANDOFF_MS = 30 * 60 * 1000
+
+/**
+ * The signer at this address who can sign next from here, right after this
+ * signer finished. Their own emailed link came to the same inbox, so opening
+ * it here gives no one anything the inbox does not; the window keeps an old
+ * or forwarded link from handing it out later.
+ */
+async function nextSignerHere(recip: SigningRecipient): Promise<{ id: string; name: string; auth_token_hash: string | null; auth_token_enc: string | null } | null> {
+  if (!recip.completedAt || Date.now() - Date.parse(recip.completedAt) > HANDOFF_MS) return null
+  if (recip.envelope.status === 'voided' || recip.envelope.status === 'completed') return null
+  return findSharedAddressNextSigner(recip.envelope.id, recip.id, recip.email)
 }
 
 async function resolve(token: string): Promise<SigningRecipient | null> {
@@ -93,7 +112,10 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
 
   if (env.status === 'voided') return { status: 'voided', message: 'This signing request was canceled. Your broker will send a new one if it is still needed.' }
   if (recip.declinedAt) return { status: 'declined', message: 'You declined this signing request. Your broker has been told.' }
-  if (recip.completedAt || env.status === 'completed') return { status: 'completed', envelopeName: env.name, propertyAddress: deal.address, signedAt: recip.completedAt }
+  if (recip.completedAt || env.status === 'completed') {
+    const next = await nextSignerHere(recip)
+    return { status: 'completed', envelopeName: env.name, propertyAddress: deal.address, signedAt: recip.completedAt, nextSigner: next?.name || null }
+  }
 
   if (earlierSigningGroupPending(recip.signingOrder, await listEnvelopeSigningRoster(env.id))) {
     return { status: 'waiting', envelopeName: env.name, propertyAddress: deal.address }
@@ -102,7 +124,7 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
     return { status: 'verify', recipientName: recip.name || 'there', propertyAddress: deal.address, maskedPhone: maskPhone(recip.phone), canText: textCodesConfigured() && !!recip.phone }
   }
 
-  const [documents, fields] = await Promise.all([getSigningDocuments(env.id), getEnvelopeFieldsForSigning(env.id)])
+  const [documents, fields, addressBook] = await Promise.all([getSigningDocuments(env.id), getEnvelopeFieldsForSigning(env.id), listEnvelopeAddressBook(env.id)])
   return {
     status: 'ready',
     data: {
@@ -115,6 +137,7 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
       consentVersion: ESIGN_CONSENT_VERSION,
       documents,
       fields: visibleFields(fields, recip.id),
+      sharedWith: sharedAddressCosigners(addressBook, { id: recip.id, email: recip.email }).map((o) => o.name || 'another signer'),
     },
   }
 }
@@ -162,7 +185,10 @@ export async function recordSigningConsent(token: string): Promise<{ ok: boolean
 export type SubmitFieldValue = { fieldId: string; value: SignFieldValue }
 
 /** Submit a recipient's fields, finish them, then advance or seal. */
-export async function submitSigning(token: string, values: SubmitFieldValue[]): Promise<{ ok: boolean; error?: string; fieldId?: string; completed?: boolean }> {
+export async function submitSigning(
+  token: string,
+  values: SubmitFieldValue[],
+): Promise<{ ok: boolean; error?: string; fieldId?: string; completed?: boolean; nextSigner?: string | null }> {
   const g = await gate(token)
   if (!g.ok) return { ok: false, error: g.error }
   const { recip } = g
@@ -186,7 +212,22 @@ export async function submitSigning(token: string, values: SubmitFieldValue[]): 
   await logSigningEvent(recip.envelope.cycleId, recip.email || recip.name || 'signer', 'envelope_recipient_signed', { envelope: recip.envelope.name, recipient: recip.name || recip.email, role: recip.role, fields: check.values.size })
 
   const completed = await advanceOrSeal(createServiceClient(), recip.envelope.id)
-  return { ok: true, completed }
+  const next = completed ? null : await nextSignerHere({ ...recip, completedAt: signedAt })
+  return { ok: true, completed, nextSigner: next?.name || null }
+}
+
+/**
+ * Continue as the next signer at this address (a couple sharing one inbox):
+ * opens that signer's own emailed link, the same one, never a new one.
+ */
+export async function continueAsNextSigner(token: string): Promise<{ ok: boolean; path?: string; error?: string }> {
+  const recip = await resolve(token)
+  if (!recip) return { ok: false, error: 'This signing link is not valid.' }
+  const next = await nextSignerHere(recip)
+  if (!next) return { ok: false, error: 'Use the email addressed to the next signer.' }
+  const { token: nextToken } = await mintOrReuseSigningLink(createServiceClient(), next)
+  await logSigningEvent(recip.envelope.cycleId, recip.email || recip.name || 'signer', 'envelope_signer_handoff', { envelope: recip.envelope.name, from: recip.name || recip.email, to: next.name })
+  return { ok: true, path: `/sign/${nextToken}` }
 }
 
 /** Decline to sign: the envelope is voided and the broker is emailed at once. */

@@ -22,6 +22,8 @@ import {
   seedPartyEnvelopeRecipients,
   rowsForRecipientSave,
   normalizeSignerPhone,
+  namesInSentence,
+  sharedAddressCosigners,
   recipientIdForMappedField,
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
@@ -480,5 +482,29 @@ describe('recipientIdForMappedField', () => {
         ],
       ),
     ).toBe('seller')
+  })
+})
+
+describe('a couple sharing one email address', () => {
+  const r = (id: string, name: string, email: string, extra: Record<string, unknown> = {}) => ({ id, name, email, role: 'Buyer', action_required: 'NeedsToSign', completed_at: null, declined_at: null, ...extra })
+  it('finds the other signers at the same address, whatever the case', () => {
+    const rows = [r('a', 'Jane Smith', 'smiths@example.com'), r('b', 'John Smith', 'Smiths@Example.com '), r('c', 'Pat Lee', 'pat@example.com')]
+    expect(sharedAddressCosigners(rows, rows[0]!).map((x) => x.name)).toEqual(['John Smith'])
+    expect(sharedAddressCosigners(rows, rows[2]!)).toEqual([])
+  })
+  it('leaves out anyone who has finished, declined, or only gets a copy', () => {
+    const rows = [
+      r('a', 'Jane Smith', 'smiths@example.com'),
+      r('b', 'John Smith', 'smiths@example.com', { completed_at: '2026-09-24T00:00:00Z' }),
+      r('c', 'Kid Smith', 'smiths@example.com', { action_required: 'ReceivesACopy' }),
+      r('d', 'Gran Smith', 'smiths@example.com', { declined_at: '2026-09-24T00:00:00Z' }),
+    ]
+    expect(sharedAddressCosigners(rows, rows[0]!)).toEqual([])
+  })
+  it('names people the way a sentence does', () => {
+    expect(namesInSentence(['Jane'])).toBe('Jane')
+    expect(namesInSentence(['Jane', 'John'])).toBe('Jane and John')
+    expect(namesInSentence(['Ann', 'Jane', 'John'])).toBe('Ann, Jane and John')
+    expect(namesInSentence([])).toBe('')
   })
 })
