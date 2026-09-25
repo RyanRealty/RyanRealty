@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
+import { Encodings, Font, FontNames } from '@pdf-lib/standard-fonts'
+import { HELVETICA_CHARS, HELVETICA_KERN, HELVETICA_WIDTHS } from './helvetica-metrics'
 import { areaSpace, findTextAreas, fitTextToBox, helveticaWidth, layoutAreaText, pdfSafeText, textSizeForBox, type AreaCandidate } from './text-areas'
 
 const line = (y: number, x: number, w: number, label: string | null = null, h = 0.015, page = 1): AreaCandidate => ({ page, x, y, w, h, type: 'text', label })
@@ -135,6 +137,47 @@ describe('laying text onto the lines', () => {
   })
 })
 
+// The browser measures with a generated table (scripts/gen-helvetica-metrics.mjs)
+// instead of shipping @pdf-lib/standard-fonts. A pdf-lib upgrade that moves a
+// width fails here: rerun the script.
+describe('the Helvetica table', () => {
+  const font = Font.load(FontNames.Helvetica)
+  const winAnsi = Encodings.WinAnsi
+  const glyph = (ch: string) => winAnsi.encodeUnicodeCodePoint(ch.codePointAt(0)!).name
+  const chars = Array.from(HELVETICA_CHARS)
+
+  it('holds every character WinAnsi encodes, at the width pdf-lib uses', () => {
+    expect(chars.map((c) => c.codePointAt(0)).sort((a, b) => a! - b!)).toEqual(winAnsi.supportedCodePoints.slice().sort((a, b) => a - b))
+    expect(HELVETICA_WIDTHS).toEqual(chars.map((c) => font.getWidthOfGlyph(glyph(c)) || 250))
+  })
+
+  it('holds every kerning pair pdf-lib applies, and no other', () => {
+    const table = new Map<string, number>()
+    for (const [l, rights, amounts] of HELVETICA_KERN) Array.from(rights).forEach((r, i) => table.set(l + r, amounts[i]))
+    const want = new Map<string, number>()
+    for (const l of chars) for (const r of chars) {
+      const k = font.getXAxisKerningForPair(glyph(l), glyph(r))
+      if (k) want.set(l + r, k)
+    }
+    expect(table).toEqual(want)
+  })
+
+  it('measures every character and pair exactly as pdf-lib does', async () => {
+    const doc = await PDFDocument.create()
+    const f = await doc.embedFont(StandardFonts.Helvetica)
+    const all = chars.join('')
+    expect(helveticaWidth(all, 10)).toBeCloseTo(f.widthOfTextAtSize(all, 10), 6)
+    for (const [l, rights] of HELVETICA_KERN) {
+      for (const r of rights) expect(helveticaWidth(l + r, 12)).toBeCloseTo(f.widthOfTextAtSize(l + r, 12), 6)
+    }
+  })
+
+  it('measures a character the font cannot draw as the "?" printed in its place', () => {
+    expect(helveticaWidth('a→b', 10)).toBeCloseTo(helveticaWidth('a?b', 10), 6)
+    expect(helveticaWidth('ok 😀', 10)).toBeCloseTo(helveticaWidth('ok ?', 10), 6)
+  })
+})
+
 describe('fitTextToBox', () => {
   const box = { w: 0.2 * 612, h: 0.035 * 792 } // the composer's default text box
   it('keeps the box size for a short value', () => {
@@ -148,6 +191,10 @@ describe('fitTextToBox', () => {
     expect(r.size).toBeLessThan(textSizeForBox(box.h))
     expect(r.lines.join(' ')).toBe('Refrigerator and chest freezer stay with the home')
     expect(r.lines.length * (r.size + 1.2)).toBeLessThanOrEqual(box.h - 1 + 1e-6)
+  })
+  it('takes any character a signer types, and returns the lines as they print', () => {
+    expect(() => fitTextToBox('smile 😀 → next', box.w, box.h)).not.toThrow()
+    expect(fitTextToBox('smile 😀 → next', box.w, box.h).lines.join(' ')).toBe('smile ? ? next')
   })
   it('says when even 6 pt cannot hold it, and still returns every word', () => {
     const long = 'word '.repeat(200).trim()

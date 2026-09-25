@@ -13,7 +13,7 @@
  * line, and returns what does not fit (lib/tc/continuation.ts carries it onto
  * a continuation addendum).
  */
-import { Encodings, Font, FontNames } from '@pdf-lib/standard-fonts'
+import { HELVETICA_CHARS, HELVETICA_KERN, HELVETICA_WIDTHS } from './helvetica-metrics'
 import { wrapTextToWidth } from './lined-signature-fields'
 
 /** A field on a page, as fractions of the page, top-left origin (lib/tc/signing.ts). */
@@ -27,28 +27,41 @@ export type TextArea<T extends LineBox = LineBox> = {
 }
 
 // ── the font the sealer draws with (pdf-lib Helvetica, WinAnsi) ────────────
+// Measured from lib/tc/helvetica-metrics.ts, generated from the font data
+// pdf-lib draws with, so the browser does not load all fourteen standard fonts.
 
-let helvetica: ReturnType<typeof Font.load> | null = null
-const font = () => (helvetica ??= Font.load(FontNames.Helvetica))
-const winAnsi = Encodings.WinAnsi
+type Metrics = { width: Map<string, number>; kern: Map<string, number> }
+let metrics: Metrics | null = null
+function helvetica(): Metrics {
+  if (metrics) return metrics
+  const width = new Map<string, number>()
+  Array.from(HELVETICA_CHARS).forEach((ch, i) => width.set(ch, HELVETICA_WIDTHS[i]))
+  const kern = new Map<string, number>()
+  for (const [left, rights, amounts] of HELVETICA_KERN) {
+    Array.from(rights).forEach((right, i) => kern.set(left + right, amounts[i]))
+  }
+  return (metrics = { width, kern })
+}
 
 /** Text the sealer can draw: every character WinAnsi cannot encode becomes "?". */
 export function pdfSafeText(s: string): string {
+  const { width } = helvetica()
   let out = ''
-  for (const ch of s.replace(/\r\n?/g, '\n')) {
-    const cp = ch.codePointAt(0) ?? 63
-    out += ch === '\n' || winAnsi.canEncodeUnicodeCodePoint(cp) ? ch : '?'
-  }
+  for (const ch of s.replace(/\r\n?/g, '\n')) out += ch === '\n' || width.has(ch) ? ch : '?'
   return out
 }
 
-/** Width in points of `text` at `size`, exactly as pdf-lib's widthOfTextAtSize (glyph widths plus kerning). */
+/**
+ * Width in points of `text` at `size`, exactly as pdf-lib's widthOfTextAtSize
+ * (glyph widths plus kerning). A character the font cannot encode is measured
+ * as the "?" the sealer prints in its place.
+ */
 export function helveticaWidth(text: string, size: number): number {
-  const f = font()
-  const names = Array.from(text).map((ch) => winAnsi.encodeUnicodeCodePoint(ch.codePointAt(0) ?? 63).name)
+  const { width, kern } = helvetica()
+  const chars = Array.from(text).map((ch) => (width.has(ch) ? ch : '?'))
   let total = 0
-  for (let i = 0; i < names.length; i++) {
-    total += (f.getWidthOfGlyph(names[i]) || 250) + (f.getXAxisKerningForPair(names[i], names[i + 1]) || 0)
+  for (let i = 0; i < chars.length; i++) {
+    total += (width.get(chars[i]) ?? 250) + (kern.get(chars[i] + (chars[i + 1] ?? '')) ?? 0)
   }
   return (total * size) / 1000
 }
@@ -73,8 +86,10 @@ export const MIN_BOX_TEXT_PT = 6
 export function fitTextToBox(text: string, widthPts: number, heightPts: number): { size: number; lines: string[]; fits: boolean } {
   const width = usableWidth(widthPts)
   const room = Math.max(1, heightPts - 1)
+  // The lines as they print: a character the font cannot draw is its "?".
+  const safe = pdfSafeText(text)
   for (let size = textSizeForBox(heightPts); ; size = Math.round((size - 0.5) * 10) / 10) {
-    const lines = wrapTextToWidth(text, width, (s) => helveticaWidth(s, size))
+    const lines = wrapTextToWidth(safe, width, (s) => helveticaWidth(s, size))
     const fits = lines.length <= 1 || lines.length * (size + 1.2) <= room + 1e-6
     if (fits || size - 0.5 < MIN_BOX_TEXT_PT) return { size, lines, fits }
   }
