@@ -12,7 +12,8 @@
  *
  * Same data by construction: the query names the scope the page read
  * (lib/atlas/atlas-dots-scope.ts), the boundary is resolved through the same
- * cached DAL call the page made, and the population comes from the same
+ * cached DAL call the page made (a community's on-market population through
+ * the same getCommunityPopulation), and the population comes from the same
  * cached core (buildAtlasDots in lib/atlas/build-place-atlas.ts).
  *
  * CDN-cacheable: a complete read is public for five minutes at the edge
@@ -23,7 +24,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { buildAtlasDots, hashAtlasBoundary } from '@/lib/atlas/build-place-atlas'
 import { parseAtlasDotsScope } from '@/lib/atlas/atlas-dots-scope'
-import { resolveAtlasBoundaryRef } from '@/lib/atlas/atlas-boundary-ref'
+import { resolveAtlasScopeRef } from '@/lib/atlas/atlas-boundary-ref'
 
 const CACHEABLE = 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600'
 const NO_STORE = 'no-store'
@@ -34,11 +35,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'bad scope' }, { status: 400, headers: { 'Cache-Control': NO_STORE } })
   }
   try {
-    const boundary = scope.boundary ? await resolveAtlasBoundaryRef(scope.boundary) : null
+    const resolved = scope.boundary ? await resolveAtlasScopeRef(scope.boundary) : null
+    const boundary = resolved?.boundary ?? null
     if (scope.boundary && !boundary) {
       return NextResponse.json({ error: 'no boundary' }, { status: 404, headers: { 'Cache-Control': NO_STORE } })
     }
-    const { dots, stamp, complete } = await buildAtlasDots({ cities: scope.cities, boundary })
+    // A community names its own on-market population (the homes it lists), so
+    // the dots rebuild the map the page counted: lib/place/community-population.ts.
+    const { dots, stamp, complete } = await buildAtlasDots(
+      resolved?.onMarket
+        ? { cities: scope.cities, boundary, onMarket: resolved.onMarket }
+        : { cities: scope.cities, boundary },
+    )
     return NextResponse.json(
       { dots, stamp, complete, boundary: hashAtlasBoundary(boundary) },
       { headers: { 'Cache-Control': complete ? CACHEABLE : NO_STORE } },

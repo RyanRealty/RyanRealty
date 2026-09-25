@@ -328,7 +328,8 @@ export { getSaleZoneCache, upsertSaleZoneCache } from '@/lib/data/cma/sale-zone-
 export type { SaleZoneCacheRow } from '@/lib/data/cma/sale-zone-cache'
 export type { SubdivisionRing, SubdivisionRingPlat } from '@/lib/data/geo/subdivision-ring'
 export type { BoundaryGeoJSONInput, BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
-export { getResortBoundaryGeoJSON } from '@/lib/data/geo/getResortBoundaryGeoJSON'
+// A registry community's stored outline, keyed by its durable slug, gated by the trust rule.
+export { getCommunityOutlineGeoJSON } from '@/lib/data/geo/getCommunityOutline'
 
 // Geo — Bend westside neighborhood stats for homepage map section
 export { getBendNeighborhoodStats } from '@/lib/data/geo/getBendNeighborhoodStats'

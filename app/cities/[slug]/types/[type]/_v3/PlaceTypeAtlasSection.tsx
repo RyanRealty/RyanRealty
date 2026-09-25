@@ -34,7 +34,7 @@ import Link from 'next/link'
 import {
   getBoundaryGeoJSON,
   getCityBoundaryGeoJSON,
-  getResortBoundaryGeoJSON,
+  getCommunityOutlineGeoJSON,
 } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -58,9 +58,9 @@ export type PlaceTypeBoundarySource =
   | { kind: 'city'; geoSlug: string; cityName: string }
   | {
       kind: 'community'
-      /** Registry slug — the resort's own recorded outline is tried first. */
+      /** The community's URL or registry slug: its stored outline is keyed by the registry's durable slug. */
       geoSlug: string
-      /** The polygon the page already read for its pins, when it trusts it. */
+      /** The trusted outline the page already read for its pins, when it has one. */
       stored: GeoJSON.Geometry | null
     }
 
@@ -70,13 +70,15 @@ const ATLAS_MS = 9000
 
 async function resolveBoundary(source: PlaceTypeBoundarySource): Promise<GeoJSON.Geometry | null> {
   if (source.kind === 'community') {
-    const resort = await withTimeoutFallback(
-      getResortBoundaryGeoJSON(source.geoSlug),
+    // The stored outline, keyed by the registry and gated by the one trust
+    // rule (lib/communities/community-outline.ts). The same row the page read.
+    const outline = await withTimeoutFallback(
+      getCommunityOutlineGeoJSON(source.geoSlug),
       null,
       BOUNDARY_MS,
-      'place-type:resortBoundary',
+      'place-type:communityOutline',
     )
-    return asPlaceBoundary(resort) ?? source.stored
+    return asPlaceBoundary(outline) ?? source.stored
   }
   const [recorded, fallback] = await Promise.all([
     withTimeoutFallback(
