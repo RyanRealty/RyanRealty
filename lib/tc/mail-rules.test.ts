@@ -2045,6 +2045,23 @@ describe('re-decide dry run: the classes it got wrong', () => {
     expect(d.dealId).toBeNull()
     // The executed PDF with nothing naming its file waits for a person.
     expect(d.status).toBe('unfiled_transaction')
+    // An envelope with its own name keeps its thread: the notices of one envelope.
+    const named = decide4(
+      mail({ from: ['noreply@skyslope.com'], subject: 'Envelope completed: You have documents to sign - Second Offer', body: 'Your document has been completed.' }),
+      { dealId: 'beaumont', method: 'address' },
+    )
+    expect(named.dealId).toBe('beaumont')
+  })
+
+  it("the brokerage's own signed paperwork is no deal's and waits for no one (1924a002a6aa9a8b, 192541659bcdc94d)", () => {
+    for (const subject of [
+      'Envelope completed: Independent Contractor Agreement - Pat Broker',
+      'Envelope completed: COAR Membership',
+      'Completed: Complete with Docusign: ODS Participant Agreement.pdf',
+    ]) {
+      const d = decide4(mail({ from: ['noreply@skyslope.com'], subject, body: 'Your document has been completed.', attachments: [{ name: 'Agreement.pdf' }] }))
+      expect(d.status, `${subject}: ${d.reasons.join(' / ')}`).toBe('not_deal')
+    }
   })
 
   it('our note about a new listing to the title company printing its home book is deal mail, not marketing (1907bc58e24f01cc)', () => {
@@ -2278,5 +2295,129 @@ describe('golden eval after the re-decide fixes', () => {
     expect(
       decide4(mail({ from: ['app@serviceline.example'], sentAt: at, subject: 'Booking Confirmation', body: 'Your appointment with Valley Plumbing at 20702 Beaumont Dr, Bend OR 97701 is confirmed.' })).dealId,
     ).toBe('beaumont')
+  })
+})
+
+describe('re-decide dry run: cycles when a property comes back', () => {
+  const cycles = [
+    cycle({ id: 'bought-2025', status: 'Closed', acceptanceDate: '2025-07-06', closeDate: '2025-08-14' }),
+    cycle({ id: 'listed-2026', kind: 'listing', status: 'Transaction', listingDate: '2026-07-19' }),
+    cycle({ id: 'sold-2026', status: 'Closed', acceptanceDate: '2026-07-21', closeDate: '2026-09-01' }),
+  ]
+
+  it("the sellers' counter on the clients' 2025 purchase is not an offer on the 2026 listing (197e0e6ebef0b040)", () => {
+    expect(pickCycleForMail(cycles, '2025-07-06T15:00:00Z', 'counter')).toBe('bought-2025')
+    // An offer while we list it goes to the listing's offer log.
+    expect(pickCycleForMail(cycles, '2026-07-20T15:00:00Z', 'offer')).toBe('listed-2026')
+  })
+
+  it("a showing weeks before a contract is the listing's; the contract's own paperwork days before it is recorded is the contract's", () => {
+    const tumalo2026 = [
+      cycle({ id: 'listing', kind: 'listing', status: 'Transaction', listingDate: '2026-04-03' }),
+      cycle({ id: 'sale', status: 'Pending', acceptanceDate: '2026-09-19', closeDate: '2026-11-30' }),
+    ]
+    expect(pickCycleForMail(tumalo2026, '2026-08-25T17:00:00Z', 'general')).toBe('listing')
+    expect(pickCycleForMail(tumalo2026, '2026-09-17T17:00:00Z', 'escrow_title')).toBe('sale')
+    // Mail before every cycle (a January listing appointment) is the first cycle's, not the latest contract's.
+    expect(pickCycleForMail(tumalo2026, '2026-01-20T17:00:00Z', 'general')).toBe('listing')
+  })
+
+  it('on a purchase, with no listing of ours open, the offer two weeks before acceptance is that contract\'s (19833eb5181ee960)', () => {
+    const purchase = [
+      cycle({ id: 'contract', status: 'Canceled/App', acceptanceDate: '2025-08-04', closeDate: '2025-09-15', deadDate: '2025-08-05' }),
+      cycle({ id: 'undated', status: 'Canceled/App', deadDate: '2025-09-30' }),
+    ]
+    expect(pickCycleForMail(purchase, '2025-07-22T17:00:00Z', 'offer')).toBe('contract')
+    expect(pickCycleForMail(purchase, '2025-07-23T17:00:00Z', 'general')).toBe('contract')
+    // Between two purchase contracts, the negotiation of the second is the second's, not the first's tail.
+    const twoPurchases = [
+      cycle({ id: 'first', status: 'Canceled/App', acceptanceDate: '2025-04-12', closeDate: '2025-07-14', deadDate: '2025-07-18' }),
+      cycle({ id: 'second', status: 'Closed', acceptanceDate: '2025-08-26', closeDate: '2025-10-10' }),
+    ]
+    expect(pickCycleForMail(twoPurchases, '2025-08-12T17:00:00Z', 'general')).toBe('second')
+  })
+
+  it("after a contract dies the showings, repairs and next offer are the listing's again (19dcb17703b8d7cd, 19df351e268b20f6)", () => {
+    const relisted = [
+      cycle({ id: 'listing', kind: 'listing', status: 'Transaction', listingDate: '2025-04-09' }),
+      cycle({ id: 'fell-through', status: 'Canceled/Pend', acceptanceDate: '2026-03-28', closeDate: '2026-04-29', deadDate: '2026-04-24' }),
+      cycle({ id: 'closed', status: 'Closed', acceptanceDate: '2026-05-14', closeDate: '2026-07-09' }),
+    ]
+    expect(pickCycleForMail(relisted, '2026-04-10T17:00:00Z', 'general')).toBe('fell-through')
+    expect(pickCycleForMail(relisted, '2026-04-26T18:40:00Z', 'general')).toBe('listing')
+    expect(pickCycleForMail(relisted, '2026-05-04T14:08:00Z', 'general')).toBe('listing')
+    // Its termination paperwork still goes to it; the next contract's paperwork to that one.
+    expect(pickCycleForMail(relisted, '2026-04-27T17:00:00Z', 'escrow_title', { termination: true })).toBe('fell-through')
+    expect(pickCycleForMail(relisted, '2026-05-12T17:00:00Z', 'escrow_title')).toBe('closed')
+  })
+})
+
+describe('re-decide dry run: a neighbour on our street, and a contact before the contract', () => {
+  const delaware: DealFacts = {
+    dealId: 'delaware',
+    address: '909 NW Delaware Avenue, Bend, OR, 97703',
+    city: 'Bend',
+    stage: 'dead',
+    cycles: [cycle({ id: 'de-sale', status: 'Expired', acceptanceDate: '2025-08-01', deadDate: '2025-12-01' })],
+    partyEmails: [],
+    contactEmails: [],
+  }
+
+  it('another house number in front of our street is a neighbour\'s home, not the file (1999a93ecf0d1ce9)', () => {
+    const p = parseDealAddress(delaware.address)!
+    expect(mentionsDealStreet('510 NW Delaware.pdf', p)).toBe(false)
+    expect(mentionsDealStreet('510 NW Delaware Ave', p)).toBe(false)
+    expect(mentionsBareStreet('510 Delaware Comps', p)).toBe(false)
+    // Ours, and ours with a slip of the keyboard, still name it; so does the street with no number.
+    expect(mentionsDealStreet('909 NW Delaware.pdf', p)).toBe(true)
+    expect(mentionsDealStreet('990 NW Delaware.pdf', p)).toBe(true)
+    expect(mentionsDealStreet('the NW Delaware inspection', p)).toBe(true)
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['owner@example.com'],
+        sentAt: '2025-09-30T12:23:00Z',
+        subject: '510 Delaware Comps',
+        body: 'Based on the attached comps, I think your home could sell for a range now.',
+        attachments: [{ name: '510 NW Delaware.pdf' }],
+      }),
+      deals: [...DEALS, delaware],
+      thread: null,
+    })
+    expect(d.dealId).toBeNull()
+  })
+
+  it("a contact's mail long before the file's contract is about something else (18c164770fd69c1e, 1934038001030f0c)", () => {
+    const mayfield: DealFacts = {
+      dealId: 'mayfield',
+      address: '17130 Mayfield Drive, Bend, OR, 97707',
+      city: 'Bend',
+      stage: 'closed',
+      cycles: [
+        cycle({ id: 'ma-listing', kind: 'listing', status: 'Transaction', listingDate: '2023-07-03' }),
+        cycle({ id: 'ma-sale', status: 'Closed', acceptanceDate: '2025-09-21', closeDate: '2025-10-29' }),
+      ],
+      partyEmails: ['pat.seller@gmail.com'],
+      contactEmails: ['inspector@inspections.example', 'agent@brokerage.example'],
+    }
+    const coffee = decideMailFiling({
+      facts: mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['inspector@inspections.example'],
+        sentAt: '2023-11-28T14:13:00Z',
+        subject: 'Do you have time to connect?',
+        body: 'I have been looking to expand my referral network. I would love to meet over a cup of coffee.',
+      }),
+      deals: [...DEALS, mayfield],
+      thread: null,
+    })
+    expect(coffee.dealId).toBeNull()
+    // The same inspector during the contract is on the file.
+    const report = decideMailFiling({
+      facts: mail({ from: ['inspector@inspections.example'], sentAt: '2025-09-25T17:00:00Z', subject: 'Report', body: 'Report attached.' }),
+      deals: [...DEALS, mayfield],
+      thread: null,
+    })
+    expect(report.dealId).toBe('mayfield')
   })
 })

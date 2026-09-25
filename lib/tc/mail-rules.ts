@@ -361,13 +361,29 @@ export function mentionsDealStreet(text: string, parsed: ParsedDealAddress): boo
   if (parsed.directional) {
     // A two-word name keeps its second word: "NW Newport Ave" is not 1974 NW Newport Hills Dr.
     const second = parsed.next && !STREET_SUFFIX_WORD.test(parsed.next) ? `\\s*${escapeRe(parsed.next)}` : ''
-    if (new RegExp(`\\b${directionalRe(parsed.directional)}\\.?\\s+${street}${second}\\b`, 'i').test(text)) return true
+    if (streetStandsAlone(new RegExp(`\\b${directionalRe(parsed.directional)}\\.?\\s+${street}${second}\\b`, 'gi'), text, parsed)) return true
   }
   if (/^\d/.test(parsed.street) || !parsed.next || parsed.street.length < 4) return false
   // A two-word name ("School House") is also written as one ("Schoolhouse Rd.").
-  if (!STREET_SUFFIX_WORD.test(parsed.next)) return new RegExp(`\\b${compoundRe(parsed.street, parsed.next)}\\b`, 'i').test(text)
+  if (!STREET_SUFFIX_WORD.test(parsed.next)) return streetStandsAlone(new RegExp(`\\b${compoundRe(parsed.street, parsed.next)}\\b`, 'gi'), text, parsed)
   const next = SUFFIX_VARIANTS[parsed.next] ?? escapeRe(parsed.next)
-  return new RegExp(`\\b${splitRe(parsed.street)}\\s+(?:${next})\\b`, 'i').test(text)
+  return streetStandsAlone(new RegExp(`\\b${splitRe(parsed.street)}\\s+(?:${next})\\b`, 'gi'), text, parsed)
+}
+
+/**
+ * Some mention of our street that no other house number stands in front of.
+ * "510 NW Delaware.pdf" is a neighbour's home on the street of 909 NW
+ * Delaware, not the file (the 2026-09-24 re-decide dry run filed Matt's comps
+ * for that owner there). Our own number with a slip of the keyboard ("2372 NW
+ * Ordway" for 2732) is still ours.
+ */
+function streetStandsAlone(re: RegExp, text: string, parsed: ParsedDealAddress): boolean {
+  for (const m of text.matchAll(re)) {
+    const before = text.slice(Math.max(0, (m.index ?? 0) - 24), m.index ?? 0)
+    const num = before.match(new RegExp(`(?<![\\d$,.#/-])\\b(\\d{2,6})\\s+(?:${DIRECTIONAL}\\s+)?$`, 'i'))?.[1]
+    if (!num || nearHouseNumber(num, parsed.number)) return true
+  }
+  return false
 }
 
 function escapeRe(s: string): string {
@@ -413,7 +429,7 @@ export function mentionsBareStreet(text: string, parsed: ParsedDealAddress): boo
   const name = bareStreetName(parsed)
   if (!name) return false
   const [first, second] = name.split(' ')
-  return new RegExp(`\\b${second ? compoundRe(first, second) : splitRe(first)}\\b`, 'i').test(text)
+  return streetStandsAlone(new RegExp(`\\b${second ? compoundRe(first, second) : splitRe(first)}\\b`, 'gi'), text, parsed)
 }
 
 /**
@@ -847,6 +863,20 @@ const LISTING_ALERT_SUBJECT =
 const ESIGN_SUBJECT =
   /documents? to sign|signature (?:is )?(?:requested|still needed)|your signed documents|envelope (?:completed|sent|voided|declined|signed)|has been signed|please docusign|docusign|dotloop|authentisign|digisign/i
 
+/**
+ * The brokerage's own signed paperwork, no property's: a broker's independent
+ * contractor agreement and office policies, the association of REALTORS
+ * membership, an MLS participant agreement, a vendor's service agreement or
+ * order form. The 2026-09-24 re-decide dry run queued these as signed
+ * transaction documents.
+ */
+const BROKERAGE_PAPERWORK =
+  /\bindependent contractor\b|\boffice polic(?:y|ies)\b|\bCOAR\b|\bmembership\b|\bparticipant agreement\b|\bservice agreement\b|\border form\b/i
+
+/** An e-sign notice that names no envelope: "Envelope completed: You have documents to sign". */
+const GENERIC_ESIGN_SUBJECT =
+  /^\s*(?:(?:re|fwd?):\s*)*(?:envelope (?:completed|sent|voided|declined|signed)|completed|signature requested)?\s*:?\s*(?:you have )?documents? to sign\s*$/i
+
 /** A contract ended: termination agreement, mutual release, release of earnest money. */
 const TERMINATION = /\bterminat(?:ion|e|ed)\b|\bmutual release\b|\brelease of earnest\b|\bcancel(?:l)?ation (?:agreement|of (?:sale|contract|agreement))\b/i
 
@@ -1061,6 +1091,8 @@ export function mailDirection(facts: Pick<MailFacts, 'from' | 'to' | 'cc'>): 'in
 const LIVE_STAGES = new Set(['pending', 'pre_contract', 'active_listing'])
 const POST_CLOSE_DAYS = 120
 const PRE_OPEN_DAYS = 45
+/** How far ahead of its recorded acceptance a contract's own paperwork arrives. */
+const CONTRACT_LEAD_DAYS = 7
 /** How long after a contract died its termination paperwork (release, refund) still arrives. */
 const TERMINATION_TAIL_DAYS = 30
 const DAY = 86_400_000
@@ -1094,6 +1126,27 @@ export function dealOpenAt(deal: DealFacts, sentAt: string): boolean {
     if ((w.start == null || at >= w.start) && (w.end == null || at <= w.end)) return true
   }
   return false
+}
+
+/**
+ * Was a contact (the other agent, title, the lender, the inspector) on the file
+ * at this moment? They come on for a contract: from the weeks before an
+ * acceptance through the post-close tail. Before that their mail is about
+ * something else: Matt's 2023 coffee invitation to an inspector and a 2024
+ * home-search note to an agent, both later on 17130 Mayfield's sale, filed
+ * there in the 2026-09-24 re-decide dry run because its listing record opened
+ * in 2023. A file with no dated contract keeps its open window.
+ */
+export function contactOnFileAt(deal: DealFacts, sentAt: string): boolean {
+  const at = t(sentAt)
+  if (at == null) return false
+  const contracts = deal.cycles.filter((c) => c.kind === 'sale' && t(c.acceptanceDate) != null)
+  if (!contracts.length) return dealOpenAt(deal, sentAt)
+  return contracts.some((c) => {
+    const start = (t(c.acceptanceDate) as number) - PRE_OPEN_DAYS * DAY
+    const end = t(c.closeDate) ?? t(c.deadDate)
+    return at >= start && (end == null || at <= end + POST_CLOSE_DAYS * DAY)
+  })
 }
 
 /**
@@ -1201,7 +1254,7 @@ function cycleNameScore(c: DealCycleFacts, cycles: readonly DealCycleFacts[], te
     if (toks.length < 2) continue
     const first = escapeRe(toks[0])
     const last = escapeRe(toks[toks.length - 1])
-    if (new RegExp(`\\b${first}\\b[^\\n]{0,40}?\\b${last}\\b|\\b${last},\\s*${first}\\b`, 'i').test(text)) best = Math.max(best, 12)
+    if (new RegExp(`\\b${first}\\b[^\\n]{0,40}?\\b${last}\\b|\\b${last},\\s*${first}\\b`, 'i').test(text)) best = Math.max(best, 25)
     else if (last.length >= 5 && !otherTokens.has(toks[toks.length - 1]) && new RegExp(`\\b${last}\\b`, 'i').test(text)) best = Math.max(best, 4)
   }
   return best
@@ -1232,8 +1285,15 @@ export function pickCycleForMail(
 ): string | null {
   if (!cycles.length) return null
   const at = t(sentAt) ?? Date.now()
+  // Offers go to our listing's offer log, when we were listing it then: the
+  // sellers' counter on the clients' 2025 purchase of 3480 SW 45th is not an
+  // offer on the listing they opened on it in 2026.
   if ((category === 'offer' || category === 'counter') && !hints.termination) {
-    const listing = cycles.find((c) => c.kind === 'listing')
+    const listing = cycles.find((c) => {
+      if (c.kind !== 'listing') return false
+      const w = cycleWindow(c)
+      return (w.start == null && w.end == null) || ((w.start == null || at >= w.start) && (w.end == null || at <= w.end))
+    })
     if (listing) return listing.id
   }
   const cancelled = (c: DealCycleFacts) => /cancel|dead|terminat|withdrawn|expired/i.test(c.status ?? '')
@@ -1241,17 +1301,41 @@ export function pickCycleForMail(
   const text = hints.text ?? ''
   const escrowNamed = new Set(cycles.filter((c) => mentionsEscrowNumber(text, c.escrowNumber)).map((c) => c.id))
   const mlsNamed = new Set(cycles.filter((c) => mentionsMlsNumber(text, c.mlsNumber)).map((c) => c.id))
-  let best: { id: string; score: number; recency: number } | null = null
+  const inWindow = (c: DealCycleFacts) => {
+    const w = cycleWindow(c)
+    return (w.start == null || at >= w.start) && (w.end == null || at <= w.end)
+  }
+  // While our listing was open, the weeks before a contract (showings, offers)
+  // are the listing's, and a contract's own paperwork starts a week before its
+  // acceptance. With no listing of ours open (a purchase), the offer, the
+  // pre-approval and the comps before acceptance are that contract's: 820 NW
+  // 12th's initial offer, two weeks before acceptance, went to an undated
+  // cancelled cycle under the one-week lead.
+  const listingOpen = cycles.some((c) => c.kind === 'listing' && (c.listingDate != null || c.closeDate != null || c.deadDate != null) && inWindow(c))
+  const leadDays = listingOpen ? CONTRACT_LEAD_DAYS : PRE_OPEN_DAYS
+  let best: { id: string; score: number; gap: number; recency: number } | null = null
   for (const c of cycles) {
     const w = cycleWindow(c)
     let score = 0
-    const holds = (w.start == null || at >= w.start) && (w.end == null || at <= w.end)
+    const acceptedAt = t(c.acceptanceDate)
+    const start = c.kind === 'sale' && acceptedAt != null && !c.listingDate ? acceptedAt - leadDays * DAY : w.start
+    const holds = (start == null || at >= start) && (w.end == null || at <= w.end)
     if (holds) score += 10
     const accepted = t(c.acceptanceDate)
-    if (c.kind === 'sale' && accepted != null && accepted <= at + PRE_OPEN_DAYS * DAY) score += 5
-    // Under contract on the send date: accepted (the day before counts, dates are days) through close or cancellation.
     const ended = t(c.closeDate) ?? t(c.deadDate)
-    const live = c.kind === 'sale' && accepted != null && accepted - DAY <= at && (ended == null || at <= ended + DAY)
+    const diedAt = cancelled(c) ? (t(c.deadDate) ?? ended) : null
+    // Paperwork dated a few days before the contract is recorded belongs to it;
+    // a showing weeks before a contract is the listing's (19496 Tumalo's August
+    // showings are not the sale accepted 2026-09-19). A contract that has died
+    // is over: the showings, the repairs and the next buyer's offer after 20702
+    // Beaumont's first contract fell through are the listing's again, not the
+    // dead contract's (its termination paperwork still finds it, below).
+    if (c.kind === 'sale' && accepted != null && accepted <= at + leadDays * DAY && !(diedAt != null && at > diedAt)) score += 5
+    // Under contract on the send date: accepted (the day before counts, dates
+    // are days) through close, or through the day it died (not the close it
+    // was scheduled for).
+    const over = diedAt ?? ended
+    const live = c.kind === 'sale' && accepted != null && accepted - DAY <= at && (over == null || at <= over + DAY)
     if (live) score += 6
     if (!cancelled(c)) score += 3
     if (escrowNamed.has(c.id) && escrowNamed.size < cycles.length) score += 20
@@ -1265,13 +1349,20 @@ export function pickCycleForMail(
       // one: the 2026-09-24 re-decide dry run sent the Oregon REALTORS legal
       // hotline thread about 2680 NW Nordic's live contract to the contract
       // that had died seven weeks earlier.
-      const diedAt = t(c.deadDate) ?? ended
       if (cancelled(c) && holds && (diedAt == null || at <= diedAt + TERMINATION_TAIL_DAYS * DAY)) score += 25
       if (closed(c) && !live) score -= 30
     }
+    // A tie goes to the cycle nearest the send date: mail before every cycle
+    // (the January listing appointment on 19496 Tumalo) is the first one's,
+    // not the latest contract's; among cycles that hold the date, the newest.
+    const gap = holds ? 0 : start != null && at < start ? start - at : w.end != null && at > w.end ? at - w.end : 0
     const recency = accepted ?? t(c.listingDate) ?? t(c.createdAt) ?? 0
-    if (!best || score > best.score || (score === best.score && recency > best.recency)) {
-      best = { id: c.id, score, recency }
+    if (
+      !best ||
+      score > best.score ||
+      (score === best.score && (gap < best.gap || (gap === best.gap && recency > best.recency)))
+    ) {
+      best = { id: c.id, score, gap, recency }
     }
   }
   return best?.id ?? cycles[0].id
@@ -1736,11 +1827,15 @@ export function decideMailFiling(input: {
   }
 
   // Rule 2 — the thread already lives on a deal, and this email names no other property.
-  // A platform's notice is one envelope; Gmail threads its identical subjects
-  // ("Envelope completed: You have documents to sign") across unrelated
-  // envelopes, so the thread says nothing about which file this one is.
-  const platformNotice = facts.from.length > 0 && facts.from.every((e) => isAutomatedSender(e) && domainIn(e, ESIGN_DOMAINS))
-  if (thread && byId.has(thread.dealId) && !platformNotice) {
+  // A platform's notice is one envelope; Gmail threads its identical generic
+  // subjects ("Envelope completed: You have documents to sign") across
+  // unrelated envelopes, so that thread says nothing about which file this one
+  // is. An envelope with its own name ("… - Second Offer") keeps its thread.
+  const genericNotice =
+    facts.from.length > 0 &&
+    facts.from.every((e) => isAutomatedSender(e) && domainIn(e, ESIGN_DOMAINS)) &&
+    GENERIC_ESIGN_SUBJECT.test(facts.subject)
+  if (thread && byId.has(thread.dealId) && !genericNotice) {
     const other = scored.find((c) => c.dealId !== thread.dealId && hasEvidence(c, 'address', 'street'))
     const anchored = scored.find((c) => c.dealId === thread.dealId)
     if (!other) {
@@ -1848,7 +1943,8 @@ export function decideMailFiling(input: {
   const open = scored.filter((c) => {
     const d = byId.get(c.dealId)
     if (!d || !dealOpenAt(d, facts.sentAt)) return false
-    if (hasEvidence(c, 'party', 'contact')) return true
+    if (hasEvidence(c, 'party')) return true
+    if (hasEvidence(c, 'contact') && contactOnFileAt(d, facts.sentAt)) return true
     return hasEvidence(c, 'name') && (senderNamedOn.has(c.dealId) || transactionMail)
   })
   const eligible = open.filter((c) => {
@@ -1918,12 +2014,15 @@ export function decideMailFiling(input: {
   // Counteroffer Rejection - 1450 Revere Ave") is a transaction record too.
   // A broker's own "[Deal: 1405 NW Newport Ave] Fwd: …" says it is deal mail
   // for a property that has no file yet: it waits in the queue with that property.
-  const transactionForm = facts.attachments.some(isTransactionFormAttachment)
+  // The brokerage's own paperwork (a contractor agreement, a membership) is no property's.
+  const ownPaperwork = !subjectProperty && BROKERAGE_PAPERWORK.test(facts.subject)
+  const transactionForm = !ownPaperwork && facts.attachments.some(isTransactionFormAttachment)
   const filedByHand = /^\s*\[deal:/i.test(facts.subject) && !!subjectProperty
   // An e-sign completion carrying its executed PDF is a signed document,
   // whatever it is named ("ORE_Residential_Input_-_ODS.pdf" with a garbled
   // text layer): when nothing says which file, a person places it.
   const signedDocument =
+    !ownPaperwork &&
     categoryBase === 'signing_notice' &&
     /envelope completed|^\s*completed:|your signed documents|has been signed|has completed their document/i.test(facts.subject) &&
     facts.attachments.some((a) => /\.pdf$/i.test(String(a.name ?? '')))
