@@ -149,7 +149,8 @@ export async function pruneMarketFactSale(since: string): Promise<number> {
  * Upsert sale facts for closings on or after `since` (and listings modified
  * since). With `until` the window closes before that date and the
  * modified-since clause is off: a year at a time for a historical rebuild,
- * inside the function's 120 s statement limit.
+ * a few seconds each because the bounded window reads the close-date index
+ * (migration 20260925080000).
  */
 export async function refreshMarketFactSale(since: string, until?: string): Promise<unknown> {
   const sb = createServiceClient()
