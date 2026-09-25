@@ -292,7 +292,13 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
 
   it('a stale failure still cannot print a list above the failed ask', async () => {
     const { applyFailedAskCap } = await import('./expired-audit')
-    const x = p({ conservative: 780000, recommended: 800000, highEnd: 830000 })
+    const x = p({
+      conservative: 780000,
+      recommended: 800000,
+      highEnd: 830000,
+      valueLow: 500000,
+      valueHigh: 850000,
+    })
     const r = applyFailedAskCap(x, { lastFailedListPrice: 600000, offMarketDate: staleOff })
     expect(r.applied).toBe(true)
     expect(x.recommended).toBe(600000)
@@ -303,7 +309,13 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
   it('missing date still caps at the failed ask; missing ask does nothing', async () => {
     const { applyFailedAskCap } = await import('./expired-audit')
     expect(applyFailedAskCap(p(), { lastFailedListPrice: null, offMarketDate: recentOff }).applied).toBe(false)
-    const x = p({ conservative: 520000, recommended: 560000, highEnd: 590000 })
+    const x = p({
+      conservative: 520000,
+      recommended: 560000,
+      highEnd: 590000,
+      valueLow: 400000,
+      valueHigh: 600000,
+    })
     const r = applyFailedAskCap(x, { lastFailedListPrice: 500000, offMarketDate: null })
     expect(r.applied).toBe(true)
     expect(x.recommended).toBe(500000)

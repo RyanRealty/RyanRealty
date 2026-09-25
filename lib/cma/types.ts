@@ -454,6 +454,13 @@ export interface CmaPricing {
   /** True when the printed list band was clipped to failedAsk. */
   failedAskCapped?: boolean
   /**
+   * True when the last failed ask sat below the hero band (`valueLow` /
+   * `valueHigh`). The failed-ask haircut is skipped and the recommendation
+   * stays on the comps, inside the range. The letter explains that price
+   * was not what held the listing back.
+   */
+  failedAskBelowRange?: boolean
+  /**
    * THE PRICE MUST FOLLOW FROM THE PRINTED METHOD, OR THE DOCUMENT MUST PRINT
    * WHAT OVERRODE IT (tasteReview round three, §2 item 1).
    *

@@ -881,6 +881,40 @@ export interface FailedAskCapResult {
   cappedTo: number | null
   /** What the comp engine wanted before the ceiling. */
   uncappedRecommended: number | null
+  /**
+   * True when the failed ask sat below the hero band, so the haircut
+   * was skipped and the recommendation stayed on the comps.
+   */
+  belowRange?: boolean
+}
+
+/** Hero Low/High the letter prints. Same pair `closedCompBand` uses. */
+export function heroBandFromPricing(p: {
+  valueLow?: number | null
+  valueHigh?: number | null
+}): { low: number; high: number } | null {
+  const lo = Number(p.valueLow)
+  const hi = Number(p.valueHigh)
+  if (!(lo > 0) || !(hi > 0)) return null
+  return { low: Math.min(lo, hi), high: Math.max(lo, hi) }
+}
+
+/**
+ * Seller sentence when the last ask was already under the sales. No em dash.
+ * Printed on the pricing beat and stored on `pricing.notes`.
+ */
+export function failedAskBelowRangeNote(ask: number): string {
+  return `The last listing asked ${usd(ask)}, under what the sales support. Price was not what held it back.`
+}
+
+function hasStoredBelowRangeReason(pricing: {
+  priceOverride?: number | null
+  reviewReason?: string | null
+  notes?: string[]
+}): boolean {
+  if (pricing.priceOverride == null || !(pricing.priceOverride > 0)) return false
+  const text = `${pricing.reviewReason ?? ''} ${(pricing.notes ?? []).join(' ')}`
+  return /broker adjustment|price override|applied on review/i.test(text)
 }
 
 /**
@@ -990,6 +1024,10 @@ export function applyFailedAskCap(
     clamp?: CmaPricingClamp | null
     /** Re-anchored here whenever the ceiling moves the list (round four, class A). */
     sellerNet?: CmaSellerNet | null
+    valueLow?: number
+    valueHigh?: number
+    priceOverride?: number | null
+    failedAskBelowRange?: boolean
   },
   args: { lastFailedListPrice: number | null; offMarketDate: string | null; asOf?: Date },
 ): FailedAskCapResult {
@@ -1001,6 +1039,7 @@ export function applyFailedAskCap(
     (pricing.clamp?.applications ?? []).map((a) => [a.tier, a.before]),
   )
   pricing.clamp = null
+  pricing.failedAskBelowRange = false
   // THE NET FOLLOWS THE LIST. This ceiling is the one thing on the build path
   // that moves `recommended` after `attachSellerNet` has run, and it runs up
   // to three times per build (lib/cma/build.ts steps 4, 4.45, 4.46). A seller
@@ -1008,6 +1047,21 @@ export function applyFailedAskCap(
   // new place, so every exit from here re-anchors it.
   reanchorSellerNet(pricing)
   if (ask == null || !Number.isFinite(ask) || ask <= 0) return none
+  const band = heroBandFromPricing(pricing)
+  // Haircut only when the failed ask was inside or above the hero band.
+  // An ask already below the sales is not a ceiling: cutting further from it
+  // is the Nugget defect (range $734k–$878k, ask $725k, rec $712k).
+  if (band && ask < band.low) {
+    pricing.failedAskBelowRange = true
+    const note = failedAskBelowRangeNote(ask)
+    if (!pricing.notes.includes(note)) pricing.notes.push(note)
+    reanchorSellerNet(pricing)
+    return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
+  }
+  // A broker override with a note may sit below the band. Do not lift or cut it.
+  if (band && pricing.recommended < band.low && hasStoredBelowRangeReason(pricing)) {
+    return none
+  }
 
   let recent = false
   if (args.offMarketDate) {
@@ -1021,8 +1075,17 @@ export function applyFailedAskCap(
 
   const ceilings = clampCeilings(ask, recent)
   const consCeil = ceilings.conservative.value
-  const recCeil = ceilings.recommended.value
-  const highCeil = ceilings.highEnd.value
+  // Inside the band the haircut may still bind, but the recommend never
+  // drops below the hero low unless a stored broker override said so.
+  const askInsideBand = band != null && ask >= band.low && ask <= band.high
+  const recCeil =
+    askInsideBand && !hasStoredBelowRangeReason(pricing)
+      ? Math.max(ceilings.recommended.value, band.low)
+      : ceilings.recommended.value
+  const highCeil =
+    askInsideBand && !hasStoredBelowRangeReason(pricing)
+      ? Math.max(ceilings.highEnd.value, recCeil)
+      : ceilings.highEnd.value
   if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= highCeil)
     return none
 

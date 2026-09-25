@@ -702,11 +702,11 @@ describe('listPriceFromEngine is the only cover number', () => {
         highEndList: 900_000,
         source: 'comps',
       },
-      { failedAsk: 749_900 },
+      { failedAsk: 820_000 },
     )
-    expect(cover.recommended).toBeLessThanOrEqual(749_900)
-    expect(cover.highEnd).toBeLessThanOrEqual(749_900)
-    expect(cover.failedAsk).toBe(749_900)
+    expect(cover.recommended).toBeLessThanOrEqual(820_000)
+    expect(cover.highEnd).toBeLessThanOrEqual(820_000)
+    expect(cover.failedAsk).toBe(820_000)
     expect(cover.notes.join(' ')).toMatch(/did not sell/i)
   })
 })

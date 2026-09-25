@@ -135,6 +135,24 @@ function finiteMoney(v: number | null | undefined): number | null {
   return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null
 }
 
+/**
+ * Where the last ask sits against the same hero band the letter prints
+ * (`valueLow` / `valueHigh`). Anything else called the ask "inside" as long
+ * as it was not 1% above the high, which is how $725k under a $734k low
+ * became "inside what those sales support".
+ */
+export function lastAskVersusHeroBand(
+  last: number,
+  valueLow: number,
+  valueHigh: number,
+): 'below' | 'inside' | 'above' {
+  const lo = Math.min(valueLow, valueHigh)
+  const hi = Math.max(valueLow, valueHigh)
+  if (last < lo) return 'below'
+  if (last > hi) return 'above'
+  return 'inside'
+}
+
 function scopePhrase(facts: CmaFirstContactFacts): string {
   const sub = trim(facts.subdivision)
   if (facts.salesScope === 'subdivision' && sub && !/^n\/a$/i.test(sub)) return `in ${sub}`
@@ -162,17 +180,23 @@ export function composeFirstContactNumbers(origin: CmaOrigin, facts: CmaFirstCon
   const sentences = [origin === 'expired' || origin === 'fsbo' ? 'We researched your property and the comparable sales to see what we would do to get a better result.' : null, lead]
   const last = finiteMoney(facts.lastListPrice)
   if (last != null) {
-    const pct = Math.round((last / hi - 1) * 100)
     const asked = origin === 'fsbo' ? 'You are asking' : 'The last listing asked'
-    if (pct >= 5) {
-      sentences.push(`${asked} ${formatFirstTouchUsd(last)}, about ${pct}% above what those sales support.`)
-      sentences.push(
-        origin === 'fsbo'
-          ? 'That is worth knowing before an offer comes in.'
-          : 'That gap is usually the whole story, and it says nothing bad about the house.',
-      )
-    } else if (pct >= 1) {
-      sentences.push(`${asked} ${formatFirstTouchUsd(last)}, a little above what those sales support.`)
+    const vs = lastAskVersusHeroBand(last, lo, hi)
+    if (vs === 'below') {
+      sentences.push(`${asked} ${formatFirstTouchUsd(last)}, below what those sales support.`)
+      sentences.push('Price was not what held it back.')
+    } else if (vs === 'above') {
+      const pct = Math.round((last / hi - 1) * 100)
+      if (pct >= 5) {
+        sentences.push(`${asked} ${formatFirstTouchUsd(last)}, about ${pct}% above what those sales support.`)
+        sentences.push(
+          origin === 'fsbo'
+            ? 'That is worth knowing before an offer comes in.'
+            : 'That gap is usually the whole story, and it says nothing bad about the house.',
+        )
+      } else {
+        sentences.push(`${asked} ${formatFirstTouchUsd(last)}, a little above what those sales support.`)
+      }
     } else {
       sentences.push(`${asked} ${formatFirstTouchUsd(last)}, inside what those sales support.`)
     }

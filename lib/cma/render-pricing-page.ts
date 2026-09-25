@@ -27,6 +27,7 @@ import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
+import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling, readMeasure, readRangeRuleKept } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
@@ -112,7 +113,12 @@ export function whatItsWorthLead(
   // to sit on the cover, which the blueprint gives one sentence.
   const ask = currentAskLine(pricing)
   const display = pricingRangeDisplay(pricing)
-  return [worth, listRange, display.outOfRange ? display.note : null, ask]
+  const failedAsk = failedSubjectAsk(subject, askCtx) ?? pricing.failedAsk ?? null
+  const belowRangeNote =
+    pricing.failedAskBelowRange && failedAsk != null && failedAsk > 0
+      ? failedAskBelowRangeNote(failedAsk)
+      : null
+  return [worth, listRange, display.outOfRange ? display.note : null, belowRangeNote, ask]
     .filter((b): b is string => Boolean(b && b.trim()))
     .join(' ')
 }

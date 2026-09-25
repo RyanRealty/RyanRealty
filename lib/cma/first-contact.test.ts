@@ -5,6 +5,7 @@ import {
   composeCmaFirstContact,
   composeCmaFirstContactSubject,
   composeFirstContactNumbers,
+  lastAskVersusHeroBand,
   salesScopeFromTierCounts,
   streetOnly,
 } from '@/lib/cma/first-contact'
@@ -90,6 +91,44 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     expect(fsbo).toContain('You are asking $675,000, about 8% above what those sales support.')
     expect(fsbo).toContain('That is worth knowing before an offer comes in.')
     expect(fsbo).not.toContain('nothing bad about the house')
+  })
+
+  it('uses the letter hero band for below, inside, and above', () => {
+    // Nugget: $725k last ask, letter band $734k–$878k. Old code compared only
+    // to the high and called $725k "inside".
+    expect(lastAskVersusHeroBand(725_000, 734_000, 878_000)).toBe('below')
+    expect(lastAskVersusHeroBand(800_000, 734_000, 878_000)).toBe('inside')
+    expect(lastAskVersusHeroBand(900_000, 734_000, 878_000)).toBe('above')
+    const below = composeFirstContactNumbers('expired', {
+      ...FACTS,
+      valueLow: 734_000,
+      valueHigh: 878_000,
+      recommendedList: 803_000,
+      lastListPrice: 725_000,
+    })
+    expect(below).toContain('they support $734,000 to $878,000.')
+    expect(below).toContain('The last listing asked $725,000, below what those sales support.')
+    expect(below).toContain('Price was not what held it back.')
+    expect(below).not.toContain('inside what those sales support')
+    const inside = composeFirstContactNumbers('expired', {
+      ...FACTS,
+      valueLow: 734_000,
+      valueHigh: 878_000,
+      recommendedList: 803_000,
+      lastListPrice: 800_000,
+    })
+    expect(inside).toContain('The last listing asked $800,000, inside what those sales support.')
+    expect(inside).not.toContain('Price was not what held it back.')
+    const above = composeFirstContactNumbers('expired', {
+      ...FACTS,
+      valueLow: 734_000,
+      valueHigh: 878_000,
+      recommendedList: 803_000,
+      lastListPrice: 950_000,
+    })
+    expect(above).toContain('The last listing asked $950,000, about 8% above what those sales support.')
+    expect(above).not.toContain('inside what those sales support')
+    expect(above).not.toContain('below what those sales support')
   })
 
   it('names the subdivision only when every priced sale came from it', () => {
