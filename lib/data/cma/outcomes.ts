@@ -37,6 +37,7 @@ import 'server-only'
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import {
   getDocEngagementDetail,
@@ -216,15 +217,19 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
   if (personIds.length > 0 && earliestSend) {
     const sessions: Array<{ session_id: string; crm_person_id: number }> = []
     for (const part of chunk(personIds, 100)) {
-      const { data, error } = await sb
-        .from('visitor_sessions')
-        .select('session_id, crm_person_id')
-        .in('crm_person_id', part)
+      const { rows, error } = await fetchPagedRows<Row>((from, to) =>
+        sb
+          .from('visitor_sessions')
+          .select('session_id, crm_person_id')
+          .in('crm_person_id', part)
+          .order('session_id', { ascending: true })
+          .range(from, to),
+      )
       if (error) {
         console.error('[cma outcomes] visitor_sessions read failed:', error.message)
         continue
       }
-      for (const r of (data ?? []) as Row[]) {
+      for (const r of rows) {
         const sid = str(r.session_id)
         const pid = Number(r.crm_person_id)
         if (!sid || !Number.isFinite(pid)) continue
@@ -235,17 +240,22 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
     const pidBySid = new Map(sessions.map((s) => [s.session_id, s.crm_person_id]))
     if (sessionIds.length > 0) {
       for (const part of chunk(sessionIds, 100)) {
-        const { data, error } = await sb
-          .from('visitor_events')
-          .select('session_id, page_url, event_at, event_type')
-          .in('session_id', part)
-          .in('event_type', ['page_view', 'listing_view'])
-          .gte('event_at', earliestSend)
+        const { rows, error } = await fetchPagedRows<Row>((from, to) =>
+          sb
+            .from('visitor_events')
+            .select('id, session_id, page_url, event_at, event_type')
+            .in('session_id', part)
+            .in('event_type', ['page_view', 'listing_view'])
+            .gte('event_at', earliestSend)
+            .order('event_at', { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
         if (error) {
           console.error('[cma outcomes] session events read failed:', error.message)
           continue
         }
-        for (const v of (data ?? []) as Row[]) {
+        for (const v of rows) {
           const sid = str(v.session_id)
           const at = str(v.event_at)
           const pageUrl = str(v.page_url)

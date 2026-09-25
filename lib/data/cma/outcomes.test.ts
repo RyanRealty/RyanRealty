@@ -58,7 +58,9 @@ vi.mock('next/cache', () => ({
  */
 function table(rows: Array<Record<string, unknown>>) {
   const filters: Array<(r: Record<string, unknown>) => boolean> = []
-  let order: { col: string; asc: boolean } | null = null
+  const orders: Array<{ col: string; asc: boolean }> = []
+  let rangeFrom = 0
+  let rangeTo: number | null = null
   const api = {
     select: () => api,
     eq: (col: string, val: unknown) => {
@@ -75,17 +77,28 @@ function table(rows: Array<Record<string, unknown>>) {
     },
     or: () => api,
     order: (col: string, opts?: { ascending?: boolean }) => {
-      order = { col, asc: opts?.ascending !== false }
+      orders.push({ col, asc: opts?.ascending !== false })
+      return api
+    },
+    range: (from: number, to: number) => {
+      rangeFrom = from
+      rangeTo = to
       return api
     },
     then(resolve: (v: { data: unknown[]; error: null }) => unknown) {
       let out = rows.filter((r) => filters.every((f) => f(r)))
-      if (order) {
-        const o = order
-        out = [...out].sort((a, b) =>
-          String(a[o.col]) < String(b[o.col]) ? (o.asc ? -1 : 1) : String(a[o.col]) > String(b[o.col]) ? (o.asc ? 1 : -1) : 0,
-        )
+      if (orders.length > 0) {
+        out = [...out].sort((a, b) => {
+          for (const o of orders) {
+            const av = String(a[o.col] ?? '')
+            const bv = String(b[o.col] ?? '')
+            if (av === bv) continue
+            return av < bv ? (o.asc ? -1 : 1) : o.asc ? 1 : -1
+          }
+          return 0
+        })
       }
+      if (rangeTo != null) out = out.slice(rangeFrom, rangeTo + 1)
       return resolve({ data: out, error: null })
     },
   }
