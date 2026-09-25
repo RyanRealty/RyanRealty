@@ -184,7 +184,9 @@ export function composeFirstContactNumbers(origin: CmaOrigin, facts: CmaFirstCon
     const vs = lastAskVersusHeroBand(last, lo, hi)
     if (vs === 'below') {
       sentences.push(`${asked} ${formatFirstTouchUsd(last)}, below what those sales support.`)
-      sentences.push('Price was not what held it back.')
+      if (rec != null && rec <= last) {
+        sentences.push('Price was not what held it back.')
+      }
     } else if (vs === 'above') {
       const pct = Math.round((last / hi - 1) * 100)
       if (pct >= 5) {
@@ -326,8 +328,7 @@ export function composeCmaFirstContact(
   origin: CmaOrigin,
   facts: CmaFirstContactFacts,
 ): InboundValuationCopy {
-  const first = trim(facts.firstName) ?? 'there'
-  const greeting = `Hi ${first},`
+  const greeting = 'Hi there,'
   const named = streetOnly(facts.address) ?? 'this home'
   const intro = introFor(facts.brokerName ?? null)
   const plan = planFor(origin, named)

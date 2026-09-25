@@ -286,10 +286,7 @@ function heroForSubject(subject: CmaSubject): { src: string | null; caption: str
 function coverPage(a: RenderCmaArgs): PageDef {
   // Cover prefers MLS photo; never a second map (C9). Non-map fallback when no photo.
   const hero = heroForSubject(a.subject)
-  const prepared = [
-    a.client.name ? `Prepared for ${a.client.name}` : 'Prepared',
-    `by ${a.broker.displayName}, Ryan Realty`,
-  ].join(' ')
+  const prepared = `Prepared by ${a.broker.displayName}, Ryan Realty`
   // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
   // Low · High · Recommended once. Never sole legacy cover-price.
   const payoff = letterCoverPayoffHtml(a.pricing)

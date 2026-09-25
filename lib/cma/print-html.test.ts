@@ -12,6 +12,8 @@ const buildSubjectLocationMapDataUri = vi.fn(async (_subject?: unknown) => null)
 vi.mock('@/lib/data', () => ({
   getCmaRenderSourceBySlug: (...args: unknown[]) => getCmaRenderSourceBySlug(...args),
   getCmaStoredHtmlBySlug: (...args: unknown[]) => getCmaStoredHtmlBySlug(...args),
+  getCmaAccessIdentity: vi.fn(async () => null),
+  findCrmPersonIdByEmail: vi.fn(async () => null),
 }))
 
 vi.mock('@/lib/data/cma/builderReads', () => ({

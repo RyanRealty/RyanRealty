@@ -108,3 +108,37 @@ export function exclusivePocketPathNote(
   }
   return `${address}: exclusive pocket — date adjustment flat. Sold and last-ask stay as recorded — size and story class do not adjust.`
 }
+
+/**
+ * Set-level note. Must match the math: cooling is applied to every sale in
+ * the window when the path cools, and the city index is never used to pump.
+ */
+export function exclusivePocketSetNote(city: string, coolingApplied: boolean): string {
+  const place = (city ?? '').trim() || 'this city'
+  if (coolingApplied) {
+    return `These sales are the exclusive pocket. Flex-style cooling date adjustment is applied to every sale in this window along the market path. The ${place} city index is not used to pump prices. Size and story class do not adjust.`
+  }
+  return `These sales are the exclusive pocket. Date adjustment is not applied along the ${place} city index. That series includes tracts already excluded from this set. Each sale stays on its sold and last-ask price. Size and story class do not adjust.`
+}
+
+/**
+ * A cooled exclusive-pocket band may not sit below every actual same-subdivision
+ * close unless a stated reason names that floor. Lifts the printed low to the
+ * lowest same-subdivision contract price.
+ */
+export function floorExclusivePocketBandToSameSubCloses(args: {
+  valueLow: number
+  valueHigh: number
+  sameSubdivisionClosePrices: readonly number[]
+  coolingApplied: boolean
+}): { valueLow: number; valueHigh: number; floored: boolean; floor: number | null } {
+  const low = Math.min(args.valueLow, args.valueHigh)
+  const high = Math.max(args.valueLow, args.valueHigh)
+  const closes = args.sameSubdivisionClosePrices.filter((n) => Number.isFinite(n) && n > 0)
+  if (!args.coolingApplied || closes.length === 0) {
+    return { valueLow: low, valueHigh: high, floored: false, floor: null }
+  }
+  const floor = Math.min(...closes)
+  if (low >= floor) return { valueLow: low, valueHigh: high, floored: false, floor }
+  return { valueLow: floor, valueHigh: Math.max(floor, high), floored: true, floor }
+}

@@ -17,6 +17,7 @@ type CreditDoc = {
     sqft?: number | null
     streetAddress?: string | null
   } | null
+  comps?: ReadonlyArray<{ address?: string | null }> | null
 }
 
 export async function likeHomeCreditsForDocument(
@@ -51,21 +52,34 @@ export async function likeHomeCreditsForDocument(
     return null
   }
   const own = (subject?.streetAddress ?? '').trim().toLowerCase()
+  const letterAddrs = new Set(
+    (doc.comps ?? [])
+      .map((c) => (c.address ?? '').trim().toLowerCase())
+      .filter(Boolean),
+  )
+  const mapped = rows
+    .map((r) => ({
+      address: [r.street_number, r.street_name].filter(Boolean).join(' ').trim(),
+      subdivision: r.subdivision,
+      yearBuilt: r.year_built,
+      sqft: r.sqft == null ? null : Number(r.sqft),
+      closeDate: String(r.close_date).slice(0, 10),
+      concessionsAmount: r.concessions_amount == null ? null : Number(r.concessions_amount),
+      concessionsYn: r.concessions_yn,
+    }))
+    .filter((r) => {
+      if (!r.address) return false
+      if (own && r.address.toLowerCase() === own) return false
+      if (letterAddrs.size === 0) return false
+      const addr = r.address.toLowerCase()
+      return [...letterAddrs].some((a) => a === addr || a.includes(addr) || addr.includes(a))
+    })
+  if (mapped.length === 0) return null
   return likeHomeCredits({
     subdivision: subject?.subdivision,
     yearBuilt: subject?.yearBuilt,
     sqft: subject?.sqft,
     asOf,
-    rows: rows
-      .map((r) => ({
-        address: [r.street_number, r.street_name].filter(Boolean).join(' ').trim(),
-        subdivision: r.subdivision,
-        yearBuilt: r.year_built,
-        sqft: r.sqft == null ? null : Number(r.sqft),
-        closeDate: String(r.close_date).slice(0, 10),
-        concessionsAmount: r.concessions_amount == null ? null : Number(r.concessions_amount),
-        concessionsYn: r.concessions_yn,
-      }))
-      .filter((r) => !own || r.address.toLowerCase() !== own),
+    rows: mapped,
   })
 }

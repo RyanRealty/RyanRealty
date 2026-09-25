@@ -241,9 +241,7 @@ function nextScene(a: OpinionSceneArgs): string {
         <div class="r">${nextStepNoteHtml(a)}</div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Oregon Real Estate License # ${esc(br.licenseNumber)}` : ''}</div>
         <div class="fine r">${esc(
-          `Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })} for ${
-            a.clientName ?? a.client?.name ?? 'the owner'
-          }. This is a comparative market analysis. It is not an appraisal.`,
+          `Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })}. This is a comparative market analysis. It is not an appraisal.`,
         )}</div>
         <div class="print-out r"><a href="?print=1" data-rr-track="cma-print">Print this report</a></div>
       </div>

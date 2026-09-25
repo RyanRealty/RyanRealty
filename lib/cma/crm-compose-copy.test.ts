@@ -32,7 +32,8 @@ describe('cma compose copy', () => {
       agentName: 'Matt Ryan',
     })
     expect(out.subject).toBe('A market analysis for 123 NW Cascade Ave')
-    expect(out.body).toContain('Hi Sarah')
+    expect(out.body).toContain('Hi there')
+    expect(out.body).not.toContain('Hi Sarah')
     expect(out.body).toContain('$649,000')
     expect(out.requiresPdfAttachment).toBe(true)
   })

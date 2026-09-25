@@ -10,6 +10,7 @@ import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/pri
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import { compAreaContains, compAreaIn, compAreaPhrase, milesPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
+import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
 
 const esc = escapeHtml
 
@@ -55,9 +56,8 @@ export type BandStreetRow = {
 }
 
 export function rivalAddress(row: BandStreetRow): string {
-  return [row.StreetNumber, row.StreetName]
-    .map((p) => (p ?? '').trim())
-    .filter(Boolean)
+  return [publishStreetNumber(row.StreetNumber), publishStreetPart(row.StreetName)]
+    .filter((p): p is string => Boolean(p))
     .join(' ')
 }
 

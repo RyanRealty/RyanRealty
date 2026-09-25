@@ -60,7 +60,7 @@ ${immersiveInteractionCss()}
     <div class="hero-kick">${esc(inboundImmersiveHeroKick(s.streetAddress, a.generatedAtIso))}</div>
     <h1 class="hero-h">${esc(s.streetAddress)}</h1>
     <div class="hero-sub">${esc(s.city)}, ${esc(s.state)} ${esc(s.postalCode ?? '')}${cleanText(s.subdivision) ? ` · ${esc(cleanText(s.subdivision)!)}` : ''}</div>
-    <div class="hero-for">Prepared for ${esc(a.client.name ?? 'the owner')} by ${esc(a.broker.displayName)}, Ryan Realty · ${esc(
+    <div class="hero-for">Prepared by ${esc(a.broker.displayName)}, Ryan Realty · ${esc(
       dateLong(a.generatedAtIso),
     )}</div>
     ${immersiveHeroNumberHtml(a)}

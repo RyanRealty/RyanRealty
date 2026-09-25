@@ -904,7 +904,7 @@ export function heroBandFromPricing(p: {
  * Printed on the pricing beat and stored on `pricing.notes`.
  */
 export function failedAskBelowRangeNote(ask: number): string {
-  return `The last listing asked ${usd(ask)}, under what the sales support. Price was not what held it back.`
+  return `The last listing asked ${usd(ask)}, below the sales band. The recommended list sits on the sales, not on that ask.`
 }
 
 function hasStoredBelowRangeReason(pricing: {
@@ -989,13 +989,13 @@ function clampSentence(args: {
   printed: number
   phrase: string | null
 }): string {
-  const head = `The sales alone would support listing at ${clampUsd(args.supported)}.`
+  const head = `The sales support a value of ${clampUsd(args.supported)}.`
   const why = args.phrase
     ? `${clampUsd(args.printed)}, which is ${args.phrase} across ${FAILED_ASK_BACKTEST.pairs.toLocaleString(
         'en-US',
       )} Central Oregon pairs.`
     : `${clampUsd(args.printed)}.`
-  return `${head} Because ${clampUsd(args.ask)} already failed to sell, we do not recommend going above ${why}`
+  return `${head} Because ${clampUsd(args.ask)} already failed to sell, we recommend listing at ${why}`
 }
 
 /**
@@ -1153,7 +1153,7 @@ export function applyFailedAskCap(
         sentence: clampSentence({
           supported: headline.before,
           ask,
-          printed: headline.after,
+          printed: pricing.recommended,
           phrase: ceilings[headline.tier].phrase,
         }),
       }

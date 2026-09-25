@@ -108,7 +108,7 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     })
     expect(below).toContain('they support $734,000 to $878,000.')
     expect(below).toContain('The last listing asked $725,000, below what those sales support.')
-    expect(below).toContain('Price was not what held it back.')
+    expect(below).not.toContain('Price was not what held it back.')
     expect(below).not.toContain('inside what those sales support')
     const inside = composeFirstContactNumbers('expired', {
       ...FACTS,
@@ -321,6 +321,8 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     expect(facts.closedSalesCount).toBe(5)
     expect(facts.salesScope).toBe('near')
     const letter = composeCmaFirstContact('expired', facts)
+    expect(letter.bodyText).toContain('Hi there,')
+    expect(letter.bodyText).not.toContain('Blair')
     expect(letter.bodyText).toContain('your home at 2465 7th came off the market')
     expect(letter.bodyText).toContain('We found five sales of homes like yours near you, and they support $412,000 to $443,000.')
     expect(letter.bodyText).toContain('The last listing asked $460,000, a little above what those sales support.')

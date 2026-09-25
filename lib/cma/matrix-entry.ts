@@ -22,6 +22,8 @@
 
 import { UNADDRESSED_DOC_LINKS, cleanText, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import { proximityLabel } from '@/lib/cma/market-area'
+import { publishStreetNumber, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
 import {
   finalAskOf,
   priceChangeCountOf,
@@ -172,11 +174,30 @@ function remarksOf(row: unknown): string | null {
 }
 
 function streetNumberOf(address: string): string | null {
-  return /^\s*(\d+[A-Za-z]?)\s/.exec(address)?.[1] ?? null
+  const n = /^\s*(\d+[A-Za-z]?)\s/.exec(address)?.[1] ?? null
+  return publishStreetNumber(n)
 }
 
 function streetNameOf(address: string): string | null {
-  return address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || null
+  const published = publishUnparsedStreetLine(address)
+  if (!published) return null
+  return published.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || published
+}
+
+function publishedAddress(address: string): string {
+  return publishUnparsedStreetLine(address) ?? address.trim()
+}
+
+function entryProximity(
+  subject: { latitude?: number | null; longitude?: number | null } | null | undefined,
+  lat: number | null,
+  lng: number | null,
+): string | null {
+  if (!subject) return null
+  return proximityLabel(
+    { lat: subject.latitude ?? null, lng: subject.longitude ?? null },
+    { lat, lng },
+  )
 }
 
 function sortAttrs(parts: Array<[string, string | number | null]>): string {
@@ -233,7 +254,7 @@ export function closedEntries(
     return {
       key: keyFor('closed', i),
       family: 'closed' as const,
-      address: c.address,
+      address: publishedAddress(c.address),
       href: trackedDocLink(
         'listing',
         {
@@ -305,6 +326,7 @@ export function unsoldEntries(
   peers: readonly CmaExpiredPeer[],
   ctx?: TrackedDocLinkCtx | null,
   city?: string | null,
+  subject?: Pick<CmaSubject, 'latitude' | 'longitude'> | null,
 ): MatrixEntry[] {
   return peers.map((p, i) => {
     const path = pricePathFromListing({
@@ -320,7 +342,7 @@ export function unsoldEntries(
     return {
       key: keyFor('unsold', i),
       family: 'unsold' as const,
-      address: p.address,
+      address: publishedAddress(p.address),
       href: trackedDocLink(
         'listing',
         {
@@ -350,7 +372,7 @@ export function unsoldEntries(
       closePrice: null,
       listPrice: num(p.listPrice) ?? num(p.originalListPrice),
       concessionsAmount: null,
-      proximity: null,
+      proximity: entryProximity(subject, p.latitude ?? null, p.longitude ?? null),
       garageSpaces: null,
       cdomDays: dom,
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((p.onMarketDate ?? '').slice(0, 10))
@@ -379,6 +401,7 @@ export function activeEntries(
   rivals: readonly CmaBandRival[],
   ctx?: TrackedDocLinkCtx | null,
   city?: string | null,
+  subject?: Pick<CmaSubject, 'latitude' | 'longitude'> | null,
 ): MatrixEntry[] {
   return rivals.map((r, i) => {
     const path = pricePathFromListing({
@@ -395,7 +418,7 @@ export function activeEntries(
     return {
       key: keyFor('active', i),
       family: 'active' as const,
-      address: r.address,
+      address: publishedAddress(r.address),
       href: trackedDocLink(
         'listing',
         {
@@ -430,7 +453,7 @@ export function activeEntries(
       closePrice: null,
       listPrice: num(r.listPrice) ?? num(r.originalListPrice),
       concessionsAmount: null,
-      proximity: null,
+      proximity: entryProximity(subject, r.latitude ?? null, r.longitude ?? null),
       garageSpaces: null,
       cdomDays: dom,
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((r.onMarketDate ?? '').slice(0, 10))

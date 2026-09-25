@@ -17,7 +17,7 @@ import {
 } from '@/lib/data/cma/builderReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { bandAroundList, pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
-import { compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
+import { compAreaContains, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
@@ -447,6 +447,19 @@ export async function buildCmaExtras(args: {
   const asOf = args.asOf ?? new Date()
   const since36 = monthsAgoIso(SEASONALITY_MONTHS, asOf)
   const since12 = monthsAgoIso(SUBDIVISION_MONTHS, asOf)
+  const compsLookbackMonths = (() => {
+    const ages = args.comps
+      .map((c) => {
+        const iso = (c.closeDate ?? '').slice(0, 10)
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null
+        const ms = asOf.getTime() - Date.parse(`${iso}T12:00:00.000Z`)
+        if (!Number.isFinite(ms) || ms < 0) return null
+        return Math.ceil(ms / (1000 * 60 * 60 * 24 * 30.44))
+      })
+      .filter((n): n is number => n != null && n > 0)
+    return ages.length > 0 ? Math.max(3, Math.max(...ages)) : SUBDIVISION_MONTHS
+  })()
+  const sinceComps = monthsAgoIso(compsLookbackMonths, asOf)
   const computedBand = bandAroundList(args.pricing.recommended)
   const lo = args.band?.lo ?? computedBand?.lo ?? 0
   const hi = args.band?.hi ?? computedBand?.hi ?? 0
@@ -466,24 +479,35 @@ export async function buildCmaExtras(args: {
           }).catch(() => null)
         : getCmaBandInventory(args.subject.city, lo, hi, args.subject.propertySubType).catch(() => null),
     subdivision ? getCmaSubdivisionClosed(subdivision, since12).catch(() => []) : Promise.resolve([]),
-    getCmaMarketAreaRows(args.subject.city, since12).catch(() => []),
+    getCmaMarketAreaRows(args.subject.city, sinceComps).catch(() => []),
   ])
 
   const photoUrl = args.subject.photoUrl?.trim() ?? ''
+  const area = args.compArea ?? null
+  const pocketRows = area
+    ? areaRows.filter((r) =>
+        compAreaContains(area, {
+          latitude: r.Latitude ?? null,
+          longitude: r.Longitude ?? null,
+          subdivision: r.SubdivisionName ?? null,
+          city: r.City ?? args.subject.city,
+        }),
+      )
+    : areaRows
   return {
     seasonality: computeSeasonality(skinny, args.subject.city, since36),
-    band: computeBandPosition(bandInv, args.subject.city, lo, hi, args.subject, args.compArea ?? null),
+    band: computeBandPosition(bandInv, args.subject.city, lo, hi, args.subject, area),
     subdivisionPulse: subdivision ? computeSubdivisionPulse(subRows, subdivision, SUBDIVISION_MONTHS, since12) : null,
     financing: computeFinancing(skinny, args.subject.city, since12),
     photoBench: computePhotoBench(args.subjectPhotosCount, args.comps),
     marketArea: computeMarketArea({
-      rows: areaRows,
+      rows: pocketRows,
       subject: args.subject,
       comps: args.comps,
       pricing: args.pricing,
       asOf,
     }),
-    sold90: computeSold90SameBedsBaths({ rows: areaRows, subject: args.subject, asOf }),
+    sold90: computeSold90SameBedsBaths({ rows: pocketRows, subject: args.subject, asOf }),
     photos: photoUrl ? { current: [photoUrl], historical: [] } : null,
   }
 }

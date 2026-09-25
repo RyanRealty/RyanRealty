@@ -560,6 +560,28 @@ export function trimPpsfOutliers<T extends { ppsfTimeAdjusted: number }>(rows: T
 }
 
 /**
+ * Band endpoints only. A $/sqft outlier may still carry weight on the
+ * recommendation; it may not sit on the printed low or high when the
+ * starting set has four or more sales. Wider than the 12% point-estimate
+ * trim so a tight D10 min-max set is not pulled in; Marshmallow's $618/sf
+ * against a ~$430/sf cluster is still outside.
+ */
+export const BAND_ENDPOINT_PPSF_OUTLIER = 0.25
+
+export function salesForBandEndpoints<T extends { ppsfTimeAdjusted: number }>(rows: T[]): T[] {
+  if (rows.length < 4) return rows
+  const mid = median(rows.map((r) => r.ppsfTimeAdjusted).filter((n) => n > 0))
+  if (!(mid > 0)) return rows
+  const kept = rows.filter((r) => {
+    if (!(r.ppsfTimeAdjusted > 0)) return true
+    return Math.abs(r.ppsfTimeAdjusted - mid) / mid <= BAND_ENDPOINT_PPSF_OUTLIER
+  })
+  // Start with four or more; keep the trim when at least three remain
+  // (Marshmallow: four sales, one $/sf outlier, three stay on the endpoints).
+  return kept.length >= 3 ? kept : rows
+}
+
+/**
  * Close-price point estimate: median time-adjusted $/sqft of the trimmed
  * set, times subject GLA. On a tight same-subdivision set this beats a
  * weighted mix of 10 mixed-tier sales.
@@ -823,13 +845,18 @@ export function listPriceFromEngine(opts: {
   const band = saleBandFromAdjusted(opts.subjectSqft, opts.adjusted)
   // The sales that carry a printed adjusted price, split by the ONE range rule
   // (partitionByRangeRule). Land has no living area and prices per acre, so it
-  // stays on the $/sqft path it already used.
-  const part = opts.subjectSqft > 0
+  // stays on the $/sqft path it already used. Band endpoints drop $/sqft
+  // outliers when four or more sales remain; the recommendation still
+  // reconciles the original kept set.
+  const recPart = opts.subjectSqft > 0
     ? partitionByRangeRule(opts.adjusted)
     : { priced: [], kept: [], setAside: [], rule: null as PricingRangeRuleName | null }
-  const range = rangeFromPartition(part)
-  // The price is reconciled over the KEPT sales only. A sale the document says
-  // was set aside carries none of it.
+  const part = recPart
+  const endpointKept = opts.subjectSqft > 0 ? salesForBandEndpoints(recPart.kept) : recPart.kept
+  const range = rangeFromPartition({
+    ...recPart,
+    kept: endpointKept.length >= 3 ? endpointKept : recPart.kept,
+  })
   const reconciledValue =
     range != null
       ? weightedAdjustedPrice(
@@ -1047,12 +1074,18 @@ export function applyEngineRecommendedList(
   // is rounded here, so both arrive at the cover on the same grid.
   const valueLow = engine.rangeRule?.adjustedLow ?? roundPriceDown(conservative)
   const valueHigh = engine.rangeRule?.adjustedHigh ?? roundPriceUp(highEnd)
+  // High / aspirational list is the same evidence as the band top. Carrying
+  // the sale-to-ask ratio past valueHigh printed $1,034k over a $1,000k top.
+  const bandTop = Math.max(valueLow, valueHigh)
+  const highEndClamped = Math.min(highEnd, bandTop)
+  const conservativeClamped = Math.min(conservative, highEndClamped)
+  const listClamped = Math.min(Math.max(list, conservativeClamped), highEndClamped)
   return clipCoverToFailedAsk(
     {
       ...pricing,
-      recommended: list,
-      conservative,
-      highEnd,
+      recommended: listClamped,
+      conservative: conservativeClamped,
+      highEnd: highEndClamped,
       valueLow: Math.min(valueLow, valueHigh),
       valueHigh: Math.max(valueLow, valueHigh),
       predictedClose: close,

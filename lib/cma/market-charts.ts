@@ -332,7 +332,7 @@ export type DaysRow = {
  */
 const DAYS_FS = 12
 const DAYS_GUTTER_MIN = 150
-const DAYS_GUTTER_MAX = 270
+const DAYS_GUTTER_MAX = 360
 /** From a gutter label's end to the zero rule. */
 const LABEL_GAP = 14
 /** From the frame's left edge to the widest gutter label's start. */

@@ -18,6 +18,7 @@ import {
   replaceCmaComps,
   snapshotCmaVersion,
   getPricingMarketIndex,
+  findCrmPersonIdByEmail,
   type CmaCompInsert,
 } from '@/lib/data'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
@@ -30,7 +31,11 @@ import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps
 import { JUDGMENT_PRUNE_FLOOR, pricedSetAfterJudgment } from '@/lib/cma/judgment-prune'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
-import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
+import {
+  exclusivePocketSetNote,
+  floorExclusivePocketBandToSameSubCloses,
+  selectionIsExclusivePocket,
+} from '@/lib/pricing/exclusive-pocket-date-adj'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
@@ -55,6 +60,7 @@ import { buildSubdivisionStory, SUBDIVISION_STORY_YEARS } from '@/lib/cma/subdiv
 import { getCmaSubdivisionHistory } from '@/lib/data/cma/builderReads'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
+import { evaluateLetterConsistencyContract } from '@/lib/cma/letter-consistency'
 import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
@@ -539,9 +545,31 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // (§0 rule 5; look pass 2026-09-07 printed "4 of 8" beside a 5-row matrix).
       attachSellerNet(p, set)
       if (p && exclusivePocket) {
-        p.notes.unshift(
-          `These sales are the exclusive pocket. Date adjustment does not walk the ${subject.city} city index. That series includes tracts already excluded from this set. Each sale stays on its sold and last-ask price. Size and story class do not adjust.`,
-        )
+        const coolingApplied = adj.some((c) => Number.isFinite(c.timeAdjustment) && c.timeAdjustment < 0)
+        p.notes.unshift(exclusivePocketSetNote(subject.city, coolingApplied))
+        const sameSub = (subject.subdivision ?? '').trim().toLowerCase()
+        const sameSubCloses = sameSub
+          ? adj
+              .filter((c) => (c.subdivision ?? '').trim().toLowerCase() === sameSub)
+              .map((c) => c.closePrice)
+              .filter((n): n is number => Number.isFinite(n) && n > 0)
+          : []
+        const floored = floorExclusivePocketBandToSameSubCloses({
+          valueLow: p.valueLow,
+          valueHigh: p.valueHigh,
+          sameSubdivisionClosePrices: sameSubCloses,
+          coolingApplied,
+        })
+        if (floored.floored && floored.floor != null) {
+          p.valueLow = floored.valueLow
+          p.valueHigh = floored.valueHigh
+          if (p.conservative < floored.valueLow) p.conservative = floored.valueLow
+          if (p.recommended < floored.valueLow) p.recommended = floored.valueLow
+          p.notes.unshift(
+            `The printed low is the lowest same-subdivision close $${Math.round(floored.floor).toLocaleString('en-US')}, not a cooled adjusted price below every sale in that pocket.`,
+          )
+          attachSellerNet(p, set)
+        }
       } else if (p && usePath) {
         p.notes.unshift(
           `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
@@ -1333,12 +1361,47 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // Spread, never a second hand-written list: a field added to one list and
     // not the other would render here and vanish on re-brand (W10.3).
+    let personId =
+      input.personId != null && Number.isFinite(input.personId) && input.personId > 0
+        ? Math.round(input.personId)
+        : null
+    if (personId == null && input.client.email?.trim()) {
+      try {
+        personId = await findCrmPersonIdByEmail(input.client.email)
+      } catch {
+        personId = null
+      }
+    }
     const { html, pageCount } = renderCmaHtml({
       ...renderArgs,
       broker,
       mapDataUri: map?.dataUri ?? null,
       subjectMapDataUri: null,
+      docLinks: { brokerSlug: broker.slug, personId, cmaSlug: slug },
     })
+    const letterContract = evaluateLetterConsistencyContract({
+      html,
+      names: { clientName: input.client.name },
+      identity: { personId, clientEmail: input.client.email },
+      pricing,
+    })
+    for (const check of letterContract.checks) {
+      contract.checks.push(check)
+    }
+    if (!letterContract.pass) {
+      contract.pass = false
+      const failed = letterContract.checks
+        .filter((c) => c.severity === 'hard' && !c.pass)
+        .map((c) => `${c.id}: ${c.detail}`)
+        .join(' | ')
+      const err = `Letter consistency contract failed: ${failed}`
+      await recordBuildFailure(slug, err, {
+        stage: 'letter-contract',
+        docType,
+        contractChecks: letterContract.checks,
+      })
+      return { ok: false, error: err, slug }
+    }
 
     // 7. Citations — one entry per figure class (CLAUDE.md §0).
     const citations: Record<string, unknown> = {

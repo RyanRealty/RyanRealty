@@ -3,7 +3,7 @@
  * layout fix ships without waiting on a full rebuild of html_content.
  */
 
-import { getCmaAccessIdentity, getCmaRenderSourceBySlug, getCmaStoredHtmlBySlug } from '@/lib/data'
+import { findCrmPersonIdByEmail, getCmaAccessIdentity, getCmaRenderSourceBySlug, getCmaStoredHtmlBySlug } from '@/lib/data'
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
@@ -113,7 +113,11 @@ export async function resolveDocLinkCtx(
 ): Promise<TrackedDocLinkCtx> {
   let personId: number | null = null
   try {
-    personId = (await getCmaAccessIdentity(slug))?.personId ?? null
+    const identity = await getCmaAccessIdentity(slug)
+    personId = identity?.personId ?? null
+    if (personId == null && identity?.clientEmail) {
+      personId = await findCrmPersonIdByEmail(identity.clientEmail)
+    }
   } catch {
     personId = null
   }

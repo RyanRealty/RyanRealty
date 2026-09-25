@@ -53,7 +53,9 @@ describe('fsbo_cma_first_touch_v1', () => {
 
  it('names the property, range, and CTA in Matt\'s register', () => {
  const { body } = composeFsboCmaFirstTouchEmail(FULL)
- expect(body).toContain('Hi Sarah,')
+ expect(body).toContain('Hi there,')
+ expect(body).not.toContain('Hi Sarah,')
+ expect(body).not.toContain('Sarah Nguyen')
  expect(body).toContain('My name is Matt Ryan with Ryan Realty in Bend.')
  expect(body).toContain('your home at 123 NW Cascade Ave is for sale by owner')
  expect(body).toContain('no charge and no strings')
@@ -90,17 +92,17 @@ describe('fsbo_cma_first_touch_v1', () => {
 })
 
 describe('cma_cover_intro_v1', () => {
- it('names it a comparative market analysis, not an appraisal, and requires prepared-for name', () => {
+ it('names it a comparative market analysis, not an appraisal, and omits the owner name', () => {
  const cover = composeCmaCoverIntro(FULL)
  expect(cover.templateId).toBe(CMA_COVER_INTRO_V1)
  expect(cover.title).toBe('Pricing report for 123 NW Cascade Ave, Bend, OR 97703')
- expect(cover.preparedLine).toBe('Prepared for Sarah Nguyen · September 3, 2026')
+ expect(cover.preparedLine).toBe('Prepared · September 3, 2026')
  expect(cover.body).toMatch(/not an appraisal/i)
  // Matt 2026-09-10: the document is a comparative market analysis, and says so.
  expect(cover.body).toMatch(/comparative market analysis/i)
  expect(cover.body).not.toMatch(/Lenders order appraisals/i)
  expect(cover.askLine).toContain('Current ask: $679,000')
- expect(cover.fullText).toContain('Sarah Nguyen')
+ expect(cover.fullText).not.toContain('Sarah Nguyen')
  expect(cover.fullText).not.toMatch(/Questions on any line/i)
  })
 

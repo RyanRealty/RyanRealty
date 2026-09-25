@@ -131,7 +131,10 @@ function splitStreet(t: TrackedListingTarget): { streetNumber: string | null; st
   const address = clean(t.address)
   if (!address) return { streetNumber: null, streetName: null }
   const m = address.match(/^(\d[\dA-Za-z-]*)\s+(.+)$/)
-  if (m) return { streetNumber: m[1]!, streetName: m[2]! }
+  if (m) {
+    const number = /^0+$/.test(m[1]!) ? null : m[1]!
+    return { streetNumber: number, streetName: m[2]! }
+  }
   return { streetNumber: null, streetName: address }
 }
 

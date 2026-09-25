@@ -230,11 +230,13 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       unsoldPeersFor({ subject: a.subject, peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers }),
       a.docLinks ?? null,
       a.subject.city,
+      a.subject,
     ),
     active: activeEntries(
       activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals),
       a.docLinks ?? null,
       a.subject.city,
+      a.subject,
     ),
   }
 }
@@ -533,9 +535,11 @@ export function whatHappenedPage(a: OpinionPageArgs): CmaPageDef | null {
     meta: `${esc(a.subject.streetAddress)} · What happened`,
     toc: heading,
     body: `
+  <div class="keep-close">
   <h2 class="section">${esc(heading)}</h2>
   ${whatHappenedGraphicHtml(a)}
-  ${failedAskBacktestHtml(a, 'letter')}`,
+  ${failedAskBacktestHtml(a, 'letter')}
+  </div>`,
   }
 }
 
@@ -1392,7 +1396,6 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
       ? b.photoUrl
       : `${site}${b.photoUrl}`
     : null
-  const client = cleanText(a.client?.name ?? null)
   return `<div class="keep-close">
   <div class="signature-page">
     ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
@@ -1409,7 +1412,7 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
     </div>
   </div>
   <p class="fine">${esc(
-    `Prepared ${dateLong(a.generatedAtIso)}${client ? ` for ${client}` : ''}. This is a comparative market analysis. It is not an appraisal.`,
+    `Prepared ${dateLong(a.generatedAtIso)}. This is a comparative market analysis. It is not an appraisal.`,
   )}</p>
   </div>`
 }
@@ -1450,17 +1453,23 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
           range,
         })
       : ''
+  const pendingClaimed = (b.pendingCount ?? 0) > 0
+  const pendingLead =
+    '<p class="chart-read">Under contract is not closed. These are still competing until they close.</p>'
   const pendingMatrix =
     pendingOnly.length > 0
       ? renderMatrixHtml({
           id: 'competition-pending',
           family: 'active',
           heading: 'Pending: under contract in this range',
-          lead: '<p class="chart-read">Under contract is not closed. These are still competing until they close.</p>',
+          lead: pendingLead,
           entries: [sets.subject, ...pendingOnly],
           range,
         })
-      : ''
+      : pendingClaimed
+        ? `<h3 class="subhead">Pending: under contract in this range</h3>
+  ${pendingLead}`
+        : ''
   const matrix = [activeMatrix, pendingMatrix].filter(Boolean).join('\n  ')
   const sentence =
     a.bandRivals?.sentence ??

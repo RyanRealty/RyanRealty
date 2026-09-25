@@ -23,6 +23,8 @@
  * A superlative is written only when it is true of the printed sales.
  */
 
+import { capClosedCompShares } from '@/lib/pricing/closed-comp-weight'
+
 /** The two fields the weighted value itself needs. Every adjusted sale has them. */
 export interface WeightedSale {
   adjustedPrice: number
@@ -41,10 +43,9 @@ export interface WeightedSale {
 export function weightedAdjustedPrice(sales: readonly WeightedSale[]): number | null {
   const usable = sales.filter((s) => Number.isFinite(s.adjustedPrice) && s.adjustedPrice > 0)
   if (usable.length === 0) return null
-  const raw = (s: WeightedSale) => (Number.isFinite(s.weight) && s.weight > 0 ? s.weight : 0)
-  const total = usable.reduce((sum, s) => sum + raw(s), 0)
-  const share = (s: WeightedSale) => (total <= 0 ? 1 / usable.length : raw(s) / total)
-  return Math.round(usable.reduce((sum, s) => sum + s.adjustedPrice * share(s), 0))
+  const raw = usable.map((s) => (Number.isFinite(s.weight) && s.weight > 0 ? s.weight : 0))
+  const shares = capClosedCompShares(raw)
+  return Math.round(usable.reduce((sum, s, i) => sum + s.adjustedPrice * (shares[i] ?? 0), 0))
 }
 
 /** What the reconciliation needs off an adjusted sale. */
@@ -148,9 +149,8 @@ export function reconcileAdjustedSales(args: {
   }
   const rawOf = (s: ReconcilableSale) =>
     Number.isFinite(s.weight) && s.weight > 0 ? s.weight : 0
-  const total = usable.reduce((sum, s) => sum + rawOf(s), 0)
-  const equalWeighted = total <= 0
-  const share = (s: ReconcilableSale) => (equalWeighted ? 1 / usable.length : rawOf(s) / total)
+  const shares = capClosedCompShares(usable.map(rawOf))
+  const share = (_s: ReconcilableSale, i: number) => shares[i] ?? 0
 
   const weightedPrice = weightedAdjustedPrice(usable)
 
@@ -159,7 +159,7 @@ export function reconcileAdjustedSales(args: {
     args.subjectSqft > 0 ? Math.min(...usable.map((s) => Math.abs(s.sqft - args.subjectSqft))) : null
   const mostRecent = Math.min(...usable.map((s) => s.monthsSinceClose))
 
-  const weights: ReconciliationWeight[] = usable.map((s) => {
+  const weights: ReconciliationWeight[] = usable.map((s, i) => {
     const gross = grossAdjustmentPct(s)
     const parts = [sizePhrase(s, args.subjectSqft), recencyPhrase(s), movementPhrase(gross)]
     const leads: string[] = []
@@ -173,7 +173,7 @@ export function reconcileAdjustedSales(args: {
     return {
       listingKey: s.listingKey,
       address: s.address,
-      weight: round1(share(s) * 100),
+      weight: round1(share(s, i) * 100),
       weightRaw: +rawOf(s).toFixed(4),
       adjustedPrice: Math.round(s.adjustedPrice),
       grossAdjustmentPct: gross,
