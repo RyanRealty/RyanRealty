@@ -318,17 +318,46 @@ export type DaysRow = {
 }
 
 /**
- * Row labels are right-anchored in a fixed gutter, so a long address grows
- * LEFT and off the sheet. At twelve comps that put eight paragraphs 4pt into
- * the left margin and failed the page-safety contract. Twenty-four characters
- * is what the 136-unit gutter holds at 12px.
+ * Row labels are right-anchored in the gutter, so a label wider than the
+ * gutter grows LEFT, past the frame. The SVG clips at its own edge, so the
+ * delivered PDF lost the start of every long label, which is the comp's
+ * number: "1. 401 Comparable Stree…" printed as "01 Comparable Stree…", and
+ * the half-glyph that survived sat 2.4pt in the left margin (page-safety,
+ * 2026-09-25). The fixed 24-character cap before this could not hold: at
+ * 12px, 24 characters is about 150 units against a 136-unit gutter.
+ *
+ * The gutter is now sized to its longest label. A label's width is estimated
+ * per character with a factor that covers both faces the chart renders in,
+ * measured 2026-09-25 at 12px: real comp labels run 0.44 to 0.53em a
+ * character in Geist and up to 0.61em in the offline fallback on an all-caps
+ * MLS address. A label longer than the widest gutter is cut at its end, so the
+ * number that ties a bar to the comp table always prints.
  */
-const DAYS_LABEL_MAX = 24
+const DAYS_FS = 12
+const LABEL_EM = 0.62
+const LABEL_EM_BOLD = 0.66
+const DAYS_GUTTER_MIN = 150
+const DAYS_GUTTER_MAX = 270
+/** From a gutter label's end to the zero rule. */
+const LABEL_GAP = 14
+/** From the frame's left edge to the widest gutter label's start. */
+const LABEL_INSET = 4
 
-function fitLabel(text: string): string {
+/**
+ * A chart label's estimated width in chart units, at its font size. Shared by
+ * every chart that right-anchors labels in a gutter, so a gutter is sized to
+ * what it has to hold rather than to a fixed width.
+ */
+export function labelWidth(text: string, fontSize: number, bold = false): number {
+  return text.length * fontSize * (bold ? LABEL_EM_BOLD : LABEL_EM)
+}
+
+function fitDaysLabel(text: string, bold: boolean): string {
   const t = text.trim()
-  if (t.length <= DAYS_LABEL_MAX) return t
-  return `${t.slice(0, DAYS_LABEL_MAX - 1).trimEnd()}…`
+  const room = DAYS_GUTTER_MAX - LABEL_GAP - LABEL_INSET
+  const maxChars = Math.floor(room / labelWidth('x', DAYS_FS, bold))
+  if (t.length <= maxChars) return t
+  return `${t.slice(0, maxChars - 1).trimEnd()}…`
 }
 
 /**
@@ -367,7 +396,12 @@ export function daysToOfferSvg(
   // The tick's label lives above the plot; without one the bars start higher.
   const top = tick ? 34 : 16
   const H = top + kept.length * rowH + 14
-  const gutter = 150
+  const labels = kept.map((r) => fitDaysLabel(r.label, r.subject))
+  const widest = Math.max(...kept.map((r, i) => labelWidth(labels[i] ?? '', DAYS_FS, r.subject)))
+  const gutter = Math.min(
+    DAYS_GUTTER_MAX,
+    Math.max(DAYS_GUTTER_MIN, Math.ceil(widest + LABEL_GAP + LABEL_INSET)),
+  )
   const plotL = gutter
   // Reserve the right margin for the longest value label. The subject's reads
   // "192 days, no offer" and used to run off the frame.
@@ -382,7 +416,7 @@ export function daysToOfferSvg(
       const end = x(row.days)
       const stroke = row.subject ? RULER_INK : RULER_MUTED
       const width = row.subject ? 7 : 5
-      return `<text x="${gutter - 14}" y="${(mid + 4).toFixed(1)}" text-anchor="end" font-size="12" ${row.subject ? `font-weight="600" ` : ''}fill="${RULER_INK}">${esc(fitLabel(row.label))}</text>
+      return `<text x="${gutter - LABEL_GAP}" y="${(mid + 4).toFixed(1)}" text-anchor="end" font-size="${DAYS_FS}" ${row.subject ? `font-weight="600" ` : ''}fill="${RULER_INK}">${esc(labels[i] ?? '')}</text>
     <line x1="${plotL}" y1="${(mid).toFixed(1)}" x2="${Math.max(end, plotL + 1).toFixed(1)}" y2="${(mid).toFixed(1)}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="butt"/>
     <text x="${(Math.max(end, plotL + 1) + 10).toFixed(1)}" y="${(mid + 4).toFixed(1)}" font-size="12" ${row.subject ? `font-weight="600" ` : ''}fill="${RULER_INK}">${esc(row.valueLabel)}</text>`
     })
@@ -1051,6 +1085,34 @@ const ASK_OUTCOME_LABEL: Record<AskOutcomeGroup['key'], string> = {
  */
 const ASK_OUTCOME_WEIGHT = { mine: 14, other: 7 }
 
+/** Beside the seller's group: it names the group their listing is in. */
+const ASK_OUTCOME_MARKER = 'yours is in this group'
+const ASK_GUTTER_MIN = 190
+const ASK_GUTTER_MAX = 340
+
+/** The lines a group's label block carries, the seller's marker aside. */
+function askOutcomeRowText(g: AskOutcomeGroup): { name: string; count: string; share: string } {
+  const count = [
+    `${int(g.n)} ${g.n === 1 ? 'listing' : 'listings'}`,
+    g.medianCutPct != null && g.medianCutPct > 0 ? `median cut ${g.medianCutPct.toFixed(1)}%` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  // What each sold group actually realized against the price it FIRST asked
+  // (research item 4), with the count it was measured over. It sits under the
+  // group's name, never on the bar: the bar's axis is days, and a second unit
+  // on it is a dual axis by another route.
+  const share =
+    g.medianSoldToOriginalAskPct != null && g.medianSoldToOriginalAskPct > 0
+      ? `sold at ${g.medianSoldToOriginalAskPct.toFixed(1)}% of the first ask${
+          g.soldToOriginalAskN != null && g.soldToOriginalAskN > 0
+            ? `, ${int(g.soldToOriginalAskN)} ${g.soldToOriginalAskN === 1 ? 'sale' : 'sales'}`
+            : ''
+        }`
+      : ''
+  return { name: ASK_OUTCOME_LABEL[g.key], count, share }
+}
+
 /**
  * The first price decides the days.
  *
@@ -1074,13 +1136,33 @@ export function askOutcomeBarsSvg(
   const hasShare = groups.some(
     (g) => g.medianSoldToOriginalAskPct != null && g.medianSoldToOriginalAskPct > 0,
   )
-  const rowH = hasShare ? (phone ? 70 : 66) : phone ? 56 : 52
+  // On the wide layout the seller's group is marked on its own line under the
+  // name. Beside the name it made a 49-character bold line, far wider than the
+  // gutter, and the SVG clipped its start at the frame: the letter printed
+  // "without a price cut · yours is in this group" (2026-09-25). The phone
+  // layout gives its name line the full width and keeps the marker beside it.
+  const markerLine = !phone && groups.some((g) => g.key === subjectGroup)
+  const rowH = (hasShare ? (phone ? 70 : 66) : phone ? 56 : 52) + (markerLine ? 14 : 0)
   const top = 8
   const H = top + groups.length * rowH + 10
-  // The gutter holds the longest label the rows carry, not a fixed 190: the
-  // realized-share line ("sold at 94.3% of the first ask, 302 sales") is
-  // right-anchored in it, and a fixed gutter pushed it off the left edge.
-  const gutter = phone ? 8 : 250
+  // The gutter holds the widest line the rows carry, measured with labelWidth,
+  // the estimate the days strip sizes its gutter with. A fixed gutter, 190 and then 250,
+  // pushed the realized-share line and the seller's marker past the left edge.
+  const widestLine = Math.max(
+    ...groups.flatMap((g) => {
+      const t = askOutcomeRowText(g)
+      const mine = g.key === subjectGroup
+      return [
+        labelWidth(t.name, fs, mine),
+        mine ? labelWidth(ASK_OUTCOME_MARKER, fs, true) : 0,
+        labelWidth(t.count, subFs),
+        labelWidth(t.share, subFs),
+      ]
+    }),
+  )
+  const gutter = phone
+    ? 8
+    : Math.min(ASK_GUTTER_MAX, Math.max(ASK_GUTTER_MIN, Math.ceil(widestLine + LABEL_GAP + LABEL_INSET)))
   const plotL = phone ? 8 : gutter
   const longest = Math.max(...groups.map((g) => `${int(g.medianDays)} days`.length))
   const plotR = W - Math.min(Math.max(longest * fs * 0.62 + 14, 60), 150)
@@ -1102,25 +1184,9 @@ export function askOutcomeBarsSvg(
       // "· your home" beside a 117-day median, on a document that says "yours
       // went 290 days", reads as a claim about their listing. It is a claim
       // about which GROUP their listing is in.
-      const name = `${ASK_OUTCOME_LABEL[g.key]}${mine ? ' · yours is in this group' : ''}`
-      const count = [
-        `${int(g.n)} ${g.n === 1 ? 'listing' : 'listings'}`,
-        g.medianCutPct != null && g.medianCutPct > 0 ? `median cut ${g.medianCutPct.toFixed(1)}%` : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-      // What each sold group actually realized against the price it FIRST
-      // asked (research item 4), with the count it was measured over. It sits
-      // under the group's name, never on the bar: the bar's axis is days, and
-      // a second unit on it is a dual axis by another route.
-      const share =
-        g.medianSoldToOriginalAskPct != null && g.medianSoldToOriginalAskPct > 0
-          ? `sold at ${g.medianSoldToOriginalAskPct.toFixed(1)}% of the first ask${
-              g.soldToOriginalAskN != null && g.soldToOriginalAskN > 0
-                ? `, ${int(g.soldToOriginalAskN)} ${g.soldToOriginalAskN === 1 ? 'sale' : 'sales'}`
-                : ''
-            }`
-          : ''
+      const text = askOutcomeRowText(g)
+      const name = `${text.name}${mine ? ` · ${ASK_OUTCOME_MARKER}` : ''}`
+      const { count, share } = text
       // Delta 2: "tap a bar to see its n, median days, median cut, median share
       // of ask." Every figure in the reading is already drawn on the row; the
       // group carries it as one sentence so a tap on a phone, where the row's
@@ -1161,9 +1227,25 @@ export function askOutcomeBarsSvg(
     <text x="${(past ? end - 8 : end + 8).toFixed(1)}" y="${barY + 4}"${past ? ' text-anchor="end"' : ''}${bold} font-size="${fs}" fill="${TL_INK}">${esc(value)}</text></g>`
       }
       const mid = top + i * rowH + rowH / 2
-      return `${open}<text x="${gutter - 14}" y="${(mid - (share ? 10 : 3)).toFixed(1)}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
-    <text x="${gutter - 14}" y="${(mid + (share ? 6 : 13)).toFixed(1)}" text-anchor="end" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
-    ${share ? `<text x="${gutter - 14}" y="${(mid + 20).toFixed(1)}" text-anchor="end" font-size="${subFs}" fill="${TL_MUTED}">${esc(share)}</text>` : ''}
+      // The label block, right-anchored in the gutter and centred on the bar:
+      // 16 units after a name-size line and 14 after a sub line, the spacing
+      // the rows have always had.
+      const block = [
+        { text: text.name, size: fs, weight: bold, fill: TL_INK, step: 16 },
+        ...(mine ? [{ text: ASK_OUTCOME_MARKER, size: fs, weight: bold, fill: TL_INK, step: 16 }] : []),
+        { text: count, size: subFs, weight: '', fill: TL_MUTED, step: 14 },
+        ...(share ? [{ text: share, size: subFs, weight: '', fill: TL_MUTED, step: 14 }] : []),
+      ]
+      const span = block.slice(0, -1).reduce((sum, line) => sum + line.step, 0)
+      let lineY = mid + 5 - span / 2
+      const label = block
+        .map((line) => {
+          const out = `<text x="${gutter - LABEL_GAP}" y="${lineY.toFixed(1)}" text-anchor="end"${line.weight} font-size="${line.size}" fill="${line.fill}">${esc(line.text)}</text>`
+          lineY += line.step
+          return out
+        })
+        .join('\n    ')
+      return `${open}${label}
     <line x1="${plotL}" y1="${mid.toFixed(1)}" x2="${Math.max(x(g.medianDays), plotL + 1).toFixed(1)}" y2="${mid.toFixed(1)}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
     <text x="${(Math.max(x(g.medianDays), plotL + 1) + 10).toFixed(1)}" y="${(mid + 4).toFixed(1)}"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text></g>`
     })
