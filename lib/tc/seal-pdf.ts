@@ -13,7 +13,7 @@
 import { createHash } from 'node:crypto'
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import type { EnvelopeField, SignFieldValue } from './signing'
-import { wrapTextToWidth } from './lined-signature-fields'
+import { fitTextToBox, pdfSafeText } from './text-areas'
 
 export type SealRecipientSummary = {
   name: string
@@ -109,22 +109,31 @@ async function drawFieldValue(
     return
   }
 
-  if (value.kind === 'date_signed' || value.kind === 'text') {
-    const text = value.text ?? ''
+  if (value.kind === 'text' && typeof value.size === 'number' && value.size > 0) {
+    // One line of a lined section, already fit to this line by the same
+    // metrics (lib/tc/text-areas.ts): draw it as laid out, never wrap or drop.
+    const text = pdfSafeText(value.text ?? '')
     if (!text) return
-    const size = Math.max(7, Math.min(11, fh * 0.72))
+    page.drawText(text, { x: fx + 2, y: fy + (fh - value.size) / 2 + 1, size: value.size, font, color: INK })
+    return
+  }
+  if (value.kind === 'date_signed' || value.kind === 'text' || value.kind === 'date' || value.kind === 'time') {
+    // A picked date or time prints as its text (11/30/2026, 5:30 PM).
+    // A character Helvetica cannot encode would fail the whole seal.
+    const text = pdfSafeText(value.text ?? '')
+    if (!text) return
+    // Shrunk until every word fits the box (lib/tc/text-areas.ts fitTextToBox,
+    // the same rule the editors hold a signer and a broker to). Nothing typed
+    // is ever dropped from a signed document: past 6 pt it runs below the box.
+    const { size, lines } = fitTextToBox(text, fw, fh)
     const maxWidth = Math.max(8, fw - 4)
-    const lines = wrapTextToWidth(text, maxWidth, (s) => font.widthOfTextAtSize(s, size))
     const lineH = size + 1.2
-    const maxLines = Math.max(1, Math.floor((fh - 1) / lineH))
-    const shown = lines.slice(0, maxLines)
     // Top-align in the box so a wrapped paragraph sits on the printed lines.
     let ty = fy + fh - size - 1
-    if (shown.length === 1) ty = fy + (fh - size) / 2 + 1
-    for (const line of shown) {
+    if (lines.length === 1) ty = fy + (fh - size) / 2 + 1
+    for (const line of lines) {
       page.drawText(line, { x: fx + 2, y: ty, size, font, color: INK, maxWidth })
       ty -= lineH
-      if (ty < fy - 1) break
     }
     return
   }
@@ -271,7 +280,7 @@ function appendCertificate(
     'Electronic Transactions Act (ORS ch. 84). Each signer consented to transact electronically, ' +
     'the signing link authenticated the signer (unique per-recipient token), and this record ' +
     'captures intent, attribution, timestamps, and tamper evidence (document hashes above). ' +
-    'A completed copy was delivered to every party.'
+    'A completed copy is emailed to every party when the envelope is sealed.'
   // simple word-wrap
   const words = legal.split(' ')
   let row = ''

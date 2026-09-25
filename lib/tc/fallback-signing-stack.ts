@@ -100,7 +100,12 @@ export function withFallbackSignatures(
   )
   const promoted = promoteInitialsBoxes(promoteLinedFormFields(typed), [...allowed])
   const have = new Set(promoted.filter((f) => f.type === 'signature').map((f) => f.signerRole))
-  const extra = fallbackSigningStack(input).filter((f) => !have.has(f.signerRole))
+  // Printed signature lines whose signer the form does not name are the
+  // missing roles' lines: the broker assigns them in the composer (and send
+  // refuses until every signer has one). A stack at fixed page positions put
+  // the buyer's box on a Seller row of the 002 (found 2026-09-24).
+  const unnamedLines = promoted.some((f) => f.type === 'signature' && !f.signerRole)
+  const extra = unnamedLines ? [] : fallbackSigningStack(input).filter((f) => !have.has(f.signerRole))
   return withNoUnsignableRequirement([...promoted, ...extra], allowed)
 }
 

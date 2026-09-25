@@ -1,4 +1,5 @@
 import { captureException, init } from '@sentry/nextjs'
+import { scrubDeep } from '@/lib/analytics/private-paths'
 
 // client-errors.ts owns the window listeners, and the browser sends errors
 // only: no tracing, no session replay.
@@ -21,6 +22,9 @@ export function captureInBrowser(error: unknown): void {
       // extension's or a third-party tag's never spend the error quota.
       allowUrls: process.env.NODE_ENV === 'production' ? [/^https:\/\/(www\.)?ryan-realty\.com\//] : undefined,
       ignoreErrors: [/^ResizeObserver loop/, /^Script error\.?$/],
+      // A signing link's token (and any secret query value) never leaves in a report.
+      beforeSend: (event) => scrubDeep(event),
+      beforeBreadcrumb: (crumb) => scrubDeep(crumb),
     })
   }
   captureException(error)
