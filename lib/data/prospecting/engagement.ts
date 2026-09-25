@@ -29,6 +29,7 @@ import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { cmaSlugBase } from '@/lib/cma/address-slug'
 import { cmaCampaignFromUrl } from '@/lib/cma/doc-links'
+import { normalizeClickUrl } from '@/lib/crm/email-events'
 import type { ProspectEngagement, ProspectKind } from './types'
 
 /** One doc's identity for a scoped engagement read. */
@@ -52,14 +53,18 @@ export type ProspectEngagementMap = Record<string, ProspectEngagement>
 export interface DocEngagementDetail {
   /** email_events `sent` for `cma:<slug>` — the send this doc's tracking hangs off. */
   emailSentAt: string | null
-  /** email_events `delivered` (Resend rail only; Gmail has no delivery receipt). */
+  /** email_events `delivered`. Resend receipt wins; Gmail may be inferred. */
   emailDeliveredAt: string | null
+  /** True when emailDeliveredAt came from the inferred (no-bounce / open / click) rule. */
+  deliveredInferred: boolean
   emailOpens: number
   firstOpenAt: string | null
   lastOpenAt: string | null
   emailClicks: number
   firstClickAt: string | null
   lastClickAt: string | null
+  /** Distinct clicked destinations for this send (identity/utm params stripped). */
+  clickedLinks: string[]
   /** Hard bounce or spam complaint on this send — an exception, not engagement. */
   bouncedAt: string | null
   /** Unsubscribe attributed to this send — also an exception. */
@@ -99,12 +104,14 @@ const EMPTY_ENGAGEMENT: ProspectEngagement = {
 export const EMPTY_DOC_ENGAGEMENT_DETAIL: DocEngagementDetail = {
   emailSentAt: null,
   emailDeliveredAt: null,
+  deliveredInferred: false,
   emailOpens: 0,
   firstOpenAt: null,
   lastOpenAt: null,
   emailClicks: 0,
   firstClickAt: null,
   lastClickAt: null,
+  clickedLinks: [],
   bouncedAt: null,
   unsubscribedAt: null,
   reportViews: 0,
@@ -176,13 +183,15 @@ export function projectEngagement(detail: DocEngagementDetail): ProspectEngageme
 
 type EmailAgg = {
   sentAt: string | null
-  deliveredAt: string | null
+  deliveredReceiptAt: string | null
+  deliveredInferredAt: string | null
   opens: number
   firstOpenAt: string | null
   lastOpenAt: string | null
   clicks: number
   firstClickAt: string | null
   lastClickAt: string | null
+  clickedLinks: string[]
   bouncedAt: string | null
   unsubscribedAt: string | null
 }
@@ -190,16 +199,26 @@ type EmailAgg = {
 function emptyEmailAgg(): EmailAgg {
   return {
     sentAt: null,
-    deliveredAt: null,
+    deliveredReceiptAt: null,
+    deliveredInferredAt: null,
     opens: 0,
     firstOpenAt: null,
     lastOpenAt: null,
     clicks: 0,
     firstClickAt: null,
     lastClickAt: null,
+    clickedLinks: [],
     bouncedAt: null,
     unsubscribedAt: null,
   }
+}
+
+function clickUrlFromMeta(meta: unknown): string | null {
+  if (!meta || typeof meta !== 'object') return null
+  const rec = meta as Record<string, unknown>
+  const raw = typeof rec.url === 'string' ? rec.url : typeof rec.clickUrl === 'string' ? rec.clickUrl : null
+  const url = normalizeClickUrl(raw)
+  return url || null
 }
 
 async function computeEngagementDetail(
@@ -223,7 +242,7 @@ async function computeEngagementDetail(
     const chunk = emailKeys.slice(i, i + 100)
     const { data, error } = await sb
       .from('email_events')
-      .select('email_key, event, occurred_at')
+      .select('email_key, event, occurred_at, meta')
       .in('email_key', chunk)
     if (error) {
       console.error('[prospecting] engagement email_events read failed:', error.message)
@@ -237,19 +256,26 @@ async function computeEngagementDetail(
         case 'sent':
           agg.sentAt = earlier(agg.sentAt, at)
           break
-        case 'delivered':
-          agg.deliveredAt = earlier(agg.deliveredAt, at)
+        case 'delivered': {
+          const inferred =
+            ev.meta && typeof ev.meta === 'object' && (ev.meta as { inferred?: unknown }).inferred === true
+          if (inferred) agg.deliveredInferredAt = earlier(agg.deliveredInferredAt, at)
+          else agg.deliveredReceiptAt = earlier(agg.deliveredReceiptAt, at)
           break
+        }
         case 'open':
           agg.opens++
           agg.firstOpenAt = earlier(agg.firstOpenAt, at)
           agg.lastOpenAt = later(agg.lastOpenAt, at)
           break
-        case 'click':
+        case 'click': {
           agg.clicks++
           agg.firstClickAt = earlier(agg.firstClickAt, at)
           agg.lastClickAt = later(agg.lastClickAt, at)
+          const url = clickUrlFromMeta(ev.meta)
+          if (url && !agg.clickedLinks.includes(url)) agg.clickedLinks.push(url)
           break
+        }
         case 'bounce':
         case 'complaint':
           agg.bouncedAt = earlier(agg.bouncedAt, at)
@@ -384,13 +410,15 @@ async function computeEngagementDetail(
     }
     result[k.id] = {
       emailSentAt: em.sentAt,
-      emailDeliveredAt: em.deliveredAt,
+      emailDeliveredAt: em.deliveredReceiptAt ?? em.deliveredInferredAt,
+      deliveredInferred: em.deliveredReceiptAt == null && em.deliveredInferredAt != null,
       emailOpens: em.opens,
       firstOpenAt: em.firstOpenAt,
       lastOpenAt: em.lastOpenAt,
       emailClicks: em.clicks,
       firstClickAt: em.firstClickAt,
       lastClickAt: em.lastClickAt,
+      clickedLinks: em.clickedLinks,
       bouncedAt: em.bouncedAt,
       unsubscribedAt: em.unsubscribedAt,
       reportViews: views?.count ?? 0,
@@ -416,12 +444,12 @@ async function computeEngagementDetail(
 // shape. A new key part retires them rather than reading them back.
 const cachedEngagementExpired = unstable_cache(
   computeEngagementDetail,
-  ['prospecting-engagement-expired-v2'],
+  ['prospecting-engagement-expired-v3'],
   { revalidate: 60, tags: ['prospecting:engagement:expired'] },
 )
 const cachedEngagementFsbo = unstable_cache(
   computeEngagementDetail,
-  ['prospecting-engagement-fsbo-v2'],
+  ['prospecting-engagement-fsbo-v3'],
   { revalidate: 60, tags: ['prospecting:engagement:fsbo'] },
 )
 
@@ -429,7 +457,7 @@ const cachedEngagementFsbo = unstable_cache(
 // performance report needs per-document engagement for docs that are NOT
 // prospects (a CMA built for a walk-in seller has no expired/fsbo row), so it
 // cannot borrow either prospecting tag without polluting their invalidation.
-const cachedEngagementDoc = unstable_cache(computeEngagementDetail, ['doc-engagement-v2'], {
+const cachedEngagementDoc = unstable_cache(computeEngagementDetail, ['doc-engagement-v3'], {
   revalidate: 60,
   tags: ['cma:engagement'],
 })

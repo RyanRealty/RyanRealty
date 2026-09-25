@@ -25,13 +25,15 @@ import {
   updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail,
   stampCmaLinkOnPerson,
+  stampCmaPersonId,
   logCmaTimelineEvent,
 } from '@/lib/data'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { CMA_DOC_ORIGIN } from '@/lib/cma/doc-links'
 import { wrapBrandedEmail, brandedTextFooter, escapeHtml } from '@/lib/email/shell'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
-import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isSuppressed } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
@@ -118,6 +120,7 @@ async function resolveSendContext(
     brokerName: brokerRow.displayName,
     firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
     lastListPrice,
+    brokerSlug: CRM_BROKER_BY_EMAIL[(brokerRow.email ?? '').toLowerCase()] ?? 'matt',
   })
   // The place links are resolved here, not in the composer: a subdivision link
   // goes in only when that plat page renders, with the counts the page prints.
@@ -355,6 +358,7 @@ export async function prepareCmaSendPreview(slug: string): Promise<
         brokerName: brokerRow.displayName,
         firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
         lastListPrice,
+        brokerSlug: CRM_BROKER_BY_EMAIL[(brokerRow.email ?? '').toLowerCase()] ?? 'matt',
       }),
     }
     fakeCtx.facts.place = await resolveFirstContactPlace(fakeCtx.facts)
@@ -402,11 +406,36 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     }
   }
 
+  // A send without a CRM contact is untracked (no pixel, no signed links, no
+  // timeline). Find or create the contact the same way the drip does, then
+  // fail closed if we still have no person.
+  let personId = await findCrmPersonIdByEmail(ctx.clientEmail)
+  const crmBrokerSlug = CRM_BROKER_BY_EMAIL[(ctx.brokerRow.email ?? '').toLowerCase()] ?? 'matt'
+  if (!personId) {
+    const lead = await ensureNativeLead({
+      name: ctx.clientName,
+      email: ctx.clientEmail,
+      source: ctx.origin === 'expired' ? 'expired-outreach-queue' : ctx.origin === 'fsbo' ? 'fsbo-outreach' : 'cma-send',
+      tags: [
+        'audience:seller',
+        ctx.origin === 'expired' ? 'intent:expired-listing' : ctx.origin === 'fsbo' ? 'intent:fsbo' : 'source:cma-send',
+        ctx.origin === 'expired' ? 'source:expired-outreach-queue' : ctx.origin === 'fsbo' ? 'source:fsbo-outreach' : 'source:cma-send',
+      ],
+      assignedBroker: crmBrokerSlug,
+    })
+    personId = lead.personId > 0 ? lead.personId : null
+    if (personId) await stampCmaPersonId(slug, personId)
+  }
+  if (!personId) {
+    return {
+      ok: false,
+      error: 'Could not create a CRM contact for this email. The CMA was not sent — it would have gone out untracked.',
+    }
+  }
+  ctx.facts.personId = personId
+
   // Suppression chokepoint (fails closed).
-  const personId = await findCrmPersonIdByEmail(ctx.clientEmail)
-  const sup = personId
-    ? await isSuppressed(personId, 'email')
-    : await isSuppressedByEmail(ctx.clientEmail, 'email')
+  const sup = await isSuppressed(personId, 'email')
   if (sup.suppressed) {
     return { ok: false, error: `This contact has opted out of email (${sup.reasons.join(', ')}).` }
   }
@@ -426,7 +455,6 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
   }
 
   const body = buildLeadBody(ctx, override, await signatureFor(ctx.brokerRow.email))
-  const crmBrokerSlug = CRM_BROKER_BY_EMAIL[(ctx.brokerRow.email ?? '').toLowerCase()] ?? 'matt'
   const emailKey = `cma:${slug}`
   const trackedHtml = attributeOutbound(body.html, {
     brokerSlug: crmBrokerSlug,
@@ -464,6 +492,8 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
   }
   const transport: 'gmail' | 'resend' = gmailRes.ok ? 'gmail' : 'resend'
   const gmailMessageId = gmailRes.ok ? gmailRes.messageId : undefined
+  const gmailThreadId = gmailRes.ok ? gmailRes.threadId : undefined
+  const rfcMessageId = gmailRes.ok ? gmailRes.rfcMessageId : undefined
   if (!gmailRes.ok) {
     // Fallback rail: Resend. The lead still gets the CMA; the timeline row
     // records the degraded transport so the outage is visible.
@@ -515,7 +545,13 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
       emailKey,
       subject: body.subject,
       occurredAt: sentAt,
-      meta: { transport, slug, docType: 'cma' },
+      meta: {
+        transport,
+        slug,
+        docType: 'cma',
+        ...(gmailThreadId ? { gmailThreadId } : {}),
+        ...(rfcMessageId ? { rfcMessageId } : {}),
+      },
     })
     if (!rec.ok) console.warn('[sendCmaToLead] email_events sent row failed:', rec.error)
   } catch (e) {

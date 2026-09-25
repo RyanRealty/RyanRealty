@@ -19,6 +19,8 @@ const h = vi.hoisted(() => ({
   updateCmaRowFieldsBySlug: vi.fn(),
   logCmaTimelineEvent: vi.fn(),
   recordEmailEvent: vi.fn(),
+  ensureNativeLead: vi.fn(),
+  stampCmaPersonId: vi.fn(),
   row: {
     id: 'row-1',
     status: 'finalized',
@@ -62,6 +64,7 @@ vi.mock('@/lib/data', async (importOriginal) => ({
   updateCmaRowFieldsBySlug: h.updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail: vi.fn(async () => 42),
   stampCmaLinkOnPerson: vi.fn(async () => undefined),
+  stampCmaPersonId: h.stampCmaPersonId,
   logCmaTimelineEvent: h.logCmaTimelineEvent,
   getBrokers: vi.fn(async () => []),
 }))
@@ -80,6 +83,9 @@ vi.mock('@/lib/cma-pdf', () => ({
   CmaNotFoundError: class CmaNotFoundError extends Error {},
 }))
 vi.mock('@/lib/crm/email-events', () => ({ recordEmailEvent: h.recordEmailEvent }))
+vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
+  ensureNativeLead: (...args: unknown[]) => h.ensureNativeLead(...args),
+}))
 vi.mock('@/lib/email/auto-track', () => ({ instrumentLeadHtml: vi.fn(async (html: string) => html) }))
 
 import { sendCmaToLead } from '@/lib/cma/send'
@@ -98,6 +104,8 @@ beforeEach(() => {
   h.updateCmaRowFieldsBySlug.mockResolvedValue({ ok: true })
   h.logCmaTimelineEvent.mockResolvedValue(undefined)
   h.recordEmailEvent.mockResolvedValue({ ok: true })
+  h.ensureNativeLead.mockResolvedValue({ personId: 88, created: true })
+  h.stampCmaPersonId.mockResolvedValue(undefined)
   consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
@@ -116,6 +124,49 @@ describe('sendCmaToLead', () => {
     expect(h.gmailSend).toHaveBeenCalledTimes(1)
     expect(h.sendEmail).not.toHaveBeenCalled()
     expect(h.updateCmaRowFieldsBySlug).toHaveBeenCalledWith(SLUG, expect.objectContaining({ status: 'delivered' }))
+    expect(h.recordEmailEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'sent',
+        emailKey: `cma:${SLUG}`,
+        meta: expect.objectContaining({
+          transport: 'gmail',
+          slug: SLUG,
+          gmailThreadId: 'thr-1',
+          rfcMessageId: expect.stringMatching(/^<.+@ryan-realty\.com>$/),
+        }),
+      }),
+    )
+    expect(h.ensureNativeLead).not.toHaveBeenCalled()
+  })
+
+  it('creates a CRM contact when none exists, then tracks the send', async () => {
+    const { findCrmPersonIdByEmail } = await import('@/lib/data')
+    vi.mocked(findCrmPersonIdByEmail).mockResolvedValueOnce(null)
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res).toMatchObject({ ok: true, transport: 'gmail', personId: 88 })
+    expect(h.ensureNativeLead).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'lead@example.com', source: 'cma-send' }),
+    )
+    expect(h.stampCmaPersonId).toHaveBeenCalledWith(SLUG, 88)
+    expect(h.recordEmailEvent).toHaveBeenCalledWith(expect.objectContaining({ personId: 88 }))
+    expect(h.logCmaTimelineEvent).toHaveBeenCalled()
+  })
+
+  it('refuses the send when a CRM contact cannot be created', async () => {
+    const { findCrmPersonIdByEmail } = await import('@/lib/data')
+    vi.mocked(findCrmPersonIdByEmail).mockResolvedValueOnce(null)
+    h.ensureNativeLead.mockResolvedValueOnce({ personId: 0, created: false })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(false)
+    expect(res.error).toMatch(/untracked/i)
+    expect(h.gmailSend).not.toHaveBeenCalled()
+    expect(h.sendEmail).not.toHaveBeenCalled()
+    expect(h.updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+    expect(h.recordEmailEvent).not.toHaveBeenCalled()
   })
 
   it('falls back to Resend when the Gmail sign-in stalls past its deadline', async () => {

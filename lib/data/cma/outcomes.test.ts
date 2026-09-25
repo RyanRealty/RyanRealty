@@ -10,8 +10,8 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
  * bounce must survive to the row instead of being smoothed into "no activity".
  */
 
-type EmailRow = { email_key: string; event: string; occurred_at: string }
-type ViewRow = { page_url: string; event_at: string; page_category: string; event_type: string }
+type EmailRow = { email_key: string; event: string; occurred_at: string; meta?: Record<string, unknown> }
+type ViewRow = { page_url: string; event_at: string; page_category: string; event_type: string; session_id?: string }
 
 /** A document page view as the tracker actually writes it. */
 function view(slug: string, at: string): ViewRow {
@@ -43,6 +43,7 @@ const state = {
   people: [] as Array<{ id: number; stage: string | null }>,
   emailEvents: [] as EmailRow[],
   views: [] as ViewRow[],
+  sessions: [] as Array<{ session_id: string; crm_person_id: number }>,
   queueRows: [] as Array<Record<string, unknown>>,
 }
 
@@ -105,6 +106,8 @@ vi.mock('@/lib/supabase/service', () => ({
           return table(state.emailEvents as unknown as Array<Record<string, unknown>>)
         case 'visitor_events':
           return table(state.views as unknown as Array<Record<string, unknown>>)
+        case 'visitor_sessions':
+          return table(state.sessions as unknown as Array<Record<string, unknown>>)
         default:
           return table([])
       }
@@ -124,6 +127,7 @@ beforeEach(() => {
   state.people = []
   state.emailEvents = []
   state.views = []
+  state.sessions = []
   state.queueRows = []
 })
 
@@ -208,6 +212,72 @@ describe('getCmaOutcomes — one row-level answer per document', () => {
 
   it('returns an empty map for an empty id list without touching the database', async () => {
     expect(await getCmaOutcomes([])).toEqual({})
+  })
+
+  it('flags a Gmail inferred delivery and lets a Resend receipt win', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'doc-one', person_id: null, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+      { id: 'c2', slug: 'doc-two', person_id: null, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.emailEvents = [
+      { email_key: 'cma:doc-one', event: 'sent', occurred_at: '2026-09-01T10:00:00Z' },
+      { email_key: 'cma:doc-one', event: 'delivered', occurred_at: '2026-09-02T10:00:00Z', meta: { inferred: true } },
+      { email_key: 'cma:doc-two', event: 'sent', occurred_at: '2026-09-01T10:00:00Z' },
+      { email_key: 'cma:doc-two', event: 'delivered', occurred_at: '2026-09-01T10:00:05Z', meta: { inferred: true } },
+      { email_key: 'cma:doc-two', event: 'delivered', occurred_at: '2026-09-01T10:00:06Z' },
+    ]
+    const map = await getCmaOutcomes(['c1', 'c2'])
+    expect(map.c1).toMatchObject({
+      deliveredAt: '2026-09-02T10:00:00Z',
+      deliveredInferred: true,
+    })
+    expect(map.c2).toMatchObject({
+      deliveredAt: '2026-09-01T10:00:06Z',
+      deliveredInferred: false,
+    })
+  })
+
+  it('classifies each distinct clicked link for the admin cell', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-2465-7th', person_id: 7, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.emailEvents = [
+      { email_key: 'cma:cma-2465-7th', event: 'sent', occurred_at: '2026-09-01T10:00:00Z' },
+      {
+        email_key: 'cma:cma-2465-7th',
+        event: 'click',
+        occurred_at: '2026-09-01T12:00:00Z',
+        meta: { url: `https://ryan-realty.com/cma/cma-2465-7th?_pid=tok&utm_campaign=cma-2465-7th` },
+      },
+      {
+        email_key: 'cma:cma-2465-7th',
+        event: 'click',
+        occurred_at: '2026-09-01T12:01:00Z',
+        meta: { url: 'https://ryan-realty.com/subdivisions/diamond-bar-ranch?utm_source=cma&utm_medium=document&utm_campaign=cma-2465-7th&agent=matt' },
+      },
+      {
+        email_key: 'cma:cma-2465-7th',
+        event: 'click',
+        occurred_at: '2026-09-01T12:02:00Z',
+        meta: { url: 'https://ryan-realty.com/cities/redmond?utm_campaign=cma-2465-7th' },
+      },
+      {
+        email_key: 'cma:cma-2465-7th',
+        event: 'click',
+        occurred_at: '2026-09-01T12:03:00Z',
+        meta: { url: 'https://ryan-realty.com/reviews?_pid=tok' },
+      },
+    ]
+    const o = (await getCmaOutcomes(['c1'])).c1
+    expect(o.clicks).toBe(4)
+    expect(o.clickedLinks.map((l) => l.label)).toEqual([
+      'report',
+      'Diamond Bar Ranch',
+      'Redmond',
+      'reviews',
+    ])
+    expect(o.clickedLinks.map((l) => l.kind)).toEqual(['letter', 'area', 'area', 'reviews'])
+    expect(o.clickedLinks[1]!.url).toBe('https://ryan-realty.com/subdivisions/diamond-bar-ranch')
   })
 })
 
@@ -297,6 +367,40 @@ describe('getCmaOutcomes — a tap on a comp is a visit to THAT document', () =>
       tap('cma-101-main', '/homes-for-sale/bend/x-220000001', '2026-09-02T09:01:00Z', 'cta_click'),
     ]
     expect((await getCmaOutcomes(['c1'])).c1.visits).toBe(0)
+  })
+
+  it('counts a site visit attributed by crm_person_id after the send', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: 7, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.sessions = [{ session_id: 'sid-7', crm_person_id: 7 }]
+    state.views = [
+      {
+        page_url: 'https://ryan-realty.com/reviews',
+        event_at: '2026-09-01T14:00:00Z',
+        page_category: 'site',
+        event_type: 'page_view',
+        session_id: 'sid-7',
+      },
+    ]
+    const o = (await getCmaOutcomes(['c1'])).c1
+    expect(o.visits).toBe(1)
+    expect(o.firstVisitAt).toBe('2026-09-01T14:00:00Z')
+    expect(o.visitedPages).toEqual({ count: 1, recent: ['/reviews'] })
+  })
+
+  it('does not double-count a campaign-tagged tap or the document itself via the session', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: 7, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.sessions = [{ session_id: 'sid-7', crm_person_id: 7 }]
+    state.views = [
+      { ...view('cma-101-main', '2026-09-01T12:00:00Z'), session_id: 'sid-7' },
+      { ...tap('cma-101-main', '/reviews', '2026-09-01T12:05:00Z'), session_id: 'sid-7' },
+    ]
+    const o = (await getCmaOutcomes(['c1'])).c1
+    expect(o.visits).toBe(2)
+    expect(o.visitedPages.recent).toEqual(['/reviews'])
   })
 
   it('ignores a campaign that is not one of ours', async () => {

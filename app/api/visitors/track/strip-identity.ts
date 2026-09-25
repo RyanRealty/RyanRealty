@@ -33,6 +33,30 @@ export const IDENTITY_PARAMS = ['_pid', '_fuid'] as const
  * A string we cannot parse is returned unchanged rather than half-edited — a
  * referrer can be anything, and guessing at one is worse than keeping it.
  */
+/**
+ * Destination of an in-document click, identity params stripped. Same rule as
+ * `stripIdentityParams` — `_pid` / `_fuid` never enter stored metadata.
+ */
+export function stripClickDestination(url: string | null | undefined): string | undefined {
+  return stripIdentityParams(url)
+}
+
+/**
+ * Event metadata as it may be stored. A click destination is kept even at
+ * essential consent — it names the page, not the person. Identity params
+ * are stripped first. Other metadata still drops at essential.
+ */
+export function visitorEventMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+  minimalOnly: boolean,
+): Record<string, unknown> | undefined {
+  const raw = metadata && typeof metadata === 'object' ? metadata : null
+  const dest = stripClickDestination(typeof raw?.destination === 'string' ? raw.destination : null)
+  if (minimalOnly) return dest ? { destination: dest } : undefined
+  if (!raw && !dest) return undefined
+  return dest ? { ...raw, destination: dest } : (raw ?? undefined)
+}
+
 export function stripIdentityParams(url: string | null | undefined): string | undefined {
   const raw = typeof url === 'string' ? url.trim() : ''
   if (!raw) return undefined

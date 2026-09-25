@@ -13,6 +13,8 @@ import 'server-only'
  *   visitor_events `page_category='client-document'`, page_url `/cma/<slug>`
  *   visitor_events page_url carrying `utm_campaign=<slug>` — a tap on a comp,
  *                                               place or CTA inside the document
+ *   visitor_sessions `crm_person_id` after send — site visits attributed by
+ *                                               identity even without the campaign
  *   crm_timeline   `email_in` / `sms_in` on the linked person — the reply
  *
  * This reader turns those three into ONE row-level answer per document, and one
@@ -23,8 +25,9 @@ import 'server-only'
  * row (delivered_at — the column is named for the CRM's "delivered to the
  * lead", not for an SMTP delivery receipt). `deliveredAt` is the provider's
  * actual delivery event and exists ONLY on the Resend fallback rail; a Gmail
- * DWD send has no delivery webhook, so a null there means "no receipt exists",
- * never "it did not arrive". The UI must not render the two as one stage.
+ * DWD send has no delivery webhook. Bounce-watch infers `delivered` with
+ * `meta.inferred=true` after 24h with no bounce, or on any open/click. A
+ * Resend receipt still wins when both exist. The UI marks inferred vs receipt.
  *
  * COST. Every read is `.in()`-chunked over the caller's id set — no per-row
  * query, no unbounded table scan. getCmaLaneFunnel scopes the expensive
@@ -41,6 +44,8 @@ import {
 } from '@/lib/data/prospecting/engagement'
 import { listCmaQueue } from '@/lib/data/cma/unified-queue'
 import { classifyCmaOrigin, CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
+import { classifyCmaLink, type CmaLinkKind } from '@/lib/cma/link-kind'
+import { cmaCampaignFromUrl } from '@/lib/cma/doc-links'
 
 /** Inbound kinds that count as "they answered". A form submit is not a reply. */
 export const REPLY_TIMELINE_KINDS = ['email_in', 'sms_in'] as const
@@ -50,12 +55,16 @@ export type CmaOutcome = {
   slug: string
   /** cmas.delivered_at — when the broker's send left the building. */
   sentAt: string | null
-  /** Provider delivery receipt. Resend rail only; null on the Gmail rail. */
+  /** Provider delivery receipt, or inferred (no bounce in 24h / any open or click). */
   deliveredAt: string | null
+  /** True when deliveredAt came from the Gmail inferred rule, not a Resend receipt. */
+  deliveredInferred: boolean
   firstOpenAt: string | null
   opens: number
   firstClickAt: string | null
   clicks: number
+  /** Distinct in-letter / email links they opened, classified for the admin cell. */
+  clickedLinks: Array<{ kind: CmaLinkKind; label: string; url: string }>
   /**
    * They actually opened it. Counts BOTH `/cma/<slug>` document views and
    * views of ryan-realty.com pages this document sent them to — every address,
@@ -91,10 +100,12 @@ export function emptyCmaOutcome(cmaId: string, slug: string): CmaOutcome {
     slug,
     sentAt: null,
     deliveredAt: null,
+    deliveredInferred: false,
     firstOpenAt: null,
     opens: 0,
     firstClickAt: null,
     clicks: 0,
+    clickedLinks: [],
     firstVisitAt: null,
     visits: 0,
     lastVisitAt: null,
@@ -197,7 +208,64 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
     }
   }
 
-  // 4. Where the lead sits today.
+  // 4. Site visits attributed by session identity (rr_pid → crm_person_id),
+  //    even when the arrival URL did not carry utm_campaign=<slug>. Deduped
+  //    against campaign-tagged views so a tagged tap is not counted twice.
+  type SessionHit = { path: string; at: string; pageUrl: string }
+  const sessionHitsByPid = new Map<number, SessionHit[]>()
+  if (personIds.length > 0 && earliestSend) {
+    const sessions: Array<{ session_id: string; crm_person_id: number }> = []
+    for (const part of chunk(personIds, 100)) {
+      const { data, error } = await sb
+        .from('visitor_sessions')
+        .select('session_id, crm_person_id')
+        .in('crm_person_id', part)
+      if (error) {
+        console.error('[cma outcomes] visitor_sessions read failed:', error.message)
+        continue
+      }
+      for (const r of (data ?? []) as Row[]) {
+        const sid = str(r.session_id)
+        const pid = Number(r.crm_person_id)
+        if (!sid || !Number.isFinite(pid)) continue
+        sessions.push({ session_id: sid, crm_person_id: pid })
+      }
+    }
+    const sessionIds = [...new Set(sessions.map((s) => s.session_id))]
+    const pidBySid = new Map(sessions.map((s) => [s.session_id, s.crm_person_id]))
+    if (sessionIds.length > 0) {
+      for (const part of chunk(sessionIds, 100)) {
+        const { data, error } = await sb
+          .from('visitor_events')
+          .select('session_id, page_url, event_at, event_type')
+          .in('session_id', part)
+          .in('event_type', ['page_view', 'listing_view'])
+          .gte('event_at', earliestSend)
+        if (error) {
+          console.error('[cma outcomes] session events read failed:', error.message)
+          continue
+        }
+        for (const v of (data ?? []) as Row[]) {
+          const sid = str(v.session_id)
+          const at = str(v.event_at)
+          const pageUrl = str(v.page_url)
+          const pid = sid ? pidBySid.get(sid) : undefined
+          if (!sid || !at || !pageUrl || pid == null) continue
+          let path = '/'
+          try {
+            path = new URL(pageUrl, 'https://ryan-realty.com').pathname || '/'
+          } catch {
+            path = '/'
+          }
+          const list = sessionHitsByPid.get(pid) ?? []
+          list.push({ path, at, pageUrl })
+          sessionHitsByPid.set(pid, list)
+        }
+      }
+    }
+  }
+
+  // 5. Where the lead sits today.
   const stageByPid = new Map<number, string | null>()
   for (const part of chunk(personIds, 200)) {
     const { data, error } = await sb.from('crm_people').select('id, stage').in('id', part)
@@ -227,19 +295,43 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
       }
     }
 
+    let firstVisitAt = earlier(eng.firstViewAt, eng.firstSiteViewAt)
+    let lastVisitAt = later(eng.lastViewAt, eng.lastSiteViewAt)
+    let visits = eng.reportViews + eng.siteViews
+    let siteViewCount = eng.siteViews
+    const recent = [...eng.recentSitePaths]
+    if (pid != null && sentAt) {
+      for (const hit of sessionHitsByPid.get(pid) ?? []) {
+        if (hit.at <= sentAt) continue
+        // Already counted as a campaign-tagged arrival or the document itself.
+        if (cmaCampaignFromUrl(hit.pageUrl)) continue
+        if (hit.path.includes(`/cma/${slug}`)) continue
+        visits++
+        siteViewCount++
+        firstVisitAt = earlier(firstVisitAt, hit.at)
+        lastVisitAt = later(lastVisitAt, hit.at)
+        if (!recent.includes(hit.path)) recent.unshift(hit.path)
+      }
+    }
+
     out[cmaId] = {
       cmaId,
       slug,
       sentAt,
       deliveredAt: eng.emailDeliveredAt,
+      deliveredInferred: eng.deliveredInferred,
       firstOpenAt: eng.firstOpenAt,
       opens: eng.emailOpens,
       firstClickAt: eng.firstClickAt,
       clicks: eng.emailClicks,
-      firstVisitAt: earlier(eng.firstViewAt, eng.firstSiteViewAt),
-      visits: eng.reportViews + eng.siteViews,
-      lastVisitAt: later(eng.lastViewAt, eng.lastSiteViewAt),
-      visitedPages: { count: eng.siteViews, recent: eng.recentSitePaths },
+      clickedLinks: eng.clickedLinks.map((url) => {
+        const c = classifyCmaLink(url, slug)
+        return { kind: c.kind, label: c.label, url }
+      }),
+      firstVisitAt,
+      visits,
+      lastVisitAt,
+      visitedPages: { count: siteViewCount, recent: recent.slice(0, 3) },
       repliedAt,
       bounced: eng.bouncedAt != null,
       unsubscribed: eng.unsubscribedAt != null,
@@ -258,7 +350,7 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
  */
 export const getCmaOutcomes = makeResilientCached<[string[]], CmaOutcomeMap>(
   computeCmaOutcomes,
-  ['cma-outcomes-v1'],
+  ['cma-outcomes-v2'],
   { revalidate: 60, tags: ['cma:engagement'] },
   {},
 )

@@ -18,6 +18,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { composeCmaFirstContact } from '@/lib/cma/first-contact'
 import {
   immersiveHeroNumberHtml,
   letterCoverPayoffHtml,
@@ -883,5 +884,44 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect((body.match(/<h[23][^>]*>[^<]*The sales that set this price/g) ?? []).length).toBe(1)
   })
 
-
+  it('contract: first-contact-tracked-area-links', () => {
+    const letter = composeCmaFirstContact('expired', {
+      address: '1130 E Canter, Sisters, OR 97759',
+      firstName: 'Pat',
+      valueLow: 649_000,
+      valueHigh: 675_000,
+      recommendedList: 659_000,
+      brokerName: 'Matt Ryan',
+      city: 'Sisters',
+      closedSalesCount: 3,
+      salesScope: 'subdivision',
+      cmaSlug: 'cma-1130-e-canter',
+      brokerSlug: 'matt',
+      personId: 42,
+      place: {
+        subdivision: {
+          label: 'SaddleStone',
+          href: 'https://ryan-realty.com/subdivisions/saddlestone?utm_source=crm&utm_medium=doc&utm_campaign=cma-letter',
+          closed12mo: 3,
+          unsold12mo: null,
+          active: 1,
+          pending: null,
+          history: null,
+        },
+        wider: {
+          label: 'Sisters',
+          href: 'https://ryan-realty.com/cities/sisters?utm_source=crm&utm_medium=doc&utm_campaign=cma-letter',
+        },
+      },
+    })
+    expect(letter.bodyText).toContain('utm_campaign=cma-1130-e-canter')
+    expect(letter.bodyText).not.toContain('utm_campaign=cma-letter')
+    expect(letter.bodyText).toContain('utm_source=cma')
+    expect(letter.bodyText).toContain('utm_medium=document')
+    expect(letter.bodyText).not.toMatch(/utm_medium=doc&utm_medium=/)
+    const reviews = (letter.bodyText.match(/https:\/\/ryan-realty\.com\/reviews\?[^\s]+/)?.[0] ?? '').replace(/[.,;:!?]+$/, '')
+    expect((reviews.match(/utm_medium=/g) ?? []).length).toBe(1)
+    expect(letter.bodyText).toContain('/subdivisions/saddlestone?')
+    expect(letter.bodyText).toContain('/cities/sisters?')
+  })
 })

@@ -24,6 +24,7 @@ import { type InboundPacketFacts, type InboundValuationCopy } from '@/lib/cma/in
 import type { FirstContactPlace } from '@/lib/cma/first-contact-place'
 import { isAskedOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { formatFirstTouchUsd } from '@/lib/crm/first-touch-copy'
+import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 
 const PUBLIC_SITE = 'https://ryan-realty.com'
 const ABOUT_HREF = `${PUBLIC_SITE}/about`
@@ -68,6 +69,27 @@ export type CmaFirstContactFacts = InboundPacketFacts & {
    * place (neighborhood or city). Null or missing → no place links at all.
    */
   place?: FirstContactPlace | null
+  /** When set, area/site hrefs go through `trackedDocLink` (`utm_campaign=<slug>`). */
+  cmaSlug?: string | null
+  brokerSlug?: string | null
+  personId?: number | null
+}
+
+function trackingCtx(facts: CmaFirstContactFacts): TrackedDocLinkCtx | null {
+  const slug = trim(facts.cmaSlug)
+  if (!slug) return null
+  return {
+    cmaSlug: slug,
+    brokerSlug: facts.brokerSlug ?? null,
+    personId: facts.personId ?? null,
+  }
+}
+
+/** Stamp a first-party href with the document campaign when we know the slug. */
+function siteHref(href: string, facts: CmaFirstContactFacts): string {
+  const ctx = trackingCtx(facts)
+  if (!ctx) return href
+  return trackedDocLink('site', href, ctx)
 }
 
 /** The one close every origin shares. The send rail appends the report URL to it. */
@@ -177,7 +199,7 @@ function whatYouGet(facts: CmaFirstContactFacts): string {
 
 function askFor(origin: CmaOrigin, facts: CmaFirstContactFacts): string {
   const sitDown = 'We could sit down, or take fifteen minutes on the phone, and talk about how we sell homes.'
-  const proof = `${whatYouGet(facts)} You can read our reviews at ${REVIEWS_HREF} and see who we are at ${ABOUT_HREF}.`
+  const proof = `${whatYouGet(facts)} You can read our reviews at ${siteHref(REVIEWS_HREF, facts)} and see who we are at ${siteHref(ABOUT_HREF, facts)}.`
   if (origin === 'expired') {
     return `Again, we are sorry your home did not sell. If you are ever considering selling in the future, we would love the opportunity to earn your business. ${sitDown} ${proof}`
   }
@@ -239,16 +261,16 @@ function placeParagraph(facts: CmaFirstContactFacts): string | null {
       parts.push(`In ${sub.label} itself, ${joined}.`)
       parts.push(
         sub.unsold12mo === 0
-          ? `Every home that came off the market there in that stretch sold. Our ${sub.label} page keeps the running picture, what is for sale there, what has sold, and what did not: ${sub.href}.`
-          : `Our ${sub.label} page keeps the running picture, what is for sale there, what has sold, and what did not: ${sub.href}.`,
+          ? `Every home that came off the market there in that stretch sold. Our ${sub.label} page keeps the running picture, what is for sale there, what has sold, and what did not: ${siteHref(sub.href, facts)}.`
+          : `Our ${sub.label} page keeps the running picture, what is for sale there, what has sold, and what did not: ${siteHref(sub.href, facts)}.`,
       )
     } else {
-      parts.push(`Our ${sub.label} page is at ${sub.href}.`)
+      parts.push(`Our ${sub.label} page is at ${siteHref(sub.href, facts)}.`)
     }
-    if (wider) parts.push(`The ${wider.label} page shows the wider market it sits in: ${wider.href}.`)
+    if (wider) parts.push(`The ${wider.label} page shows the wider market it sits in: ${siteHref(wider.href, facts)}.`)
     return parts.join(' ')
   }
-  if (wider) return `Our page on ${wider.label} is at ${wider.href}.`
+  if (wider) return `Our page on ${wider.label} is at ${siteHref(wider.href, facts)}.`
   return null
 }
 
@@ -368,6 +390,8 @@ export function cmaFirstContactFactsFromRow(
     firstName?: string | null
     lastListPrice?: number | null
     place?: FirstContactPlace | null
+    brokerSlug?: string | null
+    personId?: number | null
   },
 ): CmaFirstContactFacts {
   const args = asRecord(row.render_args)
@@ -391,5 +415,8 @@ export function cmaFirstContactFactsFromRow(
     closedSalesCount: countField(row.comps_count),
     salesScope: salesScopeFromTierCounts(selection?.final_tier_counts),
     place: extra?.place ?? null,
+    cmaSlug: strField(row.slug),
+    brokerSlug: extra?.brokerSlug ?? null,
+    personId: extra?.personId ?? null,
   }
 }

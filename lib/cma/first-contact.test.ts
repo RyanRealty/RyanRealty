@@ -288,6 +288,41 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     expect(letter.bodyText).toContain('In Diamond Bar Ranch itself, six homes sold in the last twelve months, and two are for sale right now.')
     expect(letter.bodyText).toMatch(/\/subdivisions\/diamond-bar-ranch/)
   })
+
+  it('stamps area and site links with the CMA slug when the row has one', () => {
+    const facts = cmaFirstContactFactsFromRow(
+      {
+        slug: 'cma-2465-7th',
+        subject_address: '2465 7th, Redmond, OR 97756',
+        subject_city: 'Redmond',
+        subject_subdivision: 'Diamond Bar Ranch',
+        client_name: 'Blair Auld',
+        value_low: 412000,
+        value_high: 443000,
+        recommended_list: 435000,
+        comps_count: 5,
+      },
+      {
+        brokerName: 'Matt Ryan',
+        brokerSlug: 'matt',
+        personId: 99,
+        place: { subdivision: { ...DBR, closed12mo: 6, unsold12mo: null, active: 2, pending: null, history: null }, wider: REDMOND },
+      },
+    )
+    expect(facts.cmaSlug).toBe('cma-2465-7th')
+    const letter = composeCmaFirstContact('expired', facts)
+    expect(letter.bodyText).toContain('utm_campaign=cma-2465-7th')
+    expect(letter.bodyText).not.toContain('utm_campaign=cma-letter')
+    expect(letter.bodyText).toContain('utm_source=cma')
+    expect(letter.bodyText).toContain('utm_medium=document')
+    expect(letter.bodyText).not.toMatch(/utm_medium=doc&utm_medium=/)
+    expect(letter.bodyText).toContain('/reviews?')
+    expect(letter.bodyText).toContain('/about?')
+    expect(letter.bodyText).toContain('/subdivisions/diamond-bar-ranch?')
+    expect(letter.bodyText).toContain('/cities/redmond?')
+    const reviews = letter.bodyText.match(/https:\/\/ryan-realty\.com\/reviews\?[^\s]+/)?.[0] ?? ''
+    expect((reviews.match(/utm_medium=/g) ?? []).length).toBe(1)
+  })
 })
 
 describe('placeParagraph — what did not sell (SITE-55)', () => {

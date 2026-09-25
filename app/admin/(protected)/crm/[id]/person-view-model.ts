@@ -54,7 +54,7 @@ type TimelineRowLike = {
 }
 
 /** Per-label open/click rollup keyed by the email's timeline title. */
-export type EmailEngagement = Record<string, { opens: number; lastOpen: string | null; clicks: number }>
+export type EmailEngagement = Record<string, { opens: number; lastOpen: string | null; clicks: number; clickUrls: string[] }>
 
 // ── formatting ───────────────────────────────────────────────────────────────
 
@@ -132,12 +132,14 @@ export function buildEmailEngagement(timeline: TimelineRowLike[]): EmailEngageme
     const pl = (t.payload ?? {}) as { label?: string }
     const key = (pl.label ?? t.title ?? '').trim()
     if (!key) continue
-    const e = (engagement[key] ??= { opens: 0, lastOpen: null, clicks: 0 })
+    const e = (engagement[key] ??= { opens: 0, lastOpen: null, clicks: 0, clickUrls: [] })
     if (t.kind === 'email_open') {
       e.opens++
       if (!e.lastOpen || t.ts > e.lastOpen) e.lastOpen = t.ts
     } else {
       e.clicks++
+      const url = typeof (t.payload ?? {}).url === 'string' ? String((t.payload as { url?: unknown }).url) : null
+      if (url && !e.clickUrls.includes(url)) e.clickUrls.push(url)
     }
   }
   return engagement
@@ -168,6 +170,7 @@ export function buildTimelineItems(
         payload: (t.payload ?? {}) as Record<string, unknown>,
         opens: t.kind === 'email_out' ? eng?.opens : undefined,
         clicks: t.kind === 'email_out' ? eng?.clicks : undefined,
+        clickUrls: t.kind === 'email_out' ? eng?.clickUrls : undefined,
       }
     }) as TimelineItem[]
 }

@@ -85,6 +85,8 @@ export type TimelineItem = {
   payload: Record<string, unknown>
   opens?: number
   clicks?: number
+  /** Distinct destinations from folded email_click rows. */
+  clickUrls?: string[]
   delivered?: boolean
   bounced?: boolean
   visitedAfterSend?: boolean
@@ -403,6 +405,11 @@ function EventCard({ item }: { item: TimelineItem }) {
             ) : null}
             {typeof item.clicks === 'number' && item.clicks > 0 ? (
               <TimelineChip className="ml-1">{item.clicks} clicks</TimelineChip>
+            ) : null}
+            {item.clickUrls && item.clickUrls.length > 0 ? (
+              <span className="ml-1 text-xs" style={MUTED} title={item.clickUrls.join('\n')}>
+                {item.clickUrls.join(' · ')}
+              </span>
             ) : null}
             {item.visitedAfterSend ? (
               <TimelineChip tone="ok" className="ml-1">

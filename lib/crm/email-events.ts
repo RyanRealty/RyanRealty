@@ -23,6 +23,7 @@ import 'server-only'
 /** The normalized lifecycle event taxonomy stored in email_events.event. */
 export type EmailEvent =
   | 'sent'
+  | 'accepted'
   | 'delivered'
   | 'open'
   | 'click'
@@ -75,6 +76,7 @@ export type RecordEmailEventResult =
 
 const EVENT_VALUES: readonly EmailEvent[] = [
   'sent',
+  'accepted',
   'delivered',
   'open',
   'click',
@@ -98,6 +100,9 @@ export function normalizeEvent(raw: string | null | undefined): EmailEvent | nul
     case 'send':
     case 'delivery':
       return 'sent'
+    case 'accepted':
+    case 'accept':
+      return 'accepted'
     case 'delivered':
       return 'delivered'
     case 'open':
@@ -139,12 +144,38 @@ export function normalizeEvent(raw: string | null | undefined): EmailEvent | nul
  * rather than the email, so a pixel that fires many times still collapses to one
  * open row even though the recipient is unknown / resolved only best-effort.
  */
+/**
+ * Click identity: strip `_pid`, `utm_*` and `agent` so two taps on the same
+ * link collapse, and two taps on different links stay distinct.
+ */
+export function normalizeClickUrl(url: string | null | undefined): string {
+  const raw = (url ?? '').trim()
+  if (!raw) return ''
+  try {
+    const u = new URL(raw, 'https://ryan-realty.com')
+    for (const key of [...u.searchParams.keys()]) {
+      if (key === '_pid' || key === 'agent' || key.startsWith('utm_')) {
+        u.searchParams.delete(key)
+      }
+    }
+    let out = `${u.origin}${u.pathname}`
+    const qs = u.searchParams.toString()
+    if (qs) out += `?${qs}`
+    if (u.hash) out += u.hash
+    return out
+  } catch {
+    return raw
+  }
+}
+
 export function buildDedupeKey(opts: {
   messageId?: string | null
   emailKey?: string | null
   event: EmailEvent
   recipientEmail?: string | null
   personId?: number | null
+  /** Destination URL — included for `click` so distinct links stay distinct. */
+  clickUrl?: string | null
 }): string {
   const anchor = (opts.messageId || opts.emailKey || 'none').trim()
   const recipient = (opts.recipientEmail ?? '').trim().toLowerCase()
@@ -152,7 +183,12 @@ export function buildDedupeKey(opts: {
   // recipient is known (the Gmail tracker rail), so the key stays deterministic.
   const target =
     recipient || (typeof opts.personId === 'number' && Number.isFinite(opts.personId) ? `p:${opts.personId}` : '')
-  return `${anchor}:${opts.event}:${target}`
+  const base = `${anchor}:${opts.event}:${target}`
+  if (opts.event === 'click') {
+    const url = normalizeClickUrl(opts.clickUrl)
+    if (url) return `${base}:${url}`
+  }
+  return base
 }
 
 /**
@@ -271,12 +307,21 @@ export async function recordEmailEvent(
   }
 
   const occurredAt = toIso(input.occurredAt)
+  const clickUrl =
+    event === 'click'
+      ? typeof input.meta?.url === 'string'
+        ? input.meta.url
+        : typeof input.meta?.clickUrl === 'string'
+          ? input.meta.clickUrl
+          : null
+      : null
   const dedupeKey = buildDedupeKey({
     messageId,
     emailKey,
     event,
     recipientEmail: recipient,
     personId,
+    clickUrl,
   })
 
   const { insertEmailEvent } = await import('@/lib/data/crm/insertEmailEvent')

@@ -20,11 +20,22 @@ vi.mock('@/lib/data/crm/getPersonPrimaryEmail', () => ({
 
 import {
   buildDedupeKey,
+  normalizeClickUrl,
   normalizeEvent,
   recordEmailEvent,
   resolvePersonIdByEmail,
   sendTypeFromEmailKey,
 } from './email-events'
+
+describe('normalizeClickUrl', () => {
+  it('strips _pid, utm_* and agent so the same link collapses', () => {
+    expect(
+      normalizeClickUrl(
+        'https://ryan-realty.com/subdivisions/diamond-bar-ranch?_pid=abc&utm_source=cma&utm_medium=document&utm_campaign=cma-x&agent=matt',
+      ),
+    ).toBe('https://ryan-realty.com/subdivisions/diamond-bar-ranch')
+  })
+})
 
 describe('buildDedupeKey (idempotency)', () => {
   it('is stable for the same (messageId, event, recipient)', () => {
@@ -70,6 +81,37 @@ describe('buildDedupeKey (idempotency)', () => {
   it('prefers the recipient over the person id when both are present', () => {
     const k = buildDedupeKey({ messageId: 'm1', event: 'open', recipientEmail: 'a@b.com', personId: 42 })
     expect(k).toBe('m1:open:a@b.com')
+  })
+
+  it('includes the normalized URL for click events so distinct links stay distinct', () => {
+    const a = buildDedupeKey({
+      emailKey: 'cma:deer',
+      event: 'click',
+      personId: 7,
+      clickUrl: 'https://ryan-realty.com/reviews?_pid=tok&utm_source=cma&utm_medium=document&utm_campaign=cma-deer&agent=matt',
+    })
+    const b = buildDedupeKey({
+      emailKey: 'cma:deer',
+      event: 'click',
+      personId: 7,
+      clickUrl: 'https://ryan-realty.com/reviews?utm_campaign=cma-deer',
+    })
+    const other = buildDedupeKey({
+      emailKey: 'cma:deer',
+      event: 'click',
+      personId: 7,
+      clickUrl: 'https://ryan-realty.com/about',
+    })
+    expect(a).toBe(b)
+    expect(a).toBe('cma:deer:click:p:7:https://ryan-realty.com/reviews')
+    expect(other).toBe('cma:deer:click:p:7:https://ryan-realty.com/about')
+    expect(a).not.toBe(other)
+  })
+
+  it('leaves a click without a URL on the original three-part key', () => {
+    expect(buildDedupeKey({ emailKey: 'cma:deer', event: 'click', personId: 7 })).toBe(
+      'cma:deer:click:p:7',
+    )
   })
 })
 
@@ -124,6 +166,12 @@ describe('normalizeEvent (Resend + Gmail name mapping)', () => {
     expect(normalizeEvent('spamReport')).toBe('complaint')
     expect(normalizeEvent('unsubscribed')).toBe('unsubscribe')
     expect(normalizeEvent('opt-out')).toBe('unsubscribe')
+  })
+
+  it('maps accepted (SMTP accept before a delivery receipt)', () => {
+    expect(normalizeEvent('accepted')).toBe('accepted')
+    expect(normalizeEvent('email.accepted')).toBe('accepted')
+    expect(normalizeEvent('accept')).toBe('accepted')
   })
 
   it('passes already-normalized values through, case-insensitively', () => {
@@ -254,6 +302,30 @@ describe('recordEmailEvent', () => {
     expect(row.recipient_email).toBe('lead@example.com')
     // Recipient known -> dedupe anchored on the email.
     expect(row.dedupe_key).toBe('newsletter:2026-06:open:lead@example.com')
+  })
+
+  it('keeps two clicks on different links as two rows, and collapses a repeat tap', async () => {
+    mockGetPrimaryEmail.mockResolvedValue('lead@example.com')
+    mockInsert.mockResolvedValue({ ok: true, inserted: true })
+    await recordEmailEvent({
+      personId: 7,
+      sendType: 'cma',
+      event: 'click',
+      emailKey: 'cma:deer',
+      meta: { url: 'https://ryan-realty.com/reviews?_pid=tok&utm_campaign=cma-deer&agent=matt' },
+    })
+    await recordEmailEvent({
+      personId: 7,
+      sendType: 'cma',
+      event: 'click',
+      emailKey: 'cma:deer',
+      meta: { clickUrl: 'https://ryan-realty.com/about' },
+    })
+    const first = mockInsert.mock.calls[0][0].dedupe_key
+    const second = mockInsert.mock.calls[1][0].dedupe_key
+    expect(first).toBe('cma:deer:click:lead@example.com:https://ryan-realty.com/reviews')
+    expect(second).toBe('cma:deer:click:lead@example.com:https://ryan-realty.com/about')
+    expect(first).not.toBe(second)
   })
 
   it('Gmail rail: still records (recipient empty) when the person has no email on file', async () => {

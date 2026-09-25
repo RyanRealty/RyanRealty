@@ -131,7 +131,12 @@ describe('sendGmailMessage', () => {
 
     const res = await sendGmailMessage(MESSAGE)
 
-    expect(res).toEqual({ ok: true, messageId: 'msg-1', threadId: 'thr-1' })
+    expect(res).toEqual({
+      ok: true,
+      messageId: 'msg-1',
+      threadId: 'thr-1',
+      rfcMessageId: expect.stringMatching(/^<.+@ryan-realty\.com>$/),
+    })
     expect(calls(TOKEN_URL)).toHaveLength(1)
     expect(calls('/gmail/v1/users/me/messages/send')).toEqual([
       expect.objectContaining({ method: 'POST' }),
