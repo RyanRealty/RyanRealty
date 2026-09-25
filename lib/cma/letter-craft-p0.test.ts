@@ -1,14 +1,14 @@
 /**
  * Tip Ready CMA letter craft P0 (Matt 2026-09-12).
  * Cover headline once, Pricing report mast, screen stack / print matrix,
- * sorry+earn close, draft banner never on finalized owner PDF.
+ * sorry close, draft banner never on finalized owner PDF.
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { COVER_LIST_PRICE_HEADLINE, immersiveHeroNumberHtml, immersiveAnswerHtml } from './cover-value'
 import { OWNER_FACING_PRODUCT_NAME, cmaCoverLabelHtml } from './fsbo-cma-render'
-import { CLOSE_EARN_YOUR_BUSINESS, nextStepHeading, nextStepNoteHtml, assembleOpinionPages } from './opinion-pages'
+import { nextStepHeading, nextStepNoteHtml } from './opinion-pages'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
 import { renderImmersiveCmaHtml } from './immersive'
 import { immersiveStylesheet } from './immersive-css'
@@ -212,7 +212,7 @@ describe('letter craft P0 — screen matrix / print matrix', () => {
 })
 
 describe('letter craft P0 — close voice', () => {
-  it('keeps sorry heading and adds earn-your-business line', () => {
+  it('says sorry plainly and offers to help if they relist', () => {
     const a = {
       subject,
       comps: five(),
@@ -222,16 +222,20 @@ describe('letter craft P0 — close voice', () => {
       generatedAtIso: '2026-09-12T00:00:00.000Z',
       expiredAudit: args().expiredAudit,
     }
-    expect(nextStepHeading(a as never)).toBe("We're sorry that your home did not sell this go-around.")
+    expect(nextStepHeading(a as never)).toBe("Sorry your home didn't sell.")
     const note = nextStepNoteHtml(a as never)
-    expect(note).toContain('earn your business')
+    expect(note).toContain('If you decide to list again, we&#39;re glad to help.')
     expect(note).toContain('here for any questions you have')
+    expect(note).not.toContain('earn your business')
+    expect(note).not.toContain('this go-around')
     expect(note).toContain('>Call<')
     expect(note).toContain('>Text<')
     expect(note).toContain('>Email<')
     const { html } = renderCmaHtml(args())
-    expect(html).toContain('did not sell this go-around')
-    expect(html).toContain('earn your business')
+    expect(html).toContain('Sorry your home didn&#39;t sell.')
+    expect(html).toContain('If you decide to list again, we&#39;re glad to help.')
+    expect(html).not.toContain('earn your business')
+    expect(html).not.toContain('this go-around')
   })
 })
 

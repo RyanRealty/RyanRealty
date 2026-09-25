@@ -128,7 +128,7 @@ export function pinRevealLine(fact: CmaPinFact): string {
 /** The whole pin, in words, for a screen reader and for the button's label. */
 export function pinReading(fact: CmaPinFact): string {
   const line = pinRevealLine(fact)
-  return [`${fact.key}. ${fact.address}`, fact.outcome, line].filter(Boolean).join(' — ')
+  return [`${fact.key}. ${fact.address}`, fact.outcome, line].filter(Boolean).join('. ')
 }
 
 /**
