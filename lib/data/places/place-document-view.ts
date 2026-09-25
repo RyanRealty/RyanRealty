@@ -102,3 +102,38 @@ export function documentKindLabel(kind: PlaceDocumentKind): string {
       return 'Rules and regulations'
   }
 }
+
+/**
+ * What a place's documents add up to, counted once for every surface that
+ * describes them: V3PlaceDocuments' note and footnote, and the neighborhood
+ * FAQ's CC&Rs answer (Matt 2026-09-24). One helper, so the answer can never
+ * name a different count, county or attribution than the section it repeats.
+ */
+export interface PlaceDocumentSummary {
+  count: number
+  declarations: number
+  amendments: number
+  /** The county on the first document, as the section's footnote names it. */
+  county: string
+  hasRecorded: boolean
+  hasAssociation: boolean
+  publisher: string | null
+  /** The recording index to credit, when a document carries one. */
+  attribution: { url: string; label: string } | null
+}
+
+export function summarizePlaceDocuments(documents: readonly PlaceDocument[]): PlaceDocumentSummary | null {
+  const first = documents[0]
+  if (!first) return null
+  const cited = documents.find((d) => d.sourceIndexUrl)
+  return {
+    count: documents.length,
+    declarations: documents.filter((d) => d.kind === 'ccr').length,
+    amendments: documents.filter((d) => d.kind === 'amendment').length,
+    county: first.county,
+    hasRecorded: documents.some((d) => d.recordingType !== 'association-published'),
+    hasAssociation: documents.some((d) => d.recordingType === 'association-published'),
+    publisher: documents.find((d) => d.publisher)?.publisher ?? null,
+    attribution: cited ? { url: cited.sourceIndexUrl, label: cited.sourceLabel } : null,
+  }
+}

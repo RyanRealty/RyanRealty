@@ -299,7 +299,13 @@ export function PriceCtaStrip({
     : null
   // A lease's history amounts are rent: no sale-price cut is drawn from them.
   const lastDrop = offMarket || lease || !history ? null : publishListingLastDrop(history)
-  const datedDrop = lease ? null : dropMark !== undefined ? dropMark : publishListingDropMark(history)
+  const newestDrop = lease ? null : dropMark !== undefined ? dropMark : publishListingDropMark(history)
+  // The mark prints the new price (Matt 2026-09-24), so it draws only while the
+  // cut set today's price. publishListingDropMark returns the newest DROP and
+  // skips increases, so after a later raise its `to` is no longer the price in
+  // the H1, and a cut line under it would name a second current price (§0).
+  const datedDrop =
+    newestDrop && headlinePrice != null && Math.round(headlinePrice) === newestDrop.to ? newestDrop : null
   const listedBy = publishListingListedBy({
     listAgentName: listing.listAgentName,
     listOfficeName: listing.listOfficeName,

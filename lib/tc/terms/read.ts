@@ -44,6 +44,20 @@ export function claudeTermsModel(): string {
   return process.env.TC_TERMS_CLAUDE_MODEL?.trim() || 'claude-opus-5'
 }
 
+/**
+ * One token from the terms model before a batch: an account out of credit, a
+ * bad key or a model that is gone fails here, before any document is read or
+ * Grok is paid for (lib/tc/terms/outage.ts).
+ */
+export async function claudeTermsReachable(): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await createAnthropic().messages.create({ model: claudeTermsModel(), max_tokens: 1, messages: [{ role: 'user', content: 'ok' }] })
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: (e instanceof Error ? e.message : String(e)).slice(0, 500) }
+  }
+}
+
 export function grokTermsModel(): string {
   return process.env.TC_TERMS_GROK_MODEL?.trim() || GROK_MODELS.documents
 }

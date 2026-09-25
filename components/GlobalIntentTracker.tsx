@@ -18,6 +18,7 @@
  * Returns null. Side-effect-only on mount.
  */
 import { useEffect } from 'react'
+import { scrubPrivateUrls } from '@/lib/analytics/private-paths'
 import { trackEvent } from '@/lib/tracking'
 
 function findTelOrMailto(target: EventTarget | null): { kind: 'tel' | 'sms' | 'mailto'; href: string } | null {
@@ -38,7 +39,7 @@ export default function GlobalIntentTracker() {
       try {
         const match = findTelOrMailto(e.target)
         if (!match) return
-        const path = (typeof window !== 'undefined' ? window.location.pathname : '/') || '/'
+        const path = scrubPrivateUrls((typeof window !== 'undefined' ? window.location.pathname : '/') || '/')
         if (match.kind === 'tel' || match.kind === 'sms') {
           // Strip the scheme for the event params; keep raw href for analytics
           const number = match.href.replace(/^(tel|sms):/, '').trim()
@@ -86,7 +87,7 @@ export default function GlobalIntentTracker() {
         // Best-effort form identifier
         const formId = form.id || form.getAttribute('name') || form.getAttribute('aria-label') || ''
         const formAction = form.getAttribute('action') || ''
-        const path = (typeof window !== 'undefined' ? window.location.pathname : '/') || '/'
+        const path = scrubPrivateUrls((typeof window !== 'undefined' ? window.location.pathname : '/') || '/')
         trackEvent('form_start', {
           form_id: String(formId).slice(0, 64),
           form_action: String(formAction).slice(0, 128),

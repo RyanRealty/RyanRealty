@@ -150,6 +150,40 @@ describe('status price bands', () => {
     expect(html).toContain('Closed $/sqft covers 1 of 2 homes (1 with no living area on record).')
   })
 
+  it('rounds once, after the median, so the figure matches a recomputation from the rows', () => {
+    // 312.50 and 320.40 a foot: the exact median is 316.45, so $316. Rounding
+    // each rate first (313, 320) would have printed $317.
+    expect(priceBand([312.5, 320.4])).toMatchObject({ n: 2, low: 313, median: 316, avg: 316, high: 320 })
+  })
+
+  it('reads "one home" for a single home and drops the Sold column when nothing has sold', () => {
+    const one = statusPriceBoardHtml(
+      statusPriceSummaries({ closed: [entry({ key: '1', family: 'closed', listPrice: 510000, closePrice: 500000, sqft: 1600 })] }),
+    )
+    expect(one).toContain('The one home in this report, by status.')
+    expect(one).not.toContain('one homes')
+    const noSales = statusPriceBoardHtml(
+      statusPriceSummaries({ active: [entry({ key: 'A', family: 'active', status: 'active', listPrice: 544000, sqft: 1600 })] }),
+    )
+    expect(noSales).not.toContain('>Sold<')
+    expect(noSales).toContain('<tr><th scope="row">Low</th><td class="n">$544,000</td><td class="n">$340</td></tr>')
+    expect(noSales).toMatch(/List is the asking price\. \$\/sqft is each home(&#39;|&#x27;|')s list price over its own living area\./)
+    expect(noSales.match(/<col class="sp-fig">/g)).toHaveLength(2)
+  })
+
+  it('names the real gap when a $/sqft is missing for want of a price, not a living area', () => {
+    const html = statusPriceBoardHtml(
+      statusPriceSummaries({
+        closed: [
+          entry({ key: '1', family: 'closed', listPrice: 510000, closePrice: null, sqft: 1600 }),
+          entry({ key: '2', family: 'closed', listPrice: 490000, closePrice: 480000, sqft: 1600 }),
+        ],
+      }),
+    )
+    expect(html).toContain('Closed $/sqft covers 1 of 2 homes (1 with no sold price on record).')
+    expect(html).not.toContain('no living area')
+  })
+
   it('never counts the subject', () => {
     const rows = statusPriceSummaries({
       closed: [

@@ -21,6 +21,9 @@ import {
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
   rowsForRecipientSave,
+  normalizeSignerPhone,
+  namesInSentence,
+  sharedAddressCosigners,
   recipientIdForMappedField,
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
@@ -40,9 +43,22 @@ describe('SIGN_FIELD_TYPES', () => {
     expect([...SIGN_FIELD_TYPES]).toContain('full_name')
     expect([...SIGN_FIELD_TYPES]).toContain('time_signed')
     expect(SIGN_FIELD_LABEL.full_name).toBe('Full Name')
-    expect(SIGN_FIELD_LABEL.time_signed).toBe('Time')
+    expect(SIGN_FIELD_LABEL.time_signed).toBe('Time signed')
     expect(isSenderAnnotation('strike')).toBe(true)
     expect(isSenderAnnotation('full_name')).toBe(false)
+  })
+  it('adds a date picker and a time picker beside the automatic stamps', () => {
+    expect([...SIGN_FIELD_TYPES]).toContain('date')
+    expect([...SIGN_FIELD_TYPES]).toContain('time')
+    expect(SIGN_FIELD_LABEL.date).toBe('Date')
+    expect(SIGN_FIELD_LABEL.time).toBe('Time')
+    const sql = readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260924231000_tc_envelope_field_interactivity.sql'),
+      'utf8',
+    )
+    expect(sql).toContain("'date',")
+    expect(sql).toContain("'time',")
+    expect(sql).toContain('require_text_code')
   })
   it('CHECK constraint and invite columns match the palette', () => {
     const sql = readFileSync(
@@ -385,6 +401,28 @@ describe('recipientMatchesSigner', () => {
   })
 })
 
+describe('normalizeSignerPhone', () => {
+  it('stores a US mobile as +1 and ten digits, whatever the typing', () => {
+    expect(normalizeSignerPhone('(541) 213-6706')).toBe('+15412136706')
+    expect(normalizeSignerPhone('1-541-213-6706')).toBe('+15412136706')
+    expect(normalizeSignerPhone('+1 541 213 6706')).toBe('+15412136706')
+  })
+  it('keeps nothing it cannot text', () => {
+    expect(normalizeSignerPhone('213-6706')).toBeNull()
+    expect(normalizeSignerPhone('')).toBeNull()
+    expect(normalizeSignerPhone(null)).toBeNull()
+    expect(normalizeSignerPhone('2-541-213-6706')).toBeNull()
+  })
+  it('a save writes the phone only when the caller sent one', () => {
+    const [withPhone, without] = rowsForRecipientSave('e1', [
+      { id: 'a', role: 'Buyer', name: 'A', email: 'a@x.com', signingOrder: 1, phone: '541.213.6706' },
+      { id: 'b', role: 'Buyer', name: 'B', email: 'b@x.com', signingOrder: 1 },
+    ])
+    expect(withPhone!.phone).toBe('+15412136706')
+    expect('phone' in without!).toBe(false)
+  })
+})
+
 describe('rowsForRecipientSave', () => {
   it('gives every row an id so mixed new and existing signers upsert', () => {
     const rows = rowsForRecipientSave(
@@ -444,5 +482,29 @@ describe('recipientIdForMappedField', () => {
         ],
       ),
     ).toBe('seller')
+  })
+})
+
+describe('a couple sharing one email address', () => {
+  const r = (id: string, name: string, email: string, extra: Record<string, unknown> = {}) => ({ id, name, email, role: 'Buyer', action_required: 'NeedsToSign', completed_at: null, declined_at: null, ...extra })
+  it('finds the other signers at the same address, whatever the case', () => {
+    const rows = [r('a', 'Jane Smith', 'smiths@example.com'), r('b', 'John Smith', 'Smiths@Example.com '), r('c', 'Pat Lee', 'pat@example.com')]
+    expect(sharedAddressCosigners(rows, rows[0]!).map((x) => x.name)).toEqual(['John Smith'])
+    expect(sharedAddressCosigners(rows, rows[2]!)).toEqual([])
+  })
+  it('leaves out anyone who has finished, declined, or only gets a copy', () => {
+    const rows = [
+      r('a', 'Jane Smith', 'smiths@example.com'),
+      r('b', 'John Smith', 'smiths@example.com', { completed_at: '2026-09-24T00:00:00Z' }),
+      r('c', 'Kid Smith', 'smiths@example.com', { action_required: 'ReceivesACopy' }),
+      r('d', 'Gran Smith', 'smiths@example.com', { declined_at: '2026-09-24T00:00:00Z' }),
+    ]
+    expect(sharedAddressCosigners(rows, rows[0]!)).toEqual([])
+  })
+  it('names people the way a sentence does', () => {
+    expect(namesInSentence(['Jane'])).toBe('Jane')
+    expect(namesInSentence(['Jane', 'John'])).toBe('Jane and John')
+    expect(namesInSentence(['Ann', 'Jane', 'John'])).toBe('Ann, Jane and John')
+    expect(namesInSentence([])).toBe('')
   })
 })

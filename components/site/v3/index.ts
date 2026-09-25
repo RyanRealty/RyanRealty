@@ -696,6 +696,7 @@ export { V3PlaceDocuments } from './V3PlaceDocuments'
 export {
   V3PlaceCharacter,
   placeCharacterHeading,
+  PLACE_HOA_CAVEAT,
   yearBuiltSentence,
   hoaPresenceSentence,
   duesSentence,

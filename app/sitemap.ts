@@ -6,11 +6,10 @@ import { LLMS_ZIPS } from '@/lib/site/llms-geo'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
 import { isBendNewConstructionSearchTwinPath } from '@/lib/routing/bend-new-construction-search-twin'
-import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
+import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 // Public sitemap — Coming Soon is excluded by policy. See
 // lib/listing-status-public.ts. Never submit a pre-marketing listing to Google.
-const ACTIVE_STATUS_OR = PUBLIC_ACTIVE_OR_PREDICATE
 
 import { fetchAllRows } from '@/lib/supabase/paginate'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
@@ -320,12 +319,19 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // The shared deadline above still bounds each.
     const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
     const started = {
+      // The city list reads listing_search_mv (maintained incrementally since
+      // 2026-09-24), not raw `listings`. The raw scan paged 589K rows through an
+      // ilike OR with no index behind it: 13.7s from the sandbox and 18.7s in
+      // production's cold build (the whole build's critical path), and it came
+      // back with exactly 7,000 rows because fetchAllRows stops on a page that
+      // errors. The table read is 1.3s, 7,485 rows, and the same 18 Central
+      // Oregon cities (compared 2026-09-25).
       'cities': leg(
         'cities',
-        fetchAllRows<{ City?: string | null }>(
-          supabase, 'listings', 'City',
-          (q) => q.or(ACTIVE_STATUS_OR).not('City', 'is', null),
-        ),
+        fetchAllRows<{ city?: string | null }>(
+          supabase, 'listing_search_mv', 'city',
+          (q) => q.in('standard_status', PUBLIC_ACTIVE_STATUSES).not('city', 'is', null).order('listing_key', { ascending: true }),
+        ).then((rows) => rows.map((r) => ({ City: r.city ?? null }))),
         SITE_CITY_SLUGS.map((slug) => ({ City: slug })) as Array<{ City?: string | null }>,
       ),
       'matrix-city-preset-decision': leg(

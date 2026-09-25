@@ -9,13 +9,15 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-  generateSigningToken,
   isSignableRole,
   isValidEmail,
   coerceActionRequired,
   recipientRoleLabel,
+  namesInSentence,
+  sharedAddressCosigners,
   type EnvelopeField,
 } from './signing'
+import { mintOrReuseSigningLink } from '@/lib/data/tc/signing-token-vault'
 import { incompleteFormMessage } from './required-fields'
 import { sealEnvelope, type SealDocumentInput, type SealRecipientSummary } from './seal-pdf'
 import { sendSigningInvite, sendCompletionCopy, sendBrokerSignedNotice } from './signing-emails'
@@ -134,8 +136,11 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
       .maybeSingle()
     const address = (cycle as DbRow)?.tc_deals?.address ?? 'your transaction'
     for (const r of toNotify) {
-      const { token, hash } = generateSigningToken()
-      await supabase.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', r.id)
+      const { token } = await mintOrReuseSigningLink(supabase, {
+        id: r.id,
+        auth_token_hash: r.auth_token_hash ?? null,
+        auth_token_enc: r.auth_token_enc ?? null,
+      })
       const sent = await sendSigningInvite({
         to: r.email,
         recipientName: r.name || 'there',
@@ -144,6 +149,7 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
         signUrl: `${siteUrl()}/sign/${token}`,
         customSubject: (env as DbRow)?.invite_subject ?? null,
         customBody: (env as DbRow)?.invite_body ?? null,
+        sharedWith: sharedAddressCosigners(signable as Array<DbRow & { id: string }>, r as DbRow & { id: string }).map((o) => o.name || 'another signer'),
       })
       await supabase
         .from('tc_envelope_recipients')
@@ -361,20 +367,39 @@ export async function sealAndCompleteEnvelope(
 
   const pdfBuf = Buffer.from(bytes)
   const pdfName = `${sealName}.pdf`.replace(/[^\w.\- ]+/g, '')
+  // One copy per address, greeting everyone who reads it (a couple sharing one inbox).
+  const namesByEmail = new Map<string, string[]>()
+  for (const r of (recips ?? []) as DbRow[]) {
+    if (coerceActionRequired(r.action_required, r.role) === 'NoAction') continue
+    const email = (r.email ?? '').trim().toLowerCase()
+    if (!email) continue
+    namesByEmail.set(email, [...(namesByEmail.get(email) ?? []), ...(r.name ? [String(r.name)] : [])])
+  }
   const seen = new Set<string>()
   for (const r of (recips ?? []) as DbRow[]) {
     if (coerceActionRequired(r.action_required, r.role) === 'NoAction') continue
     const email = (r.email ?? '').trim().toLowerCase()
     if (!email || seen.has(email)) continue
     seen.add(email)
-    await sendCompletionCopy({
+    const sent = await sendCompletionCopy({
       to: email,
-      recipientName: r.name || 'there',
+      recipientName: namesInSentence(namesByEmail.get(email) ?? []) || r.name || 'there',
       envelopeName: env.name,
       propertyAddress: address,
       pdf: pdfBuf,
       pdfName,
     })
+    // A party who never got their copy is on the deal's activity, not lost.
+    if (sent.error) {
+      await supabase.from('tc_events').insert({
+        deal_id: (cycle as DbRow)?.deal_id ?? null,
+        cycle_id: env.cycle_id,
+        document_id: execDocId,
+        actor: 'system',
+        action: 'envelope_copy_failed',
+        detail: { envelope: env.name, recipient: r.name || email, error: sent.error.slice(0, 300) },
+      })
+    }
   }
   const brokerEmail = env.created_by && env.created_by.includes('@') ? env.created_by : null
   if (brokerEmail && !seen.has(brokerEmail.toLowerCase())) {

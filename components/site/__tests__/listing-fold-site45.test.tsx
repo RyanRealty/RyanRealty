@@ -83,6 +83,19 @@ describe('the price cut as two prices at rest', () => {
     expect(html).toMatch(/aria-label="Price drop \$76K: \$1,075,000 to \$999,000, 7\.1% on Aug 15, 2026"/)
   })
 
+  it('draws nothing once a later price change leaves the cut behind the H1 price', () => {
+    // Listed 1,195,000, cut to 999,000 on Aug 15, raised to 1,025,000 on Sep 1:
+    // the newest DROP still says 999,000, which is not today's price.
+    const raised = strip({
+      dropMark: mark,
+      listing: { ...LISTING, listPrice: 1_025_000 },
+    })
+    expect(raised).not.toContain('listing-drop')
+    expect(raised).not.toContain('$999,000')
+    // The mark still draws when the cut set the price in the H1.
+    expect(strip({ dropMark: mark })).toContain('listing-drop__to')
+  })
+
   it('draws nothing without a dated mark, including off market', () => {
     // Matt 2026-09-15: a cut without the date does not ship. original-vs-ask
     // without event_date is not a price-drop mark.

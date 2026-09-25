@@ -242,6 +242,10 @@ export const V3_CLUSTER_MAX_ZOOM = V3_MAP_MAX_ZOOM
  * edge. A mark is anchored at its centre, so the padding has to clear half the
  * mark PLUS a full mark: 1.5 x V3_MARK_WIDTH_PX = 96. The clamp keeps a phone
  * frame from spending its whole width on margin while still clearing the bar.
+ *
+ * Keep the side padding (Matt 2026-09-24, "Keep the padding"): the whole-region
+ * view fills the height and not the width, because filling the width crops the
+ * top and bottom of the region, where Madras and La Pine sit.
  */
 export function v3FitPadding(el: { clientWidth: number; clientHeight: number } | null): {
   top: number

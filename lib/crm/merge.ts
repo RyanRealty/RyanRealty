@@ -25,6 +25,7 @@
  * (buildMergeContext) so agent/sender/company always resolve from real data.
  */
 import { stampCrmOutboundUtms } from '@/lib/analytics/visit-broker'
+import { isPrivateLink } from '@/lib/analytics/private-paths'
 import { formatDate } from '@/lib/format/date'
 import { isRandomToken } from '@/lib/crm/lead-quality'
 
@@ -421,6 +422,9 @@ export function attributeSiteLinks(
   if (!slug && !fuid && !pid) return text
   return text.replace(/https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g, (url) => {
     if (url.includes('/admin')) return url
+    // A signing link is sent exactly as minted: no identity, agent or UTM
+    // parameter rides on a page whose address is its key (private-paths.ts).
+    if (isPrivateLink(url)) return url
     // Split off a #fragment so params land in the query string, not the hash —
     // an anchor-carrying CTA (/housing-market/bend?utm=..#market-report) must
     // not become ..#market-report&agent=.., which the server never sees.

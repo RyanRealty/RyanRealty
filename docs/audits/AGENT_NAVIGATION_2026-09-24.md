@@ -26,8 +26,9 @@ agent transcripts made in this session. Nothing is estimated unless it says so.
   paragraph. CLAUDE.md is 37,460 bytes and its budget was lowered to match, so the next
   pointer still has to be paid for by trimming something.
 - The replay agents also flagged defects on `main`. The five leads were checked and fixed on
-  this branch, with the related defects found alongside. Ten product calls went to Matt:
-  four are decided and built (2026-09-24), six are still open. See the last two sections.
+  this branch, with the related defects found alongside. Ten product calls went to Matt on
+  2026-09-24 and all ten are decided: four built, six kept as they are. See the last two
+  sections.
 
 ## How this was measured
 
@@ -404,31 +405,32 @@ Found while checking T05, not caused by it: the nightly int test
 `lib/cma/page-safety.int.test.ts` fails on `main`. With 12 comparable sales, comp
 addresses sit 2.3 to 2.4pt into the PDF's left margin. It is filed as its own task.
 
-### Still open
+### Decided 2026-09-24, second round
 
-- **Pending homes in the search box (T08).** Suggestions include Pending listings on purpose:
-  the site's on-market statuses (`PUBLIC_ON_MARKET_STATUSES`) are Active, Active Under
-  Contract and Pending. Dropping Pending means changing that rule. The city counts above
-  follow the results page, which shows Active and Active Under Contract.
-- **Deeper place FAQ questions (T03).** About half the questions added on 2026-09-22
-  (`af236fac9`) are market figures again; the rest list names already on the page.
-  Neighborhood pages already load schools, HOA dues, CC&Rs and build years that never reach
-  the FAQ. A city-page test forbids HOA and school-district data in the city FAQ.
-- **The region filling the desktop map (H4).** With fractional zoom the whole-region fit
-  still keeps up to 128px of padding per side (`v3FitPadding`), so the tall region fills the
-  height and only part of the width. Filling the width crops the top and bottom of the frame,
-  where Madras and La Pine sit.
-- **The loop brief seeding ranking work itself (T14).** The brief prints a hint to run the
-  seeder by hand; the Monday cron (`loop-weekly-measure`) seeds. Seeding from the brief
-  changes what every session's boot writes to the work graph, and `docs/RUN_LOOP.md` §7 would
-  change with it.
-- **Content inside the page's own hidden overlays (T11).** `0ea697108` counts rows that a
-  modal manager hid (`data-aria-hidden`). Rows under the page's own `aria-hidden`, such as a
-  closed overlay host, still count as zero. One replay argued those should count.
-- **The Meta ads snapshot on a day with no ad delivery (T12).** It returns 200 with
-  `empty: true`. Failing it instead would mark the snapshot failed every day while ads are
-  off. The 2026-09-22 visibility audit found no Meta ads rows after 2026-06-19. `6303fd2ca`
-  chose 200 on purpose.
+Matt picked the recommended option on all six.
+
+- **Deeper place FAQ questions (T03): "Add to neighborhoods." Built.** Neighborhood FAQs now
+  answer how old the homes are, whether homes report an HOA, what the dues run, whether CC&Rs
+  are on file, and which school district and attendance areas cover the place. Each answer is
+  the sentence the page's own section prints, and the FAQPage markup carries the same rows.
+  City FAQs are unchanged.
+  - Schools come from the Deschutes County attendance polygons (`getPlaceSchools`), and the
+    page's Schools section now reads the same list. The authored school names it printed
+    before disagreed with the county in three of thirteen neighborhoods (Southeast Bend,
+    Southern Crossing, River West).
+  - Write-up sentences that contradicted the county were corrected in five neighborhoods, and
+    three "no HOA here" claims now speak only for the neighborhood association, because the
+    page's own MLS section shows subdivision HOAs inside the boundary.
+- **Pending homes in the search box (T08): "Keep Pending."** No change. Noted in
+  `lib/data/listings/searchSuggestTiles.ts`.
+- **The region filling the desktop map (H4): "Keep the padding."** No change. Noted at
+  `v3FitPadding` in `lib/maps/v3-basemap.ts`.
+- **The loop brief seeding ranking work (T14): "Keep the Monday job."** No change. Noted in
+  `scripts/loop-brief.ts`.
+- **Content inside the page's own hidden overlays (T11): "Keep counting as zero."** No change.
+  Noted in `scripts/lib/content-floor.mjs`.
+- **The Meta ads snapshot on a day with no ad delivery (T12): "Keep success, no rows."** No
+  change. Noted in `app/api/cron/marketing-snapshot-meta-ads/route.ts`.
 
 ## Appendix: the replay tasks
 

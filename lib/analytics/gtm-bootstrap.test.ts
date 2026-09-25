@@ -59,4 +59,16 @@ describe('gtmBootstrapScript', () => {
       (window.dataLayer ?? []).some((e) => typeof e === 'object' && e !== null && (e as { event?: string }).event === 'gtm.js'),
     ).toBe(true)
   })
+
+  it('never loads gtm.js on a page whose address carries a secret (a signing link)', () => {
+    const script = gtmBootstrapScript('other', 'GTM-TEST123')
+    for (const [pathname, loads] of [['/sign/Yi4wyKxKtxZNhijQFu1lKJu9WWofkfJNdzW0bFkwtpc', false], ['/cma-drafts/42', false], ['/listings/123', true]] as const) {
+      const inserted: unknown[] = []
+      const fakeScript = { parentNode: { insertBefore: (el: unknown) => inserted.push(el) } }
+      const document = { cookie: '', getElementsByTagName: () => [fakeScript], createElement: () => ({}), head: { appendChild: (el: unknown) => inserted.push(el) } }
+      const window: { dataLayer?: unknown[] } = { dataLayer: [] }
+      new Function('window', 'document', 'location', 'dataLayer', script)(window, document, { search: '', pathname }, window.dataLayer)
+      expect(inserted.length > 0).toBe(loads)
+    }
+  })
 })

@@ -43,6 +43,7 @@ import { formatFileSize } from '@/lib/format/bytes'
 import {
   documentKindLabel,
   recordingLabel,
+  summarizePlaceDocuments,
   type PlaceDocument,
 } from '@/lib/data/places/place-document-view'
 import { v3Text } from './atoms'
@@ -54,19 +55,15 @@ interface Props {
 }
 
 export function V3PlaceDocuments({ displayName, documents }: Props) {
-  if (documents.length === 0) return null
+  const summary = summarizePlaceDocuments(documents)
+  if (!summary) return null
 
-  const county = documents[0].county
-  const attribution = documents.find((d) => d.sourceIndexUrl)
-  const declarations = documents.filter((d) => d.kind === 'ccr').length
-  const amendments = documents.filter((d) => d.kind === 'amendment').length
+  const { county, attribution, declarations, amendments, hasRecorded, hasAssociation, publisher } = summary
   // Two provenance stories can appear on one page: recorded county instruments,
   // and copies the association publishes itself. The caveat has to describe
   // whichever are actually here — telling a reader that an unstamped
   // association PDF was "recorded in Deschutes County" would be false.
-  const hasRecorded = documents.some((d) => d.recordingType !== 'association-published')
-  const hasAssociation = documents.some((d) => d.recordingType === 'association-published')
-  const publisher = documents.find((d) => d.publisher)?.publisher ?? null
+  // summarizePlaceDocuments counts them, shared with the neighborhood FAQ.
 
   const rows: V3LedgerPlainRow[] = documents.map((d) => {
     const size = formatFileSize(d.fileBytes)
@@ -126,8 +123,8 @@ export function V3PlaceDocuments({ displayName, documents }: Props) {
             <>
               {' '}
               Recorded copies via{' '}
-              <a href={attribution.sourceIndexUrl} target="_blank" rel="noopener noreferrer">
-                {attribution.sourceLabel}
+              <a href={attribution.url} target="_blank" rel="noopener noreferrer">
+                {attribution.label}
               </a>
               .
             </>

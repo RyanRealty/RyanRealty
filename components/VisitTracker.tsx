@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { isPrivatePath } from '@/lib/analytics/private-paths'
 import { usePathname } from 'next/navigation'
 import { trackUserEvent } from '@/app/actions/track-user-event'
 import { hasAnalyticsConsent, getStoredConsent, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
@@ -395,8 +396,9 @@ export default function VisitTracker({ userId }: Props) {
     } catch {
       /* first-party memory is best-effort */
     }
-    // The public visitor pipeline never tracks internal admin pages.
-    if (pathname?.startsWith('/admin') || !pathname) return
+    // The public visitor pipeline never tracks internal admin pages, nor a page
+    // whose address carries a secret (a signing link: private-paths.ts).
+    if (pathname?.startsWith('/admin') || !pathname || isPrivatePath(pathname)) return
     // Unified visitor_sessions / visitor_events pipeline — feeds the
     // /admin/visitors/live + /admin/analytics/funnel-breakdown dashboards and
     // the hot-lead scoring cron. Fires at EVERY non-declined consent level:
