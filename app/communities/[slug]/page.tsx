@@ -8,7 +8,8 @@
  * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
  * Matt 2026-09-07): an input-to-answer ask, not a number hero.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
- * regions. Homes stay on this page in the carousel.
+ * regions. Homes stay on this page as listing dials, one per buyer group
+ * (Matt 2026-09-24: every place page shows listings the same way).
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * leftoverHudKpis grain stays 'neighborhood', keyed by the bare community
@@ -131,6 +132,7 @@ import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
+import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -700,7 +702,8 @@ async function renderCommunityDetail({ params }: Props) {
   // Commercial leases in the community: shown last under the map, never
   // counted for sale and never a pin.
   const leaseSection = await loadPlaceLeaseSection(liveStockTiles)
-  const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${publicName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
+  // The reader's words for the same set (SITE-193): no MLS status names.
+  const inventorySource = placeInventorySource(placeBoundaryClause(publicName))
   const hasMap =
     seedRing || fieldTiles.length > 0 || stockSections.length > 0 || leaseSection != null
   // The living map, scoped to this community (Matt 2026-09-01: heat maps on
@@ -1097,6 +1100,10 @@ async function renderCommunityDetail({ params }: Props) {
               </ul>
             </nav>
           ) : null}
+          {/* Matt 2026-09-24: the homes below the map are listing dials, one
+              per buyer group (each type link above lands on its dial), the
+              same as every other place page, still filtered by the
+              subdivision chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
 
@@ -1138,9 +1145,9 @@ async function renderCommunityDetail({ params }: Props) {
             chartFirst
             foldAfter={0}
             source={v3Text(
-              `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-                `detached single-family houses assigned to ${publicName} by boundary membership. ` +
-                `Sold history is leftover, not a city monthly chart. Months of supply and a buyer's or seller's verdict stay off this grain.`,
+              `regional MLS through Oregon Data Share: ` +
+                `detached single-family houses inside the recorded ${publicName} boundary. ` +
+                `The sold history is ${publicName}'s own closed sales, not a city chart. Months of supply and a buyer's or seller's verdict are not part of this section.`,
             )}
             chart={costChart}
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}

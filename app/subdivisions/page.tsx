@@ -65,7 +65,7 @@ export const metadata: Metadata = pageMetadata({
 })
 
 const LEDGER_TRACE =
-  'live MLS through Oregon Data Share, active single-family listings filed under each subdivision name (Active and Active Under Contract, Coming Soon excluded); for a subdivision the county recorded in phases, every active single-family listing standing inside any of its recorded phases, each counted once. The median is the list price of those same listings'
+  'live MLS through Oregon Data Share, single-family homes for sale filed under each subdivision name (homes already under contract are not counted); for a subdivision the county recorded in phases, every single-family home for sale standing inside any of its recorded phases, each counted once. The median is the list price of those same listings'
 
 function fmtPrice(n: number | null | undefined): string | null {
   return formatIndexMedianUsd(n)

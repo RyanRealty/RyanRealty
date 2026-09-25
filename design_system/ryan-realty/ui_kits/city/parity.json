@@ -31,7 +31,12 @@
     },
     {
       "name": "PlaceSubdivisionMap",
-      "section": "One map. Children sit beside it (Bend neighborhoods, plats elsewhere) and the carousel under it lists the publicly active homes. Never ?shapes= on this URL.",
+      "section": "One map. Children sit beside it (Bend neighborhoods, plats elsewhere) and the listing dials under it hold the publicly active homes. Never ?shapes= on this URL.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceSubdivisionHomes",
+      "section": "#homes, the listing dials (Matt 2026-09-24: every place page shows listings the same way; the carousel is gone). Every publicly active home in the city, or in the child chosen on the map, one V3ListingDial per buyer group: one home large with its lead photograph and the card copy, the rest of the group as thumbnails on a vertical rail to its left (a strip under the card on a phone), an \"03 / 12\" readout heading the rail. Commercial leases are the last dial, never in a for-sale dial or its count. Every listing stays an <a href> in the served HTML.",
       "blocking": true
     },
     {
@@ -167,7 +172,7 @@
     "V3Breadcrumb",
     "V3Heading (H1 `{City} real estate`)",
     "PlaceSubdivisionAtlas #atlas (one map: the city's children beside it)",
-    "PlaceSubdivisionHomes #homes (every publicly active home in the city, or in the selected child)",
+    "PlaceSubdivisionHomes #homes, listing dials -- one V3ListingDial per buyer group of every publicly active home in the city, or in the selected child; commercial leases last",
     "city-fold: CityInsight #place-insight (figure: the beautifului InsightCards pager) | CityAlertsStrip #alerts (the ask)",
     "PlaceTypeSlider (horizontal leftover type cards)",
     "V3Ledger #neighborhoods (designated Bend neighborhoods, D83/D89)",

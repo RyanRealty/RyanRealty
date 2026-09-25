@@ -32,22 +32,20 @@
 }
 
 @media (max-width: 39.99rem) {
+  /* The photograph is as tall as its copy and no taller. It used to be capped
+     at 8rem with the belonging facts clamped to one line to fit, and the clamp
+     cut the sentence mid-fact at 375 ("$2,052 HOA a year from homes here.
+     3…", SITE-193): a figure cut off is not a figure. Now every fact prints
+     whole and the photograph grows by the line it needs; the floor stays. */
   .place-opening.place-opening--community.place-opening--media {
     min-height: 6.5rem;
-    max-height: 8rem;
+    max-height: none;
   }
 
   /* Clear the absolute breadcrumb so the H1 is not clipped. */
   .place-opening--community.place-opening--media .place-opening__copy {
     padding-top: calc(var(--v3-tap) + var(--v3-space-2xs));
     padding-bottom: var(--v3-space-2xs);
-  }
-
-  .place-opening--community .place-opening__caption--belonging {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    overflow: hidden;
   }
 }
 

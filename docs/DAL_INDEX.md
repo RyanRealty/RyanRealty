@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-25T02:05:07.869Z
+**Generated:** 2026-09-25T02:08:48.247Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2688,7 +2688,7 @@ Companion files:
 
 **Tables:** `listing_boundary_xref_mv`
 
-**Selected columns:** `geo_slug`, `listing_key`, `list_price`
+**Selected columns:** `geo_slug`, `listing_key`, `list_price`, `standard_status`
 
 **Cache tags:** `cacheTag.city('bend'), cacheTag.market`
 
@@ -2710,7 +2710,7 @@ Companion files:
 
 **Tables:** `listing_tile_mv`
 
-**Selected columns:** `listing_key`, `list_price`, `subdivision_lower`, `city_lower`
+**Selected columns:** `listing_key`, `list_price`, `subdivision_lower`, `city_lower`, `standard_status`
 
 **Cache tags:** `cacheTag.market, cacheTag.listings`
 
@@ -4576,7 +4576,7 @@ Companion files:
 
 **Tables:** `listing_boundary_xref_mv`
 
-**Selected columns:** `listing_key`, `geo_slug`, `property_type`, `property_sub_type`, `list_price`
+**Selected columns:** `listing_key`, `geo_slug`, `property_type`, `property_sub_type`, `list_price`, `standard_status`
 
 **Cache tags:** `cacheTag.market`
 

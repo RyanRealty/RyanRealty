@@ -25,7 +25,7 @@ import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { listingTileHref } from '@/lib/slug'
 import { formatDateTime } from '@/lib/format/date'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
-import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { PUBLIC_ACTIVE_STATUSES, publicCountState } from '@/lib/listing-status-public'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
@@ -98,10 +98,16 @@ function daysAgo(nowMs: number, iso: string | null | undefined): number | null {
   return Number.isFinite(t) ? Math.max(0, Math.floor((nowMs - t) / 86_400_000)) : null
 }
 
-function dotStatus(status: string): AtlasDot['s'] | null {
-  if (status === 'Active') return 'active'
-  if (status === 'Active Under Contract' || status === 'Pending') return 'pending'
-  if (status === 'Closed') return 'sold'
+/**
+ * A dot's state is the public count's bucket (publicCountState, the one
+ * classifier every "for sale" and "pending" figure reads), so the map's key
+ * and the homes under the map can never count one listing two ways.
+ */
+export function dotStatus(status: string | null | undefined): AtlasDot['s'] | null {
+  const state = publicCountState(status)
+  if (state === 'for-sale') return 'active'
+  if (state === 'under-contract') return 'pending'
+  if (state === 'sold') return 'sold'
   return null
 }
 

@@ -15,12 +15,17 @@
  * property_type 'A' AND property_sub_type 'Single Family Residence'), because
  * "homes for sale in {place}" on a place page means exactly that set
  * (VOICE-8). The every-type rows ride along for the stock mix.
+ *
+ * "FOR SALE" IS ACTIVE (SITE-193, 2026-09-24): activeCount and the median are
+ * the Active listings, by publicCountState, the classifier the map and the
+ * homes block read. Active Under Contract is underContractCount and stays in
+ * listingKeys (still shown). See lib/data/geo/neighborhood-public-inventory.ts.
  */
 
 import { supabaseAnon } from '@/lib/data/client'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
-import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { PUBLIC_ACTIVE_STATUSES, publicCountState } from '@/lib/listing-status-public'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { medianListPrice } from '@/lib/data/geo/neighborhood-public-inventory'
 
@@ -30,14 +35,18 @@ export type PlatFamilyInventoryRow = {
   property_type: string | null
   property_sub_type: string | null
   list_price: number | string | null
+  /** MLS status. Under contract by publicCountState, else for sale (as placeHomesCount). */
+  standard_status?: string | null
 }
 
 export type PlatFamilyInventory = {
-  /** Distinct single-family listings, Active or Active Under Contract. */
+  /** Distinct single-family listings FOR SALE (status Active). */
   activeCount: number
-  /** Median list price of those listings with a published price, null when none. */
+  /** Distinct single-family listings under contract and still showing. */
+  underContractCount: number
+  /** Median list price of the for-sale listings with a published price, null when none. */
   medianListPrice: number | null
-  /** Their listing keys, distinct, in key order. */
+  /** Every single-family listing still showing (for sale and under contract), distinct, in key order. */
   listingKeys: string[]
   /** Distinct listings of EVERY property type inside the family. */
   allTypeCount: number
@@ -52,19 +61,26 @@ export function rollupPlatFamilyInventory(
 ): PlatFamilyInventory {
   const all = new Set<string>()
   const sfr = new Map<string, number | null>()
+  const underContract = new Set<string>()
   for (const row of rows) {
     const key = (row.listing_key ?? '').trim()
     if (!key) continue
     all.add(key)
     if (row.property_type !== 'A' || row.property_sub_type !== 'Single Family Residence') continue
+    if (publicCountState(row.standard_status) === 'under-contract') underContract.add(key)
     const price = Number(row.list_price)
     const priced = Number.isFinite(price) && price > 0 ? price : null
     if (!sfr.has(key) || (sfr.get(key) == null && priced != null)) sfr.set(key, priced)
   }
   const listingKeys = [...sfr.keys()].sort()
-  const prices = [...sfr.values()].filter((p): p is number => p != null).sort((a, b) => a - b)
+  const prices = [...sfr.entries()]
+    .filter(([key]) => !underContract.has(key))
+    .map(([, price]) => price)
+    .filter((p): p is number => p != null)
+    .sort((a, b) => a - b)
   return {
-    activeCount: listingKeys.length,
+    activeCount: listingKeys.length - underContract.size,
+    underContractCount: underContract.size,
     medianListPrice: medianListPrice(prices),
     listingKeys,
     allTypeCount: all.size,
@@ -85,7 +101,7 @@ async function fetchPlatFamilyInventory(slugs: readonly string[]): Promise<PlatF
     (from, to) =>
       sb
         .from('listing_boundary_xref_mv')
-        .select('listing_key,geo_slug,property_type,property_sub_type,list_price')
+        .select('listing_key,geo_slug,property_type,property_sub_type,list_price,standard_status')
         .eq('geo_type', 'subdivision')
         .in('geo_slug', slugs)
         .in('standard_status', PUBLIC_ACTIVE_STATUSES)
@@ -102,7 +118,8 @@ async function fetchPlatFamilyInventory(slugs: readonly string[]): Promise<PlatF
 
 const cachedPlatFamilyInventory = makeResilientCached(
   fetchPlatFamilyInventory,
-  ['plat-family-inventory-v1'],
+  // v2 (SITE-193): activeCount is for sale only and underContractCount is new.
+  ['plat-family-inventory-v2'],
   // 15 minutes, the same window as the registry plat inventory
   // (getRegistryPlatPublicInventory) the /subdivisions index sits beside.
   { revalidate: 900, tags: [cacheTag.market] },

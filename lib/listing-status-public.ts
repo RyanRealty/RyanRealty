@@ -48,6 +48,43 @@ export const PUBLIC_ON_MARKET_STATUSES: ListingStatus[] = [
 ]
 
 /**
+ * WHAT A PUBLIC COUNT CALLS A LISTING (SITE-193, 2026-09-24).
+ *
+ * PUBLIC_ACTIVE_STATUSES answers "may a visitor SEE it", and it holds Active
+ * Under Contract, because that home still shows and still takes backup
+ * offers. It does not answer "is it FOR SALE" in a figure. A home with an
+ * accepted offer is under contract: the Market Truth active count is Active
+ * alone and puts Active Under Contract in pending_count (see
+ * lib/market/publish-place-door.ts), the homepage pulse counts it pending, and
+ * the place map draws it as a pending mark. When the homes under that map
+ * counted "for sale" off the visibility list instead, /cities/bend printed
+ * "700 for sale" on the map and "705 for sale" under it: the same 700 Active
+ * listings plus 5 under contract (read 2026-09-24, listing_boundary_xref_mv
+ * city/bend against getAtlasTiles(Bend) inside the recorded boundary; the 700
+ * listing keys were identical). Every public count that says "for sale" or
+ * "pending" reads this one classifier.
+ */
+export const PUBLIC_FOR_SALE_STATUSES: ListingStatus[] = ['Active']
+
+/** Under contract on a public count: an accepted offer, still showing or not. */
+export const PUBLIC_UNDER_CONTRACT_STATUSES: ListingStatus[] = ['Active Under Contract', 'Pending']
+
+export type PublicCountState = 'for-sale' | 'under-contract' | 'sold'
+
+/**
+ * The bucket a public count puts a listing in, or null when no public count
+ * holds it (Coming Soon, off market, an unknown string). Exact MLS strings, as
+ * the tiles carry them.
+ */
+export function publicCountState(status: string | null | undefined): PublicCountState | null {
+  const s = String(status ?? '').trim()
+  if ((PUBLIC_FOR_SALE_STATUSES as string[]).includes(s)) return 'for-sale'
+  if ((PUBLIC_UNDER_CONTRACT_STATUSES as string[]).includes(s)) return 'under-contract'
+  if (s === 'Closed') return 'sold'
+  return null
+}
+
+/**
  * OFF MARKET, for a PUBLIC surface (SITE-21).
  *
  * The list itself is SITE-20's, one file over

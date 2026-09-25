@@ -6,6 +6,7 @@
  * listedCount is the length of that set, or omitted.
  */
 import { formatCount } from '@/lib/format/count'
+import { placeHomesCountLabel } from '@/lib/place/place-count-label'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import {
   PLACE_BUYER_GROUP_HEADING,
@@ -62,28 +63,35 @@ export function communityStockTypesFromListings(
 }
 
 export function communityFieldTypeIndex(
-  listings: readonly { propertyType?: string | null; propertySubType?: string | null }[],
+  listings: readonly {
+    propertyType?: string | null
+    propertySubType?: string | null
+    standardStatus?: string | null
+  }[],
 ): CommunityFieldType[] {
-  const counts: Record<PlaceBuyerGroup, number> = {
-    homes: 0,
-    cabins: 0,
-    attached: 0,
-    multifamily: 0,
-    lots: 0,
-    other: 0,
+  const groups: Record<PlaceBuyerGroup, { standardStatus?: string | null }[]> = {
+    homes: [],
+    cabins: [],
+    attached: [],
+    multifamily: [],
+    lots: [],
+    other: [],
   }
   for (const listing of listings) {
-    counts[placeBuyerGroup(listing.propertyType, listing.propertySubType)] += 1
+    groups[placeBuyerGroup(listing.propertyType, listing.propertySubType)].push(listing)
   }
   return PLACE_BUYER_GROUPS.flatMap((key) => {
-    const count = counts[key]
+    const rows = groups[key]
+    const count = rows.length
     if (count <= 0) return []
     return [
       {
         key,
         heading: PLACE_BUYER_GROUP_HEADING[key],
         count,
-        countLabel: `${formatCount(count)} for sale`,
+        // The words each dial below heads itself with and the map above
+        // counts by: under contract is not for sale (SITE-193).
+        countLabel: placeHomesCountLabel(rows) ?? `${formatCount(count)} for sale`,
       },
     ]
   })

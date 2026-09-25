@@ -1,0 +1,18 @@
+{
+  "note": "Shrink-only baseline for scripts/check-no-public-em-dash.mjs (SITE-193, 2026-09-24). The em dashes each file already held in public string literals when its tree came into the gate's scope. A file may hold this many and no more; fix one and lower its number (or drop the entry) in the same commit. Never raise a number to pass. city-sections.ts holds a comparison against a lone placeholder dash, not copy.",
+  "files": {
+    "app/cities/[slug]/_v3/city-sections.ts": 1,
+    "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx": 1,
+    "app/cities/_v3/CitiesInsight.client.tsx": 1,
+    "app/subdivisions/[slug]/_v3/plat-caption.ts": 1,
+    "app/subdivisions/[slug]/_v3/subdivision-traces.ts": 2,
+    "components/site/v3/V3Chart.tsx": 5,
+    "components/site/v3/V3ListingClose.client.tsx": 2,
+    "components/site/v3/V3ListingRow.tsx": 1,
+    "components/site/v3/V3PlaceDocuments.tsx": 1,
+    "components/site/v3/V3ProofBlock.view.ts": 3,
+    "components/site/v3/V3StickyAsk.client.tsx": 1,
+    "lib/site/publish-plat-unsold.ts": 1,
+    "lib/site/registry-metadata.ts": 1
+  }
+}

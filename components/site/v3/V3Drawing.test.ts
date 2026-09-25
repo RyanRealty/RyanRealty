@@ -87,6 +87,17 @@ describe('hover, tap and keyboard reach one reading', () => {
     expect(css).toMatch(/\.v3-drawing__mark \{[\s\S]*?inline-size: 1\.5rem;/)
     expect(css).toMatch(/\.v3-drawing__barrow \{[\s\S]*?min-height: var\(--v3-tap\);/)
   })
+
+  it('never squeezes the reading to one word a line to fit the source beside it (SITE-193)', () => {
+    // The community valuation answer printed "Hover, / tap / or / tab ..." one
+    // word per line: a nowrap source in an auto grid column took the row.
+    const foot = /\.v3 \.v3-drawing__foot \{([\s\S]*?)\}/.exec(css)?.[1] ?? ''
+    expect(foot).toContain('flex-wrap: wrap')
+    const reading = /\.v3 \.v3-drawing__reading \{([\s\S]*?)\}/.exec(css)?.[1] ?? ''
+    expect(reading).toMatch(/flex: 1 1 18rem/)
+    const source = /\.v3 \.v3-drawing__source \{([\s\S]*?)\}/.exec(css)?.[1] ?? ''
+    expect(source).not.toContain('nowrap')
+  })
 })
 
 describe('the draw-on is one entrance, and reduced motion is already drawn', () => {

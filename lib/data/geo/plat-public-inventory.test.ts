@@ -75,6 +75,25 @@ describe('plat public inventory rollup', () => {
     expect(theRidge?.medianListPrice).toBeNull()
   })
 
+  it('counts for sale as Active only and under contract apart (SITE-193)', () => {
+    const row = (listing_key: string, list_price: number, standard_status: string) => ({
+      listing_key,
+      list_price,
+      subdivision_lower: 'ridge at eagle crest',
+      city_lower: 'redmond',
+      standard_status,
+    })
+    const rows = rollupPlatPublicInventory(
+      [row('a', 800_000, 'Active'), row('b', 1_000_000, 'Active'), row('c', 5_000_000, 'Active Under Contract')],
+      plats,
+    )
+    const ridge = rows.find((r) => r.slug === 'ridge-at-eagle-crest')!
+    expect(ridge.activeCount).toBe(2)
+    expect(ridge.underContractCount).toBe(1)
+    expect(ridge.medianListPrice).toBe(900_000)
+    expect(ridge.listingKeys).toEqual(['a', 'b', 'c'])
+  })
+
   it('does not mix a second plat or city into Ridge At Eagle Crest', () => {
     const rows = rollupPlatPublicInventory(
       [

@@ -244,11 +244,18 @@ describe('placeDoorTrace', () => {
     }
   })
 
-  it('names the polygon read at neighborhood, with that read\'s own status set', () => {
+  it('names the polygon read at neighborhood, in a reader\'s words, with the one for-sale status set', () => {
+    // SITE-193 (2026-09-24): the neighborhood count is Active only now
+    // (getNeighborhoodPublicInventory reads publicCountState, like the map and
+    // the homes block under the door), so the trace says what every other grain
+    // says. It used to name MLS statuses, carry two em dashes and claim "the
+    // same counted set the map below plots", which the map never was.
     const trace = placeDoorTrace({ grain: 'neighborhood', placeName: 'Awbrey Butte' })
-    expect(trace).toMatch(/Awbrey Butte boundary polygon/)
-    expect(trace).toMatch(/Coming Soon/)
-    expect(trace).toMatch(/Active and Active Under Contract/)
+    expect(trace).toMatch(/inside the recorded Awbrey Butte boundary/)
+    expect(trace).toMatch(/Active listings only/)
+    expect(trace).toMatch(/homes already under contract are counted separately/)
+    expect(trace).not.toMatch(/Coming Soon|Active Under Contract|the map below/)
+    expect(trace).not.toMatch(/\u2014/)
   })
 
   it('names boundary membership at community and subdivision', () => {
@@ -264,7 +271,7 @@ describe('placeDoorTrace', () => {
     // (supabase/migrations/20260823010000_compute_market_metrics_shadow.sql:136
     // and :164). The label over the door says "homes for sale"; the trace under
     // it has to describe the same population.
-    for (const grain of ['city', 'community', 'subdivision'] as const) {
+    for (const grain of ['city', 'neighborhood', 'community', 'subdivision'] as const) {
       const trace = placeDoorTrace({ grain, placeName: 'Bend' })
       expect(trace).toMatch(/Active listings only/)
       expect(trace).toMatch(/homes already under contract are counted separately/)

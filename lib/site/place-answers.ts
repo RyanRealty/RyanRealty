@@ -227,7 +227,7 @@ function priorTrace(
   trace: string,
 ): string[] {
   if (!prior || !positive(prior.count) || !prior.label.trim()) return []
-  return [`${prior.count} closed sales ${prior.label.trim()} (the comparison run) — ${trace}`]
+  return [`${prior.count} closed sales ${prior.label.trim()} (the comparison run): ${trace}`]
 }
 
 /**
@@ -357,7 +357,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       ),
     })
     traces.push(
-      `${shown} months of supply (${verdict.label}) — ${trace(`months of supply on ${f.monthsOfSupplyActiveCount ?? '?'} active`)}`,
+      `${shown} months of supply (${verdict.label}): ${trace(`months of supply on ${f.monthsOfSupplyActiveCount ?? '?'} active`)}`,
     )
   } else if (f.closedCount && positive(f.closedCount.count)) {
     // NO VERDICT, SAID OUT LOUD, with the figure that explains the refusal.
@@ -389,7 +389,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       source: traceWith(f.closedCount.trace, `closed sales ${windowLabel}`),
     })
     traces.push(
-      `${count} closed sales ${windowLabel} (no verdict published at this grain) — ${traceWith(f.closedCount.trace, `closed sales ${windowLabel}`)}`,
+      `${count} closed sales ${windowLabel} (no verdict published at this grain): ${traceWith(f.closedCount.trace, `closed sales ${windowLabel}`)}`,
     )
     // The comparison run is a published figure too, so it gets its own line in
     // the §0 report rather than riding along inside the subject's.
@@ -437,12 +437,12 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
     })
     if (sale) {
       traces.push(
-        `${formatPriceExact(sale.price)} median sale price — ${traceWith(sale.trace, `median closed price ${sale.windowLabel}`)}`,
+        `${formatPriceExact(sale.price)} median sale price: ${traceWith(sale.trace, `median closed price ${sale.windowLabel}`)}`,
       )
     }
     if (list) {
       traces.push(
-        `${formatPriceExact(list)} median list price — ${traceWith(f.medianListPriceTrace, 'median list price of the homes now for sale')}`,
+        `${formatPriceExact(list)} median list price: ${traceWith(f.medianListPriceTrace, 'median list price of the homes now for sale')}`,
       )
     }
   }
@@ -482,7 +482,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       },
       source: trace('median days from listing to under contract, last 90 days'),
     })
-    traces.push(`${days} median days to pending — ${trace('median days from listing to under contract, last 90 days')}`)
+    traces.push(`${days} median days to pending: ${trace('median days from listing to under contract, last 90 days')}`)
   } else if (f.daysOnMarket && positive(f.daysOnMarket.days)) {
     const days = Math.round(f.daysOnMarket.days)
     answers.push({
@@ -509,7 +509,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       source: traceWith(f.daysOnMarket.trace, `median days on market ${f.daysOnMarket.windowLabel}`),
     })
     traces.push(
-      `${days} median days on market — ${traceWith(f.daysOnMarket.trace, `median days on market ${f.daysOnMarket.windowLabel}`)}`,
+      `${days} median days on market: ${traceWith(f.daysOnMarket.trace, `median days on market ${f.daysOnMarket.windowLabel}`)}`,
     )
   }
 
@@ -546,7 +546,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       },
       source: trace('median closed price as a share of the original list price, last 12 months'),
     })
-    traces.push(`${shown} of original list — ${trace('median closed price as a share of the original list price, last 12 months')}`)
+    traces.push(`${shown} of original list: ${trace('median closed price as a share of the original list price, last 12 months')}`)
   }
 
   // ── Who is buying ─────────────────────────────────────────────────────────
@@ -583,7 +583,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       },
       source: trace('share of closings recorded as cash, last 12 months'),
     })
-    traces.push(`${shown} cash share — ${trace('share of closings recorded as cash, last 12 months')}`)
+    traces.push(`${shown} cash share: ${trace('share of closings recorded as cash, last 12 months')}`)
   }
 
   // ── How many ──────────────────────────────────────────────────────────────
@@ -607,7 +607,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       },
       source: inventoryTrace,
     })
-    traces.push(`${n} active listings — ${inventoryTrace}`)
+    traces.push(`${n} active listings: ${inventoryTrace}`)
   }
 
   // The closed count only gets its own row when it did not already answer the
@@ -629,7 +629,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       },
       source: traceWith(f.closedCount.trace, `closed sales ${windowLabel}`),
     })
-    traces.push(`${count} closed sales ${windowLabel} — ${traceWith(f.closedCount.trace, `closed sales ${windowLabel}`)}`)
+    traces.push(`${count} closed sales ${windowLabel}: ${traceWith(f.closedCount.trace, `closed sales ${windowLabel}`)}`)
     for (const line of priorTrace(f.closedCount.priorWindow, traceWith(f.closedCount.trace, 'closed sales, grouped by calendar year'))) {
       traces.push(line)
     }
@@ -664,7 +664,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       },
       source: lifetimeTrace,
     })
-    traces.push(`${lifetime} closed sales inside the recorded boundary — ${lifetimeTrace}`)
+    traces.push(`${lifetime} closed sales inside the recorded boundary: ${lifetimeTrace}`)
     ask(`How many homes have ever sold in ${place}?`)
   }
 

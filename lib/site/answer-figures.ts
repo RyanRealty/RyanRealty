@@ -196,7 +196,7 @@ export function buildAnswerFigures(input: AnswerFiguresInput): AnswerFigure[] {
           name: 'Under contract in a month',
           value: sold,
           label: paceLabel(sold, input.activeCount, input.monthsOfSupply),
-          note: `About ${paceLabel(sold, input.activeCount, input.monthsOfSupply)} homes a month, which is the six-month close pace the months-of-supply formula divides by: homes for sale divided by months of supply recovers it exactly. Not a forecast — it is what the last six months did.`,
+          note: `About ${paceLabel(sold, input.activeCount, input.monthsOfSupply)} homes a month, which is the six-month close pace the months-of-supply formula divides by: homes for sale divided by months of supply recovers it exactly. Not a forecast: it is what the last six months did.`,
         },
       ],
       ...(input.verdictLabel
@@ -277,7 +277,7 @@ export function buildAnswerFigures(input: AnswerFiguresInput): AnswerFigure[] {
       // pass showed on an unmatched address (2026-09-08).
       emptyReason:
         input.subjectFound && n > 0
-          ? `${n} comparable ${n === 1 ? 'close' : 'closes'} so far — too few to chart honestly. The written valuation lists every one of them with what it sold for.`
+          ? `${n} comparable ${n === 1 ? 'close' : 'closes'} so far, too few to chart honestly. The written valuation lists every one of them with what it sold for.`
           : 'A broker matches it by hand for the written valuation, which carries every comparable close and what it sold for.',
       source: input.sources.comps,
     })

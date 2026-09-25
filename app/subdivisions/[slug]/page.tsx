@@ -231,6 +231,7 @@ import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atla
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles, unionListingTiles } from '@/lib/place/place-inventory-stock'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
+import { placeInventorySource } from '@/lib/place/place-inventory-source'
 import { placeHomesForSaleHeading } from '@/lib/place/place-homes-heading'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
@@ -493,6 +494,7 @@ const loadSubdivisionCore = cache(async (slug: string) => {
           city: headFamily.citySlug,
           citySlug: headFamily.citySlug,
           activeCount: familyInventory.activeCount,
+          underContractCount: familyInventory.underContractCount,
           medianListPrice: familyInventory.medianListPrice,
           listingKeys: familyInventory.listingKeys,
           href: `/subdivisions/${slug}`,
@@ -1039,7 +1041,7 @@ async function renderSubdivisionPage({ params }: Props) {
   ])
   const inventorySource =
     stockSections.length > 0 || leaseSection
-      ? `regional MLS through Oregon Data Share, every publicly active listing inside ${displayName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
+      ? placeInventorySource(`inside ${displayName}`)
       : homesLedgerTrace(platScope)
   const headline = placeHomesForSaleHeading(displayName)
   /* THE PLAT OPENS ON A PHOTOGRAPH, AND SAYS WHOSE IT IS (SITE-08 pass 2).

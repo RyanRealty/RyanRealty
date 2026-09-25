@@ -5,8 +5,10 @@
  * fold where Atlas is the drawing and CityAlertsStrip (V3Number) is the figure.
  * H1 is "{city} homes for sale". One map: the city's children sit beside it
  * (Bend neighborhoods, recorded plats elsewhere), no taller than the map.
- * Choosing one zooms to that shape and the carousel below lists its publicly
- * active homes. The city name shows every publicly active home in the city.
+ * Choosing one zooms to that shape and the listing dials below hold its
+ * publicly active homes, one dial per buyer group (Matt 2026-09-24: every
+ * place page shows listings the same way). The city name shows every publicly
+ * active home in the city.
  * Do not write ?shapes= onto this URL. Type chips live on the map key and
  * PlaceTypeSlider, not as first-screen property-type H2s. One
  * typical-price slope sits after the child doors. MOS is two bars, never a
@@ -91,6 +93,7 @@ import { placeInventoryHref } from '@/lib/communities/self-city-community'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishCityRealEstateTitle } from '@/lib/site/page-metadata'
 import { placeCityRealEstateHeading, placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { appendPlaceFaqExtras, buildPlaceFaqExtras } from '@/lib/site/place-faq-extras'
@@ -864,7 +867,8 @@ async function renderCityDetail({ params }: Props) {
       return [bare, { geoType, geoSlug: isBend ? `${slug}-${bare}` : bare }]
     }),
   )
-  const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${cityName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
+  // The reader's words for the same set (SITE-193): no MLS status names.
+  const inventorySource = placeInventorySource(placeBoundaryClause(cityName))
 
   // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
   // city-prefixed index slugs while the ledger's are plain registry slugs for
@@ -1170,6 +1174,9 @@ async function renderCityDetail({ params }: Props) {
               />
             </div>
           </div>
+          {/* Matt 2026-09-24: the homes below the map are listing dials, one
+              per buyer group, the same as every other place page, still
+              filtered by the child place chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
 
