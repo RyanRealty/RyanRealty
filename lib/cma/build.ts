@@ -13,10 +13,10 @@
 
 import {
   getCmaBrokerBySlugOrEmail,
-  getCmaAdminReviewRowBySlug,
   upsertCmaRowBySlug,
   updateCmaRowFieldsBySlug,
   replaceCmaComps,
+  snapshotCmaVersion,
   getPricingMarketIndex,
   type CmaCompInsert,
 } from '@/lib/data'
@@ -37,7 +37,7 @@ import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
 import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
-import { composeBuildSummary, composeFailureSummary, statusAfterBuildFailure } from '@/lib/cma/build-summary'
+import { composeBuildSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
@@ -147,107 +147,30 @@ async function resolveBroker(input: CmaBuildInput): Promise<CmaBroker> {
 async function recordBuildFailure(
   slug: string,
   error: string,
-  meta?: {
+  _meta?: {
     stage: 'subject' | 'comps' | 'pricing' | 'contract'
     docType: 'cma' | 'expired-audit'
     compSelection?: CompSelectionDiagnostics | null
-    /**
-     * D8 (Matt 2026-08-27): a failed build used to leave an EMPTY row — no
-     * comps, no pricing, nothing for the review/rebuild flow to work from.
-     * Every figure the build reached before dying is persisted so a broker can
-     * see WHY it refused and rebuild with notes instead of starting cold.
-     */
     pricing?: CmaPricing | null
     contractChecks?: Array<{ id: string; severity: string; pass: boolean; detail: string }> | null
   },
 ): Promise<void> {
-  const failureSummary = meta
-    ? {
-        ...composeFailureSummary({
-          builder: CMA_BUILDER_VERSION,
-          docType: meta.docType,
-          stage: meta.stage,
-          error,
-          compSelection: meta.compSelection ?? null,
-        }),
-        ...(meta.pricing
-          ? {
-              pricing_at_failure: {
-                recommended: meta.pricing.recommended,
-                conservative: meta.pricing.conservative,
-                highEnd: meta.pricing.highEnd,
-                valueLow: meta.pricing.valueLow,
-                valueHigh: meta.pricing.valueHigh,
-                predictedClose: meta.pricing.predictedClose ?? null,
-                currentAsk: meta.pricing.currentAsk ?? null,
-                method1Mid: meta.pricing.method1Mid,
-                method2: meta.pricing.method2,
-                method3: meta.pricing.method3,
-                confidence: meta.pricing.confidence,
-                compPpsfCv: meta.pricing.compPpsfCv,
-              },
-            }
-          : {}),
-        ...(meta.contractChecks ? { contract_at_failure: meta.contractChecks } : {}),
-      }
-    : null
-  // Matt 2026-09-03 (Rim View): a failed rebuild must not leave the prior
-  // kept-set document (Summit/Falcon/Hopper/Hunnell at $1.645M) looking live.
-  // Keep the failure summary + build_error for the broker; clear html, comps,
-  // and list figures so the draft cannot be mistaken for a priced set.
-  // html_path is NOT NULL on public.cmas — nulling it aborts the whole update
-  // (live Rim View kept $1.645M Summit/Falcon after a8ab9ded for this reason).
-  // Empty string is not a stored document (cmaHasStoredHtml / canOpenCmaDocument).
-  // The row's own status, read before anything is written: a failed rebuild
-  // clears the document, and a row with no document may not keep wearing
-  // `finalized` or `delivered` (three live rows did on 2026-09-07). Archived
-  // stays archived; an unreadable status is left alone rather than guessed.
-  const existing = await getCmaAdminReviewRowBySlug(slug).catch((err) => {
-    console.error('[recordBuildFailure] status read failed', slug, err)
-    return null
-  })
-  const nextStatus = statusAfterBuildFailure(
-    existing && typeof existing.status === 'string' ? existing.status : null,
-  )
-  const clearFields = {
-    ...(nextStatus ? { status: nextStatus } : {}),
-    build_error: error.slice(0, 2000),
-    built_at: new Date().toISOString(),
-    ...(failureSummary ? { build_summary: failureSummary } : {}),
-    html_content: null,
-    html_path: '',
-    render_args: null,
-    citations: null,
-    recommended_list: null,
-    value_low: null,
-    value_high: null,
-    comps_count: 0,
+  // A failed rebuild keeps the prior document, pricing and comps. Only the
+  // failure reason (and when it happened) is written so the broker can still
+  // open, approve and send what was already built.
+  const reason = error.slice(0, 2000)
+  const withStamp = {
+    build_error: reason,
+    build_failed_at: new Date().toISOString(),
   }
-  const cleared: { ok: boolean; id?: string; error?: string } = await updateCmaRowFieldsBySlug(
-    slug,
-    clearFields,
-  ).catch((err) => {
-    console.error('[recordBuildFailure] clear update failed', slug, err)
-    return { ok: false }
+  const written = await updateCmaRowFieldsBySlug(slug, withStamp).catch((err) => {
+    console.error('[recordBuildFailure] update failed', slug, err)
+    return { ok: false as const, error: err instanceof Error ? err.message : 'update failed' }
   })
-  let cmaId = cleared.ok && typeof cleared.id === 'string' ? cleared.id : null
-  // Update can succeed while .select('id') returns empty (RLS). Still wipe comps
-  // and retry the clear once so the admin rebuild path cannot keep $1.645M live.
-  if (!cmaId || !cleared.ok) {
-    const row = existing ?? (await getCmaAdminReviewRowBySlug(slug).catch(() => null))
-    if (row && typeof row.id === 'string') cmaId = row.id
-    if (!cleared.ok) {
-      await updateCmaRowFieldsBySlug(slug, clearFields).catch((err) => {
-        console.error('[recordBuildFailure] clear retry failed', slug, err)
-      })
-    }
-  }
-  if (cmaId) {
-    await replaceCmaComps(cmaId, []).catch((err) => {
-      console.error('[recordBuildFailure] replaceCmaComps([]) failed', slug, cmaId, err)
+  if (!written.ok && /build_failed_at/i.test(written.error ?? '')) {
+    await updateCmaRowFieldsBySlug(slug, { build_error: reason }).catch((err) => {
+      console.error('[recordBuildFailure] build_error fallback failed', slug, err)
     })
-  } else {
-    console.error('[recordBuildFailure] no cma id to clear comps for', slug)
   }
 }
 
@@ -261,6 +184,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   // A throw anywhere downstream of selection (voice gate, render, persist) used
   // to wipe the answer to "why these comps" off the row entirely.
   let compDiagnostics: CompSelectionDiagnostics | null = null
+  const snapshot = await snapshotCmaVersion({ slug, reason: 'rebuild' })
+  if (!snapshot.ok) {
+    return {
+      ok: false,
+      error: `Could not snapshot the current CMA before rebuild: ${snapshot.error}`,
+      slug,
+    }
+  }
   try {
     const broker = await resolveBroker(input)
 

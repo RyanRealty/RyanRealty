@@ -266,8 +266,7 @@ export default async function AdminCmaReviewPage({
             color: 'var(--a-danger)',
           }}
         >
-          The last build did not finish: {buildError}. Fix the input (address or MLS) and rebuild
-          from the review panel.
+          last build failed: {buildError}
         </p>
       ) : null}
 

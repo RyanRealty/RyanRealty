@@ -232,6 +232,50 @@ export type CmaCompInsert = {
   price_per_sqft: number | null
 }
 
+export type CmaVersionSnapshotResult =
+  | { ok: true; id?: string; skipped?: boolean }
+  | { ok: false; error: string }
+
+/**
+ * Snapshot the live cmas row plus its cma_comps before a rebuild overwrites
+ * them. A missing row is a first build (skip). A failed insert fails the
+ * rebuild so the prior document cannot disappear without a copy.
+ */
+export async function snapshotCmaVersion(args: {
+  slug: string
+  reason: string
+}): Promise<CmaVersionSnapshotResult> {
+  try {
+    const sb = client()
+    if (!sb) return { ok: true, skipped: true }
+    const slug = args.slug.trim().toLowerCase()
+    if (!slug) return { ok: false, error: 'Missing CMA slug' }
+    const { data: row, error: rowErr } = await sb.from('cmas').select('*').eq('slug', slug).maybeSingle()
+    if (rowErr) return { ok: false, error: rowErr.message }
+    if (!row) return { ok: true, skipped: true }
+    const cmaId = typeof (row as { id?: unknown }).id === 'string' ? (row as { id: string }).id : null
+    if (!cmaId) return { ok: false, error: `CMA ${slug} has no readable id` }
+    const { data: comps, error: compsErr } = await sb.from('cma_comps').select('*').eq('cma_id', cmaId)
+    if (compsErr) return { ok: false, error: compsErr.message }
+    const { data: inserted, error } = await sb
+      .from('cma_versions')
+      .insert({
+        cma_id: cmaId,
+        slug,
+        snapshot: { row, comps: comps ?? [] },
+        reason: args.reason.trim() || 'rebuild',
+      })
+      .select('id')
+      .single()
+    if (error) return { ok: false, error: error.message }
+    const id = (inserted as { id?: string } | null)?.id
+    return { ok: true, ...(typeof id === 'string' ? { id } : {}) }
+  } catch (err) {
+    console.error('[snapshotCmaVersion]', err)
+    return { ok: false, error: err instanceof Error ? err.message : 'Snapshot failed' }
+  }
+}
+
 /** Replace the cma_comps set for one CMA (idempotent rebuilds). */
 export async function replaceCmaComps(
   cmaId: string,

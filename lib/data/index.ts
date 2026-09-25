@@ -653,8 +653,9 @@ export {
   getCmaAdminRowBySlug, getCmaAdminReviewRowBySlug, getCmaProspectAsk, getCmaServeHead,
   getCmaStoredHtmlBySlug, getCmaRenderSourceBySlug, getCmaHtmlBySlug,
   getCmaAccessIdentity, updateCmaRowFieldsBySlug, deleteCmaRowById, replaceCmaComps,
+  snapshotCmaVersion,
 } from '@/lib/data/cma/documents'
-export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource } from '@/lib/data/cma/documents'
+export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource, CmaVersionSnapshotResult } from '@/lib/data/cma/documents'
 export { listOpenCmaActions, listOpenCmaActionsForSlug, claimCmaAction, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
 // THE one CMA queue — every origin in a single list (Matt 2026-09-04).
 export { listCmaQueue, isSendableQueueState } from '@/lib/data/cma/unified-queue'
