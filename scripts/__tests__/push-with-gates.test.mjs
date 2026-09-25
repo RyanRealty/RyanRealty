@@ -180,3 +180,113 @@ describe('push-with-gates.sh exit-code propagation', () => {
     120_000,
   )
 })
+
+// RUN_LOOP §5: a session's own branch never lands on main through
+// `npm run push`. On 2026-09-24 a cloud session's branch, restarted with
+// `git checkout -B <branch> origin/main`, tracked origin/main, and the
+// upstream push sent four unreviewed commits straight to main (d1a4c6979).
+describe('push-with-gates.sh refuses a session branch that tracks origin/main', () => {
+  let gBase
+  let gOrigin
+  let gWork
+
+  beforeAll(() => {
+    gBase = mkdtempSync(join(tmpdir(), 'push-guard-test-'))
+    gOrigin = join(gBase, 'origin.git')
+    gWork = join(gBase, 'work')
+    const init = spawnSync('git', ['init', '--bare', '-b', 'main', gOrigin], { encoding: 'utf8', env: cleanEnv })
+    if (init.status !== 0) throw new Error(`git init --bare failed:\n${init.stdout}${init.stderr}`)
+    git(gBase, 'clone', gOrigin, gWork)
+    git(gWork, 'config', 'user.email', 'test@test.invalid')
+    git(gWork, 'config', 'user.name', 'test')
+    mkdirSync(join(gWork, 'scripts'))
+    copyFileSync(PUSH_SCRIPT, join(gWork, 'scripts', 'push-with-gates.sh'))
+    copyFileSync(STAMP_SCRIPT, join(gWork, 'scripts', 'stamp-gates-marker.mjs'))
+    writeFileSync(join(gWork, 'stub-ok.cjs'), "console.log('stub OK')\n")
+    const scripts = Object.fromEntries(
+      ['ci:gates', 'lint', 'build', 'ci:bundle-budget', 'test:unit'].map((s) => [s, 'node stub-ok.cjs']),
+    )
+    writeFileSync(join(gWork, 'package.json'), JSON.stringify({ name: 'push-guard', version: '0.0.0', scripts }, null, 2))
+    writeFileSync(join(gWork, 'README.md'), 'base\n')
+    git(gWork, 'add', '.')
+    git(gWork, 'commit', '-m', 'base')
+    git(gWork, 'push', 'origin', 'HEAD:main')
+    git(gWork, 'fetch', 'origin')
+  }, 60_000)
+
+  afterAll(() => {
+    if (gBase) rmSync(gBase, { recursive: true, force: true })
+  })
+
+  function commitOn(branch, note) {
+    writeFileSync(join(gWork, `${branch.replace(/\W/g, '-')}.txt`), `${note}\n`)
+    git(gWork, 'add', '.')
+    git(gWork, 'commit', '-m', note)
+  }
+
+  it(
+    'refuses a claude/* branch that tracks origin/main, before any gate runs',
+    () => {
+      git(gWork, 'checkout', '-B', 'claude/restarted', 'origin/main')
+      expect(git(gWork, 'rev-parse', '--abbrev-ref', '@{u}')).toBe('origin/main')
+      commitOn('claude/restarted', 'session work')
+      const before = git(gOrigin, 'rev-parse', 'main')
+      const { status, output } = runPushScript(gWork)
+
+      expect(status).toBe(5)
+      expect(output).toMatch(/claude\/restarted tracks origin\/main/)
+      expect(output).toMatch(/git push -u origin claude\/restarted/)
+      expect(output).not.toMatch(/ci:gates static chain/)
+      expect(git(gOrigin, 'rev-parse', 'main')).toBe(before)
+    },
+    120_000,
+  )
+
+  it(
+    'pushes a claude/* branch that tracks its own remote to that remote',
+    () => {
+      git(gWork, 'checkout', '--no-track', '-b', 'claude/own', 'origin/main')
+      commitOn('claude/own', 'own work')
+      git(gWork, 'push', '-u', 'origin', 'claude/own')
+      commitOn('claude/own', 'more own work')
+      const mainBefore = git(gOrigin, 'rev-parse', 'main')
+      const { status, output } = runPushScript(gWork)
+
+      expect(output).toMatch(/git push OK/)
+      expect(status).toBe(0)
+      expect(git(gOrigin, 'rev-parse', 'claude/own')).toBe(git(gWork, 'rev-parse', 'HEAD'))
+      expect(git(gOrigin, 'rev-parse', 'main')).toBe(mainBefore)
+    },
+    120_000,
+  )
+
+  it(
+    'lands a wt/* worktree branch on the origin/main it tracks',
+    () => {
+      git(gWork, 'fetch', 'origin')
+      git(gWork, 'checkout', '-B', 'wt/lane', 'origin/main')
+      commitOn('wt/lane', 'lane work')
+      const { status, output } = runPushScript(gWork)
+
+      expect(output).toMatch(/git push OK/)
+      expect(status).toBe(0)
+      expect(git(gOrigin, 'rev-parse', 'main')).toBe(git(gWork, 'rev-parse', 'HEAD'))
+    },
+    120_000,
+  )
+
+  it(
+    'pushes main to origin/main',
+    () => {
+      git(gWork, 'fetch', 'origin')
+      git(gWork, 'checkout', '-B', 'main', 'origin/main')
+      commitOn('main', 'main work')
+      const { status, output } = runPushScript(gWork)
+
+      expect(output).toMatch(/git push OK/)
+      expect(status).toBe(0)
+      expect(git(gOrigin, 'rev-parse', 'main')).toBe(git(gWork, 'rev-parse', 'HEAD'))
+    },
+    120_000,
+  )
+})

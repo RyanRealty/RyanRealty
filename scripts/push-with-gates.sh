@@ -110,6 +110,35 @@ trap on_exit EXIT
 trap 'die 130 "✗ interrupted (SIGINT) — push aborted. NOTHING landed on the remote."' INT
 trap 'die 143 "✗ terminated (SIGTERM) — push aborted. NOTHING landed on the remote."' TERM
 
+# ---------------------------------------------------------------------------
+# A session's own branch never lands on main through this script (RUN_LOOP §5).
+# `git checkout -B <branch> origin/main`, the restart a cloud session is told to
+# run after its PR merges, leaves that branch tracking origin/main, and the
+# upstream push below then sends it straight to main with no PR and no review.
+# That is how d1a4c6979 reached production on 2026-09-24. A wt/* worktree
+# branch is MEANT to land on the origin/main it tracks, so it passes, as does
+# main itself. Explicit push arguments name their own target and skip this.
+# Checked before any gate runs, so the refusal costs nothing.
+# ---------------------------------------------------------------------------
+if [ "$#" -eq 0 ]; then
+  PUSH_BRANCH=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || echo "")
+  PUSH_UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "")
+  case "$PUSH_BRANCH" in
+    '' | main | wt/*) ;;
+    *)
+      if [ "$PUSH_UPSTREAM" = "origin/main" ]; then
+        die 5 \
+          "✗ $PUSH_BRANCH tracks origin/main, so this push would land it on main with no PR." \
+          "  A session's own branch pushes to its own remote (docs/RUN_LOOP.md §5):" \
+          "    git branch --unset-upstream" \
+          "    npm run gates:stamp && git push -u origin $PUSH_BRANCH" \
+          "  To land on main on purpose, push from a checkout of main." \
+          "  NOTHING landed on the remote. Your commits are still local."
+      fi
+      ;;
+  esac
+fi
+
 # unit_base — the commit this push is measured against: the merge-base with the
 # upstream, else with origin/main, else empty (the caller runs the full suite).
 unit_base() {

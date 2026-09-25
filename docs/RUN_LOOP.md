@@ -99,6 +99,8 @@ A session bound to its own branch never runs `npm run push` (it rebases onto and
 `main`, not the branch): it runs `npm run gates:stamp`, `git push -u origin <branch>`, and
 writes `LAND <branch>@<sha>` on the node with `--note`; the next session that can push
 `main` lands it before it claims anything. Nobody waits on a person to merge.
+`npm run push` refuses (exit 5) a branch other than `main` or `wt/*` that tracks `origin/main`:
+`git checkout -B <branch> origin/main` makes that, and it once sent a session's commits to main.
 One `ci:gates` per ship; do not poll GitHub Actions (R-221).
 
 ## 6. The ledger trailer (ranking-affecting commits)
