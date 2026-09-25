@@ -251,7 +251,7 @@ export function htmlWithoutAllowedPreparedNameLines(
   OWNERS_CLOSE_RE.lastIndex = 0
   NAMED_COVER_RE.lastIndex = 0
   NAMED_CLOSE_RE.lastIndex = 0
-  let html = htmlOrText.replace(OWNERS_COVER_RE, 'Prepared by Ryan Realty').replace(OWNERS_CLOSE_RE, 'Prepared')
+  const html = htmlOrText.replace(OWNERS_COVER_RE, 'Prepared by Ryan Realty').replace(OWNERS_CLOSE_RE, 'Prepared')
   if (!showOwnerName(opts?.showOwnerName)) return html
   return html.replace(NAMED_COVER_RE, 'Prepared by Ryan Realty').replace(NAMED_CLOSE_RE, 'Prepared')
 }
