@@ -27,13 +27,16 @@ checks.push({
 })
 
 const videos = src('lib/data/videos/getListingVideos.ts')
+// The cache key only moves forward: v14 evicted the untagged 3D rows, v15 the
+// hashless Vimeo srcs. A later bump passes; a revert to an older key fails.
+const videosKeyVersion = Number(/'listing-videos-v(\d+)'/.exec(videos)?.[1] ?? 0)
 checks.push({
   label: 'details.Videos 3D rows tag isVirtualTour',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-hero-video['"]/.test(videos) &&
     /isListingVirtualTour\(/.test(videos) &&
     videos.includes('isVirtualTour: true') &&
-    videos.includes('listing-videos-v14'),
+    videosKeyVersion >= 15,
 })
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')

@@ -303,6 +303,8 @@ export type {
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'
+export { getListingCardVideo, LISTING_CARD_VIDEO_KEY } from '@/lib/data/videos/getListingCardVideo'
+export type { ListingCardVideoResult } from '@/lib/data/videos/getListingCardVideo'
 export { getSubdivisionVideoTours } from '@/lib/data/videos/getSubdivisionVideoTours'
 export {
   getRecentListingVideoRows,
