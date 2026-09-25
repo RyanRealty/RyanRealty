@@ -48,6 +48,7 @@ import {
   type ChecklistItem,
 } from '@/lib/tc/field-rules'
 import { ContinueAsSigner } from './ContinueAsSigner'
+import { PrintedLines } from './PrintedLines'
 import { fitTextToBox, textSizeForBox } from '@/lib/tc/text-areas'
 import { ESIGN_CONSENT_SUMMARY, esignDisclosure } from '@/lib/tc/esign-consent'
 import { cn } from '@/lib/utils'
@@ -509,33 +510,21 @@ function FieldBox({
   const shownText = valueText(value)
   const isMark = field.type === 'signature' || field.type === 'initials'
   const png = value && (value.kind === 'signature' || value.kind === 'initials') ? value.png : null
-  // Typed text as the sealer prints it: the same lines at the same size
-  // (lib/tc/text-areas.ts fitTextToBox), scaled to the screen.
+  // Typed text as the sealer prints it (PrintedLines): the same lines, size and
+  // baselines, in the box's own points.
   const ptsW = size.ptsW || 612
   const ptsH = size.ptsH || 792
-  const printed =
-    field.type === 'text' && shownText.trim() && !(value?.kind === 'text' && value.size)
-      ? (() => {
-          const fitBox = fitTextToBox(shownText, field.w * ptsW, field.h * ptsH)
-          return { lines: fitBox.lines, px: fitBox.size * (size.w / ptsW), lineHeight: (fitBox.size + 1.2) * (size.w / ptsW) }
-        })()
-      : null
-  const printedText = printed ? (
-    <span className="block min-w-0 whitespace-nowrap" style={{ fontSize: printed.px, lineHeight: `${printed.lineHeight}px` }}>
-      {printed.lines.map((l, i) => (
-        <span key={i} className="block">
-          {l}
-        </span>
-      ))}
-    </span>
-  ) : null
+  const printedText =
+    field.type === 'text' && shownText.trim() && !(value?.kind === 'text' && value.size) ? (
+      <PrintedLines text={shownText} widthPts={field.w * ptsW} heightPts={field.h * ptsH} />
+    ) : null
 
   // The broker's locked fields and other signers' finished ones: as they will print.
   if (owner !== 'mine') {
     return (
       <div
         style={{ ...style, fontSize: fit(shownText) }}
-        className={cn('pointer-events-none flex overflow-hidden px-0.5 leading-none text-foreground', printed && printed.lines.length > 1 ? 'items-start' : 'items-center')}
+        className="pointer-events-none flex items-center overflow-hidden px-0.5 leading-none text-foreground"
         aria-hidden
       >
         {png ? (
