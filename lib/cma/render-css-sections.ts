@@ -704,7 +704,7 @@ export function cmaSectionStyles(): string {
   table.kv.status-price-table th:first-child { padding-left: 0; text-align: left; }
   table.kv.status-price-table col.sp-stat { width: 22%; }
   table.kv.status-price-table col.sp-fig { width: 26%; }
-  table.kv.status-price-table tbody { break-inside: avoid; }
+  table.kv.status-price-table tbody { break-inside: auto; }
   table.kv.status-price-table tr.sp-group th { color: var(--navy); font-weight: 600; padding-top: 8px; border-bottom: 1px solid var(--navy); }
   table.kv.status-price-table .sp-count { font-weight: 400; color: var(--muted); margin-left: 6px; }
   .ppsf-status-caption { margin: 4px 0 10px; }
@@ -909,16 +909,36 @@ export function cmaSectionStyles(): string {
   }
   h2.section, h3.subhead, h4.subhead { break-after: avoid; page-break-after: avoid; }
   table.comps tr, table.kv tr { break-inside: avoid; page-break-inside: avoid; }
-  /* Keep a figure or table with the sentence that reads it. A caption that
-     spills onto the next sheet sits above that sheet's header. */
-  figure, .figure-block, .chart-block, .pin-map-wrap, .lot-tile, .comp-matrix-wrap,
-  .worth-strip, .status-price-wrap {
+  /* Small units only. A figure with its caption, a map tile, a source
+     note with its strip, the closing signature plus the prepared line.
+     Large tables already repeat thead and must split. */
+  figure, .pin-map-wrap, .lot-tile, .keep-note, .keep-close {
     break-inside: avoid;
     page-break-inside: avoid;
   }
-  .chart-read, figcaption, caption, .ppsf-status-caption, h4.subhead, .matrix-group-h {
+  /* page-contract sets table { break-inside: avoid }. That parks a whole
+     matrix on the next sheet and leaves a heading alone. Override. */
+  table, .comp-matrix-wrap, .worth-strip, .status-price-wrap, .chart-block,
+  .figure-block, .status-price {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  /* Lead sentence stays with the figure that follows. */
+  .chart-read, h4.subhead, .matrix-group-h {
     break-after: avoid;
     page-break-after: avoid;
+  }
+  /* Caption stays with the table/figure ABOVE it, never with the next
+     chapter. break-after: avoid on a caption glued it to following
+     content and spilled it above the next section header. */
+  figcaption, caption, .ppsf-status-caption {
+    break-before: avoid;
+    page-break-before: avoid;
+    break-after: auto;
+    page-break-after: auto;
+  }
+  /* Source note under a stat strip, even when the wrap is missing. */
+  .stat-strip + .small, .stat-strip + p.small {
     break-before: avoid;
     page-break-before: avoid;
   }

@@ -2,7 +2,7 @@
  * Print CMA must be one map, no empty letter sheets, no contents filler.
  */
 import { describe, expect, it } from 'vitest'
-import { renderCmaHtml, type RenderCmaArgs } from './render'
+import { renderCmaHtml, splitPageOpening, type RenderCmaArgs } from './render'
 import { mapPage, pricingPage, salesThatSetItPage } from './render-pricing-page'
 import { printWiderMarketPages } from './market-area-chapters'
 import { cmaStylesheet } from './render-css'
@@ -144,6 +144,8 @@ describe('print CMA layout', () => {
     const { html } = renderCmaHtml(args())
     expect(html).not.toContain('>Contents<')
     expect(html).not.toContain('class="toc"')
+    expect(html).toContain('class="page-open"')
+    expect(html).toContain('class="keep-close"')
   })
 
   it('does not force every inner sheet to 11 inches of empty cream', () => {
@@ -163,7 +165,10 @@ describe('print CMA layout', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
     expect(css).toMatch(/\.pin-map-wrap[\s\S]*?break-inside:\s*avoid/)
     expect(css).toMatch(/\.chart-read[\s\S]*?break-after:\s*avoid/)
-    expect(css).toMatch(/figcaption[\s\S]*?break-after:\s*avoid/)
+    expect(css).toMatch(/figcaption[\s\S]*?break-before:\s*avoid/)
+    expect(css).toMatch(/\.comp-matrix-wrap[\s\S]*?break-inside:\s*auto/)
+    expect(css).toMatch(/\.page-open[\s\S]*?break-inside:\s*avoid/)
+    expect(css).toMatch(/@media print \{[\s\S]*?\.page-closing \{ padding: 16px 28px 20px; \}/)
   })
 
   it('keeps the wider market on one sheet', () => {
@@ -228,5 +233,17 @@ describe('print CMA layout', () => {
     expect(pages).toHaveLength(1)
     expect(pages[0].body).toContain('What 2 to 4 bedroom homes sold for')
     expect(pages[0].body).toContain('This market')
+  })
+
+  it('keeps a heading with its first small block and leaves a matrix free to split', () => {
+    const small = splitPageOpening('<h2 class="section">The sales</h2><p>Five closed.</p><table></table>')
+    expect(small.open).toContain('The sales')
+    expect(small.open).toContain('Five closed.')
+    expect(small.rest).toContain('<table')
+    const large = splitPageOpening(
+      '<h2 class="section">The sales</h2><div class="comp-matrix-wrap"><table></table></div>',
+    )
+    expect(large.open).toBe('<h2 class="section">The sales</h2>')
+    expect(large.rest).toContain('comp-matrix-wrap')
   })
 })

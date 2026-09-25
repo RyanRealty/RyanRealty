@@ -199,4 +199,20 @@ describe('CMA letter copy has no em dash', () => {
     const body = html.replace(/<style\b[\s\S]*?<\/style>/gi, '')
     expect(body).not.toContain('\u2014')
   })
+
+  it('rewrites a stored method sentence that still carries an em dash', () => {
+    const stored =
+      'These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price — size and story class do not adjust.'
+    const { html } = renderCmaHtml({
+      ...args(),
+      pricing: {
+        ...args().pricing,
+        timeAdjustment: { sentence: stored },
+      } as never,
+    })
+    const body = html.replace(/<style\b[\s\S]*?<\/style>/gi, '')
+    expect(body).toContain('price. Size and story class do not adjust.')
+    expect(body).not.toContain('\u2014')
+    expect(body).not.toContain(stored)
+  })
 })

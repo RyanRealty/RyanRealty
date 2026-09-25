@@ -8,6 +8,7 @@
  */
 
 import { cleanText, countWord, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
+import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { currentAskLine } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
@@ -75,7 +76,7 @@ export function whatItsWorthHeading(input: {
       tiersUsed: input.tiersUsed ?? [],
     }).body,
   })
-  return sentencesOf(logic)[0] ?? 'What the sales say'
+  return sanitizeLetterEmDash(sentencesOf(logic)[0] ?? 'What the sales say')
 }
 
 /**
@@ -141,7 +142,7 @@ function pricingWithMeasure(pricing: CmaPricing): CmaPricing {
   const ta = (pricing as unknown as { timeAdjustment?: Record<string, unknown> | null })
     .timeAdjustment
   const measure = readMeasure(ta)
-  const sentence = typeof ta?.sentence === 'string' ? ta.sentence.trim() : ''
+  const sentence = typeof ta?.sentence === 'string' ? sanitizeLetterEmDash(ta.sentence.trim()) : ''
   if (!measure || !sentence) return pricing
   if (sentence.toLowerCase().includes(measure.toLowerCase())) return pricing
   return {
@@ -529,7 +530,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     fallback: search.body,
   })
   const logic = sentencesOf(whichSales)
-  const heading = logic[0] ?? whatItsWorthHeading(input)
+  const heading = sanitizeLetterEmDash(logic[0] ?? whatItsWorthHeading(input))
   const methodTail = logic.slice(1).join(' ')
   // THE CLAMP, UNDER THE NUMBER IT MOVED. When the failed-ask clamp binds, the
   // printed price is not the one the method above it produces — Concorde
