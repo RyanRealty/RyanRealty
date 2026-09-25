@@ -1396,7 +1396,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         .join(' | ')
       const err = `Letter consistency contract failed: ${failed}`
       await recordBuildFailure(slug, err, {
-        stage: 'letter-contract',
+        stage: 'contract',
         docType,
         contractChecks: letterContract.checks,
       })

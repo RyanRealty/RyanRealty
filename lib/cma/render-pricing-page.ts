@@ -542,11 +542,9 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   const lead = input.omitLeadPrices
     ? ''
     : `
-  <div class="keep-close">
   <h2 class="section is-answer">${esc(heading)}</h2>
   <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
-  ${clampHtml}
-  </div>`
+  ${clampHtml}`
   // The method comes BEFORE the evidence for it (Delta 1): which sales, how
   // each was adjusted, and how the range and the recommended list follow.
   // Every one of those sentences is written by lib/pricing and stored on the

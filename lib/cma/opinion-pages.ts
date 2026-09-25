@@ -535,11 +535,9 @@ export function whatHappenedPage(a: OpinionPageArgs): CmaPageDef | null {
     meta: `${esc(a.subject.streetAddress)} · What happened`,
     toc: heading,
     body: `
-  <div class="keep-close">
   <h2 class="section">${esc(heading)}</h2>
   ${whatHappenedGraphicHtml(a)}
-  ${failedAskBacktestHtml(a, 'letter')}
-  </div>`,
+  ${failedAskBacktestHtml(a, 'letter')}`,
   }
 }
 

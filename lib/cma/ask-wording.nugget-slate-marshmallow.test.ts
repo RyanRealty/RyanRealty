@@ -4,6 +4,8 @@ import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { composeFirstContactNumbers, lastAskVersusHeroBand } from '@/lib/cma/first-contact'
 
 const FACTS = {
+  address: '19815 Nugget, Bend, OR 97701',
+  firstName: null,
   valueLow: 734_000,
   valueHigh: 878_000,
   recommendedList: 734_000,
@@ -57,6 +59,8 @@ describe('ask wording from one computed position', () => {
     expect(lastAskVersusHeroBand(ask, low, high)).toBe('inside')
     expect(askGapClass(ask, low, high)).toBe('inside')
     const email = composeFirstContactNumbers('expired', {
+      address: '19318 Marshmallow, Bend, OR 97702',
+      firstName: null,
       valueLow: low,
       valueHigh: high,
       recommendedList: rec,
@@ -66,9 +70,10 @@ describe('ask wording from one computed position', () => {
       salesScope: 'subdivision',
       city: 'Bend',
     })
+    expect(email).toBeTruthy()
     expect(email).toContain('inside what those sales support')
     expect(email).toContain('We would recommend listing at $975,000.')
     expect(email).not.toContain('sales alone would support')
-    expect(email.match(/recommend listing at \$[\d,]+/g)?.length).toBe(1)
+    expect(email?.match(/recommend listing at \$[\d,]+/g)?.length).toBe(1)
   })
 })
