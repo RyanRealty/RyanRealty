@@ -45,8 +45,10 @@ import {
   getCityHeroUrlsBySlug,
   getPlaceOpeningListings,
   getPlaceAmenityLayers,
+  getPlaceSchools,
   getSubdivisionOnMarketRows,
 } from '@/lib/data'
+import { getDistrictForCity } from '@/data/co-schools'
 import { EMPTY_PLACE_AMENITY_LAYERS } from '@/lib/atlas/place-amenity-layers'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
@@ -139,7 +141,7 @@ import {
 import { NeighborhoodAlertsStrip } from './_v3/NeighborhoodAlertsSheet.client'
 import { NeighborhoodInsight } from './_v3/NeighborhoodInsight.client'
 import { buildNeighborhoodInsightBoard } from './_v3/neighborhood-insight'
-import { dailyLifeRows } from './_v3/neighborhood-daily-life'
+import { dailyLifeHasSchools, dailyLifeRows, NEIGHBORHOOD_SCHOOLS_TRACE } from './_v3/neighborhood-daily-life'
 import {
   PLACE_NEAR_RECREATION_TRACE,
   recreationNearPoint,
@@ -293,6 +295,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
     indexCities,
     cityPace,
     openingListings,
+    placeSchools,
   ] = await Promise.all([
     // Result variant: a timed-out boundary yields `{ pins: [] }`, which is
     // indistinguishable from a genuinely empty neighborhood. `.ok` keeps them
@@ -376,6 +379,11 @@ async function renderNeighborhoodDetail({ params }: Props) {
       3000,
       'nbh:openingListings',
     ),
+    // The Deschutes County attendance areas covering the recorded boundary
+    // (Matt 2026-09-24). The Schools section and the FAQ both read this one
+    // list, so they cannot name different schools. A timeout is an empty
+    // list: the section and the question drop, nothing claims "no schools".
+    withTimeoutFallback(getPlaceSchools('neighborhood', boundaryNeighborhoodSlug), [], 4500, 'nbh:schools'),
   ])
   const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -535,10 +543,12 @@ async function renderNeighborhoodDetail({ params }: Props) {
     medianDaysToPending: hud.daysToPending,
     soldCount12mo: publicPace.closedCount ?? null,
     refreshedAt: leftoverStamp,
+    attendanceSchools: placeSchools.map((school) => school.name),
+    schoolDistrict: getDistrictForCity(cityName) ?? null,
   })
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
 
-  const dailyRows = dailyLifeRows(richContent, cityName)
+  const dailyRows = dailyLifeRows(richContent, cityName, placeSchools)
   const withCoords = boundaryMapData.pins.filter(
     (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng),
   )
@@ -573,6 +583,13 @@ async function renderNeighborhoodDetail({ params }: Props) {
             placeName: neighborhood.name,
           })
         : null,
+    // The same reads the Build years + HOA and CC&Rs sections print from
+    // (Matt 2026-09-24): the answers are those sections' own sentences.
+    character: placeCharacter,
+    characterSource: placeCharacter
+      ? `regional MLS listings, ${placeCharacter.noun} inside the ${neighborhood.name} boundary`
+      : null,
+    documents: placeDocuments,
   })
 
   /* ── The cited Q&A (SITE-08) ────────────────────────────────────────────
@@ -1072,13 +1089,25 @@ async function renderNeighborhoodDetail({ params }: Props) {
             neither neighbour repeats one. */}
         {affordability ? <V3PlaceAffordability id="afford" {...affordability} /> : null}
 
-        {firstDaily ? (
+        {/* Schools are the county attendance areas (Matt 2026-09-24), under
+            their source line. With no attendance read the rows are the
+            authored parks alone, so the section says Parks. */}
+        {firstDaily && dailyLifeHasSchools(dailyRows) ? (
           <V3Ledger
             id="daily-life"
             eyebrow={v3Text(`${neighborhood.name} · Daily life`)}
             heading={v3Text('Schools')}
             rows={[firstDaily, ...restDaily]}
+            source={v3Text(NEIGHBORHOOD_SCHOOLS_TRACE)}
             action={{ label: v3Text('Every school'), href: '/schools' }}
+          />
+        ) : firstDaily ? (
+          <V3Ledger
+            id="daily-life"
+            eyebrow={v3Text(`${neighborhood.name} · Daily life`)}
+            heading={v3Text('Parks')}
+            rows={[firstDaily, ...restDaily]}
+            action={{ label: v3Text('Every Central Oregon park'), href: '/parks' }}
           />
         ) : null}
 

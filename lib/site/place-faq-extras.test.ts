@@ -289,6 +289,123 @@ describe('buildPlaceFaqExtras', () => {
   })
 })
 
+describe('neighborhood facts (Matt 2026-09-24, "Add to neighborhoods")', () => {
+  const character = {
+    subType: 'Single Family Residence',
+    noun: 'detached homes',
+    homeCount: 4_800,
+    yearBuilt: { p10: 1986, p90: 2017, sample: 4_461 },
+    hoaPresence: { yes: 140, reported: 212, windowFrom: '2024-01-01' },
+    dues: { medianMonthly: 45, reported: 130, windowFrom: '2024-01-01' },
+  }
+  const CHARACTER_TRACE = 'regional MLS listings, detached homes inside the Awbrey Butte boundary'
+  const recorded = {
+    id: 'd1',
+    publishedName: 'AWBREY BUTTE',
+    kind: 'ccr' as const,
+    recordingRef: '346-1105',
+    recordingType: 'book-page' as const,
+    publisher: null,
+    documentDate: null,
+    book: 346,
+    page: 1105,
+    instrumentNumber: null,
+    recordingYear: 1979,
+    county: 'Deschutes',
+    sourceIndexUrl: 'https://recording.deschutes.org/',
+    sourceLabel: 'Deschutes County DIAL',
+    url: 'https://example.com/ccr.pdf',
+    fileBytes: 1000,
+    pageCount: 12,
+  }
+  const amendment = { ...recorded, id: 'd2', kind: 'amendment' as const, recordingRef: '2007-36361', recordingType: 'year-instrument' as const, book: null, page: null, instrumentNumber: '2007-36361' }
+
+  function neighborhood(over: Record<string, unknown> = {}) {
+    return buildPlaceFaqExtras({
+      placeName: 'Awbrey Butte',
+      cityName: 'Bend',
+      grain: 'neighborhood',
+      character,
+      characterSource: CHARACTER_TRACE,
+      documents: [recorded, amendment],
+      ...over,
+    } as Parameters<typeof buildPlaceFaqExtras>[0])
+  }
+
+  it('answers how old the homes are with the section sentence and its sample', () => {
+    const q = neighborhood().find((e) => e.question === 'How old are the homes in Awbrey Butte?')
+    expect(q?.answer).toBe(
+      'Eight in ten detached homes in Awbrey Butte were built between 1986 and 2017, based on 4,461 homes with a recorded build year. The figure covers detached homes only.',
+    )
+    expect(q?.source).toBe(CHARACTER_TRACE)
+  })
+
+  it('answers the HOA question in the counted form, never "no HOA"', () => {
+    const q = neighborhood().find((e) => e.question === 'Do homes in Awbrey Butte have an HOA?')
+    expect(q?.answer).toBe(
+      'Since January 2024, 212 detached listings here reported whether the home has an HOA. 140 of them do. ' +
+        'Listings that reported nothing about an HOA are not counted either way. Confirm dues and governing documents through the association before relying on them.',
+    )
+    const none = neighborhood({ character: { ...character, hoaPresence: { yes: 0, reported: 40, windowFrom: '2024-01-01' } } })
+    const answer = none.find((e) => e.question === 'Do homes in Awbrey Butte have an HOA?')?.answer ?? ''
+    expect(answer).toContain('0 of them do.')
+    expect(answer).not.toMatch(/\bno HOA\b|does not have an HOA/i)
+  })
+
+  it('answers the dues question with its median, type and window', () => {
+    const q = neighborhood().find((e) => e.question === 'How much are HOA dues in Awbrey Butte?')
+    expect(q?.answer).toContain('130 detached listings here reported a dues figure since January 2024. The median is $45 a month.')
+    expect(q?.answer).toContain('Confirm them through the association before relying on them.')
+  })
+
+  it('answers CC&Rs from the linked documents, with the recording county and the title caveat', () => {
+    const q = neighborhood().find((e) => e.question === 'Does Awbrey Butte have CC&Rs?')
+    expect(q?.answer).toBe(
+      'Yes. This page links 2 recorded documents for Awbrey Butte: the declaration and 1 recorded amendment. ' +
+        'They are copies of instruments recorded in Deschutes County, Oregon. ' +
+        'Later amendments may exist that are not shown here, so confirm the governing chain through title before relying on it.',
+    )
+    expect(q?.source).toBe('instruments recorded in Deschutes County, Oregon, copies via Deschutes County DIAL')
+  })
+
+  it('never calls an association-published copy a recorded instrument', () => {
+    const published = {
+      ...recorded,
+      recordingType: 'association-published' as const,
+      publisher: 'Awbrey Butte Homesites Association',
+      documentDate: '2019-05-01',
+      book: null,
+      page: null,
+    }
+    const q = neighborhood({ documents: [published] }).find((e) => e.question === 'Does Awbrey Butte have CC&Rs?')
+    expect(q?.answer).toContain("They are Awbrey Butte Homesites Association's own published copies, which carry no county instrument number.")
+    expect(q?.answer).not.toMatch(/recorded in Deschutes County/)
+    expect(q?.source).toBe("Awbrey Butte Homesites Association's published copies")
+  })
+
+  it('asks about governing documents, not CC&Rs, when no declaration is on file', () => {
+    const extras = neighborhood({ documents: [{ ...recorded, kind: 'bylaws' as const }] })
+    expect(extras.find((e) => e.question === 'Does Awbrey Butte have CC&Rs?')).toBeUndefined()
+    expect(extras.find((e) => e.question === 'What governing documents are on file for Awbrey Butte?')?.answer).toMatch(
+      /^This page links 1 recorded document for Awbrey Butte\./,
+    )
+  })
+
+  it('drops every one of them without a source, without data, or on a city page', () => {
+    expect(neighborhood({ characterSource: null }).map((e) => e.question)).toEqual(['Does Awbrey Butte have CC&Rs?'])
+    expect(neighborhood({ character: null, documents: [] })).toEqual([])
+    const city = buildPlaceFaqExtras({
+      placeName: 'Bend',
+      grain: 'city',
+      character,
+      characterSource: CHARACTER_TRACE,
+      documents: [recorded],
+    })
+    const blob = city.map((e) => `${e.question} ${e.answer}`).join(' ')
+    expect(blob).not.toMatch(/HOA|CC&Rs|build year/i)
+  })
+})
+
 describe('appendPlaceFaqExtras', () => {
   it('keeps pulse Dataset variables and adds extras only to FAQPage items', () => {
     const pulse = buildMarketFaq('Bend', {
