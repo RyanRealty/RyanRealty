@@ -16,6 +16,21 @@ function item(over: Partial<OpenHouseFieldItem> = {}): OpenHouseFieldItem {
     weekend: true,
     when: 'Sat, Aug 15, 2026 · 2pm-4pm',
     meta: 'Sat, Aug 15, 2026 · 2pm-4pm · 3 bd · 2 ba · 1,800 sqft',
+    listing: {
+      listingKey: 'L1',
+      href: '/homes-for-sale/bend/123-pine-st-220000001',
+      price: 625_000,
+      addressLine: '123 Pine St',
+      cityLine: 'Bend',
+      beds: null,
+      baths: null,
+      sqft: null,
+      propertyType: 'A',
+      propertySubType: null,
+      subdivisionName: null,
+      city: 'Bend',
+      listNumber: null,
+    },
     ...over,
   }
 }
@@ -53,11 +68,12 @@ describe('SITE-169 source line', () => {
   })
 })
 
-describe('SITE-169 catalog', () => {
-  it('the fold imports the installed shadcn carousel', () => {
+describe('SITE-169 fold, on the listing dial (Matt 2026-09-24)', () => {
+  it('the fold is V3ListingDial per band, drawn from the Field rows, with the timetable over it', () => {
     const src = readFileSync(join(process.cwd(), 'app/open-houses/_v3/OpenHouseFold.client.tsx'), 'utf8')
-    expect(src).toContain('@/components/ui/carousel')
-    expect(src).toContain('CarouselPrevious')
-    expect(src).toContain('CarouselNext')
+    expect(src).toContain('<V3ListingDial')
+    expect(src).toContain('rail.map((item) => item.listing)')
+    expect(src).toContain('oh-upcoming')
+    expect(src).not.toContain('@/components/ui/carousel')
   })
 })

@@ -163,5 +163,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${GATE} — OK: /buy /sell /neighborhoods /housing-market/bend and the homepage #guides strip keep the Sep 7 AEO cluster with authentic titles. First house-rail photos must peek onto the 1440×900 fold (not heading-only).`,
+  `${GATE} — OK: /buy /sell /neighborhoods /housing-market/bend and the homepage #guides strip keep the Sep 7 AEO cluster with authentic titles. First house-rail photos must peek onto the 1440×900 fold (not heading-only); the shelves are listing dials.`,
 )

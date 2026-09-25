@@ -3,7 +3,7 @@
 /**
  * Opening breakdown + photographed Field. Count stays a caption on the
  * server; this island is what the reader does with it — cut-size bands
- * that swap the shadcn carousel, and city doors a crawler can follow.
+ * that swap the listing dial, and city doors a crawler can follow.
  */
 import Link from 'next/link'
 import { V3ChartSwitch, V3_ROOT_CLASS, v3Text } from '@/components/site/v3'
@@ -37,6 +37,7 @@ export function PriceDropsFold({
         {bands.map((band) => (
           <PriceDropPhotos
             key={band.key}
+            id={`pd-cuts-${band.key}`}
             items={band.items}
             label={`${railLabel} · ${band.label}`}
           />

@@ -226,3 +226,9 @@
   padding-inline: var(--v3-gutter);
   padding-bottom: var(--v3-space-lg);
 }
+
+/* The shelves (listing dials, HomeHomesRails) carry the gutter on their own
+   page; here this wrapper already does, so they do not add a second one. */
+.cities-fold__homes > .v3.home-shelves {
+  padding-inline: 0;
+}

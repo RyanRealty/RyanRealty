@@ -65,6 +65,21 @@ describe('openHouseItemListSchema', () => {
       eventDate: '2026-08-15',
       weekend: true,
       when: 'Sat, Aug 15, 2026 · 2pm-4pm',
+      listing: {
+        listingKey: 'L1',
+        href: '/homes-for-sale/bend/123-pine-st-220000001',
+        price: 625_000,
+        addressLine: '123 Pine St',
+        cityLine: 'Bend',
+        beds: null,
+        baths: null,
+        sqft: null,
+        propertyType: 'A',
+        propertySubType: null,
+        subdivisionName: null,
+        city: 'Bend',
+        listNumber: null,
+      },
     }
     const list = openHouseItemListSchema([item], 'https://ryan-realty.com')
     expect(list).toMatchObject({ type: 'itemList' })

@@ -1,7 +1,9 @@
 'use client'
 
 /**
- * One horizontal house rail for the homepage. Cards reuse SplitCardMedia
+ * One horizontal house rail. It was the homepage's shelf until Matt 2026-09-24
+ * moved every listing carousel to the listing dial (HomeHomesRails now mounts
+ * V3ListingDial); V3PlaceInventory's layout="rails" still mounts it. Cards reuse SplitCardMedia
  * (badges, photo carousel, in-card 3D/video) and the same ask/meta publishers as Field Split cards.
  * Photo and copy open the listing. Tour plays in the card media. No save/heart on public cards (Matt 2026-09-15).
  */

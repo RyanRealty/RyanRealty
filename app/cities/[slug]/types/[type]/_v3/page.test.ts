@@ -60,7 +60,7 @@ describe('place-type pages', () => {
     expect(COMM).toMatch(/label: 'For sale'/)
   })
 
-  it('puts a shadcn carousel rail of photographed listings in the fold (SITE-106 / SITE-107)', () => {
+  it('puts the listing dial of photographed listings in the fold (SITE-106 / SITE-107, dial 2026-09-24)', () => {
     expect(CITY).toMatch(/<PlaceTypeFilm/)
     expect(CITY).toMatch(/from '\.\/_v3\/PlaceTypeFilm\.client'/)
     expect(COMM).toMatch(/<PlaceTypeFilm/)
@@ -84,13 +84,13 @@ describe('place-type pages', () => {
       resolve('app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx'),
       'utf8',
     )
-    expect(film).toContain("from '@/components/ui/carousel'")
-    expect(film).toMatch(/CarouselPrevious/)
-    expect(film).toMatch(/CarouselNext/)
-    expect(film).toMatch(/md:basis-1\/2/)
-    expect(film).toMatch(/LISTING_FIELD_LEAD_PHOTO_SIZE/)
-    expect(film).toMatch(/place-type-film__specs/)
-    expect(film).toMatch(/place-type-film__addr/)
+    // Matt 2026-09-24: the film is the listing dial, not a carousel. The dial
+    // draws the 800x600 lead plate and the card copy (ask, beds/baths/sqft,
+    // address); the Atlas rings the home the dial shows.
+    expect(film).toMatch(/<V3ListingDial\b/)
+    expect(film).toMatch(/useListingDialIndex\(FILM_ID, filmed\.length\)/)
+    expect(film).toMatch(/setLinkedKey\(shownKey\)/)
+    expect(film).not.toContain("from '@/components/ui/carousel'")
     expect(film).not.toMatch(/place-type-film__on-photo/)
     expect(film).not.toMatch(/V3Carousel/)
     expect(CITY).toMatch(/placeTypeAtlasEyebrow\(spec, false\)/)

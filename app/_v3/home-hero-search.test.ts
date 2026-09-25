@@ -351,7 +351,12 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).not.toMatch(/<HomeHomesField/)
     expect(PAGE).not.toContain('homeFieldPool')
     expect(PAGE).toContain('homeRailRows')
-    expect(RAILS).toContain('HomeListingRail')
+    // Matt 2026-09-24: the shelves are listing dials, not carousels. The same
+    // rows go through one converter, so each dial lists the rail's cards.
+    expect(RAILS).toContain('V3ListingDial')
+    expect(RAILS).toContain('listingRowFromRailCard')
+    expect(RAILS).not.toContain('HomeListingRail')
+    expect(RAILS).toContain('dialRailPositionAt(order)')
     expect(RAIL_CLIENT).toContain('SplitCardMedia')
     expect(RAIL_CLIENT).toContain('href={card.href}')
     expect(RAIL_CLIENT).not.toContain('HeartIcon')

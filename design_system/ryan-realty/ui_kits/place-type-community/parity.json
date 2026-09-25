@@ -6,7 +6,7 @@
   "requiredComponents": [
     {
       "name": "PlaceTypeFilm",
-      "section": "Fold V3Carousel rail of photographed listings (mode=rail, prev/next, 800x600 plates, price+address+beds/baths/sqft).",
+      "section": "Fold set of photographed listings on V3ListingDial (Matt 2026-09-24, it was the shadcn carousel): one listing large on its 800x600 plate with price+address+beds/baths/sqft, the rest as thumbnails, 03 / 12; while the pointer or focus is in it the Atlas rings the home the dial shows.",
       "blocking": true
     },
     {
@@ -61,11 +61,12 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-15",
+    "evaluatedAt": "2026-09-24",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type-community --builder cursor-agent \u2014 grok-4.6 via cursor-cli, three scorings of tip shots at /communities/tetherow/types/single-family including carousel-open; Mini Tip Ready judge on Matthews Mini.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "cursor-agent",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type-community --builder claude-opus-5.5 --shots <the 4 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge chain fell to its claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. Builder claude-opus-5.5 is not the judge.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5.5",
+    "transport": "claude-cli",
     "shotSpec": {
       "routes": [
         "/communities/tetherow/types/single-family"
@@ -76,34 +77,43 @@
       ],
       "states": [
         "default",
-        "carousel-open"
+        "dial-open"
       ],
-      "capture": "first viewport + carousel-open via scripts/take-route-shots.mjs against tip c2b2de83a next dev :3027; scale 1, palette-quantized"
+      "capture": "node scripts/take-route-shots.mjs place-type-community http://127.0.0.1:3484/communities/tetherow/types/single-family --states 'dial-open=.place-type-film .v3-dial__step--next@.place-type-film!click'. First viewport, scale 1, palette-quantized, against this branch's own next build + next start."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/mobile375.png",
-      "carouselOpenDesktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/carousel-open-desktop.png",
-      "carouselOpenMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/carousel-open-mobile375.png"
+      "dialOpenDesktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-open-desktop.png",
+      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-open-mobile375.png"
     },
-    "shotsHash": "sha256:41d8e1c0485ee4cf004997bf3f30f0141d899fb934810c0e18284f846d12c211",
+    "shotsHash": "sha256:e1fea3329f44f5999ef4629c3f4094acd9042e1b8ce195a75699269fabd21a56",
     "scores": [
-      52,
-      58,
-      55
+      64,
+      62,
+      68
     ],
-    "score": 55,
+    "score": 64,
     "criteria": {
-      "designQuality": 16,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 8,
+      "designQuality": 19,
+      "originality": 17,
+      "interaction": 11,
+      "craft": 9,
       "honestyFunction": 8
     },
-    "beats": "Tetherow.com (https://tetherow.com/) \u2014 this page wins on a live MLS count, asking-price band, and a named Oregon Data Share timestamp; it loses photography and place character. Zillow community pages still beat the first viewport on photographed listings.",
+    "perCriterion": {
+      "design": 19,
+      "originality": 17,
+      "interaction": 11,
+      "craft": 9,
+      "honesty": 8
+    },
+    "honestyFunction": 8,
+    "demoMatch": true,
+    "beats": "Redfin's Tetherow neighborhood page — this page wins on data depth (per-cluster median price pills tied to a live price-band slider, not just a pin drop) and on getting a buyer to a broker in one path, but Redfin still beats it on raw listing count density and saved-search tooling.",
     "adaptedFrom": [
       {
-        "id": "shadcn-carousel"
+        "id": "house-listing-dial"
       },
       {
         "id": "house-atlas"
@@ -114,64 +124,34 @@
     ],
     "defects": [
       {
-        "section": "LISTINGS ON THE MAP",
-        "severity": "taste",
-        "finding": "The canvas is a pale gray plat: boundary, streets, and listing dots are the same cream-on-gray, so 18 for-sale marks do not read as a price story at 1440 or 375.",
-        "primitive": "components/site/v3/V3Atlas.client.tsx",
-        "replaceWith": "house-atlas"
-      },
-      {
-        "section": "Up to any price",
-        "severity": "taste",
-        "finding": "The $1,350,000\u2013$3,999,995 band lives only in the claim sentence; the slider sits at the ceiling with no histogram, so scrubbing is chrome instead of the data.",
-        "primitive": "components/site/v3/V3Atlas.client.tsx",
-        "replaceWith": "house-atlas"
-      },
-      {
-        "section": "ON THE MARKET / carousel-open",
-        "severity": "taste",
-        "finding": "Rest fold clips the rail to photo fragments; the open shots are two (desktop) or one (375) listing cards then a cream void, with no peek of the next plate and no 1 of N, so the shadcn rail never fills the viewport the demo occupies.",
-        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx",
-        "replaceWith": "shadcn-carousel"
-      },
-      {
-        "section": "18 homes ask \u2026 for nine in ten",
-        "severity": "taste",
-        "finding": "Nine in ten is unexplained next to a count of 18; a visitor cannot tell whether that is a percentile, a close rate, or leftover methodology.",
-        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
-        "replaceWith": "house-quiet"
-      },
-      {
-        "section": "mobile 375 header / first viewport",
-        "severity": "defect",
-        "finding": "Desktop exposes 541.703.3095; at 375 the fold has Sign in and a menu only, so call is not a one-path job from what is visible.",
-        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
+        "section": "atlas map price pills (bottom cluster)",
+        "severity": "craft",
+        "finding": "the median $1.4M, $1.4M, and $2.5M tags crowd into the same corner of the polygon at both 1440 and 375 and nearly overlap, so the map is unreadable exactly where the cheapest homes sit",
         "replaceWith": null
       },
       {
-        "section": "SEO and JSON-LD",
-        "severity": "defect",
-        "finding": "Title, canonical, and ItemList are not in these pixels, so SEO cannot be credited as improved; a prettier fold that only holds crawlables is not a rise.",
-        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
+        "section": "left rail below the price slider (desktop)",
+        "severity": "taste",
+        "finding": "at 1440px the column under 'Up to any price' sits empty for roughly 400px before the listing dial begins, so the first fold reads unfinished instead of composed",
+        "replaceWith": null
+      },
+      {
+        "section": "listing-dial thumbnail rail",
+        "severity": "taste",
+        "finding": "the thumbnail strip under the big photo is a row of undifferentiated postage-stamp images with no visible price or spec distinction between them, functioning as a scroll list wearing thumbnails instead of a real filmstrip",
         "replaceWith": null
       }
     ],
-    "demoMatch": true,
-    "tells": [
-      "Missing states. \u2014 the LISTINGS ON THE MAP price scrubber is parked at Up to any price with no distribution, ticks, or filtered remainder, so the only visible state is the unfiltered set.",
-      "The stacked-section page. \u2014 first viewport is still claim block, then atlas block, then a clipped ON THE MARKET strip, three stacked regions with no change in density once the map eats the fold."
-    ],
-    "dullest": "LISTINGS ON THE MAP: most of the first viewport is a washed-out plat whose dots you have to hunt for, while the actual houses are a clipped sliver under ON THE MARKET. That is choosing a faint GIS outline over the inventory.",
-    "verdict": "demoMatch is true: carousel-open shows the shadcn prev/next rail with photographed cards, price, address, and specs, not a cream box that hid the control. The rest fold is still a pale Atlas occupying the screen, a ceiling-parked scrubber, and a clipped ON THE MARKET strip, which is why the tells are missing states and a stacked page. SEO is not evidenced in the shots so it is held, not risen; inventory facts exist on the open rail and in the claim but the first viewport still hides most listing plates.",
-    "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 57,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:33505f7d2a4b6413a9852791a9b6d2d7ebc6a63e4b92c1d6f0decb48f53c65e2"
-    },
+    "verdict": "This is the prescribed house kit (Atlas map, quiet claim line, listing dial) executed correctly and dully: the claim sentence is honest and sourced, the map is genuinely custom cartography with median pills rather than a raw Google map, and the dial's big serif '01/12' is the one moment with real personality. But the pills collide at the one cluster a buyer actually cares about, the desktop fold wastes a third of its width on empty space, and nothing here is a section a person would screenshot to show someone — it is competent, on-brand, and stops well short of breathtaking. demoMatch is true only because no catalog control was cream-boxed here; the house forms themselves just aren't earning the score their execution implies.",
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "rubricVersion differs (v1-2026-09-10 \u2192 v1-2026-09-12) and shotsHash differs (new carousel-open tip shots on SITE-107 tip c2b2de83a). First v1-2026-09-12 mark on open-state evidence; demoMatch true from judge."
+    "priorMark": {
+      "evaluatedAt": "2026-09-15",
+      "score": 55,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:41d8e1c0485ee4cf004997bf3f30f0141d899fb934810c0e18284f846d12c211"
+    },
+    "rebaselineReason": "evaluatorModel grok-4.6 -> claude-sonnet-5; shotsHash (new captures of the listing dial, Matt 2026-09-24, SITE-195). The judge is a different instrument from the prior mark, so this is the first mark on the claude-sonnet-5 ruler for this class and the floor the next pass may not fall under."
   },
   "sectionOrder": [
     "V3SectionTracker",
@@ -179,7 +159,7 @@
     "V3Breadcrumb",
     "V3Heading + claim sentence + source line",
     "PlaceTypeAtlasSection (#atlas, streamed, standin fallback)",
-    "PlaceTypeFilm (V3Carousel mode=rail)",
+    "PlaceTypeFilm (V3ListingDial, the Atlas rings the home it shows)",
     "PlaceTypeSortBar + PlaceTypeRows (#homes)",
     "V3Quiet",
     "V3Footer"
