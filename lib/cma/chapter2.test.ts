@@ -217,6 +217,10 @@ describe('2b — what the first asking price realized', () => {
     // series steps back up; the dot column shows the shape, the figure stays
     // printed beside it, and the header names the scale the dots sit on.
     expect(html).toContain('table class="kv realization"')
+    expect(html).toMatch(
+      /keep-open is-keep[\s\S]*What the first asking price actually realized[\s\S]*<table class="kv realization"/,
+    )
+    expect(html).toContain('tbody class="row-pack"')
     expect(html).toContain('91% to 100%')
     expect(html.match(/class="rz-svg"/g) ?? []).toHaveLength(5)
     expect(html).toContain(

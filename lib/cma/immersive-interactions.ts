@@ -456,7 +456,11 @@ try{
     // The SHARED tables. The adjustment grid under matrix 1 repeats the same
     // columns and is moved by the same sort, but it is not what the controls
     // are counted over.
-    var tables=[].slice.call(chapter.querySelectorAll('table.comp-matrix'))
+    var allTables=[].slice.call(chapter.querySelectorAll('table.comp-matrix'))
+    // Row chunks repeat the same homes with a fresh photo head so a break
+    // never orphans 1-2 body rows. Sort counts each home once.
+    var tables=allTables.filter(function(t){return t.getAttribute('data-row-chunk')!=='1'})
+    var rowChunks=allTables.filter(function(t){return t.getAttribute('data-row-chunk')==='1'})
     var shared=tables.filter(function(t){return !t.classList.contains('is-adjustments')})
     if(!shared.length)return
     var stack=chapter.querySelector('.comp-stack')
@@ -570,6 +574,30 @@ try{
         global.forEach(function(pin){if(byPin[pin])container.appendChild(byPin[pin])})
       }
       reflow(stack,'.comp-stack-card:not(.is-yours)')
+      function mirror(fromTable,toTable){
+        var seq=[].slice.call(fromTable.querySelectorAll('thead th.v')).map(function(h){return h.getAttribute('data-comp')})
+        var head=toTable.querySelector('thead tr')
+        var rows=[].slice.call(toTable.querySelectorAll('tbody tr'))
+        var heads=[].slice.call(toTable.querySelectorAll('thead th.v'))
+        var byComp={}
+        heads.forEach(function(h,i){
+          byComp[h.getAttribute('data-comp')]={head:h,cells:rows.map(function(tr){return tr.querySelectorAll('td')[i]})}
+        })
+        seq.forEach(function(comp){
+          var it=byComp[comp]
+          if(!it||!head)return
+          head.appendChild(it.head)
+          rows.forEach(function(tr,ri){if(it.cells[ri])tr.appendChild(it.cells[ri])})
+        })
+      }
+      rowChunks.forEach(function(chunk){
+        var key=[].slice.call(chunk.querySelectorAll('thead th.v')).map(function(h){return h.getAttribute('data-comp')}).sort().join('|')
+        var primary=tables.filter(function(t){
+          if(t.classList.contains('is-adjustments')!==chunk.classList.contains('is-adjustments'))return false
+          return [].slice.call(t.querySelectorAll('thead th.v')).map(function(h){return h.getAttribute('data-comp')}).sort().join('|')===key
+        })[0]
+        if(primary)mirror(primary,chunk)
+      })
     }
     // "As weighted" was a lie: the printed order is newest first, and the
     // weights ran 31.9, 14.2, 15.1, 27.3, 11.6 down the row under a pill
@@ -604,7 +632,7 @@ try{
     if(statuses.active&&statuses.pending){
       var fbox=controls(anchor,'Show:')
       function only(status){
-        tables.forEach(function(t){
+        allTables.forEach(function(t){
           var heads=[].slice.call(t.querySelectorAll('thead th.v'))
           var rows=[].slice.call(t.querySelectorAll('tbody tr'))
           heads.forEach(function(h,i){

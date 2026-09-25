@@ -40,6 +40,7 @@ import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { closedEntries, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
 import { statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
+import { matrixChunkSizes, packRowHtml } from '@/lib/cma/table-fragments'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
@@ -735,38 +736,46 @@ function matrixTable(
       }</th>`
     })
     .join('')}</tr>`
-  const body = rows
-    .map((row, i) => {
-      const subjectVal = cols[0]!.cells[i] ?? '-'
-      const tds = cols
-        .map((c, ci) => {
-          const val = c.cells[i] ?? '-'
-          const diff =
-            row.html !== true && ci > 0 && val !== subjectVal && val !== '-' && subjectVal !== '-'
-          const cell = row.html === true ? val : esc(val)
-          return `<td class="v${row.figure ? ' n' : ''}${
-            row.note === true ? ' is-note' : ''
-          }${diff ? ' is-diff' : ''}">${cell}</td>`
-        })
-        .join('')
-      const factAttr = row.fact ? ` data-fact="${row.fact}"` : ''
-      // The conclusion of the grid gets a rule above it, the way a total does.
-      const cls = row.rule ? ' class="is-total"' : ''
-      // Delta 2: 'Toggle "adjusted for date and size" on and off on the sale
-      // prices to see what the adjustments do.' The toggle hides the working,
-      // never the conclusion — the sale price today keeps its row.
-      const adjAttr = row.grid === true && row.rule !== true ? ' data-adj="1"' : ''
-      return `<tr${factAttr}${cls}${adjAttr}><th>${esc(row.label)}</th>${tds}</tr>`
-    })
-    .join('')
-  return `
-  <div class="comp-matrix-wrap">
-    <table class="kv is-wide comp-matrix is-${esc(family)}${opts.adjustments ? ' is-adjustments' : ''}">
+  const rowHtmls = rows.map((row, i) => {
+    const subjectVal = cols[0]!.cells[i] ?? '-'
+    const tds = cols
+      .map((c, ci) => {
+        const val = c.cells[i] ?? '-'
+        const diff =
+          row.html !== true && ci > 0 && val !== subjectVal && val !== '-' && subjectVal !== '-'
+        const cell = row.html === true ? val : esc(val)
+        return `<td class="v${row.figure ? ' n' : ''}${
+          row.note === true ? ' is-note' : ''
+        }${diff ? ' is-diff' : ''}">${cell}</td>`
+      })
+      .join('')
+    const factAttr = row.fact ? ` data-fact="${row.fact}"` : ''
+    // The conclusion of the grid gets a rule above it, the way a total does.
+    const cls = row.rule ? ' class="is-total"' : ''
+    // Delta 2: 'Toggle "adjusted for date and size" on and off on the sale
+    // prices to see what the adjustments do.' The toggle hides the working,
+    // never the conclusion — the sale price today keeps its row.
+    const adjAttr = row.grid === true && row.rule !== true ? ' data-adj="1"' : ''
+    return `<tr${factAttr}${cls}${adjAttr}><th>${esc(row.label)}</th>${tds}</tr>`
+  })
+  // Chrome does not reprint thead. Each piece is a complete table with the
+  // photo+address head, at most 12 body rows, and break-inside: avoid.
+  const sizes = matrixChunkSizes(rowHtmls.length)
+  let offset = 0
+  return sizes
+    .map((size, gi) => {
+      const slice = rowHtmls.slice(offset, offset + size)
+      offset += size
+      return `
+  <div class="comp-matrix-wrap is-keep">
+    <table class="kv is-wide comp-matrix is-${esc(family)}${opts.adjustments ? ' is-adjustments' : ''}" data-row-chunk="${gi === 0 ? '0' : '1'}">
       ${colgroup}
       <thead>${head}</thead>
-      <tbody>${body}</tbody>
+      ${packRowHtml(slice)}
     </table>
   </div>`
+    })
+    .join('')
 }
 
 /**

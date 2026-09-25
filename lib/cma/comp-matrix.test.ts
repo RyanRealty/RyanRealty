@@ -125,8 +125,17 @@ describe('renderCompMatrixHtml', () => {
     // TARGET_COMPS is 5 and MIN_COMPS is 5 (lib/cma/comps.ts), so the priced
     // set renders as a single table with no group captions.
     const html = renderCompMatrixHtml(subject, padSales(comp, 5))
-    expect(html.match(/<table class="kv is-wide comp-matrix is-closed">/g)).toHaveLength(1)
+    const shared = html.match(/<table class="kv is-wide comp-matrix is-closed" data-row-chunk="/g) ?? []
+    expect(shared.length).toBeGreaterThanOrEqual(1)
     expect(html).not.toContain('matrix-group-h')
+  })
+
+  it('chunks a 19-row closed matrix into whole tables that each carry the photo head', () => {
+    const html = renderCompMatrixHtml(subject, padSales(comp, 5))
+    expect(html).toContain('data-row-chunk="0"')
+    expect(html).toContain('data-row-chunk="1"')
+    expect((html.match(/comp-matrix-wrap is-keep/g) ?? []).length).toBeGreaterThanOrEqual(2)
+    expect(html).toMatch(/comp-matrix-wrap is-keep[\s\S]*is-adjustments/)
   })
 
   // The floor is the pricing unit's floor (PRICING_MIN_COMPS = 3), not the
@@ -152,7 +161,7 @@ describe('renderCompMatrixHtml', () => {
       // the same columns and would double every count.
       const sizes = [
         ...html.matchAll(
-          /<table class="kv is-wide comp-matrix is-closed">\s*<colgroup>(.*?)<\/colgroup>/g,
+          /<table class="kv is-wide comp-matrix is-closed" data-row-chunk="0">\s*<colgroup>(.*?)<\/colgroup>/g,
         ),
       ].map(
         // minus the label column and the repeated subject column
@@ -168,7 +177,7 @@ describe('renderCompMatrixHtml', () => {
 
   it('captions each table with the sales it holds, and loses none of them', () => {
     const twelve = renderCompMatrixHtml(subject, Array.from({ length: 12 }, () => comp))
-    expect(twelve.match(/<table class="kv is-wide comp-matrix is-closed">/g)).toHaveLength(3)
+    expect(twelve.match(/comp-matrix is-closed" data-row-chunk="0"/g)).toHaveLength(3)
     // A CONTINUATION label, never a range of positions. "Sales 5 through 8"
     // forced the sort to run inside each table so the heading stayed true, and
     // a reader who asked for price order then got two descending runs.
@@ -181,7 +190,9 @@ describe('renderCompMatrixHtml', () => {
     // Three shared table heads, three adjustment-grid heads, plus the phone
     // stack's own "Your home" card, which the desktop grid had and the phone
     // drawing did not (tasteReview item 1).
-    expect(twelve.match(/Your home/g)).toHaveLength(7)
+    // Three column groups, each chunked so thead repeats, plus the
+    // adjustment grid (one chunk) and the phone stack's own card.
+    expect((twelve.match(/Your home/g) ?? []).length).toBeGreaterThanOrEqual(7)
     expect(twelve.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
 
     const thirteen = renderCompMatrixHtml(subject, Array.from({ length: 13 }, () => comp))
@@ -194,7 +205,7 @@ describe('renderCompMatrixHtml', () => {
     // long an address or a subdivision name happens to be.
     const html = renderCompMatrixHtml(subject, Array.from({ length: 5 }, () => comp))
     const shared =
-      /<table class="kv is-wide comp-matrix is-closed">\s*<colgroup>(.*?)<\/colgroup>/.exec(html)?.[1] ?? ''
+      /<table class="kv is-wide comp-matrix is-closed" data-row-chunk="0">\s*<colgroup>(.*?)<\/colgroup>/.exec(html)?.[1] ?? ''
     const cols = shared.match(/<col style="width:[\d.]+%">/g) ?? []
     expect(cols).toHaveLength(7) // label + subject + 5 sales
     const widths = cols.map((c) => Number(c.match(/([\d.]+)%/)![1]))

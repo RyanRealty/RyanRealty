@@ -917,12 +917,40 @@ export function cmaSectionStyles(): string {
     break-inside: avoid;
     page-break-inside: avoid;
   }
-  /* page-contract sets table { break-inside: avoid }. That parks a whole
-     matrix on the next sheet and leaves a heading alone. Override. */
-  table, .comp-matrix-wrap, .worth-strip, .status-price-wrap, .chart-block,
-  .figure-block, .status-price {
+  /* page-contract sets table { break-inside: avoid }. Boards that are
+     taller than a sheet still have to flow. Pre-chunked matrices do not
+     — each piece already carries its photo head and is short enough
+     to stay whole. */
+  .worth-strip, .status-price-wrap, .chart-block,
+  .figure-block, .status-price,
+  .comp-matrix-wrap:not(.is-keep),
+  table:not(.comp-matrix):not(.realization) {
     break-inside: auto !important;
     page-break-inside: auto !important;
+  }
+  .comp-matrix-wrap.is-keep,
+  .comp-matrix-wrap.is-keep table,
+  table.comp-matrix[data-row-chunk],
+  .keep-open.is-keep,
+  .keep-open.is-keep table {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  table.comp-matrix tbody.row-pack,
+  table.realization tbody.row-pack {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* collapse stops Chrome reprinting thead. separate + header-group
+     reprints photo+address heads when a long matrix still has to split. */
+  table.comp-matrix,
+  table.realization {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  table.comp-matrix thead,
+  table.realization thead {
+    display: table-header-group;
   }
   /* Sub-section opener (heading + short intro) stays with the table or
      chart that follows. Do NOT put break-after: avoid on .chart-read:
@@ -957,8 +985,8 @@ export function cmaSectionStyles(): string {
     break-after: avoid;
     page-break-after: avoid;
   }
-  table.comp-matrix thead,
-  table.realization thead,
+  /* Do not glue matrix/realization thead to the first body: that
+     keeps the head on sheet one and drops it on the continuation. */
   table.kv.status-price-table thead,
   table.kv.status-price-table tbody:first-of-type {
     break-inside: avoid;

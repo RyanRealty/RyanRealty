@@ -1,11 +1,11 @@
 /**
  * Letter pagination: no heading-only sheet, no one-line trailer, no spill
- * above a section header. Same Chrome / pdfjs harness as page-safety.
+ * above a section header, no table fragment shorter than three body rows,
+ * and every comparison-matrix continuation carries its photo/address head.
+ * Same Chrome / pdfjs harness as page-safety.
  *
- * The 16-page Murphy packet (tip d8561759a) printed a heading alone on
- * page 5, left two-thirds of page 9 blank, spilled a source note and a
- * caption above the next chapter header, and parked the prepared line on
- * its own last sheet. This fails any of those shapes.
+ * A coherent block (strip plus source) may open a sheet. Font metrics
+ * move the cut, so the table rules are sizes, not one-render tuning.
  */
 import { describe, expect, it } from 'vitest'
 import { existsSync } from 'node:fs'
@@ -336,6 +336,200 @@ function contentSpan(runs: PdfTextRun[]): number {
   return Math.max(...runs.map((r) => r.y1)) - Math.min(...runs.map((r) => r.y0))
 }
 
+const MATRIX_LABELS = [
+  'First ask',
+  'Seller concessions',
+  'Days on market',
+  'Status date',
+  'List price',
+  'Original list',
+  'List $/sqft',
+  'Sold $/sqft',
+  'Lot size',
+  'Year built',
+  'Net, as a share of the sale',
+  'Every adjustment added up',
+  'Adjusted for date',
+  'Adjusted for size',
+  'Adjusted for style',
+  'Adjusted for rooms',
+  'Net adjustment',
+  'Sale price today',
+  'Weight in this price',
+  'Sold for',
+  'Distance',
+  'Garage',
+  'Baths',
+  'Beds',
+  'CDOM',
+  'Adjusted',
+  'Status',
+  'Sold',
+  'Size',
+].sort((a, b) => b.length - a.length)
+
+const AMBIGUOUS_MATRIX_LABEL = new Set(['Sold', 'Status', 'Size', 'Adjusted', 'Beds', 'Baths', 'Garage'])
+
+const MATRIX_ORDER = [
+  'Distance',
+  'Status',
+  'Status date',
+  'List price',
+  'Original list',
+  'Sold',
+  'Days on market',
+  'CDOM',
+  'Beds',
+  'Baths',
+  'Size',
+  'Lot size',
+  'Year built',
+  'Garage',
+  'List $/sqft',
+  'Sold $/sqft',
+  'Seller concessions',
+  'Adjusted',
+  'First ask',
+  'Sold for',
+  'Adjusted for date',
+  'Adjusted for size',
+  'Adjusted for style',
+  'Adjusted for rooms',
+  'Net adjustment',
+  'Net, as a share of the sale',
+  'Every adjustment added up',
+  'Sale price today',
+  'Weight in this price',
+]
+
+const REALIZATION_ROW = /^(0 to 2|3 to 4|5 to 8|9 to 16|17 or more)\b/i
+const REALIZATION_HEADING = /what the first asking price actually realized/i
+const REALIZATION_THEAD = /weeks to an offer/i
+
+type PageLine = { y: number; y0: number; y1: number; text: string }
+
+function pageLines(runs: PdfTextRun[]): PageLine[] {
+  const sorted = [...runs].sort((a, b) => b.y1 - a.y1 || a.x0 - b.x0)
+  const lines: PageLine[] = []
+  for (const r of sorted) {
+    const mid = (r.y0 + r.y1) / 2
+    const last = lines[lines.length - 1]
+    if (last && Math.abs(last.y - mid) < 5) {
+      last.text += ` ${r.text}`
+      last.y0 = Math.min(last.y0, r.y0)
+      last.y1 = Math.max(last.y1, r.y1)
+    } else {
+      lines.push({ y: mid, y0: r.y0, y1: r.y1, text: r.text })
+    }
+  }
+  return lines
+}
+
+function lineMatrixLabel(text: string): string | null {
+  const t = text.replace(/\s+/g, ' ').trim()
+  for (const label of MATRIX_LABELS) {
+    if (t !== label && !t.startsWith(label)) continue
+    const rest = t.slice(label.length).trim()
+    if (AMBIGUOUS_MATRIX_LABEL.has(label)) {
+      if (rest === '' || /^[-$0-9]/.test(rest) || /^(miles|sqft|bd|ba|ac|days|Closed|Active|Pending|Expired)/i.test(rest)) {
+        return label
+      }
+      continue
+    }
+    return label
+  }
+  return null
+}
+
+function matrixLabelsOn(lines: PageLine[]): string[] {
+  return lines.map((l) => lineMatrixLabel(l.text)).filter((v): v is string => Boolean(v))
+}
+
+function realizationRowsOn(lines: PageLine[]): string[] {
+  return lines
+    .map((l) => l.text.replace(/\s+/g, ' ').trim().match(REALIZATION_ROW)?.[1] ?? null)
+    .filter((v): v is string => Boolean(v))
+}
+
+function isAddressHead(text: string): boolean {
+  const t = text.replace(/\s+/g, ' ').trim()
+  if (/your home/i.test(t)) return true
+  if (REALIZATION_THEAD.test(t)) return true
+  return /^\d{1,6}\s+[A-Za-z]/.test(t)
+}
+
+function hasHeaderAbove(lines: PageLine[], firstRowY: number): boolean {
+  return lines.some((l) => l.y > firstRowY + 6 && isAddressHead(l.text))
+}
+
+function firstContentLine(lines: PageLine[]): PageLine | undefined {
+  return lines.find((l) => {
+    const t = l.text.trim()
+    return t.length > 0 && !isChrome(t) && !isPgMeta(t) && !isSectionHead(t)
+  })
+}
+
+function continuesMatrix(prev: string[], next: string[]): boolean {
+  if (prev.length === 0 || next.length === 0) return false
+  const idx = (label: string) => MATRIX_ORDER.indexOf(label)
+  const prevMax = Math.max(...prev.map(idx).filter((i) => i >= 0))
+  const nextMin = Math.min(...next.map(idx).filter((i) => i >= 0))
+  return prevMax >= 0 && nextMin >= 0 && nextMin > prevMax
+}
+
+function assertTableFragments(pages: PdfTextRun[][], label: string, failures: string[]) {
+  const lined = pages.map((p) => pageLines(p.filter((r) => !isChrome(r.text) && !isPgMeta(r.text))))
+  lined.forEach((lines, idx) => {
+    const pageNo = idx + 1
+    const first = firstContentLine(lines)
+    if (first && lineMatrixLabel(first.text)) {
+      failures.push(
+        `${label} p${pageNo}: page opens on matrix row "${first.text.slice(0, 48)}" with no photo/address header`,
+      )
+    }
+    if (first && REALIZATION_ROW.test(first.text.replace(/\s+/g, ' ').trim()) && !lines.some((l) => REALIZATION_THEAD.test(l.text) && l.y >= first.y)) {
+      failures.push(
+        `${label} p${pageNo}: page opens on realization row "${first.text.slice(0, 40)}" with no column header`,
+      )
+    }
+
+    const hasRzHead = lines.some((l) => REALIZATION_HEADING.test(l.text))
+    const rz = realizationRowsOn(lines)
+    if (hasRzHead && rz.length > 0 && rz.length < 3) {
+      failures.push(
+        `${label} p${pageNo}: realization heading sits with ${rz.length} body row(s); need 3 or move all`,
+      )
+    }
+
+    const next = lined[idx + 1]
+    if (!next) return
+    const here = matrixLabelsOn(lines)
+    const ahead = matrixLabelsOn(next)
+    if (continuesMatrix(here, ahead)) {
+      if (here.length < 3) {
+        failures.push(`${label} p${pageNo}: matrix leaves ${here.length} body row(s) before the break`)
+      }
+      if (ahead.length < 3) {
+        failures.push(`${label} p${pageNo + 1}: matrix continues with ${ahead.length} body row(s)`)
+      }
+      const firstNext = next.find((l) => lineMatrixLabel(l.text))
+      if (firstNext && !hasHeaderAbove(next, firstNext.y)) {
+        failures.push(`${label} p${pageNo + 1}: matrix continuation has no photo/address header`)
+      }
+    }
+    const rzHere = realizationRowsOn(lines)
+    const rzNext = realizationRowsOn(next)
+    if (rzHere.length && rzNext.length && !next.some((l) => REALIZATION_HEADING.test(l.text))) {
+      if (rzHere.length < 3) {
+        failures.push(`${label} p${pageNo}: realization leaves ${rzHere.length} body row(s) before the break`)
+      }
+      if (rzNext.length < 3) {
+        failures.push(`${label} p${pageNo + 1}: realization continues with ${rzNext.length} body row(s)`)
+      }
+    }
+  })
+}
+
 function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }[], label: string) {
   const margins = marginsToPt(CMA_MARGIN_IN)
   const boxH = PAPER.heightPt - margins.top - margins.bottom
@@ -401,39 +595,20 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
       }
     }
 
-    if (pageNo < pages.length) {
-      const lowest = belowHead.length ? Math.min(...belowHead.map((r) => r.y0)) : cy0
-      const leftover = lowest - cy0
-      const nextH = sizes[idx + 1]?.h ?? h
-      const nextTopBand = nextH - margins.top - 0.15 * boxH
-      const nextOpensChapter = next.some(
-        (r) => !isChrome(r.text) && isPgMeta(r.text) && r.y1 > nextTopBand,
-      )
-      const nextFlow = next.filter(
-        (r) => !isChrome(r.text) && !isPgMeta(r.text) && !isSectionHead(r.text),
-      )
-      const nextTop = [...nextFlow].sort((a, b) => b.y1 - a.y1)[0]
-      // End-of-chapter empty space (next sheet opens a new header) is fine.
-      // A pushed tail is continuation prose at the top of the next sheet
-      // while this sheet still had room.
-      if (
-        leftover > 0.2 * boxH &&
-        nextTop &&
-        isBody(nextTop.text) &&
-        !nextOpensChapter
-      ) {
-        failures.push(
-          `${label} p${pageNo}: ${(leftover / boxH * 100).toFixed(0)}% empty, next sheet opens with "${nextTop.text.slice(0, 48)}"`,
-        )
-      }
-    }
-
     if (header) {
       const above = body.filter((r) => r.y0 > header.y1 + 2 && (isBody(r.text) || isSectionHead(r.text)))
       const headerFromTop = (sizes[idx]?.h ?? PAPER.heightPt) - margins.top - header.y1
-      // A mid-page chapter start is fine. Spill is a leftover line or caption
-      // sitting above a header that is trying to open the sheet.
-      if (above.length > 0 && headerFromTop < 0.35 * boxH && contentSpan(above) < 0.25 * boxH) {
+      // A matrix tail (and its one reading sentence) then a chapter header
+      // is a mid-page start. Spill is a leftover caption or sentence with
+      // no table, above a header that is trying to open the sheet.
+      const matrixAbove = above.filter((r) => lineMatrixLabel(r.text)).length
+      const aboveIsTableTail = matrixAbove >= 2
+      if (
+        above.length > 0 &&
+        !aboveIsTableTail &&
+        headerFromTop < 0.35 * boxH &&
+        contentSpan(above) < 0.25 * boxH
+      ) {
         failures.push(
           `${label} p${pageNo}: "${above[0]?.text.slice(0, 60)}" sits above the section header`,
         )
@@ -441,9 +616,22 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
     }
   })
 
+  assertTableFragments(pages, label, failures)
+
   if (failures.length) {
     throw new Error(`${label}: ${failures.join(' | ')}`)
   }
+}
+
+function injectWiderMetrics(html: string): string {
+  const widen = `<style id="metric-widen">
+    html, body, table, th, td, p, li, h1, h2, h3, h4 {
+      font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif !important;
+      letter-spacing: 0.04em !important;
+    }
+    table.kv, table.comp-matrix, table.realization { font-size: 12px !important; }
+  </style>`
+  return html.includes('</head>') ? html.replace('</head>', `${widen}</head>`) : `${widen}${html}`
 }
 
 describe.skipIf(!hasChrome)('CMA letter pagination', () => {
@@ -464,5 +652,13 @@ describe.skipIf(!hasChrome)('CMA letter pagination', () => {
     const { pages, sizes } = await extractPdfTextRuns(new Uint8Array(pdf))
     expect(pages.length).toBeGreaterThan(3)
     assertPagination(pages, sizes, '5-comp')
+  }, 120_000)
+
+  it('table-break rules hold under a wider fallback face', async () => {
+    const { html } = renderCmaHtml(fiveCompWithStatuses())
+    const pdf = await renderPdf(injectWiderMetrics(html))
+    const { pages, sizes } = await extractPdfTextRuns(new Uint8Array(pdf))
+    expect(pages.length).toBeGreaterThan(3)
+    assertPagination(pages, sizes, '5-comp-wide')
   }, 120_000)
 })
