@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * The closings reconciliation against a fake Spark and a fake store: which
  * closings count as drift, and how a closing Spark no longer serves is
  * recorded (repair mode only) and released when Spark serves it again
- * (Matt 2026-09-25: a sale the MLS removed is left out of every statistic).
+ * (Matt 2026-09-25: a sale the MLS removed is left out of every statistic),
+ * and how a repair keeps each listing's old values before rewriting it.
  */
 
 type Fields = Record<string, unknown>
@@ -15,6 +16,10 @@ const store = {
   absent: new Set<string>(),
   recorded: [] as { listingKey: string; listNumber: string | null; closeDate: string | null }[],
   cleared: [] as string[],
+  repairLog: [] as Record<string, unknown>[],
+  repairLogFails: false,
+  outcomes: [] as { ids: number[]; outcome: string }[],
+  upserted: [] as string[],
 }
 
 vi.mock('@/lib/spark', () => ({
@@ -47,19 +52,42 @@ vi.mock('@/lib/data/sync/closingsReconcile', () => ({
     for (const k of keys) store.absent.delete(k)
     return keys.length
   }),
+  recordRepairLog: vi.fn(async (entries: Record<string, unknown>[]) => {
+    if (store.repairLogFails) throw new Error('[recordRepairLog] insert failed')
+    const ids = new Map<string, number>()
+    for (const e of entries) {
+      store.repairLog.push(e)
+      ids.set(String(e.listingKey), store.repairLog.length)
+    }
+    return ids
+  }),
+  setRepairLogOutcome: vi.fn(async (ids: number[], outcome: string) => {
+    if (ids.length > 0) store.outcomes.push({ ids, outcome })
+    return ids.length
+  }),
 }))
 vi.mock('@/lib/data/sync/syncWrites', () => ({
   getAdminOverrideFlags: vi.fn(async () => new Map()),
   getHeldMediaByListNumbers: vi.fn(async () => new Map()),
-  setListingFreezeFlags: vi.fn(async () => undefined),
-  upsertListingRows: vi.fn(async () => ({ ok: true })),
+  setListingFreezeFlags: vi.fn(async (listNumbers: string[]) => ({ ok: true, updated: listNumbers.length })),
+  upsertListingRows: vi.fn(async (rows: Record<string, unknown>[]) => {
+    store.upserted.push(...rows.map((r) => String(r.ListingKey)))
+    return { ok: true }
+  }),
 }))
 vi.mock('@/lib/data/market-report/compute', () => ({ refreshMarketFactSpansForKeys: vi.fn(async () => ({ rebuilt: 0, missed: [] })) }))
-vi.mock('@/lib/sync/fetchListingHistory', () => ({ fetchAndInsertHistoryCore: vi.fn() }))
+vi.mock('@/lib/sync/fetchListingHistory', () => ({
+  fetchAndInsertHistoryCore: vi.fn(async () => ({ ok: true, inserted: 0, items: [] })),
+}))
 vi.mock('@/lib/sync/deltaSync', () => ({
   DELTA_SYNC: { EXPAND: '', UPSERT_CHUNK: 50 },
   resolveRunMortgageRate: vi.fn(async () => null),
-  resultToMappedRow: vi.fn(),
+  resultToMappedRow: vi.fn((r: { StandardFields: Fields }) => ({
+    ListingKey: r.StandardFields.ListingKey,
+    ListNumber: r.StandardFields.ListingId,
+    StandardStatus: r.StandardFields.StandardStatus,
+    ClosePrice: r.StandardFields.ClosePrice,
+  })),
 }))
 
 import { reconcileClosings } from './closingsReconcile'
@@ -105,6 +133,10 @@ beforeEach(() => {
   store.absent = new Set()
   store.recorded = []
   store.cleared = []
+  store.repairLog = []
+  store.repairLogFails = false
+  store.outcomes = []
+  store.upserted = []
 })
 
 describe('reconcileClosings', () => {
@@ -117,6 +149,49 @@ describe('reconcileClosings', () => {
     expect(r.drift[0]!.reasons).toEqual(['close_price'])
     expect(r.drift[0]!.ours?.closePrice).toBe(93588000)
     expect(r.drift[0]!.mls.closePrice).toBe(93588)
+  })
+
+  it('keeps the old values in the repair log before rewriting the listing', async () => {
+    spark.window = [sparkClosing('K1', { ClosePrice: 93588 })]
+    spark.byKey.set('K1', sparkClosing('K1', { ClosePrice: 93588 }))
+    store.closedInWindow = ['K1']
+    store.rows.set('K1', ourRow('K1', { ClosePrice: 93588000 }))
+    const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
+    expect(r.repaired).toBe(1)
+    expect(r.repairLogged).toBe(1)
+    expect(store.repairLog).toHaveLength(1)
+    expect(store.repairLog[0]).toMatchObject({
+      listingKey: 'K1',
+      listNumber: 'LK1',
+      reasons: ['close_price'],
+      ours: { closePrice: 93588000 },
+      mls: { closePrice: 93588 },
+      windowFrom: '2026-03-01',
+      windowTo: '2026-03-31',
+    })
+    expect(store.upserted).toEqual(['K1'])
+    expect(store.outcomes).toEqual([{ ids: [1], outcome: 'repaired' }])
+  })
+
+  it('rewrites nothing when the old values cannot be kept', async () => {
+    spark.window = [sparkClosing('K1', { ClosePrice: 93588 })]
+    spark.byKey.set('K1', sparkClosing('K1', { ClosePrice: 93588 }))
+    store.closedInWindow = ['K1']
+    store.rows.set('K1', ourRow('K1', { ClosePrice: 93588000 }))
+    store.repairLogFails = true
+    await expect(reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })).rejects.toThrow(/recordRepairLog/)
+    expect(store.upserted).toEqual([])
+  })
+
+  it('marks a listing Spark would not serve in full as a failed repair', async () => {
+    spark.window = [sparkClosing('K1', { ClosePrice: 93588 })]
+    // The window pull has it; the full re-pull by key returns nothing.
+    store.closedInWindow = ['K1']
+    store.rows.set('K1', ourRow('K1', { ClosePrice: 93588000 }))
+    const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
+    expect(r.repaired).toBe(0)
+    expect(r.repairFailed).toEqual(['K1'])
+    expect(store.outcomes).toEqual([{ ids: [1], outcome: 'failed' }])
   })
 
   it('records a closing Spark no longer serves only in repair mode', async () => {

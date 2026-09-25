@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-25T12:35:58.256Z
+**Generated:** 2026-09-25T13:36:27.743Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -2810,6 +2810,23 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `listing_address` | text | yes |  |
 | `mls_number` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `listing_mls_repair_log`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `listing_key` | text | no |  |
+| `list_number` | text | yes |  |
+| `repaired_at` | timestamp with time zone | no | now() |
+| `source` | text | no |  |
+| `window_from` | date | yes |  |
+| `window_to` | date | yes |  |
+| `reasons` | ARRAY | no | '{}'::text[] |
+| `ours` | jsonb | yes |  |
+| `mls` | jsonb | no |  |
+| `outcome` | text | no | 'pending'::text |
+| `note` | text | yes |  |
 
 ### `listing_mv_errors`
 

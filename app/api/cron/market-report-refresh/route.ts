@@ -6,7 +6,8 @@
  *   1. Closings reconciliation over the trailing 13 months
  *      (lib/sync/closingsReconcile.ts): every closing Spark holds is set against
  *      our copy on the facts a statistic reads, and drifted rows are re-pulled
- *      from Spark. The delta sync only sees a listing when Spark modifies it; a
+ *      from Spark, each one's old values kept first in listing_mls_repair_log.
+ *      The delta sync only sees a listing when Spark modifies it; a
  *      row written thin, or frozen before a later correction, comes back here.
  *      On 2026-09-25 this found about 1,100 such rows, most of them March to
  *      May 2026 closings.
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
   try {
     const recon = await reconcileClosings({ from: windowStart, to: isoDay(new Date()), repair, maxRepairs: MAX_REPAIRS })
     say(
-      `closings ${windowStart}..today: Spark ${recon.sparkClosings}, ours ${recon.ourClosedInWindow}, drifted ${recon.drift.length}, repaired ${recon.repaired}, failed ${recon.repairFailed.length}, not in Spark ${recon.notInSpark.length} (absent from the MLS: ${recon.absentFromMls.recorded} recorded, ${recon.absentFromMls.cleared} released${recon.absentFromMls.refused ? `; refused: ${recon.absentFromMls.refused}` : ''})`,
+      `closings ${windowStart}..today: Spark ${recon.sparkClosings}, ours ${recon.ourClosedInWindow}, drifted ${recon.drift.length}, repaired ${recon.repaired} (before-images logged ${recon.repairLogged}), failed ${recon.repairFailed.length}, not in Spark ${recon.notInSpark.length} (absent from the MLS: ${recon.absentFromMls.recorded} recorded, ${recon.absentFromMls.cleared} released${recon.absentFromMls.refused ? `; refused: ${recon.absentFromMls.refused}` : ''})`,
     )
     if (recon.absentFromMls.refused) {
       await queueBrokerHealthAlert({
@@ -106,6 +107,7 @@ export async function GET(request: Request) {
         ours: recon.ourClosedInWindow,
         drifted: recon.drift.length,
         repaired: recon.repaired,
+        repairLogged: recon.repairLogged,
         membershipRows: recon.membershipRows,
         repairFailed: recon.repairFailed,
         notInSpark: recon.notInSpark,

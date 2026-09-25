@@ -10,9 +10,11 @@
  *   --max <n>                  repair at most n listings (default 2000)
  *   --json <file>              write the full result (every drifted key and why) to a file
  *
- * Without --repair nothing is written. With it, closings Spark no longer serves
- * at all are recorded in market_listing_absent_from_mls (left out of every
- * Market Truth statistic, Matt 2026-09-25). See lib/sync/closingsReconcile.ts.
+ * Without --repair nothing is written. With it, each drifted listing's old
+ * values are kept in listing_mls_repair_log before it is re-pulled, and
+ * closings Spark no longer serves at all are recorded in
+ * market_listing_absent_from_mls (left out of every Market Truth statistic,
+ * Matt 2026-09-25). See lib/sync/closingsReconcile.ts.
  */
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
@@ -56,7 +58,7 @@ async function main() {
   )
   if (argv.includes('--repair')) {
     console.log(
-      `repaired ${r.repaired}, history replaced ${r.historyRefreshed}, re-frozen ${r.refinalized}, membership rows rebuilt ${r.membershipRows}, failed ${r.repairFailed.length}`,
+      `repaired ${r.repaired} (old values kept in listing_mls_repair_log: ${r.repairLogged}), history replaced ${r.historyRefreshed}, re-frozen ${r.refinalized}, membership rows rebuilt ${r.membershipRows}, failed ${r.repairFailed.length}`,
     )
     if (r.repairFailed.length > 0) console.log(`  failed: ${r.repairFailed.join(', ')}`)
   }

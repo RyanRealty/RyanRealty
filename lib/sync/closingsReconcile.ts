@@ -14,10 +14,12 @@
  *   2. Compare each with our row on the facts a market statistic reads
  *      (lib/sync/listingDrift.ts). Keys we count but Spark does not place in
  *      the window are looked up in Spark by key and compared the same way.
- *   3. Repair: fetch each drifted listing in full (the delta sync's expand),
- *      map it with the delta sync's own mapper, keep a frozen gallery where we
- *      hold more photos than the MLS now serves, upsert, replace its history,
- *      and re-freeze it when it is terminal.
+ *   3. Repair: first keep each drifted listing's before-image in
+ *      listing_mls_repair_log (no listing is rewritten unless its old values
+ *      are kept), then fetch it in full (the delta sync's expand), map it with
+ *      the delta sync's own mapper, keep a frozen gallery where we hold more
+ *      photos than the MLS now serves, upsert, replace its history, and
+ *      re-freeze it when it is terminal.
  *
  * A repair writes the listing row and its history only. No activity events and
  * no status-history rows: these sales are weeks or months old, and an event
@@ -36,6 +38,8 @@ import {
   getListingsForReconcile,
   rebuildPlaceMembershipForKeys,
   recordAbsentFromMls,
+  recordRepairLog,
+  setRepairLogOutcome,
 } from '@/lib/data/sync/closingsReconcile'
 import {
   getAdminOverrideFlags,
@@ -99,6 +103,8 @@ export type ClosingsReconcileResult = {
   repaired: number
   /** Keys actually rewritten (their membership and episodes are rebuilt too). */
   repairedKeys: string[]
+  /** Before-images kept in listing_mls_repair_log ahead of the repair. */
+  repairLogged: number
   repairFailed: string[]
   historyRefreshed: number
   refinalized: number
@@ -165,7 +171,7 @@ export async function findClosingsDrift(
 ): Promise<
   Omit<
     ClosingsReconcileResult,
-    'repaired' | 'repairedKeys' | 'repairFailed' | 'historyRefreshed' | 'refinalized' | 'membershipRows' | 'absentFromMls'
+    'repaired' | 'repairedKeys' | 'repairLogged' | 'repairFailed' | 'historyRefreshed' | 'refinalized' | 'membershipRows' | 'absentFromMls'
   >
 > {
   const [spark, ourClosed] = await Promise.all([fetchSparkClosingsInWindow(from, to), getClosedListingKeysInWindow(from, to)])
@@ -391,15 +397,38 @@ export async function reconcileClosings(opts: {
     ? await syncAbsentFromMls(found.notInSpark, { sparkClosings: found.sparkClosings, ourClosedInWindow: found.ourClosedInWindow })
     : { recorded: 0, cleared: 0, refused: null }
   if (!opts.repair || found.drift.length === 0) {
-    return { ...found, absentFromMls, repaired: 0, repairedKeys: [], repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
+    return { ...found, absentFromMls, repaired: 0, repairedKeys: [], repairLogged: 0, repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
   }
-  const keys = found.drift.map((d) => d.key).slice(0, opts.maxRepairs ?? 2000)
-  const r = await repairListingsFromSpark(keys)
+  const toRepair = found.drift.slice(0, opts.maxRepairs ?? 2000)
+  // The before-image is kept first; recordRepairLog throws rather than let a
+  // listing be rewritten without it (Matt 2026-09-25: old values are kept).
+  const logIds = await recordRepairLog(
+    toRepair.map((d) => ({
+      listingKey: d.key,
+      listNumber: d.listNumber,
+      reasons: d.reasons,
+      ours: d.ours,
+      mls: d.mls,
+      windowFrom: opts.from,
+      windowTo: opts.to,
+    })),
+  )
+  const r = await repairListingsFromSpark(toRepair.map((d) => d.key))
+  const rewritten = new Set(r.repairedKeys)
+  try {
+    await setRepairLogOutcome([...logIds].filter(([k]) => rewritten.has(k)).map(([, id]) => id), 'repaired')
+    await setRepairLogOutcome([...logIds].filter(([k]) => !rewritten.has(k)).map(([, id]) => id), 'failed')
+  } catch (err) {
+    // The listings are already written and their before-images kept; a row left
+    // 'pending' only lacks its outcome, which the repaired keys below still carry.
+    console.error('[closingsReconcile] repair log outcome not recorded', err)
+  }
   return {
     ...found,
     absentFromMls,
     repaired: r.repaired,
     repairedKeys: r.repairedKeys,
+    repairLogged: logIds.size,
     repairFailed: r.failed,
     historyRefreshed: r.historyRefreshed,
     refinalized: r.refinalized,

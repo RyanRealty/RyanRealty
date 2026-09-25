@@ -1,11 +1,13 @@
 /**
- * Closings reconciliation: the Supabase reads.
+ * Closings reconciliation: the Supabase reads and writes.
  *
  * lib/sync/closingsReconcile.ts sets every closing Spark holds for a window
  * against our copy. These are the two reads it needs: our rows for a set of
  * listing keys (the facts a market statistic reads, plus the freeze flags), and
  * the keys we hold as closed inside the window (the reverse direction: a row we
- * count that Spark no longer places there).
+ * count that Spark no longer places there). Plus its writes: the closings the
+ * MLS no longer serves (market_listing_absent_from_mls) and the before-image
+ * of every repair (listing_mls_repair_log).
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -139,4 +141,69 @@ export async function clearAbsentFromMls(keys: string[]): Promise<number> {
   const { error } = await sb.from('market_listing_absent_from_mls').delete().in('listing_key', keys) // @canonical-key — Spark ListingKey values
   if (error) throw new Error(`[clearAbsentFromMls] ${error.message}`)
   return keys.length
+}
+
+/** One listing a repair is about to rewrite: what we held and what the MLS serves. */
+export type RepairLogEntry = {
+  listingKey: string
+  listNumber: string | null
+  reasons: string[]
+  /** Our values before the repair (the reconciliation's snapshot). */
+  ours: unknown
+  /** What Spark served at repair time. */
+  mls: unknown
+  windowFrom: string | null
+  windowTo: string | null
+  note?: string | null
+  /** Defaults to now; a backfill passes the time the run wrote its output. */
+  repairedAt?: string
+  outcome?: 'pending' | 'repaired' | 'failed'
+}
+
+/**
+ * Keep the before-image of listings a repair is about to rewrite, in
+ * listing_mls_repair_log, BEFORE they are rewritten (Matt 2026-09-25: our old
+ * values are kept so a repair can be audited or undone). Returns the new row
+ * ids by listing key. Throws when the write fails, so the caller never rewrites
+ * a listing whose old values were not kept.
+ */
+export async function recordRepairLog(entries: RepairLogEntry[], source = 'closings-reconcile'): Promise<Map<string, number>> {
+  const ids = new Map<string, number>()
+  if (entries.length === 0) return ids
+  const sb = createServiceClient()
+  const now = new Date().toISOString()
+  for (let i = 0; i < entries.length; i += 500) {
+    const { data, error } = await sb
+      .from('listing_mls_repair_log')
+      .insert(
+        entries.slice(i, i + 500).map((e) => ({
+          listing_key: e.listingKey,
+          list_number: e.listNumber,
+          repaired_at: e.repairedAt ?? now,
+          source,
+          window_from: e.windowFrom,
+          window_to: e.windowTo,
+          reasons: e.reasons,
+          ours: e.ours ?? null,
+          mls: e.mls,
+          outcome: e.outcome ?? 'pending',
+          note: e.note ?? null,
+        })),
+      )
+      .select('id, listing_key')
+    if (error) throw new Error(`[recordRepairLog] ${error.message}`)
+    for (const r of (data ?? []) as { id: number; listing_key: string }[]) ids.set(r.listing_key, r.id)
+  }
+  return ids
+}
+
+/** Move logged repairs from pending to what happened. */
+export async function setRepairLogOutcome(ids: number[], outcome: 'repaired' | 'failed'): Promise<number> {
+  if (ids.length === 0) return 0
+  const sb = createServiceClient()
+  for (let i = 0; i < ids.length; i += 500) {
+    const { error } = await sb.from('listing_mls_repair_log').update({ outcome }).in('id', ids.slice(i, i + 500))
+    if (error) throw new Error(`[setRepairLogOutcome] ${error.message}`)
+  }
+  return ids.length
 }
