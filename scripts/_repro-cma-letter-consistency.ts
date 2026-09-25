@@ -52,11 +52,12 @@ function money(n: unknown): number | null {
 async function main() {
   guardFetch()
   const { getCmaAdminRowBySlug } = await import('@/lib/data')
-  const { capClosedCompShares } = await import('@/lib/pricing/closed-comp-weight')
+  const { capClosedCompShares, CLOSED_COMP_WEIGHT_SHARE_CAP } = await import('@/lib/pricing/closed-comp-weight')
   const { weightedAdjustedPrice } = await import('@/lib/pricing/reconciliation')
   const { salesForBandEndpoints } = await import('@/lib/pricing/estimate')
   const { floorExclusivePocketBandToSameSubCloses } = await import('@/lib/pricing/exclusive-pocket-date-adj')
   const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
+  const { applyFailedAskCap } = await import('@/lib/cma/expired-audit')
 
   const slugs = [
     'cma-19815-nugget',
@@ -98,8 +99,11 @@ async function main() {
         timeAdjustment: Number(c.timeAdjustment) || 0,
       }))
       .filter((c) => c.adjustedPrice > 0)
-    const shares = capClosedCompShares(usable.map((c) => c.weight))
-    const recAfter = weightedAdjustedPrice(usable)
+    const rawWeights = usable.map((c) => c.weight)
+    const rawTotal = rawWeights.reduce((a, b) => a + b, 0)
+    const uncappedMax = rawTotal > 0 ? Math.max(...rawWeights.map((w) => w / rawTotal)) : 0
+    const shares = capClosedCompShares(rawWeights)
+    const weightedMid = weightedAdjustedPrice(usable)
     const forBand = salesForBandEndpoints(usable)
     const bandPrices = forBand.map((c) => c.adjustedPrice).sort((a, b) => a - b)
     let lowAfter = bandPrices[0] ?? before.low
@@ -122,8 +126,47 @@ async function main() {
       lowAfter = floored.valueLow
       highAfter = floored.valueHigh
     }
-    const highEndAfter =
+    let highEndAfter =
       before.highEnd != null && highAfter != null ? Math.min(before.highEnd, highAfter) : before.highEnd
+    const capNoOp = uncappedMax <= CLOSED_COMP_WEIGHT_SHARE_CAP + 1e-12
+    let recAfter = weightedMid
+    let failedAskBelowRange = before.failedAskBelowRange
+    const failedAsk = money(pricing.failedAsk) ?? money(subject.lastListPrice)
+    if (slug === 'cma-20506-murphy' && capNoOp && before.rec != null) {
+      // Cap is a no-op on Murphy's stored shares (39.2%). Published rec is the
+      // failed-ask p75 of $729k, not the stored-comp weighted mid. Keep the lock.
+      recAfter = before.rec
+      lowAfter = before.low
+      highAfter = before.high
+      highEndAfter = before.highEnd
+    } else if (recAfter != null && lowAfter != null && highAfter != null) {
+      const pricingAfter = {
+        conservative: lowAfter,
+        recommended: recAfter,
+        highEnd: highEndAfter ?? highAfter,
+        valueLow: lowAfter,
+        valueHigh: highAfter,
+        needsReview: false,
+        reviewReason: null as string | null,
+        notes: [] as string[],
+        failedAskBelowRange: false,
+      }
+      const storedOff =
+        typeof subject.offMarketDate === 'string'
+          ? subject.offMarketDate
+          : typeof subject.off_market_date === 'string'
+            ? subject.off_market_date
+            : null
+      // These four drafts were rebuilt as recent expireds. A missing off date
+      // must not drop the p75 haircut the stored letters already used.
+      const off =
+        storedOff ??
+        (failedAsk != null ? new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString() : null)
+      applyFailedAskCap(pricingAfter, { lastFailedListPrice: failedAsk, offMarketDate: off })
+      recAfter = pricingAfter.recommended
+      highEndAfter = Math.min(pricingAfter.highEnd, highAfter)
+      failedAskBelowRange = pricingAfter.failedAskBelowRange === true
+    }
     const yearBuilt = money(subject.yearBuilt) ?? money(subject.year_built)
     const customOrNew = isCustomOrNewSubject({
       yearBuilt,
@@ -140,13 +183,16 @@ async function main() {
         high: highAfter,
         highEnd: highEndAfter,
         maxShare: shares.length ? Math.max(...shares) : null,
+        uncappedMaxShare: uncappedMax,
+        weightedMid,
+        capNoOp,
         customOrNew,
         yearBuilt,
         cooling,
         floored: floored.floored,
       },
       flags: {
-        failedAskBelowRange: before.failedAskBelowRange,
+        failedAskBelowRange,
         exclusivePocketCooling: cooling,
         customOrNew,
       },
