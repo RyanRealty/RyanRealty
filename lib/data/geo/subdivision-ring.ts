@@ -4,7 +4,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 /**
  * The plats next to the plat a point sits in, and the plat for a batch of
  * points. Both read `public.boundaries` (county GIS subdivision polygons)
- * through two RPCs: `cma_subdivision_ring` (migration 20260909120000) and
+ * through two RPCs: `cma_subdivision_ring` (migration 20260909120000; the
+ * current body, which reaches the GiST index, is 20260925015103) and
  * `geo_assign_batch`. The CMA comp ladders use them for the containment rule
  * (Matt 2026-09-08): the subject's subdivision, then the subdivisions next to
  * it inside the same neighborhood or community, before any distance ring.
