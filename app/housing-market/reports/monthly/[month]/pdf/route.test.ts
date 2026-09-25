@@ -22,6 +22,7 @@ function edition(month: string, over: Partial<EditionListItem> = {}): EditionLis
     page_count: 19,
     published_at: '2026-09-08T15:30:00Z',
     data_complete_through: '2026-09-03',
+    figures: null,
     ...over,
   }
 }

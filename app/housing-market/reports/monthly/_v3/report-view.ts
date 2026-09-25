@@ -35,6 +35,7 @@ import {
   money,
   monthLabel,
   monthName,
+  moneyShort,
   mosText,
   pctChange,
 } from '@/lib/market-report/format'
@@ -596,6 +597,13 @@ export type ArchiveCell = {
   /** The edition's first headline sentence, shown on hover and focus. */
   lead: string | null
   latest: boolean
+  /** Central Oregon's median sale price that month, "$640K"; null when withheld or not stored. */
+  median: string | null
+  /**
+   * Where that median sits between the archive's lowest and highest, 0 to 1:
+   * the month's bar shade. Null when there is no median.
+   */
+  shade: number | null
 }
 
 export type ArchiveYear = {
@@ -623,9 +631,24 @@ export function monthShort(index: number): string {
   return MONTHS_SHORT[index] ?? ''
 }
 
-/** Every published edition, grouped by calendar year, newest year first. */
+/**
+ * Every published edition, grouped by calendar year, newest year first. Each
+ * month carries Central Oregon's median sale price as stored with the edition
+ * and a shade placing it between the lowest and highest median in the
+ * archive, so the calendar reads as the price cycle before a month is opened.
+ */
 export function archiveYears(list: readonly EditionListItem[]): ArchiveYear[] {
   const latestKey = list.length ? list.map(editionKey).sort().at(-1) ?? null : null
+  const medians = list.flatMap((item) => {
+    const v = item.figures?.median
+    return typeof v === 'number' && Number.isFinite(v) ? [v] : []
+  })
+  const lo = medians.length ? Math.min(...medians) : 0
+  const hi = medians.length ? Math.max(...medians) : 0
+  const shadeOf = (v: number | null | undefined): number | null => {
+    if (typeof v !== 'number' || !Number.isFinite(v)) return null
+    return hi > lo ? (v - lo) / (hi - lo) : 1
+  }
   const byYear = new Map<number, (ArchiveCell | null)[]>()
   for (const item of list) {
     const key = editionKey(item)
@@ -642,6 +665,8 @@ export function archiveYears(list: readonly EditionListItem[]): ArchiveYear[] {
       pdf: hasPdf(item) ? pdfFacts(item) : null,
       lead: firstSentence(item.summary),
       latest: key === latestKey,
+      median: typeof item.figures?.median === 'number' ? moneyShort(item.figures.median) : null,
+      shade: shadeOf(item.figures?.median),
     }
     byYear.set(year, slots)
   }

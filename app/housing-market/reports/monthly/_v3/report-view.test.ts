@@ -132,6 +132,7 @@ function item(month: string, over: Partial<EditionListItem> = {}): EditionListIt
     page_count: 19,
     published_at: '2026-09-08T15:30:00Z',
     data_complete_through: '2026-09-03',
+    figures: null,
     ...over,
   }
 }
@@ -362,6 +363,26 @@ describe('the archive', () => {
       'The median single-family home in Central Oregon sold for $700,000 in 2026-08, up 2% from a year earlier.',
     )
     expect(firstSentence(null)).toBeNull()
+  })
+
+  it('prints each month\'s stored median and shades it between the archive\'s lowest and highest', () => {
+    const fig = (median: number | null) => ({ median, medianYoY: null, sales: 300, mos: 4.2, verdict: 'balanced' as const })
+    const years = archiveYears([
+      item('2026-08', { figures: fig(640_000) }),
+      item('2011-03', { figures: fig(240_000) }),
+      item('2006-01', { figures: fig(440_000) }),
+      item('2006-02', { figures: fig(null) }),
+      item('2006-03'),
+    ])
+    const aug = years[0]!.slots[7]!
+    expect(aug.median).toBe('$640K')
+    expect(aug.shade).toBe(1)
+    expect(years[1]!.slots[2]!.shade).toBe(0)
+    expect(years[2]!.slots[0]!.shade).toBeCloseTo(0.5)
+    // A withheld median and a row stored before figures existed stay plain.
+    expect(years[2]!.slots[1]!.median).toBeNull()
+    expect(years[2]!.slots[1]!.shade).toBeNull()
+    expect(years[2]!.slots[2]!.shade).toBeNull()
   })
 
   it('finds the months either side of an edition', () => {

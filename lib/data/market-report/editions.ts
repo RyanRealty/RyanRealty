@@ -38,6 +38,21 @@ async function withWriteRetry<T>(label: string, attempt: () => Promise<T>): Prom
 
 export type EditionStatus = 'draft' | 'published' | 'withdrawn'
 
+/** An edition's headline figures, stored beside it so a list never reads the payload. */
+export type EditionFigures = {
+  median: number | null
+  medianYoY: number | null
+  sales: number
+  mos: number | null
+  verdict: 'seller' | 'balanced' | 'buyer' | null
+}
+
+/** The figures the archive lists: Central Oregon's own, for the edition month. */
+export function editionFiguresOf(payload: EditionPayload): EditionFigures {
+  const k = payload.region.kpis
+  return { median: k.median.v, medianYoY: k.medianYoY, sales: k.sales, mos: k.mos, verdict: k.verdict }
+}
+
 export type EditionListItem = {
   edition_month: string
   slug: string
@@ -48,6 +63,8 @@ export type EditionListItem = {
   page_count: number | null
   published_at: string | null
   data_complete_through: string
+  /** Null on a row stored before the column existed. */
+  figures: EditionFigures | null
 }
 
 export type EditionRow = EditionListItem & {
@@ -60,7 +77,7 @@ export type EditionRow = EditionListItem & {
 }
 
 const LIST_COLUMNS =
-  'edition_month, slug, title, summary, pdf_path, pdf_bytes, page_count, published_at, data_complete_through'
+  'edition_month, slug, title, summary, pdf_path, pdf_bytes, page_count, published_at, data_complete_through, figures'
 
 /** Storage path for an edition's PDF: grouped by year. */
 export function editionPdfPath(editionMonth: string): string {
@@ -231,6 +248,7 @@ async function upsertEditionOnce(
       definition_id: input.definitionId,
       hold_reason: input.holdReason,
       generated_at: input.generatedAt,
+      figures: editionFiguresOf(input.payload),
       published_at: publishedAt,
     },
     { onConflict: 'edition_month' },

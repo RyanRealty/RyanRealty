@@ -18,6 +18,7 @@
  * on purpose: they lead to a route handler that redirects to the stored file,
  * and a client-side navigation or a prefetch has nothing to render there.
  */
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -35,6 +36,8 @@ export type MonthlyArchiveProps = {
   eyebrow: string
   heading: string
   lede: string
+  /** What the month bars and figures show; printed under the year jump when any month carries one. */
+  legend?: string
   years: readonly ArchiveYear[]
   /** The §0 trace for the sentences the months reveal. */
   source: string
@@ -42,7 +45,7 @@ export type MonthlyArchiveProps = {
   sourceName: string
 }
 
-export function MonthlyArchive({ id, eyebrow, heading, lede, years, source, sourceName }: MonthlyArchiveProps) {
+export function MonthlyArchive({ id, eyebrow, heading, lede, legend, years, source, sourceName }: MonthlyArchiveProps) {
   if (years.length === 0) return null
   const headingId = `${id}-heading`
   return (
@@ -67,6 +70,13 @@ export function MonthlyArchive({ id, eyebrow, heading, lede, years, source, sour
             ))}
           </ul>
         </nav>
+      ) : null}
+
+      {legend && years.some((y) => y.slots.some((c) => c?.median)) ? (
+        <p className="monthly-archive__legend">
+          <span className="monthly-archive__legend-scale" aria-hidden="true" />
+          {legend}
+        </p>
       ) : null}
 
       <ol className="monthly-archive__years">
@@ -104,7 +114,12 @@ export function MonthlyArchive({ id, eyebrow, heading, lede, years, source, sour
                   return (
                     <li
                       key={cell.key}
-                      className={cn('monthly-archive__month', cell.latest && 'monthly-archive__month--latest')}
+                      className={cn(
+                        'monthly-archive__month',
+                        cell.shade != null && 'monthly-archive__month--shaded',
+                        cell.latest && 'monthly-archive__month--latest',
+                      )}
+                      style={cell.shade != null ? ({ '--cell-shade': cell.shade.toFixed(3) } as CSSProperties) : undefined}
                     >
                       <Link
                         href={cell.href}
@@ -115,6 +130,7 @@ export function MonthlyArchive({ id, eyebrow, heading, lede, years, source, sour
                       >
                         {cell.short}
                       </Link>
+                      {cell.median ? <span className="monthly-archive__median">{cell.median}</span> : null}
                       {cell.pdfHref && cell.pdf ? (
                         <a
                           href={cell.pdfHref}

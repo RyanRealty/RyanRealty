@@ -134,8 +134,9 @@ export function ArchiveSections({ editions, edition, completeThrough }: ArchiveS
         eyebrow={`Archive · ${reportCount}`}
         heading={`Every report since ${monthLabel(oldestKey)}`}
         lede="Each edition reads Central Oregon, Bend and Redmond by month and the smaller towns over three months, with the full tables in its PDF."
+        legend="Under each month: the Central Oregon median sale price, single-family homes on less than an acre. The darker the bar, the higher that month's median against every month here."
         years={archiveYears(editions)}
-        source={`${REPORT_SOURCE_NAME}. Each month links to that edition's page and its PDF. The line a month reveals is the first sentence of that edition's summary, exactly as published.`}
+        source={`${REPORT_SOURCE_NAME}. Each month links to that edition's page and its PDF. The line a month reveals is the first sentence of that edition's summary, and the figure under it is that edition's Central Oregon median, both exactly as published.`}
         sourceName={REPORT_SOURCE_NAME}
       />
 

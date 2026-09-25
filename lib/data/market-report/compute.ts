@@ -196,11 +196,24 @@ export async function refreshMarketFactSpansForKeys(keys: string[]): Promise<{ r
   let rebuilt = 0
   const missed: string[] = []
   for (const key of [...new Set(keys)].sort()) {
-    const { data, error } = await sb.rpc('refresh_market_fact_listing_span', {
-      p_after: key.slice(0, -1),
-      p_limit: 10,
-      p_modified_since: null,
-    })
+    // A dropped connection on one key must not end a long repair run: three tries, 1 and 2 s apart.
+    let data: unknown = null
+    let error: { message: string } | null = null
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const r = await sb.rpc('refresh_market_fact_listing_span', {
+          p_after: key.slice(0, -1),
+          p_limit: 10,
+          p_modified_since: null,
+        })
+        data = r.data
+        error = r.error
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : String(err) }
+      }
+      if (!error) break
+      if (attempt < 2) await new Promise((res) => setTimeout(res, 1000 * (attempt + 1)))
+    }
     if (error) throw new Error(`[refreshMarketFactSpansForKeys ${key}] ${error.message}`)
     const d = (data ?? {}) as BatchJson
     rebuilt += Number(d.upserted ?? 0)
