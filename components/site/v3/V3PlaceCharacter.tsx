@@ -137,6 +137,13 @@ export function duesSentence(
   return `${opener}. The median is $${formatCount(dues.medianMonthly)} a month.`
 }
 
+/**
+ * The closing caveat under any HOA figure. Exported so the neighborhood FAQ
+ * prints the same words (Matt 2026-09-24): one string, not two copies.
+ */
+export const PLACE_HOA_CAVEAT =
+  'Listings that reported nothing about an HOA are not counted either way. Confirm dues and governing documents through the association before relying on them.'
+
 export function placeCharacterHeading(
   placeName: string,
   character: PlaceCharacterData,
@@ -172,9 +179,7 @@ export function V3PlaceCharacter({ placeName, character }: Props) {
       items={items}
       note={
         `Every figure here describes ${noun} only, measured from listings in the regional MLS.` +
-        (hoaPresence || dues
-          ? ' Listings that reported nothing about an HOA are not counted either way. Confirm dues and governing documents through the association before relying on them.'
-          : '')
+        (hoaPresence || dues ? ` ${PLACE_HOA_CAVEAT}` : '')
       }
     />
   )

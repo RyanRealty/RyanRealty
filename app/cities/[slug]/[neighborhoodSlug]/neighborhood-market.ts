@@ -66,6 +66,14 @@ export function neighborhoodMarketFaqInput(input: {
   medianDaysToPending: number | null
   soldCount12mo: number | null
   refreshedAt: string | null
+  /**
+   * The Deschutes County attendance areas covering the neighborhood
+   * (getPlaceSchools), in its order, and the city's district. The same list the
+   * page's Schools section prints, so the answer and the section agree
+   * (Matt 2026-09-24). Absent or empty: no schools question.
+   */
+  attendanceSchools?: readonly string[] | null
+  schoolDistrict?: { district: string; districtSlug: string } | null
 }): MarketFaqInput {
   return {
     grain: 'neighborhood',
@@ -77,6 +85,9 @@ export function neighborhoodMarketFaqInput(input: {
     medianDaysToPending: input.medianDaysToPending,
     soldCount12mo: input.soldCount12mo,
     refreshedAt: input.refreshedAt,
+    attendanceSchools: input.attendanceSchools ?? null,
+    schoolDistrictName: input.schoolDistrict?.district ?? null,
+    schoolDistrictSlug: input.schoolDistrict?.districtSlug ?? null,
   }
 }
 

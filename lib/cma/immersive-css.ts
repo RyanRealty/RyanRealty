@@ -392,7 +392,7 @@ table.comp-matrix .matrix-addr{display:block}
 .addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
-.status-price{margin:8px 0 28px}
+.status-price{margin:8px 0 28px;overflow-x:auto}
 .status-price .subhead{margin:0 0 10px}
 .status-price-table th.n,.status-price-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ppsf-status-caption{margin:4px 0 14px}
@@ -546,7 +546,9 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 /* The status table is FlexMLS style (Matt 2026-09-24): List, Sold and $/sqft
    across, Low, Avg, Median and High down each status. The 38% rule above
    would land on every heading and stack the figures, so the columns are set
-   here. Four columns fit a phone at reading size, so there is no pan box. */
+   here. On a phone the columns size to their figures (table-layout auto), and
+   a price too long for the screen scrolls inside the section instead of
+   running into the next column. */
 .letter-body table.kv.status-price-table{table-layout:fixed;max-width:760px}
 .letter-body table.kv.status-price-table th{width:auto;padding:8px 0 8px 12px}
 .letter-body table.kv.status-price-table th.n{text-align:right}
@@ -557,7 +559,7 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .letter-body table.kv.status-price-table tr.sp-group th{opacity:1;font-weight:600;padding-top:20px;border-bottom:1px solid var(--ink)}
 .letter-body table.kv.status-price-table tbody:first-of-type tr.sp-group th{padding-top:12px}
 .letter-body table.kv.status-price-table .sp-count{font-weight:400;opacity:.65;margin-left:10px}
-@media (max-width:480px){.letter-body table.kv.status-price-table{font-size:13px}}
+@media (max-width:480px){.letter-body table.kv.status-price-table{font-size:13px;table-layout:auto}}
 /* The net-at-list ledger, on screen. Same rows the letter prints, at reading
    size, with the money column right-aligned so the column adds up by eye. */
 .letter-body table.kv.netsheet th{width:62%;opacity:1;font-weight:500}
