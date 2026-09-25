@@ -775,6 +775,11 @@
   position: absolute;
   top: 0;
   transform: translateX(10px);
+  /* Its own width, not what is left of the plot: the resting tip sits on the
+     newest point at the right edge, where shrink-to-fit wrapped "Median sale
+     price" onto three lines. */
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 2rem));
   min-width: 9rem;
   padding: var(--v3-space-2xs) var(--v3-space-xs);
   background: var(--v3-cream);

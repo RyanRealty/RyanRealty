@@ -83,7 +83,7 @@ Terrebonne CMA**, computed off six sales.
 and that the cache figure's lineage was unverifiable. Both refuted. **The cache is right**; its writer
 is `compute_and_cache_period_stats` using `COALESCE(days_to_pending, pending_timestamp − OnMarketDate)`,
 and it reproduces exactly. The defect is the raw column and the paths that read it — the video
-market-report producer and `get_beacon_metrics`.
+market-report producer and `report_period_metrics_core`.
 
 The `DaysOnMarket` column equals `CloseDate − ListDate − 1` in 95% of rows across all 34 years, and
 `DaysOnMarket` correlates with list-to-close at **r = 1.000** (within one day on 98.8% of rows).
@@ -108,7 +108,7 @@ report path. **Two registry entries, never one label.**
 ### 1.4 Months of supply disagrees across paths and crosses the verdict line
 
 `market_pulse_live` reports 488 active / **3.54 months → "seller's market."**
-`get_beacon_metrics` (the `/admin/reports` builder) reports 794 current / **4.5 → "balanced."**
+`report_period_metrics_core` (the `/admin/reports` builder) reports 794 current / **4.5 → "balanced."**
 A 27% delta across the §0 threshold. The repo's own cross-path tolerance is **1%**.
 
 Three active-count definitions coexist *inside the cache layer alone*: 488 (status + subtype +

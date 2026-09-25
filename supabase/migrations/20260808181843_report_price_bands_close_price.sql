@@ -3,7 +3,7 @@
 -- Preserves return shape: { sales_by_band, current_listings_by_band }.
 -- Enterprise Map 2026-08-08: prior body selected ListPrice for closed rows.
 
-CREATE OR REPLACE FUNCTION get_beacon_price_bands(
+CREATE OR REPLACE FUNCTION report_price_bands_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -157,5 +157,5 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION get_beacon_price_bands IS
+COMMENT ON FUNCTION report_price_bands_core IS
   'Price bands: closed sales by ClosePrice; active/coming-soon inventory by ListPrice. Fixed 2026-08-08 (closed had used ListPrice).';

@@ -46,7 +46,7 @@ const DEFINITION = 'lib/crm/merge.ts'
 
 // Files allowed to write an identity param: the helper that mints it, the
 // primitive it calls, the token module, and the raw-HTML doc tracker that
-// forwards the SAME token it read to our own identify beacon.
+// forwards the SAME token it read to our own identify endpoint.
 const STAMP_ALLOWED = new Set([
   HELPER,
   DEFINITION,

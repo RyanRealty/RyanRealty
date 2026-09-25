@@ -17,7 +17,6 @@ Parent table `listings` — **595,377 rows**, keyed `ListingKey`.
 | Table | Key column | Rows | Rows per parent row | Freshness | Flag |
 |---|---|---:|---:|---|---|
 | `listing_history` | `listing_key` | 3,901,379 | 6.55 | 2026-08-22 |  |
-| `beacon_comparable_listings_v` | `listingkey` | 595,377 | 1.00 | — |  |
 | `listing_tile_mv_src` | `listing_key` | 595,265 | 1.00 | — |  |
 | `listing_tile_mv` | `listing_key` | 595,216 | 1.00 | — |  |
 | `listing_private` | `listing_key` | 594,877 | 1.00 | 2026-08-22 |  |
@@ -67,7 +66,6 @@ Parent table `properties` — **7,251 rows**, keyed `parcel_number`.
 | Table | Key column | Rows | Rows per parent row | Freshness | Flag |
 |---|---|---:|---:|---|---|
 | `listings` | `parcel_number` | 595,377 | 82.11 | — |  |
-| `beacon_comparable_listings_v` | `parcel_number` | 595,377 | 82.11 | — |  |
 
 ## Entity: person / contact
 

@@ -201,7 +201,7 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          // GA4 + Google Ads need more than www.google-analytics.com: gtag beacons
+          // GA4 + Google Ads need more than www.google-analytics.com: gtag requests
           // hit www.google.com/g/collect and the regional *.analytics.google.com /
           // region1.google-analytics.com hosts, Google Signals/SODAR uses
           // *.adtrafficquality.google, and ads conversions use *.doubleclick.net.
@@ -577,6 +577,18 @@ const nextConfig: NextConfig = {
       './public/cmas/cma-*/assets/*.png',
       './public/cmas/cma-*/assets/*.jpg',
       './public/cmas/cma-*/assets/*.otf',
+    ],
+    // The monthly market report PDF (lib/market-report/pdf): Chromium like the
+    // CMA routes, plus the fonts and pre-sized images REPORT_ASSET_FILES in
+    // lib/market-report/pdf/assets.ts reads from disk.
+    'app/api/cron/market-report-publish/route': [
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
+      './node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2',
+      './node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2',
+      './node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2',
+      './public/fonts/Amboqia_Boriango.otf',
+      './public/market-report/*',
     ],
     'app/api/reports/export/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',

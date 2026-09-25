@@ -28,9 +28,10 @@
  * Real 2-segment routes under /housing-market/reports that are NOT the legacy
  * per-geo report and must pass through untouched.
  *   app/housing-market/reports/archive/[city]/page.tsx
+ *   app/housing-market/reports/monthly/[month]/page.tsx  (one monthly edition)
  *   app/reports/sales/[city]/[period]/page.tsx  (4 segments; listed for safety)
  */
-const RESERVED_FIRST_SEGMENTS = new Set(['archive', 'sales'])
+const RESERVED_FIRST_SEGMENTS = new Set(['archive', 'monthly', 'sales'])
 
 /** Same normalization as `slugify` in lib/slug.ts. */
 function slugifyGeo(name: string): string {

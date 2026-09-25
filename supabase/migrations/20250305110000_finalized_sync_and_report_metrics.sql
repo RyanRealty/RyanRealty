@@ -20,10 +20,10 @@ CREATE INDEX IF NOT EXISTS idx_listings_media_finalized ON listings (media_final
 
 -- Returns: sold_count, median_price, median_dom, median_ppsf, current_listings, sales_12mo (for inventory calc).
 -- Ensure we own the function signatures and avoid ambiguity if earlier versions exist.
-DROP FUNCTION IF EXISTS get_beacon_metrics(text, date, date, date);
-DROP FUNCTION IF EXISTS get_beacon_metrics(text, date, date, date, text);
+DROP FUNCTION IF EXISTS report_period_metrics_core(text, date, date, date);
+DROP FUNCTION IF EXISTS report_period_metrics_core(text, date, date, date, text);
 
-CREATE OR REPLACE FUNCTION get_beacon_metrics(
+CREATE OR REPLACE FUNCTION report_period_metrics_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -125,10 +125,10 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION get_beacon_metrics(text, date, date, date) IS 'City/period metrics: sold count, median price, median DOM, median $/sqft, current listings, 12mo sales, inventory.';
+COMMENT ON FUNCTION report_period_metrics_core(text, date, date, date) IS 'City/period metrics: sold count, median price, median DOM, median $/sqft, current listings, 12mo sales, inventory.';
 
 -- Price band distribution: counts of sales and current listings by price bucket (for histogram).
-CREATE OR REPLACE FUNCTION get_beacon_price_bands(
+CREATE OR REPLACE FUNCTION report_price_bands_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -241,4 +241,4 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION get_beacon_price_bands(text, date, date, boolean) IS 'Price band counts for sales and current listings by city/period (or last 12 months).';
+COMMENT ON FUNCTION report_price_bands_core(text, date, date, boolean) IS 'Price band counts for sales and current listings by city/period (or last 12 months).';

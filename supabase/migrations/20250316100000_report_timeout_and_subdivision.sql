@@ -64,10 +64,10 @@ $$;
 
 COMMENT ON FUNCTION get_city_metrics_timeseries(text, int, text) IS 'Monthly sold count and median price (single-pass). Optional subdivision.';
 
--- Add optional subdivision to get_beacon_metrics (drop 4-arg overload to avoid ambiguous call from get_city_period_metrics)
-DROP FUNCTION IF EXISTS get_beacon_metrics(text, date, date, date);
+-- Add optional subdivision to report_period_metrics_core (drop 4-arg overload to avoid ambiguous call from get_city_period_metrics)
+DROP FUNCTION IF EXISTS report_period_metrics_core(text, date, date, date);
 
-CREATE OR REPLACE FUNCTION get_beacon_metrics(
+CREATE OR REPLACE FUNCTION report_period_metrics_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -171,10 +171,10 @@ BEGIN
 END;
 $$;
 
--- Add optional subdivision to get_beacon_price_bands (drop 4-arg overload to avoid ambiguous call from get_city_price_bands)
-DROP FUNCTION IF EXISTS get_beacon_price_bands(text, date, date, boolean);
+-- Add optional subdivision to report_price_bands_core (drop 4-arg overload to avoid ambiguous call from get_city_price_bands)
+DROP FUNCTION IF EXISTS report_price_bands_core(text, date, date, boolean);
 
-CREATE OR REPLACE FUNCTION get_beacon_price_bands(
+CREATE OR REPLACE FUNCTION report_price_bands_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -306,7 +306,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT get_beacon_metrics(p_city, p_period_start, p_period_end, p_as_of, p_subdivision);
+  SELECT report_period_metrics_core(p_city, p_period_start, p_period_end, p_as_of, p_subdivision);
 $$;
 
 CREATE OR REPLACE FUNCTION get_city_price_bands(
@@ -322,5 +322,5 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT get_beacon_price_bands(p_city, p_period_start, p_period_end, p_sales_12mo, p_subdivision);
+  SELECT report_price_bands_core(p_city, p_period_start, p_period_end, p_sales_12mo, p_subdivision);
 $$;

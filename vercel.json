@@ -147,6 +147,14 @@
       "schedule": "0 14 * * 0"
     },
     {
+      "path": "/api/cron/market-report-refresh",
+      "schedule": "17 11 * * *"
+    },
+    {
+      "path": "/api/cron/market-report-publish",
+      "schedule": "23 15 8 * *"
+    },
+    {
       "path": "/api/cron/market-stat-consistency",
       "schedule": "40 14 * * *"
     },

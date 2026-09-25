@@ -108,7 +108,7 @@
  *     `document.images` report `naturalWidth > 0` (_ds-shot.mjs).
  *  5. Webfonts. Amboqia and Geist land after first paint and reflow every
  *     heading. Await `document.fonts.ready` (_live-shot.mjs).
- *  6. `networkidle` is not a load signal here. Analytics beacons and the map
+ *  6. `networkidle` is not a load signal here. Analytics pings and the map
  *     SDK keep sockets warm, so `waitUntil: 'networkidle'` either hangs to the
  *     timeout or resolves at an arbitrary moment. Load on `domcontentloaded`
  *     and settle explicitly.

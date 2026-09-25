@@ -38,6 +38,8 @@ describe('resolveLegacyReportGeoRedirect', () => {
   it('leaves the live routes that share the prefix alone', () => {
     // app/housing-market/reports/archive/[city]/page.tsx
     expect(resolveLegacyReportGeoRedirect('/housing-market/reports/archive/bend')).toBeNull()
+    // app/housing-market/reports/monthly/[month]/page.tsx: one monthly edition
+    expect(resolveLegacyReportGeoRedirect('/housing-market/reports/monthly/2026-08')).toBeNull()
     // app/reports/sales/[city]/[period]/page.tsx
     expect(resolveLegacyReportGeoRedirect('/reports/sales/bend')).toBeNull()
     expect(resolveLegacyReportGeoRedirect('/reports/sales/bend/2026')).toBeNull()

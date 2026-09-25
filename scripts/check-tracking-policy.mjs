@@ -173,7 +173,7 @@ check('Middleware answers the retired /_next/image URL',
 // TRACK-3: RUM ingest validates through one module (FID dropped, >120 s dropped, no /_next or /api paths).
 const vitalsRoute = read('app/api/web-vitals/route.ts')
 check('RUM ingest validates every sample', /parseWebVitalSample\(/.test(vitalsRoute),
-  'app/api/web-vitals/route.ts must pass every beacon through parseWebVitalSample() (lib/analytics/web-vitals-sample.ts).')
+  'app/api/web-vitals/route.ts must pass every sample through parseWebVitalSample() (lib/analytics/web-vitals-sample.ts).')
 // TRACK-2: deploy:verify parses the homepage's inline scripts and requires the GTM loader.
 const deployVerify = read('scripts/check-vercel-deploy.mjs')
 check('deploy:verify parses production inline scripts', /checkInlineScripts\(/.test(deployVerify),

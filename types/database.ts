@@ -4157,38 +4157,6 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
-      get_beacon_metrics: {
-        Args: {
-          p_as_of?: string
-          p_city: string
-          p_include_acreage?: boolean
-          p_include_commercial?: boolean
-          p_include_condo_town?: boolean
-          p_include_manufactured?: boolean
-          p_max_price?: number
-          p_min_price?: number
-          p_period_end: string
-          p_period_start: string
-          p_subdivision?: string
-        }
-        Returns: Json
-      }
-      get_beacon_price_bands: {
-        Args: {
-          p_city: string
-          p_include_acreage?: boolean
-          p_include_commercial?: boolean
-          p_include_condo_town?: boolean
-          p_include_manufactured?: boolean
-          p_max_price?: number
-          p_min_price?: number
-          p_period_end: string
-          p_period_start: string
-          p_sales_12mo?: boolean
-          p_subdivision?: string
-        }
-        Returns: Json
-      }
       get_browse_cities_stats: {
         Args: never
         Returns: {
@@ -4623,6 +4591,38 @@ export type Database = {
       refresh_market_pulse: { Args: never; Returns: Json }
       report_listing_history_row_count: { Args: never; Returns: number }
       report_listings_missing_both_dates_count: { Args: never; Returns: number }
+      report_period_metrics_core: {
+        Args: {
+          p_as_of?: string
+          p_city: string
+          p_include_acreage?: boolean
+          p_include_commercial?: boolean
+          p_include_condo_town?: boolean
+          p_include_manufactured?: boolean
+          p_max_price?: number
+          p_min_price?: number
+          p_period_end: string
+          p_period_start: string
+          p_subdivision?: string
+        }
+        Returns: Json
+      }
+      report_price_bands_core: {
+        Args: {
+          p_city: string
+          p_include_acreage?: boolean
+          p_include_commercial?: boolean
+          p_include_condo_town?: boolean
+          p_include_manufactured?: boolean
+          p_max_price?: number
+          p_min_price?: number
+          p_period_end: string
+          p_period_start: string
+          p_sales_12mo?: boolean
+          p_subdivision?: string
+        }
+        Returns: Json
+      }
       resolve_listing_neighborhood: {
         Args: { p_latitude: number; p_longitude: number }
         Returns: {

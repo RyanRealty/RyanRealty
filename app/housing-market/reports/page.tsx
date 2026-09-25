@@ -100,6 +100,12 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
               term: "What this page is",
               body: "Download or view sales by city and week. Live inventory, months of supply, and city pulse live on the Live market hub. This page does not re-host those numbers.",
             },
+            {
+              label: "Central Oregon monthly market report",
+              href: "/housing-market/reports/monthly",
+              detail: "Read each month's report here or download the PDF.",
+              lead: true,
+            },
             { label: "Live market hub", href: "/housing-market" },
             { label: "City pulse (Bend)", href: "/housing-market/bend" },
             { label: "Months of supply", href: "/months-of-supply" },

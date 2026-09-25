@@ -111,7 +111,7 @@
 |-------|--------|
 | **Maturity** | **4** — Live pulse + large cache; only-path for public market stats; methodology stamp on served rows. Not 5: v3 vs v4 definition drift; ClosePrice bands migration apply; continuous freshness Sense. |
 | **Evidence status** | **VERIFIED** |
-| **Evidence pointers** | EVIDENCE-LOG CAP-006: cache methodology v3=12920, v4=0, v1=70; pulse sample v3; live `market_pulse_live`=45, `market_stats_cache`=12995 (`M-live-db-counts.json`); gates `ci:market-formula`, DAL boundary; migration file `20260808181843_beacon_price_bands_close_price.sql` (hosted apply still open) |
+| **Evidence pointers** | EVIDENCE-LOG CAP-006: cache methodology v3=12920, v4=0, v1=70; pulse sample v3; live `market_pulse_live`=45, `market_stats_cache`=12995 (`M-live-db-counts.json`); gates `ci:market-formula`, DAL boundary; migration file `20260808181843_report_price_bands_close_price.sql` (hosted apply confirmed done 2026-09-25 via `20260925030000_report_core_defect_fixes.sql`) |
 | **Public risk** | **Critical** |
 | **Broker product?** | Yes |
 | **Residual disposition** | **ACTIVE** (data/accuracy) — hosted ClosePrice apply; pulse freshness Sense; never claim v4 for v3 rows; cache writer adoption of v4 string |

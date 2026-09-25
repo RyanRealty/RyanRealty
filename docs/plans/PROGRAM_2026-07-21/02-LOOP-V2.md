@@ -254,7 +254,7 @@ I4 is the single most important line in this spec. Across the 19 audits, the dom
 
 Any candidate matching these takes the next slot in its owner loop regardless of score:
 
-1. A published number contradicts its source (CLAUDE.md §0 violation on a public surface). Example from the audits: `get_beacon_price_bands` bucketing closed sales by `"ListPrice"`.
+1. A published number contradicts its source (CLAUDE.md §0 violation on a public surface). Example from the audits: `report_price_bands_core` bucketing closed sales by `"ListPrice"`.
 2. Compliance exposure: TCPA, fair-housing, license-risk, an owner's media-suppression flag bypassed, soliciting an off-market seller.
 3. Privacy or authorization leak. Example: `broker-command-center` scope filters failing open for an unmapped broker email.
 4. A money path is broken: lead capture, contact CTA, listing detail render, a ranking page 404/500.
@@ -293,7 +293,7 @@ B  blast risk     = 2 if legally-binding / §0 stat surface / irreversible, else
 | Candidate | R | S | C | J | E | B | score |
 |---|---|---|---|---|---|---|---|
 | Listing-detail `ctaBroker` null-fallback removes all contact CTAs | 3.9 | 4 | 0.50 | 1.5 | 1 | 1 | **11.7** |
-| `get_beacon_price_bands` ClosePrice fix | 2.3 | 5 | 0.50 | 1.0 | 1 | 2 | **2.9** + P0 preempt |
+| `report_price_bands_core` ClosePrice fix | 2.3 | 5 | 0.50 | 1.0 | 1 | 2 | **2.9** + P0 preempt |
 | Pass `inboxUnread` into ConsoleShell (1 line, dead badge) | 0.7 | 3 | 0.50 | 1.0 | 1 | 1 | **1.1** |
 | Sitemap emits `/cities/{city}/{sub}` instead of the working `/communities/{city}-{sub}` | 3.5 | 4 | 0.50 | 1.0 | 1 | 1 | **7.0** |
 | Render `aiReferrers` already loaded and discarded on 3 admin pages | 0.3 | 2 | 0.50 | 1.0 | 1 | 1 | **0.3** |

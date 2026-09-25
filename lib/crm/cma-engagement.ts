@@ -31,7 +31,7 @@ import 'server-only'
  * FAIL CLOSED ON A MISSING PERSON. No contact, no alert — never a text about an
  * anonymous someone, and never a default-desk page for a row we cannot name.
  * Every function returns false rather than throwing: these run inside a Twilio
- * webhook, a Gmail sync and a tracking beacon.
+ * webhook, a Gmail sync and a tracking ping.
  */
 
 import { BROKER_ALERT_ORIGIN, queueBrokerAlert } from '@/lib/crm/broker-alerts'
