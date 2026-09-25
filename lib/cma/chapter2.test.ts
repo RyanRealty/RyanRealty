@@ -218,9 +218,9 @@ describe('2b — what the first asking price realized', () => {
     // printed beside it, and the header names the scale the dots sit on.
     expect(html).toContain('table class="kv realization"')
     expect(html).toMatch(
-      /keep-open is-keep[\s\S]*What the first asking price actually realized[\s\S]*<table class="kv realization"/,
+      /keep-block[\s\S]*What the first asking price actually realized[\s\S]*<table class="kv realization"/,
     )
-    expect(html).toContain('tbody class="row-pack"')
+    expect(html).not.toMatch(/keep-block[\s\S]*What the first asking price actually realized[\s\S]*keep-open/)
     expect(html).toContain('91% to 100%')
     expect(html.match(/class="rz-svg"/g) ?? []).toHaveLength(5)
     expect(html).toContain(

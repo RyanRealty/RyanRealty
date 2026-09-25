@@ -619,15 +619,15 @@ a.street-sale .n{font-variant-numeric:tabular-nums;font-weight:600}
   .sc:last-child{min-height:0;break-after:auto;page-break-after:auto}
   .cue{display:none}
   .hero{color:var(--navy)}
-  figure,.pin-map-wrap,.lot-tile,.keep-note,.keep-close,.keep-open{break-inside:avoid;page-break-inside:avoid}
-  .worth-strip,.status-price-wrap,.chart-block,.figure-block,.status-price,.comp-matrix-wrap:not(.is-keep),table:not(.comp-matrix):not(.realization){break-inside:auto!important;page-break-inside:auto!important}
-  .comp-matrix-wrap.is-keep,.comp-matrix-wrap.is-keep table,table.comp-matrix[data-row-chunk],.keep-open.is-keep,.keep-open.is-keep table{break-inside:avoid!important;page-break-inside:avoid!important}
-  table.comp-matrix tbody.row-pack,table.realization tbody.row-pack{break-inside:avoid;page-break-inside:avoid}
+  figure,.pin-map-wrap,.lot-tile,.keep-note,.keep-close,.keep-open,.keep-block{break-inside:avoid;page-break-inside:avoid}
+  .worth-strip,.status-price-wrap,.chart-block,.figure-block,.status-price,.comp-matrix-wrap:not(.is-keep),table:not(.comp-matrix),.keep-block table{break-inside:auto!important;page-break-inside:auto!important}
+  .comp-matrix-wrap.is-keep,.comp-matrix-wrap.is-keep table,.keep-block{break-inside:avoid!important;page-break-inside:avoid!important}
+  table.comp-matrix tbody.row-pack{break-inside:avoid;page-break-inside:avoid}
   table.comp-matrix,table.realization{border-collapse:separate;border-spacing:0}
   table.comp-matrix thead,table.realization thead{display:table-header-group}
   .keep-open,h4.subhead,.matrix-group-h{break-after:avoid;page-break-after:avoid}
-  .keep-open+.comp-matrix-wrap,.keep-open+table,.keep-open+.szn,.keep-open+.ppsf-status-caption,.keep-open+p,h3.subhead+.comp-matrix-wrap,h3.subhead+table,h3.subhead+.szn,h4.subhead+.comp-matrix-wrap,h4.subhead+table,.ppsf-status-caption+.comp-matrix-wrap{break-before:avoid;page-break-before:avoid}
-  table.kv.status-price-table thead,table.kv.status-price-table tbody:first-of-type{break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid}
+  .keep-open+.comp-matrix-wrap,.keep-open+.keep-block,.keep-open+table,.keep-open+.szn,.keep-open+.ppsf-status-caption,.keep-open+p,h3.subhead+.comp-matrix-wrap,h3.subhead+table,h3.subhead+.szn,h4.subhead+.comp-matrix-wrap,h4.subhead+table,.ppsf-status-caption+.comp-matrix-wrap{break-before:avoid;page-break-before:avoid}
+  .keep-block+.small,.keep-block+p.small{break-before:avoid;page-break-before:avoid}
   ul.peer-stories li{break-inside:avoid;page-break-inside:avoid}
   ul.peer-stories+.small{break-before:avoid;page-break-before:avoid;break-after:page;page-break-after:always}
   figcaption,caption,.ppsf-status-caption,table+.small,table+p.small{break-before:avoid;page-break-before:avoid;break-after:auto;page-break-after:auto}

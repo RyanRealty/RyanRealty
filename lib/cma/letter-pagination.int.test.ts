@@ -451,6 +451,26 @@ function realizationRowsOn(lines: PageLine[]): string[] {
     .filter((v): v is string => Boolean(v))
 }
 
+const STATUS_STAT = /^(Low|Avg|Median|High)\b/
+const STATUS_GROUP = /^(Closed|Active|Expired|Pending)\b/
+
+function isStatusGroupLabel(text: string): boolean {
+  const t = text.replace(/\s+/g, ' ').trim()
+  return STATUS_GROUP.test(t) && /home/i.test(t)
+}
+
+function statusStatRowsOn(lines: PageLine[]): string[] {
+  return lines
+    .map((l) => {
+      const t = l.text.replace(/\s+/g, ' ').trim()
+      const m = t.match(STATUS_STAT)
+      if (!m) return null
+      if (!/\$[\d,]|\d/.test(t.slice(m[0].length))) return null
+      return m[1]
+    })
+    .filter((v): v is string => Boolean(v))
+}
+
 function isAddressHead(text: string): boolean {
   const t = text.replace(/\s+/g, ' ').trim()
   if (/your home/i.test(t)) return true
@@ -526,6 +546,20 @@ function assertTableFragments(pages: PdfTextRun[][], label: string, failures: st
       if (rzNext.length < 3) {
         failures.push(`${label} p${pageNo + 1}: realization continues with ${rzNext.length} body row(s)`)
       }
+      if (rzHere.length === 4 && rzNext.length === 1) {
+        failures.push(`${label} p${pageNo}: realization splits 4/1`)
+      }
+    }
+
+    const stHere = statusStatRowsOn(lines)
+    const stNext = statusStatRowsOn(next)
+    const nextOpensGroup = next.some((l) => isStatusGroupLabel(l.text))
+    if (stHere.length && stNext.length && !nextOpensGroup) {
+      if (stHere.length === 1 || stNext.length === 1) {
+        failures.push(
+          `${label} p${pageNo}: status group splits ${stHere.length}/${stNext.length}`,
+        )
+      }
     }
   })
 }
@@ -554,6 +588,17 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
       if (fill < 0.15) {
         failures.push(
           `${label} p${pageNo}: last sheet is ${(fill * 100).toFixed(1)}% content (need ≥15%)`,
+        )
+      }
+    } else if (label.startsWith('5-comp')) {
+      // A short chapter that ends, or a coherent block that opens the next
+      // sheet, is allowed. Half-empty leftover in the middle of the same
+      // section (the 12+7 matrix split) is not.
+      const fill = contentSpan(body) / boxH
+      const nextOpensSection = next.some((r) => isPgMeta(r.text) || isSectionHead(r.text))
+      if (fill < 0.55 && !nextOpensSection) {
+        failures.push(
+          `${label} p${pageNo}: non-final sheet is ${((1 - fill) * 100).toFixed(0)}% empty (cap 45%)`,
         )
       }
     }
@@ -648,6 +693,8 @@ describe.skipIf(!hasChrome)('CMA letter pagination', () => {
     const { html } = renderCmaHtml(a)
     expect(html).toContain('comp-matrix is-active')
     expect(html).toContain('data-status="expired"')
+    expect(html).toContain('data-status-group="active"')
+    expect(html).toContain('class="keep-block"')
     const pdf = await renderPdf(html)
     const { pages, sizes } = await extractPdfTextRuns(new Uint8Array(pdf))
     expect(pages.length).toBeGreaterThan(3)

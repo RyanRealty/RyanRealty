@@ -183,12 +183,23 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
   const figureCells = (row: StatusPriceRow, stat: (typeof STATS)[number][0]) =>
     [row.list, ...(showSold ? [row.sold] : []), row.ppsf].map((band) => `<td class="n">${figure(band, stat)}</td>`).join('')
   const columns = showSold ? 4 : 3
+  const thead = `<thead><tr><th scope="col"></th><th class="n" scope="col">List</th>${showSold ? '<th class="n" scope="col">Sold</th>' : ''}<th class="n" scope="col">$/sqft</th></tr></thead>`
+  const colgroup = `<colgroup><col class="sp-stat">${'<col class="sp-fig">'.repeat(columns - 1)}</colgroup>`
+  // Chrome ignores break-inside on tbody. Each status (label + Low/Avg/
+  // Median/High) is its own table inside a keep-block div so High cannot
+  // land alone on the next sheet.
   const groups = rows
     .map(
-      (row) => `<tbody data-status="${esc(row.key)}">
+      (row) => `<div class="keep-block" data-status-group="${esc(row.key)}">
+    <table class="kv is-wide status-price-table">
+    ${colgroup}
+    ${thead}
+    <tbody data-status="${esc(row.key)}">
       <tr class="sp-group"><th scope="rowgroup" colspan="${columns}">${esc(row.label)}<span class="sp-count">${esc(homesLabel(row.homes))}</span></th></tr>
       ${STATS.map(([stat, label]) => `<tr><th scope="row">${label}</th>${figureCells(row, stat)}</tr>`).join('\n      ')}
-    </tbody>`,
+    </tbody>
+    </table>
+    </div>`,
     )
     .join('\n    ')
   const n = rows.reduce((a, r) => a + r.homes, 0)
@@ -205,10 +216,6 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
   <h3 class="subhead">${esc(rows.map((r) => r.label).join(' · '))}</h3>
   <p class="chart-read">${esc(read)}</p>
   </div>
-  <table class="kv is-wide status-price-table">
-    <colgroup><col class="sp-stat">${'<col class="sp-fig">'.repeat(columns - 1)}</colgroup>
-    <thead><tr><th scope="col"></th><th class="n" scope="col">List</th>${showSold ? '<th class="n" scope="col">Sold</th>' : ''}<th class="n" scope="col">$/sqft</th></tr></thead>
-    ${groups}
-  </table>${notes.length ? `\n  <p class="small status-price-note">${esc(notes.join(' '))}</p>` : ''}
+  ${groups}${notes.length ? `\n  <p class="small status-price-note">${esc(notes.join(' '))}</p>` : ''}
 </div>`
 }

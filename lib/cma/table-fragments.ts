@@ -2,25 +2,80 @@
  * Print fragments for CMA tables. Chrome will split a tall table wherever
  * the remaining box ends, and font metrics move that cut. These sizes are
  * metric-independent: never leave fewer than three body rows on either
- * side of a break, and keep a short or two-column matrix whole.
+ * side of a break, keep a matrix whole when it fits one printed page, and
+ * never mark a part unbreakable if that would leave the previous sheet
+ * more than about 40% empty.
  */
+
+import { CMA_MARGIN_IN, PAPER, PT_PER_IN } from '@/lib/pdf/page-contract'
 
 /** A page may not inherit fewer body rows than this on either side of a break. */
 export const MIN_TABLE_FRAGMENT_ROWS = 3
 
-/** About twelve body rows, or a two-home matrix, stay on one sheet. */
+/** About twelve body rows, used only as a short-table hint in tests. */
 export const SHORT_MATRIX_MAX_ROWS = 12
 export const SHORT_MATRIX_MAX_HOME_COLS = 2
 
+/** US Letter content box the CMA print contract reserves (11in − 0.4 − 0.7). */
+export const PAGE_CONTENT_IN =
+  PAPER.heightPt / PT_PER_IN - CMA_MARGIN_IN.top - CMA_MARGIN_IN.bottom
+
+export const PAGE_CONTENT_WIDTH_IN =
+  PAPER.widthPt / PT_PER_IN - CMA_MARGIN_IN.left - CMA_MARGIN_IN.right
+
+/** Extra room so a borderline estimate still fits under a wider face. */
+export const MATRIX_SAFE_MARGIN_IN = 0.55
+
 /**
- * A table of about twelve body rows stays whole. A taller two-column
- * matrix (the active set is 19 rows) is not forced whole: that parks a
- * chapter header alone when the leftover box is short. Those tables
- * split between row-packs of at least three, each continuation reprinting
- * the photo/address head.
+ * An unbreakable part may take at most this share of the content box.
+ * Leftover above ~40% can start the table and split on the 3-row rule.
  */
-export function keepMatrixWhole(_homeCols: number, bodyRows: number): boolean {
-  return bodyRows <= SHORT_MATRIX_MAX_ROWS
+export const UNBREAKABLE_MAX_PAGE_FRAC = 0.6
+
+/** Matches the label column in `comp-matrix.ts`. */
+const LABEL_COL_PCT = 24
+
+/**
+ * Printed height of one comparison matrix: photo head (4/3 of a value
+ * column) plus address lines plus body rows. Safe over-estimate so a
+ * "fits one page" call does not clip under Palatino.
+ */
+export function estimateMatrixHeightIn(
+  homeCols: number,
+  bodyRows: number,
+  photos = true,
+): number {
+  const cols = Math.max(1, homeCols)
+  const valueShare = (100 - LABEL_COL_PCT) / 100
+  const colW = (PAGE_CONTENT_WIDTH_IN * valueShare) / cols
+  const photoH = photos ? colW * (3 / 4) : 0
+  // Narrower columns wrap the address and the ask-path more.
+  const addrH = photos ? Math.min(0.85, 0.38 + 0.08 * Math.max(0, cols - 2)) : 0.28
+  const headH = photoH + addrH + 0.12
+  const rowH = 0.3 + (cols >= 5 ? 0.04 : 0)
+  const wrap = 0.22
+  return headH + Math.max(0, bodyRows) * rowH + wrap
+}
+
+/** True when the whole matrix, with a safe margin, still fits one sheet. */
+export function keepMatrixWhole(homeCols: number, bodyRows: number, photos = true): boolean {
+  if (bodyRows <= 0) return true
+  return (
+    estimateMatrixHeightIn(homeCols, bodyRows, photos) + MATRIX_SAFE_MARGIN_IN <= PAGE_CONTENT_IN
+  )
+}
+
+/**
+ * True when the part is short enough to mark `break-inside: avoid` without
+ * jumping a leftover box that is more than about 40% of the sheet.
+ */
+export function keepMatrixUnbreakable(
+  homeCols: number,
+  bodyRows: number,
+  photos = true,
+): boolean {
+  if (bodyRows <= 0) return true
+  return estimateMatrixHeightIn(homeCols, bodyRows, photos) <= PAGE_CONTENT_IN * UNBREAKABLE_MAX_PAGE_FRAC
 }
 
 /**
@@ -59,32 +114,51 @@ export function packRowHtml(rowHtmls: readonly string[]): string {
 }
 
 /**
+ * Split `rowCount` into `parts` groups whose sizes differ by at most one
+ * (10+9, never 12+7). Each part is at least `min` when the total allows it.
+ */
+export function evenRowChunks(
+  rowCount: number,
+  parts: number,
+  min = MIN_TABLE_FRAGMENT_ROWS,
+): number[] {
+  if (rowCount <= 0 || parts <= 0) return []
+  const n = Math.min(parts, rowCount)
+  const sizes: number[] = []
+  let cut = 0
+  for (let i = 0; i < n; i++) {
+    const size = Math.ceil((rowCount - cut) / (n - i))
+    sizes.push(size)
+    cut += size
+  }
+  if (sizes.some((s) => s < min) && rowCount >= min * sizes.length) {
+    return tableFragmentSizes(rowCount, min)
+  }
+  return sizes
+}
+
+/**
  * How to cut a long matrix into whole tables, each with its own photo head.
- * Chrome does not reprint thead across a break, so each piece is a complete
- * table of at most 12 body rows and at least 3.
+ * Keep one table whenever the estimate fits a page. Otherwise the fewest
+ * near-equal parts that each still fit, every part at least three rows.
  */
 export function matrixChunkSizes(
   rowCount: number,
-  max = SHORT_MATRIX_MAX_ROWS,
+  homeCols = 6,
+  photos = true,
   min = MIN_TABLE_FRAGMENT_ROWS,
 ): number[] {
   if (rowCount <= 0) return []
-  if (rowCount <= max) return [rowCount]
-  const sizes: number[] = []
-  let remaining = rowCount
-  while (remaining > 0) {
-    if (remaining <= max) {
-      if (remaining < min && sizes.length > 0) {
-        const need = min - remaining
-        sizes[sizes.length - 1] -= need
-        sizes.push(remaining + need)
-      } else {
-        sizes.push(remaining)
-      }
-      break
+  if (keepMatrixWhole(homeCols, rowCount, photos)) return [rowCount]
+  const maxParts = Math.max(2, Math.floor(rowCount / min))
+  for (let n = 2; n <= maxParts; n++) {
+    const sizes = evenRowChunks(rowCount, n, min)
+    if (
+      sizes.length === n &&
+      sizes.every((s) => s >= min && keepMatrixWhole(homeCols, s, photos))
+    ) {
+      return sizes
     }
-    sizes.push(max)
-    remaining -= max
   }
-  return sizes
+  return tableFragmentSizes(rowCount, min)
 }

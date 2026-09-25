@@ -173,6 +173,7 @@ describe('print CMA layout', () => {
     expect(css).toMatch(/table \+ \.small[\s\S]*?break-before:\s*avoid/)
     expect(css).toMatch(/\.comp-matrix-wrap:not\(\.is-keep\)[\s\S]*?break-inside:\s*auto/)
     expect(css).toMatch(/\.comp-matrix-wrap\.is-keep[\s\S]*?break-inside:\s*avoid/)
+    expect(css).toMatch(/\.keep-block[\s\S]*?break-inside:\s*avoid/)
     expect(css).toMatch(/tbody\.row-pack[\s\S]*?break-inside:\s*avoid/)
     expect(css).toMatch(/\.page-open[\s\S]*?break-inside:\s*avoid/)
     expect(css).toMatch(/@media print \{[\s\S]*?\.page-closing \{ padding: 16px 28px 20px; \}/)

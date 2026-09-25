@@ -974,13 +974,16 @@ export function renderAskRealizationHtml(a: {
     : `<p class="small">${esc(
         `Single-family sales in ${table.city} over ${period}, from the Oregon Data Share MLS. Each row is the median close over the price that listing first asked, across the sales in that row.`,
       )}</p>`
-  return `<div class="keep-open is-keep"><h3 class="subhead">What the first asking price actually realized</h3>
+  // Chrome ignores break-inside on tbody and on the table itself once a
+  // sibling caption is glued on. Heading + table live in a block div;
+  // caption and reading stay outside so they cannot force a 4/1 split.
+  return `<div class="keep-block"><h3 class="subhead">What the first asking price actually realized</h3>
   <table class="kv realization">
     <colgroup><col class="rz-weeks"/><col class="rz-n"/><col class="rz-mark"/><col class="rz-share"/></colgroup>
     <thead><tr><th>Weeks to an offer</th><th class="n">Sales</th><th class="rz-mark">${esc(
       `${scale.lo}% to ${scale.hi}%`,
     )}</th><th class="n">Share of the first ask</th></tr></thead>
-    <tbody class="row-pack">${rows}</tbody>
+    <tbody>${rows}</tbody>
   </table>
   </div>
   ${caption}

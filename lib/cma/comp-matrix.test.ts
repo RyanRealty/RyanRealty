@@ -130,12 +130,12 @@ describe('renderCompMatrixHtml', () => {
     expect(html).not.toContain('matrix-group-h')
   })
 
-  it('chunks a 19-row closed matrix into whole tables that each carry the photo head', () => {
+  it('keeps a page-fitting closed matrix as one table and only locks short pieces', () => {
     const html = renderCompMatrixHtml(subject, padSales(comp, 5))
     expect(html).toContain('data-row-chunk="0"')
-    expect(html).toContain('data-row-chunk="1"')
-    expect((html.match(/comp-matrix-wrap is-keep/g) ?? []).length).toBeGreaterThanOrEqual(2)
+    expect(html).not.toContain('data-row-chunk="1"')
     expect(html).toMatch(/comp-matrix-wrap is-keep[\s\S]*is-adjustments/)
+    expect(html).toMatch(/<div class="comp-matrix-wrap">[\s\S]*is-closed/)
   })
 
   // The floor is the pricing unit's floor (PRICING_MIN_COMPS = 3), not the

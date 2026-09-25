@@ -40,7 +40,11 @@ import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { closedEntries, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
 import { statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
-import { matrixChunkSizes, packRowHtml } from '@/lib/cma/table-fragments'
+import {
+  keepMatrixUnbreakable,
+  matrixChunkSizes,
+  packRowHtml,
+} from '@/lib/cma/table-fragments'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
@@ -758,16 +762,20 @@ function matrixTable(
     const adjAttr = row.grid === true && row.rule !== true ? ' data-adj="1"' : ''
     return `<tr${factAttr}${cls}${adjAttr}><th>${esc(row.label)}</th>${tds}</tr>`
   })
-  // Chrome does not reprint thead. Each piece is a complete table with the
-  // photo+address head, at most 12 body rows, and break-inside: avoid.
-  const sizes = matrixChunkSizes(rowHtmls.length)
+  // One table when the estimate fits a page. Taller than a page: the fewest
+  // near-equal pieces, each with its own photo head. `is-keep` only when the
+  // piece is short enough that jumping it cannot leave the previous sheet
+  // more than about 40% empty.
+  const photos = opts.heads !== false
+  const sizes = matrixChunkSizes(rowHtmls.length, cols.length, photos)
   let offset = 0
   return sizes
     .map((size, gi) => {
       const slice = rowHtmls.slice(offset, offset + size)
       offset += size
+      const keep = keepMatrixUnbreakable(cols.length, size, photos)
       return `
-  <div class="comp-matrix-wrap is-keep">
+  <div class="comp-matrix-wrap${keep ? ' is-keep' : ''}">
     <table class="kv is-wide comp-matrix is-${esc(family)}${opts.adjustments ? ' is-adjustments' : ''}" data-row-chunk="${gi === 0 ? '0' : '1'}">
       ${colgroup}
       <thead>${head}</thead>

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  evenRowChunks,
+  keepMatrixUnbreakable,
   keepMatrixWhole,
   matrixChunkSizes,
   packRowHtml,
@@ -24,28 +26,56 @@ describe('tableFragmentSizes', () => {
 })
 
 describe('keepMatrixWhole', () => {
-  it('does not force a 19-row two-column matrix whole', () => {
-    expect(keepMatrixWhole(2, 19)).toBe(false)
+  it('keeps a 19-row two-column matrix whole: it fits one sheet', () => {
+    expect(keepMatrixWhole(2, 19)).toBe(true)
   })
 
   it('keeps a 12-row table whole at any width', () => {
     expect(keepMatrixWhole(6, 12)).toBe(true)
   })
 
-  it('lets a six-column 19-row closed matrix split', () => {
-    expect(keepMatrixWhole(6, 19)).toBe(false)
+  it('keeps a six-column 19-row closed matrix whole when the estimate fits', () => {
+    expect(keepMatrixWhole(6, 19)).toBe(true)
+  })
+
+  it('splits a 40-row two-column matrix: taller than a page', () => {
+    expect(keepMatrixWhole(2, 40)).toBe(false)
+  })
+})
+
+describe('keepMatrixUnbreakable', () => {
+  it('does not lock a page-filling 19-row two-column matrix', () => {
+    expect(keepMatrixUnbreakable(2, 19)).toBe(false)
+  })
+
+  it('locks a short piece that cannot leave 40% empty', () => {
+    expect(keepMatrixUnbreakable(2, 6)).toBe(true)
+  })
+})
+
+describe('evenRowChunks', () => {
+  it('splits 19 into 10+9, not 12+7', () => {
+    expect(evenRowChunks(19, 2)).toEqual([10, 9])
   })
 })
 
 describe('matrixChunkSizes', () => {
-  it('keeps 12 or fewer rows as one table', () => {
+  it('keeps a page-fitting 19-row matrix as one table', () => {
+    expect(matrixChunkSizes(19, 2)).toEqual([19])
+    expect(matrixChunkSizes(19, 6)).toEqual([19])
     expect(matrixChunkSizes(12)).toEqual([12])
     expect(matrixChunkSizes(5)).toEqual([5])
   })
 
-  it('splits 19 rows into 12+7, never a 1-row or 2-row piece', () => {
-    expect(matrixChunkSizes(19)).toEqual([12, 7])
-    expect(matrixChunkSizes(13)).toEqual([10, 3])
+  it('splits a taller-than-a-page matrix into the fewest near-equal parts', () => {
+    const sizes = matrixChunkSizes(40, 2)
+    expect(sizes.length).toBeGreaterThanOrEqual(2)
+    expect(sizes.reduce((a, b) => a + b, 0)).toBe(40)
+    expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1)
+    for (const size of sizes) {
+      expect(size).toBeGreaterThanOrEqual(3)
+      expect(keepMatrixWhole(2, size)).toBe(true)
+    }
   })
 })
 

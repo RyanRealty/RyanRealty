@@ -704,6 +704,7 @@ export function cmaSectionStyles(): string {
   table.kv.status-price-table th:first-child { padding-left: 0; text-align: left; }
   table.kv.status-price-table col.sp-stat { width: 22%; }
   table.kv.status-price-table col.sp-fig { width: 26%; }
+  .keep-block[data-status-group] + .keep-block[data-status-group] { margin-top: 8px; }
   table.kv.status-price-table tbody { break-inside: auto; }
   table.kv.status-price-table tr.sp-group th { color: var(--navy); font-weight: 600; padding-top: 8px; border-bottom: 1px solid var(--navy); }
   table.kv.status-price-table .sp-count { font-weight: 400; color: var(--muted); margin-left: 6px; }
@@ -913,31 +914,28 @@ export function cmaSectionStyles(): string {
      note with its strip, the closing signature plus the prepared line,
      a sub-section heading with its intro. Large tables already repeat
      thead and must split. */
-  figure, .pin-map-wrap, .lot-tile, .keep-note, .keep-close, .keep-open {
+  figure, .pin-map-wrap, .lot-tile, .keep-note, .keep-close, .keep-open, .keep-block {
     break-inside: avoid;
     page-break-inside: avoid;
   }
   /* page-contract sets table { break-inside: avoid }. Boards that are
-     taller than a sheet still have to flow. Pre-chunked matrices do not
-     — each piece already carries its photo head and is short enough
-     to stay whole. */
+     taller than a sheet still have to flow. A keep-block is the unit
+     Chrome will hold: do not also lock the table inside it. */
   .worth-strip, .status-price-wrap, .chart-block,
   .figure-block, .status-price,
   .comp-matrix-wrap:not(.is-keep),
-  table:not(.comp-matrix):not(.realization) {
+  table:not(.comp-matrix),
+  .keep-block table {
     break-inside: auto !important;
     page-break-inside: auto !important;
   }
   .comp-matrix-wrap.is-keep,
   .comp-matrix-wrap.is-keep table,
-  table.comp-matrix[data-row-chunk],
-  .keep-open.is-keep,
-  .keep-open.is-keep table {
+  .keep-block {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
-  table.comp-matrix tbody.row-pack,
-  table.realization tbody.row-pack {
+  table.comp-matrix tbody.row-pack {
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -961,6 +959,7 @@ export function cmaSectionStyles(): string {
     page-break-after: avoid;
   }
   .keep-open + .comp-matrix-wrap,
+  .keep-open + .keep-block,
   .keep-open + table,
   .keep-open + .szn,
   .keep-open + .ppsf-status-caption,
@@ -985,16 +984,10 @@ export function cmaSectionStyles(): string {
     break-after: avoid;
     page-break-after: avoid;
   }
-  /* Do not glue matrix/realization thead to the first body: that
-     keeps the head on sheet one and drops it on the continuation. */
-  table.kv.status-price-table thead,
-  table.kv.status-price-table tbody:first-of-type {
-    break-inside: avoid;
-    page-break-inside: avoid;
-    break-after: avoid;
-    page-break-after: avoid;
-  }
-  table.kv.status-price-table tbody:first-of-type {
+  /* Caption after a keep-block stays with that block. Do not glue the
+     following reading paragraph: that is what forced the 4/1 split. */
+  .keep-block + .small,
+  .keep-block + p.small {
     break-before: avoid;
     page-break-before: avoid;
   }

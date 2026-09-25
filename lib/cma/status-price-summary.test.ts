@@ -106,6 +106,8 @@ describe('status price bands', () => {
     expect(html).toContain('<h3 class="subhead">Closed · Active</h3>')
     expect(html).toMatch(/<th class="n" scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/)
     expect(html).toContain('col class="sp-fig"')
+    expect(html).toContain('<div class="keep-block" data-status-group="closed">')
+    expect(html).toContain('<div class="keep-block" data-status-group="active">')
     expect(html).toContain('<tbody data-status="closed">')
     expect(html).toContain('<tbody data-status="active">')
     expect(html).toContain('Closed<span class="sp-count">2 homes</span>')
