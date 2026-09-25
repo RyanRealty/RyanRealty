@@ -387,7 +387,6 @@ next.
 | Every `scripts/check-*.mjs` actually runs somewhere | gated (meta) | `check-gates-wired.mjs` |
 | A ledger row cannot claim "done" without a real mechanism | gated (meta) | `check-program-complete.mjs` |
 | This file cites no dead path, no decommissioned doc, no retired v1 token, and does not regrow | gated | [`check-claude-canon.mjs`](scripts/check-claude-canon.mjs) |
-| No outside report vendor's name in code or docs (Matt 2026-09-25) | gated | `check-no-vendor-name.mjs` |
 | Rendered video deliverables carry an approval marker | gated via commit-msg hook | `check-draft-first.mjs` |
 | First frame of a render is a usable thumbnail | gated in the render pipeline, not CI | `check_first_frame.py` |
 | §0 data accuracy — every number traces to a named source | **prose + reviewer.** No gate can read a deliverable's intent; the per-figure verification trace is the mechanism | — |
