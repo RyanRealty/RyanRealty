@@ -57,7 +57,7 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toContain('$620,000')
     expect(html).toContain('$635,000')
     expect(html).toContain('$619,999')
-    expect(html).toContain('Prepared by Matt Ryan, Ryan Realty')
+    expect(html).toContain('Prepared for the owners of 20513 Byron by Matt Ryan, Ryan Realty')
     expect(html).not.toContain('Prepared for Eric Demello')
     expect(html).not.toContain('Eric Demello')
     expect(html).toContain('here for any questions you have')

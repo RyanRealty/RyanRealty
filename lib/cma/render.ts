@@ -291,6 +291,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
     brokerName: a.broker.displayName,
     generatedAt: dateLong(a.generatedAtIso),
     ownerName: letterOwnerDisplayName(a.client?.name),
+    streetAddress: a.subject.streetAddress,
   })
   // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
   // Low · High · Recommended once. Never sole legacy cover-price.

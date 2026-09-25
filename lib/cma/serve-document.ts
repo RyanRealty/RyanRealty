@@ -13,6 +13,7 @@ import {
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
 import { resolveCmaPrintHtml, resolveDocLinkCtx } from '@/lib/cma/print-html'
+import { applyPreparedLinesToStoredHtml } from '@/lib/cma/letter-privacy'
 import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
 import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
@@ -153,8 +154,12 @@ function withTracker(html: string, extra = ''): string {
   return html.includes('</body>') ? html.replace('</body>', `${tracker}</body>`) : html + tracker
 }
 
-function storedHtmlResult(html: string, origin: string, extra = ''): CmaServeResult {
-  let out = html.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
+function storedHtmlResult(html: string, origin: string, extra = '', street?: string | null): CmaServeResult {
+  let out = applyPreparedLinesToStoredHtml(html, {
+    streetAddress: street,
+    brokerName: 'Matt Ryan',
+  })
+  out = out.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
   out = withTracker(out, `<script src="/rr-cma-doc.js" defer></script>${extra}`)
   return { kind: 'html', status: 200, html: out, headers: CMA_DOC_HEADERS }
 }

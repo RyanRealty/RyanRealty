@@ -66,6 +66,7 @@ ${immersiveInteractionCss()}
         brokerName: a.broker.displayName,
         generatedAt: dateLong(a.generatedAtIso),
         ownerName: letterOwnerDisplayName(a.client?.name),
+        streetAddress: s.streetAddress,
       }),
     )}</div>
     ${immersiveHeroNumberHtml(a)}

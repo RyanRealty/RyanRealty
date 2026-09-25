@@ -14,6 +14,13 @@ import type { CmaBroker } from '@/lib/cma/types'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { likeHomeCreditsForDocument } from '@/lib/cma/like-home-credits-load'
 import { listingMarketForDocument } from '@/lib/cma/listing-window-load'
+import {
+  applyPreparedLinesToStoredHtml,
+  letterOwnerDisplayName,
+  letterStreetAddress,
+} from '@/lib/cma/letter-privacy'
+import { printArgsDistanceFill } from '@/lib/cma/print-overlay'
+import { dateLong } from '@/lib/cma/render-blocks'
 
 export async function resolveCmaPrintHtml(slug: string): Promise<{ html: string; status: string } | null> {
   const source = await getCmaRenderSourceBySlug(slug)
@@ -50,6 +57,7 @@ export async function resolveCmaPrintHtmlFromSource(
       photoUrl: (brokerRow?.photo_url as string | null) ?? null,
     }
     const stored = source.render_args as unknown as RenderCmaArgs
+    const distance = printArgsDistanceFill(stored)
     const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(source.build_summary))
     let mapDataUri: string | null = stored.mapDataUri ?? null
     // The overlay travels with the tile: it is the centre, zoom and pin
@@ -79,6 +87,9 @@ export async function resolveCmaPrintHtmlFromSource(
     const likeHomeCredits = await likeHomeCreditsForDocument(stored, source.status)
     const { html } = renderCmaHtml({
       ...stored,
+      extras: distance.extras,
+      expiredPeers: distance.expiredPeers,
+      bandRivals: distance.bandRivals,
       comps,
       broker,
       mapDataUri,
@@ -89,12 +100,33 @@ export async function resolveCmaPrintHtmlFromSource(
       listingMarket,
       likeHomeCredits,
     })
-    return { html, status: source.status }
+    return {
+      html: applyPreparedLinesToStoredHtml(html, {
+        streetAddress: stored.subject?.streetAddress,
+        brokerName: broker.displayName,
+        generatedAt: stored.generatedAtIso ? dateLong(stored.generatedAtIso) : '',
+        ownerName: letterOwnerDisplayName(stored.client?.name ?? null),
+      }),
+      status: source.status,
+    }
   }
 
   const storedHtml = await getCmaStoredHtmlBySlug(slug)
   if (!storedHtml) return null
-  return { html: storedHtml, status: source.status }
+  let street = ''
+  try {
+    const identity = await getCmaAccessIdentity(slug)
+    street = letterStreetAddress(identity?.subjectAddress)
+  } catch {
+    street = ''
+  }
+  return {
+    html: applyPreparedLinesToStoredHtml(storedHtml, {
+      streetAddress: street,
+      brokerName: 'Matt Ryan',
+    }),
+    status: source.status,
+  }
 }
 
 /**

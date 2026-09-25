@@ -1414,6 +1414,7 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
     preparedClosingLine({
       generatedAt: dateLong(a.generatedAtIso),
       ownerName: letterOwnerDisplayName(a.client?.name ?? null),
+      streetAddress: a.subject.streetAddress,
     }),
   )}</p>
   </div>`
