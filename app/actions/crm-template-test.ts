@@ -14,7 +14,7 @@
  *
  * Compliance gates that DO still apply:
  *   - Access guard (CRM access required)
- *   - quiet-hours check for SMS (8pm to 8am Pacific — Oregon's window)
+ *   - quiet-hours check for SMS (7:55pm to 8am Pacific, inside Oregon's 8pm window)
  *   - A2P 10DLC Twilio gate (sendSms checks a2p campaign status)
  *   - Send path is the same library calls (sendCrmEmail / sendSms) as real sends
  */
@@ -107,9 +107,9 @@ export async function sendTemplateSelfTestAction(
   }
 
   // SMS path. Respect TCPA quiet hours (compliance gate).
-  const { inSmsQuietHours } = await import('@/lib/crm/quiet-hours')
+  const { inSmsQuietHours, smsPauseStartLabel } = await import('@/lib/crm/quiet-hours')
   if (inSmsQuietHours()) {
-    return { ok: false, error: 'Quiet hours (8pm to 8am Pacific, ORS 646.563). Try again after 8am.' }
+    return { ok: false, error: `Quiet hours (${smsPauseStartLabel()} to 8am Pacific, ORS 646.563). Try again after 8am.` }
   }
 
   // Route through the cached DAL reader (not raw .from()) for broker telephony.

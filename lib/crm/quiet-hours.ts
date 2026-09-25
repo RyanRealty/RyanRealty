@@ -38,10 +38,42 @@ export function hourInTimeZone(date: Date, timeZone: string = DEFAULT_SMS_TIMEZO
   return h === 24 ? 0 : h
 }
 
+/**
+ * Sends pause this many minutes before 8pm. Every path asks the quiet-hours
+ * question again right before its Twilio call (76f3a5d09), but a text handed to
+ * Twilio at 7:59:59pm can still reach the phone after 8pm: Twilio queues it and
+ * the carrier hands it on, and Oregon counts the text, not our API call. Five
+ * minutes covers Twilio's queue and the carrier hand-off with room to spare.
+ */
+export const QUIET_END_GUARD_MINUTES = 5
+
+/** Minutes after midnight, local, at which texts pause (7:55pm). */
+export const SMS_PAUSE_START_MINUTE = QUIET_END_HOUR * 60 - QUIET_END_GUARD_MINUTES
+
+/** "7:55pm": when texts pause, for copy that names the window. */
+export function smsPauseStartLabel(): string {
+  const h = Math.floor(SMS_PAUSE_START_MINUTE / 60)
+  const m = SMS_PAUSE_START_MINUTE % 60
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')}${h < 12 ? 'am' : 'pm'}`
+}
+
+/** Minutes after local midnight of `date` in the given IANA timezone. */
+function minuteOfDayInTimeZone(date: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: 'numeric',
+    hourCycle: 'h23',
+    timeZone,
+  }).formatToParts(date)
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? 0) % 24
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? 0)
+  return hour * 60 + minute
+}
+
 /** True when `date` falls inside the quiet window (no SMS may send). */
 export function inSmsQuietHours(date: Date = new Date(), timeZone: string = DEFAULT_SMS_TIMEZONE): boolean {
-  const h = hourInTimeZone(date, timeZone)
-  return h < QUIET_START_HOUR || h >= QUIET_END_HOUR
+  const minute = minuteOfDayInTimeZone(date, timeZone)
+  return minute < QUIET_START_HOUR * 60 || minute >= SMS_PAUSE_START_MINUTE
 }
 
 /** The next instant SMS is allowed (next 8:05am market time), for deferring a send. */

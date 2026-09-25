@@ -35,7 +35,10 @@ const h = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: h.isSuppressed }))
-vi.mock('@/lib/crm/quiet-hours', () => ({ inSmsQuietHours: h.inSmsQuietHours }))
+vi.mock('@/lib/crm/quiet-hours', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/crm/quiet-hours')>()),
+  inSmsQuietHours: h.inSmsQuietHours,
+}))
 vi.mock('@/lib/crm/idempotency', () => ({ withSendIdempotency: h.withSendIdempotency }))
 vi.mock('@/lib/data/crm/getSendTarget', () => ({ getSendTarget: h.getSendTarget }))
 vi.mock('@/lib/crm/merge', () => ({

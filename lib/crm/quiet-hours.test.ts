@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { hourInTimeZone, inSmsQuietHours, nextSmsWindow } from './quiet-hours'
+import {
+  hourInTimeZone,
+  inSmsQuietHours,
+  nextSmsWindow,
+  QUIET_END_GUARD_MINUTES,
+  smsPauseStartLabel,
+} from './quiet-hours'
 
 // Quiet hours: no SMS before 8am or at/after 8PM in the recipient's local time
 // (default America/Los_Angeles). Federal TCPA/TSR would allow until 9pm; Oregon
@@ -19,10 +25,21 @@ describe('quiet-hours (America/Los_Angeles, PDT UTC-7)', () => {
     expect(inSmsQuietHours(new Date('2026-06-24T11:30:00Z'))).toBe(true) // 4:30am PDT
   })
 
-  it('allows the 8am to 8pm window', () => {
+  it('allows 8am up to the 7:55pm pause', () => {
     expect(inSmsQuietHours(new Date('2026-06-24T15:00:00Z'))).toBe(false) // 8am PDT
     expect(inSmsQuietHours(new Date('2026-06-24T19:00:00Z'))).toBe(false) // noon PDT
-    expect(inSmsQuietHours(new Date('2026-06-25T02:59:00Z'))).toBe(false) // 7:59pm PDT
+    expect(inSmsQuietHours(new Date('2026-06-25T02:54:59Z'))).toBe(false) // 7:54:59pm PDT
+  })
+
+  it('pauses five minutes before 8pm, so a text handed to Twilio lands inside the window', () => {
+    // A 7:59:59pm send passed every check and could still reach the phone
+    // after 8pm through Twilio's queue and the carrier (audit, 2026-09-24).
+    expect(QUIET_END_GUARD_MINUTES).toBe(5)
+    expect(inSmsQuietHours(new Date('2026-06-25T02:55:00Z'))).toBe(true) // 7:55pm PDT
+    expect(inSmsQuietHours(new Date('2026-06-25T02:59:59Z'))).toBe(true) // 7:59:59pm PDT
+    expect(inSmsQuietHours(new Date('2026-12-11T03:54:00Z'))).toBe(false) // 7:54pm PST
+    expect(inSmsQuietHours(new Date('2026-12-11T03:55:00Z'))).toBe(true) // 7:55pm PST
+    expect(smsPauseStartLabel()).toBe('7:55pm')
   })
 
   it('blocks at/after 8pm — the Oregon window, not the federal 9pm', () => {

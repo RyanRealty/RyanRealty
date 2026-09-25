@@ -16,13 +16,15 @@
 
 import 'server-only'
 import { isSuppressed, type SendChannel } from '@/lib/crm/suppressions'
-import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { inSmsQuietHours, smsPauseStartLabel } from '@/lib/crm/quiet-hours'
 import { recordSendBlockEvent } from '@/lib/data/crm/recordSendBlockEvent'
 import type { GovernedFailure } from './types'
 
-/** The quiet-hours refusal shown to brokers (kept byte-identical to the composer's). */
-export const QUIET_HOURS_ERROR =
-  'Quiet hours: texts pause 8pm to 8am Pacific (Oregon, ORS 646.563). Call instead, or check "send anyway" to override.'
+/**
+ * The quiet-hours refusal shown to brokers (kept byte-identical to the
+ * composer's). The pause time comes from the rule, so the copy moves with it.
+ */
+export const QUIET_HOURS_ERROR = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, so each one lands before Oregon's 8pm cutoff (ORS 646.563). Call instead, or check "send anyway" to override.`
 
 const HARD_STOP_REASON = 'tag:compliance:hard-stop'
 
