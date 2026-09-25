@@ -44,33 +44,42 @@ async function gmailTotalFor(mailbox: string): Promise<number | null> {
   }
 }
 
+type CoverageBucket = { mailbox: string; status: string; reviewed_count: number; last_reviewed_at: string | null }
+
 /**
  * Per-mailbox coverage: the panel on /admin/closings reads this to show
  * whether every message has been reviewed, not just how many were kept.
  * Gmail's own total is fetched live (a cheap getProfile call per mailbox);
  * everything else comes from tc_mail_reviews / tc_mail_review_cursors.
+ *
+ * tc_mail_reviews holds one row per (mailbox, gmail_id) ever reviewed —
+ * ~73,000 as of 2026-09-24 — well past PostgREST's default row cap, so the
+ * per-mailbox count and status breakdown are read through
+ * `tc_mail_review_coverage()` (migration 20260924060000), a GROUP BY that
+ * runs in Postgres and returns only the summary rows, never the table.
  */
 export async function getMailCoverage(): Promise<MailCoverageRow[]> {
   const sb = createServiceClient()
   const mailboxes = await getCrmMailboxes()
   const [reviewsRes, cursorsRes, totals] = await Promise.all([
-    sb.from('tc_mail_reviews').select('mailbox, status, reviewed_at'),
+    sb.rpc('tc_mail_review_coverage'),
     sb.from('tc_mail_review_cursors').select('mailbox, listed, started_at, finished_at'),
     Promise.all(mailboxes.map((mb) => gmailTotalFor(mb.email))),
   ])
-  const { data: reviews, error: reviewsErr } = reviewsRes
+  const { data: buckets, error: reviewsErr } = reviewsRes as { data: CoverageBucket[] | null; error: { message: string } | null }
   if (reviewsErr && !missingTable(reviewsErr.message)) console.error('[getMailCoverage] reviews', reviewsErr.message)
   const { data: cursors, error: cursorsErr } = cursorsRes
   if (cursorsErr && !missingTable(cursorsErr.message)) console.error('[getMailCoverage] cursors', cursorsErr.message)
 
   const byMailbox = new Map<string, { count: number; byStatus: Record<string, number>; last: string | null }>()
-  for (const r of reviews ?? []) {
-    const m = String(r.mailbox)
+  for (const b of buckets ?? []) {
+    const m = String(b.mailbox)
     const entry = byMailbox.get(m) ?? { count: 0, byStatus: {}, last: null }
-    entry.count++
-    const status = String(r.status)
-    entry.byStatus[status] = (entry.byStatus[status] ?? 0) + 1
-    const ts = r.reviewed_at as string | null
+    const n = Number(b.reviewed_count) || 0
+    entry.count += n
+    const status = String(b.status)
+    entry.byStatus[status] = (entry.byStatus[status] ?? 0) + n
+    const ts = b.last_reviewed_at
     if (ts && (!entry.last || ts > entry.last)) entry.last = ts
     byMailbox.set(m, entry)
   }
