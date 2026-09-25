@@ -26,7 +26,7 @@
  */
 
 import { google } from 'googleapis'
-import { answeredStatus, GOOGLE_AUTH_TIMEOUT_MS, withDeadline } from '@/lib/google-deadline'
+import { answeredStatus, GOOGLE_AUTH_TIMEOUT_MS, withAuthDeadline, withDeadline } from '@/lib/google-deadline'
 
 /** drafts.create requires gmail.modify | gmail.compose | full mail. gmail.modify is the one
  *  that's actually allowlisted for our service account (verified 2026-05-29). */
@@ -91,15 +91,10 @@ function buildJwt(subject: string, scopes: string[] = [GMAIL_DRAFT_SCOPE]) {
       'GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY missing',
     )
   }
-  return new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey.replace(/\\n/g, '\n'),
-    scopes,
-    subject,
-    // google-auth-library gives the token request no timeout of its own, so a
-    // stalled token endpoint would hold it open forever. Gmail calls set their own.
-    transporterOptions: { timeout: GMAIL_AUTH_TIMEOUT_MS },
-  })
+  // The JWT carries the auth deadline; Gmail calls set their own.
+  return new google.auth.JWT(
+    withAuthDeadline({ email: clientEmail, key: privateKey.replace(/\\n/g, '\n'), scopes, subject }),
+  )
 }
 
 /** RFC 2047 encode a header value only if it contains non-ASCII. */

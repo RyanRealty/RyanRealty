@@ -14,7 +14,7 @@
  * the trend reader) does not pay for it.
  */
 
-import { GOOGLE_AUTH_TIMEOUT_MS } from '../../google-deadline'
+import { withAuthDeadline } from '../../google-deadline'
 
 export type GscApiRow = {
   keys: string[]
@@ -69,14 +69,13 @@ export async function createGscQuery(): Promise<GscQueryFn | null> {
   const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
   if (!email || !key) return null
   const { google } = await import('googleapis')
-  const auth = new google.auth.JWT({
-    email,
-    key: key.replace(/\\n/g, '\n'),
-    scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
-    // google-auth-library gives the token POST no timeout of its own: a
-    // stalled token endpoint would hang the first query. Queries set their own.
-    transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
-  })
+  const auth = new google.auth.JWT(
+    withAuthDeadline({
+      email,
+      key: key.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+    }),
+  )
   const sc = google.searchconsole({ version: 'v1', auth, timeout: GSC_REQUEST_TIMEOUT_MS })
   const siteUrl = gscSiteUrl()
   return async (req) => {

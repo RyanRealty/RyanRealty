@@ -1,7 +1,7 @@
 'use server'
 
 import { google } from 'googleapis'
-import { GOOGLE_AUTH_TIMEOUT_MS } from '@/lib/google-deadline'
+import { withAuthDeadline } from '@/lib/google-deadline'
 
 /**
  * Per-request deadline for the 3 parallel Search Analytics queries below. The
@@ -65,15 +65,13 @@ export async function getSearchConsoleSummary(startDate: string, endDate: string
   }
 
   try {
-    const auth = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKeyRaw.replace(/\\n/g, '\n'),
-      scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
-      // google-auth-library gives the token POST no timeout of its own: a
-      // stalled token endpoint would hang all three queries below. Each query
-      // sets its own deadline.
-      transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
-    })
+    const auth = new google.auth.JWT(
+      withAuthDeadline({
+        email: clientEmail,
+        key: privateKeyRaw.replace(/\\n/g, '\n'),
+        scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+      }),
+    )
     const webmasters = google.webmasters({ version: 'v3', auth, timeout: SEARCH_CONSOLE_REQUEST_TIMEOUT_MS })
 
     const [summaryRes, queryRes, pageRes] = await Promise.all([

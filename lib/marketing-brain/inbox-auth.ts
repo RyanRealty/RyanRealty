@@ -22,7 +22,7 @@
  * Locked 2026-05-14.
  */
 
-import { GOOGLE_AUTH_TIMEOUT_MS, withDeadline } from '@/lib/google-deadline'
+import { GOOGLE_AUTH_TIMEOUT_MS, withAuthDeadline, withDeadline } from '@/lib/google-deadline'
 import { google } from 'googleapis'
 import type { OAuth2Client, JWT } from 'google-auth-library'
 
@@ -46,16 +46,16 @@ function buildJwt(scopes: string[]): JWT {
       'GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY missing',
     )
   }
-  return new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey.replace(/\\n/g, '\n'),
-    scopes,
-    subject: MARKETING_INBOX_USER,
-    // google-auth-library gives the token POST no timeout of its own, so a
-    // stalled token endpoint hung the marketing-inbox cron until the platform
-    // killed it (the gap lib/gmail-draft.ts had). tryAuthorize races it too.
-    transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
-  })
+  // A stalled token endpoint hung the marketing-inbox cron until the platform
+  // killed it; the JWT carries the auth deadline and tryAuthorize races it too.
+  return new google.auth.JWT(
+    withAuthDeadline({
+      email: clientEmail,
+      key: privateKey.replace(/\\n/g, '\n'),
+      scopes,
+      subject: MARKETING_INBOX_USER,
+    }),
+  )
 }
 
 async function tryAuthorize(client: JWT): Promise<AuthStatus> {

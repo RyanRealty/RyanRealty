@@ -21,6 +21,17 @@
 export const GOOGLE_AUTH_TIMEOUT_MS = 10_000
 
 /**
+ * JWT options with the auth deadline set: build every service-account JWT as
+ * `new google.auth.JWT(withAuthDeadline({ ... }))`. ci:google-deadline holds
+ * app/ and lib/ to it, because a JWT built without it gives its token POST no
+ * timeout at all (lib/data/brokers/workspace-sync.ts and lib/crawl-probe/gsc.ts
+ * were both missed by hand on 2026-09-25).
+ */
+export function withAuthDeadline<T extends object>(opts: T): T & { transporterOptions: { timeout: number } } {
+  return { ...opts, transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS } }
+}
+
+/**
  * Reject when `work` has not settled within `ms`. The timer is always cleared,
  * so a fast call leaves nothing ticking.
  */

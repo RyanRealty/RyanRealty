@@ -27,7 +27,7 @@ import 'server-only'
 import { google } from 'googleapis'
 import type { JWT } from 'google-auth-library'
 import type { gmailpostmastertools_v1 } from 'googleapis'
-import { GOOGLE_AUTH_TIMEOUT_MS, withDeadline } from '@/lib/google-deadline'
+import { GOOGLE_AUTH_TIMEOUT_MS, withAuthDeadline, withDeadline } from '@/lib/google-deadline'
 
 export const POSTMASTER_DOMAINS = [
   'ryan-realty.com',
@@ -84,16 +84,15 @@ export async function getPostmasterAuth(): Promise<PostmasterAuthStatus> {
       hint: POSTMASTER_SETUP_HINT,
     }
   }
-  const jwt = new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey.replace(/\\n/g, '\n'),
-    scopes: [POSTMASTER_SCOPE],
-    subject: POSTMASTER_IMPERSONATE_USER,
-    // google-auth-library gives the token POST no timeout of its own (same gap
-    // lib/gmail-draft.ts had): a stalled token endpoint would hang this call
-    // forever. The explicit authorize() below races the same deadline.
-    transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
-  })
+  // The JWT carries the auth deadline; the explicit authorize() below races it too.
+  const jwt = new google.auth.JWT(
+    withAuthDeadline({
+      email: clientEmail,
+      key: privateKey.replace(/\\n/g, '\n'),
+      scopes: [POSTMASTER_SCOPE],
+      subject: POSTMASTER_IMPERSONATE_USER,
+    }),
+  )
   try {
     await withDeadline(jwt.authorize(), GOOGLE_AUTH_TIMEOUT_MS, 'Postmaster auth')
     return { ok: true, client: jwt, error: null }

@@ -13,7 +13,7 @@
  */
 
 import { google } from 'googleapis'
-import { GOOGLE_AUTH_TIMEOUT_MS } from '@/lib/google-deadline'
+import { withAuthDeadline } from '@/lib/google-deadline'
 
 const READ_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly'
 const WRITE_SCOPE = 'https://www.googleapis.com/auth/calendar'
@@ -41,15 +41,9 @@ function getServiceAccountAuth(impersonateEmail: string, write = false) {
   const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n')
   if (!email || !key) throw new Error('Google service account credentials not configured')
 
-  return new google.auth.JWT({
-    email,
-    key,
-    scopes: [write ? WRITE_SCOPE : READ_SCOPE],
-    subject: impersonateEmail,
-    // google-auth-library gives the token POST no timeout of its own: a stalled
-    // token endpoint would hang whichever Calendar call fetches the token.
-    transporterOptions: { timeout: GOOGLE_AUTH_TIMEOUT_MS },
-  })
+  return new google.auth.JWT(
+    withAuthDeadline({ email, key, scopes: [write ? WRITE_SCOPE : READ_SCOPE], subject: impersonateEmail }),
+  )
 }
 
 export async function getGcalEvents(
