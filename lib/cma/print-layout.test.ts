@@ -152,6 +152,20 @@ describe('print CMA layout', () => {
     expect(css).toMatch(/\.page-flyer/)
   })
 
+  it('does not force a blank trailing page after the closing section', () => {
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(/\.page:last-child[\s\S]*?min-height:\s*0/)
+    expect(css).toMatch(/\.page-closing[\s\S]*?break-after:\s*auto/)
+    expect(css).toMatch(/\.page-closing[\s\S]*?padding:\s*32px 36px 40px/)
+  })
+
+  it('keeps figure and table captions with their figure', () => {
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(/\.pin-map-wrap[\s\S]*?break-inside:\s*avoid/)
+    expect(css).toMatch(/\.chart-read[\s\S]*?break-after:\s*avoid/)
+    expect(css).toMatch(/figcaption[\s\S]*?break-after:\s*avoid/)
+  })
+
   it('keeps the wider market on one sheet', () => {
     const pages = printWiderMarketPages({
       subject,

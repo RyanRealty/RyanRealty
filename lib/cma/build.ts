@@ -609,7 +609,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       attachSellerNet(p, set)
       if (p && exclusivePocket) {
         p.notes.unshift(
-          `These sales are the exclusive pocket. Date adjustment does not walk the ${subject.city} city index — that series includes tracts already excluded from this set. Each sale stays on its sold and last-ask price — size and story class do not adjust.`,
+          `These sales are the exclusive pocket. Date adjustment does not walk the ${subject.city} city index. That series includes tracts already excluded from this set. Each sale stays on its sold and last-ask price. Size and story class do not adjust.`,
         )
       } else if (p && usePath) {
         p.notes.unshift(

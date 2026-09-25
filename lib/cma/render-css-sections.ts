@@ -909,6 +909,19 @@ export function cmaSectionStyles(): string {
   }
   h2.section, h3.subhead, h4.subhead { break-after: avoid; page-break-after: avoid; }
   table.comps tr, table.kv tr { break-inside: avoid; page-break-inside: avoid; }
+  /* Keep a figure or table with the sentence that reads it. A caption that
+     spills onto the next sheet sits above that sheet's header. */
+  figure, .figure-block, .chart-block, .pin-map-wrap, .lot-tile, .comp-matrix-wrap,
+  .worth-strip, .status-price-wrap {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .chart-read, figcaption, caption, .ppsf-status-caption, h4.subhead, .matrix-group-h {
+    break-after: avoid;
+    page-break-after: avoid;
+    break-before: avoid;
+    page-break-before: avoid;
+  }
 
 `
 }
