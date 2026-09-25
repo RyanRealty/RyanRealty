@@ -201,6 +201,7 @@ describe('push-with-gates.sh refuses a session branch that tracks origin/main', 
     git(gWork, 'config', 'user.name', 'test')
     mkdirSync(join(gWork, 'scripts'))
     copyFileSync(PUSH_SCRIPT, join(gWork, 'scripts', 'push-with-gates.sh'))
+    copyFileSync(join(repoRoot, 'scripts', 'push-retry.sh'), join(gWork, 'scripts', 'push-retry.sh'))
     copyFileSync(STAMP_SCRIPT, join(gWork, 'scripts', 'stamp-gates-marker.mjs'))
     writeFileSync(join(gWork, 'stub-ok.cjs'), "console.log('stub OK')\n")
     const scripts = Object.fromEntries(
@@ -234,10 +235,53 @@ describe('push-with-gates.sh refuses a session branch that tracks origin/main', 
       const { status, output } = runPushScript(gWork)
 
       expect(status).toBe(5)
-      expect(output).toMatch(/claude\/restarted tracks origin\/main/)
+      expect(output).toMatch(/claude\/restarted tracks main/)
       expect(output).toMatch(/git push -u origin claude\/restarted/)
       expect(output).not.toMatch(/ci:gates static chain/)
       expect(git(gOrigin, 'rev-parse', 'main')).toBe(before)
+    },
+    120_000,
+  )
+
+  function runWith(cwd, script, args = []) {
+    const r = spawnSync('sh', [script, ...args], {
+      cwd,
+      encoding: 'utf8',
+      env: { ...cleanEnv, PUSH_GATES_IN_PLACE: '1' },
+    })
+    return { status: r.status, output: `${r.stdout}\n${r.stderr}` }
+  }
+
+  it(
+    'refuses it too when the only arguments are options, which still push to the upstream',
+    () => {
+      git(gWork, 'checkout', 'claude/restarted')
+      const before = git(gOrigin, 'rev-parse', 'main')
+      const { status, output } = runWith(gWork, 'scripts/push-with-gates.sh', ['--force-with-lease'])
+
+      expect(status).toBe(5)
+      expect(output).toMatch(/tracks main/)
+      expect(git(gOrigin, 'rev-parse', 'main')).toBe(before)
+    },
+    120_000,
+  )
+
+  it(
+    'refuses a branch whose merge ref is main even when origin/main is not fetched',
+    () => {
+      git(gWork, 'checkout', '-b', 'claude/noref')
+      git(gWork, 'config', 'branch.claude/noref.remote', 'origin')
+      git(gWork, 'config', 'branch.claude/noref.merge', 'refs/heads/main')
+      git(gWork, 'update-ref', '-d', 'refs/remotes/origin/main')
+      const before = git(gOrigin, 'rev-parse', 'main')
+      try {
+        const { status, output } = runPushScript(gWork)
+        expect(status).toBe(5)
+        expect(output).toMatch(/claude\/noref tracks main/)
+        expect(git(gOrigin, 'rev-parse', 'main')).toBe(before)
+      } finally {
+        git(gWork, 'fetch', 'origin')
+      }
     },
     120_000,
   )
@@ -255,6 +299,36 @@ describe('push-with-gates.sh refuses a session branch that tracks origin/main', 
       expect(output).toMatch(/git push OK/)
       expect(status).toBe(0)
       expect(git(gOrigin, 'rev-parse', 'claude/own')).toBe(git(gWork, 'rev-parse', 'HEAD'))
+      expect(git(gOrigin, 'rev-parse', 'main')).toBe(mainBefore)
+    },
+    120_000,
+  )
+
+  it(
+    'on a race, push-retry rebases a session branch onto its own remote, not main',
+    () => {
+      // Another checkout pushed to origin/claude/own after this one last fetched.
+      const other = join(gBase, 'other')
+      git(gBase, 'clone', gOrigin, other)
+      git(other, 'config', 'user.email', 'test@test.invalid')
+      git(other, 'config', 'user.name', 'test')
+      git(other, 'checkout', 'claude/own')
+      writeFileSync(join(other, 'other.txt'), 'from another checkout\n')
+      git(other, 'add', '.')
+      git(other, 'commit', '-m', 'other work')
+      git(other, 'push', 'origin', 'claude/own')
+
+      git(gWork, 'checkout', 'claude/own')
+      commitOn('claude/own', 'local work after the race')
+      const mainBefore = git(gOrigin, 'rev-parse', 'main')
+      const { status, output } = runWith(gWork, 'scripts/push-retry.sh')
+
+      expect(output).toMatch(/origin\/claude\/own moved during verification/)
+      expect(output).not.toMatch(/origin\/main moved/)
+      expect(output).toMatch(/git push OK/)
+      expect(status).toBe(0)
+      expect(git(gOrigin, 'rev-parse', 'claude/own')).toBe(git(gWork, 'rev-parse', 'HEAD'))
+      expect(git(gWork, 'log', '--format=%s', '-3')).toMatch(/other work/)
       expect(git(gOrigin, 'rev-parse', 'main')).toBe(mainBefore)
     },
     120_000,
