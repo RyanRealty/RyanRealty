@@ -145,6 +145,14 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(html).toContain('data-status="pending"')
     expect(html).toContain('data-status="active"')
     expect(html).toContain('data-status="closed"')
+    // Matt 2026-09-24, FlexMLS style: List, Sold and $/sqft across the top,
+    // the four figures down each status, one table (the $/sqft board folded in).
+    expect(html).toMatch(
+      /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
+    )
+    expect(html.match(/<tbody data-status=/g)).toHaveLength(3)
+    expect(html.match(/<th scope="row">Median<\/th>/g)).toHaveLength(3)
+    expect(html).not.toContain('data-ppsf-status="board"')
   })
 
   it('contract: recommend-low-high-recommended-once', () => {

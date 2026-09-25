@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { queuedRowAfterRedecide, worthFullRead } from './mail-index'
 import {
   bareStreetName,
   categorizeMail,
+  dealMaybeOpenAt,
   dealOpenAt,
   decideMailFiling,
   isHouseAddress,
@@ -18,6 +20,13 @@ import {
   propertyInSubject,
   streetAddressesIn,
   filesToOpenFromQueue,
+  isComparablesReport,
+  listedAddresses,
+  isTransactionFormAttachment,
+  personNameMatches,
+  personNamedIn,
+  platformAliasNamesDeal,
+  stripQuotedHistory,
   type DealCycleFacts,
   type DealFacts,
   type MailFacts,
@@ -308,8 +317,12 @@ describe('decideMailFiling: regressions from the live misfile audit (2026-09-23)
     const d = decide(
       mail({ from: ['workspace-noreply@google.com'], to: ['admin@ryan-realty.com'], subject: '[Notice] Possible unresolved security risks in your Admin Console' }),
     )
-    expect(d.status).toBe('not_deal')
+    // v4: "[Notice]" is a system notice, so it stops at rule 0 (bulk) instead of reaching "no deal evidence".
+    expect(d.status).toBe('bulk')
     expect(d.candidates).toEqual([])
+    const code = decide(mail({ from: ['workspace-noreply@google.com'], to: ['admin@ryan-realty.com'], subject: 'Your sign-in code' }))
+    expect(code.status).toBe('not_deal')
+    expect(code.candidates).toEqual([])
     const crm = decide(mail({ from: ['marketing@ryan-realty.com'], to: ['matt@ryan-realty.com'], subject: 'Re: Test: CRM email delivery + tracking check' }))
     expect(crm.status).toBe('not_deal')
   })
@@ -638,5 +651,1278 @@ describe('opening files from queued mail', () => {
 
   it('an offer alone never opens a file', () => {
     expect(filesToOpenFromQueue([q('1', 'Offer to purchase 909 Delaware', 'offer'), q('2', 'Re: Offer to purchase 909 Delaware', 'offer')])).toEqual([])
+  })
+})
+
+// ── v4: the 2026-09-24 read-only audit of ~1,500 real messages ───────────────
+// Every case below is shaped like a real message the v3 rules mishandled. People
+// are placeholders; addresses, MLS and escrow numbers are the files' own.
+
+const oldBend: DealFacts = {
+  dealId: 'old-bend',
+  address: '64350 Old Bend Redmond Hwy, Bend, OR, 97703',
+  city: 'Bend',
+  stage: 'closed',
+  cycles: [
+    cycle({ id: 'ob-listing', kind: 'listing', status: 'Transaction', mlsNumber: '220205567' }),
+    cycle({
+      id: 'ob-closed',
+      status: 'Closed',
+      mlsNumber: '220205567',
+      escrowNumber: 'WT0278291',
+      acceptanceDate: '2025-08-27',
+      closeDate: '2025-09-25',
+      buyers: ['Jordan Secondcycle'],
+    }),
+    cycle({
+      id: 'ob-canceled',
+      status: 'Canceled/App',
+      mlsNumber: '220205567',
+      acceptanceDate: '2025-08-06',
+      deadDate: '2025-08-24',
+      buyers: ['Avery Firstcycle', 'Casey Firstcycle'],
+    }),
+  ],
+  partyEmails: [],
+  contactEmails: ['tonya.moore@westerntitle.com'],
+}
+
+const ordway: DealFacts = {
+  dealId: 'ordway',
+  address: '2732 Ordway Avenue, Bend, OR, 97703',
+  city: 'Bend',
+  stage: 'closed',
+  cycles: [cycle({ id: 'or-sale', status: 'Closed', mlsNumber: '220201089', escrowNumber: 'WT0274211', acceptanceDate: '2025-05-08', closeDate: '2025-06-09' })],
+  partyEmails: [],
+  contactEmails: ['otheragent@garnerlike.com', 'titleofficer@westerntitle.com'],
+}
+
+const nordic: DealFacts = {
+  dealId: 'nordic',
+  address: '2680 NW Nordic Avenue, Bend, OR, 97703',
+  city: 'Bend',
+  stage: 'pending',
+  cycles: [cycle({ id: 'no-sale', status: 'Pending', mlsNumber: '220184043', acceptanceDate: '2026-08-20' })],
+  partyEmails: [],
+  contactEmails: ['transactions@bridgetownfiles.com'],
+  subdivisions: ['Valhalla Heights'],
+}
+
+const jacklight: DealFacts = {
+  dealId: 'jacklight',
+  address: '20473 Jacklight Lane, Bend, OR, 97702',
+  city: 'Bend',
+  stage: 'pending',
+  cycles: [cycle({ id: 'ja-sale', status: 'Pending', mlsNumber: '220198987', acceptanceDate: '2026-08-15' })],
+  partyEmails: [],
+  contactEmails: ['otherofficer@westerntitle.com'],
+  // The other agent is on the file by name only: SkySlope carried no email for her.
+  contactNames: ['Lee Listside'],
+}
+
+const V4_DEALS = [...DEALS, oldBend, ordway, nordic, jacklight]
+
+const decide4 = (m: MailFacts, thread: { dealId: string; method: string } | null = null, deals: readonly DealFacts[] = V4_DEALS) =>
+  decideMailFiling({ facts: m, deals, thread })
+
+// A title officer's signature: two office addresses, phones, emails. It repeats in
+// every quoted layer of every reply. The addresses are placeholders; the shape is real.
+const TITLE_SIGNATURE = [
+  'Pat Officer',
+  'Senior Escrow Officer',
+  'pat.officer@westerntitle.com<mailto:pat.officer@westerntitle.com>',
+  'T: 541-555-0100<tel:541-555-0100>',
+  '',
+  'Western Title & Escrow Company',
+  '100 SW Example Ave, Suite 100',
+  'Bend, OR 97702',
+  '',
+  '200 SW 9th St',
+  'Redmond, OR 97756',
+].join('\n')
+
+describe('v4 defect 1: a title signature or an "also viewed" list is not a digest', () => {
+  it('a title reply naming one deal in its subject files there, whatever its signature lists (Western Title: 122 dropped as bulk)', () => {
+    const d = decide4(
+      mail({
+        from: ['tonya.moore@westerntitle.com'],
+        to: ['transactions@bridgetownfiles.com'],
+        cc: ['matt@ryan-realty.com'],
+        sentAt: '2026-05-15T17:00:00Z',
+        subject: "Re: Congratulations! You're Under Contract! | 20702 Beaumont Drive",
+        body: [
+          'Great thank you! We will add you to the file.',
+          '',
+          TITLE_SIGNATURE,
+          '',
+          'On May 14, 2026, at 2:34 PM, TC <transactions@bridgetownfiles.com> wrote:',
+          'Important Contacts:',
+          'Escrow: Pat Officer, Western Title & Escrow',
+          '100 SW Example Ave, Ste. 100, Bend, OR 97702',
+          'Email: pat.officer@westerntitle.com, Phone: (541) 555-0100',
+          '',
+          TITLE_SIGNATURE,
+        ].join('\n'),
+        attachments: [{ name: 'Sale Agreement.pdf' }, { name: "Counter- Seller's.pdf" }],
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+  })
+
+  it('letterhead addresses never count toward the three, even when the subject names no deal', () => {
+    expect(listedAddresses('RE: closing docs', `Received for 20702 Beaumont Drive, thank you.\n\n${TITLE_SIGNATURE}`)).toEqual(['20702 beaumont'])
+    const d = decide4(
+      mail({
+        from: ['tonya.moore@westerntitle.com'],
+        sentAt: '2026-05-20T17:00:00Z',
+        subject: 'RE: closing docs',
+        body: `Received the signed docs for 20702 Beaumont Drive, thank you.\n\n${TITLE_SIGNATURE}`,
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+  })
+
+  it('a Flexmls activity report for one of our MLS numbers files there, not dropped for its "also viewed" homes', () => {
+    const facts = mail({
+      from: ['listingupdates@flexmail.flexmls.com'],
+      subject: 'Activity Report for MLS# 220215931 - 19496 Tumalo Reservoir Road, Bend, OR',
+      body:
+        'Activity for 19496 Tumalo Reservoir Road, Bend, OR 97703. ListingId: 220215931. List Price: $1,095,000. ' +
+        'Also viewed: 123 Pine Street $899,000 3 bd; 456 Oak Avenue $1,150,000 4 bd; 789 Elm Drive $975,000 3 bd.',
+    })
+    const d = decide4(facts)
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('tumalo')
+    expect(d.method).toBe('mls')
+    // Bulk headers do not change it: exactly one deal's MLS number in the subject lifts the noise.
+    const bulk = decide4({ ...facts, bulkHeaders: true })
+    expect(bulk.status).toBe('filed')
+    expect(bulk.dealId).toBe('tumalo')
+  })
+
+  it('real digests stay noise: a hot sheet naming one of ours in its body, and one with a phone on every line', () => {
+    expect(
+      decide4(
+        mail({
+          subject: 'Your daily hot sheet',
+          body: '19496 Tumalo Reservoir Road $1,095,000 3 bd. 123 Pine Street $899,000 3 bd. 456 Oak Avenue $1,150,000 4 bd.',
+        }),
+      ).status,
+    ).toBe('bulk')
+    expect(
+      decide4(
+        mail({
+          subject: 'Weekend showings',
+          body: '123 Pine Street $525,000 host 541-555-0101\n456 Oak Avenue $615,000 host 541-555-0102\n789 Elm Drive $700,000 host 541-555-0103',
+        }),
+      ).status,
+    ).toBe('bulk')
+  })
+
+  it('bulk mail naming our full address in its subject is read by the rules, not filed on that alone (a vendor pitch)', () => {
+    const d = decide4(
+      mail({ from: ['listings@vendorpitch.example'], subject: 'Get more buyers for 5663 Impala Avenue', body: 'Boost your listing today.', bulkHeaders: true }),
+    )
+    expect(d.status).toBe('not_deal')
+    expect(d.dealId).toBeNull()
+  })
+})
+
+describe('v4 defect 2: e-sign envelopes are not listing alerts', () => {
+  const addenda = [{ name: 'Addendum_to_Sale_Agreement_2_-_002_OREF__1_.pdf' }, { name: 'Addendum_to_Sale_Agreement_2A_-_002_OREF.pdf' }]
+
+  it('"Envelope completed: Appraisal Price Change" and "Price Change Form" are e-sign notices', () => {
+    const cat = (subject: string, attachments: { name: string; executionState?: string }[] = []) =>
+      categorizeMail({ subject, body: 'Your document has been completed.', attachments, autoReply: false, fromHouseSystem: false })
+    expect(cat('Envelope completed: Appraisal Price Change', addenda)).toBe('signing_notice')
+    expect(cat('Envelope completed: Price Change Form', [{ name: 'Change_Form_for_Status__Date__Price_and_Other_Miscellaneous_Changes_-_ODS.pdf' }])).toBe(
+      'signing_notice',
+    )
+    // An executed transaction form attached is never a listing alert.
+    expect(cat('Price change', [{ name: 'Addendum_to_Sale_Agreement_2_-_002_OREF.pdf', executionState: 'fully_executed' }])).toBe('addendum')
+    // Real listing alerts still are.
+    expect(cat('Price drop on 123 Pine Street')).toBe('listing_alert')
+  })
+
+  it('an addendum to the sale agreement is an addendum, not an offer', () => {
+    expect(categorizeMail({ subject: 'see attached', body: '', attachments: addenda, autoReply: false, fromHouseSystem: false })).toBe('addendum')
+  })
+
+  it('the completed envelope files to the deal its documents name', () => {
+    const d = decide4(
+      mail({
+        from: ['noreply@skyslope.com'],
+        sentAt: '2026-05-25T04:58:00Z',
+        subject: 'Envelope completed: Appraisal Price Change',
+        body: 'Your document has been completed.',
+        attachments: addenda.map((a) => ({ ...a, text: 'ADDENDUM TO SALE AGREEMENT. Property: 20702 Beaumont Drive, Bend, OR 97701. Price change.' })),
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+    expect(d.category).toBe('signing_notice')
+  })
+})
+
+describe('v4 defect 3: a full address from a stranger, in ordinary mail, is not a filing', () => {
+  it('vendor pitches naming our listing file nowhere (virtual staging, magazine ad sales)', () => {
+    expect(
+      decide4(
+        mail({
+          from: ['hello@stagingvendor.example'],
+          subject: 'Quick idea for 5663 Impala Avenue',
+          body: 'Hi, I saw your listing at 5663 Impala Avenue. Virtual staging helps buyers picture the home.',
+        }),
+      ).status,
+    ).toBe('not_deal')
+    expect(decide4(mail({ from: ['ads@homemagazine.example'], subject: 'Feature 20702 Beaumont Drive in our fall issue', body: 'Premium placement for your listing.' })).status).toBe(
+      'not_deal',
+    )
+  })
+
+  it("another agent arranging a showing on our listing files there, though they are on no file yet (198c8daf351e24f1)", () => {
+    const d = decide4(
+      mail({
+        from: ['buyersagent@gmail.com'],
+        sentAt: '2026-05-20T17:00:00Z',
+        subject: 'Showing on 20702 Beaumont Drive',
+        body: 'Hi Matt, my clients would like to switch from 12:00 noon to 1:00 today. Would that work for the sellers?',
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+  })
+
+  it('the property\'s own records and documents still file from people not yet on the file (HOA documents, service invoices, a termination question)', () => {
+    const hoa = decide4(
+      mail({ from: ['matt@ryan-realty.com'], to: ['tom@buyerstrust.example'], sentAt: '2026-05-20T17:00:00Z', subject: '20702 Beaumont Drive HOA Documents', body: 'Let me know if you can open these.' }),
+    )
+    expect(hoa.dealId).toBe('beaumont')
+    const service = decide4(
+      mail({
+        from: ['office@heatingco.example'],
+        to: ['rebeccapeterson@ryan-realty.com'],
+        sentAt: '2026-05-20T17:00:00Z',
+        subject: '20702 Beaumont Drive Service Records',
+        body: 'Here are all of the service invoices I have for this address.',
+        attachments: [{ name: 'Service Invoice.pdf' }],
+      }),
+    )
+    expect(service.dealId).toBe('beaumont')
+    const legal = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['legal@realtorsassociation.example'],
+        sentAt: '2026-05-20T17:00:00Z',
+        subject: 'Re: Question Regarding Contract Termination',
+        body: 'Thanks for your insight on the contract for 20702 Beaumont Drive.',
+      }),
+    )
+    expect(legal.dealId).toBe('beaumont')
+  })
+
+  it('inspections by their kind are inspection mail: a septic evaluation report, a radon test (from people on no file)', () => {
+    const septic = decide4(
+      mail({
+        from: ['office@septicservice.example'],
+        sentAt: '2026-05-20T17:00:00Z',
+        subject: 'Report for 20702 Beaumont Drive',
+        body: 'Payment received, here is the report.',
+        attachments: [{ name: 'ESER for 20702 Beaumont Drive.pdf' }],
+      }),
+    )
+    expect(septic.category).toBe('inspection')
+    expect(septic.dealId).toBe('beaumont')
+    const radon = decide4(
+      mail({ from: ['inspector@inspections.example'], sentAt: '2026-05-18T17:00:00Z', subject: 'Invitation: Radon equipment pick up', body: 'Location: 20702 Beaumont Drive, Bend, OR 97701' }),
+    )
+    expect(radon.category).toBe('inspection')
+    expect(radon.dealId).toBe('beaumont')
+  })
+
+  it("our own prospecting blast to people on no file is not deal mail (Rebecca's NEW LISTING letters)", () => {
+    const d = decide4(
+      mail({
+        from: ['rebeccapeterson@ryan-realty.com'],
+        to: ['neighbor@gmail.com'],
+        subject: 'New NWX Listing - Rare Backyard',
+        body: "I'm excited to announce a new listing at 20702 Beaumont Drive in our community. Call today!",
+      }),
+    )
+    expect(d.status).toBe('not_deal')
+  })
+
+  it('the same outbound mail to someone on that file does file (the other agent)', () => {
+    const d = decide4(
+      mail({ from: ['matt@ryan-realty.com'], to: ['realestatetiffany@gmail.com'], sentAt: '2026-05-20T17:00:00Z', subject: '20702 Beaumont Drive photos', body: 'Here they are.' }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+  })
+
+  it('a new counterparty writing transaction mail about the property still files (appraiser, escrow officer, lender)', () => {
+    const appraiser = decide4(
+      mail({ from: ['office@newappraiser.example'], sentAt: '2026-05-20T17:00:00Z', subject: '20702 Beaumont Drive', body: 'We have scheduled the appraisal inspection for Tuesday.' }),
+    )
+    expect(appraiser.status).toBe('filed')
+    expect(appraiser.dealId).toBe('beaumont')
+    const escrow = decide4(mail({ from: ['new.officer@westerntitle.com'], sentAt: '2026-05-20T17:00:00Z', subject: 'Question on 20702 Beaumont Drive', body: 'Quick question.' }))
+    expect(escrow.status).toBe('filed')
+    expect(escrow.dealId).toBe('beaumont')
+    const lender = decide4(
+      mail({ from: ['loans@newlender.example'], sentAt: '2026-05-20T17:00:00Z', subject: 'Update: 20702 Beaumont Drive', body: 'Good news, we are clear to close.' }),
+    )
+    expect(lender.status).toBe('filed')
+    expect(lender.dealId).toBe('beaumont')
+  })
+})
+
+describe('v4 defect 4: the body says what the email is about', () => {
+  const cat = (body: string, bulkHeaders = false) =>
+    categorizeMail({ subject: 'Re: 61260 Sunflower Lane', body, attachments: [], autoReply: false, fromHouseSystem: false, bulkHeaders })
+
+  it('reads the step from the body when the subject and file names are silent', () => {
+    expect(cat('We wanted to allow extra time for your clients to decide on our counter offfer.')).toBe('counter')
+    expect(cat('The repair addendum is attached for signatures.')).toBe('addendum')
+    expect(cat('The earnest money was received today.')).toBe('escrow_title')
+  })
+
+  it('quoted history never decides: it was about something else, earlier', () => {
+    expect(cat('Sounds good, talk soon.\n\nOn Thu, Feb 5, 2026 at 9:01 PM Agent <\nagent@example.com> wrote:\n\n> our counter offer is attached')).toBe('general')
+    expect(cat('Sounds good.\n> the counter offer is attached')).toBe('general')
+    expect(cat('Thanks!\n\nFrom: Agent <agent@example.com>\nSent: Thursday, October 16, 2025 3:03 PM\nSubject: counter offer')).toBe('general')
+  })
+
+  it('a forwarded message is kept: the broker forwarded it on purpose', () => {
+    expect(stripQuotedHistory('Made a few tweaks.\n\n---------- Forwarded message ---------\nFrom: A <a@x.com>\nDate: Fri\n\nthe counter offer')).toContain(
+      'counter offer',
+    )
+  })
+
+  it('a title company signature is not escrow mail: "Western Title & Escrow Company" never decides', () => {
+    expect(cat(`You are invited to our holiday event!\n\n${TITLE_SIGNATURE}`)).toBe('general')
+    expect(cat('Escrow number WT0291454 is open.')).toBe('escrow_title')
+    // An invitation to many, from a title officer on many files, with one client on it, files nowhere.
+    const d = decide4(
+      mail({
+        from: ['tonya.moore@westerntitle.com'],
+        to: ['transactions@bridgetownfiles.com', 'otherofficer@westerntitle.com', 'guest.one@example.com'],
+        sentAt: '2026-09-01T17:00:00Z',
+        subject: 'Western Title Redmond Holiday Event',
+        body: `Join us for our holiday event!\n\n${TITLE_SIGNATURE}`,
+        attachments: [{ name: 'Holiday Flyer.pdf' }],
+      }),
+    )
+    expect(d.dealId).toBeNull()
+  })
+
+  it('pricing talk to a prospective seller is not a transaction ("your purchase price", "for appraisal purposes")', () => {
+    expect(cat('Applying this decline to your purchase price gives an estimate. It is important to nail the pricing for appraisal purposes.')).toBe('general')
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['prospect@example.com'],
+        subject: '22993 Ghost Tree Ln',
+        body: 'Attached is the seller report. Applying this decline to your purchase price gives an estimate. It is important to nail the pricing for appraisal purposes.',
+        attachments: [{ name: '22993_Ghost_Tree_Ln_Seller_Report.pdf' }],
+      }),
+    )
+    expect(d.status).toBe('not_deal')
+  })
+
+  it('marketing mail never reads as a transaction from its body', () => {
+    expect(cat('Lock in your closing date and lower your earnest money! Unsubscribe here.')).toBe('general')
+    expect(cat('Lock in your closing date and lower your earnest money!', true)).toBe('general')
+    const d = decide4(
+      mail({
+        from: ['promo@lenderads.example'],
+        subject: 'Rates for buyers of 20702 Beaumont Drive',
+        body: 'Lock in your closing date and lower your earnest money! Unsubscribe here.',
+      }),
+    )
+    expect(d.status).toBe('not_deal')
+  })
+
+  it('transaction mail for a property with no file is kept when only the body says so (61260 Sunflower counter)', () => {
+    const d = decide4(
+      mail({
+        from: ['otheragent@gmail.com'],
+        to: ['rebeccapeterson@ryan-realty.com'],
+        subject: 'Re: 61260 Sunflower Lane',
+        body: 'We will be leaving this afternoon and I wanted to allow extra time for your clients to decide on our counter offfer.',
+      }),
+    )
+    expect(d.status).toBe('unfiled_transaction')
+    expect(d.category).toBe('counter')
+    expect(d.propertyHint).toBe('61260 sunflower')
+  })
+})
+
+describe('v4 defect 5: a comps report is not about its comps', () => {
+  const cmaText =
+    'Comparable Market Analysis 19496 Tumalo Reservoir Road, Bend, OR, 97703 Prepared for the sellers. ' +
+    'CMA 19496 Tumalo Reservoir Road , Bend OR 97703 Subject 19496 Tumalo Reservoir Road , Bend OR 97703 ' +
+    '1 65130 Highland Road , Bend OR 97703 220198308 Closed 5 64350 Old Bend Redmond Hwy , Bend OR 97703 220205567 Closed ' +
+    'Subject 19496 Tumalo Reservoir Road Bend OR 97703 64350 Old Bend Redmond Hwy Bend OR'
+
+  it('an email to our sellers with a comps PDF files to their deal, never to the sold comp that is also our file', () => {
+    const tumaloSellers: DealFacts = { ...tumalo, partyEmails: ['seller.one@example.com'] }
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['seller.one@example.com'],
+        sentAt: '2026-01-20T22:47:00Z',
+        subject: "Today's Call at 530",
+        body: 'Looking forward to the call.',
+        attachments: [{ name: '19496 TRR Comps.pdf', text: cmaText }],
+      }),
+      null,
+      [...V4_DEALS.filter((x) => x.dealId !== 'tumalo'), tumaloSellers],
+    )
+    expect(d.dealId).toBe('tumalo')
+    expect(d.candidates.map((c) => c.dealId)).not.toContain('old-bend')
+  })
+
+  it('knows a comps report by its name or its first page', () => {
+    expect(isComparablesReport({ name: '820 comps.pdf' })).toBe(true)
+    expect(isComparablesReport({ name: 'report.pdf', text: cmaText })).toBe(true)
+    expect(isComparablesReport({ name: 'Sale_Agreement.pdf', text: 'RESIDENTIAL REAL ESTATE SALE AGREEMENT' })).toBe(false)
+  })
+
+  it('a CMA for a property with no file, listing our closed deal as a comp, files nowhere', () => {
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['prospect@example.com'],
+        sentAt: '2025-10-01T17:00:00Z',
+        subject: 'Your home value',
+        attachments: [
+          {
+            name: 'CMA.pdf',
+            text: 'Comparative Market Analysis 123 Pine Street, Bend. Subject 123 Pine Street. Subject 123 Pine Street. Comp 64350 Old Bend Redmond Hwy 220205567 Closed',
+          },
+        ],
+      }),
+    )
+    expect(d.dealId).toBeNull()
+  })
+})
+
+describe('v4 defect 6: the cycle the message itself names', () => {
+  it("title mail with the first contract's escrow number goes to the canceled cycle it belongs to", () => {
+    const d = decide4(
+      mail({ from: ['tonya.moore@westerntitle.com'], sentAt: '2025-08-06T18:52:00Z', subject: 'Open Escrow # WT0277448 Property: 64350 Old Bend Redmond Hwy Bend, OR 97703' }),
+    )
+    expect(d.dealId).toBe('old-bend')
+    expect(d.cycleId).toBe('ob-canceled')
+  })
+
+  it("the second contract's escrow number goes to the closed cycle", () => {
+    const d = decide4(
+      mail({ from: ['tonya.moore@westerntitle.com'], sentAt: '2025-08-28T23:32:00Z', subject: 'Open Escrow # WT0278291 Property: 64350 Old Bend Redmond Highway Bend, OR 97703' }),
+    )
+    expect(d.cycleId).toBe('ob-closed')
+  })
+
+  it('an agreement naming the first buyers goes to their cycle, the second buyers to theirs', () => {
+    expect(pickCycleForMail(oldBend.cycles, '2025-08-26T16:00:00Z', 'signing_notice', { text: 'Buyer: Avery Firstcycle and Casey Firstcycle. Seller: Sample Family Trust.' })).toBe(
+      'ob-canceled',
+    )
+    expect(pickCycleForMail(oldBend.cycles, '2025-08-12T16:00:00Z', 'signing_notice', { text: 'Buyer: Jordan Secondcycle.' })).toBe('ob-closed')
+  })
+
+  it('a termination goes to the cycle it terminates, never the closed one or the listing', () => {
+    const env = decide4(
+      mail({
+        from: ['noreply@skyslope.com'],
+        sentAt: '2025-08-16T18:07:00Z',
+        subject: 'Envelope completed: Termination Agreement | 64350 Old Bend Redmond Hwy',
+        attachments: [{ name: 'Termination_Agreement.pdf' }, { name: 'Addendum-_Termination.pdf' }],
+      }),
+    )
+    expect(env.cycleId).toBe('ob-canceled')
+    const ours = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['tonya.moore@westerntitle.com'],
+        sentAt: '2025-08-16T17:00:00Z',
+        subject: 'Termination agreement - Old Bend Redmond Hwy',
+        attachments: [{ name: 'Termination_Agreement_-_057_OREF.pdf' }, { name: 'Addendum_to_Sale_Agreement_2_-_002_OREF.pdf' }],
+      }),
+    )
+    expect(ours.dealId).toBe('old-bend')
+    expect(ours.cycleId).toBe('ob-canceled')
+  })
+
+  it('mail while the first contract was live goes to it; mail after the second closed goes to the closed one', () => {
+    expect(pickCycleForMail(oldBend.cycles, '2025-08-10T16:00:00Z', 'escrow_title')).toBe('ob-canceled')
+    expect(pickCycleForMail(oldBend.cycles, '2025-09-10T16:00:00Z', 'escrow_title')).toBe('ob-closed')
+    expect(pickCycleForMail(oldBend.cycles, '2025-11-01T16:00:00Z', 'post_close')).toBe('ob-closed')
+  })
+})
+
+describe('v4 defect 7: compound street names with or without the space', () => {
+  it('"Schoolhouse Rd." is School House Rd, and the other way round', () => {
+    const sh = parseDealAddress('56111 School House Rd, Bend, OR, 97707')!
+    expect(mentionsDealAddress('Septic inspection - 56111 Schoolhouse Rd.', sh)).toBe(true)
+    expect(mentionsDealStreet('Schoolhouse Rd.', sh)).toBe(true)
+    expect(mentionsBareStreet('Re: Schoolhouse walkthrough', sh)).toBe(true)
+    const joined = parseDealAddress('56111 Schoolhouse Rd, Bend, OR, 97707')!
+    expect(mentionsDealAddress('56111 School House Rd', joined)).toBe(true)
+    expect(mentionsDealStreet('School House Road', joined)).toBe(true)
+    expect(mentionsDealAddress('56111 Schools', sh)).toBe(false)
+  })
+
+  it('files the spelled-together address', () => {
+    const d = decide4(mail({ from: ['noreply@skyslope.com'], sentAt: '2026-04-14T17:00:00Z', subject: 'Envelope completed: Septic Addendum | 56111 Schoolhouse Rd.' }))
+    expect(d.dealId).toBe('school-house')
+  })
+})
+
+describe('v4 defect 8: a house number and a noun are not another property', () => {
+  it('"19496 Septic Invoice" from the other agent on 19496 Tumalo files there', () => {
+    const d = decide4(mail({ from: ['shana@shanasellers.com'], subject: '19496 Septic Invoice', attachments: [{ name: 'Invoice 4471.pdf' }] }))
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('tumalo')
+  })
+
+  it('a real other property from the same sender still does not file by sender', () => {
+    expect(decide4(mail({ from: ['shana@shanasellers.com'], subject: 'Offer on 19496 Pine Street', attachments: [{ name: 'Offer.pdf' }] })).dealId).toBeNull()
+    expect(decide4(mail({ from: ['shana@shanasellers.com'], subject: 'Offer on 1450 Revere Ave', attachments: [{ name: 'Offer.pdf' }] })).dealId).toBeNull()
+  })
+})
+
+describe('v4 defect 9: SkySlope per-file addresses name the property', () => {
+  it('reads the street and house number from the local part', () => {
+    const be = parseDealAddress('20702 Beaumont Drive, Bend, OR, 97701')!
+    expect(platformAliasNamesDeal(['BeaumontDrive2070260b4@skyslope.com'], be)).toBe(true)
+    expect(platformAliasNamesDeal(['BeaumontDrive20702@skyslope.com'], be)).toBe(true)
+    expect(platformAliasNamesDeal(['BeaumontDrive1234@skyslope.com'], be)).toBe(false)
+    expect(platformAliasNamesDeal(['BeaumontDrive2070260b4@example.com'], be)).toBe(false)
+    expect(platformAliasNamesDeal(['SchoolHouseRd561112@skyslope.com'], parseDealAddress('56111 School House Rd, Bend')!)).toBe(true)
+    expect(platformAliasNamesDeal(['SW45thStreet3480@skyslope.com'], parseDealAddress('3480 SW 45th Street, Redmond')!)).toBe(true)
+    expect(platformAliasNamesDeal(['NEButlerMarketRd105017@skyslope.com'], parseDealAddress('1050 NE Butler Market Rd, Bend')!)).toBe(true)
+  })
+
+  it('"Fwd: Deck Receipt" to the Beaumont file address files to Beaumont', () => {
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['BeaumontDrive2070260b4@skyslope.com'],
+        sentAt: '2026-05-27T20:20:00Z',
+        subject: 'Fwd: Deck Receipt',
+        attachments: [{ name: 'Truss Receipt - 2026-05-19.pdf' }],
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+  })
+})
+
+describe('v4 defect 10: our own machines are not deal mail', () => {
+  it("Studio drafts from the Resend sandbox and the site's lead notices never file, whatever they name", () => {
+    expect(decide4(mail({ from: ['onboarding@resend.dev'], subject: 'listing reel draft v2 - 20702 Beaumont Drive' })).status).toBe('bulk')
+    expect(decide4(mail({ from: ['onboarding@resend.dev'], subject: '5 approved photos', body: 'MLS 220199105' })).status).toBe('bulk')
+    expect(
+      decide4(mail({ from: ['notifications@mail.ryan-realty.com'], subject: 'New lead: home value request', body: 'Address: 19496 Tumalo Reservoir Rd. MLS 220215931' })).status,
+    ).toBe('bulk')
+    expect(categorizeMail({ subject: '[Notice] Something', body: '', attachments: [], autoReply: false, fromHouseSystem: false })).toBe('system_alert')
+  })
+})
+
+describe('v4 defect 11: a person on the file by name only', () => {
+  const beaumontNamed: DealFacts = { ...beaumont, contactNames: ['Pat Otheragent'] }
+  const deals = [...V4_DEALS.filter((d) => d.dealId !== 'beaumont'), beaumontNamed]
+
+  it("the other agent's name on the To line picks the file among the shared TC's several (FHA Addendum thread)", () => {
+    const d = decide4(
+      mail({
+        from: ['lender.one@newlender.example'],
+        to: ['someagent@gmail.com'],
+        cc: ['transactions@bridgetownfiles.com', 'matt@ryan-realty.com'],
+        people: [
+          { email: 'lender.one@newlender.example', name: 'Lee Lender', role: 'from' },
+          { email: 'someagent@gmail.com', name: 'pat Otheragent', role: 'to' },
+          { email: 'transactions@bridgetownfiles.com', name: 'TC Desk', role: 'cc' },
+        ],
+        sentAt: '2026-05-20T14:47:00Z',
+        subject: 'RE: FHA Addendum',
+      }),
+      null,
+      deals,
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+  })
+
+  it("the sender named on exactly one file, with a document, files there (\"Fwd: Brandon's Loan\")", () => {
+    const d = decide4(
+      mail({
+        from: ['lee.listside@gmail.com'],
+        to: ['matt@ryan-realty.com', 'transactions@bridgetownfiles.com'],
+        people: [{ email: 'lee.listside@gmail.com', name: 'Lee Listside', role: 'from' }],
+        sentAt: '2026-09-01T17:25:00Z',
+        subject: "Fwd: Brandon's Loan",
+        attachments: [{ name: 'Amendatory clause to be signed by Seller.pdf' }],
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('jacklight')
+  })
+
+  it('one person is one person: on several files by email and one by name, they are on none uniquely ("Client Appreciation" BCC)', () => {
+    // The title officer is a contact by email on Beaumont, and on Nordic by name only (a row with no email).
+    const nordicNamed: DealFacts = { ...nordic, contactEmails: [], contactNames: ['Tonya Moore'] }
+    const tumaloWithOfficer: DealFacts = { ...tumalo, contactEmails: [...tumalo.contactEmails, 'tonya.moore@westerntitle.com'] }
+    const d = decide4(
+      mail({
+        from: ['tonya.moore@westerntitle.com'],
+        to: ['tonya.moore@westerntitle.com'],
+        people: [
+          { email: 'tonya.moore@westerntitle.com', name: 'Moore, Tonya', role: 'from' },
+          { email: 'tonya.moore@westerntitle.com', name: 'Moore, Tonya', role: 'to' },
+        ],
+        sentAt: '2026-09-01T17:00:00Z',
+        subject: 'Client Appreciation',
+        attachments: [{ name: 'Redmond Summer Open House.pdf' }],
+      }),
+      null,
+      [...V4_DEALS.filter((x) => x.dealId !== 'nordic' && x.dealId !== 'tumalo'), nordicNamed, tumaloWithOfficer],
+    )
+    expect(d.dealId).toBeNull()
+  })
+
+  it('a first name alone, and our own brokers on a platform sender, never count', () => {
+    expect(personNameMatches('Lee', 'Lee Listside')).toBe(false)
+    expect(personNameMatches('Listside, Lee', 'Lee Listside')).toBe(true)
+    const d = decide4(
+      mail({ from: ['noreply@skyslope.com'], people: [{ email: 'noreply@skyslope.com', name: 'Matt Ryan', role: 'from' }], subject: 'Your weekly summary' }),
+      null,
+      [...deals, { ...schoolHouse, dealId: 'school-house-named', contactNames: ['Matt Ryan'] }],
+    )
+    expect(d.status).toBe('not_deal')
+  })
+})
+
+describe('v4 defect 12: a typo in the house number is not another property', () => {
+  it('"SPD\'s for 2372 NW Ordway" from the other agent on 2732 Ordway files there', () => {
+    const d = decide4(
+      mail({ from: ['otheragent@garnerlike.com'], sentAt: '2025-05-08T01:26:00Z', subject: "SPD's for 2372 NW Ordway", attachments: [{ name: 'SKM_C450i25050717260.pdf' }] }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('ordway')
+  })
+
+  it('"2731 Ordway Title Report" from us to the title officer on 2732 Ordway files there', () => {
+    const d = decide4(mail({ from: ['matt@ryan-realty.com'], to: ['titleofficer@westerntitle.com'], sentAt: '2025-05-15T23:05:00Z', subject: '2731 Ordway Title Report' }))
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('ordway')
+  })
+})
+
+describe('v4 defect 12, the dry run on real mail: a mistyped house number on our street names the file', () => {
+  it('"2731 Ordway Title Report" to a title officer on no file still files to 2732 Ordway (196d63218a29b738)', () => {
+    const d = decide4(mail({ from: ['matt@ryan-realty.com'], to: ['another.officer@westerntitle.com'], sentAt: '2025-05-15T23:05:00Z', subject: '2731 Ordway Title Report' }))
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('ordway')
+  })
+
+  it("a stranger's ordinary mail about a neighbouring number files nowhere, and two-word names must match both words", () => {
+    expect(decide4(mail({ from: ['someone@example.com'], sentAt: '2025-05-15T23:05:00Z', subject: '2733 Ordway garage sale' })).dealId).toBeNull()
+    expect(decide4(mail({ from: ['matt@ryan-realty.com'], to: ['x@example.com'], sentAt: '2025-08-10T17:00:00Z', subject: '64351 Old Mill Title Report' })).dealId).toBeNull()
+  })
+
+  it('the property hint is the house number and street, not the next word of the subject', () => {
+    expect(propertyInSubject('61260 Sunflower Email to Deb')).toBe('61260 sunflower')
+    expect(propertyInSubject('19496 Septic Invoice')).toBe('19496 septic')
+    expect(propertyInSubject('Re: 61260 Sunflower Lane')).toBe('61260 sunflower')
+  })
+})
+
+describe('v4, the dry run on real mail: our own words about a file by its street', () => {
+  it('broker-to-broker mail calling a file by its street files there, transaction words or not ("Re: More Clarification on Nordic PA")', () => {
+    const d = decide4(mail({ from: ['matt@ryan-realty.com'], to: ['rebeccapeterson@ryan-realty.com'], sentAt: '2026-08-30T14:54:00Z', subject: 'Re: More Clarification on Nordic PA' }))
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('nordic')
+  })
+
+  it('an e-sign platform sending as our broker is our own transaction mail ("Nordic Counteroffer (Buyer #2)" from noreply@skyslope.com)', () => {
+    const d = decide4(
+      mail({
+        from: ['noreply@skyslope.com'],
+        to: ['rebeccapeterson@ryan-realty.com'],
+        people: [{ email: 'noreply@skyslope.com', name: 'Rebecca Peterson', role: 'from' }],
+        sentAt: '2026-08-23T20:35:00Z',
+        subject: 'Nordic Counteroffer (Buyer #2)',
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('nordic')
+  })
+
+  it('a stranger calling a street by name is still not a filing', () => {
+    expect(decide4(mail({ from: ['skis@example.com'], subject: 'Nordic skiing this weekend?' })).dealId).toBeNull()
+  })
+
+  it('between brokers, with no transaction words, a short common street word is not the file ("Test Email" is not 1234 Test Street)', () => {
+    const testStreet: DealFacts = { ...nordic, dealId: 'test-street', address: '1234 Test Street, Bend, OR', subdivisions: [] }
+    const bluff: DealFacts = { ...nordic, dealId: 'bluff', address: '363 SW Bluff Dr, Bend, OR', subdivisions: [] }
+    const deals = [...V4_DEALS, testStreet, bluff]
+    expect(decide4(mail({ from: ['paul@ryan-realty.com'], to: ['matt@ryan-realty.com'], subject: 'Test Email' }), null, deals).dealId).toBeNull()
+    expect(decide4(mail({ from: ['paul@ryan-realty.com'], to: ['matt@ryan-realty.com'], subject: 'Called his bluff' }), null, deals).dealId).toBeNull()
+  })
+})
+
+describe('v4, the dry run on real mail: a subject naming a property is worth reading in full', () => {
+  it('pass 1 reads on when the subject names a property, even when the snippet reads as ordinary mail (61260 Sunflower counter)', () => {
+    const snippetOnly = decide4(
+      mail({ from: ['otheragent@gmail.com'], to: ['rebeccapeterson@ryan-realty.com'], subject: 'Re: 61260 Sunflower Lane', body: 'Hi Rebecca, I had a long couple days.' }),
+    )
+    expect(snippetOnly.status).toBe('not_deal')
+    expect(worthFullRead(snippetOnly, false)).toBe(true)
+    expect(worthFullRead(decide4(mail({ from: ['news@example.com'], subject: 'Weekly tips' })), false)).toBe(false)
+  })
+})
+
+describe('v4 defect 13: machines writing to a client are not that client', () => {
+  it('an automated sender scores no party or contact evidence from its recipients', () => {
+    const d = decide4(mail({ from: ['no-reply@accounts.example.com'], to: ['realestatetiffany@gmail.com'], sentAt: '2026-05-20T17:00:00Z', subject: 'Security alert' }))
+    expect(d.status).toBe('not_deal')
+    expect(d.candidates).toEqual([])
+  })
+
+  it("a listing report a service sends our sellers as the broker still files (ListTrac, alert@listtrac.com)", () => {
+    const tumaloSellers: DealFacts = { ...tumalo, partyEmails: ['seller.one@example.com'] }
+    const d = decide4(
+      mail({
+        from: ['alert@listtrac.com'],
+        to: ['seller.one@example.com'],
+        cc: ['matt@ryan-realty.com'],
+        people: [{ email: 'alert@listtrac.com', name: 'Matt Ryan', role: 'from' }],
+        subject: 'Your Listing - Weekly Report of Online Activity',
+        body: 'Here is a summary of online activity for your listing. Forward Report for 19496 Tumalo Reservoir Rd, Bend, OR 97703. 4004 property views.',
+      }),
+      null,
+      [...V4_DEALS.filter((x) => x.dealId !== 'tumalo'), tumaloSellers],
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('tumalo')
+  })
+
+  it('a queued row the rules now drop leaves the queue', () => {
+    expect(queuedRowAfterRedecide('not_deal')).toBe('dismissed')
+    expect(queuedRowAfterRedecide('bulk')).toBe('dismissed')
+    expect(queuedRowAfterRedecide('ambiguous')).toBeNull()
+    expect(queuedRowAfterRedecide('error')).toBeNull()
+  })
+})
+
+describe('v4 defect 14: the subdivision is a nickname for the file', () => {
+  it('"Valhalla Heights" from the TC on several files picks 2680 NW Nordic', () => {
+    const d = decide4(mail({ from: ['transactions@bridgetownfiles.com'], sentAt: '2026-09-01T17:00:00Z', subject: 'Valhalla Heights - HOA docs', attachments: [{ name: 'HOA.pdf' }] }))
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('nordic')
+  })
+
+  it('never a subdivision two open files share, and never a placeholder', () => {
+    const a: DealFacts = { ...nordic, dealId: 'red-a', address: '122 SW 10th Street, Redmond, OR', subdivisions: ['Townsite Of Redmond'] }
+    const b: DealFacts = { ...nordic, dealId: 'red-b', address: '218 SW 4th St, Redmond, OR', subdivisions: ['Townsite Of Redmond'] }
+    const c: DealFacts = { ...nordic, dealId: 'na', address: '64350 Old Bend Redmond Hwy, Bend', subdivisions: ['N/A'] }
+    const deals = [a, b, c]
+    expect(decide4(mail({ from: ['transactions@bridgetownfiles.com'], subject: 'Townsite Of Redmond - docs', attachments: [{ name: 'x.pdf' }] }), null, deals).dealId).toBeNull()
+    expect(decide4(mail({ from: ['transactions@bridgetownfiles.com'], subject: 'N/A docs', attachments: [{ name: 'x.pdf' }] }), null, deals).dealId).toBeNull()
+  })
+})
+
+describe('v4 defect 15: a thread never outvotes the message that names another of our files', () => {
+  // Supra reuses one Gmail thread per sender across every property it reports on.
+  const sunstone: DealFacts = { ...fortyFifth, dealId: 'sunstone', address: '56628 Sunstone Loop, Bend, OR, 97707', stage: 'dead', cycles: [] }
+  const drouillard: DealFacts = { ...nordic, dealId: 'drouillard', address: '2354 NW Drouillard Ave, Bend, OR, 97703', stage: 'closed', subdivisions: [] }
+  const mayfield: DealFacts = { ...nordic, dealId: 'mayfield', address: '17130 Mayfield Drive, Bend, OR, 97707', stage: 'closed', subdivisions: [] }
+  const deals = [...V4_DEALS, sunstone, drouillard, mayfield]
+  const supra = (body: string) =>
+    mail({ from: ['suprashowing@suprasystems.com'], sentAt: '2025-11-13T18:46:00Z', subject: 'Supra Showings - New Showing Notification', body })
+
+  it('a Supra notice naming one of our listings files there, and the unrelated thread file is not even a candidate', () => {
+    const d = decide4(
+      supra('The showing by an agent at 2354 Drouillard Avenue, Bend, OR 97703 (KeyBox# 31714201) began 11/13/2025 10:45AM'),
+      { dealId: 'sunstone', method: 'address' },
+      deals,
+    )
+    expect(d.dealId).toBe('drouillard')
+    expect(d.candidates.map((c) => c.dealId)).not.toContain('sunstone')
+  })
+
+  it('naming two of ours is a choice between those two, never the thread file (19a7e8a7fddeec36)', () => {
+    const d = decide4(
+      supra(
+        'The showing by an agent at 2354 Drouillard Avenue, Bend, OR 97703 (KeyBox# 31714201) began 11/13/2025 10:45AM\n' +
+          ' by an agent at 17130 Mayfield Drive, Bend, OR 97707 (KeyBox# 34345373) began 11/13/2025 10:44AM',
+      ),
+      { dealId: 'sunstone', method: 'address' },
+      deals,
+    )
+    expect(d.status).toBe('ambiguous')
+    expect(d.candidates.map((c) => c.dealId).sort()).toEqual(['drouillard', 'mayfield'])
+  })
+
+  it("when the message names its thread's file and another, the thread still breaks the tie (\"Re: Question Regarding Contract Termination\")", () => {
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['legal@realtorsassociation.example'],
+        sentAt: '2025-11-13T18:46:00Z',
+        subject: 'Re: Question Regarding Contract Termination',
+        body: 'The buyers of 17130 Mayfield Drive may terminate; the sale of 2354 NW Drouillard Ave is their contingency.',
+      }),
+      { dealId: 'mayfield', method: 'address' },
+      deals,
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('mayfield')
+  })
+
+  it('a Supra notice naming none of ours still follows its thread (136 correct thread filings)', () => {
+    const d = decide4(supra('For additional information on your showings please login to SupraWEB.'), { dealId: 'drouillard', method: 'address' }, deals)
+    expect(d.dealId).toBe('drouillard')
+    expect(d.method).toBe('thread')
+  })
+})
+
+// ── the golden eval (2026-09-24): every WRONG and WORSE row, as a class ─────
+// The golden set replayed 1,522 labeled messages through the production path.
+// Each case below is shaped like one of the rows v4 got wrong or newly missed.
+// People are placeholders; addresses, MLS and escrow numbers are the files' own.
+
+// Our clients selling one home and buying the next, the same two people on both files.
+const CLIENTS = ['pat.client@gmail.com', 'lee.client@live.com']
+const CLIENT_NAMES = ['Pat Client', 'Lee Client']
+// The sale: SkySlope's listing record carries no dates; the contract does.
+const clientSale: DealFacts = {
+  dealId: 'client-sale',
+  address: '2354 NW Drouillard Ave, Bend, OR, 97703',
+  city: 'Bend',
+  stage: 'closed',
+  cycles: [
+    cycle({ id: 'cs-listing', kind: 'listing', status: 'Transaction', mlsNumber: '220200647', escrowNumber: 'WT0278259' }),
+    cycle({
+      id: 'cs-sale',
+      status: 'Closed',
+      mlsNumber: '220200647',
+      escrowNumber: 'WT0278259',
+      acceptanceDate: '2025-08-27',
+      closeDate: '2025-10-10',
+      buyers: ['Robin Buyerside'],
+      sellers: CLIENT_NAMES,
+    }),
+  ],
+  partyEmails: CLIENTS,
+  contactEmails: ['tonya.moore@westerntitle.com'],
+  partyNames: [...CLIENT_NAMES, 'Robin Buyerside'],
+  contactNames: ['Tonya Moore'],
+  subdivisions: ['NorthWest Crossing'],
+}
+// The purchase: a first contract cancelled, the second closed the same day as the sale.
+const clientPurchase: DealFacts = {
+  dealId: 'client-purchase',
+  address: '2680 NW Nordic Avenue, Bend, OR, 97703',
+  city: 'Bend',
+  stage: 'closed',
+  cycles: [
+    cycle({ id: 'cp-first', status: 'Canceled/App', mlsNumber: '220184043', escrowNumber: '7061-4265058', acceptanceDate: '2025-04-12', deadDate: '2025-07-18', buyers: CLIENT_NAMES }),
+    cycle({ id: 'cp-second', status: 'Closed', mlsNumber: '220184043', escrowNumber: '7061-4304106', acceptanceDate: '2025-08-26', closeDate: '2025-10-10', buyers: CLIENT_NAMES }),
+  ],
+  partyEmails: CLIENTS,
+  contactEmails: ['escrow.one@firstam.com', 'loans@lender.example'],
+  partyNames: CLIENT_NAMES,
+  contactNames: ['Tonya Moore'],
+  subdivisions: ['Valhalla Heights'],
+}
+const TWO_FILES = [...DEALS, clientSale, clientPurchase]
+const decideTwo = (m: MailFacts, thread: { dealId: string; method: string } | null = null) => decideMailFiling({ facts: m, deals: TWO_FILES, thread })
+
+describe('golden eval: our clients on two files, only the email can pick one', () => {
+  it('a file whose listing has no dates was still on the market the year before its contract (dealMaybeOpenAt)', () => {
+    expect(dealOpenAt(clientSale, '2025-05-27T22:46:00Z')).toBe(false)
+    expect(dealMaybeOpenAt(clientSale, '2025-05-27T22:46:00Z')).toBe(true)
+    expect(dealMaybeOpenAt(clientSale, '2023-05-27T22:46:00Z')).toBe(false)
+  })
+
+  it('names in the text: first and last together, or "Last, First"; never one alone', () => {
+    expect(personNamedIn('Mutual Clients | Pat Client / Lee Client', 'Pat Client')).toBe(true)
+    expect(personNamedIn('Client, Pat will sign Tuesday', 'Pat Client')).toBe(true)
+    expect(personNamedIn('the Client purchase', 'Pat Client')).toBe(false)
+  })
+
+  it('a check-in to the clients that calls their home by its street files on that home, not the purchase (19713ecad417fe36)', () => {
+    const d = decideTwo(
+      mail({
+        from: ['rebeccapeterson@ryan-realty.com'],
+        to: CLIENTS,
+        sentAt: '2025-05-27T22:46:00Z',
+        subject: 'Quick Check-In & Next Steps',
+        body: 'Are you back in your Drouillard home now? Just wanted to confirm so we are aligned on scheduling future showings.',
+        attachments: [{ name: 'Market Analysis Broad - Client.pdf' }, { name: 'Market Analysis Close - Client.pdf' }],
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('client-sale')
+  })
+
+  it("title's note naming only the clients queues, whatever file its thread sits on (199ced8da06e36cb)", () => {
+    const d = decideTwo(
+      mail({
+        from: ['assistant@westerntitle.com'],
+        to: ['escrow.one@firstam.com', 'tonya.moore@westerntitle.com', 'rebeccapeterson@ryan-realty.com'],
+        sentAt: '2025-10-10T15:58:00Z',
+        subject: 'RE: Mutual Clients | Pat Client / Lee Client',
+        body: 'We received the lenders wire and have released for recording!\n\nThank you!',
+      }),
+      { dealId: 'client-sale', method: 'thread' },
+    )
+    expect(d.status).toBe('ambiguous')
+    expect(d.dealId).toBeNull()
+  })
+
+  it('the side the email is on picks the file: "the Client purchase" is the file where we represent the buyers (1988619f74312500)', () => {
+    const d = decideTwo(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['tonya.moore@westerntitle.com', 'pat.client@gmail.com'],
+        sentAt: '2025-08-27T19:55:00Z',
+        subject: 'Balance of Down Payment',
+        body: 'Part of the agreement to extend our closing date on the Client purchase was to submit the balance of the down payment with escrow by tomorrow at 5.',
+      }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('client-purchase')
+    expect(d.method).toBe('party')
+  })
+
+  it('"sold our loan" is no sale: it is the clients\' own loan, the purchase (19950c64cefa703b); "the buyers\' loan" is neither side', () => {
+    const ours = decideTwo(
+      mail({
+        from: ['pat.client@gmail.com'],
+        sentAt: '2025-09-15T21:26:00Z',
+        subject: 'Question',
+        body: 'The mortgage company sold our loan already. Do you know how the process works?',
+      }),
+    )
+    expect(ours.status).toBe('filed')
+    expect(ours.dealId).toBe('client-purchase')
+    const theirs = decideTwo(
+      mail({ from: ['pat.client@gmail.com'], sentAt: '2025-09-15T21:26:00Z', subject: 'Question', body: "Did the buyers' loan get approved?" }),
+    )
+    expect(theirs.status).toBe('ambiguous')
+  })
+
+  it('a status note with a section for each file names both: a person picks (196bb426dadfd392)', () => {
+    const d = decideTwo(
+      mail({
+        from: ['rebeccapeterson@ryan-realty.com'],
+        to: CLIENTS,
+        sentAt: '2025-05-10T17:33:00Z',
+        subject: 'Saturday (5/10) Updates',
+        body: 'Drouillard\n1. Open house today at 2 p.m.\n\nNordic\n1. The sellers accepted our repair addendum.',
+      }),
+    )
+    expect(d.status).toBe('ambiguous')
+  })
+
+  it("someone the email talks about who is on only one of the files picks it: the purchase's lender by name (198fdce893c6f7aa)", () => {
+    const withLender: DealFacts = { ...clientPurchase, contactNames: ['Tonya Moore', 'Morgan Lender'] }
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['lee.client@live.com'],
+        to: ['rebeccapeterson@ryan-realty.com'],
+        sentAt: '2025-08-31T01:47:00Z',
+        subject: 'Re: Updates from Friday',
+        body: 'You can speak with him for sure. It is the same gentleman, Morgan Lender with the lending company.',
+      }),
+      deals: [...DEALS, clientSale, withLender],
+      thread: null,
+    })
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('client-purchase')
+  })
+
+  it("a numbered street with its suffix picks among one client's files, though it names nothing among all of ours (1990b21f70b73fe6)", () => {
+    const investor = ['investor@gmail.com']
+    const seventh: DealFacts = {
+      dealId: 'seventh',
+      address: '703 7th Street, Redmond, OR, 97756',
+      city: 'Redmond',
+      stage: 'pending',
+      cycles: [cycle({ id: '7-sale', status: 'Pending', acceptanceDate: '2025-07-20' })],
+      partyEmails: investor,
+      contactEmails: [],
+    }
+    const tenth: DealFacts = {
+      ...seventh,
+      dealId: 'tenth',
+      address: '122 SW 10th Street, Redmond, OR, 97756',
+      cycles: [cycle({ id: '10-sale', status: 'Pending', acceptanceDate: '2025-07-01' })],
+    }
+    const d = decideMailFiling({
+      facts: mail({ from: ['investor@gmail.com'], sentAt: '2025-08-01T17:00:00Z', subject: 'Fwd: 7th Street Inspection', body: 'See below.' }),
+      deals: [...DEALS, seventh, tenth],
+      thread: { dealId: 'tenth', method: 'party' },
+    })
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('seventh')
+  })
+
+  it('an email naming one of the two files by its address still files there by rule 3', () => {
+    const d = decideTwo(
+      mail({ from: ['pat.client@gmail.com'], sentAt: '2025-09-15T21:26:00Z', subject: 'Keys for 2680 NW Nordic Avenue', body: 'When do we get them?' }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('client-purchase')
+  })
+
+  it('a client on one open file still files by who wrote it (the rule needs two)', () => {
+    const d = decideTwo(mail({ from: ['pat.client@gmail.com'], sentAt: '2026-06-01T17:00:00Z', subject: 'Question', body: 'Quick question for you.' }))
+    expect(d.status).not.toBe('ambiguous')
+  })
+})
+
+describe('golden eval: a company is one party when counting who is on which file', () => {
+  // Western Title's escrow officer is on many files; her assistant is on one.
+  const assistantFile: DealFacts = {
+    dealId: 'assistant-file',
+    address: '20401 Penhollow Ln, Bend, OR, 97702',
+    city: 'Bend',
+    stage: 'closed',
+    cycles: [cycle({ id: 'pe-sale', status: 'Closed', escrowNumber: 'WT0275687', acceptanceDate: '2025-06-16', closeDate: '2025-07-25' })],
+    partyEmails: [],
+    contactEmails: ['assistant@westerntitle.com', 'tonya.moore@westerntitle.com'],
+  }
+  it("mail to the officer and her assistant is not the assistant's one file (1988619f74312500)", () => {
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['tonya.moore@westerntitle.com', 'assistant@westerntitle.com'],
+        sentAt: '2025-08-07T19:55:00Z',
+        subject: 'Wire timing',
+        body: 'Wanted to make sure we had a plan for the wire tomorrow.',
+      }),
+      null,
+      [...V4_DEALS, assistantFile],
+    )
+    expect(d.dealId).not.toBe('assistant-file')
+    expect(d.status).not.toBe('filed')
+  })
+})
+
+describe('golden eval: the subject names the one it is about', () => {
+  it("an e-sign completion whose subject calls one file by its street files there, though its PDF names the buyers' own home (1963b421aa2a2083)", () => {
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['noreply@skyslope.com'],
+        to: ['matt@ryan-realty.com'],
+        sentAt: '2025-05-02T17:00:00Z',
+        subject: 'Envelope completed: Nordic Ave Offer Letter',
+        body: 'All parties have completed the envelope.',
+        attachments: [{ name: 'Offer Letter.pdf', text: 'Buyers currently own 2354 NW Drouillard Ave, Bend, OR 97703 and write this letter about their offer.' }],
+      }),
+      deals: TWO_FILES,
+      thread: null,
+    })
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('client-purchase')
+  })
+})
+
+describe('golden eval: the sign company, and file names with underscores', () => {
+  it('"Ryan Realty_20702 Beaumont Dr, Bend.pdf" names 20702 Beaumont Dr (an underscore used to hide the number)', () => {
+    const d = decide4(mail({ from: ['vendor@gmail.com'], subject: 'Proof', body: 'Attached.', attachments: [{ name: 'Ryan Realty_20702 Beaumont Dr, Bend.pdf' }] }))
+    expect(d.candidates.find((c) => c.dealId === 'beaumont')?.evidence).toContain('address')
+  })
+
+  it('proofs for two of our listings go to a person, not nowhere (19c2f26db0a023d1)', () => {
+    const d = decide4(
+      mail({
+        from: ['signshop@gmail.com'],
+        sentAt: '2026-02-05T18:52:00Z',
+        subject: 'Re: Sign Installation',
+        body: 'Proofs attached below for the two installs. The earliest we can install will be Tuesday.',
+        attachments: [{ name: 'Ryan Realty_19496 Tumalo Reservoir Rd, Bend.pdf' }, { name: 'Ryan Realty_20702 Beaumont Dr, Bend.pdf' }],
+      }),
+    )
+    expect(d.status).toBe('ambiguous')
+  })
+
+  it('"Sign is down" about our listing is the listing, from whoever it comes (19f4285c16784053); a pitch is still nothing', () => {
+    const d = decide4(
+      mail({ from: ['neighbor@gmail.com'], to: ['signshop@gmail.com'], cc: ['matt@ryan-realty.com'], sentAt: '2026-07-08T16:17:00Z', subject: '20702 Beaumont Dr Bend', body: 'Sign is down\nSent from my iPhone' }),
+    )
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+    const pitch = decide4(
+      mail({ from: ['ads@lifestylemag.example'], sentAt: '2026-07-08T16:17:00Z', subject: '20702 Beaumont Dr Bend', body: 'Your listing stood out as a fit for our Living section. A full-page feature is available.' }),
+    )
+    expect(pitch.status).toBe('not_deal')
+  })
+})
+
+describe('golden eval: a list of properties is a digest, whatever street the subject names', () => {
+  const bluff: DealFacts = {
+    dealId: 'bluff',
+    address: '363 SW Bluff Dr, Bend, OR, 97702',
+    city: 'Bend',
+    stage: 'dead',
+    cycles: [cycle({ id: 'bl-listing', kind: 'listing', status: 'Canceled/App', mlsNumber: '220190001', listingDate: '2025-06-01', deadDate: '2025-10-01' })],
+    partyEmails: [],
+    contactEmails: [],
+  }
+  it("a buyer's tour list naming our listing among four others is not about our listing (198cd918ef4575f2)", () => {
+    const d = decide4(
+      mail({
+        from: ['rebeccapeterson@ryan-realty.com'],
+        to: ['prospect@lawgroup.example'],
+        sentAt: '2025-08-21T16:58:00Z',
+        subject: 'Follow-Up: Bluff Dr. Units + New Options',
+        body: [
+          'It was such a pleasure meeting you yesterday!',
+          '363 SW Bluff Dr. #208 - $899,900',
+          '291 SW Bluff Dr, #210 - $1,295,000',
+          'Additional Properties',
+          '1714 NW Sample Rd - riverfront',
+          '62734 Example Dr - close to the rim',
+          '5500 SW Sample Street, Unit 18',
+        ].join('\n'),
+        attachments: [{ name: '1_10.4 Initial Agency Disclosure Pamphlet (Buyer) - OR.pdf' }],
+      }),
+      null,
+      [...V4_DEALS, bluff],
+    )
+    expect(d.status).toBe('bulk')
+  })
+
+  it('the agency disclosure pamphlet is no disclosure and no transaction form', () => {
+    const pamphlet = { name: '1_10.4 Initial Agency Disclosure Pamphlet (Buyer) - OR.pdf' }
+    expect(isTransactionFormAttachment(pamphlet)).toBe(false)
+    expect(categorizeMail({ subject: 'Next steps', body: '', attachments: [pamphlet], autoReply: false, fromHouseSystem: false })).toBe('general')
+    expect(isTransactionFormAttachment({ name: 'Sellers Property Disclosure.pdf' })).toBe(true)
+  })
+})
+
+describe('golden eval: reminders, platforms, and people on no file', () => {
+  it("a lender's daily birthday reminder naming a client and her address is no mail about her file (19a8c8feb7b7ee56)", () => {
+    const d = decide4(
+      mail({
+        from: ['loans@lender.example'],
+        to: ['rebeccapeterson@ryan-realty.com'],
+        subject: 'Daily Birthday Reminder',
+        body: 'Today is the birthday of Pat Client, 2680 NW Nordic Avenue, Bend, OR 97703.',
+      }),
+    )
+    expect(d.status).toBe('bulk')
+  })
+
+  it("an e-sign platform's no-reply sending our broker's documents to our client keeps its recipients as evidence (19e0f0de0d3775af)", () => {
+    const sellers: DealFacts = { ...impala, partyEmails: ['seller.one@gmail.com'] }
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['noreply@skyslope.com'],
+        to: ['seller.one@gmail.com'],
+        cc: ['paul@ryan-realty.com'],
+        subject: 'Paul Stevenson shared some documents with you.',
+        body: 'Paul Stevenson has shared documents with you. View documents.',
+        attachments: [{ name: 'ORE Residential Input - ODS.pdf' }],
+      }),
+      deals: [schoolHouse, tumalo, beaumont, sellers],
+      thread: null,
+    })
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('impala')
+  })
+
+  const goldenAstor: DealFacts = {
+    dealId: 'golden-astor',
+    address: '52678 Golden Astor Road',
+    city: null,
+    stage: 'pre_contract',
+    cycles: [cycle({ id: 'ga-pre', status: 'Pre-Contract' })],
+    partyEmails: [],
+    contactEmails: [],
+  }
+  const withAstor = [...V4_DEALS, goldenAstor]
+  const at = '2024-04-08T23:11:00Z'
+
+  it("Deschutes Title's escrow mail about a file with nobody on it files (190039894f16273e)", () => {
+    const d = decide4(
+      mail({ from: ['escrow.two@deschutestitle.com'], sentAt: at, subject: 'EM Receipt - 52678 Golden Astor Rd. La Pine, OR | DE22058', body: 'Please see attached.' }),
+      null,
+      withAstor,
+    )
+    expect(d.category).toBe('escrow_title')
+    expect(d.dealId).toBe('golden-astor')
+  })
+
+  it("a pump company's invoice and a property manager's cash-flow sheet for the property file (18ebffaeb93bff02, 18eaf801ee792abe)", () => {
+    const invoice = decide4(
+      mail({ from: ['office.pump@gmail.com'], sentAt: at, subject: '52678 Golden Astor', body: 'Invoice attached. Let me know if you have any questions.', attachments: [{ name: 'Invoice 2316.pdf' }] }),
+      null,
+      withAstor,
+    )
+    expect(invoice.dealId).toBe('golden-astor')
+    const books = decide4(
+      mail({ from: ['manager.rentals@gmail.com'], sentAt: at, subject: '52678 Golden Astor', body: '--\nProperty Management Services LLC', attachments: [{ name: 'Cash Flow 52678 Golden Astor.xlsx' }] }),
+      null,
+      withAstor,
+    )
+    expect(books.dealId).toBe('golden-astor')
+  })
+
+  it('our own mail about a file to someone on none files; only our marketing does not (18eae5d5efed5435, 1914e75fc842eeee)', () => {
+    const toTitle = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['officer@westertitle.example'],
+        sentAt: at,
+        subject: '52678 Golden Astor',
+        body: 'Here is the info on this one.\n\nOn Mon, Apr 8, 2024 at 9:00 AM Owner wrote:\n> We are locating the neighbors only, not sure if it is a shared well.',
+      }),
+      null,
+      withAstor,
+    )
+    expect(toTitle.dealId).toBe('golden-astor')
+    const media = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['todd@mediaco.example'],
+        sentAt: '2026-06-01T17:00:00Z',
+        subject: 'Fwd: Media for 20702 Beaumont Drive, Bend, OR 97701',
+        body: 'Can you cut a reel from these?\n\n---------- Forwarded message ---------\nFrom: Photographer\nYour media is ready.\nUnsubscribe',
+      }),
+    )
+    expect(media.dealId).toBe('beaumont')
+    const blast = decide4(
+      mail({
+        from: ['rebeccapeterson@ryan-realty.com'],
+        to: ['neighbor@gmail.com'],
+        subject: 'Rare Backyard in Your Neighborhood',
+        body: 'Hello neighbors, a rare new listing at 20702 Beaumont Drive. Considering selling your home? Call today.',
+      }),
+    )
+    expect(blast.status).toBe('not_deal')
+  })
+})
+
+describe('golden eval: a two-word street keeps both words after a directional', () => {
+  it('"1405 NW Newport Ave" is not 1974 NW Newport Hills Dr (1a04b28f5d47fa29 filed there by "NW Newport")', () => {
+    const hills = parseDealAddress('1974 NW Newport Hills Drive, Bend, OR, 97703')!
+    expect(mentionsDealStreet('[Deal: 1405 NW Newport Ave] Fwd: 1405 NW Newport Ave', hills)).toBe(false)
+    expect(mentionsDealStreet('Inspection for NW Newport Hills', hills)).toBe(true)
+    expect(mentionsDealStreet('Re: SW 45th inspection', parseDealAddress('3480 SW 45th Street, Redmond, OR')!)).toBe(true)
+  })
+
+  it('a broker\'s "[Deal: …]" for a property with no file waits in the queue with that property', () => {
+    const d = decide4(mail({ from: ['matt.lists.homes@gmail.com'], to: ['matt@ryan-realty.com'], subject: '[Deal: 1405 NW Newport Ave] Fwd: 1405 NW Newport Ave', body: 'Forwarded.' }))
+    expect(d.status).toBe('unfiled_transaction')
+    expect(d.propertyHint).toBe('1405 nw newport')
   })
 })

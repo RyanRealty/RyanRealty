@@ -77,6 +77,11 @@ export const getClassRows = unstable_cache(
         u.lastModified instanceof Date ? u.lastModified.toISOString() : String(u.lastModified ?? ''),
       ])
   },
-  ['sitemap-class-urls-v3'],
+  // v4 (2026-09-24): PR #368 changed which market URLs the universe emits
+  // (a registry community's market page is its community-grain path). The v3
+  // entries built by the old code kept serving the three 301 sources for over
+  // an hour after the deploy, so the key moves and the next read builds fresh.
+  // Bump it again whenever buildAllUrls changes WHICH urls it emits.
+  ['sitemap-class-urls-v4'],
   { revalidate: 3600 },
 )

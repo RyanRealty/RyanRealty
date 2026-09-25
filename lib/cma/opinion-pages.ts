@@ -70,7 +70,6 @@ import {
 import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
 import { compAreaSentence } from '@/lib/cma/matrix-sets'
 import { setAsideCompIndexes } from '@/lib/cma/set-aside'
-import { statusPpsfBoardHtml, statusPpsfSummaries } from '@/lib/cma/status-ppsf'
 import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '@/lib/cma/status-price-summary'
 import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
@@ -283,17 +282,11 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
       listPrice: r.listPrice,
       sqft: r.sqft ?? null,
     })),
-    statusPpsfBoard: statusPpsfBoardHtml(
-      statusPpsfSummaries({
-        closed: sets.closed,
-        unsold: sets.unsold,
-        active: sets.active,
-      }),
-    ),
     statusPriceBoard: statusPriceBoardHtml(
       statusPriceSummaries({
         closed: sets.closed,
         active: sets.active,
+        unsold: sets.unsold,
       }),
     ),
   }

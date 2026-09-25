@@ -269,6 +269,10 @@ export async function syncMailboxWindow(params: {
         meta,
         universe: mailUniverse,
         sb,
+        // The rules' leftovers that still look transactional get one Grok
+        // read (lib/tc/mail-model-stage.ts: files only at >= 0.9 confidence,
+        // never dismisses). Measured 2026-09-24: about 4 messages a day.
+        modelStage: true,
       })
       if (r.status === 'filed') vault.filed++
       else if (r.status === 'ambiguous' || r.status === 'unfiled_transaction') vault.queued++

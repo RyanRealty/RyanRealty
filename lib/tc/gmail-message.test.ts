@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createHash } from 'node:crypto'
-import { bulkSignals, extractBody, messageKeyFor, parseAddressList, pdfParts, threadKeyFor } from './gmail-message'
+import { bulkSignals, extractBody, messageKeyFor, otherAttachmentNames, parseAddressList, pdfParts, threadKeyFor } from './gmail-message'
 
 const h = (pairs: Record<string, string>) => Object.entries(pairs).map(([name, value]) => ({ name, value }))
 
@@ -58,5 +58,19 @@ describe('bodies and attachments', () => {
       ],
     })
     expect(parts.map((p) => p.filename)).toEqual(['Offer.pdf', 'SCO1.PDF'])
+  })
+
+  it("names the other files attached, never the PDFs or a signature's images (a property manager's cash-flow sheet)", () => {
+    const names = otherAttachmentNames({
+      mimeType: 'multipart/mixed',
+      parts: [
+        { mimeType: 'text/plain', body: { data: b64('x') } },
+        { mimeType: 'application/pdf', filename: 'Offer.pdf', body: { attachmentId: 'A1', size: 1000 } },
+        { mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename: 'Cash Flow 52678 Golden Astor.xlsx', body: { attachmentId: 'A2', size: 19323 } },
+        { mimeType: 'image/png', filename: 'image001.png', body: { attachmentId: 'A3', size: 10 } },
+        { mimeType: 'image/jpeg', filename: '20702 Beaumont front.jpg', body: { attachmentId: 'A4', size: 10 } },
+      ],
+    })
+    expect(names).toEqual(['Cash Flow 52678 Golden Astor.xlsx', '20702 Beaumont front.jpg'])
   })
 })

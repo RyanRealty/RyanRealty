@@ -28,6 +28,9 @@ export const MAIL_METHOD_LABEL: Record<string, string> = {
   manual: 'filed by hand',
 }
 
+/** A file this message could also belong to — the rules' own runner-up reads from `match_detail.candidates`. */
+export type MailFileCandidate = { dealId: string; address: string; propertyKey: string; stage: string; evidence: string[] }
+
 export type DealMailRow = {
   id: string
   sentAt: string
@@ -47,11 +50,13 @@ export type DealMailRow = {
   offerId: string | null
   mailboxes: string[]
   decidedBy: string
+  /** Other files the rules considered for this message (never includes the one it landed on) — the correction picker's defaults. */
+  candidates: MailFileCandidate[]
 }
 
 export type MailQueueRow = DealMailRow & {
   propertyHint: string | null
-  candidates: Array<{ dealId: string; address: string; propertyKey: string; stage: string; evidence: string[] }>
+  candidates: MailFileCandidate[]
 }
 
 export type MailQueueGroup = {

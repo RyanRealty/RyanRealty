@@ -284,7 +284,7 @@ describe('letter craft Matt ADD 2026-09-12', () => {
     expect(html).toContain('Lot size')
   })
 
-  it('prints list $/sf and sold $/sf summaries by status from the selected homes', () => {
+  it('prints one status table with List, Sold and $/sqft from the selected homes', () => {
     const extras = {
       marketArea: {
         expiredPeers: [
@@ -341,20 +341,21 @@ describe('letter craft Matt ADD 2026-09-12', () => {
     const { html } = renderCmaHtml(a)
     const immersive = renderImmersiveCmaHtml({ ...a, broker }, 'https://ryan-realty.com')
     for (const doc of [html, immersive]) {
-      expect(doc).toContain('data-ppsf-status="board"')
-      expect(doc).toContain('Dollars a square foot')
-      expect(doc).toContain('List $/sf')
-      expect(doc).toContain('Sold $/sf')
-      expect(doc).toContain('>Sold<')
-      expect(doc).toContain('>Active<')
-      expect(doc).toContain('>Expired<')
-      // 510000/1580 list and 500000/1580 sold on the five closed sales.
-      expect(doc).toContain('$323')
-      expect(doc).toContain('$316')
+      // One status table, FlexMLS style (Matt 2026-09-24): the separate
+      // "Dollars a square foot" board is folded in as its $/sqft column.
+      expect(doc).toContain('data-status-price="board"')
+      expect(doc).not.toContain('data-ppsf-status="board"')
+      expect(doc).not.toContain('Dollars a square foot')
+      expect(doc).toMatch(/scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/)
+      expect(doc).toContain('<tbody data-status="closed">')
+      expect(doc).toContain('<tbody data-status="active">')
+      expect(doc).toContain('<tbody data-status="expired">')
+      // 500000/1580 sold on the five closed sales = $316 a foot.
+      expect(doc).toMatch(/<tbody data-status="closed">[\s\S]*?<th scope="row">Median<\/th><td class="n">\$510,000<\/td><td class="n">\$500,000<\/td><td class="n">\$316<\/td>/)
       // Active 520000/1600 = 325; expired 540000/1500 = 360.
-      expect(doc).toContain('$325')
-      expect(doc).toContain('$360')
-      expect(doc).not.toMatch(/data-ppsf-status="board"[\s\S]{0,800}months of supply/i)
+      expect(doc).toMatch(/<tbody data-status="active">[\s\S]*?<td class="n">\$325<\/td>/)
+      expect(doc).toMatch(/<tbody data-status="expired">[\s\S]*?<td class="n">\$360<\/td>/)
+      expect(doc).not.toMatch(/data-status-price="board"[\s\S]{0,2400}months of supply/i)
     }
   })
 })

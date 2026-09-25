@@ -533,10 +533,10 @@ pulls `main` and reads that file first. See [`AGENTS.md`](AGENTS.md).
 `.cursor/skills/`, `marketing_brain_skills/`, `social_media_skills/`, `automation_skills/`) or
 in Cursor's bundled paths, **read that skill before doing the work**.
 
-**Mandatory:** `engineering:code-review` on every meaningful change before ship.
-`engineering:deploy-checklist` before any production deploy. `design:design-system` when
-shadcn/ui compliance is in question. `data:*` fires automatically on any Supabase/SQL/analytics
-task. Everything else fires on trigger match.
+**Mandatory:** the built-in `code-review` skill on every meaningful change before ship,
+`npm run deploy:verify` after a production deploy, `design_system/ryan-realty/SKILL.md` when
+shadcn/ui compliance is in question, §0 and §7 on any Supabase/SQL/analytics task. Everything
+else fires on trigger match.
 
 ## Sister skill libraries
 
