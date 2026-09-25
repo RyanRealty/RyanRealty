@@ -37,6 +37,7 @@ import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
+import { letterOwnerDisplayName, preparedCoverLine } from '@/lib/cma/letter-privacy'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -286,7 +287,11 @@ function heroForSubject(subject: CmaSubject): { src: string | null; caption: str
 function coverPage(a: RenderCmaArgs): PageDef {
   // Cover prefers MLS photo; never a second map (C9). Non-map fallback when no photo.
   const hero = heroForSubject(a.subject)
-  const prepared = `Prepared by ${a.broker.displayName}, Ryan Realty`
+  const prepared = preparedCoverLine({
+    brokerName: a.broker.displayName,
+    generatedAt: dateLong(a.generatedAtIso),
+    ownerName: letterOwnerDisplayName(a.client?.name),
+  })
   // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
   // Low · High · Recommended once. Never sole legacy cover-price.
   const payoff = letterCoverPayoffHtml(a.pricing)
@@ -301,7 +306,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
       <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
       <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}</div>
       ${payoff}
-      <p class="cover-presented">${esc(`${prepared} · ${dateLong(a.generatedAtIso)}`)}</p>
+      <p class="cover-presented">${esc(prepared)}</p>
       ${hero.stale ? `<p class="hero-caption">${esc(hero.caption)}</p>` : ''}
     </div>
   </div>`,

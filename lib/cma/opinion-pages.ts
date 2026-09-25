@@ -38,6 +38,7 @@ import {
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
 import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
+import { letterOwnerDisplayName, preparedClosingLine } from '@/lib/cma/letter-privacy'
 import { listingTimelinePhoneSvg, listingTimelineSvg, listingMarketSlopesPhoneSvg, listingMarketSlopesSvg } from '@/lib/cma/market-charts'
 import {
   listingMarketSentence,
@@ -1410,7 +1411,10 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
     </div>
   </div>
   <p class="fine">${esc(
-    `Prepared ${dateLong(a.generatedAtIso)}. This is a comparative market analysis. It is not an appraisal.`,
+    preparedClosingLine({
+      generatedAt: dateLong(a.generatedAtIso),
+      ownerName: letterOwnerDisplayName(a.client?.name ?? null),
+    }),
   )}</p>
   </div>`
 }

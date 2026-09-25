@@ -75,7 +75,63 @@ export function letterContainsOwnerContactNames(
 /** Greeting used while the broker's name ruling is on hold. */
 export const HELD_LETTER_GREETING = 'Hi there,'
 
-/** Cover / signature line: never "Prepared for <name>". */
+/**
+ * One-line flip for the two owner-addressed prepared lines (cover + closing).
+ * Default off: names stay out of the letter until the broker rules them in.
+ */
+export const CMA_LETTER_SHOW_OWNER_NAME = false
+
+/** Full owner/contact name for the two prepared lines, or null. */
+export function letterOwnerDisplayName(source: LetterNameSource | string | null | undefined): string | null {
+  if (typeof source === 'string') {
+    const t = source.trim()
+    return t || null
+  }
+  const raw = [source?.clientName, source?.ownerName, source?.contactName]
+    .map((s) => (typeof s === 'string' ? s.trim() : ''))
+    .find(Boolean)
+  return raw || null
+}
+
+function showOwnerName(override?: boolean): boolean {
+  return override ?? CMA_LETTER_SHOW_OWNER_NAME
+}
+
+/**
+ * Cover line. Flag on: "Prepared for <name> by Matt Ryan, Ryan Realty · <date>".
+ * Flag off: "Prepared by Matt Ryan, Ryan Realty · <date>".
+ */
+export function preparedCoverLine(args: {
+  brokerName?: string | null
+  generatedAt: string
+  ownerName?: string | null
+  showOwnerName?: boolean
+}): string {
+  const who = (args.brokerName ?? '').trim() || 'Matt Ryan'
+  const date = args.generatedAt.trim()
+  const owner = showOwnerName(args.showOwnerName) ? (args.ownerName ?? '').trim() : ''
+  if (owner) return `Prepared for ${owner} by ${who}, Ryan Realty · ${date}`
+  return `Prepared by ${who}, Ryan Realty · ${date}`
+}
+
+/**
+ * Closing line. Flag on: "Prepared <date> for <name>. This is a comparative…"
+ * Flag off: "Prepared <date>. This is a comparative…"
+ */
+export function preparedClosingLine(args: {
+  generatedAt: string
+  ownerName?: string | null
+  showOwnerName?: boolean
+}): string {
+  const date = args.generatedAt.trim()
+  const owner = showOwnerName(args.showOwnerName) ? (args.ownerName ?? '').trim() : ''
+  if (owner) {
+    return `Prepared ${date} for ${owner}. This is a comparative market analysis. It is not an appraisal.`
+  }
+  return `Prepared ${date}. This is a comparative market analysis. It is not an appraisal.`
+}
+
+/** Cover / signature line: never "Prepared for <name>" when the flag is off. */
 export function preparedLineWithoutName(brokerName?: string | null): string {
   const who = (brokerName ?? '').trim()
   return who ? `Prepared by ${who}, Ryan Realty` : 'Prepared'
@@ -93,13 +149,33 @@ export type LetterNameCheck = {
   detail: string
 }
 
+/**
+ * When the owner-name flag is on, the two prepared lines may carry the name.
+ * Strip those sentences so a name elsewhere still fails the contract.
+ */
+export function htmlWithoutAllowedPreparedNameLines(
+  htmlOrText: string,
+  opts?: { showOwnerName?: boolean },
+): string {
+  if (!showOwnerName(opts?.showOwnerName)) return htmlOrText
+  return htmlOrText
+    .replace(/Prepared for\s+[^<]+?\s+by\s+[^,<]+,\s+Ryan Realty\s+·\s+[^<]+/gi, 'Prepared by Ryan Realty')
+    .replace(
+      /Prepared\s+[^.<]+?\s+for\s+[^.<]+(?=\.\s+This is a comparative market analysis)/gi,
+      'Prepared',
+    )
+}
+
 /** Hard refuse: the letter or email draft carries the row's owner/contact name. */
 export function letterOwnerNameCheck(
   htmlOrText: string,
   source: LetterNameSource | null | undefined,
+  opts?: { showOwnerName?: boolean },
 ): LetterNameCheck {
   const tokens = ownerContactNameTokens(source)
-  const hit = letterContainsOwnerContactNames(htmlOrText, source)
+  const graded = htmlWithoutAllowedPreparedNameLines(htmlOrText, opts)
+  const hit = letterContainsOwnerContactNames(graded, source)
+  const allowed = showOwnerName(opts?.showOwnerName)
   return {
     id: 'letter-no-owner-names',
     severity: 'hard',
@@ -107,7 +183,9 @@ export function letterOwnerNameCheck(
     detail: hit
       ? `Letter or email draft printed owner/contact name token(s): ${tokens.join(', ')}.`
       : tokens.length
-        ? 'Owner/contact name tokens are absent from the letter and email draft.'
+        ? allowed
+          ? 'Owner/contact name tokens appear only on the two prepared lines, or not at all.'
+          : 'Owner/contact name tokens are absent from the letter and email draft.'
         : 'Row carries no owner/contact name tokens.',
   }
 }

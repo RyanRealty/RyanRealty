@@ -37,6 +37,7 @@ import { DID_NOT_SELL_HEADING } from '@/lib/cma/did-not-sell'
 import { escapeHtml } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
+import { letterOwnerDisplayName, preparedClosingLine } from '@/lib/cma/letter-privacy'
 
 const esc = escapeHtml
 
@@ -241,7 +242,10 @@ function nextScene(a: OpinionSceneArgs): string {
         <div class="r">${nextStepNoteHtml(a)}</div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Oregon Real Estate License # ${esc(br.licenseNumber)}` : ''}</div>
         <div class="fine r">${esc(
-          `Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })}. This is a comparative market analysis. It is not an appraisal.`,
+          preparedClosingLine({
+            generatedAt: formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' }),
+            ownerName: letterOwnerDisplayName(a.clientName ?? a.client?.name ?? null),
+          }),
         )}</div>
         <div class="print-out r"><a href="?print=1" data-rr-track="cma-print">Print this report</a></div>
       </div>

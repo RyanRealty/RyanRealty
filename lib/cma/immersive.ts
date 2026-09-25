@@ -17,6 +17,7 @@ import {
 } from '@/lib/cma/immersive-interactions'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 import { assembleOpinionScenes } from '@/lib/cma/opinion-scenes'
+import { letterOwnerDisplayName, preparedCoverLine } from '@/lib/cma/letter-privacy'
 import { renderCompPinMapScript } from '@/lib/cma/comp-pin-map'
 
 type ImmersiveArgs = RenderCmaArgs & { broker: CmaBroker }
@@ -60,8 +61,12 @@ ${immersiveInteractionCss()}
     <div class="hero-kick">${esc(inboundImmersiveHeroKick(s.streetAddress, a.generatedAtIso))}</div>
     <h1 class="hero-h">${esc(s.streetAddress)}</h1>
     <div class="hero-sub">${esc(s.city)}, ${esc(s.state)} ${esc(s.postalCode ?? '')}${cleanText(s.subdivision) ? ` · ${esc(cleanText(s.subdivision)!)}` : ''}</div>
-    <div class="hero-for">Prepared by ${esc(a.broker.displayName)}, Ryan Realty · ${esc(
-      dateLong(a.generatedAtIso),
+    <div class="hero-for">${esc(
+      preparedCoverLine({
+        brokerName: a.broker.displayName,
+        generatedAt: dateLong(a.generatedAtIso),
+        ownerName: letterOwnerDisplayName(a.client?.name),
+      }),
     )}</div>
     ${immersiveHeroNumberHtml(a)}
   </div>
