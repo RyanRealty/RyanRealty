@@ -2419,5 +2419,21 @@ describe('re-decide dry run: a neighbour on our street, and a contact before the
       thread: null,
     })
     expect(report.dealId).toBe('mayfield')
+    // Only a veto on the one file: a TC firm on several files is still on several,
+    // the files out of contract that day do not drop away and leave one standing
+    // (the golden eval's "SPDS questions" filed on another of the firm's files).
+    const other: DealFacts = {
+      ...mayfield,
+      dealId: 'other',
+      address: '5663 Impala Avenue, Redmond, OR, 97756',
+      cycles: [cycle({ id: 'ot-sale', status: 'Closed', acceptanceDate: '2023-11-01', closeDate: '2023-12-15' })],
+      partyEmails: [],
+    }
+    const tc = decideMailFiling({
+      facts: mail({ from: ['inspector@inspections.example'], sentAt: '2023-11-28T14:13:00Z', subject: 'SPDS questions', body: 'A few questions on the disclosures.' }),
+      deals: [...DEALS, mayfield, other],
+      thread: null,
+    })
+    expect(tc.reasons.join(' / ')).not.toContain('exactly one open deal')
   })
 })

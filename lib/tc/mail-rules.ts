@@ -1943,8 +1943,7 @@ export function decideMailFiling(input: {
   const open = scored.filter((c) => {
     const d = byId.get(c.dealId)
     if (!d || !dealOpenAt(d, facts.sentAt)) return false
-    if (hasEvidence(c, 'party')) return true
-    if (hasEvidence(c, 'contact') && contactOnFileAt(d, facts.sentAt)) return true
+    if (hasEvidence(c, 'party', 'contact')) return true
     return hasEvidence(c, 'name') && (senderNamedOn.has(c.dealId) || transactionMail)
   })
   const eligible = open.filter((c) => {
@@ -1957,8 +1956,17 @@ export function decideMailFiling(input: {
     const d = byId.get(c.dealId)
     return d && named.some((p) => (d.partyNames ?? []).some((n) => personNameMatches(p.name, n))) ? 'party' : 'contact'
   }
+  // A contact (not a client) on a single file, writing long before that file's
+  // contract: about something else. Only a veto on the one file; it never
+  // narrows several files to one (a TC firm on four files is still on four).
+  const onlyContactBeforeContract = (c: MailCandidate) => {
+    const d = byId.get(c.dealId)
+    return !hasEvidence(c, 'party') && hasEvidence(c, 'contact') && !!d && !contactOnFileAt(d, facts.sentAt)
+  }
   if (open.length && !eligible.length) {
     reasons.push(`subject names ${subjectProperty}, which is not the sender's deal`)
+  } else if (eligible.length === 1 && onlyContactBeforeContract(eligible[0])) {
+    reasons.push('a contact on one file, long before its contract')
   } else if (eligible.length === 1) {
     const only = eligible[0]
     const method = methodFor(only)
