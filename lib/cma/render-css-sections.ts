@@ -910,9 +910,10 @@ export function cmaSectionStyles(): string {
   h2.section, h3.subhead, h4.subhead { break-after: avoid; page-break-after: avoid; }
   table.comps tr, table.kv tr { break-inside: avoid; page-break-inside: avoid; }
   /* Small units only. A figure with its caption, a map tile, a source
-     note with its strip, the closing signature plus the prepared line.
-     Large tables already repeat thead and must split. */
-  figure, .pin-map-wrap, .lot-tile, .keep-note, .keep-close {
+     note with its strip, the closing signature plus the prepared line,
+     a sub-section heading with its intro. Large tables already repeat
+     thead and must split. */
+  figure, .pin-map-wrap, .lot-tile, .keep-note, .keep-close, .keep-open {
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -923,15 +924,64 @@ export function cmaSectionStyles(): string {
     break-inside: auto !important;
     page-break-inside: auto !important;
   }
-  /* Lead sentence stays with the figure that follows. */
-  .chart-read, h4.subhead, .matrix-group-h {
+  /* Sub-section opener (heading + short intro) stays with the table or
+     chart that follows. Do NOT put break-after: avoid on .chart-read:
+     that glued a chapter-tail paragraph to the next strip and pushed
+     both onto the next sheet. */
+  .keep-open, h4.subhead, .matrix-group-h {
     break-after: avoid;
     page-break-after: avoid;
+  }
+  .keep-open + .comp-matrix-wrap,
+  .keep-open + table,
+  .keep-open + .szn,
+  .keep-open + .ppsf-status-caption,
+  .keep-open + p,
+  h3.subhead + .comp-matrix-wrap,
+  h3.subhead + table,
+  h3.subhead + .szn,
+  h3.subhead + .chart-read,
+  h4.subhead + .comp-matrix-wrap,
+  h4.subhead + table,
+  .chart-read + .comp-matrix-wrap,
+  .ppsf-status-caption + .comp-matrix-wrap,
+  .ppsf-status-caption + p {
+    break-before: avoid;
+    page-break-before: avoid;
+  }
+  h3.subhead + .chart-read,
+  h3.subhead + p,
+  .keep-open + .ppsf-status-caption,
+  .keep-open + p,
+  .ppsf-status-caption + p {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  table.comp-matrix thead,
+  table.realization thead,
+  table.kv.status-price-table thead,
+  table.kv.status-price-table tbody:first-of-type {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  table.kv.status-price-table tbody:first-of-type {
+    break-before: avoid;
+    page-break-before: avoid;
+  }
+  ul.peer-stories li { break-inside: avoid; page-break-inside: avoid; }
+  ul.peer-stories + .small {
+    break-before: avoid;
+    page-break-before: avoid;
+    break-after: page;
+    page-break-after: always;
   }
   /* Caption stays with the table/figure ABOVE it, never with the next
      chapter. break-after: avoid on a caption glued it to following
      content and spilled it above the next section header. */
-  figcaption, caption, .ppsf-status-caption {
+  figcaption, caption, .ppsf-status-caption,
+  table + .small, table + p.small {
     break-before: avoid;
     page-break-before: avoid;
     break-after: auto;

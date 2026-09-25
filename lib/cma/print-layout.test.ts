@@ -146,6 +146,7 @@ describe('print CMA layout', () => {
     expect(html).not.toContain('class="toc"')
     expect(html).toContain('class="page-open"')
     expect(html).toContain('class="keep-close"')
+    expect(html).toContain('class="keep-open"')
   })
 
   it('does not force every inner sheet to 11 inches of empty cream', () => {
@@ -164,8 +165,12 @@ describe('print CMA layout', () => {
   it('keeps figure and table captions with their figure', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
     expect(css).toMatch(/\.pin-map-wrap[\s\S]*?break-inside:\s*avoid/)
-    expect(css).toMatch(/\.chart-read[\s\S]*?break-after:\s*avoid/)
+    expect(css).toMatch(/\.keep-open[\s\S]*?break-after:\s*avoid/)
+    expect(css).toMatch(/\.keep-open \+ \.comp-matrix-wrap[\s\S]*?break-before:\s*avoid/)
+    expect(css).toMatch(/ul\.peer-stories \+ \.small[\s\S]*?break-before:\s*avoid/)
+    expect(css).toMatch(/ul\.peer-stories \+ \.small[\s\S]*?break-after:\s*page/)
     expect(css).toMatch(/figcaption[\s\S]*?break-before:\s*avoid/)
+    expect(css).toMatch(/table \+ \.small[\s\S]*?break-before:\s*avoid/)
     expect(css).toMatch(/\.comp-matrix-wrap[\s\S]*?break-inside:\s*auto/)
     expect(css).toMatch(/\.page-open[\s\S]*?break-inside:\s*avoid/)
     expect(css).toMatch(/@media print \{[\s\S]*?\.page-closing \{ padding: 16px 28px 20px; \}/)

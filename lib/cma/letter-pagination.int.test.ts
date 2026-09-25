@@ -309,9 +309,21 @@ function isSectionHead(text: string): boolean {
   return isLetterSpaced(t) && letters.length >= 10
 }
 
-function isBody(text: string): boolean {
+function isSubhead(text: string): boolean {
   const t = text.trim()
   if (isChrome(t) || isPgMeta(t) || isSectionHead(t)) return false
+  if (t.length < 8 || t.length > 90) return false
+  if (!/^[A-Z]/.test(t)) return false
+  if ((t.match(/\./g) ?? []).length > 1) return false
+  return (
+    /:/.test(t) ||
+    /^(When|What|How|The first|The listings|Closed|Active|Pending|Homes for sale|Median|Sorry)\b/.test(t)
+  )
+}
+
+function isBody(text: string): boolean {
+  const t = text.trim()
+  if (isChrome(t) || isPgMeta(t) || isSectionHead(t) || isSubhead(t)) return false
   return /[a-z]/.test(t) && t.replace(/\s/g, '').length >= 12
 }
 
@@ -374,6 +386,44 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
       if (under.length === 0) {
         failures.push(
           `${label} p${pageNo}: orphaned heading at the bottom ("${lowestHead.text.slice(0, 48)}")`,
+        )
+      }
+    }
+
+    const subs = belowHead.filter((r) => isSubhead(r.text))
+    const lowestSub = [...subs].sort((a, b) => a.y0 - b.y0)[0]
+    if (lowestSub && lowestSub.y0 < cy0 + 0.15 * boxH) {
+      const under = belowHead.filter((r) => r.y1 < lowestSub.y0 - 2)
+      if (!hasTableInk(under)) {
+        failures.push(
+          `${label} p${pageNo}: orphaned subheading in the last 15% ("${lowestSub.text.slice(0, 48)}")`,
+        )
+      }
+    }
+
+    if (pageNo < pages.length) {
+      const lowest = belowHead.length ? Math.min(...belowHead.map((r) => r.y0)) : cy0
+      const leftover = lowest - cy0
+      const nextH = sizes[idx + 1]?.h ?? h
+      const nextTopBand = nextH - margins.top - 0.15 * boxH
+      const nextOpensChapter = next.some(
+        (r) => !isChrome(r.text) && isPgMeta(r.text) && r.y1 > nextTopBand,
+      )
+      const nextFlow = next.filter(
+        (r) => !isChrome(r.text) && !isPgMeta(r.text) && !isSectionHead(r.text),
+      )
+      const nextTop = [...nextFlow].sort((a, b) => b.y1 - a.y1)[0]
+      // End-of-chapter empty space (next sheet opens a new header) is fine.
+      // A pushed tail is continuation prose at the top of the next sheet
+      // while this sheet still had room.
+      if (
+        leftover > 0.2 * boxH &&
+        nextTop &&
+        isBody(nextTop.text) &&
+        !nextOpensChapter
+      ) {
+        failures.push(
+          `${label} p${pageNo}: ${(leftover / boxH * 100).toFixed(0)}% empty, next sheet opens with "${nextTop.text.slice(0, 48)}"`,
         )
       }
     }

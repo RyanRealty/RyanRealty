@@ -879,6 +879,22 @@ function matrixStack(input: {
 }
 
 /**
+ * A matrix lead may be one plain sentence, one HTML block, or a chapter
+ * sentence joined to an HTML block. Escape only the plain parts so a
+ * caller that already wrapped a sentence does not print the tags.
+ */
+function leadBlocksHtml(leadRaw: string): string {
+  const raw = leadRaw.trim()
+  if (!raw) return ''
+  return raw
+    .split(/(?=<p\b)/i)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => (part.startsWith('<') ? part : `<p class="chart-read">${esc(part)}</p>`))
+    .join('\n  ')
+}
+
+/**
  * ONE MATRIX. The generic behind all three.
  *
  * `entries[0]` is always the reader's own home; the rest are the set. The
@@ -939,7 +955,7 @@ export function renderMatrixHtml(input: {
     const adjFolded = foldIdenticalRows([subjAdj, ...adjCols], ADJUSTMENT_ROWS)
     adjustment = { cols: adjCols, rows: adjFolded.rows }
     const adjGroups = splitEvenly(adjCols)
-    adjustmentHtml = `<h4 class="subhead adjustments-h">How each sale was adjusted</h4>
+    adjustmentHtml = `<div class="keep-open"><h4 class="subhead adjustments-h">How each sale was adjusted</h4></div>
   ${adjGroups
     .map((group) =>
       matrixTable([subjAdj, ...group], adjFolded.rows, input.family, {
@@ -954,11 +970,15 @@ export function renderMatrixHtml(input: {
     input.omitHeading || !input.heading.trim()
       ? ''
       : `<h3 class="subhead">${esc(input.heading)}</h3>`
+  const leadHtml = leadBlocksHtml(input.lead ?? '')
+  const captionHtml = statusPpsfCaptionHtml(input.family, rest)
+  const foldedHtml = folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''
+  const opener = `${headingHtml}
+  ${leadHtml}`
   return `
-  ${headingHtml}
-  ${input.lead ?? ''}
-  ${statusPpsfCaptionHtml(input.family, rest)}
-  ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
+  ${opener.trim() ? `<div class="keep-open">${opener}</div>` : ''}
+  ${captionHtml}
+  ${foldedHtml}
   ${tables}
   ${matrixStack({
     family: input.family,

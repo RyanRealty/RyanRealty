@@ -193,6 +193,7 @@ describe('CMA letter copy has no em dash', () => {
     expect(html).toContain('Closed sales: these set the price')
     expect(html).toContain('named in it: the recorded facts')
     expect(html).toContain('Active: asking in this range now')
+    expect(html).toMatch(/class="keep-open"[\s\S]*Active: asking in this range now/)
     expect(html).toContain('Pending: under contract in this range')
     // Stylesheet comments are developer notes, not printed copy. The reader
     // sees the markup outside <style>.

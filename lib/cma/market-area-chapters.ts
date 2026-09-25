@@ -721,8 +721,8 @@ export function renderOfferTimingHtml(a: {
   if (!timing) {
     const withheld = statWithheldReason(raw)
     return withheld
-      ? `${a.bare ? '' : '<h3 class="subhead">When homes like yours get their offer</h3>'}
-  <p class="chart-read">${esc(withheld)}</p>`
+      ? `<div class="keep-open">${a.bare ? '' : '<h3 class="subhead">When homes like yours get their offer</h3>'}
+  <p class="chart-read">${esc(withheld)}</p></div>`
       : ''
   }
   const subjectDays = subjectListingFailed(a.subject) ? subjectDomDays(a.subject) : null
@@ -749,8 +749,8 @@ export function renderOfferTimingHtml(a: {
   ]
     .filter(Boolean)
     .join(' ')
-  return `<h3 class="subhead">When homes like yours get their offer</h3>
-  <div class="szn timing-wide">${wide}</div>
+  return `<div class="keep-open"><h3 class="subhead">When homes like yours get their offer</h3>
+  <div class="szn timing-wide">${wide}</div></div>
   ${phone ? `<div class="szn timing-phone">${phone}</div>` : ''}
   ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}
   ${a.bare ? '' : `<p class="small">${esc(chapter2SourceLine(timing.city, timing.windowMonths, timing.n))}</p>`}`
@@ -768,8 +768,8 @@ export function renderAskOutcomeHtml(a: {
   if (!outcome) {
     const withheld = statWithheldReason(raw)
     return withheld
-      ? `<h3 class="subhead">The first price decides the days</h3>
-  <p class="chart-read">${esc(withheld)}</p>`
+      ? `<div class="keep-open"><h3 class="subhead">The first price decides the days</h3>
+  <p class="chart-read">${esc(withheld)}</p></div>`
       : ''
   }
   const mine: AskOutcomeGroup['key'] | null = subjectListingFailed(a.subject) ? 'did-not-sell' : null
@@ -805,8 +805,8 @@ export function renderAskOutcomeHtml(a: {
   ]
     .filter(Boolean)
     .join(' ')
-  return `<h3 class="subhead">The first price decides the days</h3>
-  <div class="szn outcome-wide">${wide}</div>
+  return `<div class="keep-open"><h3 class="subhead">The first price decides the days</h3>
+  <div class="szn outcome-wide">${wide}</div></div>
   ${phone ? `<div class="szn outcome-phone">${phone}</div>` : ''}
   ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}
   ${a.bare ? '' : `<p class="small">${esc(askOutcomeSourceLine(outcome))}</p>`}`
@@ -936,8 +936,8 @@ export function renderAskRealizationHtml(a: {
   if (!table) {
     const withheld = statWithheldReason(raw)
     return withheld
-      ? `<h3 class="subhead">What the first asking price actually realized</h3>
-  <p class="chart-read">${esc(withheld)}</p>`
+      ? `<div class="keep-open"><h3 class="subhead">What the first asking price actually realized</h3>
+  <p class="chart-read">${esc(withheld)}</p></div>`
       : ''
   }
   const subjectDays = subjectDomDays(a.subject)
@@ -969,7 +969,12 @@ export function renderAskRealizationHtml(a: {
     .join('')
   const period =
     table.windowMonths === 12 ? 'the last 12 months' : `the last ${int(table.windowMonths)} months`
-  return `<h3 class="subhead">What the first asking price actually realized</h3>
+  const caption = a.bare
+    ? ''
+    : `<p class="small">${esc(
+        `Single-family sales in ${table.city} over ${period}, from the Oregon Data Share MLS. Each row is the median close over the price that listing first asked, across the sales in that row.`,
+      )}</p>`
+  return `<div class="keep-open"><h3 class="subhead">What the first asking price actually realized</h3></div>
   <table class="kv realization">
     <colgroup><col class="rz-weeks"/><col class="rz-n"/><col class="rz-mark"/><col class="rz-share"/></colgroup>
     <thead><tr><th>Weeks to an offer</th><th class="n">Sales</th><th class="rz-mark">${esc(
@@ -977,14 +982,8 @@ export function renderAskRealizationHtml(a: {
     )}</th><th class="n">Share of the first ask</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
-  ${realizationReading(table, mine, subjectDays, failed)}
-  ${
-    a.bare
-      ? ''
-      : `<p class="small">${esc(
-          `Single-family sales in ${table.city} over ${period}, from the Oregon Data Share MLS. Each row is the median close over the price that listing first asked, across the sales in that row.`,
-        )}</p>`
-  }`
+  ${caption}
+  ${realizationReading(table, mine, subjectDays, failed)}`
 }
 
 /**

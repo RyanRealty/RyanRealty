@@ -201,8 +201,10 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
       : "$/sqft is each home's list price over its own living area.",
   ].join(' ')
   return `<div class="status-price" data-status-price="board">
+  <div class="keep-open">
   <h3 class="subhead">${esc(rows.map((r) => r.label).join(' · '))}</h3>
   <p class="chart-read">${esc(read)}</p>
+  </div>
   <table class="kv is-wide status-price-table">
     <colgroup><col class="sp-stat">${'<col class="sp-fig">'.repeat(columns - 1)}</colgroup>
     <thead><tr><th scope="col"></th><th class="n" scope="col">List</th>${showSold ? '<th class="n" scope="col">Sold</th>' : ''}<th class="n" scope="col">$/sqft</th></tr></thead>
