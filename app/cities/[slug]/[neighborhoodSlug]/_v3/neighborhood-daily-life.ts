@@ -24,9 +24,11 @@ import type { PlaceSchool } from '@/lib/data'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import { parkDepthLine } from '@/lib/site/place-recreation'
 
-/** The line under the section when it lists attendance schools. */
+/** The line under the section: what each kind of row is. */
 export const NEIGHBORHOOD_SCHOOLS_TRACE =
   'Schools are the Deschutes County attendance areas that cover this neighborhood.'
+export const NEIGHBORHOOD_DAILY_PARKS_TRACE =
+  "Parks are the ones this neighborhood's own write-up names, each with a page of its own."
 
 const SCHOOL_LEVEL_LABEL: Record<PlaceSchool['level'], string> = {
   elementary: 'Elementary',
@@ -40,28 +42,30 @@ function resolvePark(name: string) {
   return CO_PARKS.find((park) => park.name.trim().toLowerCase() === needle)
 }
 
+export type DailyLifeRows = {
+  /** The attendance schools, elementary then middle then high. */
+  schools: V3LedgerPlainRow[]
+  /** The parks the authored write-up names, when each has a page. */
+  parks: V3LedgerPlainRow[]
+}
+
 export function dailyLifeRows(
   content: ResortCommunityContent | null,
   _cityName: string,
-  schools: readonly PlaceSchool[] = [],
-): V3LedgerPlainRow[] {
-  const rows: V3LedgerPlainRow[] = []
+  placeSchools: readonly PlaceSchool[] = [],
+): DailyLifeRows {
   const seen = new Set<string>()
-
-  const push = (row: V3LedgerPlainRow) => {
-    const id = row.id ?? row.href
-    if (seen.has(id)) return
-    seen.add(id)
-    rows.push(row)
-  }
+  const schools: V3LedgerPlainRow[] = []
+  const parks: V3LedgerPlainRow[] = []
 
   // Already ordered elementary, middle, high, and by share inside a level.
-  for (const school of schools) {
+  for (const school of placeSchools) {
     const slug = school.slug?.trim()
     const name = school.name?.trim()
     const level = SCHOOL_LEVEL_LABEL[school.level]
-    if (!slug || !name || !level) continue
-    push({
+    if (!slug || !name || !level || seen.has(slug)) continue
+    seen.add(slug)
+    schools.push({
       href: `/schools/${slug}`,
       when: v3Text(level),
       what: v3Text(name),
@@ -74,10 +78,11 @@ export function dailyLifeRows(
     const name = amenity.name?.trim()
     if (!name) continue
     const park = resolvePark(name)
-    if (!park) continue
+    if (!park || seen.has(`park:${park.slug}`)) continue
+    seen.add(`park:${park.slug}`)
     const access = amenity.access?.trim()
     const depth = parkDepthLine(park)
-    push({
+    parks.push({
       href: `/parks/${park.slug}`,
       when: v3Text('Park'),
       what: v3Text(park.name),
@@ -86,10 +91,29 @@ export function dailyLifeRows(
     })
   }
 
-  return rows
+  return { schools, parks }
 }
 
-/** True when the rows carry at least one attendance school. */
-export function dailyLifeHasSchools(rows: readonly V3LedgerPlainRow[]): boolean {
-  return rows.some((row) => typeof row.id === 'string' && row.id.startsWith('school-'))
+/**
+ * The daily-life section, or nothing. It opens on schools, so it renders only
+ * when the attendance read returned some: a timed-out read drops the section
+ * and leaves its parks to the page's own Parks section, rather than printing
+ * a second "Parks" section above that one. The heading and the source line
+ * name both kinds of row when both are there.
+ */
+export function dailyLifeSection(rows: DailyLifeRows): {
+  heading: string
+  source: string
+  rows: [V3LedgerPlainRow, ...V3LedgerPlainRow[]]
+} | null {
+  const [first, ...rest] = [...rows.schools, ...rows.parks]
+  if (rows.schools.length === 0 || !first) return null
+  const withParks = rows.parks.length > 0
+  return {
+    heading: withParks ? 'Schools and parks' : 'Schools',
+    source: withParks
+      ? `${NEIGHBORHOOD_SCHOOLS_TRACE} ${NEIGHBORHOOD_DAILY_PARKS_TRACE}`
+      : NEIGHBORHOOD_SCHOOLS_TRACE,
+    rows: [first, ...rest],
+  }
 }

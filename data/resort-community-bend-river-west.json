@@ -20,7 +20,6 @@
     { "category": "Parks", "name": "Pageant Park", "description": "A 0.3-acre park at 691 NW Drake Road on the Deschutes River Trail, with riverfront lawn, benches, and a small boat launch.", "access": "Pedestrian bridge connects to Drake Park" },
     { "category": "Recreation", "name": "Deschutes River Trail (Pioneer Reach)", "description": "A paved multi-use trail widened in 2023, connecting Drake Park north to Pacific Park and south to the Old Mill District, with footbridges crossing the river.", "access": "Trail access at Galveston Avenue" },
     { "category": "Recreation", "name": "Bend Whitewater Park", "description": "A whitewater park opened September 2015 at 166 SW Shevlin Hixon Dr, with a three-channel river stretch for tubing, kayaking, and paddleboarding, about half a mile south along the river.", "access": "Via the Deschutes River Trail" },
-    { "category": "Schools", "name": "Highland School at Kenwood Elementary", "description": "A K-5 Bend-La Pine campus at 701 NW Newport Ave within the neighborhood, feeding to Cascade Middle and Summit High.", "access": "Walkable from most River West addresses" },
     { "category": "Landmark", "name": "Old Mill District", "description": "A 270-acre mixed-use redevelopment of the former lumber-mill site, with 60-plus shops and restaurants and the Hayden Homes Amphitheater, about a mile south along the river.", "access": "Via the Deschutes River Trail or a 5-minute drive" }
   ],
   "drive_times": [
@@ -32,7 +31,7 @@
     { "fact": "River West Neighborhood Association established April 17, 2002; one of 13 districts", "source_url": "https://bendoregon.gov/neighborhood-districts/" },
     { "fact": "Drake Park 13 ac, 1921, 777 NW Riverside Blvd; Pioneer Reach renovated 2023", "source_url": "https://www.bendparksandrec.org/park/drake-park-and-mirror-pond/" },
     { "fact": "Bend Whitewater Park opened Sept 2015, 166 SW Shevlin Hixon Dr, three-channel river stretch", "source_url": "https://en.wikipedia.org/wiki/Bend_Whitewater_Park" },
-    { "fact": "Highland at Kenwood Elementary K-5, 701 NW Newport Ave; feeds Cascade Middle + Summit High", "source_url": "https://www.greatschools.org/oregon/bend/1699-Highland-School-At-Kenwood-Elementary-School/" },
+    { "fact": "Highland School at Kenwood K-5, 701 NW Newport Ave, inside the neighborhood boundary", "source_url": "https://www.greatschools.org/oregon/bend/1699-Highland-School-At-Kenwood-Elementary-School/" },
     { "fact": "Attendance areas covering most of River West: High Lakes Elementary, Pacific Crest Middle, Summit High; Highland School at Kenwood has no attendance area (Deschutes County GIS school attendance areas, share of the neighborhood polygon, read 2026-09-25)", "source_url": "https://maps.deschutes.org/arcgis/rest/services/OpenData/BoundaryFD/MapServer/19" }
   ],
   "sources": [

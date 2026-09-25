@@ -141,7 +141,7 @@ import {
 import { NeighborhoodAlertsStrip } from './_v3/NeighborhoodAlertsSheet.client'
 import { NeighborhoodInsight } from './_v3/NeighborhoodInsight.client'
 import { buildNeighborhoodInsightBoard } from './_v3/neighborhood-insight'
-import { dailyLifeHasSchools, dailyLifeRows, NEIGHBORHOOD_SCHOOLS_TRACE } from './_v3/neighborhood-daily-life'
+import { dailyLifeRows, dailyLifeSection } from './_v3/neighborhood-daily-life'
 import {
   PLACE_NEAR_RECREATION_TRACE,
   recreationNearPoint,
@@ -548,7 +548,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
   })
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
 
-  const dailyRows = dailyLifeRows(richContent, cityName, placeSchools)
+  const dailyLife = dailyLifeSection(dailyLifeRows(richContent, cityName, placeSchools))
   const withCoords = boundaryMapData.pins.filter(
     (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng),
   )
@@ -560,7 +560,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
         }
       : undefined
   const nearbyRecreation = recreationNearPoint(geo?.lat, geo?.lng, {
-    omitHrefs: new Set(dailyRows.map((row) => row.href)),
+    omitHrefs: new Set((dailyLife?.rows ?? []).map((row) => row.href)),
   })
   const newHouses30d = publishableNewCount(publicPace.newCount30d)
   const placeFaqExtras = buildPlaceFaqExtras({
@@ -738,7 +738,6 @@ async function renderNeighborhoodDetail({ params }: Props) {
 
   /* ── The ledgers ───────────────────────────────────────────────────────── */
 
-  const [firstDaily, ...restDaily] = dailyRows
 
   // Every recorded subdivision inside the neighborhood, plus any community
   // row the neighborhood already named. The line under a name is that
@@ -1089,25 +1088,16 @@ async function renderNeighborhoodDetail({ params }: Props) {
             neither neighbour repeats one. */}
         {affordability ? <V3PlaceAffordability id="afford" {...affordability} /> : null}
 
-        {/* Schools are the county attendance areas (Matt 2026-09-24), under
-            their source line. With no attendance read the rows are the
-            authored parks alone, so the section says Parks. */}
-        {firstDaily && dailyLifeHasSchools(dailyRows) ? (
+        {/* Schools are the county attendance areas (Matt 2026-09-24), with the
+            parks the write-up names, under a source line for each kind. */}
+        {dailyLife ? (
           <V3Ledger
             id="daily-life"
             eyebrow={v3Text(`${neighborhood.name} · Daily life`)}
-            heading={v3Text('Schools')}
-            rows={[firstDaily, ...restDaily]}
-            source={v3Text(NEIGHBORHOOD_SCHOOLS_TRACE)}
+            heading={v3Text(dailyLife.heading)}
+            rows={dailyLife.rows}
+            source={v3Text(dailyLife.source)}
             action={{ label: v3Text('Every school'), href: '/schools' }}
-          />
-        ) : firstDaily ? (
-          <V3Ledger
-            id="daily-life"
-            eyebrow={v3Text(`${neighborhood.name} · Daily life`)}
-            heading={v3Text('Parks')}
-            rows={[firstDaily, ...restDaily]}
-            action={{ label: v3Text('Every Central Oregon park'), href: '/parks' }}
           />
         ) : null}
 

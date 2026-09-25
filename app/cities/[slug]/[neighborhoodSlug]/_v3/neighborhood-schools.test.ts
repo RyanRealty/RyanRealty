@@ -5,7 +5,12 @@ import { buildMarketFaq } from '@/lib/site/market-faq'
 import type { PlaceSchool } from '@/lib/data'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import { neighborhoodMarketFaqInput } from '../neighborhood-market'
-import { dailyLifeHasSchools, dailyLifeRows, NEIGHBORHOOD_SCHOOLS_TRACE } from './neighborhood-daily-life'
+import {
+  dailyLifeRows,
+  dailyLifeSection,
+  NEIGHBORHOOD_DAILY_PARKS_TRACE,
+  NEIGHBORHOOD_SCHOOLS_TRACE,
+} from './neighborhood-daily-life'
 
 /**
  * Matt 2026-09-24: neighborhood pages answer schools. The Schools section and
@@ -31,8 +36,7 @@ const AUTHORED = {
 
 describe('neighborhood Schools section', () => {
   it('lists the attendance schools in order, never the authored school names', () => {
-    const rows = dailyLifeRows(AUTHORED, 'Bend', SOUTHEAST_BEND)
-    const schools = rows.filter((row) => String(row.id).startsWith('school-'))
+    const { schools, parks } = dailyLifeRows(AUTHORED, 'Bend', SOUTHEAST_BEND)
     expect(schools.map((row) => row.href)).toEqual([
       '/schools/r-e-jewell-elem',
       '/schools/silver-rail-elem',
@@ -40,15 +44,22 @@ describe('neighborhood Schools section', () => {
       '/schools/caldera-high',
     ])
     expect(JSON.stringify(schools)).toContain('Middle school')
-    expect(JSON.stringify(rows)).not.toContain('Lava Ridge')
-    expect(dailyLifeHasSchools(rows)).toBe(true)
-    expect(NEIGHBORHOOD_SCHOOLS_TRACE).toMatch(/Deschutes County attendance areas/)
+    expect(JSON.stringify([...schools, ...parks])).not.toContain('Lava Ridge')
+    expect(parks.map((row) => row.href)).toEqual(['/parks/drake-park'])
   })
 
-  it('keeps the authored parks and says so when no school came back', () => {
-    const rows = dailyLifeRows(AUTHORED, 'Bend', [])
-    expect(dailyLifeHasSchools(rows)).toBe(false)
-    expect(rows.every((row) => !String(row.id).startsWith('school-'))).toBe(true)
+  it('names both kinds of row in the heading and the source line when parks ride along', () => {
+    const section = dailyLifeSection(dailyLifeRows(AUTHORED, 'Bend', SOUTHEAST_BEND))
+    expect(section?.heading).toBe('Schools and parks')
+    expect(section?.source).toBe(`${NEIGHBORHOOD_SCHOOLS_TRACE} ${NEIGHBORHOOD_DAILY_PARKS_TRACE}`)
+    expect(section?.rows.map((row) => row.href).slice(-1)).toEqual(['/parks/drake-park'])
+    const schoolsOnly = dailyLifeSection(dailyLifeRows(null, 'Bend', SOUTHEAST_BEND))
+    expect(schoolsOnly?.heading).toBe('Schools')
+    expect(schoolsOnly?.source).toBe(NEIGHBORHOOD_SCHOOLS_TRACE)
+  })
+
+  it('renders no section without schools, so the parks go to the Parks section', () => {
+    expect(dailyLifeSection(dailyLifeRows(AUTHORED, 'Bend', []))).toBeNull()
   })
 })
 

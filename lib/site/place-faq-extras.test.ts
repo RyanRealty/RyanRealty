@@ -335,7 +335,7 @@ describe('neighborhood facts (Matt 2026-09-24, "Add to neighborhoods")', () => {
   it('answers how old the homes are with the section sentence and its sample', () => {
     const q = neighborhood().find((e) => e.question === 'How old are the homes in Awbrey Butte?')
     expect(q?.answer).toBe(
-      'Eight in ten detached homes in Awbrey Butte were built between 1986 and 2017, based on 4,461 homes with a recorded build year. The figure covers detached homes only.',
+      'Eight in ten detached homes in Awbrey Butte were built between 1986 and 2017, based on 4,461 homes with a recorded build year.',
     )
     expect(q?.source).toBe(CHARACTER_TRACE)
   })
@@ -358,13 +358,15 @@ describe('neighborhood facts (Matt 2026-09-24, "Add to neighborhoods")', () => {
     expect(q?.answer).toContain('Confirm them through the association before relying on them.')
   })
 
-  it('answers CC&Rs from the linked documents, with the recording county and the title caveat', () => {
-    const q = neighborhood().find((e) => e.question === 'Does Awbrey Butte have CC&Rs?')
+  it('says what CC&Rs are on file, never a bare yes for the whole place', () => {
+    const q = neighborhood().find((e) => e.question === 'What CC&Rs are on file for Awbrey Butte?')
     expect(q?.answer).toBe(
-      'Yes. This page links 2 recorded documents for Awbrey Butte: the declaration and 1 recorded amendment. ' +
+      'This page links 2 recorded documents for Awbrey Butte: the declaration and 1 recorded amendment. ' +
         'They are copies of instruments recorded in Deschutes County, Oregon. ' +
-        'Later amendments may exist that are not shown here, so confirm the governing chain through title before relying on it.',
+        'A declaration covers the lots it describes, which may not be every home in Awbrey Butte. ' +
+        'Later amendments may exist that are not shown here, so confirm the governing documents for a specific home through title before relying on them.',
     )
+    expect(q?.answer).not.toMatch(/^Yes\b/)
     expect(q?.source).toBe('instruments recorded in Deschutes County, Oregon, copies via Deschutes County DIAL')
   })
 
@@ -377,7 +379,7 @@ describe('neighborhood facts (Matt 2026-09-24, "Add to neighborhoods")', () => {
       book: null,
       page: null,
     }
-    const q = neighborhood({ documents: [published] }).find((e) => e.question === 'Does Awbrey Butte have CC&Rs?')
+    const q = neighborhood({ documents: [published] }).find((e) => e.question === 'What CC&Rs are on file for Awbrey Butte?')
     expect(q?.answer).toContain("They are Awbrey Butte Homesites Association's own published copies, which carry no county instrument number.")
     expect(q?.answer).not.toMatch(/recorded in Deschutes County/)
     expect(q?.source).toBe("Awbrey Butte Homesites Association's published copies")
@@ -385,14 +387,14 @@ describe('neighborhood facts (Matt 2026-09-24, "Add to neighborhoods")', () => {
 
   it('asks about governing documents, not CC&Rs, when no declaration is on file', () => {
     const extras = neighborhood({ documents: [{ ...recorded, kind: 'bylaws' as const }] })
-    expect(extras.find((e) => e.question === 'Does Awbrey Butte have CC&Rs?')).toBeUndefined()
+    expect(extras.find((e) => e.question === 'What CC&Rs are on file for Awbrey Butte?')).toBeUndefined()
     expect(extras.find((e) => e.question === 'What governing documents are on file for Awbrey Butte?')?.answer).toMatch(
       /^This page links 1 recorded document for Awbrey Butte\./,
     )
   })
 
   it('drops every one of them without a source, without data, or on a city page', () => {
-    expect(neighborhood({ characterSource: null }).map((e) => e.question)).toEqual(['Does Awbrey Butte have CC&Rs?'])
+    expect(neighborhood({ characterSource: null }).map((e) => e.question)).toEqual(['What CC&Rs are on file for Awbrey Butte?'])
     expect(neighborhood({ character: null, documents: [] })).toEqual([])
     const city = buildPlaceFaqExtras({
       placeName: 'Bend',

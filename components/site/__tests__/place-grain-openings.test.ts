@@ -284,7 +284,8 @@ describe('neighborhood daily life', () => {
 
   it('opens Awbrey Butte on its attendance-area schools, not golf or /parks stubs', async () => {
     const content = await getResortCommunityContent('bend-awbrey-butte')
-    const rows = dailyLifeRows(content, 'Bend', AWBREY_BUTTE_SCHOOLS)
+    const { schools, parks } = dailyLifeRows(content, 'Bend', AWBREY_BUTTE_SCHOOLS)
+    const rows = [...schools, ...parks]
     const names = rows.map((row) => String(row.what))
     expect(names.slice(0, 4)).toEqual(['North Star Elementary', 'High Lakes Elem', 'Pacific Crest Middle', 'Summit High'])
     expect(names).not.toContain('Cascade Middle')

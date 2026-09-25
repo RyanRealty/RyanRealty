@@ -26,11 +26,11 @@
  * Dataset variableMeasured stays pulse-only. Extras feed the visible FAQ and
  * FAQPage JSON-LD only.
  */
-import { duesSentence, hoaPresenceSentence, yearBuiltSentence } from '@/components/site/v3'
+import { duesSentence, hoaPresenceSentence, PLACE_HOA_CAVEAT, yearBuiltSentence } from '@/components/site/v3'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatPaceShare } from '@/lib/data/market-truth/public-pace'
 import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
-import type { PlaceDocument } from '@/lib/data/places/place-document-view'
+import { summarizePlaceDocuments, type PlaceDocument } from '@/lib/data/places/place-document-view'
 import { publishableNewCount } from '@/lib/site/place-alerts'
 import type { MarketFaqItem, MarketFaqResult } from '@/lib/site/market-faq'
 
@@ -346,10 +346,6 @@ export function buildPlaceFaqExtras(input: PlaceFaqExtrasInput): PlaceFaqExtraIt
   return extras
 }
 
-/** The closing note V3PlaceCharacter prints under any HOA figure, word for word. */
-const HOA_CAVEAT =
-  'Listings that reported nothing about an HOA are not counted either way. Confirm dues and governing documents through the association before relying on them.'
-
 function pushCharacterExtras(
   out: PlaceFaqExtraItem[],
   place: string,
@@ -361,14 +357,14 @@ function pushCharacterExtras(
   if (yearBuilt) {
     pushExtra(out, {
       question: `How old are the homes in ${place}?`,
-      answer: `${yearBuiltSentence(place, noun, yearBuilt)} The figure covers ${noun} only.`,
+      answer: yearBuiltSentence(place, noun, yearBuilt),
       source,
     })
   }
   if (hoaPresence) {
     pushExtra(out, {
       question: `Do homes in ${place} have an HOA?`,
-      answer: `${hoaPresenceSentence(subType, hoaPresence)} ${HOA_CAVEAT}`,
+      answer: `${hoaPresenceSentence(subType, hoaPresence)} ${PLACE_HOA_CAVEAT}`,
       source,
     })
   }
@@ -381,57 +377,54 @@ function pushCharacterExtras(
   }
 }
 
+/**
+ * What is on file, never a yes or no. A declaration covers the lots its own
+ * text describes, and a Bend district holds many subdivisions, so one linked
+ * declaration is not "yes, this place has CC&Rs" for every home in it. The
+ * counts, county and attribution come from summarizePlaceDocuments, the same
+ * helper V3PlaceDocuments' note and footnote read.
+ */
 function pushDocumentsExtra(
   out: PlaceFaqExtraItem[],
   place: string,
   documents: readonly PlaceDocument[] | null,
 ): void {
-  // Every document, exactly as V3PlaceDocuments counts them, so the count in
-  // the answer is the count in the section's own note.
-  const docs = [...(documents ?? [])]
-  if (docs.length === 0) return
-  const n = docs.length
-  const declarations = docs.filter((d) => d.kind === 'ccr').length
-  const amendments = docs.filter((d) => d.kind === 'amendment').length
-  const recorded = docs.filter((d) => d.recordingType !== 'association-published')
-  const published = docs.filter((d) => d.recordingType === 'association-published')
-  const county = (recorded[0] ?? docs[0])!.county
-  const publisher = published.find((d) => d.publisher)?.publisher ?? null
-  const attribution = recorded.find((d) => d.sourceIndexUrl && d.sourceLabel)
-
-  const noun = `${n} ${recorded.length > 0 ? 'recorded ' : ''}${n === 1 ? 'document' : 'documents'}`
+  const summary = summarizePlaceDocuments(documents ?? [])
+  if (!summary) return
+  const { count, declarations, amendments, county, hasRecorded, hasAssociation, publisher, attribution } = summary
   const which =
     declarations > 0 && amendments > 0
       ? `: ${declarations === 1 ? 'the declaration' : `${declarations} declarations`} and ${amendments} recorded ${amendments === 1 ? 'amendment' : 'amendments'}`
       : ''
   const sentences = [
-    declarations > 0
-      ? `Yes. This page links ${noun} for ${place}${which}.`
-      : `This page links ${noun} for ${place}.`,
+    `This page links ${count} ${hasRecorded ? 'recorded ' : ''}${count === 1 ? 'document' : 'documents'} for ${place}${which}.`,
   ]
-  if (recorded.length > 0) {
+  if (hasRecorded) {
     sentences.push(
-      published.length > 0
+      hasAssociation
         ? `The ones with a book, page or instrument number are copies of instruments recorded in ${county} County, Oregon.`
         : `They are copies of instruments recorded in ${county} County, Oregon.`,
     )
   }
-  if (published.length > 0) {
+  if (hasAssociation) {
     sentences.push(
-      `${published.length === docs.length ? 'They are' : 'The rest are'} ${publisher ?? 'the association'}'s own published copies, which carry no county instrument number.`,
+      `${hasRecorded ? 'The rest are' : 'They are'} ${publisher ?? 'the association'}'s own published copies, which carry no county instrument number.`,
     )
   }
-  sentences.push('Later amendments may exist that are not shown here, so confirm the governing chain through title before relying on it.')
+  if (declarations > 0) {
+    sentences.push(`A declaration covers the lots it describes, which may not be every home in ${place}.`)
+  }
+  sentences.push(
+    'Later amendments may exist that are not shown here, so confirm the governing documents for a specific home through title before relying on them.',
+  )
 
   const sources = [
-    recorded.length > 0
-      ? `instruments recorded in ${county} County, Oregon${attribution ? `, copies via ${attribution.sourceLabel}` : ''}`
-      : null,
-    published.length > 0 ? `${publisher ?? 'the association'}'s published copies` : null,
+    hasRecorded ? `instruments recorded in ${county} County, Oregon${attribution ? `, copies via ${attribution.label}` : ''}` : null,
+    hasAssociation ? `${publisher ?? 'the association'}'s published copies` : null,
   ].filter((part): part is string => Boolean(part))
 
   pushExtra(out, {
-    question: declarations > 0 ? `Does ${place} have CC&Rs?` : `What governing documents are on file for ${place}?`,
+    question: declarations > 0 ? `What CC&Rs are on file for ${place}?` : `What governing documents are on file for ${place}?`,
     answer: sentences.join(' '),
     source: sources.join('; '),
   })
