@@ -9,8 +9,8 @@
     "status": "DONE",
     "files": [
       "20260414190000_backfill_close_price_from_history_rpc.sql",
-      "20260808181843_beacon_price_bands_close_price.sql",
-      "20260808181843_beacon_price_bands_close_price.sql"
+      "20260808181843_report_price_bands_close_price.sql",
+      "20260808181843_report_price_bands_close_price.sql"
     ]
   },
   {

@@ -32,10 +32,10 @@ $$;
 COMMENT ON FUNCTION _is_excluded_property_type(text, boolean, boolean, boolean, boolean)
   IS 'Helper: true if property type should be excluded from SFR-focused reports.';
 
--- 2) get_beacon_metrics: add p_include_commercial
-DROP FUNCTION IF EXISTS get_beacon_metrics(text, date, date, date, text, boolean, boolean, boolean, numeric, numeric);
+-- 2) report_period_metrics_core: add p_include_commercial
+DROP FUNCTION IF EXISTS report_period_metrics_core(text, date, date, date, text, boolean, boolean, boolean, numeric, numeric);
 
-CREATE OR REPLACE FUNCTION get_beacon_metrics(
+CREATE OR REPLACE FUNCTION report_period_metrics_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -147,7 +147,7 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION get_beacon_metrics(text, date, date, date, text, boolean, boolean, boolean, boolean, numeric, numeric)
+COMMENT ON FUNCTION report_period_metrics_core(text, date, date, date, text, boolean, boolean, boolean, boolean, numeric, numeric)
   IS 'City/period metrics (single-pass): optional commercial; sold count, median price, DOM, $/sqft, active, 12mo sales, inventory.';
 
 -- 3) get_city_period_metrics: add p_include_commercial
@@ -172,17 +172,17 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT get_beacon_metrics(
+  SELECT report_period_metrics_core(
     p_city, p_period_start, p_period_end, p_as_of, p_subdivision,
     p_include_condo_town, p_include_manufactured, p_include_acreage, p_include_commercial,
     p_min_price, p_max_price
   );
 $$;
 
--- 4) get_beacon_price_bands: add p_include_commercial
-DROP FUNCTION IF EXISTS get_beacon_price_bands(text, date, date, boolean, text, boolean, boolean, boolean, numeric, numeric);
+-- 4) report_price_bands_core: add p_include_commercial
+DROP FUNCTION IF EXISTS report_price_bands_core(text, date, date, boolean, text, boolean, boolean, boolean, numeric, numeric);
 
-CREATE OR REPLACE FUNCTION get_beacon_price_bands(
+CREATE OR REPLACE FUNCTION report_price_bands_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -358,7 +358,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT get_beacon_price_bands(
+  SELECT report_price_bands_core(
     p_city, p_period_start, p_period_end, p_sales_12mo, p_subdivision,
     p_include_condo_town, p_include_manufactured, p_include_acreage, p_include_commercial,
     p_min_price, p_max_price

@@ -49,6 +49,7 @@
     "ci:no-public-em-dash",
     "ci:no-report-rpc",
     "ci:no-staging-host",
+    "ci:no-vendor-name",
     "ci:ods-compliance",
     "ci:offmarket-listing-cta",
     "ci:page-dal",

@@ -3418,7 +3418,7 @@
     "also_stated_in": []
    },
    {
-    "rule": "For closed/pending listings always use the generated `days_to_pending` column (OnMarketDate to pending_timestamp) as the DOM metric, matching Beacon Appraisal methodology. For active listings without a pending_timestamp, compute live days-active from OnMarketDate and label it 'days active,' never 'DOM.'",
+    "rule": "For closed/pending listings always use the generated `days_to_pending` column (OnMarketDate to pending_timestamp) as the DOM metric, matching the appraiser-style monthly report methodology. For active listings without a pending_timestamp, compute live days-active from OnMarketDate and label it 'days active,' never 'DOM.'",
     "source_path": "skills/youtube-market-reports/query-rules.md",
     "topic": "data-accuracy",
     "evidence": "docs/DATABASE_SCHEMA_SNAPSHOT.md confirms both `days_to_pending` and `pending_timestamp` columns exist on listings",

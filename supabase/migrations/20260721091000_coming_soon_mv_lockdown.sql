@@ -9,7 +9,7 @@
 -- materialized Coming Soon rows and was granted to `anon` — and the anon key
 -- ships in the browser bundle. Verified leaking before this change:
 --   listing_tile_mv 52 · listing_search_mv 52 · listing_boundary_xref_mv 152
---   listing_detail_mv 62 · beacon_comparable_listings_v 52
+--   listing_detail_mv 62
 --   similar_listings_mv: 582 pairs recommending a Coming Soon listing
 --
 -- PATTERN: rename the MV to <name>_src, expose a filtered VIEW under the
@@ -90,9 +90,8 @@ revoke all on public.similar_listings_mv_src from anon, authenticated;
 grant select on public.similar_listings_mv_src to service_role;
 grant select on public.similar_listings_mv to anon, authenticated, service_role;
 
--- ── Dead objects, no application reader, both leaking to anon ───────────────
+-- ── Dead object, no application reader, leaking to anon ─────────────────────
 revoke all on public.listing_detail_mv from anon, authenticated;
-revoke all on public.beacon_comparable_listings_v from anon, authenticated;
 
 -- ── Refresh functions repointed at the _src objects ─────────────────────────
 -- Bodies are otherwise unchanged (advisory locks + 900s timeouts preserved).

@@ -343,7 +343,7 @@ Prove the process end-to-end. Persist; never delete.
    `href="tel:` inside the `#contact-cta` section (`page.tsx:355-382`).
 8. **Inception telemetry**: load `/motivated-sellers` in a browser — `search_view` appears in
    GA4 DebugView/dataLayer with `resultsCount` (`components/tracking/TrackSearchView.tsx:13-24`),
-   and scrolling fires `section_view` beacons to `/api/visitors/track`
+   and scrolling fires `section_view` tracking pings to `/api/visitors/track`
    (`KbSectionTracker.client.tsx:7-27`).
 9. **Freshness ladder wiring**: `grep -A1 '"path": "/api/cron/sync-delta"' vercel.json` →
    `"3,18,33,48 * * * *"`; `grep -n 'revalidate = 600' app/motivated-sellers/page.tsx

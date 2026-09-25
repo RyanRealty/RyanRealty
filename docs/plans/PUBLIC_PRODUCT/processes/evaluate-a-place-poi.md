@@ -67,7 +67,7 @@ with the top 40 prerendered (`app/builders/[slug]/page.tsx:22,24-27`).
 - **Automated actors:** ISR revalidation (300s detail pages, 3600s indices —
   `app/schools/[slug]/page.tsx:43`, `app/schools/page.tsx:32`, `app/central-oregon/events/page.tsx:36`);
   the sitemap generator emitting all registry URLs (`app/sitemap.ts:165-220`);
-  `KbSectionTracker` beaconing `section_view` + scroll-depth to GA4/Pixel AND
+  `KbSectionTracker` pinging `section_view` + scroll-depth to GA4/Pixel AND
   `/api/visitors/track` on every route in the family
   (`components/site/kb/KbSectionTracker.client.tsx:1-40`).
 - **Accountable for completion:** nobody human — the page is the operator. The contact
@@ -374,7 +374,7 @@ default curl UAs.)
    ```
    Expect one row with `propertyType 'A'` filters. Clean up the test row.
 6. **Measurement E2E:** load one detail page per family in a browser, scroll to bottom,
-   and verify `section_view` + `scroll_depth` beacons hit `/api/visitors/track` (network
+   and verify `section_view` + `scroll_depth` tracking pings hit `/api/visitors/track` (network
    panel) with full `location.href` page URLs (the bare-path regression documented in
    `KbSectionTracker.client.tsx:10-14` is the thing being guarded).
 7. **Exit integrity:** on one detail per family, assert every rendered exit href

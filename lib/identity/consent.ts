@@ -1,6 +1,6 @@
 /**
  * Server-side reading of the visitor's tracking choice, for identity paths that
- * do not go through /api/visitors/track (server actions, beacons, redirects).
+ * do not go through /api/visitors/track (server actions, tracking pings, redirects).
  *
  * The rule is the one the track route and components/VisitTracker.tsx already
  * enforce (docs/TRACKING_POLICY.md, "What we collect at each consent tier"):

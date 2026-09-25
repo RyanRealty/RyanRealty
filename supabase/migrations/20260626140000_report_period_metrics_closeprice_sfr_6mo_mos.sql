@@ -1,4 +1,4 @@
--- §0 data-accuracy fix for get_beacon_metrics (admin custom reports, /admin/reports).
+-- §0 data-accuracy fix for report_period_metrics_core (admin custom reports, /admin/reports).
 -- Applied to hosted Supabase 2026-06-26 (MCP); this file is the repo-parity record of the
 -- final deployed state.
 --
@@ -17,7 +17,7 @@
 --      6-month base: active / (trailing-6-month sales / 6). Now uses sales_6mo.
 --
 -- _is_excluded_property_type is left in place (no other caller) but is no longer used here.
-CREATE OR REPLACE FUNCTION public.get_beacon_metrics(p_city text, p_period_start date, p_period_end date, p_as_of date DEFAULT NULL::date, p_subdivision text DEFAULT NULL::text, p_include_condo_town boolean DEFAULT false, p_include_manufactured boolean DEFAULT false, p_include_acreage boolean DEFAULT false, p_include_commercial boolean DEFAULT false, p_min_price numeric DEFAULT NULL::numeric, p_max_price numeric DEFAULT NULL::numeric)
+CREATE OR REPLACE FUNCTION public.report_period_metrics_core(p_city text, p_period_start date, p_period_end date, p_as_of date DEFAULT NULL::date, p_subdivision text DEFAULT NULL::text, p_include_condo_town boolean DEFAULT false, p_include_manufactured boolean DEFAULT false, p_include_acreage boolean DEFAULT false, p_include_commercial boolean DEFAULT false, p_min_price numeric DEFAULT NULL::numeric, p_max_price numeric DEFAULT NULL::numeric)
  RETURNS json
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER

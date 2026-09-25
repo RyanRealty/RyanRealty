@@ -249,3 +249,54 @@ About 73% of relisted listings recover; the rest are assumed. Reconstruction of 
 within 0.4% of the stored snapshot.
 
 Never read `status_change_timestamp` — 51,506 rows carry a single bulk-migration date.
+
+---
+
+## 6. The monthly market report (2026-09-25)
+
+The Central Oregon monthly market report (`lib/market-report/`, editions at
+`/housing-market/reports/monthly`) reads Market Truth through its own compact store
+(`market_report_*` tables, migrations `20260925010000`..`20260925040000`). Everything above
+holds; these are the report's additional predicates. Definition id on every row: `mr-v1`.
+
+| report segment | predicate | used for |
+|---|---|---|
+| `sfr` | `detached` AND (`lot_size_acres` < 1 OR null) | The main series: Central Oregon, Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, Madras. Keeps acreage from pulling on in-town prices. Calibrated against the appraiser-style monthly report the region used before: Bend July 2026 median $780,000, identical. |
+| `acreage` | `detached` AND `lot_size_acres` >= 1 | Its own table. |
+| `condo_townhome` | `condo` OR `townhome` | Its own table and Bend chart. |
+| `detached` | `detached`, any lot | Terrebonne, Culver, Powell Butte, Camp Sherman (most homes there sit on acreage). |
+
+- **Places.** Towns are the MLS city (D5) through `place_membership` city rows. **Bend quadrants**
+  (`market_report_bend_quadrant`): the address `StreetDirPrefix` (NW, NE, SE, SW), else the quadrant
+  of the listing's City of Bend neighborhood district, else `bend-outside` ("Rural Bend", outside
+  both). Communities are their mapped boundary.
+- **Periods.** `month`, `trailing3` (towns), `trailing12`, `quarter`. A period past
+  `market_report_state.complete_through` is refused.
+- **Months of supply** = homes for sale on the period's last day ÷ (closings in the six months ending
+  that day ÷ 6), the §0 formula; verdict ≤ 4 seller's, 4 to 6 balanced, ≥ 6 buyer's.
+- **Floors** are §2.3's: a median needs 10, a change from a year ago, a share, months of supply and a
+  verdict need 30. A withheld figure is stored `v: null` and printed as a dash with the reason.
+- **Price bands.** 28 bands: under $100K, $50K steps to $1M, $200K steps to $1.8M, then $1.8M, $2M,
+  $2.5M, $3M, $4M and up (`market_report_band_idx`, twin of `lib/market-report/bands.ts`). Sold by
+  close price, for sale by asking price. Months-of-supply tiers are sums of whole bands.
+- **Speed and negotiation.** Days to pending = `days_to_contract` (recorded from 2006). Sale to list
+  = median `sale_to_final_list`; a price cut = a sale listed above its final list price. Financing
+  shares from 2004; seller concessions (share of sales reporting the field) from 2013.
+- **Flow.** New listings = episodes whose on-market date falls in the period, relists within 90 days
+  excluded. Pendings = episodes that went under contract in the period.
+- **The gate (CLAUDE.md §0).** Every edition runs the Spark × Supabase reconciliation before it
+  renders: each monthly market's closed single-family sales, by listing key, against Spark. More
+  than 1% missing holds the edition as a draft with the reason and texts the owner.
+- **Freshness.** `/api/cron/market-report-refresh` (daily) runs the closings reconciliation repair
+  (`lib/sync/closingsReconcile.ts`) over the trailing 13 months, then refreshes the store and
+  recomputes those months. `/api/cron/market-report-publish` (the 8th) publishes the month that
+  ended. An edition is frozen when it publishes; its payload and citations are stored with it.
+
+**Closings drift, found 2026-09-25.** Across the whole feed (every property type, every city Spark
+serves), Spark held 1,093 closings from January 2024 to September 2026 that our `listings` copy
+lacked, mis-dated, held at an old status, or held without a property sub-type and living area. Most
+were March to May 2026: for March 2026 we held 795 closed listings against Spark's 978. Two causes: the delta sync skipped every finalized row, so a withdrawn listing
+that relisted and sold, or a close date corrected later, never landed (fixed: a finalized row now
+reopens when the MLS changes a fact a statistic reads, `lib/sync/listingDrift.ts`); and a batch of
+spring 2026 rows was written without those fields and never modified again (caught by the daily
+reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is no longer Closed.

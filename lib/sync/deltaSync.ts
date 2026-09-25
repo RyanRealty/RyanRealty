@@ -29,11 +29,14 @@ import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-s
 import { sparkToListingRow, extractPrivateDetails, type ListingMapperOptions } from '@/lib/listing-mapper'
 import { fetchSparkListingsPage } from '@/lib/spark'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
+import { driftReasons, factsFromListingRow, type DriftReason } from '@/lib/sync/listingDrift'
+import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
 import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
 import { SCHEDULED_EXPIRED_CAPTURE } from '@/lib/expired-listing-select'
 import {
   getSyncState,
   getExistingListingsByListNumbers,
+  getHeldMediaByListNumbers,
   upsertListingRows,
   insertPriceHistoryRows,
   insertStatusHistoryRows,
@@ -84,6 +87,15 @@ export type ExistingListingLite = {
   StandardStatus: string | null
   ListPrice: number | null
   is_finalized: boolean | null
+  /** The facts a finalized row is compared on before it may reopen
+   *  (lib/sync/listingDrift.ts). Optional so a partial fixture stays valid; the
+   *  live read (getExistingListingsByListNumbers) selects every one. */
+  City?: string | null
+  CloseDate?: string | null
+  ClosePrice?: number | null
+  property_sub_type?: string | null
+  TotalLivingAreaSqFt?: number | null
+  media_finalized?: boolean | null
 }
 
 /** A raw Spark delta result as returned by the listings feed. CustomFields is
@@ -127,8 +139,22 @@ export type FinalizeTarget = {
   sourceRow: Record<string, unknown>
 }
 
+/** A finalized row the MLS materially changed, reopened for this run. */
+export type ReopenedFinalized = {
+  listNumber: string
+  listingKey: string
+  reasons: DriftReason[]
+  /** The row's media was frozen at close; the rewrite must not shrink it. */
+  preserveMedia: boolean
+}
+
 export type DeltaPlan = {
   rowsToUpsert: Record<string, unknown>[]
+  /** Reopened finalized rows. Upserted in their own batch: they carry the
+   *  unfreeze columns, and a batched upsert writes NULL for any column a
+   *  sibling row lacks. */
+  reopenedRows: Record<string, unknown>[]
+  reopened: ReopenedFinalized[]
   privateRows: PrivateRow[]
   activityEvents: ActivityEventRow[]
   priceHistoryRows: PriceHistoryRow[]
@@ -141,6 +167,7 @@ export type DeltaPlan = {
     priceChanges: number
     statusChanges: number
     skippedFinalized: number
+    reopenedFinalized: number
   }
 }
 
@@ -169,7 +196,8 @@ export function resultToMappedRow(
  * DB state. Pure — no I/O, no clock read except the injectable `nowIso`. This is
  * the UNION of both lanes' diff→event→finalize matrices:
  *
- *   - skip any row whose existing listing is already finalized (cron)
+ *   - skip any row whose existing listing is already finalized (cron), unless
+ *     Spark materially changed it (lib/sync/listingDrift.ts): then reopen it
  *   - new listing -> new_listing event; queue finalize if born terminal
  *   - status change -> status_history row (cron) + one status event:
  *       status_pending / status_closed(+media_finalized) / status_active /
@@ -195,13 +223,15 @@ export function computeDeltaPlan(
   const mapperOptions: ListingMapperOptions = { mortgageRate: opts.mortgageRate ?? null }
   const plan: DeltaPlan = {
     rowsToUpsert: [],
+    reopenedRows: [],
+    reopened: [],
     privateRows: [],
     activityEvents: [],
     priceHistoryRows: [],
     statusHistoryRows: [],
     finalizeTargets: [],
     maxProcessedTs: null,
-    counters: { fetched: 0, newListings: 0, priceChanges: 0, statusChanges: 0, skippedFinalized: 0 },
+    counters: { fetched: 0, newListings: 0, priceChanges: 0, statusChanges: 0, skippedFinalized: 0, reopenedFinalized: 0 },
   }
   const queuedFinalize = new Set<string>()
 
@@ -221,10 +251,25 @@ export function computeDeltaPlan(
 
     const existing = existingByNum.get(listNumber)
 
-    // Skip finalized rows entirely — never re-upsert a frozen closed listing.
+    // A finalized row is frozen against noise, not against the MLS. It stays
+    // skipped unless Spark reports a material change to a fact a statistic
+    // reads (status, close date or price, list price, city, sub-type, living
+    // area); then it reopens and runs the normal diff below, and a terminal
+    // row re-freezes in the finalize pass. Until 2026-09-25 this skip was
+    // unconditional: a withdrawn listing that relisted and sold, or a close
+    // date corrected after the fact, never reached us.
+    let reopened = false
     if (existing?.is_finalized) {
-      plan.counters.skippedFinalized++
-      continue
+      const reasons = driftReasons(factsFromListingRow(existing as Record<string, unknown>), factsFromListingRow(row))
+      if (reasons.length === 0) {
+        plan.counters.skippedFinalized++
+        continue
+      }
+      reopened = true
+      plan.counters.reopenedFinalized++
+      plan.reopened.push({ listNumber, listingKey, reasons, preserveMedia: existing.media_finalized === true })
+      row.is_finalized = false
+      row.history_finalized = false
     }
 
     const priv = extractPrivateDetails(fields, result.CustomFields)
@@ -324,7 +369,8 @@ export function computeDeltaPlan(
       }
     }
 
-    plan.rowsToUpsert.push(row)
+    if (reopened) plan.reopenedRows.push(row)
+    else plan.rowsToUpsert.push(row)
   }
 
   return plan
@@ -373,6 +419,7 @@ export type ExecuteRunResult = {
   historyRowsInserted: number
   photosFixed: number
   skippedFinalized: number
+  reopenedFinalized: number
   expired: ExpiredStats | null
 }
 
@@ -390,8 +437,9 @@ async function loadExistingByNum(listNumbers: string[]): Promise<Map<string, Exi
 }
 
 /** Live 30-yr rate (percent) every row in one run is priced at; null → the
- *  mapper's DEFAULT_PITI_RATE, never a failed sync. */
-async function resolveRunMortgageRate(): Promise<number | null> {
+ *  mapper's DEFAULT_PITI_RATE, never a failed sync. Shared with the closings
+ *  reconciliation repair (lib/sync/closingsReconcile.ts). */
+export async function resolveRunMortgageRate(): Promise<number | null> {
   try {
     const live = await getLiveMortgageRate()
     return live?.ratePct ?? null
@@ -524,6 +572,27 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     else { upsertFailed = true; console.error('[deltaSync] upsert error.', r.error) }
   }
 
+  // 1a. Reopened finalized rows: keep the frozen gallery where we hold more
+  // than the MLS now serves, then upsert them as their own batch.
+  if (plan.reopenedRows.length > 0) {
+    const preserve = plan.reopened.filter((r) => r.preserveMedia).map((r) => r.listNumber)
+    const held = preserve.length > 0 ? await getHeldMediaByListNumbers(preserve) : new Map()
+    const rows = plan.reopenedRows.map((row) => {
+      const h = held.get(String(row.ListNumber ?? ''))
+      return h ? mergeFrozenMedia(row, h) : row
+    })
+    for (let i = 0; i < rows.length; i += DELTA_SYNC.UPSERT_CHUNK) {
+      const chunk = rows.slice(i, i + DELTA_SYNC.UPSERT_CHUNK)
+      const r = await upsertListingRows(chunk)
+      if (r.ok) totalUpserted += chunk.length
+      else { upsertFailed = true; console.error('[deltaSync] reopened upsert error.', r.error) }
+    }
+    console.log(
+      `[deltaSync] reopened ${rows.length} finalized row(s): ` +
+        plan.reopened.map((r) => `${r.listNumber} (${r.reasons.join('+')})`).join(', '),
+    )
+  }
+
   // 1b. Divert confidential keys to listing_private (best-effort).
   for (let i = 0; i < plan.privateRows.length; i += DELTA_SYNC.UPSERT_CHUNK) {
     const chunk = plan.privateRows.slice(i, i + DELTA_SYNC.UPSERT_CHUNK).map((r) => ({ ...r, updated_at: nowIso }))
@@ -646,6 +715,7 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     historyRowsInserted,
     photosFixed,
     skippedFinalized: plan.counters.skippedFinalized,
+    reopenedFinalized: plan.counters.reopenedFinalized,
     expired,
   }
 }

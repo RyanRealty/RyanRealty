@@ -9,7 +9,7 @@
 
 ## THE ANSWER (smoking gun — confirmed)
 
-**the in-house CRM is still sending automated nurture emails ("FUB/Beacon") to your contacts through
+**the in-house CRM is still sending automated nurture emails (FUB's own "smart campaigns" feature) to your contacts through
 your connected Gmail account. Our CRM is NOT sending them — it only READS them back.**
 
 - The emails have subject/body "archived" (a legacy FUB nurture template, id 28, which no longer
@@ -17,7 +17,7 @@ your connected Gmail account. Our CRM is NOT sending them — it only READS them
 - They go out on a **fixed per-contact cadence** (Brian Keith always ~15:43–15:44 UTC; Laurie
   McAdam always ~15:00 UTC; Nadean always ~18:53 UTC) — the signature of a scheduled automated
   campaign, not manual sends.
-- FUB's own `/v1/emails` API records each of these with `campaignOrigin: "FUB/Beacon"`,
+- FUB's own `/v1/emails` API records each of these with `campaignOrigin` naming FUB's smart-campaigns feature,
   `emailTemplateId: 28`, `userId: 1` (Matt), `emailAccountId: 528627` (your connected Gmail),
   `status: "Sent"`, `actionPlanId: null`. **FUB sends them via your Gmail**, so they land in your
   Gmail "Sent" folder, and our read-only `crm-gmail-sync` cron ingests them into the CRM timeline
@@ -46,10 +46,10 @@ find **the in-house CRM** → **Remove access**. This severs FUB's OAuth send gr
   reference — you don't need FUB's Gmail integration anymore, so this is clean.
 
 **B. Alternative (keeps FUB↔Gmail connected):** turn off the FUB campaign in the FUB UI. The sends
-carry `campaignOrigin: "FUB/Beacon"` — in FUB, go to the **Beacon / smart-campaign or automated
+carry FUB's smart-campaign `campaignOrigin` tag — in FUB, go to the **smart-campaign or automated
 email area** and disable the active nurture campaign(s) using the legacy templates. (FUB Action
 Plans are NOT the culprit — all affected contacts show 0 action-plan enrollments; this is a
-Beacon/smart-campaign, so pausing action plans alone will NOT stop it.) If the campaign can't be
+smart campaign, so pausing action plans alone will NOT stop it.) If the campaign can't be
 located quickly, use option A — it's guaranteed.
 
 **C. We touch nothing programmatically.** Per policy we do not disable FUB via the API. The
@@ -78,15 +78,15 @@ which is what made this look like the CRM was sending. Two optional cleanups (Ma
 Ranked by likelihood of being Matt's "archived emails." Legend: **CONTACTS** = external
 leads/subscribers; **INTERNAL** = Matt or brokers only.
 
-### 1. FUB/Beacon via Matt's Gmail — ✅ THE CULPRIT (external, active, ongoing)
+### 1. FUB smart campaigns via Matt's Gmail — ✅ THE CULPRIT (external, active, ongoing)
 - **What:** legacy FUB nurture campaign, template 28, subject "archived", sent by FUB through your
-  connected Gmail (emailAccountId 528627, `campaignOrigin: "FUB/Beacon"`).
+  connected Gmail (emailAccountId 528627, `campaignOrigin` naming FUB's smart-campaigns feature).
 - **Active?** YES — latest send 2026-07-02 15:44. 48 sends since 2026-06-01, 14 contacts, 7 in last 7d.
 - **Our code's role:** NONE for sending. `crm-gmail-sync` (`app/api/cron/crm-gmail-sync`) is
   read-only — `syncMailboxWindow` in `lib/crm/gmail.ts` uses only `messages.list` + `messages.get`
   (lines 165, 181, 199). The `messages.send` at line 361 is a DIFFERENT function (`sendCrmEmail`)
   not called by the sync cron.
-- **Off-switch:** Matt — Google connections → remove FUB (option A), or disable the FUB Beacon
+- **Off-switch:** Matt — Google connections → remove FUB (option A), or disable the FUB smart
   campaign (option B). No env flag / cron on our side stops it, because it isn't our send.
 
 ### 2. CRM sequence engine — INTERNAL RISK, but NOT firing to these contacts
@@ -152,7 +152,7 @@ All go to `matt@ryan-realty.com` or broker emails, never to leads:
 ### Core sender note
 `lib/resend.ts` has **no global email kill-switch** (no `EMAIL_ENABLED` / `RESEND_ENABLED` / dry-run
 flag). The only universal Resend lever is unsetting/rotating `RESEND_API_KEY` in Vercel (kills ALL
-Resend email, including internal digests). This does NOT affect the FUB/Beacon culprit, which sends
+Resend email, including internal digests). This does NOT affect the FUB-smart-campaign culprit, which sends
 via Gmail, not Resend.
 
 ---
@@ -161,7 +161,7 @@ via Gmail, not Resend.
 
 | Path | Who stops it | How |
 |---|---|---|
-| **1. FUB/Beacon (the culprit)** | **MATT** (UI/Google) | Google connections → Remove FUB (option A) OR disable the FUB Beacon campaign (option B) |
+| **1. FUB smart campaigns (the culprit)** | **MATT** (UI/Google) | Google connections → Remove FUB (option A) OR disable the FUB smart campaign (option B) |
 | 2. Sequence engine | We can, on approval | Pause `crm_sequences` or remove cron (not the culprit) |
 | 3. Auto-enroll | We can, on approval | Remove cron (not the culprit) |
 | 4. Scheduled sends / cohort | We can, on approval | Idle now; remove cron (not the culprit) |

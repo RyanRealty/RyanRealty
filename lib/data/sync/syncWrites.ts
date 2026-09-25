@@ -12,6 +12,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import type { HeldMedia } from '@/lib/sync/frozenMedia'
 
 export {
   selectNewExpiredListings,
@@ -32,6 +33,12 @@ export type ExistingListingRow = {
   StandardStatus: string | null
   ListPrice: number | null
   is_finalized: boolean | null
+  City: string | null
+  CloseDate: string | null
+  ClosePrice: number | null
+  property_sub_type: string | null
+  TotalLivingAreaSqFt: number | null
+  media_finalized: boolean | null
 }
 
 export type SyncState = {
@@ -84,9 +91,49 @@ export async function getExistingListingsByListNumbers(
   if (!sb || listNumbers.length === 0) return []
   const { data } = await sb
     .from('listings')
-    .select('ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized')
+    .select(
+      'ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized, City, CloseDate, ClosePrice, property_sub_type, TotalLivingAreaSqFt, media_finalized',
+    )
     .in('ListNumber', listNumbers.slice(0, 5000))
   return (data ?? []) as ExistingListingRow[]
+}
+
+/**
+ * The media we hold for frozen rows, by ListNumber: the primary photo, the
+ * tour flag, the open houses, and the media collections inside details. Read
+ * only for the handful of finalized rows a sync reopens, so a rewrite never
+ * shrinks a sold listing's gallery (lib/sync/frozenMedia.ts).
+ */
+export async function getHeldMediaByListNumbers(listNumbers: string[]): Promise<Map<string, HeldMedia>> {
+  const out = new Map<string, HeldMedia>()
+  const sb = client()
+  const unique = [...new Set(listNumbers.filter(Boolean))]
+  if (!sb || unique.length === 0) return out
+  for (let i = 0; i < unique.length; i += 50) {
+    const { data, error } = await sb
+      .from('listings')
+      .select(
+        'ListNumber, PhotoURL, has_virtual_tour, OpenHouses, Photos:details->Photos, FloorPlans:details->FloorPlans, Videos:details->Videos, VirtualTours:details->VirtualTours, Documents:details->Documents, DetailOpenHouses:details->OpenHouses',
+      )
+      .in('ListNumber', unique.slice(i, i + 50))
+    if (error) throw new Error(`[getHeldMediaByListNumbers] ${error.message}`)
+    for (const r of (data ?? []) as Record<string, unknown>[]) {
+      out.set(String(r.ListNumber), {
+        PhotoURL: typeof r.PhotoURL === 'string' ? r.PhotoURL : null,
+        has_virtual_tour: typeof r.has_virtual_tour === 'boolean' ? r.has_virtual_tour : null,
+        OpenHouses: r.OpenHouses ?? null,
+        details: {
+          Photos: r.Photos,
+          FloorPlans: r.FloorPlans,
+          Videos: r.Videos,
+          VirtualTours: r.VirtualTours,
+          Documents: r.Documents,
+          OpenHouses: r.DetailOpenHouses,
+        },
+      })
+    }
+  }
+  return out
 }
 
 /** Replace listing_history rows for a key: delete-all-then-insert. */

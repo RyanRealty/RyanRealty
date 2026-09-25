@@ -1,7 +1,7 @@
 -- Functional indexes for LOWER/TRIM patterns used in report functions and search.
 -- Standard B-tree indexes do NOT help ILIKE or LOWER(TRIM(...)) predicates.
 
--- City: used as TRIM("City") ILIKE ... in all report/beacon functions
+-- City: used as TRIM("City") ILIKE ... in all report functions
 CREATE INDEX IF NOT EXISTS idx_listings_city_lower
   ON listings (LOWER(TRIM(COALESCE("City", ''))));
 

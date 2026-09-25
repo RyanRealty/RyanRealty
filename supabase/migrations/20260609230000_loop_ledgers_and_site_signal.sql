@@ -46,7 +46,7 @@ alter table public.process_escape_ledger enable row level security;
 
 -- The normalized scoreboard the diagnose step reads: route x date x metric.
 -- Composes what already lands in Supabase today (marketing_channel_daily from
--- the GA4/ads snapshot crons, web_vitals from the RUM beacon). Extend with
+-- the GA4/ads snapshot crons, web_vitals from the client-side sendBeacon reporter). Extend with
 -- GSC/FUB unions as those ingests come online — the view is the contract.
 create or replace view public.site_signal as
 select

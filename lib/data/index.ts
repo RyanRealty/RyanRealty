@@ -521,6 +521,7 @@ export {
   getSyncStateFields,
   updateSyncStateLastDelta,
   getExistingListingsByListNumbers,
+  getHeldMediaByListNumbers,
   replaceListingHistoryForKey,
   upsertListingRows,
   insertPriceHistoryRows,

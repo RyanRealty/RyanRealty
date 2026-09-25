@@ -17,8 +17,8 @@
  * `_fuid` (the retired vendor id) is refused: an unsigned id identifies nobody.
  * GPC and a cookie decline are honored inside the action.
  *
- * Response is 204 always (even on a bad id): this is a fire-and-forget beacon
- * and must never surface an error into the client document.
+ * Response is 204 always (even on a bad id): this is a fire-and-forget tracking
+ * ping and must never surface an error into the client document.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
