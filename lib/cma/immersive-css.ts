@@ -619,8 +619,11 @@ a.street-sale .n{font-variant-numeric:tabular-nums;font-weight:600}
   .sc:last-child{min-height:0;break-after:auto;page-break-after:auto}
   .cue{display:none}
   .hero{color:var(--navy)}
-  figure,.figure-block,.chart-block,.pin-map-wrap,.lot-tile,.comp-matrix-wrap,.worth-strip,.status-price-wrap{break-inside:avoid;page-break-inside:avoid}
-  .chart-read,figcaption,caption,.ppsf-status-caption,h4.subhead,.matrix-group-h{break-after:avoid;page-break-after:avoid;break-before:avoid;page-break-before:avoid}
+  figure,.pin-map-wrap,.lot-tile,.keep-note,.keep-close{break-inside:avoid;page-break-inside:avoid}
+  table,.comp-matrix-wrap,.worth-strip,.status-price-wrap,.chart-block,.figure-block,.status-price{break-inside:auto!important;page-break-inside:auto!important}
+  .chart-read,h4.subhead,.matrix-group-h{break-after:avoid;page-break-after:avoid}
+  figcaption,caption,.ppsf-status-caption{break-before:avoid;page-break-before:avoid;break-after:auto;page-break-after:auto}
+  .stat-strip+.small,.stat-strip+p.small{break-before:avoid;page-break-before:avoid}
 }
 `
 }

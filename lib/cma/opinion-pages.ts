@@ -558,12 +558,14 @@ export function failedAskBacktestHtml(a: OpinionPageArgs, doc: 'letter' | 'immer
   const val = doc === 'letter' ? 'val' : 'st-n'
   const lbl = doc === 'letter' ? 'lbl' : 'st-l'
   const small = doc === 'letter' ? 'small' : 'small r'
-  return `<div class="${strip}">
+  return `<div class="keep-note">
+  <div class="${strip}">
     <div class="${cell}"><div class="${val}">${int(b.pairs)}</div><div class="${lbl}">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
     <div class="${cell}"><div class="${val}">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="${lbl}">of the asking price that failed is what the median one sold for</div></div>
     <div class="${cell}"><div class="${val}">${b.shareClosedAboveAskPct}%</div><div class="${lbl}">sold for more than that ask</div></div>
   </div>
-  <p class="${small}">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>`
+  <p class="${small}">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>
+  </div>`
 }
 
 /**
@@ -1391,7 +1393,8 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
       : `${site}${b.photoUrl}`
     : null
   const client = cleanText(a.client?.name ?? null)
-  return `<div class="signature-page">
+  return `<div class="keep-close">
+  <div class="signature-page">
     ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
     <div class="sig-content">
       <div class="sig-name">${esc(b.displayName)}</div>
@@ -1407,7 +1410,8 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
   </div>
   <p class="fine">${esc(
     `Prepared ${dateLong(a.generatedAtIso)}${client ? ` for ${client}` : ''}. This is a comparative market analysis. It is not an appraisal.`,
-  )}</p>`
+  )}</p>
+  </div>`
 }
 
 /**

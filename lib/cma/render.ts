@@ -135,6 +135,53 @@ interface PageDef {
   closing?: boolean
 }
 
+const LARGE_OPENING =
+  /<(?:table|div)\b[^>]*class="[^"]*(?:comp-matrix-wrap|worth-strip|status-price|chart-block|status-price-wrap)[^"]*"/i
+
+function takeTopElement(html: string): { html: string; rest: string } | null {
+  const src = html.trimStart()
+  const open = src.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*)?>/)
+  if (!open) return null
+  const tag = open[1]!.toLowerCase()
+  if (open[0].endsWith('/>') || /^(img|br|hr|input|meta|source)$/i.test(tag)) {
+    return { html: src.slice(0, open[0].length), rest: src.slice(open[0].length) }
+  }
+  let depth = 1
+  let i = open[0].length
+  const openRe = new RegExp(`<${tag}\\b`, 'i')
+  const closeRe = new RegExp(`</${tag}\\b`, 'i')
+  while (i < src.length && depth > 0) {
+    const rest = src.slice(i)
+    const nextOpen = rest.search(openRe)
+    const nextClose = rest.search(closeRe)
+    if (nextClose < 0) return { html: src, rest: '' }
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth += 1
+      i += nextOpen + tag.length + 1
+    } else {
+      depth -= 1
+      const closeStart = i + nextClose
+      const gt = src.indexOf('>', closeStart)
+      i = gt >= 0 ? gt + 1 : closeStart + tag.length + 3
+    }
+  }
+  return { html: src.slice(0, i), rest: src.slice(i) }
+}
+
+/** Heading plus the first small block, so a section never opens alone. */
+export function splitPageOpening(body: string): { open: string; rest: string } {
+  const src = body.trim()
+  const heading = src.match(/^<h[1-4]\b[\s\S]*?<\/h[1-4]>/i)
+  if (!heading) return { open: '', rest: src }
+  const after = src.slice(heading[0].length)
+  const next = takeTopElement(after)
+  if (!next) return { open: heading[0], rest: after }
+  if (LARGE_OPENING.test(next.html) || /^<table\b/i.test(next.html)) {
+    return { open: heading[0], rest: after }
+  }
+  return { open: heading[0] + next.html, rest: next.rest }
+}
+
 function wrapPage(page: PageDef): string {
   if (page.cover) {
     return `
@@ -146,13 +193,17 @@ function wrapPage(page: PageDef): string {
   // throughout, navy on the cover and the closing sheet only. The closing
   // takes the cream wordmark, because the navy one disappears into the field.
   const logo = page.closing ? 'logo-white.png' : 'logo-blue.png'
+  const { open, rest } = splitPageOpening(page.body)
   return `
 <section class="page${page.flyer ? ' page-flyer' : ''}${page.closing ? ' page-closing' : ''}">
+  <div class="page-open">
   <header class="pg-header">
     <img src="${SITE_URL}/images/brand/${logo}" alt="Ryan Realty" class="logo" />
     <div class="pg-meta">${page.meta}</div>
   </header>
-  ${page.body}
+  ${open}
+  </div>
+  ${rest}
 </section>`
 }
 

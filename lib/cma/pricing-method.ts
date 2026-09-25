@@ -18,6 +18,7 @@
  */
 
 import { escapeHtml } from '@/lib/cma/render-blocks'
+import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import type { CmaPricing } from '@/lib/cma/types'
 
 const esc = escapeHtml
@@ -40,7 +41,7 @@ function num(v: unknown): number | null {
 }
 
 function str(v: unknown): string | null {
-  return typeof v === 'string' && v.trim() ? v.trim() : null
+  return typeof v === 'string' && v.trim() ? sanitizeLetterEmDash(v.trim()) : null
 }
 
 function block(pricing: CmaPricing | null | undefined, key: string): Record<string, unknown> | null {

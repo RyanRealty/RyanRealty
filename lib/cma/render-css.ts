@@ -65,6 +65,9 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   .page-cover { break-after: page; page-break-after: always; }
   .page-flyer { break-before: page; page-break-before: always; }
+  /* Navy close is its own sheet. Leftover basis/disclosure lines must not
+     sit above the closing header. */
+  .page-closing { break-before: page; page-break-before: always; }
 
   @media screen {
     /* Screen only: show sheets on a desk. Print takes its box from @page. */
@@ -102,6 +105,12 @@ export function cmaStylesheet(siteUrl: string): string {
   .page a { color: var(--navy); }
   .page-closing a { color: var(--cream); }
 
+  .page-open {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
   .pg-header {
     display: flex;
     justify-content: space-between;
@@ -109,6 +118,8 @@ export function cmaStylesheet(siteUrl: string): string {
     border-bottom: 1px solid var(--navy-line);
     padding-bottom: 9px;
     margin-bottom: 16px;
+    break-after: avoid;
+    page-break-after: avoid;
   }
   .pg-header img.logo { height: 34px; }
   .pg-header .pg-meta {
@@ -725,8 +736,10 @@ export function cmaStylesheet(siteUrl: string): string {
       box-shadow: none;
       margin: 0;
       width: auto;
-      /* Content-box height = 11in - 0.4in top - 0.7in bottom. */
-      min-height: 9.9in;
+      /* Do not force a section to fill a sheet. A 9.9in min-height made
+         leftover from one chapter paint onto the next sheet above that
+         chapter's in-body header. Height comes from content. */
+      min-height: 0;
       padding: 0;
     }
     /* Last sheet: no forced min-height and no break-after. Either one on
@@ -762,7 +775,9 @@ export function cmaStylesheet(siteUrl: string): string {
     .page-closing { padding: 24px 20px 32px; }
   }
   @media print {
-    .page-closing { padding: 28px 32px 36px; }
+    .page-closing { padding: 16px 28px 20px; }
+    .page-closing .signature-page { margin-top: 14px; padding-top: 14px; }
+    .page-closing p.fine { margin-top: 8px; }
   }
   .page-closing h2.section { color: var(--cream); border-bottom-color: var(--cream); }
   .page-closing h3.subhead,

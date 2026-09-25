@@ -56,6 +56,19 @@ describe('the method, stated before the evidence', () => {
     ])
   })
 
+  it('rewrites a stored em dash in a method sentence at render time', () => {
+    const dirty = {
+      ...pricing,
+      timeAdjustment: {
+        sentence:
+          'Each sale stays on its own sold and last-ask price — size and story class do not adjust.',
+      },
+    } as unknown as CmaPricing
+    const out = pricingMethodSentences({ pricing: dirty })
+    expect(out.join(' ')).toContain('price. Size and story class do not adjust.')
+    expect(out.join(' ')).not.toContain('\u2014')
+  })
+
   it('drops a sentence the pricing unit did not write, and never writes one of its own', () => {
     const thin = { ...pricing, timeAdjustment: null, reconciliation: null } as unknown as CmaPricing
     expect(pricingMethodSentences({ pricing: thin })).toEqual([
