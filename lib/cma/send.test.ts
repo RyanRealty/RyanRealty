@@ -105,7 +105,7 @@ beforeEach(() => {
   h.logCmaTimelineEvent.mockResolvedValue(undefined)
   h.recordEmailEvent.mockResolvedValue({ ok: true })
   h.ensureNativeLead.mockResolvedValue({ personId: 88, created: true })
-  h.stampCmaPersonId.mockResolvedValue(undefined)
+  h.stampCmaPersonId.mockResolvedValue({ ok: true })
   consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
@@ -137,6 +137,42 @@ describe('sendCmaToLead', () => {
       }),
     )
     expect(h.ensureNativeLead).not.toHaveBeenCalled()
+    expect(h.stampCmaPersonId).toHaveBeenCalledWith(SLUG, 42)
+  })
+
+  it('saves an existing CRM contact on the cmas row before the PDF renders', async () => {
+    const pdf = await import('@/lib/cma-pdf')
+    const order: string[] = []
+    h.stampCmaPersonId.mockImplementation(async () => {
+      order.push('stamp')
+      return { ok: true }
+    })
+    vi.mocked(pdf.renderCmaPdfBuffer).mockImplementation(async () => {
+      order.push('pdf')
+      return { buffer: Buffer.from('%PDF-1.7'), finalized: true }
+    })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res).toMatchObject({ ok: true, personId: 42 })
+    expect(h.stampCmaPersonId).toHaveBeenCalledWith(SLUG, 42)
+    expect(order).toEqual(['stamp', 'pdf'])
+  })
+
+  it('fails the send when saving the contact id on the row fails, and does not render the PDF', async () => {
+    const pdf = await import('@/lib/cma-pdf')
+    h.stampCmaPersonId.mockResolvedValueOnce({ ok: false, error: 'write refused' })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(false)
+    expect(res.error).toMatch(/untracked/i)
+    expect(res.error).toMatch(/write refused/)
+    expect(pdf.renderCmaPdfBuffer).not.toHaveBeenCalled()
+    expect(h.gmailSend).not.toHaveBeenCalled()
+    expect(h.sendEmail).not.toHaveBeenCalled()
+    expect(h.updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+    expect(h.recordEmailEvent).not.toHaveBeenCalled()
   })
 
   it('creates a CRM contact when none exists, then tracks the send', async () => {

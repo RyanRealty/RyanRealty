@@ -424,12 +424,25 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
       assignedBroker: crmBrokerSlug,
     })
     personId = lead.personId > 0 ? lead.personId : null
-    if (personId) await stampCmaPersonId(slug, personId)
   }
   if (!personId) {
     return {
       ok: false,
       error: 'Could not create a CRM contact for this email. The CMA was not sent — it would have gone out untracked.',
+    }
+  }
+  // Persist before the PDF renders. The create path already stamped; an
+  // existing CRM contact used to skip this, so the letter shipped without
+  // `_pid`. A failed write must stop the send — logging and continuing is
+  // how an untracked PDF left the shop.
+  const stamped = await stampCmaPersonId(slug, personId)
+  if (!stamped || stamped.ok !== true) {
+    return {
+      ok: false,
+      error:
+        stamped && stamped.ok === false
+          ? `Could not save the contact on this CMA (${stamped.error}). The CMA was not sent — it would have gone out untracked.`
+          : 'Could not save the contact on this CMA. The CMA was not sent — it would have gone out untracked.',
     }
   }
   ctx.facts.personId = personId
