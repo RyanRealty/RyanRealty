@@ -244,9 +244,16 @@ export async function publishEdition(opts: {
     return { month, dryRun, status: 'held', holdReason, reconciliation, pdfPath: null, pages: null, bytes: null }
   }
 
+  const status = opts.status ?? 'published'
+  if (status === 'draft' && !dryRun) {
+    // A draft run never replaces a published edition (the same rule as the hold above).
+    const existing = await getEditionForWrite(month)
+    if (existing?.status === 'published') {
+      throw new Error(`[publishEdition] ${month} is published; a draft run does not replace it`)
+    }
+  }
   const { pdf } = await renderEditionPdf(payload)
   const pages = pageCount(pdf)
-  const status = opts.status ?? 'published'
   if (dryRun) {
     log(`${month}: ${pages} pages, ${(pdf.length / 1024).toFixed(0)} KB (dry run, nothing written)`)
     return { month, dryRun, status, holdReason: null, reconciliation, pdfPath: null, pages, bytes: pdf.length }

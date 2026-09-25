@@ -660,12 +660,19 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
         const h = held.get(String(row.ListNumber ?? ''))
         return h ? mergeFrozenMedia(row, h) : row
       })
+      const failedKeys = new Set<string>()
       for (let i = 0; i < rows.length; i += DELTA_SYNC.UPSERT_CHUNK) {
         const chunk = rows.slice(i, i + DELTA_SYNC.UPSERT_CHUNK)
         const r = await upsertListingRows(chunk)
         if (r.ok) totalUpserted += chunk.length
-        else { upsertFailed = true; console.error('[deltaSync] reopened upsert error.', r.error) }
+        else {
+          upsertFailed = true
+          console.error('[deltaSync] reopened upsert error.', r.error)
+          // The rows did not land: their events, history and re-freeze must not either.
+          for (const row of chunk) failedKeys.add(String(row.ListingKey ?? row.ListNumber ?? ''))
+        }
       }
+      if (failedKeys.size > 0) dropFromPlan(plan, failedKeys)
       if (rows.length > 0) {
         console.log(
           `[deltaSync] reopened ${rows.length} finalized row(s): ` +
@@ -738,8 +745,8 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     }
   }
 
-  // 6. Photo-fix pass for rows upserted without a PhotoURL.
-  const photoKeys = plan.rowsToUpsert
+  // 6. Photo-fix pass for rows upserted without a PhotoURL (reopened rows included).
+  const photoKeys = [...plan.rowsToUpsert, ...plan.reopenedRows]
     .filter((r) => !r.PhotoURL && r.ListingKey)
     .map((r) => r.ListingKey as string)
     .slice(0, DELTA_SYNC.MAX_PHOTO_FIXES)

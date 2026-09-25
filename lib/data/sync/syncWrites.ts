@@ -89,17 +89,24 @@ export async function getExistingListingsByListNumbers(
 ): Promise<ExistingListingRow[]> {
   const sb = client()
   if (!sb || listNumbers.length === 0) return []
-  const { data, error } = await sb
-    .from('listings')
-    .select(
-      'ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized, City, CloseDate, ClosePrice, property_sub_type, TotalLivingAreaSqFt, media_finalized',
-    )
-    .in('ListNumber', listNumbers.slice(0, 5000))
-  // A failed read must stop the tick (the cursor holds and the window retries),
-  // never read as "no existing rows": that would treat every listing as new,
-  // skip the finalized guard and emit a new_listing event for each.
-  if (error) throw new Error(`[getExistingListingsByListNumbers] ${error.message}`)
-  return (data ?? []) as ExistingListingRow[]
+  const unique = [...new Set(listNumbers)]
+  const out: ExistingListingRow[] = []
+  // Chunks of 500, under the API's 1,000-row response cap: a truncated read
+  // would look like "no existing row" for everything past the cap.
+  for (let i = 0; i < unique.length; i += 500) {
+    const { data, error } = await sb
+      .from('listings')
+      .select(
+        'ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized, City, CloseDate, ClosePrice, property_sub_type, TotalLivingAreaSqFt, media_finalized',
+      )
+      .in('ListNumber', unique.slice(i, i + 500))
+    // A failed read must stop the tick (the cursor holds and the window retries),
+    // never read as "no existing rows": that would treat every listing as new,
+    // skip the finalized guard and emit a new_listing event for each.
+    if (error) throw new Error(`[getExistingListingsByListNumbers] ${error.message}`)
+    out.push(...((data ?? []) as ExistingListingRow[]))
+  }
+  return out
 }
 
 /**

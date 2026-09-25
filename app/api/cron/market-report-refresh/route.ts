@@ -70,8 +70,15 @@ export async function GET(request: Request) {
   try {
     const recon = await reconcileClosings({ from: windowStart, to: isoDay(new Date()), repair, maxRepairs: MAX_REPAIRS })
     say(
-      `closings ${windowStart}..today: Spark ${recon.sparkClosings}, ours ${recon.ourClosedInWindow}, drifted ${recon.drift.length}, repaired ${recon.repaired}, failed ${recon.repairFailed.length}, not in Spark ${recon.notInSpark.length} (absent from the MLS: ${recon.absentFromMls.recorded} recorded, ${recon.absentFromMls.cleared} released)`,
+      `closings ${windowStart}..today: Spark ${recon.sparkClosings}, ours ${recon.ourClosedInWindow}, drifted ${recon.drift.length}, repaired ${recon.repaired}, failed ${recon.repairFailed.length}, not in Spark ${recon.notInSpark.length} (absent from the MLS: ${recon.absentFromMls.recorded} recorded, ${recon.absentFromMls.cleared} released${recon.absentFromMls.refused ? `; refused: ${recon.absentFromMls.refused}` : ''})`,
     )
+    if (recon.absentFromMls.refused) {
+      await queueBrokerHealthAlert({
+        key: 'closings-absent-refused',
+        body: `The MLS check did not record missing sales today: ${recon.absentFromMls.refused.slice(0, 200)}. Spark may be down or answering empty.`,
+        cooldownMinutes: 1440,
+      })
+    }
     if (recon.drift.length > REPAIR_ALERT_AT) {
       await queueBrokerHealthAlert({
         key: 'closings-drift',

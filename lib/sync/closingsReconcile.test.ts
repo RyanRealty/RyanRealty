@@ -125,11 +125,15 @@ describe('reconcileClosings', () => {
 
     const report = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: false })
     expect(report.notInSpark).toEqual(['GONE'])
-    expect(report.absentFromMls).toEqual({ recorded: 0, cleared: 0 })
+    expect(report.absentFromMls).toEqual({ recorded: 0, cleared: 0, refused: null })
     expect(store.recorded).toEqual([])
 
+    // Spark still serves the window's other closings: one missing sale is a removal, not an outage.
+    spark.window = [sparkClosing('K2')]
+    store.closedInWindow = ['GONE', 'K2']
+    store.rows.set('K2', ourRow('K2'))
     const repair = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
-    expect(repair.absentFromMls).toEqual({ recorded: 1, cleared: 0 })
+    expect(repair.absentFromMls).toEqual({ recorded: 1, cleared: 0, refused: null })
     expect(store.recorded).toEqual([{ listingKey: 'GONE', listNumber: 'LGONE', closeDate: '2026-03-10' }])
   })
 
@@ -137,7 +141,7 @@ describe('reconcileClosings', () => {
     store.absent.add('BACK')
     spark.byKey.set('BACK', sparkClosing('BACK', { CloseDate: '2025-02-01' }))
     const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
-    expect(r.absentFromMls).toEqual({ recorded: 0, cleared: 1 })
+    expect(r.absentFromMls).toEqual({ recorded: 0, cleared: 1, refused: null })
     expect(store.cleared).toEqual(['BACK'])
     expect(store.absent.has('BACK')).toBe(false)
   })
@@ -145,7 +149,29 @@ describe('reconcileClosings', () => {
   it('keeps a recorded key Spark still does not serve', async () => {
     store.absent.add('STILL-GONE')
     const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
-    expect(r.absentFromMls).toEqual({ recorded: 0, cleared: 0 })
+    expect(r.absentFromMls).toEqual({ recorded: 0, cleared: 0, refused: null })
     expect(store.absent.has('STILL-GONE')).toBe(true)
+  })
+
+  it('records nothing when Spark returns no closings at all (an outage, not removals)', async () => {
+    store.closedInWindow = ['A', 'B', 'C']
+    for (const k of store.closedInWindow) store.rows.set(k, ourRow(k))
+    const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
+    expect(r.notInSpark).toEqual(['A', 'B', 'C'])
+    expect(r.absentFromMls.recorded).toBe(0)
+    expect(r.absentFromMls.refused).toMatch(/no closings/)
+    expect(store.recorded).toEqual([])
+  })
+
+  it('records nothing when far more go missing than removed listings explain', async () => {
+    const ours = Array.from({ length: 1000 }, (_, i) => `K${i}`)
+    store.closedInWindow = ours
+    for (const k of ours) store.rows.set(k, ourRow(k))
+    // Spark serves the first 900; 100 missing is past max(10, 0.5% of 1,000 = 5).
+    spark.window = ours.slice(0, 900).map((k) => sparkClosing(k))
+    const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
+    expect(r.notInSpark).toHaveLength(100)
+    expect(r.absentFromMls.recorded).toBe(0)
+    expect(r.absentFromMls.refused).toMatch(/more than removed listings explain/)
   })
 })

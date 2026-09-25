@@ -18,6 +18,8 @@
  * Redmond closings from Feb-Aug 2026 that our copy lacked or mis-dated.
  */
 
+import { toNum } from '@/lib/listing-scalars'
+
 export type DriftFacts = {
   status: string | null
   closeDate: string | null
@@ -72,13 +74,20 @@ export function factsFromListingRow(row: Record<string, unknown>): DriftFacts {
 }
 
 /**
- * Facts from raw Spark StandardFields. Living area follows the mapper's own
- * precedence (TotalLivingAreaSqFt, BuildingAreaTotal, LivingArea) so a lite
- * select and a full mapped row read the same number.
+ * Facts from raw Spark StandardFields, read the way the mapper reads them.
+ * Living area is the mapper's own `toNum(pick(TotalLivingAreaSqFt,
+ * BuildingAreaTotal, LivingArea))`: the first field that is present wins even
+ * when it is blank or masked. Falling through to the next field here, when the
+ * mapper does not, made a row whose first field was blank drift every day and
+ * be repaired to the same blank every day.
  */
 export function factsFromSparkFields(fields: Record<string, unknown>): DriftFacts {
   // Spark masks an unlicensed field as a run of asterisks; the mapper strips any run.
   const masked = (v: unknown) => (typeof v === 'string' && /^\*+$/.test(v.trim()) ? null : v)
+  const firstPresent = (...keys: string[]) => {
+    for (const k of keys) if (fields[k] != null) return fields[k]
+    return null
+  }
   return {
     status: text(masked(fields.StandardStatus)) ?? text(masked(fields.MlsStatus)),
     closeDate: dateOnly(masked(fields.CloseDate)),
@@ -86,10 +95,7 @@ export function factsFromSparkFields(fields: Record<string, unknown>): DriftFact
     listPrice: num(masked(fields.ListPrice)),
     city: text(masked(fields.City)),
     subType: text(masked(fields.PropertySubType)),
-    sqft:
-      num(masked(fields.TotalLivingAreaSqFt)) ??
-      num(masked(fields.BuildingAreaTotal)) ??
-      num(masked(fields.LivingArea)),
+    sqft: toNum(firstPresent('TotalLivingAreaSqFt', 'BuildingAreaTotal', 'LivingArea')),
   }
 }
 

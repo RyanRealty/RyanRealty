@@ -72,6 +72,17 @@ describe('fact readers', () => {
     expect(f).toEqual({ ...base, listPrice: null })
   })
 
+  it('takes the first living-area field present even when blank, as the mapper does', () => {
+    // The mapper stores null here (toNum(pick(...)) picks the blank first field),
+    // so the drift read must too, or the row drifts and is repaired every day.
+    const blank = factsFromSparkFields({ TotalLivingAreaSqFt: '', BuildingAreaTotal: 2100 })
+    expect(blank.sqft).toBeNull()
+    const masked = factsFromSparkFields({ TotalLivingAreaSqFt: '*****', BuildingAreaTotal: 2100 })
+    expect(masked.sqft).toBeNull()
+    const absent = factsFromSparkFields({ BuildingAreaTotal: 2100 })
+    expect(absent.sqft).toBe(2100)
+  })
+
   it('dateOnly keeps the leading calendar date', () => {
     expect(dateOnly('2026-08-14T07:00:00Z')).toBe('2026-08-14')
     expect(dateOnly('not a date')).toBeNull()

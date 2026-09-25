@@ -154,6 +154,16 @@ describe('buildBands', () => {
     expect(tier.sales6).toBe(60)
     expect(tier.active).toBe(20)
   })
+
+  it('withholds the bands when a month of the twelve was never stored', () => {
+    const rows: ReportBandRow[] = []
+    for (let i = 0; i < 12; i++) {
+      if (i === 3) continue // this month failed to compute
+      const end = lastDayOf(addMonths('2026-07', -i))
+      rows.push({ period_end: end, geo_type: 'city', geo_slug: 'bend', segment: 'sfr', band_idx: 10, closed_n: 10, active_end_n: 20 })
+    }
+    expect(buildBands(new BandIndex(rows), '2026-07', 'city:bend', 'sfr')).toBeNull()
+  })
 })
 
 describe('quarterEnds', () => {

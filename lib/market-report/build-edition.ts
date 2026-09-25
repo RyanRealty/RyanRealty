@@ -302,6 +302,12 @@ export function buildBands(
 ): { rows: BandRowOut[]; tiers: TierRowOut[] } | null {
   const monthMap = bands.get(lastDayOf(endKey), geo, segment)
   if (!monthMap) return null
+  // Every month of the 12 must be stored: a month that failed to compute would
+  // read as zero sales, understate a band's six-month sales and overstate its
+  // months of supply. Missing any, the band section is withheld.
+  for (let i = 1; i < 12; i++) {
+    if (!bands.get(lastDayOf(addMonths(endKey, -i)), geo, segment)) return null
+  }
   const sum = (months: number, idxBand: number) => {
     let total = 0
     for (let i = 0; i < months; i++) {

@@ -51,7 +51,7 @@ async function main() {
   console.log(
     `not in Spark: ${r.notInSpark.length}` +
       (argv.includes('--repair')
-        ? ` (recorded as absent from the MLS: ${r.absentFromMls.recorded}; back in the MLS and released: ${r.absentFromMls.cleared})`
+        ? ` (recorded as absent from the MLS: ${r.absentFromMls.recorded}; back in the MLS and released: ${r.absentFromMls.cleared}${r.absentFromMls.refused ? `; NOT recorded: ${r.absentFromMls.refused}` : ''})`
         : ' (reported only)'),
   )
   if (argv.includes('--repair')) {

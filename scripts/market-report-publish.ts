@@ -7,8 +7,10 @@
  * Flags
  *   --from YYYY-MM / --to YYYY-MM   edition (data) months, inclusive
  *   --publish                       gate, render, upload and publish each edition (lib/market-report/pipeline.ts)
- *   --draft                         the same, stored as a draft (not visible on the site)
+ *   --draft                         the same, stored as a draft (not visible on the site); published months are left alone
  *   --skip-published                leave months that are already published alone
+ *   --rebuilt-since <iso>           leave months whose stored edition was generated at or after this
+ *                                   time alone (resume a republish of editions already published)
  *   --out <dir>                     render <dir>/<month>.pdf, .html and .citations.json locally for review (no writes)
  *   --no-pdf                        build payloads only (fast check of every month)
  *   --series-cache <file>           reuse loaded series and bands from a JSON file (write it when absent); local review only
@@ -80,9 +82,13 @@ async function main() {
   const sources = liveReconcileSources()
   for (const month of months(from, to)) {
     if (status) {
-      if (has('skip-published')) {
+      const rebuiltSince = flag('rebuilt-since')
+      // A draft run never touches a published month (publishEdition refuses it too).
+      const skipPublished = has('skip-published') || status === 'draft'
+      if (skipPublished || rebuiltSince) {
         const existing = await getEditionForWrite(month)
-        if (existing?.status === 'published') {
+        const fresh = rebuiltSince && existing && Date.parse(existing.generated_at) >= Date.parse(rebuiltSince)
+        if ((skipPublished && existing?.status === 'published') || fresh) {
           counts.skipped += 1
           continue
         }

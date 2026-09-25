@@ -50,7 +50,8 @@ export function mergeFrozenMedia(row: Record<string, unknown>, held: HeldMedia):
     }
   }
   row.details = details
-  if (keptPhotos || (!row.PhotoURL && held.PhotoURL)) row.PhotoURL = held.PhotoURL
+  // The held primary photo follows the held gallery, but a null never replaces a URL the MLS sent.
+  if (held.PhotoURL && (keptPhotos || !row.PhotoURL)) row.PhotoURL = held.PhotoURL
   row.media_finalized = true
   return row
 }

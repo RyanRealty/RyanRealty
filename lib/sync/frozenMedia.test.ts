@@ -40,6 +40,12 @@ describe('mergeFrozenMedia', () => {
     expect(row.PhotoURL).toBe('https://img/mls.jpg')
   })
 
+  it('keeps the MLS primary photo when the held gallery has none recorded', () => {
+    const row = mergeFrozenMedia(mapped(20), { ...held(30), PhotoURL: null })
+    expect(((row.details as Record<string, unknown>).Photos as unknown[]).length).toBe(30)
+    expect(row.PhotoURL).toBe('https://img/mls.jpg')
+  })
+
   it('never drops a column: the row keeps every media key it came with', () => {
     const before = Object.keys(mapped(0)).sort()
     const row = mergeFrozenMedia(mapped(0), held(3))

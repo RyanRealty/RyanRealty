@@ -52,7 +52,7 @@ import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
 const REPAIR_HISTORY_CONCURRENCY = 2
 
 const LITE_SELECT =
-  'ListingKey,ListingId,StandardStatus,MlsStatus,CloseDate,ClosePrice,City,PropertyType,PropertySubType,TotalLivingAreaSqFt,BuildingAreaTotal,LivingArea,ModificationTimestamp'
+  'ListingKey,ListingId,StandardStatus,MlsStatus,CloseDate,ClosePrice,ListPrice,City,PropertyType,PropertySubType,TotalLivingAreaSqFt,BuildingAreaTotal,LivingArea,ModificationTimestamp'
 
 /** Pages of 1,000 a window may take before the pull refuses to guess (200,000 closings). */
 const MAX_WINDOW_PAGES = 200
@@ -90,8 +90,12 @@ export type ClosingsReconcileResult = {
    * Truth statistic (Matt 2026-09-25).
    */
   notInSpark: string[]
-  /** Repair mode only: absences recorded this run, and earlier ones the MLS serves again (removed). */
-  absentFromMls: { recorded: number; cleared: number }
+  /**
+   * Repair mode only: absences recorded this run, earlier ones the MLS serves
+   * again (released), and why recording was refused when the pull looked like
+   * an outage rather than a few removed listings.
+   */
+  absentFromMls: { recorded: number; cleared: number; refused: string | null }
   repaired: number
   /** Keys actually rewritten (their membership and episodes are rebuilt too). */
   repairedKeys: string[]
@@ -332,15 +336,36 @@ export async function repairListingsFromSpark(keys: string[]): Promise<{
 }
 
 /** Find drift in the window and, when asked, repair it (capped). */
+/** Absences one window may record before the pull is treated as an outage: 10, or 0.5% of our closings. */
+export function absentRecordLimit(ourClosedInWindow: number): number {
+  return Math.max(10, Math.ceil(ourClosedInWindow * 0.005))
+}
+
 /**
  * Record the window's closings Spark no longer serves, and release any key
  * recorded earlier that Spark serves again. The recorded list is short, so
  * every run re-checks all of it by key.
+ *
+ * A Spark outage (an error page read as an empty result, a rejected filter)
+ * would make every closing we hold look removed, and recording them would
+ * drop every sale from every statistic. So nothing is recorded when Spark
+ * returned no closings for the window, or when more go missing than a few
+ * removed listings explain (absentRecordLimit); the caller alerts instead.
  */
-async function syncAbsentFromMls(notInSpark: string[]): Promise<{ recorded: number; cleared: number }> {
-  const rows = notInSpark.length > 0 ? await getListingsForReconcile(notInSpark) : new Map()
+async function syncAbsentFromMls(
+  notInSpark: string[],
+  window: { sparkClosings: number; ourClosedInWindow: number },
+): Promise<{ recorded: number; cleared: number; refused: string | null }> {
+  let refused: string | null = null
+  if (notInSpark.length > 0 && window.sparkClosings === 0) {
+    refused = `Spark returned no closings for the window while we hold ${window.ourClosedInWindow}`
+  } else if (notInSpark.length > absentRecordLimit(window.ourClosedInWindow)) {
+    refused = `${notInSpark.length} of our ${window.ourClosedInWindow} closings are missing from Spark, more than removed listings explain (limit ${absentRecordLimit(window.ourClosedInWindow)})`
+  }
+  const toRecord = refused ? [] : notInSpark
+  const rows = toRecord.length > 0 ? await getListingsForReconcile(toRecord) : new Map()
   const recorded = await recordAbsentFromMls(
-    notInSpark.map((key) => {
+    toRecord.map((key) => {
       const row = rows.get(key)
       return {
         listingKey: key,
@@ -352,7 +377,7 @@ async function syncAbsentFromMls(notInSpark: string[]): Promise<{ recorded: numb
   const held = (await getAbsentFromMlsKeys()).filter((k) => !notInSpark.includes(k))
   const back = held.length > 0 ? [...(await fetchSparkLiteByKeys(held)).keys()] : []
   const cleared = await clearAbsentFromMls(back)
-  return { recorded, cleared }
+  return { recorded, cleared, refused }
 }
 
 export async function reconcileClosings(opts: {
@@ -362,7 +387,9 @@ export async function reconcileClosings(opts: {
   maxRepairs?: number
 }): Promise<ClosingsReconcileResult> {
   const found = await findClosingsDrift(opts.from, opts.to)
-  const absentFromMls = opts.repair ? await syncAbsentFromMls(found.notInSpark) : { recorded: 0, cleared: 0 }
+  const absentFromMls = opts.repair
+    ? await syncAbsentFromMls(found.notInSpark, { sparkClosings: found.sparkClosings, ourClosedInWindow: found.ourClosedInWindow })
+    : { recorded: 0, cleared: 0, refused: null }
   if (!opts.repair || found.drift.length === 0) {
     return { ...found, absentFromMls, repaired: 0, repairedKeys: [], repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
   }

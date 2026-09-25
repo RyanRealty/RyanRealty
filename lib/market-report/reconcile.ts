@@ -349,6 +349,26 @@ function inPopulation(s: GateSale, f: PrintedFigure): boolean {
  * Check each printed figure against Spark. `excluded` holds the Spark keys our
  * sale facts mark unpublishable (the method's own exclusions).
  */
+/** Sales bucketed by close month, so a figure scans only the months it covers. */
+function byMonth(sales: readonly GateSale[]): Map<string, GateSale[]> {
+  const out = new Map<string, GateSale[]>()
+  for (const s of sales) {
+    const k = s.date.slice(0, 7)
+    const list = out.get(k)
+    if (list) list.push(s)
+    else out.set(k, [s])
+  }
+  return out
+}
+
+function inWindow(index: Map<string, GateSale[]>, f: PrintedFigure): GateSale[] {
+  const out: GateSale[] = []
+  for (let k = f.from.slice(0, 7); k <= f.to.slice(0, 7); k = addMonths(k, 1)) {
+    for (const s of index.get(k) ?? []) if (inPopulation(s, f)) out.push(s)
+  }
+  return out
+}
+
 export function checkFigures(
   figures: readonly PrintedFigure[],
   spark: readonly GateSale[],
@@ -356,10 +376,12 @@ export function checkFigures(
   excluded: ReadonlySet<string>,
   tolerance = RECONCILE_TOLERANCE,
 ): FigureCheck[] {
+  const sparkIndex = byMonth(spark)
+  const ourIndex = byMonth(ours)
   return figures.map((f) => {
-    const sparkAll = spark.filter((s) => inPopulation(s, f))
+    const sparkAll = inWindow(sparkIndex, f)
     const sp = sparkAll.filter((s) => !excluded.has(s.key))
-    const ou = ours.filter((s) => inPopulation(s, f))
+    const ou = inWindow(ourIndex, f)
     const ourByKey = new Map(ou.map((s) => [s.key, s]))
     const sparkKeys = new Set(sp.map((s) => s.key))
     const missingFromUs = sp.filter((s) => !ourByKey.has(s.key)).map((s) => s.key)
