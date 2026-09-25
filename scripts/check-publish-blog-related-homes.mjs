@@ -42,13 +42,18 @@ checks.push({
     /norm\(community\.slug\)/.test(geo),
 })
 
+// SITE-203: the place CTA carries the query the door page owns, through the
+// two heading builders every place page uses ("{community} homes for sale",
+// "{city} real estate"), never a hand-typed label.
 checks.push({
-  label: 'lifestyle CTA is Talk to a broker; place CTA is See {label} homes',
+  label: 'lifestyle CTA is Talk to a broker; place CTA is the door page\'s own query heading',
   ok:
     /export function publishBlogContextualCta/.test(helper) &&
     helper.includes("label: 'Talk to a broker'") &&
     helper.includes('href: \'/contact\'') &&
-    helper.includes('See ${place.label} homes'),
+    /placeHomesForSaleHeading\(place\.label\)/.test(helper) &&
+    /placeCityRealEstateHeading\(place\.label\)/.test(helper) &&
+    !helper.includes('See ${place.label} homes'),
 })
 
 const dal = src('lib/data/blog/getBlogRelatedHomes.ts')

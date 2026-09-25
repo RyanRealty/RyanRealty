@@ -3,7 +3,7 @@
 // shadcn semantic color utility (card surface, muted foreground text, hairline
 // borders, …) now reads its color from the locked admin tokens (components/admin/v2).
 import Link from 'next/link'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { getGA4Summary } from '@/app/actions/ga4-report'
 import { Ga4MirrorNotice } from '@/app/admin/(protected)/analytics/_components/Ga4MirrorNotice'
 

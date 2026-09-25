@@ -60,24 +60,27 @@ export async function generateMetadata(): Promise<Metadata> {
         : null
   const fiveStar = quotes.filter((q) => q.rating >= 5).length
   const description = span
-    ? `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5, ${span}). Every review in full on this page — nothing picked, nothing trimmed.`
-    : `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5). Every review in full on this page — nothing picked, nothing trimmed.`
+    ? `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5, ${span}). Every review in full on this page. Nothing picked, nothing trimmed.`
+    : `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5). Every review in full on this page. Nothing picked, nothing trimmed.`
+  // The layout template appends "| Ryan Realty, Central Oregon", so the
+  // document title carries the brand once. The brand twice here made /reviews
+  // the stronger brand match than / (SITE-198). Social cards get no template,
+  // so they keep it.
   const title =
-    n > 0 && fiveStar === n
-      ? `${n} five-star Google reviews · Ryan Realty`
-      : `${n} Google reviews · Ryan Realty`
+    n > 0 && fiveStar === n ? `${n} five-star Google reviews` : `${n} Google reviews`
+  const socialTitle = `${title} · Ryan Realty`
   return {
     title,
     description,
     alternates: { canonical: `${siteUrl}${ROUTE_PATH}` },
     openGraph: {
-      title: `${title} · ${average.toFixed(1)} of 5`,
+      title: `${socialTitle} · ${average.toFixed(1)} of 5`,
       description,
       url: `${siteUrl}${ROUTE_PATH}`,
       type: 'website',
       images: [{ url: ogImage, width: 1200, height: 630 }],
     },
-    twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
+    twitter: { card: 'summary_large_image', title: socialTitle, description, images: [ogImage] },
   }
 }
 

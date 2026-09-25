@@ -696,6 +696,7 @@ export { V3PlaceDocuments } from './V3PlaceDocuments'
 export {
   V3PlaceCharacter,
   placeCharacterHeading,
+  PLACE_HOA_CAVEAT,
   yearBuiltSentence,
   hoaPresenceSentence,
   duesSentence,
@@ -720,6 +721,7 @@ export type { V3PlaceInventoryProps } from './V3PlaceInventory'
 export { V3ListingDial } from './V3ListingDial.client'
 
 export type { V3ListingDialProps } from './V3ListingDial.client'
+export type { DialRailPosition, DialReel } from './V3ListingDial.video'
 
 export {
   dialKeyTarget,

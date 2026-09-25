@@ -223,6 +223,21 @@ const nextConfig: NextConfig = {
           { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googletagmanager.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google-analytics.com https://www.google.com https://maps.googleapis.com https://maps.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.adtrafficquality.google https://connect.facebook.net; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.us.sentry.io https://tiles.openfreemap.org https://elevation-tiles-prod.s3.amazonaws.com https://accounts.google.com https://*.supabase.co https://*.google-analytics.com https://www.google-analytics.com https://*.analytics.google.com https://www.google.com https://www.googletagmanager.com https://*.doubleclick.net https://*.adtrafficquality.google https://api.elevenlabs.io https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.gstatic.com data: blob: https://pagead2.googlesyndication.com https://*.googlesyndication.com https://connect.facebook.net https://www.facebook.com https://*.facebook.com https://analytics.google.com; worker-src 'self' blob:; frame-src 'self' https://dwvlophlbvvygjfxcrhm.supabase.co https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.aryeo.com https://*.matterport.com https://*.zillow.com https://drive.google.com https://*.cloudflarestream.com https://*.videodelivery.net https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.google.com https://*.adtrafficquality.google;" },
         ],
       },
+      // A page whose address carries a secret (lib/analytics/private-paths.ts):
+      // no referrer ever carries its address anywhere, and the signing page's
+      // own policy admits no third-party origin at all, so a tag added by
+      // mistake is blocked by the browser, not just left out by the layout.
+      // Supabase serves the documents; Sentry takes scrubbed error reports.
+      ...['/sign/:path*', '/cma-drafts/:path*', '/alerts/unsubscribe', '/newsletter/unsubscribe'].map((source) => ({
+        source,
+        headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
+      })),
+      {
+        source: '/sign/:path*',
+        headers: [
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.ingest.us.sentry.io data: blob:; worker-src 'self' blob:; frame-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" },
+        ],
+      },
       // CMA documents are embedded in a same-origin iframe on the admin review
       // page (/admin/cmas/[slug]). The global DENY above blocks that preview;
       // SAMEORIGIN keeps cross-origin embedding blocked while letting the

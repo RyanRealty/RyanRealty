@@ -76,7 +76,7 @@ import {
   v3Text,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
-import { COMPARISON_CITY_LABELS, CORE_CITY_SLUGS, resolveGeo } from './_v3/geo-constants'
+import { COMPARISON_CITY_LABELS, CORE_MARKET_PATHS, resolveGeo } from './_v3/geo-constants'
 import {
   buildCityMedianChart,
   buildCityPeriodFigures,
@@ -94,9 +94,10 @@ import {
 } from './_v3/city-insight'
 import { cityHomesRows } from './_v3/city-homes'
 import { geoTitle } from './_v3/geo-title'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
-  return CORE_CITY_SLUGS.map((s) => ({ slug: [s] }))
+  return CORE_MARKET_PATHS.map((p) => ({ slug: p.replace(/^\/housing-market\//, '').split('/') }))
 }
 
 export const dynamicParams = true
@@ -129,7 +130,7 @@ type Props = { params: Promise<{ slug: string[] }> }
  * React cache() memoizes per request across generateMetadata and the render, so
  * this adds no round trip: the description's figures are the identical values
  * the Instrument and the Dataset JSON-LD are built from. dynamicParams stays
- * true — CORE_CITY_SLUGS is a presentation list, not a registry, and madras,
+ * true — CORE_MARKET_PATHS is a presentation list, not a registry, and madras,
  * culver, powell-butte, camp-sherman and every two-segment community URL render
  * legitimately outside it.
  */
@@ -427,7 +428,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     { label: 'Housing market', href: '/housing-market' },
     ...(communityName
       ? [
-          { label: cityName, href: `/housing-market/${citySlug}` },
+          { label: cityName, href: cityMarketPath(citySlug) },
           { label: communityName },
         ]
       : [{ label: cityName }]),
@@ -467,6 +468,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             geoName={geoName}
             cityName={cityName}
             citySlug={citySlug}
+            communitySlug={data.geo.communitySlug}
             hud={hud}
             mosText={mosText}
             verdict={verdict}

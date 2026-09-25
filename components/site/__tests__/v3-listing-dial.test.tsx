@@ -82,6 +82,33 @@ function count(html: string, re: RegExp): number {
   return html.match(re)?.length ?? 0
 }
 
+describe('V3ListingDial rail position and reel (SITE-194)', () => {
+  const dial = (railPosition?: 'left' | 'right' | 'bottom') =>
+    renderToStaticMarkup(
+      <V3ListingDial id="pv" heading="Homes" label="Homes in Porter James" listings={SFR.rows} railPosition={railPosition} />,
+    )
+
+  it('the left rail is the default and carries no modifier; right and bottom do', () => {
+    expect(dial()).not.toMatch(/v3-dial--rail-/)
+    expect(dial('left')).not.toMatch(/v3-dial--rail-/)
+    expect(dial('right')).toContain('v3-dial--rail-right')
+    expect(dial('bottom')).toContain('v3-dial--rail-bottom')
+  })
+
+  it('a bottom rail is a horizontal tablist on every screen', () => {
+    expect(dial('bottom')).toContain('aria-orientation="horizontal"')
+    expect(dial('right')).toContain('aria-orientation="vertical"')
+  })
+
+  it('the served HTML carries the photograph only: no reel, no player, no play control', () => {
+    const html = dial()
+    expect(html).not.toContain('v3-dial__reel')
+    expect(html).not.toContain('<iframe')
+    expect(html).not.toContain('<video')
+    expect(html).not.toContain('Play video')
+  })
+})
+
 describe('V3PlaceInventory layout="dial"', () => {
   const html = renderToStaticMarkup(
     <V3PlaceInventory

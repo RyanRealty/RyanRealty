@@ -14,6 +14,7 @@
  */
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { placeCityRealEstateHeading, placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import resortRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 
 export type BuyablePlaceKind = 'community' | 'city'
@@ -125,7 +126,13 @@ export type BlogContextualCta = {
 
 export function publishBlogContextualCta(place: BuyablePlace | null): BlogContextualCta {
   if (place) {
-    return { label: `See ${place.label} homes`, href: place.href }
+    // SITE-203: the anchor says the query the door page owns. A community
+    // page wins "{name} homes for sale" (its H1); a city page wins "{city}
+    // real estate" (the /homes-for-sale search owns the city's inventory
+    // query, and /cities/* is never retargeted at it).
+    const label =
+      place.kind === 'city' ? placeCityRealEstateHeading(place.label) : placeHomesForSaleHeading(place.label)
+    return { label, href: place.href }
   }
   return { label: 'Talk to a broker', href: '/contact' }
 }

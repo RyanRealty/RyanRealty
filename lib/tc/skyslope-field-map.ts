@@ -49,6 +49,11 @@ export interface MappedField {
   signerRole: SignerRole
   optional: boolean
   label: string | null
+  /**
+   * Which signer of the role this line is for (0 = the first buyer, 1 = the
+   * second), when the printed rows say so (lined-signature-fields.ts).
+   */
+  signerIndex?: number
 }
 
 const TYPE_MAP: Record<string, MappedFieldType> = {

@@ -1,8 +1,10 @@
 /**
- * List $/sf and sold $/sf summaries per status, from the homes already on
- * the letter (the three matrices). Nothing here invents months of supply or
- * reads the city cache — each rate is that home's own ask or sale over its
- * own living area (CLAUDE.md §0).
+ * List $/sf and sold $/sf per status, from the homes already on the letter
+ * (the three matrices). Nothing here invents months of supply or reads the
+ * city cache — each rate is that home's own ask or sale over its own living
+ * area (CLAUDE.md §0). The rates caption each matrix; the status table's
+ * $/sqft column lives in status-price-summary.ts (the separate "Dollars a
+ * square foot" board folded into it, Matt 2026-09-24).
  */
 
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
@@ -41,16 +43,20 @@ export function ppsfOf(price: number | null | undefined, sqft: number | null | u
   return price / sqft
 }
 
+/**
+ * Median, low and high of the exact rates, each rounded once at the end, the
+ * same math as the status table's $/sqft column (priceBand), so a matrix
+ * caption and the table never differ by a dollar on the same homes.
+ */
 export function ppsfBand(values: readonly number[]): PpsfBand | null {
   if (values.length === 0) return null
-  const rounded = values.map((v) => Math.round(v))
-  const mid = median(rounded)
+  const mid = median([...values])
   if (mid == null) return null
   return {
-    n: rounded.length,
+    n: values.length,
     median: Math.round(mid),
-    low: Math.min(...rounded),
-    high: Math.max(...rounded),
+    low: Math.round(Math.min(...values)),
+    high: Math.round(Math.max(...values)),
   }
 }
 
@@ -114,39 +120,6 @@ export function statusPpsfSummaries(input: {
     askingRow('active', 'Active', 'active', active),
     askingRow('expired', 'Expired', 'unsold', unsold),
   ].filter((row): row is StatusPpsfRow => row != null)
-}
-
-/** "$323" or "$310–$335 · median $323". */
-export function formatPpsfBand(band: PpsfBand | null): string {
-  if (!band) return '—'
-  const mid = usd(band.median)
-  if (band.n < 2 || band.low === band.high) return mid
-  return `${usd(band.low)}–${usd(band.high)} · median ${mid}`
-}
-
-export function statusPpsfBoardHtml(rows: readonly StatusPpsfRow[]): string {
-  if (rows.length === 0) return ''
-  const body = rows
-    .map(
-      (row) => `<tr data-status="${esc(row.key)}">
-      <th>${esc(row.label)}</th>
-      <td class="n">${esc(String(row.homes))}</td>
-      <td class="n">${esc(formatPpsfBand(row.list))}</td>
-      <td class="n">${esc(formatPpsfBand(row.sold))}</td>
-    </tr>`,
-    )
-    .join('')
-  return `<div class="ppsf-status" data-ppsf-status="board">
-  <h3 class="subhead">Dollars a square foot</h3>
-  <p class="chart-read">${esc(
-    "Each rate is that home's own ask or sale over its own living area. These are the homes in this report.",
-  )}</p>
-  <table class="kv is-wide ppsf-status-table">
-    <colgroup><col class="sp-status"><col class="sp-homes"><col class="sp-band"><col class="sp-band"></colgroup>
-    <thead><tr><th>Status</th><th class="n">Homes</th><th class="n">List $/sf</th><th class="n">Sold $/sf</th></tr></thead>
-    <tbody>${body}</tbody>
-  </table>
-</div>`
 }
 
 function theseHomes(n: number, kind: 'sale' | 'listing'): string {

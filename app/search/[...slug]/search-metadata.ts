@@ -73,13 +73,20 @@ export async function buildSearchSlugMetadata({
   // SITE-185: the luxury preset page is the one winner for "{place} luxury
   // homes for sale", so its description opens on that query instead of the
   // city's generic meta description (which never says "luxury").
+  // SITE-196: an area page with no description of its own used to inherit
+  // the CITY's meta description ("Homes for sale in Bend, Oregon. Browse Bend
+  // real estate listings..."), so /homes-for-sale/bend/fawnview described
+  // Bend and collected "bend oregon real estate" impressions that belong to
+  // /cities/bend. An area page now describes its own place.
   const rawMetaDesc =
     luxuryPresetDescription(preset, placeName) ??
     (areaPrint && subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
-    content?.metaDescription ??
+    (subdivisionSlug ? null : content?.metaDescription) ??
     (preset
       ? `${preset.label} in ${placeName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`
-      : `Homes for sale in ${displayName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`)
+      : subdivisionSlug && areaPrint && city
+        ? `${placeHomesForSaleHeading(areaPrint)} in ${city}, Oregon. Live listings from the regional MLS, with price, size, and the map.`
+        : `Homes for sale in ${displayName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`)
   const metaDesc = shareDescription(rawMetaDesc)
   const bannerUrl =
     city &&

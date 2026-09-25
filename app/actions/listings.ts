@@ -2,7 +2,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { after } from 'next/server'
 import { listingTileHref, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
@@ -279,7 +279,9 @@ export async function getCityFromSlug(slug: string | undefined): Promise<string 
 }
 
 export type SearchSuggestionAddress = { label: string; href: string }
+/** count = exact on-market (Active + Active Under Contract) listings from searchListingsAllCount — the same population the search results page shows for this city, never the 250-row suggestion sample. */
 export type SearchSuggestionCity = { city: string; count: number }
+/** count = exact on-market (Active + Active Under Contract) listings from searchListingsAllCount, alias-expanded like the community page — never the 250-row suggestion sample. */
 export type SearchSuggestionSubdivision = { city: string; subdivisionName: string; count: number }
 export type SearchSuggestionZip = { postalCode: string; city?: string; count: number; href: string }
 export type SearchSuggestionBroker = { label: string; href: string }
@@ -314,7 +316,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   // (searchListingSuggestTiles on listing_tile_mv_src.search_vector). That
   // reader already gates to PUBLIC_ON_MARKET_STATUSES so a street prefix
   // cannot stamp Closed 2018 stock into the Addresses group.
-  const { searchListingSuggestTiles, searchBrokersByDisplayName, getNeighborhoodDirectory, searchSiteContentTitles } =
+  const { searchListingSuggestTiles, searchBrokersByDisplayName, getNeighborhoodDirectory, searchSiteContentTitles, searchListingsAllCount } =
     await import('@/lib/data')
   const { searchSitePages } = await import('@/lib/search/site-pages')
   const { matchNeighborhoodEntries } = await import('@/lib/search/neighborhood-match')
@@ -350,7 +352,9 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     if (!city.toLowerCase().includes(qLower)) continue
     cityCounts.set(city, (cityCounts.get(city) ?? 0) + 1)
   }
-  const cities: SearchSuggestionCity[] = Array.from(cityCounts.entries())
+  // Ranked by hits inside the 250-row text-matched sample — a fine RELEVANCE
+  // signal (ordering only) but never a population count (below).
+  const cityMatches = Array.from(cityCounts.entries())
     .map(([city, count]) => ({ city, count }))
     .sort((a, b) => b.count - a.count || a.city.localeCompare(b.city))
     .slice(0, 8)
@@ -369,9 +373,44 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     if (cur) cur.count += 1
     else subByKey.set(key, { city, subdivisionName: sub, count: 1 })
   }
-  const subdivisions = Array.from(subByKey.values())
+  const subdivisionMatches = Array.from(subByKey.values())
     .sort((a, b) => b.count - a.count || a.subdivisionName.localeCompare(b.subdivisionName))
     .slice(0, 12)
+
+  // §0 data accuracy: cityMatches/subdivisionMatches above rank by sample hits,
+  // which skews toward whatever matched the typed text and is capped at 250
+  // rows — never "how many homes are here." The sublabel must show the same
+  // count the search results page shows when this suggestion is picked, so
+  // replace it with the cached EXACT head-count over listing_search_mv
+  // (searchListingsAllCount) — the same function and 'active' status
+  // (Active + Active Under Contract) that getListingsWithAdvanced uses for a
+  // plain city/subdivision browse with no filters. Pending is out of scope
+  // here (Matt); never a new aggregate over raw `listings`. Kicked off now,
+  // awaited just before return, so it overlaps with the address/zip/
+  // neighborhood/page work below instead of adding a second round trip.
+  const cityTrueCountsPromise = Promise.all(
+    cityMatches.map(async (c) => {
+      try {
+        return await searchListingsAllCount({ city: c.city, status: 'active' })
+      } catch {
+        return 0
+      }
+    })
+  )
+  const subdivisionTrueCountsPromise = Promise.all(
+    subdivisionMatches.map(async (s) => {
+      try {
+        return await searchListingsAllCount({
+          city: s.city,
+          // Same alias expansion the community page itself matches on.
+          subdivisions: getSubdivisionMatchNames(s.subdivisionName),
+          status: 'active',
+        })
+      } catch {
+        return 0
+      }
+    })
+  )
 
   // Prefer addresses whose street line actually contains the typed prefix, and
   // rank those first so "delaw" surfaces 114 Delaware ahead of incidental
@@ -471,7 +510,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
   if (/\b(report|market)\b/.test(qLower)) {
     reports.push({ label: 'Market reports', href: '/housing-market/reports' })
   }
-  for (const c of cities.slice(0, 3)) {
+  for (const c of cityMatches.slice(0, 3)) {
     reports.push({
       label: `Market report · ${c.city}`,
       href: reportsExploreYtdPath(c.city),
@@ -484,6 +523,20 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     ...contentTitles.guides.map((g) => ({ label: g.title, href: `/blog/${encodeURIComponent(g.slug)}`, kind: 'guide' as const })),
     ...contentTitles.blog.map((b) => ({ label: b.title, href: `/blog/${encodeURIComponent(b.slug)}`, kind: 'blog' as const })),
   ].slice(0, 8)
+
+  const [cityTrueCounts, subdivisionTrueCounts] = await Promise.all([
+    cityTrueCountsPromise,
+    subdivisionTrueCountsPromise,
+  ])
+  const cities: SearchSuggestionCity[] = cityMatches.map((c, i) => ({
+    city: c.city,
+    count: cityTrueCounts[i] ?? 0,
+  }))
+  const subdivisions: SearchSuggestionSubdivision[] = subdivisionMatches.map((s, i) => ({
+    city: s.city,
+    subdivisionName: s.subdivisionName,
+    count: subdivisionTrueCounts[i] ?? 0,
+  }))
 
   return { addresses, cities, subdivisions, neighborhoods, zips, brokers, reports, pages, ...(tilesDegraded ? { degraded: true } : {}) }
 }

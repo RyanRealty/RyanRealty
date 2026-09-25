@@ -20,6 +20,7 @@ import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/dat
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { formatCrawlProbeLine } from '../lib/data/crawl-probe/rows'
+import { formatPlaceMembershipLine } from '../lib/data/loop/place-membership-freshness'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
 import { siteServeTier, isMeasurementWindowDue, isSiteClaim, isStaleInProgress, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
@@ -296,8 +297,12 @@ async function main() {
     `gsc: ${signals.gsc.status} ${signals.gsc.rows28d} target_query_benchmark rows / 28d (${signals.gsc.source})`,
   )
   push(`crawl probe: ${formatCrawlProbeLine(signals.crawlProbe)}`)
+  push(`place_membership: ${formatPlaceMembershipLine(signals.placeMembership)}`)
   {
     const siteEligibleCount = eligible.filter((n) => (n.version_gap ?? '').startsWith('SITE-')).length
+    // A hint, never a write (Matt 2026-09-24, "Keep the Monday job"): the
+    // Monday loop-weekly-measure cron seeds ranking work, and boot stays
+    // read-only on the work graph.
     if (siteEligibleCount === 0) {
       push(
         'GSC GAPS: 0 eligible SITE-* nodes. Ranking is not the served class. Dry-run: npx tsx scripts/seed-gsc-ranking-queue.ts  Apply: npx tsx scripts/seed-gsc-ranking-queue.ts --apply',

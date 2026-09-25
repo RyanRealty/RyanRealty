@@ -46,11 +46,13 @@ export function inSmsQuietHours(date: Date = new Date(), timeZone: string = DEFA
 
 /** The next instant SMS is allowed (next 8:05am market time), for deferring a send. */
 export function nextSmsWindow(now: Date = new Date()): Date {
-  const h = hourInTimeZone(now, DEFAULT_SMS_TIMEZONE)
   const next = new Date(now)
-  if (h >= QUIET_END_HOUR) next.setUTCDate(next.getUTCDate() + 1)
   // Pacific is UTC-7/-8; 8am PT ≈ 15:00–16:00 UTC. Use 16:05 UTC as a safe
   // post-8am marker regardless of DST (the cron re-checks the precise hour).
   next.setUTCHours(16, 5, 0, 0)
+  // Tomorrow's marker only when today's has passed. Never add a day for "after
+  // 8pm Pacific": by then the UTC date has already rolled over (9pm PDT is
+  // 04:00Z tomorrow), so that +1 held the text a full extra day.
+  if (next.getTime() <= now.getTime()) next.setUTCDate(next.getUTCDate() + 1)
   return next
 }

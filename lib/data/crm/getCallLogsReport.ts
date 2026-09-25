@@ -9,7 +9,7 @@
  */
 
 import 'server-only'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/data/client'
 import { resolveDateRange } from './getAgentActivityReport'
 

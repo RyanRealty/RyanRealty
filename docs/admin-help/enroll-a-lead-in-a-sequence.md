@@ -21,6 +21,6 @@ Leads that come in from the website or an ad are enrolled into the right master 
 
 ## How it behaves
 
-- **Sending windows.** Emails go out between 7am and 7pm, texts between 8am and 9pm Pacific.
+- **Sending windows.** Emails go out between 7am and 7pm, texts between 8am and 8pm Pacific.
 - **Stops on reply.** The moment the lead replies, the sequence pauses so you take over the conversation.
 - **Steps that need your approval** wait in the **Approvals** queue (and in the Needs Action count on your dashboard) until you send, edit, skip, or dismiss them.

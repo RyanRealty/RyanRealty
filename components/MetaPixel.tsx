@@ -1,7 +1,9 @@
 'use client'
 
 import Script from 'next/script'
+import { usePathname } from 'next/navigation'
 import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
+import { isPrivatePath } from '@/lib/analytics/private-paths'
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
 
@@ -22,10 +24,14 @@ const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
  * Mode (fbq('consent','revoke') by default, 'grant' on accept) instead.
  */
 export default function MetaPixel() {
+  const pathname = usePathname()
   // Same reason as the Google tags: a dev pageview must not become a real
   // PageView event in the ad account's optimisation data.
   if (IS_NON_PRODUCTION_BUILD) return null
   if (!PIXEL_ID) return null
+  // A signing link's address is its key: the pixel's PageView carried it
+  // (dl=) until 2026-09-24. No tag ever sees one (private-paths.ts).
+  if (isPrivatePath(pathname)) return null
 
   return (
     <>

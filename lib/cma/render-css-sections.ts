@@ -683,30 +683,21 @@ export function cmaSectionStyles(): string {
   .stat2 .st-l { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
+  /* The status table, FlexMLS style (Matt 2026-09-24): List, Sold and $/sqft
+     across, Low, Avg, Median and High down each status. A status group does
+     not split across sheets. */
   .status-price { margin: 6px 0 16px; }
   .status-price .subhead { margin: 0 0 8px; }
   .status-price-table th.n, .status-price-table td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  table.kv.status-price-table,
-  table.kv.ppsf-status-table { table-layout: fixed; }
-  table.kv.status-price-table th,
-  table.kv.ppsf-status-table th { width: auto; padding: 4px 0 4px 8px; }
-  table.kv.status-price-table td,
-  table.kv.ppsf-status-table td { padding: 4px 0 4px 8px; }
-  table.kv.status-price-table th:first-child,
-  table.kv.ppsf-status-table th:first-child { padding-left: 0; text-align: left; }
-  table.kv.status-price-table col.sp-status,
-  table.kv.ppsf-status-table col.sp-status { width: 16%; }
-  table.kv.status-price-table col.sp-homes,
-  table.kv.ppsf-status-table col.sp-homes { width: 8%; }
-  table.kv.status-price-table col.sp-fig { width: 19%; }
-  table.kv.ppsf-status-table col.sp-band { width: 38%; }
-  .ppsf-status { margin: 8px 0 16px; }
-  .ppsf-status .subhead { margin: 0 0 6px; }
-  .ppsf-status-table th.n, .ppsf-status-table td.n {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
+  table.kv.status-price-table { table-layout: fixed; }
+  table.kv.status-price-table th { width: auto; padding: 3px 0 3px 8px; }
+  table.kv.status-price-table td { padding: 3px 0 3px 8px; }
+  table.kv.status-price-table th:first-child { padding-left: 0; text-align: left; }
+  table.kv.status-price-table col.sp-stat { width: 22%; }
+  table.kv.status-price-table col.sp-fig { width: 26%; }
+  table.kv.status-price-table tbody { break-inside: avoid; }
+  table.kv.status-price-table tr.sp-group th { color: var(--navy); font-weight: 600; padding-top: 8px; border-bottom: 1px solid var(--navy); }
+  table.kv.status-price-table .sp-count { font-weight: 400; color: var(--muted); margin-left: 6px; }
   .ppsf-status-caption { margin: 4px 0 10px; }
 
   table.comps .sub-cell { font-size: 8px; color: var(--muted); margin-top: 1px; }

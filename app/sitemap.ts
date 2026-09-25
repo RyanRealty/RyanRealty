@@ -6,11 +6,10 @@ import { LLMS_ZIPS } from '@/lib/site/llms-geo'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
 import { isBendNewConstructionSearchTwinPath } from '@/lib/routing/bend-new-construction-search-twin'
-import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
+import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
 
 // Public sitemap — Coming Soon is excluded by policy. See
 // lib/listing-status-public.ts. Never submit a pre-marketing listing to Google.
-const ACTIVE_STATUS_OR = PUBLIC_ACTIVE_OR_PREDICATE
 
 import { fetchAllRows } from '@/lib/supabase/paginate'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
@@ -37,6 +36,7 @@ import { GOLF_COURSES } from '@/data/golf/courses'
 import { CO_TRAILS } from '@/data/co-trails'
 import { CO_SCHOOLS } from '@/data/co-schools'
 import { CO_PARKS } from '@/data/co-parks'
+import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
 
 // The ONLY slugs with a real /communities/[slug] page — derived directly from
 // the curated resort registry (data/resort-communities.json) so the sitemap
@@ -127,11 +127,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // Per-city market pages (mirror the generateStaticParams list in
     // app/housing-market/[...slug]/page.tsx) — the section's main organic
     // asset; without these entries they were crawl-discovery only.
-    ...[
-      'bend', 'redmond', 'sisters', 'sunriver', 'la-pine', 'tumalo',
-      'prineville', 'terrebonne', 'black-butte-ranch', 'eagle-crest', 'crooked-river-ranch',
-    ].map((slug) => ({
-      url: `${baseUrl}/housing-market/${slug}`,
+    // Each is its canonical URL: a registry community's market page is its
+    // community-grain path (/housing-market/sisters/black-butte-ranch), never
+    // the one-segment twin that 301s there (lib/market/canonical-market-path).
+    ...CORE_MARKET_PATHS.map((path) => ({
+      url: `${baseUrl}${path}`,
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.6,
@@ -301,24 +301,87 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   /** Whatever is left of the shared budget, never less than 1s. */
   const remainingMs = () => Math.max(1_000, deadlineAt - Date.now())
   /** Run one leg under the shared deadline; on overrun, log and fall back. */
-  const leg = <T,>(label: string, work: Promise<T>, fallback: T): Promise<T> =>
-    withTimeoutFallback(work, fallback, remainingMs(), `sitemap:${label}`)
+  const legMs: string[] = []
+  const leg = <T,>(label: string, work: Promise<T>, fallback: T): Promise<T> => {
+    const startedAt = Date.now()
+    return withTimeoutFallback(work, fallback, remainingMs(), `sitemap:${label}`).finally(() => {
+      legMs.push(`${label}=${Date.now() - startedAt}ms`)
+    })
+  }
 
   try {
+    // Every leg is an independent read (none takes another's result), so all
+    // of them START here, together, and the body below awaits each where it
+    // is used. Run one after another they cost the SUM of the legs: 44.8s cold
+    // from a sandbox on 2026-09-24 (matrix-city-preset-decision 18.4s,
+    // search-matrix 10.4s, listing-rows 5.0s, cities 4.4s, ...), which is what
+    // put /sitemaps/core.xml, geo.xml and matrix.xml past the crawl probe's 20s
+    // budget on every cold build. Started together they cost the slowest one.
+    // The shared deadline above still bounds each.
+    const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
+    const started = {
+      // The city list reads listing_search_mv (maintained incrementally since
+      // 2026-09-24), not raw `listings`. The raw scan paged 589K rows through an
+      // ilike OR with no index behind it: 13.7s from the sandbox and 18.7s in
+      // production's cold build (the whole build's critical path), and it came
+      // back with exactly 7,000 rows because fetchAllRows stops on a page that
+      // errors. The table read is 1.3s, 7,485 rows, and the same 18 Central
+      // Oregon cities (compared 2026-09-25).
+      'cities': leg(
+        'cities',
+        fetchAllRows<{ city?: string | null }>(
+          supabase, 'listing_search_mv', 'city',
+          (q) => q.in('standard_status', PUBLIC_ACTIVE_STATUSES).not('city', 'is', null).order('listing_key', { ascending: true }),
+        ).then((rows) => rows.map((r) => ({ City: r.city ?? null }))),
+        SITE_CITY_SLUGS.map((slug) => ({ City: slug })) as Array<{ City?: string | null }>,
+      ),
+      'matrix-city-preset-decision': leg(
+        'matrix-city-preset-decision',
+        getMatrixCityPresetDecisionSet(),
+        null as Awaited<ReturnType<typeof getMatrixCityPresetDecisionSet>>,
+      ),
+      'subdivision-browse-pairs': leg(
+        'subdivision-browse-pairs',
+        getBrowsePairSitemapPaths(subdivisionCitySlugs),
+        [] as string[],
+      ),
+      'indexable-subdivisions': leg('indexable-subdivisions', getIndexableSubdivisions(), []),
+      'neighborhoods': leg('neighborhoods', getAllNeighborhoodsWithCity(), []),
+      'search-matrix': leg('search-matrix', getSearchMatrixSitemapEntries(baseUrl, now), []),
+      'out-of-area-cities': leg('out-of-area-cities', getOutOfAreaCitySitemapEntries(), []),
+      'brokers': leg(
+        'brokers',
+        fetchAllRows<{ slug: string; updated_at?: string }>(
+          supabase, 'brokers', 'slug, updated_at',
+          (q) => q.eq('is_active', true),
+        ),
+        [] as Array<{ slug: string; updated_at?: string }>,
+      ),
+      'listing-rows': leg('listing-rows', getListingSitemapRows(now), []),
+      'blog-posts': leg(
+        'blog-posts',
+        fetchAllRows<{ slug: string; published_at?: string | null }>(
+          supabase, 'blog_posts', 'slug, published_at',
+          (q) => q.eq('status', 'published'),
+        ),
+        [] as Array<{ slug: string; published_at?: string | null }>,
+      ),
+      'market-reports': leg(
+        'market-reports',
+        fetchAllRows<{ slug: string; created_at?: string | null }>(
+          supabase, 'market_reports', 'slug, created_at',
+        ),
+        [] as Array<{ slug: string; created_at?: string | null }>,
+      ),
+    }
+
     // Cities — paginate to get ALL cities (Supabase caps at 1,000 per request).
     // Fallback is the ten seeded site cities, not []: this raw-listings scan hit
     // the statement timeout 11 times in 24h on 2026-09-22, and an empty
     // fallback silently dropped every /cities, /homes-for-sale/{city}/{preset}
     // and /open-houses family from that hour's sitemap (visibility audit,
     // DATA-4). cityEntityKey is slugify(), so a slug maps to itself.
-    const cityRows = await leg(
-      'cities',
-      fetchAllRows<{ City?: string | null }>(
-        supabase, 'listings', 'City',
-        (q) => q.or(ACTIVE_STATUS_OR).not('City', 'is', null),
-      ),
-      SITE_CITY_SLUGS.map((slug) => ({ City: slug })) as Array<{ City?: string | null }>,
-    )
+    const cityRows = await started['cities']
 
     const cities = Array.from(
       new Set(
@@ -350,11 +413,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // getMatrixCityPresetDecisionSet() resolves the same matrix once; the
     // loop then does a synchronous Set lookup per combo
     // (matrixCityPresetNoIndexFromSet), same classification, same output.
-    const matrixCityPresetDecision = await leg(
-      'matrix-city-preset-decision',
-      getMatrixCityPresetDecisionSet(),
-      null as Awaited<ReturnType<typeof getMatrixCityPresetDecisionSet>>,
-    )
+    const matrixCityPresetDecision = await started['matrix-city-preset-decision']
 
     for (const city of cities) {
       const key = cityEntityKey(city)
@@ -462,12 +521,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // The aggregate now happens once a night inside the MV. Same rows, same
     // classification (classifyLifetimeBuckets) — see
     // lib/data/subdivisions/getSubdivisionCityInventory.ts.
-    const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
-    const browsePairPaths = await leg(
-      'subdivision-browse-pairs',
-      getBrowsePairSitemapPaths(subdivisionCitySlugs),
-      [] as string[],
-    )
+    const browsePairPaths = await started['subdivision-browse-pairs']
     for (const path of browsePairPaths) {
       // SITE-183 / SITE-182: a registry community's area twin
       // (/homes-for-sale/bend/broken-top) 301s onto the community page,
@@ -490,7 +544,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // (/subdivisions/ridge-at-eagle-crest) and leaves out a plat recorded under
     // a city, neighborhood or community name (/subdivisions/bend, /sisters,
     // /la-pine). Nothing to change here: the set decides, this leg submits it.
-    const indexableSubdivisions = await leg('indexable-subdivisions', getIndexableSubdivisions(), [])
+    const indexableSubdivisions = await started['indexable-subdivisions']
     for (const url of subdivisionSitemapUrls(indexableSubdivisions, baseUrl)) {
       dynamicPages.push({
         url,
@@ -502,7 +556,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
 
     // Neighborhood pages — /cities/{city}/{neighborhood} resolves ONLY for
     // rows in the neighborhoods table; emit exactly those.
-    const neighborhoodRows = await leg('neighborhoods', getAllNeighborhoodsWithCity(), [])
+    const neighborhoodRows = await started['neighborhoods']
     for (const n of neighborhoodRows) {
       const cityRel = Array.isArray(n.cities) ? n.cities[0] : n.cities
       const citySlug = cityRel?.slug
@@ -524,23 +578,16 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // depth content. Returns [] when the cached inventory read fails, so a
     // transient DB error thins the sitemap instead of fabricating entries.
     dynamicPages.push(
-      ...(await leg('search-matrix', getSearchMatrixSitemapEntries(baseUrl, now), [])),
+      ...(await started['search-matrix']),
     )
 
     // Out-of-area referral-tier city pages (W12) — only the indexable top set
     // (>= 5 active listings, top 25 by active count); every other out-of-area
     // city renders noindex and is never emitted.
-    dynamicPages.push(...(await leg('out-of-area-cities', getOutOfAreaCitySitemapEntries(), [])))
+    dynamicPages.push(...(await started['out-of-area-cities']))
 
     // Team members
-    const brokers = await leg(
-      'brokers',
-      fetchAllRows<{ slug: string; updated_at?: string }>(
-        supabase, 'brokers', 'slug, updated_at',
-        (q) => q.eq('is_active', true),
-      ),
-      [] as Array<{ slug: string; updated_at?: string }>,
-    )
+    const brokers = await started['brokers']
 
     for (const b of brokers) {
       dynamicPages.push({
@@ -556,7 +603,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // 7,586 rows / 5,827 unique keys on 2026-08-19, so 1,759 live listings
     // never reached listings.xml. Paths use listingTileHref so locs match
     // the listing-page canonical.
-    const listingRows = await leg('listing-rows', getListingSitemapRows(now), [])
+    const listingRows = await started['listing-rows']
     for (const r of listingRows) {
       dynamicPages.push({
         url: `${baseUrl}${r.path}`,
@@ -585,14 +632,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     }
 
     // Blog posts — paginate
-    const posts = await leg(
-      'blog-posts',
-      fetchAllRows<{ slug: string; published_at?: string | null }>(
-        supabase, 'blog_posts', 'slug, published_at',
-        (q) => q.eq('status', 'published'),
-      ),
-      [] as Array<{ slug: string; published_at?: string | null }>,
-    )
+    const posts = await started['blog-posts']
 
     for (const p of posts) {
       dynamicPages.push({
@@ -607,13 +647,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
 
     // Market reports — restored 2026-06-01 (the HTTP 500 was jsdom failing to
     // load in serverless; fixed in lib/sanitize.ts, pages now 200).
-    const reports = await leg(
-      'market-reports',
-      fetchAllRows<{ slug: string; created_at?: string | null }>(
-        supabase, 'market_reports', 'slug, created_at',
-      ),
-      [] as Array<{ slug: string; created_at?: string | null }>,
-    )
+    const reports = await started['market-reports']
     for (const r of reports) {
       dynamicPages.push({
         url: `${baseUrl}/housing-market/reports/${r.slug}`,
@@ -653,6 +687,9 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     console.error('[sitemap] Error generating dynamic pages:', e)
     // Return static pages only if database query fails
   }
+  // One line per universe build naming each leg's wall time, so a slow
+  // sitemap names its slow read in the runtime log (crawl probe 2026-09-24).
+  console.log(`[sitemap] universe build ${Date.now() - (deadlineAt - buildBudgetMs)}ms: ${legMs.join(' ')}`)
 
   // Output-based drift backstop: drop any non-sanctioned 2-seg /cities URL,
   // however built (template/concat/join/aliased), drop the browse twin of

@@ -118,7 +118,7 @@ describe('SITE-73 zip fold composition', () => {
   })
 
   it('adds crawlable SEO doors without inventing a portal search hero', () => {
-    expect(FIELD).toMatch(/housing-market/)
+    expect(FIELD).toMatch(/cityMarketPath\(/)
     expect(FIELD).toMatch(/months-of-supply/)
     expect(PAGE).toMatch(/Live single-family inventory in ZIP/)
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)

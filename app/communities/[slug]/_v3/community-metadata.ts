@@ -15,6 +15,7 @@
  */
 
 import type { pageMetadata } from '@/lib/site/page-metadata'
+import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
 import { preferPlaceHero } from '@/lib/geo-images'
@@ -73,17 +74,23 @@ export function communitySerpTitle(input: {
   listedCount?: number | null
 }): string {
   const { name, city, slug, listedCount } = input
+  // A self-city community's /cities/<slug> page is titled "{place} real
+  // estate" (publishCityRealEstateTitle), so this page keeps the inventory
+  // title and the two never share a title again (SITE-187 / SITE-184). A
+  // compound slug is noindex and not a registered community: unchanged.
+  if (isSelfCityCommunity(slug) || !isCanonicalCommunitySlug(slug)) {
+    return `${name} Homes for Sale | ${city}, OR`
+  }
   // Mountain High GSC: title at pos 5–15 with 0 CTR. Name the on-page listed
   // count, or omit a count. Never a parent-city leak (SEO-58).
-  if (slug === 'mountain-high' && listedCount != null && listedCount > 0) {
-    return `${name}: ${formatCount(listedCount)} homes for sale | ${city}, OR`
-  }
-  // The heading stays "{name} homes for sale". This phrase is the other query
-  // for the same URL (Matt 2026-09-22).
-  if (slug === 'tetherow') {
-    return `${name} real estate | Homes for Sale | ${city}, OR`
-  }
-  return `${name} Homes for Sale | ${city}, OR`
+  const homes =
+    slug === 'mountain-high' && listedCount != null && listedCount > 0
+      ? `${formatCount(listedCount)} ${listedCount === 1 ? 'Home' : 'Homes'} for Sale`
+      : 'Homes for Sale'
+  // "{name} real estate" is the other query for the same URL: Tetherow first
+  // (Matt 2026-09-22), every registered community since (Matt 2026-09-24).
+  // The heading stays "{name} homes for sale".
+  return `${name} real estate | ${homes} | ${city}, OR`
 }
 
 export function communitySerpDescription(input: {
@@ -104,17 +111,28 @@ export function communitySerpDescription(input: {
   // names the inventory query the page wins instead. The helper, not a
   // name-equals-city test: Black Butte Ranch's registry city is Sisters.
   const selfCity = name.trim().toLowerCase() === city.trim().toLowerCase() || isSelfCityCommunity(slug)
+  // SITE-203: "{name} homes for sale" is the query the page owns (its H1),
+  // and the buyers guide and the market report both outranked this page for
+  // it while the description opened "{name} in {city}, Oregon." The opener
+  // now says the query; the setting clause and the mix follow as before.
   const opener = counted
-    ? `${formatCount(input.listedCount)} homes for sale in ${name}, ${city}.`
+    ? `${formatCount(input.listedCount)} ${input.listedCount === 1 ? 'home' : 'homes'} for sale in ${name}, ${city}.`
     : slug === 'tetherow'
       ? `${name} real estate in ${city}, Oregon.`
       : selfCity
         ? `${name}, Oregon homes for sale.`
-        : `${name} in ${city}, Oregon.`
+        : `${name} homes for sale in ${city}, Oregon.`
   const skipMix = counted && types.length <= 1
-  return [opener, setting, skipMix ? null : mix, 'Live MLS inventory.']
-    .filter((part): part is string => Boolean(part && part.trim()))
-    .join(' ')
+  const compose = (withMix: boolean) =>
+    [opener, setting, withMix ? mix : null, 'Live MLS inventory.']
+      .filter((part): part is string => Boolean(part && part.trim()))
+      .join(' ')
+  const full = compose(!skipMix)
+  // The whole sentence set or the set without the mix: shareDescription
+  // truncates past 155 characters, and a description that ends mid-word
+  // ("Live…") is worse than one that leaves the mix to the page body.
+  if (shareDescription(full) === full) return full
+  return compose(false)
 }
 
 /**
@@ -269,9 +287,10 @@ export function communityMetadataInput(input: {
   }
 
   return {
-    // Title format: "[Community] Homes for Sale | [City], OR". Mountain High
-    // includes the on-page listed count when stock carries it. Tetherow leads
-    // with "Tetherow real estate". H1 stays "{Place} homes for sale".
+    // Title format: "[Community] real estate | Homes for Sale | [City], OR";
+    // a self-city community (Sunriver, Black Butte Ranch) and a compound slug
+    // keep "[Community] Homes for Sale | [City], OR". Mountain High names the
+    // on-page listed count when stock carries it. H1 stays "{Place} homes for sale".
     title: communitySerpTitle({
       slug,
       name,

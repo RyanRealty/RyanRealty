@@ -24,6 +24,7 @@
  */
 import 'server-only'
 import { attributeSiteLinks } from '@/lib/crm/merge'
+import { isPrivateLink } from '@/lib/analytics/private-paths'
 import { signPersonLinkToken, type LinkChannel } from '@/lib/identity/link-token'
 
 export type DecorateOutboundOptions = {
@@ -97,6 +98,7 @@ export function decorateOutboundText(text: string, opts: DecorateOutboundOptions
   const token = personId ? signPersonLinkToken(personId, opts.channel) : null
   const medium = MEDIUM_BY_CHANNEL[opts.channel]
   const cleaned = text.replace(OWN_LINK_RE, (u) => {
+    if (isPrivateLink(u)) return u // a signing link is sent exactly as minted (private-paths.ts)
     const stripped = stripUnsignedIdentity(u)
     return medium ? withMediumIfMissing(stripped, medium) : stripped
   })

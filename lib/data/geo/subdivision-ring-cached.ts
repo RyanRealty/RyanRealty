@@ -8,8 +8,12 @@ import { readSubdivisionRing, type SubdivisionRing } from '@/lib/data/geo/subdiv
  * getSubdivisionRing for the /subdivisions/[slug] page, cached (P3 — DATA-6,
  * SEO-2, EXP-7, 2026-09-23).
  *
- * WHY. `cma_subdivision_ring` measures every recorded plat polygon against the
- * home plat as geography, which no index serves. P3 harness, three uncached
+ * WHY. `cma_subdivision_ring` measured every recorded plat polygon against the
+ * home plat as geography, which no index served. Since migration
+ * 20260925010237 a geometry box test reaches boundaries_polygon_gist first: 24
+ * plat points through PostgREST went p50 5,766 -> 206 ms, max 63,258 ->
+ * 6,132 ms (2026-09-25). The history below is why this cache exists; it stays,
+ * because a cold read can still take seconds. P3 harness, three uncached
  * calls per plat centroid, 2026-09-23: 3.7 to 16.1 s for the ten plats that
  * answered HTTP 500 on every live fetch (elkai-woods 8.4 to 11.2 s,
  * blakley-heights 10.1 to 16.1 s, saddleback 4.0 to 6.1 s, royal-oaks-estates-

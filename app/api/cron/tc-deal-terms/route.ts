@@ -16,7 +16,9 @@
  *  3. Watch the document reader: when readable documents wait and nothing has
  *     been read for two hours, Matt gets one email (at most every 12 hours).
  *
- * Both readers are required: with either key missing the route does nothing.
+ * Both readers are required: with either key missing the route does nothing,
+ * and with Claude unreachable (out of credit, bad key, down) it reads nothing
+ * and stores nothing (lib/tc/terms/outage.ts).
  * ?doc=<uuid>&dry=1 reads one document and returns both readings, writing
  * nothing. ?cycle=<uuid> resolves and fills one cycle.
  */
@@ -24,6 +26,7 @@ import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { grokConfigured } from '@/lib/grok/client'
 import { applyCycleTerms, pendingTermsDocuments, readDocumentTerms } from '@/lib/data/tc/deal-terms'
+import { claudeTermsReachable } from '@/lib/tc/terms/read'
 import { checkReaderHealth } from '@/lib/data/tc/reader-health'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -57,6 +60,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, dry: true, result: r })
   }
 
+  // One token first: with the Claude account out of credit (2026-09-24) every
+  // read would fail after Grok was paid for, so nothing is read at all.
+  const reachable = await claudeTermsReachable()
+  if (!reachable.ok) return NextResponse.json({ ok: false, readerUnavailable: `claude: ${reachable.error}`, health }, { status: 503 })
+
   const { data: gotLease } = await sb.rpc('crm_try_cron_lease', { p_name: 'tc-deal-terms', p_lease_seconds: 300 })
   if (gotLease === false) return NextResponse.json({ ok: true, skipped: 'previous run still in progress', health })
 
@@ -70,6 +78,8 @@ export async function GET(request: Request) {
         const id = queue.shift()!
         const r = await readDocumentTerms(id, { sb })
         reads.push({ id, status: r.status, forms: r.forms, agreed: r.agreedTerms, disagreements: r.disagreements, error: r.error })
+        // A provider outage mid-batch: stop, the rest would fail the same way.
+        if (r.status === 'unavailable') queue.length = 0
         if (r.status === 'read') {
           const { data } = await sb.from('tc_documents').select('cycle_id').eq('id', id).maybeSingle()
           if (data?.cycle_id) cycles.add(String(data.cycle_id))

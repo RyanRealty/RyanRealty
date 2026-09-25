@@ -18,7 +18,7 @@
  */
 
 import 'server-only'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { isAttributableLead } from '@/lib/data/crm/leadSourceTaxonomy'
 import { listReferralReceivables } from '@/lib/data/crm/referralReceivables'
 import {

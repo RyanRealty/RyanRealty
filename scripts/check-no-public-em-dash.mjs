@@ -69,6 +69,12 @@ const ROOTS = [
   'components/site/v3/V3Roll.tsx',
   'components/site/v3/V3Steps.tsx',
   'components/site/v3/V3Facts.tsx',
+  // Place documents (2026-09-25): the section's note printed "4 recorded
+  // documents for Mountain View — 2 declarations ..." live. The note, the
+  // count builder it shares with the neighborhood FAQ, and the FAQ answers.
+  'components/site/v3/V3PlaceDocuments.tsx',
+  'lib/data/places/place-document-view.ts',
+  'lib/site/place-faq-extras.ts',
 ]
 
 /** JSON the visitor can read; not walked as TypeScript. */

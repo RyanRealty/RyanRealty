@@ -5,6 +5,7 @@
     "ci:commit-compiles",
     "ci:count-degraded-read",
     "ci:degraded-isr",
+    "ci:unstable-cache-door",
     "ci:crm-fail-closed",
     "ci:crm-scope",
     "ci:crm-secrets",
@@ -716,6 +717,13 @@
       "lib/data/loop/signals.ts",
       "docs/plans/COMPANY_SCOREBOARD.md"
     ],
+    "ci:community-href-canonical": [
+      "app/**",
+      "components/**",
+      "lib/**",
+      "data/resort-communities.json",
+      "scripts/check-community-href-canonical.mjs"
+    ],
     "ci:internal-links": [
       "app/**",
       "components/**",
@@ -1326,6 +1334,15 @@
     ],
     "ci:tracking-policy": [
       "components/GoogleAnalytics.tsx",
+      "components/GTMHead.tsx",
+      "components/MetaPixel.tsx",
+      "components/PageViewTracker.tsx",
+      "components/VisitTracker.tsx",
+      "sentry.server.config.ts",
+      "sentry.edge.config.ts",
+      "lib/observability/**",
+      "next.config.ts",
+      "scripts/check-tracking-policy.mjs",
       "lib/analytics/**",
       "lib/tracking/**",
       "app/**",

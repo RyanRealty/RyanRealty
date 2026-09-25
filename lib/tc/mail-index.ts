@@ -22,8 +22,10 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getGmailFor } from '@/lib/crm/gmail'
 import { brokerByEmail } from '@/lib/brokers/directory'
 import { ensureBrokerDirectory, getCrmMailboxes } from '@/lib/data/brokers/directory'
+import { getSubdivisionNamesByMlsNumbers } from '@/lib/data/tc/deal-subdivisions'
 import {
   MAIL_RULES_VERSION,
+  cycleHintsFor,
   dealOpenAt,
   decideMailFiling,
   filesToOpenFromQueue,
@@ -55,6 +57,7 @@ import {
   messageKeyFor,
   parseAddressList,
   pdfParts,
+  otherAttachmentNames,
   sentAtOf,
   threadKeyFor,
 } from '@/lib/tc/gmail-message'
@@ -111,6 +114,8 @@ export async function loadMailUniverse(sb: SB = createServiceClient()): Promise<
     actual_closing_date: string | null
     dead_date: string | null
     created_at: string | null
+    buyers: unknown
+    sellers: unknown
   }
   const [deals, cycles, contacts, people] = await Promise.all([
     allRows<DealRow>((a, b) => sb.from('tc_deals').select('id, address, city, stage').order('id').range(a, b)),
@@ -118,13 +123,15 @@ export async function loadMailUniverse(sb: SB = createServiceClient()): Promise<
       sb
         .from('tc_cycles')
         .select(
-          'id, deal_id, kind, status, mls_number, escrow_number, listing_date, contract_acceptance_date, escrow_closing_date, actual_closing_date, dead_date, created_at',
+          'id, deal_id, kind, status, mls_number, escrow_number, listing_date, contract_acceptance_date, escrow_closing_date, actual_closing_date, dead_date, created_at, buyers, sellers',
         )
         .order('id')
         .range(a, b),
     ),
-    allRows<{ deal_id: string; email: string | null }>((a, b) =>
-      sb.from('tc_deal_contacts').select('deal_id, email').not('email', 'is', null).order('id').range(a, b),
+    // Contacts with an email, and contacts on file by name only (SkySlope
+    // imports an other agent with no email): the name still identifies them.
+    allRows<{ deal_id: string; email: string | null; name: string | null }>((a, b) =>
+      sb.from('tc_deal_contacts').select('deal_id, email, name').order('id').range(a, b),
     ),
     allRows<{ deal_id: string; person_id: number; role: string }>((a, b) =>
       sb.from('tc_deal_people').select('deal_id, person_id, role').order('id').range(a, b),
@@ -133,17 +140,30 @@ export async function loadMailUniverse(sb: SB = createServiceClient()): Promise<
 
   const personIds = [...new Set(people.map((p) => Number(p.person_id)))]
   const emailsByPerson = new Map<number, string[]>()
+  const nameByPerson = new Map<number, string>()
   for (let i = 0; i < personIds.length; i += 300) {
-    const { data } = await sb
-      .from('crm_contact_points')
-      .select('person_id, value')
-      .eq('kind', 'email')
-      .in('person_id', personIds.slice(i, i + 300))
+    const ids = personIds.slice(i, i + 300)
+    const [{ data }, { data: names }] = await Promise.all([
+      sb.from('crm_contact_points').select('person_id, value').eq('kind', 'email').in('person_id', ids),
+      sb.from('crm_people').select('id, name, first_name, last_name').in('id', ids),
+    ])
     for (const r of data ?? []) {
       const list = emailsByPerson.get(Number(r.person_id)) ?? []
       list.push(normalizeEmail(String(r.value)))
       emailsByPerson.set(Number(r.person_id), list)
     }
+    for (const r of names ?? []) {
+      const full = String(r.name ?? '').trim() || [r.first_name, r.last_name].filter(Boolean).join(' ').trim()
+      if (full) nameByPerson.set(Number(r.id), full)
+    }
+  }
+  const namesOf = (v: unknown): string[] => (Array.isArray(v) ? v.map((x) => String(x ?? '').trim()).filter(Boolean) : [])
+  // The property's MLS subdivision, a name brokers and clients call the file by.
+  let subdivisionByMls = new Map<string, string>()
+  try {
+    subdivisionByMls = await getSubdivisionNamesByMlsNumbers(cycles.map((c) => c.mls_number ?? '').filter(Boolean))
+  } catch (err) {
+    console.warn('[mail-index] subdivisions (fail-open)', err instanceof Error ? err.message : err)
   }
 
   const cyclesByDeal = new Map<string, CycleRow[]>()
@@ -170,12 +190,25 @@ export async function loadMailUniverse(sb: SB = createServiceClient()): Promise<
         }
       }
     }
+    const dealContacts = contacts.filter((c) => c.deal_id === d.id)
     const contactEmails = new Set(
-      contacts
-        .filter((c) => c.deal_id === d.id)
+      dealContacts
         .map((c) => normalizeEmail(c.email))
         // A house address never identifies a deal (the 2026-08-23 misfile).
         .filter((e) => e.includes('@') && !isHouseAddress(e)),
+    )
+    // A contact row carrying a house address is us, by name too.
+    const contactNames = new Set(
+      dealContacts.filter((c) => !(c.email && isHouseAddress(c.email))).map((c) => String(c.name ?? '').trim()).filter(Boolean),
+    )
+    const partyNames = new Set<string>()
+    for (const p of people.filter((x) => x.deal_id === d.id)) {
+      const n = nameByPerson.get(Number(p.person_id))
+      if (n) partyNames.add(n)
+    }
+    for (const c of dealCycles) for (const n of [...namesOf(c.buyers), ...namesOf(c.sellers)]) partyNames.add(n)
+    const subdivisions = new Set(
+      dealCycles.map((c) => (c.mls_number ? subdivisionByMls.get(c.mls_number) : undefined)).filter((s): s is string => !!s),
     )
     return {
       dealId: d.id,
@@ -193,9 +226,14 @@ export async function loadMailUniverse(sb: SB = createServiceClient()): Promise<
         closeDate: c.actual_closing_date ?? c.escrow_closing_date,
         deadDate: c.dead_date,
         createdAt: c.created_at,
+        buyers: namesOf(c.buyers),
+        sellers: namesOf(c.sellers),
       })),
       partyEmails: [...partyEmails],
       contactEmails: [...contactEmails],
+      partyNames: [...partyNames],
+      contactNames: [...contactNames],
+      subdivisions: [...subdivisions],
     }
   })
   return { deals: out, listingSide, sellerEmails }
@@ -257,14 +295,22 @@ type ReadAttachment = {
 function factsFromHeaders(msg: gmail_v1.Schema$Message, body: string, attachments: MailAttachmentFacts[]): MailFacts & { fromName: string | null } {
   const headers = msg.payload?.headers
   const from = parseAddressList(header(headers, 'From'))
+  const to = parseAddressList(header(headers, 'To'))
+  const cc = parseAddressList(header(headers, 'Cc'))
   const { bulk, autoReply } = bulkSignals(headers)
   return {
     messageKey: messageKeyFor(header(headers, 'Message-ID'), String(msg.id)),
     sentAt: sentAtOf(msg),
     from: from.map((a) => a.email),
     fromName: from[0]?.name || null,
-    to: parseAddressList(header(headers, 'To')).map((a) => a.email),
-    cc: parseAddressList(header(headers, 'Cc')).map((a) => a.email),
+    to: to.map((a) => a.email),
+    cc: cc.map((a) => a.email),
+    // Display names: someone on a file by name only is still recognized.
+    people: [
+      ...from.map((a) => ({ email: a.email, name: a.name || null, role: 'from' as const })),
+      ...to.map((a) => ({ email: a.email, name: a.name || null, role: 'to' as const })),
+      ...cc.map((a) => ({ email: a.email, name: a.name || null, role: 'cc' as const })),
+    ],
     subject: header(headers, 'Subject') ?? '',
     body,
     attachments,
@@ -340,6 +386,17 @@ export type IndexInput = {
 }
 
 /**
+ * Pass 1 (headers + snippet) decides whether the full message is worth a
+ * read: anything but ordinary mail, anything touching a file, anything with
+ * attachments, and (v4) any subject that names a property. The snippet is the
+ * first ~200 characters; "decide on our counter offer" further down the body
+ * of "Re: 61260 Sunflower Lane" was never read, so it never queued.
+ */
+export function worthFullRead(d1: MailDecision, multipartMixed: boolean): boolean {
+  return d1.status !== 'not_deal' || d1.candidates.length > 0 || d1.category !== 'general' || multipartMixed || !!d1.propertyHint
+}
+
+/**
  * Index one broker-mailbox message. Cheap first: headers and the snippet
  * decide whether the full message is worth reading. Mail the rules call
  * ordinary is counted, not stored.
@@ -386,24 +443,36 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
     // Pass 1: headers + snippet. Bulk mail stops here.
     const d1 = decideMailFiling({ facts: base, deals: universe.deals, thread: anchor })
     if (d1.status === 'bulk') return empty(d1, 'bulk')
-    const worthReading =
-      d1.status !== 'not_deal' || d1.candidates.length > 0 || d1.category !== 'general' || looksMultipartMixed(headers)
-    if (!worthReading) return empty(d1, 'not_deal')
+    if (!worthFullRead(d1, looksMultipartMixed(headers))) return empty(d1, 'not_deal')
 
     // Pass 2: full body + attachment names.
     const full = (await gmail.users.messages.get({ userId: 'me', id: input.gmailId, format: 'full' })).data
     threadId = full.threadId ?? threadId
     const body = extractBody(full.payload)
     const names = pdfParts(full.payload).map((p) => ({ name: p.filename }))
-    const f2 = factsFromHeaders(full, body, names)
+    // The other files' names reach the rules too (never stored, never read):
+    // "Cash Flow 52678 Golden Astor.xlsx" says what the email is about.
+    const others = otherAttachmentNames(full.payload).map((name) => ({ name }))
+    const f2 = factsFromHeaders(full, body, [...names, ...others])
     const d2 = decideMailFiling({ facts: f2, deals: universe.deals, thread: anchor })
     const transactionNames = names.some((n) => isTransactionFormAttachment(n))
-    if (!STORED.has(d2.status) && !transactionNames) return empty(d2, d2.status)
+    // An e-sign completion's PDFs are the executed documents, whatever the
+    // platform named them ("Change_Form_for_Status__Date__Price…ODS.pdf"):
+    // their text names the property the notice's subject left out.
+    const esign = d2.category === 'signing_notice' && names.length > 0
+    // A PDF from, or sent to, someone on one of our files is read whatever it
+    // is named: "ORE Residential Input - ODS_....pdf" from a seller's TC named
+    // 1974 NW Newport Hills Drive only in its text (audit 2026-09-24,
+    // 1947f8f79839a85e). About 5 such messages a day across the three
+    // mailboxes, at most 5 PDFs each.
+    const fromDealPerson =
+      names.length > 0 && d2.candidates.some((c) => c.evidence.some((e) => e === 'party' || e === 'contact' || e === 'name'))
+    if (!STORED.has(d2.status) && !transactionNames && !esign && !fromDealPerson) return empty(d2, d2.status)
 
     // Pass 3: read the PDFs. Their text can carry the address or escrow number
     // the subject left out, and it says whether a form is fully executed.
-    const read = names.length ? await readAttachments(gmail, full, STORED.has(d2.status)) : []
-    const f3: MailFacts = { ...f2, attachments: names.map((n) => read.find((r) => r.ref.filename === n.name)?.facts ?? n) }
+    const read = names.length ? await readAttachments(gmail, full, STORED.has(d2.status) || esign || fromDealPerson) : []
+    const f3: MailFacts = { ...f2, attachments: [...names.map((n) => read.find((r) => r.ref.filename === n.name)?.facts ?? n), ...others] }
     internalAt = f3.sentAt
     let decision = decideMailFiling({ facts: f3, deals: universe.deals, thread: anchor })
     if (input.dryRun) {
@@ -444,7 +513,7 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
         }
         if (applied.action === 'file') {
           const deal = universe.deals.find((d) => d.dealId === applied.dealId)
-          const cycleId = deal ? pickCycleForMail(deal.cycles, f3.sentAt, decision.category) : null
+          const cycleId = deal ? pickCycleForMail(deal.cycles, f3.sentAt, decision.category, cycleHintsFor(f3)) : null
           if (deal && cycleId) {
             decision = { ...decision, status: 'filed', dealId: applied.dealId, cycleId, method: null, reasons: [...decision.reasons, `model: ${modelDecision.reason}`] }
             decidedBy = 'model'
@@ -1364,10 +1433,13 @@ export async function rematchQueuedMail(
     .eq('decided_by', 'system')
     .order('decided_at', { ascending: true })
     .limit(input.limit ?? 500)
-  const out = { checked: 0, filed: 0, stillQueued: 0, errors: 0, complete: true }
+  const out = { checked: 0, filed: 0, stillQueued: 0, dismissed: 0, errors: 0, complete: true }
   const todo = (rows ?? [])
-    .map((row) => ((row.gmail_refs as Array<{ mailbox?: string; broker?: string; gmail_id?: string }> | null) ?? [])[0])
-    .filter((ref): ref is { mailbox: string; broker?: string; gmail_id: string } => !!ref?.mailbox && !!ref.gmail_id)
+    .map((row) => {
+      const ref = ((row.gmail_refs as Array<{ mailbox?: string; broker?: string; gmail_id?: string }> | null) ?? [])[0]
+      return ref ? { ...ref, rowId: String(row.id) } : null
+    })
+    .filter((ref): ref is { mailbox: string; broker?: string; gmail_id: string; rowId: string } => !!ref?.mailbox && !!ref.gmail_id)
   // The model reads a queued message once; after that only the rules re-decide
   // it (a new deal or contact), so a daily rematch does not re-ask the same question.
   const asked = new Set<string>()
@@ -1395,11 +1467,41 @@ export async function rematchQueuedMail(
       const r = await indexGmailMessage({ gmail, mailbox: ref.mailbox, brokerSlug: ref.broker ?? 'matt', gmailId: ref.gmail_id, universe, sb, modelStage })
       if (r.status === 'filed') out.filed++
       else if (r.status === 'error') out.errors++
-      else out.stillQueued++
+      else if (queuedRowAfterRedecide(r.status) === 'dismissed') {
+        // The rules no longer call it transaction mail (a rules change, or a
+        // row queued before one): it leaves the queue. Kept, never deleted;
+        // only a row the system queued, never one a person answered.
+        await sb
+          .from('tc_mail_messages')
+          .update({
+            status: 'dismissed',
+            match_detail: { reasons: r.decision?.reasons ?? [], candidates: r.decision?.candidates ?? [], anchor: null },
+            rules_version: MAIL_RULES_VERSION,
+            decided_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', ref.rowId)
+          .eq('decided_by', 'system')
+          .in('status', ['ambiguous', 'unfiled_transaction'])
+        out.dismissed++
+      } else out.stillQueued++
     }
   }
   await Promise.all(Array.from({ length: Math.min(SWEEP_CONCURRENCY, todo.length) }, worker))
   return out
+}
+
+/**
+ * What happens to a queued row (ambiguous / unfiled_transaction, decided by
+ * the system) when the rules decide its message again: not_deal or bulk
+ * takes it out of the queue as `dismissed` (decided_by stays 'system', so it
+ * reads as the rules' answer, not a person's). Before v4 such a row stayed
+ * queued forever: the re-decide returned before touching it, and the oldest
+ * row came back first every day (the Workspace notice to admin@, queued by
+ * the v2 rules at 13:35 UTC on 2026-09-24).
+ */
+export function queuedRowAfterRedecide(status: IndexResult['status']): 'dismissed' | null {
+  return status === 'not_deal' || status === 'bulk' ? 'dismissed' : null
 }
 
 /**

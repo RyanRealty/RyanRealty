@@ -69,16 +69,31 @@ function strip(over: Record<string, unknown> = {}) {
 describe('the price cut as two prices at rest', () => {
   const mark = { from: 1_075_000, to: 999_000, drop: 76_000, pct: 7.1, date: '2026-08-15' }
 
-  it('prints from, cut, percent and date without a hover', () => {
+  it('prints from, to, cut, percent and date without a hover', () => {
     const html = strip({ dropMark: mark })
     expect(html).toContain('class="listing-drop"')
     expect(html).not.toContain('<line')
     expect(html).not.toContain('<circle')
     expect(html).toContain('$1,075,000')
+    // Matt 2026-09-24: the line prints the new price too, not only the H1.
+    expect(html).toContain('<span class="listing-drop__to">$999,000</span>')
     expect(html).toContain('Cut $76,000')
     expect(html).toContain('−7.1%')
     expect(html).toContain('Aug 15, 2026')
     expect(html).toMatch(/aria-label="Price drop \$76K: \$1,075,000 to \$999,000, 7\.1% on Aug 15, 2026"/)
+  })
+
+  it('draws nothing once a later price change leaves the cut behind the H1 price', () => {
+    // Listed 1,195,000, cut to 999,000 on Aug 15, raised to 1,025,000 on Sep 1:
+    // the newest DROP still says 999,000, which is not today's price.
+    const raised = strip({
+      dropMark: mark,
+      listing: { ...LISTING, listPrice: 1_025_000 },
+    })
+    expect(raised).not.toContain('listing-drop')
+    expect(raised).not.toContain('$999,000')
+    // The mark still draws when the cut set the price in the H1.
+    expect(strip({ dropMark: mark })).toContain('listing-drop__to')
   })
 
   it('draws nothing without a dated mark, including off market', () => {
@@ -97,6 +112,8 @@ describe('the price cut as two prices at rest', () => {
     const html = renderToStaticMarkup(createElement(PriceDropMark, { mark, label: 'Price drop $76K' }))
     expect(html).toContain('listing-drop__from')
     expect(html).toContain('listing-drop__cut')
+    // Old price struck through, then the new price, then the cut.
+    expect(html).toMatch(/<s class="listing-drop__from">\$1,075,000<\/s><span class="listing-drop__to">\$999,000<\/span><span class="listing-drop__cut">Cut \$76,000<\/span>/)
     expect(html).not.toContain('<svg')
     expect(html).not.toContain('<line')
   })

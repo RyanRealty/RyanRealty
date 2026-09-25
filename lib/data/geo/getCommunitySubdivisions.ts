@@ -4,10 +4,11 @@
  *
  * Each entry carries the subdivision's authoritative county-GIS polygon (so the
  * community map can render the subdivisions "broken out" as separate cells) and
- * its active home count (from listing_boundary_xref_mv). Membership is spatial
- * (centroid within the parent community polygon) — see the RPC migration
- * 20260529050000 for why (plats aren't parented to communities, and MLS names
- * don't match plat names).
+ * its active home count (from listing_boundary_xref_mv). Membership is spatial:
+ * a plat smaller than the parent with more than half its area inside it. See
+ * the RPC migration 20260529050000 for why (plats aren't parented to
+ * communities, and MLS names don't match plat names); the current body, which
+ * reaches the GiST index, is 20260925015103.
  *
  * Cached per-geo on the geoNeighborhood window. Throws on a transient RPC error
  * (never caches an empty result) — same no-poison contract as
@@ -17,7 +18,7 @@
  * table. This never approximates.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import type { BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'

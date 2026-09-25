@@ -429,7 +429,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             eyebrow={v3Text('On the market now')}
             heading={v3Text(`${buyablePlace.label} homes`)}
             rows={[firstRelatedHome, ...restRelatedHomes]}
-            source={v3Text(`Active SFR in ${buyablePlace.label}. Same inventory as ${buyablePlace.href}.`)}
+            source={v3Text(`Active single-family listings in ${buyablePlace.label} from the regional MLS, the same homes the ${buyablePlace.label} page shows.`)}
             action={{ label: v3Text(contextualCta.label), href: contextualCta.href }}
           />
         ) : null}

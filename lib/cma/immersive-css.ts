@@ -392,12 +392,9 @@ table.comp-matrix .matrix-addr{display:block}
 .addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
-.status-price{margin:8px 0 22px}
+.status-price{margin:8px 0 28px;overflow-x:auto}
 .status-price .subhead{margin:0 0 10px}
 .status-price-table th.n,.status-price-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.ppsf-status{margin:8px 0 28px}
-.ppsf-status .subhead{margin:0 0 10px}
-.ppsf-status-table th.n,.ppsf-status-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ppsf-status-caption{margin:4px 0 14px}
 /* NO PAN BOX: every chart ships a 360-unit phone layout. */
 .median-phone{display:none}
@@ -546,28 +543,23 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
    the cream page shows through it. The picture and the address stay solid. */
 .letter-body table.kv.comp-matrix thead th{opacity:1}
 .letter-body table.kv td{padding:8px 0;border-bottom:1px solid var(--ink12)}
-/* The status boards are many columns, not a label and one figure. The 38%
-   rule above landed on every heading, so Low, Avg, Median and High stacked
-   on top of each other and the dollars read as one string. */
-.letter-body table.kv.status-price-table,
-.letter-body table.kv.ppsf-status-table{table-layout:fixed}
-.letter-body table.kv.status-price-table th,
-.letter-body table.kv.ppsf-status-table th{width:auto;padding:10px 0 10px 18px}
-.letter-body table.kv.status-price-table td,
-.letter-body table.kv.ppsf-status-table td{padding:10px 0 10px 18px}
-.letter-body table.kv.status-price-table th:first-child,
-.letter-body table.kv.ppsf-status-table th:first-child{padding-left:0;text-align:left}
-.letter-body table.kv.status-price-table tbody th,
-.letter-body table.kv.ppsf-status-table tbody th{opacity:1;font-weight:600}
-.letter-body table.kv.status-price-table col.sp-status,
-.letter-body table.kv.ppsf-status-table col.sp-status{width:16%}
-.letter-body table.kv.status-price-table col.sp-homes,
-.letter-body table.kv.ppsf-status-table col.sp-homes{width:10%}
-.letter-body table.kv.status-price-table col.sp-fig{width:18.5%}
-.letter-body table.kv.ppsf-status-table col.sp-band{width:37%}
-.status-price,.ppsf-status{overflow-x:auto}
-.letter-body table.kv.status-price-table{min-width:760px}
-.letter-body table.kv.ppsf-status-table{min-width:680px}
+/* The status table is FlexMLS style (Matt 2026-09-24): List, Sold and $/sqft
+   across, Low, Avg, Median and High down each status. The 38% rule above
+   would land on every heading and stack the figures, so the columns are set
+   here. On a phone the columns size to their figures (table-layout auto), and
+   a price too long for the screen scrolls inside the section instead of
+   running into the next column. */
+.letter-body table.kv.status-price-table{table-layout:fixed;max-width:760px}
+.letter-body table.kv.status-price-table th{width:auto;padding:8px 0 8px 12px}
+.letter-body table.kv.status-price-table th.n{text-align:right}
+.letter-body table.kv.status-price-table td{padding:8px 0 8px 12px}
+.letter-body table.kv.status-price-table th:first-child{padding-left:0;text-align:left}
+.letter-body table.kv.status-price-table col.sp-stat{width:22%}
+.letter-body table.kv.status-price-table col.sp-fig{width:26%}
+.letter-body table.kv.status-price-table tr.sp-group th{opacity:1;font-weight:600;padding-top:20px;border-bottom:1px solid var(--ink)}
+.letter-body table.kv.status-price-table tbody:first-of-type tr.sp-group th{padding-top:12px}
+.letter-body table.kv.status-price-table .sp-count{font-weight:400;opacity:.65;margin-left:10px}
+@media (max-width:480px){.letter-body table.kv.status-price-table{font-size:13px;table-layout:auto}}
 /* The net-at-list ledger, on screen. Same rows the letter prints, at reading
    size, with the money column right-aligned so the column adds up by eye. */
 .letter-body table.kv.netsheet th{width:62%;opacity:1;font-weight:500}

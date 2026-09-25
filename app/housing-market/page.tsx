@@ -137,6 +137,7 @@ import { publicMarketPulseSource } from '@/lib/market/publish-public-methodology
 import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
 import './_v3/hub-market.css'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export const revalidate = 900
 
@@ -570,7 +571,7 @@ export default async function HousingMarketHubPage() {
       if (!slug) continue
       exploreItems.push({
         label: `${city.label} housing market`,
-        href: `/housing-market/${slug}`,
+        href: cityMarketPath(slug),
       })
     }
   }

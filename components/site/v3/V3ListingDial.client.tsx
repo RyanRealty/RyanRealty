@@ -48,6 +48,20 @@
  * prefers-reduced-motion the token layer collapses that to nothing and the
  * outgoing card is dropped at once.
  *
+ * THE REEL (SITE-194, Matt 2026-09-24: "have the primary photo come in
+ * first; after a second or two, play the video associated with it if there
+ * is one"). The photograph always paints first. Once the card has been on
+ * screen in a visible tab for DIAL_VIDEO_DWELL_MS, the dial asks
+ * /api/listings/[key]/card-video (the listing page's own hero reel, cached,
+ * never a 3D tour) and, when there is one, fades it in over the photograph,
+ * silent and looping, inside the photograph's own box so nothing moves. A
+ * turn unmounts it at once. One reel plays on a page at a time (the
+ * arbiter in V3ListingDial.video.ts). A reader who asked for reduced motion
+ * or Save-Data is offered a "Play video" control instead of autoplay.
+ *
+ * THE RAIL'S SIDE. `railPosition` puts the dial left of the card (default,
+ * see above), right of it, or under it as a strip on every screen.
+ *
  * Every figure is the row's own (CLAUDE.md section 0): the ask and the facts
  * come through the lib publishers, and a row with no ask reads "Price not
  * published", never a seller offer the row does not make. A commercial lease
@@ -81,6 +95,19 @@ import { V3Icon } from './V3Icon'
 import { SplitCardMedia } from './SplitCardMedia'
 import type { V3ListingRowData } from './V3ListingRow'
 import {
+  createDialVideoArbiter,
+  DIAL_VIDEO_DWELL_MS,
+  dialRailClass,
+  dialRailHorizontal,
+  dialVideoEndpoint,
+  dialVideoMayDwell,
+  dialVideoMode,
+  dialVideoShouldFetch,
+  parseDialVideoBody,
+  type DialRailPosition,
+  type DialReel,
+} from './V3ListingDial.video'
+import {
   dialKeyTarget,
   dialPanelId,
   dialPosition,
@@ -111,6 +138,10 @@ export type V3ListingDialProps = {
   label: string
   listings: readonly V3ListingRowData[]
   className?: string
+  /** Where the rail stands: left of the card (default), right of it, or under it on every screen. */
+  railPosition?: DialRailPosition
+  /** SITE-194: play the card's walkthrough reel after the dwell. Default true. */
+  video?: boolean
 }
 
 /** The lead photograph is drawn well past 800px wide on a desktop. */
@@ -140,6 +171,15 @@ function readMedia(query: string): boolean {
 const subscribePhone = subscribeMedia(PHONE_QUERY)
 const readPhone = () => readMedia(PHONE_QUERY)
 const serverFalse = () => false
+
+/** One reel on the page: every dial on it shares this arbiter. */
+const reelArbiter = createDialVideoArbiter()
+
+function readSaveData(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const connection = (navigator as { connection?: { saveData?: boolean } }).connection
+  return Boolean(connection?.saveData)
+}
 
 /** The kind line: an MLS sub type worth naming ("Duplex", "Condominium"). */
 function subTypeLabel(raw: string | null): string | null {
@@ -182,10 +222,29 @@ type CardProps = {
   tabId: string | null
   shown: boolean
   leaving: boolean
+  /** The reel to play over the photograph, once the dwell has passed. */
+  reel: DialReel | null
+  /** The reel has a first frame: fade it in. */
+  reelOn: boolean
+  onReelReady: () => void
+  /** Reduced motion / Save-Data: a control instead of autoplay. */
+  offer: boolean
+  onPlay: () => void
 }
 
 /** The primary card: the lead photograph and the rail card's copy. */
-const DialCard = memo(function DialCard({ listing, panelId, tabId, shown, leaving }: CardProps) {
+const DialCard = memo(function DialCard({
+  listing,
+  panelId,
+  tabId,
+  shown,
+  leaving,
+  reel,
+  reelOn,
+  onReelReady,
+  offer,
+  onPlay,
+}: CardProps) {
   const facts = factsOf(listing)
   const price = dialPriceSlot(facts)
   const photo = listing.photoUrl?.trim() || null
@@ -221,6 +280,38 @@ const DialCard = memo(function DialCard({ listing, panelId, tabId, shown, leavin
             No photo published
           </Link>
         )}
+        {reel ? (
+          <div className={cn('v3-dial__reel', reelOn && 'is-on')} aria-hidden="true">
+            {reel.kind === 'video' ? (
+              <video
+                className="v3-dial__reel-media"
+                src={reel.src}
+                poster={reel.posterUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                onPlaying={onReelReady}
+              />
+            ) : (
+              <iframe
+                className="v3-dial__reel-media v3-dial__reel-media--frame"
+                src={reel.src}
+                title=""
+                tabIndex={-1}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                onLoad={onReelReady}
+              />
+            )}
+          </div>
+        ) : null}
+        {offer ? (
+          <button type="button" className="v3-dial__play" onClick={onPlay}>
+            <V3Icon name="Play" size={16} className="v3-dial__play-icon" />
+            Play video
+          </button>
+        ) : null}
       </div>
       <Link href={listing.href} className="v3-dial__copy">
         <span className="v3-dial__figures">
@@ -300,6 +391,8 @@ export function V3ListingDial({
   label,
   listings,
   className,
+  railPosition,
+  video = true,
 }: V3ListingDialProps) {
   const count = listings.length
   const multi = count > 1
@@ -316,6 +409,49 @@ export function V3ListingDial({
   const touch = useRef<{ x: number; y: number } | null>(null)
   const turned = useRef(false)
   const phone = useSyncExternalStore(subscribePhone, readPhone, serverFalse)
+  const horizontal = dialRailHorizontal(phone, railPosition)
+
+  // The reel (SITE-194): which card's reel is mounted, whether its first
+  // frame is in (the fade), and the offer a reduced-motion reader tapped.
+  const [reel, setReel] = useState<{ key: string; reel: DialReel } | null>(null)
+  const [reelOn, setReelOn] = useState(false)
+  const [offer, setOffer] = useState<{ key: string; reel: DialReel } | null>(null)
+  const [onScreen, setOnScreen] = useState(false)
+  const [pageVisible, setPageVisible] = useState(true)
+  const offerRef = useRef(offer)
+  offerRef.current = offer
+  const stageRef = useRef<HTMLDivElement | null>(null)
+  const reelCache = useRef(new Map<string, Promise<DialReel | null>>())
+  const dwellTimer = useRef<number | undefined>(undefined)
+
+  const stopReel = useCallback(() => {
+    window.clearTimeout(dwellTimer.current)
+    setReel(null)
+    setReelOn(false)
+    setOffer(null)
+  }, [])
+
+  const fetchReel = useCallback((key: string): Promise<DialReel | null> => {
+    const cache = reelCache.current
+    const held = cache.get(key)
+    if (held) return held
+    const request = fetch(dialVideoEndpoint(key), { credentials: 'omit' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body) => parseDialVideoBody(body))
+      .catch(() => null)
+    cache.set(key, request)
+    return request
+  }, [])
+
+  const onReelReady = useCallback(() => setReelOn(true), [])
+
+  const playOffer = useCallback(() => {
+    const cur = offerRef.current
+    if (!cur) return
+    reelArbiter.claim(id, stopReel)
+    setOffer(null)
+    setReel(cur)
+  }, [id, stopReel])
 
   const warm = useCallback(
     (at: number) => {
@@ -341,6 +477,7 @@ export function V3ListingDial({
       if (target === current) return
       indexRef.current = target
       turned.current = true
+      stopReel()
       window.clearTimeout(leaveTimer.current)
       if (readMedia(CALM_QUERY)) {
         setLeaving(null)
@@ -361,7 +498,7 @@ export function V3ListingDial({
         }
       }
     },
-    [count, listings, warm],
+    [count, listings, warm, stopReel],
   )
 
   const selectFromThumb = useCallback((at: number) => select(at, false), [select])
@@ -370,6 +507,65 @@ export function V3ListingDial({
   }, [])
 
   useEffect(() => () => window.clearTimeout(leaveTimer.current), [])
+
+  // The reel plays only for a card the reader can see: the stage on screen,
+  // the tab visible. Either going away stops it.
+  useEffect(() => {
+    if (!video) return
+    const onVisibility = () => setPageVisible(document.visibilityState === 'visible')
+    onVisibility()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [video])
+
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!video || !stage || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(
+      (entries) => setOnScreen(entries.some((entry) => entry.isIntersecting)),
+      { threshold: 0.5 },
+    )
+    io.observe(stage)
+    return () => io.disconnect()
+  }, [video])
+
+  useEffect(() => {
+    if (!onScreen || !pageVisible) stopReel()
+  }, [onScreen, pageVisible, stopReel])
+
+  // The dwell: the photograph first, then, if the card is still the one
+  // showing, its reel (or the offer of one). A turn cancels a pending dwell.
+  useEffect(() => {
+    window.clearTimeout(dwellTimer.current)
+    const listing = listings[index]
+    if (!listing) return
+    if (!dialVideoMayDwell({ onScreen, pageVisible, enabled: video })) return
+    if (!dialVideoShouldFetch(listing)) return
+    let cancelled = false
+    dwellTimer.current = window.setTimeout(async () => {
+      const found = await fetchReel(listing.listingKey)
+      if (cancelled || !found || indexRef.current !== index) return
+      const mode = dialVideoMode({ reducedMotion: readMedia(CALM_QUERY), saveData: readSaveData() })
+      if (mode === 'auto') {
+        reelArbiter.claim(id, stopReel)
+        setReel({ key: listing.listingKey, reel: found })
+      } else {
+        setOffer({ key: listing.listingKey, reel: found })
+      }
+    }, DIAL_VIDEO_DWELL_MS)
+    return () => {
+      cancelled = true
+      window.clearTimeout(dwellTimer.current)
+    }
+  }, [index, onScreen, pageVisible, video, listings, id, fetchReel, stopReel])
+
+  useEffect(
+    () => () => {
+      reelArbiter.release(id)
+      window.clearTimeout(dwellTimer.current)
+    },
+    [id],
+  )
 
   // Warm the neighbours once the dial is near the viewport, not at page load.
   useEffect(() => {
@@ -393,12 +589,12 @@ export function V3ListingDial({
   const readEdges = useCallback(() => {
     const el = scrollerRef.current
     if (!el) return
-    const pos = phone ? el.scrollLeft : el.scrollTop
-    const view = phone ? el.clientWidth : el.clientHeight
-    const size = phone ? el.scrollWidth : el.scrollHeight
+    const pos = horizontal ? el.scrollLeft : el.scrollTop
+    const view = horizontal ? el.clientWidth : el.clientHeight
+    const size = horizontal ? el.scrollWidth : el.scrollHeight
     const next = { before: pos > 1, after: pos + view < size - 1 }
     setEdges((prev) => (prev.before === next.before && prev.after === next.after ? prev : next))
-  }, [phone])
+  }, [horizontal])
 
   useEffect(() => {
     const el = scrollerRef.current
@@ -440,7 +636,7 @@ export function V3ListingDial({
     // lands at once rather than spinning the dial past every home between.
     const behaviorFor = (from: number, to: number, view: number): ScrollBehavior =>
       readMedia(CALM_QUERY) || Math.abs(to - from) > view * 2 ? 'auto' : 'smooth'
-    if (phone) {
+    if (horizontal) {
       const left = dialRevealOffset(el.scrollLeft, el.clientWidth, tab.offsetLeft, tab.offsetWidth)
       if (left !== el.scrollLeft) {
         el.scrollTo({ left, behavior: behaviorFor(el.scrollLeft, left, el.clientWidth) })
@@ -451,7 +647,7 @@ export function V3ListingDial({
         el.scrollTo({ top, behavior: behaviorFor(el.scrollTop, top, el.clientHeight) })
       }
     }
-  }, [index, phone])
+  }, [index, horizontal])
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const target = dialKeyTarget(event.key, indexRef.current, count)
@@ -486,7 +682,13 @@ export function V3ListingDial({
         rootRef.current = el
       }}
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-dial', multi ? 'v3-dial--multi' : 'v3-dial--single', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-dial',
+        multi ? 'v3-dial--multi' : 'v3-dial--single',
+        dialRailClass(railPosition),
+        className,
+      )}
       aria-labelledby={heading ? headingId : undefined}
     >
       {heading || countLabel || pos ? (
@@ -536,7 +738,7 @@ export function V3ListingDial({
                 className="v3-dial__thumbs"
                 role="tablist"
                 aria-label={label}
-                aria-orientation={phone ? 'horizontal' : 'vertical'}
+                aria-orientation={horizontal ? 'horizontal' : 'vertical'}
                 data-more-before={edges.before ? '' : undefined}
                 data-more-after={edges.after ? '' : undefined}
                 onKeyDown={onKeyDown}
@@ -567,7 +769,7 @@ export function V3ListingDial({
             </div>
           </div>
         ) : null}
-        <div className="v3-dial__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div ref={stageRef} className="v3-dial__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           {listings.map((listing, i) => (
             <DialCard
               key={listing.listingKey}
@@ -576,6 +778,11 @@ export function V3ListingDial({
               tabId={multi ? dialTabId(id, i) : null}
               shown={i === index}
               leaving={multi && leaving === i && i !== index}
+              reel={i === index && reel?.key === listing.listingKey ? reel.reel : null}
+              reelOn={i === index && reelOn}
+              onReelReady={onReelReady}
+              offer={i === index && offer?.key === listing.listingKey}
+              onPlay={playOffer}
             />
           ))}
         </div>

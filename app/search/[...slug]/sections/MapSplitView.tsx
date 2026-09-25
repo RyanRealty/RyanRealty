@@ -36,6 +36,7 @@ import {
 } from '@/components/site/v3'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import SearchPageJsonLd from '../SearchPageJsonLd'
+import { splitLeadImageUrl } from '@/lib/search/split-lead-image'
 import { buildCityMarketDatasetSchema } from '../city-market-dataset'
 import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
@@ -398,6 +399,7 @@ export async function renderMapSplitView(props: {
         subdivisionBlurb={null}
         cityMetaDescription={citySeo.cityMetaDescription}
         bannerUrl={null}
+        primaryImageUrl={splitLeadImageUrl(viewport.listings)}
         siteUrl={citySeo.siteUrl}
         canonicalPath={props.searchPagePath}
         name={headline}

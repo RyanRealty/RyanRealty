@@ -44,6 +44,48 @@ describe('buildGscGapDrafts (the seeder, moved to lib for the cron, PROCESS-1)',
     })
     expect(drafts[0]?.title).toMatch(/^GSC gap \[cannibal\] brasada ranch homes for sale → \/communities\/brasada-ranch /)
   })
+
+  it('a variant that asks for another page class is not a split landing (SITE-196)', () => {
+    // The 2026-08-26..09-22 rows behind SITE-196, as GSC returned them: the
+    // exact query sat on /cities/bend alone; the report and the broker pages
+    // held the market / agent / companies variants that are theirs.
+    const { drafts } = buildGscGapDrafts({
+      queries: [],
+      queryPages: [
+        { q: 'bend oregon real estate market', path: '/housing-market/bend', impressions: 11, clicks: 0, position: 32.7 },
+        { q: 'bend oregon real estate statistics', path: '/housing-market/bend', impressions: 7, clicks: 0, position: 22.7 },
+        { q: 'bend oregon real estate trends', path: '/housing-market/bend', impressions: 3, clicks: 0, position: 21 },
+        { q: 'bend oregon real estate', path: '/cities/bend', impressions: 2, clicks: 0, position: 37 },
+        { q: 'bend oregon real estate statistics', path: '/housing-market', impressions: 2, clicks: 0, position: 66.5 },
+        { q: 'bend oregon real estate agent', path: '/rebecca-ryser-peterson/', impressions: 1, clicks: 0, position: 41 },
+        { q: 'bend oregon real estate companies', path: '/', impressions: 1, clicks: 0, position: 21 },
+      ],
+      landings: null,
+      targetQueries: [],
+      existing: [],
+      now,
+    })
+    expect(drafts.filter((d) => d.title.includes('[cannibal]'))).toEqual([])
+  })
+
+  it('a same-class variant on another URL still splits the landing', () => {
+    const { drafts } = buildGscGapDrafts({
+      queries: [],
+      queryPages: [
+        { q: 'caldera springs homes for sale', path: '/communities/caldera-springs', impressions: 2, clicks: 0, position: 34 },
+        { q: 'caldera springs homes for sale', path: '/blog/caldera-springs-buyers-guide', impressions: 1, clicks: 0, position: 8 },
+        { q: 'caldera springs real estate', path: '/housing-market/sunriver/caldera-springs', impressions: 2, clicks: 0, position: 8.5 },
+        { q: 'caldera springs prices', path: '/blog/caldera-springs-buyers-guide', impressions: 12, clicks: 0, position: 8.3 },
+      ],
+      landings: null,
+      targetQueries: [],
+      existing: [],
+      now,
+    })
+    const cannibal = drafts.find((d) => d.title.includes('[cannibal]'))
+    expect(cannibal?.title).toMatch(/caldera springs homes for sale → \/communities\/caldera-springs \(pos 34\.0, 5 impr/)
+    expect(cannibal?.title).not.toMatch(/17 impr/)
+  })
 })
 
 describe('alreadySeeded: dedupe against the graph', () => {
@@ -68,6 +110,37 @@ describe('alreadySeeded: dedupe against the graph', () => {
   it('a row read without state always counts as seeded, and a longer winner is not a match', () => {
     expect(alreadySeeded([{ version_gap: 'SITE-182', title }], 'cannibal', '/communities/tetherow', now)).toBe(true)
     expect(alreadySeeded([{ version_gap: 'SITE-182', title }], 'cannibal', '/communities/tether', now)).toBe(false)
+  })
+
+  describe('the 2026-09-24 trap: a live node on a winner blocks every kind on that winner', () => {
+    it('a live cannibal node blocks a zero-click seed on the same winner', () => {
+      const live: SiteRow = { version_gap: 'SITE-183', title, state: 'blocked', updated_at: daysAgo(1) }
+      expect(alreadySeeded([live], 'zero-click', '/communities/tetherow', now)).toBe(true)
+    })
+
+    it('a blocked node blocks (blocked is live, not closed)', () => {
+      const blocked: SiteRow = { version_gap: 'SITE-183', title, state: 'blocked', updated_at: daysAgo(1) }
+      expect(alreadySeeded([blocked], 'depth', '/communities/tetherow', now)).toBe(true)
+    })
+
+    it('a killed node of another kind does NOT block — a kill is a decision about that one kind', () => {
+      const killed: SiteRow = { version_gap: 'SITE-182', title, state: 'killed', updated_at: daysAgo(RESEED_AFTER_DAYS * 4) }
+      expect(alreadySeeded([killed], 'zero-click', '/communities/tetherow', now)).toBe(false)
+      // same kind still blocks for good (unchanged behavior)
+      expect(alreadySeeded([killed], 'cannibal', '/communities/tetherow', now)).toBe(true)
+    })
+
+    it('a done node older than RESEED_AFTER_DAYS does not block, even for another kind', () => {
+      const old: SiteRow = { version_gap: 'SITE-182', title, state: 'done', updated_at: daysAgo(RESEED_AFTER_DAYS + 1) }
+      expect(alreadySeeded([old], 'zero-click', '/communities/tetherow', now)).toBe(false)
+      expect(alreadySeeded([old], 'cannibal', '/communities/tetherow', now)).toBe(false)
+    })
+
+    it('a different winner with the same prefix does not block', () => {
+      const live: SiteRow = { version_gap: 'SITE-183', title, state: 'open', updated_at: daysAgo(1) }
+      expect(alreadySeeded([live], 'zero-click', '/communities/tetherow-annex', now)).toBe(false)
+      expect(alreadySeeded([live], 'zero-click', '/communities/tether', now)).toBe(false)
+    })
   })
 })
 

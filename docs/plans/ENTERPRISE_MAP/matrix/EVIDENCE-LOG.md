@@ -462,3 +462,15 @@ Deleted `video/`, `listing_video_v4/`, `video_production_skills/`, `lib/youtube-
 ## 2026-08-19 — Redirect-only 308 class (G35 / FLEET-PUNCH motivated-sellers)
 
 Live probe before fix: `GET /motivated-sellers` and `/motivated-sellers/bend` and `/feed` = HTTP 200, title "Ryan Realty — Central Oregon Real Estate", no h1, no main (`x-nextjs-prerender: 1`). Sibling aliases already in `next.config.ts` (`/area-guides`, `/pulse`, `/resources`, `/builders`) returned 308. Class: Next 16 prerender/streaming cannot emit 3xx from page-level `permanentRedirect()`. Fix: declare those aliases in `next.config.ts`. Gate `ci:redirect-only`.
+
+## 2026-09-24 — INT-026 Sentry live (dark → green)
+
+The G13 probe file (`integration-health-probes.json`, recorded 2026-08-16) stays as recorded; this entry supersedes its INT-026 row.
+
+| Check | Recorded | Evidence |
+|---|---|---|
+| Connector | Sentry connected (Matt's OAuth) | org `ryan-realty-llc`, project `ryan-realty-platform`, region us |
+| Before | 0 errors in 30 days, 0 spans in 90 | Vercel had no `SENTRY_DSN`; the cloud environment's DSN pointed at project 0 |
+| DSNs | `SENTRY_DSN` 17:14Z and `NEXT_PUBLIC_SENTRY_DSN` 17:28Z on Vercel production | Vercel env API (names and targets only) |
+| Server | Spans from 18:55Z, the first production build carrying the DSN | 287,630 spans in the hour to 19:57Z at 10% sampling, mostly `/subdivisions/[slug]`, `/communities/[slug]`, `/cities/[slug]`; tracing made opt-in (`SENTRY_TRACES_SAMPLE_RATE`) |
+| Browser | Production probe on `/about` at 19:59Z: envelope HTTP 200 | issue RYAN-REALTY-PLATFORM-2 (resolved); `/` and `/about` load no JS carrying the SDK, which loads on the first error |

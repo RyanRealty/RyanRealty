@@ -4,7 +4,7 @@
  * Reads from the `neighborhoods` table. Lives behind the DAL boundary.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 
 export type NeighborhoodLite = { id: string; name: string; slug: string }

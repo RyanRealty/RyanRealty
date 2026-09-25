@@ -34,6 +34,11 @@
       "name": "V3_ROOT_CLASS",
       "section": "v3 token scope on <main>. Layout already mounts V3Chrome.",
       "blocking": true
+    },
+    {
+      "name": "SearchSeoTail",
+      "section": "SITE-201: the bare /homes-for-sale's depth below the viewport-fit frame (region market band, Central Oregon FAQ + FAQPage, city doors). Renders only on the bare indexable split view when the region read lands inside its grace; the Dataset node rides SearchRootJsonLd.",
+      "blocking": true
     }
   ],
   "layoutComponents": [

@@ -18,7 +18,7 @@
  * Lives behind the DAL boundary (Gate G1). Pages import from @/lib/data.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS } from '@/lib/data/cache/unstable-cache'
 
