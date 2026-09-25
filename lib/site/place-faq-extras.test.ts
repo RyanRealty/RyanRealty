@@ -361,13 +361,28 @@ describe('neighborhood facts (Matt 2026-09-24, "Add to neighborhoods")', () => {
   it('says what CC&Rs are on file, never a bare yes for the whole place', () => {
     const q = neighborhood().find((e) => e.question === 'What CC&Rs are on file for Awbrey Butte?')
     expect(q?.answer).toBe(
-      'This page links 2 recorded documents for Awbrey Butte: the declaration and 1 recorded amendment. ' +
+      'This page links 2 recorded documents for Awbrey Butte: the declaration and an amendment. ' +
         'They are copies of instruments recorded in Deschutes County, Oregon. ' +
         'A declaration covers the lots it describes, which may not be every home in Awbrey Butte. ' +
         'Later amendments may exist that are not shown here, so confirm the governing documents for a specific home through title before relying on them.',
     )
     expect(q?.answer).not.toMatch(/^Yes\b/)
     expect(q?.source).toBe('instruments recorded in Deschutes County, Oregon, copies via Deschutes County DIAL')
+  })
+
+  it('names every kind of document, so the parts add up to the count', () => {
+    // Mountain View's page, 2026-09-25: four documents, and the answer named
+    // only the two declarations and the amendment. The fourth was the bylaws.
+    const documents = [
+      recorded,
+      { ...recorded, id: 'd3', recordingRef: '2000-21083' },
+      amendment,
+      { ...recorded, id: 'd4', kind: 'bylaws' as const, recordingRef: '327-2533' },
+    ]
+    const q = neighborhood({ documents }).find((e) => e.question === 'What CC&Rs are on file for Awbrey Butte?')
+    expect(q?.answer).toMatch(
+      /^This page links 4 recorded documents for Awbrey Butte: 2 declarations, an amendment, and the bylaws\. /,
+    )
   })
 
   it('never calls an association-published copy a recorded instrument', () => {
@@ -383,6 +398,11 @@ describe('neighborhood facts (Matt 2026-09-24, "Add to neighborhoods")', () => {
     expect(q?.answer).toContain("They are Awbrey Butte Homesites Association's own published copies, which carry no county instrument number.")
     expect(q?.answer).not.toMatch(/recorded in Deschutes County/)
     expect(q?.source).toBe("Awbrey Butte Homesites Association's published copies")
+    // A mixed set is not "recorded documents" either: one of them is not.
+    const mixed = neighborhood({ documents: [recorded, published] }).find(
+      (e) => e.question === 'What CC&Rs are on file for Awbrey Butte?',
+    )
+    expect(mixed?.answer).toMatch(/^This page links 2 documents for Awbrey Butte\. /)
   })
 
   it('asks about governing documents, not CC&Rs, when no declaration is on file', () => {
