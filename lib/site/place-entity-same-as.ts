@@ -6,10 +6,14 @@
  * official site. Organization sameAs is already on the root layout; Place nodes
  * on /cities/* and /communities/* shipped without it (live audit 2026-09-22).
  *
- * Wikidata Q-ids resolved 2026-09-22 via wbgetentities on enwiki titles.
+ * Wikidata Q-ids resolved 2026-09-22 via wbgetentities on enwiki titles, and
+ * re-verified 2026-09-25: every enwiki title's summary names the same Q-id as
+ * its canonical, non-disambiguation page. City .gov domains match the
+ * Wikipedia infobox website (Bend, Redmond) or Wikidata P856 (La Pine).
  * Official community origins come from lib/community-seo-content.ts sources
- * (the same pages the About prose already cites). Do not add a URL that is
- * not Wikipedia, Wikidata, a city .gov, or that sourced official origin.
+ * (the same pages the About prose already cites); each answered 200 on
+ * 2026-09-25. Do not add a URL that is not Wikipedia, Wikidata, a city .gov,
+ * or that sourced official origin.
  */
 
 export type PlaceEntitySameAs = {
