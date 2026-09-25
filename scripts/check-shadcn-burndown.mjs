@@ -54,7 +54,16 @@ const EXCLUDE = [
   // Catalog install path (Matt 2026-09-10): v3 wraps shadcn/beUI source.
   'components/site/v3/',
   'components/motion/',
+  // The rest of the public site (2026-09-25). The header has said since
+  // 2026-09-10 that public v3 is out of this set, but the list only named
+  // components/site/v3/, so route-level v3 files (every app/**/_v3/ folder,
+  // components/site/listing-detail/) still counted: 42 of them had piled up and
+  // the nightly lane failed on files the rule no longer governs.
+  'components/site/',
 ]
+
+/** A route's own v3 folder (app/<route>/_v3/): the public register, out of scope. */
+const isRouteV3 = (rel) => /(^|\/)_v3\//.test(`${rel}/`)
 
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out
@@ -63,10 +72,10 @@ function walk(dir, out = []) {
     const full = join(dir, name)
     const rel = relative(ROOT, full).replace(/\\/g, '/')
     if (statSync(full).isDirectory()) {
-      if (EXCLUDE.some((e) => `${rel}/`.startsWith(e))) continue
+      if (EXCLUDE.some((e) => `${rel}/`.startsWith(e)) || isRouteV3(rel)) continue
       walk(full, out)
     } else if (/\.(tsx|ts)$/.test(name) && !/\.test\.(tsx|ts)$/.test(name)) {
-      if (EXCLUDE.some((e) => rel.startsWith(e))) continue
+      if (EXCLUDE.some((e) => rel.startsWith(e)) || isRouteV3(rel)) continue
       out.push(rel)
     }
   }
