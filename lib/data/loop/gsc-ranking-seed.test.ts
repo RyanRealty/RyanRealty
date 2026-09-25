@@ -44,6 +44,48 @@ describe('buildGscGapDrafts (the seeder, moved to lib for the cron, PROCESS-1)',
     })
     expect(drafts[0]?.title).toMatch(/^GSC gap \[cannibal\] brasada ranch homes for sale → \/communities\/brasada-ranch /)
   })
+
+  it('a variant that asks for another page class is not a split landing (SITE-196)', () => {
+    // The 2026-08-26..09-22 rows behind SITE-196, as GSC returned them: the
+    // exact query sat on /cities/bend alone; the report and the broker pages
+    // held the market / agent / companies variants that are theirs.
+    const { drafts } = buildGscGapDrafts({
+      queries: [],
+      queryPages: [
+        { q: 'bend oregon real estate market', path: '/housing-market/bend', impressions: 11, clicks: 0, position: 32.7 },
+        { q: 'bend oregon real estate statistics', path: '/housing-market/bend', impressions: 7, clicks: 0, position: 22.7 },
+        { q: 'bend oregon real estate trends', path: '/housing-market/bend', impressions: 3, clicks: 0, position: 21 },
+        { q: 'bend oregon real estate', path: '/cities/bend', impressions: 2, clicks: 0, position: 37 },
+        { q: 'bend oregon real estate statistics', path: '/housing-market', impressions: 2, clicks: 0, position: 66.5 },
+        { q: 'bend oregon real estate agent', path: '/rebecca-ryser-peterson/', impressions: 1, clicks: 0, position: 41 },
+        { q: 'bend oregon real estate companies', path: '/', impressions: 1, clicks: 0, position: 21 },
+      ],
+      landings: null,
+      targetQueries: [],
+      existing: [],
+      now,
+    })
+    expect(drafts.filter((d) => d.title.includes('[cannibal]'))).toEqual([])
+  })
+
+  it('a same-class variant on another URL still splits the landing', () => {
+    const { drafts } = buildGscGapDrafts({
+      queries: [],
+      queryPages: [
+        { q: 'caldera springs homes for sale', path: '/communities/caldera-springs', impressions: 2, clicks: 0, position: 34 },
+        { q: 'caldera springs homes for sale', path: '/blog/caldera-springs-buyers-guide', impressions: 1, clicks: 0, position: 8 },
+        { q: 'caldera springs real estate', path: '/housing-market/sunriver/caldera-springs', impressions: 2, clicks: 0, position: 8.5 },
+        { q: 'caldera springs prices', path: '/blog/caldera-springs-buyers-guide', impressions: 12, clicks: 0, position: 8.3 },
+      ],
+      landings: null,
+      targetQueries: [],
+      existing: [],
+      now,
+    })
+    const cannibal = drafts.find((d) => d.title.includes('[cannibal]'))
+    expect(cannibal?.title).toMatch(/caldera springs homes for sale → \/communities\/caldera-springs \(pos 34\.0, 5 impr/)
+    expect(cannibal?.title).not.toMatch(/17 impr/)
+  })
 })
 
 describe('alreadySeeded: dedupe against the graph', () => {
