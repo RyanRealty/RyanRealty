@@ -202,8 +202,9 @@ export function HomeBrowsePlaces({
                       </CarouselItem>
                     ))}
                   </CarouselContent>
-                  <CarouselPrevious />
-                  <CarouselNext />
+                  {/* size-11 = 44px (ci:tap-targets): see HomeFeaturedCommunity. */}
+                  <CarouselPrevious className="size-11" />
+                  <CarouselNext className="size-11" />
                 </Carousel>
               </div>
             ) : (

@@ -1,4 +1,4 @@
-import type { V3FieldItem } from '@/components/site/v3'
+import type { V3FieldItem, V3ListingRowData } from '@/components/site/v3'
 import type { PriceDrop } from '@/lib/data'
 import { formatPrice } from '@/lib/format/money'
 import { listingTileHref } from '@/lib/slug'
@@ -24,7 +24,22 @@ export type PriceDropFieldItem = V3FieldItem & {
   city?: string
   /** Route slug for /price-drops/{city}, when the city is one we pre-render. */
   citySlug?: string
+  /**
+   * The same home as the listing dial's row (Matt 2026-09-24: the fold's
+   * carousel is V3ListingDial). Built here, from the same drop, in the same
+   * pass, so the dial can never hold a home, a figure or an order the Field
+   * list does not. The cut rides the photograph as the drop badge, in the
+   * words the card printed (`dropLine`).
+   */
+  listing: V3ListingRowData
 }
+
+/**
+ * getPriceDrops keeps single-family rows only (property_type 'A', its
+ * SFR_TYPE filter), and PriceDrop does not carry the type, so the dial row
+ * names it: an ask on this page is a sale ask, never a lease rate.
+ */
+const PRICE_DROP_PROPERTY_TYPE = 'A'
 
 function namedPrice(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n) || n <= 0) return null
@@ -85,6 +100,30 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       .join(' · ')
 
     const photoSrc = drop.photoUrl?.trim()
+    const cityLine = [
+      [city, drop.postalCode?.trim() || null].filter(Boolean).join(' '),
+      subdivision && subdivision !== city ? subdivision : null,
+    ]
+      .filter((part): part is string => Boolean(part))
+      .join(' · ')
+    const listing: V3ListingRowData = {
+      listingKey: drop.listingKey,
+      href: listingTileHref(drop),
+      photoUrl: photoSrc || null,
+      price: drop.listPrice,
+      addressLine: street,
+      cityLine,
+      beds: drop.beds,
+      baths: drop.baths,
+      sqft: drop.sqft,
+      pricePerSqft: null,
+      propertyType: PRICE_DROP_PROPERTY_TYPE,
+      propertySubType: null,
+      subdivisionName: drop.subdivisionName,
+      city,
+      listNumber: drop.listNumber,
+      ...(dropLine ? { badges: [{ kind: 'drop' as const, label: dropLine }] } : {}),
+    }
 
     items.push({
       id: drop.listingKey,
@@ -108,6 +147,7 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       ...(photoSrc ? { photoSrc } : {}),
       lat: drop.lat,
       lng: drop.lng,
+      listing,
     })
   }
 

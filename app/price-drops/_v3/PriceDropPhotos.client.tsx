@@ -1,132 +1,52 @@
 'use client'
 
 /**
- * Photographed price-cut houses as the installed shadcn carousel
- * (`npx shadcn add carousel` → `components/ui/carousel.tsx`).
+ * Photographed price-cut houses on the listing dial.
  *
- * THE OBJECT. ui.shadcn.com/docs/components/carousel is one composed slide
- * with Previous / Next flanking the track — not a strip of equal peeking
- * cards. This file imports that source itself. A house rail wrapper is not
- * the install (`ci:catalog-install` requireRouteImport / taste-receipt --ship).
+ * WHAT IT WAS. The installed shadcn carousel (`components/ui/carousel.tsx`),
+ * one composed slide per house with Previous / Next flanking the track and an
+ * "01 / 12" readout under it.
  *
- * Each slide names city and cut size on the facts, not as a chip on the
- * photograph (contrast on mixed MLS plates failed the last mark).
+ * WHAT IT IS (Matt 2026-09-24, "Let's get all of those carousels in place").
+ * V3ListingDial: one cut house large with its photograph and the card's copy,
+ * the rest of the band as thumbnails on the dial's rail, "03 / 12" at its
+ * head. The houses are the same ones in the same order: the band's
+ * photographed rows (every row when none has a photograph), sorted by cut
+ * percent upstream in priceDropFieldItems, each drawn from the row the Field
+ * list lists (`item.listing`, built in the same pass). The cut itself rides
+ * the photograph as the drop badge in the card's own words ("was $599,000,
+ * -8.3%"), and the city and subdivision the slide named sit on the card's
+ * city line.
+ *
+ * One dial per cut-size band, inside PriceDropsFold's switch; only one shows
+ * at a time, so the page reads as one dial and takes the dial's default rail.
  */
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from '@/components/ui/carousel'
-import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Carousel } from '@/components/site/v3'
-import {
-  LISTING_FIELD_LEAD_PHOTO_SIZE,
-  listingRowPhotoSrc,
-} from '@/lib/listing/row-photo'
+import { V3ListingDial } from '@/components/site/v3'
 import type { PriceDropFieldItem } from './drops-field-items'
 import './price-drops-field.css'
 
-/** Public wire for the house wrapper (ci:site-primitive-wired). The fold uses the installed source. */
-export { V3Carousel }
-
 export function PriceDropPhotos({
+  id,
   items,
   label,
 }: {
+  /** The dial's root id, unique on the page (one per band). */
+  id: string
   items: readonly PriceDropFieldItem[]
   label: string
 }) {
   const photographed = items.filter((item) => Boolean(item.photoSrc?.trim()))
   const rail = photographed.length > 0 ? photographed : items
-  const [api, setApi] = useState<CarouselApi>()
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    if (!api) return
-    const read = () => setIndex(api.selectedScrollSnap())
-    read()
-    api.on('select', read)
-    api.on('reInit', read)
-    return () => {
-      api.off('select', read)
-      api.off('reInit', read)
-    }
-  }, [api])
-
   if (rail.length === 0) return null
 
   return (
     <div className="pd-cuts">
-      <Carousel
-        setApi={setApi}
-        opts={{ align: 'start', containScroll: 'trimSnaps' }}
-        className={cn(V3_ROOT_CLASS, 'v3-carousel', 'pd-cuts-rail')}
-        aria-label={label}
-      >
-        <CarouselContent className="v3-carousel__track ml-0">
-          {rail.map((item, i) => (
-            <CarouselItem
-              key={item.id}
-              className="v3-carousel__slide pl-0"
-              aria-label={`Slide ${i + 1} of ${rail.length}`}
-            >
-              <Link
-                href={item.href}
-                className="pd-slide"
-                aria-label={
-                  item.specs
-                    ? `${item.priceLabel}, ${item.title}, ${item.specs}`
-                    : `${item.priceLabel}, ${item.title}`
-                }
-              >
-                {item.photoSrc ? (
-                  <span className="pd-slide__media">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={listingRowPhotoSrc(item.photoSrc, LISTING_FIELD_LEAD_PHOTO_SIZE)}
-                      alt=""
-                      width={800}
-                      height={600}
-                      className="pd-slide__photo"
-                      loading={i < 2 ? 'eager' : 'lazy'}
-                      fetchPriority={i === 0 ? 'high' : 'auto'}
-                      decoding="async"
-                    />
-                  </span>
-                ) : null}
-                <span className="pd-slide__body">
-                  {item.city ? <span className="pd-slide__city">{item.city}</span> : null}
-                  <span className="pd-slide__price">{item.priceLabel}</span>
-                  {item.dropLine ? <span className="pd-slide__drop">{item.dropLine}</span> : null}
-                  {item.cutShare != null ? (
-                    <span className="pd-slide__cut" aria-hidden="true">
-                      <span style={{ width: `${(item.cutShare * 100).toFixed(1)}%` }} />
-                    </span>
-                  ) : null}
-                  <span className="pd-slide__addr">{item.title}</span>
-                  {item.specs ? <span className="pd-slide__specs">{item.specs}</span> : null}
-                </span>
-              </Link>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        {rail.length > 1 ? (
-          <>
-            <CarouselPrevious className="v3-carousel__step v3-carousel__step--prev" />
-            <CarouselNext className="v3-carousel__step v3-carousel__step--next" />
-          </>
-        ) : null}
-      </Carousel>
-      {rail.length > 1 ? (
-        <p className="pd-cuts__pos" aria-live="polite">
-          {String(index + 1).padStart(2, '0')} / {String(rail.length).padStart(2, '0')}
-        </p>
-      ) : null}
+      <V3ListingDial
+        id={id}
+        label={label}
+        listings={rail.map((item) => item.listing)}
+        className="pd-cuts-dial"
+      />
     </div>
   )
 }

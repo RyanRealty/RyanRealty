@@ -1,0 +1,57 @@
+/* The homepage's live homes on the listing dial (HomeHomesRails). Tokens only.
+
+   One dial per shelf, stacked, each with the shelf's see-all door under it.
+   The dial carries its own look (components/site/v3/V3ListingDial.css); this
+   file only places the stack on the page's measure and rules the shelves
+   apart: the section rule over the stack, a hairline between shelves (the
+   same separation V3PlaceInventory gives its dials). */
+
+.v3.home-shelves {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xl);
+  width: 100%;
+  max-width: var(--v3-measure);
+  min-width: 0;
+  margin: 0 auto;
+  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-xl);
+}
+
+/* The section rule that opens every pattern section after content. */
+* + .v3.home-shelves {
+  border-top: var(--v3-rule-section);
+}
+
+.home-shelf {
+  min-width: 0;
+}
+
+.home-shelf + .home-shelf {
+  padding-top: var(--v3-space-xl);
+  border-top: var(--v3-rule-hairline);
+}
+
+/* The dial fills the stack's measure; the stack already holds the gutter. */
+.v3.v3-dial.home-shelf__dial {
+  max-width: none;
+}
+
+.home-shelf__more {
+  margin: var(--v3-space-md) 0 0;
+}
+
+@media (max-width: 40rem) {
+  .v3.home-shelves {
+    gap: var(--v3-space-lg);
+    padding-top: var(--v3-space-sm);
+    padding-bottom: var(--v3-space-lg);
+  }
+
+  .home-shelf + .home-shelf {
+    padding-top: var(--v3-space-lg);
+  }
+
+  .home-shelf__more {
+    margin-top: var(--v3-space-sm);
+  }
+}

@@ -1,56 +1,40 @@
 'use client'
 
 /**
- * Fold rail of photographed listings (SITE-106).
+ * Fold set of photographed listings (SITE-106), on the listing dial.
  *
- * Catalog job `shadcn-carousel`: the installed source
- * (`@/components/ui/carousel`) with official prev/next, one composed slide at
- * 375 (basis-full), two composed slides from md. Card bodies carry price +
- * address + beds/baths/sqft on 800×600 plates — never the 320×240 ledger
- * thumb. A house rail wrapper is not the install.
+ * WHAT IT WAS. Catalog job `shadcn-carousel`: the installed source with
+ * official prev/next, one composed slide at 375, two from md, each card price
+ * + address + beds/baths/sqft on an 800x600 plate.
  *
- * Layout lock keeps this AFTER Atlas: H1 → claim → Atlas → rail.
+ * WHAT IT IS (Matt 2026-09-24, "Let's get all of those carousels in place").
+ * The same homes in the same order on V3ListingDial: one home large with its
+ * photograph and the card's copy (the ask, beds, baths, sqft, the address, a
+ * door to the listing), the rest as thumbnails on the dial's rail with "03 /
+ * 12" at its head. The lead photograph is still the 800x600 plate (the dial
+ * asks for LISTING_FIELD_LEAD_PHOTO_SIZE), and filmRows below still decides
+ * which homes are in it and in what order: the photographed rows in the
+ * claim's price band, the lowest ask, then the highest, then the band spread
+ * between them, at most twelve.
+ *
+ * THE MAP LINK KEEPS WORKING. A pointer or a focus on a film card used to ring
+ * that home's mark on the Atlas. The home the dial is showing is the one the
+ * reader is on now, so while the pointer or the focus is inside the film the
+ * Atlas rings the home the dial shows, and turning the dial moves the ring.
+ *
+ * Layout lock keeps this AFTER Atlas: H1, claim, Atlas, then the film.
  */
 
-import Link from 'next/link'
-import Image from 'next/image'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel'
-import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS } from '@/components/site/v3'
+import { useEffect, useRef, type FocusEvent } from 'react'
+import { V3ListingDial } from '@/components/site/v3'
+import { useListingDialIndex } from '@/components/site/v3/useListingDialIndex'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
-import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
-import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
-import {
-  LISTING_FIELD_LEAD_PHOTO_SIZE,
-  listingRowPhotoSrc,
-} from '@/lib/listing/row-photo'
 import { usePlaceTypeLink } from './PlaceTypeField.client'
 import './place-type-page.css'
 
 const FOLD_CAP = 12
-
-function specsLine(listing: V3ListingRowData): string | null {
-  const parts: string[] = []
-  if (listing.beds != null) parts.push(`${listing.beds} bd`)
-  if (listing.baths != null) parts.push(`${listing.baths} ba`)
-  if (listing.sqft != null && listing.sqft > 0) {
-    parts.push(`${listing.sqft.toLocaleString('en-US')} sqft`)
-  }
-  return parts.length > 0 ? parts.join(' · ') : null
-}
+/** The dial's root id; its tab and card ids derive from it. One film per page. */
+const FILM_ID = 'place-type-film'
 
 /** Pick photographed rows that read as the claim's band, not only the floor. */
 function filmRows(
@@ -77,7 +61,7 @@ function filmRows(
 
   if (pool.length <= FOLD_CAP) return pool
 
-  /* Spread across the band so the rail matches the sentence, not twelve $470Ks. */
+  /* Spread across the band so the film matches the sentence, not twelve $470Ks. */
   const picks: V3ListingRowData[] = []
   const seen = new Set<string>()
   const push = (row: V3ListingRowData | undefined) => {
@@ -107,95 +91,41 @@ export function PlaceTypeFilm({
   bandLow?: number | null
   bandHigh?: number | null
 }) {
-  const { linkedKey, setLinkedKey } = usePlaceTypeLink()
+  const { setLinkedKey } = usePlaceTypeLink()
   const filmed = filmRows(rows, bandLow, bandHigh)
+  const index = useListingDialIndex(FILM_ID, filmed.length)
+  const shownKey = filmed[index]?.listingKey ?? null
+  const engaged = useRef(false)
+
+  // While the reader is in the film, the Atlas rings the home the dial shows.
+  useEffect(() => {
+    if (engaged.current) setLinkedKey(shownKey)
+  }, [shownKey, setLinkedKey])
+
   if (filmed.length === 0) return null
 
+  const engage = () => {
+    engaged.current = true
+    setLinkedKey(shownKey)
+  }
+  const release = () => {
+    engaged.current = false
+    setLinkedKey(null)
+  }
+
   return (
-    <div className="place-type-film">
+    <div
+      className="place-type-film"
+      data-listing-key={shownKey ?? undefined}
+      onPointerEnter={engage}
+      onPointerLeave={release}
+      onFocus={engage}
+      onBlur={(event: FocusEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) release()
+      }}
+    >
       <p className="place-type-film__eyebrow">On the market</p>
-      <div className="place-type-film__stage">
-        <Carousel
-          opts={{ align: 'start', loop: false }}
-          className={cn(V3_ROOT_CLASS, 'place-type-film__carousel')}
-          aria-label={label}
-        >
-          <CarouselContent>
-            {filmed.map((listing, i) => {
-              const ask = formatPublishedSaleAsk({
-                price: listing.price,
-                propertyType: listing.propertyType,
-              })
-              const shareKind = publishListingShareKind({
-                propertySubType: listing.propertySubType,
-                subdivisionName: listing.subdivisionName,
-                city: listing.city,
-                listNumber: listing.listNumber,
-              })
-              const specs = specsLine(listing)
-              const src = listing.photoUrl
-                ? listingRowPhotoSrc(listing.photoUrl, LISTING_FIELD_LEAD_PHOTO_SIZE)
-                : null
-              const on = linkedKey === listing.listingKey
-              return (
-                <CarouselItem key={listing.listingKey} className="md:basis-1/2">
-                  <div className="p-1">
-                    <Link
-                      href={listing.href}
-                      className={cn('place-type-film__card-link', on && 'is-linked')}
-                      data-listing-key={listing.listingKey}
-                      data-linked={on ? 'true' : 'false'}
-                      aria-label={
-                        specs
-                          ? `${ask ?? 'Listing'} at ${listing.addressLine}, ${specs}`
-                          : `${ask ?? 'Listing'} at ${listing.addressLine}`
-                      }
-                      onPointerEnter={() => setLinkedKey(listing.listingKey)}
-                      onPointerLeave={() => setLinkedKey(null)}
-                      onFocus={() => setLinkedKey(listing.listingKey)}
-                      onBlur={() => setLinkedKey(null)}
-                    >
-                      <Card size="sm" className="place-type-film__card">
-                        <span className="place-type-film__media">
-                          {src ? (
-                            <Image
-                              src={src}
-                              alt=""
-                              width={800}
-                              height={600}
-                              className="place-type-film__photo"
-                              sizes="(max-width: 40rem) 100vw, 50vw"
-                              priority={i < 2}
-                            />
-                          ) : null}
-                        </span>
-                        <CardHeader>
-                          <CardTitle className="place-type-film__price">{ask ?? '—'}</CardTitle>
-                          {shareKind ? (
-                            <CardDescription className="place-type-film__share">
-                              {shareKind}
-                            </CardDescription>
-                          ) : null}
-                        </CardHeader>
-                        <CardContent>
-                          <span className="place-type-film__addr">{listing.addressLine}</span>
-                          {specs ? <span className="place-type-film__specs">{specs}</span> : null}
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  </div>
-                </CarouselItem>
-              )
-            })}
-          </CarouselContent>
-          {filmed.length > 1 ? (
-            <>
-              <CarouselPrevious className="place-type-film__step" />
-              <CarouselNext className="place-type-film__step" />
-            </>
-          ) : null}
-        </Carousel>
-      </div>
+      <V3ListingDial id={FILM_ID} label={label} listings={filmed} className="place-type-film__dial" />
     </div>
   )
 }

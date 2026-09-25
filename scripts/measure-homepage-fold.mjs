@@ -30,7 +30,7 @@ const { context } = await openGateContext(browser, {
 })
 const page = await context.newPage()
 await page.goto(`${BASE}/`, { waitUntil: 'networkidle', timeout: 90_000 })
-await page.waitForSelector('.home-rail__media, #guides', { timeout: 30_000 })
+await page.waitForSelector('.home-shelf .v3-dial__card:not([hidden]) .v3-lrow__media, .home-rail__media, #guides', { timeout: 30_000 })
 await page.waitForTimeout(400)
 
 const geo = await page.evaluate(() => {
@@ -40,9 +40,10 @@ const geo = await page.evaluate(() => {
     return { top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height) }
   }
   const guides = document.querySelector('#guides')
-  const rail = document.querySelector('.home-rails > .home-rail, .home-rail')
-  const heading = document.querySelector('.home-rail__title, .home-rails h2')
-  const photo = document.querySelector('.home-rail__media, .home-rail .v3-lrow__media')
+  // The shelves are listing dials since 2026-09-24 (HomeHomesRails); the old rail selectors stay as fallbacks.
+  const rail = document.querySelector('.home-shelves > .home-shelf, .home-rail')
+  const heading = document.querySelector('.home-shelf .v3-dial__heading, .home-rail__title')
+  const photo = document.querySelector('.home-shelf .v3-dial__card:not([hidden]) .v3-lrow__media, .home-rail__media')
   const doors = [...document.querySelectorAll('#guides a.v3-answers__door')]
   return {
     guides: box(guides),

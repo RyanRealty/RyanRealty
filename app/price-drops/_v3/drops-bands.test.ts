@@ -8,6 +8,21 @@ function item(over: Partial<PriceDropFieldItem> & Pick<PriceDropFieldItem, 'id'>
     href: `/homes-for-sale/listing/${over.id}`,
     priceLabel: '$500,000',
     title: '1 Test St',
+    listing: {
+      listingKey: `${over.id}`,
+      href: `/homes-for-sale/listing/${over.id}`,
+      price: 500_000,
+      addressLine: '1 Test St',
+      cityLine: 'Bend',
+      beds: null,
+      baths: null,
+      sqft: null,
+      propertyType: 'A',
+      propertySubType: null,
+      subdivisionName: null,
+      city: 'Bend',
+      listNumber: null,
+    },
     ...over,
   }
 }
@@ -48,11 +63,14 @@ describe('priceDropCityDoors', () => {
   })
 })
 
-describe('price-drops catalog install', () => {
-  it('imports the installed shadcn carousel from the route v3 files', () => {
+describe('price-drops fold, on the listing dial (Matt 2026-09-24)', () => {
+  it('draws each cut-size band on V3ListingDial from the Field rows', () => {
     const photos = readFileSync(new URL('./PriceDropPhotos.client.tsx', import.meta.url), 'utf8')
     const fold = readFileSync(new URL('./PriceDropsFold.client.tsx', import.meta.url), 'utf8')
-    expect(photos).toContain("from '@/components/ui/carousel'")
+    expect(photos).toContain('<V3ListingDial')
+    expect(photos).toContain('rail.map((item) => item.listing)')
+    expect(photos).not.toContain("from '@/components/ui/carousel'")
     expect(fold).toContain('PriceDropPhotos')
+    expect(fold).toContain('id={`pd-cuts-${band.key}`}')
   })
 })

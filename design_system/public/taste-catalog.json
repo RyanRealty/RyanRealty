@@ -2442,7 +2442,7 @@
       ]
     },
     "homepage-v6": {
-      "layoutLock": "The homepage opens with live inventory in the first viewport and a real Sell address field without waiting on JS. Do not replace the hero search with a stacked memo. Rails stay house carousels \u2014 adapt V3Carousel into them rather than inventing a second rail look. Featured community and Browse places are catalog Card / carousel / number \u2014 not house chips or a house pager.",
+      "layoutLock": "The homepage opens with live inventory in the first viewport and a real Sell address field without waiting on JS. Do not replace the hero search with a stacked memo. The house shelves are listing dials (Matt 2026-09-24, every listing carousel becomes the dial): each shelf is a V3ListingDial, one home large and the rest as thumbnails, and stacked shelves take different rail positions (dialRailPositionAt: bottom, left, right) so no two adjacent read as one object. Do not bring back a listing carousel. Featured community and Browse places are catalog Card / carousel / number \u2014 not house chips or a house pager.",
       "primitivesToAdd": [
         "V3Carousel"
       ],
@@ -2494,8 +2494,14 @@
         {
           "id": "house-home-rails",
           "catalog": "house-v3",
-          "url": "app/_v3/HomeListingRail.client.tsx",
-          "job": "Stacked house carousels of live inventory, not a wall of cards."
+          "url": "app/_v3/HomeHomesRails.tsx",
+          "job": "Stacked shelves of live inventory, each on V3ListingDial with its own rail position, not a wall of cards and not a carousel."
+        },
+        {
+          "id": "house-listing-dial",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ListingDial.client.tsx",
+          "job": "One home large with its photograph and the card copy, the rest of the shelf as thumbnails that turn it, 03 / 12 at its head."
         },
         {
           "id": "beui-morphing-search",
@@ -2513,7 +2519,7 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Inventory rails and featured community. Adapt into the installed Carousel, do not paste a second kit."
+          "job": "Featured community only. Adapt into the installed Carousel, do not paste a second kit. The inventory shelves are the listing dial (Matt 2026-09-24), never this."
         },
         {
           "id": "shadcn-card",
@@ -3029,7 +3035,13 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Inventory rails. Adapt into V3Carousel, do not paste a second kit."
+          "job": "Retired for inventory (Matt 2026-09-24): the shelves are V3ListingDial. Kept so the receipt that scored the carousel still resolves."
+        },
+        {
+          "id": "house-listing-dial",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ListingDial.client.tsx",
+          "job": "The lead shelf per asking-price band, and the shelves under it, on the listing dial: one home large, the rest as thumbnails."
         }
       ]
     },
@@ -3062,7 +3074,7 @@
     "price-drops": {
       "layoutLock": "Opening is the Field of cut houses. Count is a caption. Do not open on a KPI of reductions this week with no photographs.",
       "demoStates": [
-        "carousel-open=.pd-cuts-rail [data-slot=carousel-next]!click",
+        "dial-open=.pd-cuts .v3-dial__step--next!click",
         "band-open=.pd-bands [role=tab]:nth-child(2)!click"
       ],
       "modules": [
@@ -3082,7 +3094,13 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Photo rails of the week's cuts. Adapt into V3Carousel."
+          "job": "Retired for the cut houses (Matt 2026-09-24): they are on V3ListingDial. Kept so the receipt that scored the carousel still resolves."
+        },
+        {
+          "id": "house-listing-dial",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ListingDial.client.tsx",
+          "job": "The week's cut houses per cut-size band on the listing dial: one house large with its cut on the photograph, the rest as thumbnails."
         }
       ]
     },
@@ -3236,7 +3254,7 @@
     "place-type": {
       "layoutLock": "H1 is the type in the place, then one plain sentence with the count and the price band, then Atlas. Do not say the type twice as two display lines with no fact. Count and band from the same listing-tile read as the map marks.",
       "demoStates": [
-        "carousel-open=[data-slot=\"carousel-next\"]!click"
+        "dial-open=.place-type-film .v3-dial__step--next!click"
       ],
       "modules": [
         {
@@ -3255,7 +3273,13 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Photographed listings as a rail. Adapt into V3Carousel."
+          "job": "Retired for the film (Matt 2026-09-24): the photographed listings are on V3ListingDial. Kept so the receipt that scored the carousel still resolves."
+        },
+        {
+          "id": "house-listing-dial",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ListingDial.client.tsx",
+          "job": "The photographed listings in the claim band on the listing dial, and the Atlas rings the home the dial shows."
         }
       ]
     },

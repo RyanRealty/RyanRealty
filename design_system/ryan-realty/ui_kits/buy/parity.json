@@ -21,12 +21,12 @@
     },
     {
       "name": "BuyHomesShelf",
-      "section": "Directly under the Stage (SITE-91, 2026-09-16): THIS ROUTE'S OWN composition of the installed shadcn carousel (app/buy/_v3/BuyHomesShelf.client.tsx imports @/components/ui/carousel, which is what ci:catalog-install --requireRouteImport and taste-receipt --ship read this directory for). The lead shelf of live single-family listings, sorted cheapest first and brushed by asking-price band on V3ChartSwitch, whose hidden panels stay in the DOM so every listing href is crawlable whichever band is open. Flanking 44x44 chevrons on the media midline; the card face, the chrome classes and the stylesheet are imported from HomeListingRail so the two pages show inventory as one object.",
+      "section": "Directly under the Stage (SITE-91, 2026-09-16; on the listing dial since Matt 2026-09-24): THIS ROUTE'S OWN composition. The lead shelf of live single-family listings, sorted cheapest first and brushed by asking-price band on V3ChartSwitch, whose hidden panels stay in the DOM so every listing href is crawlable whichever band is open; each band is a V3ListingDial (one home large, the rest as thumbnails, 03 / 12), under the price ladder, which fills the mark of the home the dial shows. /buy 301s to /homes-for-sale (next.config.ts, 2026-09-23), so no visitor reaches it.",
       "blocking": true
     },
     {
       "name": "HomeHomesRails",
-      "section": "The shelves BELOW the lead one (price cuts, new this week): app/_v3/HomeHomesRails.tsx, the same rows and the same V3Carousel primitive the homepage mounts, built from THIS page's SFR tiles so every card belongs to the population the hero's figures describe. Carries the shadcn position readout (01 / 09) the fold shelf trades away for 25px of fold.",
+      "section": "The shelves BELOW the lead one (price cuts, new this week): app/_v3/HomeHomesRails.tsx, the same rows and the same V3ListingDial shelves the homepage mounts, built from THIS page's SFR tiles so every card belongs to the population the hero's figures describe. railOffset carries the page's dial order on from the lead shelf, so no two adjacent dials share a rail position.",
       "blocking": true
     },
     {
@@ -66,8 +66,8 @@
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Stage #top -- the opening, inventory variant: photo + H1 + the navy action, then the live market band across the base (SITE-46). Each figure is a door and carries the register's caret at rest (SITE-91)",
     "V3Breadcrumb",
-    "BuyHomesShelf -- the lead shelf (its section id is the rail row's own, homes-local, set in app/_v3/home-rail-items.ts rather than in the page) (SITE-91): the installed shadcn carousel imported by this route's own _v3, cheapest first, asking-price brush + see-all on one line with the heading, the price ladder over the track, flanking 44x44 chevrons on the media midline, a fifth card cut by the track edge",
-    "HomeHomesRails -- the remaining inventory shelves (price cuts, new this week) on the homepage primitive",
+    "BuyHomesShelf -- the lead shelf (its section id is the rail row's own, homes-local, set in app/_v3/home-rail-items.ts rather than in the page) (SITE-91): cheapest first, asking-price brush + see-all on one line with the heading, the price ladder over the dial, each band a V3ListingDial (Matt 2026-09-24)",
+    "HomeHomesRails -- the remaining inventory shelves (price cuts, new this week) on the homepage V3ListingDial shelves",
     "V3Ledger #buyer-guides -- first-time, relocation, investment, plus Sep 7 AEO buyer guides",
     "HomeHomesField -- browse the same single-family population by type, regional search as the door out; under the guides so the shelves and the Field are never adjacent (moved here SITE-91)",
     "V3Quiet #how-it-works -- how a purchase works here",

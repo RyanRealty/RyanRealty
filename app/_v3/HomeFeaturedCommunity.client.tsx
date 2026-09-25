@@ -165,8 +165,12 @@ export function HomeFeaturedCommunity({
           </CarouselContent>
           {slides.length > 1 ? (
             <>
-              <CarouselPrevious />
-              <CarouselNext />
+              {/* size-11 = 44px: the kit default (icon-sm) is 28x28. It passed
+                  ci:tap-targets only as the WCAG 2.5.8 "Equivalent" of the
+                  homepage rails' 44px "Next slide", and the rails are listing
+                  dials now (2026-09-24), so the control carries its own size. */}
+              <CarouselPrevious className="size-11" />
+              <CarouselNext className="size-11" />
             </>
           ) : null}
         </Carousel>

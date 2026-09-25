@@ -226,6 +226,38 @@ export function railCardFromListingRow(row: V3ListingRowData): HomeRailCard {
 }
 
 /**
+ * A rail card as the listing dial's row (Matt 2026-09-24: the shelves that
+ * were carousels are V3ListingDial now). The inverse of railCardFromListingRow:
+ * the same listing, the same figures, the same door. The dial draws one
+ * photograph per listing, so the card's first photo (the one the carousel
+ * card opened on) is the one it gets.
+ */
+export function listingRowFromRailCard(card: HomeRailCard): V3ListingRowData {
+  return {
+    listingKey: card.listingKey,
+    href: card.href,
+    photoUrl: card.photoUrls[0] ?? null,
+    price: card.price,
+    addressLine: card.addressLine,
+    cityLine: card.cityLine,
+    beds: card.beds,
+    baths: card.baths,
+    sqft: card.sqft,
+    pricePerSqft: card.pricePerSqft,
+    propertyType: card.propertyType,
+    propertySubType: card.propertySubType,
+    subdivisionName: card.subdivisionName,
+    city: card.city,
+    listNumber: card.listNumber,
+    tourUrl: card.tourUrl,
+    hasTour: card.hasTour,
+    badges: card.badges,
+    statusLabel: card.statusLabel,
+    ...(card.leaseRateOption !== undefined ? { leaseRateOption: card.leaseRateOption } : {}),
+  }
+}
+
+/**
  * Build stacked rails from one active tile pool. Rows that cannot fill at
  * least three honest cards are omitted (no lonely two-card shelf).
  */
