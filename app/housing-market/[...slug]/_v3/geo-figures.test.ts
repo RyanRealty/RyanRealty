@@ -176,6 +176,73 @@ describe('buildCityPeriodFigures — leftover 12-month overlay', () => {
   })
 })
 
+describe('buildExploreItems — the place page under its own query (SITE-196 / SITE-203)', () => {
+  const links = (items: ReturnType<typeof buildExploreItems>) =>
+    items.flatMap((item) => (isQuietLink(item) ? [{ label: item.label, href: quietLinkHref(item) }] : []))
+
+  it('a city report opens with "{city} real estate" to /cities/{city}', () => {
+    const items = links(
+      buildExploreItems({
+        valuationHrefValue: '/sell',
+        citySlug: 'bend',
+        cityName: 'Bend',
+        communityName: null,
+        footnotes: [],
+        posts: [],
+      }),
+    )
+    expect(items[0]).toEqual({ label: 'Bend real estate', href: '/cities/bend' })
+  })
+
+  it('a registered community report opens with "{community} homes for sale" to its public page', () => {
+    const items = links(
+      buildExploreItems({
+        valuationHrefValue: '/sell',
+        citySlug: 'sunriver',
+        cityName: 'Sunriver',
+        communityName: 'Caldera Springs',
+        communitySlug: 'caldera-springs',
+        footnotes: [],
+        posts: [],
+      }),
+    )
+    expect(items[0]).toEqual({ label: 'Caldera Springs homes for sale', href: '/communities/caldera-springs' })
+    expect(items[1]).toEqual({ label: 'Sunriver housing market', href: '/housing-market/sunriver' })
+    expect(items.map((item) => item.href)).not.toContain('/cities/sunriver')
+  })
+
+  it('a rebranded durable slug links the public page, never the 308', () => {
+    const items = links(
+      buildExploreItems({
+        valuationHrefValue: '/sell',
+        citySlug: 'bend',
+        cityName: 'Bend',
+        communityName: 'Pronghorn',
+        communitySlug: 'pronghorn',
+        footnotes: [],
+        posts: [],
+      }),
+    )
+    expect(items[0]?.href).toBe('/communities/juniper-preserve')
+  })
+
+  it('an MLS plat under the report gets no community door', () => {
+    const items = links(
+      buildExploreItems({
+        valuationHrefValue: '/sell',
+        citySlug: 'bend',
+        cityName: 'Bend',
+        communityName: 'Fawnview',
+        communitySlug: 'fawnview',
+        footnotes: [],
+        posts: [],
+      }),
+    )
+    expect(items[0]).toEqual({ label: 'Bend housing market', href: '/housing-market/bend' })
+    expect(items.map((item) => item.href).some((href) => href?.startsWith('/communities/'))).toBe(false)
+  })
+})
+
 describe('buildExploreItems — SITE-123 Bend AEO cluster', () => {
   it('pins the three SEO Desk guides on /housing-market/bend and skips them on a community', () => {
     const bend = buildExploreItems({

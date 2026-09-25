@@ -21,6 +21,9 @@ import { formatPrice, formatPriceCompact, formatPriceExact } from '@/lib/format/
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { moneyTicks, monthTicks, seriesClaim, spacedTicks, yoyClaim } from '@/lib/charts/ticks'
 import { listingsBrowsePath } from '@/lib/slug'
+import { communityPath, resolvePublicCommunitySlug } from '@/lib/communities/community-public-pair'
+import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
+import { placeCityRealEstateHeading, placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import {
   publicSegmentBrowseHref,
   publicSegmentDisplayBits,
@@ -416,6 +419,8 @@ export function buildExploreItems(args: {
   citySlug: string
   cityName: string
   communityName: string | null
+  /** The URL segment after the city; a registered community gets its place-page door. */
+  communitySlug?: string | null
   footnotes: readonly CityFootnote[]
   posts: readonly BlogPostCard[]
 }): V3QuietItem[] {
@@ -433,6 +438,23 @@ export function buildExploreItems(args: {
     items.unshift({
       label: `${args.cityName} housing market`,
       href: cityMarketPath(args.citySlug),
+    })
+  }
+  // SITE-196 / SITE-203: this report links its place page under the query
+  // that page owns ("{city} real estate", "{community} homes for sale"), so
+  // the report stops being the only URL Google sees for the place's name. A
+  // community door only when the segment is a registered community: an MLS
+  // plat under /housing-market has its own page family.
+  const communityPublicSlug = args.communitySlug ? resolvePublicCommunitySlug(args.communitySlug) : null
+  if (args.communityName && communityPublicSlug && isCanonicalCommunitySlug(communityPublicSlug)) {
+    items.unshift({
+      label: placeHomesForSaleHeading(args.communityName),
+      href: communityPath(communityPublicSlug),
+    })
+  } else if (!args.communityName) {
+    items.unshift({
+      label: placeCityRealEstateHeading(args.cityName),
+      href: `/cities/${args.citySlug}`,
     })
   }
   const seenBlog = new Set(

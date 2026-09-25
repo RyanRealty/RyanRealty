@@ -468,6 +468,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             geoName={geoName}
             cityName={cityName}
             citySlug={citySlug}
+            communitySlug={data.geo.communitySlug}
             hud={hud}
             mosText={mosText}
             verdict={verdict}
