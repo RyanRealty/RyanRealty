@@ -50,7 +50,9 @@ export async function getListingCardVideo(listingKey: string): Promise<ListingCa
   const parsed = InputSchema.safeParse({ listingKey })
   if (!parsed.success) return { video: null, degraded: false }
   const key = parsed.data.listingKey
-  const cached = unstable_cache(() => resolveCardVideo(key), ['listing-card-video-v1', key], {
+  // v2 2026-09-25: Vimeo srcs carry the unlisted-video privacy hash (v1 could
+  // hold a hashless src, which the player refuses to play).
+  const cached = unstable_cache(() => resolveCardVideo(key), ['listing-card-video-v2', key], {
     revalidate: CACHE_WINDOWS.videos,
     tags: [cacheTag.listing(key), cacheTag.videos],
   })

@@ -23,6 +23,7 @@
  */
 
 import type { VideoEmbed } from '@/lib/data/types/video'
+import { parseVimeoRef, vimeoPlayerSrc } from '@/lib/video-embed'
 import { publishListingHeroUnmute, publishListingHeroVideo } from './publish-listing-hero-video'
 
 export type ListingCardVideoKind = 'file' | 'youtube' | 'vimeo' | 'stream'
@@ -39,7 +40,6 @@ export type ListingCardVideo = {
 /** YouTube ids are eleven characters; watch, embed, shorts and youtu.be forms. */
 const YOUTUBE_ID =
   /(?:youtube(?:-nocookie)?\.com\/(?:watch\?[^#]*v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
-const VIMEO_ID = /vimeo\.com\/(?:video\/)?(\d+)/
 
 function parseUrl(raw: string): URL | null {
   const trimmed = raw.trim()
@@ -56,10 +56,6 @@ export function listingCardYoutubeId(url: string): string | null {
   return YOUTUBE_ID.exec(url)?.[1] ?? null
 }
 
-export function listingCardVimeoId(url: string): string | null {
-  return VIMEO_ID.exec(url)?.[1] ?? null
-}
-
 /** Which silent player can run this embed, or null when none can. */
 export function listingCardVideoKind(video: Pick<VideoEmbed, 'embedType' | 'url'>): ListingCardVideoKind | null {
   const url = parseUrl(video.url)
@@ -70,7 +66,7 @@ export function listingCardVideoKind(video: Pick<VideoEmbed, 'embedType' | 'url'
   if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com') || host === 'youtu.be') {
     return listingCardYoutubeId(url.toString()) ? 'youtube' : null
   }
-  if (host.endsWith('vimeo.com')) return listingCardVimeoId(url.toString()) ? 'vimeo' : null
+  if (host.endsWith('vimeo.com')) return parseVimeoRef(url.toString()) ? 'vimeo' : null
   if (host.endsWith('cloudflarestream.com') || host.endsWith('videodelivery.net')) return 'stream'
   return null
 }
@@ -146,19 +142,18 @@ export function listingCardVideoSrc(video: Pick<ListingCardVideo, 'kind' | 'url'
       return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`
     }
     case 'vimeo': {
-      const id = listingCardVimeoId(url.toString())
-      if (!id) return null
-      const out = new URL(`https://player.vimeo.com/video/${id}`)
-      // An unlisted Vimeo reel plays only with its privacy hash.
-      const hash = url.searchParams.get('h')
-      if (hash) out.searchParams.set('h', hash)
-      out.searchParams.set('background', '1')
-      out.searchParams.set('autoplay', '1')
-      out.searchParams.set('muted', '1')
-      out.searchParams.set('loop', '1')
-      out.searchParams.set('playsinline', '1')
-      out.searchParams.set('dnt', '1')
-      return out.toString()
+      // An unlisted Vimeo reel plays only with its privacy hash, which
+      // vimeoPlayerSrc carries from either the path or the `h` param.
+      const ref = parseVimeoRef(url.toString())
+      if (!ref) return null
+      return vimeoPlayerSrc(ref, {
+        background: '1',
+        autoplay: '1',
+        muted: '1',
+        loop: '1',
+        playsinline: '1',
+        dnt: '1',
+      })
     }
     case 'stream': {
       url.searchParams.set('autoplay', 'true')

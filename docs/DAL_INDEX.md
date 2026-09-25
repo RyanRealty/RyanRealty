@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-24T20:03:31.982Z
+**Generated:** 2026-09-25T01:01:20.483Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2508,7 +2508,7 @@ Companion files:
 
 **Exports:** `getEventDetail`
 
-**Cache keys:** `event-detail-v3-full-set`
+**Cache keys:** `event-detail-v4-full-set`
 
 **TTL windows:** `CACHE_WINDOWS.listingsByGeo`
 
@@ -2752,7 +2752,7 @@ Companion files:
 
 **Exports:** `getGolfDetail`
 
-**Cache keys:** `golf-detail-v4-full-set`
+**Cache keys:** `golf-detail-v5-full-set`
 
 **TTL windows:** `CACHE_WINDOWS.listingsByGeo`
 
@@ -5012,7 +5012,7 @@ Companion files:
 
 **Exports:** `getTrailDetail`
 
-**Cache keys:** `trail-detail-v3-full-set`
+**Cache keys:** `trail-detail-v4-full-set`
 
 **TTL windows:** `CACHE_WINDOWS.listingsByGeo`
 
@@ -5042,7 +5042,7 @@ Companion files:
 
 **Exports:** `getVenueDetail`
 
-**Cache keys:** `venue-detail-v3-full-set`
+**Cache keys:** `venue-detail-v4-full-set`
 
 **TTL windows:** `CACHE_WINDOWS.listingsByGeo`
 
@@ -5060,7 +5060,7 @@ Companion files:
 
 **Exports:** `LISTING_CARD_VIDEO_KEY`, `getListingCardVideo`
 
-**Cache keys:** `listing-card-video-v1`
+**Cache keys:** `listing-card-video-v2`
 
 **TTL windows:** `CACHE_WINDOWS.videos`
 

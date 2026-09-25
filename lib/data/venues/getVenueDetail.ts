@@ -147,7 +147,8 @@ async function fetchVenueDetail(slug: string): Promise<VenueDetail | null> {
 }
 
 export function getVenueDetail(slug: string): Promise<VenueDetail | null> {
-  return unstable_cache(() => fetchVenueDetail(slug), ['venue-detail-v3-full-set', slug], {
+  // v4 2026-09-25: tile Vimeo srcs keep the privacy hash (v3 could hold a hashless, unplayable src).
+  return unstable_cache(() => fetchVenueDetail(slug), ['venue-detail-v4-full-set', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'venues'],
   })()

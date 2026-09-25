@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VideoEmbed } from '@/lib/data/types/video'
+import { normalizeEmbed } from '@/lib/video-embed'
 import {
   listingCardVideoCanUnmute,
   listingCardVideoKind,
@@ -126,6 +127,21 @@ describe('listingCardVideoSrc: muted, inline, looping, no controls', () => {
     expect(u.searchParams.get('background')).toBe('1')
     expect(u.searchParams.get('muted')).toBe('1')
     expect(u.searchParams.get('loop')).toBe('1')
+  })
+
+  it('keeps a hash shared in the path (vimeo.com/<id>/<hash>) as well', () => {
+    const u = new URL(listingCardVideoSrc({ kind: 'vimeo', url: 'https://vimeo.com/714278543/56be80407a?share=copy' })!)
+    expect(u.hostname).toBe('player.vimeo.com')
+    expect(u.pathname).toBe('/video/714278543')
+    expect(u.searchParams.get('h')).toBe('56be80407a')
+    expect(u.searchParams.get('background')).toBe('1')
+  })
+
+  it('the reel picked from the feed carries the hash end to end', () => {
+    const norm = normalizeEmbed('https://vimeo.com/714278543/56be80407a')!
+    const reel = publishListingCardVideo([embed({ source: 'mls-vimeo', url: norm.url })])!
+    expect(reel.kind).toBe('vimeo')
+    expect(new URL(listingCardVideoSrc(reel)!).searchParams.get('h')).toBe('56be80407a')
   })
 
   it('turns the Stream player chrome off', () => {

@@ -116,7 +116,8 @@ async function fetchTrailDetail(slug: string): Promise<TrailDetail | null> {
 }
 
 export function getTrailDetail(slug: string): Promise<TrailDetail | null> {
-  return unstable_cache(() => fetchTrailDetail(slug), ['trail-detail-v3-full-set', slug], {
+  // v4 2026-09-25: tile Vimeo srcs keep the privacy hash (v3 could hold a hashless, unplayable src).
+  return unstable_cache(() => fetchTrailDetail(slug), ['trail-detail-v4-full-set', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'trails'],
   })()
