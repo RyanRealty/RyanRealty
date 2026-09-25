@@ -729,6 +729,14 @@ export function cmaStylesheet(siteUrl: string): string {
       min-height: 9.9in;
       padding: 0;
     }
+    /* Last sheet: no forced min-height and no break-after. Either one on
+       the closing section leaves a blank trailing page in the PDF. */
+    .page:last-child,
+    .page-closing {
+      min-height: 0;
+      break-after: auto;
+      page-break-after: auto;
+    }
     /* NO height, NO max-height, NO overflow:hidden — all three delete content.
        A clipped row is never drawn, so it leaves no trace in the PDF for any
        downstream check to find. That is how 77 CMAs in the library were losing
@@ -745,6 +753,16 @@ export function cmaStylesheet(siteUrl: string): string {
   .page-closing {
     background: var(--navy);
     color: var(--cream);
+    /* Inner inset on the navy panel. Print zeros .page padding (bands live
+       on @page), so without this the close sits flush on the navy edge. */
+    padding: 32px 36px 40px;
+    box-sizing: border-box;
+  }
+  @media screen and (max-width: 700px) {
+    .page-closing { padding: 24px 20px 32px; }
+  }
+  @media print {
+    .page-closing { padding: 28px 32px 36px; }
   }
   .page-closing h2.section { color: var(--cream); border-bottom-color: var(--cream); }
   .page-closing h3.subhead,

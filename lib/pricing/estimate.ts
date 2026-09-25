@@ -280,7 +280,7 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: `exclusive pocket — city_slug='${opts.citySlug}' index computed but not applied`,
       },
-      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price — size and story class do not adjust.${would}`,
+      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Size and story class do not adjust.${would}`,
     }
   }
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })

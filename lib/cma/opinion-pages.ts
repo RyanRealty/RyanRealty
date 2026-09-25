@@ -1195,7 +1195,7 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   <p><strong>Effective date.</strong> This opinion is effective ${esc(
     dateLong(a.generatedAtIso),
   )}. Every figure in it was pulled that day and reads the market as it stood then.</p>
-  <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it — the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labelled as yours and should be confirmed independently.</p>
+  <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it: the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labelled as yours and should be confirmed independently.</p>
   <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale ${esc(
     adjustmentsMadeClause(a.comps),
   )}. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>
@@ -1232,14 +1232,12 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /**
- * The close, in the owner's words (Matt 2026-09-22). Sorry about their home,
- * this time, and an invitation if they list again. Not a form letter about
- * "this listing."
+ * The close. Sorry it did not sell, glad to help if they relist. Plain
+ * broker voice, not a form letter about "this listing."
  */
-export const CLOSE_SORRY_HEADING = "We're sorry that your home did not sell this go-around."
+export const CLOSE_SORRY_HEADING = "Sorry your home didn't sell."
 
-export const CLOSE_EARN_YOUR_BUSINESS =
-  "If you're considering listing in the future, we'd love the opportunity to earn your business."
+export const CLOSE_EARN_YOUR_BUSINESS = "If you decide to list again, we're glad to help."
 
 export const CLOSE_HERE_FOR_QUESTIONS = "We're here for any questions you have."
 
@@ -1442,7 +1440,7 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
       ? renderMatrixHtml({
           id: 'competition-active',
           family: 'active',
-          heading: 'Active — asking in this range now',
+          heading: 'Active: asking in this range now',
           lead: activeMatrixLead(activeOnly, { lo: b.lo, hi: b.hi }),
           entries: [sets.subject, ...activeOnly],
           range,
@@ -1453,7 +1451,7 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
       ? renderMatrixHtml({
           id: 'competition-pending',
           family: 'active',
-          heading: 'Pending — under contract in this range',
+          heading: 'Pending: under contract in this range',
           lead: '<p class="chart-read">Under contract is not closed. These are still competing until they close.</p>',
           entries: [sets.subject, ...pendingOnly],
           range,
