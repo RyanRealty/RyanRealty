@@ -107,7 +107,7 @@ export async function sendTemplateSelfTestAction(
   }
 
   // SMS path. Respect TCPA quiet hours (compliance gate).
-  const { inSmsQuietHours, smsPauseStartLabel } = await import('@/lib/crm/quiet-hours')
+  const { inSmsQuietHours, smsPauseStartLabel, smsWindowCloseAt } = await import('@/lib/crm/quiet-hours')
   if (inSmsQuietHours()) {
     return { ok: false, error: `Quiet hours (${smsPauseStartLabel()} to 8am Pacific, ORS 646.563). Try again after 8am.` }
   }
@@ -127,7 +127,7 @@ export async function sendTemplateSelfTestAction(
   }
 
   const { sendSms } = await import('@/lib/crm/twilio')
-  const smsResult = await sendSms({ from: fromNumber, to: toPhone, body: renderedBody })
+  const smsResult = await sendSms({ from: fromNumber, to: toPhone, body: renderedBody, validUntil: smsWindowCloseAt() })
   if (!smsResult.ok) return { ok: false, error: smsResult.error }
   return { ok: true, message: `Test SMS sent to ${toPhone}` }
 }

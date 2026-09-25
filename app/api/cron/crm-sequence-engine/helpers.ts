@@ -3,7 +3,7 @@ import 'server-only'
 /**
  * crm-sequence-engine helpers — pure/total utilities split out of route.ts
  * (file-size budget, 2026-07-02). SMS quiet hours come from lib/crm/quiet-hours
- * (Oregon 8pm). Do not reintroduce a local 9pm copy.
+ * (Oregon 8pm, sends pause at 7:55pm). Do not reintroduce a local 9pm copy.
  */
 
 import {
@@ -19,6 +19,7 @@ import {
   hourInTimeZone,
   inSmsQuietHours as canonicalInSmsQuietHours,
   nextSmsWindow,
+  smsWindowCloseAt as canonicalSmsWindowCloseAt,
 } from '@/lib/crm/quiet-hours'
 
 /**
@@ -37,9 +38,14 @@ export function laHour(): number {
   return hourInTimeZone(new Date())
 }
 
-/** Oregon 8am–8pm Pacific. Do not fork a 9pm copy here (deep audit C1). */
+/** Oregon 8am to the 7:55pm pause, Pacific. Do not fork a 9pm copy here (deep audit C1). */
 export function inSmsQuietHours(date?: Date): boolean {
   return canonicalInSmsQuietHours(date)
+}
+
+/** 8:00pm Pacific today, the instant Twilio drops a still-queued sequence text. */
+export function smsWindowCloseAt(date?: Date): Date {
+  return canonicalSmsWindowCloseAt(date)
 }
 
 /** Next 8:05am Pacific — after the Oregon SMS window opens. */

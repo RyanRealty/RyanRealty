@@ -23,8 +23,10 @@ import type { GovernedFailure } from './types'
 /**
  * The quiet-hours refusal shown to brokers (kept byte-identical to the
  * composer's). The pause time comes from the rule, so the copy moves with it.
+ * It suggests no phone call: ORS 646.563 holds sales calls to the same 8am to
+ * 8pm window.
  */
-export const QUIET_HOURS_ERROR = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, so each one lands before Oregon's 8pm cutoff (ORS 646.563). Call instead, or check "send anyway" to override.`
+export const QUIET_HOURS_ERROR = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, ahead of Oregon's 8pm cutoff (ORS 646.563). Check "send anyway" to override.`
 
 const HARD_STOP_REASON = 'tag:compliance:hard-stop'
 

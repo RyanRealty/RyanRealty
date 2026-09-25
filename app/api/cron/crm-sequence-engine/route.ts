@@ -33,6 +33,7 @@ import {
   looksSuspect,
   nextSendWindow,
   renderMerge,
+  smsWindowCloseAt,
   suppressedSmsFallbackEmailEnabled,
   type Step,
 } from './helpers'
@@ -491,7 +492,7 @@ export async function GET(request: Request) {
           // else the Mac iMessage relay as backup; else the step's email fallback
           // ("optional email or text"); else hold + queue visibly until A2P clears.
           if (a2pStatus === 'VERIFIED') {
-            // Quiet hours gate the actual Twilio send only (8 AM to 8 PM PT).
+            // Quiet hours gate the actual Twilio send only (8am to the 7:55pm pause, PT).
             if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }
             // Daily cap (#3): hold once the engine hits its daily budget so a big
             // backlog can't blast past the low-volume campaign's carrier cap.
@@ -521,9 +522,11 @@ export async function GET(request: Request) {
                 await finish({ next_run_at: nextSendWindow().toISOString() })
                 continue
               }
+              // Twilio drops the text if it is still queued at 8pm.
+              const validUntil = smsWindowCloseAt()
               const sent = seqFrom
-                ? await sendSms({ from: seqFrom, to: toPhone, body })
-                : await sendSmsViaMessagingService({ to: toPhone, body })
+                ? await sendSms({ from: seqFrom, to: toPhone, body, validUntil })
+                : await sendSmsViaMessagingService({ to: toPhone, body, validUntil })
               if (!sent.ok) {
                 await releaseSend()
                 await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() })

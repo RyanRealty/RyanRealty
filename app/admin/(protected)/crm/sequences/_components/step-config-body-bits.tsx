@@ -29,16 +29,14 @@ import {
   type ConditionOp,
   type Step,
 } from '@/lib/crm/sequence-step-schema'
-import { QUIET_START_HOUR, SMS_PAUSE_START_MINUTE } from '@/lib/crm/quiet-hours'
+import { formatMinuteOfDay, QUIET_START_HOUR, SMS_PAUSE_START_MINUTE } from '@/lib/crm/quiet-hours'
 import { CHANNEL_CARD_LABELS } from './editor-shared'
 import type { PanelOptions } from './StepConfigPanel'
 import { EngineTruthRadios, TagMultiselect } from './step-config-bits'
 
-/** 8 → "8:00 am", 20 → "8:00 pm". The text window copy reads the rule's own hours so it cannot drift. */
+/** 480 → "8:00 am", 1195 → "7:55 pm". The text window copy reads the rule's own minutes so it cannot drift. */
 function clockTime(minuteOfDay: number): string {
-  const hour = Math.floor(minuteOfDay / 60)
-  const minute = String(minuteOfDay % 60).padStart(2, '0')
-  return `${hour % 12 || 12}:${minute} ${hour < 12 ? 'am' : 'pm'}`
+  return formatMinuteOfDay(minuteOfDay, ' ')
 }
 
 const CONDITION_FIELD_LABELS: Record<ConditionField, string> = {

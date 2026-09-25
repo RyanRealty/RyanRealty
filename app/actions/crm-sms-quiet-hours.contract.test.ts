@@ -7,16 +7,19 @@ import { describe, expect, it } from 'vitest'
  * numbers (no contact record) are sent straight from the action and come LAST,
  * after the group attempt and every 1:1 send. A 7:59pm click could text them
  * after 8pm, and a group refused for quiet hours falls through to this loop.
+ * Each raw send also hands Twilio the 8pm close as its ValidityPeriod bound.
  */
 const src = readFileSync(new URL('./crm.ts', import.meta.url), 'utf8')
 
 describe('sendCrmSmsAction raw group-reply numbers', () => {
   it('asks quiet hours again before each raw send unless the broker overrode', () => {
     const loopAt = src.indexOf('for (const e164 of rawPhones) {')
-    const postAt = src.indexOf('? await sendSms({ from: rawFrom, to: e164, body, mediaUrls })', loopAt)
+    const postAt = src.indexOf('? await sendSms({ from: rawFrom, to: e164, body, mediaUrls, validUntil })', loopAt)
     expect(loopAt).toBeGreaterThan(-1)
     expect(postAt).toBeGreaterThan(loopAt)
     const beforePost = src.slice(loopAt, postAt)
     expect(beforePost).toMatch(/if \(inSmsQuietHours\(\) && !override\) \{ lastError = QUIET_HOURS_ERROR; continue \}/)
+    expect(beforePost).toContain('const validUntil = override ? undefined : smsWindowCloseAt()')
+    expect(src).toContain(': await sendSmsViaMessagingService({ to: e164, body, mediaUrls, validUntil })')
   })
 })

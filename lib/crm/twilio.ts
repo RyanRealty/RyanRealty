@@ -298,6 +298,32 @@ async function postMessage(form: URLSearchParams): Promise<{ ok: true; sid: stri
  */
 const MAX_MMS_MEDIA = 10
 
+/** Twilio's accepted ValidityPeriod range; it recommends more than 5 s (Message resource docs). */
+const MIN_VALIDITY_S = 6
+const MAX_VALIDITY_S = 36_000
+
+/**
+ * ValidityPeriod, in seconds, for a text that must not reach a phone after
+ * `validUntil`: Twilio drops a message still in its queue when the period
+ * runs out. Null when too little time is left to send at all.
+ */
+export function validityPeriodSeconds(validUntil: Date, now: number = Date.now()): number | null {
+  const seconds = Math.floor((validUntil.getTime() - now) / 1000)
+  if (seconds < MIN_VALIDITY_S) return null
+  return Math.min(seconds, MAX_VALIDITY_S)
+}
+
+const SEND_WINDOW_CLOSED_ERROR = 'The send window closes before Twilio could deliver this text, so nothing was sent.'
+
+/** Set ValidityPeriod from `validUntil`; false when the window is already too close to send. */
+function applyValidUntil(form: URLSearchParams, validUntil?: Date): boolean {
+  if (!validUntil) return true
+  const seconds = validityPeriodSeconds(validUntil)
+  if (seconds == null) return false
+  form.set('ValidityPeriod', String(seconds))
+  return true
+}
+
 function appendMediaUrls(form: URLSearchParams, mediaUrls?: string[]): void {
   if (!mediaUrls || mediaUrls.length === 0) return
   mediaUrls.slice(0, MAX_MMS_MEDIA).forEach((url, i) => form.set(`MediaUrl${i}`, url))
@@ -312,7 +338,8 @@ function appendMediaUrls(form: URLSearchParams, mediaUrls?: string[]): void {
  * `queued` for a full hour before the carrier released it; through the service the
  * same send delivered in seconds from the same number). Falls back to a raw-From
  * send only when the messaging service isn't configured. Pass mediaUrls (public
- * HTTPS URLs) to send as MMS.
+ * HTTPS URLs) to send as MMS. Pass validUntil (smsWindowCloseAt() for a send
+ * under quiet hours) and Twilio drops the text if it is still queued then.
  */
 async function maybeInstrumentSmsBody(to: string, body: string): Promise<string> {
   if (!/https?:\/\//i.test(body)) return body
@@ -329,7 +356,7 @@ async function maybeInstrumentSmsBody(to: string, body: string): Promise<string>
   }
 }
 
-export async function sendSms(params: { from: string; to: string; body: string; mediaUrls?: string[] }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+export async function sendSms(params: { from: string; to: string; body: string; mediaUrls?: string[]; validUntil?: Date }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const to = toE164(params.to)
   if (!to) return { ok: false, error: 'Invalid phone number' }
   const a2p = await getA2pCampaignStatus()
@@ -344,12 +371,13 @@ export async function sendSms(params: { from: string; to: string; body: string; 
       : { From: params.from, To: to, Body: body },
   )
   appendMediaUrls(form, params.mediaUrls)
+  if (!applyValidUntil(form, params.validUntil)) return { ok: false, error: SEND_WINDOW_CLOSED_ERROR }
   const r = await postMessage(form)
   return r.ok ? r : { ok: false, error: r.error }
 }
 
-/** Preferred outbound path — uses the A2P-registered messaging service. Pass mediaUrls (public HTTPS URLs) to send as MMS. */
-export async function sendSmsViaMessagingService(params: { to: string; body: string; mediaUrls?: string[] }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+/** Preferred outbound path — uses the A2P-registered messaging service. Pass mediaUrls (public HTTPS URLs) to send as MMS, validUntil to bound Twilio's queue (see sendSms). */
+export async function sendSmsViaMessagingService(params: { to: string; body: string; mediaUrls?: string[]; validUntil?: Date }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
   if (!ms) return { ok: false, error: 'TWILIO_MESSAGING_SERVICE_SID not configured' }
   const to = toE164(params.to)
@@ -361,6 +389,7 @@ export async function sendSmsViaMessagingService(params: { to: string; body: str
   const body = await maybeInstrumentSmsBody(to, params.body)
   const form = new URLSearchParams({ MessagingServiceSid: ms, To: to, Body: body })
   appendMediaUrls(form, params.mediaUrls)
+  if (!applyValidUntil(form, params.validUntil)) return { ok: false, error: SEND_WINDOW_CLOSED_ERROR }
   const r = await postMessage(form)
   return r.ok ? r : { ok: false, error: r.error }
 }

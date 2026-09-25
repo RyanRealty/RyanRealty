@@ -206,6 +206,8 @@ describe('sendGovernedSms — guard order', () => {
     const res = await sendGovernedSms({ ...baseReq, overrideQuietHours: true })
     expect(res).toEqual({ ok: true, sid: 'SM123', to: '+15415551234' })
     expect(h.sendSms).toHaveBeenCalledTimes(1)
+    // The broker chose to send in quiet hours, so no 8pm expiry rides along.
+    expect(h.sendSms).toHaveBeenCalledWith(expect.objectContaining({ validUntil: undefined }))
   })
 
   it('asks quiet hours again at the POST: a 7:59pm guard pass that reaches the send after 8pm refuses', async () => {
@@ -224,7 +226,10 @@ describe('sendGovernedSms — guard order', () => {
   it('happy path: merge → tracked body to Twilio, readable body + exact row shape to the timeline', async () => {
     passAllGuards()
     wireHappySmsPath()
-    const res = await sendGovernedSms(baseReq)
+    // Noon PDT, so the 8pm close below is the same local day on every run.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-06-24T19:00:00Z'))
+    const res = await sendGovernedSms(baseReq).finally(() => vi.useRealTimers())
     expect(res).toEqual({ ok: true, sid: 'SM123', to: '+15415551234' })
     // initiator.broker null → falls back to the person's assigned broker
     expect(h.brokerTwilioNumber).toHaveBeenCalledWith('rebecca')
@@ -233,7 +238,12 @@ describe('sendGovernedSms — guard order', () => {
       to: '+15415551234',
       body: 'tracked:attr:merged:hello',
       mediaUrls: undefined,
+      validUntil: expect.any(Date),
     })
+    // Under quiet hours the text carries the 8pm close, so Twilio drops it if
+    // it is still queued then (lib/crm/quiet-hours smsWindowCloseAt).
+    const { validUntil } = h.sendSms.mock.calls[0]![0] as { validUntil: Date }
+    expect(validUntil.toISOString()).toBe('2026-06-25T03:00:00.000Z') // 8:00pm PDT
     expect(h.inserts).toHaveLength(1)
     expect(h.inserts[0].table).toBe('crm_timeline')
     expect(h.inserts[0].rows).toEqual({

@@ -22,6 +22,7 @@ import { renderCrmMerge } from '@/lib/crm/merge'
 import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } from '@/lib/crm/twilio'
+import { smsWindowCloseAt } from '@/lib/crm/quiet-hours'
 import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
 import { recordConversationMessage } from '@/lib/crm/record-message'
 import { checkSendGuards } from './guards'
@@ -68,9 +69,12 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
       skipSuppression: true,
     })
     if (late) return late
+    // Under quiet hours, Twilio drops the text if it is still queued at 8pm. A
+    // broker's deliberate override carries no such bound.
+    const validUntil = req.overrideQuietHours ? undefined : smsWindowCloseAt()
     const sent = fromNumber
-      ? await sendSms({ from: fromNumber, to, body: trackedBody, mediaUrls })
-      : await sendSmsViaMessagingService({ to, body: trackedBody, mediaUrls })
+      ? await sendSms({ from: fromNumber, to, body: trackedBody, mediaUrls, validUntil })
+      : await sendSmsViaMessagingService({ to, body: trackedBody, mediaUrls, validUntil })
     if (!sent.ok) return { ok: false, error: sent.error, stage: 'provider' }
 
     const storedMedia = req.payload.storedMedia ?? []

@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
+  formatMinuteOfDay,
   hourInTimeZone,
   inSmsQuietHours,
   nextSmsWindow,
   QUIET_END_GUARD_MINUTES,
   smsPauseStartLabel,
+  smsWindowCloseAt,
 } from './quiet-hours'
 
 // Quiet hours: no SMS before 8am or at/after 8PM in the recipient's local time
@@ -105,5 +107,50 @@ describe('nextSmsWindow — the next morning, never the one after', () => {
         expect(inSmsQuietHours(next), now.toISOString()).toBe(false)
       }
     }
+  })
+})
+
+// smsWindowCloseAt: the 8:00pm instant every enforced send hands Twilio as its
+// ValidityPeriod bound, so a text still queued then is dropped, not delivered.
+describe('smsWindowCloseAt, the 8pm bound Twilio enforces', () => {
+  it('is 8:00:00pm local the same day, in summer and in winter', () => {
+    // 7:54:59.500pm PDT → 8:00pm PDT is 03:00Z the next UTC day
+    expect(smsWindowCloseAt(new Date('2026-06-25T02:54:59.500Z')).toISOString()).toBe('2026-06-25T03:00:00.000Z')
+    // 8:00am PDT → the same evening
+    expect(smsWindowCloseAt(new Date('2026-06-24T15:00:00Z')).toISOString()).toBe('2026-06-25T03:00:00.000Z')
+    // 12:30pm PST → 8:00pm PST is 04:00Z the next UTC day
+    expect(smsWindowCloseAt(new Date('2026-12-10T20:30:00Z')).toISOString()).toBe('2026-12-11T04:00:00.000Z')
+  })
+
+  it('holds on both DST changeover days (clocks change at 2am, before the window opens)', () => {
+    // 2026-03-08 spring forward: 9:00am PDT (16:00Z) → 8pm PDT (03:00Z)
+    expect(smsWindowCloseAt(new Date('2026-03-08T16:00:00Z')).toISOString()).toBe('2026-03-09T03:00:00.000Z')
+    // 2026-11-01 fall back: 9:00am PST (17:00Z) → 8pm PST (04:00Z)
+    expect(smsWindowCloseAt(new Date('2026-11-01T17:00:00Z')).toISOString()).toBe('2026-11-02T04:00:00.000Z')
+  })
+
+  it('leaves every open-window send at least the guard band before the close', () => {
+    for (let t = Date.parse('2026-06-24T08:00:00-07:00'); ; t += 60_000) {
+      const now = new Date(t)
+      if (inSmsQuietHours(now)) break
+      const left = smsWindowCloseAt(now).getTime() - now.getTime()
+      expect(left, now.toISOString()).toBeGreaterThanOrEqual(QUIET_END_GUARD_MINUTES * 60_000)
+      expect(left, now.toISOString()).toBeLessThanOrEqual(12 * 3_600_000)
+    }
+  })
+})
+
+describe('formatMinuteOfDay and hourInTimeZone share one clock', () => {
+  it('formats the window ends the way the copy prints them', () => {
+    expect(formatMinuteOfDay(8 * 60)).toBe('8:00am')
+    expect(formatMinuteOfDay(8 * 60, ' ')).toBe('8:00 am')
+    expect(formatMinuteOfDay(19 * 60 + 55, ' ')).toBe('7:55 pm')
+    expect(formatMinuteOfDay(0)).toBe('12:00am')
+    expect(formatMinuteOfDay(12 * 60)).toBe('12:00pm')
+  })
+
+  it('reads midnight as hour 0 and the last minute of the day as 23', () => {
+    expect(hourInTimeZone(new Date('2026-06-24T07:00:00Z'))).toBe(0) // midnight PDT
+    expect(hourInTimeZone(new Date('2026-06-24T06:59:59Z'))).toBe(23) // 11:59:59pm PDT
   })
 })
