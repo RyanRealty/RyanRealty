@@ -130,20 +130,79 @@ describe('listing-fold-density lock', () => {
   })
 
   it('refuses a phone fold that puts display-1 air back on the address', () => {
+    const css = live.listingCss.replace(
+      'h1.listing-ask {\n    font-size: var(--v3-size-display-2);',
+      'h1.listing-ask {\n    font-size: var(--v3-size-display-1);',
+    )
+    const p = listingHeroFoldDensityProblems({
+      root: REPO,
+      files: { ...live, listingCss: css },
+    })
+    expect(p.join('\n')).toMatch(/display-2/)
+  })
+
+  it('refuses a phone scale that a bare .listing-ask loses to h1.listing-ask (2026-09-25)', () => {
+    // The shape that shipped: the phone rule was right and never applied.
+    const css = live.listingCss.replace(
+      '@media (max-width: 40rem) {\n  h1.listing-ask {',
+      '@media (max-width: 40rem) {\n  .listing-ask {',
+    )
+    const p = listingHeroFoldDensityProblems({
+      root: REPO,
+      files: { ...live, listingCss: css },
+    })
+    expect(p.join('\n')).toMatch(/h1\.listing-ask must use display-2/)
+  })
+
+  it('refuses the letterboxed phone frame Matt saw (2026-09-25)', () => {
+    // A fixed-height frame with the still contained: 99px of navy above and
+    // below a 3:2 photo at 375.
     const css = live.listingCss
       .replace(
-        '.listing-ask {\n    font-size: var(--v3-size-display-2);',
-        '.listing-ask {\n    font-size: var(--v3-size-display-1);',
+        '  aspect-ratio: var(--listing-frame-aspect, 3 / 2);\n  min-height: 0;\n  max-height: var(--v3-carousel-h);',
+        '  height: var(--v3-carousel-h);',
       )
       .replace(
-        '.listing-frame__tabs {\n    left: var(--v3-space-2xs);\n    bottom: 0;',
-        '.listing-frame__tabs {\n    left: var(--v3-space-2xs);\n    bottom: var(--v3-space-sm);',
+        '@media (max-width: 63.99rem) {\n  .listing-mosaic__slide img {\n    object-fit: cover;',
+        '@media (max-width: 63.99rem) {\n  .listing-mosaic__slide img {\n    object-fit: contain;',
       )
     const p = listingHeroFoldDensityProblems({
       root: REPO,
       files: { ...live, listingCss: css },
     })
-    expect(p.join('\n')).toMatch(/display-2|flush on the strip|listing-ask|Photos\/Map/i)
+    const text = p.join('\n')
+    expect(text).toMatch(/aspect-ratio: var\(--listing-frame-aspect/)
+    expect(text).toMatch(/object-fit: cover/)
+  })
+
+  it('refuses media tabs back on the still and a counter out of Jax lane', () => {
+    const css = live.listingCss
+      .replace('.listing-strip > .listing-frame__tabs {\n    position: static;', '.listing-strip > .listing-frame__tabs {\n    position: absolute;')
+      .replace('min-width: var(--v3-dog-clear);', 'min-width: 0;')
+    const hero = readFileSync(join(REPO, 'components/site/listing-detail/ListingHero.tsx'), 'utf8').replace(
+      '          {mediaTabs}\n',
+      '',
+    )
+    const p = listingHeroFoldDensityProblems({
+      root: REPO,
+      files: { ...live, listingCss: css, hero },
+    })
+    const text = p.join('\n')
+    expect(text).toMatch(/ride in the strip row/)
+    expect(text).toMatch(/Jax/)
+    expect(text).toMatch(/inside \.listing-strip/)
+  })
+
+  it('refuses the new price printed twice (Matt 2026-09-25)', () => {
+    const drop = readFileSync(join(REPO, 'components/site/listing-detail/PriceDropMark.tsx'), 'utf8').replace(
+      '<span className="listing-drop__cut">',
+      '<span className="listing-drop__to">{to}</span>\n      <span className="listing-drop__cut">',
+    )
+    const p = listingHeroFoldDensityProblems({
+      root: REPO,
+      files: { ...live, priceDrop: drop },
+    })
+    expect(p.join('\n')).toMatch(/must not print the new price/)
   })
 
   it('refuses overlay-compact list overflow that clips Avenue at 375', () => {

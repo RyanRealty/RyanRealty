@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
@@ -33,6 +33,7 @@ import {
   LISTING_MOSAIC_LEAD_SIZES,
   LISTING_MOSAIC_PHOTO_QUALITY,
   LISTING_MOSAIC_STRIP_SIZES,
+  listingFrameAspect,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
@@ -64,6 +65,16 @@ const ListingMediaMap = dynamic(() => import('./ListingLocationMap.client'), {
  * the main column the old on-media caption repeated all three lines sixty
  * pixels above where they are set, and a bare number on a picture is the
  * thing SITE-20 had to fence with a status word. No empty navy, no grid.
+ *
+ * THE PHONE FRAME (Matt 2026-09-25, "I hate all the wasted space"). Below
+ * 64rem the frame is the photograph's own shape (listingFrameAspect, 3:2 until
+ * the lead still reports otherwise) with a cover fit, not a 448px navy box
+ * with the still letterboxed in it: at 375 that box left 99px of navy above
+ * the photo and 99px below. The media tabs ride in the strip row there, off
+ * the photograph, because the MLS marks burned into a still's corners
+ * ("Digitally Altered", the ODS source mark) are exactly where a pill would
+ * sit. On a phone the row is tabs, tools and the counter, the counter last so
+ * it, not a control, sits in Jax's lane at the right edge.
  */
 
 type MediaTab = 'photos' | 'video' | 'tour' | 'floor' | 'map'
@@ -189,6 +200,15 @@ export function ListingHero({
   const [allowAutoplay, setAllowAutoplay] = useState(false)
   /** The photo in the frame (desktop) and the slide in view (phone). */
   const [frame, setFrame] = useState(0)
+  /**
+   * The phone frame's shape once the lead still has decoded, or null while
+   * the 3:2 default already fits it. Ignored at 64rem and up, where the frame
+   * is a viewport-tall well.
+   */
+  const [leadAspect, setLeadAspect] = useState<number | null>(null)
+  const onLeadShape = useCallback((width: number, height: number) => {
+    setLeadAspect(listingFrameAspect(width, height))
+  }, [])
   const [mediaTab, setMediaTab] = useState<MediaTab>(() => {
     if (photos.length > 0) return 'photos'
     if (floorPlans.length > 0) return 'floor'
@@ -364,12 +384,63 @@ export function ListingHero({
     hasMap ? { value: 'map' as const, label: 'Map' } : null,
   ].filter((row): row is { value: MediaTab; label: string } => row != null)
 
+  const mediaTabs =
+    mediaTabItems.length > 1 ? (
+      <Tabs
+        value={mediaTab}
+        onValueChange={(next) => {
+          if (next === 'video') {
+            const video = otherPills.find((pill) => pill.action === 'video')
+            if (video) {
+              openCaption(video)
+              return
+            }
+          }
+          if (next === 'tour') {
+            const tour = otherPills.find((pill) => pill.action === 'tour')
+            if (tour) {
+              openCaption(tour)
+              return
+            }
+          }
+          if (next === 'floor') {
+            const floor = otherPills.find((pill) => pill.action === 'floor')
+            if (floor) {
+              openCaption(floor)
+              return
+            }
+          }
+          if (next === 'photos' || next === 'map' || next === 'tour' || next === 'floor' || next === 'video') {
+            setMediaTab(next)
+          }
+        }}
+        variant="pill"
+        className="listing-frame__tabs"
+      >
+        <TabsList>
+          {mediaTabItems.map((item) => (
+            <TabsTrigger key={item.value} value={item.value}>
+              {item.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+    ) : null
+
   return (
     <div
       id="listing-hero-visual"
       className={cn('listing-hero-bleed listing-frame', className)}
     >
-      <div className="listing-frame__media">
+      <div
+        className="listing-frame__media"
+        data-lead={heroVideo ? 'video' : undefined}
+        style={
+          leadAspect != null && !heroVideo
+            ? ({ '--listing-frame-aspect': String(leadAspect) } as CSSProperties)
+            : undefined
+        }
+      >
         {showVideo && reel ? (
           <div className="listing-mosaic__pane" data-listing-media="video">
             <VideoPlayPane video={reel} addressLine={addressLine} />
@@ -438,6 +509,7 @@ export function ListingHero({
                       alt={frameAlt(i + 1)}
                       sizes={i === 0 ? LISTING_MOSAIC_LEAD_SIZES : LISTING_MOSAIC_CAROUSEL_SIZES}
                       priority={lcpPriority && i === 0}
+                      onShape={i === 0 && !heroVideo ? onLeadShape : undefined}
                     />
                     ) : null}
                   </button>
@@ -452,53 +524,15 @@ export function ListingHero({
         {openHouseLabel ? (
           <div className="listing-mosaic__open-house">{openHouseLabel}</div>
         ) : null}
-        {mediaTabItems.length > 1 ? (
-          <Tabs
-            value={mediaTab}
-            onValueChange={(next) => {
-              if (next === 'video') {
-                const video = otherPills.find((pill) => pill.action === 'video')
-                if (video) {
-                  openCaption(video)
-                  return
-                }
-              }
-              if (next === 'tour') {
-                const tour = otherPills.find((pill) => pill.action === 'tour')
-                if (tour) {
-                  openCaption(tour)
-                  return
-                }
-              }
-              if (next === 'floor') {
-                const floor = otherPills.find((pill) => pill.action === 'floor')
-                if (floor) {
-                  openCaption(floor)
-                  return
-                }
-              }
-              if (next === 'photos' || next === 'map' || next === 'tour' || next === 'floor' || next === 'video') {
-                setMediaTab(next)
-              }
-            }}
-            variant="pill"
-            className="listing-frame__tabs"
-          >
-            <TabsList>
-              {mediaTabItems.map((item) => (
-                <TabsTrigger key={item.value} value={item.value}>
-                  {item.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        ) : null}
       </div>
 
-      {/* Cream index under the bleed photograph. beUI pill tabs sit on the
-          photograph (bg-card track), not on a navy filmstrip. */}
+      {/* The navy index under the photograph. The beUI pill tabs are its first
+          child: at 64rem and up they sit on the photograph's foot (positioned
+          above the strip, where they always were), below it they ride in this
+          row so no pill covers a corner mark on the still. */}
       {total > 0 || mediaTabItems.length > 0 ? (
         <div className="listing-strip" data-open="true">
+          {mediaTabs}
           {total > 0 && counter ? (
             <span className="listing-strip__counter">{counter}</span>
           ) : null}
@@ -535,9 +569,11 @@ export function ListingHero({
           ) : null}
           <div className="listing-strip__tools" role="group" aria-label="Listing media">
             {total > 0 ? (
+              /* On a phone the photograph itself is this button (a tap on the
+                 slide opens the same gallery), so "Open" leaves the row there. */
               <button
                 type="button"
-                className="listing-strip__tool listing-strip__tool--primary"
+                className="listing-strip__tool listing-strip__tool--primary listing-strip__tool--open"
                 onClick={() => openGallery(frame)}
                 aria-label={`Open photo ${frame + 1} of ${total}`}
               >
@@ -616,23 +652,50 @@ function MosaicStill({
   sizes,
   priority = false,
   contain = false,
+  onShape,
 }: {
   src: string
   alt: string
   sizes: string
   priority?: boolean
   contain?: boolean
+  /** The lead still reports its natural size so the phone frame can take its shape. */
+  onShape?: (width: number, height: number) => void
 }) {
   // Lead still is the 1600 mosaic derivative (or larger). Never the 320
   // filmstrip thumb or the 800 field-lead plate in this frame.
   const live = preferListingMosaicPhotoUrl(src)
   void sizes
   void priority
+  const imgRef = useRef<HTMLImageElement>(null)
+  // A portrait still covers into a landscape phone frame anchored at its foot
+  // (listing-detail.css), which keeps the ODS mark and the house.
+  const [portrait, setPortrait] = useState(false)
+  const read = useCallback(
+    (img: HTMLImageElement | null) => {
+      if (!img || !img.naturalWidth || !img.naturalHeight) return
+      setPortrait(img.naturalHeight > img.naturalWidth)
+      onShape?.(img.naturalWidth, img.naturalHeight)
+    },
+    [onShape],
+  )
+  // A still that decoded before hydration fired its load event before React
+  // listened for it; read it off the element instead.
+  useEffect(() => {
+    const img = imgRef.current
+    if (img?.complete) read(img)
+  }, [read, live])
   return (
     <>
       <PhotoSkeleton label="Loading photograph" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={live} alt={alt} className={contain ? 'is-plan' : undefined} />
+      <img
+        ref={imgRef}
+        src={live}
+        alt={alt}
+        className={cn(contain && 'is-plan', portrait && 'is-portrait') || undefined}
+        onLoad={(event) => read(event.currentTarget)}
+      />
     </>
   )
 }

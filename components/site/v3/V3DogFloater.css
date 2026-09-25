@@ -7,7 +7,7 @@
    the circle, not the animated node. Sheet 150–220ms rise+fade. */
 
 .v3-dog-floater {
-  --v3-dog-fab: 4.25rem;
+  /* --v3-dog-fab lives in tokens.css so a surface can clear his lane. */
   position: fixed;
   top: 50%;
   right: calc(var(--v3-space-md) + env(safe-area-inset-right, 0px));

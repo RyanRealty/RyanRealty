@@ -300,10 +300,11 @@ export function PriceCtaStrip({
   // A lease's history amounts are rent: no sale-price cut is drawn from them.
   const lastDrop = offMarket || lease || !history ? null : publishListingLastDrop(history)
   const newestDrop = lease ? null : dropMark !== undefined ? dropMark : publishListingDropMark(history)
-  // The mark prints the new price (Matt 2026-09-24), so it draws only while the
-  // cut set today's price. publishListingDropMark returns the newest DROP and
-  // skips increases, so after a later raise its `to` is no longer the price in
-  // the H1, and a cut line under it would name a second current price (§0).
+  // The mark reads "Was $X · Cut $Y" under the headline price (Matt 2026-09-24,
+  // one price since 2026-09-25), so it draws only while the cut set today's
+  // price. publishListingDropMark returns the newest DROP and skips increases,
+  // so after a later raise its `to` is no longer the headline price, and "Was"
+  // beside it would describe a cut that did not produce it (§0).
   const datedDrop =
     newestDrop && headlinePrice != null && Math.round(headlinePrice) === newestDrop.to ? newestDrop : null
   const listedBy = publishListingListedBy({
@@ -395,7 +396,8 @@ export function PriceCtaStrip({
         {estPayment ? <span className="listing-ask__est">{estPayment}</span> : null}
       </p>
       {datedDrop && !offMarket ? (
-        /* The cut as two prices at rest, with the date (Matt 2026-09-15). */
+        /* The cut at rest, with the date (Matt 2026-09-15), under the one
+           headline price: "Was $X · Cut $Y (−Z%) on date" (Matt 2026-09-25). */
         <div className="listing-face__drop">
           <PriceDropMark
             mark={datedDrop}

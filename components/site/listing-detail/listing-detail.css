@@ -12,7 +12,13 @@
      stamp in navy gutters (Grand Targhee 1440). Fill the first slice minus
      chrome + tap-height strip. Other surfaces keep --v3-mosaic-h. */
   --v3-mosaic-h: min(calc(100dvh - var(--v3-chrome-h) - 2.75rem), 50rem);
-  --v3-carousel-h: min(62dvh, 28rem);
+  /* Below 64rem the frame's height is its photograph's shape
+     (--listing-frame-aspect), and this is only its CAP, for a wide tablet
+     where a 3:2 frame would outrun the screen. It used to BE the height:
+     min(62dvh, 28rem) = 448px at 375, a 3:2 still letterboxed inside it with
+     99px of navy above and below (Matt 2026-09-25, "I hate all the wasted
+     space"). */
+  --v3-carousel-h: min(75dvh, 40rem);
   --navy: var(--v3-navy);
   --cream: var(--v3-cream);
   --navy-70: var(--v3-navy-70);
@@ -38,6 +44,28 @@
 @media (min-width: 64rem) {
   .listing-detail:has(> .v3-breadcrumb--overlay) .listing-mosaic__captions {
     top: auto;
+  }
+}
+
+/* THE PHONE CRUMB (Matt 2026-09-25). Below 64rem the place path is one tight
+   navy line ABOVE the photograph, not a wash over it: the phone frame is the
+   still edge to edge, and a still's "Digitally Altered" mark is burned into
+   its top-left corner, exactly under an overlaid trail. The line is the
+   compact 1.75rem row (V3Breadcrumb overlay-compact); the navy runs straight
+   into the frame and the strip, one media block. Wide screens keep the
+   overlay on the viewport-tall well. The open-house flag moves to the top
+   right for the same corner. */
+@media (max-width: 63.99rem) {
+  .listing-detail > .v3.v3-breadcrumb.v3-breadcrumb--overlay {
+    position: relative;
+    background: var(--v3-surface-inverse);
+  }
+
+  .listing-detail .listing-mosaic__open-house,
+  .listing-detail:has(> .v3-breadcrumb--overlay) .listing-mosaic__open-house {
+    top: var(--v3-space-xs);
+    right: var(--v3-space-xs);
+    left: auto;
   }
 }
 
@@ -564,6 +592,7 @@
 }
 
 .listing-hero-carousel [data-slot='carousel-content'],
+.listing-hero-carousel [data-slot='carousel-content'] > div,
 .listing-hero-carousel [data-slot='carousel-item'] {
   height: 100%;
 }
@@ -582,6 +611,27 @@
   right: 0.5rem;
 }
 
+/* The steps are 44px targets at every width (PUBLIC_UI §2 Touch). The
+   installed carousel ships them at icon-sm, 28px. */
+.listing-hero-carousel__prev,
+.listing-hero-carousel__next {
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+}
+
+/* On a wide screen the frame's vertical middle is the viewport's, which is
+   where Jax floats at the right edge: he sat on "Next". Both steps stand in
+   by his lane, so they stay a pair. On a phone the frame is above him. */
+@media (min-width: 64rem) {
+  .listing-hero-carousel__prev {
+    left: var(--v3-dog-clear);
+  }
+
+  .listing-hero-carousel__next {
+    right: var(--v3-dog-clear);
+  }
+}
+
 .listing-mosaic__carousel::-webkit-scrollbar {
   display: none;
 }
@@ -589,7 +639,7 @@
 .listing-mosaic__slide {
   position: relative;
   flex: 0 0 100%;
-  height: var(--v3-carousel-h);
+  height: 100%;
   scroll-snap-align: start;
   border: 0;
   padding: 0;
@@ -637,6 +687,21 @@
   object-fit: contain;
 }
 
+/* Below 64rem the frame is the lead photograph's shape, so the still covers
+   it edge to edge and a 3:2, 4:3 or 16:9 lead loses nothing. A portrait still
+   (a frame stops at 4:3) is anchored at its foot: the ODS source mark sits
+   bottom left on every MLS still, and the house sits low in a tall frame. */
+@media (max-width: 63.99rem) {
+  .listing-mosaic__slide img {
+    object-fit: cover;
+    object-position: 50% 50%;
+  }
+
+  .listing-mosaic__slide img.is-portrait {
+    object-position: 50% 100%;
+  }
+}
+
 .listing-mosaic__captions {
   position: absolute;
   left: var(--v3-space-sm);
@@ -663,7 +728,7 @@
 .listing-mosaic__pane {
   position: relative;
   width: 100%;
-  height: var(--v3-carousel-h);
+  height: 100%;
   background: var(--v3-navy);
 }
 
@@ -855,12 +920,19 @@
     padding-bottom: var(--v3-space-xs);
   }
 
+  /* The address sits directly under the navy strip, and its cap line touched
+     it; one xs of air (8px), not a cream band. */
   .listing-face__title {
     gap: 0;
+    padding-top: var(--v3-space-xs);
   }
 
+  /* Save / Share then Tour, together at the start of the line. The compact
+     fold lifts this row to the viewport's middle, Jax's height, and a Tour
+     pushed to the right edge sat under him (19100 Macalpine Loop at 390). */
   .listing-face__price-row {
-    gap: var(--v3-space-3xs);
+    justify-content: flex-start;
+    gap: var(--v3-space-3xs) var(--v3-space-sm);
     margin-top: 0;
   }
 
@@ -890,41 +962,35 @@
   }
 }
 
-/* THE PRICE CUT AS TWO PRICES (Matt 2026-09-10). SITE-45's 22px slope hid
-   the reading behind hover. Two values are not a chart: strikethrough the
-   ask before the cut, the new ask beside it (Matt 2026-09-24), exception ink
-   on the dollars cut, date at rest. */
+/* THE PRICE CUT, ONE PRICE (Matt 2026-09-10, 2026-09-25). SITE-45's 22px
+   slope hid the reading behind hover; two values are not a chart. Under the
+   headline price: "Was $X · Cut $Y (−Z%) on date". The new price is the
+   headline and is not printed again. Exception ink on the dollars cut only.
+   Each part keeps its own words together, so a phone wraps at a dot. */
 .listing-drop {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.15rem 0.7rem;
+  gap: 0.15rem 0.4rem;
   margin: 0;
-  color: var(--v3-navy);
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
   font-variant-numeric: tabular-nums;
 }
 
-.listing-drop__from {
-  font-weight: var(--v3-weight-medium);
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-  color: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+.listing-drop > span {
+  white-space: nowrap;
 }
 
-.listing-drop__to {
-  font-weight: var(--v3-weight-strong);
+.listing-drop__from {
+  color: var(--v3-navy);
 }
 
 .listing-drop__cut {
   font-weight: var(--v3-weight-strong);
   color: var(--v3-exception);
-}
-
-.listing-drop__meta {
-  font-weight: var(--v3-weight-medium);
-  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
 }
 
 /* THE PILLS' PLAIN READ (SITE-45). One sentence under the row, its trace
@@ -1035,11 +1101,24 @@
   flex-direction: column;
 }
 
+/* THE PHONE FRAME IS THE PHOTOGRAPH'S SHAPE (Matt 2026-09-25). Below 64rem
+   the frame is as tall as its lead still at full width: 3:2 until the still
+   reports another shape (ListingHero, listingFrameAspect: 4:3 to 16:9), 16:9
+   when a reel leads. No fixed-height navy box, so no band above or below the
+   photograph. min-height 0 stops the carousel's content from stretching the
+   ratio; the cap only binds on a wide tablet. The desktop well is below. */
 .listing-frame__media {
   position: relative;
-  height: var(--v3-carousel-h);
+  width: 100%;
+  aspect-ratio: var(--listing-frame-aspect, 3 / 2);
+  min-height: 0;
+  max-height: var(--v3-carousel-h);
   background: var(--v3-navy);
   overflow: hidden;
+}
+
+.listing-frame__media[data-lead='video'] {
+  --listing-frame-aspect: 16 / 9;
 }
 
 /* Desktop's stage and the phone's carousel are both in the DOM; each width
@@ -1052,19 +1131,19 @@
   display: none;
 }
 
+/* The tabs are the strip's first child. At 64rem and up they sit where they
+   always sat, on the photograph's foot (the strip's top edge is the frame's
+   bottom edge, so bottom: 100% + sm is the frame's bottom - sm). Below 64rem
+   they ride in the strip row (see THE PHONE ROW). */
 .listing-frame__tabs {
   position: absolute;
   left: var(--v3-space-sm);
-  bottom: var(--v3-space-sm);
+  /* + 1px: the strip's hairline top border sits outside its padding box. */
+  bottom: calc(100% + 1px + var(--v3-space-sm));
   z-index: 4;
 }
 
 @media (max-width: 40rem) {
-  .listing-frame__tabs {
-    left: var(--v3-space-2xs);
-    bottom: 0;
-  }
-
   .listing-mosaic__captions {
     gap: var(--v3-space-2xs);
     left: var(--v3-space-2xs);
@@ -1075,6 +1154,7 @@
 .listing-strip {
   --listing-strip-h: 2.75rem;
   --listing-strip-thumb: 2.75rem;
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -1219,9 +1299,125 @@
   min-width: 11rem;
 }
 
+/* THE PHONE ROW (Matt 2026-09-25). Below 64rem the tabs leave the photograph
+   and take the row's first cell, so every media control sits in ONE 44px navy
+   row under the still: tabs | filmstrip | tools | counter. The counter is
+   last and at least Jax's lane wide (--v3-dog-clear): Jax is fixed at the
+   right edge at half the viewport's height, which on a phone is this row, and
+   the counter is the one thing in the row that is not a control. Under 40rem
+   the filmstrip and "Open" leave the row (a swipe or a tap on the photograph
+   does both jobs) so a three-tab listing fits the row whole. */
+@media (max-width: 63.99rem) {
+  /* Flex, not the desktop grid: a listing with no floor plan or map has no
+     tabs, and the row must still lay out without an empty cell. The reel
+     grows from zero, so it takes only the room the tabs and tools leave.
+     A listing with five media kinds (photos, video, 3D, floor, map) plus
+     Street view is wider than a phone: the ROW scrolls sideways under the
+     counter, which sticks at the right edge with a fade on its left, so a
+     half-shown tab reads as "more this way", not as a clipped word. */
+  .listing-strip {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .listing-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .listing-strip > .listing-frame__tabs {
+    position: static;
+    flex: none;
+    padding-inline-start: var(--v3-space-2xs);
+  }
+
+  .listing-strip__reel {
+    flex: 1 1 0;
+  }
+
+  .listing-strip__tools {
+    flex: none;
+  }
+
+  .listing-strip .listing-frame__tabs [role='tablist'] {
+    gap: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .listing-strip .listing-frame__tabs [role='tab'] {
+    min-height: var(--v3-tap);
+    min-width: var(--v3-tap);
+    padding-inline: var(--v3-space-sm);
+    color: var(--v3-cream);
+    font-family: var(--v3-font-body);
+    font-size: var(--v3-size-label);
+    font-weight: var(--v3-weight-medium);
+    letter-spacing: var(--v3-track-label);
+  }
+
+  .listing-strip .listing-frame__tabs [role='tab']:hover {
+    color: var(--v3-cream);
+  }
+
+  .listing-strip .listing-frame__tabs [role='tab'][aria-selected='true'] {
+    color: var(--v3-navy);
+  }
+
+  /* The sliding indicator stays the beUI pill, cream on the navy row, inset
+     so the 44px target reads as a 32px pill. */
+  .listing-strip .listing-frame__tabs [role='tablist'] > div > span {
+    inset-block: var(--v3-space-2xs);
+    background: var(--v3-cream);
+  }
+
+  .listing-strip__counter {
+    order: 1;
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    flex: none;
+    justify-content: center;
+    min-width: var(--v3-dog-clear);
+    margin-inline-start: auto;
+    background: var(--v3-navy);
+  }
+
+  .listing-strip__counter::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 100%;
+    width: var(--v3-space-lg);
+    background: linear-gradient(to right, transparent, var(--v3-navy));
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 39.99rem) {
+  .listing-strip__reel,
+  .listing-strip__tool--open {
+    display: none;
+  }
+
+  .listing-strip .listing-frame__tabs [role='tab'] {
+    padding-inline: var(--v3-space-xs);
+  }
+
+  .listing-strip__tool {
+    padding-inline: var(--v3-space-xs);
+  }
+}
+
 @media (min-width: 64rem) {
+  /* Desktop keeps the viewport-tall well and the whole still in it. */
   .listing-frame__media {
     height: var(--v3-mosaic-h);
+    aspect-ratio: auto;
+    max-height: none;
   }
 
   .listing-hero-carousel,
@@ -1544,8 +1740,12 @@ h1.listing-ask {
   color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
 }
 
+/* The phone scale. It must name the element: SITE-131 moved the desktop rule
+   to h1.listing-ask (0,1,1), and a bare .listing-ask (0,1,0) here then lost to
+   it, so a phone drew the address at display-1 (35.2px at 375, two lines and
+   77px tall) instead of display-2 (24px, one line). */
 @media (max-width: 40rem) {
-  .listing-ask {
+  h1.listing-ask {
     font-size: var(--v3-size-display-2);
     line-height: var(--v3-leading-display);
   }
