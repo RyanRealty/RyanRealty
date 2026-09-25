@@ -299,7 +299,7 @@ function NewEnvelopeDialog({
               Cancel
             </Button>
             <Button onClick={create} disabled={busy || !picked.size}>
-              {busy ? 'Creating…' : 'Create &amp; compose'}
+              {busy ? 'Creating…' : 'Create & compose'}
             </Button>
           </>
         }
