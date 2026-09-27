@@ -247,9 +247,10 @@ describe('letter craft P0 — draft banner never on finalized owner PDF', () => 
     review: { severity: 'blocked', rendererNotice: BLOCKED },
   } as unknown as CmaPricing
 
-  it('still shows the band on a draft letter', () => {
+  it('never prints the broker-review banner on the owner letter, draft or not', () => {
     const { html } = renderCmaHtml(args({ pricing: reviewPricing, documentStatus: 'needs_review' }))
-    expect(html).toContain(BLOCKED)
+    expect(html).not.toContain(BLOCKED)
+    expect(html).not.toContain('under broker review')
   })
 
   it('suppresses the band when documentStatus is finalized or delivered', () => {
@@ -262,6 +263,14 @@ describe('letter craft P0 — draft banner never on finalized owner PDF', () => 
       )
       expect(immersive).not.toContain('under broker review')
     }
+  })
+})
+
+describe('letter craft: cover stays on one sheet', () => {
+  it('print CSS caps the cover stage so the prepared line cannot spill a blank page', () => {
+    const css = readFileSync(join(process.cwd(), 'lib/cma/render-css.ts'), 'utf8')
+    expect(css).toMatch(/\.cover-stage \{[\s\S]*max-height: 9\.7in/)
+    expect(css).toMatch(/\.hero-photo \{[\s\S]*max-height: 3\.8in/)
   })
 })
 

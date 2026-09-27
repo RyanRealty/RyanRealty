@@ -19,6 +19,7 @@ import { closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
+import { proximityLabel } from '@/lib/cma/market-area'
 import {
   describeIndexShape,
   describePath,
@@ -39,10 +40,12 @@ import {
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 import {
   applyExclusivePocketDateAdj,
+  describeAppliedDateAdjustments,
   exclusivePocketPathNote,
   selectionIsExclusivePocket,
   TIME_ADJUSTMENT_BASIS_POCKET,
   TIME_ADJUSTMENT_MEASURE_POCKET,
+  type AppliedDateMove,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 
 const SIZE_ADJ_FACTOR = 0.5
@@ -255,6 +258,12 @@ export function buildTimeAdjustmentBasis(opts: {
    * The picker already excluded the tracts that series mixes in.
    */
   exclusivePocket?: boolean
+  /**
+   * The adjustments that were actually applied, sale by sale. When any of
+   * them moved, the sentence names those comps and the percentage. A pocket
+   * that refused the city-index pump still has to admit a cooling it did apply.
+   */
+  applied?: readonly AppliedDateMove[]
 }): PricingTimeAdjustment {
   const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
   const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
@@ -266,6 +275,11 @@ export function buildTimeAdjustmentBasis(opts: {
       wouldMove != null && Number.isFinite(wouldMove) && wouldMove !== 0
         ? ` That city index ${wouldMove > 0 ? 'rose' : 'fell'} ${Math.abs(wouldMove).toFixed(1)} percent over the last ${windowMonths} months; it is not applied here.`
         : ''
+    const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
+    const place = opts.cityName?.trim() || 'this city'
+    const sentence = appliedDetail
+      ? `These sales are the exclusive pocket. ${appliedDetail} The ${place} city index is not used to pump prices. Size and story class do not adjust.`
+      : `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Size and story class do not adjust.${would}`
     return {
       pctPerMonth: 0,
       pctOverWindow: 0,
@@ -280,7 +294,7 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: `exclusive pocket — city_slug='${opts.citySlug}' index computed but not applied`,
       },
-      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Size and story class do not adjust.${would}`,
+      sentence,
     }
   }
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
@@ -568,17 +582,101 @@ export function trimPpsfOutliers<T extends { ppsfTimeAdjusted: number }>(rows: T
  */
 export const BAND_ENDPOINT_PPSF_OUTLIER = 0.25
 
-export function salesForBandEndpoints<T extends { ppsfTimeAdjusted: number }>(rows: T[]): T[] {
-  if (rows.length < 4) return rows
-  const mid = median(rows.map((r) => r.ppsfTimeAdjusted).filter((n) => n > 0))
-  if (!(mid > 0)) return rows
-  const kept = rows.filter((r) => {
-    if (!(r.ppsfTimeAdjusted > 0)) return true
-    return Math.abs(r.ppsfTimeAdjusted - mid) / mid <= BAND_ENDPOINT_PPSF_OUTLIER
-  })
-  // Start with four or more; keep the trim when at least three remain
-  // (Marshmallow: four sales, one $/sf outlier, three stay on the endpoints).
-  return kept.length >= 3 ? kept : rows
+/**
+ * A sale under this share of the weight does not set a band end. The
+ * highest-weight sale stays even after the 40% cap (Slate Rolen). A 1.6%
+ * sale (Oakside 2821 Aldrich) does not.
+ */
+export const BAND_ENDPOINT_MIN_WEIGHT_SHARE = 0.05
+
+/**
+ * Minimum band width, as a fraction of the recommendation. About ±2.5%.
+ * A band already about 4% wide is left on the sales. A few-thousand-dollar
+ * band is false precision and is opened out to this width.
+ */
+export const BAND_MIN_WIDTH_RATIO = 0.05
+export const BAND_WIDTH_ALREADY_ENOUGH = 0.04
+
+function weightShare<T extends { weight?: number | null }>(row: T, total: number): number {
+  const w = row.weight
+  if (typeof w !== 'number' || !Number.isFinite(w) || w <= 0 || !(total > 0)) return 0
+  return w / total
+}
+
+function rowsHaveWeights<T extends { weight?: number | null }>(rows: readonly T[]): boolean {
+  return (
+    rows.length > 0 &&
+    rows.every((r) => typeof r.weight === 'number' && Number.isFinite(r.weight) && (r.weight as number) >= 0) &&
+    rows.some((r) => (r.weight as number) > 0)
+  )
+}
+
+export function salesForBandEndpoints<T extends { ppsfTimeAdjusted: number; weight?: number | null }>(rows: T[]): T[] {
+  let pool = rows
+  if (rows.length >= 4) {
+    const mid = median(rows.map((r) => r.ppsfTimeAdjusted).filter((n) => n > 0))
+    if (mid > 0) {
+      const kept = rows.filter((r) => {
+        if (!(r.ppsfTimeAdjusted > 0)) return true
+        return Math.abs(r.ppsfTimeAdjusted - mid) / mid <= BAND_ENDPOINT_PPSF_OUTLIER
+      })
+      // Start with four or more; keep the trim when at least three remain
+      // (Marshmallow: four sales, one $/sf outlier, three stay on the endpoints).
+      if (kept.length >= 3) pool = kept
+    }
+  }
+  if (!rowsHaveWeights(rows)) return pool
+  const total = rows.reduce((sum, r) => sum + (typeof r.weight === 'number' ? r.weight : 0), 0)
+  if (!(total > 0)) return pool
+  const top = rows.reduce((best, row) => (weightShare(row, total) > weightShare(best, total) ? row : best))
+  const keep = new Set<T>()
+  for (const row of pool) {
+    if (weightShare(row, total) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(row)
+  }
+  // The capped top-weight comp stays on an endpoint even if a $/sf trim
+  // dropped it, as long as its share is still meaningful.
+  if (weightShare(top, total) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(top)
+  const out = rows.filter((row) => keep.has(row))
+  return out.length >= 2 ? out : pool
+}
+
+/**
+ * Open a false-precision band out to about ±2.5% around `rec`. A band that
+ * is already about 4% of the rec wide stays on the sales, so a supported
+ * spread (Oakside Meridian, about $483k-$505k) is not pulled past those sales.
+ */
+export function ensureMinBandWidth(
+  low: number,
+  high: number,
+  rec: number,
+): { low: number; high: number } {
+  if (!(rec > 0) || !(low > 0) || !(high > 0)) return { low, high }
+  const lo = Math.min(low, high)
+  const hi = Math.max(low, high)
+  if ((hi - lo) / rec >= BAND_WIDTH_ALREADY_ENOUGH) return { low: lo, high: hi }
+  const half = rec * (BAND_MIN_WIDTH_RATIO / 2)
+  return { low: Math.min(lo, rec - half), high: Math.max(hi, rec + half) }
+}
+
+/**
+ * After a later step moves valueLow/valueHigh, the range sentence still
+ * quotes the dollars it was written with. Rewrite that pair to the hero
+ * band so the prose and the cover cannot disagree.
+ */
+export function syncRangeRuleToHeroBand<T extends { valueLow: number; valueHigh: number; rangeRule?: PricingRangeRule | null }>(
+  pricing: T,
+): T {
+  const rule = pricing.rangeRule
+  if (!rule?.sentence) return pricing
+  const low = Math.round(Math.min(pricing.valueLow, pricing.valueHigh) / 1000) * 1000
+  const high = Math.round(Math.max(pricing.valueLow, pricing.valueHigh) / 1000) * 1000
+  if (!(low > 0) || !(high > 0)) return pricing
+  const sentence = rule.sentence.replace(
+    /\$[\d,]+\s+to\s+\$[\d,]+/,
+    `$${low.toLocaleString('en-US')} to $${high.toLocaleString('en-US')}`,
+  )
+  if (sentence === rule.sentence && rule.adjustedLow === low && rule.adjustedHigh === high) return pricing
+  return { ...pricing, rangeRule: { ...rule, adjustedLow: low, adjustedHigh: high, sentence } }
 }
 
 /**
@@ -780,8 +878,15 @@ export function adjustCmaCompAlongMarket(opts: {
     saleSqft: sale.sqft,
     monthsSinceClose,
   })
+  const proximity =
+    (sale.proximity ?? '').trim() ||
+    proximityLabel(
+      { lat: opts.subject.latitude ?? null, lng: opts.subject.longitude ?? null },
+      { lat: sale.latitude ?? null, lng: sale.longitude ?? null },
+    )
   const adjusted: CmaAdjustedComp = {
     ...sale,
+    proximity,
     monthsSinceClose: +monthsSinceClose.toFixed(1),
     timeAdjustment,
     timeAdjustedPrice,
@@ -918,6 +1023,24 @@ export function listPriceFromEngine(opts: {
     rangeLow = Math.round(range.low)
     rangeHigh = Math.round(range.high)
   }
+  // A $3k band on a $620k recommendation is false precision. Open it to
+  // about ±2.5% around the reconciled price when the sales themselves are
+  // tighter than that. A band that is already wide enough is left alone.
+  if (rangeLow != null && rangeHigh != null) {
+    const center = reconciledValue != null && reconciledValue > 0 ? reconciledValue : (rangeLow + rangeHigh) / 2
+    const widened = ensureMinBandWidth(rangeLow, rangeHigh, center)
+    let nextLow = roundPriceDown(widened.low)
+    let nextHigh = roundPriceUp(widened.high)
+    // Do not widen onto a sale the range rule set aside.
+    if (asideBelow != null && nextLow <= asideBelow) nextLow = rangeLow
+    if (asideAbove != null && nextHigh >= asideAbove) nextHigh = rangeHigh
+    rangeLow = nextLow
+    rangeHigh = nextHigh
+    if (rangeLow > rangeHigh) {
+      rangeLow = roundPriceDown(center)
+      rangeHigh = roundPriceUp(center)
+    }
+  }
 
   const recommendedList = mid != null ? listFromClose(mid, ratio) : null
   let conservativeList = rangeLow != null ? listFromClose(rangeLow, ratio) : band != null ? listFromClose(band.low, ratio) : null
@@ -927,10 +1050,13 @@ export function listPriceFromEngine(opts: {
     if (highEndList != null && highEndList < recommendedList) highEndList = recommendedList
   }
 
+  // The printed band is the adjusted sale prices. The city close-to-ask
+  // share is a list-strategy fact. It is not applied to this range. Saying
+  // the figures were "carried to an asking price" was the Nugget defect.
   const askStep =
     ratio != null
-      ? ` Homes in this city are closing at ${(ratio * 100).toFixed(1)} percent of the price they first asked, so each figure is carried to an asking price at that share.`
-      : ' No local share of the original asking price was available, so the asking prices are the adjusted sale prices themselves.'
+      ? ` The range is those adjusted sale prices. Homes in this city are closing at ${(ratio * 100).toFixed(1)} percent of the price they first asked. That share is a list-strategy fact. It is not applied to this range.`
+      : ' The range is the adjusted sale prices. No local share of the original asking price was available to use as a list-strategy fact.'
   const rangeRule: PricingRangeRule | null =
     range != null && rangeLow != null && rangeHigh != null
       ? {
@@ -1235,6 +1361,12 @@ export function priceCmaSet(args: {
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
     indexUnavailableReason: args.indexUnavailableReason ?? null,
     exclusivePocket: selectionIsExclusivePocket(args.selection.tiersUsed),
+    applied: args.adjusted.map((c) => ({
+      address: c.address,
+      closePrice: c.closePrice,
+      timeAdjustment: c.timeAdjustment,
+      timeAdjustedPrice: c.timeAdjustedPrice,
+    })),
   })
   // THE HOUSE NEXT DOOR IS THE EVIDENCE, AND IT GETS THE LAST WORD BEFORE THE
   // FAILED-ASK CEILING (Matt 2026-09-10). computePricing already applied it,
@@ -1274,6 +1406,7 @@ export function priceCmaSet(args: {
       covered.valueHigh = covered.highEnd
       covered.needsReview = true
     }
+    return syncRangeRuleToHeroBand(covered)
   }
   return covered
 }

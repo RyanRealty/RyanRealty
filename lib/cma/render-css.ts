@@ -750,6 +750,28 @@ export function cmaStylesheet(siteUrl: string): string {
       break-after: auto;
       page-break-after: auto;
     }
+    /* A forced break before the close left the last disclosure paragraph
+       alone on its own sheet. Let the close follow that paragraph. */
+    .page-closing {
+      break-before: auto;
+      page-break-before: auto;
+    }
+    /* The cover photo must not push "Prepared for" onto a blank next page.
+       The content box is 9.9in. A loaded photo used to add its own height
+       on top of a 9.9in minimum. */
+    .cover-stage {
+      min-height: 0;
+      height: auto;
+      max-height: 9.7in;
+    }
+    .hero-photo {
+      flex: 0 1 auto;
+      max-height: 3.8in;
+      min-height: 0;
+      height: auto;
+      width: 100%;
+      object-fit: contain;
+    }
     /* NO height, NO max-height, NO overflow:hidden — all three delete content.
        A clipped row is never drawn, so it leaves no trace in the PDF for any
        downstream check to find. That is how 77 CMAs in the library were losing

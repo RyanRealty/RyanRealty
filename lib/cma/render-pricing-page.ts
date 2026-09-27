@@ -246,6 +246,17 @@ export function listRangeBounds(
  * Tip Ready: list-range prose band must equal the hero closed-comp band.
  * Refuse dual-tier (Canter: $686–716 list vs $675–705 hero).
  */
+/** The first "$X to $Y" in a range sentence, or null when the sentence names no pair. */
+export function dollarsInRangeSentence(sentence: string | null | undefined): { low: number; high: number } | null {
+  if (!sentence) return null
+  const match = sentence.match(/\$([\d,]+)\s+to\s+\$([\d,]+)/)
+  if (!match) return null
+  const low = Number(match[1]!.replace(/,/g, ''))
+  const high = Number(match[2]!.replace(/,/g, ''))
+  if (!(low > 0) || !(high > 0)) return null
+  return { low, high }
+}
+
 export function listRangeMatchesHeroBand(
   pricing: CmaPricing,
   failedAsk?: number | null,
@@ -253,7 +264,14 @@ export function listRangeMatchesHeroBand(
   const hero = closedCompBand(pricing)
   const list = listRangeBounds(pricing, failedAsk)
   if (!hero || !list) return false
-  return list.low === round1k(hero.low) && list.high === round1k(hero.high)
+  if (list.low !== round1k(hero.low) || list.high !== round1k(hero.high)) return false
+  // The method sentence is a second copy of the band. Slate printed
+  // "$594,000 to $623,000" under a hero band of $620k-$623k.
+  const said = dollarsInRangeSentence(
+    (pricing as { rangeRule?: { sentence?: string | null } | null }).rangeRule?.sentence,
+  )
+  if (!said) return true
+  return round1k(said.low) === round1k(hero.low) && round1k(said.high) === round1k(hero.high)
 }
 
 /**

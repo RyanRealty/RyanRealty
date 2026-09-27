@@ -17,14 +17,27 @@ function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
+function coord(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v
+  if (typeof v === 'string' && v.trim()) {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  return null
+}
+
 function fillRow<T extends GeoRow>(
   row: T,
   subject: { latitude?: number | null; longitude?: number | null } | null | undefined,
 ): T {
   if ((row.proximity ?? '').trim()) return row
+  const raw = row as T & Record<string, unknown>
   const label = proximityLabel(
     { lat: subject?.latitude ?? null, lng: subject?.longitude ?? null },
-    { lat: row.latitude ?? null, lng: row.longitude ?? null },
+    {
+      lat: coord(raw.latitude ?? raw.Latitude ?? raw.lat),
+      lng: coord(raw.longitude ?? raw.Longitude ?? raw.lng ?? raw.lon),
+    },
   )
   if (!label) return row
   return { ...row, proximity: label }

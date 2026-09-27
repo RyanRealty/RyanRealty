@@ -86,6 +86,7 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import { askStepped, resolveAskPosition } from '@/lib/cma/ask-position'
 import {
   PRICED_RIGHT_HEADING_OVERPRICED,
   askExposureSentence,
@@ -226,7 +227,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       domDays: subjectDomDays(a.subject),
       printableAsk: subjectPrintableAsk(a.subject, askCtx),
     }),
-    closed: closedEntries(a.comps, a.docLinks ?? null),
+    closed: closedEntries(a.comps, a.docLinks ?? null, a.subject),
     unsold: unsoldEntries(
       unsoldPeersFor({ subject: a.subject, peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers }),
       a.docLinks ?? null,
@@ -712,7 +713,14 @@ export function whatHappenedHeading(a: OpinionPageArgs): string {
     const sentence = askExposureSentence(exposure.segments)
     if (sentence) return sentence
   }
-  const ask = exposure?.segments[0]?.ask ?? a.subject.lastListPrice
+  const position = resolveAskPosition({
+    lastListPrice: a.subject.lastListPrice,
+    exposure,
+  })
+  if (askStepped(position)) {
+    return `You first asked ${usd(position.originalAsk!)}. The last listing asked ${usd(position.lastAsk!)} and did not sell.`
+  }
+  const ask = position.lastAsk ?? position.originalAsk
   return ask != null && ask > 0
     ? `You asked ${usd(ask)} and did not sell.`
     : 'Your home came off the market without selling.'
@@ -893,7 +901,12 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     // A one-column matrix is not a comparison, so the chapter degrades to the
     // city's own count and the reader's own outcome rather than vanishing and
     // taking the ask that failed with it.
-    if (!subjectListingFailed(a.subject) || !sets.subject.outcome) return ''
+    const said = a.expiredPeers?.sentence?.trim()
+    if (!subjectListingFailed(a.subject) || !sets.subject.outcome) {
+      // The search ran and found nothing. Say so. A letter with no peer set
+      // at all still omits the chapter.
+      return said ? `<p>${esc(said)}</p>` : ''
+    }
     const ask = sets.subject.lastAsk
     const own = `Your own listing ${
       ask != null && ask > 0 ? `asked ${usd(ask)} and ` : ''

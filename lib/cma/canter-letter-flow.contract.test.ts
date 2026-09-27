@@ -217,6 +217,31 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
 
     expect(listRangeMatchesHeroBand(canter)).toBe(true)
     expect(listRangeBounds(canter)).toEqual({ low: 675_000, high: 705_000 })
+    const stale = {
+      ...canter,
+      rangeRule: {
+        rule: 'min-max' as const,
+        n: 5,
+        kept: 5,
+        adjustedLow: 594_000,
+        adjustedHigh: 623_000,
+        saleToAskRatio: null,
+        saleToAskSource: 'none' as const,
+        ratiosExcluded: 0,
+        sentence:
+          'The range is the spread of all five sale prices adjusted for date and size: $594,000 to $623,000.',
+      },
+    }
+    expect(listRangeMatchesHeroBand(stale as typeof pricing)).toBe(false)
+    const matched = {
+      ...stale,
+      rangeRule: {
+        ...stale.rangeRule,
+        sentence:
+          'The range is the spread of all five sale prices adjusted for date and size: $675,000 to $705,000.',
+      },
+    }
+    expect(listRangeMatchesHeroBand(matched as typeof pricing)).toBe(true)
 
     const hero = letterCoverPayoffHtml(canter)
     expect(hero).toContain('$675,000')

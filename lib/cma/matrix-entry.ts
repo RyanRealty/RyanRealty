@@ -188,12 +188,30 @@ function publishedAddress(address: string): string {
   return publishUnparsedStreetLine(address) ?? address.trim()
 }
 
+function finiteCoord(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v
+  if (typeof v === 'string' && v.trim()) {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  return null
+}
+
+/** Lat/lng under whichever key the row was stored with. */
+function rowCoords(row: object | null | undefined): { lat: number | null; lng: number | null } {
+  const o = (row ?? {}) as Record<string, unknown>
+  return {
+    lat: finiteCoord(o.latitude ?? o.Latitude ?? o.lat),
+    lng: finiteCoord(o.longitude ?? o.Longitude ?? o.lng ?? o.lon),
+  }
+}
+
 function entryProximity(
   subject: { latitude?: number | null; longitude?: number | null } | null | undefined,
-  lat: number | null,
-  lng: number | null,
+  row: object | null | undefined,
 ): string | null {
   if (!subject) return null
+  const { lat, lng } = rowCoords(row)
   return proximityLabel(
     { lat: subject.latitude ?? null, lng: subject.longitude ?? null },
     { lat, lng },
@@ -235,6 +253,7 @@ function movedOrNull(first: number | null, last: number | null): number | null {
 export function closedEntries(
   comps: readonly CmaAdjustedComp[],
   ctx?: TrackedDocLinkCtx | null,
+  subject?: { latitude?: number | null; longitude?: number | null } | null,
 ): MatrixEntry[] {
   return comps.map((c, i) => {
     const path = pricePathFromSale(c)
@@ -295,7 +314,7 @@ export function closedEntries(
         const v = c.concessions ?? c.concessionsAmount ?? null
         return v != null && Number.isFinite(v) ? Number(v) : null
       })(),
-      proximity: (c.proximity ?? '').trim() || null,
+      proximity: (c.proximity ?? '').trim() || entryProximity(subject, c),
       garageSpaces: c.garageSpaces != null && Number.isFinite(c.garageSpaces) ? Number(c.garageSpaces) : null,
       cdomDays: days(c.domTotal),
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((c.closeDate ?? '').slice(0, 10))
@@ -372,7 +391,7 @@ export function unsoldEntries(
       closePrice: null,
       listPrice: num(p.listPrice) ?? num(p.originalListPrice),
       concessionsAmount: null,
-      proximity: entryProximity(subject, p.latitude ?? null, p.longitude ?? null),
+      proximity: (p as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, p),
       garageSpaces: null,
       cdomDays: dom,
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((p.onMarketDate ?? '').slice(0, 10))
@@ -453,7 +472,7 @@ export function activeEntries(
       closePrice: null,
       listPrice: num(r.listPrice) ?? num(r.originalListPrice),
       concessionsAmount: null,
-      proximity: entryProximity(subject, r.latitude ?? null, r.longitude ?? null),
+      proximity: (r as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, r),
       garageSpaces: null,
       cdomDays: dom,
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((r.onMarketDate ?? '').slice(0, 10))

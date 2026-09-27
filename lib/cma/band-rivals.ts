@@ -591,7 +591,14 @@ export type CompetitionRingPick<T> = {
  * widest is always a radius (only the sole, unwidened ring can be a mapped
  * boundary or a city), so re-testing membership only ever needs lat/lng.
  */
-export function pickCompetitionRing<T extends { Latitude?: number | null; Longitude?: number | null }>(
+export function pickCompetitionRing<
+  T extends {
+    Latitude?: number | null
+    Longitude?: number | null
+    SubdivisionName?: string | null
+    City?: string | null
+  },
+>(
   input: {
     rings: readonly CompArea[]
     activeRows: readonly T[]
@@ -604,8 +611,8 @@ export function pickCompetitionRing<T extends { Latitude?: number | null; Longit
   const geo = (r: T) => ({
     latitude: r.Latitude ?? null,
     longitude: r.Longitude ?? null,
-    subdivision: null,
-    city: null,
+    subdivision: r.SubdivisionName ?? null,
+    city: r.City ?? null,
   })
   for (let i = 0; i < rings.length; i++) {
     const ring = rings[i]!

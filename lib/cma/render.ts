@@ -9,11 +9,8 @@ import {
   dateLong,
   escapeHtml,
   monthYear,
-  reviewNoticeBandHtml,
   sparkPhotoAt,
 } from '@/lib/cma/render-blocks'
-import { readReviewNotice } from '@/lib/cma/render-contract'
-import { isCmaClientReady } from '@/lib/cma/draft-access'
 import type {
   CmaAdjustedComp,
   CmaBroker,
@@ -113,8 +110,8 @@ export interface RenderCmaArgs {
   docLinks?: TrackedDocLinkCtx | null
   /**
    * Row status at SERVE (draft / needs_review / finalized / delivered).
-   * Finalized and delivered owner PDFs must never print the draft
-   * "under broker review" band even if pricing.review still carries a notice.
+   * The owner letter never prints the broker-review banner. That flag stays
+   * on the admin view only.
    */
   documentStatus?: string | null
   /**
@@ -315,32 +312,13 @@ function coverPage(a: RenderCmaArgs): PageDef {
 
 }
 
-/**
- * The review band, directly under the cover.
- *
- * Round-four class C: it belongs on the sheet a reader turns to first, not on
- * a page of its own. `.page-cover` already breaks after itself, so prepending
- * the band to the first chapter puts it at the top of page two on paper and
- * immediately under the cover on screen — one sheet, no orphan page.
- */
-function withReviewNotice(a: RenderCmaArgs, pages: PageDef[]): PageDef[] {
-  // Owner / finalized PDF: never leak the draft review banner (Tip Ready P0).
-  if (isCmaClientReady(a.documentStatus)) return pages
-  const review = readReviewNotice(a.pricing)
-  if (!review) return pages
-  const band = reviewNoticeBandHtml(review.notice ?? '', 'letter')
-  if (!band) return pages
-  const at = pages.findIndex((p) => !p.cover)
-  if (at < 0) return [...pages, { meta: 'Pricing report', body: band }]
-  return pages.map((p, i) => (i === at ? { ...p, body: `${band}
-${p.body}` } : p))
-}
-
 export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: number } {
   // P10: cover, then the ONE chapter order both documents walk
   // (OPINION_CHAPTER_ORDER). Nothing is appended here — a chapter that exists
   // only on the letter is exactly the drift the shared order removes.
-  const pages: PageDef[] = withReviewNotice(a, [coverPage(a), ...assembleOpinionPages(a)])
+  // The broker-review banner is admin-only (serve-document adminReview).
+  // It does not belong in the owner letter, draft or final.
+  const pages: PageDef[] = [coverPage(a), ...assembleOpinionPages(a)]
   const body = pages.map((p) => wrapPage(p)).join('\n')
   const html = `<!DOCTYPE html>
 <html lang="en">

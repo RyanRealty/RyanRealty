@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { activeEntries, unsoldEntries } from '@/lib/cma/matrix-entry'
+import { activeEntries, closedEntries, unsoldEntries } from '@/lib/cma/matrix-entry'
+import type { CmaAdjustedComp } from '@/lib/cma/types'
 import { proximityLabel } from '@/lib/cma/market-area'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
@@ -52,5 +53,50 @@ describe('matrix distance — unsold / active / pending from subject lat/lng', (
         { lat: rival.latitude, lng: rival.longitude },
       ),
     )
+  })
+
+  it('fills a blank closed-comp distance from coordinates (3871 Petrosa)', () => {
+    const comp = {
+      listingKey: 'P1',
+      address: '3871 Petrosa',
+      city: 'Bend',
+      closePrice: 700_000,
+      sqft: 1800,
+      latitude: 44.07,
+      longitude: -121.3,
+      proximity: '',
+      adjustedPrice: 700_000,
+      weight: 1,
+    } as CmaAdjustedComp
+    const [row] = closedEntries([comp], null, subject)
+    expect(row?.proximity).toBe(
+      proximityLabel({ lat: subject.latitude, lng: subject.longitude }, { lat: 44.07, lng: -121.3 }),
+    )
+    expect(row?.proximity).toMatch(/miles/)
+  })
+
+  it('fills Monterey Mews expired rows when coordinates are stored as Latitude/Longitude', () => {
+    const peer = {
+      listingKey: 'M1',
+      address: '12 Monterey Mews',
+      listPrice: 480_000,
+      originalListPrice: 499_000,
+      status: 'Expired',
+      daysOnMarket: 60,
+      onMarketDate: '2026-01-01',
+      photoUrl: null,
+      latitude: null,
+      longitude: null,
+      Latitude: 44.062,
+      Longitude: -121.318,
+      yearBuilt: 2004,
+      sqft: 1600,
+      lotAcres: 0.15,
+      beds: 3,
+      baths: 2,
+    } as CmaExpiredPeer & { Latitude: number; Longitude: number }
+    const [row] = unsoldEntries([peer], null, 'Bend', subject)
+    expect(row?.proximity).toMatch(/miles/)
+    expect(row?.proximity).not.toBe('-')
   })
 })

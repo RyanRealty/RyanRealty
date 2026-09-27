@@ -265,21 +265,21 @@ describe('B — the story is told about the ask that ran the clock', () => {
 
 // ── C. A row under review says so, wherever it is read ──────────────────────
 
-describe('C — the review band shows on the letter and the immersive', () => {
+describe('C. the review band stays off the owner letter and the immersive', () => {
   const review = (severity: string, notice: string) =>
     ({ pricing: { ...pricing, review: { severity, rendererNotice: notice } } }) as unknown as Partial<RenderCmaArgs>
 
   const BLOCKED = 'This report is under broker review and is not final. Do not rely on the price in it until a broker has signed off.'
   const REVIEW = 'This report is under broker review and is not final.'
 
-  it('shows at severity blocked on both documents', () => {
-    expect(letter(review('blocked', BLOCKED))).toContain(BLOCKED)
-    expect(immersive(review('blocked', BLOCKED))).toContain(BLOCKED)
+  it('does not print at severity blocked on either owner document', () => {
+    expect(letter(review('blocked', BLOCKED))).not.toContain('under broker review')
+    expect(immersive(review('blocked', BLOCKED))).not.toContain('under broker review')
   })
 
-  it('shows at severity review on both documents', () => {
-    expect(letter(review('review', REVIEW))).toContain(REVIEW)
-    expect(immersive(review('review', REVIEW))).toContain(REVIEW)
+  it('does not print at severity review on either owner document', () => {
+    expect(letter(review('review', REVIEW))).not.toContain('under broker review')
+    expect(immersive(review('review', REVIEW))).not.toContain('under broker review')
   })
 
   it('shows nothing at severity none, or with no notice to print', () => {

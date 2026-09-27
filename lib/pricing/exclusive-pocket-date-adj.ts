@@ -109,12 +109,61 @@ export function exclusivePocketPathNote(
   return `${address}: exclusive pocket — date adjustment flat. Sold and last-ask stay as recorded — size and story class do not adjust.`
 }
 
+/** One closed sale the date adjustment did or did not move. */
+export type AppliedDateMove = {
+  address: string
+  closePrice: number
+  timeAdjustment: number
+  timeAdjustedPrice?: number | null
+}
+
+const DATE_MOVE_MIN_DOLLARS = 500
+
+function usd(n: number): string {
+  return `$${Math.round(n).toLocaleString('en-US')}`
+}
+
 /**
- * Set-level note. Must match the math: cooling is applied to every sale in
- * the window when the path cools, and the city index is never used to pump.
+ * The sentence for the moves that were actually applied. Null when nothing
+ * moved. Names the percentage and the comps, so a grid that walked a sale
+ * from $621,000 to $594,000 cannot sit under a line that says no date
+ * adjustment was applied.
  */
-export function exclusivePocketSetNote(city: string, coolingApplied: boolean): string {
+export function describeAppliedDateAdjustments(moves: readonly AppliedDateMove[]): string | null {
+  const moved = moves.filter((m) => {
+    if (!(m.closePrice > 0) || !Number.isFinite(m.timeAdjustment)) return false
+    return Math.abs(m.timeAdjustment) >= DATE_MOVE_MIN_DOLLARS
+  })
+  if (moved.length === 0) return null
+  const bits = moved.map((m) => {
+    const to = m.timeAdjustedPrice != null && m.timeAdjustedPrice > 0 ? m.timeAdjustedPrice : m.closePrice + m.timeAdjustment
+    const pct = (m.timeAdjustment / m.closePrice) * 100
+    const sign = pct > 0 ? '+' : ''
+    const where = m.address.trim() || 'one sale'
+    return `${where} moved ${sign}${pct.toFixed(1)} percent, from ${usd(m.closePrice)} to ${usd(to)}`
+  })
+  const head =
+    moved.length === 1
+      ? 'Date adjustment was applied to one sale.'
+      : `Date adjustment was applied to ${moved.length} sales.`
+  return `${head} ${bits.join('; ')}.`
+}
+
+/**
+ * Set-level note. Must match the math: when sales were cooled, name those
+ * sales and the percentage. When nothing moved, say the city index was not
+ * used to pump and each sale stays on its sold price.
+ */
+export function exclusivePocketSetNote(
+  city: string,
+  coolingApplied: boolean,
+  applied?: readonly AppliedDateMove[],
+): string {
   const place = (city ?? '').trim() || 'this city'
+  const detail = describeAppliedDateAdjustments(applied ?? [])
+  if (coolingApplied && detail) {
+    return `These sales are the exclusive pocket. ${detail} The ${place} city index is not used to pump prices. Size and story class do not adjust.`
+  }
   if (coolingApplied) {
     return `These sales are the exclusive pocket. Flex-style cooling date adjustment is applied to every sale in this window along the market path. The ${place} city index is not used to pump prices. Size and story class do not adjust.`
   }
@@ -122,23 +171,36 @@ export function exclusivePocketSetNote(city: string, coolingApplied: boolean): s
 }
 
 /**
- * A cooled exclusive-pocket band may not sit below every actual same-subdivision
- * close unless a stated reason names that floor. Lifts the printed low to the
- * lowest same-subdivision contract price.
+ * A cooled exclusive-pocket band may not sit below every meaningful
+ * same-subdivision adjusted sale. The floor is that adjusted price, never
+ * the unadjusted close: lifting to the raw close puts a cooled top-weight
+ * sale (Slate Rolen, $594k) outside the band it should anchor.
+ *
+ * When `sameSubdivisionAdjustedPrices` is passed, raw closes are ignored.
+ * An empty adjusted list means there is no same-subdivision floor.
  */
 export function floorExclusivePocketBandToSameSubCloses(args: {
   valueLow: number
   valueHigh: number
   sameSubdivisionClosePrices: readonly number[]
+  sameSubdivisionAdjustedPrices?: readonly number[]
   coolingApplied: boolean
 }): { valueLow: number; valueHigh: number; floored: boolean; floor: number | null } {
   const low = Math.min(args.valueLow, args.valueHigh)
   const high = Math.max(args.valueLow, args.valueHigh)
-  const closes = args.sameSubdivisionClosePrices.filter((n) => Number.isFinite(n) && n > 0)
+  const adjusted =
+    args.sameSubdivisionAdjustedPrices?.filter((n) => Number.isFinite(n) && n > 0) ?? null
+  const closes =
+    adjusted != null
+      ? adjusted
+      : args.sameSubdivisionClosePrices.filter((n) => Number.isFinite(n) && n > 0)
   if (!args.coolingApplied || closes.length === 0) {
     return { valueLow: low, valueHigh: high, floored: false, floor: null }
   }
   const floor = Math.min(...closes)
+  // Never lift the low above a meaningful same-subdivision adjusted sale.
+  // The floor is the lowest of those sales, so a band that already includes
+  // one stays where the adjustment put it.
   if (low >= floor) return { valueLow: low, valueHigh: high, floored: false, floor }
   return { valueLow: floor, valueHigh: Math.max(floor, high), floored: true, floor }
 }

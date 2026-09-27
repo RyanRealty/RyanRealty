@@ -1186,6 +1186,36 @@ export function applyFailedAskCap(
 }
 
 /**
+ * The actives step and the closed-band clamp can move `recommended` after
+ * `applyFailedAskCap` has already written "we recommend listing at $X".
+ * Rewrite that sentence and `clamp.after` from the final recommendation so
+ * the letter does not print two recommend prices.
+ */
+export function rewriteFailedAskClampAfterRec<
+  T extends { recommended: number; clamp?: CmaPricingClamp | null },
+>(pricing: T): T {
+  const clamp = pricing.clamp
+  if (!clamp || clamp.kind !== 'failed-ask') return pricing
+  const rec = Math.round(pricing.recommended)
+  if (!(rec > 0)) return pricing
+  const printed = `$${rec.toLocaleString('en-US')}`
+  const sentence = clamp.sentence.replace(/(we recommend listing at )\$[\d,]+/i, `$1${printed}`)
+  const after = clamp.appliedTo === 'recommended' ? rec : clamp.after
+  if (sentence === clamp.sentence && clamp.after === after && clamp.applications.every((a) => a.tier !== 'recommended' || a.after === rec)) {
+    return pricing
+  }
+  return {
+    ...pricing,
+    clamp: {
+      ...clamp,
+      after,
+      sentence,
+      applications: clamp.applications.map((a) => (a.tier === 'recommended' ? { ...a, after: rec } : a)),
+    },
+  }
+}
+
+/**
  * Chapter 1's timeline, resolved from the row.
  *
  * PREFERRED: `expiredAudit.finalCycle`, written at build from the MLS listing

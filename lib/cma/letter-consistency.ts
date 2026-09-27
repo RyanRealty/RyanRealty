@@ -105,6 +105,49 @@ export function letterRecommendDollarsCheck(
   }
 }
 
+/**
+ * The hero band must overlap the closed comps. A band that sits entirely
+ * under every sale, or entirely over every sale, is not support (Marys Grace:
+ * band $531k-$577k under comps at $610k-$665k).
+ */
+export function bandVersusClosedCompsCheck(
+  pricing: { valueLow?: number | null; valueHigh?: number | null },
+  comps: readonly { adjustedPrice?: number | null; closePrice?: number | null }[] | null | undefined,
+): ContractCheck {
+  const low = money(pricing.valueLow)
+  const high = money(pricing.valueHigh)
+  const bandLow = low != null && high != null ? Math.min(low, high) : null
+  const bandHigh = low != null && high != null ? Math.max(low, high) : null
+  const prices = (comps ?? [])
+    .map((c) => money(c.adjustedPrice) ?? money(c.closePrice))
+    .filter((n): n is number => n != null)
+  if (bandLow == null || bandHigh == null || prices.length === 0) {
+    return {
+      id: 'band-overlaps-closed-comps',
+      severity: 'hard',
+      pass: true,
+      detail: 'No band or no closed comps to compare.',
+    }
+  }
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const entirelyBelow = bandHigh < min
+  const entirelyAbove = bandLow > max
+  const pass = !entirelyBelow && !entirelyAbove
+  const band = `$${Math.round(bandLow).toLocaleString('en-US')}-$${Math.round(bandHigh).toLocaleString('en-US')}`
+  const span = `$${Math.round(min).toLocaleString('en-US')}-$${Math.round(max).toLocaleString('en-US')}`
+  return {
+    id: 'band-overlaps-closed-comps',
+    severity: 'hard',
+    pass,
+    detail: pass
+      ? `Band ${band} overlaps the closed comps ${span}.`
+      : entirelyBelow
+        ? `Band ${band} sits entirely below every closed comp ${span}.`
+        : `Band ${band} sits entirely above every closed comp ${span}.`,
+  }
+}
+
 export function evaluateLetterConsistencyContract(args: {
   html: string
   names: LetterNameSource | null | undefined
@@ -115,12 +158,14 @@ export function evaluateLetterConsistencyContract(args: {
     valueLow?: number | null
     valueHigh?: number | null
   }
+  closedComps?: readonly { adjustedPrice?: number | null; closePrice?: number | null }[] | null
 }): { pass: boolean; checks: ContractCheck[] } {
   const checks: ContractCheck[] = [
     letterOwnerNameCheck(args.html, args.names),
     letterLinkTrackingCheck(args.html, args.identity),
     highEndAtOrBelowBandCheck(args.pricing),
     letterRecommendDollarsCheck(args.html, args.pricing),
+    bandVersusClosedCompsCheck(args.pricing, args.closedComps),
   ]
   return { pass: checks.every((c) => c.pass), checks }
 }

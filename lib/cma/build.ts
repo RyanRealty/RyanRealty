@@ -30,11 +30,20 @@ import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { JUDGMENT_PRUNE_FLOOR, pricedSetAfterJudgment } from '@/lib/cma/judgment-prune'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
-import { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
+import {
+  adjustCmaCompAlongMarket,
+  adjustCompAlongMarket,
+  ensureMinBandWidth,
+  priceCmaSet,
+  roundPriceDown,
+  roundPriceUp,
+  syncRangeRuleToHeroBand,
+} from '@/lib/pricing/estimate'
 import {
   exclusivePocketSetNote,
   floorExclusivePocketBandToSameSubCloses,
   selectionIsExclusivePocket,
+  type AppliedDateMove,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
@@ -70,6 +79,7 @@ import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
   applyFailedAskCap,
+  rewriteFailedAskClampAfterRec,
   buildFailureFindings,
   buildServicesList,
   buildNetSheet,
@@ -90,13 +100,13 @@ import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
-import { buildCompArea } from '@/lib/pricing/comp-area'
+import { buildCompArea, compAreaContains, compAreaIn, resolveCompetitionArea, type CompArea } from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
 import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
-import { nudgeRecommendedDownForHighDomActives } from '@/lib/pricing/active-dom-nudge'
+import { nudgeRecommendedDownForHighDomActives, pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { clampRecommendedToClosedBand } from '@/lib/pricing/recommended-in-band'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
@@ -545,19 +555,33 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // (§0 rule 5; look pass 2026-09-07 printed "4 of 8" beside a 5-row matrix).
       attachSellerNet(p, set)
       if (p && exclusivePocket) {
-        const coolingApplied = adj.some((c) => Number.isFinite(c.timeAdjustment) && c.timeAdjustment < 0)
-        p.notes.unshift(exclusivePocketSetNote(subject.city, coolingApplied))
+        const moves: AppliedDateMove[] = adj.map((c) => ({
+          address: c.address,
+          closePrice: c.closePrice,
+          timeAdjustment: c.timeAdjustment,
+          timeAdjustedPrice: c.timeAdjustedPrice,
+        }))
+        const coolingApplied = moves.some((c) => Number.isFinite(c.timeAdjustment) && c.timeAdjustment < 0)
+        p.notes.unshift(exclusivePocketSetNote(subject.city, coolingApplied, moves))
         const sameSub = (subject.subdivision ?? '').trim().toLowerCase()
-        const sameSubCloses = sameSub
-          ? adj
-              .filter((c) => (c.subdivision ?? '').trim().toLowerCase() === sameSub)
-              .map((c) => c.closePrice)
-              .filter((n): n is number => Number.isFinite(n) && n > 0)
+        const sameSubRows = sameSub
+          ? adj.filter((c) => (c.subdivision ?? '').trim().toLowerCase() === sameSub)
           : []
+        const weightTotal = sameSubRows.reduce((sum, c) => sum + (c.weight > 0 ? c.weight : 0), 0)
+        const topWeight = sameSubRows.reduce((best, c) => (c.weight > best ? c.weight : best), 0)
+        const meaningfulAdjusted = sameSubRows
+          .filter((c) => {
+            const share = weightTotal > 0 ? c.weight / weightTotal : 0
+            return c.adjustedPrice > 0 && (share >= 0.05 || c.weight === topWeight)
+          })
+          .map((c) => c.adjustedPrice)
         const floored = floorExclusivePocketBandToSameSubCloses({
           valueLow: p.valueLow,
           valueHigh: p.valueHigh,
-          sameSubdivisionClosePrices: sameSubCloses,
+          sameSubdivisionClosePrices: sameSubRows
+            .map((c) => c.closePrice)
+            .filter((n): n is number => Number.isFinite(n) && n > 0),
+          sameSubdivisionAdjustedPrices: meaningfulAdjusted,
           coolingApplied,
         })
         if (floored.floored && floored.floor != null) {
@@ -566,10 +590,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           if (p.conservative < floored.valueLow) p.conservative = floored.valueLow
           if (p.recommended < floored.valueLow) p.recommended = floored.valueLow
           p.notes.unshift(
-            `The printed low is the lowest same-subdivision close $${Math.round(floored.floor).toLocaleString('en-US')}, not a cooled adjusted price below every sale in that pocket.`,
+            `The printed low is the lowest meaningful same-subdivision adjusted sale at $${Math.round(floored.floor).toLocaleString('en-US')}. A cooled price below every one of those sales does not set the range.`,
           )
           attachSellerNet(p, set)
         }
+        const widened = ensureMinBandWidth(p.valueLow, p.valueHigh, p.recommended)
+        p.valueLow = roundPriceDown(widened.low)
+        p.valueHigh = roundPriceUp(widened.high)
+        if (p.recommended < p.valueLow) p.recommended = p.valueLow
+        if (p.recommended > p.valueHigh) p.recommended = p.valueHigh
+        const synced = syncRangeRuleToHeroBand(p)
+        p.rangeRule = synced.rangeRule
       } else if (p && usePath) {
         p.notes.unshift(
           `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
@@ -1159,10 +1190,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         longitude: c.longitude,
       })),
     })
-    // Matt ADD 2026-09-12: same geographic pocket for solds, expired peers, and
-    // actives — do NOT widen competition past the comps area.
-    const competitionRings = compArea ? [compArea] : []
-    const widestCompetitionRing = compArea
+    // Pocket, then a radius. Bend stops at 5 miles. Never the whole city.
+    // The closed-comp area can fall through to "Bend"; competition must not.
+    const competitionRings = compArea
+      ? resolveCompetitionArea({
+          compArea,
+          subject: {
+            latitude: subject.latitude,
+            longitude: subject.longitude,
+            city: subject.city,
+          },
+          keptComps: renderComps.map((c) => ({
+            subdivision: c.subdivision,
+            selectionTier: c.selectionTier,
+            latitude: c.latitude,
+            longitude: c.longitude,
+          })),
+        }).filter((r) => r.kind !== 'city')
+      : []
+    const widestCompetitionRing = competitionRings.length > 0 ? competitionRings[competitionRings.length - 1]! : null
 
     // The peer band is the market-area band (0.55x-1.85x of the anchor) the
     // status grid already uses; the competition band is the +/-10% live band
@@ -1171,9 +1217,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const peerBand = marketAreaPriceBand(pricing.recommended || subject.lastListPrice || 0)
     const rivalBand = bandAroundList(pricing.recommended)
     const [unsoldRead, widestAreaInventory] = await Promise.all([
-      compArea && peerBand
+      widestCompetitionRing && peerBand
         ? getCmaAreaUnsoldCycles({
-            area: compArea,
+            area: widestCompetitionRing,
             city: subject.city,
             propertySubType: subject.propertySubType,
             priceLo: peerBand.lo,
@@ -1230,24 +1276,43 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         .filter((n): n is number => n != null && n > 0)
       return ages.length > 0 ? Math.max(3, Math.max(...ages)) : 12
     })()
-    const expiredPeers =
-      compArea && unsoldRead
-        ? buildExpiredPeerSet({
-            rows: unsoldRead.rows,
-            subject: {
-              beds: subject.beds,
-              sqft: subject.sqft,
-              latitude: subject.latitude,
-              longitude: subject.longitude,
-              listingKey: subject.listingKey,
-              mlsNumber: subject.mlsNumber,
-              streetAddress: subject.streetAddress,
-            },
-            area: compArea,
-            keptCompMedianPpsf: keptCompMedianPpsf(renderComps),
-            maxWindowMonths: compsLookbackMonths,
-          })
-        : null
+    const expiredSubject = {
+      beds: subject.beds,
+      sqft: subject.sqft,
+      latitude: subject.latitude,
+      longitude: subject.longitude,
+      listingKey: subject.listingKey,
+      mlsNumber: subject.mlsNumber,
+      streetAddress: subject.streetAddress,
+    }
+    // Same ladder as actives: pocket, then radius, stop when three homes are
+    // in hand, never the city. An empty rung still produces a sentence.
+    let expiredArea: CompArea | null = competitionRings[0] ?? null
+    let expiredRows = unsoldRead?.rows ?? []
+    if (unsoldRead && competitionRings.length > 0) {
+      for (const ring of competitionRings) {
+        const inside = unsoldRead.rows.filter((r) =>
+          compAreaContains(ring, {
+            latitude: r.Latitude ?? null,
+            longitude: r.Longitude ?? null,
+            subdivision: r.SubdivisionName ?? null,
+            city: r.City ?? null,
+          }),
+        )
+        expiredArea = ring
+        expiredRows = inside
+        if (inside.length >= 3) break
+      }
+    }
+    const expiredPeers = expiredArea
+      ? buildExpiredPeerSet({
+          rows: expiredRows,
+          subject: expiredSubject,
+          area: expiredArea,
+          keptCompMedianPpsf: keptCompMedianPpsf(renderComps),
+          maxWindowMonths: compsLookbackMonths,
+        })
+      : null
 
     // Walk the ring ladder over the widest read: stop at the first ring
     // holding three active-or-pending homes, or the widest ring itself.
@@ -1261,7 +1326,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         : null
     const competitionArea = competitionRing?.area ?? widestCompetitionRing
 
-    const bandRivals =
+    let bandRivals =
       competitionRing && widestAreaInventory
         ? buildBandRivalSet({
             area: competitionRing.area,
@@ -1284,9 +1349,39 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             ringsTried: competitionRing.ringsTried,
           })
         : null
+    if (!bandRivals && rivalBand && compArea) {
+      const area = competitionRings[0] && competitionRings[0].kind !== 'city' ? competitionRings[0] : null
+      const lo = `$${rivalBand.lo.toLocaleString('en-US')}`
+      const hi = `$${rivalBand.hi.toLocaleString('en-US')}`
+      const sentence = area
+        ? `No home ${compAreaIn(area)} is for sale between ${lo} and ${hi}, and none is under contract. The search did not cover the whole city.`
+        : `This home has no map point, so no competition was pulled. The search did not cover the whole city.`
+      bandRivals = {
+        area: area ?? {
+          kind: 'radius',
+          names: [],
+          radiusMiles: null,
+          centre: compArea.centre,
+          source: 'competition: no coordinates, city not used',
+          sentence: 'The homes closest to yours.',
+        },
+        lo: rivalBand.lo,
+        hi: rivalBand.hi,
+        activeCount: 0,
+        pendingCount: 0,
+        rivals: [],
+        sentence,
+        source: 'Competition ladder returned no listings inside the cap.',
+        widenedFrom: null,
+        ringsTried: competitionRings.flatMap((r) =>
+          r.kind === 'radius' && r.radiusMiles != null ? [r.radiusMiles] : [],
+        ),
+      }
+    }
 
     // Matt 2026-09-17: high-DOM (60+) overpriced actives may nudge Recommended
     // DOWN within the closed-comp band only — never outside, no story-adj.
+    // The pull is also capped, and it cannot go under pocket closed-sale support.
     if (pricing && bandRivals?.rivals?.length) {
       const bandLow = Math.min(pricing.valueLow, pricing.valueHigh)
       const bandHigh = Math.max(pricing.valueLow, pricing.valueHigh)
@@ -1294,6 +1389,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         recommended: pricing.recommended,
         bandLow,
         bandHigh,
+        pocketClosedSupport: pocketClosedSupportPrice(adjusted, subject.subdivision),
         actives: bandRivals.rivals.map((r) => ({
           status: r.status,
           listPrice: r.listPrice,
@@ -1307,8 +1403,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // Matt 2026-09-17: Low/High = closed-comp band; Recommended must stay inside.
     // Tip Ready refuses when Rec is outside Low/High (see recommended-in-band).
+    // The failed-ask sentence is rewritten from this final recommendation.
     if (pricing) {
       pricing = clampRecommendedToClosedBand(pricing)
+      pricing = rewriteFailedAskClampAfterRec(pricing)
+      pricing = syncRangeRuleToHeroBand(pricing)
     }
 
     const listingMarket = await loadListingWindowMarket({
@@ -1384,6 +1483,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       names: { clientName: input.client.name },
       identity: { personId, clientEmail: input.client.email },
       pricing,
+      closedComps: renderComps,
     })
     for (const check of letterContract.checks) {
       contract.checks.push(check)

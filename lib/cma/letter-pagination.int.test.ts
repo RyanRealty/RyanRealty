@@ -352,9 +352,24 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
       }
     }
 
-    const onlyHeading = heads.length > 0 && prose.length === 0 && !hasTableInk(belowHead)
+    // Near-blank spillover: a continuation sheet (no chapter header) whose
+    // text covers under about a third of the page. The cover is page 1.
+    // A one-line "Prepared for" spill and a trailing source note land here.
+    // The cover's letter-spaced "RECOMMENDED" is not a chapter heading.
+    const onlyHeading = pageNo > 1 && heads.length > 0 && prose.length === 0 && !hasTableInk(belowHead)
     if (onlyHeading) {
       failures.push(`${label} p${pageNo}: content is only a heading ("${heads[0]?.text}")`)
+    }
+
+    // A continuation sheet that is almost empty: the cover's "Prepared for"
+    // spill, or the last disclosure sentence sitting alone before the close.
+    if (pageNo > 1 && !thisStartsSection) {
+      const fill = contentSpan(belowHead) / boxH
+      if (fill < 0.12) {
+        failures.push(
+          `${label} p${pageNo}: near-blank spillover, content span ${(fill * 100).toFixed(0)}%`,
+        )
+      }
     }
 
     // Heading then a jumped block: this sheet opens a section, the next sheet
@@ -369,7 +384,7 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
     }
 
     const lowestHead = [...heads].sort((a, b) => a.y0 - b.y0)[0]
-    if (lowestHead && lowestHead.y0 < cy0 + 0.25 * boxH) {
+    if (pageNo > 1 && lowestHead && lowestHead.y0 < cy0 + 0.25 * boxH) {
       const under = belowHead.filter((r) => r.y1 < lowestHead.y0 - 2 && (isBody(r.text) || hasTableInk([r])))
       if (under.length === 0) {
         failures.push(
