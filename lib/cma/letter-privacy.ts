@@ -4,6 +4,7 @@
  * tokens. A token is a word from client_name / owner / contact that is not a
  * generic role word.
  */
+import { BRAND, BROKERS } from '@/lib/brand/contact'
 
 const ROLE_WORDS = new Set([
   'the',
@@ -120,6 +121,48 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/**
+ * Phrases the letter prints because they are the firm or the signing broker,
+ * not because they are the owner. Longest first so "Ryan Realty LLC" is taken
+ * before "Ryan Realty".
+ */
+const FIRM_AND_BROKER_PHRASES: readonly string[] = (() => {
+  const raw = [
+    BRAND.legalName,
+    BRAND.name,
+    ...Object.values(BROKERS).flatMap((broker) => [broker.name, broker.nameShort]),
+  ]
+  const seen = new Set<string>()
+  const phrases: string[] = []
+  for (const phrase of raw) {
+    const trimmed = phrase.trim()
+    const key = trimmed.toLowerCase()
+    if (trimmed.length < 2 || seen.has(key)) continue
+    seen.add(key)
+    phrases.push(trimmed)
+  }
+  phrases.sort((a, b) => b.length - a.length)
+  return phrases
+})()
+
+/** Stand-in that is not a name token, so the scan and the scrub skip the phrase. */
+function shieldFirmAndBrokerPhrases(text: string): { text: string; slots: string[] } {
+  const slots: string[] = []
+  let out = text
+  for (const phrase of FIRM_AND_BROKER_PHRASES) {
+    out = out.replace(new RegExp(`\\b${escapeRegExp(phrase)}\\b`, 'gi'), (match) => {
+      slots.push(match)
+      return `\uE000${slots.length - 1}\uE001`
+    })
+  }
+  return { text: out, slots }
+}
+
+function restoreFirmAndBrokerPhrases(text: string, slots: string[]): string {
+  if (slots.length === 0) return text
+  return text.replace(/\uE000(\d+)\uE001/g, (whole, index: string) => slots[Number(index)] ?? whole)
+}
+
 function significantWords(phrase: string): string[] {
   return phrase
     .split(/[\s,./&+-]+/)
@@ -212,7 +255,8 @@ export function scrubMlsOwnerTokens(
   if (!text) return text
   const tokens = ownerContactNameTokens(source)
   if (tokens.length === 0) return text
-  let out = text
+  const shielded = shieldFirmAndBrokerPhrases(text)
+  let out = shielded.text
   const phrases = [source?.clientName, source?.ownerName, source?.contactName, source?.firstName]
     .map((s) => (typeof s === 'string' ? s.trim() : ''))
     .filter((s) => s.length > 2)
@@ -240,11 +284,14 @@ export function scrubMlsOwnerTokens(
       out = out.replace(word, '')
     }
   }
-  return out
-    .replace(/[ \t]{2,}/g, ' ')
-    .replace(/\s+([,.;:])/g, '$1')
-    .replace(/\(\s*\)/g, '')
-    .trim()
+  return restoreFirmAndBrokerPhrases(
+    out
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/\s+([,.;:])/g, '$1')
+      .replace(/\(\s*\)/g, '')
+      .trim(),
+    shielded.slots,
+  )
 }
 
 type MlsTextRow = {
@@ -310,7 +357,7 @@ export function ownerNameTokenHits(
 ): string[] {
   const tokens = ownerContactNameTokens(source)
   if (tokens.length === 0) return []
-  const text = textOf(htmlOrText)
+  const text = shieldFirmAndBrokerPhrases(textOf(htmlOrText)).text
   const words = new Set((text.match(NAME_TOKEN_RE) ?? []).map((w) => w.toLowerCase()))
   const hits: string[] = []
   for (const token of tokens) {

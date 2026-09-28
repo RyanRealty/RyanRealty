@@ -131,3 +131,64 @@ describe('ordinary-word surnames are not bare name hits', () => {
     expect(letterOwnerNameCheck(html, NAMES).pass).toBe(true)
   })
 })
+
+describe('the brokerage and the broker are not the owner', () => {
+  const brokerLine =
+    '<p>Prepared by Matt Ryan, Ryan Realty.</p><p class="sig">Matt Ryan · Owner &amp; Principal Broker</p><footer>Ryan Realty</footer>'
+
+  it('passes when the only Ryan is the firm or the signature', () => {
+    const names = { clientName: 'Ryan Testerly' }
+    expect(letterOwnerNameCheck(brokerLine, names).pass).toBe(true)
+    expect(ownerNameTokenHits(brokerLine, names)).toEqual([])
+    expect(letterOwnerNameCheck(brokerLine.toLowerCase(), names).pass).toBe(true)
+    const remarks = scrubMlsOwnerTokens(
+      'Dear neighbor, listed with Ryan Realty. Agent Matt Ryan. ryan realty too.',
+      names,
+    )
+    expect(remarks).toMatch(/Ryan Realty/)
+    expect(remarks).toMatch(/Matt Ryan/)
+    expect(remarks).toMatch(/ryan realty/)
+    expect(letterOwnerNameCheck(`<p>${remarks}</p>`, names).pass).toBe(true)
+  })
+
+  it('still fails on a greeting, a possessive, or the surname', () => {
+    const names = { clientName: 'Ryan Testerly' }
+    const dear = `${brokerLine}<p>Dear Ryan, the range is ready.</p>`
+    expect(letterOwnerNameCheck(dear, names).pass).toBe(false)
+    expect(ownerNameTokenHits(dear, names)).toEqual(['Ryan'])
+    const possessive = `${brokerLine}<p>Ryan Smithson's home sat for 40 days.</p>`
+    expect(letterOwnerNameCheck(possessive, names).pass).toBe(false)
+    expect(ownerNameTokenHits(possessive, names)).toContain('Ryan')
+    const full = `${brokerLine}<p>Ryan Testerly asked about the roof.</p>`
+    expect(letterOwnerNameCheck(full, names).pass).toBe(false)
+    expect(ownerNameTokenHits(full, names)).toEqual(['Ryan', 'Testerly'])
+    const surname = `${brokerLine}<p>Testerly kept the yard.</p>`
+    expect(letterOwnerNameCheck(surname, names).pass).toBe(false)
+    expect(ownerNameTokenHits(surname, names)).toEqual(['Testerly'])
+    const scrubbed = scrubMlsOwnerTokens('Dear Ryan, Ryan Testerly liked Ryan Realty and Matt Ryan.', names)
+    expect(scrubbed).toMatch(/Ryan Realty/)
+    expect(scrubbed).toMatch(/Matt Ryan/)
+    expect(scrubbed.replace(/\bRyan Realty\b/g, '').replace(/\bMatt Ryan\b/g, '')).not.toMatch(/\b(Ryan|Testerly)\b/)
+  })
+
+  it('does not fail a surname of Ryan on the firm or the signature alone', () => {
+    const names = { clientName: 'Pat Ryan' }
+    expect(letterOwnerNameCheck(brokerLine, names).pass).toBe(true)
+    expect(ownerNameTokenHits(brokerLine, names)).toEqual([])
+    const named = `${brokerLine}<p>Pat Ryan asked about the roof.</p>`
+    expect(letterOwnerNameCheck(named, names).pass).toBe(false)
+    expect(ownerNameTokenHits(named, names)).toEqual(['Pat', 'Ryan'])
+  })
+
+  it('uses the other roster names the same way', () => {
+    const letter = '<p>Prepared by Paul Stevenson, Ryan Realty.</p><p>Rebecca Peterson · Ryan Realty</p>'
+    expect(letterOwnerNameCheck(letter, { clientName: 'Paul Testerly' }).pass).toBe(true)
+    expect(letterOwnerNameCheck(`${letter}<p>Dear Paul,</p>`, { clientName: 'Paul Testerly' }).pass).toBe(false)
+    expect(letterOwnerNameCheck(letter, { clientName: 'Rebecca Testerly' }).pass).toBe(true)
+    expect(
+      letterOwnerNameCheck(`${letter}<p>Rebecca Ryser Peterson is not the owner, but Dear Rebecca is.</p>`, {
+        clientName: 'Rebecca Testerly',
+      }).pass,
+    ).toBe(false)
+  })
+})
