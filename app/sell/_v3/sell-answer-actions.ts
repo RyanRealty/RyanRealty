@@ -269,6 +269,9 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
         'median days from the listing date to a signed contract, trailing 90 days',
       )
       .replace(/market_pulse_live/gi, 'the live market pulse')
+      // The metric layer joins figure and source with an em dash; public copy
+      // carries none (ci:no-public-em-dash covers source strings, not data).
+      .replace(/\s*\u2014\s*/g, ': ')
   }
 
   const subjectSummary = subject

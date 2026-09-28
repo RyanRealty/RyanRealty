@@ -395,7 +395,8 @@ describe('public place pages', () => {
     const sell = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
     expect(jsonFeed).toMatch(/getPublicPlaceSegments/)
     expect(jsonRoute).toMatch(/extraSegments/)
-    expect(sell).toMatch(/getPublicPlaceSegments/)
+    // /sell dropped its property-type rows (Matt 2026-09-28).
+    expect(sell).not.toMatch(/getPublicPlaceSegments/)
     const citiesIndex = readFileSync(resolve('app/cities/page.tsx'), 'utf8')
     // Wave H: the cities index is an A–Z directory of city doors. Property-type
     // segments stay on the city member page, not on this index.

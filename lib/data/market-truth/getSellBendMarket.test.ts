@@ -154,11 +154,14 @@ describe('getSellBendMarket', () => {
     expect(page).toMatch(/getCityDetachedInventory/)
   })
 
-  it('/sell and the JSON feed both read Market Truth detached', () => {
+  it('/sell prints no market figures and the JSON feed reads Market Truth detached', () => {
+    // Matt 2026-09-28: the market sections left /sell for one link to the
+    // full market report, so the page reads no market table at all.
     const page = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
     const feed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
-    expect(page).toMatch(/getSellBendMarket/)
-    expect(page).not.toMatch(/getMarketPulse/)
+    expect(page).not.toMatch(/getSellBendMarket|getMarketPulse/)
+    const finalAsk = readFileSync(resolve('app/sell/_v3/SellFinalAsk.tsx'), 'utf8')
+    expect(finalAsk).toContain('/housing-market/bend')
     expect(feed).toMatch(/getDetachedOverlays/)
   })
 

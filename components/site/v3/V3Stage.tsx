@@ -187,6 +187,16 @@ export type V3StageProps = {
    * network), or was never supplied. A Stage with only a poster is complete.
    */
   posterSrc: string
+  /**
+   * Optional responsive candidates for the poster, as an `<img srcset>`
+   * string. The site ships `images.unoptimized`, so a page that wants the
+   * still to stay the LCP on a phone without shipping the full master passes
+   * pre-sized derivatives here. Omit it and the poster renders exactly as it
+   * always has, src only.
+   */
+  posterSrcSet?: string
+  /** `<img sizes>` for posterSrcSet. Ignored without it. */
+  posterSizes?: string
   /** Owned video. Optional. Autoplays muted, looping, inline, motion allowing. */
   videoSrc?: string
   /**
@@ -328,6 +338,8 @@ function assertInventory(inventory: V3StageInventory | undefined): void {
 export function V3Stage<H extends string, L extends string>({
   headline,
   posterSrc,
+  posterSrcSet,
+  posterSizes,
   videoSrc,
   action,
   overlayStrength = 'standard',
@@ -387,6 +399,8 @@ export function V3Stage<H extends string, L extends string>({
         <img
           className="v3-stage-poster"
           src={posterSrc}
+          srcSet={posterSrcSet}
+          sizes={posterSrcSet ? (posterSizes ?? '100vw') : undefined}
           alt=""
           decoding="async"
           fetchPriority="high"

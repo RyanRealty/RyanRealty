@@ -373,8 +373,8 @@ describe('the address splits into what the comp ladder wants', () => {
 describe('the form asks in the order the nodes fixed', () => {
   it('answers the address before it asks for contact (SITE-02)', () => {
     expect(form).toContain("answerSellValue")
-    expect(form).toMatch(/setStep\(sellAnswerHasSubstance\(result\.answer\) \? 'answer' : 'qualify'\)/)
-    // The answer step exists between address and qualify.
+    expect(form).toMatch(/setStep\(sellAnswerHasSubstance\(result\.answer\) \? 'answer' : 'when'\)/)
+    // The answer step exists between address and the timeframe.
     expect(form).toMatch(/type Step = 'address' \| 'answer' \| 'qualify' \| 'when' \| 'success'/)
   })
 
@@ -388,9 +388,15 @@ describe('the form asks in the order the nodes fixed', () => {
     expect(form).not.toMatch(/id="sell-value-name"[\s\S]{0,180}required/)
   })
 
-  it('asks the timeframe AFTER the answer, and the choice is the submit (SITE-10)', () => {
+  it('asks the timeframe AFTER the answer, and contact LAST as the submit (2026-09-28)', () => {
     expect(form.indexOf("setStep('when')")).toBeGreaterThan(-1)
-    expect(form).toContain('submit(opt.value)')
+    // A timeframe tap advances to contact; the contact button submits.
+    expect(form).not.toContain('submit(opt.value)')
+    expect(form).toMatch(/setTimeline\(opt\.value\)[\s\S]{0,80}setStep\('qualify'\)/)
+    expect(form).toContain('submit(timeline)')
+    const railAt = form.indexOf('= [', form.indexOf('const SHEET_RAIL'))
+    const rail = form.slice(railAt, form.indexOf(']', railAt))
+    expect(rail.indexOf("'when'")).toBeLessThan(rail.indexOf("'qualify'"))
     // Every option carries a timeframe, so no submit can land without one.
     for (const v of ['ready-now', 'next-3-6', 'exploring']) {
       expect(form).toContain(`value: '${v}'`)
@@ -420,30 +426,31 @@ describe('the form asks in the order the nodes fixed', () => {
   })
 })
 
-describe('the page wires the two round-one primitives', () => {
-  it('gives the hero the sentinel the sticky control watches', () => {
+describe('the page wires the landing (Matt 2026-09-28)', () => {
+  it('keeps the hero id and drops the sticky control (no sticky Call/Text bar)', () => {
     expect(page).toContain('id="sell-hero"')
-    expect(page).toContain('sentinelId="sell-hero"')
-    expect(page).toContain('targetId="get-value"')
-    expect(page).toContain('focusId="get-value-address"')
-  })
-
-  it('mounts the sticky control as a direct child of main', () => {
-    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'))
-    expect(main).toContain('<V3StickyAsk')
-  })
-
-  it('feeds the sticky the same months of supply the Instrument prints', () => {
-    expect(page).toContain('applyDetachedOverlay(')
-    expect(page).toContain('stickyAskVerdict(bendPulse')
-    // /sell publishes Market Truth DETACHED, never the mixed-type live pulse
-    // bucket — the rule lib/data/market-truth/getSellBendMarket.test.ts asserts.
-    expect(page).toContain('getSellBendMarket')
-    // …and the tail's source line must name THAT read. The control shipped
-    // printing "Source: market_pulse_live" for a market_metric figure on
-    // 2026-09-08; the source is a caller argument now, so this page states it.
-    expect(page).toContain("stickyAskVerdict(bendPulse, 'market_metric, Bend detached (Market Truth)')")
+    expect(page).not.toContain('<V3StickyAsk')
     expect(page).not.toContain('market_pulse_live')
+  })
+
+  it('shows reviews with initials only', () => {
+    expect(page).toContain('uniqueReviewerInitials')
+    expect(page).toContain('withInitialsOnly(proofRaw)')
+  })
+
+  it('puts Matt on the first screen: face, title, license', () => {
+    const hero = page.slice(page.indexOf('<V3Stage'), page.indexOf('</V3Stage>'))
+    expect(hero).toContain('sell-hero-face')
+    expect(hero).toContain('BROKERS.matt.titleShort')
+    expect(hero).toContain('mattLicense')
+  })
+
+  it('ships the CMA hero copy in the static HTML, never from searchParams (ISR)', () => {
+    expect(page).toContain('altHeadline={SELL_CMA_HEADLINE}')
+    expect(page).toContain('SELL_ENTRY_SCRIPT')
+    // The page component takes no props, so it cannot read searchParams.
+    expect(page).toMatch(/export default async function SellPage\(\)/)
+    expect(page).toContain('export const revalidate = 3600')
   })
 
   it('ships the proof block with the outcome strips off until Matt rules', () => {
@@ -451,10 +458,10 @@ describe('the page wires the two round-one primitives', () => {
     expect(page).toContain("attribution: { surface: 'sell', place: 'bend', source: 'proof_block' }")
   })
 
-  it('reaches the routed broker through the roster, never a phone literal (G38)', () => {
+  it('reaches Matt through the roster, never a phone literal (G38)', () => {
     expect(page).toContain('aboutFaceFromBroker')
-    expect(page).toContain('`tel:${routedFace.tel}`')
-    expect(page).toContain('`sms:${routedFace.tel}`')
+    expect(page).toContain('`tel:${mattTel}`')
+    expect(page).toContain('`sms:${mattTel}`')
     expect(page).not.toMatch(/tel:\+?1?5417033095/)
   })
 

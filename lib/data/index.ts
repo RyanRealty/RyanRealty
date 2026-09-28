@@ -471,6 +471,13 @@ export type {
 } from '@/lib/data/proof/getProofBlock'
 export type { ProofOutcomeRow, ProofOutcomes } from '@/lib/data/proof/outcomes'
 
+// Office closings strip (/sell): up to six list-side Ryan Realty closings in the
+// last 12 months, one row per home. City, beds, price, days to contract, sale
+// to final list. No street, month or name.
+export { getOfficeRecentClosings } from '@/lib/data/proof/getOfficeRecentClosings'
+export type { OfficeRecentClosings } from '@/lib/data/proof/getOfficeRecentClosings'
+export type { OfficeClosing } from '@/lib/data/proof/office-closings'
+
 // Listing close (SITE-06): how often a home in THIS city cut before it sold,
 // how deep, and how long it waited for a contract. Market Truth cells pinned
 // to a 12-month window, each figure carrying its own trace.

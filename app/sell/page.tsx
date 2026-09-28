@@ -1,115 +1,103 @@
 /**
- * /sell - the Sell destination, on the components/site/v3 barrel.
+ * /sell - the Sell landing page and seller path, on the components/site/v3
+ * barrel. Rebuilt 2026-09-28 from Matt's brief and the competitor walk in
+ * /workspace/competitor-sell-paths-2026-09-28/SYNTHESIS.md. Order, cuts and
+ * per-section reasoning live in design_system/ryan-realty/ui_kits/sell/parity.json.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Sell
- * destinations open Stage then Sheet. Four of the six patterns, no two adjacent
- * alike. Order, deletions, and per-section reasoning live in
- * design_system/ryan-realty/ui_kits/sell/parity.json.
+ * WHO LANDS HERE. Every CMA email to a homeowner whose listing just EXPIRED
+ * elsewhere, plus everyone who searches for selling in Central Oregon. So the
+ * first screen at 1440x900 and 375x812 carries the whole case: the promise,
+ * the proof (Google rating and count, homes sold), the broker's face, and the
+ * one action.
  *
- * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
- * pageMetadata (title "Sell Your Home in Central Oregon"), MetadataBlock
- * JSON-LD (BreadcrumbList + FAQPage), V3SectionTracker pageType="sell",
- * revalidate 300, route /sell, and the capture contract. SellValueForm
- * posts through submitSellerLPForm with pagePath="/sell" and formId get-value.
- * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
+ * ONE PRIMARY ACTION. The existing value flow (SellValueForm, posting through
+ * submitSellerLPForm with pagePath "/sell" and formId get-value), labelled as a
+ * conversation: SELL_PRIMARY_LABEL. It is repeated once, as the final ask,
+ * which links back to the same field. Call and text are small text links.
+ * No sticky bar, no second form.
  *
- * D11: visible CTA copy is "Value my home" once, on the address-field submit.
- * Title/meta keep search-demand language. Stage is poster + H1 + quiet 3%
- * eyebrow. The primitive still requires an action prop. The page hides it.
+ * ?from=cma changes ONLY the hero copy, without breaking ISR: both copies ship
+ * in the static HTML (V3Stage altHeadline/altEyebrow plus two sub lines), and
+ * SELL_ENTRY_SCRIPT flags html[data-sell-entry="cma"] before first paint so
+ * sell-landing.css shows the CMA pair. The page never reads searchParams, so
+ * plain /sell stays one cached document (revalidate 3600).
  *
- * One derivation for months of supply: marketVerdict reads the RAW value,
- * formatMonthsOfSupply prints it, and the Instrument source line carries
- * MOS_METHODOLOGY_CLAUSE + MOS_THRESHOLD_CLAUSE. Rounding before classifying
- * is what this ordering prevents.
- *
- * One filled primary in the first 390 viewport: the capture Sheet submit.
- * Chrome Value my home is off /sell (the field is the ask) and on /sell/* leaves.
- * Stage ghost is gone.
- * Stage is tall: the photograph carries the H1 and the address ask, so
- * the first viewport is the working surface, not a cream void under a still.
- *
- * SITE-111 first viewport: Stage, then THE ADDRESS SHEET. The slab on the
- * photograph is one narrow column — a sourced Bend line with its own section-0
- * trace, the beui-input address field, the Value my home ask — and the submit
- * opens the real shadcn Sheet, where the sourced answer for the typed street
- * reveals BETWEEN the address and the contact step. The Bend months-of-supply
- * two-bar left the fold with it: the 2026-09-12 table called printing city
- * supply next to an empty address "answering the city before it has a house",
- * and supply is now drawn in the sheet against the street the visitor typed.
- * The Instrument below still carries the full Bend pulse with its trace.
+ * TRACKING. SellClickTracker records every link and CTA click on the page to
+ * the contact through the existing first-party and CRM sinks; every control
+ * this route renders carries data-sell-cta (sell-cta-tracking.test.ts and
+ * ci:sell-cta-tracking enforce it). The visit itself is the site-wide
+ * VisitTracker page_view, whose pageUrl keeps from=cma. The value-flow submit
+ * carries entry "cma" to the contact record. The full path is written up in
+ * docs/plans/PUBLIC_PRODUCT/sell-cma-tracking.md.
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import {
-  getBrokerageListings,
   getBrokerageTrackRecord,
   getBrokers,
+  getOfficeRecentClosings,
   getProofBlock,
-  getSellBendMarket,
-  getSurfaceImage,
 } from '@/lib/data'
-import { applyDetachedOverlay } from '@/lib/data/market-truth/getSellBendMarket'
-import { stickyAskVerdict } from '@/lib/sticky-ask'
-import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
-import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
-import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
-import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
+import type { ProofBlock } from '@/lib/data'
+import { aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { formatPrice, formatPriceExact, formatPriceCompact } from '@/lib/format/money'
-import { formatDate } from '@/lib/format/date'
-import { listingsBrowsePath, valuationPath } from '@/lib/slug'
-import { CONTACT } from '@/lib/brand/contact'
-import { aeoHubQuietItems } from '@/lib/seo/aeo-hub-guides'
+import { BROKERS } from '@/lib/brand/contact'
+import { uniqueReviewerInitials } from '@/lib/reviews/reviewer-initials'
 import {
   V3_ROOT_CLASS,
-  v3Text,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
-  V3Ledger,
   V3ProofBlock,
   V3Quiet,
-  V3Sheet,
   V3Stage,
-  V3StickyAsk,
   V3SectionTracker,
   V3SourceDisclosure,
   proofBlockView,
-  type V3InstrumentFigure,
-  type V3ProofReach,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SellCapture } from './_v3/SellCapture'
 import { SellValueForm } from './_v3/SellValueForm'
-import { sellBendLedgerRows } from './_v3/sell-market-rows'
-import { sellListingRows, OUR_LISTINGS_TRACE } from './_v3/sell-listings'
+import { SellHowWeSell } from './_v3/SellHowWeSell'
+import { SellClosings } from './_v3/SellClosings'
+import { SellFinalAsk } from './_v3/SellFinalAsk'
+import { SellClickTracker } from './_v3/SellClickTracker'
+import { SellEntryFlag } from './_v3/SellEntryFlag'
+import { SELL_ENTRY_SCRIPT } from './_v3/sell-entry'
 import './_v3/sell-stage.css'
+import './_v3/sell-landing.css'
 import {
-  BEND_MARKET_TRACE_SCOPE,
-  FAQ_ITEMS,
-  FORM_ANCHOR,
-  PLAN_STEPS,
   ROUTE_PATH,
-  SELL_FOLD_TRACE,
-  SELL_POSTER,
-  SELL_STAGE_EYEBROW,
+  SELL_CMA_EYEBROW,
+  SELL_CMA_HEADLINE,
+  SELL_CMA_SUB,
+  SELL_FAQ_ITEMS,
+  SELL_HERO_SUB,
+  SELL_PRIMARY_LABEL,
   TRACK_RECORD_TRACE,
 } from './_v3/sell-constants'
 
 export const revalidate = 3600
 
+/** Pre-sized derivatives of the Drake Park aerial (public/images/sell). Each is under 300 KB. */
+const SELL_HERO_SRC = '/images/sell/sell-hero-drake-park-1280.webp'
+const SELL_HERO_SRCSET = [640, 960, 1280, 1920]
+  .map((w) => `/images/sell/sell-hero-drake-park-${w}.webp ${w}w`)
+  .join(', ')
+const SELL_OG_IMAGE = '/images/sell/sell-hero-drake-park-1920.webp'
+/** Matt's headshot, cropped small from /images/brokers/ryan-matt.png. */
+const MATT_HEADSHOT = '/images/sell/ryan-matt-160.webp'
+const MATT_HEADSHOT_2X = '/images/sell/ryan-matt-320.webp'
+
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Sell Your Home in Central Oregon',
     description:
-      'List your Central Oregon home with Ryan Realty. One 3% listing plan with everything included, professional photos within 48 hours of signing, and a written report every week you are on the market. Local experts, exceptional customer service.',
+      'Talk with Ryan Realty about selling your Central Oregon home. A price built from the closed sales, a complete launch in week one with photos, drone, video and a 3D tour in the 3%, and a written report every week. No contract to talk.',
     path: ROUTE_PATH,
-    ogImage: SELL_POSTER,
+    ogImage: SELL_OG_IMAGE,
     keywords: [
       'sell home Bend Oregon',
       'Central Oregon home valuation',
@@ -119,181 +107,74 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
+/** Reviews on /sell show initials only (Matt, 2026-09-28): no full client names. */
+function withInitialsOnly(block: ProofBlock): ProofBlock {
+  const reviews = block.reviews
+  if (!reviews) return block
+  const taken = new Set<string>()
+  return {
+    ...block,
+    reviews: {
+      ...reviews,
+      quotes: reviews.quotes.map((q) => {
+        const initials = uniqueReviewerInitials(q.author, taken)
+        taken.add(initials)
+        return { ...q, author: initials }
+      }),
+    },
+  }
+}
+
 export default async function SellPage() {
-  const [
-    bend,
-    heroSrc,
-    trackRecord,
-    publicPace,
-    publicSegments,
-    listings,
-    proof,
-    brokers,
-    attributed,
-  ] = await Promise.all([
-    getSellBendMarket(),
-    getSurfaceImage('hero', {
-      geoTags: ['central-oregon'],
-      seed: ROUTE_PATH,
-      fallback: SELL_POSTER,
-    }),
-    getBrokerageTrackRecord(),
-    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
-    getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
-    getBrokerageListings().catch(() => []),
+  const [proofRaw, trackRecord, brokers, closings] = await Promise.all([
     getProofBlock({ geoType: 'city', geoSlug: 'bend', geoLabel: 'Bend' }).catch(() => null),
+    getBrokerageTrackRecord().catch(() => null),
     getBrokers().catch(() => []),
-    readAttributedAgentServer().catch(() => null),
+    getOfficeRecentClosings(),
   ])
 
-  // SITE-05. The sticky control's tail must print the SAME months of supply the
-  // Instrument below prints, or the page contradicts itself while both are on
-  // screen (§0).
-  //
-  // So it is fed from getSellBendMarket — the one read this page already makes
-  // — shaped into the pulse row stickyAskVerdict expects by applyDetachedOverlay,
-  // the helper that exists to put Market Truth DETACHED figures onto a pulse-
-  // shaped row. This page never reads the live pulse table at all: that is the
-  // rule that stops /sell publishing the mixed-type bucket (488 active / 3.54
-  // months) as if it were the detached market, and it is asserted in
-  // lib/data/market-truth/getSellBendMarket.test.ts.
-  const bendPulse = bend
-    ? applyDetachedOverlay({ monthsOfSupply: null as number | null, refreshedAt: '' }, bend)
-    : null
-  // The source the tail names is the read this page actually made: Market
-  // Truth detached figures off market_metric, never the pulse table.
-  const sellVerdict = stickyAskVerdict(bendPulse, 'market_metric, Bend detached (Market Truth)')
+  // Faces: Matt only (Matt's ruling). His record comes off the live roster via
+  // the DAL; the license falls back to the roster in lib/brand/contact.
+  const mattRow = brokers.find((b) => b.slug === BROKERS.matt.slug)
+  const matt = mattRow ? aboutFaceFromBroker(mattRow) : null
+  const mattName = matt?.name ?? BROKERS.matt.name
+  const mattFirst = mattName.split(' ')[0] ?? mattName
+  const mattLicense = matt?.license ?? BROKERS.matt.license
+  const mattTel = matt?.tel ?? null
+  const mattPhone = matt?.phoneDisplay ?? null
 
-  // SITE-11. The reach strip carries the broker this page routes the lead to —
-  // the attributed agent when an ad sent them, Matt otherwise — and its number
-  // comes off the live roster through the DAL, never a literal (G38).
-  const routedSlug = attributed?.broker ?? 'matt'
-  const routedFace: AboutFace | null =
-    brokers
-      .map((b) => aboutFaceFromBroker(b))
-      .find((face): face is AboutFace => face !== null && face.href.endsWith(`/${routedSlug}`)) ??
-    brokers.map((b) => aboutFaceFromBroker(b)).find((face): face is AboutFace => face !== null) ??
-    null
-  const reach: V3ProofReach[] = routedFace
-    ? [
-        ...(routedFace.tel
-          ? ([
-              {
-                key: 'call',
-                kind: 'call',
-                href: `tel:${routedFace.tel}`,
-                label: `Call ${routedFace.name}`,
-              },
-              {
-                key: 'text',
-                kind: 'text',
-                href: `sms:${routedFace.tel}`,
-                label: `Text ${routedFace.name}`,
-              },
-            ] as V3ProofReach[])
-          : []),
-        ...(routedFace.bookHref
-          ? ([
-              { key: 'book', kind: 'book', href: routedFace.bookHref, label: 'Book a call' },
-            ] as V3ProofReach[])
-          : []),
-      ]
-    : []
-
-  // MATT RULED 2026-09-08: "hold those, we only want positive". The two outcome
-  // strips compare our closings to Bend's median, and this window they read
-  // slower and lower (52 days to contract against 29; 93.7% of the first ask
-  // against 97.0%, n=7), so they do not go on a seller-facing page. The block
-  // ships the record, the reviews and the reach, and says only what it shows.
-  // The figures themselves are untouched — this is what we publish, not what we
-  // measured. Recorded in docs/plans/PUBLIC_PRODUCT/decisions.md.
+  const proof = proofRaw ? withInitialsOnly(proofRaw) : null
+  // MATT RULED 2026-09-08: "hold those, we only want positive". The outcome
+  // strips stay off (see docs/plans/PUBLIC_PRODUCT/decisions.md). No reach
+  // strip: call and text live as small links in the hero and the final ask.
   const proofView = proof
     ? proofBlockView({
         block: proof,
         id: 'proof',
         headingLevel: 2,
         attribution: { surface: 'sell', place: 'bend', source: 'proof_block' },
-        reach,
+        reach: [],
         showOutcomes: false,
       })
     : null
 
-  const bendFigures: V3InstrumentFigure[] = []
-  if (bend?.medianListPrice != null) {
-    bendFigures.push({
-      // formatPriceExact: the SAME median printed $939,900 on /, /cities and
-      // /cities/bend and $940,000 here on the same day (2026-08-27 audit). One
-      // statistic, one spelling, site-wide.
-      value: v3Text(formatPriceExact(bend.medianListPrice)),
-      label: v3Text('median list price'),
-      href: '/housing-market/bend',
-    })
-  }
-  if (bend != null) {
-    bendFigures.push({
-      value: v3Text(bend.activeCount.toLocaleString('en-US')),
-      label: v3Text('homes for sale'),
-      href: listingsBrowsePath(),
-    })
-  }
-  if (bend != null) {
-    bendFigures.push({
-      value: v3Text(bend.mosLabel),
-      label: v3Text('months of supply'),
-      href: '/months-of-supply',
-    })
-  }
-  const [firstBendFigure, ...restBendFigures] = bendFigures
-  const alsoRows = sellBendLedgerRows(publicSegments, publicPace)
-  const [firstAlsoRow, ...restAlsoRows] = alsoRows
+  const reviewCount = proof?.reviews?.count ?? 0
+  const reviewAvg = proof?.reviews?.averageRating ?? null
+  const homesSold = proof?.record?.homesSold ?? trackRecord?.homesSold ?? null
+  const heroProofTrace = [
+    reviewCount > 0 && reviewAvg != null
+      ? `Google Business Profile reviews for Ryan Realty, read through getReviews(): ${reviewCount} reviews, average ${reviewAvg.toFixed(1)}.`
+      : null,
+    homesSold != null ? `Homes sold: ${TRACK_RECORD_TRACE}` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
-  const leftoverTrace =
-    publicPaceItems(publicPace).length > 0
-      ? ' Leftover pace stats are 12-month Market Truth cells except pending and inventory age, which are point-in-time.'
-      : ''
-  const extraTrace =
-    publicSegmentItems(publicSegments, 'bend').length > 0
-      ? ' Extra product types are Market Truth, sample-gated.'
-      : ''
-  const bendTrace =
-    bend != null
-      ? `${BEND_MARKET_TRACE_SCOPE} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
-      : BEND_MARKET_TRACE_SCOPE
-
-  const listingRows = sellListingRows(listings)
-  const [firstListing, ...restListings] = listingRows
-
-  // The reviews arrive inside the proof block now (getProofBlock reads the same
-  // Google reviews getReviews did), so the page no longer pulls them twice.
-  const proofReviewCount = proof?.reviews?.count ?? 0
-
-  const quietItems: V3QuietItem[] = FAQ_ITEMS.map((item) => ({
+  const quietItems: V3QuietItem[] = SELL_FAQ_ITEMS.map((item) => ({
     kind: 'prose' as const,
     term: item.question,
     body: item.answer,
   }))
-
-  if (trackRecord) {
-    const volume = formatPriceCompact(trackRecord.totalVolume)
-    const avg = formatPrice(trackRecord.avgSalePrice)
-    quietItems.push({
-      kind: 'prose',
-      term: 'Closed sales listed by Ryan Realty',
-      body: `${trackRecord.homesSold.toLocaleString('en-US')} homes sold, ${volume} closed volume, ${avg} average sale price. ${TRACK_RECORD_TRACE}`,
-    })
-  }
-
-  quietItems.push(
-    ...aeoHubQuietItems('sell'),
-    { label: 'Value my home', href: FORM_ANCHOR },
-    ...(proofReviewCount > 0
-      ? [{ label: `All ${proofReviewCount} Google reviews`, href: '/reviews' }]
-      : [{ label: 'Google reviews', href: '/reviews' }]),
-    { label: 'Written valuation page', href: valuationPath() },
-    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
-    { label: 'The 3% listing plan', href: '#listing-plan' },
-    { label: 'Browse homes for sale', href: listingsBrowsePath() },
-  )
 
   const schemas: SchemaInput[] = [
     {
@@ -305,86 +186,62 @@ export default async function SellPage() {
     },
     {
       type: 'service',
-      name: 'Value my home',
+      name: 'Home selling consultation and written valuation',
       serviceType: 'Comparative market analysis',
       description:
-        'A written comparative market analysis for a Central Oregon home. Three closed comps, three active comps, and the list-price range those six support.',
+        'A conversation about selling a Central Oregon home and a written comparative market analysis built from the closed sales near it. No listing agreement required.',
       url: ROUTE_PATH,
       areaServed: 'Bend, Oregon',
       providerOrganization: true,
     },
-    { type: 'faqPage', items: FAQ_ITEMS },
-    // SITE-111 SEO increment. The seller page had no WebPage node, so nothing
-    // in its structured data tied the page itself to the brokerage entity the
-    // rest of the site publishes at #organization. Six blocks become seven,
-    // and the page a seller lands on now names its own subject.
+    { type: 'faqPage', items: SELL_FAQ_ITEMS },
     {
       type: 'webPage',
       name: 'Sell your home in Central Oregon',
       description:
-        'What a Central Oregon home is worth, what the Bend record says about the street, and the one 3% listing plan Ryan Realty lists on.',
+        'How Ryan Realty prices, launches and reports on a Central Oregon listing, with reviews, recent office closings, and a way to talk about your home.',
       url: ROUTE_PATH,
       aboutOrganization: true,
     },
   ]
-  if (bend != null) {
-    schemas.push({
-      type: 'dataset',
-      name: 'Bend housing market snapshot',
-      description:
-        'Detached single-family homes whose MLS City is Bend. Active count, months of supply, and market verdict from Market Truth. Not the city-limits polygon.',
-      url: ROUTE_PATH,
-      dateModified: bend.computedAt,
-      spatialCoverageName: 'Bend, Oregon',
-      variableMeasured: [
-        { name: 'Homes for sale', value: bend.activeCount },
-        { name: 'Months of supply', value: bend.mosLabel, unitText: 'months' },
-        { name: 'Market verdict', value: bend.verdictLabel },
-      ],
-    })
-  }
 
-  const posterSrc = heroSrc ?? SELL_POSTER
-
-  // SITE-85 · §0. Quiet hero figure from the pace read this page already makes.
-  // Re-verified 2026-09-10 this session: market_metric city=bend
-  // segment=detached is_publishable — closed_count window_months=12 → 2071,
-  // median_close window_months=12 → 760000, complete_through=2026-09-09;
-  // active_count window_months=0 → 648, months_of_supply window_months=6 →
-  // 3.745… (same Bend pulse the Instrument prints). Prefer pace over
-  // track-record career totals so the first viewport backs "what is my home
-  // worth" with Bend closes.
-  const heroClosed = publicPace.closedCount
-  const heroMedian = publicPace.medianClose
-  // Visitor-facing sentence only — no methodology jargon on the ask
-  // (evaluator 2026-09-10: "Market Truth detached…" read as engineer copy).
-  // The Instrument and Ledger keep the full §0 traces below the fold.
   const heroProof =
-    heroClosed != null && heroMedian != null ? (
+    reviewCount > 0 && reviewAvg != null ? (
       <>
-        <strong>{heroClosed.toLocaleString('en-US')}</strong>
-        {' Bend homes closed in the last 12 months · median sale '}
-        <strong>{formatPriceExact(heroMedian)}</strong>
+        <strong>{reviewAvg.toFixed(1)}</strong>
+        <span className="sell-hero-stars" aria-hidden="true">
+          {` ${'★'.repeat(Math.max(0, Math.min(5, Math.round(reviewAvg))))} `}
+        </span>
+        {`from ${reviewCount.toLocaleString('en-US')} Google reviews`}
+        {homesSold != null ? (
+          <>
+            {' · '}
+            <span className="sell-hero-nowrap">
+              <strong>{homesSold.toLocaleString('en-US')}</strong>
+              {' homes sold'}
+            </span>
+          </>
+        ) : null}
         {'. '}
-        <Link className="sell-stage-ask__door" href="/housing-market/bend">
-          The Bend market report
-        </Link>
+        <a className="sell-stage-ask__door" href="#proof" data-sell-cta="hero-reviews">
+          Read the reviews
+        </a>
       </>
-    ) : trackRecord ? (
+    ) : homesSold != null ? (
       <>
-        <strong>{trackRecord.homesSold.toLocaleString('en-US')}</strong>
-        {' homes sold by Ryan Realty · average close '}
-        <strong>{formatPriceExact(trackRecord.avgSalePrice)}</strong>
-        {'. '}
-        <Link className="sell-stage-ask__door" href="/our-homes">
-          What we have listed
-        </Link>
+        <strong>{homesSold.toLocaleString('en-US')}</strong>
+        {' homes sold by Ryan Realty'}
       </>
     ) : null
 
   return (
     <>
       <main className={V3_ROOT_CLASS}>
+        {/* Pre-paint: flag the CMA entry so the hero shows its copy on the
+            first frame. See ./_v3/sell-entry.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: SELL_ENTRY_SCRIPT }} />
+        <SellEntryFlag />
+        <SellClickTracker />
         <MetadataBlock schemas={schemas} />
         <V3SectionTracker />
 
@@ -397,166 +254,101 @@ export default async function SellPage() {
           id="sell-hero"
           headingLevel={1}
           height="tall"
-          className="sell-stage-poster"
-          eyebrow={SELL_STAGE_EYEBROW}
-          headline="Sell your home in Central Oregon"
-          posterSrc={posterSrc}
-          action={{ label: 'Value my home', href: FORM_ANCHOR, variant: 'ghost' }}
+          className="sell-stage-poster sell-landing-hero"
+          headline="Sell your home in Central Oregon, priced from the sales that closed"
+          altEyebrow={SELL_CMA_EYEBROW}
+          altHeadline={SELL_CMA_HEADLINE}
+          posterSrc={SELL_HERO_SRC}
+          posterSrcSet={SELL_HERO_SRCSET}
+          posterSizes="100vw"
         >
+          <p className="sell-hero-sub sell-hero-sub--default">{SELL_HERO_SUB}</p>
+          <p className="sell-hero-sub sell-hero-sub--cma">{SELL_CMA_SUB}</p>
           <SellCapture
-            eyebrow="Free. No listing agreement."
+            eyebrow="No contract to talk"
+            ariaLabel={SELL_PRIMARY_LABEL}
             placement="stage"
             proof={heroProof}
             trace={
-              heroClosed != null && heroMedian != null ? (
+              heroProof && heroProofTrace ? (
                 <V3SourceDisclosure
                   className="sell-stage-ask__trace"
-                  source={SELL_FOLD_TRACE}
-                  sourceName="Oregon Data Share"
+                  source={heroProofTrace}
+                  sourceName="Google and Oregon Data Share"
                 />
               ) : null
             }
-            nextHref={proofView ? '#proof' : '#bend-market'}
-            nextLabel={proofView ? 'The record' : 'Bend market'}
           >
-            <SellValueForm pagePath={ROUTE_PATH} />
+            <div className="sell-hero-face">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="sell-hero-face__img"
+                src={MATT_HEADSHOT}
+                srcSet={`${MATT_HEADSHOT} 1x, ${MATT_HEADSHOT_2X} 2x`}
+                width={56}
+                height={56}
+                alt={mattName}
+                decoding="async"
+              />
+              <p className="sell-hero-face__who">
+                <span className="sell-hero-face__name">{mattName}</span>
+                <span className="sell-hero-face__role">
+                  {BROKERS.matt.titleShort}
+                  {mattLicense ? ` · Oregon license ${mattLicense}` : ''}
+                </span>
+              </p>
+            </div>
+            <SellValueForm
+              pagePath={ROUTE_PATH}
+              submitLabel={SELL_PRIMARY_LABEL}
+              ctaHook="hero-value-flow"
+            />
+            {mattTel ? (
+              <p className="sell-hero-reach">
+                Or{' '}
+                <a href={`tel:${mattTel}`} data-sell-cta="hero-call">
+                  call
+                </a>{' '}
+                or{' '}
+                <a href={`sms:${mattTel}`} data-sell-cta="hero-text">
+                  text
+                </a>{' '}
+                {mattFirst}
+                {mattPhone ? ` at ${mattPhone}` : ''}.
+              </p>
+            ) : null}
           </SellCapture>
         </V3Stage>
+
+        <SellHowWeSell />
 
         {proofView ? (
           <V3ProofBlock
             {...proofView}
-            // Spelled out as well as carried in the view so the section is
-            // greppable from the route file — ci:page-purpose reads the
-            // contract's section list against this page's literal ids.
+            // Spelled out as well as carried in the view so ci:page-purpose can
+            // read the section id from the route file.
             id="proof"
-            // The quiet form (strips off) has no drawing to fill the left
-            // column. sell-answer.css collapses the body to one column for
-            // this instance only; the class goes away when the strips come on.
             className={proofView.strips.length === 0 ? 'sell-proof--quiet' : undefined}
           />
         ) : null}
 
-        {/* §0. The block prints its own trace only alongside the drawing, and
-            the drawing is off here — which would leave the closed-volume and
-            review figures on a public page with no source available. The
-            collapsed trace atom carries it: present on the section, never a
-            paragraph of methodology competing with the figures. */}
+        {/* §0. With the drawing off the block prints no trace of its own, so
+            the collapsed trace atom carries it. */}
         {proofView && proofView.strips.length === 0 ? (
           <div className="sell-proof-trace">
             <V3SourceDisclosure source={proofView.trace} />
           </div>
         ) : null}
 
-        {bend && firstBendFigure ? (
-          <V3Instrument
-            id="bend-market"
-            level={2}
-            eyebrow={v3Text('Bend, Oregon')}
-            headline={v3Text(`Bend housing market: a ${bend.verdictLabel}`)}
-            note={v3Text(
-              `${bend.activeCount.toLocaleString('en-US')} detached homes for sale. ${bend.mosLabel} months of supply is a ${bend.verdictLabel}.`,
-            )}
-            figures={[firstBendFigure, ...restBendFigures]}
-            source={v3Text(bendTrace)}
-            updated={v3Text(formatDate(bend.computedAt))}
-            action={{
-              label: v3Text('Value my home'),
-              href: FORM_ANCHOR,
-              variant: 'ghost',
-            }}
-          />
-        ) : (
-          <V3Quiet
-            id="bend-market"
-            heading="Bend supply"
-            items={[
-              {
-                kind: 'prose',
-                body: 'Bend months of supply is not on this page right now. The number comes from live inventory divided by the six-month close pace. Value the house first.',
-              },
-              { label: 'Value my home', href: FORM_ANCHOR },
-              { label: 'Months of supply, defined', href: '/months-of-supply' },
-            ]}
-          />
-        )}
+        <SellClosings closings={closings} />
 
-        {firstAlsoRow ? (
-          <V3Ledger
-            id="bend-also"
-            eyebrow={v3Text('Bend, Oregon')}
-            heading={v3Text('What else is listed, and how listings move')}
-            rows={[firstAlsoRow, ...restAlsoRows]}
-            encode="bar"
-            source={v3Text(
-              `${BEND_MARKET_TRACE_SCOPE}${leftoverTrace}${extraTrace}`.trim(),
-            )}
-            updated={bend ? v3Text(formatDate(bend.computedAt)) : undefined}
-            action={{ label: v3Text('Full Bend market report'), href: '/housing-market/bend' }}
-          />
-        ) : null}
+        <V3Quiet id="selling-questions" heading="Selling questions" items={quietItems} />
 
-        <V3Sheet
-          id="listing-plan"
-          className="sell-plan"
-          heading="The 3% listing plan"
-          eyebrow="One plan. Enhanced inclusions. No add-on fees."
-          steps={PLAN_STEPS}
-          showEcho={false}
-          showProgress={false}
-        />
-
-        {/* The reviews used to have their own V3Proof band here. V3ProofBlock
-            now carries them, in full and as written, directly under the ask —
-            which is where proof does its work on a seller page. Two reviews
-            sections on one page is the "second way to show the same thing"
-            TASTE.md calls how one site becomes two, so this one is gone rather
-            than duplicated. The reviews door lives on in the Quiet block. */}
-        {firstListing ? (
-          <V3Ledger
-            id="our-listings"
-            eyebrow={v3Text('Ryan Realty')}
-            heading={v3Text('Our listings')}
-            rows={[firstListing, ...restListings]}
-            media="photo"
-            source={v3Text(OUR_LISTINGS_TRACE)}
-            action={{ label: v3Text('All office listings'), href: '/our-homes' }}
-          />
-        ) : (
-          <V3Ledger
-            id="our-listings"
-            eyebrow={v3Text('Ryan Realty')}
-            heading={v3Text('Our listings')}
-            rows={[]}
-            media="photo"
-            emptyMessage={v3Text(
-              'No Ryan Realty office listing is on the market in this refresh.',
-            )}
-            action={{ label: v3Text('Homes for sale'), href: '/homes-for-sale' }}
-          />
-        )}
-
-        <V3Quiet
-          id="selling-questions"
-          heading="Selling questions"
-          items={quietItems}
-        />
-
-        {/* SITE-05. A direct child of main, never inside a hidden ancestor: the
-            control watches #sell-hero and #get-value with IntersectionObserver,
-            and an observer inside a display:none subtree reports nothing. It
-            appears once the hero is fully past and retires whenever the address
-            field it points at is on screen, so the page never carries three
-            asks at once (PUBLIC_UI §1). */}
-        <V3StickyAsk
-          href={FORM_ANCHOR}
-          label="Value my home"
-          verdict={sellVerdict}
-          place="Bend"
-          surface="sell"
-          sentinelId="sell-hero"
-          targetId="get-value"
-          focusId="get-value-address"
+        <SellFinalAsk
+          label={SELL_PRIMARY_LABEL}
+          tel={mattTel}
+          phoneDisplay={mattPhone}
+          brokerFirstName={mattFirst}
         />
       </main>
 

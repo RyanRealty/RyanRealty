@@ -1,12 +1,12 @@
 {
   "route": "app/sell/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic list-with-us pages: the ask in the first working surface (SellValueForm, Places autocomplete, pagePath=/sell), live Bend figures with a source trace, one 3% plan with the full Enhanced inclusion list, and every valuation CTA anchored to #get-value. Zero invented results. D11: Value my home on the field submit, never What's my home worth on a control.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value. CLOSED 2026-08-27: 'Places autocomplete' verified by code trace, not by curl (client-hydrated). Chain confirmed: app/sell/_v3/SellValueForm.tsx renders components/seller-lp/AddressAutocomplete.tsx bound to the address field (visible 'Home address' label, empty value). AddressAutocomplete calls lib/use-google-maps-ready.ts (useGoogleMapsReady({libraries:['places']})) and instantiates google.maps.places.Autocomplete via importLibrary('places') restricted to US addresses, biased to Bend/Central Oregon bounds. The loader is components/GoogleMapsBootstrap.tsx, mounted app/layout.tsx -> RootProvider -> AnalyticsScripts -> GoogleMapsBootstrap (same shared loader used by SearchMapClustered, ListingLocationMap, ListingHeroMap, ListingLot3D, and other live map surfaces). NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set in .env.local. Served SSR markup carries the empty address input with its visible label (curl-verified); the Places wiring itself only activates post-hydration by design, so it cannot be curl-verified and was not expected to be. 2026-09-08 (SITE-02, SITE-10, SITE-05, SITE-11): the address step now ANSWERS before it asks. Order is address -> answer -> contact (email required, phone optional) -> timeframe (the choice is the submit, so a submit cannot land without one) -> success. The near-term lane (ready-now) gets a /book prompt in the success state and in the same-minute system confirmation. address_submit fires on the address step so the address-to-request ratio has a denominator. The old V3Proof reviews band was REMOVED rather than duplicated: V3ProofBlock carries the reviews, directly under the ask, and one reviews surface is the rule (TASTE.md consistency). 2026-09-16 (SITE-111): the first viewport is Stage then THE ADDRESS SHEET. The slab on the photograph is one narrow column \u2014 the sourced Bend line with its own section-0 disclosure (SELL_FOLD_TRACE) and a crawlable door to /housing-market/bend, the beui-input address field (components/motion/input, imported by app/sell/_v3/SellValueForm.tsx), the Value my home submit \u2014 and the scroll cue moved out of the slab onto the photo. The Bend months-of-supply two-bar LEFT the fold: the 2026-09-12 table called printing city supply beside an untyped address \"answering the city before it has a house\", and supply is now drawn inside the sheet against the typed street. The submit opens the real shadcn Sheet (components/ui/sheet, Radix Dialog, imported by the same route file) above the chrome \u2014 overlay, focus trap, Escape, close control, a three-rung step rail \u2014 and the sourced answer reveals inside it between the address and the contact step. Nothing SITE-02, SITE-05, SITE-10 or SITE-11 shipped was removed: the answer step, the sticky ask, the timeframe ask, the proof block and the ask-source attribution are all still here, and the four steps still run address -> answer -> contact -> timeframe -> success with the same payload, field names and pagePath.",
+  "competitiveTarget": "Rebuilt 2026-09-28 against a walk of 11 seller paths at 1440x900 and 375x812 (/workspace/competitor-sell-paths-2026-09-28/SYNTHESIS.md: Cascade Hasson SIR, Coldwell Banker Bain, Duke Warner, Bend Premier, Stellar/lifeinbend, Strategic/movetobend, RE/MAX Key, Redfin, Compass, Opendoor, Windermere, Zillow landing only). Beat them where they are weak: the Bend offices open on a contact form with no proof and no face on the first screen; only Stellar puts numbers in the hero; nobody shows a broker face plus reviews on the first screen; only Bend Premier speaks to an expired listing. Match the national pattern that wins: an address first, low-effort questions next, contact LAST as the submit (Redfin, Opendoor). So /sell carries proof, Matt\u2019s face and the one action on the first screen at both widths, a ?from=cma hero for owners whose listing ended, three concrete steps, initials-only reviews, real office closings, and the same value flow with contact moved to the end. Zero invented results.",
+  "note": "Rebuilt 2026-09-28 from Matt\u2019s brief (CMA landing for expired listings) and the Phase 1 competitor walk. Rhythm: no two adjacent sections share a pattern. Cut: market sections, property-type rows, the blog/site link block, Expand ask, the 3% hero label, full reviewer names, the em dash in the proof trace, the sticky ask. ?from=cma changes ONLY the hero copy, client-side over the static HTML, so /sell keeps revalidate 3600.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD BreadcrumbList + FAQPage. V3Breadcrumb and V3Quiet carry no structured data of their own. FAQPage items are the same FAQ_ITEMS array the Quiet block renders.",
+      "section": "JSON-LD BreadcrumbList + Service + FAQPage + WebPage. FAQPage items are the same SELL_FAQ_ITEMS array V3Quiet renders.",
       "blocking": true
     },
     {
@@ -16,47 +16,47 @@
     },
     {
       "name": "V3Stage",
-      "section": "Pattern 4, opens the page. headingLevel 1, height tall. H1 is the seo-shell head term. Quiet eyebrow is 3% listing plan. SellCapture + SellValueForm sit on the photograph as the Stage children. The primitive requires an action prop. The page hides it (sell-stage-poster) so the filled primary is the capture submit.",
+      "section": "Opens the page. headingLevel 1, height tall. H1 opens with the seo-shell head term (Sell your home in Central Oregon, priced from the sales that closed). altEyebrow/altHeadline carry the ?from=cma copy (For homeowners whose listing ended / Your listing ended. Let\u2019s talk about what\u2019s next.), both in the static HTML. Poster is a pre-sized srcset of the Drake Park aerial, each file under 300 KB.",
       "blocking": true
     },
     {
       "name": "SellValueForm",
-      "section": "The ask. Address field is the spine: visible label, empty field, submit Value my home. No card title, no placeholder. Places autocomplete, partial-lead, CMA queue. pagePath='/sell' attribution. formId anchor #get-value. Capture contract unchanged. SITE-02: the ask is now four steps - address -> ANSWER -> contact -> timeframe -> success. The answer body is app/sell/_v3/SellAnswer.tsx, rendered by this form (so the ROUTE does not import it and this contract cannot name it; app/sell/_v3/sell-answer.test.ts is what holds the step in place). It draws months of supply as two bars, the pace and cash readings as sentences with a disclosure each, and the comparable-close count for the typed address. No dollar figure for a typed address (Matt). One component against one data type so the drawing can be swapped.",
+      "section": "The ONE primary action, inside SellCapture on the Stage: first-screen proof line (Google rating + count, homes sold) with its trace, Matt\u2019s face (name, Principal Broker, license), the address field and the submit labelled Talk to us about your home, then a small call/text link. Same flow, action and payload as before; steps are address, market read, timing, contact (contact last, as the submit).",
       "blocking": true
     },
     {
-      "name": "V3Instrument",
-      "section": "Pattern 1, level 2. Three lead Bend figures (median, homes for sale, months of supply). Ask is ghost Value my home.",
+      "name": "SellHowWeSell",
+      "section": "How we sell in 3 steps (price from the sales; launch right in week one with photo, drone, video and 3D in the 3%; a written weekly report). Full PLAN_GROUPS inclusions behind one native details toggle.",
       "blocking": true
     },
     {
-      "name": "V3Ledger",
-      "section": "#bend-also. Extra product types and leftover pace as scannable rows. Count is the figure, the rest of the sentence is detail. Bar-encode type counts only.",
+      "name": "V3ProofBlock",
+      "section": "Reviews through the existing switcher, reviewer INITIALS ONLY (withInitialsOnly). Outcome strips OFF (Matt 2026-09-08). No reach strip.",
       "blocking": true
     },
     {
-      "name": "V3Sheet",
-      "section": "Pattern 5, the one 3% plan as plan-detail blocks. No field, no matrix, no 2.5/3.5. Enhanced inclusions only.",
+      "name": "SellClosings",
+      "section": "Up to 6 Ryan Realty list-side closings in the last 12 months from MLS closed data (getOfficeRecentClosings): city, beds, price, days to contract, sale to final list. No street, month or names. Not links. Renders nothing with no rows.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6. Seller FAQ as prose from the same FAQ_ITEMS the FAQPage JSON-LD uses, track-record proof as prose with its own MLS closed-sale trace, Sep 7 AEO seller guides from lib/seo/aeo-hub-guides.ts (SITE-123, published titles), outbound doors including Value my home and valuationHref('/sell').",
+      "section": "Four selling questions (SELL_FAQ_ITEMS). The same array feeds FAQPage.",
+      "blocking": true
+    },
+    {
+      "name": "SellFinalAsk",
+      "section": "The primary action repeated once (a link to the same value-flow field), small call/text links, and the one link to the full Bend market report that replaces the market sections.",
+      "blocking": true
+    },
+    {
+      "name": "SellClickTracker",
+      "section": "Tracking island: every link and CTA click on /sell to cta_click (visitor_events) + trackCtaClick (GA4 + CRM). Enforced by ci:sell-cta-tracking.",
       "blocking": true
     },
     {
       "name": "V3Footer",
       "section": "Chrome. V3_FOOTER_COLUMNS. No button. Rendered OUTSIDE main.",
-      "blocking": true
-    },
-    {
-      "name": "V3ProofBlock",
-      "section": "SITE-11. Directly under the ask. The record, the Google reviews in full, and the reach to the ROUTED broker (tel/sms/book from the roster through aboutFaceFromBroker, never a literal - G38). Ships with showOutcomes:false until Matt rules on the two outcome strips; the sell-proof--quiet class collapses the body to one column while the drawing column is empty.",
-      "blocking": true
-    },
-    {
-      "name": "V3StickyAsk",
-      "section": "SITE-05. A direct child of main, never inside a hidden ancestor. Watches #sell-hero (sentinel) and #get-value (target): appears once the hero is fully past, retires whenever the address field is on screen. Its verdict tail is built by stickyAskVerdict from the Bend pulse row with applyDetachedOverlay, so it prints the SAME months of supply the Instrument prints.",
       "blocking": true
     }
   ],
@@ -93,7 +93,14 @@
     "SellPlanSingle",
     "SellCommission",
     "SellMarketContext",
-    "SellValuationCTA"
+    "SellValuationCTA",
+    "V3Instrument (Bend pulse)",
+    "V3Ledger #bend-also",
+    "V3Sheet listing plan",
+    "V3Ledger our listings (active)",
+    "V3StickyAsk",
+    "aeoHubQuietItems on /sell",
+    "Expand ask shot trigger"
   ],
   "jsonLd": {
     "required": [
@@ -102,31 +109,38 @@
         "emittedBy": "MetadataBlock schemas array (breadcrumb entry)"
       },
       {
+        "type": "Service",
+        "emittedBy": "MetadataBlock schemas array (service entry)"
+      },
+      {
         "type": "FAQPage",
-        "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same FAQ_ITEMS array V3Quiet renders"
+        "emittedBy": "MetadataBlock schemas array (faqPage entry), items = SELL_FAQ_ITEMS, the array V3Quiet renders"
+      },
+      {
+        "type": "WebPage",
+        "emittedBy": "MetadataBlock schemas array (webPage entry)"
       }
     ],
-    "note": "One derivation for the FAQ. Visible Quiet answers and FAQPage items are the same array. This route emits a Dataset (the Bend market snapshot), stamped from the market run."
+    "note": "One derivation for the FAQ. The Dataset (Bend market snapshot) left with the market sections on 2026-09-28."
   },
   "dataLayer": {
-    "getMarketPulse": "lib/data/market/getMarketPulse.ts. market_pulse_live, geo_type='city', geo_slug='bend', property_type='A'. Feeds the Instrument.",
-    "getSurfaceImage": "lib/data/media/getSurfaceImages.ts. Distinct approved hero for /sell, fallback tetherow-golf-aerial. Feeds V3Stage posterSrc. No homepage Old Mill video on this route: a Stage with a poster is complete, and /sell was already on a distinct still so it would not reuse the homepage banner.",
-    "getBrokerageTrackRecord": "lib/data/track-record.ts. Closed Ryan Realty list-side sales. Feeds Quiet proof prose, not the Bend Instrument.",
-    "SellValueForm": "app/sell/_v3/SellValueForm.tsx into app/lp/seller-home-value/actions.ts. Bound to SellCapture. Same action, same payload, same field names, pagePath=/sell.",
-    "note": "Every read is a DAL function from @/lib/data (G8). Nothing is fetched that the page does not render. getCityMarketDetail, getLifestyleImages, and getSoldStories were dropped with the sections that consumed them. Route-local constants live in app/sell/_v3/sell-constants.ts."
+    "getProofBlock": "lib/data/proof/getProofBlock.ts. Google reviews (count, average, quotes) and the brokerage record. Quotes are mapped to initials on the page.",
+    "getBrokerageTrackRecord": "lib/data/track-record.ts. Homes sold (list side, all time), fallback for the hero proof line.",
+    "getBrokers": "lib/data/brokers/getBrokers.ts. Matt\u2019s roster row (headshot record, license, phone) through aboutFaceFromBroker.",
+    "getOfficeRecentClosings": "lib/data/proof/getOfficeRecentClosings.ts. Up to 6 list-side office closings, CloseDate in the last 12 months.",
+    "SellValueForm": "app/sell/_v3/SellValueForm.tsx into app/lp/seller-home-value/actions.ts. Same action, payload and field names, pagePath=/sell, plus entry=cma when the page URL says from=cma.",
+    "note": "Every read is a DAL function from @/lib/data (G8). getSellBendMarket, getPublicDetachedPace, getPublicPlaceSegments, getBrokerageListings and getSurfaceImage left /sell with the sections that consumed them."
   },
   "sectionOrder": [
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Stage id=sell-hero (SellCapture: sourced line + section-0 trace + crawlable door, then the beui-input address field, then Value my home; the submit opens the shadcn Sheet where address -> SellAnswer -> contact -> timeframe -> success runs)",
-    "V3ProofBlock #proof -- the record, the reviews, the reach (outcome strips OFF pending Matt)",
-    "V3Instrument (Bend pulse) or V3Quiet empty",
-    "V3Ledger #bend-also -- other types and leftover pace, not a 27-figure grid",
-    "V3Sheet #listing-plan",
-    "V3Ledger #our-listings (office house rows, cap 6, MLS standing when it is not plain Active)",
-    "V3Quiet #selling-questions (FAQ, track record, doors incl. the reviews door)",
-    "V3StickyAsk (fixed, direct child of main)",
+    "V3Stage id=sell-hero (H1, sub, first-screen proof + trace, Matt face, address field, Talk to us about your home, small call/text link; the submit opens the Sheet: market read, timing, contact as the final submit, success)",
+    "SellHowWeSell (three steps, inclusions behind a toggle)",
+    "V3ProofBlock #proof (reviews, initials only)",
+    "SellClosings (recent office closings, MLS closed data)",
+    "V3Quiet #selling-questions (four questions)",
+    "SellFinalAsk (the primary action repeated once, call/text links, the market report link)",
     "V3Footer"
   ],
   "openDefects": {
@@ -246,33 +260,81 @@
     }
   },
   "contentFloor": {
-    "seededAt": "2026-09-12",
-    "seededFrom": "https://ryan-realty.com",
+    "seededAt": "2026-09-28",
+    "seededFrom": "http://localhost:3322",
     "viewport": 1440,
     "observed": {
       "h1": 1,
-      "words": 1176,
-      "headings": 6,
-      "sections": 7,
-      "internalLinks": 200,
-      "images": 5,
+      "words": 769,
+      "headings": 5,
+      "sections": 6,
+      "internalLinks": 162,
+      "images": 7,
       "heroImageWidth": 1440,
-      "heroImageNatural": 4200,
+      "heroImageNatural": 1440,
       "video": 0,
-      "jsonLd": 6
+      "jsonLd": 6,
+      "sectionDepth": {
+        "sell-hero": {
+          "items": 0,
+          "words": 93
+        },
+        "how-we-sell": {
+          "items": 28,
+          "words": 126
+        },
+        "proof": {
+          "items": 0,
+          "words": 140
+        },
+        "recent-closings": {
+          "items": 6,
+          "words": 134
+        },
+        "selling-questions": {
+          "items": 4,
+          "words": 225
+        },
+        "talk": {
+          "items": 0,
+          "words": 36
+        }
+      }
     },
     "floors": {
       "h1": 1,
-      "words": 823,
-      "headings": 4,
-      "sections": 5,
-      "internalLinks": 140,
-      "images": 3,
+      "words": 538,
+      "headings": 3,
+      "sections": 4,
+      "internalLinks": 113,
+      "images": 4,
       "heroImageWidth": 1296,
-      "heroImageNatural": 3780,
+      "heroImageNatural": 1296,
       "video": 0,
-      "jsonLd": 6
+      "jsonLd": 6,
+      "sectionDepth": {
+        "sell-hero": {
+          "items": 0,
+          "words": 83
+        },
+        "how-we-sell": {
+          "items": 25,
+          "words": 113
+        },
+        "proof": {
+          "items": 0,
+          "words": 126
+        },
+        "recent-closings": {
+          "items": 5,
+          "words": 120
+        },
+        "selling-questions": {
+          "items": 3,
+          "words": 202
+        }
+      }
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. 2026-09-28 reseed (tip/sell-landing-rebuild, measured on a local production build of that branch): words 823 -> 538 and heroImageNatural 3780 -> 1296 are lowered on purpose. Matt's cuts removed the market-rows table, the long plan list (now behind a toggle) and the Dataset schema; the hero is now a pre-sized 640-1920w webp srcset instead of the 4200px original, which is what cut page weight from ~15.6 MB to ~4.5 MB."
   }
 }

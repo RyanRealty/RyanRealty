@@ -2,7 +2,8 @@
 /**
  * check-aeo-hub-guides.mjs — ci:aeo-hub-guides (SITE-123).
  *
- * /buy, /sell, /neighborhoods, /housing-market/bend, and the homepage strip
+ * /buy, /neighborhoods, /housing-market/bend, and the homepage strip (/sell
+ * left the list 2026-09-28, Matt's landing rebuild)
  * must crawlably link the Sep 7 AEO cluster with the published titles.
  * Sealed SEO Desk list.
  * Dropping a href or swapping the title for a generic label fails.
@@ -29,13 +30,10 @@ const REQUIRED = {
     ['/blog/property-taxes-deschutes-county', 'Property Taxes in Bend and Deschutes County, Explained'],
     ['/blog/closing-costs-buyers-bend-oregon', 'Closing Costs for Home Buyers in Bend, Oregon'],
   ],
-  sell: [
-    ['/blog/how-to-sell-your-home-bend', 'How to Sell Your House in Bend, Oregon'],
-    ['/blog/cost-to-sell-house-bend-oregon', 'What It Costs to Sell a House in Bend (and Oregon)'],
-    ['/blog/how-to-price-your-bend-home', 'How to Price Your Bend Home So It Sells'],
-    ['/blog/selling-your-bend-home-from-out-of-state', 'Selling Your Bend Home from Out of State'],
-    ['/blog/property-taxes-deschutes-county', 'Property Taxes in Bend and Deschutes County, Explained'],
-  ],
+  // sell: REMOVED 2026-09-28. Matt's /sell rebuild cut the blog/site link block
+  // from /sell (it is the landing page for CMA emails to owners whose listing
+  // ended; one market-report link replaces the doors). The guides still ship
+  // on /buy, /neighborhoods, /housing-market/bend and the homepage strip.
   neighborhoods: [
     ['/blog/best-neighborhoods-bend-buyers', 'Best Neighborhoods in Bend, Oregon for Buyers'],
     ['/blog/westside-vs-eastside-bend', 'Westside vs Eastside Bend: Price, Walkability, and Trade-offs'],
@@ -61,7 +59,6 @@ const REQUIRED = {
 
 const TIP_MINS = {
   buy: 5,
-  sell: ['/blog/how-to-sell-your-home-bend', '/blog/cost-to-sell-house-bend-oregon'],
   neighborhoods: ['/blog/best-neighborhoods-bend-buyers', '/blog/bend-vs-redmond-vs-sisters'],
   'housing-market/bend': 3,
   home: 9,
@@ -72,7 +69,6 @@ const INVENTED_BROKER = ['/blog/buyers-agent-bend-buyer-broker-agreement']
 
 const HUB_FILES = {
   buy: ['app/buy/_v3/buy-constants.ts', 'app/buy/page.tsx'],
-  sell: ['app/sell/page.tsx'],
   neighborhoods: ['app/neighborhoods/page.tsx'],
   'housing-market/bend': ['app/housing-market/[...slug]/_v3/geo-figures.ts'],
   home: ['app/page.tsx', 'app/_v3/home-guide-qa.ts'],
@@ -80,7 +76,6 @@ const HUB_FILES = {
 
 const WIRE = {
   buy: { helper: 'aeoHubLedgerRows', primitive: 'V3Ledger' },
-  sell: { helper: 'aeoHubQuietItems', primitive: 'V3Quiet' },
   neighborhoods: { helper: 'aeoHubQuietItems', primitive: 'V3Quiet' },
   'housing-market/bend': { helper: 'aeoHubQuietItems', primitive: 'V3Quiet' },
   home: { helper: 'aeoHubHomeStripDoors', primitive: 'V3Answers' },
@@ -163,5 +158,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${GATE} — OK: /buy /sell /neighborhoods /housing-market/bend and the homepage #guides strip keep the Sep 7 AEO cluster with authentic titles. First house-rail photos must peek onto the 1440×900 fold (not heading-only).`,
+  `${GATE} — OK: /buy /neighborhoods /housing-market/bend and the homepage #guides strip keep the Sep 7 AEO cluster with authentic titles. First house-rail photos must peek onto the 1440×900 fold (not heading-only).`,
 )

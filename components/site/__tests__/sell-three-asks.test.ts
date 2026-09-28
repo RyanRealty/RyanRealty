@@ -40,18 +40,17 @@ describe('/sell three asks became one', () => {
     expect(formAt).toBeLessThan(stageClose)
   })
 
-  it('keeps three Bend answers as figures and the rest as a ledger, not one numeral grid', () => {
-    expect(page).toMatch(/<V3Ledger/)
-    expect(page).toContain('sellBendLedgerRows')
-    expect(page).toContain('What else is listed, and how listings move')
-    expect(page).not.toContain('foldAfter={3}')
-    expect(page).not.toMatch(/for \(const item of publicSegmentItems/)
-    expect(page).not.toMatch(/for \(const item of publicPaceItems/)
+  it('carries no market sections, no sticky bar and no second primary (Matt 2026-09-28)', () => {
+    expect(page).not.toMatch(/<V3Ledger|<V3Instrument|<V3StickyAsk|sellBendLedgerRows/)
+    expect(page).not.toContain('What else is listed, and how listings move')
+    // ONE primary action: the value flow, repeated once as the final ask.
+    expect(page).toContain('submitLabel={SELL_PRIMARY_LABEL}')
+    expect(page).toContain('label={SELL_PRIMARY_LABEL}')
   })
 
-  it('address step is label + empty field + Value my home', () => {
+  it('address step is label + empty field + Value my home (default label)', () => {
     expect(form).toContain('Home address')
-    expect(form).toContain('Value my home')
+    expect(form).toContain("submitLabel = 'Value my home'")
     expect(form).not.toContain('Enter your home address')
     expect(form).not.toContain("Get your home's value")
     expect(form).not.toContain('Get your home’s value')

@@ -132,7 +132,7 @@ function traceText(block: ProofBlock, showOutcomes: boolean): string {
     .filter((t) => t.scope === 'always' || showOutcomes)
     .map(
       (t) =>
-        `${t.figure} — ${t.source}; ${t.table}; ${t.filter}; ${t.window}; ${t.rows} rows; pulled ${t.fetchedAt}; ${t.query}`,
+        `${t.figure}: ${t.source}; ${t.table}; ${t.filter}; ${t.window}; ${t.rows} rows; pulled ${t.fetchedAt}; ${t.query}`,
     )
     .join(' · ')
 }

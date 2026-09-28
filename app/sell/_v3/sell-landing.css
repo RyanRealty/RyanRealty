@@ -1,0 +1,347 @@
+/*
+ * /sell landing (2026-09-28 rebuild). Route-local, tokens only.
+ *
+ * FIRST SCREEN. At 1440x900 and 375x812 the hero carries the H1, the sub, the
+ * proof line, Matt's face and the one action. The stage stops where the slab
+ * stops; the photograph is a pre-sized srcset and stays the LCP.
+ *
+ * ?from=cma. html[data-sell-entry="cma"] (set before first paint by
+ * SELL_ENTRY_SCRIPT) swaps the default headline and sub for the CMA pair that
+ * V3Stage and the page already shipped in the HTML. Nothing else changes.
+ */
+
+/* ---------- hero copy ---------- */
+.v3.v3-stage.sell-landing-hero .v3-stage-copy {
+  padding-block: var(--v3-space-xl) var(--v3-space-lg);
+}
+.v3.v3-stage.sell-landing-hero .v3-stage-line {
+  max-width: 22ch;
+}
+@media (max-width: 47.99rem) {
+  .v3.v3-stage.sell-landing-hero .v3-stage-copy {
+    padding-block: var(--v3-space-md) var(--v3-space-sm);
+    gap: var(--v3-space-xs);
+  }
+  .v3.v3-stage.sell-landing-hero .v3-stage-line {
+    font-size: var(--v3-size-display-2);
+  }
+}
+.v3.v3-stage .sell-hero-sub {
+  margin: 0;
+  max-width: 40rem;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-on-media);
+  text-wrap: pretty;
+}
+@media (max-width: 47.99rem) {
+  .v3.v3-stage .sell-hero-sub {
+    font-size: var(--v3-size-body-sm);
+  }
+}
+.v3.v3-stage .sell-hero-sub--cma {
+  display: none;
+}
+html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .v3-stage-line:not(.v3-stage-line--alt),
+html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--default {
+  display: none;
+}
+html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .v3-stage-line--alt,
+html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .v3-stage-eyebrow--alt,
+html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
+  display: block;
+}
+
+/* ---------- the slab: proof, face, action ---------- */
+.v3.v3-stage.sell-landing-hero .sell-stage-ask {
+  width: min(100%, 32rem);
+  gap: var(--v3-space-xs);
+}
+@media (max-width: 47.99rem) {
+  .v3.v3-stage.sell-landing-hero .sell-stage-ask {
+    padding: var(--v3-space-sm);
+    margin-block-end: var(--v3-space-sm);
+  }
+  .v3.v3-stage.sell-landing-hero .sell-stage-ask__head {
+    margin-bottom: 0;
+  }
+  .v3.v3-stage.sell-landing-hero .sell-stage-ask .sell-stage-submit {
+    margin-block-start: var(--v3-space-3xs);
+    min-width: 0;
+  }
+  /* "Talk to us about your home" is longer than the old label; at 375 the
+     demo's text-lg nowrap label pushed the button (and the grid track, and
+     the field with it) past the slab edge. One step down keeps one line. */
+  .v3.v3-stage.sell-landing-hero .sell-stage-submit .sell-stage-submit__label {
+    margin-inline-end: var(--v3-space-sm);
+    font-size: var(--v3-size-body);
+  }
+}
+/* The dog floater (V3DogFloater.css) is fixed at the vertical middle of the
+   inline-end edge. On a phone the slab runs to the gutter, so the rows that
+   land at mid-viewport (the proof line and its "how we calculate this"
+   trace, the eyebrow, Matt's face) keep a right-hand lane clear of it:
+   disc + its inset + a small gap, minus the gutter and slab padding the
+   slab already gives. The field and the button keep the full width; they
+   sit well below the middle of every phone viewport. Checked at 375x812,
+   375x667, 390x844 and 414x896, both entries. */
+@media (max-width: 47.99rem) {
+  .v3.v3-stage.sell-landing-hero .sell-stage-ask {
+    --sell-dog-lane: calc(
+      var(--v3-dog-fab, 4.25rem) + var(--v3-space-md) + var(--v3-space-xs) - var(--v3-gutter) -
+        var(--v3-space-sm)
+    );
+  }
+  .v3.v3-stage.sell-landing-hero .sell-stage-ask__record,
+  .v3.v3-stage.sell-landing-hero .sell-stage-ask__head,
+  .v3.v3-stage.sell-landing-hero .sell-hero-face {
+    padding-inline-end: var(--sell-dog-lane);
+  }
+  /* The disclosure control is pinned to the row's end (margin-inline-start:
+     auto), so the lane above still leaves "how we calculate this" under the
+     disc. Inset only that control. */
+  .v3.v3-stage.sell-landing-hero .sell-stage-ask__trace .v3-source__more {
+    margin-inline-end: calc(var(--sell-dog-lane) + var(--v3-space-sm));
+  }
+}
+.v3.v3-stage .sell-hero-stars {
+  color: var(--v3-ink);
+  letter-spacing: var(--v3-track-label);
+}
+.v3.v3-stage .sell-hero-nowrap {
+  white-space: nowrap;
+}
+.v3.v3-stage .sell-hero-face {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+}
+.v3.v3-stage .sell-hero-face__img {
+  flex: none;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--v3-radius-pill);
+  object-fit: cover;
+  background: var(--v3-wash);
+}
+.v3.v3-stage .sell-hero-face__who {
+  display: grid;
+  margin: 0;
+  min-width: 0;
+  font-family: var(--v3-font-body);
+  line-height: var(--v3-leading-note);
+}
+.v3.v3-stage .sell-hero-face__name {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
+}
+.v3.v3-stage .sell-hero-face__role {
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+.v3.v3-stage .sell-hero-reach {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+/* Element color rules sit in @layer base so utilities still win (ci:css-layers). */
+@layer base {
+  .v3.v3-stage .sell-hero-reach a,
+  .v3 .sell-final__reach a,
+  .v3 .sell-final__report a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+}
+
+/* ---------- how we sell ---------- */
+.v3.sell-how,
+.v3.sell-closings,
+.v3.sell-final {
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+.sell-how__head,
+.sell-closings__head {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  margin-block-end: var(--v3-space-lg);
+}
+.sell-how__steps {
+  display: grid;
+  gap: var(--v3-space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 64rem) {
+  .sell-how__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--v3-space-xl);
+  }
+}
+.sell-how__step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--v3-space-sm);
+  align-items: start;
+  padding-block-start: var(--v3-space-sm);
+  border-block-start: var(--v3-rule-section);
+}
+.sell-how__n {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-num);
+  line-height: 1;
+  color: var(--v3-navy);
+}
+.sell-how__title,
+.sell-how__group-title {
+  margin: 0 0 var(--v3-space-2xs);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-strong);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+}
+.sell-how__body,
+.sell-how__terms {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  text-wrap: pretty;
+}
+.sell-how__all {
+  margin-block-start: var(--v3-space-lg);
+  border-block: var(--v3-rule-hairline);
+}
+.sell-how__toggle {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  cursor: pointer;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+.sell-how__toggle:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+.sell-how__groups {
+  display: grid;
+  gap: var(--v3-space-md);
+  padding-block: var(--v3-space-sm) var(--v3-space-md);
+}
+@media (min-width: 48rem) {
+  .sell-how__groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 64rem) {
+  .sell-how__groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.sell-how__items {
+  margin: 0;
+  padding-inline-start: var(--v3-space-md);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+.sell-how__terms {
+  padding-block-end: var(--v3-space-md);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* ---------- recent closings ---------- */
+.sell-closings__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--v3-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sell-closings__card {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  background: var(--v3-surface-raised);
+  border: var(--v3-rule-hairline);
+  border-radius: var(--v3-radius-card);
+}
+.sell-closings__where {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+.sell-closings__price {
+  margin: 0;
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-num);
+  color: var(--v3-ink);
+}
+.sell-closings__facts {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  margin: var(--v3-space-2xs) 0 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+.sell-closings__facts dt {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.sell-closings__facts dd {
+  margin: 0;
+  color: var(--v3-ink);
+}
+.sell-closings__trace {
+  margin-block-start: var(--v3-space-sm);
+  font-size: var(--v3-size-source);
+}
+
+/* ---------- final ask ---------- */
+.v3.sell-final {
+  display: grid;
+  justify-items: start;
+  gap: var(--v3-space-sm);
+  border-block-start: var(--v3-rule-section);
+}
+.sell-final__sub,
+.sell-final__reach,
+.sell-final__report {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+.v3.sell-final .sell-final__cta {
+  min-height: var(--v3-tap);
+  text-decoration: none;
+}
