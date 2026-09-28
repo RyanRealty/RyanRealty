@@ -80,7 +80,7 @@ describe('minimum-width band and the active nudge stay ordered', () => {
       { actives: SITTING },
     )
     expect(finished.recommended).toBe(625_000)
-    expect(finished.conservative).toBe(624_900)
+    expect(finished.conservative).toBe(625_000)
     expect(finished.highEnd).toBe(625_000)
     expect(finished.valueLow).toBe(609_000)
     expect(finished.valueHigh).toBe(641_000)
@@ -221,10 +221,11 @@ describe('floor, minimum width, failed-ask cap, and the nudge', () => {
     expect(pricing.conservative).toBe(624_900)
     expect(pricing.recommended).not.toBe(609_000)
     const finished = finishRecommendedAfterActives(pricing, { actives: SITTING })
-    // The pin is still that sale. The printed list is the nearest thousand,
-    // which stays above the floor and inside the opened band.
+    // The pin is still that sale. The printed list and the printed floor are
+    // the nearest thousand, inside the opened band. The ask is not within
+    // one step, so the list is not pulled down to it.
     expect(finished.recommended).toBe(625_000)
-    expect(finished.conservative).toBe(624_900)
+    expect(finished.conservative).toBe(625_000)
     expect(finished.recommended).toBeGreaterThanOrEqual(finished.conservative)
     const contract = evaluateAccuracyContract({
       audit: null,

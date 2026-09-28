@@ -142,37 +142,39 @@ export function roundPriceUp(n: number): number {
 }
 
 /**
- * The thousand-dollar grid a printed recommendation already uses
- * (`listFromClose`, the active nudge). Nearest thousand.
+ * Nearest thousand, kept inside the printed band.
  *
- * A step that would fall under the conservative floor, or under the printed
- * band, rounds up onto the next thousand that clears both. A step that would
- * clear the top of the band rounds down onto the thousand still inside it.
- * The band wins when the floor and the band cannot both be kept: the printed
- * list stays inside [low, high].
+ * The band ends are already on the grid. A raw off-grid sale is not a reason
+ * to step up: $849,416 inside a printed band of $849,000 to $900,000 prints
+ * $849,000, the band low.
+ *
+ * When the unrounded pin is at or within one thousand of the last ask, the
+ * printed list does not go above that ask. $499,148 against an ask of
+ * $499,000 prints $499,000. $499,600 against the same ask prints $499,000,
+ * not $500,000.
  */
 export function roundPrintedRecommendation(
   rec: number,
-  bounds: { low?: number | null; high?: number | null; floor?: number | null },
+  bounds: { low?: number | null; high?: number | null; ask?: number | null },
 ): number {
   if (!Number.isFinite(rec) || !(rec > 0)) return rec
   const step = 1000
-  const up = (n: number) => Math.ceil(n / step) * step
-  const down = (n: number) => Math.floor(n / step) * step
   let next = Math.round(rec / step) * step
-  const floor =
-    bounds.floor != null && Number.isFinite(bounds.floor) && bounds.floor > 0 ? bounds.floor : null
   const low =
     bounds.low != null && bounds.high != null && bounds.low > 0 && bounds.high > 0
       ? Math.min(bounds.low, bounds.high)
       : null
   const high = low != null ? Math.max(bounds.low as number, bounds.high as number) : null
-  if (floor != null && next < floor) next = up(floor)
-  if (low != null && next < low) next = up(low)
-  if (high != null && next > high) next = down(high)
-  if (low != null && high != null && (next < low || next > high)) {
-    const into = Math.min(down(high), Math.max(up(low), floor != null ? up(floor) : up(low)))
-    next = into >= low && into <= high ? into : Math.min(high, Math.max(low, next))
+  if (low != null && next < low) next = Math.ceil(low / step) * step
+  if (high != null && next > high) next = Math.floor(high / step) * step
+  if (low != null && next < low) next = low
+  if (high != null && next > high) next = high
+  const ask = bounds.ask
+  if (ask != null && Number.isFinite(ask) && ask > 0 && Math.abs(rec - ask) <= step && next > ask) {
+    const capped = Math.floor(ask / step) * step
+    const fits = (n: number) => n > 0 && (low == null || n >= low) && (high == null || n <= high)
+    if (fits(capped)) next = capped
+    else if (low != null && fits(low) && low <= ask) next = low
   }
   return next
 }
@@ -197,25 +199,49 @@ export function roundPrintedPrices<
     valueHigh: number
     conservative?: number
     highEnd?: number
+    failedAsk?: number | null
   },
->(pricing: T): T {
+>(pricing: T, askOverride?: number | null): T {
   const band = roundPrintedBand(pricing.valueLow, pricing.valueHigh)
+  const ask =
+    askOverride != null && Number.isFinite(askOverride) && askOverride > 0
+      ? askOverride
+      : pricing.failedAsk != null && pricing.failedAsk > 0
+        ? pricing.failedAsk
+        : null
   const recommended = roundPrintedRecommendation(pricing.recommended, {
     low: band.low,
     high: band.high,
-    floor: typeof pricing.conservative === 'number' ? pricing.conservative : null,
+    ask,
   })
+  let conservative = pricing.conservative
+  if (typeof conservative === 'number' && conservative > 0) {
+    // Same grid as the list. A raw off-grid floor rounds to the nearest
+    // thousand inside the printed band, then cannot sit above the list.
+    conservative = roundPrintedRecommendation(conservative, { low: band.low, high: band.high })
+    if (conservative > recommended) conservative = recommended
+  }
   let highEnd = pricing.highEnd
-  if (typeof highEnd === 'number' && highEnd > 0 && highEnd < recommended) highEnd = recommended
+  if (typeof highEnd === 'number' && highEnd > 0) {
+    let rounded = Math.round(highEnd / 1000) * 1000
+    if (ask != null && highEnd <= ask && rounded > ask) {
+      const under = Math.floor(ask / 1000) * 1000
+      rounded = under >= recommended ? under : recommended
+    }
+    if (band.high > 0 && rounded > band.high && band.high >= recommended) rounded = band.high
+    if (rounded < recommended) rounded = recommended
+    highEnd = rounded
+  }
   if (
     recommended === pricing.recommended &&
     band.low === pricing.valueLow &&
     band.high === pricing.valueHigh &&
+    conservative === pricing.conservative &&
     highEnd === pricing.highEnd
   ) {
     return pricing
   }
-  return { ...pricing, recommended, valueLow: band.low, valueHigh: band.high, highEnd }
+  return { ...pricing, recommended, valueLow: band.low, valueHigh: band.high, conservative, highEnd }
 }
 
 /** At or above this many sales the range drops one at each end. */

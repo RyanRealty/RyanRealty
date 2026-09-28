@@ -7,9 +7,11 @@
  *    the conservative tier, which the same-subdivision floor is copied onto.
  *    The tier is not lowered to follow the pull.
  * 2. Recommended is clamped into the printed closed-comp band.
- * 3. The printed recommendation and band ends sit on the pricing grid.
- *    Nearest thousand. A step under the conservative floor or under the band
- *    rounds up into the band. A step over the band rounds down into it.
+ * 3. The printed recommendation, the list tiers, and the band ends sit on
+ *    the thousand-dollar grid. Nearest thousand, inside the printed band.
+ *    A raw off-grid floor is not a reason to step up. When the unrounded
+ *    pin is within one thousand of the last ask, the printed list does not
+ *    go above that ask.
  * 4. The failed-ask sentence is rewritten from that final recommendation.
  *
  * The nudge function itself may still land under a list tier when its caller
@@ -42,6 +44,7 @@ export type FinishRecommendedPricing = {
   clamp?: CmaPricingClamp | null
   sellerNet?: CmaSellerNet | null
   rangeRule?: PricingRangeRule | null
+  failedAsk?: number | null
 }
 
 /**
@@ -59,6 +62,8 @@ export function finishRecommendedAfterActives<T extends FinishRecommendedPricing
   input: {
     actives: readonly ActiveDomNudgeRival[]
     pocketClosedSupport?: number | null
+    /** Failed last ask. Rounding will not print a list above it when the unrounded pin is within one thousand. */
+    ask?: number | null
   },
 ): T {
   let next = pricing
@@ -87,7 +92,7 @@ export function finishRecommendedAfterActives<T extends FinishRecommendedPricing
     }
   }
   next = clampRecommendedToClosedBand(next)
-  next = roundPrintedPrices(next)
+  next = roundPrintedPrices(next, input.ask)
   next = rewriteFailedAskClampAfterRec(next)
   // The net sheet is anchored to recommended at the moment attachSellerNet
   // ran. The actives nudge is after that. A sheet still on the pre-nudge

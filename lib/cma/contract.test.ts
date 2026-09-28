@@ -194,6 +194,32 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'dispersion-within-limit')!.pass).toBe(false)
   })
 
+  it('grades dispersion on the final list, not a recommended dollar left in the review reason', () => {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    pricing.recommended = 544_000
+    pricing.conservative = 500_000
+    pricing.highEnd = 570_000
+    pricing.valueLow = 494_000
+    pricing.valueHigh = 570_000
+    pricing.needsReview = true
+    pricing.reviewReason =
+      'Comparable sales span a wide price-per-square-foot range. Recommended $561,000 sits inside the supported range.'
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+    })
+    const dispersion = contract.checks.find((c) => c.id === 'dispersion-within-limit')!
+    expect(dispersion.pass).toBe(false)
+    expect(dispersion.detail).toContain('$544,000')
+    expect(dispersion.detail).not.toContain('$561,000')
+  })
+
   it('a range wider than 8% of the recommended list on a side forces review (Matt 2026-09-09)', () => {
     const tight = [
       comp({ closePrice: 600000, sqft: 2000 }),
