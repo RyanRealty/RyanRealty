@@ -371,7 +371,7 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     const hrefs = linkHrefs(letter.paragraphs)
     expect(hrefs).toContain('https://ryan-realty.com/reviews')
     expect(hrefs).toContain('https://ryan-realty.com/about')
-    expect(hrefs).toContain('https://ryan-realty.com/sell')
+    expect(hrefs).toContain('https://ryan-realty.com/sell?from=cma')
     expect(hrefs).toContain('https://ryan-realty.com/cma/cma-2465-7th')
     expect(hrefs).toContain('https://ryan-realty.com/subdivisions/diamond-bar-ranch')
     expect(hrefs).toContain('https://ryan-realty.com/cities/redmond')

@@ -5,11 +5,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // (buildDedupeKey, normalizeEvent) are unaffected by these mocks.
 const mockInsert = vi.fn()
 const mockGetSent = vi.fn()
+const mockGetSentByKey = vi.fn()
+const mockDeliveredTimeline = vi.fn()
 const mockGetPersonIds = vi.fn()
 const mockGetPrimaryEmail = vi.fn()
 vi.mock('@/lib/data/crm/insertEmailEvent', () => ({
   insertEmailEvent: (...args: unknown[]) => mockInsert(...args),
   getSentEventByMessageId: (...args: unknown[]) => mockGetSent(...args),
+  getSentEventByEmailKey: (...args: unknown[]) => mockGetSentByKey(...args),
+  insertEmailDeliveredTimeline: (...args: unknown[]) => mockDeliveredTimeline(...args),
 }))
 vi.mock('@/lib/data/crm/getPersonIdsByEmail', () => ({
   getPersonIdsByEmail: (...args: unknown[]) => mockGetPersonIds(...args),
@@ -20,6 +24,7 @@ vi.mock('@/lib/data/crm/getPersonPrimaryEmail', () => ({
 
 import {
   buildDedupeKey,
+  emailClickTimelineDedupeKey,
   normalizeClickUrl,
   normalizeEvent,
   recordEmailEvent,
@@ -112,6 +117,69 @@ describe('buildDedupeKey (idempotency)', () => {
     expect(buildDedupeKey({ emailKey: 'cma:deer', event: 'click', personId: 7 })).toBe(
       'cma:deer:click:p:7',
     )
+  })
+
+  it('includes linkId in a click key so report_text and report_button stay distinct', () => {
+    const text = buildDedupeKey({
+      emailKey: 'cma:deer',
+      event: 'click',
+      personId: 7,
+      clickUrl: 'https://ryan-realty.com/cma/cma-deer',
+      clickLinkId: 'report_text',
+    })
+    const button = buildDedupeKey({
+      emailKey: 'cma:deer',
+      event: 'click',
+      personId: 7,
+      clickUrl: 'https://ryan-realty.com/cma/cma-deer',
+      clickLinkId: 'report_button',
+    })
+    const legacy = buildDedupeKey({
+      emailKey: 'cma:deer',
+      event: 'click',
+      personId: 7,
+      clickUrl: 'https://ryan-realty.com/cma/cma-deer',
+    })
+    expect(text).toBe('cma:deer:click:p:7:report_text:https://ryan-realty.com/cma/cma-deer')
+    expect(button).toBe('cma:deer:click:p:7:report_button:https://ryan-realty.com/cma/cma-deer')
+    expect(text).not.toBe(button)
+    expect(legacy).toBe('cma:deer:click:p:7:https://ryan-realty.com/cma/cma-deer')
+  })
+})
+
+describe('emailClickTimelineDedupeKey', () => {
+  it('keeps the legacy key when no linkId is present', () => {
+    expect(
+      emailClickTimelineDedupeKey({
+        personId: 9,
+        emailKey: 'cma:deer',
+        loggedUrl: 'https://ryan-realty.com/cma/cma-deer',
+      }),
+    ).toBe('track:click:9:cma:deer:https://ryan-realty.com/cma/cma-deer')
+  })
+
+  it('splits report_text and report_button, and collapses a repeat of the same link', () => {
+    const a = emailClickTimelineDedupeKey({
+      personId: 9,
+      emailKey: 'cma:deer',
+      loggedUrl: 'https://ryan-realty.com/cma/cma-deer',
+      linkId: 'report_text',
+    })
+    const b = emailClickTimelineDedupeKey({
+      personId: 9,
+      emailKey: 'cma:deer',
+      loggedUrl: 'https://ryan-realty.com/cma/cma-deer',
+      linkId: 'report_button',
+    })
+    const again = emailClickTimelineDedupeKey({
+      personId: 9,
+      emailKey: 'cma:deer',
+      loggedUrl: 'https://ryan-realty.com/cma/cma-deer',
+      linkId: 'report_text',
+    })
+    expect(a).not.toBe(b)
+    expect(a).toBe(again)
+    expect(a).toBe('track:click:9:cma:deer:report_text:https://ryan-realty.com/cma/cma-deer')
   })
 })
 
@@ -217,9 +285,13 @@ describe('recordEmailEvent', () => {
   beforeEach(() => {
     mockInsert.mockReset()
     mockGetSent.mockReset()
+    mockGetSentByKey.mockReset()
+    mockDeliveredTimeline.mockReset()
     mockGetPersonIds.mockReset()
     mockGetPrimaryEmail.mockReset()
     mockGetSent.mockResolvedValue(null)
+    mockGetSentByKey.mockResolvedValue(null)
+    mockDeliveredTimeline.mockResolvedValue(undefined)
   })
 
   it('writes a normalized row and reports inserted=true (the new-row path)', async () => {
@@ -380,5 +452,110 @@ describe('recordEmailEvent', () => {
     expect(row.send_type).toBe('campaign')
     expect(row.broker).toBe('matt')
     expect(row.subject).toBe('Hi Jane')
+    // Provider-confirmed Resend delivery: the webhook already writes the
+    // timeline row. This path must not add another.
+    expect(mockDeliveredTimeline).not.toHaveBeenCalled()
+  })
+
+  it('writes an inferred no-bounce delivered timeline row', async () => {
+    mockGetPersonIds.mockResolvedValue([7])
+    mockInsert.mockResolvedValue({ ok: true, inserted: true })
+    await recordEmailEvent({
+      messageId: 'gmail-1',
+      recipientEmail: 'lead@example.com',
+      personId: 7,
+      broker: 'matt',
+      sendType: 'cma',
+      event: 'delivered',
+      emailKey: 'cma:cma-deer',
+      subject: 'A market analysis',
+      meta: { inferred: true, source: 'gmail-bounce-watch' },
+    })
+    expect(mockDeliveredTimeline).toHaveBeenCalledOnce()
+    expect(mockDeliveredTimeline.mock.calls[0][0]).toMatchObject({
+      personId: 7,
+      emailKey: 'cma:cma-deer',
+      messageId: 'gmail-1',
+      basis: 'no-bounce',
+      body: 'Delivered (no bounce)',
+      dedupeKey: 'track:delivered:7:cma:cma-deer',
+    })
+  })
+
+  it('an open-inferred delivery reuses the sent-row key, and a later inference is a no-op', async () => {
+    mockGetPrimaryEmail.mockResolvedValue('lead@example.com')
+    mockGetSentByKey.mockResolvedValue({
+      message_id: 'gmail-1',
+      email_key: 'cma:cma-deer',
+      send_type: 'cma',
+      person_id: 7,
+      broker: 'matt',
+      recipient_email: 'lead@example.com',
+      subject: 'A market analysis',
+    })
+    mockInsert
+      .mockResolvedValueOnce({ ok: true, inserted: true })
+      .mockResolvedValueOnce({ ok: true, inserted: false })
+    mockDeliveredTimeline.mockResolvedValue(undefined)
+
+    const opened = await recordEmailEvent({
+      personId: 7,
+      sendType: 'cma',
+      event: 'delivered',
+      emailKey: 'cma:cma-deer',
+      subject: 'A market analysis',
+      meta: { inferred: 'opened' },
+    })
+    expect(opened.ok && opened.inserted).toBe(true)
+    expect(mockInsert.mock.calls[0][0].dedupe_key).toBe('gmail-1:delivered:lead@example.com')
+    expect(mockInsert.mock.calls[0][0].meta).toEqual({ inferred: 'opened' })
+    expect(mockDeliveredTimeline.mock.calls[0][0]).toMatchObject({
+      basis: 'opened',
+      body: 'Delivered (opened)',
+      dedupeKey: 'track:delivered:7:cma:cma-deer',
+    })
+
+    const later = await recordEmailEvent({
+      messageId: 'gmail-1',
+      recipientEmail: 'lead@example.com',
+      personId: 7,
+      sendType: 'cma',
+      event: 'delivered',
+      emailKey: 'cma:cma-deer',
+      subject: 'A market analysis',
+      meta: { inferred: true, source: 'gmail-bounce-watch' },
+    })
+    expect(later.ok && (later as { inserted: boolean }).inserted).toBe(false)
+    expect(mockInsert.mock.calls[1][0].dedupe_key).toBe(mockInsert.mock.calls[0][0].dedupe_key)
+    // Timeline upsert is still attempted; ignoreDuplicates makes it a no-op.
+    expect(mockDeliveredTimeline).toHaveBeenCalledTimes(2)
+    expect(mockDeliveredTimeline.mock.calls[1][0].dedupeKey).toBe(
+      mockDeliveredTimeline.mock.calls[0][0].dedupeKey,
+    )
+  })
+
+  it('puts linkId on the click email_events dedupe key when present', async () => {
+    mockGetPrimaryEmail.mockResolvedValue('lead@example.com')
+    mockInsert.mockResolvedValue({ ok: true, inserted: true })
+    await recordEmailEvent({
+      personId: 7,
+      sendType: 'cma',
+      event: 'click',
+      emailKey: 'cma:deer',
+      meta: { url: 'https://ryan-realty.com/cma/deer', linkId: 'report_text' },
+    })
+    await recordEmailEvent({
+      personId: 7,
+      sendType: 'cma',
+      event: 'click',
+      emailKey: 'cma:deer',
+      meta: { url: 'https://ryan-realty.com/cma/deer', linkId: 'report_button' },
+    })
+    expect(mockInsert.mock.calls[0][0].dedupe_key).toBe(
+      'cma:deer:click:lead@example.com:report_text:https://ryan-realty.com/cma/deer',
+    )
+    expect(mockInsert.mock.calls[1][0].dedupe_key).toBe(
+      'cma:deer:click:lead@example.com:report_button:https://ryan-realty.com/cma/deer',
+    )
   })
 })

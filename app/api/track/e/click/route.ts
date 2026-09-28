@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyEmailToken } from '@/lib/email-tracking'
 import { createServiceClient } from '@/lib/supabase/service'
-import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
+import { emailClickTimelineDedupeKey, recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
 import { recordNewsletterEngagement } from '@/lib/newsletter/track-ledger'
 import { channelFromEmailKey, decorateOutboundUrl } from '@/lib/identity/outbound-links'
 import { stripIdentityParams } from '@/app/api/visitors/track/strip-identity'
@@ -25,9 +25,14 @@ export async function GET(req: NextRequest) {
   if (ctx && Number.isFinite(ctx.personId)) {
     try {
       const sb = createServiceClient()
+      const linkId = (ctx.linkId ?? '').trim() || null
+      const linkText = (ctx.linkText ?? '').trim() || null
       // De-duped (edge case T-4): the dedupe_key includes the target URL, so
       // repeat clicks of the SAME link collapse to one timeline row while a click
       // on a DIFFERENT link still records (matches the email_events click grain).
+      // When a CMA letter signs a link id (`report_text` vs `report_button`),
+      // that id is part of the key so the two same-URL anchors stay distinct.
+      // A legacy token with no `i` keeps today's key.
       const { error } = await sb.from('crm_timeline').upsert(
         {
           person_id: ctx.personId,
@@ -36,8 +41,19 @@ export async function GET(req: NextRequest) {
           broker: ctx.broker ?? null,
           title: ctx.label ? `Clicked a link in: ${ctx.label}` : 'Clicked an email link',
           body: logged,
-          payload: { emailKey: ctx.emailKey, label: ctx.label ?? null, url: logged },
-          dedupe_key: `track:click:${ctx.personId}:${ctx.emailKey}:${logged}`,
+          payload: {
+            emailKey: ctx.emailKey,
+            label: ctx.label ?? null,
+            url: logged,
+            ...(linkId ? { linkId } : {}),
+            ...(linkText ? { linkText } : {}),
+          },
+          dedupe_key: emailClickTimelineDedupeKey({
+            personId: ctx.personId,
+            emailKey: ctx.emailKey,
+            loggedUrl: logged,
+            linkId,
+          }),
         },
         { onConflict: 'dedupe_key', ignoreDuplicates: true },
       )
@@ -58,7 +74,11 @@ export async function GET(req: NextRequest) {
         event: 'click',
         emailKey: ctx.emailKey || null,
         subject: ctx.label || null,
-        meta: { url: logged },
+        meta: {
+          url: logged,
+          ...(linkId ? { linkId } : {}),
+          ...(linkText ? { linkText } : {}),
+        },
       })
       if (!res.ok) console.warn('[track/click] email_events error:', res.error)
 

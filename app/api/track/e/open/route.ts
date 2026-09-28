@@ -75,6 +75,24 @@ export async function GET(req: NextRequest) {
       })
       if (!res.ok) console.warn('[track/open] email_events error:', res.error)
 
+      // An open is proof of delivery. Gmail DWD has no delivery webhook, so if
+      // this send has no `delivered` row yet, record one now (meta inferred
+      // 'opened'). The later no-bounce job reuses the same email_events dedupe
+      // key and sees flags.delivered — whichever path fires first wins.
+      // recordEmailEvent is idempotent and skips a second timeline row.
+      if (ctx.emailKey) {
+        const delivered = await recordEmailEvent({
+          personId: ctx.personId,
+          broker: ctx.broker ?? null,
+          sendType: sendTypeFromEmailKey(ctx.emailKey),
+          event: 'delivered',
+          emailKey: ctx.emailKey,
+          subject: ctx.label || null,
+          meta: { inferred: 'opened' },
+        })
+        if (!delivered.ok) console.warn('[track/open] inferred-delivered error:', delivered.error)
+      }
+
       // A CMA open is a lead signal (2026-09-07). Same broker rail as the
       // document visit, same per-(document, contact) dedupe — whichever of the
       // two fires first is the one alert the broker gets. Non-blocking: the

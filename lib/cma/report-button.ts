@@ -10,7 +10,7 @@ function escapeAttr(s: string): string {
 }
 
 export function cmaReportButtonHtml(viewUrl: string): string {
-  return `<p style="margin:0 0 24px 0;"><a href="${escapeAttr(viewUrl)}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>`
+  return `<p style="margin:0 0 24px 0;"><a href="${escapeAttr(viewUrl)}" data-rr-link="report_button" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>`
 }
 
 /** The preheader for a broker-typed note: its first sentence, not the composed one. */

@@ -39,7 +39,7 @@ import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
 import { cmaFirstContactFactsForSend, cmaSendBrokerSlug } from '@/lib/cma/first-contact-for-send'
-import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from '@/lib/cma/first-contact-render'
+import { cmaLetterLinkId, paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from '@/lib/cma/first-contact-render'
 import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
 import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
@@ -170,7 +170,9 @@ export function linkifyHttp(html: string): string {
   return html.replace(/https:\/\/[^\s<]+/g, (url) => {
     const trailing = url.match(/[.,;:!?]+$/)?.[0] ?? ''
     const clean = trailing ? url.slice(0, -trailing.length) : url
-    return `<a href="${clean}">${clean}</a>${trailing}`
+    const id = cmaLetterLinkId(clean)
+    const attr = id ? ` data-rr-link="${id}"` : ''
+    return `<a href="${clean}"${attr}>${clean}</a>${trailing}`
   })
 }
 

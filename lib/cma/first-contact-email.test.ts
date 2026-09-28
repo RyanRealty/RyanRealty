@@ -64,7 +64,7 @@ describe('Nate first-contact letter (expired, 62017 Nate\'s)', () => {
   it('links the short words to clean hrefs', () => {
     expect(linksOf(copy.paragraphs)).toEqual([
       { text: 'read it online', href: 'https://ryan-realty.com/cma/cma-62017-nate-s' },
-      { text: 'see how we sell homes', href: 'https://ryan-realty.com/sell' },
+      { text: 'see how we sell homes', href: 'https://ryan-realty.com/sell?from=cma' },
       { text: 'read our reviews', href: 'https://ryan-realty.com/reviews' },
       { text: 'learn about our business', href: 'https://ryan-realty.com/about' },
       { text: 'Clarendon Place page', href: 'https://ryan-realty.com/subdivisions/clarendon-place' },

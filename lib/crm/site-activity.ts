@@ -150,6 +150,9 @@ export function sourceLabel(source: string | null, medium: string | null, campai
   const c = (campaign ?? '').toLowerCase()
   if (m === 'sms') return 'Text from us'
   if (m === 'personal-link') return 'Personal link from a broker'
+  // Email medium first: a CMA email (utm_source=cma or utm_campaign=cma-*)
+  // must never fall through to "CMA document" or "Came back on their own".
+  if (m === 'email' && (s === 'cma' || c.startsWith('cma-'))) return 'CMA email'
   if (s === 'cma' || m === 'document' || c.startsWith('cma-')) return 'CMA document'
   if (c.includes('newsletter') || s === 'newsletter') return 'Newsletter'
   if (c.includes('listing-alert') || c.includes('alert')) return 'Listing alert email'

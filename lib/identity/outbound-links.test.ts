@@ -66,6 +66,23 @@ describe('decorateOutboundText — the one decoration helper', () => {
     expect(out).toContain('agent=matt')
   })
 
+  it('keeps from=cma exactly once when decorating the CMA sell link', () => {
+    const out = decorateOutboundUrl('https://ryan-realty.com/sell?from=cma&utm_source=cma&utm_campaign=cma-zz-postland-20260928', {
+      brokerSlug: 'matt',
+      personId: 13168,
+      channel: 'document',
+    })
+    const u = new URL(out)
+    expect(u.pathname).toBe('/sell')
+    expect(u.searchParams.getAll('from')).toEqual(['cma'])
+    expect(u.searchParams.getAll('utm_source')).toEqual(['cma'])
+    expect(u.searchParams.getAll('utm_campaign')).toEqual(['cma-zz-postland-20260928'])
+    expect(u.searchParams.getAll('utm_medium')).toEqual(['email'])
+    expect(u.searchParams.getAll('utm_content')).toEqual(['agent-matt'])
+    expect(u.searchParams.getAll('agent')).toEqual(['matt'])
+    expect(u.searchParams.getAll('_pid')).toHaveLength(1)
+  })
+
   it('never adds an email, phone or name to a URL', () => {
     const out = decorateOutboundUrl('https://ryan-realty.com/', { brokerSlug: 'matt', personId: 3, channel: 'email' })
     expect(out).not.toMatch(/email=|eml=|phone=|name=|@/)

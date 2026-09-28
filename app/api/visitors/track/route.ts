@@ -71,6 +71,7 @@ import {
   classifyAutomation,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
+import { buildEmailVisitTimelineRow, recordEmailVisitTimeline } from '@/lib/crm/email-visit-timeline'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -784,6 +785,45 @@ export async function POST(request: NextRequest) {
       console.warn('[visitors/track] cma-opened alert failed:', err)
     }
   }
+
+  // A page_view that arrived from an email link (verified person token +
+  // utm_medium=email) lands on the contact's Recent activity. Cookie-only /
+  // carryover identification does not. Non-blocking: a failure never breaks
+  // the track 200. Dedupe is per (session, campaign, path) because one
+  // localStorage session spans many email clicks.
+  if (eventType === 'page_view' && token && !automation.automated) {
+    const tokenArrival =
+      decision.kind === 'identify' || decision.kind === 'already' || decision.kind === 'rotate'
+    if (tokenArrival) {
+      try {
+        const row = buildEmailVisitTimelineRow({
+          eventType,
+          sessionId,
+          pageUrl: storedPageUrl,
+          utmMedium: campaign?.medium ?? null,
+          utmSource: campaign?.source ?? null,
+          utmCampaign: campaign?.campaign ?? null,
+          personId: token.personId,
+          tokenVerified: true,
+          automated: automation.automated,
+        })
+        if (row) {
+          await withTimeoutFallback(
+            recordEmailVisitTimeline(supabase, row),
+            undefined,
+            2000,
+            'crm:email-visit-timeline',
+          )
+        }
+      } catch (err) {
+        console.warn(
+          '[visitors/track] email-visit timeline failed:',
+          err instanceof Error ? err.message : String(err),
+        )
+      }
+    }
+  }
+
   const response = NextResponse.json(
     {
       ok: true,

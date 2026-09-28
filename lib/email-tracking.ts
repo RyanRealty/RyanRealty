@@ -61,6 +61,14 @@ export interface EmailTrackContext {
   broker?: string
   /** Optional expiry: when set on sign, the token carries `exp` and verify rejects it once past. Newsletter tokens set this. */
   ttlSeconds?: number
+  /**
+   * Stable CMA letter link id (`report_text`, `report_button`, `sell`, …).
+   * Signed as `i`. Absent on tokens minted before link identity existed —
+   * those still verify, redirect, and record exactly as they do today.
+   */
+  linkId?: string
+  /** Visible anchor text, truncated, signed as `x` for the timeline snippet. */
+  linkText?: string
 }
 
 function mac(payload: string): string {
@@ -71,6 +79,10 @@ export function signEmailToken(ctx: EmailTrackContext): string {
   assertTrackingSecret()
   const body: Record<string, unknown> = { p: ctx.personId, k: ctx.emailKey, l: ctx.label ?? '', u: ctx.url ?? '' }
   if (ctx.broker) body.b = ctx.broker
+  const linkId = (ctx.linkId ?? '').trim()
+  if (linkId) body.i = linkId
+  const linkText = (ctx.linkText ?? '').trim().slice(0, 60)
+  if (linkText) body.x = linkText
   // TTL + nonce (edge case T-5): an expiring token can't be replayed forever, and
   // the nonce distinguishes two otherwise-identical tokens. Only added when a TTL
   // is requested, so non-expiring callers (legacy CMA/sequence links) are unchanged.
@@ -104,12 +116,16 @@ export function verifyEmailToken(token: string | null | undefined): EmailTrackCo
     }
     const personId = Number(o.p)
     if (!Number.isFinite(personId)) return null
+    const linkId = o.i ? String(o.i).trim() : ''
+    const linkText = o.x ? String(o.x).trim().slice(0, 60) : ''
     return {
       personId,
       emailKey: String(o.k ?? ''),
       label: o.l ? String(o.l) : undefined,
       url: o.u ? String(o.u) : undefined,
       broker: o.b ? String(o.b) : undefined,
+      ...(linkId ? { linkId } : {}),
+      ...(linkText ? { linkText } : {}),
     }
   } catch {
     return null
@@ -155,22 +171,59 @@ export function decodeHtmlHref(href: string): string {
     .replace(/&(?:amp|#38|#x26);/gi, '&')
 }
 
+/** Visible words inside an anchor, for the click-token `x` field. */
+export function visibleAnchorText(inner: string): string | undefined {
+  const decoded = inner
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&rarr;/gi, '→')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0?39;|&apos;/gi, "'")
+  const text = decoded
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[→\s]+$/u, '')
+    .trim()
+    .slice(0, 60)
+  return text || undefined
+}
+
 export function instrumentEmailHtml(html: string, ctx: EmailTrackContext): string {
   const base = `${SITE_URL}/api/track/e`
   const pixelToken = signEmailToken({ personId: ctx.personId, emailKey: ctx.emailKey, label: ctx.label, broker: ctx.broker, ttlSeconds: ctx.ttlSeconds })
 
-  const out = html.replace(/href="(https?:\/\/[^"]+)"/gi, (m, rawHref: string) => {
-    // The capture is HTML source, not a URL. Decode before signing, or the
-    // redirect target keeps its &amp; separators (see decodeHtmlHref).
-    const url = decodeHtmlHref(rawHref)
-    if (url.includes('/api/track/e/')) return m // already wrapped
-    if (isComplianceLink(url)) return m // unsubscribe/compliance links stay plain
-    // A signing link is its own key: the click token would carry it, and the
-    // click route stores the destination (private-paths.ts).
-    if (isPrivateLink(url)) return m
-    const tok = signEmailToken({ personId: ctx.personId, emailKey: ctx.emailKey, label: ctx.label, url, broker: ctx.broker, ttlSeconds: ctx.ttlSeconds })
-    return `href="${base}/click?t=${encodeURIComponent(tok)}"`
-  })
+  const out = html.replace(
+    /<a\b([^>]*?)href="(https?:\/\/[^"]+)"([^>]*)>([\s\S]*?)<\/a>/gi,
+    (full, pre: string, rawHref: string, post: string, inner: string) => {
+      // The capture is HTML source, not a URL. Decode before signing, or the
+      // redirect target keeps its &amp; separators (see decodeHtmlHref).
+      const url = decodeHtmlHref(rawHref)
+      if (url.includes('/api/track/e/')) return full // already wrapped
+      if (isComplianceLink(url)) return full // unsubscribe/compliance links stay plain
+      // A signing link is its own key: the click token would carry it, and the
+      // click route stores the destination (private-paths.ts).
+      if (isPrivateLink(url)) return full
+      const attrs = `${pre} ${post}`
+      const linkId = /\bdata-rr-link="([^"]*)"/i.exec(attrs)?.[1]?.trim() || undefined
+      const linkText = visibleAnchorText(inner)
+      const tok = signEmailToken({
+        personId: ctx.personId,
+        emailKey: ctx.emailKey,
+        label: ctx.label,
+        url,
+        broker: ctx.broker,
+        ttlSeconds: ctx.ttlSeconds,
+        linkId,
+        linkText,
+      })
+      const newPre = pre.replace(/\s*data-rr-link="[^"]*"/gi, '')
+      const newPost = post.replace(/\s*data-rr-link="[^"]*"/gi, '')
+      return `<a${newPre}href="${base}/click?t=${encodeURIComponent(tok)}"${newPost}>${inner}</a>`
+    },
+  )
 
   const pixel = `<img src="${base}/open?t=${encodeURIComponent(pixelToken)}" width="1" height="1" alt="" style="display:none;max-height:0;max-width:0;overflow:hidden;" />`
   return /<\/body>/i.test(out) ? out.replace(/<\/body>/i, `${pixel}</body>`) : out + pixel

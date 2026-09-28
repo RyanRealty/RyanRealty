@@ -114,6 +114,7 @@ export type SentEmailEventLookup = {
   broker: string | null
   recipient_email: string | null
   subject: string | null
+  message_id: string | null
 }
 
 /**
@@ -132,7 +133,7 @@ export async function getSentEventByMessageId(
     const sb = createServiceClient()
     const { data, error } = await sb
       .from('email_events')
-      .select('email_key,send_type,person_id,broker,recipient_email,subject')
+      .select('message_id,email_key,send_type,person_id,broker,recipient_email,subject')
       .eq('message_id', mid)
       .eq('event', 'sent')
       .limit(1)
@@ -141,5 +142,78 @@ export async function getSentEventByMessageId(
     return row ?? null
   } catch {
     return null
+  }
+}
+
+/**
+ * The `sent` row for an instrumentation email_key. Used so an open-inferred
+ * `delivered` event reuses the same message id (and therefore the same
+ * email_events dedupe key) as the no-bounce job's later insert.
+ *
+ * Newest sent row wins when a key was reused. Never throws.
+ */
+export async function getSentEventByEmailKey(
+  emailKey: string,
+): Promise<SentEmailEventLookup | null> {
+  const key = emailKey.trim()
+  if (!key) return null
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('email_events')
+      .select('message_id,email_key,send_type,person_id,broker,recipient_email,subject')
+      .eq('email_key', key)
+      .eq('event', 'sent')
+      .order('occurred_at', { ascending: false })
+      .limit(1)
+    if (error) return null
+    const row = (data ?? [])[0] as SentEmailEventLookup | undefined
+    return row ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * One `email_delivered` crm_timeline row, keyed so a job re-tick, a pixel
+ * re-fire, or an open-then-inference sequence collapses to a single row.
+ * Never throws — a timeline miss must never break the event write.
+ */
+export async function insertEmailDeliveredTimeline(input: {
+  personId: number
+  emailKey: string
+  messageId: string | null
+  broker: string | null
+  subject: string | null
+  basis: 'no-bounce' | 'opened'
+  body: string
+  dedupeKey: string
+}): Promise<void> {
+  if (!Number.isFinite(input.personId) || input.personId <= 0) return
+  const emailKey = input.emailKey.trim()
+  if (!emailKey) return
+  try {
+    const sb = createServiceClient()
+    const { error } = await sb.from('crm_timeline').upsert(
+      {
+        person_id: input.personId,
+        kind: 'email_delivered',
+        source: 'email-tracking',
+        broker: input.broker,
+        title: 'Email delivered',
+        body: input.body,
+        payload: {
+          emailKey,
+          messageId: input.messageId,
+          basis: input.basis,
+          subject: input.subject,
+        },
+        dedupe_key: input.dedupeKey,
+      },
+      { onConflict: 'dedupe_key', ignoreDuplicates: true },
+    )
+    if (error) console.warn('[email-events] delivered timeline failed:', error.message)
+  } catch (e) {
+    console.warn('[email-events] delivered timeline threw:', e instanceof Error ? e.message : e)
   }
 }

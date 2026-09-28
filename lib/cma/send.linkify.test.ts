@@ -12,7 +12,7 @@ import { linkifyHttp } from './send'
 describe('linkifyHttp — a URL that ends a sentence keeps the sentence intact', () => {
   it('leaves a trailing full stop outside the anchor', () => {
     expect(linkifyHttp('Reviews are at https://ryan-realty.com/reviews.')).toBe(
-      'Reviews are at <a href="https://ryan-realty.com/reviews">https://ryan-realty.com/reviews</a>.',
+      'Reviews are at <a href="https://ryan-realty.com/reviews" data-rr-link="reviews">https://ryan-realty.com/reviews</a>.',
     )
   })
 
@@ -26,14 +26,14 @@ describe('linkifyHttp — a URL that ends a sentence keeps the sentence intact',
     for (const mark of ['.', ',', ';', ':', '!', '?']) {
       const out = linkifyHttp(`Go to https://ryan-realty.com/about${mark}`)
       expect(out).toBe(
-        `Go to <a href="https://ryan-realty.com/about">https://ryan-realty.com/about</a>${mark}`,
+        `Go to <a href="https://ryan-realty.com/about" data-rr-link="about">https://ryan-realty.com/about</a>${mark}`,
       )
     }
   })
 
   it('does not strip anything from a URL that ends cleanly', () => {
     expect(linkifyHttp('https://ryan-realty.com/cma/cma-828-florida')).toBe(
-      '<a href="https://ryan-realty.com/cma/cma-828-florida">https://ryan-realty.com/cma/cma-828-florida</a>',
+      '<a href="https://ryan-realty.com/cma/cma-828-florida" data-rr-link="report_text">https://ryan-realty.com/cma/cma-828-florida</a>',
     )
   })
 })

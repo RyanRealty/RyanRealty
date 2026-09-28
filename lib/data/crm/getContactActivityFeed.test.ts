@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyTimelineKind, buildSnippet, toFeedItem } from './getContactActivityFeed'
+import { classifyTimelineKind, buildSnippet, emailClickSnippet, toFeedItem } from './getContactActivityFeed'
 
 describe('getContactActivityFeed pure helpers (2.1)', () => {
   describe('classifyTimelineKind', () => {
@@ -11,6 +11,11 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
       expect(classifyTimelineKind('email_out').direction).toBe('out')
       expect(classifyTimelineKind('email_open')).toEqual({ category: 'email', direction: 'in', label: 'Email opened' })
       expect(classifyTimelineKind('email_click').label).toBe('Email link clicked')
+      expect(classifyTimelineKind('email_delivered')).toEqual({
+        category: 'email',
+        direction: 'out',
+        label: 'Email delivered',
+      })
     })
     it('classifies calls, voicemail, notes, milestones', () => {
       expect(classifyTimelineKind('call').category).toBe('call')
@@ -78,6 +83,56 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
       const hidden = toFeedItem({ id: 9, ts: 't', kind: 'email_out', body: null, payload: { contentHidden: true }, source: 'fub-import' })
       expect(hidden.contentHidden).toBe(true)
       expect(hidden.snippet).toBeNull()
+    })
+
+    it('email_click snippet is link text plus the short path, not the 200-char URL', () => {
+      const item = toFeedItem({
+        id: 3,
+        ts: 't',
+        kind: 'email_click',
+        title: 'Clicked a link in: A market analysis',
+        body: 'https://ryan-realty.com/cma/cma-zz-postland-20260928?utm_source=cma&utm_medium=email&utm_campaign=cma-zz-postland-20260928&utm_content=agent-matt&agent=matt',
+        payload: {
+          url: 'https://ryan-realty.com/cma/cma-zz-postland-20260928?utm_source=cma&utm_medium=email&utm_campaign=cma-zz-postland-20260928&utm_content=agent-matt&agent=matt',
+          linkId: 'report_text',
+          linkText: 'read it online',
+        },
+        source: 'email-tracking',
+      })
+      expect(item.snippet).toBe('read it online · /cma/cma-zz-postland-20260928')
+      expect(item.label).toBe('Email link clicked')
+    })
+
+    it('a legacy email_click row with no link text shows just the short path', () => {
+      expect(
+        emailClickSnippet({
+          body: 'https://ryan-realty.com/sell?utm_source=cma&utm_medium=email&utm_campaign=cma-x&agent=matt',
+          payload: { url: 'https://ryan-realty.com/sell?utm_source=cma&utm_medium=email&utm_campaign=cma-x&agent=matt' },
+        }),
+      ).toBe('/sell')
+      const item = toFeedItem({
+        id: 4,
+        ts: 't',
+        kind: 'email_click',
+        body: 'https://ryan-realty.com/reviews?utm_campaign=cma-x',
+        payload: { url: 'https://ryan-realty.com/reviews?utm_campaign=cma-x' },
+        source: 'email-tracking',
+      })
+      expect(item.snippet).toBe('/reviews')
+    })
+
+    it('a web_event email-visit row snippets the title', () => {
+      const item = toFeedItem({
+        id: 5,
+        ts: 't',
+        kind: 'web_event',
+        title: 'Visited /sell from CMA email',
+        body: null,
+        payload: { path: '/sell' },
+        source: 'email-visit',
+      })
+      expect(item.label).toBe('Website activity')
+      expect(item.snippet).toBe('Visited /sell from CMA email')
     })
   })
 })

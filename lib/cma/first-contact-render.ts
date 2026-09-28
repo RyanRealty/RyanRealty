@@ -16,6 +16,41 @@ export const CMA_EMAIL_ORIGIN = 'https://ryan-realty.com'
 
 export type FirstContactRun = string | { text: string; href: string }
 
+/** Stable ids signed into CMA click tokens so two same-URL anchors stay distinct. */
+export const CMA_LETTER_LINK_IDS = [
+  'report_text',
+  'report_button',
+  'sell',
+  'reviews',
+  'about',
+  'subdivision',
+  'city',
+] as const
+export type CmaLetterLinkId = (typeof CMA_LETTER_LINK_IDS)[number]
+
+/**
+ * Map a CMA letter href to its stable link id. The report button is always
+ * `report_button` (stamped at render, not here); `/cma/<slug>` inside the
+ * letter text is `report_text`. Used by the structured renderer and the
+ * bare-URL/override path so both get the same ids.
+ */
+export function cmaLetterLinkId(href: string): CmaLetterLinkId | null {
+  let path: string
+  try {
+    const u = new URL(href, CMA_EMAIL_ORIGIN)
+    path = u.pathname.replace(/\/$/, '') || '/'
+  } catch {
+    return null
+  }
+  if (path === '/sell') return 'sell'
+  if (path === '/reviews') return 'reviews'
+  if (path === '/about') return 'about'
+  if (path === '/cma' || path.startsWith('/cma/')) return 'report_text'
+  if (path.startsWith('/subdivisions/')) return 'subdivision'
+  if (path.startsWith('/cities/')) return 'city'
+  return null
+}
+
 const TOKEN_RE = /\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)|https?:\/\/[^\s<]+/g
 
 export function cleanFirstPartyHref(href: string): string {
@@ -23,7 +58,14 @@ export function cleanFirstPartyHref(href: string): string {
   try {
     const u = new URL(decoded, CMA_EMAIL_ORIGIN)
     if (u.hostname.replace(/^www\./, '') !== 'ryan-realty.com') return u.toString()
-    return `${CMA_EMAIL_ORIGIN}${u.pathname}`
+    // UTMs and identity are stamped later. Keep `from` so the CMA letter's
+    // "see how we sell homes" link lands on /sell?from=cma exactly once.
+    const from = (u.searchParams.get('from') ?? '').trim()
+    const path = `${CMA_EMAIL_ORIGIN}${u.pathname}`
+    if (!from) return path
+    const kept = new URL(path)
+    kept.searchParams.set('from', from)
+    return kept.toString()
   } catch {
     return decoded
   }
@@ -154,8 +196,11 @@ function renderRuns(runs: FirstContactRun[], address: string | null, slug: strin
   return runs
     .map((run) => {
       if (typeof run === 'string') return emphasizeAddress(run, address).replace(/\n/g, '<br/>')
-      const href = escapeHtml(stampCmaEmailCampaign(cleanFirstPartyHref(run.href), slug))
-      return `<a href="${href}">${escapeHtml(run.text)}</a>`
+      const clean = cleanFirstPartyHref(run.href)
+      const href = escapeHtml(stampCmaEmailCampaign(clean, slug))
+      const id = cmaLetterLinkId(clean)
+      const attr = id ? ` data-rr-link="${id}"` : ''
+      return `<a href="${href}"${attr}>${escapeHtml(run.text)}</a>`
     })
     .join('')
 }

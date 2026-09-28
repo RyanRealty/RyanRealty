@@ -148,6 +148,17 @@ export function normalizeEvent(raw: string | null | undefined): EmailEvent | nul
  * Click identity: strip `_pid`, `utm_*` and `agent` so two taps on the same
  * link collapse, and two taps on different links stay distinct.
  */
+export function emailClickTimelineDedupeKey(opts: {
+  personId: number
+  emailKey: string
+  loggedUrl: string
+  linkId?: string | null
+}): string {
+  const linkId = (opts.linkId ?? '').trim()
+  const base = `track:click:${opts.personId}:${opts.emailKey}`
+  return linkId ? `${base}:${linkId}:${opts.loggedUrl}` : `${base}:${opts.loggedUrl}`
+}
+
 export function normalizeClickUrl(url: string | null | undefined): string {
   const raw = (url ?? '').trim()
   if (!raw) return ''
@@ -176,6 +187,12 @@ export function buildDedupeKey(opts: {
   personId?: number | null
   /** Destination URL — included for `click` so distinct links stay distinct. */
   clickUrl?: string | null
+  /**
+   * Stable CMA letter link id (`report_text`, `report_button`, …). When set,
+   * two anchors that share a URL (the report sentence and the report button)
+   * stay distinct; omitted, the key is exactly as before.
+   */
+  clickLinkId?: string | null
 }): string {
   const anchor = (opts.messageId || opts.emailKey || 'none').trim()
   const recipient = (opts.recipientEmail ?? '').trim().toLowerCase()
@@ -186,6 +203,9 @@ export function buildDedupeKey(opts: {
   const base = `${anchor}:${opts.event}:${target}`
   if (opts.event === 'click') {
     const url = normalizeClickUrl(opts.clickUrl)
+    const linkId = (opts.clickLinkId ?? '').trim()
+    if (linkId && url) return `${base}:${linkId}:${url}`
+    if (linkId) return `${base}:${linkId}`
     if (url) return `${base}:${url}`
   }
   return base
@@ -284,16 +304,36 @@ export async function recordEmailEvent(
   let broker = input.broker ?? null
   let sendType = input.sendType
   let subject = input.subject ?? null
-  const messageId = input.messageId ?? null
+  let messageId = input.messageId ?? null
+
+  const dal = await import('@/lib/data/crm/insertEmailEvent')
 
   // Resend's delivered/bounce webhook knows the provider message id and the
   // recipient, not our campaign email_key. Inherit the `sent` row so those
   // events join the same send in reporting.
   if (messageId && !(emailKey ?? '').trim()) {
-    const { getSentEventByMessageId } = await import('@/lib/data/crm/insertEmailEvent')
-    const sent = await getSentEventByMessageId(messageId)
+    const sent = await dal.getSentEventByMessageId(messageId)
     if (sent) {
       emailKey = sent.email_key
+      if (!broker) broker = sent.broker
+      if ((!sendType || sendType === 'other') && sent.send_type) {
+        sendType = sent.send_type as EmailSendType
+      }
+      if (!hasPersonId && sent.person_id) personId = personId ?? sent.person_id
+      if (!recipient && sent.recipient_email) {
+        recipient = sent.recipient_email.trim().toLowerCase()
+      }
+      if (!subject) subject = sent.subject
+    }
+  }
+
+  // Open-inferred delivery has personId + emailKey, not the Gmail message id.
+  // Inherit the `sent` row so this insert collides with the no-bounce job's
+  // later `delivered` write (same dedupe key) instead of creating a second row.
+  if (event === 'delivered' && !(messageId ?? '').trim() && (emailKey ?? '').trim()) {
+    const sent = await dal.getSentEventByEmailKey(emailKey as string)
+    if (sent) {
+      if (sent.message_id) messageId = sent.message_id
       if (!broker) broker = sent.broker
       if ((!sendType || sendType === 'other') && sent.send_type) {
         sendType = sent.send_type as EmailSendType
@@ -315,6 +355,8 @@ export async function recordEmailEvent(
           ? input.meta.clickUrl
           : null
       : null
+  const clickLinkId =
+    event === 'click' && typeof input.meta?.linkId === 'string' ? input.meta.linkId : null
   const dedupeKey = buildDedupeKey({
     messageId,
     emailKey,
@@ -322,10 +364,10 @@ export async function recordEmailEvent(
     recipientEmail: recipient,
     personId,
     clickUrl,
+    clickLinkId,
   })
 
-  const { insertEmailEvent } = await import('@/lib/data/crm/insertEmailEvent')
-  const res = await insertEmailEvent({
+  const res = await dal.insertEmailEvent({
     message_id: messageId,
     recipient_email: recipient,
     person_id: personId,
@@ -339,6 +381,33 @@ export async function recordEmailEvent(
     dedupe_key: dedupeKey,
   })
   if (!res.ok) return { ok: false, error: res.error }
+
+  // Inferred delivery (no-bounce job, or an open that beat the job) also
+  // lands on crm_timeline. A provider-confirmed Resend delivery already has
+  // its own row from the webhook — skip it here.
+  if (event === 'delivered' && personId && (emailKey ?? '').trim()) {
+    try {
+      const { deliveredBasisFromMeta, deliveredPreview, deliveredTimelineDedupeKey } = await import(
+        '@/lib/crm/email-delivered'
+      )
+      const basis = deliveredBasisFromMeta(input.meta)
+      if (basis) {
+        await dal.insertEmailDeliveredTimeline({
+          personId,
+          emailKey: emailKey as string,
+          messageId,
+          broker,
+          subject,
+          basis,
+          body: deliveredPreview(basis),
+          dedupeKey: deliveredTimelineDedupeKey(personId, emailKey as string),
+        })
+      }
+    } catch (e) {
+      console.warn('[email-events] delivered timeline threw:', e instanceof Error ? e.message : e)
+    }
+  }
+
   return { ok: true, inserted: res.inserted, event, personId }
 }
 

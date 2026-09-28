@@ -34,7 +34,7 @@ import {
 const PUBLIC_SITE = 'https://ryan-realty.com'
 const ABOUT_HREF = `${PUBLIC_SITE}/about`
 const REVIEWS_HREF = `${PUBLIC_SITE}/reviews`
-const SELL_HREF = `${PUBLIC_SITE}/sell`
+const SELL_HREF = `${PUBLIC_SITE}/sell?from=cma`
 
 function publicHref(href: string): string {
   return cleanFirstPartyHref(href)

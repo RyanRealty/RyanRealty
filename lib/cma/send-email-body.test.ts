@@ -138,6 +138,11 @@ describe('CMA first-contact send body', () => {
       expect(verifyPersonLinkToken(dest.searchParams.get('_pid'))).toEqual({ personId: 4242, channel: 'document' })
       expect(dest.searchParams.get('utm_medium')).not.toBe('document')
       expect(dest.search).not.toContain('utm_medium=document')
+      if (dest.pathname === '/sell') {
+        expect(dest.searchParams.getAll('from')).toEqual(['cma'])
+      } else {
+        expect(dest.searchParams.has('from')).toBe(false)
+      }
       paths.push(dest.pathname)
     }
     expect(paths).toEqual([
@@ -149,6 +154,19 @@ describe('CMA first-contact send body', () => {
       '/cities/bend',
       `/cma/${SLUG}`,
     ])
+    expect(letter).not.toContain('data-rr-link')
+    const ids = links.map((link) => verifyEmailToken(new URL(link.href).searchParams.get('t'))?.linkId)
+    expect(ids).toEqual([
+      'report_text',
+      'sell',
+      'reviews',
+      'about',
+      'subdivision',
+      'city',
+      'report_button',
+    ])
+    expect(verifyEmailToken(new URL(links[0]!.href).searchParams.get('t'))?.linkText).toBe('read it online')
+    expect(verifyEmailToken(new URL(links[6]!.href).searchParams.get('t'))?.linkText).toBe('READ THE FULL REPORT')
   })
 
   it('keeps http out of the letter plain text, and leaves the signature plain part alone', () => {

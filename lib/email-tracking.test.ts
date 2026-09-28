@@ -21,6 +21,33 @@ describe('signEmailToken / verifyEmailToken', () => {
     })
   })
 
+  it('round-trips linkId and linkText, and still verifies an old token with no i', () => {
+    const withId = signEmailToken({
+      ...CTX,
+      url: 'https://ryan-realty.com/cma/cma-x',
+      linkId: 'report_text',
+      linkText: 'read it online',
+    })
+    expect(verifyEmailToken(withId)).toMatchObject({
+      personId: 42,
+      url: 'https://ryan-realty.com/cma/cma-x',
+      linkId: 'report_text',
+      linkText: 'read it online',
+    })
+    const payload = JSON.parse(Buffer.from(withId.split('.')[0], 'base64url').toString())
+    expect(payload.i).toBe('report_text')
+    expect(payload.x).toBe('read it online')
+
+    const oldTok = signEmailToken({ ...CTX, url: 'https://ryan-realty.com/sell' })
+    const oldPayload = JSON.parse(Buffer.from(oldTok.split('.')[0], 'base64url').toString())
+    expect(oldPayload.i).toBeUndefined()
+    expect(oldPayload.x).toBeUndefined()
+    const old = verifyEmailToken(oldTok)
+    expect(old).toMatchObject({ personId: 42, url: 'https://ryan-realty.com/sell' })
+    expect(old?.linkId).toBeUndefined()
+    expect(old?.linkText).toBeUndefined()
+  })
+
   it('rejects a tampered token', () => {
     const tok = signEmailToken(CTX)
     const [payload] = tok.split('.')
@@ -95,6 +122,27 @@ describe('instrumentEmailHtml', () => {
     const ctx = verifyEmailToken(decodeURIComponent(tokMatch![1]))
     expect(ctx?.url).toBe('https://ryan-realty.com/listings/123')
     expect(ctx?.personId).toBe(42)
+  })
+
+  it('signs i/x from data-rr-link and visible text, then strips the attribute', () => {
+    const html =
+      '<body><a href="https://ryan-realty.com/cma/cma-x" data-rr-link="report_text">read it online</a></body>'
+    const out = instrumentEmailHtml(html, CTX)
+    expect(out).not.toContain('data-rr-link')
+    expect(out).toContain('read it online')
+    const tokMatch = out.match(/click\?t=([^"]+)"/)
+    const ctx = verifyEmailToken(decodeURIComponent(tokMatch![1]))
+    expect(ctx?.linkId).toBe('report_text')
+    expect(ctx?.linkText).toBe('read it online')
+    expect(ctx?.url).toBe('https://ryan-realty.com/cma/cma-x')
+  })
+
+  it('an anchor without an id behaves exactly as before', () => {
+    const html = '<a href="https://ryan-realty.com/sell">Sell</a>'
+    const out = instrumentEmailHtml(html, CTX)
+    const ctx = verifyEmailToken(decodeURIComponent(out.match(/click\?t=([^"]+)"/)![1]))
+    expect(ctx?.linkId).toBeUndefined()
+    expect(ctx?.url).toBe('https://ryan-realty.com/sell')
   })
 
   it('NEVER wraps unsubscribe/compliance links (they stay plain)', () => {

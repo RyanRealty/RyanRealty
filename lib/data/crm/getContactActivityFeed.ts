@@ -60,6 +60,7 @@ const KIND_MAP: Record<string, KindMeta> = {
   email: { category: 'email', direction: null, label: 'Email' },
   email_open: { category: 'email', direction: 'in', label: 'Email opened' },
   email_click: { category: 'email', direction: 'in', label: 'Email link clicked' },
+  email_delivered: { category: 'email', direction: 'out', label: 'Email delivered' },
   call: { category: 'call', direction: null, label: 'Call' },
   voicemail: { category: 'call', direction: 'in', label: 'Voicemail' },
   note: { category: 'note', direction: null, label: 'Note' },
@@ -113,6 +114,38 @@ export function buildSnippet(row: { title?: string | null; body?: string | null;
   return null
 }
 
+/** Pathname only (no query) so a click preview is not a 200-char tracked URL. */
+export function shortPathFromUrl(url: string | null | undefined): string | null {
+  const raw = (url ?? '').trim()
+  if (!raw) return null
+  try {
+    return new URL(raw, 'https://ryan-realty.com').pathname || '/'
+  } catch {
+    const path = raw.split('?')[0]?.trim()
+    return path || null
+  }
+}
+
+/**
+ * Recent-activity snippet for an email_click row: "read it online · /cma/<slug>".
+ * Derived from payload so the stored body (the logged URL) stays as-is for
+ * any other reader. A legacy row with no linkText shows just the short path.
+ */
+export function emailClickSnippet(row: { body?: string | null; payload?: unknown }): string | null {
+  const payload = (row.payload ?? {}) as Record<string, unknown>
+  const url =
+    typeof payload.url === 'string' && payload.url.trim()
+      ? payload.url
+      : typeof row.body === 'string'
+        ? row.body
+        : ''
+  const path = shortPathFromUrl(url)
+  const linkText = typeof payload.linkText === 'string' ? payload.linkText.trim() : ''
+  if (linkText && path) return `${linkText} · ${path}`
+  if (path) return path
+  return null
+}
+
 /** Pure: map a raw crm_timeline row to a typed feed item. */
 export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
   const kind = String(row.kind ?? '')
@@ -130,11 +163,14 @@ export function toFeedItem(row: Record<string, unknown>): ActivityFeedItem {
     category: meta.category,
     direction: meta.direction,
     label: meta.label,
-    snippet: buildSnippet({
-      title: row.title as string | null,
-      body: row.body as string | null,
-      payload: row.payload,
-    }),
+    snippet:
+      kind === 'email_click'
+        ? emailClickSnippet({ body: row.body as string | null, payload: row.payload })
+        : buildSnippet({
+            title: row.title as string | null,
+            body: row.body as string | null,
+            payload: row.payload,
+          }),
     broker: (row.broker as string | null) ?? null,
     source: String(row.source ?? 'app'),
     recordingSid,

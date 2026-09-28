@@ -7,11 +7,13 @@
  *   1. Posts a page_view to /api/visitors/track with the SAME localStorage
  *      session id ('rr_session_id') the site snippet uses, at 'essential'
  *      consent (no banner exists on a client document; minimal record only).
+ *      pageUrl keeps campaign params (utm_*, agent, from) and strips only
+ *      identity params (_pid, _fuid), matching strip-identity.ts.
  *   2. If the URL carries ?_pid= (the SIGNED person token, P7 identity loop)
- *      from a tracked link, forwards it with the page_view (the track route
- *      verifies it and identifies the visit) and calls /api/track/e/identify as
- *      a second path (rr_pid cookie + history backfill). `?_fuid=` is retired
- *      and identifies nobody.
+ *      from a tracked link, forwards it on the page_view as identityToken
+ *      (the track route verifies it and identifies the visit) and calls
+ *      /api/track/e/identify as a second path (rr_pid cookie + history
+ *      backfill). `?_fuid=` is retired and identifies nobody.
  *   3. Strips the identity params from the address bar.
  *
  * Fails silent by design: a tracking error must never break the document.
@@ -37,9 +39,22 @@
     var params = new URLSearchParams(location.search)
     var pid = params.get('_pid')
     var fuid = params.get('_fuid')
-    // The stored page_url never carries identity params (privacy rule: no
-    // personal identifiers in stored URLs).
-    var cleanUrl = location.origin + location.pathname
+    // Keep campaign params (utm_*, agent, from) so a /cma arrival from a CMA
+    // email still reads as email, not Direct. Strip only identity params — the
+    // same list as app/api/visitors/track/strip-identity.ts IDENTITY_PARAMS.
+    // A pathname-only URL threw those tags away and the lead page labelled the
+    // visit "Came back on their own".
+    var IDENTITY_PARAMS = ['_pid', '_fuid']
+    var urlWithoutIdentity = function (href) {
+      try {
+        var u = new URL(href, location.origin)
+        for (var i = 0; i < IDENTITY_PARAMS.length; i++) u.searchParams.delete(IDENTITY_PARAMS[i])
+        return u.toString()
+      } catch (e) {
+        return location.origin + location.pathname
+      }
+    }
+    var trackPageUrl = urlWithoutIdentity(location.href)
 
     var postView = function (sessionId) {
       return fetch('/api/visitors/track', {
@@ -51,14 +66,15 @@
           sessionId: sessionId,
           sourceDomain: 'ryan-realty.com',
           eventType: 'page_view',
-          pageUrl: cleanUrl,
+          pageUrl: trackPageUrl,
           pageTitle: document.title || undefined,
           pageCategory: 'client-document',
           referrer: document.referrer || undefined,
-          landingPage: cleanUrl,
+          landingPage: trackPageUrl,
           consent: 'essential',
           // The signed person token from the link we sent (P7 identity loop): the
-          // track route verifies it and identifies this visit server-side.
+          // track route verifies it and identifies this visit server-side. The
+          // separate /api/track/e/identify call below still runs as a second path.
           identityToken: pid || undefined,
           webdriver: navigator.webdriver === true ? true : undefined,
         }),
@@ -125,7 +141,7 @@
               sessionId: sid,
               sourceDomain: 'ryan-realty.com',
               eventType: 'cta_click',
-              pageUrl: cleanUrl,
+              pageUrl: trackPageUrl,
               pageTitle: (el.textContent || '').trim().slice(0, 80) || href.slice(0, 80),
               pageCategory: 'client-document',
               consent: 'essential',

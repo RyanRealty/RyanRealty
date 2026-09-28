@@ -113,11 +113,26 @@ describe('labels', () => {
   it('source labels', () => {
     expect(sourceLabel('crm', 'email', 'listing-alerts')).toBe('Listing alert email')
     expect(sourceLabel('cma', 'document', 'cma-1-main')).toBe('CMA document')
+    expect(sourceLabel('cma', 'email', 'cma-zz-postland-20260928')).toBe('CMA email')
+    expect(sourceLabel('crm', 'email', 'cma-zz-postland-20260928')).toBe('CMA email')
+    expect(sourceLabel('crm', 'email', 'june-update')).toBe('Email from us')
     expect(sourceLabel('gbp', 'organic', 'profile')).toBe('Google Business Profile')
     expect(sourceLabel('crm', 'personal-link', null)).toBe('Personal link from a broker')
     expect(sourceLabel('direct', 'none', null)).toBe('Direct or bookmark')
     expect(sourceLabel('chatgpt.com', null, null)).toBe('AI assistant (chatgpt.com)')
     expect(visitSource('https://ryan-realty.com/?fbclid=abc', undefined, false)).toBe('Paid ad (Meta)')
+  })
+
+  it('a visit whose first page carries CMA-email tags never reads Came back on their own', () => {
+    const url =
+      'https://ryan-realty.com/cma/cma-zz-postland-20260928?utm_source=cma&utm_medium=email&utm_campaign=cma-zz-postland-20260928&agent=matt'
+    expect(visitSource(url, SESSION, false)).toBe('CMA email')
+    const visits = buildVisits(
+      [ev(t(40), 'page_view', url)],
+      [{ ...SESSION, utmSource: null, utmMedium: null, utmCampaign: null }],
+    )
+    expect(visits[0].source).toBe('CMA email')
+    expect(visits[0].source).not.toBe('Came back on their own')
   })
 
   it('identified_via in plain words', () => {
