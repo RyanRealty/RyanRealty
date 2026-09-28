@@ -11,6 +11,8 @@ const buildCmaMapDataUri = vi.fn(async (_subject?: unknown, _comps?: unknown) =>
 const buildSubjectLocationMapDataUri = vi.fn(async (_subject?: unknown) => null)
 const buildCma = vi.fn()
 const selectComps = vi.fn()
+const listingMarketForDocument = vi.fn(async (_doc?: unknown, _status?: unknown, _budget?: unknown) => null)
+const likeHomeCreditsForDocument = vi.fn(async (_doc?: unknown, _status?: unknown, _budget?: unknown) => null)
 
 vi.mock('@/lib/data', () => ({
   getCmaRenderSourceBySlug: (...args: unknown[]) => getCmaRenderSourceBySlug(...args),
@@ -43,11 +45,13 @@ vi.mock('@/lib/cma/map', () => ({
 }))
 
 vi.mock('@/lib/cma/listing-window-load', () => ({
-  listingMarketForDocument: vi.fn(async () => null),
+  listingMarketForDocument: (doc: unknown, status: unknown, budget?: unknown) =>
+    budget === undefined ? listingMarketForDocument(doc, status) : listingMarketForDocument(doc, status, budget),
 }))
 
 vi.mock('@/lib/cma/like-home-credits-load', () => ({
-  likeHomeCreditsForDocument: vi.fn(async () => null),
+  likeHomeCreditsForDocument: (doc: unknown, status: unknown, budget?: unknown) =>
+    budget === undefined ? likeHomeCreditsForDocument(doc, status) : likeHomeCreditsForDocument(doc, status, budget),
 }))
 
 vi.mock('@/lib/cma/build', () => ({
@@ -77,6 +81,8 @@ describe('resolveCmaPrintHtml', () => {
     buildSubjectLocationMapDataUri.mockClear()
     buildCma.mockClear()
     selectComps.mockClear()
+    listingMarketForDocument.mockClear()
+    likeHomeCreditsForDocument.mockClear()
   })
 
   it('renders from render_args so current CSS ships on Open PDF', async () => {
@@ -97,6 +103,10 @@ describe('resolveCmaPrintHtml', () => {
     expect(buildSubjectLocationMapDataUri).not.toHaveBeenCalled()
     const renderArg = renderCmaHtml.mock.calls[0]?.[0] as { subjectMapDataUri?: unknown }
     expect(renderArg.subjectMapDataUri).toBeNull()
+    // PDF goes through resolveCmaPrintHtml. No read budget — a slow market
+    // read must still be allowed to finish and stay in the letter.
+    expect(listingMarketForDocument.mock.calls[0]).toHaveLength(2)
+    expect(likeHomeCreditsForDocument.mock.calls[0]).toHaveLength(2)
   })
 
   it('never calls buildCma or the comp picker; rec, band, and comps stay byte-identical', async () => {

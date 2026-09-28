@@ -4,11 +4,8 @@
  */
 
 import { getLikeHomeSales } from '@/lib/data/cma/builderReads'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
-
-/** Same budget as the listing-window read. An empty result is "no credits", not a hang. */
-const LIKE_HOME_READ_MS = 4_000
 import { likeHomeBounds, likeHomeCredits, type LikeHomeCredit } from '@/lib/cma/like-home-credits'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 
 const LIVE_STATUS = new Set(['draft', 'needs_review'])
 
@@ -27,6 +24,7 @@ type CreditDoc = {
 export async function likeHomeCreditsForDocument(
   doc: CreditDoc,
   status: string | null | undefined,
+  readBudgetMs?: number,
 ): Promise<LikeHomeCredit | null> {
   if (!LIVE_STATUS.has((status ?? '').toLowerCase())) return null
   const subject = doc.subject
@@ -39,22 +37,28 @@ export async function likeHomeCreditsForDocument(
   })
   const city = (subject?.city ?? '').trim()
   if (!bounds || !city) return null
-  // [] on timeout or error matches a miss: likeHomeCredits returns null when nothing maps.
-  const rows = await withTimeoutFallback(
-    getLikeHomeSales({
-      city,
-      subdivisionPrefix: bounds.place,
-      sqftLow: bounds.sqftLow,
-      sqftHigh: bounds.sqftHigh,
-      yearLow: bounds.yearLow,
-      yearHigh: bounds.yearHigh,
-      fromIso: bounds.from,
-      toIso: bounds.to,
-    }),
-    [],
-    LIKE_HOME_READ_MS,
-    'cma.likeHome',
-  )
+  const query = {
+    city,
+    subdivisionPrefix: bounds.place,
+    sqftLow: bounds.sqftLow,
+    sqftHigh: bounds.sqftHigh,
+    yearLow: bounds.yearLow,
+    yearHigh: bounds.yearHigh,
+    fromIso: bounds.from,
+    toIso: bounds.to,
+  }
+  let rows
+  if (readBudgetMs == null) {
+    try {
+      rows = await getLikeHomeSales(query)
+    } catch (err) {
+      console.error('[like-home-credits]', err)
+      return null
+    }
+  } else {
+    // [] on timeout matches a miss: nothing maps, so the letter omits the line.
+    rows = await withTimeoutFallback(getLikeHomeSales(query), [], readBudgetMs, 'cma.likeHome')
+  }
   const own = (subject?.streetAddress ?? '').trim().toLowerCase()
   const letterAddrs = new Set(
     (doc.comps ?? [])

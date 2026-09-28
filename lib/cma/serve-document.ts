@@ -143,12 +143,12 @@ export async function immersiveFromRow(
           CMA_READ_MS,
           'cma.map',
         )
-    // Market and credits time-box themselves. Run them with the map so a slow
-    // closed-sales scan cannot stack on top of the tile.
+    // Budget is this serve path only. Print / PDF call the same loaders with
+    // no budget, so a slow read still lands in the letter instead of being dropped.
     const [mapBits, listingMarket, likeHomeCredits, docLinks] = await Promise.all([
       mapPromise,
-      listingMarketForDocument(stored, row.status),
-      likeHomeCreditsForDocument({ ...stored, comps }, row.status),
+      listingMarketForDocument(stored, row.status, CMA_READ_MS),
+      likeHomeCreditsForDocument({ ...stored, comps }, row.status, CMA_READ_MS),
       slug
         ? withTimeoutFallback(resolveDocLinkCtx(slug, broker.slug), null, CMA_READ_MS, 'cma.docLinks')
         : Promise.resolve(null),
