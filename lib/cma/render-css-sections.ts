@@ -612,6 +612,12 @@ export function cmaSectionStyles(): string {
     table.comp-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   }
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
+  /* Row-wise split. thead repeats on the continuation when the renderer
+     will do it (table-header-group). A photo head is often too tall to
+     repeat; the tail then shares the sheet with the next chapter's lead
+     instead of sitting on a blank page. */
+  table.comp-matrix thead { display: table-header-group; }
+  table.comp-matrix tbody { display: table-row-group; break-inside: auto; }
   table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }
   /* TOP, not bottom: the subject head carries one line the sale heads do not. */
   table.comp-matrix thead th.v { vertical-align: top; text-align: right; }

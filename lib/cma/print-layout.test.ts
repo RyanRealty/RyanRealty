@@ -256,6 +256,16 @@ describe('print CMA layout', () => {
     expect(spread.open).not.toContain('bars')
     expect(spread.rest).toContain('class="spread"')
     expect(spread.rest).toContain('bars')
+    const chart = splitPageOpening(
+      '<h2 class="section">What price and time look like in Bend</h2><div class="spread"><div class="spread-col"><h3 class="subhead">When homes like yours get their offer</h3><div class="szn timing-wide"><svg class="trend-svg"></svg></div><p class="chart-read">Half of them.</p></div><div class="spread-col"><h3 class="subhead">The first price decides the days</h3></div></div>',
+    )
+    expect(chart.open).toContain('What price and time look like in Bend')
+    expect(chart.open).toContain('When homes like yours get their offer')
+    expect(chart.open).not.toContain('<svg')
+    expect(chart.open).not.toContain('The first price decides the days')
+    expect(chart.rest).toContain('<svg')
+    expect(chart.rest).toContain('class="spread"')
+    expect(chart.rest).toContain('Half of them.')
     const alone = splitPageOpening(
       '<h2 class="section">What price and time look like in Bend</h2><div class="spread"><div class="spread-col"><p>curve</p></div></div>',
     )
@@ -264,7 +274,9 @@ describe('print CMA layout', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
     expect(css).toMatch(/\.spread,\s*\.spread-col\s*\{[^}]*break-inside:\s*auto !important/)
     expect(css).toMatch(/svg\.trend-svg,\s*\.szn svg\s*\{[^}]*break-inside:\s*avoid !important/)
-    expect(css).toMatch(/\.page-open:has\(\.spread-col\)\s*\{[^}]*break-inside:\s*avoid/)
+    expect(css).toMatch(/\.page-open\.is-chart-follow\s*\{[^}]*break-inside:\s*avoid/)
+    expect(css).toMatch(/\.page-open\.is-chart-follow\s*\{[^}]*break-after:\s*auto !important/)
+    expect(css).toMatch(/table\.comp-matrix thead\s*\{[^}]*display:\s*table-header-group/)
     expect(css).toMatch(
       /break-before:\s*auto;\s*page-break-before:\s*auto;\s*break-inside:\s*avoid;\s*page-break-inside:\s*avoid;/,
     )

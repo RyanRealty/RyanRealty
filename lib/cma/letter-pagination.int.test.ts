@@ -17,7 +17,7 @@ import type { CmaBandRival, CmaBandRivalSet } from './band-rivals'
 import type { CmaExpiredPeer, CmaExpiredPeerSet } from './market-status'
 import type { CompArea } from '@/lib/pricing/comp-area'
 import { extractPdfTextRuns, inspectPdfPageSafety, type PdfTextRun } from '@/lib/pdf/assert-page-safety'
-import { headingTailFailures } from '@/lib/cma/page-ink'
+import { headingTailFailures, nearBlankFailures } from '@/lib/cma/page-ink'
 import { pdfRenderOptions, CMA_MARGIN_IN, marginsToPt, PAPER } from '@/lib/pdf/page-contract'
 
 const CHROME =
@@ -416,6 +416,7 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
   })
 
   failures.push(...headingTailFailures(pages, sizes, label))
+  failures.push(...nearBlankFailures(pages, sizes, label))
 
   if (failures.length) {
     throw new Error(`${label}: ${failures.join(' | ')}`)
@@ -661,6 +662,9 @@ describe.skipIf(!hasChrome)('CMA letter pagination', () => {
     'foxborough',
     'pine-vista',
     'crossing',
+    'condor-redmond',
+    'purcell',
+    'yapoah',
   ] as const)(
     '%s snapshot shape keeps the close together and does not slice a chart',
     async (name) => {

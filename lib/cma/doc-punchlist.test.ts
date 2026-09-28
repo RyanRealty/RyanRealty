@@ -1457,6 +1457,14 @@ describe('tasteReview 4 — chapter 2b is one composed spread', () => {
     const html = renderCmaHtml(withChapter2()).html
     expect(html).toContain('The first price decides the days')
     expect(html).toContain('When homes like yours get their offer')
+    const leadAt = html.indexOf('When homes like yours get their offer')
+    const openAt = html.lastIndexOf('class="page-open is-chart-follow"', leadAt)
+    const spreadAt = html.indexOf('class="spread"', openAt)
+    expect(openAt).toBeGreaterThan(-1)
+    expect(spreadAt).toBeGreaterThan(openAt)
+    const opening = html.slice(openAt, spreadAt)
+    expect(opening).toContain('When homes like yours get their offer')
+    expect(opening).not.toContain('<svg')
   })
 })
 

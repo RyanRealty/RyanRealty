@@ -54,6 +54,50 @@ function isBodyInk(text: string): boolean {
 }
 
 /**
+ * Share of the content box a sheet must fill. A competition-grid tail that
+ * sat alone under the priced-right chapter was under this. A disclosure that
+ * cannot share a sheet with the close can still clear about 30%.
+ */
+export const NEAR_BLANK_FILL = 0.2
+
+function contentSpan(runs: PdfTextRun[]): number {
+  if (runs.length === 0) return 0
+  return Math.max(...runs.map((r) => r.y1)) - Math.min(...runs.map((r) => r.y0))
+}
+
+/**
+ * Sheets whose text covers less than `min` of the content box. The cover is
+ * page 1 and is not graded. Returns one string per failing sheet.
+ */
+export function nearBlankFailures(
+  pages: PdfTextRun[][],
+  _sizes: { w: number; h: number }[],
+  label: string,
+  min = NEAR_BLANK_FILL,
+): string[] {
+  const margins = marginsToPt(CMA_MARGIN_IN)
+  const boxH = PAPER.heightPt - margins.top - margins.bottom
+  const failures: string[] = []
+  pages.forEach((all, idx) => {
+    if (idx === 0) return
+    const body = all.filter((r) => !isChrome(r.text) && !isPgMeta(r.text))
+    const fill = contentSpan(body) / boxH
+    if (fill < min) {
+      const sample = body
+        .map((r) => r.text)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 70)
+      failures.push(
+        `${label} p${idx + 1}: near-blank page, content span ${(fill * 100).toFixed(0)}% ("${sample}")`,
+      )
+    }
+  })
+  return failures
+}
+
+/**
  * Pages whose last real ink is a heading or the section banner, with the
  * chapter body on the next sheet. Returns one string per failing sheet.
  */

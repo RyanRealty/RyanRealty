@@ -111,16 +111,26 @@ export function cmaStylesheet(siteUrl: string): string {
     break-after: avoid;
     page-break-after: avoid;
   }
-  /* First chart only. Gluing the second chart as well makes the opening
-     one sheet tall, and a short table tail is left on the page before it.
-     The banner, the heading, and that first chart still stay together.
-     break-inside: auto let them sit alone under the competition grid. */
-  .page-open:has(.spread-col) {
+  /* Banner, heading, and the chart's lead sentence. The SVG is outside this
+     box: gluing the chart in made the group taller than the room under a
+     competition-grid tail, so the tail sat alone on the next sheet. The
+     chart follows on this sheet when it fits, and on the next when it does
+     not. One SVG still does not slice. */
+  .page-open.is-chart-follow {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    break-after: auto;
-    page-break-after: auto;
+    break-after: auto !important;
+    page-break-after: auto !important;
   }
+  .page-open.is-chart-follow > h2,
+  .page-open.is-chart-follow > h3,
+  .page-open.is-chart-follow > p,
+  .open-lead,
+  .open-lead h3 {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+  .open-lead { margin: 0; padding: 0; }
   .pg-header {
     display: flex;
     justify-content: space-between;

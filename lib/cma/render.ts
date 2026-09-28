@@ -139,9 +139,9 @@ interface PageDef {
   closing?: boolean
 }
 
-// A spread is two full charts stacked on paper. It is not a "first small
-// block": pulled into .page-open (break-inside: avoid) the opening is about
-// one sheet tall, and a short table tail is left alone on the previous page.
+// A spread is two full charts stacked on paper. The heading keeps the lead
+// sentence only. Pulling the chart into .page-open makes that box too tall
+// to sit under a short competition-grid tail, and the tail is left alone.
 const LARGE_OPENING =
   /<(?:table|div)\b[^>]*class="[^"]*(?:comp-matrix-wrap|worth-strip|status-price|chart-block|status-price-wrap|spread)[^"]*"/i
 
@@ -175,10 +175,61 @@ function takeTopElement(html: string): { html: string; rest: string } | null {
   return { html: src.slice(0, i), rest: src.slice(i) }
 }
 
+function classListHas(html: string, name: string): boolean {
+  const m = html.match(/^\s*<[a-zA-Z][\w:-]*\b[^>]*\bclass="([^"]*)"/i)
+  if (!m) return false
+  return m[1]!.split(/\s+/).includes(name)
+}
+
+function elementIsChart(html: string): boolean {
+  return /<svg\b/i.test(html) || classListHas(html, 'szn') || classListHas(html, 'chart-block')
+}
+
 /**
- * A two-chart spread: keep the heading with the FIRST chart only.
- * The second chart stays outside, so the pair can split between charts
- * without slicing either one and without gluing both to the heading.
+ * Lead copy in a spread column, stopping at the chart.
+ * The SVG stays in the column so a short grid tail can share a sheet with
+ * the heading. A column with no chart returns null and the caller keeps
+ * the old "first column stays with the heading" split.
+ */
+function splitLeadBeforeChart(colInner: string): { lead: string; rest: string } | null {
+  let remaining = colInner
+  let lead = ''
+  while (remaining.trim()) {
+    const el = takeTopElement(remaining)
+    if (!el) return null
+    if (elementIsChart(el.html)) return { lead, rest: remaining }
+    lead += el.html
+    remaining = el.rest
+  }
+  return null
+}
+
+/**
+ * Pull the first chart's lead sentence out of a spread. The chart SVG stays
+ * in the spread, outside the unbreakable opening.
+ */
+function peelSpreadChartLead(spreadHtml: string): { lead: string; rest: string } | null {
+  const openTag = spreadHtml.match(/^<div\b[^>]*>/i)
+  if (!openTag || !classListHas(spreadHtml, 'spread')) return null
+  const closeAt = spreadHtml.lastIndexOf('</div>')
+  if (closeAt < openTag[0].length) return null
+  const inner = spreadHtml.slice(openTag[0].length, closeAt)
+  const first = takeTopElement(inner)
+  if (!first || !classListHas(first.html, 'spread-col')) return null
+  const colOpen = first.html.match(/^<div\b[^>]*>/i)
+  if (!colOpen) return null
+  const colClose = first.html.lastIndexOf('</div>')
+  if (colClose < colOpen[0].length) return null
+  const colInner = first.html.slice(colOpen[0].length, colClose)
+  const split = splitLeadBeforeChart(colInner)
+  if (!split) return null
+  const newCol = `${colOpen[0]}${split.rest}</div>`
+  return { lead: split.lead, rest: `${openTag[0]}${newCol}${first.rest}</div>` }
+}
+
+/**
+ * A spread with no chart in the first column: keep that column with the
+ * heading and let a second column start the next sheet.
  */
 function peelFirstSpreadCol(spreadHtml: string): { first: string; rest: string } | null {
   const openTag = spreadHtml.match(/^<div\b[^>]*>/i)
@@ -187,7 +238,7 @@ function peelFirstSpreadCol(spreadHtml: string): { first: string; rest: string }
   if (closeAt < openTag[0].length) return null
   const inner = spreadHtml.slice(openTag[0].length, closeAt)
   const first = takeTopElement(inner)
-  if (!first || !/\bclass="[^"]*\bspread-col\b/.test(first.html)) return null
+  if (!first || !classListHas(first.html, 'spread-col')) return null
   if (!first.rest.trim()) return null
   return { first: first.html, rest: `${openTag[0]}${first.rest}</div>` }
 }
@@ -200,14 +251,28 @@ export function splitPageOpening(body: string): { open: string; rest: string } {
   const after = src.slice(heading[0].length)
   const next = takeTopElement(after)
   if (!next) return { open: heading[0], rest: after }
-  if (/^<div\b[^>]*\bclass="[^"]*\bspread\b/.test(next.html)) {
+  if (classListHas(next.html, 'spread')) {
+    const chart = peelSpreadChartLead(next.html)
+    if (chart) {
+      const lead = chart.lead.trim() ? `<div class="open-lead">${chart.lead}</div>` : ''
+      return { open: heading[0] + lead, rest: chart.rest + next.rest }
+    }
     const peeled = peelFirstSpreadCol(next.html)
     if (peeled) return { open: heading[0] + peeled.first, rest: peeled.rest + next.rest }
+  }
+  // A chart with no lead stays out of the unbreakable opening so it cannot
+  // drag the heading onto the next sheet.
+  if (elementIsChart(next.html)) {
+    return { open: heading[0], rest: after }
   }
   if (LARGE_OPENING.test(next.html) || /^<table\b/i.test(next.html)) {
     return { open: heading[0], rest: after }
   }
   return { open: heading[0] + next.html, rest: next.rest }
+}
+
+function openingFollowedByChart(rest: string): boolean {
+  return classListHas(rest, 'spread') || classListHas(rest, 'szn') || classListHas(rest, 'chart-block')
 }
 
 function wrapPage(page: PageDef): string {
@@ -222,9 +287,12 @@ function wrapPage(page: PageDef): string {
   // takes the cream wordmark, because the navy one disappears into the field.
   const logo = page.closing ? 'logo-white.png' : 'logo-blue.png'
   const { open, rest } = splitPageOpening(page.body)
+  // The chart is outside the opening. break-after:auto on this class lets a
+  // short grid tail share the sheet with the heading. The SVG stays whole.
+  const chartFollows = openingFollowedByChart(rest)
   return `
 <section class="page${page.flyer ? ' page-flyer' : ''}${page.closing ? ' page-closing' : ''}">
-  <div class="page-open">
+  <div class="page-open${chartFollows ? ' is-chart-follow' : ''}">
   <header class="pg-header">
     <img src="${SITE_URL}/images/brand/${logo}" alt="Ryan Realty" class="logo" />
     <div class="pg-meta">${page.meta}</div>
