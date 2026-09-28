@@ -112,10 +112,12 @@ export function cmaStylesheet(siteUrl: string): string {
     page-break-after: avoid;
   }
   /* First chart only. Gluing the second chart as well makes the opening
-     one sheet tall, and a short table tail is left on the page before it. */
+     one sheet tall, and a short table tail is left on the page before it.
+     The banner, the heading, and that first chart still stay together.
+     break-inside: auto let them sit alone under the competition grid. */
   .page-open:has(.spread-col) {
-    break-inside: auto;
-    page-break-inside: auto;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
     break-after: auto;
     page-break-after: auto;
   }

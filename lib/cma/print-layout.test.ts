@@ -264,7 +264,7 @@ describe('print CMA layout', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
     expect(css).toMatch(/\.spread,\s*\.spread-col\s*\{[^}]*break-inside:\s*auto !important/)
     expect(css).toMatch(/svg\.trend-svg,\s*\.szn svg\s*\{[^}]*break-inside:\s*avoid !important/)
-    expect(css).toMatch(/\.page-open:has\(\.spread-col\)\s*\{[^}]*break-inside:\s*auto/)
+    expect(css).toMatch(/\.page-open:has\(\.spread-col\)\s*\{[^}]*break-inside:\s*avoid/)
     expect(css).toMatch(
       /break-before:\s*auto;\s*page-break-before:\s*auto;\s*break-inside:\s*avoid;\s*page-break-inside:\s*avoid;/,
     )

@@ -19,7 +19,8 @@ import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types
 import type { CmaBandRival, CmaBandRivalSet } from './band-rivals'
 import type { CmaExpiredPeer, CmaExpiredPeerSet } from './market-status'
 import type { CompArea } from '@/lib/pricing/comp-area'
-import { inspectPdfPageSafety, formatViolations } from '@/lib/pdf/assert-page-safety'
+import { extractPdfTextRuns, inspectPdfPageSafety, formatViolations } from '@/lib/pdf/assert-page-safety'
+import { headingTailFailures } from '@/lib/cma/page-ink'
 import { pdfRenderOptions, CMA_MARGIN_IN } from '@/lib/pdf/page-contract'
 
 const CHROME =
@@ -188,6 +189,9 @@ async function expectClean(a: RenderCmaArgs, label: string, extraCss?: string) {
       `${label}: ${report.violations.length} violation(s) over ${report.pageCount} sheet(s): ${formatViolations(report.violations)}`,
     )
   }
+  const { pages, sizes } = await extractPdfTextRuns(new Uint8Array(pdf))
+  const tails = headingTailFailures(pages, sizes, label)
+  if (tails.length) throw new Error(tails.join(' | '))
   return report
 }
 

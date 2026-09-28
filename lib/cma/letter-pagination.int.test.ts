@@ -17,6 +17,7 @@ import type { CmaBandRival, CmaBandRivalSet } from './band-rivals'
 import type { CmaExpiredPeer, CmaExpiredPeerSet } from './market-status'
 import type { CompArea } from '@/lib/pricing/comp-area'
 import { extractPdfTextRuns, inspectPdfPageSafety, type PdfTextRun } from '@/lib/pdf/assert-page-safety'
+import { headingTailFailures } from '@/lib/cma/page-ink'
 import { pdfRenderOptions, CMA_MARGIN_IN, marginsToPt, PAPER } from '@/lib/pdf/page-contract'
 
 const CHROME =
@@ -414,6 +415,8 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
     }
   })
 
+  failures.push(...headingTailFailures(pages, sizes, label))
+
   if (failures.length) {
     throw new Error(`${label}: ${failures.join(' | ')}`)
   }
@@ -600,10 +603,10 @@ function assertChartAtomic(pages: PdfTextRun[][], label: string) {
 async function assertLetterPages(
   a: RenderCmaArgs,
   label: string,
-  opts?: { nearBlank?: boolean; minFill?: number },
+  opts?: { nearBlank?: boolean; minFill?: number; spread?: boolean },
 ) {
   const { html } = renderCmaHtml(a)
-  expect(html).toContain('class="spread"')
+  if (opts?.spread !== false) expect(html).toContain('class="spread"')
   const pdf = await renderPdf(html)
   const safety = await inspectPdfPageSafety(pdf, { margins: CMA_MARGIN_IN })
   if (!safety.ok) {
@@ -613,7 +616,7 @@ async function assertLetterPages(
   expect(pages.length).toBeGreaterThan(3)
   assertPagination(pages, sizes, label)
   assertClosingTogether(pages, label)
-  assertChartAtomic(pages, label)
+  if (opts?.spread !== false) assertChartAtomic(pages, label)
   if (opts?.nearBlank) assertNoNearBlank(pages, label, opts.minFill ?? 0.35)
 }
 
@@ -649,12 +652,21 @@ describe.skipIf(!hasChrome)('CMA letter pagination', () => {
     await assertLetterPages(shapedLetter({ comps: n, leadRepeats: 0 }), `${n}-comp`)
   }, 180_000)
 
-  it.each(['jones', 'sage-stone', 'monterey-mews', 'mcclellan', 'nugget'] as const)(
+  it.each([
+    'jones',
+    'sage-stone',
+    'monterey-mews',
+    'mcclellan',
+    'nugget',
+    'foxborough',
+    'pine-vista',
+    'crossing',
+  ] as const)(
     '%s snapshot shape keeps the close together and does not slice a chart',
     async (name) => {
       const raw = JSON.parse(
         readFileSync(join(process.cwd(), 'lib/cma/fixtures/letter-shapes', `${name}.json`), 'utf8'),
-      ) as RenderCmaArgs
+      ) as RenderCmaArgs & { market?: { offerTiming?: unknown; askOutcome?: unknown } | null }
       const a = {
         ...raw,
         broker,
@@ -667,7 +679,8 @@ describe.skipIf(!hasChrome)('CMA letter pagination', () => {
       } as RenderCmaArgs
       // A disclosure that will not share a sheet with the close can land near
       // 30% full. The blank matrix tails these rows used to print were under 20%.
-      await assertLetterPages(a, name, { nearBlank: true, minFill: 0.22 })
+      const charts = Boolean(raw.market?.offerTiming && raw.market?.askOutcome)
+      await assertLetterPages(a, name, { nearBlank: true, minFill: 0.22, spread: charts })
     },
     120_000,
   )
