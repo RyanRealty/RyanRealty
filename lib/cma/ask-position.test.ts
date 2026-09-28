@@ -47,8 +47,7 @@ describe('one ask position — Slate', () => {
         },
       },
     } as unknown as OpinionPageArgs)
-    expect(heading).toContain('You first asked $616,900')
-    expect(heading).toContain('The last listing asked $589,900')
+    expect(heading).toBe('You asked $616,900 for 40 days, then $589,900 and did not sell.')
     expect(heading).not.toBe('You asked $616,900 and did not sell.')
 
     const item = buildFailedAskItem(
@@ -95,7 +94,12 @@ describe('one ask position — Slate', () => {
         },
       },
     } as unknown as OpinionPageArgs)
-    expect(heading).toContain('The last listing asked $745,000')
-    expect(heading).not.toContain('$760,000')
+    expect(heading).toBe(
+      'You asked $775,000 for 60 days, then $760,000 for 120, then $745,000 and did not sell.',
+    )
+    const banner = /you asked (\$[\d,]+[^.]*)\./i.exec(heading)
+    expect(banner).not.toBeNull()
+    const asks = [...banner![1]!.matchAll(/\$([\d,]+)/g)].map((m) => Number(m[1]!.replace(/,/g, '')))
+    expect(asks[asks.length - 1]).toBe(745_000)
   })
 })

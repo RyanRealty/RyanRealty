@@ -90,6 +90,7 @@ import { askStepped, resolveAskPosition } from '@/lib/cma/ask-position'
 import {
   PRICED_RIGHT_HEADING_OVERPRICED,
   askExposureSentence,
+  askHeadingEndingAtLastAsk,
   askGapClass,
   askStoryReading,
   neutralAskReading,
@@ -720,8 +721,14 @@ export function whatHappenedHeading(a: OpinionPageArgs): string {
     const sentence = askExposureSentence(exposure.segments)
     if (sentence) return sentence
   }
+  // A dashed last step is not on the exposure. The banner still has to be
+  // "You asked ..." and the last dollar in it is the ask the listing came off at.
+  if (exposure && exposure.segments.length > 0 && !exposureAgrees && position.lastAsk != null) {
+    const sentence = askHeadingEndingAtLastAsk(exposure.segments, position.lastAsk)
+    if (sentence) return sentence
+  }
   if (askStepped(position)) {
-    return `You first asked ${usd(position.originalAsk!)}. The last listing asked ${usd(position.lastAsk!)} and did not sell.`
+    return `You asked ${usd(position.originalAsk!)}, then ${usd(position.lastAsk!)} and did not sell.`
   }
   const ask = position.lastAsk ?? position.originalAsk
   return ask != null && ask > 0
