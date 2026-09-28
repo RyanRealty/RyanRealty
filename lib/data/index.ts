@@ -653,7 +653,7 @@ export {
   getCmaAdminRowBySlug, getCmaAdminReviewRowBySlug, getCmaProspectAsk, getCmaServeHead,
   getCmaStoredHtmlBySlug, getCmaRenderSourceBySlug, getCmaHtmlBySlug,
   getCmaAccessIdentity, updateCmaRowFieldsBySlug, deleteCmaRowById, replaceCmaComps,
-  snapshotCmaVersion,
+  snapshotCmaVersion, getCmaBuildSummaryBySlug,
 } from '@/lib/data/cma/documents'
 export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource, CmaVersionSnapshotResult } from '@/lib/data/cma/documents'
 export { listOpenCmaActions, listOpenCmaActionsForSlug, claimCmaAction, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'

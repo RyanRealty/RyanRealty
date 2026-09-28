@@ -17,6 +17,7 @@ import {
   updateCmaRowFieldsBySlug,
   replaceCmaComps,
   snapshotCmaVersion,
+  getCmaBuildSummaryBySlug,
   getPricingMarketIndex,
   findCrmPersonIdByEmail,
   type CmaCompInsert,
@@ -54,7 +55,8 @@ import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
-import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
+import { judgeComps, readJudgeCache, repairNarrativeAgainstAudit, JudgeUnstableError } from '@/lib/cma/judge'
+import type { JudgeDecisionRecord } from '@/lib/cma/judge-vote'
 import { alignNarrativeToPricedSet, honestComparabilityLine } from '@/lib/cma/judge-consistency'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
@@ -182,6 +184,16 @@ async function recordBuildFailure(
       console.error('[recordBuildFailure] build_error fallback failed', slug, err)
     })
   }
+}
+
+/**
+ * Merge the judge decision onto the existing build_summary. The prior letter
+ * stays; only this JSON key is added. A failed merge must not hide the
+ * build_error the caller writes next.
+ */
+async function persistJudgeCache(slug: string, record: JudgeDecisionRecord): Promise<void> {
+  const current = (await getCmaBuildSummaryBySlug(slug)) ?? {}
+  await updateCmaRowFieldsBySlug(slug, { build_summary: { ...current, judge_cache: record } })
 }
 
 
@@ -416,8 +428,29 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // math runs. Falls back to the full set + the dispersion guard when the
     // key is absent or the call fails. A different product still blocks:
     // pricing that set is a comp shortage, not a number.
-    const judgment = await judgeComps(subject, selection.comps, market)
     const isCurated = curatedKeys.length > 0
+    const priorCache = await getCmaBuildSummaryBySlug(slug)
+      .then((summary) => readJudgeCache(summary))
+      .catch(() => null)
+    let judgment: Awaited<ReturnType<typeof judgeComps>>
+    try {
+      judgment = await judgeComps(subject, selection.comps, market, {
+        priorCache,
+        minComps: MIN_COMPS,
+        // A broker-picked set is priced as chosen. The minimum is not in play.
+        enforceKeepMinimum: !isCurated,
+      })
+    } catch (err) {
+      if (err instanceof JudgeUnstableError) {
+        await persistJudgeCache(slug, err.record).catch((cacheErr) => {
+          console.error('[cma/judge] could not store the unstable decision', slug, cacheErr)
+        })
+        const message = err.message
+        await recordBuildFailure(slug, message, { stage: 'comps', docType, compSelection: selection.diagnostics })
+        return { ok: false, error: message, slug }
+      }
+      throw err
+    }
     let compsForPricing = selection.comps
     if (!isCurated) {
       const keep = new Set(judgment?.keptKeys ?? [])
@@ -451,7 +484,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         const excluded = judgment.verdicts.filter((v) => v.tier === 'exclude').length
         const weak = judgment.verdicts.filter((v) => v.tier === 'weak').length
         selection.trace.push(
-          `Comparability judgment (${judgment.model}): kept ${judgment.keptKeys.length} of ${selection.comps.length} candidates, excluded ${excluded} as non-comparable, down-weighted ${weak}. ${gated.trace}`,
+          `Comparability judgment (${judgment.model}): kept ${judgment.keptKeys.length} of ${selection.comps.length} candidates, excluded ${excluded} as non-comparable, down-weighted ${weak}. ${judgment.cacheHit ? 'Reused the stored decision. ' : ''}${gated.trace}`,
         )
       } else if (gated.droppedProduct > 0) {
         selection.trace.push(
@@ -1423,6 +1456,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             kept_keys: judgment.keptKeys,
             excluded: judgment.verdicts.filter((v) => v.tier === 'exclude'),
             cost_usd: judgment.costUsd,
+            input_checksum: judgment.inputChecksum ?? null,
+            judge_version: judgment.decision?.judgeVersion ?? null,
+            votes: judgment.decision?.votes ?? null,
+            cache_hit: judgment.cacheHit === true,
           }
         : { source: 'none', note: 'Priced on the full comp set (deterministic + dispersion guard).' },
       adversarial_audit: audit

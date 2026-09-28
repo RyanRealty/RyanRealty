@@ -36,6 +36,26 @@ export type CmaRenderSource = {
   build_summary: Record<string, unknown> | null
 }
 
+/**
+ * The row's build_summary only, for the comp-judge decision cache.
+ * Null when the row or the summary is missing, or Supabase is not configured.
+ * A read failure returns null: the cache is an optimization, not a gate.
+ */
+export async function getCmaBuildSummaryBySlug(slug: string): Promise<Record<string, unknown> | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('cmas')
+    .select('build_summary')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error || !data) return null
+  const summary = (data as { build_summary?: unknown }).build_summary
+  return summary && typeof summary === 'object' && !Array.isArray(summary)
+    ? (summary as Record<string, unknown>)
+    : null
+}
+
 /** Metadata-only admin review read. Never pulls html_content / citations / render_args. */
 export const CMA_ADMIN_REVIEW_COLUMNS =
   'id, slug, doc_type, status, subject_address, subject_city, subject_subdivision, subject_listing_key, subject_beds, subject_baths, subject_sqft, client_name, client_email, client_phone, client_notes, broker_slug, built_at, created_at, finalized_at, delivered_at, archived_at, html_path, recommended_list, value_low, value_high, published_to_listing, published_at, published_by, comps_count, build_error, build_summary, price_override, person_id, request_source'
