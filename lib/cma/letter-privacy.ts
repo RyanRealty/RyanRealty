@@ -23,6 +23,45 @@ const ROLE_WORDS = new Set([
   'of',
 ])
 
+/**
+ * Ordinary words and real-estate vocabulary that are also surnames.
+ * They print all over a CMA ("list price", "What price and time").
+ * A hit requires a name-shaped position, not a bare whole-word match.
+ */
+const COMMON_NAME_WORDS = new Set([
+  'price',
+  'prices',
+  'hill',
+  'hills',
+  'rose',
+  'roses',
+  'wood',
+  'woods',
+  'stone',
+  'stones',
+  'lake',
+  'lakes',
+  'park',
+  'parks',
+  'brook',
+  'brooks',
+  'ridge',
+  'ridges',
+  'field',
+  'fields',
+  'river',
+  'rivers',
+  'young',
+  'king',
+  'kings',
+  'bell',
+  'bells',
+])
+
+export function isCommonNameWord(token: string): boolean {
+  return COMMON_NAME_WORDS.has(token.toLowerCase())
+}
+
 export type LetterNameSource = {
   clientName?: string | null
   ownerName?: string | null
@@ -81,6 +120,83 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function significantWords(phrase: string): string[] {
+  return phrase
+    .split(/[\s,./&+-]+/)
+    .map((part) => part.replace(/[^A-Za-z'-]/g, ''))
+    .filter((part) => part.length >= 2 && !ROLE_WORDS.has(part.toLowerCase()))
+}
+
+/** A phrase whose every word is ordinary vocabulary, not a given name. */
+function phraseIsOnlyCommonWords(phrase: string): boolean {
+  const words = significantWords(phrase)
+  return words.length > 0 && words.every((word) => isCommonNameWord(word))
+}
+
+/**
+ * Greeting, "Prepared for", a sign-off, a to/cc line, or a capitalized
+ * pair sitting next to another name token ("Ada Price").
+ */
+function commonWordInNamePosition(text: string, token: string, tokens: string[]): boolean {
+  const t = escapeRegExp(token)
+  if (new RegExp(`\\b(?:hi|hello|dear|hey),?\\s+${t}\\b`, 'i').test(text)) return true
+  if (new RegExp(`\\bprepared\\s+for\\s+(?!the\\s+owners\\b)(?:[A-Za-z][A-Za-z'-]*\\s+){0,3}${t}\\b`, 'i').test(text)) {
+    return true
+  }
+  if (new RegExp(`\\b(?:sincerely|regards|cheers|thanks|thank you),?\\s+${t}\\b`, 'i').test(text)) return true
+  if (new RegExp(`(?:^|\\n)\\s*(?:to|cc|bcc)\\s*:[^\\n]*\\b${t}\\b`, 'i').test(text)) return true
+  for (const other of tokens) {
+    if (other.toLowerCase() === token.toLowerCase()) continue
+    const o = escapeRegExp(other)
+    const pair = new RegExp(`\\b(${o})\\s+(${t})\\b|\\b(${t})\\s+(${o})\\b`, 'g')
+    let match: RegExpExecArray | null
+    while ((match = pair.exec(text))) {
+      const left = match[1] ?? match[3]
+      const right = match[2] ?? match[4]
+      if (left && right && /^[A-Z]/.test(left) && /^[A-Z]/.test(right)) return true
+    }
+  }
+  return false
+}
+
+/** Drop a capitalized pair of name tokens ("Price Quincy" or "Quincy Price"). */
+function scrubCapitalizedNamePairs(text: string, tokens: string[]): string {
+  let out = text
+  for (const a of tokens) {
+    for (const b of tokens) {
+      if (a.toLowerCase() === b.toLowerCase()) continue
+      const re = new RegExp(`\\b(${escapeRegExp(a)})\\s+(${escapeRegExp(b)})\\b`, 'g')
+      out = out.replace(re, (whole, left: string, right: string) =>
+        /^[A-Z]/.test(left) && /^[A-Z]/.test(right) ? '' : whole,
+      )
+    }
+  }
+  return out
+}
+
+function scrubCommonWordNamePositions(text: string, token: string, tokens: string[]): string {
+  const t = escapeRegExp(token)
+  let out = text
+  out = out.replace(new RegExp(`\\b(hi|hello|dear|hey),?\\s+${t}\\b`, 'gi'), '$1')
+  out = out.replace(
+    new RegExp(`\\b(prepared\\s+for\\s+(?!the\\s+owners\\b)(?:[A-Za-z][A-Za-z'-]*\\s+){0,3})${t}\\b`, 'gi'),
+    '$1',
+  )
+  out = out.replace(new RegExp(`\\b(sincerely|regards|cheers|thanks|thank you),?\\s+${t}\\b`, 'gi'), '$1')
+  out = out.replace(new RegExp(`(^|\\n)(\\s*(?:to|cc|bcc)\\s*:[^\\n]*?)\\b${t}\\b`, 'gi'), '$1$2')
+  for (const other of tokens) {
+    if (other.toLowerCase() === token.toLowerCase()) continue
+    const o = escapeRegExp(other)
+    out = out.replace(new RegExp(`\\b(${o})\\s+(${t})\\b`, 'g'), (whole, mate: string, word: string) =>
+      /^[A-Z]/.test(mate) && /^[A-Z]/.test(word) ? mate : whole,
+    )
+    out = out.replace(new RegExp(`\\b(${t})\\s+(${o})\\b`, 'g'), (whole, word: string, mate: string) =>
+      /^[A-Z]/.test(word) && /^[A-Z]/.test(mate) ? mate : whole,
+    )
+  }
+  return out
+}
+
 /**
  * Take owner and trust tokens out of MLS-sourced text before it is printed.
  *
@@ -102,9 +218,19 @@ export function scrubMlsOwnerTokens(
     .filter((s) => s.length > 2)
     .sort((a, b) => b.length - a.length)
   for (const phrase of phrases) {
+    // "Price" alone must not wipe every "list price". A phrase that still
+    // contains a real given name ("Quincy Price") comes out whole.
+    if (phraseIsOnlyCommonWords(phrase)) continue
     out = out.replace(new RegExp(escapeRegExp(phrase), 'gi'), '')
   }
+  // Reverse order ("Price Quincy") is not the stored phrase. Take the pair
+  // out before the given name is deleted on its own and the surname is left.
+  out = scrubCapitalizedNamePairs(out, tokens)
   for (const token of tokens) {
+    if (isCommonNameWord(token)) {
+      out = scrubCommonWordNamePositions(out, token, tokens)
+      continue
+    }
     const month = MONTH_ABBR[token.toLowerCase()]
     const word = new RegExp(`\\b${escapeRegExp(token)}\\b`, 'gi')
     if (month) {
@@ -173,15 +299,34 @@ export function scrubOwnerTokensInHtml(
   })
 }
 
+/**
+ * Tokens that actually print. A real given name matches as a whole word.
+ * An ordinary word (price, hill, stone) matches only in a name-shaped
+ * position. The list is the tokens that hit, not every token on the row.
+ */
+export function ownerNameTokenHits(
+  htmlOrText: string,
+  source: LetterNameSource | null | undefined,
+): string[] {
+  const tokens = ownerContactNameTokens(source)
+  if (tokens.length === 0) return []
+  const text = textOf(htmlOrText)
+  const words = new Set((text.match(NAME_TOKEN_RE) ?? []).map((w) => w.toLowerCase()))
+  const hits: string[] = []
+  for (const token of tokens) {
+    if (!words.has(token.toLowerCase())) continue
+    if (isCommonNameWord(token) && !commonWordInNamePosition(text, token, tokens)) continue
+    hits.push(token)
+  }
+  return hits
+}
+
 /** True when any owner/contact token appears as a whole word in the copy. */
 export function letterContainsOwnerContactNames(
   htmlOrText: string,
   source: LetterNameSource | null | undefined,
 ): boolean {
-  const tokens = ownerContactNameTokens(source)
-  if (tokens.length === 0) return false
-  const words = new Set((textOf(htmlOrText).match(NAME_TOKEN_RE) ?? []).map((w) => w.toLowerCase()))
-  return tokens.some((t) => words.has(t.toLowerCase()))
+  return ownerNameTokenHits(htmlOrText, source).length > 0
 }
 
 /** Greeting used while the broker's name ruling is on hold. */
@@ -375,14 +520,14 @@ export function letterOwnerNameCheck(
 ): LetterNameCheck {
   const tokens = ownerContactNameTokens(source)
   const graded = htmlWithoutAllowedPreparedNameLines(htmlOrText, opts)
-  const hit = letterContainsOwnerContactNames(graded, source)
+  const hits = ownerNameTokenHits(graded, source)
   const allowed = showOwnerName(opts?.showOwnerName)
   return {
     id: 'letter-no-owner-names',
     severity: 'hard',
-    pass: !hit,
-    detail: hit
-      ? `Letter or email draft printed owner/contact name token(s): ${tokens.join(', ')}.`
+    pass: hits.length === 0,
+    detail: hits.length
+      ? `Letter or email draft printed owner/contact name token(s): ${hits.join(', ')}.`
       : tokens.length
         ? allowed
           ? 'Owner/contact name tokens appear only on the two prepared lines, or not at all.'
