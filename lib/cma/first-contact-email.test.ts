@@ -26,7 +26,7 @@ In today's market, the price is everything. Priced too high, a home sits, and ev
 
 The full report is attached as a PDF, and you can also read it online. It walks through each of those sales, the listings near you that did not sell and what happened to their prices, and who you would be competing with right now at that price. Every address in it links back to our site if you want to look closer.
 
-Again, we are sorry your home did not sell. If you are ever considering selling in the future, we would love the opportunity to earn your business. You can see how we sell homes, read our reviews, and see who we are.
+Again, we are sorry your home did not sell. Nothing about that points to a problem with the house itself. Over the past few months the market has been shifting in a way that has been less favorable for sellers, and that has made it harder for good homes to sell at the prices they would have brought before. If you are ever considering selling in the future, we would love the opportunity to earn your business. You can see how we sell homes, read our reviews, and learn about our business.
 
 In Clarendon Place itself, six homes sold in the last twelve months, two are for sale right now, and three came off the market without selling. Our Clarendon Place page keeps the running picture, what is for sale there, what has sold, and what did not. The Bend page shows the wider market it sits in.
 
@@ -66,7 +66,7 @@ describe('Nate first-contact letter (expired, 62017 Nate\'s)', () => {
       { text: 'read it online', href: 'https://ryan-realty.com/cma/cma-62017-nate-s' },
       { text: 'see how we sell homes', href: 'https://ryan-realty.com/sell' },
       { text: 'read our reviews', href: 'https://ryan-realty.com/reviews' },
-      { text: 'see who we are', href: 'https://ryan-realty.com/about' },
+      { text: 'learn about our business', href: 'https://ryan-realty.com/about' },
       { text: 'Clarendon Place page', href: 'https://ryan-realty.com/subdivisions/clarendon-place' },
       { text: 'Bend page', href: 'https://ryan-realty.com/cities/bend' },
     ])

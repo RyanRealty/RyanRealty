@@ -116,7 +116,7 @@ describe('CMA first-contact send body', () => {
       'read it online',
       'see how we sell homes',
       'read our reviews',
-      'see who we are',
+      'learn about our business',
       'Clarendon Place page',
       'Bend page',
       'READ THE FULL REPORT →',

@@ -232,14 +232,14 @@ const ASK_LINKS: FirstContactRun[] = [
   ', ',
   { text: 'read our reviews', href: REVIEWS_HREF },
   ', and ',
-  { text: 'see who we are', href: ABOUT_HREF },
+  { text: 'learn about our business', href: ABOUT_HREF },
   '.',
 ]
 
 function askRuns(origin: CmaOrigin): FirstContactRun[] {
   if (origin === 'expired') {
     return [
-      'Again, we are sorry your home did not sell. If you are ever considering selling in the future, we would love the opportunity to earn your business. ',
+      'Again, we are sorry your home did not sell. Nothing about that points to a problem with the house itself. Over the past few months the market has been shifting in a way that has been less favorable for sellers, and that has made it harder for good homes to sell at the prices they would have brought before. If you are ever considering selling in the future, we would love the opportunity to earn your business. ',
       ...ASK_LINKS,
     ]
   }
