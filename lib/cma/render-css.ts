@@ -751,10 +751,16 @@ export function cmaStylesheet(siteUrl: string): string {
       page-break-after: auto;
     }
     /* A forced break before the close left the last disclosure paragraph
-       alone on its own sheet. Let the close follow that paragraph. */
+       alone on its own sheet. Let the close follow that paragraph when the
+       two fit. The close itself stays whole: heading, reach list, signature.
+       Starting it in the leftover under basis-and-limits split the reach
+       list and left the signature on the next sheet. It is under a page, so
+       if it does not fit it moves, at the section boundary. */
     .page-closing {
       break-before: auto;
       page-break-before: auto;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     /* The cover photo must not push "Prepared for" onto a blank next page.
        The content box is 9.9in. A loaded photo used to add its own height

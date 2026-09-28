@@ -15,7 +15,7 @@ import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types
 import type { CmaBandRival, CmaBandRivalSet } from './band-rivals'
 import type { CmaExpiredPeer, CmaExpiredPeerSet } from './market-status'
 import type { CompArea } from '@/lib/pricing/comp-area'
-import { extractPdfTextRuns, type PdfTextRun } from '@/lib/pdf/assert-page-safety'
+import { extractPdfTextRuns, inspectPdfPageSafety, type PdfTextRun } from '@/lib/pdf/assert-page-safety'
 import { pdfRenderOptions, CMA_MARGIN_IN, marginsToPt, PAPER } from '@/lib/pdf/page-contract'
 
 const CHROME =
@@ -411,6 +411,177 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
   }
 }
 
+const offerTiming = {
+  city: 'Bend',
+  windowMonths: 12,
+  n: 2238,
+  medianDays: 26,
+  points: [
+    { days: 7, pct: 31.2 },
+    { days: 14, pct: 44.1 },
+    { days: 30, pct: 54 },
+    { days: 60, pct: 68.9 },
+    { days: 90, pct: 79.8 },
+    { days: 180, pct: 93.3 },
+  ],
+}
+
+const askOutcome = {
+  city: 'Bend',
+  windowMonths: 12,
+  groups: [
+    { key: 'sold-no-cut', n: 1217, medianDays: 6, medianSoldToOriginalAskPct: 100 },
+    { key: 'sold-after-cut', n: 1021, medianDays: 69, medianCutPct: 5.8, medianSoldToOriginalAskPct: 91.9 },
+    { key: 'did-not-sell', n: 809, medianDays: 117 },
+  ],
+}
+
+const realization = {
+  city: 'Bend',
+  windowMonths: 12,
+  buckets: [
+    { weeks: '0-2', n: 686, medianPctOfOriginalAsk: 100, reason: null },
+    { weeks: '3-4', n: 302, medianPctOfOriginalAsk: 97.4, reason: null },
+    { weeks: '5-8', n: 280, medianPctOfOriginalAsk: 95.1, reason: null },
+    { weeks: '9-16', n: 240, medianPctOfOriginalAsk: 93.2, reason: null },
+    { weeks: '17+', n: 190, medianPctOfOriginalAsk: 90.4, reason: null },
+  ],
+}
+
+/**
+ * Jones: a net of a few lines lands the closing in the leftover under basis
+ * and limits, which used to split the reach list and leave the signature.
+ * Sage Stone: a long competition lead ends the matrix in a short tail in
+ * front of the priced-right spread, which used to sit alone on the next sheet.
+ */
+function shapedLetter(opts: { comps: number; leadRepeats: number }): RenderCmaArgs {
+  const base = fiveCompWithStatuses()
+  const recommended = 497800
+  const lines = [
+    { label: 'Our fee', amount: 14934, source: '3% of the list price' },
+    { label: "Buyer's agent", amount: 12445, source: '2.5% of the list price, if you offer it' },
+    { label: 'Title insurance', amount: 1342, source: "Oregon owner's policy rate" },
+  ]
+  const lead =
+    'Nearby homes are still for sale in this range and a buyer can choose them instead. '.repeat(
+      opts.leadRepeats,
+    )
+  const peers = [peer(1), peer(2), peer(3)]
+  const rivals = [rival(1, 'Active'), rival(2, 'Pending')]
+  return {
+    ...base,
+    subject: {
+      ...base.subject,
+      streetAddress: opts.leadRepeats > 0 ? '60320 Sage Stone' : '2667 Jones',
+      city: 'Bend',
+      postalCode: '97701',
+      standardStatus: 'Expired',
+      lastListPrice: 525000,
+      lastListDate: '2026-04-11',
+    },
+    comps: Array.from({ length: opts.comps }, (_, i) => comp(i + 1)),
+    pricing: {
+      ...(base.pricing as object),
+      sellerNet: {
+        basis: 'list',
+        list: recommended,
+        lines,
+        net: recommended - lines.reduce((sum, line) => sum + line.amount, 0),
+        sentence: '',
+        unknowns: ['escrow'],
+      },
+    } as CmaPricing,
+    market: {
+      geoSlug: 'bend',
+      geoLabel: 'Bend',
+      periodStart: '2025-09-01',
+      periodEnd: '2026-09-01',
+      soldCount365: 2200,
+      medianSalePrice: 700000,
+      medianDom: 26,
+      medianPpsf: 340,
+      saleToListRatio: 0.98,
+      yoyMedianPriceDeltaPct: 2,
+      activeCount: 745,
+      pendingCount: 200,
+      monthsOfSupply: 3.6,
+      mosFormula: 'active / (closed_6mo / 6)',
+      marketVerdict: 'seller',
+      methodologyVersion: 'v3',
+      computedAt: '2026-09-27T00:00:00.000Z',
+      pulseUpdatedAt: '2026-09-27T00:00:00.000Z',
+      offerTiming,
+      askOutcome,
+      originalAskRealization: realization,
+    } as never,
+    bandRivals: {
+      ...(base.bandRivals as object),
+      activeCount: 1,
+      pendingCount: 1,
+      rivals,
+      sentence: lead ? `${lead}One home is under contract.` : 'One home is for sale and one is under contract.',
+    } as CmaBandRivalSet,
+    expiredPeers: {
+      ...(base.expiredPeers as object),
+      peers,
+      count: peers.length,
+    } as CmaExpiredPeerSet,
+  } as RenderCmaArgs
+}
+
+function pageText(runs: PdfTextRun[]): string {
+  return runs.map((r) => r.text).join(' ')
+}
+
+function contentFill(runs: PdfTextRun[]): number {
+  const margins = marginsToPt(CMA_MARGIN_IN)
+  const boxH = PAPER.heightPt - margins.top - margins.bottom
+  const body = runs.filter((r) => !isChrome(r.text) && !isPgMeta(r.text))
+  return contentSpan(body) / boxH
+}
+
+/** The signature and the closing heading are one section. A split leaves the licence alone. */
+function assertClosingTogether(pages: PdfTextRun[][], label: string) {
+  const texts = pages.map(pageText)
+  const sig = texts.findIndex((t) => /201206613/.test(t))
+  if (sig < 0) throw new Error(`${label}: signature licence is not on any sheet`)
+  const body = texts[sig]!
+  if (!/NEXT STEP|S O R R Y|WHAT HAPPENS NEXT/i.test(body)) {
+    throw new Error(`${label}: signature is on p${sig + 1} without the closing heading`)
+  }
+  const fill = contentFill(pages[sig]!)
+  if (fill < 0.45) {
+    throw new Error(`${label}: closing sheet is only ${(fill * 100).toFixed(0)}% full`)
+  }
+}
+
+function assertNoNearBlank(pages: PdfTextRun[][], label: string, min = 0.35) {
+  const failures: string[] = []
+  pages.forEach((runs, idx) => {
+    if (idx === 0) return
+    const fill = contentFill(runs)
+    if (fill < min) {
+      failures.push(`p${idx + 1} ${(fill * 100).toFixed(0)}% ("${pageText(runs).slice(0, 70)}")`)
+    }
+  })
+  if (failures.length) throw new Error(`${label}: near-blank page ${failures.join(' | ')}`)
+}
+
+async function assertLetterPages(a: RenderCmaArgs, label: string, opts?: { nearBlank?: boolean }) {
+  const { html } = renderCmaHtml(a)
+  expect(html).toContain('class="spread"')
+  const pdf = await renderPdf(html)
+  const safety = await inspectPdfPageSafety(pdf, { margins: CMA_MARGIN_IN })
+  if (!safety.ok) {
+    throw new Error(`${label}: page safety ${safety.violations.length} on ${safety.pageCount} sheets`)
+  }
+  const { pages, sizes } = await extractPdfTextRuns(new Uint8Array(pdf))
+  expect(pages.length).toBeGreaterThan(3)
+  assertPagination(pages, sizes, label)
+  assertClosingTogether(pages, label)
+  if (opts?.nearBlank) assertNoNearBlank(pages, label)
+}
+
 describe.skipIf(!hasChrome)('CMA letter pagination', () => {
   it('letter-craft fixture has no heading-only, trailer, or spill-above-header pages', async () => {
     const { html } = renderCmaHtml(letterCraftArgs())
@@ -430,4 +601,16 @@ describe.skipIf(!hasChrome)('CMA letter pagination', () => {
     expect(pages.length).toBeGreaterThan(3)
     assertPagination(pages, sizes, '5-comp')
   }, 120_000)
+
+  it('Jones shape keeps the closing heading with the signature', async () => {
+    await assertLetterPages(shapedLetter({ comps: 5, leadRepeats: 0 }), 'jones')
+  }, 120_000)
+
+  it('Sage Stone shape does not leave a near-blank matrix tail', async () => {
+    await assertLetterPages(shapedLetter({ comps: 5, leadRepeats: 20 }), 'sage', { nearBlank: true })
+  }, 120_000)
+
+  it.each([5, 13, 20, 40])('%i comps paginate without a split close', async (n) => {
+    await assertLetterPages(shapedLetter({ comps: n, leadRepeats: 0 }), `${n}-comp`)
+  }, 180_000)
 })

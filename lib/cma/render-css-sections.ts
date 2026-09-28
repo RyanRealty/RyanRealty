@@ -525,9 +525,12 @@ export function cmaSectionStyles(): string {
   }
   /* Months of supply as two bars, and chapter 3's dot strip. Same mechanism. */
   /* On paper the spread is one column: two 720-unit charts side by side in a
-     7.3in box put their axis type at seven points. Same story, paginated. */
-  .spread { display: block; }
-  .spread-col { min-width: 0; }
+     7.3in box put their axis type at seven points. Same story, paginated.
+     The pair is not one unbreakable block. Kept whole under the heading it
+     is nearly a sheet, and a short matrix tail is left alone on the page
+     before it. A chart splits only when the room left will not hold it. */
+  .spread { display: block; break-inside: auto; page-break-inside: auto; }
+  .spread-col { min-width: 0; break-inside: auto; page-break-inside: auto; }
   .mos-phone, .worth-phone { display: none; }
   @media screen and (max-width: 700px) {
     .mos-wide, .worth-wide { display: none; }
@@ -919,7 +922,7 @@ export function cmaSectionStyles(): string {
   /* page-contract sets table { break-inside: avoid }. That parks a whole
      matrix on the next sheet and leaves a heading alone. Override. */
   table, .comp-matrix-wrap, .worth-strip, .status-price-wrap, .chart-block,
-  .figure-block, .status-price {
+  .figure-block, .status-price, .spread, .spread-col {
     break-inside: auto !important;
     page-break-inside: auto !important;
   }

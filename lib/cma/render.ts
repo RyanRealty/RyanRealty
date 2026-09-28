@@ -139,8 +139,11 @@ interface PageDef {
   closing?: boolean
 }
 
+// A spread is two full charts stacked on paper. It is not a "first small
+// block": pulled into .page-open (break-inside: avoid) the opening is about
+// one sheet tall, and a short table tail is left alone on the previous page.
 const LARGE_OPENING =
-  /<(?:table|div)\b[^>]*class="[^"]*(?:comp-matrix-wrap|worth-strip|status-price|chart-block|status-price-wrap)[^"]*"/i
+  /<(?:table|div)\b[^>]*class="[^"]*(?:comp-matrix-wrap|worth-strip|status-price|chart-block|status-price-wrap|spread)[^"]*"/i
 
 function takeTopElement(html: string): { html: string; rest: string } | null {
   const src = html.trimStart()

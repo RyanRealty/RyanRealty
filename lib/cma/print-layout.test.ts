@@ -246,4 +246,18 @@ describe('print CMA layout', () => {
     expect(large.open).toBe('<h2 class="section">The sales</h2>')
     expect(large.rest).toContain('comp-matrix-wrap')
   })
+
+  it('does not keep the priced-right spread inside the unbreakable opening', () => {
+    const spread = splitPageOpening(
+      '<h2 class="section">What price and time look like in Bend</h2><div class="spread"><div class="spread-col"><p>curve</p></div></div>',
+    )
+    expect(spread.open).toBe('<h2 class="section">What price and time look like in Bend</h2>')
+    expect(spread.rest).toContain('class="spread"')
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(/\.spread \{[^}]*break-inside:\s*auto/)
+    expect(css).toMatch(/\.spread-col \{[^}]*break-inside:\s*auto/)
+    expect(css).toMatch(
+      /break-before:\s*auto;\s*page-break-before:\s*auto;\s*break-inside:\s*avoid;\s*page-break-inside:\s*avoid;/,
+    )
+  })
 })
