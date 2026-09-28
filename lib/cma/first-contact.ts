@@ -424,10 +424,9 @@ export function cmaFirstContactFactsFromRow(
   const market = asRecord(args?.market)
   const summary = asRecord(row.build_summary)
   const selection = asRecord(summary?.comp_selection)
-  const clientName = strField(row.client_name)
   return {
     address: strField(row.subject_address),
-    firstName: extra?.firstName ?? (clientName ? clientName.split(/\s+/)[0] ?? null : null),
+    firstName: extra?.firstName ?? null,
     valueLow: moneyField(row.value_low),
     valueHigh: moneyField(row.value_high),
     recommendedList: moneyField(row.recommended_list),

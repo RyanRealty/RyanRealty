@@ -37,7 +37,7 @@ import { DID_NOT_SELL_HEADING } from '@/lib/cma/did-not-sell'
 import { escapeHtml } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
-import { letterOwnerDisplayName, preparedClosingLine } from '@/lib/cma/letter-privacy'
+import { preparedClosingLine } from '@/lib/cma/letter-privacy'
 
 const esc = escapeHtml
 
@@ -244,7 +244,6 @@ function nextScene(a: OpinionSceneArgs): string {
         <div class="fine r">${esc(
           preparedClosingLine({
             generatedAt: formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' }),
-            ownerName: letterOwnerDisplayName(a.clientName ?? a.client?.name ?? null),
             streetAddress: a.subject.streetAddress,
           }),
         )}</div>

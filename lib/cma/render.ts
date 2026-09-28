@@ -35,10 +35,10 @@ import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
 import {
-  letterOwnerDisplayName,
   ownerContactNameTokens,
   preparedCoverLine,
   scrubMlsOwnerTokens,
+  expandNameMonthDatesInHtml,
   scrubMlsTextRow,
 } from '@/lib/cma/letter-privacy'
 
@@ -317,7 +317,6 @@ function coverPage(a: RenderCmaArgs): PageDef {
   const prepared = preparedCoverLine({
     brokerName: a.broker.displayName,
     generatedAt: dateLong(a.generatedAtIso),
-    ownerName: letterOwnerDisplayName(a.client?.name),
     streetAddress: a.subject.streetAddress,
   })
   // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
@@ -369,6 +368,31 @@ export function scrubLetterSources(a: RenderCmaArgs): RenderCmaArgs {
           })),
         }
       : story,
+    extras: scrubExtras(a.extras, source),
+  }
+}
+
+function scrubExtras(
+  extras: RenderCmaArgs['extras'],
+  source: { clientName: string | null },
+): RenderCmaArgs['extras'] {
+  if (!extras || ownerContactNameTokens(source).length === 0) return extras
+  const market = extras.marketArea
+  const band = extras.band
+  return {
+    ...extras,
+    marketArea: market
+      ? {
+          ...market,
+          expiredPeers: market.expiredPeers?.map((peer) => scrubMlsTextRow(peer, source)),
+        }
+      : market,
+    band: band
+      ? {
+          ...band,
+          rivals: band.rivals?.map((rival) => scrubMlsTextRow(rival, source)) ?? band.rivals,
+        }
+      : band,
   }
 }
 
@@ -395,5 +419,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
 ${body}
 </body>
 </html>`
-  return { html, pageCount: pages.length }
+  return {
+    html: expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null }),
+    pageCount: pages.length,
+  }
 }

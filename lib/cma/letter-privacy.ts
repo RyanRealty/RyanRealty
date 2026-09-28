@@ -141,6 +141,26 @@ export function scrubMlsTextRow<T extends MlsTextRow>(row: T, source: LetterName
   }
 }
 
+/**
+ * A month abbreviation that is also a name token, written as a date
+ * ("Jan 7"), is spelled out. Other name tokens are left for the field scrub
+ * and the name check. Running the full token delete over the finished HTML
+ * also eats the street when a name word sits in the address.
+ */
+export function expandNameMonthDatesInHtml(
+  html: string,
+  source: LetterNameSource | null | undefined,
+): string {
+  if (!html) return html
+  const months = ownerContactNameTokens(source).filter((token) => MONTH_ABBR[token.toLowerCase()])
+  if (months.length === 0) return html
+  const sourceRe = `\\b(?:${months.map(escapeRegExp).join('|')})\\b(?=\\s+\\d)`
+  return html.replace(/>([^<]+)</g, (whole, text: string) => {
+    const next = text.replace(new RegExp(sourceRe, 'gi'), (match) => MONTH_ABBR[match.toLowerCase()] ?? match)
+    return next === text ? whole : `>${next}<`
+  })
+}
+
 /** Scrub owner tokens in HTML text nodes. Tags and attributes stay. */
 export function scrubOwnerTokensInHtml(
   html: string,

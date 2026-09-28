@@ -316,7 +316,7 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     )
     expect(facts.city).toBe('Redmond')
     expect(facts.subdivision).toBe('Diamond Bar Ranch')
-    expect(facts.firstName).toBe('Blair')
+    expect(facts.firstName).toBeNull()
     expect(facts.lastListPrice).toBe(460000)
     expect(facts.closedSalesCount).toBe(5)
     expect(facts.salesScope).toBe('near')

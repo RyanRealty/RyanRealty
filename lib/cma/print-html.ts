@@ -16,7 +16,6 @@ import { likeHomeCreditsForDocument } from '@/lib/cma/like-home-credits-load'
 import { listingMarketForDocument } from '@/lib/cma/listing-window-load'
 import {
   applyPreparedLinesToStoredHtml,
-  letterOwnerDisplayName,
   letterStreetAddress,
 } from '@/lib/cma/letter-privacy'
 import { printArgsDistanceFill } from '@/lib/cma/print-overlay'
@@ -105,7 +104,6 @@ export async function resolveCmaPrintHtmlFromSource(
         streetAddress: stored.subject?.streetAddress,
         brokerName: broker.displayName,
         generatedAt: stored.generatedAtIso ? dateLong(stored.generatedAtIso) : '',
-        ownerName: letterOwnerDisplayName(stored.client?.name ?? null),
       }),
       status: source.status,
     }

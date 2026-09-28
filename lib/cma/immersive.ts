@@ -15,7 +15,7 @@ import {
 } from '@/lib/cma/immersive-interactions'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 import { assembleOpinionScenes } from '@/lib/cma/opinion-scenes'
-import { letterOwnerDisplayName, preparedCoverLine } from '@/lib/cma/letter-privacy'
+import { expandNameMonthDatesInHtml, preparedCoverLine } from '@/lib/cma/letter-privacy'
 import { renderCompPinMapScript } from '@/lib/cma/comp-pin-map'
 
 type ImmersiveArgs = RenderCmaArgs & { broker: CmaBroker }
@@ -64,7 +64,6 @@ ${immersiveInteractionCss()}
       preparedCoverLine({
         brokerName: a.broker.displayName,
         generatedAt: dateLong(a.generatedAtIso),
-        ownerName: letterOwnerDisplayName(a.client?.name),
         streetAddress: s.streetAddress,
       }),
     )}</div>
@@ -102,5 +101,5 @@ ${renderCompPinMapScript()}
 </script>
 </body>
 </html>`
-  return html
+  return expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null })
 }

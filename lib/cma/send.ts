@@ -118,7 +118,7 @@ async function resolveSendContext(
   const clientName = (row.client_name as string | null) ?? null
   const facts = cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
     brokerName: brokerRow.displayName,
-    firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
+    firstName: null,
     lastListPrice,
     brokerSlug: CRM_BROKER_BY_EMAIL[(brokerRow.email ?? '').toLowerCase()] ?? 'matt',
   })
@@ -356,7 +356,7 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       lastListPrice,
       facts: cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
         brokerName: brokerRow.displayName,
-        firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
+        firstName: null,
         lastListPrice,
         brokerSlug: CRM_BROKER_BY_EMAIL[(brokerRow.email ?? '').toLowerCase()] ?? 'matt',
       }),
