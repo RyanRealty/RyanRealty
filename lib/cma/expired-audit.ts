@@ -977,25 +977,62 @@ function clampUsd(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
+function sameMark(a: number, b: number): boolean {
+  if (!(a > 0) || !(b > 0)) return false
+  return Math.round(a / 1000) * 1000 === Math.round(b / 1000) * 1000
+}
+
+/** The recent-failure ceiling, rounded the same way clampCeilings rounds it. */
+function failedAskP75(ask: number): number {
+  return Math.round((FAILED_ASK_BACKTEST.closeP75Ratio * ask) / 1000) * 1000
+}
+
 /**
- * The sentence the document prints where the clamp binds. It names the number
- * the evidence produced, the number that already failed, and the number we
- * will print instead — so a reader who follows the method to one answer is
- * never handed a different one with nothing in between.
+ * The sentence the document prints where the clamp binds.
+ *
+ * The cover owns the recommended dollars. This sentence must not say "that
+ * price" next to the failed ask, and it must not call the cover price the
+ * 75th percentile unless that price still is the percentile. A later nudge
+ * or a band-floor lift moves the list off the percentile. The prose follows.
  */
+export function failedAskClampProse(args: {
+  supported: number
+  ask: number
+  /** The ceiling the clamp itself wrote, before a later nudge. */
+  ceiling: number
+  /** The list the letter will print. */
+  rec: number
+  /** True when the ceiling was the recent-failure percentile, not the ask itself. */
+  percentile: boolean
+}): string {
+  const head = `The sales support a value of ${clampUsd(args.supported)}.`
+  const because = `Because ${clampUsd(args.ask)} already failed to sell`
+  const pairs = FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')
+  const p75 = failedAskP75(args.ask)
+  const recIsP75 = args.percentile && sameMark(args.rec, p75) && sameMark(args.ceiling, p75)
+  if (recIsP75) {
+    return `${head} ${because}, we recommend the price on the cover, the 75th percentile of what failed listings later sold for across ${pairs} Central Oregon pairs.`
+  }
+  if (args.percentile && args.rec < p75) {
+    return `${head} ${because}, we do not list above the 75th percentile of what failed listings later sold for across ${pairs} Central Oregon pairs. The price on the cover is under that ceiling.`
+  }
+  return `${head} ${because}, we recommend the price on the cover, which stays under that ask.`
+}
+
 function clampSentence(args: {
   supported: number
   ask: number
   printed: number
   phrase: string | null
 }): string {
-  const head = `The sales support a value of ${clampUsd(args.supported)}.`
-  const why = args.phrase
-    ? `${clampUsd(args.printed)}, which is ${args.phrase} across ${FAILED_ASK_BACKTEST.pairs.toLocaleString(
-        'en-US',
-      )} Central Oregon pairs.`
-    : `${clampUsd(args.printed)}.`
-  return `${head} Because ${clampUsd(args.ask)} already failed to sell, we recommend listing at ${why}`
+  const percentile = args.phrase != null && /75th percentile/.test(args.phrase)
+  return failedAskClampProse({
+    supported: args.supported,
+    ask: args.ask,
+    ceiling: args.printed,
+    rec: args.printed,
+    percentile,
+  })
 }
 
 /**
@@ -1198,8 +1235,19 @@ export function rewriteFailedAskClampAfterRec<
   if (!clamp || clamp.kind !== 'failed-ask') return pricing
   const rec = Math.round(pricing.recommended)
   if (!(rec > 0)) return pricing
-  const printed = `$${rec.toLocaleString('en-US')}`
-  const sentence = clamp.sentence.replace(/(we recommend listing at )\$[\d,]+/i, `$1${printed}`)
+  const askMatch = clamp.sentence.match(/Because \$([\d,]+) already failed to sell/i)
+  const ask = askMatch ? Number(askMatch[1]!.replace(/,/g, '')) : null
+  const percentile = clamp.basis?.ratio === FAILED_ASK_BACKTEST.closeP75Ratio || /75th percentile/.test(clamp.sentence)
+  const sentence =
+    ask != null && ask > 0
+      ? failedAskClampProse({
+          supported: clamp.before,
+          ask,
+          ceiling: clamp.after,
+          rec,
+          percentile,
+        })
+      : clamp.sentence
   const after = clamp.appliedTo === 'recommended' ? rec : clamp.after
   if (sentence === clamp.sentence && clamp.after === after && clamp.applications.every((a) => a.tier !== 'recommended' || a.after === rec)) {
     return pricing

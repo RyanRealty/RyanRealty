@@ -83,7 +83,7 @@ import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, ANCHOR_RURAL_RADII_MILES, sameStreet
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
-import { isClusterPocket, pocketHoldsGeographyExclusive } from '@/lib/pricing/ladder'
+import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -618,7 +618,13 @@ export async function selectComps(
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
-        : tier.whenStarved && pocketHoldsGeographyExclusive(exclusiveCount, 0, clusterPocket)
+        : tier.whenStarved &&
+            pocketStopsLaterRungs({
+              kept: byKey.size,
+              exclusiveClosed: exclusiveCount,
+              clusterPocket,
+              minComps: MIN_COMPS,
+            })
           ? `the pocket already supplied a tight closed set (${exclusiveCount} closed), so the search stayed exclusive`
         : tier.sameCommunity && !subjectCommunity
         ? 'the subject is not inside a planned or golf community'
@@ -631,7 +637,12 @@ export async function selectComps(
         : tier.samePocket && pocketNeighborNorms.length === 0
         ? 'no nearby mapped pocket cluster sits inside a quarter mile'
         : isListingsGeographyWidenTier(tier) &&
-            pocketHoldsGeographyExclusive(exclusiveCount, 0, clusterPocket)
+            pocketStopsLaterRungs({
+              kept: byKey.size,
+              exclusiveClosed: exclusiveCount,
+              clusterPocket,
+              minComps: MIN_COMPS,
+            })
         ? `the pocket already supplied a tight closed set (${exclusiveCount} closed), so the search stayed exclusive`
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'

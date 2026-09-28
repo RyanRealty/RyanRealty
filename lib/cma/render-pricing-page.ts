@@ -29,7 +29,7 @@ import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
-import { listCeiling, readMeasure, readRangeRuleKept } from '@/lib/cma/render-contract'
+import { listCeiling, readMeasure } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
@@ -293,16 +293,10 @@ export function keptSaleCount(
   pricing: CmaPricing,
   comps: readonly CmaAdjustedComp[],
 ): number {
-  const aside = setAsideCompIndexes(pricing, comps)
-  if (aside.size > 0) return keptCompCount(pricing, comps)
-  // Tip Ready P0 / Cos Falcon smoke: trimmed-one-each-end may refuse to trim
-  // when that would leave fewer than 5 kept sales. Do not honor a stale
-  // rangeRule.kept that assumed ends were set aside — that reprints "four"
-  // over a six-sale grid with no set-aside list (class E again).
-  const rule = (pricing as { rangeRule?: { rule?: string } } | null)?.rangeRule?.rule
-  if (rule === 'trimmed-one-each-end') return comps.length
-  const stated = readRangeRuleKept(pricing)
-  if (stated != null && stated > 0) return Math.min(stated, comps.length)
+  // The lead counts the rows in the printed grid. rangeRule.kept is how many
+  // sales set the range ends. Using it here printed "three closed sales" over
+  // a four-row grid, then called the extra row set aside when nothing in the
+  // grid was. A real set-aside list still subtracts.
   return keptCompCount(pricing, comps)
 }
 
@@ -369,22 +363,43 @@ function mapLegend(boundaryShown?: boolean, parentShown?: boolean): string {
  * this introduces no figure the seller cannot check, and no figure is computed
  * here — the adjusted sales and the recommend both arrive from lib/pricing.
  */
+const MOVE_MIN_DOLLARS = 1
+
+/** How many of these sales actually moved, by adjustment. Not "each" unless each did. */
+export function adjustmentMoveClause(comps: readonly CmaAdjustedComp[]): string {
+  const total = comps.length
+  if (total === 0) return ''
+  const groups: Array<{ label: string; n: number }> = []
+  const date = comps.filter((c) => Math.abs(c.timeAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
+  const size = comps.filter((c) => Math.abs(c.sizeAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
+  const story = comps.filter((c) => Math.abs(c.storyAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
+  if (size > 0) groups.push({ label: 'size', n: size })
+  if (date > 0) groups.push({ label: 'date', n: date })
+  if (story > 0) groups.push({ label: 'style', n: story })
+  if (groups.length === 0) return ''
+  const one = (g: { label: string; n: number }) => {
+    if (g.n === total) return `each moved for ${g.label}`
+    if (g.n === 1) return `one moved for ${g.label}`
+    return `${countWord(g.n)} of the ${countWord(total)} moved for ${g.label}`
+  }
+  if (groups.length === 1) return one(groups[0]!)
+  if (groups.every((g) => g.n === total)) {
+    const labels = groups.map((g) => g.label)
+    const label = labels.length === 2 ? `${labels[0]} and ${labels[1]}` : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
+    return `each moved for ${label}`
+  }
+  return groups.map(one).join(', and ')
+}
+
 function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): string {
   const adj = adjustedCloseRange(input.comps)
   if (!adj || !adj.adjustments || !(input.pricing.recommended > 0)) return ''
-  // ONE n FOR THIS CHAPTER. The strip's caption, this lead and the range
-  // sentence lib/pricing writes were 7, 7 and 5 on 19968 and 4, 6 and 4 on
-  // Concorde — three counts of one set inside one chapter (tasteReview round
-  // three, §2 item 2). The number that means something is the count of sales
-  // the price is over; the rest are shown, and said to be set aside.
-  const n = keptSaleCount(input.pricing, input.comps)
+  // ONE n FOR THIS CHAPTER. The count is the printed grid, less a sale the
+  // document actually sets aside. rangeRule.kept is not that count.
+  const asideIdx = setAsideCompIndexes(input.pricing, input.comps)
+  const kept = input.comps.filter((_, i) => !asideIdx.has(i))
+  const n = kept.length
   const aside = input.comps.length - n
-  // NO SECOND RANGE HERE. This line used to print the span of every adjusted
-  // sale to the dollar — the UNTRIMMED pair on a document whose cover, method
-  // sentence and strip were all printing the trimmed one (tasteReview round
-  // two, §3.F). The trimmed pair is the answer and it is stated once, in the
-  // lead above; the untrimmed span belongs to the method sentence lib/pricing
-  // writes, which says in its own words which sales it set aside.
   const asideWord = countWord(aside)
   const shown =
     aside > 0
@@ -392,9 +407,14 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
           aside === 1 ? 'is' : 'are'
         } shown below and set aside.`
       : ''
-  return `<p class="chart-read">${esc(
-    `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below set this number, each moved for ${adj.adjustments}.${shown}`,
-  )}</p>`
+  const move = adjustmentMoveClause(kept.length > 0 ? kept : input.comps)
+  const head = `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below set this number`
+  const moved = !move
+    ? `${head}.`
+    : move.startsWith('each ')
+      ? `${head}, ${move}.`
+      : `${head}. ${move.charAt(0).toUpperCase()}${move.slice(1)}.`
+  return `<p class="chart-read">${esc(`${moved}${shown}`)}</p>`
 }
 
 /**

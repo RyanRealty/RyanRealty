@@ -231,10 +231,10 @@ describe('B — the story is told about the ask that ran the clock', () => {
     )
   })
 
-  it('measures the gap off the dominant ask, not the last cut', () => {
-    expect(failedAskForStory(withExposure(ASK_EXPOSURE))).toBe(475_000)
-    // Without the field the renderer falls back to the cycle, and says nothing
-    // causal — chapter 2b takes its descriptive title (asserted below).
+  it('measures the gap off the last ask, not the original list', () => {
+    // $475,000 ran 152 days. The percent-above line uses the last ask, $460,000,
+    // which is what the email and the tables use.
+    expect(failedAskForStory(withExposure(ASK_EXPOSURE))).toBe(460_000)
     expect(failedAskForStory(opinion())).toBe(460_000)
   })
 

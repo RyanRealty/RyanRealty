@@ -757,23 +757,25 @@ export function pricedRightPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /**
- * THE ASK THAT FAILED, resolved the way chapter 1's drawing resolves it — the
- * last step of the final listing period, which is the cut the seller came off
- * the market at, not the price they opened on.
+ * The ask the gap sentence is measured against: the last ask, the price the
+ * listing came off at. The exposure heading still names every ask and how
+ * long it ran. Measuring the percent-above line off the original list (the
+ * price that ran the most days) disagreed with the email and the tables,
+ * which use the last ask.
  *
- * Null when there is no failed listing: on an asked origin there is no chapter
- * 1 and no ask of the seller's own for anything to be measured against.
+ * Null when there is no failed listing.
  */
 export function failedAskForStory(a: OpinionPageArgs): number | null {
   if ((a.expiredAudit?.findings.length ?? 0) === 0) return null
-  // THE DOMINANT ASK FIRST. The last cut is where the story used to start and
-  // it is the ask the market saw least (round-four class B): on the exemplar
-  // 152 of 187 days ran at a price $15,000 above the one this used to measure.
-  const dominant = askExposureFor(a)?.dominant ?? null
-  if (dominant != null && dominant > 0) return dominant
+  const exposure = askExposureFor(a)
+  const position = resolveAskPosition({
+    lastListPrice: a.subject.lastListPrice,
+    exposure: exposure ? { segments: exposure.segments, final: exposure.final } : null,
+  })
+  if (position.lastAsk != null && position.lastAsk > 0) return position.lastAsk
   const cycle = a.expiredAudit?.finalCycle ?? null
   const lastCut = [...(cycle?.cuts ?? [])].reverse().find((c) => c.ask > 0)?.ask ?? null
-  const ask = lastCut ?? cycle?.initialAsk ?? a.subject.lastListPrice ?? null
+  const ask = lastCut ?? cycle?.finalAsk ?? cycle?.initialAsk ?? null
   return ask != null && ask > 0 ? ask : null
 }
 

@@ -52,7 +52,8 @@ describe('Marshmallow recommend sentence follows the actives step', () => {
   it('rewrites the clamp to the final rec in the same order the build uses', () => {
     const pricing = capped()
     expect(pricing.recommended).toBe(933_000)
-    expect(pricing.clamp?.sentence).toContain('we recommend listing at $933,000')
+    expect(pricing.clamp?.sentence).toContain('price on the cover, the 75th percentile')
+    expect(pricing.clamp?.sentence).not.toContain('$933,000')
     expect(pricing.clamp?.after).toBe(933_000)
 
     const actives = [{ status: 'Active', listPrice: 1_020_000, daysOnMarket: 90 }]
@@ -70,9 +71,9 @@ describe('Marshmallow recommend sentence follows the actives step', () => {
       market: null,
       pricing: stale as unknown as CmaPricing,
     }).body
-    expect(staleHtml).toContain('recommend listing at $933,000')
-    expect(letterRecommendDollarsCheck(staleHtml, stale).pass).toBe(false)
-    expect(letterRecommendDollarsCheck(staleHtml, stale).id).toBe('letter-one-recommend-price')
+    expect(staleHtml).toContain('price on the cover, the 75th percentile')
+    expect(staleHtml).not.toContain('under that ceiling')
+    expect(letterRecommendDollarsCheck(staleHtml, stale).pass).toBe(true)
 
     const finished = finishRecommendedAfterActives(pricing, {
       actives,
@@ -81,11 +82,11 @@ describe('Marshmallow recommend sentence follows the actives step', () => {
     expect(finished.recommended).toBe(927_000)
     expect(finished.clamp?.after).toBe(927_000)
     expect(finished.clamp?.applications.find((a) => a.tier === 'recommended')?.after).toBe(927_000)
-    expect(finished.clamp?.sentence).toContain('we recommend listing at $927,000')
+    expect(finished.clamp?.sentence).toContain('under that ceiling')
+    expect(finished.clamp?.sentence).not.toContain('price on the cover, the 75th percentile')
     expect(finished.clamp?.sentence).not.toContain('$933,000')
-    expect(finished.clamp?.sentence.match(/recommend listing at \$[\d,]+/g)).toEqual([
-      'recommend listing at $927,000',
-    ])
+    expect(finished.clamp?.sentence).not.toContain('$927,000')
+    expect(finished.clamp?.sentence).not.toContain('that price')
     expect(finished.clamp?.sentence).not.toMatch(/[—–]/)
 
     const html = pricingPage({
@@ -95,8 +96,8 @@ describe('Marshmallow recommend sentence follows the actives step', () => {
       pricing: finished as unknown as CmaPricing,
     }).body
     expect(html).not.toContain('$933,000')
-    expect(html).toContain('we recommend listing at that price')
-    expect(html.match(/recommend listing at \$[\d,]+/g)).toBeNull()
+    expect(html).toContain('under that ceiling')
+    expect(html).not.toContain('that price which is the 75th')
     const check = letterRecommendDollarsCheck(html, finished)
     expect(check.pass).toBe(true)
     expect(check.id).toBe('letter-one-recommend-price')

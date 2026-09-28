@@ -48,6 +48,9 @@ describe('selectionIsExclusivePocket', () => {
     expect(selectionIsExclusivePocket(['pocket-6mo', 'widened-disclosed-24mo'])).toBe(false)
     expect(selectionIsExclusivePocket([])).toBe(false)
     expect(selectionIsExclusivePocket(['gla-bracket'])).toBe(false)
+    // A size-bracket sale is outside the pocket. It must not leave the set exclusive.
+    expect(selectionIsExclusivePocket(['subdivision-6mo', 'gla-bracket'])).toBe(false)
+    expect(selectionIsExclusivePocket(['pocket-12mo', 'subdivision-3mo', 'gla-bracket'])).toBe(false)
   })
 })
 

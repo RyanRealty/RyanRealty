@@ -446,8 +446,9 @@ describe('net at list itemises, or prints no figure at all', () => {
 })
 
 /**
- * Round-four class B. The story is about the ask that ran the clock, not the
- * cut the listing came off at.
+ * The heading names every ask and how long it ran. The gap class uses the
+ * last ask, the price the listing came off at, which is what the email and
+ * the tables use. The original list is not that number.
  */
 const EXPOSURE = {
   segments: [
@@ -471,12 +472,11 @@ describe('chapter one reads the ask that ran the clock', () => {
     expect(whatHappenedHeading(a)).toBe('You asked $500,000 for 152 days, then $460,000 for 35.')
   })
 
-  it('measures the gap off the dominant ask, not the final one', () => {
+  it('measures the gap off the last ask, not the original list', () => {
     const a = withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } })
-    // $500,000 against a $444,000 top is 12.6 percent — far-above. The final
-    // $460,000 ask is 3.6 percent, which is near-above and a different story,
-    // and it is the one the chapter used to tell.
-    expect(storyClassFor(a)).toBe('far-above')
+    // $500,000 against a $444,000 top is 12.6 percent. The last ask, $460,000,
+    // is 3.6 percent, near the range. The percent line uses the last ask.
+    expect(storyClassFor(a)).toBe('near-above')
   })
 
   it('tells no causal story when the row does not say which ask ran the clock', () => {
@@ -493,6 +493,7 @@ describe('chapter one reads the ask that ran the clock', () => {
       segments: [{ ask: 380000, from: null, to: null, days: 187, sharePct: 100, pctAboveRangeTop: null }],
     }
     const a = withAudit({ findings: FINDINGS, askExposure: low, finalCycle: { days: 187 } })
+    a.subject = { ...a.subject, lastListPrice: 380_000 }
     expect(storyClassFor(a)).toBe('neutral')
   })
 

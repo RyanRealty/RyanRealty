@@ -62,6 +62,97 @@ function textOf(htmlOrText: string): string {
     .replace(/&amp;/g, '&')
 }
 
+const MONTH_ABBR: Record<string, string> = {
+  jan: 'January',
+  feb: 'February',
+  mar: 'March',
+  apr: 'April',
+  jun: 'June',
+  jul: 'July',
+  aug: 'August',
+  sep: 'September',
+  sept: 'September',
+  oct: 'October',
+  nov: 'November',
+  dec: 'December',
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Take owner and trust tokens out of MLS-sourced text before it is printed.
+ *
+ * A month abbreviation that is also a name ("Jan" in "Listed Jan 7") is
+ * spelled out, so the date stays true and the name token is not printed.
+ * Any other whole-word token, including trust words (Rev, Liv, Trust), is
+ * removed. The name check stays the backstop.
+ */
+export function scrubMlsOwnerTokens(
+  text: string,
+  source: LetterNameSource | null | undefined,
+): string {
+  if (!text) return text
+  const tokens = ownerContactNameTokens(source)
+  if (tokens.length === 0) return text
+  let out = text
+  const phrases = [source?.clientName, source?.ownerName, source?.contactName, source?.firstName]
+    .map((s) => (typeof s === 'string' ? s.trim() : ''))
+    .filter((s) => s.length > 2)
+    .sort((a, b) => b.length - a.length)
+  for (const phrase of phrases) {
+    out = out.replace(new RegExp(escapeRegExp(phrase), 'gi'), '')
+  }
+  for (const token of tokens) {
+    const month = MONTH_ABBR[token.toLowerCase()]
+    const word = new RegExp(`\\b${escapeRegExp(token)}\\b`, 'gi')
+    if (month) {
+      out = out.replace(new RegExp(`\\b${escapeRegExp(token)}\\b(?=\\s+\\d)`, 'gi'), month)
+      out = out.replace(word, '')
+    } else {
+      out = out.replace(word, '')
+    }
+  }
+  return out
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\s+([,.;:])/g, '$1')
+    .replace(/\(\s*\)/g, '')
+    .trim()
+}
+
+type MlsTextRow = {
+  publicRemarks?: string | null
+  viewDescription?: string | null
+  listingHistoryLine?: string | null
+  whyItSat?: string | null
+}
+
+/** Scrub the MLS text fields a letter prints: remarks, view, history, why-it-sat. */
+export function scrubMlsTextRow<T extends MlsTextRow>(row: T, source: LetterNameSource | null | undefined): T {
+  if (ownerContactNameTokens(source).length === 0) return row
+  const scrub = (s: string | null | undefined) => (typeof s === 'string' ? scrubMlsOwnerTokens(s, source) : s)
+  return {
+    ...row,
+    publicRemarks: scrub(row.publicRemarks) ?? row.publicRemarks,
+    viewDescription: scrub(row.viewDescription) ?? row.viewDescription,
+    listingHistoryLine: scrub(row.listingHistoryLine) ?? row.listingHistoryLine,
+    whyItSat: scrub(row.whyItSat) ?? row.whyItSat,
+  }
+}
+
+/** Scrub owner tokens in HTML text nodes. Tags and attributes stay. */
+export function scrubOwnerTokensInHtml(
+  html: string,
+  source: LetterNameSource | null | undefined,
+): string {
+  if (!html || ownerContactNameTokens(source).length === 0) return html
+  return html.replace(/>([^<]+)</g, (whole, text: string) => {
+    const next = scrubMlsOwnerTokens(text, source)
+    return next === text ? whole : `>${next}<`
+  })
+}
+
 /** True when any owner/contact token appears as a whole word in the copy. */
 export function letterContainsOwnerContactNames(
   htmlOrText: string,

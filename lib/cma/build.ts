@@ -107,6 +107,7 @@ import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { bandAroundList, bandRowToRival, buildBandRivalSet, emptyCompetitionSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
+import { replaceGradedChecks } from '@/lib/cma/final-rec-grade'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -876,7 +877,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // 4.5. Accuracy contract — the mechanical enforcement of the process.
     // Hard violations kill the build; review violations force needs_review so
     // an unvetted or non-converged CMA can never present as clean.
-    const contract = evaluateAccuracyContract({
+    // Graded again after finishRecommendedAfterActives, on the final list.
+    const accuracyContractInput = {
       comps: adjusted,
       pricing,
       judgment,
@@ -891,7 +893,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // Null when nothing graded a comp on price on this build.
       priceAnchorPpsf: selection.diagnostics?.price_anchor?.ppsf ?? null,
       tiersUsed: selection.tiersUsed,
-    })
+    }
+    const contract = evaluateAccuracyContract(accuracyContractInput)
     if (!contract.pass) {
       const failed = contract.checks
         .filter((c) => c.severity === 'hard' && !c.pass)
@@ -1369,6 +1372,50 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         pocketClosedSupport: pocketClosedSupportPrice(adjusted, subject.subdivision),
       })
       pricing = syncRangeRuleToHeroBand(pricing)
+      // The accuracy contract and the net sheet were written on the pre-nudge
+      // list. Grade and print the final recommendation.
+      if (expiredAudit) {
+        expiredAudit = {
+          ...expiredAudit,
+          netSheet: buildNetSheet(pricing, {
+            expectedConcessions: pricing.sellerNet?.expectedConcessions ?? null,
+          }),
+        }
+      }
+      const graded = evaluateAccuracyContract({ ...accuracyContractInput, pricing })
+      const replaced = replaceGradedChecks({
+        prior: contract.checks,
+        graded: graded.checks,
+        reviewReason: pricing.reviewReason,
+      })
+      contract.checks = replaced.checks
+      contract.pass = graded.pass
+      contract.forceReview = graded.forceReview
+      pricing.reviewReason = replaced.reviewReason
+      if (!graded.pass) {
+        const failed = graded.checks
+          .filter((c) => c.severity === 'hard' && !c.pass)
+          .map((c) => `${c.id}: ${c.detail}`)
+          .join(' | ')
+        const err = `Accuracy contract failed: ${failed}`
+        await recordBuildFailure(slug, err, {
+          stage: 'contract',
+          docType,
+          compSelection: selection.diagnostics,
+          pricing,
+          contractChecks: graded.checks,
+        })
+        return { ok: false, error: err, slug }
+      }
+      if (graded.forceReview) {
+        pricing.needsReview = true
+      }
+      pricing.review = buildPricingReview({
+        needsReview: pricing.needsReview,
+        reviewReason: pricing.reviewReason,
+        clamp: pricing.clamp ?? null,
+        auditVerdict,
+      })
     }
 
     const listingMarket = await loadListingWindowMarket({

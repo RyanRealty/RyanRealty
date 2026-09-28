@@ -34,7 +34,13 @@ import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
-import { letterOwnerDisplayName, preparedCoverLine } from '@/lib/cma/letter-privacy'
+import {
+  letterOwnerDisplayName,
+  ownerContactNameTokens,
+  preparedCoverLine,
+  scrubMlsOwnerTokens,
+  scrubMlsTextRow,
+} from '@/lib/cma/letter-privacy'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -312,13 +318,44 @@ function coverPage(a: RenderCmaArgs): PageDef {
 
 }
 
+export function scrubLetterSources(a: RenderCmaArgs): RenderCmaArgs {
+  const source = { clientName: a.client?.name ?? null }
+  if (ownerContactNameTokens(source).length === 0) return a
+  const story = a.subdivisionStory
+  return {
+    ...a,
+    subject: scrubMlsTextRow(a.subject, source),
+    comps: a.comps.map((c) => scrubMlsTextRow(c, source)),
+    expiredPeers: a.expiredPeers
+      ? { ...a.expiredPeers, peers: a.expiredPeers.peers.map((p) => scrubMlsTextRow(p, source)) }
+      : a.expiredPeers,
+    bandRivals: a.bandRivals
+      ? { ...a.bandRivals, rivals: a.bandRivals.rivals.map((r) => scrubMlsTextRow(r, source)) }
+      : a.bandRivals,
+    subdivisionStory: story
+      ? {
+          ...story,
+          sections: story.sections.map((s) => ({
+            ...s,
+            body: scrubMlsOwnerTokens(s.body, source),
+          })),
+          notableSales: story.notableSales.map((s) => ({
+            ...s,
+            line: scrubMlsOwnerTokens(s.line, source),
+          })),
+        }
+      : story,
+  }
+}
+
 export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: number } {
   // P10: cover, then the ONE chapter order both documents walk
   // (OPINION_CHAPTER_ORDER). Nothing is appended here — a chapter that exists
   // only on the letter is exactly the drift the shared order removes.
   // The broker-review banner is admin-only (serve-document adminReview).
   // It does not belong in the owner letter, draft or final.
-  const pages: PageDef[] = [coverPage(a), ...assembleOpinionPages(a)]
+  const src = scrubLetterSources(a)
+  const pages: PageDef[] = [coverPage(src), ...assembleOpinionPages(src)]
   const body = pages.map((p) => wrapPage(p)).join('\n')
   const html = `<!DOCTYPE html>
 <html lang="en">

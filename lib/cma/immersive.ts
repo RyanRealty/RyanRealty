@@ -4,7 +4,7 @@
  * wider-market charts.
  */
 
-import type { RenderCmaArgs } from '@/lib/cma/render'
+import { scrubLetterSources, type RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle } from '@/lib/cma/inbound-packet'
@@ -25,7 +25,8 @@ function esc(s: string): string {
 }
 
 export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): string {
-  const s = a.subject
+  const src = scrubLetterSources(a)
+  const s = src.subject
   // F3, Matt 2026-09-07: object-fit:cover cropped the MLS photo to the
   // viewport, and on 2465 7th that photo is an agent-annotated aerial — the
   // landmark callouts ran off both edges and the "*Location is approximate"
@@ -37,7 +38,7 @@ export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): strin
     ? `<img class="hero-bed" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/><img class="hero-img" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/>`
     : ''
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -67,12 +68,12 @@ ${immersiveInteractionCss()}
         streetAddress: s.streetAddress,
       }),
     )}</div>
-    ${immersiveHeroNumberHtml(a)}
+    ${immersiveHeroNumberHtml(src)}
   </div>
   <div class="cue" aria-hidden="true"></div>
 </section>
 
-${assembleOpinionScenes(a)}
+${assembleOpinionScenes(src)}
 
 <script>
 (function(){
@@ -101,4 +102,5 @@ ${renderCompPinMapScript()}
 </script>
 </body>
 </html>`
+  return html
 }

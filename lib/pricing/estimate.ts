@@ -15,7 +15,7 @@ import type { CmaSiteData } from '@/lib/cma/county'
 import { attachSellerNet, resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
-import { closedCompWeight } from '@/lib/pricing/closed-comp-weight'
+import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
@@ -397,6 +397,13 @@ export interface PricingRangeRule {
   saleToAskSource: 'city-index' | 'market-context' | 'these-sales' | 'none'
   /** Sale-to-ask ratios dropped by the ±50% rule. */
   ratiosExcluded: number
+  /**
+   * Rounded min and max of the sales that set the ends, before a minimum-width
+   * open or a later floor. The sentence uses these when the printed band is
+   * not that spread.
+   */
+  saleLow?: number
+  saleHigh?: number
   /** The rule in one sentence, in the document's own words. */
   sentence: string
 }
@@ -597,12 +604,6 @@ export const BAND_ENDPOINT_MIN_WEIGHT_SHARE = 0.05
 export const BAND_MIN_WIDTH_RATIO = 0.05
 export const BAND_WIDTH_ALREADY_ENOUGH = 0.04
 
-function weightShare<T extends { weight?: number | null }>(row: T, total: number): number {
-  const w = row.weight
-  if (typeof w !== 'number' || !Number.isFinite(w) || w <= 0 || !(total > 0)) return 0
-  return w / total
-}
-
 function rowsHaveWeights<T extends { weight?: number | null }>(rows: readonly T[]): boolean {
   return (
     rows.length > 0 &&
@@ -626,16 +627,22 @@ export function salesForBandEndpoints<T extends { ppsfTimeAdjusted: number; weig
     }
   }
   if (!rowsHaveWeights(rows)) return pool
-  const total = rows.reduce((sum, r) => sum + (typeof r.weight === 'number' ? r.weight : 0), 0)
+  const rawWeights = rows.map((r) => (typeof r.weight === 'number' && r.weight > 0 ? r.weight : 0))
+  const total = rawWeights.reduce((sum, w) => sum + w, 0)
   if (!(total > 0)) return pool
-  const top = rows.reduce((best, row) => (weightShare(row, total) > weightShare(best, total) ? row : best))
+  // The letter prints capped shares (capClosedCompShares, 40% cap). The
+  // endpoint test used to read the raw share, so a sale the grid shows at
+  // 6.4% was treated as 3.5% and could not set an end. One weight basis.
+  const shares = capClosedCompShares(rawWeights)
+  const shareOf = (row: T) => shares[rows.indexOf(row)] ?? 0
+  const top = rows.reduce((best, row) => (shareOf(row) > shareOf(best) ? row : best))
   const keep = new Set<T>()
   for (const row of pool) {
-    if (weightShare(row, total) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(row)
+    if (shareOf(row) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(row)
   }
   // The capped top-weight comp stays on an endpoint even if a $/sf trim
   // dropped it, as long as its share is still meaningful.
-  if (weightShare(top, total) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(top)
+  if (shareOf(top) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(top)
   const out = rows.filter((row) => keep.has(row))
   return out.length >= 2 ? out : pool
 }
@@ -658,10 +665,52 @@ export function ensureMinBandWidth(
   return { low: Math.min(lo, rec - half), high: Math.max(hi, rec + half) }
 }
 
+/** The tail of a range sentence that explains the list-strategy share. */
+function rangeSentenceSuffix(sentence: string): string {
+  const idx = sentence.search(/The range is (?:those|the) adjusted/)
+  return idx >= 0 ? ` ${sentence.slice(idx)}` : ''
+}
+
+/**
+ * The range sentence names the sales that set the ends and the dollars the
+ * letter prints. When a later step opens or lifts the band, it does not call
+ * that wider pair "the spread of the sale prices".
+ */
+export function describeRangeSentence(args: {
+  rule: PricingRangeRuleName
+  n: number
+  kept: number
+  printedLow: number
+  printedHigh: number
+  saleLow: number
+  saleHigh: number
+  /** Trimmed-rule aside count wording, already composed. */
+  trimmedAside?: string | null
+  suffix?: string
+}): string {
+  const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
+  const suffix = args.suffix ?? ''
+  if (args.rule === 'trimmed-one-each-end') {
+    const aside = args.trimmedAside ?? ''
+    return `The range is the spread of the ${countWord(args.kept)} sale prices behind this price, adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}. ${aside}${suffix}`
+  }
+  const same = args.printedLow === args.saleLow && args.printedHigh === args.saleHigh
+  const count =
+    args.kept === args.n
+      ? `all ${countWord(args.n)}`
+      : `the ${countWord(args.kept)} of the ${countWord(args.n)}`
+  if (same) {
+    return `The range is the spread of ${count} sale prices adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+  }
+  return `The ${countWord(args.kept)} sale prices that set the ends, of the ${countWord(args.n)} adjusted for date and size, run from ${usd(args.saleLow)} to ${usd(args.saleHigh)}. The printed range is ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+}
+
 /**
  * After a later step moves valueLow/valueHigh, the range sentence still
  * quotes the dollars it was written with. Rewrite that pair to the hero
- * band so the prose and the cover cannot disagree.
+ * band so the prose and the cover cannot disagree. When the rule recorded
+ * the sale spread, the sentence keeps that spread and names the printed
+ * band separately instead of calling the opened band the sale prices.
  */
 export function syncRangeRuleToHeroBand<T extends { valueLow: number; valueHigh: number; rangeRule?: PricingRangeRule | null }>(
   pricing: T,
@@ -671,10 +720,24 @@ export function syncRangeRuleToHeroBand<T extends { valueLow: number; valueHigh:
   const low = Math.round(Math.min(pricing.valueLow, pricing.valueHigh) / 1000) * 1000
   const high = Math.round(Math.max(pricing.valueLow, pricing.valueHigh) / 1000) * 1000
   if (!(low > 0) || !(high > 0)) return pricing
-  const sentence = rule.sentence.replace(
-    /\$[\d,]+\s+to\s+\$[\d,]+/,
-    `$${low.toLocaleString('en-US')} to $${high.toLocaleString('en-US')}`,
-  )
+  const saleLow = rule.saleLow
+  const saleHigh = rule.saleHigh
+  const sentence =
+    rule.rule === 'min-max' && saleLow != null && saleHigh != null && saleLow > 0 && saleHigh > 0
+      ? describeRangeSentence({
+          rule: 'min-max',
+          n: rule.n,
+          kept: rule.kept,
+          printedLow: low,
+          printedHigh: high,
+          saleLow,
+          saleHigh,
+          suffix: rangeSentenceSuffix(rule.sentence),
+        })
+      : rule.sentence.replace(
+          /\$[\d,]+\s+to\s+\$[\d,]+/,
+          `$${low.toLocaleString('en-US')} to $${high.toLocaleString('en-US')}`,
+        )
   if (sentence === rule.sentence && rule.adjustedLow === low && rule.adjustedHigh === high) return pricing
   return { ...pricing, rangeRule: { ...rule, adjustedLow: low, adjustedHigh: high, sentence } }
 }
@@ -1023,6 +1086,10 @@ export function listPriceFromEngine(opts: {
     rangeLow = Math.round(range.low)
     rangeHigh = Math.round(range.high)
   }
+  // The sales' own ends, before a minimum-width open. The sentence names
+  // these when the printed band is wider or higher than the comps.
+  const saleLow = rangeLow
+  const saleHigh = rangeHigh
   // A $3k band on a $620k recommendation is false precision. Open it to
   // about ±2.5% around the reconciled price when the sales themselves are
   // tighter than that. A band that is already wide enough is left alone.
@@ -1068,22 +1135,30 @@ export function listPriceFromEngine(opts: {
           saleToAskRatio: ratio,
           saleToAskSource,
           ratiosExcluded,
-          // BOTH COUNTS, BY NAME. The sentence used to open on the number of
-          // sales the rule ran over (7) and then describe a spread of the five
-          // it kept, so the printed n, the strip's n and the sentence's n were
-          // three different claims about the same picture. Then it named only
-          // the kept count and "two more", and chapter 5 of cma-19968 could
-          // still say six sales support a range four of them produced. It now
-          // states the kept count and the whole count in one arithmetic a
-          // reader can check: four of the six.
-          sentence:
-            range.rule === 'trimmed-one-each-end'
-              ? `The range is the spread of the ${countWord(range.kept)} sale prices behind this price, adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}. ${
-                  range.n - range.kept === 1
-                    ? `One of the ${countWord(range.n)} sales sat outside every one of them and was set aside`
-                    : `${countWord(range.n - range.kept, true)} of the ${countWord(range.n)} sales sat outside every one of them and were set aside`
-                }, so no single sale could set the range.${askStep}`
-              : `The range is the spread of all ${countWord(range.n)} sale prices adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`,
+          saleLow: saleLow ?? undefined,
+          saleHigh: saleHigh ?? undefined,
+          // BOTH COUNTS, BY NAME. The sentence states how many sales set the
+          // ends and how many were in the set. When the printed band was
+          // opened past those sales, it says so instead of calling the opened
+          // dollars the spread of the sale prices.
+          sentence: describeRangeSentence({
+            rule: range.rule,
+            n: range.n,
+            kept: range.kept,
+            printedLow: rangeLow,
+            printedHigh: rangeHigh,
+            saleLow: saleLow ?? rangeLow,
+            saleHigh: saleHigh ?? rangeHigh,
+            trimmedAside:
+              range.rule === 'trimmed-one-each-end'
+                ? `${
+                    range.n - range.kept === 1
+                      ? `One of the ${countWord(range.n)} sales sat outside every one of them and was set aside`
+                      : `${countWord(range.n - range.kept, true)} of the ${countWord(range.n)} sales sat outside every one of them and were set aside`
+                  }, so no single sale could set the range.`
+                : null,
+            suffix: askStep,
+          }),
         }
       : null
 

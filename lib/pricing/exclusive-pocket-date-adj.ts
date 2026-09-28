@@ -17,8 +17,14 @@
 
 import type { MarketPath } from '@/lib/pricing/market-path'
 
-/** Geography the picker already refused. City-index lift is the same refuse. */
-const WIDEN_TIER = /^(nearby-|city-|similar-|widened-|beyond-|rural-|like-community-|competing-)/
+/**
+ * Geography the picker already refused. City-index lift is the same refuse.
+ * `gla-bracket` is a size-bracket substitution from outside the pocket
+ * (match.ts bracketGla). It is not an exclusive tier. Ignoring it kept a
+ * mixed set labeled exclusive and zeroed the size adjustment the bracket
+ * exists to restore.
+ */
+const WIDEN_TIER = /^(nearby-|city-|similar-|widened-|beyond-|rural-|like-community-|competing-|gla-bracket)/
 
 /** Own street, own plat, or the 0.25 mi street-cluster pocket. */
 const EXCLUSIVE_TIER = /^(pocket-|subdivision-|own-street-)/

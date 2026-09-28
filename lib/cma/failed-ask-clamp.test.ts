@@ -67,8 +67,12 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     const s = x.clamp!.sentence
     expect(s).toContain('$1,973,000')
     expect(s).toContain('$1,500,000')
-    expect(s).toContain('$1,473,000')
+    // The cover owns $1,473,000. The sentence points at that price without
+    // reprinting it next to the failed ask, where "that price" read as the ask.
+    expect(s).toContain('price on the cover')
     expect(s).toContain('75th percentile')
+    expect(s).not.toContain('$1,473,000')
+    expect(s).not.toContain('that price')
     expect(s).toContain('3,394')
     // Seller language, not engine language.
     expect(s).not.toMatch(/\b(clamp|cap|quantile|p75|comp|comps|subject)\b/i)

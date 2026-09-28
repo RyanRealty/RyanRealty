@@ -549,6 +549,32 @@ export function pocketHoldsGeographyExclusive(
 }
 
 /**
+ * Stop later rungs when the exclusive pocket already holds.
+ *
+ * A priceable set (kept >= PRICING_MIN_COMPS) stops, same as before.
+ * Under that minimum, two closed sales and nothing pending used to stop too,
+ * and the build then failed ("2 of 3 within a quarter mile") instead of
+ * walking the rest of the ladder. Canter stays exclusive below the minimum
+ * because its tight set includes a pending sale in the pocket (Ranch + Horse
+ * Back closed, one Horse Back pending). A cluster of only closed sales that
+ * cannot price the document does not stop.
+ */
+export function pocketStopsLaterRungs(args: {
+  kept: number
+  exclusiveClosed: number
+  exclusivePending?: number
+  clusterPocket?: boolean
+  minComps?: number
+}): boolean {
+  const pending = args.exclusivePending ?? 0
+  const holds = pocketHoldsGeographyExclusive(args.exclusiveClosed, pending, args.clusterPocket === true)
+  if (!holds) return false
+  const min = args.minComps ?? PRICING_MIN_COMPS
+  if (args.kept >= min) return true
+  return args.clusterPocket === true && pending > 0
+}
+
+/**
  * THE SIZE BAND INSIDE THE SUBJECT'S OWN PLAT (Matt 2026-09-10).
  *
  * "Location is primary, and within the subdivision, that's the truest sense of

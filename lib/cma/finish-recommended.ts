@@ -10,13 +10,14 @@
  * clamp) and then step 1 moved the rec. The sentence has to be last.
  */
 
-import type { CmaPricingClamp } from '@/lib/cma/types'
+import type { CmaPricingClamp, CmaSellerNet } from '@/lib/cma/types'
 import {
   nudgeRecommendedDownForHighDomActives,
   type ActiveDomNudgeRival,
 } from '@/lib/pricing/active-dom-nudge'
 import { clampRecommendedToClosedBand } from '@/lib/pricing/recommended-in-band'
 import { rewriteFailedAskClampAfterRec } from '@/lib/cma/expired-audit'
+import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 
 export type FinishRecommendedPricing = {
   recommended: number
@@ -24,6 +25,7 @@ export type FinishRecommendedPricing = {
   valueHigh: number
   notes: string[]
   clamp?: CmaPricingClamp | null
+  sellerNet?: CmaSellerNet | null
 }
 
 export function finishRecommendedAfterActives<T extends FinishRecommendedPricing>(
@@ -49,5 +51,10 @@ export function finishRecommendedAfterActives<T extends FinishRecommendedPricing
     }
   }
   next = clampRecommendedToClosedBand(next)
-  return rewriteFailedAskClampAfterRec(next)
+  next = rewriteFailedAskClampAfterRec(next)
+  // The net sheet is anchored to recommended at the moment attachSellerNet
+  // ran. The actives nudge is after that. A sheet still on the pre-nudge
+  // list prints a second price (Grand Targhee $543k under a $527k rec).
+  if (next.sellerNet) reanchorSellerNet(next)
+  return next
 }
