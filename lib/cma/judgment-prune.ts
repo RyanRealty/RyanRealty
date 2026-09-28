@@ -84,6 +84,18 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
   const droppedProduct = args.selected.length - pool.length
   const poolKeys = new Set(pool.map((c) => c.listingKey))
   const vettedPool = args.vetted.filter((c) => poolKeys.has(c.listingKey))
+  const judged = args.verdicts.length > 0
+  // A keep under the pricing minimum is not a thin price-tier cut of a
+  // filled ladder. The excluded sales do not come back. Zero kept is the
+  // case a widened search prices after the judge has already rejected it.
+  if (judged && vettedPool.length < args.minComps) {
+    return {
+      comps: vettedPool,
+      shortage: true,
+      droppedProduct,
+      trace: `Comparability judgment kept ${vettedPool.length} sale(s), under the ${args.minComps}-sale minimum. The excluded sales are not priced.`,
+    }
+  }
   const comps = vettedPool.length >= JUDGMENT_PRUNE_FLOOR ? vettedPool : pool
   const shortage = comps.length < args.minComps
   const trace =

@@ -88,6 +88,34 @@ describe('printed recommendation rounding', () => {
     expect(range?.detail).toMatch(/recommended \$849,000/)
   })
 
+  it('prints an in-band pin on the band low when the ask sits above it', () => {
+    // Unrounded list $566,341. Printed band $566,000 to $590,000. Ask
+    // $574,500 is inside the band and more than one thousand above the pin,
+    // so the ask cap does not apply. Nearest thousand is the band low.
+    expect(
+      roundPrintedRecommendation(566_341, { low: 566_000, high: 590_000, ask: 574_500 }),
+    ).toBe(566_000)
+    const finished = finishRecommendedAfterActives(
+      {
+        recommended: 566_341,
+        conservative: 566_341,
+        highEnd: 590_000,
+        valueLow: 566_000,
+        valueHigh: 590_000,
+        notes: [],
+        failedAsk: 574_500,
+      },
+      { actives: [], ask: 574_500 },
+    )
+    expect(finished.recommended).toBe(566_000)
+    expect(finished.conservative).toBe(566_000)
+    expect(finished.valueLow).toBe(566_000)
+    expect(finished.valueHigh).toBe(590_000)
+    expect(finished.recommended).toBeLessThanOrEqual(574_500)
+    expect(finished.recommended).toBeGreaterThanOrEqual(finished.valueLow)
+    expect(finished.recommended).toBeLessThanOrEqual(finished.valueHigh)
+  })
+
   it('prints an ask-level pin on the ask, and the contract uses that same thousand', () => {
     const finished = finishRecommendedAfterActives(
       {

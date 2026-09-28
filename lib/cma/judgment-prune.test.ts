@@ -121,6 +121,34 @@ describe('pricing comps stay on the product the audit can defend', () => {
     expect(gated.droppedProduct).toBe(1)
   })
 
+  it('shortages a widened set the judge kept none of, instead of pricing those sales', () => {
+    // Four sales, same subtype as a 1924 subject, years 1972 through 2021.
+    // None is a new build. The judge excluded every one. The old floor priced
+    // them anyway because zero is under five.
+    const selected = [
+      sale('a', 1972, 'Single Family Residence'),
+      sale('b', 2011, 'Single Family Residence'),
+      sale('c', 2021, 'Single Family Residence'),
+      sale('d', 1976, 'Single Family Residence'),
+    ]
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: [],
+      verdicts: selected.map((c) => ({
+        listingKey: c.listingKey,
+        tier: 'exclude',
+        basis: 'vintage',
+        reason: 'A different construction generation from the 1924 subject.',
+      })),
+      subject: { propertySubType: 'Single Family Residence', yearBuilt: 1924, newConstructionYn: false },
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.droppedProduct).toBe(0)
+    expect(gated.comps).toEqual([])
+    expect(gated.shortage).toBe(true)
+  })
+
   it('does not treat a same-street price cut as a product exclusion', () => {
     const price = {
       listingKey: 'twin',

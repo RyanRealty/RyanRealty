@@ -147,7 +147,10 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
       })
       if (gated.shortage) {
-        const err = `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`
+        const err =
+          gated.droppedProduct > 0
+            ? `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`
+            : `Not enough comparable sales the review would keep. ${gated.comps.length} of ${selection.comps.length} stayed, and this home needs ${MIN_COMPS}.`
         await recordFailure(slug, err)
         return { ok: false, error: err, slug }
       }
