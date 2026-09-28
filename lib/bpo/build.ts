@@ -31,7 +31,8 @@ import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
-import { JUDGMENT_PRUNE_FLOOR, pricedSetAfterJudgment } from '@/lib/cma/judgment-prune'
+import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { auditCma } from '@/lib/cma/audit'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { resolveRentalPotential } from '@/lib/cma/rental-potential'
@@ -130,17 +131,38 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // Vets every candidate comp on the full feature set before any math.
     const judgment = await judgeComps(subject, selection.comps, market)
     let compsForPricing = selection.comps
-    if (judgment) {
-      const keep = new Set(judgment.keptKeys)
-      const vetted = selection.comps.filter((c) => keep.has(c.listingKey))
-      compsForPricing = pricedSetAfterJudgment(selection.comps, vetted)
-      selection.trace.push(
-        compsForPricing.length === vetted.length
-          ? `Comparability judgment (${judgment.model}): kept ${vetted.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}.`
-          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${JUDGMENT_PRUNE_FLOOR}-comp floor, so the full set was priced instead.`,
-      )
-    } else {
-      selection.trace.push('Comparability judgment unavailable — priced on the full selection; broker review required.')
+    {
+      const keep = new Set(judgment?.keptKeys ?? [])
+      const vetted = judgment ? selection.comps.filter((c) => keep.has(c.listingKey)) : selection.comps
+      const gated = pricingCompsAfterJudgment({
+        selected: selection.comps,
+        vetted,
+        verdicts: judgment?.verdicts ?? [],
+        subject: {
+          propertySubType: subject.propertySubType,
+          yearBuilt: subject.yearBuilt,
+          newConstructionYn: subject.newConstructionYn,
+        },
+        minComps: MIN_COMPS,
+        exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
+      })
+      if (gated.shortage) {
+        const err = `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`
+        await recordFailure(slug, err)
+        return { ok: false, error: err, slug }
+      }
+      compsForPricing = gated.comps
+      if (judgment) {
+        selection.trace.push(
+          `Comparability judgment (${judgment.model}): kept ${judgment.keptKeys.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. ${gated.trace}`,
+        )
+      } else {
+        selection.trace.push(
+          gated.droppedProduct > 0
+            ? `Comparability judgment unavailable. ${gated.trace} Broker review is required.`
+            : 'Comparability judgment unavailable — priced on the full selection; broker review required.',
+        )
+      }
     }
     const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
 

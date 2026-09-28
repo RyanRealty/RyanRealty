@@ -91,6 +91,8 @@ import {
   customBathCompatible,
   customLotCompatible,
   isCustomOrNewSubject,
+  isNewBuild,
+  newConstructionCompatible,
   type IrrigationClass,
 } from '@/lib/pricing/classes'
 
@@ -987,20 +989,35 @@ export async function selectComps(
       // HARD EXCLUSION at every tier for custom / new-construction subjects
       // (Matt 2026-09-03, 19365 Rim View). Year-built and quality outrank a
       // tight radius. Widen geography or time; do not pad TARGET_COMPS with
-      // a different construction generation. Ordinary resale subjects skip.
-      if (
-        !(isListingsPocketExclusiveTier(tier) && clusterPocket) &&
-        !yearQualityCompatible(
-          {
-            yearBuilt: subject.yearBuilt,
-            newConstructionYn: subject.newConstructionYn,
-            remarks: subject.publicRemarks,
-          },
-          { yearBuilt: comp.yearBuilt, remarks: comp.publicRemarks },
-        )
-      ) {
-        rung.excluded.year_quality++
-        continue
+      // a different construction generation. Ordinary resale subjects skip
+      // that band, and instead refuse a new build: the facts ladder already
+      // does, and a listings fallback must not price the new build the facts
+      // path dropped. An exclusive pocket still keeps the mix it was given.
+      if (!(isListingsPocketExclusiveTier(tier) && clusterPocket)) {
+        const asOfYear = Number((opts.asOf ?? new Date().toISOString().slice(0, 10)).slice(0, 4))
+        if (
+          !customOrNew &&
+          !newConstructionCompatible(
+            isNewBuild(subject.yearBuilt, asOfYear, subject.newConstructionYn),
+            isNewBuild(comp.yearBuilt, asOfYear, null),
+          )
+        ) {
+          rung.excluded.year_quality++
+          continue
+        }
+        if (
+          !yearQualityCompatible(
+            {
+              yearBuilt: subject.yearBuilt,
+              newConstructionYn: subject.newConstructionYn,
+              remarks: subject.publicRemarks,
+            },
+            { yearBuilt: comp.yearBuilt, remarks: comp.publicRemarks },
+          )
+        ) {
+          rung.excluded.year_quality++
+          continue
+        }
       }
 
       const compArea = resolveMarketArea(comp.latitude, comp.longitude)
@@ -1043,6 +1060,11 @@ export async function selectComps(
   if (x.product_type > 0) {
     trace.push(
       `Excluded ${x.product_type} comp(s) on product type. A townhome, condo, or manufactured home is not comparable to a detached house at any distance, per Fannie Mae B4-1.3-08.`,
+    )
+  }
+  if (x.year_quality > 0) {
+    trace.push(
+      `Excluded ${x.year_quality} sale(s) on construction generation. A new build does not price a resale, and a resale does not price a new build.`,
     )
   }
   if (x.bath_count > 0) {

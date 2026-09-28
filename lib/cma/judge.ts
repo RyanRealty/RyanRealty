@@ -495,6 +495,9 @@ export async function judgeComps(
       }
       protectedKeys.add(v.listingKey)
       if (v.tier !== 'exclude') continue
+      // The street exempts the price cut only. A different product on a
+      // street that shares the first word stays excluded.
+      if (!isPriceTierExclusion(v)) continue
       v.tier = 'strong'
       delete v.basis
       v.reason = `Same street as the subject and within ${Math.round(SAME_STREET_SIZE_BAND * 100)}% of its size. The closest sale there is to this house, so it prices it whatever the wider neighborhood runs at.`
