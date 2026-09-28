@@ -106,7 +106,7 @@ import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/
 import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { bandAroundList, bandRowToRival, buildBandRivalSet, emptyCompetitionSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
-import { alignListTiersToRecommended, finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
+import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import { replaceGradedChecks } from '@/lib/cma/final-rec-grade'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
@@ -594,18 +594,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           )
           attachSellerNet(p, set)
         }
+        // Recorded after the same-subdivision floor and before the open.
+        // The open below is presentation. It must not move the recommendation
+        // or the conservative tier. The nudge chases this low.
+        const evidenceLow = Math.min(p.valueLow, p.valueHigh)
+        if (p.rangeRule) p.rangeRule = { ...p.rangeRule, evidenceLow }
         const widened = ensureMinBandWidth(p.valueLow, p.valueHigh, p.recommended)
         p.valueLow = roundPriceDown(widened.low)
         p.valueHigh = roundPriceUp(widened.high)
         if (p.recommended < p.valueLow) p.recommended = p.valueLow
         if (p.recommended > p.valueHigh) p.recommended = p.valueHigh
-        // Minimum width can open the closed band under the list-tier floor.
-        // The recommendation stays. The tiers have to contain it.
-        const aligned = alignListTiersToRecommended(p)
-        if (aligned !== p) {
-          p.conservative = aligned.conservative ?? p.conservative
-          p.highEnd = aligned.highEnd ?? p.highEnd
-        }
         const synced = syncRangeRuleToHeroBand(p)
         p.rangeRule = synced.rangeRule
       } else if (p && usePath) {

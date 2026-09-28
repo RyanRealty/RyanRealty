@@ -404,6 +404,12 @@ export interface PricingRangeRule {
    */
   saleLow?: number
   saleHigh?: number
+  /**
+   * Closed low after the same-subdivision floor and before the minimum-width
+   * open in the exclusive-pocket block. The open is presentation. A later
+   * nudge or failed-ask pin chases this, not the opened low.
+   */
+  evidenceLow?: number
   /** The rule in one sentence, in the document's own words. */
   sentence: string
   /**

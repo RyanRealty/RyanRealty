@@ -23,6 +23,7 @@ import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
 import { RANGE_REVIEW_SHARE, rangeWiderThanShare } from '@/lib/pricing/review'
+import { closedSaleLow } from '@/lib/cma/expired-audit'
 
 // Restrictive/resource base zones where buildability is NOT automatic — a
 // dwelling needs a verified current entitlement (SKILL §3.5).
@@ -138,14 +139,17 @@ export function evaluateAccuracyContract(args: {
   const failedAsk = args.failedAsk ?? pricing.failedAsk ?? null
   if (failedAsk != null && failedAsk > 0) {
     const bandLow = Math.min(pricing.valueLow, pricing.valueHigh)
-    const belowRange = pricing.failedAskBelowRange === true && bandLow > 0
+    // A minimum-width open can print a low under the sales. The pin is the
+    // sales, so the check uses that low when it sits above the printed one.
+    const salesLow = closedSaleLow(pricing) ?? bandLow
+    const belowRange = pricing.failedAskBelowRange === true && salesLow > 0
     const over = belowRange
-      ? pricing.recommended > bandLow
+      ? pricing.recommended > salesLow
       : pricing.recommended > failedAsk || pricing.highEnd > failedAsk
     const rec = pricing.recommended.toLocaleString()
     const high = pricing.highEnd.toLocaleString()
     const ask = failedAsk.toLocaleString()
-    const low = bandLow.toLocaleString()
+    const low = salesLow.toLocaleString()
     checks.push({
       id: 'expired-list-cap',
       severity: 'hard',

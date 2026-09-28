@@ -899,6 +899,32 @@ export function heroBandFromPricing(p: {
   return { low: Math.min(lo, hi), high: Math.max(lo, hi) }
 }
 
+function positivePrice(n: number | null | undefined): number | null {
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null
+}
+
+/**
+ * The closed-sale low a nudge or a failed-ask pin may use.
+ *
+ * The printed low is this number, unless a minimum-width open dropped it.
+ * That open is presentation. The same-subdivision floor, recorded as
+ * `evidenceLow` after the floor and before the open, wins over the earlier
+ * sale low when it is higher. When nothing was opened, this is the printed low.
+ */
+export function closedSaleLow(pricing: {
+  valueLow?: number | null
+  valueHigh?: number | null
+  rangeRule?: { saleLow?: number; evidenceLow?: number } | null
+}): number | null {
+  const printed = heroBandFromPricing(pricing)
+  if (!printed) return null
+  const above = [positivePrice(pricing.rangeRule?.saleLow), positivePrice(pricing.rangeRule?.evidenceLow)].filter(
+    (n): n is number => n != null && n > printed.low && n <= printed.high,
+  )
+  if (above.length === 0) return printed.low
+  return Math.max(...above)
+}
+
 /**
  * Seller sentence when the last ask was already under the sales. No em dash.
  * Printed on the pricing beat and stored on `pricing.notes`.
@@ -1065,6 +1091,7 @@ export function applyFailedAskCap(
     valueHigh?: number
     priceOverride?: number | null
     failedAskBelowRange?: boolean
+    rangeRule?: { saleLow?: number; evidenceLow?: number } | null
   },
   args: { lastFailedListPrice: number | null; offMarketDate: string | null; asOf?: Date },
 ): FailedAskCapResult {
@@ -1085,14 +1112,17 @@ export function applyFailedAskCap(
   reanchorSellerNet(pricing)
   if (ask == null || !Number.isFinite(ask) || ask <= 0) return none
   const band = heroBandFromPricing(pricing)
-  // Haircut only when the failed ask was inside or above the hero band.
+  // The sales' own low. A minimum-width open can put the printed low under
+  // this. The ask is judged against the sales, not against that open.
+  const salesLow = closedSaleLow(pricing)
+  // Haircut only when the failed ask was inside or above the sales.
   // An ask already below the sales is not a ceiling: cutting further from it
-  // is the Nugget defect (range $734k–$878k, ask $725k, rec $712k). Pin the
-  // recommendation to the band LOW so the printed list sits on the sales
-  // and the expired-list-cap contract can pass (rec <= valueLow, not rec <= ask).
-  if (band && ask < band.low) {
+  // is the Nugget defect (range $734k-$878k, ask $725k, rec $712k). Pin the
+  // recommendation to the sales low so the printed list sits on the sales
+  // and the expired-list-cap contract can pass (rec <= that low, not rec <= ask).
+  if (band && salesLow != null && ask < salesLow) {
     pricing.failedAskBelowRange = true
-    const pinned = band.low
+    const pinned = salesLow
     pricing.recommended = pinned
     pricing.conservative = Math.min(pricing.conservative, pinned)
     if (pricing.highEnd < pinned) pricing.highEnd = pinned
@@ -1101,8 +1131,8 @@ export function applyFailedAskCap(
     reanchorSellerNet(pricing)
     return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
   }
-  // A broker override with a note may sit below the band. Do not lift or cut it.
-  if (band && pricing.recommended < band.low && hasStoredBelowRangeReason(pricing)) {
+  // A broker override with a note may sit below the sales. Do not lift or cut it.
+  if (band && salesLow != null && pricing.recommended < salesLow && hasStoredBelowRangeReason(pricing)) {
     return none
   }
 
@@ -1120,10 +1150,11 @@ export function applyFailedAskCap(
   const consCeil = ceilings.conservative.value
   // Inside the band the haircut may still bind, but the recommend never
   // drops below the hero low unless a stored broker override said so.
-  const askInsideBand = band != null && ask >= band.low && ask <= band.high
+  const askInsideBand = band != null && salesLow != null && ask >= salesLow && ask <= band.high
+  const insideFloor = salesLow ?? band?.low ?? 0
   const recCeil =
     askInsideBand && !hasStoredBelowRangeReason(pricing)
-      ? Math.max(ceilings.recommended.value, band.low)
+      ? Math.max(ceilings.recommended.value, insideFloor)
       : ceilings.recommended.value
   const highCeil =
     askInsideBand && !hasStoredBelowRangeReason(pricing)
