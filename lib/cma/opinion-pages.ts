@@ -226,6 +226,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       finalCycle: a.expiredAudit?.finalCycle ?? null,
       domDays: subjectDomDays(a.subject),
       printableAsk: subjectPrintableAsk(a.subject, askCtx),
+      exposure: askExposureFor(a),
     }),
     closed: closedEntries(a.comps, a.docLinks ?? null, a.subject),
     unsold: unsoldEntries(
@@ -705,18 +706,20 @@ export function askExposureFor(a: OpinionPageArgs): AskExposure | null {
 export function whatHappenedHeading(a: OpinionPageArgs): string {
   const status = readSubjectStatus(a)
   const exposure = askExposureFor(a)
-  if (status?.isActiveWithOtherBrokerage) {
-    const ask = exposure?.final ?? a.subject.lastListPrice ?? null
-    return ask != null && ask > 0 ? `Your home is listed at ${usd(ask)}.` : 'Where your listing stands.'
-  }
-  if (exposure && exposure.segments.length > 1) {
-    const sentence = askExposureSentence(exposure.segments)
-    if (sentence) return sentence
-  }
   const position = resolveAskPosition({
     lastListPrice: a.subject.lastListPrice,
     exposure,
   })
+  if (status?.isActiveWithOtherBrokerage) {
+    const ask = position.lastAsk
+    return ask != null && ask > 0 ? `Your home is listed at ${usd(ask)}.` : 'Where your listing stands.'
+  }
+  const lastSegmentAsk = exposure?.segments.length ? exposure.segments[exposure.segments.length - 1]?.ask : null
+  const exposureAgrees = position.lastAsk == null || lastSegmentAsk === position.lastAsk
+  if (exposure && exposure.segments.length > 1 && exposureAgrees) {
+    const sentence = askExposureSentence(exposure.segments)
+    if (sentence) return sentence
+  }
   if (askStepped(position)) {
     return `You first asked ${usd(position.originalAsk!)}. The last listing asked ${usd(position.lastAsk!)} and did not sell.`
   }

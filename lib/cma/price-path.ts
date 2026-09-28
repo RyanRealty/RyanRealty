@@ -38,6 +38,7 @@
 
 import { formatPriceExact } from '@/lib/format/money'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
+import { resolveAskPosition, type AskExposureLike } from '@/lib/cma/ask-position'
 
 const esc = escapeHtml
 
@@ -302,6 +303,53 @@ export function pricePathEventsJson(path: PricePath): string {
 export function finalAskOf(path: PricePath): number {
   if (path.undatedCutTo != null) return path.undatedCutTo
   return path.cuts.length > 0 ? path.cuts[path.cuts.length - 1]!.price : path.startPrice
+}
+
+/**
+ * The cycle's last recorded step is not always the ask the listing came off
+ * at. `resolveAskPosition` is that ask. When it differs, the line ends on it
+ * as a dashed step: the cycle did not date the move.
+ */
+export function alignPricePathToLastAsk(path: PricePath | null, lastAsk: number | null): PricePath | null {
+  if (!path || lastAsk == null || !(lastAsk > 0)) return path
+  const end = Math.round(lastAsk)
+  if (finalAskOf(path) === end) return path
+  return { ...path, undatedCutTo: end }
+}
+
+/**
+ * The subject's own price history. The cycle supplies the dated cuts. The
+ * end is the shared ask resolver, so a banner cannot stop on an earlier cut
+ * while the list column prints the last ask.
+ */
+export function subjectPricePath(args: {
+  cycle: Parameters<typeof pricePathFromFinalCycle>[0]
+  label: string
+  lastListPrice?: number | null
+  exposure?: AskExposureLike | null
+  onMarketDate?: string | null
+  daysOnMarket?: number | null
+  status?: string | null
+  /** When the column is not allowed to print an ask, the fallback path stays blank. */
+  printableAsk?: number | null
+}): PricePath | null {
+  const position = resolveAskPosition({
+    lastListPrice: args.lastListPrice,
+    exposure: args.exposure,
+  })
+  const fromCycle = alignPricePathToLastAsk(pricePathFromFinalCycle(args.cycle, args.label), position.lastAsk)
+  if (fromCycle) return fromCycle
+  // No cycle: only an ask the column is allowed to print. A stale list price
+  // stays off the line.
+  if (args.printableAsk == null || !(args.printableAsk > 0)) return null
+  return pricePathFromListing({
+    address: args.label,
+    listPrice: args.printableAsk,
+    originalListPrice: position.originalAsk ?? args.printableAsk,
+    onMarketDate: args.onMarketDate,
+    daysOnMarket: args.daysOnMarket,
+    status: args.status,
+  })
 }
 
 /** How many times the ask came down over the period, as the record holds it. */

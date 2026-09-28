@@ -27,9 +27,9 @@ import { publishStreetNumber, publishUnparsedStreetLine } from '@/lib/listing/pu
 import {
   finalAskOf,
   priceChangeCountOf,
-  pricePathFromFinalCycle,
   pricePathFromListing,
   pricePathFromSale,
+  subjectPricePath,
   shortOrExactUsd,
   shortUsd,
   type PricePath,
@@ -37,6 +37,7 @@ import {
 import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaPinFact } from '@/lib/cma/comp-pin-map'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
+import type { AskExposureLike } from '@/lib/cma/ask-position'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
@@ -505,18 +506,20 @@ export function subjectEntry(input: {
   domDays: number | null
   /** Only an ask this listing still has. `subjectPrintableAsk` decides. */
   printableAsk: number | null
+  /** Exposure segments, when the letter has them. The resolver prefers lastListPrice. */
+  exposure?: AskExposureLike | null
 }): MatrixEntry {
   const s = input.subject
-  const path =
-    pricePathFromFinalCycle(input.finalCycle ?? null, s.streetAddress) ??
-    pricePathFromListing({
-      address: s.streetAddress,
-      listPrice: input.printableAsk,
-      originalListPrice: input.printableAsk,
-      onMarketDate: s.lastListDate,
-      daysOnMarket: input.domDays,
-      status: s.standardStatus,
-    })
+  const path = subjectPricePath({
+    cycle: input.finalCycle ?? null,
+    label: s.streetAddress,
+    lastListPrice: s.lastListPrice,
+    exposure: input.exposure,
+    onMarketDate: s.lastListDate,
+    daysOnMarket: input.domDays,
+    status: s.standardStatus,
+    printableAsk: input.printableAsk,
+  })
   const status = (s.standardStatus ?? '').trim().toLowerCase()
   const cameOff = /^(expired|withdrawn|cancell?ed)/.test(status)
   // Capitalised, unlike the other three families: this cell is a statement

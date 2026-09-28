@@ -76,4 +76,26 @@ describe('one ask position — Slate', () => {
     expect(item?.trigger).toContain('The last listing asked $589,900')
     expect(item?.trigger).toContain('The original ask was $616,900')
   })
+
+  it('does not let a multi-step exposure end the heading on an earlier ask', () => {
+    const heading = whatHappenedHeading({
+      subject: { ...subject, streetAddress: '12 Cedar Post', lastListPrice: 745_000 },
+      pricing: { recommended: 312_000, valueLow: 185_000, valueHigh: 429_000 } as CmaPricing,
+      expiredAudit: {
+        findings: [],
+        finalCycle: { days: 180 },
+        askExposure: {
+          segments: [
+            { ask: 775_000, from: '2026-02-01', to: '2026-04-01', days: 60, sharePct: 40, pctAboveRangeTop: null },
+            { ask: 760_000, from: '2026-04-01', to: '2026-08-01', days: 120, sharePct: 60, pctAboveRangeTop: null },
+          ],
+          dominant: { ask: 760_000, from: '2026-04-01', to: '2026-08-01', days: 120, sharePct: 60, pctAboveRangeTop: null },
+          final: { ask: 760_000, from: '2026-04-01', to: '2026-08-01', days: 120, sharePct: 60, pctAboveRangeTop: null },
+          sentence: 'You asked $775,000 for 60 days, then $760,000 for 120.',
+        },
+      },
+    } as unknown as OpinionPageArgs)
+    expect(heading).toContain('The last listing asked $745,000')
+    expect(heading).not.toContain('$760,000')
+  })
 })
