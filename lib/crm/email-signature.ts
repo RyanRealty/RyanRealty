@@ -7,8 +7,8 @@
  * Precedence (Matt directive 2026-07-09 — CRM signatures must MATCH Gmail):
  *   1. Gmail-synced signature (brokers.gmail_signature_html, pulled verbatim
  *      from the broker's Gmail sendAs settings by
- *      lib/crm/gmail-signature-sync.ts) — used as-is, so what a client sees
- *      from the CRM is byte-identical to what they see from Gmail.
+ *      lib/crm/gmail-signature-sync.ts). Used as stored, except the logo alt
+ *      em dash, which buildGmailSignature rewrites to a comma.
  *   2. Broker-authored custom signature (brokers.email_signature, §9 My
  *      Settings) — plain text, replaces the generated identity block.
  *   3. Generated identity block (name/title/license/contact from the row).
@@ -77,17 +77,29 @@ function buildCustomSignature(custom: string): BrokerSignature {
 }
 
 /**
- * Gmail-synced variant: the broker's real Gmail sendAs signature HTML is used
- * VERBATIM (Gmail signatures are already email-client-safe inline-styled
- * HTML), so CRM sends match Gmail sends exactly. The Oregon pamphlet
- * compliance line is still appended — that guarantee survives every variant.
+ * The installed signatures put an em dash in the logo alt. Rewrite that one
+ * string (the character, plus the &mdash; and &#8212; forms) to a comma.
+ * Every other character of the synced HTML stays as Gmail stored it.
+ */
+function rewriteSignatureLogoAlt(html: string): string {
+  return html.replace(
+    /alt="Ryan Realty (?:\u2014|&mdash;|&#8212;) Bend, Oregon"/g,
+    'alt="Ryan Realty, Bend, Oregon"',
+  )
+}
+
+/**
+ * Gmail-synced variant: the broker's real Gmail sendAs signature HTML, with
+ * only the logo alt normalized above. The Oregon pamphlet compliance line is
+ * still appended.
  */
 function buildGmailSignature(gmailHtml: string): BrokerSignature {
-  const html = `<div style="margin-top:28px">${gmailHtml}${pamphletHtml()}</div>`
+  const body = rewriteSignatureLogoAlt(gmailHtml)
+  const html = `<div style="margin-top:28px">${body}${pamphletHtml()}</div>`
   const plain = [
     '',
     '--',
-    htmlToPlainText(gmailHtml),
+    htmlToPlainText(body),
     `Oregon Initial Agency Disclosure Pamphlet (ORS 696.820): ${AGENCY_PAMPHLET_URL}`,
   ].join('\n')
   return { html, plain }
