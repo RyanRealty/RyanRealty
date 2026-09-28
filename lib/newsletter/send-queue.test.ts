@@ -79,9 +79,16 @@ describe('renderForRecipient — per-broker sender identity + broker-stamped tok
     expect(r.from).toBe(`Paul Stevenson · Ryan Realty <${NEWSLETTER_FROM_ADDRESS}>`)
     expect(r.replyTo).toBe('paul@ryan-realty.com')
     expect(r.html).toContain('541.502.3436')
-    expect(r.html).toContain('agent=paul')
+    // Site links are click-wrapped, so the broker stamp lives in each signed
+    // destination. Image src attributes are not links and are not decorated.
+    const dests = [...r.html!.matchAll(/\/api\/track\/e\/click\?t=([^"&]+)/g)]
+      .map((m) => verifyEmailToken(decodeURIComponent(m[1]!))?.url ?? '')
+      .filter((u) => u.includes('ryan-realty.com'))
+    expect(dests.length).toBeGreaterThan(0)
+    expect(dests.every((u) => u.includes('agent=paul'))).toBe(true)
     expect(r.html).not.toContain('977-6841')
     expect(r.html).not.toContain('agent=matt')
+    expect(dests.some((u) => u.includes('agent=matt'))).toBe(false)
   })
 
   it('derives non-empty plain text from HTML when body_text is blank (G-NL-3)', () => {

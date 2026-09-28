@@ -34,6 +34,8 @@ import {
 } from '@/app/actions/cma-queue'
 import { cmaClientIntentLabel, isCmaClientIntent, type CmaClientIntent } from '@/lib/cma/client-intent'
 import type { CmaOrigin, CmaSendMode } from '@/lib/cma/origin'
+import { paragraphsForLetterBody, renderCmaLetterBlock, type FirstContactRun } from '@/lib/cma/first-contact-render'
+import { cmaReviewOverrideIfEdited } from '@/lib/cma/review-override'
 import './cma-review.css'
 
 export interface CmaReviewActionsProps {
@@ -69,8 +71,18 @@ export interface CmaReviewActionsProps {
   signatureHtml: string | null
   /** Default outbound subject (first-contact compose). */
   emailSubject: string
-  /** Default outbound body (first-contact compose). */
+  /** Default outbound body (first-contact compose, or a saved override). */
   emailBody: string
+  /** Composed subject, even when emailSubject is a saved override. */
+  letterSubject: string
+  /** Composed plain text, even when emailBody is a saved override. */
+  letterPlain: string
+  /** Marker form of the composed letter. An unedited marker round-trips. */
+  letterMarkers: string
+  /** Structured links for the composed letter. Edited text does not use these. */
+  letterParagraphs: FirstContactRun[][]
+  /** Street the letter bolds. Same address the send uses. */
+  letterAddress: string | null
   /** Ready to approve+deliver (audit ok, contact, document). */
   canDeliver: boolean
 }
@@ -106,11 +118,13 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   const isNowLane = props.sendMode === 'now'
 
   function overrideIfEdited() {
-    const subject = emailSubject.trim()
-    const bodyText = emailBody.trim()
-    const edited =
-      subject !== props.emailSubject.trim() || bodyText !== props.emailBody.trim()
-    return edited ? { subject, bodyText } : { subject, bodyText }
+    // Baseline is the composed letter, not whatever the box was filled with.
+    // A saved override is already an edit. An untouched compose stays on the
+    // default path so its links are not flattened to plain text.
+    return cmaReviewOverrideIfEdited(
+      { subject: emailSubject, bodyText: emailBody },
+      { subject: props.letterSubject, bodyText: props.letterPlain },
+    )
   }
 
   function rebuild() {
@@ -378,6 +392,18 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           onBodyChange={setEmailBody}
           signatureHtml={props.signatureHtml}
           hideMergeFields
+          renderPreviewBody={(body) =>
+            renderCmaLetterBlock({
+              paragraphs: paragraphsForLetterBody({
+                bodyText: body,
+                canonicalPlain: props.letterPlain,
+                canonicalMarkers: props.letterMarkers,
+                paragraphs: props.letterParagraphs,
+              }),
+              address: props.letterAddress,
+              slug: props.slug,
+            })
+          }
         />
 
         {showSchedule ? (

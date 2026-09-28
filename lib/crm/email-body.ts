@@ -106,6 +106,11 @@ export function withPreviewLinkTarget(doc: string): string {
   return doc.replace('<head>', '<head><base target="_blank">')
 }
 
+/** Wrap already-rendered letter HTML in the same preview document. */
+export function buildEmailPreviewSrcDoc(innerHtml: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:16px;background:#ffffff">${innerHtml}</body></html>`
+}
+
 /** Full srcDoc document for the composer's sandboxed preview iframe. */
 export function buildEmailPreviewDoc(
   body: string,

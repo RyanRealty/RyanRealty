@@ -28,12 +28,11 @@ import { CmaBuildWatch } from '@/app/admin/(protected)/cmas/_components/CmaBuild
 import { CmaOutcomeCell } from '@/components/admin/cma/CmaOutcomeCell'
 import { getCmaOutcomes } from '@/lib/data/cma/outcomes'
 import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin, theirPriceLabelFor } from '@/lib/cma/origin'
-import { composeCmaFirstContact, cmaFirstContactFactsFromRow } from '@/lib/cma/first-contact'
+import { buildCmaFirstContactForRow } from '@/lib/cma/first-contact-for-send'
 import { readFirstContactOverride } from '@/lib/cma/first-contact-override'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { dripEtaFor, DRIP_CADENCE_LINE } from '@/lib/cma/drip-eta'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
-import { cmaReportButtonHtml } from '@/lib/cma/report-button'
 import '../_components/cma-review.css'
 
 export const dynamic = 'force-dynamic'
@@ -110,10 +109,8 @@ export default async function AdminCmaReviewPage({
     (typeof brokerRow?.email === 'string' && /@ryan-realty\.com$/i.test(brokerRow.email)
       ? brokerRow.email
       : null) || 'matt@ryan-realty.com'
-  // The preview appends the same report button the send rail appends, so a
-  // broker-typed note previews with its link (lib/cma/report-button.ts).
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const signatureHtml = `${cmaReportButtonHtml(`${siteUrl}/cma/${slug}`)}${(await getSignatureForMailbox(fromMailbox))?.html ?? ''}`
+  // The letter renderer adds the report button. The signature is only the signature.
+  const signatureHtml = (await getSignatureForMailbox(fromMailbox))?.html ?? ''
 
   // Drip ETA when this CMA's prospect is currently queued.
   let inDrip = false
@@ -144,14 +141,13 @@ export default async function AdminCmaReviewPage({
   // spend three queries proving it.
   const outcome = row.delivered_at ? (await getCmaOutcomes([String(row.id)]))[String(row.id)] ?? null : null
 
-  const composed = composeCmaFirstContact(origin, {
-    ...cmaFirstContactFactsFromRow(row, {
-      brokerName: signingBroker?.displayName ?? 'Matt Ryan',
-      firstName: (clientLabel ?? '').trim().split(/\s+/)[0] || null,
-      lastListPrice: lastList,
-    }),
-    address: subjectAddress || null,
+  const built = await buildCmaFirstContactForRow(row as Record<string, unknown>, {
+    origin,
+    brokerName: signingBroker?.displayName ?? 'Matt Ryan',
+    brokerEmail: typeof brokerRow?.email === 'string' ? brokerRow.email : fromMailbox,
+    lastListPrice: lastList,
   })
+  const composed = built.copy
   const savedOverride = readFirstContactOverride(summary)
   const firstContact = {
     subject: savedOverride?.subject || composed.subject,
@@ -312,6 +308,11 @@ export default async function AdminCmaReviewPage({
         signatureHtml={signatureHtml}
         emailSubject={firstContact.subject}
         emailBody={firstContact.bodyText}
+        letterSubject={composed.subject}
+        letterPlain={composed.bodyText}
+        letterMarkers={composed.bodyMarkers}
+        letterParagraphs={composed.paragraphs}
+        letterAddress={built.facts.address}
         canDeliver={canDeliver}
       />
 

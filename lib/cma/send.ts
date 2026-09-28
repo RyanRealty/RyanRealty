@@ -30,19 +30,20 @@ import {
 } from '@/lib/data'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { CMA_DOC_ORIGIN } from '@/lib/cma/doc-links'
-import { wrapBrandedEmail, brandedTextFooter, escapeHtml } from '@/lib/email/shell'
+import { wrapBrandedEmail, brandedTextFooter } from '@/lib/email/shell'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
-import { composeCmaFirstContact, cmaFirstContactFactsFromRow, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
-import { resolveFirstContactPlace } from '@/lib/cma/first-contact-place'
+import { composeCmaFirstContact, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { cmaFirstContactFactsForSend, cmaSendBrokerSlug } from '@/lib/cma/first-contact-for-send'
+import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from '@/lib/cma/first-contact-render'
 import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
 import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
-import { cmaReportButtonHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
+import { previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
@@ -61,7 +62,7 @@ import { formatPublishedPhone } from '@/lib/cma/format-phone'
 const SITE_URL = CMA_DOC_ORIGIN
 const MAX_PDF_BYTES = 25 * 1024 * 1024
 
-interface CmaSendContext {
+export interface CmaSendContext {
   slug: string
   subjectAddress: string
   /** MLS ListingKey for this CMA. Null when the row has none. */
@@ -118,15 +119,11 @@ async function resolveSendContext(
     await getCmaProspectAsk(String(row.id)),
   )
   const clientName = (row.client_name as string | null) ?? null
-  const facts = cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
+  const facts = await cmaFirstContactFactsForSend(row as Record<string, unknown>, {
     brokerName: brokerRow.displayName,
-    firstName: null,
     lastListPrice,
-    brokerSlug: CRM_BROKER_BY_EMAIL[(brokerRow.email ?? '').toLowerCase()] ?? 'matt',
+    brokerSlug: cmaSendBrokerSlug(brokerRow.email),
   })
-  // The place links are resolved here, not in the composer: a subdivision link
-  // goes in only when that plat page renders, with the counts the page prints.
-  facts.place = await resolveFirstContactPlace(facts)
   return {
     ctx: {
       slug,
@@ -177,30 +174,6 @@ export function linkifyHttp(html: string): string {
   })
 }
 
-function bodyParagraphsHtml(bodyText: string, address: string | null): string {
-  return bodyText
-    .split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 16px 0;">${linkifyHttp(emphasizeAddress(p, address)).replace(/\n/g, '<br/>')}</p>`)
-    .join('')
-}
-
-function emphasizeAddress(text: string, address: string | null): string {
-  const named = address?.trim() || ''
-  const escaped = escapeHtml(text)
-  if (!named) return escaped
-  // The letter names the street ("2465 7th"), the row holds the full line
-  // ("2465 7th, Redmond, OR 97756"). Bold whichever form the paragraph uses,
-  // longest first so the full line never gets a nested tag.
-  const forms = [named, streetOnly(named)].filter((f): f is string => Boolean(f))
-  let out = escaped
-  for (const form of forms) {
-    const needle = escapeHtml(form)
-    if (!needle || out.includes(`<strong>${needle}</strong>`)) continue
-    out = out.split(needle).join(`<strong>${needle}</strong>`)
-  }
-  return out
-}
-
 /**
  * The broker's own signature, from the system (Matt 2026-09-09: "we will always
  * use my signature from the system"). Gmail-synced wins, then the signature they
@@ -221,63 +194,41 @@ async function signatureFor(email: string | null): Promise<{ html: string; plain
   }
 }
 
-function buildLeadBody(
+export function buildLeadBody(
   ctx: CmaSendContext,
   override?: CmaSendOverride,
   signature?: { html: string; plain: string } | null,
 ): { html: string; text: string; subject: string } {
   const copy = composeCmaFirstContact(ctx.origin, inboundFacts(ctx))
-  const brokerFirst = ctx.brokerRow.displayName.split(/\s+/)[0]
-  const viewUrl = `${SITE_URL}/cma/${ctx.slug}`
   const subject = override?.subject?.trim() || copy.subject
-
-  if (override?.bodyText?.trim()) {
-    const raw = override.bodyText.trim()
-    const paras = raw
-      .split(/\n{2,}/)
-      .map((p) => `<p style="margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
-      .join('')
-    const bodyHtml = `
-<div style="padding:32px 34px 8px;">
-  ${paras}
-  ${cmaReportButtonHtml(viewUrl)}
-  ${signature?.html ?? ''}
-</div>`
-    const text = `${raw}
-
-Read the full report: ${viewUrl}
-${signature?.plain ?? ''}${brandedTextFooter()}`
-    const html = wrapBrandedEmail({
-      bodyHtml,
-      // A broker-typed note previews as its own first sentence, not the
-      // composed line it replaced.
-      previewText: previewTextFromCustomBody(raw, copy.previewText),
-      mastheadLine: copy.mastheadLine,
-      heroUrl: null,
-      // One close: the broker's own signature, appended above. The navy
-      // "talk to" card would be a second sign-off under it (Matt 2026-09-09).
-      senderBroker: null,
-      unsubscribeUrl: null,
-      audienceLine: null,
-    })
-    return { html, text, subject }
-  }
-
+  const raw = override?.bodyText?.trim() ?? ''
+  const paragraphs = paragraphsForLetterBody({
+    bodyText: raw || copy.bodyText,
+    canonicalPlain: copy.bodyText,
+    canonicalMarkers: copy.bodyMarkers,
+    paragraphs: copy.paragraphs,
+  })
+  const letterPlain = paragraphsToPlain(paragraphs)
+  const uneditedBody = !raw || raw === copy.bodyText.trim() || raw === copy.bodyMarkers.trim()
+  const block = renderCmaLetterBlock({
+    paragraphs,
+    address: ctx.subjectAddress,
+    slug: ctx.slug,
+  })
   const bodyHtml = `
 <div style="padding:32px 34px 8px;">
-  ${bodyParagraphsHtml(copy.bodyText, ctx.subjectAddress)}
-  ${cmaReportButtonHtml(viewUrl)}
+  ${block}
   ${signature?.html ?? ''}
 </div>`
-
-  const text = `${copy.bodyText.replace(copy.close, `${copy.close} ${viewUrl}`)}
+  const text = `${letterPlain}
 ${signature?.plain ?? ''}${brandedTextFooter()}`
-
   const html = wrapBrandedEmail({
     bodyHtml,
-    previewText: copy.previewText,
+    previewText: uneditedBody ? copy.previewText : previewTextFromCustomBody(raw, copy.previewText),
     mastheadLine: copy.mastheadLine,
     heroUrl: null,
+    // One close: the broker's own signature, appended above. The navy
+    // "talk to" card would be a second sign-off under it (Matt 2026-09-09).
     senderBroker: null,
     unsubscribeUrl: null,
     audienceLine: null,
@@ -358,14 +309,12 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       recommendedList: (row.recommended_list as number | null) ?? null,
       origin,
       lastListPrice,
-      facts: cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
+      facts: await cmaFirstContactFactsForSend(row as Record<string, unknown>, {
         brokerName: brokerRow.displayName,
-        firstName: null,
         lastListPrice,
-        brokerSlug: CRM_BROKER_BY_EMAIL[(brokerRow.email ?? '').toLowerCase()] ?? 'matt',
+        brokerSlug: cmaSendBrokerSlug(brokerRow.email),
       }),
     }
-    fakeCtx.facts.place = await resolveFirstContactPlace(fakeCtx.facts)
     const body = buildLeadBody(fakeCtx)
     return {
       ok: true,
