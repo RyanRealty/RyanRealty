@@ -150,5 +150,6 @@ describe('admin badge labels', () => {
     expect(CMA_QUEUE_STATE_LABEL['comp-shortage']).toBe('Comp shortage')
     expect(CMA_QUEUE_STATE_LABEL['comps-unstable']).toBe('Comps unstable')
     expect(CMA_QUEUE_STATE_LABEL.failed).toBe('Build failed')
+    expect(CMA_QUEUE_STATE_LABEL.bounced).toBe('Bounced')
   })
 })

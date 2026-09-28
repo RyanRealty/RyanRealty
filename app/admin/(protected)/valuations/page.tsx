@@ -13,6 +13,7 @@ import { listBposForAdmin } from '@/lib/data/bpo/reads'
 import { formatDate } from '@/lib/format/date'
 import { QueueRow, QuietRow, VerdictLine } from '@/components/admin/v2'
 import { classifyBuildError, DELIBERATE_BUILD_LABEL } from '@/lib/cma/build-error-code'
+import { readCmaDeliveryStatus } from '@/lib/cma/delivery-status'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,7 +66,9 @@ export default async function ValuationsPage() {
   const cmaStopped = cmaRows.filter((r) => !!r.build_error)
   const cmaFailed = cmaStopped.filter((r) => classifyBuildError(r.build_error, r.build_summary) == null)
   const cmaBuilding = cmaRows.filter((r) => r.status === 'draft' && !r.built_at && !r.build_error)
-  const cmaDelivered = cmaRows.filter((r) => !!r.delivered_at)
+  const cmaDelivered = cmaRows.filter(
+    (r) => !!r.delivered_at && readCmaDeliveryStatus(r.build_summary, r.delivered_at) !== 'bounced',
+  )
 
   const allBpos = [...bpos.rows, ...bposSeller.rows]
   const bpoDrafts = allBpos.filter((r) => r.status === 'draft' && !r.archivedAt && !r.buildError)

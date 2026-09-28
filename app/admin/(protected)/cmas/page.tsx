@@ -48,6 +48,7 @@ const STATE_TONE: Record<CmaQueueState, AdminState> = {
   'comp-shortage': 'down',
   'comps-unstable': 'down',
   failed: 'down',
+  bounced: 'down',
   building: 'waiting',
   queued: 'accent',
   sent: 'ok',
@@ -88,6 +89,7 @@ function whyLine(r: CmaQueueRow): string | null {
     return r.auditSummary ? `${head}. ${r.auditSummary.slice(0, 140)}` : head
   }
   if (r.state === 'unvetted') return 'Audit did not run. Nothing has checked this one.'
+  if (r.state === 'bounced') return `${CMA_QUEUE_STATE_LABEL.bounced}. The address refused this message.`
   if (r.state === 'comp-shortage' || r.state === 'comps-unstable') {
     const label = CMA_QUEUE_STATE_LABEL[r.state]
     return r.buildError ? `${label}: ${r.buildError.slice(0, 140)}` : `${label}.`
@@ -386,7 +388,8 @@ export default async function CmaQueuePage({
                 r.state === 'audit-failed' ||
                 r.state === 'failed' ||
                 r.state === 'comp-shortage' ||
-                r.state === 'comps-unstable'
+                r.state === 'comps-unstable' ||
+                r.state === 'bounced'
               }
               action={
                 r.state === 'queued' ? (

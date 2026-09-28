@@ -136,6 +136,7 @@ describe('autoSendBuiltCma — only ready sends', () => {
     'building',
     'queued',
     'sent',
+    'bounced',
     'archived',
   ]
 

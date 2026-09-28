@@ -49,6 +49,18 @@ describe('the failure path keeps the prior document', () => {
     expect(upsert).toBeGreaterThan(snap)
   })
 
+  it('carries the bounce stamp onto a successful rebuild and does not keep the error code', () => {
+    const start = src.indexOf('const buildSummary = composeBuildSummary')
+    const end = src.indexOf('built_at: generatedAtIso', start)
+    const slice = src.slice(start, end)
+    expect(slice).toContain('readCmaBuildSummaryForMerge')
+    expect(slice).toContain('carryDeliveryAcrossRebuild(buildSummary, priorSummary.summary)')
+    expect(slice).toContain('build_summary: buildSummaryToStore')
+    expect(slice).toContain(': buildSummary')
+    expect(slice).not.toMatch(/build_error_code\s*:/)
+    expect(slice).not.toContain('judge_cache')
+  })
+
   it('writes only the failure reason and does not clear the document', () => {
     const fn = src.slice(src.indexOf('async function recordBuildFailure'), src.indexOf('export async function buildCma'))
     expect(fn).toMatch(/build_error: reason/)

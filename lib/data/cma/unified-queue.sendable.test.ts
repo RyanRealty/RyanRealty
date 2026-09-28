@@ -32,6 +32,7 @@ describe('isSendableQueueState', () => {
       'flagged',
       'queued',
       'sent',
+      'bounced',
       'archived',
     ]
     for (const s of notSendable) expect(isSendableQueueState(s)).toBe(false)

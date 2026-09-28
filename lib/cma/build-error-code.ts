@@ -1,3 +1,5 @@
+import { CMA_BOUNCED_LABEL, readCmaDeliveryStatus } from '@/lib/cma/delivery-status'
+
 /**
  * Deliberate build outcomes vs a crash.
  *
@@ -81,6 +83,7 @@ export function cmaDetailBadgeLabel(args: {
   buildSummary: unknown
   deliveredAt: string | null
 }): string {
+  if (readCmaDeliveryStatus(args.buildSummary, args.deliveredAt) === 'bounced') return CMA_BOUNCED_LABEL
   const statusNorm = args.status.trim().toLowerCase()
   const sent = Boolean(args.deliveredAt) || statusNorm === 'delivered'
   if (!sent && args.buildError) {

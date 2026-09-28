@@ -8,6 +8,7 @@
 
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { DELIBERATE_BUILD_LABEL } from '@/lib/cma/build-error-code'
+import { CMA_BOUNCED_LABEL } from '@/lib/cma/delivery-status'
 import type { CmaOrigin } from '@/lib/cma/origin'
 
 /** Bare `/admin/cmas` opens the ready door, not the whole work pile. */
@@ -24,6 +25,7 @@ export type CmaQueueViewState =
   | 'ready'
   | 'queued'
   | 'sent'
+  | 'bounced'
   | 'archived'
 
 /** One label table for the queue chips and the row. Deliberate outcomes are not "failed". */
@@ -38,6 +40,7 @@ export const CMA_QUEUE_STATE_LABEL: Record<CmaQueueViewState, string> = {
   building: 'Building',
   queued: 'In drip',
   sent: 'Sent',
+  bounced: CMA_BOUNCED_LABEL,
   archived: 'Archived',
 }
 
@@ -95,6 +98,7 @@ const STATE_ORDER: CmaQueueViewState[] = [
   'building',
   'queued',
   'sent',
+  'bounced',
 ]
 
 const REC_BANDS: Record<Exclude<CmaRecBand, 'all'>, { min: number; max: number }> = {

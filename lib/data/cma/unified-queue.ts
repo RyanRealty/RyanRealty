@@ -27,6 +27,7 @@ import {
 } from '@/lib/cma/origin'
 import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
 import { classifyBuildError } from '@/lib/cma/build-error-code'
+import { readCmaDeliveryStatus } from '@/lib/cma/delivery-status'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -56,6 +57,7 @@ export type CmaQueueState =
   | 'ready'          // built, audited, clean
   | 'queued'         // approved, waiting its turn in the cold drip
   | 'sent'
+  | 'bounced'      // hard bounce after the send left; not a delivery
   | 'archived'
 
 /** Whether the adversarial audit ran, and what it concluded. */
@@ -185,6 +187,9 @@ export function resolveCmaQueueState(args: {
   buildSummary?: unknown
 }): CmaQueueState {
   if (args.archivedAt || args.status === 'archived') return 'archived'
+  // A hard bounce on this send keeps delivered_at and still is not delivered.
+  // A stamp older than delivered_at is a previous attempt.
+  if (readCmaDeliveryStatus(args.buildSummary, args.deliveredAt) === 'bounced') return 'bounced'
   if (args.deliveredAt || args.emailSentAt || args.status === 'delivered') return 'sent'
   if (args.queuedAt) return 'queued'
   if (args.buildError) {

@@ -12,8 +12,10 @@ export type BounceNotice = {
   failedRecipients: string[]
   /** SMTP status like `5.1.1` or `4.2.2`, when the notice prints one. */
   status: string | null
-  /** Permanent (5.x.x) — the address should be suppressed. */
+  /** Permanent (5.x.x or a 5xx SMTP code). The address should be suppressed. */
   hard: boolean
+  /** Bare SMTP code such as `550` or `452`, when the notice prints one. */
+  smtpCode: string | null
   diagnostic: string | null
   /** RFC Message-ID the notice is answering (In-Reply-To), angle-brackets stripped. */
   inReplyTo: string | null
@@ -23,6 +25,8 @@ export type BounceNotice = {
 
 const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi
 const STATUS_RE = /\b([45]\.\d{1,3}\.\d{1,3})\b/
+/** A 3-digit SMTP code. Not the dotted enhanced status (`5.1.1` is not `511`). */
+const SMTP_RE = /(?:^|[^0-9.])([45]\d{2})(?=[^0-9.]|$)/
 const FINAL_RECIPIENT_RE = /Final-Recipient:\s*(?:rfc822;)\s*(\S+)/i
 const ACTION_RE = /^Action:\s*(\S+)/im
 const DIAGNOSTIC_RE = /Diagnostic-Code:\s*(?:smtp;)\s*(.+)/i
@@ -61,6 +65,96 @@ function parseReferences(raw: string | null | undefined): string[] {
   return one ? [one] : []
 }
 
+/** First 4xx/5xx SMTP reply code in the notice, if one is printed. */
+export function smtpCodeOf(text: string): string | null {
+  return text.match(SMTP_RE)?.[1] ?? null
+}
+
+/**
+ * Hard when the notice is a permanent failure: enhanced 5.x.x, a 5xx SMTP
+ * code, or Action: failed with no 4.x.x status. A 4.x.x status is never hard,
+ * even when the prose says the mailbox is unavailable.
+ */
+export function isHardBounce(args: {
+  status: string | null
+  smtp: string | null
+  action: string | null
+}): boolean {
+  if (args.status?.startsWith('4.')) return false
+  if (!args.status && args.smtp?.startsWith('4')) return false
+  if (args.status?.startsWith('5.')) return true
+  if (args.smtp?.startsWith('5')) return true
+  return args.action === 'failed'
+}
+
+export type BounceDisposition = 'bounced' | 'deferred' | 'ignore'
+
+/** What the CMA row and email_events should do with one parsed notice. */
+export function bounceDisposition(notice: Pick<BounceNotice, 'isBounce' | 'hard'>): BounceDisposition {
+  if (!notice.isBounce) return 'ignore'
+  return notice.hard ? 'bounced' : 'deferred'
+}
+
+/**
+ * Side effects of a disposition. Soft (deferred) and ordinary mail write
+ * nothing: no bounce event, no CMA stamp, no timeline, no suppression.
+ */
+export function bounceSideEffects(disposition: BounceDisposition): {
+  emailEvent: 'bounce' | null
+  cmaStatus: 'bounced' | null
+  timeline: boolean
+  suppress: boolean
+} {
+  if (disposition !== 'bounced') {
+    return { emailEvent: null, cmaStatus: null, timeline: false, suppress: false }
+  }
+  return { emailEvent: 'bounce', cmaStatus: 'bounced', timeline: true, suppress: true }
+}
+
+export type BounceMimePart = {
+  mimeType?: string | null
+  body?: { data?: string | null } | null
+  parts?: BounceMimePart[] | null
+}
+
+function decodeMimeBody(data: string | null | undefined): string {
+  if (!data) return ''
+  try {
+    return Buffer.from(data, 'base64url').toString('utf8')
+  } catch {
+    return ''
+  }
+}
+
+function walkMime(
+  part: BounceMimePart,
+  out: { status: string[]; plain: string[]; html: string[] },
+  inStatus: boolean,
+): void {
+  const mime = (part.mimeType ?? '').split(';')[0]!.trim().toLowerCase()
+  // The attached original can carry its own Status line. Do not parse it.
+  if (mime === 'message/rfc822' || mime === 'text/rfc822-headers') return
+  const statusHere = inStatus || mime === 'message/delivery-status'
+  const body = decodeMimeBody(part.body?.data)
+  const multipart = mime.startsWith('multipart/')
+  if (statusHere && body && !multipart) out.status.push(body)
+  else if (!statusHere && mime === 'text/plain' && body) out.plain.push(body)
+  else if (!statusHere && mime === 'text/html' && body) out.html.push(body)
+  for (const child of part.parts ?? []) walkMime(child, out, statusHere)
+}
+
+/**
+ * Text the parser should see: the message/delivery-status part first, then
+ * the human plain-text (html only when there is no plain part).
+ */
+export function bounceTextFromMime(payload: BounceMimePart | null | undefined): string {
+  if (!payload) return ''
+  const out = { status: [] as string[], plain: [] as string[], html: [] as string[] }
+  walkMime(payload, out, false)
+  const human = out.plain.length ? out.plain : out.html
+  return [...out.status, ...human].filter((s) => s.trim()).join('\n')
+}
+
 function looksLikeBounce(from: string, subject: string, text: string): boolean {
   if (BOUNCE_FROM.test(from) || BOUNCE_SUBJECT.test(subject)) return true
   if (/^Status:\s*[45]\./im.test(text) && /Final-Recipient:/i.test(text)) return true
@@ -91,6 +185,7 @@ export function parseBounceNotice(input: {
       failedRecipients: [],
       status: null,
       hard: false,
+      smtpCode: null,
       diagnostic: null,
       inReplyTo: normId(input.inReplyTo),
       references: parseReferences(input.references),
@@ -107,8 +202,10 @@ export function parseBounceNotice(input: {
   for (const e of emailsIn(xFailed)) {
     if (!failed.includes(e)) failed.push(e)
   }
-  // Outlook: "Your message to bounce@example.com couldn't be delivered."
-  const outlookTo = text.match(/Your message to\s+(\S+@\S+)\s+could(?:n't| not) be delivered/i)?.[1]
+  // Outlook and the plain-text fallback: "could not be delivered to a@b.c".
+  const outlookTo = text.match(
+    /(?:Your message to\s+|could not be delivered to\s+)<?(\S+@\S+)>?\s*(?:could(?:n't| not) be delivered)?/i,
+  )?.[1]
   if (outlookTo) {
     const e = outlookTo.replace(/[<>]/g, '').trim().toLowerCase()
     if (e.includes('@') && !failed.includes(e)) failed.push(e)
@@ -121,18 +218,13 @@ export function parseBounceNotice(input: {
   }
 
   const status = text.match(STATUS_RE)?.[1] ?? null
+  const smtpCode = smtpCodeOf(`${text.match(DIAGNOSTIC_RE)?.[1] ?? ''} ${text}`)
   const action = text.match(ACTION_RE)?.[1]?.toLowerCase() ?? null
   const diagnostic =
     (text.match(DIAGNOSTIC_RE)?.[1] ?? text.match(/Remote Server returned\s+'([^']+)'/i)?.[1] ?? null)?.trim() ??
     null
 
-  const hard =
-    (status != null && status.startsWith('5.')) ||
-    action === 'failed' && (status == null || status.startsWith('5.')) ||
-    /5\.\d+\.\d+/.test(diagnostic ?? '') ||
-    /user unknown|does not exist|recipnotfound|mailbox unavailable|no such user/i.test(
-      `${diagnostic ?? ''} ${text.slice(0, 800)}`,
-    )
+  const hard = isHardBounce({ status, smtp: smtpCode, action })
 
   const inReplyTo = normId(input.inReplyTo) ?? normId(text.match(ORIGINAL_MSGID_RE)?.[1] ?? null)
 
@@ -141,6 +233,7 @@ export function parseBounceNotice(input: {
     failedRecipients: failed,
     status,
     hard: Boolean(hard),
+    smtpCode,
     diagnostic,
     inReplyTo,
     references: parseReferences(input.references),

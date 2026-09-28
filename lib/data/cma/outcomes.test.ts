@@ -203,6 +203,61 @@ describe('getCmaOutcomes — one row-level answer per document', () => {
     expect(map.c1.sentAt).toBeNull()
   })
 
+  it('ignores a bounce stamp older than the current send', async () => {
+    state.cmas = [
+      {
+        id: 'c1',
+        slug: 'doc-one',
+        person_id: null,
+        client_email: 'a@b.com',
+        delivered_at: '2026-09-05T10:00:00Z',
+        build_summary: { delivery: { status: 'bounced', at: '2026-09-01T12:00:00Z' } },
+      },
+    ]
+    state.emailEvents = [
+      { email_key: 'cma:doc-one', event: 'sent', occurred_at: '2026-09-01T10:00:00Z' },
+      { email_key: 'cma:doc-one', event: 'bounce', occurred_at: '2026-09-01T12:00:00Z' },
+      { email_key: 'cma:doc-one', event: 'delivered', occurred_at: '2026-09-05T11:00:00Z', meta: { inferred: true } },
+    ]
+    const map = await getCmaOutcomes(['c1'])
+    expect(map.c1.bounced).toBe(false)
+    expect(map.c1.deliveredAt).toBe('2026-09-05T11:00:00Z')
+  })
+
+  it('counts a bounce stamp at or after the current send', async () => {
+    state.cmas = [
+      {
+        id: 'c1',
+        slug: 'doc-one',
+        person_id: null,
+        client_email: 'a@b.com',
+        delivered_at: '2026-09-05T10:00:00Z',
+        build_summary: { delivery: { status: 'bounced', at: '2026-09-05T10:00:00Z' } },
+      },
+    ]
+    state.emailEvents = [
+      { email_key: 'cma:doc-one', event: 'delivered', occurred_at: '2026-09-05T11:00:00Z', meta: { inferred: true } },
+    ]
+    const map = await getCmaOutcomes(['c1'])
+    expect(map.c1.bounced).toBe(true)
+    expect(map.c1.deliveredAt).toBeNull()
+  })
+
+  it('does not count a hard bounce as delivered', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'doc-one', person_id: null, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.emailEvents = [
+      { email_key: 'cma:doc-one', event: 'sent', occurred_at: '2026-09-01T10:00:00Z' },
+      { email_key: 'cma:doc-one', event: 'delivered', occurred_at: '2026-09-02T10:00:00Z', meta: { inferred: true } },
+      { email_key: 'cma:doc-one', event: 'bounce', occurred_at: '2026-09-02T12:00:00Z' },
+    ]
+    const map = await getCmaOutcomes(['c1'])
+    expect(map.c1.bounced).toBe(true)
+    expect(map.c1.deliveredAt).toBeNull()
+    expect(map.c1.sentAt).toBe('2026-09-01T10:00:00Z')
+  })
+
   it('surfaces a bounce and an unsubscribe as exceptions, not as activity', async () => {
     state.cmas = [{ id: 'c1', slug: 'doc-one', person_id: null, client_email: 'x@y.com', delivered_at: '2026-09-01T10:00:00Z' }]
     state.emailEvents = [
@@ -473,5 +528,49 @@ describe('getCmaLaneFunnel — the per-lane shape of the funnel', () => {
     expect(funnel.totals.sent).toBe(0)
     expect(funnel.totals.openRate).toBeNull()
     expect(funnel.lanes).toHaveLength(3)
+  })
+
+  it('does not let a stale delivery stamp count as a funnel bounce', async () => {
+    state.queueRows = [{ id: 'c1', origin: 'expired', state: 'sent' }]
+    state.cmas = [
+      {
+        id: 'c1',
+        slug: 'doc-one',
+        person_id: null,
+        client_email: 'a@b.com',
+        delivered_at: '2026-09-05T10:00:00Z',
+        build_summary: { delivery: { status: 'bounced', at: '2026-09-01T12:00:00Z' } },
+      },
+    ]
+    state.emailEvents = [
+      { email_key: 'cma:doc-one', event: 'bounce', occurred_at: '2026-09-01T12:00:00Z' },
+      { email_key: 'cma:doc-one', event: 'delivered', occurred_at: '2026-09-05T11:00:00Z', meta: { inferred: true } },
+    ]
+    const funnel = await getCmaLaneFunnel()
+    const expired = funnel.lanes.find((l) => l.origin === 'expired')!
+    expect(expired.sent).toBe(1)
+    expect(expired.bounced).toBe(0)
+    expect(expired.delivered).toBe(1)
+  })
+
+  it('counts a bounced send as sent and bounced, not delivered', async () => {
+    state.queueRows = [
+      { id: 'c1', origin: 'expired', state: 'sent' },
+      { id: 'c2', origin: 'expired', state: 'bounced' },
+    ]
+    state.cmas = [
+      { id: 'c1', slug: 'doc-one', person_id: null, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+      { id: 'c2', slug: 'doc-two', person_id: null, client_email: 'b@c.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.emailEvents = [
+      { email_key: 'cma:doc-one', event: 'delivered', occurred_at: '2026-09-02T10:00:00Z', meta: { inferred: true } },
+      { email_key: 'cma:doc-two', event: 'delivered', occurred_at: '2026-09-02T10:00:00Z', meta: { inferred: true } },
+      { email_key: 'cma:doc-two', event: 'bounce', occurred_at: '2026-09-02T12:00:00Z' },
+    ]
+    const funnel = await getCmaLaneFunnel()
+    const expired = funnel.lanes.find((l) => l.origin === 'expired')!
+    expect(expired.sent).toBe(2)
+    expect(expired.delivered).toBe(1)
+    expect(expired.bounced).toBe(1)
   })
 })

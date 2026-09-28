@@ -50,6 +50,7 @@ const STATE_ORDER: CmaQueueState[] = [
   'building',
   'queued',
   'sent',
+  'bounced',
   'archived',
 ]
 

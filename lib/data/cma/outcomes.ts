@@ -27,7 +27,9 @@ import 'server-only'
  * actual delivery event and exists ONLY on the Resend fallback rail; a Gmail
  * DWD send has no delivery webhook. Bounce-watch infers `delivered` with
  * `meta.inferred=true` after 24h with no bounce, or on any open/click. A
- * Resend receipt still wins when both exist. The UI marks inferred vs receipt.
+ * Resend receipt still wins when both exist. A hard bounce clears that
+ * delivery for the count: the send left, and it was not delivered. The UI
+ * marks inferred vs receipt.
  *
  * COST. Every read is `.in()`-chunked over the caller's id set — no per-row
  * query, no unbounded table scan. getCmaLaneFunnel scopes the expensive
@@ -47,6 +49,7 @@ import { listCmaQueue } from '@/lib/data/cma/unified-queue'
 import { classifyCmaOrigin, CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
 import { classifyCmaLink, type CmaLinkKind } from '@/lib/cma/link-kind'
 import { cmaCampaignFromUrl } from '@/lib/cma/doc-links'
+import { countsAsEmailDelivered, hasCmaBounceStamp, readCmaDeliveryStatus } from '@/lib/cma/delivery-status'
 
 /** Inbound kinds that count as "they answered". A form submit is not a reply. */
 export const REPLY_TIMELINE_KINDS = ['email_in', 'sms_in'] as const
@@ -155,7 +158,7 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
   for (const part of chunk(ids, 100)) {
     const { data, error } = await sb
       .from('cmas')
-      .select('id, slug, person_id, client_email, delivered_at')
+      .select('id, slug, person_id, client_email, delivered_at, build_summary')
       .in('id', part)
     if (error) throw new Error(`cma outcomes: cmas read failed: ${error.message}`)
     docs.push(...((data ?? []) as Row[]))
@@ -324,12 +327,20 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
       }
     }
 
+    // The delivery stamp is the row's bounce fact when it is present. A stamp
+    // older than this send does not keep the row bounced. No stamp falls
+    // back to the email_events bounce.
+    const bounced = hasCmaBounceStamp(d.build_summary)
+      ? readCmaDeliveryStatus(d.build_summary, sentAt) === 'bounced'
+      : eng.bouncedAt != null
     out[cmaId] = {
       cmaId,
       slug,
       sentAt,
-      deliveredAt: eng.emailDeliveredAt,
-      deliveredInferred: eng.deliveredInferred,
+      // A hard bounce is not a delivery. An inferred "delivered" that landed
+      // before the DSN was read must not keep the row in the delivered count.
+      deliveredAt: countsAsEmailDelivered(eng.emailDeliveredAt, bounced) ? eng.emailDeliveredAt : null,
+      deliveredInferred: bounced ? false : eng.deliveredInferred,
       firstOpenAt: eng.firstOpenAt,
       opens: eng.emailOpens,
       firstClickAt: eng.firstClickAt,
@@ -343,7 +354,7 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
       lastVisitAt,
       visitedPages: { count: siteViewCount, recent: recent.slice(0, 3) },
       repliedAt,
-      bounced: eng.bouncedAt != null,
+      bounced,
       unsubscribed: eng.unsubscribedAt != null,
       leadStage: pid == null ? null : (stageByPid.get(pid) ?? null),
     }
@@ -447,14 +458,15 @@ async function computeCmaLaneFunnel(): Promise<CmaLaneFunnel> {
     return made
   }
 
-  const sentRows: Array<{ id: string; origin: CmaOrigin }> = []
+  const sentRows: Array<{ id: string; origin: CmaOrigin; queueBounced: boolean }> = []
   for (const r of rows) {
     const l = lane(r.origin)
     l.built++
     if (r.state === 'ready') l.ready++
-    if (r.state === 'sent') {
+    // Bounced mail left the building, so it stays in sent. It is not a delivery.
+    if (r.state === 'sent' || r.state === 'bounced') {
       l.sent++
-      sentRows.push({ id: r.id, origin: r.origin })
+      sentRows.push({ id: r.id, origin: r.origin, queueBounced: r.state === 'bounced' })
     }
   }
 
@@ -465,12 +477,12 @@ async function computeCmaLaneFunnel(): Promise<CmaLaneFunnel> {
     const o = outcomes[r.id]
     if (!o) continue
     const l = lane(r.origin)
-    if (o.deliveredAt) l.delivered++
+    if (countsAsEmailDelivered(o.deliveredAt, o.bounced || r.queueBounced)) l.delivered++
     if (o.opens > 0) l.opened++
     if (o.clicks > 0) l.clicked++
     if (o.visits > 0) l.visited++
     if (o.repliedAt) l.replied++
-    if (o.bounced) l.bounced++
+    if (o.bounced || r.queueBounced) l.bounced++
     if (o.unsubscribed) l.unsubscribed++
   }
 

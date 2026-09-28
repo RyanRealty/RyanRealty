@@ -19,7 +19,15 @@ import {
   listWatchedSentEvents,
   type WatchedSentRow,
 } from '@/lib/data/crm/gmailBounceWatch'
-import { matchSentToBounce, parseBounceNotice, type BounceNotice } from '@/lib/crm/gmail-bounce-notice'
+import {
+  bounceDisposition,
+  bounceSideEffects,
+  bounceTextFromMime,
+  matchSentToBounce,
+  parseBounceNotice,
+  type BounceNotice,
+} from '@/lib/crm/gmail-bounce-notice'
+import { stampCmaHardBounce } from '@/lib/cma/stamp-hard-bounce'
 import { recordEmailEvent, type EmailSendType } from '@/lib/crm/email-events'
 import { addSuppression } from '@/lib/crm/suppressions'
 
@@ -42,20 +50,6 @@ export type BounceWatchResult = {
 
 function headerOf(msg: gmail_v1.Schema$Message, name: string): string | undefined {
   return msg.payload?.headers?.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? undefined
-}
-
-function extractText(payload: gmail_v1.Schema$MessagePart | undefined): string {
-  if (!payload) return ''
-  const parts: string[] = []
-  const walk = (p: gmail_v1.Schema$MessagePart, want: string) => {
-    if (p.mimeType === want && p.body?.data) {
-      parts.push(Buffer.from(p.body.data, 'base64url').toString('utf8'))
-    }
-    for (const child of p.parts ?? []) walk(child, want)
-  }
-  walk(payload, 'text/plain')
-  if (parts.length === 0) walk(payload, 'text/html')
-  return parts.join('\n')
 }
 
 async function listBounceNotices(
@@ -83,7 +77,7 @@ async function listBounceNotices(
         subject: headerOf(msg, 'Subject') ?? '',
         inReplyTo: headerOf(msg, 'In-Reply-To') ?? '',
         references: headerOf(msg, 'References') ?? '',
-        text: extractText(msg.payload),
+        text: bounceTextFromMime(msg.payload),
       })
       if (!notice.isBounce) continue
       out.push({ threadId: msg.threadId ?? null, notice })
@@ -189,21 +183,41 @@ export async function runGmailBounceWatch(): Promise<BounceWatchResult> {
       const found = await listBounceNotices(gmail)
       notices += found.length
       for (const item of found) {
+        const effects = bounceSideEffects(bounceDisposition(item.notice))
+        // Soft (4.x.x) and ordinary mail stay as they are. Only a hard bounce
+        // is an email_events bounce, a timeline row, a suppression, and a CMA stamp.
+        if (!effects.emailEvent) continue
         const sent = matchSentToBounce(sents, item)
         if (!sent) continue
         matched++
         const key = sent.email_key ?? ''
         const already = key ? flags.get(key)?.bounced : false
-        if (already) continue
-        const wrote = await recordBounce(sent, item.notice)
-        if (wrote) {
-          bounced++
-          if (item.notice.hard) suppressed++
-          if (key) {
-            const next = flags.get(key) ?? { bounced: false, delivered: false, opened: false, clicked: false }
-            next.bounced = true
-            flags.set(key, next)
+        if (!already) {
+          const wrote = await recordBounce(sent, item.notice)
+          if (wrote) {
+            bounced++
+            if (effects.suppress) suppressed++
+            if (key) {
+              const next = flags.get(key) ?? { bounced: false, delivered: false, opened: false, clicked: false }
+              next.bounced = true
+              flags.set(key, next)
+            }
           }
+        }
+        if (effects.cmaStatus === 'bounced') {
+          const stamped = await stampCmaHardBounce({
+            sendType: sent.send_type,
+            emailKey: sent.email_key,
+            meta: sent.meta,
+            recipientEmail: sent.recipient_email,
+            enhancedStatus: item.notice.status,
+            smtpCode: item.notice.smtpCode,
+            diagnostic: item.notice.diagnostic,
+          }).catch((err) => {
+            console.warn('[gmail-bounce-watch] cma stamp threw', err)
+            return { ok: false as const, error: 'threw' }
+          })
+          if (!stamped.ok) console.warn('[gmail-bounce-watch] cma stamp failed', stamped.error)
         }
       }
     } catch (e) {

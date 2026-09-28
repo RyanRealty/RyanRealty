@@ -31,6 +31,7 @@ import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { buildErrorCodeFromMessage, mergeBuildErrorCode } from '@/lib/cma/build-error-code'
+import { carryDeliveryAcrossRebuild } from '@/lib/cma/delivery-status'
 import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import {
@@ -1762,6 +1763,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       market, subject, factsReady: selection.pricingSource === 'facts',
     })
 
+    // The new summary replaces the column. Copy only the bounce stamp. A
+    // failed read stores the new summary as composed. build_error_code is
+    // not copied: this build cleared the failure.
+    const priorSummary = await readCmaBuildSummaryForMerge(slug).catch((err) => {
+      console.error('[buildCma] build_summary read failed', slug, err)
+      return { ok: false as const, error: 'read threw' }
+    })
+    const buildSummaryToStore = priorSummary.ok
+      ? carryDeliveryAcrossRebuild(buildSummary, priorSummary.summary)
+      : buildSummary
+
     // 8. Persist. Upsert keyed on slug — a rebuild updates in place (G47:
     // one property, one slug, one CMA).
     const upsert = await upsertCmaRowBySlug({
@@ -1803,7 +1815,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // signing broker without recomputing a single number (W10.3).
       render_args: renderArgs,
       citations,
-      build_summary: buildSummary,
+      build_summary: buildSummaryToStore,
       built_at: generatedAtIso,
       build_error: null,
       price_override: input.priceOverride ?? null,
