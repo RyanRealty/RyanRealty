@@ -19,7 +19,9 @@ describe('SITE-111 sell catalog install', () => {
     expect(field).toMatch(/from '@\/components\/motion\/input'/)
     expect(form).toContain('<ExpandingArrowButton')
     expect(form).toContain('type="submit"')
-    expect(form).toContain('data-taste="ask-open"')
+    // The hidden "Expand ask" shot trigger was cut (Matt 2026-09-28).
+    expect(form).not.toContain('data-taste="ask-open"')
+    expect(form).not.toContain('Expand ask')
     expect(field).toContain('variant="motion"')
     expect(field).toContain('InputGroup')
     expect(field).toContain('sell-field__confirm')

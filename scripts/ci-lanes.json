@@ -739,6 +739,12 @@
       "components/**",
       "lib/site-nav.ts"
     ],
+    "ci:sell-cta-tracking": [
+      "app/sell/**",
+      "components/VisitTracker.tsx",
+      "lib/cta-tracking.ts",
+      "scripts/check-sell-cta-tracking.mjs"
+    ],
     "ci:join-conversion": [
       "app/join/**",
       "lib/data/loop/join-conversion.ts",

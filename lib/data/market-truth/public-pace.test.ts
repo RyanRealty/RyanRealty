@@ -66,7 +66,8 @@ describe('public pace surfaces', () => {
     expect(market).toMatch(/getPublicDetachedPace/)
     expect(hub).toMatch(/getPublicDetachedPace/)
     expect(zip).toMatch(/getPublicDetachedPace/)
-    expect(sell).toMatch(/getPublicDetachedPace/)
+    // /sell dropped its market sections (Matt 2026-09-28); the report link replaces them.
+    expect(sell).not.toMatch(/getPublicDetachedPace/)
     const annual = readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8')
     const region = readFileSync(resolve('app/housing-market/central-oregon/page.tsx'), 'utf8')
     const reports = readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8')

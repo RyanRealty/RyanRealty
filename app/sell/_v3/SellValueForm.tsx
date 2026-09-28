@@ -4,19 +4,26 @@
  * /sell capture. Address field is the spine. One filled ask: Value my home.
  * Posts through submitSellerLPForm with pagePath="/sell" and formId get-value.
  *
- * FOUR STEPS, IN THIS ORDER (site queue SITE-02 + SITE-10, Matt 2026-09-07):
+ * FOUR STEPS, IN THIS ORDER (SITE-02 + SITE-10, reordered 2026-09-28):
  *
  *   address  → the ask. Fires `address_submit` so the share of address submits
- *              that reach a contact is measurable at all — it was not before,
- *              which is why the node's accept test could not be read.
+ *              that reach a contact is measurable at all.
  *   answer   → what the address BOUGHT: the place's verdict drawn as supply
  *              against pace, how fast homes go under contract, and the
  *              comparable closes the CMA engine already found. No dollar
- *              figure (Matt's ruling). This is the step that did not exist.
- *   contact  → email required, phone optional, name optional.
- *   when     → the timeframe, asked AFTER the answer (SITE-10). Choosing it
- *              submits: a question that is also the button is a question
- *              almost everyone answers, which is what the 80% accept needs.
+ *              figure (Matt's ruling).
+ *   when     → the timeframe, still asked AFTER the answer (SITE-10). One tap,
+ *              and the tap advances.
+ *   qualify  → contact LAST, and its button is the submit: email required,
+ *              phone optional, name optional.
+ *
+ * WHY CONTACT MOVED TO THE END (competitor walk 2026-09-28,
+ * /workspace/competitor-sell-paths-2026-09-28/SYNTHESIS.md). Every national
+ * funnel walked (Redfin /why-sell, Opendoor, Zillow) asks the low-effort
+ * questions first and makes the contact form the final submit; the Bend
+ * brokerages walked all open on a contact form. The one-tap timeframe used to
+ * come after the email, so the email step was the wall in the middle. Same
+ * component, same action, same payload, same field ids.
  *
  * The answer step is deliberately thin here: everything it draws lives in
  * SellAnswer.tsx against the SellAnswerData type, so the drawing can be
@@ -61,7 +68,13 @@ import {
 import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
-import { readAskSource, withAskSource, type AskSource } from '@/lib/ask-source'
+import {
+  markAskSource,
+  peekAskSource,
+  readAskSource,
+  withAskSource,
+  type AskSource,
+} from '@/lib/ask-source'
 import {
   submitSellerLPForm,
   type SellerLPTimeline,
@@ -213,9 +226,22 @@ type Step = 'address' | 'answer' | 'qualify' | 'when' | 'success'
 /** The sheet's own progression, so a visitor can see how many questions are left. */
 const SHEET_RAIL: { id: Step; label: string }[] = [
   { id: 'answer', label: 'Market read' },
-  { id: 'qualify', label: 'Where to send it' },
   { id: 'when', label: 'Timing' },
+  { id: 'qualify', label: 'Where to send it' },
 ]
+
+/**
+ * The CMA door. /sell?from=cma is the link a CMA email to an expired-listing
+ * owner opens (app/sell/page.tsx), and the submission carries it so the
+ * contact record says so. Read in the submit handler, never at render.
+ */
+function readSellEntry(): 'cma' | null {
+  try {
+    return new URLSearchParams(window.location.search).get('from') === 'cma' ? 'cma' : null
+  } catch {
+    return null
+  }
+}
 
 /**
  * The timeframe, as a SCALE rather than three identical boxes.
@@ -264,9 +290,26 @@ const NEAR_TERM: SellerLPTimeline = 'ready-now'
 type Props = {
   pagePath?: string
   formId?: string
+  /**
+   * The address submit's label. Defaults to "Value my home", which every
+   * other surface (homepage, /sell/valuation, the leaves) keeps.
+   */
+  submitLabel?: string
+  /**
+   * The /sell tracking hook. When set, the address submit carries
+   * `data-sell-cta` with this value, so SellClickTracker records the press to
+   * the contact (app/sell/_v3/SellClickTracker.tsx), and a submit with no
+   * other ask source stamped is stamped 'hero'.
+   */
+  ctaHook?: string
 }
 
-export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Props) {
+export function SellValueForm({
+  pagePath = '/sell',
+  formId = 'get-value',
+  submitLabel = 'Value my home',
+  ctaHook,
+}: Props) {
   const [step, setStep] = useState<Step>('address')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [address, setAddress] = useState('')
@@ -282,7 +325,6 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   const [isHot, setIsHot] = useState(false)
   const [bookLane, setBookLane] = useState(false)
   const [pin, setPin] = useState<SellPin | null>(null)
-  const [askOpen, setAskOpen] = useState(false)
 
   const addressFieldId = `${formId}-address`
 
@@ -342,6 +384,8 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     } catch {
       // tracking helper missing in some envs
     }
+    // /sell: the hero field is the ask when no other control stamped one.
+    if (ctaHook && !peekAskSource()) markAskSource('hero')
     // The sheet IS the working surface, so it opens on the submit and carries
     // its own reading state.
     setSheetOpen(true)
@@ -351,17 +395,18 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         // The answer is a bonus, never a gate: a visitor whose address we
         // cannot place still gets to ask for the written valuation.
         setAnswer(null)
-        setStep('qualify')
+        setStep('when')
         return
       }
       setAnswer(sellAnswerHasSubstance(result.answer) ? result.answer : null)
-      setStep(sellAnswerHasSubstance(result.answer) ? 'answer' : 'qualify')
+      setStep(sellAnswerHasSubstance(result.answer) ? 'answer' : 'when')
     })
   }
 
   function submit(chosen: SellerLPTimeline) {
     setError(null)
     const askSource: AskSource | null = readAskSource()
+    const entry = readSellEntry() // event-handler body, hydration-safe
     startTransition(async () => {
       const result = await submitSellerLPForm({
         smsConsent,
@@ -374,6 +419,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
         source: 'seller-lp',
         pagePath,
+        entry,
       })
       if (!result.success) {
         setError(result.error)
@@ -420,7 +466,14 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       setError('Please enter a valid email.')
       return
     }
-    setStep('when')
+    // Contact is the last question, so its button is the submit. The
+    // timeframe was chosen one step earlier; a visitor who reached this step
+    // without one (the UI never allows it) is sent back to it.
+    if (!timeline) {
+      setStep('when')
+      return
+    }
+    submit(timeline)
   }
 
   function closeSheet() {
@@ -437,10 +490,10 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     ? 'Reading the Bend record'
     : step === 'answer'
       ? 'What the record says about this street'
-      : step === 'qualify'
-        ? 'Where should we send it?'
-        : step === 'when'
-          ? 'When are you thinking of selling?'
+      : step === 'when'
+        ? 'When are you thinking of selling?'
+        : step === 'qualify'
+          ? 'Where should we send it?'
           : 'Your home value is on its way'
 
   const sheetBody = reading ? (
@@ -486,9 +539,10 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               disabled={pending}
               onClick={() => {
                 setTimeline(opt.value)
-                submit(opt.value)
+                setError(null)
+                setStep('qualify')
               }}
-              className={cn('sell-when__opt', timeline === opt.value && 'sell-when__opt--picked')}
+              className={cn('sell-when__opt h-auto whitespace-normal', timeline === opt.value && 'sell-when__opt--picked')}
               style={{ ['--sell-when-horizon' as string]: String(opt.horizon) }}
             >
               <span className="sell-when__mark" aria-hidden="true" />
@@ -499,22 +553,17 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
           </li>
         ))}
       </ol>
-      {pending ? <p className="mt-3 text-sm text-muted-foreground">Sending</p> : null}
-      {error ? (
-        <p className="mt-3 text-sm font-medium text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
       <Button
         type="button"
         variant="link"
         onClick={() => {
           setError(null)
-          setStep('qualify')
+          if (answer) setStep('answer')
+          else closeSheet()
         }}
         className="mt-4 h-auto justify-start p-0"
       >
-        Back
+        {answer ? 'Back to the market read' : 'Edit address'}
       </Button>
     </div>
   ) : step === 'qualify' ? (
@@ -562,18 +611,23 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
 
       <Button type="submit" disabled={pending} className="mt-6 min-h-11 w-full text-base">
-        Continue
+        {pending ? 'Sending' : 'Send me the written valuation'}
       </Button>
+      {error && emailLooksValid ? (
+        <p className="mt-3 text-sm font-medium text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
       <Button
         type="button"
         variant="link"
         onClick={() => {
           setError(null)
-          setStep(answer ? 'answer' : 'address')
+          setStep('when')
         }}
         className="mt-2 h-auto justify-start p-0"
       >
-        {answer ? 'Back to the market read' : 'Edit address'}
+        Back to timing
       </Button>
     </form>
   ) : answer ? (
@@ -585,10 +639,10 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       </p>
       <Button
         type="button"
-        onClick={() => setStep('qualify')}
+        onClick={() => setStep('when')}
         className="mt-4 min-h-11 w-full text-base"
       >
-        Send me the written valuation
+        Next: your timing
       </Button>
     </div>
   ) : null
@@ -663,24 +717,12 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         <ExpandingArrowButton
           type="submit"
           disabled={pending}
-          active={askOpen}
           className="sell-stage-submit mt-4 justify-self-start"
+          labelClassName="sell-stage-submit__label"
+          {...(ctaHook ? { 'data-sell-cta': ctaHook } : {})}
         >
-          {pending ? 'Reading the market' : 'Value my home'}
+          {pending ? 'Reading the market' : submitLabel}
         </ExpandingArrowButton>
-        {/* Shot trigger: opacity-0 (Playwright-visible) so ask-open can force
-            the expanding-arrow trail on 375, where hover media is false. */}
-        <Button
-          type="button"
-          variant="ghost"
-          data-taste="ask-open"
-          aria-hidden
-          tabIndex={-1}
-          className="h-11 w-11 p-0 opacity-0"
-          onClick={() => setAskOpen(true)}
-        >
-          Expand ask
-        </Button>
       </form>
 
       {/* shadcn:sheet — the real one. Overlay over the photograph, focus trap,

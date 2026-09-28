@@ -74,6 +74,16 @@ export type SellerLPSubmission = {
    * one and keeps behaving exactly as before.
    */
   askSource?: string | null
+  /**
+   * WHICH DOOR the visitor came through, when it is not the page itself.
+   * 'cma' = the /sell?from=cma entry a CMA email to an expired-listing owner
+   * links to (app/sell/page.tsx). It rides into the CRM sourceUrl as
+   * from=cma, into custom.sellEntry, and into the lead-origin note, so the
+   * contact record says the seller came back through the CMA. Closed set;
+   * anything else is ignored. Optional and additive: every other caller
+   * behaves exactly as before.
+   */
+  entry?: 'cma' | null
 }
 
 /** Only accept a simple site-relative path for sourceUrl attribution. */
@@ -237,6 +247,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     )
       ? String(submission.askSource)
       : null
+    // The CMA door (/sell?from=cma). Closed set: only 'cma' is kept.
+    let sellEntry: 'cma' | null = submission.entry === 'cma' ? 'cma' : null
 
     // ─── Inbound attribution UTMs → CRM sourceUrl ──────────────────────────
     // CRM's /v1/people API exposes sourceUrl but NOT utmContent/utmCampaign
@@ -267,11 +279,20 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
           const v = refUrl.searchParams.get(k)
           if (v) passthrough.set(k, v)
         }
+        // The CMA door survives even when the client flag did not (a stale
+        // bundle): the page URL the action was posted from still says it.
+        if (refUrl.searchParams.get('from') === 'cma' && refUrl.pathname === leadPagePath) {
+          sellEntry = 'cma'
+        }
+        if (sellEntry) passthrough.set('from', sellEntry)
         const qs = passthrough.toString()
         if (qs) leadSourceUrl = `${siteUrl}${leadPagePath}?${qs}`
       }
     } catch {
       // malformed referer — fall back to the bare LP url
+    }
+    if (sellEntry && !leadSourceUrl.includes('from=')) {
+      leadSourceUrl = `${leadSourceUrl}${leadSourceUrl.includes('?') ? '&' : '?'}from=${sellEntry}`
     }
 
     // ─── Resolve who this submission belongs to ────────────────────────────
@@ -488,6 +509,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         sellerPropertyAddress: parsed.full,
         ...(reasonLabel ? { sellerReason: reasonLabel } : {}),
         ...(askSource ? { askSource } : {}),
+        ...(sellEntry ? { sellEntry } : {}),
       }
 
       // 3. Lead-origin note → crm_timeline. Tells the broker WHY this lead came
@@ -506,7 +528,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         // to an LP path, so every /sell lead reached the broker's origin note
         // reading "Page: /lp/seller-home-value" — verified 2026-09-08 on a live
         // /sell submit. The broker acts on that line, so it has to be true.
-        landingPage: leadPagePath,
+        landingPage: sellEntry ? `${leadPagePath}?from=${sellEntry}` : leadPagePath,
         utmSource: originUtmSource,
         utmMedium: originUtmMedium,
         utmCampaign: originUtmCampaign,
@@ -522,6 +544,9 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         assignedAgent: assignment.broker,
         assignmentReason:
           assignment.userId === CRM_DESK_MATT ? 'default routing to Matt' : 'agent attribution cookie',
+        ...(sellEntry === 'cma'
+          ? { extra: 'Came back through the CMA email (/sell?from=cma), listing ended elsewhere' }
+          : {}),
       }
 
       await enrichNativeLead({

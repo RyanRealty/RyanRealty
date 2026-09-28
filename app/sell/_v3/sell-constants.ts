@@ -211,31 +211,44 @@ export const VALUATION_FAQ_ITEMS = [
   },
 ] as const
 
-export const SELL_REVIEW_AUTHORS = [
-  'Audra Hedberg',
-  'Douglas Grant',
-  'Charise Millard',
-  'C Jenkins',
-  'Helen Luna Fess',
-  'SwankHQ',
-] as const
-
-export const BEND_MARKET_TRACE_SCOPE =
-  'live MLS through Oregon Data Share, detached single-family homes whose MLS City is Bend, not the city-limits polygon.'
-
-/**
- * The section-0 trace for the two figures the first viewport prints beside the
- * ask (closed count, median sale). SITE-111: those figures used to carry no
- * source line until the Instrument three sections down, so the fold published
- * numbers a reader could not check without scrolling. A figure and its trace
- * belong in the same viewport.
- */
-export const SELL_FOLD_TRACE =
-  'Regional MLS through Oregon Data Share, read through the Market Truth metric layer: detached single-family homes whose MLS City is Bend, trailing 12 months of closed sales.'
-
 export const TRACK_RECORD_TRACE =
   // The WINDOW is stated (2026-08-27 audit: "16 homes sold" carried a filter
   // trace and no window — career? YTD? — leaving the reader to guess). The
   // read has no date filter: it is every closed Ryan Realty listing since the
   // brokerage opened in June 2023.
   'Central Oregon MLS, every home listed by Ryan Realty and closed since the brokerage opened in June 2023. StandardStatus Closed, ClosePrice.'
+
+/**
+ * /sell's own four questions (Matt's brief, 2026-09-28: "FAQ of about 4"). The
+ * FAQPage JSON-LD on /sell is built from this same array, so the visible
+ * answers and the structured data cannot drift. FAQ_ITEMS stays for the
+ * expired-listing and for-sale-by-owner pages that still carry it.
+ */
+export const SELL_FAQ_ITEMS = [
+  {
+    question: 'Is there a contract to talk with you?',
+    answer:
+      'No. Talking with us and getting the written valuation are free, and there is no listing agreement to sign for either. If you decide to list with us, that is a separate agreement we go through together.',
+  },
+  FAQ_ITEMS[1],
+  FAQ_ITEMS[2],
+  {
+    question: 'My listing just ended with another brokerage. Can we talk?',
+    answer:
+      'Yes, once that listing agreement has ended. We look at what the price, the photos and the showings did, tell you plainly what we would change, and you decide. From a signed agreement to live on the MLS is typically 5 to 7 business days.',
+  },
+] as const
+
+/** The ONE primary action on /sell, on the hero submit and the final ask. */
+export const SELL_PRIMARY_LABEL = 'Talk to us about your home'
+
+/** /sell default hero. The H1 must open "Sell your home in Central Oregon" (ci:seo-shell). */
+export const SELL_HERO_SUB =
+  'Tell us about your home and we will show you what the closed sales around it say, and how we would price and launch it. No contract to talk, no pressure.'
+
+/** /sell?from=cma hero (Matt, 2026-09-28). ONLY the hero copy changes. */
+export const SELL_CMA_EYEBROW = 'For homeowners whose listing ended'
+export const SELL_CMA_HEADLINE = "Your listing ended. Let's talk about what's next."
+export const SELL_CMA_SUB =
+  "We'll look at the price, the photos and the showings, and tell you plainly what we'd change. No contract, no pressure."
+
