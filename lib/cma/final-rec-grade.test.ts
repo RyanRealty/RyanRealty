@@ -3,13 +3,42 @@
  * not the list from before the active nudge.
  */
 import { describe, expect, it } from 'vitest'
-import { replaceGradedChecks } from '@/lib/cma/final-rec-grade'
+import { rebaseAuditToFinalRec, rebaseRecommendedQuotes, replaceGradedChecks } from '@/lib/cma/final-rec-grade'
 import { buildNetSheet } from '@/lib/cma/expired-audit'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import type { CmaPricing, CmaSellerNet } from '@/lib/cma/types'
 import type { ContractCheck } from '@/lib/cma/contract'
 
 describe('final recommendation is what the checks grade', () => {
+  it('rewrites a recommended quote and leaves the band alone', () => {
+    const text =
+      'Audit verdict: pass. Recommended $564,000 sits in the cluster. The sales support $536,000 to $564,000. Also recommended $564k.'
+    const out = rebaseRecommendedQuotes(text, 564_000, 555_000)
+    expect(out).toContain('Recommended $555,000')
+    expect(out).toContain('recommended $555,000')
+    expect(out).not.toMatch(/[Rr]ecommended(?: list)? \$564/)
+    expect(out).toContain('$536,000 to $564,000')
+  })
+
+  it('points the stored audit summary at the final list', () => {
+    const audit = rebaseAuditToFinalRec(
+      {
+        verdict: 'pass',
+        llmVerdict: 'pass',
+        summary: 'The recommended $685,000 is inside the sales.',
+        findings: [{ severity: 'minor', category: 'price-opinion', claim: 'Recommended list $685k is fine.', evidence: 'cluster', compListingKey: null }],
+        costUsd: 0,
+        model: 'test',
+        usedLlm: true,
+      },
+      685_000,
+      664_000,
+    )
+    expect(audit.summary).toContain('$664,000')
+    expect(audit.summary).not.toContain('$685,000')
+    expect(audit.findings[0]?.claim).toContain('$664,000')
+  })
+
   it('replaces a check that cited the pre-nudge list', () => {
     const prior: ContractCheck[] = [
       {

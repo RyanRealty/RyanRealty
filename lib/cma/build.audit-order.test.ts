@@ -18,4 +18,13 @@ describe('CMA first-build audit order', () => {
     expect(honest).toBeLessThan(audit)
     expect(cap).toBeLessThan(audit)
   })
+
+  it('grades the audit on the list after the nudge and the rounding', () => {
+    const finish = src.lastIndexOf('finishRecommendedAfterActives(')
+    const refresh = src.indexOf('rebaseAuditToFinalRec(audit')
+    const graded = src.lastIndexOf('evaluateAccuracyContract({ ...accuracyContractInput, pricing, audit })')
+    expect(finish).toBeGreaterThan(0)
+    expect(refresh).toBeGreaterThan(finish)
+    expect(graded).toBeGreaterThan(refresh)
+  })
 })

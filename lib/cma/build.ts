@@ -107,7 +107,7 @@ import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { bandAroundList, bandRowToRival, buildBandRivalSet, emptyCompetitionSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
-import { replaceGradedChecks } from '@/lib/cma/final-rec-grade'
+import { rebaseAuditToFinalRec, replaceGradedChecks } from '@/lib/cma/final-rec-grade'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -879,6 +879,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       )
     }
 
+    // The list the audit was shown. A later nudge, clamp, or rounding pass
+    // re-audits or rewrites the quote so the stored grade names the final list.
+    const auditedRec = pricing.recommended
+
     // 4.5. Accuracy contract — the mechanical enforcement of the process.
     // Hard violations kill the build; review violations force needs_review so
     // an unvetted or non-converged CMA can never present as clean.
@@ -1378,7 +1382,21 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       })
       pricing = syncRangeRuleToHeroBand(pricing)
       // The accuracy contract and the net sheet were written on the pre-nudge
-      // list. Grade and print the final recommendation.
+      // list. Grade and print the final recommendation. The audit quote has
+      // to name that same list: re-run when the key is up, otherwise rewrite
+      // the recommended dollar the first pass recorded.
+      if (audit && Math.round(auditedRec) !== Math.round(pricing.recommended)) {
+        const again = await auditCma({
+          subject,
+          comps: adjusted,
+          excluded: excludedForAudit(),
+          pricing,
+          judgment,
+          market,
+          site,
+        })
+        audit = again ?? rebaseAuditToFinalRec(audit, auditedRec, pricing.recommended)
+      }
       if (expiredAudit) {
         expiredAudit = {
           ...expiredAudit,
@@ -1387,7 +1405,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           }),
         }
       }
-      const graded = evaluateAccuracyContract({ ...accuracyContractInput, pricing })
+      const graded = evaluateAccuracyContract({ ...accuracyContractInput, pricing, audit })
       const replaced = replaceGradedChecks({
         prior: contract.checks,
         graded: graded.checks,
@@ -1415,11 +1433,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       if (graded.forceReview) {
         pricing.needsReview = true
       }
+      const finalAuditVerdict = audit
+        ? audit.verdict === 'pass'
+          ? ('pass' as const)
+          : audit.verdict === 'fail'
+            ? ('fail' as const)
+            : ('review' as const)
+        : ('did-not-run' as const)
+      const heldConfidence = confidenceForVerdict(pricing.confidence, finalAuditVerdict)
+      if (heldConfidence.confidence !== pricing.confidence) {
+        pricing.confidence = heldConfidence.confidence
+        if (heldConfidence.reason) {
+          pricing.confidenceReason = [pricing.confidenceReason, heldConfidence.reason].filter(Boolean).join(' ')
+        }
+      }
       pricing.review = buildPricingReview({
         needsReview: pricing.needsReview,
         reviewReason: pricing.reviewReason,
         clamp: pricing.clamp ?? null,
-        auditVerdict,
+        auditVerdict: finalAuditVerdict,
       })
     }
 
