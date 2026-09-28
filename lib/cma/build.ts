@@ -28,7 +28,7 @@ import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
-import { JUDGMENT_PRUNE_FLOOR, pricedSetAfterJudgment } from '@/lib/cma/judgment-prune'
+import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import {
   adjustCmaCompAlongMarket,
@@ -48,7 +48,7 @@ import {
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
-import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
+import { attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary } from '@/lib/cma/build-summary'
@@ -60,7 +60,6 @@ import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
 import { resolveCmaSiteData } from '@/lib/cma/county'
-import { resolveCmaParcels } from '@/lib/cma/parcel-shapes'
 import { buildCmaExtras } from '@/lib/cma/extras'
 import { computeEquityPosition } from '@/lib/cma/equity'
 import { buildListingPlan } from '@/lib/cma/listing-plan'
@@ -70,7 +69,6 @@ import { getCmaSubdivisionHistory } from '@/lib/data/cma/builderReads'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { evaluateLetterConsistencyContract } from '@/lib/cma/letter-consistency'
-import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
 import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
@@ -98,16 +96,12 @@ import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
-import { buildCompSearch } from '@/lib/pricing/comp-search'
-import { buildCompArea, compAreaContains, resolveCompetitionArea, type CompArea } from '@/lib/pricing/comp-area'
-import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
-import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
-import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
+import { compAreaContains, type CompArea } from '@/lib/pricing/comp-area'
+import { buildExpiredPeerSet, keptCompMedianPpsf } from '@/lib/cma/market-status'
 import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
-import { bandAroundList, bandRowToRival, buildBandRivalSet, emptyCompetitionSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
-import { rebaseAuditToFinalRec, replaceGradedChecks } from '@/lib/cma/final-rec-grade'
+import { assembleCompetition } from '@/lib/cma/assemble-competition'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -420,24 +414,51 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // does §0-safe math on whatever the query returns; this vets which comps
     // are genuinely comparable and drops the different-tier sales before the
     // math runs. Falls back to the full set + the dispersion guard when the
-    // key is absent or the call fails — never blocks a build.
+    // key is absent or the call fails. A different product still blocks:
+    // pricing that set is a comp shortage, not a number.
     const judgment = await judgeComps(subject, selection.comps, market)
     const isCurated = curatedKeys.length > 0
     let compsForPricing = selection.comps
-    if (judgment && !isCurated) {
-      const keep = new Set(judgment.keptKeys)
-      const vetted = selection.comps.filter((c) => keep.has(c.listingKey))
-      // Never prune below the document floor (≥5). MIN_COMPS (3) is the
-      // pricing-unit floor so a starved ladder can still print; Grok must not
-      // thin a filled ladder below Matt's ≥5 (Falcon 15991 kept 3 of 8).
-      compsForPricing = pricedSetAfterJudgment(selection.comps, vetted)
-      // The judgment step must appear in the rendered verification trace —
-      // otherwise the trace says "N comps" while the report prices on fewer.
-      selection.trace.push(
-        compsForPricing.length === vetted.length
-          ? `Comparability judgment (${judgment.model}): kept ${vetted.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. Priced on the ${vetted.length}-comp vetted set.`
-          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${JUDGMENT_PRUNE_FLOOR}-comp floor, so the full ${selection.comps.length}-comp set was priced instead.`,
-      )
+    if (!isCurated) {
+      const keep = new Set(judgment?.keptKeys ?? [])
+      const vetted = judgment ? selection.comps.filter((c) => keep.has(c.listingKey)) : selection.comps
+      // A price-tier keep below the document floor still prices the
+      // product-matched ladder (Falcon). A different product does not come
+      // back, even when the judge kept fewer than that floor. Zero
+      // product-matched sales is the existing comp shortage, not a price.
+      const gated = pricingCompsAfterJudgment({
+        selected: selection.comps,
+        vetted,
+        verdicts: judgment?.verdicts ?? [],
+        subject: {
+          propertySubType: subject.propertySubType,
+          yearBuilt: subject.yearBuilt,
+          newConstructionYn: subject.newConstructionYn,
+        },
+        minComps: MIN_COMPS,
+        exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
+      })
+      if (gated.shortage) {
+        const err = `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`
+        await recordBuildFailure(slug, err, { stage: 'comps', docType, compSelection: selection.diagnostics })
+        return { ok: false, error: err, slug }
+      }
+      compsForPricing = gated.comps
+      if (judgment) {
+        const excluded = judgment.verdicts.filter((v) => v.tier === 'exclude').length
+        const weak = judgment.verdicts.filter((v) => v.tier === 'weak').length
+        selection.trace.push(
+          `Comparability judgment (${judgment.model}): kept ${judgment.keptKeys.length} of ${selection.comps.length} candidates, excluded ${excluded} as non-comparable, down-weighted ${weak}. ${gated.trace}`,
+        )
+      } else if (gated.droppedProduct > 0) {
+        selection.trace.push(
+          `Comparability judgment unavailable for this build. ${gated.trace} Broker review is required.`,
+        )
+      } else {
+        selection.trace.push(
+          'Comparability judgment unavailable for this build. Priced on the full selection with the dispersion guard as backstop, and broker review is required.',
+        )
+      }
     } else if (judgment && isCurated) {
       // Broker-curated set: the broker already vetted these, so every curated
       // comp is kept. The judge still narrates and its `weak` verdicts still
@@ -689,6 +710,42 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       })
     }
 
+    // Sitting actives can still move the list. The graded audit has to see
+    // the list after that nudge, the band clamp, and the thousand-dollar
+    // round. A repair that re-prices runs this again before its re-audit,
+    // because the comp set changed. That re-audit is the stored grade. There
+    // is no second call whose only job is to rewrite a dollar, and no regex
+    // rewrite of the summary.
+    const settleRecommended = async (
+      comps: typeof adjusted,
+      current: NonNullable<typeof pricing>,
+    ) => {
+      const competition = await assembleCompetition({
+        subject,
+        comps,
+        verdicts: judgment?.verdicts ?? [],
+        diagnostics: selection.diagnostics,
+        recommended: current.recommended,
+        subjectZone: site.zone,
+        generatedAtIso,
+      })
+      const finished = syncRangeRuleToHeroBand(
+        finishRecommendedAfterActives(current, {
+          actives: (competition.bandRivals?.rivals ?? []).map((r) => ({
+            status: r.status,
+            listPrice: r.listPrice,
+            daysOnMarket: r.daysOnMarket,
+          })),
+          pocketClosedSupport: pocketClosedSupportPrice(comps, subject.subdivision),
+          ask: current.failedAsk ?? (lastCycleFailed ? subject.lastListPrice : null),
+        }),
+      )
+      return { competition, pricing: finished }
+    }
+    let settled = await settleRecommended(adjusted, pricing)
+    let competition = settled.competition
+    pricing = settled.pricing
+
     // 4.4. Adversarial accuracy audit — an independent second pass whose only
     // job is to refute the finished analysis (Matt directive 2026-07-11:
     // every CMA must be adversarially audited). Builder and auditor share no
@@ -762,6 +819,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           pricing.notes.push(
             `The comparability narrative reflects the initial review. The ${flagged.length} comp(s) it references were subsequently removed on the independent audit's findings, and the pricing recomputed on the remaining set.`,
           )
+          settled = await settleRecommended(adjusted, pricing)
+          competition = settled.competition
+          pricing = settled.pricing
           audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
         }
       }
@@ -835,6 +895,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
               selection.trace.push(
                 `Adversarial audit narrative repair: ${proseFindings.length} finding(s) about the prose were returned to the comparability model, the corrected narrative passed the deterministic integrity check, and the analysis was re-audited on it. No comp and no price changed.`,
               )
+              settled = await settleRecommended(adjusted, pricing)
+              competition = settled.competition
+              pricing = settled.pricing
               audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
               narrativeRepair = { model: repair.model, costUsd: repair.costUsd, accepted: true }
             }
@@ -879,14 +942,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       )
     }
 
-    // The list the audit was shown. A later nudge, clamp, or rounding pass
-    // re-audits or rewrites the quote so the stored grade names the final list.
-    const auditedRec = pricing.recommended
-
     // 4.5. Accuracy contract — the mechanical enforcement of the process.
     // Hard violations kill the build; review violations force needs_review so
     // an unvetted or non-converged CMA can never present as clean.
-    // Graded again after finishRecommendedAfterActives, on the final list.
+    // Graded once, on the list the audit just saw.
     const accuracyContractInput = {
       comps: adjusted,
       pricing,
@@ -1144,109 +1203,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // adjustment — resolved by the SAME function the seller-net caption under
     // the grid reads, so the line and the caption cannot disagree. Null only
     // when the sale recorded nothing at all.
-    const renderComps = attachCompConcessions(applyCompVerdicts(adjusted, judgment?.verdicts ?? []))
-
-    // The recorded lot under the subject and under each kept sale. Resolved
-    // from the SAME array the document renders, so a tile numbered 3 is the
-    // comp numbered 3 in the grid. Fail-open: no parcel simply means the
-    // document carries no land section.
-    const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
-
-    // THE SEARCH, COUNTED (round four, class E). `compTrace` is prose and
-    // `tiersUsed` is a list of names, so the story a renderer wrote from them
-    // could — and on cma-2465-7th-redmond-97756 did — claim a shortage inside
-    // a subdivision that produced three of the five sales printed beneath it.
-    // This is the same ladder as counts: what each rung returned, how many of
-    // the PRINTED sales came from it, and how those sales fall by subdivision,
-    // with one sentence generated from those numbers.
-    const compSearch = buildCompSearch({
-      subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
-      ladder: selection.diagnostics.ladder.map((t) => ({
-        tier: t.tier,
-        ran: t.ran,
-        monthsBack: t.months_back,
-        compsAdded: t.comps_added,
-      })),
-      keptComps: renderComps.map((c) => ({
-        subdivision: c.subdivision,
-        selectionTier: c.selectionTier,
-      })),
-      // Delta 4: on acreage the story names the splits that set sales aside.
-      rural:
-        selection.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1
-          ? { subjectZone: site.zone, counts: selection.diagnostics.excluded_totals }
-          : null,
-    })
-
-    // R2h. ONE AREA, then the two sets that must come out of it (Matt
-    // 2026-09-08: "we want to use the same area that we searched and where we
-    // actually retrieved comps ... Same thing with the competition").
-    //
-    // The unsold peers and the competition used to be city-wide reads, so one
-    // document carried three different maps. `compArea` is derived from the
-    // counted ladder above and the sales this document prints; both reads
-    // below are scoped to it and to nothing wider.
-    const compArea = buildCompArea({
-      subject: {
-        latitude: subject.latitude,
-        longitude: subject.longitude,
-        subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
-        city: subject.city,
-      },
-      rungs: (compSearch?.rungs ?? []).map((r) => ({ key: r.key, kept: r.kept, added: r.added })),
-      keptComps: renderComps.map((c) => ({
-        subdivision: c.subdivision,
-        selectionTier: c.selectionTier,
-        latitude: c.latitude,
-        longitude: c.longitude,
-      })),
-    })
-    // Pocket, then a radius. Bend stops at 5 miles. Never the whole city.
-    // The closed-comp area can fall through to "Bend"; competition must not.
-    const competitionRings = compArea
-      ? resolveCompetitionArea({
-          compArea,
-          subject: {
-            latitude: subject.latitude,
-            longitude: subject.longitude,
-            city: subject.city,
-          },
-          keptComps: renderComps.map((c) => ({
-            subdivision: c.subdivision,
-            selectionTier: c.selectionTier,
-            latitude: c.latitude,
-            longitude: c.longitude,
-          })),
-        }).filter((r) => r.kind !== 'city')
-      : []
-    const widestCompetitionRing = competitionRings.length > 0 ? competitionRings[competitionRings.length - 1]! : null
-
-    // The peer band is the market-area band (0.55x-1.85x of the anchor) the
-    // status grid already uses; the competition band is the +/-10% live band
-    // the competition chapter already uses. Same two definitions, read inside
-    // the area instead of inside the city.
-    const peerBand = marketAreaPriceBand(pricing.recommended || subject.lastListPrice || 0)
-    const rivalBand = bandAroundList(pricing.recommended)
-    const [unsoldRead, widestAreaInventory] = await Promise.all([
-      widestCompetitionRing && peerBand
-        ? getCmaAreaUnsoldCycles({
-            area: widestCompetitionRing,
-            city: subject.city,
-            propertySubType: subject.propertySubType,
-            priceLo: peerBand.lo,
-            priceHi: peerBand.hi,
-          }).catch(() => null)
-        : Promise.resolve(null),
-      widestCompetitionRing && rivalBand
-        ? getCmaAreaBandInventory({
-            area: widestCompetitionRing,
-            city: subject.city,
-            lo: rivalBand.lo,
-            hi: rivalBand.hi,
-            propertySubType: subject.propertySubType,
-          }).catch(() => null)
-        : Promise.resolve(null),
-    ])
+    // Loaded before the graded audit, on the pre-nudge list, so the nudge and
+    // the letter read the same rivals. A repair that re-prices replaces this.
+    const {
+      renderComps,
+      parcels,
+      compSearch,
+      compArea,
+      competitionRings,
+      peerBand,
+      rivalBand,
+      unsoldRead,
+      widestAreaInventory,
+      competitionRing,
+      competitionArea,
+      bandRivals,
+    } = competition
 
     // Extras + listing plan AFTER CompArea. When CompArea is set, pass the
     // same ±10% area inventory the competition chapter uses — never city-wide
@@ -1324,136 +1296,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           maxWindowMonths: compsLookbackMonths,
         })
       : null
-
-    // Walk the ring ladder over the widest read: stop at the first ring
-    // holding three active-or-pending homes, or the widest ring itself.
-    const competitionRing =
-      widestAreaInventory && competitionRings.length > 0
-        ? pickCompetitionRing({
-            rings: competitionRings,
-            activeRows: widestAreaInventory.activeRows,
-            pendingRows: widestAreaInventory.pendingRows,
-          })
-        : null
-    const competitionArea = competitionRing?.area ?? widestCompetitionRing
-
-    let bandRivals =
-      competitionRing && widestAreaInventory
-        ? buildBandRivalSet({
-            area: competitionRing.area,
-            lo: widestAreaInventory.lo,
-            hi: widestAreaInventory.hi,
-            activeCount: competitionRing.activeCount,
-            pendingCount: competitionRing.pendingCount,
-            rivals: [
-              ...competitionRing.activeRows.map((r) => bandRowToRival(r, 'Active')),
-              ...competitionRing.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-            ].filter((r): r is NonNullable<typeof r> => r != null),
-            subject: {
-              latitude: subject.latitude,
-              longitude: subject.longitude,
-              beds: subject.beds,
-              sqft: subject.sqft,
-            },
-            asOfIso: generatedAtIso,
-            widenedFrom: competitionRing.widenedFrom,
-            ringsTried: competitionRing.ringsTried,
-          })
-        : null
-    if (!bandRivals && rivalBand && compArea) {
-      bandRivals = emptyCompetitionSet({
-        rings: competitionRings,
-        compArea,
-        lo: rivalBand.lo,
-        hi: rivalBand.hi,
-      })
-    }
-
-    // Matt 2026-09-17: high-DOM actives may pull Recommended down inside the
-    // band, then the failed-ask sentence is rewritten from that final rec.
-    if (pricing) {
-      pricing = finishRecommendedAfterActives(pricing, {
-        actives: (bandRivals?.rivals ?? []).map((r) => ({
-          status: r.status,
-          listPrice: r.listPrice,
-          daysOnMarket: r.daysOnMarket,
-        })),
-        pocketClosedSupport: pocketClosedSupportPrice(adjusted, subject.subdivision),
-      })
-      pricing = syncRangeRuleToHeroBand(pricing)
-      // The accuracy contract and the net sheet were written on the pre-nudge
-      // list. Grade and print the final recommendation. The audit quote has
-      // to name that same list: re-run when the key is up, otherwise rewrite
-      // the recommended dollar the first pass recorded.
-      if (audit && Math.round(auditedRec) !== Math.round(pricing.recommended)) {
-        const again = await auditCma({
-          subject,
-          comps: adjusted,
-          excluded: excludedForAudit(),
-          pricing,
-          judgment,
-          market,
-          site,
-        })
-        audit = again ?? rebaseAuditToFinalRec(audit, auditedRec, pricing.recommended)
-      }
-      if (expiredAudit) {
-        expiredAudit = {
-          ...expiredAudit,
-          netSheet: buildNetSheet(pricing, {
-            expectedConcessions: pricing.sellerNet?.expectedConcessions ?? null,
-          }),
-        }
-      }
-      const graded = evaluateAccuracyContract({ ...accuracyContractInput, pricing, audit })
-      const replaced = replaceGradedChecks({
-        prior: contract.checks,
-        graded: graded.checks,
-        reviewReason: pricing.reviewReason,
-      })
-      contract.checks = replaced.checks
-      contract.pass = graded.pass
-      contract.forceReview = graded.forceReview
-      pricing.reviewReason = replaced.reviewReason
-      if (!graded.pass) {
-        const failed = graded.checks
-          .filter((c) => c.severity === 'hard' && !c.pass)
-          .map((c) => `${c.id}: ${c.detail}`)
-          .join(' | ')
-        const err = `Accuracy contract failed: ${failed}`
-        await recordBuildFailure(slug, err, {
-          stage: 'contract',
-          docType,
-          compSelection: selection.diagnostics,
-          pricing,
-          contractChecks: graded.checks,
-        })
-        return { ok: false, error: err, slug }
-      }
-      if (graded.forceReview) {
-        pricing.needsReview = true
-      }
-      const finalAuditVerdict = audit
-        ? audit.verdict === 'pass'
-          ? ('pass' as const)
-          : audit.verdict === 'fail'
-            ? ('fail' as const)
-            : ('review' as const)
-        : ('did-not-run' as const)
-      const heldConfidence = confidenceForVerdict(pricing.confidence, finalAuditVerdict)
-      if (heldConfidence.confidence !== pricing.confidence) {
-        pricing.confidence = heldConfidence.confidence
-        if (heldConfidence.reason) {
-          pricing.confidenceReason = [pricing.confidenceReason, heldConfidence.reason].filter(Boolean).join(' ')
-        }
-      }
-      pricing.review = buildPricingReview({
-        needsReview: pricing.needsReview,
-        reviewReason: pricing.reviewReason,
-        clamp: pricing.clamp ?? null,
-        auditVerdict: finalAuditVerdict,
-      })
-    }
 
     const listingMarket = await loadListingWindowMarket({
       city: subject.city,
