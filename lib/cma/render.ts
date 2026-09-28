@@ -175,6 +175,23 @@ function takeTopElement(html: string): { html: string; rest: string } | null {
   return { html: src.slice(0, i), rest: src.slice(i) }
 }
 
+/**
+ * A two-chart spread: keep the heading with the FIRST chart only.
+ * The second chart stays outside, so the pair can split between charts
+ * without slicing either one and without gluing both to the heading.
+ */
+function peelFirstSpreadCol(spreadHtml: string): { first: string; rest: string } | null {
+  const openTag = spreadHtml.match(/^<div\b[^>]*>/i)
+  if (!openTag) return null
+  const closeAt = spreadHtml.lastIndexOf('</div>')
+  if (closeAt < openTag[0].length) return null
+  const inner = spreadHtml.slice(openTag[0].length, closeAt)
+  const first = takeTopElement(inner)
+  if (!first || !/\bclass="[^"]*\bspread-col\b/.test(first.html)) return null
+  if (!first.rest.trim()) return null
+  return { first: first.html, rest: `${openTag[0]}${first.rest}</div>` }
+}
+
 /** Heading plus the first small block, so a section never opens alone. */
 export function splitPageOpening(body: string): { open: string; rest: string } {
   const src = body.trim()
@@ -183,6 +200,10 @@ export function splitPageOpening(body: string): { open: string; rest: string } {
   const after = src.slice(heading[0].length)
   const next = takeTopElement(after)
   if (!next) return { open: heading[0], rest: after }
+  if (/^<div\b[^>]*\bclass="[^"]*\bspread\b/.test(next.html)) {
+    const peeled = peelFirstSpreadCol(next.html)
+    if (peeled) return { open: heading[0] + peeled.first, rest: peeled.rest + next.rest }
+  }
   if (LARGE_OPENING.test(next.html) || /^<table\b/i.test(next.html)) {
     return { open: heading[0], rest: after }
   }

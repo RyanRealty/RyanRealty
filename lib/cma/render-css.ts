@@ -111,6 +111,14 @@ export function cmaStylesheet(siteUrl: string): string {
     break-after: avoid;
     page-break-after: avoid;
   }
+  /* First chart only. Gluing the second chart as well makes the opening
+     one sheet tall, and a short table tail is left on the page before it. */
+  .page-open:has(.spread-col) {
+    break-inside: auto;
+    page-break-inside: auto;
+    break-after: auto;
+    page-break-after: auto;
+  }
   .pg-header {
     display: flex;
     justify-content: space-between;

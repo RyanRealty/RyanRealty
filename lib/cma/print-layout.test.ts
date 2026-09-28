@@ -247,15 +247,24 @@ describe('print CMA layout', () => {
     expect(large.rest).toContain('comp-matrix-wrap')
   })
 
-  it('does not keep the priced-right spread inside the unbreakable opening', () => {
+  it('keeps the heading with the first priced-right chart and lets the second split off', () => {
     const spread = splitPageOpening(
+      '<h2 class="section">What price and time look like in Bend</h2><div class="spread"><div class="spread-col"><p>curve</p></div><div class="spread-col"><p>bars</p></div></div>',
+    )
+    expect(spread.open).toContain('What price and time look like in Bend')
+    expect(spread.open).toContain('curve')
+    expect(spread.open).not.toContain('bars')
+    expect(spread.rest).toContain('class="spread"')
+    expect(spread.rest).toContain('bars')
+    const alone = splitPageOpening(
       '<h2 class="section">What price and time look like in Bend</h2><div class="spread"><div class="spread-col"><p>curve</p></div></div>',
     )
-    expect(spread.open).toBe('<h2 class="section">What price and time look like in Bend</h2>')
-    expect(spread.rest).toContain('class="spread"')
+    expect(alone.open).toBe('<h2 class="section">What price and time look like in Bend</h2>')
+    expect(alone.rest).toContain('class="spread"')
     const css = cmaStylesheet('https://ryan-realty.com')
-    expect(css).toMatch(/\.spread \{[^}]*break-inside:\s*auto/)
-    expect(css).toMatch(/\.spread-col \{[^}]*break-inside:\s*auto/)
+    expect(css).toMatch(/\.spread,\s*\.spread-col\s*\{[^}]*break-inside:\s*auto !important/)
+    expect(css).toMatch(/svg\.trend-svg,\s*\.szn svg\s*\{[^}]*break-inside:\s*avoid !important/)
+    expect(css).toMatch(/\.page-open:has\(\.spread-col\)\s*\{[^}]*break-inside:\s*auto/)
     expect(css).toMatch(
       /break-before:\s*auto;\s*page-break-before:\s*auto;\s*break-inside:\s*avoid;\s*page-break-inside:\s*avoid;/,
     )

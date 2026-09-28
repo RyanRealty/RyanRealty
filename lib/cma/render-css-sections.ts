@@ -526,11 +526,11 @@ export function cmaSectionStyles(): string {
   /* Months of supply as two bars, and chapter 3's dot strip. Same mechanism. */
   /* On paper the spread is one column: two 720-unit charts side by side in a
      7.3in box put their axis type at seven points. Same story, paginated.
-     The pair is not one unbreakable block. Kept whole under the heading it
-     is nearly a sheet, and a short matrix tail is left alone on the page
-     before it. A chart splits only when the room left will not hold it. */
+     The pair may split between the two charts. One chart may not: a sliced
+     curve or a sliced bar row reads as two different figures. */
   .spread { display: block; break-inside: auto; page-break-inside: auto; }
   .spread-col { min-width: 0; break-inside: auto; page-break-inside: auto; }
+  svg.trend-svg, .szn svg { break-inside: avoid; page-break-inside: avoid; }
   .mos-phone, .worth-phone { display: none; }
   @media screen and (max-width: 700px) {
     .mos-wide, .worth-wide { display: none; }
@@ -925,6 +925,12 @@ export function cmaSectionStyles(): string {
   .figure-block, .status-price, .spread, .spread-col {
     break-inside: auto !important;
     page-break-inside: auto !important;
+  }
+  /* The graphic only. The column around it may break so the two charts can
+     separate, but one SVG does not paint across a sheet edge. */
+  svg.trend-svg, .szn svg {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
   /* Lead sentence stays with the figure that follows. */
   .chart-read, h4.subhead, .matrix-group-h {

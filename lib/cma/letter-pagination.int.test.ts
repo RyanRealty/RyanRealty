@@ -8,7 +8,8 @@
  * its own last sheet. This fails any of those shapes.
  */
 import { describe, expect, it } from 'vitest'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import puppeteer, { type Browser } from 'puppeteer-core'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
@@ -356,7 +357,14 @@ function assertPagination(pages: PdfTextRun[][], sizes: { w: number; h: number }
     // text covers under about a third of the page. The cover is page 1.
     // A one-line "Prepared for" spill and a trailing source note land here.
     // The cover's letter-spaced "RECOMMENDED" is not a chapter heading.
-    const onlyHeading = pageNo > 1 && heads.length > 0 && prose.length === 0 && !hasTableInk(belowHead)
+    // Chart and table pages often extract as short runs, so "no prose run"
+    // is not enough. A heading-only sheet is also short.
+    const onlyHeading =
+      pageNo > 1 &&
+      heads.length > 0 &&
+      prose.length === 0 &&
+      !hasTableInk(belowHead) &&
+      contentSpan(belowHead) / boxH < 0.3
     if (onlyHeading) {
       failures.push(`${label} p${pageNo}: content is only a heading ("${heads[0]?.text}")`)
     }
@@ -567,7 +575,33 @@ function assertNoNearBlank(pages: PdfTextRun[][], label: string, min = 0.35) {
   if (failures.length) throw new Error(`${label}: near-blank page ${failures.join(' | ')}`)
 }
 
-async function assertLetterPages(a: RenderCmaArgs, label: string, opts?: { nearBlank?: boolean }) {
+function flatPage(runs: PdfTextRun[]): string {
+  return runs
+    .map((r) => r.text)
+    .join('')
+    .replace(/\s+/g, '')
+    .toLowerCase()
+}
+
+/** One bar chart's labels. A sliced SVG puts the top row and the bottom row on different sheets. */
+function assertChartAtomic(pages: PdfTextRun[][], label: string) {
+  const flats = pages.map(flatPage)
+  const at = (needle: string) => flats.findIndex((t) => t.includes(needle))
+  const curve = at('daystoanacceptedoffer')
+  if (curve < 0) throw new Error(`${label}: offer curve is missing or split mid-label`)
+  const bars = ['soldwithoutapricecut', 'soldafterapricecut', 'yoursisinthisgroup']
+    .map(at)
+    .filter((i) => i >= 0)
+  if (bars.length >= 2 && new Set(bars).size !== 1) {
+    throw new Error(`${label}: bar chart rows land on different sheets`)
+  }
+}
+
+async function assertLetterPages(
+  a: RenderCmaArgs,
+  label: string,
+  opts?: { nearBlank?: boolean; minFill?: number },
+) {
   const { html } = renderCmaHtml(a)
   expect(html).toContain('class="spread"')
   const pdf = await renderPdf(html)
@@ -579,7 +613,8 @@ async function assertLetterPages(a: RenderCmaArgs, label: string, opts?: { nearB
   expect(pages.length).toBeGreaterThan(3)
   assertPagination(pages, sizes, label)
   assertClosingTogether(pages, label)
-  if (opts?.nearBlank) assertNoNearBlank(pages, label)
+  assertChartAtomic(pages, label)
+  if (opts?.nearBlank) assertNoNearBlank(pages, label, opts.minFill ?? 0.35)
 }
 
 describe.skipIf(!hasChrome)('CMA letter pagination', () => {
@@ -613,4 +648,27 @@ describe.skipIf(!hasChrome)('CMA letter pagination', () => {
   it.each([5, 13, 20, 40])('%i comps paginate without a split close', async (n) => {
     await assertLetterPages(shapedLetter({ comps: n, leadRepeats: 0 }), `${n}-comp`)
   }, 180_000)
+
+  it.each(['jones', 'sage-stone', 'monterey-mews', 'mcclellan', 'nugget'] as const)(
+    '%s snapshot shape keeps the close together and does not slice a chart',
+    async (name) => {
+      const raw = JSON.parse(
+        readFileSync(join(process.cwd(), 'lib/cma/fixtures/letter-shapes', `${name}.json`), 'utf8'),
+      ) as RenderCmaArgs
+      const a = {
+        ...raw,
+        broker,
+        client: { name: null, email: null, phone: null, notes: null },
+        mapDataUri:
+          'data:image/svg+xml,' +
+          encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"/>'),
+        subjectMapDataUri: null,
+        documentStatus: 'draft',
+      } as RenderCmaArgs
+      // A disclosure that will not share a sheet with the close can land near
+      // 30% full. The blank matrix tails these rows used to print were under 20%.
+      await assertLetterPages(a, name, { nearBlank: true, minFill: 0.22 })
+    },
+    120_000,
+  )
 })
