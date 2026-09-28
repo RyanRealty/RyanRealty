@@ -33,6 +33,15 @@ export type GrokTextOptions = {
   maxTokens?: number
   temperature?: number
   /**
+   * Best-effort deterministic sampling on POST /v1/chat/completions.
+   * xAI documents `seed` as an integer and does not list it among the fields
+   * reasoning models reject (those are frequency_penalty, presence_penalty,
+   * and stop). Determinism is still not guaranteed; callers that need a
+   * stable decision take a majority and cache it. The Cursor CLI transport
+   * has no seed flag, so this is sent only on the xAI chat body.
+   */
+  seed?: number
+  /**
    * Reasoning budget. grok-4.6 defaults to high, which burns thousands of
    * reasoning tokens on a one-line caption. Set 'low' for mechanical work.
    */
@@ -74,6 +83,7 @@ export async function generateGrokText(options: GrokTextOptions): Promise<GrokTe
     max_tokens: options.maxTokens ?? 900,
   }
   if (options.temperature != null) body.temperature = options.temperature
+  if (options.seed != null) body.seed = options.seed
   if (options.reasoningEffort) body.reasoning_effort = options.reasoningEffort
 
   const res = await xaiFetch(
@@ -135,6 +145,8 @@ export async function generateGrokStructured<T>(
     },
   }
   if (options.temperature != null) body.temperature = options.temperature
+  // Cursor transport (above) cannot forward seed: cursor-agent has no seed flag.
+  if (options.seed != null) body.seed = options.seed
   if (options.reasoningEffort) body.reasoning_effort = options.reasoningEffort
 
   const res = await xaiFetch(
