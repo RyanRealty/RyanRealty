@@ -8,6 +8,10 @@
  */
 
 import { getCmaCityClosedDuring } from '@/lib/data/cma/builderReads'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+
+/** A draft's live market read must not hold Open report open. Stored dollars still win. */
+const LISTING_MARKET_READ_MS = 4_000
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import {
   chooseListingMarket,
@@ -82,7 +86,7 @@ type MarketDoc = {
   listingMarket?: unknown
 }
 
-async function measureDocument(doc: MarketDoc): Promise<ListingMarketMove | null> {
+async function measureDocumentNow(doc: MarketDoc): Promise<ListingMarketMove | null> {
   const cycle = doc.expiredAudit?.finalCycle
   return loadListingWindowMarket({
     city: doc.subject?.city,
@@ -94,6 +98,11 @@ async function measureDocument(doc: MarketDoc): Promise<ListingMarketMove | null
     offDate: cycle?.offMarketDate,
     asOf: new Date().toISOString().slice(0, 10),
   })
+}
+
+/** Timeout is only on the fresh read. A stored move is returned by the caller when this is null. */
+async function measureDocument(doc: MarketDoc): Promise<ListingMarketMove | null> {
+  return withTimeoutFallback(measureDocumentNow(doc), null, LISTING_MARKET_READ_MS, 'cma.listingMarket')
 }
 
 /**

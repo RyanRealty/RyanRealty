@@ -94,6 +94,18 @@ export function composeOutboundHtml(
   return base + (signatureHtml ?? '')
 }
 
+/**
+ * Preview chrome only. The sent message (composeOutboundHtml, cmaReportButtonHtml)
+ * does not include this tag. A sandboxed preview without a top-level target
+ * navigates inside the frame, and that navigation does not send the admin
+ * session cookie — a draft /cma link then returns {"error":"CMA not found"}.
+ */
+export function withPreviewLinkTarget(doc: string): string {
+  if (doc.includes('<base ')) return doc
+  if (!doc.includes('<head>')) return doc
+  return doc.replace('<head>', '<head><base target="_blank">')
+}
+
 /** Full srcDoc document for the composer's sandboxed preview iframe. */
 export function buildEmailPreviewDoc(
   body: string,

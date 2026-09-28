@@ -14,6 +14,9 @@ import { serveCmaDocument, CMA_DOC_HEADERS } from '@/lib/cma/serve-document'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+// Letter render is time-boxed inside serveCmaDocument. This is only the
+// platform backstop so a stuck read cannot leave the tab blank for minutes.
+export const maxDuration = 30
 
 export async function GET(
   request: Request,

@@ -39,7 +39,7 @@
  */
 
 import { useMemo, useRef, useState } from 'react'
-import { buildEmailPreviewDoc, looksLikeHtml, type EmailBodyFormat } from '@/lib/crm/email-body'
+import { buildEmailPreviewDoc, looksLikeHtml, withPreviewLinkTarget, type EmailBodyFormat } from '@/lib/crm/email-body'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import { FilterChip, SearchField } from '@/components/admin/v2'
@@ -82,7 +82,7 @@ export function EmailBodyEditor(props: {
   )
 
   const previewDoc = useMemo(
-    () => buildEmailPreviewDoc(props.body, props.signatureHtml ?? null, format),
+    () => withPreviewLinkTarget(buildEmailPreviewDoc(props.body, props.signatureHtml ?? null, format)),
     [props.body, props.signatureHtml, format],
   )
   const unresolved = useMemo(
@@ -170,10 +170,14 @@ export function EmailBodyEditor(props: {
         className={cn('av2-input field-sizing-content w-full', tab === 'edit' ? '' : 'hidden')}
         style={format === 'html' ? { fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-sm)' } : undefined}
       />
+      {/* Preview-only: base target=_blank plus allow-popups-to-escape-sandbox.
+          The sent report button has no target. A click that stays in the
+          sandboxed frame drops the admin cookie, and a draft then returns
+          CMA not found. Scripts and same-origin stay off. */}
       {tab === 'preview' ? (
         <iframe
           title="Email preview"
-          sandbox=""
+          sandbox="allow-popups allow-popups-to-escape-sandbox"
           srcDoc={previewDoc}
           className="h-96 w-full rounded-xl"
           style={{ border: '1px solid var(--a-border)', background: 'var(--a-surface)' }}

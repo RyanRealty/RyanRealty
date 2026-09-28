@@ -4,6 +4,10 @@
  */
 
 import { getLikeHomeSales } from '@/lib/data/cma/builderReads'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+
+/** Same budget as the listing-window read. An empty result is "no credits", not a hang. */
+const LIKE_HOME_READ_MS = 4_000
 import { likeHomeBounds, likeHomeCredits, type LikeHomeCredit } from '@/lib/cma/like-home-credits'
 
 const LIVE_STATUS = new Set(['draft', 'needs_review'])
@@ -35,9 +39,9 @@ export async function likeHomeCreditsForDocument(
   })
   const city = (subject?.city ?? '').trim()
   if (!bounds || !city) return null
-  let rows
-  try {
-    rows = await getLikeHomeSales({
+  // [] on timeout or error matches a miss: likeHomeCredits returns null when nothing maps.
+  const rows = await withTimeoutFallback(
+    getLikeHomeSales({
       city,
       subdivisionPrefix: bounds.place,
       sqftLow: bounds.sqftLow,
@@ -46,11 +50,11 @@ export async function likeHomeCreditsForDocument(
       yearHigh: bounds.yearHigh,
       fromIso: bounds.from,
       toIso: bounds.to,
-    })
-  } catch (err) {
-    console.error('[like-home-credits]', err)
-    return null
-  }
+    }),
+    [],
+    LIKE_HOME_READ_MS,
+    'cma.likeHome',
+  )
   const own = (subject?.streetAddress ?? '').trim().toLowerCase()
   const letterAddrs = new Set(
     (doc.comps ?? [])
