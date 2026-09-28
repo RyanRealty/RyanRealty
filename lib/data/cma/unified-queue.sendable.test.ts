@@ -24,6 +24,8 @@ describe('isSendableQueueState', () => {
   it('refuses every other state', () => {
     const notSendable: CmaQueueState[] = [
       'failed',
+      'comp-shortage',
+      'comps-unstable',
       'building',
       'audit-failed',
       'unvetted',

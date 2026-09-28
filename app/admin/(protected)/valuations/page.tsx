@@ -12,6 +12,7 @@ import { listCmasForAdmin } from '@/lib/data'
 import { listBposForAdmin } from '@/lib/data/bpo/reads'
 import { formatDate } from '@/lib/format/date'
 import { QueueRow, QuietRow, VerdictLine } from '@/components/admin/v2'
+import { classifyBuildError, DELIBERATE_BUILD_LABEL } from '@/lib/cma/build-error-code'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,10 +29,18 @@ type CmaRow = {
   finalized_at: string | null
   delivered_at: string | null
   build_error: string | null
+  build_summary: unknown
 }
 
 function price(n: number | null): string | null {
   return n == null ? null : `$${Math.round(n).toLocaleString('en-US')}`
+}
+
+function stoppedLine(failed: number, stalled: number): string {
+  const bits: string[] = []
+  if (failed > 0) bits.push(`${failed} build${failed === 1 ? '' : 's'} failed`)
+  if (stalled > 0) bits.push(`${stalled} did not price`)
+  return bits.length ? `${bits.join('. ')}.` : 'Builds are clean.'
 }
 
 function daysAgo(iso: string | null, nowMs: number): string | undefined {
@@ -53,34 +62,35 @@ export default async function ValuationsPage() {
 
   const cmaRows = cmas.rows as CmaRow[]
   const cmaDrafts = cmaRows.filter((r) => r.status === 'draft' && r.built_at && !r.build_error)
-  const cmaFailed = cmaRows.filter((r) => !!r.build_error)
+  const cmaStopped = cmaRows.filter((r) => !!r.build_error)
+  const cmaFailed = cmaStopped.filter((r) => classifyBuildError(r.build_error, r.build_summary) == null)
   const cmaBuilding = cmaRows.filter((r) => r.status === 'draft' && !r.built_at && !r.build_error)
   const cmaDelivered = cmaRows.filter((r) => !!r.delivered_at)
 
   const allBpos = [...bpos.rows, ...bposSeller.rows]
   const bpoDrafts = allBpos.filter((r) => r.status === 'draft' && !r.archivedAt && !r.buildError)
-  const bpoFailed = allBpos.filter((r) => !!r.buildError && !r.archivedAt)
+  const bpoStopped = allBpos.filter((r) => !!r.buildError && !r.archivedAt)
+  const bpoFailed = bpoStopped.filter((r) => classifyBuildError(r.buildError, null) == null)
 
   const needsReview = cmaDrafts.length + bpoDrafts.length
   const failed = cmaFailed.length + bpoFailed.length
+  const stalled = cmaStopped.length - cmaFailed.length + (bpoStopped.length - bpoFailed.length)
+  const stopped = stoppedLine(failed, stalled)
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
-        <VerdictLine tone={needsReview + failed > 0 ? 'attention' : 'ok'}>
+        <VerdictLine tone={needsReview + failed + stalled > 0 ? 'attention' : 'ok'}>
           {needsReview > 0 ? (
             <>
               <b>
                 {needsReview} draft{needsReview === 1 ? '' : 's'} waiting for your review.
               </b>{' '}
-              {failed > 0 ? `${failed} build${failed === 1 ? '' : 's'} failed.` : 'Builds are clean.'}
+              {stopped}
             </>
-          ) : failed > 0 ? (
+          ) : failed + stalled > 0 ? (
             <>
-              <b>
-                {failed} build{failed === 1 ? '' : 's'} failed.
-              </b>{' '}
-              Nothing else waits on you.
+              <b>{stopped}</b> Nothing else waits on you.
             </>
           ) : (
             <>
@@ -153,40 +163,46 @@ export default async function ValuationsPage() {
         </section>
       )}
 
-      {(cmaFailed.length > 0 || bpoFailed.length > 0) && (
+      {(cmaStopped.length > 0 || bpoStopped.length > 0) && (
         <section aria-label="Failed builds">
           <h2 className="av2-lane-head">Failed builds</h2>
           <ul className="av2-queue">
-            {cmaFailed.slice(0, 8).map((c) => (
-              <QueueRow
-                key={c.slug}
-                kind="Failed"
-                kindTone="down"
-                title={c.subject_address ?? c.slug}
-                context={c.build_error ?? 'build failed'}
-                age={daysAgo(c.created_at, nowMs)}
-                action={
-                  <Link href={`/admin/cmas/${c.slug}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                    Open
-                  </Link>
-                }
-              />
-            ))}
-            {bpoFailed.slice(0, 8).map((b) => (
-              <QueueRow
-                key={b.id}
-                kind="Failed"
-                kindTone="down"
-                title={b.subjectAddress ?? b.slug}
-                context={b.buildError ?? 'build failed'}
-                age={daysAgo(b.createdAt, nowMs)}
-                action={
-                  <Link href="/admin/bpo" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                    Open board
-                  </Link>
-                }
-              />
-            ))}
+            {cmaStopped.slice(0, 8).map((c) => {
+              const code = classifyBuildError(c.build_error, c.build_summary)
+              return (
+                <QueueRow
+                  key={c.slug}
+                  kind={code ? DELIBERATE_BUILD_LABEL[code] : 'Failed'}
+                  kindTone="down"
+                  title={c.subject_address ?? c.slug}
+                  context={c.build_error ?? 'build failed'}
+                  age={daysAgo(c.created_at, nowMs)}
+                  action={
+                    <Link href={`/admin/cmas/${c.slug}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                      Open
+                    </Link>
+                  }
+                />
+              )
+            })}
+            {bpoStopped.slice(0, 8).map((b) => {
+              const code = classifyBuildError(b.buildError, null)
+              return (
+                <QueueRow
+                  key={b.id}
+                  kind={code ? DELIBERATE_BUILD_LABEL[code] : 'Failed'}
+                  kindTone="down"
+                  title={b.subjectAddress ?? b.slug}
+                  context={b.buildError ?? 'build failed'}
+                  age={daysAgo(b.createdAt, nowMs)}
+                  action={
+                    <Link href="/admin/bpo" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                      Open board
+                    </Link>
+                  }
+                />
+              )
+            })}
           </ul>
         </section>
       )}

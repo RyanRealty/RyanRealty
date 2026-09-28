@@ -26,6 +26,7 @@ import {
   type CmaSendMode,
 } from '@/lib/cma/origin'
 import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
+import { classifyBuildError } from '@/lib/cma/build-error-code'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -45,13 +46,15 @@ function client() {
  * `unvetted` — the audit could not run at all — is kept distinct from it.
  */
 export type CmaQueueState =
-  | 'failed'       // build blew up — nothing to send
-  | 'building'     // no document yet
-  | 'audit-failed' // audit ran and failed — NOT sendable
-  | 'unvetted'     // audit could not run — a human must read it before it goes
-  | 'flagged'      // built, needs_review for some other reason
-  | 'ready'        // built, audited, clean
-  | 'queued'       // approved, waiting its turn in the cold drip
+  | 'failed'         // build blew up — nothing to send
+  | 'comp-shortage'  // under the 3-comp floor on purpose, not a crash
+  | 'comps-unstable' // judge split decides the minimum (JUDGE_UNSTABLE)
+  | 'building'       // no document yet
+  | 'audit-failed'   // audit ran and failed — NOT sendable
+  | 'unvetted'       // audit could not run — a human must read it before it goes
+  | 'flagged'        // built, needs_review for some other reason
+  | 'ready'          // built, audited, clean
+  | 'queued'         // approved, waiting its turn in the cold drip
   | 'sent'
   | 'archived'
 
@@ -178,11 +181,18 @@ export function resolveCmaQueueState(args: {
   deliveredAt: string | null
   emailSentAt: string | null
   queuedAt: string | null
+  /** cmas.build_summary. Optional. Old rows classify from buildError text. */
+  buildSummary?: unknown
 }): CmaQueueState {
   if (args.archivedAt || args.status === 'archived') return 'archived'
   if (args.deliveredAt || args.emailSentAt || args.status === 'delivered') return 'sent'
   if (args.queuedAt) return 'queued'
-  if (args.buildError) return 'failed'
+  if (args.buildError) {
+    const code = classifyBuildError(args.buildError, args.buildSummary)
+    if (code === 'COMP_SHORTAGE') return 'comp-shortage'
+    if (code === 'JUDGE_UNSTABLE') return 'comps-unstable'
+    return 'failed'
+  }
   if (!args.hasDocument) return 'building'
   // Audit outcome outranks the generic flag — "this one is wrong" and "nobody
   // checked this one" are different jobs for whoever is working the queue.
@@ -375,6 +385,7 @@ export function mapBpoQueueRow(r: Record<string, unknown>): CmaQueueRow {
       emailSentAt: sentAt,
       // A BPO has no cold drip to wait in.
       queuedAt: null,
+      buildSummary: summary,
     }),
     origin: 'bpo',
     sendMode: sendModeForOrigin('bpo'),
@@ -499,6 +510,7 @@ export async function listCmaQueue(options: {
         deliveredAt,
         emailSentAt,
         queuedAt,
+        buildSummary: summary,
       }),
       origin,
       sendMode: sendModeForOrigin(origin),

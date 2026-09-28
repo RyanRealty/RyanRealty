@@ -708,6 +708,7 @@ async function dryRun(slug: string): Promise<DryRun> {
       deliveredAt: (row.delivered_at as string | null) ?? null,
       emailSentAt: (row.email_sent_at as string | null) ?? null,
       queuedAt: (row.queued_at as string | null) ?? null,
+      buildSummary: row.build_summary ?? null,
     })
   const review = buildPricingReview({
     needsReview: pricing.needsReview,

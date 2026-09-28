@@ -7,6 +7,7 @@
  */
 
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
+import { DELIBERATE_BUILD_LABEL } from '@/lib/cma/build-error-code'
 import type { CmaOrigin } from '@/lib/cma/origin'
 
 /** Bare `/admin/cmas` opens the ready door, not the whole work pile. */
@@ -14,6 +15,8 @@ export const CMA_QUEUE_DEFAULT_STATE: CmaQueueViewState | 'all' | 'work' = 'read
 
 export type CmaQueueViewState =
   | 'failed'
+  | 'comp-shortage'
+  | 'comps-unstable'
   | 'building'
   | 'audit-failed'
   | 'unvetted'
@@ -22,6 +25,21 @@ export type CmaQueueViewState =
   | 'queued'
   | 'sent'
   | 'archived'
+
+/** One label table for the queue chips and the row. Deliberate outcomes are not "failed". */
+export const CMA_QUEUE_STATE_LABEL: Record<CmaQueueViewState, string> = {
+  ready: 'Ready',
+  unvetted: 'Unvetted',
+  flagged: 'Flagged',
+  'audit-failed': 'Audit failed',
+  'comp-shortage': DELIBERATE_BUILD_LABEL.COMP_SHORTAGE,
+  'comps-unstable': DELIBERATE_BUILD_LABEL.JUDGE_UNSTABLE,
+  failed: 'Build failed',
+  building: 'Building',
+  queued: 'In drip',
+  sent: 'Sent',
+  archived: 'Archived',
+}
 
 export type CmaCreatedWindow = '7d' | '30d' | '90d' | 'all'
 export type CmaRecBand = 'lt400' | '400-600' | '600-800' | '800-1m' | 'gt1m' | 'all'
@@ -59,6 +77,8 @@ const WORK_STATES: ReadonlySet<CmaQueueViewState> = new Set([
   'unvetted',
   'flagged',
   'audit-failed',
+  'comp-shortage',
+  'comps-unstable',
   'failed',
   'building',
   'queued',
@@ -69,6 +89,8 @@ const STATE_ORDER: CmaQueueViewState[] = [
   'unvetted',
   'flagged',
   'audit-failed',
+  'comp-shortage',
+  'comps-unstable',
   'failed',
   'building',
   'queued',

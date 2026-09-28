@@ -18,6 +18,7 @@ import {
   replaceCmaComps,
   snapshotCmaVersion,
   getCmaBuildSummaryBySlug,
+  readCmaBuildSummaryForMerge,
   getPricingMarketIndex,
   findCrmPersonIdByEmail,
   type CmaCompInsert,
@@ -29,6 +30,7 @@ import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
+import { buildErrorCodeFromMessage, mergeBuildErrorCode } from '@/lib/cma/build-error-code'
 import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import {
@@ -171,16 +173,28 @@ async function recordBuildFailure(
   // failure reason (and when it happened) is written so the broker can still
   // open, approve and send what was already built.
   const reason = error.slice(0, 2000)
-  const withStamp = {
+  // Read first. A failed read must not replace build_summary: the prior
+  // letter's pricing, judge cache, and audit live on that object. html_path
+  // is a different column and is not in this write either way.
+  const prior = await readCmaBuildSummaryForMerge(slug).catch((err) => {
+    console.error('[recordBuildFailure] build_summary read failed', slug, err)
+    return { ok: false as const, error: 'read threw' }
+  })
+  const withStamp: Record<string, unknown> = {
     build_error: reason,
     build_failed_at: new Date().toISOString(),
+  }
+  if (prior.ok) {
+    withStamp.build_summary = mergeBuildErrorCode(prior.summary, buildErrorCodeFromMessage(reason))
   }
   const written = await updateCmaRowFieldsBySlug(slug, withStamp).catch((err) => {
     console.error('[recordBuildFailure] update failed', slug, err)
     return { ok: false as const, error: err instanceof Error ? err.message : 'update failed' }
   })
   if (!written.ok && /build_failed_at/i.test(written.error ?? '')) {
-    await updateCmaRowFieldsBySlug(slug, { build_error: reason }).catch((err) => {
+    const fallback: Record<string, unknown> = { build_error: reason }
+    if (prior.ok) fallback.build_summary = withStamp.build_summary
+    await updateCmaRowFieldsBySlug(slug, fallback).catch((err) => {
       console.error('[recordBuildFailure] build_error fallback failed', slug, err)
     })
   }

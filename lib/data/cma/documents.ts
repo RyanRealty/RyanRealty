@@ -56,6 +56,34 @@ export async function getCmaBuildSummaryBySlug(slug: string): Promise<Record<str
     : null
 }
 
+/**
+ * build_summary for a merge onto the existing object.
+ *
+ * Distinct from getCmaBuildSummaryBySlug: a read failure is `ok: false` and
+ * the caller must not write a summary. Writing `{ build_error_code }` over a
+ * failed read would drop the prior letter's summary fields. A missing summary
+ * is `ok: true` with `{}` so the code can still be stored.
+ */
+export async function readCmaBuildSummaryForMerge(
+  slug: string,
+): Promise<{ ok: true; summary: Record<string, unknown> } | { ok: false; error: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const { data, error } = await sb
+    .from('cmas')
+    .select('build_summary')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error) return { ok: false, error: error.message }
+  if (!data) return { ok: false, error: 'cma row not found' }
+  const summary = (data as { build_summary?: unknown }).build_summary
+  if (summary == null) return { ok: true, summary: {} }
+  if (typeof summary !== 'object' || Array.isArray(summary)) {
+    return { ok: false, error: 'build_summary is not an object' }
+  }
+  return { ok: true, summary: summary as Record<string, unknown> }
+}
+
 /** Metadata-only admin review read. Never pulls html_content / citations / render_args. */
 export const CMA_ADMIN_REVIEW_COLUMNS =
   'id, slug, doc_type, status, subject_address, subject_city, subject_subdivision, subject_listing_key, subject_beds, subject_baths, subject_sqft, client_name, client_email, client_phone, client_notes, broker_slug, built_at, created_at, finalized_at, delivered_at, archived_at, html_path, recommended_list, value_low, value_high, published_to_listing, published_at, published_by, comps_count, build_error, build_summary, price_override, person_id, request_source'

@@ -23,6 +23,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
+import { cmaBuildFailureLead, cmaDetailBadgeLabel } from '@/lib/cma/build-error-code'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
 import { CmaBuildWatch } from '@/app/admin/(protected)/cmas/_components/CmaBuildWatch'
 import { CmaOutcomeCell } from '@/components/admin/cma/CmaOutcomeCell'
@@ -86,6 +87,13 @@ export default async function AdminCmaReviewPage({
   const isBuilding =
     !hasDocument && !buildError && String(row.html_path ?? '').startsWith('pending:')
   const summary = (row.build_summary as Record<string, unknown> | null) ?? null
+  const failureLead = cmaBuildFailureLead(buildError, summary)
+  const badgeLabel = cmaDetailBadgeLabel({
+    status,
+    buildError,
+    buildSummary: summary,
+    deliveredAt: (row.delivered_at as string | null) ?? null,
+  })
   const listingKey = String(row.subject_listing_key ?? '').trim()
   const blockers = cmaPublishRefusals(row)
   const concerns = cmaPublishConcerns(row)
@@ -187,7 +195,7 @@ export default async function AdminCmaReviewPage({
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
         <EntityTitle>{subjectAddress || safeSlug}</EntityTitle>
-        <StateWord state={statusState(status)}>{status}</StateWord>
+        <StateWord state={badgeLabel === status ? statusState(status) : 'down'}>{badgeLabel}</StateWord>
       </div>
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
@@ -262,7 +270,7 @@ export default async function AdminCmaReviewPage({
             color: 'var(--a-danger)',
           }}
         >
-          last build failed: {buildError}
+          {failureLead}: {buildError}
         </p>
       ) : null}
 

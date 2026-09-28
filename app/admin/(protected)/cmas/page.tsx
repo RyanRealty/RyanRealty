@@ -22,6 +22,7 @@ import { QueueFilters } from '@/app/admin/(protected)/cmas/_components/queue/Que
 import type { AdminState } from '@/components/admin/v2'
 import {
   CMA_QUEUE_DEFAULT_STATE,
+  CMA_QUEUE_STATE_LABEL,
   cmaQueueHref,
   cmaQueueMoneyLine,
   cmaQueueWhoLine,
@@ -39,23 +40,13 @@ export const dynamic = 'force-dynamic'
 
 const WINDOW = 500
 
-const STATE_LABEL: Record<CmaQueueState, string> = {
-  ready: 'Ready',
-  unvetted: 'Unvetted',
-  flagged: 'Flagged',
-  'audit-failed': 'Audit failed',
-  failed: 'Build failed',
-  building: 'Building',
-  queued: 'In drip',
-  sent: 'Sent',
-  archived: 'Archived',
-}
-
 const STATE_TONE: Record<CmaQueueState, AdminState> = {
   ready: 'waiting',
   unvetted: 'waiting',
   flagged: 'waiting',
   'audit-failed': 'down',
+  'comp-shortage': 'down',
+  'comps-unstable': 'down',
   failed: 'down',
   building: 'waiting',
   queued: 'accent',
@@ -97,6 +88,10 @@ function whyLine(r: CmaQueueRow): string | null {
     return r.auditSummary ? `${head}. ${r.auditSummary.slice(0, 140)}` : head
   }
   if (r.state === 'unvetted') return 'Audit did not run. Nothing has checked this one.'
+  if (r.state === 'comp-shortage' || r.state === 'comps-unstable') {
+    const label = CMA_QUEUE_STATE_LABEL[r.state]
+    return r.buildError ? `${label}: ${r.buildError.slice(0, 140)}` : `${label}.`
+  }
   if (r.state === 'failed') return r.buildError ? `Build failed: ${r.buildError.slice(0, 140)}` : 'Build failed.'
   if (r.state === 'flagged') return r.reviewReason ? r.reviewReason.slice(0, 140) : 'Flagged for review.'
   if (r.state === 'queued') return null // filled with ETA at render
@@ -316,9 +311,9 @@ export default async function CmaQueuePage({
       <QueueFilters
         filters={filters}
         cities={cities}
-        stateOptions={(Object.keys(STATE_LABEL) as CmaQueueState[])
+        stateOptions={(Object.keys(CMA_QUEUE_STATE_LABEL) as CmaQueueState[])
           .filter((s) => s === 'ready' || s === 'queued' || (stateCounts.get(s) ?? 0) > 0)
-          .map((s) => ({ value: s, label: STATE_LABEL[s], count: stateCounts.get(s) ?? 0 }))}
+          .map((s) => ({ value: s, label: CMA_QUEUE_STATE_LABEL[s], count: stateCounts.get(s) ?? 0 }))}
         originOptions={ORIGIN_ORDER.filter((o) => (originCounts.get(o) ?? 0) > 0).map((o) => ({
           value: o,
           label: CMA_ORIGIN_LABEL[o],
@@ -360,7 +355,7 @@ export default async function CmaQueuePage({
           return (
             <QueueRow
               key={r.id}
-              kind={r.state === 'queued' ? STATE_LABEL.queued : CMA_ORIGIN_LABEL[r.origin]}
+              kind={r.state === 'queued' ? CMA_QUEUE_STATE_LABEL.queued : CMA_ORIGIN_LABEL[r.origin]}
               kindTone={STATE_TONE[r.state]}
               title={
                 <Link href={r.detailHref} style={{ color: 'inherit', textDecoration: 'none' }}>
@@ -387,7 +382,12 @@ export default async function CmaQueuePage({
                 </>
               }
               age={age(r.createdAt)}
-              hot={r.state === 'audit-failed' || r.state === 'failed'}
+              hot={
+                r.state === 'audit-failed' ||
+                r.state === 'failed' ||
+                r.state === 'comp-shortage' ||
+                r.state === 'comps-unstable'
+              }
               action={
                 r.state === 'queued' ? (
                   <DripQueueActions slug={r.slug} />

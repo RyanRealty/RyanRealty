@@ -44,6 +44,8 @@ const STATE_ORDER: CmaQueueState[] = [
   'flagged',
   'unvetted',
   'audit-failed',
+  'comp-shortage',
+  'comps-unstable',
   'failed',
   'building',
   'queued',

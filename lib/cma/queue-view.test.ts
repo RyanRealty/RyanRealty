@@ -119,6 +119,22 @@ describe('filterCmaQueueRows', () => {
     ])
   })
 
+  it('keeps a comp shortage in the work pile and out of the failed chip', () => {
+    const extra = [
+      row({ address: '1 Short', state: 'comp-shortage' }),
+      row({ address: '2 Unstable', state: 'comps-unstable' }),
+      row({ address: '3 Crash', state: 'failed' }),
+    ]
+    const work = filterCmaQueueRows([...rows, ...extra], { state: 'work' }, now).map((r) => r.address)
+    expect(work).toEqual(expect.arrayContaining(['1 Short', '2 Unstable', '3 Crash']))
+    expect(filterCmaQueueRows([...rows, ...extra], { state: 'failed' }, now).map((r) => r.address)).toEqual([
+      '3 Crash',
+    ])
+    expect(filterCmaQueueRows([...rows, ...extra], { state: 'comp-shortage' }, now).map((r) => r.address)).toEqual([
+      '1 Short',
+    ])
+  })
+
   it('filters by city, origin, address, rec band, and created window', () => {
     expect(filterCmaQueueRows(rows, { city: 'Redmond', state: 'all' }, now).map((r) => r.city)).toEqual(['Redmond'])
     expect(filterCmaQueueRows(rows, { origin: 'expired' }, now)).toHaveLength(1)

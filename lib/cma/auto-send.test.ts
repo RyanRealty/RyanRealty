@@ -131,6 +131,8 @@ describe('autoSendBuiltCma — only ready sends', () => {
     'unvetted',
     'flagged',
     'failed',
+    'comp-shortage',
+    'comps-unstable',
     'building',
     'queued',
     'sent',

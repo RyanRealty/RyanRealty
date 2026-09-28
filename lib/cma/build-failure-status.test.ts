@@ -53,6 +53,8 @@ describe('the failure path keeps the prior document', () => {
     const fn = src.slice(src.indexOf('async function recordBuildFailure'), src.indexOf('export async function buildCma'))
     expect(fn).toMatch(/build_error: reason/)
     expect(fn).toMatch(/build_failed_at/)
+    expect(fn).toMatch(/mergeBuildErrorCode/)
+    expect(fn).not.toMatch(/html_path:/)
     expect(fn).not.toMatch(/html_content: null/)
     expect(fn).not.toMatch(/html_path: ''/)
     expect(fn).not.toMatch(/render_args: null/)
