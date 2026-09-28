@@ -157,6 +157,16 @@ Ryan Realty
       // auto-send to the lead, which would bypass the human review the draft
       // model exists for. Only a hard 502 if even the fallback fails.
       try {
+        // Same chokepoint as above, checked again in this scope. The fallback
+        // carries the lead's CMA and names the lead, so it never runs for a
+        // lead who is suppressed for email.
+        const fallbackGate = await isSuppressedByEmail(String(to), 'email')
+        if (fallbackGate.suppressed) {
+          return NextResponse.json(
+            { error: 'recipient is suppressed for email', recipient: to, reasons: fallbackGate.reasons },
+            { status: 409 },
+          )
+        }
         const { sendEmail } = await import('@/lib/resend')
         const fb = await sendEmail({
           to: impersonateAs,

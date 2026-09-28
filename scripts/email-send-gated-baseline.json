@@ -5,10 +5,6 @@
       "kind": "internal",
       "reason": "Internal: newsletter test-send (adminTestSendNewsletterAction) to the authenticated admin's OWN inbox (gate.email from requireAdmin()), subject prefixed [TEST]. Never a lead or subscriber \u2014 it renders the issue as-broker so the admin can preview real delivery before enqueueing. The actual audience send routes through the gated queue drain (per-row isSuppressedByEmail). Permanently allowlisted. Line shifted -45 when the preview render helpers moved to lib/newsletter/preview.ts (W2 review-surface build 2026-07-06). Line shifted 472->465 when public subscribe moved to newsletter-subscribe.ts (D4 2026-08-13). Line shifted 465->470 by the 2026-08-25 change that makes the two admin assign paths REPORT a skipped opt-out instead of returning ok:true (subscribeToNewsletter no longer revives an unsubscribe by default). Line shifted 470->401 by the 2026-09-01 orphan-export trim (four dead admin assign actions removed above it). Line shifted 401->390 by the 2026-09-07 brand-voice-canon retirement (removed the checkNewsletterVoice gate blocks that sat above it in this file). Line shifted 390->388 when assigned-broker normalization shrank the helper above this send (2026-09-22)."
     },
-    "app/api/cma/[slug]/gmail-draft/route.ts:163": {
-      "kind": "internal",
-      "reason": "Internal: Resend fallback to the BROKER (impersonateAs) when the Gmail draft cannot be created. Never to the lead. The lead recipient is gated by isSuppressedByEmail earlier in handleDraft before any draft/fallback runs."
-    },
     "app/api/cron/daily-broker-digest/route.ts:142": {
       "kind": "internal",
       "reason": "Internal: one digest email per BROKER (Matt/Rebecca/Paul), not a lead. No consent record applies; permanently allowlisted. Line re-synced in the audit cron-auth consolidation."
