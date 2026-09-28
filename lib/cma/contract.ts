@@ -143,8 +143,12 @@ export function evaluateAccuracyContract(args: {
     // sales, so the check uses that low when it sits above the printed one.
     const salesLow = closedSaleLow(pricing) ?? bandLow
     const belowRange = pricing.failedAskBelowRange === true && salesLow > 0
+    // The pin is the sales low. The printed list is that price on the
+    // thousand-dollar grid, which can sit up to one step above an off-grid
+    // sale when rounding down would cross the conservative floor.
+    const pinCeiling = Math.ceil(salesLow / 1000) * 1000
     const over = belowRange
-      ? pricing.recommended > salesLow
+      ? pricing.recommended > pinCeiling
       : pricing.recommended > failedAsk || pricing.highEnd > failedAsk
     const rec = pricing.recommended.toLocaleString()
     const high = pricing.highEnd.toLocaleString()

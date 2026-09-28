@@ -7,7 +7,10 @@
  *    the conservative tier, which the same-subdivision floor is copied onto.
  *    The tier is not lowered to follow the pull.
  * 2. Recommended is clamped into the printed closed-comp band.
- * 3. The failed-ask sentence is rewritten from that final recommendation.
+ * 3. The printed recommendation and band ends sit on the pricing grid.
+ *    Nearest thousand. A step under the conservative floor or under the band
+ *    rounds up into the band. A step over the band rounds down into it.
+ * 4. The failed-ask sentence is rewritten from that final recommendation.
  *
  * The nudge function itself may still land under a list tier when its caller
  * passes only the sale band (Canter, $701k toward $675k lands at $682k). The
@@ -26,7 +29,7 @@ import {
 import { clampRecommendedToClosedBand } from '@/lib/pricing/recommended-in-band'
 import { closedSaleLow, rewriteFailedAskClampAfterRec } from '@/lib/cma/expired-audit'
 import { reanchorSellerNet } from '@/lib/pricing/seller-net'
-import type { PricingRangeRule } from '@/lib/pricing/estimate'
+import { roundPrintedPrices, type PricingRangeRule } from '@/lib/pricing/estimate'
 
 export type FinishRecommendedPricing = {
   recommended: number
@@ -84,6 +87,7 @@ export function finishRecommendedAfterActives<T extends FinishRecommendedPricing
     }
   }
   next = clampRecommendedToClosedBand(next)
+  next = roundPrintedPrices(next)
   next = rewriteFailedAskClampAfterRec(next)
   // The net sheet is anchored to recommended at the moment attachSellerNet
   // ran. The actives nudge is after that. A sheet still on the pre-nudge

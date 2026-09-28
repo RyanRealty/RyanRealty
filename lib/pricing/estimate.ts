@@ -141,6 +141,83 @@ export function roundPriceUp(n: number): number {
   return Math.ceil(n / priceRoundingStep(n)) * priceRoundingStep(n)
 }
 
+/**
+ * The thousand-dollar grid a printed recommendation already uses
+ * (`listFromClose`, the active nudge). Nearest thousand.
+ *
+ * A step that would fall under the conservative floor, or under the printed
+ * band, rounds up onto the next thousand that clears both. A step that would
+ * clear the top of the band rounds down onto the thousand still inside it.
+ * The band wins when the floor and the band cannot both be kept: the printed
+ * list stays inside [low, high].
+ */
+export function roundPrintedRecommendation(
+  rec: number,
+  bounds: { low?: number | null; high?: number | null; floor?: number | null },
+): number {
+  if (!Number.isFinite(rec) || !(rec > 0)) return rec
+  const step = 1000
+  const up = (n: number) => Math.ceil(n / step) * step
+  const down = (n: number) => Math.floor(n / step) * step
+  let next = Math.round(rec / step) * step
+  const floor =
+    bounds.floor != null && Number.isFinite(bounds.floor) && bounds.floor > 0 ? bounds.floor : null
+  const low =
+    bounds.low != null && bounds.high != null && bounds.low > 0 && bounds.high > 0
+      ? Math.min(bounds.low, bounds.high)
+      : null
+  const high = low != null ? Math.max(bounds.low as number, bounds.high as number) : null
+  if (floor != null && next < floor) next = up(floor)
+  if (low != null && next < low) next = up(low)
+  if (high != null && next > high) next = down(high)
+  if (low != null && high != null && (next < low || next > high)) {
+    const into = Math.min(down(high), Math.max(up(low), floor != null ? up(floor) : up(low)))
+    next = into >= low && into <= high ? into : Math.min(high, Math.max(low, next))
+  }
+  return next
+}
+
+/** Printed band ends sit on the same outward grid the range already uses. On-grid ends stay. */
+export function roundPrintedBand(low: number, high: number): { low: number; high: number } {
+  if (!(low > 0) || !(high > 0)) return { low, high }
+  const lo = Math.min(low, high)
+  const hi = Math.max(low, high)
+  const stepLo = priceRoundingStep(lo)
+  const stepHi = priceRoundingStep(hi)
+  const nextLo = lo % stepLo === 0 ? lo : roundPriceDown(lo)
+  const nextHi = hi % stepHi === 0 ? hi : roundPriceUp(hi)
+  if (!(nextLo > 0) || nextLo > nextHi) return { low: lo, high: hi }
+  return { low: nextLo, high: nextHi }
+}
+
+export function roundPrintedPrices<
+  T extends {
+    recommended: number
+    valueLow: number
+    valueHigh: number
+    conservative?: number
+    highEnd?: number
+  },
+>(pricing: T): T {
+  const band = roundPrintedBand(pricing.valueLow, pricing.valueHigh)
+  const recommended = roundPrintedRecommendation(pricing.recommended, {
+    low: band.low,
+    high: band.high,
+    floor: typeof pricing.conservative === 'number' ? pricing.conservative : null,
+  })
+  let highEnd = pricing.highEnd
+  if (typeof highEnd === 'number' && highEnd > 0 && highEnd < recommended) highEnd = recommended
+  if (
+    recommended === pricing.recommended &&
+    band.low === pricing.valueLow &&
+    band.high === pricing.valueHigh &&
+    highEnd === pricing.highEnd
+  ) {
+    return pricing
+  }
+  return { ...pricing, recommended, valueLow: band.low, valueHigh: band.high, highEnd }
+}
+
 /** At or above this many sales the range drops one at each end. */
 export const RANGE_TRIM_MIN_N = 6
 
