@@ -64,6 +64,8 @@ const MAX_PDF_BYTES = 25 * 1024 * 1024
 interface CmaSendContext {
   slug: string
   subjectAddress: string
+  /** MLS ListingKey for this CMA. Null when the row has none. */
+  subjectListingKey: string | null
   clientName: string | null
   clientEmail: string
   brokerRow: {
@@ -129,6 +131,7 @@ async function resolveSendContext(
     ctx: {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
+      subjectListingKey: (row.subject_listing_key as string | null) ?? null,
       clientName,
       clientEmail,
       brokerRow,
@@ -346,6 +349,7 @@ export async function prepareCmaSendPreview(slug: string): Promise<
     const fakeCtx: CmaSendContext = {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
+      subjectListingKey: (row.subject_listing_key as string | null) ?? null,
       clientName,
       clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || 'pending@placeholder',
       brokerRow,
@@ -400,6 +404,9 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
       address: ctx.subjectAddress,
       city: ctx.facts.city ?? null,
       sinceIso: null,
+      // Without the subject's own listing, "Lot 33" on the only row at the
+      // address looks like an unknown unit and the screen refuses the send.
+      subjectListingKey: ctx.subjectListingKey ?? null,
     })
     if (!screen.ok) {
       return { ok: false, error: `Not sent. ${screen.detail}` }

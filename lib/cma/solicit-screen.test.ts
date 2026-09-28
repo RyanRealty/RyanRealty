@@ -1,5 +1,16 @@
-import { describe, expect, it } from 'vitest'
-import { decideSolicitScreen, unitFromAddress, unitToken } from '@/lib/cma/solicit-screen'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mls = vi.hoisted(() => ({
+  findCmaSubjectByAddress: vi.fn(async () => [] as unknown[]),
+  findCmaSubjectByMls: vi.fn(async () => [] as unknown[]),
+}))
+
+vi.mock('@/lib/data', () => ({
+  findCmaSubjectByAddress: mls.findCmaSubjectByAddress,
+  findCmaSubjectByMls: mls.findCmaSubjectByMls,
+}))
+
+import { decideSolicitScreen, screenAddressForSolicitation, unitFromAddress, unitToken } from '@/lib/cma/solicit-screen'
 
 function listing(over: Record<string, unknown> = {}) {
   return {
@@ -227,5 +238,198 @@ describe('a house is not a condo just because a neighbour row carries a number',
     const out = decideSolicitScreen(rows, { unit: null, unitKnown: true })
     expect(out.ok).toBe(false)
     if (!out.ok) expect(out.listingKey).toBe('LIVE')
+  })
+})
+
+const AMBIGUOUS_DETAIL =
+  "This street address carries listings for more than one unit and the subject's unit is not recorded, so its MLS state cannot be established."
+
+const SCREEN_ADDRESS = '4242 Example Lane, Bend, OR 97701'
+
+describe('a builder lot number on one listing is not a second unit', () => {
+  beforeEach(() => {
+    mls.findCmaSubjectByAddress.mockReset()
+    mls.findCmaSubjectByMls.mockReset()
+    mls.findCmaSubjectByAddress.mockResolvedValue([])
+    mls.findCmaSubjectByMls.mockResolvedValue([])
+  })
+
+  function mlsListing(over: Record<string, unknown> = {}) {
+    return {
+      ListingKey: 'ZZTESTKEY1',
+      StandardStatus: 'Expired',
+      OnMarketDate: '2026-02-01',
+      ListDate: '2026-02-01',
+      CloseDate: null,
+      unit_number: null,
+      ...over,
+    }
+  }
+
+  it('clears one listing whose unit is Lot 33 when the subject key matches', async () => {
+    mls.findCmaSubjectByAddress.mockResolvedValue([
+      mlsListing({ ListingKey: 'ZZTESTKEYLOT33', unit_number: 'Lot 33' }),
+    ])
+    const out = await screenAddressForSolicitation({
+      address: SCREEN_ADDRESS,
+      city: 'Bend',
+      subjectListingKey: 'ZZTESTKEYLOT33',
+    })
+    expect(out.ok).toBe(true)
+    expect(mls.findCmaSubjectByMls).not.toHaveBeenCalled()
+  })
+
+  it('clears that same single Lot 33 listing when no subject key was recorded', async () => {
+    mls.findCmaSubjectByAddress.mockResolvedValue([
+      mlsListing({ ListingKey: 'ZZTESTKEYLOT33', unit_number: 'Lot 33' }),
+    ])
+    const out = await screenAddressForSolicitation({ address: SCREEN_ADDRESS, city: 'Bend' })
+    expect(out.ok).toBe(true)
+  })
+
+  it('still refuses two real units when the subject unit and the key are both missing', async () => {
+    mls.findCmaSubjectByAddress.mockResolvedValue([
+      mlsListing({ ListingKey: 'ZZTESTUNIT1', unit_number: 'Unit 1' }),
+      mlsListing({ ListingKey: 'ZZTESTUNIT2', unit_number: 'Unit 2', StandardStatus: 'Active', OnMarketDate: '2026-09-01' }),
+    ])
+    const out = await screenAddressForSolicitation({ address: SCREEN_ADDRESS, city: 'Bend' })
+    expect(out).toEqual({
+      ok: false,
+      reason: 'unverified',
+      detail: AMBIGUOUS_DETAIL,
+      listingKey: null,
+      checked: 2,
+    })
+  })
+
+  it('still refuses one listing with a real unit when the subject unit is unknown', () => {
+    const out = decideSolicitScreen(
+      [mlsListing({ ListingKey: 'ZZTESTUNIT4', unit_number: 'Unit 4' }) as never],
+      {},
+    )
+    expect(out.ok).toBe(false)
+    if (!out.ok) {
+      expect(out.reason).toBe('unverified')
+      expect(out.detail).toBe(AMBIGUOUS_DETAIL)
+    }
+  })
+
+  it('still refuses a lot number sitting beside a real unit when the subject is unknown', () => {
+    const out = decideSolicitScreen(
+      [
+        mlsListing({ ListingKey: 'ZZTESTKEYLOT33', unit_number: 'Lot 33' }) as never,
+        mlsListing({ ListingKey: 'ZZTESTUNIT2', unit_number: '#B', StandardStatus: 'Active' }) as never,
+      ],
+      {},
+    )
+    expect(out.ok).toBe(false)
+    if (!out.ok) {
+      expect(out.reason).toBe('unverified')
+      expect(out.detail).toBe(AMBIGUOUS_DETAIL)
+    }
+  })
+
+  it('uses the subject key to keep a Lot 33 row and ignore a different unit', async () => {
+    mls.findCmaSubjectByAddress.mockResolvedValue([
+      mlsListing({ ListingKey: 'ZZTESTKEYLOT33', unit_number: 'Lot 33' }),
+      mlsListing({ ListingKey: 'ZZTESTUNIT2', unit_number: 'Unit 2', StandardStatus: 'Active', OnMarketDate: '2026-09-01' }),
+    ])
+    const blind = await screenAddressForSolicitation({ address: SCREEN_ADDRESS, city: 'Bend' })
+    expect(blind.ok).toBe(false)
+    if (!blind.ok) expect(blind.detail).toBe(AMBIGUOUS_DETAIL)
+
+    const keyed = await screenAddressForSolicitation({
+      address: SCREEN_ADDRESS,
+      city: 'Bend',
+      subjectListingKey: 'ZZTESTKEYLOT33',
+    })
+    expect(keyed.ok).toBe(true)
+  })
+
+  it('still refuses two lot-number listings when the subject unit is unknown', () => {
+    const out = decideSolicitScreen(
+      [
+        mlsListing({ ListingKey: 'ZZTESTLOT33', unit_number: 'Lot 33' }) as never,
+        mlsListing({ ListingKey: 'ZZTESTLOT7', unit_number: 'LOT 7' }) as never,
+      ],
+      {},
+    )
+    expect(out.ok).toBe(false)
+    if (!out.ok) {
+      expect(out.reason).toBe('unverified')
+      expect(out.detail).toBe(AMBIGUOUS_DETAIL)
+    }
+  })
+
+  // One house, four MLS rows on the same parcel. The older sale stores the
+  // builder lot as a bare number ("63"). That is indistinguishable from a
+  // real unit, so only the subject key may clear it.
+  function sameParcelRows() {
+    return [
+      mlsListing({
+        ListingKey: 'K-SUBJ',
+        StandardStatus: 'Canceled',
+        OnMarketDate: '2026-06-01',
+        ListDate: '2026-06-01',
+        status_change_timestamp: '2026-09-15',
+        ListPrice: 550000,
+        unit_number: null,
+      }),
+      mlsListing({
+        ListingKey: 'K-MAY',
+        StandardStatus: 'Canceled',
+        OnMarketDate: '2026-03-01',
+        ListDate: '2026-03-01',
+        status_change_timestamp: '2026-05-05',
+        ListPrice: 575000,
+        unit_number: null,
+      }),
+      mlsListing({
+        ListingKey: 'K-APR',
+        StandardStatus: 'Canceled',
+        OnMarketDate: '2026-02-01',
+        ListDate: '2026-02-01',
+        status_change_timestamp: '2026-04-28',
+        ListPrice: 575000,
+        unit_number: null,
+      }),
+      mlsListing({
+        ListingKey: 'K-OLD',
+        StandardStatus: 'Closed',
+        OnMarketDate: '2024-04-01',
+        ListDate: '2024-04-01',
+        CloseDate: '2024-07-11',
+        ClosePrice: 522057,
+        unit_number: '63',
+      }),
+    ]
+  }
+
+  const SAME_PARCEL = '7700 19th, Redmond, OR 97756'
+
+  it('clears the same-parcel house when the subject key shows it has no unit', async () => {
+    mls.findCmaSubjectByAddress.mockResolvedValue(sameParcelRows())
+    const out = await screenAddressForSolicitation({
+      address: SAME_PARCEL,
+      city: 'Redmond',
+      subjectListingKey: 'K-SUBJ',
+    })
+    expect(out).toEqual({
+      ok: true,
+      checked: 3,
+      detail: 'Checked 3 MLS listing(s) for this address; none is live or newly closed.',
+    })
+  })
+
+  it('still refuses the same-parcel house when the bare lot number has no subject key', async () => {
+    mls.findCmaSubjectByAddress.mockResolvedValue(sameParcelRows())
+    const out = await screenAddressForSolicitation({ address: SAME_PARCEL, city: 'Redmond' })
+    expect(out).toEqual({
+      ok: false,
+      reason: 'unverified',
+      detail: AMBIGUOUS_DETAIL,
+      listingKey: null,
+      checked: 4,
+    })
   })
 })

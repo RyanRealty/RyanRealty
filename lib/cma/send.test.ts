@@ -21,6 +21,11 @@ const h = vi.hoisted(() => ({
   recordEmailEvent: vi.fn(),
   ensureNativeLead: vi.fn(),
   stampCmaPersonId: vi.fn(),
+  screenAddressForSolicitation: vi.fn(async () => ({
+    ok: true as const,
+    checked: 1,
+    detail: 'clear',
+  })),
   row: {
     id: 'row-1',
     status: 'finalized',
@@ -87,6 +92,9 @@ vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
   ensureNativeLead: (...args: unknown[]) => h.ensureNativeLead(...args),
 }))
 vi.mock('@/lib/email/auto-track', () => ({ instrumentLeadHtml: vi.fn(async (html: string) => html) }))
+vi.mock('@/lib/cma/solicit-screen', () => ({
+  screenAddressForSolicitation: h.screenAddressForSolicitation,
+}))
 
 import { sendCmaToLead } from '@/lib/cma/send'
 import { GMAIL_AUTH_TIMEOUT_MS } from '@/lib/gmail-draft'
@@ -106,6 +114,7 @@ beforeEach(() => {
   h.recordEmailEvent.mockResolvedValue({ ok: true })
   h.ensureNativeLead.mockResolvedValue({ personId: 88, created: true })
   h.stampCmaPersonId.mockResolvedValue({ ok: true })
+  h.screenAddressForSolicitation.mockResolvedValue({ ok: true, checked: 1, detail: 'clear' })
   consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
@@ -249,5 +258,46 @@ describe('sendCmaToLead', () => {
     expect(h.logCmaTimelineEvent).not.toHaveBeenCalled()
     expect(h.recordEmailEvent).not.toHaveBeenCalled()
     expect(consoleError).toHaveBeenCalledWith(expect.stringContaining(SLUG))
+  })
+
+  it('passes the subject listing key into the solicitation screen on an expired send', async () => {
+    const { getCmaAdminRowBySlug } = await import('@/lib/data')
+    vi.mocked(getCmaAdminRowBySlug).mockResolvedValueOnce({
+      ...h.row,
+      request_source: 'expired-outreach-queue',
+      doc_type: 'expired-audit',
+      subject_address: '4242 Example Lane, Bend, OR 97701',
+      subject_city: 'Bend',
+      subject_listing_key: 'ZZTESTKEYLOT33',
+    })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(true)
+    expect(h.screenAddressForSolicitation).toHaveBeenCalledWith({
+      address: '4242 Example Lane, Bend, OR 97701',
+      city: 'Bend',
+      sinceIso: null,
+      subjectListingKey: 'ZZTESTKEYLOT33',
+    })
+  })
+
+  it('passes null when the expired row has no subject listing key', async () => {
+    const { getCmaAdminRowBySlug } = await import('@/lib/data')
+    vi.mocked(getCmaAdminRowBySlug).mockResolvedValueOnce({
+      ...h.row,
+      request_source: 'expired-outreach-queue',
+      doc_type: 'expired-audit',
+      subject_address: '4242 Example Lane, Bend, OR 97701',
+      subject_city: 'Bend',
+      subject_listing_key: null,
+    })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(true)
+    expect(h.screenAddressForSolicitation).toHaveBeenCalledWith(
+      expect.objectContaining({ subjectListingKey: null, address: '4242 Example Lane, Bend, OR 97701' }),
+    )
   })
 })

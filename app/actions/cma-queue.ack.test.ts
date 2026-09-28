@@ -62,6 +62,7 @@ function row(over: Partial<CmaQueueRow> = {}): CmaQueueRow {
     address: '1 Test Way',
     city: 'Bend',
     subdivision: null,
+    subjectListingKey: null,
     contactName: 'Ada',
     contactEmail: 'ada@example.com',
     brokerSlug: 'matthew-ryan',
