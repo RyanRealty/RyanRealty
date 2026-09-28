@@ -406,6 +406,16 @@ export interface PricingRangeRule {
   saleHigh?: number
   /** The rule in one sentence, in the document's own words. */
   sentence: string
+  /**
+   * Sales kept out of the ends because their time-adjusted $/sf sat more
+   * than 25 percent off the median. They still carry weight in the price.
+   */
+  endpointPpsfAside?: number
+  /**
+   * Sales kept out of the ends because their capped share was under 5 percent.
+   * They still carry that share of the price.
+   */
+  endpointWeightAside?: number
 }
 
 /**
@@ -613,7 +623,19 @@ function rowsHaveWeights<T extends { weight?: number | null }>(rows: readonly T[
 }
 
 export function salesForBandEndpoints<T extends { ppsfTimeAdjusted: number; weight?: number | null }>(rows: T[]): T[] {
+  return splitBandEndpoints(rows).kept
+}
+
+/**
+ * Which sales may set a band end, and why the others may not.
+ * A $/sf outlier and a sale under the weight floor still carry their share
+ * of the recommendation. They only lose the right to set the printed low or high.
+ */
+export function splitBandEndpoints<T extends { ppsfTimeAdjusted: number; weight?: number | null }>(
+  rows: T[],
+): { kept: T[]; ppsfAside: number; weightAside: number } {
   let pool = rows
+  let ppsfAside = 0
   if (rows.length >= 4) {
     const mid = median(rows.map((r) => r.ppsfTimeAdjusted).filter((n) => n > 0))
     if (mid > 0) {
@@ -623,13 +645,16 @@ export function salesForBandEndpoints<T extends { ppsfTimeAdjusted: number; weig
       })
       // Start with four or more; keep the trim when at least three remain
       // (Marshmallow: four sales, one $/sf outlier, three stay on the endpoints).
-      if (kept.length >= 3) pool = kept
+      if (kept.length >= 3) {
+        ppsfAside = rows.length - kept.length
+        pool = kept
+      }
     }
   }
-  if (!rowsHaveWeights(rows)) return pool
+  if (!rowsHaveWeights(rows)) return { kept: pool, ppsfAside, weightAside: 0 }
   const rawWeights = rows.map((r) => (typeof r.weight === 'number' && r.weight > 0 ? r.weight : 0))
   const total = rawWeights.reduce((sum, w) => sum + w, 0)
-  if (!(total > 0)) return pool
+  if (!(total > 0)) return { kept: pool, ppsfAside, weightAside: 0 }
   // The letter prints capped shares (capClosedCompShares, 40% cap). The
   // endpoint test used to read the raw share, so a sale the grid shows at
   // 6.4% was treated as 3.5% and could not set an end. One weight basis.
@@ -644,7 +669,14 @@ export function salesForBandEndpoints<T extends { ppsfTimeAdjusted: number; weig
   // dropped it, as long as its share is still meaningful.
   if (shareOf(top) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(top)
   const out = rows.filter((row) => keep.has(row))
-  return out.length >= 2 ? out : pool
+  const kept = out.length >= 2 ? out : pool
+  let weightAside = 0
+  if (kept !== pool) {
+    const keptSet = new Set(kept)
+    weightAside = pool.filter((row) => !keptSet.has(row)).length
+    if (ppsfAside > 0 && !pool.includes(top) && keptSet.has(top)) ppsfAside -= 1
+  }
+  return { kept, ppsfAside, weightAside }
 }
 
 /**
@@ -1020,10 +1052,15 @@ export function listPriceFromEngine(opts: {
     ? partitionByRangeRule(opts.adjusted)
     : { priced: [], kept: [], setAside: [], rule: null as PricingRangeRuleName | null }
   const part = recPart
-  const endpointKept = opts.subjectSqft > 0 ? salesForBandEndpoints(recPart.kept) : recPart.kept
+  const endpointSplit =
+    opts.subjectSqft > 0
+      ? splitBandEndpoints(recPart.kept)
+      : { kept: recPart.kept, ppsfAside: 0, weightAside: 0 }
+  const useEndpointKept = endpointSplit.kept.length >= 3
+  const endpointKept = useEndpointKept ? endpointSplit.kept : recPart.kept
   const range = rangeFromPartition({
     ...recPart,
-    kept: endpointKept.length >= 3 ? endpointKept : recPart.kept,
+    kept: endpointKept,
   })
   const reconciledValue =
     range != null
@@ -1137,6 +1174,8 @@ export function listPriceFromEngine(opts: {
           ratiosExcluded,
           saleLow: saleLow ?? undefined,
           saleHigh: saleHigh ?? undefined,
+          endpointPpsfAside: useEndpointKept ? endpointSplit.ppsfAside : 0,
+          endpointWeightAside: useEndpointKept ? endpointSplit.weightAside : 0,
           // BOTH COUNTS, BY NAME. The sentence states how many sales set the
           // ends and how many were in the set. When the printed band was
           // opened past those sales, it says so instead of calling the opened

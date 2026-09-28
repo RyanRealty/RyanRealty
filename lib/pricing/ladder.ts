@@ -17,6 +17,7 @@
  */
 
 import { POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
+import { assertRungsClassified } from '@/lib/pricing/rung-class'
 
 export type AppleStrictness = 'strict' | 'utilities' | 'product_lot'
 
@@ -242,7 +243,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     disclosure:
       'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
   })
-  return [
+  const tiers: PricingTier[] = [
     // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
     // 2026-09-10: "We want to look specifically at that address or in that
     // subdivision"). 23 Benaiah carries "N/A" for a subdivision, so every plat
@@ -401,6 +402,8 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
         'The bounded search did not reach the minimum number of sales this price needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of this home in size, up to 10 miles out, sales from outside the community this home sits in, where it sits in one, and where it sits outside every mapped neighborhood, sales across a highway or a river from it. An older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
     },
   ]
+  assertRungsClassified(tiers.map((tier) => tier.name))
+  return tiers
 }
 
 /**

@@ -16,18 +16,7 @@
  */
 
 import type { MarketPath } from '@/lib/pricing/market-path'
-
-/**
- * Geography the picker already refused. City-index lift is the same refuse.
- * `gla-bracket` is a size-bracket substitution from outside the pocket
- * (match.ts bracketGla). It is not an exclusive tier. Ignoring it kept a
- * mixed set labeled exclusive and zeroed the size adjustment the bracket
- * exists to restore.
- */
-const WIDEN_TIER = /^(nearby-|city-|similar-|widened-|beyond-|rural-|like-community-|competing-|gla-bracket)/
-
-/** Own street, own plat, or the 0.25 mi street-cluster pocket. */
-const EXCLUSIVE_TIER = /^(pocket-|subdivision-|own-street-)/
+import { classifyRungName } from '@/lib/pricing/rung-class'
 
 export const TIME_ADJUSTMENT_MEASURE_POCKET = 'sold and last-ask prices in this exclusive pocket'
 
@@ -63,9 +52,16 @@ export function canterRecommendNearGold(recommended: number): boolean {
 /** Matt 2026-09-17 — Tip Ready refuse below this many closed comps. */
 export const CANTER_MIN_CLOSED_COMPS = 5
 
+/**
+ * True only when every rung is the subject's own street, own plat, or the
+ * 0.25 mi pocket, and at least one of those is present. Any wider rung,
+ * including a name the classifier does not know, keeps size adjustment and
+ * the upward date move. `broker-selected` on its own is not exclusive.
+ */
 export function selectionIsExclusivePocket(tiersUsed: readonly string[]): boolean {
-  if (tiersUsed.some((t) => WIDEN_TIER.test(t))) return false
-  return tiersUsed.some((t) => EXCLUSIVE_TIER.test(t))
+  const classes = tiersUsed.map((tier) => classifyRungName(tier))
+  if (classes.some((kind) => kind === 'widen' || kind === 'unclassified')) return false
+  return classes.some((kind) => kind === 'exclusive')
 }
 
 /**

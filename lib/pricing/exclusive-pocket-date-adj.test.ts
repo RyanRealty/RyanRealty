@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { compTierLadder } from '@/lib/cma/comp-tiers'
 import {
   CANTER_GOLD_RECOMMEND,
   applyExclusivePocketDateAdj,
@@ -7,7 +8,15 @@ import {
   exclusivePocketPathNote,
   selectionIsExclusivePocket,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
+import { pricingTierLadder } from '@/lib/pricing/ladder'
+import { classifyRungName, type RungClass } from '@/lib/pricing/rung-class'
 import type { MarketPath } from '@/lib/pricing/market-path'
+
+/** The file's own definition, written out so a new prefix cannot hide inside the classifier. */
+function expectedLadderClass(name: string): Exclude<RungClass, 'broker-selected' | 'unclassified'> {
+  if (name.startsWith('own-street-') || name.startsWith('subdivision-') || name.startsWith('pocket-')) return 'exclusive'
+  return 'widen'
+}
 
 const rising: MarketPath = {
   factor: 1.21,
@@ -51,6 +60,29 @@ describe('selectionIsExclusivePocket', () => {
     // A size-bracket sale is outside the pocket. It must not leave the set exclusive.
     expect(selectionIsExclusivePocket(['subdivision-6mo', 'gla-bracket'])).toBe(false)
     expect(selectionIsExclusivePocket(['pocket-12mo', 'subdivision-3mo', 'gla-bracket'])).toBe(false)
+    expect(selectionIsExclusivePocket(['subdivision-6mo', 'neighborhood-24mo', 'citywide-12mo'])).toBe(false)
+    expect(selectionIsExclusivePocket(['subdivision-6mo', 'neighborhood-6mo'])).toBe(false)
+    expect(selectionIsExclusivePocket(['subdivision-6mo', 'adjacent-subdivision-12mo'])).toBe(false)
+    expect(selectionIsExclusivePocket(['pocket-6mo', 'community-12mo'])).toBe(false)
+    expect(selectionIsExclusivePocket(['own-street-24mo', 'adjacent-sub-6mo'])).toBe(false)
+    expect(selectionIsExclusivePocket(['broker-selected'])).toBe(false)
+    expect(selectionIsExclusivePocket(['subdivision-12mo', 'broker-selected'])).toBe(true)
+  })
+
+  it('classifies every rung either ladder can emit', () => {
+    const names = [
+      ...pricingTierLadder().map((tier) => tier.name),
+      ...pricingTierLadder({ customOrNew: true }).map((tier) => tier.name),
+      ...compTierLadder('Cedar Plat').map((tier) => tier.name),
+    ]
+    expect(names.length).toBeGreaterThan(40)
+    for (const name of names) {
+      expect(classifyRungName(name), name).toBe(expectedLadderClass(name))
+    }
+    expect(classifyRungName('gla-bracket')).toBe('widen')
+    expect(classifyRungName('broker-selected')).toBe('broker-selected')
+    expect(classifyRungName('invented-rung-9mo')).toBe('unclassified')
+    expect(selectionIsExclusivePocket(['subdivision-6mo', 'invented-rung-9mo'])).toBe(false)
   })
 })
 
