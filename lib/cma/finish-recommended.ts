@@ -5,6 +5,10 @@
  *    not below pocket closed-sale support.
  * 2. Recommended is clamped into the closed-comp band.
  * 3. The failed-ask sentence is rewritten from that final recommendation.
+ * 4. Conservative and high end move to keep the recommendation inside them.
+ *    A minimum-width open can put the closed-band low under the earlier
+ *    conservative tier, and the nudge follows that low. The recommendation
+ *    and the closed band stay where those steps put them.
  *
  * Marshmallow printed "recommend listing at $933,000" from step 0 (the
  * clamp) and then step 1 moved the rec. The sentence has to be last.
@@ -23,9 +27,32 @@ export type FinishRecommendedPricing = {
   recommended: number
   valueLow: number
   valueHigh: number
+  /** List tiers. When present, they are pulled into line with the final recommendation. */
+  conservative?: number
+  highEnd?: number
   notes: string[]
   clamp?: CmaPricingClamp | null
   sellerNet?: CmaSellerNet | null
+}
+
+/**
+ * The accuracy contract requires conservative <= recommended <= highEnd.
+ * Later steps may lower the recommendation without moving those tiers.
+ * Move the tiers. Do not move the recommendation.
+ */
+export function alignListTiersToRecommended<T extends { recommended: number; conservative?: number; highEnd?: number }>(
+  pricing: T,
+): T {
+  const conservative =
+    typeof pricing.conservative === 'number' && pricing.conservative > pricing.recommended
+      ? pricing.recommended
+      : pricing.conservative
+  const highEnd =
+    typeof pricing.highEnd === 'number' && pricing.highEnd < pricing.recommended
+      ? pricing.recommended
+      : pricing.highEnd
+  if (conservative === pricing.conservative && highEnd === pricing.highEnd) return pricing
+  return { ...pricing, conservative, highEnd }
 }
 
 export function finishRecommendedAfterActives<T extends FinishRecommendedPricing>(
@@ -51,6 +78,7 @@ export function finishRecommendedAfterActives<T extends FinishRecommendedPricing
     }
   }
   next = clampRecommendedToClosedBand(next)
+  next = alignListTiersToRecommended(next)
   next = rewriteFailedAskClampAfterRec(next)
   // The net sheet is anchored to recommended at the moment attachSellerNet
   // ran. The actives nudge is after that. A sheet still on the pre-nudge
