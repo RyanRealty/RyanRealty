@@ -191,35 +191,6 @@ export function askExposureSentence(
   return `You asked ${parts.join(', then ')}.`
 }
 
-/**
- * "You asked ..." ending on the ask the listing came off at.
- *
- * The exposure's last segment can stop one cut early when that last move has
- * no date. Skipping the sentence then left "You first asked ..." which is not
- * the banner. The known steps stay, and the undated last ask closes the line.
- */
-export function askHeadingEndingAtLastAsk(
-  segments: ReadonlyArray<{ ask: number; days: number | null }>,
-  lastAsk: number | null,
-): string {
-  const runs = segments.filter((s) => s.ask > 0 && Number.isFinite(s.ask))
-  const end = lastAsk != null && Number.isFinite(lastAsk) && lastAsk > 0 ? Math.round(lastAsk) : null
-  const lastRun = runs.length > 0 ? Math.round(runs[runs.length - 1]!.ask) : null
-  if (end == null || lastRun === end) return askExposureSentence(runs)
-  const priorDated = runs.length > 0 && runs.every((s) => s.days != null && s.days > 0)
-  if (priorDated) {
-    const parts = runs.map((s, i) => {
-      const n = Math.round(s.days!).toLocaleString('en-US')
-      return i === 0 ? `${usd(s.ask)} for ${n} days` : `${usd(s.ask)} for ${n}`
-    })
-    return `You asked ${parts.join(', then ')}, then ${usd(end)} and did not sell.`
-  }
-  const asks = [...runs.map((s) => usd(s.ask)), usd(end)]
-  return asks.length === 1
-    ? `You asked ${asks[0]} and did not sell.`
-    : `You asked ${asks.slice(0, -1).join(', then ')}, then ${asks[asks.length - 1]} and did not sell.`
-}
-
 function usd(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
