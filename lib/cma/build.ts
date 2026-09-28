@@ -79,7 +79,6 @@ import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
   applyFailedAskCap,
-  rewriteFailedAskClampAfterRec,
   buildFailureFindings,
   buildServicesList,
   buildNetSheet,
@@ -100,14 +99,14 @@ import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
-import { buildCompArea, compAreaContains, compAreaIn, resolveCompetitionArea, type CompArea } from '@/lib/pricing/comp-area'
+import { buildCompArea, compAreaContains, resolveCompetitionArea, type CompArea } from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
 import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
-import { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
-import { nudgeRecommendedDownForHighDomActives, pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
-import { clampRecommendedToClosedBand } from '@/lib/pricing/recommended-in-band'
+import { bandAroundList, bandRowToRival, buildBandRivalSet, emptyCompetitionSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
+import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
+import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -1350,63 +1349,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           })
         : null
     if (!bandRivals && rivalBand && compArea) {
-      const area = competitionRings[0] && competitionRings[0].kind !== 'city' ? competitionRings[0] : null
-      const lo = `$${rivalBand.lo.toLocaleString('en-US')}`
-      const hi = `$${rivalBand.hi.toLocaleString('en-US')}`
-      const sentence = area
-        ? `No home ${compAreaIn(area)} is for sale between ${lo} and ${hi}, and none is under contract. The search did not cover the whole city.`
-        : `This home has no map point, so no competition was pulled. The search did not cover the whole city.`
-      bandRivals = {
-        area: area ?? {
-          kind: 'radius',
-          names: [],
-          radiusMiles: null,
-          centre: compArea.centre,
-          source: 'competition: no coordinates, city not used',
-          sentence: 'The homes closest to yours.',
-        },
+      bandRivals = emptyCompetitionSet({
+        rings: competitionRings,
+        compArea,
         lo: rivalBand.lo,
         hi: rivalBand.hi,
-        activeCount: 0,
-        pendingCount: 0,
-        rivals: [],
-        sentence,
-        source: 'Competition ladder returned no listings inside the cap.',
-        widenedFrom: null,
-        ringsTried: competitionRings.flatMap((r) =>
-          r.kind === 'radius' && r.radiusMiles != null ? [r.radiusMiles] : [],
-        ),
-      }
+      })
     }
 
-    // Matt 2026-09-17: high-DOM (60+) overpriced actives may nudge Recommended
-    // DOWN within the closed-comp band only — never outside, no story-adj.
-    // The pull is also capped, and it cannot go under pocket closed-sale support.
-    if (pricing && bandRivals?.rivals?.length) {
-      const bandLow = Math.min(pricing.valueLow, pricing.valueHigh)
-      const bandHigh = Math.max(pricing.valueLow, pricing.valueHigh)
-      const nudge = nudgeRecommendedDownForHighDomActives({
-        recommended: pricing.recommended,
-        bandLow,
-        bandHigh,
-        pocketClosedSupport: pocketClosedSupportPrice(adjusted, subject.subdivision),
-        actives: bandRivals.rivals.map((r) => ({
+    // Matt 2026-09-17: high-DOM actives may pull Recommended down inside the
+    // band, then the failed-ask sentence is rewritten from that final rec.
+    if (pricing) {
+      pricing = finishRecommendedAfterActives(pricing, {
+        actives: (bandRivals?.rivals ?? []).map((r) => ({
           status: r.status,
           listPrice: r.listPrice,
           daysOnMarket: r.daysOnMarket,
         })),
+        pocketClosedSupport: pocketClosedSupportPrice(adjusted, subject.subdivision),
       })
-      if (nudge.nudged) {
-        pricing = { ...pricing, recommended: nudge.recommended, notes: [...pricing.notes, nudge.reason!] }
-      }
-    }
-
-    // Matt 2026-09-17: Low/High = closed-comp band; Recommended must stay inside.
-    // Tip Ready refuses when Rec is outside Low/High (see recommended-in-band).
-    // The failed-ask sentence is rewritten from this final recommendation.
-    if (pricing) {
-      pricing = clampRecommendedToClosedBand(pricing)
-      pricing = rewriteFailedAskClampAfterRec(pricing)
       pricing = syncRangeRuleToHeroBand(pricing)
     }
 

@@ -34,6 +34,8 @@ export type CmaBandRival = {
   originalListPrice?: number | null
   onMarketDate?: string | null
   listingHistoryLine?: string | null
+  /** Miles from the subject. Blank on a stored row until print fills it from coordinates. */
+  proximity?: string | null
 }
 
 export type CmaBandSubject = {
@@ -555,6 +557,44 @@ export function buildBandRivalSet(input: {
     }),
     widenedFrom,
     ringsTried: input.ringsTried ?? [],
+  }
+}
+
+/**
+ * The competition read came back empty (no inventory, or no ring to query).
+ * The chapter still says so. It does not disappear, and it does not fall
+ * back to every listing in the city.
+ */
+export function emptyCompetitionSet(args: {
+  rings: readonly CompArea[]
+  compArea: CompArea
+  lo: number
+  hi: number
+}): CmaBandRivalSet {
+  const area = args.rings[0] && args.rings[0].kind !== 'city' ? args.rings[0] : null
+  const lo = `$${args.lo.toLocaleString('en-US')}`
+  const hi = `$${args.hi.toLocaleString('en-US')}`
+  const sentence = area
+    ? `No home ${compAreaIn(area)} is for sale between ${lo} and ${hi}, and none is under contract. The search did not cover the whole city.`
+    : `This home has no map point, so no competition was pulled. The search did not cover the whole city.`
+  return {
+    area: area ?? {
+      kind: 'radius',
+      names: [],
+      radiusMiles: null,
+      centre: args.compArea.centre,
+      source: 'competition: no coordinates, city not used',
+      sentence: 'The homes closest to yours.',
+    },
+    lo: args.lo,
+    hi: args.hi,
+    activeCount: 0,
+    pendingCount: 0,
+    rivals: [],
+    sentence,
+    source: 'Competition ladder returned no listings inside the cap.',
+    widenedFrom: null,
+    ringsTried: args.rings.flatMap((r) => (r.kind === 'radius' && r.radiusMiles != null ? [r.radiusMiles] : [])),
   }
 }
 

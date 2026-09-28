@@ -902,17 +902,20 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     // city's own count and the reader's own outcome rather than vanishing and
     // taking the ask that failed with it.
     const said = a.expiredPeers?.sentence?.trim()
+    const saidHtml = said ? `<p>${esc(said)}</p>` : ''
     if (!subjectListingFailed(a.subject) || !sets.subject.outcome) {
       // The search ran and found nothing. Say so. A letter with no peer set
       // at all still omits the chapter.
-      return said ? `<p>${esc(said)}</p>` : ''
+      return saidHtml
     }
     const ask = sets.subject.lastAsk
     const own = `Your own listing ${
       ask != null && ask > 0 ? `asked ${usd(ask)} and ` : ''
     }${sets.subject.outcome.charAt(0).toLowerCase()}${sets.subject.outcome.slice(1)}.`
+    // The owner's own failed listing is not a substitute for an empty search.
     return `${lead0 ? `<p class="chart-read">${esc(lead0)}</p>` : ''}
-  <p>${esc(own)}</p>`
+  <p>${esc(own)}</p>
+  ${saidHtml}`
   }
   const range = pathRangeFor(a)
   const matrix = renderMatrixHtml({

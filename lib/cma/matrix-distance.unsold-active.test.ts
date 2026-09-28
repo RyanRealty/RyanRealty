@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { activeEntries, closedEntries, unsoldEntries } from '@/lib/cma/matrix-entry'
+import { printArgsDistanceFill } from '@/lib/cma/print-overlay'
+import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaAdjustedComp } from '@/lib/cma/types'
 import { proximityLabel } from '@/lib/cma/market-area'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
@@ -98,5 +100,30 @@ describe('matrix distance — unsold / active / pending from subject lat/lng', (
     const [row] = unsoldEntries([peer], null, 'Bend', subject)
     expect(row?.proximity).toMatch(/miles/)
     expect(row?.proximity).not.toBe('-')
+  })
+
+  it('fills a blank active distance from Latitude/Longitude on the print path', () => {
+    const rival = {
+      listingKey: 'A9',
+      address: '80 Competition Way',
+      listPrice: 610_000,
+      status: 'Active' as const,
+      daysOnMarket: 12,
+      photoUrl: null,
+      latitude: null,
+      longitude: null,
+      Latitude: 44.07,
+      Longitude: -121.3,
+      proximity: '',
+    }
+    const [entry] = activeEntries([rival as CmaBandRival], null, 'Bend', subject)
+    expect(entry?.proximity).toMatch(/miles/)
+
+    const filled = printArgsDistanceFill({
+      subject: { latitude: subject.latitude, longitude: subject.longitude, streetAddress: '1 Test' },
+      bandRivals: { rivals: [rival] },
+    } as unknown as RenderCmaArgs)
+    expect(filled.bandRivals?.rivals?.[0]?.proximity ?? '').toMatch(/miles/)
+    expect(rival.proximity).toBe('')
   })
 })
