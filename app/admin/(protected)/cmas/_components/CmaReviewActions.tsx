@@ -153,8 +153,22 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
 
   function approve() {
     startTransition(async () => {
-      const { error } = await approveCmaAction(props.slug)
-      if (error) toast.error(error)
+      const res = await approveCmaAction(props.slug)
+      if (res.error && res.needsReviewAck) {
+        // Flagged build. Approving continues only after the broker confirms.
+        const ack = confirm(
+          `${res.error}\n\nApprove anyway, acknowledging the recorded findings?`,
+        )
+        if (!ack) return
+        const retry = await approveCmaAction(props.slug, { acknowledgeReview: true })
+        if (retry.error) toast.error(retry.error)
+        else {
+          toast.success('Approved.')
+          router.refresh()
+        }
+        return
+      }
+      if (res.error) toast.error(res.error)
       else {
         toast.success('Approved.')
         router.refresh()
@@ -195,7 +209,16 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         }
       }
       const ov = overrideIfEdited()
-      const res = await approveAndDeliverCma(props.slug, ov, { delivery })
+      let res = await approveAndDeliverCma(props.slug, ov, { delivery })
+      if (!res.ok && res.needsReviewAck) {
+        // Flagged build. Sending continues only after the broker confirms.
+        const flagText = res.reviewReason?.trim() || res.error
+        const ack = confirm(
+          `${flagText}\n\nSend anyway, acknowledging the recorded findings?`,
+        )
+        if (!ack) return
+        res = await approveAndDeliverCma(props.slug, ov, { delivery, acknowledgeReview: true })
+      }
       if (!res.ok) {
         toast.error(res.error)
         return
