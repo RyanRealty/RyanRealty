@@ -3,7 +3,25 @@
  * Greeting policy is on hold; the body still must not carry the row's name
  * tokens. A token is a word from client_name / owner / contact that is not a
  * generic role word.
+ *
+ * What is held against the owner, and what is not:
+ *   - Role words (the, owner, seller...) never become tokens.
+ *   - Ordinary, entity and directional words (price, hill, homes, llc, estate,
+ *     nw...) count only in a name-shaped position: a greeting, "Prepared for",
+ *     a sign-off, a to/cc line, or a capitalized pair beside another name
+ *     token.
+ *   - Our own identity (the brokerage and the brokers, read from
+ *     lib/brand/contact) is removed from the text before the CHECK grades it.
+ *     A client named Ryan is not refused for "Matt Ryan" or "Ryan Realty". Whole
+ *     phrases only, and never a phrase the owner's own name is made of. The MLS
+ *     scrub is never told our identity: a remark's "Ryan" can be the owner.
+ *   - Trust words (trust, rev, revocable, liv, living, family) are none of
+ *     those. They are scrubbed everywhere on purpose and the check refuses
+ *     them everywhere.
+ * A real printed name (a greeting, a sign-off, the full name) still fails.
  */
+
+import { BRAND, BROKERS } from '@/lib/brand/contact'
 
 const ROLE_WORDS = new Set([
   'the',
@@ -24,9 +42,15 @@ const ROLE_WORDS = new Set([
 ])
 
 /**
- * Ordinary words and real-estate vocabulary that are also surnames.
- * They print all over a CMA ("list price", "What price and time").
- * A hit requires a name-shaped position, not a bare whole-word match.
+ * Ordinary words and real-estate vocabulary that are also surnames, plus the
+ * words a company or estate owner name is made of, plus street directionals.
+ * They print all over a CMA ("list price", "What price and time", "sales of
+ * homes like yours", "115 NW Oregon Ave") and all over MLS remarks ("real
+ * estate"). A hit requires a name-shaped position, not a bare whole-word match.
+ *
+ * TRUST WORDS ARE NOT HERE ON PURPOSE: trust, rev, revocable, liv, living,
+ * family. A trust name is scrubbed from MLS text everywhere and the check
+ * refuses it everywhere (letter-privacy.trust-scrub.test.ts holds that).
  */
 const COMMON_NAME_WORDS = new Set([
   'price',
@@ -56,6 +80,61 @@ const COMMON_NAME_WORDS = new Set([
   'kings',
   'bell',
   'bells',
+  // Company and estate owners (assessor rows such as "QUILLFEATHER HOMES LLC",
+  // "ESTATE OF ..."). The real-estate nouns first.
+  'home',
+  'homes',
+  'house',
+  'houses',
+  'property',
+  'properties',
+  'estate',
+  'estates',
+  'land',
+  'realty',
+  'rental',
+  'rentals',
+  'holding',
+  'holdings',
+  'investment',
+  'investments',
+  'investors',
+  'builder',
+  'builders',
+  'construction',
+  'development',
+  'developments',
+  'developers',
+  'management',
+  'capital',
+  'partners',
+  'group',
+  'company',
+  // Legal forms.
+  'llc',
+  'inc',
+  'co',
+  'corp',
+  'ltd',
+  'lp',
+  'llp',
+  'pllc',
+  'limited',
+  // Street directionals. They print in every address, ours included ("115 NW
+  // Oregon Ave", comp addresses), and a builder's name can end in one
+  // ("... Homes NW"). One-letter directionals never become tokens.
+  'ne',
+  'nw',
+  'se',
+  'sw',
+  'north',
+  'south',
+  'east',
+  'west',
+  'northeast',
+  'northwest',
+  'southeast',
+  'southwest',
 ])
 
 export function isCommonNameWord(token: string): boolean {
@@ -140,6 +219,9 @@ function phraseIsOnlyCommonWords(phrase: string): boolean {
 function commonWordInNamePosition(text: string, token: string, tokens: string[]): boolean {
   const t = escapeRegExp(token)
   if (new RegExp(`\\b(?:hi|hello|dear|hey),?\\s+${t}\\b`, 'i').test(text)) return true
+  // An honorific makes any word a surname: "Mr. North will consider offers"
+  // names the owner even though "north" is an ordinary word.
+  if (new RegExp(`\\b(?:mr|mrs|ms|miss|dr)\\.?\\s+${t}\\b`, 'i').test(text)) return true
   if (new RegExp(`\\bprepared\\s+for\\s+(?!the\\s+owners\\b)(?:[A-Za-z][A-Za-z'-]*\\s+){0,3}${t}\\b`, 'i').test(text)) {
     return true
   }
@@ -178,6 +260,8 @@ function scrubCommonWordNamePositions(text: string, token: string, tokens: strin
   const t = escapeRegExp(token)
   let out = text
   out = out.replace(new RegExp(`\\b(hi|hello|dear|hey),?\\s+${t}\\b`, 'gi'), '$1')
+  // "Mr. North" names the owner: drop the surname with its honorific.
+  out = out.replace(new RegExp(`\\b(?:mr|mrs|ms|miss|dr)\\.?\\s+${t}\\b`, 'gi'), '')
   out = out.replace(
     new RegExp(`\\b(prepared\\s+for\\s+(?!the\\s+owners\\b)(?:[A-Za-z][A-Za-z'-]*\\s+){0,3})${t}\\b`, 'gi'),
     '$1',
@@ -299,10 +383,91 @@ export function scrubOwnerTokensInHtml(
   })
 }
 
+/** "matthew-ryan" -> "Matthew Ryan": the roster's web slug, spelled out. */
+function nameFromSlug(slug: string): string {
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+/**
+ * The phrases that are OUR identity, not an owner's name: the brokerage and
+ * every broker on the roster, in each form the roster carries. "Matt Ryan" is
+ * the display name, "Matthew Ryan" is the web slug spelled out, "Rebecca Ryser
+ * Peterson" is the legal name behind the everyday "Rebecca Peterson", and
+ * "Ryan Realty LLC" is the legal form of the brand name. Every other spelling
+ * the brand module lists (BRAND.alternateNames) begins with "Ryan Realty".
+ *
+ * Read from lib/brand/contact.ts (BRAND, BROKERS), the roster the signature,
+ * the email sender name, and the JSON-LD already read. There is no second list
+ * here: a broker added to BROKERS is covered the day it is added. A broker who
+ * exists only in public.brokers is not on the roster, and a client who shares
+ * that broker's name meets the old refusal until the broker is added there.
+ * Longest first, so the legal form wins over the bare brand name.
+ */
+export function ourIdentityPhrases(): string[] {
+  const phrases = new Set<string>()
+  const add = (phrase: string) => {
+    const t = phrase.trim()
+    if (t) phrases.add(t)
+  }
+  add(BRAND.name)
+  add(BRAND.legalName)
+  for (const broker of Object.values(BROKERS)) {
+    add(broker.name)
+    add(broker.nameShort)
+    add(nameFromSlug(broker.slug))
+  }
+  return [...phrases].sort((a, b) => b.length - a.length)
+}
+
+/** Each identity phrase with its comparable words, worked out once. */
+const OUR_IDENTITY = ourIdentityPhrases().map((phrase) => ({
+  phrase,
+  // Same word rule as the owner tokens, so a hyphenated name compares alike.
+  words: significantWords(phrase).map((word) => word.toLowerCase()),
+}))
+
+function identityRegExp(phrases: readonly string[]): RegExp {
+  const alternatives = phrases.map((phrase) => phrase.split(/\s+/).map(escapeRegExp).join('\\s+'))
+  return new RegExp(`\\b(?:${alternatives.join('|')})\\b`, 'gi')
+}
+
+const OUR_IDENTITY_RE = identityRegExp(OUR_IDENTITY.map(({ phrase }) => phrase))
+
+/**
+ * Text with the brokerage and broker names taken out. Whole phrases only: a
+ * bare "Matt" or "Ryan" is not our identity and stays for the grader, so a
+ * greeting to a client who shares a first name still fails.
+ *
+ * One phrase is NOT taken out: a phrase made only of words in the owner's own
+ * name. A client called Matt Ryan (or an owner called "Ryan Realty Holdings")
+ * is a real name that reads exactly like ours, and only a person can tell the
+ * two apart, so the letter stays refused as it was before this rule existed.
+ *
+ * For grading only. The MLS scrub functions never call this: a remark that
+ * says "Ryan" can be naming the owner.
+ */
+function withoutOurOwnIdentity(text: string, tokens: readonly string[]): string {
+  const ownWords = new Set(tokens.map((token) => token.toLowerCase()))
+  const ours = OUR_IDENTITY.filter(({ words }) => words.length === 0 || !words.every((word) => ownWords.has(word)))
+  if (ours.length === 0) return text
+  const re = ours.length === OUR_IDENTITY.length ? OUR_IDENTITY_RE : identityRegExp(ours.map(({ phrase }) => phrase))
+  return text.replace(re, ' ')
+}
+
 /**
  * Tokens that actually print. A real given name matches as a whole word.
- * An ordinary word (price, hill, stone) matches only in a name-shaped
- * position. The list is the tokens that hit, not every token on the row.
+ * An ordinary word (price, hill, stone, homes, llc) matches only in a
+ * name-shaped position. The list is the tokens that hit, not every token on
+ * the row.
+ *
+ * Our own brokerage and broker names are taken out of the copy first, so a
+ * client named Ryan is not a hit on "Matt Ryan" or "Ryan Realty". This is the
+ * one grader: letterOwnerNameCheck and letterContainsOwnerContactNames both
+ * read it, so they cannot disagree.
  */
 export function ownerNameTokenHits(
   htmlOrText: string,
@@ -310,7 +475,7 @@ export function ownerNameTokenHits(
 ): string[] {
   const tokens = ownerContactNameTokens(source)
   if (tokens.length === 0) return []
-  const text = textOf(htmlOrText)
+  const text = withoutOurOwnIdentity(textOf(htmlOrText), tokens)
   const words = new Set((text.match(NAME_TOKEN_RE) ?? []).map((w) => w.toLowerCase()))
   const hits: string[] = []
   for (const token of tokens) {
@@ -321,7 +486,7 @@ export function ownerNameTokenHits(
   return hits
 }
 
-/** True when any owner/contact token appears as a whole word in the copy. */
+/** True when any owner/contact token appears as a whole word in the copy (ours excluded). */
 export function letterContainsOwnerContactNames(
   htmlOrText: string,
   source: LetterNameSource | null | undefined,
@@ -512,7 +677,14 @@ export function htmlWithoutAllowedPreparedNameLines(
   return html.replace(NAMED_COVER_RE, 'Prepared by Ryan Realty').replace(NAMED_CLOSE_RE, 'Prepared')
 }
 
-/** Hard refuse: the letter or email draft carries the row's owner/contact name. */
+/**
+ * Hard refuse: the letter or email draft carries the row's owner/contact name.
+ *
+ * Order matters. The two prepared sentences are set aside first (their
+ * patterns read the literal "Ryan Realty"), then ownerNameTokenHits takes the
+ * tags out, takes our own brokerage and broker names out, and grades what is
+ * left.
+ */
 export function letterOwnerNameCheck(
   htmlOrText: string,
   source: LetterNameSource | null | undefined,
