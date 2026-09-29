@@ -95,6 +95,12 @@ vi.mock('@/lib/email/auto-track', () => ({ instrumentLeadHtml: vi.fn(async (html
 vi.mock('@/lib/cma/solicit-screen', () => ({
   screenAddressForSolicitation: h.screenAddressForSolicitation,
 }))
+// These tests are about the two rails. The owner's prospect row (claim, stamp,
+// finalize, release) is pinned in send.prospect-claim.test.ts; here no prospect
+// row resolves, so the send proceeds exactly as it did before that lease existed.
+vi.mock('@/lib/data/prospecting/cma-send-prospect', () => ({
+  resolveProspectForCmaSend: vi.fn(async () => null),
+}))
 
 import { sendCmaToLead } from '@/lib/cma/send'
 import { GMAIL_AUTH_TIMEOUT_MS } from '@/lib/gmail-draft'
