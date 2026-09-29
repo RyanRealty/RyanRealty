@@ -53,6 +53,7 @@
     "ci:no-staging-host",
     "ci:ods-compliance",
     "ci:offmarket-listing-cta",
+    "ci:outbound-tracking",
     "ci:page-dal",
     "ci:pdf-page-safety",
     "ci:place-section-depth",

@@ -1,0 +1,418 @@
+{
+  "note": "Registry for ci:outbound-tracking. Every app/ and lib/ caller of sendEmail, sendBatchEmails, sendGmailMessage, sendCrmEmail, or Resend .emails.send must be a template or an exclusion. Render entries call the production builder, then the same wrap the send uses. Static is only the BPO letter, whose body builder is not exported and whose send renders a PDF. Exceptions are tel:, mailto:, and the Oregon Initial Agency Disclosure Pamphlet. Unsubscribe and /sign links that the instrumenter leaves raw are failures, not exceptions.",
+  "templates": [
+    {
+      "id": "cma-letter-expired",
+      "file": "lib/cma/send.ts",
+      "fn": "sendCmaToLead",
+      "kind": "CMA letter email",
+      "check": "render",
+      "wrap": "buildLeadBody then attributeOutbound, the same order as sendCmaToLead.",
+      "staticAssert": ["attributeOutbound("]
+    },
+    {
+      "id": "cma-letter-fsbo",
+      "file": "lib/cma/send.ts",
+      "fn": "sendCmaToLead",
+      "kind": "CMA letter email",
+      "check": "render",
+      "wrap": "buildLeadBody then attributeOutbound, the same order as sendCmaToLead.",
+      "staticAssert": ["attributeOutbound("]
+    },
+    {
+      "id": "cma-letter-place-page",
+      "file": "lib/cma/send.ts",
+      "fn": "sendCmaToLead",
+      "kind": "CMA letter email",
+      "check": "render",
+      "wrap": "buildLeadBody then attributeOutbound. Place-page facts add the subdivision and city links.",
+      "staticAssert": ["attributeOutbound("]
+    },
+    {
+      "id": "cma-letter-lead-form",
+      "file": "lib/cma/send.ts",
+      "fn": "sendCmaToLead",
+      "kind": "CMA letter email",
+      "check": "render",
+      "wrap": "buildLeadBody then attributeOutbound, the same order as sendCmaToLead.",
+      "staticAssert": ["attributeOutbound("]
+    },
+    {
+      "id": "cma-letter-seller-valuation",
+      "file": "lib/cma/send.ts",
+      "fn": "sendCmaToLead",
+      "kind": "CMA letter email",
+      "check": "render",
+      "wrap": "buildLeadBody then attributeOutbound, the same order as sendCmaToLead.",
+      "staticAssert": ["attributeOutbound("]
+    },
+    {
+      "id": "fsbo-first-touch",
+      "file": "lib/cma/fsbo-cma-templates.ts",
+      "fn": "composeFsboCmaFirstTouchEmail",
+      "kind": "CMA first-contact",
+      "check": "render",
+      "wrap": "The composer sends this plain-text body through the Gmail rail. The gate renders it with composeOutboundHtml plus attributeOutbound, the wrap sendCrmEmail applies."
+    },
+    {
+      "id": "fsbo-first-touch-seed",
+      "file": "lib/cma/fsbo-cma-templates.ts",
+      "fn": "FSBO_CMA_FIRST_TOUCH_EMAIL_SEED",
+      "kind": "CMA first-contact",
+      "check": "render",
+      "wrap": "Stored seed copy, tokens filled with fixture values, then the same Gmail wrap as fsbo-first-touch."
+    },
+    {
+      "id": "cma-request-confirmation",
+      "file": "lib/cma/request-emails.ts",
+      "fn": "sendLeadConfirmation",
+      "kind": "CMA first-contact",
+      "check": "render",
+      "wrap": "The HTML is built in sendLeadConfirmation and sendGmailMessage wraps it with instrumentLeadHtml, which calls attributeOutbound. The gate renders that HTML through attributeOutbound.",
+      "staticAssert": ["sendGmailMessage("]
+    },
+    {
+      "id": "place-value-confirmation",
+      "file": "lib/cma/request-emails.ts",
+      "fn": "sendPlaceValueConfirmation",
+      "kind": "CMA first-contact",
+      "check": "render",
+      "wrap": "Plain text goes through sendGovernedEmail on the Gmail rail. The gate renders it with composeOutboundHtml plus attributeOutbound.",
+      "staticAssert": ["sendGovernedEmail("]
+    },
+    {
+      "id": "site-confirmation-contact",
+      "file": "lib/comms/site-confirmations.ts",
+      "fn": "sendContactConfirmation",
+      "kind": "other",
+      "check": "render",
+      "wrap": "Body is inline, then the shared site send() helper calls sendGovernedEmail. The gate renders the booking link through the Gmail wrap."
+    },
+    {
+      "id": "site-confirmation-alert",
+      "file": "lib/comms/site-confirmations.ts",
+      "fn": "sendAlertConfirmation",
+      "kind": "other",
+      "check": "render",
+      "wrap": "Body is inline, then sendGovernedEmail. The gate renders the listing and booking links through the Gmail wrap."
+    },
+    {
+      "id": "site-confirmation-payment",
+      "file": "lib/comms/site-confirmations.ts",
+      "fn": "sendPaymentEstimate",
+      "kind": "other",
+      "check": "render",
+      "wrap": "Body is inline, then sendGovernedEmail. The gate renders the listing and booking links through the Gmail wrap."
+    },
+    {
+      "id": "site-confirmation-expired",
+      "file": "lib/comms/site-confirmations.ts",
+      "fn": "sendExpiredAcknowledgment",
+      "kind": "other",
+      "check": "render",
+      "wrap": "Body is inline, then sendGovernedEmail. The gate renders the booking link through the Gmail wrap."
+    },
+    {
+      "id": "cma-legacy-contact",
+      "file": "app/actions/contact-cma.ts",
+      "fn": "sendLegacyCmaDelivery",
+      "kind": "CMA letter email",
+      "check": "render",
+      "wrap": "attributeOutbound on the stored letter, then prepareDeliverableEmail, then sendEmail. The prepare footer is added after tracking.",
+      "staticAssert": ["attributeOutbound(", "prepareDeliverableEmail("]
+    },
+    {
+      "id": "cma-draft-send",
+      "file": "app/api/cma-drafts/[id]/send/route.ts",
+      "fn": "POST",
+      "kind": "CMA letter email",
+      "check": "render",
+      "wrap": "attributeOutbound on the stored letter, then sendEmail. The stored letter is not in the repo, so the fixture is one content link.",
+      "staticAssert": ["attributeOutbound("]
+    },
+    {
+      "id": "bpo-letter",
+      "file": "lib/bpo/send.ts",
+      "fn": "sendBpoToLead",
+      "kind": "CMA letter email",
+      "check": "static",
+      "why": "buildBody is not exported, and sendBpoToLead renders a PDF before the send. A render would need the database.",
+      "staticAssert": ["attributeOutbound("]
+    },
+    {
+      "id": "market-report-cadence",
+      "file": "lib/crm/market-report-send.ts",
+      "fn": "sendOneSubscriber",
+      "kind": "market report",
+      "check": "render",
+      "wrap": "renderMarketReportEmail, then prepareDeliverableEmail, then attributeOutbound. Production does not pass broker into attributeOutbound. The gate checks links and the pixel only.",
+      "staticAssert": ["prepareDeliverableEmail(", "attributeOutbound("]
+    },
+    {
+      "id": "newsletter-market-report-bulk",
+      "file": "lib/newsletter/market-report-bulk.ts",
+      "fn": "runMarketReportBulkSend",
+      "kind": "market report",
+      "check": "render",
+      "wrap": "The bulk send builds marketSection and queues a newsletter. It does not send. The drain renders that body through renderForRecipient. The gate does the same wrap.",
+      "staticAssert": ["marketSection("]
+    },
+    {
+      "id": "newsletter-drain",
+      "file": "lib/newsletter/send-queue.ts",
+      "fn": "drainNewsletter",
+      "kind": "newsletter",
+      "check": "render",
+      "wrap": "drainNewsletter calls renderForRecipient, which wraps with wrapNewsletterHtml and attributeOutbound (ttl on the token).",
+      "staticAssert": ["renderForRecipient("]
+    },
+    {
+      "id": "newsletter-one-click",
+      "file": "app/actions/contact-newsletter.ts",
+      "fn": "sendNewsletterToContactCore",
+      "kind": "newsletter",
+      "check": "render",
+      "wrap": "wrapNewsletterHtml then instrumentEmailHtml with a 180 day ttl, then sendEmail.",
+      "staticAssert": ["wrapNewsletterHtml(", "instrumentEmailHtml("]
+    },
+    {
+      "id": "listing-alert-cron",
+      "file": "lib/alerts/send.ts",
+      "fn": "sendAlertEmailToRecipients",
+      "kind": "other",
+      "check": "render",
+      "wrap": "buildListingAlertEmail then attributeOutbound, then sendEmail. No second prepare step.",
+      "staticAssert": ["attributeOutbound("]
+    },
+    {
+      "id": "listing-alert-send-now",
+      "file": "app/actions/contact-listing-matches.ts",
+      "fn": "sendListingMatchesForContactAction",
+      "kind": "other",
+      "check": "render",
+      "wrap": "buildListingAlertEmail, attributeOutbound, then prepareDeliverableEmail, then sendEmail.",
+      "staticAssert": ["attributeOutbound(", "prepareDeliverableEmail("]
+    },
+    {
+      "id": "email-cohort",
+      "file": "lib/crm/bulk-handlers/email-cohort.ts",
+      "fn": "sendOneCohortEmail",
+      "kind": "drip/sequence",
+      "check": "render",
+      "wrap": "composeOutboundHtml, attributeOutbound, then prepareDeliverableEmail. The Resend rail sends that HTML.",
+      "staticAssert": ["attributeOutbound(", "prepareDeliverableEmail("]
+    },
+    {
+      "id": "sequence-step",
+      "file": "app/api/cron/crm-sequence-engine/route.ts",
+      "fn": "GET",
+      "kind": "drip/sequence",
+      "check": "render",
+      "wrap": "The step body is plain text sent through sendCrmEmail, which composes the signature and calls instrumentLeadHtml. The gate renders a fixture body through that wrap.",
+      "staticAssert": ["sendCrmEmail("]
+    },
+    {
+      "id": "sequence-sms-fallback",
+      "file": "app/api/cron/crm-sequence-engine/route.ts",
+      "fn": "sendSmsFallbackEmail",
+      "kind": "drip/sequence",
+      "check": "render",
+      "wrap": "Same Gmail wrap as the email step, via sendCrmEmail.",
+      "staticAssert": ["sendCrmEmail("]
+    },
+    {
+      "id": "crm-composer",
+      "file": "app/actions/crm.ts",
+      "fn": "sendCrmEmailAction",
+      "kind": "other",
+      "check": "render",
+      "wrap": "Broker-composed text goes through sendGovernedEmail on the Gmail rail. The gate renders a fixture body through composeOutboundHtml plus attributeOutbound.",
+      "staticAssert": ["sendGovernedEmail("]
+    },
+    {
+      "id": "governed-gmail",
+      "file": "lib/comms/sendGovernedEmail.ts",
+      "fn": "sendViaGmail",
+      "kind": "other",
+      "check": "render",
+      "wrap": "sendViaGmail calls sendCrmEmail, which composes the signature and wraps with instrumentLeadHtml.",
+      "staticAssert": ["sendCrmEmail("]
+    },
+    {
+      "id": "governed-resend",
+      "file": "lib/comms/sendGovernedEmail.ts",
+      "fn": "sendViaResend",
+      "kind": "other",
+      "check": "render",
+      "wrap": "prepareDeliverableEmail, then sendEmail. sendEmail calls instrumentLeadHtml, which calls attributeOutbound. The gate applies that same order.",
+      "staticAssert": ["prepareDeliverableEmail(", "sendEmail("]
+    },
+    {
+      "id": "admin-one-off",
+      "file": "app/actions/admin-email.ts",
+      "fn": "sendAdminEmail",
+      "kind": "other",
+      "check": "render",
+      "wrap": "The admin's HTML is sent through sendEmail. instrumentLeadHtml calls attributeOutbound when the address maps to one person. The gate renders a fixture through attributeOutbound.",
+      "staticAssert": ["emailKey:"]
+    },
+    {
+      "id": "appointment-invite",
+      "file": "lib/crm/appointment-invites.ts",
+      "fn": "sendAppointmentInvites",
+      "kind": "other",
+      "check": "render",
+      "wrap": "Plain text, including a location line that may be a URL, goes through sendGovernedEmail. The gate renders a maps URL through the Gmail wrap.",
+      "staticAssert": ["sendGovernedEmail("]
+    },
+    {
+      "id": "home-valuation",
+      "file": "app/home-valuation/actions.ts",
+      "fn": "runValuationFollowUp",
+      "kind": "CMA first-contact",
+      "check": "render",
+      "wrap": "The two lead HTML bodies go through sendEmail, which wraps via instrumentLeadHtml. The gate renders both through attributeOutbound. The admin alert in the same function is text to the brokerage and is not a template.",
+      "staticAssert": ["emailKey:"]
+    },
+    {
+      "id": "signing-invite",
+      "file": "lib/tc/signing-emails.ts",
+      "fn": "sendSigningInvite",
+      "kind": "other",
+      "check": "render",
+      "wrap": "shell() builds the HTML. sendEmail wraps it via instrumentLeadHtml when a person resolves. The gate renders the shell through attributeOutbound. A static count asserts shell() has exactly one href.",
+      "staticAssert": ["emailKey:"]
+    },
+    {
+      "id": "signing-completion",
+      "file": "lib/tc/signing-emails.ts",
+      "fn": "sendCompletionCopy",
+      "kind": "other",
+      "check": "render",
+      "wrap": "shell() with no CTA, then sendEmail's instrumentLeadHtml. The gate renders that shell through attributeOutbound.",
+      "staticAssert": ["emailKey:"]
+    }
+  ],
+  "exclusions": [
+    {
+      "file": "lib/resend.ts",
+      "fn": "sendEmail",
+      "reason": "Resend primitive. The .emails.send call lives here. Every lead send must call this or sendCrmEmail, not a new client."
+    },
+    {
+      "file": "lib/resend.ts",
+      "fn": "sendBatchEmails",
+      "reason": "Batch wrapper. It calls sendEmail once per row and is not itself a template."
+    },
+    {
+      "file": "lib/resend.ts",
+      "fn": "sendContactNotification",
+      "reason": "Contact-form notification to the brokerage admin inbox, not to the lead."
+    },
+    {
+      "file": "app/actions/crm-template-test.ts",
+      "fn": "sendTemplateSelfTestAction",
+      "reason": "Template self-test to the signed-in broker's own mailbox, subject prefixed [TEST]. Not a lead."
+    },
+    {
+      "file": "app/actions/newsletter.ts",
+      "fn": "adminTestSendNewsletterAction",
+      "reason": "Newsletter test-send to the authenticated admin's own inbox, subject prefixed [TEST]. The audience send is the drain."
+    },
+    {
+      "file": "app/api/cma/[slug]/gmail-draft/route.ts",
+      "fn": "handleDraft",
+      "reason": "Resend fallback to the broker when the Gmail draft fails. This branch does not email the lead."
+    },
+    {
+      "file": "lib/cma-deliver.ts",
+      "fn": "finalizeAndDeliverCma",
+      "reason": "Two internal sends: Resend fallback to the broker when the Gmail draft fails, and a ready-for-review note to Matt. The lead is not mailed here."
+    },
+    {
+      "file": "lib/cma-delivery.ts",
+      "fn": "processCmaDelivery",
+      "reason": "Broker-review notification with a signed preview link. The lead send is a different route."
+    },
+    {
+      "file": "lib/cma/request-emails.ts",
+      "fn": "sendBrokerNotification",
+      "reason": "New-request notice to the assigned broker, not the lead."
+    },
+    {
+      "file": "app/api/cron/broker-agent-digest/route.ts",
+      "fn": "GET",
+      "reason": "Internal activity digest to Matt's own mailbox. Not a lead."
+    },
+    {
+      "file": "app/api/cron/daily-broker-digest/route.ts",
+      "fn": "GET",
+      "reason": "One digest email per broker. No lead recipient."
+    },
+    {
+      "file": "app/api/cron/weekly-pipeline-digest/route.ts",
+      "fn": "GET",
+      "reason": "Weekly pipeline digest to the broker or staff recipients configured in company settings. Not a lead."
+    },
+    {
+      "file": "app/api/cron/loop-health-check/route.ts",
+      "fn": "GET",
+      "reason": "Pipeline heartbeat alert to Matt only. Healthy runs send nothing."
+    },
+    {
+      "file": "app/api/cron/marketing-optimization-report/route.ts",
+      "fn": "sendDigestEmail",
+      "reason": "Weekly marketing report to the brokerage inbox, not a lead."
+    },
+    {
+      "file": "app/api/cron/newsletter-monthly-draft/route.ts",
+      "fn": "notifyMatt",
+      "reason": "Draft-ready note to Matt after the monthly draft cron. The draft itself does not send."
+    },
+    {
+      "file": "lib/deploy-health-alert.ts",
+      "fn": "sendDeployHealthAlertEmail",
+      "reason": "Ops alert to Matt when production has fallen behind main. No lead recipient."
+    },
+    {
+      "file": "lib/expired-alert.ts",
+      "fn": "sendExpiredAlertEmail",
+      "reason": "Expired-listing alert to Matt's inbox, not the homeowner."
+    },
+    {
+      "file": "lib/fsbo-alert.ts",
+      "fn": "sendFsboAlertEmail",
+      "reason": "FSBO alert to Matt's inbox, not the homeowner."
+    },
+    {
+      "file": "lib/seller-lead-alert.ts",
+      "fn": "sendSellerLeadAlertEmail",
+      "reason": "New seller-lead alert to Matt's inbox, not the lead."
+    },
+    {
+      "file": "lib/market-stat-alert.ts",
+      "fn": "sendMarketStatAlertEmail",
+      "reason": "Market-stat consistency alert to Matt when a published figure drifts. No lead recipient."
+    },
+    {
+      "file": "app/api/twilio/inbound-sms/route.ts",
+      "fn": "POST",
+      "reason": "New-text alert to the assigned broker's own mailbox."
+    },
+    {
+      "file": "app/api/twilio/conversations-events/route.ts",
+      "fn": "POST",
+      "reason": "Group-text alert to the owning broker's own mailbox."
+    },
+    {
+      "file": "app/api/twilio/recording/route.ts",
+      "fn": "POST",
+      "reason": "Voicemail or call-recording transcript to the broker's own mailbox."
+    },
+    {
+      "file": "lib/tc/signing-emails.ts",
+      "fn": "sendBrokerNotice",
+      "reason": "Signing progress notice to our own sending broker, never the client."
+    }
+  ]
+}

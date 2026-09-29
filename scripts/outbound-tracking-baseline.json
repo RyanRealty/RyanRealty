@@ -1,0 +1,65 @@
+{
+  "note": "Shrink-only ratchet for ci:outbound-tracking. Each entry is a registered template that fails the link or pixel check today. reasons must match the gate exactly. A new reason fails. A reason that no longer reproduces fails until the entry is removed. Do not add a row to hide a new template. There is no --write flag.",
+  "entries": {
+    "cma-legacy-contact": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/api/email/unsubscribe?t=eyJwIjo0MjQyLCJjIjoiZW1haWwifQ.LiIwn39SGI66RNbMo7kdsY29pPcBA5R7SbzzMH3keiw"
+      ],
+      "note": "sendLegacyCmaDelivery attributes the letter, then prepareDeliverableEmail appends the unsubscribe footer. The instrumenter leaves that unsubscribe href raw. Content links and the open pixel pass."
+    },
+    "market-report-cadence": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/api/email/unsubscribe?t=eyJwIjo0MjQyLCJjIjoiZW1haWwifQ.LiIwn39SGI66RNbMo7kdsY29pPcBA5R7SbzzMH3keiw&agent=matt&_pid=4242.report.ZyzmTSEAQ_HjG1jVJs2Baj&utm_source=crm&utm_medium=email&utm_content=agent-matt"
+      ],
+      "note": "Content links are wrapped and the open pixel is present. The one raw href is the unsubscribe URL: attributeOutbound decorates it, then leaves it unwrapped because it is an unsubscribe link. sendOneSubscriber in lib/crm/market-report-send.ts (the attributeOutbound call near lines 159-165) does not pass broker, so opens and clicks are not stamped with the broker. This gate checks links and the pixel only and does not assert that stamp."
+    },
+    "newsletter-market-report-bulk": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/newsletter/unsubscribe?token=gate-fixture"
+      ],
+      "note": "The market section links are wrapped and the open pixel is present. The newsletter unsubscribe href is left raw."
+    },
+    "newsletter-drain": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/newsletter/unsubscribe?token=gate-fixture"
+      ],
+      "note": "renderForRecipient wraps content links and adds the open pixel. The newsletter unsubscribe href is left raw."
+    },
+    "newsletter-one-click": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/newsletter/unsubscribe?token=gate-fixture"
+      ],
+      "note": "instrumentEmailHtml wraps content links and adds the open pixel. The newsletter unsubscribe href is left raw."
+    },
+    "listing-alert-cron": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/alerts/unsubscribe?token=gate-fixture"
+      ],
+      "note": "Listing links are wrapped and the open pixel is present. The alerts unsubscribe href is left raw."
+    },
+    "listing-alert-send-now": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/alerts/unsubscribe?token=gate-fixture"
+      ],
+      "note": "attributeOutbound runs, then prepareDeliverableEmail. Listing links and the open pixel pass. The alerts unsubscribe href is left raw."
+    },
+    "email-cohort": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/api/email/unsubscribe?t=eyJwIjo0MjQyLCJjIjoiZW1haWwifQ.LiIwn39SGI66RNbMo7kdsY29pPcBA5R7SbzzMH3keiw"
+      ],
+      "note": "sendOneCohortEmail attributes the body, then prepareDeliverableEmail appends the unsubscribe footer. That unsubscribe href stays raw. Content links and the open pixel pass."
+    },
+    "governed-resend": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/api/email/unsubscribe?t=eyJwIjo0MjQyLCJjIjoiZW1haWwifQ.LiIwn39SGI66RNbMo7kdsY29pPcBA5R7SbzzMH3keiw&agent=matt&_pid=4242.email.qsnOfOea3sjTzGS34zOa-0&utm_source=crm&utm_medium=email&utm_content=agent-matt"
+      ],
+      "note": "sendViaResend prepares (unsubscribe footer) and then the shared send path instruments. The unsubscribe href is decorated and left unwrapped. The content link and the open pixel pass."
+    },
+    "signing-invite": {
+      "reasons": [
+        "untracked href: https://ryan-realty.com/sign/gate-fixture"
+      ],
+      "note": "The signing CTA points at /sign/, which the instrumenter treats as a private link and does not wrap. The open pixel is present. The shell has one href, asserted statically."
+    }
+  }
+}
