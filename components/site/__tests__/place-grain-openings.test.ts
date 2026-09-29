@@ -22,7 +22,6 @@ import {
 } from '@/app/communities/[slug]/_v3/community-opening'
 import { belongingLine, resortIndexRow } from '@/app/communities/_v3/community-index-rows'
 import { homesLedgerTrace } from '@/app/subdivisions/[slug]/_v3/subdivision-traces'
-import { platHomesMode, toLedgerRows, type FieldEntry } from '@/app/subdivisions/[slug]/_v3/subdivision-rows'
 
 const links = {
   browse: '/homes-for-sale/bend',
@@ -550,30 +549,11 @@ describe('communities index rows', () => {
 })
 
 describe('subdivision ledger', () => {
-  it('treats a timed-out count as unknown, not a giant zero', () => {
-    expect(platHomesMode({ activeCount: null, homeRows: 0, pinCount: 0 })).toBe('unknown')
-    expect(platHomesMode({ activeCount: 0, homeRows: 0, pinCount: 0 })).toBe('empty')
-    expect(platHomesMode({ activeCount: 6, homeRows: 6, pinCount: 6 })).toBe('field')
-    expect(platHomesMode({ activeCount: 2, homeRows: 2, pinCount: 2 })).toBe('ledger')
-  })
-
-  it('keeps address and price as the row, with a photo when one exists', () => {
-    const item: FieldEntry = {
-      id: 'a',
-      href: '/homes-for-sale/listing/1',
-      title: '12 Sunrise Loop',
-      priceLabel: '$895,000',
-      meta: '3 bd · 2 ba',
-      photoSrc: 'https://img.example/h.jpg',
-      lat: 44.1,
-      lng: -121.3,
-    }
-    const [row] = toLedgerRows([item])
-    expect(row?.what).toBe('12 Sunrise Loop')
-    expect(row?.value).toBe('$895,000')
-    expect(row?.media?.src).toBe('https://img.example/h.jpg')
-  })
-
+  // platHomesMode/toLedgerRows (subdivision-rows.ts) were retired 2026-08-29
+  // (b4ca74d82, "Split plus plat inventory face") when the plat opening moved
+  // to PlaceSplitView; page.tsx no longer imports them or the 'unknown' /
+  // 'empty' / 'field' / 'ledger' mode concept. homesLedgerTrace below lives in
+  // the still-live subdivision-traces.ts.
   it('keeps the homes trace to one line without methodology thresholds', () => {
     const trace = homesLedgerTrace({ kind: 'boundary', displayName: 'Sunrise Village' })
     expect(trace).toMatch(/Sunrise Village/)

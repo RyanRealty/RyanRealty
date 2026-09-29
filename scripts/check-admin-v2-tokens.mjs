@@ -53,7 +53,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/PersonWorkspace.tsx',
   'app/admin/(protected)/people/[id]/FieldEditors.tsx',
   'app/admin/(protected)/people/[id]/TasksSection.tsx',
-  'app/admin/(protected)/people/[id]/NotesSection.tsx',
   'app/admin/(protected)/people/[id]/HomesSection.tsx',
   // P7 identity loop (2026-09-23): "On the site" + the personal-link copy control.
   'app/admin/(protected)/people/[id]/SiteActivitySection.tsx',
@@ -646,7 +645,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/deals/[key]/DealPropertyFacts.tsx',
   'app/admin/(protected)/deals/[key]/DealContingencyDays.tsx',
   'app/admin/(protected)/deals/[key]/DealPrices.tsx',
-  'app/admin/(protected)/deals/[key]/DocumentName.tsx',
   'app/admin/(protected)/deals/[key]/DocumentRowActions.tsx',
   'app/admin/(protected)/deals/[key]/DocumentUpload.tsx',
   'app/admin/(protected)/deals/[key]/FillOrefPacket.tsx',

@@ -66,7 +66,6 @@ const PATHS = Object.freeze({
   communityPage: 'app/communities/[slug]/page.tsx',
   neighborhoodPage: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
   subdivisionPage: 'app/subdivisions/[slug]/page.tsx',
-  communityStage: 'app/communities/[slug]/_v3/CommunityStage.tsx',
   placeOpeningCss: 'components/place/place-opening.css',
 })
 
@@ -532,12 +531,11 @@ export function placeHeroFoldDensityProblems({ root = process.cwd(), files = {} 
     }
   }
 
-  const stage = readRel(root, PATHS.communityStage, files.communityStage)
-  if (stage == null) {
-    p.push(`${PATHS.communityStage}: missing.`)
-  } else if (!/overlay=\{Boolean\(props\.posterSrc\)\}/.test(stage)) {
-    p.push(`${PATHS.communityStage}: Stage crumb must overlay the poster. Same V3Breadcrumb contract as the four place templates.`)
-  }
+  // CommunityStage.tsx (the Stage crumb-overlay contract) was retired
+  // 2026-08-29 (15c9be385, "community first screen is leftover face plus
+  // split") when the community opening moved to PlaceSplitView; page.tsx no
+  // longer imports it. The four PLACE_TEMPLATE_PAGES checks above still cover
+  // V3Breadcrumb mounting for city, community, neighborhood and subdivision.
 
   const css = readRel(root, PATHS.placeOpeningCss, files.placeOpeningCss)
   if (css == null) {
