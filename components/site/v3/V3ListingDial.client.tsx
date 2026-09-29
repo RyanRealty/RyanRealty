@@ -623,6 +623,8 @@ type CardProps = {
   nextLabel?: string
   /** Turns the dial to one of `next`. */
   onPick?: (index: number) => void
+  /** A mouse resting on a `next` row marks its ask on the asks strip. */
+  onHover?: (index: number | null) => void
 }
 
 /**
@@ -667,6 +669,7 @@ const DialCard = memo(function DialCard({
   next,
   nextLabel,
   onPick,
+  onHover,
 }: CardProps) {
   const facts = factsOf(listing)
   const price = dialPriceSlot(facts)
@@ -801,6 +804,10 @@ const DialCard = memo(function DialCard({
                 className="v3-dial__next-row"
                 aria-label={`Show ${dialThumbLabel(home.addressLine, homePrice.text)}`}
                 onClick={() => onPick(at)}
+                onPointerEnter={(event) => {
+                  if (event.pointerType === 'mouse') onHover?.(at)
+                }}
+                onPointerLeave={() => onHover?.(null)}
               >
                 <span className="v3-dial__next-media">
                   <DialThumbImage listing={home} />
@@ -851,23 +858,28 @@ function DialAsks({
   index,
   listings,
   onPick,
+  ghostIndex,
+  onGhost,
 }: {
   scale: DialAskScale
   index: number
   listings: readonly V3ListingDialItem[]
   onPick: (index: number) => void
+  /** The home a pointer rests on, here, on a thumbnail or on a "near" row. */
+  ghostIndex: number | null
+  onGhost: (index: number | null) => void
 }) {
   const trackRef = useRef<HTMLDivElement | null>(null)
   const drag = useRef<number | null>(null)
   const frame = useRef(0)
   const pending = useRef<number | null>(null)
-  const [hover, setHover] = useState<number | null>(null)
   const hydrated = useSyncExternalStore(noSubscribe, clientTrue, serverFalse)
   const ticks = useMemo(() => (hydrated ? dialAskTicksPath(scale.asks, 16) : ''), [hydrated, scale])
   const total = scale.asks.length
   const rank = scale.rank.get(index) ?? null
   const here = rank != null ? scale.asks[rank]! : null
-  const ghost = hover != null && hover !== rank ? scale.asks[hover] ?? null : null
+  const ghostRank = ghostIndex != null && ghostIndex !== index ? scale.rank.get(ghostIndex) : undefined
+  const ghost = ghostRank != null ? scale.asks[ghostRank] ?? null : null
 
   useEffect(() => () => cancelAnimationFrame(frame.current), [])
 
@@ -909,13 +921,13 @@ function DialAsks({
           if (event.pointerType === 'mouse' && event.button !== 0) return
           drag.current = event.pointerId
           event.currentTarget.setPointerCapture?.(event.pointerId)
-          setHover(null)
+          onGhost(null)
           turnTo(rankAt(event.clientX))
         }}
         onPointerMove={(event) => {
           const r = rankAt(event.clientX)
           if (drag.current === event.pointerId) turnTo(r)
-          else if (event.pointerType === 'mouse') setHover(r >= 0 ? r : null)
+          else if (event.pointerType === 'mouse') onGhost(r >= 0 ? scale.asks[r]!.index : null)
         }}
         onPointerUp={(event) => {
           if (drag.current === event.pointerId) drag.current = null
@@ -923,7 +935,7 @@ function DialAsks({
         onPointerCancel={() => {
           drag.current = null
         }}
-        onPointerLeave={() => setHover(null)}
+        onPointerLeave={() => onGhost(null)}
         onKeyDown={(event) => {
           const target = dialAskKeyTarget(event.key, rank, total)
           if (target == null) return
@@ -962,6 +974,8 @@ function DialAsks({
 }
 
 type ThumbProps = {
+  /** A mouse resting on the thumbnail marks its ask on the asks strip. */
+  onHover?: (index: number | null) => void
   listing: V3ListingDialItem
   index: number
   dialId: string
@@ -979,6 +993,7 @@ const DialThumb = memo(function DialThumb({
   onSelect,
   onWarm,
   setRef,
+  onHover,
 }: ThumbProps) {
   const facts = factsOf(listing)
   const price = dialPriceSlot(facts)
@@ -996,7 +1011,11 @@ const DialThumb = memo(function DialThumb({
       tabIndex={selected ? 0 : -1}
       className="v3-dial__thumb"
       onClick={() => onSelect(index)}
-      onPointerEnter={() => onWarm(index)}
+      onPointerEnter={(event) => {
+        onWarm(index)
+        if (event.pointerType === 'mouse') onHover?.(index)
+      }}
+      onPointerLeave={() => onHover?.(null)}
       onFocus={() => onWarm(index)}
     >
       <span className="v3-dial__thumb-media">
@@ -1115,6 +1134,9 @@ export function V3ListingDial({
   )
 
   const selectFromThumb = useCallback((at: number) => select(at, false), [select])
+  // The home a mouse rests on (the strip, a thumbnail, a "near" row), marked
+  // on the asks strip so the rail and the axis read as one set.
+  const [askGhost, setAskGhost] = useState<number | null>(null)
   // The asks strip's axis: the set's own asks, cheapest first (a lease's rent
   // is in its own unit, so a lease is never on it).
   const askScale = useMemo(
@@ -1479,6 +1501,7 @@ export function V3ListingDial({
                     onSelect={selectFromThumb}
                     onWarm={warm}
                     setRef={setTabRef}
+                    onHover={askScale ? setAskGhost : undefined}
                   />
                 ))}
               </div>
@@ -1494,7 +1517,16 @@ export function V3ListingDial({
             </div>
           </div>
         ) : null}
-        {askScale ? <DialAsks scale={askScale} index={index} listings={listings} onPick={selectFromThumb} /> : null}
+        {askScale ? (
+          <DialAsks
+            scale={askScale}
+            index={index}
+            listings={listings}
+            onPick={selectFromThumb}
+            ghostIndex={askGhost}
+            onGhost={setAskGhost}
+          />
+        ) : null}
         <div ref={stageRef} className="v3-dial__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           {listings.map((listing, i) => {
             const shown = i === index
@@ -1527,6 +1559,7 @@ export function V3ListingDial({
                 next={shown && upNext.rows.length > 0 ? upNext.rows : undefined}
                 nextLabel={upNext.label}
                 onPick={shown && upNext.rows.length > 0 ? pickNext : undefined}
+                onHover={shown && askScale ? setAskGhost : undefined}
               />
             )
           })}

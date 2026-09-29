@@ -117,7 +117,7 @@ export function PlaceSubdivisionRail({
         // The key to the rows' bars, so the mark reads as a count.
         <p className="place-subdiv-rail__key">
           <span className="place-subdiv-rail__key-mark" aria-hidden="true" />
-          Homes for sale on the map
+          Bar: homes for sale in each, on one scale
         </p>
       ) : null}
       <ul className="place-subdiv-rail__list">

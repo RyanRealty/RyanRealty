@@ -52,7 +52,10 @@
   .place-one-map {
     grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
     grid-template-areas: 'list map';
-    align-items: end;
+    /* The rail heads its column from the section's top, level with the map's
+       legend (2026-09-29: bottom-aligned, it left a screen-high blank over
+       the list on /cities/bend at 1440). */
+    align-items: start;
   }
 }
 

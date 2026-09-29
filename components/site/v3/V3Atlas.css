@@ -555,8 +555,13 @@
 /* The linked mark (a sibling list's or dial's home) wears a navy ring clear
    of the pill, so it reads against the light basemap, not only a cream edge. */
 .v3-atlas__pin.is-linked {
+  z-index: 5;
   outline: 2px solid var(--v3-navy);
   outline-offset: 3px;
+  /* A cream mat between the pill and the ring, so the ring reads as a ring
+     over a crowded patch of pills (2026-09-29: the dial's home was one pill
+     among many). */
+  box-shadow: 0 0 0 3px var(--v3-cream);
 }
 
 /* SITE-127 — cluster face is a $ pill, not a bare count disc. UXLIVE-6: the
@@ -810,6 +815,36 @@
 
 .v3-atlas__hist-bar.is-out {
   opacity: 0.14;
+}
+
+/* A few homes: one tick each on the scale, the ones past the thumb faded. */
+.v3-atlas__hist--ticks {
+  position: relative;
+  display: block;
+}
+
+.v3-atlas__hist-tick {
+  position: absolute;
+  bottom: 0;
+  width: var(--v3-rule-weight-section);
+  height: 70%;
+  margin-left: calc(var(--v3-rule-weight-section) / -2);
+  background: var(--v3-navy);
+  opacity: 0.6;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__hist-tick.is-out {
+  opacity: 0.14;
+}
+
+.v3-atlas__scrub-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(var(--v3-space-2xs) * -1);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  font-variant-numeric: tabular-nums;
 }
 
 .v3-atlas__range {

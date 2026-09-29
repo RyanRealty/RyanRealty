@@ -55,14 +55,21 @@
   flex-wrap: wrap;
 }
 
-/* At a phone's width the four bands are a two-by-two of equal cells, never
-   three and a stray (2026-09-25: "10 and up" alone on a second line). */
+/* At a phone's width the bands are one row of equal cells, and four are a
+   two-by-two, never three and a stray (2026-09-25: "10 and up" alone on a
+   second line; 2026-09-29: a week with no cut of 10% or more has three). */
 @media (max-width: 40rem) {
   .pd-fold-stage.v3 .v3-chart-switch__seg {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
     width: 100%;
     border-radius: var(--v3-radius-card);
+  }
+
+  .pd-fold-stage.v3 .v3-chart-switch__seg:has(> :nth-child(4)) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .pd-fold-stage.v3 .v3-chart-switch__seg > * {

@@ -263,7 +263,10 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
     ? {
         sentence:
           activeCount != null && lowAsk != null && bandHigh != null
-            ? `${activeCount.toLocaleString('en-US')} homes ask ${formatPriceExact(lowAsk)} to ${formatPriceExact(bandHigh)} for nine in ten.`
+            ? // Two plain sentences, the count and then the band (2026-09-29:
+              // "13 homes ask $1,499,000 to $3,999,900 for nine in ten" read
+              // as a formula). The same figures, the city page's wording.
+              `${activeCount.toLocaleString('en-US')} ${activeCount === 1 ? 'home' : 'homes'} for sale in ${publicName}. Nine in ten ask between ${formatPriceExact(lowAsk)} and ${formatPriceExact(bandHigh)}.`
             : claimBase.sentence,
         source: claimBase.source,
       }

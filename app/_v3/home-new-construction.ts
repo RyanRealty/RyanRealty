@@ -1,7 +1,7 @@
 /**
  * Homepage new-construction primary run — live counts, SFR-first doors.
  */
-import { searchListingsAllCount } from '@/lib/data'
+import { searchListingsAll, searchListingsAllCount } from '@/lib/data'
 import {
   BEND_NEW_CON_HOME_NAV_NAMES,
   BEND_NEW_CON_STAGE_FALLBACK_POSTER,
@@ -29,10 +29,36 @@ async function liveCount(filter: Parameters<typeof searchListingsAllCount>[0]): 
   }
 }
 
+/**
+ * A photograph of one of the subdivision's own new homes for sale, for a door
+ * with no place photograph (2026-09-29: two of three doors were a navy plate
+ * with a name on it). The newest photographed listing the same filter counts;
+ * nothing when there is none, and the plate stays.
+ */
+async function listedPhoto(filter: Parameters<typeof searchListingsAll>[0]): Promise<string | undefined> {
+  if (!dalReady()) return undefined
+  try {
+    const { rows } = await searchListingsAll({ ...filter, photosCountMin: 1, sort: 'newest', limit: 3 })
+    const url = rows.map((row) => row.photoUrl?.trim()).find((src): src is string => Boolean(src))
+    return url || undefined
+  } catch (err) {
+    console.error('[loadHomeNewConRun] photo', err)
+    return undefined
+  }
+}
+
 export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
-  const [bendCount, ...navCounts] = await Promise.all([
-    liveCount(bendNewConSearchFilter()),
-    ...BEND_NEW_CON_HOME_NAV_NAMES.map((name) => liveCount(bendNewConSearchFilter(name))),
+  const placePhotos = BEND_NEW_CON_HOME_NAV_NAMES.map((name) => preferPlaceHeroOrNull(null, communityImage(slugify(name))))
+  const [[bendCount, ...navCounts], listedPhotos] = await Promise.all([
+    Promise.all([
+      liveCount(bendNewConSearchFilter()),
+      ...BEND_NEW_CON_HOME_NAV_NAMES.map((name) => liveCount(bendNewConSearchFilter(name))),
+    ]),
+    Promise.all(
+      BEND_NEW_CON_HOME_NAV_NAMES.map((name, i) =>
+        placePhotos[i] ? Promise.resolve(undefined) : listedPhoto(bendNewConSearchFilter(name)),
+      ),
+    ),
   ])
 
   const doors: HomePlaceDoor[] = [
@@ -44,7 +70,7 @@ export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
       ...(bendCount != null ? { count: bendCount } : {}),
     },
     ...BEND_NEW_CON_HOME_NAV_NAMES.map((name, i) => {
-      const photoSrc = preferPlaceHeroOrNull(null, communityImage(slugify(name)))
+      const photoSrc = placePhotos[i] ?? listedPhotos[i] ?? null
       return {
         label: name,
         href: bendNewConSearchHref(name),

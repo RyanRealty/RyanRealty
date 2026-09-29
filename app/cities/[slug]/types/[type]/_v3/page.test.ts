@@ -68,8 +68,8 @@ describe('place-type pages', () => {
     expect(COMM).toMatch(/bandLow=\{lowAsk\}/)
     expect(COMM).toMatch(/bandHigh=\{bandHigh\}/)
     expect(COMM).toMatch(/comm-type:p90/)
-    expect(COMM).toMatch(/homes ask/)
-    expect(COMM).toMatch(/for nine in ten/)
+    expect(COMM).toMatch(/for sale in \$\{publicName\}/)
+    expect(COMM).toMatch(/Nine in ten ask between/)
     const commFilm = readFileSync(
       resolve('app/communities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx'),
       'utf8',

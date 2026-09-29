@@ -1366,9 +1366,10 @@
     --v3-dial-thumb-w: 4.75rem;
   }
 
-  /* A phone turns back with a swipe or a thumbnail; the strip keeps its room
-     for a third home and a sliver of a fourth (2026-09-25: two and a half). */
-  .v3-dial__step--prev {
+  /* A phone turns with a swipe on the photograph, a thumbnail or the asks
+     strip, so the strip gives its step buttons' room to homes: three whole
+     thumbnails and the edge of a fourth at 375 (2026-09-25: two and a half). */
+  .v3-dial__step {
     display: none;
   }
 

@@ -159,6 +159,8 @@ const CHIP_FOLD_AT_WIDE = 24
 
 /** Steps in the price scrubber's distribution. */
 const PRICE_BINS = 24
+/** Under this many priced homes the scrubber draws a tick per home, not steps. */
+const PRICE_TICKS_UNDER = 40
 
 export type AtlasDot = {
   /** Listing key — the React key. */
@@ -1039,18 +1041,27 @@ export function V3Atlas({
      the scale, the ones past either end counted in the end step, so the
      slider is drawn over how many homes it will keep or drop. Counts of the
      dots on this map, nothing else; a withheld ask is not binned. */
-  const priceBins = useMemo(() => {
+  const priceBins = useMemo((): { kind: 'bins'; bins: number[] } | { kind: 'ticks'; xs: number[] } | null => {
     const span = priceScale.max - priceScale.min
     if (!(span > 0)) return null
-    const bins = new Array<number>(PRICE_BINS).fill(0)
-    let any = 0
+    const asks: number[] = []
     for (const d of dots) {
       if (d.s !== 'active' || d.p == null || !Number.isFinite(d.p)) continue
-      const at = Math.floor(((d.p - priceScale.min) / span) * PRICE_BINS)
-      bins[Math.min(PRICE_BINS - 1, Math.max(0, at))] += 1
-      any += 1
+      asks.push(d.p)
     }
-    return any >= PRICE_BINS / 2 ? bins : null
+    if (asks.length < 3) return null
+    // A few homes are a tick each (2026-09-29: thirteen Tetherow asks in
+    // twenty-four steps drew stray blocks that read as noise); a set large
+    // enough to have a shape is drawn in steps.
+    if (asks.length < PRICE_TICKS_UNDER) {
+      return { kind: 'ticks', xs: asks.map((p) => Math.min(1, Math.max(0, (p - priceScale.min) / span))) }
+    }
+    const bins = new Array<number>(PRICE_BINS).fill(0)
+    for (const p of asks) {
+      const at = Math.floor(((p - priceScale.min) / span) * PRICE_BINS)
+      bins[Math.min(PRICE_BINS - 1, Math.max(0, at))] += 1
+    }
+    return { kind: 'bins', bins }
   }, [dots, priceScale])
 
   /* Visitor state. */
@@ -2199,10 +2210,10 @@ export function V3Atlas({
           <span className="v3-atlas__scrub-label">
             Up to <strong className="v3-atlas__scrub-value">{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
           </span>
-          {priceBins && !waiting ? (
+          {priceBins && !waiting && priceBins.kind === 'bins' ? (
             <span className="v3-atlas__hist" aria-hidden="true">
-              {priceBins.map((n, i) => {
-                const most = Math.max(...priceBins)
+              {priceBins.bins.map((n, i) => {
+                const most = Math.max(...priceBins.bins)
                 const low = priceScale.min + ((priceScale.max - priceScale.min) * i) / PRICE_BINS
                 return (
                   <span
@@ -2212,6 +2223,20 @@ export function V3Atlas({
                   />
                 )
               })}
+            </span>
+          ) : null}
+          {priceBins && !waiting && priceBins.kind === 'ticks' ? (
+            <span className="v3-atlas__hist v3-atlas__hist--ticks" aria-hidden="true">
+              {priceBins.xs.map((x, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'v3-atlas__hist-tick',
+                    !atCeiling && priceScale.min + (priceScale.max - priceScale.min) * x > maxPrice && 'is-out',
+                  )}
+                  style={{ left: `calc(0.5rem + ${x.toFixed(4)} * (100% - 1rem))` }}
+                />
+              ))}
             </span>
           ) : null}
           <input
@@ -2225,6 +2250,13 @@ export function V3Atlas({
             onChange={(e) => setMaxPrice(Number(e.target.value))}
             aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
           />
+          {priceBins && !waiting ? (
+            // The slider's own ends, so the steps and ticks over it read as prices.
+            <span className="v3-atlas__scrub-ends" aria-hidden="true">
+              <span>{fmtShort(priceScale.min)}</span>
+              <span>{fmtShort(priceScale.max)}</span>
+            </span>
+          ) : null}
         </label>
       )}
     </div>

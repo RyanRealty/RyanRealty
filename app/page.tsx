@@ -223,6 +223,7 @@ export default async function Home() {
   // so a null prints nothing rather than a zero (section 0). The resorts run
   // carries no figure because this page holds no per-resort read; /communities
   // owns those.
+  const featuredBySlug = new Map(featuredCommunitySlides.map((slide) => [slide.slug, slide]))
   const placeRuns = [
     ...(newConRun ? [newConRun] : []),
     {
@@ -252,19 +253,28 @@ export default async function Home() {
     {
       name: 'Resorts and communities',
       layout: 'carousel' as const,
+      // The same figure the featured-community slides above print for the
+      // same resort ("N homes for sale", registry resort public figures:
+      // every single-family listing filed under any of the community's
+      // subdivision names), read once by loadHomeFeaturedCommunitySlides.
+      unit: 'homes for sale',
       seeAll: { label: 'Every community', href: '/communities' },
       doors: RESORT_DOORS.map((r) => {
         const photoSrc = communityImage(r.slug)
-        // Each resort says where it is and what it is, from the registry's
-        // own authored line (2026-09-25: four cards all read "Resort
-        // community"). Authored copy only; a miss keeps the plain label.
+        // Each resort says where it is and what it is, from its own authored
+        // copy (2026-09-25: four cards all read "Resort community";
+        // 2026-09-29: the registry line alone left three reading only their
+        // town). Authored copy only; a miss keeps the town.
         const entry = getResortCommunityBySlug(r.slug)
-        const line = entry ? homeFeaturedBlurb(null, entry) : null
+        const slide = featuredBySlug.get(r.slug)
+        const line = slide?.blurb?.trim() || (entry ? homeFeaturedBlurb(null, entry) : null)
+        const forSale = slide?.figures.find((f) => f.label === 'homes for sale' || f.label === 'home for sale')?.n
         return {
           label: r.label,
           href: r.href,
-          description: entry ? [entry.city, line].filter(Boolean).join(' · ') || 'Resort community' : 'Resort community',
+          description: [entry?.city ?? slide?.city, line].filter(Boolean).join(' · ') || 'Resort community',
           ...(photoSrc ? { photoSrc } : {}),
+          ...(typeof forSale === 'number' && Number.isFinite(forSale) && forSale > 0 ? { count: forSale } : {}),
         }
       }),
     },
