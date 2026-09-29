@@ -632,10 +632,17 @@ export async function sendProspectingEmailIntro(
     // inside the rail (fail-closed), tracking + timeline + attribution are the
     // rail's job (emailKey `cma:<slug>` — the engagement reader's key). A
     // failure here means NO email left the building → release and allow retry.
-    const sent = await sendCmaToLead(clientReady.slug, {
-      subject: args.subjectOverride?.trim() || undefined,
-      bodyText: args.bodyOverride?.trim() || undefined,
-    })
+    // This action already owns the owner's email claim (step 10), so the rail is
+    // told not to claim, stamp, finalize or release that row itself: a second
+    // claim would come back claimed_elsewhere and refuse this very send.
+    const sent = await sendCmaToLead(
+      clientReady.slug,
+      {
+        subject: args.subjectOverride?.trim() || undefined,
+        bodyText: args.bodyOverride?.trim() || undefined,
+      },
+      { callerHoldsProspectClaim: true },
+    )
     if (!sent.ok) {
       await releaseProspectEmailSend(kind, id)
       console.error('[sendProspectingEmailIntro] rail send failed, claim released:', sent.error)

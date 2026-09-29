@@ -121,7 +121,9 @@ export async function stampProspectEmailMessageId(
 ): Promise<void> {
   const sb = createServiceClient()
   const { error } = await sb.rpc('prospect_email_send_stamp', { p_kind: kind, p_id: id, p_message_id: messageId })
-  if (error) console.warn('[prospecting] prospect_email_send_stamp failed:', error.message)
+  // An error, not a warning: without this stamp the row only becomes "already
+  // sent" when finalize lands, so a failure here is a hole worth a loud line.
+  if (error) console.error('[prospecting] prospect_email_send_stamp failed:', error.message)
 }
 
 /** Finalize a successful email send: status='sent', sent_at, message id, idempotency key, person id. */
