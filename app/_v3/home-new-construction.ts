@@ -84,7 +84,10 @@ export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
   return {
     name: 'New construction',
     unit: 'new homes for sale',
-    layout: 'carousel',
+    // A counted ledger like the towns under it (2026-09-29: three card
+    // carousels on one page, featured communities, new construction and the
+    // resorts, read as one module three times; at 375 each card was a
+    // half-empty box between two arrows).
     seeAll: { label: 'Bend new homes page', href: '/new-construction' },
     doors,
   }

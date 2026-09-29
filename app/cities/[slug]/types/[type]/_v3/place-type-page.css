@@ -65,6 +65,18 @@
   padding-inline: 0;
 }
 
+/* The opening box sits on the measure, its copy on the page's left edge
+   (2026-09-29: place-opening.css's `.place-opening { margin: 0; padding: 0 }`
+   loads later and won the tie, so at 1440 the H1 and the claim started at the
+   raw gutter while the breadcrumb and the map stood on the measure). The two
+   classes together outrank it; the copy's own gutter comes from the no-photo
+   opening rule. */
+.place-opening.place-type-opening {
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: 0;
+}
+
 .place-type-film {
   width: 100%;
   max-width: var(--v3-measure);

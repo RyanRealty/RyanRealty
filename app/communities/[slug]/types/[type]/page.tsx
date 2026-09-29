@@ -298,8 +298,11 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
+          // The community is a step on the way (2026-09-29: "Bend / For sale"
+          // over a Tetherow page named nothing of Tetherow).
           trail={[
             { label: cityName, href: cityHref },
+            { label: publicName, href: placeHref },
             { label: 'For sale' },
           ]}
         />

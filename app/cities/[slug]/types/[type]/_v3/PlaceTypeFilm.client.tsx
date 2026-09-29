@@ -45,6 +45,13 @@ function filmRows(
 ): V3ListingRowData[] {
   const filmed = rows.filter((r) => Boolean(r.photoUrl?.trim()))
   if (filmed.length === 0) return []
+  const byAsk = (a: V3ListingRowData, b: V3ListingRowData) =>
+    (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY)
+
+  /* A set small enough to hold whole is held whole, cheapest first (2026-09-29:
+     Tetherow's thirteen homes showed as twelve, the one past the band dropped,
+     under a claim that counts thirteen). */
+  if (filmed.length <= FOLD_CAP + 4) return filmed.slice().sort(byAsk)
 
   const low = bandLow != null && Number.isFinite(bandLow) ? bandLow : null
   const high = bandHigh != null && Number.isFinite(bandHigh) ? bandHigh : null
@@ -56,9 +63,7 @@ function filmRows(
         })
       : filmed
 
-  const pool = (inBand.length >= 4 ? inBand : filmed)
-    .slice()
-    .sort((a, b) => (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY))
+  const pool = (inBand.length >= 4 ? inBand : filmed).slice().sort(byAsk)
 
   if (pool.length <= FOLD_CAP) return pool
 
@@ -92,7 +97,7 @@ export function PlaceTypeFilm({
   bandLow?: number | null
   bandHigh?: number | null
 }) {
-  const { setLinkedKey } = usePlaceTypeLink()
+  const { setLinkedKey, setRestKey } = usePlaceTypeLink()
   const filmed = filmRows(rows, bandLow, bandHigh)
   // The dial opens on its first home and reports every turn (onIndexChange).
   const [turned, setTurned] = useState(0)
@@ -101,8 +106,9 @@ export function PlaceTypeFilm({
 
   // The Atlas rings the home the dial shows, and follows every turn.
   useEffect(() => {
+    setRestKey(shownKey)
     setLinkedKey(shownKey)
-  }, [shownKey, setLinkedKey])
+  }, [shownKey, setLinkedKey, setRestKey])
 
   if (filmed.length === 0) return null
 

@@ -25,6 +25,7 @@ import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-
 import { markAskSource } from '@/lib/ask-source'
 import { trackEvent } from '@/lib/tracking'
 import type { HomeHeroLive } from './home-hero-inventory'
+import { HOME_HERO_PLACE_SEEDS } from './home-hero-places'
 import './home-hero-search.css'
 
 /** Where a no-JS Buy submit lands: the regional inventory page. */
@@ -32,26 +33,20 @@ const BUY_ACTION = '/homes-for-sale'
 /** Where a no-JS Sell submit lands: the valuation form, at its anchor. */
 const SELL_ACTION = '/sell#get-value'
 
-/** MorphingSearch shows these when the query is empty — the demo opens onto a list, not a blank overlay. */
-const PLACE_SEEDS: MorphingSearchItem[] = [
-  { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },
-  { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City' },
-  { id: '/homes-for-sale/sisters', title: 'Sisters', description: 'City' },
-  { id: '/homes-for-sale/sunriver', title: 'Sunriver', description: 'Community' },
-  { id: '/communities/tetherow', title: 'Tetherow', description: 'Bend' },
-  { id: '/homes-for-sale/prineville', title: 'Prineville', description: 'City' },
-  { id: '/homes-for-sale/la-pine', title: 'La Pine', description: 'City' },
-  { id: '/homes-for-sale/madras', title: 'Madras', description: 'City' },
-]
+/** MorphingSearch shows these when the query is empty: the demo opens onto a list, not a blank overlay. */
+const PLACE_SEEDS: MorphingSearchItem[] = HOME_HERO_PLACE_SEEDS.map(({ id, title, description }) => ({ id, title, description }))
 
 export function HomeHeroSearch({
   valuationHref,
   live,
   homes,
+  places: placeRows,
 }: {
   valuationHref: string
   live?: HomeHeroLive
   homes?: readonly MorphingSearchItem[]
+  /** The same places with their live counts, from the page; the seeds otherwise. */
+  places?: readonly MorphingSearchItem[]
 }) {
   const router = useRouter()
   const uid = useId()
@@ -80,10 +75,10 @@ export function HomeHeroSearch({
     if (typed.length > 0) return typed
     // Opened empty: the places first (where most searches start), then the
     // newest homes with their asks, each marked as a place or a home.
-    const places = PLACE_SEEDS.map((seed) => ({ ...seed, icon: MapPin }))
+    const places = (placeRows?.length ? placeRows : PLACE_SEEDS).map((seed) => ({ ...seed, icon: MapPin }))
     const listed = homes?.length ? [...places, ...homes.map((home) => ({ ...home, icon: House }))] : places
     return listed
-  }, [items, homes])
+  }, [items, homes, placeRows])
 
   const go = useCallback(
     (href: string) => {

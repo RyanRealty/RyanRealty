@@ -177,7 +177,7 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toContain('html:has(.home-hero-search) .v3-chrome__search')
     expect(css).toMatch(/html:has\(\.home-hero-search\) \.v3-chrome__search \{\s*display:\s*none/)
     expect(css).toContain('.v3 .home-hero-search .v3-morph-search--live .v3-morph-search__catalog')
-    expect(css).toContain('width: 18rem')
+    expect(css).toContain('width: 22rem')
     // Sharp cream painters: nested .v3 + TabsList bg-card + V3Tabs track — gone on Stage.
     expect(css).toContain('.v3 .home-hero-search .v3,')
     expect(css).toContain('.v3 .home-hero-search .v3-tabs,')
@@ -510,9 +510,11 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PLACES).toMatch(/home-browse-places__runname/)
     expect(PLACES).toMatch(/home-browse-places__unit/)
     expect(PLACES).toMatch(/home-browse-places__count/)
-    // The resorts run ships no inventory figure — this page holds no per-resort read.
+    // The resorts run's figure is the featured slide's own "homes for sale".
     expect(PAGE).toMatch(/RESORT_DOORS\.map\(\(r\) =>/)
-    expect(PAGE).toContain("layout: 'carousel' as const")
+    // One run of community cards on the page (the featured carousel); the
+    // resorts and new-construction runs are counted ledgers like the towns.
+    expect(PAGE).not.toContain("layout: 'carousel' as const")
     expect(PAGE).toContain('communityImage(r.slug)')
     expect(PAGE).toContain('preferPlaceHeroOrNull')
     expect(PAGE).toContain('hasCuratedCityHero')

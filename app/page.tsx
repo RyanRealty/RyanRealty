@@ -31,6 +31,7 @@ import { homeGuideQaJsonLd, homeGuideQaQuestions } from './_v3/home-guide-qa'
 import { HomeHomesRails } from './_v3/HomeHomesRails'
 import { loadHomePulseBundle } from './_v3/home-pulse'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
+import { homeHeroPlaceItems } from './_v3/home-hero-places'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { loadHomeNewConRun } from './_v3/home-new-construction'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
@@ -252,7 +253,8 @@ export default async function Home() {
     },
     {
       name: 'Resorts and communities',
-      layout: 'carousel' as const,
+      // A counted ledger, not a third card carousel: the featured communities
+      // above are the page's one run of community cards (2026-09-29).
       // The same figure the featured-community slides above print for the
       // same resort ("N homes for sale", registry resort public figures:
       // every single-family listing filed under any of the community's
@@ -324,6 +326,18 @@ export default async function Home() {
         >
           <HomeHeroSearch
             valuationHref={valuationHref('/')}
+            // The places the opened search leads with, each with its live
+            // count: a city's is the Towns run's figure below, a community's
+            // the featured slide's own (2026-09-29: a static list of names).
+            places={homeHeroPlaceItems(
+              new Map(cities.map((c) => [c.slug, c.activeCount])),
+              new Map(
+                featuredCommunitySlides.map((slide) => [
+                  slide.slug,
+                  slide.figures.find((f) => f.label === 'homes for sale' || f.label === 'home for sale')?.n,
+                ]),
+              ),
+            )}
             // Each home in the opened search names its ask and beds beside
             // its town (2026-09-25: a bare list of streets), the card's own
             // figures: a sale ask only, never a lease rate read as a price.
