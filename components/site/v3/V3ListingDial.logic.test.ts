@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  dialAskRelation,
   DIAL_JAX_GAP_PX,
   DIAL_NO_ASK,
   DIAL_RAIL_DEFAULT,
@@ -724,5 +725,22 @@ describe('the asks strip', () => {
   it('writes one path of ticks across a 1000-wide box', () => {
     const scale = dialAskScale(rows([500_000, 525_000, 550_000, 575_000, 600_000]))!
     expect(dialAskTicksPath(scale.asks, 16)).toBe('M0.0 0v16M250.0 0v16M500.0 0v16M750.0 0v16M1000.0 0v16')
+  })
+})
+
+describe('dialAskRelation: a near-price row against the home in front', () => {
+  it('names the difference of the two asks in the dial’s compact form', () => {
+    expect(dialAskRelation(1_699_900, 2_100_000)).toBe('$400K less')
+    expect(dialAskRelation(2_195_000, 2_100_000)).toBe('$95K more')
+    expect(dialAskRelation(3_390_000, 1_899_000)).toBe('$1.5M more')
+  })
+  it('calls an equal ask the same', () => {
+    expect(dialAskRelation(835_000, 835_000)).toBe('Same ask')
+  })
+  it('says nothing without two real asks', () => {
+    expect(dialAskRelation(null, 500_000)).toBeNull()
+    expect(dialAskRelation(500_000, undefined)).toBeNull()
+    expect(dialAskRelation(0, 500_000)).toBeNull()
+    expect(dialAskRelation(Number.NaN, 500_000)).toBeNull()
   })
 })

@@ -81,7 +81,9 @@
 /* The cities with cuts: each door a name, a bar on one scale, and its count. */
 .pd-cities {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  /* Two ranked columns on a wide screen, the bars long enough to compare
+     (2026-09-29: four to a row left 21 cuts and 7 as two slivers). */
+  grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr));
   gap: 0 var(--v3-space-lg);
   padding-top: var(--v3-space-sm);
   border-top: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
@@ -108,7 +110,7 @@
 .pd-cities__bar {
   position: relative;
   display: block;
-  height: var(--v3-rule-weight-section);
+  height: var(--v3-space-xs);
   background: var(--v3-hairline);
 }
 

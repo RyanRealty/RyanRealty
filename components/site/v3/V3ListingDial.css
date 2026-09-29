@@ -193,6 +193,23 @@
   display: none;
 }
 
+/* The cut on the photograph, bottom left, clear of the tags at the top. */
+.v3-dial__cut-stamp {
+  position: absolute;
+  left: var(--v3-space-sm);
+  bottom: var(--v3-space-sm);
+  z-index: 3;
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
 .v3-dial__media .v3-lrow__photo-tags {
   top: var(--v3-space-sm);
   left: var(--v3-space-sm);
@@ -1122,6 +1139,13 @@
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-strong);
   font-variant-numeric: tabular-nums;
+}
+
+/* The row's ask against the home in front: "$95K more", "$400K less". */
+.v3-dial__next-rel {
+  margin-left: var(--v3-space-xs);
+  color: var(--v3-ink-muted);
+  font-weight: var(--v3-weight-body);
 }
 
 .v3-dial__next-fact {

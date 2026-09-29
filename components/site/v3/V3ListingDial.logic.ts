@@ -1,3 +1,4 @@
+import { formatPriceCompact } from '@/lib/format/money'
 /**
  * V3ListingDial — the pure half. Index arithmetic, the position readout, the
  * key map, the swipe rule and the thumbnail's accessible name live here so the
@@ -808,4 +809,22 @@ export function dialPlayerHandshake(kind: DialIframeKind, on: 'load' | 'ready'):
     ]
   }
   return []
+}
+
+/**
+ * Where a "near this price" home's ask sits against the home in front, in
+ * words (2026-09-29: the three rows beside the card read as a smaller copy of
+ * the thumbnails, with nothing tying them to the house they sit next to):
+ * "$95K more", "$400K less", "Same ask". Both asks are the rows' own; the
+ * difference is their subtraction, compact-rounded the way every ask on the
+ * dial is. A missing, non-finite or non-positive ask says nothing (null);
+ * the caller never passes a lease rate.
+ */
+export function dialAskRelation(ask: number | null | undefined, here: number | null | undefined): string | null {
+  if (ask == null || here == null || !Number.isFinite(ask) || !Number.isFinite(here) || ask <= 0 || here <= 0) {
+    return null
+  }
+  const diff = ask - here
+  if (Math.abs(diff) < 500) return 'Same ask'
+  return `${formatPriceCompact(Math.abs(diff))} ${diff > 0 ? 'more' : 'less'}`
 }

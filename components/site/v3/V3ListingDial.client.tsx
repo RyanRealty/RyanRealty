@@ -146,6 +146,7 @@ import {
   DIAL_THUMB_WHOLE,
   dialAskKeyTarget,
   dialAskNearest,
+  dialAskRelation,
   dialAskScale,
   dialAskTicksPath,
   dialCutWidth,
@@ -738,6 +739,15 @@ const DialCard = memo(function DialCard({
             No photo published
           </Link>
         )}
+        {cut?.pct && photo ? (
+          // The cut stamped on the photograph (2026-09-29: the layout lock
+          // puts one house large "with its cut on the photograph"; the cut
+          // lived only in the column beside it). The copy beside says it in
+          // full, so the stamp is not read twice.
+          <span className="v3-dial__cut-stamp" aria-hidden="true">
+            {cut.pct.replace(/^[-\u2212]\s*/, '')} off
+          </span>
+        ) : null}
         {reel}
       </div>
       <Link href={listing.href} className="v3-dial__copy">
@@ -797,6 +807,11 @@ const DialCard = memo(function DialCard({
             const homeFacts = factsOf(home)
             const homePrice = dialPriceSlot(homeFacts)
             const homeFact = home.cut?.pct ?? dialThumbFact(homeFacts.meta)
+            // Its ask against the one in front, so the column reads as this
+            // house's neighbours on price, not a second rail. Sale asks only.
+            const relation = listingPriceIsLeaseRate(listing.propertyType) || listingPriceIsLeaseRate(home.propertyType)
+              ? null
+              : dialAskRelation(home.price, listing.price)
             return (
               <button
                 key={home.listingKey}
@@ -813,7 +828,10 @@ const DialCard = memo(function DialCard({
                   <DialThumbImage listing={home} />
                 </span>
                 <span className="v3-dial__next-copy">
-                  <span className="v3-dial__next-ask">{homePrice.text}</span>
+                  <span className="v3-dial__next-ask">
+                    {homePrice.text}
+                    {relation ? <span className="v3-dial__next-rel">{relation}</span> : null}
+                  </span>
                   {homeFact ? <span className="v3-dial__next-fact">{homeFact}</span> : null}
                   <span className="v3-dial__next-addr">{home.addressLine}</span>
                 </span>

@@ -838,15 +838,6 @@
   opacity: 0.14;
 }
 
-.v3-atlas__scrub-ends {
-  display: flex;
-  justify-content: space-between;
-  margin-top: calc(var(--v3-space-2xs) * -1);
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-source);
-  font-variant-numeric: tabular-nums;
-}
-
 .v3-atlas__range {
   width: 100%;
   height: var(--v3-tap);

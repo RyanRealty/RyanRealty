@@ -23,7 +23,11 @@ export function PriceDropsFold({
   showCityDoors?: boolean
 }) {
   const bands = priceDropBands(items)
-  const doors = showCityDoors ? priceDropCityDoors(items) : []
+  // Ranked, most cuts first, so the bars read as a chart and not a list in
+  // the order the towns were named (2026-09-29).
+  const doors = showCityDoors
+    ? [...priceDropCityDoors(items)].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    : []
   // The cuts in a town with no page of its own (Terrebonne, Powell Butte...)
   // are counted on their own row, so the rows add up to the homes above
   // (2026-09-25: seven towns summed to 47 under "48 shown below").
@@ -68,7 +72,7 @@ export function PriceDropsFold({
           ))}
           {elsewhere > 0 ? (
             <span className="pd-cities__link pd-cities__link--rest">
-              <span className="pd-cities__name">Elsewhere</span>
+              <span className="pd-cities__name">Other towns</span>
               <span className="pd-cities__bar" aria-hidden="true">
                 <span style={{ width: `${((elsewhere / maxDoor) * 100).toFixed(1)}%` }} />
               </span>

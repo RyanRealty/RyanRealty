@@ -2250,13 +2250,6 @@ export function V3Atlas({
             onChange={(e) => setMaxPrice(Number(e.target.value))}
             aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
           />
-          {priceBins && !waiting ? (
-            // The slider's own ends, so the steps and ticks over it read as prices.
-            <span className="v3-atlas__scrub-ends" aria-hidden="true">
-              <span>{fmtShort(priceScale.min)}</span>
-              <span>{fmtShort(priceScale.max)}</span>
-            </span>
-          ) : null}
         </label>
       )}
     </div>
