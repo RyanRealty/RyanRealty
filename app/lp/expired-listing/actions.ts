@@ -1,5 +1,16 @@
 'use server'
 
+/**
+ * reachability: entry-point cascading orphan. Its only importer, ExpiredLPForm.tsx, was deleted
+ * once /lp/expired-listing became a 308 stub (e1d97d490), so nothing calls submitExpiredLPForm
+ * or saveExpiredPartialAddress now. Kept, not deleted, because three checks read this file by
+ * path: scripts/check-identity-stitch-paths.mjs (G2),
+ * lib/comms/site-confirmations.contract.test.ts (the expired acknowledgment contract) and
+ * lib/crm/response-clock.test.ts (the expired-lp source).
+ * Open call for a human: delete this file together with those three pins, or re-wire it to a
+ * live form.
+ */
+
 import { siteOrigin } from '@/lib/site-origin'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {

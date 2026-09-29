@@ -12,13 +12,11 @@ import { readFileSync } from 'node:fs'
 
 const PATHS = [
   'app/contact/actions.ts',
-  'app/home-valuation/actions.ts',
   'app/actions/lead-landing.ts',
   'app/actions/lead-capture.ts',
   'app/actions/newsletter-subscribe.ts',
   'app/actions/search-alert-capture.ts',
   'app/lp/seller-home-value/actions.ts',
-  'app/lp/fsbo/actions.ts',
   'app/lp/expired-listing/actions.ts',
   'app/lp/buyer-listing-alerts/actions.ts',
   'app/auth/callback/route.ts',

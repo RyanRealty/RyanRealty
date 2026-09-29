@@ -1,5 +1,5 @@
 {
-  "count": 54,
+  "count": 53,
   "files": [
     "app/book/BookingClient.tsx",
     "app/buy/loading.tsx",
@@ -11,7 +11,6 @@
     "app/dashboard/error.tsx",
     "app/dev/components/ComponentGalleryClient.tsx",
     "app/error.tsx",
-    "app/home-valuation/ValuationForm.tsx",
     "app/housing-market/loading.tsx",
     "app/invest/page.tsx",
     "app/listing/[listingKey]/loading.tsx",

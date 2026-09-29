@@ -1,23 +1,8 @@
 {
-  "generatedAt": "2026-09-29T20:58:36.931Z",
+  "generatedAt": "2026-09-29T21:24:13.822Z",
   "reason": "Pre-gate backlog of components/**, lib/**, and app/** non-route modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 16,
+  "count": 1,
   "names": [
-    "app/_v3/HomeExploreMap.client.tsx",
-    "app/_v3/HomeHomesFieldBound.client.tsx",
-    "app/_v3/home-competitive-brief.ts",
-    "app/admin/(protected)/cmas/_components/worklist/CmaBoard.client.tsx",
-    "app/cities/[slug]/PublicProductTypes.tsx",
-    "app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-market-charts.tsx",
-    "app/cities/[slug]/_v3/city-market-charts.tsx",
-    "app/components/admin/BrokerSelect.tsx",
-    "app/home-valuation/ValuationForm.tsx",
-    "app/lp/buyer-listing-alerts/BuyerLPForm.tsx",
-    "app/lp/expired-listing/ExpiredLPForm.tsx",
-    "app/lp/fsbo/FsboLPForm.tsx",
-    "app/lp/seller-home-value/data.ts",
-    "app/lp/tetherow/heath/_components/HeathCmaForm.tsx",
-    "app/team/[slug]/_v3/BrokerValuationSheet.client.tsx",
     "lib/data/crm/getFirstTouchAttribution.ts"
   ]
 }

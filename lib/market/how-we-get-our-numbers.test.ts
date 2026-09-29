@@ -58,17 +58,14 @@ describe('how-we-get-our-numbers copy', () => {
 })
 
 describe('HUD and leftover panels jump to the dictionary', () => {
-  // The KB market HUD (KbMarketHud + the three Public*Stats panels +
-  // MetricHowLink) was deleted with its last consumer, app/page.tsx, in the
-  // 2026-08-27 v3 rebuild. The v3 Instrument carries its methodology in the
-  // section source line instead of per-KPI how-links, and the dictionary page
-  // itself survives behind the chrome footer's Market column. HUD_KPI_HOW's
-  // label coverage is asserted above against the dictionary's own entries.
-  it('the surviving product-types strip carries a how-link', () => {
-    const types = readFileSync(resolve('app/cities/[slug]/PublicProductTypes.tsx'), 'utf8')
-    expect(types).toMatch(/MetricHowLink/)
-    expect(types).toMatch(/PANEL_HOW\.products/)
-  })
+  // The KB market HUD (KbMarketHud + the three Public*Stats panels) was deleted
+  // with its last consumer, app/page.tsx, in the 2026-08-27 v3 rebuild. The one
+  // strip that still carried a MetricHowLink (PublicProductTypes, replaced by
+  // V3PlacePropertyTypes) went with MetricHowLink itself, so no panel carries a
+  // per-KPI how-link any more. The v3 Instrument carries its methodology in the
+  // section source line instead, and the dictionary page itself survives behind
+  // the chrome footer's Market column. HUD_KPI_HOW's label coverage is asserted
+  // above against the dictionary's own entries.
   it('the dictionary page renders every entry id', () => {
     const page = readFileSync(resolve('app/how-we-get-our-numbers/page.tsx'), 'utf8')
     expect(page).toMatch(/HOW_NUMBER_ENTRIES/)

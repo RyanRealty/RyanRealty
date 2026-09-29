@@ -1,5 +1,17 @@
 'use server'
 
+/**
+ * reachability: entry-point cascading orphan. Its only importer, BuyerLPForm.tsx, was deleted
+ * once /lp/buyer-listing-alerts became a 308 stub (e1d97d490), so nothing calls
+ * submitBuyerLPForm now. Kept, not deleted, because four checks read this file by path:
+ * scripts/check-identity-stitch-paths.mjs (G2), scripts/check-listing-alert-enroll.mjs (G4),
+ * scripts/check-measurement-loop.mjs (fails if the file is missing) and
+ * lib/crm/response-clock.test.ts (the buyer-lp source). alert-filters.ts stays reachable only
+ * through this file.
+ * Open call for a human: delete this file together with those four pins and alert-filters.ts,
+ * or re-wire it to a live form.
+ */
+
 import { siteOrigin } from '@/lib/site-origin'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
