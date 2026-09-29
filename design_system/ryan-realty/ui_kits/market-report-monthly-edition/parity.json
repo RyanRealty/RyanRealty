@@ -1,0 +1,74 @@
+{
+  "route": "app/housing-market/reports/monthly/[month]/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3 only. This directory holds NO index.html: one edition of the monthly report never had a bespoke mockup, and its visual target is the pattern set, not a picture. The contract below binds the route's component set (ci:mockup-parity) and its section plan (ci:page-purpose).",
+  "competitiveTarget": "One month of the Central Oregon market, citable by URL. Beat the Bend brokerages' market-update posts and the portals' metro pages on depth and interrogation: the region's four figures under a plain-English standfirst, its 36-month median price as a line and its months of supply as year strips against the balanced zone (two questions, two forms, both readable by pointer, finger and keyboard), every town in the edition on one encoded ledger with a twelve-month reveal, Bend and Redmond each opening on their own price picture, an honest dash where a market is too thin to publish, and the edition's own numbered PDF, with the source trace under every section.",
+  "note": "Authored 2026-09-25 with the taste pass that gave supply its own form (the region's months of supply were a second line chart in the median's frame, evaluator defect 5) and broke the repeated eyebrow-then-heading beat (defect 4). The page renders only from the edition's stored payload, the frozen object the PDF was rendered from, with the PDF's formatters, so page and PDF cannot disagree; months of supply prints through formatMonthsOfSupply and every call comes from lib/market/classify thresholds (4 or less seller's, above 4 and under 6 balanced, 6 or more buyer's). A malformed or unpublished month is a 404. Rhythm: no two adjacent sections share a pattern; the Bend and Redmond Instruments are one enumeration. No tasteReview yet: a separate evaluator owes it.",
+  "requiredComponents": [
+    {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList and a Dataset of the region's figures for the month (variableMeasured equals the numbers on screen, dateModified is the edition's published_at). The schema.org Report, with the PDF as its encoding, is emitted beside it by the page's own script tag (editionReportSchema), because the site JSON-LD builder has no Report type.",
+      "blocking": true
+    },
+    {
+      "name": "V3SectionTracker",
+      "section": "Section-view tracking, first inside main.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Housing market > Market reports > Monthly report > the month, the current page never a link.",
+      "blocking": true
+    },
+    {
+      "name": "EditionSections",
+      "section": "The body, in app/housing-market/reports/monthly/_v3/EditionSections.tsx: the region as a level-1 V3Instrument whose stage sets the median sale price line (V3Chart) beside months of supply as V3SeasonStrips; the market-by-market V3Ledger (encoded bars, a twelve-month reveal per row, on a running head); one level-2 V3Instrument per monthly city (Bend, Redmond) that opens on its median line (chartLead); V3Doors for the PDF, the months either side and the year in the archive; and V3Answers for how to read the report with the outbound doors.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS), rendered outside main so it maps to contentinfo.",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx",
+      "note": "Not a page-level import. Do not remount."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Stage",
+      "reason": "Pattern 4 needs an owned photo or video and is never allowed over a number. A market page opens on its answer (PUBLIC_UI.md, the Market row of the openings table); the city chapters borrow only the Stage's order, the picture before the line of type, with the chart as the picture."
+    }
+  ],
+  "jsonLd": {
+    "required": [
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry), from editionSchemas in _v3/report-schemas.ts" },
+      { "type": "Dataset", "emittedBy": "MetadataBlock schemas array (dataset entry)", "note": "Each value is the number the page prints." },
+      { "type": "Report", "emittedBy": "The page's own application/ld+json script (editionReportSchema), with the PDF as a MediaObject encoding when the edition has one." }
+    ]
+  },
+  "dataLayer": {
+    "getPublishedEdition": "lib/data/market-report/editions.ts, anon read, RLS: published rows only. The edition and its frozen payload. One read per request (react cache) for the metadata and the body.",
+    "listPublishedEditions": "lib/data/market-report/editions.ts, for the months either side and the year's count in the closing Doors.",
+    "note": "The page owns the reads and hands the row to EditionSections; _v3/report-view.ts turns the payload into barrel props (supplySeasons folds the stored supply run into year strips) with the PDF's formatters and computes no market figure."
+  },
+  "generateStaticParams": {
+    "required": false,
+    "note": "Editions are rows the monthly cron publishes, not a finite geo set (the page's @no-static-params line). ISR, revalidated hourly and by the publish cron."
+  },
+  "sectionOrder": [
+    "V3SectionTracker: first inside main.",
+    "MetadataBlock: the structured data listed under jsonLd, after the page's own Report script.",
+    "V3Breadcrumb: Home, Housing market, Market reports, Monthly report, the month.",
+    "EditionSections: the body, in this order.",
+    "inside the body, 1: the region, a level-1 Instrument (id report) that opens on its eyebrow and the H1, then the standfirst, the four figures, and the stage: the median line beside the supply year strips.",
+    "inside the body, 2: market by market, the Ledger (id markets), on a running head: the heading at the left and its context on the same line at the far end.",
+    "inside the body, 3: Bend and Redmond, one Instrument each (ids bend and redmond), an enumeration that opens on each city's median line before its eyebrow and heading.",
+    "inside the body, 4: the Doors (id more), the PDF, the months either side and the year.",
+    "inside the body, 5: how to read this report, V3Answers (id about-numbers), on its heading alone, with the outbound doors.",
+    "V3Footer: outside main."
+  ]
+}

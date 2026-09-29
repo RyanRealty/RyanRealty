@@ -44,6 +44,7 @@ import {
   V3Button,
   V3Eyebrow,
   V3Heading,
+  V3RunningHead,
   V3SourceLine,
   V3_ROOT_CLASS,
   type V3ButtonVariant,
@@ -248,6 +249,16 @@ type V3LedgerBase = {
   headingLevel?: 1 | 2
   /** The context line above the heading: the place, the window, the filter. */
   eyebrow?: V3Text
+  /**
+   * Set the eyebrow as a KICKER on the heading's own line, at its far end,
+   * instead of on a line above it (2026-09-25). A ledger reads like a table,
+   * and a running head across the measure (the name at the left, the context
+   * at the right, the rows under both) reads like a table's head. A page uses
+   * it to break the eyebrow-then-heading beat that had every section of the
+   * monthly report open the same way (separate taste evaluator). On a narrow
+   * screen the kicker wraps under the heading. Does nothing without an eyebrow.
+   */
+  eyebrowInline?: boolean
   /** One sentence under the heading when the list needs a stated basis. */
   note?: V3Text
   /**
@@ -409,6 +420,7 @@ export function V3Ledger(props: V3LedgerProps) {
     heading,
     headingLevel = 2,
     eyebrow,
+    eyebrowInline = false,
     note,
     drawing,
     source,
@@ -485,10 +497,18 @@ export function V3Ledger(props: V3LedgerProps) {
       aria-label={headingId ? undefined : heading}
     >
       <div className="v3-ledger__head">
-        {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
-        <V3Heading level={headingLevel} id={headingId}>
-          {heading}
-        </V3Heading>
+        {eyebrow && eyebrowInline ? (
+          /* The running head: the name, then the context at the far end of the
+             same line (the barrel's one running-head atom). */
+          <V3RunningHead level={headingLevel} id={headingId} heading={heading} kicker={eyebrow} />
+        ) : (
+          <>
+            {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
+            <V3Heading level={headingLevel} id={headingId}>
+              {heading}
+            </V3Heading>
+          </>
+        )}
         {note ? <p className="v3-ledger__note">{note}</p> : null}
         {drawing ? <div className="v3-ledger__drawing">{drawing}</div> : null}
       </div>

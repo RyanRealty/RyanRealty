@@ -210,6 +210,14 @@ export type V3ChartProps = {
    */
   restingRead?: 'last'
   /**
+   * Where the reading prints. 'tip' (the default) is the small card beside the
+   * crosshair from 48rem and a one-line band above the plot on a phone. 'band' is
+   * the band at every width: one line over the plot, never a card on the line.
+   * For a chart that is the picture of its section (V3Instrument's chartLead),
+   * where a resting card sat on the line's most recent peak (2026-09-25).
+   */
+  reading?: 'tip' | 'band'
+  /**
    * Range rows only. Names what every row's `sample` counted, drawn ONCE
    * above the rows ("detached closes in the quarter"). A bare n is not a
    * reading until the chart says what it counted, so the atom refuses a
@@ -410,6 +418,7 @@ export function V3Chart({
   keysToggle,
   yearPages,
   restingRead,
+  reading = 'tip',
   sampleKey,
   rangeKeyLabel,
   rangeBaseKeyLabel,
@@ -540,19 +549,24 @@ export function V3Chart({
       : []
 
   /* Hover columns: every series' reading at each plotted x, as fractions of
-     the plot box, in x order. */
+     the WHOLE plot box, in x order. The reading layer covers the SVG edge to
+     edge, so a point's place in it is its own x and y over the viewBox: the
+     frame the bars already use. Measured against the inner scale box instead,
+     the crosshair and the dots landed a few pixels off the line they read
+     (2 to 3px at 1440 on the monthly report, 2026-09-25). */
   const hoverColumns: V3ChartHoverColumn[] =
     plot && plot.kind === 'line' && hover !== false
       ? (() => {
-          const { l, t, w, h } = plot.scale
+          const vbW = plot.vbW || 1
+          const vbH = plot.vbH || 1
           const byX = new Map<string, V3ChartHoverColumn>()
           plot.lines.forEach((line, i) => {
             for (const p of line.points) {
               if (!p.plot) continue
-              const frac = (p.x - l) / (w || 1)
+              const frac = p.x / vbW
               const key = frac.toFixed(3)
               const col = byX.get(key) ?? { frac, tick: p.tick, readings: [] }
-              col.readings.push({ name: line.name, label: p.label, frac: (p.y - t) / (h || 1), emphasis: i === emphasisIndex })
+              col.readings.push({ name: line.name, label: p.label, frac: p.y / vbH, emphasis: i === emphasisIndex })
               byX.set(key, col)
             }
           })
@@ -628,6 +642,7 @@ export function V3Chart({
         'v3-chart',
         `v3-chart--${plot.kind}`,
         yoy && 'v3-chart--yoy',
+        reading === 'band' && 'v3-chart--band',
         className,
       )}
       aria-labelledby={captionId}

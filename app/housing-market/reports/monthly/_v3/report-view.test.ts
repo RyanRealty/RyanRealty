@@ -24,9 +24,11 @@ import {
   pdfFacts,
   pdfSize,
   publishedVerdict,
-  supplyTrendChart,
+  supplySeasons,
+  supplyVerdict,
   withheldClause,
 } from './report-view'
+import { marketVerdict as registryVerdict } from '@/lib/data/market-truth/registry'
 
 /* -------------------------------------------------------------------------- */
 /* A real payload, built by the same builder the monthly cron runs            */
@@ -211,6 +213,29 @@ describe('publishedVerdict', () => {
     expect(publishedVerdict({ mos: 4.3, verdict: 'seller' })).toBeNull()
     expect(publishedVerdict({ mos: null, verdict: 'seller' })).toBeNull()
   })
+
+  it('never prints a call for a supply figure that is not a number', () => {
+    expect(publishedVerdict({ mos: Number.NaN, verdict: 'balanced' })).toBeNull()
+    expect(publishedVerdict({ mos: Number.POSITIVE_INFINITY, verdict: 'buyer' })).toBeNull()
+  })
+})
+
+describe('supplyVerdict', () => {
+  it('is the call the edition builder stored, on every boundary (the Market Truth registry)', () => {
+    for (const mos of [0, 2.3, 3.99, 4, 4.01, 5, 5.99, 6, 6.01, 11]) {
+      expect(supplyVerdict(mos), String(mos)).toBe(registryVerdict(mos))
+    }
+    expect(supplyVerdict(4)).toBe('seller')
+    expect(supplyVerdict(4.01)).toBe('balanced')
+    expect(supplyVerdict(6)).toBe('buyer')
+  })
+
+  it('makes no call on a missing or non-finite figure', () => {
+    expect(supplyVerdict(null)).toBeNull()
+    expect(supplyVerdict(undefined)).toBeNull()
+    expect(supplyVerdict(Number.NaN)).toBeNull()
+    expect(supplyVerdict(Number.NEGATIVE_INFINITY)).toBeNull()
+  })
 })
 
 describe('market by market', () => {
@@ -278,28 +303,58 @@ describe('charts', () => {
     expect(chart.caption).toBe('Central Oregon median sale price by month, September 2023 to August 2026')
   })
 
-  it('draws months of supply over the balanced zone and calls the edition month', () => {
-    const chart = supplyTrendChart(payload.region.series, 'Central Oregon', payload.region.kpis)!
-    expect(chart.series![0]!.points.at(-1)!.label).toBe('4.0 months')
-    expect(chart.bands).toEqual([{ from: 4, to: 6, label: 'Balanced: above 4 and under 6 months' }])
-    expect(chart.claim).toBe("4.0 months of supply at the end of August 2026: a seller's market by our measure.")
+  it('draws months of supply against the balanced zone and calls the edition month', () => {
+    const strips = supplySeasons(payload.region.series, 'Central Oregon', payload.region.kpis)!
+    expect(strips.caption).toBe('Central Oregon months of supply by month, September 2023 to August 2026')
+    expect(strips.bands).toEqual([{ from: 4, to: 6, label: 'Balanced: above 4 and under 6 months' }])
+    expect(strips.threshold).toBe(4)
+    expect(strips.claim).toBe("4.0 months of supply at the end of August 2026: a seller's market by our measure.")
+    // The newest month is the edition month, printed the way the line printed it.
+    const newest = strips.rows[0]!.cells[7]!
+    expect(newest.tick).toBe('Aug 2026')
+    expect(newest.label).toBe('4.0 months')
+    expect(newest.note).toBe("a seller's market")
   })
 
-  it('writes every supply gridline to the same precision', () => {
+  it('keeps every stored month, one strip per calendar year, newest first, January in the first column', () => {
+    const strips = supplySeasons(payload.region.series, 'Central Oregon', payload.region.kpis)!
+    expect(strips.rows.map((r) => String(r.name))).toEqual(['2026', '2025', '2024', '2023'])
+    for (const row of strips.rows) expect(row.cells).toHaveLength(12)
+    const readings = strips.rows.flatMap((r) => r.cells.filter((c) => c != null))
+    expect(readings).toHaveLength(36)
+    // 2023 starts in September; 2026 stops in August. The gaps stay gaps.
+    expect(strips.rows[3]!.cells.slice(0, 8).every((c) => c == null)).toBe(true)
+    expect(strips.rows[3]!.cells[8]!.tick).toBe('Sep 2023')
+    expect(strips.rows[0]!.cells.slice(8).every((c) => c == null)).toBe(true)
+    expect(strips.columns.map(String)).toEqual(['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'])
+  })
+
+  it('prints each month as the stored figure and calls it the way the thresholds do', () => {
     const months = Array.from({ length: 12 }, (_, i) => addMonths('2025-09', i))
-    const mos = [2.1, 2.4, 2.9, 3.3, 3.8, 4.2, 4.6, 4.4, 3.9, 3.1, 2.6, 2.2]
-    const series = {
-      ...payload.region.series!,
-      months,
-      mos: months.map((k, i) => ({ k, v: mos[i]!, n: 300 })),
-    }
-    const labels = supplyTrendChart(series, 'Central Oregon', payload.region.kpis)!.yTicks!.map((t) => String(t.label))
-    expect(labels.length).toBeGreaterThanOrEqual(2)
-    for (const label of labels) expect(label).toMatch(/^\d+\.\d$/)
-    const flat = { ...series, mos: months.map((k, i) => ({ k, v: [2, 3, 4, 5][i % 4]!, n: 300 })) }
-    const whole = supplyTrendChart(flat, 'Central Oregon', payload.region.kpis)!.yTicks!.map((t) => String(t.label))
-    expect(whole.length).toBeGreaterThanOrEqual(2)
-    for (const label of whole) expect(label).toMatch(/^\d+$/)
+    const mos = [2.1, 3.96, 4.0, 4.04, 5.97, 6.0, 6.8, 4.4, 3.9, 3.1, 2.6, 2.2]
+    const series = { ...payload.region.series!, months, mos: months.map((k, i) => ({ k, v: mos[i]!, n: 300 })) }
+    const strips = supplySeasons(series, 'Central Oregon', payload.region.kpis)!
+    const byTick = new Map(
+      strips.rows.flatMap((r) => r.cells.flatMap((c) => (c ? [[String(c.tick), c] as const] : []))),
+    )
+    expect(byTick.get('Oct 2025')!.label).toBe(`${mosText(3.96)} months`)
+    expect(byTick.get('Oct 2025')!.note).toBe("a seller's market")
+    expect(byTick.get('Nov 2025')!.note).toBe("a seller's market")
+    // 4.04 prints 4.1, never a 4.0 beside a balanced call.
+    expect(byTick.get('Dec 2025')!.label).toBe('4.1 months')
+    expect(byTick.get('Dec 2025')!.note).toBe('a balanced market')
+    expect(byTick.get('Jan 2026')!.label).toBe('5.9 months')
+    expect(byTick.get('Jan 2026')!.note).toBe('a balanced market')
+    expect(byTick.get('Feb 2026')!.note).toBe("a buyer's market")
+    // The domain holds the whole balanced zone and the run's own top.
+    expect(strips.max).toBe(7)
+    expect(supplySeasons(payload.region.series, 'Central Oregon', payload.region.kpis)!.max).toBe(6)
+  })
+
+  it('draws no strips from a missing or one-month series', () => {
+    expect(supplySeasons(undefined, 'Central Oregon', payload.region.kpis)).toBeUndefined()
+    const one = { ...payload.region.series!, mos: [{ k: '2026-08', v: 4, n: 300 }] }
+    expect(supplySeasons(one, 'Central Oregon', payload.region.kpis)).toBeUndefined()
   })
 
   it('labels the x axis with the year at each January, not a month name at the edge', () => {
@@ -399,7 +454,7 @@ describe('voice', () => {
       marketFigures(payload.region.kpis),
       marketLedgerRows(payload),
       medianTrendChart(payload.region.series, 'Central Oregon'),
-      supplyTrendChart(payload.region.series, 'Central Oregon', payload.region.kpis),
+      supplySeasons(payload.region.series, 'Central Oregon', payload.region.kpis),
       editionDescription(EDITION, payload.region.kpis),
       archiveYears([item('2026-08')]),
     ])

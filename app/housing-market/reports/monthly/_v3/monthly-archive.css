@@ -32,9 +32,8 @@
   margin-bottom: var(--v3-space-lg);
 }
 
-.monthly-archive__heading {
-  margin: 0;
-}
+/* The running head is the barrel's (V3RunningHead, tokens.css): one rule set
+   with the edition page's table, which opens the same way. */
 
 .monthly-archive__lede {
   margin: 0;
@@ -212,11 +211,17 @@
   );
 }
 
+/* The gap between two months belongs half to each: a month's doors reach into
+   it, so a target is the cell plus one column gap wide. At 320px a sixth of
+   the row is 42px, under the tap floor; with the gap it is 47.6px. The text
+   stays on the cell's edge, because the padding gives back what the margin
+   takes. */
 .monthly-archive__read {
   display: flex;
   align-items: center;
   min-height: var(--v3-tap);
-  padding: var(--v3-space-3xs) 0 0;
+  margin-inline: calc(var(--v3-space-2xs) / -2);
+  padding: var(--v3-space-3xs) calc(var(--v3-space-2xs) / 2) 0;
   color: var(--v3-ink);
   font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-strong);
@@ -243,6 +248,8 @@
 }
 
 .monthly-archive__pdf {
+  margin-inline: calc(var(--v3-space-2xs) / -2);
+  padding-inline: calc(var(--v3-space-2xs) / 2);
   color: var(--v3-ink-muted);
   text-decoration: underline;
   text-decoration-color: var(--v3-edge);
@@ -280,64 +287,144 @@
   outline-offset: var(--v3-focus-offset);
 }
 
-/* The reveal: the edition's first headline sentence, over the row below, on
-   a pointer that can hover and a window wide enough to hold it beside the
-   cell. A phone taps straight through to the edition page, which opens on the
-   same sentence. Hidden (not only transparent) below that, so the panel never
-   widens the page. */
+/* The reveal: the edition's first headline sentence, over the row below.
+   Opened three ways, and every way at every width: a pointer that can hover
+   (hover alone, so a phone's sticky tap-hover never fakes it), KEYBOARD focus
+   in the month, and a phone's press and hold (V3HoldReveal sets data-revealed
+   on the month). Keyboard focus is :focus-visible, never :focus-within: a tap
+   focuses the link it lands on too, so a phone that tapped a PDF door, or came
+   back to the page from an edition, found a panel six cells wide stuck open
+   over the row below (code review, 2026-09-29). It sits inside the month's
+   link, so it resets the link's weight, and it is out of the flow, so nothing
+   under a pointer moves while it opens. */
 .monthly-archive__peek {
-  display: none;
+  position: absolute;
+  top: calc(100% + var(--v3-space-3xs));
+  left: 0;
+  z-index: 5;
+  display: grid;
+  gap: var(--v3-space-3xs);
+  width: min(20rem, 60vw);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  background: var(--v3-panel-bg);
+  border: var(--v3-panel-border);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-body);
+  line-height: var(--v3-leading-note);
+  text-align: left;
+  text-wrap: pretty;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    visibility var(--v3-dur-state) var(--v3-ease-out);
 }
 
-@media (hover: hover) and (min-width: 40rem) {
-  .monthly-archive__peek {
-    position: absolute;
-    top: calc(100% + var(--v3-space-3xs));
-    left: 0;
-    z-index: 5;
-    display: grid;
-    gap: var(--v3-space-3xs);
-    width: min(20rem, 60vw);
-    padding: var(--v3-space-sm) var(--v3-space-md);
-    background: var(--v3-panel-bg);
-    border: var(--v3-panel-border);
-    color: var(--v3-ink);
-    font-size: var(--v3-size-body-sm);
-    line-height: var(--v3-leading-note);
-    text-wrap: pretty;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition:
-      opacity var(--v3-dur-state) var(--v3-ease-out),
-      visibility var(--v3-dur-state) var(--v3-ease-out);
-  }
+.monthly-archive__month:has(:focus-visible) .monthly-archive__peek,
+.monthly-archive__month[data-revealed='true'] .monthly-archive__peek {
+  opacity: 1;
+  visibility: visible;
+}
 
-  .monthly-archive__month:hover > .monthly-archive__peek,
-  .monthly-archive__month:focus-within > .monthly-archive__peek {
+@media (hover: hover) {
+  .monthly-archive__month:hover .monthly-archive__peek {
     opacity: 1;
     visibility: visible;
   }
+}
 
-  /* Cells in the right half of the row open leftward, so the panel stays on
-     the page: six across below 64rem, twelve above. */
-  .monthly-archive__month:nth-child(6n + 4) > .monthly-archive__peek,
-  .monthly-archive__month:nth-child(6n + 5) > .monthly-archive__peek,
-  .monthly-archive__month:nth-child(6n) > .monthly-archive__peek {
+/* A held sentence is part of its month's door: a tap on it opens that month.
+   At rest and on hover it takes no pointer, so it never hides the month drawn
+   under it from a mouse. */
+.monthly-archive__month[data-revealed='true'] .monthly-archive__peek {
+  pointer-events: auto;
+}
+
+/* The open month sits above its neighbours, so its sentence is never painted
+   under the next row's links. */
+.monthly-archive__month:has(:focus-visible),
+.monthly-archive__month[data-revealed='true'] {
+  z-index: 6;
+}
+
+@media (hover: hover) {
+  .monthly-archive__month:hover {
+    z-index: 6;
+  }
+}
+
+/* A press and hold on a month's link is the reveal, not the OS link menu or a
+   text selection. Only a link that carries a sentence is held (V3HoldReveal's
+   handle), so only that link gives up the menu: the PDF door, and a month with
+   no sentence to show, keep the phone's own long press (open, download,
+   share). */
+.monthly-archive__hold .monthly-archive__read:has(.monthly-archive__peek) {
+  -webkit-touch-callout: none;
+}
+
+@media (hover: none) {
+  .monthly-archive__hold .monthly-archive__read:has(.monthly-archive__peek) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* From 40rem the sentence opens beside the month as a panel. Cells in the
+   right half of the row open leftward, so the panel stays on the page: six
+   across below 64rem, twelve above. */
+@media (min-width: 40rem) {
+  .monthly-archive__month:nth-child(6n + 4) .monthly-archive__peek,
+  .monthly-archive__month:nth-child(6n + 5) .monthly-archive__peek,
+  .monthly-archive__month:nth-child(6n) .monthly-archive__peek {
     left: auto;
     right: 0;
   }
+}
 
-  @media (min-width: 64rem) {
-    .monthly-archive__month:nth-child(n) > .monthly-archive__peek {
-      left: 0;
-      right: auto;
-    }
+@media (min-width: 64rem) {
+  .monthly-archive__month:nth-child(n) .monthly-archive__peek {
+    left: 0;
+    right: auto;
+  }
 
-    .monthly-archive__month:nth-child(n + 7) > .monthly-archive__peek {
-      left: auto;
-      right: 0;
-    }
+  .monthly-archive__month:nth-child(n + 7) .monthly-archive__peek {
+    left: auto;
+    right: 0;
+  }
+}
+
+/* On a phone a month is a sixth of the row, too narrow to hold a sentence
+   beside it, so the sentence spans the whole row of months under the one
+   opened: its left edge steps back one column (the cell's width plus the
+   column gap) for every column to the left of the month, and it is exactly
+   six cells and five gaps wide, so it can never widen the page. */
+@media (max-width: 39.99rem) {
+  .monthly-archive__peek {
+    --month-col: 0;
+    left: calc(var(--month-col) * -1 * (100% + var(--v3-space-2xs)));
+    width: calc(600% + 5 * var(--v3-space-2xs));
+  }
+
+  .monthly-archive__month:nth-child(6n + 2) .monthly-archive__peek {
+    --month-col: 1;
+  }
+
+  .monthly-archive__month:nth-child(6n + 3) .monthly-archive__peek {
+    --month-col: 2;
+  }
+
+  .monthly-archive__month:nth-child(6n + 4) .monthly-archive__peek {
+    --month-col: 3;
+  }
+
+  .monthly-archive__month:nth-child(6n + 5) .monthly-archive__peek {
+    --month-col: 4;
+  }
+
+  .monthly-archive__month:nth-child(6n) .monthly-archive__peek {
+    --month-col: 5;
   }
 }
 
