@@ -358,28 +358,23 @@ function radiusStep(miles: number): number {
   return Math.ceil(miles * 2) / 2
 }
 
+/** Bend competition never leaves this radius. A city-wide pull is not a comp set. */
+export const COMPETITION_BEND_CAP_MILES = 5
+
+/** Outside Bend the ladder may follow a rural comp search, and then it stops. */
+export const COMPETITION_RURAL_CAP_MILES = 15
+
 /**
- * THE COMPETITION AREA. Matt: "we want to limit it to the neighborhood or
- * community. Unless it's not part of that, then we'll have to use a radius."
+ * THE COMPETITION LADDER. Same idea as the closed-comp pocket, then a radius.
  *
- * So this is NOT the comp area verbatim: a subject whose sales all came from
- * one subdivision still competes with the whole neighborhood around it. The
- * boundary wins whenever the subject sits in one; otherwise a circle sized to
- * hold the sales the price was built on. Never the city — a Redmond seller is
- * not competing with a house four miles away on the other side of town.
+ * Pocket (the subdivision the closed sales came from) first, then 0.5 / 1 / 2
+ * / 5 miles. Widen only while the caller is starved. In Bend the cap is 5
+ * miles. Elsewhere the cap is the comp search's own reach, and never more
+ * than 15. Never the city. A subject with no coordinates returns no ring:
+ * there is nothing to draw, and the city is not a substitute.
  *
- * Matt 2026-09-08, "definitely tighter on rural homes, make the best
- * decision": when the subject sits in NO mapped boundary, the circle no
- * longer jumps straight to the farthest comp. It starts at five miles and
- * widens — 5, then 10, then the comp search's own reach — and only as far as
- * it has to. This function does not read inventory, so it cannot decide when
- * three homes have been found; it returns the RING ORDER to try, widest last
- * and never past the comp search's reach. The caller reads the band once, at
- * the widest ring, and walks this order stopping at the first ring that
- * holds three (see `pickCompetitionRing` in lib/cma/band-rivals.ts).
- *
- * A mapped boundary or a subject with no coordinates never widens — there is
- * exactly one ring to try, same as before this change.
+ * This function does not read inventory. The caller queries once at the
+ * widest ring and walks this order (see `pickCompetitionRing`).
  */
 export function resolveCompetitionArea(input: {
   compArea: CompArea
@@ -387,75 +382,49 @@ export function resolveCompetitionArea(input: {
   keptComps: readonly CompAreaKeptComp[]
 }): CompArea[] {
   const centre = centreOf({ ...input.subject, subdivision: null })
-  if (!centre) {
-    // No coordinates, no circle and no polygon test. Say so rather than draw a
-    // radius from a point we do not have.
-    return [
-      {
-        ...input.compArea,
-        kind: 'city',
-        names: input.subject.city ? [input.subject.city] : input.compArea.names,
-        radiusMiles: null,
-        centre: null,
-        source: `${input.compArea.source}; competition: the subject carries no coordinates, so neither a boundary nor a radius can be drawn`,
-        sentence: `${input.subject.city || 'Your city'}.`,
-      },
-    ]
-  }
+  if (!centre) return []
 
-  const slug = resolveMarketArea(centre.lat, centre.lng)
-  const kind = marketAreaKind(slug)
-  const name = marketAreaLabel(slug)
-  if (kind && name) {
-    const base = {
-      kind: kind as CompAreaKind,
-      names: [name],
-      radiusMiles: null,
-      centre,
-      source: `competition: the subject sits inside the ${kind} polygon ${slug}, so only listings inside that boundary count`,
-    }
-    return [{ ...base, sentence: areaSentence(base, null) }]
-  }
-
-  // Outside every mapped boundary — rural. The comp search's own reach is the
-  // ceiling: the wider of the radius the comp area already names, and the
-  // distance to the farthest sale the price was built on, rounded up to a
-  // radius a seller can read. Both are facts about this document, not a
-  // default.
+  const bend = input.subject.city.trim().toLowerCase() === 'bend'
   const farthest = input.keptComps
     .map((c) => distanceMiles(centre, { lat: c.latitude ?? null, lng: c.longitude ?? null }))
     .filter((d): d is number => d != null && Number.isFinite(d))
   const measured = farthest.length > 0 ? Math.max(...farthest) : 0
-  const compSearchRadiusMiles = radiusStep(Math.max(input.compArea.radiusMiles ?? 0, measured, 1))
+  const compSearchRadiusMiles = radiusStep(Math.max(input.compArea.radiusMiles ?? 0, measured, 0.5))
+  const cap = bend
+    ? COMPETITION_BEND_CAP_MILES
+    : Math.min(COMPETITION_RURAL_CAP_MILES, Math.max(compSearchRadiusMiles, 0.5))
 
-  // Already tighter than five miles: use it as-is, nothing to widen into.
-  // Otherwise: 5, then 10, then the comp search's reach — deduped, capped at
-  // that reach, ascending. (A reach of exactly 5 or 10 collapses the ladder
-  // to one or two rungs rather than repeating a mile value.)
-  const milesLadder =
-    compSearchRadiusMiles < 5
-      ? [compSearchRadiusMiles]
-      : [...new Set([5, 10, compSearchRadiusMiles].filter((m) => m <= compSearchRadiusMiles))].sort(
-          (a, b) => a - b,
-        )
+  const steps = bend
+    ? [0.5, 1, 2, 5]
+    : cap < 5
+      ? [0.5, 1, 2, cap].filter((m) => m <= cap + 1e-9)
+      : [0.5, 1, 2, 5, 10, cap].filter((m) => m <= cap + 1e-9)
+  const miles = [...new Set(steps.map((m) => (m >= 5 ? radiusStep(m) : m)))].sort((a, b) => a - b)
 
-  return milesLadder.map((radiusMiles) => {
-    const widest = radiusMiles === compSearchRadiusMiles
+  const rings: CompArea[] = []
+  if (input.compArea.kind === 'subdivision' || input.compArea.kind === 'subdivisions') {
+    rings.push({
+      ...input.compArea,
+      centre,
+      sentence: input.compArea.sentence || areaSentence({ ...input.compArea, centre }, null),
+    })
+  }
+  for (const radiusMiles of miles) {
+    const widest = radiusMiles === miles[miles.length - 1]
     const base = {
       kind: 'radius' as const,
       names: [],
       radiusMiles,
       centre,
-      source: `competition: the subject is outside every mapped neighborhood or community polygon; ring of ${milesPhrase(
-        radiusMiles,
-      )}${
+      source: `competition: pocket then radius, ring of ${milesPhrase(radiusMiles)}${
         widest
-          ? ` — the comp search's own reach, the widest this ring may go`
-          : `, tried before widening toward the comp search's reach of ${milesPhrase(compSearchRadiusMiles)}`
+          ? `, the widest this search may go (${bend ? 'Bend cap 5 miles' : `cap ${milesPhrase(cap)}`})`
+          : ', widened only when the tighter ring is short of homes'
       }`,
     }
-    return { ...base, sentence: areaSentence(base, null) }
-  })
+    rings.push({ ...base, sentence: areaSentence(base, null) })
+  }
+  return rings
 }
 
 /**

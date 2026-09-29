@@ -11,6 +11,7 @@
 
 import type { CmaSubject } from '@/lib/cma/types'
 import { POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
+import { assertRungsClassified } from '@/lib/pricing/rung-class'
 
 export type CompTier = {
   name: string
@@ -130,7 +131,7 @@ export function realSubdivision(value: string | null | undefined): string | null
 export const WIDENED_SQFT_BAND = 0.25
 
 export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
-    return [
+    const tiers: CompTier[] = [
     // 1-2. The subject's own subdivision, exhausted across the full 12 months
     // BEFORE any geographic widening.
     { name: 'subdivision-6mo', subdivisionIlike, monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
@@ -275,6 +276,8 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
         'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of your home in size, up to 25 miles out, sales inside a nearby resort community your home is not part of, and sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
     },
   ]
+  assertRungsClassified(tiers.map((tier) => tier.name))
+  return tiers
 }
 
 /**

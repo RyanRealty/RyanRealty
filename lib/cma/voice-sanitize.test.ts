@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
+import { sanitizeClientProse, sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 
 describe('sanitizeClientProse', () => {
   it('strips the em-dash that killed cma-16923-torrance', () => {
@@ -21,5 +21,16 @@ describe('sanitizeClientProse', () => {
   it('leaves compliant prose alone', () => {
     const clean = 'Three comps bracket the subject. All closed within five weeks.'
     expect(sanitizeClientProse(clean)).toBe(clean)
+  })
+})
+
+describe('sanitizeLetterEmDash', () => {
+  it('turns a stored price — size clause into a period and a capital', () => {
+    const stored =
+      'Each sale stays on its own sold and last-ask price — size and story class do not adjust.'
+    expect(sanitizeLetterEmDash(stored)).toBe(
+      'Each sale stays on its own sold and last-ask price. Size and story class do not adjust.',
+    )
+    expect(sanitizeLetterEmDash(stored)).not.toMatch(/[—–]/)
   })
 })

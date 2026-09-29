@@ -65,6 +65,9 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   .page-cover { break-after: page; page-break-after: always; }
   .page-flyer { break-before: page; page-break-before: always; }
+  /* Navy close is its own sheet. Leftover basis/disclosure lines must not
+     sit above the closing header. */
+  .page-closing { break-before: page; page-break-before: always; }
 
   @media screen {
     /* Screen only: show sheets on a desk. Print takes its box from @page. */
@@ -102,6 +105,32 @@ export function cmaStylesheet(siteUrl: string): string {
   .page a { color: var(--navy); }
   .page-closing a { color: var(--cream); }
 
+  .page-open {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  /* Banner, heading, and the chart's lead sentence. The SVG is outside this
+     box: gluing the chart in made the group taller than the room under a
+     competition-grid tail, so the tail sat alone on the next sheet. The
+     chart follows on this sheet when it fits, and on the next when it does
+     not. One SVG still does not slice. */
+  .page-open.is-chart-follow {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+  .page-open.is-chart-follow > h2,
+  .page-open.is-chart-follow > h3,
+  .page-open.is-chart-follow > p,
+  .open-lead,
+  .open-lead h3 {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+  .open-lead { margin: 0; padding: 0; }
   .pg-header {
     display: flex;
     justify-content: space-between;
@@ -109,6 +138,8 @@ export function cmaStylesheet(siteUrl: string): string {
     border-bottom: 1px solid var(--navy-line);
     padding-bottom: 9px;
     margin-bottom: 16px;
+    break-after: avoid;
+    page-break-after: avoid;
   }
   .pg-header img.logo { height: 34px; }
   .pg-header .pg-meta {
@@ -725,9 +756,47 @@ export function cmaStylesheet(siteUrl: string): string {
       box-shadow: none;
       margin: 0;
       width: auto;
-      /* Content-box height = 11in - 0.4in top - 0.7in bottom. */
-      min-height: 9.9in;
+      /* Do not force a section to fill a sheet. A 9.9in min-height made
+         leftover from one chapter paint onto the next sheet above that
+         chapter's in-body header. Height comes from content. */
+      min-height: 0;
       padding: 0;
+    }
+    /* Last sheet: no forced min-height and no break-after. Either one on
+       the closing section leaves a blank trailing page in the PDF. */
+    .page:last-child,
+    .page-closing {
+      min-height: 0;
+      break-after: auto;
+      page-break-after: auto;
+    }
+    /* A forced break before the close left the last disclosure paragraph
+       alone on its own sheet. Let the close follow that paragraph when the
+       two fit. The close itself stays whole: heading, reach list, signature.
+       Starting it in the leftover under basis-and-limits split the reach
+       list and left the signature on the next sheet. It is under a page, so
+       if it does not fit it moves, at the section boundary. */
+    .page-closing {
+      break-before: auto;
+      page-break-before: auto;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    /* The cover photo must not push "Prepared for" onto a blank next page.
+       The content box is 9.9in. A loaded photo used to add its own height
+       on top of a 9.9in minimum. */
+    .cover-stage {
+      min-height: 0;
+      height: auto;
+      max-height: 9.7in;
+    }
+    .hero-photo {
+      flex: 0 1 auto;
+      max-height: 3.8in;
+      min-height: 0;
+      height: auto;
+      width: 100%;
+      object-fit: contain;
     }
     /* NO height, NO max-height, NO overflow:hidden — all three delete content.
        A clipped row is never drawn, so it leaves no trace in the PDF for any
@@ -745,6 +814,18 @@ export function cmaStylesheet(siteUrl: string): string {
   .page-closing {
     background: var(--navy);
     color: var(--cream);
+    /* Inner inset on the navy panel. Print zeros .page padding (bands live
+       on @page), so without this the close sits flush on the navy edge. */
+    padding: 32px 36px 40px;
+    box-sizing: border-box;
+  }
+  @media screen and (max-width: 700px) {
+    .page-closing { padding: 24px 20px 32px; }
+  }
+  @media print {
+    .page-closing { padding: 16px 28px 20px; }
+    .page-closing .signature-page { margin-top: 14px; padding-top: 14px; }
+    .page-closing p.fine { margin-top: 8px; }
   }
   .page-closing h2.section { color: var(--cream); border-bottom-color: var(--cream); }
   .page-closing h3.subhead,

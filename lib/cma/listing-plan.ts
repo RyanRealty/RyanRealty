@@ -18,6 +18,7 @@
  * what will happen.
  */
 
+import { resolveAskPosition } from '@/lib/cma/ask-position'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -69,11 +70,22 @@ export function buildFailedAskItem(
   expiredAudit: ExpiredAuditData | null,
 ): ListingPlanItem | null {
   if (!expiredAudit) return null
-  const ask = subject.lastListPrice
+  const exposure = expiredAudit.askExposure
+  const position = resolveAskPosition({
+    lastListPrice: subject.lastListPrice,
+    exposure: exposure
+      ? { segments: exposure.segments, final: exposure.final?.ask ?? null }
+      : null,
+  })
+  const ask = position.lastAsk
   if (ask == null || !(ask > 0)) return null
   if (!(pricing.recommended > 0)) return null
+  const original =
+    position.originalAsk != null && position.originalAsk !== ask
+      ? ` The original ask was ${usd(position.originalAsk)}.`
+      : ''
   return {
-    trigger: `The last listing asked ${usd(ask)} and did not sell.`,
+    trigger: `The last listing asked ${usd(ask)} and did not sell.${original}`,
     action: `We price the relist at ${usd(pricing.recommended)}.`,
     basis: `Last list ${usd(ask)} against the recommended list of ${usd(pricing.recommended)}.`,
   }

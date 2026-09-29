@@ -33,6 +33,12 @@ export type CursorStructuredOptions = {
   model?: string
   maxTokens?: number
   temperature?: number
+  /**
+   * Accepted so the structured-call options type matches the xAI body.
+   * cursor-agent has no seed flag, and this function does not put the value
+   * on the CLI argv or into the prompt.
+   */
+  seed?: number
   reasoningEffort?: 'low' | 'medium' | 'high'
   timeoutMs?: number
   schema: Record<string, unknown>

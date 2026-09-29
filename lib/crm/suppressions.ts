@@ -50,11 +50,12 @@ export async function isSuppressed(personId: number, channel: SendChannel): Prom
  * and treats the address as suppressed if ANY of these is true:
  *
  *   1. Any matched person is suppressed for the channel (via isSuppressed —
- *      this also covers the protected compliance tags compliance:hard-stop,
- *      contact:do-not-text, contact:do-not-call through TAG_CHANNEL).
- *   2. A protected compliance tag sits on a matched person (belt-and-suspenders;
- *      isSuppressed already enforces these, kept explicit so the contract is
- *      readable and survives any future TAG_CHANNEL edit).
+ *      TAG_CHANNEL). contact:do-not-call and contact:do-not-text block phone
+ *      and SMS only. They do not block email.
+ *   2. The same tag map, scanned explicitly so a future edit to the per-person
+ *      path cannot mail a hard-stop. compliance:hard-stop blocks every channel.
+ *      unsubscribed and bounced block email. A suppression row stored on
+ *      channel 'all' (bounce, unsubscribe) still blocks every channel.
  *   3. A crm_suppressions row exists keyed by that email (value column) with
  *      channel in ('all', the channel) — covers email-keyed opt-outs written
  *      before any person row exists (bounce/complaint webhooks, manual entry).
@@ -62,11 +63,11 @@ export async function isSuppressed(personId: number, channel: SendChannel): Prom
  * FAIL-CLOSED: on ANY read error, return suppressed=true. A brand-new email
  * with no person and no suppression row is NOT suppressed (a fresh opt-in).
  */
-const PROTECTED_COMPLIANCE_TAGS = new Set([
-  'compliance:hard-stop',
-  'contact:do-not-text',
-  'contact:do-not-call',
-])
+function tagBlocksSendChannel(tag: string, channel: SendChannel): boolean {
+  const hit = TAG_CHANNEL.find((m) => m.tag.toLowerCase() === tag)
+  if (!hit) return false
+  return hit.channels.includes('all') || hit.channels.includes(channel)
+}
 
 export async function isSuppressedByEmail(
   email: string,
@@ -102,7 +103,7 @@ export async function isSuppressedByEmail(
     for (const p of people.data ?? []) {
       const tags = ((p.tags as string[] | undefined) ?? []).map((t) => t.toLowerCase())
       for (const t of tags) {
-        if (PROTECTED_COMPLIANCE_TAGS.has(t)) reasons.push(`tag:${t}`)
+        if (tagBlocksSendChannel(t, channel)) reasons.push(`tag:${t}`)
       }
       const per = await isSuppressed(p.id as number, channel)
       if (per.suppressed) reasons.push(...per.reasons.map((r) => `person:${p.id}:${r}`))

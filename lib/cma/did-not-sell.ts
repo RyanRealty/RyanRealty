@@ -25,8 +25,8 @@ import { UNADDRESSED_DOC_LINKS, escapeHtml, int, sparkPhotoAt, usd } from '@/lib
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import {
   priceHistoryLineHtml,
-  pricePathFromFinalCycle,
   pricePathFromListing,
+  subjectPricePath,
   type PricePath,
 } from '@/lib/cma/price-path'
 import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
@@ -247,16 +247,15 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
   const stories: Story[] = []
   const s = a.subject
   if (subjectListingFailed(s)) {
-    const path =
-      pricePathFromFinalCycle(a.finalCycle ?? null, s.streetAddress) ??
-      pricePathFromListing({
-        address: s.streetAddress,
-        listPrice: s.lastListPrice,
-        originalListPrice: s.lastListPrice,
-        onMarketDate: s.lastListDate,
-        daysOnMarket: subjectDomDays(s),
-        status: s.standardStatus,
-      })
+    const path = subjectPricePath({
+      cycle: a.finalCycle ?? null,
+      label: s.streetAddress,
+      lastListPrice: s.lastListPrice,
+      onMarketDate: s.lastListDate,
+      daysOnMarket: subjectDomDays(s),
+      status: s.standardStatus,
+      printableAsk: s.lastListPrice,
+    })
     stories.push({
       id: 'yours',
       title: `Your home · ${s.streetAddress}`,

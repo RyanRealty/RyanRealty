@@ -103,6 +103,20 @@ describe('high-DOM sitting active Recommended nudge', () => {
     expect(out.recommended).toBe(701_000)
     expect(isHighDomOverpricedActive(pending, 705_000)).toBe(false)
   })
+
+  it('Oakside shape: the pull stays inside 3 percent and never under pocket closed support', () => {
+    const out = nudgeRecommendedDownForHighDomActives({
+      recommended: 485_000,
+      bandLow: 430_000,
+      bandHigh: 505_000,
+      pocketClosedSupport: 483_000,
+      actives: [{ status: 'Active', listPrice: 470_000, daysOnMarket: 90 }],
+    })
+    expect(out.nudged).toBe(true)
+    expect(out.recommended).toBeGreaterThanOrEqual(483_000)
+    expect(out.recommended).toBeLessThanOrEqual(485_000)
+    expect(485_000 - out.recommended).toBeLessThanOrEqual(485_000 * 0.03 + 1000)
+  })
 })
 
 function roundExpect(rec: number, lo: number, pull: number): number {

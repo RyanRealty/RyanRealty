@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -299,6 +299,12 @@ describe('taste-receipt --ship picker-contract', () => {
 })
 
 describe('taste-receipt --ship CLI', () => {
+  it('never calls process.exit, so a long refuse list reaches the caller whole on macOS', () => {
+    // macOS pipes are async: process.exit() right after console.error() cut
+    // the output at 8 KB and dropped the open-state line this suite matches.
+    expect(readFileSync(SHIP, 'utf8')).not.toMatch(/process\.exit\(\d/)
+  })
+
   it('exits 1 on a cream-box receipt with no open shot', () => {
     const dir = mkdtempSync(join(tmpdir(), 'rr-ship-'))
     mkdirSync(join(dir, 'design_system/public'), { recursive: true })

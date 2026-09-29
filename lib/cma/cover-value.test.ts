@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coverValueBlockHtml, expectedSale, immersiveAnswerHtml, immersiveHeroNumberHtml, letterCoverPayoffHtml } from '@/lib/cma/cover-value'
+import { coverValueBlockHtml, expectedSale, immersiveAnswerHtml, immersiveHeroNumberHtml, letterCoverPayoffHtml, rangeSpreadCauseSentence } from '@/lib/cma/cover-value'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
@@ -133,5 +133,55 @@ describe('coverWorthSentence — the number capped below the range', () => {
     expect(t).not.toMatch(/worth/)
     const plain = coverWorthSentence({ ...p, clamp: null, recommended: 1_700_000 } as unknown as import('@/lib/cma/types').CmaPricing, { omitAsk: true })
     expect(plain).toBe('Your home is worth $1,550,000 to $3,255,000 today.')
+  })
+})
+
+describe('rangeSpreadCauseSentence names the exclusion that happened', () => {
+  const wide = {
+    recommended: 1_324_000,
+    valueLow: 1_000_000,
+    valueHigh: 1_400_000,
+  }
+
+  it('says a $/sf outlier was set aside, and that it still carries weight', () => {
+    const sentence = rangeSpreadCauseSentence({
+      ...wide,
+      rangeRule: { rule: 'min-max', n: 4, kept: 3, endpointPpsfAside: 1, endpointWeightAside: 0 },
+    } as unknown as import('@/lib/cma/types').CmaPricing)
+    expect(sentence).toContain('price per square foot')
+    expect(sentence).toContain('still carries weight')
+    expect(sentence).not.toMatch(/furthest/)
+    expect(sentence).not.toMatch(/[—–]/)
+  })
+
+  it('says a light sale failed the weight test', () => {
+    const sentence = rangeSpreadCauseSentence({
+      ...wide,
+      rangeRule: { rule: 'min-max', n: 4, kept: 3, endpointPpsfAside: 0, endpointWeightAside: 1 },
+    } as unknown as import('@/lib/cma/types').CmaPricing)
+    expect(sentence).toContain('too little weight')
+    expect(sentence).toContain('still carries weight')
+    expect(sentence).not.toMatch(/furthest/)
+  })
+
+  it('says the high and low were set aside so one sale cannot set the range', () => {
+    const sentence = rangeSpreadCauseSentence({
+      ...wide,
+      rangeRule: { rule: 'trimmed-one-each-end', n: 6, kept: 4, endpointPpsfAside: 0, endpointWeightAside: 0 },
+    } as unknown as import('@/lib/cma/types').CmaPricing)
+    expect(sentence).toContain('one sale cannot set the range')
+    expect(sentence).not.toContain('still carries weight')
+    expect(sentence).not.toMatch(/furthest/)
+  })
+
+  it('says nothing when the range is not wide', () => {
+    expect(
+      rangeSpreadCauseSentence({
+        recommended: 500_000,
+        valueLow: 480_000,
+        valueHigh: 520_000,
+        rangeRule: { rule: 'min-max', n: 4, kept: 3, endpointPpsfAside: 1, endpointWeightAside: 0 },
+      } as unknown as import('@/lib/cma/types').CmaPricing),
+    ).toBe('')
   })
 })

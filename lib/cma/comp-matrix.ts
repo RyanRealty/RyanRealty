@@ -1005,7 +1005,7 @@ export function renderCompMatrixHtml(
       domDays: subjectDomDays(subject),
       printableAsk: subjectPrintableAsk(subject, askCtx),
     }),
-    ...closedEntries(comps, ctx),
+    ...closedEntries(comps, ctx, subject),
   ]
   return renderMatrixHtml({
     id: 'sales-that-set-it',

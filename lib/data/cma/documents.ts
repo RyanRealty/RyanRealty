@@ -36,6 +36,26 @@ export type CmaRenderSource = {
   build_summary: Record<string, unknown> | null
 }
 
+/**
+ * The row's build_summary only, for the comp-judge decision cache.
+ * Null when the row or the summary is missing, or Supabase is not configured.
+ * A read failure returns null: the cache is an optimization, not a gate.
+ */
+export async function getCmaBuildSummaryBySlug(slug: string): Promise<Record<string, unknown> | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('cmas')
+    .select('build_summary')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error || !data) return null
+  const summary = (data as { build_summary?: unknown }).build_summary
+  return summary && typeof summary === 'object' && !Array.isArray(summary)
+    ? (summary as Record<string, unknown>)
+    : null
+}
+
 /** Metadata-only admin review read. Never pulls html_content / citations / render_args. */
 export const CMA_ADMIN_REVIEW_COLUMNS =
   'id, slug, doc_type, status, subject_address, subject_city, subject_subdivision, subject_listing_key, subject_beds, subject_baths, subject_sqft, client_name, client_email, client_phone, client_notes, broker_slug, built_at, created_at, finalized_at, delivered_at, archived_at, html_path, recommended_list, value_low, value_high, published_to_listing, published_at, published_by, comps_count, build_error, build_summary, price_override, person_id, request_source'
@@ -230,6 +250,50 @@ export type CmaCompInsert = {
   days_to_offer: number | null
   dom_total: number | null
   price_per_sqft: number | null
+}
+
+export type CmaVersionSnapshotResult =
+  | { ok: true; id?: string; skipped?: boolean }
+  | { ok: false; error: string }
+
+/**
+ * Snapshot the live cmas row plus its cma_comps before a rebuild overwrites
+ * them. A missing row is a first build (skip). A failed insert fails the
+ * rebuild so the prior document cannot disappear without a copy.
+ */
+export async function snapshotCmaVersion(args: {
+  slug: string
+  reason: string
+}): Promise<CmaVersionSnapshotResult> {
+  try {
+    const sb = client()
+    if (!sb) return { ok: true, skipped: true }
+    const slug = args.slug.trim().toLowerCase()
+    if (!slug) return { ok: false, error: 'Missing CMA slug' }
+    const { data: row, error: rowErr } = await sb.from('cmas').select('*').eq('slug', slug).maybeSingle()
+    if (rowErr) return { ok: false, error: rowErr.message }
+    if (!row) return { ok: true, skipped: true }
+    const cmaId = typeof (row as { id?: unknown }).id === 'string' ? (row as { id: string }).id : null
+    if (!cmaId) return { ok: false, error: `CMA ${slug} has no readable id` }
+    const { data: comps, error: compsErr } = await sb.from('cma_comps').select('*').eq('cma_id', cmaId)
+    if (compsErr) return { ok: false, error: compsErr.message }
+    const { data: inserted, error } = await sb
+      .from('cma_versions')
+      .insert({
+        cma_id: cmaId,
+        slug,
+        snapshot: { row, comps: comps ?? [] },
+        reason: args.reason.trim() || 'rebuild',
+      })
+      .select('id')
+      .single()
+    if (error) return { ok: false, error: error.message }
+    const id = (inserted as { id?: string } | null)?.id
+    return { ok: true, ...(typeof id === 'string' ? { id } : {}) }
+  } catch (err) {
+    console.error('[snapshotCmaVersion]', err)
+    return { ok: false, error: err instanceof Error ? err.message : 'Snapshot failed' }
+  }
 }
 
 /** Replace the cma_comps set for one CMA (idempotent rebuilds). */

@@ -19,7 +19,8 @@ import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types
 import type { CmaBandRival, CmaBandRivalSet } from './band-rivals'
 import type { CmaExpiredPeer, CmaExpiredPeerSet } from './market-status'
 import type { CompArea } from '@/lib/pricing/comp-area'
-import { inspectPdfPageSafety, formatViolations } from '@/lib/pdf/assert-page-safety'
+import { extractPdfTextRuns, inspectPdfPageSafety, formatViolations } from '@/lib/pdf/assert-page-safety'
+import { headingTailFailures, nearBlankFailures } from '@/lib/cma/page-ink'
 import { pdfRenderOptions, CMA_MARGIN_IN } from '@/lib/pdf/page-contract'
 
 const CHROME =
@@ -188,13 +189,21 @@ async function expectClean(a: RenderCmaArgs, label: string, extraCss?: string) {
       `${label}: ${report.violations.length} violation(s) over ${report.pageCount} sheet(s): ${formatViolations(report.violations)}`,
     )
   }
+  const { pages, sizes } = await extractPdfTextRuns(new Uint8Array(pdf))
+  const tails = [
+    ...headingTailFailures(pages, sizes, label),
+    ...nearBlankFailures(pages, sizes, label),
+  ]
+  if (tails.length) throw new Error(tails.join(' | '))
   return report
 }
 
 describe.skipIf(!hasChrome)('CMA page safety', () => {
   it('a baseline CMA keeps every sheet inside the contract', async () => {
     const report = await expectClean(args(), 'baseline')
-    expect(report.pageCount).toBeGreaterThan(3)
+    // The close follows the disclosure instead of forcing a blank sheet, so a
+    // short letter is three pages. expectClean already refused a clipped one.
+    expect(report.pageCount).toBeGreaterThanOrEqual(3)
   }, 90_000)
 
   it('an overstuffed CMA FLOWS onto clean extra sheets', async () => {
@@ -232,7 +241,7 @@ describe.skipIf(!hasChrome)('CMA page safety', () => {
       (_, i) => `Improvement note ${i + 1} describing work completed on the property in detail.`,
     ).join(' ')
     const report = await expectClean(args({ sellerImprovementsText: huge }), 'spilling-section')
-    expect(report.pageCount).toBeGreaterThan(3)
+    expect(report.pageCount).toBeGreaterThanOrEqual(3)
   }, 120_000)
 
   it('.page never clips its own overflow', async () => {

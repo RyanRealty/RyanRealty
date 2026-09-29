@@ -24,6 +24,7 @@ img{max-width:100%;display:block}
 .sc.pack{min-height:0;align-items:flex-start;padding-top:48px;padding-bottom:56px}
 .sc-cream{background:var(--cream)}
 .sc-navy{background:var(--navy);color:var(--cream)}
+.sc-navy.pack{padding:48px 36px 56px}
 .in{max-width:880px;margin:0 auto;width:100%;container-type:inline-size}
 .in.wide{max-width:1120px}
 .kick{font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;opacity:.65;margin-bottom:18px}
@@ -614,8 +615,15 @@ a.street-sale .n{font-variant-numeric:tabular-nums;font-weight:600}
 @media print{.comp-stack-card a.comp-stack-addr,a.dns-addr,.rival-card .rival-addr{min-height:0;padding:0}}
 @media print{
   .sc{min-height:0;padding:24px}
+  .sc-navy,.sc-navy.pack{padding:32px 36px 40px}
+  .sc:last-child{min-height:0;break-after:auto;page-break-after:auto}
   .cue{display:none}
   .hero{color:var(--navy)}
+  figure,.pin-map-wrap,.lot-tile,.keep-note,.keep-close{break-inside:avoid;page-break-inside:avoid}
+  table,.comp-matrix-wrap,.worth-strip,.status-price-wrap,.chart-block,.figure-block,.status-price{break-inside:auto!important;page-break-inside:auto!important}
+  .chart-read,h4.subhead,.matrix-group-h{break-after:avoid;page-break-after:avoid}
+  figcaption,caption,.ppsf-status-caption{break-before:avoid;page-break-before:avoid;break-after:auto;page-break-after:auto}
+  .stat-strip+.small,.stat-strip+p.small{break-before:avoid;page-break-before:avoid}
 }
 `
 }

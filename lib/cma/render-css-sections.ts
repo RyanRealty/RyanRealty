@@ -525,9 +525,12 @@ export function cmaSectionStyles(): string {
   }
   /* Months of supply as two bars, and chapter 3's dot strip. Same mechanism. */
   /* On paper the spread is one column: two 720-unit charts side by side in a
-     7.3in box put their axis type at seven points. Same story, paginated. */
-  .spread { display: block; }
-  .spread-col { min-width: 0; }
+     7.3in box put their axis type at seven points. Same story, paginated.
+     The pair may split between the two charts. One chart may not: a sliced
+     curve or a sliced bar row reads as two different figures. */
+  .spread { display: block; break-inside: auto; page-break-inside: auto; }
+  .spread-col { min-width: 0; break-inside: auto; page-break-inside: auto; }
+  svg.trend-svg, .szn svg { break-inside: avoid; page-break-inside: avoid; }
   .mos-phone, .worth-phone { display: none; }
   @media screen and (max-width: 700px) {
     .mos-wide, .worth-wide { display: none; }
@@ -609,6 +612,12 @@ export function cmaSectionStyles(): string {
     table.comp-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   }
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
+  /* Row-wise split. thead repeats on the continuation when the renderer
+     will do it (table-header-group). A photo head is often too tall to
+     repeat; the tail then shares the sheet with the next chapter's lead
+     instead of sitting on a blank page. */
+  table.comp-matrix thead { display: table-header-group; }
+  table.comp-matrix tbody { display: table-row-group; break-inside: auto; }
   table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }
   /* TOP, not bottom: the subject head carries one line the sale heads do not. */
   table.comp-matrix thead th.v { vertical-align: top; text-align: right; }
@@ -704,7 +713,7 @@ export function cmaSectionStyles(): string {
   table.kv.status-price-table th:first-child { padding-left: 0; text-align: left; }
   table.kv.status-price-table col.sp-stat { width: 22%; }
   table.kv.status-price-table col.sp-fig { width: 26%; }
-  table.kv.status-price-table tbody { break-inside: avoid; }
+  table.kv.status-price-table tbody { break-inside: auto; }
   table.kv.status-price-table tr.sp-group th { color: var(--navy); font-weight: 600; padding-top: 8px; border-bottom: 1px solid var(--navy); }
   table.kv.status-price-table .sp-count { font-weight: 400; color: var(--muted); margin-left: 6px; }
   .ppsf-status-caption { margin: 4px 0 10px; }
@@ -909,6 +918,45 @@ export function cmaSectionStyles(): string {
   }
   h2.section, h3.subhead, h4.subhead { break-after: avoid; page-break-after: avoid; }
   table.comps tr, table.kv tr { break-inside: avoid; page-break-inside: avoid; }
+  /* Small units only. A figure with its caption, a map tile, a source
+     note with its strip, the closing signature plus the prepared line.
+     Large tables already repeat thead and must split. */
+  figure, .pin-map-wrap, .lot-tile, .keep-note, .keep-close {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* page-contract sets table { break-inside: avoid }. That parks a whole
+     matrix on the next sheet and leaves a heading alone. Override. */
+  table, .comp-matrix-wrap, .worth-strip, .status-price-wrap, .chart-block,
+  .figure-block, .status-price, .spread, .spread-col {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  /* The graphic only. The column around it may break so the two charts can
+     separate, but one SVG does not paint across a sheet edge. */
+  svg.trend-svg, .szn svg {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  /* Lead sentence stays with the figure that follows. */
+  .chart-read, h4.subhead, .matrix-group-h {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  /* Caption stays with the table/figure ABOVE it, never with the next
+     chapter. break-after: avoid on a caption glued it to following
+     content and spilled it above the next section header. */
+  figcaption, caption, .ppsf-status-caption {
+    break-before: avoid;
+    page-break-before: avoid;
+    break-after: auto;
+    page-break-after: auto;
+  }
+  /* Source note under a stat strip, even when the wrap is missing. */
+  .stat-strip + .small, .stat-strip + p.small {
+    break-before: avoid;
+    page-break-before: avoid;
+  }
 
 `
 }

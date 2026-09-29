@@ -109,6 +109,13 @@
           if (!el || el.tagName !== 'A') return
           var href = el.getAttribute('href') || ''
           if (!href || href.charAt(0) === '#') return
+          var destination = href
+          try {
+            var destUrl = new URL(href, location.origin)
+            destUrl.searchParams.delete('_pid')
+            destUrl.searchParams.delete('_fuid')
+            destination = destUrl.toString()
+          } catch (e) { /* keep the raw href */ }
           fetch('/api/visitors/track', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -122,6 +129,7 @@
               pageTitle: (el.textContent || '').trim().slice(0, 80) || href.slice(0, 80),
               pageCategory: 'client-document',
               consent: 'essential',
+              metadata: { destination: destination },
             }),
           }).catch(function () {})
         } catch (e) { /* never break a click */ }

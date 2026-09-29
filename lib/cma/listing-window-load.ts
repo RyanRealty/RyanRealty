@@ -15,6 +15,7 @@ import {
   withSqftMedian,
   type ListingMarketMove,
 } from '@/lib/cma/listing-window-market'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 
 const LIVE_STATUS = new Set(['draft', 'needs_review'])
 
@@ -82,9 +83,9 @@ type MarketDoc = {
   listingMarket?: unknown
 }
 
-async function measureDocument(doc: MarketDoc): Promise<ListingMarketMove | null> {
+async function measureDocument(doc: MarketDoc, readBudgetMs?: number): Promise<ListingMarketMove | null> {
   const cycle = doc.expiredAudit?.finalCycle
-  return loadListingWindowMarket({
+  const read = loadListingWindowMarket({
     city: doc.subject?.city,
     subdivision: doc.subject?.subdivision,
     sqft: doc.subject?.sqft,
@@ -94,22 +95,32 @@ async function measureDocument(doc: MarketDoc): Promise<ListingMarketMove | null
     offDate: cycle?.offMarketDate,
     asOf: new Date().toISOString().slice(0, 10),
   })
+  // No budget: wait for the read, same as the PDF / print path. A budget is
+  // only the admin Open-report serve, and a timeout returns null so a stored
+  // move above still wins.
+  if (readBudgetMs == null) return read
+  return withTimeoutFallback(read, null, readBudgetMs, 'cma.listingMarket')
 }
 
 /**
  * Stored dollars win. A draft that was measured before the size was kept
  * gets the median square feet attached when a fresh read still matches
  * those dollars, so the sentence can explain a rise beside a lower rate.
+ *
+ * `readBudgetMs` is optional. Omit it (print / PDF) and a slow read runs to
+ * completion. The admin document serve passes a budget so Open report cannot
+ * sit on a blank tab.
  */
 export async function listingMarketForDocument(
   doc: MarketDoc,
   status: string | null | undefined,
+  readBudgetMs?: number,
 ): Promise<ListingMarketMove | null> {
   const stored = readListingMarket(doc.listingMarket)
   const live = LIVE_STATUS.has((status ?? '').toLowerCase())
-  if (!stored) return live ? measureDocument(doc) : null
+  if (!stored) return live ? measureDocument(doc, readBudgetMs) : null
   if (!live) return stored
   if (stored.early.sqftMedian != null && stored.late.sqftMedian != null) return stored
-  const fresh = await measureDocument(doc)
+  const fresh = await measureDocument(doc, readBudgetMs)
   return fresh ? withSqftMedian(stored, fresh) : stored
 }

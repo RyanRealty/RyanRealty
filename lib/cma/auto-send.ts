@@ -134,7 +134,11 @@ export async function autoSendBuiltCma(slug: string, injected?: AutoSendDeps): P
     // prospect never auto-sends, whatever the lane switch says.
     if (row.origin === 'expired' || row.origin === 'fsbo') {
       const { screenAddressForSolicitation } = await import('@/lib/cma/solicit-screen')
-      const screen = await screenAddressForSolicitation({ address: row.address, city: row.city ?? null })
+      const screen = await screenAddressForSolicitation({
+        address: row.address,
+        city: row.city ?? null,
+        subjectListingKey: row.subjectListingKey ?? null,
+      })
       if (!screen.ok) {
         return {
           outcome: 'not-ready',

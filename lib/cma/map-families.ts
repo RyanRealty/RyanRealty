@@ -21,7 +21,7 @@
 export type CmaMapFamily = 'closed' | 'active' | 'unsold'
 
 export const FAMILY_LABEL: Record<CmaMapFamily, string> = {
-  closed: 'Closed sales — these set the price',
+  closed: 'Closed sales: these set the price',
   active: 'For sale or under contract now',
   unsold: 'Came off the market unsold',
 }
