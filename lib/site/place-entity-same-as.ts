@@ -12,8 +12,10 @@
  * Wikipedia infobox website (Bend, Redmond) or Wikidata P856 (La Pine).
  * Official community origins come from lib/community-seo-content.ts sources
  * (the same pages the About prose already cites); each answered 200 on
- * 2026-09-25. Do not add a URL that is not Wikipedia, Wikidata, a city .gov,
- * or that sourced official origin.
+ * 2026-09-25 except sunriverowners.org, whose bot wall answers 403 (the host is
+ * up). Do not add a URL that is not Wikipedia, Wikidata, a city .gov, or that
+ * sourced official origin, and never give one Wikipedia or Wikidata entity to
+ * two paths (the test holds this).
  */
 
 export type PlaceEntitySameAs = {
@@ -130,13 +132,12 @@ export const PLACE_ENTITY_SAME_AS: readonly PlaceEntitySameAs[] = [
     sameAs: ['https://www.northwestcrossing.com'],
   },
   {
+    // The town entity (Q3459533) belongs to /cities/sunriver alone: two pages
+    // claiming one entity invite an engine to merge them. Sunriver Resort
+    // (Q7641161) is the lodge business, not the community. The Owners
+    // Association runs the community and is the source its page cites.
     path: '/communities/sunriver',
-    sameAs: [
-      'https://en.wikipedia.org/wiki/Sunriver,_Oregon',
-      'https://www.wikidata.org/wiki/Q3459533',
-      'https://en.wikipedia.org/wiki/Sunriver_Resort',
-      'https://www.wikidata.org/wiki/Q7641161',
-    ],
+    sameAs: ['https://www.sunriverowners.org'],
   },
   {
     path: '/communities/crosswater',
