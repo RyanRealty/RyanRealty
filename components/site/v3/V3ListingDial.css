@@ -713,9 +713,12 @@
 /* The thumbnail's one fact (beds and size, or a cut), so the rail reads as
    homes to compare, not photographs to page through. */
 .v3-dial__thumb-fact {
+  overflow: hidden;
   color: var(--v3-ink);
   font-size: var(--v3-size-source);
   font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .v3-dial__thumb-track {
@@ -1182,6 +1185,174 @@
   }
 }
 
+/* THE ASKS STRIP (2026-09-29). Every priced home in the set as a tick on one
+   price axis, the home in front marked and named; a press or a drag along it
+   turns the dial by price, a resting pointer names the home under it. It
+   stands between the card and the thumbnails (over the strip, or under the
+   readout in a column), so the dial shows the whole set's spread at a glance
+   and not only the next few photographs. The ticks draw after hydration into
+   a box whose height is set here, so nothing moves when they arrive. */
+.v3-dial__asks {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+  padding-top: 1.35rem;
+}
+
+.v3-dial__asks-track {
+  position: relative;
+  height: 1.5rem;
+  border-bottom: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-navy) 22%, transparent);
+  cursor: pointer;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The hit area reaches a full tap target without drawing any taller. */
+.v3-dial__asks-track::before {
+  content: '';
+  position: absolute;
+  inset: -0.6rem 0 -0.6rem 0;
+}
+
+.v3-dial__asks-ticks {
+  position: absolute;
+  inset: auto 0 0 0;
+  width: 100%;
+  height: 1rem;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.v3-dial__asks-ticks path {
+  fill: none;
+  stroke: var(--v3-navy);
+  stroke-opacity: 0.3;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3-dial__asks-mark {
+  position: absolute;
+  bottom: 0;
+  left: var(--v3-asks-x, 0%);
+  width: var(--v3-rule-weight-section);
+  height: 1.5rem;
+  margin-left: calc(var(--v3-rule-weight-section) / -2);
+  background: var(--v3-navy);
+  pointer-events: none;
+  transition: left var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-dial__asks-mark::after {
+  content: '';
+  position: absolute;
+  top: -0.2rem;
+  left: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: var(--v3-radius-pill);
+  background: var(--v3-navy);
+  transform: translateX(-50%);
+}
+
+/* The tip slides from left-anchored at the cheapest end to right-anchored at
+   the dearest, so it never runs off the strip. */
+.v3-dial__asks-tip {
+  position: absolute;
+  bottom: calc(100% + 0.3rem);
+  left: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-source);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateX(calc(var(--v3-asks-x, 0%) * -1));
+}
+
+.v3-dial__asks-mark--ghost {
+  z-index: 1;
+  opacity: 0.55;
+  transition: none;
+}
+
+.v3-dial__asks-mark--ghost .v3-dial__asks-tip {
+  padding-inline: var(--v3-space-3xs);
+  background: var(--v3-surface);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-dial__asks-ends {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+.v3-dial__asks-label {
+  overflow: hidden;
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-label);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Where the strip stands on a wide screen: over the thumbnails beside the
+   readout (bottom), or under the readout in the column (left, right). */
+@media (min-width: 40.0625rem) {
+  .v3-dial--rail-bottom {
+    grid-template-areas:
+      'title title'
+      'stage stage'
+      'pos asks'
+      'pos rail';
+  }
+
+  .v3-dial--rail-left {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'title title'
+      'pos stage'
+      'asks stage'
+      'rail stage';
+  }
+
+  .v3-dial--rail-right {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'title title'
+      'stage pos'
+      'stage asks'
+      'stage rail';
+  }
+
+  .v3-dial--multi .v3-dial__asks {
+    grid-area: asks;
+  }
+
+  .v3-dial--rail-bottom .v3-dial__asks {
+    margin-bottom: var(--v3-space-xs);
+    margin-inline-end: var(--v3-dial-end-clear, 0px);
+  }
+
+  .v3-dial--rail-left .v3-dial__asks,
+  .v3-dial--rail-right .v3-dial__asks {
+    margin-bottom: var(--v3-space-sm);
+  }
+
+  .v3-dial--rail-right .v3-dial__asks {
+    margin-inline-end: var(--v3-dial-end-clear, 0px);
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Phone. LAST IN THE FILE ON PURPOSE: every rule above that a phone reads is
    single-class, so a narrow override written earlier would lose the cascade.
@@ -1221,7 +1392,7 @@
   }
 
   .v3-dial--multi .v3-dial__rail {
-    grid-area: 2 / 1;
+    grid-area: 3 / 1;
   }
 
   /* The photograph is the MLS's own 4:3 on a phone: nothing cropped. */
@@ -1253,6 +1424,19 @@
   }
 
   .v3-dial__thumb-addr {
+    display: none;
+  }
+
+  /* The strip over the thumbnails, under the card: a thumb drags along it. */
+  .v3-dial--multi .v3-dial__asks {
+    grid-area: 2 / 1;
+    margin-inline-end: var(--v3-dial-end-clear, 0px);
+  }
+
+
+  /* A phone's thumbnail keeps its beds and drops the size, so the caption is
+     one line under every photograph. */
+  .v3-dial__thumb-fact > span + span {
     display: none;
   }
 }

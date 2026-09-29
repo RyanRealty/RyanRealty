@@ -35,6 +35,10 @@ import {
   dialThumbLabel,
   dialCutWidth,
   dialWrap,
+  dialAskKeyTarget,
+  dialAskNearest,
+  dialAskScale,
+  dialAskTicksPath,
 } from './V3ListingDial.logic'
 
 describe('dialThumbFact: the one fact a thumbnail carries', () => {
@@ -667,5 +671,58 @@ describe('dialPlayerSignal: fade in only when a player says frames are moving', 
       { method: 'addEventListener', value: 'timeupdate' },
     ])
     expect(dialPlayerHandshake('stream', 'load')).toEqual([])
+  })
+})
+
+describe('the asks strip', () => {
+  const rows = (prices: Array<number | null>, lease: number[] = []) =>
+    prices.map((price, i) => ({ price, lease: lease.includes(i) }))
+
+  it('sorts the priced homes cheapest first on a log axis and skips leases and missing asks', () => {
+    const scale = dialAskScale(rows([800_000, null, 400_000, 1_600_000, 2_500, 600_000, 1_000_000], [4]))!
+    expect(scale.asks.map((a) => a.index)).toEqual([2, 5, 0, 6, 3])
+    expect(scale.lo).toBe(400_000)
+    expect(scale.hi).toBe(1_600_000)
+    // $800K is half-way between $400K and $1.6M on a log axis.
+    expect(scale.asks[2]!.x).toBeCloseTo(0.5, 6)
+    expect(scale.asks[0]!.x).toBe(0)
+    expect(scale.asks[4]!.x).toBe(1)
+    expect(scale.rank.get(0)).toBe(2)
+    expect(scale.rank.has(1)).toBe(false)
+    expect(scale.rank.has(4)).toBe(false)
+  })
+
+  it('draws nothing under five priced homes, and a narrow spread on a linear axis', () => {
+    expect(dialAskScale(rows([1, 2, 3, 4]))).toBeNull()
+    const narrow = dialAskScale(rows([500_000, 520_000, 540_000, 560_000, 600_000]))!
+    expect(narrow.asks[2]!.x).toBeCloseTo(0.4, 6)
+  })
+
+  it('finds the nearest ask to a point, the cheaper on a tie', () => {
+    const scale = dialAskScale(rows([500_000, 525_000, 550_000, 575_000, 600_000]))!
+    expect(dialAskNearest(scale.asks, 0)).toBe(0)
+    expect(dialAskNearest(scale.asks, 1)).toBe(4)
+    expect(dialAskNearest(scale.asks, 0.5)).toBe(2)
+    expect(dialAskNearest(scale.asks, 0.125)).toBe(0)
+    expect(dialAskNearest(scale.asks, -3)).toBe(0)
+    expect(dialAskNearest([], 0.5)).toBe(-1)
+  })
+
+  it('steps one ask with the arrows and jumps to the ends', () => {
+    expect(dialAskKeyTarget('ArrowRight', 2, 5)).toBe(3)
+    expect(dialAskKeyTarget('ArrowLeft', 2, 5)).toBe(1)
+    expect(dialAskKeyTarget('ArrowRight', 4, 5)).toBe(4)
+    expect(dialAskKeyTarget('ArrowLeft', 0, 5)).toBe(0)
+    expect(dialAskKeyTarget('Home', 3, 5)).toBe(0)
+    expect(dialAskKeyTarget('End', 0, 5)).toBe(4)
+    // A home with no ask: right goes to the cheapest, left too.
+    expect(dialAskKeyTarget('ArrowRight', null, 5)).toBe(0)
+    expect(dialAskKeyTarget('ArrowLeft', null, 5)).toBe(0)
+    expect(dialAskKeyTarget('x', 1, 5)).toBeNull()
+  })
+
+  it('writes one path of ticks across a 1000-wide box', () => {
+    const scale = dialAskScale(rows([500_000, 525_000, 550_000, 575_000, 600_000]))!
+    expect(dialAskTicksPath(scale.asks, 16)).toBe('M0.0 0v16M250.0 0v16M500.0 0v16M750.0 0v16M1000.0 0v16')
   })
 })

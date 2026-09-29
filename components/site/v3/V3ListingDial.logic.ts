@@ -106,6 +106,104 @@ export function dialThumbFact(meta: readonly string[]): string | null {
 }
 
 /**
+ * THE ASKS STRIP (2026-09-29). Every priced home in the set as a tick on one
+ * price axis, the home in front marked on it, so the dial reads as a set to
+ * browse rather than one house at a time, and a drag along it turns the dial
+ * by price. The figures are the rows' own asks, sorted; nothing is derived
+ * but their order and where each falls between the cheapest and the dearest.
+ *
+ * `x` is 0..1 on a log scale (an ask is a ratio quantity: $400K to $800K is
+ * the same step as $2M to $4M, and a linear axis pins most of a place's homes
+ * into its first third). A set whose dearest ask is under 1.5x its cheapest is
+ * drawn on a linear axis, where the log bend buys nothing.
+ */
+export type DialAsk = { index: number; price: number; x: number }
+export type DialAskScale = {
+  /** Priced homes, cheapest first; ties keep dial order. */
+  asks: DialAsk[]
+  lo: number
+  hi: number
+  /** Dial index -> rank in `asks` (a home with no ask has none). */
+  rank: Map<number, number>
+}
+
+/** Fewer priced homes than this and the strip draws nothing. */
+export const DIAL_ASKS_MIN = 5
+
+export function dialAskScale(
+  rows: ReadonlyArray<{ price: number | null | undefined; lease: boolean }>,
+  min = DIAL_ASKS_MIN,
+): DialAskScale | null {
+  const priced: Array<{ index: number; price: number }> = []
+  rows.forEach((row, index) => {
+    const p = row.price
+    if (row.lease || p == null || !Number.isFinite(p) || p <= 0) return
+    priced.push({ index, price: p })
+  })
+  if (priced.length < min) return null
+  priced.sort((a, b) => a.price - b.price || a.index - b.index)
+  const lo = priced[0]!.price
+  const hi = priced[priced.length - 1]!.price
+  const log = hi / lo >= 1.5
+  const span = log ? Math.log(hi) - Math.log(lo) : hi - lo
+  const asks = priced.map(({ index, price }) => ({
+    index,
+    price,
+    x: span > 0 ? (log ? (Math.log(price) - Math.log(lo)) / span : (price - lo) / span) : 0.5,
+  }))
+  const rank = new Map<number, number>()
+  asks.forEach((ask, r) => rank.set(ask.index, r))
+  return { asks, lo, hi, rank }
+}
+
+/** The rank of the ask nearest `x` (0..1); ties go to the cheaper home. */
+export function dialAskNearest(asks: readonly DialAsk[], x: number): number {
+  if (asks.length === 0) return -1
+  const at = Math.min(1, Math.max(0, Number.isFinite(x) ? x : 0))
+  let lo = 0
+  let hi = asks.length - 1
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (asks[mid]!.x < at) lo = mid + 1
+    else hi = mid
+  }
+  if (lo > 0 && Math.abs(asks[lo - 1]!.x - at) <= Math.abs(asks[lo]!.x - at)) return lo - 1
+  return lo
+}
+
+/** The rank a key moves to from `rank` (null: the home in front has no ask). */
+export function dialAskKeyTarget(key: string, rank: number | null, total: number): number | null {
+  if (total < 1) return null
+  const page = Math.max(1, Math.round(total / 10))
+  const from = rank ?? -1
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowUp':
+      return Math.min(total - 1, from + 1)
+    case 'ArrowLeft':
+    case 'ArrowDown':
+      return rank == null ? 0 : Math.max(0, from - 1)
+    case 'PageUp':
+      return Math.min(total - 1, Math.max(0, from) + page)
+    case 'PageDown':
+      return Math.max(0, (rank ?? 0) - page)
+    case 'Home':
+      return 0
+    case 'End':
+      return total - 1
+    default:
+      return null
+  }
+}
+
+/** One path of ticks, `d` for an SVG whose viewBox is 1000 wide and `h` tall. */
+export function dialAskTicksPath(asks: readonly DialAsk[], h: number): string {
+  let d = ''
+  for (const ask of asks) d += `M${(ask.x * 1000).toFixed(1)} 0v${h}`
+  return d
+}
+
+/**
  * A price cut, as the page that knows it hands it to the dial (/price-drops):
  * the words and the magnitude the row already carries, never re-derived here.
  * `was` is the earlier ask as printed ("$1,149,000"), `pct` the cut as printed

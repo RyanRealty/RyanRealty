@@ -144,12 +144,18 @@ import {
   dialSwipeDelta,
   dialTabId,
   DIAL_THUMB_WHOLE,
+  dialAskKeyTarget,
+  dialAskNearest,
+  dialAskScale,
+  dialAskTicksPath,
   dialCutWidth,
   dialThumbCut,
   dialThumbFact,
   dialThumbLabel,
   dialVideoAutoplay,
   dialWrap,
+  type DialAsk,
+  type DialAskScale,
   type DialIframeKind,
   type DialPriceCut,
   type DialRailPosition,
@@ -158,6 +164,7 @@ import {
   type DialVideoState,
 } from './V3ListingDial.logic'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
+import { formatPriceCompact } from '@/lib/format/money'
 import './tokens.css'
 import './V3ListingRow.css'
 import './V3ListingDial.css'
@@ -826,6 +833,134 @@ function DialThumbImage({ listing }: { listing: V3ListingRowData }) {
   return <span className="v3-dial__thumb-none">No photo</span>
 }
 
+const noSubscribe = () => () => {}
+const clientTrue = () => true
+
+/**
+ * THE ASKS STRIP (2026-09-29): every priced home in the set as a tick on one
+ * price axis, cheapest to dearest, with the home in front marked. The set at a
+ * glance (where this ask sits among the rest), and a scrubber: a press or a
+ * drag turns the dial to the home nearest that ask, a pointer resting on it
+ * names the home under it, and the arrow keys step one ask up or down. The
+ * ticks draw after the page hydrates (they are the set's shape, not content a
+ * crawler needs, and the served HTML stays about 1 KB per listing); the box
+ * they draw into is sized by the stylesheet, so nothing moves when they do.
+ */
+function DialAsks({
+  scale,
+  index,
+  listings,
+  onPick,
+}: {
+  scale: DialAskScale
+  index: number
+  listings: readonly V3ListingDialItem[]
+  onPick: (index: number) => void
+}) {
+  const trackRef = useRef<HTMLDivElement | null>(null)
+  const drag = useRef<number | null>(null)
+  const frame = useRef(0)
+  const pending = useRef<number | null>(null)
+  const [hover, setHover] = useState<number | null>(null)
+  const hydrated = useSyncExternalStore(noSubscribe, clientTrue, serverFalse)
+  const ticks = useMemo(() => (hydrated ? dialAskTicksPath(scale.asks, 16) : ''), [hydrated, scale])
+  const total = scale.asks.length
+  const rank = scale.rank.get(index) ?? null
+  const here = rank != null ? scale.asks[rank]! : null
+  const ghost = hover != null && hover !== rank ? scale.asks[hover] ?? null : null
+
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
+
+  const rankAt = (clientX: number) => {
+    const box = trackRef.current?.getBoundingClientRect()
+    if (!box || box.width <= 0) return -1
+    return dialAskNearest(scale.asks, (clientX - box.left) / box.width)
+  }
+  // One turn per frame however fast the pointer moves.
+  const turnTo = (r: number) => {
+    if (r < 0) return
+    pending.current = r
+    if (frame.current) return
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0
+      const ask = pending.current != null ? scale.asks[pending.current] : undefined
+      if (ask) onPick(ask.index)
+    })
+  }
+  const nameOf = (ask: DialAsk) => {
+    const home = listings[ask.index]
+    return home ? dialThumbLabel(home.addressLine, dialPriceSlot(factsOf(home)).text) : formatPriceCompact(ask.price)
+  }
+
+  return (
+    <div className="v3-dial__asks">
+      <div
+        ref={trackRef}
+        className="v3-dial__asks-track"
+        role="slider"
+        tabIndex={0}
+        aria-label="Turn the dial by asking price"
+        aria-orientation="horizontal"
+        aria-valuemin={1}
+        aria-valuemax={total}
+        aria-valuenow={rank != null ? rank + 1 : undefined}
+        aria-valuetext={here ? nameOf(here) : 'This home has no published ask'}
+        onPointerDown={(event) => {
+          if (event.pointerType === 'mouse' && event.button !== 0) return
+          drag.current = event.pointerId
+          event.currentTarget.setPointerCapture?.(event.pointerId)
+          setHover(null)
+          turnTo(rankAt(event.clientX))
+        }}
+        onPointerMove={(event) => {
+          const r = rankAt(event.clientX)
+          if (drag.current === event.pointerId) turnTo(r)
+          else if (event.pointerType === 'mouse') setHover(r >= 0 ? r : null)
+        }}
+        onPointerUp={(event) => {
+          if (drag.current === event.pointerId) drag.current = null
+        }}
+        onPointerCancel={() => {
+          drag.current = null
+        }}
+        onPointerLeave={() => setHover(null)}
+        onKeyDown={(event) => {
+          const target = dialAskKeyTarget(event.key, rank, total)
+          if (target == null) return
+          event.preventDefault()
+          const ask = scale.asks[target]
+          if (ask) onPick(ask.index)
+        }}
+      >
+        <svg className="v3-dial__asks-ticks" viewBox="0 0 1000 16" preserveAspectRatio="none" aria-hidden="true">
+          {ticks ? <path d={ticks} /> : null}
+        </svg>
+        {here ? (
+          <span className="v3-dial__asks-mark" style={{ '--v3-asks-x': `${(here.x * 100).toFixed(2)}%` } as CSSProperties}>
+            <span className="v3-dial__asks-tip">{formatPriceCompact(here.price)}</span>
+          </span>
+        ) : null}
+        {ghost ? (
+          <span
+            className="v3-dial__asks-mark v3-dial__asks-mark--ghost"
+            style={{ '--v3-asks-x': `${(ghost.x * 100).toFixed(2)}%` } as CSSProperties}
+            aria-hidden="true"
+          >
+            <span className="v3-dial__asks-tip">{nameOf(ghost)}</span>
+          </span>
+        ) : null}
+      </div>
+      <p className="v3-dial__asks-ends" aria-hidden="true">
+        <span>{formatPriceCompact(scale.lo)}</span>
+        <span className="v3-dial__asks-label">
+          {total} {total === 1 ? 'ask' : 'asks'}, low to high
+        </span>
+        <span>{formatPriceCompact(scale.hi)}</span>
+      </p>
+    </div>
+  )
+}
+
 type ThumbProps = {
   listing: V3ListingDialItem
   index: number
@@ -869,7 +1004,15 @@ const DialThumb = memo(function DialThumb({
       </span>
       <span className="v3-dial__thumb-cap">
         <span className="v3-dial__thumb-ask">{price.text}</span>
-        {fact ? <span className="v3-dial__thumb-fact">{fact}</span> : null}
+        {fact ? (
+          // The beds, then the size, which a phone's narrow thumbnail drops
+          // rather than wrapping the caption to a second line.
+          <span className="v3-dial__thumb-fact">
+            {fact.includes(' · ')
+              ? fact.split(' · ').map((part, i) => <span key={part}>{i > 0 ? ` · ${part}` : part}</span>)
+              : fact}
+          </span>
+        ) : null}
         {cutWidth ? (
           <span className="v3-dial__thumb-track" aria-hidden="true">
             <span style={{ width: cutWidth }} />
@@ -972,6 +1115,15 @@ export function V3ListingDial({
   )
 
   const selectFromThumb = useCallback((at: number) => select(at, false), [select])
+  // The asks strip's axis: the set's own asks, cheapest first (a lease's rent
+  // is in its own unit, so a lease is never on it).
+  const askScale = useMemo(
+    () =>
+      multi
+        ? dialAskScale(listings.map((l) => ({ price: l.price, lease: listingPriceIsLeaseRate(l.propertyType) })))
+        : null,
+    [multi, listings],
+  )
   const pickNext = useCallback((at: number) => select(at, true), [select])
   // The three homes in the set nearest the one in front by ask, for the
   // card's "near this price" column (2026-09-25: the next homes in order
@@ -1342,6 +1494,7 @@ export function V3ListingDial({
             </div>
           </div>
         ) : null}
+        {askScale ? <DialAsks scale={askScale} index={index} listings={listings} onPick={selectFromThumb} /> : null}
         <div ref={stageRef} className="v3-dial__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           {listings.map((listing, i) => {
             const shown = i === index
