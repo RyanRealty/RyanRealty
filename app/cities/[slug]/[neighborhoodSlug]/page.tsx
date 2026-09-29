@@ -954,44 +954,10 @@ async function renderNeighborhoodDetail({ params }: Props) {
           </div>
         </div>
 
-        <PlaceSubdivisionMap
-          placeName={neighborhood.name}
-          rail={railEntries}
-          homes={placeHomes}
-          leases={leaseSection?.rows ?? []}
-          keysBySlug={homesByChild}
-          source={`${placeInventorySource(placeBoundaryClause(neighborhood.name))} This is a wider set than the detached count on the fold.`}
-          asOf={leftoverStamp}
-        >
-          <div className="place-one-map">
-            <PlaceSubdivisionRail id="child-places" nameOnly />
-            <PlaceSubdivisionAtlas
-              id="atlas"
-              headingLevel={2}
-              headline={v3Text(neighborhood.name)}
-              headlineTone="eyebrow"
-              dots={atlasProps.dots}
-              dotsSrc={atlasProps.dotsSrc}
-              dotsSummary={atlasProps.dotsSummary}
-              regions={atlasProps.regions}
-              childRegions={atlasProps.childRegions}
-              basemapSrc={atlasProps.basemapSrc}
-              fit="dots"
-              types={atlasView.types}
-              events={atlasView.events}
-              source={atlasView.source}
-              stamp={atlasView.stamp}
-              incomplete={!atlasView.complete}
-              amenities={atlasProps.amenities}
-              hidePriceScrubber
-            />
-          </div>
-          {/* Matt 2026-09-23: the homes below the map are the dial, one per
-              buyer group, still filtered by the subdivision chosen on the map.
-              City and community pages draw the same dials (2026-09-24). */}
-          <PlaceSubdivisionHomes id="homes" />
-        </PlaceSubdivisionMap>
-
+        {/* The market figure and the alerts sentence open the page, under the
+            photograph (2026-09-29, the taste lock: "a place page opens with a
+            drawing and a figure beside the alerts sentence"). The map and its
+            homes follow. */}
         <div className="nbh-fold">
           <div className="nbh-fold__stage">
             <aside className="nbh-fold__figure nbh-fold__figure--insight">
@@ -1060,6 +1026,44 @@ async function renderNeighborhoodDetail({ params }: Props) {
             </aside>
           </div>
         </div>
+
+        <PlaceSubdivisionMap
+          placeName={neighborhood.name}
+          rail={railEntries}
+          homes={placeHomes}
+          leases={leaseSection?.rows ?? []}
+          keysBySlug={homesByChild}
+          source={`${placeInventorySource(placeBoundaryClause(neighborhood.name))} This is a wider set than the detached count on the fold.`}
+          asOf={leftoverStamp}
+        >
+          <div className="place-one-map">
+            <PlaceSubdivisionRail id="child-places" nameOnly />
+            <PlaceSubdivisionAtlas
+              id="atlas"
+              headingLevel={2}
+              headline={v3Text(neighborhood.name)}
+              headlineTone="eyebrow"
+              dots={atlasProps.dots}
+              dotsSrc={atlasProps.dotsSrc}
+              dotsSummary={atlasProps.dotsSummary}
+              regions={atlasProps.regions}
+              childRegions={atlasProps.childRegions}
+              basemapSrc={atlasProps.basemapSrc}
+              fit="dots"
+              types={atlasView.types}
+              events={atlasView.events}
+              source={atlasView.source}
+              stamp={atlasView.stamp}
+              incomplete={!atlasView.complete}
+              amenities={atlasProps.amenities}
+              hidePriceScrubber
+            />
+          </div>
+          {/* Matt 2026-09-23: the homes below the map are the dial, one per
+              buyer group, still filtered by the subdivision chosen on the map.
+              City and community pages draw the same dials (2026-09-24). */}
+          <PlaceSubdivisionHomes id="homes" />
+        </PlaceSubdivisionMap>
 
         <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
 

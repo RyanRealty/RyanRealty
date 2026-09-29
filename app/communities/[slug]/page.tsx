@@ -1034,8 +1034,8 @@ async function renderCommunityDetail({ params }: Props) {
                 </>
               ) : null}
               <a href="#homes">{publicName} homes for sale</a>
-              {/* The alerts ask, named in the first screen (2026-09-25): the
-                  form itself sits in the fold under the homes; this is its door. */}
+              {/* The alerts ask's door (2026-09-25); since 2026-09-29 the form
+                  itself sits right under the opening. */}
               {' · '}
               <a href="#alerts">Email me new {publicName} listings</a>
             </p>
@@ -1047,6 +1047,32 @@ async function renderCommunityDetail({ params }: Props) {
                 {belongingLine}
               </p>
             ) : null}
+          </div>
+        </div>
+
+        {/* The alerts sentence and the value ask open the page, under the
+            photograph (2026-09-29: the judge found neither in the first
+            screen; the caption's door pointed two screens down). The map and
+            its homes follow. */}
+        <div className="community-fold">
+          <div className="community-fold__stage">
+            <aside className="community-fold__figure">
+              <CommunityAlertsStrip
+                id="alerts"
+                communityName={publicName}
+                city={cityName}
+                subdivision={community.subdivision}
+                geoSlug={neighborhoodSlug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={newestListingsHref}
+                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
+                types={alertTypes}
+              />
+            </aside>
+          </div>
+          <div className="community-fold__ask">
+            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
           </div>
         </div>
 
@@ -1116,28 +1142,6 @@ async function renderCommunityDetail({ params }: Props) {
             <CommunityAmenities board={amenityBoard} />
           </V3Amenities>
         ) : null}
-
-        <div className="community-fold">
-          <div className="community-fold__stage">
-            <aside className="community-fold__figure">
-              <CommunityAlertsStrip
-                id="alerts"
-                communityName={publicName}
-                city={cityName}
-                subdivision={community.subdivision}
-                geoSlug={neighborhoodSlug}
-                newCount30d={publicPace.newCount30d}
-                updatedAt={leftoverStamp}
-                browseHref={newestListingsHref}
-                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
-                types={alertTypes}
-              />
-            </aside>
-          </div>
-          <div className="community-fold__ask">
-            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
-          </div>
-        </div>
 
         {costChart && firstMarketFigure ? (
           <V3Instrument

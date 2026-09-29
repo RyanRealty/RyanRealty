@@ -1130,6 +1130,39 @@ async function renderCityDetail({ params }: Props) {
           </div>
         </div>
 
+        {/* The market figure and the alerts sentence open the page, under the
+            photograph (2026-09-29, the taste lock: "a place page opens with a
+            drawing and a figure beside the alerts sentence"; with the map
+            first the ask sat two screens down). The map and its homes follow. */}
+        <div className="city-fold">
+          <div className="city-fold__stage">
+            <aside className="city-fold__figure city-fold__figure--insight">
+              <CityInsight
+                id="place-insight"
+                board={insightBoard}
+                mos={foldMosProps}
+                latestSale={foldLatestSale}
+              />
+            </aside>
+            <aside className="city-fold__figure city-fold__figure--ask">
+              <CityAlertsStrip
+                id="alerts"
+                cityName={cityName}
+                geoSlug={slug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={homesForSalePath(cityName)}
+                // ONE filled control in the first viewport, and never none: the
+                // strip steps down only when PlaceDoor rendered above. When MOS
+                // owns the inventory count, PlaceDoor is omitted and submit is
+                // primary (44×44 filled, not a hairline outline).
+                demote={placeDoor != null}
+                types={alertTypes}
+              />
+            </aside>
+          </div>
+        </div>
+
         <PlaceSubdivisionMap
           placeName={cityName}
           rail={railEntries}
@@ -1180,35 +1213,6 @@ async function renderCityDetail({ params }: Props) {
               filtered by the child place chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
-
-        <div className="city-fold">
-          <div className="city-fold__stage">
-            <aside className="city-fold__figure city-fold__figure--insight">
-              <CityInsight
-                id="place-insight"
-                board={insightBoard}
-                mos={foldMosProps}
-                latestSale={foldLatestSale}
-              />
-            </aside>
-            <aside className="city-fold__figure city-fold__figure--ask">
-              <CityAlertsStrip
-                id="alerts"
-                cityName={cityName}
-                geoSlug={slug}
-                newCount30d={publicPace.newCount30d}
-                updatedAt={leftoverStamp}
-                browseHref={homesForSalePath(cityName)}
-                // ONE filled control in the first viewport, and never none: the
-                // strip steps down only when PlaceDoor rendered above. When MOS
-                // owns the inventory count, PlaceDoor is omitted and submit is
-                // primary (44×44 filled, not a hairline outline).
-                demote={placeDoor != null}
-                types={alertTypes}
-              />
-            </aside>
-          </div>
-        </div>
 
         {earlyNamedPlaces && firstGolf ? (
           <V3Ledger
