@@ -64,6 +64,7 @@ export interface PollProcessedEvent {
     | 'rejected_sender'
     | 'failed'
     | 'reply_failed'
+    | 'reply_unconfirmed'
     | 'duplicate'
   action_row_id?: string
   action_type?: string
@@ -392,7 +393,7 @@ export async function pollMarketingInbox(opts: PollOptions = {}): Promise<PollRe
         .eq('id', inboxEventId)
 
       // Reply
-      let replyOutcome: 'replied' | 'dispatched' | 'reply_failed' = 'dispatched'
+      let replyOutcome: 'replied' | 'dispatched' | 'reply_failed' | 'reply_unconfirmed' = 'dispatched'
       if (sendAuth.ok && sendAuth.client && !opts.skipReply) {
         const replyCtx: ReplyContext = {
           to_email: senderEmail,
@@ -416,7 +417,7 @@ export async function pollMarketingInbox(opts: PollOptions = {}): Promise<PollRe
                 },
         }
         const out = await sendInboxReply(sendAuth.client as JWT, replyCtx)
-        replyOutcome = out.status === 'sent' ? 'replied' : 'reply_failed'
+        replyOutcome = out.status === 'sent' ? 'replied' : out.status === 'unconfirmed' ? 'reply_unconfirmed' : 'reply_failed'
       }
 
       if (!opts.skipMarkAsRead) await safeMarkAsRead(gmail, item.id, errors)

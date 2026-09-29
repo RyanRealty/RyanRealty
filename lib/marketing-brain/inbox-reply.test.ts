@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
   send: vi.fn(),
   gmailCtor: vi.fn(),
   eq: vi.fn(),
+  update: vi.fn(),
 }))
 
 vi.mock('googleapis', () => ({
@@ -27,7 +28,12 @@ vi.mock('googleapis', () => ({
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
-    from: () => ({ update: () => ({ eq: h.eq }) }),
+    from: () => ({
+      update: (row: unknown) => {
+        h.update(row)
+        return { eq: h.eq }
+      },
+    }),
   }),
 }))
 
@@ -74,8 +80,9 @@ describe('sendInboxReply', () => {
 
     const res = await sendInboxReply(FAKE_JWT, CTX)
 
-    expect(res.status).toBe('failed')
+    expect(res.status).toBe('unconfirmed')
     expect(res.error).toMatch(/did not confirm.*may have gone out.*check Sent/i)
+    expect(h.update).toHaveBeenCalledWith(expect.objectContaining({ reply_status: 'unconfirmed' }))
   })
 
   it('reports a plain Gmail refusal without the unconfirmed wording', async () => {
@@ -85,5 +92,6 @@ describe('sendInboxReply', () => {
 
     expect(res.status).toBe('failed')
     expect(res.error).toBe('Invalid To header')
+    expect(h.update).toHaveBeenCalledWith(expect.objectContaining({ reply_status: 'failed' }))
   })
 })

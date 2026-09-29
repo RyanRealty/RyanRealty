@@ -54,7 +54,8 @@ export interface ReplyContext {
 }
 
 export interface ReplyOutcome {
-  status: 'sent' | 'failed' | 'skipped'
+  /** 'unconfirmed': the send left and Gmail never answered, so it may have gone out. */
+  status: 'sent' | 'failed' | 'skipped' | 'unconfirmed'
   gmail_message_id?: string
   voice_violations?: string[]
   error?: string
@@ -230,19 +231,20 @@ export async function sendInboxReply(
     const msg = e instanceof Error ? e.message : String(e)
     // No HTTP status back means the send left and Gmail never answered
     // (timeout, dropped connection): it may already be in the thread, so the
-    // row must not read as a confirmed failure.
-    const reply_error =
-      answeredStatus(e) == null
-        ? `Gmail did not confirm this reply (${msg.replace(/\.$/, '')}). It may have gone out: check Sent in ${MARKETING_INBOX_USER} before treating it as unsent.`
-        : msg
+    // row reads 'unconfirmed', never a confirmed failure a retry would resend.
+    const unconfirmed = answeredStatus(e) == null
+    const reply_error = unconfirmed
+      ? `Gmail did not confirm this reply (${msg.replace(/\.$/, '')}). It may have gone out: check Sent in ${MARKETING_INBOX_USER} before treating it as unsent.`
+      : msg
+    const status = unconfirmed ? 'unconfirmed' : 'failed'
     await supabase
       .from('marketing_inbox_events')
       .update({
         replied_at: new Date().toISOString(),
-        reply_status: 'failed',
+        reply_status: status,
         reply_error,
       })
       .eq('id', ctx.inbox_event_id)
-    return { status: 'failed', error: reply_error }
+    return { status, error: reply_error }
   }
 }
