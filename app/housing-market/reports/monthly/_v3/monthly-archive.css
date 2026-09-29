@@ -32,24 +32,8 @@
   margin-bottom: var(--v3-space-lg);
 }
 
-/* The running head: the heading at the left, its context on the heading's
-   baseline at the far end of the measure (the edition page's table opens the
-   same way). It wraps under the heading when the line is short. */
-.monthly-archive__headline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--v3-space-2xs) var(--v3-space-lg);
-}
-
-.monthly-archive__heading {
-  margin: 0;
-}
-
-.monthly-archive__kicker {
-  flex: 0 1 auto;
-}
+/* The running head is the barrel's (V3RunningHead, tokens.css): one rule set
+   with the edition page's table, which opens the same way. */
 
 .monthly-archive__lede {
   margin: 0;
@@ -227,11 +211,17 @@
   );
 }
 
+/* The gap between two months belongs half to each: a month's doors reach into
+   it, so a target is the cell plus one column gap wide. At 320px a sixth of
+   the row is 42px, under the tap floor; with the gap it is 47.6px. The text
+   stays on the cell's edge, because the padding gives back what the margin
+   takes. */
 .monthly-archive__read {
   display: flex;
   align-items: center;
   min-height: var(--v3-tap);
-  padding: var(--v3-space-3xs) 0 0;
+  margin-inline: calc(var(--v3-space-2xs) / -2);
+  padding: var(--v3-space-3xs) calc(var(--v3-space-2xs) / 2) 0;
   color: var(--v3-ink);
   font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-strong);
@@ -258,6 +248,8 @@
 }
 
 .monthly-archive__pdf {
+  margin-inline: calc(var(--v3-space-2xs) / -2);
+  padding-inline: calc(var(--v3-space-2xs) / 2);
   color: var(--v3-ink-muted);
   text-decoration: underline;
   text-decoration-color: var(--v3-edge);
@@ -297,11 +289,14 @@
 
 /* The reveal: the edition's first headline sentence, over the row below.
    Opened three ways, and every way at every width: a pointer that can hover
-   (hover alone, so a phone's sticky tap-hover never fakes it), keyboard focus
-   anywhere in the month, and a phone's press and hold (V3HoldReveal sets
-   data-revealed on the month). It sits inside the month's link, so it resets
-   the link's weight, and it is out of the flow, so nothing under a pointer
-   moves while it opens. */
+   (hover alone, so a phone's sticky tap-hover never fakes it), KEYBOARD focus
+   in the month, and a phone's press and hold (V3HoldReveal sets data-revealed
+   on the month). Keyboard focus is :focus-visible, never :focus-within: a tap
+   focuses the link it lands on too, so a phone that tapped a PDF door, or came
+   back to the page from an edition, found a panel six cells wide stuck open
+   over the row below (code review, 2026-09-29). It sits inside the month's
+   link, so it resets the link's weight, and it is out of the flow, so nothing
+   under a pointer moves while it opens. */
 .monthly-archive__peek {
   position: absolute;
   top: calc(100% + var(--v3-space-3xs));
@@ -327,7 +322,7 @@
     visibility var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.monthly-archive__month:focus-within .monthly-archive__peek,
+.monthly-archive__month:has(:focus-visible) .monthly-archive__peek,
 .monthly-archive__month[data-revealed='true'] .monthly-archive__peek {
   opacity: 1;
   visibility: visible;
@@ -349,7 +344,7 @@
 
 /* The open month sits above its neighbours, so its sentence is never painted
    under the next row's links. */
-.monthly-archive__month:focus-within,
+.monthly-archive__month:has(:focus-visible),
 .monthly-archive__month[data-revealed='true'] {
   z-index: 6;
 }
@@ -360,13 +355,17 @@
   }
 }
 
-/* A press and hold is the reveal, not the OS link menu or a text selection. */
-.monthly-archive__hold .monthly-archive__month a {
+/* A press and hold on a month's link is the reveal, not the OS link menu or a
+   text selection. Only a link that carries a sentence is held (V3HoldReveal's
+   handle), so only that link gives up the menu: the PDF door, and a month with
+   no sentence to show, keep the phone's own long press (open, download,
+   share). */
+.monthly-archive__hold .monthly-archive__read:has(.monthly-archive__peek) {
   -webkit-touch-callout: none;
 }
 
 @media (hover: none) {
-  .monthly-archive__hold .monthly-archive__month {
+  .monthly-archive__hold .monthly-archive__read:has(.monthly-archive__peek) {
     -webkit-user-select: none;
     user-select: none;
   }

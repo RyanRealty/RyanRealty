@@ -25,8 +25,10 @@ import {
   pdfSize,
   publishedVerdict,
   supplySeasons,
+  supplyVerdict,
   withheldClause,
 } from './report-view'
+import { marketVerdict as registryVerdict } from '@/lib/data/market-truth/registry'
 
 /* -------------------------------------------------------------------------- */
 /* A real payload, built by the same builder the monthly cron runs            */
@@ -210,6 +212,29 @@ describe('publishedVerdict', () => {
     expect(publishedVerdict({ mos: 6, verdict: 'buyer' })).toBe('buyer')
     expect(publishedVerdict({ mos: 4.3, verdict: 'seller' })).toBeNull()
     expect(publishedVerdict({ mos: null, verdict: 'seller' })).toBeNull()
+  })
+
+  it('never prints a call for a supply figure that is not a number', () => {
+    expect(publishedVerdict({ mos: Number.NaN, verdict: 'balanced' })).toBeNull()
+    expect(publishedVerdict({ mos: Number.POSITIVE_INFINITY, verdict: 'buyer' })).toBeNull()
+  })
+})
+
+describe('supplyVerdict', () => {
+  it('is the call the edition builder stored, on every boundary (the Market Truth registry)', () => {
+    for (const mos of [0, 2.3, 3.99, 4, 4.01, 5, 5.99, 6, 6.01, 11]) {
+      expect(supplyVerdict(mos), String(mos)).toBe(registryVerdict(mos))
+    }
+    expect(supplyVerdict(4)).toBe('seller')
+    expect(supplyVerdict(4.01)).toBe('balanced')
+    expect(supplyVerdict(6)).toBe('buyer')
+  })
+
+  it('makes no call on a missing or non-finite figure', () => {
+    expect(supplyVerdict(null)).toBeNull()
+    expect(supplyVerdict(undefined)).toBeNull()
+    expect(supplyVerdict(Number.NaN)).toBeNull()
+    expect(supplyVerdict(Number.NEGATIVE_INFINITY)).toBeNull()
   })
 })
 

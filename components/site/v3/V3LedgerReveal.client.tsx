@@ -22,7 +22,8 @@
  */
 
 import type { ReactNode } from 'react'
-import { V3HoldReveal, V3_HOLD_MS } from './V3HoldReveal.client'
+import { V3HoldReveal } from './V3HoldReveal.client'
+import { V3_HOLD_MS } from './V3HoldReveal.logic'
 
 /** Long enough to be a hold, short enough that the OS context menu (~500ms) has not fired. */
 export const V3_LEDGER_HOLD_MS = V3_HOLD_MS

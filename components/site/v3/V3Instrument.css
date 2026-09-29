@@ -123,21 +123,58 @@
    takes more height because it is the opening, and the verdict is set a full
    step below it, so the chart reads as the section's picture rather than as a
    figure that lost its heading.
+
+   The lift is visual only (2026-09-29). In the document the lead wrapper
+   follows the verdict and its note, so the heading comes first in the
+   accessibility tree; the section becomes a column and the lead takes the
+   first place in it. Nothing above the lead takes focus, so the tab order
+   still runs top to bottom on screen. Flex items do not collapse margins, and
+   none of the section's children pairs a bottom margin with a top one, so
+   every gap below the lead is the gap the section always had.
    --------------------------------------------------------------------------- */
 .v3.v3-instrument.v3-instrument--chart-lead {
   --v3-chart-plot: 14rem;
+  display: flex;
+  flex-direction: column;
 }
 
-.v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__stage:first-child > .v3-instrument__chart,
-.v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__chart:first-child {
+/* A column stretches its items across unless an item carries auto inline
+   margins, and the trace does (V3SourceLine.css holds it to the measure with
+   margin-inline: auto): in the column it shrank to its text and sat in the
+   middle of the section. Every item takes the full width it has in the block
+   flow; a max-width still holds (the note keeps its reading measure). */
+.v3.v3-instrument.v3-instrument--chart-lead > * {
+  width: 100%;
+}
+
+.v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__lead {
+  order: -1;
+  min-width: 0;
+  margin-bottom: var(--v3-space-2xl);
+}
+
+/* Whatever opens the lead opens flush: no hairline, no space above it, be it
+   a chart, a drawing (the season strips carry their own rule and space), the
+   second chart or the cards. A later block in the lead keeps its rule, which
+   now separates it from the one above. */
+.v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__lead > :first-child,
+.v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__lead > .v3-instrument__stage:first-child > :first-child,
+.v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__lead > .v3-instrument__stage:first-child > .v3-instrument__drawing:first-child > :first-child {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
 }
 
-.v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__eyebrow,
-.v3.v3-instrument.v3-instrument--chart-lead > :not(.v3-instrument__eyebrow) + .v3-instrument__headline {
-  margin-top: var(--v3-space-2xl);
+/* Where a split stage sits side by side (from 64rem), both halves open the
+   lead, so the drawing beside the chart opens flush too and the two captions
+   start on one line. */
+@media (min-width: 64rem) {
+  .v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__lead > .v3-instrument__stage--split:first-child > *,
+  .v3.v3-instrument.v3-instrument--chart-lead > .v3-instrument__lead > .v3-instrument__stage--split:first-child > .v3-instrument__drawing > :first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
 }
 
 @media (max-width: 47.99rem) {

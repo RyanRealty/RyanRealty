@@ -13,9 +13,11 @@
  *
  * The one check this module makes on a payload value is the verdict: a
  * months-of-supply verdict is printed only when it agrees with the house
- * thresholds for the number beside it (lib/market/classify.ts). Both come from
- * the same builder, so a mismatch means a corrupted row, and the page then
- * prints the number without a call rather than a call the number contradicts.
+ * thresholds for the number beside it, called by the Market Truth registry's
+ * marketVerdict (lib/data/market-truth/registry.ts), the function the edition
+ * builder stored the verdict with. Both come from the same builder, so a
+ * mismatch means a corrupted row, and the page then prints the number without
+ * a call rather than a call the number contradicts.
  */
 import type { EditionListItem } from '@/lib/data/market-report/editions'
 import {
@@ -42,7 +44,11 @@ import {
 import { VERDICT_LABEL } from '@/lib/market-report/narrative'
 import type { ReportGeo } from '@/lib/market-report/geos'
 import type { EditionPayload, Kpis, MarketSection, MonthlySeries, Pt, Verdict } from '@/lib/market-report/types'
-import { MOS_BALANCED_MAX, MOS_SELLER_MAX, marketVerdict } from '@/lib/market/classify'
+import {
+  VERDICT_BUYER_MIN,
+  VERDICT_SELLER_MAX,
+  marketVerdict as registryVerdict,
+} from '@/lib/data/market-truth/registry'
 import { formatFileSize } from '@/lib/format/bytes'
 import { homesForSalePath } from '@/lib/slug'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
@@ -172,17 +178,20 @@ export function downloadLabel(key: string, item: Pick<EditionListItem, 'page_cou
 
 /**
  * The call the house thresholds make on a months-of-supply figure (≤ 4
- * seller's, 4 to 6 balanced, ≥ 6 buyer's), through lib/market/classify.ts, the
- * one source of those boundaries. Null for a figure it cannot call.
+ * seller's, 4 to 6 balanced, ≥ 6 buyer's): the Market Truth registry's
+ * marketVerdict, the same function the edition builder stored every verdict
+ * with (lib/market-report/build-edition.ts, verdictOf), so the page's check
+ * and the stored call cannot part on a boundary, and nothing here re-maps one
+ * vocabulary onto another. The registry calls any number, so a figure that is
+ * missing or not finite is guarded here and gets no call.
  */
 export function supplyVerdict(mos: number | null | undefined): Verdict | null {
-  const kind = marketVerdict(mos).kind
-  return kind === 'sellers' ? 'seller' : kind === 'buyers' ? 'buyer' : kind === 'balanced' ? 'balanced' : null
+  return mos == null || !Number.isFinite(mos) ? null : registryVerdict(mos)
 }
 
 /**
- * The stored verdict, printed only when it matches the house thresholds for
- * the stored months of supply (≤ 4 seller's, 4 to 6 balanced, ≥ 6 buyer's).
+ * The stored verdict, printed only when it matches the registry's call on the
+ * stored months of supply (≤ 4 seller's, 4 to 6 balanced, ≥ 6 buyer's).
  */
 export function publishedVerdict(k: Pick<Kpis, 'mos' | 'verdict'>): Verdict | null {
   if (k.mos == null || k.verdict == null) return null
@@ -419,15 +428,15 @@ export function supplySeasons(
     ...(claim ? { claim: v3Text(claim) } : {}),
     rows,
     columns: MONTH_INITIALS.map((m) => v3Text(m)),
-    max: Math.max(MOS_BALANCED_MAX, Math.ceil(top)),
+    max: Math.max(VERDICT_BUYER_MIN, Math.ceil(top)),
     bands: [
       {
-        from: MOS_SELLER_MAX,
-        to: MOS_BALANCED_MAX,
-        label: v3Text(`Balanced: above ${MOS_SELLER_MAX} and under ${MOS_BALANCED_MAX} months`),
+        from: VERDICT_SELLER_MAX,
+        to: VERDICT_BUYER_MIN,
+        label: v3Text(`Balanced: above ${VERDICT_SELLER_MAX} and under ${VERDICT_BUYER_MIN} months`),
       },
     ],
-    threshold: MOS_SELLER_MAX,
+    threshold: VERDICT_SELLER_MAX,
     emptyReason: v3Text('Too few sales in these months for a supply reading.'),
   }
 }

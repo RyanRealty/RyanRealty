@@ -21,8 +21,11 @@
   /* The year's gutter, wide enough for four tabular digits at label size. */
   --v3-seasons-name: 2.75rem;
   /* A month that has not crossed: the Ledger's context-bar ink (V3Ledger.css,
-     the encoded bar), so a length reads the same on both. */
-  --v3-seasons-base: color-mix(in srgb, var(--v3-ink) 45%, transparent);
+     the encoded bar, navy at 45%), so a length reads the same on both. Mixed
+     into the surface rather than into transparency, so it is the same ink
+     over the balanced wash and over the column wash that marks the month
+     being read: nothing behind a bar ever changes its tone. */
+  --v3-seasons-base: color-mix(in srgb, var(--v3-ink) 45%, var(--v3-surface));
   /* The band's edges: the threshold lines, lighter than a mark, darker than
      the wash they close. */
   --v3-seasons-rule: color-mix(in srgb, var(--v3-ink) 38%, transparent);
@@ -181,6 +184,7 @@
   align-items: flex-end;
   justify-content: center;
   height: 100%;
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
 .v3 .v3-seasons__bar {
@@ -189,11 +193,11 @@
   width: 56%;
   min-height: 1px;
   background: var(--v3-seasons-base);
-  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
 /* The part of the month past the threshold, in full ink: the crossing is the
-   thing a reader should see first. */
+   thing a reader should see first. Full ink on a column means THIS and
+   nothing else. */
 .v3 .v3-seasons__cap {
   position: absolute;
   top: 0;
@@ -202,8 +206,15 @@
   background: var(--v3-ink);
 }
 
-.v3 .v3-seasons__cell.is-active .v3-seasons__bar {
-  background: var(--v3-ink);
+/* The month being read is marked behind its column, never on it: a wash the
+   height of the row, in the register's edge tint, while the bar keeps its
+   data ink. Filling the whole bar in ink made the resting month (4.0 months,
+   a seller's market, on the line) look as though it had crossed, the one
+   thing the ink is reserved for (code review, 2026-09-29). The row's year and
+   the column's month turn full ink beside it, and the reading line says it in
+   words. */
+.v3 .v3-seasons__cell.is-active {
+  background: var(--v3-edge);
 }
 
 .v3 .v3-seasons__cols {

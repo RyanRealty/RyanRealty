@@ -68,6 +68,13 @@ export type {
 
 export { V3Button, V3Figure, V3Eyebrow, V3Heading, V3Lede } from './atoms'
 
+/**
+ * A heading with its context on the heading's own line, at the far end,
+ * instead of an eyebrow over it: the beat that breaks eyebrow-then-heading.
+ * The Ledger's `eyebrowInline` renders it; a page section may too.
+ */
+export { V3RunningHead } from './atoms'
+
 export type {
   V3ButtonProps,
   V3ButtonVariant,
@@ -76,6 +83,7 @@ export type {
   V3HeadingProps,
   V3HeadingSize,
   V3LedeProps,
+  V3RunningHeadProps,
 } from './atoms'
 
 /**
@@ -414,10 +422,13 @@ export { V3LedgerRevealIsland, V3_LEDGER_HOLD_MS } from './V3LedgerReveal.client
  * The same tap-and-hold for any set of doors that reveal something on hover
  * and focus (generalised 2026-09-25): the monthly report archive's months use
  * it so a phone gets the reveal a pointer gets. The item's stylesheet reads
- * `data-revealed="true"`; a plain tap still opens the door.
+ * `data-revealed="true"`; a plain tap still opens the door. The gesture itself
+ * (hold, swallow, the grace that stands a swallow down) is the pure controller
+ * in V3HoldReveal.logic.ts.
  */
-export { V3HoldReveal, V3_HOLD_MS } from './V3HoldReveal.client'
+export { V3HoldReveal } from './V3HoldReveal.client'
 export type { V3HoldRevealProps } from './V3HoldReveal.client'
+export { V3_HOLD_MS } from './V3HoldReveal.logic'
 
 /**
  * The listing unit for Ledger-register search surfaces: one live listing as a

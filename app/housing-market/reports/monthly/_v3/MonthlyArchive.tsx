@@ -7,13 +7,14 @@
  *
  * THE PHONE GETS THE REVEAL TOO (taste evaluator, 2026-09-25: the reveal was
  * gated to a hover pointer and a wide window, so a phone got none). The hold
- * is the Ledger's (V3HoldReveal): a press of a third of a second opens the
- * month's sentence in place and swallows the tap that would have followed, a
- * plain tap still opens the month, a tap outside closes it. The sentence sits
+ * is the Ledger's (V3HoldReveal): a press of a third of a second on a month's
+ * link opens the month's sentence in place and swallows the tap that would
+ * have followed, a plain tap still opens the month, a tap outside closes it,
+ * and the PDF door keeps the phone's own long-press menu. The sentence sits
  * INSIDE the month's link, so a tap on an open sentence opens that month and
  * never the month drawn under it; the link's aria-label still names it and
- * aria-describedby still reads the sentence, and keyboard focus opens it at
- * every width.
+ * aria-describedby still reads the sentence, and keyboard focus (never a
+ * tap's focus) opens it at every width.
  *
  * WHY A PAGE SECTION AND NOT A BARREL PATTERN. The six patterns carry one door
  * per row (Ledger, Directory, Quiet); an archive month carries two, and the
@@ -34,10 +35,9 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
   V3_ROOT_CLASS,
-  V3Eyebrow,
-  V3Heading,
   V3HoldReveal,
   V3Lede,
+  V3RunningHead,
   V3SourceDisclosure,
 } from '@/components/site/v3'
 import { archiveYearId, monthShort, type ArchiveYear } from './report-view'
@@ -73,14 +73,10 @@ export function MonthlyArchive({ id, eyebrow, heading, lede, legend, years, sour
     <section id={id} className={cn(V3_ROOT_CLASS, 'monthly-archive')} aria-labelledby={headingId}>
       <div className="monthly-archive__head">
         {/* The running head: the heading, then its context at the far end of
-            the same line (the report's table opens the same way), instead of
-            the eyebrow-over-heading beat every section used to repeat. */}
-        <div className="monthly-archive__headline">
-          <V3Heading level={2} id={headingId} className="monthly-archive__heading">
-            {heading}
-          </V3Heading>
-          <V3Eyebrow className="monthly-archive__kicker">{eyebrow}</V3Eyebrow>
-        </div>
+            the same line (the report's table opens the same way, through the
+            same barrel atom), instead of the eyebrow-over-heading beat every
+            section used to repeat. */}
+        <V3RunningHead level={2} id={headingId} heading={heading} kicker={eyebrow} />
         <V3Lede className="monthly-archive__lede">{lede}</V3Lede>
       </div>
 
@@ -106,10 +102,17 @@ export function MonthlyArchive({ id, eyebrow, heading, lede, legend, years, sour
       ) : null}
 
       {anyLead ? (
-        /* The phone's hover: a press and hold on a month opens its sentence
-           (data-revealed, read by monthly-archive.css). Mounted only when a
-           month has a sentence to reveal. */
-        <V3HoldReveal item=".monthly-archive__month" reveal=".monthly-archive__peek" className="monthly-archive__hold">
+        /* The phone's hover: a press and hold on a month's link opens its
+           sentence (data-revealed, read by monthly-archive.css). Only the
+           month link is a handle, so a long press on the PDF door still gets
+           the phone's own menu. Mounted only when a month has a sentence to
+           reveal. */
+        <V3HoldReveal
+          item=".monthly-archive__month"
+          reveal=".monthly-archive__peek"
+          handle=".monthly-archive__read"
+          className="monthly-archive__hold"
+        >
           {calendar}
         </V3HoldReveal>
       ) : (

@@ -14,6 +14,15 @@
  * door, and a tap outside every item closes what is open. Holding a second
  * item moves the reveal to it.
  *
+ * The swallow is spent on the hold's own click or not at all: the next press
+ * of any kind stands it down, and so does a short grace after the lift or the
+ * cancel, because an iOS long press and a hold that turns into a scroll never
+ * produce a click (V3HoldReveal.logic.ts, where the gesture is tested).
+ *
+ * `handle` narrows where a hold may start inside an item: an archive month is
+ * held by its month link, so its PDF door keeps the phone's own long-press
+ * menu (open, download, share).
+ *
  * Everything else about the items (that they are links, that they work before
  * hydration, how a keyboard and a screen reader reach the reveal) is left to
  * the markup: this renders one plain wrapper and attaches listeners after
@@ -25,9 +34,7 @@
  */
 
 import { useEffect, useRef, type ReactNode } from 'react'
-
-/** Long enough to be a hold, short enough that the OS context menu (~500ms) has not fired. */
-export const V3_HOLD_MS = 350
+import { createHoldController } from './V3HoldReveal.logic'
 
 const OPEN = 'data-revealed'
 
@@ -36,29 +43,23 @@ export type V3HoldRevealProps = {
   item: string
   /** Selector for the reveal inside an item. An item without one is never held. */
   reveal: string
+  /**
+   * Selector for the part of an item a hold starts from. Omitted, the whole
+   * item. A press anywhere else in the item behaves as the platform does.
+   */
+  handle?: string
   /** The wrapper's class, for the owning stylesheet. */
   className?: string
   children: ReactNode
 }
 
-export function V3HoldReveal({ item, reveal, className, children }: V3HoldRevealProps) {
+export function V3HoldReveal({ item, reveal, handle, className, children }: V3HoldRevealProps) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const root = ref.current
     if (!root) return
 
-    let timer: number | null = null
-    let startX = 0
-    let startY = 0
-    let swallowClick = false
-
-    const clearTimer = () => {
-      if (timer != null) {
-        window.clearTimeout(timer)
-        timer = null
-      }
-    }
     const closeAll = (except?: Element | null) => {
       for (const open of root.querySelectorAll(`[${OPEN}="true"]`)) {
         if (open !== except) open.removeAttribute(OPEN)
@@ -66,61 +67,62 @@ export function V3HoldReveal({ item, reveal, className, children }: V3HoldReveal
     }
     const itemOf = (target: EventTarget | null): HTMLElement | null =>
       target instanceof Element ? target.closest<HTMLElement>(item) : null
+    // The item a press may hold: inside this wrapper, carrying a reveal, and
+    // pressed on its handle when the caller named one.
+    const holdableAt = (target: EventTarget | null): HTMLElement | null => {
+      const hit = itemOf(target)
+      if (!hit || !root.contains(hit) || !hit.querySelector(reveal)) return null
+      if (handle) {
+        const grip = target instanceof Element ? target.closest(handle) : null
+        if (!grip || !hit.contains(grip)) return null
+      }
+      return hit
+    }
 
-    const onPointerDown = (event: PointerEvent) => {
-      // Mouse and pen already have hover; the hold is for touch alone.
-      if (event.pointerType !== 'touch') return
-      const held = itemOf(event.target)
-      clearTimer()
-      if (!held || !root.contains(held) || !held.querySelector(reveal)) return
-      startX = event.clientX
-      startY = event.clientY
-      timer = window.setTimeout(() => {
-        timer = null
+    const hold = createHoldController<HTMLElement>({
+      onHold: (held) => {
         closeAll(held)
         held.setAttribute(OPEN, 'true')
-        swallowClick = true
-      }, V3_HOLD_MS)
+      },
+    })
+
+    // Every press on the page, seen first (capture): a new gesture always
+    // starts clean, a press outside every item closes what is open, and a
+    // touch on an item's handle starts the hold.
+    const onDocumentPointerDown = (event: PointerEvent) => {
+      const hit = itemOf(event.target)
+      if (!hit || !root.contains(hit)) closeAll()
+      hold.down(event.pointerType, event.clientX, event.clientY, holdableAt(event.target))
     }
     // A scroll is not a hold.
-    const onPointerMove = (event: PointerEvent) => {
-      if (timer == null) return
-      if (Math.abs(event.clientX - startX) > 8 || Math.abs(event.clientY - startY) > 8) clearTimer()
-    }
-    const onPointerEnd = () => clearTimer()
+    const onPointerMove = (event: PointerEvent) => hold.move(event.clientX, event.clientY)
+    const onPointerEnd = () => hold.end()
     const onClick = (event: MouseEvent) => {
-      if (!swallowClick) return
-      swallowClick = false
+      if (!hold.click()) return
       event.preventDefault()
       event.stopPropagation()
     }
     // The OS long-press menu on a link, held back only while a hold is live.
     const onContextMenu = (event: Event) => {
-      if (timer != null || swallowClick) event.preventDefault()
-    }
-    const onDocumentPointerDown = (event: PointerEvent) => {
-      const hit = itemOf(event.target)
-      if (!hit || !root.contains(hit)) closeAll()
+      if (hold.contextMenu()) event.preventDefault()
     }
 
-    root.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('pointerdown', onDocumentPointerDown, true)
     root.addEventListener('pointermove', onPointerMove)
     root.addEventListener('pointerup', onPointerEnd)
     root.addEventListener('pointercancel', onPointerEnd)
     root.addEventListener('click', onClick, true)
     root.addEventListener('contextmenu', onContextMenu)
-    document.addEventListener('pointerdown', onDocumentPointerDown)
     return () => {
-      clearTimer()
-      root.removeEventListener('pointerdown', onPointerDown)
+      hold.dispose()
+      document.removeEventListener('pointerdown', onDocumentPointerDown, true)
       root.removeEventListener('pointermove', onPointerMove)
       root.removeEventListener('pointerup', onPointerEnd)
       root.removeEventListener('pointercancel', onPointerEnd)
       root.removeEventListener('click', onClick, true)
       root.removeEventListener('contextmenu', onContextMenu)
-      document.removeEventListener('pointerdown', onDocumentPointerDown)
     }
-  }, [item, reveal])
+  }, [item, reveal, handle])
 
   return (
     <div ref={ref} className={className}>

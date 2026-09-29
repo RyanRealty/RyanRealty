@@ -44,6 +44,7 @@ import {
   V3Button,
   V3Eyebrow,
   V3Heading,
+  V3RunningHead,
   V3SourceLine,
   V3_ROOT_CLASS,
   type V3ButtonVariant,
@@ -498,14 +499,8 @@ export function V3Ledger(props: V3LedgerProps) {
       <div className="v3-ledger__head">
         {eyebrow && eyebrowInline ? (
           /* The running head: the name, then the context at the far end of the
-             same line. The heading stays first in reading order, so the region
-             is still named by it and the kicker reads as its qualifier. */
-          <div className="v3-ledger__headline">
-            <V3Heading level={headingLevel} id={headingId}>
-              {heading}
-            </V3Heading>
-            <V3Eyebrow className="v3-ledger__kicker">{eyebrow}</V3Eyebrow>
-          </div>
+             same line (the barrel's one running-head atom). */
+          <V3RunningHead level={headingLevel} id={headingId} heading={heading} kicker={eyebrow} />
         ) : (
           <>
             {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}

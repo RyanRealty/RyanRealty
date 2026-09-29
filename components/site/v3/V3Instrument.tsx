@@ -215,6 +215,12 @@ export type V3InstrumentProps = {
    * eyebrow-then-heading beat). The figures and the trace still follow the
    * heading. Ignored when the section has no chart, drawing or card: it then
    * opens on its eyebrow exactly as before.
+   *
+   * Only the PICTURE moves. The document keeps the heading first (eyebrow,
+   * heading, note, then the series, where chartFirst puts it) and the
+   * stylesheet lifts the series above them, so the accessibility tree and a
+   * screen reader meet the section's name before its chart (code review,
+   * 2026-09-29: the first build put the figure ahead of the heading).
    */
   chartLead?: boolean
   /** The supporting figures, left to right in the order the caller passes them. */
@@ -396,7 +402,8 @@ export function V3Instrument({
 
   // The series block, built once and placed by the ordering props below: under
   // the figures (the default), between the verdict and the figures
-  // (chartFirst), or above the eyebrow and the verdict (chartLead).
+  // (chartFirst), or in its own lead wrapper after the verdict that the
+  // stylesheet draws above the eyebrow (chartLead).
   const charts = (
     <>
       {chart || drawing ? (
@@ -451,8 +458,6 @@ export function V3Instrument({
       aria-labelledby={headlineId}
       aria-label={headlineId ? undefined : headline}
     >
-      {leading ? charts : null}
-
       {eyebrow ? (
         <V3Eyebrow className="v3-instrument__eyebrow">{eyebrow}</V3Eyebrow>
       ) : null}
@@ -462,6 +467,12 @@ export function V3Instrument({
       </V3Heading>
 
       {note ? <p className="v3-instrument__note">{note}</p> : null}
+
+      {/* THE LEAD. Drawn first on screen and read after the verdict: in the
+          document it sits where chartFirst puts a chart, after the heading
+          and its note, so a screen reader meets the section's name before
+          its picture. V3Instrument.css lifts it above the eyebrow (order). */}
+      {leading ? <div className="v3-instrument__lead">{charts}</div> : null}
 
       {(() => {
         const renderFigure = (figure: (typeof figures)[number], i: number) => {
