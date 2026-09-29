@@ -38,12 +38,17 @@ const FOLD_CAP = 12
 const FILM_ID = 'place-type-film'
 
 /** Pick photographed rows that read as the claim's band, not only the floor. */
-function filmRows(
+export function filmRows(
   rows: readonly V3ListingRowData[],
   bandLow: number | null,
   bandHigh: number | null,
+  bandEndRows: readonly V3ListingRowData[] = [],
 ): V3ListingRowData[] {
-  const filmed = rows.filter((r) => Boolean(r.photoUrl?.trim()))
+  // The claim's two end homes join the pool (once each), so the film's first
+  // and last asks are the sentence's.
+  const keys = new Set(rows.map((r) => r.listingKey))
+  const merged = [...rows, ...bandEndRows.filter((r) => !keys.has(r.listingKey))]
+  const filmed = merged.filter((r) => Boolean(r.photoUrl?.trim()))
   if (filmed.length === 0) return []
   const byAsk = (a: V3ListingRowData, b: V3ListingRowData) =>
     (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY)
@@ -83,7 +88,9 @@ function filmRows(
     push(pool[idx])
     if (picks.length >= FOLD_CAP) break
   }
-  return picks.slice(0, FOLD_CAP)
+  // Low to high, the order the asks strip over the rail draws them in
+  // (2026-09-29: the rail ran $449K, $2.1M, $560K...).
+  return picks.slice(0, FOLD_CAP).sort(byAsk)
 }
 
 export function PlaceTypeFilm({
@@ -91,14 +98,19 @@ export function PlaceTypeFilm({
   label,
   bandLow = null,
   bandHigh = null,
+  bandEndRows = [],
+  total = null,
 }: {
   rows: readonly V3ListingRowData[]
   label: string
   bandLow?: number | null
   bandHigh?: number | null
+  bandEndRows?: readonly V3ListingRowData[]
+  /** The claim's count, so a film that holds a spread says it is one. */
+  total?: number | null
 }) {
   const { setLinkedKey, setRestKey } = usePlaceTypeLink()
-  const filmed = filmRows(rows, bandLow, bandHigh)
+  const filmed = filmRows(rows, bandLow, bandHigh, bandEndRows)
   // The dial opens on its first home and reports every turn (onIndexChange).
   const [turned, setTurned] = useState(0)
   const index = filmed.length < 2 ? 0 : Math.min(turned, filmed.length - 1)
@@ -128,7 +140,13 @@ export function PlaceTypeFilm({
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) release()
       }}
     >
-      <p className="place-type-film__eyebrow">On the market</p>
+      <p className="place-type-film__eyebrow">
+        {total != null && total > filmed.length
+          ? // A spread, not the set: say how many of how many (2026-09-29:
+            // "12 asks" under a claim of 758 homes read as a miscount).
+            `On the market: ${filmed.length} of ${total.toLocaleString('en-US')}, across the band`
+          : 'On the market'}
+      </p>
       <V3ListingDial
         id={FILM_ID}
         label={label}

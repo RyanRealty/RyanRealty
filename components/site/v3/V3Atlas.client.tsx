@@ -2093,7 +2093,10 @@ export function V3Atlas({
     }
     const out: { kind: string; label: string }[] = []
     if (counts.forSale > 0) out.push({ kind: 'active', label: `${counts.forSale.toLocaleString('en-US')} for sale` })
-    if (counts.pending > 0) out.push({ kind: 'pending', label: `${counts.pending.toLocaleString('en-US')} pending` })
+    // "Under contract", the word the homes under the map use, so the two counts
+    // read as one set and its showing part (2026-09-29: "218 pending" over "3
+    // under contract" read as a contradiction).
+    if (counts.pending > 0) out.push({ kind: 'pending', label: `${counts.pending.toLocaleString('en-US')} under contract` })
     if (amenityParks.length > 0) {
       out.push({
         kind: 'park',
@@ -2148,9 +2151,9 @@ export function V3Atlas({
         // homes grouped under it, a plain tag one home's own ask.
         <p className="v3-atlas__pin-legend">
           <span className="v3-atlas__pin-legend-mark v3-atlas__pin-legend-mark--cluster" aria-hidden="true">
-            median
+            homes
           </span>
-          the middle ask of the homes grouped there
+          how many homes are grouped there, over their {ATLAS_CLUSTER_PIN_LABEL} ask
           {pinMarks.some((m) => m.kind === 'pin') ? (
             <>
               <span className="v3-atlas__pin-legend-mark" aria-hidden="true">
@@ -2794,7 +2797,13 @@ export function V3Atlas({
                           >
                             {price ? (
                               <>
-                                <span className="v3-atlas__pin-kind">{ATLAS_CLUSTER_PIN_LABEL}</span>
+                                {/* How many homes the bubble holds over their median
+                                    ask (2026-09-29: two dozen pills all reading
+                                    "median" said nothing apart; the key says the
+                                    figure is the median). */}
+                                <span className="v3-atlas__pin-kind">
+                                  {mark.count.toLocaleString('en-US')} {mark.count === 1 ? 'home' : 'homes'}
+                                </span>
                                 <span className="v3-atlas__pin-ask">{price}</span>
                               </>
                             ) : null}

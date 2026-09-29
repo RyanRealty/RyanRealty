@@ -122,7 +122,7 @@ describe('UXLIVE-3: a deferred Atlas prints the inline Atlas’s numbers in its 
   it('the same key: for sale and pending', () => {
     const key = /<li class="v3-atlas__key-item">([\s\S]*?)<\/li>/g
     expect(pick(deferred, key)).toEqual(pick(inline, key))
-    expect(pick(inline, key)).toEqual(['8 for sale', '2 pending'])
+    expect(pick(inline, key)).toEqual(['8 for sale', '2 under contract'])
   })
 
   it('the same claim sentence', () => {

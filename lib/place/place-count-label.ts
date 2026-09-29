@@ -35,7 +35,8 @@ export function placeHomesCount(rows: readonly PlaceCountRow[]): PlaceHomesCount
 }
 
 /**
- * "700 for sale", "533 for sale · 5 under contract", "2 under contract", or
+ * "700 for sale", "533 for sale · 5 under contract, still showing", "2 under
+ * contract, still showing", or
  * null for no rows. Never "0 for sale": a group with no listing for sale says
  * only what it holds.
  */
@@ -43,6 +44,8 @@ export function placeHomesCountLabel(rows: readonly PlaceCountRow[]): string | n
   const { forSale, underContract } = placeHomesCount(rows)
   const parts: string[] = []
   if (forSale > 0) parts.push(`${formatCount(forSale)} for sale`)
-  if (underContract > 0) parts.push(`${formatCount(underContract)} under contract`)
+  // The homes hold only the ones still showing; the map over them counts every
+  // home under contract, so this says which part it is (2026-09-29).
+  if (underContract > 0) parts.push(`${formatCount(underContract)} under contract, still showing`)
   return parts.length > 0 ? parts.join(' · ') : null
 }

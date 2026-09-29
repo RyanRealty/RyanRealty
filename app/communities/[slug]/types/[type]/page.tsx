@@ -276,6 +276,14 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
   const copy = placeTypeMetadataCopy({ spec, placeName: publicName, count: activeCount })
   const listOk = listRead.ok
   const rows = listOk ? placeTypeListingRows(listRead.value) : []
+  /* The homes at the claim's two ends (the lowest ask, and the ask at nine in
+     ten), so the film's strip runs between the same two prices the sentence
+     names (2026-09-29: the newest 120 did not hold the $379,500 floor, and the
+     strip began at $449K under a claim that began at $379,500). */
+  const bandEndRows = placeTypeListingRows([
+    ...(lowRead.ok ? lowRead.value.slice(0, 1) : []),
+    ...(p90Read.ok ? p90Read.value.slice(-1) : []),
+  ])
   /* H1 already named the type. Atlas eyebrow is a section marker, not a
      second "Single-family…" Amboqia line (SITE-107 / taste table). */
   const eyebrow = placeTypeAtlasEyebrow(spec, false)
@@ -359,6 +367,8 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
                 label={`${spec.nounMany} in ${publicName}`}
                 bandLow={lowAsk}
                 bandHigh={bandHigh}
+                bandEndRows={bandEndRows}
+                total={activeCount}
               />
             ) : null}
           </div>

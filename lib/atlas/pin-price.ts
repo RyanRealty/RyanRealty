@@ -39,8 +39,10 @@ export function formatAtlasClusterRange(minUsd: number, maxUsd: number): string 
 }
 
 /**
- * The word a cluster pill prints above its figure, so the figure is never
- * read as one home's ask. Plain English, lower case (UXLIVE-6, 2026-09-23).
+ * What a cluster pill's figure is, so it is never read as one home's ask.
+ * Plain English, lower case (UXLIVE-6, 2026-09-23). Since 2026-09-29 the pill
+ * prints its count of homes over the figure and the map's key says the figure
+ * is this word ("how many homes are grouped there, over their median ask").
  */
 export const ATLAS_CLUSTER_PIN_LABEL = 'median'
 

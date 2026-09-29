@@ -94,7 +94,7 @@ describe('the map and the homes under it count "for sale" the same way', () => {
     expect(homes.underContract).toBe(2)
     expect(mapPending).toBe(3)
     expect(homes.underContract).toBeLessThanOrEqual(mapPending)
-    expect(placeHomesCountLabel(rows)).toBe('3 for sale · 2 under contract')
+    expect(placeHomesCountLabel(rows)).toBe('3 for sale · 2 under contract, still showing')
   })
 
   it('classifies every status the same way on a dot and on a count', async () => {
@@ -112,9 +112,9 @@ describe('the map and the homes under it count "for sale" the same way', () => {
     const { placeStockSectionsFromTiles } = await import('./place-inventory-stock')
     const sections = placeStockSectionsFromTiles(HOMES_POPULATION)
     const sfr = sections.find((s) => s.key === 'sfr')!
-    expect(sfr.countLabel).toBe('3 for sale · 1 under contract')
+    expect(sfr.countLabel).toBe('3 for sale · 1 under contract, still showing')
     expect(sfr.rows.find((r) => r.listingKey === 'k-4')?.statusLabel).toBe('Under contract')
-    expect(sections.find((s) => s.key === 'attached')?.countLabel).toBe('1 under contract')
+    expect(sections.find((s) => s.key === 'attached')?.countLabel).toBe('1 under contract, still showing')
   })
 
   it('holds the door over a neighborhood or plat equal to the single-family homes under it and to the map', async () => {
@@ -193,7 +193,7 @@ describe('the map and the homes under it count "for sale" the same way', () => {
         <PlaceSubdivisionHomes id="homes" />
       </PlaceSubdivisionMap>,
     )
-    expect(html).toContain('>3 for sale · 2 under contract<')
+    expect(html).toContain('>3 for sale · 2 under contract, still showing<')
     expect(html).not.toContain('5 for sale')
   })
 })
@@ -201,7 +201,7 @@ describe('the map and the homes under it count "for sale" the same way', () => {
 describe('placeHomesCountLabel', () => {
   it('never prints "0 for sale" and says nothing for no rows', () => {
     expect(placeHomesCountLabel([])).toBeNull()
-    expect(placeHomesCountLabel([{ standardStatus: 'Active Under Contract' }])).toBe('1 under contract')
+    expect(placeHomesCountLabel([{ standardStatus: 'Active Under Contract' }])).toBe('1 under contract, still showing')
     expect(placeHomesCountLabel([{ standardStatus: 'Active' }, { standardStatus: null }])).toBe('2 for sale')
   })
 })
