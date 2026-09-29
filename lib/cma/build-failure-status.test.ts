@@ -1,14 +1,8 @@
 /**
- * A failed rebuild may not leave a row wearing a status it can no longer back
- * up.
+ * A failed rebuild must not destroy the document that already exists.
  *
- * `recordBuildFailure` clears html_content, html_path, render_args, citations,
- * the list figures and the comps — everything that makes a document — and left
- * `status` exactly where it was. Three live rows on 2026-09-07 read `finalized`
- * with nothing behind them, so the admin queue offered Send on a document that
- * `canOpenCmaDocument` could not open.
- *
- * Tested here: the rule itself, and that the failure path actually applies it.
+ * The prior letter, prices and comps stay on the row. Only build_error
+ * (and build_failed_at when the column exists) is written.
  */
 
 import { readFileSync } from 'node:fs'
@@ -43,30 +37,30 @@ describe('statusAfterBuildFailure', () => {
   })
 })
 
-describe('the failure path applies it', () => {
-  it('reads the row status before the clear and writes the fallback with it', () => {
-    const read = src.indexOf('const existing = await getCmaAdminReviewRowBySlug(slug)')
-    const decide = src.indexOf('const nextStatus = statusAfterBuildFailure(')
-    const clear = src.indexOf('const clearFields = {')
-    const write = src.indexOf('...(nextStatus ? { status: nextStatus } : {})')
-    expect(read).toBeGreaterThan(0)
-    expect(decide).toBeGreaterThan(read)
-    expect(clear).toBeGreaterThan(decide)
-    expect(write).toBeGreaterThan(clear)
+describe('the failure path keeps the prior document', () => {
+  it('snapshots before any overwrite and fails the rebuild if the snapshot fails', () => {
+    const build = src.indexOf('export async function buildCma')
+    const snap = src.indexOf("await snapshotCmaVersion({ slug, reason: 'rebuild' })")
+    const fail = src.indexOf('Could not snapshot the current CMA before rebuild')
+    const upsert = src.indexOf('upsertCmaRowBySlug', snap)
+    expect(build).toBeGreaterThan(0)
+    expect(snap).toBeGreaterThan(build)
+    expect(fail).toBeGreaterThan(snap)
+    expect(upsert).toBeGreaterThan(snap)
   })
 
-  it('still clears every field that makes the row look like a document', () => {
-    for (const field of [
-      'html_content: null',
-      "html_path: ''",
-      'render_args: null',
-      'citations: null',
-      'recommended_list: null',
-      'value_low: null',
-      'value_high: null',
-      'comps_count: 0',
-    ]) {
-      expect(src).toContain(field)
-    }
+  it('writes only the failure reason and does not clear the document', () => {
+    const fn = src.slice(src.indexOf('async function recordBuildFailure'), src.indexOf('export async function buildCma'))
+    expect(fn).toMatch(/build_error: reason/)
+    expect(fn).toMatch(/build_failed_at/)
+    expect(fn).not.toMatch(/html_content: null/)
+    expect(fn).not.toMatch(/html_path: ''/)
+    expect(fn).not.toMatch(/render_args: null/)
+    expect(fn).not.toMatch(/citations: null/)
+    expect(fn).not.toMatch(/recommended_list: null/)
+    expect(fn).not.toMatch(/value_low: null/)
+    expect(fn).not.toMatch(/value_high: null/)
+    expect(fn).not.toMatch(/comps_count: 0/)
+    expect(fn).not.toMatch(/replaceCmaComps\(/)
   })
 })

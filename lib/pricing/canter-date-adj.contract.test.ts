@@ -306,7 +306,7 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
     expect(basis.pctPerMonth).toBe(0)
     expect(basis.sentence).toMatch(/exclusive pocket/)
     expect(basis.sentence).toMatch(/city index/)
-    expect(basis.sentence).toMatch(/size and story/)
+    expect(basis.sentence).toMatch(/Size and story/)
     expect(basis.sentence).not.toMatch(/Each sale is moved by the change/)
   })
 

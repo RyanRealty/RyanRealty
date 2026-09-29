@@ -114,11 +114,33 @@ export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined)
   const spread = `That range is wide because the ${countWord(kept)} sales behind it still land ${usd(
     Math.round(hi - lo),
   )} apart once each is moved to today`
-  return setAside > 0
-    ? `${spread}, and that is after setting aside the ${
-        setAside === 1 ? 'furthest one' : `${countWord(setAside)} furthest`
-      }.`
-    : `${spread}.`
+  if (setAside <= 0) return `${spread}.`
+  const ppsf = Math.max(0, num(rule.endpointPpsfAside) ?? 0)
+  const light = Math.max(0, num(rule.endpointWeightAside) ?? 0)
+  const trim = Math.max(0, setAside - ppsf - light)
+  const parts: string[] = []
+  if (ppsf === 1) parts.push('one sale whose price per square foot sat more than 25 percent off the others')
+  else if (ppsf > 1) parts.push(`${countWord(ppsf)} sales whose price per square foot sat more than 25 percent off the others`)
+  if (light === 1) parts.push('one sale that carried too little weight to set an end')
+  else if (light > 1) parts.push(`${countWord(light)} sales that carried too little weight to set an end`)
+  if (trim === 1) parts.push('one sale at the end of the prices so a single sale cannot set the range')
+  else if (trim > 1) parts.push('the sales at each end of the prices so one sale cannot set the range')
+  if (parts.length === 0) {
+    // Older rows stored the count and not the reason. Do not call it distance.
+    parts.push(
+      setAside === 1
+        ? 'one sale that did not qualify to set an end'
+        : `${countWord(setAside)} sales that did not qualify to set an end`,
+    )
+  }
+  const joined = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  const stillCarries =
+    ppsf + light > 0 && trim === 0
+      ? ppsf + light === 1
+        ? ' That sale still carries weight in the recommended price.'
+        : ' Those sales still carry weight in the recommended price.'
+      : ''
+  return `${spread}, and that is after setting aside ${joined}.${stillCarries}`
 }
 
 

@@ -10,6 +10,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { cleanText } from '@/lib/cma/render-blocks'
+import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 import type {
   CmaAdjustedComp,
@@ -70,7 +71,7 @@ export function clientPlaceClause(
 
 export function clientFacingNotes(notes: readonly string[], pricing: CmaPricing): string[] {
   return notes
-    .map((n) => n.trim())
+    .map((n) => sanitizeLetterEmDash(n.trim()))
     .filter(Boolean)
     .filter((n) => !isClientInternalLeak(n))
     .filter((n) => !/broker should confirm|verification trace|wide price-per-square-foot range/i.test(n))

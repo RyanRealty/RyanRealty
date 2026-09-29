@@ -27,7 +27,15 @@ export {
   type ProspectEngagementMap,
 } from './engagement'
 
-export { getProspect, getProspectDetail } from './get'
+export {
+  getProspect,
+  getProspectDetail,
+  getProspectDetailCore,
+  attachProspectOptionalPanels,
+  PROSPECT_DETAIL_FAST_MS,
+  PROSPECT_DETAIL_LOAD_ERRORS,
+} from './get'
+export type { ProspectDetailCoreResult } from './get'
 
 export {
   dripIntentTagFor,

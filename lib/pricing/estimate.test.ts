@@ -702,11 +702,11 @@ describe('listPriceFromEngine is the only cover number', () => {
         highEndList: 900_000,
         source: 'comps',
       },
-      { failedAsk: 749_900 },
+      { failedAsk: 820_000 },
     )
-    expect(cover.recommended).toBeLessThanOrEqual(749_900)
-    expect(cover.highEnd).toBeLessThanOrEqual(749_900)
-    expect(cover.failedAsk).toBe(749_900)
+    expect(cover.recommended).toBeLessThanOrEqual(820_000)
+    expect(cover.highEnd).toBeLessThanOrEqual(820_000)
+    expect(cover.failedAsk).toBe(820_000)
     expect(cover.notes.join(' ')).toMatch(/did not sell/i)
   })
 })
@@ -1050,7 +1050,8 @@ describe('D10 — what the cover calls the value is the printed evidence', () =>
     expect(priced.valueHigh).toBe(480_000)
     expect(priced.conservative).toBe(442_000)
     expect(priced.recommended).toBe(474_000)
-    expect(priced.highEnd).toBe(505_000)
+    expect(priced.highEnd).toBe(480_000)
+    expect(priced.highEnd).toBeLessThanOrEqual(priced.valueHigh)
     expect(priced.rangeRule?.saleToAskRatio).toBe(0.95)
   })
 })

@@ -22,12 +22,14 @@
 
 import { UNADDRESSED_DOC_LINKS, cleanText, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import { proximityLabel } from '@/lib/cma/market-area'
+import { publishStreetNumber, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
 import {
   finalAskOf,
   priceChangeCountOf,
-  pricePathFromFinalCycle,
   pricePathFromListing,
   pricePathFromSale,
+  subjectPricePath,
   shortOrExactUsd,
   shortUsd,
   type PricePath,
@@ -35,6 +37,7 @@ import {
 import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaPinFact } from '@/lib/cma/comp-pin-map'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
+import type { AskExposureLike } from '@/lib/cma/ask-position'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
@@ -172,11 +175,48 @@ function remarksOf(row: unknown): string | null {
 }
 
 function streetNumberOf(address: string): string | null {
-  return /^\s*(\d+[A-Za-z]?)\s/.exec(address)?.[1] ?? null
+  const n = /^\s*(\d+[A-Za-z]?)\s/.exec(address)?.[1] ?? null
+  return publishStreetNumber(n)
 }
 
 function streetNameOf(address: string): string | null {
-  return address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || null
+  const published = publishUnparsedStreetLine(address)
+  if (!published) return null
+  return published.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || published
+}
+
+function publishedAddress(address: string): string {
+  return publishUnparsedStreetLine(address) ?? address.trim()
+}
+
+function finiteCoord(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v
+  if (typeof v === 'string' && v.trim()) {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  return null
+}
+
+/** Lat/lng under whichever key the row was stored with. */
+function rowCoords(row: object | null | undefined): { lat: number | null; lng: number | null } {
+  const o = (row ?? {}) as Record<string, unknown>
+  return {
+    lat: finiteCoord(o.latitude ?? o.Latitude ?? o.lat),
+    lng: finiteCoord(o.longitude ?? o.Longitude ?? o.lng ?? o.lon),
+  }
+}
+
+function entryProximity(
+  subject: { latitude?: number | null; longitude?: number | null } | null | undefined,
+  row: object | null | undefined,
+): string | null {
+  if (!subject) return null
+  const { lat, lng } = rowCoords(row)
+  return proximityLabel(
+    { lat: subject.latitude ?? null, lng: subject.longitude ?? null },
+    { lat, lng },
+  )
 }
 
 function sortAttrs(parts: Array<[string, string | number | null]>): string {
@@ -214,6 +254,7 @@ function movedOrNull(first: number | null, last: number | null): number | null {
 export function closedEntries(
   comps: readonly CmaAdjustedComp[],
   ctx?: TrackedDocLinkCtx | null,
+  subject?: { latitude?: number | null; longitude?: number | null } | null,
 ): MatrixEntry[] {
   return comps.map((c, i) => {
     const path = pricePathFromSale(c)
@@ -233,7 +274,7 @@ export function closedEntries(
     return {
       key: keyFor('closed', i),
       family: 'closed' as const,
-      address: c.address,
+      address: publishedAddress(c.address),
       href: trackedDocLink(
         'listing',
         {
@@ -274,7 +315,7 @@ export function closedEntries(
         const v = c.concessions ?? c.concessionsAmount ?? null
         return v != null && Number.isFinite(v) ? Number(v) : null
       })(),
-      proximity: (c.proximity ?? '').trim() || null,
+      proximity: (c.proximity ?? '').trim() || entryProximity(subject, c),
       garageSpaces: c.garageSpaces != null && Number.isFinite(c.garageSpaces) ? Number(c.garageSpaces) : null,
       cdomDays: days(c.domTotal),
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((c.closeDate ?? '').slice(0, 10))
@@ -305,6 +346,7 @@ export function unsoldEntries(
   peers: readonly CmaExpiredPeer[],
   ctx?: TrackedDocLinkCtx | null,
   city?: string | null,
+  subject?: Pick<CmaSubject, 'latitude' | 'longitude'> | null,
 ): MatrixEntry[] {
   return peers.map((p, i) => {
     const path = pricePathFromListing({
@@ -320,7 +362,7 @@ export function unsoldEntries(
     return {
       key: keyFor('unsold', i),
       family: 'unsold' as const,
-      address: p.address,
+      address: publishedAddress(p.address),
       href: trackedDocLink(
         'listing',
         {
@@ -350,7 +392,7 @@ export function unsoldEntries(
       closePrice: null,
       listPrice: num(p.listPrice) ?? num(p.originalListPrice),
       concessionsAmount: null,
-      proximity: null,
+      proximity: (p as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, p),
       garageSpaces: null,
       cdomDays: dom,
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((p.onMarketDate ?? '').slice(0, 10))
@@ -379,6 +421,7 @@ export function activeEntries(
   rivals: readonly CmaBandRival[],
   ctx?: TrackedDocLinkCtx | null,
   city?: string | null,
+  subject?: Pick<CmaSubject, 'latitude' | 'longitude'> | null,
 ): MatrixEntry[] {
   return rivals.map((r, i) => {
     const path = pricePathFromListing({
@@ -395,7 +438,7 @@ export function activeEntries(
     return {
       key: keyFor('active', i),
       family: 'active' as const,
-      address: r.address,
+      address: publishedAddress(r.address),
       href: trackedDocLink(
         'listing',
         {
@@ -430,7 +473,7 @@ export function activeEntries(
       closePrice: null,
       listPrice: num(r.listPrice) ?? num(r.originalListPrice),
       concessionsAmount: null,
-      proximity: null,
+      proximity: (r as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, r),
       garageSpaces: null,
       cdomDays: dom,
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((r.onMarketDate ?? '').slice(0, 10))
@@ -463,18 +506,20 @@ export function subjectEntry(input: {
   domDays: number | null
   /** Only an ask this listing still has. `subjectPrintableAsk` decides. */
   printableAsk: number | null
+  /** Exposure segments, when the letter has them. The resolver prefers lastListPrice. */
+  exposure?: AskExposureLike | null
 }): MatrixEntry {
   const s = input.subject
-  const path =
-    pricePathFromFinalCycle(input.finalCycle ?? null, s.streetAddress) ??
-    pricePathFromListing({
-      address: s.streetAddress,
-      listPrice: input.printableAsk,
-      originalListPrice: input.printableAsk,
-      onMarketDate: s.lastListDate,
-      daysOnMarket: input.domDays,
-      status: s.standardStatus,
-    })
+  const path = subjectPricePath({
+    cycle: input.finalCycle ?? null,
+    label: s.streetAddress,
+    lastListPrice: s.lastListPrice,
+    exposure: input.exposure,
+    onMarketDate: s.lastListDate,
+    daysOnMarket: input.domDays,
+    status: s.standardStatus,
+    printableAsk: input.printableAsk,
+  })
   const status = (s.standardStatus ?? '').trim().toLowerCase()
   const cameOff = /^(expired|withdrawn|cancell?ed)/.test(status)
   // Capitalised, unlike the other three families: this cell is a statement

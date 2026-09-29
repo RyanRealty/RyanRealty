@@ -43,7 +43,7 @@ import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
 // bridge, has to be the mechanism.
 import { AGENT_ATTRIB_COOKIE } from '@/lib/agent-attribution'
 import { resolveVisitBrokerSlug, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
-import { stripIdentityParams } from './strip-identity'
+import { stripIdentityParams, visitorEventMetadata } from './strip-identity'
 // P7 identity loop (2026-09-23, docs/TRACKING_POLICY.md "The known-contact
 // identity loop"): a SIGNED ?_pid= token on a link we sent identifies the visit
 // here, server-side, on the landing page view; the durable rr_vid and the
@@ -552,7 +552,7 @@ export async function POST(request: NextRequest) {
     listing_area_sqft: typeof listing?.areaSqft === 'number' ? listing.areaSqft : undefined,
     scroll_depth_pct:  !minimalOnly && typeof body.scrollDepthPct === 'number' ? Math.max(0, Math.min(100, Math.round(body.scrollDepthPct))) : undefined,
     dwell_seconds:     !minimalOnly && typeof body.dwellSeconds === 'number' ? Math.max(0, Math.round(body.dwellSeconds)) : undefined,
-    metadata:          !minimalOnly && body.metadata && typeof body.metadata === 'object' ? body.metadata : undefined,
+    metadata:          visitorEventMetadata(body.metadata, minimalOnly),
   }
   const cleanEventInsert: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(eventInsert)) {

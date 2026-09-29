@@ -81,24 +81,55 @@ export async function logCmaTimelineEvent(
   }
 }
 
+export type StampCmaPersonIdResult = { ok: true } | { ok: false; error: string }
+
 /**
  * Stamp cmas.person_id for a kicked-off build (W5.1 person link). The build
  * engine has no person concept; the kickoff DOES — without this stamp the
  * person page's Valuations lane cannot see the doc (found live 2026-08-05 on
  * the litmus fixture: person_id null on a person-kicked CMA). Fills only when
  * unset — never re-links a row that already belongs to someone.
+ *
+ * Returns ok/error so a send can fail closed. A swallowed warn used to let
+ * the PDF ship without `_pid`.
  */
-export async function stampCmaPersonId(slug: string, personId: number): Promise<void> {
+export async function stampCmaPersonId(slug: string, personId: number): Promise<StampCmaPersonIdResult> {
+  const safeSlug = slug.trim()
+  if (!safeSlug || !Number.isFinite(personId) || personId <= 0) {
+    return { ok: false, error: 'CMA slug and a contact id are required.' }
+  }
   const sb = client()
-  if (!sb) return
+  if (!sb) return { ok: false, error: 'Could not save the contact on this CMA.' }
   try {
-    await sb
+    const { data: row, error: readErr } = await sb
+      .from('cmas')
+      .select('person_id')
+      .eq('slug', safeSlug)
+      .maybeSingle()
+    if (readErr) return { ok: false, error: readErr.message }
+    if (!row) return { ok: false, error: 'CMA not found' }
+    const existing = row.person_id == null ? null : Number(row.person_id)
+    if (existing === personId) return { ok: true }
+    if (existing != null) return { ok: true }
+    const { error } = await sb
       .from('cmas')
       .update({ person_id: personId })
-      .eq('slug', slug)
+      .eq('slug', safeSlug)
       .is('person_id', null)
+    if (error) return { ok: false, error: error.message }
+    const { data: after, error: afterErr } = await sb
+      .from('cmas')
+      .select('person_id')
+      .eq('slug', safeSlug)
+      .maybeSingle()
+    if (afterErr) return { ok: false, error: afterErr.message }
+    if (Number(after?.person_id) !== personId) {
+      return { ok: false, error: 'Could not save the contact on this CMA.' }
+    }
+    return { ok: true }
   } catch (e) {
     console.warn('[stampCmaPersonId]', e instanceof Error ? e.message : String(e))
+    return { ok: false, error: 'Could not save the contact on this CMA.' }
   }
 }
 

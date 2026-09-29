@@ -9,7 +9,7 @@ import {
   similarBedRange,
   type CmaExpiredPeer,
 } from './market-status'
-import { daysToOfferSvg, medianCloseLineSvg } from './market-charts'
+import { askOutcomeBarsSvg, daysToOfferSvg, labelWidth, medianCloseLineSvg } from './market-charts'
 import { immersiveWiderMarketChapters, renderStatusGridHtml } from './market-area-chapters'
 import { renderImmersiveCmaHtml } from './immersive'
 import type { RenderCmaArgs } from './render'
@@ -505,6 +505,92 @@ describe('market charts', () => {
     // Every bar is directly labelled, so an axis tick would only repeat one.
     expect(svg.match(/192 days/g)).toHaveLength(1)
     expect(svg).not.toContain('month-ledger')
+  })
+
+  // 2026-09-25: twelve comps printed "01 Comparable Stree…" for "1. 401
+  // Comparable Stree…". The labels ran past a fixed gutter, the SVG clipped
+  // their start (the comp's number), and the survivor sat in the left margin.
+  function rowLabels(svg: string): Array<{ x: number; size: number; bold: boolean; text: string }> {
+    return [...svg.matchAll(/<text ([^>]*)>([^<]*)<\/text>/g)]
+      .filter((m) => (m[1] ?? '').includes('text-anchor="end"'))
+      .map((m) => ({
+        x: Number((m[1] ?? '').match(/\bx="([\d.]+)"/)?.[1]),
+        size: Number((m[1] ?? '').match(/font-size="([\d.]+)"/)?.[1]),
+        bold: (m[1] ?? '').includes('font-weight="600"'),
+        text: m[2] ?? '',
+      }))
+  }
+  const longRows = Array.from({ length: 12 }, (_, i) => ({
+    label: `${i + 1}. ${400 + i + 1} Comparable Street Northwest`,
+    days: 12,
+    subject: false,
+    valueLabel: '12 days',
+  }))
+
+  it('keeps every row label inside the frame, number first', () => {
+    const svg = daysToOfferSvg(
+      [...longRows, { label: '123 Test Way', days: 40, subject: true, valueLabel: '40 days, no offer' }],
+      'How fast homes like yours went',
+    )
+    const labels = rowLabels(svg)
+    expect(labels).toHaveLength(13)
+    for (const [i, l] of labels.entries()) {
+      expect(l.x - labelWidth(l.text, l.size, l.bold)).toBeGreaterThanOrEqual(0)
+      if (i < 12) expect(l.text.startsWith(`${i + 1}. ${400 + i + 1} `)).toBe(true)
+    }
+  })
+
+  it('sizes the gutter to its labels', () => {
+    const zeroRule = (svg: string) => Number(svg.match(/<line x1="([\d.]+)"/)?.[1])
+    const short = daysToOfferSvg(
+      [
+        { label: '1. 730 Quince', days: 1, subject: false, valueLabel: '1 day' },
+        { label: '2. 840 Quince', days: 4, subject: false, valueLabel: '4 days' },
+        { label: '3. 735 Oak', days: 51, subject: false, valueLabel: '51 days' },
+      ],
+      'How fast homes like yours went',
+    )
+    expect(zeroRule(short)).toBe(150)
+    const long = daysToOfferSvg(longRows, 'How fast homes like yours went')
+    expect(zeroRule(long)).toBeGreaterThan(150)
+    expect(zeroRule(long)).toBeLessThanOrEqual(270)
+  })
+
+  it('cuts a label past the widest gutter at its end, never its number', () => {
+    const svg = daysToOfferSvg(
+      [
+        { label: `1. ${'61535 Very Long Street Name Northwest Unit 4000 Building C'}`, days: 3, subject: false, valueLabel: '3 days' },
+        { label: '2. 840 Quince', days: 4, subject: false, valueLabel: '4 days' },
+        { label: '3. 735 Oak', days: 51, subject: false, valueLabel: '51 days' },
+      ],
+      'How fast homes like yours went',
+    )
+    const [first] = rowLabels(svg)
+    expect(first?.text.startsWith('1. 61535 ')).toBe(true)
+    expect(first?.text.endsWith('…')).toBe(true)
+    expect((first?.x ?? 0) - labelWidth(first?.text ?? '', first?.size ?? 12)).toBeGreaterThanOrEqual(0)
+  })
+
+  // Same defect, second chart: the seller's group printed "without a price cut
+  // · yours is in this group" because the marker rode beside the name in a
+  // fixed 250-unit gutter and the SVG clipped the start of the line.
+  it('keeps the first-price labels inside the frame, the marker on its own line', () => {
+    const svg = askOutcomeBarsSvg(
+      {
+        city: 'Bend',
+        windowMonths: 12,
+        groups: [
+          { key: 'sold-no-cut', n: 1302, medianDays: 9, medianSoldToOriginalAskPct: 100, soldToOriginalAskN: 1302 },
+          { key: 'sold-after-cut', n: 1188, medianDays: 61, medianCutPct: 12.5, medianSoldToOriginalAskPct: 94.3, soldToOriginalAskN: 1188 },
+          { key: 'did-not-sell', n: 1141, medianDays: 117, medianCutPct: 6.2 },
+        ],
+      },
+      'sold-after-cut',
+    )
+    const labels = rowLabels(svg)
+    expect(labels.map((l) => l.text)).toContain('Sold after a price cut')
+    expect(labels.map((l) => l.text)).toContain('yours is in this group')
+    for (const l of labels) expect(l.x - labelWidth(l.text, l.size, l.bold), l.text).toBeGreaterThanOrEqual(0)
   })
 
   it('says nothing rather than draw two sales as a chart', () => {

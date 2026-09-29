@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { blamesPriorAgent } from '@/lib/crm/first-touch-copy'
 import {
+  CMA_REPORT_ONLINE_LINE,
   cmaFirstContactFactsFromRow,
   composeCmaFirstContact,
   composeCmaFirstContactSubject,
   composeFirstContactNumbers,
+  lastAskVersusHeroBand,
   salesScopeFromTierCounts,
   streetOnly,
 } from '@/lib/cma/first-contact'
+import type { FirstContactRun } from '@/lib/cma/first-contact-render'
 import type { CmaOrigin } from '@/lib/cma/origin'
 
 const FACTS = {
@@ -23,6 +26,10 @@ const FACTS = {
 }
 
 const ORIGINS: CmaOrigin[] = ['expired', 'fsbo', 'seller-valuation', 'lead-form', 'broker', 'internal', 'unknown']
+
+function linkHrefs(paragraphs: FirstContactRun[][]): string[] {
+  return paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [r.href]))
+}
 
 describe('first-contact copy (Matt 2026-09-09 register)', () => {
   it('opens the way Matt opens: who we are, why we wrote, sorry it did not sell', () => {
@@ -41,10 +48,13 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
       expect(c.bodyText).toContain('pricing low is rarely the danger people think it is')
       expect(c.bodyText).toContain('the most knowledgeable brokers in Central Oregon')
       expect(c.bodyText).toContain('earn your business')
-      expect(c.bodyText).toContain('talk about how we sell homes')
-      expect(c.bodyText).toContain('premium product')
-      expect(c.bodyText).toContain('https://ryan-realty.com/reviews')
-      expect(c.bodyText).toContain('https://ryan-realty.com/about')
+      expect(c.bodyText).toContain('see how we sell homes')
+      expect(c.bodyText).toContain('read our reviews')
+      expect(c.bodyText).toContain('learn about our business')
+      expect(c.bodyText).not.toContain('see who we are')
+      expect(c.bodyText).not.toContain('sit down')
+      expect(c.bodyText).not.toContain('premium product')
+      expect(c.bodyText).not.toMatch(/https?:/)
       expect(c.bodyText).toContain('Please let me know if you have any questions.')
     }
   })
@@ -92,6 +102,44 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     expect(fsbo).not.toContain('nothing bad about the house')
   })
 
+  it('uses the letter hero band for below, inside, and above', () => {
+    // Nugget: $725k last ask, letter band $734k–$878k. Old code compared only
+    // to the high and called $725k "inside".
+    expect(lastAskVersusHeroBand(725_000, 734_000, 878_000)).toBe('below')
+    expect(lastAskVersusHeroBand(800_000, 734_000, 878_000)).toBe('inside')
+    expect(lastAskVersusHeroBand(900_000, 734_000, 878_000)).toBe('above')
+    const below = composeFirstContactNumbers('expired', {
+      ...FACTS,
+      valueLow: 734_000,
+      valueHigh: 878_000,
+      recommendedList: 803_000,
+      lastListPrice: 725_000,
+    })
+    expect(below).toContain('they support $734,000 to $878,000.')
+    expect(below).toContain('The last listing asked $725,000, below what those sales support.')
+    expect(below).not.toContain('Price was not what held it back.')
+    expect(below).not.toContain('inside what those sales support')
+    const inside = composeFirstContactNumbers('expired', {
+      ...FACTS,
+      valueLow: 734_000,
+      valueHigh: 878_000,
+      recommendedList: 803_000,
+      lastListPrice: 800_000,
+    })
+    expect(inside).toContain('The last listing asked $800,000, inside what those sales support.')
+    expect(inside).not.toContain('Price was not what held it back.')
+    const above = composeFirstContactNumbers('expired', {
+      ...FACTS,
+      valueLow: 734_000,
+      valueHigh: 878_000,
+      recommendedList: 803_000,
+      lastListPrice: 950_000,
+    })
+    expect(above).toContain('The last listing asked $950,000, about 8% above what those sales support.')
+    expect(above).not.toContain('inside what those sales support')
+    expect(above).not.toContain('below what those sales support')
+  })
+
   it('names the subdivision only when every priced sale came from it', () => {
     expect(salesScopeFromTierCounts({ 'subdivision-3mo': 6, 'subdivision-6mo': 2 })).toBe('subdivision')
     expect(salesScopeFromTierCounts({ 'subdivision-6mo': 1, 'nearby-1mi-6mo': 1, 'subdivision-3mo-wide': 1 })).toBe('near')
@@ -116,12 +164,12 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     expect(streetOnly('  ')).toBeNull()
   })
 
-  it('keeps close verbatim inside bodyText so the rail can splice the report URL', () => {
+  it('keeps the report sentence in the body and does not print a URL', () => {
     for (const o of ORIGINS) {
       const c = composeCmaFirstContact(o, FACTS)
-      expect(c.close).toBe('The full report is attached as a PDF.')
+      expect(c.close).toBe(CMA_REPORT_ONLINE_LINE)
       expect(c.bodyText).toContain(c.close)
-      expect(c.bodyText.replace(c.close, `${c.close} https://x`)).toContain('https://x')
+      expect(c.bodyText).not.toMatch(/https?:/)
     }
   })
 
@@ -191,8 +239,11 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     expect(c.bodyText).toContain(
       'In Diamond Bar Ranch itself, six homes sold in the last twelve months, two are for sale right now, and one is under contract.',
     )
-    expect(c.bodyText).toContain(`Our Diamond Bar Ranch page keeps the running picture, what is for sale there, what has sold, and what did not: ${DBR.href}.`)
-    expect(c.bodyText).toContain(`The Redmond page shows the wider market it sits in: ${REDMOND.href}.`)
+    expect(c.bodyText).toContain('Our Diamond Bar Ranch page keeps the running picture, what is for sale there, what has sold, and what did not.')
+    expect(c.bodyText).toContain('The Redmond page shows the wider market it sits in.')
+    expect(c.bodyText).not.toMatch(/https?:/)
+    expect(linkHrefs(c.paragraphs)).toContain('https://ryan-realty.com/subdivisions/diamond-bar-ranch')
+    expect(linkHrefs(c.paragraphs)).toContain('https://ryan-realty.com/cities/redmond')
   })
 
   it('falls back to the page\'s closed-sales history when the twelve-month figures are withheld', () => {
@@ -219,9 +270,10 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
       ...FACTS,
       place: { subdivision: { ...DBR, closed12mo: null, unsold12mo: null, active: null, pending: null, history: null }, wider: REDMOND },
     })
-    expect(c.bodyText).toContain(`Our Diamond Bar Ranch page is at ${DBR.href}.`)
+    expect(c.bodyText).toContain('Our Diamond Bar Ranch page has the running picture.')
     expect(c.bodyText).not.toContain('sold in the last twelve months')
-    expect(c.bodyText).toContain('The Redmond page shows the wider market it sits in')
+    expect(c.bodyText).toContain('The Redmond page shows the wider market it sits in.')
+    expect(linkHrefs(c.paragraphs)).toContain('https://ryan-realty.com/subdivisions/diamond-bar-ranch')
   })
 
   it('never links a subdivision page the resolver did not clear', () => {
@@ -232,7 +284,8 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     })
     expect(c.bodyText).not.toContain('/subdivisions/')
     expect(c.bodyText).not.toContain('Nowhere Estates')
-    expect(c.bodyText).toContain(`Our page on Redmond is at ${REDMOND.href}.`)
+    expect(c.bodyText).toContain('Our Redmond page has the wider market.')
+    expect(linkHrefs(c.paragraphs)).toContain('https://ryan-realty.com/cities/redmond')
   })
 
   it('names the neighborhood page when the subject sits in one', () => {
@@ -243,20 +296,20 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
         wider: { label: 'Riverwest', href: 'https://ryan-realty.com/cities/bend/riverwest?utm_source=crm&utm_medium=doc&utm_campaign=cma-letter' },
       },
     })
-    expect(c.bodyText).toContain('Our page on Riverwest is at')
-    expect(c.bodyText).toMatch(/\/cities\/bend\/riverwest/)
-    expect(c.bodyText).not.toContain('Our page on Bend')
+    expect(c.bodyText).toContain('Our Riverwest page has the wider market.')
+    expect(linkHrefs(c.paragraphs)).toContain('https://ryan-realty.com/cities/bend/riverwest')
+    expect(c.bodyText).not.toContain('Our Bend page')
   })
 
   it('prints no place link at all when nothing was resolved', () => {
     for (const place of [null, undefined, { subdivision: null, wider: null }]) {
       const c = composeCmaFirstContact('expired', { ...FACTS, subdivision: 'Diamond Bar Ranch', place })
-      expect(c.bodyText).not.toContain('ryan-realty.com/cities')
-      expect(c.bodyText).not.toContain('ryan-realty.com/subdivisions')
+      expect(c.bodyText).not.toContain('ryan-realty.com')
       expect(c.bodyText).not.toContain('Our page on')
     }
     const c = composeCmaFirstContact('expired', { ...FACTS, city: null, place: null })
-    expect(c.bodyText).toContain('Central Oregon street by street')
+    expect(c.bodyText).toContain('see how we sell homes')
+    expect(c.bodyText).not.toContain('premium product')
   })
 
   it('reads the letter facts off a cmas row without inventing them', () => {
@@ -277,16 +330,52 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     )
     expect(facts.city).toBe('Redmond')
     expect(facts.subdivision).toBe('Diamond Bar Ranch')
-    expect(facts.firstName).toBe('Blair')
+    expect(facts.firstName).toBeNull()
     expect(facts.lastListPrice).toBe(460000)
     expect(facts.closedSalesCount).toBe(5)
     expect(facts.salesScope).toBe('near')
     const letter = composeCmaFirstContact('expired', facts)
+    expect(letter.bodyText).toContain('Hi there,')
+    expect(letter.bodyText).not.toContain('Blair')
     expect(letter.bodyText).toContain('your home at 2465 7th came off the market')
     expect(letter.bodyText).toContain('We found five sales of homes like yours near you, and they support $412,000 to $443,000.')
     expect(letter.bodyText).toContain('The last listing asked $460,000, a little above what those sales support.')
     expect(letter.bodyText).toContain('In Diamond Bar Ranch itself, six homes sold in the last twelve months, and two are for sale right now.')
-    expect(letter.bodyText).toMatch(/\/subdivisions\/diamond-bar-ranch/)
+    expect(linkHrefs(letter.paragraphs)).toContain('https://ryan-realty.com/subdivisions/diamond-bar-ranch')
+  })
+
+  it('stamps area and site links with the CMA slug when the row has one', () => {
+    const facts = cmaFirstContactFactsFromRow(
+      {
+        slug: 'cma-2465-7th',
+        subject_address: '2465 7th, Redmond, OR 97756',
+        subject_city: 'Redmond',
+        subject_subdivision: 'Diamond Bar Ranch',
+        client_name: 'Blair Auld',
+        value_low: 412000,
+        value_high: 443000,
+        recommended_list: 435000,
+        comps_count: 5,
+      },
+      {
+        brokerName: 'Matt Ryan',
+        brokerSlug: 'matt',
+        personId: 99,
+        place: { subdivision: { ...DBR, closed12mo: 6, unsold12mo: null, active: 2, pending: null, history: null }, wider: REDMOND },
+      },
+    )
+    expect(facts.cmaSlug).toBe('cma-2465-7th')
+    const letter = composeCmaFirstContact('expired', facts)
+    expect(letter.bodyText).not.toContain('utm_')
+    expect(letter.bodyText).not.toMatch(/https?:/)
+    const hrefs = linkHrefs(letter.paragraphs)
+    expect(hrefs).toContain('https://ryan-realty.com/reviews')
+    expect(hrefs).toContain('https://ryan-realty.com/about')
+    expect(hrefs).toContain('https://ryan-realty.com/sell')
+    expect(hrefs).toContain('https://ryan-realty.com/cma/cma-2465-7th')
+    expect(hrefs).toContain('https://ryan-realty.com/subdivisions/diamond-bar-ranch')
+    expect(hrefs).toContain('https://ryan-realty.com/cities/redmond')
+    expect(hrefs.every((h) => !h.includes('utm_'))).toBe(true)
   })
 })
 

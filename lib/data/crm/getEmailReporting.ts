@@ -40,14 +40,15 @@ import type { EmailEvent, EmailSendType } from '@/lib/crm/email-events'
 /** The lifecycle ordering used to pick the "latest meaningful" event of a send. */
 const EVENT_RANK: Record<EmailEvent, number> = {
   sent: 0,
-  delivered: 1,
-  open: 2,
-  click: 3,
+  accepted: 1,
+  delivered: 2,
+  open: 3,
+  click: 4,
   // Terminal/negative states outrank progress — a bounce/complaint/unsubscribe
   // is the headline status of that send regardless of an earlier open.
-  unsubscribe: 4,
-  complaint: 5,
-  bounce: 6,
+  unsubscribe: 5,
+  complaint: 6,
+  bounce: 7,
 }
 
 export type EmailSendLogRow = {

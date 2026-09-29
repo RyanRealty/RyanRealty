@@ -107,8 +107,7 @@ export function composeInboundNumbersClause(facts: InboundPacketFacts): string |
 }
 
 export function composeInboundValuationCopy(facts: InboundPacketFacts): InboundValuationCopy {
-  const first = trim(facts.firstName) ?? 'there'
-  const greeting = `Hi ${first},`
+  const greeting = 'Hi there,'
   const named = trim(facts.address) ?? 'this home'
   const plan = `The number for ${named}, and the sales behind it.`
   const numbers = composeInboundNumbersClause(facts)

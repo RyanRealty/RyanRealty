@@ -482,24 +482,23 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
   confirm the deploy, apply its held migrations, leave no branch, worktree or loose end. Worktrees
   only for parallel work; merge or hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
   [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
-- **Never ask Matt to run anything.** Git, terminal and deploys are yours.
+- **Never ask Matt to run anything, and never queue found work for him (Matt 2026-09-25).**
+  Git, terminal and deploys are yours; a defect found on the way ships this session, not as a
+  suggested task.
 - **Always ask Matt questions to get what you need (Matt 2026-09-24).** A call that is his
   goes to him as a question (AskUserQuestion, recommended option first), not a guess or a
   closing "say X if you want".
 - **Clear a stale `.git/index.lock` yourself;** never report a lock as a blocker.
 - **No blocked builds or commits.** If something is in the way, fix it. Exhaust every option
   before reporting an issue.
-- **No half measures. Research how pros do it first, nail it the first time.** Before
-  scaffolding anything non-trivial, look at how the best in the field actually do it and build
-  to that standard. Don't ship a minimum-viable thing and iterate ten times — that wastes
-  Matt's review cycles and produces drift.
+- **No half measures. Research how pros do it first, nail it the first time.** Build anything
+  non-trivial to the standard the best in the field set, not a minimum-viable thing iterated
+  ten times: that wastes Matt's review cycles and produces drift.
 - **Vault is the sole source of truth for transaction coordination.** Never reconcile
-  transactions against SkySlope — it is a workflow tool, not a system of record. Treating it as
-  authoritative is a known failure mode that produces wrong audit numbers.
-- **Full company scope on all audits.** Every audit runs across all brokers, all mailboxes, and
-  the max available date range by default. Never narrow to one broker, one inbox, or the last
-  30 days unless Matt explicitly asks. Partial-scope audits miss outliers and produce false
-  clean reports.
+  transactions against SkySlope: it is a workflow tool, not a system of record, and treating it
+  as one produces wrong audit numbers.
+- **Full company scope on all audits.** All brokers, all mailboxes, the max date range, unless
+  Matt explicitly narrows it. Partial-scope audits miss outliers and report false cleans.
 
 ## Opus orchestrator policy
 

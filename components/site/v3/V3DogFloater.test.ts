@@ -69,7 +69,8 @@ describe('V3DogFloater · SITE-153', () => {
   it('the whole head turns toward the pointer; the eye itself never moves (Matt 2026-09-24)', () => {
     expect(SRC).toContain("from '@/lib/geo/aim-at-pointer'")
     expect(SRC).toContain("addEventListener('pointermove'")
-    expect(SRC).toContain('{ passive: true }')
+    // Passive, and captured on window so no descendant can hide the pointer.
+    expect(SRC).toContain('{ capture: true, passive: true }')
     expect(SRC).toContain('requestAnimationFrame')
     expect(SRC).toContain('cancelAnimationFrame')
     expect(SRC).toContain('removeEventListener')

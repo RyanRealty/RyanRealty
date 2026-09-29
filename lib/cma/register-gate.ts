@@ -130,7 +130,7 @@ export function renderRegisterShell(params: { slug: string; address: string | nu
       <li>How we got the price</li>
     </ul>
     <a class="cta" href="${startHref}"><span class="g">G</span> Continue with Google</a>
-    ${params.clientName ? `<p class="who">Prepared for ${escapeHtml(params.clientName)}.</p>` : ''}
+    ${params.address ? `<p class="who">Prepared for the owner of ${escapeHtml(params.address)}.</p>` : ''}
     <p class="fine">Private report. <a href="/privacy" style="color:inherit">Privacy</a> · <a href="/terms" style="color:inherit">Terms</a></p>
   `,
   )

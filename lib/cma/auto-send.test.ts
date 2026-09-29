@@ -4,12 +4,16 @@ import { describe, expect, it, vi } from 'vitest'
 // imports the DAL barrel and reads live MLS. These tests inject every send
 // dependency and only lock the decision, so the screen stays a clear no-op.
 // Loading the real module is what blew the 30s timeout under a parallel suite.
-vi.mock('@/lib/cma/solicit-screen', () => ({
-  screenAddressForSolicitation: async () => ({
+const screen = vi.hoisted(() => ({
+  screenAddressForSolicitation: vi.fn(async () => ({
     ok: true as const,
     checked: 0,
     detail: 'clear',
-  }),
+  })),
+}))
+
+vi.mock('@/lib/cma/solicit-screen', () => ({
+  screenAddressForSolicitation: screen.screenAddressForSolicitation,
 }))
 
 import { autoSendBuiltCma, type AutoSendDeps } from '@/lib/cma/auto-send'
@@ -56,6 +60,7 @@ function queueRow(over: Partial<CmaQueueRow> = {}): CmaQueueRow {
     address: '1 Main St',
     city: 'Bend',
     subdivision: null,
+    subjectListingKey: null,
     contactName: 'Owner',
     contactEmail: 'owner@example.com',
     brokerSlug: 'matt',
@@ -190,6 +195,32 @@ describe('autoSendBuiltCma — the lane is on and the row is ready', () => {
     const res = await autoSendBuiltCma('cma-1-main', d)
     expect(res.outcome).toBe('error')
     expect(d.enqueueDrip).not.toHaveBeenCalled()
+  })
+
+  it('passes the subject listing key into the solicitation screen', async () => {
+    screen.screenAddressForSolicitation.mockClear()
+    const d = deps({
+      findRow: vi.fn(async () => queueRow({ subjectListingKey: 'ZZTESTKEYLOT33' })),
+    })
+    const res = await autoSendBuiltCma('cma-1-main', d)
+    expect(res.outcome).toBe('queued')
+    expect(screen.screenAddressForSolicitation).toHaveBeenCalledTimes(1)
+    expect(screen.screenAddressForSolicitation).toHaveBeenCalledWith({
+      address: '1 Main St',
+      city: 'Bend',
+      subjectListingKey: 'ZZTESTKEYLOT33',
+    })
+  })
+
+  it('passes null when the row has no subject listing key', async () => {
+    screen.screenAddressForSolicitation.mockClear()
+    const d = deps()
+    await autoSendBuiltCma('cma-1-main', d)
+    expect(screen.screenAddressForSolicitation).toHaveBeenCalledWith({
+      address: '1 Main St',
+      city: 'Bend',
+      subjectListingKey: null,
+    })
   })
 })
 

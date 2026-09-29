@@ -248,8 +248,9 @@ Pricing matcher (`lib/pricing/match.ts`) on top of facts. Refuse a comps-implied
 
 | Table | Rows | Purpose |
 |---|---|---|
-| `public.cmas` | 1 | Finalized per-property CMA deliverables. One row per finalized CMA. |
+| `public.cmas` | 1 | Finalized per-property CMA deliverables. One row per finalized CMA. `build_failed_at` stamps a failed rebuild; the prior document stays. |
 | `public.cma_comps` | 8 | Linking table: comp listings used per CMA. |
+| `public.cma_versions` | 0 | Snapshots of a `cmas` row plus its `cma_comps` taken before a rebuild overwrites the live row. RLS matches `cmas`. |
 | `public.cma_deliveries` | 27 | Delivery tracking (email/print/portal). RLS enabled 2026-05-21 (anon sees 0). |
 | `public.valuations` | 0 | Estimated values per property (system-generated). |
 | `public.valuation_comps` | 0 | Comps backing a valuation. |

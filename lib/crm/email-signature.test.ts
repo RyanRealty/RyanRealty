@@ -70,6 +70,23 @@ describe('buildSignature — Gmail-synced signature (2026-07-09)', () => {
     const sig = buildSignature(broker({ gmailSignatureHtml: '  \n ', emailSignature: 'Custom fallback text' }))
     expect(sig.html).toContain('Custom fallback text')
   })
+
+  it('rewrites only the logo alt em dash, including the entity forms', () => {
+    const dash = '\u2014'
+    const raw = `<div>See you ${dash} Matt</div><img alt="Ryan Realty ${dash} Bend, Oregon" src="https://example.com/logo.png">`
+    const sig = buildSignature(broker({ gmailSignatureHtml: raw }))
+    expect(sig.html).toContain('alt="Ryan Realty, Bend, Oregon"')
+    expect(sig.html).not.toContain(`alt="Ryan Realty ${dash} Bend, Oregon"`)
+    expect(sig.html).toContain(`See you ${dash} Matt`)
+
+    for (const entity of ['&mdash;', '&#8212;']) {
+      const entityRaw = `<img alt="Ryan Realty ${entity} Bend, Oregon"><p>Ryan Realty ${entity} Bend, Oregon</p>`
+      const entitySig = buildSignature(broker({ gmailSignatureHtml: entityRaw }))
+      expect(entitySig.html).toContain('alt="Ryan Realty, Bend, Oregon"')
+      expect(entitySig.html).not.toContain(`alt="Ryan Realty ${entity} Bend, Oregon"`)
+      expect(entitySig.html).toContain(`<p>Ryan Realty ${entity} Bend, Oregon</p>`)
+    }
+  })
 })
 
 describe('buildSignature — broker custom signature (P1-6)', () => {

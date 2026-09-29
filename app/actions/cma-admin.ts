@@ -261,10 +261,11 @@ export async function rebuildCmaAction(
 
 export async function approveCmaAction(
   slug: string,
-  opts?: { acknowledgeReview?: boolean },
+  opts?: { acknowledgeReview?: boolean; flagReason?: string | null },
 ): Promise<{ error: string | null; needsReviewAck?: boolean }> {
   try {
-    if (!(await requireAdmin())) return { error: 'Unauthorized' }
+    const adminEmail = await requireAdmin()
+    if (!adminEmail) return { error: 'Unauthorized' }
     const safeSlug = slug.trim().toLowerCase()
     const row = await getCmaAdminReviewRowBySlug(safeSlug)
     if (!row) return { error: 'CMA not found' }
@@ -276,17 +277,40 @@ export async function approveCmaAction(
     // build flagged needs_review (unvetted comps, disputed audit, non-converged
     // methods) cannot approve silently — the broker must explicitly acknowledge
     // the recorded findings.
-    const summary = row.build_summary as { needs_review?: boolean; review_reason?: string | null } | null
-    if (summary?.needs_review && !opts?.acknowledgeReview) {
+    const summary =
+      row.build_summary && typeof row.build_summary === 'object' && !Array.isArray(row.build_summary)
+        ? (row.build_summary as Record<string, unknown>)
+        : null
+    const needsReview = Boolean(summary?.needs_review)
+    const reviewReason = typeof summary?.review_reason === 'string' ? summary.review_reason : null
+    const storedReason = reviewReason?.trim() ? reviewReason : null
+    const passedFlag = typeof opts?.flagReason === 'string' ? opts.flagReason.trim() : ''
+    if (needsReview && !opts?.acknowledgeReview) {
       return {
-        error: `Flagged for broker review: ${summary.review_reason ?? 'accuracy findings recorded in the build summary'}`,
+        error: `Flagged for broker review: ${reviewReason ?? 'accuracy findings recorded in the build summary'}`,
         needsReviewAck: true,
       }
     }
-    const res = await updateCmaRowFieldsBySlug(safeSlug, {
+    const now = new Date().toISOString()
+    const updates: Record<string, unknown> = {
       status: 'finalized',
-      finalized_at: new Date().toISOString(),
-    })
+      finalized_at: now,
+    }
+    // Record the decision when the broker acknowledged a needs_review flag
+    // or passed the flag text they saw (an audit review verdict can flag a
+    // row whose needs_review is false). Do not clear needs_review,
+    // review_reason, or any other finding.
+    if (opts?.acknowledgeReview && (needsReview || passedFlag)) {
+      updates.build_summary = {
+        ...(summary ?? {}),
+        review_acknowledgement: {
+          acknowledged_by: adminEmail,
+          acknowledged_at: now,
+          review_reason: storedReason ?? (passedFlag || null),
+        },
+      }
+    }
+    const res = await updateCmaRowFieldsBySlug(safeSlug, updates)
     if (!res.ok) return { error: res.error ?? 'Approve failed' }
     refresh(safeSlug)
     return { error: null }

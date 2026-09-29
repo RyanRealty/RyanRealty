@@ -2,7 +2,7 @@
  * Print CMA must be one map, no empty letter sheets, no contents filler.
  */
 import { describe, expect, it } from 'vitest'
-import { renderCmaHtml, type RenderCmaArgs } from './render'
+import { renderCmaHtml, splitPageOpening, type RenderCmaArgs } from './render'
 import { mapPage, pricingPage, salesThatSetItPage } from './render-pricing-page'
 import { printWiderMarketPages } from './market-area-chapters'
 import { cmaStylesheet } from './render-css'
@@ -144,12 +144,31 @@ describe('print CMA layout', () => {
     const { html } = renderCmaHtml(args())
     expect(html).not.toContain('>Contents<')
     expect(html).not.toContain('class="toc"')
+    expect(html).toContain('class="page-open"')
+    expect(html).toContain('class="keep-close"')
   })
 
   it('does not force every inner sheet to 11 inches of empty cream', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
     expect(css).not.toMatch(/@media screen \{[^}]*\.page \{[^}]*min-height:\s*11in/)
     expect(css).toMatch(/\.page-flyer/)
+  })
+
+  it('does not force a blank trailing page after the closing section', () => {
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(/\.page:last-child[\s\S]*?min-height:\s*0/)
+    expect(css).toMatch(/\.page-closing[\s\S]*?break-after:\s*auto/)
+    expect(css).toMatch(/\.page-closing[\s\S]*?padding:\s*32px 36px 40px/)
+  })
+
+  it('keeps figure and table captions with their figure', () => {
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(/\.pin-map-wrap[\s\S]*?break-inside:\s*avoid/)
+    expect(css).toMatch(/\.chart-read[\s\S]*?break-after:\s*avoid/)
+    expect(css).toMatch(/figcaption[\s\S]*?break-before:\s*avoid/)
+    expect(css).toMatch(/\.comp-matrix-wrap[\s\S]*?break-inside:\s*auto/)
+    expect(css).toMatch(/\.page-open[\s\S]*?break-inside:\s*avoid/)
+    expect(css).toMatch(/@media print \{[\s\S]*?\.page-closing \{ padding: 16px 28px 20px; \}/)
   })
 
   it('keeps the wider market on one sheet', () => {
@@ -214,5 +233,52 @@ describe('print CMA layout', () => {
     expect(pages).toHaveLength(1)
     expect(pages[0].body).toContain('What 2 to 4 bedroom homes sold for')
     expect(pages[0].body).toContain('This market')
+  })
+
+  it('keeps a heading with its first small block and leaves a matrix free to split', () => {
+    const small = splitPageOpening('<h2 class="section">The sales</h2><p>Five closed.</p><table></table>')
+    expect(small.open).toContain('The sales')
+    expect(small.open).toContain('Five closed.')
+    expect(small.rest).toContain('<table')
+    const large = splitPageOpening(
+      '<h2 class="section">The sales</h2><div class="comp-matrix-wrap"><table></table></div>',
+    )
+    expect(large.open).toBe('<h2 class="section">The sales</h2>')
+    expect(large.rest).toContain('comp-matrix-wrap')
+  })
+
+  it('keeps the heading with the first priced-right chart and lets the second split off', () => {
+    const spread = splitPageOpening(
+      '<h2 class="section">What price and time look like in Bend</h2><div class="spread"><div class="spread-col"><p>curve</p></div><div class="spread-col"><p>bars</p></div></div>',
+    )
+    expect(spread.open).toContain('What price and time look like in Bend')
+    expect(spread.open).toContain('curve')
+    expect(spread.open).not.toContain('bars')
+    expect(spread.rest).toContain('class="spread"')
+    expect(spread.rest).toContain('bars')
+    const chart = splitPageOpening(
+      '<h2 class="section">What price and time look like in Bend</h2><div class="spread"><div class="spread-col"><h3 class="subhead">When homes like yours get their offer</h3><div class="szn timing-wide"><svg class="trend-svg"></svg></div><p class="chart-read">Half of them.</p></div><div class="spread-col"><h3 class="subhead">The first price decides the days</h3></div></div>',
+    )
+    expect(chart.open).toContain('What price and time look like in Bend')
+    expect(chart.open).toContain('When homes like yours get their offer')
+    expect(chart.open).not.toContain('<svg')
+    expect(chart.open).not.toContain('The first price decides the days')
+    expect(chart.rest).toContain('<svg')
+    expect(chart.rest).toContain('class="spread"')
+    expect(chart.rest).toContain('Half of them.')
+    const alone = splitPageOpening(
+      '<h2 class="section">What price and time look like in Bend</h2><div class="spread"><div class="spread-col"><p>curve</p></div></div>',
+    )
+    expect(alone.open).toBe('<h2 class="section">What price and time look like in Bend</h2>')
+    expect(alone.rest).toContain('class="spread"')
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(/\.spread,\s*\.spread-col\s*\{[^}]*break-inside:\s*auto !important/)
+    expect(css).toMatch(/svg\.trend-svg,\s*\.szn svg\s*\{[^}]*break-inside:\s*avoid !important/)
+    expect(css).toMatch(/\.page-open\.is-chart-follow\s*\{[^}]*break-inside:\s*avoid/)
+    expect(css).toMatch(/\.page-open\.is-chart-follow\s*\{[^}]*break-after:\s*auto !important/)
+    expect(css).toMatch(/table\.comp-matrix thead\s*\{[^}]*display:\s*table-header-group/)
+    expect(css).toMatch(
+      /break-before:\s*auto;\s*page-break-before:\s*auto;\s*break-inside:\s*avoid;\s*page-break-inside:\s*avoid;/,
+    )
   })
 })

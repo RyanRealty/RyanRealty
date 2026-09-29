@@ -72,7 +72,8 @@ export function formatViolations(violations: PageSafetyViolation[], limit = 8): 
   return shown.join(' ') + more
 }
 
-type TextRun = { x0: number; y0: number; x1: number; y1: number; text: string }
+export type PdfTextRun = { x0: number; y0: number; x1: number; y1: number; text: string }
+type TextRun = PdfTextRun
 
 /**
  * Glyph boxes from the text matrix. `transform` is [a,b,c,d,e,f] where (e,f) is
@@ -82,6 +83,12 @@ type TextRun = { x0: number; y0: number; x1: number; y1: number; text: string }
  * baseline itself — a run whose descender clips is still a clipped run.
  */
 const DESCENDER_FRACTION = 0.25
+
+export async function extractPdfTextRuns(
+  data: Uint8Array,
+): Promise<{ pages: TextRun[][]; sizes: { w: number; h: number }[] }> {
+  return extractRuns(data)
+}
 
 async function extractRuns(data: Uint8Array): Promise<{ pages: TextRun[][]; sizes: { w: number; h: number }[] }> {
   // Dynamic import: pdfjs is only needed when a PDF is actually produced, and

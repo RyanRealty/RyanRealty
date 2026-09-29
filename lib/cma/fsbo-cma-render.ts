@@ -46,8 +46,8 @@ export function factsFromCmaSurface(input: {
 
   return {
     ...emptyFsboCmaMergeFacts(),
-    ownerFirstName: input.clientName?.trim().split(/\s+/)[0] || null,
-    ownerFullName: input.clientName?.trim() || null,
+    ownerFirstName: null,
+    ownerFullName: null,
     propertyAddress: address || street,
     propertyStreet: street,
     propertyCity: city,

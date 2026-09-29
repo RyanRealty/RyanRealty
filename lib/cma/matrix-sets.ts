@@ -44,8 +44,28 @@ export function unsoldPeersFor(input: {
  * printed them. `pickBandRivals` already ran at build; this only fixes the
  * order the keys are handed out in.
  */
+const STATUS_RANK: Record<string, number> = { Pending: 3, Active: 2, Expired: 1 }
+
+function normAddr(address: string): string {
+  return address.replace(/^0+\s+/, '').trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+/** Same home listed twice: keep the most advanced status (Pending > Active). */
+export function dedupeRivalsByAddress(rivals: readonly CmaBandRival[]): CmaBandRival[] {
+  const byAddr = new Map<string, CmaBandRival>()
+  for (const r of rivals) {
+    const key = normAddr(r.address)
+    if (!key) continue
+    const prior = byAddr.get(key)
+    if (!prior || (STATUS_RANK[r.status] ?? 0) > (STATUS_RANK[prior.status] ?? 0)) {
+      byAddr.set(key, r)
+    }
+  }
+  return [...byAddr.values()]
+}
+
 export function activeRivalsFor(rivals?: readonly CmaBandRival[] | null): CmaBandRival[] {
-  const named = (rivals ?? []).filter((r) => r.address.trim() && r.listPrice > 0)
+  const named = dedupeRivalsByAddress((rivals ?? []).filter((r) => r.address.trim() && r.listPrice > 0))
   return [...named.filter((r) => r.status === 'Active'), ...named.filter((r) => r.status === 'Pending')]
 }
 

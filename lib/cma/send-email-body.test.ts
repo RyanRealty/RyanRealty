@@ -1,0 +1,233 @@
+import { describe, expect, it } from 'vitest'
+import { composeCmaFirstContact } from '@/lib/cma/first-contact'
+import { buildCmaFirstContactForRow } from '@/lib/cma/first-contact-for-send'
+import type { FirstContactPlace } from '@/lib/cma/first-contact-place'
+import { attributeOutbound } from '@/lib/crm/attributed-links'
+import { verifyEmailToken } from '@/lib/email-tracking'
+import { verifyPersonLinkToken } from '@/lib/identity/link-token'
+import { buildLeadBody, type CmaSendContext } from '@/lib/cma/send'
+
+const SLUG = 'cma-62017-nate-s'
+const PLACE: FirstContactPlace = {
+  subdivision: {
+    label: 'Clarendon Place',
+    href: 'https://ryan-realty.com/subdivisions/clarendon-place',
+    closed12mo: 6,
+    active: 2,
+    unsold12mo: 3,
+    pending: null,
+    history: null,
+  },
+  wider: { label: 'Bend', href: 'https://ryan-realty.com/cities/bend' },
+}
+
+const FACTS = {
+  address: "62017 Nate's, Bend, OR 97702",
+  firstName: null,
+  valueLow: 346000,
+  valueHigh: 372000,
+  recommendedList: 358000,
+  lastListPrice: 405000,
+  brokerName: 'Matt Ryan',
+  brokerSlug: 'matt',
+  city: 'Bend',
+  subdivision: 'Clarendon Place',
+  closedSalesCount: 4,
+  salesScope: 'subdivision' as const,
+  cmaSlug: SLUG,
+  place: PLACE,
+}
+
+function ctx(): CmaSendContext {
+  return {
+    slug: SLUG,
+    subjectAddress: FACTS.address,
+    clientName: 'Nate Someone',
+    clientEmail: 'nate@example.com',
+    brokerRow: {
+      slug: 'matthew-ryan',
+      displayName: 'Matt Ryan',
+      title: 'Owner & Principal Broker',
+      email: 'matt@ryan-realty.com',
+      phone: null,
+      photoUrl: null,
+    },
+    valueLow: 346000,
+    valueHigh: 372000,
+    recommendedList: 358000,
+    lastListPrice: 405000,
+    origin: 'expired',
+    facts: FACTS,
+    // Cast, not an annotation: main may add context fields (for example the
+    // subject listing key) that this body builder does not read.
+  } as CmaSendContext
+}
+
+const SIGNATURE = {
+  html: '<div data-sig>Matt Ryan <a href="https://ryan-realty.com/docs/oregon-initial-agency-disclosure-pamphlet.pdf">Oregon Initial Agency Disclosure Pamphlet</a></div>',
+  plain:
+    '\n--\nMatt Ryan\nOregon Initial Agency Disclosure Pamphlet (ORS 696.820): https://ryan-realty.com/docs/oregon-initial-agency-disclosure-pamphlet.pdf\n',
+}
+
+function letterHtml(html: string): string {
+  const m = html.match(/<div data-cma-letter>([\s\S]*?)<\/div>/)
+  if (!m) throw new Error('letter block missing')
+  return m[1]!
+}
+
+function decodeVisible(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&rarr;/g, '→')
+    .replace(/&nbsp;/g, ' ')
+}
+
+function anchors(html: string): Array<{ href: string; text: string }> {
+  return [...html.matchAll(/<a\b[^>]*\bhref="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)].map((m) => ({
+    href: m[1]!,
+    text: decodeVisible(m[2]!).trim(),
+  }))
+}
+
+function track(html: string): string {
+  return attributeOutbound(html, {
+    brokerSlug: 'matt',
+    personId: 4242,
+    emailKey: `cma:${SLUG}`,
+    label: 'A market analysis for 62017 Nate\'s',
+    broker: 'matt',
+  })
+}
+
+describe('CMA first-contact send body', () => {
+  const copy = composeCmaFirstContact('expired', FACTS)
+
+  it('tracks every letter link once, as words, with the email tag set', () => {
+    const sent = buildLeadBody(ctx(), undefined, SIGNATURE)
+    const html = track(sent.html)
+    const letter = letterHtml(html)
+    const links = anchors(letter)
+    expect(links.map((l) => l.text)).toEqual([
+      'read it online',
+      'see how we sell homes',
+      'read our reviews',
+      'learn about our business',
+      'Clarendon Place page',
+      'Bend page',
+      'READ THE FULL REPORT →',
+    ])
+    expect(decodeVisible(letter).toLowerCase()).not.toContain('http')
+    const paths: string[] = []
+    for (const link of links) {
+      const href = new URL(link.href, 'https://ryan-realty.com')
+      expect(href.pathname).toBe('/api/track/e/click')
+      const token = verifyEmailToken(href.searchParams.get('t'))
+      expect(token?.url).toBeTruthy()
+      const dest = new URL(token!.url!)
+      expect(dest.searchParams.getAll('utm_source')).toEqual(['cma'])
+      expect(dest.searchParams.getAll('utm_medium')).toEqual(['email'])
+      expect(dest.searchParams.getAll('utm_campaign')).toEqual([SLUG])
+      expect(dest.searchParams.getAll('utm_content')).toEqual(['agent-matt'])
+      expect(dest.searchParams.getAll('agent')).toEqual(['matt'])
+      expect(dest.searchParams.getAll('_pid')).toHaveLength(1)
+      expect(verifyPersonLinkToken(dest.searchParams.get('_pid'))).toEqual({ personId: 4242, channel: 'document' })
+      expect(dest.searchParams.get('utm_medium')).not.toBe('document')
+      expect(dest.search).not.toContain('utm_medium=document')
+      paths.push(dest.pathname)
+    }
+    expect(paths).toEqual([
+      `/cma/${SLUG}`,
+      '/sell',
+      '/reviews',
+      '/about',
+      '/subdivisions/clarendon-place',
+      '/cities/bend',
+      `/cma/${SLUG}`,
+    ])
+  })
+
+  it('keeps http out of the letter plain text, and leaves the signature plain part alone', () => {
+    const sent = buildLeadBody(ctx(), undefined, SIGNATURE)
+    const letter = sent.text.split('\n--\n')[0] ?? ''
+    expect(letter.toLowerCase()).not.toContain('http')
+    expect(letter.trim()).toBe(copy.bodyText)
+    expect(sent.text).toContain('https://ryan-realty.com/docs/oregon-initial-agency-disclosure-pamphlet.pdf')
+    const sigVisible = decodeVisible(sent.html.split('data-cma-letter')[1]?.split('</div>')[1] ?? '')
+    expect(sigVisible).toContain('Oregon Initial Agency Disclosure Pamphlet')
+    expect(sigVisible.toLowerCase()).not.toContain('http')
+  })
+
+  it('renders an unedited override the same as the default path', () => {
+    const base = buildLeadBody(ctx(), undefined, SIGNATURE)
+    const plain = buildLeadBody(ctx(), { bodyText: copy.bodyText }, SIGNATURE)
+    const markers = buildLeadBody(ctx(), { bodyText: copy.bodyMarkers }, SIGNATURE)
+    expect(plain.html).toBe(base.html)
+    expect(plain.text).toBe(base.text)
+    expect(markers.html).toBe(base.html)
+    expect(markers.text).toBe(base.text)
+  })
+
+  it('still puts the report button on an edited note, and converts a stored document URL', () => {
+    const note = buildLeadBody(ctx(), { bodyText: 'Hi there,\n\nA short note.' }, SIGNATURE)
+    expect(note.text).not.toContain('Read the full report')
+    expect(note.text.split('\n--\n')[0]?.toLowerCase()).not.toContain('http')
+    expect(letterHtml(note.html)).toContain('READ THE FULL REPORT')
+    expect(letterHtml(note.html)).toContain(`/cma/${SLUG}`)
+
+    const stale = [
+      'Hi there,',
+      '',
+      'Read our reviews at https://ryan-realty.com/reviews?utm_source=cma&utm_medium=document&utm_campaign=cma-62017-nate-s. and who we are at https://ryan-realty.com/about?utm_source=cma&amp;utm_medium=document&amp;utm_campaign=cma-62017-nate-s.',
+    ].join('\n')
+    const rescued = track(buildLeadBody(ctx(), { bodyText: stale }, SIGNATURE).html)
+    const letter = letterHtml(rescued)
+    expect(decodeVisible(letter).toLowerCase()).not.toContain('http')
+    const links = anchors(letter)
+    expect(links.map((l) => l.text)).toEqual(['our reviews', 'who we are', 'READ THE FULL REPORT →'])
+    const reviews = new URL(verifyEmailToken(new URL(links[0]!.href).searchParams.get('t'))!.url!)
+    const about = new URL(verifyEmailToken(new URL(links[1]!.href).searchParams.get('t'))!.url!)
+    expect(reviews.pathname).toBe('/reviews')
+    expect(about.pathname).toBe('/about')
+    for (const dest of [reviews, about]) {
+      expect(dest.searchParams.getAll('utm_medium')).toEqual(['email'])
+      expect(dest.searchParams.getAll('utm_source')).toEqual(['cma'])
+      expect(dest.searchParams.getAll('utm_campaign')).toEqual([SLUG])
+      expect(dest.search).not.toContain('utm_medium=document')
+    }
+  })
+
+  it('matches the Review helper for the same row', async () => {
+    const row = {
+      slug: SLUG,
+      subject_address: FACTS.address,
+      subject_city: 'Bend',
+      subject_subdivision: 'Clarendon Place',
+      client_name: 'Nate Someone',
+      value_low: 346000,
+      value_high: 372000,
+      recommended_list: 358000,
+      comps_count: 4,
+      build_summary: { comp_selection: { final_tier_counts: { 'subdivision-6mo': 4 } } },
+    }
+    const preview = await buildCmaFirstContactForRow(row, {
+      origin: 'expired',
+      brokerName: 'Matt Ryan',
+      brokerSlug: 'matt',
+      lastListPrice: 405000,
+      place: PLACE,
+    })
+    const sent = buildLeadBody(
+      { ...ctx(), facts: preview.facts },
+      undefined,
+      SIGNATURE,
+    )
+    expect(preview.copy.bodyText).toBe(copy.bodyText)
+    expect(sent.text.split('\n--\n')[0]?.trim()).toBe(preview.copy.bodyText)
+    expect(preview.copy.bodyText).not.toContain('Someone')
+  })
+})
