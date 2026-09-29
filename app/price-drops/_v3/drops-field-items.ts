@@ -1,4 +1,4 @@
-import type { V3FieldItem, V3ListingRowData } from '@/components/site/v3'
+import type { V3FieldItem, V3ListingDialItem } from '@/components/site/v3'
 import type { PriceDrop } from '@/lib/data'
 import { formatPrice } from '@/lib/format/money'
 import { listingTileHref } from '@/lib/slug'
@@ -28,10 +28,12 @@ export type PriceDropFieldItem = V3FieldItem & {
    * The same home as the listing dial's row (Matt 2026-09-24: the fold's
    * carousel is V3ListingDial). Built here, from the same drop, in the same
    * pass, so the dial can never hold a home, a figure or an order the Field
-   * list does not. The cut rides the photograph as the drop badge, in the
-   * words the card printed (`dropLine`).
+   * list does not. The cut is the card's own mark (2026-09-25, was a drop
+   * badge on the photograph): the "was" ask and the percent exactly as
+   * `dropLine` prints them, and `cutShare` as its track, the same three
+   * things the carousel slide showed before the dial.
    */
-  listing: V3ListingRowData
+  listing: V3ListingDialItem
 }
 
 /**
@@ -106,7 +108,11 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
     ]
       .filter((part): part is string => Boolean(part))
       .join(' · ')
-    const listing: V3ListingRowData = {
+    const cutShare =
+      deepest > 0 && drop.lastDropPct != null && Number.isFinite(drop.lastDropPct) && drop.lastDropPct > 0
+        ? Math.min(1, drop.lastDropPct / deepest)
+        : null
+    const listing: V3ListingDialItem = {
       listingKey: drop.listingKey,
       href: listingTileHref(drop),
       photoUrl: photoSrc || null,
@@ -122,7 +128,7 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       subdivisionName: drop.subdivisionName,
       city,
       listNumber: drop.listNumber,
-      ...(dropLine ? { badges: [{ kind: 'drop' as const, label: dropLine }] } : {}),
+      ...(was || pct ? { cut: { was, pct, share: cutShare } } : {}),
     }
 
     items.push({
@@ -134,9 +140,7 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       ...(drop.lastDropPct != null && Number.isFinite(drop.lastDropPct) && drop.lastDropPct > 0
         ? { cutPct: drop.lastDropPct }
         : {}),
-      ...(deepest > 0 && drop.lastDropPct != null && Number.isFinite(drop.lastDropPct) && drop.lastDropPct > 0
-        ? { cutShare: Math.min(1, drop.lastDropPct / deepest) }
-        : {}),
+      ...(cutShare != null ? { cutShare } : {}),
       ...(dropLine ? { dropLine } : {}),
       ...(inventory ? { specs: inventory } : {}),
       ...(city ? { city } : {}),

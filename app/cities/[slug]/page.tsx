@@ -492,6 +492,7 @@ async function renderCityDetail({ params }: Props) {
     sfrMos: hud.monthsSupply,
     segments: publicSegments,
     covers: { ...placeTypeCoverPhotos(tiles), ...typeCovers },
+    scope: `with a ${cityName} address`,
   })
   const trail = cityPageTrail(cityName)
   const headline = placeCityRealEstateHeading(cityName)

@@ -31,12 +31,16 @@
   padding-bottom: var(--v3-space-sm);
 }
 
+/* The fold stands at the page measure, wider than the text over it
+   (2026-09-25): at the text measure the dial stood its card upright with
+   three thumbnails beside the readout; at 72rem the card lies on its side and
+   the rail shows the band as homes to compare. */
 .pd-fold-stage.v3 {
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-sm);
   width: 100%;
-  max-width: var(--v3-measure-text);
+  max-width: var(--v3-measure);
   min-width: 0;
   margin-inline: auto;
   padding-inline: var(--v3-gutter);
@@ -51,26 +55,81 @@
   flex-wrap: wrap;
 }
 
+/* At a phone's width the four bands are a two-by-two of equal cells, never
+   three and a stray (2026-09-25: "10 and up" alone on a second line). */
+@media (max-width: 40rem) {
+  .pd-fold-stage.v3 .v3-chart-switch__seg {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    border-radius: var(--v3-radius-card);
+  }
+
+  .pd-fold-stage.v3 .v3-chart-switch__seg > * {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+/* The cities with cuts: each door a name, a bar on one scale, and its count. */
 .pd-cities {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--v3-space-xs) var(--v3-space-md);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0 var(--v3-space-lg);
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
 }
 
 .pd-cities__link {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-control);
-  min-height: var(--v3-tap);
-  display: inline-flex;
-  align-items: center;
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
+  text-decoration: none;
 }
 
-.pd-cities__link:hover,
-.pd-cities__link:focus-visible {
-  color: var(--v3-navy);
+.pd-cities__name {
+  text-decoration: underline;
+  text-decoration-thickness: var(--v3-rule-weight-hairline);
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.pd-cities__bar {
+  position: relative;
+  display: block;
+  height: var(--v3-rule-weight-section);
+  background: var(--v3-hairline);
+}
+
+.pd-cities__bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--v3-navy);
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.pd-cities__link--rest .pd-cities__name {
+  color: var(--v3-ink-muted);
+  text-decoration: none;
+}
+
+.pd-cities__count {
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-cities__link:hover .pd-cities__count,
+.pd-cities__link:focus-visible .pd-cities__count {
+  color: var(--v3-ink);
+}
+
+.pd-cities__link:hover .pd-cities__bar > span,
+.pd-cities__link:focus-visible .pd-cities__bar > span {
+  opacity: 0.8;
 }
 
 /* One photographed Field. The slot is in flow (slotSurface=photos) so the

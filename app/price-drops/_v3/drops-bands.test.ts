@@ -49,7 +49,7 @@ describe('priceDropBands', () => {
 })
 
 describe('priceDropCityDoors', () => {
-  it('emits one crawlable door per city we pre-render, first-seen order', () => {
+  it('emits one crawlable door per city we pre-render, first-seen order, with its count of listed cuts', () => {
     const doors = priceDropCityDoors([
       item({ id: 'a', city: 'Bend', citySlug: 'bend' }),
       item({ id: 'b', city: 'Redmond', citySlug: 'redmond' }),
@@ -57,8 +57,8 @@ describe('priceDropCityDoors', () => {
       item({ id: 'd', city: 'Medford', citySlug: 'medford' }),
     ])
     expect(doors).toEqual([
-      { slug: 'bend', label: 'Bend', href: '/price-drops/bend' },
-      { slug: 'redmond', label: 'Redmond', href: '/price-drops/redmond' },
+      { slug: 'bend', label: 'Bend', href: '/price-drops/bend', count: 2 },
+      { slug: 'redmond', label: 'Redmond', href: '/price-drops/redmond', count: 1 },
     ])
   })
 })

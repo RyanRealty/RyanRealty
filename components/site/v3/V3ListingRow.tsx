@@ -107,6 +107,13 @@ export type V3ListingRowData = {
    */
   leaseRateOption?: string | null
   /**
+   * A commercial lease's terms as the listing files them, already worded by
+   * publishLeaseTerms ("NNN lease", "Tenant pays taxes, insurance and
+   * utilities", "Zoned IL", "15 parking spaces"). Only lease rows carry it; the
+   * dial's card prints each one under the rent. Absent or empty prints nothing.
+   */
+  leaseTerms?: readonly string[] | null
+  /**
    * SITE-194: whether the listing has a walkthrough reel a card can play.
    * An optional hint from data the page already holds; only an explicit
    * false stops the dial asking /api/listings/[key]/card-video after the

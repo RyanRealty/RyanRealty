@@ -54,6 +54,8 @@ export type HomeRailCard = {
    * hold a lease (isPhotographedPriced drops them).
    */
   leaseRateOption?: string | null
+  /** The ask before the last cut (the drop read's previousPrice), when the card carries a cut. */
+  cutWas?: number | null
 }
 
 const BEND_AREA = new Set(
@@ -419,6 +421,7 @@ export function enrichHomeRailRows(
         hasTour,
         tourLabel,
         badges: badges.slice(0, 3),
+        cutWas: dropLabel && drop ? drop.previousPrice : null,
       }
     }),
   }))

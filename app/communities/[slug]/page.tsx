@@ -1034,6 +1034,10 @@ async function renderCommunityDetail({ params }: Props) {
                 </>
               ) : null}
               <a href="#homes">{publicName} homes for sale</a>
+              {/* The alerts ask, named in the first screen (2026-09-25): the
+                  form itself sits in the fold under the homes; this is its door. */}
+              {' · '}
+              <a href="#alerts">Email me new {publicName} listings</a>
             </p>
             {belongingLine ? (
               <p

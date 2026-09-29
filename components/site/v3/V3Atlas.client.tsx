@@ -157,6 +157,9 @@ const CHIP_FOLD_AT_WIDE = 24
 /* Data                                                                        */
 /* -------------------------------------------------------------------------- */
 
+/** Steps in the price scrubber's distribution. */
+const PRICE_BINS = 24
+
 export type AtlasDot = {
   /** Listing key — the React key. */
   k: string
@@ -1031,6 +1034,25 @@ export function V3Atlas({
      listed dots' own prices, rounded outward to a clean step. */
   const priceScale = useMemo(() => (pre ? pre.priceScale : atlasPriceScale(dots)), [pre, dots])
 
+  /* The scrubber's own distribution (2026-09-25: a bare track said nothing
+     about where the homes sit): the active dots' asks in equal steps across
+     the scale, the ones past either end counted in the end step, so the
+     slider is drawn over how many homes it will keep or drop. Counts of the
+     dots on this map, nothing else; a withheld ask is not binned. */
+  const priceBins = useMemo(() => {
+    const span = priceScale.max - priceScale.min
+    if (!(span > 0)) return null
+    const bins = new Array<number>(PRICE_BINS).fill(0)
+    let any = 0
+    for (const d of dots) {
+      if (d.s !== 'active' || d.p == null || !Number.isFinite(d.p)) continue
+      const at = Math.floor(((d.p - priceScale.min) / span) * PRICE_BINS)
+      bins[Math.min(PRICE_BINS - 1, Math.max(0, at))] += 1
+      any += 1
+    }
+    return any >= PRICE_BINS / 2 ? bins : null
+  }, [dots, priceScale])
+
   /* Visitor state. */
   const [maxPriceRaw, setMaxPriceRaw] = useState<number | null>(null)
   const maxPrice = maxPriceRaw ?? priceScale.max
@@ -1839,6 +1861,7 @@ export function V3Atlas({
           count: 1,
         }))
     const byIndex = new Map(raw.map((p) => [p.i, p]))
+    const island = { w: view.w, h: view.h }
     const screenGroups = grouped.map((g) => {
       let sx = 0
       let sy = 0
@@ -1850,14 +1873,16 @@ export function V3Atlas({
         sy += src.y
         n += 1
       }
-      return {
-        ...g,
-        x: n > 0 ? sx / n : g.x,
-        y: n > 0 ? sy / n : g.y,
-      }
+      // Clamped to the island BEFORE the overlap merge (2026-09-25): two asks
+      // near the map's edge were merged as apart, then both clamped onto the
+      // same edge line, and "$769k" printed over "$749k".
+      const cx = n > 0 ? sx / n : g.x
+      const cy = n > 0 ? sy / n : g.y
+      const at =
+        g.count > 1 ? clampAtlasPinToIsland(cx, cy, island, ATLAS_CLUSTER_PILL) : clampAtlasPinToIsland(cx, cy, island)
+      return { ...g, x: at.x, y: at.y }
     })
     const merged = clusterPins ? mergeOverlappingAtlasClusters(screenGroups) : screenGroups
-    const island = { w: view.w, h: view.h }
     const out: PaintedPin[] = []
     for (const g of merged) {
       if (g.count === 1) {
@@ -2106,6 +2131,25 @@ export function V3Atlas({
         </div>
       ) : null}
       {keyPlacement === 'dock' ? keyList : null}
+      {pinMarks.some((m) => m.kind === 'cluster') ? (
+        // What the two price faces mean (2026-09-25: "median $1.2M" beside a
+        // bare "$479k" read as one scale): a bubble is the middle ask of the
+        // homes grouped under it, a plain tag one home's own ask.
+        <p className="v3-atlas__pin-legend">
+          <span className="v3-atlas__pin-legend-mark v3-atlas__pin-legend-mark--cluster" aria-hidden="true">
+            median
+          </span>
+          the middle ask of the homes grouped there
+          {pinMarks.some((m) => m.kind === 'pin') ? (
+            <>
+              <span className="v3-atlas__pin-legend-mark" aria-hidden="true">
+                $
+              </span>
+              one home&rsquo;s ask
+            </>
+          ) : null}
+        </p>
+      ) : null}
       {amenityParks.length > 0 || amenityTrails.length > 0 ? (
         <div className="v3-atlas__amenities" role="group" aria-label="Parks and trails">
           {amenityParks.length > 0 ? (
@@ -2155,6 +2199,21 @@ export function V3Atlas({
           <span className="v3-atlas__scrub-label">
             Up to <strong className="v3-atlas__scrub-value">{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
           </span>
+          {priceBins && !waiting ? (
+            <span className="v3-atlas__hist" aria-hidden="true">
+              {priceBins.map((n, i) => {
+                const most = Math.max(...priceBins)
+                const low = priceScale.min + ((priceScale.max - priceScale.min) * i) / PRICE_BINS
+                return (
+                  <span
+                    key={i}
+                    className={cn('v3-atlas__hist-bar', !atCeiling && low > maxPrice && 'is-out')}
+                    style={{ height: `${Math.max(n > 0 ? 8 : 0, (n / most) * 100).toFixed(1)}%` }}
+                  />
+                )
+              })}
+            </span>
+          ) : null}
           <input
             className="v3-atlas__range"
             type="range"
@@ -2688,7 +2747,15 @@ export function V3Atlas({
                         return (
                           <span
                             key={mark.id}
-                            className={cn('v3-atlas__pin', 'is-cluster', clusterHit === mark.id && 'is-hot')}
+                            className={cn(
+                              'v3-atlas__pin',
+                              'is-cluster',
+                              clusterHit === mark.id && 'is-hot',
+                              // The linked home sits inside this bubble: ring
+                              // the bubble, or the ring under it never shows
+                              // (2026-09-25, the type page's dial and map).
+                              linkedIndex != null && mark.indices.includes(linkedIndex) && 'is-linked',
+                            )}
                             style={
                               {
                                 ['--atlas-pin-x']: `${mark.x}px`,

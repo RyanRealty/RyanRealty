@@ -65,6 +65,8 @@ import {
   PlaceTypeSortBar,
 } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeField.client'
 import { PlaceTypeFilm } from './_v3/PlaceTypeFilm.client'
+import { homeFeaturedBlurb } from '@/app/_v3/home-featured-communities'
+import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { PlaceTypeAtlasSection } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection'
 import { PlaceTypeAtlasStandin } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasStandin'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
@@ -157,6 +159,12 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
   const registry = getResortCommunityBySlug(slug)
   const publicName = registry?.label ?? community.name
   const cityName = community.city
+  // The place's own line (2026-09-25: past the stat sentence nothing on the
+  // page was about Tetherow): the first sentence of its authored about prose,
+  // the same line the homepage's featured card prints. Authored copy from
+  // data/resort-community-<slug>.json or the registry; a miss prints nothing.
+  const placeContent = registry ? await getResortCommunityContent(slug).catch(() => null) : null
+  const placeLine = registry ? homeFeaturedBlurb(placeContent, registry) : null
   const placeHref = `/communities/${slug}`
   const pagePath = `/communities/${slug}/types/${spec.slug}`
   const cityHref = community.citySlug ? `/cities/${community.citySlug}` : placeHref
@@ -299,6 +307,7 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
                 <V3Heading level={1} size="field">
                   {headline}
                 </V3Heading>
+                {placeLine ? <p className="place-type-claim place-type-claim--place">{placeLine}</p> : null}
                 {claim ? (
                   <>
                     <p className="place-type-claim">{claim.sentence}</p>

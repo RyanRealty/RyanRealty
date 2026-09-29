@@ -43,7 +43,10 @@ export type PlaceMosView = {
 }
 
 /** Whole sales-a-month for the visitor face; math stays full precision in values. */
-const PACE = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+// One decimal, so the printed division reconciles with the printed ratio
+// (2026-09-25: "50 for sale ÷ 13 a month" beside "4.0 months" read as 3.85;
+// the pace was 12.5). A whole pace still prints whole.
+const PACE = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 })
 
 function asFinitePositive(value: number | null | undefined): number | null {
   if (value == null || !Number.isFinite(value) || value <= 0) return null

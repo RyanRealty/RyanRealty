@@ -201,7 +201,14 @@ describe('price drops on the dial', () => {
     expect(items.map((i) => i.listing.listingKey)).toEqual(['L2', 'L1'])
     for (const item of items) {
       expect(item.listing.href).toBe(item.href)
-      expect(item.listing.badges).toEqual([{ kind: 'drop', label: item.dropLine }])
+      // The cut is the card's own mark, in the row's own words (was, the
+      // percent) and the row's own share of the deepest cut, never a badge.
+      expect(item.listing.badges).toBeUndefined()
+      expect(item.listing.cut).toEqual({
+        was: item.dropLine?.match(/^was (\$[\d,]*\d)/)?.[1] ?? null,
+        pct: item.dropLine?.match(/(-[\d.]+%)$/)?.[1] ?? null,
+        share: item.cutShare ?? null,
+      })
     }
     const l1 = items.find((i) => i.id === 'L1')!
     expect(l1.listing.price).toBe(549_500)
@@ -213,10 +220,13 @@ describe('price drops on the dial', () => {
     const html = renderToStaticMarkup(<PriceDropPhotos id="pd-cuts-all" items={items} label="Cuts" />)
     for (const item of items) expect(hrefs(html)).toContain(item.href)
     expect(html).toContain('$549,500')
-    // The card in front carries its cut on the photograph. A card that is not
-    // showing is served as its door alone (the dial's weight rule, about 1 KB
-    // per listing); its cut mounts from the same item when it turns up.
-    expect(html).toContain('was $796,000, -12.1%')
+    // The card in front carries its cut as its own mark (was, the percent,
+    // the track) over the ask; every thumbnail carries its percent. A card
+    // that is not showing is served as its door alone (the dial's weight
+    // rule, about 1 KB per listing); its mark mounts when it turns up.
+    expect(html).toContain('Was <s>$796,000</s>')
+    expect(html).toContain('<span class="v3-dial__cut-pct">-12.1%</span>')
+    expect(html).toContain('<span class="v3-dial__thumb-fact">-12.1%</span>')
     expect(html).not.toContain('v3-carousel')
   })
   it('makes the open band the fold\'s first paint: its first photograph alone is not lazy', () => {

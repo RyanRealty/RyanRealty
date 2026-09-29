@@ -387,3 +387,10 @@
   text-decoration: none;
   border-bottom: var(--v3-rule-hairline);
 }
+
+/* A reader sent to #homes (the opening's "homes for sale" door, the alerts
+   door's neighbour) lands with the type row over the dials in view, not cut
+   under the site header (2026-09-25: the row was half hidden at 1440 and 375). */
+.community-field-types + #homes {
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-tap) + var(--v3-space-lg));
+}

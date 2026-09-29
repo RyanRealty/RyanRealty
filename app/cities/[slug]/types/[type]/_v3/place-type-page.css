@@ -15,6 +15,13 @@
   text-wrap: pretty;
 }
 
+/* A community's own line over the figures (its authored about prose): the
+   place in words before the place in numbers. */
+.place-type-claim--place {
+  color: var(--v3-ink-muted);
+  font-style: italic;
+}
+
 /* §0: every figure names where it came from, in the reader's words.
    Set as metadata, not as a second sentence of the claim: a hairline above it
    and a tracked, smaller face, so a reader's eye reads "claim, then citation"

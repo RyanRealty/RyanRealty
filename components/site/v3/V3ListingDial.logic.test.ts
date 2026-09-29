@@ -31,9 +31,34 @@ import {
   dialSwipeDelta,
   dialTabId,
   dialThumbCut,
+  dialThumbFact,
   dialThumbLabel,
+  dialCutWidth,
   dialWrap,
 } from './V3ListingDial.logic'
+
+describe('dialThumbFact: the one fact a thumbnail carries', () => {
+  it('takes the beds and the living area from the card meta, never the $/sqft', () => {
+    expect(dialThumbFact(['3 bd', '2 ba', '1,800 sqft', '$322/sqft'])).toBe('3 bd · 1,800 sqft')
+  })
+  it('keeps a size alone for a lease or a lot, and says nothing when there is nothing', () => {
+    expect(dialThumbFact(['2,500 sqft'])).toBe('2,500 sqft')
+    expect(dialThumbFact(['Under contract', '$410/sqft'])).toBeNull()
+    expect(dialThumbFact([])).toBeNull()
+  })
+})
+
+describe('dialCutWidth: the cut track fill', () => {
+  it('is the share as a percent width, clamped to the track', () => {
+    expect(dialCutWidth(0.5)).toBe('50.0%')
+    expect(dialCutWidth(1.4)).toBe('100.0%')
+  })
+  it('draws nothing for no share, zero or a non-number (unknown is not zero)', () => {
+    expect(dialCutWidth(null)).toBeNull()
+    expect(dialCutWidth(0)).toBeNull()
+    expect(dialCutWidth(Number.NaN)).toBeNull()
+  })
+})
 
 describe('dialWrap / dialStep: the dial has no end stop', () => {
   it('folds any index into 0..count-1', () => {

@@ -12,7 +12,12 @@
    A right-hand column stops short of the site's Jax button (V3DogFloater,
    fixed at the right edge, top 50%) by --v3-dial-end-clear, which the
    component measures (dialEndClearance) wherever the dial runs under it.
-   Wide band (76rem and up): the card lies on its side, photograph beside copy.
+   From 44rem of dial the card lies on its side, photograph beside copy, and
+   the photograph is held to a share of the screen (2026-09-25: a 60vh
+   photograph put the ask and the facts under the fold and read as one house
+   at a time), so the photograph, the ask, the facts and a run of the rail
+   share the section's first screen, the featured-plus-list shape the portals'
+   collections use.
    Phone (40rem and under): every position is the heading with the readout
    beside it, the card, then the dial as a strip under it.
    One listing: the card alone, and from 44rem the card lies on its side
@@ -26,8 +31,12 @@
   --v3-dial-rail-w: 10rem;
   --v3-dial-gap: var(--v3-space-lg);
   --v3-dial-copy-w: 22rem;
-  --v3-dial-thumb-w: 9rem;
-  --v3-dial-fade: var(--v3-space-xl);
+  --v3-dial-thumb-w: 8.5rem;
+  /* The lead photograph's ceiling on its side: never more than about half a
+     laptop screen, so the rail is on screen with it. */
+  --v3-dial-photo-max: min(52vh, 27rem);
+  /* Wide enough to read as "more past here" at the strip's cut edge. */
+  --v3-dial-fade: 4rem;
   /* The card's shape answers the width it is given, not the window's: the
      same dial is 72rem inside a plat's inventory and 90rem under a
      neighborhood's map. */
@@ -352,10 +361,103 @@
 }
 
 .v3-dial__meta {
-  color: var(--v3-ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs) 0;
+  color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
   font-variant-numeric: tabular-nums;
   line-height: var(--v3-leading-control);
+}
+
+/* One fact to a cell, a hairline between them: read as figures, not prose.
+   On a phone and in a hidden door the cell is its text; the card on its
+   side sets the figure over its unit (below). */
+.v3-dial__fact {
+  padding-inline: var(--v3-space-xs);
+  border-inline-start: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
+}
+
+.v3-dial__fact-unit {
+  margin-inline-start: 0.25em;
+}
+
+.v3-dial__fact:first-child {
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+
+/* A lease's terms as the listing files them, under the rent. */
+.v3-dial__terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-2xs);
+}
+
+.v3-dial__term {
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  border: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
+  border-radius: var(--v3-radius-pill);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-control);
+}
+
+/* THE PRICE CUT (a page that knows one, /price-drops): its own mark over the
+   ask, the cut on a track against the deepest cut in the same set. */
+.v3-dial__cut {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  width: min(100%, 16rem);
+}
+
+.v3-dial__cut-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+}
+
+.v3-dial__cut-label {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.v3-dial__cut-pct {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-dial__cut-track,
+.v3-dial__thumb-track {
+  position: relative;
+  display: block;
+  height: var(--v3-rule-weight-section);
+  overflow: hidden;
+  background: var(--v3-hairline);
+}
+
+.v3-dial__cut-track {
+  height: calc(var(--v3-rule-weight-section) * 2);
+}
+
+.v3-dial__cut-fill,
+.v3-dial__thumb-track > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--v3-navy);
+}
+
+.v3-dial__cut-was {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .v3-dial__where {
@@ -535,7 +637,7 @@
 
 .v3-dial__thumb-media img {
   object-fit: cover;
-  opacity: 0.58;
+  opacity: 0.8;
   transition: opacity var(--v3-dur-state) var(--v3-ease-out);
 }
 
@@ -606,6 +708,18 @@
   font-size: var(--v3-size-source);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The thumbnail's one fact (beds and size, or a cut), so the rail reads as
+   homes to compare, not photographs to page through. */
+.v3-dial__thumb-fact {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-source);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-dial__thumb-track {
+  margin-top: var(--v3-space-3xs);
 }
 
 .v3-dial__thumb[aria-selected='true'] .v3-dial__thumb-ask {
@@ -801,51 +915,119 @@
     align-content: start;
     padding-top: var(--v3-space-2xs);
   }
-
-  .v3-dial--rail-bottom .v3-dial__media .v3-lrow__media {
-    max-height: 60vh;
-  }
 }
 
-/* A WIDE DIAL (76rem and up, the neighborhood's 90rem band under its map):
-   the card lies across the band as the map above it does, instead of
-   standing a 72rem card in a 90rem band. With a column dial the photograph
-   sits against it, the thumbnails beside the picture they turn: dial,
-   picture, copy on the left; copy, picture, dial mirrored on the right.
-   Under a strip the photograph leads and the copy takes the right. The copy
-   link hugs its own lines at the foot of its column rather than filling it,
-   so the empty space above it is not a link. The `:not([hidden])` keeps a
-   card that is not showing out of the grid. */
-@container v3-dial (min-width: 76rem) {
-  .v3-dial--multi .v3-dial__card:not([hidden]) {
+/* THE CARD ON ITS SIDE (44rem of dial and up; 2026-09-25, was 76rem). The
+   photograph and the copy share one row, so the ask and the facts stand
+   beside the picture instead of under it, and the photograph is held to
+   --v3-dial-photo-max so the rail is on screen with the card. The copy runs
+   down from the top of its column as one block: the figures, then the
+   street and the door under a hairline. With a column dial the photograph sits against it (dial,
+   picture, copy on the left; copy, picture, dial mirrored on the right).
+   The `:not([hidden])` keeps a card that is not showing out of the grid. */
+@container v3-dial (min-width: 44rem) {
+  .v3-dial__card:not([hidden]) {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--v3-dial-copy-w);
-    column-gap: var(--v3-space-sm);
+    grid-template-columns: minmax(0, 3fr) minmax(15rem, 2fr);
+    align-items: stretch;
+    column-gap: var(--v3-space-lg);
   }
 
-  .v3-dial--multi .v3-dial__media {
+  .v3-dial__media {
     grid-column: 1;
     grid-row: 1;
   }
 
-  .v3-dial--multi .v3-dial__copy {
-    grid-column: 2;
-    grid-row: 1;
-    align-self: end;
-    justify-self: start;
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--v3-space-lg);
-    padding: 0 0 0 var(--v3-space-lg);
+  .v3-dial__media .v3-lrow__media {
+    aspect-ratio: 3 / 2;
+    max-height: var(--v3-dial-photo-max);
   }
 
-  .v3-dial--multi .v3-dial__where {
+  .v3-dial__copy {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    align-items: start;
+    row-gap: var(--v3-space-md);
+    padding: 0;
+  }
+
+  .v3-dial__figures {
+    gap: var(--v3-space-xs);
+  }
+
+  /* The facts as a spec row: each figure large over its unit. */
+  .v3-dial__meta {
+    flex-wrap: nowrap;
+    margin-top: var(--v3-space-2xs);
+  }
+
+  .v3-dial__fact {
+    display: grid;
+    gap: var(--v3-space-3xs);
+    padding-inline: var(--v3-space-sm);
+  }
+
+  .v3-dial__fact-fig,
+  .v3-dial__fact-word {
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-lg);
+    font-weight: var(--v3-weight-strong);
+    line-height: 1.1;
+  }
+
+  .v3-dial__fact-unit {
+    margin-inline-start: 0;
+    color: var(--v3-ink-muted);
+    font-size: var(--v3-size-source);
+    letter-spacing: var(--v3-track-label);
+    text-transform: uppercase;
+  }
+
+  /* The photograph spans the card's height; the copy heads the other column
+     and the next homes stand at its foot. */
+  .v3-dial__card:not([hidden]) {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .v3-dial__media {
+    grid-row: 1 / span 2;
+  }
+
+  .v3-dial__next {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    display: grid;
+    gap: var(--v3-space-2xs);
+    padding-top: var(--v3-space-sm);
+  }
+
+  .v3-dial--rail-right .v3-dial__next {
+    grid-column: 1;
+  }
+
+  /* The copy column is the dial's right edge on a strip or a left column:
+     it stops short of the Jax button where the dial runs under it, as the
+     strip's next step does (--v3-dial-end-clear, measured). */
+  .v3-dial--rail-bottom .v3-dial__copy,
+  .v3-dial--rail-bottom .v3-dial__next,
+  .v3-dial--rail-left .v3-dial__copy,
+  .v3-dial--single .v3-dial__copy {
+    padding-inline-end: var(--v3-dial-end-clear, 0px);
+  }
+
+  .v3-dial__where {
     justify-items: start;
     max-width: none;
+    padding-top: var(--v3-space-sm);
+    border-top: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
     text-align: left;
   }
 
   .v3-dial--rail-right .v3-dial__card:not([hidden]) {
-    grid-template-columns: var(--v3-dial-copy-w) minmax(0, 1fr);
+    grid-template-columns: minmax(15rem, 2fr) minmax(0, 3fr);
   }
 
   .v3-dial--rail-right .v3-dial__media {
@@ -854,38 +1036,149 @@
 
   .v3-dial--rail-right .v3-dial__copy {
     grid-column: 1;
-    padding: 0 var(--v3-space-lg) 0 0;
   }
 
   /* On its side the photograph never reaches the dial's right edge. */
-  .v3-dial--multi .v3-dial__reel-controls {
+  .v3-dial__reel-controls {
     right: 0;
   }
 }
 
-/* One listing, 44rem and up: the card on its side. ----------------------- */
+/* A very wide band (the neighborhood's 90rem under its map): the copy column
+   stops growing, so the photograph takes the width back. */
+@container v3-dial (min-width: 76rem) {
+  .v3-dial__card:not([hidden]) {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+  }
+
+  .v3-dial--rail-right .v3-dial__card:not([hidden]) {
+    grid-template-columns: 24rem minmax(0, 1fr);
+  }
+}
+
+/* THE HOMES NEAR THIS PRICE beside the one in front (a strip dial, wide): a
+   label and three rows, each a thumbnail, its ask, one fact and its street. Hidden on a
+   phone and on a column dial, which lists its homes beside the card. */
+.v3-dial__next {
+  display: none;
+}
+
+.v3-dial__next-label {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.v3-dial__next-row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--v3-space-sm);
+  width: 100%;
+  margin: 0;
+  padding: var(--v3-space-2xs) 0;
+  border: 0;
+  border-top: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
+  background: none;
+  color: var(--v3-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-dial__next-row:hover,
+.v3-dial__next-row:focus-visible {
+  background: var(--v3-wash);
+}
+
+.v3-dial__next-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--v3-wash);
+}
+
+.v3-dial__next-media img {
+  object-fit: cover;
+}
+
+.v3-dial__next-copy {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-control);
+}
+
+.v3-dial__next-ask {
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-dial__next-fact {
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-dial__next-addr {
+  overflow: hidden;
+  color: var(--v3-ink-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @container v3-dial (min-width: 44rem) {
-  .v3-dial--single .v3-dial__card:not([hidden]) {
+  .v3-dial--rail-bottom .v3-dial__next,
+  .v3-dial--single .v3-dial__next {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    align-items: end;
-    column-gap: var(--v3-space-xl);
+  }
+}
+
+/* THE COLUMN DIALS AS LISTS (wide screens, 2026-09-25). Beside a card held
+   to a share of the screen, 10rem tiles showed one home and a half; as rows
+   (a small photograph, the ask, one fact, the street) the column lists five
+   or six homes beside the one in front, the featured-plus-list shape. */
+@media (min-width: 40.0625rem) {
+  .v3.v3-dial.v3-dial--rail-left,
+  .v3.v3-dial.v3-dial--rail-right {
+    --v3-dial-rail-w: 15rem;
   }
 
-  .v3-dial--single .v3-dial__copy {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--v3-space-md);
-    padding-top: 0;
+  .v3-dial--rail-left .v3-dial__thumbs,
+  .v3-dial--rail-right .v3-dial__thumbs {
+    gap: 0;
   }
 
-  .v3-dial--single .v3-dial__where {
-    justify-items: start;
-    max-width: none;
-    text-align: left;
+  /* The list scrolls under a wheel or a thumb and turns with the arrow keys;
+     its step buttons would take two rows of homes, so a list has none. */
+  .v3-dial--rail-left .v3-dial__step,
+  .v3-dial--rail-right .v3-dial__step {
+    display: none;
   }
 
-  .v3-dial--single .v3-dial__reel-controls {
-    right: 0;
+  .v3-dial--rail-left .v3-dial__thumb,
+  .v3-dial--rail-right .v3-dial__thumb {
+    grid-template-columns: 4rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--v3-space-sm);
+    padding: var(--v3-space-2xs) var(--v3-space-2xs) var(--v3-space-2xs) 0;
+    border-bottom: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
+    border-radius: 0;
+  }
+
+  .v3-dial--rail-left .v3-dial__thumb-media,
+  .v3-dial--rail-right .v3-dial__thumb-media {
+    aspect-ratio: 4 / 3;
+  }
+
+  .v3-dial--rail-left .v3-dial__thumb[aria-selected='true'],
+  .v3-dial--rail-right .v3-dial__thumb[aria-selected='true'] {
+    background: var(--v3-wash);
   }
 }
 
@@ -899,7 +1192,13 @@
   .v3.v3-dial {
     --v3-dial-gap: var(--v3-space-sm);
     --v3-dial-fade: var(--v3-space-lg);
-    --v3-dial-thumb-w: 5.75rem;
+    --v3-dial-thumb-w: 4.75rem;
+  }
+
+  /* A phone turns back with a swipe or a thumbnail; the strip keeps its room
+     for a third home and a sliver of a fourth (2026-09-25: two and a half). */
+  .v3-dial__step--prev {
+    display: none;
   }
 
   /* At 375 the dial runs to the screen's edge, where the Jax button rides

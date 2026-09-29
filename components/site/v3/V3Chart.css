@@ -963,6 +963,15 @@
     height: calc(var(--v3-chart-plot) - 1.75rem);
   }
 
+  /* The y labels stand clear of the Jax button (V3DogFloater: 4.25rem wide,
+     --v3-space-md in from the right edge, fixed at mid-screen) on a phone,
+     where the rail runs to the gutter: at 375 the button sat on "$1,500,000"
+     and left "$1," (2026-09-25). The gutter already gives part of the band. */
+  .v3 .v3-chart__y--ticks,
+  .v3 .v3-chart__y--ends {
+    margin-inline-end: calc(4.25rem + var(--v3-space-md) - var(--v3-gutter));
+  }
+
   .v3 .v3-chart__tip,
   .v3 .v3-chart__tip--flip {
     top: 0;

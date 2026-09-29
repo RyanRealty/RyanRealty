@@ -144,16 +144,20 @@ import {
   dialSwipeDelta,
   dialTabId,
   DIAL_THUMB_WHOLE,
+  dialCutWidth,
   dialThumbCut,
+  dialThumbFact,
   dialThumbLabel,
   dialVideoAutoplay,
   dialWrap,
   type DialIframeKind,
+  type DialPriceCut,
   type DialRailPosition,
   type DialVideoController,
   type DialVideoEnv,
   type DialVideoState,
 } from './V3ListingDial.logic'
+import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import './tokens.css'
 import './V3ListingRow.css'
 import './V3ListingDial.css'
@@ -164,7 +168,15 @@ import './V3ListingDial.css'
  * (its row carries no Videos and no VirtualTours) so it never asks; true or
  * absent, the dial asks when the reader rests on the card.
  */
-export type V3ListingDialItem = V3ListingRowData & { hasVideo?: boolean | null }
+export type V3ListingDialItem = V3ListingRowData & {
+  hasVideo?: boolean | null
+  /**
+   * A price cut the page knows (/price-drops): drawn as its own mark on the
+   * card (was, now, the cut on a track against the deepest cut in the set)
+   * and as the thumbnail's fact, instead of a sticker on the photograph.
+   */
+  cut?: DialPriceCut | null
+}
 
 export type V3ListingDialProps = {
   /** Root id. Tab and card ids derive from it, so it must be unique on the page. */
@@ -598,6 +610,41 @@ type CardProps = {
   reel?: ReactNode
   /** The shown card hands its media clicks to the dial (the in-card 3D tour takes the media from the reel). */
   onMediaClickCapture?: (event: ReactMouseEvent<HTMLDivElement>) => void
+  /** The shown card's next homes in the set, previewed beside it (a strip dial on a wide screen). */
+  next?: ReadonlyArray<{ listing: V3ListingDialItem; index: number }>
+  /** What the preview is ("Near this price", "Next on the dial"). */
+  nextLabel?: string
+  /** Turns the dial to one of `next`. */
+  onPick?: (index: number) => void
+}
+
+/**
+ * A price cut as its own mark (2026-09-25: a corner sticker on the photograph
+ * read as an afterthought): the earlier ask struck through, the cut, and a
+ * track filled to the cut's share of the deepest cut in the same set, over
+ * the ask it sits on. Every word and figure is the row's own (DialPriceCut).
+ */
+function DialCutMark({ cut }: { cut: DialPriceCut }) {
+  const width = dialCutWidth(cut.share)
+  if (!cut.was && !cut.pct) return null
+  return (
+    <span className="v3-dial__cut">
+      <span className="v3-dial__cut-head">
+        <span className="v3-dial__cut-label">Price cut</span>
+        {cut.pct ? <span className="v3-dial__cut-pct">{cut.pct}</span> : null}
+      </span>
+      {width ? (
+        <span className="v3-dial__cut-track" aria-hidden="true">
+          <span className="v3-dial__cut-fill" style={{ width }} />
+        </span>
+      ) : null}
+      {cut.was ? (
+        <span className="v3-dial__cut-was">
+          Was <s>{cut.was}</s>
+        </span>
+      ) : null}
+    </span>
+  )
 }
 
 /** The primary card: the lead photograph and the rail card's copy. */
@@ -610,6 +657,9 @@ const DialCard = memo(function DialCard({
   priority,
   reel,
   onMediaClickCapture,
+  next,
+  nextLabel,
+  onPick,
 }: CardProps) {
   const facts = factsOf(listing)
   const price = dialPriceSlot(facts)
@@ -623,6 +673,8 @@ const DialCard = memo(function DialCard({
   const visible = shown || leaving
   const askClass = cn('v3-dial__ask', price.withheld && 'v3-dial__ask--none')
   const meta = facts.meta.length > 0 ? facts.meta.join(' · ') : null
+  const cut = listing.cut ?? null
+  const terms = (listing.leaseTerms ?? []).filter((term) => term.trim())
   if (!visible) {
     // A card that is not showing is served as its door alone: the <a href>
     // with the ask, the facts and the street a crawler reads (and the ids the
@@ -630,14 +682,18 @@ const DialCard = memo(function DialCard({
     // (the neighbours' photographs are warmed into the cache beforehand), so
     // a long dial does not serve a second photograph and a second copy of
     // every URL per listing (2,124 B of HTML per listing before, 2026-09-24).
+    //
+    // Its spans carry no classes (2026-09-25): a hidden card is never drawn,
+    // and the card that turns up renders its own classed copy, so the class
+    // names were ~110 B per listing the reader never sees.
     return (
       <div id={panelId} role={tabId ? 'tabpanel' : undefined} aria-labelledby={tabId ?? undefined} hidden className="v3-dial__card">
-        <Link href={listing.href} className="v3-dial__copy">
-          {kind ? <span className="v3-dial__kind">{kind}</span> : null}
-          <span className={askClass}>{price.text}</span>
-          {meta ? <span className="v3-dial__meta">{meta}</span> : null}
-          <span className="v3-dial__addr">{listing.addressLine}</span>
-          <span className="v3-dial__city">{listing.cityLine}</span>
+        <Link href={listing.href}>
+          {kind ? <span>{kind}</span> : null}
+          <span>{price.text}</span>
+          {meta ? <span>{meta}</span> : null}
+          <span>{listing.addressLine}</span>
+          <span>{listing.cityLine}</span>
         </Link>
       </div>
     )
@@ -677,8 +733,40 @@ const DialCard = memo(function DialCard({
       <Link href={listing.href} className="v3-dial__copy">
         <span className="v3-dial__figures">
           {kind ? <span className="v3-dial__kind">{kind}</span> : null}
+          {cut ? <DialCutMark cut={cut} /> : null}
           <span className={askClass}>{price.text}</span>
-          {meta ? <span className="v3-dial__meta">{meta}</span> : null}
+          {facts.meta.length > 0 ? (
+            // The facts one to a cell, so a reader scans them as figures
+            // rather than reading a sentence; the served text is the same.
+            <span className="v3-dial__meta">
+              {facts.meta.map((fact, i) => {
+                // "1,134 sqft" as a figure over its unit; a word ("Under
+                // contract") stays as it is. The text is the meta line's own.
+                const m = /^([$\d][\d,.$]*)(\/?\s*.*)$/.exec(fact)
+                return (
+                  <span key={`${i}-${fact}`} className="v3-dial__fact">
+                    {m ? (
+                      <>
+                        <span className="v3-dial__fact-fig">{m[1]}</span>
+                        <span className="v3-dial__fact-unit">{m[2].trim()}</span>
+                      </>
+                    ) : (
+                      <span className="v3-dial__fact-word">{fact}</span>
+                    )}
+                  </span>
+                )
+              })}
+            </span>
+          ) : null}
+          {terms.length > 0 ? (
+            <span className="v3-dial__terms">
+              {terms.map((term) => (
+                <span key={term} className="v3-dial__term">
+                  {term}
+                </span>
+              ))}
+            </span>
+          ) : null}
         </span>
         <span className="v3-dial__where">
           <span className="v3-dial__addr">{listing.addressLine}</span>
@@ -689,9 +777,54 @@ const DialCard = memo(function DialCard({
           </span>
         </span>
       </Link>
+      {next && next.length > 0 && onPick ? (
+        // The homes in the set nearest this one's ask, beside it (2026-09-25:
+        // the column under the ask was empty and the dial read as one house
+        // at a time). Each row turns the dial to its home.
+        <div className="v3-dial__next">
+          <p className="v3-dial__next-label">{nextLabel}</p>
+          {next.map(({ listing: home, index: at }) => {
+            const homeFacts = factsOf(home)
+            const homePrice = dialPriceSlot(homeFacts)
+            const homeFact = home.cut?.pct ?? dialThumbFact(homeFacts.meta)
+            return (
+              <button
+                key={home.listingKey}
+                type="button"
+                className="v3-dial__next-row"
+                aria-label={`Show ${dialThumbLabel(home.addressLine, homePrice.text)}`}
+                onClick={() => onPick(at)}
+              >
+                <span className="v3-dial__next-media">
+                  <DialThumbImage listing={home} />
+                </span>
+                <span className="v3-dial__next-copy">
+                  <span className="v3-dial__next-ask">{homePrice.text}</span>
+                  {homeFact ? <span className="v3-dial__next-fact">{homeFact}</span> : null}
+                  <span className="v3-dial__next-addr">{home.addressLine}</span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
     </div>
   )
 })
+
+/** A thumbnail's photograph: the Spark plate as a plain <img>, anything else through the optimizer. */
+function DialThumbImage({ listing }: { listing: V3ListingRowData }) {
+  const src = thumbSrc(listing)
+  if (src && isSparkListingPhotoUrl(src)) {
+    // A Spark plate is already the 320 thumbnail and skips the image
+    // optimizer either way; a plain <img> sized by the stylesheet saves
+    // next/image's inline style on every thumbnail in the served HTML.
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img className="v3-dial__thumb-img" src={src} alt="" loading="lazy" />
+  }
+  if (src) return <SparkSafeImage src={src} alt="" fill sizes={THUMB_SIZES} />
+  return <span className="v3-dial__thumb-none">No photo</span>
+}
 
 type ThumbProps = {
   listing: V3ListingDialItem
@@ -712,8 +845,10 @@ const DialThumb = memo(function DialThumb({
   onWarm,
   setRef,
 }: ThumbProps) {
-  const price = dialPriceSlot(factsOf(listing))
-  const src = thumbSrc(listing)
+  const facts = factsOf(listing)
+  const price = dialPriceSlot(facts)
+  const cutWidth = listing.cut ? dialCutWidth(listing.cut.share) : null
+  const fact = listing.cut?.pct ?? dialThumbFact(facts.meta)
   return (
     <button
       ref={(el) => setRef(index, el)}
@@ -730,20 +865,16 @@ const DialThumb = memo(function DialThumb({
       onFocus={() => onWarm(index)}
     >
       <span className="v3-dial__thumb-media">
-        {src && isSparkListingPhotoUrl(src) ? (
-          // A Spark plate is already the 320 thumbnail and skips the image
-          // optimizer either way; a plain <img> sized by the stylesheet saves
-          // next/image's inline style on every thumbnail in the served HTML.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="v3-dial__thumb-img" src={src} alt="" loading="lazy" />
-        ) : src ? (
-          <SparkSafeImage src={src} alt="" fill sizes={THUMB_SIZES} />
-        ) : (
-          <span className="v3-dial__thumb-none">No photo</span>
-        )}
+        <DialThumbImage listing={listing} />
       </span>
       <span className="v3-dial__thumb-cap">
         <span className="v3-dial__thumb-ask">{price.text}</span>
+        {fact ? <span className="v3-dial__thumb-fact">{fact}</span> : null}
+        {cutWidth ? (
+          <span className="v3-dial__thumb-track" aria-hidden="true">
+            <span style={{ width: cutWidth }} />
+          </span>
+        ) : null}
         <span className="v3-dial__thumb-addr">{listing.addressLine}</span>
       </span>
     </button>
@@ -841,6 +972,47 @@ export function V3ListingDial({
   )
 
   const selectFromThumb = useCallback((at: number) => select(at, false), [select])
+  const pickNext = useCallback((at: number) => select(at, true), [select])
+  // The three homes in the set nearest the one in front by ask, for the
+  // card's "near this price" column (2026-09-25: the next homes in order
+  // repeated the strip under the card). A sort of the set's own asks, no new
+  // figure. A strip dial only: a column dial lists its homes beside the card.
+  const upNext = useMemo((): { label: string; rows: Array<{ listing: V3ListingDialItem; index: number }> } => {
+    const none = { label: '', rows: [] }
+    if (!multi || rail !== 'bottom' || count < 3) return none
+    const front = listings[index]
+    const here = front?.price
+    // A lease's "price" is a rent in its own unit, never comparable by size,
+    // and a home with no ask has nothing to be near: those show the next
+    // homes on the dial in order instead.
+    const byPrice =
+      count >= 4 &&
+      front != null &&
+      !listingPriceIsLeaseRate(front.propertyType) &&
+      here != null &&
+      Number.isFinite(here) &&
+      here > 0
+    if (!byPrice) {
+      return {
+        label: 'Next on the dial',
+        rows: [1, 2].map((step) => {
+          const at = dialWrap(index + step, count)
+          return { listing: listings[at]!, index: at }
+        }),
+      }
+    }
+    return {
+      label: 'Near this price',
+      rows: listings
+        .map((listing, at) => ({ listing, index: at }))
+        .filter(
+          ({ listing, index: at }) =>
+            at !== index && listing.price != null && listing.price > 0 && !listingPriceIsLeaseRate(listing.propertyType),
+        )
+        .sort((a, b) => Math.abs(a.listing.price! - here) - Math.abs(b.listing.price! - here) || a.index - b.index)
+        .slice(0, 3),
+    }
+  }, [multi, rail, count, index, listings])
   const setTabRef = useCallback((at: number, el: HTMLButtonElement | null) => {
     tabs.current[at] = el
   }, [])
@@ -1199,6 +1371,9 @@ export function V3ListingDial({
                   ) : null
                 }
                 onMediaClickCapture={shown ? onMediaClickCapture : undefined}
+                next={shown && upNext.rows.length > 0 ? upNext.rows : undefined}
+                nextLabel={upNext.label}
+                onPick={shown && upNext.rows.length > 0 ? pickNext : undefined}
               />
             )
           })}

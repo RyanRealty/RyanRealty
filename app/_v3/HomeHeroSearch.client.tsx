@@ -14,6 +14,7 @@ import { flattenSuggestions, useSearchSuggest } from '@/components/search/Search
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
 import { MorphingSearch, type MorphingSearchItem } from '@/components/motion/morphing-search'
 import { Tabs } from '@/components/motion/tabs'
+import { House, MapPin } from 'lucide-react'
 import { V3MorphSearch, V3Tabs, type V3MorphSearchItem } from '@/components/site/v3'
 
 // Tip Ready: the route imports the installed catalog files. V3 wrappers
@@ -74,9 +75,13 @@ export function HomeHeroSearch({
       id: item.href,
       title: item.label,
       description: item.sublabel,
+      icon: item.kind === 'address' ? House : MapPin,
     }))
     if (typed.length > 0) return typed
-    const listed = homes?.length ? [...homes, ...PLACE_SEEDS] : PLACE_SEEDS
+    // Opened empty: the places first (where most searches start), then the
+    // newest homes with their asks, each marked as a place or a home.
+    const places = PLACE_SEEDS.map((seed) => ({ ...seed, icon: MapPin }))
+    const listed = homes?.length ? [...places, ...homes.map((home) => ({ ...home, icon: House }))] : places
     return listed
   }, [items, homes])
 

@@ -24,6 +24,11 @@ export function PriceDropsFold({
 }) {
   const bands = priceDropBands(items)
   const doors = showCityDoors ? priceDropCityDoors(items) : []
+  // The cuts in a town with no page of its own (Terrebonne, Powell Butte...)
+  // are counted on their own row, so the rows add up to the homes above
+  // (2026-09-25: seven towns summed to 47 under "48 shown below").
+  const elsewhere = items.length - doors.reduce((sum, door) => sum + door.count, 0)
+  const maxDoor = Math.max(1, elsewhere, ...doors.map((door) => door.count))
 
   if (bands.length === 0) return null
 
@@ -47,12 +52,31 @@ export function PriceDropsFold({
         ))}
       </V3ChartSwitch>
       {doors.length > 0 ? (
+        // Each city's door carries how many of the cuts above are there, as a
+        // count and a bar on one scale (2026-09-25: a bare row of names).
         <nav className="pd-cities" aria-label="Price cuts by city">
           {doors.map((door) => (
             <Link key={door.slug} href={door.href} className="pd-cities__link">
-              {door.label}
+              <span className="pd-cities__name">{door.label}</span>
+              <span className="pd-cities__bar" aria-hidden="true">
+                <span style={{ width: `${((door.count / maxDoor) * 100).toFixed(1)}%` }} />
+              </span>
+              <span className="pd-cities__count">
+                {door.count} {door.count === 1 ? 'cut' : 'cuts'}
+              </span>
             </Link>
           ))}
+          {elsewhere > 0 ? (
+            <span className="pd-cities__link pd-cities__link--rest">
+              <span className="pd-cities__name">Elsewhere</span>
+              <span className="pd-cities__bar" aria-hidden="true">
+                <span style={{ width: `${((elsewhere / maxDoor) * 100).toFixed(1)}%` }} />
+              </span>
+              <span className="pd-cities__count">
+                {elsewhere} {elsewhere === 1 ? 'cut' : 'cuts'}
+              </span>
+            </span>
+          ) : null}
         </nav>
       ) : null}
     </div>

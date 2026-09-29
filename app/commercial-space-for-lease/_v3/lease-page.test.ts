@@ -122,7 +122,7 @@ describe('leaseCityLedgerRows', () => {
       what: 'Bend',
       value: '4 for lease',
       weight: 1,
-      detail: '2 from $0.90 to $1.40 per sq ft per month · 1 at $985 per month · 1 rate not published',
+      detail: '2 from $0.90 to $1.40 per sq ft per month\n1 at $985 per month\n1 rate not published',
     })
     expect(rows[1]!.weight).toBe(0.25)
   })

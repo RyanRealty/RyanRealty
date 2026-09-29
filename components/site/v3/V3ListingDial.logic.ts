@@ -90,6 +90,40 @@ export function dialSwipeDelta(dx: number, dy: number, minPx = DIAL_SWIPE_MIN_PX
   return dx < 0 ? 1 : -1
 }
 
+/**
+ * The one fact a thumbnail carries under its ask (2026-09-25: a rail of bare
+ * photographs read as a stock carousel, not as homes to compare): the beds
+ * and the size, taken from the card's own meta line (publishListingCardFacts)
+ * so the rail can never print a figure the card does not. "3 bd · 1,800 sqft";
+ * a lease or a lot with no beds keeps its size; nothing to say is null.
+ */
+export function dialThumbFact(meta: readonly string[]): string | null {
+  const beds = meta.find((m) => / bd$/.test(m))
+  // " sqft" with a space: the living area, never the "$322/sqft" price.
+  const size = meta.find((m) => / sqft$/.test(m))
+  const parts = [beds, size].filter((part): part is string => Boolean(part))
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
+/**
+ * A price cut, as the page that knows it hands it to the dial (/price-drops):
+ * the words and the magnitude the row already carries, never re-derived here.
+ * `was` is the earlier ask as printed ("$1,149,000"), `pct` the cut as printed
+ * ("-13.1%"), `share` the cut as a share of the deepest cut in the same set,
+ * 0..1, or null when the row has no percent (unknown is not zero).
+ */
+export type DialPriceCut = {
+  was: string | null
+  pct: string | null
+  share: number | null
+}
+
+/** The cut track's fill, as a CSS width: a share outside 0..1 is clamped, none is null. */
+export function dialCutWidth(share: number | null | undefined): string | null {
+  if (share == null || !Number.isFinite(share) || share <= 0) return null
+  return `${(Math.min(1, share) * 100).toFixed(1)}%`
+}
+
 /** Shown when the row has no ask to publish (never "Price on request"). */
 export const DIAL_NO_ASK = 'Price not published'
 

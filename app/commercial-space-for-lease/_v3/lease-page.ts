@@ -11,7 +11,7 @@
  * (CLAUDE.md section 0). A lease is never an Offer: the ItemList names each listing and
  * its rent in words, with no price property.
  */
-import type { LeaseRateOptionsByKey, ListingTile } from '@/lib/data'
+import type { LeaseRateOptionsByKey, LeaseTermsByKey, ListingTile } from '@/lib/data'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { CENTRAL_OREGON_CITY_SLUGS, SITE_CITY_SLUGS, citySlugForScope } from '@/lib/central-oregon'
 import { formatCount } from '@/lib/format/count'
@@ -58,6 +58,8 @@ const CITY_PAGES: ReadonlySet<string> = new Set(SITE_CITY_SLUGS)
 export function leaseCityGroups(
   tiles: readonly ListingTile[],
   rateOptions: Readonly<LeaseRateOptionsByKey>,
+  /** The lease's terms (getLeaseTerms), printed on its dial card; absent prints none. */
+  leaseTerms: Readonly<LeaseTermsByKey> = {},
 ): LeaseCityGroup[] {
   const seen = new Set<string>()
   const byTown = new Map<string, { label: string; rows: V3ListingRowData[] }>()
@@ -66,8 +68,10 @@ export function leaseCityGroups(
     if (!listingPriceIsLeaseRate(tile.propertyType)) continue
     const label = tile.city?.trim()
     if (!label) continue
-    const row = placeLeaseRowFromTile(tile, rateOptions)
-    if (!row) continue
+    const base = placeLeaseRowFromTile(tile, rateOptions)
+    if (!base) continue
+    const terms = leaseTerms[tile.listingKey] ?? []
+    const row: V3ListingRowData = terms.length > 0 ? { ...base, leaseTerms: terms } : base
     seen.add(tile.listingKey)
     const slug = citySlugForScope(label)
     const town = byTown.get(slug) ?? { label, rows: [] }
@@ -110,7 +114,10 @@ export function leaseCityLedgerRows(groups: readonly LeaseCityGroup[]): LeaseLed
     what: group.label,
     value: group.countLabel,
     weight: most > 0 ? group.rows.length / most : 0,
-    ...(group.rateSummary ? { detail: group.rateSummary } : {}),
+    // One unit to a line (2026-09-25): a per-sq-ft span and a whole-space
+    // rent in one sentence asked the reader to convert between them. The
+    // figures and their counts are publishLeaseRateSummary's, unchanged.
+    ...(group.rateSummary ? { detail: group.rateSummary.split(' · ').join('\n') } : {}),
   }))
 }
 

@@ -19,13 +19,15 @@
  *
  * THE MAP LINK KEEPS WORKING. A pointer or a focus on a film card used to ring
  * that home's mark on the Atlas. The home the dial is showing is the one the
- * reader is on now, so while the pointer or the focus is inside the film the
- * Atlas rings the home the dial shows, and turning the dial moves the ring.
+ * reader is on now, so the Atlas rings the home the dial shows from the first
+ * paint (2026-09-25: a ring that waited for the pointer left the map looking
+ * unrelated to the dial under it), turning the dial moves the ring, and
+ * coming back to the film from a Field row rings the dial's home again.
  *
  * Layout lock keeps this AFTER Atlas: H1, claim, Atlas, then the film.
  */
 
-import { useEffect, useRef, useState, type FocusEvent } from 'react'
+import { useEffect, useState, type FocusEvent } from 'react'
 import { V3ListingDial } from '@/components/site/v3'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { usePlaceTypeLink } from './PlaceTypeField.client'
@@ -96,23 +98,18 @@ export function PlaceTypeFilm({
   const [turned, setTurned] = useState(0)
   const index = filmed.length < 2 ? 0 : Math.min(turned, filmed.length - 1)
   const shownKey = filmed[index]?.listingKey ?? null
-  const engaged = useRef(false)
 
-  // While the reader is in the film, the Atlas rings the home the dial shows.
+  // The Atlas rings the home the dial shows, and follows every turn.
   useEffect(() => {
-    if (engaged.current) setLinkedKey(shownKey)
+    setLinkedKey(shownKey)
   }, [shownKey, setLinkedKey])
 
   if (filmed.length === 0) return null
 
   const engage = () => {
-    engaged.current = true
     setLinkedKey(shownKey)
   }
-  const release = () => {
-    engaged.current = false
-    setLinkedKey(null)
-  }
+  const release = engage
 
   return (
     <div

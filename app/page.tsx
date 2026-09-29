@@ -7,10 +7,12 @@ import {
   getReviews,
   attachListingCardExtras,
   loadRecentPriceDropEvents,
+  getResortCommunityBySlug,
 } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
+import { formatPrice } from '@/lib/format/money'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import {
   V3_ROOT_CLASS,
@@ -32,7 +34,7 @@ import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { loadHomeNewConRun } from './_v3/home-new-construction'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
-import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
+import { homeFeaturedBlurb, loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
 import { cityHero, communityImage, hasCuratedCityHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
 import { homeRailItemList } from './_v3/home-jsonld'
@@ -253,10 +255,15 @@ export default async function Home() {
       seeAll: { label: 'Every community', href: '/communities' },
       doors: RESORT_DOORS.map((r) => {
         const photoSrc = communityImage(r.slug)
+        // Each resort says where it is and what it is, from the registry's
+        // own authored line (2026-09-25: four cards all read "Resort
+        // community"). Authored copy only; a miss keeps the plain label.
+        const entry = getResortCommunityBySlug(r.slug)
+        const line = entry ? homeFeaturedBlurb(null, entry) : null
         return {
           label: r.label,
           href: r.href,
-          description: 'Resort community',
+          description: entry ? [entry.city, line].filter(Boolean).join(' · ') || 'Resort community' : 'Resort community',
           ...(photoSrc ? { photoSrc } : {}),
         }
       }),
@@ -307,11 +314,20 @@ export default async function Home() {
         >
           <HomeHeroSearch
             valuationHref={valuationHref('/')}
-            homes={railRows[0]?.cards.slice(0, 5).map((card) => ({
-              id: card.href,
-              title: card.addressLine,
-              description: card.cityLine,
-            }))}
+            // Each home in the opened search names its ask and beds beside
+            // its town (2026-09-25: a bare list of streets), the card's own
+            // figures: a sale ask only, never a lease rate read as a price.
+            homes={railRows[0]?.cards.slice(0, 5).map((card) => {
+              const ask =
+                card.propertyType !== 'G' && card.price != null && card.price > 0 ? formatPrice(card.price) : null
+              return {
+                id: card.href,
+                title: card.addressLine,
+                description: [ask && /\$/.test(ask) ? ask : null, card.beds != null ? `${card.beds} bd` : null, card.cityLine]
+                  .filter(Boolean)
+                  .join(' · '),
+              }
+            })}
           />
         </V3Stage>
 
@@ -319,6 +335,7 @@ export default async function Home() {
           rows={railRows}
           emptyMessage="No active homes with a photo and list price right now."
           forSaleCount={pulseBundle?.counts.forSale}
+          switched
         />
 
         {/* SITE-160: guides below the first rail so a priced card clears the fold. */}

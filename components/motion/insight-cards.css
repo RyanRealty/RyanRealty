@@ -80,6 +80,16 @@
   overflow: visible;
 }
 
+/* On a phone the chart's price labels (drawn at its right edge) stand clear
+   of the Jax button's mid-screen band (V3DogFloater: 4.25rem wide,
+   --v3-space-md in from the edge); at 375 it covered "$1,500,000" and left
+   "$1," (2026-09-25). The same clearance V3Chart's y labels take. */
+@media (max-width: 40rem) {
+  .insight-chart-stage {
+    margin-inline-end: calc(4.25rem + var(--v3-space-md, 1rem) - var(--v3-gutter, 1.25rem));
+  }
+}
+
 .insight-tooltip {
   position: absolute;
   top: 0.35rem;

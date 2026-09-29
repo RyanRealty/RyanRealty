@@ -363,8 +363,13 @@
   color: var(--v3-ink-on-media);
   opacity: 0.8;
 }
+/* The type row stands on the page measure, and the card the edge cuts
+   fades out instead of ending mid-figure at the viewport (2026-09-25: "1..."
+   and half an "M" at 1440 read as an overflow, not as more to scroll). */
 .place-type-slider {
   width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
   overflow: hidden;
 }
 .place-type-slider__track {
@@ -377,6 +382,8 @@
   padding: var(--v3-space-sm) var(--v3-gutter) var(--v3-space-md);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, var(--v3-navy) calc(100% - 5rem), transparent);
+  mask-image: linear-gradient(to right, var(--v3-navy) calc(100% - 5rem), transparent);
 }
 .place-type-slider__track::-webkit-scrollbar {
   display: none;

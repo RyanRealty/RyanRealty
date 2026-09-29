@@ -81,8 +81,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CommercialSpaceForLeasePage() {
-  const { tiles, rateOptions } = await getCommercialLeaseListings()
-  const groups = leaseCityGroups(tiles, rateOptions)
+  const { tiles, rateOptions, leaseTerms } = await getCommercialLeaseListings()
+  const groups = leaseCityGroups(tiles, rateOptions, leaseTerms)
   if (groups.length === 0) noStore()
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')

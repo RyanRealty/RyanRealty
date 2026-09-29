@@ -340,3 +340,31 @@ describe('PlaceSubdivisionHomes (city, community and neighborhood pages)', () =>
     expect(html).not.toContain('v3-carousel')
   })
 })
+
+describe('V3ListingDial on a wide strip: the homes near this price (2026-09-25)', () => {
+  const base = SFR.rows[0]!
+  const prices = [600_000, 1_400_000, 640_000, 590_000, 900_000]
+  const rows = prices.map((price, i) => ({
+    ...base,
+    listingKey: `near-${i}`,
+    href: `/homes-for-sale/bend/near-${i}`,
+    addressLine: `${10 + i} Near Street`,
+    price,
+  }))
+  const html = renderToStaticMarkup(<V3ListingDial id="near" heading="Houses" label="Houses" listings={rows} />)
+
+  it('lists the three asks nearest the home in front, nearest first, as buttons', () => {
+    expect(html).toContain('Near this price')
+    const shown = [...html.matchAll(/class="v3-dial__next-addr">([^<]+)</g)].map((m) => m[1])
+    // In front: $600,000. Nearest: $590,000, $640,000, $900,000.
+    expect(shown).toEqual(['13 Near Street', '12 Near Street', '14 Near Street'])
+    expect(count(html, /class="v3-dial__next-row"/g)).toBe(3)
+  })
+
+  it('draws no preview on a column dial, which lists its homes beside the card', () => {
+    const side = renderToStaticMarkup(
+      <V3ListingDial id="near-l" heading="Houses" label="Houses" listings={rows} railPosition="left" />,
+    )
+    expect(side).not.toContain('Near this price')
+  })
+})

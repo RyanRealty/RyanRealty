@@ -741,10 +741,11 @@ export {
   dialRailPositionAt,
   dialStep,
   dialSwipeDelta,
+  dialThumbFact,
   dialThumbLabel,
   dialWrap,
 } from './V3ListingDial.logic'
-export type { DialRailPosition } from './V3ListingDial.logic'
+export type { DialPriceCut, DialRailPosition } from './V3ListingDial.logic'
 
 /* -------------------------------------------------------------------------- */
 /* CHROME: the persistent frame the six patterns sit inside                    */

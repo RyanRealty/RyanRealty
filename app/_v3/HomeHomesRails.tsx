@@ -24,10 +24,50 @@
  * cycle runs on across the whole page (/buy's lead shelf is its first dial).
  */
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Button, V3ListingDial, dialRailPositionAt } from '@/components/site/v3'
+import {
+  V3_ROOT_CLASS,
+  V3Button,
+  V3ListingDial,
+  V3ChartSwitch,
+  dialRailPositionAt,
+  v3Text,
+  type V3ListingDialItem,
+} from '@/components/site/v3'
+import { formatPrice } from '@/lib/format/money'
 import { listingRowFromRailCard, type HomeRailRow } from './home-rail-items'
 import './home-homes-rails.css'
 import './home-shelves.css'
+
+/** The cut's percent as the drop badge prints it ("(−0.7%)"), or null. */
+function badgeCutPct(card: HomeRailRow['cards'][number]): string | null {
+  const label = card.badges.find((b) => b.kind === 'drop')?.label ?? ''
+  return /\(([−-][\d.]+%)\)/.exec(label)?.[1] ?? null
+}
+
+/**
+ * The price-cuts shelf draws each cut as the dial's own mark (2026-09-25:
+ * three shelves of one shape): the earlier ask, the percent the drop badge
+ * prints, and a track against the deepest cut on the shelf, in place of the
+ * badge on the photograph. Every other shelf keeps its rows as they are.
+ */
+function shelfListings(row: HomeRailRow): V3ListingDialItem[] {
+  const rows = row.cards.map(listingRowFromRailCard)
+  if (row.id !== 'homes-price-cuts') return rows
+  const pcts = row.cards.map(badgeCutPct)
+  const deepest = Math.max(0, ...pcts.map((p) => (p ? Math.abs(parseFloat(p.replace('−', '-'))) : 0)))
+  return rows.map((listing, i) => {
+    const card = row.cards[i]!
+    const pct = pcts[i]
+    if (!pct) return listing
+    const size = Math.abs(parseFloat(pct.replace('−', '-')))
+    const was = card.cutWas != null && card.cutWas > 0 ? formatPrice(card.cutWas) : null
+    return {
+      ...listing,
+      badges: (listing.badges ?? []).filter((b) => b.kind !== 'drop'),
+      cut: { was: was && /\$/.test(was) ? was : null, pct, share: deepest > 0 ? size / deepest : null },
+    }
+  })
+}
 
 function HomeShelf({ row, order }: { row: HomeRailRow; order: number }) {
   return (
@@ -38,7 +78,7 @@ function HomeShelf({ row, order }: { row: HomeRailRow; order: number }) {
         headingLevel={2}
         countLabel={row.countLabel ?? null}
         label={row.heading}
-        listings={row.cards.map(listingRowFromRailCard)}
+        listings={shelfListings(row)}
         railPosition={dialRailPositionAt(order)}
         className="home-shelf__dial"
       />
@@ -57,6 +97,7 @@ export function HomeHomesRails({
   rows,
   emptyMessage,
   railOffset = 0,
+  switched = false,
 }: {
   rows: HomeRailRow[]
   emptyMessage: string
@@ -64,12 +105,36 @@ export function HomeHomesRails({
   forSaleCount?: number | null
   /** How many dials the page mounts above these shelves (the rail cycle runs on). */
   railOffset?: number
+  /**
+   * One dial with a switch between the shelves instead of a stack (the
+   * homepage, 2026-09-25: three stacked dials read as one section pasted
+   * three times). The /price-drops fold's form: the set is chosen by a tab,
+   * one dial shows, and every shelf's homes stay in the served HTML.
+   */
+  switched?: boolean
 }) {
   if (rows.length === 0) {
     return (
       <p className="home-rail home-rail--empty" role="status">
         {emptyMessage}
       </p>
+    )
+  }
+
+  if (switched && rows.length > 1) {
+    return (
+      <div className={cn(V3_ROOT_CLASS, 'home-shelves', 'home-shelves--switched')}>
+        <V3ChartSwitch
+          label={v3Text('Homes for sale')}
+          items={rows.map((row) => ({ key: row.id, label: v3Text(SHELF_TAB[row.id] ?? row.heading) }))}
+          className="home-shelves__switch"
+        >
+          {rows.map((row) => (
+            // One dial shows at a time, so each takes the default rail.
+            <HomeShelf key={row.id} row={row} order={0} />
+          ))}
+        </V3ChartSwitch>
+      </div>
     )
   }
 
@@ -80,4 +145,11 @@ export function HomeHomesRails({
       ))}
     </div>
   )
+}
+
+/** The switch's short names for the shelves; a shelf not named here keeps its heading. */
+const SHELF_TAB: Readonly<Record<string, string>> = {
+  'homes-local': 'Bend and nearby',
+  'homes-price-cuts': 'Price cuts',
+  'homes-new': 'New this week',
 }

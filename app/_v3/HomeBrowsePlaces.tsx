@@ -106,14 +106,19 @@ function PlaceCard({
       </CardHeader>
       <CardContent className="home-browse-places__count-slot">
         {live ? (
-          <AnimatedNumber
-            value={live.n}
-            format={(n) =>
-              Math.round(n) === Math.round(live.n) ? live.label : Math.round(n).toLocaleString('en-US')
-            }
-            startOnView
-            className="home-browse-places__count"
-          />
+          <span className="home-browse-places__count-row">
+            <AnimatedNumber
+              value={live.n}
+              format={(n) =>
+                Math.round(n) === Math.round(live.n) ? live.label : Math.round(n).toLocaleString('en-US')
+              }
+              startOnView
+              className="home-browse-places__count"
+            />
+            {/* What the figure counts, beside it (2026-09-25: a bare "8"
+                under a navy plate read as a missing asset). */}
+            {unit?.trim() ? <span className="home-browse-places__count-unit">{unit}</span> : null}
+          </span>
         ) : (
           <span className="home-browse-places__count home-browse-places__count--empty" aria-hidden="true">
             &nbsp;
@@ -164,7 +169,14 @@ export function HomeBrowsePlaces({
       {shown.map((run) => {
         const runId = `${id}-${run.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
         const cta = run.layout === 'carousel' ? 'Explore' : 'See homes'
-        const carousel = run.layout === 'carousel' && run.doors.length > 1
+        // The towns, each with a live count and a photograph, are a ranked
+        // list with the count drawn as a bar (2026-09-25: three card
+        // carousels in a row read as one repeated module). A carousel run
+        // keeps its cards, and a card's count now names what it counts.
+        const counted = run.doors.map((door) => doorCount(door.count))
+        const ledger = counted.some(Boolean) && run.layout !== 'carousel'
+        const most = Math.max(1, ...counted.map((c) => c?.n ?? 0))
+        const carousel = !ledger && run.layout === 'carousel' && run.doors.length > 1
         return (
           <section key={runId} className="home-browse-places__run" aria-labelledby={runId}>
             <div className="home-browse-places__runhead">
@@ -181,7 +193,67 @@ export function HomeBrowsePlaces({
               ) : null}
             </div>
 
-            {carousel ? (
+            {ledger ? (
+              <ol className="home-browse-places__ledger">
+                {run.doors.map((door, i) => {
+                  const live = counted[i]
+                  const photoSrc = placeDoorPhotoSrc(door.photoSrc)
+                  return (
+                    <li key={door.href} className="home-browse-places__lrow">
+                      <Link href={door.href} className="home-browse-places__llink">
+                        {photoSrc ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            className="home-browse-places__lthumb"
+                            src={photoSrc}
+                            alt={homePlacePhotoAlt(door)}
+                            width={96}
+                            height={72}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <span className="home-browse-places__lthumb home-browse-places__lglyph" aria-hidden="true">
+                            {door.label.trim().charAt(0)}
+                          </span>
+                        )}
+                        <span className="home-browse-places__lname">
+                          {door.label}
+                          {door.description?.trim() ? (
+                            <span className="home-browse-places__ldesc">{door.description}</span>
+                          ) : null}
+                        </span>
+                        <span className="home-browse-places__lmeasure">
+                          <span className="home-browse-places__ltrack" aria-hidden="true">
+                            {live ? (
+                              <span
+                                className="home-browse-places__lbar"
+                                style={{ width: `${((live.n / most) * 100).toFixed(1)}%` }}
+                              />
+                            ) : null}
+                          </span>
+                          {live ? (
+                            <span className="home-browse-places__lfigure">
+                              <AnimatedNumber
+                                value={live.n}
+                                format={(n) =>
+                                  Math.round(n) === Math.round(live.n) ? live.label : Math.round(n).toLocaleString('en-US')
+                                }
+                                startOnView
+                                className="home-browse-places__count"
+                              />
+                              {run.unit?.trim() ? (
+                                <span className="home-browse-places__lunit">{run.unit}</span>
+                              ) : null}
+                            </span>
+                          ) : null}
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ol>
+            ) : carousel ? (
               <div className="home-browse-places__stage">
                 <Carousel
                   opts={{ align: 'start', containScroll: 'trimSnaps' }}

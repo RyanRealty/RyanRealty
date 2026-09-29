@@ -105,6 +105,7 @@ export function PlaceSubdivisionRail({
   label?: string
 }) {
   const { placeName, rail, homes, keysBySlug, selectedId, setSelected } = usePlaceMap()
+  const railMost = Math.max(1, ...rail.map((entry) => keysBySlug[entry.id]?.length ?? 0))
   const detailBase = useId()
   return (
     <nav
@@ -112,6 +113,13 @@ export function PlaceSubdivisionRail({
       className={cn('place-subdiv-rail', nameOnly && 'place-subdiv-rail--names')}
       aria-label={label ?? `${placeName} subdivisions`}
     >
+      {railMost > 1 ? (
+        // The key to the rows' bars, so the mark reads as a count.
+        <p className="place-subdiv-rail__key">
+          <span className="place-subdiv-rail__key-mark" aria-hidden="true" />
+          Homes for sale on the map
+        </p>
+      ) : null}
       <ul className="place-subdiv-rail__list">
         <li>
           <button
@@ -127,6 +135,7 @@ export function PlaceSubdivisionRail({
         </li>
         {rail.map((entry) => {
           const photo = firstListedPhoto(homes, keysBySlug[entry.id])
+          const listed = keysBySlug[entry.id]?.length ?? 0
           return (
             <li key={entry.id} className={cn(entry.href && 'place-subdiv-rail__item--linked')}>
               <button
@@ -158,6 +167,15 @@ export function PlaceSubdivisionRail({
                   {nameOnly && entry.detail ? (
                     <span id={`${detailBase}-${entry.id}`} className="place-subdiv-rail__detail">
                       {entry.detail}
+                    </span>
+                  ) : null}
+                  {/* How many of the map's homes are in this place, as a bar
+                      on one scale down the rail (2026-09-25: a column of names
+                      and captions with nothing to compare). The figure is the
+                      detail line's; the bar only draws it. */}
+                  {listed > 0 ? (
+                    <span className="place-subdiv-rail__bar" aria-hidden="true">
+                      <span style={{ width: `${((listed / railMost) * 100).toFixed(1)}%` }} />
                     </span>
                   ) : null}
                 </span>
