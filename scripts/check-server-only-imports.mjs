@@ -20,8 +20,9 @@
  *
  * Usage: node scripts/check-server-only-imports.mjs
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { loadProject, clientPathsTo } from './lib/client-import-graph.mjs'
 
 const ROOT = process.cwd()
 
@@ -37,6 +38,19 @@ const SERVER_ONLY = [
   // Server-side card resolution (imports the manifest transitively).
   'lib/pulse-lifestyle-cards.server',
   'pulse-lifestyle-cards.server',
+]
+
+// Modules no 'use client' file may reach THROUGH ANY CHAIN of imports (the
+// transitive rule). The direct rule above cannot see these: no client file
+// imports the JSON, a util three hops down does. Each entry says what to read
+// instead. Keep entries justified with the measured cost.
+const CLIENT_UNREACHABLE = [
+  {
+    file: 'data/resort-communities.json',
+    cost: '~44 KB minified, emitted into 26 client route chunks = 1.15 MB of the 10.93 MB client bundle (2026-09-29)',
+    fix: 'read the naming/alias fields through lib/communities/registry-lite.ts (data/resort-communities.lite.json); '
+      + 'the prose-bearing entries stay behind lib/data/communities/registry.ts on the server',
+  },
 ]
 
 const SCAN_DIRS = ['app', 'components', 'lib']
@@ -88,18 +102,50 @@ function main() {
     }
   }
 
+  // Transitive rule: a 'use client' file reaches a forbidden module through
+  // ANY chain. One shortest chain per client root, deduped by the last two
+  // hops (the bridge) so the fix target is the short list, not 40 components.
+  const transitive = []
+  const project = loadProject(ROOT)
+  for (const entry of CLIENT_UNREACHABLE) {
+    if (!existsSync(join(ROOT, entry.file))) continue
+    const hits = clientPathsTo(project, entry.file)
+    const bridges = new Map()
+    for (const h of hits) {
+      const bridge = h.chain.slice(-2).join(' -> ')
+      const cur = bridges.get(bridge) ?? { count: 0, sample: h.chain }
+      cur.count += 1
+      if (h.chain.length < cur.sample.length) cur.sample = h.chain
+      bridges.set(bridge, cur)
+    }
+    if (bridges.size > 0) transitive.push({ entry, clientRoots: hits.length, bridges })
+  }
+
   console.log('Server-only import check (G43)')
   console.log('==============================')
-  if (violations.length === 0) {
-    console.log('No client file value-imports a server-only module.')
+  if (violations.length === 0 && transitive.length === 0) {
+    console.log('No client file value-imports a server-only module, directly or transitively.')
     process.exit(0)
   }
-  console.log(`${violations.length} violation(s):`)
-  for (const v of violations) console.log('  ' + v)
-  console.log()
-  console.log('Fix: resolve the data server-side and pass it as a prop (see')
-  console.log('lib/pulse-lifestyle-cards.server.ts), or use `import type` if only')
-  console.log('the types are needed.')
+  if (violations.length > 0) {
+    console.log(`${violations.length} violation(s):`)
+    for (const v of violations) console.log('  ' + v)
+    console.log()
+    console.log('Fix: resolve the data server-side and pass it as a prop (see')
+    console.log('lib/pulse-lifestyle-cards.server.ts), or use `import type` if only')
+    console.log('the types are needed.')
+    console.log()
+  }
+  for (const t of transitive) {
+    console.log(`${t.entry.file} is reachable from ${t.clientRoots} 'use client' file(s).`)
+    console.log(`  Cost: ${t.entry.cost}`)
+    console.log(`  Fix: ${t.entry.fix}`)
+    console.log('  Bridge(s) that pull it in (importer count, shortest chain):')
+    for (const [, info] of [...t.bridges.entries()].sort((a, b) => b[1].count - a[1].count)) {
+      console.log(`    ${String(info.count).padStart(3)}  ${info.sample.join('\n         -> ')}`)
+    }
+    console.log()
+  }
   process.exit(1)
 }
 

@@ -1,4 +1,4 @@
-import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
+import { getResortCommunityLiteBySubdivisionName } from '@/lib/communities/registry-lite'
 
 /**
  * MLS SubdivisionName can differ from our canonical community name (e.g. "Pronghorn Resort" vs "Pronghorn").
@@ -35,7 +35,7 @@ export function getSubdivisionMatchNames(canonicalName: string): string[] {
   const trimmed = (canonicalName ?? '').trim()
   if (!trimmed) return []
   const names = new Set<string>([trimmed])
-  const registryEntry = getResortCommunityBySubdivisionName(trimmed)
+  const registryEntry = getResortCommunityLiteBySubdivisionName(trimmed)
   if (registryEntry) {
     names.add(registryEntry.label.trim())
     for (const alias of registryEntry.subdivision_aliases ?? []) {

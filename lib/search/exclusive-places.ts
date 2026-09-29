@@ -14,7 +14,7 @@
  * both; keep both (OR / AND as the DAL already does). Do not invent the city.
  */
 
-import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
+import { getResortCommunityLiteBySubdivisionName } from '@/lib/communities/registry-lite'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { slugify } from '@/lib/slug'
 
@@ -73,7 +73,7 @@ function samePlaceName(a: string, b: string): boolean {
 
 /** Registry community for a Places token (label, slug, or alias). */
 export function communityForPlaceToken(token: string) {
-  return getResortCommunityBySubdivisionName(token)
+  return getResortCommunityLiteBySubdivisionName(token)
 }
 
 /** True when `city` is the registry parent of this community token. */
