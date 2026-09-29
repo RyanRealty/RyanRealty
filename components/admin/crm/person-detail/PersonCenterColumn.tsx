@@ -69,6 +69,7 @@ import { Button, IconButton, Menu, SearchField, ToolbarSelect } from '@/componen
 import { cn } from '@/lib/utils'
 import { TimelineMediaStrip } from '@/components/admin/crm/StoredAttachments'
 import { partitionNotes } from '@/lib/crm/note-classify'
+import { cmaTimelineChipLabel } from '@/lib/crm/cma-thread-label'
 import { timelineArtifactDoor } from '@/lib/crm/timeline-artifacts'
 import { addCrmNoteAction, startCrmCallAction } from '@/app/actions/crm'
 import { logCrmCallAction, quickFollowUpAction, toggleTimelineStarAction, refreshSmsDeliveryStatusAction } from '@/app/actions/crm-person-detail'
@@ -357,6 +358,7 @@ function EventCard({ item }: { item: TimelineItem }) {
   // groupMembers. Surfacing it here is what makes a group text unmistakable from a
   // private 1:1 — previously they rendered identically.
   const group = groupInfoFromPayload(item.payload)
+  const cmaLabel = cmaTimelineChipLabel(item.payload)
 
   function toggleStar() {
     const next = !starred
@@ -388,6 +390,7 @@ function EventCard({ item }: { item: TimelineItem }) {
             <span className="text-sm font-medium" style={{ color: 'var(--a-text)' }}>
               {item.title ?? (isLeadOrigin ? 'Lead Origin' : item.kind.replace(/_/g, ' '))}
             </span>
+            {cmaLabel ? <TimelineChip className="ml-2">{cmaLabel}</TimelineChip> : null}
             {isAutomationEmail ? (
               <TimelineChip className="ml-2 uppercase">Archived</TimelineChip>
             ) : null}

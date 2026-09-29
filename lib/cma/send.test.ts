@@ -97,6 +97,7 @@ vi.mock('@/lib/cma/solicit-screen', () => ({
 }))
 
 import { sendCmaToLead } from '@/lib/cma/send'
+import { gmailTimelineDedupeKey } from '@/lib/crm/gmail-timeline-key'
 import { GMAIL_AUTH_TIMEOUT_MS } from '@/lib/gmail-draft'
 
 const SLUG = 'cma-123-main-st'
@@ -147,6 +148,25 @@ describe('sendCmaToLead', () => {
     )
     expect(h.ensureNativeLead).not.toHaveBeenCalled()
     expect(h.stampCmaPersonId).toHaveBeenCalledWith(SLUG, 42)
+    const recorded = h.recordEmailEvent.mock.calls[0]?.[0] as { meta?: { rfcMessageId?: string } }
+    const rfcMessageId = recorded.meta?.rfcMessageId
+    expect(rfcMessageId).toEqual(expect.stringMatching(/^<.+@ryan-realty\.com>$/))
+    expect(h.logCmaTimelineEvent).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        dedupeKey: gmailTimelineDedupeKey(rfcMessageId, 42),
+        mergePayloadOnConflict: true,
+        payload: expect.objectContaining({
+          artifact: 'cma',
+          slug: SLUG,
+          cmaSlug: SLUG,
+          cmaLabel: 'CMA sent',
+          threadId: 'thr-1',
+          gmailMessageId: 'msg-1',
+          transport: 'gmail',
+        }),
+      }),
+    )
   })
 
   it('saves an existing CRM contact on the cmas row before the PDF renders', async () => {
@@ -241,6 +261,16 @@ describe('sendCmaToLead', () => {
 
     expect(h.sendEmail).toHaveBeenCalledTimes(1)
     expect(res).toMatchObject({ ok: true, transport: 'resend' })
+    const logged = h.logCmaTimelineEvent.mock.calls[0]?.[1] as {
+      dedupeKey?: string
+      mergePayloadOnConflict?: boolean
+      payload?: { threadId?: string; cmaSlug?: string; cmaLabel?: string }
+    }
+    expect(logged.dedupeKey).toMatch(/^cma:sent:/)
+    expect(logged.payload?.threadId).toBeUndefined()
+    expect(logged.payload?.cmaSlug).toBe(SLUG)
+    expect(logged.payload?.cmaLabel).toBe('CMA sent')
+    expect(logged.mergePayloadOnConflict).toBeFalsy()
   })
 
   it('does not fall back when Gmail never answered the send, and tells the broker to check Sent', async () => {

@@ -31,6 +31,8 @@ const REPLY_INTENTS: ReadonlySet<string> = new Set([
   'not_interested',
   'wrong_number',
   'later',
+  'market_updates',
+  'future_seller',
   'other',
 ])
 
@@ -66,6 +68,8 @@ export function composePersonNextStep(facts: PersonNextFacts): string {
     if (facts.replyIntent === 'later') return 'Follow up later.'
     if (facts.replyIntent === 'question') return 'Reply. They asked a question.'
     if (facts.replyIntent === 'interested') return 'Reply. They are interested.'
+    if (facts.replyIntent === 'market_updates') return 'Send market updates. They asked to stay in the loop.'
+    if (facts.replyIntent === 'future_seller') return 'Future seller. Renting for now, stay in touch.'
     return facts.unrepliedInbound.channel === 'sms' ? 'Reply to their text.' : 'Reply to their email.'
   }
 
@@ -129,7 +133,7 @@ export function composeListNextStep(input: {
 /** Newest-first messages. Unreplied = latest inbound is newer than latest outbound. */
 export function unrepliedInboundFromMessages(
   items: ReadonlyArray<{ kind: string; ts: string; payload?: Record<string, unknown> | null }>,
-): { channel: 'sms' | 'email'; replyIntent: ReplyIntent | null } | null {
+): { channel: 'sms' | 'email'; ts: number; replyIntent: ReplyIntent | null } | null {
   let lastIn: { channel: 'sms' | 'email'; ts: number; payload: Record<string, unknown> | null } | null = null
   let lastOutTs = -Infinity
   for (const m of items) {
@@ -150,8 +154,32 @@ export function unrepliedInboundFromMessages(
   if (!lastIn || lastOutTs >= lastIn.ts) return null
   return {
     channel: lastIn.channel,
+    ts: lastIn.ts,
     replyIntent: asReplyIntent(lastIn.payload?.intent),
   }
+}
+
+/**
+ * Intent for the header line. The unreplied message's own payload.intent
+ * wins. Otherwise the newest system note whose intent is stamped at or
+ * after that inbound (classification lands a few seconds later). An older
+ * "not interested" note must not override a newer reply that has no note yet.
+ */
+export function replyIntentForUnreplied(
+  unreplied: { ts: number; replyIntent: ReplyIntent | null } | null,
+  systemNotes: ReadonlyArray<{ ts: string; payload?: Record<string, unknown> | null }>,
+): ReplyIntent | null {
+  if (!unreplied) return null
+  if (unreplied.replyIntent) return unreplied.replyIntent
+  let best: { ts: number; intent: ReplyIntent } | null = null
+  for (const note of systemNotes) {
+    const ts = Date.parse(note.ts)
+    if (!Number.isFinite(ts) || ts < unreplied.ts) continue
+    const intent = asReplyIntent(note.payload?.intent)
+    if (!intent) continue
+    if (!best || ts >= best.ts) best = { ts, intent }
+  }
+  return best?.intent ?? null
 }
 
 export function replyIntentFromTimeline(

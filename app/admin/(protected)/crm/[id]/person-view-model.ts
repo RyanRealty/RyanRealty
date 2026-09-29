@@ -11,6 +11,7 @@
  * page already has in hand.
  */
 import { formatDate } from '@/lib/format/date'
+import { collapseCmaSendDuplicates } from '@/lib/crm/cma-timeline-collapse'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { mergeTagOptions } from '@/lib/data/crm/getPersonDetailExtras'
 import { CRM_STAGES } from '@/lib/crm/constants'
@@ -29,6 +30,7 @@ const SOURCE_PRESETS = [
   'inbound-call',
   'Expired Listing Cron',
   'FSBO',
+  'CMA email reply',
 ]
 
 type ContactPointLike = {
@@ -154,7 +156,7 @@ export function buildTimelineItems(
   timeline: TimelineRowLike[],
   engagement: EmailEngagement,
 ): TimelineItem[] {
-  return timeline
+  return collapseCmaSendDuplicates(timeline)
     .filter((t) => t.kind !== 'email_open' && t.kind !== 'email_click' && t.kind !== 'sms_click')
     .map((t) => {
       const eng = engagement[(t.title ?? '').trim()]

@@ -9,6 +9,7 @@ import {
   composePersonNextStep,
   composePersonNowLine,
   listingViewIsRecent,
+  replyIntentForUnreplied,
   unrepliedInboundFromMessages,
   RECENT_LISTING_VIEW_MS,
   type PersonListingView,
@@ -88,7 +89,7 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
     return { nextLine: 'No next step queued.', nowLine: 'Not on the site.', askHref: null }
   }
   const sb = createServiceClient()
-  const [messages, awaiting, view, tasks] = await Promise.all([
+  const [messages, awaiting, view, tasks, notes] = await Promise.all([
     sb
       .from('crm_timeline')
       .select('kind,ts,payload')
@@ -105,9 +106,17 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
       .is('completed_at', null)
       .order('due_at', { ascending: true })
       .limit(8),
+    sb
+      .from('crm_timeline')
+      .select('ts,payload')
+      .eq('person_id', personId)
+      .eq('kind', 'system')
+      .order('ts', { ascending: false })
+      .limit(20),
   ])
   if (messages.error) console.error('[getPersonGlance] messages', messages.error.message)
   if (tasks.error) console.error('[getPersonGlance] tasks', tasks.error.message)
+  if (notes.error) console.error('[getPersonGlance] notes', notes.error.message)
 
   const unreplied = unrepliedInboundFromMessages(
     (messages.data ?? []).map((row) => ({
@@ -116,6 +125,12 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
       payload: (row.payload ?? null) as Record<string, unknown> | null,
     })),
   )
+  const noteRows = notes.error
+    ? []
+    : (notes.data ?? []).map((row) => ({
+        ts: String(row.ts ?? ''),
+        payload: (row.payload ?? null) as Record<string, unknown> | null,
+      }))
   const latestView = view
   const triage = (tasks.data ?? []).find((t) =>
     isTriageTaskCandidate({
@@ -127,7 +142,7 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
   return {
     nextLine: composePersonNextStep({
       unrepliedInbound: unreplied ? { channel: unreplied.channel } : null,
-      replyIntent: unreplied?.replyIntent ?? null,
+      replyIntent: replyIntentForUnreplied(unreplied, noteRows),
       triageTask: triage ? { name: (triage.name as string | null) ?? null, type: (triage.type as string | null) ?? null } : null,
       sequenceWaiting: awaiting,
     }),

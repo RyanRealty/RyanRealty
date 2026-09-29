@@ -3,6 +3,7 @@ import {
   composeListNextStep,
   composePersonNextStep,
   composePersonNowLine,
+  replyIntentForUnreplied,
   unrepliedInboundFromMessages,
 } from '@/lib/crm/person-header-lines'
 
@@ -43,6 +44,36 @@ describe('person glance lines', () => {
     expect(composePersonNowLine({ latestListingView: null, nowMs: Date.parse('2026-08-19T22:00:00Z') })).toBe(
       'Not on the site.',
     )
+  })
+
+  it('names a market-update ask and a future seller', () => {
+    const base = { unrepliedInbound: { channel: 'email' as const }, triageTask: null, sequenceWaiting: null }
+    expect(composePersonNextStep({ ...base, replyIntent: 'market_updates' })).toBe(
+      'Send market updates. They asked to stay in the loop.',
+    )
+    expect(composePersonNextStep({ ...base, replyIntent: 'future_seller' })).toBe(
+      'Future seller. Renting for now, stay in touch.',
+    )
+  })
+
+  it('uses a note written after the unreplied email, and ignores an older decline', () => {
+    const inboundTs = Date.parse('2026-09-29T20:16:44.000Z')
+    expect(
+      replyIntentForUnreplied({ ts: inboundTs, replyIntent: null }, [
+        { ts: '2026-09-29T20:24:26.000Z', payload: { intent: 'market_updates' } },
+        { ts: '2026-09-29T18:00:00.000Z', payload: { intent: 'not_interested' } },
+      ]),
+    ).toBe('market_updates')
+    expect(
+      replyIntentForUnreplied({ ts: inboundTs, replyIntent: null }, [
+        { ts: '2026-09-29T18:00:00.000Z', payload: { intent: 'not_interested' } },
+      ]),
+    ).toBeNull()
+    expect(
+      replyIntentForUnreplied({ ts: inboundTs, replyIntent: 'later' }, [
+        { ts: '2026-09-29T21:00:00.000Z', payload: { intent: 'not_interested' } },
+      ]),
+    ).toBe('later')
   })
 
   it('treats newer inbound than outbound as unreplied', () => {

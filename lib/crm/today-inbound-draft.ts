@@ -68,6 +68,9 @@ function draftForIntent(intent: ReplyIntent | null, who: readonly PersonWhoLabel
       return 'Happy to answer that. When works for a quick call?'
     case 'later':
       return 'No rush. I will check back later.'
+    case 'market_updates':
+    case 'future_seller':
+      return ''
     case 'other':
       return ''
     default: {

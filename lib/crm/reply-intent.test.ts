@@ -75,6 +75,38 @@ describe('deterministicReplyIntent (pre-pass, no model call)', () => {
     expect(deterministicReplyIntent('Who is this and how did you get my number?')).toBeNull()
     expect(deterministicReplyIntent('Maybe in the spring, we are not ready yet')).toBeNull()
   })
+
+  it('classifies a keep-in-the-loop reply as market_updates, never not_interested', () => {
+    const body = 'Yes please keep me in the loop on the market. I realize that it will probably be at least a year.'
+    const r = deterministicReplyIntent(body)
+    expect(r?.intent).toBe('market_updates')
+    expect(r?.intent).not.toBe('not_interested')
+    expect(r?.source).toBe('deterministic')
+    expect(r?.recommendedReply).toBe('')
+  })
+
+  it('classifies a rent-after-a-fallen-sale reply as future_seller, never not_interested', () => {
+    const body = "Actually it was sold but on a contingency that fell through... I've decided to rent"
+    const r = deterministicReplyIntent(body)
+    expect(r?.intent).toBe('future_seller')
+    expect(r?.intent).not.toBe('not_interested')
+    expect(r?.recommendedReply).toBe('')
+  })
+
+  it('still classifies STOP, profanity, and a bare not interested the way it did', () => {
+    expect(deterministicReplyIntent('stop texting me')?.intent).toBe('not_interested')
+    expect(deterministicReplyIntent('stop texting me')?.recommendedReply).toBe('Understood, I will not text you again.')
+    expect(deterministicReplyIntent('remove me')?.intent).toBe('not_interested')
+    expect(deterministicReplyIntent('not interested')?.intent).toBe('not_interested')
+    expect(deterministicReplyIntent('fuck off')?.intent).toBe('not_interested')
+  })
+
+  it('does not let STOP-adjacent phrasing swallow a loop request, and does not treat a negated update ask as one', () => {
+    expect(deterministicReplyIntent('not interested, but keep me in the loop')?.intent).toBe('market_updates')
+    expect(deterministicReplyIntent('I am not interested in market updates')?.intent).toBe('not_interested')
+    expect(deterministicReplyIntent('do not send me updates')).toBeNull()
+    expect(deterministicReplyIntent('my parent mentioned the rental income')).toBeNull()
+  })
 })
 
 describe('classifyInboundReply — deterministic path never touches the network', () => {
@@ -84,6 +116,17 @@ describe('classifyInboundReply — deterministic path never touches the network'
     const r = await classifyInboundReply({ body: 'stop texting me', context: {} })
     expect(r?.intent).toBe('not_interested')
     expect(r?.source).toBe('deterministic')
+  })
+
+  it('resolves a market-update ask without fetch', async () => {
+    forbidNetwork()
+    vi.stubEnv('XAI_API_KEY', '')
+    const r = await classifyInboundReply({
+      body: 'Yes please keep me in the loop on the market. I realize that it will probably be at least a year.',
+      context: {},
+    })
+    expect(r?.intent).toBe('market_updates')
+    expect(r?.recommendedReply).toBe('')
   })
 
   it('kill switch CRM_REPLY_INTENT_DISABLED=1 returns null even for deterministic input', async () => {
@@ -145,6 +188,22 @@ describe('classifyInboundReply — model path (mocked API)', () => {
       context: { kind: 'expired', address: '61500 Larkspur Loop' },
     })
     expect(r?.recommendedReply).toContain('61500 Larkspur Loop')
+  })
+
+  it('drops a model draft when the intent is market_updates or future_seller', async () => {
+    vi.stubEnv('XAI_API_KEY', 'test-key')
+    stubModelResponse({
+      intent: 'market_updates',
+      confidence: 0.8,
+      recommended_reply: 'I will send you a market report next month.',
+    })
+    const r = await classifyInboundReply({
+      body: 'Please tell me something the rules do not catch about pricing trends',
+      context: {},
+    })
+    expect(r?.intent).toBe('market_updates')
+    expect(r?.source).toBe('model')
+    expect(r?.recommendedReply).toBe('')
   })
 
   it('returns null on an invalid intent from the model', async () => {

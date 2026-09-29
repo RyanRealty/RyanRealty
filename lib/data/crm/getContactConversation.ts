@@ -7,6 +7,7 @@
  * Raw .from() lives here per the DAL boundary (G1).
  */
 import { createServiceClient } from '@/lib/data/client'
+import { collapseCmaSendDuplicates } from '@/lib/crm/cma-timeline-collapse'
 
 /** crm_timeline kinds that are a real message/call (what the Comms thread shows). */
 export const CONVERSATION_KINDS = ['sms_in', 'sms_out', 'email_in', 'email_out', 'call', 'voicemail'] as const
@@ -18,6 +19,7 @@ export type ConversationMessage = {
   title: string | null
   body: string | null
   broker: string | null
+  source: string | null
   payload: Record<string, unknown> | null
 }
 
@@ -33,7 +35,7 @@ export async function getContactConversation(
 
   let q = sb
     .from('crm_timeline')
-    .select('id,ts,kind,title,body,payload,broker')
+    .select('id,ts,kind,title,body,payload,broker,source')
     .eq('person_id', personId)
     .in('kind', CONVERSATION_KINDS as unknown as string[])
     .order('ts', { ascending: false })
@@ -44,16 +46,21 @@ export async function getContactConversation(
   if (error || !data) return { items: [], nextCursor: null }
 
   const hasMore = data.length > limit
-  const page = (data as Array<Record<string, unknown>>).slice(0, limit)
-  const items: ConversationMessage[] = page.map((r) => ({
-    id: Number(r.id),
-    ts: String(r.ts),
-    kind: String(r.kind),
-    title: (r.title as string | null) ?? null,
-    body: (r.body as string | null) ?? null,
-    broker: (r.broker as string | null) ?? null,
-    payload: (r.payload as Record<string, unknown> | null) ?? null,
-  }))
-  const nextCursor = hasMore && page.length ? String(page[page.length - 1]!.ts) : null
+  // Collapse across the lookahead row too, so a duplicate sitting on the page
+  // boundary still folds into its gmail twin instead of showing on the next page.
+  const collapsed = collapseCmaSendDuplicates(
+    (data as Array<Record<string, unknown>>).map((r) => ({
+      id: Number(r.id),
+      ts: String(r.ts),
+      kind: String(r.kind),
+      title: (r.title as string | null) ?? null,
+      body: (r.body as string | null) ?? null,
+      broker: (r.broker as string | null) ?? null,
+      source: (r.source as string | null) ?? null,
+      payload: (r.payload as Record<string, unknown> | null) ?? null,
+    })),
+  )
+  const items = collapsed.slice(0, limit)
+  const nextCursor = hasMore && items.length ? items[items.length - 1]!.ts : null
   return { items, nextCursor }
 }

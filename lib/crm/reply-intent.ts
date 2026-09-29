@@ -10,6 +10,9 @@
  *   1. Deterministic pre-pass (no model call, no key needed):
  *      - STOP-adjacent phrasing or profanity  -> not_interested
  *      - explicit "wrong number" phrasing     -> wrong_number
+ *      - keep-in-the-loop / market updates    -> market_updates (never a decline)
+ *      - renting now / will sell later        -> future_seller (never a decline)
+ *      - explicit "not interested"            -> not_interested
  *      - empty body or a bare acknowledgement -> other (no suggested reply)
  *   2. Model call through lib/grok (Matt 2026-09-09: every model pass on
  *      Grok), schema-bound JSON.
@@ -35,10 +38,13 @@ export type ReplyIntent =
   | 'not_interested'
   | 'wrong_number'
   | 'later'
+  | 'market_updates'
+  | 'future_seller'
   | 'other'
 
 const VALID_INTENTS: ReadonlySet<string> = new Set([
-  'interested', 'question', 'not_interested', 'wrong_number', 'later', 'other',
+  'interested', 'question', 'not_interested', 'wrong_number', 'later',
+  'market_updates', 'future_seller', 'other',
 ])
 
 /** Short human labels for task names / alert emails / timeline notes. */
@@ -48,6 +54,8 @@ export const REPLY_INTENT_LABELS: Record<ReplyIntent, string> = {
   not_interested: 'Not interested',
   wrong_number: 'Wrong number',
   later: 'Follow up later',
+  market_updates: 'Wants market updates',
+  future_seller: 'Renting for now, future seller',
   other: 'General reply',
 }
 
@@ -102,6 +110,77 @@ const ACK_TOKENS: ReadonlySet<string> = new Set([
 const NOT_INTERESTED_REPLY = 'Understood, I will not text you again.'
 const WRONG_NUMBER_REPLY = 'Apologies for the mix-up. I will remove this number from my list.'
 
+// Built per call (no shared /g lastIndex). "no" / "not" in the 80 characters
+// before a phrase negates it, unless a contrast word ("but", "however", ...)
+// sits closer, in which case only a negation after that contrast counts.
+// That is what keeps "not interested, but keep me in the loop" as an ask.
+const NEGATION_SRC = String.raw`\b(?:do not|don't|dont|never|stop|no|not|won't|wont)\b`
+const CONTRAST_SRC = String.raw`\b(?:but|however|though|although|still|yet)\b`
+
+const MARKET_PATTERNS: readonly RegExp[] = [
+  /\bkeep (?:me|us) in the loop\b/i,
+  /\bstay in the loop\b/i,
+  /\bkept in the loop\b/i,
+  /\bkeep (?:me|us) (?:posted|informed|updated)\b/i,
+  /\bsend me updates\b/i,
+  /\bmarket updates?\b/i,
+  /\bmarket reports?\b/i,
+  /\blet me know how the market\b/i,
+]
+
+const FUTURE_PATTERNS: readonly RegExp[] = [
+  /\bdecided to rent\b/i,
+  /\bgoing to rent\b/i,
+  /\bplan(?:ning)? to rent\b/i,
+  /\brent(?:ing)? it out\b/i,
+  /\brent(?:ing)? the (?:house|home|property) out\b/i,
+  /\bwill rent\b/i,
+  /\brenting for now\b/i,
+  /\brent it for now\b/i,
+  /\b(?:will sell later|selling later|sell it later)\b/i,
+]
+
+function askIsNegated(text: string, matchIndex: number): boolean {
+  const window = text.slice(Math.max(0, matchIndex - 80), matchIndex)
+  let lastContrastEnd = -1
+  for (const match of window.matchAll(new RegExp(CONTRAST_SRC, 'gi'))) {
+    lastContrastEnd = (match.index ?? 0) + match[0].length
+  }
+  const scope = lastContrastEnd >= 0 ? window.slice(lastContrastEnd) : window
+  return new RegExp(NEGATION_SRC, 'i').test(scope)
+}
+
+function hasUnnegated(text: string, patterns: readonly RegExp[]): boolean {
+  for (const pattern of patterns) {
+    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`
+    for (const match of text.matchAll(new RegExp(pattern.source, flags))) {
+      if (!askIsNegated(text, match.index ?? 0)) return true
+    }
+  }
+  return false
+}
+
+function fellThroughAndRent(text: string): boolean {
+  if (!/\bfell through\b/i.test(text)) return false
+  return hasUnnegated(text, [/\b(?:rent|rents|renting|rented)\b/i])
+}
+
+/**
+ * An ask still wins when "not interested" only shows up before a contrast
+ * ("not interested, but keep me in the loop"). A decline with no later ask
+ * does not.
+ */
+function askSurvivesDecline(text: string, patterns: readonly RegExp[], extra?: (slice: string) => boolean): boolean {
+  const matches = (slice: string) => hasUnnegated(slice, patterns) || (extra?.(slice) ?? false)
+  if (!matches(text)) return false
+  const decline = /\bnot interested\b/i.exec(text)
+  if (!decline) return true
+  const afterDecline = text.slice(decline.index + decline[0].length)
+  const contrast = new RegExp(CONTRAST_SRC, 'i').exec(afterDecline)
+  if (!contrast) return false
+  return matches(afterDecline.slice(contrast.index + contrast[0].length))
+}
+
 /**
  * Deterministic classification. Returns null when no deterministic rule fires
  * (the model decides). Exported for direct testing.
@@ -127,6 +206,24 @@ export function deterministicReplyIntent(body: string): ReplyClassification | nu
       intent: 'wrong_number',
       confidence: 0.9,
       recommendedReply: WRONG_NUMBER_REPLY,
+      source: 'deterministic',
+    }
+  }
+
+  // After STOP / profanity / wrong-number. STOP_ADJACENT does not match
+  // "keep me in the loop". These asks are not a decline, even when the
+  // note mentions a year out or a sale that fell through.
+  if (askSurvivesDecline(trimmed, MARKET_PATTERNS)) {
+    return { intent: 'market_updates', confidence: 0.92, recommendedReply: '', source: 'deterministic' }
+  }
+  if (askSurvivesDecline(trimmed, FUTURE_PATTERNS, fellThroughAndRent)) {
+    return { intent: 'future_seller', confidence: 0.9, recommendedReply: '', source: 'deterministic' }
+  }
+  if (/\bnot interested\b/i.test(trimmed)) {
+    return {
+      intent: 'not_interested',
+      confidence: 0.9,
+      recommendedReply: NOT_INTERESTED_REPLY,
       source: 'deterministic',
     }
   }
@@ -185,7 +282,7 @@ export function buildReplyIntentPrompt(input: ClassifyInboundReplyInput): { syst
   const system = `You classify an inbound SMS reply from a homeowner prospect that Ryan Realty (a real-estate brokerage in Bend, Oregon) previously texted. Output a SINGLE JSON object and nothing else:
 
 {
-  "intent": "<one of: interested | question | not_interested | wrong_number | later | other>",
+  "intent": "<one of: interested | question | not_interested | wrong_number | later | market_updates | future_seller | other>",
   "confidence": <number between 0.0 and 1.0>,
   "recommended_reply": "<1-2 sentence draft the broker can send back as-is, or empty string>"
 }
@@ -196,6 +293,8 @@ INTENT definitions:
   - not_interested: they declined, asked us to stop, or are hostile.
   - wrong_number: they say we reached the wrong person or they do not own the property.
   - later: not now, but open to it down the road ("maybe in the spring", "check back later").
+  - market_updates: they asked to be kept in the loop or sent market updates or reports. This is not a decline.
+  - future_seller: they are renting the home for now, a sale fell through and they will rent, or they will sell later. This is not a decline.
   - other: none of the above (small talk, acknowledgement, unclear).
 
 RECOMMENDED_REPLY rules (hard):
@@ -203,6 +302,7 @@ RECOMMENDED_REPLY rules (hard):
   - NEVER invent facts. NEVER state a price, valuation, percentage, date, or any number that does not appear verbatim in the prospect's message or the context.
   - No em dashes, no semicolons, no exclamation marks, no emoji, no marketing cliches.
   - If intent is not_interested or wrong_number: one polite closing sentence, nothing more.
+  - If intent is market_updates or future_seller: return an empty string. Do not draft outreach copy.
   - If intent is question and answering would require facts you do not have, acknowledge and offer a call instead of guessing.
   - If nothing useful can be suggested, return an empty string.
 
@@ -280,10 +380,14 @@ export async function classifyInboundReply(
 
   const ctx = input.context ?? {}
   const allowedText = [input.body, ctx.personName ?? '', ctx.address ?? ''].join('\n')
-  const recommendedReply = sanitizeRecommendedReply(
-    typeof parsed.recommended_reply === 'string' ? parsed.recommended_reply : '',
-    allowedText,
-  )
+  // No new outbound copy for these two, even if the model drafts one.
+  const recommendedReply =
+    intent === 'market_updates' || intent === 'future_seller'
+      ? ''
+      : sanitizeRecommendedReply(
+          typeof parsed.recommended_reply === 'string' ? parsed.recommended_reply : '',
+          allowedText,
+        )
 
   return {
     intent: intent as ReplyIntent,

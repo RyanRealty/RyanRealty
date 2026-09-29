@@ -115,6 +115,7 @@ export function parseStoredColumns(rawJson: string | null): PeopleColumnKey[] | 
 export const LEAD_SOURCE_OPTIONS = [
   'Ryan-Realty.com', 'Zillow', 'Realtor.com', 'Referral', 'Sphere', 'Open House',
   'Expired Listing', 'FSBO', 'Facebook', 'Google', 'Inbound call', 'Import', 'Manual entry',
+  'CMA email reply',
 ] as const
 
 // ── Timeframe options (§14.3 item 10) ────────────────────────────────────────

@@ -140,6 +140,8 @@
   display:flex; gap:var(--a-s2); align-items:center; }
 .av2-bubble__chan { font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
   border:1px solid var(--a-border); border-radius:4px; padding:0 4px; color:var(--a-text-2); background:var(--a-bg); }
+.av2-bubble__cma { font-size:10px; font-weight:600; border:1px solid var(--a-border); border-radius:4px;
+  padding:0 4px; color:var(--a-text-2); background:var(--a-bg); }
 
 /* ---- RailNav (header Option A, locked) ----
    §5: 216px rail (--a-rail-w) at ≥1200px, icon-collapsed below (1024–1199px);

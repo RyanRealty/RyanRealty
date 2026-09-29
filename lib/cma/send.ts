@@ -38,6 +38,8 @@ import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { CMA_LABEL_SENT } from '@/lib/crm/cma-thread-label'
+import { gmailTimelineDedupeKey } from '@/lib/crm/gmail-timeline-key'
 import { cmaFirstContactFactsForSend, cmaSendBrokerSlug } from '@/lib/cma/first-contact-for-send'
 import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from '@/lib/cma/first-contact-render'
 import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
@@ -530,16 +532,33 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
   await updateCmaRowFieldsBySlug(slug, { status: 'delivered', delivered_at: sentAt })
   if (personId) {
     await stampCmaLinkOnPerson(personId, { cmaLink: `${SITE_URL}/cma/${slug}`, cmaSlug: slug })
+    // Gmail rail: the same dedupe key the mailbox sync will compute, so the
+    // send and the later sync are one row. Resend has no Message-ID the sync
+    // can see, so it keeps its own key and no Gmail thread.
+    const gmailDedupe =
+      transport === 'gmail' && rfcMessageId
+        ? gmailTimelineDedupeKey({ rfcMessageId, gmailId: gmailMessageId }, personId)
+        : null
     await logCmaTimelineEvent(personId, {
       kind: 'email_out',
       title: body.subject,
       body: `CMA sent to ${ctx.clientEmail} for ${ctx.subjectAddress}.`,
       broker: crmBrokerSlug,
-      // Unique per send (full ISO timestamp, not the send DATE) so a legitimate
-      // re-send is always logged as its own timeline row. A date-keyed dedupe
-      // silently swallowed the second same-day send, hiding a real delivery.
-      dedupeKey: `cma:sent:${slug}:${sentAt}`,
-      payload: { artifact: 'cma', slug, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, gmailMessageId: gmailMessageId ?? null, resendId: resendId ?? null },
+      // Resend (and a Gmail send with no Message-ID) stays unique per send.
+      // A date-keyed dedupe silently swallowed a second same-day send.
+      dedupeKey: gmailDedupe ?? `cma:sent:${slug}:${sentAt}`,
+      ...(gmailDedupe ? { mergePayloadOnConflict: true } : {}),
+      payload: {
+        artifact: 'cma',
+        slug,
+        cmaSlug: slug,
+        cmaLabel: CMA_LABEL_SENT,
+        transport,
+        mailbox: transport === 'gmail' ? brokerMailbox : null,
+        gmailMessageId: gmailMessageId ?? null,
+        resendId: resendId ?? null,
+        ...(transport === 'gmail' && gmailThreadId ? { threadId: gmailThreadId } : {}),
+      },
     })
   }
   return { ok: true, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, gmailMessageId, resendId, personId }

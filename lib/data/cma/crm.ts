@@ -9,6 +9,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
 import { mergeCmaClientFields } from '@/lib/data/cma/crm-attach-fields'
+import { mergeSyncedGmailPayload } from '@/lib/crm/cma-thread-label'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -51,7 +52,15 @@ export async function stampCmaLinkOnPerson(
   }
 }
 
-/** Best-effort crm_timeline entry (email_out for sends, system otherwise). */
+/**
+ * Best-effort crm_timeline entry (email_out for sends, system otherwise).
+ * Never throws: a timeline write must not fail a send that already went out.
+ *
+ * mergePayloadOnConflict is only for the CMA Gmail rail, whose dedupe key is
+ * the same one mailbox sync uses. If sync inserted first, fold the CMA fields
+ * onto that row's payload and leave its body, title, and source alone.
+ * Other callers stay silent on a duplicate key, as they always have.
+ */
 export async function logCmaTimelineEvent(
   personId: number,
   entry: {
@@ -61,12 +70,13 @@ export async function logCmaTimelineEvent(
     broker?: string | null
     dedupeKey?: string | null
     payload?: Record<string, unknown>
+    mergePayloadOnConflict?: boolean
   },
 ): Promise<void> {
   const sb = client()
   if (!sb) return
   try {
-    await sb.from('crm_timeline').insert({
+    const { error } = await sb.from('crm_timeline').insert({
       person_id: personId,
       kind: entry.kind,
       title: entry.title,
@@ -76,6 +86,27 @@ export async function logCmaTimelineEvent(
       payload: entry.payload ?? {},
       dedupe_key: entry.dedupeKey ?? null,
     })
+    if (!error) return
+    const duplicate = error.code === '23505' || /duplicate key|dedupe_key/i.test(error.message ?? '')
+    if (!duplicate || !entry.mergePayloadOnConflict || !entry.dedupeKey) return
+    const { data, error: readErr } = await sb
+      .from('crm_timeline')
+      .select('payload')
+      .eq('dedupe_key', entry.dedupeKey)
+      .maybeSingle()
+    if (readErr || !data) {
+      console.warn('[logCmaTimelineEvent] merge read failed', readErr?.message ?? 'no row')
+      return
+    }
+    const prior =
+      data.payload && typeof data.payload === 'object' && !Array.isArray(data.payload)
+        ? (data.payload as Record<string, unknown>)
+        : {}
+    const { error: updErr } = await sb
+      .from('crm_timeline')
+      .update({ payload: mergeSyncedGmailPayload(prior, entry.payload ?? {}) })
+      .eq('dedupe_key', entry.dedupeKey)
+    if (updErr) console.warn('[logCmaTimelineEvent] merge write failed', updErr.message)
   } catch (e) {
     console.warn('[logCmaTimelineEvent]', e instanceof Error ? e.message : String(e))
   }

@@ -14,7 +14,6 @@
  * Gmail is the system of record for email bodies.
  */
 
-import { createHash } from 'node:crypto'
 import { google, type gmail_v1 } from 'googleapis'
 import { type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -23,8 +22,11 @@ import { composeOutboundHtml, prepareOutboundEmailBody, type EmailBodyFormat } f
 import { classifyInboundReply } from '@/lib/crm/reply-intent'
 import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildEmailIntentNote, emailIntentDedupeKey } from '@/lib/crm/email-intent-note'
+import { mergeSyncedGmailPayload, payloadForSyncedGmailMessage, type CmaThreadRecord } from '@/lib/crm/cma-thread-label'
+import { gmailMessageKey, gmailTimelineDedupeKey } from '@/lib/crm/gmail-timeline-key'
 import { INDEX_METADATA_HEADERS } from '@/lib/tc/gmail-message'
 import { GMAIL_AUTH_TIMEOUT_MS } from '@/lib/gmail-draft'
+import { getCmaThreadsForPeople } from '@/lib/data/crm/getCmaThreadsForPeople'
 
 // System/notification senders that must never create timeline entries — leftover
 // vendor mail is platform noise, not a communication from a contact.
@@ -215,6 +217,21 @@ async function classifyInboundEmailReplies(
   return notes.length
 }
 
+/** People a metadata page can attach a timeline row to. Blocked senders are skipped. */
+function matchedPersonIds(metas: gmail_v1.Schema$Message[], emailMap: Map<string, number>): number[] {
+  const ids = new Set<number>()
+  for (const meta of metas) {
+    const from = parseAddresses(headerOf(meta, 'From'))
+    if (from.length && from.every((a) => BLOCKED_SENDER_DOMAINS.has(a.split('@')[1] ?? ''))) continue
+    const toCc = [...parseAddresses(headerOf(meta, 'To')), ...parseAddresses(headerOf(meta, 'Cc'))]
+    for (const address of [...from, ...toCc]) {
+      const personId = emailMap.get(address)
+      if (personId) ids.add(personId)
+    }
+  }
+  return [...ids]
+}
+
 /**
  * Process one window of a mailbox. Cursor = gmail internalDate (ms) of the
  * newest fully-processed point, stored in crm_imports (source `gmail:<slug>`).
@@ -328,6 +345,17 @@ export async function syncMailboxWindow(params: {
         )
         metas.push(...chunk)
       }
+      // One CMA-thread lookup for the people on this page, not one per message.
+      // Fail-open: a lookup error still syncs the mail, just without a label.
+      let cmaThreads: CmaThreadRecord[] = []
+      const pagePersonIds = matchedPersonIds(metas, emailMap)
+      if (pagePersonIds.length) {
+        try {
+          cmaThreads = await getCmaThreadsForPeople(pagePersonIds)
+        } catch (err) {
+          console.warn('[gmail-sync] CMA thread lookup failed (fail-open)', err)
+        }
+      }
       for (const meta of metas) {
         processed++
         const internal = Number(meta.internalDate ?? 0)
@@ -350,27 +378,43 @@ export async function syncMailboxWindow(params: {
         // RFC822 Message-ID is stable across mailboxes — an email delivered to
         // two broker inboxes gets a different gmailId per mailbox but the same
         // Message-ID, so keying on it makes the second copy an upsert no-op.
-        const rfcId = headerOf(fullMsg.data, 'Message-ID')
-        const messageKey = rfcId ? `rfc:${createHash('sha1').update(rfcId.trim()).digest('hex').slice(0, 24)}` : fullMsg.data.id
+        // Same helper a CMA Gmail send uses, so the send and the sync share a row.
+        const rfcId = headerOf(fullMsg.data, 'Message-ID') ?? null
+        const gmailId = fullMsg.data.id ?? null
+        const messageKey = gmailMessageKey(rfcId, gmailId)
+        if (!messageKey) {
+          await indexForVault(meta)
+          continue
+        }
         for (const [personId, dir] of candidates) {
+          const dedupeKey = gmailTimelineDedupeKey({ rfcMessageId: rfcId, gmailId }, personId)
+          if (!dedupeKey) continue
           matched++
+          const counterpartyEmails = (dir === 'in' ? from : toCc).filter(
+            (address) => !SELF_DOMAINS.has(address.split('@')[1] ?? ''),
+          )
           rows.push({
             person_id: personId,
             ts: new Date(internal || Date.now()).toISOString(),
             kind: dir === 'in' ? 'email_in' : 'email_out',
             title: subject,
             body,
-            payload: {
-              gmailId: fullMsg.data.id,
-              threadId: fullMsg.data.threadId,
+            payload: payloadForSyncedGmailMessage({
+              gmailId,
+              threadId: fullMsg.data.threadId ?? null,
               mailbox: mailboxEmail,
               snippet: fullMsg.data.snippet ?? null,
-            },
+              personId,
+              direction: dir,
+              subject,
+              counterpartyEmails,
+              threads: cmaThreads,
+            }),
             broker: brokerSlug,
             source: 'gmail',
-            dedupe_key: `gmail:${messageKey}:p${personId}`,
+            dedupe_key: dedupeKey,
           })
-          if (dir === 'in' && messageKey) {
+          if (dir === 'in') {
             inboundForIntent.push({
               personId,
               messageKey,
@@ -406,6 +450,32 @@ export async function syncMailboxWindow(params: {
           seen.set(r.dedupe_key as string, r)
         }
         if (seen.size) {
+          // Upsert replaces payload. Read the row already stored under this
+          // key (the CMA send, when it won the race) and keep its CMA fields.
+          const priors = new Map<string, Record<string, unknown>>()
+          const keys = [...seen.keys()]
+          for (let i = 0; i < keys.length; i += 100) {
+            const part = keys.slice(i, i + 100)
+            const { data: priorRows, error: priorErr } = await sb
+              .from('crm_timeline')
+              .select('dedupe_key, payload')
+              .in('dedupe_key', part)
+            if (priorErr) {
+              console.warn('[gmail-sync] payload merge read failed', priorErr.message)
+              continue
+            }
+            for (const prior of priorRows ?? []) {
+              const key = prior.dedupe_key as string
+              if (prior.payload && typeof prior.payload === 'object' && !Array.isArray(prior.payload)) {
+                priors.set(key, prior.payload as Record<string, unknown>)
+              }
+            }
+          }
+          for (const [key, row] of seen) {
+            const prior = priors.get(key)
+            if (!prior) continue
+            row.payload = mergeSyncedGmailPayload(prior, (row.payload ?? {}) as Record<string, unknown>)
+          }
           const { error } = await sb.from('crm_timeline').upsert([...seen.values()], { onConflict: 'dedupe_key' })
           if (error) throw new Error('timeline upsert: ' + error.message)
         }

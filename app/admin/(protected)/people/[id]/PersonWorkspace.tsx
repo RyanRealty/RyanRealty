@@ -31,6 +31,7 @@ import {
   getTwilioSmsStatus,
 } from '@/app/actions/crm'
 import { SectionHead, StateWord, ThreadBubble, ThreadScrollEnd } from '@/components/admin/v2'
+import { cmaTimelineChipLabel } from '@/lib/crm/cma-thread-label'
 import { oldestFirst } from '@/lib/crm/thread-chronology'
 import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
 import {
@@ -266,6 +267,7 @@ export async function PersonWorkspace({
                     key={m.id}
                     direction={dir}
                     channel={chan}
+                    label={chan === 'Email' ? cmaTimelineChipLabel(m.payload) : null}
                     stamp={[
                       tsLabel(m.ts),
                       dir === 'out' && m.broker ? m.broker : null,

@@ -71,6 +71,29 @@ describe('composeTodayInboundDraft', () => {
     ).toBe('Apologies for the mix-up. I will remove this number from my list.')
   })
 
+  it('does not draft outreach for a market-update ask or a future seller', () => {
+    expect(
+      draft({
+        intent: 'market_updates',
+        inboundBody: 'Yes please keep me in the loop on the market.',
+        recommendedReply: '',
+      }),
+    ).toBe('')
+    expect(
+      draft({
+        intent: 'future_seller',
+        inboundBody: "I've decided to rent",
+        recommendedReply: '',
+      }),
+    ).toBe('')
+    expect(
+      draft({
+        intent: null,
+        inboundBody: 'Yes please keep me in the loop on the market.',
+      }),
+    ).toBe('')
+  })
+
   it('returns empty for other, empty body, and empty classified suggestion', () => {
     expect(draft({ intent: 'other', inboundBody: 'ok', recommendedReply: '' })).toBe('')
     expect(draft({ intent: null, inboundBody: '' })).toBe('')
